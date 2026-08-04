@@ -138,6 +138,36 @@ test('paid Meta work-and-kids blocker advances to accountability instead of repe
     assert.equal(inspectVoiceScriptQuality(voiceReply.joined).valid, true);
 });
 
+test('paid Meta voice progression reflects different real blocker categories', () => {
+    const blockerQualifier = {
+        facts: {
+            current_state: 'Wants to lose 10kg and feel fitter.',
+            history_blockers: 'A real blocker is disrupting progress.',
+        },
+        commercial_stage: 'problem_qualified',
+    };
+    const cases = [
+        ['My knee pain keeps stopping me whenever I build momentum.', /pain keeps interrupting/i],
+        ['I get anxious and self-conscious at the gym.', /confidence is the thing getting in the way/i],
+        ['Cravings and weekends keep undoing my progress.', /food is the part that keeps pulling things off track/i],
+        ['Stress and low energy leave me exhausted.', /energy or headspace keeps changing/i],
+        ['Rotating shifts make it impossible to keep a routine.', /life keeps crowding the week/i],
+        ["I'm stuck because I don't know what exercises to do.", /not sure what the right next step is/i],
+    ];
+    for (const [currentMessage, expectedReflection] of cases) {
+        const reply = buildDeterministicPaidMetaConversationReply({
+            currentMessage,
+            qualifier: blockerQualifier,
+            history: [],
+            flowVariant: 'plant_based_control',
+            personalVoiceNoteMode: true,
+        });
+        assert.match(reply.joined, expectedReflection);
+        assert.match(reply.joined, /losing 10kg and feeling fitter/i);
+        assert.equal((reply.joined.match(/\?/g) || []).length, 1);
+    }
+});
+
 test('paid Meta question-fatigue reply apologises and leaves space without another question', () => {
     const qualifier = {
         commercial_stage: 'engaged',

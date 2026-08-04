@@ -58,6 +58,16 @@ function hasHighSignalConsistencyBlocker(text = '') {
     return /\b(?:can(?:'t| not) stick|never stick|keep falling|fall off|keep stopping|always restart|can(?:'t| not) stay consistent|struggl\w* to stay consistent|routine\w* (?:go|fall|drop)\w* (?:off|sideways)|lose motivation|no accountability|things? (?:just )?get(?:s)? in the way|work (?:and|&) (?:the )?kids|kids (?:and|&) work|busy with (?:work|kids|family))\b/i.test(value);
 }
 
+function hasHighSignalGoalBlocker(text = '') {
+    const value = String(text || '').trim();
+    if (value.length < 10) return false;
+    if (/\b(?:nothing (?:is )?(?:stopping|blocking|get(?:ting)? in the way)|no current (?:issue|blocker)|no(?:thing)? really gets? in the way|already (?:pretty )?consistent)\b/i.test(value)) {
+        return false;
+    }
+    return hasHighSignalConsistencyBlocker(value)
+        || /\b(?:struggl\w*|stuck|overwhelm\w*|procrastinat\w*|lack(?:ing)? (?:time|energy|motivation|confidence)|low (?:energy|motivation|confidence)|no time|too busy|shift work|rotating shifts?|schedule keeps?|caregiv\w*|kids?|children|family commitments?|pain|injur\w*|sore|fatigue\w*|exhaust\w*|sleep|stress\w*|anxi\w*|nervous|self-conscious|embarrass\w*|confidence|motivat\w*|crav\w*|weekends?|food keeps?|routine|travel|gym anxiety|don['’]?t know (?:what|how|where)|not sure (?:what|how|where)|keeps? (?:me )?(?:stuck|stopping)|stops? me|holds? me back|gets? in the way|barrier|blocker)\b/i.test(value);
+}
+
 function hasQualifierPersonalEvidence(qualifier = {}) {
     const facts = safeObject(qualifier.facts);
     const relationshipChecklist = safeObject(facts.relationship_checklist);
@@ -142,13 +152,15 @@ function resolvePersonalVoiceReplyPlan({
 
     const accountabilityConnection = hasAccountabilityConnectionSignal(currentMessage);
     const consistencyBlocker = hasHighSignalConsistencyBlocker(currentMessage);
+    const goalBlocker = hasHighSignalGoalBlocker(currentMessage)
+        && hasGoalAndBlockerEvidence(qualifier);
     const programExplanation = hasProgramExplanationSignal(currentMessage)
         && hasGoalAndBlockerEvidence(qualifier);
     const eligible = isUnlinkedInstagramLead
         && hasInstagramGraphRoute
         && (!hasRecentVoiceMessage || bypassRecentVoiceCooldownForInternalTest)
         && Number(meaningfulLeadReplyCount || 0) >= 2
-        && (accountabilityConnection || consistencyBlocker || programExplanation)
+        && (accountabilityConnection || consistencyBlocker || goalBlocker || programExplanation)
         && hasQualifierPersonalEvidence(qualifier);
 
     return {
@@ -156,7 +168,9 @@ function resolvePersonalVoiceReplyPlan({
         reason: eligible
             ? (accountabilityConnection
                 ? 'lead_accountability_connection_moment'
-                : (programExplanation ? 'lead_program_explanation_moment' : 'lead_shared_consistency_blocker'))
+                : (programExplanation
+                    ? 'lead_program_explanation_moment'
+                    : (consistencyBlocker ? 'lead_shared_consistency_blocker' : 'lead_shared_goal_blocker')))
             : '',
         syntheticVoiceForbidden: false,
         manualNativeVoiceRecommended: false,
@@ -620,6 +634,7 @@ module.exports = {
     isAiAuthenticityQuestion,
     parseBoolean,
     resolvePersonalVoiceReplyPlan,
+    hasHighSignalGoalBlocker,
     resolveCocosShanSunnyVoiceTestReason,
     resolveOutboundVoiceMessageConfig,
     _test: {
@@ -628,6 +643,7 @@ module.exports = {
         hasProgramExplanationSignal,
         hasVoiceTextFallbackSignal,
         hasHighSignalConsistencyBlocker,
+        hasHighSignalGoalBlocker,
         hasPersonalGoalOrBlockerSignal,
         hasQualifierPersonalEvidence,
         hasWrittenLaughter,

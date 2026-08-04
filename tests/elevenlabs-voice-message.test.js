@@ -238,6 +238,36 @@ const workAndKidsVoicePlan = voice.resolvePersonalVoiceReplyPlan({
 assert.strictEqual(workAndKidsVoicePlan.useSyntheticVoice, true);
 assert.strictEqual(workAndKidsVoicePlan.reason, 'lead_shared_consistency_blocker');
 
+const generalBlockerCases = [
+    ['Rotating shifts make it almost impossible to keep a routine.', 'My shifts keep breaking the routine.'],
+    ['My knee pain keeps stopping me whenever I build momentum.', 'Knee pain interrupts training.'],
+    ['I get really self-conscious and anxious when I walk into a gym.', 'Low confidence and gym anxiety.'],
+    ['Cravings and weekends keep undoing the progress I make.', 'Food cravings derail the week.'],
+    ['Stress and low energy leave me too exhausted to follow through.', 'Stress and low energy stop follow-through.'],
+    ["I'm stuck because I don't know what exercises I should be doing.", 'Does not know what training to follow.'],
+];
+for (const [currentMessage, historyBlocker] of generalBlockerCases) {
+    const plan = voice.resolvePersonalVoiceReplyPlan({
+        channel: 'instagram',
+        hasInstagramGraphRoute: true,
+        currentMessage,
+        qualifier: {
+            facts: {
+                current_state: 'Wants to lose 10kg and feel fitter.',
+                history_blockers: historyBlocker,
+            },
+        },
+        meaningfulLeadReplyCount: 2,
+        hasRecentVoiceMessage: false,
+    });
+    assert.strictEqual(plan.useSyntheticVoice, true, `expected general blocker voice path for: ${currentMessage}`);
+    assert.ok(
+        ['lead_shared_goal_blocker', 'lead_accountability_connection_moment'].includes(plan.reason),
+        `expected blocker/accountability reason for: ${currentMessage}`
+    );
+}
+assert.strictEqual(voice._test.hasHighSignalGoalBlocker('Nothing is getting in the way, I am already consistent.'), false);
+
 assert.strictEqual(
     voice.resolvePersonalVoiceReplyPlan({
         channel: 'instagram',

@@ -128,6 +128,7 @@ const {
     inspectVoiceScriptQuality,
     resolveCocosShanSunnyVoiceTestReason,
     resolvePersonalVoiceReplyPlan,
+    hasHighSignalGoalBlocker,
 } = require('./_lib/elevenlabs-voice-message');
 const { recordGrowthOutcome } = require('./_lib/growth-outcomes');
 const {
@@ -1205,6 +1206,29 @@ const PAID_META_APP_INCLUSIONS_RE = /\b(?:what(?:'s| is| was) (?:actually )?(?:i
 const PAID_META_PROGRAM_WORKS_RE = /\bhow does (?:the |your )?(?:program|founders pass|course|coaching) work\b|\bwhat (?:is|comes) included\b/i;
 const PAID_META_OFFER_INFO_RE = /^(?:i (?:want|need|wanted) to know )?(?:how much|(?:your )?prices?(?: and what i get)?|pricing|cost|what(?:'s| is) (?:actually )?included|what do i get|what are the (?:details|prices)|tell me (?:the|about the) (?:price|pricing|details|inclusions))(?:\b|[?!.])/i;
 
+function buildPaidMetaBlockerReflection(message = '') {
+    const text = String(message || '');
+    if (/\b(?:pain|injur\w*|sore)\b/i.test(text)) {
+        return 'When pain keeps interrupting the plan, trying to force the same week over and over usually makes it harder.';
+    }
+    if (/\b(?:anxi\w*|nervous|self-conscious|embarrass\w*|confidence|gym anxiety)\b/i.test(text)) {
+        return 'When confidence is the thing getting in the way, having a plan that feels manageable matters more than trying to be perfect.';
+    }
+    if (/\b(?:crav\w*|weekends?|food keeps?)\b/i.test(text)) {
+        return 'When food is the part that keeps pulling things off track, a simple structure is usually much easier to come back to.';
+    }
+    if (/\b(?:energy|fatigue\w*|exhaust\w*|sleep|stress\w*|motivat\w*|overwhelm\w*)\b/i.test(text)) {
+        return 'When your energy or headspace keeps changing, expecting every week to look the same just sets you up to feel behind.';
+    }
+    if (/\b(?:shift work|rotating shifts?|schedule|no time|too busy|caregiv\w*|kids?|children|family commitments?|travel)\b/i.test(text)) {
+        return 'When life keeps crowding the week, training and food are usually the first things to get pushed around.';
+    }
+    if (/\b(?:don['’]?t know (?:what|how|where)|not sure (?:what|how|where)|stuck)\b/i.test(text)) {
+        return 'When you are not sure what the right next step is, it is easy to stay stuck even when the goal matters to you.';
+    }
+    return 'When something keeps knocking the plan off course, every restart can feel harder than the last one.';
+}
+
 function hasDirectPaidMetaCheckoutIntent(value = '') {
     const message = String(value || '').replace(/\s+/g, ' ').trim();
     return /^(?:please )?(?:send (?:me )?(?:the )?link|can you send (?:me )?(?:the )?link|how do i (?:join|sign up|start|get started)|where do i (?:join|sign up|start|get started)|where can i (?:join|sign up|start|get started)|i(?:'m| am) ready to (?:join|sign up|start|get started)|i want to (?:join|sign up|start|get started)|i(?:'m| am) in,? send (?:me )?(?:the )?link)[.!?\s]*$/i.test(message)
@@ -1416,15 +1440,16 @@ function buildDeterministicPaidMetaConversationReply({
         };
     }
 
-    if (PAID_META_BLOCKER_SIGNAL_RE.test(message) && hasGoal) {
+    if ((PAID_META_BLOCKER_SIGNAL_RE.test(message) || hasHighSignalGoalBlocker(message)) && hasGoal) {
         const lifeLoadBlocker = /\b(?:things? (?:just )?get(?:s)? in the way|work (?:and|&) (?:the )?kids|kids (?:and|&) work|busy with (?:work|kids|family))\b/i.test(message);
+        const blockerReflection = buildPaidMetaBlockerReflection(message);
         const joined = lifeLoadBlocker
             ? (personalVoiceNoteMode
                 ? `Hey, hope you're going well. Yeah, so that makes total sense. Work and the kids can wreck the best intentions, hey. Um, honestly, that's what this program is designed for. It's about having me check in on you, keeping you accountable, and adjusting the week when things get crazy so we can keep the ball rolling. It's not about perfection. It's about getting back on the horse when you fall off, and having the right person in your corner. Would that kind of support help you keep moving toward ${voiceGoalPhrase}?`
                 : `Yeah, that makes sense. It sounds like the plan disappears when work and the kids take over.\n\nWould having a clear week to follow and me checking in make that easier?`)
             : (personalVoiceNoteMode
-                ? `Hey, hope you're going well. Yeah, I get you. That stop-start loop can wear you down because every restart feels harder than the last one. Um, honestly, that's what this program is designed for. It's about having me check in, keep you accountable, and adjust the week with you so we can keep the ball rolling. It's not about perfection. It's about getting back on the horse when you fall off, and having the right person in your corner. Would that kind of support help you keep moving toward ${voiceGoalPhrase}?`
-                : `Yeah, I get you. That stop-start loop is exactly where accountability helps.\n\nWould having a clear plan and me checking in help you stay on track?`);
+                ? `Hey, hope you're going well. Yeah, so that makes total sense. ${blockerReflection} Um, honestly, that's what this program is designed for. It's about having me check in, keep you accountable, and adjust the week with you so we can keep the ball rolling. It's not about perfection. It's about getting back on the horse when you fall off, and having the right person in your corner. Would that kind of support help you keep moving toward ${voiceGoalPhrase}?`
+                : `Yeah, that makes sense. ${blockerReflection}\n\nWould having a clear plan and me checking in help you stay on track?`);
         return {
             chunks: [joined],
             joined,
