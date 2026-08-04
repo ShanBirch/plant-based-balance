@@ -1464,11 +1464,13 @@ function buildDeterministicPaidMetaConversationReply({
             ? [
                 `Hey, how are you going. Yeah, so that makes total sense.`,
                 reflection,
-                `Um, yeah, so that's honestly what Balance is designed for.`,
-                `It's, it's about giving you a clear plan, you know, so when you fall off, you've always got something simple to come back to.`,
-                `And having me there to check in, keep you accountable, and move things around a bit when life gets crazy.`,
-                `So, you know, you can get back on the horse and keep moving toward ${voiceGoalPhrase}, without feeling like you have to get every week perfect.`,
-                `Yeah, so, it's nineteen ninety-nine a month. I'll send you a page that explains it properly, and if it feels right, you can tap Try Balance free and have a look through the app.`,
+                `So, um, that's honestly what Balance is designed for.`,
+                `It's, it's about giving you a clear plan for the week.`,
+                `And having me there to check in, keep you accountable, and move things around when life gets crazy.`,
+                `So if you fall off, you know, you've got something simple to come back to.`,
+                `And we can keep you moving toward ${voiceGoalPhrase}, without every week needing to be perfect.`,
+                `It's nineteen ninety-nine a month.`,
+                `I'll send you a page that explains it properly, and if it feels right, you can tap Try Balance free and have a look through the app.`,
             ].join('\n\n')
             : `Yeah, that makes sense. ${reflection} Balance gives you a clear plan and support around ${voiceGoalPhrase}, and the app and community are $19.99 a month.\n\nThis page explains how it works. If it feels right, tap Try Balance free at the bottom: ${META_APP_PREVIEW_URL}`;
         return {
@@ -1479,7 +1481,11 @@ function buildDeterministicPaidMetaConversationReply({
             voiceCompanionText: personalVoiceNoteMode
                 ? `Here you go — this explains how Balance works. If it feels right, tap Try Balance free at the bottom: ${META_APP_PREVIEW_URL}`
                 : '',
-            voiceThoughtPauseMs: personalVoiceNoteMode ? 1300 : 0,
+            // Measured from Shannon's clean Instagram notes: shorter connective
+            // pauses, with longer thinking/topic-transition breaks.
+            voiceThoughtPausesMs: personalVoiceNoteMode
+                ? [740, 1400, 1050, 660, 1180, 610, 1260, 820]
+                : [],
             model: 'deterministic_paid_meta_conversation_v2',
             replyMode: 'campaign_app_preview_handoff',
             maxChunks: 1,
@@ -6432,6 +6438,7 @@ exports.handler = async (event) => {
             outbound_voice_message_reason: outboundVoiceMessageReason || undefined,
             voice_companion_text: outboundVoiceMessage ? (draft.voiceCompanionText || undefined) : undefined,
             outbound_voice_thought_pause_ms: outboundVoiceMessage ? (draft.voiceThoughtPauseMs || undefined) : undefined,
+            outbound_voice_thought_pauses_ms: outboundVoiceMessage ? (draft.voiceThoughtPausesMs || undefined) : undefined,
             outbound_voice_source_text: outboundVoiceMessage ? (draft.joined || undefined) : undefined,
             paid_meta_app_preview_handoff: draft.appPreviewHandoff || undefined,
             paid_meta_app_preview_url: draft.appPreviewHandoff ? draft.appPreviewUrl : undefined,
@@ -6696,6 +6703,9 @@ exports.handler = async (event) => {
                 : undefined,
             outbound_voice_thought_pause_ms: coalescedOutboundVoiceMessage
                 ? (draft.voiceThoughtPauseMs || existingPending.data?.outbound_voice_thought_pause_ms || undefined)
+                : undefined,
+            outbound_voice_thought_pauses_ms: coalescedOutboundVoiceMessage
+                ? (draft.voiceThoughtPausesMs || existingPending.data?.outbound_voice_thought_pauses_ms || undefined)
                 : undefined,
             outbound_voice_source_text: coalescedOutboundVoiceMessage
                 ? (draft.joined || existingPending.data?.outbound_voice_source_text || undefined)

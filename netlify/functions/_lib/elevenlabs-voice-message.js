@@ -394,6 +394,19 @@ function resolveVoiceThoughtPauseMs(alertData = {}) {
     return Math.min(MAX_VOICE_THOUGHT_PAUSE_MS, Math.round(requested));
 }
 
+function resolveVoiceThoughtPausesMs(alertData = {}) {
+    const requested = alertData.outbound_voice_thought_pauses_ms
+        ?? alertData.voice_thought_pauses_ms;
+    if (Array.isArray(requested)) {
+        return requested
+            .map(value => Number(value))
+            .filter(value => Number.isFinite(value) && value > 0)
+            .map(value => Math.min(MAX_VOICE_THOUGHT_PAUSE_MS, Math.round(value)));
+    }
+    const fallback = resolveVoiceThoughtPauseMs(alertData);
+    return fallback > 0 ? [fallback] : [];
+}
+
 function unwrapPcmWav(wavBuffer) {
     const wav = Buffer.isBuffer(wavBuffer) ? wavBuffer : Buffer.from(wavBuffer || []);
     if (wav.length < 44 || wav.toString('ascii', 0, 4) !== 'RIFF' || wav.toString('ascii', 8, 12) !== 'WAVE') {
@@ -405,11 +418,14 @@ function unwrapPcmWav(wavBuffer) {
 function assemblePcmThoughtGroups(groupWavs = [], sampleRate = 16000, pauseMs = 0) {
     const groups = groupWavs.map(unwrapPcmWav);
     if (!groups.length) throw new Error('No voice thought groups were generated');
-    const silenceBytes = Math.max(0, Math.round(sampleRate * 2 * (pauseMs / 1000)));
-    const silence = Buffer.alloc(silenceBytes);
+    const pauseSchedule = Array.isArray(pauseMs) ? pauseMs : [pauseMs];
     const pcmParts = [];
     groups.forEach((group, index) => {
-        if (index > 0 && silence.length) pcmParts.push(silence);
+        if (index > 0 && pauseSchedule.length) {
+            const requestedPause = Number(pauseSchedule[Math.min(index - 1, pauseSchedule.length - 1)]) || 0;
+            const silenceBytes = Math.max(0, Math.round(sampleRate * 2 * (requestedPause / 1000)));
+            if (silenceBytes > 0) pcmParts.push(Buffer.alloc(silenceBytes));
+        }
         pcmParts.push(group);
     });
     return wrapPcm16LeAsWav(Buffer.concat(pcmParts), sampleRate, 1);
@@ -665,11 +681,11 @@ async function createVoiceMessageAudio({ messages, alertId, alertData = {}, supa
         modelId: resolveModelId(alertData),
         outputFormat: resolveOutputFormat(alertData),
     };
-    const thoughtPauseMs = resolveVoiceThoughtPauseMs(alertData);
+    const thoughtPausesMs = resolveVoiceThoughtPausesMs(alertData);
     const thoughtGroups = splitVoiceThoughtGroups(text);
     const pcmFormat = resolveAudioUploadFormat(config.outputFormat).sourceEncoding === 'pcm_s16le';
     let speech;
-    if (thoughtPauseMs > 0 && thoughtGroups.length > 1 && pcmFormat) {
+    if (thoughtPausesMs.length > 0 && thoughtGroups.length > 1 && pcmFormat) {
         const groupSpeech = await synthesizeThoughtGroups(thoughtGroups, thought =>
             generateElevenLabsSpeech({
                 text: thought,
@@ -679,7 +695,7 @@ async function createVoiceMessageAudio({ messages, alertId, alertData = {}, supa
             }), 2);
         const sampleRate = groupSpeech[0].sampleRate || 16000;
         speech = {
-            buffer: assemblePcmThoughtGroups(groupSpeech.map(item => item.buffer), sampleRate, thoughtPauseMs),
+            buffer: assemblePcmThoughtGroups(groupSpeech.map(item => item.buffer), sampleRate, thoughtPausesMs),
             contentType: 'audio/wav',
             extension: 'wav',
             sourceEncoding: 'pcm_s16le',
@@ -778,6 +794,7 @@ module.exports = {
         wrapPcm16LeAsWav,
         splitVoiceThoughtGroups,
         resolveVoiceThoughtPauseMs,
+        resolveVoiceThoughtPausesMs,
         unwrapPcmWav,
     assemblePcmThoughtGroups,
     synthesizeThoughtGroups,

@@ -178,11 +178,25 @@ const thoughtGroups = voice._test.splitVoiceThoughtGroups('First thought.\n\nSec
 assert.deepStrictEqual(thoughtGroups, ['First thought.', 'Second thought.', 'Third thought.']);
 assert.strictEqual(voice._test.resolveVoiceThoughtPauseMs({ outbound_voice_thought_pause_ms: 700 }), 700);
 assert.strictEqual(voice._test.resolveVoiceThoughtPauseMs({ outbound_voice_thought_pause_ms: 5000 }), 1500);
+assert.deepStrictEqual(
+    voice._test.resolveVoiceThoughtPausesMs({ outbound_voice_thought_pauses_ms: [740, 1400, 5000] }),
+    [740, 1400, 1500]
+);
+assert.deepStrictEqual(
+    voice._test.resolveVoiceThoughtPausesMs({ outbound_voice_thought_pause_ms: 700 }),
+    [700]
+);
 const thoughtWav = voice._test.assemblePcmThoughtGroups([
     voice._test.wrapPcm16LeAsWav(Buffer.alloc(3200), 16000, 1),
     voice._test.wrapPcm16LeAsWav(Buffer.alloc(3200), 16000, 1),
 ], 16000, 700);
 assert.strictEqual(thoughtWav.readUInt32LE(40), 3200 + 22400 + 3200);
+const variableThoughtWav = voice._test.assemblePcmThoughtGroups([
+    voice._test.wrapPcm16LeAsWav(Buffer.alloc(3200), 16000, 1),
+    voice._test.wrapPcm16LeAsWav(Buffer.alloc(3200), 16000, 1),
+    voice._test.wrapPcm16LeAsWav(Buffer.alloc(3200), 16000, 1),
+], 16000, [740, 1400]);
+assert.strictEqual(variableThoughtWav.readUInt32LE(40), 3200 + 23680 + 3200 + 44800 + 3200);
 
 assert.deepStrictEqual(
     voice._test.resolveAudioUploadFormat('pcm_16000', 'application/octet-stream'),
