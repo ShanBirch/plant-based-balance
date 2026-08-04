@@ -615,15 +615,14 @@ async function createVoiceMessageAudio({ messages, alertId, alertData = {}, supa
     const pcmFormat = resolveAudioUploadFormat(config.outputFormat).sourceEncoding === 'pcm_s16le';
     let speech;
     if (thoughtPauseMs > 0 && thoughtGroups.length > 1 && pcmFormat) {
-        const groupSpeech = [];
-        for (const thought of thoughtGroups) {
-            groupSpeech.push(await generateElevenLabsSpeech({
+        const groupSpeech = await Promise.all(thoughtGroups.map(thought =>
+            generateElevenLabsSpeech({
                 text: thought,
                 ...config,
                 supabaseQuery,
                 alertData,
-            }));
-        }
+            })
+        ));
         const sampleRate = groupSpeech[0].sampleRate || 16000;
         speech = {
             buffer: assemblePcmThoughtGroups(groupSpeech.map(item => item.buffer), sampleRate, thoughtPauseMs),

@@ -1,8 +1,20 @@
 const assert = require('assert');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const voice = require('../netlify/functions/_lib/elevenlabs-voice-message');
 const igDraft = require('../netlify/functions/ig-instant-draft')._test;
 const sendIg = require('../netlify/functions/send-ig-reply')._test;
+
+const voiceSource = fs.readFileSync(
+    path.join(__dirname, '../netlify/functions/_lib/elevenlabs-voice-message.js'),
+    'utf8'
+);
+assert.match(
+    voiceSource,
+    /Promise\.all\(thoughtGroups\.map/,
+    'paced thought groups must synthesize concurrently so the live send completes inside the function timeout'
+);
 
 const personalVoicePrompt = igDraft.buildPersonalVoiceNoteDraftingBlock(true);
 assert.match(personalVoicePrompt, /five Cocos voice clips Shannon approved/i);
