@@ -109,6 +109,12 @@ test('the five-minute clock ends in a compact App + Community Stripe gate', asyn
     const trial = runTrial('?guest=true&meta_trial=facebook_5m_paid_v2&utm_source=facebook&utm_medium=paid_social&fbclid=test-click');
     const api = trial.window.BalanceMetaAdTrial;
     api.onOnboardingStarted();
+    const savedProfile = JSON.stringify({ name: 'Preview Buyer', primaryGoal: 'Build strength', trainingDays: 3 });
+    const savedFoodPreferences = JSON.stringify({ dietary_preference: 'vegan', meals_per_day: 4 });
+    const savedResult = JSON.stringify({ recommendedPlan: 'balanced', experience: 'beginner' });
+    trial.localStorage.setItem('userProfile', savedProfile);
+    trial.localStorage.setItem('user_food_preferences', savedFoodPreferences);
+    trial.sessionStorage.setItem('userResult', savedResult);
     api.onOnboardingComplete();
     let state = api.readState();
     assert.equal(state.deadlineAt - state.previewStartedAt, 300_000);
@@ -130,6 +136,9 @@ test('the five-minute clock ends in a compact App + Community Stripe gate', asyn
     assert.equal(checkout.body.compliance.accepted.terms, true);
     assert.equal(trial.sessionStorage.getItem(api.PAYMENT_SESSION_KEY), 'cs_live_preview');
     assert.equal(trial.sessionStorage.getItem(api.CLAIM_KEY), null);
+    assert.equal(trial.localStorage.getItem('userProfile'), savedProfile);
+    assert.equal(trial.localStorage.getItem('user_food_preferences'), savedFoodPreferences);
+    assert.equal(trial.sessionStorage.getItem('userResult'), savedResult);
     assert.equal(trial.window.location.href, 'https://checkout.stripe.com/test-preview');
 });
 
