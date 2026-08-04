@@ -10,6 +10,7 @@
 - Guardrails: organic traffic is unchanged; existing signed-in members are never replaced by preview mode; preview actions cannot write workouts, meals, messages, purchases, or social activity; the gate clearly says account creation is free and takes no payment.
 - Decision date: 2026-08-18, or after 100 attributed preview starts if that comes later.
 - Keep/stop rule: keep the variant only if attributed account creation improves and downstream qualified or paid conversion does not fall materially versus the paid-Meta control. Do not select a winner from clicks or cheap preview starts alone.
+- Native rollout: keep the `Already installed?` handoff hidden for normal traffic until the Android and iOS binaries containing the Meta trial bridge are published. After both releases are live, add `native_handoff=1` to the ad destination to expose it.
 
 Required ad parameters:
 

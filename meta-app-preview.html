@@ -47,8 +47,8 @@
         <a class="button secondary" href="https://apps.apple.com/us/app/balance-fitness-gamified/id6761238161" data-track="cta_click">iPhone</a>
         <a class="button secondary" href="https://play.google.com/store/apps/details?id=com.fitgotchi.app" data-track="cta_click">Android</a>
     </div>
-    <a id="open-installed" class="button ghost" href="#" data-track="cta_click">Already installed? Open Balance</a>
-    <p class="note">If you install from the store, return to this page and tap “Already installed?” so Balance can recognise this Facebook preview.</p>
+    <a id="open-installed" class="button ghost" href="#" data-track="cta_click" hidden>Already installed? Open Balance</a>
+    <p id="preview-note" class="note">Your five-minute preview starts in your browser. The iPhone and Android downloads are free.</p>
 </main>
 <script>
 (function () {
@@ -59,7 +59,13 @@
     if (!incoming.get('utm_medium')) incoming.set('utm_medium', 'paid_social');
     var query = incoming.toString();
     document.getElementById('start-preview').href = '/dashboard.html?' + query;
-    document.getElementById('open-installed').href = 'com.fitgotchi.app://meta-trial?' + query;
+    var openInstalled = document.getElementById('open-installed');
+    openInstalled.href = 'com.fitgotchi.app://meta-trial?' + query;
+    // Enable this per campaign only after the matching native binaries are live.
+    if (incoming.get('native_handoff') === '1') {
+        openInstalled.hidden = false;
+        document.getElementById('preview-note').textContent = 'If you install from the store, return to this page and tap “Already installed?” so Balance can recognise this Facebook preview.';
+    }
 })();
 </script>
 </body>
