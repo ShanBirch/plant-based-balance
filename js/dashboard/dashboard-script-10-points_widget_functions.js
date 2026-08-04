@@ -4421,7 +4421,7 @@ async function renderBalanceShareCardImage(cardPayload, options = {}) {
     return canvas.toDataURL('image/jpeg', 0.92);
 }
 
-async function shareBalanceCardImageExternally(dataUrl, target, text) {
+async function shareBalanceCardImageExternally(dataUrl, target, text, options = {}) {
     const blob = pbbShareDataUrlToBlob(dataUrl);
     const file = new File([blob], `balance-${target || 'share'}-${Date.now()}.jpg`, { type: blob.type || 'image/jpeg' });
     const shareData = {
@@ -4442,6 +4442,8 @@ async function shareBalanceCardImageExternally(dataUrl, target, text) {
             console.warn('Native web share failed:', error);
         }
     }
+
+    if (options.allowDownloadFallback === false) return null;
 
     const link = document.createElement('a');
     link.href = dataUrl;
@@ -4678,6 +4680,21 @@ async function shareBalanceCardWithNativeBridge(dataUrl, safeTarget) {
     return false;
 }
 
+async function shareBalanceCardWithLegacyAndroidBridge(dataUrl, safeTarget) {
+    const nativePermissions = window.NativePermissions;
+    const androidShare = nativePermissions && nativePermissions.shareImageToInstagram;
+    if (typeof androidShare !== 'function' || canUseFreshAndroidInstagramShareBridge()) return false;
+    try {
+        const opened = androidShare.call(nativePermissions, dataUrl, safeTarget);
+        window._balanceInstagramShareLastResult = { platform: 'android-legacy', opened };
+        return opened === true || opened === 'true';
+    } catch (error) {
+        window._balanceInstagramShareLastResult = { platform: 'android-legacy', error: String(error && error.message || error) };
+        console.warn('Legacy Android Instagram share failed:', error);
+        return false;
+    }
+}
+
 async function shareBalanceCardToInstagram(cardPayload, target, options = {}) {
     if (!canUseBalanceInstagramShareTest()) {
         showToast('Instagram sharing is in test mode for now.', 'info');
@@ -4731,11 +4748,22 @@ async function shareBalanceCardToInstagram(cardPayload, target, options = {}) {
         // including Android OEM/Instagram combinations where the app is
         // installed but does not resolve the targeted composer. Keep the share
         // usable by falling back to the platform share sheet on both platforms.
-        return shareBalanceCardImageExternally(
+        const sharedExternally = await shareBalanceCardImageExternally(
             dataUrl,
             safeTarget,
-            safeTarget === 'story' ? 'Share this to your Instagram Story' : 'Share this to your Instagram Feed'
+            safeTarget === 'story' ? 'Share this to your Instagram Story' : 'Share this to your Instagram Feed',
+            { allowDownloadFallback: false }
         );
+        if (sharedExternally === true || sharedExternally === false) return sharedExternally;
+
+        // Shells installed before bridge v2 cannot mint a fresh content URI.
+        // If their WebView has no usable file share sheet, still open Instagram
+        // directly instead of silently downloading the prepared overlay.
+        if (await shareBalanceCardWithLegacyAndroidBridge(dataUrl, safeTarget)) {
+            showToast(`Opening Instagram ${safeTarget === 'story' ? 'Story' : 'Feed'}...`, 'success');
+            return true;
+        }
+        return false;
     }
 
     return shareBalanceCardImageExternally(
@@ -5484,7 +5512,7 @@ async function shareNutritionToInstagram(target = 'story') {
         const cardPayload = await buildDailyNutritionInstagramPayload();
         const safeTarget = target === 'feed' ? 'feed' : 'story';
         const opened = await shareBalanceCardToInstagram(cardPayload, safeTarget);
-        if (opened && safeTarget === 'feed') {
+        if (opened) {
             const xpResult = await awardBalanceSocialShareXP(
                 'meal',
                 'instagram_feed',
@@ -5494,7 +5522,7 @@ async function shareNutritionToInstagram(target = 'story') {
                 markMealInstagramShareUsedToday();
             }
             showToast(
-                xpResult?.success ? 'Nutrition shared to Instagram Feed! +15 XP' : 'Nutrition opened in Instagram. Today\'s food IG XP is already claimed.',
+                xpResult?.success ? 'Nutrition shared to Instagram Story! +15 XP' : 'Nutrition opened in Instagram Story. Today\'s food IG XP is already claimed.',
                 'success'
             );
         }

@@ -2625,9 +2625,9 @@ if(!window._pbbIsIOSSafari) {
                         <span style="font-size:1rem;">🥗</span>
                         <span style="font-size:0.85rem;">Balance Feed (+15 XP)</span>
                     </button>
-                    <button id="share-nutrition-ig-story-btn" onclick="shareNutritionToInstagram('feed')" style="display:flex; align-items:center; justify-content:center; gap:6px; width:100%; margin-top:8px; padding:10px 16px; background:linear-gradient(135deg, rgba(190,24,93,0.14), rgba(67,56,202,0.12)); border:1px solid rgba(190,24,93,0.22); border-radius:10px; color:var(--text-main); font-size:0.82rem; font-weight:700; cursor:pointer; transition:all 0.2s;">
+                    <button id="share-nutrition-ig-story-btn" onclick="shareNutritionToInstagram('story')" style="display:flex; align-items:center; justify-content:center; gap:6px; width:100%; margin-top:8px; padding:10px 16px; background:linear-gradient(135deg, rgba(190,24,93,0.14), rgba(67,56,202,0.12)); border:1px solid rgba(190,24,93,0.22); border-radius:10px; color:var(--text-main); font-size:0.82rem; font-weight:700; cursor:pointer; transition:all 0.2s;">
                         <span style="font-size:0.82rem; font-weight:950;">IG</span>
-                        <span style="font-size:0.85rem;">Feed (+15 XP)</span>
+                        <span style="font-size:0.85rem;">Story (+15 XP)</span>
                     </button>
                 </div>
 
@@ -11051,8 +11051,8 @@ if(!window._pbbIsIOSSafari) {
                 <div style="background: #1e293b; border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 15px;">
                     <div style="color: white; -webkit-text-fill-color: white; font-weight: 900; font-size: 0.96rem; margin-bottom: 10px;">Fast daily route</div>
                     <div style="display: flex; flex-direction: column; gap: 9px;">
-                        <div style="display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center;"><span style="width: 30px; height: 30px; border-radius: 50%; background: rgba(245,217,138,0.18); color: #f5d98a; display: inline-flex; align-items: center; justify-content: center; font-weight: 950;">1</span><span style="color: rgba(255,255,255,0.84); font-size: 0.84rem; line-height: 1.35;">Log an accepted meal, hit daily nutrition targets, then share to Balance Feed and Instagram Feed.</span><span style="color: #f5d98a; font-weight: 950; font-size: 0.85rem;">+33 XP</span></div>
-                        <div style="display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center;"><span style="width: 30px; height: 30px; border-radius: 50%; background: rgba(245,217,138,0.18); color: #f5d98a; display: inline-flex; align-items: center; justify-content: center; font-weight: 950;">2</span><span style="color: rgba(255,255,255,0.84); font-size: 0.84rem; line-height: 1.35;">Log a workout, then share it to Balance Feed and Instagram Feed.</span><span style="color: #f5d98a; font-weight: 950; font-size: 0.85rem;">+31 XP</span></div>
+                        <div style="display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center;"><span style="width: 30px; height: 30px; border-radius: 50%; background: rgba(245,217,138,0.18); color: #f5d98a; display: inline-flex; align-items: center; justify-content: center; font-weight: 950;">1</span><span style="color: rgba(255,255,255,0.84); font-size: 0.84rem; line-height: 1.35;">Log an accepted meal, hit daily nutrition targets, then share to Balance Feed and Instagram Story.</span><span style="color: #f5d98a; font-weight: 950; font-size: 0.85rem;">+33 XP</span></div>
+                        <div style="display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center;"><span style="width: 30px; height: 30px; border-radius: 50%; background: rgba(245,217,138,0.18); color: #f5d98a; display: inline-flex; align-items: center; justify-content: center; font-weight: 950;">2</span><span style="color: rgba(255,255,255,0.84); font-size: 0.84rem; line-height: 1.35;">Log a workout, then share it to Balance Feed and Instagram Story.</span><span style="color: #f5d98a; font-weight: 950; font-size: 0.85rem;">+31 XP</span></div>
                         <div style="display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center;"><span style="width: 30px; height: 30px; border-radius: 50%; background: rgba(245,217,138,0.18); color: #f5d98a; display: inline-flex; align-items: center; justify-content: center; font-weight: 950;">3</span><span style="color: rgba(255,255,255,0.84); font-size: 0.84rem; line-height: 1.35;">Post one Feed check-in, take one comment turn, and react to a post.</span><span style="color: #f5d98a; font-weight: 950; font-size: 0.85rem;">+5 XP</span></div>
                         <div style="display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center;"><span style="width: 30px; height: 30px; border-radius: 50%; background: rgba(245,217,138,0.18); color: #f5d98a; display: inline-flex; align-items: center; justify-content: center; font-weight: 950;">4</span><span style="color: rgba(255,255,255,0.84); font-size: 0.84rem; line-height: 1.35;">Finish a fresh daily quiz at 100% and hit 10,000 synced Fitbit steps.</span><span style="color: #f5d98a; font-weight: 950; font-size: 0.85rem;">+12 XP</span></div>
                     </div>
@@ -12924,7 +12924,7 @@ if (window._pbbIsIOSSafari) {
                 Share meal to Feed (+15 XP)
             </button>
             <button class="meal-detail-edit-btn" id="mealDetailIgStoryBtn" onclick="shareCurrentMealToInstagram()" style="background: linear-gradient(135deg, #be185d, #4338ca); color: white; margin-bottom: 10px;">
-                Share to IG Feed (+15 XP)
+                Share to IG Story (+15 XP)
             </button>
             <button class="meal-detail-edit-btn" id="mealDetailEditBtn" onclick="openEditItemsModal()">
                 ✏️ Edit Items
@@ -12971,7 +12971,7 @@ if (window._pbbIsIOSSafari) {
         </div>
         <div id="mealBreakdownShareActions" style="display:none; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px; padding:0 20px 20px; flex-shrink:0;">
             <button type="button" id="mealBreakdownFeedBtn" onclick="shareMealBreakdownToFeed(this)" style="border:none; border-radius:14px; padding:13px 10px; background:#046a38; color:#fff; -webkit-text-fill-color:#fff; font-weight:900; font-size:0.86rem; cursor:pointer;">Feed</button>
-            <button type="button" id="mealBreakdownIgBtn" onclick="shareMealBreakdownToInstagram(this)" style="border:none; border-radius:14px; padding:13px 10px; background:#be185d; color:#fff; -webkit-text-fill-color:#fff; font-weight:900; font-size:0.86rem; cursor:pointer;">IG Feed +15 XP</button>
+            <button type="button" id="mealBreakdownIgBtn" onclick="shareMealBreakdownToInstagram(this)" style="border:none; border-radius:14px; padding:13px 10px; background:#be185d; color:#fff; -webkit-text-fill-color:#fff; font-weight:900; font-size:0.86rem; cursor:pointer;">IG Story +15 XP</button>
         </div>
     </div>
 </div>
@@ -14689,7 +14689,7 @@ if(!window._pbbIsIOSSafari) {
     subtab: 'calorie-tracker',
     sel: '#meals-log-list,.meal-log-card,#share-nutrition-ig-story-btn',
     title: 'Share to Instagram',
-    body: "Meals and nutrition summaries can open in Instagram Feed as Balance cards. Weekly progress photos can still open in Instagram Story.",
+    body: "Meals, nutrition summaries, and weekly progress photos can open in Instagram Story as Balance cards.",
     condition: function(){
       return !!(document.querySelector('#meals-log-list .meal-log-card,.meal-log-card,#share-nutrition-ig-story-btn,#progress-photo-share-ig-story-btn'));
     }
@@ -17655,13 +17655,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=41';
+s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=42';
             s.onload = function() { if(window._crumb)window._crumb('script10_deferred_loaded'); };
             document.head.appendChild(s);
         }, 1500);
     }, { once: true });
 } else {
-document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=41"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=42"><\/script>');
 }
 </script>
 
@@ -17730,7 +17730,7 @@ document.write('<script src="js/dashboard/dashboard-script-10-points_widget_func
             }
 
             var s = document.createElement('script');
-        s.src = 'js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=30';
+        s.src = 'js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=31';
             s.dataset.pbbCalorieTracker = '1';
             s.onload = function() {
                 if (window._crumb) window._crumb('script11_loaded');
@@ -17790,7 +17790,7 @@ document.write('<script src="js/dashboard/dashboard-script-10-points_widget_func
             }, window._pbbIsMealShortcutLaunch ? 250 : 2500);
         }, { once: true });
     } else {
-      document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=30" data-pbb-calorie-tracker="1"><\/script>');
+      document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=31" data-pbb-calorie-tracker="1"><\/script>');
         document.write('<script src="js/dashboard/dashboard-script-meal-builder.js?v=3" data-pbb-meal-builder="1"><\/script>');
     }
 })();

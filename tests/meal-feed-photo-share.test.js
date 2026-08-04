@@ -18,8 +18,40 @@ function extractFunction(name, nextFunctionName) {
     return trackerSource.slice(start, next).trim();
 }
 
+function addMealOverlayShareStubs(context) {
+    context.window.pbbShareImageUrlToDataUrl = async () => 'data:image/jpeg;base64,bWVhbA==';
+    context.window.renderBalanceShareCardImage = async () => 'data:image/jpeg;base64,b3ZlcmxheQ==';
+    context.atob = value => Buffer.from(value, 'base64').toString('binary');
+    context.Uint8Array = Uint8Array;
+    context.File = class File {
+        constructor(parts, name, options) {
+            this.parts = parts;
+            this.name = name;
+            this.type = options.type;
+        }
+    };
+    context.FormData = class FormData {
+        constructor() { this.values = new Map(); }
+        append(key, value) { this.values.set(key, value); }
+    };
+    context.crypto = { randomUUID: () => 'overlay-story-id' };
+    context.fetch = async () => ({
+        ok: true,
+        json: async () => ({ url: 'https://images.example/rendered-meal-overlay.jpg' })
+    });
+    context.mealShareFileFromDataUrl = (_dataUrl, fileName) => ({
+        name: fileName,
+        type: 'image/jpeg'
+    });
+    context.uploadStoryMediaToBackblaze = async (_file, options) => {
+        assert.equal(options.source, 'meal_share_photo_overlay');
+        assert.equal(options.preferDirectUpload, true);
+        return { url: 'https://images.example/rendered-meal-overlay.jpg' };
+    };
+}
+
 test('dashboard loads the refreshed meal share logic', () => {
-    assert.match(dashboardSource, /dashboard-script-11-calorie_tracker_functions\.js\?v=28/g);
+    assert.match(dashboardSource, /dashboard-script-11-calorie_tracker_functions\.js\?v=31/g);
 });
 
 test('meal share prompt stays visible and locks every action while its photo uploads', () => {
@@ -73,6 +105,7 @@ test('Instagram meal shares collect a photo and send the designed photo-backed c
         showToast: () => {},
         console
     };
+    addMealOverlayShareStubs(context);
 
     vm.runInNewContext(
         `${extractFunction('shareMealRecordToInstagram', 'closeMealFeedSharePrompt')}\nthis.shareMealRecordToInstagram = shareMealRecordToInstagram;`,
@@ -126,6 +159,7 @@ test('meal Feed shares attach a missing photo before creating the story', async 
         showToast: () => {},
         console
     };
+    addMealOverlayShareStubs(context);
 
     vm.runInNewContext(
         `${extractFunction('shareMealRecordToFeed', 'getLatestMealFromRenderedListForFeedShare')}\nthis.shareMealRecordToFeed = shareMealRecordToFeed;`,
@@ -135,8 +169,9 @@ test('meal Feed shares attach a missing photo before creating the story', async 
     const story = await context.shareMealRecordToFeed({ id: 'meal-1', meal_type: 'breakfast' }, null);
     assert.equal(attachCalls, 1);
     assert.equal(story.id, 'story-1');
-    assert.equal(createdStoryData.media_url, 'https://images.example/meal.jpg');
-    assert.equal(createdStoryData.thumbnail_url, 'https://images.example/meal.jpg');
+    assert.equal(createdStoryData.media_url, 'https://images.example/rendered-meal-overlay.jpg');
+    assert.equal(createdStoryData.thumbnail_url, 'https://images.example/rendered-meal-overlay.jpg');
+    assert.equal(JSON.parse(createdStoryData.caption).share_style, 'photo_overlay');
 });
 
 test('meal Feed shares reuse the freshly saved camera photo without opening the gallery', async () => {
@@ -179,6 +214,7 @@ test('meal Feed shares reuse the freshly saved camera photo without opening the 
         showToast: () => {},
         console
     };
+    addMealOverlayShareStubs(context);
 
     vm.runInNewContext(
         `${extractFunction('shareMealRecordToFeed', 'getLatestMealFromRenderedListForFeedShare')}\nthis.shareMealRecordToFeed = shareMealRecordToFeed;`,
@@ -190,8 +226,8 @@ test('meal Feed shares reuse the freshly saved camera photo without opening the 
     assert.equal(refreshCalls, 2);
     assert.equal(pickerCalls, 0);
     assert.equal(attachCalls, 0);
-    assert.equal(createdStoryData.media_url, 'https://images.example/just-taken-meal.jpg');
-    assert.equal(createdStoryData.thumbnail_url, 'https://images.example/just-taken-meal.jpg');
+    assert.equal(createdStoryData.media_url, 'https://images.example/rendered-meal-overlay.jpg');
+    assert.equal(createdStoryData.thumbnail_url, 'https://images.example/rendered-meal-overlay.jpg');
 });
 
 test('meal Feed share retries the original captured photo instead of opening Android Photos', async () => {
@@ -232,6 +268,7 @@ test('meal Feed share retries the original captured photo instead of opening And
         console,
         Error
     };
+    addMealOverlayShareStubs(context);
 
     vm.runInNewContext(
         `${extractFunction('shareMealRecordToFeed', 'getLatestMealFromRenderedListForFeedShare')}\nthis.shareMealRecordToFeed = shareMealRecordToFeed;`,
@@ -242,7 +279,7 @@ test('meal Feed share retries the original captured photo instead of opening And
     assert.equal(story.id, 'story-1');
     assert.equal(pickerCalls, 0);
     assert.equal(clearedFallback, true);
-    assert.equal(createdStoryData.media_url, 'https://images.example/retried-captured-meal.jpg');
+    assert.equal(createdStoryData.media_url, 'https://images.example/rendered-meal-overlay.jpg');
 });
 
 test('the chosen share photo is uploaded and persisted on the meal', async () => {

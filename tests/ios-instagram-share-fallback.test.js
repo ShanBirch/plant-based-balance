@@ -8,15 +8,19 @@ const script = fs.readFileSync(
 );
 const dashboard = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
 
-if (!/if \(isBalanceNativeInstagramSurface\(\)\) \{[\s\S]*?return shareBalanceCardImageExternally\(/.test(script)) {
+if (!/if \(isBalanceNativeInstagramSurface\(\)\) \{[\s\S]*?await shareBalanceCardImageExternally\(/.test(script)) {
     throw new Error('Native Android and iOS must fall back to the share sheet when the direct Instagram bridge fails');
+}
+
+if (!/shareBalanceCardWithLegacyAndroidBridge\(dataUrl, safeTarget\)/.test(script)) {
+    throw new Error('Older Android shells must still open Instagram when their WebView cannot share the prepared file');
 }
 
 if (/Could not open Instagram directly/.test(script)) {
     throw new Error('Native Instagram failure must not dead-end with the old direct-open error');
 }
 
-if (!/dashboard-script-10-points_widget_functions\.js\?v=41/.test(dashboard)) {
+if (!/dashboard-script-10-points_widget_functions\.js\?v=42/.test(dashboard)) {
     throw new Error('Dashboard must load the cache-busted Instagram fallback script');
 }
 

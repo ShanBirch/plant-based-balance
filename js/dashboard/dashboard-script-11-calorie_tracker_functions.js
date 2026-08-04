@@ -1801,7 +1801,7 @@ function markMealInstagramShareUsedToday() {
 window.markMealInstagramShareUsedToday = markMealInstagramShareUsedToday;
 
 function getMealInstagramShareButtonText() {
-    return isMealInstagramShareUsedToday() ? 'IG Feed' : `IG Feed (+${MEAL_FEED_SHARE_XP} XP)`;
+    return isMealInstagramShareUsedToday() ? 'IG Story' : `IG Story (+${MEAL_FEED_SHARE_XP} XP)`;
 }
 
 const PBB_PENDING_MEAL_INSTAGRAM_SHARE_KEY = 'pbbPendingMealInstagramShare';
@@ -1863,7 +1863,7 @@ function refreshMealInstagramShareButtons() {
             button.disabled = alreadyOpened;
             button.style.opacity = alreadyOpened ? '0.65' : '1';
             button.style.cursor = alreadyOpened ? 'default' : 'pointer';
-            button.textContent = alreadyOpened ? 'IG Feed shared' : getMealInstagramShareButtonText();
+            button.textContent = alreadyOpened ? 'IG Story shared' : getMealInstagramShareButtonText();
             return;
         }
         button.disabled = false;
@@ -2181,6 +2181,16 @@ function buildMealFeedCardPayload(meal) {
     return cardPayload;
 }
 
+function mealShareFileFromDataUrl(dataUrl, fileName) {
+    const parts = String(dataUrl || '').split(',');
+    const mimeMatch = parts[0].match(/data:(.*?);base64/);
+    const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+    const binary = atob(parts[1] || '');
+    const bytes = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index++) bytes[index] = binary.charCodeAt(index);
+    return new File([bytes], fileName, { type: mimeType });
+}
+
 async function getFreshMealRecordForFeedShare(meal) {
     if (!meal || !meal.id || getMealSharePhotoUrl(meal)) return meal;
     if (!window.supabaseClient || !window.currentUser?.id) return meal;
@@ -2361,10 +2371,31 @@ async function shareMealRecordToFeed(meal, btn) {
         const cardPayload = buildMealFeedCardPayload(mealForShare);
         const hasPhoto = !!cardPayload.photo_url;
         if (!hasPhoto) throw new Error('Meal photo was not available after upload');
+        if (typeof window.renderBalanceShareCardImage !== 'function' || typeof window.pbbShareImageUrlToDataUrl !== 'function') {
+            throw new Error('Meal share overlay is still loading');
+        }
+        const photoDataUrl = await window.pbbShareImageUrlToDataUrl(cardPayload.photo_url);
+        const compositeDataUrl = await window.renderBalanceShareCardImage(cardPayload, {
+            target: 'feed',
+            photoDataUrl
+        });
+        const compositeFile = mealShareFileFromDataUrl(compositeDataUrl, `balance-meal-overlay-${Date.now()}.jpg`);
+        if (typeof uploadStoryMediaToBackblaze !== 'function') {
+            throw new Error('Feed uploader is still loading. Please try again.');
+        }
+        const uploadData = await uploadStoryMediaToBackblaze(compositeFile, {
+            userId: window.currentUser.id,
+            storyId: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(),
+            source: 'meal_share_photo_overlay',
+            preferDirectUpload: true
+        });
+        if (!uploadData?.url) throw new Error('The meal overlay upload was not confirmed.');
+        const overlayUrl = uploadData.url;
+        cardPayload.share_style = 'photo_overlay';
         const storyData = {
             media_type: 'meal_card',
-            media_url: hasPhoto ? cardPayload.photo_url : '',
-            thumbnail_url: hasPhoto ? cardPayload.photo_url : null,
+            media_url: overlayUrl,
+            thumbnail_url: overlayUrl,
             caption: JSON.stringify(cardPayload),
             duration: 5
         };
@@ -2646,9 +2677,9 @@ function completeMealFeedSharePromptDestination(destination) {
         button.style.cursor = completed ? 'default' : 'pointer';
         button.style.opacity = completed ? '0.65' : '1';
         if (completed) {
-            button.textContent = buttonDestination === 'feed' ? 'Balance Feed shared' : 'IG Feed shared';
+            button.textContent = buttonDestination === 'feed' ? 'Balance Feed shared' : 'IG Story shared';
         } else {
-            button.textContent = button.dataset.defaultLabel || (buttonDestination === 'feed' ? 'Balance Feed' : 'IG Feed');
+            button.textContent = button.dataset.defaultLabel || (buttonDestination === 'feed' ? 'Balance Feed' : 'IG Story');
         }
     });
     const dismissButton = prompt.querySelector('[aria-label="Dismiss meal share prompt"]');
@@ -2665,8 +2696,8 @@ function completeMealFeedSharePromptDestination(destination) {
         hint.textContent = feedShared && instagramShared
             ? 'Shared to both'
             : feedShared
-                ? 'Balance Feed shared. IG Feed is still ready.'
-                : 'IG Feed shared. Balance Feed is still ready.';
+                ? 'Balance Feed shared. IG Story is still ready.'
+                : 'IG Story shared. Balance Feed is still ready.';
     }
 
     return feedShared && instagramShared;
@@ -2695,9 +2726,9 @@ window.sharePendingMealToFeed = async function(btn) {
 window.sharePendingMealToInstagram = async function(btn) {
     const meal = window._pbbPendingMealFeedShare;
     let sharedSuccessfully = false;
-    setMealFeedSharePromptBusy(true, 'Uploading photo and preparing your IG Feed post...');
+    setMealFeedSharePromptBusy(true, 'Uploading photo and preparing your IG Story...');
     try {
-        const shared = await shareMealRecordToInstagram(meal, btn, 'feed');
+        const shared = await shareMealRecordToInstagram(meal, btn, 'story');
         if (shared) {
             sharedSuccessfully = true;
             const sharedToBoth = completeMealFeedSharePromptDestination('instagram');
@@ -2733,7 +2764,7 @@ function showMealFeedSharePrompt(meal) {
     prompt.setAttribute('aria-live', 'polite');
     prompt.style.cssText = 'position:fixed;left:14px;right:14px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:10030;background:#ffffff;border:1px solid #dbeafe;border-radius:16px;box-shadow:0 18px 42px rgba(15,23,42,0.22);padding:14px;font-family:inherit;';
     const feedButtonLabel = feedEarnsXp ? `Balance Feed +${MEAL_FEED_SHARE_XP} XP` : 'Balance Feed';
-    const instagramButtonLabel = instagramEarnsXp ? `IG Feed +${MEAL_FEED_SHARE_XP} XP` : 'IG Feed';
+    const instagramButtonLabel = instagramEarnsXp ? `IG Story +${MEAL_FEED_SHARE_XP} XP` : 'IG Story';
     const feedButtonHtml = `<button type="button" data-meal-share-destination="feed" data-default-label="${feedButtonLabel}" onclick="sharePendingMealToFeed(this)" style="border:none;background:#046a38;color:white;border-radius:999px;padding:11px 12px;font-size:0.78rem;font-weight:900;cursor:pointer;white-space:nowrap;">${feedButtonLabel}</button>`;
     prompt.innerHTML = `
         <div style="display:flex;align-items:center;gap:12px;">
@@ -9392,7 +9423,7 @@ function openMealDetailPopup(index) {
     if (igShareBtn) {
         const isWater = String(meal.meal_type || '').toLowerCase() === 'water';
         igShareBtn.disabled = isWater;
-        igShareBtn.textContent = isWater ? 'IG Feed unavailable' : getMealInstagramShareButtonText();
+        igShareBtn.textContent = isWater ? 'IG Story unavailable' : getMealInstagramShareButtonText();
         igShareBtn.style.opacity = isWater ? '0.85' : '1';
     }
 
@@ -9507,7 +9538,7 @@ async function shareCurrentMealToInstagram() {
 
     const meal = currentMealsList[currentEditingMealIndex];
     const btn = document.getElementById('mealDetailIgStoryBtn');
-    await shareMealRecordToInstagram(meal, btn, 'feed');
+    await shareMealRecordToInstagram(meal, btn, 'story');
 }
 window.shareCurrentMealToInstagram = shareCurrentMealToInstagram;
 
@@ -9970,7 +10001,7 @@ async function shareMealBreakdownToInstagram(btn) {
         return false;
     }
 
-    return await shareMealRecordToInstagram(meal, btn || null, 'feed');
+    return await shareMealRecordToInstagram(meal, btn || null, 'story');
 }
 window.shareMealBreakdownToInstagram = shareMealBreakdownToInstagram;
 
