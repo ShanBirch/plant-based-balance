@@ -731,13 +731,13 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
     <div style="background:#ffffff; color:#151515; -webkit-text-fill-color:#151515; border-radius:24px; padding:32px 24px; max-width:380px; width:100%; max-height:100%; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; text-align:center; box-shadow:0 28px 80px rgba(0,0,0,0.4); box-sizing:border-box;">
         <img src="balance_logo.png" alt="Balance" style="width:64px; height:64px; object-fit:contain; margin:0 auto 16px; display:block;">
         <h3 id="meta-ad-trial-gate-title" style="margin:0 0 10px; font-size:1.35rem; line-height:1.2; color:#151515; -webkit-text-fill-color:#151515; font-family:'Montserrat',sans-serif;">Keep your Balance setup</h3>
-        <p style="color:#5f5a50; -webkit-text-fill-color:#5f5a50; font-size:0.95rem; margin:0 0 6px; line-height:1.5;">Your five-minute preview is finished. Unlock the full app and community without losing your setup.</p>
-        <p style="color:#151515; -webkit-text-fill-color:#151515; font-size:1.05rem; margin:0 0 18px; font-weight:800;">AU$19.99/month</p>
+        <p style="color:#5f5a50; -webkit-text-fill-color:#5f5a50; font-size:0.95rem; margin:0 0 6px; line-height:1.5;">Your five-minute preview is finished. Start the full six-week Balance program without losing your setup.</p>
+        <p style="color:#151515; -webkit-text-fill-color:#151515; font-size:1.05rem; margin:0 0 18px; font-weight:800;">One AU$89.99 payment for the full six weeks</p>
         <label for="meta-ad-trial-email" style="display:block; text-align:left; color:#37332d; -webkit-text-fill-color:#37332d; font-size:0.78rem; font-weight:700; margin:0 0 6px;">Your email</label>
         <input id="meta-ad-trial-email" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" style="width:100%; box-sizing:border-box; border:1px solid #cfc8ba; background:#ffffff; color:#151515; -webkit-text-fill-color:#151515; padding:13px 12px; border-radius:11px; font-size:1rem; margin:0 0 14px;">
         <label style="display:flex; align-items:flex-start; gap:9px; text-align:left; color:#5f5a50; -webkit-text-fill-color:#5f5a50; font-size:0.72rem; line-height:1.4; margin:0 0 14px;">
             <input id="meta-ad-trial-terms" type="checkbox" style="margin:2px 0 0; width:17px; height:17px; flex:0 0 auto; accent-color:#111111;">
-            <span>I agree to the <a href="terms.html" target="_blank" rel="noopener" style="color:#166534; -webkit-text-fill-color:#166534;">Terms</a>, <a href="privacy.html" target="_blank" rel="noopener" style="color:#166534; -webkit-text-fill-color:#166534;">Privacy Policy</a>, <a href="client-agreement.html" target="_blank" rel="noopener" style="color:#166534; -webkit-text-fill-color:#166534;">Client Agreement</a> and <a href="refund-policy.html" target="_blank" rel="noopener" style="color:#166534; -webkit-text-fill-color:#166534;">Refund Policy</a>. AU$19.99 is charged today and monthly until cancelled.</span>
+            <span>I agree to the <a href="terms.html" target="_blank" rel="noopener" style="color:#166534; -webkit-text-fill-color:#166534;">Terms</a>, <a href="privacy.html" target="_blank" rel="noopener" style="color:#166534; -webkit-text-fill-color:#166534;">Privacy Policy</a>, <a href="client-agreement.html" target="_blank" rel="noopener" style="color:#166534; -webkit-text-fill-color:#166534;">Client Agreement</a> and <a href="refund-policy.html" target="_blank" rel="noopener" style="color:#166534; -webkit-text-fill-color:#166534;">Refund Policy</a>. AU$89.99 is charged once for six weeks of access and does not renew automatically.</span>
         </label>
         <div id="meta-ad-trial-error" role="alert" style="display:none; color:#b42318; -webkit-text-fill-color:#b42318; background:#fef3f2; border:1px solid #fecdca; border-radius:9px; padding:9px; font-size:0.76rem; line-height:1.35; margin:0 0 12px;"></div>
         <button id="meta-ad-trial-checkout-btn" type="button" onclick="window.BalanceMetaAdTrial.beginCheckout()" style="width:100%; background:#111111; color:#ffffff; -webkit-text-fill-color:#ffffff; border:none; padding:15px; border-radius:12px; font-size:1rem; font-weight:800; cursor:pointer; font-family:'Montserrat',sans-serif;">UNLOCK BALANCE</button>
@@ -13403,7 +13403,7 @@ if(!window._pbbIsIOSSafari) {
 <script>
 (function(){
   const steps = [
-    { tab:'dashboard', sel:'#guest-mode-banner', title:'Five minutes to explore', body:'Your preview clock starts after onboarding. Explore Balance, then unlock the full app and community for AU$19.99/month.', quick:true, condition:function(){ return window.metaAdTrialMode === true; } },
+    { tab:'dashboard', sel:'#guest-mode-banner', title:'Five minutes to explore', body:'Your preview clock starts after onboarding. Explore Balance, then choose whether to start the full six-week program with one AU$89.99 payment.', quick:true, condition:function(){ return window.metaAdTrialMode === true; } },
     { tab:'dashboard', sel:'#tamagotchi-stats-bar', fallbackSel:'#balance-level-bar', title:'Levels keep going', fallbackTitle:'Levels keep going', body:'Level 99 is no longer the finish line. Keep earning XP to climb higher and unlock a new character every 5 levels.', fallbackBody:'Level 99 is no longer the finish line. Keep earning XP to climb higher and unlock a new character every 5 levels.' },
     { tab:'movement-tab', sel:'#activity-share-section', title:'Share your activity twice', body:'The first activity share each day earns +15 XP in Balance Feed and another +15 XP in Instagram Story. Later activity shares still work without extra XP.', condition: function(){ return !!document.getElementById('activity-share-section'); } },
     { tab:'movement-tab', sel:'#activity-share-photo-btn', title:'Take a photo or choose one', body:'When you share an activity, tap Add a photo to open your camera or choose one from your gallery. Balance puts your activity stats straight on it for Feed.', condition: function(){ return !!document.getElementById('activity-share-photo-btn'); } },
@@ -14575,7 +14575,7 @@ if(!window._pbbIsIOSSafari) {
     tab: 'dashboard',
     sel: '#guest-mode-banner',
     title: 'Five minutes to explore',
-    body: 'Your preview clock starts after onboarding. Explore Balance, then unlock the full app and community for AU$19.99/month.',
+    body: 'Your preview clock starts after onboarding. Explore Balance, then choose whether to start the full six-week program with one AU$89.99 payment.',
     condition: function(){ return window.metaAdTrialMode === true; }
   });
   allFeatures.push({

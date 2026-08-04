@@ -105,7 +105,7 @@ test('paid Facebook attribution activates onboarding without changing organic gu
     assert.equal(organic.localStorage.getItem('onboardingComplete'), 'true');
 });
 
-test('the five-minute clock ends in a compact App + Community Stripe gate', async () => {
+test('the five-minute clock ends in the fixed six-week Stripe gate', async () => {
     const trial = runTrial('?guest=true&meta_trial=facebook_5m_paid_v2&utm_source=facebook&utm_medium=paid_social&fbclid=test-click');
     const api = trial.window.BalanceMetaAdTrial;
     api.onOnboardingStarted();
@@ -130,7 +130,7 @@ test('the five-minute clock ends in a compact App + Community Stripe gate', asyn
     trial.elements['meta-ad-trial-terms'].checked = true;
     assert.equal(await api.beginCheckout(), true);
     const checkout = trial.events.find(event => event.event_type === 'checkout_request');
-    assert.equal(checkout.body.priceId, 'balance_app_community_monthly');
+    assert.equal(checkout.body.priceId, 'balance_vegan_founders_pass');
     assert.equal(checkout.body.pageVariant, 'facebook_5m_paid_v2');
     assert.equal(checkout.body.checkoutSource, 'meta_ad_trial');
     assert.equal(checkout.body.compliance.accepted.terms, true);
@@ -163,6 +163,7 @@ test('dashboard, signup, native handoffs, measurement, and both discovery system
     const success = fs.readFileSync(path.join(root, 'success.html'), 'utf8');
     const checkoutSession = fs.readFileSync(path.join(root, 'netlify/edge-functions/create-checkout-session.js'), 'utf8');
     const claim = fs.readFileSync(path.join(root, 'netlify/edge-functions/claim-meta-trial-subscription.js'), 'utf8');
+    const foundersClaim = fs.readFileSync(path.join(root, 'netlify/edge-functions/claim-founders-pass.js'), 'utf8');
     const netlify = fs.readFileSync(path.join(root, 'netlify.toml'), 'utf8');
     const logger = fs.readFileSync(path.join(root, 'netlify/functions/log-lp-event.js'), 'utf8');
     const android = fs.readFileSync(path.join(root, 'android/app/src/main/java/com/fitgotchi/app/MainActivity.java'), 'utf8');
@@ -190,7 +191,9 @@ test('dashboard, signup, native handoffs, measurement, and both discovery system
     assert.match(landing, /native_handoff/);
     assert.match(landing, /facebook_5m_paid_v2/);
     assert.match(landing, /Built for the stop-start weeks/);
-    assert.match(landing, /Balance App \+ Community is \$19\.99 AUD per month/);
+    assert.match(landing, /six-week Balance program is one \$89\.99 AUD payment/);
+    assert.match(dashboard, /One AU\$89\.99 payment for the full six weeks/);
+    assert.match(foundersClaim, /FOUNDERS_PLAN = "balance_foundations_six_week"/);
     assert.match(landing, /TRY BALANCE FREE/);
     assert.ok(landing.indexOf('id="how-balance-helps"') < landing.indexOf('id="start-preview"'));
     assert.match(landing, /Your free look does not begin until you tap the button below/);

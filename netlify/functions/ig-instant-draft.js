@@ -1069,7 +1069,7 @@ function buildContextualMetaAdOfferLinkReply({ checkoutUrl = '', flowVariant = '
     const url = String(checkoutUrl || '').trim();
     if (!isApprovedChallengeBioLinkText(url)) return null;
     if (isPaidMetaFoundersPassSelection(currentMessage)) {
-        const joined = `Perfect — Founders Pass is $89.99 once. Here's the link: ${url}`;
+        const joined = `Perfect — it's one $89.99 payment for the full six weeks. Here's the link: ${url}`;
         return {
             chunks: [joined],
             joined,
@@ -1239,7 +1239,16 @@ function hasRecentPaidMetaSupportQuestion(history = []) {
     return (Array.isArray(history) ? history : [])
         .filter(item => String(item?.direction || '').toLowerCase() === 'out')
         .slice(-4)
-        .some(item => /\b(?:would (?:having me|that kind of support)|would that help|accountability help|help you stay on track|make it easier)\b/i.test(String(item?.text || '')));
+        .some(item => /\b(?:would (?:having me|that kind of support)|would that help|accountability help|help you stay on track|make it easier|are you keen to (?:have|take) a look)\b/i.test(String(item?.text || '')));
+}
+
+function isApprovedPaidMetaAppPreviewMoment({ currentMessage = '', qualifier = {} } = {}) {
+    const message = String(currentMessage || '').replace(/\s+/g, ' ').trim();
+    return (PAID_META_BLOCKER_SIGNAL_RE.test(message)
+            || hasHighSignalGoalBlocker(message)
+            || PAID_META_POSITIVE_FIT_RE.test(message))
+        && qualifierHasKnownMetaAdBlocker(qualifier)
+        && !!String(qualifier?.facts?.current_state || qualifier?.facts?.motivation || '').trim();
 }
 
 function hasRecentPaidMetaGoalQuestion(history = []) {
@@ -1351,7 +1360,7 @@ function buildDeterministicPaidMetaConversationReply({
     if (PAID_META_PROGRAM_WORKS_RE.test(message)) {
         const goalText = voiceGoalPhrase ? ` around ${voiceGoalPhrase}` : '';
         const communityCopy = broadFlow ? 'the Balance app and community' : 'the Balance app and plant-based community';
-        const offerName = broadFlow ? 'The six-week Balance kickstart' : 'The Founders Pass';
+        const offerName = broadFlow ? 'The six-week Balance kickstart' : 'The six-week Balance program';
         const joined = `${offerName} gives you a clear week-by-week Foundations course${goalText}, six weeks of ${communityCopy}, workouts with video demos, meal planning and progress tracking. You also get one weekly check-in where I review and adjust your training and food. It finishes after six weeks and doesn't renew automatically.\n\nWould you prefer that fixed six-week start, or ongoing weekly coaching?`;
         return {
             chunks: [joined],
@@ -1366,12 +1375,12 @@ function buildDeterministicPaidMetaConversationReply({
 
     if (PAID_META_OFFER_INFO_RE.test(message)) {
         const communityCopy = broadFlow ? 'the Balance app and community' : 'the Balance app and plant-based community';
-        const offerName = broadFlow ? 'The six-week Balance kickstart' : 'The Founders Pass';
+        const offerName = broadFlow ? 'The six-week Balance kickstart' : 'The six-week Balance program';
         const selectedFixedStart = /\b(?:founders pass|fixed (?:six|6)[ -]?week)\b/i.test(message);
         const nextAsk = selectedFixedStart
             ? 'Would you like me to send you the checkout link?'
             : 'Want me to show you how the first week would work around your goal?';
-        const joined = `${offerName} is $89.99 once. You get the six-week Foundations course, six weeks of ${communityCopy}, and one weekly check-in and plan review with me. It doesn't renew automatically.\n\n${nextAsk}`;
+        const joined = `${offerName} is one $89.99 payment for the full six weeks. You get the six-week Foundations course, six weeks of ${communityCopy}, and one weekly check-in and plan review with me. It doesn't renew automatically.\n\n${nextAsk}`;
         return {
             chunks: [joined],
             joined,
@@ -1398,7 +1407,7 @@ function buildDeterministicPaidMetaConversationReply({
     }
 
     if (PAID_META_NEXT_STEP_RE.test(message) && hasGoal && hasBlocker) {
-        const offerName = broadFlow ? 'the six-week Balance kickstart' : 'the Founders Pass';
+        const offerName = broadFlow ? 'the six-week Balance kickstart' : 'the six-week Balance program';
         const nextAsk = recentProofVideo || !FOUNDERS_PASS_APP_PREVIEW_URL
             ? 'Want me to send you the full breakdown?'
             : 'Want me to send you the quick video so you can see how it works?';
@@ -1415,7 +1424,21 @@ function buildDeterministicPaidMetaConversationReply({
     }
 
     if (PAID_META_POSITIVE_FIT_RE.test(message) && hasRecentPaidMetaSupportQuestion(history)) {
-        const offerName = broadFlow ? 'the six-week Balance kickstart' : 'the Founders Pass';
+        if (!broadFlow && META_APP_PREVIEW_URL && hasGoal && hasBlocker) {
+            const joined = `Yeah, for sure. Here you go — you can set yourself up and look through the app before any payment: ${META_APP_PREVIEW_URL}\n\nWhat would you like to look at first — the training, food, or weekly check-ins?`;
+            return {
+                chunks: [joined],
+                joined,
+                appPreviewHandoff: true,
+                appPreviewUrl: META_APP_PREVIEW_URL,
+                model: 'deterministic_paid_meta_conversation_v3',
+                replyMode: 'campaign_app_preview_handoff',
+                maxChunks: 1,
+                error: null,
+                flowVariant,
+            };
+        }
+        const offerName = broadFlow ? 'the six-week Balance kickstart' : 'the six-week Balance program';
         const canSendProofVideo = Boolean(FOUNDERS_PASS_APP_PREVIEW_URL) && allowVideoAttachment && !broadFlow && !recentProofVideo;
         const nextAsk = recentProofVideo
             ? 'Want me to send you the full breakdown?'
@@ -1463,27 +1486,26 @@ function buildDeterministicPaidMetaConversationReply({
         const joined = personalVoiceNoteMode
             ? [
                 `Hey, how are you going. Yeah, so that makes total sense. ${reflection}`,
-                `So, um, that's honestly what Balance is designed for. It's, it's about giving you a clear plan for the week.`,
+                `Ummmm... so, that's honestly what Balance is designed for. It's, it's about giving you a clear plan for the week, ya know.`,
                 `And having me there to check in, keep you accountable, and move things around when life gets crazy.`,
-                `So if you fall off, you know, you've got something simple to come back to. And we can keep you moving toward ${voiceGoalPhrase}, without every week needing to be perfect.`,
-                `It's nineteen ninety-nine a month. I'll send you a page that explains it properly, and if it feels right, you can tap Try Balance free and have a look through the app.`,
+                `So if you fall off, ya know, you've got something simple to come back to. And we can keep you moving toward ${voiceGoalPhrase}, without every week needing to be perfect.`,
+                `It's one eighty-nine ninety-nine payment for the full six weeks.`,
+                `And yeah, if you're keen, I can give you access to the app so you can check it out before any payment. Are you keen to have a look?`,
             ].join('\n\n')
-            : `Yeah, that makes sense. ${reflection} Balance gives you a clear plan and support around ${voiceGoalPhrase}, and the app and community are $19.99 a month.\n\nThis page explains how it works. If it feels right, tap Try Balance free at the bottom: ${META_APP_PREVIEW_URL}`;
+            : `Yeah, that makes sense. ${reflection} Balance gives you a clear plan and support around ${voiceGoalPhrase}. It's one $89.99 payment for the full six weeks.\n\nIf you're keen, I can give you access to the app so you can check it out before any payment. Are you keen to have a look?`;
         return {
             chunks: [joined],
             joined,
-            appPreviewHandoff: true,
-            appPreviewUrl: META_APP_PREVIEW_URL,
-            voiceCompanionText: personalVoiceNoteMode
-                ? `Here you go — this explains how Balance works. If it feels right, tap Try Balance free at the bottom: ${META_APP_PREVIEW_URL}`
-                : '',
+            appPreviewHandoff: false,
+            appPreviewUrl: null,
+            voiceCompanionText: '',
             // Measured from Shannon's clean Instagram notes: shorter connective
             // pauses, with longer thinking/topic-transition breaks.
             voiceThoughtPausesMs: personalVoiceNoteMode
-                ? [1400, 1050, 1180, 1260]
+                ? [1500, 1450, 1350, 1550, 1700]
                 : [],
             model: 'deterministic_paid_meta_conversation_v2',
-            replyMode: 'campaign_app_preview_handoff',
+            replyMode: 'campaign_sales_progression',
             maxChunks: 1,
             error: null,
             flowVariant,
@@ -1822,14 +1844,14 @@ function buildMetaAdFoundersPassFirstReply(currentMessage = '', { customData = {
     const accessLine = broadFlow
         ? 'six weeks of the Balance app and community.'
         : 'six weeks of the Balance app and plant-based community.';
-    const supportScope = `The Founders Pass is AU$89.99 once. You get the six-week Foundations course, ${accessLine} It includes one weekly check-in plus workout and food review and adjustments with me, and it doesn't renew automatically.`;
+    const supportScope = `It's one AU$89.99 payment for the full six weeks. You get the six-week Foundations course, ${accessLine} It includes one weekly check-in plus workout and food review and adjustments with me, and it doesn't renew automatically.`;
     let answer;
     if (intent === 'fit' || intent === 'overview') {
         answer = `Hey, yeah of course. Before I send you a heap of generic info, what's the main thing you're trying to change with your fitness right now?`;
     } else if (intent === 'plant_based_requirement') {
         answer = `Not at all. Plenty of people start while they're just trying to eat more plant-based. What does your food look like at the moment?`;
     } else if (intent === 'personalised_coaching') {
-        answer = `Yeah, I do. Starter Coaching is the personalised option, where I review and adjust your training and food each week. What are you mainly trying to change at the moment?`;
+        answer = `Yeah, I do. The six-week Balance program gives you a clear plan, plus a weekly check-in where I review and adjust your training and food. What are you mainly trying to change at the moment?`;
     } else if (intent === 'accountability') {
         answer = `You check in inside Balance and I can see what the week actually looked like, then I reply with the next bit of direction and a nudge if things are slipping. It's personal support from me, not just app reminders.`;
     } else if (intent === 'price') {
@@ -1969,6 +1991,7 @@ function buildPaidMetaConversationApproval({
     draft = null,
     currentMessage = '',
     linkedUserId = null,
+    qualifier = {},
 } = {}) {
     const message = String(currentMessage || '').trim();
     const deterministicProgression = metaAdConversationFastLane
@@ -1981,7 +2004,7 @@ function buildPaidMetaConversationApproval({
         && (draft?.replyMode !== 'campaign_app_preview_handoff'
             || (draft?.appPreviewHandoff === true
                 && draft?.appPreviewUrl === META_APP_PREVIEW_URL
-                && (PAID_META_BLOCKER_SIGNAL_RE.test(message) || hasHighSignalGoalBlocker(message))));
+                && isApprovedPaidMetaAppPreviewMoment({ currentMessage: message, qualifier })));
     if (!deterministicProgression) return null;
     return {
         required: false,
@@ -2110,6 +2133,7 @@ function buildApprovedDeterministicMetaAdFirstReplyReview({
     mediaReview = null,
     contextReview = null,
     currentMessage = '',
+    qualifier = {},
 } = {}) {
     const message = String(currentMessage || '').trim();
     const approvedFirstReply = metaAdFirstInbound
@@ -2129,7 +2153,7 @@ function buildApprovedDeterministicMetaAdFirstReplyReview({
         && (draft?.replyMode !== 'campaign_app_preview_handoff'
             || (draft?.appPreviewHandoff === true
                 && draft?.appPreviewUrl === META_APP_PREVIEW_URL
-                && (PAID_META_BLOCKER_SIGNAL_RE.test(message) || hasHighSignalGoalBlocker(message))));
+                && isApprovedPaidMetaAppPreviewMoment({ currentMessage: message, qualifier })));
     if ((!approvedFirstReply && !approvedGoalProof && !approvedConversationProgression)
         || linkedUserId
         || mediaReview?.required === true
@@ -2993,9 +3017,7 @@ function buildLeadOnboardingHandoffData({ draftText, qualifier, leadStage, linke
     const draftHasLinkDrop = isSignupLinkHandoffText(draftText);
     const acceptedCoaching = isCurrentChallengeHandoffMoment({ qualifier, currentMessage });
     const approvedAppPreviewHandoff = appPreviewHandoffUrl === META_APP_PREVIEW_URL
-        && hasHighSignalGoalBlocker(currentMessage)
-        && qualifierHasKnownMetaAdBlocker(qualifier)
-        && !!String(qualifier?.facts?.current_state || qualifier?.facts?.motivation || '').trim();
+        && isApprovedPaidMetaAppPreviewMoment({ currentMessage, qualifier });
     const visibleHandoffUrl = (String(draftText || '').match(/https?:\/\/\S+/gi) || [])
         .map(url => url.replace(/[),.!?]+$/, ''))
         .find(url => isApprovedChallengeBioLinkText(url)) || '';
@@ -6285,6 +6307,7 @@ exports.handler = async (event) => {
         draft,
         currentMessage: displayMessage,
         linkedUserId: thread.linked_user_id,
+        qualifier,
     });
     let challengeOfferWarning = metaAdFirstReplyApproval
         || paidMetaConversationApproval
@@ -6909,6 +6932,7 @@ exports.handler = async (event) => {
             mediaReview,
             contextReview,
             currentMessage: displayMessage,
+            qualifier,
         });
         if (approvedDeterministicReview) {
             draftReview = approvedDeterministicReview;

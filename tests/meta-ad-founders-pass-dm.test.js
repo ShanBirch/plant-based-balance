@@ -80,7 +80,7 @@ test('Cocos paid-ad Founders Pass opener bypasses the false signup hold and mode
     }), null);
 });
 
-test('paid Meta blocker advances directly to the priced five-minute app preview', () => {
+test('paid Meta blocker quotes the six-week payment and app access follows positive intent', () => {
     const qualifier = {
         commercial_stage: 'engaged',
         facts: {
@@ -101,24 +101,34 @@ test('paid Meta blocker advances directly to the priced five-minute app preview'
     });
 
     assert.match(blockerReply.joined, /work and the kids can wreck the best intentions/i);
-    assert.match(blockerReply.joined, /\$19\.99 a month/i);
-    assert.match(blockerReply.joined, /page explains how it works/i);
-    assert.match(blockerReply.joined, /Try Balance free at the bottom/i);
-    assert.match(blockerReply.joined, /meta-app-preview\.html/i);
+    assert.match(blockerReply.joined, /one \$89\.99 payment for the full six weeks/i);
+    assert.match(blockerReply.joined, /access to the app.*before any payment/i);
+    assert.doesNotMatch(blockerReply.joined, /meta-app-preview\.html/i);
     assert.doesNotMatch(blockerReply.joined, /what usually gets in the way/i);
     assert.doesNotMatch(blockerReply.joined, /clear (?:week|plan).*checking in.*(?:help|easier)/i);
-    assert.equal((blockerReply.joined.match(/\?/g) || []).length, 0);
-    assert.equal(blockerReply.replyMode, 'campaign_app_preview_handoff');
-    assert.equal(blockerReply.appPreviewHandoff, true);
+    assert.equal((blockerReply.joined.match(/\?/g) || []).length, 1);
+    assert.equal(blockerReply.replyMode, 'campaign_sales_progression');
+    assert.equal(blockerReply.appPreviewHandoff, false);
+    const previewReply = buildDeterministicPaidMetaConversationReply({
+        currentMessage: "Yeah, I'm keen",
+        qualifier,
+        history: [{ direction: 'out', text: blockerReply.joined }],
+        flowVariant: 'plant_based_control',
+    });
+    assert.equal(previewReply.replyMode, 'campaign_app_preview_handoff');
+    assert.equal(previewReply.appPreviewHandoff, true);
+    assert.match(previewReply.joined, /meta-app-preview\.html/i);
+    assert.match(previewReply.joined, /before any payment/i);
+    assert.equal((previewReply.joined.match(/\?/g) || []).length, 1);
     const previewHandoff = buildLeadOnboardingHandoffData({
-        draftText: blockerReply.joined,
+        draftText: previewReply.joined,
         qualifier,
         leadStage: 'qualifying',
         linkedUserId: null,
         threadId: 'coco-thread',
         manychatMessageId: 'coco-blocker',
-        currentMessage: 'Other things just get in the way. Work kids',
-        appPreviewHandoffUrl: blockerReply.appPreviewUrl,
+        currentMessage: "Yeah, I'm keen",
+        appPreviewHandoffUrl: previewReply.appPreviewUrl,
     });
     assert.equal(previewHandoff.approved_link_auto_sendable, true);
     assert.equal(previewHandoff.paid_meta_app_preview_handoff, true);
@@ -154,11 +164,13 @@ test('paid Meta blocker advances directly to the priced five-minute app preview'
     assert.match(voiceReply.joined, /Hey, how are you going/i);
     assert.match(voiceReply.joined, /work and the kids can wreck the best intentions/i);
     assert.match(voiceReply.joined, /losing 10 kilos and feeling fitter/i);
-    assert.match(voiceReply.joined, /nineteen ninety-nine a month/i);
-    assert.match(voiceReply.joined, /tap Try Balance free/i);
+    assert.match(voiceReply.joined, /one eighty-nine ninety-nine payment for the full six weeks/i);
+    assert.match(voiceReply.joined, /access to the app.*before any payment/i);
+    assert.match(voiceReply.joined, /Ummmm\.\.\./i);
+    assert.match(voiceReply.joined, /ya know/i);
     assert.doesNotMatch(voiceReply.joined, /https?:\/\//);
-    assert.match(voiceReply.voiceCompanionText, /meta-app-preview\.html/i);
-    assert.equal((voiceReply.joined.match(/\?/g) || []).length, 0);
+    assert.equal(voiceReply.voiceCompanionText, '');
+    assert.equal((voiceReply.joined.match(/\?/g) || []).length, 1);
     assert.equal(inspectVoiceScriptQuality(voiceReply.joined).valid, true);
 
     const broadReply = buildDeterministicPaidMetaConversationReply({
@@ -238,9 +250,9 @@ test('paid Meta voice progression reflects different real blocker categories', (
         });
         assert.match(reply.joined, expectedReflection);
         assert.match(reply.joined, /losing 10 kilos and feeling fitter/i);
-        assert.match(reply.joined, /nineteen ninety-nine a month/i);
-        assert.match(reply.voiceCompanionText, /meta-app-preview\.html/i);
-        assert.equal((reply.joined.match(/\?/g) || []).length, 0);
+        assert.match(reply.joined, /one eighty-nine ninety-nine payment for the full six weeks/i);
+        assert.equal(reply.voiceCompanionText, '');
+        assert.equal((reply.joined.match(/\?/g) || []).length, 1);
     }
 });
 
@@ -412,7 +424,7 @@ test('inclusions quick reply answers the direct ask without a raw preview URL', 
     assert.doesNotMatch(reply.joined, /https?:\/\//);
 });
 
-test('personalised coaching FAQ routes to Starter Coaching without a Founders Pass handoff', () => {
+test('personalised coaching FAQ answers from the advertised six-week program without a premature handoff', () => {
     for (const spelling of [
         'Do you offer personalized coaching plans?',
         'Do you offer personalised coaching plans?',
@@ -427,7 +439,7 @@ test('personalised coaching FAQ routes to Starter Coaching without a Founders Pa
             linkedUserId: null,
         });
 
-        assert.equal(reply.joined, 'Yeah, I do. Starter Coaching is the personalised option, where I review and adjust your training and food each week. What are you mainly trying to change at the moment?');
+        assert.equal(reply.joined, 'Yeah, I do. The six-week Balance program gives you a clear plan, plus a weekly check-in where I review and adjust your training and food. What are you mainly trying to change at the moment?');
         assert.equal(reply.checkoutUrl, null);
         assert.equal(reply.videoAttachmentUrl, undefined);
         assert.equal(approval.code, 'approved_meta_ad_first_reply');
@@ -620,12 +632,12 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
         flowVariant: 'plant_based_control',
         personalVoiceNoteMode: true,
     });
-    assert.deepEqual(blockerVoiceReply.voiceThoughtPausesMs, [1400, 1050, 1180, 1260]);
-    assert.equal(blockerVoiceReply.joined.split(/\n\s*\n/).length, 5);
-    assert.doesNotMatch(blockerVoiceReply.joined, /\.\.\./);
+    assert.deepEqual(blockerVoiceReply.voiceThoughtPausesMs, [1500, 1450, 1350, 1550, 1700]);
+    assert.equal(blockerVoiceReply.joined.split(/\n\s*\n/).length, 6);
+    assert.match(blockerVoiceReply.joined, /Ummmm\.\.\./);
     assert.match(blockerVoiceReply.joined, /losing 8 kilos/i);
     assert.match(blockerVoiceReply.joined, /It's, it's about giving you a clear plan/i);
-    assert.match(blockerVoiceReply.joined, /you know/i);
+    assert.match(blockerVoiceReply.joined, /ya know/i);
     assert.equal(inspectVoiceScriptQuality(blockerVoiceReply.joined).valid, true);
 
     const changingShiftBlocker = buildDeterministicPaidMetaConversationReply({
@@ -640,8 +652,8 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
         flowVariant: 'plant_based_control',
         personalVoiceNoteMode: true,
     });
-    assert.equal(changingShiftBlocker.replyMode, 'campaign_app_preview_handoff');
-    assert.deepEqual(changingShiftBlocker.voiceThoughtPausesMs, [1400, 1050, 1180, 1260]);
+    assert.equal(changingShiftBlocker.replyMode, 'campaign_sales_progression');
+    assert.deepEqual(changingShiftBlocker.voiceThoughtPausesMs, [1500, 1450, 1350, 1550, 1700]);
     assert.match(changingShiftBlocker.joined, /life keeps crowding the week/i);
     assert.match(changingShiftBlocker.joined, /losing 7 kilos/i);
 
@@ -712,18 +724,20 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
         qualifier: blockerQualifier,
         flowVariant: 'plant_based_control',
     });
-    assert.match(blocker.joined, /\$19\.99 a month/i);
-    assert.match(blocker.joined, /meta-app-preview\.html/i);
-    assert.equal((blocker.joined.match(/\?/g) || []).length, 0);
+    assert.match(blocker.joined, /one \$89\.99 payment for the full six weeks/i);
+    assert.doesNotMatch(blocker.joined, /meta-app-preview\.html/i);
+    assert.equal((blocker.joined.match(/\?/g) || []).length, 1);
     assert.equal(buildPaidMetaConversationApproval({
         metaAdConversationFastLane: true,
         draft: blocker,
         currentMessage: 'I feel like I just stop and start again. So many times',
+        qualifier: blockerQualifier,
     }).code, 'approved_meta_ad_sales_progression');
     assert.equal(buildApprovedDeterministicMetaAdFirstReplyReview({
         metaAdConversationFastLane: true,
         draft: blocker,
         currentMessage: 'I feel like I just stop and start again. So many times',
+        qualifier: blockerQualifier,
         mediaReview: { required: false },
         contextReview: { required: false },
     }).reviewer_model, 'deterministic-paid-meta-conversation-approval');
@@ -734,8 +748,8 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
         personalVoiceNoteMode: true,
     });
     assert.ok(voiceBlocker.joined.trim().split(/\s+/).length >= 34);
-    assert.equal((voiceBlocker.joined.match(/\?/g) || []).length, 0);
-    assert.match(voiceBlocker.voiceCompanionText, /meta-app-preview\.html/i);
+    assert.equal((voiceBlocker.joined.match(/\?/g) || []).length, 1);
+    assert.equal(voiceBlocker.voiceCompanionText, '');
     assert.equal(inspectVoiceScriptQuality(voiceBlocker.joined).valid, true,
         'the deterministic accountability reply is ready for ElevenLabs without another repair round');
 
@@ -745,7 +759,7 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
         history: [],
         flowVariant: 'plant_based_control',
     });
-    assert.match(nextStep.joined, /Founders Pass is probably the best starting point/i);
+    assert.match(nextStep.joined, /six-week Balance program is probably the best starting point/i);
     assert.match(nextStep.joined, /full breakdown/i);
     assert.equal((nextStep.joined.match(/\?/g) || []).length, 1);
     assert.doesNotMatch(nextStep.joined, /https?:\/\//);
@@ -756,7 +770,8 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
         history: [{ direction: 'out', text: 'Would having a clear plan and me checking in help you stay on track?' }],
         flowVariant: 'plant_based_control',
     });
-    assert.match(acceptedSupport.joined, /exactly what the Founders Pass is for/i);
+    assert.match(acceptedSupport.joined, /meta-app-preview\.html/i);
+    assert.match(acceptedSupport.joined, /before any payment/i);
     assert.equal((acceptedSupport.joined.match(/\?/g) || []).length, 1);
 
     const naturalAcceptedSupport = buildDeterministicPaidMetaConversationReply({
@@ -765,8 +780,8 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
         history: [{ direction: 'out', text: 'Would that kind of support make it easier for you to stay on track?' }],
         flowVariant: 'plant_based_control',
     });
-    assert.match(naturalAcceptedSupport.joined, /exactly what the Founders Pass is for/i);
-    assert.match(naturalAcceptedSupport.joined, /first week|full breakdown/i);
+    assert.match(naturalAcceptedSupport.joined, /meta-app-preview\.html/i);
+    assert.match(naturalAcceptedSupport.joined, /training, food, or weekly check-ins/i);
     assert.equal((naturalAcceptedSupport.joined.match(/\?/g) || []).length, 1);
     assert.doesNotMatch(naturalAcceptedSupport.joined, /does that feel like the kind of support you need/i,
         'support acceptance must not repeat the support-fit question the lead just answered');
@@ -779,9 +794,9 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
         allowVideoAttachment: true,
     });
     assert.doesNotMatch(acceptedSupportWithVideo.joined, /quick video/i);
-    assert.equal(acceptedSupportWithVideo.videoAttachmentUrl, null);
+    assert.equal(acceptedSupportWithVideo.videoAttachmentUrl, undefined);
     assert.equal(acceptedSupportWithVideo.chunks.length, 1);
-    assert.match(acceptedSupportWithVideo.joined, /what the first week would look like/i);
+    assert.match(acceptedSupportWithVideo.joined, /meta-app-preview\.html/i);
 
     const buyer = buildDeterministicPaidMetaConversationReply({
         currentMessage: 'Send me the link',
@@ -841,7 +856,7 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
         ],
         flowVariant: 'plant_based_control',
     });
-    assert.match(selectedFoundersPrice.joined, /\$89\.99 once/i);
+    assert.match(selectedFoundersPrice.joined, /one \$89\.99 payment for the full six weeks/i);
     assert.match(selectedFoundersPrice.joined, /send you the checkout link/i);
     assert.doesNotMatch(selectedFoundersPrice.joined, /show you how the first week/i,
         'price after selecting Founders Pass must advance to checkout permission, not repeat week-one discovery');
@@ -854,7 +869,7 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
         checkoutUrl,
     });
     assert.equal(priceAndInclusions.replyMode, 'campaign_sales_progression');
-    assert.match(priceAndInclusions.joined, /\$89\.99 once/i);
+    assert.match(priceAndInclusions.joined, /one \$89\.99 payment for the full six weeks/i);
     assert.doesNotMatch(priceAndInclusions.joined, /https?:\/\//);
     assert.equal(hasDirectPaidMetaCheckoutIntent("What's included in Balance app?"), false);
     assert.equal(hasDirectPaidMetaCheckoutIntent('I want to know your prices and what I get'), false);
