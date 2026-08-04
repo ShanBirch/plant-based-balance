@@ -502,6 +502,22 @@ assert.equal(instantDraft.isInternalMetaAdConversationTestLane({
     linkedUserId: 'client-user-1',
     customData: internalPlantBasedTestData,
 }), false, 'the internal test override never applies to a linked client');
+assert.equal(instantDraft.isInternalMetaAdConversationOpeningTurn({
+    customData: internalPlantBasedTestData,
+    history: [],
+    currentMessage: 'Do you offer personalized coaching plans?',
+}), true, 'the first post-reset Coco prompt re-enters the deterministic ad opener');
+assert.equal(instantDraft.isInternalMetaAdConversationOpeningTurn({
+    customData: internalPlantBasedTestData,
+    history: [{ direction: 'out', text: 'What are you mainly trying to change at the moment?' }],
+    currentMessage: 'Do you offer personalized coaching plans?',
+}), false, 'an established Coco episode does not restart the deterministic opener');
+assert.equal(instantDraft.isInternalMetaAdConversationOpeningTurn({
+    linkedUserId: 'client-user-1',
+    customData: internalPlantBasedTestData,
+    history: [],
+    currentMessage: 'Do you offer personalized coaching plans?',
+}), false, 'the opening-turn override never applies to a linked client');
 assert.equal(instantDraft.isContextualMetaAdOfferLinkRequest({
     currentMessage: 'Can I see it?',
     qualifier: { commercial_stage: 'buyer_intent' },

@@ -2994,6 +2994,17 @@ function isInternalMetaAdConversationTestLane({ linkedUserId = null, customData 
         && String(customData?.internal_test_meta_ad_flow || '').toLowerCase() === 'plant_based_control';
 }
 
+function isInternalMetaAdConversationOpeningTurn({
+    linkedUserId = null,
+    customData = {},
+    history = [],
+    currentMessage = '',
+} = {}) {
+    return isInternalMetaAdConversationTestLane({ linkedUserId, customData })
+        && (Array.isArray(history) ? history : []).length === 0
+        && shouldUseDeterministicMetaAdFirstReply(currentMessage);
+}
+
 function filterInternalTestHistoryAfterReset({
     history = [],
     linkedUserId = null,
@@ -5303,6 +5314,12 @@ exports.handler = async (event) => {
         linkedUserId: thread.linked_user_id,
         customData: thread.custom_data,
     });
+    const metaAdOpeningTurn = metaAdFirstInbound || isInternalMetaAdConversationOpeningTurn({
+        linkedUserId: thread.linked_user_id,
+        customData: thread.custom_data,
+        history,
+        currentMessage: messageText,
+    });
     const metaAdFastLane = metaAdFirstInbound || metaAdConversationFastLane;
     const unfilteredHistoryCount = history.length;
     history = filterMetaAdCardAttachmentHistory({
@@ -5712,7 +5729,7 @@ exports.handler = async (event) => {
         const earlyTypingDelayMs = resolveMetaAdEarlyTypingDelayMs({
             lastInboundAt: thread.last_inbound_at,
             seed: manychatMessageId || messageText,
-            firstReply: metaAdFirstInbound,
+            firstReply: metaAdOpeningTurn,
         });
         if (earlyTypingDelayMs > 0) {
             await new Promise(resolve => setTimeout(resolve, earlyTypingDelayMs));
@@ -5846,7 +5863,7 @@ exports.handler = async (event) => {
         && isMetaAdGoalReplyTurn(history, messageText);
     let draft;
     try {
-        draft = metaAdFirstInbound && shouldUseDeterministicMetaAdFirstReply(messageText) ? buildMetaAdFoundersPassFirstReply(messageText, {
+        draft = metaAdOpeningTurn && shouldUseDeterministicMetaAdFirstReply(messageText) ? buildMetaAdFoundersPassFirstReply(messageText, {
             customData: thread.custom_data,
             flowVariant: metaAdFlowVariant,
             acquisitionMode,
@@ -6065,7 +6082,7 @@ exports.handler = async (event) => {
         userId: thread.linked_user_id,
         leadStage: effectiveLeadStage,
     });
-    const metaAdFirstReplyApproval = buildMetaAdFirstReplyApproval({ metaAdFirstInbound, draft });
+    const metaAdFirstReplyApproval = buildMetaAdFirstReplyApproval({ metaAdFirstInbound: metaAdOpeningTurn, draft });
     const paidMetaConversationApproval = buildPaidMetaConversationApproval({
         metaAdConversationFastLane,
         draft,
@@ -6202,7 +6219,7 @@ exports.handler = async (event) => {
             }),
             meta_ad_fast_lane: metaAdFastLane || undefined,
             meta_ad_card_attachments_suppressed: metaAdCardAttachmentsSuppressed || undefined,
-            meta_ad_first_inbound: metaAdFirstInbound || undefined,
+            meta_ad_first_inbound: metaAdOpeningTurn || undefined,
             meta_ad_conversation_fast_lane: metaAdConversationFastLane || undefined,
             meta_ad_internal_test_lane: internalMetaAdConversationTestLane || undefined,
             instagram_early_typing_action: earlyInstagramTypingAction?.attempted
@@ -6210,7 +6227,7 @@ exports.handler = async (event) => {
                 : undefined,
             exercise_conversation_fast_lane: exerciseConversationFastLane || undefined,
             meta_ad_flow_variant: metaAdFastLane ? draft.flowVariant : metaAdFlowVariant,
-            meta_ad_first_reply_intent: metaAdFirstInbound ? draft.firstReplyIntent : undefined,
+            meta_ad_first_reply_intent: metaAdOpeningTurn ? draft.firstReplyIntent : undefined,
             paid_meta_conversation_step: /^deterministic_paid_meta_conversation_v\d+/i.test(String(draft.model || ''))
                 ? draft.replyMode
                 : undefined,
@@ -6460,7 +6477,7 @@ exports.handler = async (event) => {
             meta_ad_card_attachments_suppressed: metaAdCardAttachmentsSuppressed
                 || existingPending.data?.meta_ad_card_attachments_suppressed
                 || undefined,
-            meta_ad_first_inbound: metaAdFirstInbound || existingPending.data?.meta_ad_first_inbound || undefined,
+            meta_ad_first_inbound: metaAdOpeningTurn || existingPending.data?.meta_ad_first_inbound || undefined,
             meta_ad_conversation_fast_lane: metaAdConversationFastLane || existingPending.data?.meta_ad_conversation_fast_lane || existingPending.data?.meta_ad_active_conversation_fast_lane || undefined,
             meta_ad_internal_test_lane: internalMetaAdConversationTestLane || existingPending.data?.meta_ad_internal_test_lane || undefined,
             instagram_early_typing_action: earlyInstagramTypingAction?.attempted
@@ -6468,7 +6485,7 @@ exports.handler = async (event) => {
                 : existingPending.data?.instagram_early_typing_action || undefined,
             exercise_conversation_fast_lane: exerciseConversationFastLane || existingPending.data?.exercise_conversation_fast_lane || undefined,
             meta_ad_flow_variant: metaAdFastLane ? draft.flowVariant : (metaAdFlowVariant || existingPending.data?.meta_ad_flow_variant || undefined),
-            meta_ad_first_reply_intent: metaAdFirstInbound ? draft.firstReplyIntent : existingPending.data?.meta_ad_first_reply_intent,
+            meta_ad_first_reply_intent: metaAdOpeningTurn ? draft.firstReplyIntent : existingPending.data?.meta_ad_first_reply_intent,
             meta_ad_checkout_url: draft.checkoutUrl || existingPending.data?.meta_ad_checkout_url || undefined,
             meta_ad_attribution: metaAdFastLane
                 ? (thread.custom_data?.meta_ad_attribution || existingPending.data?.meta_ad_attribution || undefined)
@@ -6663,7 +6680,7 @@ exports.handler = async (event) => {
         const reviewContextBlocks = `LATEST just-arrived ${channelLabel} message from ${leadName} (this is the message the draft must answer): "${reviewLatestForPrompt}"${mediaSummaryReviewContext}${audioTranscriptReviewContext}${priorText}${timelineText}${workoutText}${memoryText}${crossChannelText}${learningReelReviewContext}`;
         const reviewTimeoutMs = cocosAutoSendLane ? COCOS_DRAFT_REVIEW_TIMEOUT_MS : IG_DRAFT_REVIEW_TIMEOUT_MS;
         const approvedDeterministicReview = buildApprovedDeterministicMetaAdFirstReplyReview({
-            metaAdFirstInbound,
+            metaAdFirstInbound: metaAdOpeningTurn,
             metaAdGoalReplyTurn,
             metaAdConversationFastLane,
             draft,
@@ -7281,6 +7298,7 @@ exports._test = {
     isMetaAdFastLaneEligible,
     isMetaAdConversationFastLaneEligible,
     isInternalMetaAdConversationTestLane,
+    isInternalMetaAdConversationOpeningTurn,
     filterInternalTestHistoryAfterReset,
     isExerciseConversationFastLaneEligible,
     resolveMetaAdFlowVariant,
