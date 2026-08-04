@@ -121,7 +121,7 @@ test('paid Meta blocker quotes the six-week payment and app access follows posit
     assert.equal(previewReply.appPreviewHandoff, true);
     assert.match(previewReply.joined, /meta-app-preview\.html/i);
     assert.match(previewReply.joined, /before any payment/i);
-    assert.equal((previewReply.joined.match(/\?/g) || []).length, 1);
+    assert.equal((previewReply.joined.match(/\?/g) || []).length, 0);
     const previewHandoff = buildLeadOnboardingHandoffData({
         draftText: previewReply.joined,
         qualifier,
@@ -134,7 +134,7 @@ test('paid Meta blocker quotes the six-week payment and app access follows posit
     });
     assert.equal(previewHandoff.approved_link_auto_sendable, true);
     assert.equal(previewHandoff.paid_meta_app_preview_handoff, true);
-    assert.match(previewHandoff.signup_link_handoff_url, /meta-app-preview\.html$/);
+    assert.match(previewHandoff.signup_link_handoff_url, /meta-app-preview\.html(?:\?|$)/);
 
     const restoredQuestion = ensureMetaAdSalesProgressionQuestion({
         draft: {
@@ -853,7 +853,8 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
     });
     assert.match(acceptedSupport.joined, /meta-app-preview\.html/i);
     assert.match(acceptedSupport.joined, /before any payment/i);
-    assert.equal((acceptedSupport.joined.match(/\?/g) || []).length, 1);
+    assert.equal((acceptedSupport.joined.match(/\?/g) || []).length, 0,
+        'the preview handoff pauses the DM instead of immediately asking whether the page opened');
 
     const naturalAcceptedSupport = buildDeterministicPaidMetaConversationReply({
         currentMessage: "Yes, that's exactly the kind of structure I need.",
@@ -862,8 +863,8 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
         flowVariant: 'plant_based_control',
     });
     assert.match(naturalAcceptedSupport.joined, /meta-app-preview\.html/i);
-    assert.match(naturalAcceptedSupport.joined, /Does that page open okay for you/i);
-    assert.equal((naturalAcceptedSupport.joined.match(/\?/g) || []).length, 1);
+    assert.doesNotMatch(naturalAcceptedSupport.joined, /Does that page open okay for you/i);
+    assert.equal((naturalAcceptedSupport.joined.match(/\?/g) || []).length, 0);
     assert.doesNotMatch(naturalAcceptedSupport.joined, /does that feel like the kind of support you need/i,
         'support acceptance must not repeat the support-fit question the lead just answered');
 

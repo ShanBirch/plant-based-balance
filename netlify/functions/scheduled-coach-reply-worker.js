@@ -143,6 +143,39 @@ async function cancelStaleScheduledInstagramReply(alert, newerMessage) {
     });
 }
 
+async function getMetaPreviewConversionAfterGate(alert = {}) {
+    const data = alert.data || {};
+    if (data.meta_app_preview_followup !== true) return null;
+    const sessionId = String(data.meta_app_preview_session_id || '').trim();
+    const gateShownAt = String(data.meta_app_preview_gate_shown_at || '').trim();
+    if (!sessionId || !gateShownAt) return { event_type: 'preview_followup_evidence_missing' };
+    const events = await supabase(
+        `lp_events?select=event_type,created_at&session_id=eq.${encodeURIComponent(sessionId)}&event_type=in.(checkout_started,trial_purchase_claimed,trial_subscription_claimed)&created_at=gte.${encodeURIComponent(gateShownAt)}&order=created_at.asc&limit=1`
+    );
+    return events[0] || null;
+}
+
+async function cancelMetaPreviewFollowupAfterConversion(alert, conversion) {
+    const canceledAt = new Date().toISOString();
+    await supabase(`coach_alerts?id=eq.${alert.id}&status=eq.pending`, {
+        method: 'PATCH',
+        body: {
+            status: 'canceled',
+            actioned_at: canceledAt,
+            data: {
+                ...(alert.data || {}),
+                cancel_reason: conversion.event_type === 'preview_followup_evidence_missing'
+                    ? 'meta_app_preview_followup_evidence_missing'
+                    : 'meta_app_preview_checkout_or_purchase_started',
+                meta_app_preview_followup_canceled_at: canceledAt,
+                meta_app_preview_conversion_event: conversion.event_type,
+                meta_app_preview_conversion_at: conversion.created_at || null,
+            },
+        },
+        prefer: 'return=minimal',
+    });
+}
+
 function buildAutoSendReviewHold(alert) {
     const data = alert?.data || {};
     const isAutoSend = data.scheduled_via === 'auto_send'
@@ -464,6 +497,17 @@ async function sendAutoSendHoldNotification(alert, autoHold) {
  * to flip to 'sent' once delivered.
  */
 async function fireAlert(alert) {
+    try {
+        const conversion = await getMetaPreviewConversionAfterGate(alert);
+        if (conversion) {
+            await cancelMetaPreviewFollowupAfterConversion(alert, conversion);
+            console.info(`[scheduled-worker] canceled preview follow-up ${alert.id}; ${conversion.event_type}`);
+            return { ok: false, error: 'meta_app_preview_conversion_or_evidence_hold' };
+        }
+    } catch (e) {
+        console.error(`[scheduled-worker] preview conversion check failed for ${alert.id}:`, e.message);
+        return { ok: false, error: 'meta_app_preview_conversion_check_failed' };
+    }
     try {
         const newerMessage = await getNewerInstagramConversationMessage(alert);
         if (newerMessage) {

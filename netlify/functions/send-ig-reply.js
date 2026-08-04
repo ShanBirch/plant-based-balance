@@ -32,6 +32,7 @@ const {
     mergeLearningReelContext,
     normalizeLearningReelItems,
 } = require('./_lib/client-context');
+const { isMetaAppPreviewUrl } = require('./_lib/meta-app-preview-ref');
 const {
     OUTBOUND_TEXT_ENCODING_CORRUPTION_CODE,
     resolveUtf8TransportText,
@@ -222,10 +223,10 @@ function isGratitudeCloserText(text = '') {
 
 function resolveApprovedVoiceCompanionText(alertData = {}, voiceEnabled = false) {
     const text = String(alertData.voice_companion_text || '').trim();
-    const previewUrl = 'https://plantbased-balance.org/meta-app-preview.html';
+    const previewUrl = String(alertData.paid_meta_app_preview_url || '').trim();
     if (!voiceEnabled
         || alertData.paid_meta_app_preview_handoff !== true
-        || alertData.paid_meta_app_preview_url !== previewUrl
+        || !isMetaAppPreviewUrl(previewUrl)
         || !text
         || text.length > 500
         || !text.includes(previewUrl)

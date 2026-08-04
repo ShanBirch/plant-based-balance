@@ -32,6 +32,13 @@ test('voice companion text is restricted to the approved paid Meta app preview',
         paid_meta_app_preview_url: previewUrl,
     };
     assert.equal(sendIg.resolveApprovedVoiceCompanionText(data, true), data.voice_companion_text);
+    const signedPreviewUrl = `${previewUrl}?meta_ref=signed-preview-reference`;
+    const signedData = {
+        ...data,
+        voice_companion_text: `Here you go — have a quick look here: ${signedPreviewUrl}`,
+        paid_meta_app_preview_url: signedPreviewUrl,
+    };
+    assert.equal(sendIg.resolveApprovedVoiceCompanionText(signedData, true), signedData.voice_companion_text);
     assert.equal(sendIg.resolveApprovedVoiceCompanionText(data, false), '');
     assert.equal(sendIg.resolveApprovedVoiceCompanionText({
         ...data,

@@ -92,6 +92,11 @@ const {
     isTestAccount,
     isAiAutomationOptedOut,
 } = require('./_lib/client-context');
+const {
+    META_APP_PREVIEW_URL,
+    buildMetaAppPreviewUrl,
+    isMetaAppPreviewUrl,
+} = require('./_lib/meta-app-preview-ref');
 const { buildExerciseLibrarySupportBlock } = require('./_lib/exercise-library-search');
 const { resolveCoachDmManagerScheduledFor } = require('./_lib/coach-dm-working-hours');
 const {
@@ -1290,6 +1295,7 @@ function buildDeterministicPaidMetaConversationReply({
     history = [],
     flowVariant = 'plant_based_control',
     checkoutUrl = '',
+    appPreviewUrl = META_APP_PREVIEW_URL,
     personalVoiceNoteMode = false,
     allowVideoAttachment = false,
 } = {}) {
@@ -1442,13 +1448,13 @@ function buildDeterministicPaidMetaConversationReply({
     }
 
     if (PAID_META_POSITIVE_FIT_RE.test(message) && hasRecentPaidMetaSupportQuestion(history)) {
-        if (!broadFlow && META_APP_PREVIEW_URL && hasGoal && hasBlocker) {
-            const joined = `Yeah, for sure. Here you go. You can set yourself up and look through the app before any payment: ${META_APP_PREVIEW_URL}\n\nDoes that page open okay for you?`;
+        if (!broadFlow && appPreviewUrl && hasGoal && hasBlocker) {
+            const joined = `Yeah, for sure. Here you go. You can set yourself up and look through the app before any payment: ${appPreviewUrl}`;
             return {
                 chunks: [joined],
                 joined,
                 appPreviewHandoff: true,
-                appPreviewUrl: META_APP_PREVIEW_URL,
+                appPreviewUrl,
                 model: 'deterministic_paid_meta_conversation_v3',
                 replyMode: 'campaign_app_preview_handoff',
                 maxChunks: 1,
@@ -1725,8 +1731,6 @@ const FOUNDERS_PASS_APP_PREVIEW_URL = '';
 const ALLY_WEIGHT_LOSS_PROOF_URL = 'https://plantbased-balance.org/photos/client-success/ally-cocos.png';
 const FOUNDERS_PASS_CHECKOUT_URL = 'https://plantbased-balance.org/founders';
 const FOUNDERS_PASS_BROAD_CHECKOUT_URL = 'https://future-balance.netlify.app/fitness';
-const META_APP_PREVIEW_URL = 'https://plantbased-balance.org/meta-app-preview.html';
-
 function buildDraftVideoAttachmentData(draft = {}) {
     const url = String(draft?.videoAttachmentUrl || '').trim();
     return {
@@ -2028,7 +2032,7 @@ function buildPaidMetaConversationApproval({
         && (draft?.replyMode !== 'campaign_buyer_handoff' || isPaidMetaContextualCheckoutIntent(message))
         && (draft?.replyMode !== 'campaign_app_preview_handoff'
             || (draft?.appPreviewHandoff === true
-                && draft?.appPreviewUrl === META_APP_PREVIEW_URL
+                && isMetaAppPreviewUrl(draft?.appPreviewUrl)
                 && isApprovedPaidMetaAppPreviewMoment({ currentMessage: message, qualifier })));
     if (!deterministicProgression) return null;
     return {
@@ -2177,7 +2181,7 @@ function buildApprovedDeterministicMetaAdFirstReplyReview({
         && (draft?.replyMode !== 'campaign_buyer_handoff' || isPaidMetaContextualCheckoutIntent(message))
         && (draft?.replyMode !== 'campaign_app_preview_handoff'
             || (draft?.appPreviewHandoff === true
-                && draft?.appPreviewUrl === META_APP_PREVIEW_URL
+                && isMetaAppPreviewUrl(draft?.appPreviewUrl)
                 && isApprovedPaidMetaAppPreviewMoment({ currentMessage: message, qualifier })));
     if ((!approvedFirstReply && !approvedGoalProof && !approvedConversationProgression)
         || linkedUserId
@@ -3042,7 +3046,7 @@ function buildLeadOnboardingHandoffData({ draftText, qualifier, leadStage, linke
     if (!isUnlinkedAcquisitionLeadForLinkGate({ leadStage, linkedUserId })) return null;
     const draftHasLinkDrop = isSignupLinkHandoffText(draftText);
     const acceptedCoaching = isCurrentChallengeHandoffMoment({ qualifier, currentMessage });
-    const approvedAppPreviewHandoff = appPreviewHandoffUrl === META_APP_PREVIEW_URL
+    const approvedAppPreviewHandoff = isMetaAppPreviewUrl(appPreviewHandoffUrl)
         && isApprovedPaidMetaAppPreviewMoment({ currentMessage, qualifier });
     const visibleHandoffUrl = (String(draftText || '').match(/https?:\/\/\S+/gi) || [])
         .map(url => url.replace(/[),.!?]+$/, ''))
@@ -3056,7 +3060,7 @@ function buildLeadOnboardingHandoffData({ draftText, qualifier, leadStage, linke
             operator_queue: null,
             style_note: 'Qualified paid Meta lead received the approved five-minute Balance app preview.',
             signup_link_manual_only: false,
-            signup_link_handoff_url: META_APP_PREVIEW_URL,
+            signup_link_handoff_url: appPreviewHandoffUrl,
             approved_link_auto_sendable: true,
             paid_meta_app_preview_handoff: true,
             codex_review: {
@@ -6158,6 +6162,7 @@ exports.handler = async (event) => {
             history,
             flowVariant: metaAdFlowVariant,
             checkoutUrl: metaAdCheckoutUrl,
+            appPreviewUrl: buildMetaAppPreviewUrl(thread.id),
             personalVoiceNoteMode: outboundVoiceMessage,
             allowVideoAttachment: hasInstagramGraphRoute,
         });
