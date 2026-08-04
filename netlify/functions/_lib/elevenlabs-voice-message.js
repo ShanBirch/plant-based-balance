@@ -9,7 +9,8 @@ const DEFAULT_SIMILARITY_BOOST = 0.75;
 const DEFAULT_STYLE = 0;
 const MAX_TTS_CHARS = 3500;
 const MIN_VOICE_NOTE_WORDS = 34;
-const MAX_VOICE_THOUGHT_PAUSE_MS = 1500;
+const MAX_VOICE_THOUGHT_PAUSE_MS = 2000;
+const DEFAULT_PCM_TRAILING_SILENCE_MS = 900;
 const SHAN_N_SUNNY_GRAPH_ACCOUNT_IDS = new Set(['17841415641641750']);
 const COCOS_GRAPH_ACCOUNT_IDS = new Set(['17841435394720504', '26328183736859579']);
 const MANUAL_AI_AUTHENTICITY_VOICE_SCRIPT = "hey, yep it's Shannon. I do use a bit of help organising my inbox because it gets busy, but the coaching and support inside Balance is me.";
@@ -59,6 +60,12 @@ function normalizeTtsPronunciation(text = '') {
                 ? `${spokenDollars} ${speakNumber(Number(cents))}`
                 : `${spokenDollars} dollars`;
         });
+}
+
+function normalizeShannonVoiceGreeting(text = '') {
+    return String(text || '')
+        .replace(/^\s*(?:hey,?\s*)?(?:how are you going|how ya going|how are ya)[?.!,]*/i, 'Hey, how are ya.')
+        .replace(/^(Hey, how are ya\.)(?:[ \t]+)(?=\S)/i, '$1\n\n');
 }
 
 function parseBoolean(value, fallback = false) {
@@ -372,7 +379,9 @@ function buildTtsText(messages = []) {
         .replace(/\n{3,}/g, '\n\n')
         .trim();
     return normalizeTtsPronunciation(
-        ensureNaturalVoiceHesitation(normalizeShannonVoiceContractions(text))
+        normalizeShannonVoiceGreeting(
+            ensureNaturalVoiceHesitation(normalizeShannonVoiceContractions(text))
+        )
     )
         .slice(0, MAX_TTS_CHARS);
 }
@@ -445,6 +454,15 @@ function assemblePcmThoughtGroups(groupWavs = [], sampleRate = 16000, pauseMs = 
         pcmParts.push(group);
     });
     return wrapPcm16LeAsWav(Buffer.concat(pcmParts), sampleRate, 1);
+}
+
+function appendPcmTrailingSilence(wavBuffer, sampleRate = 16000, trailingMs = DEFAULT_PCM_TRAILING_SILENCE_MS) {
+    const pcm = unwrapPcmWav(wavBuffer);
+    const requestedMs = Number(trailingMs);
+    const safeTrailingMs = Number.isFinite(requestedMs) ? Math.max(0, Math.round(requestedMs)) : 0;
+    const silenceBytes = Math.round(sampleRate * 2 * (safeTrailingMs / 1000));
+    if (!silenceBytes) return wrapPcm16LeAsWav(pcm, sampleRate, 1);
+    return wrapPcm16LeAsWav(Buffer.concat([pcm, Buffer.alloc(silenceBytes)]), sampleRate, 1);
 }
 
 async function synthesizeThoughtGroups(thoughtGroups = [], generate, concurrency = 2) {
@@ -719,8 +737,14 @@ async function createVoiceMessageAudio({ messages, alertId, alertData = {}, supa
             alertData,
         });
     }
+    const trailingSilenceMs = speech.sourceEncoding === 'pcm_s16le'
+        ? DEFAULT_PCM_TRAILING_SILENCE_MS
+        : 0;
+    const uploadBuffer = trailingSilenceMs > 0
+        ? appendPcmTrailingSilence(speech.buffer, speech.sampleRate || 16000, trailingSilenceMs)
+        : speech.buffer;
     const uploaded = await uploadVoiceNoteToB2({
-        buffer: speech.buffer,
+        buffer: uploadBuffer,
         contentType: speech.contentType || 'audio/mpeg',
         extension: speech.extension || 'mp3',
         alertId,
@@ -736,6 +760,7 @@ async function createVoiceMessageAudio({ messages, alertId, alertData = {}, supa
         thoughtGroupCount: thoughtPausesMs.length > 0 ? thoughtGroups.length : 1,
         thoughtPauseMs: thoughtPausesMs[0] || 0,
         thoughtPausesMs,
+        trailingSilenceMs,
     };
 }
 
@@ -770,6 +795,7 @@ module.exports = {
     DEFAULT_STABILITY,
     DEFAULT_SIMILARITY_BOOST,
     DEFAULT_STYLE,
+    DEFAULT_PCM_TRAILING_SILENCE_MS,
     MIN_VOICE_NOTE_WORDS,
     buildTtsText,
     normalizeTtsPronunciation,
@@ -797,6 +823,7 @@ module.exports = {
         hasCoreVoiceHesitation,
         normalizeAccountKey,
         normalizeShannonVoiceContractions,
+        normalizeShannonVoiceGreeting,
         resolveCocosShanSunnyVoiceTestReason,
         resolveAudioUploadFormat,
         resolveModelId,
@@ -808,7 +835,8 @@ module.exports = {
         resolveVoiceThoughtPausesMs,
         buildSsmlPausedVoiceText,
         unwrapPcmWav,
-    assemblePcmThoughtGroups,
-    synthesizeThoughtGroups,
+        assemblePcmThoughtGroups,
+        appendPcmTrailingSilence,
+        synthesizeThoughtGroups,
     },
 };

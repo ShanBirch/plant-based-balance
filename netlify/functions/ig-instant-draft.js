@@ -1317,12 +1317,12 @@ function buildDeterministicPaidMetaConversationReply({
     if (resolveMetaAdFirstReplyIntent(message) === 'personalised_coaching') {
         const knownProblem = hasGoal && hasBlocker;
         const body = personalVoiceNoteMode && knownProblem
-            ? `Hey, how are you going. Yeah, I do. Ummmm... Balance Foundations gives you a clear six-week curriculum inside the app, ya know.\n\nAnd you've got me there once a week to review and adjust your training and food around what's actually happening.\n\nIt's one eighty-nine ninety-nine payment for the full six weeks.\n\nAnd yeah, if you're keen, I can give you access to the app so you can check it out before any payment.`
+            ? `Hey, how are ya.\n\nYeah, I do. Ummmm... Balance Foundations gives you a clear six-week curriculum inside the app, ya know.\n\nAnd you've got me there once a week to review and adjust your training and food around what's actually happening.\n\nIt's one eighty-nine ninety-nine payment for the full six weeks.\n\nHonestly, what I can do is let you set yourself up in the app, so you can get a feel for it. Your program, your meal plan, and the community.\n\nThen once you've seen it, we can take payment.`
             : knownProblem
             ? `Yeah, I do. Balance Foundations gives you a six-week curriculum inside the app, plus one weekly check-in where I review and adjust your training and food around what's actually happening.`
             : `Yeah, I do. Balance Foundations gives you a six-week curriculum inside the app, plus one weekly check-in where I review and adjust your training and food.`;
         const nextAsk = knownProblem
-            ? 'Are you keen to have a quick look inside the app?'
+            ? (personalVoiceNoteMode ? 'How does that sound?' : 'Are you keen to have a quick look inside the app?')
             : 'What are you mainly trying to change at the moment?';
         const joined = `${body}\n\n${nextAsk}`;
         return {
@@ -1497,12 +1497,14 @@ function buildDeterministicPaidMetaConversationReply({
         }
         const joined = personalVoiceNoteMode
             ? [
-                `Hey, how are you going. Yeah, so that makes total sense. ${reflection}`,
+                `Hey, how are ya.`,
+                `Yeah, so that makes total sense. ${reflection}`,
                 `Ummmm... so, that's honestly what Balance is designed for. It's, it's about giving you a clear plan for the week, ya know.`,
                 `And having me there to check in, keep you accountable, and move things around when life gets crazy.`,
                 `So if you fall off, ya know, you've got something simple to come back to. And we can keep you moving toward ${voiceGoalPhrase}, without every week needing to be perfect.`,
                 `It's one eighty-nine ninety-nine payment for the full six weeks.`,
-                `And yeah, if you're keen, I can give you access to the app so you can check it out before any payment. Are you keen to have a look?`,
+                `What I can do is let you set yourself up in the app, so you can get a feel for it. Your program, your meal plan, and the community.`,
+                `Then once you've seen it, we can take payment. How does that sound?`,
             ].join('\n\n')
             : `Yeah, that makes sense. ${reflection} Balance gives you a clear plan and support around ${voiceGoalPhrase}. It's one $89.99 payment for the full six weeks.\n\nIf you're keen, I can give you access to the app so you can check it out before any payment. Are you keen to have a look?`;
         return {
@@ -1514,7 +1516,7 @@ function buildDeterministicPaidMetaConversationReply({
             // Measured from Shannon's clean Instagram notes: shorter connective
             // pauses, with longer thinking/topic-transition breaks.
             voiceThoughtPausesMs: personalVoiceNoteMode
-                ? [1500, 1450, 1350, 1550, 1700]
+                ? [1900, 1500, 1450, 1350, 1550, 1600, 1500]
                 : [],
             model: 'deterministic_paid_meta_conversation_v2',
             replyMode: 'campaign_sales_progression',
@@ -4389,7 +4391,7 @@ PERSONAL VOICE NOTE MODE:
 This exact draft will be spoken in Shannon's approved voice-note voice, not sent as ordinary text.
 - Match the five Cocos voice clips Shannon approved on 2026-07-24. Write at least 34 words so the voice has room to settle. There is no strict maximum: stay proportional to what they shared and do not pad or cut a natural reply to hit a duration.
 - Sound like Shannon thinking with them in the moment: relaxed Australian phrasing, contractions, and small punctuation-led breathing pauses.
-- Use Shannon's confirmed surface wording. If this moment genuinely needs the greeting, write "How ya going?", never "How are you going?" Do not force a greeting when answering their newest detail directly is more natural.
+- Use Shannon's confirmed surface wording. If this moment genuinely needs the greeting, write "Hey, how are ya." as its own first paragraph, never "How are you going?" Leave a full paragraph break after the greeting so it gets a proper thinking pause. Do not force a greeting when answering their newest detail directly is more natural.
 - Include 3 to 4 imperfect thinking beats across the whole note, as the approved scripts did. At least one must be a drawn-out "ummm" for genuine wondering or thought-searching. Do not substitute "ahh": that sounds like relief and belongs only when the meaning is genuinely relief or realisation. The other beats may be "okay", "yeah", "honestly", "anyway", "alright", "like", "you know", or a slight self-correction.
 - Use spoken "ya know" after a complete relatable or reassuring point as a soft landing that invites shared understanding, for example "you don't have to prove anything, ya know." Never add it randomly, use it to interrupt unfinished logic, or globally replace every "you" with "ya".
 - Vary the hesitation placement. Never use the same filler pattern every time, stack fillers, or make the note sound scripted.

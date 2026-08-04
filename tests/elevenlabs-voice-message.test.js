@@ -36,8 +36,9 @@ assert.match(personalVoicePrompt, /3 to 4 imperfect thinking beats/i);
 assert.match(personalVoicePrompt, /At least one must be a drawn-out "ummm"/i);
 assert.match(personalVoicePrompt, /Do not substitute "ahh"/i);
 assert.match(personalVoicePrompt, /you don't have to prove anything, ya know/i);
-assert.match(personalVoicePrompt, /How ya going\?/i);
+assert.match(personalVoicePrompt, /Hey, how are ya\./i);
 assert.match(personalVoicePrompt, /never "How are you going\?"/i);
+assert.match(personalVoicePrompt, /full paragraph break after the greeting/i);
 assert.match(personalVoicePrompt, /punctuation-led breathing pauses/i);
 assert.match(personalVoicePrompt, /Vary the hesitation placement/i);
 assert.match(personalVoicePrompt, /do not pad or cut a natural reply/i);
@@ -152,6 +153,11 @@ assert.strictEqual(
 );
 
 assert.strictEqual(
+    voice.buildTtsText(['Hey, how are you going. Yeah, that makes sense. Ummmm... let me think about that.']),
+    'Hey, how are ya.\n\nYeah, that makes sense. Ummmm... let me think about that.'
+);
+
+assert.strictEqual(
     voice.ensureNaturalVoiceHesitation('Yeah, um, that makes sense. Keep it simple.'),
     'Yeah, um, that makes sense. Keep it simple.'
 );
@@ -202,10 +208,10 @@ assert.strictEqual(wav.readUInt32LE(40), 4);
 const thoughtGroups = voice._test.splitVoiceThoughtGroups('First thought.\n\nSecond thought.\n\nThird thought.');
 assert.deepStrictEqual(thoughtGroups, ['First thought.', 'Second thought.', 'Third thought.']);
 assert.strictEqual(voice._test.resolveVoiceThoughtPauseMs({ outbound_voice_thought_pause_ms: 700 }), 700);
-assert.strictEqual(voice._test.resolveVoiceThoughtPauseMs({ outbound_voice_thought_pause_ms: 5000 }), 1500);
+assert.strictEqual(voice._test.resolveVoiceThoughtPauseMs({ outbound_voice_thought_pause_ms: 5000 }), 2000);
 assert.deepStrictEqual(
     voice._test.resolveVoiceThoughtPausesMs({ outbound_voice_thought_pauses_ms: [740, 1400, 5000] }),
-    [740, 1400, 1500]
+    [740, 1400, 2000]
 );
 assert.deepStrictEqual(
     voice._test.resolveVoiceThoughtPausesMs({ outbound_voice_thought_pause_ms: 700 }),
@@ -229,6 +235,10 @@ const variableThoughtWav = voice._test.assemblePcmThoughtGroups([
     voice._test.wrapPcm16LeAsWav(Buffer.alloc(3200), 16000, 1),
 ], 16000, [740, 1400]);
 assert.strictEqual(variableThoughtWav.readUInt32LE(40), 3200 + 23680 + 3200 + 44800 + 3200);
+const tailedWav = voice._test.appendPcmTrailingSilence(wav, 16000, 900);
+assert.strictEqual(tailedWav.readUInt32LE(40), 4 + 28800);
+assert.strictEqual(tailedWav.subarray(tailedWav.length - 28800).every(byte => byte === 0), true);
+assert.strictEqual(voice.DEFAULT_PCM_TRAILING_SILENCE_MS, 900);
 
 assert.deepStrictEqual(
     voice._test.resolveAudioUploadFormat('pcm_16000', 'application/octet-stream'),
