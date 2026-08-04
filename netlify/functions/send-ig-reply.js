@@ -2495,6 +2495,8 @@ exports.handler = async (event) => {
             output_format: r.audio.outputFormat,
             source_encoding: r.audio.sourceEncoding,
             sample_rate: r.audio.sampleRate,
+            thought_group_count: r.audio.thoughtGroupCount,
+            thought_pause_ms: r.audio.thoughtPauseMs,
             text: r.audio.text,
         }));
 

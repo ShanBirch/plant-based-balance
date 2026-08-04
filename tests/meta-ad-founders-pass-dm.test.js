@@ -607,6 +607,24 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
     assert.equal((personalisedVoiceReply.joined.match(/\?/g) || []).length, 1);
     assert.equal(inspectVoiceScriptQuality(personalisedVoiceReply.joined).valid, true);
 
+    const blockerVoiceReply = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'Work, the kids and low confidence keep knocking me off track.',
+        qualifier: {
+            commercial_stage: 'problem_qualified',
+            facts: {
+                current_state: 'Wants to lose 8kg.',
+                history_blockers: 'Work, children and confidence disrupt consistency.',
+            },
+        },
+        flowVariant: 'plant_based_control',
+        personalVoiceNoteMode: true,
+    });
+    assert.equal(blockerVoiceReply.voiceThoughtPauseMs, 700);
+    assert.equal(blockerVoiceReply.joined.split(/\n\s*\n/).length, 6);
+    assert.doesNotMatch(blockerVoiceReply.joined, /\.\.\./);
+    assert.match(blockerVoiceReply.joined, /losing 8kg/i);
+    assert.equal(inspectVoiceScriptQuality(blockerVoiceReply.joined).valid, true);
+
     const goal = buildDeterministicPaidMetaConversationReply({
         currentMessage: 'I need to lose weight, probably 15kgs',
         qualifier: goalQualifier,

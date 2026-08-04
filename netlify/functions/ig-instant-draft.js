@@ -1461,7 +1461,14 @@ function buildDeterministicPaidMetaConversationReply({
             };
         }
         const joined = personalVoiceNoteMode
-            ? `Hey, hope you're going well. Yeah, so that makes total sense. ${reflection} Um, honestly, that's what Balance is designed for. It's about giving you a clear plan and having the right support around you when the week gets messy, so you can keep moving toward ${voiceGoalPhrase} without needing to be perfect. The app and community are $19.99 a month. I'll send you a quick preview now so you can set yourself up and have five minutes to play around before the membership screen comes up.`
+            ? [
+                `Hey, hope you're going well. Yeah, so that makes total sense.`,
+                reflection,
+                `Um, honestly, that's what Balance is designed for.`,
+                `It's about giving you a clear plan, and having the right support around you when the week gets messy.`,
+                `So you can keep moving toward ${voiceGoalPhrase}, without needing to be perfect.`,
+                `The app and community are $19.99 a month. I'll send you a quick preview now, so you can set yourself up and have five minutes to play around before the membership screen comes up.`,
+            ].join('\n\n')
             : `Yeah, that makes sense. ${reflection} Balance gives you a clear plan and support around ${voiceGoalPhrase}, and the app and community are $19.99 a month.\n\nHere, you can set yourself up and have a five-minute look through it before the membership screen comes up: ${META_APP_PREVIEW_URL}`;
         return {
             chunks: [joined],
@@ -1471,6 +1478,7 @@ function buildDeterministicPaidMetaConversationReply({
             voiceCompanionText: personalVoiceNoteMode
                 ? `Here you go — set yourself up and have a five-minute look through Balance here: ${META_APP_PREVIEW_URL}`
                 : '',
+            voiceThoughtPauseMs: personalVoiceNoteMode ? 700 : 0,
             model: 'deterministic_paid_meta_conversation_v2',
             replyMode: 'campaign_app_preview_handoff',
             maxChunks: 1,
@@ -6422,6 +6430,7 @@ exports.handler = async (event) => {
             outbound_voice_message: outboundVoiceMessage || undefined,
             outbound_voice_message_reason: outboundVoiceMessageReason || undefined,
             voice_companion_text: outboundVoiceMessage ? (draft.voiceCompanionText || undefined) : undefined,
+            outbound_voice_thought_pause_ms: outboundVoiceMessage ? (draft.voiceThoughtPauseMs || undefined) : undefined,
             paid_meta_app_preview_handoff: draft.appPreviewHandoff || undefined,
             paid_meta_app_preview_url: draft.appPreviewHandoff ? draft.appPreviewUrl : undefined,
             inbound_voice_message: inboundVoiceMessage || undefined,
@@ -6682,6 +6691,9 @@ exports.handler = async (event) => {
             outbound_voice_message_reason: coalescedOutboundVoiceMessage ? coalescedOutboundVoiceReason : undefined,
             voice_companion_text: coalescedOutboundVoiceMessage
                 ? (draft.voiceCompanionText || existingPending.data?.voice_companion_text || undefined)
+                : undefined,
+            outbound_voice_thought_pause_ms: coalescedOutboundVoiceMessage
+                ? (draft.voiceThoughtPauseMs || existingPending.data?.outbound_voice_thought_pause_ms || undefined)
                 : undefined,
             paid_meta_app_preview_handoff: draft.appPreviewHandoff || existingPending.data?.paid_meta_app_preview_handoff || undefined,
             paid_meta_app_preview_url: draft.appPreviewHandoff

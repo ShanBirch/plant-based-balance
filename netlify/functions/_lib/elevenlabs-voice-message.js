@@ -9,6 +9,7 @@ const DEFAULT_SIMILARITY_BOOST = 0.75;
 const DEFAULT_STYLE = 0;
 const MAX_TTS_CHARS = 3500;
 const MIN_VOICE_NOTE_WORDS = 34;
+const MAX_VOICE_THOUGHT_PAUSE_MS = 1500;
 const SHAN_N_SUNNY_GRAPH_ACCOUNT_IDS = new Set(['17841415641641750']);
 const COCOS_GRAPH_ACCOUNT_IDS = new Set(['17841435394720504', '26328183736859579']);
 const MANUAL_AI_AUTHENTICITY_VOICE_SCRIPT = "hey, yep it's Shannon. I do use a bit of help organising my inbox because it gets busy, but the coaching and support inside Balance is me.";
@@ -331,6 +332,44 @@ function buildTtsText(messages = []) {
         .slice(0, MAX_TTS_CHARS);
 }
 
+function splitVoiceThoughtGroups(text = '') {
+    return String(text || '')
+        .split(/\n\s*\n+/)
+        .map(value => value.trim())
+        .filter(Boolean);
+}
+
+function resolveVoiceThoughtPauseMs(alertData = {}) {
+    const requested = Number(
+        alertData.outbound_voice_thought_pause_ms
+        ?? alertData.voice_thought_pause_ms
+        ?? 0
+    );
+    if (!Number.isFinite(requested) || requested <= 0) return 0;
+    return Math.min(MAX_VOICE_THOUGHT_PAUSE_MS, Math.round(requested));
+}
+
+function unwrapPcmWav(wavBuffer) {
+    const wav = Buffer.isBuffer(wavBuffer) ? wavBuffer : Buffer.from(wavBuffer || []);
+    if (wav.length < 44 || wav.toString('ascii', 0, 4) !== 'RIFF' || wav.toString('ascii', 8, 12) !== 'WAVE') {
+        throw new Error('Expected PCM WAV audio for thought-pause assembly');
+    }
+    return wav.subarray(44);
+}
+
+function assemblePcmThoughtGroups(groupWavs = [], sampleRate = 16000, pauseMs = 0) {
+    const groups = groupWavs.map(unwrapPcmWav);
+    if (!groups.length) throw new Error('No voice thought groups were generated');
+    const silenceBytes = Math.max(0, Math.round(sampleRate * 2 * (pauseMs / 1000)));
+    const silence = Buffer.alloc(silenceBytes);
+    const pcmParts = [];
+    groups.forEach((group, index) => {
+        if (index > 0 && silence.length) pcmParts.push(silence);
+        pcmParts.push(group);
+    });
+    return wrapPcm16LeAsWav(Buffer.concat(pcmParts), sampleRate, 1);
+}
+
 function countVoiceScriptWords(text = '') {
     return (String(text || '').match(/[A-Za-z0-9]+(?:['’][A-Za-z0-9]+)*/g) || []).length;
 }
@@ -571,12 +610,36 @@ async function createVoiceMessageAudio({ messages, alertId, alertData = {}, supa
         modelId: resolveModelId(alertData),
         outputFormat: resolveOutputFormat(alertData),
     };
-    const speech = await generateElevenLabsSpeech({
-        text,
-        ...config,
-        supabaseQuery,
-        alertData,
-    });
+    const thoughtPauseMs = resolveVoiceThoughtPauseMs(alertData);
+    const thoughtGroups = splitVoiceThoughtGroups(text);
+    const pcmFormat = resolveAudioUploadFormat(config.outputFormat).sourceEncoding === 'pcm_s16le';
+    let speech;
+    if (thoughtPauseMs > 0 && thoughtGroups.length > 1 && pcmFormat) {
+        const groupSpeech = [];
+        for (const thought of thoughtGroups) {
+            groupSpeech.push(await generateElevenLabsSpeech({
+                text: thought,
+                ...config,
+                supabaseQuery,
+                alertData,
+            }));
+        }
+        const sampleRate = groupSpeech[0].sampleRate || 16000;
+        speech = {
+            buffer: assemblePcmThoughtGroups(groupSpeech.map(item => item.buffer), sampleRate, thoughtPauseMs),
+            contentType: 'audio/wav',
+            extension: 'wav',
+            sourceEncoding: 'pcm_s16le',
+            sampleRate,
+        };
+    } else {
+        speech = await generateElevenLabsSpeech({
+            text,
+            ...config,
+            supabaseQuery,
+            alertData,
+        });
+    }
     const uploaded = await uploadVoiceNoteToB2({
         buffer: speech.buffer,
         contentType: speech.contentType || 'audio/mpeg',
@@ -591,6 +654,8 @@ async function createVoiceMessageAudio({ messages, alertId, alertData = {}, supa
         outputFormat: config.outputFormat,
         sourceEncoding: speech.sourceEncoding || null,
         sampleRate: speech.sampleRate || null,
+        thoughtGroupCount: thoughtPauseMs > 0 ? thoughtGroups.length : 1,
+        thoughtPauseMs,
     };
 }
 
@@ -657,5 +722,9 @@ module.exports = {
         resolveOutputFormat,
         resolveVoiceId,
         wrapPcm16LeAsWav,
+        splitVoiceThoughtGroups,
+        resolveVoiceThoughtPauseMs,
+        unwrapPcmWav,
+        assemblePcmThoughtGroups,
     },
 };
