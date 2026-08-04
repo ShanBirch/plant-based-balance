@@ -26,3 +26,14 @@ test('booking settings validates the live Google connection and offers reconnect
     assert.match(settingsUi, /Reconnect Google/);
     assert.match(settingsUi, /New times are paused until Balance can protect your busy periods/);
 });
+
+test('both verified Shannon owner accounts can manage booking settings', () => {
+    const bookingFunction = read('netlify/functions/balance-booking.mts');
+    const settingsUi = read('booking-settings.js');
+
+    assert.match(bookingFunction, /const ADMIN_EMAILS = new Set/);
+    assert.match(bookingFunction, /shannonbirch@cocospersonaltraining\.com/);
+    assert.match(bookingFunction, /shannonrhysbirch@gmail\.com/);
+    assert.match(bookingFunction, /ADMIN_EMAILS\.has\(trimText\(user\.email/);
+    assert.match(settingsUi, /signed in, but not with a Balance owner account/);
+});

@@ -32,7 +32,10 @@ class GoogleCalendarReconnectRequired extends Error {
 }
 
 const BRISBANE_TIMEZONE = "Australia/Brisbane";
-const ADMIN_EMAIL = "shannonbirch@cocospersonaltraining.com";
+const ADMIN_EMAILS = new Set([
+    "shannonbirch@cocospersonaltraining.com",
+    "shannonrhysbirch@gmail.com",
+]);
 const GOOGLE_REFRESH_TOKEN_KEY = "balance_booking_google_refresh_token";
 const GOOGLE_OAUTH_STATE_KEY = "balance_booking_google_oauth_state";
 const DEFAULT_PUBLIC_ORIGIN = "https://plantbased-balance.org";
@@ -400,7 +403,7 @@ async function requireAdmin(req: Request): Promise<{ ok: true } | { ok: false; r
     if (!response.ok) return { ok: false, response: json(401, { ok: false, error: "sign_in_required" }) };
 
     const user = await response.json() as { email?: unknown };
-    if (trimText(user.email, 320).toLowerCase() !== ADMIN_EMAIL) {
+    if (!ADMIN_EMAILS.has(trimText(user.email, 320).toLowerCase())) {
         return { ok: false, response: json(403, { ok: false, error: "forbidden" }) };
     }
     return { ok: true };

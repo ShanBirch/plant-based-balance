@@ -127,7 +127,12 @@
                 return;
             }
             card.setAttribute('aria-busy', 'false');
-            setStatus('Could not load booking settings. Make sure you are signed in as Shannon and try again.', 'error');
+            setStatus(
+                error.message === 'forbidden'
+                    ? 'You are signed in, but not with a Balance owner account. Sign out of Balance and sign back in with your owner account.'
+                    : 'Could not load booking settings. Please try again.',
+                'error',
+            );
         }
     }
 
