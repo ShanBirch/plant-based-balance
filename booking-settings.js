@@ -67,12 +67,27 @@
         byId('booking-link-label').textContent = data.bookingUrl || '/book';
 
         const connected = Boolean(data.googleCalendarConnected);
-        byId('google-calendar-title').textContent = connected ? 'Google Calendar connected' : 'Google Calendar is not connected';
-        byId('google-calendar-copy').textContent = connected
-            ? 'Busy times are protected and confirmed calls create calendar invitations.'
-            : (data.googleOAuthConfigured ? 'Connect your calendar before switching live so Balance can protect busy times.' : 'Add the Google OAuth client ID and secret in Netlify first, then connect here.');
+        const reconnectRequired = Boolean(data.googleCalendarReconnectRequired);
+        const connectionIssue = Boolean(data.googleCalendarConnectionIssue);
+        const calendarTitle = byId('google-calendar-title');
+        const calendarCopy = byId('google-calendar-copy');
+        if (connected) {
+            calendarTitle.textContent = 'Google Calendar connected';
+            calendarCopy.textContent = 'Busy times are protected and confirmed calls create calendar invitations.';
+        } else if (reconnectRequired) {
+            calendarTitle.textContent = 'Google Calendar needs to be reconnected';
+            calendarCopy.textContent = 'The saved Google permission is no longer valid. Reconnect before sharing the booking link so busy times stay protected.';
+        } else if (connectionIssue) {
+            calendarTitle.textContent = 'Google Calendar could not be checked';
+            calendarCopy.textContent = 'Balance has paused new booking times because it could not verify your calendar. Reconnect Google to restore availability.';
+        } else {
+            calendarTitle.textContent = 'Google Calendar is not connected';
+            calendarCopy.textContent = data.googleOAuthConfigured
+                ? 'Connect your calendar before switching live so Balance can protect busy times.'
+                : 'Add the Google OAuth client ID and secret in Netlify first, then connect here.';
+        }
         const googleButton = byId('google-calendar-button');
-        googleButton.textContent = connected ? 'Disconnect' : 'Connect Google';
+        googleButton.textContent = connected ? 'Disconnect' : (reconnectRequired || connectionIssue ? 'Reconnect Google' : 'Connect Google');
         googleButton.dataset.connected = connected ? 'true' : 'false';
         googleButton.disabled = !connected && !data.googleOAuthConfigured;
 
@@ -95,7 +110,17 @@
             form.hidden = false;
             card.setAttribute('aria-busy', 'false');
             const result = new URLSearchParams(window.location.search).get('calendar');
-            setStatus(result === 'connected' ? 'Google Calendar is connected. Save your availability, then switch bookings live when you are ready.' : result === 'failed' ? 'Google Calendar connection did not complete. Try again once the redirect URI and OAuth credentials are set.' : 'Set your times, connect Google Calendar, then open bookings when it feels right.', result === 'failed' ? 'error' : result === 'connected' ? 'success' : '');
+            const calendarNeedsAttention = data.googleCalendarReconnectRequired || data.googleCalendarConnectionIssue;
+            setStatus(
+                calendarNeedsAttention
+                    ? 'Reconnect Google Calendar before sharing the booking link. New times are paused until Balance can protect your busy periods.'
+                    : result === 'connected'
+                        ? 'Google Calendar is connected. Save your availability, then switch bookings live when you are ready.'
+                        : result === 'failed'
+                            ? 'Google Calendar connection did not complete. Try again once the redirect URI and OAuth credentials are set.'
+                            : 'Set your times, connect Google Calendar, then open bookings when it feels right.',
+                calendarNeedsAttention || result === 'failed' ? 'error' : result === 'connected' ? 'success' : '',
+            );
         } catch (error) {
             if (error.message === 'sign_in_required') {
                 window.location.href = `/login.html?redirect=${encodeURIComponent('/booking-settings.html')}`;

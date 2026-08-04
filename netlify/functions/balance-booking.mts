@@ -20,6 +20,16 @@ type BusyRange = { start: string; end: string };
 type CallType = "phone" | "video" | "whatsapp";
 type BookingMode = "standard" | "outside_hours";
 type CalendarEventResult = { id: string; meetingUrl: string };
+type GoogleCalendarCheck = {
+    connected: boolean;
+    busy: BusyRange[];
+    reconnectRequired: boolean;
+    connectionIssue: boolean;
+};
+
+class GoogleCalendarReconnectRequired extends Error {
+    override name = "GoogleCalendarReconnectRequired";
+}
 
 const BRISBANE_TIMEZONE = "Australia/Brisbane";
 const ADMIN_EMAIL = "shannonbirch@cocospersonaltraining.com";
@@ -400,7 +410,8 @@ async function getGoogleAccessToken(): Promise<string> {
     const refreshToken = await getPrivateSecret(GOOGLE_REFRESH_TOKEN_KEY);
     const clientId = getEnv("GOOGLE_CALENDAR_CLIENT_ID");
     const clientSecret = getEnv("GOOGLE_CALENDAR_CLIENT_SECRET");
-    if (!refreshToken || !clientId || !clientSecret) return "";
+    if (!refreshToken) return "";
+    if (!clientId || !clientSecret) throw new Error("Google Calendar OAuth is not configured");
 
     const response = await fetch("https://oauth2.googleapis.com/token", {
         method: "POST",
@@ -412,26 +423,51 @@ async function getGoogleAccessToken(): Promise<string> {
             grant_type: "refresh_token",
         }),
     });
-    const data = await response.json().catch(() => ({})) as { access_token?: unknown };
-    if (!response.ok || !data.access_token) throw new Error("Google Calendar connection needs to be reconnected");
+    const data = await response.json().catch(() => ({})) as { access_token?: unknown; error?: unknown };
+    if (!response.ok || !data.access_token) {
+        const errorCode = trimText(data.error, 80).toLowerCase();
+        if (response.status === 400 || response.status === 401 || errorCode === "invalid_grant" || errorCode === "invalid_client") {
+            throw new GoogleCalendarReconnectRequired("Google Calendar connection needs to be reconnected");
+        }
+        throw new Error("Google Calendar access token could not be refreshed");
+    }
     return String(data.access_token);
 }
 
-async function googleBusyRanges(settings: BookingSettings, timeMin: string, timeMax: string): Promise<{ connected: boolean; busy: BusyRange[] }> {
+async function googleBusyRanges(settings: BookingSettings, timeMin: string, timeMax: string): Promise<GoogleCalendarCheck> {
     const refreshToken = await getPrivateSecret(GOOGLE_REFRESH_TOKEN_KEY);
-    if (!refreshToken) return { connected: false, busy: [] };
-    const accessToken = await getGoogleAccessToken();
-    if (!accessToken) return { connected: false, busy: [] };
+    if (!refreshToken) return { connected: false, busy: [], reconnectRequired: false, connectionIssue: false };
 
-    const response = await fetch("https://www.googleapis.com/calendar/v3/freeBusy", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ timeMin, timeMax, items: [{ id: settings.calendar_id || "primary" }] }),
-    });
-    const data = await response.json().catch(() => ({})) as { calendars?: Record<string, { busy?: BusyRange[]; errors?: unknown[] }> };
-    const calendar = data.calendars?.[settings.calendar_id || "primary"];
-    if (!response.ok || calendar?.errors?.length) throw new Error("Google Calendar availability could not be read");
-    return { connected: true, busy: Array.isArray(calendar?.busy) ? calendar.busy : [] };
+    try {
+        const accessToken = await getGoogleAccessToken();
+        if (!accessToken) return { connected: false, busy: [], reconnectRequired: false, connectionIssue: false };
+
+        const response = await fetch("https://www.googleapis.com/calendar/v3/freeBusy", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ timeMin, timeMax, items: [{ id: settings.calendar_id || "primary" }] }),
+        });
+        const data = await response.json().catch(() => ({})) as { calendars?: Record<string, { busy?: BusyRange[]; errors?: unknown[] }> };
+        const calendar = data.calendars?.[settings.calendar_id || "primary"];
+        if (response.status === 401 || response.status === 403) {
+            throw new GoogleCalendarReconnectRequired("Google Calendar permission needs to be renewed");
+        }
+        if (!response.ok || calendar?.errors?.length) throw new Error("Google Calendar availability could not be read");
+        return {
+            connected: true,
+            busy: Array.isArray(calendar?.busy) ? calendar.busy : [],
+            reconnectRequired: false,
+            connectionIssue: false,
+        };
+    } catch (error) {
+        console.error("[balance-booking] Google Calendar availability check failed", error);
+        return {
+            connected: false,
+            busy: [],
+            reconnectRequired: error instanceof GoogleCalendarReconnectRequired,
+            connectionIssue: true,
+        };
+    }
 }
 
 function overlaps(slotStart: Date, slotEnd: Date, busy: BusyRange): boolean {
@@ -470,7 +506,12 @@ export function buildSlotsForDate(settingsInput: BookingSettings, date: string, 
     return slots;
 }
 
-async function getAvailability(_fromDate: string, settings: BookingSettings): Promise<{ dates: Array<{ date: string; label: string; slots: Array<{ start: string; end: string; label: string }> }>; calendarConnected: boolean }> {
+async function getAvailability(_fromDate: string, settings: BookingSettings): Promise<{
+    dates: Array<{ date: string; label: string; slots: Array<{ start: string; end: string; label: string }> }>;
+    calendarConnected: boolean;
+    calendarReconnectRequired: boolean;
+    calendarConnectionIssue: boolean;
+}> {
     const days = PUBLIC_BOOKING_WINDOW_DAYS;
     const firstDate = brisbaneDateKey();
     const lastDate = dateKeyForOffset(firstDate, days - 1);
@@ -478,6 +519,14 @@ async function getAvailability(_fromDate: string, settings: BookingSettings): Pr
     const timeMax = dateAtBrisbaneTime(dateKeyForOffset(lastDate, 1), "00:00").toISOString();
     const databaseBusy = await databaseBusyRanges(timeMin, timeMax);
     const google = await googleBusyRanges(settings, timeMin, timeMax);
+    if (!google.connected) {
+        return {
+            dates: [],
+            calendarConnected: false,
+            calendarReconnectRequired: google.reconnectRequired,
+            calendarConnectionIssue: google.connectionIssue,
+        };
+    }
     const busy = [...databaseBusy, ...google.busy];
     const dates = [];
 
@@ -486,7 +535,12 @@ async function getAvailability(_fromDate: string, settings: BookingSettings): Pr
         const slots = buildSlotsForDate(settings, date, busy);
         if (slots.length) dates.push({ date, label: dateLabel(date), slots });
     }
-    return { dates, calendarConnected: google.connected };
+    return {
+        dates,
+        calendarConnected: true,
+        calendarReconnectRequired: false,
+        calendarConnectionIssue: false,
+    };
 }
 
 async function getOutsideHoursSlot(settings: BookingSettings, startsAt: string, now = new Date()): Promise<{ start: string; end: string; label: string } | null> {
@@ -502,6 +556,7 @@ async function getOutsideHoursSlot(settings: BookingSettings, startsAt: string, 
         databaseBusyRanges(start.toISOString(), end.toISOString()),
         googleBusyRanges(settings, start.toISOString(), end.toISOString()),
     ]);
+    if (!google.connected) return null;
     if ([...databaseBusy, ...google.busy].some(range => overlaps(start, end, range))) return null;
     return { start: start.toISOString(), end: end.toISOString(), label: timeLabel(start.toISOString()) };
 }
@@ -816,12 +871,20 @@ async function handleSettings(req: Request): Promise<Response> {
     const admin = await requireAdmin(req);
     if (!admin.ok) return admin.response;
     if (req.method === "GET") {
-        const [settings, refreshToken] = await Promise.all([getSettings(), getPrivateSecret(GOOGLE_REFRESH_TOKEN_KEY)]);
+        const settings = await getSettings();
+        const calendarCheckStartedAt = new Date();
+        const calendarCheck = await googleBusyRanges(
+            settings,
+            calendarCheckStartedAt.toISOString(),
+            new Date(calendarCheckStartedAt.getTime() + 60 * 60 * 1000).toISOString(),
+        );
         return json(200, {
             ok: true,
             settings,
             bookingUrl: bookingUrl(),
-            googleCalendarConnected: Boolean(refreshToken),
+            googleCalendarConnected: calendarCheck.connected,
+            googleCalendarReconnectRequired: calendarCheck.reconnectRequired,
+            googleCalendarConnectionIssue: calendarCheck.connectionIssue,
             googleOAuthConfigured: Boolean(getEnv("GOOGLE_CALENDAR_CLIENT_ID") && getEnv("GOOGLE_CALENDAR_CLIENT_SECRET")),
             confirmationEmailConfigured: Boolean(getEnv("RESEND_API_KEY") && getEnv("BOOKING_EMAIL_FROM")),
             smsConfigured: smsConfigured(),
@@ -853,7 +916,14 @@ export default async function handler(req: Request): Promise<Response> {
         if (url.searchParams.get("mode") === "settings") return handleSettings(req);
         if (req.method === "GET") {
             const settings = await getSettings();
-            if (!settings.booking_enabled) return json(200, { ok: true, ...publicSettings(settings), dates: [], calendarConnected: false });
+            if (!settings.booking_enabled) return json(200, {
+                ok: true,
+                ...publicSettings(settings),
+                dates: [],
+                calendarConnected: false,
+                calendarReconnectRequired: false,
+                calendarConnectionIssue: false,
+            });
             const availability = await getAvailability(url.searchParams.get("from") || "", settings);
             return json(200, { ok: true, ...publicSettings(settings), ...availability });
         }
