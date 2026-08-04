@@ -7,6 +7,7 @@ const {
     buildMetaAdCheckoutUrl,
     buildMetaAdFoundersPassFirstReply,
     buildMetaAdGoalProofReply,
+    applyMetaAdGoalProofReply,
     isMetaAdGoalReplyTurn,
     buildMetaAdFirstReplyApproval,
     buildApprovedMetaAdFirstReplyHandoffData,
@@ -402,6 +403,18 @@ test('the reply after the goal is tailored and carries the right native proof me
         buildDraftImageAttachmentData(weightGoal).draft_image_attachment_url,
         weightGoal.imageAttachmentUrl
     );
+    const appliedWeightGoal = applyMetaAdGoalProofReply({
+        joined: 'Nice, that is a solid goal.',
+        chunks: ['Nice, that is a solid goal.'],
+        model: 'vertex-v7',
+        replyMode: 'standard',
+        timeline: 'preserved live timeline',
+    }, 'My goal is weight loss. I would like to lose about 10kg.');
+    assert.equal(appliedWeightGoal.replyMode, 'campaign_goal_proof');
+    assert.equal(appliedWeightGoal.model, 'deterministic_meta_ad_goal_proof_v1');
+    assert.match(appliedWeightGoal.joined, /10kg is a solid goal/i);
+    assert.match(appliedWeightGoal.imageAttachmentUrl, /ally-cocos\.png/);
+    assert.equal(appliedWeightGoal.timeline, 'preserved live timeline');
     const guardedWeightGoal = ensureMetaAdSalesProgressionQuestion({
         draft: weightGoal,
         currentMessage: 'I need to lose weight, probably 15kgs',

@@ -1843,6 +1843,22 @@ function buildMetaAdGoalProofReply(currentMessage = '', { flowVariant = 'plant_b
     };
 }
 
+function applyMetaAdGoalProofReply(draft = {}, currentMessage = '', { flowVariant = 'plant_based_control' } = {}) {
+    const proof = buildMetaAdGoalProofReply(currentMessage, { flowVariant });
+    return {
+        ...draft,
+        ...proof,
+        timeline: draft.timeline || proof.timeline,
+        conversationEpisode: draft.conversationEpisode || proof.conversationEpisode,
+        currentTurnAnchorBlock: draft.currentTurnAnchorBlock || proof.currentTurnAnchorBlock,
+        storyReplyPromptContextBlock: draft.storyReplyPromptContextBlock || proof.storyReplyPromptContextBlock,
+        mediaContextPromptBlock: draft.mediaContextPromptBlock || proof.mediaContextPromptBlock,
+        learningReelContextBlock: draft.learningReelContextBlock || proof.learningReelContextBlock,
+        learningReelReplyAnchorBlock: draft.learningReelReplyAnchorBlock || proof.learningReelReplyAnchorBlock,
+        learningReelEvidenceBlock: draft.learningReelEvidenceBlock || proof.learningReelEvidenceBlock,
+    };
+}
+
 function buildMetaAdFirstReplyApproval({ metaAdFirstInbound = false, draft = null } = {}) {
     if (!metaAdFirstInbound
         || draft?.replyMode !== 'campaign_first_reply'
@@ -5934,14 +5950,8 @@ exports.handler = async (event) => {
             ...contextualLinkReply,
         };
     }
-    if (metaAdGoalReplyTurn && !draft.imageAttachmentUrl && !draft.videoAttachmentUrl) {
-        const proofMedia = buildMetaAdGoalProofReply(messageText, { flowVariant: metaAdFlowVariant });
-        draft = {
-            ...draft,
-            imageAttachmentUrl: proofMedia.imageAttachmentUrl || null,
-            videoAttachmentUrl: proofMedia.videoAttachmentUrl || null,
-            model: `${draft.model || 'unknown'}+meta_ad_goal_proof_media_v1`,
-        };
+    if (metaAdGoalReplyTurn) {
+        draft = applyMetaAdGoalProofReply(draft, messageText, { flowVariant: metaAdFlowVariant });
     }
     if (metaAdConversationFastLane) draft = ensureMetaAdSalesProgressionQuestion({
         draft,
@@ -7305,6 +7315,7 @@ exports._test = {
     resolveMetaAdFirstReplyIntent,
     isMetaAdGoalReplyTurn,
     buildMetaAdGoalProofReply,
+    applyMetaAdGoalProofReply,
     shouldUseDeterministicMetaAdFirstReply,
     getMetaAdSensitiveHoldReason,
     buildMetaAdCheckoutUrl,
