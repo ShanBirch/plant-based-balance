@@ -776,8 +776,9 @@ function isNonBlockingDraftStyleWarning(draftReview) {
 
 const META_AD_OPTION_MENU_WARNING_RE = /\b(?:choice menu|multiple[- ]choice|multi[- ]option|multiple options?|option list|stack(?:ed|ing)? questions?|too many questions?|second question|extra question|answer options?)\b/i;
 const META_AD_GOAL_DISCOVERY_WARNING_RE = /\b(?:generic|broad|stock)\b[^.]{0,100}\b(?:discovery|follow[- ]?up|question)\b|\b(?:what usually (?:derails|gets in the way)|goal[- ]linked follow[- ]?up)\b/i;
+const META_AD_BLOCKER_PROGRESSION_WARNING_RE = /\b(?:intake[- ]like|too probing|unnecessary|new coaching discovery question|second question|extra question|already stated the problem)\b/i;
 const META_AD_WEIGHT_LOSS_GOAL_RE = /\b(?:lose|losing|drop|dropping|reduce|reducing)\s+(?:about\s+|around\s+|some\s+)?(?:weight|fat|\d{1,2}(?:\.\d+)?\s*(?:kg|kgs|kilograms?|lb|lbs|pounds?))\b|\b(?:weight|fat)\s*loss\b/i;
-const META_AD_CONSISTENCY_PROBLEM_RE = /\b(?:can(?:'|\u2019)?t|cannot|never|struggl\w*|hard to|keep)\b[^.!?\n]{0,80}\b(?:stick|consistent|consistency|routine|program|plan|fall(?:ing)? off|drop(?:s|ping)? off)\b|\bfall(?:ing)? off\b/i;
+const META_AD_CONSISTENCY_PROBLEM_RE = /\b(?:can(?:'|\u2019)?t|cannot|never|struggl\w*|hard to|keep)\b[^.!?\n]{0,80}\b(?:stick|consistent|consistency|routine|program|plan|fall(?:ing)? off|drop(?:s|ping)? off|accountab)\b|\b(?:fall(?:ing)? off|accountab(?:ility|le)?|work (?:and|&) (?:the )?kids|kids (?:and|&) work|things? (?:just )?get(?:s)? in the way)\b/i;
 
 function draftParrotsLatestInbound(replyText, currentMessage) {
     const normalize = value => String(value || '')
@@ -800,18 +801,25 @@ function buildSafeMetaAdStyleFallback({ draft, draftReview, currentMessage } = {
     const optionMenuWarning = META_AD_OPTION_MENU_WARNING_RE.test(reviewText);
     const goalDiscoveryWarning = META_AD_WEIGHT_LOSS_GOAL_RE.test(String(currentMessage || ''))
         && META_AD_GOAL_DISCOVERY_WARNING_RE.test(reviewText);
-    if (!optionMenuWarning && !goalDiscoveryWarning) return null;
+    const blockerProgressionWarning = META_AD_CONSISTENCY_PROBLEM_RE.test(String(currentMessage || ''))
+        && META_AD_BLOCKER_PROGRESSION_WARNING_RE.test(reviewText);
+    if (!optionMenuWarning && !goalDiscoveryWarning && !blockerProgressionWarning) return null;
 
     const originalText = draftTextFromDraft(draft);
     if (!originalText) return null;
     let replacement = '';
     if (META_AD_WEIGHT_LOSS_GOAL_RE.test(String(currentMessage || ''))) {
         const kgGoal = String(currentMessage || '').match(/\b(\d{1,2}(?:\.\d+)?)\s*(?:kg|kgs|kilograms?)\b/i)?.[1] || '';
+        const secondaryGoal = /\benergy\b/i.test(String(currentMessage || ''))
+            ? 'having more energy'
+            : /\b(?:fit|fitter|fitness)\b/i.test(String(currentMessage || ''))
+                ? 'feeling fitter'
+                : 'feeling better';
         replacement = kgGoal
-            ? `Morning. ${kgGoal}kg and feeling fitter is a solid goal. When you've tried before, what tends to fall apart first?`
+            ? `Morning. ${kgGoal}kg and ${secondaryGoal} is a solid goal. When you've tried before, what tends to fall apart first?`
             : `Morning. That's a solid goal. When you've tried before, what tends to fall apart first?`;
     } else if (META_AD_CONSISTENCY_PROBLEM_RE.test(String(currentMessage || ''))) {
-        replacement = 'Yeah that makes sense. How long do you normally stick to it before it drops off?';
+        replacement = `Yeah, that makes total sense. Work and the kids can wreck the best intentions. Honestly, that's where having me check in, adjust the week with you and keep you accountable makes a big difference. Would that kind of support make it easier to stay on track?`;
     } else {
         const firstQuestionEnd = originalText.indexOf('?');
         const hasAnotherQuestion = firstQuestionEnd >= 0 && originalText.indexOf('?', firstQuestionEnd + 1) >= 0;

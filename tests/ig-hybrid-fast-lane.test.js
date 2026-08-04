@@ -279,6 +279,17 @@ const safeGoalDiscoveryFallback = instantDraft.buildSafeMetaAdStyleFallback({
     currentMessage: 'I want to lose about 10kg and feel fitter.',
 });
 assert.equal(safeGoalDiscoveryFallback.joined, "Morning. 10kg and feeling fitter is a solid goal. When you've tried before, what tends to fall apart first?");
+const safeEnergyGoalFallback = instantDraft.buildSafeMetaAdStyleFallback({
+    draft: { chunks: ['Goal reply'], joined: 'Goal reply' },
+    draftReview: {
+        verdict: 'warn',
+        notification_required: false,
+        context_loss_suspected: false,
+        issues: ['Uses a generic discovery question.'],
+    },
+    currentMessage: 'My goal is to lose 9kg and have more energy.',
+});
+assert.match(safeEnergyGoalFallback.joined, /9kg and having more energy/i);
 const safeConsistencyFallback = instantDraft.buildSafeMetaAdStyleFallback({
     draft: {
         chunks: [
@@ -295,7 +306,25 @@ const safeConsistencyFallback = instantDraft.buildSafeMetaAdStyleFallback({
     },
     currentMessage: 'Mhmm I can just never stick to the program',
 });
-assert.equal(safeConsistencyFallback.joined, 'Yeah that makes sense. How long do you normally stick to it before it drops off?');
+assert.match(safeConsistencyFallback.joined, /having me check in, adjust the week with you and keep you accountable/i);
+assert.match(safeConsistencyFallback.joined, /would that kind of support make it easier/i);
+const safeAccountabilityVoiceFallback = instantDraft.buildSafeMetaAdStyleFallback({
+    draft: {
+        chunks: ['Yeah that makes total sense. When accountability falls apart, what usually goes first, workouts or food?'],
+        joined: 'Yeah that makes total sense. When accountability falls apart, what usually goes first, workouts or food?',
+    },
+    draftReview: {
+        verdict: 'warn',
+        notification_required: false,
+        context_loss_suspected: false,
+        summary: 'The new coaching discovery question feels intake-like after they already stated the problem.',
+        issues: ['Could be too probing.'],
+    },
+    currentMessage: 'Work and the kids usually get in the way. I really struggle with accountability.',
+});
+assert.match(safeAccountabilityVoiceFallback.joined, /work and the kids can wreck the best intentions/i);
+assert.ok(safeAccountabilityVoiceFallback.joined.split(/\s+/).length >= 34,
+    'the safe accountability fallback remains long enough to sound natural as a voice note');
 assert.equal(instantDraft.draftParrotsLatestInbound(
     'Yeah that one’s brutal, because you already know what to do, it just drops off. Mhmm I can just never stick to the program.',
     'Mhmm I can just never stick to the program'
