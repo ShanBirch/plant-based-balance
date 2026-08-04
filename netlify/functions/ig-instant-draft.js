@@ -1034,7 +1034,7 @@ function isPaidMetaBuyerIntentOfferReplyAllowed({ alertData, challengeOfferWarni
 }
 
 const PAID_META_CONTEXTUAL_OFFER_VIEW_RE = /^(?:can|could) i (?:see|look at|check out) (?:it|this|that|the (?:pass|details|program))(?: please)?[.!?\s]*$/i;
-const PAID_META_FOUNDERS_PASS_SELECTION_RE = /^(?:the\s+)?founders?\s+pass(?:\s+please)?[.!?\s]*$/i;
+const PAID_META_FOUNDERS_PASS_SELECTION_RE = /^(?:(?:the\s+)?founders?\s+pass(?:\s+please)?|(?:the\s+)?founders?\s+pass\s+(?:is|sounds|looks)\b.{0,90}\b(?:best|right|fit|one)|(?:i(?:'ll| will|'d| would)|let(?:'s| us))\s+(?:go with|choose|take|start with|do)\s+(?:the\s+)?founders?\s+pass)\b[.!?\s\S]{0,100}$/i;
 
 function isPaidMetaFoundersPassSelection(value = '') {
     return PAID_META_FOUNDERS_PASS_SELECTION_RE.test(String(value || '').replace(/\s+/g, ' ').trim());
@@ -1057,7 +1057,7 @@ function isContextualMetaAdOfferLinkRequest({ currentMessage = '', qualifier = {
         return recentOutbound.some(item => {
             const text = String(item?.text || '');
             return /\bfounders? pass\b/i.test(text)
-                && /\bwhich (?:one|option) do you want to start with\b/i.test(text);
+                && /\b(?:which (?:one|option) do you want to start with|\$89\.99|six-week|doesn['’]?t renew|full breakdown)\b/i.test(text);
         });
     }
     if (!PAID_META_CONTEXTUAL_OFFER_VIEW_RE.test(message)) return false;

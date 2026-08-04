@@ -16,6 +16,8 @@ const {
     buildDeterministicPaidMetaConversationReply,
     buildPaidMetaConversationApproval,
     hasDirectPaidMetaCheckoutIntent,
+    isContextualMetaAdOfferLinkRequest,
+    buildContextualMetaAdOfferLinkReply,
     buildDraftVideoAttachmentData,
     buildDraftImageAttachmentData,
     filterMetaAdCardAttachmentHistory,
@@ -665,6 +667,19 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
     assert.equal(hasDirectPaidMetaCheckoutIntent("What's included in Balance app?"), false);
     assert.equal(hasDirectPaidMetaCheckoutIntent('I want to know your prices and what I get'), false);
     assert.equal(hasDirectPaidMetaCheckoutIntent('Send me the link'), true);
+
+    assert.equal(isContextualMetaAdOfferLinkRequest({
+        currentMessage: "The Founders Pass is the best fit for me. I'm ready to join.",
+        qualifier: { commercial_stage: 'buyer_intent' },
+        history: [{
+            direction: 'out',
+            text: "The Founders Pass is $89.99 once. You get the six-week Foundations course and it doesn't renew automatically.",
+        }],
+    }), true);
+    assert.match(buildContextualMetaAdOfferLinkReply({
+        checkoutUrl,
+        currentMessage: "The Founders Pass is the best fit for me. I'm ready to join.",
+    }).joined, /here's the link/i);
 
     assert.equal(buildDeterministicPaidMetaConversationReply({
         currentMessage: 'Stop messaging me',
