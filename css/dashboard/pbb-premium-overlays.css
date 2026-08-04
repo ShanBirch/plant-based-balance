@@ -9419,6 +9419,22 @@ html:not([data-pbb-theme="light"]) #create-custom-exercise-modal label[style*="b
     line-height: 1.45;
 }
 
+.course-path-lock-note {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 12px;
+    padding: 10px 11px;
+    border: 1px solid color-mix(in srgb, var(--course-accent) 24%, transparent);
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--course-accent) 9%, transparent);
+    color: var(--course-copy) !important;
+    -webkit-text-fill-color: var(--course-copy) !important;
+    font-size: 0.72rem;
+    font-weight: 750;
+    line-height: 1.35;
+}
+
 .course-topic-list {
     display: flex;
     flex-direction: column;

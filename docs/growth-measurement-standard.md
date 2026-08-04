@@ -95,4 +95,15 @@ Run both routes against the same AU$89.99 six-week Balance Foundations Founders 
 - Primary KPI: Course visitors who start an available topic within seven days.
 - Diagnostics: `course_card_toggled`, `course_topic_started`, `course_locked_tapped`, lesson completion, Foundations completion, and progression into the next unlocked course.
 - Guardrail: existing lesson completions must remain credited, and course-navigation support or confusion reports must not increase.
+- Outcome: superseded the same day by `foundations_gate_with_course_previews_v1` before a meaningful comparison window.
+
+### Foundations-gated course previews
+
+- Launch date: 2026-08-04.
+- Variant: `foundations_gate_with_course_previews_v1`.
+- Curriculum version: `outcome_course_curriculum_v2`.
+- Hypothesis: letting members preview every course while using Foundations as the single start gate will make the full value of the curriculum clearer without creating an unclear learning path.
+- Primary KPI: Foundations completion followed by a specialist-course topic start within seven days.
+- Diagnostics: locked course previews, `course_locked_tapped`, Foundations completion, specialist-course starts, and progression between specialist courses.
+- Guardrail: no specialist topic can start before Foundations is complete, and existing lesson completions remain credited.
 - Decision date: 2026-08-18, comparing the first 14 live days with the prior 14 days.
