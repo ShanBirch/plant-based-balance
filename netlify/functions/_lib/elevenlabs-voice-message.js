@@ -106,7 +106,7 @@ function hasAccountabilityConnectionSignal(text = '') {
 function hasHighSignalConsistencyBlocker(text = '') {
     const value = String(text || '').trim();
     if (value.length < 10) return false;
-    return /\b(?:can(?:'t| not) stick|never stick|keep falling|fall off|keep stopping|always restart|can(?:'t| not) stay consistent|struggl\w* to stay consistent|routine\w* (?:go|fall|drop)\w* (?:off|sideways)|lose motivation|no accountability|things? (?:just )?get(?:s)? in the way|work (?:and|&) (?:the )?kids|kids (?:and|&) work|busy with (?:work|kids|family))\b/i.test(value);
+    return /\b(?:can(?:'t| not) stick|never stick|keep falling|fall off|keep stopping|always restart|can(?:'t| not) stay consistent|struggl\w* to stay consistent|routine\w* (?:go|fall|drop)\w* (?:off|sideways)|lose motivation|no accountability|miss(?:ed|ing)? (?:a |one |a couple of |couple of )?days?|feel like i(?:'ve| have) blown it|stop altogether|give up altogether|things? (?:just )?get(?:s)? in the way|work (?:and|&) (?:the )?kids|kids (?:and|&) work|busy with (?:work|kids|family))\b/i.test(value);
 }
 
 function hasHighSignalGoalBlocker(text = '') {

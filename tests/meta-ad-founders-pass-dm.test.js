@@ -236,6 +236,7 @@ test('paid Meta voice progression reflects different real blocker categories', (
         commercial_stage: 'problem_qualified',
     };
     const cases = [
+        ["I start well, but if I miss a couple of days I feel like I've blown it and stop altogether.", /something keeps knocking the plan off course/i],
         ['My knee pain keeps stopping me whenever I build momentum.', /pain keeps interrupting/i],
         ['I get anxious and self-conscious at the gym.', /confidence is the thing getting in the way/i],
         ['Cravings and weekends keep undoing my progress.', /food is the part that keeps pulling things off track/i],

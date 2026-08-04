@@ -327,6 +327,7 @@ assert.strictEqual(workAndKidsVoicePlan.useSyntheticVoice, true);
 assert.strictEqual(workAndKidsVoicePlan.reason, 'lead_shared_consistency_blocker');
 
 const generalBlockerCases = [
+    ["I start well, but if I miss a couple of days I feel like I've blown it and stop altogether.", 'Missing a couple of days triggers an all-or-nothing stop.'],
     ['Rotating shifts make it almost impossible to keep a routine.', 'My shifts keep breaking the routine.'],
     ['My knee pain keeps stopping me whenever I build momentum.', 'Knee pain interrupts training.'],
     ['I get really self-conscious and anxious when I walk into a gym.', 'Low confidence and gym anxiety.'],
@@ -350,7 +351,7 @@ for (const [currentMessage, historyBlocker] of generalBlockerCases) {
     });
     assert.strictEqual(plan.useSyntheticVoice, true, `expected general blocker voice path for: ${currentMessage}`);
     assert.ok(
-        ['lead_shared_goal_blocker', 'lead_accountability_connection_moment'].includes(plan.reason),
+        ['lead_shared_goal_blocker', 'lead_shared_consistency_blocker', 'lead_accountability_connection_moment'].includes(plan.reason),
         `expected blocker/accountability reason for: ${currentMessage}`
     );
 }
