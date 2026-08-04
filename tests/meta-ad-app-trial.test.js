@@ -199,7 +199,8 @@ test('dashboard, signup, native handoffs, measurement, and both discovery system
     assert.match(foundersClaim, /FOUNDERS_PLAN = "balance_foundations_six_week"/);
     assert.match(landing, /TRY BALANCE FREE/);
     assert.ok(landing.indexOf('id="how-balance-helps"') < landing.indexOf('id="start-preview"'));
-    assert.match(landing, /Your free look does not begin until you tap the button below/);
+    assert.match(landing, /Your free look does not begin until you finish the short setup inside Balance/);
+    assert.match(landing, /five-minute app preview begins after onboarding/);
     assert.match(logger, /'trial_gate_shown'/);
     assert.match(logger, /'trial_subscription_claimed'/);
     assert.match(logger, /'trial_purchase_claimed'/);
