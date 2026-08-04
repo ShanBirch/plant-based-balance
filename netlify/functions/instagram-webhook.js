@@ -2585,7 +2585,7 @@ async function fetchAlertsForThreadIds({ threadIds, status, nowIso, sinceIso = n
                 ? `&actioned_at=gte.${encodeURIComponent(sinceIso || nowIso)}`
                 : `&created_at=lte.${encodeURIComponent(nowIso)}`;
             const result = await supabase(
-                `coach_alerts?select=id,actioned_at,suggested_message,data&data->>ig_thread_id=eq.${encodeURIComponent(id)}&status=eq.${encodeURIComponent(status)}${timeFilter}&alert_type=in.(ig_incoming_dm,fb_incoming_dm)&limit=25`
+                `coach_alerts?select=id,idempotency_key,actioned_at,suggested_message,scheduled_reply_text,data&data->>ig_thread_id=eq.${encodeURIComponent(id)}&status=eq.${encodeURIComponent(status)}${timeFilter}&alert_type=in.(ig_incoming_dm,fb_incoming_dm)&limit=25`
             );
             rows.push(...result);
         } catch (err) {
@@ -2600,12 +2600,18 @@ async function fetchAlertsForThreadIds({ threadIds, status, nowIso, sinceIso = n
     });
 }
 
+function shouldApplyBalanceSendEchoToPending(sentAlert = {}, pendingAlert = {}) {
+    const sentKey = String(sentAlert.idempotency_key || '').trim();
+    const pendingKey = String(pendingAlert.idempotency_key || '').trim();
+    return !!sentKey && sentKey === pendingKey;
+}
+
 async function markPendingGraphAlertsSent({ thread, threadId, messageText, nowIso, graphMessageId }) {
     if (!threadId || !messageText) return 0;
     let cleared = 0;
     const analysisJobs = [];
     const sentMessage = normalizeCoachDraftText(messageText).trim();
-    let echoMatchesBalanceSend = false;
+    let matchedBalanceSendAlert = null;
     try {
         const relatedThreadIds = relatedThreadIdsForGraphEcho({ thread, threadId });
         const nowMsForEcho = new Date(nowIso).getTime();
@@ -2616,7 +2622,7 @@ async function markPendingGraphAlertsSent({ thread, threadId, messageText, nowIs
             nowIso,
             sinceIso: echoSinceIso,
         });
-        echoMatchesBalanceSend = sentRows.some(row => {
+        matchedBalanceSendAlert = sentRows.find(row => {
             const data = row.data || {};
             if (data.sent_via === 'instagram_graph_echo') return false;
             const graphIds = Array.isArray(data.sent_graph_message_ids) ? data.sent_graph_message_ids : [];
@@ -2629,7 +2635,7 @@ async function markPendingGraphAlertsSent({ thread, threadId, messageText, nowIs
                 && Number.isFinite(sentAtMs)
                 && Number.isFinite(nowMs)
                 && Math.abs(nowMs - sentAtMs) <= GRAPH_ECHO_BALANCE_SEND_WINDOW_MS;
-        });
+        }) || null;
         const rows = await fetchAlertsForThreadIds({
             threadIds: relatedThreadIds,
             status: 'pending',
@@ -2637,8 +2643,9 @@ async function markPendingGraphAlertsSent({ thread, threadId, messageText, nowIs
         });
         for (const row of rows) {
             const data = row.data || {};
-            const draftText = normalizeCoachDraftText(data.draft_text || row.suggested_message || '').trim();
-            if (echoMatchesBalanceSend) {
+            const draftText = normalizeCoachDraftText(data.draft_text || row.suggested_message || row.scheduled_reply_text || '').trim();
+            if (matchedBalanceSendAlert) {
+                if (!shouldApplyBalanceSendEchoToPending(matchedBalanceSendAlert, row)) continue;
                 const mergedData = {
                     ...data,
                     cancel_reason: 'cleared_by_graph_echo_for_balance_send',
@@ -2659,6 +2666,10 @@ async function markPendingGraphAlertsSent({ thread, threadId, messageText, nowIs
                 cleared++;
                 continue;
             }
+            // A just-created inbound alert shell can still be waiting for its
+            // draft while an older multi-part Graph send echoes back. Never
+            // claim that blank shell as the reply to the newer inbound.
+            if (!draftText) continue;
             const wasEdited = !!draftText && !!sentMessage && sentMessage !== draftText;
             const mergedData = {
                 ...data,
@@ -3072,6 +3083,7 @@ exports._test = {
     buildGoldCoastWebsitePrivateReply,
     commentPrivateReplyDedupeId,
     alertNeedsDraftRecovery,
+    shouldApplyBalanceSendEchoToPending,
 };
 
 exports._internal = {
