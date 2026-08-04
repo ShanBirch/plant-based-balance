@@ -52,7 +52,8 @@ test('offer facts agree across marketing and legal pages', () => {
     assert.match(coaching, /Starter Coaching.*\$29\.99 \/week/s);
     assert.match(terms, /Balance Foundations Founders Pass/);
     assert.match(refunds, /Founders Pass is a one-time purchase/);
-    assert.match(founders, /BALANCE FOUNDATIONS FOUNDERS PASS AU\$89\.99 ONCE 6-WEEK COURSE WEEKLY COACHING REVIEW/);
+    assert.match(founders, /BALANCE FOUNDATIONS AU\$89\.99 COMPLETE 6-WEEK CURRICULUM WEEKLY COACHING REVIEW/);
+    assert.doesNotMatch(founders, /Starter Coaching/);
 });
 
 test('Shannon story agrees wherever it appears', () => {
