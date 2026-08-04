@@ -582,7 +582,19 @@ exports.handler = async (event) => {
             const res = await fetch(`${SITE_URL}/.netlify/functions/send-ig-reply`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ alertId, replyText, draftText, source, editReason, timingSuggestion, forceText }),
+                body: JSON.stringify({
+                    alertId,
+                    // Preserve UTF-8 through the internal function hop. Passing only
+                    // plain JSON here allowed apostrophes in scheduled voice scripts
+                    // to arrive as question marks in some Netlify executions, where
+                    // the outbound integrity guard correctly stopped the send.
+                    replyTextUtf8Base64: Buffer.from(replyText, 'utf8').toString('base64'),
+                    draftTextUtf8Base64: Buffer.from(draftText, 'utf8').toString('base64'),
+                    source,
+                    editReason,
+                    timingSuggestion,
+                    forceText,
+                }),
             });
             const text = await res.text();
             return { statusCode: res.status, body: text || JSON.stringify({ ok: res.ok }) };

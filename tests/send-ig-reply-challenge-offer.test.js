@@ -1,4 +1,7 @@
 const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
+const root = path.resolve(__dirname, '..');
 
 const {
     isCocosAlertData,
@@ -107,5 +110,19 @@ assert.strictEqual(
     'outbound_text_encoding_corruption'
 );
 assert.strictEqual(validateOutboundTextIntegrity('wait what??').ok, true);
+
+const sendCoachReplySource = fs.readFileSync(
+    path.join(root, 'netlify', 'functions', 'send-coach-reply.js'),
+    'utf8'
+);
+assert.match(
+    sendCoachReplySource,
+    /replyTextUtf8Base64:\s*Buffer\.from\(replyText, 'utf8'\)\.toString\('base64'\)/,
+    'the scheduled coach sender must preserve UTF-8 Base64 through the Instagram function hop'
+);
+assert.match(
+    sendCoachReplySource,
+    /draftTextUtf8Base64:\s*Buffer\.from\(draftText, 'utf8'\)\.toString\('base64'\)/
+);
 
 console.log('send ig challenge offer notification tests passed');
