@@ -714,6 +714,18 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
     assert.equal(hasDirectPaidMetaCheckoutIntent("What's included in Balance app?"), false);
     assert.equal(hasDirectPaidMetaCheckoutIntent('I want to know your prices and what I get'), false);
     assert.equal(hasDirectPaidMetaCheckoutIntent('Send me the link'), true);
+    assert.equal(hasDirectPaidMetaCheckoutIntent('I want to start now. Please send me the checkout link.'), true,
+        'compound start-now intent must use the deterministic approved checkout URL');
+    const compoundBuyer = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'I want to start now. Please send me the checkout link.',
+        qualifier: { ...blockerQualifier, commercial_stage: 'buyer_intent' },
+        flowVariant: 'plant_based_control',
+        checkoutUrl,
+    });
+    assert.equal(compoundBuyer.checkoutUrl, checkoutUrl);
+    assert.match(compoundBuyer.joined, new RegExp(checkoutUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    assert.doesNotMatch(compoundBuyer.joined, /Https:\/\//,
+        'deterministic checkout handoff must preserve the approved lowercase URL');
 
     assert.equal(isContextualMetaAdOfferLinkRequest({
         currentMessage: "The Founders Pass is the best fit for me. I'm ready to join.",

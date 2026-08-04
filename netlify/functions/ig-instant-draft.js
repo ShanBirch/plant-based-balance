@@ -1207,7 +1207,8 @@ const PAID_META_OFFER_INFO_RE = /^(?:i (?:want|need|wanted) to know )?(?:how muc
 
 function hasDirectPaidMetaCheckoutIntent(value = '') {
     const message = String(value || '').replace(/\s+/g, ' ').trim();
-    return /^(?:please )?(?:send (?:me )?(?:the )?link|can you send (?:me )?(?:the )?link|how do i (?:join|sign up|start|get started)|where do i (?:join|sign up|start|get started)|where can i (?:join|sign up|start|get started)|i(?:'m| am) ready to (?:join|sign up|start|get started)|i want to (?:join|sign up|start|get started)|i(?:'m| am) in,? send (?:me )?(?:the )?link)[.!?\s]*$/i.test(message);
+    return /^(?:please )?(?:send (?:me )?(?:the )?link|can you send (?:me )?(?:the )?link|how do i (?:join|sign up|start|get started)|where do i (?:join|sign up|start|get started)|where can i (?:join|sign up|start|get started)|i(?:'m| am) ready to (?:join|sign up|start|get started)|i want to (?:join|sign up|start|get started)|i(?:'m| am) in,? send (?:me )?(?:the )?link)[.!?\s]*$/i.test(message)
+        || /(?:^|[.!?]\s+)(?:please\s+)?(?:send (?:me )?(?:the )?(?:checkout )?link|can you send (?:me )?(?:the )?(?:checkout )?link)[.!?\s]*$/i.test(message);
 }
 
 function hasRecentPaidMetaSupportQuestion(history = []) {
