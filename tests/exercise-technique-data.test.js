@@ -81,7 +81,7 @@ test('every catalog exercise receives a complete, audited cue set', () => {
 test('dashboard loads the cue engine before the workout implementation', () => {
     const html = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
     const cueIndex = html.indexOf('pbb-exercise-technique-data.js?v=1');
-    const workoutIndex = html.indexOf('dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=155');
+    const workoutIndex = html.indexOf('dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=156');
     assert.ok(cueIndex >= 0);
     assert.ok(workoutIndex > cueIndex);
 

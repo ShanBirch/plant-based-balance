@@ -25,7 +25,7 @@ function runTrial(search) {
         'meta-ad-trial-gate': { style: {} },
         'meta-ad-trial-email': { value: '', focus() { this.focused = true; } },
         'meta-ad-trial-terms': { checked: false },
-        'meta-ad-trial-checkout-btn': { disabled: false, textContent: 'UNLOCK BALANCE' },
+        'meta-ad-trial-checkout-btn': { disabled: false, textContent: 'START FOUNDATIONS' },
         'meta-ad-trial-error': { style: {}, textContent: '' },
         'guided-tour-overlay': { classList: { remove() {} } },
     };
@@ -93,7 +93,7 @@ function runTrial(search) {
 }
 
 test('paid Facebook attribution activates onboarding without changing organic guest traffic', () => {
-    const paid = runTrial('?guest=true&meta_trial=facebook_5m_paid_v2&utm_source=facebook&utm_medium=paid_social&ad_id=ad-42');
+    const paid = runTrial('?guest=true&meta_trial=facebook_5m_foundations_v3&utm_source=facebook&utm_medium=paid_social&ad_id=ad-42');
     assert.equal(paid.window.metaAdTrialMode, true);
     assert.equal(paid.sessionStorage.getItem('guestMode'), 'true');
     assert.equal(paid.localStorage.getItem('onboardingComplete'), null);
@@ -106,7 +106,7 @@ test('paid Facebook attribution activates onboarding without changing organic gu
 });
 
 test('the five-minute clock ends in the fixed six-week Stripe gate', async () => {
-    const trial = runTrial('?guest=true&meta_trial=facebook_5m_paid_v2&utm_source=facebook&utm_medium=paid_social&fbclid=test-click');
+    const trial = runTrial('?guest=true&meta_trial=facebook_5m_foundations_v3&utm_source=facebook&utm_medium=paid_social&fbclid=test-click');
     const api = trial.window.BalanceMetaAdTrial;
     api.onOnboardingStarted();
     const savedProfile = JSON.stringify({ name: 'Preview Buyer', primaryGoal: 'Build strength', trainingDays: 3 });
@@ -131,10 +131,11 @@ test('the five-minute clock ends in the fixed six-week Stripe gate', async () =>
     assert.equal(await api.beginCheckout(), true);
     const checkout = trial.events.find(event => event.event_type === 'checkout_request');
     assert.equal(checkout.body.priceId, 'balance_vegan_founders_pass');
-    assert.equal(checkout.body.pageVariant, 'facebook_5m_paid_v2');
+    assert.equal(checkout.body.pageVariant, 'facebook_5m_foundations_v3');
     assert.equal(checkout.body.checkoutSource, 'meta_ad_trial');
     assert.equal(checkout.body.compliance.accepted.terms, true);
     assert.equal(trial.sessionStorage.getItem(api.PAYMENT_SESSION_KEY), 'cs_live_preview');
+    assert.equal(trial.sessionStorage.getItem(api.PAYMENT_PLAN_KEY), 'balance_foundations_six_week');
     assert.equal(trial.sessionStorage.getItem(api.CLAIM_KEY), null);
     assert.equal(trial.localStorage.getItem('userProfile'), savedProfile);
     assert.equal(trial.localStorage.getItem('user_food_preferences'), savedFoodPreferences);
@@ -143,7 +144,7 @@ test('the five-minute clock ends in the fixed six-week Stripe gate', async () =>
 });
 
 test('a claimed member revisiting the ad cannot have onboarding data cleared', () => {
-    const query = '?guest=true&meta_trial=facebook_5m_paid_v2&utm_source=facebook&utm_medium=paid_social';
+    const query = '?guest=true&meta_trial=facebook_5m_foundations_v3&utm_source=facebook&utm_medium=paid_social';
     const trial = runTrial(query);
     const api = trial.window.BalanceMetaAdTrial;
     api.markClaimed('member-1');
@@ -176,10 +177,12 @@ test('dashboard, signup, native handoffs, measurement, and both discovery system
     assert.match(onboarding, /BalanceMetaAdTrial\.onOnboardingComplete\(\)/);
     assert.match(onboarding, /BalanceMetaAdTrial\.hasPendingClaim\(\)/);
     assert.match(login, /applyMetaAdTrialHandoffCopy/);
-    assert.match(login, /claimPendingMetaTrialSubscription/);
+    assert.match(login, /claimPendingMetaTrialPurchase/);
+    assert.match(login, /claim-founders-pass/);
     assert.match(login, /meta_ad_trial_paid/);
     assert.match(success, /Taking you straight back to Balance now/);
     assert.match(success, /source=meta_ad_trial_paid/);
+    assert.match(success, /if \(isFoundersPass && !isMetaAdTrialPurchase\)/);
     assert.match(checkoutSession, /checkoutSource === "meta_ad_trial"/);
     assert.match(checkoutSession, /session\.url/);
     assert.match(claim, /META_TRIAL_PLAN = "app_community_monthly"/);
@@ -189,16 +192,17 @@ test('dashboard, signup, native handoffs, measurement, and both discovery system
     assert.match(landing, /id="open-installed"[^>]+hidden/);
     assert.match(landing, /\.button\[hidden\]\s*\{\s*display:none !important;/);
     assert.match(landing, /native_handoff/);
-    assert.match(landing, /facebook_5m_paid_v2/);
+    assert.match(landing, /facebook_5m_foundations_v3/);
     assert.match(landing, /Built for the stop-start weeks/);
     assert.match(landing, /Balance Foundations is one \$89\.99 AUD payment for the complete six-week curriculum/);
-    assert.match(dashboard, /One AU\$89\.99 payment for the full six weeks/);
+    assert.match(dashboard, /AU\$89\.99 once\. No auto-renewal\./);
     assert.match(foundersClaim, /FOUNDERS_PLAN = "balance_foundations_six_week"/);
     assert.match(landing, /TRY BALANCE FREE/);
     assert.ok(landing.indexOf('id="how-balance-helps"') < landing.indexOf('id="start-preview"'));
     assert.match(landing, /Your free look does not begin until you tap the button below/);
     assert.match(logger, /'trial_gate_shown'/);
     assert.match(logger, /'trial_subscription_claimed'/);
+    assert.match(logger, /'trial_purchase_claimed'/);
     assert.match(android, /getPendingMetaTrialQuery/);
     assert.match(ios, /enum BalanceMetaTrialHandoff/);
 });

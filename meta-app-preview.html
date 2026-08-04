@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-landing-page="meta-app-preview" data-landing-variant="facebook_5m_paid_v2">
+<html lang="en" data-landing-page="meta-app-preview" data-landing-variant="facebook_5m_foundations_v3">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -42,7 +42,7 @@
         @media (max-width:370px) { .steps { grid-template-columns:1fr; } .step { min-height:0; } }
     </style>
 </head>
-<body data-landing-page="meta-app-preview" data-landing-variant="facebook_5m_paid_v2">
+<body data-landing-page="meta-app-preview" data-landing-variant="facebook_5m_foundations_v3">
 <main>
     <img class="logo" src="balance_logo.png" alt="Balance">
     <p class="eyebrow">Plant-based fitness that fits real life</p>
@@ -65,7 +65,7 @@
         <h2>See whether it feels right first</h2>
         <p>Your free look does not begin until you tap the button below.</p>
         <div class="steps" aria-label="How the preview works">
-            <div class="step"><strong>1</strong><span>Set up your goal</span></div>
+            <div class="step"><strong>1</strong><span>Tell Balance about your real week</span></div>
             <div class="step"><strong>2</strong><span>Explore for five minutes</span></div>
             <div class="step"><strong>3</strong><span>Choose whether to continue</span></div>
         </div>
@@ -88,7 +88,7 @@
 (function () {
     var incoming = new URLSearchParams(window.location.search);
     incoming.set('guest', 'true');
-    incoming.set('meta_trial', 'facebook_5m_paid_v2');
+    incoming.set('meta_trial', 'facebook_5m_foundations_v3');
     if (!incoming.get('utm_source')) incoming.set('utm_source', 'facebook');
     if (!incoming.get('utm_medium')) incoming.set('utm_medium', 'paid_social');
     var query = incoming.toString();

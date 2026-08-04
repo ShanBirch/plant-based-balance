@@ -87,25 +87,28 @@ test('Balance Foundations is a six-week course that preserves the existing lesso
     assert.match(learning, /Course Library/);
     assert.match(learning, /foundations_course_completed/);
     assert.match(learning, /Continue with weekly coaching/);
-    assert.match(dashboard, /id: 'balance-foundations-course-v1'/);
-    assert.match(dashboard, /sel: '#balance-foundations-course-card'/);
+    assert.match(dashboard, /id: 'course-preview-locks-v1'/);
+    assert.match(dashboard, /sel: '\.course-library-intro'/);
     assert.match(dashboard, /fallbackSel: '#learning-content'/);
 });
 
 test('Founders Pass onboarding captures the real-world blocker behind consistency', () => {
     const onboarding = read('js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js');
-    assert.match(onboarding, /Let\\'s set up your goals one small answer at a time/);
+    const stepsBlock = onboarding.match(/const WIZARD_CHAT_STEPS = \[[\s\S]*?\n\];/)[0];
+    assert.match(stepsBlock, /Time for a comeback/);
     assert.match(onboarding, /key: 'main_blocker'[\s\S]*?What usually knocks you off track when life gets messy/);
     assert.match(onboarding, /setWizardFieldValue\('wizard-main-blocker', answers\.main_blocker\)/);
-    assert.match(onboarding, /key: 'competing_priorities'[\s\S]*?What does a normal week actually have to fit around/);
-    assert.match(onboarding, /key: 'weekly_capacity'[\s\S]*?how many training windows could you genuinely protect/);
-    assert.match(onboarding, /key: 'routine_window'[\s\S]*?least likely to get stolen/);
-    assert.match(onboarding, /key: 'starter_session_minutes'[\s\S]*?what size session would still feel easy to finish/i);
+    assert.doesNotMatch(stepsBlock, /key: 'competing_priorities'/);
+    assert.match(stepsBlock, /key: 'weekly_capacity'[\s\S]*?how many training windows could you genuinely protect/);
+    assert.match(stepsBlock, /key: 'routine_window'[\s\S]*?least likely to get stolen/);
+    assert.doesNotMatch(stepsBlock, /key: 'starter_session_minutes'/);
+    assert.match(onboarding, /function inferWizardStarterPlan\(answers = \{\}\)/);
+    assert.match(onboarding, /setWizardFieldValue\('wizard-starter-session-minutes', inferredPlan\.starterSessionMinutes\)/);
     assert.match(onboarding, /function getWizardRecommendedStarterFrequency/);
     assert.match(onboarding, /function selectWizardRoutineWindow/);
     assert.match(onboarding, /function selectWizardStarterMinutes/);
-    assert.match(onboarding, /Your chosen starting routine/);
-    assert.match(onboarding, /you chose \$\{displayedFrequency\}/);
+    assert.match(onboarding, /Balance suggests starting here/);
+    assert.match(onboarding, /you said \$\{routine\.capacityLabel/);
     assert.match(onboarding, /Change anything below if another choice suits you better/);
     assert.match(onboarding, /function getWizardUnavailableTrainingDays/);
     assert.match(onboarding, /filter\(day => !unavailable\.has\(day\)\)/);

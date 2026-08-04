@@ -14,12 +14,12 @@ test('DM drafting knowledge covers the paid handoff and real onboarding stages',
     assert.match(guide, /five minutes to explore/i);
     assert.match(guide, /AU\$19\.99\/month/);
     assert.match(guide, /Stripe Checkout/);
-    assert.match(guide, /three realistic weekly anchors/i);
-    assert.match(guide, /main thing that knocks them off track/i);
-    assert.match(guide, /real competing priorities such as work\/kids\/study\/caring/i);
-    assert.match(guide, /intentionally easy starter-session length/i);
-    assert.match(guide, /payment page, account creation\/login, conversational intake/i);
-    assert.match(guide, /training setup, nutrition setup, profile\/character, Weekly Goals/i);
+    assert.match(guide, /AU\$89\.99 once/);
+    assert.match(guide, /usual blocker/i);
+    assert.match(guide, /realistic weekly capacity/i);
+    assert.match(guide, /Balance infers the six-week direction, starter duration, split, learning focus, and first three Weekly Goals/i);
+    assert.match(guide, /payment page, account creation\/login, comeback intake/i);
+    assert.match(guide, /optional cycle setup, training recommendation, calendar preview, assigned-goals summary/i);
 });
 
 test('DM drafting knowledge explains the brain angle without taking control away', () => {

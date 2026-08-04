@@ -81,7 +81,8 @@ export default async (request, context) => {
         const cancelPath = safeReturnPath(returnPath, "/plant-based-fitness.html");
         assertAcceptedCheckoutTerms(compliance);
         const checkoutEmail = cleanCheckoutEmail(email, { required: false });
-        const isMetaAdTrialCheckout = checkoutSource === "meta_ad_trial" && pageVariant === "facebook_5m_paid_v2";
+        const isMetaAdTrialCheckout = checkoutSource === "meta_ad_trial"
+            && ["facebook_5m_foundations_v3", "facebook_5m_paid_v2"].includes(pageVariant);
         const complianceMetadata = compliance?.metadata || {};
         const documentVersions = compliance?.document_versions || {};
         const stripeComplianceMetadata = {

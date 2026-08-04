@@ -12,7 +12,7 @@
     <meta property="og:url" content="https://plantbased-balance.org/login.html">
     <meta property="og:type" content="website">
     <link rel="stylesheet" href="styles.css">
-    <script src="lib/meta-ad-trial.js?v=2"></script>
+    <script src="lib/meta-ad-trial.js?v=3"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://js.stripe.com/v3/"></script>
     <script>
@@ -829,6 +829,9 @@
             if (isPaid && window.BalanceMetaAdTrial) {
                 sessionStorage.setItem(window.BalanceMetaAdTrial.CLAIM_KEY, 'true');
                 if (sessionId) sessionStorage.setItem(window.BalanceMetaAdTrial.PAYMENT_SESSION_KEY, sessionId);
+                if (window.BalanceMetaAdTrial.PAYMENT_PLAN_KEY && !sessionStorage.getItem(window.BalanceMetaAdTrial.PAYMENT_PLAN_KEY)) {
+                    sessionStorage.setItem(window.BalanceMetaAdTrial.PAYMENT_PLAN_KEY, 'balance_foundations_six_week');
+                }
             }
             const heading = document.getElementById('signup-heading');
             const intro = document.getElementById('signup-intro');
@@ -897,16 +900,23 @@
             }
         }
 
-        async function claimPendingMetaTrialSubscription(session) {
+        async function claimPendingMetaTrialPurchase(session) {
             if (!window.BalanceMetaAdTrial) return null;
             const sessionId = sessionStorage.getItem(window.BalanceMetaAdTrial.PAYMENT_SESSION_KEY) || '';
+            const planKey = window.BalanceMetaAdTrial.PAYMENT_PLAN_KEY
+                ? sessionStorage.getItem(window.BalanceMetaAdTrial.PAYMENT_PLAN_KEY) || 'balance_foundations_six_week'
+                : 'balance_foundations_six_week';
             const accessToken = session?.access_token;
             if (!sessionId || !accessToken) return null;
+            const isLegacyAppMembership = planKey === 'app_community_monthly';
+            const claimEndpoint = isLegacyAppMembership
+                ? '/.netlify/functions/claim-meta-trial-subscription'
+                : '/.netlify/functions/claim-founders-pass';
             let lastError = null;
             for (let attempt = 0; attempt < 3; attempt += 1) {
                 if (attempt) await new Promise(resolve => setTimeout(resolve, 700 * attempt));
                 try {
-                    const response = await fetch('/.netlify/functions/claim-meta-trial-subscription', {
+                    const response = await fetch(claimEndpoint, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -918,14 +928,20 @@
                     if (!response.ok || result.error) throw new Error(result.error || 'Payment activation is still processing.');
                     if (result.claimed) {
                         sessionStorage.removeItem(window.BalanceMetaAdTrial.PAYMENT_SESSION_KEY);
-                        window.BalanceMetaAdTrial.track('trial_subscription_claimed', { plan: result.plan, status: result.status });
+                        if (window.BalanceMetaAdTrial.PAYMENT_PLAN_KEY) {
+                            sessionStorage.removeItem(window.BalanceMetaAdTrial.PAYMENT_PLAN_KEY);
+                        }
+                        window.BalanceMetaAdTrial.track('trial_purchase_claimed', {
+                            plan: result.plan || planKey,
+                            status: result.status || (result.expired ? 'expired' : 'active')
+                        });
                     }
                     return result;
                 } catch (error) {
                     lastError = error;
                 }
             }
-            console.warn('Paid preview activation will retry after the next login:', lastError?.message || 'unknown error');
+            console.warn('Paid preview purchase activation will retry after the next login:', lastError?.message || 'unknown error');
             return null;
         }
 
@@ -1001,7 +1017,7 @@
                 }
 
                 await claimPendingFoundersPass(session);
-                await claimPendingMetaTrialSubscription(session);
+                await claimPendingMetaTrialPurchase(session);
 
                 // Already logged in - redirect to dashboard
                 let redirect = urlParams.get('redirect');
@@ -1096,7 +1112,7 @@
                 const { user } = await authHelpers.signIn(email, password);
                 const signedInSession = await authHelpers.getSession();
                 await claimPendingFoundersPass(signedInSession);
-                await claimPendingMetaTrialSubscription(signedInSession);
+                await claimPendingMetaTrialPurchase(signedInSession);
 
                 showSuccess('Login successful!');
                 try {
@@ -1234,7 +1250,7 @@
 
 
                 await claimPendingFoundersPass(signupResult.session);
-                await claimPendingMetaTrialSubscription(signupResult.session);
+                await claimPendingMetaTrialPurchase(signupResult.session);
 
                 showSuccess('Account created! Logging you in...');
 

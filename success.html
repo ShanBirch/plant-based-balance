@@ -13,7 +13,7 @@
     <meta property="og:url" content="https://plantbased-balance.org/success.html">
     <meta property="og:type" content="website">
     <link rel="stylesheet" href="styles.css">
-    <script src="lib/meta-ad-trial.js?v=2"></script>
+    <script src="lib/meta-ad-trial.js?v=3"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     
     <!-- Meta Pixel Code -->
@@ -158,7 +158,7 @@
             const isFoundersPass = planKey === 'balance_foundations_six_week' || planKey === 'founders_pass_lifetime';
             const purchaseValue = parseFloat(urlParams.get('amount')) || (isFoundersPass ? (planKey === 'founders_pass_lifetime' ? 99 : 89.99) : isAppCommunityPlan ? 19.99 : isCoachingCallsPlan ? 99.99 : 29.99);
             const isBump = urlParams.get('bump') === 'true';
-            const isMetaAdTrialPurchase = urlParams.get('source') === 'meta_ad_trial_paid' && isAppCommunityPlan;
+            const isMetaAdTrialPurchase = urlParams.get('source') === 'meta_ad_trial_paid' && (isFoundersPass || isAppCommunityPlan);
 
             if (planKey === 'balance_foundations_six_week') {
                 const planName = document.getElementById('success-plan-name');
@@ -176,11 +176,14 @@
             if (isMetaAdTrialPurchase && window.BalanceMetaAdTrial) {
                 const sessionId = urlParams.get('session_id') || '';
                 if (sessionId) sessionStorage.setItem(window.BalanceMetaAdTrial.PAYMENT_SESSION_KEY, sessionId);
+                if (window.BalanceMetaAdTrial.PAYMENT_PLAN_KEY) {
+                    sessionStorage.setItem(window.BalanceMetaAdTrial.PAYMENT_PLAN_KEY, planKey);
+                }
                 sessionStorage.setItem(window.BalanceMetaAdTrial.CLAIM_KEY, 'true');
                 sessionStorage.removeItem('guestMode');
                 window.BalanceMetaAdTrial.track('purchase', {
-                    plan: 'app_community_monthly',
-                    amount_aud: 19.99,
+                    plan: planKey,
+                    amount_aud: purchaseValue,
                     stripe_session_id: sessionId,
                     source: 'meta_ad_trial'
                 });
@@ -211,7 +214,7 @@
                 if (accountHeading) accountHeading.textContent = 'Step 2: open Balance';
                 if (firstCallBox) firstCallBox.style.display = 'block';
             }
-            if (isFoundersPass) {
+            if (isFoundersPass && !isMetaAdTrialPurchase) {
                 const planName = document.getElementById('success-plan-name');
                 const readyCopy = document.getElementById('success-ready-copy');
                 const nextCopy = document.getElementById('success-next-copy');

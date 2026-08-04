@@ -6708,7 +6708,7 @@ _onDomReady(initPushPermissionReminder);
 // --- ONBOARDING WIZARD LOGIC ---
 let currentWizardStep = 1;
 const totalWizardSteps = 19;
-const skippedWizardSlides = [2, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18];
+const skippedWizardSlides = [2, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
 const finalWizardStep = 19;
 let wizardSlideTransitionTimer = null;
 const wizardSlideTransitionMs = 280;
@@ -6736,6 +6736,7 @@ function closeOnboardingBlockingSurfaces() {
 }
 
 function isWizardSlideSkipped(step) {
+    if (step === 17 && window._wizardCustomizeOnlyMode) return false;
     if (skippedWizardSlides.includes(step)) return true;
     return step === 17 && !window._wizardCustomizeOnlyMode &&
         typeof window.isFitGotchiHidden === 'function' && window.isFitGotchiHidden();
@@ -7044,6 +7045,54 @@ function deriveWizardGoalBodyType(goalIntentIds) {
     return 'Athletic';
 }
 
+function inferWizardStarterPlan(answers = {}) {
+    const outcome = normalizeWizardChatText(answers.why_now || '');
+    const blocker = normalizeWizardChatText(answers.main_blocker || '');
+    const combined = `${outcome} ${blocker}`.trim();
+    const containsAny = words => words.some(word => combined.includes(normalizeWizardChatText(word)));
+    const goalIntentIds = ['consistent_workouts'];
+
+    if (containsAny(['lose weight', 'fat loss', 'lean', 'drop weight', 'smaller'])) {
+        goalIntentIds.unshift('lose_weight');
+    } else if (containsAny(['strong', 'strength', 'muscle', 'tone', 'toned', 'build'])) {
+        goalIntentIds.unshift('build_strength');
+    } else if (containsAny(['food', 'nutrition', 'eat better', 'meal', 'protein'])) {
+        goalIntentIds.unshift('improve_nutrition');
+    } else if (answers.energy_level === 'low' || containsAny(['energy', 'tired', 'sleep', 'exhausted'])) {
+        goalIntentIds.unshift('more_energy');
+    }
+
+    const weeklyGoalFocusIds = ['complete_workouts', 'protein_days'];
+    if (goalIntentIds.includes('lose_weight') || goalIntentIds.includes('improve_nutrition')) {
+        weeklyGoalFocusIds.push('meal_log_days');
+    } else if (goalIntentIds.includes('more_energy') || answers.energy_level === 'low') {
+        weeklyGoalFocusIds.push('sleep_7h_nights');
+    } else {
+        weeklyGoalFocusIds.push('water_goal_days');
+    }
+
+    const learningInterestIds = ['behavior_change_science', 'workout_motivation', 'plant_based_cooking'];
+    if (goalIntentIds.includes('lose_weight')) learningInterestIds.push('fat_loss_basics');
+    else if (goalIntentIds.includes('build_strength')) learningInterestIds.push('muscle_gain_basics');
+    else if (goalIntentIds.includes('improve_nutrition')) learningInterestIds.push('protein_science');
+    else if (goalIntentIds.includes('more_energy')) learningInterestIds.push('recovery_sleep_energy');
+
+    let starterSessionMinutes = 15;
+    if (answers.weekly_capacity === 'one_or_two' || answers.weekly_capacity === 'varies' || answers.energy_level === 'low') {
+        starterSessionMinutes = 10;
+    } else if (answers.weekly_capacity === 'four_plus' && answers.energy_level === 'high') {
+        starterSessionMinutes = 20;
+    }
+
+    return {
+        goalIntentIds: Array.from(new Set(goalIntentIds)).slice(0, 2),
+        weeklyGoalFocusIds,
+        learningInterestIds: Array.from(new Set(learningInterestIds)),
+        goalBodyType: deriveWizardGoalBodyType(goalIntentIds),
+        starterSessionMinutes
+    };
+}
+
 function wizardPrefersImperialUnits() {
     try {
         return localStorage.getItem('weightUnitPreference') === 'lbs';
@@ -7209,7 +7258,10 @@ function getWizardRecommendedStarterFrequency(answers = wizardChatAnswers || {})
 }
 
 function getWizardStarterRoutine(answers = wizardChatAnswers || {}) {
-    const minutes = Math.max(10, Math.min(30, Number(answers.starter_session_minutes) || 15));
+    const inferredMinutes = typeof inferWizardStarterPlan === 'function'
+        ? inferWizardStarterPlan(answers).starterSessionMinutes
+        : 15;
+    const minutes = Math.max(10, Math.min(30, Number(answers.starter_session_minutes) || inferredMinutes));
     return {
         frequency: getWizardRecommendedStarterFrequency(answers),
         minutes,
@@ -7228,15 +7280,16 @@ const WIZARD_CHAT_STEPS = [
     {
         key: 'goal_setup_ready',
         type: 'start',
-        question: 'Let\'s set up your goals one small answer at a time. You can change anything later. Ready to go?',
+        question: 'Time for a comeback. Tell us where you are starting from and Balance will set the first six weeks for you.',
+        prelude: 'No giant questionnaire. No picking goals from a wall of options. Just the details that change your plan.',
         options: [
-            { value: 'lets_go', label: 'Let\'s go' }
+            { value: 'lets_go', label: 'BUILD MY START' }
         ]
     },
     {
         key: 'gender',
         type: 'choice',
-        question: 'First up, should I tune this setup for her or him?',
+        question: 'Which setup should Balance use for your body and calorie calculations?',
         options: [
             { value: 'female', label: 'For her' },
             { value: 'male', label: 'For him' }
@@ -7247,62 +7300,18 @@ const WIZARD_CHAT_STEPS = [
     { key: 'height', type: 'measurement', measurement: 'height', question: getWizardHeightQuestion, placeholder: getWizardHeightPlaceholder },
     { key: 'weight', type: 'measurement', measurement: 'weight', question: getWizardWeightQuestion, placeholder: getWizardWeightPlaceholder },
     {
-        key: 'goal_intents',
-        type: 'multi',
-        question: 'For the first 30 days, what are we mainly working toward?',
-        prelude: 'Pick one if you want the sharpest plan. You can pick a few, but the more you choose, the less specific the first plan becomes.',
-        required: true,
-        maxSelect: 3,
-        submitLabel: 'Lock direction',
-        textPlaceholder: 'Or type the main direction...',
-        options: [
-            { value: 'lose_weight', label: WIZARD_GOAL_INTENT_LABELS.lose_weight },
-            { value: 'build_strength', label: WIZARD_GOAL_INTENT_LABELS.build_strength },
-            { value: 'consistent_workouts', label: WIZARD_GOAL_INTENT_LABELS.consistent_workouts },
-            { value: 'improve_nutrition', label: WIZARD_GOAL_INTENT_LABELS.improve_nutrition },
-            { value: 'learn_fitness', label: WIZARD_GOAL_INTENT_LABELS.learn_fitness },
-            { value: 'more_energy', label: WIZARD_GOAL_INTENT_LABELS.more_energy },
-            { value: 'build_community', label: WIZARD_GOAL_INTENT_LABELS.build_community }
-        ]
-    },
-    {
-        key: 'weekly_goal_focus',
-        type: 'multi',
-        prelude: getWizardGoalRecipeText,
-        question: 'I have pre-picked the usual weekly anchors for that direction. Keep or change the 3 targets you are willing to hit for 30 days.',
-        required: true,
-        requiresStructured: true,
-        maxSelect: 3,
-        submitLabel: 'Lock my 3 targets',
-        textPlaceholder: 'Or type the weekly anchor...',
-        options: [
-            { value: 'complete_workouts', label: WIZARD_WEEKLY_GOAL_FOCUS_LABELS.complete_workouts },
-            { value: 'protein_days', label: WIZARD_WEEKLY_GOAL_FOCUS_LABELS.protein_days },
-            { value: 'calorie_range_days', label: WIZARD_WEEKLY_GOAL_FOCUS_LABELS.calorie_range_days },
-            { value: 'meal_log_days', label: WIZARD_WEEKLY_GOAL_FOCUS_LABELS.meal_log_days },
-            { value: 'weigh_in_days', label: WIZARD_WEEKLY_GOAL_FOCUS_LABELS.weigh_in_days },
-            { value: 'steps_10k_days', label: WIZARD_WEEKLY_GOAL_FOCUS_LABELS.steps_10k_days },
-            { value: 'sleep_7h_nights', label: WIZARD_WEEKLY_GOAL_FOCUS_LABELS.sleep_7h_nights },
-            { value: 'water_goal_days', label: WIZARD_WEEKLY_GOAL_FOCUS_LABELS.water_goal_days },
-            { value: 'daily_quiz_days', label: WIZARD_WEEKLY_GOAL_FOCUS_LABELS.daily_quiz_days },
-            { value: 'perfect_lessons', label: WIZARD_WEEKLY_GOAL_FOCUS_LABELS.perfect_lessons },
-            { value: 'message_coach', label: WIZARD_WEEKLY_GOAL_FOCUS_LABELS.message_coach },
-            { value: 'share_workout_feed', label: WIZARD_WEEKLY_GOAL_FOCUS_LABELS.share_workout_feed }
-        ]
+        key: 'why_now',
+        type: 'text',
+        question: 'Six weeks from now, what would you love to feel different?',
+        prelude: 'Say it in your own words. Balance will turn it into a practical starting goal.',
+        placeholder: 'Stronger, back in a routine, better with food, more energy...',
+        minLength: 3
     },
     {
         key: 'main_blocker',
         type: 'text',
         question: 'What usually knocks you off track when life gets messy?',
         placeholder: 'Time, stress, all-or-nothing thinking, not knowing what to do...',
-        minLength: 3
-    },
-    {
-        key: 'competing_priorities',
-        type: 'text',
-        question: 'What does a normal week actually have to fit around?',
-        prelude: 'This is where most plans get it wrong. We will build around your real life, not an imaginary quiet week.',
-        placeholder: 'Work hours, kids, study, caring, travel, shift work...',
         minLength: 3
     },
     {
@@ -7328,19 +7337,6 @@ const WIZARD_CHAT_STEPS = [
             { value: 'varies', label: WIZARD_ROUTINE_WINDOW_LABELS.varies }
         ]
     },
-    {
-        key: 'starter_session_minutes',
-        type: 'choice',
-        question: 'On your busiest normal day, what size session would still feel easy to finish?',
-        prelude: 'We start lighter than your maximum. The first win is teaching your brain that this is something you follow through on.',
-        options: [
-            { value: '10', label: '10 minutes' },
-            { value: '15', label: '15 minutes' },
-            { value: '20', label: '20 minutes' },
-            { value: '30', label: '30 minutes' }
-        ]
-    },
-    { key: 'goal_weight', type: 'measurement', measurement: 'weight', question: getWizardGoalWeightQuestion, placeholder: getWizardGoalWeightPlaceholder, optional: true },
     {
         key: 'equipment_access',
         type: 'choice',
@@ -7375,6 +7371,14 @@ const WIZARD_CHAT_STEPS = [
         ]
     },
     {
+        key: 'movement_limits',
+        type: 'text',
+        question: 'Any injuries, pain, or movements Shannon should know about?',
+        prelude: 'This is only for planning safely. You can skip it if nothing applies.',
+        placeholder: 'Type anything relevant, or leave blank',
+        optional: true
+    },
+    {
         key: 'dietary_requirements',
         type: 'multi',
         question: 'Any food style or restrictions we should respect?',
@@ -7390,34 +7394,7 @@ const WIZARD_CHAT_STEPS = [
         ],
         emptyLabel: 'No restrictions',
         submitLabel: 'Done'
-    },
-    {
-        key: 'learning_interests',
-        type: 'multi',
-        question: 'What are you interested in learning about?',
-        required: true,
-        maxSelect: 5,
-        submitLabel: 'Lock learning topics',
-        textPlaceholder: 'Or type what you want to learn...',
-        options: [
-            { value: 'plant_based_cooking', label: WIZARD_LEARNING_INTEREST_LABELS.plant_based_cooking },
-            { value: 'macronutrient_science', label: WIZARD_LEARNING_INTEREST_LABELS.macronutrient_science },
-            { value: 'micronutrient_science', label: WIZARD_LEARNING_INTEREST_LABELS.micronutrient_science },
-            { value: 'behavior_change_science', label: WIZARD_LEARNING_INTEREST_LABELS.behavior_change_science },
-            { value: 'mindset', label: WIZARD_LEARNING_INTEREST_LABELS.mindset },
-            { value: 'neuroscience', label: WIZARD_LEARNING_INTEREST_LABELS.neuroscience },
-            { value: 'longevity', label: WIZARD_LEARNING_INTEREST_LABELS.longevity },
-            { value: 'workout_motivation', label: WIZARD_LEARNING_INTEREST_LABELS.workout_motivation },
-            { value: 'weight_training_technique', label: WIZARD_LEARNING_INTEREST_LABELS.weight_training_technique },
-            { value: 'meal_prep_planning', label: WIZARD_LEARNING_INTEREST_LABELS.meal_prep_planning },
-            { value: 'protein_science', label: WIZARD_LEARNING_INTEREST_LABELS.protein_science },
-            { value: 'recovery_sleep_energy', label: WIZARD_LEARNING_INTEREST_LABELS.recovery_sleep_energy },
-            { value: 'fat_loss_basics', label: WIZARD_LEARNING_INTEREST_LABELS.fat_loss_basics },
-            { value: 'muscle_gain_basics', label: WIZARD_LEARNING_INTEREST_LABELS.muscle_gain_basics },
-            { value: 'supplements', label: WIZARD_LEARNING_INTEREST_LABELS.supplements }
-        ]
-    },
-    { key: 'ig_handle', type: 'text', question: 'Last one, what is your Instagram handle? You can skip this.', placeholder: '@yourhandle', optional: true }
+    }
 ];
 
 let wizardChatStarted = false;
@@ -7869,7 +7846,7 @@ function renderWizardChatProgress() {
         : (step?.type === 'start' ? 4 : Math.max(4, Math.round(((current - 1) / total) * 100)));
     if (label) {
         if (wizardChatComplete) label.textContent = 'Ready for training setup';
-        else if (step?.type === 'start') label.textContent = 'Goal setup';
+        else if (step?.type === 'start') label.textContent = 'Comeback setup';
         else label.textContent = `Question ${current} of ${total}`;
     }
     if (fill) fill.style.width = `${pct}%`;
@@ -8207,23 +8184,20 @@ function saveWizardChatIntakeToInputs() {
     setWizardFieldValue('wizard-age', answers.age);
     setWizardFieldValue('wizard-height', answers.height);
     setWizardFieldValue('wizard-weight', answers.weight);
-    setWizardFieldValue('wizard-goal-weight', answers.goal_weight || answers.weight);
+    setWizardFieldValue('wizard-goal-weight', answers.weight);
     setWizardFieldValue('wizard-equipment', answers.equipment_access);
     setWizardFieldValue('wizard-activity-level', answers.activity_level);
     setWizardFieldValue('wizard-energy-level', answers.energy_level);
-    setWizardFieldValue('wizard-ig-handle', answers.ig_handle ? `@${answers.ig_handle}` : '');
+    setWizardFieldValue('wizard-ig-handle', '');
 
-    const goalIntentIds = Array.isArray(answers.goal_intents)
-        ? answers.goal_intents
-        : (answers.goal_intents ? [answers.goal_intents] : []);
+    const inferredPlan = inferWizardStarterPlan(answers);
+    const goalIntentIds = inferredPlan.goalIntentIds;
     const goalIntentLabels = goalIntentIds.map(id => WIZARD_GOAL_INTENT_LABELS[id]).filter(Boolean);
-    const weeklyGoalFocusIds = Array.isArray(answers.weekly_goal_focus) ? answers.weekly_goal_focus : [];
+    const weeklyGoalFocusIds = inferredPlan.weeklyGoalFocusIds;
     const weeklyGoalFocusLabels = weeklyGoalFocusIds.map(id => WIZARD_WEEKLY_GOAL_FOCUS_LABELS[id]).filter(Boolean);
-    const learningInterestIds = Array.isArray(answers.learning_interests)
-        ? answers.learning_interests
-        : (answers.learning_interests ? [answers.learning_interests] : []);
+    const learningInterestIds = inferredPlan.learningInterestIds;
     const learningInterestItems = learningInterestIds.map(buildWizardLearningInterestItem).filter(Boolean);
-    const inferredGoalBodyType = answers.goalBodyType || deriveWizardGoalBodyType(goalIntentIds);
+    const inferredGoalBodyType = inferredPlan.goalBodyType;
     setWizardFieldValue('wizard-goal-type', inferredGoalBodyType);
     setWizardFieldValue('wizard-goal-intents', JSON.stringify(goalIntentIds));
     setWizardFieldValue('wizard-goal-intent-labels', JSON.stringify(goalIntentLabels));
@@ -8231,14 +8205,15 @@ function saveWizardChatIntakeToInputs() {
     setWizardFieldValue('wizard-weekly-goal-focus-labels', JSON.stringify(weeklyGoalFocusLabels));
     setWizardFieldValue('wizard-chat-freeform', JSON.stringify(wizardChatFreeformAnswers || {}));
     setWizardFieldValue('wizard-main-blocker', answers.main_blocker);
-    setWizardFieldValue('wizard-competing-priorities', answers.competing_priorities);
+    setWizardFieldValue('wizard-competing-priorities', answers.main_blocker);
     setWizardFieldValue('wizard-weekly-capacity', answers.weekly_capacity);
     setWizardFieldValue('wizard-routine-window', answers.routine_window);
-    setWizardFieldValue('wizard-starter-session-minutes', answers.starter_session_minutes);
+    setWizardFieldValue('wizard-starter-session-minutes', inferredPlan.starterSessionMinutes);
     setWizardFieldValue('wizard-recommended-frequency', getWizardRecommendedStarterFrequency(answers));
     setWizardFieldValue('wizard-why-now', answers.why_now);
     setWizardFieldValue('wizard-long-term-goal', answers.long_term_goal);
     setWizardFieldValue('wizard-independence-goal', answers.independence_goal);
+    setWizardFieldValue('wizard-movement-limits', answers.movement_limits);
 
     wizardDietaryRequirements = new Set(Array.isArray(answers.dietary_requirements) ? answers.dietary_requirements : []);
     wizardLearningInterests = new Set(learningInterestItems.map(item => item.id));
@@ -8249,6 +8224,7 @@ function saveWizardChatIntakeToInputs() {
         localStorage.setItem('onboardingWeeklyGoalFocus', JSON.stringify(weeklyGoalFocusIds.map(id => ({ id, label: WIZARD_WEEKLY_GOAL_FOCUS_LABELS[id] })).filter(item => item.label)));
         localStorage.setItem('onboardingLearningInterestIds', JSON.stringify(Array.from(wizardLearningInterests)));
         localStorage.setItem('onboardingLearningInterests', JSON.stringify(learningInterestItems));
+        localStorage.setItem('pbb_auto_weekly_goals_pending_v1', 'true');
     } catch (e) {}
     return true;
 }
@@ -8285,7 +8261,7 @@ function getWizardPrimaryGoalSummary() {
     const data = readWizardProfileData();
     const goalIntentLabels = Array.isArray(data.goalIntentLabels) ? data.goalIntentLabels.filter(Boolean) : [];
     const weeklyGoalFocusLabels = Array.isArray(data.weeklyGoalFocusLabels) ? data.weeklyGoalFocusLabels.filter(Boolean) : [];
-    const primaryGoal = WIZARD_PRIMARY_GOAL_LABELS[data.goalType] || goalIntentLabels[0] || weeklyGoalFocusLabels[0] || 'the goal you just chose';
+    const primaryGoal = goalIntentLabels[0] || WIZARD_PRIMARY_GOAL_LABELS[data.goalType] || weeklyGoalFocusLabels[0] || 'a repeatable first six weeks';
     const detail = [];
     const goalWeight = Number(data.goalWeight);
     const currentWeight = Number(data.weight);
@@ -8305,8 +8281,19 @@ function getWizardPrimaryGoalSummary() {
 
 function renderWizardWeeklyGoalRoutine() {
     const targetEl = document.getElementById('wizard-weekly-goal-target');
-    if (!targetEl) return;
-    targetEl.textContent = getWizardPrimaryGoalSummary();
+    if (targetEl) targetEl.textContent = getWizardPrimaryGoalSummary();
+    const goalsEl = document.getElementById('wizard-assigned-goals');
+    if (!goalsEl) return;
+    const ids = readWizardJsonField('wizard-weekly-goal-focus', []);
+    const labels = ids.map(id => id === 'complete_workouts'
+        ? `Train ${getWizardRecommendedStarterFrequency(wizardChatAnswers)}x/week`
+        : WIZARD_WEEKLY_GOAL_FOCUS_LABELS[id]).filter(Boolean).slice(0, 3);
+    goalsEl.innerHTML = labels.map((label, index) => (
+        `<div class="wizard-assigned-goal" style="--goal-delay:${index * 90}ms">` +
+            `<span class="wizard-assigned-goal-number">0${index + 1}</span>` +
+            `<span>${escapeWizardHtml(label)}</span>` +
+        `</div>`
+    )).join('');
 }
 
 window.submitWizardChatAnswer = submitWizardChatAnswer;
@@ -9802,6 +9789,8 @@ function updateWizardUI() {
             setTimeout(() => wizardOverlay.classList.remove('wizard-mode-transition'), wizardSlideTransitionMs);
         }
         wizardOverlay.classList.toggle('wizard-chat-mode', isChatMode);
+        wizardOverlay.classList.toggle('wizard-trial-locked', window.metaAdTrialMode === true);
+        wizardOverlay.dataset.step = String(currentWizardStep);
         if (currentWizardStep !== 1) wizardOverlay.classList.remove('wizard-chat-keyboard');
     }
 
@@ -9925,7 +9914,7 @@ function updateWizardUI() {
     const titleEl = document.getElementById('wizard-title');
 
     if(titleEl) {
-        titleEl.textContent = currentWizardStep === 1 ? 'Setup Chat' : 'Build Your Plan';
+        titleEl.textContent = currentWizardStep === 1 ? 'TIME FOR A COMEBACK.' : 'YOUR SIX-WEEK SETUP';
     }
 
     if(prevBtn) {
@@ -9935,7 +9924,7 @@ function updateWizardUI() {
 
     if(nextBtn) {
         if(currentWizardStep === finalWizardStep) {
-            nextBtn.innerHTML = "Let's Go! 🚀";
+            nextBtn.textContent = 'OPEN BALANCE';
             nextBtn.onclick = finishOnboarding;
         } else if(currentWizardStep === 1) {
             nextBtn.innerHTML = wizardChatComplete ? "Continue &rarr;" : "Finish chat";
@@ -10450,6 +10439,7 @@ async function wizardNext() {
             why_now: document.getElementById('wizard-why-now')?.value.trim() || '',
             long_term_goal: document.getElementById('wizard-long-term-goal')?.value.trim() || '',
             independence_goal: document.getElementById('wizard-independence-goal')?.value.trim() || '',
+            movement_limits: document.getElementById('wizard-movement-limits')?.value.trim() || '',
             weekly_goal_focus: weeklyGoalFocusLabels
         };
 
@@ -10491,7 +10481,8 @@ async function wizardNext() {
             recommended_training_frequency: goalCatcher.recommended_training_frequency,
             why_now: goalCatcher.why_now,
             long_term_goal: goalCatcher.long_term_goal,
-            independence_goal: goalCatcher.independence_goal
+            independence_goal: goalCatcher.independence_goal,
+            movement_limits: goalCatcher.movement_limits
         };
 
         // Calculate BMR, TDEE, and Macros
@@ -10526,15 +10517,9 @@ async function wizardNext() {
         const dateInput = document.getElementById('wizard-period-date');
         const wellnessToggle = document.getElementById('wizard-wellness-toggle');
 
-        if (!wellnessToggle.checked && !dateInput.value) {
+        const cycleSyncPref = document.querySelector('input[name="wizard-cycle-sync"]:checked')?.value || 'no';
+        if (cycleSyncPref === 'yes' && !wellnessToggle.checked && !dateInput.value) {
             wizardAlert("Please enter your last period date so we can sync your plan.");
-            return;
-        }
-
-        // NEW: Validate cycle sync questions
-        const cycleSyncPref = document.querySelector('input[name="wizard-cycle-sync"]:checked')?.value;
-        if (!cycleSyncPref) {
-            wizardAlert("Please select whether you want to sync your workouts with your cycle.");
             return;
         }
 
@@ -10548,7 +10533,10 @@ async function wizardNext() {
         }
 
         // Save Data
-        if (wellnessToggle.checked) {
+        if (cycleSyncPref !== 'yes') {
+            userCycleData.noPeriodMode = false;
+            userCycleData.lastPeriod = null;
+        } else if (wellnessToggle.checked) {
             userCycleData.noPeriodMode = true;
             toggleNoPeriodMode(); // Apply logic
         } else {
@@ -10603,23 +10591,25 @@ async function wizardNext() {
         const age = existingData.age || 0;
 
         // Determine menopause status based on wellness toggle and age
-        let menopause_status = 'cycling';
-        if (wellnessToggle.checked || age > 45) {
+        let menopause_status = cycleSyncPref === 'yes' ? 'cycling' : 'not_tracking';
+        if (cycleSyncPref === 'yes' && (wellnessToggle.checked || age > 45)) {
             menopause_status = 'menopause';
         }
 
         existingData.menopause_status = menopause_status;
-        existingData.last_period = wellnessToggle.checked ? null : dateInput.value;
+        existingData.last_period = cycleSyncPref === 'yes' && !wellnessToggle.checked ? dateInput.value : null;
 
         // NEW: Save cycle sync preferences
         existingData.cycle_sync_preference = cycleSyncPref;
         existingData.period_energy_response = document.querySelector('input[name="wizard-period-energy"]:checked')?.value || 'high';
 
         // Calculate hormone profile (CORTISOL vs ESTROGEN)
-        if (menopause_status === 'menopause' || age > 45) {
+        if (cycleSyncPref === 'yes' && (menopause_status === 'menopause' || age > 45)) {
             existingData.profile = 'ESTROGEN';
-        } else {
+        } else if (cycleSyncPref === 'yes') {
             existingData.profile = 'CORTISOL';
+        } else {
+            existingData.profile = null;
         }
 
         sessionStorage.setItem('userProfile', JSON.stringify(existingData));
@@ -10656,7 +10646,14 @@ async function wizardNext() {
         existingData.training_frequency = wizardTrainingFrequency;
         existingData.training_days = Array.from(wizardSelectedDays).join(',');
         existingData.recovery_on_rest_days = document.getElementById('wizard-recovery-days')?.checked;
+        existingData.split_preference = wizardTrainingFrequency >= 4 ? 'upper_lower' : 'full_body';
+        existingData.exercise_preferences = existingData.exercise_preferences || { liked: [], avoid: [] };
         sessionStorage.setItem('userProfile', JSON.stringify(existingData));
+
+        // Balance chooses the sensible split and builds the first calendar.
+        // Members can edit either later from Training settings.
+        wizardSplitPreference = existingData.split_preference;
+        generateWizardCalendar();
 
         // Check if user has gym equipment - if not, skip split preference (step 5)
         const equipment = existingData.equipment_access;
@@ -12415,6 +12412,18 @@ async function finishOnboarding() {
     // Sync quiz data to database
     await syncQuizDataToDb();
 
+    // Balance assigns the first three Weekly Goals from the onboarding answers.
+    // The deferred goals module also watches the pending key, so guest previews
+    // carry this across Stripe and apply it as soon as the paid account opens.
+    try {
+        localStorage.setItem('pbb_auto_weekly_goals_pending_v1', 'true');
+        if (window.weeklyGoals && typeof window.weeklyGoals.applyOnboardingDefaults === 'function') {
+            await window.weeklyGoals.applyOnboardingDefaults();
+        }
+    } catch (error) {
+        console.warn('[onboarding] first weekly goals will retry after app open', error);
+    }
+
     // Prepare the first plant-based meal plan before the coaching welcome is
     // queued. This lets Shannon's first message truthfully point the member to
     // Nutrition, while a generation failure still allows onboarding to finish.
@@ -12558,8 +12567,14 @@ function toggleWizardPeriodInput() {
 function togglePeriodEnergyQuestion() {
     const cycleSyncValue = document.querySelector('input[name="wizard-cycle-sync"]:checked')?.value;
     const periodEnergySection = document.getElementById('period-energy-section');
+    const cycleDetails = document.getElementById('wizard-cycle-details');
+    const noPeriodOption = document.getElementById('wizard-cycle-no-period');
+    const isEnabled = cycleSyncValue === 'yes';
 
-    if (cycleSyncValue === 'yes') {
+    if (cycleDetails) cycleDetails.style.display = isEnabled ? 'block' : 'none';
+    if (noPeriodOption) noPeriodOption.style.display = isEnabled ? 'flex' : 'none';
+
+    if (isEnabled) {
         periodEnergySection.style.display = 'block';
     } else {
         periodEnergySection.style.display = 'none';

@@ -37,7 +37,7 @@ assert.match(
   'a refreshed server snapshot must win over stale local storage'
 );
 
-assert.match(dashboard, /pbb-deferred-weeklygoals\.js\?v=25/);
+assert.match(dashboard, /pbb-deferred-weeklygoals\.js\?v=27/);
 assert.match(dashboard, /pbb-weekly-checkin-preview\.js\?v=21/);
 
 console.log('weekly review late-sync protection test passed');

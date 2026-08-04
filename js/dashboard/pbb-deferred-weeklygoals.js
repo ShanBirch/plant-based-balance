@@ -433,6 +433,69 @@
     return suggested.slice(0, MAX_GOALS);
   }
 
+  function onboardingTrainingFrequency() {
+    let frequency = 0;
+    readProfileSources().some(profile => {
+      const candidate = Number(profile.training_frequency || profile.recommended_training_frequency || 0);
+      if (!Number.isFinite(candidate) || candidate < 1) return false;
+      frequency = Math.max(1, Math.min(7, Math.round(candidate)));
+      return true;
+    });
+    return frequency || 2;
+  }
+
+  async function applyOnboardingDefaults() {
+    const pending = localStorage.getItem('pbb_auto_weekly_goals_pending_v1') === 'true';
+    const userId = window.currentUser && window.currentUser.id;
+    const isGuestPreview = userId === 'guest-preview';
+    if (!pending || !userId || state.saving) return false;
+    if (!state.week) state.week = getPlanningWeek(new Date());
+    if (state.selected.length) {
+      if (!isGuestPreview && !state.lastSaveWasLocalOnly) {
+        localStorage.removeItem('pbb_auto_weekly_goals_pending_v1');
+      }
+      return false;
+    }
+
+    const selected = suggestWeeklyGoalsFromOnboarding();
+    const trainingFrequency = onboardingTrainingFrequency();
+    selected.forEach(goal => {
+      if (goal.id === 'complete_workouts') goal.target = trainingFrequency;
+    });
+    if (!selected.length) return false;
+
+    const week = Object.assign({}, state.week);
+    const progress = buildPendingProgress(week, selected);
+    const arc = { headline: 'Your first week is ready.' };
+    state.selected = normalizeSelected(selected);
+    state.progress = progress;
+    state.arc = arc;
+    state.row = saveWeeklyRowLocal(userId, week, state.selected, progress, arc);
+    state.lastSavedAt = Date.now();
+    state.lastSaveWasLocalOnly = true;
+    state.saving = true;
+    renderCard();
+
+    try {
+      const result = await calculateProgress(userId, week, state.selected);
+      state.progress = result.progress;
+      state.arc = result.arc;
+      state.row = await saveWeeklyRow(userId, week, state.selected, result.progress, result.arc);
+      if (!isGuestPreview && !state.lastSaveWasLocalOnly) {
+        localStorage.removeItem('pbb_auto_weekly_goals_pending_v1');
+      }
+      emitWeeklyGoalsSaved(week, state.selected, 'onboarding_auto', { localOnly: state.lastSaveWasLocalOnly });
+      return true;
+    } catch (error) {
+      console.warn('[weekly-goals] onboarding defaults saved locally and will retry sync', error);
+      emitWeeklyGoalsSaved(week, state.selected, 'onboarding_auto', { localOnly: true });
+      return true;
+    } finally {
+      state.saving = false;
+      renderCard();
+    }
+  }
+
   async function fetchWeeklyRow(userId, weekStart) {
     const fallback = readLocalRow(userId, weekStart) || findLocalRow(userId, weekStart);
     if (!window.supabaseClient || !state.tableAvailable) return fallback;
@@ -1102,10 +1165,10 @@
           <div style="width:52px;height:52px;border-radius:16px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;color:#fde68a;font-weight:950;font-size:1.18rem;flex-shrink:0;box-shadow:0 10px 24px rgba(15,23,42,0.22);position:relative;">3</div>
           <div style="flex:1;min-width:0;">
             <div style="font-size:0.68rem;color:#fde68a;text-transform:uppercase;letter-spacing:0.08em;font-weight:900;margin-bottom:3px;">Weekly goals</div>
-            <div style="font-size:1.08rem;color:white;font-weight:900;line-height:1.18;">Choose your 3 for the week</div>
-            <div style="font-size:0.8rem;color:rgba(255,255,255,0.74);margin-top:4px;">We'll suggest a few from your onboarding answers, then you choose.</div>
+            <div style="font-size:1.08rem;color:white;font-weight:900;line-height:1.18;">Your first 3 are ready</div>
+            <div style="font-size:0.8rem;color:rgba(255,255,255,0.74);margin-top:4px;">Balance sets these from your onboarding answers. You can adjust them any time.</div>
           </div>
-          <button type="button" onclick="openWeeklyGoalsModal()" style="border:1px solid rgba(255,255,255,0.22);background:white;color:#24113f;font-size:0.78rem;font-weight:900;padding:10px 14px;border-radius:12px;cursor:pointer;box-shadow:0 10px 22px rgba(15,23,42,0.22);position:relative;">Set</button>
+          <button type="button" onclick="openWeeklyGoalsModal()" style="border:1px solid rgba(255,255,255,0.22);background:white;color:#24113f;font-size:0.78rem;font-weight:900;padding:10px 14px;border-radius:12px;cursor:pointer;box-shadow:0 10px 22px rgba(15,23,42,0.22);position:relative;">Review</button>
         </div>
       `;
       return;
@@ -1502,6 +1565,9 @@
       renderCard();
 
       await loadWeekState(window.currentUser.id, week, existingRow);
+      if (!state.selected.length && localStorage.getItem('pbb_auto_weekly_goals_pending_v1') === 'true') {
+        await applyOnboardingDefaults();
+      }
     } catch (error) {
       console.warn('[weekly-goals] refresh failed', error);
     } finally {
@@ -1528,7 +1594,8 @@
       return refreshCompletedWeek(userId, weekStart);
     },
     getCatalog: function(){ return GOAL_CATALOG; },
-    getState: function(){ return state; }
+    getState: function(){ return state; },
+    applyOnboardingDefaults: applyOnboardingDefaults
   };
 
   if (document.readyState === 'loading') {
