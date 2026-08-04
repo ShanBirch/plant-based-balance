@@ -15,6 +15,7 @@ const {
     ensureMetaAdSalesProgressionQuestion,
     buildDeterministicPaidMetaConversationReply,
     collectCocosAutoRepairIssues,
+    getAutoDmHoldReason,
     buildPaidMetaConversationApproval,
     hasDirectPaidMetaCheckoutIntent,
     isContextualMetaAdOfferLinkRequest,
@@ -316,7 +317,14 @@ test('verified paid Meta price progression is not stripped by the generic early-
     assert.match(draft.joined, /Would you like me to send you the checkout link\?/i);
     const issues = collectCocosAutoRepairIssues({
         draft,
-        draftReview: { verdict: 'pass', issues: [] },
+        draftReview: {
+            verdict: 'pass',
+            confidence: 1,
+            issues: [],
+            notification_required: false,
+            context_loss_suspected: false,
+            reviewer_model: 'deterministic-paid-meta-conversation-approval',
+        },
         currentMessage: 'Thanks. How much is Balance Foundations?',
         qualifier,
         leadStage: 'qualifying',
@@ -324,6 +332,28 @@ test('verified paid Meta price progression is not stripped by the generic early-
         meaningfulLeadReplyCount: 8,
     });
     assert.equal(issues.some(issue => /invites coaching before/i.test(issue)), false);
+    const hold = getAutoDmHoldReason({
+        mediaReview: { required: false },
+        contextReview: { required: false },
+        onboardingPhase: null,
+        draft,
+        draftReview: {
+            verdict: 'pass',
+            confidence: 1,
+            issues: [],
+            notification_required: false,
+            context_loss_suspected: false,
+            reviewer_model: 'deterministic-paid-meta-conversation-approval',
+        },
+        challengeOfferWarning: { required: false, code: 'approved_meta_ad_sales_progression' },
+        currentMessage: 'Thanks. How much is Balance Foundations?',
+        qualifier,
+        leadStage: 'qualifying',
+        linkedUserId: null,
+        meaningfulLeadReplyCount: 8,
+        alertData: { meta_ad_fast_lane: true, meta_ad_conversation_fast_lane: true },
+    });
+    assert.equal(hold, null);
 });
 
 test('deterministic first reply is narrow and leaves sensitive, opt-out, and unrelated ad messages to normal review', () => {

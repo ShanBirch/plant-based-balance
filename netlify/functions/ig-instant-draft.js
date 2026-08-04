@@ -1561,6 +1561,8 @@ function buildDeterministicPaidMetaConversationReply({
 
 function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draft, draftReview, challengeOfferWarning, currentMessage, qualifier, leadStage, linkedUserId, meaningfulLeadReplyCount, contextBypass, cocosContextBypass, alertData, allowTestLaneDraftReviewWarning = false, allowBalanceLeadDraftReviewWarning = false }) {
     const effectiveContextBypass = contextBypass || cocosContextBypass;
+    const verifiedPaidMetaProgression = /^deterministic_paid_meta_conversation_v\d+/i.test(String(draft?.model || ''))
+        && ['campaign_sales_progression', 'campaign_buyer_handoff', 'campaign_app_preview_handoff'].includes(String(draft?.replyMode || ''));
     const metaAdSensitiveHold = getMetaAdSensitiveHoldReason({ alertData, currentMessage });
     if (metaAdSensitiveHold) return metaAdSensitiveHold;
     const appProblemHold = getAppProblemAutoSendHoldReason({
@@ -1612,7 +1614,8 @@ function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draf
             label: 'stock discovery question needs Shannon review',
         };
     }
-    if (draft?.appPreviewHandoff !== true
+    if (!verifiedPaidMetaProgression
+        && draft?.appPreviewHandoff !== true
         && isPrematureChallengeInvite({ draftText: draft.joined, currentMessage, qualifier, leadStage, linkedUserId, leadReplyCount: meaningfulLeadReplyCount })) {
         return {
             code: 'premature_challenge_invite',
