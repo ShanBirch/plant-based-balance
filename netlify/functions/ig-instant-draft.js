@@ -1154,7 +1154,7 @@ function ensureMetaAdSalesProgressionQuestion({
     leadStage = '',
     linkedUserId = null,
 } = {}) {
-    if (!draft || metaAdDraftHasQuestion(draft) || shouldKeepMetaAdReplyQuestionFree({
+    if (!draft || draft.appPreviewHandoff || metaAdDraftHasQuestion(draft) || shouldKeepMetaAdReplyQuestionFree({
         currentMessage,
         leadStage,
         qualifierStage: qualifier?.commercial_stage || qualifier?.stage,
@@ -1443,18 +1443,36 @@ function buildDeterministicPaidMetaConversationReply({
     if ((PAID_META_BLOCKER_SIGNAL_RE.test(message) || hasHighSignalGoalBlocker(message)) && hasGoal) {
         const lifeLoadBlocker = /\b(?:things? (?:just )?get(?:s)? in the way|work (?:and|&) (?:the )?kids|kids (?:and|&) work|busy with (?:work|kids|family))\b/i.test(message);
         const blockerReflection = buildPaidMetaBlockerReflection(message);
-        const joined = lifeLoadBlocker
-            ? (personalVoiceNoteMode
-                ? `Hey, hope you're going well. Yeah, so that makes total sense. Work and the kids can wreck the best intentions, hey. Um, honestly, that's what this program is designed for. It's about having me check in on you, keeping you accountable, and adjusting the week when things get crazy so we can keep the ball rolling. It's not about perfection. It's about getting back on the horse when you fall off, and having the right person in your corner. Would that kind of support help you keep moving toward ${voiceGoalPhrase}?`
-                : `Yeah, that makes sense. It sounds like the plan disappears when work and the kids take over.\n\nWould having a clear week to follow and me checking in make that easier?`)
-            : (personalVoiceNoteMode
-                ? `Hey, hope you're going well. Yeah, so that makes total sense. ${blockerReflection} Um, honestly, that's what this program is designed for. It's about having me check in, keep you accountable, and adjust the week with you so we can keep the ball rolling. It's not about perfection. It's about getting back on the horse when you fall off, and having the right person in your corner. Would that kind of support help you keep moving toward ${voiceGoalPhrase}?`
-                : `Yeah, that makes sense. ${blockerReflection}\n\nWould having a clear plan and me checking in help you stay on track?`);
+        const reflection = lifeLoadBlocker
+            ? 'Work and the kids can wreck the best intentions, hey.'
+            : blockerReflection;
+        if (broadFlow) {
+            const broadJoined = personalVoiceNoteMode
+                ? `Hey, hope you're going well. Yeah, so that makes total sense. ${reflection} Um, honestly, that's what this program is designed for. It's about having me check in, keep you accountable, and adjust the week with you so we can keep the ball rolling. Would that kind of support help you keep moving toward ${voiceGoalPhrase}?`
+                : `Yeah, that makes sense. ${reflection}\n\nWould having a clear plan and me checking in help you stay on track?`;
+            return {
+                chunks: [broadJoined],
+                joined: broadJoined,
+                model: 'deterministic_paid_meta_conversation_v1',
+                replyMode: 'campaign_sales_progression',
+                maxChunks: 1,
+                error: null,
+                flowVariant,
+            };
+        }
+        const joined = personalVoiceNoteMode
+            ? `Hey, hope you're going well. Yeah, so that makes total sense. ${reflection} Um, honestly, that's what Balance is designed for. It's about giving you a clear plan and having the right support around you when the week gets messy, so you can keep moving toward ${voiceGoalPhrase} without needing to be perfect. The app and community are $19.99 a month. I'll send you a quick preview now so you can set yourself up and have five minutes to play around before the membership screen comes up.`
+            : `Yeah, that makes sense. ${reflection} Balance gives you a clear plan and support around ${voiceGoalPhrase}, and the app and community are $19.99 a month.\n\nHere, you can set yourself up and have a five-minute look through it before the membership screen comes up: ${META_APP_PREVIEW_URL}`;
         return {
             chunks: [joined],
             joined,
-            model: 'deterministic_paid_meta_conversation_v1',
-            replyMode: 'campaign_sales_progression',
+            appPreviewHandoff: true,
+            appPreviewUrl: META_APP_PREVIEW_URL,
+            voiceCompanionText: personalVoiceNoteMode
+                ? `Here you go — set yourself up and have a five-minute look through Balance here: ${META_APP_PREVIEW_URL}`
+                : '',
+            model: 'deterministic_paid_meta_conversation_v2',
+            replyMode: 'campaign_app_preview_handoff',
             maxChunks: 1,
             error: null,
             flowVariant,
@@ -1539,7 +1557,8 @@ function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draf
             label: 'stock discovery question needs Shannon review',
         };
     }
-    if (isPrematureChallengeInvite({ draftText: draft.joined, currentMessage, qualifier, leadStage, linkedUserId, leadReplyCount: meaningfulLeadReplyCount })) {
+    if (draft?.appPreviewHandoff !== true
+        && isPrematureChallengeInvite({ draftText: draft.joined, currentMessage, qualifier, leadStage, linkedUserId, leadReplyCount: meaningfulLeadReplyCount })) {
         return {
             code: 'premature_challenge_invite',
             label: 'coaching invite needs human readiness first',
@@ -1648,6 +1667,7 @@ const FOUNDERS_PASS_APP_PREVIEW_URL = '';
 const ALLY_WEIGHT_LOSS_PROOF_URL = 'https://plantbased-balance.org/photos/client-success/ally-cocos.png';
 const FOUNDERS_PASS_CHECKOUT_URL = 'https://plantbased-balance.org/founders';
 const FOUNDERS_PASS_BROAD_CHECKOUT_URL = 'https://future-balance.netlify.app/fitness';
+const META_APP_PREVIEW_URL = 'https://plantbased-balance.org/meta-app-preview.html';
 
 function buildDraftVideoAttachmentData(draft = {}) {
     const url = String(draft?.videoAttachmentUrl || '').trim();
@@ -1942,11 +1962,15 @@ function buildPaidMetaConversationApproval({
     const message = String(currentMessage || '').trim();
     const deterministicProgression = metaAdConversationFastLane
         && !linkedUserId
-        && ['campaign_sales_progression', 'campaign_buyer_handoff'].includes(String(draft?.replyMode || ''))
+        && ['campaign_sales_progression', 'campaign_buyer_handoff', 'campaign_app_preview_handoff'].includes(String(draft?.replyMode || ''))
         && /^deterministic_paid_meta_conversation_v\d+(?:\+[a-z0-9_-]+)*$/i.test(String(draft?.model || ''))
         && !META_AD_FIRST_REPLY_OPT_OUT_RE.test(message)
         && !META_AD_FIRST_REPLY_REVIEW_REQUIRED_RE.test(message)
-        && (draft?.replyMode !== 'campaign_buyer_handoff' || isPaidMetaContextualCheckoutIntent(message));
+        && (draft?.replyMode !== 'campaign_buyer_handoff' || isPaidMetaContextualCheckoutIntent(message))
+        && (draft?.replyMode !== 'campaign_app_preview_handoff'
+            || (draft?.appPreviewHandoff === true
+                && draft?.appPreviewUrl === META_APP_PREVIEW_URL
+                && (PAID_META_BLOCKER_SIGNAL_RE.test(message) || hasHighSignalGoalBlocker(message))));
     if (!deterministicProgression) return null;
     return {
         required: false,
@@ -2088,9 +2112,13 @@ function buildApprovedDeterministicMetaAdFirstReplyReview({
         && draft?.replyMode === 'campaign_goal_proof'
         && /^deterministic_meta_ad_goal_proof_v\d+(?:\+[a-z0-9_-]+)*$/i.test(String(draft?.model || ''));
     const approvedConversationProgression = metaAdConversationFastLane
-        && ['campaign_sales_progression', 'campaign_buyer_handoff'].includes(String(draft?.replyMode || ''))
+        && ['campaign_sales_progression', 'campaign_buyer_handoff', 'campaign_app_preview_handoff'].includes(String(draft?.replyMode || ''))
         && /^deterministic_paid_meta_conversation_v\d+(?:\+[a-z0-9_-]+)*$/i.test(String(draft?.model || ''))
-        && (draft?.replyMode !== 'campaign_buyer_handoff' || isPaidMetaContextualCheckoutIntent(message));
+        && (draft?.replyMode !== 'campaign_buyer_handoff' || isPaidMetaContextualCheckoutIntent(message))
+        && (draft?.replyMode !== 'campaign_app_preview_handoff'
+            || (draft?.appPreviewHandoff === true
+                && draft?.appPreviewUrl === META_APP_PREVIEW_URL
+                && (PAID_META_BLOCKER_SIGNAL_RE.test(message) || hasHighSignalGoalBlocker(message))));
     if ((!approvedFirstReply && !approvedGoalProof && !approvedConversationProgression)
         || linkedUserId
         || mediaReview?.required === true
@@ -2949,14 +2977,40 @@ function isUnlinkedAcquisitionLeadForLinkGate({ leadStage, linkedUserId } = {}) 
     return !['in_app', 'paying', 'churned'].includes(stage);
 }
 
-function buildLeadOnboardingHandoffData({ draftText, qualifier, leadStage, linkedUserId, threadId, manychatMessageId, currentMessage }) {
+function buildLeadOnboardingHandoffData({ draftText, qualifier, leadStage, linkedUserId, threadId, manychatMessageId, currentMessage, appPreviewHandoffUrl = '' }) {
     if (!isUnlinkedAcquisitionLeadForLinkGate({ leadStage, linkedUserId })) return null;
     const draftHasLinkDrop = isSignupLinkHandoffText(draftText);
     const acceptedCoaching = isCurrentChallengeHandoffMoment({ qualifier, currentMessage });
+    const approvedAppPreviewHandoff = appPreviewHandoffUrl === META_APP_PREVIEW_URL
+        && hasHighSignalGoalBlocker(currentMessage)
+        && qualifierHasKnownMetaAdBlocker(qualifier)
+        && !!String(qualifier?.facts?.current_state || qualifier?.facts?.motivation || '').trim();
     const visibleHandoffUrl = (String(draftText || '').match(/https?:\/\/\S+/gi) || [])
         .map(url => url.replace(/[),.!?]+$/, ''))
         .find(url => isApprovedChallengeBioLinkText(url)) || '';
-    if (!draftHasLinkDrop && !acceptedCoaching) return null;
+    if (!draftHasLinkDrop && !acceptedCoaching && !approvedAppPreviewHandoff) return null;
+
+    if (approvedAppPreviewHandoff) {
+        return {
+            lead_onboarding_handoff: false,
+            needs_you_required: false,
+            operator_queue: null,
+            style_note: 'Qualified paid Meta lead received the approved five-minute Balance app preview.',
+            signup_link_manual_only: false,
+            signup_link_handoff_url: META_APP_PREVIEW_URL,
+            approved_link_auto_sendable: true,
+            paid_meta_app_preview_handoff: true,
+            codex_review: {
+                source: 'ig-instant-draft',
+                decision: 'approved_paid_meta_app_preview_handoff',
+                queue: null,
+                needs_shannon_approval: false,
+                reason: 'The lead supplied both a goal and a real blocker, so the current paid app preview is the next step.',
+                evidence_ids: [threadId ? `ig_threads:${threadId}` : '', manychatMessageId ? `manychat_message_id:${manychatMessageId}` : ''].filter(Boolean),
+                reviewed_at: new Date().toISOString(),
+            },
+        };
+    }
 
     if (isApprovedChallengeBioHandoffAllowed({ draftText, qualifier, currentMessage })) {
         return {
@@ -6237,6 +6291,7 @@ exports.handler = async (event) => {
         threadId: thread.id,
         manychatMessageId,
         currentMessage: displayMessage,
+        appPreviewHandoffUrl: draft.appPreviewHandoff ? draft.appPreviewUrl : '',
     });
     const approvedCoachingLinkHandoff = leadOnboardingHandoffData?.approved_link_auto_sendable === true;
     if (leadOnboardingHandoffData?.client_manager_review_required) {
@@ -6366,6 +6421,9 @@ exports.handler = async (event) => {
             meta_ad_attribution: metaAdFastLane ? (thread.custom_data?.meta_ad_attribution || undefined) : undefined,
             outbound_voice_message: outboundVoiceMessage || undefined,
             outbound_voice_message_reason: outboundVoiceMessageReason || undefined,
+            voice_companion_text: outboundVoiceMessage ? (draft.voiceCompanionText || undefined) : undefined,
+            paid_meta_app_preview_handoff: draft.appPreviewHandoff || undefined,
+            paid_meta_app_preview_url: draft.appPreviewHandoff ? draft.appPreviewUrl : undefined,
             inbound_voice_message: inboundVoiceMessage || undefined,
             elevenlabs_voice_id: outboundVoiceMessage ? 'UHnJrglEof8vTMenwnVm' : undefined,
             elevenlabs_voice_name: outboundVoiceMessage ? 'Shannon Balance Professional 20260606' : undefined,
@@ -6622,6 +6680,13 @@ exports.handler = async (event) => {
                 : existingPending.data?.meta_ad_attribution,
             outbound_voice_message: coalescedOutboundVoiceMessage || undefined,
             outbound_voice_message_reason: coalescedOutboundVoiceMessage ? coalescedOutboundVoiceReason : undefined,
+            voice_companion_text: coalescedOutboundVoiceMessage
+                ? (draft.voiceCompanionText || existingPending.data?.voice_companion_text || undefined)
+                : undefined,
+            paid_meta_app_preview_handoff: draft.appPreviewHandoff || existingPending.data?.paid_meta_app_preview_handoff || undefined,
+            paid_meta_app_preview_url: draft.appPreviewHandoff
+                ? draft.appPreviewUrl
+                : existingPending.data?.paid_meta_app_preview_url,
             inbound_voice_message: inboundVoiceMessage || existingPending.data?.inbound_voice_message || undefined,
             elevenlabs_voice_id: coalescedOutboundVoiceMessage
                 ? (existingPending.data?.elevenlabs_voice_id || 'UHnJrglEof8vTMenwnVm')

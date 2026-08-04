@@ -80,7 +80,7 @@ test('Cocos paid-ad Founders Pass opener bypasses the false signup hold and mode
     }), null);
 });
 
-test('paid Meta work-and-kids blocker advances to accountability instead of repeating the blocker question', () => {
+test('paid Meta blocker advances directly to the priced five-minute app preview', () => {
     const qualifier = {
         commercial_stage: 'engaged',
         facts: {
@@ -100,10 +100,28 @@ test('paid Meta work-and-kids blocker advances to accountability instead of repe
         personalVoiceNoteMode: false,
     });
 
-    assert.match(blockerReply.joined, /work and the kids take over/i);
-    assert.match(blockerReply.joined, /clear week to follow and me checking in/i);
+    assert.match(blockerReply.joined, /work and the kids can wreck the best intentions/i);
+    assert.match(blockerReply.joined, /\$19\.99 a month/i);
+    assert.match(blockerReply.joined, /five-minute look/i);
+    assert.match(blockerReply.joined, /meta-app-preview\.html/i);
     assert.doesNotMatch(blockerReply.joined, /what usually gets in the way/i);
-    assert.equal((blockerReply.joined.match(/\?/g) || []).length, 1);
+    assert.doesNotMatch(blockerReply.joined, /clear (?:week|plan).*checking in.*(?:help|easier)/i);
+    assert.equal((blockerReply.joined.match(/\?/g) || []).length, 0);
+    assert.equal(blockerReply.replyMode, 'campaign_app_preview_handoff');
+    assert.equal(blockerReply.appPreviewHandoff, true);
+    const previewHandoff = buildLeadOnboardingHandoffData({
+        draftText: blockerReply.joined,
+        qualifier,
+        leadStage: 'qualifying',
+        linkedUserId: null,
+        threadId: 'coco-thread',
+        manychatMessageId: 'coco-blocker',
+        currentMessage: 'Other things just get in the way. Work kids',
+        appPreviewHandoffUrl: blockerReply.appPreviewUrl,
+    });
+    assert.equal(previewHandoff.approved_link_auto_sendable, true);
+    assert.equal(previewHandoff.paid_meta_app_preview_handoff, true);
+    assert.match(previewHandoff.signup_link_handoff_url, /meta-app-preview\.html$/);
 
     const restoredQuestion = ensureMetaAdSalesProgressionQuestion({
         draft: {
@@ -134,10 +152,23 @@ test('paid Meta work-and-kids blocker advances to accountability instead of repe
     });
     assert.match(voiceReply.joined, /hope you're going well/i);
     assert.match(voiceReply.joined, /work and the kids can wreck the best intentions/i);
-    assert.match(voiceReply.joined, /getting back on the horse/i);
     assert.match(voiceReply.joined, /losing 10kg and feeling fitter/i);
-    assert.equal((voiceReply.joined.match(/\?/g) || []).length, 1);
+    assert.match(voiceReply.joined, /\$19\.99 a month/i);
+    assert.match(voiceReply.joined, /five minutes to play around/i);
+    assert.doesNotMatch(voiceReply.joined, /https?:\/\//);
+    assert.match(voiceReply.voiceCompanionText, /meta-app-preview\.html/i);
+    assert.equal((voiceReply.joined.match(/\?/g) || []).length, 0);
     assert.equal(inspectVoiceScriptQuality(voiceReply.joined).valid, true);
+
+    const broadReply = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'Other things just get in the way. Work kids',
+        qualifier,
+        flowVariant: 'broad_pain',
+        personalVoiceNoteMode: false,
+    });
+    assert.match(broadReply.joined, /clear plan and me checking in/i);
+    assert.doesNotMatch(broadReply.joined, /meta-app-preview|\$19\.99/i);
+    assert.equal((broadReply.joined.match(/\?/g) || []).length, 1);
 });
 
 test('Coco paid-ad referral is the episode boundary when a stale writer restores an older reset timestamp', () => {
@@ -206,7 +237,9 @@ test('paid Meta voice progression reflects different real blocker categories', (
         });
         assert.match(reply.joined, expectedReflection);
         assert.match(reply.joined, /losing 10kg and feeling fitter/i);
-        assert.equal((reply.joined.match(/\?/g) || []).length, 1);
+        assert.match(reply.joined, /\$19\.99 a month/i);
+        assert.match(reply.voiceCompanionText, /meta-app-preview\.html/i);
+        assert.equal((reply.joined.match(/\?/g) || []).length, 0);
     }
 });
 
@@ -641,8 +674,9 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
         qualifier: blockerQualifier,
         flowVariant: 'plant_based_control',
     });
-    assert.match(blocker.joined, /clear plan and me checking in/i);
-    assert.equal((blocker.joined.match(/\?/g) || []).length, 1);
+    assert.match(blocker.joined, /\$19\.99 a month/i);
+    assert.match(blocker.joined, /meta-app-preview\.html/i);
+    assert.equal((blocker.joined.match(/\?/g) || []).length, 0);
     assert.equal(buildPaidMetaConversationApproval({
         metaAdConversationFastLane: true,
         draft: blocker,
@@ -662,7 +696,8 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
         personalVoiceNoteMode: true,
     });
     assert.ok(voiceBlocker.joined.trim().split(/\s+/).length >= 34);
-    assert.equal((voiceBlocker.joined.match(/\?/g) || []).length, 1);
+    assert.equal((voiceBlocker.joined.match(/\?/g) || []).length, 0);
+    assert.match(voiceBlocker.voiceCompanionText, /meta-app-preview\.html/i);
     assert.equal(inspectVoiceScriptQuality(voiceBlocker.joined).valid, true,
         'the deterministic accountability reply is ready for ElevenLabs without another repair round');
 

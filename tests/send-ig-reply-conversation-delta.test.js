@@ -24,6 +24,25 @@ test('Instagram Graph replies split below the native 250-character visible cutof
     }), {});
 });
 
+test('voice companion text is restricted to the approved paid Meta app preview', () => {
+    const previewUrl = 'https://plantbased-balance.org/meta-app-preview.html';
+    const data = {
+        voice_companion_text: `Here you go — have a quick look here: ${previewUrl}`,
+        paid_meta_app_preview_handoff: true,
+        paid_meta_app_preview_url: previewUrl,
+    };
+    assert.equal(sendIg.resolveApprovedVoiceCompanionText(data, true), data.voice_companion_text);
+    assert.equal(sendIg.resolveApprovedVoiceCompanionText(data, false), '');
+    assert.equal(sendIg.resolveApprovedVoiceCompanionText({
+        ...data,
+        voice_companion_text: `${data.voice_companion_text} https://example.com`,
+    }, true), '');
+    assert.equal(sendIg.resolveApprovedVoiceCompanionText({
+        ...data,
+        paid_meta_app_preview_handoff: false,
+    }, true), '');
+});
+
 test('final automated send gate sees a newer manual outbound', async () => {
     const originalFetch = global.fetch;
     try {

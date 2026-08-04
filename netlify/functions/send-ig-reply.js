@@ -219,6 +219,21 @@ function isGratitudeCloserText(text = '') {
         || /\b(?:thanks|thank you|thankyou|appreciate it|legend)\b$/.test(normalized);
 }
 
+function resolveApprovedVoiceCompanionText(alertData = {}, voiceEnabled = false) {
+    const text = String(alertData.voice_companion_text || '').trim();
+    const previewUrl = 'https://plantbased-balance.org/meta-app-preview.html';
+    if (!voiceEnabled
+        || alertData.paid_meta_app_preview_handoff !== true
+        || alertData.paid_meta_app_preview_url !== previewUrl
+        || !text
+        || text.length > 500
+        || !text.includes(previewUrl)
+        || /https?:\/\/(?!plantbased-balance\.org\/meta-app-preview\.html)/i.test(text)) {
+        return '';
+    }
+    return text;
+}
+
 function resolveLatestInboundTextForSend({ alertData = {}, alert = {} } = {}) {
     const data = safeObject(alertData);
     const evidence = safeObject(data.draft_evidence);
@@ -2256,6 +2271,11 @@ exports.handler = async (event) => {
             voiceConfig: voiceMessageConfig,
         }]
         : messagesToSend.map(text => ({ kind: 'text', text }));
+    const voiceCompanionText = resolveApprovedVoiceCompanionText(alertData, voiceMessageConfig.enabled);
+    const approvedVoiceCompanion = !!voiceCompanionText;
+    if (approvedVoiceCompanion) {
+        outboundItems.push({ kind: 'text', text: voiceCompanionText });
+    }
     if (hasDraftVideoAttachment && !voiceMessageConfig.enabled) {
         outboundItems = [
             outboundItems[0],
@@ -2536,7 +2556,9 @@ exports.handler = async (event) => {
         delivery_channel: shouldUseGraph ? 'instagram_graph' : (alertData.delivery_channel || channel),
         delivery_transport: deliveryTransport,
         ...buildAlternateIgDeliveryData(alternateDelivery || {}),
-        delivery_payload_kind: voiceMessageConfig.enabled ? 'audio' : 'text',
+        delivery_payload_kind: voiceMessageConfig.enabled
+            ? (approvedVoiceCompanion ? 'audio_and_text' : 'audio')
+            : 'text',
         outbound_voice_message: voiceMessageConfig.enabled
             ? true
             : (forceText ? false : (alertData.outbound_voice_message || undefined)),
@@ -2756,7 +2778,7 @@ exports.handler = async (event) => {
             chunks_sent: sentChunks.length,
             chunks_total: outboundItems.length,
             delivery_payload_kind: voiceMessageConfig.enabled
-                ? 'audio'
+                ? (approvedVoiceCompanion ? 'audio_and_text' : 'audio')
                 : (hasDraftImageAttachment ? 'image' : (hasDraftVideoAttachment ? 'video' : 'text')),
             ...cleanup,
         }),
@@ -2777,6 +2799,7 @@ exports._test = {
     resolveFirstItemTypingDelayMs,
     resolveOutboundDmBubbleOptions,
     resolveOutboundVoiceMessageConfig,
+    resolveApprovedVoiceCompanionText,
     buildInstagramGraphVideoMessagePayload,
     buildInstagramGraphImageMessagePayload,
     isInstagramAudioUnsupportedError,
