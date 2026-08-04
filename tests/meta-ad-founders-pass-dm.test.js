@@ -596,6 +596,18 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
     assert.match(acceptedSupport.joined, /exactly what the Founders Pass is for/i);
     assert.equal((acceptedSupport.joined.match(/\?/g) || []).length, 1);
 
+    const naturalAcceptedSupport = buildDeterministicPaidMetaConversationReply({
+        currentMessage: "Yes, that's exactly the kind of structure I need.",
+        qualifier: blockerQualifier,
+        history: [{ direction: 'out', text: 'Would that kind of support make it easier for you to stay on track?' }],
+        flowVariant: 'plant_based_control',
+    });
+    assert.match(naturalAcceptedSupport.joined, /exactly what the Founders Pass is for/i);
+    assert.match(naturalAcceptedSupport.joined, /first week|full breakdown/i);
+    assert.equal((naturalAcceptedSupport.joined.match(/\?/g) || []).length, 1);
+    assert.doesNotMatch(naturalAcceptedSupport.joined, /does that feel like the kind of support you need/i,
+        'support acceptance must not repeat the support-fit question the lead just answered');
+
     const acceptedSupportWithVideo = buildDeterministicPaidMetaConversationReply({
         currentMessage: 'Yeah',
         qualifier: blockerQualifier,

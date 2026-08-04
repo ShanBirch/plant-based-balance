@@ -1200,7 +1200,7 @@ function resolveMetaAdEarlyTypingDelayMs({ lastInboundAt = '', seed = '', nowMs 
 const PAID_META_GOAL_SIGNAL_RE = /\b(?:lose|drop|reduce|gain|build|improve|get|feel|become|want|need|goal|stronger|fitter|leaner|healthier|weight|fat|muscle|strength|fitness|energy|confidence)\b/i;
 const PAID_META_BLOCKER_SIGNAL_RE = /\b(?:stop(?:ping)? and start(?:ing)?|stop[- ]start|keep stopping|keep restarting|always restart|fall(?:ing)? off|drop(?:ping)? off|never stick|can(?:'t| not) stick|inconsisten|lose motivation|no motivation|no time|too busy|overwhelm|cravings?|weekends?|chocolate|accountab|stay on track|follow through|things? (?:just )?get(?:s)? in the way|work (?:and|&) (?:the )?kids|kids (?:and|&) work|busy with (?:work|kids|family))\b/i;
 const PAID_META_NEXT_STEP_RE = /^(?:okay[, ]*)?(?:so[, ]*)?(?:what (?:do i do|should i do|now)|what(?:'s| is) next|where (?:do i|should i) start|how (?:do i|should i) start)(?: now)?[.!?\s]*$/i;
-const PAID_META_POSITIVE_FIT_RE = /^(?:yes|yeah|yep|definitely|absolutely|probably|i think so|that would help|that sounds good|sounds good|i(?:'m| am) keen|keen)[!?.\s]*$/i;
+const PAID_META_POSITIVE_FIT_RE = /^(?:(?:yes|yeah|yep|definitely|absolutely)\b(?!.*\b(?:but\s+(?:not|no)|don['’]?t|do not)\b)|probably\b|i think so\b|that would (?:really )?help\b|that sounds good\b|sounds good\b|i(?:'m| am) keen\b|keen\b)[\s\S]{0,160}$/i;
 const PAID_META_APP_INCLUSIONS_RE = /\b(?:what(?:'s| is| was) (?:actually )?(?:included in|in|inside)|what do (?:i|you) get (?:in|inside)) (?:the )?(?:balance(?: app)?|app)\b/i;
 const PAID_META_OFFER_INFO_RE = /^(?:i (?:want|need|wanted) to know )?(?:how much|(?:your )?prices?(?: and what i get)?|pricing|cost|what(?:'s| is) (?:actually )?included|what do i get|what are the (?:details|prices)|tell me (?:the|about the) (?:price|pricing|details|inclusions))(?:\b|[?!.])/i;
 
@@ -1360,7 +1360,7 @@ function buildDeterministicPaidMetaConversationReply({
         const nextAsk = recentProofVideo
             ? 'Want me to send you the full breakdown?'
             : (canSendProofVideo
-                ? 'Does that feel like the kind of support you need?'
+                ? 'Want me to give you the full breakdown?'
                 : 'Want me to show you what the first week would look like?');
         const proofBridge = canSendProofVideo
             ? ` Here's a quick video showing you how it works inside Balance.`
@@ -5944,6 +5944,25 @@ exports.handler = async (event) => {
             learningReelContextBlock,
             learningReelReplyAnchorBlock,
             learningReelEvidenceBlock,
+        };
+    }
+
+    if (metaAdConversationFastLane && !metaAdOpeningTurn && !metaAdGoalReplyTurn) {
+        const deterministicProgression = buildDeterministicPaidMetaConversationReply({
+            currentMessage: messageText,
+            qualifier,
+            history,
+            flowVariant: metaAdFlowVariant,
+            checkoutUrl: metaAdCheckoutUrl,
+            personalVoiceNoteMode: outboundVoiceMessage,
+            allowVideoAttachment: hasInstagramGraphRoute,
+        });
+        if (deterministicProgression) draft = {
+            ...draft,
+            ...deterministicProgression,
+            timeline: draft.timeline,
+            currentTurnAnchorBlock: draft.currentTurnAnchorBlock,
+            conversationEpisode: draft.conversationEpisode,
         };
     }
 
