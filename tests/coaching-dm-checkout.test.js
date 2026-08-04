@@ -104,6 +104,10 @@ test('clean Founders Pass route and cream-gold social preview stay wired', () =>
     assert.match(netlify, /from = "\/founders"[\s\S]{0,120}to = "\/plant-based-fitness\.html"[\s\S]{0,80}status = 200/);
     assert.match(netlify, /from = "\/founders\/:meta_ref"[\s\S]{0,120}to = "\/plant-based-fitness\.html"[\s\S]{0,80}status = 200/);
     assert.match(analytics, /shortMetaRoute[\s\S]{0,900}incoming\.ad_id = decoded\.toString\(\)/);
+    assert.match(founders, /<base href="\/">/);
+    assert.match(founders, /href="\/founders#join"/);
+    assert.match(broadFounders, /<base href="\/">/);
+    assert.match(broadFounders, /href="\/fitness#join"/);
     assert.match(founders, /property="og:url" content="https:\/\/plantbased-balance\.org\/founders"/);
     assert.match(founders, /property="og:image" content="https:\/\/plantbased-balance\.org\/assets\/balance-founders-og-cream-gold\.png\?v=20260804"/);
     assert.match(broadFounders, /property="og:url" content="https:\/\/future-balance\.netlify\.app\/fitness"/);

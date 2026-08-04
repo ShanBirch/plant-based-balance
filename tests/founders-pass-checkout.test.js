@@ -28,6 +28,7 @@ test('one-time Founders Pass has a complete purchase and activation path', () =>
     assert.match(checkout, /balance_foundations_six_week/);
     assert.match(checkout, /safeReturnPath/);
     assert.match(checkout, /"\/plant-based-fitness\.html", "\/fitness-coaching\.html"/);
+    assert.match(checkout, /founders\|fitness/);
     assert.match(checkout, /`\$\{cancelPath\}#join`/);
     assert.match(claim, /payment_status !== "paid"/);
     assert.match(claim, /This purchase does not match the signed-in account/);
@@ -61,7 +62,7 @@ test('Founders Pass experiment has two honest measured landing experiences', () 
     assert.match(plantPage, /data-landing-variant="plant_based_control"/);
     assert.match(broadPage, /data-landing-variant="broad_pain"/);
     assert.doesNotMatch(broadPage, /plant[ -]?based|vegan|vegetarian/i);
-    assert.match(broadPage, /future-balance\.netlify\.app\/fitness-coaching\.html/);
+    assert.match(broadPage, /future-balance\.netlify\.app\/fitness/);
     assert.match(broadPage, /data-plan="founders-pass"/);
     assert.match(plantPage, /<script src="analytics\.js"><\/script>/);
     assert.match(broadPage, /<script src="analytics\.js"><\/script>/);

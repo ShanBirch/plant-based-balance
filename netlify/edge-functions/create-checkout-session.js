@@ -10,7 +10,9 @@ const STRIPE_API_VERSION = "2026-02-25.clover";
 
 function safeReturnPath(value, fallback) {
     const allowed = new Set(["/plant-based-fitness.html", "/fitness-coaching.html"]);
-    return allowed.has(value) ? value : fallback;
+    if (allowed.has(value)) return value;
+    if (/^\/(?:founders|fitness)(?:\/[0-9a-z]+)?\/?$/i.test(String(value || ""))) return value;
+    return fallback;
 }
 
 function appendMetadata(params, prefix, metadata) {
