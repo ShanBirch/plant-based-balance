@@ -163,6 +163,7 @@ Scene 4 (5.2–6.0s): “Watch it. Learn it. Follow your plan.” lands and the 
 - focal: assets/balance-logo.png
 - roles: balance-logo = supporting
 - sfx: notification, click-soft
+- audio_sync: The frozen master voice asset carries 34.5 seconds of leading silence so the delivered MP4 begins speaking only when the visible voice-note bar starts, even if the renderer collapses timeline audio offsets.
 
 Adapt: keep the message-thread-building signature and camera landing on the confirmation; remove machine-working theatre and make the actor unmistakably human.
 
