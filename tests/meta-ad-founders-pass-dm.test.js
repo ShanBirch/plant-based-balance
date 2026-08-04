@@ -176,6 +176,17 @@ test('paid Meta blocker quotes the six-week payment and app access follows posit
     assert.deepStrictEqual(voiceReply.voiceThoughtPausesMs, [1900, 1500, 1450, 1350, 1550, 1600, 1500]);
     assert.equal(inspectVoiceScriptQuality(voiceReply.joined).valid, true);
 
+    const voicePreviewReply = buildDeterministicPaidMetaConversationReply({
+        currentMessage: "Yeah, that sounds good. I'd like to have a look.",
+        qualifier,
+        history: [{ direction: 'out', text: voiceReply.joined }],
+        flowVariant: 'plant_based_control',
+    });
+    assert.equal(voicePreviewReply.replyMode, 'campaign_app_preview_handoff');
+    assert.equal(voicePreviewReply.appPreviewHandoff, true);
+    assert.match(voicePreviewReply.joined, /meta-app-preview\.html/i);
+    assert.doesNotMatch(voicePreviewReply.joined, /founders pass details/i);
+
     const broadReply = buildDeterministicPaidMetaConversationReply({
         currentMessage: 'Other things just get in the way. Work kids',
         qualifier,

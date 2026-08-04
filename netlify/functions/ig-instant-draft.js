@@ -1239,7 +1239,11 @@ function hasRecentPaidMetaSupportQuestion(history = []) {
     return (Array.isArray(history) ? history : [])
         .filter(item => String(item?.direction || '').toLowerCase() === 'out')
         .slice(-4)
-        .some(item => /\b(?:would (?:having me|that kind of support)|would that help|accountability help|help you stay on track|make it easier|are you keen to (?:have|take) a look)\b/i.test(String(item?.text || '')));
+        .some(item => {
+            const text = String(item?.text || '');
+            return /\b(?:would (?:having me|that kind of support)|would that help|accountability help|help you stay on track|make it easier|are you keen to (?:have|take) a look)\b/i.test(text)
+                || /\b(?:set yourself up in the app|check it out before any payment|once you(?:'ve| have) seen it, we can take payment)\b[\s\S]{0,220}\bhow does that sound\b/i.test(text);
+        });
 }
 
 function isApprovedPaidMetaAppPreviewMoment({ currentMessage = '', qualifier = {} } = {}) {
