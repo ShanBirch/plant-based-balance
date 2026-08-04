@@ -26,7 +26,9 @@ assert.match(personalVoicePrompt, /five Cocos voice clips Shannon approved/i);
 assert.match(personalVoicePrompt, /at least 34 words/i);
 assert.match(personalVoicePrompt, /There is no strict maximum/i);
 assert.match(personalVoicePrompt, /3 to 4 imperfect thinking beats/i);
-assert.match(personalVoicePrompt, /At least one must be a natural "umm" or "ahh"/i);
+assert.match(personalVoicePrompt, /At least one must be a drawn-out "ummm"/i);
+assert.match(personalVoicePrompt, /Do not substitute "ahh"/i);
+assert.match(personalVoicePrompt, /you don't have to prove anything, ya know/i);
 assert.match(personalVoicePrompt, /How ya going\?/i);
 assert.match(personalVoicePrompt, /never "How are you going\?"/i);
 assert.match(personalVoicePrompt, /punctuation-led breathing pauses/i);
@@ -139,7 +141,7 @@ assert.strictEqual(normalTiming.delay_ms, 15 * 60 * 1000);
 
 assert.strictEqual(
     voice.buildTtsText(['hey there', 'second bubble']),
-    'hey there\n\nUmm... second bubble'
+    'hey there\n\nUmmm... second bubble'
 );
 
 assert.strictEqual(
@@ -149,14 +151,23 @@ assert.strictEqual(
 
 assert.match(
     voice.ensureNaturalVoiceHesitation('That makes sense. Keep the next step simple.'),
-    /\. Umm\.\.\. Keep/
+    /\. Ummm\.\.\. Keep/
+);
+
+assert.strictEqual(
+    voice.ensureNaturalVoiceHesitation('Keep it simple'),
+    'Ummm... Keep it simple'
+);
+assert.doesNotMatch(
+    voice.ensureNaturalVoiceHesitation('Keep it simple'),
+    /Ahh/
 );
 
 assert.strictEqual(
     voice.buildTtsText([
         'I would not overthink it. It is useful if you can repeat it. Do not make it ten new rules. You cannot keep that up.',
     ]),
-    "I wouldn't overthink it. Umm... It's useful if you can repeat it. Don't make it ten new rules. You can't keep that up."
+    "I wouldn't overthink it. Ummm... It's useful if you can repeat it. Don't make it ten new rules. You can't keep that up."
 );
 
 assert.strictEqual(

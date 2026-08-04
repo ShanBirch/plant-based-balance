@@ -25,8 +25,10 @@ Automatic speech recognition regularly normalises Australian speech. A transcrip
 ## Current non-negotiable surface rules
 
 - Write `How ya going?`, not `How are you going?`, when that casual greeting genuinely fits.
-- Use natural `umm` and `ahh` thinking beats. This is Shannon's current direction from 2026-08-04 and supersedes the older no-written-filler rule.
-- Put `umm` or `ahh` at a real thought change. Never use one to cover a missing explanation.
+- Use a drawn-out `ummm` for Shannon's wondering or thought-searching sound. This is Shannon's direct correction from 2026-08-04 and supersedes the older generic `umm/ahh` rule.
+- Do not substitute a relieved `ahh` for that thinking sound. Use `ahh` only when the line genuinely expresses relief or realisation; never auto-insert it as generic filler.
+- Put `ummm` at a real thought change. Never use it to cover a missing explanation.
+- Use spoken `ya know` after a complete relatable or reassuring point as a soft landing that invites shared understanding. The archive transcript label remains `you know` because recognition normalises the reduction. Do not sprinkle it into unfinished logic or turn every other `you` into `ya`.
 - Use the natural contraction whenever one exists: `I'll`, `I'm`, `I've`, `you're`, `you've`, `it's`, `that's`, `there's`, `don't`, `doesn't`, `can't`, `isn't`, `haven't`.
 - Do not turn every line into phonetic spelling. The script should guide natural delivery without becoming hard to read or damaging TTS pronunciation.
 
@@ -38,7 +40,7 @@ Across 18,677 words from the 512 verified single-speaker recordings:
 | --- | ---: | --- |
 | `so` | 330 | Main thought organiser; often begins a sentence or resets the explanation. |
 | `yeah` | 133 | Agreement, acknowledgement or opening beat. |
-| `you know` | 107 | Shared-understanding check or soft landing. |
+| `you know` | 107 | Shared-understanding check or soft landing after a complete relatable or reassuring point. |
 | `and then` | 82 | Chronological or causal continuation. |
 | `ya` | 31 | Real reduction; use in confirmed phrases such as `How ya going?`, not as a global replacement for `you`. |
 | `goin'` surface pronunciation | 35 | Real delivery feature; normally keep readable script spelling `going` unless phonetic direction is needed. |
@@ -88,7 +90,7 @@ Use the live relationship and message context:
 ### Client coaching
 
 - Start from the actual problem, then say what Shannon would notice, change, watch or adjust.
-- Use `I think`, `you know`, `so`, `yeah` and a measured `umm/ahh` when Shannon is visibly working through the person's situation.
+- Use `I think`, `you know`, `so`, `yeah` and a measured, drawn-out `ummm` when Shannon is visibly working through the person's situation.
 - Do not soften a concrete instruction into vague `support`, `guidance` or `mindfulness` language.
 
 ### Science or mechanism explanation
@@ -96,20 +98,24 @@ Use the live relationship and message context:
 - Keep the causal step correct before adding personality.
 - Translate a technical term immediately: `the eccentric, the way down`.
 - Use short landing fragments after the complete explanation.
-- Put `umm/ahh` before the next thought, not inside the definition or mechanism that must remain clear.
+- Put `ummm` before the next thought, not inside the definition or mechanism that must remain clear.
 
-## Umm and ahh placement
+## Ummm, ahh and soft-landing placement
 
 The clean timing subset contained 77 recognisable `um/uh` sounds over 34.68 minutes, or about 2.22 per minute. The surface recogniser under-counted these, which is why acoustic/word-timing evidence is used for frequency.
+
+The archive establishes that hesitation sounds are real. Shannon's later direct listening correction establishes which sound to author by default: `ummm` is the wondering/thought-searching expression; `ahh` sounds like relief and is not interchangeable.
 
 For normal authored delivery:
 
 - 15–30 seconds: usually zero or one core hesitation.
 - 30–60 seconds: usually one to three core hesitations.
 - 60–90 seconds: usually two to four core hesitations.
-- Vary `umm` and `ahh`; do not alternate them mechanically.
-- Do not place both inside the same tiny phrase.
+- Prefer a long, breathed `ummm` at a genuine thought transition. Do not shorten it into a clipped token between polished clauses.
+- Use `ahh` only when the meaning is actually relief or realisation. Do not alternate it mechanically with `ummm` for variety.
+- Do not place multiple hesitation sounds inside the same tiny phrase.
 - Do not begin every note or Reel with one.
+- Let spoken `ya know` follow a complete relatable or reassuring point when a shared-understanding landing is useful: `you don't have to prove anything, ya know.`
 
 Measured delivery:
 
@@ -123,7 +129,7 @@ Measured delivery:
 | After `so/yeah/well` | 0.20–0.52s | 0.35s |
 | Repeated-word restart | 0.18–0.77s | 0.45s |
 
-An `umm` lasted about 0.58 seconds at the median, while an ordinary word lasted about 0.26 seconds. The sound needs time around it. A fast `umm` inserted between polished clauses does not reproduce Shannon's cadence.
+An `umm` lasted about 0.58 seconds at the median, while an ordinary word lasted about 0.26 seconds. Shannon's approved authored form may be drawn out further as `ummm`; the sound needs time and breath around it. A fast `umm` inserted between polished clauses does not reproduce Shannon's cadence.
 
 ## Sentence construction
 
@@ -138,7 +144,7 @@ The characteristic structure is a complete idea built from smaller spoken groups
 
 1. Direct setup.
 2. One useful explanatory line.
-3. A pause, `so`, `yeah`, `umm` or `ahh` at the real turn.
+3. A pause, `so`, `yeah` or a drawn-out `ummm` at the real turn.
 4. A short restatement or concrete picture.
 5. The next state.
 
@@ -150,7 +156,9 @@ Sentence starts were led by `so`, `and`, `I`, `hey`, `yeah`, `but`, `it's`, `yo`
 
 - `How ya going?`
 - all normal contractions;
-- `umm` and `ahh` as real thinking beats.
+- a drawn-out `ummm` as the default wondering or thought-searching beat;
+- `ahh` only for genuine relief or realisation;
+- spoken `ya know` as a shared-understanding soft landing after a complete thought.
 
 ### Supported when relaxed
 
@@ -201,8 +209,8 @@ Therefore: preserve `How ya going?`, natural `goin'` delivery, thread-earned `br
 
 - `How ya going?`
 - `Yeah, so... [answer].`
-- `Umm... [the next thought].`
-- `[Complete point]. Ahh... [qualification].`
+- `Ummm... [the next thought].`
+- `[Complete reassuring point], ya know.`
 - `[Explanation], you know?`
 - `I mean... [small correction].`
 - `So then... [what happened next].`
@@ -220,7 +228,7 @@ Run:
 npm run voice:check -- --file path\to\script.txt --context dm
 ```
 
-Supported contexts include `dm`, `new_lead`, `spoken`, `reel` and `science`. The checker rejects expanded contractions and formal greeting/presenter phrases, warns about missing `umm/ahh` beats in longer scripts, catches stacked hesitation sounds, checks sentence shape and protects relationship-specific words.
+Supported contexts include `dm`, `new_lead`, `spoken`, `reel` and `science`. The checker rejects expanded contractions and formal greeting/presenter phrases, warns about a missing core hesitation in longer scripts, catches stacked hesitation sounds, checks sentence shape and protects relationship-specific words. A passing `ahh` still needs human semantic review because it is not the default thinking sound.
 
 The checker is a first gate, not proof by itself. A passing script must still match the exact relationship, topic, current facts and closest approved example.
 

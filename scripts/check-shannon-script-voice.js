@@ -71,15 +71,15 @@ function analyzeScript(text = '', { context = 'spoken' } = {}) {
         issues.push(issue({
             severity: 'warning',
             code: 'missing_core_hesitation',
-            message: `This ${wordCount}-word ${context} script has ${coreHesitations} umm/ahh beat${coreHesitations === 1 ? '' : 's'}.`,
-            suggestion: `Add ${targetCore - coreHesitations} genuine “umm” or “ahh” at a real thought change.`,
+            message: `This ${wordCount}-word ${context} script has ${coreHesitations} core hesitation beat${coreHesitations === 1 ? '' : 's'}.`,
+            suggestion: `Add ${targetCore - coreHesitations} genuine, drawn-out “ummm” at a real thought change. Use “ahh” only for actual relief or realisation.`,
         }));
     }
     if (stackedHesitations) {
         issues.push(issue({
             severity: 'error',
             code: 'stacked_hesitations',
-            message: 'Umm/ahh sounds are stacked too closely and read as an imitation.',
+            message: 'Hesitation sounds are stacked too closely and read as an imitation.',
             suggestion: 'Keep one hesitation, finish the thought, then let the next imperfect beat happen later.',
         }));
     }

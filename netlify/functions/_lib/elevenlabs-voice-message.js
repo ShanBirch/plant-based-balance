@@ -349,18 +349,18 @@ function ensureNaturalVoiceHesitation(text = '') {
 
     const paragraphBreak = value.indexOf('\n\n');
     if (paragraphBreak >= 0) {
-        return `${value.slice(0, paragraphBreak + 2)}Umm... ${value.slice(paragraphBreak + 2)}`;
+        return `${value.slice(0, paragraphBreak + 2)}Ummm... ${value.slice(paragraphBreak + 2)}`;
     }
     const sentenceBreak = value.search(/[.!?]\s+(?=[A-Za-z])/);
     if (sentenceBreak >= 0) {
         const splitAt = sentenceBreak + 1;
-        return `${value.slice(0, splitAt)} Umm...${value.slice(splitAt)}`;
+        return `${value.slice(0, splitAt)} Ummm...${value.slice(splitAt)}`;
     }
     const comma = value.indexOf(',');
     if (comma >= 8) {
-        return `${value.slice(0, comma + 1)} umm...${value.slice(comma + 1)}`;
+        return `${value.slice(0, comma + 1)} ummm...${value.slice(comma + 1)}`;
     }
-    return `Ahh... ${value}`;
+    return `Ummm... ${value}`;
 }
 
 function buildTtsText(messages = []) {
@@ -484,7 +484,7 @@ function inspectVoiceScriptQuality(text = '') {
         issues.push(`voice note is ${wordCount} words; minimum is ${MIN_VOICE_NOTE_WORDS}`);
     }
     if (!hasCoreVoiceHesitation(value)) {
-        issues.push('voice note needs at least one natural umm or ahh');
+        issues.push('voice note needs at least one natural, drawn-out ummm thinking beat');
     }
     if (thinkingBeatCount < 3) {
         issues.push(`voice note has ${thinkingBeatCount} thinking beat${thinkingBeatCount === 1 ? '' : 's'}; minimum is 3`);
