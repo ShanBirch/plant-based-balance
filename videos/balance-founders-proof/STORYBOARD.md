@@ -1,8 +1,8 @@
 ---
 format: 1080x1920
-duration: 54.2s
-message: "Balance turns your goal into a clear, supported week"
-arc: Future self → Personal goal → Plan delivered → Human support → Visible progress → Belonging → CTA
+duration: 63.2s
+message: "It's time for a comeback, and Balance puts learning, planning, progress and support in one place"
+arc: Comeback → Personal goal → Learning library → Plan delivered → Human support → Visible progress → Belonging → Balance
 audience: Plant-based adults who want to become fitter but need structure and accountability that works in real life
 mode: autonomous
 music: Warm, confident electronic pulse with an organic human feel; 104 BPM; uplifting without sounding like a hard-sell fitness ad
@@ -13,10 +13,10 @@ music: Warm, confident electronic pulse with an organic human feel; 104 BPM; upl
 - **Palette system:** warm white ground, near-black plum display type and Balance gold as the single accent. Content cards use the restrained gold tint and border system from `frame.md`; no invented gradients or secondary accent colours.
 - **Motion grammar:** smooth long-tail settles, a single purposeful camera move per shot, and progressive reveals across the full beat. With no narration, the music phrasing and the order in which the viewer reads the copy act as the cue rail: show one idea, let it land, then reveal the proof. Holds are still; only a tiny deterministic jitter or a live waveform may remain active.
 - **Visual truth:** use the real Balance logo and real community imagery as proof, but crop and layer them inside cinematic, reconstructed Balance surfaces. Meal-plan delivery and Shannon's inbox voice note are faithful product visualisations, not literal full-screen screenshots.
-- **Rhythm:** Frames 1 and 7 are calm held reads. Frames 2–6 carry the product proof, with Frame 4 intentionally slowing for the human accountability moment before energy builds again through progress and community.
+- **Rhythm:** Frames 1 and 9 are calm held reads. Frames 2–8 carry the product proof, with Frame 3 slowing long enough to scan the full Learning library and Frame 6 intentionally holding for the human accountability moment before energy builds again through progress and community.
 - **Keep-out:** all critical copy and UI stay in the upper 83% and clear of Instagram's header, composer and right-side controls. No raw URLs, browser chrome, stock fitness imagery, generic AI glow, drop shadows, bouncy entrances, slideshow front-loading or screensaver-style independent floating.
 
-## Frame 1 — Find your fittest self
+## Frame 1 — It's time for a comeback
 
 - status: animated
 - src: compositions/frames/01-find-your-fittest-self.html
@@ -38,7 +38,7 @@ music: Warm, confident electronic pulse with an organic human feel; 104 BPM; upl
 Adapt: keep the single restrained reveal and long held read; replace the generic centered card with a vertical editorial cover and make the resolved frame thumbnail-safe.
 
 Scene 1 (0.0–1.1s): warm-white field with a soft gold diagonal atmosphere; the Balance mark draws on in the upper third while a small gold eyebrow, “BALANCE”, arrives beneath it. Centered editorial layout, three depth layers, low density.
-Scene 2 (1.1–3.0s): “FIND YOUR” reveals first, then “FITTEST SELF” lands as the dominant near-black two-line display; a gold sweep travels once through “FITTEST”. The phrase occupies roughly half the usable canvas and is fully readable without sound.
+Scene 2 (1.1–3.0s): “IT'S TIME FOR A” reveals first, then “COMEBACK” lands as the dominant near-black display; a gold sweep travels once through “COMEBACK”. The phrase occupies roughly half the usable canvas and is fully readable without sound.
 Scene 3 (3.0–5.0s): “A plan that fits real life.” rises into place below and the complete cover holds absolutely still for the thumbnail read.
 
 ## Frame 2 — Your goal becomes your week
@@ -67,7 +67,33 @@ Scene 2 (1.5–3.1s): the goal card compresses into a gold “YOUR GOAL” chip 
 Scene 3 (3.1–5.2s): four plan tiles populate sequentially—Plant-based meals, Strength sessions, Daily target, Recovery—each checking on with a restrained gold mark. Asymmetric 60/40 layout with the plan as the dominant subject.
 Scene 4 (5.2–6.0s): the completed week holds; a small line lands last: “Built around what you’re working toward.”
 
-## Frame 3 — Your meal plan, delivered
+## Frame 3 — The whole Learning library
+
+- status: animated
+- src: compositions/frames/02b-balance-learning-library.html
+- duration: 9s
+- poster: 7.8s
+- transition_in: crossfade
+- scene: All seven current Balance Learning sections assemble into one clear library
+- type: feature_showcase
+- persuasion: Cognitive ease and product depth
+- beat: learning depth
+- asset_candidates: none
+- blueprint: grid-card-assemble
+- posture: Adapt
+- rules: spring-pop-entrance, svg-path-draw, stat-bars-and-fills
+- focal: complete Learning library
+- roles: learning-section cards = hero
+- sfx: pop, ping
+
+Adapt: use the vertical-list variant so all seven sections remain readable together. Keep the restrained Balance editorial system, pace the cards across the full beat, and hold on the complete library long enough to understand its breadth.
+
+Scene 1 (0.0–0.9s): “BALANCE / LEARNING” and “THE WHOLE LEARNING LIBRARY.” establish the breadth of the app. A thin gold learning rail draws downward behind the empty list.
+Scene 2 (0.9–5.4s): all seven current sections assemble one at a time: How Your Body Moves; Fuel for Results; Make Progress Stick; Train With Purpose; Build Muscle Intelligently; Energy, Hormones & Recovery; Healthy for Life. Each adds its exact live subtitle.
+Scene 3 (5.4–8.2s): the complete library holds while “Seven learning areas. One place to keep building.” lands beneath it and an Explore to Keep Learning progress line fills from left to right.
+Scene 4 (8.2–9.0s): the complete Learning library holds still for a final phone-readable scan.
+
+## Frame 4 — Your meal plan, delivered
 
 - status: animated
 - src: compositions/frames/03-meal-plan-delivered.html
@@ -93,7 +119,7 @@ Scene 2 (1.3–4.5s): breakfast, lunch, dinner and snack cards assemble one at a
 Scene 3 (4.5–6.1s): the highlighted meal card pushes forward; a gold “ADD TO GROCERY LIST” action presses, and the card morphs into a neatly grouped grocery list delivered beside the week.
 Scene 4 (6.1–7.0s): “Plan. Shop. Cook. Done.” reveals word by word, then the finished meal-plan-and-list composition holds.
 
-## Frame 4 — Your exercise, coached
+## Frame 5 — Your exercise, coached
 
 - status: animated
 - src: compositions/frames/03b-coached-exercise.html
@@ -119,7 +145,7 @@ Scene 2 (1.8–2.8s): the live exercise video makes one deliberate camera pull-b
 Scene 3 (2.8–5.2s): “V-sits” resolves below the video, followed by three practical prescription cards—3 sets, 10–12 reps and 45 seconds rest. Coach cues appear last: chest proud, core braced, control the reach.
 Scene 4 (5.2–6.0s): “Watch it. Learn it. Follow your plan.” lands and the complete exercise-detail screen holds.
 
-## Frame 5 — Real check-ins with Shannon
+## Frame 6 — Real check-ins with Shannon
 
 - status: animated
 - src: compositions/frames/04-shannon-check-in.html
@@ -143,9 +169,9 @@ Adapt: keep the message-thread-building signature and camera landing on the conf
 Scene 1 (0.0–0.7s): quiet cream field; “REAL CHECK-INS WITH SHANNON” enters in two measured lines, then moves to the upper third as a Balance inbox surface rises beneath it.
 Scene 2 (0.7–0.9s): a notification from “Shannon” arrives: “Weekly check-in”, with a warm profile monogram, timestamp and unread gold dot. The camera makes one gentle push toward the message.
 Scene 3 (0.9–1.5s): the message opens into a voice-note card and the play control depresses once. “Delivered in your Balance inbox” lands below.
-Scene 4 (1.5–12.8s): a genuine example check-in plays in Shannon's professional ElevenLabs voice while the gold waveform advances for the actual recording duration. The master audio track is anchored at global 25.5s so the delivered MP4 begins speaking only after the voice-note card appears. The example finishes naturally on “unbelievable”; the artificial trailing phrase is removed. “Questions. Direction. Accountability.” holds beneath the inbox so the support promise still works muted.
+Scene 4 (1.5–12.8s): a genuine example check-in plays in Shannon's professional ElevenLabs voice while the gold waveform advances for the actual recording duration. The master audio track is anchored at global 34.5s so the delivered MP4 begins speaking only after the voice-note card appears. The example finishes naturally on “unbelievable”; the artificial trailing phrase is removed. “Questions. Direction. Accountability.” holds beneath the inbox so the support promise still works muted.
 
-## Frame 6 — See your progress build
+## Frame 7 — See your progress build
 
 - status: animated
 - src: compositions/frames/05-progress-build.html
@@ -171,7 +197,7 @@ Scene 2 (1.5–3.8s): three reconstructed Balance rows arrive sequentially—Str
 Scene 3 (3.8–5.2s): the camera pushes through the completed ring into a Movement card; “Form check” and “Coach workout” chips settle beside a simple training preview.
 Scene 4 (5.2–6.0s): “Your training. Your habits. One clear view.” resolves and holds.
 
-## Frame 7 — A community that shows up
+## Frame 8 — A community that shows up
 
 - status: animated
 - src: compositions/frames/06-daily-community.html
@@ -197,17 +223,17 @@ Scene 2 (1.2–4.0s): real food, walk and workout moments crop cleanly out of th
 Scene 3 (4.0–5.2s): the camera eases inward; the three cards align into a generous vertical feed while “Meals · walks · workouts · wins” reveals beneath them.
 Scene 4 (5.2–6.0s): “A COMMUNITY THAT SHOWS UP DAILY” lands, with “DAILY” in gold; all cards hold still.
 
-## Frame 8 — Founders Pass
+## Frame 9 — Balance
 
 - status: animated
-- src: compositions/frames/07-founders-pass.html
+- src: compositions/frames/07-balance-close.html
 - duration: 6s
 - poster: 5s
 - transition_in: crossfade
-- scene: The promise resolves into a simple, transparent Founders Pass offer
+- scene: The product proof resolves into an evergreen Balance brand close
 - type: cta
-- persuasion: Value summary and low-friction next step
-- beat: offer close
+- persuasion: Value summary and identity reinforcement
+- beat: brand close
 - asset_candidates: assets/balance-logo.png
 - blueprint: titlecard-reveal
 - posture: Adapt
@@ -216,9 +242,9 @@ Scene 4 (5.2–6.0s): “A COMMUNITY THAT SHOWS UP DAILY” lands, with “DAILY
 - roles: balance-logo = supporting
 - sfx: riser, impact-bass-2
 
-Adapt: keep the restrained end-card chain; use three calm proof cards that simplify the offer rather than presenting a dense sales panel.
+Adapt: keep the restrained end-card chain; use three calm proof cards that summarise what Balance helps someone do without presenting a membership, course or checkout offer.
 
-Scene 1 (0.0–1.5s): calm card one: “A CLEAR PLAN.” lands centred and holds for one beat.
-Scene 2 (1.5–3.0s): hard cut at full opacity to card two: “6 WEEKS WITH SHANNON.” A small line clarifies “Questions · direction · accountability”.
-Scene 3 (3.0–4.3s): hard cut to card three: “LIFETIME CORE ACCESS.” A smaller line adds “Balance app + plant-based community”.
-Scene 4 (4.3–6.0s): the Balance mark and “FIND YOUR FITTEST SELF” resolve above one solid gold pill: “FOUNDERS PASS · AU$99 ONCE”. A quiet prompt beneath says “Tell me your goal and I’ll show you how it fits.” The full lockup holds to the final frame.
+Scene 1 (0.0–1.5s): calm card one: “LEARN HOW YOUR BODY WORKS.” lands with “Movement · nutrition · habits · training”.
+Scene 2 (1.5–3.0s): hard cut at full opacity to card two: “TRAIN + EAT WITH A PLAN.” A small line adds “Clear meals · coached exercise · practical structure”.
+Scene 3 (3.0–4.3s): hard cut to card three: “SEE PROGRESS. GET SUPPORT.” A smaller line adds “Check-ins · community · one clear view”.
+Scene 4 (4.3–6.0s): the Balance mark and “IT'S TIME FOR A COMEBACK” resolve above one solid gold “BALANCE” pill. The original line “A plan that fits real life.” returns beneath it and the full brand lockup holds to the final frame.

@@ -1,6 +1,6 @@
 <template>
   <div data-hf-id="hf-rhrv" id="root" data-composition-id="01-find-your-fittest-self" data-duration="5.5" data-width="1080" data-height="1920">
-    <div data-hf-id="hf-k0rp" class="clip f01-find-your-fittest-self-ground" data-start="0" data-duration="5.5" data-track-index="0" aria-hidden="true">
+    <div data-hf-id="hf-k0rp" id="f01-background" class="clip f01-find-your-fittest-self-ground" data-start="0" data-duration="5.5" data-track-index="0" aria-hidden="true">
       <div data-hf-id="hf-t9po" class="f01-find-your-fittest-self-diagonal"></div>
       <div data-hf-id="hf-4426" class="f01-find-your-fittest-self-ring f01-find-your-fittest-self-ring-a"></div>
       <div data-hf-id="hf-xycd" class="f01-find-your-fittest-self-ring f01-find-your-fittest-self-ring-b"></div>
@@ -8,7 +8,7 @@
       <div data-hf-id="hf-cz5o" class="f01-find-your-fittest-self-fine-rule"></div>
     </div>
 
-    <main data-hf-id="hf-wec7" class="clip f01-find-your-fittest-self-cover" data-start="0" data-duration="5.5" data-track-index="1">
+    <main data-hf-id="hf-wec7" id="f01-cover" class="clip f01-find-your-fittest-self-cover" data-start="0" data-duration="5.5" data-track-index="1">
       <section data-hf-id="hf-9km3" class="f01-find-your-fittest-self-lockup" id="f01-find-your-fittest-self-lockup" aria-label="Balance">
         <div data-hf-id="hf-6lqv" class="f01-find-your-fittest-self-mark-shell">
           <img data-hf-id="hf-r13v" class="f01-find-your-fittest-self-mark" id="f01-find-your-fittest-self-mark" src="assets/balance-logo.png" alt="Balance mark">
@@ -24,14 +24,13 @@
         </div>
       </section>
 
-      <section data-hf-id="hf-vmkb" class="f01-find-your-fittest-self-title" aria-label="Find your fittest self">
-        <div data-hf-id="hf-kfk4" class="f01-find-your-fittest-self-kicker" id="f01-find-your-fittest-self-kicker">FIND YOUR</div>
+      <section data-hf-id="hf-vmkb" class="f01-find-your-fittest-self-title" aria-label="It's time for a comeback">
+        <div data-hf-id="hf-kfk4" class="f01-find-your-fittest-self-kicker" id="f01-find-your-fittest-self-kicker">IT'S TIME FOR A</div>
         <div data-hf-id="hf-0thy" class="f01-find-your-fittest-self-display" id="f01-find-your-fittest-self-display">
           <div data-hf-id="hf-zgj1" class="f01-find-your-fittest-self-fittest-stack">
-            <span data-hf-id="hf-ko7g" class="f01-find-your-fittest-self-fittest-solid">FITTEST</span>
-            <span data-hf-id="hf-w6j6" class="f01-find-your-fittest-self-fittest-sweep" id="f01-find-your-fittest-self-fittest-sweep" data-layout-allow-occlusion="">FITTEST</span>
+            <span data-hf-id="hf-ko7g" class="f01-find-your-fittest-self-fittest-solid">COMEBACK</span>
+            <span data-hf-id="hf-w6j6" class="f01-find-your-fittest-self-fittest-sweep" id="f01-find-your-fittest-self-fittest-sweep" data-layout-allow-occlusion="">COMEBACK</span>
           </div>
-          <span data-hf-id="hf-j5l7" class="f01-find-your-fittest-self-self" id="f01-find-your-fittest-self-self">SELF</span>
         </div>
       </section>
 
@@ -174,7 +173,7 @@
       justify-content: center;
       gap: 15px;
       color: #a96f00;
-      font-size: 20px;
+      font-size: 24px;
       font-weight: 600;
       line-height: 1;
       letter-spacing: 0.18em;
@@ -199,7 +198,7 @@
     [class~="f01-find-your-fittest-self-kicker"] {
       min-height: 58px;
       color: #a96f00;
-      font-size: 47px;
+      font-size: 42px;
       font-weight: 600;
       line-height: 1.2;
       letter-spacing: 0.12em;
@@ -211,7 +210,7 @@
       flex-direction: column;
       align-items: center;
       color: #160d20;
-      font-size: 151px;
+      font-size: 131px;
       font-weight: 700;
       line-height: 0.91;
       letter-spacing: -0.055em;
@@ -303,8 +302,9 @@
       const kicker = root.querySelector("#f01-find-your-fittest-self-kicker");
       const kickerStates = [
         { t: 0, text: "" },
-        { t: 0.09, text: "FIND" },
-        { t: 0.28, text: "FIND YOUR" }
+        { t: 0.09, text: "IT'S" },
+        { t: 0.24, text: "IT'S TIME" },
+        { t: 0.42, text: "IT'S TIME FOR A" }
       ];
       const kickerDriver = { t: 0 };
       const kickerTextAt = (time) => {
@@ -355,12 +355,6 @@
         { opacity: 0, y: 38, scale: 0.975 },
         { opacity: 1, y: 0, scale: 1, duration: 0.62, ease: "power2.out" },
         1.48
-      );
-      tl.fromTo(
-        "#f01-find-your-fittest-self-self",
-        { opacity: 0, y: 34 },
-        { opacity: 1, y: 0, duration: 0.54, ease: "power2.out" },
-        1.76
       );
       tl.fromTo(
         "#f01-find-your-fittest-self-fittest-sweep",

@@ -1,0 +1,10 @@
+{
+  "duration": 9.5,
+  "assertions": [
+    { "kind": "appearsBy", "selector": "#f02b-header", "bySec": 0.7 },
+    { "kind": "before", "a": "#f02b-week-1", "b": "#f02b-week-7" },
+    { "kind": "before", "a": "#f02b-week-7", "b": "#f02b-footer" },
+    { "kind": "staysInFrame", "selector": ".f02b-week-card" },
+    { "kind": "keepsMoving", "withinSelector": ".f02b-content", "maxStaticSec": 2.5 }
+  ]
+}

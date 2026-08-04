@@ -2,12 +2,12 @@
 workflow: product-launch-video
 flow: automation
 storyboard: no
-message: "Balance turns a person's goal into a clear supported week, with plant-based meals, training, Shannon's check-ins, progress and an active plant-based community in one place"
+message: "It's time for a comeback: Balance brings a person's learning, plant-based meals, training, support, progress and community into one place"
 destination: instagram-dm
 aspect: 1080x1920
 language: en
 audience: "Plant-based adults who want to become fitter but need structure and accountability that works in real life"
-length: 48s
+length: 63s
 angle: "cinematic product proof: show exactly how support arrives and what daily life inside Balance feels like"
 narration: no
 style_preset: blue-professional
@@ -15,12 +15,12 @@ style_preset: blue-professional
 
 ## Intent
 
-Create a polished vertical Balance ad that can be sent after a Meta-ad lead tells
-Shannon their goal. Lead with “Find your fittest self”, then prove the promise by
-showing the person's week taking shape inside Balance. The viewer should understand
-what their meal plan looks like, how it is delivered, how Shannon's check-in arrives
-as a voice note in their inbox, how progress is made visible, and that the plant-based
-community is active every day.
+Create a polished vertical evergreen post for Balance. Lead with “It's time for a
+comeback”, show the complete Learning library, then prove what everyday life inside
+Balance feels like as the person's week takes shape. The viewer should understand
+the seven learning areas, what their meal plan looks like, how it is delivered, how
+human support can arrive in their inbox, how progress is made visible, and that the
+plant-based community is active every day.
 
 ## Assets
 
@@ -35,7 +35,8 @@ community is active every day.
 ## Customizations
 
 - Use real Balance product truth, but present it as cinematic phone and UI choreography rather than flat screenshots.
-- Build a designed opening frame that also works as the Instagram thumbnail: “FIND YOUR FITTEST SELF” with “A plan that fits real life.”
+- Build a designed opening frame that also works as the Instagram thumbnail: “IT'S TIME FOR A COMEBACK” with “A plan that fits real life.”
+- Show every live Learning section: How Your Body Moves, Fuel for Results, Make Progress Stick, Train With Purpose, Build Muscle Intelligently, Energy, Hormones & Recovery, and Healthy for Life.
 - Animate meal cards assembling into a delivered weekly meal plan with a grocery-list handoff.
 - Show a real Shannon exercise demonstration full-screen, then pull back into the Balance exercise view with coaching cues, sets, reps and rest time.
 - Animate a Shannon voice-note check-in arriving in the Balance inbox, then play a real example check-in in Shannon's professional ElevenLabs voice.
@@ -46,6 +47,6 @@ community is active every day.
 
 - Do not show a raw video URL in the Instagram conversation.
 - Do not present static screenshots one after another.
-- Do not claim instant daily replies, unlimited support, or ongoing personalised weekly plan reviews after the six-week support period.
-- The offer is AU$99 once, six weeks of one-to-one in-app support with Shannon for questions, direction and accountability, then lifetime access to the core app and plant-based community.
+- This is an evergreen Balance product post, not a membership or course offer. Do not show price, checkout, access length, auto-renewal, lifetime-access or fixed-course language.
+- Do not claim instant daily replies or unlimited support.
 - Keep critical text clear of the Instagram top header, bottom composer and right-side controls.
