@@ -18,6 +18,49 @@ function cleanString(value, max = 500) {
     return String(value || '').trim().slice(0, max);
 }
 
+const SPOKEN_NUMBERS_UNDER_100 = [
+    'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine',
+    'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen',
+    'seventeen', 'eighteen', 'nineteen', 'twenty', 'twenty-one', 'twenty-two',
+    'twenty-three', 'twenty-four', 'twenty-five', 'twenty-six', 'twenty-seven',
+    'twenty-eight', 'twenty-nine', 'thirty', 'thirty-one', 'thirty-two',
+    'thirty-three', 'thirty-four', 'thirty-five', 'thirty-six', 'thirty-seven',
+    'thirty-eight', 'thirty-nine', 'forty', 'forty-one', 'forty-two', 'forty-three',
+    'forty-four', 'forty-five', 'forty-six', 'forty-seven', 'forty-eight',
+    'forty-nine', 'fifty', 'fifty-one', 'fifty-two', 'fifty-three', 'fifty-four',
+    'fifty-five', 'fifty-six', 'fifty-seven', 'fifty-eight', 'fifty-nine',
+    'sixty', 'sixty-one', 'sixty-two', 'sixty-three', 'sixty-four', 'sixty-five',
+    'sixty-six', 'sixty-seven', 'sixty-eight', 'sixty-nine', 'seventy',
+    'seventy-one', 'seventy-two', 'seventy-three', 'seventy-four', 'seventy-five',
+    'seventy-six', 'seventy-seven', 'seventy-eight', 'seventy-nine', 'eighty',
+    'eighty-one', 'eighty-two', 'eighty-three', 'eighty-four', 'eighty-five',
+    'eighty-six', 'eighty-seven', 'eighty-eight', 'eighty-nine', 'ninety',
+    'ninety-one', 'ninety-two', 'ninety-three', 'ninety-four', 'ninety-five',
+    'ninety-six', 'ninety-seven', 'ninety-eight', 'ninety-nine',
+];
+
+function speakNumber(value) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return String(value || '');
+    if (Number.isInteger(number) && number >= 0 && number < 100) return SPOKEN_NUMBERS_UNDER_100[number];
+    const [whole, decimal = ''] = String(value).split('.');
+    if (decimal) {
+        return `${speakNumber(whole)} point ${decimal.split('').map(digit => speakNumber(digit)).join(' ')}`;
+    }
+    return String(value);
+}
+
+function normalizeTtsPronunciation(text = '') {
+    return String(text || '')
+        .replace(/\b(\d{1,2}(?:\.\d+)?)\s*(?:kg|kgs|kilograms?)\b/gi, (_, amount) => `${speakNumber(amount)} kilos`)
+        .replace(/(?:AU\s*)?\$(\d{1,2})(?:\.(\d{2}))?/gi, (_, dollars, cents) => {
+            const spokenDollars = speakNumber(dollars);
+            return cents && cents !== '00'
+                ? `${spokenDollars} ${speakNumber(Number(cents))}`
+                : `${spokenDollars} dollars`;
+        });
+}
+
 function parseBoolean(value, fallback = false) {
     if (value == null || value === '') return fallback;
     if (typeof value === 'boolean') return value;
@@ -205,7 +248,7 @@ function normalizeShannonVoiceContractions(text = '') {
         [/\bwas\s+not\b/gi, "wasn't"],
         [/\bwere\s+not\b/gi, "weren't"],
         [/\bi\s+am\b/gi, "I'm"],
-        [/\bi\s+have\b/gi, "I've"],
+        [/\bi\s+have\b(?!\s+to\b)/gi, "I've"],
         [/\bi\s+will\b/gi, "I'll"],
         [/\bi\s+would\b/gi, "I'd"],
         [/\bit\s+is\b/gi, "it's"],
@@ -216,13 +259,13 @@ function normalizeShannonVoiceContractions(text = '') {
         [/\bwhere\s+is\b/gi, "where's"],
         [/\bhere\s+is\b/gi, "here's"],
         [/\byou\s+are\b/gi, "you're"],
-        [/\byou\s+have\b/gi, "you've"],
+        [/\byou\s+have\b(?!\s+to\b)/gi, "you've"],
         [/\byou\s+will\b/gi, "you'll"],
         [/\bwe\s+are\b/gi, "we're"],
-        [/\bwe\s+have\b/gi, "we've"],
+        [/\bwe\s+have\b(?!\s+to\b)/gi, "we've"],
         [/\bwe\s+will\b/gi, "we'll"],
         [/\bthey\s+are\b/gi, "they're"],
-        [/\bthey\s+have\b/gi, "they've"],
+        [/\bthey\s+have\b(?!\s+to\b)/gi, "they've"],
         [/\bthey\s+will\b/gi, "they'll"],
         [/\bwouldnt\b/gi, "wouldn't"],
         [/\bshouldnt\b/gi, "shouldn't"],
@@ -328,7 +371,9 @@ function buildTtsText(messages = []) {
         .replace(/[^\S\n]+\n/g, '\n')
         .replace(/\n{3,}/g, '\n\n')
         .trim();
-    return ensureNaturalVoiceHesitation(normalizeShannonVoiceContractions(text))
+    return normalizeTtsPronunciation(
+        ensureNaturalVoiceHesitation(normalizeShannonVoiceContractions(text))
+    )
         .slice(0, MAX_TTS_CHARS);
 }
 
@@ -700,6 +745,7 @@ module.exports = {
     DEFAULT_STYLE,
     MIN_VOICE_NOTE_WORDS,
     buildTtsText,
+    normalizeTtsPronunciation,
     inspectVoiceScriptQuality,
     ensureNaturalVoiceHesitation,
     createVoiceMessageAudio,

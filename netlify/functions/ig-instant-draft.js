@@ -1261,8 +1261,8 @@ function buildPaidMetaVoiceGoalPhrase(facts = {}) {
     const kgGoal = rawGoal.match(/\b(\d{1,2}(?:\.\d+)?)\s*(?:kg|kgs|kilograms?)\b/i)?.[1] || '';
     const weightGoal = /\b(?:lose|losing|weight|fat|leaner|tone)\b/i.test(rawGoal);
     const fitnessGoal = /\b(?:fit|fitter|fitness|energy)\b/i.test(rawGoal);
-    if (kgGoal && weightGoal && fitnessGoal) return `losing ${kgGoal}kg and feeling fitter`;
-    if (kgGoal && weightGoal) return `losing ${kgGoal}kg`;
+    if (kgGoal && weightGoal && fitnessGoal) return `losing ${kgGoal} kilos and feeling fitter`;
+    if (kgGoal && weightGoal) return `losing ${kgGoal} kilos`;
     if (weightGoal) return 'your weight-loss goal';
     if (/\b(?:strong|stronger|strength|muscle)\b/i.test(rawGoal)) return 'getting stronger';
     if (fitnessGoal) return 'feeling fitter';
@@ -1462,23 +1462,24 @@ function buildDeterministicPaidMetaConversationReply({
         }
         const joined = personalVoiceNoteMode
             ? [
-                `Hey, hope you're going well. Yeah, so that makes total sense.`,
+                `Hey, how are you going. Yeah, so that makes total sense.`,
                 reflection,
-                `Um, honestly, that's what Balance is designed for.`,
-                `It's about giving you a clear plan, and having the right support around you when the week gets messy.`,
-                `So you can keep moving toward ${voiceGoalPhrase}, without needing to be perfect.`,
-                `The app and community are $19.99 a month. I'll send you a quick preview now, so you can set yourself up and have five minutes to play around before the membership screen comes up.`,
+                `Um, yeah, so that's honestly what Balance is designed for.`,
+                `It's, it's about giving you a clear plan, you know, so when you fall off, you've always got something simple to come back to.`,
+                `And having me there to check in, keep you accountable, and move things around a bit when life gets crazy.`,
+                `So, you know, you can get back on the horse and keep moving toward ${voiceGoalPhrase}, without feeling like you have to get every week perfect.`,
+                `Yeah, so, it's nineteen ninety-nine a month. I'll send you a page that explains it properly, and if it feels right, you can tap Try Balance free and have a look through the app.`,
             ].join('\n\n')
-            : `Yeah, that makes sense. ${reflection} Balance gives you a clear plan and support around ${voiceGoalPhrase}, and the app and community are $19.99 a month.\n\nHere, you can set yourself up and have a five-minute look through it before the membership screen comes up: ${META_APP_PREVIEW_URL}`;
+            : `Yeah, that makes sense. ${reflection} Balance gives you a clear plan and support around ${voiceGoalPhrase}, and the app and community are $19.99 a month.\n\nThis page explains how it works. If it feels right, tap Try Balance free at the bottom: ${META_APP_PREVIEW_URL}`;
         return {
             chunks: [joined],
             joined,
             appPreviewHandoff: true,
             appPreviewUrl: META_APP_PREVIEW_URL,
             voiceCompanionText: personalVoiceNoteMode
-                ? `Here you go — set yourself up and have a five-minute look through Balance here: ${META_APP_PREVIEW_URL}`
+                ? `Here you go — this explains how Balance works. If it feels right, tap Try Balance free at the bottom: ${META_APP_PREVIEW_URL}`
                 : '',
-            voiceThoughtPauseMs: personalVoiceNoteMode ? 900 : 0,
+            voiceThoughtPauseMs: personalVoiceNoteMode ? 1300 : 0,
             model: 'deterministic_paid_meta_conversation_v2',
             replyMode: 'campaign_app_preview_handoff',
             maxChunks: 1,

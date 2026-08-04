@@ -153,8 +153,18 @@ assert.strictEqual(
 );
 
 assert.strictEqual(
+    voice.normalizeTtsPronunciation('Lose 7kg. Balance is AU$19.99 a month.'),
+    'Lose seven kilos. Balance is nineteen ninety-nine a month.'
+);
+
+assert.strictEqual(
     voice._test.normalizeShannonVoiceContractions('i wouldnt say it is bad, but you are probably overthinking it'),
     "i wouldn't say it's bad, but you're probably overthinking it"
+);
+
+assert.strictEqual(
+    voice._test.normalizeShannonVoiceContractions('you have to restart, but you have already got a plan'),
+    "you have to restart, but you've already got a plan"
 );
 
 const wav = voice._test.wrapPcm16LeAsWav(Buffer.from([0, 0, 255, 127]), 16000, 1);

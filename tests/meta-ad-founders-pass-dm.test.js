@@ -102,7 +102,8 @@ test('paid Meta blocker advances directly to the priced five-minute app preview'
 
     assert.match(blockerReply.joined, /work and the kids can wreck the best intentions/i);
     assert.match(blockerReply.joined, /\$19\.99 a month/i);
-    assert.match(blockerReply.joined, /five-minute look/i);
+    assert.match(blockerReply.joined, /page explains how it works/i);
+    assert.match(blockerReply.joined, /Try Balance free at the bottom/i);
     assert.match(blockerReply.joined, /meta-app-preview\.html/i);
     assert.doesNotMatch(blockerReply.joined, /what usually gets in the way/i);
     assert.doesNotMatch(blockerReply.joined, /clear (?:week|plan).*checking in.*(?:help|easier)/i);
@@ -150,11 +151,11 @@ test('paid Meta blocker advances directly to the priced five-minute app preview'
         flowVariant: 'plant_based_control',
         personalVoiceNoteMode: true,
     });
-    assert.match(voiceReply.joined, /hope you're going well/i);
+    assert.match(voiceReply.joined, /Hey, how are you going/i);
     assert.match(voiceReply.joined, /work and the kids can wreck the best intentions/i);
-    assert.match(voiceReply.joined, /losing 10kg and feeling fitter/i);
-    assert.match(voiceReply.joined, /\$19\.99 a month/i);
-    assert.match(voiceReply.joined, /five minutes to play around/i);
+    assert.match(voiceReply.joined, /losing 10 kilos and feeling fitter/i);
+    assert.match(voiceReply.joined, /nineteen ninety-nine a month/i);
+    assert.match(voiceReply.joined, /tap Try Balance free/i);
     assert.doesNotMatch(voiceReply.joined, /https?:\/\//);
     assert.match(voiceReply.voiceCompanionText, /meta-app-preview\.html/i);
     assert.equal((voiceReply.joined.match(/\?/g) || []).length, 0);
@@ -236,8 +237,8 @@ test('paid Meta voice progression reflects different real blocker categories', (
             personalVoiceNoteMode: true,
         });
         assert.match(reply.joined, expectedReflection);
-        assert.match(reply.joined, /losing 10kg and feeling fitter/i);
-        assert.match(reply.joined, /\$19\.99 a month/i);
+        assert.match(reply.joined, /losing 10 kilos and feeling fitter/i);
+        assert.match(reply.joined, /nineteen ninety-nine a month/i);
         assert.match(reply.voiceCompanionText, /meta-app-preview\.html/i);
         assert.equal((reply.joined.match(/\?/g) || []).length, 0);
     }
@@ -619,10 +620,12 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
         flowVariant: 'plant_based_control',
         personalVoiceNoteMode: true,
     });
-    assert.equal(blockerVoiceReply.voiceThoughtPauseMs, 900);
-    assert.equal(blockerVoiceReply.joined.split(/\n\s*\n/).length, 6);
+    assert.equal(blockerVoiceReply.voiceThoughtPauseMs, 1300);
+    assert.equal(blockerVoiceReply.joined.split(/\n\s*\n/).length, 7);
     assert.doesNotMatch(blockerVoiceReply.joined, /\.\.\./);
-    assert.match(blockerVoiceReply.joined, /losing 8kg/i);
+    assert.match(blockerVoiceReply.joined, /losing 8 kilos/i);
+    assert.match(blockerVoiceReply.joined, /It's, it's about giving you a clear plan/i);
+    assert.match(blockerVoiceReply.joined, /you know/i);
     assert.equal(inspectVoiceScriptQuality(blockerVoiceReply.joined).valid, true);
 
     const changingShiftBlocker = buildDeterministicPaidMetaConversationReply({
@@ -638,9 +641,9 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
         personalVoiceNoteMode: true,
     });
     assert.equal(changingShiftBlocker.replyMode, 'campaign_app_preview_handoff');
-    assert.equal(changingShiftBlocker.voiceThoughtPauseMs, 900);
+    assert.equal(changingShiftBlocker.voiceThoughtPauseMs, 1300);
     assert.match(changingShiftBlocker.joined, /life keeps crowding the week/i);
-    assert.match(changingShiftBlocker.joined, /losing 7kg/i);
+    assert.match(changingShiftBlocker.joined, /losing 7 kilos/i);
 
     const goal = buildDeterministicPaidMetaConversationReply({
         currentMessage: 'I need to lose weight, probably 15kgs',

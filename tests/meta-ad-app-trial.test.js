@@ -189,6 +189,11 @@ test('dashboard, signup, native handoffs, measurement, and both discovery system
     assert.match(landing, /\.button\[hidden\]\s*\{\s*display:none !important;/);
     assert.match(landing, /native_handoff/);
     assert.match(landing, /facebook_5m_paid_v2/);
+    assert.match(landing, /Built for the stop-start weeks/);
+    assert.match(landing, /Balance App \+ Community is \$19\.99 AUD per month/);
+    assert.match(landing, /TRY BALANCE FREE/);
+    assert.ok(landing.indexOf('id="how-balance-helps"') < landing.indexOf('id="start-preview"'));
+    assert.match(landing, /Your free look does not begin until you tap the button below/);
     assert.match(logger, /'trial_gate_shown'/);
     assert.match(logger, /'trial_subscription_claimed'/);
     assert.match(android, /getPendingMetaTrialQuery/);

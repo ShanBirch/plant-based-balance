@@ -10,13 +10,20 @@
     <style>
         :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
         * { box-sizing: border-box; }
-        body { margin:0; min-height:100vh; min-height:100dvh; background:radial-gradient(circle at 50% -10%, #343025 0, #12110f 38%, #050505 76%); color:#f8f5ee; padding:calc(28px + env(safe-area-inset-top, 0px)) 20px calc(28px + env(safe-area-inset-bottom, 0px)); display:flex; align-items:center; justify-content:center; }
-        main { width:100%; max-width:440px; text-align:center; }
+        body { margin:0; min-height:100vh; min-height:100dvh; background:radial-gradient(circle at 50% -10%, #343025 0, #12110f 32%, #050505 72%); color:#f8f5ee; padding:calc(28px + env(safe-area-inset-top, 0px)) 20px calc(40px + env(safe-area-inset-bottom, 0px)); }
+        main { width:100%; max-width:620px; margin:0 auto; text-align:center; }
         .logo { width:76px; height:76px; object-fit:contain; margin:0 auto 22px; filter:drop-shadow(0 12px 28px rgba(216,178,94,.18)); }
         .eyebrow { margin:0 0 12px; color:#d8b25e; font-size:.76rem; font-weight:800; letter-spacing:.13em; text-transform:uppercase; }
         h1 { margin:0; font-size:clamp(2rem, 8vw, 3rem); line-height:1.02; letter-spacing:-.045em; }
-        .lead { margin:18px auto 24px; max-width:38ch; color:#c8c1b3; font-size:1rem; line-height:1.6; }
-        .steps { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:0 0 24px; }
+        .lead { margin:18px auto 28px; max-width:44ch; color:#c8c1b3; font-size:1rem; line-height:1.65; }
+        .section { margin:18px 0; padding:24px 20px; border:1px solid rgba(216,178,94,.2); border-radius:20px; background:rgba(255,255,255,.035); text-align:left; }
+        .section h2 { margin:0 0 12px; color:#f5d98a; font-size:1.25rem; letter-spacing:-.02em; }
+        .section p { margin:0; color:#bbb3a5; line-height:1.65; }
+        .features { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px; }
+        .feature { padding:14px; border-radius:14px; background:rgba(0,0,0,.22); color:#d8d1c5; font-size:.86rem; line-height:1.45; }
+        .feature strong { display:block; color:#f8f5ee; margin-bottom:4px; }
+        .price { margin-top:16px; padding:15px; border-left:3px solid #d8b25e; background:rgba(216,178,94,.08); color:#e8dfce; font-size:.9rem; line-height:1.55; }
+        .steps { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:16px 0 0; }
         .step { min-height:94px; padding:14px 9px; border:1px solid rgba(216,178,94,.2); border-radius:16px; background:rgba(255,255,255,.035); }
         .step strong { display:block; color:#f5d98a; font-size:1.05rem; margin-bottom:6px; }
         .step span { color:#aaa294; font-size:.73rem; line-height:1.35; }
@@ -25,31 +32,57 @@
         .button.primary { background:linear-gradient(135deg,#f5d98a,#bd8b2c); color:#111; box-shadow:0 14px 34px rgba(216,178,94,.22); }
         .button.secondary { background:#f8f5ee; color:#111; }
         .button.ghost { color:#d8b25e; border:1px solid rgba(216,178,94,.34); background:transparent; margin-top:10px; }
-        .or { margin:20px 0 12px; color:#777064; font-size:.76rem; text-transform:uppercase; letter-spacing:.1em; }
+        .cta-wrap { margin:28px 0 0; padding:26px 20px; border-radius:20px; background:linear-gradient(145deg,rgba(216,178,94,.14),rgba(255,255,255,.035)); border:1px solid rgba(216,178,94,.28); }
+        .cta-wrap h2 { margin:0 0 8px; font-size:1.35rem; }
+        .cta-wrap p { margin:0 0 18px; color:#bdb5a7; line-height:1.55; }
+        .or { margin:28px 0 12px; color:#777064; font-size:.76rem; text-transform:uppercase; letter-spacing:.1em; }
         .stores { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
         .note { color:#827b70; font-size:.72rem; line-height:1.45; margin:15px 8px 0; }
+        @media (max-width:470px) { .features { grid-template-columns:1fr; } }
         @media (max-width:370px) { .steps { grid-template-columns:1fr; } .step { min-height:0; } }
     </style>
 </head>
 <body data-landing-page="meta-app-preview" data-landing-variant="facebook_5m_paid_v2">
 <main>
     <img class="logo" src="balance_logo.png" alt="Balance">
-    <p class="eyebrow">Facebook preview</p>
-    <h1>Try Balance before you join</h1>
-    <p class="lead">Set up your goals, explore the app for five minutes, then unlock the full app and community only if it feels right.</p>
-    <div class="steps" aria-label="How the preview works">
-        <div class="step"><strong>1</strong><span>Complete your setup</span></div>
-        <div class="step"><strong>2</strong><span>Explore for five minutes</span></div>
-        <div class="step"><strong>3</strong><span>Unlock Balance to continue</span></div>
+    <p class="eyebrow">Plant-based fitness that fits real life</p>
+    <h1>A plan you can always come back to</h1>
+    <p class="lead">Balance gives you practical training, plant-based food structure and a clear weekly focus—without expecting every week to be perfect.</p>
+
+    <section class="section" id="how-balance-helps">
+        <h2>Built for the stop-start weeks</h2>
+        <p>When work, family, low energy or a changed routine knocks things sideways, you do not need another complete reset. Balance keeps the next useful step clear so you can get moving again.</p>
+        <div class="features">
+            <div class="feature"><strong>Training structure</strong>Workouts with video demonstrations and a plan you can follow at your level.</div>
+            <div class="feature"><strong>Plant-based food</strong>Meal-planning tools and daily targets without turning food into a second job.</div>
+            <div class="feature"><strong>Weekly direction</strong>Goals, progress tracking and a simple focus for the week ahead.</div>
+            <div class="feature"><strong>Community</strong>A plant-based fitness space where you can keep showing up and ask for support.</div>
+        </div>
+        <div class="price"><strong>Balance App + Community is $19.99 AUD per month.</strong><br>You can look through the app free for five minutes before the membership screen appears.</div>
+    </section>
+
+    <section class="section" id="how-preview-works">
+        <h2>See whether it feels right first</h2>
+        <p>Your free look does not begin until you tap the button below.</p>
+        <div class="steps" aria-label="How the preview works">
+            <div class="step"><strong>1</strong><span>Set up your goal</span></div>
+            <div class="step"><strong>2</strong><span>Explore for five minutes</span></div>
+            <div class="step"><strong>3</strong><span>Choose whether to continue</span></div>
+        </div>
+    </section>
+
+    <div class="cta-wrap" id="try-balance">
+        <h2>Ready to look inside?</h2>
+        <p>Tap below when you are ready. That is when your five-minute app preview starts.</p>
+        <a id="start-preview" class="button primary" href="#" data-track="cta_click">TRY BALANCE FREE</a>
+        <p id="preview-note" class="note">No payment is taken before your preview. The membership option appears after five minutes.</p>
     </div>
-    <a id="start-preview" class="button primary" href="#" data-track="cta_click">START MY FREE PREVIEW</a>
-    <p class="or">Or download Balance free</p>
+    <p class="or">Prefer the app?</p>
     <div class="stores">
         <a class="button secondary" href="https://apps.apple.com/us/app/balance-fitness-gamified/id6761238161" data-track="cta_click">iPhone</a>
         <a class="button secondary" href="https://play.google.com/store/apps/details?id=com.fitgotchi.app" data-track="cta_click">Android</a>
     </div>
     <a id="open-installed" class="button ghost" href="#" data-track="cta_click" hidden>Already installed? Open Balance</a>
-    <p id="preview-note" class="note">Your five-minute preview starts in your browser. The iPhone and Android downloads are free.</p>
 </main>
 <script>
 (function () {
