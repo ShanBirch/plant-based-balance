@@ -84,3 +84,12 @@ test('scheduled worker transports reply and draft text as UTF-8 Base64', () => {
     assert.match(source, /replyTextUtf8Base64:\s*Buffer\.from\(replyText, 'utf8'\)\.toString\('base64'\)/);
     assert.match(source, /draftTextUtf8Base64:\s*Buffer\.from\(draftText, 'utf8'\)\.toString\('base64'\)/);
 });
+
+test('the sender restores its full receipt when its own Graph echo wins the status race', () => {
+    const source = fs.readFileSync(path.join(
+        __dirname,
+        '../netlify/functions/send-ig-reply.js'
+    ), 'utf8');
+    assert.match(source, /status=eq\.sent&data->>send_claim_id=eq\.\$\{encodeURIComponent\(sendClaimId\)\}&data->>sent_via=eq\.instagram_graph_echo/);
+    assert.match(source, /body: \{ actioned_at: sentAtIso, data: mergedData \}/);
+});

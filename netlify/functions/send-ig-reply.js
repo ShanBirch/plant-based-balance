@@ -2657,7 +2657,19 @@ exports.handler = async (event) => {
         });
         alertMarkedSent = allOk && markedRows.length > 0;
         if (allOk && !alertMarkedSent) {
-            console.warn(`[send-ig-reply] alert ${alertId} was delivered but its send claim was lost before mark-sent`);
+            // A native Graph echo can mark this same alert sent while the
+            // multi-item sender is still finishing. Recover the full receipt
+            // only when the exact send claim is still present and the echo is
+            // the actor that won the race.
+            const echoRows = await supabase(`coach_alerts?id=eq.${encodeURIComponent(alertId)}&status=eq.sent&data->>send_claim_id=eq.${encodeURIComponent(sendClaimId)}&data->>sent_via=eq.instagram_graph_echo`, {
+                method: 'PATCH',
+                body: { actioned_at: sentAtIso, data: mergedData },
+                prefer: 'return=representation',
+            });
+            alertMarkedSent = echoRows.length > 0;
+            if (!alertMarkedSent) {
+                console.warn(`[send-ig-reply] alert ${alertId} was delivered but its send claim was lost before mark-sent`);
+            }
         }
     } catch (err) {
         console.warn('[send-ig-reply] alert status update failed (non-fatal):', err.message);
