@@ -2488,9 +2488,15 @@ async function loadIgHistory(threadId, currentText) {
     return prior;
 }
 
-async function hasRecentOutboundVoiceMessage(threadId, cooldownDays = 30) {
+function resolveRecentVoiceSince({ cooldownDays = 30, resetAt = '', nowMs = Date.now() } = {}) {
+    const cooldownSinceMs = Number(nowMs) - (cooldownDays * 24 * 60 * 60 * 1000);
+    const resetAtMs = Date.parse(resetAt || '');
+    return new Date(Number.isFinite(resetAtMs) ? Math.max(cooldownSinceMs, resetAtMs) : cooldownSinceMs).toISOString();
+}
+
+async function hasRecentOutboundVoiceMessage(threadId, cooldownDays = 30, resetAt = '') {
     if (!threadId) return false;
-    const since = new Date(Date.now() - (cooldownDays * 24 * 60 * 60 * 1000)).toISOString();
+    const since = resolveRecentVoiceSince({ cooldownDays, resetAt });
     try {
         const rows = await supabaseQuery(
             `ig_messages?select=id&thread_id=eq.${encodeURIComponent(threadId)}&direction=eq.out&source=eq.instagram_graph_voice_send&created_at=gte.${encodeURIComponent(since)}&limit=1`
@@ -5853,7 +5859,13 @@ exports.handler = async (event) => {
     const qualifierQuestion = (!terminalQualifierStage && qualifierEligible && qualifierEvaluated && qualifier?.is_question_moment && qualifier?.next_question)
         ? qualifier.next_question.trim()
         : null;
-    const recentOutboundVoiceMessage = await hasRecentOutboundVoiceMessage(thread.id, 1);
+    const recentOutboundVoiceMessage = await hasRecentOutboundVoiceMessage(
+        thread.id,
+        1,
+        internalMetaAdConversationTestLane
+            ? thread.custom_data?.internal_test_conversation_reset_at
+            : ''
+    );
     const inboundVoiceMessage = hasInboundVoiceNoteInUnansweredBatch({
         currentMessage: messageText,
         recentInboundMessages,
@@ -5867,7 +5879,7 @@ exports.handler = async (event) => {
         meaningfulLeadReplyCount,
         hasRecentVoiceMessage: recentOutboundVoiceMessage,
         inboundVoiceMessage,
-        bypassRecentVoiceCooldownForInternalTest: internalMetaAdConversationTestLane,
+        bypassRecentVoiceCooldownForInternalTest: false,
     });
     // Internal accounts exercise the same voice eligibility as real leads.
     // The Cocos -> Shan n Sunny flag opens the auto-reply test lane, but it
@@ -7300,6 +7312,7 @@ exports._test = {
     buildDraftImageAttachmentData,
     ensureMetaAdSalesProgressionQuestion,
     resolveMetaAdEarlyTypingDelayMs,
+    resolveRecentVoiceSince,
     getCocosCodexReviewHold,
     isBalanceLeadAutoSendEnabled,
     isCanceledLatestRecoveryCandidate,

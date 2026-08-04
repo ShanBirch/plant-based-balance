@@ -662,6 +662,17 @@ assert.equal(instantDraft.resolveMetaAdEarlyTypingDelayMs({
     seed: 'message-1',
     nowMs: Date.parse('2026-08-01T10:00:20.000Z'),
 }), 0, 'late webhook processing shows typing immediately instead of waiting longer');
+const voiceCooldownNow = Date.parse('2026-08-04T03:30:00.000Z');
+assert.equal(instantDraft.resolveRecentVoiceSince({
+    cooldownDays: 1,
+    resetAt: '2026-08-04T03:00:00.000Z',
+    nowMs: voiceCooldownNow,
+}), '2026-08-04T03:00:00.000Z', 'the Coco reset ignores only voice notes from older test episodes');
+assert.equal(instantDraft.resolveRecentVoiceSince({
+    cooldownDays: 1,
+    resetAt: '2026-08-02T03:00:00.000Z',
+    nowMs: voiceCooldownNow,
+}), '2026-08-03T03:30:00.000Z', 'an old reset never weakens the normal one-day proactive voice cooldown');
 const contextualLinkHandoff = instantDraft.buildLeadOnboardingHandoffData({
     draftText: contextualLinkReply.joined,
     qualifier: { commercial_stage: 'buyer_intent', stage: 'current_state' },
