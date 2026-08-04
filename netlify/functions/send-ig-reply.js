@@ -1051,6 +1051,16 @@ function resolveOutboundItemGapMs({ index, outboundItems = [], plannedChunkGapsM
     return plannedChunkGapsMs[index - 1] || chunkPacing.minMs || CHUNK_GAP_MIN_MS;
 }
 
+function resolveVoiceSourceMessages(alertData = {}, messagesToSend = []) {
+    const preservedSource = String(alertData.outbound_voice_source_text || '').trim();
+    if (alertData.paid_meta_app_preview_handoff
+        && alertData.scheduled_was_edited !== true
+        && preservedSource) {
+        return [preservedSource];
+    }
+    return messagesToSend;
+}
+
 function editAnalysisBudgetForSend({ source, deliveryPacing } = {}) {
     if (source === 'scheduled_worker' || deliveryPacing === 'human_long_reply_v1') {
         return EDIT_ANALYSIS_BACKGROUND_BUDGET_MS;
@@ -2411,7 +2421,7 @@ exports.handler = async (event) => {
         try {
             if (item.kind === 'audio') {
                 const audio = await createVoiceMessageAudio({
-                    messages: messagesToSend,
+                    messages: resolveVoiceSourceMessages(alertData, messagesToSend),
                     alertId,
                     alertData,
                     supabaseQuery: supabase,
@@ -2828,6 +2838,7 @@ exports._test = {
     resolveChunkGaps,
     resolveFirstItemTypingDelayMs,
     resolveOutboundItemGapMs,
+    resolveVoiceSourceMessages,
     resolveOutboundDmBubbleOptions,
     resolveOutboundVoiceMessageConfig,
     resolveApprovedVoiceCompanionText,

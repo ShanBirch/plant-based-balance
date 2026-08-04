@@ -58,6 +58,20 @@ test('voice companion follows promptly enough for the sender to retain its produ
     }), 6500);
 });
 
+test('paid Meta voice keeps its approved thought paragraphs through DM bubble splitting', () => {
+    const source = 'First thought.\n\nSecond thought.\n\nThird thought.';
+    assert.deepEqual(sendIg.resolveVoiceSourceMessages({
+        paid_meta_app_preview_handoff: true,
+        scheduled_was_edited: false,
+        outbound_voice_source_text: source,
+    }, ['First thought.\nSecond thought.', 'Third thought.']), [source]);
+    assert.deepEqual(sendIg.resolveVoiceSourceMessages({
+        paid_meta_app_preview_handoff: true,
+        scheduled_was_edited: true,
+        outbound_voice_source_text: source,
+    }, ['Shannon edited this.']), ['Shannon edited this.']);
+});
+
 test('final automated send gate sees a newer manual outbound', async () => {
     const originalFetch = global.fetch;
     try {
