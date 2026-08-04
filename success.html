@@ -13,6 +13,7 @@
     <meta property="og:url" content="https://plantbased-balance.org/success.html">
     <meta property="og:type" content="website">
     <link rel="stylesheet" href="styles.css">
+    <script src="lib/meta-ad-trial.js?v=2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     
     <!-- Meta Pixel Code -->
@@ -157,6 +158,7 @@
             const isFoundersPass = planKey === 'balance_foundations_six_week' || planKey === 'founders_pass_lifetime';
             const purchaseValue = parseFloat(urlParams.get('amount')) || (isFoundersPass ? (planKey === 'founders_pass_lifetime' ? 99 : 89.99) : isAppCommunityPlan ? 19.99 : isCoachingCallsPlan ? 99.99 : 29.99);
             const isBump = urlParams.get('bump') === 'true';
+            const isMetaAdTrialPurchase = urlParams.get('source') === 'meta_ad_trial_paid' && isAppCommunityPlan;
 
             if (planKey === 'balance_foundations_six_week') {
                 const planName = document.getElementById('success-plan-name');
@@ -170,6 +172,32 @@
                 const readyCopy = document.getElementById('success-ready-copy');
                 if (planName) planName.textContent = 'Balance App + Community';
                 if (readyCopy) readyCopy.textContent = 'Once your setup is complete, your app membership and Balance community access are ready.';
+            }
+            if (isMetaAdTrialPurchase && window.BalanceMetaAdTrial) {
+                const sessionId = urlParams.get('session_id') || '';
+                if (sessionId) sessionStorage.setItem(window.BalanceMetaAdTrial.PAYMENT_SESSION_KEY, sessionId);
+                sessionStorage.setItem(window.BalanceMetaAdTrial.CLAIM_KEY, 'true');
+                sessionStorage.removeItem('guestMode');
+                window.BalanceMetaAdTrial.track('purchase', {
+                    plan: 'app_community_monthly',
+                    amount_aud: 19.99,
+                    stripe_session_id: sessionId,
+                    source: 'meta_ad_trial'
+                });
+                const nextCopy = document.getElementById('success-next-copy');
+                const accountHeading = document.getElementById('success-account-heading');
+                const signupLink = document.getElementById('success-signup-link');
+                const loginLink = document.getElementById('success-login-link');
+                if (nextCopy) nextCopy.textContent = 'Taking you straight back to Balance now.';
+                if (accountHeading) accountHeading.textContent = 'Opening Balance...';
+                const sessionQuery = sessionId ? `&session_id=${encodeURIComponent(sessionId)}` : '';
+                const signupUrl = `login.html?action=signup&source=meta_ad_trial_paid${sessionQuery}`;
+                if (signupLink) {
+                    signupLink.href = signupUrl;
+                    signupLink.textContent = 'OPEN BALANCE NOW →';
+                }
+                if (loginLink) loginLink.href = `login.html?source=meta_ad_trial_paid${sessionQuery}`;
+                setTimeout(() => window.location.replace(signupUrl), 1500);
             }
             if (isCoachingCallsPlan) {
                 const planName = document.getElementById('success-plan-name');

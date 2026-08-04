@@ -39,6 +39,8 @@ assert(
     checkoutSession.includes('payment_intent_data[metadata]') &&
     checkoutSession.includes('calls_per_week: plan.callsPerWeek') &&
     checkoutSession.includes('customerEmail: checkoutEmail') &&
+    checkoutSession.includes('checkoutSource === "meta_ad_trial"') &&
+    checkoutSession.includes('session.url || null') &&
     checkoutSession.includes('https://api.stripe.com/v1/checkout/sessions') &&
     checkoutSession.includes('"Content-Type": "application/x-www-form-urlencoded"') &&
     !checkoutSession.includes('import Stripe from "stripe"'),

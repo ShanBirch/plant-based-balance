@@ -2,6 +2,7 @@
 
 - Launch date: 2026-08-04
 - Variant: `facebook_5m_v1`
+- Status: superseded on 2026-08-04 by the paid unlock variant before meaningful campaign traffic was sent.
 - Destination: `https://plantbased-balance.org/meta-app-preview.html`
 - Eligible traffic: attributed Facebook paid-social visitors only
 - Hypothesis: letting a Facebook lead complete onboarding and explore Balance for five minutes before account creation will increase qualified account creation without weakening paid conversion quality.

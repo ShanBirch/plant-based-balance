@@ -12,7 +12,7 @@
     <meta property="og:url" content="https://plantbased-balance.org/login.html">
     <meta property="og:type" content="website">
     <link rel="stylesheet" href="styles.css">
-    <script src="lib/meta-ad-trial.js?v=1"></script>
+    <script src="lib/meta-ad-trial.js?v=2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://js.stripe.com/v3/"></script>
     <script>
@@ -821,16 +821,52 @@
         }
 
         function applyMetaAdTrialHandoffCopy(urlParams) {
-            if (urlParams.get('source') !== 'meta_ad_trial') return;
+            const source = urlParams.get('source');
+            if (!['meta_ad_trial', 'meta_ad_trial_paid'].includes(source)) return;
             if (window.BalanceMetaAdTrial) window.BalanceMetaAdTrial.markSignupHandoff();
+            const isPaid = source === 'meta_ad_trial_paid';
+            const sessionId = urlParams.get('session_id') || '';
+            if (isPaid && window.BalanceMetaAdTrial) {
+                sessionStorage.setItem(window.BalanceMetaAdTrial.CLAIM_KEY, 'true');
+                if (sessionId) sessionStorage.setItem(window.BalanceMetaAdTrial.PAYMENT_SESSION_KEY, sessionId);
+            }
             const heading = document.getElementById('signup-heading');
             const intro = document.getElementById('signup-intro');
             const referralGroup = document.getElementById('signup-referral-group');
             const signupButton = document.getElementById('signup-btn');
-            if (heading) heading.textContent = 'Keep your Balance setup';
-            if (intro) intro.textContent = 'Create your free account to save your onboarding answers and keep using Balance.';
+            const signupEmail = document.getElementById('signup-email');
+            const loginEmail = document.getElementById('login-email');
+            const signupName = document.getElementById('signup-name');
+            const checkoutEmail = window.BalanceMetaAdTrial
+                ? sessionStorage.getItem(window.BalanceMetaAdTrial.CHECKOUT_EMAIL_KEY) || ''
+                : '';
+            let previewProfile = {};
+            try { previewProfile = JSON.parse(sessionStorage.getItem('userProfile') || '{}'); } catch (error) {}
+            if (heading) heading.textContent = isPaid ? 'Payment confirmed' : 'Keep your Balance setup';
+            if (intro) intro.textContent = isPaid
+                ? 'Create your account with the email you used at Stripe, then we will open Balance with your setup ready.'
+                : 'Create your account to save your onboarding answers and keep using Balance.';
             if (referralGroup) referralGroup.style.display = 'none';
-            if (signupButton) signupButton.textContent = 'CREATE FREE ACCOUNT';
+            if (signupButton) signupButton.textContent = isPaid ? 'OPEN BALANCE' : 'CREATE FREE ACCOUNT';
+            if (checkoutEmail && signupEmail) signupEmail.value = checkoutEmail;
+            if (checkoutEmail && loginEmail) loginEmail.value = checkoutEmail;
+            if (isPaid && signupName && previewProfile.name) signupName.value = previewProfile.name;
+            if (isPaid) {
+                [signupEmail, loginEmail].forEach(input => {
+                    if (!input) return;
+                    if (checkoutEmail) {
+                        input.readOnly = true;
+                        input.style.background = '#f1f5f9';
+                    }
+                });
+                ['apple-login-btn', 'google-login-btn', 'apple-signup-btn', 'google-signup-btn'].forEach(id => {
+                    const button = document.getElementById(id);
+                    if (button) button.style.display = 'none';
+                });
+                document.querySelectorAll('.oauth-divider, .explore-btn').forEach(element => {
+                    element.style.display = 'none';
+                });
+            }
         }
 
         async function claimPendingFoundersPass(session) {
@@ -859,6 +895,38 @@
                 console.warn('Founders Pass activation will retry after the next login:', error.message);
                 return null;
             }
+        }
+
+        async function claimPendingMetaTrialSubscription(session) {
+            if (!window.BalanceMetaAdTrial) return null;
+            const sessionId = sessionStorage.getItem(window.BalanceMetaAdTrial.PAYMENT_SESSION_KEY) || '';
+            const accessToken = session?.access_token;
+            if (!sessionId || !accessToken) return null;
+            let lastError = null;
+            for (let attempt = 0; attempt < 3; attempt += 1) {
+                if (attempt) await new Promise(resolve => setTimeout(resolve, 700 * attempt));
+                try {
+                    const response = await fetch('/.netlify/functions/claim-meta-trial-subscription', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${accessToken}`
+                        },
+                        body: JSON.stringify({ sessionId })
+                    });
+                    const result = await response.json().catch(() => ({}));
+                    if (!response.ok || result.error) throw new Error(result.error || 'Payment activation is still processing.');
+                    if (result.claimed) {
+                        sessionStorage.removeItem(window.BalanceMetaAdTrial.PAYMENT_SESSION_KEY);
+                        window.BalanceMetaAdTrial.track('trial_subscription_claimed', { plan: result.plan, status: result.status });
+                    }
+                    return result;
+                } catch (error) {
+                    lastError = error;
+                }
+            }
+            console.warn('Paid preview activation will retry after the next login:', lastError?.message || 'unknown error');
+            return null;
         }
 
         async function initializePage() {
@@ -933,6 +1001,7 @@
                 }
 
                 await claimPendingFoundersPass(session);
+                await claimPendingMetaTrialSubscription(session);
 
                 // Already logged in - redirect to dashboard
                 let redirect = urlParams.get('redirect');
@@ -1027,6 +1096,7 @@
                 const { user } = await authHelpers.signIn(email, password);
                 const signedInSession = await authHelpers.getSession();
                 await claimPendingFoundersPass(signedInSession);
+                await claimPendingMetaTrialSubscription(signedInSession);
 
                 showSuccess('Login successful!');
                 try {
@@ -1164,6 +1234,7 @@
 
 
                 await claimPendingFoundersPass(signupResult.session);
+                await claimPendingMetaTrialSubscription(signupResult.session);
 
                 showSuccess('Account created! Logging you in...');
 

@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en" data-landing-page="meta-app-preview" data-landing-variant="facebook_5m_v1">
+<html lang="en" data-landing-page="meta-app-preview" data-landing-variant="facebook_5m_paid_v2">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Try Balance Free</title>
-    <meta name="description" content="Set up your goals, explore Balance free for five minutes, then create an account if you want to keep going.">
+    <meta name="description" content="Set up your goals, explore Balance free for five minutes, then unlock the full app and community if it feels right.">
     <link rel="icon" type="image/png" href="balance_logo.png">
     <script src="analytics.js" defer></script>
     <style>
@@ -31,16 +31,16 @@
         @media (max-width:370px) { .steps { grid-template-columns:1fr; } .step { min-height:0; } }
     </style>
 </head>
-<body data-landing-page="meta-app-preview" data-landing-variant="facebook_5m_v1">
+<body data-landing-page="meta-app-preview" data-landing-variant="facebook_5m_paid_v2">
 <main>
     <img class="logo" src="balance_logo.png" alt="Balance">
     <p class="eyebrow">Facebook preview</p>
     <h1>Try Balance before you join</h1>
-    <p class="lead">Set up your goals, explore the app for five minutes, then create a free account only if you want to keep your setup.</p>
+    <p class="lead">Set up your goals, explore the app for five minutes, then unlock the full app and community only if it feels right.</p>
     <div class="steps" aria-label="How the preview works">
         <div class="step"><strong>1</strong><span>Complete your setup</span></div>
         <div class="step"><strong>2</strong><span>Explore for five minutes</span></div>
-        <div class="step"><strong>3</strong><span>Create an account to continue</span></div>
+        <div class="step"><strong>3</strong><span>Unlock Balance to continue</span></div>
     </div>
     <a id="start-preview" class="button primary" href="#" data-track="cta_click">START MY FREE PREVIEW</a>
     <p class="or">Or download Balance free</p>
@@ -55,7 +55,7 @@
 (function () {
     var incoming = new URLSearchParams(window.location.search);
     incoming.set('guest', 'true');
-    incoming.set('meta_trial', 'facebook_5m_v1');
+    incoming.set('meta_trial', 'facebook_5m_paid_v2');
     if (!incoming.get('utm_source')) incoming.set('utm_source', 'facebook');
     if (!incoming.get('utm_medium')) incoming.set('utm_medium', 'paid_social');
     var query = incoming.toString();

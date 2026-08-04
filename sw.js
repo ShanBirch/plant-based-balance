@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v273'; // v273: paid-Facebook onboarding preview and signup gate
+const CACHE_NAME = 'pbb-app-v274'; // v274: paid-Facebook Stripe unlock and app return
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -9,7 +9,7 @@ const ASSETS = [
   './welcome.html',
   './lib/supabase.js?v=14',
   './lib/auth-guard.js?v=10',
-  './lib/meta-ad-trial.js?v=1',
+  './lib/meta-ad-trial.js?v=2',
   './lib/native-push.js?v=38',
   './login.html',
   './exercise_videos.js?v=20260801-android-video-compat',

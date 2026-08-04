@@ -23,6 +23,10 @@ function runTrial(search) {
         'guest-mode-banner': { style: {} },
         'guest-mode-label': { textContent: '' },
         'meta-ad-trial-gate': { style: {} },
+        'meta-ad-trial-email': { value: '', focus() { this.focused = true; } },
+        'meta-ad-trial-terms': { checked: false },
+        'meta-ad-trial-checkout-btn': { disabled: false, textContent: 'UNLOCK BALANCE' },
+        'meta-ad-trial-error': { style: {}, textContent: '' },
         'guided-tour-overlay': { classList: { remove() {} } },
     };
     const events = [];
@@ -35,6 +39,7 @@ function runTrial(search) {
     const document = {
         readyState: 'complete',
         referrer: 'https://facebook.com/',
+        cookie: '_fbc=test-fbc; _fbp=test-fbp',
         documentElement: { classList: { add(value) { this.value = value; } } },
         getElementById: id => elements[id] || null,
         addEventListener() {},
@@ -53,9 +58,14 @@ function runTrial(search) {
         innerWidth: 390,
         innerHeight: 844,
         crypto: { randomUUID: () => 'fixed-id' },
-        fetch: async (_url, options) => {
-            events.push(JSON.parse(options.body));
-            return { ok: true };
+        fetch: async (url, options) => {
+            const body = JSON.parse(options.body);
+            if (url === '/.netlify/functions/log-lp-event') events.push(body);
+            if (url === '/.netlify/functions/create-checkout-session') {
+                events.push({ event_type: 'checkout_request', body });
+                return { ok: true, json: async () => ({ sessionId: 'cs_live_preview', url: 'https://checkout.stripe.com/test-preview' }) };
+            }
+            return { ok: true, json: async () => ({ recorded: true }) };
         },
         setTimeout: () => 1,
         clearTimeout() {},
@@ -83,7 +93,7 @@ function runTrial(search) {
 }
 
 test('paid Facebook attribution activates onboarding without changing organic guest traffic', () => {
-    const paid = runTrial('?guest=true&meta_trial=facebook_5m_v1&utm_source=facebook&utm_medium=paid_social&ad_id=ad-42');
+    const paid = runTrial('?guest=true&meta_trial=facebook_5m_paid_v2&utm_source=facebook&utm_medium=paid_social&ad_id=ad-42');
     assert.equal(paid.window.metaAdTrialMode, true);
     assert.equal(paid.sessionStorage.getItem('guestMode'), 'true');
     assert.equal(paid.localStorage.getItem('onboardingComplete'), null);
@@ -95,8 +105,8 @@ test('paid Facebook attribution activates onboarding without changing organic gu
     assert.equal(organic.localStorage.getItem('onboardingComplete'), 'true');
 });
 
-test('the five-minute clock starts after onboarding and ends in a non-dismissible signup gate', () => {
-    const trial = runTrial('?guest=true&meta_trial=facebook_5m_v1&utm_source=facebook&utm_medium=paid_social&fbclid=test-click');
+test('the five-minute clock ends in a compact App + Community Stripe gate', async () => {
+    const trial = runTrial('?guest=true&meta_trial=facebook_5m_paid_v2&utm_source=facebook&utm_medium=paid_social&fbclid=test-click');
     const api = trial.window.BalanceMetaAdTrial;
     api.onOnboardingStarted();
     api.onOnboardingComplete();
@@ -110,14 +120,21 @@ test('the five-minute clock starts after onboarding and ends in a non-dismissibl
     assert.equal(trial.elements['meta-ad-trial-gate'].style.display, 'flex');
     assert.ok(trial.events.some(event => event.event_type === 'trial_gate_shown'));
 
-    api.beginSignup();
-    assert.equal(trial.sessionStorage.getItem(api.CLAIM_KEY), 'true');
-    assert.equal(trial.sessionStorage.getItem('guestMode'), null);
-    assert.equal(trial.window.location.href, '/login.html?action=signup&source=meta_ad_trial');
+    trial.elements['meta-ad-trial-email'].value = 'buyer@example.com';
+    trial.elements['meta-ad-trial-terms'].checked = true;
+    assert.equal(await api.beginCheckout(), true);
+    const checkout = trial.events.find(event => event.event_type === 'checkout_request');
+    assert.equal(checkout.body.priceId, 'balance_app_community_monthly');
+    assert.equal(checkout.body.pageVariant, 'facebook_5m_paid_v2');
+    assert.equal(checkout.body.checkoutSource, 'meta_ad_trial');
+    assert.equal(checkout.body.compliance.accepted.terms, true);
+    assert.equal(trial.sessionStorage.getItem(api.PAYMENT_SESSION_KEY), 'cs_live_preview');
+    assert.equal(trial.sessionStorage.getItem(api.CLAIM_KEY), null);
+    assert.equal(trial.window.location.href, 'https://checkout.stripe.com/test-preview');
 });
 
 test('a claimed member revisiting the ad cannot have onboarding data cleared', () => {
-    const query = '?guest=true&meta_trial=facebook_5m_v1&utm_source=facebook&utm_medium=paid_social';
+    const query = '?guest=true&meta_trial=facebook_5m_paid_v2&utm_source=facebook&utm_medium=paid_social';
     const trial = runTrial(query);
     const api = trial.window.BalanceMetaAdTrial;
     api.markClaimed('member-1');
@@ -134,21 +151,37 @@ test('dashboard, signup, native handoffs, measurement, and both discovery system
     const onboarding = fs.readFileSync(path.join(root, 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js'), 'utf8');
     const login = fs.readFileSync(path.join(root, 'login.html'), 'utf8');
     const landing = fs.readFileSync(path.join(root, 'meta-app-preview.html'), 'utf8');
+    const success = fs.readFileSync(path.join(root, 'success.html'), 'utf8');
+    const checkoutSession = fs.readFileSync(path.join(root, 'netlify/edge-functions/create-checkout-session.js'), 'utf8');
+    const claim = fs.readFileSync(path.join(root, 'netlify/edge-functions/claim-meta-trial-subscription.js'), 'utf8');
+    const netlify = fs.readFileSync(path.join(root, 'netlify.toml'), 'utf8');
     const logger = fs.readFileSync(path.join(root, 'netlify/functions/log-lp-event.js'), 'utf8');
     const android = fs.readFileSync(path.join(root, 'android/app/src/main/java/com/fitgotchi/app/MainActivity.java'), 'utf8');
     const ios = fs.readFileSync(path.join(root, 'ios/App/App/BalanceShortcutHandoff.swift'), 'utf8');
 
-    assert.match(dashboard, /paid-facebook-five-minute-preview-v1/);
+    assert.match(dashboard, /paid-facebook-stripe-unlock-v1/);
     assert.ok((dashboard.match(/Five minutes to explore/g) || []).length >= 2);
     assert.match(dashboard, /id="meta-ad-trial-gate"/);
     assert.match(auth, /requestedMetaAdTrial/);
     assert.match(onboarding, /BalanceMetaAdTrial\.onOnboardingComplete\(\)/);
     assert.match(onboarding, /BalanceMetaAdTrial\.hasPendingClaim\(\)/);
     assert.match(login, /applyMetaAdTrialHandoffCopy/);
+    assert.match(login, /claimPendingMetaTrialSubscription/);
+    assert.match(login, /meta_ad_trial_paid/);
+    assert.match(success, /Taking you straight back to Balance now/);
+    assert.match(success, /source=meta_ad_trial_paid/);
+    assert.match(checkoutSession, /checkoutSource === "meta_ad_trial"/);
+    assert.match(checkoutSession, /session\.url/);
+    assert.match(claim, /META_TRIAL_PLAN = "app_community_monthly"/);
+    assert.match(claim, /checkoutEmail !== userEmail/);
+    assert.match(claim, /subscription_status: status/);
+    assert.match(netlify, /claim-meta-trial-subscription/);
     assert.match(landing, /id="open-installed"[^>]+hidden/);
     assert.match(landing, /\.button\[hidden\]\s*\{\s*display:none !important;/);
     assert.match(landing, /native_handoff/);
+    assert.match(landing, /facebook_5m_paid_v2/);
     assert.match(logger, /'trial_gate_shown'/);
+    assert.match(logger, /'trial_subscription_claimed'/);
     assert.match(android, /getPendingMetaTrialQuery/);
     assert.match(ios, /enum BalanceMetaTrialHandoff/);
 });

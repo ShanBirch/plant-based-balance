@@ -12,6 +12,8 @@ test('DM drafting knowledge covers the paid handoff and real onboarding stages',
     assert.match(guide, /login\.html\?action=signup/);
     assert.match(guide, /meta-app-preview\.html/);
     assert.match(guide, /five minutes to explore/i);
+    assert.match(guide, /AU\$19\.99\/month/);
+    assert.match(guide, /Stripe Checkout/);
     assert.match(guide, /three realistic weekly anchors/i);
     assert.match(guide, /main thing that knocks them off track/i);
     assert.match(guide, /real competing priorities such as work\/kids\/study\/caring/i);

@@ -40,6 +40,10 @@
   path = "/.netlify/functions/claim-founders-pass"
 
 [[edge_functions]]
+  function = "claim-meta-trial-subscription"
+  path = "/.netlify/functions/claim-meta-trial-subscription"
+
+[[edge_functions]]
   function = "create-billing-portal-session"
   path = "/.netlify/functions/create-billing-portal-session"
 

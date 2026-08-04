@@ -9,7 +9,7 @@ import {
 const STRIPE_API_VERSION = "2026-02-25.clover";
 
 function safeReturnPath(value, fallback) {
-    const allowed = new Set(["/plant-based-fitness.html", "/fitness-coaching.html"]);
+    const allowed = new Set(["/plant-based-fitness.html", "/fitness-coaching.html", "/dashboard.html"]);
     if (allowed.has(value)) return value;
     if (/^\/(?:founders|fitness)(?:\/[0-9a-z]+)?\/?$/i.test(String(value || ""))) return value;
     return fallback;
@@ -75,12 +75,13 @@ export default async (request, context) => {
 
     try {
         const body = await request.json();
-        const { priceId, isTrial, trialDays, referralCode, email, bump, fbc, fbp, utm_data, compliance, returnPath, pageVariant } = body;
+        const { priceId, isTrial, trialDays, referralCode, email, bump, fbc, fbp, utm_data, compliance, returnPath, pageVariant, checkoutSource } = body;
         const checkoutOrigin = assertSameSiteCheckoutRequest(request);
         const plan = getBalanceCheckoutPlan(priceId);
         const cancelPath = safeReturnPath(returnPath, "/plant-based-fitness.html");
         assertAcceptedCheckoutTerms(compliance);
         const checkoutEmail = cleanCheckoutEmail(email, { required: false });
+        const isMetaAdTrialCheckout = checkoutSource === "meta_ad_trial" && pageVariant === "facebook_5m_paid_v2";
         const complianceMetadata = compliance?.metadata || {};
         const documentVersions = compliance?.document_versions || {};
         const stripeComplianceMetadata = {
@@ -120,8 +121,8 @@ export default async (request, context) => {
             bump: Boolean(bump && plan.allowBump),
             subscriptionMetadata: subscriptionData.metadata,
             paymentMetadata: purchaseMetadata,
-            successUrl: checkoutOrigin + `/success.html?session_id={CHECKOUT_SESSION_ID}&plan=${encodeURIComponent(plan.balancePlan)}&amount=${(plan.unitAmount / 100).toFixed(2)}&bump=${bump && plan.allowBump ? "true" : "false"}`,
-            cancelUrl: checkoutOrigin + (plan.balancePlan === "balance_foundations_six_week" ? `${cancelPath}#join` : "/plantbasedswitch.html"),
+            successUrl: checkoutOrigin + `/success.html?session_id={CHECKOUT_SESSION_ID}&plan=${encodeURIComponent(plan.balancePlan)}&amount=${(plan.unitAmount / 100).toFixed(2)}&bump=${bump && plan.allowBump ? "true" : "false"}${isMetaAdTrialCheckout ? "&source=meta_ad_trial_paid" : ""}`,
+            cancelUrl: checkoutOrigin + (isMetaAdTrialCheckout ? "/dashboard.html" : plan.balancePlan === "balance_foundations_six_week" ? `${cancelPath}#join` : "/plantbasedswitch.html"),
             metadata: {
                 checkout_email: checkoutEmail,
                 balance_product: plan.balanceProduct,
@@ -134,6 +135,7 @@ export default async (request, context) => {
                 access_days: String(plan.accessDays || ""),
                 landing_page_variant: pageVariant || "general",
                 landing_return_path: cancelPath,
+                checkout_source: isMetaAdTrialCheckout ? "meta_ad_trial" : "general",
                 fbc: fbc || "",
                 fbp: fbp || "",
                 ...utm_data,
@@ -144,7 +146,7 @@ export default async (request, context) => {
             },
         });
 
-        return new Response(JSON.stringify({ sessionId: session.id }), {
+        return new Response(JSON.stringify({ sessionId: session.id, url: session.url || null }), {
             headers: { "Content-Type": "application/json" }
         });
 
