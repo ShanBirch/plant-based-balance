@@ -403,10 +403,10 @@
 [functions."meta-ig-sync-content"]
   schedule = "*/15 * * * *"
 
-# Instagram Graph inbox reconcile - polls recent Graph conversations so missed
-# webhook events are recovered without ManyChat.
+# Instagram Graph inbox reconcile - one-minute missed-webhook backstop so paid
+# ad DMs still enter the canonical reply path inside the live-chat window.
 [functions."meta-ig-reconcile-inbox"]
-  schedule = "*/5 * * * *"
+  schedule = "* * * * *"
 
 # Instagram comment reply worker - polls recent shan_n_sunny media comments,
 # waits a short human-ish delay, then posts one deduped Graph comment reply.
