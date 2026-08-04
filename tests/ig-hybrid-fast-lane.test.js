@@ -515,6 +515,20 @@ assert.equal(instantDraft.isContextualMetaAdOfferLinkRequest({
     qualifier: { commercial_stage: 'engaged' },
     history: [{ direction: 'out', text: 'That sunset looks unreal.' }],
 }), false, 'the same phrase outside an offer context cannot trigger a checkout link');
+const foundersSelectionHistory = [{
+    direction: 'out',
+    text: 'Starter Coaching is $29.99/week. Founders Pass is $89.99 once. Which one do you want to start with?',
+}];
+assert.equal(instantDraft.isContextualMetaAdOfferLinkRequest({
+    currentMessage: 'Founders pass',
+    qualifier: { commercial_stage: 'buyer_intent' },
+    history: foundersSelectionHistory,
+}), true, 'choosing Founders Pass after a direct option question is a checkout-link request');
+assert.equal(instantDraft.isContextualMetaAdOfferLinkRequest({
+    currentMessage: 'Founders pass',
+    qualifier: { commercial_stage: 'buyer_intent' },
+    history: [{ direction: 'out', text: 'What is Founders Pass?' }],
+}), false, 'mentioning Founders Pass without a direct option question remains informational');
 const contextualLinkReply = instantDraft.buildContextualMetaAdOfferLinkReply({
     checkoutUrl: 'https://plantbased-balance.org/plant-based-fitness.html?utm_source=instagram',
     flowVariant: 'plant_based_control',
@@ -523,6 +537,21 @@ assert.match(contextualLinkReply.joined, /have a look here/i);
 assert.match(contextualLinkReply.joined, /plant-based-fitness\.html\?utm_source=instagram/);
 assert.match(contextualLinkReply.joined, /does that feel like the kind of support you need\?/i);
 assert.equal(contextualLinkReply.model, 'deterministic_meta_ad_contextual_link_v1');
+const foundersSelectionReply = instantDraft.buildContextualMetaAdOfferLinkReply({
+    checkoutUrl: 'https://plantbased-balance.org/plant-based-fitness.html?utm_source=instagram',
+    flowVariant: 'plant_based_control',
+    currentMessage: 'Founders Pass',
+});
+assert.match(foundersSelectionReply.joined, /Perfect.*Founders Pass is \$89\.99 once/i);
+assert.match(foundersSelectionReply.joined, /plant-based-fitness\.html\?utm_source=instagram/);
+assert.equal(foundersSelectionReply.model, 'deterministic_paid_meta_conversation_v2');
+assert.equal(foundersSelectionReply.replyMode, 'campaign_buyer_handoff');
+assert.equal(instantDraft.buildPaidMetaConversationApproval({
+    metaAdConversationFastLane: true,
+    draft: foundersSelectionReply,
+    currentMessage: 'Founders Pass',
+    linkedUserId: null,
+}).required, false, 'the contextual Founders selection passes the deterministic buyer-handoff gate');
 const progressedMetaReply = instantDraft.ensureMetaAdSalesProgressionQuestion({
     draft: { chunks: ['It includes one-to-one support from me.'], joined: 'It includes one-to-one support from me.', model: 'test' },
     currentMessage: "What's included in Founders Pass?",

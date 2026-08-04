@@ -1033,21 +1033,52 @@ function isPaidMetaBuyerIntentOfferReplyAllowed({ alertData, challengeOfferWarni
         && draftReview?.context_loss_suspected !== true;
 }
 
-function isContextualMetaAdOfferLinkRequest({ currentMessage = '', qualifier = {}, history = [] } = {}) {
-    const message = String(currentMessage || '').replace(/\s+/g, ' ').trim();
-    if (!/^(?:can|could) i (?:see|look at|check out) (?:it|this|that|the (?:pass|details|program))(?: please)?[.!?\s]*$/i.test(message)) {
-        return false;
-    }
-    if (String(qualifier?.commercial_stage || '').toLowerCase() !== 'buyer_intent') return false;
-    return (Array.isArray(history) ? history : [])
-        .filter(item => String(item?.direction || '').toLowerCase() === 'out')
-        .slice(-4)
-        .some(item => /\b(?:founders? pass|six-week|balance app|plant-based community|one-to-one in-app support)\b/i.test(String(item?.text || '')));
+const PAID_META_CONTEXTUAL_OFFER_VIEW_RE = /^(?:can|could) i (?:see|look at|check out) (?:it|this|that|the (?:pass|details|program))(?: please)?[.!?\s]*$/i;
+const PAID_META_FOUNDERS_PASS_SELECTION_RE = /^(?:the\s+)?founders?\s+pass(?:\s+please)?[.!?\s]*$/i;
+
+function isPaidMetaFoundersPassSelection(value = '') {
+    return PAID_META_FOUNDERS_PASS_SELECTION_RE.test(String(value || '').replace(/\s+/g, ' ').trim());
 }
 
-function buildContextualMetaAdOfferLinkReply({ checkoutUrl = '', flowVariant = 'plant_based_control' } = {}) {
+function isPaidMetaContextualCheckoutIntent(value = '') {
+    const message = String(value || '').replace(/\s+/g, ' ').trim();
+    return hasDirectPaidMetaCheckoutIntent(message)
+        || isPaidMetaFoundersPassSelection(message)
+        || PAID_META_CONTEXTUAL_OFFER_VIEW_RE.test(message);
+}
+
+function isContextualMetaAdOfferLinkRequest({ currentMessage = '', qualifier = {}, history = [] } = {}) {
+    const message = String(currentMessage || '').replace(/\s+/g, ' ').trim();
+    if (String(qualifier?.commercial_stage || '').toLowerCase() !== 'buyer_intent') return false;
+    const recentOutbound = (Array.isArray(history) ? history : [])
+        .filter(item => String(item?.direction || '').toLowerCase() === 'out')
+        .slice(-4);
+    if (isPaidMetaFoundersPassSelection(message)) {
+        return recentOutbound.some(item => {
+            const text = String(item?.text || '');
+            return /\bfounders? pass\b/i.test(text)
+                && /\bwhich (?:one|option) do you want to start with\b/i.test(text);
+        });
+    }
+    if (!PAID_META_CONTEXTUAL_OFFER_VIEW_RE.test(message)) return false;
+    return recentOutbound.some(item => /\b(?:founders? pass|six-week|balance app|plant-based community|one-to-one in-app support)\b/i.test(String(item?.text || '')));
+}
+
+function buildContextualMetaAdOfferLinkReply({ checkoutUrl = '', flowVariant = 'plant_based_control', currentMessage = '' } = {}) {
     const url = String(checkoutUrl || '').trim();
     if (!isApprovedChallengeBioLinkText(url)) return null;
+    if (isPaidMetaFoundersPassSelection(currentMessage)) {
+        const joined = `Perfect — Founders Pass is $89.99 once. Here's the link: ${url}`;
+        return {
+            chunks: [joined],
+            joined,
+            checkoutUrl: url,
+            flowVariant,
+            model: 'deterministic_paid_meta_conversation_v2',
+            replyMode: 'campaign_buyer_handoff',
+            maxChunks: 1,
+        };
+    }
     const joined = `Yeah for sure, have a look here: ${url}\n\nHave a quick look and tell me, does that feel like the kind of support you need?`;
     return {
         chunks: [joined],
@@ -1841,7 +1872,7 @@ function buildPaidMetaConversationApproval({
         && /^deterministic_paid_meta_conversation_v\d+(?:\+[a-z0-9_-]+)*$/i.test(String(draft?.model || ''))
         && !META_AD_FIRST_REPLY_OPT_OUT_RE.test(message)
         && !META_AD_FIRST_REPLY_REVIEW_REQUIRED_RE.test(message)
-        && (draft?.replyMode !== 'campaign_buyer_handoff' || hasDirectPaidMetaCheckoutIntent(message));
+        && (draft?.replyMode !== 'campaign_buyer_handoff' || isPaidMetaContextualCheckoutIntent(message));
     if (!deterministicProgression) return null;
     return {
         required: false,
@@ -1985,7 +2016,7 @@ function buildApprovedDeterministicMetaAdFirstReplyReview({
     const approvedConversationProgression = metaAdConversationFastLane
         && ['campaign_sales_progression', 'campaign_buyer_handoff'].includes(String(draft?.replyMode || ''))
         && /^deterministic_paid_meta_conversation_v\d+(?:\+[a-z0-9_-]+)*$/i.test(String(draft?.model || ''))
-        && (draft?.replyMode !== 'campaign_buyer_handoff' || hasDirectPaidMetaCheckoutIntent(message));
+        && (draft?.replyMode !== 'campaign_buyer_handoff' || isPaidMetaContextualCheckoutIntent(message));
     if ((!approvedFirstReply && !approvedGoalProof && !approvedConversationProgression)
         || linkedUserId
         || mediaReview?.required === true
@@ -2752,7 +2783,8 @@ function isCurrentChallengeHandoffMoment({ qualifier, currentMessage } = {}) {
     if (hasDirectPaidMetaCheckoutIntent(currentMessage)) return true;
     if (hasChallengeInviteReadinessSignal(currentMessage)) return true;
     if (String(qualifier?.commercial_stage || '').toLowerCase() === 'buyer_intent'
-        && /^(?:can|could) i (?:see|look at|check out) (?:it|this|that|the (?:pass|details|program))(?: please)?[.!?\s]*$/i.test(String(currentMessage || '').trim())) {
+        && (PAID_META_CONTEXTUAL_OFFER_VIEW_RE.test(String(currentMessage || '').trim())
+            || isPaidMetaFoundersPassSelection(currentMessage))) {
         return true;
     }
     const stage = String(qualifier?.stage || '').toLowerCase();
@@ -5878,6 +5910,7 @@ exports.handler = async (event) => {
         const contextualLinkReply = buildContextualMetaAdOfferLinkReply({
             checkoutUrl: metaAdCheckoutUrl,
             flowVariant: metaAdFlowVariant,
+            currentMessage: messageText,
         });
         if (contextualLinkReply) draft = {
             ...draft,
