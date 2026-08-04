@@ -13443,7 +13443,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'movement-tab', sel:'#workout-library-card,[onclick*="openWorkoutLibrary"]', title:'Program Library', body:"Prebuilt 48-week programs — pick one and follow along." },
     { tab:'movement-tab', sel:'#form-check-quick-card', title:'Form Checks', body:"Film a quick exercise clip and send it to Shannon when you want him to check your technique. During a workout, use the form-check button at the top of workout mode." },
 
-    { tab:'learning', sel:'#balance-foundations-course-card', fallbackSel:'#learning-content', title:'Your six-week course', fallbackTitle:'Your course lives here', body:"Follow Balance Foundations week by week, then keep going with specialist courses. Every lesson you already completed still counts.", fallbackBody:"Open Course to follow Balance Foundations and browse the full specialist course library." },
+    { tab:'learning', sel:'.course-library-intro', fallbackSel:'#learning-content', title:'Your courses, in order', fallbackTitle:'Your courses live here', body:"Tap a course card to reveal its topics. Finish each course to unlock the next, and tap any available topic to start.", fallbackBody:"Open Course to see your Health IQ rank and work through every Balance course in order." },
 
     { tab:'cycle', sel:'#cycle-hero-card,#view-cycle', title:'Cycle Syncing', body:"Log your period and get workouts synced to your hormonal phases.", condition: function(){ try { return (window.currentUser && (window.currentUser.gender === 'female' || window.currentUser.gender === 'Female')); } catch(e){ return false; } } },
     { tab:'cycle', sel:'#weekly-calendar', title:'Plan your week', body:"Use the weekly calendar to drag workout days around, tap a day, and add walks, classes, Pilates, yoga, or another activity.", action: function(){ try { if (typeof switchCalendarView === 'function') switchCalendarView('weekly'); } catch(e){} } },
@@ -13496,7 +13496,7 @@ if(!window._pbbIsIOSSafari) {
     'Calorie tracker widget': 'tour-08',
     'Quick log calories & macros': 'tour-09',
     'Your workout for the day': 'tour-10',
-    'Your six-week course': 'tour-11',
+    'Your courses, in order': 'tour-11',
     'Say hi to Coach Shan': 'tour-12',
     'Edit your post': 'tour-13',
     'Post actions': 'tour-13'
@@ -14130,14 +14130,14 @@ if(!window._pbbIsIOSSafari) {
 
   var allFeatures = [
     {
-      id: 'balance-foundations-course-v1',
+      id: 'sequential-course-library-v1',
       tab: 'learning',
-      sel: '#balance-foundations-course-card',
+      sel: '.course-library-intro',
       fallbackSel: '#learning-content',
-      title: 'Your six-week course',
-      fallbackTitle: 'Your course lives here',
-      body: 'Follow Balance Foundations week by week, then keep going with specialist courses. Every lesson you already completed still counts.',
-      fallbackBody: 'Open Course to follow Balance Foundations and browse the full specialist course library.'
+      title: 'Your courses, in order',
+      fallbackTitle: 'Your courses live here',
+      body: 'Tap a course card to reveal its topics. Finish each course to unlock the next, and tap any available topic to start.',
+      fallbackBody: 'Open Course to see your Health IQ rank and work through every Balance course in order.'
     },
     {
       id: 'unlimited-level-progression-v1',
@@ -16154,7 +16154,7 @@ if (window._pbbIsIOSSafari) {
 }
 </script>
 
-<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=90">
+<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=91">
 
 
 <script src="js/dashboard/script_part_24.js?v=2"></script>
@@ -18346,11 +18346,11 @@ if (window._pbbIsIOSSafari) {
             });
             if (window.showQuizBattleInviteModal || learningAlreadyRequested) return;
             var s = document.createElement('script');
-      s.src = 'lib/learning-inline.js?v=13';
+      s.src = 'lib/learning-inline.js?v=14';
             document.head.appendChild(s);
         }, { once: true });
     } else {
-    document.write('<script src="lib/learning-inline.js?v=13"><\/script>');
+    document.write('<script src="lib/learning-inline.js?v=14"><\/script>');
     }
     </script>
     <!-- Battle System & Logic Overrides (130 lines — deferred on iOS) -->

@@ -85,3 +85,13 @@ Run both routes against the same AU$89.99 six-week Balance Foundations Founders 
 - Diagnostics: motion render success, native video handoff, share-sheet handoff, still fallback rate, destination split, and Feed engagement on the matching Balance post.
 - Guardrail: users must always retain the still-card fallback, and median time from share tap to composer opening should remain under eight seconds.
 - Decision date: 2026-08-11, comparing the motion variant with the prior still-card window.
+
+## Sequential course library launch
+
+- Launch date: 2026-08-04.
+- Variant: `sequential_course_library_v1`.
+- Hypothesis: one ordered set of expandable course cards, with Scholar progress first and clear prerequisite locks, will make the Course tab easier to understand and increase lesson starts.
+- Primary KPI: Course visitors who start an available topic within seven days.
+- Diagnostics: `course_card_toggled`, `course_topic_started`, `course_locked_tapped`, lesson completion, Foundations completion, and progression into the next unlocked course.
+- Guardrail: existing lesson completions must remain credited, and course-navigation support or confusion reports must not increase.
+- Decision date: 2026-08-18, comparing the first 14 live days with the prior 14 days.
