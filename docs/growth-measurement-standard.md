@@ -90,7 +90,8 @@ Run both routes against the same AU$89.99 six-week Balance Foundations Founders 
 
 - Launch date: 2026-08-04.
 - Variant: `sequential_course_library_v1`.
-- Hypothesis: one ordered set of expandable course cards, with Scholar progress first and clear prerequisite locks, will make the Course tab easier to understand and increase lesson starts.
+- Curriculum version: `outcome_course_curriculum_v1`.
+- Hypothesis: one ordered set of outcome-based courses, with Scholar progress first and clear prerequisite locks, will make the Course tab easier to understand and increase lesson starts.
 - Primary KPI: Course visitors who start an available topic within seven days.
 - Diagnostics: `course_card_toggled`, `course_topic_started`, `course_locked_tapped`, lesson completion, Foundations completion, and progression into the next unlocked course.
 - Guardrail: existing lesson completions must remain credited, and course-navigation support or confusion reports must not increase.
