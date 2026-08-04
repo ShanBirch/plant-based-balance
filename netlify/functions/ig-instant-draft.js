@@ -1599,8 +1599,8 @@ async function clearIgAutoSendHoldForCurrentDraft({ alertId, alertData, reason =
 // attachment disabled until a Foundations-specific preview is published.
 const FOUNDERS_PASS_APP_PREVIEW_URL = '';
 const ALLY_WEIGHT_LOSS_PROOF_URL = 'https://plantbased-balance.org/photos/client-success/ally-cocos.png';
-const FOUNDERS_PASS_CHECKOUT_URL = 'https://plantbased-balance.org/plant-based-fitness.html?utm_source=instagram&utm_medium=dm&utm_campaign=founders_pass_plant_based&utm_content=dm_handoff';
-const FOUNDERS_PASS_BROAD_CHECKOUT_URL = 'https://future-balance.netlify.app/fitness-coaching.html?utm_source=instagram&utm_medium=dm&utm_campaign=founders_pass_broad_pain&utm_content=dm_handoff';
+const FOUNDERS_PASS_CHECKOUT_URL = 'https://plantbased-balance.org/founders';
+const FOUNDERS_PASS_BROAD_CHECKOUT_URL = 'https://future-balance.netlify.app/fitness';
 
 function buildDraftVideoAttachmentData(draft = {}) {
     const url = String(draft?.videoAttachmentUrl || '').trim();
@@ -1656,21 +1656,13 @@ function buildMetaAdCheckoutUrl({ customData = {}, flowVariant = '', currentMess
         : FOUNDERS_PASS_CHECKOUT_URL;
     const routing = customData?.current_inbound_routing || {};
     const attribution = customData?.meta_ad_attribution || {};
-    const values = {
-        campaign_id: routing.campaign_id || attribution.campaign_id,
-        adset_id: routing.adset_id || attribution.adset_id || attribution.ad_set_id,
-        ad_id: routing.ad_id || attribution.ad_id,
-        creative_id: routing.creative_id || attribution.creative_id || attribution.ad_creative_id,
-        placement: routing.placement || attribution.placement,
-        meta_ad_name: attribution.ad_name || attribution.ad_title,
-        meta_ref: attribution.ref,
-    };
-    const url = new URL(baseUrl);
-    Object.entries(values).forEach(([key, value]) => {
-        const cleaned = String(value || '').replace(/\s+/g, ' ').trim().slice(0, 500);
-        if (cleaned) url.searchParams.set(key, cleaned);
-    });
-    return url.toString();
+    const adId = String(routing.ad_id || attribution.ad_id || '').trim();
+    if (!/^\d{6,30}$/.test(adId)) return baseUrl;
+    try {
+        return `${baseUrl}/${BigInt(adId).toString(36)}`;
+    } catch (_) {
+        return baseUrl;
+    }
 }
 
 function foundersPassCheckoutUrlForMessage(message = '', customData = {}, flowVariant = '', acquisitionMode = '') {
@@ -2108,7 +2100,7 @@ THE OFFERING (for context — never list as a brochure; speak like a friend):
 - The FIRST offer for warm leads is the paid Balance Plant-Based Fitness Founders Pass, not a free challenge, standalone custom meal plan, workout program, or generic app trial.
 - If they are plant-based / vegan / vegetarian-curious, tailor the coaching explanation around plant-based food support.
 - If they just want fitness, muscle, weight loss, energy, or consistency with no plant-based signal, tailor the coaching explanation around training, food structure, and accountability.
-- Link attribution matters. For the plant-based ad route use ${FOUNDERS_PASS_CHECKOUT_URL}. For the broad ad route use ${FOUNDERS_PASS_BROAD_CHECKOUT_URL}. The broad route must not introduce plant-based, vegan or vegetarian positioning in its ad reply, landing handoff or follow-up unless the lead independently asks about it. Preserve the route selected by the ad referral and never remove the UTM parameters.
+- Keep the public link clean. For the plant-based ad route use ${FOUNDERS_PASS_CHECKOUT_URL}. For the broad ad route use ${FOUNDERS_PASS_BROAD_CHECKOUT_URL}. The broad route must not introduce plant-based, vegan or vegetarian positioning in its ad reply, landing handoff or follow-up unless the lead independently asks about it. Preserve the route and Meta identifiers on the canonical thread and handoff receipt, never by pasting tracking parameters into the DM.
 - For a general ad-attributed "what is it?" or Founders Pass opener, do not dump the offer or send a raw media URL. Ask one plain question about the main thing they are trying to change. After they answer, reflect that exact goal in one short sentence and send the native Balance proof video. Treat the three ad FAQ prompts as informational, not transactional: answer the selected question in one concise beat, ask one useful context question, and do not send a signup link. Only send the Founders Pass link after an explicit transactional message such as "send me the link", "I'm ready", "how do I join?", or clear acceptance after the offer. Only offer a quick call if they say they want to talk it through or remain genuinely uncertain after the clear explanation.
 - If they only ask "what's Balance?" or "what's your app?" while also saying they are already training hard or feeling good, answer in one plain beat and make any coaching mention casual. No feature list or link unless they ask for details.
 - Once they start, the Balance app gives them the guided kickstart, training and food structure, progress tools and community.
@@ -2123,7 +2115,7 @@ RESPONSE PATTERNS (mimic Shannon's actual voice for each prompt):
 - "How does accountability work?" / "how would you keep me on track?" -> this is a connection moment, not a brochure request. Explain it plainly from Shannon's point of view: they check in and log what is happening, Shannon sees the real week and guides the next move, with a nudge when things start slipping. In PERSONAL VOICE NOTE MODE, make this one connected voice note and do not duplicate the explanation in text. Otherwise use one concise text bubble. Do not tack on another qualifier unless their answer would genuinely change the next step.
 - "Is it in person?" / "I'm looking for a local trainer" / "I already have a PT" -> treat this as a preference or compatibility objection. Answer plainly first: the Founders Pass is an online guided app and plant-based community, not in-person personal training. Do not push the link yet. Ask whether that would still be useful, or how it would need to fit around their current trainer.
 - "Do I need to already be Plant Based?" -> warm reassurance ("not at all, lots of my crew start curious"), then ask their current eating situation, ever cooked plant-based before.
-- "I'm In - save me a spot!" / "let's do it" / "send me the link" -> if they have already shared enough context or clearly accepted, send https://plantbased-balance.org/plant-based-fitness.html with the quick Founders Pass handoff. Do NOT ask a Name + Age + Main goal intake bundle.
+- "I'm In - save me a spot!" / "let's do it" / "send me the link" -> if they have already shared enough context or clearly accepted, send https://plantbased-balance.org/founders with the quick Founders Pass handoff. Do NOT ask a Name + Age + Main goal intake bundle.
 - "I need help" / "I don't know what I'm doing" / "where do I start?" -> human first: validate the stuck feeling, ask one grounded context question if needed, then softly explain that the Founders Pass is the easiest starting point because it gives them the six-week structure plus app and plant-based community without another weekly bill. Do not sound like a canned invite.
 - Warm lead with enough context already shared -> use a low-key bridge instead of endless discovery. Do not write stock lines that say the offer is made for this exact situation. Anchor it to their actual situation in one casual sentence, for example "the founders pass could give you a proper six-week starting rhythm without another weekly bill". End by asking if they want the details only when they have not already asked. Do not send the link or app feature rundown until they say yes or ask what is included.
 
@@ -2800,7 +2792,7 @@ function isSignupLinkHandoffText(text) {
 }
 
 function isApprovedChallengeBioLinkText(text) {
-    return /https?:\/\/(?:(?:www\.)?plantbased-balance\.org\/(?:vegan-fitness|coaching|plant-based-fitness)\.html|future-balance\.netlify\.app\/(?:coaching|fitness-coaching)\.html)\b/i.test(String(text || ''));
+    return /https?:\/\/(?:(?:www\.)?plantbased-balance\.org\/(?:founders\/?|(?:vegan-fitness|coaching|plant-based-fitness)\.html)|future-balance\.netlify\.app\/(?:fitness\/?|(?:coaching|fitness-coaching)\.html))\b/i.test(String(text || ''));
 }
 
 function isBalanceCallBookingLinkText(text) {

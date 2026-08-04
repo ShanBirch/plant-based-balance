@@ -8,7 +8,7 @@ const {
 test('DM drafting knowledge covers the paid handoff and real onboarding stages', () => {
     const guide = buildAppNavigationGuideBlock();
 
-    assert.match(guide, /plant-based-fitness\.html/);
+    assert.match(guide, /plantbased-balance\.org\/founders/);
     assert.match(guide, /login\.html\?action=signup/);
     assert.match(guide, /three realistic weekly anchors/i);
     assert.match(guide, /main thing that knocks them off track/i);

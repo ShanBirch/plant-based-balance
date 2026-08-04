@@ -440,7 +440,7 @@ assert.match(compactCustomData, /native_story_hook/);
 assert.match(compactCustomData, /offer_path: balance_vegan_founders_pass/);
 assert.doesNotMatch(compactCustomData, /story_outreach_history/);
 assert.doesNotMatch(compactCustomData, /long sales rule/);
-assert.match(igDraftSource, /https:\/\/plantbased-balance\.org\/plant-based-fitness\.html/);
+assert.match(igDraftSource, /https:\/\/plantbased-balance\.org\/founders/);
 assert.match(igDraftSource, /Balance Foundations Founders Pass: AUD \$89\.99 once/);
 assert.match(igDraftSource, /fixed six-week course, six weeks of app\/community access/);
 assert.match(igDraftSource, /one weekly check-in plus workout\/food review and adjustments/);

@@ -40,7 +40,7 @@ CURRENT PRIMARY OFFER:
 - It includes a structured six-week course, six weeks of app/community access, one weekly check-in, and workout and food review/adjustments from Shannon.
 - It is about half the AU$179.94 cost of six weeks of Starter Coaching. Starter is AUD $29.99/week for ongoing individual progression and continued access after Foundations, or as a direct ongoing start.
 - Never say the Founders Pass has no 1:1 or one-to-one coaching.
-- No sales call is needed. They can start from the Founders Pass page: https://plantbased-balance.org/plant-based-fitness.html
+- No sales call is needed. They can start from the Founders Pass page: https://plantbased-balance.org/founders
 - It is one payment, not a recurring app membership. No hidden weekly app fee.
 - Do not offer a free challenge or free entry as the acquisition path.
 

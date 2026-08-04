@@ -534,6 +534,42 @@
   force = true
 
 [[redirects]]
+  from = "/founders"
+  to = "/plant-based-fitness.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/founders/"
+  to = "/plant-based-fitness.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/founders/:meta_ref"
+  to = "/plant-based-fitness.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/fitness"
+  to = "/fitness-coaching.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/fitness/"
+  to = "/fitness-coaching.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/fitness/:meta_ref"
+  to = "/fitness-coaching.html"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/vegan-fitness.html"
   to = "/plant-based-fitness.html"
   status = 301

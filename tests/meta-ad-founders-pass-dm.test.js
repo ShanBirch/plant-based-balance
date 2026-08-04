@@ -219,7 +219,7 @@ test('preview-only Meta approval cannot make the worker invent a checkout link',
         linkedUserId: null,
     });
     assert.equal(readyHandoff.approved_link_auto_sendable, true);
-    assert.match(readyHandoff.signup_link_handoff_url, /plant-based-fitness\.html/);
+    assert.equal(readyHandoff.signup_link_handoff_url, 'https://plantbased-balance.org/founders');
 });
 
 test('paid Meta opt-out, identity, and safety messages always hold while ordinary flows are untouched', () => {
@@ -480,7 +480,7 @@ test('the reply after the goal is tailored and carries the right native proof me
 });
 
 test('paid Meta conversation stages stay deterministic, purposeful, and immediately reviewable', () => {
-    const checkoutUrl = 'https://plantbased-balance.org/plant-based-fitness.html?utm_source=instagram';
+    const checkoutUrl = 'https://plantbased-balance.org/founders';
     const goalQualifier = {
         commercial_stage: 'engaged',
         facts: { current_state: 'Wants to lose 15kg.', history_blockers: null },
@@ -645,7 +645,7 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
         checkoutUrl,
     });
     assert.match(buyer.joined, /get started here/i);
-    assert.match(buyer.joined, /plant-based-fitness\.html/);
+    assert.match(buyer.joined, /plantbased-balance\.org\/founders/);
     assert.equal((buyer.joined.replace(/https?:\/\/\S+/g, '').match(/\?/g) || []).length, 0,
         'the checkout handoff uses a clear action instead of a redundant question');
     assert.equal(buildPaidMetaConversationApproval({
@@ -719,7 +719,7 @@ test('plant-based requirement and ready prompts receive different next steps', (
     const ready = buildMetaAdFoundersPassFirstReply("I'm ready to start");
     assert.equal(ready.firstReplyIntent, 'ready');
     assert.match(ready.joined, /quick setup and start here/i);
-    assert.match(ready.joined, /plant-based-fitness\.html/);
+    assert.match(ready.joined, /plantbased-balance\.org\/founders/);
     assert.equal(buildMetaAdFirstReplyApproval({
         metaAdFirstInbound: true,
         draft: ready,
@@ -735,7 +735,7 @@ test('broad ad route stays broad through the informational first reply', () => {
     assert.doesNotMatch(reply.joined, /https?:\/\//);
 });
 
-test('stored Meta identifiers survive the DM link and approved handoff gate', () => {
+test('the public DM link stays clean while Meta identifiers remain thread data', () => {
     const customData = {
         meta_ad_attribution: {
             source: 'meta_ads',
@@ -753,14 +753,11 @@ test('stored Meta identifiers survive the DM link and approved handoff gate', ()
         },
     };
     const checkoutUrl = buildMetaAdCheckoutUrl({ customData, flowVariant: 'plant_based_control' });
-    const parsed = new URL(checkoutUrl);
-    assert.equal(parsed.searchParams.get('campaign_id'), '120210001');
-    assert.equal(parsed.searchParams.get('adset_id'), '120210002');
-    assert.equal(parsed.searchParams.get('ad_id'), '120210003');
-    assert.equal(parsed.searchParams.get('creative_id'), '120210004');
-    assert.equal(parsed.searchParams.get('placement'), 'instagram_reels');
-    assert.equal(parsed.searchParams.get('meta_ad_name'), 'A1 Brain Angle');
-    assert.equal(parsed.searchParams.get('meta_ref'), 'balance_plant_based_a1');
+    const shortAdRef = BigInt('120210003').toString(36);
+    assert.equal(checkoutUrl, `https://plantbased-balance.org/founders/${shortAdRef}`);
+    assert.equal(new URL(checkoutUrl).search, '');
+    assert.equal(customData.meta_ad_attribution.ad_id, '120210003');
+    assert.equal(customData.meta_ad_attribution.ad_name, 'A1 Brain Angle');
 
     const ready = buildMetaAdFoundersPassFirstReply("I'm ready to start", { customData });
     const handoff = buildLeadOnboardingHandoffData({
@@ -773,7 +770,7 @@ test('stored Meta identifiers survive the DM link and approved handoff gate', ()
         currentMessage: "I'm ready to start",
     });
     assert.equal(handoff.approved_link_auto_sendable, true);
-    assert.match(handoff.signup_link_handoff_url, /ad_id=120210003/);
+    assert.equal(handoff.signup_link_handoff_url, `https://plantbased-balance.org/founders/${shortAdRef}`);
 });
 
 test('inclusions are informational and do not create an approved checkout handoff', () => {

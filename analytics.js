@@ -43,6 +43,28 @@
         if (value) incoming[key] = value.slice(0, 500);
     });
 
+    // Paid Meta DMs use a short public path instead of exposing a long tracking
+    // query. The compact base-36 suffix carries the unique numeric Meta ad ID;
+    // campaign, ad-set and creative details remain joinable from that ID.
+    const shortMetaRoute = window.location.pathname.match(/^\/(founders|fitness)\/([0-9a-z]+)\/?$/i);
+    if (shortMetaRoute && !incoming.ad_id) {
+        try {
+            let decoded = 0n;
+            for (const char of shortMetaRoute[2].toLowerCase()) {
+                const digit = parseInt(char, 36);
+                if (!Number.isInteger(digit) || digit < 0 || digit > 35) throw new Error('invalid short Meta reference');
+                decoded = decoded * 36n + BigInt(digit);
+            }
+            incoming.ad_id = decoded.toString();
+            incoming.utm_source = incoming.utm_source || 'instagram';
+            incoming.utm_medium = incoming.utm_medium || 'dm';
+            incoming.utm_campaign = incoming.utm_campaign || (shortMetaRoute[1].toLowerCase() === 'fitness'
+                ? 'founders_pass_broad_pain'
+                : 'founders_pass_plant_based');
+            incoming.utm_content = incoming.utm_content || 'dm_handoff';
+        } catch (_) {}
+    }
+
     const now = new Date().toISOString();
     const firstTouch = safeParse(localStorage.getItem(FIRST_TOUCH_KEY), {});
     const previousLastTouch = safeParse(localStorage.getItem(LAST_TOUCH_KEY), {});

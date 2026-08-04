@@ -39,7 +39,7 @@ const COCOS_BOT_ACCOUNT = 'cocos_pt_studio';
 const BALANCE_BOT_ACCOUNT = 'shan_n_sunny';
 const SIMPLE_OPENER_RE = /^(yo+|yoo+|hey+|heya+|hi+|hello+|hiya+|morning+|afternoon+|evening+|haha+|hahaha+|lol+|sup|what'?s up|whats up|thanks?|thank you|cheers|nice|sick|love it|haha yeah|yeah|yea|yep|yess?|yes|nah|no worries)[!?.\s]*$/i;
 const RISKY_REPLY_RE = /\b(challenge|join|joined|sign\s*up|signup|link|price|cost|program|plan|meal|workout|coach|coaching|injur|injury|pain|hurt|sore|hospital|doctor|medical|sorry|grief|death|died|anxiety|depress|sad|trauma|pregnan|calorie|macro|eating disorder)\b/i;
-const DEFAULT_COACHING_URL = 'https://plantbased-balance.org/plant-based-fitness.html';
+const DEFAULT_COACHING_URL = 'https://plantbased-balance.org/founders';
 const AUTOMATED_PERMANENT_NEEDS_YOU_SCHEDULE_SOURCES = new Set([
     'auto_send',
     'balance_lead_client_manager_cron',

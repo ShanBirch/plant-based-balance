@@ -61,7 +61,7 @@ const organicCheckout = instantDraft.buildMetaAdCheckoutUrl({
     currentMessage: broadMessage,
     flowVariant: 'broad_pain',
 });
-assert.match(organicCheckout, /^https:\/\/plantbased-balance\.org\/plant-based-fitness\.html/);
+assert.match(organicCheckout, /^https:\/\/plantbased-balance\.org\/founders/);
 assert.doesNotMatch(organicCheckout, /future-balance/);
 
 const paidCheckout = instantDraft.buildMetaAdCheckoutUrl({
@@ -69,8 +69,8 @@ const paidCheckout = instantDraft.buildMetaAdCheckoutUrl({
     currentMessage: broadMessage,
     flowVariant: 'broad_pain',
 });
-assert.match(paidCheckout, /^https:\/\/future-balance\.netlify\.app\/fitness-coaching\.html/);
-assert.match(paidCheckout, /ad_id=broad-ad-1/);
+assert.equal(paidCheckout, 'https://future-balance.netlify.app/fitness');
+assert.equal(new URL(paidCheckout).search, '');
 
 const webhookPaid = instagramWebhook.mergeGraphCustomData({}, {
     participantId: 'lead-1',

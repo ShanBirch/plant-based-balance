@@ -79,7 +79,7 @@ const repairedChunks = finalizeDraftChunksFromRawText(
         currentMessageText: 'yeah sounds good',
     }
 );
-assert.match(repairedChunks.join('\n'), /https:\/\/plantbased-balance\.org\/plant-based-fitness\.html/);
+assert.match(repairedChunks.join('\n'), /https:\/\/plantbased-balance\.org\/founders/);
 
 const supportChunks = finalizeDraftChunksFromRawText(
     JSON.stringify({ messages: ["sounds good mate", "here's the link, check it out and download the app"] }),

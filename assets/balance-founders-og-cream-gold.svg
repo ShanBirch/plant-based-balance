@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Balance</title>
+  <desc id="desc">The gold Balance harmony logo centred on a cream background.</desc>
+  <defs>
+    <radialGradient id="cream" cx="50%" cy="42%" r="76%">
+      <stop offset="0" stop-color="#fffaf0"/>
+      <stop offset="1" stop-color="#f0e5d1"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#9f6c19"/>
+      <stop offset="0.48" stop-color="#d6ad57"/>
+      <stop offset="1" stop-color="#a97821"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#cream)"/>
+  <rect x="24" y="24" width="1152" height="582" rx="24" fill="none" stroke="#c69a43" stroke-width="2" opacity="0.72"/>
+  <circle cx="600" cy="315" r="208" fill="#fffaf0" opacity="0.58"/>
+  <circle cx="600" cy="315" r="176" fill="none" stroke="url(#gold)" stroke-width="16"/>
+  <text x="600" y="334" text-anchor="middle" dominant-baseline="middle" fill="url(#gold)" font-family="Noto Serif JP, Hiragino Mincho ProN, Yu Mincho, MS Mincho, serif" font-size="224" font-weight="700">和</text>
+</svg>

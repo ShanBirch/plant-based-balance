@@ -7,6 +7,7 @@ const root = path.join(__dirname, '..');
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 const coaching = read('coaching.html');
 const founders = read('plant-based-fitness.html');
+const broadFounders = read('fitness-coaching.html');
 const checkout = read('checkout.js');
 const success = read('success.html');
 const bookingPage = read('book.html');
@@ -78,7 +79,7 @@ test('Zoom PT availability choice reaches the booking record and calendar event'
     assert.match(booking, /const subject = encodeURIComponent\(`\$\{packageName\} availability`\)/);
 });
 
-test('all active DM handoffs use the permanent branded Founders Pass URL', () => {
+test('all active DM handoffs use the clean permanent Founders Pass URL', () => {
     const files = [
         'netlify/edge-functions/sales-bot.js',
         'netlify/functions/_lib/client-context.js',
@@ -91,9 +92,23 @@ test('all active DM handoffs use the permanent branded Founders Pass URL', () =>
 
     for (const file of files) {
         const source = read(file);
-        assert.match(source, /https:\/\/plantbased-balance\.org\/plant-based-fitness\.html/, file);
+        assert.match(source, /https:\/\/plantbased-balance\.org\/founders/, file);
+        assert.doesNotMatch(source, /plantbased-balance\.org\/founders\?/, file);
         assert.doesNotMatch(source, /https:\/\/future-balance\.netlify\.app\/coaching\.html/, file);
     }
+});
+
+test('clean Founders Pass route and cream-gold social preview stay wired', () => {
+    const netlify = read('netlify.toml');
+    const analytics = read('analytics.js');
+    assert.match(netlify, /from = "\/founders"[\s\S]{0,120}to = "\/plant-based-fitness\.html"[\s\S]{0,80}status = 200/);
+    assert.match(netlify, /from = "\/founders\/:meta_ref"[\s\S]{0,120}to = "\/plant-based-fitness\.html"[\s\S]{0,80}status = 200/);
+    assert.match(analytics, /shortMetaRoute[\s\S]{0,900}incoming\.ad_id = decoded\.toString\(\)/);
+    assert.match(founders, /property="og:url" content="https:\/\/plantbased-balance\.org\/founders"/);
+    assert.match(founders, /property="og:image" content="https:\/\/plantbased-balance\.org\/assets\/balance-founders-og-cream-gold\.png\?v=20260804"/);
+    assert.match(broadFounders, /property="og:url" content="https:\/\/future-balance\.netlify\.app\/fitness"/);
+    assert.match(broadFounders, /property="og:image" content="https:\/\/future-balance\.netlify\.app\/assets\/balance-founders-og-cream-gold\.png\?v=20260804"/);
+    assert.ok(fs.existsSync(path.join(root, 'assets', 'balance-founders-og-cream-gold.png')));
 });
 
 test('Founders Pass page sells the one-time membership through guarded hosted checkout', () => {
