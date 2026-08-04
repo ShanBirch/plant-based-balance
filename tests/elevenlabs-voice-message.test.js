@@ -12,8 +12,13 @@ const voiceSource = fs.readFileSync(
 );
 assert.match(
     voiceSource,
+    /text: buildSsmlPausedVoiceText\(thoughtGroups, thoughtPausesMs\)/,
+    'paced thought groups must remain one continuous ElevenLabs generation'
+);
+assert.doesNotMatch(
+    voiceSource,
     /synthesizeThoughtGroups\(thoughtGroups,[\s\S]{0,300}, 2\)/,
-    'paced thought groups must use the provider-safe two-request synthesis pool'
+    'paced voice notes must not re-seed the cloned voice at each pause'
 );
 
 const personalVoicePrompt = igDraft.buildPersonalVoiceNoteDraftingBlock(true);
@@ -185,6 +190,13 @@ assert.deepStrictEqual(
 assert.deepStrictEqual(
     voice._test.resolveVoiceThoughtPausesMs({ outbound_voice_thought_pause_ms: 700 }),
     [700]
+);
+assert.strictEqual(
+    voice._test.buildSsmlPausedVoiceText(
+        ['First thought.', 'Second thought.', 'Third thought.'],
+        [1400, 1050]
+    ),
+    'First thought. <break time="1.4s" /> Second thought. <break time="1.05s" /> Third thought.'
 );
 const thoughtWav = voice._test.assemblePcmThoughtGroups([
     voice._test.wrapPcm16LeAsWav(Buffer.alloc(3200), 16000, 1),

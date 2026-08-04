@@ -407,6 +407,22 @@ function resolveVoiceThoughtPausesMs(alertData = {}) {
     return fallback > 0 ? [fallback] : [];
 }
 
+function buildSsmlPausedVoiceText(thoughtGroups = [], pauseSchedule = []) {
+    const groups = (Array.isArray(thoughtGroups) ? thoughtGroups : [])
+        .map(value => String(value || '').trim())
+        .filter(Boolean);
+    const pauses = Array.isArray(pauseSchedule) ? pauseSchedule : [pauseSchedule];
+    if (groups.length < 2 || !pauses.length) return groups.join(' ');
+    return groups.map((group, index) => {
+        if (index >= groups.length - 1) return group;
+        const requested = Number(pauses[Math.min(index, pauses.length - 1)]) || 0;
+        const clamped = Math.min(MAX_VOICE_THOUGHT_PAUSE_MS, Math.max(0, Math.round(requested)));
+        if (!clamped) return group;
+        const seconds = (clamped / 1000).toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
+        return `${group} <break time="${seconds}s" />`;
+    }).join(' ');
+}
+
 function unwrapPcmWav(wavBuffer) {
     const wav = Buffer.isBuffer(wavBuffer) ? wavBuffer : Buffer.from(wavBuffer || []);
     if (wav.length < 44 || wav.toString('ascii', 0, 4) !== 'RIFF' || wav.toString('ascii', 8, 12) !== 'WAVE') {
@@ -683,24 +699,18 @@ async function createVoiceMessageAudio({ messages, alertId, alertData = {}, supa
     };
     const thoughtPausesMs = resolveVoiceThoughtPausesMs(alertData);
     const thoughtGroups = splitVoiceThoughtGroups(text);
-    const pcmFormat = resolveAudioUploadFormat(config.outputFormat).sourceEncoding === 'pcm_s16le';
     let speech;
-    if (thoughtPausesMs.length > 0 && thoughtGroups.length > 1 && pcmFormat) {
-        const groupSpeech = await synthesizeThoughtGroups(thoughtGroups, thought =>
-            generateElevenLabsSpeech({
-                text: thought,
-                ...config,
-                supabaseQuery,
-                alertData,
-            }), 2);
-        const sampleRate = groupSpeech[0].sampleRate || 16000;
-        speech = {
-            buffer: assemblePcmThoughtGroups(groupSpeech.map(item => item.buffer), sampleRate, thoughtPausesMs),
-            contentType: 'audio/wav',
-            extension: 'wav',
-            sourceEncoding: 'pcm_s16le',
-            sampleRate,
-        };
+    if (thoughtPausesMs.length > 0
+        && thoughtGroups.length > 1
+        && !/^eleven_v3$/i.test(config.modelId)) {
+        // Keep the cloned voice in one continuous generation. Separate TTS
+        // requests re-seed timbre and prosody at every pause.
+        speech = await generateElevenLabsSpeech({
+            text: buildSsmlPausedVoiceText(thoughtGroups, thoughtPausesMs),
+            ...config,
+            supabaseQuery,
+            alertData,
+        });
     } else {
         speech = await generateElevenLabsSpeech({
             text,
@@ -795,6 +805,7 @@ module.exports = {
         splitVoiceThoughtGroups,
         resolveVoiceThoughtPauseMs,
         resolveVoiceThoughtPausesMs,
+        buildSsmlPausedVoiceText,
         unwrapPcmWav,
     assemblePcmThoughtGroups,
     synthesizeThoughtGroups,

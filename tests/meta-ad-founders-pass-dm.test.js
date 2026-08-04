@@ -620,8 +620,8 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
         flowVariant: 'plant_based_control',
         personalVoiceNoteMode: true,
     });
-    assert.deepEqual(blockerVoiceReply.voiceThoughtPausesMs, [740, 1400, 1050, 660, 1180, 610, 1260, 820]);
-    assert.equal(blockerVoiceReply.joined.split(/\n\s*\n/).length, 9);
+    assert.deepEqual(blockerVoiceReply.voiceThoughtPausesMs, [1400, 1050, 1180, 1260]);
+    assert.equal(blockerVoiceReply.joined.split(/\n\s*\n/).length, 5);
     assert.doesNotMatch(blockerVoiceReply.joined, /\.\.\./);
     assert.match(blockerVoiceReply.joined, /losing 8 kilos/i);
     assert.match(blockerVoiceReply.joined, /It's, it's about giving you a clear plan/i);
@@ -641,7 +641,7 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
         personalVoiceNoteMode: true,
     });
     assert.equal(changingShiftBlocker.replyMode, 'campaign_app_preview_handoff');
-    assert.deepEqual(changingShiftBlocker.voiceThoughtPausesMs, [740, 1400, 1050, 660, 1180, 610, 1260, 820]);
+    assert.deepEqual(changingShiftBlocker.voiceThoughtPausesMs, [1400, 1050, 1180, 1260]);
     assert.match(changingShiftBlocker.joined, /life keeps crowding the week/i);
     assert.match(changingShiftBlocker.joined, /losing 7 kilos/i);
 

@@ -1462,15 +1462,11 @@ function buildDeterministicPaidMetaConversationReply({
         }
         const joined = personalVoiceNoteMode
             ? [
-                `Hey, how are you going. Yeah, so that makes total sense.`,
-                reflection,
-                `So, um, that's honestly what Balance is designed for.`,
-                `It's, it's about giving you a clear plan for the week.`,
+                `Hey, how are you going. Yeah, so that makes total sense. ${reflection}`,
+                `So, um, that's honestly what Balance is designed for. It's, it's about giving you a clear plan for the week.`,
                 `And having me there to check in, keep you accountable, and move things around when life gets crazy.`,
-                `So if you fall off, you know, you've got something simple to come back to.`,
-                `And we can keep you moving toward ${voiceGoalPhrase}, without every week needing to be perfect.`,
-                `It's nineteen ninety-nine a month.`,
-                `I'll send you a page that explains it properly, and if it feels right, you can tap Try Balance free and have a look through the app.`,
+                `So if you fall off, you know, you've got something simple to come back to. And we can keep you moving toward ${voiceGoalPhrase}, without every week needing to be perfect.`,
+                `It's nineteen ninety-nine a month. I'll send you a page that explains it properly, and if it feels right, you can tap Try Balance free and have a look through the app.`,
             ].join('\n\n')
             : `Yeah, that makes sense. ${reflection} Balance gives you a clear plan and support around ${voiceGoalPhrase}, and the app and community are $19.99 a month.\n\nThis page explains how it works. If it feels right, tap Try Balance free at the bottom: ${META_APP_PREVIEW_URL}`;
         return {
@@ -1484,7 +1480,7 @@ function buildDeterministicPaidMetaConversationReply({
             // Measured from Shannon's clean Instagram notes: shorter connective
             // pauses, with longer thinking/topic-transition breaks.
             voiceThoughtPausesMs: personalVoiceNoteMode
-                ? [740, 1400, 1050, 660, 1180, 610, 1260, 820]
+                ? [1400, 1050, 1180, 1260]
                 : [],
             model: 'deterministic_paid_meta_conversation_v2',
             replyMode: 'campaign_app_preview_handoff',
