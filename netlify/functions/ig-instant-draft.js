@@ -1742,13 +1742,16 @@ function buildMetaAdFoundersPassFirstReply(currentMessage = '', { customData = {
 }
 
 const META_AD_GOAL_QUESTION_RE = /what(?:'s| is| are) (?:the )?(?:main thing )?you(?:'re| are)? ?(?:mainly )?trying to change(?: with your fitness)?(?: at the moment| right now)?/i;
+const META_AD_STATED_GOAL_RE = /\b(?:lose|losing|drop|dropping|reduce|reducing)\s+(?:about\s+|around\s+|some\s+)?(?:weight|fat|\d{1,2}(?:\.\d+)?\s*(?:kg|kgs|kilograms?|lb|lbs|pounds?))\b|\b(?:get|feel|become)\s+(?:a\s+)?(?:fitter|fit|stronger|leaner|healthier)\b|\b(?:build|gain)\s+(?:some\s+)?(?:strength|muscle)\b/i;
 
-function isMetaAdGoalReplyTurn(history = []) {
+function isMetaAdGoalReplyTurn(history = [], currentMessage = '') {
     const recent = (Array.isArray(history) ? history : [])
         .filter(item => String(item?.text || '').trim())
         .slice(-6);
     const latestOutbound = [...recent].reverse().find(item => item?.direction === 'out');
-    return !!latestOutbound && META_AD_GOAL_QUESTION_RE.test(String(latestOutbound.text || ''));
+    if (latestOutbound && META_AD_GOAL_QUESTION_RE.test(String(latestOutbound.text || ''))) return true;
+    if (!META_AD_STATED_GOAL_RE.test(String(currentMessage || ''))) return false;
+    return !recent.some(item => item?.direction === 'in' && META_AD_STATED_GOAL_RE.test(String(item.text || '')));
 }
 
 function buildMetaAdGoalProofReply(currentMessage = '', { flowVariant = 'plant_based_control' } = {}) {
@@ -5799,7 +5802,7 @@ exports.handler = async (event) => {
         && personalVoicePlan.useSyntheticVoice;
     const outboundVoiceMessageReason = personalVoicePlan.reason;
     const metaAdGoalReplyTurn = metaAdConversationFastLane
-        && isMetaAdGoalReplyTurn(history);
+        && isMetaAdGoalReplyTurn(history, messageText);
     let draft;
     try {
         draft = metaAdFirstInbound && shouldUseDeterministicMetaAdFirstReply(messageText) ? buildMetaAdFoundersPassFirstReply(messageText, {
@@ -5879,6 +5882,15 @@ exports.handler = async (event) => {
             imageAttachmentUrl: proofMedia.imageAttachmentUrl || null,
             videoAttachmentUrl: proofMedia.videoAttachmentUrl || null,
             model: `${draft.model || 'unknown'}+meta_ad_goal_proof_media_v1`,
+        };
+    }
+    if (metaAdGoalReplyTurn && !draft.chunks.some(chunk => isQuestionLikeText(chunk))) {
+        const goalProgressionQuestion = `When you've tried before, what tends to fall apart first?`;
+        draft = {
+            ...draft,
+            chunks: [...draft.chunks, goalProgressionQuestion].slice(0, Math.max(2, draft.maxChunks || MAX_CHUNKS)),
+            joined: [...draft.chunks, goalProgressionQuestion].slice(0, Math.max(2, draft.maxChunks || MAX_CHUNKS)).join('\n'),
+            model: `${draft.model || 'unknown'}+meta_ad_goal_question_guard_v1`,
         };
     }
 

@@ -344,6 +344,13 @@ test('the reply after the goal is tailored and carries the right native proof me
         { direction: 'out', text: 'Morning. What are you mainly trying to change right now?' },
         { direction: 'in', text: 'I want to lose about 10kg and feel fitter.' },
     ]), true);
+    assert.equal(isMetaAdGoalReplyTurn([
+        { direction: 'out', text: 'When you say personalised, do you mean workouts, food, or both?' },
+    ], 'Both. I want to lose about 10kg and feel fitter.'), true);
+    assert.equal(isMetaAdGoalReplyTurn([
+        { direction: 'in', text: 'I want to lose about 10kg and feel fitter.' },
+        { direction: 'out', text: 'When have you tried before?' },
+    ], 'I still want to lose about 10kg.'), false);
     assert.equal(isMetaAdGoalReplyTurn([{ direction: 'out', text: 'How was your week?' }]), false);
 
     const consistency = buildMetaAdGoalProofReply('I need accountability because I always fall off');
