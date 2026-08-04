@@ -1035,7 +1035,7 @@ function isPaidMetaBuyerIntentOfferReplyAllowed({ alertData, challengeOfferWarni
 }
 
 const PAID_META_CONTEXTUAL_OFFER_VIEW_RE = /^(?:can|could) i (?:see|look at|check out) (?:it|this|that|the (?:pass|details|program))(?: please)?[.!?\s]*$/i;
-const PAID_META_FOUNDERS_PASS_SELECTION_RE = /^(?:(?:the\s+)?founders?\s+pass(?:\s+please)?|(?:the\s+)?founders?\s+pass\s+(?:is|sounds|looks)\b.{0,90}\b(?:best|right|fit|one)|(?:i(?:'ll| will|'d| would)|let(?:'s| us))\s+(?:go with|choose|take|start with|do)\s+(?:the\s+)?founders?\s+pass)\b[.!?\s\S]{0,100}$/i;
+const PAID_META_FOUNDERS_PASS_SELECTION_RE = /^(?:(?:the\s+)?founders?\s+pass(?:\s+please)?|(?:the\s+)?(?:fixed\s+(?:six|6)[ -]?week\s+)?founders?\s+pass\s+(?:is|sounds|looks)\b.{0,90}\b(?:best|right|fit|one)|(?:i(?:'ll| will|'d| would)|let(?:'s| us))\s+(?:go with|choose|take|start with|do)\s+(?:the\s+)?founders?\s+pass)\b[.!?\s\S]{0,100}$/i;
 
 function isPaidMetaFoundersPassSelection(value = '') {
     return PAID_META_FOUNDERS_PASS_SELECTION_RE.test(String(value || '').replace(/\s+/g, ' ').trim());
