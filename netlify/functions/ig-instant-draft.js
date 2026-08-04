@@ -724,6 +724,8 @@ function reviewLooksLikePureContextGap(review) {
 function collectCocosAutoRepairIssues({ draft, draftReview, challengeOfferWarning, currentMessage, qualifier, leadStage, linkedUserId, meaningfulLeadReplyCount, voiceNoteMode = false }) {
     const issues = [];
     const draftText = draftTextFromDraft(draft);
+    const verifiedPaidMetaProgression = /^deterministic_paid_meta_conversation_v\d+/i.test(String(draft?.model || ''))
+        && ['campaign_sales_progression', 'campaign_buyer_handoff', 'campaign_app_preview_handoff'].includes(String(draft?.replyMode || ''));
     const challengeOfferAllowed = hasChallengeInviteReadinessSignal(currentMessage)
         || hasEarnedChallengeInviteMoment({ qualifier, currentMessage, leadReplyCount: meaningfulLeadReplyCount })
         || ['pitched', 'won'].includes(qualifier?.stage)
@@ -749,7 +751,7 @@ function collectCocosAutoRepairIssues({ draft, draftReview, challengeOfferWarnin
     if (isUnsafeStockDiscoveryQuestion(draftText)) {
         issues.push('Draft uses a stock discovery question. Replace it with a specific reply to the latest detail, or no question if a reaction is enough.');
     }
-    if (prematureChallengeInvite) {
+    if (prematureChallengeInvite && !verifiedPaidMetaProgression) {
         issues.push('Draft invites coaching before the person has shown enough readiness or 3 meaningful lead replies. Keep rapport moving instead.');
     }
     if (voiceNoteMode) {

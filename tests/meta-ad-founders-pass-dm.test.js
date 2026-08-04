@@ -14,6 +14,7 @@ const {
     buildApprovedDeterministicMetaAdFirstReplyReview,
     ensureMetaAdSalesProgressionQuestion,
     buildDeterministicPaidMetaConversationReply,
+    collectCocosAutoRepairIssues,
     buildPaidMetaConversationApproval,
     hasDirectPaidMetaCheckoutIntent,
     isContextualMetaAdOfferLinkRequest,
@@ -296,6 +297,33 @@ test('paid Meta question-fatigue reply apologises and leaves space without anoth
     });
     assert.equal(guardedReply.joined, repairReply.joined);
     assert.doesNotMatch(guardedReply.joined, /\?/);
+});
+
+test('verified paid Meta price progression is not stripped by the generic early-pitch repair', () => {
+    const qualifier = {
+        stage: 'current_state',
+        commercial_stage: 'buyer_intent',
+        facts: {
+            current_state: 'Wants to lose about 8 kilos.',
+            history_blockers: 'If she misses two days, she gives up.',
+        },
+    };
+    const draft = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'Thanks. How much is Balance Foundations?',
+        qualifier,
+        flowVariant: 'plant_based_control',
+    });
+    assert.match(draft.joined, /Would you like me to send you the checkout link\?/i);
+    const issues = collectCocosAutoRepairIssues({
+        draft,
+        draftReview: { verdict: 'pass', issues: [] },
+        currentMessage: 'Thanks. How much is Balance Foundations?',
+        qualifier,
+        leadStage: 'qualifying',
+        linkedUserId: null,
+        meaningfulLeadReplyCount: 8,
+    });
+    assert.equal(issues.some(issue => /invites coaching before/i.test(issue)), false);
 });
 
 test('deterministic first reply is narrow and leaves sensitive, opt-out, and unrelated ad messages to normal review', () => {
