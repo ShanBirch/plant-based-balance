@@ -370,6 +370,16 @@ function assemblePcmThoughtGroups(groupWavs = [], sampleRate = 16000, pauseMs = 
     return wrapPcm16LeAsWav(Buffer.concat(pcmParts), sampleRate, 1);
 }
 
+async function synthesizeThoughtGroups(thoughtGroups = [], generate, concurrency = 2) {
+    const results = [];
+    const batchSize = Math.max(1, Math.min(2, Number(concurrency) || 2));
+    for (let index = 0; index < thoughtGroups.length; index += batchSize) {
+        const batch = thoughtGroups.slice(index, index + batchSize);
+        results.push(...await Promise.all(batch.map(generate)));
+    }
+    return results;
+}
+
 function countVoiceScriptWords(text = '') {
     return (String(text || '').match(/[A-Za-z0-9]+(?:['’][A-Za-z0-9]+)*/g) || []).length;
 }
@@ -615,14 +625,13 @@ async function createVoiceMessageAudio({ messages, alertId, alertData = {}, supa
     const pcmFormat = resolveAudioUploadFormat(config.outputFormat).sourceEncoding === 'pcm_s16le';
     let speech;
     if (thoughtPauseMs > 0 && thoughtGroups.length > 1 && pcmFormat) {
-        const groupSpeech = await Promise.all(thoughtGroups.map(thought =>
+        const groupSpeech = await synthesizeThoughtGroups(thoughtGroups, thought =>
             generateElevenLabsSpeech({
                 text: thought,
                 ...config,
                 supabaseQuery,
                 alertData,
-            })
-        ));
+            }), 2);
         const sampleRate = groupSpeech[0].sampleRate || 16000;
         speech = {
             buffer: assemblePcmThoughtGroups(groupSpeech.map(item => item.buffer), sampleRate, thoughtPauseMs),
@@ -724,6 +733,7 @@ module.exports = {
         splitVoiceThoughtGroups,
         resolveVoiceThoughtPauseMs,
         unwrapPcmWav,
-        assemblePcmThoughtGroups,
+    assemblePcmThoughtGroups,
+    synthesizeThoughtGroups,
     },
 };

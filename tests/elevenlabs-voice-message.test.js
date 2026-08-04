@@ -12,8 +12,8 @@ const voiceSource = fs.readFileSync(
 );
 assert.match(
     voiceSource,
-    /Promise\.all\(thoughtGroups\.map/,
-    'paced thought groups must synthesize concurrently so the live send completes inside the function timeout'
+    /synthesizeThoughtGroups\(thoughtGroups,[\s\S]{0,300}, 2\)/,
+    'paced thought groups must use the provider-safe two-request synthesis pool'
 );
 
 const personalVoicePrompt = igDraft.buildPersonalVoiceNoteDraftingBlock(true);
