@@ -1035,7 +1035,7 @@ function isPaidMetaBuyerIntentOfferReplyAllowed({ alertData, challengeOfferWarni
 }
 
 const PAID_META_CONTEXTUAL_OFFER_VIEW_RE = /^(?:can|could) i (?:see|look at|check out) (?:it|this|that|the (?:pass|details|program))(?: please)?[.!?\s]*$/i;
-const PAID_META_FOUNDERS_PASS_SELECTION_RE = /^(?:(?:the\s+)?founders?\s+pass(?:\s+please)?|(?:the\s+)?(?:fixed\s+(?:six|6)[ -]?week\s+)?founders?\s+pass\s+(?:is|sounds|looks)\b.{0,90}\b(?:best|right|fit|one)|(?:i(?:'ll| will|'d| would)|let(?:'s| us))\s+(?:go with|choose|take|start with|do)\s+(?:the\s+)?founders?\s+pass)\b[.!?\s\S]{0,100}$/i;
+const PAID_META_FOUNDERS_PASS_SELECTION_RE = /^(?:(?:the\s+)?(?:founders?\s+pass|balance\s+foundations)(?:\s+please)?|(?:the\s+)?(?:fixed\s+(?:six|6)[ -]?week\s+)?(?:founders?\s+pass|balance\s+foundations)\s+(?:is|sounds|looks)\b.{0,90}\b(?:best|right|fit|one)|(?:i(?:'ll| will|'d| would)|let(?:'s| us))\s+(?:go with|choose|take|start with|do)\s+(?:the\s+)?(?:founders?\s+pass|balance\s+foundations))\b[.!?\s\S]{0,100}$/i;
 
 function isPaidMetaFoundersPassSelection(value = '') {
     return PAID_META_FOUNDERS_PASS_SELECTION_RE.test(String(value || '').replace(/\s+/g, ' ').trim());
@@ -1057,12 +1057,12 @@ function isContextualMetaAdOfferLinkRequest({ currentMessage = '', qualifier = {
     if (isPaidMetaFoundersPassSelection(message)) {
         return recentOutbound.some(item => {
             const text = String(item?.text || '');
-            return /\bfounders? pass\b/i.test(text)
+            return /\b(?:founders? pass|balance foundations)\b/i.test(text)
                 && /\b(?:which (?:one|option) do you want to start with|\$89\.99|six-week|doesn['’]?t renew|full breakdown)\b/i.test(text);
         });
     }
     if (!PAID_META_CONTEXTUAL_OFFER_VIEW_RE.test(message)) return false;
-    return recentOutbound.some(item => /\b(?:founders? pass|six-week|balance app|plant-based community|one-to-one in-app support)\b/i.test(String(item?.text || '')));
+    return recentOutbound.some(item => /\b(?:founders? pass|balance foundations|six-week|balance app|plant-based community|one-to-one in-app support)\b/i.test(String(item?.text || '')));
 }
 
 function buildContextualMetaAdOfferLinkReply({ checkoutUrl = '', flowVariant = 'plant_based_control', currentMessage = '' } = {}) {
@@ -1317,12 +1317,12 @@ function buildDeterministicPaidMetaConversationReply({
     if (resolveMetaAdFirstReplyIntent(message) === 'personalised_coaching') {
         const knownProblem = hasGoal && hasBlocker;
         const body = personalVoiceNoteMode && knownProblem
-            ? `Yeah, I do. Um, because you said you get excited for a few weeks and then drop off, Starter Coaching would probably suit you better. Honestly, I review your training and food each week and adjust it around what's actually happening, so you aren't trying to force the same plan when the week changes.`
-            : (knownProblem
-                ? `Yeah, I do. Starter Coaching is the personalised option, where I review and adjust your training and food each week. It's $29.99 a week, and it makes sense for the stop-start pattern you mentioned.`
-                : `Yeah, I do. Starter Coaching is the personalised option, where I review and adjust your training and food each week. It's $29.99 a week.`);
+            ? `Hey, how are you going. Yeah, I do. Ummmm... Balance Foundations gives you a clear six-week curriculum inside the app, ya know.\n\nAnd you've got me there once a week to review and adjust your training and food around what's actually happening.\n\nIt's one eighty-nine ninety-nine payment for the full six weeks.\n\nAnd yeah, if you're keen, I can give you access to the app so you can check it out before any payment.`
+            : knownProblem
+            ? `Yeah, I do. Balance Foundations gives you a six-week curriculum inside the app, plus one weekly check-in where I review and adjust your training and food around what's actually happening.`
+            : `Yeah, I do. Balance Foundations gives you a six-week curriculum inside the app, plus one weekly check-in where I review and adjust your training and food.`;
         const nextAsk = knownProblem
-            ? 'Is that the kind of support you mean?'
+            ? 'Are you keen to have a quick look inside the app?'
             : 'What are you mainly trying to change at the moment?';
         const joined = `${body}\n\n${nextAsk}`;
         return {
@@ -1341,7 +1341,7 @@ function buildDeterministicPaidMetaConversationReply({
         const appContents = broadFlow
             ? 'workouts with video demos, meal planning and daily targets, weekly goals, progress tracking, and the community'
             : 'workouts with video demos, plant-based meal plans and daily targets, weekly goals, progress tracking, and the plant-based community';
-        const supportOffer = broadFlow ? 'The six-week Balance kickstart' : 'The Founders Pass';
+        const supportOffer = broadFlow ? 'The six-week Balance kickstart' : 'The Balance Foundations program';
         const nextAsk = muscleGoal
             ? 'Want me to show you what the muscle-building side would look like for you?'
             : 'Want me to show you what a first week could look like for your goal?';
@@ -1360,8 +1360,8 @@ function buildDeterministicPaidMetaConversationReply({
     if (PAID_META_PROGRAM_WORKS_RE.test(message)) {
         const goalText = voiceGoalPhrase ? ` around ${voiceGoalPhrase}` : '';
         const communityCopy = broadFlow ? 'the Balance app and community' : 'the Balance app and plant-based community';
-        const offerName = broadFlow ? 'The six-week Balance kickstart' : 'The six-week Balance program';
-        const joined = `${offerName} gives you a clear week-by-week Foundations course${goalText}, six weeks of ${communityCopy}, workouts with video demos, meal planning and progress tracking. You also get one weekly check-in where I review and adjust your training and food. It finishes after six weeks and doesn't renew automatically.\n\nWould you prefer that fixed six-week start, or ongoing weekly coaching?`;
+        const offerName = broadFlow ? 'The six-week Balance kickstart' : 'Balance Foundations';
+        const joined = `${offerName} gives you a clear six-week curriculum${goalText} inside the app, with workouts and video demos, meal planning, progress tracking and six weeks of ${communityCopy}. You also get one weekly check-in where I review and adjust your training and food. It finishes after six weeks and doesn't renew automatically.\n\nAre you keen to have a quick look inside the app?`;
         return {
             chunks: [joined],
             joined,
@@ -1375,12 +1375,12 @@ function buildDeterministicPaidMetaConversationReply({
 
     if (PAID_META_OFFER_INFO_RE.test(message)) {
         const communityCopy = broadFlow ? 'the Balance app and community' : 'the Balance app and plant-based community';
-        const offerName = broadFlow ? 'The six-week Balance kickstart' : 'The six-week Balance program';
-        const selectedFixedStart = /\b(?:founders pass|fixed (?:six|6)[ -]?week)\b/i.test(message);
+        const offerName = broadFlow ? 'The six-week Balance kickstart' : 'Balance Foundations';
+        const selectedFixedStart = /\b(?:founders pass|balance foundations|fixed (?:six|6)[ -]?week)\b/i.test(message);
         const nextAsk = selectedFixedStart
             ? 'Would you like me to send you the checkout link?'
             : 'Want me to show you how the first week would work around your goal?';
-        const joined = `${offerName} is one $89.99 payment for the full six weeks. You get the six-week Foundations course, six weeks of ${communityCopy}, and one weekly check-in and plan review with me. It doesn't renew automatically.\n\n${nextAsk}`;
+        const joined = `${offerName} is one $89.99 payment for the full six weeks. You get the complete six-week curriculum, six weeks of ${communityCopy}, and one weekly check-in and plan review with me. It doesn't renew automatically.\n\n${nextAsk}`;
         return {
             chunks: [joined],
             joined,
@@ -1407,7 +1407,19 @@ function buildDeterministicPaidMetaConversationReply({
     }
 
     if (PAID_META_NEXT_STEP_RE.test(message) && hasGoal && hasBlocker) {
-        const offerName = broadFlow ? 'the six-week Balance kickstart' : 'the six-week Balance program';
+        const offerName = broadFlow ? 'the six-week Balance kickstart' : 'Balance Foundations';
+        if (!broadFlow) {
+            const joined = `${offerName} is one $89.99 payment for the complete six-week curriculum, with one weekly check-in and plan review from me.\n\nIf you're keen, I can give you access to the app so you can check it out before any payment. Are you keen to have a look?`;
+            return {
+                chunks: [joined],
+                joined,
+                model: 'deterministic_paid_meta_conversation_v2',
+                replyMode: 'campaign_sales_progression',
+                maxChunks: 1,
+                error: null,
+                flowVariant,
+            };
+        }
         const nextAsk = recentProofVideo || !FOUNDERS_PASS_APP_PREVIEW_URL
             ? 'Want me to send you the full breakdown?'
             : 'Want me to send you the quick video so you can see how it works?';
@@ -1425,7 +1437,7 @@ function buildDeterministicPaidMetaConversationReply({
 
     if (PAID_META_POSITIVE_FIT_RE.test(message) && hasRecentPaidMetaSupportQuestion(history)) {
         if (!broadFlow && META_APP_PREVIEW_URL && hasGoal && hasBlocker) {
-            const joined = `Yeah, for sure. Here you go — you can set yourself up and look through the app before any payment: ${META_APP_PREVIEW_URL}\n\nWhat would you like to look at first — the training, food, or weekly check-ins?`;
+            const joined = `Yeah, for sure. Here you go. You can set yourself up and look through the app before any payment: ${META_APP_PREVIEW_URL}\n\nDoes that page open okay for you?`;
             return {
                 chunks: [joined],
                 joined,
@@ -1438,7 +1450,7 @@ function buildDeterministicPaidMetaConversationReply({
                 flowVariant,
             };
         }
-        const offerName = broadFlow ? 'the six-week Balance kickstart' : 'the six-week Balance program';
+        const offerName = broadFlow ? 'the six-week Balance kickstart' : 'Balance Foundations';
         const canSendProofVideo = Boolean(FOUNDERS_PASS_APP_PREVIEW_URL) && allowVideoAttachment && !broadFlow && !recentProofVideo;
         const nextAsk = recentProofVideo
             ? 'Want me to send you the full breakdown?'
@@ -1522,7 +1534,9 @@ function buildDeterministicPaidMetaConversationReply({
     }
 
     if (['problem_qualified', 'offer_ready'].includes(commercialStage) && PAID_META_NEXT_STEP_RE.test(message)) {
-        const joined = `The next step is getting the right level of support around the problem you've just described.\n\nWould you prefer a guided six-week kickstart, or hands-on plan changes every week?`;
+        const joined = broadFlow
+            ? `The next step is getting the right level of support around the problem you've just described.\n\nWould you prefer a guided six-week kickstart, or hands-on plan changes every week?`
+            : `Balance Foundations is the best starting point here. It's one $89.99 payment for the complete six-week curriculum, with one weekly check-in and plan review from me.\n\nAre you keen to have a quick look inside the app?`;
         return {
             chunks: [joined],
             joined,
@@ -1851,7 +1865,7 @@ function buildMetaAdFoundersPassFirstReply(currentMessage = '', { customData = {
     } else if (intent === 'plant_based_requirement') {
         answer = `Not at all. Plenty of people start while they're just trying to eat more plant-based. What does your food look like at the moment?`;
     } else if (intent === 'personalised_coaching') {
-        answer = `Yeah, I do. The six-week Balance program gives you a clear plan, plus a weekly check-in where I review and adjust your training and food. What are you mainly trying to change at the moment?`;
+            answer = `Yeah, I do. Balance Foundations gives you a clear six-week curriculum inside the app, plus a weekly check-in where I review and adjust your training and food. What are you mainly trying to change at the moment?`;
     } else if (intent === 'accountability') {
         answer = `You check in inside Balance and I can see what the week actually looked like, then I reply with the next bit of direction and a nudge if things are slipping. It's personal support from me, not just app reminders.`;
     } else if (intent === 'price') {
@@ -1860,8 +1874,8 @@ function buildMetaAdFoundersPassFirstReply(currentMessage = '', { customData = {
         answer = `Love it. ${supportScope}\n\nYou can see the quick setup and start here: ${checkoutUrl}`;
     } else if (intent === 'inclusions') {
         answer = broadFlow
-            ? `Yeah, it's a six-week guided start with me supporting you inside Balance, plus training, food support and the community all together. What's the main thing you're trying to change with your fitness right now?`
-            : `Yeah, it's a six-week guided start with me supporting you inside Balance, plus training, plant-based food support and the community all together. What's the main thing you're trying to change with your fitness right now?`;
+                ? `Yeah, Balance Foundations is a six-week curriculum inside the app, with me supporting you, plus training, food support and the community all together. What's the main thing you're trying to change with your fitness right now?`
+                : `Yeah, Balance Foundations is a six-week curriculum inside the app, with me supporting you, plus training, plant-based food support and the community all together. What's the main thing you're trying to change with your fitness right now?`;
     }
     const chunks = [answer].filter(Boolean);
     return {
@@ -2187,10 +2201,11 @@ function buildApprovedDeterministicMetaAdFirstReplyReview({
 
 const META_AD_FUNNEL_CONTEXT = `
 LEAD ACQUISITION CONTEXT:
-The primary DM offer is the Balance Foundations Founders Pass: AUD $89.99 once for a fixed six-week course, six weeks of app/community access, and one weekly check-in plus workout/food review and adjustments from Shannon. It does not auto-renew. Starter Coaching at AUD $29.99/week is the ongoing individual progression option after Foundations or from day one. The default close happens inside DMs. A short call is an escalation only when the lead explicitly wants to talk, remains genuinely uncertain after a clear DM explanation, or the situation needs Shannon's judgement. Balance no longer uses a free challenge as its acquisition or conversion path. The acquisition-mode block above is authoritative about whether Shannon initiated the relationship or the lead knowingly entered from a Meta ad. Meta may supply one of the example phrases below as the lead's prefilled opening. Treat it as their ordinary first sentence, not as a questionnaire step. Never restate a menu of options or ask them to choose from buttons. The words below trigger offer-inquiry mode:
-  1. "What's actually included?"
-  2. "Do I need to already be Plant Based?"
-  3. "Do you offer personalized coaching plans?"
+The current paid Meta campaign promotes one public offer: Balance Foundations. It is AUD $89.99 as one payment for the full six weeks and does not auto-renew. It includes a clear six-week curriculum inside Balance, six weeks of app/community access, and one weekly check-in plus workout/food review and adjustments from Shannon. Do not rename this paid-ad offer Starter Coaching or switch a paid-ad lead to a weekly package merely because Meta's old prompt says "personalized coaching plans". The default close happens inside DMs. A short call is an escalation only when the lead explicitly wants to talk, remains genuinely uncertain after a clear DM explanation, or the situation needs Shannon's judgement. Balance no longer uses a free challenge as its acquisition or conversion path. The acquisition-mode block above is authoritative about whether Shannon initiated the relationship or the lead knowingly entered from a Meta ad. Meta may supply one of the example phrases below as the lead's prefilled opening. Treat it as their ordinary first sentence, not as a questionnaire step. Never restate a menu of options or ask them to choose from buttons. The preferred current campaign prompts are:
+  1. "What's included in the six-week Balance Foundations program?"
+  2. "How does the weekly check-in work?"
+  3. "Do I need to already be plant-based?"
+The legacy prompt "Do you offer personalized coaching plans?" can still arrive from an older live ad. Answer it in the Balance Foundations context: explain the six-week curriculum and Shannon's weekly review, then ask about the lead's goal. Do not route that paid-ad prompt to Starter Coaching.
 Also treat as offer inquiry: "founders pass", "founding membership", "plant-based fitness app", "vegan fitness app", "community", "1:1 coaching", "one-on-one coaching", "starter coaching", "online coaching", "what's included", "your program" when they clearly mean the offer, "saw your ad", "wanna join", "work with you", "send me the link", "I'm in", or "I need help / I don't know what I'm doing". Do NOT treat vague "keen", "interested", "yeah sounds good", or friendly banter as offer intent unless the same message clearly points at the offer/program/link.
 
 Important: when there is no prior tracked conversation, do NOT assume the lead started the DM. Most first captured lead messages happen because Shannon commented on or replied to their story/post natively, and that opener is not visible in ManyChat. Their reply may be tiny or ambiguous because they are answering that unseen opener. Treat it as an open door and build rapport from whatever signal exists. Use one light human move, which can be a short statement. Ask a question only when that is clearly the best next text, or when there is no better hook and Shannon has not asked a basic day/week opener yet.
@@ -2207,27 +2222,27 @@ SHANNON FOLLOW-UP QUESTION FINGERPRINT:
 - If the lead asks whether this is AI, a bot, automated, or really Shannon, do not draft a public denial and do not continue the sales thread. That must be held for Shannon.
 
 THE OFFERING (for context — never list as a brochure; speak like a friend):
-- The FIRST offer for warm leads is the paid Balance Plant-Based Fitness Founders Pass, not a free challenge, standalone custom meal plan, workout program, or generic app trial.
+- The FIRST offer for leads in this paid campaign is the paid Balance Foundations program, not a free challenge, standalone custom meal plan, workout program, generic app trial or Starter Coaching.
 - If they are plant-based / vegan / vegetarian-curious, tailor the coaching explanation around plant-based food support.
 - If they just want fitness, muscle, weight loss, energy, or consistency with no plant-based signal, tailor the coaching explanation around training, food structure, and accountability.
 - Keep the public link clean. For the plant-based ad route use ${FOUNDERS_PASS_CHECKOUT_URL}. For the broad ad route use ${FOUNDERS_PASS_BROAD_CHECKOUT_URL}. The broad route must not introduce plant-based, vegan or vegetarian positioning in its ad reply, landing handoff or follow-up unless the lead independently asks about it. Preserve the route and Meta identifiers on the canonical thread and handoff receipt, never by pasting tracking parameters into the DM.
-- For a general ad-attributed "what is it?" or Founders Pass opener, do not dump the offer or send a raw media URL. Ask one plain question about the main thing they are trying to change. After they answer, reflect that exact goal in one short sentence and send the native Balance proof video. Treat the three ad FAQ prompts as informational, not transactional: answer the selected question in one concise beat, ask one useful context question, and do not send a signup link. Only send the Founders Pass link after an explicit transactional message such as "send me the link", "I'm ready", "how do I join?", or clear acceptance after the offer. Only offer a quick call if they say they want to talk it through or remain genuinely uncertain after the clear explanation.
+- For a general ad-attributed "what is it?" or Balance Foundations opener, do not dump the offer or send a raw media URL. Ask one plain question about the main thing they are trying to change. After they answer, reflect that exact goal in one short sentence, announce the proof naturally and send the native Balance proof media. Treat the three ad FAQ prompts as informational, not transactional: answer the selected question in one concise beat, ask one useful context question, and do not send a signup link. Only send the Balance Foundations link after an explicit transactional message such as "send me the link", "I'm ready", "how do I join?", or clear acceptance after the offer. Only offer a quick call if they say they want to talk it through or remain genuinely uncertain after the clear explanation.
 - If they only ask "what's Balance?" or "what's your app?" while also saying they are already training hard or feeling good, answer in one plain beat and make any coaching mention casual. No feature list or link unless they ask for details.
 - Once they start, the Balance app gives them the guided kickstart, training and food structure, progress tools and community.
-- Package fit matters. App + Community is $19.99/month for self-directed ongoing structure without weekly one-to-one review. Starter Coaching is $29.99/week for one weekly check-in plus workout/food review and adjustments. Coaching + Calls is $99.99/week for Starter Coaching plus one weekly live call and deeper review. If someone explicitly asks for personalised coaching, individual plan adjustments or weekly review, route toward Starter Coaching. If they want regular calls or deeper live support, route toward Coaching + Calls. Do not force them back into Founders Pass.
+- Outside this paid Meta campaign, the wider package ladder still exists and must not be changed. Inside this paid Meta campaign, keep the conversation focused on Balance Foundations at one $89.99 payment for the full six weeks. Only discuss another package if the lead explicitly rejects the six-week format and asks for a different ongoing or live-call service.
 - Keep it low-pressure. If they are not ready, leave a clean re-entry handle or use App + Community when it genuinely fits. Do not revive a free-challenge funnel.
 - Voice notes: when the system supplies a decoded voice-note transcript or media summary, treat it as heard. Reply to the content. Never ask them to resend, repeat, or type the gist of a voice note. If audio is genuinely inaccessible or unintelligible after retries, leave no public voice-note fallback and let the media-review hold/retry path handle it.
 
 RESPONSE PATTERNS (mimic Shannon's actual voice for each prompt):
 - "What's actually included?" -> answer the direct ask casually in one short sentence, then ask what they are mainly trying to change. Do not send a signup link from this FAQ click.
-- "Do you offer personalized coaching plans?" -> answer yes and route to Starter Coaching: one weekly check-in plus training and food review/adjustments for $29.99/week. Ask what they are mainly trying to change. Do not send the Founders Pass video or a signup link from this branch.
+- "Do you offer personalized coaching plans?" -> answer yes in the current Balance Foundations context: it has a clear six-week curriculum plus one weekly check-in where Shannon reviews and adjusts training and food. Ask what they are mainly trying to change. Do not mention Starter Coaching or send a signup link from this FAQ branch.
 - "What's Balance?" / "what's your app?" -> answer plainly: it is Shannon's fitness app/coaching setup. If their latest training detail gives a natural opening, one casual line is enough: "honestly one weekly check-in would probably help keep that simple if you wanted the coaching details". Do not hardcode that wording, but keep that size and feel. No app feature list or signup link unless they ask what is included or ask for details.
 - "How does accountability work?" / "how would you keep me on track?" -> this is a connection moment, not a brochure request. Explain it plainly from Shannon's point of view: they check in and log what is happening, Shannon sees the real week and guides the next move, with a nudge when things start slipping. In PERSONAL VOICE NOTE MODE, make this one connected voice note and do not duplicate the explanation in text. Otherwise use one concise text bubble. Do not tack on another qualifier unless their answer would genuinely change the next step.
-- "Is it in person?" / "I'm looking for a local trainer" / "I already have a PT" -> treat this as a preference or compatibility objection. Answer plainly first: the Founders Pass is an online guided app and plant-based community, not in-person personal training. Do not push the link yet. Ask whether that would still be useful, or how it would need to fit around their current trainer.
+- "Is it in person?" / "I'm looking for a local trainer" / "I already have a PT" -> treat this as a preference or compatibility objection. Answer plainly first: Balance Foundations is an online six-week curriculum inside the app and plant-based community, not in-person personal training. Do not push the link yet. Ask whether that would still be useful, or how it would need to fit around their current trainer.
 - "Do I need to already be Plant Based?" -> warm reassurance ("not at all, lots of my crew start curious"), then ask their current eating situation, ever cooked plant-based before.
-- "I'm In - save me a spot!" / "let's do it" / "send me the link" -> if they have already shared enough context or clearly accepted, send https://plantbased-balance.org/founders with the quick Founders Pass handoff. Do NOT ask a Name + Age + Main goal intake bundle.
-- "I need help" / "I don't know what I'm doing" / "where do I start?" -> human first: validate the stuck feeling, ask one grounded context question if needed, then softly explain that the Founders Pass is the easiest starting point because it gives them the six-week structure plus app and plant-based community without another weekly bill. Do not sound like a canned invite.
-- Warm lead with enough context already shared -> use a low-key bridge instead of endless discovery. Do not write stock lines that say the offer is made for this exact situation. Anchor it to their actual situation in one casual sentence, for example "the founders pass could give you a proper six-week starting rhythm without another weekly bill". End by asking if they want the details only when they have not already asked. Do not send the link or app feature rundown until they say yes or ask what is included.
+- "I'm In - save me a spot!" / "let's do it" / "send me the link" -> if they have already shared enough context or clearly accepted, send https://plantbased-balance.org/founders with the quick Balance Foundations handoff. Do NOT ask a Name + Age + Main goal intake bundle.
+- "I need help" / "I don't know what I'm doing" / "where do I start?" -> human first: validate the stuck feeling, ask one grounded context question if needed, then softly explain that Balance Foundations is the easiest starting point because it gives them the complete six-week curriculum plus app and plant-based community without another weekly bill. Do not sound like a canned invite.
+- Warm lead with enough context already shared -> use a low-key bridge instead of endless discovery. Do not write stock lines that say the offer is made for this exact situation. Anchor it to their actual situation in one casual sentence, for example "Balance Foundations could give you a proper six-week starting rhythm without another weekly bill". End by asking if they want the details only when they have not already asked. Do not send the link or app feature rundown until they say yes or ask what is included.
 
 When the conversation has clearly moved past intake (qualifier answers received, or they're chatting about something else), drop this context and just chat naturally.`;
 

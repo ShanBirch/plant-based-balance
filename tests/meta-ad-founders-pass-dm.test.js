@@ -418,7 +418,7 @@ test('inclusions quick reply answers the direct ask without a raw preview URL', 
     assert.equal(reply.chunks.length, 1);
     assert.equal(reply.checkoutUrl, null);
     assert.doesNotMatch(reply.joined, /balance-founders-pass-dm-preview\.mp4/);
-    assert.match(reply.joined, /six-week guided start/i);
+    assert.match(reply.joined, /Balance Foundations is a six-week curriculum inside the app/i);
     assert.match(reply.joined, /training, plant-based food support and the community/i);
     assert.match(reply.joined, /main thing you're trying to change/i);
     assert.doesNotMatch(reply.joined, /https?:\/\//);
@@ -439,7 +439,8 @@ test('personalised coaching FAQ answers from the advertised six-week program wit
             linkedUserId: null,
         });
 
-        assert.equal(reply.joined, 'Yeah, I do. The six-week Balance program gives you a clear plan, plus a weekly check-in where I review and adjust your training and food. What are you mainly trying to change at the moment?');
+        assert.equal(reply.joined, 'Yeah, I do. Balance Foundations gives you a clear six-week curriculum inside the app, plus a weekly check-in where I review and adjust your training and food. What are you mainly trying to change at the moment?');
+        assert.doesNotMatch(reply.joined, /Starter Coaching|\$29\.99/i);
         assert.equal(reply.checkoutUrl, null);
         assert.equal(reply.videoAttachmentUrl, undefined);
         assert.equal(approval.code, 'approved_meta_ad_first_reply');
@@ -615,8 +616,9 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
         flowVariant: 'plant_based_control',
         personalVoiceNoteMode: true,
     });
-    assert.match(personalisedVoiceReply.joined, /Starter Coaching would probably suit you better/i);
-    assert.match(personalisedVoiceReply.joined, /review your training and food each week/i);
+    assert.match(personalisedVoiceReply.joined, /Balance Foundations gives you a clear six-week curriculum inside the app/i);
+    assert.match(personalisedVoiceReply.joined, /review and adjust your training and food/i);
+    assert.doesNotMatch(personalisedVoiceReply.joined, /Starter Coaching|\$29\.99/i);
     assert.equal((personalisedVoiceReply.joined.match(/\?/g) || []).length, 1);
     assert.equal(inspectVoiceScriptQuality(personalisedVoiceReply.joined).valid, true);
 
@@ -759,8 +761,10 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
         history: [],
         flowVariant: 'plant_based_control',
     });
-    assert.match(nextStep.joined, /six-week Balance program is probably the best starting point/i);
-    assert.match(nextStep.joined, /full breakdown/i);
+    assert.match(nextStep.joined, /Balance Foundations is one \$89\.99 payment/i);
+    assert.match(nextStep.joined, /one \$89\.99 payment for the complete six-week curriculum/i);
+    assert.doesNotMatch(nextStep.joined, /ongoing weekly coaching|Starter Coaching/i);
+    assert.match(nextStep.joined, /access to the app so you can check it out before any payment/i);
     assert.equal((nextStep.joined.match(/\?/g) || []).length, 1);
     assert.doesNotMatch(nextStep.joined, /https?:\/\//);
 
@@ -781,7 +785,7 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
         flowVariant: 'plant_based_control',
     });
     assert.match(naturalAcceptedSupport.joined, /meta-app-preview\.html/i);
-    assert.match(naturalAcceptedSupport.joined, /training, food, or weekly check-ins/i);
+    assert.match(naturalAcceptedSupport.joined, /Does that page open okay for you/i);
     assert.equal((naturalAcceptedSupport.joined.match(/\?/g) || []).length, 1);
     assert.doesNotMatch(naturalAcceptedSupport.joined, /does that feel like the kind of support you need/i,
         'support acceptance must not repeat the support-fit question the lead just answered');
@@ -839,11 +843,12 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
         ],
         flowVariant: 'plant_based_control',
     });
-    assert.match(programInclusionsAfterAcceptedSupport.joined, /week-by-week Foundations course/i);
+    assert.match(programInclusionsAfterAcceptedSupport.joined, /Balance Foundations gives you a clear six-week curriculum/i);
     assert.match(programInclusionsAfterAcceptedSupport.joined, /Balance app and plant-based community/i);
     assert.match(programInclusionsAfterAcceptedSupport.joined, /weekly check-in/i);
     assert.match(programInclusionsAfterAcceptedSupport.joined, /doesn't renew automatically/i);
-    assert.match(programInclusionsAfterAcceptedSupport.joined, /fixed six-week start, or ongoing weekly coaching/i);
+    assert.match(programInclusionsAfterAcceptedSupport.joined, /keen to have a quick look inside the app/i);
+    assert.doesNotMatch(programInclusionsAfterAcceptedSupport.joined, /ongoing weekly coaching|Starter Coaching/i);
     assert.doesNotMatch(programInclusionsAfterAcceptedSupport.joined, /show you what the first week/i,
         'an inclusions question after accepting the first-week offer must not repeat that question');
     assert.equal((programInclusionsAfterAcceptedSupport.joined.match(/\?/g) || []).length, 1);

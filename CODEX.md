@@ -358,11 +358,13 @@ Admin AI coach:
 - 24-hour IG messaging window applies. Human-agent tag can extend to 7 days only when Meta has approved the Human Agent feature; the code gates this behind `INSTAGRAM_GRAPH_HUMAN_AGENT_ENABLED`.
 - First captured message from a lead often has no visible context because Shannon has already commented on or replied to their story/post natively, outside ManyChat. Treat empty IG/FB history as an unseen Shannon opener, not as the lead initiating cold. The AI should build rapport from whatever signal exists, ask one light human question, and avoid intake/pitch unless they clearly ask about the challenge or link.
 - Lead stages: `new`, `qualifying`, `invited`, `in_app`, `churned`, and newer paid/accepted states may exist in migrations.
-- Ad quick replies have included:
-  - "What's actually included?"
-  - "Do I need to already be Plant Based?"
-  - "I'm In - save me a spot!"
-- These are Meta messaging-template buttons, not AI-created reply bubbles. For the next plant-based ad run, remove the visible menu so the lead can type naturally. Until the live ad template is updated, treat a tapped prompt as the lead's ordinary first sentence and never answer with another option menu.
+- The current paid plant-based Meta campaign promotes one public offer: **Balance Foundations**, one $89.99 payment for the complete six-week curriculum, six weeks inside the app/community, and one weekly check-in with training and food review/adjustments. Do not rename it Starter Coaching in this campaign or divert an old ad prompt into the $29.99/week package.
+- Preferred Meta prompt questions for this campaign are:
+  - "What's included in the six-week Balance Foundations program?"
+  - "How does the weekly check-in work?"
+  - "Do I need to already be plant-based?"
+- Older ads may still send "Do you offer personalized coaching plans?". Answer yes by explaining the Balance Foundations six-week curriculum and weekly review, then ask about the lead's goal. Do not mention Starter Coaching in that paid-ad branch.
+- These are Meta messaging-template buttons, not AI-created reply bubbles. Treat a tapped prompt as the lead's ordinary first sentence and never answer with another option menu.
 - If ad quick replies change, update `META_AD_FUNNEL_CONTEXT` in `ig-instant-draft.js`.
 - "I'm In" qualifier asks: name/age, main goal, what has tripped them up before, then "ill get back to you asap" in deliberately casual lowercase.
 

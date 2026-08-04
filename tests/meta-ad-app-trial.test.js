@@ -191,7 +191,7 @@ test('dashboard, signup, native handoffs, measurement, and both discovery system
     assert.match(landing, /native_handoff/);
     assert.match(landing, /facebook_5m_paid_v2/);
     assert.match(landing, /Built for the stop-start weeks/);
-    assert.match(landing, /six-week Balance program is one \$89\.99 AUD payment/);
+    assert.match(landing, /Balance Foundations is one \$89\.99 AUD payment for the complete six-week curriculum/);
     assert.match(dashboard, /One AU\$89\.99 payment for the full six weeks/);
     assert.match(foundersClaim, /FOUNDERS_PLAN = "balance_foundations_six_week"/);
     assert.match(landing, /TRY BALANCE FREE/);

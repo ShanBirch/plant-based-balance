@@ -98,7 +98,7 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 
 ### DM media handoffs
 
-- Introduce a DM proof video casually with `Here's a quick video showing you how it works` or a similarly short natural line.
+- Introduce every native DM proof attachment before it lands. For a video, use `Here's a quick video showing you how it works` or a similarly short natural line. For a client photo, briefly explain who or what the lead is about to see; never let a photo of Alison or another client arrive without context.
 - Do not announce the video's exact runtime or list every section it contains. Phrases such as `This is a 54-second look at...` sound generated and over-explained.
 - Let the preceding sentence carry the person's specific goal or blocker, then keep the video introduction simple.
 
@@ -108,8 +108,10 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 - Once a paid-ad conversation is active, safe text follow-ups should normally reach Instagram in roughly 15-30 seconds. Never leave a style-only reviewer warning stranded between the immediate-send and scheduled-worker rules: remove the unsafe wording deterministically when possible, preserve every safety/context/offer hold, and dispatch the cleaned reply without an artificial delay.
 - For a broad goal such as weight loss or difficulty sticking to a program, use one plain follow-up from the exact detail. Do not ask an answer-menu question, and never repair a draft by copying the person's sentence back to them.
 - Do not send a checkout link from an FAQ click alone. Send it only after the person explicitly asks for the link or how to join, says they are ready, or clearly accepts after the offer.
-- `Do you offer personalized coaching plans?` routes to Starter Coaching, not the Founders Pass. Use Australian spelling in the reply: `Yeah, I do. Starter Coaching is the personalised option, where I review and adjust your training and food each week. What are you mainly trying to change at the moment?`
-- Do not send the Founders Pass proof video on the personalised coaching branch because its final frame promotes the $99 Founders Pass.
+- The current paid plant-based Meta campaign promotes one public offer: Balance Foundations, one $89.99 payment for the complete six-week curriculum. Do not introduce Starter Coaching in this campaign.
+- Treat the legacy `Do you offer personalized coaching plans?` prompt as a Balance Foundations FAQ: explain the six-week curriculum and Shannon's weekly training/food review, then ask about the lead's goal.
+- Preferred current Meta prompts are `What's included in the six-week Balance Foundations program?`, `How does the weekly check-in work?`, and `Do I need to already be plant-based?`.
+- Do not send proof media on the initial FAQ response. Send it after the lead shares a goal, announce it naturally, and attach it natively.
 
 ### Plant-based positioning language
 
