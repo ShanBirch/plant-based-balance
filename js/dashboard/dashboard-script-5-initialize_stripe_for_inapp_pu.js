@@ -8594,6 +8594,35 @@ async function saveWizardFoodPreferences() {
 async function checkAndTriggerOnboarding() {
     let isReturningMember = localStorage.getItem('onboardingComplete') === 'true';
     let databaseOnboardingStatusChecked = false;
+
+    // A paid-Facebook preview runs the real wizard locally before signup. Once
+    // the person creates an account, copy those answers into their authenticated
+    // profile instead of making them repeat onboarding.
+    if (!window.guestMode && window.BalanceMetaAdTrial && window.BalanceMetaAdTrial.hasPendingClaim()) {
+        try {
+            await syncQuizDataToDb();
+            const userId = window.currentUser?.id || window.currentUser?.user_id;
+            if (userId && window.supabaseClient) {
+                let foodPreferences = null;
+                try { foodPreferences = JSON.parse(localStorage.getItem('user_food_preferences') || 'null'); } catch(e) {}
+                if (foodPreferences) {
+                    const { error: foodError } = await window.supabaseClient
+                        .from('user_food_preferences')
+                        .upsert({ user_id: userId, ...foodPreferences }, { onConflict: 'user_id' });
+                    if (foodError) throw foodError;
+                }
+                await dbHelpers.users.update(userId, { onboarding_complete: true });
+            }
+            localStorage.setItem('onboardingComplete', 'true');
+            localStorage.setItem('plantbased_onboarding_complete', 'true');
+            window.BalanceMetaAdTrial.markClaimed(userId);
+            isReturningMember = true;
+            return;
+        } catch (error) {
+            console.warn('[meta-ad-trial] Could not claim preview onboarding yet; it will retry next load.', error);
+            return;
+        }
+    }
     // TRANSFERRED CLIENT INTERCEPT:
     // Clients migrated from another platform (Trainerize etc.) have their data
     // pre-filled by scripts/transfer_kylie.js and similar. They only need to
@@ -8758,6 +8787,9 @@ async function checkAndTriggerOnboarding() {
 
 function initOnboardingWizard() {
     if (window._crumb) window._crumb('onboarding_wizard_init');
+    if (window.metaAdTrialMode && window.BalanceMetaAdTrial) {
+        window.BalanceMetaAdTrial.onOnboardingStarted();
+    }
     // Guard against multiple simultaneous triggers
     const modal = document.getElementById('onboarding-wizard');
     if (!modal) return;
@@ -12154,6 +12186,9 @@ function playHeaderCoinGrantAnimation(startBalance, endBalance, grantedAmount) {
 async function finishOnboarding() {
     localStorage.setItem('onboardingComplete', 'true');
     localStorage.setItem('plantbased_onboarding_complete', 'true'); // Also set alternate key for consistency
+    if (window.metaAdTrialMode && window.BalanceMetaAdTrial) {
+        window.BalanceMetaAdTrial.onOnboardingComplete();
+    }
     window._onboardingWizardPending = false;
     const wizardEl = document.getElementById('onboarding-wizard');
     if (wizardEl) {

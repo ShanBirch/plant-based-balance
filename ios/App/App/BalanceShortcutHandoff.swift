@@ -64,4 +64,27 @@ enum BalanceShortcutHandoff {
 
 extension Notification.Name {
     static let balanceShortcutActionQueued = Notification.Name("BalanceShortcutActionQueued")
+    static let balanceMetaTrialQueued = Notification.Name("BalanceMetaTrialQueued")
+}
+
+enum BalanceMetaTrialHandoff {
+    private static let pendingQueryKey = "pendingBalanceMetaTrialQuery"
+
+    static func store(url: URL) -> Bool {
+        guard url.scheme == "com.fitgotchi.app", url.host == "meta-trial" else { return false }
+        guard let query = URLComponents(url: url, resolvingAgainstBaseURL: false)?.percentEncodedQuery,
+              !query.isEmpty else { return true }
+        UserDefaults.standard.set(query, forKey: pendingQueryKey)
+        NotificationCenter.default.post(name: .balanceMetaTrialQueued, object: nil)
+        return true
+    }
+
+    static func pendingQuery() -> String? {
+        UserDefaults.standard.string(forKey: pendingQueryKey)
+    }
+
+    static func clear(_ query: String) {
+        guard UserDefaults.standard.string(forKey: pendingQueryKey) == query else { return }
+        UserDefaults.standard.removeObject(forKey: pendingQueryKey)
+    }
 }

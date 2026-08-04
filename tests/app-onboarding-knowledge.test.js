@@ -10,6 +10,8 @@ test('DM drafting knowledge covers the paid handoff and real onboarding stages',
 
     assert.match(guide, /plantbased-balance\.org\/founders/);
     assert.match(guide, /login\.html\?action=signup/);
+    assert.match(guide, /meta-app-preview\.html/);
+    assert.match(guide, /five minutes to explore/i);
     assert.match(guide, /three realistic weekly anchors/i);
     assert.match(guide, /main thing that knocks them off track/i);
     assert.match(guide, /real competing priorities such as work\/kids\/study\/caring/i);
@@ -32,7 +34,7 @@ test('DM drafting knowledge explains the brain angle without taking control away
 test('DM drafting knowledge maps every primary app tab and avoids invented fixes', () => {
     const guide = buildAppNavigationGuideBlock();
 
-    for (const tab of ['Home:', 'Nutrition:', 'Movement:', 'Learn:', 'Calendar:', 'Feed:']) {
+    for (const tab of ['Home:', 'Nutrition:', 'Movement:', 'Course:', 'Calendar:', 'Feed:']) {
         assert.ok(guide.includes(tab), `missing ${tab} app guidance`);
     }
     assert.match(guide, /check live account, payment, onboarding, app data/i);

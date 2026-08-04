@@ -1,7 +1,15 @@
 // --- PWA INSTALL BANNER LOGIC ---
 // On iOS, skip entirely: beforeinstallprompt never fires on iPhone/iPad (Apple restriction).
 // This avoids compiling 266 lines of JS during the critical parsing window.
-if (window._pbbIsIOSSafari) {
+if (window.metaAdTrialMode) {
+    // Keep the paid-social preview focused on onboarding and exploration.
+    // The dedicated preview landing page already provides install choices.
+    window.installPWA = function() {};
+    window.dismissInstall = function() {
+        var b = document.getElementById('pwa-install-banner');
+        if (b) b.style.display = 'none';
+    };
+} else if (window._pbbIsIOSSafari) {
     // Provide stubs so onclick="installPWA()" in HTML doesn't throw
     window.installPWA = function() { alert("On iOS, tap Share → Add to Home Screen"); };
     window.dismissInstall = function() {

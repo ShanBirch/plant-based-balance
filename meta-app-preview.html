@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en" data-landing-page="meta-app-preview" data-landing-variant="facebook_5m_v1">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Try Balance Free</title>
+    <meta name="description" content="Set up your goals, explore Balance free for five minutes, then create an account if you want to keep going.">
+    <link rel="icon" type="image/png" href="balance_logo.png">
+    <script src="analytics.js" defer></script>
+    <style>
+        :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+        * { box-sizing: border-box; }
+        body { margin:0; min-height:100vh; min-height:100dvh; background:radial-gradient(circle at 50% -10%, #343025 0, #12110f 38%, #050505 76%); color:#f8f5ee; padding:calc(28px + env(safe-area-inset-top, 0px)) 20px calc(28px + env(safe-area-inset-bottom, 0px)); display:flex; align-items:center; justify-content:center; }
+        main { width:100%; max-width:440px; text-align:center; }
+        .logo { width:76px; height:76px; object-fit:contain; margin:0 auto 22px; filter:drop-shadow(0 12px 28px rgba(216,178,94,.18)); }
+        .eyebrow { margin:0 0 12px; color:#d8b25e; font-size:.76rem; font-weight:800; letter-spacing:.13em; text-transform:uppercase; }
+        h1 { margin:0; font-size:clamp(2rem, 8vw, 3rem); line-height:1.02; letter-spacing:-.045em; }
+        .lead { margin:18px auto 24px; max-width:38ch; color:#c8c1b3; font-size:1rem; line-height:1.6; }
+        .steps { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:0 0 24px; }
+        .step { min-height:94px; padding:14px 9px; border:1px solid rgba(216,178,94,.2); border-radius:16px; background:rgba(255,255,255,.035); }
+        .step strong { display:block; color:#f5d98a; font-size:1.05rem; margin-bottom:6px; }
+        .step span { color:#aaa294; font-size:.73rem; line-height:1.35; }
+        .button { width:100%; display:flex; align-items:center; justify-content:center; min-height:54px; padding:14px 18px; border-radius:14px; border:0; text-decoration:none; font:inherit; font-weight:800; cursor:pointer; }
+        .button.primary { background:linear-gradient(135deg,#f5d98a,#bd8b2c); color:#111; box-shadow:0 14px 34px rgba(216,178,94,.22); }
+        .button.secondary { background:#f8f5ee; color:#111; }
+        .button.ghost { color:#d8b25e; border:1px solid rgba(216,178,94,.34); background:transparent; margin-top:10px; }
+        .or { margin:20px 0 12px; color:#777064; font-size:.76rem; text-transform:uppercase; letter-spacing:.1em; }
+        .stores { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+        .note { color:#827b70; font-size:.72rem; line-height:1.45; margin:15px 8px 0; }
+        @media (max-width:370px) { .steps { grid-template-columns:1fr; } .step { min-height:0; } }
+    </style>
+</head>
+<body data-landing-page="meta-app-preview" data-landing-variant="facebook_5m_v1">
+<main>
+    <img class="logo" src="balance_logo.png" alt="Balance">
+    <p class="eyebrow">Facebook preview</p>
+    <h1>Try Balance before you join</h1>
+    <p class="lead">Set up your goals, explore the app for five minutes, then create a free account only if you want to keep your setup.</p>
+    <div class="steps" aria-label="How the preview works">
+        <div class="step"><strong>1</strong><span>Complete your setup</span></div>
+        <div class="step"><strong>2</strong><span>Explore for five minutes</span></div>
+        <div class="step"><strong>3</strong><span>Create an account to continue</span></div>
+    </div>
+    <a id="start-preview" class="button primary" href="#" data-track="cta_click">START MY FREE PREVIEW</a>
+    <p class="or">Or download Balance free</p>
+    <div class="stores">
+        <a class="button secondary" href="https://apps.apple.com/us/app/balance-fitness-gamified/id6761238161" data-track="cta_click">iPhone</a>
+        <a class="button secondary" href="https://play.google.com/store/apps/details?id=com.fitgotchi.app" data-track="cta_click">Android</a>
+    </div>
+    <a id="open-installed" class="button ghost" href="#" data-track="cta_click">Already installed? Open Balance</a>
+    <p class="note">If you install from the store, return to this page and tap “Already installed?” so Balance can recognise this Facebook preview.</p>
+</main>
+<script>
+(function () {
+    var incoming = new URLSearchParams(window.location.search);
+    incoming.set('guest', 'true');
+    incoming.set('meta_trial', 'facebook_5m_v1');
+    if (!incoming.get('utm_source')) incoming.set('utm_source', 'facebook');
+    if (!incoming.get('utm_medium')) incoming.set('utm_medium', 'paid_social');
+    var query = incoming.toString();
+    document.getElementById('start-preview').href = '/dashboard.html?' + query;
+    document.getElementById('open-installed').href = 'com.fitgotchi.app://meta-trial?' + query;
+})();
+</script>
+</body>
+</html>

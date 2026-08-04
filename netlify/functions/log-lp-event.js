@@ -18,7 +18,9 @@ const ALLOWED_EVENT_TYPES = new Set([
     'checkout_click', 'checkout_started', 'checkout_error', 'video_play',
     'lead_created', 'purchase', 'signup', 'onboarding_started',
     'onboarding_completed', 'weekly_goals_set', 'meal_plan_created',
-    'first_workout_planned', 'first_workout_completed'
+    'first_workout_planned', 'first_workout_completed', 'trial_started',
+    'trial_preview_started', 'trial_gate_shown', 'trial_signup_click',
+    'trial_signup_view'
 ]);
 const MAX_STR = 500;
 

@@ -12,6 +12,7 @@
     <meta property="og:url" content="https://plantbased-balance.org/login.html">
     <meta property="og:type" content="website">
     <link rel="stylesheet" href="styles.css">
+    <script src="lib/meta-ad-trial.js?v=1"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://js.stripe.com/v3/"></script>
     <script>
@@ -819,6 +820,19 @@
             if (signupButton) signupButton.textContent = 'OPEN MY FOUNDERS PASS';
         }
 
+        function applyMetaAdTrialHandoffCopy(urlParams) {
+            if (urlParams.get('source') !== 'meta_ad_trial') return;
+            if (window.BalanceMetaAdTrial) window.BalanceMetaAdTrial.markSignupHandoff();
+            const heading = document.getElementById('signup-heading');
+            const intro = document.getElementById('signup-intro');
+            const referralGroup = document.getElementById('signup-referral-group');
+            const signupButton = document.getElementById('signup-btn');
+            if (heading) heading.textContent = 'Keep your Balance setup';
+            if (intro) intro.textContent = 'Create your free account to save your onboarding answers and keep using Balance.';
+            if (referralGroup) referralGroup.style.display = 'none';
+            if (signupButton) signupButton.textContent = 'CREATE FREE ACCOUNT';
+        }
+
         async function claimPendingFoundersPass(session) {
             if (sessionStorage.getItem('balance_founders_pass_pending') !== 'true') return null;
             const accessToken = session?.access_token;
@@ -851,6 +865,7 @@
             const urlParams = new URLSearchParams(window.location.search);
             captureFoundersPassHandoff(urlParams);
             applyFoundersPassHandoffCopy(urlParams);
+            applyMetaAdTrialHandoffCopy(urlParams);
             const isSwitchingAccount = urlParams.get('switch_account') === '1';
 
             // Check if already logged in

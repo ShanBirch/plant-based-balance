@@ -180,6 +180,8 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
 
 <!-- CRITICAL: Admin view-as localStorage isolation — runs BEFORE any other localStorage reads -->
 <script src="js/dashboard/script_part_1.js"></script>
+<!-- Paid-Facebook preview attribution must be available before auth-guard decides guest vs member mode. -->
+<script src="lib/meta-ad-trial.js?v=1"></script>
 
 <!-- CRITICAL: Hide loading overlay for returning users and restore cached FitGotchi state -->
 <script>
@@ -438,7 +440,7 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
 </script>
 
 <!-- Supabase & Auth Guard -->
-<script src="js/dashboard/script_part_2.js?v=11"></script>
+<script src="js/dashboard/script_part_2.js?v=12"></script>
 <script>
 // ── Native OAuth warm-start callback (non-iOS) ────────────────────
 // On iOS this is set up inside the deferred chain above (after supabaseClient exists).
@@ -718,9 +720,20 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
 <!-- Guest Mode Banner + Signup Prompt -->
 <div id="guest-mode-banner" style="display:none; position:fixed; top:0; left:0; right:0; z-index:9999; background:linear-gradient(135deg,#48864B,#6ab04c); color:white; padding:calc(8px + env(safe-area-inset-top, 0px)) 16px 10px 16px; font-size:0.85rem; font-weight:600; text-align:center; box-shadow:0 2px 12px rgba(0,0,0,0.15); font-family:'Inter',sans-serif;">
     <div style="display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap;">
-        <span>You're exploring as a guest</span>
-        <button onclick="window.location.href='/login.html'" style="background:white; color:#48864B; border:none; padding:6px 16px; border-radius:20px; font-weight:700; font-size:0.8rem; cursor:pointer; font-family:inherit;">Create Account</button>
-        <button onclick="dismissGuestBanner()" style="background:transparent; color:rgba(255,255,255,0.8); border:1px solid rgba(255,255,255,0.4); padding:5px 10px; border-radius:20px; font-size:0.75rem; cursor:pointer; font-family:inherit;">Dismiss</button>
+        <span id="guest-mode-label">You're exploring as a guest</span>
+        <button onclick="window.metaAdTrialMode && window.BalanceMetaAdTrial ? window.BalanceMetaAdTrial.beginSignup() : (window.location.href='/login.html')" style="background:white; color:#48864B; border:none; padding:6px 16px; border-radius:20px; font-weight:700; font-size:0.8rem; cursor:pointer; font-family:inherit;">Create Account</button>
+        <button id="guest-banner-dismiss-btn" onclick="dismissGuestBanner()" style="background:transparent; color:rgba(255,255,255,0.8); border:1px solid rgba(255,255,255,0.4); padding:5px 10px; border-radius:20px; font-size:0.75rem; cursor:pointer; font-family:inherit;">Dismiss</button>
+    </div>
+</div>
+
+<!-- Paid-Facebook trial gate. There is intentionally no dismiss action. -->
+<div id="meta-ad-trial-gate" role="dialog" aria-modal="true" aria-labelledby="meta-ad-trial-gate-title" style="display:none; position:fixed; inset:0; z-index:500000; background:rgba(3,7,18,0.88); align-items:center; justify-content:center; padding:calc(20px + env(safe-area-inset-top, 0px)) 20px calc(20px + env(safe-area-inset-bottom, 0px)); box-sizing:border-box; font-family:'Inter',sans-serif;">
+    <div style="background:#ffffff; color:#151515; -webkit-text-fill-color:#151515; border-radius:24px; padding:32px 24px; max-width:380px; width:100%; max-height:100%; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; text-align:center; box-shadow:0 28px 80px rgba(0,0,0,0.4); box-sizing:border-box;">
+        <img src="balance_logo.png" alt="Balance" style="width:64px; height:64px; object-fit:contain; margin:0 auto 16px; display:block;">
+        <h3 id="meta-ad-trial-gate-title" style="margin:0 0 10px; font-size:1.35rem; line-height:1.2; color:#151515; -webkit-text-fill-color:#151515; font-family:'Montserrat',sans-serif;">Keep your Balance setup</h3>
+        <p style="color:#5f5a50; -webkit-text-fill-color:#5f5a50; font-size:0.95rem; margin:0 0 22px; line-height:1.55;">Your five-minute preview is finished. Create your free account to save your onboarding answers and keep using Balance.</p>
+        <button type="button" onclick="window.BalanceMetaAdTrial.beginSignup()" style="width:100%; background:#111111; color:#ffffff; -webkit-text-fill-color:#ffffff; border:none; padding:15px; border-radius:12px; font-size:1rem; font-weight:800; cursor:pointer; font-family:'Montserrat',sans-serif;">CREATE FREE ACCOUNT</button>
+        <p style="color:#777166; -webkit-text-fill-color:#777166; font-size:0.76rem; margin:14px 0 0; line-height:1.4;">No payment is taken when you create your account.</p>
     </div>
 </div>
 
@@ -752,6 +765,7 @@ function closeGuestSignupModal() {
     if (modal) modal.style.display = 'none';
 }
 function dismissGuestBanner() {
+    if (window.metaAdTrialMode) return;
     const banner = document.getElementById('guest-mode-banner');
     if (banner) banner.style.display = 'none';
     sessionStorage.setItem('guestBannerDismissed', 'true');
@@ -768,6 +782,11 @@ document.addEventListener('DOMContentLoaded', function() {
             var cont = document.querySelector('.container');
             if (cont) cont.style.paddingTop = '52px';
         }
+    }
+    if (window.metaAdTrialMode) {
+        var dismissBtn = document.getElementById('guest-banner-dismiss-btn');
+        if (dismissBtn) dismissBtn.style.display = 'none';
+        if (window.BalanceMetaAdTrial) window.BalanceMetaAdTrial.scheduleGate();
     }
 });
 
@@ -12875,13 +12894,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=154';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=155';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=154"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=155"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=3"></script>
@@ -13376,6 +13395,7 @@ if(!window._pbbIsIOSSafari) {
 <script>
 (function(){
   const steps = [
+    { tab:'dashboard', sel:'#guest-mode-banner', title:'Five minutes to explore', body:'Your preview clock starts after onboarding. Look around Balance, then create a free account to keep your setup.', quick:true, condition:function(){ return window.metaAdTrialMode === true; } },
     { tab:'dashboard', sel:'#tamagotchi-stats-bar', fallbackSel:'#balance-level-bar', title:'Levels keep going', fallbackTitle:'Levels keep going', body:'Level 99 is no longer the finish line. Keep earning XP to climb higher and unlock a new character every 5 levels.', fallbackBody:'Level 99 is no longer the finish line. Keep earning XP to climb higher and unlock a new character every 5 levels.' },
     { tab:'movement-tab', sel:'#activity-share-section', title:'Share your activity twice', body:'The first activity share each day earns +15 XP in Balance Feed and another +15 XP in Instagram Story. Later activity shares still work without extra XP.', condition: function(){ return !!document.getElementById('activity-share-section'); } },
     { tab:'movement-tab', sel:'#activity-share-photo-btn', title:'Take a photo or choose one', body:'When you share an activity, tap Add a photo to open your camera or choose one from your gallery. Balance puts your activity stats straight on it for Feed.', condition: function(){ return !!document.getElementById('activity-share-photo-btn'); } },
@@ -14542,6 +14562,14 @@ if(!window._pbbIsIOSSafari) {
   // First-run onboarding now uses the guided walkthrough only. Keep legacy
   // feature-drop entries dormant so users do not see duplicate spotlight cards.
   allFeatures = [];
+  allFeatures.push({
+    id: 'paid-facebook-five-minute-preview-v1',
+    tab: 'dashboard',
+    sel: '#guest-mode-banner',
+    title: 'Five minutes to explore',
+    body: 'Your preview clock starts after onboarding. Look around Balance, then create a free account to keep your setup.',
+    condition: function(){ return window.metaAdTrialMode === true; }
+  });
   allFeatures.push({
     id: 'meal-feed-and-instagram-story-share-v1',
     tab: 'meals',
@@ -16179,7 +16207,7 @@ if (window._pbbIsIOSSafari) {
     }
 </script>
 
-<script src="js/dashboard/script_part_25.js"></script>
+<script src="js/dashboard/script_part_25.js?v=2"></script>
 
 <script>
 // Script-6 (324KB) - AI coach/chat. On iOS, defer to reduce memory pressure.

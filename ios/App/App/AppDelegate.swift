@@ -11,6 +11,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Initialize Firebase so FCM can issue tokens for iOS push.
         FirebaseApp.configure()
+        if let url = launchOptions?[.url] as? URL {
+            _ = BalanceMetaTrialHandoff.store(url: url)
+        }
         if let shortcutItem = launchOptions?[.shortcutItem] as? UIApplicationShortcutItem {
             _ = handleBalanceQuickAction(shortcutItem)
         }
@@ -24,6 +27,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func applicationWillTerminate(_ application: UIApplication) {}
 
     func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
+        if BalanceMetaTrialHandoff.store(url: url) {
+            return true
+        }
         if let action = BalanceShortcutHandoff.action(forWidgetURL: url) {
             BalanceShortcutHandoff.store(action)
             return true

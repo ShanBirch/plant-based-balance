@@ -71,6 +71,8 @@ public class MainActivity extends BridgeActivity {
     private final Object SPEECH_RESTART_TOKEN = new Object();
     /** Holds OAuth fragment from a cold-start deep link until the WebView is ready. */
     private volatile String pendingOAuthFragment = null;
+    /** Holds the paid-Facebook preview query from a cold-start app link. */
+    private volatile String pendingMetaTrialQuery = null;
     /** Holds a shortcut action (e.g. "today-workout") from a long-press app shortcut until the WebView is ready. */
     private volatile String pendingShortcutAction = null;
 
@@ -599,7 +601,11 @@ public class MainActivity extends BridgeActivity {
         // and sets the Supabase session before deciding to redirect.
         Uri deepLinkData = getIntent().getData();
         if (deepLinkData != null && "com.fitgotchi.app".equals(deepLinkData.getScheme())) {
-            pendingOAuthFragment = deepLinkData.getFragment();
+            if ("meta-trial".equals(deepLinkData.getHost())) {
+                pendingMetaTrialQuery = deepLinkData.getEncodedQuery();
+            } else {
+                pendingOAuthFragment = deepLinkData.getFragment();
+            }
         }
 
         // Check if launched from a long-press app shortcut
@@ -745,6 +751,14 @@ public class MainActivity extends BridgeActivity {
             String fragment = pendingOAuthFragment;
             pendingOAuthFragment = null;
             return fragment;
+        }
+
+        /** Returns and consumes paid-Facebook preview attribution from a cold-start deep link. */
+        @JavascriptInterface
+        public String getPendingMetaTrialQuery() {
+            String query = pendingMetaTrialQuery;
+            pendingMetaTrialQuery = null;
+            return query;
         }
 
         /**
@@ -1629,8 +1643,28 @@ public class MainActivity extends BridgeActivity {
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
+        if (handleMetaTrialDeepLink(intent)) return;
         handleOAuthDeepLink(intent);
         handleShortcutIntent(intent);
+    }
+
+    private boolean handleMetaTrialDeepLink(Intent intent) {
+        if (intent == null) return false;
+        Uri uri = intent.getData();
+        if (uri == null || !"com.fitgotchi.app".equals(uri.getScheme()) || !"meta-trial".equals(uri.getHost())) {
+            return false;
+        }
+        String query = uri.getEncodedQuery();
+        if (query == null || query.isEmpty()) return true;
+        WebView wv = getBridge().getWebView();
+        if (wv == null) {
+            pendingMetaTrialQuery = query;
+            return true;
+        }
+        String safe = query.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "");
+        String js = "if(window.BalanceMetaAdTrial&&window.BalanceMetaAdTrial.activateFromNativeQuery('" + safe + "')){window.location.replace('/dashboard.html')}";
+        runOnUiThread(() -> wv.evaluateJavascript(js, null));
+        return true;
     }
 
     /**

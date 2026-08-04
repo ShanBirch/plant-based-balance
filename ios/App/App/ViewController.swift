@@ -16,6 +16,7 @@ import WebKit
 class ViewController: CAPBridgeViewController {
     private let maxShortcutDeliveryAttempts = 30
     private var shortcutDeliveryAttempts = 0
+    private var metaTrialDeliveryAttempts = 0
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -44,7 +45,14 @@ class ViewController: CAPBridgeViewController {
             name: .balanceShortcutActionQueued,
             object: nil
         )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(deliverPendingMetaTrial),
+            name: .balanceMetaTrialQueued,
+            object: nil
+        )
         schedulePendingBalanceShortcutDelivery()
+        deliverPendingMetaTrial()
     }
 
     override func capacitorDidLoad() {
@@ -124,6 +132,30 @@ class ViewController: CAPBridgeViewController {
         }
     }
 
+    @objc private func deliverPendingMetaTrial() {
+        guard let query = BalanceMetaTrialHandoff.pendingQuery(), let webView = webView else { return }
+        metaTrialDeliveryAttempts += 1
+        let escapedQuery = javascriptStringLiteral(query)
+        let js = """
+        (function() {
+            window._pendingBalanceMetaTrialQuery = '\(escapedQuery)';
+            if (!window.BalanceMetaAdTrial || !window.BalanceMetaAdTrial.activateFromNativeQuery('\(escapedQuery)')) return 'waiting';
+            window.location.replace('/dashboard.html');
+            return 'handled';
+        })();
+        """
+        webView.evaluateJavaScript(js) { result, error in
+            if error == nil, let state = result as? String, state == "handled" {
+                BalanceMetaTrialHandoff.clear(query)
+                self.metaTrialDeliveryAttempts = 0
+            } else if self.metaTrialDeliveryAttempts < self.maxShortcutDeliveryAttempts {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                    self?.deliverPendingMetaTrial()
+                }
+            }
+        }
+    }
+
     private func javascriptStringLiteral(_ value: String) -> String {
         value
             .replacingOccurrences(of: "\\", with: "\\\\")
@@ -138,6 +170,10 @@ class ViewController: CAPBridgeViewController {
             let escapedAction = javascriptStringLiteral(action)
             source += "window._pendingBalanceShortcutAction = '\(escapedAction)';"
             source += "window._pbbShortcutLaunchAction = '\(escapedAction)';"
+        }
+        if let query = BalanceMetaTrialHandoff.pendingQuery() {
+            let escapedQuery = javascriptStringLiteral(query)
+            source += "window._pendingBalanceMetaTrialQuery = '\(escapedQuery)';"
         }
         return source
     }

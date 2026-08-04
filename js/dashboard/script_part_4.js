@@ -78,7 +78,7 @@ function initProgramDate() {
 // Stub for checkAndTriggerOnboarding - safe no-op until script-5 loads (iOS deferred)
 var _checkAndTriggerOnboardingReal = null;
 async function checkAndTriggerOnboarding() {
-    if (window.guestMode) return; // Skip onboarding in guest/preview mode
+    if (window.guestMode && !window.metaAdTrialMode) return; // Ordinary guests use demo data; paid-ad previews run onboarding.
     if (typeof _checkAndTriggerOnboardingReal === 'function') {
         return await _checkAndTriggerOnboardingReal();
     }
