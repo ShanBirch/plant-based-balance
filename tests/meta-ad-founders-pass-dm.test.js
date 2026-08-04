@@ -313,7 +313,7 @@ test('personalised coaching FAQ routes to Starter Coaching without a Founders Pa
         assert.equal(approval.code, 'approved_meta_ad_first_reply');
         assert.equal(handoff.approved_link_auto_sendable, false);
         assert.equal(handoff.signup_link_handoff_url, undefined);
-        assert.equal(isMetaAdGoalReplyTurn([{ direction: 'out', text: reply.joined }]), false);
+        assert.equal(isMetaAdGoalReplyTurn([{ direction: 'out', text: reply.joined }]), true);
     }
 });
 
@@ -340,6 +340,10 @@ test('the reply after the goal is tailored and carries the right native proof me
         text: "Hey, yeah of course. Before I send you a heap of generic info, what's the main thing you're trying to change with your fitness right now?",
     }];
     assert.equal(isMetaAdGoalReplyTurn(history), true);
+    assert.equal(isMetaAdGoalReplyTurn([
+        { direction: 'out', text: 'Morning. What are you mainly trying to change right now?' },
+        { direction: 'in', text: 'I want to lose about 10kg and feel fitter.' },
+    ]), true);
     assert.equal(isMetaAdGoalReplyTurn([{ direction: 'out', text: 'How was your week?' }]), false);
 
     const consistency = buildMetaAdGoalProofReply('I need accountability because I always fall off');

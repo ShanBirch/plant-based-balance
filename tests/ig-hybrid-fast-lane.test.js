@@ -262,7 +262,23 @@ const safeWeightLossFallback = instantDraft.buildSafeMetaAdStyleFallback({
     },
     currentMessage: 'I need to lose weight',
 });
-assert.equal(safeWeightLossFallback.joined, 'Yeah okay. How long have you been trying to lose it for?');
+assert.equal(safeWeightLossFallback.joined, "Morning. That's a solid goal. When you've tried before, what tends to fall apart first?");
+
+const safeGoalDiscoveryFallback = instantDraft.buildSafeMetaAdStyleFallback({
+    draft: {
+        chunks: ['Nice, that’s a solid goal. What usually derails you when you try to lose 10kg and get fitter?'],
+        joined: 'Nice, that’s a solid goal. What usually derails you when you try to lose 10kg and get fitter?',
+    },
+    draftReview: {
+        verdict: 'warn',
+        notification_required: false,
+        context_loss_suspected: false,
+        summary: 'Draft adds a broad discovery question instead of tying to their stated goal.',
+        issues: ['Asks a generic what usually derails you question.'],
+    },
+    currentMessage: 'I want to lose about 10kg and feel fitter.',
+});
+assert.equal(safeGoalDiscoveryFallback.joined, "Morning. 10kg and feeling fitter is a solid goal. When you've tried before, what tends to fall apart first?");
 const safeConsistencyFallback = instantDraft.buildSafeMetaAdStyleFallback({
     draft: {
         chunks: [

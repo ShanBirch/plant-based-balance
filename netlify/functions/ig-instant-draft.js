@@ -775,7 +775,8 @@ function isNonBlockingDraftStyleWarning(draftReview) {
 }
 
 const META_AD_OPTION_MENU_WARNING_RE = /\b(?:choice menu|multiple[- ]choice|multi[- ]option|multiple options?|option list|stack(?:ed|ing)? questions?|too many questions?|second question|extra question|answer options?)\b/i;
-const META_AD_WEIGHT_LOSS_GOAL_RE = /\b(?:lose|losing|drop|dropping|reduce|reducing)\s+(?:some\s+)?(?:weight|fat)\b|\b(?:weight|fat)\s*loss\b/i;
+const META_AD_GOAL_DISCOVERY_WARNING_RE = /\b(?:generic|broad|stock)\b[^.]{0,100}\b(?:discovery|follow[- ]?up|question)\b|\b(?:what usually (?:derails|gets in the way)|goal[- ]linked follow[- ]?up)\b/i;
+const META_AD_WEIGHT_LOSS_GOAL_RE = /\b(?:lose|losing|drop|dropping|reduce|reducing)\s+(?:about\s+|around\s+|some\s+)?(?:weight|fat|\d{1,2}(?:\.\d+)?\s*(?:kg|kgs|kilograms?|lb|lbs|pounds?))\b|\b(?:weight|fat)\s*loss\b/i;
 const META_AD_CONSISTENCY_PROBLEM_RE = /\b(?:can(?:'|\u2019)?t|cannot|never|struggl\w*|hard to|keep)\b[^.!?\n]{0,80}\b(?:stick|consistent|consistency|routine|program|plan|fall(?:ing)? off|drop(?:s|ping)? off)\b|\bfall(?:ing)? off\b/i;
 
 function draftParrotsLatestInbound(replyText, currentMessage) {
@@ -796,13 +797,19 @@ function buildSafeMetaAdStyleFallback({ draft, draftReview, currentMessage } = {
         draftReview?.suggested_fix,
         ...(Array.isArray(draftReview?.issues) ? draftReview.issues : []),
     ].filter(Boolean).join(' ');
-    if (!META_AD_OPTION_MENU_WARNING_RE.test(reviewText)) return null;
+    const optionMenuWarning = META_AD_OPTION_MENU_WARNING_RE.test(reviewText);
+    const goalDiscoveryWarning = META_AD_WEIGHT_LOSS_GOAL_RE.test(String(currentMessage || ''))
+        && META_AD_GOAL_DISCOVERY_WARNING_RE.test(reviewText);
+    if (!optionMenuWarning && !goalDiscoveryWarning) return null;
 
     const originalText = draftTextFromDraft(draft);
     if (!originalText) return null;
     let replacement = '';
     if (META_AD_WEIGHT_LOSS_GOAL_RE.test(String(currentMessage || ''))) {
-        replacement = 'Yeah okay. How long have you been trying to lose it for?';
+        const kgGoal = String(currentMessage || '').match(/\b(\d{1,2}(?:\.\d+)?)\s*(?:kg|kgs|kilograms?)\b/i)?.[1] || '';
+        replacement = kgGoal
+            ? `Morning. ${kgGoal}kg and feeling fitter is a solid goal. When you've tried before, what tends to fall apart first?`
+            : `Morning. That's a solid goal. When you've tried before, what tends to fall apart first?`;
     } else if (META_AD_CONSISTENCY_PROBLEM_RE.test(String(currentMessage || ''))) {
         replacement = 'Yeah that makes sense. How long do you normally stick to it before it drops off?';
     } else {
@@ -1734,14 +1741,14 @@ function buildMetaAdFoundersPassFirstReply(currentMessage = '', { customData = {
     };
 }
 
-const META_AD_GOAL_QUESTION_RE = /what(?:'s| is) the main thing you(?:'re| are) trying to change with your fitness right now/i;
+const META_AD_GOAL_QUESTION_RE = /what(?:'s| is| are) (?:the )?(?:main thing )?you(?:'re| are)? ?(?:mainly )?trying to change(?: with your fitness)?(?: at the moment| right now)?/i;
 
 function isMetaAdGoalReplyTurn(history = []) {
     const recent = (Array.isArray(history) ? history : [])
         .filter(item => String(item?.text || '').trim())
         .slice(-6);
-    const latest = recent[recent.length - 1];
-    return latest?.direction === 'out' && META_AD_GOAL_QUESTION_RE.test(String(latest.text || ''));
+    const latestOutbound = [...recent].reverse().find(item => item?.direction === 'out');
+    return !!latestOutbound && META_AD_GOAL_QUESTION_RE.test(String(latestOutbound.text || ''));
 }
 
 function buildMetaAdGoalProofReply(currentMessage = '', { flowVariant = 'plant_based_control' } = {}) {
@@ -3245,6 +3252,7 @@ function buildPaidMetaConversationWriterBlock({ linkedUserId = null, acquisition
 PAID META SINGLE-WRITER PLAYBOOK:
 - You own the conversational reply. Other code may attach approved proof media, voice or an exact checkout link, but it must not invent or force a follow-up question after you write.
 - Read the complete visible timeline. Answer the newest message first and treat an obvious answer as an answer to Shannon's last question.
+- If Shannon's immediately previous message already explained the offer, do not explain it again when the lead answers her question. Acknowledge the answer and move to the next adjacent stage.
 - Privately track the next useful stage: goal -> real blocker -> support fit -> offer explanation -> explicit next step. Move no more than one stage in a reply and skip any stage the lead has already answered.
 - While fit is still unclear, usually finish with one short NEW question whose answer changes the next sales or support decision. One question is the maximum, not a quota. A complete answer, acknowledgement, proof point, voice note, objection response or clean pause may stand alone.
 - Never repeat or lightly reword a question Shannon already asked. Never echo the lead's sentence back as Shannon's reply. Use their answer, add a relevant coaching or proof point, then make the next adjacent move.
