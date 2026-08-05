@@ -15,6 +15,7 @@ const {
     ensureMetaAdSalesProgressionQuestion,
     buildDeterministicPaidMetaConversationReply,
     restoreCoalescedPaidMetaVoiceDraft,
+    ensurePaidMetaBlockerVoiceGreeting,
     collectCocosAutoRepairIssues,
     getAutoDmHoldReason,
     buildPaidMetaConversationApproval,
@@ -164,8 +165,7 @@ test('paid Meta blocker quotes the six-week payment and app access follows posit
         flowVariant: 'plant_based_control',
         personalVoiceNoteMode: true,
     });
-    assert.match(voiceReply.joined, /^Yeah, so that makes total sense/i);
-    assert.doesNotMatch(voiceReply.joined, /hey, how are ya/i);
+    assert.match(voiceReply.joined, /^Hey, how are ya\.\n\nYeah, so that makes total sense/i);
     assert.doesNotMatch(voiceReply.joined, /how are you going/i);
     assert.match(voiceReply.joined, /work and the kids can wreck the best intentions/i);
     assert.match(voiceReply.joined, /losing 10 kilos and feeling fitter/i);
@@ -206,6 +206,27 @@ test('paid Meta blocker quotes the six-week payment and app access follows posit
         metaAdConversationFastLane: false,
         currentMessage: 'Other things just get in the way. Work kids',
         qualifier,
+    }), blockerReply);
+
+    const finallyGuardedVoiceReply = ensurePaidMetaBlockerVoiceGreeting({
+        draft: {
+            ...voiceReply,
+            chunks: [voiceReply.joined.replace(/^Hey, how are ya\.\n\n/, '')],
+            joined: voiceReply.joined.replace(/^Hey, how are ya\.\n\n/, ''),
+        },
+        outboundVoiceMessage: true,
+        outboundVoiceMessageReason: 'lead_shared_consistency_blocker',
+        metaAdConversationFastLane: true,
+        flowVariant: 'plant_based_control',
+    });
+    assert.match(finallyGuardedVoiceReply.joined, /^Hey, how are ya\.\n\n/);
+    assert.equal((finallyGuardedVoiceReply.joined.match(/Hey, how are ya\./g) || []).length, 1);
+    assert.equal(ensurePaidMetaBlockerVoiceGreeting({
+        draft: blockerReply,
+        outboundVoiceMessage: true,
+        outboundVoiceMessageReason: 'lead_shared_consistency_blocker',
+        metaAdConversationFastLane: false,
+        flowVariant: 'plant_based_control',
     }), blockerReply);
 
     const voicePreviewReply = buildDeterministicPaidMetaConversationReply({
@@ -759,8 +780,8 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
         personalVoiceNoteMode: true,
     });
     assert.deepEqual(blockerVoiceReply.voiceThoughtPausesMs, [1900, 1500, 1450, 1350, 1550, 1600, 1500]);
-    assert.equal(blockerVoiceReply.joined.split(/\n\s*\n/).length, 7);
-    assert.doesNotMatch(blockerVoiceReply.joined, /hey, how are ya/i);
+    assert.equal(blockerVoiceReply.joined.split(/\n\s*\n/).length, 8);
+    assert.match(blockerVoiceReply.joined, /^Hey, how are ya\.\n\n/);
     assert.doesNotMatch(blockerVoiceReply.joined, /how are you going/i);
     assert.match(blockerVoiceReply.joined, /Ummmm\.\.\./);
     assert.match(blockerVoiceReply.joined, /losing 8 kilos/i);

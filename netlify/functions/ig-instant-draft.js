@@ -1509,6 +1509,7 @@ function buildDeterministicPaidMetaConversationReply({
         }
         const joined = personalVoiceNoteMode
             ? [
+                `Hey, how are ya.`,
                 `Yeah, so that makes total sense. ${reflection}`,
                 `Ummmm... so, that's honestly what Balance is designed for. It's, it's about giving you a clear plan for the week, ya know.`,
                 `And having me there to check in, keep you accountable, and move things around when life gets crazy.`,
@@ -1601,6 +1602,38 @@ function restoreCoalescedPaidMetaVoiceDraft({
     return Array.isArray(restored?.voiceThoughtPausesMs) && restored.voiceThoughtPausesMs.length
         ? restored
         : draft;
+}
+
+function ensurePaidMetaBlockerVoiceGreeting({
+    draft,
+    outboundVoiceMessage = false,
+    outboundVoiceMessageReason = '',
+    metaAdConversationFastLane = false,
+    flowVariant = 'plant_based_control',
+} = {}) {
+    if (!draft
+        || !outboundVoiceMessage
+        || !metaAdConversationFastLane
+        || flowVariant !== 'plant_based_control'
+        || !['lead_shared_goal_blocker', 'lead_shared_consistency_blocker'].includes(String(outboundVoiceMessageReason || ''))) {
+        return draft;
+    }
+
+    const joined = String(draft.joined || '').trim();
+    if (!joined || /^Hey, how are ya\.\s*(?:\n\s*\n|$)/i.test(joined)) return draft;
+    const greeting = 'Hey, how are ya.';
+    const greeted = `${greeting}\n\n${joined}`;
+    const chunks = Array.isArray(draft.chunks) && draft.chunks.length
+        ? [`${greeting}\n\n${String(draft.chunks[0] || '').trim()}`, ...draft.chunks.slice(1)]
+        : [greeted];
+    return {
+        ...draft,
+        chunks,
+        joined: greeted,
+        voiceThoughtPausesMs: Array.isArray(draft.voiceThoughtPausesMs) && draft.voiceThoughtPausesMs.length
+            ? draft.voiceThoughtPausesMs
+            : [1900],
+    };
 }
 
 function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draft, draftReview, challengeOfferWarning, currentMessage, qualifier, leadStage, linkedUserId, meaningfulLeadReplyCount, contextBypass, cocosContextBypass, alertData, allowTestLaneDraftReviewWarning = false, allowBalanceLeadDraftReviewWarning = false }) {
@@ -6250,6 +6283,13 @@ exports.handler = async (event) => {
         leadStage: effectiveLeadStage,
         linkedUserId: thread.linked_user_id,
     });
+    draft = ensurePaidMetaBlockerVoiceGreeting({
+        draft,
+        outboundVoiceMessage,
+        outboundVoiceMessageReason,
+        metaAdConversationFastLane,
+        flowVariant: metaAdFlowVariant,
+    });
 
     if (Array.isArray(durableMediaIds) && durableMediaIds.length) {
         try {
@@ -7634,6 +7674,7 @@ exports._test = {
     buildContextualMetaAdOfferLinkReply,
     buildDeterministicPaidMetaConversationReply,
     restoreCoalescedPaidMetaVoiceDraft,
+    ensurePaidMetaBlockerVoiceGreeting,
     buildPaidMetaConversationApproval,
     hasDirectPaidMetaCheckoutIntent,
     buildDraftVideoAttachmentData,
