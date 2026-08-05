@@ -6,6 +6,34 @@ const path = require('node:path');
 const sendIg = require('../netlify/functions/send-ig-reply')._test;
 const { splitCoachDraftIntoDmBubbles } = require('../netlify/functions/_lib/client-context');
 
+test('automated send cannot bypass an active draft review hold', () => {
+    const heldData = {
+        scheduled_via: 'auto_send',
+        auto_send_review_hold: {
+            code: 'premature_challenge_invite',
+            label: 'Do not send an offer link before clear buying intent.',
+        },
+    };
+    assert.deepEqual(sendIg.getActiveAutomatedReviewHold({
+        source: 'balance_lead_client_manager_cron',
+        alertData: heldData,
+    }), heldData.auto_send_review_hold);
+    assert.deepEqual(sendIg.getActiveAutomatedReviewHold({
+        source: 'scheduled_worker',
+        alertData: heldData,
+    }), heldData.auto_send_review_hold);
+    assert.equal(sendIg.getActiveAutomatedReviewHold({
+        source: 'admin_dashboard',
+        alertData: {
+            auto_send_review_hold: heldData.auto_send_review_hold,
+        },
+    }), null, 'a deliberate human review action remains available');
+    assert.equal(sendIg.getActiveAutomatedReviewHold({
+        source: 'balance_lead_client_manager_cron',
+        alertData: { auto_send_review_hold: null },
+    }), null);
+});
+
 test('Instagram Graph replies split below the native 250-character visible cutoff', () => {
     const text = 'Inside Balance, the six-week course works like this: each week you get your learning plus clear weekly goals so you know exactly what to focus on. Then you have a coaching review where we look at what happened in real life and adjust your food and workouts for the next week so it stays doable and effective. What usually gets in the way when you try to stay consistent?';
     const options = sendIg.resolveOutboundDmBubbleOptions({

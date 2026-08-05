@@ -1060,6 +1060,19 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
     assert.doesNotMatch(naturalFoundationsPrice.joined, /would that kind of support|stay on track/i);
     assert.equal((naturalFoundationsPrice.joined.match(/\?/g) || []).length, 1);
 
+    const confirmFoundationsPrice = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'Just to confirm, how much is Balance Foundations in total?',
+        qualifier: blockerQualifier,
+        flowVariant: 'plant_based_control',
+        checkoutUrl,
+    });
+    assert.equal(confirmFoundationsPrice.replyMode, 'campaign_sales_progression');
+    assert.match(confirmFoundationsPrice.joined, /one \$89\.99 payment for the full six weeks/i);
+    assert.match(confirmFoundationsPrice.joined, /send you the checkout link/i);
+    assert.doesNotMatch(confirmFoundationsPrice.joined, /https?:\/\//,
+        'a price check is not clear buying intent and must not send any link');
+    assert.equal((confirmFoundationsPrice.joined.match(/\?/g) || []).length, 1);
+
     const priceAndInclusions = buildDeterministicPaidMetaConversationReply({
         currentMessage: 'I want to know your prices and what I get',
         qualifier: blockerQualifier,

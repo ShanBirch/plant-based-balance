@@ -616,6 +616,17 @@ function isAutomatedPermanentNeedsYouSendSource(source, data = {}) {
         || hasAutoSendMetadata;
 }
 
+function getActiveAutomatedReviewHold({ source = '', alertData = {} } = {}) {
+    if (!isAutomatedPermanentNeedsYouSendSource(source, alertData)) return null;
+    const hold = safeObject(alertData.auto_send_review_hold);
+    const code = String(hold.code || '').trim();
+    if (!code) return null;
+    return {
+        code,
+        label: String(hold.label || hold.reason || '').trim(),
+    };
+}
+
 function isAppSupportFastFixException(data = {}) {
     const supportException = data.support_exception === true || data.support_exception === 'true';
     const reason = String(data.support_exception_reason || '').trim();
@@ -1812,6 +1823,35 @@ exports.handler = async (event) => {
     const requestedIgThreadId = rawAlertData.ig_thread_id || requestedThreadForSend?.id || '';
     let alternateDelivery = null;
     let alertData = enrichAlertDataWithThreadGraph(rawAlertData, threadForSend);
+    const activeAutomatedReviewHold = getActiveAutomatedReviewHold({ source, alertData });
+    if (activeAutomatedReviewHold) {
+        const blockedAt = new Date().toISOString();
+        const holdLabel = activeAutomatedReviewHold.label || activeAutomatedReviewHold.code;
+        const blockedData = {
+            ...alertData,
+            last_send_error: `Automated send stopped by active review hold: ${holdLabel}`,
+            last_send_error_code: 'auto_send_review_hold_active',
+            last_send_error_at: blockedAt,
+        };
+        try {
+            await supabase(`coach_alerts?id=eq.${alertId}`, {
+                method: 'PATCH',
+                body: { data: blockedData },
+                prefer: 'return=minimal',
+            });
+        } catch (err) {
+            console.warn('[send-ig-reply] review-hold block patch failed:', err.message);
+        }
+        return {
+            statusCode: 409,
+            body: JSON.stringify({
+                error: 'Automated send stopped because this reply still requires review.',
+                code: 'auto_send_review_hold_active',
+                review_hold_code: activeAutomatedReviewHold.code,
+                source,
+            }),
+        };
+    }
     if (alertData.last_send_error || alertData.last_send_error_code || alertData.last_send_error_at) {
         try {
             const clearedData = {
@@ -2850,6 +2890,7 @@ exports._test = {
     isSendClaimStale,
     isHumanApprovedPermanentNeedsYouSendSource,
     isAutomatedPermanentNeedsYouSendSource,
+    getActiveAutomatedReviewHold,
     isAppSupportFastFixException,
     isVerifiedAppSupportAutomatedReply,
     isPermanentNeedsYouIgAlert,
