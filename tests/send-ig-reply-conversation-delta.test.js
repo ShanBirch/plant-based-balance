@@ -83,6 +83,10 @@ test('paid Meta voice keeps its approved thought paragraphs through DM bubble sp
         scheduled_was_edited: false,
         outbound_voice_source_text: `Hey, how are ya.\n\n${source}`,
     }, ['First thought.\nSecond thought.', 'Third thought.']), [`Hey, how are ya.\n\n${source}`]);
+    assert.deepEqual(sendIg.resolveVoiceSourceMessages({
+        scheduled_was_edited: false,
+        outbound_voice_source_text: `Hey, how are ya.\n\n${source}`,
+    }, ['Normalized bubble text.']), [`Hey, how are ya.\n\n${source}`]);
 });
 
 test('final automated send gate sees a newer manual outbound', async () => {
