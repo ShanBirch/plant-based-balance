@@ -98,6 +98,17 @@ function metaPreviewStage(eventType = '') {
     })[eventType] || eventType;
 }
 
+function deterministicFollowupAlertId(idempotencyKey = '') {
+    const hex = crypto.createHash('sha256').update(String(idempotencyKey || '')).digest('hex').slice(0, 32).split('');
+    // A stable RFC 4122-shaped UUID lets the primary key provide atomic
+    // idempotency even when older production schemas do not yet have a
+    // unique constraint on coach_alerts.idempotency_key.
+    hex[12] = '5';
+    hex[16] = (8 | (parseInt(hex[16], 16) & 3)).toString(16);
+    const value = hex.join('');
+    return `${value.slice(0, 8)}-${value.slice(8, 12)}-${value.slice(12, 16)}-${value.slice(16, 20)}-${value.slice(20)}`;
+}
+
 async function verifiedPreviewThread(eventPayload, nowMs = Date.now()) {
     const metadata = objectOrEmpty(eventPayload?.metadata);
     const token = String(metadata.meta_ref || '').trim();
@@ -238,6 +249,7 @@ async function enqueueMetaAppPreviewFollowup(eventPayload, nowMs = Date.now(), c
     const idempotencyKey = followupKind === 'checkout_abandoned'
         ? `meta_app_preview_followup:${followupKind}:${thread.id}:${checkoutSessionId || tokenHash}`
         : `meta_app_preview_followup:${followupKind}:${thread.id}:${tokenHash}`;
+    const alertId = deterministicFollowupAlertId(idempotencyKey);
     const alertData = {
         channel: 'instagram',
         delivery_channel: 'instagram_graph',
@@ -277,10 +289,11 @@ async function enqueueMetaAppPreviewFollowup(eventPayload, nowMs = Date.now(), c
         meta_app_preview_canonical_outbound_id: previewOutbound.id,
         meta_app_preview_gate_shown_at: new Date(gateMs).toISOString(),
     };
-    const inserted = await supabase('coach_alerts?on_conflict=idempotency_key', {
+    const inserted = await supabase('coach_alerts?on_conflict=id', {
         method: 'POST',
         prefer: 'resolution=ignore-duplicates,return=representation',
         body: [{
+            id: alertId,
             coach_id: thread.coach_id || null,
             client_id: null,
             client_name: thread.profile_name || thread.ig_username || 'Instagram lead',
@@ -386,3 +399,4 @@ exports.graphRecipientId = graphRecipientId;
 exports.isEligiblePreviewThread = isEligiblePreviewThread;
 exports.recordMetaAppPreviewProgress = recordMetaAppPreviewProgress;
 exports.enqueueMetaAppPreviewFollowup = enqueueMetaAppPreviewFollowup;
+exports.deterministicFollowupAlertId = deterministicFollowupAlertId;

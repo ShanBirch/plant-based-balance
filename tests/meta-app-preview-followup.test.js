@@ -87,7 +87,10 @@ test('a verified five-minute gate schedules one canonical IG follow-up and no ou
 
         const alertRequest = requests.find(request => request.url.includes('/coach_alerts?'));
         assert.ok(alertRequest, 'the signed gate event schedules a coach alert');
+        assert.match(alertRequest.url, /on_conflict=id(?:&|$)/,
+            'the scheduler must use the live primary-key constraint for atomic idempotency');
         const [alert] = JSON.parse(alertRequest.options.body);
+        assert.match(alert.id, /^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
         assert.equal(alert.alert_type, 'follow_up_review');
         assert.equal(alert.status, 'scheduled');
         assert.equal(alert.suggested_message, 'How did you find the Balance preview?');
