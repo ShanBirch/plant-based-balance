@@ -4851,7 +4851,34 @@ function waitForCurrentUser(timeoutMs = 15000) {
 function areMealPlanDependenciesReady() {
     return typeof window.populateVeganChallengeMealPlan === 'function'
         && typeof window.getUserNutritionTargets === 'function'
-        && typeof window.isVeganChallengeUser === 'function';
+        && typeof window.isVeganChallengeUser === 'function'
+        && typeof window.resolveMealPlanPhoto === 'function';
+}
+
+function resolveMealPlanPhotoUrl(meal) {
+    try {
+        if (typeof window.resolveMealPlanPhoto === 'function') return window.resolveMealPlanPhoto(meal) || '';
+    } catch (error) {
+        console.warn('[meal-plan] photo resolution failed:', error);
+    }
+    return String(meal?.image_url || meal?.image || '').trim();
+}
+
+async function persistResolvedMealPlanPhotos(rows) {
+    const pending = (Array.isArray(rows) ? rows : []).filter(row => row?.id && row?.image_url);
+    if (!pending.length || !window.supabaseClient) return;
+
+    const grouped = new Map();
+    pending.forEach(row => {
+        if (!grouped.has(row.image_url)) grouped.set(row.image_url, []);
+        grouped.get(row.image_url).push(row.id);
+    });
+
+    const results = await Promise.allSettled([...grouped.entries()].map(([imageUrl, ids]) =>
+        window.supabaseClient.from('ai_generated_meals').update({ image_url: imageUrl }).in('id', ids)
+    ));
+    const failed = results.filter(result => result.status === 'rejected' || result.value?.error);
+    if (failed.length) console.warn(`[meal-plan] ${failed.length} photo backfill batch(es) could not be saved`);
 }
 
 async function isCurrentUserVeganChallengeUser(user) {
@@ -5020,6 +5047,7 @@ async function loadExistingAiMealPlanInner() {
             ...meals.map(m => Number(m.week_number))
         ].filter(Boolean))].sort((a, b) => a - b);
 
+        const resolvedPhotoRows = [];
         const fullPlan = {
             id: plan.id,
             plan_name: plan.plan_name,
@@ -5038,24 +5066,31 @@ async function loadExistingAiMealPlanInner() {
                         return {
                             day_of_week: d,
                             day_name: dayNames[d],
-                            meals: dayMeals.map(m => ({
-                                meal_slot: m.meal_slot,
-                                meal_time: m.meal_time,
-                                name: m.name,
-                                description: m.description,
-                                calories: m.calories,
-                                protein_g: m.protein_g,
-                                carbs_g: m.carbs_g,
-                                fat_g: m.fat_g,
-                                fiber_g: m.fiber_g,
-                                ingredients: m.ingredients || [],
-                                preparation: m.preparation,
-                                prep_time_mins: m.prep_time_mins,
-                                cook_time_mins: m.cook_time_mins,
-                                tags: m.tags || [],
-                                cuisine: m.cuisine,
-                                image_url: m.image_url
-                            }))
+                            meals: dayMeals.map(m => {
+                                const imageUrl = resolveMealPlanPhotoUrl(m);
+                                if (!String(m.image_url || '').trim() && imageUrl) {
+                                    resolvedPhotoRows.push({ id: m.id, image_url: imageUrl });
+                                }
+                                return {
+                                    id: m.id,
+                                    meal_slot: m.meal_slot,
+                                    meal_time: m.meal_time,
+                                    name: m.name,
+                                    description: m.description,
+                                    calories: m.calories,
+                                    protein_g: m.protein_g,
+                                    carbs_g: m.carbs_g,
+                                    fat_g: m.fat_g,
+                                    fiber_g: m.fiber_g,
+                                    ingredients: m.ingredients || [],
+                                    preparation: m.preparation,
+                                    prep_time_mins: m.prep_time_mins,
+                                    cook_time_mins: m.cook_time_mins,
+                                    tags: m.tags || [],
+                                    cuisine: m.cuisine,
+                                    image_url: imageUrl
+                                };
+                            })
                         };
                     })
                 };
@@ -5064,6 +5099,9 @@ async function loadExistingAiMealPlanInner() {
 
         _aiMealPlanCache = fullPlan;
         showAiPlanLoaded(fullPlan);
+        persistResolvedMealPlanPhotos(resolvedPhotoRows).catch(error => {
+            console.warn('[meal-plan] background photo backfill failed:', error);
+        });
     } catch (err) {
         console.error('Error loading AI meal plan:', err);
         showAiPlanEmpty();
@@ -5262,7 +5300,7 @@ function renderAiPlanDay(dayNum) {
         const slotLabel = mealSlotLabels[meal.meal_slot] || meal.meal_slot;
         const slotIcon = mealSlotIcons[meal.meal_slot] || '🍽️';
         const time = meal.meal_time || '';
-        const rawImageUrl = String(meal.image_url || meal.image || '').trim();
+        const rawImageUrl = resolveMealPlanPhotoUrl(meal);
         const imageUrl = /^(?:https:\/\/|images\/meals\/)[^"'<>]+$/i.test(rawImageUrl) ? rawImageUrl : '';
         const imageAlt = String(meal.name || slotLabel).replace(/[&<>"']/g, character => ({
             '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -5653,7 +5691,7 @@ async function loadWeeklyEvolutionHistory(userId) {
     start.setDate(start.getDate() - 6);
     const { data, error } = await window.supabaseClient
         .from('meal_logs')
-        .select('meal_date,meal_time,meal_type,meal_description,notes,food_items,calories,protein_g,carbs_g,fat_g,fiber_g,micronutrients')
+        .select('meal_date,meal_time,meal_type,meal_description,notes,food_items,calories,protein_g,carbs_g,fat_g,fiber_g,micronutrients,photo_url')
         .eq('user_id', userId)
         .neq('meal_type', 'water')
         .gte('meal_date', weeklyEvolutionDateString(start))
@@ -5931,7 +5969,11 @@ async function buildNextWeekFromMealHistory(options) {
                     ...generated,
                     name: item.variation ? generated.name : item.base_meal.name,
                     tags: [...new Set([...(generated.tags || []), item.variation ? 'New variation' : 'Familiar favourite'])],
-                    image_url: null
+                    image_url: resolveMealPlanPhotoUrl({
+                        ...generated,
+                        name: item.variation ? generated.name : item.base_meal.name,
+                        image_url: item.variation ? '' : item.base_meal.image_url
+                    })
                 };
             });
             generatedDays.push({ ...result.day, day_of_week: dayNumber, meals: finalMeals });
@@ -5970,7 +6012,7 @@ async function buildNextWeekFromMealHistory(options) {
             carbs_g: meal.carbs_g, fat_g: meal.fat_g, fiber_g: meal.fiber_g,
             ingredients: meal.ingredients || [], preparation: meal.preparation,
             prep_time_mins: meal.prep_time_mins, cook_time_mins: meal.cook_time_mins,
-            tags: meal.tags || [], cuisine: meal.cuisine, image_url: null
+            tags: meal.tags || [], cuisine: meal.cuisine, image_url: resolveMealPlanPhotoUrl(meal)
         })));
         const mealsInsert = await window.supabaseClient.from('ai_generated_meals').insert(mealRows);
         if (mealsInsert.error) throw mealsInsert.error;
@@ -6097,6 +6139,10 @@ async function generateNextWeek() {
                 previousWeeks
             });
 
+            dayResult.day.meals = (dayResult.day.meals || []).map(meal => ({
+                ...meal,
+                image_url: resolveMealPlanPhotoUrl(meal)
+            }));
             nwGeneratedDays.push(dayResult.day);
 
             if (d === 0 && dayResult.weekMeta) {
@@ -6149,7 +6195,7 @@ async function generateNextWeek() {
                             carbs_g: meal.carbs_g, fat_g: meal.fat_g, fiber_g: meal.fiber_g,
                             ingredients: meal.ingredients || [], preparation: meal.preparation,
                             prep_time_mins: meal.prep_time_mins, cook_time_mins: meal.cook_time_mins,
-                            tags: meal.tags || [], cuisine: meal.cuisine, image_url: null
+                            tags: meal.tags || [], cuisine: meal.cuisine, image_url: resolveMealPlanPhotoUrl(meal)
                         });
                     });
                 });

@@ -22,6 +22,14 @@ test('builds 35 familiar slots with exactly two variations', () => {
     assert.equal(blueprint.filter(item => item.variation).length, 2);
     assert.ok(blueprint.every(item => item.base_meal.name));
 });
+test('carries a real logged meal photo into the evolving-week blueprint', () => {
+    const photoUrl = 'https://images.example/tofu-scramble.jpg';
+    const blueprint = evolution.buildBlueprint([
+        ...history,
+        meal(4, 'breakfast', 'Photo tofu scramble', { photo_url: photoUrl })
+    ]);
+    assert.ok(blueprint.some(item => item.base_meal.image_url === photoUrl));
+});
 test('only flags micronutrients measured on at least three days', () => {
     const measured = history.map((row, index) => ({ ...row, micronutrients: index < 9 ? { calcium_mg: 100 } : {} }));
     const focus = evolution.buildNutritionFocus(measured, { protein_goal_g: 120 }, 'vegan');
