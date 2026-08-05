@@ -1523,13 +1523,13 @@ function buildDeterministicPaidMetaConversationReply({
         }
         const joined = personalVoiceNoteMode
             ? [
-                `Hey, how are ya.`,
                 `Yeah, so that makes total sense. ${reflection}`,
                 `Ummmm... so, that's honestly what Balance is designed for. It's, it's about giving you a clear plan for the week, ya know.`,
                 `And having me there to check in, keep you accountable, and move things around when life gets crazy.`,
                 `So if you fall off, ya know, you've got something simple to come back to. And we can keep you moving toward ${voiceGoalPhrase}, without every week needing to be perfect.`,
-                `It's eighty-nine ninety-nine payment for the full six weeks.`,
-                `What I can do is let you set yourself up in the app, so you can get a feel for it. Your program, your meal plan, and the community.`,
+                `It's one eighty-nine ninety-nine payment for the full six weeks.`,
+                `What I can do is let you set yourself up in the app, so you can get a feel for it.`,
+                `Ummmm... you'll be able to see your workout program, your meal plan, your weekly goals, and the community.`,
                 `Then once you've seen it, we can take payment. How does that sound?`,
             ].join('\n\n')
             : `Yeah, that makes sense. ${reflection} Balance gives you a clear plan and support around ${voiceGoalPhrase}. It's one $89.99 payment for the full six weeks.\n\nIf you're keen, I can give you access to the app so you can check it out before any payment. Are you keen to have a look?`;
@@ -1542,7 +1542,7 @@ function buildDeterministicPaidMetaConversationReply({
             // Measured from Shannon's clean Instagram notes: shorter connective
             // pauses, with longer thinking/topic-transition breaks.
             voiceThoughtPausesMs: personalVoiceNoteMode
-                ? [1900, 1500, 1450, 1350, 1550, 1600, 1500]
+                ? [1800, 1500, 1450, 1550, 1600, 1500, 1500]
                 : [],
             model: 'deterministic_paid_meta_conversation_v2',
             replyMode: 'campaign_sales_progression',
@@ -1618,7 +1618,7 @@ function restoreCoalescedPaidMetaVoiceDraft({
         : draft;
 }
 
-function ensurePaidMetaBlockerVoiceGreeting({
+function removePaidMetaBlockerVoiceGreeting({
     draft,
     outboundVoiceMessage = false,
     outboundVoiceMessageReason = '',
@@ -1634,19 +1634,20 @@ function ensurePaidMetaBlockerVoiceGreeting({
     }
 
     const joined = String(draft.joined || '').trim();
-    if (!joined || /^Hey, how are ya\.\s*(?:\n\s*\n|$)/i.test(joined)) return draft;
-    const greeting = 'Hey, how are ya.';
-    const greeted = `${greeting}\n\n${joined}`;
+    if (!joined) return draft;
+    const greetingPattern = /^(?:Hey,?\s+)?(?:how are ya|how are you|how(?:'s| is) it going|how ya going)[.!?]*\s*(?:\n\s*\n|\s+)/i;
+    const withoutGreeting = joined.replace(greetingPattern, '').trim();
+    if (withoutGreeting === joined) return draft;
     const chunks = Array.isArray(draft.chunks) && draft.chunks.length
-        ? [`${greeting}\n\n${String(draft.chunks[0] || '').trim()}`, ...draft.chunks.slice(1)]
-        : [greeted];
+        ? [String(draft.chunks[0] || '').replace(greetingPattern, '').trim(), ...draft.chunks.slice(1)]
+        : [withoutGreeting];
     return {
         ...draft,
         chunks,
-        joined: greeted,
+        joined: withoutGreeting,
         voiceThoughtPausesMs: Array.isArray(draft.voiceThoughtPausesMs) && draft.voiceThoughtPausesMs.length
-            ? draft.voiceThoughtPausesMs
-            : [1900],
+            ? draft.voiceThoughtPausesMs.slice(1)
+            : draft.voiceThoughtPausesMs,
     };
 }
 
@@ -6304,7 +6305,7 @@ exports.handler = async (event) => {
         leadStage: effectiveLeadStage,
         linkedUserId: thread.linked_user_id,
     });
-    draft = ensurePaidMetaBlockerVoiceGreeting({
+    draft = removePaidMetaBlockerVoiceGreeting({
         draft,
         outboundVoiceMessage,
         outboundVoiceMessageReason,
@@ -7699,7 +7700,7 @@ exports._test = {
     buildContextualMetaAdOfferLinkReply,
     buildDeterministicPaidMetaConversationReply,
     restoreCoalescedPaidMetaVoiceDraft,
-    ensurePaidMetaBlockerVoiceGreeting,
+    removePaidMetaBlockerVoiceGreeting,
     buildPaidMetaConversationApproval,
     hasDirectPaidMetaCheckoutIntent,
     buildDraftVideoAttachmentData,

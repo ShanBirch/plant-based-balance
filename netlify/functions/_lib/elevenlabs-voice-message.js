@@ -373,13 +373,10 @@ function ensureNaturalVoiceHesitation(text = '') {
     return `Ummm... ${value}`;
 }
 
-function shouldPreserveShannonVoiceGreeting(alertData = {}) {
-    const reason = cleanString(
-        alertData.outbound_voice_message_reason || alertData.voice_reply_reason || '',
-        160
-    ).toLowerCase();
-    return reason === 'lead_shared_goal_blocker'
-        || reason === 'lead_shared_consistency_blocker';
+function shouldPreserveShannonVoiceGreeting() {
+    // Generated voice notes begin on the current detail. Relationship-specific
+    // greetings belong in deliberately recorded native audio, not synthetic TTS.
+    return false;
 }
 
 function buildTtsText(messages = [], options = {}) {

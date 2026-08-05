@@ -168,14 +168,14 @@ assert.strictEqual(
     voice._test.shouldPreserveShannonVoiceGreeting({
         outbound_voice_message_reason: 'lead_shared_consistency_blocker',
     }),
-    true
+    false
 );
 
 assert.strictEqual(
     voice._test.shouldPreserveShannonVoiceGreeting({
         outbound_voice_message_reason: 'lead_shared_goal_blocker',
     }),
-    true
+    false
 );
 
 assert.strictEqual(
