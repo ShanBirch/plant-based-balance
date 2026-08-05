@@ -157,6 +157,35 @@ assert.strictEqual(
 );
 
 assert.strictEqual(
+    voice.buildTtsText(
+        ['Hey, how are ya.\n\nYeah, that makes sense. Ummmm... let me think about that.'],
+        { preserveGreeting: true }
+    ),
+    'Hey, how are ya.\n\nYeah, that makes sense. Ummmm... let me think about that.'
+);
+
+assert.strictEqual(
+    voice._test.shouldPreserveShannonVoiceGreeting({
+        outbound_voice_message_reason: 'lead_shared_consistency_blocker',
+    }),
+    true
+);
+
+assert.strictEqual(
+    voice._test.shouldPreserveShannonVoiceGreeting({
+        outbound_voice_message_reason: 'lead_shared_goal_blocker',
+    }),
+    true
+);
+
+assert.strictEqual(
+    voice._test.shouldPreserveShannonVoiceGreeting({
+        outbound_voice_message_reason: 'lead_accountability_connection_moment',
+    }),
+    false
+);
+
+assert.strictEqual(
     voice.ensureNaturalVoiceHesitation('Yeah, um, that makes sense. Keep it simple.'),
     'Yeah, um, that makes sense. Keep it simple.'
 );

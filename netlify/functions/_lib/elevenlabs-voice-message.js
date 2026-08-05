@@ -373,7 +373,16 @@ function ensureNaturalVoiceHesitation(text = '') {
     return `Ummm... ${value}`;
 }
 
-function buildTtsText(messages = []) {
+function shouldPreserveShannonVoiceGreeting(alertData = {}) {
+    const reason = cleanString(
+        alertData.outbound_voice_message_reason || alertData.voice_reply_reason || '',
+        160
+    ).toLowerCase();
+    return reason === 'lead_shared_goal_blocker'
+        || reason === 'lead_shared_consistency_blocker';
+}
+
+function buildTtsText(messages = [], options = {}) {
     const text = (Array.isArray(messages) ? messages : [messages])
         .map(value => String(value || '').trim())
         .filter(Boolean)
@@ -381,11 +390,11 @@ function buildTtsText(messages = []) {
         .replace(/[^\S\n]+\n/g, '\n')
         .replace(/\n{3,}/g, '\n\n')
         .trim();
-    return normalizeTtsPronunciation(
-        normalizeShannonVoiceGreeting(
-            ensureNaturalVoiceHesitation(normalizeShannonVoiceContractions(text))
-        )
-    )
+    const spokenText = ensureNaturalVoiceHesitation(normalizeShannonVoiceContractions(text));
+    const greetingNormalizedText = options.preserveGreeting === true
+        ? spokenText
+        : normalizeShannonVoiceGreeting(spokenText);
+    return normalizeTtsPronunciation(greetingNormalizedText)
         .slice(0, MAX_TTS_CHARS);
 }
 
@@ -705,7 +714,8 @@ async function uploadVoiceNoteToB2({ buffer, contentType = 'audio/mpeg', extensi
 }
 
 async function createVoiceMessageAudio({ messages, alertId, alertData = {}, supabaseQuery }) {
-    const text = buildTtsText(messages);
+    const preserveGreeting = shouldPreserveShannonVoiceGreeting(alertData);
+    const text = buildTtsText(messages, { preserveGreeting });
     const quality = inspectVoiceScriptQuality(text);
     if (!quality.valid) {
         const error = new Error(`Voice script quality failed: ${quality.issues.join('; ')}`);
@@ -827,6 +837,7 @@ module.exports = {
         normalizeAccountKey,
         normalizeShannonVoiceContractions,
         normalizeShannonVoiceGreeting,
+        shouldPreserveShannonVoiceGreeting,
         resolveCocosShanSunnyVoiceTestReason,
         resolveAudioUploadFormat,
         resolveModelId,
