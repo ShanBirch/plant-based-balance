@@ -1134,6 +1134,16 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
     assert.match(fixedSixWeekSelectionReply.joined, /send you the checkout link/i);
     assert.doesNotMatch(fixedSixWeekSelectionReply.joined, /https?:\/\//);
     assert.equal((fixedSixWeekSelectionReply.joined.match(/\?/g) || []).length, 1);
+    const naturalSelectionReply = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'I think Balance Foundations is the right option for me.',
+        qualifier: { ...blockerQualifier, commercial_stage: 'buyer_intent' },
+        flowVariant: 'plant_based_control',
+        checkoutUrl,
+    });
+    assert.equal(naturalSelectionReply.replyMode, 'campaign_sales_progression');
+    assert.match(naturalSelectionReply.joined, /send you the checkout link/i);
+    assert.doesNotMatch(naturalSelectionReply.joined, /https?:\/\//);
+    assert.equal((naturalSelectionReply.joined.match(/\?/g) || []).length, 1);
 
     assert.equal(buildDeterministicPaidMetaConversationReply({
         currentMessage: 'Stop messaging me',
