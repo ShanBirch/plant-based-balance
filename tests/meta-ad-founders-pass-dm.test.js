@@ -681,6 +681,11 @@ test('the reply after the goal is tailored and carries the right native proof me
         'the text immediately before the native proof image must introduce the person shown');
     assert.match(weightAndFitnessGoal.joined, /lost 12kg in 16 weeks/i);
     assert.match(weightAndFitnessGoal.imageAttachmentUrl, /ally-cocos\.png/);
+    const naturalWeightGoal = buildMetaAdGoalProofReply(
+        'The main thing I want to change is losing around 8 kilos and feeling comfortable in my clothes again.'
+    );
+    assert.match(naturalWeightGoal.joined, /This is Ally/i);
+    assert.match(naturalWeightGoal.imageAttachmentUrl, /ally-cocos\.png/);
     assert.equal(
         buildDraftImageAttachmentData(weightGoal).draft_image_attachment_url,
         weightGoal.imageAttachmentUrl

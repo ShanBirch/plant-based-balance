@@ -2008,7 +2008,7 @@ function buildMetaAdGoalProofReply(currentMessage = '', { flowVariant = 'plant_b
     const rawMessage = String(currentMessage || '').trim();
     const text = rawMessage.toLowerCase();
     const broadFlow = flowVariant === 'broad_pain';
-    const weightLossGoal = /weight|fat|lose|lean|tone|confiden|body/.test(text);
+    const weightLossGoal = /weight|fat|lose|losing|lean|tone|confiden|body/.test(text);
     const courseProof = `Inside Balance, the six-week course turns that into a clear week to follow, with your learning, weekly goals and coaching review in one place.`;
     let bridge;
     if (/accountab|consisten|motivat|routine|habit|stick|on track|fall off|keep going/.test(text)) {
