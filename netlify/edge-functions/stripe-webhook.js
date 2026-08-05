@@ -13,6 +13,8 @@ const FOUNDERS_PASS_PRODUCT_TYPE = "balance_vegan_founders_pass";
 const FOUNDERS_PASS_PLAN = "balance_foundations_six_week";
 const LEGACY_FOUNDERS_PASS_PLAN = "founders_pass_lifetime";
 const FOUNDATIONS_ACCESS_DAYS = 42;
+const META_PREVIEW_PURCHASE_MESSAGE = "You're in 🙌 Your Balance Foundations pass is sorted. Finish signing in to the app and everything you set up will be there.";
+const META_PREVIEW_PURCHASE_DELAY_MS = 60 * 1000;
 
 function subscriptionOfferDetails(plan) {
     if (plan === "app_community_monthly") {
@@ -97,6 +99,71 @@ function cleanEmail(email) {
 
 function cleanString(value, max = 1000) {
     return String(value || "").replace(/\s+/g, " ").trim().slice(0, max);
+}
+
+function base64UrlBytes(value = "") {
+    const padded = String(value).replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(String(value).length / 4) * 4, "=");
+    const binary = atob(padded);
+    return Uint8Array.from(binary, char => char.charCodeAt(0));
+}
+
+async function verifyMetaPreviewRef(token, nowMs = Date.now()) {
+    const value = cleanString(token, 700);
+    const secret = cleanString(
+        Deno.env.get("META_APP_PREVIEW_REF_SECRET")
+        || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")
+        || Deno.env.get("SUPABASE_SERVICE_KEY")
+        || "",
+        4000,
+    );
+    const parts = value.split(".");
+    if (!secret || parts.length !== 2 || !parts[0] || !parts[1]) return null;
+    try {
+        const key = await crypto.subtle.importKey(
+            "raw",
+            new TextEncoder().encode(secret),
+            { name: "HMAC", hash: "SHA-256" },
+            false,
+            ["verify"],
+        );
+        const valid = await crypto.subtle.verify(
+            "HMAC",
+            key,
+            base64UrlBytes(parts[1]),
+            new TextEncoder().encode(parts[0]),
+        );
+        if (!valid) return null;
+        const payload = JSON.parse(new TextDecoder().decode(base64UrlBytes(parts[0])));
+        const threadId = cleanString(payload?.t, 80);
+        const issuedMs = Number(payload?.i) * 1000;
+        const expiresMs = Number(payload?.e) * 1000;
+        if (!/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(threadId)
+            || !Number.isFinite(issuedMs)
+            || !Number.isFinite(expiresMs)
+            || issuedMs > nowMs + 60_000
+            || expiresMs <= nowMs
+            || expiresMs - issuedMs > (24 * 60 * 60 * 1000) + 60_000) return null;
+        return { threadId, issuedMs, expiresMs };
+    } catch (_) {
+        return null;
+    }
+}
+
+function objectOrEmpty(value) {
+    return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+}
+
+function previewGraphRecipientId(thread = {}) {
+    const customData = objectOrEmpty(thread.custom_data);
+    const graph = objectOrEmpty(customData.instagram_graph);
+    const subscriberId = cleanString(thread.subscriber_id, 200);
+    return cleanString(
+        graph.ig_graph_user_id
+        || graph.recipient_id
+        || customData.ig_graph_recipient_id
+        || (subscriberId.startsWith("ig_graph:") ? subscriberId.slice("ig_graph:".length) : ""),
+        200,
+    );
 }
 
 function normalizeStripeId(value) {
@@ -525,6 +592,172 @@ async function insertSubscriptionSaleAlert(row) {
     }
 }
 
+async function recordMetaPreviewPurchaseAndQueue({ session, stripeEvent, email, user, purchasedAt } = {}) {
+    const token = cleanString(session?.metadata?.meta_ref, 700);
+    const verified = await verifyMetaPreviewRef(token);
+    if (!verified) return { skipped: "not_signed_meta_preview" };
+
+    const threadRows = await supabaseRequest(
+        `ig_threads?select=id,coach_id,linked_user_id,subscriber_id,ig_username,profile_name,lead_stage,last_inbound_at,last_outbound_at,custom_data&id=eq.${encodeURIComponent(verified.threadId)}&limit=1`,
+    );
+    const thread = Array.isArray(threadRows) ? threadRows[0] || null : null;
+    if (!thread) return { skipped: "preview_thread_missing" };
+
+    const customData = objectOrEmpty(thread.custom_data);
+    const graph = objectOrEmpty(customData.instagram_graph);
+    const botAccount = cleanString(customData.bot_account || graph.bot_account, 100).toLowerCase();
+    if (botAccount !== "shan_n_sunny") return { skipped: "wrong_preview_account" };
+
+    const messageRows = await supabaseRequest(
+        `ig_messages?select=id,direction,text,created_at&thread_id=eq.${encodeURIComponent(thread.id)}&order=created_at.desc&limit=20`,
+    );
+    const canonicalOutbound = Array.isArray(messageRows) ? messageRows.find(message =>
+        String(message.direction || "").toLowerCase() === "out"
+        && String(message.text || "").includes(token)
+        && String(message.text || "").includes("https://plantbased-balance.org/meta-app-preview.html")
+    ) : null;
+    if (!canonicalOutbound) return { skipped: "canonical_preview_missing" };
+
+    const analyticsSessionId = cleanString(session?.metadata?.session_id, 100);
+    const visitorId = cleanString(session?.metadata?.visitor_id, 100);
+    await supabaseRequest("growth_outcome_events?on_conflict=event_key", {
+        method: "POST",
+        prefer: "resolution=merge-duplicates,return=minimal",
+        body: [{
+            event_key: `stripe_checkout:${session.id}:meta_app_preview_purchase`,
+            event_type: "meta_app_preview_purchase_completed",
+            event_family: "revenue",
+            event_status: "paid",
+            source_system: "meta_app_preview",
+            bot_account: "shan_n_sunny",
+            from_username: thread.ig_username || null,
+            email: email || null,
+            email_key: email ? email.toLowerCase() : null,
+            ig_thread_id: thread.id,
+            client_id: user?.id || null,
+            campaign_slug: cleanString(session?.metadata?.utm_campaign, 128) || null,
+            landing_url: cleanString(session?.metadata?.landing_url, 500) || null,
+            utm_source: cleanString(session?.metadata?.utm_source, 128) || null,
+            utm_medium: cleanString(session?.metadata?.utm_medium, 128) || null,
+            utm_campaign: cleanString(session?.metadata?.utm_campaign, 128) || null,
+            score: 100,
+            score_breakdown: { stage: "purchase_completed", amount_minor: Number(session.amount_total || 8999) },
+            attribution: {
+                analytics_session_id: analyticsSessionId || null,
+                visitor_id: visitorId || null,
+                stripe_checkout_session_id: session.id,
+                stripe_event_id: stripeEvent?.id || null,
+            },
+            raw_payload: {
+                stage: "purchase_completed",
+                stripe_checkout_session_id: session.id,
+                stripe_payment_intent_id: normalizeStripeId(session.payment_intent) || null,
+            },
+            occurred_at: purchasedAt || new Date().toISOString(),
+        }],
+    });
+
+    await supabaseRequest(`ig_threads?id=eq.${encodeURIComponent(thread.id)}`, {
+        method: "PATCH",
+        prefer: "return=minimal",
+        body: { lead_stage: "paying" },
+    });
+
+    const existingAlerts = await supabaseRequest(
+        `coach_alerts?select=id,status,data&status=in.(scheduled,pending)&data-%3E%3Eig_thread_id=eq.${encodeURIComponent(thread.id)}&limit=50`,
+    ).catch(() => []);
+    for (const alert of Array.isArray(existingAlerts) ? existingAlerts : []) {
+        if (alert?.data?.meta_app_preview_followup !== true || alert?.data?.meta_app_preview_followup_kind === "purchase") continue;
+        await supabaseRequest(`coach_alerts?id=eq.${encodeURIComponent(alert.id)}&status=in.(scheduled,pending)`, {
+            method: "PATCH",
+            prefer: "return=minimal",
+            body: {
+                status: "canceled",
+                actioned_at: new Date().toISOString(),
+                data: {
+                    ...alert.data,
+                    cancel_reason: "meta_app_preview_purchase_completed",
+                    meta_app_preview_conversion_at: purchasedAt || new Date().toISOString(),
+                    meta_app_preview_conversion_event: "stripe_purchase_completed",
+                },
+            },
+        });
+    }
+
+    const nowMs = Date.now();
+    const inboundMs = Date.parse(thread.last_inbound_at || "");
+    const recipientId = previewGraphRecipientId(thread);
+    const eligible = !customData.do_not_follow_up
+        && recipientId
+        && Number.isFinite(inboundMs)
+        && nowMs >= inboundMs
+        && nowMs - inboundMs < (23.5 * 60 * 60 * 1000);
+    if (!eligible) return { recorded: true, skipped: "outside_graph_followup_window" };
+
+    const createdAt = new Date(nowMs).toISOString();
+    const graphData = {
+        ...graph,
+        ig_graph_user_id: recipientId,
+        send_ready: true,
+    };
+    const result = await insertSubscriptionSaleAlert({
+        idempotency_key: `meta_app_preview_purchase_followup:${session.id}`,
+        client_id: user?.id || null,
+        client_name: thread.profile_name || thread.ig_username || email?.split("@")[0] || "New member",
+        coach_id: thread.coach_id,
+        alert_type: "follow_up_review",
+        priority: "urgent",
+        title: `${thread.profile_name || thread.ig_username || "Instagram lead"} bought Balance Foundations`,
+        description: "Stripe confirmed the $89.99 Foundations purchase. A short welcome is queued.",
+        suggested_message: META_PREVIEW_PURCHASE_MESSAGE,
+        scheduled_reply_text: META_PREVIEW_PURCHASE_MESSAGE,
+        status: "scheduled",
+        scheduled_at: createdAt,
+        scheduled_for: new Date(nowMs + META_PREVIEW_PURCHASE_DELAY_MS).toISOString(),
+        data: {
+            channel: "instagram",
+            delivery_channel: "instagram_graph",
+            subscriber_id: thread.subscriber_id,
+            ig_thread_id: thread.id,
+            ig_username: thread.ig_username || null,
+            profile_name: thread.profile_name || null,
+            bot_account: "shan_n_sunny",
+            ig_graph_recipient_id: recipientId,
+            ig_graph_account_id: graph.ig_account_id || null,
+            instagram_graph: graphData,
+            last_inbound_at: thread.last_inbound_at,
+            source_inbound_created_at: purchasedAt || createdAt,
+            drafted_at: createdAt,
+            scheduled_via: "balance_lead_client_manager_cron",
+            auto_send_review_approved_at: createdAt,
+            outbound_attempted: false,
+            draft_messages: [META_PREVIEW_PURCHASE_MESSAGE],
+            draft_text: META_PREVIEW_PURCHASE_MESSAGE,
+            draft_model: "deterministic_meta_app_preview_purchase_v1",
+            draft_reply_mode: "campaign_app_preview_purchase_welcome",
+            draft_review: {
+                verdict: "pass",
+                confidence: 1,
+                summary: "Stripe-confirmed Foundations purchase welcome.",
+                issues: [],
+                reviewed_at: createdAt,
+                reviewer_model: "deterministic_stripe_purchase_v1",
+            },
+            context_review: { required: false, reason: "signed preview reference and Stripe purchase verified" },
+            media_review: { required: false },
+            meta_app_preview_followup: true,
+            meta_app_preview_followup_kind: "purchase",
+            meta_app_preview_session_id: analyticsSessionId || null,
+            meta_app_preview_checkout_session_id: session.id,
+            meta_app_preview_gate_shown_at: purchasedAt || createdAt,
+            meta_app_preview_purchase_at: purchasedAt || createdAt,
+            meta_app_preview_canonical_outbound_id: canonicalOutbound.id,
+            stripe_event_id: stripeEvent?.id || null,
+        },
+    });
+    return { recorded: true, queued: Boolean(result?.alert?.id), deduped: Boolean(result?.deduped) };
+}
+
 async function createSubscriptionSaleNeedsYouAlert({ syncResult, stripeEvent, subscription, invoice, session } = {}) {
     if (!isInitialPaidSubscriptionSale({ subscription, invoice, session })) {
         return { skipped: "not_initial_paid_subscription_sale" };
@@ -700,6 +933,12 @@ async function recordFoundersPassSale(context, stripeEvent, session) {
             },
         });
         await syncLinkedLeadStages([user.id], "active");
+    }
+
+    try {
+        await recordMetaPreviewPurchaseAndQueue({ session, stripeEvent, email, user, purchasedAt });
+    } catch (error) {
+        console.warn("[stripe-sync] meta preview purchase follow-up failed:", error.message || error);
     }
 
     const adminId = await findBalanceAdminId();

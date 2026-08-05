@@ -27,7 +27,16 @@ const ALLOWED_EVENT_TYPES = new Set([
 ]);
 const MAX_STR = 500;
 const PREVIEW_FOLLOWUP_DELAY_MS = 10 * 60 * 1000;
-const PREVIEW_FOLLOWUP_TEXT = "Hey, how'd you find the app?";
+const CHECKOUT_FOLLOWUP_DELAY_MS = 45 * 60 * 1000;
+const PREVIEW_FOLLOWUP_TEXT = 'How did you find the Balance preview?';
+const CHECKOUT_FOLLOWUP_TEXT = "Just checking the payment page opened properly for you. If it got stuck, send me a screenshot and I'll sort it.";
+const META_PREVIEW_PROGRESS_EVENTS = new Set([
+    'trial_started', 'onboarding_started', 'onboarding_completed',
+    'weekly_goals_set', 'meal_plan_created', 'first_workout_planned',
+    'first_workout_completed', 'trial_walkthrough_completed',
+    'trial_preview_started', 'trial_gate_shown', 'checkout_started',
+    'trial_signup_view', 'trial_purchase_claimed', 'trial_subscription_claimed',
+]);
 
 function corsHeaders() {
     return {
@@ -70,6 +79,93 @@ async function supabase(path, options = {}) {
     try { return JSON.parse(text); } catch (_) { return []; }
 }
 
+function metaPreviewStage(eventType = '') {
+    return ({
+        trial_started: 'preview_opened',
+        onboarding_started: 'onboarding_started',
+        onboarding_completed: 'onboarding_completed',
+        weekly_goals_set: 'weekly_goals_set',
+        meal_plan_created: 'meal_plan_created',
+        first_workout_planned: 'first_workout_planned',
+        first_workout_completed: 'first_workout_completed',
+        trial_walkthrough_completed: 'walkthrough_completed',
+        trial_preview_started: 'app_preview_started',
+        trial_gate_shown: 'payment_gate_reached',
+        checkout_started: 'stripe_opened',
+        trial_signup_view: 'account_signup_opened',
+        trial_purchase_claimed: 'purchase_claimed',
+        trial_subscription_claimed: 'purchase_claimed',
+    })[eventType] || eventType;
+}
+
+async function verifiedPreviewThread(eventPayload, nowMs = Date.now()) {
+    const metadata = objectOrEmpty(eventPayload?.metadata);
+    const token = String(metadata.meta_ref || '').trim();
+    const verified = verifyMetaAppPreviewRef(token, { nowMs });
+    if (!verified) return null;
+    const rows = await supabase(
+        `ig_threads?select=id,coach_id,linked_user_id,subscriber_id,ig_username,profile_name,lead_stage,last_inbound_at,last_outbound_at,custom_data&id=eq.${encodeURIComponent(verified.threadId)}&limit=1`
+    );
+    const thread = rows[0] || null;
+    if (!thread) return null;
+    const customData = objectOrEmpty(thread.custom_data);
+    const graph = objectOrEmpty(customData.instagram_graph);
+    if (String(customData.bot_account || graph.bot_account || '').trim().toLowerCase() !== 'shan_n_sunny') return null;
+    return { thread, token, verified };
+}
+
+async function recordMetaAppPreviewProgress(eventPayload, nowMs = Date.now(), context = null) {
+    if (!META_PREVIEW_PROGRESS_EVENTS.has(String(eventPayload?.event_type || ''))) {
+        return { recorded: false, reason: 'not_preview_progress' };
+    }
+    const preview = context || await verifiedPreviewThread(eventPayload, nowMs);
+    if (!preview) return { recorded: false, reason: 'invalid_ref' };
+    const metadata = objectOrEmpty(eventPayload.metadata);
+    const tokenHash = crypto.createHash('sha256').update(preview.token).digest('hex').slice(0, 32);
+    const occurredAt = eventPayload.created_at || new Date(nowMs).toISOString();
+    const safeMetadata = { ...metadata };
+    delete safeMetadata.meta_ref;
+    const eventId = String(eventPayload.event_id || `${eventPayload.session_id}:${eventPayload.event_type}:${occurredAt}`);
+    await supabase('growth_outcome_events?on_conflict=event_key', {
+        method: 'POST',
+        prefer: 'resolution=ignore-duplicates,return=minimal',
+        body: [{
+            event_key: `meta_app_preview:${eventId}`,
+            event_type: `meta_app_preview_${eventPayload.event_type}`,
+            event_family: 'conversion',
+            event_status: 'recorded',
+            source_system: 'meta_app_preview',
+            bot_account: 'shan_n_sunny',
+            from_username: preview.thread.ig_username || null,
+            ig_thread_id: preview.thread.id,
+            campaign_slug: eventPayload.utm_campaign || null,
+            landing_url: trim(eventPayload.page_url, 1000),
+            utm_source: eventPayload.utm_source || null,
+            utm_medium: eventPayload.utm_medium || null,
+            utm_campaign: eventPayload.utm_campaign || null,
+            score: eventPayload.event_type === 'checkout_started' ? 80 : eventPayload.event_type === 'trial_gate_shown' ? 60 : 20,
+            score_breakdown: { stage: metaPreviewStage(eventPayload.event_type) },
+            attribution: {
+                analytics_session_id: eventPayload.session_id || null,
+                visitor_id: eventPayload.visitor_id || null,
+                campaign_id: metadata.campaign_id || null,
+                adset_id: metadata.adset_id || null,
+                ad_id: metadata.ad_id || null,
+                creative_id: metadata.creative_id || null,
+                meta_ref_hash: tokenHash,
+            },
+            raw_payload: {
+                stage: metaPreviewStage(eventPayload.event_type),
+                event_id: eventPayload.event_id || null,
+                stripe_checkout_session_id: metadata.stripe_session_id || null,
+                metadata: safeMetadata,
+            },
+            occurred_at: occurredAt,
+        }],
+    });
+    return { recorded: true, threadId: preview.thread.id, context: preview };
+}
+
 function graphRecipientId(thread = {}) {
     const customData = objectOrEmpty(thread.custom_data);
     const graph = objectOrEmpty(customData.instagram_graph);
@@ -97,17 +193,14 @@ function isEligiblePreviewThread(thread = {}, nowMs = Date.now()) {
         && nowMs - inboundMs < (23.5 * 60 * 60 * 1000);
 }
 
-async function enqueueMetaAppPreviewFollowup(eventPayload, nowMs = Date.now()) {
-    if (!SUPABASE_SERVICE_KEY || eventPayload?.event_type !== 'trial_gate_shown') return { queued: false, reason: 'not_gate' };
-    const metadata = objectOrEmpty(eventPayload.metadata);
-    const token = String(metadata.meta_ref || '').trim();
-    const verified = verifyMetaAppPreviewRef(token, { nowMs });
-    if (!verified) return { queued: false, reason: 'invalid_ref' };
-
-    const threads = await supabase(
-        `ig_threads?select=id,coach_id,linked_user_id,subscriber_id,ig_username,profile_name,lead_stage,last_inbound_at,last_outbound_at,custom_data&id=eq.${encodeURIComponent(verified.threadId)}&limit=1`
-    );
-    const thread = threads[0];
+async function enqueueMetaAppPreviewFollowup(eventPayload, nowMs = Date.now(), context = null) {
+    const eventType = String(eventPayload?.event_type || '');
+    if (!SUPABASE_SERVICE_KEY || !['trial_gate_shown', 'checkout_started'].includes(eventType)) {
+        return { queued: false, reason: 'not_followup_stage' };
+    }
+    const preview = context || await verifiedPreviewThread(eventPayload, nowMs);
+    if (!preview) return { queued: false, reason: 'invalid_ref' };
+    const { thread, token } = preview;
     if (!isEligiblePreviewThread(thread, nowMs)) return { queued: false, reason: 'ineligible_thread' };
 
     const messages = await supabase(
@@ -127,17 +220,24 @@ async function enqueueMetaAppPreviewFollowup(eventPayload, nowMs = Date.now()) {
         return { queued: false, reason: 'conversation_changed' };
     }
 
-    const funnelEvents = await supabase(
-        `lp_events?select=event_type,created_at&session_id=eq.${encodeURIComponent(String(eventPayload.session_id || ''))}&event_type=in.(checkout_started,trial_purchase_claimed,trial_subscription_claimed)&created_at=gte.${encodeURIComponent(new Date(gateMs).toISOString())}&limit=1`
-    );
-    if (funnelEvents.length) return { queued: false, reason: 'checkout_or_purchase_started' };
+    if (eventType === 'trial_gate_shown') {
+        const funnelEvents = await supabase(
+            `lp_events?select=event_type,created_at&session_id=eq.${encodeURIComponent(String(eventPayload.session_id || ''))}&event_type=in.(checkout_started,trial_purchase_claimed,trial_subscription_claimed)&created_at=gte.${encodeURIComponent(new Date(gateMs).toISOString())}&limit=1`
+        );
+        if (funnelEvents.length) return { queued: false, reason: 'checkout_or_purchase_started' };
+    }
 
     const graph = objectOrEmpty(objectOrEmpty(thread.custom_data).instagram_graph);
     const recipientId = graphRecipientId(thread);
     const scheduledAt = new Date(nowMs).toISOString();
-    const scheduledFor = new Date(nowMs + PREVIEW_FOLLOWUP_DELAY_MS).toISOString();
+    const followupKind = eventType === 'checkout_started' ? 'checkout_abandoned' : 'gate';
+    const followupText = followupKind === 'checkout_abandoned' ? CHECKOUT_FOLLOWUP_TEXT : PREVIEW_FOLLOWUP_TEXT;
+    const scheduledFor = new Date(nowMs + (followupKind === 'checkout_abandoned' ? CHECKOUT_FOLLOWUP_DELAY_MS : PREVIEW_FOLLOWUP_DELAY_MS)).toISOString();
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex').slice(0, 32);
-    const idempotencyKey = `meta_app_preview_followup:${thread.id}:${tokenHash}`;
+    const checkoutSessionId = String(objectOrEmpty(eventPayload.metadata).stripe_session_id || '').trim();
+    const idempotencyKey = followupKind === 'checkout_abandoned'
+        ? `meta_app_preview_followup:${followupKind}:${thread.id}:${checkoutSessionId || tokenHash}`
+        : `meta_app_preview_followup:${followupKind}:${thread.id}:${tokenHash}`;
     const alertData = {
         channel: 'instagram',
         delivery_channel: 'instagram_graph',
@@ -155,10 +255,12 @@ async function enqueueMetaAppPreviewFollowup(eventPayload, nowMs = Date.now()) {
         scheduled_via: 'balance_lead_client_manager_cron',
         auto_send_review_approved_at: scheduledAt,
         outbound_attempted: false,
-        draft_messages: [PREVIEW_FOLLOWUP_TEXT],
-        draft_text: PREVIEW_FOLLOWUP_TEXT,
-        draft_model: 'deterministic_meta_app_preview_followup_v1',
-        draft_reply_mode: 'campaign_app_preview_usage_followup',
+        draft_messages: [followupText],
+        draft_text: followupText,
+        draft_model: 'deterministic_meta_app_preview_followup_v2',
+        draft_reply_mode: followupKind === 'checkout_abandoned'
+            ? 'campaign_app_preview_checkout_followup'
+            : 'campaign_app_preview_usage_followup',
         draft_review: {
             verdict: 'pass', confidence: 1,
             summary: 'Verified five-minute app gate follow-up.', issues: [],
@@ -167,8 +269,10 @@ async function enqueueMetaAppPreviewFollowup(eventPayload, nowMs = Date.now()) {
         context_review: { required: false, reason: 'signed preview ref and canonical outbound verified' },
         media_review: { required: false },
         meta_app_preview_followup: true,
+        meta_app_preview_followup_kind: followupKind,
         meta_app_preview_gate_event_id: eventPayload.event_id || null,
         meta_app_preview_session_id: eventPayload.session_id || null,
+        meta_app_preview_checkout_session_id: checkoutSessionId || null,
         meta_app_preview_ref_hash: tokenHash,
         meta_app_preview_canonical_outbound_id: previewOutbound.id,
         meta_app_preview_gate_shown_at: new Date(gateMs).toISOString(),
@@ -182,10 +286,14 @@ async function enqueueMetaAppPreviewFollowup(eventPayload, nowMs = Date.now()) {
             client_name: thread.profile_name || thread.ig_username || 'Instagram lead',
             alert_type: 'follow_up_review',
             priority: 'high',
-            title: `${thread.profile_name || thread.ig_username || 'Instagram lead'} used the Balance preview`,
-            description: 'The signed five-minute preview reached its payment gate. One contextual follow-up is queued.',
-            suggested_message: PREVIEW_FOLLOWUP_TEXT,
-            scheduled_reply_text: PREVIEW_FOLLOWUP_TEXT,
+            title: followupKind === 'checkout_abandoned'
+                ? `${thread.profile_name || thread.ig_username || 'Instagram lead'} opened Stripe`
+                : `${thread.profile_name || thread.ig_username || 'Instagram lead'} used the Balance preview`,
+            description: followupKind === 'checkout_abandoned'
+                ? 'Stripe opened but no purchase is confirmed yet. A payment-help follow-up is queued.'
+                : 'The signed five-minute preview reached its payment gate. One contextual follow-up is queued.',
+            suggested_message: followupText,
+            scheduled_reply_text: followupText,
             status: 'scheduled',
             scheduled_at: scheduledAt,
             scheduled_for: scheduledFor,
@@ -255,12 +363,13 @@ exports.handler = async (event) => {
 
     try {
         await supabase('lp_events', { method: 'POST', body: rows, prefer: 'return=minimal' });
-        for (const row of rows.filter(item => item.event_type === 'trial_gate_shown')) {
+        for (const row of rows.filter(item => META_PREVIEW_PROGRESS_EVENTS.has(item.event_type))) {
             try {
-                const result = await enqueueMetaAppPreviewFollowup(row);
+                const progress = await recordMetaAppPreviewProgress(row);
+                const result = await enqueueMetaAppPreviewFollowup(row, Date.now(), progress.context || null);
                 if (result.queued) console.log('[log-lp-event] queued preview follow-up', result.alertId);
             } catch (error) {
-                console.error('[log-lp-event] preview follow-up enqueue failed', error && error.message);
+                console.error('[log-lp-event] preview progress/follow-up failed', error && error.message);
             }
         }
     } catch (err) {
@@ -270,7 +379,10 @@ exports.handler = async (event) => {
 };
 
 exports.PREVIEW_FOLLOWUP_DELAY_MS = PREVIEW_FOLLOWUP_DELAY_MS;
+exports.CHECKOUT_FOLLOWUP_DELAY_MS = CHECKOUT_FOLLOWUP_DELAY_MS;
 exports.PREVIEW_FOLLOWUP_TEXT = PREVIEW_FOLLOWUP_TEXT;
+exports.CHECKOUT_FOLLOWUP_TEXT = CHECKOUT_FOLLOWUP_TEXT;
 exports.graphRecipientId = graphRecipientId;
 exports.isEligiblePreviewThread = isEligiblePreviewThread;
+exports.recordMetaAppPreviewProgress = recordMetaAppPreviewProgress;
 exports.enqueueMetaAppPreviewFollowup = enqueueMetaAppPreviewFollowup;

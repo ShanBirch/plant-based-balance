@@ -146,11 +146,28 @@ async function cancelStaleScheduledInstagramReply(alert, newerMessage) {
 async function getMetaPreviewConversionAfterGate(alert = {}) {
     const data = alert.data || {};
     if (data.meta_app_preview_followup !== true) return null;
+    const followupKind = String(data.meta_app_preview_followup_kind || 'gate');
+    if (followupKind === 'purchase') return null;
     const sessionId = String(data.meta_app_preview_session_id || '').trim();
     const gateShownAt = String(data.meta_app_preview_gate_shown_at || '').trim();
     if (!sessionId || !gateShownAt) return { event_type: 'preview_followup_evidence_missing' };
+    const checkoutSessionId = String(data.meta_app_preview_checkout_session_id || '').trim();
+    if (followupKind === 'checkout_abandoned' && checkoutSessionId) {
+        const purchases = await supabase(
+            `founders_pass_purchases?select=stripe_checkout_session_id,purchased_at,status&stripe_checkout_session_id=eq.${encodeURIComponent(checkoutSessionId)}&status=eq.paid&limit=1`
+        );
+        if (purchases[0]) {
+            return {
+                event_type: 'stripe_purchase_completed',
+                created_at: purchases[0].purchased_at || null,
+            };
+        }
+    }
+    const conversionTypes = followupKind === 'checkout_abandoned'
+        ? 'trial_purchase_claimed,trial_subscription_claimed'
+        : 'checkout_started,trial_purchase_claimed,trial_subscription_claimed';
     const events = await supabase(
-        `lp_events?select=event_type,created_at&session_id=eq.${encodeURIComponent(sessionId)}&event_type=in.(checkout_started,trial_purchase_claimed,trial_subscription_claimed)&created_at=gte.${encodeURIComponent(gateShownAt)}&order=created_at.asc&limit=1`
+        `lp_events?select=event_type,created_at&session_id=eq.${encodeURIComponent(sessionId)}&event_type=in.(${conversionTypes})&created_at=gte.${encodeURIComponent(gateShownAt)}&order=created_at.asc&limit=1`
     );
     return events[0] || null;
 }
@@ -166,7 +183,9 @@ async function cancelMetaPreviewFollowupAfterConversion(alert, conversion) {
                 ...(alert.data || {}),
                 cancel_reason: conversion.event_type === 'preview_followup_evidence_missing'
                     ? 'meta_app_preview_followup_evidence_missing'
-                    : 'meta_app_preview_checkout_or_purchase_started',
+                    : String(alert.data?.meta_app_preview_followup_kind || 'gate') === 'checkout_abandoned'
+                        ? 'meta_app_preview_purchase_completed'
+                        : 'meta_app_preview_checkout_or_purchase_started',
                 meta_app_preview_followup_canceled_at: canceledAt,
                 meta_app_preview_conversion_event: conversion.event_type,
                 meta_app_preview_conversion_at: conversion.created_at || null,

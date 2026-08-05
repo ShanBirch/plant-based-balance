@@ -140,6 +140,8 @@ test('the five-minute clock ends in the fixed six-week Stripe gate', async () =>
     assert.equal(checkout.body.priceId, 'balance_vegan_founders_pass');
     assert.equal(checkout.body.pageVariant, 'facebook_5m_foundations_v3');
     assert.equal(checkout.body.checkoutSource, 'meta_ad_trial');
+    assert.equal(checkout.body.utm_data.visitor_id, 'visitor-fixed-id');
+    assert.equal(checkout.body.utm_data.session_id, 'session-fixed-id');
     assert.equal(checkout.body.compliance.accepted.terms, true);
     assert.equal(trial.sessionStorage.getItem(api.PAYMENT_SESSION_KEY), 'cs_live_preview');
     assert.equal(trial.sessionStorage.getItem(api.PAYMENT_PLAN_KEY), 'balance_foundations_six_week');

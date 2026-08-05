@@ -4141,6 +4141,9 @@
         }
 
         const conversionOperatorLaneLabels = {
+            app_preview: 'App preview',
+            payment_opened: 'At payment',
+            payment_follow_up: 'Payment follow-up',
             ready_for_link: 'Ready for link',
             lead_pitch_ready: 'Pitch ready leads',
             active_challenge: 'Active challenge',
@@ -4228,6 +4231,9 @@
                 conversionOperatorMetric('New problem-qualified', p.problem_qualified || 0),
                 conversionOperatorMetric('New offer-ready', p.offer_ready || 0),
                 conversionOperatorMetric('New buyer intent', p.buyer_intent || 0),
+                conversionOperatorMetric('In app preview', s.app_preview || 0),
+                conversionOperatorMetric('At payment', s.payment_opened || 0),
+                conversionOperatorMetric('Payment follow-up', s.payment_follow_up || 0),
                 conversionOperatorMetric('Ready for link', s.ready_for_link || 0),
                 conversionOperatorMetric('Needs check-in', s.needs_check_in || 0),
                 conversionOperatorMetric('Pitch ready', (s.lead_pitch_ready || 0) + (s.pitch_ready || 0)),
@@ -4246,6 +4252,7 @@
                 item.email,
                 item.lead_stage,
                 item.qualifier_stage,
+                item.qualifier_stage_label,
                 item.recommended_action,
                 item.pending_alert_type,
                 item.challenge_name,
@@ -4255,9 +4262,11 @@
         function getConversionOperatorActions(item, lane) {
             const laneKey = item.lane || lane.key;
             const isLead = item.entity_kind === 'lead';
+            const isManagedPreview = ['app_preview', 'payment_opened', 'payment_follow_up'].includes(laneKey)
+                || (laneKey === 'paid' && String(item.qualifier_stage || '').includes('purchase'));
             const actions = [];
 
-            if (isLead && laneKey !== 'paid') {
+            if (isLead && laneKey !== 'paid' && !isManagedPreview) {
                 actions.push({ id: 'mark_link_sent', label: 'Link sent', icon: 'link', className: 'primary' });
                 actions.push({ id: 'move_fallback', label: 'Fallback', icon: 'users', className: 'warn' });
                 actions.push({ id: 'mark_paid', label: 'Paid', icon: 'circle-dollar-sign', className: 'paid', confirm: true });
@@ -4320,7 +4329,11 @@
             const entity = item.entity_kind || 'client';
             const entityClass = item.lane === 'paid' ? 'paid' : entity;
             const search = adminEsc(conversionOperatorCardSearchText(item, lane));
-            const day = item.challenge_day ? `Day ${item.challenge_day}` : (item.lead_stage || 'Lead');
+            const isPreviewFunnel = ['app_preview', 'payment_opened', 'payment_follow_up'].includes(item.lane)
+                || (item.lane === 'paid' && String(item.qualifier_stage || '').includes('purchase'));
+            const day = item.challenge_day
+                ? `Day ${item.challenge_day}`
+                : (isPreviewFunnel ? (item.qualifier_stage_label || 'Balance preview') : (item.lead_stage || 'Lead'));
             const activity = item.workout_days_30 != null
                 ? `${item.workout_days_30} workout days, ${item.meal_days_30 || 0} food days`
                 : (item.warmth_score != null ? `${item.warmth_score} warmth` : 'n/a');

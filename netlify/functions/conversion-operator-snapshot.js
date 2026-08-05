@@ -11,6 +11,9 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.en
 const BALANCE_ADMIN_EMAIL = 'shannonbirch@cocospersonaltraining.com';
 
 const LANE_ORDER = [
+    'app_preview',
+    'payment_opened',
+    'payment_follow_up',
     'ready_for_link',
     'lead_pitch_ready',
     'active_challenge',
@@ -86,6 +89,9 @@ async function execSqlJson(sql) {
 
 function laneMeta(key) {
     const labels = {
+        app_preview: ['App preview', 'Signed Meta visitors progressing through setup, walkthrough, or the five-minute app preview.'],
+        payment_opened: ['At payment', 'Opened Stripe in the last 45 minutes. The system is waiting for payment confirmation.'],
+        payment_follow_up: ['Payment follow-up', 'Opened Stripe without a confirmed purchase. A short help message is queued or due.'],
         ready_for_link: ['Ready for link', 'Accepted or clearly ready. Human handoff to get them into Balance.'],
         lead_pitch_ready: ['Pitch ready leads', 'Warm enough for a low-pressure challenge invite.'],
         active_challenge: ['Active challenge', 'In the 30-day challenge before the first checkpoint.'],
@@ -177,6 +183,28 @@ ig_with_scores as (
         end as warmth_score
     from public.ig_threads t
     where t.coach_id = (select coach_id from params)
+),
+preview_progress as (
+    select
+        e.ig_thread_id,
+        (array_agg(e.event_type order by e.occurred_at desc))[1] as latest_event_type,
+        max(e.occurred_at) as latest_event_at,
+        max(e.occurred_at) filter (where e.event_type = 'meta_app_preview_trial_started') as preview_opened_at,
+        max(e.occurred_at) filter (where e.event_type = 'meta_app_preview_onboarding_completed') as onboarding_completed_at,
+        max(e.occurred_at) filter (where e.event_type = 'meta_app_preview_trial_walkthrough_completed') as walkthrough_completed_at,
+        max(e.occurred_at) filter (where e.event_type = 'meta_app_preview_trial_preview_started') as app_preview_started_at,
+        max(e.occurred_at) filter (where e.event_type = 'meta_app_preview_trial_gate_shown') as payment_gate_at,
+        max(e.occurred_at) filter (where e.event_type = 'meta_app_preview_checkout_started') as checkout_started_at,
+        max(e.occurred_at) filter (where e.event_type in (
+            'meta_app_preview_purchase_completed',
+            'meta_app_preview_trial_purchase_claimed',
+            'meta_app_preview_trial_subscription_claimed'
+        )) as purchase_at
+    from public.growth_outcome_events e
+    where e.source_system = 'meta_app_preview'
+      and e.ig_thread_id is not null
+      and e.occurred_at >= now() - interval '30 days'
+    group by e.ig_thread_id
 ),
 operator_state as (
     select *
@@ -317,6 +345,90 @@ challenge_cards as (
       and cm.user_id <> (select coach_id from params)
       and not (os.snoozed_until is not null and os.snoozed_until > now())
 ),
+preview_cards as (
+    select
+        'lead'::text as entity_kind,
+        case
+            when pp.purchase_at is not null then 'paid'
+            when pp.checkout_started_at is not null and pp.checkout_started_at <= now() - interval '45 minutes' then 'payment_follow_up'
+            when pp.checkout_started_at is not null then 'payment_opened'
+            else 'app_preview'
+        end as lane,
+        coalesce(nullif(t.profile_name, ''), nullif(t.ig_username, ''), 'Meta preview lead') as display_name,
+        null::text as email,
+        t.ig_username as handle,
+        t.linked_user_id::text as client_id,
+        t.id::text as thread_id,
+        null::text as challenge_id,
+        null::text as challenge_name,
+        null::text as cohort_type,
+        null::int as challenge_day,
+        null::int as duration_days,
+        null::date as end_date,
+        null::numeric as current_points,
+        null::numeric as challenge_points,
+        case when pp.purchase_at is not null then 'paying' else null::text end as subscription_status,
+        t.lead_stage,
+        replace(pp.latest_event_type, 'meta_app_preview_', '') as qualifier_stage,
+        case
+            when pp.purchase_at is not null then 'Purchase confirmed'
+            when pp.checkout_started_at is not null then 'Stripe payment opened'
+            when pp.payment_gate_at is not null then 'Five-minute lock reached'
+            when pp.app_preview_started_at is not null then 'Exploring the app'
+            when pp.walkthrough_completed_at is not null then 'Walkthrough completed'
+            when pp.onboarding_completed_at is not null then 'Onboarding completed'
+            else 'Preview opened'
+        end as qualifier_stage_label,
+        t.warmth_score,
+        t.last_inbound_at,
+        t.last_outbound_at,
+        a.id::text as pending_alert_id,
+        a.alert_type as pending_alert_type,
+        a.created_at as pending_alert_created_at,
+        left(coalesce(a.suggested_message, a.scheduled_reply_text, a.data->>'draft_text', ''), 220) as pending_preview,
+        os.action as operator_action,
+        os.created_at as operator_action_at,
+        os.snoozed_until as operator_snoozed_until,
+        os.note as operator_note,
+        os.metadata as operator_metadata,
+        null::bigint as workout_days_30,
+        null::bigint as meal_days_30,
+        greatest(pp.latest_event_at, t.last_inbound_at, t.last_outbound_at, a.created_at) as updated_at,
+        coalesce(t.warmth_score, 0) as engagement_score,
+        case
+            when pp.purchase_at is not null then 'Purchase confirmed. The buyer welcome is queued and non-buyer reminders are canceled.'
+            when pp.checkout_started_at is not null and pp.checkout_started_at <= now() - interval '45 minutes' then 'No payment is confirmed. Check the queued payment-help message before intervening.'
+            when pp.checkout_started_at is not null then 'Stripe is open. Wait for payment confirmation before messaging.'
+            when pp.payment_gate_at is not null then 'They reached the $89.99 lock. The preview follow-up will handle the next step.'
+            else 'Let them finish setup and explore. Their next stage will update automatically.'
+        end as recommended_action,
+        case
+            when pp.purchase_at is not null then 100
+            when pp.checkout_started_at is not null and pp.checkout_started_at <= now() - interval '45 minutes' then 98
+            when pp.checkout_started_at is not null then 92
+            when pp.payment_gate_at is not null then 85
+            else 55
+        end as urgency_score
+    from preview_progress pp
+    join ig_with_scores t on t.id = pp.ig_thread_id
+    left join lateral (
+        select ca.*
+        from public.coach_alerts ca
+        where ca.status in ('pending', 'scheduled')
+          and ca.data->>'ig_thread_id' = t.id::text
+          and ca.data->>'meta_app_preview_followup' = 'true'
+        order by ca.created_at desc
+        limit 1
+    ) a on true
+    left join operator_state os on (
+        (os.entity_kind = 'client' and os.client_id = t.linked_user_id)
+        or (os.entity_kind = 'lead' and os.thread_id = t.id)
+    )
+    where not (os.snoozed_until is not null and os.snoozed_until > now())
+      and not exists (
+          select 1 from challenge_members cm where cm.user_id = t.linked_user_id
+      )
+),
 ready_leads as (
     select
         'lead'::text as entity_kind,
@@ -383,6 +495,7 @@ ready_leads as (
     where t.coach_id = (select coach_id from params)
       and t.linked_user_id is null
       and coalesce(t.lead_stage, 'new') <> 'churned'
+      and not exists (select 1 from preview_progress pp where pp.ig_thread_id = t.id)
       and not (os.snoozed_until is not null and os.snoozed_until > now())
       and (
           t.lead_stage = 'invited'
@@ -436,6 +549,7 @@ paid_threads as (
     )
     where t.coach_id = (select coach_id from params)
       and t.lead_stage = 'paying'
+      and not exists (select 1 from preview_progress pp where pp.ig_thread_id = t.id)
       and not (os.snoozed_until is not null and os.snoozed_until > now())
       and not exists (
           select 1
@@ -446,6 +560,8 @@ paid_threads as (
 select *
 from (
     select * from challenge_cards
+    union all
+    select * from preview_cards
     union all
     select * from ready_leads
     union all
@@ -562,3 +678,5 @@ exports.handler = async (event) => {
         return json(500, { error: error.message || 'Snapshot failed' });
     }
 };
+
+exports.buildSnapshotSql = buildSnapshotSql;

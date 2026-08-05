@@ -90,12 +90,84 @@ test('a verified five-minute gate schedules one canonical IG follow-up and no ou
         const [alert] = JSON.parse(alertRequest.options.body);
         assert.equal(alert.alert_type, 'follow_up_review');
         assert.equal(alert.status, 'scheduled');
-        assert.equal(alert.suggested_message, "Hey, how'd you find the app?");
+        assert.equal(alert.suggested_message, 'How did you find the Balance preview?');
         assert.equal((alert.suggested_message.match(/\?/g) || []).length, 1);
         assert.equal(alert.data.meta_app_preview_followup, true);
+        assert.equal(alert.data.meta_app_preview_followup_kind, 'gate');
         assert.equal(alert.data.meta_app_preview_canonical_outbound_id, '44444444-4444-4444-8444-444444444444');
+        const progressRequest = requests.find(request => request.url.includes('/growth_outcome_events?'));
+        assert.ok(progressRequest, 'the signed preview stage is added to the identity-linked outcome trail');
+        const [progress] = JSON.parse(progressRequest.options.body);
+        assert.equal(progress.ig_thread_id, threadId);
+        assert.equal(progress.event_type, 'meta_app_preview_trial_gate_shown');
         assert.equal(requests.some(request => request.url.includes('/ig_messages') && request.options.method === 'POST'), false,
             'the event handler never inserts a synthetic outbound message');
+    } finally {
+        global.fetch = originalFetch;
+        delete require.cache[require.resolve(loggerModulePath)];
+        delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    }
+});
+
+test('opening Stripe schedules a separate buyer-safe abandonment check', async () => {
+    process.env.SUPABASE_SERVICE_ROLE_KEY = 'preview-test-secret';
+    const originalFetch = global.fetch;
+    const requests = [];
+    const now = Date.now();
+    const threadId = '77777777-7777-4777-8777-777777777777';
+    const refs = require(refModulePath);
+    const previewUrl = refs.buildMetaAppPreviewUrl(threadId, { nowMs: now });
+    const token = new URL(previewUrl).searchParams.get('meta_ref');
+
+    global.fetch = async (url, options = {}) => {
+        requests.push({ url: String(url), options });
+        let body = [];
+        if (String(url).includes('/ig_threads?')) {
+            body = [{
+                id: threadId,
+                coach_id: '33333333-3333-4333-8333-333333333333',
+                linked_user_id: null,
+                subscriber_id: 'ig_graph:178900000000007',
+                ig_username: 'stripe_preview_lead',
+                profile_name: 'Stripe Preview Lead',
+                lead_stage: 'qualifying',
+                last_inbound_at: new Date(now - 30 * 60 * 1000).toISOString(),
+                custom_data: {
+                    bot_account: 'shan_n_sunny',
+                    instagram_graph: { ig_graph_user_id: '178900000000007', ig_account_id: '178400000000002' },
+                },
+            }];
+        } else if (String(url).includes('/ig_messages?')) {
+            body = [{
+                id: '88888888-8888-4888-8888-888888888888',
+                direction: 'out',
+                text: `Here you go: ${previewUrl}`,
+                created_at: new Date(now - 25 * 60 * 1000).toISOString(),
+            }];
+        } else if (String(url).includes('/coach_alerts?')) {
+            body = [{ id: '99999999-9999-4999-8999-999999999999' }];
+        }
+        return { ok: true, status: 200, text: async () => JSON.stringify(body) };
+    };
+
+    try {
+        delete require.cache[require.resolve(loggerModulePath)];
+        const logger = require(loggerModulePath);
+        const result = await logger.enqueueMetaAppPreviewFollowup({
+            event_id: 'event-checkout-opened-1',
+            event_type: 'checkout_started',
+            session_id: 'session-checkout-opened-1',
+            visitor_id: 'visitor-checkout-opened-1',
+            created_at: new Date(now).toISOString(),
+            metadata: { meta_ref: token, stripe_session_id: 'cs_test_preview_1' },
+        }, now);
+        assert.equal(result.queued, true);
+        const alertRequest = requests.find(request => request.url.includes('/coach_alerts?'));
+        const [alert] = JSON.parse(alertRequest.options.body);
+        assert.equal(alert.data.meta_app_preview_followup_kind, 'checkout_abandoned');
+        assert.equal(alert.data.meta_app_preview_checkout_session_id, 'cs_test_preview_1');
+        assert.equal(alert.suggested_message, "Just checking the payment page opened properly for you. If it got stuck, send me a screenshot and I'll sort it.");
+        assert.equal(Date.parse(alert.scheduled_for) - now, logger.CHECKOUT_FOLLOWUP_DELAY_MS);
     } finally {
         global.fetch = originalFetch;
         delete require.cache[require.resolve(loggerModulePath)];
@@ -108,6 +180,31 @@ test('the scheduled worker rechecks preview checkout evidence before Graph deliv
     assert.match(worker, /getMetaPreviewConversionAfterGate/);
     assert.match(worker, /checkout_started,trial_purchase_claimed,trial_subscription_claimed/);
     assert.match(worker, /meta_app_preview_checkout_or_purchase_started/);
+    assert.match(worker, /founders_pass_purchases/);
+    assert.match(worker, /meta_app_preview_purchase_completed/);
     assert.ok(worker.indexOf('const conversion = await getMetaPreviewConversionAfterGate(alert)') < worker.indexOf('const newerMessage = await getNewerInstagramConversationMessage(alert)'),
         'conversion evidence is checked before the final conversation-delta send guard');
+});
+
+test('Stripe purchase completion records the linked buyer and queues a welcome', () => {
+    const webhook = fs.readFileSync(path.join(__dirname, '..', 'netlify/edge-functions/stripe-webhook.js'), 'utf8');
+    assert.match(webhook, /verifyMetaPreviewRef/);
+    assert.match(webhook, /meta_app_preview_purchase_completed/);
+    assert.match(webhook, /meta_app_preview_purchase_followup:/);
+    assert.match(webhook, /Your Balance Foundations pass is sorted/);
+    assert.match(webhook, /cancel_reason: "meta_app_preview_purchase_completed"/);
+});
+
+test('the admin conversion board exposes each preview and payment stage', () => {
+    const snapshot = fs.readFileSync(path.join(__dirname, '..', 'netlify/functions/conversion-operator-snapshot.js'), 'utf8');
+    const admin = fs.readFileSync(path.join(__dirname, '..', 'admin-dashboard.html'), 'utf8');
+    assert.match(snapshot, /preview_progress as/);
+    assert.match(snapshot, /meta_app_preview_checkout_started/);
+    assert.match(snapshot, /meta_app_preview_purchase_completed/);
+    assert.match(snapshot, /'app_preview'/);
+    assert.match(snapshot, /'payment_opened'/);
+    assert.match(snapshot, /'payment_follow_up'/);
+    assert.match(admin, /In app preview/);
+    assert.match(admin, /At payment/);
+    assert.match(admin, /Payment follow-up/);
 });
