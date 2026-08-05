@@ -79,6 +79,13 @@ test('Zoom PT availability choice reaches the booking record and calendar event'
     assert.match(booking, /const subject = encodeURIComponent\(`\$\{packageName\} availability`\)/);
 });
 
+test('generic Zoom PT booking link discusses options without preselecting a frequency', () => {
+    assert.match(booking, /const requestedPtSessions = \['1', '3', '5'\]\.includes[\s\S]*?: null;/);
+    assert.match(booking, /: '1:1 Zoom PT options';/);
+    assert.match(booking, /I am interested in 1:1 Zoom PT\./);
+    assert.match(booking, /ptSessionsPerWeek: isZoomPtEnquiry && requestedPtSessions \? Number\(requestedPtSessions\) : null/);
+});
+
 test('all active DM handoffs use the clean permanent Founders Pass URL', () => {
     const files = [
         'netlify/edge-functions/sales-bot.js',

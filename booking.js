@@ -25,14 +25,16 @@
     const bookingSource = urlParams.get('source') || '';
     const requestedPtSessions = ['1', '3', '5'].includes(urlParams.get('pt_sessions'))
         ? urlParams.get('pt_sessions')
-        : '1';
+        : null;
     const isZoomPtEnquiry = bookingSource === 'zoom_pt';
     const isFirstCoachingCall = urlParams.get('first_call') === '1'
         && bookingSource === 'coaching_calls_purchase';
 
     if (isZoomPtEnquiry) {
         document.title = 'Check 1:1 Zoom PT Availability | Balance';
-        byId('booking-intro-kicker').textContent = `${requestedPtSessions} live session${requestedPtSessions === '1' ? '' : 's'} each week`;
+        byId('booking-intro-kicker').textContent = requestedPtSessions
+            ? `${requestedPtSessions} live session${requestedPtSessions === '1' ? '' : 's'} each week`
+            : '1:1 Zoom PT options';
         byId('booking-intro-title').innerHTML = 'Check your Zoom PT<br><span>availability.</span>';
         byId('booking-intro-copy').textContent = 'Choose a short fit call so we can check your goals, injury history and recurring session times before you pay anything.';
         byId('booking-card-title').textContent = 'Choose your fit call.';
@@ -132,13 +134,15 @@
         const goal = targetForm.querySelector('[name="goal"]');
         if (callType) callType.value = 'video';
         if (goal) {
-            goal.placeholder = `I am interested in Zoom PT ${requestedPtSessions}. Add your main goal, current injuries or limitations, and the days or times that usually work.`;
+            goal.placeholder = requestedPtSessions
+                ? `I am interested in Zoom PT ${requestedPtSessions}. Add your main goal, current injuries or limitations, and the days or times that usually work.`
+                : 'I am interested in 1:1 Zoom PT. Add your main goal, current injuries or limitations, and the days or times that usually work.';
         }
     }
 
     function prepareZoomPtFallback() {
         if (!isZoomPtEnquiry) return;
-        const packageName = `Zoom PT ${requestedPtSessions}`;
+        const packageName = requestedPtSessions ? `Zoom PT ${requestedPtSessions}` : '1:1 Zoom PT';
         const title = byId('booking-unavailable-title');
         const copy = byId('booking-unavailable-copy');
         const action = byId('booking-unavailable-action');
@@ -293,7 +297,7 @@
                     visitorTimeZone: localTimeZone,
                     bookingMode,
                     source: isZoomPtEnquiry ? 'zoom_pt' : 'public_booking_page',
-                    ptSessionsPerWeek: isZoomPtEnquiry ? Number(requestedPtSessions) : null,
+                    ptSessionsPerWeek: isZoomPtEnquiry && requestedPtSessions ? Number(requestedPtSessions) : null,
                 }),
             });
             const result = await response.json().catch(() => ({}));
