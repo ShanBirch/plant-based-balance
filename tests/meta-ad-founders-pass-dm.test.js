@@ -139,6 +139,17 @@ test('paid Meta blocker quotes the six-week payment and app access follows posit
     assert.equal(previewHandoff.paid_meta_app_preview_handoff, true);
     assert.match(previewHandoff.signup_link_handoff_url, /meta-app-preview\.html(?:\?|$)/);
 
+    const naturalPreviewReply = buildDeterministicPaidMetaConversationReply({
+        currentMessage: "That sounds really good. I'd definitely like to have a look inside the app.",
+        qualifier,
+        history: [{ direction: 'out', text: blockerReply.joined }],
+        flowVariant: 'plant_based_control',
+    });
+    assert.equal(naturalPreviewReply.replyMode, 'campaign_app_preview_handoff');
+    assert.equal(naturalPreviewReply.appPreviewHandoff, true);
+    assert.match(naturalPreviewReply.joined, /before any payment/i);
+    assert.equal((naturalPreviewReply.joined.match(/\?/g) || []).length, 0);
+
     const restoredQuestion = ensureMetaAdSalesProgressionQuestion({
         draft: {
             chunks: ['Yeah okay, that makes sense.'],
