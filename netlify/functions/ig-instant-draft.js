@@ -1051,7 +1051,6 @@ function isPaidMetaFoundersPassSelection(value = '') {
 function isPaidMetaContextualCheckoutIntent(value = '') {
     const message = String(value || '').replace(/\s+/g, ' ').trim();
     return hasDirectPaidMetaCheckoutIntent(message)
-        || isPaidMetaFoundersPassSelection(message)
         || PAID_META_CONTEXTUAL_OFFER_VIEW_RE.test(message);
 }
 
@@ -1062,6 +1061,7 @@ function isContextualMetaAdOfferLinkRequest({ currentMessage = '', qualifier = {
         .filter(item => String(item?.direction || '').toLowerCase() === 'out')
         .slice(-4);
     if (isPaidMetaFoundersPassSelection(message)) {
+        if (!hasDirectPaidMetaCheckoutIntent(message)) return false;
         return recentOutbound.some(item => {
             const text = String(item?.text || '');
             return /\b(?:founders? pass|balance foundations)\b/i.test(text)
@@ -1076,6 +1076,7 @@ function buildContextualMetaAdOfferLinkReply({ checkoutUrl = '', flowVariant = '
     const url = String(checkoutUrl || '').trim();
     if (!isApprovedChallengeBioLinkText(url)) return null;
     if (isPaidMetaFoundersPassSelection(currentMessage)) {
+        if (!hasDirectPaidMetaCheckoutIntent(currentMessage)) return null;
         const joined = `Perfect — it's one $89.99 payment for the full six weeks. Here's the link: ${url}`;
         return {
             chunks: [joined],
@@ -1239,7 +1240,7 @@ function buildPaidMetaBlockerReflection(message = '') {
 function hasDirectPaidMetaCheckoutIntent(value = '') {
     const message = String(value || '').replace(/\s+/g, ' ').trim();
     return /^(?:please )?(?:send (?:me )?(?:the )?link|can you send (?:me )?(?:the )?link|how do i (?:join|sign up|start|get started)|where do i (?:join|sign up|start|get started)|where can i (?:join|sign up|start|get started)|i(?:'m| am) ready to (?:join|sign up|start|get started)|i want to (?:join|sign up|start|get started)|i(?:'m| am) in,? send (?:me )?(?:the )?link)[.!?\s]*$/i.test(message)
-        || /(?:^|[.!?]\s+)(?:please\s+)?(?:send (?:me )?(?:the )?(?:checkout )?link|can you send (?:me )?(?:the )?(?:checkout )?link)[.!?\s]*$/i.test(message);
+        || /(?:^|[.!?]\s+)(?:please\s+)?(?:send (?:me )?(?:the )?(?:checkout )?link|can you send (?:me )?(?:the )?(?:checkout )?link|i(?:'m| am) ready to (?:join|sign up|start|get started)|i want to (?:join|sign up|start|get started))[.!?\s]*$/i.test(message);
 }
 
 function hasRecentPaidMetaSupportQuestion(history = []) {
@@ -1393,6 +1394,19 @@ function buildDeterministicPaidMetaConversationReply({
             ? 'Would you like me to send you the checkout link?'
             : 'Want me to show you how the first week would work around your goal?';
         const joined = `${offerName} is one $89.99 payment for the full six weeks. You get the complete six-week curriculum, six weeks of ${communityCopy}, and one weekly check-in and plan review with me. It doesn't renew automatically.\n\n${nextAsk}`;
+        return {
+            chunks: [joined],
+            joined,
+            model: 'deterministic_paid_meta_conversation_v1',
+            replyMode: 'campaign_sales_progression',
+            maxChunks: 1,
+            error: null,
+            flowVariant,
+        };
+    }
+
+    if (isPaidMetaFoundersPassSelection(message) && !hasDirectPaidMetaCheckoutIntent(message)) {
+        const joined = `Yeah, Balance Foundations sounds like the right fit. It's one $89.99 payment for the full six weeks, and it doesn't renew automatically.\n\nWould you like me to send you the checkout link?`;
         return {
             chunks: [joined],
             joined,

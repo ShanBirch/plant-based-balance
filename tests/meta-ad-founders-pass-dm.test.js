@@ -1118,13 +1118,22 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
             direction: 'out',
             text: "The Founders Pass is $89.99 once. It is a fixed six-week start and doesn't renew automatically.",
         }],
-    }), true);
+    }), false, 'choosing the best-fit offer is not yet a request to release checkout');
     const fixedSixWeekHandoff = buildContextualMetaAdOfferLinkReply({
         checkoutUrl,
         currentMessage: fixedSixWeekSelection,
     });
-    assert.match(fixedSixWeekHandoff.joined, /here's the link/i);
-    assert.match(fixedSixWeekHandoff.joined, new RegExp(checkoutUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    assert.equal(fixedSixWeekHandoff, null);
+    const fixedSixWeekSelectionReply = buildDeterministicPaidMetaConversationReply({
+        currentMessage: fixedSixWeekSelection,
+        qualifier: { ...blockerQualifier, commercial_stage: 'buyer_intent' },
+        flowVariant: 'plant_based_control',
+        checkoutUrl,
+    });
+    assert.match(fixedSixWeekSelectionReply.joined, /one \$89\.99 payment for the full six weeks/i);
+    assert.match(fixedSixWeekSelectionReply.joined, /send you the checkout link/i);
+    assert.doesNotMatch(fixedSixWeekSelectionReply.joined, /https?:\/\//);
+    assert.equal((fixedSixWeekSelectionReply.joined.match(/\?/g) || []).length, 1);
 
     assert.equal(buildDeterministicPaidMetaConversationReply({
         currentMessage: 'Stop messaging me',
