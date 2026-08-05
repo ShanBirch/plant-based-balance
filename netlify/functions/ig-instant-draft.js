@@ -1564,6 +1564,45 @@ function buildDeterministicPaidMetaConversationReply({
     return null;
 }
 
+function restoreCoalescedPaidMetaVoiceDraft({
+    draft,
+    existingPendingData = {},
+    outboundVoiceMessage = false,
+    metaAdConversationFastLane = false,
+    metaAdOpeningTurn = false,
+    metaAdGoalReplyTurn = false,
+    currentMessage = '',
+    qualifier = {},
+    history = [],
+    flowVariant = 'plant_based_control',
+    checkoutUrl = '',
+    appPreviewUrl = '',
+    allowVideoAttachment = false,
+} = {}) {
+    const inheritedVoice = existingPendingData?.outbound_voice_message === true;
+    if (!inheritedVoice
+        || outboundVoiceMessage
+        || !metaAdConversationFastLane
+        || metaAdOpeningTurn
+        || metaAdGoalReplyTurn) {
+        return draft;
+    }
+
+    const restored = buildDeterministicPaidMetaConversationReply({
+        currentMessage,
+        qualifier,
+        history,
+        flowVariant,
+        checkoutUrl,
+        appPreviewUrl,
+        personalVoiceNoteMode: true,
+        allowVideoAttachment,
+    });
+    return Array.isArray(restored?.voiceThoughtPausesMs) && restored.voiceThoughtPausesMs.length
+        ? restored
+        : draft;
+}
+
 function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draft, draftReview, challengeOfferWarning, currentMessage, qualifier, leadStage, linkedUserId, meaningfulLeadReplyCount, contextBypass, cocosContextBypass, alertData, allowTestLaneDraftReviewWarning = false, allowBalanceLeadDraftReviewWarning = false }) {
     const effectiveContextBypass = contextBypass || cocosContextBypass;
     const verifiedPaidMetaProgression = /^deterministic_paid_meta_conversation_v\d+/i.test(String(draft?.model || ''))
@@ -6647,6 +6686,21 @@ exports.handler = async (event) => {
         const coalescedOutboundVoiceReason = outboundVoiceMessageReason
             || existingPending.data?.outbound_voice_message_reason
             || '';
+        draft = restoreCoalescedPaidMetaVoiceDraft({
+            draft,
+            existingPendingData: existingPending.data,
+            outboundVoiceMessage,
+            metaAdConversationFastLane,
+            metaAdOpeningTurn,
+            metaAdGoalReplyTurn,
+            currentMessage: messageText,
+            qualifier,
+            history,
+            flowVariant: metaAdFlowVariant,
+            checkoutUrl: metaAdCheckoutUrl,
+            appPreviewUrl: buildMetaAppPreviewUrl(thread.id),
+            allowVideoAttachment: hasInstagramGraphRoute,
+        });
         const mergedData = {
             ...(existingPending.data || alertRow.data),
             client_manager_auto_reply_enabled: clientManagerAutoReplyEnabled || undefined,
@@ -7579,6 +7633,7 @@ exports._test = {
     isContextualMetaAdOfferLinkRequest,
     buildContextualMetaAdOfferLinkReply,
     buildDeterministicPaidMetaConversationReply,
+    restoreCoalescedPaidMetaVoiceDraft,
     buildPaidMetaConversationApproval,
     hasDirectPaidMetaCheckoutIntent,
     buildDraftVideoAttachmentData,

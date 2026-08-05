@@ -14,6 +14,7 @@ const {
     buildApprovedDeterministicMetaAdFirstReplyReview,
     ensureMetaAdSalesProgressionQuestion,
     buildDeterministicPaidMetaConversationReply,
+    restoreCoalescedPaidMetaVoiceDraft,
     collectCocosAutoRepairIssues,
     getAutoDmHoldReason,
     buildPaidMetaConversationApproval,
@@ -178,6 +179,34 @@ test('paid Meta blocker quotes the six-week payment and app access follows posit
     assert.equal((voiceReply.joined.match(/\?/g) || []).length, 1);
     assert.deepStrictEqual(voiceReply.voiceThoughtPausesMs, [1900, 1500, 1450, 1350, 1550, 1600, 1500]);
     assert.equal(inspectVoiceScriptQuality(voiceReply.joined).valid, true);
+
+    const coalescedVoiceReply = restoreCoalescedPaidMetaVoiceDraft({
+        draft: blockerReply,
+        existingPendingData: { outbound_voice_message: true },
+        outboundVoiceMessage: false,
+        metaAdConversationFastLane: true,
+        currentMessage: 'Other things just get in the way. Work kids',
+        qualifier: {
+            ...qualifier,
+            facts: {
+                ...qualifier.facts,
+                current_state: 'Wants to lose 10kg and feel fitter.',
+            },
+        },
+        flowVariant: 'plant_based_control',
+        allowVideoAttachment: true,
+    });
+    assert.match(coalescedVoiceReply.joined, /^Hey, how are ya\.\n\n/);
+    assert.deepStrictEqual(coalescedVoiceReply.voiceThoughtPausesMs, [1900, 1500, 1450, 1350, 1550, 1600, 1500]);
+
+    assert.equal(restoreCoalescedPaidMetaVoiceDraft({
+        draft: blockerReply,
+        existingPendingData: { outbound_voice_message: true },
+        outboundVoiceMessage: false,
+        metaAdConversationFastLane: false,
+        currentMessage: 'Other things just get in the way. Work kids',
+        qualifier,
+    }), blockerReply);
 
     const voicePreviewReply = buildDeterministicPaidMetaConversationReply({
         currentMessage: "Yeah, that sounds good. I'd like to have a look.",
