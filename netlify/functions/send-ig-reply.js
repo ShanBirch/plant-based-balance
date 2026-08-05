@@ -1054,7 +1054,7 @@ function resolveOutboundItemGapMs({ index, outboundItems = [], plannedChunkGapsM
 
 function resolveVoiceSourceMessages(alertData = {}, messagesToSend = []) {
     const preservedSource = String(alertData.outbound_voice_source_text || '').trim();
-    if (alertData.paid_meta_app_preview_handoff
+    if (alertData.outbound_voice_message === true
         && alertData.scheduled_was_edited !== true
         && preservedSource) {
         return [preservedSource];

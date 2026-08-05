@@ -68,15 +68,21 @@ test('voice companion follows promptly enough for the sender to retain its produ
 test('paid Meta voice keeps its approved thought paragraphs through DM bubble splitting', () => {
     const source = 'First thought.\n\nSecond thought.\n\nThird thought.';
     assert.deepEqual(sendIg.resolveVoiceSourceMessages({
-        paid_meta_app_preview_handoff: true,
+        outbound_voice_message: true,
         scheduled_was_edited: false,
         outbound_voice_source_text: source,
     }, ['First thought.\nSecond thought.', 'Third thought.']), [source]);
     assert.deepEqual(sendIg.resolveVoiceSourceMessages({
-        paid_meta_app_preview_handoff: true,
+        outbound_voice_message: true,
         scheduled_was_edited: true,
         outbound_voice_source_text: source,
     }, ['Shannon edited this.']), ['Shannon edited this.']);
+    assert.deepEqual(sendIg.resolveVoiceSourceMessages({
+        outbound_voice_message: true,
+        outbound_voice_message_reason: 'lead_shared_consistency_blocker',
+        scheduled_was_edited: false,
+        outbound_voice_source_text: `Hey, how are ya.\n\n${source}`,
+    }, ['First thought.\nSecond thought.', 'Third thought.']), [`Hey, how are ya.\n\n${source}`]);
 });
 
 test('final automated send gate sees a newer manual outbound', async () => {
