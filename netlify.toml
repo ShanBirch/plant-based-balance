@@ -329,6 +329,11 @@
 [functions."weekly-wrapped-push"]
   schedule = "0 23 * * 6"
 
+# Shannon-only social journey pilot. Saturday 18:30 Brisbane, with a strict
+# standard 24-hour Instagram messaging-window check inside the function.
+[functions."social-journey-reminder-scan"]
+  schedule = "30 8 * * 6"
+
 # Independent weekly-goal rewards. The database applies XP only after each
 # member's local Sunday has ended, and safely tops up late wearable syncs.
 [functions."award-weekly-goal-rewards"]

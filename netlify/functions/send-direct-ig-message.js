@@ -747,4 +747,7 @@ exports._test = {
     learningReelPayloadFromBody,
     learningReelSourceFromBody,
     sourceForDelivery,
+    hoursSinceIso,
+    postToInstagramGraph,
+    graphMessageIdFromResponse,
 };
