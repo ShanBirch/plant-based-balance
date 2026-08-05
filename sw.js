@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v277'; // v277: tailored Meta walkthrough, meal photos, and delayed five-minute preview
+const CACHE_NAME = 'pbb-app-v278'; // v278: swipeable photo share overlay previews
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -21,7 +21,7 @@ const ASSETS = [
   './js/dashboard/pbb-deferred-weeklygoals.js?v=27',
   './css/dashboard/pbb-onboarding-comeback.css?v=2',
   './js/dashboard/dashboard-script-7-video_logic.js?v=20260603-video-stream',
-  './js/dashboard/dashboard-script-10-points_widget_functions.js?v=42',
+  './js/dashboard/dashboard-script-10-points_widget_functions.js?v=43',
   './js/dashboard/pbb-deferred-formcheck.js?v=56',
   './js/dashboard/pbb-deferred-workoutbuilder.js?v=9',
   './js/dashboard/pbb-deferred-yourworkouts.js',

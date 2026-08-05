@@ -2082,6 +2082,7 @@ async function syncWorkoutFeedShareUsedToday() {
 let cachedWorkoutShareFile = null;
 let cachedWorkoutShareBase64 = null;
 let pendingPostWorkoutCompositeShare = null;
+let cachedNutritionShareBase64 = null;
 
 const BALANCE_INSTAGRAM_SHARE_TESTER_EMAILS = [
     'shannonbirch@cocospersonaltraining.com'
@@ -2613,6 +2614,15 @@ async function onWorkoutSharePhotoReady(file) {
 
         if (pendingPostWorkoutCompositeShare) {
             await preparePostWorkoutCompositePreview();
+        } else {
+            const workoutPayload = buildWorkoutShareCardPayload();
+            if (workoutPayload) {
+                await renderBalanceShareStylePreview('workout', workoutPayload, cachedWorkoutShareBase64, {
+                    previewImageId: 'share-photo-preview',
+                    previewWrapId: 'share-photo-preview-wrap',
+                    controlsId: 'workout-share-style-controls'
+                });
+            }
         }
     } catch (err) {
         console.error('Failed to process workout share photo:', err);
@@ -2645,6 +2655,10 @@ function resetWorkoutShareUI() {
     const postWorkoutPreview = document.getElementById('post-workout-photo-preview');
     if (postWorkoutPreviewWrap) postWorkoutPreviewWrap.style.display = 'none';
     if (postWorkoutPreview) postWorkoutPreview.removeAttribute('src');
+    const workoutStyleControls = document.getElementById('workout-share-style-controls');
+    const workoutStylePreviewWrap = document.getElementById('share-photo-preview-wrap');
+    if (workoutStyleControls) workoutStyleControls.style.display = 'none';
+    if (workoutStylePreviewWrap) workoutStylePreviewWrap.style.display = 'none';
 
     const takeBtn = document.getElementById('share-take-photo-btn');
     if (takeBtn) {
@@ -2684,19 +2698,20 @@ async function preparePostWorkoutCompositePreview() {
     if (!pending || !cachedWorkoutShareBase64) return;
 
     try {
-        const previewDataUrl = await renderBalanceShareCardImage(pending.cardPayload, {
-            target: 'feed',
-            photoDataUrl: cachedWorkoutShareBase64
-        });
         const preview = document.getElementById('share-photo-preview');
         const captureStep = document.getElementById('share-step-capture');
         const shareStep = document.getElementById('share-step-share');
         const shareButton = document.getElementById('share-workout-card-btn');
         const igOptions = document.getElementById('share-workout-ig-options');
 
-        if (preview) preview.src = previewDataUrl;
+        if (preview) preview.alt = pending.type === 'pb' ? 'Personal best share preview' : 'Workout share preview';
         if (captureStep) captureStep.style.display = 'none';
         if (shareStep) shareStep.style.display = 'block';
+        await renderBalanceShareStylePreview(pending.type, pending.cardPayload, cachedWorkoutShareBase64, {
+            previewImageId: 'share-photo-preview',
+            previewWrapId: 'share-photo-preview-wrap',
+            controlsId: 'workout-share-style-controls'
+        });
         if (shareButton) {
             shareButton.disabled = false;
             shareButton.setAttribute('onclick', 'sharePendingPostWorkoutCompositeToFeed()');
@@ -2782,7 +2797,8 @@ async function sharePendingPostWorkoutCompositeToFeed() {
     try {
         const compositeDataUrl = await renderBalanceShareCardImage(pending.cardPayload, {
             target: 'feed',
-            photoDataUrl: cachedWorkoutShareBase64
+            photoDataUrl: cachedWorkoutShareBase64,
+            overlayStyle: getBalanceShareOverlayStyle(pending.type)
         });
         const compositeFile = postWorkoutShareFileFromDataUrl(compositeDataUrl, 'balance-workout-overlay.jpg');
         const tempStoryId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString();
@@ -2801,6 +2817,7 @@ async function sharePendingPostWorkoutCompositeToFeed() {
         if (!uploadData?.url) throw new Error('The overlay upload was not confirmed.');
         const storyPayload = Object.assign({}, pending.cardPayload, {
             share_style: 'photo_overlay',
+            share_overlay_style: getBalanceShareOverlayStyle(pending.type),
             share_caption: pending.type === 'pb' ? 'Personal best, captured in the moment.' : 'Workout complete, captured in the moment.'
         });
         const story = await dbHelpers.stories.create(window.currentUser.id, {
@@ -3448,6 +3465,71 @@ function pbbGetWorkoutShareDurationText() {
 
 const PBB_SHARE_CREATIVE_VARIANT = 'earned_share_motion_v1';
 
+const PBB_SHARE_OVERLAY_STYLES = [
+    { id: 'classic', label: 'Clean' },
+    { id: 'gold', label: 'Gold' },
+    { id: 'midnight', label: 'Dark' },
+    { id: 'fresh', label: 'Fresh' }
+];
+const pbbShareOverlaySelections = {
+    workout: 'classic',
+    pb: 'classic',
+    activity: 'classic',
+    nutrition: 'classic'
+};
+const pbbShareStylePreviewState = {};
+
+function pbbShareNormalizeContext(context) {
+    const safeContext = String(context || '').toLowerCase();
+    return ['workout', 'pb', 'activity', 'nutrition'].includes(safeContext) ? safeContext : 'workout';
+}
+
+function getBalanceShareOverlayStyle(context) {
+    const safeContext = pbbShareNormalizeContext(context);
+    return pbbShareOverlaySelections[safeContext] || 'classic';
+}
+
+function pbbShareNormalizeOverlayStyle(style) {
+    const safeStyle = String(style || '').toLowerCase();
+    return PBB_SHARE_OVERLAY_STYLES.some(option => option.id === safeStyle) ? safeStyle : 'classic';
+}
+
+function pbbShareApplyPhotoStyle(ctx, width, height, style, target) {
+    const safeStyle = pbbShareNormalizeOverlayStyle(style);
+    if (safeStyle === 'classic') return;
+
+    ctx.save();
+    if (safeStyle === 'gold') {
+        const goldWash = ctx.createLinearGradient(0, 0, width, height);
+        goldWash.addColorStop(0, 'rgba(245,196,92,0.08)');
+        goldWash.addColorStop(0.58, 'rgba(120,53,15,0.02)');
+        goldWash.addColorStop(1, 'rgba(245,158,11,0.24)');
+        ctx.fillStyle = goldWash;
+        ctx.fillRect(0, 0, width, height);
+        ctx.strokeStyle = 'rgba(253,230,138,0.88)';
+        ctx.lineWidth = target === 'feed' ? 18 : 22;
+        ctx.strokeRect(ctx.lineWidth / 2, ctx.lineWidth / 2, width - ctx.lineWidth, height - ctx.lineWidth);
+    } else if (safeStyle === 'midnight') {
+        const midnightWash = ctx.createLinearGradient(0, 0, 0, height);
+        midnightWash.addColorStop(0, 'rgba(2,6,23,0.18)');
+        midnightWash.addColorStop(0.55, 'rgba(2,6,23,0.10)');
+        midnightWash.addColorStop(1, 'rgba(2,6,23,0.42)');
+        ctx.fillStyle = midnightWash;
+        ctx.fillRect(0, 0, width, height);
+    } else if (safeStyle === 'fresh') {
+        const freshWash = ctx.createLinearGradient(0, height * 0.12, width, height);
+        freshWash.addColorStop(0, 'rgba(20,184,166,0.08)');
+        freshWash.addColorStop(0.55, 'rgba(255,255,255,0)');
+        freshWash.addColorStop(1, 'rgba(16,185,129,0.22)');
+        ctx.fillStyle = freshWash;
+        ctx.fillRect(0, 0, width, height);
+        ctx.strokeStyle = 'rgba(167,243,208,0.72)';
+        ctx.lineWidth = target === 'feed' ? 12 : 16;
+        ctx.strokeRect(ctx.lineWidth / 2, ctx.lineWidth / 2, width - ctx.lineWidth, height - ctx.lineWidth);
+    }
+    ctx.restore();
+}
+
 function buildWorkoutShareCardPayload() {
     if (!completedWorkoutDataForShare) return null;
 
@@ -3494,6 +3576,7 @@ function buildWorkoutShareCardPayload() {
     return {
         card_type: 'workout',
         share_variant: PBB_SHARE_CREATIVE_VARIANT,
+        share_overlay_style: getBalanceShareOverlayStyle('workout'),
         workout_name: data.workoutName || 'Workout',
         duration: data.duration || pbbGetWorkoutShareDurationText(),
         exercises: exercises,
@@ -3516,6 +3599,7 @@ function buildPBShareCardPayload(pbData) {
     return {
         card_type: 'pb',
         share_variant: PBB_SHARE_CREATIVE_VARIANT,
+        share_overlay_style: getBalanceShareOverlayStyle('pb'),
         pb_history_id: pbData.pbHistoryId || pbData.historyId || pbData.id || null,
         exercise: pbData.exercise_name || pbData.exercise || 'Personal best',
         pb_type: pbType,
@@ -4170,6 +4254,79 @@ async function pbbShareDrawFullBleedMealCard(ctx, cardPayload, width, height, ta
     ctx.restore();
 }
 
+async function pbbShareDrawFullBleedNutritionCard(ctx, cardPayload, width, height, target) {
+    const isFeed = target === 'feed';
+    const safeTop = isFeed ? 78 : 240;
+    const safeBottom = isFeed ? 150 : 330;
+    const x = 64;
+    const w = width - 128;
+    const bottom = height - safeBottom;
+
+    const upperGradient = ctx.createLinearGradient(0, 0, 0, safeTop + 220);
+    upperGradient.addColorStop(0, 'rgba(3,18,14,0.62)');
+    upperGradient.addColorStop(1, 'rgba(3,18,14,0)');
+    ctx.fillStyle = upperGradient;
+    ctx.fillRect(0, 0, width, safeTop + 220);
+    const lowerGradient = ctx.createLinearGradient(0, height * 0.42, 0, height);
+    lowerGradient.addColorStop(0, 'rgba(3,18,14,0)');
+    lowerGradient.addColorStop(0.66, 'rgba(3,18,14,0.42)');
+    lowerGradient.addColorStop(1, 'rgba(3,18,14,0.82)');
+    ctx.fillStyle = lowerGradient;
+    ctx.fillRect(0, height * 0.42, width, height * 0.58);
+
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.72)';
+    ctx.shadowBlur = 16;
+    ctx.shadowOffsetY = 3;
+    ctx.fillStyle = 'rgba(255,255,255,0.94)';
+    ctx.font = '900 24px Arial, sans-serif';
+    ctx.fillText('BALANCE NUTRITION', x, safeTop + 30);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 104px Georgia, serif';
+    ctx.fillText(String(Math.round(Number(cardPayload.score || 0))), x, safeTop + 154);
+    ctx.font = '900 28px Arial, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.88)';
+    ctx.fillText('DAILY SCORE', x + 176, safeTop + 136);
+    ctx.restore();
+
+    const panelH = 300;
+    const panelY = bottom - panelH;
+    pbbShareFillRoundRect(ctx, x, panelY, w, panelH, 32, 'rgba(2,6,23,0.62)');
+    ctx.save();
+    pbbShareRoundRect(ctx, x, panelY, w, panelH, 32);
+    ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
+
+    const metrics = [
+        [pbbShareFormatNumber(cardPayload.calories), 'Calories'],
+        [pbbShareFormatNumber(cardPayload.protein, 'g'), 'Protein'],
+        [pbbShareFormatNumber(cardPayload.carbs, 'g'), 'Carbs'],
+        [pbbShareFormatNumber(cardPayload.fat, 'g'), 'Fat']
+    ];
+    const cellW = w / 2;
+    const cellH = 112;
+    metrics.forEach((metric, index) => {
+        const col = index % 2;
+        const row = Math.floor(index / 2);
+        const metricX = x + (col * cellW) + 28;
+        const metricY = panelY + 34 + (row * cellH);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '900 38px Arial, sans-serif';
+        ctx.fillText(metric[0], metricX, metricY + 34);
+        ctx.fillStyle = 'rgba(255,255,255,0.72)';
+        ctx.font = '800 20px Arial, sans-serif';
+        ctx.fillText(metric[1], metricX, metricY + 66);
+    });
+    ctx.fillStyle = 'rgba(255,255,255,0.86)';
+    ctx.font = '800 20px Arial, sans-serif';
+    ctx.fillText(`${cardPayload.meal_count || 0} meals logged`, x + 28, panelY + panelH - 26);
+    ctx.textAlign = 'right';
+    ctx.fillText(`${cardPayload.streak || 0} day streak`, x + w - 28, panelY + panelH - 26);
+    ctx.textAlign = 'left';
+}
+
 async function pbbShareDrawProgressPhotoCard(ctx, cardPayload, panelX, panelY, panelW, panelH, photoDataUrls) {
     let y = panelY + 142;
     const photos = Array.isArray(photoDataUrls) ? photoDataUrls.filter(Boolean).slice(0, 3) : [];
@@ -4263,14 +4420,26 @@ async function renderBalanceShareCardImage(cardPayload, options = {}) {
 
     const photoDataUrls = Array.isArray(options.photoDataUrls) ? options.photoDataUrls.filter(Boolean) : [];
     const primaryPhotoDataUrl = options.photoDataUrl || photoDataUrls[0] || '';
+    const requestedOverlayStyle = String(options.overlayStyle || cardPayload.share_overlay_style || '').toLowerCase();
+    const overlayStyle = ['gold', 'midnight', 'fresh'].includes(requestedOverlayStyle) ? requestedOverlayStyle : 'classic';
 
     if (primaryPhotoDataUrl) {
         try {
             const photo = await pbbShareLoadImage(primaryPhotoDataUrl);
-            pbbShareDrawCoverImage(ctx, photo, 0, 0, width, height);
+            if (overlayStyle === 'classic') {
+                pbbShareDrawCoverImage(ctx, photo, 0, 0, width, height);
+            } else {
+                ctx.save();
+                if (overlayStyle === 'midnight') ctx.filter = 'grayscale(0.72) contrast(1.08) brightness(0.86)';
+                if (overlayStyle === 'gold') ctx.filter = 'saturate(0.88) contrast(1.04)';
+                if (overlayStyle === 'fresh') ctx.filter = 'saturate(1.08) contrast(1.02)';
+                pbbShareDrawCoverImage(ctx, photo, 0, 0, width, height);
+                ctx.restore();
+                pbbShareApplyPhotoStyle(ctx, width, height, overlayStyle, target);
+            }
             // Workout, PB, and activity overlays keep the original photo
             // brightness. Their local fades give the white stats enough contrast.
-            if (cardType !== 'workout' && cardType !== 'pb' && cardType !== 'activity') {
+            if (cardType !== 'workout' && cardType !== 'pb' && cardType !== 'activity' && cardType !== 'nutrition') {
                 ctx.fillStyle = cardType === 'meal'
                     ? 'rgba(4, 12, 9, 0.18)'
                     : 'rgba(4, 12, 9, 0.56)';
@@ -4288,6 +4457,11 @@ async function renderBalanceShareCardImage(cardPayload, options = {}) {
 
     if (cardType === 'meal' && primaryPhotoDataUrl) {
         await pbbShareDrawFullBleedMealCard(ctx, cardPayload, width, height, target);
+        return canvas.toDataURL('image/jpeg', 0.92);
+    }
+
+    if (cardType === 'nutrition' && primaryPhotoDataUrl) {
+        await pbbShareDrawFullBleedNutritionCard(ctx, cardPayload, width, height, target);
         return canvas.toDataURL('image/jpeg', 0.92);
     }
 
@@ -4419,6 +4593,119 @@ async function renderBalanceShareCardImage(cardPayload, options = {}) {
     ctx.fillText('Balance: Plant-Based Fitness', 124, height - 58);
 
     return canvas.toDataURL('image/jpeg', 0.92);
+}
+
+async function renderBalanceShareStylePreview(context, cardPayload, photoDataUrl, config = {}) {
+    if (!cardPayload || !photoDataUrl) return;
+    const safeContext = pbbShareNormalizeContext(context || cardPayload.card_type);
+    const previewImage = document.getElementById(config.previewImageId || `${safeContext}-share-style-preview`);
+    const previewWrap = document.getElementById(config.previewWrapId || `${safeContext}-share-style-preview-wrap`);
+    const controls = document.getElementById(config.controlsId || `${safeContext}-share-style-controls`);
+    if (!previewImage || !previewWrap || !controls) return;
+
+    const state = pbbShareStylePreviewState[safeContext] || {};
+    state.cardPayload = Object.assign({}, cardPayload);
+    state.photoDataUrl = photoDataUrl;
+    state.previewImageId = previewImage.id;
+    state.previewWrapId = previewWrap.id;
+    state.controlsId = controls.id;
+    state.renderToken = (state.renderToken || 0) + 1;
+    pbbShareStylePreviewState[safeContext] = state;
+
+    previewWrap.style.display = 'block';
+    controls.style.display = 'block';
+    controls.innerHTML = `
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:9px; color:#ffffff; -webkit-text-fill-color:#ffffff;">
+            <span style="font-size:0.78rem; font-weight:900;">Swipe to change the overlay</span>
+            <span data-balance-share-style-name="${safeContext}" style="font-size:0.72rem; font-weight:900; color:#fde68a; -webkit-text-fill-color:#fde68a;"></span>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:7px;">
+            ${PBB_SHARE_OVERLAY_STYLES.map(option => `<button type="button" data-balance-share-style="${option.id}" onclick="selectBalanceShareOverlayStyle('${safeContext}','${option.id}')" style="min-width:0; border:1px solid rgba(255,255,255,0.28); border-radius:999px; padding:8px 5px; background:rgba(255,255,255,0.1); color:#ffffff; -webkit-text-fill-color:#ffffff; font:inherit; font-size:0.7rem; font-weight:900; cursor:pointer;">${option.label}</button>`).join('')}
+        </div>`;
+
+    if (previewWrap.dataset.balanceShareSwipeBound !== 'true') {
+        let touchStartX = null;
+        previewWrap.addEventListener('touchstart', event => {
+            touchStartX = event.touches && event.touches[0] ? event.touches[0].clientX : null;
+        }, { passive: true });
+        previewWrap.addEventListener('touchend', event => {
+            if (touchStartX == null) return;
+            const endX = event.changedTouches && event.changedTouches[0] ? event.changedTouches[0].clientX : touchStartX;
+            const deltaX = endX - touchStartX;
+            touchStartX = null;
+            if (Math.abs(deltaX) < 36) return;
+            cycleBalanceShareOverlayStyle(previewWrap.dataset.balanceShareContext, deltaX < 0 ? 1 : -1);
+        }, { passive: true });
+        previewWrap.dataset.balanceShareSwipeBound = 'true';
+    }
+    previewWrap.dataset.balanceShareContext = safeContext;
+
+    await updateBalanceShareStylePreview(safeContext);
+}
+
+async function updateBalanceShareStylePreview(context) {
+    const safeContext = pbbShareNormalizeContext(context);
+    const state = pbbShareStylePreviewState[safeContext];
+    if (!state) return;
+    const previewImage = document.getElementById(state.previewImageId);
+    const controls = document.getElementById(state.controlsId);
+    if (!previewImage || !controls) return;
+
+    const style = getBalanceShareOverlayStyle(safeContext);
+    const option = PBB_SHARE_OVERLAY_STYLES.find(item => item.id === style) || PBB_SHARE_OVERLAY_STYLES[0];
+    const token = ++state.renderToken;
+    previewImage.style.opacity = '0.58';
+    previewImage.setAttribute('aria-busy', 'true');
+    controls.querySelectorAll('[data-balance-share-style]').forEach(button => {
+        const selected = button.dataset.balanceShareStyle === style;
+        button.style.background = selected ? '#f5c45c' : 'rgba(255,255,255,0.1)';
+        button.style.color = selected ? '#111827' : '#ffffff';
+        button.style.webkitTextFillColor = selected ? '#111827' : '#ffffff';
+        button.style.borderColor = selected ? '#fde68a' : 'rgba(255,255,255,0.28)';
+        button.setAttribute('aria-pressed', String(selected));
+    });
+    const name = controls.querySelector(`[data-balance-share-style-name="${safeContext}"]`);
+    if (name) name.textContent = option.label;
+
+    try {
+        const previewPayload = Object.assign({}, state.cardPayload, { share_overlay_style: style });
+        const dataUrl = await renderBalanceShareCardImage(previewPayload, {
+            target: 'feed',
+            photoDataUrl: state.photoDataUrl,
+            overlayStyle: style
+        });
+        if (token !== state.renderToken) return;
+        previewImage.src = dataUrl;
+        previewImage.style.opacity = '1';
+        previewImage.removeAttribute('aria-busy');
+    } catch (error) {
+        console.error('Could not render share style preview:', error);
+        if (token !== state.renderToken) return;
+        previewImage.style.opacity = '1';
+        previewImage.removeAttribute('aria-busy');
+        if (typeof showToast === 'function') showToast('Could not preview that style. Try another one.', 'error');
+    }
+}
+
+function selectBalanceShareOverlayStyle(context, style) {
+    const safeContext = pbbShareNormalizeContext(context);
+    pbbShareOverlaySelections[safeContext] = pbbShareNormalizeOverlayStyle(style);
+    return updateBalanceShareStylePreview(safeContext);
+}
+
+function cycleBalanceShareOverlayStyle(context, direction) {
+    const safeContext = pbbShareNormalizeContext(context);
+    const current = getBalanceShareOverlayStyle(safeContext);
+    const currentIndex = Math.max(0, PBB_SHARE_OVERLAY_STYLES.findIndex(option => option.id === current));
+    const nextIndex = (currentIndex + (direction < 0 ? -1 : 1) + PBB_SHARE_OVERLAY_STYLES.length) % PBB_SHARE_OVERLAY_STYLES.length;
+    return selectBalanceShareOverlayStyle(safeContext, PBB_SHARE_OVERLAY_STYLES[nextIndex].id);
+}
+
+if (typeof window !== 'undefined') {
+    window.renderBalanceShareStylePreview = renderBalanceShareStylePreview;
+    window.selectBalanceShareOverlayStyle = selectBalanceShareOverlayStyle;
+    window.cycleBalanceShareOverlayStyle = cycleBalanceShareOverlayStyle;
+    window.getBalanceShareOverlayStyle = getBalanceShareOverlayStyle;
 }
 
 async function shareBalanceCardImageExternally(dataUrl, target, text, options = {}) {
@@ -4705,7 +4992,8 @@ async function shareBalanceCardToInstagram(cardPayload, target, options = {}) {
     const renderOptions = {
         target: safeTarget,
         photoDataUrl: options.photoDataUrl || null,
-        photoDataUrls: options.photoDataUrls || null
+        photoDataUrls: options.photoDataUrls || null,
+        overlayStyle: options.overlayStyle || cardPayload.share_overlay_style || 'classic'
     };
     let preparedNotified = false;
     const notifyPrepared = () => {
@@ -4912,7 +5200,7 @@ async function shareWorkoutCardToInstagram() {
                     return;
                 }
                 await onWorkoutSharePhotoReady(file);
-                await shareWorkoutCardToInstagram();
+                showToast('Swipe to choose a style, then tap IG Story again.', 'info');
             }, 'Take a workout photo');
             return;
         }
@@ -4923,6 +5211,7 @@ async function shareWorkoutCardToInstagram() {
         // promise continuation gets another chance to run in JavaScript.
         const opened = await shareBalanceCardToInstagram(cardPayload, 'story', {
             photoDataUrl: cachedWorkoutShareBase64,
+            overlayStyle: getBalanceShareOverlayStyle('workout'),
             onSharePrepared: () => markWorkoutInstagramShareCompleted()
         });
         if (!opened) clearWorkoutInstagramShareCompleted();
@@ -4964,15 +5253,19 @@ function ensurePBShareOptionsModal() {
     modal.style.cssText = 'display:none; position:fixed; inset:0; z-index:10095; background:rgba(15,23,42,0.72); align-items:flex-end; justify-content:center; padding:calc(16px + env(safe-area-inset-top, 0px)) 14px calc(16px + env(safe-area-inset-bottom, 0px)); box-sizing:border-box;';
     modal.innerHTML = `
         <div style="width:100%; max-width:460px; max-height:100%; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; background:white; border-radius:18px 18px 14px 14px; box-shadow:0 18px 50px rgba(0,0,0,0.35); padding:16px; box-sizing:border-box;">
-            <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:14px;">
+             <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:14px;">
                 <div style="min-width:0;">
                     <div style="font-size:0.72rem; font-weight:900; color:#be123c; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:4px;">Share PB</div>
                     <div id="pb-share-options-title" style="font-size:1.05rem; font-weight:950; color:#0f172a; line-height:1.2;"></div>
                     <div id="pb-share-options-detail" style="font-size:0.82rem; font-weight:750; color:#64748b; margin-top:4px;"></div>
                 </div>
-                <button onclick="closePBShareOptions()" aria-label="Close share options" style="width:34px; height:34px; border:none; border-radius:50%; background:#f1f5f9; color:#334155; font-size:1.15rem; line-height:1; cursor:pointer; flex-shrink:0;">&times;</button>
+                 <button onclick="closePBShareOptions()" aria-label="Close share options" style="width:34px; height:34px; border:none; border-radius:50%; background:#f1f5f9; color:#334155; font-size:1.15rem; line-height:1; cursor:pointer; flex-shrink:0;">&times;</button>
+             </div>
+            <div id="pb-share-style-preview-wrap" style="display:none; width:100%; aspect-ratio:4/5; border-radius:16px; overflow:hidden; background:#0f172a; margin-bottom:10px; touch-action:pan-y;">
+                <img id="pb-share-style-preview" alt="Personal best share preview" style="width:100%; height:100%; object-fit:cover; display:block; transition:opacity 0.18s ease;" />
             </div>
-            <div style="display:flex; flex-direction:column; gap:10px;">
+            <div id="pb-share-style-controls" style="display:none; background:#0f172a; border-radius:14px; padding:12px; margin-bottom:12px;"></div>
+             <div style="display:flex; flex-direction:column; gap:10px;">
                 <button data-pb-share-action="balance-feed" onclick="sharePendingPBToDestination('balance-feed')" style="width:100%; min-height:50px; border:none; border-radius:12px; background:#0f766e; color:white; font-size:0.95rem; font-weight:900; cursor:pointer;">Balance Feed</button>
                 <button data-pb-share-action="instagram-story" onclick="sharePendingPBToDestination('instagram-story')" style="width:100%; min-height:50px; border:none; border-radius:12px; background:#be185d; color:white; font-size:0.95rem; font-weight:900; cursor:pointer;">Instagram Story</button>
                 <button data-pb-share-action="instagram-feed" onclick="sharePendingPBToDestination('instagram-feed')" style="width:100%; min-height:50px; border:none; border-radius:12px; background:#4338ca; color:white; font-size:0.95rem; font-weight:900; cursor:pointer;">Instagram Feed</button>
@@ -5002,6 +5295,23 @@ function openPBShareOptions(pbData, index) {
     if (title) title.textContent = pbData.exercise || 'Personal best';
     if (detail) detail.textContent = pbbFormatPBShareValue(pbData);
     modal.style.display = 'flex';
+    if (cachedWorkoutShareBase64) {
+        renderBalanceShareStylePreview('pb', buildPBShareCardPayload(pbData), cachedWorkoutShareBase64, {
+            previewImageId: 'pb-share-style-preview',
+            previewWrapId: 'pb-share-style-preview-wrap',
+            controlsId: 'pb-share-style-controls'
+        });
+    } else {
+        openWorkoutCamera(async function(file) {
+            if (!file) return;
+            await onWorkoutSharePhotoReady(file);
+            await renderBalanceShareStylePreview('pb', buildPBShareCardPayload(pbData), cachedWorkoutShareBase64, {
+                previewImageId: 'pb-share-style-preview',
+                previewWrapId: 'pb-share-style-preview-wrap',
+                controlsId: 'pb-share-style-controls'
+            });
+        }, 'Take a selfie or gym photo for your PB share');
+    }
 }
 
 function closePBShareOptions() {
@@ -5065,7 +5375,12 @@ async function sharePendingPBToDestination(destination) {
         openWorkoutCamera(async file => {
             if (!file) return;
             await onWorkoutSharePhotoReady(file);
-            await sharePendingPBToDestination(destination);
+            await renderBalanceShareStylePreview('pb', buildPBShareCardPayload(pendingPBShareData), cachedWorkoutShareBase64, {
+                previewImageId: 'pb-share-style-preview',
+                previewWrapId: 'pb-share-style-preview-wrap',
+                controlsId: 'pb-share-style-controls'
+            });
+            showToast('Swipe to choose a style, then choose where to share it.', 'info');
         }, 'Take a selfie or gym photo for your PB share');
         return;
     }
@@ -5088,7 +5403,8 @@ async function sharePendingPBToDestination(destination) {
             const cardPayload = buildPBShareCardPayload(pendingPBShareData);
             const instagramTarget = destination === 'instagram-feed' ? 'feed' : 'story';
             const opened = await shareBalanceCardToInstagram(cardPayload, instagramTarget, {
-                photoDataUrl: cachedWorkoutShareBase64
+                photoDataUrl: cachedWorkoutShareBase64,
+                overlayStyle: getBalanceShareOverlayStyle('pb')
             });
             if (opened && instagramTarget === 'feed') {
                 const xpResult = await awardBalanceSocialShareXP(
@@ -5129,20 +5445,14 @@ async function shareWorkoutCardToFeed() {
         return;
     }
 
-    // Store context so we know this is a card share
-    window._pendingCardShare = true;
-
-    // Reuse the cached photo if the user already took one via the new UI.
-    if (cachedWorkoutShareFile) {
-        handleWorkoutCardPhotoCaptureFromFile(cachedWorkoutShareFile);
+    const cardPayload = buildWorkoutShareCardPayload();
+    if (!cachedWorkoutShareBase64) {
+        await beginPostWorkoutCompositeShare(cardPayload, 'workout');
         return;
     }
 
-    // Fallback: open the camera (legacy entry points)
-    openWorkoutCamera((file) => {
-        if (!file) return;
-        handleWorkoutCardPhotoCaptureFromFile(file);
-    }, 'Take a workout photo');
+    pendingPostWorkoutCompositeShare = { cardPayload, type: 'workout', index: null };
+    await sharePendingPostWorkoutCompositeToFeed();
 }
 
 // Handle the gym photo captured for workout card share (from file input - legacy/web fallback)
@@ -5283,7 +5593,8 @@ async function sharePBCardToFeed(pbData, photoDataUrl) {
         if (photoDataUrl) {
             const compositeDataUrl = await renderBalanceShareCardImage(cardPayload, {
                 target: 'feed',
-                photoDataUrl
+                photoDataUrl,
+                overlayStyle: getBalanceShareOverlayStyle('pb')
             });
             const compositeFile = postWorkoutShareFileFromDataUrl(compositeDataUrl, 'balance-pb-overlay.jpg');
             if (typeof uploadStoryMediaToBackblaze !== 'function') {
@@ -5298,6 +5609,7 @@ async function sharePBCardToFeed(pbData, photoDataUrl) {
             if (!uploadData?.url) throw new Error('The PB photo upload was not confirmed.');
             mediaUrl = uploadData.url;
             cardPayload.share_style = 'photo_overlay';
+            cardPayload.share_overlay_style = getBalanceShareOverlayStyle('pb');
             cardPayload.share_caption = 'Personal best, captured in the moment.';
         }
 
@@ -5334,6 +5646,70 @@ async function sharePBCardToFeed(pbData, photoDataUrl) {
         throw error;
     }
 }
+
+async function handleNutritionSharePhotoSelected(input) {
+    const file = input?.files?.[0];
+    if (!file) return;
+    await useNutritionSharePhotoFile(file);
+    input.value = '';
+}
+
+async function useNutritionSharePhotoFile(file) {
+    if (!file) return;
+    const label = document.getElementById('nutrition-share-photo-btn-text');
+    try {
+        const normalizedFile = typeof window.normalizeFeedImageUploadFile === 'function'
+            ? await window.normalizeFeedImageUploadFile(file)
+            : file;
+        const preparedFile = typeof compressMealImage === 'function'
+            ? await compressMealImage(normalizedFile)
+            : normalizedFile;
+        cachedNutritionShareBase64 = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(String(reader.result || ''));
+            reader.onerror = reject;
+            reader.readAsDataURL(preparedFile);
+        });
+        if (label) label.textContent = 'Photo added, swipe to choose your overlay style';
+        const cardPayload = await buildDailyNutritionInstagramPayload();
+        await renderBalanceShareStylePreview('nutrition', cardPayload, cachedNutritionShareBase64, {
+            previewImageId: 'nutrition-share-style-preview',
+            previewWrapId: 'nutrition-share-style-preview-wrap',
+            controlsId: 'nutrition-share-style-controls'
+        });
+    } catch (error) {
+        console.error('Could not prepare nutrition share photo:', error);
+        showToast(error?.message || 'Could not use that photo. Please try another one.', 'error');
+    }
+}
+
+function toggleNutritionSharePhotoSourceMenu(event) {
+    event?.stopPropagation?.();
+    const menu = document.getElementById('nutrition-share-photo-source-menu');
+    const button = document.getElementById('nutrition-share-photo-btn');
+    if (!menu) return;
+    const isOpen = menu.style.display !== 'none';
+    menu.style.display = isOpen ? 'none' : 'block';
+    button?.setAttribute('aria-expanded', String(!isOpen));
+}
+
+function openNutritionSharePhotoSource(source) {
+    const menu = document.getElementById('nutrition-share-photo-source-menu');
+    const button = document.getElementById('nutrition-share-photo-btn');
+    if (menu) menu.style.display = 'none';
+    button?.setAttribute('aria-expanded', 'false');
+    if (source === 'camera' && typeof openWorkoutCamera === 'function') {
+        openWorkoutCamera(async file => {
+            if (file) await useNutritionSharePhotoFile(file);
+        }, 'Take a nutrition share photo');
+        return;
+    }
+    document.getElementById(source === 'camera' ? 'nutrition-share-photo-camera-input' : 'nutrition-share-photo-gallery-input')?.click();
+}
+
+window.handleNutritionSharePhotoSelected = handleNutritionSharePhotoSelected;
+window.toggleNutritionSharePhotoSourceMenu = toggleNutritionSharePhotoSourceMenu;
+window.openNutritionSharePhotoSource = openNutritionSharePhotoSource;
 
 // Share daily nutrition summary card to feed
 async function shareNutritionToFeed() {
@@ -5393,6 +5769,7 @@ async function shareNutritionToFeed() {
 
         const cardPayload = {
             card_type: 'nutrition',
+            share_overlay_style: getBalanceShareOverlayStyle('nutrition'),
             score: score,
             calories: dailyData.total_calories || 0,
             calorie_goal: dailyData.calorie_goal || 2000,
@@ -5406,10 +5783,32 @@ async function shareNutritionToFeed() {
             streak: streak
         };
 
+        let mediaUrl = '';
+        if (cachedNutritionShareBase64) {
+            const compositeDataUrl = await renderBalanceShareCardImage(cardPayload, {
+                target: 'feed',
+                photoDataUrl: cachedNutritionShareBase64,
+                overlayStyle: getBalanceShareOverlayStyle('nutrition')
+            });
+            const compositeFile = postWorkoutShareFileFromDataUrl(compositeDataUrl, 'balance-nutrition-overlay.jpg');
+            if (typeof uploadStoryMediaToBackblaze !== 'function') {
+                throw new Error('Feed uploader is still loading. Please try again.');
+            }
+            const uploadData = await uploadStoryMediaToBackblaze(compositeFile, {
+                userId: window.currentUser.id,
+                storyId: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(),
+                source: 'feed_nutrition_photo_overlay',
+                preferDirectUpload: true
+            });
+            if (!uploadData?.url) throw new Error('The nutrition overlay upload was not confirmed.');
+            mediaUrl = uploadData.url;
+            cardPayload.share_style = 'photo_overlay';
+        }
+
         const story = await dbHelpers.stories.create(window.currentUser.id, {
             media_type: 'nutrition_card',
-            media_url: '',
-            thumbnail_url: null,
+            media_url: mediaUrl,
+            thumbnail_url: mediaUrl || null,
             caption: JSON.stringify(cardPayload),
             duration: 5
         });
@@ -5479,6 +5878,7 @@ async function buildDailyNutritionInstagramPayload() {
 
     return {
         card_type: 'nutrition',
+        share_overlay_style: getBalanceShareOverlayStyle('nutrition'),
         score: scoreData ? scoreData.total : 0,
         calories: dailyData.total_calories || 0,
         calorie_goal: dailyData.calorie_goal || 2000,
@@ -5511,7 +5911,10 @@ async function shareNutritionToInstagram(target = 'story') {
     try {
         const cardPayload = await buildDailyNutritionInstagramPayload();
         const safeTarget = target === 'feed' ? 'feed' : 'story';
-        const opened = await shareBalanceCardToInstagram(cardPayload, safeTarget);
+        const opened = await shareBalanceCardToInstagram(cardPayload, safeTarget, {
+            photoDataUrl: cachedNutritionShareBase64 || null,
+            overlayStyle: getBalanceShareOverlayStyle('nutrition')
+        });
         if (opened) {
             const xpResult = await awardBalanceSocialShareXP(
                 'meal',
@@ -6404,8 +6807,20 @@ function showActivitySuccess(data) {
     if (sharePhotoLabel) {
         const routeCopy = data.routePolyline ? 'route and activity stats' : 'activity stats';
         sharePhotoLabel.textContent = data.photoBase64
-            ? `Photo ready, your ${routeCopy} will be overlaid`
+            ? `Photo ready, swipe to choose your ${routeCopy} style`
             : `Add a photo for your ${routeCopy}`;
+    }
+    const activityStyleWrap = document.getElementById('activity-share-style-preview-wrap');
+    const activityStyleControls = document.getElementById('activity-share-style-controls');
+    if (data.photoBase64) {
+        void renderBalanceShareStylePreview('activity', buildActivityShareCardPayload(), data.photoBase64, {
+            previewImageId: 'activity-share-style-preview',
+            previewWrapId: 'activity-share-style-preview-wrap',
+            controlsId: 'activity-share-style-controls'
+        });
+    } else {
+        if (activityStyleWrap) activityStyleWrap.style.display = 'none';
+        if (activityStyleControls) activityStyleControls.style.display = 'none';
     }
 
     window.history.pushState({ view: 'activity-success' }, '', '#activity-success');
@@ -6416,6 +6831,7 @@ function buildActivityShareCardPayload() {
     const cardPayload = {
         card_type: 'activity',
         share_variant: PBB_SHARE_CREATIVE_VARIANT,
+        share_overlay_style: getBalanceShareOverlayStyle('activity'),
         activity_type: savedActivityData.activity_type,
         activity_label: savedActivityData.activity_label,
         duration: savedActivityData.duration + ' min',
@@ -6470,7 +6886,8 @@ async function shareActivityCardToFeed() {
         if (savedActivityData.photoBase64 || cardPayload.route_polyline) {
             const compositeDataUrl = await renderBalanceShareCardImage(cardPayload, {
                 target: 'feed',
-                photoDataUrl: savedActivityData.photoBase64 || null
+                photoDataUrl: savedActivityData.photoBase64 || null,
+                overlayStyle: getBalanceShareOverlayStyle('activity')
             });
             const compositeFile = postWorkoutShareFileFromDataUrl(compositeDataUrl, 'balance-activity-overlay.jpg');
             const formData = new FormData();
@@ -6562,7 +6979,10 @@ async function shareActivityCardToInstagram() {
         const opened = await shareBalanceCardToInstagram(
             buildActivityShareCardPayload(),
             'story',
-            { photoDataUrl: savedActivityData.photoBase64 || null }
+            {
+                photoDataUrl: savedActivityData.photoBase64 || null,
+                overlayStyle: getBalanceShareOverlayStyle('activity')
+            }
         );
         if (!opened) return false;
 
@@ -6619,7 +7039,12 @@ async function useActivitySharePhotoFile(file) {
         });
         savedActivityData.photoBase64 = String(dataUrl || '');
         savedActivityData.photoMimeType = preparedFile.type || 'image/jpeg';
-        if (label) label.textContent = 'Photo added, your activity stats will be overlaid';
+        if (label) label.textContent = 'Photo added, swipe to choose your overlay style';
+        await renderBalanceShareStylePreview('activity', buildActivityShareCardPayload(), savedActivityData.photoBase64, {
+            previewImageId: 'activity-share-style-preview',
+            previewWrapId: 'activity-share-style-preview-wrap',
+            controlsId: 'activity-share-style-controls'
+        });
     } catch (error) {
         console.error('Could not read activity share photo:', error);
         showToast('Could not use that photo. Please try another one.', 'error');
@@ -6656,12 +7081,17 @@ function openActivitySharePhotoSource(source) {
 window.openActivitySharePhotoSource = openActivitySharePhotoSource;
 
 document.addEventListener('click', function(event) {
-    const menu = document.getElementById('activity-share-photo-source-menu');
-    const button = document.getElementById('activity-share-photo-btn');
-    if (!menu || menu.style.display === 'none') return;
-    if (menu.contains(event.target) || button?.contains(event.target)) return;
-    menu.style.display = 'none';
-    button?.setAttribute('aria-expanded', 'false');
+    [
+        ['activity-share-photo-source-menu', 'activity-share-photo-btn'],
+        ['nutrition-share-photo-source-menu', 'nutrition-share-photo-btn']
+    ].forEach(([menuId, buttonId]) => {
+        const menu = document.getElementById(menuId);
+        const button = document.getElementById(buttonId);
+        if (!menu || menu.style.display === 'none') return;
+        if (menu.contains(event.target) || button?.contains(event.target)) return;
+        menu.style.display = 'none';
+        button?.setAttribute('aria-expanded', 'false');
+    });
 });
 
 function closeLogActivity() {

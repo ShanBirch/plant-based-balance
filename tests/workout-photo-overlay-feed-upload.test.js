@@ -33,14 +33,14 @@ assert.ok(
     'workout photo overlays must not use the unreliable iOS multipart relay'
 );
 assert.ok(
-    rendererSource.includes("if (cardType !== 'workout' && cardType !== 'pb' && cardType !== 'activity')") &&
+    rendererSource.includes("if (cardType !== 'workout' && cardType !== 'pb' && cardType !== 'activity' && cardType !== 'nutrition')") &&
         rendererSource.includes('ctx.fillRect(0, 0, width, height);'),
-    'workout, PB, and activity photo overlays must skip the full-frame dark tint'
+    'workout, PB, activity, and nutrition photo overlays must skip the full-frame dark tint'
 );
 assert.ok(
-    dashboardSource.includes('dashboard-script-10-points_widget_functions.js?v=42') &&
-        serviceWorkerSource.includes("const CACHE_NAME = 'pbb-app-v272'") &&
-        serviceWorkerSource.includes('./js/dashboard/dashboard-script-10-points_widget_functions.js?v=42'),
+    dashboardSource.includes('dashboard-script-10-points_widget_functions.js?v=43') &&
+        serviceWorkerSource.includes("const CACHE_NAME = 'pbb-app-v278'") &&
+        serviceWorkerSource.includes('./js/dashboard/dashboard-script-10-points_widget_functions.js?v=43'),
     'phones must fetch the repaired overlay share path'
 );
 

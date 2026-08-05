@@ -101,7 +101,7 @@ assert.ok(
         dashboardSource.includes('pbb-premium-overlays.css?v=92') &&
         dashboardSource.includes('dashboard-script-meal-builder.js?v=3') &&
         dashboardSource.includes('dashboard-script-11-calorie_tracker_functions.js?v=31') &&
-        serviceWorkerSource.includes("const CACHE_NAME = 'pbb-app-v272'"),
+        serviceWorkerSource.includes("const CACHE_NAME = 'pbb-app-v278'"),
     'phones must fetch the new meal-builder UI, behavior, and styles'
 );
 
