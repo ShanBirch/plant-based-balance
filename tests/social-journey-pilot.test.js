@@ -66,19 +66,33 @@ test('reminder scanner rejects ordinary public invocations', async () => {
 test('dashboard ships both discovery systems and a visible pilot card target', () => {
     const html = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
     assert.match(html, /id="social-journey-card"/);
-    assert.match(html, /social-journey-shannon-pilot-v1/);
-    assert.match(html, /sel:'#social-journey-card', title:'Build the pattern'/);
-    assert.match(html, /pbb-social-journey\.js\?v=1/);
-    assert.match(html, /pbb-social-journey\.css\?v=1/);
+    assert.match(html, /social-journey-shannon-pilot-v2/);
+    assert.match(html, /sel:'#social-journey-card', title:'Your weekly journey'/);
+    assert.match(html, /pbb-social-journey\.js\?v=2/);
+    assert.match(html, /pbb-social-journey\.css\?v=2/);
 });
 
-test('journey UI defines 12 weeks and preserves account data on restart', () => {
+test('journey UI is lesson-led, card-triggered and preserves account data on restart', () => {
     const source = fs.readFileSync(path.join(root, 'js/dashboard/pbb-social-journey.js'), 'utf8');
     const weekMatches = source.match(/\n\s+week: \d+,/g) || [];
     assert.equal(weekMatches.length, 12);
+    assert.match(source, /viewStage = isCurrentLessonSeen\(\) \? 'goals' : 'lesson'/);
+    assert.match(source, /lesson_seen_weeks/);
+    assert.match(source, /Use these goals/);
+    assert.match(source, /openFeedComposerMediaSource\('camera-photo'\)/);
+    assert.match(source, /'feed-photo'/);
+    assert.doesNotMatch(source, /setTimeout\(openOnboarding/);
     assert.match(source, /Restart only this journey/);
     assert.match(source, /settings\s*\n\s*}\);/);
     assert.doesNotMatch(source, /from\(['"]users['"]\).*delete/i);
+});
+
+test('journey styling uses the Balance cream and gold system in both themes', () => {
+    const css = fs.readFileSync(path.join(root, 'css/dashboard/pbb-social-journey.css'), 'utf8');
+    assert.match(css, /--sj-cream: var\(--pbb-luxe-cream/);
+    assert.match(css, /--sj-gold: var\(--pbb-luxe-gold/);
+    assert.match(css, /html\[data-pbb-theme="light"\]/);
+    assert.doesNotMatch(css, /#153f2e|#123f2d|#24765a/i);
 });
 
 test('migration enables ownership RLS and constrained JSON state', () => {

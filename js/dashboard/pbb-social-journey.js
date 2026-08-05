@@ -17,7 +17,7 @@
       title: 'Start where it feels safe.',
       body: 'Join the Balance community, show one normal meal and practise encouraging other people.',
       tasks: [
-        task('w1_feed_intro', 'Introduce yourself in Feed', 'One honest post is enough.', 'feed_posts', 1, '👋', 'feed'),
+        task('w1_feed_intro', 'Share your first photo to Feed', 'Take one normal photo and add a simple hello.', 'feed_posts', 1, '📷', 'feed-photo'),
         task('w1_meal_feed', 'Share one normal meal', 'No perfect plate required.', 'meal_feed_posts', 1, '🥗', 'meals'),
         task('w1_comments', 'Encourage three members', 'Meaningful replies only.', 'feed_comments', 3, '💬', 'feed')
       ]
@@ -148,16 +148,35 @@
     }
   ];
 
+  const WEEK_LESSONS = [
+    lesson('Start smaller than your motivation.', 'A pattern becomes reliable when it is easy enough to repeat on an ordinary day.', ['Use the Balance Feed as a low-pressure first step.', 'Share evidence, not a polished performance.', 'Encouraging other people strengthens your own pattern too.']),
+    lesson('Progress needs a repeatable minimum.', 'The best training week is not the hardest one. It is the one you can complete and build from.', ['A normal workout is worth recording.', 'Two completed sessions beat five imagined ones.', 'Make the work visible so it does not disappear from memory.']),
+    lesson('Food works better as evidence.', 'Seeing your normal meals clearly makes useful changes easier than judging them from memory.', ['Post what you already eat.', 'Notice what fuels training and keeps you satisfied.', 'Aim for useful repetition, not perfect plates.']),
+    lesson('Your environment is part of the plan.', 'What you repeatedly see, save and return to quietly shapes what feels normal.', ['Mute inputs that create noise or comparison.', 'Follow people who model the pattern you want.', 'Train your algorithm with deliberate attention.']),
+    lesson('Let the goal choose the share.', 'Sharing works best when it comes from real training and food choices instead of pressure to create content.', ['Start with a workout or meal you already completed.', 'Use Balance share tools to lower the friction.', 'One honest public rep is enough.']),
+    lesson('Identity grows from visible repetitions.', 'You do not need to perform a new personality. Keep showing the small actions that already belong to you.', ['Document the process instead of proving a result.', 'Choose a rhythm that survives messy weeks.', 'Let consistency become the interesting part.']),
+    lesson('Give your account one simple job.', 'A clear purpose makes it easier to know what belongs on your Instagram and what does not.', ['Name what you are working on.', 'Write a bio that matches the journey.', 'Make the first post from evidence you already have.']),
+    lesson('Keep content downstream of the work.', 'Training and food remain the centre. Sharing is a light record of what happened.', ['Complete the behaviour first.', 'Reuse a meal or workout as a Story.', 'Keep Balance Feed as your safe practice space.']),
+    lesson('Your feed reflects your attention.', 'An algorithm audit shows whether your recent choices are supporting the person you want to become.', ['Review Explore without judging it.', 'Remove five inputs that pull you off course.', 'Save examples you would genuinely use.']),
+    lesson('A rhythm should fit real life.', 'A simple weekly pattern is more useful than a posting plan that needs perfect energy and spare time.', ['Keep workouts at the centre.', 'Choose three honest Story moments.', 'Stay connected without turning it into a job.']),
+    lesson('A useful story gives evidence meaning.', 'People connect with what changed, what helped and what you are trying next.', ['Start with one real moment.', 'Say what you learned in plain language.', 'Leave room for the process to stay unfinished.']),
+    lesson('Keep only what you can sustain.', 'The final goal is not more posting. It is a pattern that supports your training, food and identity.', ['Review what felt natural.', 'Choose the smallest rhythm you will keep.', 'Share the pattern, not only the result.'])
+  ];
+
   let state = null;
   let progress = null;
   let candidates = [];
   let candidatesLoaded = false;
   let loading = false;
-  let onboardingStep = 0;
+  let viewStage = 'lesson';
   let initialized = false;
 
   function task(id, label, hint, type, target, icon, action) {
     return { id, label, hint, type, target, icon, action };
+  }
+
+  function lesson(title, body, points) {
+    return { title, body, points };
   }
 
   function isPilotUser() {
@@ -402,6 +421,28 @@
     return '<div class="social-journey-week-dots">' + WEEK_DEFINITIONS.map(item => '<span class="' + (item.week <= state.current_week ? 'done' : '') + '"></span>').join('') + '</div>';
   }
 
+  function lessonSeenWeeks() {
+    return safeArray(safeObject(state && state.settings).lesson_seen_weeks)
+      .map(Number)
+      .filter(week => week >= 1 && week <= 12);
+  }
+
+  function isCurrentLessonSeen() {
+    return !!state && lessonSeenWeeks().includes(Number(state.current_week));
+  }
+
+  function markJourneyFeatureSeen() {
+    try {
+      const featureId = 'social-journey-shannon-pilot-v2';
+      const stored = JSON.parse(localStorage.getItem('pbb_seen_features') || '[]');
+      const seen = Array.isArray(stored) ? stored : [];
+      if (!seen.includes(featureId)) {
+        seen.push(featureId);
+        localStorage.setItem('pbb_seen_features', JSON.stringify(seen));
+      }
+    } catch (_) {}
+  }
+
   function renderCard() {
     const card = getCard();
     if (!card || !isPilotUser() || !state) return;
@@ -409,18 +450,21 @@
     const completed = progress ? progress.completed_count : 0;
     const total = progress ? progress.total_count : 3;
     const percent = total ? Math.round((completed / total) * 100) : 0;
+    const lessonSeen = isCurrentLessonSeen();
     card.style.display = 'block';
     card.innerHTML = '<div class="social-journey-card__inner">'
-      + '<div class="social-journey-card__eyebrow">Journey Goals · Week ' + definition.week + ' of 12</div>'
-      + '<div class="social-journey-card__title">' + escapeHtml(definition.title) + '</div>'
-      + '<div class="social-journey-card__copy">' + escapeHtml(definition.body) + '</div>'
+      + '<div class="social-journey-card__week-art"><span>WEEK</span><strong>' + String(definition.week).padStart(2, '0') + '</strong></div>'
+      + '<div class="social-journey-card__eyebrow">Balance Foundations · Week ' + definition.week + '</div>'
+      + '<div class="social-journey-card__title">' + escapeHtml(lessonSeen ? definition.title : 'Your lesson is ready.') + '</div>'
+      + '<div class="social-journey-card__copy">' + escapeHtml(lessonSeen ? definition.body : WEEK_LESSONS[definition.week - 1].title) + '</div>'
       + '<div class="social-journey-card__row"><div class="social-journey-card__progress"><span style="width:' + percent + '%"></span></div><div class="social-journey-card__count">' + completed + ' / ' + total + '</div></div>'
-      + '<div class="social-journey-card__arrow">→</div></div>';
+      + '<div class="social-journey-card__cta">' + (lessonSeen ? 'Open my goals' : 'Start the lesson') + ' <span>→</span></div></div>';
   }
 
   function taskActionLabel(item) {
     if (item.type === 'manual') return item.complete ? 'Completed' : 'Mark done';
     if (item.action === 'feed') return 'Open Feed';
+    if (item.action === 'feed-photo') return 'Take my first Feed photo';
     if (item.action === 'meals') return 'Open Nutrition';
     if (item.action === 'movement') return 'Open Movement';
     if (item.action === 'instagram') return 'Open Instagram';
@@ -447,6 +491,10 @@
     const container = document.getElementById('social-journey-content');
     if (!container || !state) return;
     const definition = getWeekDefinition();
+    if (viewStage === 'lesson') {
+      renderLesson();
+      return;
+    }
     const settings = safeObject(state.settings);
     const connectedHandle = settings.instagram_username ? '@' + settings.instagram_username : '';
     const reminderText = settings.instagram_reminders_enabled && connectedHandle
@@ -459,23 +507,79 @@
 
     document.querySelector('.social-journey-header__title').textContent = definition.title;
     document.querySelector('.social-journey-header__week').textContent = 'Week ' + definition.week + ' of 12';
-    container.innerHTML = '<section class="social-journey-hero">'
+    container.innerHTML = '<section class="social-journey-hero social-journey-goals-hero">'
       + '<div class="social-journey-hero__eyebrow">' + escapeHtml(definition.phase) + '</div>'
-      + '<h2>' + escapeHtml(definition.title) + '</h2><p>' + escapeHtml(definition.body) + '</p>' + weekDots() + '</section>'
+      + '<div class="social-journey-goals-hero__label">YOUR GOALS</div><h2>' + escapeHtml(definition.title) + '</h2><p>' + escapeHtml(definition.body) + '</p>' + weekDots() + '</section>'
       + '<section class="social-journey-section"><h3 class="social-journey-section__heading">This week</h3>' + renderTasks() + '</section>'
       + (definition.week === 6 ? '<div class="social-journey-callout"><strong>Foundations is complete after this phase.</strong><p>Weeks 7 to 12 are the optional continuation track for building a public rhythm.</p></div>' : '')
       + (complete ? '<div class="social-journey-callout"><strong>This week is complete.</strong><p>You can let the next week arrive naturally or use the pilot control below to preview it now.</p></div>' : '')
       + '<section class="social-journey-section"><h3 class="social-journey-section__heading">Reminder route</h3><div class="social-journey-callout"><strong>' + (connectedHandle ? connectedHandle : 'In-app first') + '</strong><p>' + escapeHtml(reminderText) + '</p></div>'
       + '<button type="button" class="social-journey-button secondary" onclick="socialJourney.openReminderSetup()">' + (connectedHandle ? 'Review Instagram reminder' : 'Connect Instagram reminder') + '</button>' + instagramButton + '</section>'
+      + '<section class="social-journey-finish"><button type="button" class="social-journey-button" onclick="socialJourney.useGoals()">Use these goals</button><button type="button" class="social-journey-text-button" onclick="socialJourney.reviewLesson()">Review this week\'s lesson</button></section>'
       + '<section class="social-journey-pilot-controls"><h3>Shannon pilot controls</h3><p>These controls change only this social journey. They never reset your character, levels, coins, workouts, meals or other account data.</p>'
       + '<button type="button" class="social-journey-button secondary" onclick="socialJourney.sendTestReminder()" ' + (connectedHandle ? '' : 'disabled') + '>Send a test Instagram reminder</button>'
       + '<button type="button" class="social-journey-button secondary" onclick="socialJourney.advanceWeek()">' + (state.current_week >= 12 ? 'Journey is at Week 12' : 'Preview the next week') + '</button>'
       + '<button type="button" class="social-journey-button danger" onclick="socialJourney.restart()">Restart only this journey</button></section>';
   }
 
+  function renderLesson() {
+    ensureUi();
+    const container = document.getElementById('social-journey-content');
+    if (!container || !state) return;
+    const definition = getWeekDefinition();
+    const lessonCopy = WEEK_LESSONS[definition.week - 1];
+    document.querySelector('.social-journey-header__title').textContent = 'This week in Balance';
+    document.querySelector('.social-journey-header__week').textContent = 'Week ' + definition.week + ' lesson';
+    container.innerHTML = '<section class="social-journey-lesson">'
+      + '<div class="social-journey-lesson__number"><span>WEEK</span><strong>' + String(definition.week).padStart(2, '0') + '</strong></div>'
+      + '<div class="social-journey-lesson__eyebrow">' + escapeHtml(definition.phase) + '</div>'
+      + '<h2>' + escapeHtml(lessonCopy.title) + '</h2><p>' + escapeHtml(lessonCopy.body) + '</p></section>'
+      + '<section class="social-journey-learn-card"><div class="social-journey-section__heading">What to take with you</div>'
+      + '<div class="social-journey-learn-points">' + lessonCopy.points.map(function (point, index) { return '<div><span>0' + (index + 1) + '</span><p>' + escapeHtml(point) + '</p></div>'; }).join('') + '</div></section>'
+      + '<div class="social-journey-lesson-action"><button type="button" class="social-journey-button" onclick="socialJourney.showGoals()">See my goals</button><button type="button" class="social-journey-text-button" onclick="socialJourney.close()">Not now</button></div>';
+  }
+
+  async function showGoals() {
+    if (!state) return;
+    const settings = safeObject(state.settings);
+    const weeks = new Set(lessonSeenWeeks());
+    weeks.add(Number(state.current_week));
+    try {
+      await upsertState({
+        onboarding_complete: true,
+        settings: Object.assign({}, settings, { lesson_seen_weeks: Array.from(weeks).sort((a, b) => a - b) })
+      });
+    } catch (error) {
+      showToast(error.message || 'That lesson could not be saved yet.', 'error');
+      return;
+    }
+    viewStage = 'goals';
+    renderCard();
+    renderJourney();
+    const scroll = document.getElementById('social-journey-content');
+    if (scroll) scroll.scrollTop = 0;
+  }
+
+  function useGoals() {
+    closeJourney();
+    if (typeof window.switchAppTab === 'function') {
+      try { window.switchAppTab('dashboard'); } catch (_) {}
+    }
+    showToast('Your Journey Goals are ready on Home.', 'success');
+  }
+
+  function reviewLesson() {
+    viewStage = 'lesson';
+    renderJourney();
+    const scroll = document.getElementById('social-journey-content');
+    if (scroll) scroll.scrollTop = 0;
+  }
+
   function openJourney() {
     if (!isPilotUser() || !state) return;
     ensureUi();
+    markJourneyFeatureSeen();
+    viewStage = isCurrentLessonSeen() ? 'goals' : 'lesson';
     calculateProgress().catch(function () {}).finally(function () {
       renderCard();
       renderJourney();
@@ -498,11 +602,21 @@
   function switchTo(action) {
     closeJourney();
     if (action === 'instagram') return openInstagram();
-    const tab = action === 'feed' ? 'friends' : (action === 'meals' ? 'meals' : (action === 'movement' ? 'movement-tab' : 'dashboard'));
+    const isFeedAction = action === 'feed' || action === 'feed-photo';
+    const tab = isFeedAction ? 'friends' : (action === 'meals' ? 'meals' : (action === 'movement' ? 'movement-tab' : 'dashboard'));
     if (typeof window.switchAppTab === 'function') {
       try { window.switchAppTab(tab); } catch (_) {}
     }
-    if (action === 'feed') {
+    if (action === 'feed-photo') {
+      try {
+        if (typeof window.openFeedComposerMediaSource === 'function') {
+          window.openFeedComposerMediaSource('camera-photo');
+          return;
+        }
+        const input = document.getElementById('feed-composer-camera-photo-input');
+        if (input) input.click();
+      } catch (_) {}
+    } else if (action === 'feed') {
       setTimeout(function () {
         const composer = document.querySelector('#feed-composer-card textarea,#feed-composer-card input');
         if (composer && typeof composer.focus === 'function') composer.focus();
@@ -558,51 +672,13 @@
     if (typeof window.showToast === 'function') window.showToast(message, type || 'info');
   }
 
-  function onboardingCopy(stepIndex) {
-    const steps = [
-      {
-        eyebrow: 'Your new member experience',
-        title: 'Build the pattern, then share it.',
-        body: 'The first six weeks use the Balance Feed as a safe rehearsal space. The next six help you take the same evidence to Instagram.',
-        content: '<div class="social-journey-onboarding__proof"><div>1 · Practise inside Balance</div><div>2 · Change the inputs around you</div><div>3 · Share publicly when you are ready</div></div>'
-      },
-      {
-        eyebrow: 'Your existing account stays intact',
-        title: 'Nothing you have earned is being reset.',
-        body: 'This is a separate onboarding experience for the pilot. It does not touch the rest of your Balance account.',
-        content: '<div class="social-journey-onboarding__proof"><div>✓ Character and levels stay</div><div>✓ Coins, workouts and meals stay</div><div>✓ Programs, friends and history stay</div></div>'
-      },
-      {
-        eyebrow: 'Course lesson → journey goals',
-        title: 'Every lesson ends with something visible.',
-        body: 'Your three Journey Goals sit directly under Weekly Goals. Real Feed posts, comments and Instagram shares update them automatically.',
-        content: '<div class="social-journey-onboarding__proof"><div>👋 Introduce yourself in Feed</div><div>🥗 Share one normal meal</div><div>💬 Encourage three members</div></div>'
-      },
-      {
-        eyebrow: 'Optional Instagram reminders',
-        title: 'Use Shannon’s Instagram to close the loop.',
-        body: 'In-app remains the default. You can connect one of your eligible Instagram test conversations for a specific reminder when a journey goal is still open.',
-        content: '<div id="social-journey-connect-box"><div class="social-journey-status">Loading eligible Instagram conversations...</div></div>'
-      }
-    ];
-    return steps[stepIndex] || steps[0];
-  }
-
-  function onboardingDots() {
-    return '<div class="social-journey-onboarding__dots">' + [0,1,2,3].map(function (index) { return '<span class="' + (index === onboardingStep ? 'active' : '') + '"></span>'; }).join('') + '</div>';
-  }
-
-  function renderOnboarding() {
+  function renderReminderSetup() {
     ensureUi();
     const sheet = document.getElementById('social-journey-onboarding-sheet');
-    const copy = onboardingCopy(onboardingStep);
-    const final = onboardingStep === 3;
-    sheet.innerHTML = '<div class="social-journey-onboarding__visual"><div class="social-journey-onboarding__step">' + escapeHtml(copy.eyebrow) + '</div><h2>' + escapeHtml(copy.title) + '</h2><p>' + escapeHtml(copy.body) + '</p></div>'
-      + '<div class="social-journey-onboarding__body">' + copy.content + onboardingDots()
-      + '<button type="button" class="social-journey-button" onclick="socialJourney.onboardingNext()">' + (final ? (state && state.onboarding_complete ? 'Done' : 'Start Week 1') : 'Continue') + '</button>'
-      + (onboardingStep > 0 ? '<button type="button" class="social-journey-button secondary" onclick="socialJourney.onboardingBack()">Back</button>' : '')
-      + '</div>';
-    if (final) renderCandidateSelect();
+    sheet.innerHTML = '<div class="social-journey-onboarding__visual"><div class="social-journey-onboarding__step">Optional reminder</div><h2>Keep the loop gentle.</h2><p>Choose one of your Instagram test conversations if you want a reminder about an unfinished Journey Goal.</p></div>'
+      + '<div class="social-journey-onboarding__body"><div id="social-journey-connect-box"><div class="social-journey-status">Loading eligible Instagram conversations...</div></div>'
+      + '<button type="button" class="social-journey-button" style="margin-top:14px" onclick="socialJourney.closeReminderSetup()">Done</button></div>';
+    renderCandidateSelect();
   }
 
   function renderCandidateSelect() {
@@ -626,28 +702,11 @@
       + '</select><button type="button" class="social-journey-button secondary" style="margin-top:9px" onclick="socialJourney.connectSelectedInstagram()">Save reminder choice</button><div class="social-journey-status" id="social-journey-connect-status">Nothing is sent until you explicitly connect a conversation.</div>';
   }
 
-  function openOnboarding() {
-    ensureUi();
-    onboardingStep = 0;
-    renderOnboarding();
-    const overlay = document.getElementById('social-journey-onboarding');
-    overlay.classList.add('is-open');
-    overlay.setAttribute('aria-hidden', 'false');
-  }
-
-  function closeOnboarding() {
+  function closeReminderSetup() {
     const overlay = document.getElementById('social-journey-onboarding');
     if (!overlay) return;
     overlay.classList.remove('is-open');
     overlay.setAttribute('aria-hidden', 'true');
-  }
-
-  async function finishOnboarding() {
-    await upsertState({ onboarding_complete: true, current_week: 1, week_started_at: brisbaneDateKey(), progress_snapshot: {} });
-    closeOnboarding();
-    await calculateProgress();
-    renderCard();
-    openJourney();
   }
 
   async function connectSelectedInstagram() {
@@ -677,8 +736,7 @@
   }
 
   function openReminderSetup() {
-    onboardingStep = 3;
-    renderOnboarding();
+    renderReminderSetup();
     const overlay = document.getElementById('social-journey-onboarding');
     overlay.classList.add('is-open');
     overlay.setAttribute('aria-hidden', 'false');
@@ -700,6 +758,7 @@
     await upsertState({ current_week: state.current_week + 1, week_started_at: brisbaneDateKey(), progress_snapshot: {} });
     await calculateProgress();
     renderCard();
+    viewStage = 'lesson';
     renderJourney();
     const scroll = document.getElementById('social-journey-content');
     if (scroll) scroll.scrollTop = 0;
@@ -708,7 +767,8 @@
   async function restart() {
     const confirmed = window.confirm('Restart only the social journey from Week 1? Your character, levels, coins and all other Balance data stay exactly as they are.');
     if (!confirmed) return;
-    const settings = safeObject(state.settings);
+    const settings = Object.assign({}, safeObject(state.settings));
+    delete settings.lesson_seen_weeks;
     await upsertState({
       current_week: 1,
       week_started_at: brisbaneDateKey(),
@@ -719,8 +779,10 @@
       settings
     });
     progress = null;
-    closeJourney();
-    openOnboarding();
+    await calculateProgress();
+    renderCard();
+    viewStage = 'lesson';
+    renderJourney();
   }
 
   async function refresh() {
@@ -731,9 +793,6 @@
       ensureUi();
       await calculateProgress();
       renderCard();
-      if (!state.onboarding_complete && !document.getElementById('social-journey-onboarding').classList.contains('is-open')) {
-        setTimeout(openOnboarding, 600);
-      }
     } catch (error) {
       console.warn('[social-journey] refresh failed', error);
       const card = getCard();
@@ -768,27 +827,18 @@
     isOnboardingComplete: function () { return !!(state && state.onboarding_complete); },
     open: openJourney,
     close: closeJourney,
+    showGoals,
+    useGoals,
+    reviewLesson,
     refresh,
     taskAction,
     openInstagram,
     openReminderSetup,
+    closeReminderSetup,
     connectSelectedInstagram,
     sendTestReminder,
     advanceWeek,
     restart,
-    onboardingNext: function () {
-      if (onboardingStep < 3) {
-        onboardingStep += 1;
-        renderOnboarding();
-      } else {
-        if (state && state.onboarding_complete) closeOnboarding();
-        else finishOnboarding().catch(function (error) { showToast(error.message, 'error'); });
-      }
-    },
-    onboardingBack: function () {
-      if (onboardingStep > 0) onboardingStep -= 1;
-      renderOnboarding();
-    },
     _test: {
       WEEK_DEFINITIONS,
       brisbaneDateKey,
