@@ -11,6 +11,7 @@ const {
     isMetaAdGoalReplyTurn,
     buildMetaAdFirstReplyApproval,
     buildApprovedMetaAdFirstReplyHandoffData,
+    shouldBypassGenericLinkHandoffForApprovedPaidMetaProgression,
     buildApprovedDeterministicMetaAdFirstReplyReview,
     ensureMetaAdSalesProgressionQuestion,
     buildDeterministicPaidMetaConversationReply,
@@ -179,6 +180,21 @@ test('paid Meta blocker quotes the six-week payment and app access follows posit
     assert.equal((voiceReply.joined.match(/\?/g) || []).length, 1);
     assert.deepStrictEqual(voiceReply.voiceThoughtPausesMs, [1900, 1500, 1450, 1350, 1550, 1600, 1500]);
     assert.equal(inspectVoiceScriptQuality(voiceReply.joined).valid, true);
+    const approvedVoiceProgression = buildPaidMetaConversationApproval({
+        metaAdConversationFastLane: true,
+        draft: voiceReply,
+        currentMessage: 'My roster changes and family stuff makes it hard to restart.',
+        linkedUserId: null,
+        qualifier,
+    });
+    assert.equal(shouldBypassGenericLinkHandoffForApprovedPaidMetaProgression({
+        approval: approvedVoiceProgression,
+        draft: voiceReply,
+    }), true);
+    assert.equal(shouldBypassGenericLinkHandoffForApprovedPaidMetaProgression({
+        approval: approvedVoiceProgression,
+        draft: { ...voiceReply, joined: `${voiceReply.joined}\n\nhttps://plantbased-balance.org/founders` },
+    }), false);
 
     const coalescedVoiceReply = restoreCoalescedPaidMetaVoiceDraft({
         draft: blockerReply,

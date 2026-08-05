@@ -2149,6 +2149,13 @@ function buildApprovedMetaAdFirstReplyHandoffData({ approval, draft, leadStage, 
     };
 }
 
+function shouldBypassGenericLinkHandoffForApprovedPaidMetaProgression({ approval, draft } = {}) {
+    return approval?.required === false
+        && approval?.code === 'approved_meta_ad_sales_progression'
+        && draft?.replyMode === 'campaign_sales_progression'
+        && !/https?:\/\//i.test(String(draft?.joined || ''));
+}
+
 const META_AD_CARD_ATTACHMENT_RE = /^\[attachment:https:\/\/lookaside\.fbsbx\.com\/ig_messaging_cdn\/?[^\]]*\]$/i;
 
 function isMetaAdCardAttachmentTransportArtifact({
@@ -6433,6 +6440,10 @@ exports.handler = async (event) => {
     let challengeOfferWarning = metaAdFirstReplyApproval
         || paidMetaConversationApproval
         || buildChallengeOfferWarning({ draftText: draft.joined, qualifier, currentMessage: displayMessage });
+    const skipGenericPaidMetaLinkHandoff = shouldBypassGenericLinkHandoffForApprovedPaidMetaProgression({
+        approval: paidMetaConversationApproval,
+        draft,
+    });
     const leadOnboardingHandoffData = buildApprovedMetaAdFirstReplyHandoffData({
         approval: metaAdFirstReplyApproval,
         draft,
@@ -6440,7 +6451,7 @@ exports.handler = async (event) => {
         linkedUserId: thread.linked_user_id,
         threadId: thread.id,
         manychatMessageId,
-    }) || buildLeadOnboardingHandoffData({
+    }) || (!skipGenericPaidMetaLinkHandoff && buildLeadOnboardingHandoffData({
         draftText: draft.joined,
         qualifier,
         leadStage: effectiveLeadStage,
@@ -6449,7 +6460,7 @@ exports.handler = async (event) => {
         manychatMessageId,
         currentMessage: displayMessage,
         appPreviewHandoffUrl: draft.appPreviewHandoff ? draft.appPreviewUrl : '',
-    });
+    }));
     const approvedCoachingLinkHandoff = leadOnboardingHandoffData?.approved_link_auto_sendable === true;
     if (leadOnboardingHandoffData?.client_manager_review_required) {
         challengeOfferWarning = {
@@ -7706,6 +7717,7 @@ exports._test = {
     buildMetaAdFoundersPassFirstReply,
     buildMetaAdFirstReplyApproval,
     buildApprovedMetaAdFirstReplyHandoffData,
+    shouldBypassGenericLinkHandoffForApprovedPaidMetaProgression,
     buildApprovedDeterministicMetaAdFirstReplyReview,
     filterMetaAdCardAttachmentHistory,
     isMetaAdCardAttachmentTransportArtifact,
