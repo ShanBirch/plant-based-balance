@@ -179,11 +179,11 @@
       color: #fff;
       text-align: center;
     }
-    .not-equal { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 18px; width: 100%; }
-    .not-equal .drug { padding: 18px 12px; border: 1px solid rgba(255,255,255,0.15); border-radius: 16px; }
-    .not-equal .drug strong { display: block; font-family: "Fraunces", serif; font-size: 1.25rem; }
-    .not-equal .drug span { display: block; margin-top: 5px; color: rgba(255,255,255,0.63); font-size: 0.72rem; }
-    .not-equal .symbol { color: var(--gold); font-family: "Fraunces", serif; font-size: 2.3rem; }
+    .release-pair { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 18px; width: 100%; }
+    .release-pair .drug { padding: 18px 12px; border: 1px solid rgba(255,255,255,0.15); border-radius: 16px; }
+    .release-pair .drug strong { display: block; font-family: "Fraunces", serif; font-size: 1.25rem; }
+    .release-pair .drug span { display: block; margin-top: 5px; color: rgba(255,255,255,0.63); font-size: 0.72rem; }
+    .release-pair .symbol { color: var(--gold); font-family: "Fraunces", serif; font-size: 2.3rem; }
     .side-caption { max-width: 340px; margin-top: 24px; color: rgba(255,255,255,0.68); font-size: 0.83rem; }
 
     .body-map { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
@@ -271,9 +271,9 @@
     .urgent-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 30px; }
     .urgent-item { padding: 17px; border: 1px solid rgba(255,255,255,0.18); border-radius: 14px; background: rgba(255,255,255,0.07); font-size: 0.86rem; font-weight: 600; }
 
-    .doctor-card { display: grid; grid-template-columns: 1fr auto; gap: 36px; align-items: center; padding: clamp(30px, 5vw, 52px); border-radius: 28px; background: var(--forest); color: #fff; }
-    .doctor-card h2 { max-width: 760px; }
-    .doctor-card p { max-width: 700px; margin-top: 18px; color: rgba(255,255,255,0.7); }
+    .summary-card { display: grid; grid-template-columns: 1fr auto; gap: 36px; align-items: center; padding: clamp(30px, 5vw, 52px); border-radius: 28px; background: var(--forest); color: #fff; }
+    .summary-card h2 { max-width: 760px; }
+    .summary-card p { max-width: 700px; margin-top: 18px; color: rgba(255,255,255,0.7); }
     .print-button {
       min-width: 178px;
       padding: 15px 20px;
@@ -297,13 +297,13 @@
     footer { padding: 34px 0 48px; color: var(--muted); font-size: 0.8rem; text-align: center; }
 
     @media (max-width: 900px) {
-      .section-head, .reality-card, .doctor-card { grid-template-columns: 1fr; }
+      .section-head, .reality-card, .summary-card { grid-template-columns: 1fr; }
       .body-map { grid-template-columns: 1fr 1fr; }
       .reality-side { min-height: 300px; }
       .feedback { grid-template-columns: 1fr; }
       .feedback-step:not(:last-child)::after { content: "↓"; right: auto; left: 50%; bottom: -16px; top: auto; }
       .danger-scale { grid-template-columns: 1fr; }
-      .doctor-card { align-items: start; }
+      .summary-card { align-items: start; }
       .print-button { width: fit-content; }
     }
     @media (max-width: 680px) {
@@ -317,8 +317,8 @@
       .body-map, .compare-grid, .route-grid, .monitor-grid, .urgent-grid { grid-template-columns: 1fr; }
       .body-card { min-height: auto; }
       .body-card .num { margin-bottom: 24px; }
-      .not-equal { gap: 8px; }
-      .not-equal .drug { padding: 14px 8px; }
+      .release-pair { gap: 8px; }
+      .release-pair .drug { padding: 14px 8px; }
       .dose-banner { grid-template-columns: 1fr; }
       .route-top, .route-body, .checklist { padding: 26px; }
     }
@@ -327,8 +327,8 @@
       .topbar, .quick-nav, .print-button { display: none !important; }
       .hero { min-height: auto; padding: 44px 0; background: #183b3a !important; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
       .section { padding: 28px 0; break-inside: avoid; }
-      .reality-card, .body-card, .compare-card, .table-wrap, .route-card, .checklist, .urgent, .doctor-card { box-shadow: none; break-inside: avoid; }
-      .urgent, .doctor-card, .route-top { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+      .reality-card, .body-card, .compare-card, .table-wrap, .route-card, .checklist, .urgent, .summary-card { box-shadow: none; break-inside: avoid; }
+      .urgent, .summary-card, .route-top { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
       a { text-decoration: none; }
     }
   </style>
@@ -348,7 +348,7 @@
     <div class="wrap hero-copy">
       <p class="eyebrow">The straight guide</p>
       <h1>Testosterone enanthate, before you decide.</h1>
-      <p class="hero-lede">What the enanthate ester changes, how the oil depot releases over time, and why people use it for replacement, muscle retention and performance. Plus dosing context, injection routes, blood markers, benefits and trade-offs.</p>
+      <p class="hero-lede">How the enanthate ester releases testosterone over time, what the active hormone does inside the body, and how exposure affects muscle, bone, sexual function, blood cells, fertility, mood and other tissues.</p>
       <div class="hero-meta">
         <span class="hero-pill">Plain English</span>
         <span class="hero-pill">Evidence-linked</span>
@@ -377,16 +377,16 @@
           <p class="eyebrow">The big picture</p>
           <h2>Testosterone attached to a slow-release ester.</h2>
           <p>Testosterone enanthate is testosterone joined to an enanthate ester and dissolved in oil. After injection, that ester slows release from the depot. The body then cleaves it off, leaving active testosterone. The ester changes the release profile; it does not create a different anabolic hormone.</p>
-          <p>During a cut, people are usually interested in testosterone for muscle retention, training output and recovery&mdash;not because it directly suppresses appetite. Whether body fat falls still depends mainly on the energy deficit; testosterone changes the body-composition and performance side of that process.</p>
+          <p>Once the ester is removed, the testosterone molecule binds to androgen receptors throughout the body. The result depends on the blood level produced, how long that exposure lasts and how each tissue responds.</p>
         </div>
         <div class="reality-side">
           <div>
-            <div class="not-equal" aria-label="Retatrutide and testosterone work through different systems">
-              <div class="drug"><strong>Retatrutide</strong><span>Investigational metabolic drug</span></div>
-              <div class="symbol">≠</div>
-              <div class="drug"><strong>Testosterone enanthate</strong><span>Slow-release testosterone ester</span></div>
+            <div class="release-pair" aria-label="Testosterone enanthate releases active testosterone over time">
+              <div class="drug"><strong>Oil depot</strong><span>Enanthate slows the release</span></div>
+              <div class="symbol">→</div>
+              <div class="drug"><strong>Active testosterone</strong><span>Binds to androgen receptors</span></div>
             </div>
-            <p class="side-caption">They work through different systems. Retatrutide primarily changes appetite, glucose control and energy balance. Testosterone primarily changes androgen signalling, lean tissue, recovery and reproductive feedback. As of August 2026, retatrutide remains investigational.</p>
+            <p class="side-caption">The ester mainly changes timing. After it is cleaved off, the active hormone is testosterone itself, with the same androgen-receptor activity and the same conversion pathways to DHT and estradiol.</p>
           </div>
         </div>
       </div>
@@ -434,7 +434,7 @@
             <li>Energy, mood or wellbeing in some men</li>
             <li>Maintenance of normal male sex characteristics</li>
           </ul>
-          <p class="fineprint">The size of the effect depends on starting testosterone, dose, time, training, food, sleep and individual response. A replacement effect and a performance-enhancing effect are different parts of the same spectrum.</p>
+          <p class="fineprint">The size of the effect depends on starting testosterone, dose, time, training, food, sleep and individual response. Normal-range and above-normal exposure sit at different points on the same spectrum.</p>
         </article>
         <article class="compare-card risk">
           <h3>Risks and common trade-offs</h3>
@@ -461,25 +461,25 @@
 
       <div class="dose-banner">
         <strong>mg + route + interval</strong>
-        <p>Those three details define the exposure pattern. Testosterone enanthate is commonly used weekly or every two weeks in published replacement schedules; stretching the interval usually creates a bigger peak-to-trough swing.</p>
+        <p>Those three details define the exposure pattern. Testosterone enanthate is commonly studied in weekly or every-two-week schedules; stretching the interval usually creates a bigger peak-to-trough swing.</p>
       </div>
 
-      <div class="table-wrap" role="region" aria-label="Published testosterone enanthate replacement examples and exposure context" tabindex="0">
+      <div class="table-wrap" role="region" aria-label="Testosterone enanthate exposure examples and context" tabindex="0">
         <table>
           <thead><tr><th>Use and route</th><th>Published example</th><th>How the exposure behaves</th></tr></thead>
           <tbody>
             <tr>
-              <td>Replacement — intramuscular <small>Testosterone enanthate oil depot</small></td>
+              <td>Physiological-range exposure — intramuscular <small>Testosterone enanthate oil depot</small></td>
               <td>75–100 mg IM weekly, or 150–200 mg IM every 2 weeks</td>
               <td>Both are guideline examples. Weekly dosing usually creates smaller peaks and troughs; every-two-week dosing can rise above the physiological range early and fall toward or below it late.</td>
             </tr>
             <tr>
-              <td>Replacement — subcutaneous <small>XYOSTED, a formulation-specific auto-injector</small></td>
+              <td>Physiological-range exposure — subcutaneous <small>XYOSTED, a formulation-specific auto-injector</small></td>
               <td>75 mg into abdominal fat once weekly to start; labelled adjustments are 50, 75 or 100 mg</td>
               <td>The labelled blood check is a trough, measured 7 days after the latest dose once 6 weeks of dosing has established the pattern. This product is SC only.</td>
             </tr>
             <tr>
-              <td>Above-physiological exposure <small>Performance use, not a replacement target</small></td>
+              <td>Above-physiological exposure <small>Higher exposure, not a physiological target</small></td>
               <td>No single milligram line separates “safe” from “dangerous”</td>
               <td>More exposure can produce more anabolic effect, but also more suppression and more pressure on haematocrit, blood pressure, skin, hair, fertility, sleep and mood. Duration and stacking add to the risk.</td>
             </tr>
@@ -488,7 +488,7 @@
       </div>
 
       <div class="danger-scale">
-        <article class="scale-card green"><span class="tag">Physiological range</span><h3>Replacement exposure</h3><p>The aim is to reproduce a normal testosterone range. Benefits tend to be restoration of normal function, with risks tracked through symptoms and blood markers.</p></article>
+        <article class="scale-card green"><span class="tag">Physiological range</span><h3>Physiological exposure</h3><p>Exposure stays within the usual physiological range. Effects and trade-offs still vary with the blood level produced, duration, starting level and individual response.</p></article>
         <article class="scale-card amber"><span class="tag">Above physiological</span><h3>Performance exposure</h3><p>Higher androgen exposure can produce more muscle and strength effect. Natural production and sperm signalling are suppressed, while haematocrit, blood pressure, acne, hair loss and other effects become more likely.</p></article>
         <article class="scale-card red"><span class="tag">Compounding risk</span><h3>High exposure, long duration or stacking</h3><p>Risk builds with the level produced, time exposed, multiple drugs, uncertain product strength and adverse markers that are allowed to keep rising. There is no single milligram threshold that predicts the outcome for everyone.</p></article>
       </div>
@@ -510,7 +510,7 @@
               <li><strong>Used for:</strong> testosterone enanthate oil formulations labelled for intramuscular use.</li>
               <li><strong>Trade-offs:</strong> deeper injection, soreness, peaks and troughs with some short-acting schedules.</li>
             </ul>
-            <div class="route-warning">Some long-acting oil injections must be given in a clinic. Never inject testosterone into a vein.</div>
+            <div class="route-warning">Oil-based testosterone must never be injected into a vein. The intended route and site come from the exact formulation.</div>
           </div>
         </article>
 
@@ -570,11 +570,11 @@
     </section>
 
     <section class="wrap section">
-      <div class="doctor-card">
+      <div class="summary-card">
         <div>
           <p class="eyebrow">The useful way to read it</p>
-          <h2>Think in outcomes, exposure and trade-offs&mdash;not just a weekly number.</h2>
-          <p>The same dose can land very differently in two people. The goal might be normal function, muscle retention through a cut, strength or recovery. The fuller picture is the result being produced, the blood level and markers behind it, and which side effects or long-term costs come with that result.</p>
+          <h2>Think in exposure, body systems and trade-offs—not just a weekly number.</h2>
+          <p>The same dose can create different blood levels in different people. The fuller picture is how testosterone is releasing, which tissues are responding, what benefits are appearing and which biological trade-offs are changing alongside them.</p>
         </div>
         <button class="print-button" type="button" onclick="window.print()">Save / print guide</button>
       </div>
@@ -586,24 +586,18 @@
         <p class="section-intro">These are the practical questions that usually sit behind the conversation: what changes, what does not, and why two people can have different results from the same amount.</p>
       </div>
 
-      <details><summary>How long does testosterone enanthate last?</summary><p>The oil depot releases it over days rather than all at once. Published replacement schedules commonly use weekly or every-two-week IM injections, while the approved subcutaneous auto-injector is weekly. &ldquo;Lasts&rdquo; does not mean the blood level stays flat: a dose rises, peaks and then falls, with a larger swing when doses are spaced further apart.</p></details>
-      <details><summary>Will testosterone make me shredded?</summary><p>It can help preserve or add lean mass, maintain training output and change how a cut looks, particularly when androgen exposure is higher. It does not create the calorie deficit itself, so fat loss still comes mainly from energy balance. Water and glycogen changes can also make scale weight and visual sharpness move differently.</p></details>
+      <details><summary>How long does testosterone enanthate last?</summary><p>The oil depot releases it over days rather than all at once. Published enanthate schedules commonly use weekly or every-two-week IM injections, while the approved subcutaneous auto-injector is weekly. &ldquo;Lasts&rdquo; does not mean the blood level stays flat: a dose rises, peaks and then falls, with a larger swing when doses are spaced further apart.</p></details>
+      <details><summary>What changes as testosterone exposure rises?</summary><p>Higher exposure generally increases androgen-receptor signalling and the potential for muscle protein synthesis, lean mass, strength and recovery. The response is not identical between people, and the same rise also strengthens suppression of natural production and can increase effects on haematocrit, blood pressure, skin, hair, fertility, sleep and mood.</p></details>
       <details><summary>Does a “low dose” mean low risk?</summary><p>No. “Low” has no meaning without the formulation, interval, starting level and blood response. A dose that looks modest can still push one person above the normal range, raise haematocrit, increase blood pressure or shut down fertility.</p></details>
       <details><summary>Can natural testosterone production recover after stopping?</summary><p>It often can, but the timing and completeness are unpredictable. Recovery may take months and can be incomplete, especially after longer or higher-dose exposure. Sperm production can take longer to return than blood testosterone, and fertility may remain suppressed for a period.</p></details>
       <details><summary>Is subcutaneous enanthate safer than intramuscular enanthate?</summary><p>Not automatically. A weekly SC product may be easier to administer and can avoid a deep muscle injection, but it still produces systemic testosterone exposure and suppression. Safety depends on the exact formulation, exposure produced, injection technique and individual response.</p></details>
 
-      <h3 style="margin-top:48px">Medical and regulatory sources</h3>
+      <h3 style="margin-top:48px">Evidence and product sources</h3>
       <ul class="sources">
-        <li><a href="https://www.endocrine.org/news-and-advocacy/news-room/2026/statement-on-testosterone-replacement-therapy" target="_blank" rel="noopener">Endocrine Society: 2026 statement on testosterone replacement therapy</a> — current diagnosis, benefit and safety context.</li>
-        <li><a href="https://www.endocrine.org/clinical-practice-guidelines/testosterone-therapy" target="_blank" rel="noopener">Endocrine Society clinical practice guideline</a> — diagnostic criteria, contraindications and monitoring.</li>
-        <li><a href="https://academic.oup.com/jcem/article/103/5/1715/4939465" target="_blank" rel="noopener">Journal of Clinical Endocrinology &amp; Metabolism: full guideline</a> — doctor-used formulation and starting-dose examples.</li>
-        <li><a href="https://www.auanet.org/Documents/Guidelines/PDF/Testosterone%20Website%20Final%280%29.pdf" target="_blank" rel="noopener">American Urological Association testosterone deficiency guideline</a> — repeat early-morning testing and clinical diagnosis.</li>
-        <li><a href="https://healthymale.org.au/health-article/what-is-testosterone-replacement-therapy" target="_blank" rel="noopener">Healthy Male Australia: testosterone replacement therapy</a> — Australian prescribing and monitoring overview.</li>
-        <li><a href="https://www.fda.gov/drugs/postmarket-drug-safety-information-patients-and-providers/testosterone-information" target="_blank" rel="noopener">US FDA testosterone information</a> — current approved-use and cardiovascular evidence summary.</li>
-        <li><a href="https://www.accessdata.fda.gov/drugsatfda_docs/label/2025/209863s020lbl.pdf" target="_blank" rel="noopener">FDA prescribing information: subcutaneous testosterone enanthate</a> — abdomen-only product instructions, dosing and warnings.</li>
-        <li><a href="https://www.tga.gov.au/resources/artg/10707" target="_blank" rel="noopener">TGA: Primoteston Depot testosterone enanthate</a> &mdash; current Australian product registration and product information.</li>
-        <li><a href="https://www.lilly.com/news/stories/what-to-know-about-retatrutide" target="_blank" rel="noopener">Eli Lilly: current retatrutide status</a> — investigational status and warning against products sold outside trials.</li>
-        <li><a href="https://www.tga.gov.au/news/safety-updates/product-information-safety-updates-february-2026" target="_blank" rel="noopener">TGA product-information safety updates, February 2026</a> &mdash; current Australian enanthate safety updates.</li>
+        <li><a href="https://academic.oup.com/jcem/article/103/5/1715/4939465" target="_blank" rel="noopener">Journal of Clinical Endocrinology &amp; Metabolism: testosterone formulation and pharmacokinetic tables</a> — enanthate release patterns, exposure examples and blood-test timing.</li>
+        <li><a href="https://www.accessdata.fda.gov/drugsatfda_docs/label/2025/209863s020lbl.pdf" target="_blank" rel="noopener">FDA product information: subcutaneous testosterone enanthate</a> — abdomen-only product instructions, weekly exposure and safety data.</li>
+        <li><a href="https://www.tga.gov.au/resources/artg/10707" target="_blank" rel="noopener">TGA: Primoteston Depot testosterone enanthate</a> — current Australian product registration and product information.</li>
+        <li><a href="https://www.tga.gov.au/news/safety-updates/product-information-safety-updates-february-2026" target="_blank" rel="noopener">TGA product-information safety updates, February 2026</a> — current Australian enanthate safety updates.</li>
       </ul>
       <p class="source-date">Evidence checked 8 August 2026. This page explains mechanisms, use patterns and risk context; individual response varies.</p>
     </section>
