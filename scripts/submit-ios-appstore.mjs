@@ -245,20 +245,22 @@ async function attachBuild(appStoreVersion, build) {
 async function updateReleaseNotes(appStoreVersion, app) {
   const localizations = await asc(`/appStoreVersions/${appStoreVersion.id}/appStoreVersionLocalizations?${params({ limit: 10 })}`);
   const primaryLocale = app.attributes?.primaryLocale || 'en-AU';
-  const localization = localizations.data?.[0];
+  const existingLocalizations = localizations.data || [];
 
-  if (localization) {
-    await asc(`/appStoreVersionLocalizations/${localization.id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({
-        data: {
-          type: 'appStoreVersionLocalizations',
-          id: localization.id,
-          attributes: { whatsNew: releaseNotes },
-        },
-      }),
-    });
-    console.log(`Updated release notes for ${localization.attributes?.locale || primaryLocale}`);
+  if (existingLocalizations.length) {
+    for (const localization of existingLocalizations) {
+      await asc(`/appStoreVersionLocalizations/${localization.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          data: {
+            type: 'appStoreVersionLocalizations',
+            id: localization.id,
+            attributes: { whatsNew: releaseNotes },
+          },
+        }),
+      });
+      console.log(`Updated release notes for ${localization.attributes?.locale || primaryLocale}`);
+    }
     return;
   }
 
