@@ -202,6 +202,98 @@
     .feedback-step:not(:last-child)::after { content: "→"; position: absolute; z-index: 2; right: -12px; color: var(--sage-deep); }
     .feedback-step:last-child { background: var(--red-soft); color: var(--red); }
 
+
+    .mechanism-stack { display: grid; gap: 24px; margin-top: 38px; }
+    .diagram-panel {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      background: var(--paper);
+      box-shadow: 0 18px 48px rgba(16,42,43,0.08);
+    }
+    .diagram-head {
+      display: grid;
+      grid-template-columns: minmax(0,0.8fr) minmax(280px,1.2fr);
+      gap: 36px;
+      align-items: end;
+      padding: 34px 38px 28px;
+      border-bottom: 1px solid var(--line);
+    }
+    .diagram-head p { color: var(--muted); font-size: 0.92rem; }
+    .diagram-kicker { display: block; margin-bottom: 8px; color: var(--sage-deep); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+    .diagram-body { padding: 34px 38px 38px; }
+    .cell-diagram {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0,1fr) 30px) minmax(0,1fr);
+      align-items: stretch;
+      gap: 8px;
+    }
+    .diagram-node {
+      position: relative;
+      min-height: 190px;
+      padding: 22px 18px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #f8f6ef;
+    }
+    .diagram-node.nucleus { background: var(--blue); }
+    .diagram-node.output { background: var(--sage); }
+    .diagram-token {
+      display: grid;
+      place-items: center;
+      width: 48px;
+      height: 48px;
+      margin-bottom: 26px;
+      border-radius: 50%;
+      background: var(--forest);
+      color: var(--gold);
+      font-family: "Fraunces", serif;
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+    .diagram-node h3 { margin-bottom: 8px; font-size: 1.08rem; }
+    .diagram-node p { color: var(--muted); font-size: 0.8rem; line-height: 1.5; }
+    .diagram-arrow { display: grid; place-items: center; color: var(--gold); font-size: 1.8rem; font-weight: 700; }
+    .cell-boundary {
+      margin-top: 22px;
+      padding: 14px 18px;
+      border-radius: 14px;
+      background: var(--forest);
+      color: rgba(255,255,255,0.76);
+      font-size: 0.8rem;
+      text-align: center;
+    }
+    .input-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+    .input-card { padding: 20px; border-radius: 16px; background: #eef1ea; text-align: center; }
+    .input-card strong { display: block; margin-bottom: 5px; }
+    .input-card span { color: var(--muted); font-size: 0.78rem; }
+    .converge { display: grid; place-items: center; padding: 16px 0; color: var(--gold); font-size: 1.7rem; }
+    .growth-chain {
+      display: grid;
+      grid-template-columns: repeat(3,minmax(0,1fr) 34px) minmax(0,1fr);
+      align-items: stretch;
+      gap: 8px;
+    }
+    .growth-node { padding: 24px 20px; border-radius: 18px; background: var(--sage); }
+    .growth-node.final { background: var(--forest); color: #fff; }
+    .growth-node .step { display: block; margin-bottom: 24px; color: var(--sage-deep); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; }
+    .growth-node.final .step { color: var(--gold); }
+    .growth-node h3 { margin-bottom: 8px; font-size: 1.08rem; }
+    .growth-node p { color: var(--muted); font-size: 0.8rem; line-height: 1.5; }
+    .growth-node.final p { color: rgba(255,255,255,0.7); }
+    .mechanism-note {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 14px;
+      align-items: start;
+      margin-top: 20px;
+      padding: 18px 20px;
+      border-radius: 16px;
+      background: var(--gold-soft);
+      color: #574a2f;
+      font-size: 0.82rem;
+    }
+    .mechanism-note strong { color: var(--forest); }
     .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
     .compare-card { padding: clamp(28px, 4vw, 42px); border-radius: var(--radius); }
     .compare-card.good { background: var(--sage); }
@@ -303,6 +395,12 @@
       .feedback { grid-template-columns: 1fr; }
       .feedback-step:not(:last-child)::after { content: "↓"; right: auto; left: 50%; bottom: -16px; top: auto; }
       .danger-scale { grid-template-columns: 1fr; }
+      .diagram-head { grid-template-columns: 1fr; gap: 14px; padding: 28px; }
+      .diagram-body { padding: 28px; }
+      .cell-diagram, .growth-chain { grid-template-columns: 1fr; }
+      .diagram-node { min-height: auto; }
+      .diagram-arrow { min-height: 26px; transform: rotate(90deg); }
+      .input-row { grid-template-columns: 1fr; }
       .summary-card { align-items: start; }
       .print-button { width: fit-content; }
     }
@@ -414,6 +512,89 @@
         <div class="feedback-step">LH + FSH</div>
         <div class="feedback-step">Testes</div>
         <div class="feedback-step">External testosterone turns this signal down</div>
+      </div>
+      <div class="mechanism-stack" id="cell-signalling">
+        <article class="diagram-panel">
+          <div class="diagram-head">
+            <div><span class="diagram-kicker">Diagram 1</span><h3>Inside a muscle cell</h3></div>
+            <p>Testosterone is a steroid hormone, so it can cross the cell membrane. Its main genomic effect begins when it binds the androgen receptor inside the cell.</p>
+          </div>
+          <div class="diagram-body">
+            <div class="cell-diagram" role="img" aria-label="Testosterone enters a muscle cell, binds the androgen receptor, moves into the nucleus, binds DNA and changes protein production">
+              <div class="diagram-node">
+                <span class="diagram-token">T</span>
+                <h3>1. Enters the cell</h3>
+                <p>Free testosterone moves through the muscle-cell membrane into the cytoplasm.</p>
+              </div>
+              <div class="diagram-arrow" aria-hidden="true">→</div>
+              <div class="diagram-node">
+                <span class="diagram-token">AR</span>
+                <h3>2. Binds the receptor</h3>
+                <p>Testosterone binds the androgen receptor. The receptor changes shape and releases its chaperone proteins.</p>
+              </div>
+              <div class="diagram-arrow" aria-hidden="true">→</div>
+              <div class="diagram-node nucleus">
+                <span class="diagram-token">2×</span>
+                <h3>3. Enters the nucleus</h3>
+                <p>Activated receptors pair up and move into the nucleus, where the cell stores its DNA.</p>
+              </div>
+              <div class="diagram-arrow" aria-hidden="true">→</div>
+              <div class="diagram-node nucleus">
+                <span class="diagram-token">DNA</span>
+                <h3>4. Binds response elements</h3>
+                <p>The receptor complex attaches to androgen response elements and recruits co-regulators that alter gene transcription.</p>
+              </div>
+              <div class="diagram-arrow" aria-hidden="true">→</div>
+              <div class="diagram-node output">
+                <span class="diagram-token">mRNA</span>
+                <h3>5. Changes cell output</h3>
+                <p>Changed gene transcription alters the protein instructions sent to ribosomes and the way the fibre remodels.</p>
+              </div>
+            </div>
+            <div class="cell-boundary">Cell membrane → cytoplasm → nucleus → gene transcription → protein production and remodelling</div>
+          </div>
+        </article>
+
+        <article class="diagram-panel">
+          <div class="diagram-head">
+            <div><span class="diagram-kicker">Diagram 2</span><h3>From androgen signal to more lean mass</h3></div>
+            <p>Muscle gain is an accumulated outcome. Testosterone increases anabolic signalling, while training, amino acids, energy and recovery influence what the muscle can build from that signal.</p>
+          </div>
+          <div class="diagram-body">
+            <div class="input-row" aria-label="Inputs that influence muscle growth">
+              <div class="input-card"><strong>Androgen exposure</strong><span>How much receptor signalling occurs, and for how long</span></div>
+              <div class="input-card"><strong>Mechanical tension</strong><span>Resistance training supplies a targeted growth stimulus</span></div>
+              <div class="input-card"><strong>Building material</strong><span>Amino acids, energy, sleep and recovery support adaptation</span></div>
+            </div>
+            <div class="converge" aria-hidden="true">↓</div>
+            <div class="growth-chain" role="img" aria-label="Androgen receptor signalling supports protein synthesis and remodelling, producing larger muscle fibres and greater lean mass over time">
+              <div class="growth-node">
+                <span class="step">01 / SIGNAL</span>
+                <h3>Gene expression shifts</h3>
+                <p>Androgen-receptor activity changes transcription in muscle cells and influences pathways involved in muscle structure and function.</p>
+              </div>
+              <div class="diagram-arrow" aria-hidden="true">→</div>
+              <div class="growth-node">
+                <span class="step">02 / BALANCE</span>
+                <h3>Net protein balance rises</h3>
+                <p>When muscle protein synthesis exceeds protein breakdown across repeated cycles, contractile material can accumulate.</p>
+              </div>
+              <div class="diagram-arrow" aria-hidden="true">→</div>
+              <div class="growth-node">
+                <span class="step">03 / REMODEL</span>
+                <h3>Fibres thicken</h3>
+                <p>Human biopsy studies show larger type I and type II fibre area. Satellite-cell and myonuclear changes may support this remodelling.</p>
+              </div>
+              <div class="diagram-arrow" aria-hidden="true">→</div>
+              <div class="growth-node final">
+                <span class="step">04 / OUTCOME</span>
+                <h3>Lean mass increases</h3>
+                <p>Across weeks and months, larger fibres contribute to greater muscle size and fat-free mass. Strength gains also depend on training and neural adaptation.</p>
+              </div>
+            </div>
+            <div class="mechanism-note"><strong>Important distinction</strong><span>Lean mass is not a pure measurement of new contractile muscle; it also includes body water, glycogen and other fat-free tissue. The muscle studies also used MRI and biopsies, which support genuine fibre hypertrophy rather than scale change alone.</span></div>
+          </div>
+        </article>
       </div>
     </section>
 
@@ -598,8 +779,12 @@
         <li><a href="https://www.accessdata.fda.gov/drugsatfda_docs/label/2025/209863s020lbl.pdf" target="_blank" rel="noopener">FDA product information: subcutaneous testosterone enanthate</a> — abdomen-only product instructions, weekly exposure and safety data.</li>
         <li><a href="https://www.tga.gov.au/resources/artg/10707" target="_blank" rel="noopener">TGA: Primoteston Depot testosterone enanthate</a> — current Australian product registration and product information.</li>
         <li><a href="https://www.tga.gov.au/news/safety-updates/product-information-safety-updates-february-2026" target="_blank" rel="noopener">TGA product-information safety updates, February 2026</a> — current Australian enanthate safety updates.</li>
+        <li><a href="https://pubmed.ncbi.nlm.nih.gov/9815007/" target="_blank" rel="noopener">Ferrando et al.: testosterone and net muscle protein synthesis</a> — human amino-acid tracer study of muscle protein kinetics.</li>
+        <li><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC5417449/" target="_blank" rel="noopener">Wyce et al.: androgen-receptor gene targets in human skeletal muscle cells</a> — direct mapping of receptor binding and muscle-related gene regulation.</li>
+        <li><a href="https://pubmed.ncbi.nlm.nih.gov/12067856/" target="_blank" rel="noopener">Sinha-Hikim et al.: testosterone enanthate and muscle-fibre hypertrophy</a> — human biopsy evidence across graded exposure.</li>
+        <li><a href="https://pubmed.ncbi.nlm.nih.gov/11701431/" target="_blank" rel="noopener">Bhasin et al.: testosterone dose-response in healthy young men</a> — randomised evidence linking exposure with fat-free mass, muscle size and strength.</li>
       </ul>
-      <p class="source-date">Evidence checked 8 August 2026. This page explains mechanisms, use patterns and risk context; individual response varies.</p>
+      <p class="source-date">Evidence checked 9 August 2026. This page explains mechanisms, use patterns and risk context; individual response varies.</p>
     </section>
   </main>
 
