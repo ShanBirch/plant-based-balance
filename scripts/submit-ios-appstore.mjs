@@ -165,25 +165,41 @@ async function getOrCreateAppStoreVersion(app) {
     return version;
   }
 
-  const created = await asc('/appStoreVersions', {
-    method: 'POST',
-    body: JSON.stringify({
-      data: {
-        type: 'appStoreVersions',
-        attributes: {
-          platform: 'IOS',
-          versionString,
-        },
-        relationships: {
-          app: {
-            data: { type: 'apps', id: app.id },
+  try {
+    const created = await asc('/appStoreVersions', {
+      method: 'POST',
+      body: JSON.stringify({
+        data: {
+          type: 'appStoreVersions',
+          attributes: {
+            platform: 'IOS',
+            versionString,
+          },
+          relationships: {
+            app: {
+              data: { type: 'apps', id: app.id },
+            },
           },
         },
-      },
-    }),
-  });
-  console.log(`Created App Store version ${versionString} (${created.data.id})`);
-  return created.data;
+      }),
+    });
+    console.log(`Created App Store version ${versionString} (${created.data.id})`);
+    return created.data;
+  } catch (error) {
+    console.log(`Could not create App Store version ${versionString}. Inspecting existing iOS version states.`);
+    try {
+      const versions = await asc(`/apps/${app.id}/appStoreVersions?${params({
+        'filter[platform]': 'IOS',
+        limit: 50,
+      })}`);
+      for (const version of versions.data || []) {
+        console.log(`Existing iOS version ${version.attributes?.versionString || version.id}: ${version.attributes?.appStoreState || 'UNKNOWN'}`);
+      }
+    } catch (inspectionError) {
+      console.log(`Could not inspect existing iOS versions: ${inspectionError.message}`);
+    }
+    throw error;
+  }
 }
 
 function isSubmittedOrPastSubmissionState(state) {
