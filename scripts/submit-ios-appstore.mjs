@@ -303,6 +303,82 @@ async function updateReviewNotes(appStoreVersion) {
   }
 }
 
+function present(value) {
+  return value !== undefined && value !== null && String(value).trim() !== '';
+}
+
+async function inspectSubmissionReadiness(appStoreVersion, app) {
+  console.log('Inspecting App Store submission readiness.');
+
+  const version = await asc(`/appStoreVersions/${appStoreVersion.id}?${params({
+    include: 'build',
+  })}`);
+  const versionAttributes = version.data?.attributes || {};
+  console.log(`Version metadata: ${JSON.stringify({
+    appStoreState: versionAttributes.appStoreState || null,
+    copyrightPresent: present(versionAttributes.copyright),
+    releaseType: versionAttributes.releaseType || null,
+    buildAttached: (version.included || []).some((item) => item.type === 'builds'),
+  })}`);
+
+  const localizations = await asc(`/appStoreVersions/${appStoreVersion.id}/appStoreVersionLocalizations?${params({ limit: 50 })}`);
+  const versionLocales = [];
+  for (const localization of localizations.data || []) {
+    const attributes = localization.attributes || {};
+    const screenshotSets = await asc(`/appStoreVersionLocalizations/${localization.id}/appScreenshotSets?${params({
+      include: 'appScreenshots',
+      limit: 50,
+    })}`);
+    const screenshots = (screenshotSets.included || []).filter((item) => item.type === 'appScreenshots');
+    versionLocales.push(attributes.locale);
+    console.log(`Version localization ${attributes.locale || localization.id}: ${JSON.stringify({
+      descriptionPresent: present(attributes.description),
+      keywordsPresent: present(attributes.keywords),
+      supportUrlPresent: present(attributes.supportUrl),
+      whatsNewPresent: present(attributes.whatsNew),
+      screenshotSetCount: screenshotSets.data?.length || 0,
+      screenshotCount: screenshots.length,
+    })}`);
+  }
+
+  try {
+    const reviewDetail = await asc(`/appStoreVersions/${appStoreVersion.id}/appStoreReviewDetail`);
+    const attributes = reviewDetail.data?.attributes || {};
+    console.log(`App Review details: ${JSON.stringify({
+      exists: Boolean(reviewDetail.data?.id),
+      contactFirstNamePresent: present(attributes.contactFirstName),
+      contactLastNamePresent: present(attributes.contactLastName),
+      contactPhonePresent: present(attributes.contactPhone),
+      contactEmailPresent: present(attributes.contactEmail),
+      demoAccountRequired: attributes.demoAccountRequired ?? null,
+      demoAccountNamePresent: present(attributes.demoAccountName),
+      demoAccountPasswordPresent: present(attributes.demoAccountPassword),
+      notesPresent: present(attributes.notes),
+    })}`);
+  } catch (error) {
+    console.log(`App Review details unavailable: ${error.message}`);
+  }
+
+  try {
+    const appInfos = await asc(`/apps/${app.id}/appInfos?${params({
+      include: 'appInfoLocalizations',
+      limit: 50,
+    })}`);
+    const appInfoLocales = [...new Set((appInfos.included || [])
+      .filter((item) => item.type === 'appInfoLocalizations')
+      .map((item) => item.attributes?.locale)
+      .filter(Boolean))];
+    console.log(`Localization parity: ${JSON.stringify({
+      versionLocales,
+      appInfoLocales,
+      missingFromVersion: appInfoLocales.filter((locale) => !versionLocales.includes(locale)),
+      missingFromAppInfo: versionLocales.filter((locale) => !appInfoLocales.includes(locale)),
+    })}`);
+  } catch (error) {
+    console.log(`Could not inspect App Info localization parity: ${error.message}`);
+  }
+}
+
 async function submit(appStoreVersion, app) {
   if (!submitForReview) {
     console.log('SUBMIT_FOR_REVIEW=false, stopping before App Review submission.');
@@ -385,5 +461,6 @@ if (!(await stopIfAlreadySubmitted(appStoreVersion))) {
   await attachBuild(appStoreVersion, build);
   await updateReleaseNotes(appStoreVersion, app);
   await updateReviewNotes(appStoreVersion);
+  await inspectSubmissionReadiness(appStoreVersion, app);
   await submit(appStoreVersion, app);
 }
