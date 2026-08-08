@@ -7414,6 +7414,7 @@ const WIZARD_CHAT_STEPS = [
     {
         key: 'main_blocker',
         type: 'text',
+        prelude: 'Brain fact: when stress is high, planning and self-control get harder. A simple fallback plan gives your brain fewer decisions to make.',
         question: 'What usually knocks you off track when life gets messy?',
         placeholder: 'Time, stress, all-or-nothing thinking, not knowing what to do...',
         minLength: 3
@@ -7421,6 +7422,7 @@ const WIZARD_CHAT_STEPS = [
     {
         key: 'weekly_capacity',
         type: 'choice',
+        prelude: 'Brain fact: habits become easier to repeat when the cue stays consistent. Protecting the same few training windows helps your brain recognise when it is time to start.',
         question: 'On a busy but normal week, how many training windows could you genuinely protect?',
         options: [
             { value: 'one_or_two', label: WIZARD_WEEKLY_CAPACITY_LABELS.one_or_two },
@@ -7432,6 +7434,7 @@ const WIZARD_CHAT_STEPS = [
     {
         key: 'routine_window',
         type: 'choice',
+        prelude: 'Brain fact: starting is easier when a behaviour is attached to something that already happens, like waking up, lunch, or finishing work.',
         question: 'Which time is least likely to get stolen by everything else?',
         options: [
             { value: 'before_day', label: WIZARD_ROUTINE_WINDOW_LABELS.before_day },
@@ -7467,6 +7470,7 @@ const WIZARD_CHAT_STEPS = [
     {
         key: 'energy_level',
         type: 'choice',
+        prelude: 'Brain fact: sleep helps your brain consolidate learning and regulate attention. Low energy can make a familiar routine more useful than relying on motivation.',
         question: 'How is your energy most days?',
         options: [
             { value: 'low', label: 'Often tired' },
@@ -8059,6 +8063,7 @@ function resolveWizardChatPrelude(step) {
 function appendWizardChatQuestion(step) {
     const prelude = resolveWizardChatPrelude(step);
     if (prelude) wizardChatMessages.push({ role: 'coach', text: prelude });
+    if (prelude && String(prelude).startsWith('Brain fact:') && window._crumb) window._crumb('onboarding_brain_fact_' + step.key);
     wizardChatMessages.push({ role: 'coach', text: resolveWizardChatQuestion(step) });
 }
 
