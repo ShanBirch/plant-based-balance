@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#102a2b">
+  <meta name="description" content="A plain-English guide to testosterone, doctor-supervised TRT, dosing, injections, benefits, risks and monitoring.">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Testosterone: the straight guide before you decide">
+  <meta property="og:description" content="What testosterone does, what TRT is actually for, how doctors dose and monitor it, and where the real risks sit.">
+  <meta property="og:image" content="https://plantbased-balance.org/assets/testosterone-guide-share.png">
+  <meta property="og:url" content="https://plantbased-balance.org/testosterone-guide.html">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://plantbased-balance.org/testosterone-guide.html">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=Fraunces:opsz,wght@9..144,600;9..144,700&amp;display=swap" rel="stylesheet">
+  <title>Testosterone: The Straight Guide | Balance</title>
+  <style>
+    :root {
+      --ink: #142528;
+      --muted: #5e6d6e;
+      --forest: #102a2b;
+      --forest-soft: #183b3a;
+      --cream: #f5f1e8;
+      --paper: #fffdf8;
+      --gold: #d8b25a;
+      --gold-soft: #f3e7c8;
+      --sage: #dce8dd;
+      --sage-deep: #35635a;
+      --blue: #dce9ef;
+      --blue-deep: #315b6b;
+      --red: #a7443d;
+      --red-soft: #f6e1dc;
+      --line: rgba(20, 37, 40, 0.13);
+      --shadow: 0 24px 70px rgba(16, 42, 43, 0.12);
+      --radius: 22px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--cream);
+      color: var(--ink);
+      font-family: "DM Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 17px;
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; }
+    img { max-width: 100%; }
+    button { font: inherit; }
+    .wrap { width: min(1120px, calc(100% - 40px)); margin: 0 auto; }
+    .eyebrow {
+      margin: 0 0 14px;
+      color: var(--gold);
+      font-size: 0.76rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: "Fraunces", Georgia, serif;
+      line-height: 1.08;
+      letter-spacing: -0.025em;
+    }
+    h1 { max-width: 850px; color: #fffdf8; font-size: clamp(3rem, 7.5vw, 6.6rem); }
+    h2 { font-size: clamp(2.05rem, 4vw, 3.55rem); }
+    h3 { font-size: 1.42rem; }
+    p { margin: 0; }
+    strong { font-weight: 700; }
+
+    .topbar {
+      position: absolute;
+      z-index: 4;
+      inset: 0 0 auto;
+      padding: 24px 0;
+      color: #fff;
+    }
+    .topbar-inner { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+    .brand { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; }
+    .brand img { width: 42px; height: 42px; object-fit: contain; filter: brightness(0) invert(1); opacity: 0.94; }
+    .brand span { font-weight: 700; letter-spacing: 0.02em; }
+    .topbar-note { color: rgba(255,255,255,0.72); font-size: 0.8rem; }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      min-height: 760px;
+      padding: 168px 0 104px;
+      background:
+        radial-gradient(circle at 78% 28%, rgba(216,178,90,0.21), transparent 25%),
+        radial-gradient(circle at 18% 90%, rgba(90,139,124,0.23), transparent 30%),
+        var(--forest);
+      color: #fff;
+    }
+    .hero::before, .hero::after {
+      content: "";
+      position: absolute;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .hero::before { width: 520px; height: 520px; right: -120px; top: 110px; }
+    .hero::after { width: 310px; height: 310px; right: -15px; top: 215px; }
+    .hero-copy { position: relative; z-index: 2; }
+    .hero-lede {
+      max-width: 720px;
+      margin-top: 34px;
+      color: rgba(255,255,255,0.8);
+      font-size: clamp(1.12rem, 2vw, 1.38rem);
+    }
+    .hero-meta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 38px; }
+    .hero-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      padding: 9px 14px;
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      color: rgba(255,255,255,0.8);
+      font-size: 0.82rem;
+      backdrop-filter: blur(8px);
+    }
+    .hero-pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--gold); }
+
+    .quick-nav {
+      position: relative;
+      z-index: 3;
+      margin: -48px auto 76px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: rgba(255,253,248,0.94);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+    }
+    .quick-nav-inner { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+    .quick-nav-inner::-webkit-scrollbar { display: none; }
+    .quick-nav a {
+      flex: 0 0 auto;
+      padding: 10px 14px;
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: 0.84rem;
+      font-weight: 700;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .quick-nav a:hover, .quick-nav a:focus-visible { background: var(--sage); color: var(--forest); outline: none; }
+
+    main { padding-bottom: 80px; }
+    .section { padding: 78px 0; border-bottom: 1px solid var(--line); }
+    .section:last-child { border-bottom: 0; }
+    .section-head { display: grid; grid-template-columns: 0.72fr 1fr; gap: 70px; align-items: end; margin-bottom: 42px; }
+    .section-intro { color: var(--muted); font-size: 1.05rem; }
+    .section-intro a, .sources a { color: var(--sage-deep); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+
+    .reality-card {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      border-radius: 28px;
+      overflow: hidden;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+    }
+    .reality-main { padding: clamp(32px, 5vw, 60px); }
+    .reality-main h2 { max-width: 650px; }
+    .reality-main p { margin-top: 24px; color: var(--muted); }
+    .reality-side {
+      display: grid;
+      place-items: center;
+      min-height: 360px;
+      padding: 40px;
+      background: var(--forest);
+      color: #fff;
+      text-align: center;
+    }
+    .not-equal { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 18px; width: 100%; }
+    .not-equal .drug { padding: 18px 12px; border: 1px solid rgba(255,255,255,0.15); border-radius: 16px; }
+    .not-equal .drug strong { display: block; font-family: "Fraunces", serif; font-size: 1.25rem; }
+    .not-equal .drug span { display: block; margin-top: 5px; color: rgba(255,255,255,0.63); font-size: 0.72rem; }
+    .not-equal .symbol { color: var(--gold); font-family: "Fraunces", serif; font-size: 2.3rem; }
+    .side-caption { max-width: 340px; margin-top: 24px; color: rgba(255,255,255,0.68); font-size: 0.83rem; }
+
+    .body-map { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    .body-card { min-height: 205px; padding: 26px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); }
+    .body-card .num { display: block; margin-bottom: 38px; color: var(--gold); font-size: 0.76rem; font-weight: 700; letter-spacing: 0.1em; }
+    .body-card h3 { margin-bottom: 11px; }
+    .body-card p { color: var(--muted); font-size: 0.9rem; }
+
+    .feedback {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      margin-top: 30px;
+    }
+    .feedback-step { position: relative; padding: 18px 16px; border-radius: 14px; background: var(--sage); text-align: center; font-size: 0.82rem; font-weight: 700; }
+    .feedback-step:not(:last-child)::after { content: "→"; position: absolute; z-index: 2; right: -12px; color: var(--sage-deep); }
+    .feedback-step:last-child { background: var(--red-soft); color: var(--red); }
+
+    .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .compare-card { padding: clamp(28px, 4vw, 42px); border-radius: var(--radius); }
+    .compare-card.good { background: var(--sage); }
+    .compare-card.risk { background: var(--red-soft); }
+    .compare-card h3 { margin-bottom: 22px; }
+    .clean-list { display: grid; gap: 13px; margin: 0; padding: 0; list-style: none; }
+    .clean-list li { position: relative; padding-left: 27px; color: #324244; }
+    .clean-list li::before { position: absolute; left: 0; top: -1px; font-weight: 700; }
+    .good .clean-list li::before { content: "✓"; color: var(--sage-deep); }
+    .risk .clean-list li::before { content: "!"; color: var(--red); }
+    .fineprint { margin-top: 20px; color: var(--muted); font-size: 0.78rem; }
+
+    .dose-banner {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 22px;
+      align-items: center;
+      margin-bottom: 28px;
+      padding: 25px 28px;
+      border-left: 5px solid var(--gold);
+      border-radius: 0 18px 18px 0;
+      background: var(--gold-soft);
+    }
+    .dose-banner strong { font-family: "Fraunces", serif; font-size: 2.6rem; line-height: 1; }
+    .dose-banner p { color: #574a2f; }
+    .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); }
+    table { width: 100%; border-collapse: collapse; min-width: 760px; }
+    th, td { padding: 21px 24px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { background: #eef1ea; color: var(--muted); font-size: 0.76rem; letter-spacing: 0.08em; text-transform: uppercase; }
+    td:first-child { font-weight: 700; }
+    tr:last-child td { border-bottom: 0; }
+    td small { display: block; margin-top: 5px; color: var(--muted); }
+    .danger-scale { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 26px; }
+    .scale-card { padding: 26px; border-radius: 18px; background: var(--paper); border: 1px solid var(--line); }
+    .scale-card .tag { display: inline-block; margin-bottom: 16px; padding: 5px 10px; border-radius: 999px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+    .scale-card.green .tag { background: var(--sage); color: var(--sage-deep); }
+    .scale-card.amber .tag { background: var(--gold-soft); color: #6e5622; }
+    .scale-card.red .tag { background: var(--red-soft); color: var(--red); }
+    .scale-card h3 { margin-bottom: 10px; font-size: 1.15rem; }
+    .scale-card p { color: var(--muted); font-size: 0.86rem; }
+
+    .route-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .route-card { overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); }
+    .route-top { padding: 32px; color: #fff; }
+    .route-card.im .route-top { background: var(--blue-deep); }
+    .route-card.sc .route-top { background: var(--sage-deep); }
+    .route-label { display: inline-block; margin-bottom: 12px; color: rgba(255,255,255,0.67); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.13em; text-transform: uppercase; }
+    .route-top h3 { font-size: 1.8rem; }
+    .route-body { padding: 30px 32px 34px; }
+    .route-body p { margin-bottom: 18px; color: var(--muted); }
+    .route-facts { display: grid; gap: 11px; margin: 0; padding: 0; list-style: none; }
+    .route-facts li { padding-top: 11px; border-top: 1px solid var(--line); font-size: 0.9rem; }
+    .route-warning { margin-top: 22px; padding: 17px; border-radius: 13px; background: var(--red-soft); color: #77342f; font-size: 0.82rem; }
+
+    .monitor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .checklist { padding: 34px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); }
+    .checklist h3 { margin-bottom: 24px; }
+    .check-item { display: grid; grid-template-columns: 32px 1fr; gap: 13px; padding: 15px 0; border-top: 1px solid var(--line); }
+    .check-item:first-of-type { border-top: 0; }
+    .check-no { display: grid; place-items: center; width: 27px; height: 27px; border-radius: 50%; background: var(--forest); color: #fff; font-size: 0.72rem; font-weight: 700; }
+    .check-item strong { display: block; margin-bottom: 3px; }
+    .check-item span { color: var(--muted); font-size: 0.84rem; }
+
+    .urgent { padding: clamp(30px, 5vw, 52px); border-radius: 28px; background: var(--red); color: #fff; }
+    .urgent h2 { max-width: 720px; }
+    .urgent p { max-width: 780px; margin-top: 18px; color: rgba(255,255,255,0.78); }
+    .urgent-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 30px; }
+    .urgent-item { padding: 17px; border: 1px solid rgba(255,255,255,0.18); border-radius: 14px; background: rgba(255,255,255,0.07); font-size: 0.86rem; font-weight: 600; }
+
+    .doctor-card { display: grid; grid-template-columns: 1fr auto; gap: 36px; align-items: center; padding: clamp(30px, 5vw, 52px); border-radius: 28px; background: var(--forest); color: #fff; }
+    .doctor-card h2 { max-width: 760px; }
+    .doctor-card p { max-width: 700px; margin-top: 18px; color: rgba(255,255,255,0.7); }
+    .print-button {
+      min-width: 178px;
+      padding: 15px 20px;
+      border: 0;
+      border-radius: 999px;
+      background: var(--gold);
+      color: var(--forest);
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .print-button:hover, .print-button:focus-visible { background: #e8c974; outline: 3px solid rgba(216,178,90,0.25); }
+
+    details { border-top: 1px solid var(--line); }
+    details:last-child { border-bottom: 1px solid var(--line); }
+    summary { padding: 20px 4px; cursor: pointer; font-weight: 700; }
+    details p { max-width: 850px; padding: 0 4px 22px; color: var(--muted); }
+    .sources { display: grid; gap: 12px; margin-top: 30px; padding: 0; list-style: none; }
+    .sources li { padding: 17px 20px; border: 1px solid var(--line); border-radius: 14px; background: var(--paper); font-size: 0.86rem; }
+    .source-date { margin-top: 24px; color: var(--muted); font-size: 0.78rem; }
+
+    footer { padding: 34px 0 48px; color: var(--muted); font-size: 0.8rem; text-align: center; }
+
+    @media (max-width: 900px) {
+      .section-head, .reality-card, .doctor-card { grid-template-columns: 1fr; }
+      .body-map { grid-template-columns: 1fr 1fr; }
+      .reality-side { min-height: 300px; }
+      .feedback { grid-template-columns: 1fr; }
+      .feedback-step:not(:last-child)::after { content: "↓"; right: auto; left: 50%; bottom: -16px; top: auto; }
+      .danger-scale { grid-template-columns: 1fr; }
+      .doctor-card { align-items: start; }
+      .print-button { width: fit-content; }
+    }
+    @media (max-width: 680px) {
+      body { font-size: 16px; }
+      .wrap { width: min(100% - 24px, 1120px); }
+      .topbar-note { display: none; }
+      .hero { min-height: 690px; padding-top: 145px; }
+      .quick-nav { margin-bottom: 46px; }
+      .section { padding: 54px 0; }
+      .section-head { gap: 20px; }
+      .body-map, .compare-grid, .route-grid, .monitor-grid, .urgent-grid { grid-template-columns: 1fr; }
+      .body-card { min-height: auto; }
+      .body-card .num { margin-bottom: 24px; }
+      .not-equal { gap: 8px; }
+      .not-equal .drug { padding: 14px 8px; }
+      .dose-banner { grid-template-columns: 1fr; }
+      .route-top, .route-body, .checklist { padding: 26px; }
+    }
+    @media print {
+      body { background: #fff; color: #111; font-size: 11pt; }
+      .topbar, .quick-nav, .print-button { display: none !important; }
+      .hero { min-height: auto; padding: 44px 0; background: #183b3a !important; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+      .section { padding: 28px 0; break-inside: avoid; }
+      .reality-card, .body-card, .compare-card, .table-wrap, .route-card, .checklist, .urgent, .doctor-card { box-shadow: none; break-inside: avoid; }
+      .urgent, .doctor-card, .route-top { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+      a { text-decoration: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <a class="brand" href="https://plantbased-balance.org/" aria-label="Balance home">
+        <img src="balance_logo.png" alt="Balance">
+        <span>Balance</span>
+      </a>
+      <span class="topbar-note">General education, not a personal prescription</span>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="wrap hero-copy">
+      <p class="eyebrow">The straight guide</p>
+      <h1>Testosterone, before you decide.</h1>
+      <p class="hero-lede">What it does. What doctor-supervised replacement actually looks like. Where the benefits are real, where the risks get serious, and why using it “for a cut” is a very different decision.</p>
+      <div class="hero-meta">
+        <span class="hero-pill">Plain English</span>
+        <span class="hero-pill">Evidence-linked</span>
+        <span class="hero-pill">Updated 8 August 2026</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap quick-nav" aria-label="Guide sections">
+    <nav class="quick-nav-inner">
+      <a href="#first">The first thing</a>
+      <a href="#works">How it works</a>
+      <a href="#benefits">Pros &amp; cons</a>
+      <a href="#dose">Dose reality</a>
+      <a href="#inject">Injection routes</a>
+      <a href="#monitor">Doctor monitoring</a>
+      <a href="#urgent">Urgent signs</a>
+      <a href="#sources">Sources</a>
+    </nav>
+  </div>
+
+  <main>
+    <section class="wrap section" id="first">
+      <div class="reality-card">
+        <div class="reality-main">
+          <p class="eyebrow">Start here</p>
+          <h2>Testosterone is not a fat-loss drug.</h2>
+          <p>Testosterone replacement therapy (TRT) is designed to restore testosterone to a normal physiological range in someone with symptoms and repeatedly low blood levels. It is not an approved shortcut for getting lean, and taking extra testosterone when your level is already normal is not “replacement.”</p>
+          <p>If the goal is simply a cut, the first medical conversation should be about body composition, nutrition, sleep, training, medications and evidence-based weight management—not automatically adding an anabolic hormone.</p>
+        </div>
+        <div class="reality-side">
+          <div>
+            <div class="not-equal" aria-label="Retatrutide and testosterone are not substitutes">
+              <div class="drug"><strong>Retatrutide</strong><span>Investigational metabolic drug</span></div>
+              <div class="symbol">≠</div>
+              <div class="drug"><strong>Testosterone</strong><span>Androgen replacement hormone</span></div>
+            </div>
+            <p class="side-caption">As of August 2026, retatrutide remains unapproved and available legitimately only in clinical trials. Products sold outside trials cannot be verified for identity, purity or dose.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap section" id="works">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">The biology</p>
+          <h2>What testosterone actually does</h2>
+        </div>
+        <p class="section-intro">Testosterone is an androgen hormone. In men, most is made in the testes after signals from the brain and pituitary. It affects sexual function, sperm production, bone, red blood cells, muscle, fat distribution, mood and other tissues.</p>
+      </div>
+
+      <div class="body-map">
+        <article class="body-card"><span class="num">01</span><h3>Brain &amp; pituitary</h3><p>The hypothalamus and pituitary send LH and FSH signals that control testosterone and sperm production.</p></article>
+        <article class="body-card"><span class="num">02</span><h3>Muscle &amp; bone</h3><p>Androgen-receptor signalling supports protein synthesis, lean mass, bone density and recovery of normal function when deficiency is present.</p></article>
+        <article class="body-card"><span class="num">03</span><h3>Sexual function</h3><p>Normal testosterone contributes to libido, erections and sperm production—but injected testosterone can reduce or stop sperm production.</p></article>
+        <article class="body-card"><span class="num">04</span><h3>Conversion</h3><p>Some testosterone converts to DHT and some to estradiol. Both have useful roles and can also contribute to side effects.</p></article>
+      </div>
+
+      <div class="feedback" aria-label="Natural testosterone feedback loop">
+        <div class="feedback-step">Hypothalamus</div>
+        <div class="feedback-step">Pituitary</div>
+        <div class="feedback-step">LH + FSH</div>
+        <div class="feedback-step">Testes</div>
+        <div class="feedback-step">External testosterone turns this signal down</div>
+      </div>
+    </section>
+
+    <section class="wrap section" id="benefits">
+      <div class="section-head">
+        <div><p class="eyebrow">The trade-off</p><h2>Potential benefits and real downsides</h2></div>
+        <p class="section-intro">The benefit side is strongest when someone genuinely has hypogonadism. It cannot be assumed from tiredness, low mood or a single low result, because those can have many causes.</p>
+      </div>
+
+      <div class="compare-grid">
+        <article class="compare-card good">
+          <h3>What may improve with confirmed deficiency</h3>
+          <ul class="clean-list">
+            <li>Libido and some aspects of sexual function</li>
+            <li>Lean mass and strength response</li>
+            <li>Bone density over time</li>
+            <li>Low red-cell count caused by deficiency</li>
+            <li>Energy, mood or wellbeing in some men</li>
+            <li>Maintenance of normal male sex characteristics</li>
+          </ul>
+          <p class="fineprint">Response varies. “Normalising a deficiency” and “taking extra for performance” are not the same evidence base.</p>
+        </article>
+        <article class="compare-card risk">
+          <h3>Risks and common trade-offs</h3>
+          <ul class="clean-list">
+            <li>Reduced sperm production, infertility and smaller testes</li>
+            <li>Raised haematocrit (“thicker” blood) and clot concern</li>
+            <li>Higher blood pressure and fluid retention</li>
+            <li>Acne, oily skin and accelerated male-pattern hair loss</li>
+            <li>Breast tenderness or gynaecomastia</li>
+            <li>Worsened sleep apnoea or urinary symptoms</li>
+            <li>Mood changes; abuse can cause serious psychiatric effects</li>
+            <li>Injection pain, bleeding, infection, abscess or nerve injury</li>
+          </ul>
+          <p class="fineprint">Long-term safety questions remain. Recent indicated-use trial data did not show more major heart attacks or strokes, but pulmonary embolism and fracture signals still require attention.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="wrap section" id="dose">
+      <div class="section-head">
+        <div><p class="eyebrow">Dose reality</p><h2>There is no universal “safe dose”</h2></div>
+        <p class="section-intro">Risk depends on the exact ester and formulation, concentration, injection interval, starting hormone level, age, blood pressure, haematocrit, fertility goals, medical history and the blood level produced—not just the milligrams on the vial.</p>
+      </div>
+
+      <div class="dose-banner">
+        <strong>mg ≠ mg</strong>
+        <p>A large number may be a long-acting dose given every 10–14 weeks, while a smaller number may be a short-acting weekly dose. Injectable products are not automatically interchangeable milligram-for-milligram.</p>
+      </div>
+
+      <div class="table-wrap" role="region" aria-label="Examples of doctor-used testosterone replacement regimens" tabindex="0">
+        <table>
+          <thead><tr><th>Medical formulation</th><th>Published starting example</th><th>How doctors make it safer</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>Testosterone enanthate or cypionate <small>Short-acting injection</small></td>
+              <td>75–100 mg weekly IM, or 150–200 mg IM every 2 weeks</td>
+              <td>Adjust to symptoms, adverse effects and serum testosterone; weekly dosing can reduce peaks and troughs for some people.</td>
+            </tr>
+            <tr>
+              <td>Testosterone enanthate auto-injector <small>Product-specific subcutaneous route</small></td>
+              <td>75 mg once weekly into the abdominal region; available adjustments are 50, 75 or 100 mg</td>
+              <td>Measure a trough after about 6 weeks and adjust according to the product label. Do not use it IM or intravenously.</td>
+            </tr>
+            <tr>
+              <td>Testosterone undecanoate <small>Long-acting clinic injection</small></td>
+              <td>Much larger milligram amounts at long intervals, depending on the country and product</td>
+              <td>Deep IM administration by a trained professional; some products require observation because rare oil microembolism or anaphylaxis can occur.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="danger-scale">
+        <article class="scale-card green"><span class="tag">Lower-risk context</span><h3>Replacement, not enhancement</h3><p>Confirmed deficiency, regulated prescription product, a formulation-specific plan, levels kept in the normal target range and scheduled monitoring.</p></article>
+        <article class="scale-card amber"><span class="tag">Higher risk</span><h3>Unmonitored or unclear</h3><p>One blood test, no symptom-based diagnosis, no fertility discussion, uncertain product strength, borrowed dosing, missed blood pressure or haematocrit checks.</p></article>
+        <article class="scale-card red"><span class="tag">Dangerous territory</span><h3>Supraphysiologic use</h3><p>Escalating until levels remain above the normal range, “cycling,” stacking with other anabolic steroids, using illicit products or continuing despite adverse results. There is no scientifically valid milligram line below which this becomes safe.</p></article>
+      </div>
+    </section>
+
+    <section class="wrap section" id="inject">
+      <div class="section-head">
+        <div><p class="eyebrow">Injection routes</p><h2>Into muscle vs under the skin</h2></div>
+        <p class="section-intro">Both routes exist, but route and site belong to the exact medicine—not to testosterone in general. A product labelled for deep intramuscular use should not be casually moved into fat, and a subcutaneous auto-injector should not be pushed into muscle.</p>
+      </div>
+
+      <div class="route-grid">
+        <article class="route-card im">
+          <div class="route-top"><span class="route-label">IM</span><h3>Intramuscular</h3></div>
+          <div class="route-body">
+            <p>The medicine is deposited deeper into a large muscle, where the oil-based ester releases over time.</p>
+            <ul class="route-facts">
+              <li><strong>Where:</strong> often the gluteal muscle; some products or clinician protocols may use another large muscle.</li>
+              <li><strong>Used for:</strong> cypionate, enanthate, mixed esters and long-acting undecanoate, depending on the exact label.</li>
+              <li><strong>Trade-offs:</strong> deeper injection, soreness, peaks and troughs with some short-acting schedules.</li>
+            </ul>
+            <div class="route-warning">Some long-acting oil injections must be given in a clinic. Never inject testosterone into a vein.</div>
+          </div>
+        </article>
+
+        <article class="route-card sc">
+          <div class="route-top"><span class="route-label">SC / SubQ</span><h3>Subcutaneous</h3></div>
+          <div class="route-body">
+            <p>The medicine is deposited in the fatty layer beneath the skin. It can be comfortable and produce steadier weekly exposure with a product designed and tested for this route.</p>
+            <ul class="route-facts">
+              <li><strong>Where:</strong> one approved testosterone-enanthate auto-injector specifies the left or right abdomen, avoiding the area close to the navel.</li>
+              <li><strong>Used for:</strong> formulation-specific products; not every oil vial is labelled or tested for subcutaneous use.</li>
+              <li><strong>Trade-offs:</strong> redness, bruising, bleeding, firmness or discomfort at the site can occur.</li>
+            </ul>
+            <div class="route-warning">Have the prescriber or pharmacist demonstrate the exact technique for the exact device, site and formulation. A web guide cannot safely substitute for that training.</div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="wrap section" id="monitor">
+      <div class="section-head">
+        <div><p class="eyebrow">How doctors use it</p><h2>Diagnosis first. Monitoring always.</h2></div>
+        <p class="section-intro">Professional guidelines diagnose testosterone deficiency only when relevant symptoms occur alongside unequivocally and consistently low levels. The usual starting point is at least two early-morning fasting tests on separate days.</p>
+      </div>
+
+      <div class="monitor-grid">
+        <article class="checklist">
+          <h3>Before treatment</h3>
+          <div class="check-item"><span class="check-no">1</span><div><strong>Confirm the pattern</strong><span>Symptoms, medical and medication history, sleep, weight, training load, alcohol and other reversible causes.</span></div></div>
+          <div class="check-item"><span class="check-no">2</span><div><strong>Repeat morning labs</strong><span>Total testosterone on two separate mornings; free testosterone when clinically indicated.</span></div></div>
+          <div class="check-item"><span class="check-no">3</span><div><strong>Find the cause</strong><span>LH, FSH and sometimes prolactin or further pituitary/testicular investigation.</span></div></div>
+          <div class="check-item"><span class="check-no">4</span><div><strong>Check safety</strong><span>Blood count/haematocrit, blood pressure, fertility plans, sleep apnoea, clot risk and prostate assessment based on age and risk.</span></div></div>
+        </article>
+        <article class="checklist">
+          <h3>After starting</h3>
+          <div class="check-item"><span class="check-no">1</span><div><strong>Review response</strong><span>Are the original symptoms improving? Any acne, mood, urinary, sleep, breast or injection issues?</span></div></div>
+          <div class="check-item"><span class="check-no">2</span><div><strong>Measure at the right time</strong><span>Testosterone sampling is timed to the formulation—often a trough or midpoint for injections.</span></div></div>
+          <div class="check-item"><span class="check-no">3</span><div><strong>Track blood and pressure</strong><span>Repeat haematocrit, haemoglobin and blood pressure after initiation and periodically thereafter.</span></div></div>
+          <div class="check-item"><span class="check-no">4</span><div><strong>Change course when needed</strong><span>A haematocrit above 54% generally triggers stopping or reducing therapy and evaluation for contributors such as hypoxia or sleep apnoea.</span></div></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="wrap section" id="urgent">
+      <div class="urgent">
+        <p class="eyebrow" style="color:#ffd9c8">Do not wait</p>
+        <h2>Get urgent medical help for these symptoms</h2>
+        <p>Call 000 in Australia for severe or rapidly worsening symptoms. After an injection, sudden breathing or allergic symptoms can be time-critical.</p>
+        <div class="urgent-grid">
+          <div class="urgent-item">Chest pain, severe shortness of breath or fainting</div>
+          <div class="urgent-item">Sudden cough, throat tightness, sweating or dizziness during/after an oil injection</div>
+          <div class="urgent-item">One-sided leg swelling, warmth or pain</div>
+          <div class="urgent-item">Face droop, weakness, speech trouble or a sudden severe headache</div>
+          <div class="urgent-item">Swelling of the face/tongue, hives or trouble breathing</div>
+          <div class="urgent-item">A hot, spreading, very painful injection site with fever</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap section">
+      <div class="doctor-card">
+        <div>
+          <p class="eyebrow">The sensible next move</p>
+          <h2>If you are considering it, take the goal—not a pre-selected dose—to a GP.</h2>
+          <p>Be honest about the goal, whether that is fat loss, low libido, fatigue, fertility, strength or something else. Ask for a proper evaluation before buying or injecting anything. In Australia, testosterone is prescription-only, and possession or supply without a prescription or permit is illegal.</p>
+        </div>
+        <button class="print-button" type="button" onclick="window.print()">Save / print guide</button>
+      </div>
+    </section>
+
+    <section class="wrap section" id="sources">
+      <div class="section-head">
+        <div><p class="eyebrow">A few direct answers</p><h2>Common questions</h2></div>
+        <p class="section-intro">This page is general education. A doctor who knows your history and sees your examination and blood results is the person who can tell you whether treatment is appropriate.</p>
+      </div>
+
+      <details><summary>Will testosterone make me shredded?</summary><p>Not by itself. Correcting genuine deficiency can improve lean mass and training response, but testosterone is not an approved fat-loss treatment. Extra testosterone may also cause fluid retention, appetite changes and side effects. Getting lean still depends heavily on energy intake, training, recovery and the reason body fat is high.</p></details>
+      <details><summary>Does a “low dose” mean low risk?</summary><p>No. “Low” has no meaning without the formulation, interval, starting level and blood response. A dose that looks modest can still push one person above the normal range, raise haematocrit, increase blood pressure or shut down fertility.</p></details>
+      <details><summary>Can natural testosterone production recover after stopping?</summary><p>It often can, but the timing and completeness are unpredictable. Recovery may take months and can be incomplete, especially after longer or higher-dose exposure. Fertility can remain suppressed. This is a reason to discuss future children before starting, not after.</p></details>
+      <details><summary>Is subcutaneous testosterone safer than intramuscular testosterone?</summary><p>Not automatically. It may be easier to administer and can create smoother exposure with an appropriate product, but it still has systemic testosterone risks. Route-specific safety depends on the medicine, dose, technique and monitoring.</p></details>
+
+      <h3 style="margin-top:48px">Medical and regulatory sources</h3>
+      <ul class="sources">
+        <li><a href="https://www.endocrine.org/news-and-advocacy/news-room/2026/statement-on-testosterone-replacement-therapy" target="_blank" rel="noopener">Endocrine Society: 2026 statement on testosterone replacement therapy</a> — current diagnosis, benefit and safety context.</li>
+        <li><a href="https://www.endocrine.org/clinical-practice-guidelines/testosterone-therapy" target="_blank" rel="noopener">Endocrine Society clinical practice guideline</a> — diagnostic criteria, contraindications and monitoring.</li>
+        <li><a href="https://academic.oup.com/jcem/article/103/5/1715/4939465" target="_blank" rel="noopener">Journal of Clinical Endocrinology &amp; Metabolism: full guideline</a> — doctor-used formulation and starting-dose examples.</li>
+        <li><a href="https://www.auanet.org/Documents/Guidelines/PDF/Testosterone%20Website%20Final%280%29.pdf" target="_blank" rel="noopener">American Urological Association testosterone deficiency guideline</a> — repeat early-morning testing and clinical diagnosis.</li>
+        <li><a href="https://healthymale.org.au/health-article/what-is-testosterone-replacement-therapy" target="_blank" rel="noopener">Healthy Male Australia: testosterone replacement therapy</a> — Australian prescribing and monitoring overview.</li>
+        <li><a href="https://www.fda.gov/drugs/postmarket-drug-safety-information-patients-and-providers/testosterone-information" target="_blank" rel="noopener">US FDA testosterone information</a> — current approved-use and cardiovascular evidence summary.</li>
+        <li><a href="https://www.accessdata.fda.gov/drugsatfda_docs/label/2025/209863s020lbl.pdf" target="_blank" rel="noopener">FDA prescribing information: subcutaneous testosterone enanthate</a> — abdomen-only product instructions, dosing and warnings.</li>
+        <li><a href="https://www.accessdata.fda.gov/drugsatfda_docs/label/2022/216318s000lbl.pdf" target="_blank" rel="noopener">FDA prescribing information: testosterone cypionate injection</a> — deep gluteal IM administration and product-specific warnings.</li>
+        <li><a href="https://www.lilly.com/news/stories/what-to-know-about-retatrutide" target="_blank" rel="noopener">Eli Lilly: current retatrutide status</a> — investigational status and warning against products sold outside trials.</li>
+        <li><a href="https://www.tga.gov.au/resources/prescription-medicines-registrations/androfeme-androforte-lawley-pharmaceuticals-pty-ltd" target="_blank" rel="noopener">Therapeutic Goods Administration</a> — Australian indication requiring clinical and biochemical confirmation of deficiency.</li>
+      </ul>
+      <p class="source-date">Evidence checked 8 August 2026. This page does not diagnose low testosterone, prescribe a dose, or replace in-person injection training.</p>
+    </section>
+  </main>
+
+  <footer class="wrap">© 2026 Balance. Prepared as general health education.</footer>
+</body>
+</html>
