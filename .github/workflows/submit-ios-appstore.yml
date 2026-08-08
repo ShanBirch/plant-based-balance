@@ -10,7 +10,7 @@ on:
       build_number:
         description: Uploaded iOS build number
         required: true
-        default: "2328"
+        default: "2649"
       submit_for_review:
         description: Submit to App Review after attaching the build
         required: true
@@ -45,6 +45,6 @@ jobs:
           IOS_BUILD_NUMBER: ${{ inputs.build_number }}
           PROCESSING_WAIT_MINUTES: "35"
           SUBMIT_FOR_REVIEW: ${{ inputs.submit_for_review }}
-          IOS_RELEASE_NOTES: "Share a Set now supports higher-quality workout videos and native camera capture in the Balance app."
-          IOS_REVIEW_NOTES: "This update improves optional workout video sharing. A logged-in user can open Share a Set from a workout, record or select a short workout clip, and post it to the in-app feed. Camera and microphone access are requested only when the user chooses to record a clip."
+          IOS_RELEASE_NOTES: "Fixes Google sign-in on iPhone. Also includes smoother native video capture and sharing improvements."
+          IOS_REVIEW_NOTES: "This update fixes Google sign-in on iPhone by routing OAuth through ASWebAuthenticationSession and returning to Balance through its registered com.fitgotchi.app callback scheme. Reviewers can test this from the Continue with Google button on the login screen."
         run: node scripts/submit-ios-appstore.mjs
