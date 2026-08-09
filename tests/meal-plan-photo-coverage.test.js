@@ -48,6 +48,20 @@ test('a member logged-meal photo wins over a library match', () => {
     assert.equal(resolver.resolve({ name: 'Tofu scramble', photo_url: url }, template).url, url);
 });
 
+test('a reviewed per-client meal photo is rendered without reviving generic legacy fallbacks', () => {
+    const exactClientPhoto = 'images/meals/arunima/tofu-bhurji-roti.jpg';
+    assert.deepEqual(
+        resolver.resolve({ name: 'Tofu Bhurji + Roti', image_url: exactClientPhoto }, template),
+        { url: exactClientPhoto, source: 'explicit', recipeName: null }
+    );
+
+    const genericLegacyPhoto = resolver.resolve({
+        name: 'Palak Tofu + Wholemeal Roti',
+        image_url: 'images/meals/mediterranean_lentil_salad.png'
+    }, template);
+    assert.deepEqual(genericLegacyPhoto, { url: '', source: 'missing', recipeName: null });
+});
+
 test('unsafe image values never produce a misleading fallback photo', () => {
     const result = resolver.resolve({ meal_slot: 'breakfast', name: 'Pancakes', image_url: 'javascript:alert(1)' }, template);
     assert.equal(result.url, '');
