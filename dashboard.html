@@ -2174,6 +2174,59 @@ if(!window._pbbIsIOSSafari) {
     </div>
 </div>
 
+<style>
+    #ai-plan-loaded.ai-plan-focus-layout {
+        --meal-plan-ink: #171613;
+        --meal-plan-gold: #c99a2e;
+        --meal-plan-cream: #fbf8f1;
+        color: var(--meal-plan-ink);
+        -webkit-text-fill-color: var(--meal-plan-ink);
+    }
+    .ai-plan-focus-layout #ai-plan-header { background: #fff !important; padding: 17px 20px 13px !important; }
+    .ai-plan-focus-layout #ai-plan-name { font-size: 1.16rem !important; line-height: 1.2; }
+    .ai-plan-focus-layout #ai-plan-desc { margin-top: 4px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ai-plan-focus-layout #ai-plan-week-tabs { padding: 9px 15px 5px !important; }
+    .ai-plan-focus-layout #ai-plan-day-tabs { padding: 4px 15px 8px !important; overflow-x: auto; scrollbar-width: none; }
+    .ai-plan-focus-layout #ai-plan-day-tabs::-webkit-scrollbar { display: none; }
+    .ai-plan-focus-layout #ai-plan-day-nutrition { padding: 7px 15px 2px !important; }
+    .ai-plan-focus-layout .ai-plan-daily-summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 14px; border: 1px solid rgba(23,22,19,.08); border-radius: 15px; background: #fff; box-shadow: 0 7px 20px rgba(32,25,13,.045); }
+    .ai-plan-focus-layout .ai-plan-daily-summary strong { font-size: .9rem; }
+    .ai-plan-focus-layout .ai-plan-daily-summary span { color: #77736b; -webkit-text-fill-color: #77736b; font-size: .76rem; text-align: right; }
+    .ai-plan-focus-layout #ai-plan-meals-list { padding: 12px 15px 24px !important; }
+    .ai-plan-focus-label { display: flex; align-items: center; justify-content: space-between; margin: 3px 2px 9px; }
+    .ai-plan-focus-label strong { font-family: 'Playfair Display', serif; font-size: 1.45rem; }
+    .ai-plan-focus-label span { color: #77736b; -webkit-text-fill-color: #77736b; font-size: .78rem; font-weight: 650; }
+    .ai-plan-hero { overflow: hidden; border: 1px solid rgba(23,22,19,.09); border-radius: 22px; background: #fff; box-shadow: 0 12px 30px rgba(32,25,13,.08); }
+    .ai-plan-hero__photo { display: block; width: 100%; aspect-ratio: 1.7 / 1; object-fit: cover; background: #f2ecdf; }
+    .ai-plan-hero__content { padding: 17px; }
+    .ai-plan-hero__meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #8c681b; -webkit-text-fill-color: #8c681b; font-size: .76rem; font-weight: 750; letter-spacing: .05em; text-transform: uppercase; }
+    .ai-plan-hero__title { margin: 8px 0 5px; font-family: 'Playfair Display', serif; font-size: 1.42rem; line-height: 1.18; }
+    .ai-plan-hero__tags { color: #77736b; -webkit-text-fill-color: #77736b; font-size: .79rem; }
+    .ai-plan-hero__macros { display: flex; flex-wrap: wrap; gap: 7px 14px; margin: 13px 0 15px; padding-top: 12px; border-top: 1px solid rgba(23,22,19,.08); font-size: .78rem; font-weight: 650; }
+    .ai-plan-hero__actions { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+    .ai-plan-hero__button { min-height: 44px; border: 1px solid var(--meal-plan-ink); border-radius: 999px; background: #fff; color: var(--meal-plan-ink); -webkit-text-fill-color: var(--meal-plan-ink); font: inherit; font-size: .82rem; font-weight: 750; }
+    .ai-plan-hero__button--primary { background: var(--meal-plan-ink); color: #fff; -webkit-text-fill-color: #fff; }
+    .ai-plan-hero__details { display: none; margin-top: 15px; padding-top: 13px; border-top: 1px solid rgba(23,22,19,.08); color: #5f5b54; -webkit-text-fill-color: #5f5b54; font-size: .82rem; line-height: 1.55; }
+    .ai-plan-hero.is-open .ai-plan-hero__details { display: block; }
+    .ai-plan-hero__details h4 { margin: 0 0 7px; color: var(--meal-plan-ink); -webkit-text-fill-color: var(--meal-plan-ink); font-family: 'Playfair Display', serif; font-size: 1rem; }
+    .ai-plan-hero__details ul { margin: 0 0 12px; padding-left: 18px; }
+    .ai-plan-preview-heading { display: flex; align-items: baseline; justify-content: space-between; margin: 18px 2px 9px; }
+    .ai-plan-preview-heading strong { font-size: .88rem; }
+    .ai-plan-preview-heading span { color: #89847b; -webkit-text-fill-color: #89847b; font-size: .72rem; }
+    .ai-plan-preview-row { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(128px, 42%); gap: 10px; overflow-x: auto; padding: 1px 1px 8px; scroll-snap-type: x proximity; scrollbar-width: none; }
+    .ai-plan-preview-row::-webkit-scrollbar { display: none; }
+    .ai-plan-preview { position: relative; overflow: hidden; padding: 0; border: 1px solid rgba(23,22,19,.09); border-radius: 15px; background: #fff; text-align: left; scroll-snap-align: start; box-shadow: 0 5px 15px rgba(32,25,13,.045); }
+    .ai-plan-preview img { display: block; width: 100%; height: 84px; object-fit: cover; background: #f2ecdf; }
+    .ai-plan-preview__copy { display: block; padding: 9px 10px 10px; }
+    .ai-plan-preview__copy small { display: block; color: #8c681b; -webkit-text-fill-color: #8c681b; font-size: .64rem; font-weight: 750; text-transform: uppercase; }
+    .ai-plan-preview__copy strong { display: -webkit-box; margin-top: 3px; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; font-family: 'Playfair Display', serif; font-size: .82rem; line-height: 1.2; }
+    .ai-plan-preview.is-complete::after { content: '✓'; position: absolute; top: 7px; right: 7px; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: #171613; color: #fff; -webkit-text-fill-color: #fff; font-weight: 800; }
+    @media (max-width: 380px) {
+        .ai-plan-hero__title { font-size: 1.25rem; }
+        .ai-plan-focus-layout #ai-plan-header { padding-inline: 15px !important; }
+    }
+</style>
+
 <!-- MEALS VIEW (Contains Week Tabs) -->
 <div id="view-meals" class="app-view" style="display:none;">
     <div class="app-header">
@@ -2246,13 +2299,13 @@ if(!window._pbbIsIOSSafari) {
                 </div>
 
                 <!-- State 3: Plan loaded - week navigation + meals -->
-                <div id="ai-plan-loaded" style="display: none;">
+                <div id="ai-plan-loaded" class="ai-plan-focus-layout" style="display: none;">
                     <!-- Plan Header -->
                     <div id="ai-plan-header" style="padding: 20px; background: linear-gradient(135deg, rgba(123,168,131,0.08), rgba(99,102,241,0.05)); border-bottom: 1px solid #f1f5f9;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <div>
                                 <h2 id="ai-plan-name" style="margin: 0 0 4px; font-family: 'Playfair Display'; color: var(--primary); font-size: 1.3rem;">Your Meal Plan</h2>
-                                <p id="ai-plan-desc" style="margin: 0; font-size: 0.85rem; color: var(--text-muted);">Tailored to your goals</p>
+                                <p id="ai-plan-desc" style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">Tailored to your goals</p>
                             </div>
                             <button id="weekly-meal-evolution-btn" onclick="buildNextWeekFromMealHistory()" style="background: none; border: 1px solid var(--primary); color: var(--primary); padding: 6px 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;">
                                 <svg viewBox="0 0 24 24" style="width: 14px; height: 14px; fill: currentColor;"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
@@ -2281,11 +2334,9 @@ if(!window._pbbIsIOSSafari) {
 
                     <!-- Daily Nutrition Summary -->
                     <div id="ai-plan-day-nutrition" style="padding: 10px 15px;">
-                        <div style="display: flex; gap: 8px; justify-content: center;">
-                            <div class="ai-plan-macro-pill" id="ai-day-cal" style="background: #f1f5f9; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; color: var(--text-main);">0 cal</div>
-                            <div class="ai-plan-macro-pill" style="background: rgba(59,130,246,0.1); padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; color: #3b82f6;" id="ai-day-protein">0g protein</div>
-                            <div class="ai-plan-macro-pill" style="background: rgba(245,158,11,0.1); padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; color: #f59e0b;" id="ai-day-carbs">0g carbs</div>
-                            <div class="ai-plan-macro-pill" style="background: rgba(239,68,68,0.1); padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; color: #ef4444;" id="ai-day-fat">0g fat</div>
+                        <div class="ai-plan-daily-summary">
+                            <strong id="ai-day-cal">0 cal</strong>
+                            <span><span id="ai-day-protein">0g protein</span> · <span id="ai-day-carbs">0g carbs</span> · <span id="ai-day-fat">0g fat</span></span>
                         </div>
                     </div>
 
@@ -12891,6 +12942,7 @@ if(!window._pbbIsIOSSafari) {
 </div> <!-- End Main Container (Moved) -->
 
 <script src="js/dashboard/pbb-exercise-technique-data.js?v=1"></script>
+<script src="lib/meal-plan-next-meal.js?v=1"></script>
 <script>
 // Script-5 (678KB) - Stripe/IAP, switchAppTab, initProgramDate, checkAndTriggerOnboarding.
 // On iOS Safari, defer to reduce memory pressure during page parsing.
@@ -12929,13 +12981,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=171';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=172';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=171"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=172"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=3"></script>
@@ -13452,13 +13504,14 @@ if(!window._pbbIsIOSSafari) {
   const steps = [
     { tab:'dashboard', sel:'#weekly-goals-card', fallbackSel:'#next-obvious-steps-card', title:'Your starting goals', body:'These are the small promises Balance will help you keep this week. They are based on your setup and can change when real life changes.', clientActivation:true, clientActivationOnly:true },
     { tab:'meals', sel:'.camera-btn-widget,.meal-icon-btn', title:'Track what you actually eat', body:'A photo, barcode or quick entry gives us useful evidence. You are not trying to log perfectly; you are helping Balance learn your normal week.', clientActivation:true, clientActivationOnly:true },
-    { tab:'meals', sel:'#ai-plan-meals-list .card', fallbackSel:'#ai-plan-meals-list,#browse-plans-pill', title:'Your meal plan', fallbackTitle:'Your meal plan', body:'Your plan starts with familiar food and adds a little novelty. Open a meal for its photo, ingredients and nutrition.', fallbackBody:'Open your meal plan for familiar meals, photos, ingredients and nutrition.', clientActivation:true, clientActivationOnly:true },
+    { tab:'meals', sel:'#ai-plan-meals-list .ai-plan-hero', fallbackSel:'#ai-plan-meals-list,#browse-plans-pill', title:'Your meal plan', fallbackTitle:'Your meal plan', body:'The large card is the next meal you have not logged. Open its recipe, log it, or tap another meal to look ahead.', fallbackBody:'Open your meal plan to see the next meal first.', clientActivation:true, clientActivationOnly:true },
     { tab:'learning', sel:'.course-library-intro', fallbackSel:'#learning-content', title:'Learn as you go', fallbackTitle:'Your course', body:'Your first Balance lesson explains why small visible actions matter. The rest of your course lives here when you are ready.', fallbackBody:'Your first Balance lesson and the rest of your course live here.', clientActivation:true, clientActivationOnly:true },
     { tab:'friends', sel:'#feed-composer-card', title:'Make the change visible', body:'Feed is your low-pressure practice space. Sharing a normal meal, workout or hello gives you evidence that this is becoming part of who you are.', clientActivation:true, clientActivationOnly:true },
     { tab:'movement-tab', sel:'#today-workout-card', title:'Your workout program', body:'Your home program lives here. Start with the version that fits today, even when today is a worst-week day.', clientActivation:true, clientActivationOnly:true },
     { tab:'dashboard', sel:'#weekly-goals-card', fallbackSel:'#next-obvious-steps-card', title:'Your Weekly Goals', body:'We used your setup answers to choose your first three goals. They are ready now, and you can adjust them later when real life changes.', metaPreview:true },
     { tab:'movement-tab', sel:'#today-workout-card', title:'Your workout', body:'Your planned workout lives here. Tap the card when you are ready and Balance takes you through the session.', metaPreview:true },
-    { tab:'meals', sel:'#ai-plan-meals-list .card', fallbackSel:'#ai-plan-meals-list', title:'Your plant-based meal plan', fallbackTitle:'Your plant-based meal plan', body:'Your meals, photos, ingredients and nutrition are all laid out here. Open any meal to see the full vegan recipe.', fallbackBody:'Your meals, photos, ingredients and nutrition are all laid out here. Open any meal to see the full vegan recipe.', metaPreview:true, action:async function(){ try { if(typeof window.ensureMetaPreviewMealPlan === 'function') await window.ensureMetaPreviewMealPlan(); if(typeof switchWeek === 'function') switchWeek('meal-plan-store', document.getElementById('browse-plans-pill')); } catch(e){} await new Promise(function(r){ setTimeout(r,260); }); } },
+    { tab:'meals', sel:'#ai-plan-meals-list .ai-plan-hero', fallbackSel:'#ai-plan-meals-list', title:'Your plant-based meal plan', fallbackTitle:'Your plant-based meal plan', body:'The large card puts your next meal first. Open the recipe, log it, or tap a smaller card to look ahead.', fallbackBody:'Open your meal plan to see your next meal first.', metaPreview:true, action:async function(){ try { if(typeof window.ensureMetaPreviewMealPlan === 'function') await window.ensureMetaPreviewMealPlan(); if(typeof switchWeek === 'function') switchWeek('meal-plan-store', document.getElementById('browse-plans-pill')); } catch(e){} await new Promise(function(r){ setTimeout(r,260); }); } },
+    { tab:'meals', sel:'#ai-plan-meals-list .ai-plan-hero', fallbackSel:'#browse-plans-pill', title:'Your next meal, first', fallbackTitle:'A cleaner meal plan', body:'The large card is your next unlogged meal. Log it and the following meal moves into focus automatically.', fallbackBody:'Open Your Meal Plan to see the next meal in focus.', quick:true, condition:function(){ return !!document.querySelector('#ai-plan-meals-list .ai-plan-hero'); } },
     { tab:'friends', sel:'#friends-photo-feed .meta-preview-feed-post', fallbackSel:'#friends-photo-feed .feed-post-card,#feed-composer-card', title:'The Balance community', fallbackTitle:'The Balance community', body:'This is the live Feed. You can see Coach Shan’s posts, photos and the wins people share inside Balance.', fallbackBody:'This is the Balance Feed, where Coach Shan posts and members share meals, workouts and wins.', metaPreview:true, action:async function(){ try { if(window.BalanceMetaAdTrial && typeof window.BalanceMetaAdTrial.loadPreviewFeed === 'function') await window.BalanceMetaAdTrial.loadPreviewFeed(); } catch(e){} await new Promise(function(r){ setTimeout(r,220); }); } },
     { tab:'friends', sel:'#feed-composer-card', title:'Share a thought', body:'Use this little box when you want to share a thought, a photo, some encouragement or a win with the community.', metaPreview:true },
     { tab:'dashboard', title:'You’re all set', body:'Tap Finish to start your five-minute look around. After that, you can unlock the full six-week Balance Foundations Pass for AU$89.99 once. Your setup stays saved.', metaPreview:true, metaPreviewSignoff:true },
@@ -14257,6 +14310,17 @@ if(!window._pbbIsIOSSafari) {
   // -------------------------------------------------------
 
   var allFeatures = [
+    {
+      id: 'meal-plan-next-meal-focus-v1',
+      tab: 'meals',
+      sel: '#ai-plan-meals-list .ai-plan-hero',
+      fallbackSel: '#browse-plans-pill',
+      title: 'Your next meal, first',
+      fallbackTitle: 'A cleaner meal plan',
+      body: 'Your next unlogged meal now stays in the large card. Log it and the following meal moves into focus automatically.',
+      fallbackBody: 'Open Your Meal Plan to see the next meal in focus.',
+      action: async function(){ try { if (typeof openAiMealPlanView === 'function') openAiMealPlanView(document.getElementById('browse-plans-pill')); } catch(e){} await new Promise(function(resolve){ setTimeout(resolve, 350); }); }
+    },
     {
       id: 'social-journey-your-next-step-v1',
       tab: 'dashboard',

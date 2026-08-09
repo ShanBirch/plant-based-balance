@@ -4813,6 +4813,54 @@ let _aiMealPlanCurrentWeek = 1;
 let _aiMealPlanCurrentDay = 0;
 let _aiMealPlanLoadPromise = null;
 let _aiMealPlanGenerationInProgress = false;
+let _aiMealPlanLoggedTypes = [];
+let _aiMealPlanLoggedDayKey = '';
+let _aiMealPlanMealSelection = null;
+
+function getAiMealPlanTodayIndex() {
+    const sundayFirstDay = new Date().getDay();
+    return sundayFirstDay === 0 ? 6 : sundayFirstDay - 1;
+}
+
+function escapeAiPlanText(value) {
+    return String(value ?? '').replace(/[&<>"']/g, character => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[character]);
+}
+
+async function loadAiMealPlanLoggedTypes(dayNum) {
+    const user = window.currentUser;
+    const todayIndex = getAiMealPlanTodayIndex();
+    if (!user || !window.supabaseClient || dayNum !== todayIndex) {
+        _aiMealPlanLoggedTypes = [];
+        _aiMealPlanLoggedDayKey = `inactive:${_aiMealPlanCurrentWeek}:${dayNum}`;
+        return;
+    }
+
+    const dateKey = typeof getLocalDateString === 'function'
+        ? getLocalDateString()
+        : new Date().toISOString().slice(0, 10);
+    const requestKey = `${user.id}:${dateKey}`;
+    if (_aiMealPlanLoggedDayKey === requestKey || _aiMealPlanLoggedDayKey === `loading:${requestKey}`) return;
+    _aiMealPlanLoggedDayKey = `loading:${requestKey}`;
+
+    try {
+        const { data, error } = await window.supabaseClient
+            .from('meal_logs')
+            .select('meal_type')
+            .eq('user_id', user.id)
+            .eq('meal_date', dateKey)
+            .neq('meal_type', 'water');
+        if (error) throw error;
+        _aiMealPlanLoggedTypes = (data || []).map(row => row.meal_type).filter(Boolean);
+    } catch (error) {
+        console.warn('[meal-plan] could not read today\'s logged meals:', error);
+        _aiMealPlanLoggedTypes = [];
+    } finally {
+        _aiMealPlanLoggedDayKey = requestKey;
+        if (_aiMealPlanCurrentDay === dayNum) renderAiPlanDay(dayNum);
+    }
+}
 
 function isAiMealPlanViewActive() {
     const storeSection = document.getElementById('meal-plan-store');
@@ -5263,15 +5311,20 @@ function showAiPlanLoaded(plan) {
     // Set plan header
     const nameEl = document.getElementById('ai-plan-name');
     const descEl = document.getElementById('ai-plan-desc');
-    if (nameEl) nameEl.textContent = plan.plan_name || 'Your Tailored Meal Plan';
-    if (descEl) descEl.textContent = plan.plan_description || 'Tailored to your goals';
+    if (nameEl) nameEl.textContent = 'Your meal plan';
+    if (descEl) descEl.textContent = plan.plan_name || 'Tailored to your goals';
 
     // Render week tabs dynamically
     renderAiPlanWeekTabs(plan);
 
-    // Default to the first available week
+    // Default to the first available week and today's day.
     const firstWeek = plan.weeks?.[0]?.week_number || 1;
     _aiMealPlanCurrentWeek = firstWeek;
+    _aiMealPlanCurrentDay = getAiMealPlanTodayIndex();
+    _aiMealPlanMealSelection = null;
+    document.querySelectorAll('#ai-plan-day-tabs .sub-btn').forEach((button, index) => {
+        button.classList.toggle('active', index === _aiMealPlanCurrentDay);
+    });
 
     // Render current week/day
     renderAiPlanWeek(_aiMealPlanCurrentWeek);
@@ -5320,7 +5373,9 @@ function renderAiPlanWeekTabs(plan) {
  */
 function switchAiPlanWeek(weekNum, btn) {
     _aiMealPlanCurrentWeek = weekNum;
-    _aiMealPlanCurrentDay = 0;
+    _aiMealPlanCurrentDay = getAiMealPlanTodayIndex();
+    _aiMealPlanMealSelection = null;
+    _aiMealPlanLoggedDayKey = '';
 
     // Update week pills
     if (btn) {
@@ -5328,13 +5383,13 @@ function switchAiPlanWeek(weekNum, btn) {
         btn.classList.add('active');
     }
 
-    // Update day pills - reset to Monday
+    // Update day pills - return to today.
     document.querySelectorAll('#ai-plan-day-tabs .sub-btn').forEach((b, i) => {
-        b.classList.toggle('active', i === 0);
+        b.classList.toggle('active', i === _aiMealPlanCurrentDay);
     });
 
     renderAiPlanWeek(weekNum);
-    renderAiPlanDay(0);
+    renderAiPlanDay(_aiMealPlanCurrentDay);
 }
 
 /**
@@ -5342,6 +5397,8 @@ function switchAiPlanWeek(weekNum, btn) {
  */
 function switchAiPlanDay(dayNum, btn) {
     _aiMealPlanCurrentDay = dayNum;
+    _aiMealPlanMealSelection = null;
+    _aiMealPlanLoggedDayKey = '';
 
     if (btn) {
         document.querySelectorAll('#ai-plan-day-tabs .sub-btn').forEach(b => b.classList.remove('active'));
@@ -5358,10 +5415,138 @@ function renderAiPlanWeek(weekNum) {
     // Week theme card removed - function kept as stub for callers
 }
 
+function selectAiPlanMeal(index) {
+    _aiMealPlanMealSelection = Number(index);
+    renderAiPlanDay(_aiMealPlanCurrentDay);
+    const hero = document.querySelector('#ai-plan-meals-list .ai-plan-hero');
+    if (hero) hero.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function toggleAiPlanMealDetails(button) {
+    const hero = button?.closest('.ai-plan-hero');
+    if (!hero) return;
+    const isOpen = hero.classList.toggle('is-open');
+    button.textContent = isOpen ? 'Hide recipe' : 'View recipe';
+}
+
+function openAiPlanMealLogger() {
+    const trackerButton = document.querySelector('#meals-nav-pills .pill-btn[onclick*="calorie-tracker"]');
+    if (typeof switchWeek === 'function') switchWeek('calorie-tracker', trackerButton);
+}
+
+function renderAiPlanFocusedDay(dayNum) {
+    if (!_aiMealPlanCache || !_aiMealPlanCache.weeks) return;
+    const week = _aiMealPlanCache.weeks.find(item => item.week_number === _aiMealPlanCurrentWeek);
+    const day = week?.days?.find(item => item.day_of_week === dayNum);
+    const container = document.getElementById('ai-plan-meals-list');
+    if (!day?.meals || !container) return;
+
+    loadAiMealPlanLoggedTypes(dayNum);
+
+    const helper = window.BalanceMealPlanNext;
+    const sortedMeals = helper?.sortMeals
+        ? helper.sortMeals(day.meals).map(entry => entry.meal)
+        : [...day.meals];
+    const isToday = dayNum === getAiMealPlanTodayIndex();
+    const loggedTypes = isToday ? _aiMealPlanLoggedTypes : [];
+    const completion = helper?.completionState
+        ? helper.completionState(sortedMeals, loggedTypes)
+        : sortedMeals.map((meal, originalIndex) => ({ meal, originalIndex, complete: false }));
+    const allComplete = completion.length > 0 && completion.every(entry => entry.complete);
+    const firstIncompleteIndex = completion.findIndex(entry => !entry.complete);
+    const nextIndex = allComplete ? Math.max(sortedMeals.length - 1, 0) : Math.max(firstIncompleteIndex, 0);
+    const requestedIndex = Number.isInteger(_aiMealPlanMealSelection) ? _aiMealPlanMealSelection : nextIndex;
+    const selectedIndex = Math.min(Math.max(requestedIndex, 0), Math.max(sortedMeals.length - 1, 0));
+    const selected = sortedMeals[selectedIndex];
+    if (!selected) return;
+
+    let totalCal = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0;
+    sortedMeals.forEach(meal => {
+        totalCal += Number(meal.calories) || 0;
+        totalProtein += Number(meal.protein_g) || 0;
+        totalCarbs += Number(meal.carbs_g) || 0;
+        totalFat += Number(meal.fat_g) || 0;
+    });
+    const calEl = document.getElementById('ai-day-cal');
+    const proteinEl = document.getElementById('ai-day-protein');
+    const carbsEl = document.getElementById('ai-day-carbs');
+    const fatEl = document.getElementById('ai-day-fat');
+    if (calEl) calEl.textContent = `${Math.round(totalCal)} cal`;
+    if (proteinEl) proteinEl.textContent = `${Math.round(totalProtein)}g protein`;
+    if (carbsEl) carbsEl.textContent = `${Math.round(totalCarbs)}g carbs`;
+    if (fatEl) fatEl.textContent = `${Math.round(totalFat)}g fat`;
+
+    const slotLabels = { breakfast: 'Breakfast', am_snack: 'AM Snack', lunch: 'Lunch', pm_snack: 'PM Snack', dinner: 'Dinner' };
+    const selectedSlot = slotLabels[selected.meal_slot] || selected.meal_slot || 'Meal';
+    const rawImageUrl = resolveMealPlanPhotoUrl(selected);
+    const imageUrl = /^(?:https:\/\/|images\/meals\/)[^"'<>]+$/i.test(rawImageUrl) ? rawImageUrl : '';
+    const imageAlt = escapeAiPlanText(selected.name || selectedSlot);
+    const ingredients = (selected.ingredients || []).map(ingredient => {
+        if (typeof ingredient === 'string') return `<li>${escapeAiPlanText(ingredient)}</li>`;
+        const amount = ingredient?.amount ? ` ${escapeAiPlanText(ingredient.amount)}` : '';
+        return `<li>${escapeAiPlanText(ingredient?.name || '')}${amount}</li>`;
+    }).join('');
+    const tags = (selected.tags || []).slice(0, 3).map(tag => escapeAiPlanText(tag)).join(' · ')
+        || escapeAiPlanText(selected.description || 'Planned for you');
+    const focusLabel = allComplete && isToday
+        ? 'Today complete'
+        : selectedIndex === nextIndex && isToday
+            ? 'Up next'
+            : 'Selected meal';
+    const completeCount = completion.filter(entry => entry.complete).length;
+    const previews = sortedMeals.map((meal, index) => ({ meal, index, complete: !!completion[index]?.complete }))
+        .filter(entry => entry.index !== selectedIndex);
+
+    container.innerHTML = `
+        <div class="ai-plan-focus-label">
+            <strong>${focusLabel}</strong>
+            <span>${escapeAiPlanText(selectedSlot)}${selected.meal_time ? ` · ${escapeAiPlanText(selected.meal_time)}` : ''}</span>
+        </div>
+        <article class="ai-plan-hero" data-next-meal="${selectedIndex === nextIndex ? 'true' : 'false'}">
+            ${imageUrl ? `<img class="ai-plan-hero__photo" src="${imageUrl}" alt="${imageAlt}" loading="eager" data-meal-plan-photo="true" onerror="this.style.display='none'">` : ''}
+            <div class="ai-plan-hero__content">
+                <div class="ai-plan-hero__meta"><span>${escapeAiPlanText(selectedSlot)}</span><span>${escapeAiPlanText(selected.meal_time || '')}</span></div>
+                <h3 class="ai-plan-hero__title">${escapeAiPlanText(selected.name)}</h3>
+                <div class="ai-plan-hero__tags">${tags}</div>
+                <div class="ai-plan-hero__macros">
+                    <span>${Math.round(selected.calories || 0)} cal</span>
+                    <span>${Math.round(selected.protein_g || 0)}g protein</span>
+                    <span>${Math.round(selected.carbs_g || 0)}g carbs</span>
+                    <span>${Math.round(selected.fat_g || 0)}g fat</span>
+                </div>
+                <div class="ai-plan-hero__actions">
+                    <button type="button" class="ai-plan-hero__button ai-plan-hero__button--primary" onclick="toggleAiPlanMealDetails(this)">View recipe</button>
+                    <button type="button" class="ai-plan-hero__button" onclick="openAiPlanMealLogger()">Log meal</button>
+                </div>
+                <div class="ai-plan-hero__details">
+                    ${selected.description ? `<p>${escapeAiPlanText(selected.description)}</p>` : ''}
+                    ${ingredients ? `<h4>Ingredients</h4><ul>${ingredients}</ul>` : ''}
+                    ${selected.preparation ? `<h4>Preparation</h4><p>${escapeAiPlanText(selected.preparation)}</p>` : ''}
+                </div>
+            </div>
+        </article>
+        ${previews.length ? `
+            <div class="ai-plan-preview-heading"><strong>Other meals</strong><span>${isToday ? `${completeCount} of ${sortedMeals.length} logged` : escapeAiPlanText(day.day_name || '')}</span></div>
+            <div class="ai-plan-preview-row">
+                ${previews.map(entry => {
+                    const previewMeal = entry.meal;
+                    const previewSlot = slotLabels[previewMeal.meal_slot] || previewMeal.meal_slot || 'Meal';
+                    const previewRawUrl = resolveMealPlanPhotoUrl(previewMeal);
+                    const previewUrl = /^(?:https:\/\/|images\/meals\/)[^"'<>]+$/i.test(previewRawUrl) ? previewRawUrl : '';
+                    return `<button type="button" class="ai-plan-preview${entry.complete ? ' is-complete' : ''}" onclick="selectAiPlanMeal(${entry.index})">
+                        ${previewUrl ? `<img src="${previewUrl}" alt="${escapeAiPlanText(previewMeal.name || previewSlot)}" loading="lazy" data-meal-plan-photo="true" onerror="this.style.display='none'">` : ''}
+                        <span class="ai-plan-preview__copy"><small>${escapeAiPlanText(previewSlot)}</small><strong>${escapeAiPlanText(previewMeal.name)}</strong></span>
+                    </button>`;
+                }).join('')}
+            </div>` : ''}
+    `;
+}
+
 /**
  * Render the meals for a specific day
  */
 function renderAiPlanDay(dayNum) {
+    return renderAiPlanFocusedDay(dayNum);
     if (!_aiMealPlanCache || !_aiMealPlanCache.weeks) return;
 
     const week = _aiMealPlanCache.weeks.find(w => w.week_number === _aiMealPlanCurrentWeek);
