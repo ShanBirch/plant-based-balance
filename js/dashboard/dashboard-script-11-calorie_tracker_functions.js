@@ -1044,9 +1044,8 @@ function startVoiceRecording() {
                 if (granted) {
                     startVoiceRecording();
                 } else {
-                    if (statusText) statusText.textContent = 'Microphone access denied. Tap here to open Settings.';
-                    if (statusText) statusText.style.cursor = 'pointer';
-                    if (statusText) statusText.onclick = () => window.NativePermissions.openAppSettings();
+                    if (statusText) statusText.textContent = 'Tap the microphone to try again';
+                    showPermissionRecoveryDialog('microphone');
                 }
             };
             window.NativePermissions.requestMicrophonePermission();
@@ -1104,8 +1103,9 @@ function _startNativeVoiceRecording() {
     window._onNativeSpeechError = function(error) {
         console.error('Native speech recognition error:', error);
         if (error === 'permission-denied') {
-            if (statusText) statusText.textContent = 'Microphone access denied. Please enable it in settings.';
+            if (statusText) statusText.textContent = 'Tap the microphone to try again';
             stopVoiceRecording();
+            showPermissionRecoveryDialog('microphone');
         }
         // Other errors (no-match, timeout) are handled by auto-restart on the native side
     };
@@ -3076,36 +3076,7 @@ async function checkAndShowNotificationStatus() {
 
 // Show a dialog when notifications are blocked, with a button to open Settings
 function showNotificationBlockedDialog() {
-    const overlay = document.createElement('div');
-    overlay.id = 'notif-blocked-dialog';
-    overlay.style.cssText = 'position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:10020; display:flex; align-items:center; justify-content:center; animation:fadeIn 0.2s ease-out;';
-
-    overlay.innerHTML = '<div style="background:white; border-radius:16px; padding:24px; margin:20px; max-width:320px; width:100%; text-align:center; box-shadow:0 8px 32px rgba(0,0,0,0.2);">'
-        + '<div style="width:56px; height:56px; background:linear-gradient(135deg, #fff3e0, #ffe0b2); border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 12px;">'
-        + '<svg viewBox="0 0 24 24" style="width:28px; height:28px; fill:#f57c00;"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"/></svg>'
-        + '</div>'
-        + '<h3 style="margin:0 0 8px; font-size:1.1rem; color:#1a1a1a;">Notifications Blocked</h3>'
-        + '<p style="margin:0 0 16px; font-size:0.85rem; color:#666; line-height:1.5;">To receive meal reminders, you need to allow notifications in your device settings.</p>'
-        + '<button id="notif-open-settings-btn" style="width:100%; padding:10px 16px; border-radius:8px; border:none; background:var(--primary); color:white; font-weight:600; font-size:0.9rem; cursor:pointer; margin-bottom:8px;">Open Settings</button>'
-        + '<button onclick="document.getElementById(\'notif-blocked-dialog\').remove()" style="width:100%; padding:10px 16px; border-radius:8px; border:1px solid #ddd; background:transparent; color:#666; font-weight:500; font-size:0.9rem; cursor:pointer;">Cancel</button>'
-        + '</div>';
-
-    document.body.appendChild(overlay);
-
-    // Wire up the "Open Settings" button
-    document.getElementById('notif-open-settings-btn').onclick = function() {
-        if (window.NativePermissions && window.NativePermissions.openAppSettings) {
-            window.NativePermissions.openAppSettings();
-        } else if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
-            window.Capacitor.Plugins.App.openUrl({ url: 'app-settings:' }).catch(function() {});
-        }
-        overlay.remove();
-    };
-
-    // Dismiss on backdrop tap
-    overlay.addEventListener('click', function(e) {
-        if (e.target === overlay) overlay.remove();
-    });
+    showPermissionRecoveryDialog('notifications');
 }
 
 // Listen for notification permission changes when the app resumes from Settings.
@@ -10326,49 +10297,84 @@ async function startUnifiedCamera() {
  */
 function showCameraPermissionSettingsDialog() {
     closeUnifiedCamera();
+    showPermissionRecoveryDialog('camera');
+}
 
-    // Check if the native bridge can open settings directly
+/**
+ * Shared denied-permission recovery for every feature that relies on device
+ * access. The OS permission prompt cannot always be shown a second time, so
+ * the fallback must be an explicit, readable route to the app's Settings.
+ */
+function showPermissionRecoveryDialog(feature) {
+    const permissionContent = {
+        camera: {
+            title: 'Connect camera?',
+            body: 'Balance needs camera access to take photos, film sets, and scan barcodes.',
+            setting: 'Camera'
+        },
+        microphone: {
+            title: 'Connect microphone?',
+            body: 'Balance needs microphone access for voice meal logging and audio recording.',
+            setting: 'Microphone'
+        },
+        location: {
+            title: 'Connect location?',
+            body: 'Balance needs location access for features that use your local conditions.',
+            setting: 'Location'
+        },
+        notifications: {
+            title: 'Connect notifications?',
+            body: 'Balance needs notification access for coach replies, reminders, and updates.',
+            setting: 'Notifications'
+        }
+    };
+    const content = permissionContent[feature] || {
+        title: 'Connect this feature?',
+        body: 'Balance needs device access to use this feature.',
+        setting: 'Permissions'
+    };
+    const existing = document.getElementById('permission-recovery-dialog-overlay');
+    if (existing) existing.remove();
+
     const canOpenSettings = window.NativePermissions &&
         typeof window.NativePermissions.openAppSettings === 'function';
-
     const overlay = document.createElement('div');
-    overlay.id = 'camera-permission-dialog-overlay';
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:10020;display:flex;align-items:center;justify-content:center;padding:20px;';
+    overlay.id = 'permission-recovery-dialog-overlay';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-labelledby', 'permission-recovery-dialog-title');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.58);z-index:12050;display:flex;align-items:center;justify-content:center;padding:calc(20px + env(safe-area-inset-top, 0px)) 20px calc(20px + env(safe-area-inset-bottom, 0px));box-sizing:border-box;';
     overlay.innerHTML = `
-        <div style="background:#1e1e2e;border-radius:16px;padding:28px 24px;max-width:360px;width:100%;text-align:center;color:#fff;box-shadow:0 8px 32px rgba(0,0,0,0.4);">
-            <div style="width:56px;height:56px;border-radius:50%;background:rgba(239,68,68,0.15);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-                    <circle cx="12" cy="13" r="4"/>
-                    <line x1="1" y1="1" x2="23" y2="23" stroke="#ef4444" stroke-width="2"/>
-                </svg>
-            </div>
-            <h3 style="margin:0 0 8px;font-size:1.15rem;font-weight:700;">Camera Access Needed</h3>
-            <p style="margin:0 0 20px;font-size:0.9rem;color:rgba(255,255,255,0.7);line-height:1.5;">
-                Balance needs camera access to scan barcodes and identify food.
-                ${canOpenSettings
-                    ? 'Tap the button below to open Settings, then enable <b>Camera</b> under Permissions.'
-                    : 'Please go to your device <b>Settings &gt; Apps &gt; Balance &gt; Permissions</b> and enable Camera.'}
+        <div style="background:#fff;border-radius:18px;padding:26px 22px;max-width:360px;width:100%;max-height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;box-sizing:border-box;text-align:center;color:#172033;-webkit-text-fill-color:#172033;box-shadow:0 18px 50px rgba(15,23,42,0.28);">
+            <div style="width:54px;height:54px;border-radius:16px;background:#edf7ef;color:#2f7d46;display:flex;align-items:center;justify-content:center;margin:0 auto 15px;font-size:1.55rem;" aria-hidden="true">&#9881;</div>
+            <h3 id="permission-recovery-dialog-title" style="margin:0 0 8px;font-size:1.18rem;font-weight:800;color:#172033;-webkit-text-fill-color:#172033;">${content.title}</h3>
+            <p style="margin:0 0 20px;font-size:0.9rem;color:#475569;-webkit-text-fill-color:#475569;line-height:1.5;">
+                ${content.body} ${canOpenSettings
+                    ? `Open Settings, then turn on <b>${content.setting}</b>.`
+                    : `Turn on <b>${content.setting}</b> in your browser or device settings, then try again.`}
             </p>
-            <div style="display:flex;gap:10px;justify-content:center;">
-                ${canOpenSettings ? `
-                <button onclick="window.NativePermissions.openAppSettings(); document.getElementById('camera-permission-dialog-overlay').remove();"
-                    style="flex:1;padding:12px 20px;border:none;border-radius:12px;background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:#fff;font-weight:600;font-size:0.95rem;cursor:pointer;">
-                    Open Settings
-                </button>` : ''}
-                <button onclick="document.getElementById('camera-permission-dialog-overlay').remove();"
-                    style="flex:1;padding:12px 20px;border:1px solid rgba(255,255,255,0.2);border-radius:12px;background:transparent;color:rgba(255,255,255,0.8);font-weight:500;font-size:0.95rem;cursor:pointer;">
-                    ${canOpenSettings ? 'Cancel' : 'OK'}
-                </button>
+            <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+                ${canOpenSettings ? '<button type="button" data-permission-open-settings style="flex:1 1 140px;padding:12px 18px;border:none;border-radius:10px;background:#2f7d46;color:#fff;-webkit-text-fill-color:#fff;font-weight:800;font-size:0.93rem;cursor:pointer;">Open Settings</button>' : ''}
+                <button type="button" data-permission-dismiss style="flex:1 1 110px;padding:12px 18px;border:1px solid #dbe5dd;border-radius:10px;background:#fff;color:#475569;-webkit-text-fill-color:#475569;font-weight:700;font-size:0.93rem;cursor:pointer;">${canOpenSettings ? 'Not now' : 'OK'}</button>
             </div>
-        </div>
-    `;
-    document.body.appendChild(overlay);
-    // Close when clicking the backdrop
-    overlay.addEventListener('click', function(e) {
-        if (e.target === overlay) overlay.remove();
+        </div>`;
+
+    const dismiss = () => overlay.remove();
+    const settingsBtn = overlay.querySelector('[data-permission-open-settings]');
+    if (settingsBtn) {
+        settingsBtn.addEventListener('click', function() {
+            window.NativePermissions.openAppSettings();
+            dismiss();
+        });
+    }
+    overlay.querySelector('[data-permission-dismiss]').addEventListener('click', dismiss);
+    overlay.addEventListener('click', function(event) {
+        if (event.target === overlay) dismiss();
     });
+    document.body.appendChild(overlay);
 }
+
+window.showPermissionRecoveryDialog = showPermissionRecoveryDialog;
 
 function stopUnifiedCamera() {
     stopBarcodeScanLoop();

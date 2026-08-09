@@ -2,11 +2,13 @@ package com.fitgotchi.app;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.AlertDialog;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -20,6 +22,7 @@ import android.os.Looper;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
+import android.provider.Settings;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Base64;
@@ -172,14 +175,46 @@ public class QuickMealActivity extends AppCompatActivity {
     // Camera permission launcher
     private final ActivityResultLauncher<String> cameraPermLauncher =
         registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
-            if (granted) enterCameraMode();
+            if (granted) {
+                enterCameraMode();
+            } else {
+                showPermissionRecoveryDialog("camera");
+            }
         });
 
     // Mic permission launcher
     private final ActivityResultLauncher<String> micPermLauncher =
         registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
-            if (granted) startListening();
+            if (granted) {
+                startListening();
+            } else {
+                showPermissionRecoveryDialog("microphone");
+            }
         });
+
+    /**
+     * Never leave a hardware action looking broken after permission is denied.
+     * Android will not always show its permission sheet again, so give the user
+     * a clear recovery path back to this app's permission settings.
+     */
+    private void showPermissionRecoveryDialog(String feature) {
+        boolean isCamera = "camera".equals(feature);
+        String title = isCamera ? "Connect camera?" : "Connect microphone?";
+        String message = isCamera
+                ? "Balance needs camera access to take meal photos and scan barcodes. Open Settings to connect it."
+                : "Balance needs microphone access for voice meal logging. Open Settings to connect it.";
+
+        new AlertDialog.Builder(this)
+            .setTitle(title)
+            .setMessage(message)
+            .setNegativeButton("Not now", null)
+            .setPositiveButton("Open Settings", (dialog, which) -> {
+                Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                intent.setData(Uri.fromParts("package", getPackageName(), null));
+                startActivity(intent);
+            })
+            .show();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

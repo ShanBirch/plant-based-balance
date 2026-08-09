@@ -1,4 +1,5 @@
 import Foundation
+import AVFoundation
 import Capacitor
 import UIKit
 import UniformTypeIdentifiers
@@ -19,6 +20,25 @@ public class BalanceVideoCapturePlugin: CAPPlugin, CAPBridgedPlugin, UIImagePick
             guard let self = self else {
                 call.resolve(["cancelled": true, "reason": "plugin-unavailable"])
                 return
+            }
+
+            switch AVCaptureDevice.authorizationStatus(for: .video) {
+            case .notDetermined:
+                AVCaptureDevice.requestAccess(for: .video) { granted in
+                    DispatchQueue.main.async {
+                        if granted {
+                            self.captureWorkoutVideo(call)
+                        } else {
+                            self.showCameraPermissionRecovery(call)
+                        }
+                    }
+                }
+                return
+            case .denied, .restricted:
+                self.showCameraPermissionRecovery(call)
+                return
+            default:
+                break
             }
 
             guard UIImagePickerController.isSourceTypeAvailable(.camera) else {
@@ -61,6 +81,22 @@ public class BalanceVideoCapturePlugin: CAPPlugin, CAPBridgedPlugin, UIImagePick
         }
     }
 
+    private func showCameraPermissionRecovery(_ call: CAPPluginCall) {
+        call.resolve(["cancelled": true, "reason": "permission-denied"])
+
+        guard let viewController = bridge?.viewController else { return }
+        let alert = UIAlertController(
+            title: "Connect camera?",
+            message: "Balance needs camera access to film your sets. Open Settings to connect it.",
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "Not now", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Open Settings", style: .default) { _ in
+            guard let settingsURL = URL(string: UIApplication.openSettingsURLString) else { return }
+            UIApplication.shared.open(settingsURL)
+        })
+        viewController.present(alert, animated: true)
+    }
     public func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
         picker.dismiss(animated: true) { [weak self] in
             self?.pendingCall?.resolve(["cancelled": true])
