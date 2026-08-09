@@ -468,6 +468,9 @@
 
   function isCurrentLessonSeen() {
     if (!state) return false;
+    try {
+      if (isOnboardingTestUser() && sessionStorage.getItem('pbb_activation_force_fresh') === 'true') return false;
+    } catch (_) {}
     if (lessonSeenWeeks().includes(Number(state.current_week))) return true;
     return Number(state.current_week) === 1 && hasCompletedFirstFoundationsLesson();
   }
@@ -659,6 +662,7 @@
       window.__pbbActivationNextStepsTimer = null;
     }
     try { sessionStorage.removeItem('pbb_activation_first_lesson'); } catch (_) {}
+    try { sessionStorage.removeItem('pbb_activation_force_fresh'); } catch (_) {}
     await showGoals();
     closeJourney();
     if (typeof window.switchAppTab === 'function') {
@@ -703,6 +707,7 @@
 
   function previewGoalsForTest() {
     if (!isPilotUser() && !isOnboardingTestUser()) return false;
+    try { sessionStorage.removeItem('pbb_activation_force_fresh'); } catch (_) {}
     if (!state) state = normalizeState(defaultState());
     const settings = safeObject(state.settings);
     const weeks = new Set(lessonSeenWeeks());
@@ -714,6 +719,26 @@
     viewStage = 'goals';
     renderCard();
     openJourney('goals');
+    return true;
+  }
+
+  function resetActivationForTest() {
+    if (!isPilotUser() && !isOnboardingTestUser()) return false;
+    const existingSettings = safeObject(state && state.settings);
+    const settings = Object.assign({}, existingSettings);
+    delete settings.lesson_seen_weeks;
+    state = normalizeState(Object.assign({}, defaultState(), {
+      onboarding_complete: false,
+      settings
+    }));
+    progress = null;
+    viewStage = 'welcome';
+    try {
+      sessionStorage.setItem('pbb_activation_force_fresh', 'true');
+      sessionStorage.removeItem('pbb_activation_first_lesson');
+    } catch (_) {}
+    ensureUi();
+    renderCard();
     return true;
   }
 
@@ -1005,7 +1030,8 @@
       await loadState();
       ensureUi();
       await calculateProgress();
-      if (state && Number(state.current_week) === 1 && hasCompletedFirstFoundationsLesson() && !lessonSeenWeeks().includes(1)) {
+      const forceFreshTest = isOnboardingTestUser() && sessionStorage.getItem('pbb_activation_force_fresh') === 'true';
+      if (!forceFreshTest && state && Number(state.current_week) === 1 && hasCompletedFirstFoundationsLesson() && !lessonSeenWeeks().includes(1)) {
         await showGoals();
       }
       renderCard();
@@ -1147,6 +1173,7 @@
     close: closeJourney,
     showGoals,
     previewGoalsForTest,
+    resetActivationForTest,
     showWelcome,
     openCoachInbox,
     continueFromInbox,

@@ -63,11 +63,23 @@
         if (status) status.textContent = message;
     }
 
+    function resetJourneyForFreshRun(attempt) {
+        const retry = Math.max(0, Number(attempt) || 0);
+        if (window.socialJourney && typeof window.socialJourney.resetActivationForTest === 'function') {
+            return window.socialJourney.resetActivationForTest();
+        }
+        if (retry < 40) {
+            window.setTimeout(function () { resetJourneyForFreshRun(retry + 1); }, 150);
+        }
+        return false;
+    }
+
     function restartOnboarding() {
         closeBlockingSetup();
         localStorage.removeItem('featureTourComplete');
         localStorage.setItem('userThemePreference', 'light');
         if (typeof window.applyAppTheme === 'function') window.applyAppTheme('light');
+        resetJourneyForFreshRun(0);
         if (typeof window.startTransferredClientFlow === 'function') {
             window.startTransferredClientFlow();
             notify('Restarting the tailored onboarding flow');
@@ -79,6 +91,7 @@
     function jumpToAppTour() {
         closeBlockingSetup();
         localStorage.removeItem('featureTourComplete');
+        resetJourneyForFreshRun(0);
         if (clickByText(['test: jump to app tour'])) return;
         if (callFirst(['startGuidedFeatureTour', 'startFeatureTour', 'launchFeatureTour', 'runFeatureTour'])) return;
         notify('The app tour trigger is not ready on this screen yet.');

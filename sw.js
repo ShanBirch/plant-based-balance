@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v283'; // v283: light onboarding default and journey-card contrast
+const CACHE_NAME = 'pbb-app-v284'; // v284: deterministic fresh activation test sequence
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
