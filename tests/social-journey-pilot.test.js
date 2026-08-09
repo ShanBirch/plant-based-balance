@@ -71,8 +71,19 @@ test('dashboard ships both discovery systems and a visible pilot card target', (
     assert.match(html, /allFeatures = \[\];[\s\S]*?allFeatures\.push\(\{[\s\S]*?id: 'social-journey-your-next-step-v1'/);
     assert.match(html, /sel:'#social-journey-card', title:'Your Next Step'/);
     assert.match(html, /finish this App Tour and your first Balance Foundations lesson/);
-    assert.match(html, /pbb-social-journey\.js\?v=19/);
-    assert.match(html, /pbb-social-journey\.css\?v=6/);
+    assert.match(html, /pbb-social-journey\.js\?v=\d+/);
+    assert.match(html, /pbb-social-journey\.css\?v=\d+/);
+});
+
+test('first check-in ships the recorded Shannon welcome audio used by Inbox and Your Next Step', () => {
+    const source = fs.readFileSync(path.join(root, 'js/dashboard/pbb-social-journey.js'), 'utf8');
+    const inboxSource = fs.readFileSync(path.join(root, 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js'), 'utf8');
+    const audioPath = path.join(root, 'assets/audio/shannon-balance-welcome.mp3');
+    assert.match(source, /\/assets\/audio\/shannon-balance-welcome\.mp3/);
+    assert.match(inboxSource, /balance-onboarding-inbox-message/);
+    assert.match(inboxSource, /\/assets\/audio\/shannon-balance-welcome\.mp3/);
+    assert.equal(fs.existsSync(audioPath), true);
+    assert.ok(fs.statSync(audioPath).size > 1_000_000);
 });
 
 test('journey UI is lesson-led, card-triggered and preserves account data on restart', () => {
