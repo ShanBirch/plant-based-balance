@@ -100,6 +100,10 @@
 
     function jumpToFirstLesson() {
         closeBlockingSetup();
+        if (window.socialJourney && typeof window.socialJourney.startFirstCourseLesson === 'function') {
+            window.socialJourney.startFirstCourseLesson();
+            return;
+        }
         if (!callFirst(['showSection', 'switchSection'], ['course'])) {
             clickByText(['course']);
         }

@@ -1891,14 +1891,14 @@ if(!window._pbbIsIOSSafari) {
 if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-progressphoto.js?v=10"><\/script>');
     document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=27"><\/script>');
-    document.write('<script src="js/dashboard/pbb-social-journey.js?v=19"><\/script>');
+    document.write('<script src="js/dashboard/pbb-social-journey.js?v=20"><\/script>');
     document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=10"><\/script>');
     document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=22"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
     window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=10');
     window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=27');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=19');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=20');
     window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=10');
     window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=22');
 }
@@ -12936,7 +12936,7 @@ if (window._pbbIsIOSSafari) {
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=3"></script>
-<script src="js/dashboard/pbb-onboarding-test-navigator.js?v=1"></script>
+<script src="js/dashboard/pbb-onboarding-test-navigator.js?v=2"></script>
 
 <!-- Image Modal HTML -->
 <div class="image-modal-overlay" id="imageModal" onclick="closeImageModal()">
@@ -18514,11 +18514,11 @@ if (window._pbbIsIOSSafari) {
             });
             if (window.showQuizBattleInviteModal || learningAlreadyRequested) return;
             var s = document.createElement('script');
-      s.src = 'lib/learning-inline.js?v=19';
+      s.src = 'lib/learning-inline.js?v=20';
             document.head.appendChild(s);
         }, { once: true });
     } else {
-    document.write('<script src="lib/learning-inline.js?v=19"><\/script>');
+    document.write('<script src="lib/learning-inline.js?v=20"><\/script>');
     }
     </script>
     <!-- Battle System & Logic Overrides (130 lines — deferred on iOS) -->

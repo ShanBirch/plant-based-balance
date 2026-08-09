@@ -463,7 +463,17 @@
   }
 
   function isCurrentLessonSeen() {
-    return !!state && lessonSeenWeeks().includes(Number(state.current_week));
+    if (!state) return false;
+    if (lessonSeenWeeks().includes(Number(state.current_week))) return true;
+    return Number(state.current_week) === 1 && hasCompletedFirstFoundationsLesson();
+  }
+
+  function hasCompletedFirstFoundationsLesson() {
+    try {
+      return typeof window._isLessonCompleted === 'function' && window._isLessonCompleted('mind-1-1');
+    } catch (_) {
+      return false;
+    }
   }
 
   function markJourneyFeatureSeen() {
@@ -975,6 +985,9 @@
       await loadState();
       ensureUi();
       await calculateProgress();
+      if (state && Number(state.current_week) === 1 && hasCompletedFirstFoundationsLesson() && !lessonSeenWeeks().includes(1)) {
+        await showGoals();
+      }
       renderCard();
     } catch (error) {
       console.warn('[social-journey] refresh failed', error);
@@ -1096,7 +1109,12 @@
     if (initialized || !isJourneyEligible()) return;
     initialized = true;
     const card = getCard();
-    if (card) card.addEventListener('click', function () { openJourney(isCurrentLessonSeen() ? 'goals' : 'welcome'); });
+    if (card) card.addEventListener('click', async function () {
+      if (Number(state && state.current_week) === 1 && hasCompletedFirstFoundationsLesson() && !lessonSeenWeeks().includes(1)) {
+        await showGoals();
+      }
+      openJourney(isCurrentLessonSeen() ? 'goals' : 'welcome');
+    });
     ensureUi();
     refresh();
   }
