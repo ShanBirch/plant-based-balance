@@ -85,10 +85,11 @@ test('Balance Foundations is a six-week course that preserves the existing lesso
     assert.equal((foundationsSource.match(/number:\s*[1-6],/g) || []).length, 6);
     assert.equal(weekLessonLists.length, 6);
     weekLessonLists.forEach(([, ids]) => assert.equal((ids.match(/'[a-z]+-\d+-\d+'/g) || []).length, 5));
-    assert.match(foundationsSource, /Meet your predictive brain/);
-    assert.match(foundationsSource, /Decode cravings and emotional eating/);
-    assert.match(foundationsSource, /Change the system, not your willpower/);
-    assert.match(foundationsSource, /Build eating habits that last/);
+    assert.match(foundationsSource, /Understand why change feels hard/);
+    assert.match(foundationsSource, /Build a rhythm that can stick/);
+    assert.match(foundationsSource, /Take the fight out of food/);
+    assert.match(foundationsSource, /Make the better choice easier/);
+    assert.match(foundationsSource, /Build a way of eating you can keep/);
     assert.match(learning, /progress\.total} quizzes across 6 weeks/);
     assert.match(learning, /getFoundationsLessonTitle/);
     assert.match(socialJourney, /startFoundationsLesson\('mind-1-1'\)/);
