@@ -4477,6 +4477,8 @@ function showMealSection(id) {
 }
 
 function openAiMealPlanView(btn) {
+    if (typeof _aiMealPlanLoggedDayKey !== 'undefined') _aiMealPlanLoggedDayKey = '';
+    if (typeof _aiMealPlanMealSelection !== 'undefined') _aiMealPlanMealSelection = null;
     const mealsView = document.getElementById('view-meals');
     if (mealsView && mealsView.style.display === 'none' && typeof switchAppTab === 'function') {
         switchAppTab('meals', document.querySelector('.bottom-nav .nav-item[onclick*="meals"]'));

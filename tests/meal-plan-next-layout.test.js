@@ -13,7 +13,7 @@ const mealPlanScript = fs.readFileSync(
 test('ships the focused meal layout and cache-busted client assets', () => {
     assert.match(dashboard, /class="ai-plan-focus-layout"/);
     assert.match(dashboard, /lib\/meal-plan-next-meal\.js\?v=1/);
-    assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=172/);
+    assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=173/);
     assert.match(dashboard, /meal-plan-next-meal-focus-v1/);
 });
 
@@ -23,4 +23,5 @@ test('uses today meal logs to advance the hero and exposes real actions', () => 
     assert.match(mealPlanScript, />View recipe<\/button>/);
     assert.match(mealPlanScript, />Log meal<\/button>/);
     assert.match(mealPlanScript, /function selectAiPlanMeal\(index\)/);
+    assert.match(mealPlanScript, /function openAiMealPlanView\(btn\)[\s\S]+_aiMealPlanLoggedDayKey = ''/);
 });
