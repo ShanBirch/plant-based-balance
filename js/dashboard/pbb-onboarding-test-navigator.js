@@ -99,6 +99,10 @@
 
     function jumpToInbox() {
         closeBlockingSetup();
+        if (window.socialJourney && typeof window.socialJourney.openCoachInbox === 'function') {
+            window.socialJourney.openCoachInbox();
+            return;
+        }
         if (callFirst(['openCoachInbox', 'openDirectMessages', 'openMessagesView'])) return;
         if (clickByText(['inbox', 'messages'])) {
             window.setTimeout(function () { clickByText(['coach shannon']); }, 350);
