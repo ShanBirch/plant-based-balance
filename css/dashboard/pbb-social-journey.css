@@ -278,3 +278,31 @@ html[data-pbb-theme="light"] .social-journey-pilot-controls { background: rgba(2
   color: #e7bf62;
   -webkit-text-fill-color: #e7bf62;
 }
+
+/* Guide the activation journey toward the first Foundations lesson. */
+.balance-activation-lesson-target {
+  position: relative;
+  z-index: 1;
+  border: 1px solid rgba(184, 137, 43, .72) !important;
+  background: linear-gradient(135deg, #fffdf7, #f8edcf) !important;
+  box-shadow: 0 0 0 0 rgba(216, 178, 94, .38), 0 8px 22px rgba(154, 105, 25, .15) !important;
+  animation: balanceFirstLessonGlow 2.4s ease-in-out infinite;
+}
+
+@keyframes balanceFirstLessonGlow {
+  0%, 100% {
+    transform: translateY(0);
+    box-shadow: 0 0 0 0 rgba(216, 178, 94, 0), 0 8px 22px rgba(154, 105, 25, .13);
+  }
+  50% {
+    transform: translateY(-1px);
+    box-shadow: 0 0 0 5px rgba(216, 178, 94, .2), 0 12px 30px rgba(154, 105, 25, .25);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .balance-activation-lesson-target {
+    animation: none;
+    box-shadow: 0 0 0 4px rgba(216, 178, 94, .18), 0 8px 22px rgba(154, 105, 25, .15) !important;
+  }
+}
