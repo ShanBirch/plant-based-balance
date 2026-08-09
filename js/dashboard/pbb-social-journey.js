@@ -640,6 +640,10 @@
   }
 
   async function completeFirstCourseLesson() {
+    if (window.__pbbActivationNextStepsTimer) {
+      clearTimeout(window.__pbbActivationNextStepsTimer);
+      window.__pbbActivationNextStepsTimer = null;
+    }
     try { sessionStorage.removeItem('pbb_activation_first_lesson'); } catch (_) {}
     await showGoals();
     closeJourney();
@@ -650,7 +654,8 @@
     setTimeout(function () {
       const card = getCard();
       if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 120);
+      openJourney('goals');
+    }, 180);
     showToast('Your next steps are ready on Home.', 'success');
   }
 
