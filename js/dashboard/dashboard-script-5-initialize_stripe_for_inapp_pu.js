@@ -4881,6 +4881,124 @@ async function persistResolvedMealPlanPhotos(rows) {
     if (failed.length) console.warn(`[meal-plan] ${failed.length} photo backfill batch(es) could not be saved`);
 }
 
+const _mealPhotoGenerationPlans = new Set();
+
+function mealPhotoGenerationSignature(meal) {
+    const ingredients = (Array.isArray(meal?.ingredients) ? meal.ingredients : []).map(ingredient =>
+        typeof ingredient === 'string'
+            ? ingredient
+            : `${ingredient?.name || ''} ${ingredient?.amount || ''}`.trim()
+    );
+    return JSON.stringify([
+        String(meal?.name || '').trim().toLowerCase(),
+        String(meal?.description || '').trim().toLowerCase(),
+        ingredients.map(value => value.toLowerCase())
+    ]);
+}
+
+function mealsInPlan(plan) {
+    return (plan?.weeks || []).flatMap(week =>
+        (week.days || []).flatMap(day => day.meals || [])
+    );
+}
+
+async function mealPhotoAuthToken() {
+    if (window.authHelpers && typeof window.authHelpers.getSession === 'function') {
+        const session = await window.authHelpers.getSession();
+        if (session?.access_token) return session.access_token;
+    }
+    if (window.supabaseClient?.auth && typeof window.supabaseClient.auth.getSession === 'function') {
+        const result = await window.supabaseClient.auth.getSession();
+        return result?.data?.session?.access_token || '';
+    }
+    return '';
+}
+
+async function generateExactMealPhoto(meal, userId, planId, token) {
+    const response = await fetch('/.netlify/functions/generate-meal-image', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+            mealName: meal.name,
+            mealDescription: meal.description,
+            ingredients: meal.ingredients || [],
+            userId,
+            planId,
+            mealId: meal.id
+        })
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result.success || !/^https:\/\//i.test(result.imageUrl || '')) {
+        throw new Error(result.error || `Meal photo generation failed (${response.status})`);
+    }
+    return result.imageUrl;
+}
+
+/**
+ * Generate one exact photo per unique photo-less meal and persist it for every
+ * matching row. Curated recipes keep their hand-picked exact photos.
+ */
+async function ensureExactMealPlanPhotos(plan, userId, options = {}) {
+    const planId = plan?.id;
+    if (!planId || !userId || _mealPhotoGenerationPlans.has(planId)) return { generated: 0, failed: 0 };
+
+    const missing = mealsInPlan(plan).filter(meal =>
+        meal?.id && window.resolveMealPlanPhotoDetails?.(meal)?.source === 'missing'
+    );
+    if (!missing.length) return { generated: 0, failed: 0 };
+
+    const token = await mealPhotoAuthToken();
+    if (!token) throw new Error('No active session for meal photo generation');
+
+    const groups = new Map();
+    missing.forEach(meal => {
+        const signature = mealPhotoGenerationSignature(meal);
+        if (!groups.has(signature)) groups.set(signature, []);
+        groups.get(signature).push(meal);
+    });
+
+    _mealPhotoGenerationPlans.add(planId);
+    const queue = [...groups.values()];
+    let generated = 0;
+    let failed = 0;
+    let completed = 0;
+    const worker = async () => {
+        while (queue.length) {
+            const group = queue.shift();
+            const representative = group[0];
+            try {
+                const imageUrl = await generateExactMealPhoto(representative, userId, planId, token);
+                const ids = group.map(meal => meal.id).filter(Boolean);
+                const update = await window.supabaseClient
+                    .from('ai_generated_meals')
+                    .update({ image_url: imageUrl })
+                    .in('id', ids);
+                if (update.error) throw update.error;
+                group.forEach(meal => { meal.image_url = imageUrl; });
+                generated += 1;
+            } catch (error) {
+                failed += 1;
+                console.warn(`[meal-plan] exact photo failed for ${representative?.name || 'meal'}:`, error);
+            } finally {
+                completed += 1;
+                if (typeof options.onProgress === 'function') options.onProgress(completed, groups.size);
+            }
+        }
+    };
+
+    try {
+        await Promise.all(Array.from({ length: Math.min(2, queue.length) }, () => worker()));
+        try { localStorage.setItem('ai_meal_plan', JSON.stringify(plan)); } catch (e) {}
+        if (_aiMealPlanCache === plan) renderAiPlanDay(_aiMealPlanCurrentDay);
+        return { generated, failed };
+    } finally {
+        _mealPhotoGenerationPlans.delete(planId);
+    }
+}
+
 async function isCurrentUserVeganChallengeUser(user) {
     if (!user || !window.supabaseClient) return false;
     if (typeof window.isVeganChallengeUser === 'function') {
@@ -5101,6 +5219,9 @@ async function loadExistingAiMealPlanInner() {
         showAiPlanLoaded(fullPlan);
         persistResolvedMealPlanPhotos(resolvedPhotoRows).catch(error => {
             console.warn('[meal-plan] background photo backfill failed:', error);
+        });
+        ensureExactMealPlanPhotos(fullPlan, user.id).catch(error => {
+            console.warn('[meal-plan] exact photo backfill could not start:', error);
         });
     } catch (err) {
         console.error('Error loading AI meal plan:', err);
@@ -6014,8 +6135,31 @@ async function buildNextWeekFromMealHistory(options) {
             prep_time_mins: meal.prep_time_mins, cook_time_mins: meal.cook_time_mins,
             tags: meal.tags || [], cuisine: meal.cuisine, image_url: resolveMealPlanPhotoUrl(meal)
         })));
-        const mealsInsert = await window.supabaseClient.from('ai_generated_meals').insert(mealRows);
+        const mealsInsert = await window.supabaseClient
+            .from('ai_generated_meals')
+            .insert(mealRows)
+            .select('id,week_number,day_of_week,meal_slot');
         if (mealsInsert.error) throw mealsInsert.error;
+
+        const insertedByPosition = new Map((mealsInsert.data || []).map(row => [
+            `${row.week_number}:${row.day_of_week}:${row.meal_slot}`,
+            row.id
+        ]));
+        generatedDays.forEach(day => day.meals.forEach(meal => {
+            meal.id = insertedByPosition.get(`1:${day.day_of_week}:${meal.meal_slot}`) || meal.id;
+        }));
+
+        updateAiPlanGeneratingStatus('Creating photos that match each meal...', '88%');
+        const photoPlan = {
+            id: newPlanId,
+            weeks: [{ week_number: 1, days: generatedDays }]
+        };
+        await ensureExactMealPlanPhotos(photoPlan, user.id, {
+            onProgress: (done, total) => updateAiPlanGeneratingStatus(
+                `Creating meal photos ${done} of ${total}...`,
+                `${88 + Math.round((done / Math.max(total, 1)) * 9)}%`
+            )
+        });
 
         const activate = await window.supabaseClient.from('ai_generated_meal_plans').update({ status: 'active' }).eq('id', newPlanId);
         if (activate.error) throw activate.error;
@@ -6204,7 +6348,21 @@ async function generateNextWeek() {
                     .from('ai_generated_meals').insert(newMeals)
                     .select('id, name, description, meal_slot, week_number, day_of_week');
 
-                // Image generation removed
+                const insertedByPosition = new Map((inserted || []).map(row => [
+                    `${row.week_number}:${row.day_of_week}:${row.meal_slot}`,
+                    row.id
+                ]));
+                newWeekData.days.forEach(day => day.meals.forEach(meal => {
+                    meal.id = insertedByPosition.get(`${newWeekData.week_number}:${day.day_of_week}:${meal.meal_slot}`) || meal.id;
+                }));
+
+                if (statusEl) statusEl.textContent = `Week ${nextWeekNum} â€” Creating photos that match each meal...`;
+                await ensureExactMealPlanPhotos({ id: planId, weeks: [newWeekData] }, user.id, {
+                    onProgress: (done, total) => {
+                        if (statusEl) statusEl.textContent = `Week ${nextWeekNum} â€” Creating meal photos ${done} of ${total}...`;
+                        if (progressEl) progressEl.style.width = `${75 + Math.round((done / Math.max(total, 1)) * 23)}%`;
+                    }
+                });
             } catch (e) {
                 console.warn('Could not save new week to Supabase:', e);
             }

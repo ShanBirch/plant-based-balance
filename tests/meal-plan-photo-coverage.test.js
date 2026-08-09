@@ -27,7 +27,7 @@ test('the complete four-week onboarding plan has a photo on all 140 meals', () =
     assert.ok(meals.every(meal => resolver.safeImageUrl(meal.image_url)));
 });
 
-test('photo-less legacy meals receive a relevant safe library image', () => {
+test('photo-less legacy meals never receive a photo of a different recipe', () => {
     const lentilSoup = resolver.resolve({
         meal_slot: 'dinner',
         name: 'Lentil Soup with Whole Wheat Bread',
@@ -39,8 +39,8 @@ test('photo-less legacy meals receive a relevant safe library image', () => {
         ingredients: [{ name: 'Edamame' }]
     }, template);
 
-    assert.match(lentilSoup.url, /^images\/meals\/.+\.png$/);
-    assert.match(edamame.url, /edamame/);
+    assert.deepEqual(lentilSoup, { url: '', source: 'missing', recipeName: null });
+    assert.deepEqual(edamame, { url: '', source: 'missing', recipeName: null });
 });
 
 test('a member logged-meal photo wins over a library match', () => {
@@ -48,9 +48,10 @@ test('a member logged-meal photo wins over a library match', () => {
     assert.equal(resolver.resolve({ name: 'Tofu scramble', photo_url: url }, template).url, url);
 });
 
-test('unsafe image values are replaced by a curated photo', () => {
+test('unsafe image values never produce a misleading fallback photo', () => {
     const result = resolver.resolve({ meal_slot: 'breakfast', name: 'Pancakes', image_url: 'javascript:alert(1)' }, template);
-    assert.match(result.url, /^images\/meals\//);
+    assert.equal(result.url, '');
+    assert.equal(result.source, 'missing');
 });
 
 test('all meal-plan generation paths persist resolved photos', () => {
@@ -58,4 +59,15 @@ test('all meal-plan generation paths persist resolved photos', () => {
     assert.doesNotMatch(source, /image_url:\s*null/);
     assert.match(source, /select\('[^']*photo_url[^']*'\)/);
     assert.match(source, /persistResolvedMealPlanPhotos\(resolvedPhotoRows\)/);
+    assert.match(source, /ensureExactMealPlanPhotos\(fullPlan, user\.id\)/);
+    assert.match(source, /Creating photos that match each meal/);
+});
+
+test('the photo generator is authenticated and prompts for the exact meal', () => {
+    const source = fs.readFileSync(path.join(__dirname, '../netlify/edge-functions/generate-meal-image.ts'), 'utf8');
+    assert.match(source, /auth\/v1\/user/);
+    assert.match(source, /userOwnsMeal/);
+    assert.match(source, /gemini-3\.1-flash-image/);
+    assert.match(source, /exact prepared meal/);
+    assert.doesNotMatch(source, /data:\$\{mimeType\};base64/);
 });
