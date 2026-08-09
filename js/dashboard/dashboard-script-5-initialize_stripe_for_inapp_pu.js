@@ -7054,6 +7054,7 @@ function closeOnboardingBlockingSurfaces() {
 }
 
 function isWizardSlideSkipped(step) {
+    if (wizardAssignedProgram && [4, 5, 6].includes(step)) return true;
     if (step === 17 && window._wizardCustomizeOnlyMode) return false;
     if (skippedWizardSlides.includes(step)) return true;
     return step === 17 && !window._wizardCustomizeOnlyMode &&
@@ -8343,6 +8344,9 @@ function skipWizardChatKnownProfileSteps() {
             why_now: profile.why_now || '',
             main_blocker: profile.main_blocker || '',
             equipment_access: profile.equipment_access || '',
+            weekly_capacity: wizardAssignedProgram
+                ? ({ 1: 'one_or_two', 2: 'one_or_two', 3: 'three', 4: 'four', 5: 'five', 6: 'six', 7: 'seven' }[wizardAssignedRequiredIds.size] || 'three')
+                : (profile.weekly_capacity || ''),
             dietary_requirements: Array.isArray(profile.dietary_requirements)
                 ? profile.dietary_requirements
                 : (profile.dietary_preference ? [profile.dietary_preference] : [])
@@ -12092,6 +12096,27 @@ function initializeWizardAssignedCalendar() {
     syncWizardWorkoutTimes();
 }
 
+function prefillWizardAssignedTrainingDecisions() {
+    if (!wizardAssignedProgram) return;
+    const requiredDays = Object.keys(wizardWorkoutCalendar).filter(function (day) {
+        return wizardAssignedRequiredIds.has(wizardWorkoutCalendar[day]);
+    });
+    const requiredCount = requiredDays.length;
+    const capacity = { 1: 'one_or_two', 2: 'one_or_two', 3: 'three', 4: 'four', 5: 'five', 6: 'six', 7: 'seven' }[requiredCount] || 'three';
+
+    wizardTrainingFrequency = requiredCount;
+    wizardSelectedDays = new Set(requiredDays);
+    wizardChatAnswers.weekly_capacity = capacity;
+
+    const profileTargets = [window.currentUserProfile, window.userProfile, window.profileData].filter(Boolean);
+    profileTargets.forEach(function (profile) {
+        profile.weekly_capacity = capacity;
+        profile.training_days_per_week = requiredCount;
+        profile.strength_days_per_week = requiredCount;
+        profile.preferred_training_days = requiredDays.slice();
+    });
+}
+
 async function loadWizardAssignedProgram() {
     wizardAssignedProgram = null;
     wizardAssignedCalendarInitialized = false;
@@ -12110,6 +12135,7 @@ async function loadWizardAssignedProgram() {
         if (result.data && Array.isArray(result.data.weekly_schedule) && result.data.weekly_schedule.length) {
             wizardAssignedProgram = result.data;
             initializeWizardAssignedCalendar();
+            prefillWizardAssignedTrainingDecisions();
         }
     } catch (error) {
         console.warn('Could not load assigned onboarding program:', error);
