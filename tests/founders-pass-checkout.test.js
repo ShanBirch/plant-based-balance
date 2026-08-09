@@ -77,9 +77,21 @@ test('Founders Pass experiment has two honest measured landing experiences', () 
 test('Balance Foundations is a six-week course that preserves the existing lesson library', () => {
     const learning = read('lib/learning-inline.js');
     const dashboard = read('dashboard.html');
+    const socialJourney = read('js/dashboard/pbb-social-journey.js');
+    const foundationsSource = learning.match(/const BALANCE_FOUNDATIONS = Object\.freeze\(\{[\s\S]*?\n    \}\);/)?.[0] || '';
+    const weekLessonLists = [...foundationsSource.matchAll(/lessonIds: Object\.freeze\(\[([^\]]+)\]\)/g)];
 
     assert.match(learning, /const BALANCE_FOUNDATIONS = Object\.freeze\(\{/);
-    assert.equal((learning.match(/Object\.freeze\(\{ number:\s*[1-6],/g) || []).length, 6);
+    assert.equal((foundationsSource.match(/number:\s*[1-6],/g) || []).length, 6);
+    assert.equal(weekLessonLists.length, 6);
+    weekLessonLists.forEach(([, ids]) => assert.equal((ids.match(/'[a-z]+-\d+-\d+'/g) || []).length, 5));
+    assert.match(foundationsSource, /Meet your predictive brain/);
+    assert.match(foundationsSource, /Decode cravings and emotional eating/);
+    assert.match(foundationsSource, /Change the system, not your willpower/);
+    assert.match(foundationsSource, /Build eating habits that last/);
+    assert.match(learning, /progress\.total} quizzes across 6 weeks/);
+    assert.match(learning, /getFoundationsLessonTitle/);
+    assert.match(socialJourney, /startFoundationsLesson\('mind-1-1'\)/);
     assert.match(learning, /getFoundationsProgress/);
     assert.match(learning, /new Set\(progress\?\.lessons_completed \|\| \[\]\)/);
     assert.match(learning, /completedSet\.has\(id\)/);

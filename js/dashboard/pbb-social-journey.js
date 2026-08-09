@@ -629,7 +629,7 @@
     let attempts = 0;
     const openLesson = function () {
       if (typeof window.startFoundationsLesson === 'function') {
-        window.startFoundationsLesson('mind-4-1');
+        window.startFoundationsLesson('mind-1-1');
         return;
       }
       attempts += 1;
