@@ -9,17 +9,19 @@
   const TABLE = 'social_journey_progress';
   const VERSION = 'social_identity_v1';
   const BRISBANE_TIMEZONE = 'Australia/Brisbane';
+  const WELCOME_AUDIO_URL = window.PBB_BALANCE_WELCOME_AUDIO_URL || '/assets/audio/shannon-balance-welcome.mp3';
 
   const WEEK_DEFINITIONS = [
     {
       week: 1,
-      phase: 'FOUNDATIONS · BUILD A RHYTHM THAT CAN STICK',
-      title: 'Start where it feels safe.',
-      body: 'Join the Balance community, show one normal meal and practise encouraging other people.',
+      phase: 'FOUNDATIONS · BUILD THE EVIDENCE',
+      title: 'Make the first reps visible.',
+      body: 'Do one real action, then record it. Feed is not a performance; it is a supportive environment that helps the new pattern feel normal.',
       tasks: [
-        task('w1_feed_intro', 'Share your first photo to Feed', 'Take one normal photo and add a simple hello.', 'feed_posts', 1, '📷', 'feed-photo'),
-        task('w1_meal_feed', 'Share one normal meal', 'No perfect plate required.', 'meal_feed_posts', 1, '🥗', 'meals'),
-        task('w1_comments', 'Encourage three members', 'Meaningful replies only.', 'feed_comments', 3, '💬', 'feed')
+        task('w1_feed_intro', 'Say hello and take your first Feed photo', 'A simple hello and an ordinary photo are enough.', 'feed_posts', 1, '\uD83D\uDCF7', 'feed-photo'),
+        task('w1_first_workout', 'Complete your first workout', 'Use the version that fits the week you are actually having.', 'workout_days', 1, '\uD83C\uDFAF', 'movement'),
+        task('w1_workout_feed', 'Share that workout to Feed', 'Keep the receipt. A normal session still counts.', 'workout_feed_posts', 1, '\uD83C\uDFCB\uFE0F', 'movement'),
+        task('w1_meal_feed', 'Share one normal meal', 'Eat first, then post it. No perfect plate required.', 'meal_feed_posts', 1, '\uD83E\uDD57', 'meals')
       ]
     },
     {
@@ -149,7 +151,7 @@
   ];
 
   const WEEK_LESSONS = [
-    lesson('Start smaller than your motivation.', 'A pattern becomes reliable when it is easy enough to repeat on an ordinary day.', ['Use the Balance Feed as a low-pressure first step.', 'Share evidence, not a polished performance.', 'Encouraging other people strengthens your own pattern too.']),
+    lesson('Build the evidence. Edit the environment.', 'Identity is not something you have to declare or feel ready for. Your brain updates its idea of who you are from the actions it repeatedly sees. Every workout completed, normal meal shared and honest Feed post becomes evidence. Feed also changes the environment around you, making looking after your health more visible, supported and normal.', ['Do the action first. Posting is the receipt, not the performance.', 'Make the useful choice easier to see and repeat; that is how you edit the environment.', 'Keep the action small enough for an ordinary week. Repetition builds identity better than one perfect effort.']),
     lesson('Progress needs a repeatable minimum.', 'The best training week is not the hardest one. It is the one you can complete and build from.', ['A normal workout is worth recording.', 'Two completed sessions beat five imagined ones.', 'Make the work visible so it does not disappear from memory.']),
     lesson('Food works better as evidence.', 'Seeing your normal meals clearly makes useful changes easier than judging them from memory.', ['Post what you already eat.', 'Notice what fuels training and keeps you satisfied.', 'Aim for useful repetition, not perfect plates.']),
     lesson('Your environment is part of the plan.', 'What you repeatedly see, save and return to quietly shapes what feels normal.', ['Mute inputs that create noise or comparison.', 'Follow people who model the pattern you want.', 'Train your algorithm with deliberate attention.']),
@@ -177,6 +179,26 @@
 
   function lesson(title, body, points) {
     return { title, body, points };
+  }
+
+  function currentUserId() {
+    return String(window.currentUser && window.currentUser.id || '');
+  }
+
+  function isActivationPreview() {
+    try {
+      const host = String(window.location && window.location.hostname || '');
+      return (host === '127.0.0.1' || host === 'localhost')
+        && new URLSearchParams(window.location.search).get('tourTest') === '1';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function isJourneyEligible() {
+    if (isActivationPreview()) return true;
+    if (!window.currentUser || window.guestMode || window.isAdminViewing) return false;
+    try { return localStorage.getItem('onboardingComplete') === 'true'; } catch (_) { return false; }
   }
 
   function isPilotUser() {
@@ -236,7 +258,7 @@
 
   function defaultState() {
     return {
-      user_id: SHANNON_USER_ID,
+      user_id: currentUserId(),
       journey_version: VERSION,
       current_week: 1,
       week_started_at: brisbaneDateKey(),
@@ -286,10 +308,14 @@
   }
 
   async function upsertState(patch) {
+    if (isActivationPreview()) {
+      state = normalizeState(Object.assign({}, state || defaultState(), patch || {}));
+      return state;
+    }
     if (!window.supabaseClient || !state) return state;
     state = normalizeState(Object.assign({}, state, patch || {}));
     const payload = {
-      user_id: SHANNON_USER_ID,
+      user_id: currentUserId(),
       journey_version: VERSION,
       current_week: state.current_week,
       week_started_at: state.week_started_at,
@@ -310,11 +336,15 @@
   }
 
   async function loadState() {
+    if (isActivationPreview()) {
+      state = normalizeState(defaultState());
+      return state;
+    }
     if (!window.supabaseClient) throw new Error('Balance is still connecting.');
     const result = await window.supabaseClient
       .from(TABLE)
       .select('*')
-      .eq('user_id', SHANNON_USER_ID)
+      .eq('user_id', currentUserId())
       .maybeSingle();
     if (result.error) throw result.error;
     state = normalizeState(result.data || defaultState());
@@ -349,6 +379,11 @@
   }
 
   async function calculateProgress() {
+    if (isActivationPreview() && state) {
+      const previewTasks = getWeekDefinition().tasks.map(item => Object.assign({}, item, { current: 0, complete: false }));
+      progress = { tasks: previewTasks, completed_count: 0, total_count: previewTasks.length };
+      return progress;
+    }
     if (!state || !window.supabaseClient) return null;
     const supabase = window.supabaseClient;
     const startIso = dateFromKey(state.week_started_at).toISOString();
@@ -356,17 +391,17 @@
     const [stories, comments, transactions, workouts] = await Promise.all([
       safeQuery(() => supabase.from('stories')
         .select('id,media_type,created_at')
-        .eq('user_id', SHANNON_USER_ID)
+        .eq('user_id', currentUserId())
         .gte('created_at', startIso)
         .lt('created_at', endIso)),
       safeQuery(() => supabase.from('feed_comments')
         .select('id,created_at')
-        .eq('user_id', SHANNON_USER_ID)
+        .eq('user_id', currentUserId())
         .gte('created_at', startIso)
         .lt('created_at', endIso)),
       safeQuery(() => supabase.from('point_transactions')
         .select('id,transaction_type,created_at')
-        .eq('user_id', SHANNON_USER_ID)
+        .eq('user_id', currentUserId())
         .gte('created_at', startIso)
         .lt('created_at', endIso)
         .in('transaction_type', [
@@ -376,7 +411,7 @@
         ])),
       safeQuery(() => supabase.from('workouts')
         .select('workout_date')
-        .eq('user_id', SHANNON_USER_ID)
+        .eq('user_id', currentUserId())
         .eq('workout_type', 'history')
         .gte('workout_date', state.week_started_at)
         .lt('workout_date', addDaysKey(state.week_started_at, 7)))
@@ -433,7 +468,7 @@
 
   function markJourneyFeatureSeen() {
     try {
-      const featureId = 'social-journey-shannon-pilot-v2';
+      const featureId = 'balance-foundations-journey-v1';
       const stored = JSON.parse(localStorage.getItem('pbb_seen_features') || '[]');
       const seen = Array.isArray(stored) ? stored : [];
       if (!seen.includes(featureId)) {
@@ -445,20 +480,41 @@
 
   function renderCard() {
     const card = getCard();
-    if (!card || !isPilotUser() || !state) return;
+    if (!card || !isJourneyEligible() || !state) return;
+    const character = document.getElementById('tamagotchi-widget-container');
+    const levelStrip = document.getElementById('tamagotchi-stats-bar')
+      || document.getElementById('balance-level-bar')
+      || character;
+    if (levelStrip && levelStrip.parentNode && levelStrip.nextElementSibling !== card) {
+      levelStrip.parentNode.insertBefore(card, levelStrip.nextSibling);
+    }
+    const programStart = new Date(safeObject(window.userProfile).program_start_date || '');
+    const beforeFirstWeek = Number.isFinite(programStart.getTime())
+      && Date.now() < programStart.getTime() + (7 * 24 * 60 * 60 * 1000);
+    document.documentElement.classList.toggle('pbb-before-first-week', beforeFirstWeek);
     const definition = getWeekDefinition();
     const completed = progress ? progress.completed_count : 0;
     const total = progress ? progress.total_count : 3;
     const percent = total ? Math.round((completed / total) * 100) : 0;
     const lessonSeen = isCurrentLessonSeen();
+    const weekComplete = lessonSeen && total > 0 && completed >= total;
+    const cardTitle = !lessonSeen
+      ? 'Your inbox'
+      : (weekComplete ? 'This week is complete.' : 'Your next steps are ready.');
+    const cardCopy = !lessonSeen
+      ? 'This is where Coach Shannon will message you. Press play to hear your first check-in.'
+      : (weekComplete ? 'You built the evidence. Open this week whenever you want to review it.' : definition.body);
+    const cardCta = !lessonSeen
+      ? 'Open my first check-in'
+      : (weekComplete ? 'Review this week' : 'Open my next steps');
     card.style.display = 'block';
     card.innerHTML = '<div class="social-journey-card__inner">'
       + '<div class="social-journey-card__week-art"><span>WEEK</span><strong>' + String(definition.week).padStart(2, '0') + '</strong></div>'
-      + '<div class="social-journey-card__eyebrow">Balance Foundations · Week ' + definition.week + '</div>'
-      + '<div class="social-journey-card__title">' + escapeHtml(lessonSeen ? definition.title : 'Your lesson is ready.') + '</div>'
-      + '<div class="social-journey-card__copy">' + escapeHtml(lessonSeen ? definition.body : WEEK_LESSONS[definition.week - 1].title) + '</div>'
+      + '<div class="social-journey-card__eyebrow">' + (!lessonSeen ? 'A message from Coach Shannon' : 'Balance Foundations &middot; Week ' + definition.week) + '</div>'
+      + '<div class="social-journey-card__title">' + escapeHtml(cardTitle) + '</div>'
+      + '<div class="social-journey-card__copy">' + escapeHtml(cardCopy) + '</div>'
       + '<div class="social-journey-card__row"><div class="social-journey-card__progress"><span style="width:' + percent + '%"></span></div><div class="social-journey-card__count">' + completed + ' / ' + total + '</div></div>'
-      + '<div class="social-journey-card__cta">' + (lessonSeen ? 'Open my goals' : 'Start the lesson') + ' <span>→</span></div></div>';
+      + '<div class="social-journey-card__cta">' + escapeHtml(cardCta) + ' <span>→</span></div></div>';
   }
 
   function taskActionLabel(item) {
@@ -495,6 +551,10 @@
       renderLesson();
       return;
     }
+    if (viewStage === 'welcome') {
+      renderWelcome();
+      return;
+    }
     const settings = safeObject(state.settings);
     const connectedHandle = settings.instagram_username ? '@' + settings.instagram_username : '';
     const reminderText = settings.instagram_reminders_enabled && connectedHandle
@@ -509,17 +569,23 @@
     document.querySelector('.social-journey-header__week').textContent = 'Week ' + definition.week + ' of 12';
     container.innerHTML = '<section class="social-journey-hero social-journey-goals-hero">'
       + '<div class="social-journey-hero__eyebrow">' + escapeHtml(definition.phase) + '</div>'
-      + '<div class="social-journey-goals-hero__label">YOUR GOALS</div><h2>' + escapeHtml(definition.title) + '</h2><p>' + escapeHtml(definition.body) + '</p>' + weekDots() + '</section>'
+      + '<div class="social-journey-goals-hero__label">YOUR NEXT STEPS</div><h2>' + escapeHtml(definition.title) + '</h2><p>' + escapeHtml(definition.body) + '</p>' + weekDots() + '</section>'
       + '<section class="social-journey-section"><h3 class="social-journey-section__heading">This week</h3>' + renderTasks() + '</section>'
       + (definition.week === 6 ? '<div class="social-journey-callout"><strong>Foundations is complete after this phase.</strong><p>Weeks 7 to 12 are the optional continuation track for building a public rhythm.</p></div>' : '')
-      + (complete ? '<div class="social-journey-callout"><strong>This week is complete.</strong><p>You can let the next week arrive naturally or use the pilot control below to preview it now.</p></div>' : '')
+      + (complete ? '<div class="social-journey-callout"><strong>This week is complete.</strong><p>Your next lesson will arrive with the next week. For now, keep the actions small and repeatable.</p></div>' : '')
       + '<section class="social-journey-section"><h3 class="social-journey-section__heading">Reminder route</h3><div class="social-journey-callout"><strong>' + (connectedHandle ? connectedHandle : 'In-app first') + '</strong><p>' + escapeHtml(reminderText) + '</p></div>'
       + '<button type="button" class="social-journey-button secondary" onclick="socialJourney.openReminderSetup()">' + (connectedHandle ? 'Review Instagram reminder' : 'Connect Instagram reminder') + '</button>' + instagramButton + '</section>'
-      + '<section class="social-journey-finish"><button type="button" class="social-journey-button" onclick="socialJourney.useGoals()">Use these goals</button><button type="button" class="social-journey-text-button" onclick="socialJourney.reviewLesson()">Review this week\'s lesson</button></section>'
+      + '<section class="social-journey-finish"><button type="button" class="social-journey-button" onclick="socialJourney.useGoals()">Use these next steps</button><button type="button" class="social-journey-text-button" onclick="socialJourney.reviewLesson()">Review this week\'s lesson</button></section>'
       + '<section class="social-journey-pilot-controls"><h3>Shannon pilot controls</h3><p>These controls change only this social journey. They never reset your character, levels, coins, workouts, meals or other account data.</p>'
       + '<button type="button" class="social-journey-button secondary" onclick="socialJourney.sendTestReminder()" ' + (connectedHandle ? '' : 'disabled') + '>Send a test Instagram reminder</button>'
       + '<button type="button" class="social-journey-button secondary" onclick="socialJourney.advanceWeek()">' + (state.current_week >= 12 ? 'Journey is at Week 12' : 'Preview the next week') + '</button>'
       + '<button type="button" class="social-journey-button danger" onclick="socialJourney.restart()">Restart only this journey</button></section>';
+    if (!isPilotUser()) {
+      container.querySelectorAll('.social-journey-pilot-controls').forEach(function(element){ element.remove(); });
+      container.querySelectorAll('.social-journey-section__heading').forEach(function(heading){
+        if (heading.textContent.trim() === 'Reminder route' && heading.parentElement) heading.parentElement.remove();
+      });
+    }
   }
 
   function renderLesson() {
@@ -528,15 +594,71 @@
     if (!container || !state) return;
     const definition = getWeekDefinition();
     const lessonCopy = WEEK_LESSONS[definition.week - 1];
-    document.querySelector('.social-journey-header__title').textContent = 'This week in Balance';
-    document.querySelector('.social-journey-header__week').textContent = 'Week ' + definition.week + ' lesson';
+    document.querySelector('.social-journey-header__title').textContent = 'Your first lesson';
+    document.querySelector('.social-journey-header__week').textContent = 'How the course works';
     container.innerHTML = '<section class="social-journey-lesson">'
       + '<div class="social-journey-lesson__number"><span>WEEK</span><strong>' + String(definition.week).padStart(2, '0') + '</strong></div>'
       + '<div class="social-journey-lesson__eyebrow">' + escapeHtml(definition.phase) + '</div>'
-      + '<h2>' + escapeHtml(lessonCopy.title) + '</h2><p>' + escapeHtml(lessonCopy.body) + '</p></section>'
-      + '<section class="social-journey-learn-card"><div class="social-journey-section__heading">What to take with you</div>'
-      + '<div class="social-journey-learn-points">' + lessonCopy.points.map(function (point, index) { return '<div><span>0' + (index + 1) + '</span><p>' + escapeHtml(point) + '</p></div>'; }).join('') + '</div></section>'
-      + '<div class="social-journey-lesson-action"><button type="button" class="social-journey-button" onclick="socialJourney.showGoals()">See my goals</button><button type="button" class="social-journey-text-button" onclick="socialJourney.close()">Not now</button></div>';
+      + '<h2>' + escapeHtml(lessonCopy.title) + '</h2><p>Your first Balance Foundations lesson is interactive. Read each part, then choose the answer that makes the most sense to you.</p></section>'
+      + '<section class="social-journey-learn-card"><div class="social-journey-section__heading">How to answer</div>'
+      + '<div class="social-journey-learn-points"><div><span>01</span><p>Answer honestly rather than trying to guess the perfect response.</p></div><div><span>02</span><p>If you miss one, keep going. The explanation is part of the lesson.</p></div><div><span>03</span><p>When you finish, Balance will bring you back to your next steps.</p></div></div></section>'
+      + '<div class="social-journey-lesson-action"><button type="button" class="social-journey-button" onclick="socialJourney.startFirstCourseLesson()">Begin my first lesson</button><button type="button" class="social-journey-text-button" onclick="socialJourney.close()">Not now</button></div>';
+  }
+
+  function renderWelcome() {
+    ensureUi();
+    const container = document.getElementById('social-journey-content');
+    if (!container) return;
+    document.querySelector('.social-journey-header__title').textContent = 'Your inbox';
+    document.querySelector('.social-journey-header__week').textContent = 'A message from Coach Shannon';
+    container.innerHTML = '<section class="social-journey-welcome">'
+      + '<div class="social-journey-welcome__eyebrow">YOUR FIRST CHECK-IN &middot; PRESS PLAY</div>'
+      + '<h2>Welcome to your Inbox.</h2>'
+      + '<p>This is where Coach Shannon will message you with check-ins, voice notes and updates to your plan. Press play to hear your first check-in.</p>'
+      + '<audio class="social-journey-welcome__audio" controls preload="metadata" onerror="this.classList.add(\'is-unavailable\')"><source src="' + escapeHtml(WELCOME_AUDIO_URL) + '" type="audio/mpeg"></audio>'
+      + '<div class="social-journey-welcome__transcript"><strong>The short version</strong><p>Use the app as evidence, not judgment. Log the meal you actually ate, complete the workout that fits today, and share the ordinary reps. That is how we build something that lasts.</p></div>'
+      + '</section><div class="social-journey-lesson-action"><button type="button" class="social-journey-button" onclick="socialJourney.reviewLesson()">Open my first lesson</button><button type="button" class="social-journey-text-button" onclick="socialJourney.close()">Not now</button></div>';
+  }
+
+  function startFirstCourseLesson() {
+    closeJourney();
+    try { sessionStorage.setItem('pbb_activation_first_lesson', 'true'); } catch (_) {}
+    if (typeof window.switchAppTab === 'function') {
+      try { window.switchAppTab('learning'); } catch (_) {}
+    }
+    let attempts = 0;
+    const openLesson = function () {
+      if (typeof window.startFoundationsLesson === 'function') {
+        window.startFoundationsLesson('mind-4-1');
+        return;
+      }
+      attempts += 1;
+      if (attempts < 40) setTimeout(openLesson, 150);
+      else showToast('Your course is still loading. Open Course to start Balance Foundations.', 'info');
+    };
+    setTimeout(openLesson, 100);
+  }
+
+  async function completeFirstCourseLesson() {
+    try { sessionStorage.removeItem('pbb_activation_first_lesson'); } catch (_) {}
+    await showGoals();
+    closeJourney();
+    if (typeof window.switchAppTab === 'function') {
+      try { window.switchAppTab('dashboard'); } catch (_) {}
+    }
+    renderCard();
+    setTimeout(function () {
+      const card = getCard();
+      if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 120);
+    showToast('Your next steps are ready on Home.', 'success');
+  }
+
+  function showWelcome() {
+    viewStage = 'welcome';
+    renderJourney();
+    const scroll = document.getElementById('social-journey-content');
+    if (scroll) scroll.scrollTop = 0;
   }
 
   async function showGoals() {
@@ -565,7 +687,7 @@
     if (typeof window.switchAppTab === 'function') {
       try { window.switchAppTab('dashboard'); } catch (_) {}
     }
-    showToast('Your Journey Goals are ready on Home.', 'success');
+    showToast('Your next steps are ready on Home.', 'success');
   }
 
   function reviewLesson() {
@@ -575,11 +697,16 @@
     if (scroll) scroll.scrollTop = 0;
   }
 
-  function openJourney() {
-    if (!isPilotUser() || !state) return;
+  function openJourney(stage) {
+    if (!isJourneyEligible() || !state) return;
+    if (stage === 'welcome') {
+      openCoachInbox();
+      return;
+    }
     ensureUi();
     markJourneyFeatureSeen();
-    viewStage = isCurrentLessonSeen() ? 'goals' : 'lesson';
+    viewStage = typeof stage === 'string' ? stage : (isCurrentLessonSeen() ? 'goals' : 'lesson');
+    renderJourney();
     calculateProgress().catch(function () {}).finally(function () {
       renderCard();
       renderJourney();
@@ -590,6 +717,57 @@
     if (typeof window.pushNavigationState === 'function') {
       try { window.pushNavigationState('social-journey-view', closeJourney); } catch (_) {}
     }
+  }
+
+  async function startActivation(attempt) {
+    if (!isJourneyEligible()) return;
+    const retry = Math.max(0, Number(attempt) || 0);
+    if (!initialized) init();
+    if (!initialized) return;
+    await refresh();
+    if (!state) {
+      if (retry < 40) setTimeout(function () { startActivation(retry + 1); }, 250);
+      return;
+    }
+    const view = document.getElementById('social-journey-view');
+    if (view) view.classList.add('is-activation');
+    if (isCurrentLessonSeen()) {
+      openJourney('goals');
+      return;
+    }
+    if (typeof window.showNativePermissionsModal === 'function') {
+      const opened = await window.showNativePermissionsModal({ onComplete: openCoachInbox });
+      if (opened) return;
+    }
+    openCoachInbox();
+  }
+
+  function openCoachInbox(attempt) {
+    const retry = Math.max(0, Number(attempt) || 0);
+    if (typeof window.openDirectMessage === 'function') {
+      closeJourney();
+      window.openDirectMessage(SHANNON_USER_ID, 'Coach Shannon', 'assets/coach_shannon.jpg');
+      return;
+    }
+    if (retry < 40) setTimeout(function () { openCoachInbox(retry + 1); }, 150);
+    else showToast('Your inbox is still loading. Tap Inbox and open Coach Shannon.', 'info');
+  }
+
+  function continueFromInbox() {
+    if (typeof window.closeDirectMessageModal === 'function') {
+      window.closeDirectMessageModal();
+    } else {
+      const modal = document.getElementById('direct-message-modal');
+      if (modal) modal.style.display = 'none';
+    }
+    openJourney('lesson');
+  }
+
+  function shouldShowWelcomeMessage(recipientId) {
+    return String(recipientId || '') === SHANNON_USER_ID
+      && isJourneyEligible()
+      && !!state
+      && !isCurrentLessonSeen();
   }
 
   function closeJourney() {
@@ -786,7 +964,7 @@
   }
 
   async function refresh() {
-    if (!isPilotUser() || loading) return;
+    if (!isJourneyEligible() || loading) return;
     loading = true;
     try {
       await loadState();
@@ -813,23 +991,128 @@
     switchTo(item.action);
   }
 
+  let onboardingTestResetRunning = false;
+
+  async function maybeResetOnboardingTest() {
+    let requested = false;
+    try { requested = new URLSearchParams(window.location.search).get('onboarding_test_reset') === '1'; } catch (_) {}
+    if (!requested || onboardingTestResetRunning) return false;
+    const profile = safeObject(window.userProfile);
+    if (!profile.id || !profile.email) {
+      setTimeout(maybeResetOnboardingTest, 200);
+      return true;
+    }
+    if (!profile.is_test_account || profile.email !== 'shannonrhysbirch+arunima-onboarding-test@gmail.com') {
+      showToast('This reset link only works for the dedicated onboarding test account.', 'error');
+      try { history.replaceState({}, '', window.location.pathname); } catch (_) {}
+      return true;
+    }
+
+    onboardingTestResetRunning = true;
+    try {
+      const client = window.supabaseClient || window.supabase;
+      if (!client || !client.auth) throw new Error('The test account is still loading.');
+      const authResult = await client.auth.getUser();
+      const user = authResult && authResult.data && authResult.data.user;
+      if (!user || user.id !== profile.id || user.email !== profile.email) throw new Error('The signed-in test account could not be confirmed.');
+
+      const updateResult = await client.from('users').update({
+        onboarding_complete: true,
+        is_transferred_client: true,
+        sex: 'female'
+      }).eq('id', user.id).select('id,onboarding_complete,is_transferred_client,sex').single();
+      if (updateResult.error) throw updateResult.error;
+
+      const factsResult = await client.from('user_facts').select('id').eq('user_id', user.id).maybeSingle();
+      if (factsResult.error) throw factsResult.error;
+      if (factsResult.data && factsResult.data.id) {
+        const baselineDetails = {
+          0: 'Age: 36',
+          1: 'Location: Sydney',
+          2: 'Timezone: Australia/Sydney',
+          3: 'Works on university education projects, often from home.',
+          4: 'Wake time: 7:00-7:30 AM; morning meditation around 30 minutes.',
+          5: 'Metric units.',
+          age: 36,
+          user_gender: 'female',
+          why_now: 'Fit comfortably into size 10-12 clothes and build a health routine that lasts.',
+          main_blocker: 'When structure drops, mood-based eating, desk snacking and injury flare-ups can knock me off track.',
+          dietary_preference: 'vegetarian',
+          dietary_requirements: ['vegetarian'],
+          equipment_access: 'dumbbells',
+          exercise_preferences: { avoid: [], liked: ['dance'] }
+        };
+        const factsUpdate = await client.from('user_facts').update({
+          personal_details: baselineDetails
+        }).eq('id', factsResult.data.id).select('id').single();
+        if (factsUpdate.error) throw factsUpdate.error;
+      }
+
+      const originalConfirm = window.confirm;
+      try {
+        window.confirm = function () { return true; };
+        await refresh();
+        if (state) await restart();
+      } catch (journeyError) {
+        console.warn('[onboarding-test-reset] Inbox state will initialize fresh after onboarding.', journeyError);
+      } finally {
+        window.confirm = originalConfirm;
+      }
+
+      const removableKeys = [];
+      for (let index = 0; index < localStorage.length; index += 1) {
+        const key = localStorage.key(index);
+        if (key && /onboard|featuretour|feature_tour|journey|userprofile|permission/i.test(key)) removableKeys.push(key);
+      }
+      removableKeys.concat([
+        'onboardingComplete',
+        'featureTourComplete',
+        'pbb_seen_features',
+        'pbb_onboarding_owner_user_id',
+        'userProfile'
+      ]).forEach(function (key) { try { localStorage.removeItem(key); } catch (_) {} });
+      try { sessionStorage.clear(); } catch (_) {}
+      try { history.replaceState({}, '', window.location.pathname); } catch (_) {}
+      window.location.reload();
+    } catch (error) {
+      onboardingTestResetRunning = false;
+      showToast(error.message || 'The onboarding test account could not be reset.', 'error');
+    }
+    return true;
+  }
+
   function init() {
-    if (initialized || !isPilotUser()) return;
+    let resetRequested = false;
+    try { resetRequested = new URLSearchParams(window.location.search).get('onboarding_test_reset') === '1'; } catch (_) {}
+    if (resetRequested) {
+      maybeResetOnboardingTest();
+      return;
+    }
+    if (initialized || !isJourneyEligible()) return;
     initialized = true;
     const card = getCard();
-    if (card) card.addEventListener('click', openJourney);
+    if (card) card.addEventListener('click', function () { openJourney(isCurrentLessonSeen() ? 'goals' : 'welcome'); });
     ensureUi();
     refresh();
   }
 
   window.socialJourney = {
     isPilotUser,
+    isEligibleUser: isJourneyEligible,
     isOnboardingComplete: function () { return !!(state && state.onboarding_complete); },
     open: openJourney,
     close: closeJourney,
     showGoals,
+    showWelcome,
+    openCoachInbox,
+    continueFromInbox,
+    shouldShowWelcomeMessage,
+    getWelcomeAudioUrl: function () { return WELCOME_AUDIO_URL; },
+    startActivation,
     useGoals,
     reviewLesson,
+    startFirstCourseLesson,
+    completeFirstCourseLesson,
     refresh,
     taskAction,
     openInstagram,
@@ -845,6 +1128,14 @@
       getWeekDefinition: function () { return getWeekDefinition(); }
     }
   };
+
+  window.finishBalanceActivationLesson = completeFirstCourseLesson;
+
+  try {
+    if (new URLSearchParams(window.location.search).get('onboarding_test_reset') === '1') {
+      setTimeout(maybeResetOnboardingTest, 0);
+    }
+  } catch (_) {}
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
   else init();

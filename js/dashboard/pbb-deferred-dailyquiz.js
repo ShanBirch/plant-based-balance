@@ -143,6 +143,20 @@
         const doneCard = document.getElementById('daily-quiz-done-card');
         if (!card || !doneCard) return;
 
+        // Home now uses the single progress-aware lesson card. Keep the quiz
+        // engine and native widget snapshot, but retire both duplicate Home cards.
+        card.style.display = 'none';
+        doneCard.style.display = 'none';
+        try {
+            if (typeof window._ensureLearningProgressLoaded === 'function') {
+                await window._ensureLearningProgressLoaded();
+            }
+            syncAvailableDailyQuizWidgetSnapshot(getDailyQuizTodayString());
+        } catch (error) {
+            console.warn('Daily quiz widget sync skipped:', error);
+        }
+        return;
+
         try {
             // Ensure learning progress is loaded before checking
             if (typeof window._ensureLearningProgressLoaded === 'function') {
@@ -272,6 +286,10 @@
     window.refreshDailyQuizCard = function(xpEarned) {
         const card = document.getElementById('daily-quiz-card');
         const doneCard = document.getElementById('daily-quiz-done-card');
+        if (card) card.style.display = 'none';
+        if (doneCard) doneCard.style.display = 'none';
+        syncAvailableDailyQuizWidgetSnapshot(getDailyQuizTodayString());
+        return;
         const xpEarnedEl = document.getElementById('daily-quiz-xp-earned');
         if (xpEarnedEl && Number(xpEarned) > 0) {
             xpEarnedEl.textContent = '+' + Number(xpEarned) + ' XP earned. Come back tomorrow!';

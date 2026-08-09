@@ -978,3 +978,487 @@ html[data-pbb-theme="light"] #onboarding-wizard.wizard-chat-intro .onboarding-mo
         transition-duration: 1ms !important;
     }
 }
+
+/* Carry the cream-and-gold editorial opening through the complete setup flow. */
+#onboarding-wizard.onboarding-overlay {
+    --wizard-ink: #1a202c;
+    --wizard-night: #1a202c;
+    --wizard-panel: #fffdf8;
+    --wizard-cream: #fbfaf7;
+    --wizard-paper: #fffdf8;
+    --wizard-gold: #b8892b;
+    --wizard-gold-light: #d8b25e;
+    --wizard-muted: #596273;
+    background:
+        radial-gradient(circle at -8% 22%, transparent 0 112px, rgba(184,137,43,.15) 113px 114px, transparent 115px),
+        radial-gradient(circle at 108% 82%, transparent 0 148px, rgba(184,137,43,.12) 149px 150px, transparent 151px),
+        linear-gradient(154deg, #fbfaf7 0 58%, #f1e9da 58% 78%, #f8f5ee 78% 100%) !important;
+    color: var(--wizard-ink) !important;
+}
+
+#onboarding-wizard::before {
+    inset: 0;
+    opacity: 1;
+    background:
+        radial-gradient(circle at 86% 16%, rgba(154,105,25,.32) 0 1px, transparent 1.5px) 0 0 / 18px 18px,
+        linear-gradient(112deg, transparent 0 67%, rgba(255,255,255,.52) 67% 100%);
+    mix-blend-mode: normal;
+}
+
+#onboarding-wizard::after {
+    width: 240px;
+    height: 240px;
+    right: -132px;
+    top: auto;
+    bottom: 4%;
+    border-color: rgba(154,105,25,.13);
+    box-shadow: 0 0 0 42px rgba(184,137,43,.025), 0 0 0 84px rgba(184,137,43,.018);
+    animation: comebackIntroRing 9s ease-in-out infinite alternate;
+}
+
+#onboarding-wizard .wizard-particles {
+    opacity: .3;
+    background:
+        radial-gradient(circle at 13% 72%, rgba(154,105,25,.7) 0 1px, transparent 2px),
+        radial-gradient(circle at 88% 23%, rgba(154,105,25,.58) 0 1px, transparent 2px),
+        radial-gradient(circle at 74% 88%, rgba(154,105,25,.45) 0 1px, transparent 2px);
+}
+
+#onboarding-wizard .onboarding-modal.wizard-container,
+html[data-pbb-theme="light"] #onboarding-wizard .onboarding-modal.wizard-container {
+    border-color: rgba(154,105,25,.2) !important;
+    background:
+        radial-gradient(circle at -18% 38%, transparent 0 122px, rgba(154,105,25,.1) 123px 124px, transparent 125px),
+        linear-gradient(152deg, rgba(255,255,255,.98) 0 61%, rgba(242,234,218,.98) 61% 79%, rgba(250,248,243,.99) 79% 100%) !important;
+    color: var(--wizard-ink) !important;
+    box-shadow: 0 32px 88px rgba(47,38,22,.2), inset 0 1px 0 #fff !important;
+}
+
+#onboarding-wizard .wizard-header,
+#onboarding-wizard.wizard-chat-mode .wizard-header {
+    padding: 22px 24px 12px !important;
+    background: rgba(255,253,248,.86) !important;
+    border-bottom-color: rgba(154,105,25,.13) !important;
+    backdrop-filter: blur(12px);
+}
+
+#onboarding-wizard .wizard-header > div[onclick] {
+    border-color: rgba(26,32,44,.13) !important;
+    background: rgba(255,255,255,.72) !important;
+    color: #596273 !important;
+    -webkit-text-fill-color: #596273 !important;
+}
+
+#onboarding-wizard .wizard-brand-mark {
+    border: 1px solid rgba(154,105,25,.58);
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(255,255,255,.9), 0 0 0 4px rgba(154,105,25,.2), 0 9px 24px rgba(67,50,21,.12);
+}
+
+#onboarding-wizard .wizard-brand-copy strong {
+    color: #8b5e17 !important;
+    -webkit-text-fill-color: #8b5e17 !important;
+}
+
+#onboarding-wizard .wizard-brand-copy small {
+    color: #596273 !important;
+    -webkit-text-fill-color: #596273 !important;
+}
+
+#onboarding-wizard .wizard-progress .dot {
+    background: rgba(26,32,44,.1) !important;
+}
+
+#onboarding-wizard .wizard-progress .dot.active,
+#wizard-chat-progress-fill {
+    background: linear-gradient(90deg, #a7771f, #d8b25e) !important;
+    box-shadow: 0 0 12px rgba(184,137,43,.24);
+}
+
+#onboarding-wizard #wizard-title,
+#onboarding-wizard.wizard-chat-mode #wizard-title {
+    color: var(--wizard-ink) !important;
+    -webkit-text-fill-color: var(--wizard-ink) !important;
+}
+
+#onboarding-wizard .wizard-content,
+#onboarding-wizard.wizard-chat-mode .wizard-content {
+    padding: 18px 28px 24px !important;
+    color: var(--wizard-ink) !important;
+}
+
+#onboarding-wizard .wizard-slide,
+#onboarding-wizard .wizard-slide h3,
+#onboarding-wizard .wizard-slide label,
+#onboarding-wizard .wizard-slide div,
+#onboarding-wizard .wizard-slide span {
+    color: var(--wizard-ink) !important;
+    -webkit-text-fill-color: currentColor;
+}
+
+#onboarding-wizard .wizard-slide > p {
+    color: var(--wizard-muted) !important;
+    -webkit-text-fill-color: var(--wizard-muted) !important;
+}
+
+#onboarding-wizard .wizard-chat-intake {
+    display: flex;
+    min-height: 100%;
+    flex-direction: column;
+    justify-content: center;
+    gap: 18px !important;
+    padding: 10px 0 6px !important;
+}
+
+#onboarding-wizard .wizard-chat-progress-row {
+    padding-bottom: 8px !important;
+    color: #75684f !important;
+    -webkit-text-fill-color: #75684f !important;
+}
+
+#onboarding-wizard .wizard-chat-progress-row button {
+    border-color: rgba(26,32,44,.2) !important;
+    background: rgba(255,255,255,.66) !important;
+    color: var(--wizard-ink) !important;
+    -webkit-text-fill-color: var(--wizard-ink) !important;
+}
+
+#onboarding-wizard .wizard-chat-progress-track {
+    background: rgba(26,32,44,.1) !important;
+}
+
+#onboarding-wizard .wizard-chat-messages {
+    display: flex;
+    min-height: 118px;
+    max-height: min(27dvh, 210px) !important;
+    flex: 0 1 auto;
+    flex-direction: column;
+    justify-content: center;
+    gap: 9px;
+    padding: 8px 0 !important;
+    overflow-y: auto;
+}
+
+#onboarding-wizard .wizard-chat-bubble.coach {
+    width: 100%;
+    max-width: 100% !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: var(--wizard-ink) !important;
+    -webkit-text-fill-color: var(--wizard-ink) !important;
+    text-align: left;
+}
+
+#onboarding-wizard .wizard-chat-bubble.coach:first-child:not(:last-child) {
+    color: #8b5e17 !important;
+    -webkit-text-fill-color: #8b5e17 !important;
+    font: 800 .72rem/1.25 'Montserrat', sans-serif !important;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+}
+
+#onboarding-wizard .wizard-chat-bubble.coach:last-child {
+    max-width: 440px !important;
+    font: 900 clamp(1.65rem, 6vw, 2.45rem)/1.03 'Montserrat', sans-serif !important;
+    letter-spacing: -.045em;
+}
+
+#onboarding-wizard .wizard-chat-bubble.user {
+    display: none !important;
+}
+
+#onboarding-wizard .wizard-chat-choices {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px !important;
+    max-height: min(31dvh, 250px) !important;
+    padding: 2px 4px 8px 0 !important;
+    overflow-y: auto;
+}
+
+#onboarding-wizard .wizard-chat-choice {
+    min-height: 50px;
+    padding: 12px 14px !important;
+    border: 1px solid rgba(154,105,25,.3) !important;
+    border-radius: 8px !important;
+    background: rgba(255,255,255,.78) !important;
+    color: var(--wizard-ink) !important;
+    -webkit-text-fill-color: var(--wizard-ink) !important;
+    box-shadow: 0 7px 20px rgba(67,50,21,.07), inset 0 1px 0 #fff;
+    font-weight: 780;
+}
+
+#onboarding-wizard .wizard-chat-choice:hover,
+#onboarding-wizard .wizard-chat-choice:focus-visible {
+    border-color: #9a6919 !important;
+    background: #fff !important;
+    box-shadow: 0 10px 24px rgba(67,50,21,.12), 0 0 0 3px rgba(184,137,43,.12);
+}
+
+#onboarding-wizard .wizard-chat-choice.selected {
+    border-color: #9a6919 !important;
+    background: linear-gradient(135deg, #ead39f, #d8b25e) !important;
+    color: var(--wizard-ink) !important;
+    -webkit-text-fill-color: var(--wizard-ink) !important;
+    box-shadow: 0 10px 24px rgba(154,105,25,.16), inset 0 1px 0 rgba(255,255,255,.58);
+}
+
+#onboarding-wizard .wizard-chat-input-row {
+    gap: 9px;
+}
+
+#onboarding-wizard .wizard-chat-input-row input,
+html[data-pbb-theme="light"] #onboarding-wizard .wizard-chat-input-row input {
+    border-color: rgba(154,105,25,.34) !important;
+    border-radius: 8px !important;
+    background: rgba(255,255,255,.92) !important;
+    color: var(--wizard-ink) !important;
+    -webkit-text-fill-color: var(--wizard-ink) !important;
+    box-shadow: 0 8px 22px rgba(67,50,21,.08) !important;
+}
+
+#onboarding-wizard .wizard-chat-input-row input:focus {
+    border-color: #9a6919 !important;
+    box-shadow: 0 0 0 3px rgba(184,137,43,.15), 0 8px 22px rgba(67,50,21,.08) !important;
+}
+
+#onboarding-wizard .wizard-chat-input-row button {
+    border-radius: 8px !important;
+    background: var(--wizard-ink) !important;
+    color: #fffaf0 !important;
+    -webkit-text-fill-color: #fffaf0 !important;
+    box-shadow: 0 10px 24px rgba(26,32,44,.17), inset 0 0 0 1px rgba(216,178,94,.3);
+}
+
+#onboarding-wizard .wizard-chat-helper {
+    color: var(--wizard-muted) !important;
+    -webkit-text-fill-color: var(--wizard-muted) !important;
+}
+
+#onboarding-wizard .wizard-input-group,
+#onboarding-wizard .wizard-option,
+html[data-pbb-theme="light"] #onboarding-wizard .wizard-input-group,
+#onboarding-wizard label[style*="background:white"],
+#onboarding-wizard button[style*="background:#fff"],
+#onboarding-wizard button[style*="background:white"] {
+    border-color: rgba(154,105,25,.22) !important;
+    background: rgba(255,255,255,.72) !important;
+    color: var(--wizard-ink) !important;
+    -webkit-text-fill-color: var(--wizard-ink) !important;
+    box-shadow: 0 8px 22px rgba(67,50,21,.06), inset 0 1px 0 #fff;
+}
+
+#onboarding-wizard .wizard-input,
+#onboarding-wizard select,
+#onboarding-wizard input[type="date"],
+html[data-pbb-theme="light"] #onboarding-wizard .wizard-input,
+html[data-pbb-theme="light"] #onboarding-wizard select {
+    border-color: rgba(154,105,25,.3) !important;
+    background: rgba(255,255,255,.92) !important;
+    color: var(--wizard-ink) !important;
+    -webkit-text-fill-color: var(--wizard-ink) !important;
+}
+
+#onboarding-wizard .freq-btn.selected,
+#onboarding-wizard .day-btn.selected,
+#onboarding-wizard .split-btn.selected,
+#onboarding-wizard .starter-minutes-btn.selected {
+    border-color: #9a6919 !important;
+    background: linear-gradient(135deg, #ead39f, #d8b25e) !important;
+    color: var(--wizard-ink) !important;
+    -webkit-text-fill-color: var(--wizard-ink) !important;
+}
+
+#onboarding-wizard #wizard-starter-routine-summary,
+#onboarding-wizard #freq-tip,
+#onboarding-wizard #wizard-calendar-preview,
+#onboarding-wizard #wizard-exercise-pref-summary {
+    border-color: rgba(154,105,25,.3) !important;
+    background: linear-gradient(145deg, rgba(216,178,94,.2), rgba(255,255,255,.66)) !important;
+    color: var(--wizard-ink) !important;
+    -webkit-text-fill-color: var(--wizard-ink) !important;
+    box-shadow: 0 12px 30px rgba(67,50,21,.08) !important;
+}
+
+#onboarding-wizard .wizard-footer {
+    border-top-color: rgba(154,105,25,.14) !important;
+    background: rgba(255,253,248,.9) !important;
+    backdrop-filter: blur(12px);
+}
+
+#onboarding-wizard #wizard-next {
+    background: var(--wizard-ink) !important;
+    color: #fffaf0 !important;
+    -webkit-text-fill-color: #fffaf0 !important;
+    box-shadow: 0 12px 28px rgba(26,32,44,.16), inset 0 0 0 1px rgba(216,178,94,.3) !important;
+}
+
+#onboarding-wizard #wizard-back,
+#onboarding-wizard .wizard-edit-note {
+    color: var(--wizard-muted) !important;
+    -webkit-text-fill-color: var(--wizard-muted) !important;
+}
+
+#onboarding-wizard .wizard-slide-number,
+#onboarding-wizard .wizard-result-kicker,
+#onboarding-wizard .wizard-assigned-goal-number,
+#onboarding-wizard .wizard-coach-note span {
+    color: #8b5e17 !important;
+    -webkit-text-fill-color: #8b5e17 !important;
+}
+
+#onboarding-wizard .wizard-result-summary,
+#onboarding-wizard .wizard-coach-note {
+    color: var(--wizard-muted) !important;
+    -webkit-text-fill-color: var(--wizard-muted) !important;
+}
+
+#onboarding-wizard .wizard-assigned-goal,
+#onboarding-wizard .wizard-coach-note {
+    border-color: rgba(154,105,25,.22);
+    background: rgba(255,255,255,.66);
+    color: var(--wizard-ink) !important;
+    -webkit-text-fill-color: var(--wizard-ink) !important;
+    box-shadow: 0 8px 22px rgba(67,50,21,.06);
+}
+
+@media (max-width: 560px) {
+    #onboarding-wizard .wizard-content,
+    #onboarding-wizard.wizard-chat-mode .wizard-content {
+        padding-right: 20px !important;
+        padding-left: 20px !important;
+    }
+
+    #onboarding-wizard .wizard-chat-messages {
+        min-height: 104px;
+        max-height: min(24dvh, 180px) !important;
+    }
+
+    #onboarding-wizard .wizard-chat-bubble.coach:last-child {
+        font-size: clamp(1.55rem, 7.2vw, 2.15rem) !important;
+    }
+
+    #onboarding-wizard .wizard-chat-choices {
+        grid-template-columns: 1fr;
+        max-height: min(29dvh, 238px) !important;
+    }
+}
+
+/* Completion copy is a readable summary, not another oversized question. */
+#onboarding-wizard.wizard-chat-complete .wizard-chat-intake {
+    justify-content: flex-start;
+}
+#onboarding-wizard.wizard-chat-complete .wizard-chat-messages {
+    min-height: 0;
+    max-height: min(44dvh, 330px) !important;
+    justify-content: flex-start;
+    padding: 12px 2px 6px 0 !important;
+    overflow-y: auto !important;
+}
+#onboarding-wizard.wizard-chat-complete .wizard-chat-bubble.coach:last-child {
+    max-width: 100% !important;
+    font: 800 clamp(1.08rem, 3.8vw, 1.42rem)/1.28 'Montserrat', sans-serif !important;
+    letter-spacing: -.025em;
+}
+#onboarding-wizard.wizard-chat-complete .wizard-chat-choices {
+    grid-template-columns: 1fr;
+    flex: 0 0 auto;
+    max-height: none !important;
+    overflow: visible;
+}
+#onboarding-wizard.wizard-chat-complete .wizard-chat-choice {
+    width: 100%;
+}
+@media (max-width: 560px) {
+    #onboarding-wizard.wizard-chat-complete .wizard-chat-messages {
+        max-height: min(48dvh, 350px) !important;
+    }
+    #onboarding-wizard.wizard-chat-complete .wizard-chat-bubble.coach:last-child {
+        font-size: clamp(1rem, 4.8vw, 1.24rem) !important;
+        line-height: 1.3 !important;
+    }
+}
+
+/* Keep long onboarding prompts fully readable above choices and the keyboard. */
+#onboarding-wizard.wizard-chat-mode:not(.wizard-chat-intro):not(.wizard-chat-complete) .wizard-chat-intake {
+    justify-content: flex-start;
+    gap: 14px !important;
+}
+#onboarding-wizard.wizard-chat-mode:not(.wizard-chat-intro):not(.wizard-chat-complete) .wizard-chat-messages {
+    min-height: 0;
+    max-height: none !important;
+    flex: 0 0 auto;
+    justify-content: flex-start;
+    padding: 4px 0 2px !important;
+    overflow: visible !important;
+}
+#onboarding-wizard.wizard-chat-mode:not(.wizard-chat-intro):not(.wizard-chat-complete) .wizard-chat-bubble.coach:last-child {
+    max-width: 100% !important;
+    font-size: clamp(1.35rem, 4.5vw, 2rem) !important;
+    line-height: 1.08 !important;
+    transform: none !important;
+}
+#onboarding-wizard.wizard-chat-mode:not(.wizard-chat-intro):not(.wizard-chat-complete) .wizard-chat-choices {
+    min-height: 72px;
+    max-height: none !important;
+    flex: 1 1 auto;
+}
+
+/* Light-theme text-fill rules must not black out the fixed install banner. */
+#pwa-install-banner,
+#pwa-install-banner span,
+#pwa-install-banner button:not(.pwa-install-btn) {
+    color: #fffaf0 !important;
+    -webkit-text-fill-color: #fffaf0 !important;
+}
+#pwa-install-banner .pwa-install-btn {
+    color: #17130e !important;
+    -webkit-text-fill-color: #17130e !important;
+}
+#onboarding-wizard.active ~ #pwa-install-banner {
+    display: none !important;
+}
+
+/* Training setup slides: never inherit the legacy white WebKit text fill. */
+#onboarding-wizard #slide-4 h3,
+#onboarding-wizard #slide-7 h3 {
+    color: var(--wizard-ink) !important;
+    -webkit-text-fill-color: var(--wizard-ink) !important;
+}
+#onboarding-wizard #slide-4 p,
+#onboarding-wizard #slide-4 label,
+#onboarding-wizard #slide-4 label span,
+#onboarding-wizard #slide-7 p,
+#onboarding-wizard #slide-7 label,
+#onboarding-wizard #slide-7 label span,
+#onboarding-wizard #slide-7 .wizard-calendar-day,
+#onboarding-wizard #slide-7 .wizard-calendar-workout-name,
+#onboarding-wizard #slide-7 .wizard-calendar-workout-desc,
+#onboarding-wizard #slide-7 .wizard-calendar-time-wrap,
+#onboarding-wizard #slide-7 .wizard-calendar-edit-icon,
+#onboarding-wizard #slide-7 #wizard-calendar-preview strong {
+    color: #334155 !important;
+    -webkit-text-fill-color: #334155 !important;
+}
+#onboarding-wizard #slide-4 .freq-btn,
+#onboarding-wizard #slide-4 .day-btn,
+#onboarding-wizard #slide-4 .starter-minutes-btn,
+#onboarding-wizard #slide-4 select,
+#onboarding-wizard #slide-7 input[type="time"] {
+    color: var(--wizard-ink) !important;
+    -webkit-text-fill-color: var(--wizard-ink) !important;
+}
+#onboarding-wizard #slide-4 #freq-tip,
+#onboarding-wizard #slide-4 #days-counter {
+    color: #5f4516 !important;
+    -webkit-text-fill-color: #5f4516 !important;
+}
+#onboarding-wizard #slide-7 #wizard-calendar-preview {
+    min-height: 120px;
+}
+#onboarding-wizard #slide-7 .wizard-calendar-row {
+    border-bottom-color: rgba(154,105,25,.16) !important;
+}

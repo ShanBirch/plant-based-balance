@@ -6417,66 +6417,126 @@ function isNativeApp() {
  * Request all native permissions sequentially via native OS dialogs.
  * Only runs on first install (guarded by localStorage flag).
  */
-async function showNativePermissionsModal() {
-    if (window.guestMode) return; // Skip in guest preview mode
-    if (!isNativeApp()) return;
-    if (localStorage.getItem('native_permissions_requested')) return;
-    localStorage.setItem('native_permissions_requested', 'true');
-    localStorage.setItem('native_permissions_requested_at', String(Date.now()));
+let balancePermissionContinue = null;
 
-    // 1. Notifications — ask first so the FCM token registration in step's
-    //    init() runs against an already-resolved permission (no re-prompt).
-    if (window.NativePush && typeof window.NativePush.requestPermission === 'function') {
-        try { await window.NativePush.requestPermission(); } catch (_) { /* denied */ }
-        try { if (typeof window.NativePush.init === 'function') window.NativePush.init(); } catch (_) {}
+function setBalancePermissionStatus(id, text, state) {
+    const el = document.getElementById('balance-permission-' + id);
+    if (!el) return;
+    el.textContent = text;
+    el.dataset.state = state || '';
+}
+
+function balancePermissionStorageKey(name) {
+    const userId = window.currentUser && window.currentUser.id ? window.currentUser.id : 'signed-in-user';
+    return name + ':' + userId;
+}
+
+async function showNativePermissionsModal(options) {
+    if (window.guestMode) return false;
+    const opts = options && typeof options === 'object' ? options : {};
+    if (typeof opts.onComplete === 'function') balancePermissionContinue = opts.onComplete;
+    const requestedKey = balancePermissionStorageKey('native_permissions_requested');
+    if (localStorage.getItem(requestedKey) === 'true') {
+        const next = balancePermissionContinue;
+        balancePermissionContinue = null;
+        if (typeof next === 'function') next();
+        return false;
     }
+    await requestBalanceEssentialPermissions();
+    return true;
+}
 
-    await new Promise(r => setTimeout(r, 700));
+async function requestBalanceEssentialPermissions() {
+    const primary = document.querySelector('#balance-permission-setup .balance-permission-primary');
+    if (primary) { primary.disabled = true; primary.textContent = 'Opening phone settings...'; }
 
-    // 2. Camera
+    setBalancePermissionStatus('notifications', 'Requesting...', 'pending');
     try {
-        const camStream = await navigator.mediaDevices.getUserMedia({ video: true });
-        camStream.getTracks().forEach(t => t.stop());
-    } catch (_) { /* denied or unavailable */ }
-
-    await new Promise(r => setTimeout(r, 700));
-
-    // 3. Microphone
-    if (window.NativePermissions && typeof window.NativePermissions.hasMicrophonePermission === 'function') {
-        if (!window.NativePermissions.hasMicrophonePermission()) {
-            await new Promise((resolve) => {
-                let done = false;
-                window._onNativeMicrophonePermission = (ok) => { if (!done) { done = true; resolve(ok); } };
-                window.NativePermissions.requestMicrophonePermission();
-                setTimeout(() => { if (!done) { done = true; resolve(false); } }, 30000);
-            });
+        if (isNativeApp() && window.NativePush && typeof window.NativePush.requestPermission === 'function') {
+            const result = await window.NativePush.requestPermission();
+            if (typeof window.NativePush.init === 'function') window.NativePush.init();
+            setBalancePermissionStatus('notifications', result === 'denied' ? 'Not enabled' : 'Enabled', result === 'denied' ? 'denied' : 'granted');
+        } else if (typeof requestNotificationPermission === 'function') {
+            await requestNotificationPermission();
+            const granted = !('Notification' in window) || Notification.permission === 'granted';
+            setBalancePermissionStatus('notifications', granted ? 'Enabled' : 'Not enabled', granted ? 'granted' : 'denied');
+        } else {
+            setBalancePermissionStatus('notifications', 'Not available here', 'denied');
         }
-    } else {
-        try {
-            const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            micStream.getTracks().forEach(t => t.stop());
-        } catch (_) { /* denied */ }
-    }
+    } catch (_) { setBalancePermissionStatus('notifications', 'Not enabled', 'denied'); }
 
-    await new Promise(r => setTimeout(r, 700));
+    setBalancePermissionStatus('camera', 'Requesting...', 'pending');
+    try {
+        if (window.NativePermissions && typeof window.NativePermissions.hasCameraPermission === 'function') {
+            let granted = window.NativePermissions.hasCameraPermission();
+            if (!granted && typeof window.NativePermissions.requestCameraPermission === 'function') {
+                granted = await new Promise(resolve => {
+                    let done = false;
+                    window._onNativeCameraPermission = ok => { if (!done) { done = true; window._onNativeCameraPermission = null; resolve(!!ok); } };
+                    window.NativePermissions.requestCameraPermission();
+                    setTimeout(() => { if (!done) { done = true; resolve(false); } }, 30000);
+                });
+            }
+            setBalancePermissionStatus('camera', granted ? 'Enabled' : 'Not enabled', granted ? 'granted' : 'denied');
+        } else {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+            stream.getTracks().forEach(track => track.stop());
+            setBalancePermissionStatus('camera', 'Enabled', 'granted');
+        }
+    } catch (_) { setBalancePermissionStatus('camera', 'Not enabled', 'denied'); }
 
-    // 4. Health Data
-    if (window.NativeHealth) {
-        try { await window.NativeHealth.init(); } catch (_) { /* unavailable */ }
-    }
+    setBalancePermissionStatus('microphone', 'Requesting...', 'pending');
+    try {
+        if (window.NativePermissions && typeof window.NativePermissions.hasMicrophonePermission === 'function') {
+            let granted = window.NativePermissions.hasMicrophonePermission();
+            if (!granted && typeof window.NativePermissions.requestMicrophonePermission === 'function') {
+                granted = await new Promise(resolve => {
+                    let done = false;
+                    window._onNativeMicrophonePermission = ok => { if (!done) { done = true; window._onNativeMicrophonePermission = null; resolve(!!ok); } };
+                    window.NativePermissions.requestMicrophonePermission();
+                    setTimeout(() => { if (!done) { done = true; resolve(false); } }, 30000);
+                });
+            }
+            setBalancePermissionStatus('microphone', granted ? 'Enabled' : 'Not enabled', granted ? 'granted' : 'denied');
+        } else {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+            stream.getTracks().forEach(track => track.stop());
+            setBalancePermissionStatus('microphone', 'Enabled', 'granted');
+        }
+    } catch (_) { setBalancePermissionStatus('microphone', 'Not enabled', 'denied'); }
 
-    // Initialize services that depend on the permissions just granted
-    if (window.NativeHealth && window.NativeHealth.isNativeApp()) {
-        window.NativeHealth.init().then(ready => {
-            if (ready) window.NativeHealth.getSummary();
-        });
-    }
+    localStorage.setItem(balancePermissionStorageKey('native_permissions_requested'), 'true');
+    localStorage.setItem(balancePermissionStorageKey('native_permissions_requested_at'), String(Date.now()));
+    setTimeout(() => finishBalancePermissionSetup(true), 500);
+}
+
+function finishBalancePermissionSetup(requested) {
+    localStorage.setItem(balancePermissionStorageKey('balance_permission_setup_seen'), 'true');
+    const next = balancePermissionContinue;
+    balancePermissionContinue = null;
+    if (typeof next === 'function') setTimeout(next, 180);
 }
 
 /**
  * Open the device's notification settings so the user can enable/disable
  * push notifications for this app at any time.
  */
+// Ask each signed-in account once. Permission state is account-scoped so a
+// second client on the same test phone/browser never inherits another
+// client's completed prompt sequence.
+window.addEventListener('pbbInitComplete', function requestPermissionsAfterLogin() {
+    let attempts = 0;
+    const requestWhenReady = function () {
+        if (window.currentUser && window.currentUser.id) {
+            showNativePermissionsModal();
+            return;
+        }
+        attempts += 1;
+        if (attempts < 30) setTimeout(requestWhenReady, 250);
+    };
+    setTimeout(requestWhenReady, 700);
+}, { once: true });
+
 function openAppNotificationSettings() {
     if (window.NativePermissions && typeof window.NativePermissions.openNotificationSettings === 'function') {
         window.NativePermissions.openNotificationSettings();
@@ -6962,6 +7022,7 @@ let wizardTrainingFrequency = 0;
 let wizardSelectedDays = new Set();
 let wizardSplitPreference = '';
 let wizardWorkoutCalendar = {};
+let wizardWorkoutTimes = {};
 let selectedGender = localStorage.getItem('userGender') || null; // Track gender selection
 
 // Food preference selections (slides 2/7/8/9). Sets keep selections unique and order-insensitive.
@@ -7181,12 +7242,7 @@ function inferWizardStarterPlan(answers = {}) {
     else if (goalIntentIds.includes('improve_nutrition')) learningInterestIds.push('protein_science');
     else if (goalIntentIds.includes('more_energy')) learningInterestIds.push('recovery_sleep_energy');
 
-    let starterSessionMinutes = 15;
-    if (answers.weekly_capacity === 'one_or_two' || answers.weekly_capacity === 'varies' || answers.energy_level === 'low') {
-        starterSessionMinutes = 10;
-    } else if (answers.weekly_capacity === 'four_plus' && answers.energy_level === 'high') {
-        starterSessionMinutes = 20;
-    }
+    let starterSessionMinutes = answers.energy_level === 'low' ? 20 : 30;
 
     return {
         goalIntentIds: Array.from(new Set(goalIntentIds)).slice(0, 2),
@@ -7341,31 +7397,48 @@ function parseWizardMeasurementInput(step, raw) {
 }
 
 const WIZARD_WEEKLY_CAPACITY_LABELS = {
-    one_or_two: '1-2 reliable windows',
-    three: '3 reliable windows',
-    four_plus: '4+ reliable windows',
+    one_or_two: '1-2 strength days',
+    three: '3 strength days',
+    four: '4 strength days',
+    four_plus: '4 strength days',
+    five: '5 strength days',
+    six: '6 strength days',
+    seven: '7 strength days',
     varies: 'It changes week to week'
 };
 
 const WIZARD_ROUTINE_WINDOW_LABELS = {
+    early_morning: 'Early morning',
+    later_morning: 'Later morning',
+    lunch_time: 'Lunch time',
+    afternoon: 'Afternoon',
+    after_work: 'After work',
+    evening: 'Evening',
+    flexible: 'Flexible or changes day to day',
     before_day: 'Before the day starts',
     midday: 'Lunch or midday',
-    after_work: 'After work or school',
-    evening: 'Later in the evening',
     varies: 'It changes day to day'
 };
 
 function getWizardRecommendedStarterFrequency(answers = wizardChatAnswers || {}) {
-    if (answers.weekly_capacity === 'three') return 3;
-    if (answers.weekly_capacity === 'four_plus') return 3;
-    return 2;
+    const requestedFrequency = {
+        one_or_two: 2,
+        three: 3,
+        four: 4,
+        four_plus: 4,
+        five: 5,
+        six: 6,
+        seven: 7
+    }[answers.weekly_capacity];
+
+    return requestedFrequency || 3;
 }
 
 function getWizardStarterRoutine(answers = wizardChatAnswers || {}) {
     const inferredMinutes = typeof inferWizardStarterPlan === 'function'
         ? inferWizardStarterPlan(answers).starterSessionMinutes
         : 15;
-    const minutes = Math.max(10, Math.min(30, Number(answers.starter_session_minutes) || inferredMinutes));
+    const minutes = Math.max(10, Math.min(60, Number(answers.starter_session_minutes) || inferredMinutes));
     return {
         frequency: getWizardRecommendedStarterFrequency(answers),
         minutes,
@@ -7399,7 +7472,7 @@ const WIZARD_CHAT_STEPS = [
             { value: 'male', label: 'For him' }
         ]
     },
-    { key: 'name', type: 'text', question: 'What should Shannon call you?', placeholder: 'Your first name', minLength: 2 },
+    { key: 'name', type: 'text', question: 'Enter your name', placeholder: 'Your first name', minLength: 2 },
     { key: 'age', type: 'number', question: 'How old are you?', placeholder: 'e.g. 34', min: 18, max: 100, suffix: 'years' },
     { key: 'height', type: 'measurement', measurement: 'height', question: getWizardHeightQuestion, placeholder: getWizardHeightPlaceholder },
     { key: 'weight', type: 'measurement', measurement: 'weight', question: getWizardWeightQuestion, placeholder: getWizardWeightPlaceholder },
@@ -7423,11 +7496,14 @@ const WIZARD_CHAT_STEPS = [
         key: 'weekly_capacity',
         type: 'choice',
         prelude: 'Brain fact: habits become easier to repeat when the cue stays consistent. Protecting the same few training windows helps your brain recognise when it is time to start.',
-        question: 'On a busy but normal week, how many training windows could you genuinely protect?',
+        question: 'On a normal week, how many strength days do you actually want in your plan?',
         options: [
             { value: 'one_or_two', label: WIZARD_WEEKLY_CAPACITY_LABELS.one_or_two },
             { value: 'three', label: WIZARD_WEEKLY_CAPACITY_LABELS.three },
-            { value: 'four_plus', label: WIZARD_WEEKLY_CAPACITY_LABELS.four_plus },
+            { value: 'four', label: WIZARD_WEEKLY_CAPACITY_LABELS.four },
+            { value: 'five', label: WIZARD_WEEKLY_CAPACITY_LABELS.five },
+            { value: 'six', label: WIZARD_WEEKLY_CAPACITY_LABELS.six },
+            { value: 'seven', label: WIZARD_WEEKLY_CAPACITY_LABELS.seven },
             { value: 'varies', label: WIZARD_WEEKLY_CAPACITY_LABELS.varies }
         ]
     },
@@ -7435,14 +7511,17 @@ const WIZARD_CHAT_STEPS = [
         key: 'routine_window',
         type: 'choice',
         prelude: 'Brain fact: starting is easier when a behaviour is attached to something that already happens, like waking up, lunch, or finishing work.',
-        question: 'Which time is least likely to get stolen by everything else?',
+        question: 'When are you most likely to do your workouts?',
         options: [
-            { value: 'before_day', label: WIZARD_ROUTINE_WINDOW_LABELS.before_day },
-            { value: 'midday', label: WIZARD_ROUTINE_WINDOW_LABELS.midday },
-            { value: 'after_work', label: WIZARD_ROUTINE_WINDOW_LABELS.after_work },
-            { value: 'evening', label: WIZARD_ROUTINE_WINDOW_LABELS.evening },
-            { value: 'varies', label: WIZARD_ROUTINE_WINDOW_LABELS.varies }
-        ]
+            { value: 'early_morning', label: 'Early morning' },
+            { value: 'later_morning', label: 'Later morning' },
+            { value: 'lunch_time', label: 'Lunch time' },
+            { value: 'afternoon', label: 'Afternoon' },
+            { value: 'after_work', label: 'After work' },
+            { value: 'evening', label: 'Evening' },
+            { value: 'flexible', label: 'It changes day to day' }
+        ],
+        textPlaceholder: 'Or type an exact time, like 7:00 am...'
     },
     {
         key: 'equipment_access',
@@ -7855,6 +7934,7 @@ function setWizardChatLayoutMode({ noTextbox = false, intro = false } = {}) {
     if (!wizard) return;
     wizard.classList.toggle('wizard-chat-no-textbox', !!noTextbox);
     wizard.classList.toggle('wizard-chat-intro', !!intro);
+    wizard.classList.toggle('wizard-chat-complete', !!wizardChatComplete);
 }
 
 function bindWizardChatControlEvents() {
@@ -8071,8 +8151,60 @@ function rebuildWizardChatMessagesUntil(stepIndex) {
     wizardChatMessages = [];
 }
 
+function getWizardChatKnownProfileName() {
+    const user = window.currentUser || {};
+    const metadata = user.user_metadata || {};
+    const profile = window.currentUserProfile || window.userProfile || window.profileData || {};
+    const knownName = [
+        profile.name,
+        profile.full_name,
+        profile.first_name,
+        user.name,
+        user.full_name,
+        user.first_name,
+        metadata.name,
+        metadata.full_name,
+        metadata.first_name
+    ].find(value => typeof value === 'string' && value.trim());
+    return knownName ? knownName.trim() : '';
+}
+
+function skipWizardChatKnownProfileSteps() {
+    let guard = 0;
+    while (guard < WIZARD_CHAT_STEPS.length) {
+        const step = getWizardChatStep();
+        if (!step || step.type === 'start') return;
+
+        const profile = window.currentUserProfile || window.userProfile || window.profileData || {};
+        const isTransferred = !!(profile.is_transferred_client || window.__pbbTransferredSetupPending);
+        const knownName = getWizardChatKnownProfileName();
+        const knownAnswers = {
+            name: knownName,
+            gender: profile.sex || profile.user_gender || '',
+            age: profile.age || '',
+            why_now: profile.why_now || '',
+            main_blocker: profile.main_blocker || '',
+            equipment_access: profile.equipment_access || '',
+            dietary_requirements: Array.isArray(profile.dietary_requirements)
+                ? profile.dietary_requirements
+                : (profile.dietary_preference ? [profile.dietary_preference] : [])
+        };
+
+        const knownValue = knownAnswers[step.key];
+        const hasKnownValue = Array.isArray(knownValue) ? knownValue.length > 0 : String(knownValue || '').trim() !== '';
+        if ((step.key === 'name' || isTransferred) && hasKnownValue) {
+            wizardChatAnswers[step.key] = knownValue;
+            wizardChatStepIndex += 1;
+            guard += 1;
+            continue;
+        }
+        return;
+    }
+}
+
 function askWizardChatQuestion(options = {}) {
     wizardChatAskToken += 1;
+    skipWizardChatKnownProfileSteps();
     const step = getWizardChatStep();
     if (!step) {
         wizardChatComplete = true;
@@ -8737,9 +8869,15 @@ async function checkAndTriggerOnboarding() {
                 console.log('🎁 Transferred client detected — running trimmed setup flow');
                 localStorage.setItem('onboardingComplete', 'true');
                 if (userData.sex) localStorage.setItem('userGender', userData.sex);
-                if (typeof startTransferredClientFlow === 'function') {
-                    startTransferredClientFlow();
-                }
+                (function startTransferredSetupWhenReady(attempt) {
+                    if (typeof startTransferredClientFlow === 'function') {
+                        startTransferredClientFlow();
+                        return;
+                    }
+                    if (attempt < 120) {
+                        setTimeout(function () { startTransferredSetupWhenReady(attempt + 1); }, 250);
+                    }
+                })(0);
                 return;
             }
         } catch (e) {
@@ -10023,7 +10161,17 @@ function updateWizardUI() {
     const titleEl = document.getElementById('wizard-title');
 
     if(titleEl) {
-        titleEl.textContent = currentWizardStep === 1 ? 'TIME FOR A COMEBACK.' : 'YOUR SIX-WEEK SETUP';
+        titleEl.textContent = currentWizardStep === 1 ? 'TIME FOR A COMEBACK.' : 'YOUR BALANCE SETUP';
+    }
+
+    // Always build the confirmation calendar when this slide becomes visible.
+    // Resumed and transferred-client flows do not necessarily pass through the
+    // single forward-navigation branch that used to render it.
+    if (currentWizardStep === 7) {
+        setTimeout(() => {
+            generateWizardCalendar();
+            renderWizardCalendarPreview();
+        }, 0);
     }
 
     if(prevBtn) {
@@ -11211,115 +11359,187 @@ window.closeCharacterCustomizationShortcut = async function() {
 // feature tour. Clearing the flag is important: it's how we make sure this
 // flow only fires once per transferred client.
 window.startTransferredClientFlow = async function() {
-    // One-shot guard: if this device has already shown the transferred flow,
-    // don't show it again — even if the DB flag somehow got flipped back
-    // (e.g. someone re-ran an import script). Without this, Kylie kept
-    // seeing "Design Your Character" every login.
-    try {
-        if (localStorage.getItem('pbb_transferred_flow_shown') === 'true') {
-            // Flag is still true in the DB but we've shown the popup before.
-            // Clear the DB flag silently so checkAndTriggerOnboarding stops
-            // taking the transferred-client branch on future loads.
-            if (window.currentUser && window.dbHelpers && window.dbHelpers.users) {
-                window.dbHelpers.users.update(window.currentUser.id, {
-                    is_transferred_client: false,
-                }).catch(e => console.warn('silent transferred-flag clear failed:', e));
-            }
-            return;
-        }
-    } catch (e) { /* best-effort */ }
-
-    // Mark shown immediately so a dismiss without Save still counts — we
-    // don't want users stuck seeing this modal on every login if they bailed.
-    try { localStorage.setItem('pbb_transferred_flow_shown', 'true'); } catch (e) {}
-
-    // Also clear the DB flag up-front. If the user never clicks Save, the
-    // wizard-next rewiring below won't run and the flag would linger
-    // otherwise.
-    try {
-        if (window.currentUser && window.dbHelpers && window.dbHelpers.users) {
-            window.dbHelpers.users.update(window.currentUser.id, {
-                is_transferred_client: false,
-            }).catch(e => console.warn('pre-emptive transferred-flag clear failed:', e));
-        }
-    } catch (e) { /* best-effort */ }
-
-    // Give the dashboard a moment to finish booting (loading overlay, model
-    // preloads, etc.) before we pop a modal on top of everything.
-    await new Promise(r => setTimeout(r, 1500));
-
-    if (typeof window.openCharacterCustomizationShortcut !== 'function') {
-        console.warn('Character customization shortcut unavailable — skipping transferred flow');
+    // Transferred clients already have their known coaching context. Reuse the
+    // normal cream-and-gold setup, but skip only answers already held in profile.
+    await new Promise(resolve => setTimeout(resolve, 4000));
+    if (typeof window.initOnboardingWizard !== 'function') {
+        console.warn('Onboarding wizard unavailable for transferred client.');
         return;
     }
-    window.openCharacterCustomizationShortcut();
 
-    // openCharacterCustomizationShortcut rewires #wizard-next.onclick inside
-    // itself; that rewire happens synchronously after it shows the modal, so
-    // we just defer a tick before overriding onto the final handler.
-    setTimeout(() => {
-        const nextBtn = document.getElementById('wizard-next');
-        if (!nextBtn) return;
+    window.__pbbTransferredSetupPending = true;
+    localStorage.removeItem('featureTourComplete');
+    initOnboardingWizard();
 
-        nextBtn.onclick = async function() {
-            // 1. Save the character colours and close the modal.
-            try {
-                if (typeof window.closeCharacterCustomizationShortcut === 'function') {
-                    window.closeCharacterCustomizationShortcut();
-                }
-            } catch (e) { console.warn('close customization failed:', e); }
-
-            // 2. Clear the transferred flag in the DB so this flow doesn't
-            //    run again on her next login.
-            try {
-                if (window.currentUser && window.dbHelpers && window.dbHelpers.users) {
-                    await window.dbHelpers.users.update(window.currentUser.id, {
-                        is_transferred_client: false,
-                    });
-                }
-            } catch (e) { console.warn('clearing transferred flag failed:', e); }
-
-            // 3. Suppress the weigh-in modal on day one — she doesn't have a
-            //    weight yet (we deliberately skipped it in the import) and we
-            //    don't want a modal stepping over the tour. The card is still
-            //    visible on the home screen so the tour can point at it.
-            try { localStorage.setItem('lastWeighInPromptDate', new Date().toDateString()); } catch (e) {}
-
-            // 4. Grant the 2500-coin welcome bonus + animation. Fire and
-            //    forget so the header coin count-up runs in the background
-            //    while the permission modal / tour come up on top.
-            if (typeof grantWelcomeBonusWithAnimation === 'function') {
-                grantWelcomeBonusWithAnimation().catch(e => {
-                    console.error('Welcome bonus animation failed:', e);
-                });
-            }
-
-            // 5. Mirror finishOnboarding's post-complete sequence:
-            //    +3s: native permission modal (camera / mic / location / health)
-            //    +3.5s: web push permission (non-native only)
-            //    +5s: guided feature tour
-            if (typeof showNativePermissionsModal === 'function') {
-                setTimeout(showNativePermissionsModal, 3000);
-            }
-            if (!(typeof isNativeApp === 'function' && isNativeApp())) {
-                setTimeout(() => {
-                    if (typeof requestNotificationPermission === 'function') {
-                        requestNotificationPermission();
-                    }
-                }, 3500);
-            }
-            setTimeout(() => {
-                try {
-                    if (typeof startFeatureTour === 'function') {
-                        try { localStorage.removeItem('featureTourComplete'); } catch (e) {}
-                        startFeatureTour();
-                    }
-                } catch (e) { console.warn('startFeatureTour failed:', e); }
-            }, 5000);
-        };
-    }, 250);
+    // Startup routines may close blocking surfaces while Home initializes.
+    if (window.__pbbTransferredSetupVisibilityTimer) {
+        clearInterval(window.__pbbTransferredSetupVisibilityTimer);
+    }
+    let stableChecks = 0;
+    let attempts = 0;
+    window.__pbbTransferredSetupVisibilityTimer = setInterval(function () {
+        attempts += 1;
+        if (!window.__pbbTransferredSetupPending) {
+            clearInterval(window.__pbbTransferredSetupVisibilityTimer);
+            window.__pbbTransferredSetupVisibilityTimer = null;
+            return;
+        }
+        const modal = document.getElementById('onboarding-wizard');
+        if (!modal) return;
+        const visible = modal.style.display === 'flex' && modal.classList.contains('active');
+        if (!visible) {
+            stableChecks = 0;
+            modal.classList.add('active');
+            modal.style.display = 'flex';
+            modal.style.opacity = '1';
+            setOnboardingScrollLock(true);
+        } else {
+            stableChecks += 1;
+        }
+        if (stableChecks >= 20 || attempts >= 80) {
+            clearInterval(window.__pbbTransferredSetupVisibilityTimer);
+            window.__pbbTransferredSetupVisibilityTimer = null;
+        }
+    }, 400);
 };
 
+function ensureGuidedFeatureTourRuntime() {
+    if (typeof window.startFeatureTour === 'function') return true;
+
+    const runtimeScript = Array.from(document.scripts).find(script => {
+        const source = script.textContent || '';
+        return !script.src && source.includes('window.startFeatureTour = function') && source.includes('const steps = [');
+    });
+    if (!runtimeScript || runtimeScript.dataset.balanceTourBootstrapping === 'true') return false;
+
+    runtimeScript.dataset.balanceTourBootstrapping = 'true';
+    try {
+        Function(runtimeScript.textContent)();
+        const ready = typeof window.startFeatureTour === 'function';
+        runtimeScript.dataset.balanceTourBootstrapped = ready ? 'true' : 'false';
+        return ready;
+    } catch (error) {
+        runtimeScript.dataset.balanceTourBootstrapped = 'false';
+        console.warn('Guided feature tour runtime bootstrap failed:', error);
+        return false;
+    } finally {
+        runtimeScript.dataset.balanceTourBootstrapping = 'false';
+    }
+}
+function startWizardClientActivationTour(attempt = 0, options = {}) {
+    const isLocalTourPreview = options.preview === true;
+    if ((window.metaAdTrialMode && !isLocalTourPreview) || (window.__balanceClientActivationTourStarted && !options.restart)) return;
+
+    if (attempt === 0) {
+        if (window.__balanceClientActivationTourQueued && !options.restart) return;
+        window.__balanceClientActivationTourQueued = true;
+        window.__balanceClientActivationTourStarted = false;
+    }
+
+    const wizard = document.getElementById('onboarding-wizard');
+    const wizardStillOpen = wizard && (wizard.classList.contains('active') || wizard.style.display === 'flex');
+    if (wizardStillOpen) {
+        if (attempt < 120) {
+            setTimeout(() => startWizardClientActivationTour(attempt + 1, options), 150);
+        } else {
+            window.__balanceClientActivationTourQueued = false;
+            console.warn('Client activation tour could not start because onboarding stayed open.');
+        }
+        return;
+    }
+
+    ensureGuidedFeatureTourRuntime();
+    const start = window.startFeatureTour;
+    if (typeof start === 'function') {
+        try {
+            localStorage.removeItem('featureTourComplete');
+            start(true, { clientActivation: true });
+
+            const overlay = document.getElementById('guided-tour-overlay');
+            if (overlay && overlay.classList.contains('active')) {
+                window.__balanceClientActivationTourStarted = true;
+                window.__balanceClientActivationTourQueued = false;
+                return;
+            }
+        } catch (error) {
+            console.warn('Client activation tour start failed:', error);
+        }
+    }
+
+    window.__balanceClientActivationTourStarted = false;
+    if (attempt < 120) {
+        setTimeout(() => startWizardClientActivationTour(attempt + 1, options), 150);
+    } else {
+        window.__balanceClientActivationTourQueued = false;
+        console.warn('Client activation tour was not ready after onboarding.');
+    }
+}
+window.startWizardClientActivationTour = startWizardClientActivationTour;
+
+function waitForWizardClientTourToFinish(callback, attempt = 0) {
+    const tourIsBusy = window.__balanceGuidedTourActive || window.__balanceClientActivationTourQueued;
+    if (tourIsBusy && attempt < 240) {
+        setTimeout(() => waitForWizardClientTourToFinish(callback, attempt + 1), 250);
+        return;
+    }
+    callback();
+}
+
+function installWizardTourPreviewShortcut() {
+    if (location.hostname !== '127.0.0.1' && location.hostname !== 'localhost') return;
+
+    const forceTourTest = new URLSearchParams(location.search).get('tourTest') === '1';
+    const wizard = document.getElementById('onboarding-wizard');
+    if ((!wizard && !forceTourTest) || document.getElementById('wizard-tour-preview-shortcut')) return;
+
+    const button = document.createElement('button');
+    button.id = 'wizard-tour-preview-shortcut';
+    button.type = 'button';
+    button.textContent = 'TEST: Jump to app tour';
+    button.style.cssText = [
+        'position:fixed',
+        'left:16px',
+        'bottom:calc(16px + env(safe-area-inset-bottom, 0px))',
+        'z-index:500010',
+        'border:1px solid rgba(154,105,25,.5)',
+        'border-radius:999px',
+        'background:#1a202c',
+        'color:#fffaf0',
+        '-webkit-text-fill-color:#fffaf0',
+        'padding:10px 14px',
+        'font:800 12px/1.2 inherit',
+        'letter-spacing:.03em',
+        'box-shadow:0 10px 28px rgba(26,32,44,.28)',
+        'cursor:pointer'
+    ].join(';');
+
+    button.addEventListener('click', function() {
+        button.disabled = true;
+        if (wizard) {
+            wizard.style.display = 'none';
+            wizard.style.opacity = '';
+            wizard.classList.remove('active');
+        }
+        window._onboardingWizardPending = false;
+        if (typeof setOnboardingScrollLock === 'function') setOnboardingScrollLock(false);
+        try { localStorage.removeItem('featureTourComplete'); } catch(e) {}
+
+        if (forceTourTest) window.metaAdTrialMode = false;
+        window.__balanceClientActivationTourStarted = false;
+        window.__balanceClientActivationTourQueued = false;
+        setTimeout(function() {
+            startWizardClientActivationTour(0, { preview: forceTourTest, restart: true });
+        }, 80);
+    });
+
+    (forceTourTest ? document.body : wizard).appendChild(button);
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', installWizardTourPreviewShortcut, { once: true });
+} else {
+    installWizardTourPreviewShortcut();
+}
 // ========== WIZARD REFERRAL FUNCTIONS ==========
 
 async function loadWizardReferralCode() {
@@ -11487,13 +11707,11 @@ function renderWizardStarterRoutineRecommendation() {
         reasonParts.push(`you described the week as "${priorities}"`);
     }
     const reason = reasonParts.join(', and ') || 'it leaves deliberate room for a messy week';
-    const belowMaximum = wizardChatAnswers.weekly_capacity === 'four_plus'
-        ? ' We are suggesting less than your maximum at first so the plan stays repeatable.'
-        : '';
+    const belowMaximum = '';
 
     container.innerHTML = '';
     const title = document.createElement('strong');
-    title.textContent = frequencyWasChanged ? 'Your chosen starting routine' : 'Balance suggests starting here';
+    title.textContent = frequencyWasChanged ? 'Your chosen starting routine' : 'Your week, based on your answers';
     const plan = document.createElement('div');
     plan.style.cssText = 'font-size:1.02rem; font-weight:800; color:#5f4516; margin:5px 0 4px;';
     plan.textContent = `${displayedFrequency} x ${routine.minutes}-minute sessions - ${routine.windowLabel}`;
@@ -11538,7 +11756,7 @@ function selectWizardRoutineWindow(value) {
 }
 
 function selectWizardStarterMinutes(minutes) {
-    const value = Math.max(10, Math.min(30, Number(minutes) || 15));
+    const value = Math.max(10, Math.min(60, Number(minutes) || 15));
     saveWizardRoutineChoice('starter_session_minutes', String(value));
 }
 
@@ -11706,6 +11924,49 @@ function generateWizardCalendar() {
             wizardWorkoutCalendar[day] = recoveryOnRestDays ? 'yoga-restorative' : 'rest';
         }
     });
+
+    const defaultTime = getWizardDefaultWorkoutTime();
+    allDays.forEach(day => {
+        if (wizardWorkoutCalendar[day] === 'rest') {
+            wizardWorkoutTimes[day] = '';
+        } else if (!wizardWorkoutTimes[day]) {
+            wizardWorkoutTimes[day] = defaultTime;
+        }
+    });
+    syncWizardWorkoutTimes();
+}
+
+function parseWizardClockTime(value) {
+    const text = String(value || '').trim().toLowerCase();
+    const match = text.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);
+    if (!match) return '';
+    let hour = Number(match[1]);
+    const minute = Number(match[2] || 0);
+    if (hour > 23 || minute > 59) return '';
+    if (match[3] === 'pm' && hour < 12) hour += 12;
+    if (match[3] === 'am' && hour === 12) hour = 0;
+    return String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0');
+}
+
+function getWizardDefaultWorkoutTime() {
+    const freeform = wizardChatFreeformAnswers && wizardChatFreeformAnswers.routine_window;
+    const exactTime = parseWizardClockTime(freeform);
+    if (exactTime) return exactTime;
+    const routine = wizardChatAnswers && wizardChatAnswers.routine_window;
+    return {
+        early_morning: '07:00',
+        later_morning: '09:30',
+        lunch_time: '12:30',
+        afternoon: '15:30',
+        after_work: '18:00',
+        evening: '19:30'
+    }[routine] || '';
+}
+
+function syncWizardWorkoutTimes() {
+    wizardChatFreeformAnswers.workout_times = Object.assign({}, wizardWorkoutTimes);
+    setWizardFieldValue('wizard-chat-freeform', JSON.stringify(wizardChatFreeformAnswers || {}));
+    try { localStorage.setItem('workoutCalendarTimes', JSON.stringify(wizardWorkoutTimes)); } catch (e) {}
 }
 
 function renderWizardCalendarPreview() {
@@ -11763,7 +12024,7 @@ function renderWizardCalendarPreview() {
     instruction.textContent = 'Tap any day to change the workout';
     frag.appendChild(instruction);
 
-    const starterMinutes = Math.max(10, Math.min(30, Number(document.getElementById('wizard-starter-session-minutes')?.value) || 15));
+    const starterMinutes = Math.max(10, Math.min(60, Number(document.getElementById('wizard-starter-session-minutes')?.value) || 15));
     const starterMinimum = document.createElement('div');
     starterMinimum.style.cssText = 'margin:0 0 12px; padding:10px 12px; border-radius:10px; background:rgba(212,175,55,0.12); border:1px solid rgba(212,175,55,0.3); color:rgba(255,255,255,0.88); font-size:12px; line-height:1.45;';
     starterMinimum.innerHTML = `<strong style="color:#f4d67a;">Your ${starterMinutes}-minute minimum:</strong> on a busy day, do the first ${starterMinutes} minutes. The full session is there when you have more.`;
@@ -11807,6 +12068,30 @@ function renderWizardCalendarPreview() {
             descEl.className = 'wizard-calendar-workout-desc';
             descEl.textContent = info.desc;
             workoutText.appendChild(descEl);
+        }
+
+        if (workout !== 'rest') {
+            const timeWrap = document.createElement('label');
+            timeWrap.className = 'wizard-calendar-time-wrap';
+            timeWrap.style.cssText = 'display:inline-flex; align-items:center; gap:6px; margin-top:6px; color:#75684f; font-size:11px; font-weight:800;';
+            timeWrap.textContent = 'Time';
+
+            const timeInput = document.createElement('input');
+            timeInput.type = 'time';
+            timeInput.className = 'wizard-calendar-time';
+            timeInput.value = wizardWorkoutTimes[day] || getWizardDefaultWorkoutTime();
+            timeInput.setAttribute('aria-label', dayLabels[idx] + ' workout time');
+            timeInput.style.cssText = 'width:104px; min-height:32px; padding:4px 7px; border:1px solid rgba(154,105,25,.32); border-radius:7px; background:rgba(255,255,255,.82); color:#1a202c; font:800 12px/1 Montserrat,sans-serif;';
+            timeInput.onclick = event => event.stopPropagation();
+            timeInput.onpointerdown = event => event.stopPropagation();
+            timeInput.onchange = event => {
+                event.stopPropagation();
+                wizardWorkoutTimes[day] = timeInput.value;
+                syncWizardWorkoutTimes();
+            };
+
+            timeWrap.appendChild(timeInput);
+            workoutText.appendChild(timeWrap);
         }
 
         const editIcon = document.createElement('span');
@@ -12290,6 +12575,20 @@ function playHeaderCoinGrantAnimation(startBalance, endBalance, grantedAmount) {
 // ========== END WELCOME BONUS ==========
 
 async function finishOnboarding() {
+    if (window.__pbbTransferredSetupPending) {
+        window.__pbbTransferredSetupPending = false;
+        if (window.__pbbTransferredSetupVisibilityTimer) {
+            clearInterval(window.__pbbTransferredSetupVisibilityTimer);
+            window.__pbbTransferredSetupVisibilityTimer = null;
+        }
+        try {
+            if (window.currentUser && window.dbHelpers && window.dbHelpers.users) {
+                await window.dbHelpers.users.update(window.currentUser.id, { is_transferred_client: false });
+            }
+        } catch (error) {
+            console.warn('Could not clear transferred-client setup flag:', error);
+        }
+    }
     localStorage.setItem('onboardingComplete', 'true');
     localStorage.setItem('plantbased_onboarding_complete', 'true'); // Also set alternate key for consistency
     if (window.metaAdTrialMode && window.BalanceMetaAdTrial) {
@@ -12303,21 +12602,11 @@ async function finishOnboarding() {
         wizardEl.classList.remove('active');
     }
     setOnboardingScrollLock(false);
-
-    // Start the feature tour 5s after the wizard closes.
-    // Registered here (before any awaits) so the timer is anchored to when the
-    // user taps "Let's Go!" — not to whenever slow network calls finish.
-    // Uses force=true because localStorage persists across accounts on the same
-    // device — a previous account may have already set featureTourComplete='1'.
+    // Hand off immediately through the retrying client-tour starter. The guided
+    // tour script and its dashboard targets may finish mounting just after the
+    // wizard closes, so a single delayed attempt is not reliable.
     if (!window.metaAdTrialMode) {
-        setTimeout(() => {
-            try {
-                if (typeof startFeatureTour === 'function') {
-                    try { localStorage.removeItem('featureTourComplete'); } catch(e){}
-                    startFeatureTour();
-                }
-            } catch (e) { console.warn('startFeatureTour failed:', e); }
-        }, 5000);
+        setTimeout(() => startWizardClientActivationTour(), 350);
     }
 
     // --- Release all story/wizard WebGL contexts before restoring tamagotchi ---
@@ -12609,15 +12898,17 @@ async function finishOnboarding() {
     // Show native permissions request modal after onboarding completes.
     // Delay ~3s so the header coin-widget count-up (~2s) finishes before
     // the permissions overlay covers the screen.
-    if (!window.metaAdTrialMode) setTimeout(showNativePermissionsModal, 3000);
+    if (!window.metaAdTrialMode) setTimeout(() => waitForWizardClientTourToFinish(showNativePermissionsModal), 3000);
 
     // Web (non-native): request notification permission after onboarding finishes
     if (!window.metaAdTrialMode && !(typeof isNativeApp === 'function' && isNativeApp())) {
         setTimeout(() => {
-            if (typeof requestNotificationPermission === 'function') {
-                requestNotificationPermission();
-            }
-        }, 3500);
+            waitForWizardClientTourToFinish(() => {
+                if (typeof requestNotificationPermission === 'function') {
+                    requestNotificationPermission();
+                }
+            });
+        }, 3000);
     }
 
 }

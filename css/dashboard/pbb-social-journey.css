@@ -75,9 +75,9 @@
   flex-direction: column;
   overflow: hidden;
   padding-bottom: env(safe-area-inset-bottom, 0px);
-  background: var(--sj-deep);
-  color: var(--sj-cream);
-  -webkit-text-fill-color: var(--sj-cream);
+  background: #fbf7ed;
+  color: var(--sj-ink);
+  -webkit-text-fill-color: var(--sj-ink);
 }
 #social-journey-view.is-open { display: flex; }
 .social-journey-header {
@@ -87,13 +87,13 @@
   z-index: 3;
   padding: calc(15px + env(safe-area-inset-top, 0px)) 20px 14px;
   text-align: center;
-  background: rgba(11, 11, 11, .95);
-  border-bottom: 1px solid var(--sj-border);
+  background: rgba(251, 247, 237, .96);
+  border-bottom: 1px solid rgba(183, 138, 46, .24);
   backdrop-filter: blur(14px);
 }
-.social-journey-header__title { margin: 0; color: var(--sj-cream); -webkit-text-fill-color: var(--sj-cream); font: 800 1.14rem/1.2 Georgia, serif; }
+.social-journey-header__title { margin: 0; color: var(--sj-ink); -webkit-text-fill-color: var(--sj-ink); font: 800 1.14rem/1.2 Georgia, serif; }
 .social-journey-header__week { margin-top: 3px; color: var(--sj-gold); -webkit-text-fill-color: var(--sj-gold); font-size: .65rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
-.social-journey-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 17px 18px calc(32px + env(safe-area-inset-bottom, 0px)); }
+.social-journey-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 17px 18px calc(32px + env(safe-area-inset-bottom, 0px)); background: linear-gradient(155deg, #fffdf8 0%, #f5ead2 100%); }
 
 .social-journey-hero,
 .social-journey-lesson {
@@ -210,3 +210,52 @@ html[data-pbb-theme="light"] .social-journey-pilot-controls { background: rgba(2
   .social-journey-task { grid-template-columns: 38px minmax(0, 1fr) auto; padding: 11px; gap: 9px; }
   .social-journey-task__icon { width: 38px; height: 38px; }
 }
+
+/* First-client journey: continue the cream-and-gold onboarding language. */
+#social-journey-view.is-activation {
+  --sj-cream: #fbfaf7;
+  --sj-paper: #fffdf8;
+  --sj-muted: #596273;
+  background: radial-gradient(circle at 90% 12%, rgba(184,137,43,.14), transparent 28%), linear-gradient(154deg, #fbfaf7 0 58%, #f1e9da 58% 78%, #f8f5ee 78% 100%);
+  color: #1a202c;
+  -webkit-text-fill-color: #1a202c;
+}
+#social-journey-view.is-activation .social-journey-header { background: rgba(251,250,247,.94); border-bottom-color: rgba(154,105,25,.16); }
+#social-journey-view.is-activation .social-journey-header__title { color:#1a202c; -webkit-text-fill-color:#1a202c; }
+#social-journey-view.is-activation .social-journey-header__week { color:#8b5e17; -webkit-text-fill-color:#8b5e17; }
+#social-journey-view.is-activation .social-journey-lesson,
+#social-journey-view.is-activation .social-journey-hero,
+#social-journey-view.is-activation .social-journey-welcome {
+  border-color: rgba(154,105,25,.22);
+  background: radial-gradient(circle at 94% 10%, rgba(216,178,94,.17), transparent 34%), rgba(255,253,248,.94);
+  color:#1a202c;
+  -webkit-text-fill-color:#1a202c;
+  box-shadow: 0 18px 42px rgba(67,50,21,.1);
+}
+#social-journey-view.is-activation .social-journey-lesson h2,
+#social-journey-view.is-activation .social-journey-hero h2,
+#social-journey-view.is-activation .social-journey-welcome h2 { color:#1a202c; -webkit-text-fill-color:#1a202c; }
+#social-journey-view.is-activation .social-journey-lesson p,
+#social-journey-view.is-activation .social-journey-hero p,
+#social-journey-view.is-activation .social-journey-welcome p { color:#596273; -webkit-text-fill-color:#596273; }
+#social-journey-view.is-activation .social-journey-lesson__eyebrow,
+#social-journey-view.is-activation .social-journey-welcome__eyebrow { color:#8b5e17; -webkit-text-fill-color:#8b5e17; }
+#social-journey-view.is-activation .social-journey-lesson__number { border-color:rgba(154,105,25,.3); background:rgba(216,178,94,.14); }
+#social-journey-view.is-activation .social-journey-lesson__number strong { color:#1a202c; -webkit-text-fill-color:#1a202c; }
+#social-journey-view.is-activation .social-journey-learn-card,
+#social-journey-view.is-activation .social-journey-task { border-color:rgba(154,105,25,.2); background:rgba(255,253,248,.88); color:#1a202c; -webkit-text-fill-color:#1a202c; box-shadow:0 9px 24px rgba(67,50,21,.07); }
+#social-journey-view.is-activation .social-journey-learn-points p,
+#social-journey-view.is-activation .social-journey-task__title { color:#1a202c; -webkit-text-fill-color:#1a202c; }
+#social-journey-view.is-activation .social-journey-section__heading,
+#social-journey-view.is-activation .social-journey-task__hint { color:#596273; -webkit-text-fill-color:#596273; }
+#social-journey-view.is-activation .social-journey-task__action { background:#f1e9da; border-color:rgba(154,105,25,.24); color:#765410; -webkit-text-fill-color:#765410; }
+
+.social-journey-welcome { position:relative; overflow:hidden; border:1px solid var(--sj-border); border-radius:25px; padding:27px 22px 23px; background:linear-gradient(145deg,#24211b,#101010); box-shadow:0 17px 38px rgba(0,0,0,.24); }
+.social-journey-welcome__eyebrow { color:var(--sj-gold-light); -webkit-text-fill-color:var(--sj-gold-light); font-size:.63rem; font-weight:950; letter-spacing:.12em; }
+.social-journey-welcome h2 { margin:10px 0 9px; color:var(--sj-cream); -webkit-text-fill-color:var(--sj-cream); font:800 1.72rem/1.08 Georgia,serif; }
+.social-journey-welcome > p { margin:0; color:var(--sj-muted); -webkit-text-fill-color:var(--sj-muted); font-size:.84rem; line-height:1.55; }
+.social-journey-welcome__audio { width:100%; margin-top:20px; accent-color:#b8892b; }
+.social-journey-welcome__audio.is-unavailable { display:none; }
+.social-journey-welcome__transcript { margin-top:18px; padding:16px; border:1px solid rgba(154,105,25,.24); border-radius:16px; background:rgba(216,178,94,.1); }
+.social-journey-welcome__transcript strong { color:#8b5e17; -webkit-text-fill-color:#8b5e17; font-size:.72rem; letter-spacing:.08em; text-transform:uppercase; }
+.social-journey-welcome__transcript p { margin:7px 0 0; color:inherit; -webkit-text-fill-color:inherit; font-size:.78rem; line-height:1.5; }

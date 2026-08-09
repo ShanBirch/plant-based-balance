@@ -1110,6 +1110,23 @@
 
             try {
                 const { user } = await authHelpers.signIn(email, password);
+
+                // Onboarding state belongs to an account, not to the browser.
+                // Clear stale local flags when a different user signs in; the
+                // dashboard then restores the correct state from that user's profile.
+                if (user && user.id) {
+                    const onboardingOwnerId = localStorage.getItem('pbb_onboarding_owner_user_id');
+                    if (onboardingOwnerId !== String(user.id)) {
+                        [
+                            'onboardingComplete',
+                            'plantbased_onboarding_complete',
+                            'onboardingCompletedAt',
+                            'featureTourComplete',
+                            'pbbSocialJourneyStarted'
+                        ].forEach(function (key) { localStorage.removeItem(key); });
+                    }
+                    localStorage.setItem('pbb_onboarding_owner_user_id', String(user.id));
+                }
                 const signedInSession = await authHelpers.getSession();
                 await claimPendingFoundersPass(signedInSession);
                 await claimPendingMetaTrialPurchase(signedInSession);
