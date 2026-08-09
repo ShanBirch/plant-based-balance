@@ -4979,6 +4979,7 @@ async function ensureExactMealPlanPhotos(plan, userId, options = {}) {
                 if (update.error) throw update.error;
                 group.forEach(meal => { meal.image_url = imageUrl; });
                 generated += 1;
+                if (_aiMealPlanCache === plan) renderAiPlanDay(_aiMealPlanCurrentDay);
             } catch (error) {
                 failed += 1;
                 console.warn(`[meal-plan] exact photo failed for ${representative?.name || 'meal'}:`, error);
