@@ -5,8 +5,10 @@ const path = require('node:path');
 
 const onboardingPath = path.join(__dirname, '../js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js');
 const contextPath = path.join(__dirname, '../netlify/functions/_lib/client-context.js');
+const dashboardPath = path.join(__dirname, '../dashboard.html');
 const onboardingSource = fs.readFileSync(onboardingPath, 'utf8');
 const contextSource = fs.readFileSync(contextPath, 'utf8');
+const dashboardSource = fs.readFileSync(dashboardPath, 'utf8');
 const { _buildWelcomeDraft } = require('../netlify/functions/onboarding-welcome-draft');
 const { _isClearOnboardingSetupConfirmation } = require('../netlify/functions/instant-coach-draft');
 
@@ -22,6 +24,11 @@ test('completed onboarding prepares the first active meal plan before coach assi
 test('food preferences finish saving before onboarding advances', () => {
     assert.match(onboardingSource, /async function saveWizardFoodPreferences\(\)/);
     assert.match(onboardingSource, /const prefs = await saveWizardFoodPreferences\(\);/);
+});
+
+test('every new client reaches the Inbox welcome even when they skip the App Tour', () => {
+    assert.match(dashboardSource, /else if \(completedClientActivationTour\) \{[\s\S]+window\.socialJourney\.startActivation\(\)/);
+    assert.doesNotMatch(dashboardSource, /completedClientActivationTour && !skipped/);
 });
 
 test('the curated starter plan is held when preferences need an individual safety review', () => {

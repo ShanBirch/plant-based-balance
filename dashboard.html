@@ -13922,7 +13922,7 @@ if(!window._pbbIsIOSSafari) {
     }
     if (completedMetaPreviewTour && window.BalanceMetaAdTrial && typeof window.BalanceMetaAdTrial.onWalkthroughComplete === 'function') {
       window.BalanceMetaAdTrial.onWalkthroughComplete({ skipped: !!skipped });
-    } else if (completedClientActivationTour && !skipped) {
+    } else if (completedClientActivationTour) {
       (function openClientActivationJourney(attempt) {
         if (window.socialJourney && typeof window.socialJourney.startActivation === 'function') {
           window.socialJourney.startActivation();
