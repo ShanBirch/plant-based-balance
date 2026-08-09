@@ -65,3 +65,11 @@ test('calendar preview explains how to use the easy-session minimum', () => {
     assert.match(onboardingSource, /Your \$\{starterMinutes\}-minute minimum:/);
     assert.match(onboardingSource, /The full session is there when you have more\./);
 });
+
+test('dark onboarding keeps entered details and generated calendar text readable before deferred CSS loads', () => {
+    assert.match(comebackCss, /#onboarding-wizard \.wizard-input,[\s\S]*?-webkit-text-fill-color: #17130e !important;/);
+    assert.match(comebackCss, /#onboarding-wizard \.wizard-input::placeholder,[\s\S]*?-webkit-text-fill-color: #716858 !important;/);
+    assert.match(comebackCss, /#onboarding-wizard #wizard-calendar-preview \.wizard-calendar-workout-name[\s\S]*?-webkit-text-fill-color: var\(--wizard-cream\) !important;/);
+    assert.match(comebackCss, /#onboarding-wizard #wizard-calendar-preview \.wizard-calendar-workout-desc[\s\S]*?-webkit-text-fill-color: rgba\(247,240,223,\.7\) !important;/);
+    assert.match(dashboardSource, /pbb-onboarding-comeback\.css\?v=3/);
+});

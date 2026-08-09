@@ -373,6 +373,33 @@ html[data-pbb-theme="light"] #onboarding-wizard select {
     background: rgba(255,250,240,.97) !important;
     color: #17130e !important;
     -webkit-text-fill-color: #17130e !important;
+    caret-color: #17130e;
+    color-scheme: light;
+}
+
+#onboarding-wizard .wizard-input::placeholder,
+#onboarding-wizard .wizard-chat-input-row input::placeholder,
+#onboarding-wizard textarea.wizard-input::placeholder {
+    color: #716858 !important;
+    -webkit-text-fill-color: #716858 !important;
+    opacity: 1;
+}
+
+#onboarding-wizard .wizard-input:focus-visible,
+#onboarding-wizard .wizard-chat-input-row input:focus-visible,
+#onboarding-wizard select:focus-visible {
+    border-color: var(--wizard-gold-light) !important;
+    outline: 2px solid rgba(245,217,138,.32);
+    outline-offset: 2px;
+}
+
+#onboarding-wizard input.wizard-input:-webkit-autofill,
+#onboarding-wizard input.wizard-input:-webkit-autofill:hover,
+#onboarding-wizard input.wizard-input:-webkit-autofill:focus,
+#onboarding-wizard .wizard-chat-input-row input:-webkit-autofill {
+    -webkit-text-fill-color: #17130e !important;
+    caret-color: #17130e;
+    -webkit-box-shadow: 0 0 0 1000px #fffaf0 inset !important;
 }
 
 #onboarding-wizard label[style*="background:white"],
@@ -403,6 +430,24 @@ html[data-pbb-theme="light"] #onboarding-wizard select {
     color: var(--wizard-cream) !important;
     -webkit-text-fill-color: var(--wizard-cream) !important;
     box-shadow: 0 15px 34px rgba(0,0,0,.18) !important;
+}
+
+/* These are rendered after startup. Keep their text readable even while
+   dashboard-style-2.css is deferred on iOS. */
+#onboarding-wizard #wizard-calendar-preview .wizard-calendar-day,
+#onboarding-wizard #wizard-calendar-preview .wizard-calendar-edit-icon {
+    color: var(--wizard-gold-light) !important;
+    -webkit-text-fill-color: var(--wizard-gold-light) !important;
+}
+
+#onboarding-wizard #wizard-calendar-preview .wizard-calendar-workout-name {
+    color: var(--wizard-cream) !important;
+    -webkit-text-fill-color: var(--wizard-cream) !important;
+}
+
+#onboarding-wizard #wizard-calendar-preview .wizard-calendar-workout-desc {
+    color: rgba(247,240,223,.7) !important;
+    -webkit-text-fill-color: rgba(247,240,223,.7) !important;
 }
 
 #onboarding-wizard .wizard-footer {
