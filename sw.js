@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v279'; // v279: remove redundant Home Friends shortcut
+const CACHE_NAME = 'pbb-app-v280'; // v280: Shannon-only Gym Arrival pilot
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -19,6 +19,7 @@ const ASSETS = [
   './js/dashboard/dashboard-script-3-1_get_user_data.js?v=57',
   './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=169',
   './js/dashboard/pbb-deferred-weeklygoals.js?v=27',
+  './js/dashboard/pbb-gym-arrival.js?v=1',
   './css/dashboard/pbb-onboarding-comeback.css?v=2',
   './js/dashboard/dashboard-script-7-video_logic.js?v=20260603-video-stream',
   './js/dashboard/dashboard-script-10-points_widget_functions.js?v=43',

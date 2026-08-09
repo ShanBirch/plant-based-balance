@@ -1304,6 +1304,24 @@ window.addEventListener('load', function() {
     <!-- Next Obvious Steps Card (private preview) -->
     <div id="next-obvious-steps-card" style="display: none; margin: 0 25px 14px;"></div>
 
+    <!-- Gym Arrival is a Shannon-only pilot. Coordinates remain in localStorage on his phone. -->
+    <section id="gym-arrival-card" aria-live="polite" style="display:none; margin:0 25px 14px; padding:18px 18px 16px; border-radius:20px; background:radial-gradient(circle at 94% 8%, rgba(216,178,94,.24), transparent 38%), linear-gradient(145deg,#181611,#2c2417); color:#fffaf0; -webkit-text-fill-color:#fffaf0; border:1px solid rgba(216,178,94,.42); box-shadow:0 10px 28px rgba(26,20,12,.24);">
+        <div style="display:flex; align-items:flex-start; gap:13px;">
+            <div aria-hidden="true" style="width:46px; height:46px; border-radius:15px; background:rgba(216,178,94,.16); border:1px solid rgba(216,178,94,.34); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:1.35rem;">&#x1F4CD;</div>
+            <div style="flex:1; min-width:0;">
+                <div id="gym-arrival-eyebrow" style="font-size:.65rem; font-weight:850; color:#e4c77b; -webkit-text-fill-color:#e4c77b; letter-spacing:.12em; text-transform:uppercase; margin-bottom:4px;">Private pilot</div>
+                <h3 id="gym-arrival-title" style="margin:0; color:#fffaf0; -webkit-text-fill-color:#fffaf0; font-family:Georgia,serif; font-size:1.22rem; line-height:1.2;">Set up Gym Arrival</h3>
+                <p id="gym-arrival-body" style="margin:7px 0 0; color:rgba(255,250,240,.78); -webkit-text-fill-color:rgba(255,250,240,.78); font-size:.82rem; line-height:1.45;">Do this once while you are at your gym.</p>
+            </div>
+        </div>
+        <div style="display:flex; gap:9px; margin-top:14px;">
+            <button id="gym-arrival-primary" type="button" onclick="configureGymArrivalHere()" style="flex:1; min-height:44px; border:0; border-radius:12px; padding:11px 14px; background:#d8b25e; color:#1a1711; -webkit-text-fill-color:#1a1711; font:800 .86rem/1.2 Inter,sans-serif; cursor:pointer;">Use this location</button>
+            <button id="gym-arrival-secondary" type="button" onclick="dismissGymArrivalCard()" style="display:none; min-height:44px; border:1px solid rgba(255,255,255,.18); border-radius:12px; padding:11px 14px; background:rgba(255,255,255,.07); color:#fffaf0; -webkit-text-fill-color:#fffaf0; font:750 .82rem/1.2 Inter,sans-serif; cursor:pointer;">Not today</button>
+        </div>
+    </section>
+
+    <script src="js/dashboard/pbb-gym-arrival.js?v=1"></script>
+
     <!-- Weekly meal evolution card -->
     <section id="weekly-meal-evolution-home-card" class="weekly-meal-evolution-home-card" style="display: none;" aria-live="polite"></section>
 
@@ -12419,6 +12437,13 @@ if(!window._pbbIsIOSSafari) {
                          </button>
                      </div>
                  </div>
+                 <div id="settings-gym-arrival" style="display:none; padding:15px; border-bottom:1px solid #f1f5f9; justify-content:space-between; align-items:center; gap:14px;">
+                     <div>
+                         <div style="color:var(--text-main); font-weight:600;">Gym Arrival</div>
+                         <div id="gym-arrival-settings-status" style="font-size:0.75rem; color:var(--text-muted); line-height:1.35;">Set this once while you are at the gym</div>
+                     </div>
+                     <button id="gym-arrival-settings-btn" type="button" onclick="configureGymArrivalHere()" style="padding:8px 16px; border-radius:8px; border:none; background:var(--primary); color:white; -webkit-text-fill-color:white; font-weight:600; cursor:pointer; min-width:90px; text-align:center;">Set here</button>
+                 </div>
                  <div id="settings-clear-app-cache" style="padding:15px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center; gap:14px;">
                      <div>
                          <div>Clear App Cache</div>
@@ -13484,6 +13509,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'meals', sel:'#weekly-meal-evolution-btn', fallbackSel:'#browse-plans-pill', title:'A plan that learns your meals', fallbackTitle:'Open your meal plan', body:"At the end of each week, Balance keeps the meals you actually eat, adds two small variations, and suggests simple ways to cover nutrition gaps.", fallbackBody:"Open your meal plan to build next week from the meals you actually ate.", action:function(){ try { var pill=document.getElementById('browse-plans-pill'); if(typeof switchWeek==='function') switchWeek('meal-plan-store', pill); } catch(e){} } },
     { tab:'dashboard', sel:'.profile-icon[onclick*="profile"]', title:'Profile settings', body:"Open Profile when you need settings, dietary requirements, password changes, character customisation, or to replay this tour later." },
     { tab:'profile', sel:'#settings-app-suggestions', title:'App Suggestions', body:"Got an idea for Balance? Tap this row in Settings and send it straight to Shannon's Needs You list." },
+    { tab:'profile', sel:'#settings-gym-arrival', title:'Gym Arrival', body:'Set your gym once while you are there. Balance will recognise the location on this phone and put your workout on Home when you arrive.', quick:true, condition:function(){ return !!(window.isGymArrivalPilotUser && window.isGymArrivalPilotUser()); } },
     { tab:'profile', sel:'#settings-fitgotchi-visibility', title:'Choose your Home style', body:'FitGotchi starts hidden for new members. Turn this on any time if you want your character back on Home.', condition: function(){ return typeof window.isFitGotchiHidden === 'function' && window.isFitGotchiHidden(); } },
     { tab:'profile', sel:'#settings-payment-method', title:'Payment Method', body:"Update your saved card from Profile > Settings > Payment Method." },
 
@@ -14254,6 +14280,14 @@ if(!window._pbbIsIOSSafari) {
       fallbackTitle: 'Levels keep going',
       body: 'Level 99 is no longer the finish line. Keep earning XP to climb higher and unlock a new character every 5 levels.',
       fallbackBody: 'Level 99 is no longer the finish line. Keep earning XP to climb higher and unlock a new character every 5 levels.'
+    },
+    {
+      id: 'gym-arrival-shannon-pilot-v1',
+      tab: 'profile',
+      sel: '#settings-gym-arrival',
+      title: 'Gym Arrival',
+      body: 'Set your gym once while you are there. Balance keeps the location on this phone and puts your workout on Home when you arrive.',
+      condition: function(){ return !!(window.isGymArrivalPilotUser && window.isGymArrivalPilotUser()); }
     },
     {
       id: 'move-your-way-shannon-pilot-v1',

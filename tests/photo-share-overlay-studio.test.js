@@ -42,7 +42,7 @@ for (const id of [
 assert.ok(dashboard.includes("id: 'swipeable-photo-share-overlays-v1'"), 'returning users must see the new Feature Drop');
 assert.ok(dashboard.includes("title:'Swipe your share style'"), 'new users must see the guided share-style tour step');
 assert.ok(dashboard.includes('dashboard-script-10-points_widget_functions.js?v=43'), 'phones must load the new share composer');
-assert.ok(serviceWorker.includes("const CACHE_NAME = 'pbb-app-v279'"), 'the app shell cache must be refreshed');
+assert.ok(serviceWorker.includes("const CACHE_NAME = 'pbb-app-v280'"), 'the app shell cache must be refreshed');
 assert.ok(serviceWorker.includes('dashboard-script-10-points_widget_functions.js?v=43'), 'the new share composer must be precached');
 
 console.log('Swipeable photo share overlay studio contract passed');

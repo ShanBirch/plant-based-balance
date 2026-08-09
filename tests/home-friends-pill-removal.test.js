@@ -28,8 +28,8 @@ assert.doesNotMatch(
 );
 
 assert.match(dashboard, /onclick="openFeedMessagesPanel\(\)"/, 'Friends and messages should remain accessible from Feed');
-assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=169/, 'phones should fetch the updated Home tab controller');
+assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=171/, 'phones should fetch the updated Home tab controller');
 assert.match(dashboard, /pbb-weekly-checkin-preview\.js\?v=22/, 'phones should fetch the updated weekly-review placement');
-assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v279'/, 'the app shell cache should advance');
+assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v280'/, 'the app shell cache should advance');
 
 console.log('Home Friends pill removal tests passed');
