@@ -1181,7 +1181,7 @@
     const total = progress.total_count || state.selected.length;
     const arcLine = state.arc && state.arc.headline ? state.arc.headline : 'Your longer arc will build here.';
     const reward = calculateWeeklyGoalReward(completed, total);
-    const rewardText = futureWeek ? 'Starts next week' : 'Up to ' + reward.max + ' XP in Wrapped';
+    const rewardText = futureWeek ? 'Starts next week' : 'Up to ' + reward.max + ' XP when week ends';
     const hitLabel = futureWeek ? 'waiting for new stats' : 'of ' + total + ' hit';
     const selectedChips = state.selected.map(goal => {
       const meta = getCategoryMeta(goal.category);
@@ -1207,7 +1207,7 @@
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:6px;margin:0 0 5px;position:relative;">${selectedChips}</div>
         <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:10px 0 2px;padding:8px 10px;border-radius:999px;background:rgba(253,230,138,0.13);border:1px solid rgba(253,230,138,0.24);color:#fef3c7;font-size:0.73rem;font-weight:900;position:relative;">
-          <span>Wrapped reward</span>
+          <span>Weekly goal reward</span>
           <span>${escapeHtml(rewardText)}</span>
         </div>
         ${renderProgressRows(progress.goals)}

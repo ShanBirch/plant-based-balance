@@ -610,7 +610,7 @@
             // bar to 100%, fade out, and fire the critical-content-ready signals.
             (function dismissLoginOverlay() {
                 // Capture "was returning user" BEFORE we set dashboardInitialized below
-                // so we can still gate feature reveals / Weekly Wrapped to returning users.
+                // so we can still gate feature reveals / Month Wrapped to returning users.
                 const wasReturningUser = localStorage.getItem('dashboardInitialized') === 'true';
                 const overlay = document.getElementById('login-loading-overlay');
 
@@ -636,7 +636,7 @@
                 if (wasReturningUser) {
                     // Show feature reveal for new features (returning users only, after UI settles)
                     setTimeout(function(){ try { if (typeof checkFeatureReveals === 'function') checkFeatureReveals(); } catch(e){} }, 3000);
-                    // Weekly Wrapped - show home card Sun morning -> Mon midday if unseen this ISO week
+                    // Month Wrapped - show home card on days 1-3 if the completed month is unseen
                     setTimeout(function(){ try { if (typeof checkWeeklyWrappedAutoOpen === 'function') checkWeeklyWrappedAutoOpen(); } catch(e){} }, 4500);
                 }
             })();

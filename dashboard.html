@@ -519,7 +519,7 @@ if (window._pbbIsIOSSafari) {
             'data/vegan-challenge-meal-plan.js',
             'lib/meal-plan-photo-resolver.js?v=1',
             'lib/meal-plan-populator.js?v=2',
-            'lib/weekly-wrapped.js?v=weekly-goals-xp-v1'
+            'lib/weekly-wrapped.js?v=monthly-wrapped-v1'
         ];
         deferredLibs.forEach(function(src, i) {
             setTimeout(function() {
@@ -541,7 +541,7 @@ if (window._pbbIsIOSSafari) {
     document.write('<script src="data/vegan-challenge-meal-plan.js"><\/script>');
     document.write('<script src="lib/meal-plan-photo-resolver.js?v=1"><\/script>');
     document.write('<script src="lib/meal-plan-populator.js?v=2"><\/script>');
-    document.write('<script src="lib/weekly-wrapped.js?v=weekly-goals-xp-v1"><\/script>');
+    document.write('<script src="lib/weekly-wrapped.js?v=monthly-wrapped-v1"><\/script>');
 }
 </script>
 <script>
@@ -1328,18 +1328,18 @@ window.addEventListener('load', function() {
         <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: #94a3b8;"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
     </div>
 
-    <!-- Weekly Wrapped Card (Home) - replaces the auto-popup. Visible Sun 09:00 -> Mon 12:00
-         Brisbane time while the current ISO week's wrapped is unseen. Tapping plays the slideshow;
-         dismissing or finishing marks this week seen so it won't reappear until next week. -->
-    <div id="weekly-wrapped-card" style="display: none; margin: 0 25px 14px; cursor: pointer; border-radius: 20px; overflow: hidden; box-shadow: 0 6px 20px rgba(76,29,149,0.35); background: linear-gradient(135deg, #1a1033 0%, #2d1b69 55%, #4c1d95 100%); position: relative;" onclick="openWeeklyWrappedFromCard()">
+    <!-- Month Wrapped Card (Home). Visible from 09:00 on day 1 through 12:00 on day 3
+         Brisbane time while the completed month's recap is unseen. Tapping plays the slideshow;
+         dismissing or finishing marks that month seen. -->
+    <div id="monthly-wrapped-card" style="display: none; margin: 0 25px 14px; cursor: pointer; border-radius: 20px; overflow: hidden; box-shadow: 0 6px 20px rgba(76,29,149,0.35); background: linear-gradient(135deg, #1a1033 0%, #2d1b69 55%, #4c1d95 100%); position: relative;" onclick="openWeeklyWrappedFromCard()">
         <button type="button" aria-label="Dismiss" onclick="event.stopPropagation(); dismissWeeklyWrappedCard()" style="position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; background: rgba(255,255,255,0.18); border: none; border-radius: 50%; color: rgba(255,255,255,0.9); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.05rem; line-height: 1; padding: 0; z-index: 2;">×</button>
         <div style="position: absolute; inset: 0; background-image: repeating-linear-gradient(135deg, rgba(255,255,255,0.05) 0 2px, transparent 2px 14px); pointer-events: none;"></div>
         <div style="padding: 18px 20px; display: flex; align-items: center; gap: 14px; position: relative; z-index: 1;">
             <div style="width: 56px; height: 56px; background: linear-gradient(135deg, #fbbf24, #f59e0b); border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.6rem; box-shadow: 0 2px 10px rgba(245,158,11,0.45); transform: rotate(-4deg);">🎞️</div>
             <div style="flex: 1; min-width: 0;">
-                <div style="font-size: 0.62rem; color: rgba(255,255,255,0.65); font-weight: 700; letter-spacing: 1.6px; text-transform: uppercase; margin-bottom: 3px;">Your Week</div>
+                <div style="font-size: 0.62rem; color: rgba(255,255,255,0.65); font-weight: 700; letter-spacing: 1.6px; text-transform: uppercase; margin-bottom: 3px;">Your Month</div>
                 <div style="font-weight: 800; font-size: 1.3rem; color: white; margin-bottom: 3px; letter-spacing: -0.5px;">WRAPPED</div>
-                <div style="font-size: 0.78rem; color: rgba(255,255,255,0.85);">Seven days. One slideshow. Tap to play.</div>
+                <div style="font-size: 0.78rem; color: rgba(255,255,255,0.85);">A full month of progress. Tap to play.</div>
             </div>
             <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: rgba(255,255,255,0.7); flex-shrink: 0;"><path d="M8 5v14l11-7z"/></svg>
         </div>
@@ -12377,7 +12377,7 @@ if(!window._pbbIsIOSSafari) {
                     <span>TEST</span> Reset Walkthrough Test
                 </button>
                 <button id="btn-replay-weekly-wrapped" onclick="replayWeeklyWrapped()" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
-                    <span>🎞️</span> Replay Weekly Wrapped
+                    <span>🎞️</span> Replay Month Wrapped
                 </button>
                 <button onclick="openRareRewardsModal()" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
                     <span>🏆</span> View Rare Collection
@@ -13457,6 +13457,7 @@ if(!window._pbbIsIOSSafari) {
       } },
     { tab:'dashboard', sel:'#home-cohort-challenge-invite-top', title:'6-Week Challenge', body:"The 6-week challenge sits under your character on Home. Tap it to open the leaderboard or check how to earn XP.", quick: true, condition: function(){ var c = document.getElementById('home-cohort-challenge-invite-top'); return c && c.innerHTML.trim() !== ''; } },
     { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Meet your FitGotchi', body:"This is your FitGotchi. Feed and train it alongside you as it levels up with you.", quick: true, condition: function(){ return !(typeof window.isFitGotchiHidden === 'function' && window.isFitGotchiHidden()); } },
+    { tab:'dashboard', sel:'#monthly-wrapped-card', title:'Your Month, Wrapped', body:"At the start of each month, tap this card for your workouts, PBs, mood, streaks, weekly goals, and next-month forecast.", quick: true, condition: function(){ var c = document.getElementById('monthly-wrapped-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#weekly-goals-card', title:'Your goals, set for you', body:"Balance uses your setup answers to choose the first three weekly goals. Open Weekly Goals whenever you want to adjust the targets for real life.", quick: true, condition: function(){ var c = document.getElementById('weekly-goals-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#social-journey-card', title:'Your weekly journey', body:'Tap the card for one short lesson, then choose your three goals for the week. Balance returns you to Home so you can complete each action through the normal app.', quick: true, condition: function(){ var c = document.getElementById('social-journey-card'); return !!(window.socialJourney && window.socialJourney.isPilotUser() && c && c.style.display !== 'none'); } },
     { tab:'dashboard', sel:'#next-obvious-steps-card', title:'Next steps', body:"Balance now gives you three clear actions for the day, aligned to your weekly goals and linked straight to the right part of the app.", quick: true, condition: function(){ try { return window.pbbNextSteps && window.pbbNextSteps.isPreviewEligible && window.pbbNextSteps.isPreviewEligible() && !!document.querySelector('#next-obvious-steps-card .next-step-action'); } catch(e){ return false; } } },
@@ -14319,11 +14320,14 @@ if(!window._pbbIsIOSSafari) {
       body: "Tap Transformation to review your weigh-in history, add a missed weigh-in, or delete a bad entry before it bends the graph."
     },
     {
-      id: 'weekly-wrapped-v1',
+      id: 'monthly-wrapped-v1',
       tab: 'dashboard',
-      sel: '#weekly-wrapped-card,.profile-icon[onclick*="profile"]',
-      title: 'Your Week, Wrapped',
-      body: "Every Sunday morning a Wrapped card lands on your home screen. Tap it for a punchy slideshow of your week (workouts, PBs, mood, streak + a forecast for next week). It stays up until Monday midday. Hit × to dismiss. Replay any time from Profile → Health Tools.",
+      sel: '#monthly-wrapped-card',
+      fallbackSel: '.profile-icon[onclick*="profile"]',
+      title: 'Your Month, Wrapped',
+      fallbackTitle: 'Replay Month Wrapped',
+      body: "On the first morning of each month, a Wrapped card lands on Home. Tap it for workouts, PBs, mood, streaks, weekly goals, and a forecast for the month ahead. It stays until midday on the third. Replay it any time from Profile, then Health Tools.",
+      fallbackBody: "Month Wrapped arrives on Home at the start of each month. Open Profile, then Health Tools to replay your latest month any time.",
       action: async function(){
         // Opening Wrapped from the celebration splash → spotlight would show
         // behind the takeover, so we just leave the splash to do the intro
@@ -14335,7 +14339,7 @@ if(!window._pbbIsIOSSafari) {
       tab: 'dashboard',
       sel: '#weekly-goals-card',
       title: 'Weekly Goals',
-      body: "Pick up to 3 goals for the week. Choose body, training, food, recovery, Health IQ, or community, then watch progress build into your Wrapped.",
+      body: "Pick up to 3 goals for the week. Choose body, training, food, recovery, Health IQ, or community, then watch each week build into your Month Wrapped.",
       condition: function(){ var c = document.getElementById('weekly-goals-card'); return c && c.style.display !== 'none'; }
     },
     {
@@ -15467,22 +15471,11 @@ if(!window._pbbIsIOSSafari) {
 <!-- ========== WEEKLY WRAPPED HOOKS ========== -->
 <script>
 /**
- * Weekly Wrapped — dashboard hooks.
+ * Month Wrapped dashboard hooks.
  *
- * The heavy lifting (data + UI + animations) lives in lib/weekly-wrapped.js.
- * This script provides:
- *   - window.openWeeklyWrapped()             — manual open entry point
- *   - window.replayWeeklyWrapped()           — for profile "replay" button
- *   - window.openWeeklyWrappedFromCard()     — invoked by the home card
- *   - window.dismissWeeklyWrappedCard()      — invoked by the card's × button
- *   - window.checkWeeklyWrappedAutoOpen()    — kept for back-compat; now just
- *     refreshes the home card visibility instead of auto-popping the slideshow.
- *
- * Display rule for the home card: Sunday morning -> Monday midday
- * (Sun 09:00 through Mon 12:00 Brisbane), while this ISO week's wrapped is unseen.
- * Tapping the card opens the slideshow; tapping × dismisses. Either path
- * marks the current ISO week as seen so the card will not reappear until
- * next Sunday morning.
+ * The recap engine keeps its legacy weeklyWrapped API name for compatibility.
+ * The home card is visible from 09:00 on day 1 through 12:00 on day 3 Brisbane
+ * time while the completed calendar month's recap is unseen.
  */
 (function(){
   // Wait for the library to be ready. It loads deferred on iOS Safari, so we
@@ -15505,8 +15498,8 @@ if(!window._pbbIsIOSSafari) {
   window.replayWeeklyWrapped = function(){
     whenReady(function(){
       try {
-        // Clear this week's flag so the card/replay path can fire again
-        var key = 'pbb_wrapped_seen_' + window.weeklyWrapped.getCurrentISOWeek();
+        // Clear this month's flag so the replay path can fire again
+        var key = 'pbb_wrapped_seen_' + (window.weeklyWrapped.getCurrentPeriodKey ? window.weeklyWrapped.getCurrentPeriodKey() : window.weeklyWrapped.getCurrentISOWeek());
         localStorage.removeItem(key);
       } catch(e){}
       window.weeklyWrapped.open();
@@ -15519,22 +15512,20 @@ if(!window._pbbIsIOSSafari) {
       if (window._onboardingWizardPending) return false;
       if (localStorage.getItem('onboardingComplete') !== 'true') return false;
       if (!window.weeklyWrapped || typeof window.weeklyWrapped.getCurrentISOWeek !== 'function') return false;
-      var isoWeek = window.weeklyWrapped.getCurrentISOWeek();
-      if (window.weeklyWrapped.hasSeen(isoWeek)) return false;
+      var periodKey = window.weeklyWrapped.getCurrentPeriodKey ? window.weeklyWrapped.getCurrentPeriodKey() : window.weeklyWrapped.getCurrentISOWeek();
+      if (window.weeklyWrapped.hasSeen(periodKey)) return false;
       var now = new Date(Date.now() + (10 * 60 * 60 * 1000));
-      var dow = now.getUTCDay();   // 0 Sun … 6 Sat in Brisbane wall-clock time
+      var day = now.getUTCDate();
       var hour = now.getUTCHours();
-      // Sunday morning -> Monday midday (Sun 09:00 through Mon 12:00 Brisbane).
-      // Once dismissed/seen, won't reappear until next Sunday's wrapped
-      // (different ISO week).
-      if (dow === 0) return hour >= 9;         // Sun: only after 9am
-      if (dow === 1) return hour < 12;         // Mon: only until noon
-      return false;                             // Tue-Sat: hide
+      if (day === 1) return hour >= 9;
+      if (day === 2) return true;
+      if (day === 3) return hour < 12;
+      return false;
     } catch(_) { return false; }
   }
 
   window.refreshWeeklyWrappedCard = function(){
-    var card = document.getElementById('weekly-wrapped-card');
+    var card = document.getElementById('monthly-wrapped-card');
     if (!card) return;
     function attempt(tries){
       tries = tries || 0;
@@ -15549,7 +15540,7 @@ if(!window._pbbIsIOSSafari) {
   };
 
   window.openWeeklyWrappedFromCard = function(){
-    var card = document.getElementById('weekly-wrapped-card');
+    var card = document.getElementById('monthly-wrapped-card');
     if (card) card.style.display = 'none';
     window.openWeeklyWrapped();
   };
@@ -15557,10 +15548,10 @@ if(!window._pbbIsIOSSafari) {
   window.dismissWeeklyWrappedCard = function(){
     try {
       if (window.weeklyWrapped && typeof window.weeklyWrapped.markSeen === 'function') {
-        window.weeklyWrapped.markSeen(window.weeklyWrapped.getCurrentISOWeek());
+        window.weeklyWrapped.markSeen(window.weeklyWrapped.getCurrentPeriodKey ? window.weeklyWrapped.getCurrentPeriodKey() : window.weeklyWrapped.getCurrentISOWeek());
       }
     } catch(_){}
-    var card = document.getElementById('weekly-wrapped-card');
+    var card = document.getElementById('monthly-wrapped-card');
     if (card) card.style.display = 'none';
   };
 

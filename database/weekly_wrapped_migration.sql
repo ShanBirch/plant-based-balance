@@ -1,15 +1,16 @@
--- Weekly Wrapped Migration
+-- Wrapped Archive Migration (legacy table name)
 --
--- Stores a per-user, per-ISO-week snapshot of the Spotify-Wrapped-style recap
--- so users can revisit past weeks without the underlying data shifting (weigh-ins
--- edited, PBs re-logged, etc.). Fired once per week by the weekly-wrapped-push
--- scheduled Netlify function (Sunday 07:00 UTC ≈ 17:00 AEST Sunday arvo).
+-- Stores one immutable recap snapshot per user and period so users can revisit
+-- it without later edits shifting the numbers. New Month Wrapped rows use a
+-- YYYY-MM period key in the legacy iso_week text column; older weekly rows remain
+-- valid history. The weekly-wrapped-push function now runs on the first day of
+-- each Brisbane calendar month.
 --
 -- `data_snapshot` is the full aggregated payload the client renders from —
 -- workouts/minutes/PBs/mood/weight/social/xp/coins/streak + trend-line
 -- predictions. See `lib/weekly-wrapped.js` buildWeeklyWrappedData().
 --
--- One row per user per ISO week. `iso_week` format: 'YYYY-Www' (e.g. '2026-W16').
+-- One row per user per recap period. New rows use `iso_week` format 'YYYY-MM'.
 
 CREATE TABLE IF NOT EXISTS public.weekly_wrapped (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

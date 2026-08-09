@@ -1147,7 +1147,7 @@
 
   function placeCard(card){
     var friendPill = document.getElementById('home-friends-pill');
-    var wrapped = document.getElementById('weekly-wrapped-card');
+    var wrapped = document.getElementById('monthly-wrapped-card');
     var goals = document.getElementById('weekly-goals-card');
     var fitgotchi = document.getElementById('tamagotchi-widget-container');
 

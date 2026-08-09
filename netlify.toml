@@ -323,11 +323,10 @@
 [functions."pulse-evening"]
   schedule = "0 9 * * *"
 
-# Weekly Wrapped user push - Saturday 23:00 UTC (Sun 09:00 Brisbane).
-# One push per active user linking into the Spotify-Wrapped-style recap.
-# The push is a pinger only — client fetches the week's aggregate on open.
+# Month Wrapped check - 23:00 UTC daily (09:00 Brisbane).
+# The function exits unless Brisbane's wall-clock date is the first of the month.
 [functions."weekly-wrapped-push"]
-  schedule = "0 23 * * 6"
+  schedule = "0 23 * * *"
 
 # Shannon-only social journey pilot. Saturday 18:30 Brisbane, with a strict
 # standard 24-hour Instagram messaging-window check inside the function.

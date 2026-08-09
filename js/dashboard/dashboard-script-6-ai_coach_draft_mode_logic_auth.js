@@ -5304,7 +5304,7 @@ const CHALLENGE_XP_INFO_GROUPS = [
     {
         title: 'Weekly Goals',
         rows: [
-            { amount: '+10', title: 'Each completed weekly goal', body: 'Paid through Weekly Wrapped after goal progress is calculated.' },
+            { amount: '+10', title: 'Each completed weekly goal', body: 'Paid automatically after each weekly goal period ends.' },
             { amount: '+20', title: 'All three goals hit', body: 'Bonus for hitting 3/3 selected weekly goals.' },
             { amount: 'Cap', title: '50 XP weekly max', body: 'Weekly goal rewards are capped at 50 XP total.' },
         ],
