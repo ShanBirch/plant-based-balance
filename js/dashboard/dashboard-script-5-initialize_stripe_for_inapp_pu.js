@@ -7177,6 +7177,10 @@ let wizardSelectedDays = new Set();
 let wizardSplitPreference = '';
 let wizardWorkoutCalendar = {};
 let wizardWorkoutTimes = {};
+let wizardAssignedProgram = null;
+let wizardAssignedWorkoutItems = {};
+let wizardAssignedRequiredIds = new Set();
+let wizardAssignedCalendarInitialized = false;
 let selectedGender = localStorage.getItem('userGender') || null; // Track gender selection
 
 // Food preference selections (slides 2/7/8/9). Sets keep selections unique and order-insensitive.
@@ -11523,6 +11527,7 @@ window.startTransferredClientFlow = async function() {
 
     window.__pbbTransferredSetupPending = true;
     localStorage.removeItem('featureTourComplete');
+    await loadWizardAssignedProgram();
     initOnboardingWizard();
 
     // Startup routines may close blocking surfaces while Home initializes.
@@ -12033,7 +12038,155 @@ function selectSplitPreference(split) {
     }, 300);
 }
 
+function normalizeWizardProgramDay(value) {
+    const day = String(value || '').trim().toLowerCase().slice(0, 3);
+    return { mon: 'monday', tue: 'tuesday', wed: 'wednesday', thu: 'thursday', fri: 'friday', sat: 'saturday', sun: 'sunday' }[day] || '';
+}
+
+function isWizardAssignedRequiredWorkout(workout) {
+    return Boolean(workout && workout.type === 'inline' && workout.category === 'home_weights');
+}
+
+function getWizardAssignedWorkoutInfo(workoutId) {
+    const entry = wizardAssignedWorkoutItems[workoutId];
+    if (!entry) return null;
+    const workout = entry.workout || {};
+    const required = wizardAssignedRequiredIds.has(workoutId);
+    const name = String(workout.name || (required ? 'Coached strength session' : 'Recovery'));
+    const lowerName = name.toLowerCase();
+    let icon = required ? 'S' : 'R';
+    if (lowerName.includes('dance')) icon = 'D';
+    if (workout.type === 'rest' || lowerName.includes('rest day')) icon = '-';
+    return {
+        icon: icon,
+        name: name,
+        desc: [workout.duration || '', required ? 'Coached session, kept in plan' : 'Flexible day'].filter(Boolean).join(' | '),
+        required: required
+    };
+}
+
+function initializeWizardAssignedCalendar() {
+    if (!wizardAssignedProgram || wizardAssignedCalendarInitialized) return;
+    const schedule = Array.isArray(wizardAssignedProgram.weekly_schedule) ? wizardAssignedProgram.weekly_schedule : [];
+    wizardWorkoutCalendar = {};
+    wizardAssignedWorkoutItems = {};
+    wizardAssignedRequiredIds = new Set();
+
+    schedule.forEach(function (entry, index) {
+        const day = normalizeWizardProgramDay(entry && entry.day);
+        const workout = entry && entry.workout ? entry.workout : null;
+        if (!day || !workout) return;
+        const id = 'assigned-program-' + index;
+        wizardAssignedWorkoutItems[id] = { sourceDay: day, workout: JSON.parse(JSON.stringify(workout)) };
+        if (isWizardAssignedRequiredWorkout(workout)) wizardAssignedRequiredIds.add(id);
+        wizardWorkoutCalendar[day] = id;
+    });
+
+    const defaultTime = getWizardDefaultWorkoutTime();
+    ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].forEach(function (day) {
+        if (!wizardWorkoutCalendar[day]) wizardWorkoutCalendar[day] = 'rest';
+        const info = getWizardAssignedWorkoutInfo(wizardWorkoutCalendar[day]);
+        if (info && info.name !== 'Rest Day' && !wizardWorkoutTimes[day]) wizardWorkoutTimes[day] = defaultTime;
+    });
+    wizardAssignedCalendarInitialized = true;
+    syncWizardWorkoutTimes();
+}
+
+async function loadWizardAssignedProgram() {
+    wizardAssignedProgram = null;
+    wizardAssignedCalendarInitialized = false;
+    const userId = window.currentUser && window.currentUser.id;
+    if (!userId || !window.supabaseClient) return null;
+    try {
+        const result = await window.supabaseClient
+            .from('custom_workout_programs')
+            .select('id,user_id,program_name,duration_weeks,weekly_schedule,is_active,start_date,updated_at')
+            .eq('user_id', userId)
+            .eq('is_active', true)
+            .order('updated_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+        if (result.error) throw result.error;
+        if (result.data && Array.isArray(result.data.weekly_schedule) && result.data.weekly_schedule.length) {
+            wizardAssignedProgram = result.data;
+            initializeWizardAssignedCalendar();
+        }
+    } catch (error) {
+        console.warn('Could not load assigned onboarding program:', error);
+    }
+    return wizardAssignedProgram;
+}
+
+function getWizardFlexibleWorkoutDefinition(workoutId) {
+    const definitions = {
+        'yoga-flow': { type: 'activity', name: 'Power Yoga', category: 'recovery', duration: '10-20 min', activity_type: 'yoga', exercises: [] },
+        'yoga-restorative': { type: 'activity', name: 'Restorative Yoga', category: 'recovery', duration: '10-20 min', activity_type: 'yoga', exercises: [] },
+        'yoga-mobility': { type: 'activity', name: 'Mobility Yoga', category: 'recovery', duration: '8-15 min', activity_type: 'mobility', exercises: [] },
+        'recovery-stretch': { type: 'activity', name: 'Stretching and Mobility', category: 'recovery', duration: '8-12 min', activity_type: 'mobility', exercises: [] },
+        'recovery-dance': { type: 'activity', name: 'Dance', category: 'recovery', duration: '10-20 min', activity_type: 'dance', exercises: [] },
+        'recovery-walk': { type: 'activity', name: 'Walk', category: 'recovery', duration: '10-30 min', activity_type: 'walk', exercises: [] },
+        'rest': { type: 'rest', name: 'Rest Day', category: 'rest', exercises: [] }
+    };
+    return definitions[workoutId] || definitions.rest;
+}
+
+function buildWizardAssignedWeeklySchedule() {
+    const days = [['monday', 'Mon'], ['tuesday', 'Tue'], ['wednesday', 'Wed'], ['thursday', 'Thu'], ['friday', 'Fri'], ['saturday', 'Sat'], ['sunday', 'Sun']];
+    return days.map(function (pair) {
+        const workoutId = wizardWorkoutCalendar[pair[0]];
+        const assigned = wizardAssignedWorkoutItems[workoutId];
+        const workout = assigned ? JSON.parse(JSON.stringify(assigned.workout)) : JSON.parse(JSON.stringify(getWizardFlexibleWorkoutDefinition(workoutId)));
+        return { day: pair[1], workout: workout };
+    });
+}
+
+async function persistWizardAssignedProgramSchedule() {
+    if (!wizardAssignedProgram || !window.supabaseClient) return;
+    const userId = (window.currentUser && window.currentUser.id) || wizardAssignedProgram.user_id;
+    const weeklySchedule = buildWizardAssignedWeeklySchedule();
+    const result = await window.supabaseClient
+        .from('custom_workout_programs')
+        .update({ weekly_schedule: weeklySchedule, updated_at: new Date().toISOString() })
+        .eq('id', wizardAssignedProgram.id)
+        .eq('user_id', userId);
+    if (result.error) throw result.error;
+    wizardAssignedProgram.weekly_schedule = weeklySchedule;
+    if (window.activeCustomProgramCache && window.activeCustomProgramCache.id === wizardAssignedProgram.id) {
+        window.activeCustomProgramCache.weekly_schedule = weeklySchedule;
+    }
+}
+
+function getWizardAssignedWorkoutOptions(day) {
+    const currentIsRequired = wizardAssignedRequiredIds.has(wizardWorkoutCalendar[day]);
+    const requiredItems = Array.from(wizardAssignedRequiredIds).map(function (id) {
+        const info = getWizardAssignedWorkoutInfo(id);
+        return { id: id, name: info.name, icon: 'S', mandatory: true };
+    });
+    const options = [{ category: 'YOUR COACHED WORKOUTS - KEPT IN PLAN', items: requiredItems }];
+    if (!currentIsRequired) {
+        const flexibleAssigned = Object.keys(wizardAssignedWorkoutItems).filter(function (id) {
+            return !wizardAssignedRequiredIds.has(id);
+        }).map(function (id) {
+            const info = getWizardAssignedWorkoutInfo(id);
+            return { id: id, name: info.name, icon: info.icon };
+        });
+        options.push({ category: 'FLEXIBLE DAYS', items: flexibleAssigned.concat([
+            { id: 'yoga-restorative', name: 'Restorative Yoga', icon: 'R' },
+            { id: 'yoga-mobility', name: 'Mobility Yoga', icon: 'R' },
+            { id: 'recovery-stretch', name: 'Stretching and Mobility', icon: 'R' },
+            { id: 'recovery-dance', name: 'Dance', icon: 'D' },
+            { id: 'recovery-walk', name: 'Walk', icon: 'W' },
+            { id: 'rest', name: 'Rest Day', icon: '-' }
+        ]) });
+    }
+    return options;
+}
 function generateWizardCalendar() {
+    if (wizardAssignedProgram) {
+        initializeWizardAssignedCalendar();
+        return;
+    }
+
     let userData = {};
     try { userData = JSON.parse(sessionStorage.getItem('userProfile') || '{}'); } catch(e) {}
     const trainingDays = Array.from(wizardSelectedDays);
@@ -12127,6 +12280,13 @@ function renderWizardCalendarPreview() {
     const container = document.getElementById('wizard-calendar-preview');
     if (!container) return;
 
+    const guidance = document.getElementById('wizard-calendar-guidance');
+    if (guidance) {
+        guidance.textContent = wizardAssignedProgram
+            ? 'Your coached sessions are already set. Keep all three, move them to days that suit you, and choose recovery or rest around them.'
+            : 'Check the days, session type and time. Tap any day to change it before we build your program.';
+    }
+
     const allDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
     const dayLabels = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
@@ -12174,20 +12334,24 @@ function renderWizardCalendarPreview() {
 
     // Add instruction text
     const instruction = document.createElement('p');
-    instruction.style.cssText = 'text-align:center; font-size:13px; color:rgba(255,255,255,0.7); margin-bottom:12px;';
-    instruction.textContent = 'Tap any day to change the workout';
+    instruction.style.cssText = 'text-align:center; font-size:13px; color:#655b49; -webkit-text-fill-color:#655b49; margin-bottom:12px; line-height:1.45;';
+    instruction.textContent = wizardAssignedProgram
+        ? 'Keep all three coached sessions in your week. Tap a flexible day to move one there, or choose recovery around them.'
+        : 'Tap any day to change the workout';
     frag.appendChild(instruction);
 
     const starterMinutes = Math.max(10, Math.min(60, Number(document.getElementById('wizard-starter-session-minutes')?.value) || 15));
     const starterMinimum = document.createElement('div');
-    starterMinimum.style.cssText = 'margin:0 0 12px; padding:10px 12px; border-radius:10px; background:rgba(212,175,55,0.12); border:1px solid rgba(212,175,55,0.3); color:rgba(255,255,255,0.88); font-size:12px; line-height:1.45;';
-    starterMinimum.innerHTML = `<strong style="color:#f4d67a;">Your ${starterMinutes}-minute minimum:</strong> on a busy day, do the first ${starterMinutes} minutes. The full session is there when you have more.`;
+    starterMinimum.style.cssText = 'margin:0 0 12px; padding:10px 12px; border-radius:10px; background:#f7edcf; border:1px solid #d5b55f; color:#29261f; -webkit-text-fill-color:#29261f; font-size:12px; line-height:1.45;';
+    starterMinimum.innerHTML = wizardAssignedProgram
+        ? '<strong style="color:#7b5716; -webkit-text-fill-color:#7b5716;">Your coached sessions:</strong> 10-12 minute minimums, with 25-30 minute full versions. The three strength sessions stay in your plan, even when you move their days.'
+        : '<strong style="color:#7b5716; -webkit-text-fill-color:#7b5716;">Your ' + starterMinutes + '-minute minimum:</strong> on a busy day, do the first ' + starterMinutes + ' minutes. The full session is there when you have more.';
     frag.appendChild(starterMinimum);
 
     // Create day rows
     allDays.forEach((day, idx) => {
         const workout = wizardWorkoutCalendar[day] || 'rest';
-        const info = workoutInfo[workout] || { icon: '?', name: 'Unknown', desc: '' };
+        const info = getWizardAssignedWorkoutInfo(workout) || workoutInfo[workout] || { icon: '?', name: 'Unknown', desc: '' };
 
         const row = document.createElement('div');
         row.className = 'wizard-calendar-row';
@@ -12260,19 +12424,21 @@ function renderWizardCalendarPreview() {
     });
 
     // Add summary
-    const trainingCount = Object.values(wizardWorkoutCalendar).filter(w =>
-        w && !['rest', 'yoga-restorative', 'yoga-flow', 'yoga-mobility', 'recovery-stretch', 'recovery-foam'].includes(w)
-    ).length;
-    const yogaCount = Object.values(wizardWorkoutCalendar).filter(w =>
-        ['yoga-restorative', 'yoga-flow', 'yoga-mobility'].includes(w)
-    ).length;
-    const restCount = Object.values(wizardWorkoutCalendar).filter(w =>
-        w === 'rest' || ['recovery-stretch', 'recovery-foam'].includes(w)
-    ).length;
-
     const summary = document.createElement('div');
-    summary.style.cssText = 'text-align:center; margin-top:12px; padding:10px; background:rgba(134,239,172,0.12); border:1px solid rgba(134,239,172,0.25); border-radius:8px; font-size:13px; color:#86efac;';
-    summary.innerHTML = `<strong>${trainingCount} training</strong> · <strong>${yogaCount} yoga</strong> · <strong>${restCount} rest</strong>`;
+    summary.style.cssText = 'text-align:center; margin-top:12px; padding:10px; background:#eef6e9; border:1px solid #b9d5ab; border-radius:8px; font-size:13px; color:#24452d; -webkit-text-fill-color:#24452d;';
+    if (wizardAssignedProgram) {
+        const requiredCount = Object.values(wizardWorkoutCalendar).filter(function (id) { return wizardAssignedRequiredIds.has(id); }).length;
+        const restCount = Object.values(wizardWorkoutCalendar).filter(function (id) {
+            const info = getWizardAssignedWorkoutInfo(id);
+            return id === 'rest' || (info && info.name === 'Rest Day');
+        }).length;
+        summary.innerHTML = '<strong>' + requiredCount + ' coached sessions kept</strong> | <strong>' + (7 - requiredCount - restCount) + ' flexible days</strong> | <strong>' + restCount + ' rest</strong>';
+    } else {
+        const trainingCount = Object.values(wizardWorkoutCalendar).filter(function (w) { return w && !['rest', 'yoga-restorative', 'yoga-flow', 'yoga-mobility', 'recovery-stretch', 'recovery-foam'].includes(w); }).length;
+        const yogaCount = Object.values(wizardWorkoutCalendar).filter(function (w) { return ['yoga-restorative', 'yoga-flow', 'yoga-mobility'].includes(w); }).length;
+        const restCount = Object.values(wizardWorkoutCalendar).filter(function (w) { return w === 'rest' || ['recovery-stretch', 'recovery-foam'].includes(w); }).length;
+        summary.innerHTML = '<strong>' + trainingCount + ' training</strong> | <strong>' + yogaCount + ' yoga</strong> | <strong>' + restCount + ' rest</strong>';
+    }
     frag.appendChild(summary);
 
     // Single DOM write — replaces all previous content
@@ -12309,7 +12475,8 @@ function getWizardSelectedEquipment() {
 }
 
 // Get workout options based on wizard equipment selection
-function getWizardWorkoutOptions() {
+function getWizardWorkoutOptions(day) {
+    if (wizardAssignedProgram) return getWizardAssignedWorkoutOptions(day);
     const equipment = getWizardSelectedEquipment();
     const options = [];
 
@@ -12376,7 +12543,7 @@ function showWizardWorkoutDropdown(day, dayLabel, updateCallback) {
     const existingDropdown = document.getElementById('wizard-workout-dropdown-overlay');
     if (existingDropdown) existingDropdown.remove();
 
-    const workoutOptions = getWizardWorkoutOptions();
+    const workoutOptions = getWizardWorkoutOptions(day);
 
     // Create overlay
     const overlay = document.createElement('div');
@@ -12497,15 +12664,28 @@ function showWizardWorkoutDropdown(day, dayLabel, updateCallback) {
                 option.appendChild(checkmark);
             }
 
-            option.onclick = () => {
-                // Update calendar
-                wizardWorkoutCalendar[day] = item.id;
-
-                // Re-render the calendar preview
-                if (updateCallback) updateCallback();
-
-                // Close dropdown
-                overlay.remove();
+            option.onclick = async () => {
+                const previousCalendar = Object.assign({}, wizardWorkoutCalendar);
+                const existingDay = Object.keys(wizardWorkoutCalendar).find(function (calendarDay) {
+                    return calendarDay !== day && wizardWorkoutCalendar[calendarDay] === item.id;
+                });
+                if (wizardAssignedProgram && existingDay && wizardAssignedWorkoutItems[item.id]) {
+                    const displacedWorkout = wizardWorkoutCalendar[day];
+                    wizardWorkoutCalendar[day] = item.id;
+                    wizardWorkoutCalendar[existingDay] = displacedWorkout;
+                } else {
+                    wizardWorkoutCalendar[day] = item.id;
+                }
+                try {
+                    if (wizardAssignedProgram) await persistWizardAssignedProgramSchedule();
+                    if (updateCallback) updateCallback();
+                    overlay.remove();
+                } catch (error) {
+                    wizardWorkoutCalendar = previousCalendar;
+                    if (updateCallback) updateCallback();
+                    console.error('Could not save assigned training week:', error);
+                    if (typeof showToast === 'function') showToast('That change did not save. Please try again.', 'error');
+                }
             };
 
             categoryDiv.appendChild(option);

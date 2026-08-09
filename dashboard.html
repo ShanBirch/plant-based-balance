@@ -12901,13 +12901,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=169';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=170';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=169"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=170"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=3"></script>
@@ -16060,7 +16060,7 @@ if(!window._pbbIsIOSSafari) {
             <div class="wizard-slide" id="slide-7" style="display:none;">
                 <div style="text-align:center; margin-bottom:20px; font-size:3rem;">📅</div>
                 <h3 style="text-align:center; margin-bottom:10px;">Confirm Your Training Week</h3>
-                <p style="text-align:center; color:#666; margin-bottom:20px;">Check the days, session type and time. Tap any day to change it before we build your program.</p>
+                <p id="wizard-calendar-guidance" style="text-align:center; color:#4f493e; -webkit-text-fill-color:#4f493e; margin-bottom:20px;">Check the days, session type and time. Tap any day to change it before we build your program.</p>
 
                 <div id="wizard-calendar-preview" style="background:#fff; border-radius:12px; padding:15px; box-shadow:0 2px 10px rgba(0,0,0,0.05);">
                     <!-- Dynamically populated -->
