@@ -1319,18 +1319,6 @@ window.addEventListener('load', function() {
         </div>
     </div>
 
-    <!-- Friends Pill Widget -->
-    <div id="home-friends-pill" onclick="openHomeFriendsModal()" style="margin: 12px 25px 14px; display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: white; border-radius: 40px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #f1f5f9; transition: transform 0.15s;">
-        <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #10b981); display: flex; align-items: center; justify-content: center;">
-            <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: white;"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
-        </div>
-        <div style="flex: 1;">
-            <span style="font-weight: 700; font-size: 0.9rem; color: var(--text-main);">Friends</span>
-            <span id="home-friends-pill-count" style="font-size: 0.8rem; color: var(--text-muted); margin-left: 6px;">0</span>
-        </div>
-        <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: #94a3b8;"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
-    </div>
-
     <!-- Month Wrapped Card (Home). Visible from 09:00 on day 1 through 12:00 on day 3
          Brisbane time while the completed month's recap is unseen. Tapping plays the slideshow;
          dismissing or finishing marks that month seen. -->
@@ -1353,27 +1341,6 @@ window.addEventListener('load', function() {
 
     <!-- Shannon-only Balance-to-Instagram journey pilot -->
     <div id="social-journey-card" class="social-journey-card" style="display: none;" aria-label="Open Journey Goals"></div>
-
-    <!-- Friends Modal (Home Page) -->
-    <div id="home-friends-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 10007; align-items: flex-end; justify-content: center; backdrop-filter: blur(3px);" onclick="if(event.target===this) closeHomeFriendsModal();">
-        <div style="background: white; border-radius: 20px 20px 0 0; max-width: 500px; width: 100%; max-height: 70vh; overflow: hidden; animation: slideUpModal 0.3s ease-out;">
-            <!-- Header -->
-            <div style="padding: 16px 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between;">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <h3 style="margin: 0; font-size: 1.1rem; font-weight: 700; color: var(--text-main);">Friends</h3>
-                    <span id="home-friends-modal-count" style="background: var(--primary); color: white; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 10px;">0</span>
-                </div>
-                <div style="display: flex; gap: 8px; align-items: center;">
-                    <button onclick="closeHomeFriendsModal(); openAddFriendModal();" style="background: linear-gradient(135deg, var(--primary), #10b981); color: white; border: none; padding: 6px 12px; border-radius: 10px; font-size: 0.75rem; font-weight: 600; cursor: pointer;">+ Add</button>
-                    <button onclick="closeHomeFriendsModal()" style="background: none; border: none; font-size: 1.5rem; color: #94a3b8; cursor: pointer; line-height: 1;">&times;</button>
-                </div>
-            </div>
-            <!-- Friends List -->
-            <div id="home-friends-modal-list" style="overflow-y: auto; max-height: calc(70vh - 60px); padding: 8px 0;">
-                <div style="text-align: center; padding: 30px; color: var(--text-muted); font-size: 0.85rem;">Loading...</div>
-            </div>
-        </div>
-    </div>
 
     <!-- Daily Weigh-In Card (disappears after completion) -->
     <div id="daily-weigh-in-card" style="display: none; margin: 15px 25px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 16px; padding: 20px; color: white; position: relative; overflow: hidden;">
@@ -1908,14 +1875,14 @@ if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=27"><\/script>');
     document.write('<script src="js/dashboard/pbb-social-journey.js?v=18"><\/script>');
     document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=10"><\/script>');
-    document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=21"><\/script>');
+    document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=22"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
     window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=10');
     window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=27');
     window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=18');
     window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=10');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=21');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=22');
 }
 </script>
     
@@ -12934,13 +12901,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=168';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=169';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=168"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=169"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=3"></script>

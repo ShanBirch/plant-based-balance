@@ -41,7 +41,7 @@ assert.ok(
 );
 assert.ok(
     dashboard.includes('dashboard-script-10-points_widget_functions.js?v=43') &&
-        serviceWorker.includes("const CACHE_NAME = 'pbb-app-v278'") &&
+  serviceWorker.includes("const CACHE_NAME = 'pbb-app-v279'") &&
         serviceWorker.includes('./js/dashboard/dashboard-script-10-points_widget_functions.js?v=43'),
     'the repaired share path must be cache-busted for installed apps'
 );

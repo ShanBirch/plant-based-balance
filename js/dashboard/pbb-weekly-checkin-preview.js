@@ -1146,15 +1146,10 @@
   }
 
   function placeCard(card){
-    var friendPill = document.getElementById('home-friends-pill');
     var wrapped = document.getElementById('monthly-wrapped-card');
     var goals = document.getElementById('weekly-goals-card');
     var fitgotchi = document.getElementById('tamagotchi-widget-container');
 
-    if (friendPill && friendPill.parentNode && friendPill !== card) {
-      if (friendPill.previousSibling !== card) friendPill.parentNode.insertBefore(card, friendPill);
-      return;
-    }
     if (wrapped && wrapped.parentNode && wrapped !== card) {
       if (wrapped.previousSibling !== card) wrapped.parentNode.insertBefore(card, wrapped);
       return;
@@ -1177,8 +1172,7 @@
       card.type = 'button';
       card.className = 'pbb-wci-card';
       var anchor = document.getElementById('weekly-wrapped-card') ||
-        document.getElementById('weekly-goals-card') ||
-        document.getElementById('home-friends-pill');
+        document.getElementById('weekly-goals-card');
       if (anchor && anchor.parentNode) {
         anchor.parentNode.insertBefore(card, anchor.nextSibling);
       } else if (document.body) {

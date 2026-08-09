@@ -1352,11 +1352,6 @@ function _switchAppTabReal(tabName, btn) {
         scheduleDashboardTaskForActiveUser(checkAndRenderCycleSync, 500);
     }
 
-    // Update friends pill count on home page
-    if(tabName === 'dashboard' && typeof updateHomeFriendsPillCount === 'function') {
-        scheduleDashboardTaskForActiveUser(updateHomeFriendsPillCount, 300);
-    }
-
     window.scrollTo(0,0);
 }
 

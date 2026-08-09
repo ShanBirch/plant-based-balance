@@ -38,6 +38,6 @@ assert.match(
 );
 
 assert.match(dashboard, /pbb-deferred-weeklygoals\.js\?v=27/);
-assert.match(dashboard, /pbb-weekly-checkin-preview\.js\?v=21/);
+assert.match(dashboard, /pbb-weekly-checkin-preview\.js\?v=22/);
 
 console.log('weekly review late-sync protection test passed');
