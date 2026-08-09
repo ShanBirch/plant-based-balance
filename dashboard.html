@@ -519,7 +519,7 @@ if (window._pbbIsIOSSafari) {
             'data/vegan-challenge-meal-plan.js',
             'lib/meal-plan-photo-resolver.js?v=1',
             'lib/meal-plan-populator.js?v=2',
-            'lib/weekly-wrapped.js?v=monthly-wrapped-v1'
+            'lib/weekly-wrapped.js?v=monthly-wrapped-layout-v2'
         ];
         deferredLibs.forEach(function(src, i) {
             setTimeout(function() {
@@ -541,7 +541,7 @@ if (window._pbbIsIOSSafari) {
     document.write('<script src="data/vegan-challenge-meal-plan.js"><\/script>');
     document.write('<script src="lib/meal-plan-photo-resolver.js?v=1"><\/script>');
     document.write('<script src="lib/meal-plan-populator.js?v=2"><\/script>');
-    document.write('<script src="lib/weekly-wrapped.js?v=monthly-wrapped-v1"><\/script>');
+    document.write('<script src="lib/weekly-wrapped.js?v=monthly-wrapped-layout-v2"><\/script>');
 }
 </script>
 <script>
@@ -1331,17 +1331,17 @@ window.addEventListener('load', function() {
     <!-- Month Wrapped Card (Home). Visible from 09:00 on day 1 through 12:00 on day 3
          Brisbane time while the completed month's recap is unseen. Tapping plays the slideshow;
          dismissing or finishing marks that month seen. -->
-    <div id="monthly-wrapped-card" style="display: none; margin: 0 25px 14px; cursor: pointer; border-radius: 20px; overflow: hidden; box-shadow: 0 6px 20px rgba(76,29,149,0.35); background: linear-gradient(135deg, #1a1033 0%, #2d1b69 55%, #4c1d95 100%); position: relative;" onclick="openWeeklyWrappedFromCard()">
-        <button type="button" aria-label="Dismiss" onclick="event.stopPropagation(); dismissWeeklyWrappedCard()" style="position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; background: rgba(255,255,255,0.18); border: none; border-radius: 50%; color: rgba(255,255,255,0.9); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.05rem; line-height: 1; padding: 0; z-index: 2;">×</button>
+    <div id="monthly-wrapped-card" style="display: none; margin: 0 25px 14px; cursor: pointer; border-radius: 20px; overflow: hidden; box-shadow: 0 6px 20px rgba(76,29,149,0.35); background: linear-gradient(135deg, #1a1033 0%, #2d1b69 55%, #4c1d95 100%); position: relative; color: white; -webkit-text-fill-color: white;" onclick="openWeeklyWrappedFromCard()">
+        <button type="button" aria-label="Dismiss" onclick="event.stopPropagation(); dismissWeeklyWrappedCard()" style="position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; background: rgba(255,255,255,0.18); border: none; border-radius: 50%; color: white; -webkit-text-fill-color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.05rem; line-height: 1; padding: 0; z-index: 2;">×</button>
         <div style="position: absolute; inset: 0; background-image: repeating-linear-gradient(135deg, rgba(255,255,255,0.05) 0 2px, transparent 2px 14px); pointer-events: none;"></div>
         <div style="padding: 18px 20px; display: flex; align-items: center; gap: 14px; position: relative; z-index: 1;">
             <div style="width: 56px; height: 56px; background: linear-gradient(135deg, #fbbf24, #f59e0b); border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.6rem; box-shadow: 0 2px 10px rgba(245,158,11,0.45); transform: rotate(-4deg);">🎞️</div>
             <div style="flex: 1; min-width: 0;">
-                <div style="font-size: 0.62rem; color: rgba(255,255,255,0.65); font-weight: 700; letter-spacing: 1.6px; text-transform: uppercase; margin-bottom: 3px;">Your Month</div>
+                <div style="font-size: 0.62rem; color: rgba(255,255,255,0.72); font-weight: 700; letter-spacing: 1.6px; text-transform: uppercase; margin-bottom: 3px;">Your Month</div>
                 <div style="font-weight: 800; font-size: 1.3rem; color: white; margin-bottom: 3px; letter-spacing: -0.5px;">WRAPPED</div>
-                <div style="font-size: 0.78rem; color: rgba(255,255,255,0.85);">A full month of progress. Tap to play.</div>
+                <div style="font-size: 0.78rem; color: rgba(255,255,255,0.9);">A full month of progress. Tap to play.</div>
             </div>
-            <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: rgba(255,255,255,0.7); flex-shrink: 0;"><path d="M8 5v14l11-7z"/></svg>
+            <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: rgba(255,255,255,0.78); flex-shrink: 0;"><path d="M8 5v14l11-7z"/></svg>
         </div>
     </div>
 
