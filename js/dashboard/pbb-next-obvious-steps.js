@@ -135,6 +135,12 @@
     return style ? style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0' : el.style.display !== 'none';
   }
 
+  function isSourceCardDue(selector) {
+    var el = null;
+    try { el = document.querySelector(selector); } catch (_) {}
+    return !!(el && !el.hidden && el.style.display !== 'none');
+  }
+
   function scrollToSelector(selector, options) {
     options = options || {};
     var el = null;
@@ -269,18 +275,31 @@
   function isActionComplete(action) {
     if (!action || !action.id) return false;
     if (visibleCompleteFallback(action.id)) return true;
+    if (action.id === 'workout') return !!(dailyState.status && dailyState.status.workout && dailyState.status.workout_share);
+    if (action.id === 'nutrition' && getSelectedGoalIds().indexOf('share_meal_feed') !== -1) {
+      return !!(dailyState.status && dailyState.status.nutrition && dailyState.status.meal_share);
+    }
     return !!(dailyState.status && dailyState.status[action.id]);
   }
 
   var ACTIONS = [
     {
       id: 'workout',
-      title: "Complete today's workout",
-      body: 'Training goal: keep the week moving.',
+      title: "Complete and share today's workout",
+      body: 'Finish the session that fits today, then share the completed workout to Feed.',
       cta: 'Open Movement',
       accent: '#2563eb',
       goalIds: ['complete_workouts', 'build_workouts', 'share_workout_feed'],
       action: openMovementTarget
+    },
+    {
+      id: 'daily_checkin',
+      title: "Complete today's check-in",
+      body: 'Give Balance today\'s recovery information so the plan can respond.',
+      cta: 'Open Check-In',
+      accent: '#b45309',
+      goalIds: [],
+      action: function(){ openDashboardTarget('#check-in-prompt-card', { block: 'center' }); }
     },
     {
       id: 'nutrition',
@@ -388,13 +407,13 @@
   function isActionTargetable(action, selectedGoalIds) {
     if (!action || !action.id) return false;
     if (action.id === 'mood') {
-      return isVisibleSelector('#mood-checkin-card') || isActionComplete(action);
+      return false;
     }
     if (action.id === 'quiz') {
-      return isVisibleSelector('#daily-quiz-card') || isActionComplete(action);
+      return isSourceCardDue('#daily-quiz-card') || isActionComplete(action);
     }
     if (action.id === 'weighin') {
-      return isVisibleSelector('#daily-weigh-in-card') || isVisibleSelector('#daily-weigh-in-done-card') || matchingGoalCount(action, selectedGoalIds) > 0;
+      return isSourceCardDue('#daily-weigh-in-card') || isSourceCardDue('#daily-weigh-in-done-card') || matchingGoalCount(action, selectedGoalIds) > 0;
     }
     return true;
   }
@@ -404,7 +423,12 @@
     goalMatchedActions(selectedGoalIds).forEach(function(action){
       if (isActionTargetable(action, selectedGoalIds)) addUniqueAction(picked, action);
     });
-    return picked.slice(0, 3);
+    ['daily_checkin', 'weighin', 'quiz'].forEach(function(id){
+      var action = ACTIONS.find(function(item){ return item.id === id; });
+      var selector = id === 'daily_checkin' ? '#check-in-prompt-card' : (id === 'weighin' ? '#daily-weigh-in-card' : '#daily-quiz-card');
+      if (action && isSourceCardDue(selector)) addUniqueAction(picked, action);
+    });
+    return picked;
   }
 
   function completionActionSet(selectedGoalIds) {
@@ -424,14 +448,15 @@
     if (!action || !action.id) return false;
     if (isActionComplete(action)) return false;
     if (action.id === 'mood') {
-      return isVisibleSelector('#mood-checkin-card');
+      return false;
     }
+    if (action.id === 'daily_checkin') return isSourceCardDue('#check-in-prompt-card');
     if (action.id === 'quiz') {
-      return isVisibleSelector('#daily-quiz-card');
+      return isSourceCardDue('#daily-quiz-card');
     }
     if (action.id === 'weighin') {
       if (isVisibleSelector('#daily-weigh-in-done-card')) return false;
-      return isVisibleSelector('#daily-weigh-in-card') || matchingGoalCount(action, selectedGoalIds) > 0;
+      return isSourceCardDue('#daily-weigh-in-card') || matchingGoalCount(action, selectedGoalIds) > 0;
     }
     return true;
   }
@@ -445,9 +470,9 @@
   function scoreAction(action, selectedGoalIds) {
     if (!isActionAvailable(action, selectedGoalIds)) return -9999;
     var score = matchingGoalCount(action, selectedGoalIds) * 80;
-    if (action.id === 'weighin' && isVisibleSelector('#daily-weigh-in-card')) score += 28;
-    if (action.id === 'mood' && isVisibleSelector('#mood-checkin-card')) score += 16;
-    if (action.id === 'quiz' && isVisibleSelector('#daily-quiz-card')) score += 16;
+    if (action.id === 'daily_checkin' && isSourceCardDue('#check-in-prompt-card')) score += 32;
+    if (action.id === 'weighin' && isSourceCardDue('#daily-weigh-in-card')) score += 28;
+    if (action.id === 'quiz' && isSourceCardDue('#daily-quiz-card')) score += 16;
     return score;
   }
 
@@ -541,7 +566,7 @@
         safeSupabaseQuery(function(supabase){ return supabase.from('daily_weigh_ins').select('id,weigh_in_date').eq('user_id', userId).eq('weigh_in_date', dateKey).limit(1); }),
         safeSupabaseQuery(function(supabase){ return supabase.from('mood_logs').select('log_date,context').eq('user_id', userId).eq('log_date', dateKey); }),
         safeSupabaseQuery(function(supabase){ return supabase.from('learning_milestones').select('id,milestone_type,achieved_at').eq('user_id', userId).eq('milestone_type', 'daily_quiz').gte('achieved_at', range.startIso).lt('achieved_at', range.endIso).limit(1); }),
-        safeSupabaseQuery(function(supabase){ return supabase.from('stories').select('id,media_type,created_at').eq('user_id', userId).gte('created_at', range.startIso).lt('created_at', range.endIso).limit(1); }),
+        safeSupabaseQuery(function(supabase){ return supabase.from('stories').select('id,media_type,created_at').eq('user_id', userId).gte('created_at', range.startIso).lt('created_at', range.endIso).limit(25); }),
         safeSupabaseQuery(function(supabase){ return supabase.from('fitbit_daily_activity').select('date,steps').eq('user_id', userId).eq('date', dateKey); }),
         safeSupabaseQuery(function(supabase){ return supabase.from('oura_daily_activity').select('date,steps').eq('user_id', userId).eq('date', dateKey); }),
         safeSupabaseQuery(function(supabase){ return supabase.from('fitbit_sleep').select('date,duration_minutes').eq('user_id', userId).eq('date', dateKey); }),
@@ -582,7 +607,10 @@
 
       dailyState.status = {
         workout: workouts.length > 0 || customWorkouts.length > 0,
+        workout_share: stories.some(function(row){ return row && row.media_type === 'workout_card'; }),
         nutrition: meals.length > 0 || nutrition.some(function(row){ return Number(row.total_calories || 0) > 0 || Number(row.meal_count || 0) > 0; }),
+        meal_share: stories.some(function(row){ return row && (row.media_type === 'meal_card' || row.media_type === 'nutrition_card'); }),
+        daily_checkin: checkins.length > 0,
         hydration: normalizeWaterMl(checkin.water_intake) >= getWaterGoalMl(),
         steps: bestSteps >= 10000,
         weighin: weighIns.length > 0,
@@ -595,6 +623,7 @@
     } finally {
       dailyState.loading = false;
       render();
+      try { window.dispatchEvent(new CustomEvent('pbbNextStepsUpdated')); } catch (_) {}
     }
   }
 
@@ -721,7 +750,8 @@
     var card = document.getElementById('next-obvious-steps-card');
     if (!card) return;
 
-    if (!isPreviewEligible()) {
+    var unified = !!(window.socialJourney && typeof window.socialJourney.isUnifiedPlanActive === 'function' && window.socialJourney.isUnifiedPlanActive());
+    if (!isPreviewEligible() || unified) {
       card.style.display = 'none';
       card.innerHTML = '';
       return;
@@ -832,6 +862,24 @@
     refresh: render,
     isPreviewEligible: isPreviewEligible,
     getSuggestions: pickSuggestions,
+    getPlan: function(){
+      var selectedGoalIds = getSelectedGoalIds();
+      var actions = dailyActionSet(selectedGoalIds).map(function(action, index){
+        return { action: action, score: scoreAction(action, selectedGoalIds), index: index };
+      }).filter(function(item){ return item.score > -9999; }).sort(function(a, b){
+        if (b.score !== a.score) return b.score - a.score;
+        return a.index - b.index;
+      }).map(function(item){ return item.action; });
+      return actions.map(function(action){
+        return { id: action.id, title: action.title, body: action.body, cta: action.cta, accent: action.accent, complete: isActionComplete(action) };
+      });
+    },
+    runAction: function(id){
+      var action = ACTIONS.find(function(item){ return item.id === id; });
+      if (action && typeof action.action === 'function') action.action();
+      setTimeout(function(){ refreshDailyStatus({ force: true }); }, 1400);
+      setTimeout(function(){ refreshDailyStatus({ force: true }); }, 4500);
+    },
     refreshStatus: function(){ refreshDailyStatus({ force: true }); },
     enablePreview: function(){
       try { localStorage.setItem(PREVIEW_STORAGE_KEY, '1'); } catch (_) {}

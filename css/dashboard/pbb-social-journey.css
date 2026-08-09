@@ -129,6 +129,30 @@
   -webkit-text-fill-color: #f8f7f2 !important;
   opacity: 1 !important;
 }
+
+html.pbb-unified-next-steps #weekly-goals-card,
+html.pbb-unified-next-steps #next-obvious-steps-card,
+html.pbb-unified-next-steps #daily-weigh-in-card,
+html.pbb-unified-next-steps #daily-weigh-in-done-card,
+html.pbb-unified-next-steps #daily-quiz-card,
+html.pbb-unified-next-steps #daily-quiz-done-card,
+html.pbb-unified-next-steps #check-in-prompt-card { display: none !important; }
+
+.social-journey-section-heading-row { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.social-journey-section-heading-row button { border:0; background:transparent; color:var(--sj-gold); -webkit-text-fill-color:var(--sj-gold); font-size:.7rem; font-weight:900; }
+.social-journey-plan-list { display:grid; gap:9px; }
+.social-journey-plan-action { width:100%; border:1px solid rgba(183,138,46,.24); border-radius:16px; padding:13px; background:#fffdf8; color:var(--sj-ink); -webkit-text-fill-color:var(--sj-ink); display:grid; grid-template-columns:7px minmax(0,1fr) auto; align-items:center; gap:11px; text-align:left; box-shadow:0 8px 22px rgba(68,48,17,.07); }
+.social-journey-up-next .social-journey-plan-action { padding:16px 14px; border-color:rgba(183,138,46,.42); background:linear-gradient(135deg,#fff9e9,#fffdf8); box-shadow:0 13px 30px rgba(183,138,46,.15); }
+.social-journey-plan-action__mark { align-self:stretch; border-radius:999px; background:var(--journey-action-accent,#b78a2e); }
+.social-journey-plan-action strong { display:block; font-size:.88rem; line-height:1.22; }
+.social-journey-plan-action small { display:block; margin-top:4px; color:#6b6255; -webkit-text-fill-color:#6b6255; font-size:.72rem; line-height:1.35; }
+.social-journey-plan-action b { color:var(--journey-action-accent,#b78a2e); -webkit-text-fill-color:var(--journey-action-accent,#b78a2e); font-size:.67rem; white-space:nowrap; }
+.social-journey-weekly-focus { display:grid; gap:8px; padding:10px; border:1px solid rgba(183,138,46,.22); border-radius:18px; background:rgba(255,253,248,.82); }
+.social-journey-weekly-focus__row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 11px; border-radius:12px; background:#fff; }
+.social-journey-weekly-focus__row strong { display:block; font-size:.81rem; }
+.social-journey-weekly-focus__row small { display:block; margin-top:3px; color:#6b6255; -webkit-text-fill-color:#6b6255; font-size:.68rem; }
+.social-journey-weekly-focus__row b { color:var(--sj-gold); -webkit-text-fill-color:var(--sj-gold); font-size:.72rem; }
+.social-journey-weekly-focus__row.is-complete { opacity:.68; }
 .social-journey-hero p,
 .social-journey-lesson p { position: relative; margin: 0; max-width: 90%; color: var(--sj-muted); -webkit-text-fill-color: var(--sj-muted); font-size: .83rem; line-height: 1.52; }
 .social-journey-goals-hero__label { margin-top: 21px; color: var(--sj-gold); -webkit-text-fill-color: var(--sj-gold); font-size: .58rem; font-weight: 950; letter-spacing: .18em; }

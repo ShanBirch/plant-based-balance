@@ -19,8 +19,7 @@
       body: 'Do one real action, then record it. Feed is not a performance; it is a supportive environment that helps the new pattern feel normal.',
       tasks: [
         task('w1_feed_intro', 'Say hello and take your first Feed photo', 'A simple hello and an ordinary photo are enough.', 'feed_posts', 1, '\uD83D\uDCF7', 'feed-photo'),
-        task('w1_first_workout', 'Complete your first workout', 'Use the version that fits the week you are actually having.', 'workout_days', 1, '\uD83C\uDFAF', 'movement'),
-        task('w1_workout_feed', 'Share that workout to Feed', 'Keep the receipt. A normal session still counts.', 'workout_feed_posts', 1, '\uD83C\uDFCB\uFE0F', 'movement'),
+        task('w1_first_workout_share', 'Complete and share your first workout', 'Finish the version that fits today, then share the completed workout to Feed.', 'workout_bundle', 1, '\uD83C\uDFAF', 'movement'),
         task('w1_meal_feed', 'Share one normal meal', 'Eat first, then post it. No perfect plate required.', 'meal_feed_posts', 1, '\uD83E\uDD57', 'meals')
       ]
     },
@@ -432,7 +431,8 @@
       instagram_shares: instagramShares,
       workout_instagram_shares: transactions.filter(row => row.transaction_type === 'earn_workout_instagram_share').length,
       meal_instagram_shares: transactions.filter(row => row.transaction_type === 'earn_meal_instagram_share').length,
-      workout_days: workoutDays
+      workout_days: workoutDays,
+      workout_bundle: Math.min(workoutDays, stories.filter(row => row.media_type === 'workout_card').length)
     };
     const definition = getWeekDefinition();
     const tasks = definition.tasks.map(item => {
@@ -509,18 +509,21 @@
     const beforeFirstWeek = Number.isFinite(programStart.getTime())
       && Date.now() < programStart.getTime() + (7 * 24 * 60 * 60 * 1000);
     document.documentElement.classList.toggle('pbb-before-first-week', beforeFirstWeek);
+    document.documentElement.classList.toggle('pbb-unified-next-steps', isPilotUser() || isOnboardingTestUser());
     const definition = getWeekDefinition();
     const completed = progress ? progress.completed_count : 0;
     const total = progress ? progress.total_count : 3;
     const percent = total ? Math.round((completed / total) * 100) : 0;
     const lessonSeen = isCurrentLessonSeen();
     const weekComplete = lessonSeen && total > 0 && completed >= total;
+    const dailyPlan = getUnifiedDailyPlan();
+    const nextAction = dailyPlan[0] || null;
     const cardTitle = !lessonSeen
       ? 'Your Next Step'
-      : (weekComplete ? 'This week is complete.' : 'Your next steps are ready.');
+      : (weekComplete ? 'This week is complete.' : (nextAction ? nextAction.title : 'Your next steps are ready.'));
     const cardCopy = !lessonSeen
       ? 'Finish the App Tour and your first Foundations lesson, then come back here to see exactly what to do next.'
-      : (weekComplete ? 'You built the evidence. Open this week whenever you want to review it.' : definition.body);
+      : (weekComplete ? 'You built the evidence. Open this week whenever you want to review it.' : (nextAction ? nextAction.body : definition.body));
     const cardCta = !lessonSeen
       ? 'Open my first check-in'
       : (weekComplete ? 'Review this week' : 'Open my next steps');
@@ -559,6 +562,40 @@
     }).join('');
   }
 
+  function getUnifiedDailyPlan() {
+    try {
+      if (window.pbbNextSteps && typeof window.pbbNextSteps.getPlan === 'function') return safeArray(window.pbbNextSteps.getPlan());
+    } catch (_) {}
+    return [];
+  }
+
+  function renderDailyPlan() {
+    const plan = getUnifiedDailyPlan();
+    if (!plan.length) {
+      return '<section class="social-journey-section"><h3 class="social-journey-section__heading">Today</h3><div class="social-journey-callout"><strong>You are clear for now.</strong><p>Your next scheduled action will appear here when it is due.</p></div></section>';
+    }
+    const first = plan[0];
+    const remaining = plan.slice(1);
+    const actionButton = item => '<button type="button" class="social-journey-plan-action" onclick="socialJourney.runDailyAction(\'' + escapeHtml(item.id) + '\')" style="--journey-action-accent:' + escapeHtml(item.accent || '#b78a2e') + '"><span class="social-journey-plan-action__mark"></span><span><strong>' + escapeHtml(item.title) + '</strong><small>' + escapeHtml(item.body) + '</small></span><b>' + escapeHtml(item.cta || 'Open') + '</b></button>';
+    return '<section class="social-journey-section"><h3 class="social-journey-section__heading">Up next</h3><div class="social-journey-up-next">' + actionButton(first) + '</div></section>'
+      + (remaining.length ? '<section class="social-journey-section"><h3 class="social-journey-section__heading">Later today</h3><div class="social-journey-plan-list">' + remaining.map(actionButton).join('') + '</div></section>' : '');
+  }
+
+  function renderWeeklyGoalFocus() {
+    let weeklyState = null;
+    try { weeklyState = window.weeklyGoals && typeof window.weeklyGoals.getState === 'function' ? window.weeklyGoals.getState() : null; } catch (_) {}
+    const selected = safeArray(weeklyState && weeklyState.selected);
+    const progressGoals = safeArray(weeklyState && weeklyState.progress && weeklyState.progress.goals);
+    const goals = progressGoals.length ? progressGoals : selected.map(goal => Object.assign({}, goal, { current: 0, complete: false }));
+    if (!goals.length) return '';
+    const rows = goals.map(goal => {
+      const current = Number(goal.current || 0);
+      const target = Number(goal.target || 1);
+      return '<div class="social-journey-weekly-focus__row ' + (goal.complete ? 'is-complete' : '') + '"><span><strong>' + escapeHtml(goal.label || goal.id) + '</strong><small>' + escapeHtml(current + ' / ' + target + ' ' + (goal.unit || '')) + '</small></span><b>' + (goal.complete ? 'Done' : Math.min(100, Math.round((current / target) * 100)) + '%') + '</b></div>';
+    }).join('');
+    return '<section class="social-journey-section"><div class="social-journey-section-heading-row"><h3 class="social-journey-section__heading">This week\'s focus</h3><button type="button" onclick="socialJourney.editWeeklyGoals()">Edit goals</button></div><div class="social-journey-weekly-focus">' + rows + '</div></section>';
+  }
+
   function renderJourney() {
     ensureUi();
     const container = document.getElementById('social-journey-content');
@@ -587,7 +624,9 @@
     container.innerHTML = '<section class="social-journey-hero social-journey-goals-hero">'
       + '<div class="social-journey-hero__eyebrow">' + escapeHtml(definition.phase) + '</div>'
       + '<div class="social-journey-goals-hero__label">YOUR NEXT STEPS</div><h2>' + escapeHtml(definition.title) + '</h2><p>' + escapeHtml(definition.body) + '</p>' + weekDots() + '</section>'
-      + '<section class="social-journey-section"><h3 class="social-journey-section__heading">This week</h3>' + renderTasks() + '</section>'
+      + renderDailyPlan()
+      + renderWeeklyGoalFocus()
+      + '<section class="social-journey-section"><h3 class="social-journey-section__heading">Foundations this week</h3>' + renderTasks() + '</section>'
       + (definition.week === 6 ? '<div class="social-journey-callout"><strong>Foundations is complete after this phase.</strong><p>Weeks 7 to 12 are the optional continuation track for building a public rhythm.</p></div>' : '')
       + (complete ? '<div class="social-journey-callout"><strong>This week is complete.</strong><p>Your next lesson will arrive with the next week. For now, keep the actions small and repeatable.</p></div>' : '')
       + '<section class="social-journey-section"><h3 class="social-journey-section__heading">Reminder route</h3><div class="social-journey-callout"><strong>' + (connectedHandle ? connectedHandle : 'In-app first') + '</strong><p>' + escapeHtml(reminderText) + '</p></div>'
@@ -748,6 +787,16 @@
       try { window.switchAppTab('dashboard'); } catch (_) {}
     }
     showToast('Your next steps are ready on Home.', 'success');
+  }
+
+  function runDailyAction(actionId) {
+    closeJourney();
+    if (window.pbbNextSteps && typeof window.pbbNextSteps.runAction === 'function') window.pbbNextSteps.runAction(actionId);
+  }
+
+  function editWeeklyGoals() {
+    closeJourney();
+    if (typeof window.openWeeklyGoalsModal === 'function') window.openWeeklyGoalsModal({ source: 'unified-next-steps' });
   }
 
   function reviewLesson() {
@@ -1174,6 +1223,9 @@
     showGoals,
     previewGoalsForTest,
     resetActivationForTest,
+    isUnifiedPlanActive: function () { return isPilotUser() || isOnboardingTestUser(); },
+    runDailyAction,
+    editWeeklyGoals,
     showWelcome,
     openCoachInbox,
     continueFromInbox,
@@ -1215,5 +1267,11 @@
   window.addEventListener('pbbInitComplete', init);
   window.addEventListener('appCriticalContentReady', init);
   window.addEventListener('pbbWeeklyGoalsSaved', refresh);
+  window.addEventListener('pbbNextStepsUpdated', function () {
+    if (!initialized || !state) return;
+    renderCard();
+    const view = document.getElementById('social-journey-view');
+    if (view && view.classList.contains('is-open') && viewStage === 'goals') renderJourney();
+  });
   document.addEventListener('visibilitychange', function () { if (!document.hidden && initialized) refresh(); });
 })();
