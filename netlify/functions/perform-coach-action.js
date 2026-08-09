@@ -29,6 +29,10 @@ const {
     normalizeGeneratedProgramSchedule,
     summarizeSchedule,
 } = require('./_lib/coach-actions');
+const {
+    loadVideoBackedExerciseCatalog,
+    resolveVideoBackedExercise,
+} = require('./_lib/exercise-library-search');
 
 async function supabase(path, options = {}) {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
@@ -528,6 +532,7 @@ async function performEditWorkoutExercises({ alert, action }) {
     const customTemplateMap = await loadCustomWorkoutTemplates(clientId, program.weekly_schedule || []);
     const result = applyExerciseEditToSchedule(program.weekly_schedule || [], action.payload || {}, {
         materializeWorkout: item => materializeWorkoutForEdit({ item, program, customTemplateMap }),
+        resolveExercise: resolveVideoBackedExercise,
     });
     const updatedAt = new Date().toISOString();
     await supabase(`custom_workout_programs?id=eq.${encodeURIComponent(program.id)}`, {
@@ -601,6 +606,7 @@ function buildProgramGenerationPrompt({ alert, action, clientId, program, contex
     const currentSchedule = program?.weekly_schedule || [];
     const instruction = action.payload?.instruction || alert.data?.message_preview || '';
     const targetDays = action.payload?.target_days?.length ? action.payload.target_days.join(', ') : '';
+    const videoBackedExerciseNames = loadVideoBackedExerciseCatalog().map(row => row.name);
     return `You are Shannon's private programming assistant inside Balance.
 
 Create a safe, practical weekly workout program update for this client. Shannon will review/approve this backend action; the client will not see this text.
@@ -625,8 +631,12 @@ Rules:
 - Include rest/recovery days. Do not prescribe extreme volume.
 - Respect any injuries, equipment, low energy, cycle notes, and exercise dislikes from context.
 - If the request says certain days, schedule workouts on those days where sensible.
-- Prefer exercise names likely to exist in Shannon's library: dumbbell/barbell/machine/cable/bodyweight/yoga names. Avoid made-up equipment.
+- Every exercise name MUST be copied exactly from the video-backed library below. Never invent, rename, shorten, combine, or qualify an exercise name.
+- If the exact movement you want is absent, choose the closest suitable exercise from the list. Every saved exercise must have a demonstration video.
 - This is programming support, not medical advice.
+
+VIDEO-BACKED EXERCISE LIBRARY (exact names only):
+${videoBackedExerciseNames.join('\n')}
 
 CLIENT_ID: ${clientId}
 CLIENT_NAME: ${alert.client_name || context.user?.name || 'client'}
@@ -658,7 +668,9 @@ async function performRegenerateWorkoutProgram({ alert, action }) {
         maxOutputTokens: 5000,
         temperature: 0.35,
     });
-    const generated = normalizeGeneratedProgramSchedule(parseJsonObject(reply));
+    const generated = normalizeGeneratedProgramSchedule(parseJsonObject(reply), {
+        resolveExercise: resolveVideoBackedExercise,
+    });
     const before = summarizeSchedule(program?.weekly_schedule || []);
     const updatedAt = new Date().toISOString();
     let programId = program?.id || null;

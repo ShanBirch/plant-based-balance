@@ -80,6 +80,13 @@ function loadExerciseNames() {
     return loadExerciseCatalog().map(row => row.name);
 }
 
+function hasUsableExerciseVideoUrl(value) {
+    const url = String(value || '').trim();
+    if (!/^https?:\/\//i.test(url) && !url.startsWith('/')) return false;
+    if (/drive\.google\.com/i.test(url)) return false;
+    return /backblazeb2\.com/i.test(url) || /\.(?:mp4|mov|webm)(?:[?#].*)?$/i.test(url);
+}
+
 function normalizeText(value) {
     return String(value || '')
         .normalize('NFKD')
@@ -88,6 +95,18 @@ function normalizeText(value) {
         .replace(/['`]/g, '')
         .replace(/[^a-z0-9]+/g, ' ')
         .trim();
+}
+
+function loadVideoBackedExerciseCatalog() {
+    return loadExerciseCatalog().filter(row => hasUsableExerciseVideoUrl(row.videoUrl));
+}
+
+function resolveVideoBackedExercise(exerciseName) {
+    const normalized = normalizeText(exerciseName);
+    if (!normalized) return null;
+    const match = loadVideoBackedExerciseCatalog()
+        .find(row => normalizeText(row.name) === normalized);
+    return match ? { name: match.name, videoUrl: match.videoUrl } : null;
 }
 
 function tokenize(value) {
@@ -243,6 +262,9 @@ function _resetExerciseNameCacheForTests() {
 module.exports = {
     loadExerciseCatalog,
     loadExerciseNames,
+    loadVideoBackedExerciseCatalog,
+    hasUsableExerciseVideoUrl,
+    resolveVideoBackedExercise,
     normalizeText,
     hasExerciseLibrarySupportIntent,
     findExerciseLibraryMatchDetails,

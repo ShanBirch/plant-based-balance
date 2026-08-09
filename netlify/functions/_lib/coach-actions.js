@@ -668,14 +668,22 @@ function findScheduleItemForExerciseIntent(schedule, payload = {}) {
     return scored[0]?.item || null;
 }
 
-function normalizeExerciseForWorkout(exercise) {
+function normalizeExerciseForWorkout(exercise, options = {}) {
     const source = exercise && typeof exercise === 'object' ? exercise : { name: exercise };
+    const requestedName = source.name || 'Exercise';
+    const resolved = typeof options.resolveExercise === 'function'
+        ? options.resolveExercise(requestedName)
+        : null;
+    if (typeof options.resolveExercise === 'function' && !resolved) {
+        throw new Error(`No usable exercise video found for: ${requestedName}`);
+    }
     const sets = Number(source.sets);
     return {
-        name: titleCaseExercise(source.name || 'Exercise'),
+        name: resolved?.name || titleCaseExercise(requestedName),
         sets: Number.isFinite(sets) && sets > 0 ? Math.min(sets, 8) : 3,
         reps: String(source.reps || '10-12').replace(/\s+/g, ' ').trim(),
         desc: cleanInstruction(source.desc || source.description || 'Coach-added exercise', 120),
+        ...(resolved?.videoUrl ? { video_url: resolved.videoUrl } : {}),
     };
 }
 
@@ -711,7 +719,7 @@ function findScheduleItemForExerciseEdit(schedule, payload = {}) {
     throw new Error('Need a specific day or workout name for this exercise edit');
 }
 
-function applyExerciseEditToWorkout(workoutInput, payload = {}) {
+function applyExerciseEditToWorkout(workoutInput, payload = {}, options = {}) {
     if (!workoutInput || isRestWorkout(workoutInput)) throw new Error('Cannot edit exercises on a rest day');
     const workout = {
         ...workoutInput,
@@ -731,7 +739,7 @@ function applyExerciseEditToWorkout(workoutInput, payload = {}) {
     const op = payload.operation;
     if (op === 'add') {
         const incoming = (Array.isArray(payload.exercises) ? payload.exercises : [])
-            .map(normalizeExerciseForWorkout)
+            .map(ex => normalizeExerciseForWorkout(ex, options))
             .filter(ex => ex.name);
         if (!incoming.length) throw new Error('No exercise supplied to add');
         incoming.forEach(ex => {
@@ -752,7 +760,7 @@ function applyExerciseEditToWorkout(workoutInput, payload = {}) {
                 ...payload.replacement_exercise,
                 sets: payload.replacement_exercise?.sets || current.sets,
                 reps: payload.replacement_exercise?.reps || current.reps,
-            }),
+            }, options),
         };
     } else if (op === 'update') {
         const index = findExerciseIndex(workout.exercises, payload.exercise_name);
@@ -809,7 +817,7 @@ function applyExerciseEditToSchedule(scheduleInput, payload = {}, options = {}) 
     if (shouldMaterialize) {
         item.workout = options.materializeWorkout(item, payload);
     }
-    const edit = applyExerciseEditToWorkout(item.workout, payload);
+    const edit = applyExerciseEditToWorkout(item.workout, payload, options);
     item.workout = edit.workout;
     const after = summarizeSchedule(schedule);
     return {
@@ -822,7 +830,7 @@ function applyExerciseEditToSchedule(scheduleInput, payload = {}, options = {}) 
     };
 }
 
-function normalizeGeneratedProgramSchedule(value) {
+function normalizeGeneratedProgramSchedule(value, options = {}) {
     const source = value && typeof value === 'object' ? value : {};
     const rawSchedule = source.weekly_schedule || source.weeklySchedule || source.schedule;
     if (!Array.isArray(rawSchedule)) throw new Error('Generated program did not include weekly_schedule');
@@ -836,7 +844,7 @@ function normalizeGeneratedProgramSchedule(value) {
             workout = restWorkout();
         } else {
             const exercises = Array.isArray(rawWorkout.exercises)
-                ? rawWorkout.exercises.slice(0, 10).map(normalizeExerciseForWorkout)
+                ? rawWorkout.exercises.slice(0, 10).map(ex => normalizeExerciseForWorkout(ex, options))
                 : [];
             if (!exercises.length) throw new Error(`Generated ${day} workout has no exercises`);
             workout = {
