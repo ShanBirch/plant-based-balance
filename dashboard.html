@@ -2223,7 +2223,7 @@ if(!window._pbbIsIOSSafari) {
     .ai-plan-preview__copy small { display: block; color: #8c681b; -webkit-text-fill-color: #8c681b; font-size: .64rem; font-weight: 750; text-transform: uppercase; }
     .ai-plan-preview__copy strong { display: -webkit-box; margin-top: 3px; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; font-family: 'Playfair Display', serif; font-size: .82rem; line-height: 1.2; }
     .ai-plan-preview.is-complete::after { content: '✓'; position: absolute; top: 7px; right: 7px; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: #171613; color: #fff; -webkit-text-fill-color: #fff; font-weight: 800; }
-    @media (max-width: 380px) {
+    @media (max-width: 480px) {
         .ai-plan-hero__title { font-size: 1.25rem; }
         .ai-plan-focus-layout #ai-plan-header { padding-inline: 15px !important; }
         .ai-plan-focus-layout #weekly-meal-evolution-btn { flex: 0 0 42px; width: 42px; height: 42px; padding: 0 !important; justify-content: center; overflow: hidden; font-size: 0 !important; }
@@ -2311,7 +2311,7 @@ if(!window._pbbIsIOSSafari) {
                                 <h2 id="ai-plan-name" style="margin: 0 0 4px; font-family: 'Playfair Display'; color: var(--primary); font-size: 1.3rem;">Your Meal Plan</h2>
                                 <p id="ai-plan-desc" style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">Tailored to your goals</p>
                             </div>
-                            <button id="weekly-meal-evolution-btn" onclick="buildNextWeekFromMealHistory()" style="background: none; border: 1px solid var(--primary); color: var(--primary); padding: 6px 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                            <button id="weekly-meal-evolution-btn" type="button" aria-label="Build next week" title="Build next week" onclick="buildNextWeekFromMealHistory()" style="background: none; border: 1px solid var(--primary); color: var(--primary); padding: 6px 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;">
                                 <svg viewBox="0 0 24 24" style="width: 14px; height: 14px; fill: currentColor;"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
                                 Build Next Week
                             </button>
