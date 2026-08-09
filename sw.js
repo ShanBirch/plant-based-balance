@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v280'; // v280: Shannon-only Gym Arrival pilot
+const CACHE_NAME = 'pbb-app-v281'; // v281: refresh onboarding lesson contrast assets
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
