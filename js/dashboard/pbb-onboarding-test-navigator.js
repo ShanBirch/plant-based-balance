@@ -117,6 +117,9 @@
 
     function jumpToNextSteps() {
         closeBlockingSetup();
+        if (window.socialJourney && typeof window.socialJourney.previewGoalsForTest === 'function') {
+            if (window.socialJourney.previewGoalsForTest()) return;
+        }
         if (callFirst(['openSocialJourney', 'showSocialJourney', 'openFirstActions', 'showFirstActions'])) return;
         if (clickByText(['your next steps', 'make the first reps visible', 'start today\'s first step'])) return;
         if (!callFirst(['showSection', 'switchSection'], ['home'])) clickByText(['home']);

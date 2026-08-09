@@ -697,6 +697,21 @@
     if (scroll) scroll.scrollTop = 0;
   }
 
+  function previewGoalsForTest() {
+    if (!state || !isPilotUser()) return false;
+    const settings = safeObject(state.settings);
+    const weeks = new Set(lessonSeenWeeks());
+    weeks.add(Number(state.current_week));
+    state.onboarding_complete = true;
+    state.settings = Object.assign({}, settings, {
+      lesson_seen_weeks: Array.from(weeks).sort((a, b) => a - b)
+    });
+    viewStage = 'goals';
+    renderCard();
+    openJourney('goals');
+    return true;
+  }
+
   function useGoals() {
     closeJourney();
     if (typeof window.switchAppTab === 'function') {
@@ -1126,6 +1141,7 @@
     open: openJourney,
     close: closeJourney,
     showGoals,
+    previewGoalsForTest,
     showWelcome,
     openCoachInbox,
     continueFromInbox,
