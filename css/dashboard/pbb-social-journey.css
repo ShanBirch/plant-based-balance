@@ -259,3 +259,22 @@ html[data-pbb-theme="light"] .social-journey-pilot-controls { background: rgba(2
 .social-journey-welcome__transcript { margin-top:18px; padding:16px; border:1px solid rgba(154,105,25,.24); border-radius:16px; background:rgba(216,178,94,.1); }
 .social-journey-welcome__transcript strong { color:#8b5e17; -webkit-text-fill-color:#8b5e17; font-size:.72rem; letter-spacing:.08em; text-transform:uppercase; }
 .social-journey-welcome__transcript p { margin:7px 0 0; color:inherit; -webkit-text-fill-color:inherit; font-size:.78rem; line-height:1.5; }
+/* Activation goals keep the editorial black card with readable cream type. */
+#social-journey-view.is-activation .social-journey-goals-hero {
+  color: #fffaf0;
+  -webkit-text-fill-color: #fffaf0;
+  background: radial-gradient(circle at 94% 10%, rgba(216,178,94,.15), transparent 34%), linear-gradient(145deg, #24211b 0%, #151515 57%, #0e0e0e 100%);
+}
+#social-journey-view.is-activation .social-journey-goals-hero h2 {
+  color: #fffaf0;
+  -webkit-text-fill-color: #fffaf0;
+}
+#social-journey-view.is-activation .social-journey-goals-hero p {
+  color: #ded8cc;
+  -webkit-text-fill-color: #ded8cc;
+}
+#social-journey-view.is-activation .social-journey-goals-hero__label,
+#social-journey-view.is-activation .social-journey-goals-hero .social-journey-hero__eyebrow {
+  color: #e7bf62;
+  -webkit-text-fill-color: #e7bf62;
+}

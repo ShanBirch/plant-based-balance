@@ -1462,3 +1462,31 @@ html[data-pbb-theme="light"] #onboarding-wizard select {
 #onboarding-wizard #slide-7 .wizard-calendar-row {
     border-bottom-color: rgba(154,105,25,.16) !important;
 }
+/* Text-answer questions should not reserve an empty choice panel on phones. */
+#onboarding-wizard.wizard-chat-mode:not(.wizard-chat-intro):not(.wizard-chat-complete) .wizard-chat-choices:empty {
+    display: none !important;
+    min-height: 0 !important;
+    max-height: 0 !important;
+    flex: 0 0 0 !important;
+    padding: 0 !important;
+}
+
+@media (max-width: 560px) {
+    #onboarding-wizard.onboarding-overlay {
+        align-items: flex-start;
+        padding: max(6px, env(safe-area-inset-top, 0px)) 6px max(6px, env(safe-area-inset-bottom, 0px));
+    }
+
+    #onboarding-wizard .onboarding-modal.wizard-container,
+    html[data-pbb-theme="light"] #onboarding-wizard .onboarding-modal.wizard-container {
+        width: calc(100vw - 12px) !important;
+        height: calc(100svh - max(12px, env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))) !important;
+        max-height: calc(100svh - max(12px, env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))) !important;
+        border-radius: 22px !important;
+    }
+
+    #onboarding-wizard .wizard-chat-input-row {
+        flex: 0 0 auto;
+        padding-bottom: max(4px, env(safe-area-inset-bottom, 0px));
+    }
+}
