@@ -116,8 +116,15 @@
 
 /* Keep dark editorial-card display text readable even when dashboard theme
    heading rules load later and carry greater specificity on mobile. */
+#social-journey-view .social-journey-hero h2,
 #social-journey-view .social-journey-lesson h2,
 #social-journey-view .social-journey-lesson__number strong {
+  color: #f8f7f2 !important;
+  -webkit-text-fill-color: #f8f7f2 !important;
+  opacity: 1 !important;
+}
+
+.social-journey-card .social-journey-card__title {
   color: #f8f7f2 !important;
   -webkit-text-fill-color: #f8f7f2 !important;
   opacity: 1 !important;

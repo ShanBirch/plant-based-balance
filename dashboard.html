@@ -223,7 +223,10 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
 <script>
 (function() {
     // Immediately apply saved theme from localStorage before page renders
-    var savedTheme = localStorage.getItem('userThemePreference') || 'default';
+    var storedTheme = localStorage.getItem('userThemePreference');
+    var onboardingPending = localStorage.getItem('onboardingComplete') !== 'true';
+    var savedTheme = storedTheme || (onboardingPending ? 'light' : 'default');
+    if (!storedTheme && onboardingPending) localStorage.setItem('userThemePreference', 'light');
     savedTheme = savedTheme === 'light' ? 'light' : 'default';
     document.documentElement.setAttribute('data-pbb-theme', savedTheme === 'light' ? 'light' : 'dark');
     document.documentElement.classList.toggle('pbb-theme-light', savedTheme === 'light');
@@ -597,7 +600,7 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
 <script src="js/dashboard/script_part_4.js?v=theme-toggle-shell-v1"></script>
 
 <link rel="stylesheet" href="css/dashboard/dashboard-style-1.css?v=67">
-<link rel="stylesheet" href="css/dashboard/pbb-social-journey.css?v=7">
+<link rel="stylesheet" href="css/dashboard/pbb-social-journey.css?v=8">
 
 <script>if(window._crumb)window._crumb('head_complete');</script>
 <style id="balance-earned-celebration-styles">
@@ -12936,7 +12939,7 @@ if (window._pbbIsIOSSafari) {
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=3"></script>
-<script src="js/dashboard/pbb-onboarding-test-navigator.js?v=3"></script>
+<script src="js/dashboard/pbb-onboarding-test-navigator.js?v=4"></script>
 
 <!-- Image Modal HTML -->
 <div class="image-modal-overlay" id="imageModal" onclick="closeImageModal()">

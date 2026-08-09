@@ -66,6 +66,8 @@
     function restartOnboarding() {
         closeBlockingSetup();
         localStorage.removeItem('featureTourComplete');
+        localStorage.setItem('userThemePreference', 'light');
+        if (typeof window.applyAppTheme === 'function') window.applyAppTheme('light');
         if (typeof window.startTransferredClientFlow === 'function') {
             window.startTransferredClientFlow();
             notify('Restarting the tailored onboarding flow');
