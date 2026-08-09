@@ -66,23 +66,28 @@ test('reminder scanner rejects ordinary public invocations', async () => {
 test('dashboard ships both discovery systems and a visible pilot card target', () => {
     const html = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
     assert.match(html, /id="social-journey-card"/);
-    assert.match(html, /social-journey-shannon-pilot-v2/);
-    assert.match(html, /sel:'#social-journey-card', title:'Your weekly journey'/);
-    assert.match(html, /pbb-social-journey\.js\?v=2/);
-    assert.match(html, /pbb-social-journey\.css\?v=2/);
+    assert.match(html, /aria-label="Open Your Next Step"/);
+    assert.match(html, /social-journey-your-next-step-v1/);
+    assert.match(html, /allFeatures = \[\];[\s\S]*?allFeatures\.push\(\{[\s\S]*?id: 'social-journey-your-next-step-v1'/);
+    assert.match(html, /sel:'#social-journey-card', title:'Your Next Step'/);
+    assert.match(html, /finish this App Tour and your first Balance Foundations lesson/);
+    assert.match(html, /pbb-social-journey\.js\?v=19/);
+    assert.match(html, /pbb-social-journey\.css\?v=6/);
 });
 
 test('journey UI is lesson-led, card-triggered and preserves account data on restart', () => {
     const source = fs.readFileSync(path.join(root, 'js/dashboard/pbb-social-journey.js'), 'utf8');
     const weekMatches = source.match(/\n\s+week: \d+,/g) || [];
     assert.equal(weekMatches.length, 12);
-    assert.match(source, /viewStage = isCurrentLessonSeen\(\) \? 'goals' : 'lesson'/);
+    assert.match(source, /viewStage = typeof stage === 'string' \? stage : \(isCurrentLessonSeen\(\) \? 'goals' : 'lesson'\)/);
     assert.match(source, /lesson_seen_weeks/);
-    assert.match(source, /Use these goals/);
+    assert.match(source, /Use these next steps/);
     assert.match(source, /openFeedComposerMediaSource\('camera-photo'\)/);
     assert.match(source, /'feed-photo'/);
     assert.doesNotMatch(source, /setTimeout\(openOnboarding/);
     assert.match(source, /Restart only this journey/);
+    assert.match(source, /Your Next Step/);
+    assert.doesNotMatch(source, /Your inbox|Welcome to your Inbox/);
     assert.match(source, /settings\s*\n\s*}\);/);
     assert.doesNotMatch(source, /from\(['"]users['"]\).*delete/i);
 });

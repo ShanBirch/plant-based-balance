@@ -499,10 +499,10 @@
     const lessonSeen = isCurrentLessonSeen();
     const weekComplete = lessonSeen && total > 0 && completed >= total;
     const cardTitle = !lessonSeen
-      ? 'Your inbox'
+      ? 'Your Next Step'
       : (weekComplete ? 'This week is complete.' : 'Your next steps are ready.');
     const cardCopy = !lessonSeen
-      ? 'This is where Coach Shannon will message you. Press play to hear your first check-in.'
+      ? 'Finish the App Tour and your first Foundations lesson, then come back here to see exactly what to do next.'
       : (weekComplete ? 'You built the evidence. Open this week whenever you want to review it.' : definition.body);
     const cardCta = !lessonSeen
       ? 'Open my first check-in'
@@ -609,12 +609,12 @@
     ensureUi();
     const container = document.getElementById('social-journey-content');
     if (!container) return;
-    document.querySelector('.social-journey-header__title').textContent = 'Your inbox';
+    document.querySelector('.social-journey-header__title').textContent = 'Your Next Step';
     document.querySelector('.social-journey-header__week').textContent = 'A message from Coach Shannon';
     container.innerHTML = '<section class="social-journey-welcome">'
       + '<div class="social-journey-welcome__eyebrow">YOUR FIRST CHECK-IN &middot; PRESS PLAY</div>'
-      + '<h2>Welcome to your Inbox.</h2>'
-      + '<p>This is where Coach Shannon will message you with check-ins, voice notes and updates to your plan. Press play to hear your first check-in.</p>'
+      + '<h2>Start here.</h2>'
+      + '<p>Press play for your first check-in, then complete your first Balance Foundations lesson. After that, Your Next Step will show you exactly what to do next.</p>'
       + '<audio class="social-journey-welcome__audio" controls preload="metadata" onerror="this.classList.add(\'is-unavailable\')"><source src="' + escapeHtml(WELCOME_AUDIO_URL) + '" type="audio/mpeg"></audio>'
       + '<div class="social-journey-welcome__transcript"><strong>The short version</strong><p>Use the app as evidence, not judgment. Log the meal you actually ate, complete the workout that fits today, and share the ordinary reps. That is how we build something that lasts.</p></div>'
       + '</section><div class="social-journey-lesson-action"><button type="button" class="social-journey-button" onclick="socialJourney.reviewLesson()">Open my first lesson</button><button type="button" class="social-journey-text-button" onclick="socialJourney.close()">Not now</button></div>';
@@ -755,7 +755,7 @@
       return;
     }
     if (retry < 40) setTimeout(function () { openCoachInbox(retry + 1); }, 150);
-    else showToast('Your inbox is still loading. Tap Inbox and open Coach Shannon.', 'info');
+    else showToast('Messages are still loading. Tap the messages icon and open Coach Shannon.', 'info');
   }
 
   function continueFromInbox() {
