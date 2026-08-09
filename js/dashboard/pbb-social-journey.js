@@ -208,6 +208,10 @@
       && String(user.email || '').trim().toLowerCase() === SHANNON_EMAIL;
   }
 
+  function isOnboardingTestUser() {
+    return currentUserId() === 'cc632168-874c-447e-a4ad-ee7f6b40bb7e';
+  }
+
   function escapeHtml(value) {
     return String(value == null ? '' : value)
       .replace(/&/g, '&amp;')
@@ -698,7 +702,8 @@
   }
 
   function previewGoalsForTest() {
-    if (!state || !isPilotUser()) return false;
+    if (!isPilotUser() && !isOnboardingTestUser()) return false;
+    if (!state) state = normalizeState(defaultState());
     const settings = safeObject(state.settings);
     const weeks = new Set(lessonSeenWeeks());
     weeks.add(Number(state.current_week));
