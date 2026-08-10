@@ -20053,6 +20053,29 @@ function isTimeBasedExercise(exercise) {
     return /\b(?:sec|secs|second|seconds|min|mins|minute|minutes)\b/.test(repsText);
 }
 
+function getPrescribedSetPrefill(exercise, isTimeBased) {
+    const prescription = String(exercise?.reps || exercise?.time || '').trim();
+    if (!prescription) return null;
+
+    // Logging fields are deliberately numeric so the completed set can still
+    // be totalled and compared. Qualifiers such as "each side" remain visible
+    // in the exercise prescription/cue above the logger.
+    const numericTarget = prescription.match(/\d+(?:\.\d+)?/);
+    if (!numericTarget) return null;
+    return isTimeBased
+        ? { time: numericTarget[0] }
+        : { reps: numericTarget[0] };
+}
+
+function mergeSetPrefill(previousSet, prescribedSet) {
+    if (!previousSet && !prescribedSet) return null;
+    return {
+        kg: previousSet?.kg || '',
+        reps: previousSet?.reps || prescribedSet?.reps || '',
+        time: previousSet?.time || prescribedSet?.time || ''
+    };
+}
+
 function getDateBasedCustomProgramWeekNumber(program = window.activeCustomProgramCache) {
     if (!program || !program.start_date) return null;
 
@@ -21303,7 +21326,7 @@ function queueWorkoutExerciseVideosForOffline(exercises) {
         if (!Array.isArray(exercises) || typeof cacheWorkoutVideosForOffline !== 'function') return;
         if (navigator.connection && navigator.connection.saveData) return;
         const urls = exercises
-            .map(ex => findVideoMatch(ex.name))
+            .map(ex => ex?.video_url || ex?.videoUrl || findVideoMatch(ex?.name))
             .filter(Boolean);
         if (urls.length === 0) return;
         setTimeout(() => cacheWorkoutVideosForOffline(urls), 1500);
@@ -21488,7 +21511,7 @@ function renderWorkoutExercises(exercises) {
         card.setAttribute('data-is-user-added', ex.isUserAdded || false);
         card.style.cssText = 'background:white; border-radius:24px; box-shadow:0 10px 30px rgba(0,0,0,0.05); margin-bottom:25px; overflow:hidden; border:1px solid #f1f5f9;';
 
-        const videoUrl = findVideoMatch(ex.name);
+        const videoUrl = ex.video_url || ex.videoUrl || findVideoMatch(ex.name);
         const previousSummaryHtml = formatPreviousWorkoutSummary(ex.name);
         const previousSummary = getPreviousWorkoutSummary(ex.name);
         const isUserAdded = ex.isUserAdded || false;
@@ -21500,9 +21523,10 @@ function renderWorkoutExercises(exercises) {
         const hasWeekSpecificPlan = !!getCurrentWeeklyPlanItem(ex);
         const numSets = hasWeekSpecificPlan ? prescribedSets : (previousSummary && previousSummary.setCount > 0 ? previousSummary.setCount : prescribedSets);
         const isTimeBased = isTimeBasedExercise(ex);
+        const prescribedSet = getPrescribedSetPrefill(ex, isTimeBased);
         const setsHtml = Array.from({length: numSets}, (_, setIdx) => {
             const prevSet = previousSummary && previousSummary.sets[setIdx] ? previousSummary.sets[setIdx] : null;
-            return getSetRowHtml(ex.name, setIdx + 1, isTimeBased, prevSet);
+            return getSetRowHtml(ex.name, setIdx + 1, isTimeBased, mergeSetPrefill(prevSet, prescribedSet));
         }).join('');
 
         card.innerHTML = `
@@ -21559,7 +21583,7 @@ function renderYogaExercises(exercises) {
     container.innerHTML = '';
 
     exercises.forEach((ex, idx) => {
-        const videoUrl = findVideoMatch(ex.name);
+        const videoUrl = ex.video_url || ex.videoUrl || findVideoMatch(ex.name);
         const isUserAdded = ex.isUserAdded || false;
         const escapedName = ex.name.replace(/'/g, "\\'");
 

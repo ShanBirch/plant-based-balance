@@ -33,7 +33,7 @@ test('exercise page index stays inside available cards', () => {
 test('dashboard loads the player once and cache-busts both main loader paths', () => {
     const html = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
     assert.equal((html.match(/pbb-workout-swipe-player\.js\?v=3/g) || []).length, 1);
-    assert.equal((html.match(/dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=154/g) || []).length, 2);
+    assert.equal((html.match(/dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=176/g) || []).length, 2);
     assert.match(html, /id="workout-add-existing-wrap"/);
     assert.match(html, /id="workout-add-existing-exercise-btn"/);
 });
@@ -54,6 +54,18 @@ test('workout renderers synchronize the alternate player', () => {
     assert.ok((source.match(/PBBWorkoutSwipePlayer\?\.sync/g) || []).length >= 6);
     assert.match(source, /card\.dataset\.prescribedSets/);
     assert.match(source, /card\.dataset\.prescribedReps/);
+});
+
+test('first-time workout rows prefill prescribed reps or time', () => {
+    const source = fs.readFileSync(
+        path.join(root, 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js'),
+        'utf8'
+    );
+    assert.match(source, /function getPrescribedSetPrefill\(exercise, isTimeBased\)/);
+    assert.match(source, /isTimeBased\s*\?\s*\{ time: numericTarget\[0\] \}/);
+    assert.match(source, /\{ reps: numericTarget\[0\] \}/);
+    assert.match(source, /mergeSetPrefill\(prevSet, prescribedSet\)/);
+    assert.match(source, /ex\.video_url \|\| ex\.videoUrl \|\| findVideoMatch\(ex\.name\)/);
 });
 
 test('Francesca repaired workout uses four exact video catalog exercises', () => {
