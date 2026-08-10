@@ -378,29 +378,6 @@
     }
     .print-button:hover, .print-button:focus-visible { background: #e8c974; outline: 3px solid rgba(216,178,90,0.25); }
 
-    .protocol-alert {
-      display: grid;
-      grid-template-columns: auto 1fr;
-      gap: 18px;
-      align-items: start;
-      margin-bottom: 28px;
-      padding: 24px 26px;
-      border-left: 5px solid var(--red);
-      border-radius: 0 18px 18px 0;
-      background: var(--red-soft);
-    }
-    .protocol-alert .tag {
-      padding: 6px 10px;
-      border-radius: 999px;
-      background: var(--red);
-      color: #fff;
-      font-size: 0.68rem;
-      font-weight: 700;
-      letter-spacing: 0.09em;
-      text-transform: uppercase;
-    }
-    .protocol-alert strong { display: block; margin-bottom: 7px; color: var(--red); }
-    .protocol-alert p { color: #673936; font-size: 0.9rem; }
     .protocol-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
     .protocol-card { padding: 30px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); }
     .protocol-card.full { grid-column: 1 / -1; }
@@ -470,7 +447,6 @@
       .section-head { gap: 20px; }
       .body-map, .compare-grid, .route-grid, .monitor-grid, .urgent-grid, .protocol-grid, .protocol-numbers, .medicine-grid, .guardrail-grid { grid-template-columns: 1fr; }
       .protocol-card.full { grid-column: auto; }
-      .protocol-alert { grid-template-columns: 1fr; }
       .body-card { min-height: auto; }
       .body-card .num { margin-bottom: 24px; }
       .release-pair { gap: 8px; }
@@ -830,20 +806,12 @@
         <p class="section-intro">A clearly organised draft of the proposed plan for Shane to take to a doctor and pharmacist. It is not a prescription or a substitute for individual medical assessment, blood tests and supervised injection training.</p>
       </div>
 
-      <div class="protocol-alert" role="note" aria-label="Important protocol safety note">
-        <span class="tag">Important</span>
-        <div>
-          <strong>The proposed supply does not safely match the schedule.</strong>
-          <p>Twelve weeks of every-other-day injections is about 42 injections. Twenty single-use ampoules cover only 20 injections when each opened ampoule is discarded correctly. Do not store an opened ampoule, transfer leftover oil at home or rely on zero-dead-space syringes to solve this mismatch. Confirm the product presentation and full supply with a pharmacist before starting.</p>
-        </div>
-      </div>
-
       <div class="protocol-grid">
         <article class="protocol-card">
           <span class="protocol-kicker">Supplies and gear</span>
           <h3>Proposed checklist</h3>
           <ul class="protocol-list">
-            <li><strong>Testosterone base:</strong> Panpharma testosterone enanthate, proposed supply of 20 ampoules at 250 mg/mL. The packaging, prescription and actual ampoule volume must be checked.</li>
+            <li><strong>Testosterone base:</strong> 2 &times; Test-Enanthate 250 multidose vials, 10 mL each at 250 mg/mL, with MCT carrier oil. Total proposed supply: 20 mL and 5,000 mg.</li>
             <li><strong>Hair protection:</strong> Propescar / finasteride, 30 tablets at 5 mg.</li>
             <li><strong>Estrogen control:</strong> Adex-1 / anastrozole, 50 tablets at 1 mg.</li>
             <li><strong>Post-cycle therapy:</strong> Tamox / tamoxifen (Nolvadex), 50 mg tablets.</li>
@@ -875,8 +843,8 @@
           <ul class="protocol-list">
             <li><strong>Proposed sites:</strong> side deltoid or ventrogluteal injection. The exact route and site must match the product information and clinician training.</li>
             <li><strong>Volume conversion:</strong> on a U-100 syringe, 100 units equals 1 mL, so 40 units equals 0.4 mL. U-100 markings describe volume here, not an insulin dose.</li>
-            <li><strong>Ampoule preparation:</strong> if the product is in a glass ampoule, do not inject air into it. Open only when ready, use sterile equipment, draw carefully and discard all unused oil and the ampoule after that injection. Never reuse a needle or syringe.</li>
-            <li><strong>Vial preparation:</strong> only inject air into a rubber-stoppered vial if the exact product is confirmed as a vial and a clinician or pharmacist has taught that technique. Follow the manufacturer instructions rather than treating an ampoule and vial as interchangeable.</li>
+            <li><strong>Supply calculation:</strong> the 12-week schedule uses 16.8 mL or 4,200 mg. Two 10 mL vials provide 20 mL or 5,000 mg, leaving a 3.2 mL or 800 mg buffer before normal drawing losses.</li>
+            <li><strong>Vial handling:</strong> use only if the sealed vial label confirms 250 mg/mL, sterile multidose use, MCT carrier, manufacturer, batch, expiry and the after-first-puncture storage period. Follow the labelled handling instructions and use new sterile equipment for every withdrawal and injection.</li>
           </ul>
           <div class="protocol-note"><strong>Dose context:</strong> 350 mg per week is not a standard testosterone-replacement schedule and is substantially above usual replacement exposure. More frequent injections may reduce peaks and troughs, but they do not remove risks such as fertility suppression, raised haematocrit, blood-pressure change, acne, hair loss, mood effects or cardiovascular complications.</div>
         </article>
@@ -918,8 +886,8 @@
           <span class="protocol-kicker">Harm reduction and hygiene</span>
           <h3>Non-negotiable guardrails</h3>
           <div class="guardrail-grid">
-            <div class="guardrail"><strong>Single use means single use</strong><p>Use a new sterile needle and syringe for every injection. Never save an opened ampoule or pool leftovers. Put used equipment straight into an approved sharps container.</p></div>
-            <div class="guardrail"><strong>No zero-waste promise</strong><p>Fixed-needle syringes reduce dead-space loss, but they do not make 20 ampoules cover about 42 injections safely. Sterility comes before avoiding waste.</p></div>
+            <div class="guardrail"><strong>Multidose vial hygiene</strong><p>Use a new sterile needle and syringe for every withdrawal and injection, disinfect the stopper as directed and put used equipment straight into an approved sharps container.</p></div>
+            <div class="guardrail"><strong>Quantity confirmed</strong><p>Two 10 mL vials at 250 mg/mL provide 5,000 mg. The proposed 12-week schedule uses 4,200 mg, leaving an 800 mg buffer before normal drawing losses.</p></div>
             <div class="guardrail"><strong>Acne care</strong><p>Benzoyl peroxide can help acne, but it can also dry, peel, irritate and bleach fabric. Start according to the product directions and stop for severe irritation. EOD dosing does not guarantee acne prevention.</p></div>
             <div class="guardrail"><strong>Estrogen guardrail</strong><p>Dry or painful joints and a libido drop can occur with low estrogen, but symptoms alone cannot diagnose the cause. Do not keep adjusting anastrozole without clinician review and blood results.</p></div>
             <div class="guardrail"><strong>Fertility is not protected</strong><p>External testosterone suppresses LH and FSH and can markedly reduce sperm production. Discuss fertility preservation before the first injection if future fertility matters.</p></div>
