@@ -29,5 +29,7 @@ test('restores the hero description for phases that still show one', () => {
 test('ships the change behind fresh app asset versions', () => {
     assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=179/);
     assert.match(dashboard, /dashboard-script-9-hormone_hub_superboost_engine\.js\?v=1/);
-    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v302'/);
+    const cacheVersion = serviceWorker.match(/const CACHE_NAME = 'pbb-app-v(\d+)'/);
+    assert.ok(cacheVersion, 'service worker should define a versioned app cache');
+    assert.ok(Number(cacheVersion[1]) >= 302, 'app cache should include the Hormone Hub refresh');
 });
