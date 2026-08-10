@@ -92,6 +92,12 @@ test('Balance Foundations is a six-week course that preserves the existing lesso
     assert.match(foundationsSource, /Build a way of eating you can keep/);
     assert.match(learning, /progress\.total} quizzes across 6 weeks/);
     assert.match(learning, /getFoundationsLessonTitle/);
+    assert.match(learning, /expandedFoundationsWeekNumber/);
+    assert.match(learning, /window\.toggleFoundationsWeek/);
+    assert.match(learning, /data-foundations-quiz-id/);
+    assert.match(learning, /window\.startFoundationsQuiz/);
+    assert.match(learning, /Week \$\{topic\.number\} &middot; \$\{completedLessons\}\/\$\{totalLessons\} quizzes/);
+    assert.match(learning, /aria-expanded="\$\{isExpanded\}"/);
     assert.match(socialJourney, /startFoundationsLesson\('mind-1-1'\)/);
     assert.match(learning, /getFoundationsProgress/);
     assert.match(learning, /new Set\(progress\?\.lessons_completed \|\| \[\]\)/);
@@ -103,6 +109,7 @@ test('Balance Foundations is a six-week course that preserves the existing lesso
     assert.match(dashboard, /id: 'course-preview-locks-v1'/);
     assert.match(dashboard, /sel: '\.course-library-intro'/);
     assert.match(dashboard, /fallbackSel: '#learning-content'/);
+    assert.match(dashboard, /learning-inline\.js\?v=21/);
 });
 
 test('Founders Pass onboarding captures the real-world blocker behind consistency', () => {

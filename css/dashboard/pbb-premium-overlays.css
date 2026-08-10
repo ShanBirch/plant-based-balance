@@ -9441,6 +9441,10 @@ html:not([data-pbb-theme="light"]) #create-custom-exercise-modal label[style*="b
     gap: 8px;
 }
 
+.foundation-week-card {
+    min-width: 0;
+}
+
 .course-topic-row {
     width: 100%;
     display: grid;
@@ -9460,6 +9464,14 @@ html:not([data-pbb-theme="light"]) #create-custom-exercise-modal label[style*="b
 .course-topic-row.is-locked {
     cursor: not-allowed;
     opacity: 0.62;
+}
+
+.foundation-week-toggle.is-locked {
+    cursor: pointer;
+}
+
+.foundation-week-toggle[aria-expanded="true"] {
+    border-color: color-mix(in srgb, var(--course-accent) 42%, transparent);
 }
 
 .course-topic-row.is-complete {
@@ -9493,6 +9505,16 @@ html:not([data-pbb-theme="light"]) #create-custom-exercise-modal label[style*="b
     line-height: 1.25;
 }
 
+.course-topic-kicker {
+    margin-bottom: 2px;
+    color: var(--course-accent) !important;
+    -webkit-text-fill-color: var(--course-accent) !important;
+    font-size: 0.58rem;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
 .course-topic-description {
     margin-top: 2px;
     overflow: hidden;
@@ -9505,10 +9527,113 @@ html:not([data-pbb-theme="light"]) #create-custom-exercise-modal label[style*="b
 }
 
 .course-topic-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     color: var(--course-accent) !important;
     -webkit-text-fill-color: var(--course-accent) !important;
     font-size: 0.65rem;
     font-weight: 850;
+}
+
+.foundation-week-chevron {
+    display: inline-block;
+    font-size: 1rem;
+    line-height: 1;
+    transition: transform 180ms ease;
+}
+
+.foundation-week-toggle[aria-expanded="true"] .foundation-week-chevron {
+    transform: rotate(180deg);
+}
+
+.foundation-quiz-list {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    margin: 7px 0 3px 16px;
+    padding: 2px 0 3px 14px;
+    border-left: 2px solid color-mix(in srgb, var(--course-accent) 36%, transparent);
+}
+
+.foundation-quiz-row {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 27px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 9px;
+    padding: 9px 10px;
+    border: 1px solid color-mix(in srgb, var(--course-accent) 13%, var(--course-border));
+    border-radius: 11px;
+    background: color-mix(in srgb, var(--course-surface-soft) 88%, var(--course-accent) 12%);
+    color: var(--course-copy);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.foundation-quiz-row.is-locked {
+    cursor: not-allowed;
+    opacity: 0.56;
+}
+
+.foundation-quiz-row.is-complete {
+    border-color: rgba(16, 185, 129, 0.28);
+}
+
+.foundation-quiz-number {
+    width: 26px;
+    height: 26px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--course-accent) 15%, transparent);
+    color: var(--course-accent) !important;
+    -webkit-text-fill-color: var(--course-accent) !important;
+    font-size: 0.63rem;
+    font-weight: 900;
+}
+
+.foundation-quiz-row.is-complete .foundation-quiz-number {
+    background: #0f8b65;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+
+.foundation-quiz-copy {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.foundation-quiz-kicker {
+    color: var(--course-muted) !important;
+    -webkit-text-fill-color: var(--course-muted) !important;
+    font-size: 0.54rem;
+    font-weight: 850;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+}
+
+.foundation-quiz-title {
+    margin-top: 1px;
+    color: var(--course-copy) !important;
+    -webkit-text-fill-color: var(--course-copy) !important;
+    font-size: 0.71rem;
+    font-weight: 760;
+    line-height: 1.25;
+}
+
+.foundation-quiz-status {
+    color: var(--course-accent) !important;
+    -webkit-text-fill-color: var(--course-accent) !important;
+    font-size: 0.6rem;
+    font-weight: 850;
+}
+
+.foundation-quiz-row.is-complete .foundation-quiz-status {
+    color: #0f8b65 !important;
+    -webkit-text-fill-color: #0f8b65 !important;
 }
 
 .course-learning-streak {
