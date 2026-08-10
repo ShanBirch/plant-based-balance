@@ -521,11 +521,11 @@
     {
       id: 'steps',
       title: 'Reach 10k steps',
-      body: 'Steps goal: check progress and add a walk if needed.',
-      cta: 'Open Steps',
+      body: 'Your steps update automatically through the day.',
+      cta: 'Progress',
       accent: '#059669',
       goalIds: ['steps_10k_days'],
-      action: function(){ openDashboardTarget('#fitbit-performance-card', { block: 'center' }); }
+      action: null
     },
     {
       id: 'weighin',
@@ -573,7 +573,7 @@
       accent: '#059669',
       priority: 500,
       goalIds: [],
-      action: function(){ clickSourceCard('#fitbit-imported-activity-card'); }
+      action: function(){ clickSourceCard('#fitbit-imported-activity-share'); }
     },
     {
       id: 'fitness_diary',
@@ -884,6 +884,7 @@
         daily_checkin: checkins.length > 0,
         hydration: normalizeWaterMl(checkin.water_intake) >= getWaterGoalMl(),
         steps: bestSteps >= 10000,
+        step_count: bestSteps,
         weighin: weighIns.length > 0,
         mood: !!(moodCompleted.morning && moodCompleted.afternoon && moodCompleted.evening) || !!(currentWindow && moodCompleted[currentWindow]),
         sleep: bestSleep >= 420,
@@ -1010,6 +1011,11 @@
       '.next-step-copy strong{display:block;font-size:.9rem;line-height:1.18;color:#0f172a;font-weight:950;margin-bottom:3px;}',
       '.next-step-copy span{display:block;font-size:.75rem;line-height:1.25;color:#64748b;font-weight:700;}',
       '.next-step-cta{font-size:.68rem;font-weight:950;color:var(--next-step-accent,#16a34a);white-space:nowrap;}',
+      '.next-step-action.is-progress{cursor:default;}',
+      '.next-step-progress-meta{display:flex!important;align-items:center;justify-content:space-between;gap:10px;margin-top:8px;color:#475569!important;}',
+      '.next-step-progress-meta b{color:#047857;-webkit-text-fill-color:#047857;font-size:.7rem;white-space:nowrap;}',
+      '.next-step-progress-track{height:8px;margin-top:7px;border-radius:999px;background:#d1fae5;overflow:hidden;}',
+      '.next-step-progress-fill{height:100%;border-radius:inherit;background:linear-gradient(90deg,#10b981,#059669);transition:width .45s ease;}',
       '.next-steps-complete{padding:18px 16px 17px;display:flex;align-items:center;gap:13px;background:linear-gradient(135deg,#ecfdf5 0%,#ffffff 56%,#fff7ed 100%);}',
       '.next-steps-complete-icon{width:48px;height:48px;border-radius:16px;background:linear-gradient(135deg,#059669,#f59e0b);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:950;font-size:1.15rem;box-shadow:0 12px 24px rgba(5,150,105,.22);flex-shrink:0;}',
       '.next-steps-complete-copy strong{display:block;font-size:1.02rem;color:#0f172a;font-weight:950;line-height:1.15;margin-bottom:4px;}',
@@ -1086,6 +1092,20 @@
         '</div>',
         '<div class="next-steps-list">',
           suggestions.map(function(action){
+            if (action.id === 'steps') {
+              var currentSteps = Math.max(0, Math.round(Number(dailyState.status && dailyState.status.step_count || 0)));
+              var targetSteps = 10000;
+              var stepPercent = Math.min(100, Math.round((currentSteps / targetSteps) * 100));
+              return [
+                '<div class="next-step-action is-progress" data-next-step-id="steps" data-next-step-readonly="true" role="status" aria-label="', escapeHtml(currentSteps.toLocaleString('en-AU') + ' of ' + targetSteps.toLocaleString('en-AU') + ' steps today'), '" style="--next-step-accent:', escapeHtml(action.accent), '">',
+                  '<span class="next-step-mark" aria-hidden="true"></span>',
+                  '<span class="next-step-copy"><strong>', escapeHtml(action.title), '</strong><span>', escapeHtml(action.body), '</span>',
+                    '<span class="next-step-progress-meta"><span>', escapeHtml(currentSteps.toLocaleString('en-AU') + ' of ' + targetSteps.toLocaleString('en-AU') + ' today'), '</span><b>', stepPercent, '%</b></span>',
+                    '<span class="next-step-progress-track" aria-hidden="true"><span class="next-step-progress-fill" style="width:', stepPercent, '%"></span></span>',
+                  '</span>',
+                '</div>'
+              ].join('');
+            }
             return [
               '<button type="button" class="next-step-action" data-next-step-id="', escapeHtml(action.id), '" style="--next-step-accent:', escapeHtml(action.accent), '">',
                 '<span class="next-step-mark" aria-hidden="true"></span>',
@@ -1121,6 +1141,7 @@
     }
     var button = event.target && event.target.closest ? event.target.closest('[data-next-step-id]') : null;
     if (!button) return;
+    if (button.getAttribute('data-next-step-readonly') === 'true') return;
     var id = button.getAttribute('data-next-step-id');
     var action = ACTIONS.find(function(item){ return item.id === id; });
     if (action && typeof action.action === 'function') action.action();
@@ -1158,7 +1179,15 @@
         return a.index - b.index;
       }).map(function(item){ return item.action; });
       return actions.map(function(action){
-        return { id: action.id, title: action.title, body: action.body, cta: action.cta, accent: action.accent, complete: isActionComplete(action) };
+        var planItem = { id: action.id, title: action.title, body: action.body, cta: action.cta, accent: action.accent, complete: isActionComplete(action) };
+        if (action.id === 'steps') {
+          var currentSteps = Math.max(0, Math.round(Number(dailyState.status && dailyState.status.step_count || 0)));
+          planItem.kind = 'progress';
+          planItem.current = currentSteps;
+          planItem.target = 10000;
+          planItem.percent = Math.min(100, Math.round((currentSteps / planItem.target) * 100));
+        }
+        return planItem;
       });
     },
     runAction: function(id){

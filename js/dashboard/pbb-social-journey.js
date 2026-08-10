@@ -595,7 +595,15 @@
     }
     const first = plan[0];
     const remaining = plan.slice(1);
-    const actionButton = item => '<button type="button" class="social-journey-plan-action" onclick="socialJourney.runDailyAction(\'' + escapeHtml(item.id) + '\')" style="--journey-action-accent:' + escapeHtml(item.accent || '#b78a2e') + '"><span class="social-journey-plan-action__mark"></span><span><strong>' + escapeHtml(item.title) + '</strong><small>' + escapeHtml(item.body) + '</small></span><b>' + escapeHtml(item.cta || 'Open') + '</b></button>';
+    const actionButton = item => {
+      if (item.kind === 'progress') {
+        const current = Math.max(0, Math.round(Number(item.current || 0)));
+        const target = Math.max(1, Math.round(Number(item.target || 10000)));
+        const percent = Math.min(100, Math.max(0, Math.round(Number(item.percent || (current / target) * 100))));
+        return '<div class="social-journey-plan-action is-progress" role="status" aria-label="' + escapeHtml(current.toLocaleString('en-AU') + ' of ' + target.toLocaleString('en-AU') + ' steps today') + '" style="--journey-action-accent:' + escapeHtml(item.accent || '#059669') + '"><span class="social-journey-plan-action__mark"></span><span><strong>' + escapeHtml(item.title) + '</strong><small>' + escapeHtml(current.toLocaleString('en-AU') + ' of ' + target.toLocaleString('en-AU') + ' today') + '</small><span class="social-journey-plan-progress"><span style="width:' + percent + '%"></span></span></span><b>' + percent + '%</b></div>';
+      }
+      return '<button type="button" class="social-journey-plan-action" onclick="socialJourney.runDailyAction(\'' + escapeHtml(item.id) + '\')" style="--journey-action-accent:' + escapeHtml(item.accent || '#b78a2e') + '"><span class="social-journey-plan-action__mark"></span><span><strong>' + escapeHtml(item.title) + '</strong><small>' + escapeHtml(item.body) + '</small></span><b>' + escapeHtml(item.cta || 'Open') + '</b></button>';
+    };
     return '<section class="social-journey-section"><h3 class="social-journey-section__heading">Up next</h3><div class="social-journey-up-next">' + actionButton(first) + '</div></section>'
       + (remaining.length ? '<section class="social-journey-section"><h3 class="social-journey-section__heading">Later today</h3><div class="social-journey-plan-list">' + remaining.map(actionButton).join('') + '</div></section>' : '');
   }

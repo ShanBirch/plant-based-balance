@@ -6935,6 +6935,12 @@ async function shareActivityCardToFeed() {
                 });
                 const additionalIds = (savedActivityData.activityIds || []).filter(id => id && id !== savedActivityData.id);
                 await Promise.all(additionalIds.map(id => window.dbHelpers?.activityLogs?.update(id, { shared_to_feed: true })));
+                if (typeof window.refreshImportedActivityHomeCard === 'function') {
+                    await window.refreshImportedActivityHomeCard();
+                }
+                if (window.pbbNextSteps && typeof window.pbbNextSteps.refresh === 'function') {
+                    window.pbbNextSteps.refresh();
+                }
             } catch (e) {
                 console.error('Failed to update activity log:', e);
             }

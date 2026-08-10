@@ -184,9 +184,13 @@ html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-
 html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-copy span { color: #6b6255; -webkit-text-fill-color: #6b6255; font-size: .73rem; line-height: 1.36; }
 html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-cta { width: 32px; height: 32px; align-self: center; border: 1px solid rgba(183,138,46,.2); border-radius: 50%; display: grid; place-items: center; overflow: hidden; background: rgba(255,253,248,.88); color: transparent; -webkit-text-fill-color: transparent; font-size: 0; box-shadow: 0 5px 14px rgba(68,48,17,.06); }
 html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-cta::after { content: "\203A"; color: #6f541d; -webkit-text-fill-color: #6f541d; font: 800 1.45rem/1 Georgia,serif; transform: translateY(-1px); }
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-action.is-progress { grid-template-columns: 56px minmax(0,1fr); }
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-action.is-progress .next-step-copy { padding-right: 4px; }
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-progress-track { background: rgba(5,150,105,.15); }
 html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-steps-complete { border: 1px solid rgba(183,138,46,.22); border-radius: 18px; background: #fffdf8; }
 @media (max-width: 380px) {
   html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-action { grid-template-columns: 50px minmax(0,1fr) 30px; gap: 11px; padding: 13px 12px; }
+  html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-action.is-progress { grid-template-columns: 50px minmax(0,1fr); }
   html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-mark { width: 48px; height: 48px; border-radius: 15px; }
   html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-cta { display: grid; width: 29px; height: 29px; }
 }
@@ -200,6 +204,9 @@ html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-steps
 .social-journey-plan-action strong { display:block; font-size:.88rem; line-height:1.22; }
 .social-journey-plan-action small { display:block; margin-top:4px; color:#6b6255; -webkit-text-fill-color:#6b6255; font-size:.72rem; line-height:1.35; }
 .social-journey-plan-action b { color:var(--journey-action-accent,#b78a2e); -webkit-text-fill-color:var(--journey-action-accent,#b78a2e); font-size:.67rem; white-space:nowrap; }
+.social-journey-plan-action.is-progress { cursor:default; }
+.social-journey-plan-progress { display:block; height:7px; margin-top:8px; border-radius:999px; background:rgba(5,150,105,.15); overflow:hidden; }
+.social-journey-plan-progress span { display:block; height:100%; border-radius:inherit; background:linear-gradient(90deg,#10b981,#059669); }
 .social-journey-weekly-focus { display:grid; gap:8px; padding:10px; border:1px solid rgba(183,138,46,.22); border-radius:18px; background:rgba(255,253,248,.82); }
 .social-journey-weekly-focus__row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 11px; border-radius:12px; background:#fff; }
 .social-journey-weekly-focus__row strong { display:block; font-size:.81rem; }
