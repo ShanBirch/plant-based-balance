@@ -7549,6 +7549,14 @@ const WIZARD_WEEKLY_GOAL_FOCUS_LABELS = {
     share_workout_feed: 'Share to Feed 1x/week'
 };
 
+function getWizardWeeklyGoalFocusLabel(goalId) {
+    if (isTransferredWizardClient()) {
+        if (goalId === 'meal_log_days') return 'Track 3 meals a day, 5 days/week';
+        if (goalId === 'sleep_7h_nights') return 'Sleep 7+ hours 5 nights/week';
+    }
+    return WIZARD_WEEKLY_GOAL_FOCUS_LABELS[goalId];
+}
+
 const WIZARD_INTENT_WEEKLY_TARGETS = {
     lose_weight: ['calorie_range_days', 'protein_days', 'complete_workouts'],
     build_strength: ['complete_workouts', 'protein_days', 'calorie_range_days'],
@@ -7587,13 +7595,18 @@ function inferWizardStarterPlan(answers = {}) {
         goalIntentIds.unshift('more_energy');
     }
 
-    const weeklyGoalFocusIds = ['complete_workouts', 'protein_days'];
-    if (goalIntentIds.includes('lose_weight') || goalIntentIds.includes('improve_nutrition')) {
-        weeklyGoalFocusIds.push('meal_log_days');
-    } else if (goalIntentIds.includes('more_energy') || answers.energy_level === 'low') {
-        weeklyGoalFocusIds.push('sleep_7h_nights');
+    const weeklyGoalFocusIds = ['complete_workouts'];
+    if (isTransferredWizardClient()) {
+        weeklyGoalFocusIds.push('meal_log_days', 'sleep_7h_nights');
     } else {
-        weeklyGoalFocusIds.push('water_goal_days');
+        weeklyGoalFocusIds.push('protein_days');
+        if (goalIntentIds.includes('lose_weight') || goalIntentIds.includes('improve_nutrition')) {
+            weeklyGoalFocusIds.push('meal_log_days');
+        } else if (goalIntentIds.includes('more_energy') || answers.energy_level === 'low') {
+            weeklyGoalFocusIds.push('sleep_7h_nights');
+        } else {
+            weeklyGoalFocusIds.push('water_goal_days');
+        }
     }
 
     const learningInterestIds = ['behavior_change_science', 'workout_motivation', 'plant_based_cooking'];
@@ -8802,7 +8815,7 @@ function saveWizardChatIntakeToInputs() {
     const goalIntentIds = inferredPlan.goalIntentIds;
     const goalIntentLabels = goalIntentIds.map(id => WIZARD_GOAL_INTENT_LABELS[id]).filter(Boolean);
     const weeklyGoalFocusIds = inferredPlan.weeklyGoalFocusIds;
-    const weeklyGoalFocusLabels = weeklyGoalFocusIds.map(id => WIZARD_WEEKLY_GOAL_FOCUS_LABELS[id]).filter(Boolean);
+    const weeklyGoalFocusLabels = weeklyGoalFocusIds.map(getWizardWeeklyGoalFocusLabel).filter(Boolean);
     const learningInterestIds = inferredPlan.learningInterestIds;
     const learningInterestItems = learningInterestIds.map(buildWizardLearningInterestItem).filter(Boolean);
     const inferredGoalBodyType = inferredPlan.goalBodyType;
@@ -8895,7 +8908,7 @@ function renderWizardWeeklyGoalRoutine() {
     const ids = readWizardJsonField('wizard-weekly-goal-focus', []);
     const labels = ids.map(id => id === 'complete_workouts'
         ? `Train ${getWizardRecommendedStarterFrequency(wizardChatAnswers)}x/week`
-        : WIZARD_WEEKLY_GOAL_FOCUS_LABELS[id]).filter(Boolean).slice(0, 3);
+        : getWizardWeeklyGoalFocusLabel(id)).filter(Boolean).slice(0, 3);
     goalsEl.innerHTML = labels.map((label, index) => (
         `<div class="wizard-assigned-goal" style="--goal-delay:${index * 90}ms">` +
             `<span class="wizard-assigned-goal-number">0${index + 1}</span>` +

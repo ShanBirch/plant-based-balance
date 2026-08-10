@@ -329,14 +329,14 @@ html[data-pbb-theme="light"] .social-journey-pilot-controls { background: rgba(2
 }
 #social-journey-view.is-activation .social-journey-lesson h2,
 #social-journey-view.is-activation .social-journey-hero h2,
-#social-journey-view.is-activation .social-journey-welcome h2 { color:#1a202c; -webkit-text-fill-color:#1a202c; }
+#social-journey-view.is-activation .social-journey-welcome h2 { color:#1a202c !important; -webkit-text-fill-color:#1a202c !important; opacity:1 !important; }
 #social-journey-view.is-activation .social-journey-lesson p,
 #social-journey-view.is-activation .social-journey-hero p,
 #social-journey-view.is-activation .social-journey-welcome p { color:#596273; -webkit-text-fill-color:#596273; }
 #social-journey-view.is-activation .social-journey-lesson__eyebrow,
 #social-journey-view.is-activation .social-journey-welcome__eyebrow { color:#8b5e17; -webkit-text-fill-color:#8b5e17; }
 #social-journey-view.is-activation .social-journey-lesson__number { border-color:rgba(154,105,25,.3); background:rgba(216,178,94,.14); }
-#social-journey-view.is-activation .social-journey-lesson__number strong { color:#1a202c; -webkit-text-fill-color:#1a202c; }
+#social-journey-view.is-activation .social-journey-lesson__number strong { color:#1a202c !important; -webkit-text-fill-color:#1a202c !important; opacity:1 !important; }
 #social-journey-view.is-activation .social-journey-learn-card,
 #social-journey-view.is-activation .social-journey-task { border-color:rgba(154,105,25,.2); background:rgba(255,253,248,.88); color:#1a202c; -webkit-text-fill-color:#1a202c; box-shadow:0 9px 24px rgba(67,50,21,.07); }
 #social-journey-view.is-activation .social-journey-learn-points p,
