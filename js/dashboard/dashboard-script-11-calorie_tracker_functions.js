@@ -2901,6 +2901,12 @@ async function saveMealLogWithType(mealData) {
         throw error;
     }
 
+    if (insertData.meal_type !== 'water' && typeof window.refreshWeeklyGoalsCard === 'function') {
+        Promise.resolve(window.refreshWeeklyGoalsCard()).catch(function(refreshError) {
+            console.warn('Meal saved, but weekly goals could not refresh:', refreshError);
+        });
+    }
+
     // Update calorie challenge progress for this meal (fire-and-forget)
     if (insertData.meal_type !== 'water') {
         try {
@@ -4275,6 +4281,12 @@ async function saveMealLog(mealData) {
     if (error) {
         console.error('Error saving meal log:', error);
         throw error;
+    }
+
+    if (insertData.meal_type !== 'water' && typeof window.refreshWeeklyGoalsCard === 'function') {
+        Promise.resolve(window.refreshWeeklyGoalsCard()).catch(function(refreshError) {
+            console.warn('Meal saved, but weekly goals could not refresh:', refreshError);
+        });
     }
 
     return data;
