@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v295'; // v295: replace empty sleep trend with health connection
+const CACHE_NAME = 'pbb-app-v296'; // v296: keep onboarding essentials visible until completed
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
