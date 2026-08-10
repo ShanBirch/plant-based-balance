@@ -502,14 +502,33 @@
     const levelStrip = document.getElementById('tamagotchi-stats-bar')
       || document.getElementById('balance-level-bar')
       || character;
-    if (levelStrip && levelStrip.parentNode && levelStrip.nextElementSibling !== card) {
-      levelStrip.parentNode.insertBefore(card, levelStrip.nextSibling);
-    }
     const programStart = new Date(safeObject(window.userProfile).program_start_date || '');
     const beforeFirstWeek = Number.isFinite(programStart.getTime())
       && Date.now() < programStart.getTime() + (7 * 24 * 60 * 60 * 1000);
     document.documentElement.classList.toggle('pbb-before-first-week', beforeFirstWeek);
-    document.documentElement.classList.toggle('pbb-unified-next-steps', isPilotUser() || isOnboardingTestUser());
+    const unified = isPilotUser() || isOnboardingTestUser();
+    document.documentElement.classList.toggle('pbb-unified-next-steps', unified);
+    if (unified) {
+      const weeklyGoals = document.getElementById('weekly-goals-card');
+      const nextSteps = document.getElementById('next-obvious-steps-card');
+      if (levelStrip && levelStrip.parentNode && weeklyGoals && levelStrip.nextElementSibling !== weeklyGoals) {
+        levelStrip.parentNode.insertBefore(weeklyGoals, levelStrip.nextSibling);
+      }
+      if (weeklyGoals && weeklyGoals.parentNode && nextSteps && weeklyGoals.nextElementSibling !== nextSteps) {
+        weeklyGoals.parentNode.insertBefore(nextSteps, weeklyGoals.nextSibling);
+      }
+      card.style.display = 'none';
+      card.innerHTML = '';
+      setTimeout(function () {
+        try {
+          if (window.pbbNextSteps && typeof window.pbbNextSteps.refresh === 'function') window.pbbNextSteps.refresh();
+        } catch (_) {}
+      }, 0);
+      return;
+    }
+    if (levelStrip && levelStrip.parentNode && levelStrip.nextElementSibling !== card) {
+      levelStrip.parentNode.insertBefore(card, levelStrip.nextSibling);
+    }
     const definition = getWeekDefinition();
     const completed = progress ? progress.completed_count : 0;
     const total = progress ? progress.total_count : 3;
@@ -709,9 +728,11 @@
     }
     renderCard();
     setTimeout(function () {
-      const card = getCard();
-      if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      openJourney('goals');
+      try {
+        if (window.pbbNextSteps && typeof window.pbbNextSteps.refresh === 'function') window.pbbNextSteps.refresh();
+      } catch (_) {}
+      const nextSteps = document.getElementById('next-obvious-steps-card');
+      if (nextSteps) nextSteps.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 180);
     showToast('Your next steps are ready on Home.', 'success');
   }
@@ -756,8 +777,18 @@
       lesson_seen_weeks: Array.from(weeks).sort((a, b) => a - b)
     });
     viewStage = 'goals';
+    closeJourney();
+    if (typeof window.switchAppTab === 'function') {
+      try { window.switchAppTab('dashboard'); } catch (_) {}
+    }
     renderCard();
-    openJourney('goals');
+    setTimeout(function () {
+      try {
+        if (window.pbbNextSteps && typeof window.pbbNextSteps.refresh === 'function') window.pbbNextSteps.refresh();
+      } catch (_) {}
+      const nextSteps = document.getElementById('next-obvious-steps-card');
+      if (nextSteps) nextSteps.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 120);
     return true;
   }
 
@@ -1224,6 +1255,7 @@
     previewGoalsForTest,
     resetActivationForTest,
     isUnifiedPlanActive: function () { return isPilotUser() || isOnboardingTestUser(); },
+    getCurrentWeek: function () { return Number(state && state.current_week || 1); },
     runDailyAction,
     editWeeklyGoals,
     showWelcome,

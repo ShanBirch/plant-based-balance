@@ -194,6 +194,46 @@
     afterTab(function(){ scrollToSelector(selector, options); }, 260);
   }
 
+  function clickSourceCard(selector) {
+    switchTab('dashboard');
+    afterTab(function(){
+      var el = null;
+      try { el = document.querySelector(selector); } catch (_) {}
+      if (el && typeof el.click === 'function') el.click();
+    }, 260);
+  }
+
+  function openHiddenHomeCard(selector, expandName) {
+    switchTab('dashboard');
+    afterTab(function(){
+      var el = null;
+      try { el = document.querySelector(selector); } catch (_) {}
+      if (el) el.classList.add('pbb-next-step-active-source');
+      if (expandName && typeof window[expandName] === 'function') {
+        try { window[expandName](); } catch (_) {}
+      }
+      scrollToSelector(selector, { block: 'center' });
+    }, 260);
+  }
+
+  function isUnifiedPlanActive() {
+    try {
+      return !!(window.socialJourney && typeof window.socialJourney.isUnifiedPlanActive === 'function' && window.socialJourney.isUnifiedPlanActive());
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function isFirstProgramWeek() {
+    try {
+      if (window.socialJourney && typeof window.socialJourney.getCurrentWeek === 'function') {
+        return Number(window.socialJourney.getCurrentWeek() || 1) <= 1;
+      }
+    } catch (_) {}
+    var start = new Date((window.userProfile && window.userProfile.program_start_date) || '');
+    return Number.isFinite(start.getTime()) && Date.now() < start.getTime() + (7 * 24 * 60 * 60 * 1000);
+  }
+
   function openMovementTarget() {
     switchTab('movement-tab');
     afterTab(function(){
@@ -284,11 +324,45 @@
 
   var ACTIONS = [
     {
+      id: 'feed_intro',
+      title: 'Say hello and take your first Feed photo',
+      body: 'A simple hello and an ordinary photo are enough to start building the evidence.',
+      cta: 'Open Feed',
+      accent: '#b78a2e',
+      priority: 1000,
+      goalIds: [],
+      action: openCommunityTarget
+    },
+    {
+      id: 'weekly_review',
+      title: 'Your weekly review is ready',
+      body: 'Open Shannon\'s review of your week and the adjustments for what comes next.',
+      cta: 'Open Review',
+      accent: '#b78a2e',
+      priority: 950,
+      goalIds: [],
+      action: function(){
+        if (typeof window.openWeeklyCheckinPreview === 'function') window.openWeeklyCheckinPreview();
+        else clickSourceCard('#weekly-checkin-card');
+      }
+    },
+    {
+      id: 'quiz',
+      title: "Complete today's Balance lesson",
+      body: 'Keep building the skills that make your training and food plan easier to follow.',
+      cta: 'Open Course',
+      accent: '#d97706',
+      priority: 900,
+      goalIds: ['daily_quiz_days', 'questions_answered', 'perfect_lessons'],
+      action: openQuizTarget
+    },
+    {
       id: 'workout',
       title: "Complete and share today's workout",
       body: 'Finish the session that fits today, then share the completed workout to Feed.',
       cta: 'Open Movement',
       accent: '#2563eb',
+      priority: 800,
       goalIds: ['complete_workouts', 'build_workouts', 'share_workout_feed'],
       action: openMovementTarget
     },
@@ -298,6 +372,7 @@
       body: 'Give Balance today\'s recovery information so the plan can respond.',
       cta: 'Open Check-In',
       accent: '#b45309',
+      priority: 650,
       goalIds: [],
       action: function(){ openDashboardTarget('#check-in-prompt-card', { block: 'center' }); }
     },
@@ -307,6 +382,7 @@
       body: 'Food goal: log what you eat today.',
       cta: 'Open Nutrition',
       accent: '#16a34a',
+      priority: 300,
       goalIds: ['protein_days', 'calorie_range_days', 'meal_log_days', 'share_meal_feed'],
       action: function(){ openNutritionTarget('meals'); }
     },
@@ -334,6 +410,7 @@
       body: 'Body goal: keep the trend accurate.',
       cta: 'Open Weigh-In',
       accent: '#e11d48',
+      priority: 700,
       goalIds: ['weight_loss', 'weight_gain', 'weigh_in_days'],
       action: openWeighInTarget
     },
@@ -356,13 +433,44 @@
       action: function(){ openInsightsTarget('#insights-sleep-container'); }
     },
     {
-      id: 'quiz',
-      title: 'Complete Daily Quiz',
-      body: 'Health IQ goal: learn and bank the XP.',
-      cta: 'Open Quiz',
-      accent: '#d97706',
-      goalIds: ['daily_quiz_days', 'questions_answered', 'perfect_lessons'],
-      action: openQuizTarget
+      id: 'progress_photo',
+      title: 'Take your weekly progress photo',
+      body: 'Keep a private visual record so progress is easier to see over time.',
+      cta: 'Take Photo',
+      accent: '#e11d48',
+      priority: 600,
+      goalIds: [],
+      action: function(){ clickSourceCard('#weekly-progress-photo-card'); }
+    },
+    {
+      id: 'imported_activity',
+      title: 'Review your imported activity',
+      body: 'Confirm the activity Balance found for today.',
+      cta: 'Review',
+      accent: '#059669',
+      priority: 500,
+      goalIds: [],
+      action: function(){ clickSourceCard('#fitbit-imported-activity-card'); }
+    },
+    {
+      id: 'fitness_diary',
+      title: 'Complete your end-of-day check-in',
+      body: 'Close the loop on today so tomorrow starts with useful information.',
+      cta: 'Check In',
+      accent: '#0f766e',
+      priority: 400,
+      goalIds: [],
+      action: function(){ openHiddenHomeCard('#fitness-diary-card', 'expandFitnessDiary'); }
+    },
+    {
+      id: 'first_meal',
+      title: 'Log and share one normal meal',
+      body: 'No perfect plate required. Share what you actually ate.',
+      cta: 'Open Nutrition',
+      accent: '#16a34a',
+      priority: 550,
+      goalIds: [],
+      action: function(){ openNutritionTarget('meals'); }
     },
     {
       id: 'community',
@@ -409,9 +517,8 @@
     if (action.id === 'mood') {
       return false;
     }
-    if (action.id === 'quiz') {
-      return isSourceCardDue('#daily-quiz-card') || isActionComplete(action);
-    }
+    if (action.id === 'quiz') return true;
+    if (action.id === 'workout') return isSourceCardDue('#today-workout-card');
     if (action.id === 'weighin') {
       return isSourceCardDue('#daily-weigh-in-card') || isSourceCardDue('#daily-weigh-in-done-card') || matchingGoalCount(action, selectedGoalIds) > 0;
     }
@@ -420,14 +527,30 @@
 
   function dailyActionSet(selectedGoalIds) {
     var picked = [];
+    if (isFirstProgramWeek()) {
+      addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'feed_intro'; }));
+      addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'first_meal'; }));
+    }
+    addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'quiz'; }));
     goalMatchedActions(selectedGoalIds).forEach(function(action){
       if (isActionTargetable(action, selectedGoalIds)) addUniqueAction(picked, action);
     });
-    ['daily_checkin', 'weighin', 'quiz'].forEach(function(id){
+    ['daily_checkin', 'weighin'].forEach(function(id){
       var action = ACTIONS.find(function(item){ return item.id === id; });
-      var selector = id === 'daily_checkin' ? '#check-in-prompt-card' : (id === 'weighin' ? '#daily-weigh-in-card' : '#daily-quiz-card');
+      var selector = id === 'daily_checkin' ? '#check-in-prompt-card' : '#daily-weigh-in-card';
       if (action && isSourceCardDue(selector)) addUniqueAction(picked, action);
     });
+    [
+      ['progress_photo', '#weekly-progress-photo-card'],
+      ['fitness_diary', '#fitness-diary-card'],
+      ['imported_activity', '#fitbit-imported-activity-card']
+    ].forEach(function(item){
+      var action = ACTIONS.find(function(actionItem){ return actionItem.id === item[0]; });
+      if (action && isSourceCardDue(item[1])) addUniqueAction(picked, action);
+    });
+    if (!isFirstProgramWeek() && isSourceCardDue('#weekly-checkin-card')) {
+      addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'weekly_review'; }));
+    }
     return picked;
   }
 
@@ -451,9 +574,12 @@
       return false;
     }
     if (action.id === 'daily_checkin') return isSourceCardDue('#check-in-prompt-card');
-    if (action.id === 'quiz') {
-      return isSourceCardDue('#daily-quiz-card');
-    }
+    if (action.id === 'quiz') return true;
+    if (action.id === 'workout') return isSourceCardDue('#today-workout-card');
+    if (action.id === 'weekly_review') return !isFirstProgramWeek() && isSourceCardDue('#weekly-checkin-card');
+    if (action.id === 'progress_photo') return isSourceCardDue('#weekly-progress-photo-card');
+    if (action.id === 'fitness_diary') return isSourceCardDue('#fitness-diary-card');
+    if (action.id === 'imported_activity') return isSourceCardDue('#fitbit-imported-activity-card');
     if (action.id === 'weighin') {
       if (isVisibleSelector('#daily-weigh-in-done-card')) return false;
       return isSourceCardDue('#daily-weigh-in-card') || matchingGoalCount(action, selectedGoalIds) > 0;
@@ -469,7 +595,7 @@
 
   function scoreAction(action, selectedGoalIds) {
     if (!isActionAvailable(action, selectedGoalIds)) return -9999;
-    var score = matchingGoalCount(action, selectedGoalIds) * 80;
+    var score = Number(action.priority || 0) + matchingGoalCount(action, selectedGoalIds) * 80;
     if (action.id === 'daily_checkin' && isSourceCardDue('#check-in-prompt-card')) score += 32;
     if (action.id === 'weighin' && isSourceCardDue('#daily-weigh-in-card')) score += 28;
     if (action.id === 'quiz' && isSourceCardDue('#daily-quiz-card')) score += 16;
@@ -496,12 +622,13 @@
     });
 
     var picked = [];
+    var limit = isUnifiedPlanActive() ? ranked.length : 3;
     ranked.forEach(function(item){
-      if (picked.length >= 3) return;
+      if (picked.length >= limit) return;
       picked.push(item.action);
     });
 
-    return picked.slice(0, 3);
+    return isUnifiedPlanActive() ? picked : picked.slice(0, 3);
   }
 
   function hasCompletedDay() {
@@ -617,7 +744,9 @@
         mood: !!(moodCompleted.morning && moodCompleted.afternoon && moodCompleted.evening) || !!(currentWindow && moodCompleted[currentWindow]),
         sleep: bestSleep >= 420,
         quiz: quizzes.length > 0,
-        community: stories.length > 0
+        community: stories.length > 0,
+        feed_intro: stories.length > 0,
+        first_meal: stories.some(function(row){ return row && (row.media_type === 'meal_card' || row.media_type === 'nutrition_card'); })
       };
       dailyState.loaded = true;
     } finally {
@@ -750,14 +879,21 @@
     var card = document.getElementById('next-obvious-steps-card');
     if (!card) return;
 
-    var unified = !!(window.socialJourney && typeof window.socialJourney.isUnifiedPlanActive === 'function' && window.socialJourney.isUnifiedPlanActive());
-    if (!isPreviewEligible() || unified) {
+    var unified = isUnifiedPlanActive();
+    if (!isPreviewEligible() && !unified) {
       card.style.display = 'none';
       card.innerHTML = '';
       return;
     }
 
     ensureStyles();
+    card.classList.toggle('is-unified-plan', unified);
+    if (unified) {
+      var weeklyGoals = document.getElementById('weekly-goals-card');
+      if (weeklyGoals && weeklyGoals.parentNode && weeklyGoals.nextElementSibling !== card) {
+        weeklyGoals.parentNode.insertBefore(card, weeklyGoals.nextSibling);
+      }
+    }
     var suggestions = pickSuggestions();
     var showAll = isShowAllEnabled();
     var complete = hasCompletedDay();
@@ -772,12 +908,12 @@
         '<div class="next-steps-shell">',
           '<div class="next-steps-head">',
             '<div>',
-              '<div class="next-steps-kicker">Next steps</div>',
-              '<div class="next-steps-title">Tasks complete</div>',
+              '<div class="next-steps-kicker">', unified ? 'Your plan' : 'Next steps', '</div>',
+              '<div class="next-steps-title">', unified ? 'You are clear for now' : 'Tasks complete', '</div>',
             '</div>',
             '<div class="next-steps-head-actions">',
-              '<button type="button" class="next-steps-test-toggle" data-next-steps-test-toggle="1">Test all</button>',
-              '<div class="next-steps-note">', dailyState.awarded ? '10 XP banked' : '+10 XP', '</div>',
+              unified ? '' : '<button type="button" class="next-steps-test-toggle" data-next-steps-test-toggle="1">Test all</button>',
+              '<div class="next-steps-note">', unified ? 'Today' : (dailyState.awarded ? '10 XP banked' : '+10 XP'), '</div>',
             '</div>',
           '</div>',
           '<div class="next-steps-complete">',
@@ -795,12 +931,12 @@
       '<div class="next-steps-shell">',
         '<div class="next-steps-head">',
           '<div>',
-            '<div class="next-steps-kicker">Next steps</div>',
-            '<div class="next-steps-title">', showAll ? 'Test every route' : 'What to do today', '</div>',
+            '<div class="next-steps-kicker">', unified ? 'Your plan' : 'Next steps', '</div>',
+            '<div class="next-steps-title">', unified ? 'To do next' : (showAll ? 'Test every route' : 'What to do today'), '</div>',
           '</div>',
           '<div class="next-steps-head-actions">',
-            '<button type="button" class="next-steps-test-toggle', showAll ? ' active' : '', '" data-next-steps-test-toggle="1">', showAll ? 'Show 3' : 'Test all', '</button>',
-            '<div class="next-steps-note">Private preview</div>',
+            unified ? '' : '<button type="button" class="next-steps-test-toggle' + (showAll ? ' active' : '') + '" data-next-steps-test-toggle="1">' + (showAll ? 'Show 3' : 'Test all') + '</button>',
+            '<div class="next-steps-note">', unified ? 'Today' : 'Private preview', '</div>',
           '</div>',
         '</div>',
         '<div class="next-steps-list">',

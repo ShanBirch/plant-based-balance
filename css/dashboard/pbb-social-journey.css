@@ -130,13 +130,34 @@
   opacity: 1 !important;
 }
 
-html.pbb-unified-next-steps #weekly-goals-card,
-html.pbb-unified-next-steps #next-obvious-steps-card,
+html.pbb-unified-next-steps #social-journey-card,
 html.pbb-unified-next-steps #daily-weigh-in-card,
 html.pbb-unified-next-steps #daily-weigh-in-done-card,
+html.pbb-unified-next-steps #weekly-progress-photo-card,
+html.pbb-unified-next-steps #weekly-progress-photo-done-card,
+html.pbb-unified-next-steps #weekly-progress-photo-uploading-card,
+html.pbb-unified-next-steps #fitness-diary-card,
+html.pbb-unified-next-steps #fitness-diary-done-card,
 html.pbb-unified-next-steps #daily-quiz-card,
 html.pbb-unified-next-steps #daily-quiz-done-card,
-html.pbb-unified-next-steps #check-in-prompt-card { display: none !important; }
+html.pbb-unified-next-steps #check-in-prompt-card,
+html.pbb-unified-next-steps #check-in-completed-card,
+html.pbb-unified-next-steps #weekly-checkin-card,
+html.pbb-unified-next-steps #fitbit-imported-activity-card { display: none !important; }
+html.pbb-unified-next-steps .pbb-next-step-active-source { display: block !important; }
+
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan { margin: 0 25px 16px !important; }
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-steps-shell { overflow: visible; border: 0; border-radius: 0; background: transparent; box-shadow: none; animation: none; }
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-steps-shell::before { display: none; }
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-steps-head { padding: 13px 0 10px; border: 0; background: transparent; }
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-steps-kicker { color: #9a6b16; -webkit-text-fill-color: #9a6b16; font-size: .61rem; letter-spacing: .16em; }
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-steps-title { color: #181713; -webkit-text-fill-color: #181713; font: 800 1.38rem/1.12 Georgia, serif; }
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-steps-note { color: #756b5a; -webkit-text-fill-color: #756b5a; }
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-steps-list { gap: 10px; padding: 0; }
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-action { border-color: rgba(183,138,46,.23); border-radius: 18px; padding: 14px; background: #fffdf8; box-shadow: 0 9px 24px rgba(68,48,17,.07); }
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-copy strong { color: #181713; -webkit-text-fill-color: #181713; }
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-copy span { color: #6b6255; -webkit-text-fill-color: #6b6255; }
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-steps-complete { border: 1px solid rgba(183,138,46,.22); border-radius: 18px; background: #fffdf8; }
 
 .social-journey-section-heading-row { display:flex; align-items:center; justify-content:space-between; gap:12px; }
 .social-journey-section-heading-row button { border:0; background:transparent; color:var(--sj-gold); -webkit-text-fill-color:var(--sj-gold); font-size:.7rem; font-weight:900; }
