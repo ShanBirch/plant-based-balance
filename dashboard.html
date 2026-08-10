@@ -446,7 +446,7 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
 </script>
 
 <!-- Supabase & Auth Guard -->
-<script src="js/dashboard/script_part_2.js?v=12"></script>
+<script src="js/dashboard/script_part_2.js?v=13"></script>
 <script>
 // ── Native OAuth warm-start callback (non-iOS) ────────────────────
 // On iOS this is set up inside the deferred chain above (after supabaseClient exists).
@@ -2946,7 +2946,7 @@ if (window._pbbIsIOSSafari) {
     function _doLoadScript3() {
         if(window._crumb)window._crumb('script3_loading');
         var s = document.createElement('script');
-        s.src = 'js/dashboard/dashboard-script-3-1_get_user_data.js?v=57';
+        s.src = 'js/dashboard/dashboard-script-3-1_get_user_data.js?v=58';
         document.head.appendChild(s);
     }
     if (window._pbbAuthIsReady) {
@@ -2957,7 +2957,7 @@ if (window._pbbIsIOSSafari) {
         }, { once: true });
     }
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-3-1_get_user_data.js?v=57"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-3-1_get_user_data.js?v=58"><\/script>');
 }
 </script>
 
@@ -13051,13 +13051,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=179';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=180';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=179"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=180"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=3"></script>
@@ -17947,12 +17947,12 @@ if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-9-hormone_hub_superboost_engine.js?v=1';
+            s.src = 'js/dashboard/dashboard-script-9-hormone_hub_superboost_engine.js?v=2';
             document.head.appendChild(s);
         }, 2000);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-9-hormone_hub_superboost_engine.js?v=1"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-9-hormone_hub_superboost_engine.js?v=2"><\/script>');
 }
 </script>
 
@@ -18996,7 +18996,7 @@ if(!window._pbbIsIOSSafari) {
 <!-- CRITICAL: Immediate check for male user to prevent UI flash -->
 <script>
 (function() {
-    if (localStorage.getItem('userGender') === 'male') {
+    if (typeof getActiveUserGender === 'function' && getActiveUserGender() === 'male') {
         document.body.classList.add('male-theme');
         document.body.classList.remove('female-theme');
         

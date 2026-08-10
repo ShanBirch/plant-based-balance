@@ -280,12 +280,17 @@
         if (window.currentUser) {
             const lastUserId = localStorage.getItem('pbb_last_user_id');
             if (lastUserId && lastUserId !== window.currentUser.id) {
+                // sessionStorage survives credential changes in the same tab. Clear it
+                // before startup syncs run so another account's onboarding profile can
+                // never be written into the newly authenticated user's database row.
+                sessionStorage.clear();
                 // Different user — wipe all user-specific localStorage cache
                 const userCacheKeys = [
                     'dashboardInitialized', 'fitgotchi_model_src', 'fitgotchi_level',
                     'fitgotchi_rank', 'fitgotchi_streak', 'fitgotchi_xp_percent',
                     'fitgotchi_xp_text', 'fitgotchi_camera_orbit', 'fitgotchi_fov',
                     'fitgotchi_scale', 'onboardingComplete', 'userGender',
+                    'pbb_user_gender_owner_id',
                     'userCycleData', 'userThemePreference'
                 ];
                 userCacheKeys.forEach(function(k) { try { localStorage.removeItem(k); } catch(e) {} });

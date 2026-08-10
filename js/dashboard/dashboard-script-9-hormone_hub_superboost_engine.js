@@ -49,7 +49,11 @@ function renderCycleStatus() {
     if (typeof isMaleUser === 'function') {
         isMale = isMaleUser();
     } else {
-        const gender = localStorage.getItem('userGender');
+        const activeUserId = window.currentUser && (window.currentUser.id || window.currentUser.user_id);
+        const genderOwnerId = localStorage.getItem('pbb_user_gender_owner_id');
+        const gender = activeUserId && genderOwnerId === activeUserId
+            ? localStorage.getItem('userGender')
+            : '';
         isMale = (gender === 'Male' || gender === 'male');
     }
 

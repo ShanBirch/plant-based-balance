@@ -256,13 +256,32 @@ async function _syncQuizDataToDbRealImpl() {
     if (!user) return;
 
     try {
-        const quizJson = sessionStorage.getItem('userProfile');
+        const activeUserId = user.id || user.user_id;
+        const pendingMetaClaim = !!(window.BalanceMetaAdTrial && window.BalanceMetaAdTrial.hasPendingClaim());
+        const quizDataFromSession = readSessionProfileForActiveUser({ allowGuestClaim: pendingMetaClaim });
+        const quizJson = quizDataFromSession ? JSON.stringify(quizDataFromSession) : null;
         const hormoneType = sessionStorage.getItem('userResult');
 
         let quizData = {};
-        if (quizJson) {
-             try { quizData = JSON.parse(quizJson); } catch(e) {}
+        if (quizJson) quizData = quizDataFromSession;
+
+        // A missing or rejected profile means this tab contains no onboarding
+        // data owned by the active user. Never fall through to a database update.
+        if (!quizData || Object.keys(quizData).length === 0) return;
+
+        const embeddedUserId = quizData.id || quizData.user_id || null;
+        const embeddedEmail = String(quizData.email || '').trim().toLowerCase();
+        const activeEmail = String(user.email || '').trim().toLowerCase();
+        if ((embeddedUserId && embeddedUserId !== activeUserId) ||
+            (embeddedEmail && activeEmail && embeddedEmail !== activeEmail)) {
+            console.warn('[profile-scope] Rejected onboarding data belonging to another account.');
+            sessionStorage.removeItem('userProfile');
+            sessionStorage.removeItem('userResult');
+            sessionStorage.removeItem('pbb_profile_owner_user_id');
+            return;
         }
+
+        stampSessionProfileForActiveUser(activeUserId);
 
         // Add hormone type if present
         if (hormoneType) {
@@ -273,7 +292,7 @@ async function _syncQuizDataToDbRealImpl() {
         // Quiz collects 'sex' field, but we need 'user_gender' for UI/localStorage
         if (quizData.sex && !quizData.user_gender) {
             quizData.user_gender = quizData.sex;
-            localStorage.setItem('userGender', quizData.sex);
+            cacheActiveUserGender(quizData.sex, activeUserId);
         }
 
         // NOTE: Symptom derivation from quiz REMOVED
@@ -489,6 +508,7 @@ async function handleLogout() {
             const userSpecificKeys = [
                 'userProfile',
                 'userGender',
+                'pbb_user_gender_owner_id',
                 'onboardingComplete',
                 'characterColors',
                 'userThemePreference',
@@ -563,6 +583,42 @@ async function handleDeleteAccount() {
 
 function getActiveDashboardUserId() {
     return window.currentUser && (window.currentUser.id || window.currentUser.user_id) || null;
+}
+
+function stampSessionProfileForActiveUser(userId) {
+    const ownerId = userId || getActiveDashboardUserId() || (window.guestMode ? 'guest' : null);
+    if (!ownerId) return false;
+    sessionStorage.setItem('pbb_profile_owner_user_id', ownerId);
+    return true;
+}
+
+function readSessionProfileForActiveUser(options) {
+    let profile = null;
+    try { profile = JSON.parse(sessionStorage.getItem('userProfile') || 'null'); } catch(e) {}
+    if (!profile || typeof profile !== 'object') return null;
+
+    const opts = options || {};
+    const activeUserId = getActiveDashboardUserId();
+    const ownerId = sessionStorage.getItem('pbb_profile_owner_user_id');
+    const lastUserId = localStorage.getItem('pbb_last_user_id');
+
+    if (activeUserId && ownerId && ownerId !== activeUserId) {
+        if (!(ownerId === 'guest' && opts.allowGuestClaim)) return null;
+    }
+    if (activeUserId && !ownerId && lastUserId && lastUserId !== activeUserId && !opts.allowGuestClaim) {
+        return null;
+    }
+    return profile;
+}
+
+function cacheActiveUserGender(value, userId) {
+    const gender = normalizeGenderValue(value);
+    if (!gender) return false;
+    const ownerId = userId || getActiveDashboardUserId() || (window.guestMode ? 'guest' : null);
+    if (!ownerId) return false;
+    localStorage.setItem('userGender', gender);
+    localStorage.setItem('pbb_user_gender_owner_id', ownerId);
+    return true;
 }
 
 async function getLatestQuizResultCached() {
@@ -747,8 +803,8 @@ async function _loadProfileDataRealImpl() {
         } catch(e) {}
 
         try {
-            const sessionProfile = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
-            fallback = { ...fallback, ...sessionProfile };
+            const sessionProfile = readSessionProfileForActiveUser();
+            if (sessionProfile) fallback = { ...fallback, ...sessionProfile };
         } catch(e) {}
 
         const email = fallback.email || activeUser.email || '';
@@ -902,7 +958,7 @@ async function _loadProfileDataRealImpl() {
             console.log("Gender mismatch detected - DB:", genderFromDb, "localStorage:", currentLocalGender);
         }
         // Skip localStorage write in admin view-as mode to prevent state leakage
-        if (!window.isAdminViewing) localStorage.setItem('userGender', genderFromDb);
+        if (!window.isAdminViewing) cacheActiveUserGender(genderFromDb);
         console.log("Synced gender from DB to localStorage:", genderFromDb);
     }
 
@@ -932,6 +988,7 @@ async function _loadProfileDataRealImpl() {
         try { currentProfile = JSON.parse(sessionStorage.getItem('userProfile') || '{}'); } catch(e) {}
         currentProfile.sex = profile.sex;
         sessionStorage.setItem('userProfile', JSON.stringify(currentProfile));
+        stampSessionProfileForActiveUser();
         console.log("Restored sex from DB to sessionStorage:", profile.sex);
     }
 
@@ -7524,7 +7581,7 @@ let wizardAssignedProgram = null;
 let wizardAssignedWorkoutItems = {};
 let wizardAssignedRequiredIds = new Set();
 let wizardAssignedCalendarInitialized = false;
-let selectedGender = localStorage.getItem('userGender') || null; // Track gender selection
+let selectedGender = getActiveUserGender() || null; // Track account-scoped gender selection
 
 // Food preference selections (slides 2/7/8/9). Sets keep selections unique and order-insensitive.
 let wizardCuisinePreferences = new Set();
@@ -8933,7 +8990,7 @@ function saveWizardChatIntakeToInputs() {
     const answers = wizardChatAnswers || {};
     selectedGender = answers.gender || selectedGender;
     setWizardFieldValue('wizard-gender', selectedGender);
-    localStorage.setItem('userGender', selectedGender);
+    cacheActiveUserGender(selectedGender);
     if (selectedGender === 'male') {
         document.body.classList.add('male-theme');
         document.body.classList.remove('female-theme');
@@ -9389,7 +9446,7 @@ async function checkAndTriggerOnboarding() {
                 isReturningMember = true;
                 console.log('🎁 Transferred client detected — running trimmed setup flow');
                 localStorage.setItem('onboardingComplete', 'true');
-                if (userData.sex) localStorage.setItem('userGender', userData.sex);
+                if (userData.sex) cacheActiveUserGender(userData.sex);
                 (function startTransferredSetupWhenReady(attempt) {
                     if (typeof startTransferredClientFlow === 'function') {
                         startTransferredClientFlow();
@@ -9411,7 +9468,7 @@ async function checkAndTriggerOnboarding() {
 
     // SELF-HEALING: Even if localStorage says complete, verify cycle data exists for females
     if (onboardingComplete === 'true') {
-        const userGender = localStorage.getItem('userGender');
+        const userGender = getActiveUserGender();
         if (userGender === 'female') {
             // Check if cycle data exists in localStorage
             try {
@@ -9445,7 +9502,7 @@ async function checkAndTriggerOnboarding() {
                 isReturningMember = true;
                 // SELF-HEALING: Check if cycle data actually exists for female users
                 // If onboarding is marked complete but data is missing, allow re-onboarding
-                const userGender = localStorage.getItem('userGender') || userData.sex;
+                const userGender = getActiveUserGender() || normalizeGenderValue(userData.sex);
                 if (userGender === 'female') {
                     try {
                         const facts = typeof window.getUserFacts === 'function'
@@ -9507,7 +9564,7 @@ async function checkAndTriggerOnboarding() {
     }
 
     // Check if gender is selected (required for proper UI)
-    const hasGender = localStorage.getItem('userGender');
+    const hasGender = getActiveUserGender();
 
     // Only a member positively confirmed as new gets the clean Home default.
     // If the database check failed, keep FitGotchi visible so a returning member
@@ -10826,7 +10883,7 @@ function calculateNutritionGoals(data) {
 function selectGender(gender) {
     selectedGender = gender;
     document.getElementById('wizard-gender').value = gender;
-    localStorage.setItem('userGender', gender);
+    cacheActiveUserGender(gender);
 
     // Apply theme based on gender
     if (gender === 'male') {
@@ -10879,12 +10936,21 @@ function getActiveUserGender() {
     }
 
     try {
-        const sessionProfile = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+        const canClaimGuestProfile = !!(window.BalanceMetaAdTrial && window.BalanceMetaAdTrial.hasPendingClaim());
+        const sessionProfile = readSessionProfileForActiveUser({ allowGuestClaim: canClaimGuestProfile }) || {};
         const sessionGender = normalizeGenderValue(sessionProfile.sex || sessionProfile.user_gender);
         if (sessionGender) return sessionGender;
     } catch(e) {}
 
-    return normalizeGenderValue(localStorage.getItem('userGender'));
+    const activeUserId = getActiveDashboardUserId();
+    const genderOwnerId = localStorage.getItem('pbb_user_gender_owner_id');
+    if (activeUserId && genderOwnerId === activeUserId) {
+        return normalizeGenderValue(localStorage.getItem('userGender'));
+    }
+    if (!activeUserId && window.guestMode && genderOwnerId === 'guest') {
+        return normalizeGenderValue(localStorage.getItem('userGender'));
+    }
+    return '';
 }
 
 // Helper function to check if user is male
@@ -11269,6 +11335,7 @@ async function wizardNext() {
 
         // Store in sessionStorage
         sessionStorage.setItem('userProfile', JSON.stringify(quizData));
+        stampSessionProfileForActiveUser();
 
         console.log("Step 2 data collected:", quizData);
 

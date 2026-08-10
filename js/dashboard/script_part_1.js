@@ -7,7 +7,7 @@
         'userProfile', 'dashboardInitialized',
         'fitgotchi_model_src', 'fitgotchi_camera_orbit', 'fitgotchi_fov', 'fitgotchi_scale',
         'fitgotchi_level', 'fitgotchi_rank', 'fitgotchi_xp_text', 'fitgotchi_xp_percent', 'fitgotchi_streak',
-        'profile_photo', 'userGender', 'userThemePreference', 'dietaryPreference',
+        'profile_photo', 'userGender', 'pbb_user_gender_owner_id', 'userThemePreference', 'dietaryPreference',
         'pbb_water_goal_ml', 'weighInDoneCardDismissedDate', 'quizDoneCardDismissedDate',
         'dailyQuizLessonToday', 'progressPhotoDoneCardDismissedDate', 'mealTipCardDismissedDate',
         'workoutTrendCardDismissedDate', 'movementTrendCardDismissedDate', 'myCurrentWorkout',
