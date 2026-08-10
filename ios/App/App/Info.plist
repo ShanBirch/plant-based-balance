@@ -101,7 +101,7 @@
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Balance uses your location to record the route of walks, runs, rides and hikes you choose to track, and to show local weather.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Balance uses location while your phone is locked for route recordings you start and optional Gym Arrival reminders you enable.</string>
+	<string>Balance uses location while your phone is locked only during a route recording you start.</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>Balance reads your health data (steps, heart rate, sleep, workouts) to track your fitness progress and sync with your FitGotchi.</string>
 	<key>NSHealthUpdateUsageDescription</key>
