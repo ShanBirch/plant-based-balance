@@ -4830,6 +4830,14 @@ function escapeAiPlanText(value) {
     })[character]);
 }
 
+function formatAiPlanPreparation(value) {
+    const text = String(value || '').trim();
+    if (!text) return '';
+    const steps = text.split(/\s*(?=\d+\.\s+)/).map(step => step.replace(/^\d+\.\s*/, '').trim()).filter(Boolean);
+    if (steps.length < 2) return `<p>${escapeAiPlanText(text)}</p>`;
+    return `<ol>${steps.map(step => `<li>${escapeAiPlanText(step)}</li>`).join('')}</ol>`;
+}
+
 async function loadAiMealPlanLoggedTypes(dayNum) {
     const user = window.currentUser;
     const todayIndex = getAiMealPlanTodayIndex();
@@ -5523,7 +5531,7 @@ function renderAiPlanFocusedDay(dayNum) {
                 <div class="ai-plan-hero__details">
                     ${selected.description ? `<p>${escapeAiPlanText(selected.description)}</p>` : ''}
                     ${ingredients ? `<h4>Ingredients</h4><ul>${ingredients}</ul>` : ''}
-                    ${selected.preparation ? `<h4>Preparation</h4><p>${escapeAiPlanText(selected.preparation)}</p>` : ''}
+                    ${selected.preparation ? `<h4>Preparation</h4>${formatAiPlanPreparation(selected.preparation)}` : ''}
                 </div>
             </div>
         </article>

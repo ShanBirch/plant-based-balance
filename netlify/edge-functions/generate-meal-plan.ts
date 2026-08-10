@@ -158,7 +158,7 @@ STRICT EVOLUTION RULES:
 - For every blueprint item with variation=false, keep the base meal recognisable and keep its name. Adjust portions or add a simple side only when needed for targets.
 - For a blueprint item with variation=true, create one close variation of that base meal. Change only one or two ingredients, flavour, or presentation. Add "New variation" to its tags.
 - Do not create any other new meals. Across the full week, the supplied blueprint contains exactly ${Number(adaptiveWeek.variationLimit) || 2} variation slots.
-- Use the logged ingredients when available. Fill in reasonable text-only quantities and brief preparation steps.
+- Use the logged ingredients when available. Turn them into a complete, cookable recipe with measured pantry staples, seasonings and numbered preparation steps.
 - Return no image fields, image prompts, photo descriptions, or URLs.
 - Nutrition focus inferred from sufficiently complete logged data: ${adaptiveFocus.length ? adaptiveFocus.map((item: any) => `${item.label}: ${item.suggestion}`).join('; ') : 'No reliable gap identified. Keep the plan balanced.'}
 - Support those nutrition focus areas with foods, but never violate allergies, dislikes, dietary requirements, or the familiar-meal rule.
@@ -207,6 +207,13 @@ ${dietaryReminder}
 - NO meal over 700 cal. NO snack over 300 cal.
 - Macros must add up: (protein×4)+(carbs×4)+(fat×9) ≈ stated calories (±10%).
 
+=== RECIPE QUALITY RULES ===
+- Every breakfast, lunch and dinner must list at least 8 separate ingredients. Every snack must list at least 5.
+- Include the measured oil or cooking liquid, aromatics, individual spices, seasoning and garnish needed to make the dish taste complete. Do not bundle several foods into one ingredient such as "onion, tomato and spices".
+- Every ingredient must have a practical quantity. Do not use vague amounts such as "to taste" on their own; give a starting amount and mark it optional when appropriate.
+- Preparation must contain 3 to 6 numbered steps for main meals and at least 2 numbered steps for snacks. Include heat level, approximate cooking time and a clear doneness cue when cooking is required.
+- Keep additions nutritionally small unless their calories and macros are included in the stated nutrition.
+
 RESPOND WITH VALID JSON:
 {
   "day_of_week": ${day},
@@ -223,7 +230,7 @@ RESPOND WITH VALID JSON:
       "fat_g": number,
       "fiber_g": number,
       "ingredients": [{"name": "string", "amount": "string"}],
-      "preparation": "brief cooking steps",
+      "preparation": "1. First complete step. 2. Second complete step. 3. Third complete step.",
       "prep_time_mins": number,
       "cook_time_mins": number,
       "tags": ["string"],
@@ -236,7 +243,7 @@ RESPOND WITH VALID JSON:
     const modelPayload = {
       contents: [{ role: "user", parts: [{ text: prompt }] }],
       generationConfig: {
-        maxOutputTokens: 4096,
+        maxOutputTokens: 6144,
         temperature: 0.7,
         responseMimeType: "application/json",
       }
@@ -356,6 +363,31 @@ RESPOND WITH VALID JSON:
     // Ensure required fields
     dayData.day_of_week = day;
     dayData.day_name = dayData.day_name || dayName;
+
+    const recipeQualityIssues: string[] = [];
+    if (!Array.isArray(dayData.meals) || dayData.meals.length !== 5) {
+      recipeQualityIssues.push('response must contain exactly five meals');
+    } else {
+      dayData.meals.forEach((meal: any, index: number) => {
+        const isSnack = String(meal?.meal_slot || '').includes('snack');
+        const minIngredients = isSnack ? 5 : 8;
+        const ingredients = Array.isArray(meal?.ingredients) ? meal.ingredients : [];
+        const quantifiedIngredients = ingredients.filter((ingredient: any) =>
+          String(ingredient?.name || '').trim() && String(ingredient?.amount || '').trim()
+        );
+        const numberedSteps = String(meal?.preparation || '').match(/(?:^|\s)\d+\.\s+/g) || [];
+        const minSteps = isSnack ? 2 : 3;
+        if (ingredients.length < minIngredients || quantifiedIngredients.length !== ingredients.length) {
+          recipeQualityIssues.push(`meal ${index + 1} needs ${minIngredients} separate quantified ingredients`);
+        }
+        if (numberedSteps.length < minSteps) {
+          recipeQualityIssues.push(`meal ${index + 1} needs ${minSteps} numbered preparation steps`);
+        }
+      });
+    }
+    if (recipeQualityIssues.length) {
+      throw new Error(`Recipe quality check failed: ${recipeQualityIssues.join('; ')}`);
+    }
 
     // Post-generation calorie validation & correction
     const maxCalories: Record<string, number> = {
