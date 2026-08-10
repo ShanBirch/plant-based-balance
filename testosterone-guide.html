@@ -38,8 +38,10 @@
     }
 
     * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
+    html { max-width: 100%; overflow-x: hidden; scroll-behavior: smooth; }
     body {
+      max-width: 100%;
+      overflow-x: hidden;
       margin: 0;
       background: var(--cream);
       color: var(--ink);
@@ -49,7 +51,7 @@
       -webkit-font-smoothing: antialiased;
     }
     a { color: inherit; }
-    img { max-width: 100%; }
+    img, video { max-width: 100%; height: auto; }
     button { font: inherit; }
     .wrap { width: min(1120px, calc(100% - 40px)); margin: 0 auto; }
     .eyebrow {
@@ -319,7 +321,7 @@
     }
     .dose-banner strong { font-family: "Fraunces", serif; font-size: 2.6rem; line-height: 1; }
     .dose-banner p { color: #574a2f; }
-    .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); }
+    .table-wrap { width: 100%; max-width: 100%; overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); }
     table { width: 100%; border-collapse: collapse; min-width: 760px; }
     th, td { padding: 21px 24px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
     th { background: #eef1ea; color: var(--muted); font-size: 0.76rem; letter-spacing: 0.08em; text-transform: uppercase; }
@@ -393,11 +395,6 @@
     .protocol-number strong { font-family: "Fraunces", serif; font-size: 1.25rem; }
     .protocol-note { margin-top: 20px; padding: 17px 18px; border-radius: 14px; background: var(--gold-soft); color: #574a2f; font-size: 0.84rem; }
     .protocol-note.danger { background: var(--red-soft); color: #77342f; }
-    .price-table { min-width: 680px; }
-    .price-table th:nth-child(n+2), .price-table td:nth-child(n+2) { text-align: right; white-space: nowrap; }
-    .price-table tfoot td { background: var(--gold-soft); border-top: 2px solid var(--gold); color: var(--ink); font-weight: 800; }
-    .price-table tfoot td:first-child { font-family: "Fraunces", serif; font-size: 1.15rem; }
-    .price-table tfoot td:last-child { color: var(--sage-deep); font-size: 1.15rem; }
     .medicine-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
     .medicine-card { padding: 22px; border-radius: 18px; background: #f4f2eb; }
     .medicine-card h4 { margin-bottom: 14px; font-family: "Fraunces", serif; font-size: 1.1rem; }
@@ -447,28 +444,31 @@
       .wrap { width: min(100% - 24px, 1120px); }
       .topbar-note { display: none; }
       .hero { min-height: 690px; padding-top: 145px; }
+      h1 { font-size: clamp(2.55rem, 14vw, 4.2rem); overflow-wrap: anywhere; }
+      h2, h3, p, li, a { overflow-wrap: anywhere; }
       .quick-nav { margin-bottom: 46px; }
+      .quick-nav-inner { flex-wrap: wrap; overflow-x: visible; }
+      .quick-nav a { flex: 1 1 auto; padding: 9px 11px; text-align: center; }
       .section { padding: 54px 0; }
       .section-head { gap: 20px; }
       .body-map, .compare-grid, .route-grid, .monitor-grid, .urgent-grid, .protocol-grid, .protocol-numbers, .medicine-grid, .guardrail-grid { grid-template-columns: 1fr; }
       .protocol-card.full { grid-column: auto; }
+      .protocol-card { min-width: 0; padding: 22px; }
+      .protocol-grid > *, .medicine-grid > *, .guardrail-grid > *, .pct-line > * { min-width: 0; }
       .body-card { min-height: auto; }
       .body-card .num { margin-bottom: 24px; }
       .release-pair { gap: 8px; }
       .release-pair .drug { padding: 14px 8px; }
       .dose-banner { grid-template-columns: 1fr; }
       .route-top, .route-body, .checklist { padding: 26px; }
-      .price-table { min-width: 0; }
-      .price-table thead { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
-      .price-table, .price-table tbody, .price-table tfoot, .price-table tr, .price-table td { display: block; width: 100%; }
-      .price-table tbody tr { padding: 16px 18px; border-bottom: 1px solid var(--line); }
-      .price-table tbody td { padding: 5px 0; border: 0; }
-      .price-table tbody td:first-child { margin-bottom: 8px; padding-bottom: 11px; border-bottom: 1px solid var(--line); line-height: 1.35; }
-      .price-table tbody td:nth-child(n+2) { display: flex; justify-content: space-between; gap: 16px; text-align: right; }
-      .price-table tbody td:nth-child(n+2)::before { content: attr(data-label); color: var(--muted); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
-      .price-table tfoot tr { display: flex; align-items: center; justify-content: space-between; }
-      .price-table tfoot td { width: auto; padding: 18px; border-bottom: 0; }
-      .price-table tfoot td:first-child { flex: 1; }
+      .exposure-table { min-width: 0; }
+      .exposure-table thead { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+      .exposure-table, .exposure-table tbody, .exposure-table tr, .exposure-table td { display: block; width: 100%; }
+      .exposure-table tbody tr { padding: 16px 18px; border-bottom: 1px solid var(--line); }
+      .exposure-table tbody tr:last-child { border-bottom: 0; }
+      .exposure-table tbody td { padding: 7px 0; border: 0; }
+      .exposure-table tbody td:first-child { margin-bottom: 8px; padding-bottom: 11px; border-bottom: 1px solid var(--line); line-height: 1.4; }
+      .exposure-table tbody td:nth-child(n+2)::before { content: attr(data-label); display: block; margin-bottom: 3px; color: var(--sage-deep); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
     }
     @media print {
       body { background: #fff; color: #111; font-size: 11pt; }
@@ -697,23 +697,23 @@
       </div>
 
       <div class="table-wrap" role="region" aria-label="Testosterone enanthate exposure examples and context" tabindex="0">
-        <table>
+        <table class="exposure-table">
           <thead><tr><th>Use and route</th><th>Published example</th><th>How the exposure behaves</th></tr></thead>
           <tbody>
             <tr>
               <td>Physiological-range exposure — intramuscular <small>Testosterone enanthate oil depot</small></td>
-              <td>75–100 mg IM weekly, or 150–200 mg IM every 2 weeks</td>
-              <td>Both are guideline examples. Weekly dosing usually creates smaller peaks and troughs; every-two-week dosing can rise above the physiological range early and fall toward or below it late.</td>
+              <td data-label="Published example">75–100 mg IM weekly, or 150–200 mg IM every 2 weeks</td>
+              <td data-label="How the exposure behaves">Both are guideline examples. Weekly dosing usually creates smaller peaks and troughs; every-two-week dosing can rise above the physiological range early and fall toward or below it late.</td>
             </tr>
             <tr>
               <td>Physiological-range exposure — subcutaneous <small>XYOSTED, a formulation-specific auto-injector</small></td>
-              <td>75 mg into abdominal fat once weekly to start; labelled adjustments are 50, 75 or 100 mg</td>
-              <td>The labelled blood check is a trough, measured 7 days after the latest dose once 6 weeks of dosing has established the pattern. This product is SC only.</td>
+              <td data-label="Published example">75 mg into abdominal fat once weekly to start; labelled adjustments are 50, 75 or 100 mg</td>
+              <td data-label="How the exposure behaves">The labelled blood check is a trough, measured 7 days after the latest dose once 6 weeks of dosing has established the pattern. This product is SC only.</td>
             </tr>
             <tr>
               <td>Lower bodybuilding range <small>Community term, not a safety rating</small></td>
-              <td><strong>About 250–350 mg/week</strong><small>300 mg/week is the closest major controlled human research group</small></td>
-              <td>This is usually clearly above physiological exposure. In graded-dose research that included 300 mg/week, greater testosterone exposure tracked with more fat-free mass, muscle size, strength and haemoglobin, alongside lower HDL cholesterol. “Lower” means lower on a bodybuilding scale, not low biological exposure.</td>
+              <td data-label="Published example"><strong>About 250–350 mg/week</strong><small>300 mg/week is the closest major controlled human research group</small></td>
+              <td data-label="How the exposure behaves">This is usually clearly above physiological exposure. In graded-dose research that included 300 mg/week, greater testosterone exposure tracked with more fat-free mass, muscle size, strength and haemoglobin, alongside lower HDL cholesterol. “Lower” means lower on a bodybuilding scale, not low biological exposure.</td>
             </tr>
           </tbody>
         </table>
@@ -912,30 +912,15 @@
         </article>
 
         <article class="protocol-card full">
-          <span class="protocol-kicker">Order summary</span>
-          <h3>Price breakdown</h3>
-          <div class="table-wrap">
-            <table class="price-table" aria-label="Protocol order price breakdown in Australian dollars">
-              <thead>
-                <tr>
-                  <th scope="col">Item description</th>
-                  <th scope="col">Qty</th>
-                  <th scope="col">Price (AUD)</th>
-                  <th scope="col">Subtotal (AUD)</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr><td>Test-Enanthate 250 mg/mL (10 mL vial)</td><td data-label="Qty">2</td><td data-label="Price">$95.00</td><td data-label="Subtotal">$190.00</td></tr>
-                <tr><td>Meditech Adex-1 / Anastrozole 1 mg (50 tabs)</td><td data-label="Qty">1</td><td data-label="Price">$120.00</td><td data-label="Subtotal">$120.00</td></tr>
-                <tr><td>Meditech Tamox-20 / Nolvadex 20 mg (50 tabs)</td><td data-label="Qty">1</td><td data-label="Price">$100.00</td><td data-label="Subtotal">$100.00</td></tr>
-                <tr><td>Meditech Propescar / Finasteride 5 mg (30 tabs)</td><td data-label="Qty">1</td><td data-label="Price">$75.00</td><td data-label="Subtotal">$75.00</td></tr>
-                <tr><td>EMS Tracked Express Shipping</td><td data-label="Qty">1</td><td data-label="Price">$65.00</td><td data-label="Subtotal">$65.00</td></tr>
-              </tbody>
-              <tfoot>
-                <tr><td colspan="3">Total due</td><td>$550.00 AUD</td></tr>
-              </tfoot>
-            </table>
+          <span class="protocol-kicker">Protocol summary</span>
+          <h3>Proposed stack</h3>
+          <div class="guardrail-grid">
+            <div class="guardrail"><strong>Test-Enanthate 250</strong><p>2 &times; 10 mL multidose vials at 250 mg/mL, with MCT carrier oil.</p></div>
+            <div class="guardrail"><strong>Meditech Adex-1 / Anastrozole</strong><p>1 mg tablets, 50 tablets.</p></div>
+            <div class="guardrail"><strong>Meditech Tamox-20 / Nolvadex</strong><p>20 mg tablets, 50 tablets.</p></div>
+            <div class="guardrail"><strong>Meditech Propescar / Finasteride</strong><p>5 mg tablets, 30 tablets.</p></div>
           </div>
+          <div class="protocol-note"><strong>Clinician review required:</strong> this is a summary of the proposed products, not a prescription or medical recommendation. Confirm every medicine, dose and source with a qualified clinician and licensed pharmacist.</div>
         </article>
       </div>
     </section>
