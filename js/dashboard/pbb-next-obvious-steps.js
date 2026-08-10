@@ -252,6 +252,17 @@
     return Number.isFinite(start.getTime()) && Date.now() < start.getTime() + (7 * 24 * 60 * 60 * 1000);
   }
 
+  function isHealthConnected() {
+    try {
+      if (localStorage.getItem('healthConnectEnabled') === 'true' || window._nativeHealthReady) return true;
+    } catch (_) {}
+    return ['fitbit-connect-btn', 'oura-connect-btn', 'whoop-connect-btn'].some(function(id){
+      var button = document.getElementById(id);
+      var label = String(button && button.textContent || '').trim().toLowerCase();
+      return label === 'disconnect' || label.indexOf('connected') !== -1;
+    });
+  }
+
   function openMovementTarget() {
     switchTab('movement-tab');
     afterTab(function(){
@@ -369,6 +380,7 @@
     if (visibleCompleteFallback(action.id)) return true;
     if (action.id === 'workout') return !!(dailyState.status && dailyState.status.workout && dailyState.status.workout_share);
     if (action.id === 'meal_plan_intro' || action.id === 'workout_week_intro') return hasSeenOnboardingStep(action.id);
+    if (action.id === 'connect_health') return isHealthConnected();
     if (action.id === 'nutrition' && getSelectedGoalIds().indexOf('share_meal_feed') !== -1) {
       return !!(dailyState.status && dailyState.status.nutrition && dailyState.status.meal_share);
     }
@@ -417,6 +429,21 @@
       action: function(){
         if (typeof window.openWeeklyCheckinPreview === 'function') window.openWeeklyCheckinPreview();
         else clickSourceCard('#weekly-checkin-card');
+      }
+    },
+    {
+      id: 'connect_health',
+      title: 'Connect Android Health or your watch',
+      body: 'Bring steps, activity and sleep into Balance automatically.',
+      cta: 'Connect Health',
+      accent: '#0f766e',
+      priority: 920,
+      goalIds: [],
+      action: function(){
+        try {
+          if (typeof window.toggleHealthConnect === 'function') window.toggleHealthConnect();
+          else if (typeof window.showHealthConnectModal === 'function') window.showHealthConnectModal();
+        } catch (_) {}
       }
     },
     {
@@ -592,6 +619,7 @@
     }
     if (action.id === 'quiz') return true;
     if (action.id === 'workout') return isSourceCardDue('#today-workout-card');
+    if (action.id === 'sleep') return !!(dailyState.status && dailyState.status.sleep_data);
     if (action.id === 'weighin') {
       if (!isSundayWeighInDay()) return false;
       return isSourceCardDue('#daily-weigh-in-card') || isSourceCardDue('#daily-weigh-in-done-card') || matchingGoalCount(action, selectedGoalIds) > 0;
@@ -605,10 +633,12 @@
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'feed_intro'; }));
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'meal_plan_intro'; }));
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'workout_week_intro'; }));
+      if (!isHealthConnected()) addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'connect_health'; }));
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'first_meal'; }));
     }
     addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'quiz'; }));
     goalMatchedActions(selectedGoalIds).forEach(function(action){
+      if (isFirstProgramWeek() && action.id === 'nutrition') return;
       if (isActionTargetable(action, selectedGoalIds)) addUniqueAction(picked, action);
     });
     ['daily_checkin', 'weighin'].forEach(function(id){
@@ -651,8 +681,10 @@
     }
     if (action.id === 'daily_checkin') return isSourceCardDue('#check-in-prompt-card');
     if (action.id === 'meal_plan_intro' || action.id === 'workout_week_intro') return isFirstProgramWeek() && !hasSeenOnboardingStep(action.id);
+    if (action.id === 'connect_health') return isFirstProgramWeek() && !isHealthConnected();
     if (action.id === 'quiz') return true;
     if (action.id === 'workout') return isSourceCardDue('#today-workout-card');
+    if (action.id === 'sleep') return !!(dailyState.status && dailyState.status.sleep_data);
     if (action.id === 'weekly_review') return !isFirstProgramWeek() && isSourceCardDue('#weekly-checkin-card');
     if (action.id === 'progress_photo') return isSourceCardDue('#weekly-progress-photo-card');
     if (action.id === 'fitness_diary') return isSourceCardDue('#fitness-diary-card');
@@ -823,6 +855,7 @@
         weighin: weighIns.length > 0,
         mood: !!(moodCompleted.morning && moodCompleted.afternoon && moodCompleted.evening) || !!(currentWindow && moodCompleted[currentWindow]),
         sleep: bestSleep >= 420,
+        sleep_data: sleepValues.some(function(minutes){ return Number(minutes || 0) > 0; }),
         quiz: quizzes.length > 0,
         community: stories.length > 0,
         feed_intro: allStories.length > 0,
