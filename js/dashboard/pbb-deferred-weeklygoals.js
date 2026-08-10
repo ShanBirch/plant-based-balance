@@ -901,7 +901,11 @@
           }).length;
         break;
       case 'meal_log_days':
-        current = countDistinctDates(data.mealLogs, row => row.meal_date && isDateInWeek(row.meal_date, week) ? row.meal_date : null);
+        if (goal.unit === 'meals' || Number(goal.target || 0) > 7) {
+          current = weekRows(data.mealLogs, week, row => row.meal_date).length;
+        } else {
+          current = countDistinctDates(data.mealLogs, row => row.meal_date && isDateInWeek(row.meal_date, week) ? row.meal_date : null);
+        }
         break;
       case 'weight_loss':
       case 'weight_gain': {
