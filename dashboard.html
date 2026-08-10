@@ -2248,6 +2248,26 @@ if(!window._pbbIsIOSSafari) {
     .ai-plan-shopping__status { color: #68645d; -webkit-text-fill-color: #68645d; font-size: .68rem; }
     .ai-plan-shopping__download { min-height: 42px; padding: 10px 14px; border: 0; border-radius: 999px; background: var(--meal-plan-ink); color: #fff; -webkit-text-fill-color: #fff; font: inherit; font-size: .76rem; font-weight: 750; cursor: pointer; }
     .ai-plan-shopping__download:disabled { opacity: .5; cursor: default; }
+    #view-meals {
+        height: 100vh;
+        height: 100dvh;
+        min-height: 0;
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-y: contain;
+        scroll-padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px));
+        padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px));
+        box-sizing: border-box;
+    }
+    #meal-plan-store,
+    #ai-meal-plan-container,
+    #ai-plan-loaded,
+    #ai-plan-meals-list {
+        height: auto !important;
+        max-height: none !important;
+        overflow: visible !important;
+    }
     @media (max-width: 480px) {
         .ai-plan-hero__title { font-size: 1.25rem; }
         .ai-plan-focus-layout #ai-plan-header { padding-inline: 15px !important; }

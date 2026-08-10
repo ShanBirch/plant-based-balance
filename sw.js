@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v300'; // v300: align Arunima goals and first-lesson contrast
+const CACHE_NAME = 'pbb-app-v301'; // v301: restore full meal-plan scrolling below shopping list
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
