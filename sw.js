@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v298'; // v298: split the welcome check-in into inbox bubbles
+const CACHE_NAME = 'pbb-app-v299'; // v299: simplify the onboarding lesson action bubble
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

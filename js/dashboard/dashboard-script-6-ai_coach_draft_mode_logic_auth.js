@@ -8212,7 +8212,6 @@ async function loadDirectMessages(recipientId) {
                     <audio controls preload="metadata" src="${escapeHtml(balanceWelcomeAudio)}" style="display:block; width:100%; height:42px; border-radius:21px;"></audio>
                 </div>
                 <div style="width:min(82%, 350px); background:#fffdf8; color:#171923; border:1px solid rgba(183,138,46,.25); border-radius:19px 19px 19px 5px; padding:12px; box-shadow:0 6px 18px rgba(74,55,18,.08);">
-                    <div style="font-size:.78rem; line-height:1.4; color:#5e5547; margin:0 3px 10px;">When you have listened, I will show you how your first lesson works.</div>
                     <button type="button" onclick="window.socialJourney.continueFromInbox()" style="width:100%; border:1px solid #b78a2e; border-radius:13px; padding:12px 14px; background:linear-gradient(135deg,#d4ad52,#f0cf76); color:#171923; font-weight:900; cursor:pointer; box-shadow:0 5px 14px rgba(183,138,46,.18);">Continue to my first lesson</button>
                 </div>
             </div>` : '';
