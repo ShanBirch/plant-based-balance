@@ -393,6 +393,11 @@
     .protocol-number strong { font-family: "Fraunces", serif; font-size: 1.25rem; }
     .protocol-note { margin-top: 20px; padding: 17px 18px; border-radius: 14px; background: var(--gold-soft); color: #574a2f; font-size: 0.84rem; }
     .protocol-note.danger { background: var(--red-soft); color: #77342f; }
+    .price-table { min-width: 680px; }
+    .price-table th:nth-child(n+2), .price-table td:nth-child(n+2) { text-align: right; white-space: nowrap; }
+    .price-table tfoot td { background: var(--gold-soft); border-top: 2px solid var(--gold); color: var(--ink); font-weight: 800; }
+    .price-table tfoot td:first-child { font-family: "Fraunces", serif; font-size: 1.15rem; }
+    .price-table tfoot td:last-child { color: var(--sage-deep); font-size: 1.15rem; }
     .medicine-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
     .medicine-card { padding: 22px; border-radius: 18px; background: #f4f2eb; }
     .medicine-card h4 { margin-bottom: 14px; font-family: "Fraunces", serif; font-size: 1.1rem; }
@@ -892,6 +897,33 @@
             <div class="guardrail"><strong>Estrogen guardrail</strong><p>Dry or painful joints and a libido drop can occur with low estrogen, but symptoms alone cannot diagnose the cause. Do not keep adjusting anastrozole without clinician review and blood results.</p></div>
             <div class="guardrail"><strong>Fertility is not protected</strong><p>External testosterone suppresses LH and FSH and can markedly reduce sperm production. Discuss fertility preservation before the first injection if future fertility matters.</p></div>
             <div class="guardrail"><strong>Track the response</strong><p>Record blood pressure, injection reactions, acne, hair, sleep, mood, libido and breast symptoms alongside scheduled blood tests. Escalate concerning changes rather than adding more medicines.</p></div>
+          </div>
+        </article>
+
+        <article class="protocol-card full">
+          <span class="protocol-kicker">Order summary</span>
+          <h3>Price breakdown</h3>
+          <div class="table-wrap">
+            <table class="price-table" aria-label="Protocol order price breakdown in Australian dollars">
+              <thead>
+                <tr>
+                  <th scope="col">Item description</th>
+                  <th scope="col">Qty</th>
+                  <th scope="col">Price (AUD)</th>
+                  <th scope="col">Subtotal (AUD)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>Test-Enanthate 250 mg/mL (10 mL vial)</td><td>2</td><td>$95.00</td><td>$190.00</td></tr>
+                <tr><td>Meditech Adex-1 / Anastrozole 1 mg (50 tabs)</td><td>1</td><td>$120.00</td><td>$120.00</td></tr>
+                <tr><td>Meditech Tamox-20 / Nolvadex 20 mg (50 tabs)</td><td>1</td><td>$100.00</td><td>$100.00</td></tr>
+                <tr><td>Meditech Propescar / Finasteride 5 mg (30 tabs)</td><td>1</td><td>$75.00</td><td>$75.00</td></tr>
+                <tr><td>EMS Tracked Express Shipping</td><td>1</td><td>$65.00</td><td>$65.00</td></tr>
+              </tbody>
+              <tfoot>
+                <tr><td colspan="3">Total due</td><td>$550.00 AUD</td></tr>
+              </tfoot>
+            </table>
           </div>
         </article>
       </div>
