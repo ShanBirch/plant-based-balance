@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v287'; // v287: lead Home with Weekly Goals and due actions
+const CACHE_NAME = 'pbb-app-v288'; // v288: editorial action cards for the daily plan
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

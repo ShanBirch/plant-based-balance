@@ -153,11 +153,40 @@ html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-steps
 html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-steps-kicker { color: #9a6b16; -webkit-text-fill-color: #9a6b16; font-size: .61rem; letter-spacing: .16em; }
 html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-steps-title { color: #181713; -webkit-text-fill-color: #181713; font: 800 1.38rem/1.12 Georgia, serif; }
 html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-steps-note { color: #756b5a; -webkit-text-fill-color: #756b5a; }
-html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-steps-list { gap: 10px; padding: 0; }
-html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-action { border-color: rgba(183,138,46,.23); border-radius: 18px; padding: 14px; background: #fffdf8; box-shadow: 0 9px 24px rgba(68,48,17,.07); }
-html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-copy strong { color: #181713; -webkit-text-fill-color: #181713; }
-html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-copy span { color: #6b6255; -webkit-text-fill-color: #6b6255; }
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-steps-list { gap: 13px; padding: 0; }
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-action { position: relative; isolation: isolate; overflow: hidden; min-height: 92px; border: 1px solid rgba(183,138,46,.22); border-radius: 23px; padding: 15px 14px; display: grid; grid-template-columns: 56px minmax(0,1fr) 34px; gap: 14px; background: linear-gradient(118deg,#fffaf0 0%,#fffdf8 54%,#fff 100%); box-shadow: 0 13px 31px rgba(68,48,17,.09), inset 0 1px 0 rgba(255,255,255,.95); }
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-action::before { content: ""; position: absolute; z-index: -1; width: 145px; height: 145px; left: -52px; top: 50%; border-radius: 50%; background: var(--next-step-accent,#b78a2e); opacity: .09; transform: translateY(-50%); filter: blur(3px); }
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-action::after { content: ""; position: absolute; z-index: -1; inset: 0; background: linear-gradient(105deg,rgba(255,224,140,.2),transparent 42%); pointer-events: none; }
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-action:first-child { border-color: rgba(183,138,46,.42); box-shadow: 0 16px 36px rgba(154,107,22,.14), inset 0 1px 0 #fff; }
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-mark { width: 54px; height: 54px; align-self: center; border: 1px solid rgba(183,138,46,.19); border-radius: 17px; display: grid; place-items: center; background: rgba(255,250,235,.9); box-shadow: 0 8px 20px rgba(68,48,17,.07), inset 0 1px 0 #fff; }
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-mark::after { content: "\2726"; color: var(--next-step-accent,#b78a2e); -webkit-text-fill-color: var(--next-step-accent,#b78a2e); font-size: 1.45rem; line-height: 1; }
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan [data-next-step-id="feed_intro"] .next-step-mark::after { content: "\1F4F8"; }
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan [data-next-step-id="weekly_review"] .next-step-mark::after { content: "\1F4DD"; }
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan [data-next-step-id="quiz"] .next-step-mark::after { content: "\1F4D6"; }
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan [data-next-step-id="workout"] .next-step-mark::after { content: "\1F3CB"; }
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan [data-next-step-id="daily_checkin"] .next-step-mark::after { content: "\2713"; }
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan [data-next-step-id="nutrition"] .next-step-mark::after,
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan [data-next-step-id="first_meal"] .next-step-mark::after { content: "\1F957"; }
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan [data-next-step-id="hydration"] .next-step-mark::after { content: "\1F4A7"; }
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan [data-next-step-id="steps"] .next-step-mark::after { content: "\1F45F"; }
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan [data-next-step-id="weighin"] .next-step-mark::after { content: "\2696"; }
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan [data-next-step-id="sleep"] .next-step-mark::after { content: "\263E"; }
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan [data-next-step-id="progress_photo"] .next-step-mark::after { content: "\1F4F7"; }
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan [data-next-step-id="imported_activity"] .next-step-mark::after { content: "\2197"; }
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan [data-next-step-id="fitness_diary"] .next-step-mark::after { content: "\1F4CB"; }
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan [data-next-step-id="community"] .next-step-mark::after { content: "\1F4AC"; }
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-copy { position: relative; align-self: center; }
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-action:first-child .next-step-copy::before { content: "UP NEXT"; display: block; margin-bottom: 4px; color: #9a6b16; -webkit-text-fill-color: #9a6b16; font-size: .54rem; line-height: 1; font-weight: 950; letter-spacing: .15em; }
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-copy strong { margin-bottom: 5px; color: #181713; -webkit-text-fill-color: #181713; font-size: .94rem; line-height: 1.2; }
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-copy span { color: #6b6255; -webkit-text-fill-color: #6b6255; font-size: .73rem; line-height: 1.36; }
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-cta { width: 32px; height: 32px; align-self: center; border: 1px solid rgba(183,138,46,.2); border-radius: 50%; display: grid; place-items: center; overflow: hidden; background: rgba(255,253,248,.88); color: transparent; -webkit-text-fill-color: transparent; font-size: 0; box-shadow: 0 5px 14px rgba(68,48,17,.06); }
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-cta::after { content: "\203A"; color: #6f541d; -webkit-text-fill-color: #6f541d; font: 800 1.45rem/1 Georgia,serif; transform: translateY(-1px); }
 html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-steps-complete { border: 1px solid rgba(183,138,46,.22); border-radius: 18px; background: #fffdf8; }
+@media (max-width: 380px) {
+  html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-action { grid-template-columns: 50px minmax(0,1fr) 30px; gap: 11px; padding: 13px 12px; }
+  html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-mark { width: 48px; height: 48px; border-radius: 15px; }
+  html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-cta { display: grid; width: 29px; height: 29px; }
+}
 
 .social-journey-section-heading-row { display:flex; align-items:center; justify-content:space-between; gap:12px; }
 .social-journey-section-heading-row button { border:0; background:transparent; color:var(--sj-gold); -webkit-text-fill-color:var(--sj-gold); font-size:.7rem; font-weight:900; }
