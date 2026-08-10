@@ -1,10 +1,10 @@
-// ===== DAILY WEIGH-IN CARD LOGIC =====
+// ===== WEEKLY SUNDAY WEIGH-IN CARD LOGIC =====
 
 const FRIDAY_WEIGH_LOSS_POINTS = 5;
 const FRIDAY_WEIGH_SHARE_POINTS = 5;
 
     /**
-     * Check if user has weighed in today and show/hide card accordingly
+     * Show the weekly weigh-in card on Sunday only.
      */
     async function checkAndShowWeighInCard() {
         if (!window.currentUser) return;
@@ -14,10 +14,19 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
         const wizard = document.getElementById('onboarding-wizard');
         if (wizard && wizard.style.display !== 'none') return;
 
+        const card = document.getElementById('daily-weigh-in-card');
+        const doneCard = document.getElementById('daily-weigh-in-done-card');
+
+        // Weight can still be logged manually from other app surfaces, but the
+        // default Home prompt and completion card belong to Sunday only.
+        if (!isSundayWeighInDay()) {
+            if (card) card.style.display = 'none';
+            if (doneCard) doneCard.style.display = 'none';
+            return;
+        }
+
         try {
             const todaysWeighIn = await db.weighIns.getTodaysWeighIn(window.currentUser.id);
-            const card = document.getElementById('daily-weigh-in-card');
-            const doneCard = document.getElementById('daily-weigh-in-done-card');
 
             if (card) {
                 ensureFridayWeighInCardStyles();
@@ -42,11 +51,9 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
                         }
                     }
                 } else {
-                    // Show the card for today's weigh-in
+                    // Show the card for this week's Sunday weigh-in
                     resetDailyWeighInCardVisualState();
-                    if (isFridayWeighInDay()) {
-                        applyFridayWeighInCardVisualState();
-                    }
+                    applyFridayWeighInCardVisualState();
                     card.style.display = 'block';
                     if (doneCard) doneCard.style.display = 'none';
 
@@ -99,7 +106,7 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
         }
     }
 
-    function isFridayWeighInDay(date = new Date()) {
+    function isSundayWeighInDay(date = new Date()) {
         return date.getDay() === 0;
     }
 
@@ -230,12 +237,12 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
         if (subtitle) subtitle.style.display = '';
         const xpBadge = document.getElementById('weigh-in-xp-badge');
         if (xpBadge) xpBadge.style.display = '';
-        setTextContent('weigh-in-card-title', 'Daily Weigh-In');
-        setTextContent('weigh-in-card-subtitle', 'Track your progress, earn XP!');
+        setTextContent('weigh-in-card-title', 'Sunday Weigh-In');
+        setTextContent('weigh-in-card-subtitle', 'Log this week\'s weight and keep your trend accurate.');
         setTextContent('weigh-in-xp-badge', '+1 XP');
         setTextContent('weigh-in-submit-btn', 'Log It');
         setTextContent('weigh-in-success-xp', '+1 XP');
-        setTextContent('weigh-in-success-copy', 'Weigh-in complete!');
+        setTextContent('weigh-in-success-copy', 'Weekly weigh-in complete!');
         const submitBtn = document.getElementById('weigh-in-submit-btn');
         if (submitBtn) submitBtn.style.color = '#667eea';
     }
@@ -269,7 +276,7 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
             <div id="weigh-in-done-icon" style="width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; line-height: 1; overflow: hidden; flex-shrink: 0;">&#x2705;</div>
             <div style="flex: 1;">
                 <div id="weigh-in-done-title" style="font-weight: 700; font-size: 1rem;">Weigh-In Complete!</div>
-                <div id="weigh-in-done-subtitle" style="font-size: 0.82rem; opacity: 0.9; margin-top: 2px;">+1 XP earned. Come back tomorrow!</div>
+                <div id="weigh-in-done-subtitle" style="font-size: 0.82rem; opacity: 0.9; margin-top: 2px;">+1 XP earned. Come back next Sunday!</div>
             </div>
         `;
     }
@@ -811,7 +818,7 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
     }
 
     /**
-     * Submit the daily weigh-in
+     * Submit the Sunday weigh-in
      */
     async function submitDailyWeighIn() {
         if (!window.currentUser) {

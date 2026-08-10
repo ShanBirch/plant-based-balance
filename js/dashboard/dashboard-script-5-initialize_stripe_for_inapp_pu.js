@@ -7533,7 +7533,7 @@ const WIZARD_WEEKLY_GOAL_FOCUS_LABELS = {
     protein_days: 'Hit protein 5 days/week',
     calorie_range_days: 'Hit calorie target 5 days/week',
     meal_log_days: 'Log meals 5 days/week',
-    weigh_in_days: 'Weigh in 3-5 days/week',
+    weigh_in_days: 'Weigh in once on Sunday',
     steps_10k_days: 'Reach 10k steps 4 days/week',
     sleep_7h_nights: 'Sleep 7h 4 nights/week',
     water_goal_days: 'Hit water goal 5 days/week',

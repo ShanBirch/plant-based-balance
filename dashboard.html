@@ -1363,7 +1363,7 @@ window.addEventListener('load', function() {
     <!-- Shannon-only Balance-to-Instagram journey pilot -->
     <div id="social-journey-card" class="social-journey-card" style="display: none;" aria-label="Open Your Next Step"></div>
 
-    <!-- Daily Weigh-In Card (disappears after completion) -->
+    <!-- Sunday Weigh-In Card (disappears after completion) -->
     <div id="daily-weigh-in-card" style="display: none; margin: 15px 25px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 16px; padding: 20px; color: white; position: relative; overflow: hidden;">
         <div style="position: absolute; top: -20px; right: -20px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
         <div style="position: absolute; bottom: -30px; left: -30px; width: 80px; height: 80px; background: rgba(255,255,255,0.05); border-radius: 50%;"></div>
@@ -1371,8 +1371,8 @@ window.addEventListener('load', function() {
         <div style="position: relative; z-index: 1;">
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
                 <div>
-                    <h3 id="weigh-in-card-title" style="margin: 0 0 4px 0; font-size: 1.1rem; font-weight: 700;">Daily Weigh-In</h3>
-                    <p id="weigh-in-card-subtitle" style="margin: 0; font-size: 0.85rem; opacity: 0.9;">Track your progress, earn XP!</p>
+                    <h3 id="weigh-in-card-title" style="margin: 0 0 4px 0; font-size: 1.1rem; font-weight: 700;">Sunday Weigh-In</h3>
+                    <p id="weigh-in-card-subtitle" style="margin: 0; font-size: 0.85rem; opacity: 0.9;">Log this week's weight and keep your trend accurate.</p>
                 </div>
                 <div id="weigh-in-xp-badge" style="background: rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700;">
                     +1 XP
@@ -1396,13 +1396,13 @@ window.addEventListener('load', function() {
         </div>
     </div>
 
-    <!-- Daily Weigh-In Completed Card -->
+    <!-- Sunday Weigh-In Completed Card -->
     <div id="daily-weigh-in-done-card" style="display: none; margin: 15px 25px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 16px; padding: 16px 20px; color: white; align-items: center; gap: 15px; position: relative;">
         <button id="weigh-in-done-close" onclick="dismissWeighInDoneCard()" style="position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.2); border: none; color: white; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1; padding: 0;">&#x2715;</button>
         <div id="weigh-in-done-icon" style="width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; line-height: 1; overflow: hidden; flex-shrink: 0;">&#x2705;</div>
         <div style="flex: 1;">
             <div id="weigh-in-done-title" style="font-weight: 700; font-size: 1rem;">Weigh-In Complete!</div>
-            <div id="weigh-in-done-subtitle" style="font-size: 0.82rem; opacity: 0.9; margin-top: 2px;">+1 XP earned. Come back tomorrow!</div>
+            <div id="weigh-in-done-subtitle" style="font-size: 0.82rem; opacity: 0.9; margin-top: 2px;">+1 XP earned. Come back next Sunday!</div>
         </div>
     </div>
 
@@ -1765,12 +1765,12 @@ window.addEventListener('load', function() {
         window.addEventListener('pbbInitComplete', function() {
             setTimeout(function() {
                 var s = document.createElement('script');
-                s.src = 'js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=71';
+                s.src = 'js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=72';
                 document.head.appendChild(s);
             }, 3000);
         }, { once: true });
     } else {
-        document.write('<script src="js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=71"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=72"><\/script>');
     }
     </script>
 
@@ -1893,16 +1893,16 @@ if(!window._pbbIsIOSSafari) {
     <script>
 if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-progressphoto.js?v=10"><\/script>');
-    document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=27"><\/script>');
+    document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=28"><\/script>');
     document.write('<script src="js/dashboard/pbb-social-journey.js?v=25"><\/script>');
-    document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=12"><\/script>');
+    document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=13"><\/script>');
     document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=22"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
     window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=10');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=27');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=28');
     window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=25');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=12');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=13');
     window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=22');
 }
 </script>
@@ -12987,13 +12987,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=174';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=175';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=174"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=175"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=3"></script>
@@ -16657,15 +16657,15 @@ if(!window._pbbIsIOSSafari) {
             <div style="position: absolute; bottom: -30px; left: -30px; width: 80px; height: 80px; background: rgba(255,255,255,0.05); border-radius: 50%;"></div>
             <div style="position: relative; z-index: 1;">
                 <div style="font-size: 2.5rem; margin-bottom: 10px;">⚖️</div>
-                <h3 style="margin: 0 0 5px 0; font-family: 'Playfair Display'; font-size: 1.5rem;">Daily Weigh-In</h3>
-                <p style="margin: 0; opacity: 0.9; font-size: 0.9rem;">Start your day by tracking your progress</p>
+                <h3 style="margin: 0 0 5px 0; font-family: 'Playfair Display'; font-size: 1.5rem;">Weigh-In</h3>
+                <p style="margin: 0; opacity: 0.9; font-size: 0.9rem;">Track your weekly progress</p>
             </div>
         </div>
 
         <!-- Content -->
         <div style="padding: 25px;">
             <div id="weigh-in-modal-input-section">
-                <label style="display: block; font-weight: 600; color: var(--text-main); margin-bottom: 12px; font-size: 0.95rem;">Enter today's weight</label>
+                <label style="display: block; font-weight: 600; color: var(--text-main); margin-bottom: 12px; font-size: 0.95rem;">Enter your weight</label>
                 <div style="position: relative; margin-bottom: 20px;">
                     <input type="number" id="weigh-in-modal-input" placeholder="Enter weight" step="0.1" min="20" max="500" style="width: 100%; padding: 16px 60px 16px 20px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 1.1rem; box-sizing: border-box; transition: border-color 0.2s;" onfocus="this.style.borderColor='#667eea'" onblur="this.style.borderColor='#e2e8f0'">
                     <span id="weigh-in-modal-unit-label" style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); color: #666; font-size: 1rem; font-weight: 600;">kg</span>

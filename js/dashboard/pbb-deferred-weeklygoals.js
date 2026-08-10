@@ -28,7 +28,7 @@
       goals: [
         { id: 'weight_loss', label: 'Lose weight', target: 0.5, unit: 'kg', min: 0.1, max: 2, step: 0.1 },
         { id: 'weight_gain', label: 'Gain weight', target: 0.5, unit: 'kg', min: 0.1, max: 2, step: 0.1 },
-        { id: 'weigh_in_days', label: 'Weigh in', target: 5, unit: 'days', min: 1, max: 7, step: 1 }
+        { id: 'weigh_in_days', label: 'Sunday weigh-in', target: 1, unit: 'weigh-in', min: 1, max: 1, step: 1 }
       ]
     },
     {
@@ -861,6 +861,13 @@
     return Number.isFinite(n) ? n : null;
   }
 
+  function isSundayDateKey(value) {
+    if (!value) return false;
+    const key = String(value).slice(0, 10);
+    const date = dateFromKey(key);
+    return Number.isFinite(date.getTime()) && date.getDay() === 0;
+  }
+
   function weekRows(rows, week, dateGetter) {
     return (rows || []).filter(row => {
       const key = dateGetter(row);
@@ -899,20 +906,24 @@
       case 'weight_loss':
       case 'weight_gain': {
         precision = 1;
-        const rows = weekRows(data.weighIns, week, row => row.weigh_in_date).filter(row => weightValue(row) != null);
+        const rows = (data.weighIns || []).filter(row => {
+          return weightValue(row) != null
+            && isSundayDateKey(row.weigh_in_date)
+            && row.weigh_in_date < week.endExclusive;
+        });
         if (rows.length >= 2) {
-          const first = weightValue(rows[0]);
+          const first = weightValue(rows[rows.length - 2]);
           const latest = weightValue(rows[rows.length - 1]);
           current = goal.id === 'weight_loss'
             ? Math.max(0, first - latest)
             : Math.max(0, latest - first);
         } else {
-          helper = 'Log at least 2 weigh-ins to show the trend.';
+          helper = 'Your Sunday-to-Sunday trend starts after 2 weekly weigh-ins.';
         }
         break;
       }
       case 'weigh_in_days':
-        current = countDistinctDates(data.weighIns, row => row.weigh_in_date && isDateInWeek(row.weigh_in_date, week) ? row.weigh_in_date : null);
+        current = countDistinctDates(data.weighIns, row => row.weigh_in_date && isDateInWeek(row.weigh_in_date, week) && isSundayDateKey(row.weigh_in_date) ? row.weigh_in_date : null);
         break;
       case 'sleep_7h_nights': {
         const sleepByDate = {};

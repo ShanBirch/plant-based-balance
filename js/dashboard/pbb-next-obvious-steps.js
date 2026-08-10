@@ -84,6 +84,10 @@
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   }
 
+  function isSundayWeighInDay(date) {
+    return (date ? new Date(date) : new Date()).getDay() === 0;
+  }
+
   function localDayRange(dateKey) {
     var start = new Date(dateKey + 'T00:00:00');
     var end = new Date(start.getTime());
@@ -406,8 +410,8 @@
     },
     {
       id: 'weighin',
-      title: 'Weigh in for the day',
-      body: 'Body goal: keep the trend accurate.',
+      title: 'Complete your Sunday weigh-in',
+      body: 'Body goal: log this week\'s weight and keep the trend accurate.',
       cta: 'Open Weigh-In',
       accent: '#e11d48',
       priority: 700,
@@ -520,6 +524,7 @@
     if (action.id === 'quiz') return true;
     if (action.id === 'workout') return isSourceCardDue('#today-workout-card');
     if (action.id === 'weighin') {
+      if (!isSundayWeighInDay()) return false;
       return isSourceCardDue('#daily-weigh-in-card') || isSourceCardDue('#daily-weigh-in-done-card') || matchingGoalCount(action, selectedGoalIds) > 0;
     }
     return true;
@@ -581,6 +586,7 @@
     if (action.id === 'fitness_diary') return isSourceCardDue('#fitness-diary-card');
     if (action.id === 'imported_activity') return isSourceCardDue('#fitbit-imported-activity-card');
     if (action.id === 'weighin') {
+      if (!isSundayWeighInDay()) return false;
       if (isVisibleSelector('#daily-weigh-in-done-card')) return false;
       return isSourceCardDue('#daily-weigh-in-card') || matchingGoalCount(action, selectedGoalIds) > 0;
     }
