@@ -458,6 +458,17 @@
       .release-pair .drug { padding: 14px 8px; }
       .dose-banner { grid-template-columns: 1fr; }
       .route-top, .route-body, .checklist { padding: 26px; }
+      .price-table { min-width: 0; }
+      .price-table thead { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+      .price-table, .price-table tbody, .price-table tfoot, .price-table tr, .price-table td { display: block; width: 100%; }
+      .price-table tbody tr { padding: 16px 18px; border-bottom: 1px solid var(--line); }
+      .price-table tbody td { padding: 5px 0; border: 0; }
+      .price-table tbody td:first-child { margin-bottom: 8px; padding-bottom: 11px; border-bottom: 1px solid var(--line); line-height: 1.35; }
+      .price-table tbody td:nth-child(n+2) { display: flex; justify-content: space-between; gap: 16px; text-align: right; }
+      .price-table tbody td:nth-child(n+2)::before { content: attr(data-label); color: var(--muted); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+      .price-table tfoot tr { display: flex; align-items: center; justify-content: space-between; }
+      .price-table tfoot td { width: auto; padding: 18px; border-bottom: 0; }
+      .price-table tfoot td:first-child { flex: 1; }
     }
     @media print {
       body { background: #fff; color: #111; font-size: 11pt; }
@@ -914,11 +925,11 @@
                 </tr>
               </thead>
               <tbody>
-                <tr><td>Test-Enanthate 250 mg/mL (10 mL vial)</td><td>2</td><td>$95.00</td><td>$190.00</td></tr>
-                <tr><td>Meditech Adex-1 / Anastrozole 1 mg (50 tabs)</td><td>1</td><td>$120.00</td><td>$120.00</td></tr>
-                <tr><td>Meditech Tamox-20 / Nolvadex 20 mg (50 tabs)</td><td>1</td><td>$100.00</td><td>$100.00</td></tr>
-                <tr><td>Meditech Propescar / Finasteride 5 mg (30 tabs)</td><td>1</td><td>$75.00</td><td>$75.00</td></tr>
-                <tr><td>EMS Tracked Express Shipping</td><td>1</td><td>$65.00</td><td>$65.00</td></tr>
+                <tr><td>Test-Enanthate 250 mg/mL (10 mL vial)</td><td data-label="Qty">2</td><td data-label="Price">$95.00</td><td data-label="Subtotal">$190.00</td></tr>
+                <tr><td>Meditech Adex-1 / Anastrozole 1 mg (50 tabs)</td><td data-label="Qty">1</td><td data-label="Price">$120.00</td><td data-label="Subtotal">$120.00</td></tr>
+                <tr><td>Meditech Tamox-20 / Nolvadex 20 mg (50 tabs)</td><td data-label="Qty">1</td><td data-label="Price">$100.00</td><td data-label="Subtotal">$100.00</td></tr>
+                <tr><td>Meditech Propescar / Finasteride 5 mg (30 tabs)</td><td data-label="Qty">1</td><td data-label="Price">$75.00</td><td data-label="Subtotal">$75.00</td></tr>
+                <tr><td>EMS Tracked Express Shipping</td><td data-label="Qty">1</td><td data-label="Price">$65.00</td><td data-label="Subtotal">$65.00</td></tr>
               </tbody>
               <tfoot>
                 <tr><td colspan="3">Total due</td><td>$550.00 AUD</td></tr>
