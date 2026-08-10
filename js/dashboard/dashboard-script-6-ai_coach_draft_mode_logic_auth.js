@@ -8199,13 +8199,21 @@ async function loadDirectMessages(recipientId) {
             ? window.socialJourney.getWelcomeAudioUrl()
             : '/assets/audio/shannon-balance-welcome.mp3';
         const balanceWelcomeHtml = showBalanceWelcome ? `
-            <div class="balance-onboarding-inbox-message" style="display:flex; justify-content:flex-start; margin-bottom:16px;">
-                <div style="width:min(88%, 390px); background:#fffaf0; color:#171923; border:1px solid #dec47c; border-radius:18px 18px 18px 5px; padding:16px; box-shadow:0 8px 24px rgba(74,55,18,.10);">
-                    <div style="font-size:.68rem; font-weight:900; letter-spacing:.12em; text-transform:uppercase; color:#92671d; margin-bottom:7px;">Your first check-in</div>
-                    <div style="font:800 1.12rem/1.2 Georgia,serif; margin-bottom:7px;">Welcome to Balance.</div>
-                    <div style="font-size:.86rem; line-height:1.45; color:#4b5563; margin-bottom:12px;">Press play to hear your first voice note from Coach Shannon. When you are ready, continue into your first Foundations lesson.</div>
-                    <audio controls preload="metadata" src="${escapeHtml(balanceWelcomeAudio)}" style="display:block; width:100%; height:42px; margin-bottom:12px;"></audio>
-                    <button type="button" onclick="window.socialJourney.continueFromInbox()" style="width:100%; border:1px solid #b78a2e; border-radius:12px; padding:12px 14px; background:linear-gradient(135deg,#d4ad52,#f0cf76); color:#171923; font-weight:900; cursor:pointer;">Continue to my first lesson</button>
+            <div class="balance-onboarding-inbox-message" style="display:flex; flex-direction:column; align-items:flex-start; gap:9px; margin-bottom:18px;">
+                <div style="width:min(82%, 350px); background:#fffaf0; color:#171923; border:1px solid rgba(183,138,46,.30); border-radius:19px 19px 19px 5px; padding:14px 15px; box-shadow:0 6px 18px rgba(74,55,18,.08);">
+                    <div style="font-size:.64rem; font-weight:900; letter-spacing:.12em; text-transform:uppercase; color:#92671d; margin-bottom:6px;">Your first check-in</div>
+                    <div style="font:800 1.08rem/1.2 Georgia,serif; margin-bottom:6px; color:#171923;">Welcome to Balance.</div>
+                    <div style="font-size:.84rem; line-height:1.46; color:#4b5563;">I have left you a quick voice note about how we will use the app together. Press play when you are ready.</div>
+                </div>
+                <div style="width:min(88%, 390px); background:linear-gradient(135deg,#f4df9f,#e2ba58); color:#171923; border:1px solid rgba(146,103,29,.32); border-radius:19px 19px 19px 5px; padding:10px 12px 11px; box-shadow:0 7px 20px rgba(112,77,16,.13);">
+                    <div style="display:flex; align-items:center; gap:8px; margin:0 3px 5px; font-size:.67rem; font-weight:900; letter-spacing:.06em; color:#68480f;">
+                        <span style="width:7px; height:7px; border-radius:50%; background:#68480f;"></span>Voice message from Coach Shannon
+                    </div>
+                    <audio controls preload="metadata" src="${escapeHtml(balanceWelcomeAudio)}" style="display:block; width:100%; height:42px; border-radius:21px;"></audio>
+                </div>
+                <div style="width:min(82%, 350px); background:#fffdf8; color:#171923; border:1px solid rgba(183,138,46,.25); border-radius:19px 19px 19px 5px; padding:12px; box-shadow:0 6px 18px rgba(74,55,18,.08);">
+                    <div style="font-size:.78rem; line-height:1.4; color:#5e5547; margin:0 3px 10px;">When you have listened, I will show you how your first lesson works.</div>
+                    <button type="button" onclick="window.socialJourney.continueFromInbox()" style="width:100%; border:1px solid #b78a2e; border-radius:13px; padding:12px 14px; background:linear-gradient(135deg,#d4ad52,#f0cf76); color:#171923; font-weight:900; cursor:pointer; box-shadow:0 5px 14px rgba(183,138,46,.18);">Continue to my first lesson</button>
                 </div>
             </div>` : '';
 

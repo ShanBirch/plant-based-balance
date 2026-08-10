@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v297'; // v297: introduce Activity Insights from week two
+const CACHE_NAME = 'pbb-app-v298'; // v298: split the welcome check-in into inbox bubbles
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
