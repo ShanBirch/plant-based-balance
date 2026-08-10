@@ -160,7 +160,7 @@ html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-
 html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-action:first-child { border-color: rgba(183,138,46,.42); box-shadow: 0 16px 36px rgba(154,107,22,.14), inset 0 1px 0 #fff; }
 html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-mark { width: 54px; height: 54px; align-self: center; border: 1px solid rgba(183,138,46,.19); border-radius: 17px; display: grid; place-items: center; background: rgba(255,250,235,.9); box-shadow: 0 8px 20px rgba(68,48,17,.07), inset 0 1px 0 #fff; }
 html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-mark::after { content: "\2726"; color: var(--next-step-accent,#b78a2e); -webkit-text-fill-color: var(--next-step-accent,#b78a2e); font-size: 1.45rem; line-height: 1; }
-html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan [data-next-step-id="feed_intro"] .next-step-mark::after { content: "\1F4F8"; }
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan [data-next-step-id="feed_intro"] .next-step-mark::after { content: "\1F44B"; }
 html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan [data-next-step-id="meal_plan_intro"] .next-step-mark::after { content: "\1F37D"; }
 html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan [data-next-step-id="workout_week_intro"] .next-step-mark::after { content: "\1F4C5"; }
 html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan [data-next-step-id="weekly_review"] .next-step-mark::after { content: "\1F4DD"; }

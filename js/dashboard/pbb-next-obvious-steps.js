@@ -378,8 +378,8 @@
   var ACTIONS = [
     {
       id: 'feed_intro',
-      title: 'Say hello and take your first Feed photo',
-      body: 'A simple hello and an ordinary photo are enough to start building the evidence.',
+      title: 'Introduce yourself to the Feed',
+      body: 'Write a simple hello so everyone knows who you are. No photo needed.',
       cta: 'Open Feed',
       accent: '#b78a2e',
       priority: 1000,
@@ -777,7 +777,8 @@
         safeSupabaseQuery(function(supabase){ return supabase.from('fitbit_sleep').select('date,duration_minutes').eq('user_id', userId).eq('date', dateKey); }),
         safeSupabaseQuery(function(supabase){ return supabase.from('oura_sleep').select('date,total_sleep_minutes').eq('user_id', userId).eq('date', dateKey); }),
         safeSupabaseQuery(function(supabase){ return supabase.from('whoop_sleep').select('date,duration_minutes').eq('user_id', userId).eq('date', dateKey); }),
-        getNativeSteps()
+        getNativeSteps(),
+        safeSupabaseQuery(function(supabase){ return supabase.from('stories').select('id,media_type,created_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(50); })
       ]);
 
       var workouts = results[0] || [];
@@ -795,6 +796,7 @@
       var ouraSleep = results[12] || [];
       var whoopSleep = results[13] || [];
       var nativeSteps = Number(results[14] || 0);
+      var allStories = results[15] || [];
 
       var checkin = checkins[0] || {};
       var moodCompleted = readMoodLocalStatus(dateKey);
@@ -823,8 +825,8 @@
         sleep: bestSleep >= 420,
         quiz: quizzes.length > 0,
         community: stories.length > 0,
-        feed_intro: stories.length > 0,
-        first_meal: stories.some(function(row){ return row && (row.media_type === 'meal_card' || row.media_type === 'nutrition_card'); })
+        feed_intro: allStories.length > 0,
+        first_meal: allStories.some(function(row){ return row && (row.media_type === 'meal_card' || row.media_type === 'nutrition_card'); })
       };
       dailyState.loaded = true;
     } finally {
@@ -1065,6 +1067,12 @@
     var card = document.getElementById('next-obvious-steps-card');
     if (!card) return;
     card.addEventListener('click', handleClick);
+    document.addEventListener('click', function(event){
+      var homeButton = event.target && event.target.closest ? event.target.closest('.bottom-nav .nav-item[onclick*="dashboard"]') : null;
+      if (!homeButton) return;
+      setTimeout(function(){ refreshDailyStatus({ force: true }); }, 180);
+      setTimeout(function(){ refreshDailyStatus({ force: true }); }, 1200);
+    });
     refreshSoon(0);
     refreshDailyStatus({ force: true });
     setTimeout(render, 1500);

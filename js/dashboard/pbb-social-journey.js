@@ -18,7 +18,7 @@
       title: 'Make the first reps visible.',
       body: 'Do one real action, then record it. Feed is not a performance; it is a supportive environment that helps the new pattern feel normal.',
       tasks: [
-        task('w1_feed_intro', 'Say hello and take your first Feed photo', 'A simple hello and an ordinary photo are enough.', 'feed_posts', 1, '\uD83D\uDCF7', 'feed-photo'),
+      task('w1_feed_intro', 'Introduce yourself to the Feed', 'Write a simple hello. No photo needed.', 'feed_posts', 1, '\uD83D\uDC4B', 'feed'),
         task('w1_first_workout_share', 'Complete and share your first workout', 'Finish the version that fits today, then share the completed workout to Feed.', 'workout_bundle', 1, '\uD83C\uDFAF', 'movement'),
         task('w1_meal_feed', 'Share one normal meal', 'Eat first, then post it. No perfect plate required.', 'meal_feed_posts', 1, '\uD83E\uDD57', 'meals')
       ]
