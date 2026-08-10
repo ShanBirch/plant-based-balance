@@ -210,6 +210,8 @@ html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-steps
 .social-journey-lesson__number { position: absolute; top: 23px; left: 21px; width: 69px; height: 78px; border: 1px solid rgba(245, 217, 138, .35); border-radius: 18px; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(216, 178, 94, .08); }
 .social-journey-lesson__number span { color: var(--sj-gold-light); -webkit-text-fill-color: var(--sj-gold-light); font-size: .48rem; font-weight: 950; letter-spacing: .15em; }
 .social-journey-lesson__number strong { margin-top: 2px; color: var(--sj-cream); -webkit-text-fill-color: var(--sj-cream); font: 800 1.9rem/1 Georgia, serif; }
+.social-journey-lesson h2 { color: #181713 !important; -webkit-text-fill-color: #181713 !important; opacity: 1 !important; }
+.social-journey-lesson__number strong { color: #8a651c !important; -webkit-text-fill-color: #8a651c !important; opacity: 1 !important; }
 .social-journey-week-dots { display: grid; grid-template-columns: repeat(12, 1fr); gap: 4px; margin-top: 18px; position: relative; }
 .social-journey-week-dots span { height: 5px; border-radius: 999px; background: rgba(248, 247, 242, .13); }
 .social-journey-week-dots span.done { background: var(--sj-gold); }
