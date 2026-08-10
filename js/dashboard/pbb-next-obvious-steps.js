@@ -252,6 +252,16 @@
     return Number.isFinite(start.getTime()) && Date.now() < start.getTime() + (7 * 24 * 60 * 60 * 1000);
   }
 
+  function hasReachedSecondProgramWeek() {
+    try {
+      if (window.socialJourney && typeof window.socialJourney.getCurrentWeek === 'function') {
+        return Number(window.socialJourney.getCurrentWeek() || 1) >= 2;
+      }
+    } catch (_) {}
+    var start = new Date((window.userProfile && window.userProfile.program_start_date) || '');
+    return Number.isFinite(start.getTime()) && Date.now() >= start.getTime() + (7 * 24 * 60 * 60 * 1000);
+  }
+
   function isHealthConnected() {
     try {
       if (localStorage.getItem('healthConnectEnabled') === 'true' || window._nativeHealthReady) return true;
@@ -379,7 +389,7 @@
     if (!action || !action.id) return false;
     if (visibleCompleteFallback(action.id)) return true;
     if (action.id === 'workout') return !!(dailyState.status && dailyState.status.workout && dailyState.status.workout_share);
-    if (action.id === 'meal_plan_intro' || action.id === 'workout_week_intro') return hasSeenOnboardingStep(action.id);
+    if (action.id === 'meal_plan_intro' || action.id === 'workout_week_intro' || action.id === 'activity_insights_intro') return hasSeenOnboardingStep(action.id);
     if (action.id === 'connect_health') return isHealthConnected();
     if (action.id === 'nutrition' && getSelectedGoalIds().indexOf('share_meal_feed') !== -1) {
       return !!(dailyState.status && dailyState.status.nutrition && dailyState.status.meal_share);
@@ -444,6 +454,19 @@
           if (typeof window.toggleHealthConnect === 'function') window.toggleHealthConnect();
           else if (typeof window.showHealthConnectModal === 'function') window.showHealthConnectModal();
         } catch (_) {}
+      }
+    },
+    {
+      id: 'activity_insights_intro',
+      title: 'See what your activity is telling you',
+      body: 'Open Activity Insights to see how your workouts, recovery and health data come together.',
+      cta: 'View Insights',
+      accent: '#0f766e',
+      priority: 910,
+      goalIds: [],
+      action: function(){
+        markOnboardingStepSeen('activity_insights_intro');
+        openInsightsTarget();
       }
     },
     {
@@ -641,6 +664,9 @@
       if (!isHealthConnected()) addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'connect_health'; }));
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'first_meal'; }));
     }
+    if (hasReachedSecondProgramWeek() && !hasSeenOnboardingStep('activity_insights_intro')) {
+      addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'activity_insights_intro'; }));
+    }
     addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'quiz'; }));
     goalMatchedActions(selectedGoalIds).forEach(function(action){
       if (hasIncompleteOnboarding && action.id === 'nutrition') return;
@@ -687,6 +713,7 @@
     if (action.id === 'daily_checkin') return isSourceCardDue('#check-in-prompt-card');
     if (action.id === 'meal_plan_intro' || action.id === 'workout_week_intro') return !hasSeenOnboardingStep(action.id);
     if (action.id === 'connect_health') return !isHealthConnected();
+    if (action.id === 'activity_insights_intro') return hasReachedSecondProgramWeek() && !hasSeenOnboardingStep(action.id);
     if (action.id === 'quiz') return true;
     if (action.id === 'workout') return isSourceCardDue('#today-workout-card');
     if (action.id === 'sleep') return !!(dailyState.status && dailyState.status.sleep_data);
@@ -1158,7 +1185,7 @@
       render();
     },
     resetOnboardingCards: function(){
-      ['meal_plan_intro', 'workout_week_intro'].forEach(function(actionId){
+      ['meal_plan_intro', 'workout_week_intro', 'activity_insights_intro'].forEach(function(actionId){
         try { localStorage.removeItem(onboardingStepKey(actionId)); } catch (_) {}
       });
       render();
