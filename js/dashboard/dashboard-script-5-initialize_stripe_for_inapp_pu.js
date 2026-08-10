@@ -7248,7 +7248,13 @@ function closeOnboardingBlockingSurfaces() {
     });
 }
 
+function isTransferredWizardClient() {
+    const profile = window.currentUserProfile || window.userProfile || window.profileData || {};
+    return !!(profile.is_transferred_client || window.__pbbTransferredSetupPending);
+}
+
 function isWizardSlideSkipped(step) {
+    if (step === 4 && isTransferredWizardClient()) return true;
     if (wizardAssignedProgram && [4, 5, 6].includes(step)) return true;
     if (step === 17 && window._wizardCustomizeOnlyMode) return false;
     if (skippedWizardSlides.includes(step)) return true;
@@ -8565,6 +8571,10 @@ function askWizardChatQuestion(options = {}) {
     const step = getWizardChatStep();
     if (!step) {
         wizardChatComplete = true;
+        if (isTransferredWizardClient()) {
+            setTimeout(() => wizardNext(), 0);
+            return;
+        }
         wizardChatMessages = [{ role: 'coach', text: `Perfect. Based on your real week, I would start with ${getWizardStarterRoutineSummary()}. We will keep that minimum light until following through feels normal, then progress it. It is a suggestion, so you can change the frequency and exact days next.` }];
         renderWizardChatMessages();
         renderWizardChatProgress();
