@@ -314,20 +314,38 @@
     return goalId && GOAL_BY_ID[goalId] ? GOAL_BY_ID[goalId] : null;
   }
 
+  function isMealEntryGoal(raw, target) {
+    return Boolean(
+      raw
+      && typeof raw === 'object'
+      && (raw.id || raw.goal_id || raw.goalId) === 'meal_log_days'
+      && (String(raw.unit || '').toLowerCase() === 'meals' || Number(target) > 7)
+    );
+  }
+
+  function getGoalTargetDefinition(goal) {
+    const def = resolveGoalDefinition(goal);
+    if (!def) return null;
+    if (!isMealEntryGoal(goal, goal && goal.target)) return def;
+    return Object.assign({}, def, { max: 21, unit: 'meals' });
+  }
+
   function normalizeGoal(raw) {
     const def = resolveGoalDefinition(raw);
     if (!def) return null;
     let target = Number(raw && typeof raw === 'object' ? raw.target : null);
     if (!Number.isFinite(target) || target <= 0) target = def.target;
-    target = Math.min(def.max, Math.max(def.min, target));
-    if (def.step >= 1) target = Math.round(target);
+    const isMealEntry = isMealEntryGoal(raw, target);
+    const targetDef = isMealEntry ? getGoalTargetDefinition(raw) : def;
+    target = Math.min(targetDef.max, Math.max(targetDef.min, target));
+    if (targetDef.step >= 1) target = Math.round(target);
     else target = Math.round(target * 10) / 10;
     return {
       id: def.id,
-      label: def.label,
+      label: isMealEntry ? String(raw.label || 'Take 3 meal photos a day') : def.label,
       category: def.category,
       target,
-      unit: def.unit
+      unit: isMealEntry ? 'meals' : def.unit
     };
   }
 
@@ -1246,7 +1264,7 @@
   }
 
   function renderTargetSelector(goal) {
-    const def = GOAL_BY_ID[goal.id];
+    const def = getGoalTargetDefinition(goal);
     if (!def) return '';
     const rangeCount = Math.floor((def.max - def.min) / def.step) + 1;
     if (def.step === 1 && rangeCount <= 7) {
@@ -1489,7 +1507,7 @@
   function setDraftGoalTarget(goalId, value) {
     const index = state.draftSelected.findIndex(goal => goal.id === goalId);
     if (index === -1) return null;
-    const def = GOAL_BY_ID[goalId];
+    const def = getGoalTargetDefinition(state.draftSelected[index]);
     value = Number(value);
     if (!Number.isFinite(value)) value = def.target;
     value = Math.min(def.max, Math.max(def.min, value));
@@ -1505,7 +1523,7 @@
 
   window.adjustWeeklyGoalTarget = function(goalId, direction) {
     const goal = state.draftSelected.find(item => item.id === goalId);
-    const def = GOAL_BY_ID[goalId];
+    const def = getGoalTargetDefinition(goal);
     if (!goal || !def) return;
     setDraftGoalTarget(goalId, Number(goal.target) + (Number(direction) || 0) * def.step);
     renderModal();
