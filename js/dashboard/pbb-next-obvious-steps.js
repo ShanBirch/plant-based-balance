@@ -131,6 +131,20 @@
     return 'pbb_next_steps_complete_xp:' + userId + ':' + dateKey;
   }
 
+  function onboardingStepKey(actionId) {
+    var userId = String(window.currentUser && (window.currentUser.id || window.currentUser.email) || 'guest');
+    return 'pbb_onboarding_step_seen:' + userId + ':' + actionId;
+  }
+
+  function hasSeenOnboardingStep(actionId) {
+    try { return localStorage.getItem(onboardingStepKey(actionId)) === '1'; } catch (_) { return false; }
+  }
+
+  function markOnboardingStepSeen(actionId) {
+    try { localStorage.setItem(onboardingStepKey(actionId), '1'); } catch (_) {}
+    render();
+  }
+
   function isVisibleSelector(selector) {
     var el = null;
     try { el = document.querySelector(selector); } catch (_) {}
@@ -261,6 +275,30 @@
     }, 420);
   }
 
+  function openMealPlanTarget() {
+    markOnboardingStepSeen('meal_plan_intro');
+    switchTab('meals');
+    afterTab(function(){
+      var pill = document.getElementById('browse-plans-pill');
+      try {
+        if (typeof window.switchWeek === 'function') window.switchWeek('meal-plan-store', pill);
+      } catch (_) {}
+      scrollToSelector('#meal-plan-store', { block: 'start' });
+    }, 520);
+  }
+
+  function openWorkoutWeekTarget() {
+    markOnboardingStepSeen('workout_week_intro');
+    try {
+      if (typeof window.openCalendarEditor === 'function') {
+        window.openCalendarEditor();
+        return;
+      }
+    } catch (_) {}
+    switchTab('cycle');
+    afterTab(function(){ scrollToSelector('#view-calendar', { block: 'start' }); }, 420);
+  }
+
   function openWeighInTarget() {
     switchTab('dashboard');
     afterTab(function(){
@@ -320,6 +358,7 @@
     if (!action || !action.id) return false;
     if (visibleCompleteFallback(action.id)) return true;
     if (action.id === 'workout') return !!(dailyState.status && dailyState.status.workout && dailyState.status.workout_share);
+    if (action.id === 'meal_plan_intro' || action.id === 'workout_week_intro') return hasSeenOnboardingStep(action.id);
     if (action.id === 'nutrition' && getSelectedGoalIds().indexOf('share_meal_feed') !== -1) {
       return !!(dailyState.status && dailyState.status.nutrition && dailyState.status.meal_share);
     }
@@ -336,6 +375,26 @@
       priority: 1000,
       goalIds: [],
       action: openCommunityTarget
+    },
+    {
+      id: 'meal_plan_intro',
+      title: 'Check out your meal plan',
+      body: 'See the meals Shannon has prepared for your week and where to find them again.',
+      cta: 'View Meal Plan',
+      accent: '#16a34a',
+      priority: 980,
+      goalIds: [],
+      action: openMealPlanTarget
+    },
+    {
+      id: 'workout_week_intro',
+      title: 'Check out your workouts for the week',
+      body: 'Open your Calendar to see your assigned sessions and how the week fits together.',
+      cta: 'Open Calendar',
+      accent: '#2563eb',
+      priority: 970,
+      goalIds: [],
+      action: openWorkoutWeekTarget
     },
     {
       id: 'weekly_review',
@@ -534,6 +593,8 @@
     var picked = [];
     if (isFirstProgramWeek()) {
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'feed_intro'; }));
+      addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'meal_plan_intro'; }));
+      addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'workout_week_intro'; }));
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'first_meal'; }));
     }
     addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'quiz'; }));
@@ -579,6 +640,7 @@
       return false;
     }
     if (action.id === 'daily_checkin') return isSourceCardDue('#check-in-prompt-card');
+    if (action.id === 'meal_plan_intro' || action.id === 'workout_week_intro') return isFirstProgramWeek() && !hasSeenOnboardingStep(action.id);
     if (action.id === 'quiz') return true;
     if (action.id === 'workout') return isSourceCardDue('#today-workout-card');
     if (action.id === 'weekly_review') return !isFirstProgramWeek() && isSourceCardDue('#weekly-checkin-card');
@@ -1037,6 +1099,12 @@
     },
     disableShowAll: function(){
       try { localStorage.removeItem(SHOW_ALL_STORAGE_KEY); } catch (_) {}
+      render();
+    },
+    resetOnboardingCards: function(){
+      ['meal_plan_intro', 'workout_week_intro'].forEach(function(actionId){
+        try { localStorage.removeItem(onboardingStepKey(actionId)); } catch (_) {}
+      });
       render();
     }
   };

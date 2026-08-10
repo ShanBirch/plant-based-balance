@@ -807,6 +807,9 @@
       sessionStorage.setItem('pbb_activation_force_fresh', 'true');
       sessionStorage.removeItem('pbb_activation_first_lesson');
     } catch (_) {}
+    try {
+      if (window.pbbNextSteps && typeof window.pbbNextSteps.resetOnboardingCards === 'function') window.pbbNextSteps.resetOnboardingCards();
+    } catch (_) {}
     ensureUi();
     renderCard();
     return true;
