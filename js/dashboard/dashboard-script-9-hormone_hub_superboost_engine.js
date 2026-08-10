@@ -69,6 +69,7 @@ function renderCycleStatus() {
             nameDisplay.style.color = phase.color;
         }
         if (descDisplay) {
+            descDisplay.style.display = '';
             descDisplay.innerText = "Train based on energy and recovery. Push hard, recover smart.";
         }
         if (tagsContainer && phase) {
@@ -110,7 +111,8 @@ function renderCycleStatus() {
         nameDisplay.style.color = info.color;
     }
     if(descDisplay && info) {
-        descDisplay.innerText = info.rec || "Listen to your body.";
+        descDisplay.style.display = info.hideHeroRec ? 'none' : '';
+        descDisplay.innerText = info.hideHeroRec ? '' : (info.rec || "Listen to your body.");
     }
     
     // Tags

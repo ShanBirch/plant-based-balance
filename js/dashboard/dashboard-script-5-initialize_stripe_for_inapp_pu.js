@@ -1884,7 +1884,7 @@ try {
 
 // --- CALENDAR & CYCLE LOGIC ---
 const PHASE_INFO = {
-    menstrual: { name: 'Menstrual Phase', color: '#E57373', css: 'phase-menstrual', rec: 'Rest, Walking, Yin Yoga', icon: '🩸' },
+    menstrual: { name: 'Menstrual Phase', color: '#E57373', css: 'phase-menstrual', rec: 'Rest, Walking, Yin Yoga', hideHeroRec: true, icon: '🩸' },
     follicular: { name: 'Follicular Phase', color: '#F06292', css: 'phase-follicular', rec: 'HIIT, Strength, Cardio', icon: '⚡' },
     ovulation: { name: 'Ovulation Phase', color: '#BA68C8', css: 'phase-ovulation', rec: 'Max Effort, PB Attempts', icon: '🥚' },
     luteal: { name: 'Luteal Phase', color: '#FFB74D', css: 'phase-luteal', rec: 'Strength (Mod), Pilates', icon: '🌙' },
@@ -2124,6 +2124,7 @@ function renderCycleStatus() {
             cycleDayDisplay.parentElement.style.display = 'none'; // Hide day counter for males
         }
         if (phaseDesc) {
+            phaseDesc.style.display = '';
             phaseDesc.innerText = "Train based on energy and recovery. Push hard, recover smart.";
         }
 
@@ -2144,6 +2145,7 @@ function renderCycleStatus() {
         document.getElementById('cycle-phase-name').innerText = phase.name;
         document.getElementById('cycle-phase-name').style.color = phase.color;
         document.getElementById('cycle-day-display').innerText = "General Wellness";
+        document.getElementById('cycle-phase-desc').style.display = '';
         document.getElementById('cycle-phase-desc').innerText = "Focus on a balanced routine of Strength, Cardio, and Rest.";
         
         const iconContainer = document.getElementById('cycle-phase-icon');
@@ -2167,6 +2169,7 @@ function renderCycleStatus() {
     if (!userCycleData.lastPeriod) {
         document.getElementById('cycle-phase-name').innerText = "Setup Required";
         document.getElementById('cycle-day-display').innerText = "Complete onboarding";
+        document.getElementById('cycle-phase-desc').style.display = '';
         document.getElementById('cycle-phase-desc').innerText = "Go to Settings > Edit Profile to complete your onboarding and see your cycle insights.";
         return;
     }
@@ -2204,7 +2207,9 @@ function renderCycleStatus() {
         suggestion = "Light Resistance / Pilates";
     }
 
-    document.getElementById('cycle-phase-desc').innerText = `You are in ${phase.name}. Usual focus: ${phase.rec}.`;
+    const phaseDescription = document.getElementById('cycle-phase-desc');
+    phaseDescription.style.display = phase.hideHeroRec ? 'none' : '';
+    phaseDescription.innerText = phase.hideHeroRec ? '' : `You are in ${phase.name}. Usual focus: ${phase.rec}.`;
     
     // Update Today's Rec Card (if it exists)
     const recText = document.getElementById('rec-text');
