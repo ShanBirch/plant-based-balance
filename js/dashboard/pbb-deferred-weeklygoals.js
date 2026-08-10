@@ -406,6 +406,12 @@
     return ids;
   }
 
+  function isTransferredWeeklyGoalsClient() {
+    const sources = readProfileSources();
+    if (window.currentUser && typeof window.currentUser === 'object') sources.push(window.currentUser);
+    return sources.some(profile => profile.is_transferred_client === true || profile.is_transferred_client === 'true');
+  }
+
   function suggestWeeklyGoalsFromOnboarding() {
     const suggested = [];
     const addGoal = goalId => {
@@ -459,8 +465,14 @@
 
     const selected = suggestWeeklyGoalsFromOnboarding();
     const trainingFrequency = onboardingTrainingFrequency();
+    const isTransferredClient = isTransferredWeeklyGoalsClient();
     selected.forEach(goal => {
       if (goal.id === 'complete_workouts') goal.target = trainingFrequency;
+      if (isTransferredClient && goal.id === 'meal_log_days') {
+        goal.label = 'Take 3 meal photos a day';
+        goal.target = 15;
+        goal.unit = 'meals';
+      }
     });
     if (!selected.length) return false;
 
