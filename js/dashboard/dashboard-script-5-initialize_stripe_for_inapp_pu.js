@@ -4830,6 +4830,140 @@ function escapeAiPlanText(value) {
     })[character]);
 }
 
+function getAiPlanShoppingWeek() {
+    if (!_aiMealPlanCache?.weeks) return null;
+    return _aiMealPlanCache.weeks.find(week => Number(week.week_number) === Number(_aiMealPlanCurrentWeek)) || null;
+}
+
+function getAiPlanShoppingItems() {
+    const helper = window.BalanceMealPlanShopping;
+    return helper?.buildWeekItems ? helper.buildWeekItems(getAiPlanShoppingWeek()) : [];
+}
+
+function getAiPlanShoppingStorageKey() {
+    const planKey = _aiMealPlanCache?.id || _aiMealPlanCache?.plan_name || 'meal-plan';
+    return `pbb_ai_plan_shopping:${planKey}:week:${_aiMealPlanCurrentWeek}`;
+}
+
+function getAiPlanCheckedShoppingItems() {
+    try {
+        const saved = JSON.parse(localStorage.getItem(getAiPlanShoppingStorageKey()) || '[]');
+        return new Set(Array.isArray(saved) ? saved.map(String) : []);
+    } catch(e) {
+        return new Set();
+    }
+}
+
+function saveAiPlanCheckedShoppingItems(checked) {
+    try {
+        localStorage.setItem(getAiPlanShoppingStorageKey(), JSON.stringify(Array.from(checked)));
+    } catch(e) {}
+}
+
+function updateAiPlanShoppingStatus(items, checked) {
+    const status = document.getElementById('ai-plan-shopping-status');
+    if (!status) return;
+    status.textContent = items.length ? `${checked.size} of ${items.length} checked` : 'No ingredients found for this week';
+}
+
+function renderAiPlanShoppingList() {
+    const list = document.getElementById('ai-plan-shopping-list');
+    const summary = document.getElementById('ai-plan-shopping-summary');
+    const download = document.getElementById('ai-plan-shopping-download');
+    if (!list || !summary) return;
+
+    const helper = window.BalanceMealPlanShopping;
+    if (!helper?.buildWeekItems) {
+        list.innerHTML = '';
+        summary.textContent = 'Shopping list is loading';
+        if (download) download.disabled = true;
+        updateAiPlanShoppingStatus([], new Set());
+        return;
+    }
+
+    const items = getAiPlanShoppingItems();
+    const checked = getAiPlanCheckedShoppingItems();
+    const availableKeys = new Set(items.map(item => item.key));
+    const validChecked = new Set(Array.from(checked).filter(key => availableKeys.has(key)));
+    if (validChecked.size !== checked.size) saveAiPlanCheckedShoppingItems(validChecked);
+
+    summary.textContent = `Week ${_aiMealPlanCurrentWeek} · ${items.length} ingredient${items.length === 1 ? '' : 's'}`;
+    list.innerHTML = items.map(item => {
+        const isChecked = validChecked.has(item.key);
+        const encodedKey = escapeAiPlanText(encodeURIComponent(item.key));
+        return `<label class="ai-plan-shopping__item${isChecked ? ' is-checked' : ''}">
+            <input type="checkbox" data-shopping-key="${encodedKey}" ${isChecked ? 'checked' : ''} onchange="updateAiPlanShoppingItem(this)">
+            <span><strong>${escapeAiPlanText(item.name)}</strong>${item.amount ? `<small>${escapeAiPlanText(item.amount)}</small>` : ''}</span>
+        </label>`;
+    }).join('');
+
+    if (download) download.disabled = items.length === 0;
+    updateAiPlanShoppingStatus(items, validChecked);
+}
+
+function updateAiPlanShoppingItem(input) {
+    let key = '';
+    try { key = decodeURIComponent(input?.dataset?.shoppingKey || ''); } catch(e) {}
+    if (!key) return;
+
+    const checked = getAiPlanCheckedShoppingItems();
+    if (input.checked) checked.add(key);
+    else checked.delete(key);
+    saveAiPlanCheckedShoppingItems(checked);
+    input.closest('.ai-plan-shopping__item')?.classList.toggle('is-checked', input.checked);
+    updateAiPlanShoppingStatus(getAiPlanShoppingItems(), checked);
+}
+
+function toggleAiPlanShoppingList(forceOpen) {
+    const toggle = document.getElementById('ai-plan-shopping-toggle');
+    const panel = document.getElementById('ai-plan-shopping-panel');
+    if (!toggle || !panel) return false;
+
+    const isOpen = typeof forceOpen === 'boolean' ? forceOpen : panel.hidden;
+    panel.hidden = !isOpen;
+    toggle.setAttribute('aria-expanded', String(isOpen));
+    if (isOpen) renderAiPlanShoppingList();
+    return isOpen;
+}
+
+async function openAiMealPlanShoppingList(btn) {
+    openAiMealPlanView(btn || document.getElementById('meal-plan-shopping-pill'));
+    if (typeof loadExistingAiMealPlan === 'function') await loadExistingAiMealPlan();
+    if (!_aiMealPlanCache) return;
+
+    renderAiPlanShoppingList();
+    toggleAiPlanShoppingList(true);
+    const card = document.getElementById('ai-plan-shopping-card');
+    if (card) {
+        try { card.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch(e) {}
+    }
+}
+
+function downloadAiPlanShoppingList() {
+    const helper = window.BalanceMealPlanShopping;
+    const items = getAiPlanShoppingItems();
+    if (!helper?.toText || !items.length) return;
+
+    const checked = getAiPlanCheckedShoppingItems();
+    const text = helper.toText({
+        planName: _aiMealPlanCache?.plan_name,
+        weekNumber: _aiMealPlanCurrentWeek,
+        items,
+        checked
+    });
+    const url = URL.createObjectURL(new Blob(['\ufeff' + text], { type: 'text/plain;charset=utf-8' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `balance-week-${_aiMealPlanCurrentWeek}-shopping-list.txt`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+
+    const status = document.getElementById('ai-plan-shopping-status');
+    if (status) status.textContent = 'Shopping list downloaded';
+}
+
 function formatAiPlanPreparation(value) {
     const text = String(value || '').trim();
     if (!text) return '';
@@ -5332,6 +5466,7 @@ function showAiPlanLoaded(plan) {
     _aiMealPlanCurrentWeek = firstWeek;
     _aiMealPlanCurrentDay = getAiMealPlanTodayIndex();
     _aiMealPlanMealSelection = null;
+    renderAiPlanShoppingList();
     document.querySelectorAll('#ai-plan-day-tabs .sub-btn').forEach((button, index) => {
         button.classList.toggle('active', index === _aiMealPlanCurrentDay);
     });
@@ -5400,6 +5535,7 @@ function switchAiPlanWeek(weekNum, btn) {
 
     renderAiPlanWeek(weekNum);
     renderAiPlanDay(_aiMealPlanCurrentDay);
+    renderAiPlanShoppingList();
 }
 
 /**

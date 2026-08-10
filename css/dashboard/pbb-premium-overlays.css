@@ -9595,3 +9595,68 @@ html[data-pbb-theme="light"] .course-topic-row {
         display: none;
     }
 }
+
+/* Personalized meal-plan shopping list */
+html[data-pbb-theme="light"] .ai-plan-shopping {
+    border-color: rgba(23, 22, 19, 0.1) !important;
+    background: #ffffff !important;
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] .ai-plan-shopping__copy span,
+html[data-pbb-theme="light"] .ai-plan-shopping__chevron,
+html[data-pbb-theme="light"] .ai-plan-shopping__helper,
+html[data-pbb-theme="light"] .ai-plan-shopping__item small,
+html[data-pbb-theme="light"] .ai-plan-shopping__status {
+    color: #5f5b54 !important;
+    -webkit-text-fill-color: #5f5b54 !important;
+}
+
+html[data-pbb-theme="light"] .ai-plan-shopping__download {
+    background: #151515 !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+
+html[data-pbb-theme="dark"] .ai-plan-shopping {
+    border-color: rgba(245, 217, 138, 0.17) !important;
+    background: #21182c !important;
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+    box-shadow: 0 12px 28px rgba(8, 4, 12, 0.24) !important;
+}
+
+html[data-pbb-theme="dark"] .ai-plan-shopping__panel {
+    border-top-color: rgba(245, 217, 138, 0.13) !important;
+}
+
+html[data-pbb-theme="dark"] .ai-plan-shopping__icon {
+    background: rgba(245, 217, 138, 0.14) !important;
+    color: #f5d98a !important;
+    -webkit-text-fill-color: #f5d98a !important;
+}
+
+html[data-pbb-theme="dark"] .ai-plan-shopping__copy span,
+html[data-pbb-theme="dark"] .ai-plan-shopping__chevron,
+html[data-pbb-theme="dark"] .ai-plan-shopping__helper,
+html[data-pbb-theme="dark"] .ai-plan-shopping__item small,
+html[data-pbb-theme="dark"] .ai-plan-shopping__status {
+    color: #c9c1ce !important;
+    -webkit-text-fill-color: #c9c1ce !important;
+}
+
+html[data-pbb-theme="dark"] .ai-plan-shopping__item:hover {
+    background: rgba(245, 217, 138, 0.08) !important;
+}
+
+html[data-pbb-theme="dark"] .ai-plan-shopping__item.is-checked strong {
+    color: #aaa1b0 !important;
+    -webkit-text-fill-color: #aaa1b0 !important;
+}
+
+html[data-pbb-theme="dark"] .ai-plan-shopping__download {
+    background: linear-gradient(135deg, #d8b25e, #f5d98a) !important;
+    color: #120c18 !important;
+    -webkit-text-fill-color: #120c18 !important;
+}
