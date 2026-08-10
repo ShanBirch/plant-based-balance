@@ -1788,6 +1788,7 @@ window.addEventListener('load', function() {
     </script>
 
 
+    <script src="js/dashboard/pbb-app-telemetry.js?v=1"></script>
     <script>
 if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-fitbit.js"><\/script>');
@@ -13935,7 +13936,17 @@ if(!window._pbbIsIOSSafari) {
     bubble.style.left = bubbleLeft + 'px';
   }
 
-  async function showStep(i){
+async function showStep(i){
+    try {
+      const trackedStep = activeSteps[i];
+      window.trackBalanceActivity('guided_tour_step', {
+        mode: clientActivationTour ? 'client_activation' : (metaPreviewTour ? 'meta_preview' : 'standard'),
+        step_number: Number(i) + 1,
+        step_count: activeSteps.length,
+        step_key: trackedStep ? String(trackedStep.title || trackedStep.tab || 'step').toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 70) : 'unknown',
+        tab: trackedStep && trackedStep.tab || ''
+      }, { dedupeKey: String(i), dedupeMs:500 });
+    } catch(e){}
     if (i < 0 || i >= activeSteps.length) { endFeatureTour(false); return; }
     idx = i;
     showingXpIntro = false;
@@ -14026,12 +14037,13 @@ if(!window._pbbIsIOSSafari) {
     positionBubbleAndSpotlight(null);
   }
 
-  window.endFeatureTour = function(skipped){
+window.endFeatureTour = function(skipped){
     const completedMetaPreviewTour = metaPreviewTour;
     const completedClientActivationTour = clientActivationTour
       || window.__balancePendingClientActivation === true
       || (((window.location.hostname === '127.0.0.1') || (window.location.hostname === 'localhost'))
         && new URLSearchParams(window.location.search).get('tourTest') === '1');
+    try { window.trackBalanceActivity('guided_tour_completed', { mode: completedClientActivationTour ? 'client_activation' : (completedMetaPreviewTour ? 'meta_preview' : 'standard'), skipped: !!skipped, final_step_number: Number(idx) + 1, step_count: activeSteps.length }, { immediate:true }); } catch(e){}
     resetTourTemporaryTargets();
     const overlay = document.getElementById('guided-tour-overlay');
     if (overlay) overlay.classList.remove('active');
@@ -14089,7 +14101,10 @@ if(!window._pbbIsIOSSafari) {
       var quickSteps = activeSteps.filter(function(s){ return s.quick; });
       if (quickSteps.length) activeSteps = quickSteps;
     }
-    if (!activeSteps.length) return;
+    if (!activeSteps.length) {
+      try { window.trackBalanceActivity('guided_tour_failed', { reason: 'no_eligible_steps' }, { immediate:true }); } catch(e){}
+      return;
+    }
     idx = 0;
     showingXpIntro = false;
     window.__balanceGuidedTourActive = true;
@@ -14097,11 +14112,13 @@ if(!window._pbbIsIOSSafari) {
     closeTourBlockingSurfaces();
     const overlay = document.getElementById('guided-tour-overlay');
     if (!overlay) {
+      try { window.trackBalanceActivity('guided_tour_failed', { reason: 'overlay_missing' }, { immediate:true }); } catch(e){}
       window.__balanceGuidedTourActive = false;
       window.__balanceGuidedTourShowingIntro = false;
       return;
     }
     overlay.classList.add('active');
+    try { window.trackBalanceActivity('guided_tour_started', { mode: clientActivationTour ? 'client_activation' : (metaPreviewTour ? 'meta_preview' : 'standard'), step_count: activeSteps.length }, { immediate:true }); } catch(e){}
     if (typeof pushNavigationState === 'function') {
       try { pushNavigationState('guided-tour-overlay', function(){ endFeatureTour(true); }); } catch(e){}
     }

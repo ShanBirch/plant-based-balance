@@ -704,6 +704,7 @@
   }
 
   function startFirstCourseLesson() {
+    try { window.trackBalanceActivity('foundations_first_lesson_started', { source: 'activation_journey' }, { immediate: true }); } catch (_) {}
     closeJourney();
     try { sessionStorage.setItem('pbb_activation_first_lesson', 'true'); } catch (_) {}
     if (typeof window.switchAppTab === 'function') {
@@ -896,6 +897,7 @@
   function openCoachInbox(attempt) {
     const retry = Math.max(0, Number(attempt) || 0);
     if (typeof window.openDirectMessage === 'function') {
+      try { window.trackBalanceActivity('coach_inbox_opened', { source: 'activation_journey', attempt: retry }, { immediate: true }); } catch (_) {}
       closeJourney();
       window.openDirectMessage(SHANNON_USER_ID, 'Coach Shannon', 'assets/coach_shannon.jpg');
       return;
@@ -905,6 +907,7 @@
   }
 
   function continueFromInbox() {
+    try { window.trackBalanceActivity('coach_inbox_continued_to_lesson', { source: 'activation_journey' }, { immediate: true }); } catch (_) {}
     if (typeof window.closeDirectMessageModal === 'function') {
       window.closeDirectMessageModal();
     } else {

@@ -12020,6 +12020,7 @@ function startWizardClientActivationTour(attempt = 0, options = {}) {
     if ((window.metaAdTrialMode && !isLocalTourPreview) || (window.__balanceClientActivationTourStarted && !options.restart)) return;
 
     if (attempt === 0) {
+        try { window.trackBalanceActivity('activation_tour_handoff_started', { source: options.preview === true ? 'preview' : 'onboarding' }, { immediate:true }); } catch(e) {}
         if (window.__balanceClientActivationTourQueued && !options.restart) return;
         window.__balanceClientActivationTourQueued = true;
         window.__balanceClientActivationTourStarted = false;
@@ -12032,6 +12033,7 @@ function startWizardClientActivationTour(attempt = 0, options = {}) {
             setTimeout(() => startWizardClientActivationTour(attempt + 1, options), 150);
         } else {
             window.__balanceClientActivationTourQueued = false;
+            try { window.trackBalanceActivity('activation_tour_handoff_failed', { reason: 'onboarding_stayed_open', attempts: attempt }, { immediate:true }); } catch(e) {}
             console.warn('Client activation tour could not start because onboarding stayed open.');
         }
         return;
@@ -12051,6 +12053,7 @@ function startWizardClientActivationTour(attempt = 0, options = {}) {
                 return;
             }
         } catch (error) {
+            try { window.trackBalanceActivity('activation_tour_handoff_failed', { reason: 'tour_start_exception', error_name: error && error.name || 'error', attempts: attempt }, { immediate:true }); } catch(e) {}
             console.warn('Client activation tour start failed:', error);
         }
     }
@@ -12060,6 +12063,7 @@ function startWizardClientActivationTour(attempt = 0, options = {}) {
         setTimeout(() => startWizardClientActivationTour(attempt + 1, options), 150);
     } else {
         window.__balanceClientActivationTourQueued = false;
+        try { window.trackBalanceActivity('activation_tour_handoff_failed', { reason: 'tour_runtime_not_ready', attempts: attempt }, { immediate:true }); } catch(e) {}
         console.warn('Client activation tour was not ready after onboarding.');
     }
 }
@@ -13361,6 +13365,8 @@ function playHeaderCoinGrantAnimation(startBalance, endBalance, grantedAmount) {
 // ========== END WELCOME BONUS ==========
 
 async function finishOnboarding() {
+    const completingTransferredSetup = !!window.__pbbTransferredSetupPending;
+    try { window.trackBalanceActivity('onboarding_finish_started', { transferred_setup: completingTransferredSetup }, { immediate:true }); } catch(e) {}
     if (window.__pbbTransferredSetupPending) {
         window.__pbbTransferredSetupPending = false;
         if (window.__pbbTransferredSetupVisibilityTimer) {
@@ -13696,6 +13702,7 @@ async function finishOnboarding() {
             });
         }, 3000);
     }
+    try { window.trackBalanceActivity('onboarding_finished', { transferred_setup: completingTransferredSetup, tour_queued: !!window.__balanceClientActivationTourQueued, tour_started: !!window.__balanceClientActivationTourStarted }, { immediate:true }); } catch(e) {}
 
 }
 
