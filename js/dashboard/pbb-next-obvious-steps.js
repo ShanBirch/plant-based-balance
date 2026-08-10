@@ -288,15 +288,25 @@
   }
 
   function openWorkoutWeekTarget() {
-    markOnboardingStepSeen('workout_week_intro');
+    var cycleButton = document.getElementById('nav-cycle-btn');
     try {
-      if (typeof window.openCalendarEditor === 'function') {
-        window.openCalendarEditor();
-        return;
-      }
+      if (typeof window.switchAppTab === 'function') window.switchAppTab('cycle', cycleButton);
+      else if (cycleButton && typeof cycleButton.click === 'function') cycleButton.click();
     } catch (_) {}
-    switchTab('cycle');
-    afterTab(function(){ scrollToSelector('#view-calendar', { block: 'start' }); }, 420);
+    markOnboardingStepSeen('workout_week_intro');
+    afterTab(function(){
+      var calendarView = document.getElementById('view-calendar');
+      var cycleView = document.getElementById('view-cycle');
+      var calendarVisible = calendarView && window.getComputedStyle(calendarView).display !== 'none';
+      var cycleVisible = cycleView && window.getComputedStyle(cycleView).display !== 'none';
+      if (!calendarVisible && !cycleVisible) {
+        try {
+          if (typeof window.switchAppTab === 'function') window.switchAppTab('cycle', cycleButton);
+          else if (cycleButton && typeof cycleButton.click === 'function') cycleButton.click();
+        } catch (_) {}
+      }
+      try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (_) { window.scrollTo(0, 0); }
+    }, 520);
   }
 
   function openWeighInTarget() {
