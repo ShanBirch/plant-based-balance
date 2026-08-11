@@ -264,6 +264,13 @@ Memory extractor:
 - Updated-at trigger helper is `public.update_updated_at_column()`, not `handle_updated_at`.
 - Do not commit service role keys or secrets to this file.
 
+Workout-program exercise library rule:
+
+- Every exercise prescribed in a client workout program, including warm-ups, mobility drills, stretches, and finishers, must use an exact exercise name already present in the canonical `exercise_videos.js` catalog with a non-empty working video URL.
+- Never design a program from general exercise knowledge first and assume Balance contains those movements. Build from the available Balance exercise catalog.
+- Before saving or announcing a program, deterministically validate every prescribed exercise against the catalog and verify its video URL is reachable. Replace unsupported free-text names with appropriate existing catalog exercises, or deliberately add and verify the missing exercise/video before assigning it.
+- Recovery days such as rest, run, or walk may be schedule labels with `type: 'rest'`; do not create fake exercise rows for them merely to show the label.
+
 Important tables:
 
 - `users`: all users, including `coin_balance`, `is_test_account`, cycle preferences, etc.
