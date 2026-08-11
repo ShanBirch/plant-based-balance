@@ -143,6 +143,16 @@ async function cancelStaleScheduledInstagramReply(alert, newerMessage) {
     });
 }
 
+async function cancelIfNewerInstagramConversationMessage(alert, {
+    lookup = getNewerInstagramConversationMessage,
+    cancel = cancelStaleScheduledInstagramReply,
+} = {}) {
+    const newerMessage = await lookup(alert);
+    if (!newerMessage) return null;
+    await cancel(alert, newerMessage);
+    return newerMessage;
+}
+
 async function getMetaPreviewConversionAfterGate(alert = {}) {
     const data = alert.data || {};
     if (data.meta_app_preview_followup !== true) return null;
@@ -528,9 +538,8 @@ async function fireAlert(alert) {
         return { ok: false, error: 'meta_app_preview_conversion_check_failed' };
     }
     try {
-        const newerMessage = await getNewerInstagramConversationMessage(alert);
+        const newerMessage = await cancelIfNewerInstagramConversationMessage(alert);
         if (newerMessage) {
-            await cancelStaleScheduledInstagramReply(alert, newerMessage);
             console.info(`[scheduled-worker] canceled stale scheduled IG reply ${alert.id}; newer ${newerMessage.direction || 'conversation'} message ${newerMessage.id} arrived before send`);
             return { ok: false, error: 'stale_scheduled_reply_conversation_changed' };
         }
@@ -640,6 +649,21 @@ async function fireAlert(alert) {
         }
     }
 
+    // Re-read at the last possible point before transport. Native/manual
+    // Instagram echoes can land while the worker is validating identity,
+    // review holds, and link repair. The earlier delta check alone leaves a
+    // narrow race where a scheduled reply can follow Shannon's own message.
+    try {
+        const newerMessage = await cancelIfNewerInstagramConversationMessage(alert);
+        if (newerMessage) {
+            console.info(`[scheduled-worker] canceled stale scheduled IG reply ${alert.id} at pre-transport recheck; newer ${newerMessage.direction || 'conversation'} message ${newerMessage.id}`);
+            return { ok: false, error: 'stale_scheduled_reply_conversation_changed' };
+        }
+    } catch (e) {
+        console.error(`[scheduled-worker] pre-transport IG delta check failed for ${alert.id}:`, e.message);
+        return { ok: false, error: 'stale_check_failed' };
+    }
+
     const res = await fetch(`${SITE_URL}/.netlify/functions/send-coach-reply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -732,6 +756,7 @@ exports._test = {
     hasBalanceSafeOpenerContextBypass,
     hasAutoContextBypass,
     repairMissingScheduledLinkHandoff,
+    cancelIfNewerInstagramConversationMessage,
     getNewerInstagramConversationMessage,
     getNewerInstagramInbound,
 };
