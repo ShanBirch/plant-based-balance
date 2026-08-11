@@ -53,6 +53,9 @@ assert.strictEqual(isGratitudeCloserText('Thanks!!!'), true);
 assert.strictEqual(isGratitudeCloserText('thanks, can you send the link?'), false);
 assert.strictEqual(isGratitudeCloserText('Awesome I think I just need help with my diet and some accountability'), false);
 assert.strictEqual(isGratitudeCloserText('Awesome, send me the details'), false);
+assert.strictEqual(isGratitudeCloserText('Awesome how many clients you got working with ya'), false);
+assert.strictEqual(isGratitudeCloserText('Perfect I trained legs today'), false);
+assert.strictEqual(isGratitudeCloserText('Awesome mate thanks heaps'), true);
 assert.strictEqual(resolveLatestInboundTextForSend({
     alertData: { draft_evidence: { current_message: 'Thanks!!!' } },
 }), 'Thanks!!!');
@@ -87,6 +90,11 @@ assert.deepStrictEqual(
 assert.strictEqual(validateSendTimeOutboundSafety({
     messagesToSend: ['No worries! 😊'],
     latestInboundText: 'Thank you 😊',
+    automated: true,
+}).ok, true);
+assert.strictEqual(validateSendTimeOutboundSafety({
+    messagesToSend: ['About 40 at the moment through Balance.'],
+    latestInboundText: 'Awesome how many clients you got working with ya',
     automated: true,
 }).ok, true);
 assert.strictEqual(resolveAutomatedConversationAnchorAt({

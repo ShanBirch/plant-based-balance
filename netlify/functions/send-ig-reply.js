@@ -217,8 +217,22 @@ function isGratitudeCloserText(text = '') {
     if (/\b(?:i\s+(?:think|need|want)|need|help|diet|food|accountability|coach(?:ing)?|plan|program|details?|link|price|cost|start|join|sign\s*up|send)\b/.test(normalized)) {
         return false;
     }
-    return /^(?:thanks|thank you|thankyou|ta|cheers|appreciate it|legend|perfect|sounds good|all good|no worries|awesome|amazing|nice|sweet|okay|ok|cool|got it|love it|haha thanks|lol thanks)\b/.test(normalized)
-        || /\b(?:thanks|thank you|thankyou|appreciate it|legend)\b$/.test(normalized);
+    const closerOpening = /^(?:thanks|thank you|thankyou|ta|cheers|appreciate it|legend|perfect|sounds good|all good|no worries|awesome|amazing|nice|sweet|okay|ok|cool|got it|love it|haha thanks|lol thanks)(?:\s+|$)/.exec(normalized);
+    if (!closerOpening) return false;
+
+    // Only classify a *pure* closer. Previously the opening-word check made
+    // messages such as "Awesome how many clients you got working with ya"
+    // look like gratitude because Instagram users often omit punctuation.
+    // Any meaningful word after the warm opener keeps the turn live.
+    const closerOnlyWords = new Set([
+        'a', 'absolutely', 'again', 'all', 'always', 'amazing', 'and',
+        'appreciate', 'awesome', 'cheers', 'cool', 'course', 'good', 'got',
+        'haha', 'heaps', 'it', 'legend', 'lol', 'lot', 'love', 'mate', 'much',
+        'nice', 'no', 'okay', 'ok', 'perfect', 'really', 'shannon', 'so',
+        'sound', 'sounds', 'sweet', 'ta', 'thank', 'thanks', 'thankyou', 'too',
+        'very', 'worries', 'yeah', 'yep', 'yes', 'you',
+    ]);
+    return normalized.split(/\s+/).every(word => closerOnlyWords.has(word));
 }
 
 function resolveApprovedVoiceCompanionText(alertData = {}, voiceEnabled = false) {
