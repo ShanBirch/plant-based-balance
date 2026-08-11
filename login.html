@@ -16,17 +16,6 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://js.stripe.com/v3/"></script>
     <script>
-        // Temporary release gate: the public iPhone build does not yet contain
-        // the repaired native social-auth bridge. Remove after iOS 1.7 is live.
-        (function() {
-            var ua = navigator.userAgent || '';
-            var isNativeIOS = /FitGotchi-Native/i.test(ua) && /(iPhone|iPad|iPod)/i.test(ua);
-            if (isNativeIOS) {
-                document.documentElement.classList.add('ios-native-social-signin-paused');
-            }
-        })();
-    </script>
-    <script>
         (function() {
             try {
                 var forcedTheme = new URLSearchParams(window.location.search).get('theme');
@@ -369,27 +358,6 @@
 
         .native-email-toggle:hover {
             text-decoration: underline;
-        }
-
-        /* Keep broken social entry points out of the current public iOS build. */
-        html.ios-native-social-signin-paused .apple-btn,
-        html.ios-native-social-signin-paused .google-btn,
-        html.ios-native-social-signin-paused .native-email-toggle {
-            display: none !important;
-        }
-
-        html.ios-native-social-signin-paused form.login-email-section,
-        html.ios-native-social-signin-paused form.signup-email-section {
-            display: block !important;
-        }
-
-        html.ios-native-social-signin-paused .oauth-divider.login-email-section,
-        html.ios-native-social-signin-paused .oauth-divider.signup-email-section {
-            display: flex !important;
-        }
-
-        html.ios-native-social-signin-paused a.login-email-section {
-            display: inline-block !important;
         }
 
         .google-btn svg {
@@ -1514,10 +1482,6 @@
         (function() {
             const isNative = navigator.userAgent.includes('FitGotchi-Native');
             if (!isNative) return;
-
-            if (document.documentElement.classList.contains('ios-native-social-signin-paused')) {
-                return;
-            }
 
             // Native app: keep Apple/Google visible and tuck email behind a toggle.
             // iOS Google auth uses the FitGotchiAuth ASWebAuthenticationSession plugin above.
