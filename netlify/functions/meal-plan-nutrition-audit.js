@@ -225,7 +225,7 @@ async function loadRowsForActiveClients() {
 
     const planIds = [...new Set(plans.map(plan => plan.id).filter(Boolean))];
     for (const ids of chunk(planIds, 40)) {
-        meals.push(...await supabaseQuery(`ai_generated_meals?select=id,plan_id,name,calories,protein_g,carbs_g,fat_g,fiber_g,week_number,day_of_week,meal_slot&plan_id=in.${inList(ids)}&limit=5000`).catch(() => []));
+        meals.push(...await supabaseQuery(`ai_generated_meals?select=id,plan_id,name,calories,protein_g,carbs_g,fat_g,fiber_g,week_number,day_of_week,meal_slot&plan_id=in.${inList(ids)}&limit=5000`));
     }
 
     return { clients, users, plans, meals, quizzes };
