@@ -1,4 +1,5 @@
 const assert = require('assert');
+const confirmedBrokenVideoNames = require('./fixtures/confirmed-broken-exercise-video-names.json');
 
 const {
     applyExerciseEditToWorkout,
@@ -13,6 +14,11 @@ const {
 const catalog = loadVideoBackedExerciseCatalog();
 assert.ok(catalog.length > 1000, 'video-backed catalog should be available to the program builder');
 assert.ok(catalog.every(row => row.name && hasUsableExerciseVideoUrl(row.videoUrl)));
+const catalogNames = new Set(catalog.map(row => row.name));
+assert.ok(confirmedBrokenVideoNames.length > 100, 'confirmed broken video fixture should cover the decode audit');
+for (const name of confirmedBrokenVideoNames) {
+    assert.strictEqual(catalogNames.has(name), false, `${name} must stay out of the video-backed catalog`);
+}
 assert.strictEqual(resolveVideoBackedExercise('Machine Seated Shoulder Press'), null, 'corrupted shoulder press video must stay out of the catalog');
 assert.strictEqual(resolveVideoBackedExercise('Lat Machine Wide Grip Pulldown'), null, 'corrupted lat pulldown video must stay out of the catalog');
 assert.strictEqual(resolveVideoBackedExercise('Machine Seated Parallel Grip Shoulder Press').name, 'Machine Seated Parallel Grip Shoulder Press');
