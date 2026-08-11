@@ -17,7 +17,9 @@ const {
     isAlwaysNeedsYouPerson,
     shouldBypassKayNeedsYouForAlert,
     reviewDraftAndUpdateAlert,
+    callGeminiFallback,
     normalizeCoachDraftText,
+    splitCoachDraftIntoDmBubbles,
     normalizeLearningReelHistory,
     referencesLearningReelFollowUpText,
     getAppProblemAutoSendHoldReason,
@@ -45,6 +47,7 @@ const APPROVED_BOOKING_URL = 'https://plantbased-balance.org/book';
 const APPROVED_COACHING_LINK_SEND_DELAY_MS = 2 * 60 * 1000;
 const CLEAN_LEAD_CLOUD_FALLBACK_SEND_DELAY_MS = 4 * 60 * 1000;
 const DEFAULT_CLEAN_LEAD_CLOUD_FALLBACK_LIMIT = 8;
+const DEFAULT_CLEAN_LEAD_CLOUD_REPAIR_LIMIT = 4;
 
 function parseNonNegativeInteger(value, fallback) {
     const n = Number(value);
@@ -58,6 +61,10 @@ function resolveAiDraftReviewLimit(value = process.env.CLIENT_LEAD_MANAGER_AI_RE
 
 function resolveCleanLeadCloudFallbackLimit(value = process.env.CLIENT_LEAD_MANAGER_CLOUD_FALLBACK_LIMIT) {
     return Math.min(MAX_PER_RUN, parseNonNegativeInteger(value, DEFAULT_CLEAN_LEAD_CLOUD_FALLBACK_LIMIT));
+}
+
+function resolveCleanLeadCloudRepairLimit(value = process.env.CLIENT_LEAD_MANAGER_CLOUD_REPAIR_LIMIT) {
+    return Math.min(MAX_PER_RUN, parseNonNegativeInteger(value, DEFAULT_CLEAN_LEAD_CLOUD_REPAIR_LIMIT));
 }
 
 function normalizeDraftReview(data = {}) {
@@ -697,6 +704,224 @@ function shouldAutoScheduleCleanLeadCloudFallback(alert = {}, classification = {
     if (/https?:\/\/\S+/i.test(draftText)) return false;
     if (String(data.draft_reply_mode || '').toLowerCase() === 'voice') return false;
     return true;
+}
+
+const CLOUD_REPAIRABLE_WARNING_RE = /\b(?:extra|second|optional|unnecessary|too many|over[- ]?question|question fatigue|follow[- ]?up|generic|broad|stock|intake[- ]?like|over[- ]?long|too long|verbose|wordy|repetitive|repeats?|parrot|polished|tone|reaction[- ]?only|acknowledgement|curiosity question|discovery question)\b/i;
+const CLOUD_REPAIR_HARD_HOLD_RE = /\b(?:context loss|missing context|missing source|source dm|open the dm|media|photo|image|video|voice|audio|transcript|unsupported claim|invent(?:ed|ion)?|fabricat(?:ed|ion)?|medical|diagnos|self[- ]?harm|suicid|danger|authentic|identity|\bai\b|bot|automation|link|url|price|cost|checkout|offer|sales|book(?:ing)?|call|client status|linked client|support|app problem|injury|pain)\b/i;
+
+function warningTextForCloudRepair(review = {}) {
+    return [
+        review.summary,
+        review.suggested_fix,
+        ...(Array.isArray(review.issues) ? review.issues : []),
+    ].filter(Boolean).join(' ');
+}
+
+function shouldAttemptCleanLeadCloudRepair(alert = {}, classification = {}) {
+    if (!alert || alert.status !== 'pending' || classification?.shouldRoute || !isAcquisitionLeadAlert(alert)) return false;
+    const data = alert.data || {};
+    const review = normalizeDraftReview(data);
+    if (String(review.verdict || '').toLowerCase() !== 'warn'
+        || Number(review.confidence || 0) < 0.72
+        || review.notification_required === true
+        || review.context_loss_suspected === true) return false;
+    if (data.cloud_draft_repair?.attempted_at || data.cloud_draft_repair?.status) return false;
+    const notificationReason = String(review.notification_reason || 'none').toLowerCase();
+    if (!['', 'none', 'generic_voice', 'lead_quality'].includes(notificationReason)) return false;
+
+    const warningText = warningTextForCloudRepair(review);
+    if (!CLOUD_REPAIRABLE_WARNING_RE.test(warningText) || CLOUD_REPAIR_HARD_HOLD_RE.test(warningText)) return false;
+
+    // Reuse the complete clean-fallback gate by substituting a synthetic pass
+    // only for eligibility. The repaired text still needs its own real pass.
+    const eligibilityAlert = {
+        ...alert,
+        data: {
+            ...data,
+            draft_review: {
+                verdict: 'pass',
+                confidence: 1,
+                issues: [],
+                notification_required: false,
+                context_loss_suspected: false,
+            },
+        },
+    };
+    return shouldAutoScheduleCleanLeadCloudFallback(eligibilityAlert, classification);
+}
+
+function parseCleanLeadCloudRepair(rawText = '') {
+    const cleaned = String(rawText || '')
+        .trim()
+        .replace(/^```(?:json)?\s*/i, '')
+        .replace(/\s*```$/i, '')
+        .trim();
+    if (!cleaned) return { messages: [], holdReason: 'empty_repair' };
+    let payload;
+    try {
+        payload = JSON.parse(cleaned);
+    } catch (_) {
+        return { messages: [], holdReason: 'invalid_repair_json' };
+    }
+    if (payload?.hold_reason) {
+        return { messages: [], holdReason: String(payload.hold_reason).slice(0, 160) };
+    }
+    const sourceMessages = Array.isArray(payload?.messages) ? payload.messages : [];
+    const messages = splitCoachDraftIntoDmBubbles(sourceMessages
+        .map(value => normalizeCoachDraftText(value || '').trim())
+        .filter(Boolean))
+        .slice(0, 2);
+    const joined = messages.join('\n').trim();
+    if (!joined || joined.length > 600) return { messages: [], holdReason: 'invalid_repair_length' };
+    if ((joined.match(/\?/g) || []).length > 1) return { messages: [], holdReason: 'too_many_repair_questions' };
+    if (/https?:\/\/|www\.|\b(?:ai|bot|automation|auto[- ]?send|reviewer|system prompt)\b/i.test(joined)) {
+        return { messages: [], holdReason: 'repair_introduced_forbidden_content' };
+    }
+    return { messages, joined, holdReason: '' };
+}
+
+function latestAsksForCurrentClientCount(alert = {}) {
+    return /\b(?:how many|number of)\s+(?:active\s+|current\s+)?clients?\b|\bclients?\s+(?:have|do)\s+(?:you|ya|u)\s+(?:have|got|work(?:ing)? with)\b/i.test(
+        latestLeadText(alert.data || {})
+    );
+}
+
+function approximateClientCountForDm(count) {
+    const value = Number(count);
+    if (!Number.isFinite(value) || value <= 0) return 0;
+    if (value < 10) return Math.floor(value);
+    return Math.max(10, Math.floor(value / 10) * 10);
+}
+
+async function buildCloudRepairVerifiedFacts(alert = {}) {
+    if (!latestAsksForCurrentClientCount(alert)) return '';
+    try {
+        const rows = await supabaseQuery('coach_clients?select=id&status=eq.active&limit=1000');
+        const approximateCount = approximateClientCountForDm(rows?.length || 0);
+        if (!approximateCount) return '';
+        return `Verified live Balance fact: there are currently ${rows.length} active coach-client records. For a casual DM, answer this as "about ${approximateCount} at the moment through Balance". Do not invent a niche, package split, result, or other detail.`;
+    } catch (error) {
+        console.warn('[client-lead-manager] cloud repair client-count lookup failed:', error.message);
+        return '';
+    }
+}
+
+async function repairCleanLeadCloudDraft(alert = {}) {
+    const data = alert.data || {};
+    const review = normalizeDraftReview(data);
+    const originalDraft = normalizeCoachDraftText(alert.suggested_message || data.draft_text || '').trim();
+    const contextBlocks = buildDraftReviewContextBlocks(alert);
+    const verifiedFacts = await buildCloudRepairVerifiedFacts(alert);
+    const attemptedAt = new Date().toISOString();
+    const prompt = `You are repairing one ordinary Instagram lead DM draft for Shannon before a guarded cloud fallback may send it.
+
+Return ONLY valid JSON in one of these shapes:
+{"messages":["one concise DM", "optional second bubble"]}
+{"hold_reason":"missing fact or context needed for a safe reply"}
+
+Rules:
+- Answer the labelled latest inbound first and fix every reviewer issue.
+- Use only facts explicitly present in the labelled context or VERIFIED LIVE FACTS. Never invent Shannon's client count, personal experience, activity, location, plans, preferences, results, or business facts.
+- If the lead asks for a fact that is not explicitly present in either source, return hold_reason. Do not dodge it with a made-up or vague answer.
+- Keep Shannon's casual, concise phone-typed voice. One question maximum, and no question when a direct answer or reaction is enough.
+- Do not introduce an offer, price, link, booking, call, app-support instruction, health advice, media interpretation, or AI/automation wording.
+- Do not reopen an older topic when the latest message has moved on.
+- No em dashes. Maximum two short bubbles.
+
+PRIVATE REVIEW TO FIX:
+${warningTextForCloudRepair(review)}
+
+LABELLED CONVERSATION CONTEXT:
+${contextBlocks || '(missing context)'}
+
+VERIFIED LIVE FACTS:
+${verifiedFacts || '(none available)'}
+
+ORIGINAL DRAFT (not a source of truth):
+${originalDraft}`;
+
+    let parsed = { messages: [], holdReason: 'repair_generation_failed' };
+    try {
+        const raw = await callGeminiFallback(
+            [{ role: 'user', parts: [{ text: prompt }] }],
+            { maxOutputTokens: 700, temperature: 0.2 }
+        );
+        parsed = parseCleanLeadCloudRepair(raw);
+    } catch (error) {
+        parsed = { messages: [], holdReason: `repair_generation_failed:${String(error.message || error).slice(0, 120)}` };
+    }
+
+    if (!parsed.joined || parsed.joined === originalDraft) {
+        const repairMeta = {
+            status: 'held',
+            attempted_at: attemptedAt,
+            hold_reason: parsed.holdReason || 'repair_unchanged',
+            original_review: review,
+        };
+        try {
+            await supabaseQuery(`coach_alerts?id=eq.${encodeURIComponent(alert.id)}&status=eq.pending`, {
+                method: 'PATCH',
+                body: { data: { ...data, cloud_draft_repair: repairMeta } },
+                prefer: 'return=minimal',
+            });
+        } catch (error) {
+            console.warn('[client-lead-manager] failed to persist cloud repair hold:', error.message);
+        }
+        return {
+            alert,
+            attempted: true,
+            accepted: false,
+            repairMeta,
+        };
+    }
+
+    const reviewResult = await reviewDraftAndUpdateAlert({
+        alertId: alert.id,
+        draftText: parsed.joined,
+        alertType: alert.alert_type,
+        contextBlocks,
+        clientName: alert.client_name || data.profile_name || data.ig_username || 'lead',
+        channelLabel: data.channel || 'instagram',
+        existingContextReview: buildContextReviewInfo(alert),
+        qualifier: data.qualifier || null,
+        linkedUserId: null,
+        meaningfulLeadReplyCount: data.qualifier?.meaningful_lead_reply_count || 0,
+        persist: false,
+    });
+    const repairedReview = reviewResult?.review || null;
+    const accepted = draftReviewPassedForAutoSend({ draft_review: repairedReview })
+        && (Array.isArray(repairedReview?.issues) ? repairedReview.issues.filter(Boolean).length === 0 : true)
+        && reviewResult?.contextReview?.required !== true;
+    const repairMeta = {
+        status: accepted ? 'accepted' : 'held',
+        attempted_at: attemptedAt,
+        original_review: review,
+        repaired_review: repairedReview,
+        hold_reason: accepted ? null : 'repaired_draft_did_not_pass_clean_review',
+    };
+    const nextData = {
+        ...data,
+        draft_text: parsed.joined,
+        draft_messages: parsed.messages,
+        draft_review: repairedReview,
+        context_review: reviewResult?.contextReview?.required ? reviewResult.contextReview : null,
+        cloud_draft_repair: repairMeta,
+    };
+    const rows = await supabaseQuery(`coach_alerts?id=eq.${encodeURIComponent(alert.id)}&status=eq.pending`, {
+        method: 'PATCH',
+        body: {
+            suggested_message: parsed.joined,
+            data: nextData,
+        },
+        prefer: 'return=representation',
+    });
+    if (!rows?.[0]) return { alert, attempted: true, accepted: false, repairMeta: { ...repairMeta, status: 'conflict' } };
+    return {
+        alert: { ...alert, suggested_message: parsed.joined, data: nextData },
+        attempted: true,
+        accepted,
+        repairMeta,
+    };
 }
 
 function buildCleanLeadCloudFallbackSchedulePatch(alert = {}, now = new Date()) {
@@ -1354,6 +1579,7 @@ async function runClientLeadManager({
     limit = MAX_PER_RUN,
     aiDraftReviewLimit = resolveAiDraftReviewLimit(),
     cleanLeadCloudFallbackLimit = resolveCleanLeadCloudFallbackLimit(),
+    cleanLeadCloudRepairLimit = resolveCleanLeadCloudRepairLimit(),
 } = {}) {
     const alerts = await loadPendingDmAlerts(limit);
     const routed = [];
@@ -1361,6 +1587,10 @@ async function runClientLeadManager({
     const cloudFallbackScheduled = [];
     let autoScheduleFailed = 0;
     let cloudFallbackFailed = 0;
+    let cloudRepairsAttempted = 0;
+    let cloudRepairsAccepted = 0;
+    let cloudRepairsHeld = 0;
+    let cloudRepairsFailed = 0;
     let aiDraftReviewsAttempted = 0;
     let aiDraftReviewsSkipped = 0;
     const maxAiDraftReviews = parseNonNegativeInteger(aiDraftReviewLimit, DEFAULT_AI_DRAFT_REVIEWS_PER_RUN);
@@ -1377,14 +1607,31 @@ async function runClientLeadManager({
         } else if (needsDraftReview) {
             aiDraftReviewsSkipped++;
         }
-        const classification = classifyNeedsYou(reviewedAlert);
+        let effectiveAlert = reviewedAlert;
+        let classification = classifyNeedsYou(effectiveAlert);
         if (classification.shouldRoute) {
-            routed.push(await stampNeedsYouAlert(reviewedAlert, classification));
+            routed.push(await stampNeedsYouAlert(effectiveAlert, classification));
             continue;
         }
-        if (shouldAutoScheduleApprovedCoachingHandoff(reviewedAlert, classification)) {
+        if (cloudRepairsAttempted < cleanLeadCloudRepairLimit
+            && shouldAttemptCleanLeadCloudRepair(effectiveAlert, classification)) {
+            cloudRepairsAttempted++;
             try {
-                const scheduled = await scheduleApprovedCoachingHandoff(reviewedAlert);
+                const repair = await repairCleanLeadCloudDraft(effectiveAlert);
+                if (repair.attempted) {
+                    effectiveAlert = repair.alert;
+                    classification = classifyNeedsYou(effectiveAlert);
+                    if (repair.accepted) cloudRepairsAccepted++;
+                    else cloudRepairsHeld++;
+                }
+            } catch (error) {
+                cloudRepairsFailed++;
+                console.warn('[client-lead-manager] clean lead cloud repair failed:', error.message);
+            }
+        }
+        if (shouldAutoScheduleApprovedCoachingHandoff(effectiveAlert, classification)) {
+            try {
+                const scheduled = await scheduleApprovedCoachingHandoff(effectiveAlert);
                 if (scheduled) autoScheduled.push(scheduled);
             } catch (error) {
                 autoScheduleFailed++;
@@ -1393,9 +1640,9 @@ async function runClientLeadManager({
             continue;
         }
         if (cloudFallbackScheduled.length < cleanLeadCloudFallbackLimit
-            && shouldAutoScheduleCleanLeadCloudFallback(reviewedAlert, classification)) {
+            && shouldAutoScheduleCleanLeadCloudFallback(effectiveAlert, classification)) {
             try {
-                const scheduled = await scheduleCleanLeadCloudFallback(reviewedAlert);
+                const scheduled = await scheduleCleanLeadCloudFallback(effectiveAlert);
                 if (scheduled) cloudFallbackScheduled.push(scheduled);
             } catch (error) {
                 cloudFallbackFailed++;
@@ -1411,6 +1658,11 @@ async function runClientLeadManager({
         cloud_fallback_scheduled: cloudFallbackScheduled.length,
         cloud_fallback_failed: cloudFallbackFailed,
         cloud_fallback_limit: cleanLeadCloudFallbackLimit,
+        cloud_repairs_attempted: cloudRepairsAttempted,
+        cloud_repairs_accepted: cloudRepairsAccepted,
+        cloud_repairs_held: cloudRepairsHeld,
+        cloud_repairs_failed: cloudRepairsFailed,
+        cloud_repair_limit: cleanLeadCloudRepairLimit,
         ai_draft_reviews_attempted: aiDraftReviewsAttempted,
         ai_draft_review_limit: maxAiDraftReviews,
         ai_draft_reviews_skipped: aiDraftReviewsSkipped,
@@ -1432,6 +1684,11 @@ exports.handler = async () => {
             cloud_fallback_scheduled: result.cloud_fallback_scheduled,
             cloud_fallback_failed: result.cloud_fallback_failed,
             cloud_fallback_limit: result.cloud_fallback_limit,
+            cloud_repairs_attempted: result.cloud_repairs_attempted,
+            cloud_repairs_accepted: result.cloud_repairs_accepted,
+            cloud_repairs_held: result.cloud_repairs_held,
+            cloud_repairs_failed: result.cloud_repairs_failed,
+            cloud_repair_limit: result.cloud_repair_limit,
             ai_draft_reviews_attempted: result.ai_draft_reviews_attempted,
             ai_draft_review_limit: result.ai_draft_review_limit,
             ai_draft_reviews_skipped: result.ai_draft_reviews_skipped,
@@ -1477,6 +1734,7 @@ exports._test = {
     shouldRunDraftReview,
     resolveAiDraftReviewLimit,
     resolveCleanLeadCloudFallbackLimit,
+    resolveCleanLeadCloudRepairLimit,
     isAcquisitionLeadAlert,
     leadMediaContextMissing,
     leadAudioBatchPartiallyDecoded,
@@ -1488,6 +1746,10 @@ exports._test = {
     containsCommercialDecisionText,
     latestAlertEvidenceAt,
     shouldAutoScheduleCleanLeadCloudFallback,
+    shouldAttemptCleanLeadCloudRepair,
+    parseCleanLeadCloudRepair,
+    latestAsksForCurrentClientCount,
+    approximateClientCountForDm,
     buildCleanLeadCloudFallbackSchedulePatch,
     draftAsksRedundantCurrentStatusQuestion,
     draftRepeatsCurrentStatusQuestion,

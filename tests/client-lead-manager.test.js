@@ -15,6 +15,9 @@ assert.strictEqual(manager.resolveCleanLeadCloudFallbackLimit(undefined), 8);
 assert.strictEqual(manager.resolveCleanLeadCloudFallbackLimit('0'), 0);
 assert.strictEqual(manager.resolveCleanLeadCloudFallbackLimit('4'), 4);
 assert.strictEqual(manager.resolveCleanLeadCloudFallbackLimit('200'), 80);
+assert.strictEqual(manager.resolveCleanLeadCloudRepairLimit(undefined), 4);
+assert.strictEqual(manager.resolveCleanLeadCloudRepairLimit('0'), 0);
+assert.strictEqual(manager.resolveCleanLeadCloudRepairLimit('200'), 80);
 
 function makeAlert(overrides = {}) {
     return {
@@ -815,6 +818,73 @@ assert.strictEqual(cleanCloudFallbackPatch.scheduled_for, '2026-07-28T00:04:00.0
 assert.strictEqual(cleanCloudFallbackPatch.data.scheduled_via, 'auto_send');
 assert.strictEqual(cleanCloudFallbackPatch.data.cloud_dm_manager_fallback, true);
 assert.strictEqual(cleanCloudFallbackPatch.data.client_manager_auto_schedule_reason, 'clean_unlinked_lead_cloud_fallback');
+
+const repairableCloudWarning = makeAlert({
+    suggested_message: 'Haha yeah I have a steady roster. You doing one-on-one or group coaching?',
+    data: {
+        ig_thread_id: 'thread-repairable-warning',
+        message_preview: 'Awesome how many clients you got working with ya',
+        qualifier: { commercial_stage: 'engaged' },
+        draft_review: {
+            verdict: 'warn',
+            confidence: 0.74,
+            issues: ['The draft adds an unnecessary extra question that is not directly prompted.'],
+            summary: 'The direct answer is usable but the extra discovery question should be removed.',
+            suggested_fix: 'Keep only the direct answer.',
+            notification_reason: 'none',
+            notification_required: false,
+            context_loss_suspected: false,
+            reviewed_at: '2026-08-12T00:00:00.000Z',
+        },
+    },
+});
+assert.strictEqual(
+    manager.shouldAttemptCleanLeadCloudRepair(repairableCloudWarning, manager.classifyNeedsYou(repairableCloudWarning)),
+    true,
+    'a grounded ordinary-lead style warning should get one cloud repair attempt'
+);
+assert.strictEqual(manager.parseCleanLeadCloudRepair('{"messages":["That makes sense haha."]}').joined, 'That makes sense haha.');
+assert.strictEqual(manager.parseCleanLeadCloudRepair('{"hold_reason":"missing verified client count"}').holdReason, 'missing verified client count');
+assert.strictEqual(manager.parseCleanLeadCloudRepair('{"messages":["Check https://example.com"]}').holdReason, 'repair_introduced_forbidden_content');
+assert.strictEqual(manager.latestAsksForCurrentClientCount(repairableCloudWarning), true);
+assert.strictEqual(manager.latestAsksForCurrentClientCount(makeAlert({ data: { message_preview: 'how is coaching going?' } })), false);
+assert.strictEqual(manager.approximateClientCountForDm(44), 40);
+assert.strictEqual(manager.approximateClientCountForDm(9), 9);
+assert.strictEqual(manager.approximateClientCountForDm(0), 0);
+
+for (const heldWarning of [
+    {
+        ...repairableCloudWarning,
+        data: {
+            ...repairableCloudWarning.data,
+            draft_review: {
+                ...repairableCloudWarning.data.draft_review,
+                issues: ['The source DM context is missing; open the DM before replying.'],
+                summary: 'Missing context.',
+            },
+        },
+    },
+    {
+        ...repairableCloudWarning,
+        data: {
+            ...repairableCloudWarning.data,
+            audio_url_count: 1,
+        },
+    },
+    {
+        ...repairableCloudWarning,
+        data: {
+            ...repairableCloudWarning.data,
+            cloud_draft_repair: { status: 'held', attempted_at: '2026-08-12T00:01:00.000Z' },
+        },
+    },
+]) {
+    assert.strictEqual(
+        manager.shouldAttemptCleanLeadCloudRepair(heldWarning, manager.classifyNeedsYou(heldWarning)),
+        false,
+        'context, media, and already-attempted warnings must stay held'
+    );
+}
 assert.strictEqual(manager.containsCommercialDecisionText('normal gym chat'), false);
 assert.strictEqual(manager.containsCommercialDecisionText('I reckon Balance would suit you, want me to send the details?'), true);
 assert.strictEqual(

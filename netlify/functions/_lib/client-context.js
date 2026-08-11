@@ -6383,7 +6383,7 @@ async function updateAlertDraftReview(alertId, review, contextReview = null) {
     }
 }
 
-async function reviewDraftAndUpdateAlert({ alertId, draftText, alertType, contextBlocks, clientName, channelLabel, existingContextReview, qualifier, linkedUserId, meaningfulLeadReplyCount } = {}) {
+async function reviewDraftAndUpdateAlert({ alertId, draftText, alertType, contextBlocks, clientName, channelLabel, existingContextReview, qualifier, linkedUserId, meaningfulLeadReplyCount, persist = true } = {}) {
     const rawReview = await generateDraftReview({
         draftText,
         alertType,
@@ -6421,7 +6421,7 @@ async function reviewDraftAndUpdateAlert({ alertId, draftText, alertType, contex
         linkedUserId,
     });
     const contextReview = mergeDraftReviewContextReview(salesSuspicionGuardedReview, existingContextReview);
-    if (alertId && salesSuspicionGuardedReview) {
+    if (persist && alertId && salesSuspicionGuardedReview) {
         await updateAlertDraftReview(alertId, salesSuspicionGuardedReview, contextReview);
     }
     return { review: salesSuspicionGuardedReview, contextReview };
