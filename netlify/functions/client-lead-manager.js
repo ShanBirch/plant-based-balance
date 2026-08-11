@@ -143,6 +143,18 @@ function leadMediaContextMissing(data = {}, mediaReview = {}) {
     return false;
 }
 
+function leadNeedsReferencedMediaEvidence(data = {}) {
+    const latest = latestLeadText(data);
+    const asksForReferencedMedia = /\b(?:answer|details?|explanation|point)\s+(?:is|are|was|were)?\s*(?:right\s+)?(?:there|in|on)\s+(?:the|that|this|my)?\s*(?:video|reel|clip|story|post|photo|picture)\b|\b(?:did|have|can|could|would|will)\s+you\s+(?:watch|see|open|look at|check)\s+(?:the|that|this|my)?\s*(?:video|reel|clip|story|post|photo|picture)\b|\bwhat\s+did\s+you\s+think\s+of\s+(?:the|that|this|my)?\s*(?:video|reel|clip|story|post|photo|picture)\b/i.test(latest);
+    if (!asksForReferencedMedia) return false;
+    const decode = data.media_decode || data.mediaDecode || {};
+    const evidence = data.draft_evidence || {};
+    const counts = getMediaContextCounts(data);
+    return decode.analysis_complete !== true
+        && counts.reelContext <= 0
+        && !String(evidence.media_context || evidence.learning_reel_context || evidence.story_context || '').trim();
+}
+
 function leadLatestClearlyNeedsPriorContext(data = {}, contextReview = {}) {
     const latest = String(
         contextReview.latest_text
@@ -690,6 +702,7 @@ function shouldAutoScheduleCleanLeadCloudFallback(alert = {}, classification = {
     if (!data.ig_thread_id || !draftText || !draftReviewPassedForAutoSend(data)) return false;
     if (reviewIssues.length > 0 || contextReview.required === true) return false;
     if (mediaReview.hasMedia || leadMediaContextMissing(data, mediaReview)) return false;
+    if (leadNeedsReferencedMediaEvidence(data)) return false;
     if (hasVoiceNoteEvidence(data) || Object.values(getMediaContextCounts(data)).some(value => value === true || Number(value) > 0)) return false;
     if (appProblemHold) return false;
     if (data.client_manager_review_required === true
@@ -1062,6 +1075,7 @@ function buildDraftReviewContextBlocks(alert = {}) {
     const priorText = formatReviewList(evidence.prior_unanswered || data.recent_inbound_messages, m => `- "${truncate(m.text || m.message || '', 220)}"`);
     const timelineText = evidence.recent_timeline || '';
     const storyContextText = evidence.story_context || '';
+    const mediaContextText = evidence.media_context || evidence.learning_reel_context || '';
     const nativeStoryContextText = isNativeStoryContextCurrentForAlert(evidence.native_story_context, alert)
         ? evidence.native_story_context
         : '';
@@ -1082,6 +1096,7 @@ function buildDraftReviewContextBlocks(alert = {}) {
         priorText ? `Prior unanswered messages:\n${priorText}` : '',
         timelineText ? `Recent timestamped timeline:\n${truncate(timelineText, 2400)}` : '',
         storyContextText ? `Story/post opener context:\n${truncate(storyContextText, 1400)}` : '',
+        mediaContextText ? `Media analysis/context:\n${truncate(mediaContextText, 1800)}` : '',
         nativeStoryContextText ? `Native story/post opener context:\n${truncate(nativeStoryContextText, 1400)}` : '',
         exerciseLibrarySupportBlock ? exerciseLibrarySupportBlock.trim() : '',
         activityText ? `Recent activity snapshot:\n${truncate(activityText, 1200)}` : '',
@@ -1373,9 +1388,39 @@ function buildNeedsYouData(alert, classification) {
 
 async function loadPendingDmAlerts(limit = MAX_PER_RUN) {
     const types = DM_ALERT_TYPES.join(',');
-    return supabaseQuery(
-        `coach_alerts?select=id,created_at,client_id,client_name,coach_id,alert_type,title,description,suggested_message,status,data&status=eq.pending&alert_type=in.(${types})&order=created_at.asc&limit=${limit}`
+    const fetchLimit = Math.min(MAX_PER_RUN * 3, Math.max(Number(limit) || MAX_PER_RUN, MAX_PER_RUN) * 3);
+    const rows = await supabaseQuery(
+        `coach_alerts?select=id,created_at,client_id,client_name,coach_id,alert_type,title,description,suggested_message,status,data&status=eq.pending&alert_type=in.(${types})&order=created_at.asc&limit=${fetchLimit}`
     );
+    return rankPendingDmAlerts(rows).slice(0, Math.max(1, Number(limit) || MAX_PER_RUN));
+}
+
+function pendingDmPriorityScore(alert = {}, now = new Date()) {
+    const data = alert.data || {};
+    const latest = latestLeadText(data);
+    const normalized = normalizeStatusText(latest);
+    let score = 0;
+    if (leadHasCredibleCurrentDanger(data) || leadExplicitlyDetectsAi(data)) score += 1200;
+    if (/\b(?:send (?:me )?(?:the )?(?:link|details)|how do i (?:join|start|sign up)|i(?:'m| am) (?:in|ready)|price|pricing|what(?:'s| is) included|book (?:me|a call))\b/i.test(normalized)) score += 1000;
+    if (/[?]/.test(latest)) score += 700;
+    if (leadNeedsReferencedMediaEvidence(data) || buildMediaReviewInfo(alert).hasMedia) score += 600;
+    const stage = String(data.qualifier?.commercial_stage || '').toLowerCase();
+    if (stage === 'buyer_intent') score += 900;
+    else if (stage === 'offer_ready') score += 750;
+    else if (stage === 'problem_qualified') score += 500;
+    if (/\b(?:fat|unfit|lose weight|build muscle|fitness|training|workout|gym|consisten|accountab|need help|stuck|start again)\b/i.test(normalized)) score += 350;
+    if (alert.client_id || data.linked_user_id) score += 120;
+    const ageHours = Math.max(0, (now.getTime() - Date.parse(alert.created_at || now.toISOString())) / 3600000);
+    score += Math.min(240, ageHours * 4);
+    return score;
+}
+
+function rankPendingDmAlerts(alerts = [], now = new Date()) {
+    return [...(Array.isArray(alerts) ? alerts : [])].sort((a, b) => {
+        const scoreDelta = pendingDmPriorityScore(b, now) - pendingDmPriorityScore(a, now);
+        if (scoreDelta) return scoreDelta;
+        return Date.parse(a.created_at || 0) - Date.parse(b.created_at || 0);
+    });
 }
 
 async function hydrateLiveLinkedClient(alert = {}) {
@@ -1737,6 +1782,7 @@ exports._test = {
     resolveCleanLeadCloudRepairLimit,
     isAcquisitionLeadAlert,
     leadMediaContextMissing,
+    leadNeedsReferencedMediaEvidence,
     leadAudioBatchPartiallyDecoded,
     draftReviewPassedForAutoSend,
     approvedLinkHandoffKind,
@@ -1746,6 +1792,8 @@ exports._test = {
     containsCommercialDecisionText,
     latestAlertEvidenceAt,
     shouldAutoScheduleCleanLeadCloudFallback,
+    pendingDmPriorityScore,
+    rankPendingDmAlerts,
     shouldAttemptCleanLeadCloudRepair,
     parseCleanLeadCloudRepair,
     latestAsksForCurrentClientCount,

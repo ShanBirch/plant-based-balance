@@ -1038,6 +1038,51 @@ const reviewContext = manager.buildDraftReviewContextBlocks(makeAlert({
 assert.ok(reviewContext.includes('Just-arrived message from Lead'));
 assert.ok(reviewContext.includes('Prior unanswered messages'));
 
+const decodedMediaReviewContext = manager.buildDraftReviewContextBlocks(makeAlert({
+    data: {
+        message_preview: 'Answer is in the video :)',
+        draft_evidence: {
+            current_message: 'Answer is in the video :)',
+            media_context: 'The video reveals the answer in the final frame.',
+        },
+    },
+}));
+assert.match(decodedMediaReviewContext, /Media analysis\/context/);
+assert.match(decodedMediaReviewContext, /final frame/);
+
+const unresolvedReferencedVideo = makeAlert({
+    suggested_message: "Hahaha fair, what's the answer then?",
+    data: {
+        ig_thread_id: 'thread-unresolved-video',
+        message_preview: 'Answer is in the video :)',
+        draft_review: {
+            verdict: 'pass',
+            confidence: 0.94,
+            issues: [],
+            notification_required: false,
+            context_loss_suspected: false,
+        },
+    },
+});
+assert.strictEqual(manager.leadNeedsReferencedMediaEvidence(unresolvedReferencedVideo.data), true);
+assert.strictEqual(
+    manager.shouldAutoScheduleCleanLeadCloudFallback(unresolvedReferencedVideo, manager.classifyNeedsYou(unresolvedReferencedVideo)),
+    false,
+    'an explicit media reference cannot enter the clean text fallback without decoded evidence'
+);
+
+const rankedPending = manager.rankPendingDmAlerts([
+    makeAlert({ id: 'old-banter', created_at: '2026-08-11T00:00:00.000Z', data: { message_preview: 'haha yep' } }),
+    makeAlert({ id: 'fresh-question', created_at: '2026-08-11T09:58:00.000Z', data: { message_preview: 'Do you have a close friends story?' } }),
+    makeAlert({ id: 'fitness-signal', created_at: '2026-08-11T09:55:00.000Z', data: { message_preview: 'I feel fat and unfit and need help getting consistent' } }),
+], new Date('2026-08-11T10:00:00.000Z'));
+assert.strictEqual(rankedPending[0].id, 'fresh-question', 'direct questions should outrank passive old banter');
+assert.ok(
+    manager.pendingDmPriorityScore(rankedPending[1], new Date('2026-08-11T10:00:00.000Z'))
+        > manager.pendingDmPriorityScore(rankedPending[2], new Date('2026-08-11T10:00:00.000Z')),
+    'qualified fitness signals should outrank passive old banter'
+);
+
 const exerciseSupportContext = manager.buildDraftReviewContextBlocks(makeAlert({
     suggested_message: 'switch to Cable Hip Abduction instead',
     data: {

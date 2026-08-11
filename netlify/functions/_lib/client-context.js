@@ -2868,8 +2868,27 @@ function applyPhoneAutocorrectCapitalization(text) {
     return out;
 }
 
+function applyPhoneAutocorrectContractions(text) {
+    if (!text) return text;
+    const contractions = new Map([
+        ['im', "I'm"], ['ive', "I've"],
+        ['youre', "you're"], ['youve', "you've"], ['youll', "you'll"], ['youd', "you'd"],
+        ['weve', "we've"],
+        ['theyre', "they're"], ['theyve', "they've"], ['theyll', "they'll"], ['theyd', "they'd"],
+        ['thats', "that's"], ['whats', "what's"], ['heres', "here's"], ['theres', "there's"],
+        ['isnt', "isn't"], ['arent', "aren't"], ['wasnt', "wasn't"], ['werent', "weren't"],
+        ['dont', "don't"], ['doesnt', "doesn't"], ['didnt', "didn't"],
+        ['cant', "can't"], ['couldnt', "couldn't"], ['shouldnt', "shouldn't"], ['wouldnt', "wouldn't"], ['wont', "won't"],
+        ['hasnt', "hasn't"], ['havent', "haven't"], ['hadnt', "hadn't"],
+    ]);
+    return String(text).replace(/\b(?:im|ive|youre|youve|youll|youd|weve|theyre|theyve|theyll|theyd|thats|whats|heres|theres|isnt|arent|wasnt|werent|dont|doesnt|didnt|cant|couldnt|shouldnt|wouldnt|wont|hasnt|havent|hadnt)\b/gi, match => {
+        const replacement = contractions.get(match.toLowerCase()) || match;
+        return /^[A-Z]/.test(match) ? replacement[0].toUpperCase() + replacement.slice(1) : replacement;
+    });
+}
+
 function normalizeGeneratedCoachDraftText(text) {
-    return applyPhoneAutocorrectCapitalization(normalizeCoachDraftText(text));
+    return applyPhoneAutocorrectCapitalization(applyPhoneAutocorrectContractions(normalizeCoachDraftText(text)));
 }
 
 /**
@@ -5933,14 +5952,52 @@ const LEAD_NO_RESPONSE_WORDS = new Set([
 ]);
 const LEAD_RECIPROCAL_QUESTION_RE = /(?:\b(?:yours|wbu|hbu|what about you|how about you)\s*\?+|(?:^|[,;.!]\s*|\band\s+)you\s*\?+)/i;
 const DRAFT_FIRST_PERSON_ANSWER_RE = /\b(?:i|i'm|im|i've|ive|i'd|id|my|mine|me|personally)\b/i;
+const LEAD_PERSONAL_YES_NO_QUESTION_RE = /(?:^|[.!?]\s+)(?:do|did|are|is|have|has|can|could|would|will|were|was)\s+(?:you|ya|u)\b[^?]{0,180}\?/i;
+const DRAFT_DIRECT_ANSWER_RE = /^(?:yeah|yep|yes|nah|no|nope|not really|sure|usually|sometimes|always|never|probably|maybe|i\b|i'm\b|im\b|i've\b|ive\b|my\b|mine\b|later\b|earlier\b|before\b|after\b|today\b|tonight\b|tomorrow\b|this\s+(?:morning|arvo|afternoon|evening|week|weekend)\b)/i;
+const LEAD_UNRESOLVED_MEDIA_REFERENCE_RE = /\b(?:answer|details?|explanation|point)\s+(?:is|are|was|were)?\s*(?:right\s+)?(?:there|in|on)\s+(?:the|that|this|my)?\s*(?:video|reel|clip|story|post|photo|picture)\b|\b(?:did|have|can|could|would|will)\s+you\s+(?:watch|see|open|look at|check)\s+(?:the|that|this|my)?\s*(?:video|reel|clip|story|post|photo|picture)\b|\bwhat\s+did\s+you\s+think\s+of\s+(?:the|that|this|my)?\s*(?:video|reel|clip|story|post|photo|picture)\b/i;
+const REVIEW_MEDIA_EVIDENCE_RE = /(?:current message media context|media analysis\/context|instagram reel context|recent sent learning reel context|visible story text|story\/post opener context|video transcript|media transcript)/i;
+const REVIEW_REPEAT_STOP_WORDS = new Set([
+    'a', 'about', 'after', 'again', 'all', 'and', 'are', 'as', 'at', 'basically', 'be', 'been', 'but', 'do', 'for',
+    'from', 'haha', 'hahaha', 'have', 'hey', 'i', 'if', 'in', 'is', 'it', 'its', 'just', 'like', 'lol', 'me', 'my',
+    'of', 'on', 'one', 'or', 'really', 'so', 'that', 'the', 'their', 'them', 'they', 'this', 'to', 'too', 'very', 'was',
+    'we', 'what', 'with', 'yeah', 'yep', 'yes', 'you', 'your', 'youre', 'ah', 'ahh', 'nah',
+]);
 
 function compactReviewWords(text) {
     return String(text || '').toLowerCase().match(/[a-z0-9]+(?:'[a-z0-9]+)?/g) || [];
 }
 
+function reviewContentWords(text) {
+    return [...new Set(compactReviewWords(text)
+        .map(word => word.replace(/'(?:s|re|ve|ll|d|m)$/i, ''))
+        .filter(word => word.length >= 3 && !REVIEW_REPEAT_STOP_WORDS.has(word)))];
+}
+
+function extractRecentShannonReviewMessages(contextBlocks) {
+    return String(contextBlocks || '')
+        .split(/\r?\n/)
+        .map(line => line.trim())
+        .filter(line => /^Shannon\s*:/i.test(line))
+        .map(line => line.replace(/^Shannon\s*:\s*/i, '').trim())
+        .filter(Boolean)
+        .slice(-5);
+}
+
+function draftRepeatsRecentShannonPoint(draftText, contextBlocks) {
+    const draftWords = reviewContentWords(draftText);
+    if (draftWords.length < 4) return false;
+    const draftSet = new Set(draftWords);
+    return extractRecentShannonReviewMessages(contextBlocks).some(message => {
+        const priorWords = reviewContentWords(message);
+        if (priorWords.length < 4) return false;
+        const overlap = priorWords.filter(word => draftSet.has(word)).length;
+        return overlap >= 3 && overlap / Math.min(priorWords.length, draftWords.length) >= 0.45;
+    });
+}
+
 function extractJustArrivedReviewMessage(contextBlocks) {
     const text = String(contextBlocks || '');
-    const match = text.match(/Just-arrived[^\n:]* message from [^:]+:\s*"([\s\S]*?)"(?:\n[A-Z][A-Za-z ]+:|\nPrior unanswered messages:|\nRecent timestamped|\nExact recent|\nMemory\/context|\nStory\/content|\nShannon self-story|$)/i);
+    const match = text.match(/Just-arrived[^\n:]* message from [^:]+:\s*"([\s\S]*?)"(?:\n[A-Z][A-Za-z ]+:|\nPrior unanswered messages:|\nRecent timestamped|\nExact recent|\nMedia analysis\/context:|\nMemory\/context|\nStory\/content|\nShannon self-story|$)/i);
     return match ? String(match[1] || '').trim() : '';
 }
 
@@ -6023,26 +6080,73 @@ function applyLeadDirectQuestionCoverageGuard(review, { draftText, contextBlocks
     if (base.verdict === 'block') return base;
 
     const currentMessage = extractJustArrivedReviewMessage(contextBlocks);
-    if (!LEAD_RECIPROCAL_QUESTION_RE.test(currentMessage)) return base;
-
     const draft = normalizeCoachDraftText(draftText || '').replace(/\s+/g, ' ').trim();
-    if (DRAFT_FIRST_PERSON_ANSWER_RE.test(draft)) return base;
+    const reciprocalQuestion = LEAD_RECIPROCAL_QUESTION_RE.test(currentMessage);
+    const personalYesNoQuestion = LEAD_PERSONAL_YES_NO_QUESTION_RE.test(currentMessage);
+    if (!reciprocalQuestion && !personalYesNoQuestion) return base;
+    if (reciprocalQuestion && DRAFT_FIRST_PERSON_ANSWER_RE.test(draft)) return base;
+    if (personalYesNoQuestion && DRAFT_DIRECT_ANSWER_RE.test(draft)) return base;
 
     return {
         ...base,
         verdict: 'warn',
         confidence: Math.max(Number(base.confidence) || 0, 0.99),
-        summary: 'The lead asked the same question back, but the draft did not answer for Shannon.',
+        summary: reciprocalQuestion
+            ? 'The lead asked the same question back, but the draft did not answer for Shannon.'
+            : 'The lead asked Shannon a direct yes/no question, but the draft did not answer it.',
         issues: normalizeDraftReviewIssues([
             ...(Array.isArray(base.issues) ? base.issues : []),
-            'Unanswered reciprocal direct question from the latest inbound message.',
+            reciprocalQuestion
+                ? 'Unanswered reciprocal direct question from the latest inbound message.'
+                : 'Unanswered direct yes/no question from the latest inbound message.',
         ]),
-        suggested_fix: 'Add one brief first-person answer to their "yours?" / "you?" question before any new follow-up.',
+        suggested_fix: reciprocalQuestion
+            ? 'Add one brief first-person answer to their "yours?" / "you?" question before any new follow-up.'
+            : 'Answer their direct question in the first sentence before reacting or asking anything new.',
         context_loss_suspected: base.context_loss_suspected || false,
         notification_required: base.notification_required || false,
         notification_reason: base.notification_required ? base.notification_reason : 'unanswered_direct_question',
         reviewer_model: `${base.reviewer_model || DRAFT_REVIEW_MODEL}+direct-question-guard`,
-        deterministic_guard: 'unanswered_reciprocal_question',
+        deterministic_guard: reciprocalQuestion ? 'unanswered_reciprocal_question' : 'unanswered_direct_yes_no_question',
+    };
+}
+
+function applyLeadMediaEvidenceGuard(review, { draftText, contextBlocks, alertType } = {}) {
+    const base = review || normalizeDraftReviewPayload({ verdict: 'pass', confidence: 0 });
+    if (!['ig_incoming_dm', 'fb_incoming_dm'].includes(alertType) || base.verdict === 'block') return base;
+    const currentMessage = extractJustArrivedReviewMessage(contextBlocks);
+    if (!LEAD_UNRESOLVED_MEDIA_REFERENCE_RE.test(currentMessage) || REVIEW_MEDIA_EVIDENCE_RE.test(contextBlocks)) return base;
+    return {
+        ...base,
+        verdict: 'warn',
+        confidence: Math.max(Number(base.confidence) || 0, 0.99),
+        summary: 'The lead explicitly referred Shannon to media, but no decoded media evidence was supplied.',
+        issues: normalizeDraftReviewIssues([...(base.issues || []), 'media_context_required_before_reply']),
+        suggested_fix: 'Retrieve and analyse the referenced video, Reel, Story, post, or image before drafting. Do not ask the lead for information already present in it.',
+        context_loss_suspected: true,
+        notification_required: false,
+        notification_reason: 'missing_source_context',
+        reviewer_model: `${base.reviewer_model || DRAFT_REVIEW_MODEL}+media-evidence-guard`,
+        deterministic_guard: 'unresolved_media_reference',
+    };
+}
+
+function applyLeadRecentRepetitionGuard(review, { draftText, contextBlocks, alertType } = {}) {
+    const base = review || normalizeDraftReviewPayload({ verdict: 'pass', confidence: 0 });
+    if (!['ig_incoming_dm', 'fb_incoming_dm'].includes(alertType) || base.verdict === 'block') return base;
+    if (!draftRepeatsRecentShannonPoint(draftText, contextBlocks)) return base;
+    return {
+        ...base,
+        verdict: 'warn',
+        confidence: Math.max(Number(base.confidence) || 0, 0.98),
+        summary: 'The draft repeats the same point Shannon made in a recent outbound.',
+        issues: normalizeDraftReviewIssues([...(base.issues || []), 'recent_outbound_semantic_repetition']),
+        suggested_fix: 'Respond to the newest detail with a fresh observation, direct answer, or useful next move. Do not restate the previous point in different words.',
+        context_loss_suspected: base.context_loss_suspected || false,
+        notification_required: false,
+        notification_reason: base.notification_required ? base.notification_reason : 'generic_voice',
+        reviewer_model: `${base.reviewer_model || DRAFT_REVIEW_MODEL}+recent-repetition-guard`,
+        deterministic_guard: 'recent_outbound_semantic_repetition',
     };
 }
 
@@ -6260,6 +6364,9 @@ IG/FB LEAD QUALITY CHECK:
 - Warn if a support or workout draft over-explains the likely bug, cause, or technique checklist when one practical answer would do.
 - Warn if the draft tacks an optional curiosity question onto a strong reaction when the missing answer is not needed for coaching, support, or a qualified lead next step.
 - Warn if the latest lead message answers Shannon's previous small rapport question and the draft asks a near-duplicate same-topic question instead of reacting, unless it opens genuinely new business or coaching context.
+- Warn when the draft repeats the same observation, joke, or topic point from any of Shannon's last five outbounds, even when it swaps a few words. The newest inbound must add a fresh detail or the reply should take a different useful move.
+- Vary phone-native openings. Warn when the draft mechanically starts with "Hahaha", "Yeah", or "Ahh" and a direct answer or the sharpest specific detail could start the message instead.
+- Visible copy must use normal contractions and apostrophes: "what's", "that's", "you're", "don't", "can't", and similar forms. Warn on repeated missing-apostrophe text that looks generated rather than like one isolated human typo.
 - Block if the lead has already given training details and the draft asks whether they are into fitness, what their main focus is, or what move they are trying to progress. Own the context and respond to the detail instead.
 - Block if the lead says no/not really, says they need help later, or names sickness, time, money, financial dependency, or similar constraints, and the draft keeps problem-hunting with a binary "time or money", "what would make it easiest", or fallback-plan question. Preserve autonomy and stop probing for that turn.
 - Warn if the draft uses weak generic discovery such as "what kind of difference would that make", "what usually makes it hard", "how are you finding it", "anything in particular", or "what does that look like for you" when the lead already gave a more specific hook.
@@ -6413,7 +6520,17 @@ async function reviewDraftAndUpdateAlert({ alertId, draftText, alertType, contex
         contextBlocks,
         alertType,
     });
-    const salesSuspicionGuardedReview = applyLeadSalesSuspicionGuard(directQuestionGuardedReview, {
+    const mediaGuardedReview = applyLeadMediaEvidenceGuard(directQuestionGuardedReview, {
+        draftText,
+        contextBlocks,
+        alertType,
+    });
+    const repetitionGuardedReview = applyLeadRecentRepetitionGuard(mediaGuardedReview, {
+        draftText,
+        contextBlocks,
+        alertType,
+    });
+    const salesSuspicionGuardedReview = applyLeadSalesSuspicionGuard(repetitionGuardedReview, {
         draftText,
         contextBlocks,
         alertType,
@@ -8045,6 +8162,9 @@ module.exports = {
     softenRecentInboundBurstDraftReview,
     applyLeadStoryReplyQuestionGuard,
     applyLeadDirectQuestionCoverageGuard,
+    applyLeadMediaEvidenceGuard,
+    applyLeadRecentRepetitionGuard,
+    draftRepeatsRecentShannonPoint,
     applyLeadProgressionQuestionProtection,
     applyLeadSalesSuspicionGuard,
     isAppProblemSupportRequest,
