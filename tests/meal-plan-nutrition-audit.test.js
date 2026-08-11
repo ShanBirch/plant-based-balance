@@ -74,3 +74,80 @@ test('meal fetch failures stop the audit instead of creating false missing-meal 
         console.error = originalConsoleError;
     }
 });
+
+test('each active plan is loaded separately so the PostgREST row cap cannot hide later plans', async () => {
+    const originalFetch = global.fetch;
+    const plans = ['plan-1', 'plan-2'].map((id, index) => ({
+        id,
+        user_id: `client-${index + 1}`,
+        plan_name: `Test Plan ${index + 1}`,
+        status: 'active',
+        calorie_goal: 1800,
+        protein_goal_g: 90,
+        carbs_goal_g: 225,
+        fat_goal_g: 55,
+        created_at: '2026-08-11T00:00:00Z',
+    }));
+    const mealFor = (planId) => ({
+        id: `meal-${planId}`,
+        plan_id: planId,
+        name: 'Test Meal',
+        calories: 400,
+        protein_g: 20,
+        carbs_g: 50,
+        fat_g: 13,
+        fiber_g: 8,
+        week_number: 1,
+        day_of_week: 0,
+        meal_slot: 'breakfast',
+    });
+
+    global.fetch = async (url) => {
+        const path = new URL(url).pathname + new URL(url).search;
+
+        if (path.includes('/coach_clients?')) {
+            return response(200, plans.map((plan) => ({
+                client_id: plan.user_id,
+                coach_id: 'coach-1',
+                status: 'active',
+            })));
+        }
+        if (path.includes('/users?')) {
+            return response(200, plans.map((plan) => ({ id: plan.user_id, name: plan.user_id })));
+        }
+        if (path.includes('/quiz_results?')) {
+            return response(200, []);
+        }
+        if (path.includes('/ai_generated_meal_plans?')) {
+            return response(200, plans);
+        }
+        if (path.includes('/ai_generated_meals?') && path.includes('plan_id=eq.plan-1')) {
+            return response(200, [mealFor('plan-1')]);
+        }
+        if (path.includes('/ai_generated_meals?') && path.includes('plan_id=eq.plan-2')) {
+            return response(200, [mealFor('plan-2')]);
+        }
+        if (path.includes('/ai_generated_meals?') && path.includes('plan_id=in.')) {
+            return response(200, Array.from({ length: 1000 }, (_, index) => ({
+                ...mealFor('plan-1'),
+                id: `meal-${index}`,
+            })));
+        }
+
+        throw new Error(`Unexpected request: ${url}`);
+    };
+
+    try {
+        const result = await handler({ queryStringParameters: { dryRun: 'true' } });
+        const body = JSON.parse(result.body);
+
+        assert.equal(result.statusCode, 200);
+        assert.equal(body.success, true);
+        assert.equal(body.audited.length, 2);
+        for (const audit of body.audited) {
+            assert.equal(audit.issue_codes.includes('missing_meals'), false);
+        }
+    } finally {
+        global.fetch = originalFetch;
+    }
+});
