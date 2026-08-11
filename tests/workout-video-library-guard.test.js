@@ -13,6 +13,10 @@ const {
 const catalog = loadVideoBackedExerciseCatalog();
 assert.ok(catalog.length > 1000, 'video-backed catalog should be available to the program builder');
 assert.ok(catalog.every(row => row.name && hasUsableExerciseVideoUrl(row.videoUrl)));
+assert.strictEqual(resolveVideoBackedExercise('Machine Seated Shoulder Press'), null, 'corrupted shoulder press video must stay out of the catalog');
+assert.strictEqual(resolveVideoBackedExercise('Lat Machine Wide Grip Pulldown'), null, 'corrupted lat pulldown video must stay out of the catalog');
+assert.strictEqual(resolveVideoBackedExercise('Machine Seated Parallel Grip Shoulder Press').name, 'Machine Seated Parallel Grip Shoulder Press');
+assert.strictEqual(resolveVideoBackedExercise('Wide Grip Lat Pulldown').name, 'Wide Grip Lat Pulldown');
 assert.strictEqual(hasUsableExerciseVideoUrl('https://drive.google.com/file/d/demo'), false);
 assert.strictEqual(hasUsableExerciseVideoUrl(''), false);
 assert.strictEqual(hasUsableExerciseVideoUrl('/assets/exercise-videos/compat/glute-bridge.mp4'), true);
