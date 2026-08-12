@@ -27,6 +27,11 @@ function runTrial(search) {
         'meta-ad-trial-terms': { checked: false },
         'meta-ad-trial-checkout-btn': { disabled: false, textContent: 'START FOUNDATIONS' },
         'meta-ad-trial-error': { style: {}, textContent: '' },
+        'meta-ad-trial-exit-choice': { style: {} },
+        'meta-ad-trial-exit-title': { textContent: '' },
+        'meta-ad-trial-exit-body': { textContent: '' },
+        'meta-ad-trial-resume-btn': { textContent: '' },
+        'meta-ad-trial-inbox-preview': { style: {} },
         'guided-tour-overlay': { classList: { remove() {} } },
     };
     const events = [];
@@ -40,7 +45,7 @@ function runTrial(search) {
         readyState: 'complete',
         referrer: 'https://facebook.com/',
         cookie: '_fbc=test-fbc; _fbp=test-fbp',
-        documentElement: { classList: { add(value) { this.value = value; } } },
+        documentElement: { classList: { add(value) { this.value = value; }, remove(value) { if (this.value === value) this.value = ''; } } },
         getElementById: id => elements[id] || null,
         addEventListener() {},
     };
@@ -92,7 +97,7 @@ function runTrial(search) {
     return { window, localStorage, sessionStorage, elements, events, setNow: value => { now = value; } };
 }
 
-test('paid Facebook attribution activates onboarding without changing organic guest traffic', () => {
+test('paid Facebook and Instagram attribution activate without changing organic guest or member traffic', () => {
     const paid = runTrial('?guest=true&meta_trial=facebook_5m_foundations_v3&utm_source=facebook&utm_medium=paid_social&ad_id=ad-42');
     assert.equal(paid.window.metaAdTrialMode, true);
     assert.equal(paid.sessionStorage.getItem('guestMode'), 'true');
@@ -100,9 +105,17 @@ test('paid Facebook attribution activates onboarding without changing organic gu
     assert.equal(paid.window.BalanceMetaAdTrial.readState().attribution.ad_id, 'ad-42');
     assert.equal(paid.events[0].event_type, 'trial_started');
 
+    const paidInstagram = runTrial('?guest=true&meta_trial=facebook_5m_foundations_v3&utm_source=instagram&utm_medium=paid_social&ad_id=ig-42');
+    assert.equal(paidInstagram.window.metaAdTrialMode, true);
+    assert.equal(paidInstagram.window.BalanceMetaAdTrial.readState().attribution.ad_id, 'ig-42');
+
     const organic = runTrial('?guest=true&utm_source=facebook&utm_medium=paid_social');
     assert.equal(organic.window.metaAdTrialMode, undefined);
     assert.equal(organic.localStorage.getItem('onboardingComplete'), 'true');
+
+    const organicInstagram = runTrial('?guest=true&utm_source=instagram&utm_medium=organic');
+    assert.equal(organicInstagram.window.metaAdTrialMode, undefined);
+    assert.equal(organicInstagram.localStorage.getItem('onboardingComplete'), 'true');
 });
 
 test('the five-minute clock ends in the fixed six-week Stripe gate', async () => {
@@ -137,7 +150,7 @@ test('the five-minute clock ends in the fixed six-week Stripe gate', async () =>
     trial.elements['meta-ad-trial-terms'].checked = true;
     assert.equal(await api.beginCheckout(), true);
     const checkout = trial.events.find(event => event.event_type === 'checkout_request');
-    assert.equal(checkout.body.priceId, 'balance_vegan_founders_pass');
+    assert.equal(checkout.body.priceId, 'balance_meta_foundations_pass');
     assert.equal(checkout.body.pageVariant, 'facebook_5m_foundations_v3');
     assert.equal(checkout.body.checkoutSource, 'meta_ad_trial');
     assert.equal(checkout.body.utm_data.visitor_id, 'visitor-fixed-id');
@@ -150,6 +163,37 @@ test('the five-minute clock ends in the fixed six-week Stripe gate', async () =>
     assert.equal(trial.localStorage.getItem('user_food_preferences'), savedFoodPreferences);
     assert.equal(trial.sessionStorage.getItem('userResult'), savedResult);
     assert.equal(trial.window.location.href, 'https://checkout.stripe.com/test-preview');
+});
+
+test('paid Meta onboarding and tour exits stay locked behind continue-or-pay choices', () => {
+    const trial = runTrial('?guest=true&meta_trial=facebook_5m_foundations_v3&utm_source=instagram&utm_medium=paid_social');
+    const api = trial.window.BalanceMetaAdTrial;
+
+    assert.equal(api.showExitChoice('onboarding'), true);
+    assert.equal(trial.elements['meta-ad-trial-exit-choice'].style.display, 'flex');
+    assert.equal(trial.elements['meta-ad-trial-resume-btn'].textContent, 'CONTINUE SETUP');
+    assert.equal(api.readState().interruptedStage, 'onboarding');
+    assert.equal(api.readState().deadlineAt, null);
+
+    assert.equal(api.showExitChoice('tour'), true);
+    assert.equal(trial.elements['meta-ad-trial-resume-btn'].textContent, 'RESTART APP TOUR');
+    assert.equal(api.readState().interruptedStage, 'tour');
+    assert.equal(api.readState().deadlineAt, null);
+
+    assert.equal(api.openCheckoutGate(), true);
+    assert.equal(trial.elements['meta-ad-trial-exit-choice'].style.display, 'none');
+    assert.equal(trial.elements['meta-ad-trial-gate'].style.display, 'flex');
+    assert.equal(api.readState().interruptedStage, 'checkout');
+});
+
+test('the Inbox proof is local to the verified paid Meta preview', () => {
+    const paid = runTrial('?guest=true&meta_trial=facebook_5m_foundations_v3&utm_source=facebook&utm_medium=paid_social');
+    assert.equal(paid.window.BalanceMetaAdTrial.showInboxPreview(), true);
+    assert.equal(paid.elements['meta-ad-trial-inbox-preview'].style.display, 'flex');
+
+    const organic = runTrial('?guest=true&utm_source=instagram&utm_medium=organic');
+    assert.equal(organic.window.BalanceMetaAdTrial.showInboxPreview(), false);
+    assert.equal(organic.elements['meta-ad-trial-inbox-preview'].style.display, undefined);
 });
 
 test('a claimed member revisiting the ad cannot have onboarding data cleared', () => {
@@ -186,8 +230,11 @@ test('dashboard, signup, native handoffs, measurement, and both discovery system
     assert.match(dashboard, /title:'Your plant-based meal plan'.*metaPreview:true/);
     assert.match(dashboard, /title:'The Balance community'.*metaPreview:true/);
     assert.match(dashboard, /title:'Share a thought'.*metaPreview:true/);
+    assert.match(dashboard, /title:'Your message from Shannon'.*metaPreview:true/);
     assert.match(dashboard, /title:'You’re all set'.*metaPreviewSignoff:true/);
-    assert.match(dashboard, /onWalkthroughComplete\(\{ skipped: !!skipped \}\)/);
+    assert.match(dashboard, /showExitChoice\('tour'\)/);
+    assert.match(onboarding, /closingMetaAdTrial[\s\S]*?showExitChoice\('onboarding'\)[\s\S]*?return;/);
+    assert.match(onboarding, /window\.resumeMetaAdTrialOnboarding = function/);
     assert.match(dashboard, /id="meta-ad-trial-gate"/);
     assert.match(auth, /requestedMetaAdTrial/);
     assert.match(onboarding, /BalanceMetaAdTrial\.onOnboardingComplete\(\)/);
@@ -213,16 +260,17 @@ test('dashboard, signup, native handoffs, measurement, and both discovery system
     assert.match(landing, /incoming\.set\('utm_source', 'facebook'\)/);
     assert.match(landing, /incoming\.set\('utm_medium', 'paid_social'\)/);
     assert.match(landing, /facebook_5m_foundations_v3/);
-    assert.match(foundersLanding, /paidFacebookSources = \['facebook', 'fb', 'meta'\]/);
-    assert.match(foundersLanding, /paidFacebookMedia = \['paid_social', 'paid', 'cpc'\]/);
+    assert.match(foundersLanding, /paidMetaSources = \['facebook', 'fb', 'instagram', 'ig', 'meta'\]/);
+    assert.match(foundersLanding, /createTreeWalker\(document\.body, NodeFilter\.SHOW_TEXT\)/);
+    assert.match(foundersLanding, /paidMetaMedia = \['paid_social', 'paid', 'cpc'\]/);
     assert.match(foundersLanding, /params\.set\('guest', 'true'\)/);
     assert.match(foundersLanding, /params\.set\('meta_trial', 'facebook_5m_foundations_v3'\)/);
     assert.match(foundersLanding, /id="foundations-hero-action"/);
     assert.match(foundersLanding, /Look inside Balance/);
     assert.match(foundersLanding, /complete your setup, then take a five-minute look around/);
     assert.match(foundersLanding, /data-plan="founders-pass"/);
-    assert.match(foundersLanding, /AU\$89\.99 is due today\. Nothing renews automatically\./);
-    assert.match(dashboard, /AU\$89\.99 once\. No auto-renewal\./);
+    assert.match(foundersLanding, /replace\(\/AU\\\$89\\\.99\/g, 'AU\$89'\)/);
+    assert.match(dashboard, /AU\$89 once\. No auto-renewal\./);
     assert.match(foundersClaim, /FOUNDERS_PLAN = "balance_foundations_six_week"/);
     assert.match(logger, /'trial_gate_shown'/);
     assert.match(logger, /'trial_walkthrough_completed'/);

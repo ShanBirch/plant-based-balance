@@ -695,6 +695,7 @@ async function recordMetaPreviewPurchaseAndQueue({ session, stripeEvent, email, 
     if (!eligible) return { recorded: true, skipped: "outside_graph_followup_window" };
 
     const createdAt = new Date(nowMs).toISOString();
+    const purchaseAmount = (Math.max(0, Number(session.amount_total || 0)) / 100).toFixed(2).replace(/\.00$/, "");
     const graphData = {
         ...graph,
         ig_graph_user_id: recipientId,
@@ -708,7 +709,7 @@ async function recordMetaPreviewPurchaseAndQueue({ session, stripeEvent, email, 
         alert_type: "follow_up_review",
         priority: "urgent",
         title: `${thread.profile_name || thread.ig_username || "Instagram lead"} bought Balance Foundations`,
-        description: "Stripe confirmed the $89.99 Foundations purchase. A short welcome is queued.",
+        description: `Stripe confirmed the $${purchaseAmount} Foundations purchase. A short welcome is queued.`,
         suggested_message: META_PREVIEW_PURCHASE_MESSAGE,
         scheduled_reply_text: META_PREVIEW_PURCHASE_MESSAGE,
         status: "scheduled",

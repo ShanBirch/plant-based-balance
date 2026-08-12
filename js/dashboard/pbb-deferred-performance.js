@@ -117,7 +117,9 @@
         }
 
         // --- Sleep (from wearable data if available) ---
-        try {
+        // Paid Meta guests have no wearable account. Avoid three guaranteed
+        // failing network calls while keeping the member path unchanged.
+        if (window.metaAdTrialMode !== true) try {
             // Check each wearable source for sleep data
             let sleepFound = false;
 

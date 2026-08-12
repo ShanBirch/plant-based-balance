@@ -510,9 +510,9 @@
             var params = new URLSearchParams(window.location.search);
             var source = (params.get('utm_source') || '').trim().toLowerCase();
             var medium = (params.get('utm_medium') || '').trim().toLowerCase();
-            var paidFacebookSources = ['facebook', 'fb', 'meta'];
-            var paidFacebookMedia = ['paid_social', 'paid', 'cpc'];
-            if (paidFacebookSources.indexOf(source) === -1 || paidFacebookMedia.indexOf(medium) === -1) return;
+            var paidMetaSources = ['facebook', 'fb', 'instagram', 'ig', 'meta'];
+            var paidMetaMedia = ['paid_social', 'paid', 'cpc'];
+            if (paidMetaSources.indexOf(source) === -1 || paidMetaMedia.indexOf(medium) === -1) return;
 
             params.set('guest', 'true');
             params.set('meta_trial', 'facebook_5m_foundations_v3');
@@ -521,6 +521,8 @@
             var heroAction = document.getElementById('foundations-hero-action');
             var topAction = document.getElementById('foundations-top-action');
             var microcopy = document.getElementById('foundations-hero-microcopy');
+            var checkoutButton = document.querySelector('.checkout-btn[data-plan="founders-pass"]');
+            var checkoutTerms = document.getElementById('checkout-terms-container');
 
             document.body.classList.add('paid-meta-preview');
             document.body.dataset.landingVariant = 'facebook_5m_foundations_v3';
@@ -531,7 +533,31 @@
                 action.dataset.previewHandoff = 'true';
             });
             if (microcopy) {
-                microcopy.textContent = 'Open Balance, complete your setup, then take a five-minute look around. Your answers stay saved if you unlock.';
+                microcopy.textContent = 'Open Balance, complete your setup, then take a five-minute look around. Your answers stay saved if you unlock for AU$89 once.';
+            }
+            // The organic page remains AU$89.99. Only this verified paid-Meta
+            // runtime rewrites visible copy to the campaign's exact AU$89 offer.
+            var priceWalker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+            var priceNodes = [];
+            while (priceWalker.nextNode()) {
+                var priceNode = priceWalker.currentNode;
+                var priceParentTag = priceNode.parentElement && priceNode.parentElement.tagName;
+                if (!['SCRIPT', 'STYLE', 'NOSCRIPT'].includes(priceParentTag)
+                    && priceNode.nodeValue.indexOf('AU$89.99') !== -1) {
+                    priceNodes.push(priceNode);
+                }
+            }
+            priceNodes.forEach(function (priceNode) {
+                priceNode.nodeValue = priceNode.nodeValue.replace(/AU\$89\.99/g, 'AU$89');
+            });
+            if (checkoutTerms) checkoutTerms.style.display = 'none';
+            if (checkoutButton) {
+                checkoutButton.textContent = 'Look inside Balance';
+                checkoutButton.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    event.stopImmediatePropagation();
+                    window.location.href = appUrl;
+                }, true);
             }
         })();
 

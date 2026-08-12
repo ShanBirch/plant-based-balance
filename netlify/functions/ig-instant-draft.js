@@ -1077,7 +1077,7 @@ function buildContextualMetaAdOfferLinkReply({ checkoutUrl = '', flowVariant = '
     if (!isApprovedChallengeBioLinkText(url)) return null;
     if (isPaidMetaFoundersPassSelection(currentMessage)) {
         if (!hasDirectPaidMetaCheckoutIntent(currentMessage)) return null;
-        const joined = `Perfect — it's one $89.99 payment for the full six weeks. Here's the link: ${url}`;
+        const joined = `Perfect — it's one $89 payment for the full six weeks. Here's the link: ${url}`;
         return {
             chunks: [joined],
             joined,
@@ -1250,7 +1250,7 @@ function hasRecentPaidMetaSupportQuestion(history = []) {
         .some(item => {
             const text = String(item?.text || '');
             return /\b(?:would (?:having me|that kind of support)|would that help|accountability help|help you stay on track|make it easier|are you keen to (?:have|take) a look)\b/i.test(text)
-                || /\b(?:set yourself up in the app|check it out before any payment|once you(?:'ve| have) seen it, we can take payment)\b[\s\S]{0,220}\bhow does that sound\b/i.test(text);
+                || /\b(?:set yourself up in the app|set yourself up before you pay|check it out before any payment|once you(?:'ve| have) seen it, we can take payment)\b[\s\S]{0,260}\b(?:how does that sound|have a look first, then decide)\b/i.test(text);
         });
 }
 
@@ -1330,7 +1330,7 @@ function buildDeterministicPaidMetaConversationReply({
     if (resolveMetaAdFirstReplyIntent(message) === 'personalised_coaching') {
         const knownProblem = hasGoal && hasBlocker;
         const body = personalVoiceNoteMode && knownProblem
-            ? `Yeah, I do. Ummmm... Balance Foundations gives you a clear six-week curriculum inside the app, ya know.\n\nAnd you've got me there once a week to review and adjust your training and food around what's actually happening.\n\nIt's eighty-nine ninety-nine payment for the full six weeks.\n\nHonestly, what I can do is let you set yourself up in the app, so you can get a feel for it. Your program, your meal plan, and the community.\n\nThen once you've seen it, we can take payment.`
+            ? `Yeah, I do. Ummmm... honestly, Balance Foundations gives you a clear six-week starting plan inside the app.\n\nYou can set yourself up before you pay and see your weekly goals, starter workouts, meal plan, community, and my welcome note in your Inbox.\n\nYou've also got me there once a week to review how training and food are actually going.\n\nIt's eighty-nine dollars once for the full six weeks, and it doesn't renew.\n\nHave a look first, then decide.`
             : knownProblem
             ? `Yeah, I do. Balance Foundations gives you a six-week curriculum inside the app, plus one weekly check-in where I review and adjust your training and food around what's actually happening.`
             : `Yeah, I do. Balance Foundations gives you a six-week curriculum inside the app, plus one weekly check-in where I review and adjust your training and food.`;
@@ -1346,6 +1346,8 @@ function buildDeterministicPaidMetaConversationReply({
             maxChunks: 1,
             error: null,
             flowVariant,
+            voiceThoughtPausesMs: personalVoiceNoteMode && knownProblem ? [1700, 2300, 1500, 1100, 800] : [],
+            voiceRenderMode: personalVoiceNoteMode && knownProblem ? 'single_performance_aligned_pauses_v1' : '',
         };
     }
 
@@ -1393,7 +1395,7 @@ function buildDeterministicPaidMetaConversationReply({
         const nextAsk = selectedFixedStart
             ? 'Would you like me to send you the checkout link?'
             : 'Want me to show you how the first week would work around your goal?';
-        const joined = `${offerName} is one $89.99 payment for the full six weeks. You get the complete six-week curriculum, six weeks of ${communityCopy}, and one weekly check-in and plan review with me. It doesn't renew automatically.\n\n${nextAsk}`;
+        const joined = `${offerName} is one $89 payment for the full six weeks. You get the complete six-week curriculum, six weeks of ${communityCopy}, and one weekly check-in and plan review with me. It doesn't renew automatically.\n\n${nextAsk}`;
         return {
             chunks: [joined],
             joined,
@@ -1406,7 +1408,7 @@ function buildDeterministicPaidMetaConversationReply({
     }
 
     if (isPaidMetaFoundersPassSelection(message) && !hasDirectPaidMetaCheckoutIntent(message)) {
-        const joined = `Yeah, Balance Foundations sounds like the right fit. It's one $89.99 payment for the full six weeks, and it doesn't renew automatically.\n\nWould you like me to send you the checkout link?`;
+        const joined = `Yeah, Balance Foundations sounds like the right fit. It's one $89 payment for the full six weeks, and it doesn't renew automatically.\n\nWould you like me to send you the checkout link?`;
         return {
             chunks: [joined],
             joined,
@@ -1435,7 +1437,7 @@ function buildDeterministicPaidMetaConversationReply({
     if (PAID_META_NEXT_STEP_RE.test(message) && hasGoal && hasBlocker) {
         const offerName = broadFlow ? 'the six-week Balance kickstart' : 'Balance Foundations';
         if (!broadFlow) {
-            const joined = `${offerName} is one $89.99 payment for the complete six-week curriculum, with one weekly check-in and plan review from me.\n\nIf you're keen, I can give you access to the app so you can check it out before any payment. Are you keen to have a look?`;
+            const joined = `${offerName} is one $89 payment for the complete six-week curriculum, with one weekly check-in and plan review from me.\n\nIf you're keen, I can give you access to the app so you can check it out before any payment. Are you keen to have a look?`;
             return {
                 chunks: [joined],
                 joined,
@@ -1523,27 +1525,25 @@ function buildDeterministicPaidMetaConversationReply({
         }
         const joined = personalVoiceNoteMode
             ? [
-                `Yeah, so that makes total sense. ${reflection}`,
-                `Ummmm... so, that's honestly what Balance is designed for. It's, it's about giving you a clear plan for the week, ya know.`,
-                `And having me there to check in, keep you accountable, and move things around when life gets crazy.`,
-                `So if you fall off, ya know, you've got something simple to come back to. And we can keep you moving toward ${voiceGoalPhrase}, without every week needing to be perfect.`,
-                `It's one eighty-nine ninety-nine payment for the full six weeks.`,
-                `What I can do is let you set yourself up in the app, so you can get a feel for it.`,
-                `Ummmm... you'll be able to see your workout program, your meal plan, your weekly goals, and the community.`,
-                `Then once you've seen it, we can take payment. How does that sound?`,
+                `Yeah, that makes total sense. ${reflection}`,
+                `Ummmm... honestly, Balance is built for weeks like that. It gives you a simple starter plan around ${voiceGoalPhrase}, and we can adjust it when life changes.`,
+                `You can set yourself up before you pay. You'll see your weekly goals, starter workouts, meal plan, community, and my welcome note in your Inbox.`,
+                `It's eighty-nine dollars once for the full six weeks, and it doesn't renew.`,
+                `Have a look first, then decide. How does that sound?`,
             ].join('\n\n')
-            : `Yeah, that makes sense. ${reflection} Balance gives you a clear plan and support around ${voiceGoalPhrase}. It's one $89.99 payment for the full six weeks.\n\nIf you're keen, I can give you access to the app so you can check it out before any payment. Are you keen to have a look?`;
+            : `Yeah, that makes sense. ${reflection} Balance gives you a clear plan and support around ${voiceGoalPhrase}. It's one $89 payment for the full six weeks.\n\nIf you're keen, I can give you access to the app so you can check it out before any payment. Are you keen to have a look?`;
         return {
             chunks: [joined],
             joined,
             appPreviewHandoff: false,
             appPreviewUrl: null,
             voiceCompanionText: '',
-            // Measured from Shannon's clean Instagram notes: shorter connective
-            // pauses, with longer thinking/topic-transition breaks.
+            // The paid Meta voice skill keeps one continuous performance, then
+            // inserts real silence at aligned thought boundaries.
             voiceThoughtPausesMs: personalVoiceNoteMode
-                ? [1800, 1500, 1450, 1550, 1600, 1500, 1500]
+                ? [1700, 2400, 1500, 1000]
                 : [],
+            voiceRenderMode: personalVoiceNoteMode ? 'single_performance_aligned_pauses_v1' : '',
             model: 'deterministic_paid_meta_conversation_v2',
             replyMode: 'campaign_sales_progression',
             maxChunks: 1,
@@ -1564,7 +1564,7 @@ function buildDeterministicPaidMetaConversationReply({
     if (['problem_qualified', 'offer_ready'].includes(commercialStage) && PAID_META_NEXT_STEP_RE.test(message)) {
         const joined = broadFlow
             ? `The next step is getting the right level of support around the problem you've just described.\n\nWould you prefer a guided six-week kickstart, or hands-on plan changes every week?`
-            : `Balance Foundations is the best starting point here. It's one $89.99 payment for the complete six-week curriculum, with one weekly check-in and plan review from me.\n\nAre you keen to have a quick look inside the app?`;
+            : `Balance Foundations is the best starting point here. It's one $89 payment for the complete six-week curriculum, with one weekly check-in and plan review from me.\n\nAre you keen to have a quick look inside the app?`;
         return {
             chunks: [joined],
             joined,
@@ -1959,7 +1959,7 @@ function buildMetaAdFoundersPassFirstReply(currentMessage = '', { customData = {
     const accessLine = broadFlow
         ? 'six weeks of the Balance app and community.'
         : 'six weeks of the Balance app and plant-based community.';
-    const supportScope = `It's one AU$89.99 payment for the full six weeks. You get the six-week Foundations course, ${accessLine} It includes one weekly check-in plus workout and food review and adjustments with me, and it doesn't renew automatically.`;
+    const supportScope = `It's one AU$89 payment for the full six weeks. You get the six-week Foundations course, ${accessLine} It includes one weekly check-in plus workout and food review and adjustments with me, and it doesn't renew automatically.`;
     let answer;
     if (intent === 'fit' || intent === 'overview') {
         answer = `Hey, yeah of course. Before I send you a heap of generic info, what's the main thing you're trying to change with your fitness right now?`;
@@ -2321,7 +2321,7 @@ function buildApprovedDeterministicMetaAdFirstReplyReview({
 
 const META_AD_FUNNEL_CONTEXT = `
 LEAD ACQUISITION CONTEXT:
-The current paid Meta campaign promotes one public offer: Balance Foundations. It is AUD $89.99 as one payment for the full six weeks and does not auto-renew. It includes a clear six-week curriculum inside Balance, six weeks of app/community access, and one weekly check-in plus workout/food review and adjustments from Shannon. Do not rename this paid-ad offer Starter Coaching or switch a paid-ad lead to a weekly package merely because Meta's old prompt says "personalized coaching plans". The default close happens inside DMs. A short call is an escalation only when the lead explicitly wants to talk, remains genuinely uncertain after a clear DM explanation, or the situation needs Shannon's judgement. Balance no longer uses a free challenge as its acquisition or conversion path. The acquisition-mode block above is authoritative about whether Shannon initiated the relationship or the lead knowingly entered from a Meta ad. Meta may supply one of the example phrases below as the lead's prefilled opening. Treat it as their ordinary first sentence, not as a questionnaire step. Never restate a menu of options or ask them to choose from buttons. The preferred current campaign prompts are:
+The current paid Meta campaign promotes one public offer: Balance Foundations. It is AUD $89 as one payment for the full six weeks and does not auto-renew. It includes a clear six-week curriculum inside Balance, six weeks of app/community access, and one weekly check-in plus workout/food review and adjustments from Shannon. Do not rename this paid-ad offer Starter Coaching or switch a paid-ad lead to a weekly package merely because Meta's old prompt says "personalized coaching plans". The default close happens inside DMs. A short call is an escalation only when the lead explicitly wants to talk, remains genuinely uncertain after a clear DM explanation, or the situation needs Shannon's judgement. Balance no longer uses a free challenge as its acquisition or conversion path. The acquisition-mode block above is authoritative about whether Shannon initiated the relationship or the lead knowingly entered from a Meta ad. Meta may supply one of the example phrases below as the lead's prefilled opening. Treat it as their ordinary first sentence, not as a questionnaire step. Never restate a menu of options or ask them to choose from buttons. The preferred current campaign prompts are:
   1. "What's included in the six-week Balance Foundations program?"
   2. "How does the weekly check-in work?"
   3. "Do I need to already be plant-based?"
@@ -2349,7 +2349,7 @@ THE OFFERING (for context — never list as a brochure; speak like a friend):
 - For a general ad-attributed "what is it?" or Balance Foundations opener, do not dump the offer or send a raw media URL. Ask one plain question about the main thing they are trying to change. After they answer, reflect that exact goal in one short sentence, announce the proof naturally and send the native Balance proof media. Treat the three ad FAQ prompts as informational, not transactional: answer the selected question in one concise beat, ask one useful context question, and do not send a signup link. Only send the Balance Foundations link after an explicit transactional message such as "send me the link", "I'm ready", "how do I join?", or clear acceptance after the offer. Only offer a quick call if they say they want to talk it through or remain genuinely uncertain after the clear explanation.
 - If they only ask "what's Balance?" or "what's your app?" while also saying they are already training hard or feeling good, answer in one plain beat and make any coaching mention casual. No feature list or link unless they ask for details.
 - Once they start, the Balance app gives them the guided kickstart, training and food structure, progress tools and community.
-- Outside this paid Meta campaign, the wider package ladder still exists and must not be changed. Inside this paid Meta campaign, keep the conversation focused on Balance Foundations at one $89.99 payment for the full six weeks. Only discuss another package if the lead explicitly rejects the six-week format and asks for a different ongoing or live-call service.
+- Outside this paid Meta campaign, the wider package ladder still exists and must not be changed. Inside this paid Meta campaign, keep the conversation focused on Balance Foundations at one $89 payment for the full six weeks. Only discuss another package if the lead explicitly rejects the six-week format and asks for a different ongoing or live-call service.
 - Keep it low-pressure. If they are not ready, leave a clean re-entry handle or use App + Community when it genuinely fits. Do not revive a free-challenge funnel.
 - Voice notes: when the system supplies a decoded voice-note transcript or media summary, treat it as heard. Reply to the content. Never ask them to resend, repeat, or type the gist of a voice note. If audio is genuinely inaccessible or unintelligible after retries, leave no public voice-note fallback and let the media-review hold/retry path handle it.
 
@@ -6607,6 +6607,7 @@ exports.handler = async (event) => {
             voice_companion_text: outboundVoiceMessage ? (draft.voiceCompanionText || undefined) : undefined,
             outbound_voice_thought_pause_ms: outboundVoiceMessage ? (draft.voiceThoughtPauseMs || undefined) : undefined,
             outbound_voice_thought_pauses_ms: outboundVoiceMessage ? (draft.voiceThoughtPausesMs || undefined) : undefined,
+            outbound_voice_render_mode: outboundVoiceMessage ? (draft.voiceRenderMode || undefined) : undefined,
             outbound_voice_source_text: outboundVoiceMessage ? (draft.joined || undefined) : undefined,
             paid_meta_app_preview_handoff: draft.appPreviewHandoff || undefined,
             paid_meta_app_preview_url: draft.appPreviewHandoff ? draft.appPreviewUrl : undefined,
@@ -6889,6 +6890,9 @@ exports.handler = async (event) => {
                 : undefined,
             outbound_voice_thought_pauses_ms: coalescedOutboundVoiceMessage
                 ? (draft.voiceThoughtPausesMs || existingPending.data?.outbound_voice_thought_pauses_ms || undefined)
+                : undefined,
+            outbound_voice_render_mode: coalescedOutboundVoiceMessage
+                ? (draft.voiceRenderMode || existingPending.data?.outbound_voice_render_mode || undefined)
                 : undefined,
             outbound_voice_source_text: coalescedOutboundVoiceMessage
                 ? (draft.joined || existingPending.data?.outbound_voice_source_text || undefined)

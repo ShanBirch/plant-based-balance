@@ -1,3 +1,5 @@
+window._pbbScript5Started = true;
+
 // Fallback for getLocalDateString (defined in script-11, which may load after script-5 on iOS)
 if (typeof getLocalDateString !== 'function') {
     window.getLocalDateString = function(date) {
@@ -13707,6 +13709,9 @@ async function finishOnboarding() {
 }
 
 async function closeWizardManually() {
+     const closingMetaAdTrial = window.metaAdTrialMode === true
+         && window.BalanceMetaAdTrial
+         && typeof window.BalanceMetaAdTrial.showExitChoice === 'function';
      window._onboardingWizardPending = false;
      const wizardEl = document.getElementById('onboarding-wizard');
      if (wizardEl) {
@@ -13729,6 +13734,14 @@ async function closeWizardManually() {
          window._pausedTamagotchiSrc = null;
      }
      window._pausedMascotSrc = null;
+
+     // Paid Facebook/Instagram previews never fall through into an ungated app.
+     // Their close action becomes an explicit continue-or-pay decision. Normal
+     // members and organic guests keep the existing onboarding close behaviour.
+     if (closingMetaAdTrial) {
+         window.BalanceMetaAdTrial.showExitChoice('onboarding');
+         return;
+     }
 
      // Do NOT mark onboarding complete here — the user dismissed without finishing.
      // The wizard will re-show on next login until they actually complete setup.
@@ -13759,6 +13772,20 @@ async function closeWizardManually() {
          }, 4500);
      }
 }
+
+window.resumeMetaAdTrialOnboarding = function() {
+    if (window.metaAdTrialMode !== true) return false;
+    const wizardEl = document.getElementById('onboarding-wizard');
+    if (!wizardEl) return false;
+    window._onboardingWizardPending = true;
+    closeOnboardingBlockingSurfaces();
+    wizardEl.style.display = 'flex';
+    wizardEl.style.opacity = '1';
+    wizardEl.classList.add('active');
+    setOnboardingScrollLock(true);
+    updateWizardUI();
+    return true;
+};
 
 function toggleWizardPeriodInput() {
     const toggle = document.getElementById('wizard-wellness-toggle');
@@ -24747,3 +24774,5 @@ if (typeof enableSwipeBackNavigation === 'function') {
         enableSwipeBackNavigation('view-week-session', () => openWeekWorkoutsView());
     } catch(e) { /* swipe registration optional */ }
 }
+
+window._pbbScript5Complete = true;

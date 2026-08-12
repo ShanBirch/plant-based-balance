@@ -10,7 +10,9 @@ const DEFAULT_STYLE = 0;
 const MAX_TTS_CHARS = 3500;
 const MIN_VOICE_NOTE_WORDS = 34;
 const MAX_VOICE_THOUGHT_PAUSE_MS = 2000;
+const MAX_ALIGNED_VOICE_THOUGHT_PAUSE_MS = 3000;
 const DEFAULT_PCM_TRAILING_SILENCE_MS = 900;
+const ALIGNED_VOICE_RENDER_MODE = 'single_performance_aligned_pauses_v1';
 const SHAN_N_SUNNY_GRAPH_ACCOUNT_IDS = new Set(['17841415641641750']);
 const COCOS_GRAPH_ACCOUNT_IDS = new Set(['17841435394720504', '26328183736859579']);
 const MANUAL_AI_AUTHENTICITY_VOICE_SCRIPT = "hey, yep it's Shannon. I do use a bit of help organising my inbox because it gets busy, but the coaching and support inside Balance is me.";
@@ -402,6 +404,10 @@ function splitVoiceThoughtGroups(text = '') {
         .filter(Boolean);
 }
 
+function resolveVoiceRenderMode(alertData = {}) {
+    return cleanString(alertData.outbound_voice_render_mode || alertData.voice_render_mode || '', 120);
+}
+
 function resolveVoiceThoughtPauseMs(alertData = {}) {
     const requested = Number(
         alertData.outbound_voice_thought_pause_ms
@@ -409,17 +415,23 @@ function resolveVoiceThoughtPauseMs(alertData = {}) {
         ?? 0
     );
     if (!Number.isFinite(requested) || requested <= 0) return 0;
-    return Math.min(MAX_VOICE_THOUGHT_PAUSE_MS, Math.round(requested));
+    const maximum = resolveVoiceRenderMode(alertData) === ALIGNED_VOICE_RENDER_MODE
+        ? MAX_ALIGNED_VOICE_THOUGHT_PAUSE_MS
+        : MAX_VOICE_THOUGHT_PAUSE_MS;
+    return Math.min(maximum, Math.round(requested));
 }
 
 function resolveVoiceThoughtPausesMs(alertData = {}) {
     const requested = alertData.outbound_voice_thought_pauses_ms
         ?? alertData.voice_thought_pauses_ms;
     if (Array.isArray(requested)) {
+        const maximum = resolveVoiceRenderMode(alertData) === ALIGNED_VOICE_RENDER_MODE
+            ? MAX_ALIGNED_VOICE_THOUGHT_PAUSE_MS
+            : MAX_VOICE_THOUGHT_PAUSE_MS;
         return requested
             .map(value => Number(value))
             .filter(value => Number.isFinite(value) && value > 0)
-            .map(value => Math.min(MAX_VOICE_THOUGHT_PAUSE_MS, Math.round(value)));
+            .map(value => Math.min(maximum, Math.round(value)));
     }
     const fallback = resolveVoiceThoughtPauseMs(alertData);
     return fallback > 0 ? [fallback] : [];
@@ -463,6 +475,58 @@ function assemblePcmThoughtGroups(groupWavs = [], sampleRate = 16000, pauseMs = 
         pcmParts.push(group);
     });
     return wrapPcm16LeAsWav(Buffer.concat(pcmParts), sampleRate, 1);
+}
+
+function buildAlignedThoughtPerformance(thoughtGroups = [], pauseSchedule = []) {
+    const groups = (Array.isArray(thoughtGroups) ? thoughtGroups : [])
+        .map(value => String(value || '').trim())
+        .filter(Boolean);
+    let cursor = 0;
+    const ranges = groups.map((text, index) => {
+        const startCharacter = cursor;
+        const endCharacter = startCharacter + text.length;
+        cursor = endCharacter + (index < groups.length - 1 ? 1 : 0);
+        return {
+            text,
+            startCharacter,
+            endCharacter,
+            pauseAfterMs: Number(pauseSchedule[Math.min(index, pauseSchedule.length - 1)]) || 0,
+        };
+    });
+    return { text: groups.join(' '), ranges };
+}
+
+function insertAlignedPcmPauses(wavBuffer, alignment = {}, ranges = [], pauseSchedule = [], sampleRate = 16000) {
+    const characters = Array.isArray(alignment.characters) ? alignment.characters : [];
+    const starts = Array.isArray(alignment.character_start_times_seconds) ? alignment.character_start_times_seconds : [];
+    const ends = Array.isArray(alignment.character_end_times_seconds) ? alignment.character_end_times_seconds : [];
+    if (!characters.length || characters.length !== starts.length || characters.length !== ends.length) {
+        throw new Error('ElevenLabs alignment data is incomplete');
+    }
+    const pcm = unwrapPcmWav(wavBuffer);
+    const bytesPerSecond = sampleRate * 2;
+    const parts = [];
+    let previousByte = 0;
+    for (let index = 0; index < ranges.length - 1; index += 1) {
+        const current = ranges[index];
+        const next = ranges[index + 1];
+        const lastEnd = Number(ends[current.endCharacter - 1]);
+        const nextStart = Number(starts[next.startCharacter]);
+        if (!Number.isFinite(lastEnd) || !Number.isFinite(nextStart)) {
+            throw new Error('ElevenLabs alignment boundary is missing');
+        }
+        const boundarySeconds = Math.max(0, (lastEnd + nextStart) / 2);
+        let boundaryByte = Math.round(boundarySeconds * bytesPerSecond);
+        boundaryByte -= boundaryByte % 2;
+        boundaryByte = Math.max(previousByte, Math.min(pcm.length, boundaryByte));
+        parts.push(pcm.subarray(previousByte, boundaryByte));
+        const pauseMs = Number(pauseSchedule[Math.min(index, pauseSchedule.length - 1)]) || 0;
+        const silenceBytes = Math.max(0, Math.round(bytesPerSecond * (pauseMs / 1000)));
+        if (silenceBytes) parts.push(Buffer.alloc(silenceBytes));
+        previousByte = boundaryByte;
+    }
+    parts.push(pcm.subarray(previousByte));
+    return wrapPcm16LeAsWav(Buffer.concat(parts), sampleRate, 1);
 }
 
 function appendPcmTrailingSilence(wavBuffer, sampleRate = 16000, trailingMs = DEFAULT_PCM_TRAILING_SILENCE_MS) {
@@ -594,6 +658,17 @@ async function resolveElevenLabsApiKey(supabaseQuery) {
         || await secretValueForKey('ELEVENLABS_API_KEY', supabaseQuery);
 }
 
+function resolveElevenLabsVoiceSettings(alertData = {}) {
+    return {
+        stability: Number.isFinite(Number(alertData.elevenlabs_stability)) ? Number(alertData.elevenlabs_stability) : DEFAULT_STABILITY,
+        similarity_boost: Number.isFinite(Number(alertData.elevenlabs_similarity_boost)) ? Number(alertData.elevenlabs_similarity_boost) : DEFAULT_SIMILARITY_BOOST,
+        style: Number.isFinite(Number(alertData.elevenlabs_style)) ? Number(alertData.elevenlabs_style) : DEFAULT_STYLE,
+        use_speaker_boost: alertData.elevenlabs_speaker_boost == null
+            ? true
+            : parseBoolean(alertData.elevenlabs_speaker_boost, true),
+    };
+}
+
 async function generateElevenLabsSpeech({ text, voiceId, modelId, outputFormat, supabaseQuery, alertData = {} }) {
     const apiKey = await resolveElevenLabsApiKey(supabaseQuery);
     if (!apiKey) throw new Error('ELEVENLABS_API_KEY not configured');
@@ -611,14 +686,7 @@ async function generateElevenLabsSpeech({ text, voiceId, modelId, outputFormat, 
             body: JSON.stringify({
                 text,
                 model_id: modelId || DEFAULT_MODEL_ID,
-                voice_settings: {
-                    stability: Number.isFinite(Number(alertData.elevenlabs_stability)) ? Number(alertData.elevenlabs_stability) : DEFAULT_STABILITY,
-                    similarity_boost: Number.isFinite(Number(alertData.elevenlabs_similarity_boost)) ? Number(alertData.elevenlabs_similarity_boost) : DEFAULT_SIMILARITY_BOOST,
-                    style: Number.isFinite(Number(alertData.elevenlabs_style)) ? Number(alertData.elevenlabs_style) : DEFAULT_STYLE,
-                    use_speaker_boost: alertData.elevenlabs_speaker_boost == null
-                        ? true
-                        : parseBoolean(alertData.elevenlabs_speaker_boost, true),
-                },
+                voice_settings: resolveElevenLabsVoiceSettings(alertData),
             }),
         }
     );
@@ -646,6 +714,51 @@ async function generateElevenLabsSpeech({ text, voiceId, modelId, outputFormat, 
         extension: uploadFormat.extension,
         sourceEncoding: uploadFormat.sourceEncoding,
         sampleRate: uploadFormat.sampleRate,
+    };
+}
+
+async function generateElevenLabsSpeechWithTimestamps({ text, voiceId, modelId, outputFormat, supabaseQuery, alertData = {} }) {
+    const apiKey = await resolveElevenLabsApiKey(supabaseQuery);
+    if (!apiKey) throw new Error('ELEVENLABS_API_KEY not configured');
+    if (!voiceId) throw new Error('ElevenLabs voice id missing');
+    if (!text) throw new Error('Voice message text is empty');
+
+    const format = outputFormat || DEFAULT_OUTPUT_FORMAT;
+    const res = await fetch(
+        `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}/with-timestamps?output_format=${encodeURIComponent(format)}`,
+        {
+            method: 'POST',
+            headers: {
+                'xi-api-key': apiKey,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                text,
+                model_id: modelId || DEFAULT_MODEL_ID,
+                voice_settings: resolveElevenLabsVoiceSettings(alertData),
+            }),
+        }
+    );
+    const payload = await res.json().catch(() => null);
+    if (!res.ok) {
+        throw new Error(`ElevenLabs ${res.status}: ${JSON.stringify(payload || {}).slice(0, 400)}`);
+    }
+    const buffer = Buffer.from(String(payload?.audio_base64 || ''), 'base64');
+    if (!buffer.length) throw new Error('ElevenLabs returned empty timestamped audio');
+    const alignment = payload?.alignment || payload?.normalized_alignment;
+    if (!alignment?.characters || alignment.characters.join('') !== text) {
+        throw new Error('ElevenLabs alignment did not match the requested script');
+    }
+    const uploadFormat = resolveAudioUploadFormat(format, 'application/octet-stream');
+    return {
+        buffer: uploadFormat.sourceEncoding === 'pcm_s16le'
+            ? wrapPcm16LeAsWav(buffer, uploadFormat.sampleRate || 16000, 1)
+            : buffer,
+        contentType: uploadFormat.contentType,
+        extension: uploadFormat.extension,
+        sourceEncoding: uploadFormat.sourceEncoding,
+        sampleRate: uploadFormat.sampleRate,
+        alignment,
     };
 }
 
@@ -727,8 +840,34 @@ async function createVoiceMessageAudio({ messages, alertId, alertData = {}, supa
     };
     const thoughtPausesMs = resolveVoiceThoughtPausesMs(alertData);
     const thoughtGroups = splitVoiceThoughtGroups(text);
+    const requestedRenderMode = resolveVoiceRenderMode(alertData);
+    let renderMode = 'single_performance';
     let speech;
-    if (thoughtPausesMs.length > 0
+    if (requestedRenderMode === ALIGNED_VOICE_RENDER_MODE
+        && thoughtPausesMs.length > 0
+        && thoughtGroups.length > 1
+        && /^pcm_\d+$/i.test(config.outputFormat)) {
+        const performance = buildAlignedThoughtPerformance(thoughtGroups, thoughtPausesMs);
+        try {
+            speech = await generateElevenLabsSpeechWithTimestamps({
+                text: performance.text,
+                ...config,
+                supabaseQuery,
+                alertData,
+            });
+            speech.buffer = insertAlignedPcmPauses(
+                speech.buffer,
+                speech.alignment,
+                performance.ranges,
+                thoughtPausesMs,
+                speech.sampleRate || 16000
+            );
+            renderMode = ALIGNED_VOICE_RENDER_MODE;
+        } catch (error) {
+            console.warn('[voice-message] aligned render failed, using continuous SSML fallback:', error.message);
+        }
+    }
+    if (!speech && thoughtPausesMs.length > 0
         && thoughtGroups.length > 1
         && !/^eleven_v3$/i.test(config.modelId)) {
         // Keep the cloned voice in one continuous generation. Separate TTS
@@ -739,7 +878,8 @@ async function createVoiceMessageAudio({ messages, alertId, alertData = {}, supa
             supabaseQuery,
             alertData,
         });
-    } else {
+        renderMode = 'single_performance_ssml_pauses';
+    } else if (!speech) {
         speech = await generateElevenLabsSpeech({
             text,
             ...config,
@@ -771,6 +911,7 @@ async function createVoiceMessageAudio({ messages, alertId, alertData = {}, supa
         thoughtPauseMs: thoughtPausesMs[0] || 0,
         thoughtPausesMs,
         trailingSilenceMs,
+        renderMode,
     };
 }
 
@@ -806,6 +947,7 @@ module.exports = {
     DEFAULT_SIMILARITY_BOOST,
     DEFAULT_STYLE,
     DEFAULT_PCM_TRAILING_SILENCE_MS,
+    ALIGNED_VOICE_RENDER_MODE,
     MIN_VOICE_NOTE_WORDS,
     buildTtsText,
     normalizeTtsPronunciation,
@@ -844,9 +986,12 @@ module.exports = {
         splitVoiceThoughtGroups,
         resolveVoiceThoughtPauseMs,
         resolveVoiceThoughtPausesMs,
+        resolveVoiceRenderMode,
         buildSsmlPausedVoiceText,
         unwrapPcmWav,
         assemblePcmThoughtGroups,
+        buildAlignedThoughtPerformance,
+        insertAlignedPcmPauses,
         appendPcmTrailingSilence,
         synthesizeThoughtGroups,
     },

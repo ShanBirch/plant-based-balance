@@ -119,6 +119,20 @@ const BALANCE_CHECKOUT_PLANS = Object.freeze({
         allowBump: false,
         mode: "payment",
     }),
+    balance_meta_foundations_pass: Object.freeze({
+        token: "balance_meta_foundations_pass",
+        productName: "Balance Foundations Meta Ad Pass",
+        productDescription: "Six-week Balance Foundations course with one weekly check-in, plan review, app access, and support from Shannon",
+        unitAmount: 8900,
+        interval: null,
+        balanceProduct: "balance_vegan_founders_pass",
+        balancePlan: "balance_foundations_six_week",
+        accessDays: 42,
+        checkinsPerWeek: "1",
+        callsPerWeek: "0",
+        allowBump: false,
+        mode: "payment",
+    }),
 });
 
 export function getBalanceCheckoutPlan(priceId) {

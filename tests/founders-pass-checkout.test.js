@@ -23,6 +23,7 @@ test('one-time Founders Pass has a complete purchase and activation path', () =>
     assert.match(page, /one weekly check-in/i);
     assert.match(page, /does not renew automatically/i);
     assert.match(guard, /balance_vegan_founders_pass[\s\S]*?unitAmount: 8999[\s\S]*?mode: "payment"/);
+    assert.match(guard, /balance_meta_foundations_pass[\s\S]*?unitAmount: 8900[\s\S]*?balanceProduct: "balance_vegan_founders_pass"[\s\S]*?mode: "payment"/);
     assert.match(checkout, /checkout\.plan\.mode === "subscription"/);
     assert.match(checkout, /payment_intent_data\[metadata\]/);
     assert.match(checkout, /balance_foundations_six_week/);
@@ -119,15 +120,15 @@ test('Founders Pass onboarding captures the real-world blocker behind consistenc
     assert.match(onboarding, /key: 'main_blocker'[\s\S]*?What usually knocks you off track when life gets messy/);
     assert.match(onboarding, /setWizardFieldValue\('wizard-main-blocker', answers\.main_blocker\)/);
     assert.doesNotMatch(stepsBlock, /key: 'competing_priorities'/);
-    assert.match(stepsBlock, /key: 'weekly_capacity'[\s\S]*?how many training windows could you genuinely protect/);
-    assert.match(stepsBlock, /key: 'routine_window'[\s\S]*?least likely to get stolen/);
+    assert.match(stepsBlock, /key: 'weekly_capacity'[\s\S]*?how many strength days do you actually want in your plan/);
+    assert.match(stepsBlock, /key: 'routine_window'[\s\S]*?When are you most likely to do your workouts/);
     assert.doesNotMatch(stepsBlock, /key: 'starter_session_minutes'/);
     assert.match(onboarding, /function inferWizardStarterPlan\(answers = \{\}\)/);
     assert.match(onboarding, /setWizardFieldValue\('wizard-starter-session-minutes', inferredPlan\.starterSessionMinutes\)/);
     assert.match(onboarding, /function getWizardRecommendedStarterFrequency/);
     assert.match(onboarding, /function selectWizardRoutineWindow/);
     assert.match(onboarding, /function selectWizardStarterMinutes/);
-    assert.match(onboarding, /Balance suggests starting here/);
+    assert.match(onboarding, /Your week, based on your answers/);
     assert.match(onboarding, /you said \$\{routine\.capacityLabel/);
     assert.match(onboarding, /Change anything below if another choice suits you better/);
     assert.match(onboarding, /function getWizardUnavailableTrainingDays/);

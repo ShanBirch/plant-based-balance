@@ -12,14 +12,15 @@ const voiceSource = fs.readFileSync(
 );
 assert.match(
     voiceSource,
-    /text: buildSsmlPausedVoiceText\(thoughtGroups, thoughtPausesMs\)/,
-    'paced thought groups must remain one continuous ElevenLabs generation'
+    /\/with-timestamps\?output_format=/,
+    'paid Meta voice notes must request one timestamped continuous performance'
 );
-assert.doesNotMatch(
+assert.match(
     voiceSource,
-    /synthesizeThoughtGroups\(thoughtGroups,[\s\S]{0,300}, 2\)/,
-    'paced voice notes must not re-seed the cloned voice at each pause'
+    /insertAlignedPcmPauses\(/,
+    'paid Meta voice notes must insert real silence at aligned boundaries'
 );
+assert.match(voiceSource, /single_performance_ssml_pauses/, 'the existing voice path keeps its safe fallback');
 assert.match(
     voiceSource,
     /thoughtGroupCount:\s*thoughtPausesMs\.length > 0 \? thoughtGroups\.length : 1/,
@@ -242,6 +243,13 @@ assert.deepStrictEqual(
     [740, 1400, 2000]
 );
 assert.deepStrictEqual(
+    voice._test.resolveVoiceThoughtPausesMs({
+        outbound_voice_render_mode: voice.ALIGNED_VOICE_RENDER_MODE,
+        outbound_voice_thought_pauses_ms: [1700, 2400, 5000],
+    }),
+    [1700, 2400, 3000]
+);
+assert.deepStrictEqual(
     voice._test.resolveVoiceThoughtPausesMs({ outbound_voice_thought_pause_ms: 700 }),
     [700]
 );
@@ -263,6 +271,18 @@ const variableThoughtWav = voice._test.assemblePcmThoughtGroups([
     voice._test.wrapPcm16LeAsWav(Buffer.alloc(3200), 16000, 1),
 ], 16000, [740, 1400]);
 assert.strictEqual(variableThoughtWav.readUInt32LE(40), 3200 + 23680 + 3200 + 44800 + 3200);
+const alignedPerformance = voice._test.buildAlignedThoughtPerformance(['First thought.', 'Second thought.'], [700]);
+assert.strictEqual(alignedPerformance.text, 'First thought. Second thought.');
+const alignedCharacters = [...alignedPerformance.text];
+const alignedStarts = alignedCharacters.map((_, index) => index * 0.02);
+const alignedEnds = alignedCharacters.map((_, index) => (index + 1) * 0.02);
+const alignedSource = voice._test.wrapPcm16LeAsWav(Buffer.alloc(64000), 16000, 1);
+const alignedWav = voice._test.insertAlignedPcmPauses(alignedSource, {
+    characters: alignedCharacters,
+    character_start_times_seconds: alignedStarts,
+    character_end_times_seconds: alignedEnds,
+}, alignedPerformance.ranges, [700], 16000);
+assert.strictEqual(alignedWav.readUInt32LE(40), 64000 + 22400);
 const tailedWav = voice._test.appendPcmTrailingSilence(wav, 16000, 900);
 assert.strictEqual(tailedWav.readUInt32LE(40), 4 + 28800);
 assert.strictEqual(tailedWav.subarray(tailedWav.length - 28800).every(byte => byte === 0), true);

@@ -23,7 +23,8 @@ const ALLOWED_EVENT_TYPES = new Set([
     'onboarding_completed', 'weekly_goals_set', 'meal_plan_created',
     'first_workout_planned', 'first_workout_completed', 'trial_started',
     'trial_walkthrough_completed', 'trial_preview_started', 'trial_gate_shown', 'trial_signup_click',
-    'trial_signup_view', 'trial_subscription_claimed', 'trial_purchase_claimed'
+    'trial_signup_view', 'trial_subscription_claimed', 'trial_purchase_claimed',
+    'trial_flow_interrupted', 'trial_flow_resumed', 'trial_inbox_preview_viewed'
 ]);
 const MAX_STR = 500;
 const PREVIEW_FOLLOWUP_DELAY_MS = 10 * 60 * 1000;
@@ -36,6 +37,7 @@ const META_PREVIEW_PROGRESS_EVENTS = new Set([
     'first_workout_completed', 'trial_walkthrough_completed',
     'trial_preview_started', 'trial_gate_shown', 'checkout_started',
     'trial_signup_view', 'trial_purchase_claimed', 'trial_subscription_claimed',
+    'trial_flow_interrupted', 'trial_flow_resumed', 'trial_inbox_preview_viewed',
 ]);
 
 function corsHeaders() {
@@ -91,6 +93,9 @@ function metaPreviewStage(eventType = '') {
         trial_walkthrough_completed: 'walkthrough_completed',
         trial_preview_started: 'app_preview_started',
         trial_gate_shown: 'payment_gate_reached',
+        trial_flow_interrupted: 'preview_interrupted',
+        trial_flow_resumed: 'preview_resumed',
+        trial_inbox_preview_viewed: 'inbox_preview_viewed',
         checkout_started: 'stripe_opened',
         trial_signup_view: 'account_signup_opened',
         trial_purchase_claimed: 'purchase_claimed',
