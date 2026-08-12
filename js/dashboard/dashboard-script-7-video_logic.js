@@ -125,21 +125,22 @@ function startInlineVideoPlayback(container, video, videoUrl, playOverlay) {
         currentInlineVideo = null;
     };
 
+    // "waiting" is normal while a remote MP4 buffers, especially in Android
+    // WebView. Keep playback alive so it can recover instead of pausing it.
     video.onwaiting = function() {
         clearInlineVideoLoadTimer(video);
         video._pbbInlineLoadTimer = setTimeout(function() {
             if (!video || video.readyState >= 2 || video.paused) return;
-            video.pause();
-            video.controls = false;
             showInlineVideoStatus(container, videoUrl);
-            currentInlineVideo = null;
-        }, 8000);
+        }, 45000);
     };
 
-    video.oncanplay = function() {
+    const handleInlineVideoReady = function() {
         clearInlineVideoLoadTimer(video);
         hideInlineVideoStatus(container);
     };
+    video.oncanplay = handleInlineVideoReady;
+    video.onplaying = handleInlineVideoReady;
 
     if (video.src !== videoUrl) {
         video.src = videoUrl;
@@ -156,11 +157,10 @@ function startInlineVideoPlayback(container, video, videoUrl, playOverlay) {
 
     video._pbbInlineLoadTimer = setTimeout(function() {
         if (!video || video.readyState >= 2 || video.paused) return;
-        video.pause();
-        video.controls = false;
+        // Keep the media element playing underneath the status. If buffering
+        // completes, oncanplay/onplaying hides the status automatically.
         showInlineVideoStatus(container, videoUrl);
-        currentInlineVideo = null;
-    }, 8000);
+    }, 45000);
 
     currentInlineVideo = video;
 }
