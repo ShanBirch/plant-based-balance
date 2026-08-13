@@ -283,7 +283,7 @@ function isSafeGratitudeAcknowledgement(value) {
     return words.every(word => allowed.has(word));
 }
 
-function validateSendTimeOutboundSafety({ messagesToSend = [], latestInboundText = '', automated = false } = {}) {
+function validateSendTimeOutboundSafety({ messagesToSend = [], latestInboundText = '', automated = false, allowQuestionAfterCloser = false } = {}) {
     const combined = (Array.isArray(messagesToSend) ? messagesToSend : [messagesToSend])
         .map(value => normalizeGeneratedCoachDraftText(value || '').trim())
         .filter(Boolean)
@@ -296,7 +296,7 @@ function validateSendTimeOutboundSafety({ messagesToSend = [], latestInboundText
             reason: 'Reply mentions shanbot, AI, bots, automation, or human-authenticity repair language.',
         };
     }
-    if (isGratitudeCloserText(latestInboundText) && /[?]/.test(combined)) {
+    if (!allowQuestionAfterCloser && isGratitudeCloserText(latestInboundText) && /[?]/.test(combined)) {
         return {
             ok: false,
             code: 'gratitude_closer_fresh_question',
@@ -2287,6 +2287,10 @@ exports.handler = async (event) => {
         messagesToSend,
         latestInboundText: resolveLatestInboundTextForSend({ alertData, alert }),
         automated: isAutomatedPermanentNeedsYouSendSource(source, alertData),
+        // Shannon's isolated repeated-ad test must be allowed to progress from
+        // a short "Okay" into the approved plant-based qualifier. Keep the
+        // ordinary closer guard intact for real leads and existing clients.
+        allowQuestionAfterCloser: alertData.meta_ad_internal_test_lane === true,
     });
     if (!sendTimeSafety.ok) {
         await stampSendTimeSafetyBlock({

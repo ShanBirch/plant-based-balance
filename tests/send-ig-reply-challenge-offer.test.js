@@ -75,6 +75,11 @@ assert.deepStrictEqual(
     'gratitude_closer_fresh_question'
 );
 assert.strictEqual(validateSendTimeOutboundSafety({
+    messagesToSend: ['Are you currently plant-based or looking to adopt a plant-based lifestyle?'],
+    latestInboundText: 'Okay!',
+    allowQuestionAfterCloser: true,
+}).ok, true);
+assert.strictEqual(validateSendTimeOutboundSafety({
     messagesToSend: ['No worries at all'],
     latestInboundText: 'Thanks!!!',
 }).ok, true);
