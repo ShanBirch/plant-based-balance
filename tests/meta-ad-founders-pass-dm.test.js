@@ -99,6 +99,82 @@ test('Cocos paid-ad Founders Pass opener bypasses the false signup hold and mode
     }), null);
 });
 
+test('paid Meta goal reply that passes the progression contract bypasses subjective style review', () => {
+    const currentMessage = 'I need to lose weight';
+    const history = [
+        { direction: 'out', text: 'Nice. What\u2019s your main health or fitness goal at the moment?' },
+    ];
+    const draft = {
+        chunks: ['Yeah, losing weight is a clear goal. What usually makes it hardest for you to stay consistent?'],
+        joined: 'Yeah, losing weight is a clear goal. What usually makes it hardest for you to stay consistent?',
+        model: 'openai-gpt-5.4-mini-paid-meta+guided_meta_goal_proof_v1',
+        replyMode: 'campaign_goal_proof',
+        maxChunks: 1,
+    };
+
+    assert.deepStrictEqual(collectPaidMetaWriterContractIssues({
+        draft,
+        currentMessage,
+        qualifier: { commercial_stage: 'engaged', facts: {} },
+        history,
+    }), []);
+
+    const review = buildApprovedDeterministicMetaAdFirstReplyReview({
+        metaAdGoalReplyTurn: true,
+        metaAdConversationFastLane: true,
+        draft,
+        linkedUserId: null,
+        mediaReview: { required: false },
+        contextReview: { required: false },
+        currentMessage,
+        qualifier: { commercial_stage: 'engaged', facts: {} },
+        history,
+    });
+
+    assert.equal(review.verdict, 'pass');
+    assert.equal(review.notification_required, false);
+    assert.equal(review.reviewer_model, 'paid-meta-guided-goal-contract-approval');
+    assert.equal(getAutoDmHoldReason({
+        mediaReview: { required: false },
+        contextReview: { required: false },
+        draft,
+        draftReview: review,
+        challengeOfferWarning: null,
+        currentMessage,
+        qualifier: { commercial_stage: 'engaged', facts: {} },
+        leadStage: 'qualifying',
+        linkedUserId: null,
+        meaningfulLeadReplyCount: 2,
+        alertData: { meta_ad_fast_lane: true },
+    }), null);
+});
+
+test('paid Meta goal reply still goes through normal review when the progression contract fails', () => {
+    const currentMessage = 'I need to lose weight';
+    const history = [
+        { direction: 'out', text: 'Nice. What\u2019s your main health or fitness goal at the moment?' },
+    ];
+    const draft = {
+        chunks: ['The Founders Pass is $89. Want the link?'],
+        joined: 'The Founders Pass is $89. Want the link?',
+        model: 'openai-gpt-5.4-mini-paid-meta+guided_meta_goal_proof_v1',
+        replyMode: 'campaign_goal_proof',
+        maxChunks: 1,
+    };
+
+    assert.equal(buildApprovedDeterministicMetaAdFirstReplyReview({
+        metaAdGoalReplyTurn: true,
+        metaAdConversationFastLane: true,
+        draft,
+        linkedUserId: null,
+        mediaReview: { required: false },
+        contextReview: { required: false },
+        currentMessage,
+        qualifier: { commercial_stage: 'engaged', facts: {} },
+        history,
+    }), null);
+});
+
 test.skip('legacy deterministic blocker copy retired in favour of the live writer', () => {
     const qualifier = {
         commercial_stage: 'engaged',

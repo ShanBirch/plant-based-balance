@@ -204,6 +204,10 @@ async function main() {
     if (!isMetaAppPreviewUrl(APP_PREVIEW_URL)) throw new Error('Smoke app-preview URL is invalid.');
     const remoteUrl = String(process.env.PAID_META_SMOKE_REMOTE_URL || '').replace(/\/$/, '');
     const remoteToken = String(process.env.PAID_META_SMOKE_REMOTE_TOKEN || '');
+    const scope = remoteUrl ? 'remote_draft_turn_contract' : 'local_draft_generation_contract';
+    process.stderr.write(
+        'DRAFT-CONTRACT SMOKE ONLY: this does not verify Meta webhook capture, draft-review approval, Graph dispatch, or canonical outbound readback.\n'
+    );
     const compose = remoteUrl
         ? async payload => {
             const response = await fetch(`${remoteUrl}/.netlify/functions/paid-meta-full-flow-smoke-turn`, {
@@ -218,11 +222,17 @@ async function main() {
         : composeTurn;
     const results = await Promise.all(scenarios.map(async (scenario, index) => {
         const result = await runScenario(scenario, index, { compose });
-        process.stderr.write(`full-flow ${index + 1}/10 ${result.pass ? 'PASS' : 'FAIL'}: ${result.name}\n`);
+        process.stderr.write(`draft-contract ${index + 1}/10 ${result.pass ? 'PASS' : 'FAIL'}: ${result.name}\n`);
         return result;
     }));
-    const summary = { passed: results.filter(result => result.pass).length, failed: results.filter(result => !result.pass).length, results };
-    process.stdout.write(`PAID_META_FULL_FLOW_RESULTS=${JSON.stringify(summary)}\n`);
+    const summary = {
+        scope,
+        delivery_verified: false,
+        passed: results.filter(result => result.pass).length,
+        failed: results.filter(result => !result.pass).length,
+        results,
+    };
+    process.stdout.write(`PAID_META_DRAFT_CONTRACT_RESULTS=${JSON.stringify(summary)}\n`);
     if (summary.failed) process.exitCode = 1;
 }
 

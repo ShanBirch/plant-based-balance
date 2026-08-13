@@ -2426,6 +2426,7 @@ function buildApprovedDeterministicMetaAdFirstReplyReview({
     contextReview = null,
     currentMessage = '',
     qualifier = {},
+    history = [],
 } = {}) {
     const message = String(currentMessage || '').trim();
     const approvedFirstReply = metaAdFirstInbound
@@ -2435,9 +2436,23 @@ function buildApprovedDeterministicMetaAdFirstReplyReview({
         && approval.required !== true
         && /^approved_meta_ad_/.test(String(approval.code || ''))
         && shouldUseDeterministicMetaAdFirstReply(message);
-    const approvedGoalProof = (metaAdGoalReplyTurn || metaAdConversationFastLane)
+    const deterministicGoalProof = (metaAdGoalReplyTurn || metaAdConversationFastLane)
         && draft?.replyMode === 'campaign_goal_proof'
         && /^deterministic_meta_ad_goal_proof_v\d+(?:\+[a-z0-9_-]+)*$/i.test(String(draft?.model || ''));
+    const guidedGoalContractIssues = metaAdConversationFastLane && metaAdGoalReplyTurn
+        ? collectPaidMetaWriterContractIssues({
+            draft,
+            currentMessage: message,
+            qualifier,
+            history,
+        })
+        : [];
+    const approvedGuidedGoalReply = metaAdConversationFastLane
+        && metaAdGoalReplyTurn
+        && draft?.replyMode === 'campaign_goal_proof'
+        && /\+guided_meta_goal_proof_v\d+$/i.test(String(draft?.model || ''))
+        && guidedGoalContractIssues.length === 0;
+    const approvedGoalProof = deterministicGoalProof || approvedGuidedGoalReply;
     const approvedConversationProgression = metaAdConversationFastLane
         && ['campaign_sales_progression', 'campaign_buyer_handoff', 'campaign_app_preview_handoff'].includes(String(draft?.replyMode || ''))
         && /^deterministic_paid_meta_conversation_v\d+(?:\+[a-z0-9_-]+)*$/i.test(String(draft?.model || ''))
@@ -2470,7 +2485,9 @@ function buildApprovedDeterministicMetaAdFirstReplyReview({
         verdict: 'pass',
         confidence: 1,
         summary: approvedGoalProof
-            ? 'Approved deterministic Meta ad goal reflection and proof.'
+            ? (approvedGuidedGoalReply
+                ? 'Approved paid Meta goal reply against the guided progression contract.'
+                : 'Approved deterministic Meta ad goal reflection and proof.')
             : (approvedConversationProgression
                 ? 'Approved deterministic paid Meta sales-progression reply.'
                 : 'Approved deterministic Meta ad first reply.'),
@@ -2481,7 +2498,9 @@ function buildApprovedDeterministicMetaAdFirstReplyReview({
         notification_reason: null,
         reviewed_at: new Date().toISOString(),
         reviewer_model: approvedGoalProof
-            ? 'deterministic-meta-ad-goal-proof-approval'
+            ? (approvedGuidedGoalReply
+                ? 'paid-meta-guided-goal-contract-approval'
+                : 'deterministic-meta-ad-goal-proof-approval')
             : (approvedConversationProgression
                 ? 'deterministic-paid-meta-conversation-approval'
                 : 'deterministic-meta-ad-first-reply-approval'),
@@ -7663,8 +7682,9 @@ exports.handler = async (event) => {
             linkedUserId: thread.linked_user_id,
             mediaReview,
             contextReview,
-            currentMessage: displayMessage,
+            currentMessage: currentInboundTurnMessage,
             qualifier,
+            history: displayHistory,
         });
         if (approvedDeterministicReview) {
             draftReview = approvedDeterministicReview;
