@@ -244,6 +244,11 @@ test('dashboard, signup, native handoffs, measurement, and both discovery system
     assert.match(onboarding, /window\.ensureMetaPreviewMealPlan = ensureMetaPreviewMealPlan/);
     assert.match(onboarding, /data-meal-plan-photo="true"/);
     assert.match(onboarding, /BalanceMetaAdTrial\.hasPendingClaim\(\)/);
+    assert.match(onboarding, /await claimMetaPreviewWorkoutCalendar\(userId\);/);
+    assert.match(onboarding, /await claimMetaPreviewMealPlan\(userId\);/);
+    assert.match(onboarding, /Preview workout calendar was not confirmed in the account/);
+    assert.match(onboarding, /Preview meal plan was not confirmed in the account/);
+    assert.match(onboarding, /workout_calendar_times: calendarTimes/);
     assert.match(login, /applyMetaAdTrialHandoffCopy/);
     assert.match(login, /claimPendingMetaTrialPurchase/);
     assert.match(login, /claim-founders-pass/);

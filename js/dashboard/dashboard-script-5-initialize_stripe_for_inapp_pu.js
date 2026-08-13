@@ -6151,6 +6151,74 @@ async function ensureMetaPreviewMealPlan() {
 }
 window.ensureMetaPreviewMealPlan = ensureMetaPreviewMealPlan;
 
+async function claimMetaPreviewWorkoutCalendar(userId) {
+    const calendar = getStoredOnboardingWorkoutCalendar(window.userProfile || {});
+    if (!calendar) throw new Error('Preview workout calendar is missing');
+
+    const existingFacts = await dbHelpers.userFacts.get(userId).catch(() => ({}));
+    const currentDetails = existingFacts?.personal_details || {};
+    const calendarJson = JSON.stringify(calendar);
+    let calendarTimes = {};
+    try { calendarTimes = JSON.parse(localStorage.getItem('workoutCalendarTimes') || '{}'); } catch (e) {}
+    await dbHelpers.userFacts.upsert(userId, {
+        personal_details: {
+            ...currentDetails,
+            workout_calendar: calendarJson,
+            workout_calendar_times: calendarTimes
+        }
+    });
+
+    const savedFacts = await dbHelpers.userFacts.get(userId);
+    const savedCalendar = parseStoredWorkoutCalendar(savedFacts?.personal_details?.workout_calendar);
+    const calendarMatches = savedCalendar && PBB_ONBOARDING_DAY_KEYS.every(day => savedCalendar[day] === calendar[day]);
+    if (!calendarMatches) {
+        throw new Error('Preview workout calendar was not confirmed in the account');
+    }
+    window.userProfile = { ...(window.userProfile || {}), workout_calendar: calendarJson };
+    return savedCalendar;
+}
+
+async function claimMetaPreviewMealPlan(userId) {
+    let previewPlan = null;
+    try { previewPlan = JSON.parse(localStorage.getItem('ai_meal_plan') || 'null'); } catch (e) {}
+    if (!previewPlan || !Array.isArray(previewPlan.weeks) || previewPlan.weeks.length === 0) {
+        throw new Error('Preview meal plan is missing');
+    }
+    if (typeof window.persistBuiltMealPlan !== 'function') {
+        throw new Error('Meal plan persistence is not ready');
+    }
+
+    const claimPlanKey = `pbb_meta_preview_plan_id_${userId}`;
+    const previouslySavedPlanId = localStorage.getItem(claimPlanKey);
+    if (previouslySavedPlanId) {
+        const existing = await window.supabaseClient
+            .from('ai_generated_meal_plans')
+            .select('id')
+            .eq('id', previouslySavedPlanId)
+            .eq('user_id', userId)
+            .eq('status', 'active')
+            .maybeSingle();
+        if (existing.error) throw existing.error;
+        if (existing.data?.id) {
+            const accountPlan = { ...previewPlan, id: existing.data.id };
+            _aiMealPlanCache = accountPlan;
+            localStorage.setItem('ai_meal_plan', JSON.stringify(accountPlan));
+            return accountPlan;
+        }
+        localStorage.removeItem(claimPlanKey);
+    }
+
+    const result = await window.persistBuiltMealPlan(window.supabaseClient, userId, previewPlan);
+    if (!result?.success || !result?.plan_id) {
+        throw new Error('Preview meal plan was not confirmed in the account');
+    }
+    const accountPlan = { ...previewPlan, id: result.plan_id };
+    _aiMealPlanCache = accountPlan;
+    localStorage.setItem(claimPlanKey, result.plan_id);
+    localStorage.setItem('ai_meal_plan', JSON.stringify(accountPlan));
+    return accountPlan;
+}
+
 async function ensureInitialOnboardingMealPlan() {
     if (window.metaAdTrialMode === true) {
         const previewPlan = await ensureMetaPreviewMealPlan();
@@ -9419,8 +9487,12 @@ async function checkAndTriggerOnboarding() {
                         .upsert({ user_id: userId, ...foodPreferences }, { onConflict: 'user_id' });
                     if (foodError) throw foodError;
                 }
+                // The preview is only claimed after both personalised deliverables
+                // have been confirmed under this authenticated user's RLS scope.
+                await claimMetaPreviewWorkoutCalendar(userId);
+                await claimMetaPreviewMealPlan(userId);
                 await dbHelpers.users.update(userId, { onboarding_complete: true });
-            }
+            } else throw new Error('Authenticated account is not ready for preview claim');
             localStorage.setItem('onboardingComplete', 'true');
             localStorage.setItem('plantbased_onboarding_complete', 'true');
             window.BalanceMetaAdTrial.markClaimed(userId);
@@ -11545,8 +11617,10 @@ async function wizardNext() {
         let existingData = {};
         try { existingData = JSON.parse(sessionStorage.getItem('userProfile') || '{}'); } catch(e) {}
         existingData.workout_calendar = JSON.stringify(wizardWorkoutCalendar);
+        existingData.workout_calendar_times = { ...wizardWorkoutTimes };
         sessionStorage.setItem('userProfile', JSON.stringify(existingData));
         localStorage.setItem('workoutCalendar', JSON.stringify(wizardWorkoutCalendar));
+        localStorage.setItem('workoutCalendarTimes', JSON.stringify(wizardWorkoutTimes));
     }
 
     // Steps 8, 9, 10: Food preferences (cuisines, favorites/dislikes, allergies/cook-time).

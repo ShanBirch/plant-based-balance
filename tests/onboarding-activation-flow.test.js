@@ -9,6 +9,7 @@ const dashboardPath = path.join(__dirname, '../dashboard.html');
 const onboardingSource = fs.readFileSync(onboardingPath, 'utf8');
 const contextSource = fs.readFileSync(contextPath, 'utf8');
 const dashboardSource = fs.readFileSync(dashboardPath, 'utf8');
+const mealPlanPopulatorSource = fs.readFileSync(path.join(__dirname, '../lib/meal-plan-populator.js'), 'utf8');
 const { _buildWelcomeDraft } = require('../netlify/functions/onboarding-welcome-draft');
 const { _isClearOnboardingSetupConfirmation } = require('../netlify/functions/instant-coach-draft');
 
@@ -19,6 +20,16 @@ test('completed onboarding prepares the first active meal plan before coach assi
         /await ensureInitialOnboardingMealPlan\(\);[\s\S]+assign_coach_shannon_to_user/
     );
     assert.match(onboardingSource, /\.from\('ai_generated_meal_plans'\)[\s\S]+\.eq\('status', 'active'\)/);
+});
+
+test('paid preview claim persists the exact meal plan before marking onboarding claimed', () => {
+    assert.match(mealPlanPopulatorSource, /async function persistBuiltMealPlan\(supabase, userId, scaled\)/);
+    assert.match(mealPlanPopulatorSource, /status: 'generating'[\s\S]+update\(\{ status: 'active' \}\)/);
+    assert.match(mealPlanPopulatorSource, /incomplete plan cleanup failed/);
+    assert.match(
+        onboardingSource,
+        /await claimMetaPreviewWorkoutCalendar\(userId\);[\s\S]+await claimMetaPreviewMealPlan\(userId\);[\s\S]+BalanceMetaAdTrial\.markClaimed\(userId\)/
+    );
 });
 
 test('food preferences finish saving before onboarding advances', () => {
