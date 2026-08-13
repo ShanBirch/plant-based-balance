@@ -1871,7 +1871,10 @@ async function clearIgAutoSendHoldForCurrentDraft({ alertId, alertData, reason =
 // The previous preview displayed the retired $99 lifetime offer. Keep the
 // attachment disabled until a Foundations-specific preview is published.
 const FOUNDERS_PASS_APP_PREVIEW_URL = '';
-const ALLY_WEIGHT_LOSS_PROOF_URL = 'https://plantbased-balance.org/photos/client-success/ally-cocos.png';
+const {
+    ALLY_WEIGHT_LOSS_PROOF_URL,
+    hasAllyProofIntroduction,
+} = require('./_lib/paid-meta-proof-media');
 const FOUNDERS_PASS_CHECKOUT_URL = 'https://plantbased-balance.org/founders';
 const FOUNDERS_PASS_BROAD_CHECKOUT_URL = 'https://future-balance.netlify.app/fitness';
 function buildDraftVideoAttachmentData(draft = {}) {
@@ -2132,9 +2135,21 @@ function buildMetaAdGoalProofReply(currentMessage = '', { flowVariant = 'plant_b
 
 function applyMetaAdGoalProofReply(draft = {}, currentMessage = '', { flowVariant = 'plant_based_control' } = {}) {
     const proof = buildMetaAdGoalProofReply(currentMessage, { flowVariant });
+    let chunks = Array.isArray(draft.chunks) && draft.chunks.length > 0
+        ? draft.chunks.map(chunk => String(chunk || '').trim()).filter(Boolean)
+        : [String(draft.joined || '').trim()].filter(Boolean);
+    let joined = chunks.join('\n\n');
+    if (proof.imageAttachmentUrl && !hasAllyProofIntroduction(joined)) {
+        const allyIntroduction = 'This is Ally, one of my clients. She lost 12kg in 16 weeks while working full time and being a busy mum.';
+        if (chunks.length > 0) chunks[0] = `${chunks[0]} ${allyIntroduction}`.trim();
+        else chunks = [allyIntroduction];
+        joined = chunks.join('\n\n');
+    }
     return {
         ...proof,
         ...draft,
+        chunks,
+        joined,
         replyMode: proof.replyMode,
         flowVariant: proof.flowVariant,
         imageAttachmentUrl: proof.imageAttachmentUrl,

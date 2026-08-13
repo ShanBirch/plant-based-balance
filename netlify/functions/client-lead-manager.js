@@ -36,6 +36,7 @@ const {
     collectAlertInboundText,
     classifyPersonalDmBoundary,
 } = require('./_lib/personal-dm-boundary');
+const { maySendDraftImageAttachment } = require('./_lib/paid-meta-proof-media');
 
 const MANAGER_SOURCE = 'balance-lead-client-manager';
 const MAX_PER_RUN = 80;
@@ -920,6 +921,14 @@ ${originalDraft}`;
         context_review: reviewResult?.contextReview?.required ? reviewResult.contextReview : null,
         cloud_draft_repair: repairMeta,
     };
+    if (data.draft_image_attachment_url && !maySendDraftImageAttachment({
+        imageUrl: data.draft_image_attachment_url,
+        replyText: parsed.joined,
+    })) {
+        delete nextData.draft_image_attachment_url;
+        nextData.proof_media_suppressed = true;
+        nextData.proof_media_suppressed_reason = 'final_repaired_text_did_not_introduce_attached_client_proof';
+    }
     const rows = await supabaseQuery(`coach_alerts?id=eq.${encodeURIComponent(alert.id)}&status=eq.pending`, {
         method: 'PATCH',
         body: {

@@ -42,6 +42,7 @@ const {
 const {
     buildInstagramGraphVideoMessagePayload,
     buildInstagramGraphImageMessagePayload,
+    maySendDraftImageAttachment,
 } = require('../netlify/functions/send-ig-reply')._test;
 const { inspectVoiceScriptQuality } = require('../netlify/functions/_lib/elevenlabs-voice-message');
 
@@ -821,10 +822,21 @@ test('the reply after the goal is tailored and carries the right native proof me
     }, 'My goal is weight loss. I would like to lose about 10kg.');
     assert.equal(appliedWeightGoal.replyMode, 'campaign_goal_proof');
     assert.equal(appliedWeightGoal.model, 'vertex-v7+guided_meta_goal_proof_v1');
-    assert.equal(appliedWeightGoal.joined, 'Nice, that is a solid goal.',
-        'proof media must decorate the guided response instead of replacing its wording');
+    assert.match(appliedWeightGoal.joined, /^Nice, that is a solid goal\./,
+        'proof media must preserve the guided response instead of replacing its wording');
+    assert.match(appliedWeightGoal.joined, /This is Ally, one of my clients/i,
+        'the guided response must explicitly introduce Ally before attaching her photo');
+    assert.match(appliedWeightGoal.joined, /lost 12kg in 16 weeks/i);
     assert.match(appliedWeightGoal.imageAttachmentUrl, /ally-cocos\.png/);
     assert.equal(appliedWeightGoal.timeline, 'preserved live timeline');
+    assert.equal(maySendDraftImageAttachment({
+        imageUrl: appliedWeightGoal.imageAttachmentUrl,
+        replyText: 'Yeah, I get you. What tends to get in the way?',
+    }), false, 'the final sender must suppress Ally\'s photo if a repair removes its introduction');
+    assert.equal(maySendDraftImageAttachment({
+        imageUrl: appliedWeightGoal.imageAttachmentUrl,
+        replyText: appliedWeightGoal.joined,
+    }), true, 'the final sender may keep Ally\'s photo when the reviewed text introduces her');
     const guardedWeightGoal = ensureMetaAdSalesProgressionQuestion({
         draft: weightGoal,
         currentMessage: 'I need to lose weight, probably 15kgs',

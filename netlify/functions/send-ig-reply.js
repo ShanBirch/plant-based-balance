@@ -38,6 +38,7 @@ const {
     resolveUtf8TransportText,
     validateOutboundTextIntegrity,
 } = require('./_lib/outbound-text-integrity');
+const { maySendDraftImageAttachment } = require('./_lib/paid-meta-proof-media');
 function normalizeGraphApiVersion(value) {
     const raw = String(value || '').trim();
     if (!raw) return 'v25.0';
@@ -2330,7 +2331,14 @@ exports.handler = async (event) => {
     const draftImageAttachmentUrl = useDraftMessageChunks
         ? String(alertData.draft_image_attachment_url || '').trim()
         : '';
-    const hasDraftImageAttachment = /^https:\/\/[^\s]+\.(?:png|jpe?g|webp)(?:[?#][^\s]*)?$/i.test(draftImageAttachmentUrl);
+    const hasValidDraftImageAttachment = /^https:\/\/[^\s]+\.(?:png|jpe?g|webp)(?:[?#][^\s]*)?$/i.test(draftImageAttachmentUrl);
+    const hasDraftImageAttachment = hasValidDraftImageAttachment && maySendDraftImageAttachment({
+        imageUrl: draftImageAttachmentUrl,
+        replyText: messagesToSend.join('\n\n'),
+    });
+    if (hasValidDraftImageAttachment && !hasDraftImageAttachment) {
+        console.warn('[send-ig-reply] suppressed unintroduced paid-Meta proof image');
+    }
     if ((hasDraftVideoAttachment || hasDraftImageAttachment) && !shouldUseGraph) {
         return {
             statusCode: 409,
@@ -2928,6 +2936,7 @@ exports._test = {
     getAutomatedInstagramConversationDelta,
     joinSentChunkTexts,
     validateOutboundTextIntegrity,
+    maySendDraftImageAttachment,
 };
 
 exports.sendInstagramGraphTypingAction = sendInstagramGraphTypingAction;
