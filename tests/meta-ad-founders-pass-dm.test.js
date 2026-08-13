@@ -740,6 +740,16 @@ test('the verified guided-sales offer is not blocked as premature after goal and
             commercial_stage: 'problem_qualified',
             facts: { history_blockers: 'Slacks off when work gets busy' },
         },
+        history: [
+            {
+                direction: 'out',
+                text: 'Balance Foundations is a six-week course with your workout program built around your week and a plant-based meal plan.',
+            },
+            {
+                direction: 'out',
+                text: 'It is one $89.99 payment. You can look through the app before you pay. Want me to send you access?',
+            },
+        ],
     });
     assert.equal(approval?.required, false);
     assert.equal(getAutoDmHoldReason({

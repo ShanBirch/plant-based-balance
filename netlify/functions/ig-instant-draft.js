@@ -2306,6 +2306,7 @@ function buildPaidMetaConversationApproval({
     currentMessage = '',
     linkedUserId = null,
     qualifier = {},
+    history = [],
 } = {}) {
     const message = String(currentMessage || '').trim();
     const deterministicProgression = metaAdConversationFastLane
@@ -2318,7 +2319,9 @@ function buildPaidMetaConversationApproval({
         && (draft?.replyMode !== 'campaign_app_preview_handoff'
             || (draft?.appPreviewHandoff === true
                 && isMetaAppPreviewUrl(draft?.appPreviewUrl)
-                && isApprovedPaidMetaAppPreviewMoment({ currentMessage: message, qualifier })));
+                && (isApprovedPaidMetaAppPreviewMoment({ currentMessage: message, qualifier })
+                    || (isExplicitPaidMetaPreviewAcceptance(message)
+                        && hasRecentCompletePaidMetaOffer(history)))));
     if (!deterministicProgression) return null;
     return {
         required: false,
@@ -7111,6 +7114,7 @@ exports.handler = async (event) => {
         currentMessage: displayMessage,
         linkedUserId: thread.linked_user_id,
         qualifier,
+        history: displayHistory,
     });
     const verifiedPaidMetaPreviewApproval = paidMetaConversationApproval?.required === false
         && paidMetaConversationApproval?.code === 'approved_meta_ad_sales_progression'
@@ -7837,7 +7841,10 @@ exports.handler = async (event) => {
         const effectiveOutboundVoiceMessage = !metaAdConversationFastLane
             && !personalVoicePlan.syntheticVoiceForbidden
             && (outboundVoiceMessage || !!existingPending?.data?.outbound_voice_message);
-        const baseRepairIssues = collectCocosAutoRepairIssues({
+        const verifiedPaidMetaPreviewHandoff = paidMetaConversationApproval?.required === false
+            && draft?.appPreviewHandoff === true
+            && isMetaAppPreviewUrl(draft?.appPreviewUrl);
+        const baseRepairIssues = verifiedPaidMetaPreviewHandoff ? [] : collectCocosAutoRepairIssues({
             draft,
             draftReview,
             challengeOfferWarning,
