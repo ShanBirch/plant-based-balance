@@ -6211,6 +6211,11 @@ exports.handler = async (event) => {
         linkedUserId: thread.linked_user_id,
         customData: thread.custom_data,
         currentMessage: messageText,
+        // The webhook has already persisted the source message timestamp here.
+        // Using draft-start time would put the episode boundary after the very
+        // inbound that created it, causing the stale-source guard to cancel it.
+        resetAt: String(thread.custom_data?.instagram_graph?.last_graph_seen_at || '').trim()
+            || new Date().toISOString(),
     });
     if (internalTestResetCustomData) {
         try {
