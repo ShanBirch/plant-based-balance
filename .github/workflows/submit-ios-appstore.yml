@@ -6,7 +6,7 @@ on:
       version_string:
         description: App Store version string
         required: true
-        default: "1.7"
+        default: "1.8"
       build_number:
         description: Uploaded iOS build number
         required: true
@@ -45,6 +45,6 @@ jobs:
           IOS_BUILD_NUMBER: ${{ inputs.build_number }}
           PROCESSING_WAIT_MINUTES: "35"
           SUBMIT_FOR_REVIEW: ${{ inputs.submit_for_review }}
-          IOS_RELEASE_NOTES: "Fixes Google sign-in on iPhone. Also includes smoother native video capture and sharing improvements."
-          IOS_REVIEW_NOTES: "This update fixes Google sign-in on iPhone by routing OAuth through ASWebAuthenticationSession and returning to Balance through its registered com.fitgotchi.app callback scheme. Reviewers can test this from the Continue with Google button on the login screen."
+          IOS_RELEASE_NOTES: "Updates the App Store presentation with clearer plant-based nutrition artwork."
+          IOS_REVIEW_NOTES: "This update refreshes the App Store screenshots so the plant-based nutrition feature card is clear and readable. App functionality is unchanged."
         run: node scripts/submit-ios-appstore.mjs
