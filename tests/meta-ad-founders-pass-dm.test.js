@@ -674,6 +674,46 @@ test('paid Meta guaranteed earned offer is not held behind the ten-minute fallba
     }), true);
 });
 
+test('a repaired paid Meta goal question drops the stale offer warning from the original draft', () => {
+    const common = {
+        mediaReview: { required: false },
+        contextReview: { required: false },
+        draftReview: {
+            verdict: 'pass',
+            confidence: 1,
+            issues: [],
+            notification_required: false,
+            context_loss_suspected: false,
+            reviewer_model: 'deterministic-paid-meta-guaranteed-send-v1',
+        },
+        challengeOfferWarning: {
+            required: true,
+            code: 'challenge_offer',
+            label: 'starter coaching invite',
+        },
+        currentMessage: "I'm vegan",
+        qualifier: null,
+        leadStage: 'qualifying',
+        linkedUserId: null,
+        meaningfulLeadReplyCount: 1,
+        alertData: { meta_ad_fast_lane: true, meta_ad_conversation_fast_lane: true },
+    };
+    const repairedGoalQuestion = {
+        joined: 'Nice. What’s your main health or fitness goal at the moment?',
+        model: 'openai-gpt-5.4-mini-paid-meta+paid-meta-guaranteed',
+        replyMode: 'campaign_sales_progression',
+        paidMetaGuaranteedContract: true,
+    };
+    assert.equal(getAutoDmHoldReason({ ...common, draft: repairedGoalQuestion }), null);
+
+    const actualOffer = {
+        ...repairedGoalQuestion,
+        joined: 'Balance Foundations gives you a six-week coaching plan. Want me to send the details?',
+        paidMetaGuaranteedContract: false,
+    };
+    assert.equal(getAutoDmHoldReason({ ...common, draft: actualOffer })?.code, 'challenge_offer');
+});
+
 test('paid Meta contract blocks asking the same question after the lead answers accountability', () => {
     const repeated = collectPaidMetaWriterContractIssues({
         draft: { joined: 'Yeah, it sounds like you are already partway there. What would you mainly like help with fitness-wise?' },

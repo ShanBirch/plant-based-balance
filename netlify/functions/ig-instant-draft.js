@@ -1840,9 +1840,13 @@ function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draf
             label: 'AI draft was unavailable',
         };
     }
-    if (challengeOfferWarning?.required && !isPaidMetaBuyerIntentOfferReplyAllowed({
+    const activeChallengeOfferWarning = challengeOfferWarning?.code === 'challenge_offer'
+        && !isChallengeOfferWarningText(draft?.joined || '')
+        ? null
+        : challengeOfferWarning;
+    if (activeChallengeOfferWarning?.required && !isPaidMetaBuyerIntentOfferReplyAllowed({
         alertData,
-        challengeOfferWarning,
+        challengeOfferWarning: activeChallengeOfferWarning,
         currentMessage,
         draft,
         draftReview,
@@ -1850,7 +1854,7 @@ function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draf
     })) {
         return {
             code: 'challenge_offer',
-            label: `${challengeOfferWarning.label || 'coaching invite'} needs timing review`,
+            label: `${activeChallengeOfferWarning.label || 'coaching invite'} needs timing review`,
         };
     }
     if (isUnsafeStockDiscoveryQuestion(draft.joined)) {
