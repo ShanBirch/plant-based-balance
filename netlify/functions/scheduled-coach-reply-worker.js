@@ -273,7 +273,7 @@ function buildAutoSendReviewHold(alert) {
     const review = data.draft_review;
     const existingHold = data.auto_send_review_hold;
     const verifiedPaidMetaProgression = data.meta_ad_conversation_fast_lane === true
-        && /^deterministic_paid_meta_(?:conversation|guided_sales)_v\d+/i.test(String(data.draft_model || ''))
+        && /^deterministic_paid_meta_(?:conversation|guided_sales|handoff)_v\d+/i.test(String(data.draft_model || ''))
         && ['campaign_sales_progression', 'campaign_buyer_handoff', 'campaign_app_preview_handoff']
             .includes(String(data.draft_reply_mode || ''));
     const mediaReview = buildMediaReviewInfo(alert);

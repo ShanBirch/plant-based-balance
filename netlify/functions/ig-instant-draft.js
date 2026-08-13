@@ -1820,7 +1820,7 @@ function removePaidMetaBlockerVoiceGreeting({
 
 function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draft, draftReview, challengeOfferWarning, currentMessage, qualifier, leadStage, linkedUserId, meaningfulLeadReplyCount, contextBypass, cocosContextBypass, alertData, allowTestLaneDraftReviewWarning = false, allowBalanceLeadDraftReviewWarning = false }) {
     const effectiveContextBypass = contextBypass || cocosContextBypass;
-    const verifiedPaidMetaProgression = /^deterministic_paid_meta_(?:conversation|guided_sales)_v\d+/i.test(String(draft?.model || ''))
+    const verifiedPaidMetaProgression = /^deterministic_paid_meta_(?:conversation|guided_sales|handoff)_v\d+/i.test(String(draft?.model || ''))
         && ['campaign_sales_progression', 'campaign_buyer_handoff', 'campaign_app_preview_handoff'].includes(String(draft?.replyMode || ''));
     const verifiedGuaranteedPaidMetaOffer = draft?.paidMetaGuaranteedContract === true
         && draft?.replyMode === 'campaign_sales_progression';
@@ -2311,7 +2311,7 @@ function buildPaidMetaConversationApproval({
     const deterministicProgression = metaAdConversationFastLane
         && !linkedUserId
         && ['campaign_sales_progression', 'campaign_buyer_handoff', 'campaign_app_preview_handoff'].includes(String(draft?.replyMode || ''))
-        && /^deterministic_paid_meta_(?:conversation|guided_sales)_v\d+(?:\+[a-z0-9_-]+)*$/i.test(String(draft?.model || ''))
+        && /^deterministic_paid_meta_(?:conversation|guided_sales|handoff)_v\d+(?:\+[a-z0-9_-]+)*$/i.test(String(draft?.model || ''))
         && !META_AD_FIRST_REPLY_OPT_OUT_RE.test(message)
         && !META_AD_FIRST_REPLY_REVIEW_REQUIRED_RE.test(message)
         && (draft?.replyMode !== 'campaign_buyer_handoff' || isPaidMetaContextualCheckoutIntent(message))

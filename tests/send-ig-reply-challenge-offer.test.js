@@ -57,6 +57,15 @@ assert.strictEqual(isVerifiedPaidMetaProgressionAlertData({
 }), true);
 assert.strictEqual(isVerifiedPaidMetaProgressionAlertData({
     meta_ad_conversation_fast_lane: true,
+    draft_model: 'deterministic_paid_meta_handoff_v1',
+    draft_reply_mode: 'campaign_app_preview_handoff',
+    challenge_offer_warning: {
+        required: false,
+        code: 'approved_meta_ad_sales_progression',
+    },
+}), true, 'the signed app-preview handoff uses the same verified sender path');
+assert.strictEqual(isVerifiedPaidMetaProgressionAlertData({
+    meta_ad_conversation_fast_lane: true,
     draft_model: 'openai-gpt-5.4-mini-paid-meta',
     draft_reply_mode: 'campaign_sales_progression',
     challenge_offer_warning: {

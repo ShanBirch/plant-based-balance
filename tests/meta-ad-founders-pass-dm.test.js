@@ -1694,6 +1694,15 @@ test.skip('legacy deterministic conversational stages retired in favour of the l
     assert.equal((naturalAcceptedSupport.joined.match(/\?/g) || []).length, 0);
     assert.doesNotMatch(naturalAcceptedSupport.joined, /does that feel like the kind of support you need/i,
         'support acceptance must not repeat the support-fit question the lead just answered');
+    const previewApproval = buildPaidMetaConversationApproval({
+        metaAdConversationFastLane: true,
+        draft: naturalAcceptedSupport,
+        currentMessage: "Yes, that's exactly the kind of structure I need.",
+        linkedUserId: null,
+        qualifier: blockerQualifier,
+    });
+    assert.equal(previewApproval?.required, false);
+    assert.equal(previewApproval?.code, 'approved_meta_ad_sales_progression');
 
     const liveAppPreviewAcceptance = buildDeterministicPaidMetaConversationReply({
         currentMessage: 'Yeah give me a look',
@@ -1922,6 +1931,21 @@ test('Instagram split offer bubbles still turn a short Yes into the promised app
     assert.equal(splitInstagramOfferAcceptance.appPreviewHandoff, true);
     assert.match(splitInstagramOfferAcceptance.joined, /meta-app-preview\.html/i);
     assert.equal((splitInstagramOfferAcceptance.joined.match(/\?/g) || []).length, 0);
+    const approval = buildPaidMetaConversationApproval({
+        metaAdConversationFastLane: true,
+        draft: splitInstagramOfferAcceptance,
+        currentMessage: 'Yes',
+        linkedUserId: null,
+        qualifier: {
+            commercial_stage: 'problem_qualified',
+            facts: {
+                current_state: 'Wants to lose weight.',
+                history_blockers: 'Slacks off and struggles with consistency.',
+            },
+        },
+    });
+    assert.equal(approval?.required, false);
+    assert.equal(approval?.code, 'approved_meta_ad_sales_progression');
 });
 
 test('plant-based requirement and ready prompts receive different next steps', () => {
