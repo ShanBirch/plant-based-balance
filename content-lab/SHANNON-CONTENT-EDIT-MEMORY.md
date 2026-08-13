@@ -66,6 +66,12 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 - Do not build a normal Balance teaching or proof carousel as a long run of photos with separate caption-like overlays. The alternating rhythm is what makes the story feel intentional and readable.
 - For media-backed client proof, actual client video can occupy a media beat whenever it is the strongest receipt. Use additional slides, up to ten, when the timeline, evidence or coaching interpretation would otherwise be unclear.
 
+### Product mentions should show the product
+
+- When a carousel introduces or explains Balance, include a real current app screen on the product beat instead of relying on a generic text card alone.
+- Define Balance plainly as Shannon's plant-based fitness app, fitness community and learning platform. When relevant, name the course topics: neuroscience, motivation, nutrition, training and practical fitness education.
+- Keep the description aligned with the live product. Do not invent unfinished features, fake app chrome or unsupported claims merely to make the offer sound larger.
+
 ### Shannon's face is protected
 
 - Never place text, captions, cards, diagrams, badges, logos, CTAs or decorative motion over Shannon's face, mouth, eyes, jawline, hairline or head silhouette.
@@ -249,3 +255,4 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 | 2026-07-31 | Start with the new avatar full-screen, remove the side bars, let the exercise go full-screen at points and use the avatar in a bubble. The old character is overused. | Choose full-screen human-first openings when direct coaching is the hook; crop the presenter edge-to-edge, cut to full-screen movement proof, use the protected bubble only when useful, and rotate approved avatar looks across the series. | Exercise Reels, avatar selection, opening hooks, dynamic layouts and preview QA |
 | 2026-08-05 | The DM voice note must say `Hey, how are ya.`, not `Hey, how are you`, and always leave a big pause after the greeting. The ending must finish cleanly and offer an app preview of their program, meal plan and community before payment. | For generated one-to-one DM notes, keep the exact greeting in its own breath group, use a large transition pause, append protected trailing silence to PCM delivery, and close the Balance Foundations blocker bridge with a tailored app-preview-before-payment invitation and one natural question. | Paid Meta DMs, ElevenLabs scripts, voice-note assembly and delivery QA |
 | 2026-08-05 | Remove `Hey, how are ya?` from generated one-to-one messages because it sounds weird here. | This is the latest correction and supersedes the earlier same-day greeting rule: start with the newest detail or direct answer. Use a greeting only when live relationship context gives a specific reason, never as a canned opener. | Paid Meta DMs, ElevenLabs scripts, one-to-one draft prompts and reply templates |
+| 2026-08-13 | When Balance is mentioned, show a photo of the app and describe it as a plant-based fitness app, fitness community and learning course teaching neuroscience, nutrition and fitness. | Put a real current app screen on the Balance product beat and define the live offer plainly as an app, community and learning platform covering neuroscience, motivation, nutrition, training and practical fitness education. | Balance carousels, product introductions, campaign previews and carousel automations |
