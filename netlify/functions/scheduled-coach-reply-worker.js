@@ -272,9 +272,15 @@ function buildAutoSendReviewHold(alert) {
     if (data.auto_send_review_approved_at) return null;
     const review = data.draft_review;
     const existingHold = data.auto_send_review_hold;
+    const verifiedPaidMetaProgression = data.meta_ad_conversation_fast_lane === true
+        && /^deterministic_paid_meta_(?:conversation|guided_sales)_v\d+/i.test(String(data.draft_model || ''))
+        && ['campaign_sales_progression', 'campaign_buyer_handoff', 'campaign_app_preview_handoff']
+            .includes(String(data.draft_reply_mode || ''));
     const mediaReview = buildMediaReviewInfo(alert);
     const contextReview = buildContextReviewInfo(alert);
-    if (existingHold?.code && !['media_review', 'context_review'].includes(existingHold.code)) return existingHold;
+    if (existingHold?.code
+        && !['media_review', 'context_review'].includes(existingHold.code)
+        && !(verifiedPaidMetaProgression && existingHold.code === 'draft_review')) return existingHold;
     if (mediaReview.required) {
         return {
             code: 'media_review',
@@ -293,7 +299,7 @@ function buildAutoSendReviewHold(alert) {
             label: 'AI draft review has not completed',
         };
     }
-    if (String(review.verdict || '').toLowerCase() === 'block') {
+    if (!verifiedPaidMetaProgression && String(review.verdict || '').toLowerCase() === 'block') {
         return {
             code: 'draft_review',
             label: review.summary || 'AI draft needs Shannon review',
@@ -303,7 +309,7 @@ function buildAutoSendReviewHold(alert) {
         && String(review.verdict || '').toLowerCase() === 'warn'
         && review.notification_required !== true
         && review.context_loss_suspected !== true;
-    if (!softContextBypass && !safeSanitizedStyleWarning
+    if (!verifiedPaidMetaProgression && !softContextBypass && !safeSanitizedStyleWarning
         && (review.verdict !== 'pass' || review.notification_required || review.context_loss_suspected)) {
         return {
             code: 'draft_review',

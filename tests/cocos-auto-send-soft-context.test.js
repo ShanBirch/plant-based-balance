@@ -124,6 +124,33 @@ assert.deepStrictEqual(
 assert.deepStrictEqual(
     scheduledWorker.buildAutoSendReviewHold({
         alert_type: 'ig_incoming_dm',
+        data: {
+            channel: 'instagram',
+            scheduled_via: 'auto_send',
+            meta_ad_conversation_fast_lane: true,
+            draft_model: 'deterministic_paid_meta_guided_sales_v1',
+            draft_reply_mode: 'campaign_sales_progression',
+            draft_review: {
+                verdict: 'warn',
+                confidence: 0.4,
+                summary: 'Subjective reviewer says the earned offer moved too soon.',
+                notification_required: true,
+                context_loss_suspected: false,
+            },
+            auto_send_review_hold: {
+                code: 'draft_review',
+                label: 'Subjective reviewer says the earned offer moved too soon.',
+                held_by: 'scheduled_worker',
+            },
+        },
+    }),
+    null,
+    'scheduled worker should not reapply a subjective veto to verified paid-Meta progression'
+);
+
+assert.deepStrictEqual(
+    scheduledWorker.buildAutoSendReviewHold({
+        alert_type: 'ig_incoming_dm',
         suggested_message: 'yeah that makes sense, Palmy sounds way more your speed already haha',
         data: {
             channel: 'instagram',
