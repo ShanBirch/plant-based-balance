@@ -12,7 +12,7 @@ const ASSETS = [
   './lib/meta-ad-trial.js?v=4',
   './lib/native-push.js?v=38',
   './login.html',
-  './exercise_videos.js?v=20260801-android-video-compat',
+  './exercise_videos.js?v=20260813-android-video-compat-v2',
   './workout_library.js',
   './workout_library_extended.js',
   './js/dashboard/script_part_2.js?v=13',
