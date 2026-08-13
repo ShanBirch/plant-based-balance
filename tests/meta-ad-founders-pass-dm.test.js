@@ -714,6 +714,52 @@ test('a repaired paid Meta goal question drops the stale offer warning from the 
     assert.equal(getAutoDmHoldReason({ ...common, draft: actualOffer })?.code, 'challenge_offer');
 });
 
+test('the verified guided-sales offer is not blocked as premature after goal and blocker qualification', () => {
+    const guidedOffer = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'I just slack off when work gets busy',
+        qualifier: {
+            commercial_stage: 'problem_qualified',
+            facts: {
+                motivation: 'Lose around 10kg',
+                current_state: 'Vegan',
+                history_blockers: 'Slacks off when work gets busy',
+            },
+        },
+        history: [
+            { direction: 'in', text: 'I want to lose around 10kg' },
+            { direction: 'out', text: 'What usually gets in the way of making that happen consistently?' },
+        ],
+        flowVariant: 'plant_based_control',
+    });
+    const approval = buildPaidMetaConversationApproval({
+        metaAdConversationFastLane: true,
+        draft: guidedOffer,
+        currentMessage: 'I just slack off when work gets busy',
+        linkedUserId: null,
+        qualifier: {
+            commercial_stage: 'problem_qualified',
+            facts: { history_blockers: 'Slacks off when work gets busy' },
+        },
+    });
+    assert.equal(approval?.required, false);
+    assert.equal(getAutoDmHoldReason({
+        mediaReview: { required: false },
+        contextReview: { required: false },
+        draft: guidedOffer,
+        draftReview: { verdict: 'pass', confidence: 1, issues: [] },
+        challengeOfferWarning: approval,
+        currentMessage: 'I just slack off when work gets busy',
+        qualifier: {
+            commercial_stage: 'problem_qualified',
+            facts: { history_blockers: 'Slacks off when work gets busy' },
+        },
+        leadStage: 'qualifying',
+        linkedUserId: null,
+        meaningfulLeadReplyCount: 3,
+        alertData: { meta_ad_fast_lane: true, meta_ad_conversation_fast_lane: true },
+    }), null);
+});
+
 test('paid Meta contract blocks asking the same question after the lead answers accountability', () => {
     const repeated = collectPaidMetaWriterContractIssues({
         draft: { joined: 'Yeah, it sounds like you are already partway there. What would you mainly like help with fitness-wise?' },
