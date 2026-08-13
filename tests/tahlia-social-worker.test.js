@@ -39,6 +39,16 @@ assert.deepStrictEqual([...worker.TAHLIA_SIMPLE_COMMENTS], [
     'so good',
     'love it',
     'amazing work',
+    'nice one',
+    'great job',
+    'solid work',
+    'good stuff',
+    'love that',
+    'nailed it',
+    'great effort',
+    'nice job',
+    'very nice',
+    'this is great',
 ]);
 assert.strictEqual(worker.isBeforeBrisbaneDateKey(new Date('2026-07-04T13:59:00.000Z'), '2026-07-05'), true);
 assert.strictEqual(worker.isBeforeBrisbaneDateKey(new Date('2026-07-04T14:00:00.000Z'), '2026-07-05'), false);

@@ -195,6 +195,16 @@ const SIMPLE_COMMENT_REACTIONS = Object.freeze([
     'so good',
     'love it',
     'amazing work',
+    'nice one',
+    'great job',
+    'solid work',
+    'good stuff',
+    'love that',
+    'nailed it',
+    'great effort',
+    'nice job',
+    'very nice',
+    'this is great',
 ]);
 
 const COMMENT_TEMPLATES = {

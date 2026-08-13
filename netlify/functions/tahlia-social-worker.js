@@ -453,7 +453,7 @@ ${examplesBlock}
 
 Rules:
 - Apply the pattern of Shannon's edits, but do not copy an old line unless it genuinely fits.
-- For a comment, use only one of these exact reactions: "love this", "nice work", "good job", "well done", "so good", "love it", or "amazing work".
+- For a comment, use only one of these exact reactions: ${SIMPLE_COMMENT_REACTIONS.map(reaction => `"${reaction}"`).join(', ')}.
 - Never use more than three words.
 - Do not use the words "win" or "wins". Use the actual detail, PB, number, meal, workout, or a simple reaction instead.
 - Avoid filler like "such a good little", "showing up is the whole thing", "it all adds up", or "that counts".
