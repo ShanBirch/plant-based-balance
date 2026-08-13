@@ -267,6 +267,8 @@ Memory extractor:
 Workout-program exercise library rule:
 
 - Every exercise prescribed in a client workout program, including warm-ups, mobility drills, stretches, and finishers, must use an exact exercise name already present in the canonical `exercise_videos.js` catalog with a non-empty working video URL.
+- Every canonical demo must use the cross-phone media contract: H.264 Constrained Baseline Level 3.1, `yuv420p`, constant 24 fps, no B-frames, no audio, maximum 1280 px on the long edge, and MP4 `faststart`. Run `node scripts/normalize-exercise-video-library.mjs --write-catalog` with the production B2 environment to normalize new source URLs. The run is resumable and will not rewrite the catalog until every output passes `ffprobe` validation.
+- Do not add a raw Backblaze, Drive, MOV, WebM, HEVC, or camera-export URL directly to `exercise_videos.js`. `tests/exercise-video-phone-compat-guard.test.js` is the release guard for this rule.
 - Never design a program from general exercise knowledge first and assume Balance contains those movements. Build from the available Balance exercise catalog.
 - Before saving or announcing a program, deterministically validate every prescribed exercise against the catalog and verify its video URL is reachable. Replace unsupported free-text names with appropriate existing catalog exercises, or deliberately add and verify the missing exercise/video before assigning it.
 - Recovery days such as rest, run, or walk may be schedule labels with `type: 'rest'`; do not create fake exercise rows for them merely to show the label.

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v310'; // v310: record privacy-safe in-app journey telemetry
+const CACHE_NAME = 'pbb-app-v311'; // v311: global cross-phone exercise video catalogue
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -12,7 +12,7 @@ const ASSETS = [
   './lib/meta-ad-trial.js?v=4',
   './lib/native-push.js?v=38',
   './login.html',
-  './exercise_videos.js?v=20260813-android-video-compat-v2',
+  './exercise_videos.js?v=20260813-global-phone-video-v1',
   './workout_library.js',
   './workout_library_extended.js',
   './js/dashboard/script_part_2.js?v=13',

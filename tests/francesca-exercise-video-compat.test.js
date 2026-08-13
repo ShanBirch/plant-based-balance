@@ -32,7 +32,7 @@ test('Easy Hip Reset uses same-origin Android-compatible videos', () => {
 test('dashboard and service worker request the refreshed exercise catalog', () => {
   const dashboard = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
   const serviceWorker = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
-  const versionedCatalog = 'exercise_videos.js?v=20260813-android-video-compat-v2';
+  const versionedCatalog = 'exercise_videos.js?v=20260813-global-phone-video-v1';
 
   assert.ok(dashboard.includes(versionedCatalog));
   assert.ok(serviceWorker.includes(versionedCatalog));
