@@ -153,6 +153,58 @@ async function cancelIfNewerInstagramConversationMessage(alert, {
     return newerMessage;
 }
 
+async function reconcileScheduledInstagramController(alert = {}, { db = supabase } = {}) {
+    const data = alert.data || {};
+    const threadId = String(data.ig_thread_id || '').trim();
+    const inboundTransportId = String(data.manychat_message_id || '').trim();
+    if (!threadId || !inboundTransportId || !alert.id) return { reconciled: false, reason: 'missing_controller_identity' };
+
+    const inboundRows = await db(
+        `ig_messages?select=id,created_at&thread_id=eq.${encodeURIComponent(threadId)}&direction=eq.in&manychat_message_id=eq.${encodeURIComponent(inboundTransportId)}&limit=1`
+    );
+    const sourceInbound = inboundRows[0] || null;
+    const outboundRows = await db(
+        `ig_messages?select=id,text,created_at,manychat_message_id&thread_id=eq.${encodeURIComponent(threadId)}&direction=eq.out&alert_id=eq.${encodeURIComponent(alert.id)}&order=created_at.desc&limit=1`
+    );
+    const canonicalOutbound = outboundRows[0] || null;
+    if (!sourceInbound || !canonicalOutbound) return { reconciled: false, reason: 'canonical_evidence_missing' };
+
+    const actions = await db(
+        `ig_next_actions?select=id,action_version,status,source_message_id&thread_id=eq.${encodeURIComponent(threadId)}&owner=eq.dm_manager&source_message_id=eq.${encodeURIComponent(sourceInbound.id)}&claim_token=is.null&status=in.(ready,waiting,cooldown)&limit=1`
+    );
+    const action = actions[0] || null;
+    if (!action) return { reconciled: false, reason: 'no_unclaimed_live_action' };
+
+    const readbackAt = new Date().toISOString();
+    const completed = await db(
+        `ig_next_actions?id=eq.${encodeURIComponent(action.id)}&action_version=eq.${encodeURIComponent(action.action_version)}&source_message_id=eq.${encodeURIComponent(sourceInbound.id)}&claim_token=is.null&status=in.(ready,waiting,cooldown)`,
+        {
+            method: 'PATCH',
+            body: {
+                status: 'completed',
+                completed_at: readbackAt,
+                receipt: {
+                    decision: 'scheduled_worker_canonical_outbound_completed',
+                    action_id: action.id,
+                    action_version: action.action_version,
+                    thread_id: threadId,
+                    alert_id: alert.id,
+                    source_inbound_id: sourceInbound.id,
+                    canonical_outbound_id: canonicalOutbound.id,
+                    transport_message_id: canonicalOutbound.manychat_message_id || null,
+                    final_text: canonicalOutbound.text || '',
+                    readback_at: readbackAt,
+                    outbound_attempted: true,
+                    no_repeat_guard: true,
+                },
+            },
+            prefer: 'return=representation',
+        }
+    );
+    if (!completed[0]) return { reconciled: false, reason: 'controller_changed_before_completion' };
+    return { reconciled: true, action_id: action.id, outbound_id: canonicalOutbound.id };
+}
+
 async function getMetaPreviewConversionAfterGate(alert = {}) {
     const data = alert.data || {};
     if (data.meta_app_preview_followup !== true) return null;
@@ -684,7 +736,15 @@ async function fireAlert(alert) {
         // and double-sending after eventual recovery.
         return { ok: false, error: `send_failed_${res.status}` };
     }
-    return { ok: true };
+    try {
+        const controller = await reconcileScheduledInstagramController(alert);
+        return { ok: true, controller };
+    } catch (error) {
+        // Transport already succeeded. Never resend to repair a controller
+        // receipt; the next manager pass will reconcile from canonical rows.
+        console.error(`[scheduled-worker] controller reconciliation failed for ${alert.id}:`, error.message);
+        return { ok: true, controller: { reconciled: false, reason: 'controller_reconciliation_failed' } };
+    }
 }
 
 exports.handler = async () => {
@@ -759,4 +819,5 @@ exports._test = {
     cancelIfNewerInstagramConversationMessage,
     getNewerInstagramConversationMessage,
     getNewerInstagramInbound,
+    reconcileScheduledInstagramController,
 };

@@ -136,6 +136,43 @@ async function run() {
         'explicit buyer intent can still receive the offer handoff'
     );
 
+    const controllerCalls = [];
+    const controllerResult = await worker.reconcileScheduledInstagramController({
+        id: 'alert-controller',
+        data: {
+            ig_thread_id: 'thread-controller',
+            manychat_message_id: 'ig_graph:inbound-transport',
+        },
+    }, {
+        db: async (path, options = {}) => {
+            controllerCalls.push({ path, options });
+            if (path.startsWith('ig_messages?') && path.includes('direction=eq.in')) {
+                return [{ id: 'inbound-row', created_at: '2026-08-13T11:01:45.449Z' }];
+            }
+            if (path.startsWith('ig_messages?') && path.includes('direction=eq.out')) {
+                return [{
+                    id: 'outbound-row',
+                    text: 'A fresh reply',
+                    created_at: '2026-08-13T11:02:24.254Z',
+                    manychat_message_id: 'ig_graph:outbound-transport',
+                }];
+            }
+            if (path.startsWith('ig_next_actions?select=')) {
+                return [{ id: 'action-row', action_version: 12, status: 'ready', source_message_id: 'inbound-row' }];
+            }
+            if (path.startsWith('ig_next_actions?id=eq.action-row')) {
+                assert.strictEqual(options.method, 'PATCH');
+                assert.strictEqual(options.body.status, 'completed');
+                assert.strictEqual(options.body.receipt.source_inbound_id, 'inbound-row');
+                assert.strictEqual(options.body.receipt.canonical_outbound_id, 'outbound-row');
+                return [{ id: 'action-row', status: 'completed' }];
+            }
+            throw new Error(`Unexpected controller path: ${path}`);
+        },
+    });
+    assert.strictEqual(controllerResult.reconciled, true);
+    assert.ok(controllerCalls.some(call => call.path.includes('claim_token=is.null')));
+
     global.fetch = originalFetch;
     console.log('scheduled coach reply stale guard tests passed');
 }

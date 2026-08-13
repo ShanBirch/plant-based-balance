@@ -20,6 +20,7 @@ const {
     restoreCoalescedPaidMetaVoiceDraft,
     removePaidMetaBlockerVoiceGreeting,
     collectPaidMetaWriterContractIssues,
+    isBlockingPaidMetaWriterContractIssue,
     buildPaidMetaGuaranteedContractFallback,
     collectCocosAutoRepairIssues,
     getAutoDmHoldReason,
@@ -50,6 +51,7 @@ const {
     maySendDraftImageAttachment,
 } = require('../netlify/functions/send-ig-reply')._test;
 const { inspectVoiceScriptQuality } = require('../netlify/functions/_lib/elevenlabs-voice-message');
+const { buildMetaAppPreviewUrl, isMetaAppPreviewUrl } = require('../netlify/functions/_lib/meta-app-preview-ref');
 
 test('Cocos paid-ad Founders Pass opener bypasses the false signup hold and model review', () => {
     const currentMessage = 'What is the Founders Pass?';
@@ -443,11 +445,11 @@ test('paid Meta transition contract catches adopt wording and a mistyped plant-b
         currentMessage,
         qualifier: { facts: {} },
     });
-    assert.ok(weakReplyIssues.some(issue => /fitness-wise/i.test(issue)));
+    assert.ok(weakReplyIssues.some(issue => /health or fitness goal/i.test(issue)));
     assert.ok(weakReplyIssues.some(issue => /pitched before/i.test(issue)));
 
     assert.deepEqual(collectPaidMetaWriterContractIssues({
-        draft: { joined: "Yeah, three nights a week is a good start if you're looking to make the shift. What would you mainly like help with fitness-wise?" },
+        draft: { joined: "Yeah, three nights a week is a good start if you're looking to make the shift. Outside of eating more plant-based, what's your main health or fitness goal at the moment?" },
         currentMessage,
         qualifier: { facts: {} },
     }), []);
@@ -461,13 +463,116 @@ test('paid Meta guaranteed fallback removes a premature offer and keeps the lead
         issues: ['The reply pitched before a concrete fitness goal and real blocker were both known.'],
     });
     assert.match(fallback.joined, /3 nights a week/i);
-    assert.match(fallback.joined, /fitness-wise\?/i);
+    assert.match(fallback.joined, /health or fitness goal/i);
+    assert.doesNotMatch(fallback.joined, /what would you mainly like help with/i);
     assert.doesNotMatch(fallback.joined, /\$|Founders Pass|six weeks/i);
     assert.deepEqual(collectPaidMetaWriterContractIssues({
         draft: fallback,
         currentMessage,
         qualifier: { facts: {} },
     }).filter(issue => /pitched before/i.test(issue)), []);
+});
+
+test('paid Meta guaranteed fallback uses food and accountability to ask for the missing goal', () => {
+    const currentMessage = 'I think I want guidance with food and accountability';
+    const history = [{
+        direction: 'out',
+        text: 'What would you mainly like help with fitness-wise?',
+    }];
+    const fallback = buildPaidMetaGuaranteedContractFallback({
+        draft: { joined: 'Foundations gives you the meal plan and weekly check-in.', maxChunks: 3 },
+        currentMessage,
+        issues: ['The reply pitched before a concrete fitness goal and real blocker were both known.'],
+        qualifier: { facts: { current_state: 'Looking to adopt plant-based' } },
+        history,
+    });
+    assert.match(fallback.joined, /food side mapped out/i);
+    assert.match(fallback.joined, /keeping you accountable/i);
+    assert.match(fallback.joined, /what result are you mainly hoping to achieve/i);
+    assert.doesNotMatch(fallback.joined, /partway there|help with fitness-wise/i);
+});
+
+test('paid Meta contract blocks asking the same question after the lead answers accountability', () => {
+    const repeated = collectPaidMetaWriterContractIssues({
+        draft: { joined: 'Yeah, it sounds like you are already partway there. What would you mainly like help with fitness-wise?' },
+        currentMessage: 'Accountability',
+        qualifier: { facts: { current_state: 'Looking to adopt plant-based' } },
+        history: [{ direction: 'out', text: 'What would you mainly like help with fitness-wise?' }],
+    });
+    assert.ok(repeated.some(issue => /repeated a question/i.test(issue)));
+    assert.ok(repeated.some(isBlockingPaidMetaWriterContractIssue));
+
+    const fallback = buildPaidMetaGuaranteedContractFallback({
+        draft: { joined: 'What would you mainly like help with fitness-wise?', maxChunks: 3 },
+        currentMessage: 'Accountability',
+        issues: repeated,
+        qualifier: { facts: { current_state: 'Looking to adopt plant-based' } },
+        history: [{ direction: 'out', text: 'What would you mainly like help with fitness-wise?' }],
+    });
+    assert.match(fallback.joined, /keep you accountable/i);
+    assert.match(fallback.joined, /what result are you mainly hoping to achieve/i);
+    assert.doesNotMatch(fallback.joined, /partway there|help with fitness-wise/i);
+});
+
+test('paid Meta guided sales stages move goal to blocker to complete offer to preview link', () => {
+    const appPreviewUrl = buildMetaAppPreviewUrl('11111111-2222-4333-8444-555555555555', {
+        env: { META_APP_PREVIEW_REF_SECRET: 'paid-meta-guided-sales-test-secret' },
+    });
+    const opener = 'Are you currently plant-based or looking to adopt a plant-based lifestyle?';
+    const goalQuestion = 'Nice, three nights is a solid start. What is your main health or fitness goal at the moment?';
+    const goalHistory = [
+        { direction: 'out', text: opener },
+        { direction: 'in', text: 'I eat plant based three nights a week.' },
+        { direction: 'out', text: goalQuestion },
+    ];
+    const goalReply = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'I want to lose 8kg and feel fitter.',
+        qualifier: { facts: { current_state: 'Plant based three nights weekly' } },
+        history: goalHistory,
+        flowVariant: 'plant_based_control',
+        appPreviewUrl,
+    });
+    assert.match(goalReply.joined, /losing the weight and feeling fitter/i);
+    assert.match(goalReply.joined, /gets? in the way/i);
+    assert.doesNotMatch(goalReply.joined, /founders|\$89/i);
+
+    const blockerHistory = [
+        ...goalHistory,
+        { direction: 'in', text: 'I want to lose 8kg and feel fitter.' },
+        { direction: 'out', text: goalReply.joined },
+    ];
+    const offerReply = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'My shifts change every week so I cannot keep a routine.',
+        qualifier: { facts: { motivation: 'Lose 8kg and feel fitter' } },
+        history: blockerHistory,
+        flowVariant: 'plant_based_control',
+        appPreviewUrl,
+    });
+    assert.match(offerReply.joined, /six-week/i);
+    assert.match(offerReply.joined, /workout program/i);
+    assert.match(offerReply.joined, /plant-based meal plan/i);
+    assert.match(offerReply.joined, /weekly check-in/i);
+    assert.match(offerReply.joined, /\$89 once/i);
+    assert.match(offerReply.joined, /no subscription or auto-renewal/i);
+    assert.match(offerReply.joined, /before paying/i);
+    assert.match(offerReply.joined, /want me to send you access\?/i);
+    assert.doesNotMatch(offerReply.joined, /https?:\/\//i);
+
+    const acceptHistory = [
+        ...blockerHistory,
+        { direction: 'in', text: 'My shifts change every week so I cannot keep a routine.' },
+        { direction: 'out', text: offerReply.joined },
+    ];
+    const linkReply = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'Yep, give me a look.',
+        qualifier: { facts: { motivation: 'Lose 8kg and feel fitter', history_blockers: 'Shifts break routine' } },
+        history: acceptHistory,
+        flowVariant: 'plant_based_control',
+        appPreviewUrl,
+    });
+    const sentUrl = linkReply.joined.match(/https?:\/\/\S+/)?.[0] || '';
+    assert.equal(linkReply.replyMode, 'campaign_app_preview_handoff');
+    assert.equal(isMetaAppPreviewUrl(sentUrl), true);
 });
 
 test('fresh paid-ad test episode excludes messages from before the latest referral', () => {
@@ -883,13 +988,17 @@ test('paid Meta ad conversations are text-only without changing other voice lane
     }), false);
 });
 
-test('only exact destination handoffs override the guided paid Meta reply', () => {
+test('only destination handoffs and the narrow guided sales spine override the paid Meta writer', () => {
     assert.equal(shouldApplyDeterministicPaidMetaReplyOverride({ replyMode: 'campaign_sales_progression' }), false);
     assert.equal(shouldApplyDeterministicPaidMetaReplyOverride({
         replyMode: 'campaign_sales_progression',
         identityProgression: true,
     }), false, 'identity and other conversational stages never override the live writer');
     assert.equal(shouldApplyDeterministicPaidMetaReplyOverride({ replyMode: 'campaign_goal_proof' }), false);
+    assert.equal(shouldApplyDeterministicPaidMetaReplyOverride({
+        replyMode: 'campaign_sales_progression',
+        model: 'deterministic_paid_meta_guided_sales_v1',
+    }), true);
     assert.equal(shouldApplyDeterministicPaidMetaReplyOverride({ replyMode: 'campaign_buyer_handoff' }), true);
     assert.equal(shouldApplyDeterministicPaidMetaReplyOverride({ replyMode: 'campaign_app_preview_handoff' }), true);
 });
