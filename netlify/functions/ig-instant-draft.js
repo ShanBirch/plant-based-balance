@@ -3530,10 +3530,14 @@ function buildInternalMetaAdTestResetCustomData({
     };
 }
 
-function resolveInternalTestConversationResetAt(customData = {}) {
+function resolveInternalTestConversationResetAt(customData = {}, history = []) {
     const explicitResetAt = String(customData?.internal_test_conversation_reset_at || '').trim();
     const referralAt = String(customData?.meta_ad_attribution?.last_referral_at || '').trim();
-    const candidates = [explicitResetAt, referralAt]
+    const repeatedOpenerTimes = (Array.isArray(history) ? history : [])
+        .filter(message => String(message?.direction || '').toLowerCase() === 'in'
+            && isRepeatableInternalMetaAdTestOpener(message?.text))
+        .map(message => String(message?.created_at || '').trim());
+    const candidates = [explicitResetAt, referralAt, ...repeatedOpenerTimes]
         .map(value => ({ value, timestamp: Date.parse(value) }))
         .filter(candidate => Number.isFinite(candidate.timestamp));
     if (!candidates.length) return '';
@@ -3542,7 +3546,7 @@ function resolveInternalTestConversationResetAt(customData = {}) {
     )).value;
 }
 
-function buildInternalTestEpisodeCustomData(customData = {}) {
+function buildInternalTestEpisodeCustomData(customData = {}, history = []) {
     const source = customData && typeof customData === 'object' ? customData : {};
     return {
         bot_account: source.bot_account || source.instagram_graph?.bot_account || undefined,
@@ -3552,7 +3556,7 @@ function buildInternalTestEpisodeCustomData(customData = {}) {
         meta_ad_attribution: source.meta_ad_attribution || undefined,
         acquisition_mode: source.acquisition_mode || undefined,
         offer_flow_variant: source.offer_flow_variant || undefined,
-        internal_test_conversation_reset_at: resolveInternalTestConversationResetAt(source) || undefined,
+        internal_test_conversation_reset_at: resolveInternalTestConversationResetAt(source, history) || undefined,
     };
 }
 
@@ -3581,12 +3585,12 @@ function buildCurrentInboundTurnText(currentMessage = '', recentInboundMessages 
     ].filter(Boolean).join('\n');
 }
 
-function buildInternalTestQualifierThread(thread = {}) {
+function buildInternalTestQualifierThread(thread = {}, history = []) {
     if (!isInternalMetaAdConversationTestLane({
         linkedUserId: thread?.linked_user_id,
         customData: thread?.custom_data,
     })) return thread;
-    const resetAtMs = Date.parse(resolveInternalTestConversationResetAt(thread.custom_data));
+    const resetAtMs = Date.parse(resolveInternalTestConversationResetAt(thread.custom_data, history));
     const qualifierAtMs = Date.parse(thread?.qualifier?.evaluated_at || '');
     const qualifier = Number.isFinite(resetAtMs)
         && (!Number.isFinite(qualifierAtMs) || qualifierAtMs < resetAtMs)
@@ -3595,7 +3599,7 @@ function buildInternalTestQualifierThread(thread = {}) {
     // A fresh ad referral is a new test episode. Keep only routing/campaign data;
     // old test facts (family, blockers, preferences, buyer state) must not leak
     // into either qualification or the reply writer.
-    const customData = buildInternalTestEpisodeCustomData(thread.custom_data);
+    const customData = buildInternalTestEpisodeCustomData(thread.custom_data, history);
     return {
         ...thread,
         qualifier,
@@ -3617,7 +3621,7 @@ function filterInternalTestHistoryAfterReset({
     if (!isInternalMetaAdConversationTestLane({ linkedUserId, customData })) {
         return Array.isArray(history) ? history : [];
     }
-    const resetAtMs = Date.parse(resolveInternalTestConversationResetAt(customData));
+    const resetAtMs = Date.parse(resolveInternalTestConversationResetAt(customData, history));
     if (!Number.isFinite(resetAtMs)) {
         return Array.isArray(history) ? history : [];
     }
@@ -6554,7 +6558,7 @@ exports.handler = async (event) => {
         profileName: thread.profile_name,
         igUsername: thread.ig_username,
         customData: internalMetaAdConversationTestLane
-            ? buildInternalTestEpisodeCustomData(thread.custom_data)
+            ? buildInternalTestEpisodeCustomData(thread.custom_data, history)
             : thread.custom_data,
         leadStage: effectiveLeadStage,
     });
@@ -6707,7 +6711,7 @@ exports.handler = async (event) => {
     const meaningfulLeadReplyCount = countMeaningfulLeadReplies(history, qualifierCurrentMessage);
     const metaAdGoalReplyTurn = metaAdConversationFastLane
         && isMetaAdGoalReplyTurn(history, messageText);
-    const qualifierEvaluationThread = buildInternalTestQualifierThread(thread);
+    const qualifierEvaluationThread = buildInternalTestQualifierThread(thread, history);
     let qualifier = qualifierEvaluationThread.qualifier || null;
     const earlyDeterministicProgression = metaAdConversationFastLane && !metaAdOpeningTurn && !metaAdGoalReplyTurn
         ? buildDeterministicPaidMetaConversationReply({

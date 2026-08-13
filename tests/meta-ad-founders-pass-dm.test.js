@@ -458,6 +458,25 @@ test('Coco qualifier evaluation cannot inherit terminal sales state from an olde
     assert.equal(isolated.personal_context, null);
     assert.equal(thread.qualifier.stage, 'won');
     assert.match(thread.custom_data.relationship_memory_compaction.summary, /older test episode/i);
+
+    const openerAt = '2026-08-13T19:12:32.180Z';
+    const isolatedByLiveOpener = buildInternalTestQualifierThread({
+        ...thread,
+        qualifier: {
+            ...thread.qualifier,
+            evaluated_at: '2026-08-13T19:10:00.000Z',
+        },
+        custom_data: {
+            ...thread.custom_data,
+            internal_test_conversation_reset_at: '2026-08-13T19:02:00.000Z',
+        },
+    }, [{
+        direction: 'in',
+        text: 'what is the founders pass?',
+        created_at: openerAt,
+    }]);
+    assert.equal(isolatedByLiveOpener.qualifier, null);
+    assert.equal(isolatedByLiveOpener.custom_data.internal_test_conversation_reset_at, openerAt);
 });
 
 test('paid Meta writer contract requires an explicit answer to a proof-client question', () => {
