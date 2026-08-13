@@ -2214,7 +2214,14 @@ async function dispatchDraft({ thread, messageText, dedupeId }) {
     // Persist an actionable shell before any model/provider work starts. If
     // the background draft worker or its AI provider fails, the inbound still
     // appears in Needs You and the reconcile pass can retry the empty draft.
-    await ensureInboundAlertShell({ thread, messageText, dedupeId });
+    try {
+        await ensureInboundAlertShell({ thread, messageText, dedupeId });
+    } catch (err) {
+        // The shell is a safety net, not a prerequisite for drafting. A transient
+        // alert insert failure must not strand a real inbound before the worker
+        // gets a chance to create the draft itself.
+        console.warn('[instagram-webhook] inbound alert shell failed; continuing draft dispatch:', err.message);
+    }
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), DRAFT_DISPATCH_TIMEOUT_MS);
     try {
@@ -2842,7 +2849,9 @@ async function processGraphMessages(payload, contentContextByMessageId = new Map
                     });
                 } else if (
                     direction === 'in'
-                    && options.recoverMissingDrafts
+                    && (options.recoverMissingDrafts || resolveIgAcquisitionMode({
+                        customData: thread.custom_data,
+                    }) === 'paid_meta')
                     && await shouldRecoverMissingDraftForDedupedInbound({
                         thread,
                         dedupeId: inserted.dedupeId,
