@@ -20,6 +20,7 @@ const {
     restoreCoalescedPaidMetaVoiceDraft,
     removePaidMetaBlockerVoiceGreeting,
     collectPaidMetaWriterContractIssues,
+    buildPaidMetaGuaranteedContractFallback,
     collectCocosAutoRepairIssues,
     getAutoDmHoldReason,
     buildPaidMetaConversationApproval,
@@ -450,6 +451,23 @@ test('paid Meta transition contract catches adopt wording and a mistyped plant-b
         currentMessage,
         qualifier: { facts: {} },
     }), []);
+});
+
+test('paid Meta guaranteed fallback removes a premature offer and keeps the lead moving', () => {
+    const currentMessage = "I'm looking to adopt\nRight now I eat any based 3 nights a week";
+    const fallback = buildPaidMetaGuaranteedContractFallback({
+        draft: { joined: 'Three nights is a start. The Founders Pass is $89 for six weeks. Want the details?', maxChunks: 3 },
+        currentMessage,
+        issues: ['The reply pitched before a concrete fitness goal and real blocker were both known.'],
+    });
+    assert.match(fallback.joined, /3 nights a week/i);
+    assert.match(fallback.joined, /fitness-wise\?/i);
+    assert.doesNotMatch(fallback.joined, /\$|Founders Pass|six weeks/i);
+    assert.deepEqual(collectPaidMetaWriterContractIssues({
+        draft: fallback,
+        currentMessage,
+        qualifier: { facts: {} },
+    }).filter(issue => /pitched before/i.test(issue)), []);
 });
 
 test('fresh paid-ad test episode excludes messages from before the latest referral', () => {

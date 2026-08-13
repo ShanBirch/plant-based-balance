@@ -8219,6 +8219,7 @@ module.exports = {
     formatRecentWorkoutEvidence,
     loadWeeklyAppContext,
     callVertexAIModel,
+    callOpenAITextModel,
     callGeminiFallback,
     callVertexGeminiMultimodal,
     normalizeCoachDraftChunks,

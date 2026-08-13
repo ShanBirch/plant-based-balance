@@ -66,6 +66,7 @@ const {
     loadActiveCheckinThreadContext,
     buildCheckinConversationBlock,
     callVertexAIModel,
+    callOpenAITextModel,
     callGeminiFallback,
     callVertexGeminiMultimodal,
     normalizeCoachDraftChunks,
@@ -856,7 +857,7 @@ function normalizeQuestionFreeRepairedDraft(repaired) {
     return { chunks, joined: chunks.join('\n') };
 }
 
-async function repairCocosDraftFromReview({ draft, repairIssues, reviewContextBlocks, leadName, channelLabel, maxChunks, currentMessage, qualifier, businessName = "Coco's PT Studio" }) {
+async function repairCocosDraftFromReview({ draft, repairIssues, reviewContextBlocks, leadName, channelLabel, maxChunks, currentMessage, qualifier, businessName = "Coco's PT Studio", paidMetaMode = false }) {
     const draftText = draftTextFromDraft(draft);
     if (!draftText || !repairIssues?.length) return null;
     const questionFreeRepair = repairRequiresQuestionFreeReply(repairIssues);
@@ -891,10 +892,15 @@ ${reviewContextBlocks || '(no context provided)'}
 
 ORIGINAL DRAFT:
 ${draftText}`;
-    const rawText = await callGeminiFallback(
-        [{ role: 'user', parts: [{ text: prompt }] }],
-        { maxOutputTokens: Math.min(1200, Math.max(500, (maxChunks || MAX_CHUNKS) * 280)), temperature: 0.35 }
-    );
+    const repairContents = [{ role: 'user', parts: [{ text: prompt }] }];
+    const repairConfig = { maxOutputTokens: Math.min(1200, Math.max(500, (maxChunks || MAX_CHUNKS) * 280)), temperature: 0.35 };
+    const rawText = paidMetaMode
+        ? await callOpenAITextModel(repairContents, repairConfig, {
+            profile: 'coach_fallback',
+            label: 'openai-paid-meta-repair',
+            models: ['gpt-5.4-mini'],
+        })
+        : await callGeminiFallback(repairContents, repairConfig);
     let repaired = normalizeCocosRepairedDraft(rawText, maxChunks || draft.maxChunks || MAX_CHUNKS, leadName);
     if (questionFreeRepair) {
         repaired = normalizeQuestionFreeRepairedDraft(repaired);
@@ -3929,6 +3935,42 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
     return issues;
 }
 
+function isBlockingPaidMetaWriterContractIssue(issue = '') {
+    return /pitched before|directly asked whether|sales suspicion|answer the sales question|earned paid-Meta offer is missing/i.test(String(issue || ''));
+}
+
+function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = '', issues = [] } = {}) {
+    const issueText = (Array.isArray(issues) ? issues : []).join(' ');
+    const turn = String(currentMessage || '').replace(/\s+/g, ' ').trim();
+    let joined = '';
+    if (/sales suspicion|answer the sales question/i.test(issueText)) {
+        joined = 'Yeah, Balance is a paid program. I’m just checking whether it actually fits what you need before I offer you anything.';
+    } else if (/directly asked whether/i.test(issueText)) {
+        const existing = draftTextFromDraft(draft)
+            .replace(/^(?:yeah|yes|yep)[,.! ]*/i, '')
+            .trim();
+        joined = `Yeah, she was one of my clients.${existing ? ` ${existing}` : ''}`;
+    } else if (/pitched before/i.test(issueText)) {
+        const frequency = turn.match(/\b(\d+|one|two|three|four|five|six|seven)\s*(?:nights?|days?|times?)\s+(?:a|per)\s+week\b/i)?.[1] || '';
+        const transitionAcknowledgement = frequency
+            ? `Yeah, ${frequency} nights a week is a solid start if you’re looking to make the shift.`
+            : 'Yeah, it sounds like you’re already partway there.';
+        joined = `${transitionAcknowledgement} What would you mainly like help with fitness-wise?`;
+    } else if (/earned paid-Meta offer is missing/i.test(issueText)) {
+        const blocker = turn ? `That makes sense around ${turn.charAt(0).toLowerCase()}${turn.slice(1).replace(/[?.!]+$/, '')}. ` : '';
+        joined = `${blocker}Balance Foundations is a six-week course with your workout program built around your week, a plant-based meal plan, and one weekly check-in where I review your training and food and adjust things. It’s $89 once for the full six weeks, with no subscription or auto-renewal. You can set yourself up and look through the app before paying. Want me to send you access?`;
+    }
+    if (!joined) return null;
+    const chunks = splitCoachDraftIntoDmBubbles([joined]).slice(0, draft.maxChunks || MAX_CHUNKS);
+    return {
+        ...draft,
+        chunks,
+        joined: chunks.join('\n'),
+        model: `${String(draft.model || 'unknown').replace(/\+paid-meta-guaranteed$/, '')}+paid-meta-guaranteed`,
+        shadowDraftInput: null,
+    };
+}
+
 function replaceIgMediaMarkers(text, { photo = '📷 photo', audio = '🎙️ voice note', video = '🎥 video' } = {}) {
     return replaceVideoMarkers(
         replaceAudioMarkers(
@@ -5387,10 +5429,18 @@ Rules:
         // (Shannon's voice), Gemini fallback if that errors.
         try {
             rawText = requireNonEmptyDraftText(
-                await callVertexAIModel(textContents, generationConfig),
-                'Vertex v7'
+                paidMetaSingleWriter
+                    ? await callOpenAITextModel(textContents, generationConfig, {
+                        profile: 'coach_fallback',
+                        label: 'openai-paid-meta-primary',
+                        models: ['gpt-5.4-mini'],
+                    })
+                    : await callVertexAIModel(textContents, generationConfig),
+                paidMetaSingleWriter ? 'GPT-5.4 mini paid Meta writer' : 'Vertex v7'
             );
-            model = lastError ? 'vertex-v7+media-failed' : 'vertex-v7';
+            model = paidMetaSingleWriter
+                ? (lastError ? 'openai-gpt-5.4-mini-paid-meta+media-failed' : 'openai-gpt-5.4-mini-paid-meta')
+                : (lastError ? 'vertex-v7+media-failed' : 'vertex-v7');
         } catch (err) {
             console.warn(`[ig-draft] Vertex failed, falling back to Gemini: ${err.message}`);
             lastError = `${lastError ? lastError + ' | ' : ''}vertex: ${err.message.slice(0, 200)}`;
@@ -7559,6 +7609,7 @@ exports.handler = async (event) => {
                     currentMessage: displayMessage,
                     qualifier,
                     businessName: autoDraftRepairBusinessName,
+                    paidMetaMode: metaAdConversationFastLane,
                 }), COCOS_DRAFT_REPAIR_TIMEOUT_MS, `${autoDraftRepairBusinessName} draft repair`);
                 if (repaired?.joined) {
                     const repairedPaidMetaContractIssues = metaAdConversationFastLane
@@ -7586,7 +7637,7 @@ exports.handler = async (event) => {
                         && repairIssues.some(issue => /earned offer|complete offer|offer is now earned/i.test(String(issue || '')));
                     const acceptRepair = !!repairedReview
                         && isDraftReviewAutoSendSafe(repairedReview)
-                        && repairedPaidMetaContractIssues.length === 0
+                        && !repairedPaidMetaContractIssues.some(isBlockingPaidMetaWriterContractIssue)
                         && (!effectiveOutboundVoiceMessage || inspectVoiceScriptQuality(repaired.joined).valid)
                         && !hasFirstPersonHealthClaim(repaired.joined)
                         && !draftParrotsLatestInbound(repaired.joined, displayMessage)
@@ -7699,7 +7750,7 @@ exports.handler = async (event) => {
                 });
             }
         }
-        const unresolvedPaidMetaContractIssues = metaAdConversationFastLane
+        let unresolvedPaidMetaContractIssues = metaAdConversationFastLane
             ? collectPaidMetaWriterContractIssues({
                 draft,
                 currentMessage: currentInboundTurnMessage,
@@ -7707,14 +7758,79 @@ exports.handler = async (event) => {
                 history: displayHistory,
             })
             : [];
-        if (unresolvedPaidMetaContractIssues.length > 0) {
-            const paidMetaContractSummary = `Paid Meta reply held: ${unresolvedPaidMetaContractIssues.join(' ')}`;
+        let blockingPaidMetaContractIssues = unresolvedPaidMetaContractIssues.filter(isBlockingPaidMetaWriterContractIssue);
+        if (blockingPaidMetaContractIssues.length > 0) {
+            const guaranteedFallback = buildPaidMetaGuaranteedContractFallback({
+                draft,
+                currentMessage: currentInboundTurnMessage,
+                issues: blockingPaidMetaContractIssues,
+            });
+            if (guaranteedFallback?.joined) {
+                draft = guaranteedFallback;
+                unresolvedPaidMetaContractIssues = collectPaidMetaWriterContractIssues({
+                    draft,
+                    currentMessage: currentInboundTurnMessage,
+                    qualifier,
+                    history: displayHistory,
+                });
+                blockingPaidMetaContractIssues = unresolvedPaidMetaContractIssues.filter(isBlockingPaidMetaWriterContractIssue);
+                if (blockingPaidMetaContractIssues.length === 0) {
+                    const repairedAt = new Date().toISOString();
+                    draftReview = {
+                        verdict: 'pass',
+                        confidence: 1,
+                        summary: 'Paid Meta ordinary flow repaired to a guaranteed sendable guided reply.',
+                        issues: [],
+                        suggested_fix: '',
+                        notification_required: false,
+                        notification_reason: null,
+                        context_loss_suspected: false,
+                        reviewed_at: repairedAt,
+                        reviewer_model: 'deterministic-paid-meta-guaranteed-send-v1',
+                    };
+                    effectiveContextReview = {
+                        ...(effectiveContextReview || contextReview || {}),
+                        required: false,
+                        reasons: [],
+                        resolved_by: 'paid_meta_guaranteed_contract_repair',
+                        resolved_at: repairedAt,
+                    };
+                    currentAlertData = await persistCocosDraftRepair({
+                        alertId,
+                        currentAlertData: {
+                            ...(currentAlertData || {}),
+                            draft_review: draftReview,
+                            context_review: null,
+                        },
+                        draft,
+                        repairMeta: {
+                            status: 'accepted',
+                            repaired_at: repairedAt,
+                            strategy: 'paid_meta_guaranteed_contract_repair',
+                            remaining_non_blocking_issues: unresolvedPaidMetaContractIssues,
+                        },
+                        challengeOfferWarning,
+                        repairField: 'paid_meta_guaranteed_send',
+                    });
+                }
+            }
+        }
+        const nonBlockingPaidMetaContractIssues = unresolvedPaidMetaContractIssues
+            .filter(issue => !isBlockingPaidMetaWriterContractIssue(issue));
+        if (nonBlockingPaidMetaContractIssues.length > 0 && blockingPaidMetaContractIssues.length === 0) {
+            currentAlertData = {
+                ...(currentAlertData || {}),
+                paid_meta_non_blocking_quality_notes: nonBlockingPaidMetaContractIssues,
+            };
+        }
+        if (blockingPaidMetaContractIssues.length > 0) {
+            const paidMetaContractSummary = `Paid Meta reply held: ${blockingPaidMetaContractIssues.join(' ')}`;
             draftReview = {
                 ...(draftReview || {}),
                 verdict: 'warn',
                 confidence: 0,
                 summary: paidMetaContractSummary,
-                issues: unresolvedPaidMetaContractIssues,
+                issues: blockingPaidMetaContractIssues,
                 notification_required: true,
                 notification_reason: 'paid_meta_writer_contract',
                 context_loss_suspected: true,
@@ -8070,6 +8186,8 @@ exports._test = {
     buildPaidMetaConversationWriterBlock,
     buildPaidMetaTurnDirective,
     collectPaidMetaWriterContractIssues,
+    isBlockingPaidMetaWriterContractIssue,
+    buildPaidMetaGuaranteedContractFallback,
     buildLowContentStoryAcknowledgement,
     buildLowContentStoryReplyPolicyBlock,
     suppressAlreadyKnownContextQuestionsInDraftChunks,

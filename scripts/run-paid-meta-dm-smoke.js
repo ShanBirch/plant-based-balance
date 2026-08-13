@@ -193,6 +193,7 @@ async function runScenario(scenario, index) {
             currentMessage: fullInboundTurn,
             qualifier,
             businessName: 'Balance',
+            paidMetaMode: true,
         });
         if (repaired?.joined) draft = repaired;
     }
