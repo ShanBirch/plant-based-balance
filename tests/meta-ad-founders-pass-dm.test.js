@@ -19,6 +19,7 @@ const {
     shouldUseOutboundSyntheticVoice,
     restoreCoalescedPaidMetaVoiceDraft,
     removePaidMetaBlockerVoiceGreeting,
+    collectPaidMetaWriterContractIssues,
     collectCocosAutoRepairIssues,
     getAutoDmHoldReason,
     buildPaidMetaConversationApproval,
@@ -95,7 +96,7 @@ test('Cocos paid-ad Founders Pass opener bypasses the false signup hold and mode
     }), null);
 });
 
-test('paid Meta blocker quotes the six-week payment and app access follows positive intent', () => {
+test.skip('legacy deterministic blocker copy retired in favour of the live writer', () => {
     const qualifier = {
         commercial_stage: 'engaged',
         facts: {
@@ -360,6 +361,70 @@ test('Coco qualifier evaluation cannot inherit terminal sales state from an olde
     assert.match(thread.custom_data.relationship_memory_compaction.summary, /older test episode/i);
 });
 
+test('paid Meta writer contract requires an explicit answer to a proof-client question', () => {
+    const currentMessage = "She's done really well! Was this your client?\nI always fall off after a couple of weeks";
+    const genericAcknowledgementIssues = collectPaidMetaWriterContractIssues({
+        draft: { joined: 'Yeah, that makes sense. What usually knocks you off track?' },
+        currentMessage,
+        qualifier: { facts: {} },
+    });
+    assert.ok(genericAcknowledgementIssues.some(issue => /client/i.test(issue)));
+
+    const answeredIssues = collectPaidMetaWriterContractIssues({
+        draft: { joined: "Yeah, Ally is one of my clients. If the first couple of weeks are okay, what normally knocks you off track after that?" },
+        currentMessage,
+        qualifier: { facts: {} },
+    });
+    assert.deepEqual(answeredIssues, []);
+});
+
+test('paid Meta writer contract preserves rapid-turn details and validates the earned offer', () => {
+    const detailIssues = collectPaidMetaWriterContractIssues({
+        draft: { joined: "Food prep is usually the first thing to slip. What tends to throw it out?" },
+        currentMessage: "I think it's lack of time, no prep. Bit of everything really, food is the main one.",
+        qualifier: { facts: {} },
+    });
+    assert.ok(detailIssues.some(issue => /lack of time/i.test(issue)));
+
+    const qualifier = {
+        facts: {
+            current_state: 'Wants to lose 8kg and feel fitter.',
+            history_blockers: 'Changing shift work disrupts routine.',
+        },
+    };
+    const incompleteOfferIssues = collectPaidMetaWriterContractIssues({
+        draft: { joined: 'Balance could work well around your shifts. Want the details?' },
+        currentMessage: 'My shifts change every week so I can never keep a routine.',
+        qualifier,
+    });
+    assert.ok(incompleteOfferIssues.length >= 6);
+
+    const completeOfferIssues = collectPaidMetaWriterContractIssues({
+        draft: {
+            joined: "Changing shifts make a rigid routine hard. Balance Foundations gives you a six-week workout program around your week, a plant-based meal plan, and one weekly check-in where I review your training and food and adjust both. It's $89 once for the full six weeks, with no subscription or auto-renewal. You can set yourself up and look through the app before paying. Want me to send you access?",
+        },
+        currentMessage: 'My shifts change every week so I can never keep a routine.',
+        qualifier,
+    });
+    assert.deepEqual(completeOfferIssues, []);
+});
+
+test('paid Meta writer contract enforces the exact $89 price', () => {
+    const incorrectPriceIssues = collectPaidMetaWriterContractIssues({
+        draft: { joined: "It's $89.99 once for six weeks and it doesn't renew." },
+        currentMessage: 'How much is it?',
+        qualifier: { facts: {} },
+    });
+    assert.ok(incorrectPriceIssues.some(issue => /exactly as \$89/i.test(issue)));
+
+    const exactPriceIssues = collectPaidMetaWriterContractIssues({
+        draft: { joined: "It's $89 once for the full six weeks and it doesn't renew." },
+        currentMessage: 'How much is it?',
+        qualifier: { facts: {} },
+    });
+    assert.deepEqual(exactPriceIssues, []);
+});
+
 test('fresh paid-ad test episode excludes messages from before the latest referral', () => {
     const history = [
         { direction: 'in', text: 'The kids make it hard', created_at: '2026-08-13T09:05:00.000Z' },
@@ -379,7 +444,7 @@ test('fresh paid-ad test episode excludes messages from before the latest referr
     assert.deepEqual(filtered.map(message => message.text), ['I need accountability']);
 });
 
-test('accountability fallback responds to the current message without inventing kids or work', () => {
+test('accountability warnings never trigger invented replacement copy', () => {
     const repaired = buildSafeMetaAdStyleFallback({
         draft: {
             chunks: ['Accountability can help. Would that support make it easier?'],
@@ -394,12 +459,10 @@ test('accountability fallback responds to the current message without inventing 
         },
         currentMessage: "I've been plant based for 5 years! I think I need accountability",
     });
-    assert.match(repaired.joined, /accountability can make a huge difference/i);
-    assert.match(repaired.joined, /what tends to slip first for you\?/i);
-    assert.doesNotMatch(repaired.joined, /\b(?:kids?|work|food|prep)\b/i);
+    assert.equal(repaired, null);
 });
 
-test('paid Meta voice progression reflects different real blocker categories', () => {
+test.skip('legacy deterministic blocker category copy retired in favour of the live writer', () => {
     const blockerQualifier = {
         facts: {
             current_state: 'Wants to lose 10kg and feel fitter.',
@@ -432,7 +495,7 @@ test('paid Meta voice progression reflects different real blocker categories', (
     }
 });
 
-test('paid Meta question-fatigue reply apologises and leaves space without another question', () => {
+test.skip('legacy deterministic question-fatigue copy retired in favour of the live writer', () => {
     const qualifier = {
         commercial_stage: 'engaged',
         facts: {
@@ -459,7 +522,7 @@ test('paid Meta question-fatigue reply apologises and leaves space without anoth
     assert.doesNotMatch(guardedReply.joined, /\?/);
 });
 
-test('verified paid Meta price progression is not stripped by the generic early-pitch repair', () => {
+test.skip('legacy deterministic price copy retired in favour of the live writer', () => {
     const qualifier = {
         stage: 'current_state',
         commercial_stage: 'buyer_intent',
@@ -743,11 +806,8 @@ test('plant-based identity answers stay with the guided live-message writer', ()
         history: [{ direction: 'out', text: 'Are you currently plant-based or looking to adopt a plant-based lifestyle?' }],
         flowVariant: 'plant_based_control',
     });
-    assert.equal(currentlyPlantBasedReply.identityProgression, true);
-    assert.equal(currentlyPlantBasedReply.replyMode, 'campaign_sales_progression');
-    assert.match(currentlyPlantBasedReply.joined, /That\'s awesome!/);
-    assert.match(currentlyPlantBasedReply.joined, /How long have you been plant-based for, and what\'s the main thing you\'d like help with fitness-wise\?/);
-    assert.equal((currentlyPlantBasedReply.joined.match(/\?/g) || []).length, 1);
+    assert.equal(currentlyPlantBasedReply, null,
+        'even a simple identity answer stays with the live writer so reciprocal questions and extra bubbles are handled');
 
     const experiencedPlantBasedReply = buildDeterministicPaidMetaConversationReply({
         currentMessage: 'I have been vegan for 9 years',
@@ -783,7 +843,7 @@ test('only exact destination handoffs override the guided paid Meta reply', () =
     assert.equal(shouldApplyDeterministicPaidMetaReplyOverride({
         replyMode: 'campaign_sales_progression',
         identityProgression: true,
-    }), true, 'the narrow plant-identity step bypasses the slow model and style-warning hold');
+    }), false, 'identity and other conversational stages never override the live writer');
     assert.equal(shouldApplyDeterministicPaidMetaReplyOverride({ replyMode: 'campaign_goal_proof' }), false);
     assert.equal(shouldApplyDeterministicPaidMetaReplyOverride({ replyMode: 'campaign_buyer_handoff' }), true);
     assert.equal(shouldApplyDeterministicPaidMetaReplyOverride({ replyMode: 'campaign_app_preview_handoff' }), true);
@@ -805,7 +865,7 @@ test('paid-ad turn text keeps every rapid inbound bubble for progression checks'
     ]), "I think it's just lack of time no prep\nBit of everything really");
 });
 
-test('rapid side question is answered while the newest blocker still advances the paid Meta conversation', () => {
+test.skip('legacy deterministic side-question copy retired in favour of the live writer', () => {
     const reply = buildDeterministicPaidMetaConversationReply({
         currentMessage: `I just can't stick to it`,
         qualifier: {
@@ -912,18 +972,17 @@ test('the reply after the goal is tailored and carries the right native proof me
     assert.equal(appliedWeightGoal.model, 'vertex-v7+guided_meta_goal_proof_v1');
     assert.match(appliedWeightGoal.joined, /^Nice, that is a solid goal\./,
         'proof media must preserve the guided response instead of replacing its wording');
-    assert.match(appliedWeightGoal.joined, /This is Ally, one of my clients/i,
-        'the guided response must explicitly introduce Ally before attaching her photo');
-    assert.match(appliedWeightGoal.joined, /lost 12kg in 16 weeks/i);
-    assert.match(appliedWeightGoal.imageAttachmentUrl, /ally-cocos\.png/);
+    assert.equal(appliedWeightGoal.joined, 'Nice, that is a solid goal.');
+    assert.equal(appliedWeightGoal.imageAttachmentUrl, null,
+        'Ally proof cannot attach unless the live writer naturally introduced her');
     assert.equal(appliedWeightGoal.timeline, 'preserved live timeline');
     assert.equal(maySendDraftImageAttachment({
-        imageUrl: appliedWeightGoal.imageAttachmentUrl,
+        imageUrl: weightGoal.imageAttachmentUrl,
         replyText: 'Yeah, I get you. What tends to get in the way?',
     }), false, 'the final sender must suppress Ally\'s photo if a repair removes its introduction');
     assert.equal(maySendDraftImageAttachment({
-        imageUrl: appliedWeightGoal.imageAttachmentUrl,
-        replyText: appliedWeightGoal.joined,
+        imageUrl: weightGoal.imageAttachmentUrl,
+        replyText: 'This is Ally, one of my clients. She lost 12kg in 16 weeks.',
     }), true, 'the final sender may keep Ally\'s photo when the reviewed text introduces her');
     const guardedWeightGoal = ensureMetaAdSalesProgressionQuestion({
         draft: weightGoal,
@@ -931,10 +990,8 @@ test('the reply after the goal is tailored and carries the right native proof me
         qualifier: { commercial_stage: 'engaged', facts: { current_state: 'Wants to lose 15kg.' } },
         leadStage: 'qualifying',
     });
-    assert.match(guardedWeightGoal.model, /\+meta_ad_sales_question_v1$/);
-    assert.equal(guardedWeightGoal.chunks.length, 2,
-        'the proof image must sit between the client result and the next question');
-    assert.match(guardedWeightGoal.chunks[1], /what tends to fall apart first/i);
+    assert.equal(guardedWeightGoal, weightGoal,
+        'the guard preserves the writer/proof draft without appending a stock question');
     assert.equal(buildApprovedDeterministicMetaAdFirstReplyReview({
         metaAdGoalReplyTurn: true,
         draft: guardedWeightGoal,
@@ -971,7 +1028,7 @@ test('the reply after the goal is tailored and carries the right native proof me
     });
 });
 
-test('paid Meta conversation stages stay deterministic, purposeful, and immediately reviewable', () => {
+test.skip('legacy deterministic conversational stages retired in favour of the live writer', () => {
     const checkoutUrl = 'https://plantbased-balance.org/founders';
     const goalQualifier = {
         commercial_stage: 'engaged',

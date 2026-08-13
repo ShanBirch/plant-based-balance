@@ -262,7 +262,8 @@ const safeWeightLossFallback = instantDraft.buildSafeMetaAdStyleFallback({
     },
     currentMessage: 'I need to lose weight',
 });
-assert.equal(safeWeightLossFallback.joined, "Morning. That's a solid goal. When you've tried before, what tends to fall apart first?");
+assert.equal(safeWeightLossFallback.joined, 'Yeah, I get it. What usually makes weight loss hardest for you right now?',
+    'the sanitizer may remove an option menu but must not invent replacement copy');
 
 const safeGoalDiscoveryFallback = instantDraft.buildSafeMetaAdStyleFallback({
     draft: {
@@ -278,7 +279,8 @@ const safeGoalDiscoveryFallback = instantDraft.buildSafeMetaAdStyleFallback({
     },
     currentMessage: 'I want to lose about 10kg and feel fitter.',
 });
-assert.equal(safeGoalDiscoveryFallback.joined, "Morning. 10kg and feeling fitter is a solid goal. When you've tried before, what tends to fall apart first?");
+assert.equal(safeGoalDiscoveryFallback, null,
+    'a conversational warning goes to model repair rather than fixed goal copy');
 const safeEnergyGoalFallback = instantDraft.buildSafeMetaAdStyleFallback({
     draft: { chunks: ['Goal reply'], joined: 'Goal reply' },
     draftReview: {
@@ -289,7 +291,7 @@ const safeEnergyGoalFallback = instantDraft.buildSafeMetaAdStyleFallback({
     },
     currentMessage: 'My goal is to lose 9kg and have more energy.',
 });
-assert.match(safeEnergyGoalFallback.joined, /9kg and having more energy/i);
+assert.equal(safeEnergyGoalFallback, null);
 const safeConsistencyFallback = instantDraft.buildSafeMetaAdStyleFallback({
     draft: {
         chunks: [
@@ -306,8 +308,8 @@ const safeConsistencyFallback = instantDraft.buildSafeMetaAdStyleFallback({
     },
     currentMessage: 'Mhmm I can just never stick to the program',
 });
-assert.match(safeConsistencyFallback.joined, /having me check in, adjust the week with you and keep you accountable/i);
-assert.match(safeConsistencyFallback.joined, /would that kind of support make it easier/i);
+assert.equal(safeConsistencyFallback, null,
+    'code must not replace a consistency reply with a canned sales bridge');
 const safeAccountabilityVoiceFallback = instantDraft.buildSafeMetaAdStyleFallback({
     draft: {
         chunks: ['Yeah that makes total sense. When accountability falls apart, what usually goes first, workouts or food?'],
@@ -322,9 +324,8 @@ const safeAccountabilityVoiceFallback = instantDraft.buildSafeMetaAdStyleFallbac
     },
     currentMessage: 'Work and the kids usually get in the way. I really struggle with accountability.',
 });
-assert.match(safeAccountabilityVoiceFallback.joined, /work and the kids can wreck the best intentions/i);
-assert.ok(safeAccountabilityVoiceFallback.joined.split(/\s+/).length >= 34,
-    'the safe accountability fallback remains long enough to sound natural as a voice note');
+assert.equal(safeAccountabilityVoiceFallback, null,
+    'accountability wording remains owned by the live writer');
 assert.equal(instantDraft.draftParrotsLatestInbound(
     'Yeah that one’s brutal, because you already know what to do, it just drops off. Mhmm I can just never stick to the program.',
     'Mhmm I can just never stick to the program'
@@ -574,18 +575,16 @@ const progressedMetaReply = instantDraft.ensureMetaAdSalesProgressionQuestion({
     qualifier: { commercial_stage: 'engaged', facts: {} },
     leadStage: 'qualifying',
 });
-assert.match(progressedMetaReply.joined, /what are you mainly trying to change at the moment\?/i,
-    'an active paid-ad reply always leaves one useful sales-progression question');
-assert.equal((progressedMetaReply.joined.match(/\?/g) || []).length, 1);
+assert.equal(progressedMetaReply.joined, 'It includes one-to-one support from me.',
+    'code never bolts a stock question onto the writer reply');
 const repairedBlockerReply = instantDraft.ensureMetaAdSalesProgressionQuestion({
     draft: { chunks: ['Yeah chocolate every weekend is brutal haha.'], joined: 'Yeah chocolate every weekend is brutal haha.', model: 'test+cocos-repair' },
     currentMessage: 'Chocolate! Every weekend!',
     qualifier: { commercial_stage: 'problem_qualified', facts: { history_blockers: 'Chocolate every weekend' } },
     leadStage: 'qualifying',
 });
-assert.match(repairedBlockerReply.joined, /would having me check in and help you stay on track make that easier\?/i,
-    'the paid-ad sales guard restores a natural next question after a style repair removes it');
-assert.equal((repairedBlockerReply.joined.match(/\?/g) || []).length, 1);
+assert.equal(repairedBlockerReply.joined, 'Yeah chocolate every weekend is brutal haha.',
+    'a repaired reply remains intact rather than receiving a canned continuation');
 
 const paidMetaWriterPolicy = instantDraft.buildPaidMetaConversationWriterBlock({
     linkedUserId: null,
