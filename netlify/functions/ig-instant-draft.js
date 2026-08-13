@@ -1297,6 +1297,23 @@ function hasRecentPaidMetaPlantBasedQuestion(history = []) {
         .some(item => /currently plant-based|interested in (?:eating more )?plant-based/i.test(String(item?.text || '')));
 }
 
+function isAdaptivePaidMetaPlantBasedIdentityTurn({
+    currentMessage = '',
+    history = [],
+    flowVariant = 'plant_based_control',
+} = {}) {
+    if (flowVariant !== 'plant_based_control' || !hasRecentPaidMetaPlantBasedQuestion(history)) return false;
+    const message = String(currentMessage || '').replace(/\s+/g, ' ').trim();
+    if (!message || META_AD_FIRST_REPLY_OPT_OUT_RE.test(message) || META_AD_FIRST_REPLY_REVIEW_REQUIRED_RE.test(message)) {
+        return false;
+    }
+    if (PAID_META_OFFER_INFO_RE.test(message)
+        || PAID_META_PROGRAM_WORKS_RE.test(message)
+        || PAID_META_APP_INCLUSIONS_RE.test(message)
+        || hasDirectPaidMetaCheckoutIntent(message)) return false;
+    return /\b(?:plant[ -]?based|vegan|vegetarian|not fully|not yet|already|currently|transition\w*|adopt\w*|curious|trying|want to (?:go|eat|be) more|eat\w* .{0,24}(?:times?|days?) (?:a|per) week|once|twice|few times|yes|yeah|yep|no|nah)\b/i.test(message);
+}
+
 function buildDeterministicPaidMetaConversationReply({
     currentMessage = '',
     qualifier = {},
@@ -1311,6 +1328,11 @@ function buildDeterministicPaidMetaConversationReply({
     if (!message
         || META_AD_FIRST_REPLY_OPT_OUT_RE.test(message)
         || META_AD_FIRST_REPLY_REVIEW_REQUIRED_RE.test(message)) return null;
+
+    // This is a conversational identity turn, not a fixed funnel-copy turn.
+    // Leave it with the model so it can reflect the person's exact habit,
+    // duration, or reason before asking the next useful question.
+    if (isAdaptivePaidMetaPlantBasedIdentityTurn({ currentMessage: message, history, flowVariant })) return null;
 
     const facts = qualifier?.facts && typeof qualifier.facts === 'object' ? qualifier.facts : {};
     const commercialStage = String(qualifier?.commercial_stage || '').toLowerCase();
@@ -1331,24 +1353,6 @@ function buildDeterministicPaidMetaConversationReply({
             chunks: [joined],
             joined,
             model: 'deterministic_paid_meta_conversation_v1',
-            replyMode: 'campaign_sales_progression',
-            maxChunks: 1,
-            error: null,
-            flowVariant,
-        };
-    }
-
-    if (!broadFlow && !hasGoal && hasRecentPaidMetaPlantBasedQuestion(history)) {
-        const stillAdoptingPlantBased = /\b(?:not|isn['\u2019]?t|aren['\u2019]?t|not fully|interested|looking|trying|transitioning|adopt)\b.{0,45}\b(?:plant[ -]?based|vegan)\b/i.test(message);
-        const confirmsCurrentlyPlantBased = !stillAdoptingPlantBased
-            && /\b(?:yes|yeah|yep|i am|i'm|im|already|currently|have been)\b.{0,45}\b(?:plant[ -]?based|vegan)\b|\b(?:plant[ -]?based|vegan)\b.{0,30}\b(?:for|since|already|currently|years?|months?)\b/i.test(message);
-        const joined = confirmsCurrentlyPlantBased
-            ? `That's awesome! How long have you been plant-based for? And what's the main goal you're working towards with your health and fitness right now?`
-            : `Gotcha. What's the main thing you're trying to change with your health and fitness right now?`;
-        return {
-            chunks: [joined],
-            joined,
-            model: 'deterministic_paid_meta_conversation_v2',
             replyMode: 'campaign_sales_progression',
             maxChunks: 1,
             error: null,
@@ -1621,6 +1625,15 @@ function buildDeterministicPaidMetaConversationReply({
     }
 
     return null;
+}
+
+function shouldApplyDeterministicPaidMetaReplyOverride(draft = null) {
+    if (!draft) return false;
+    // Exact destinations are transport/sales gates, not conversational copy.
+    // Ordinary qualification, objections, explanations, and voice notes stay
+    // model-written from the live message under the paid-Meta guidance.
+    return draft.replyMode === 'campaign_buyer_handoff'
+        || draft.replyMode === 'campaign_app_preview_handoff';
 }
 
 function restoreCoalescedPaidMetaVoiceDraft({
@@ -2117,8 +2130,13 @@ function buildMetaAdGoalProofReply(currentMessage = '', { flowVariant = 'plant_b
 function applyMetaAdGoalProofReply(draft = {}, currentMessage = '', { flowVariant = 'plant_based_control' } = {}) {
     const proof = buildMetaAdGoalProofReply(currentMessage, { flowVariant });
     return {
-        ...draft,
         ...proof,
+        ...draft,
+        replyMode: proof.replyMode,
+        flowVariant: proof.flowVariant,
+        imageAttachmentUrl: proof.imageAttachmentUrl,
+        videoAttachmentUrl: proof.videoAttachmentUrl,
+        model: `${draft.model || 'unknown'}+guided_meta_goal_proof_v1`,
         timeline: draft.timeline || proof.timeline,
         conversationEpisode: draft.conversationEpisode || proof.conversationEpisode,
         currentTurnAnchorBlock: draft.currentTurnAnchorBlock || proof.currentTurnAnchorBlock,
@@ -2372,6 +2390,15 @@ The current paid Meta campaign promotes one public offer: Balance Foundations. I
   3. "Do I need to already be plant-based?"
 The legacy prompt "Do you offer personalized coaching plans?" can still arrive from an older live ad. Answer it in the Balance Foundations context: explain the six-week curriculum and Shannon's weekly review, then ask about the lead's goal. Do not route that paid-ad prompt to Starter Coaching.
 Also treat as offer inquiry: "founders pass", "founding membership", "plant-based fitness app", "vegan fitness app", "community", "1:1 coaching", "one-on-one coaching", "starter coaching", "online coaching", "what's included", "your program" when they clearly mean the offer, "saw your ad", "wanna join", "work with you", "send me the link", "I'm in", or "I need help / I don't know what I'm doing". Do NOT treat vague "keen", "interested", "yeah sounds good", or friendly banter as offer intent unless the same message clearly points at the offer/program/link.
+
+GUIDED RESPONSE CONTRACT FOR EVERY PAID-META TURN:
+- The funnel supplies the objective, verified offer facts, and the next useful decision. It never supplies a script to paste.
+- Write each ordinary reply fresh from the complete newest inbound turn. First answer or reflect the sharpest exact detail the person actually gave, using their meaning rather than a generic acknowledgement. Then make the smallest useful next move.
+- A reply must still make sense if the funnel instructions are hidden. Never use "Gotcha" or "that makes sense" as the entire reaction before jumping to a stock question.
+- Do not force the planned qualifier when their message offers a more natural thread. Rewrite the next move around their nouns, frequency, timing, reason, concern, or side question.
+- Keep exact checkout links, app-access links, safety holds, price, duration, and inclusions factual. Everything around those facts should still respond to the person.
+- If several rapid bubbles arrived, treat them as one message and respond to all meaningful parts without asking them to repeat anything.
+- After Shannon asks whether they are currently plant-based or looking to adopt it: if they are transitioning, reflect the exact habit they named, such as eating plant-based twice a week, then ask what has made them want to take it further. Do not leap straight to a generic health-and-fitness goal. If they are already plant-based, react to any duration or experience they supplied; ask how long only when it is missing, and naturally bring in their main health or fitness goal.
 
 Important: when there is no prior tracked conversation, do NOT assume the lead started the DM. Most first captured lead messages happen because Shannon commented on or replied to their story/post natively, and that opener is not visible in ManyChat. Their reply may be tiny or ambiguous because they are answering that unseen opener. Treat it as an open door and build rapport from whatever signal exists. Use one light human move, which can be a short statement. Ask a question only when that is clearly the best next text, or when there is no better hook and Shannon has not asked a basic day/week opener yet.
 
@@ -6348,7 +6375,7 @@ exports.handler = async (event) => {
             personalVoiceNoteMode: outboundVoiceMessage,
             allowVideoAttachment: hasInstagramGraphRoute,
         });
-        if (deterministicProgression) draft = {
+        if (shouldApplyDeterministicPaidMetaReplyOverride(deterministicProgression)) draft = {
             ...draft,
             ...deterministicProgression,
             timeline: draft.timeline,
@@ -7780,6 +7807,7 @@ exports._test = {
     isContextualMetaAdOfferLinkRequest,
     buildContextualMetaAdOfferLinkReply,
     buildDeterministicPaidMetaConversationReply,
+    shouldApplyDeterministicPaidMetaReplyOverride,
     restoreCoalescedPaidMetaVoiceDraft,
     removePaidMetaBlockerVoiceGreeting,
     buildPaidMetaConversationApproval,

@@ -15,6 +15,7 @@ const {
     buildApprovedDeterministicMetaAdFirstReplyReview,
     ensureMetaAdSalesProgressionQuestion,
     buildDeterministicPaidMetaConversationReply,
+    shouldApplyDeterministicPaidMetaReplyOverride,
     restoreCoalescedPaidMetaVoiceDraft,
     removePaidMetaBlockerVoiceGreeting,
     collectCocosAutoRepairIssues,
@@ -665,15 +666,15 @@ test('generic keyword and fit quick reply answer without a premature checkout li
     assert.doesNotMatch(reply.joined, /vegan fitness community/i);
 });
 
-test('plant-based answer advances to goal before blocker', () => {
+test('plant-based identity answers stay with the guided live-message writer', () => {
     const reply = buildDeterministicPaidMetaConversationReply({
         currentMessage: 'I am interested but not fully plant-based yet',
         qualifier: { commercial_stage: 'engaged', facts: {} },
         history: [{ direction: 'out', text: 'Are you currently plant-based or looking to adopt a plant-based lifestyle?' }],
         flowVariant: 'plant_based_control',
     });
-    assert.match(reply.joined, /main thing you're trying to change with your health and fitness/i);
-    assert.equal((reply.joined.match(/\?/g) || []).length, 1);
+    assert.equal(reply, null,
+        'a transitioning answer must be reflected from its exact detail instead of replaced with fixed funnel copy');
 
     const currentlyPlantBasedReply = buildDeterministicPaidMetaConversationReply({
         currentMessage: 'Yes, I am currently plant based',
@@ -681,8 +682,15 @@ test('plant-based answer advances to goal before blocker', () => {
         history: [{ direction: 'out', text: 'Are you currently plant-based or looking to adopt a plant-based lifestyle?' }],
         flowVariant: 'plant_based_control',
     });
-    assert.equal(currentlyPlantBasedReply.joined, `That's awesome! How long have you been plant-based for? And what's the main goal you're working towards with your health and fitness right now?`);
-    assert.equal((currentlyPlantBasedReply.joined.match(/\?/g) || []).length, 2);
+    assert.equal(currentlyPlantBasedReply, null,
+        'an already plant-based answer must also be written from the person\'s actual wording and duration');
+});
+
+test('only exact destination handoffs override the guided paid Meta reply', () => {
+    assert.equal(shouldApplyDeterministicPaidMetaReplyOverride({ replyMode: 'campaign_sales_progression' }), false);
+    assert.equal(shouldApplyDeterministicPaidMetaReplyOverride({ replyMode: 'campaign_goal_proof' }), false);
+    assert.equal(shouldApplyDeterministicPaidMetaReplyOverride({ replyMode: 'campaign_buyer_handoff' }), true);
+    assert.equal(shouldApplyDeterministicPaidMetaReplyOverride({ replyMode: 'campaign_app_preview_handoff' }), true);
 });
 
 test('private paid-ad voice cooldown restarts at the newest repeated FAQ opener', () => {
@@ -805,8 +813,9 @@ test('the reply after the goal is tailored and carries the right native proof me
         timeline: 'preserved live timeline',
     }, 'My goal is weight loss. I would like to lose about 10kg.');
     assert.equal(appliedWeightGoal.replyMode, 'campaign_goal_proof');
-    assert.equal(appliedWeightGoal.model, 'deterministic_meta_ad_goal_proof_v1');
-    assert.match(appliedWeightGoal.joined, /10kg is a solid goal/i);
+    assert.equal(appliedWeightGoal.model, 'vertex-v7+guided_meta_goal_proof_v1');
+    assert.equal(appliedWeightGoal.joined, 'Nice, that is a solid goal.',
+        'proof media must decorate the guided response instead of replacing its wording');
     assert.match(appliedWeightGoal.imageAttachmentUrl, /ally-cocos\.png/);
     assert.equal(appliedWeightGoal.timeline, 'preserved live timeline');
     const guardedWeightGoal = ensureMetaAdSalesProgressionQuestion({
