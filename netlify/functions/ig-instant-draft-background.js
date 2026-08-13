@@ -9,12 +9,37 @@
 
 const { handler: runIgInstantDraft } = require('./ig-instant-draft');
 
+const PAID_META_INBOUND_SETTLE_MS = 10000;
+
+function resolvePaidMetaInboundSettleDelayMs(payload = {}) {
+    const customData = payload?.customData && typeof payload.customData === 'object'
+        ? payload.customData
+        : {};
+    const attribution = customData.meta_ad_attribution && typeof customData.meta_ad_attribution === 'object'
+        ? customData.meta_ad_attribution
+        : {};
+    const paidMeta = String(attribution.source || '').toLowerCase() === 'meta_ads'
+        || String(customData.latest_paid_acquisition || '').toLowerCase() === 'meta_ads'
+        || String(customData.acquisition_source || '').toLowerCase() === 'meta_ads'
+        || customData.internal_test_auto_reply_enabled === true;
+    return paidMeta ? PAID_META_INBOUND_SETTLE_MS : 0;
+}
+
 exports.handler = async (event = {}) => {
     if (event.httpMethod !== 'POST') {
         return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
     }
 
     try {
+        let payload = {};
+        try { payload = JSON.parse(event.body || '{}'); } catch {}
+        const settleDelayMs = resolvePaidMetaInboundSettleDelayMs(payload);
+        if (settleDelayMs > 0) {
+            // Let rapid-fire Instagram bubbles land before choosing the latest
+            // canonical inbound. The older worker will then fail the freshness
+            // check and only the final message drafts the complete thought.
+            await new Promise(resolve => setTimeout(resolve, settleDelayMs));
+        }
         return await runIgInstantDraft(event);
     } catch (error) {
         console.error('[ig-instant-draft-background] dispatch failed:', error.message);
@@ -24,3 +49,5 @@ exports.handler = async (event = {}) => {
         };
     }
 };
+
+exports._test = { resolvePaidMetaInboundSettleDelayMs };

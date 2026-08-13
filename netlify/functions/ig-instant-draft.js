@@ -1319,6 +1319,10 @@ function buildDeterministicPaidMetaConversationReply({
     const voiceGoalPhrase = buildPaidMetaVoiceGoalPhrase(facts);
     const broadFlow = flowVariant === 'broad_pain';
     const recentProofVideo = hasRecentPaidMetaProofVideo(history);
+    const askedWhetherProofWasShannonsClient = (Array.isArray(history) ? history : [])
+        .slice(-5)
+        .some(item => item?.direction === 'in'
+            && /\b(?:was|is) (?:this|that|she|he) (?:one of )?your clients?\b/i.test(String(item?.text || '')));
     const approvedCheckoutUrl = isApprovedChallengeBioLinkText(checkoutUrl) ? String(checkoutUrl).trim() : '';
 
     if (META_AD_QUESTION_FATIGUE_RE.test(message)) {
@@ -1534,10 +1538,25 @@ function buildDeterministicPaidMetaConversationReply({
         const reflection = lifeLoadBlocker
             ? 'Work and the kids can wreck the best intentions, hey.'
             : blockerReflection;
+        const proofAnswer = askedWhetherProofWasShannonsClient
+            ? `Yeah, she's one of my clients. `
+            : '';
+        if (askedWhetherProofWasShannonsClient) {
+            const joined = `${proofAnswer}And that makes sense. Knowing what to do probably isn't the problem, it's keeping it going when the week changes. What usually drops off first for you, the training, the food, or both?`;
+            return {
+                chunks: [joined],
+                joined,
+                model: 'deterministic_paid_meta_conversation_v3',
+                replyMode: 'campaign_sales_progression',
+                maxChunks: 1,
+                error: null,
+                flowVariant,
+            };
+        }
         if (broadFlow) {
             const broadJoined = personalVoiceNoteMode
-                ? `Hey, hope you're going well. Yeah, so that makes total sense. ${reflection} Um, honestly, that's what this program is designed for. It's about having me check in, keep you accountable, and adjust the week with you so we can keep the ball rolling. Would that kind of support help you keep moving toward ${voiceGoalPhrase}?`
-                : `Yeah, that makes sense. ${reflection}\n\nWould having a clear plan and me checking in help you stay on track?`;
+                ? `${proofAnswer}Yeah, so that makes total sense. ${reflection} Um, honestly, that's what this program is designed for. It's about having me check in, keep you accountable, and adjust the week with you so we can keep the ball rolling. Would that kind of support help you keep moving toward ${voiceGoalPhrase}?`
+                : `${proofAnswer}Yeah, that makes sense. ${reflection}\n\nWould having a clear plan and me checking in help you stay on track?`;
             return {
                 chunks: [broadJoined],
                 joined: broadJoined,
@@ -1550,13 +1569,13 @@ function buildDeterministicPaidMetaConversationReply({
         }
         const joined = personalVoiceNoteMode
             ? [
-                `Yeah, that makes total sense. ${reflection}`,
+                `${proofAnswer}Yeah, that makes total sense. ${reflection}`,
                 `Ummmm... honestly, Balance is built for weeks like that. It gives you a simple starter plan around ${voiceGoalPhrase}, and we can adjust it when life changes.`,
                 `You can set yourself up before you pay. You'll see your weekly goals, starter workouts, meal plan, community, and my welcome note in your Inbox.`,
                 `It's eighty-nine dollars once for the full six weeks, and it doesn't renew.`,
                 `Have a look first, then decide. How does that sound?`,
             ].join('\n\n')
-            : `Yeah, that makes sense. ${reflection} Balance gives you a clear plan and support around ${voiceGoalPhrase}. It's one $89 payment for the full six weeks.\n\nIf you're keen, I can give you access to the app so you can check it out before any payment. Are you keen to have a look?`;
+            : `${proofAnswer}Yeah, that makes sense. ${reflection} Balance gives you a clear plan and support around ${voiceGoalPhrase}. It's one $89 payment for the full six weeks.\n\nIf you're keen, I can give you access to the app so you can check it out before any payment. Are you keen to have a look?`;
         return {
             chunks: [joined],
             joined,

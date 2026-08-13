@@ -683,6 +683,24 @@ test('plant-based answer advances to goal before blocker', () => {
     assert.equal((currentlyPlantBasedReply.joined.match(/\?/g) || []).length, 2);
 });
 
+test('rapid side question is answered while the newest blocker still advances the paid Meta conversation', () => {
+    const reply = buildDeterministicPaidMetaConversationReply({
+        currentMessage: `I just can't stick to it`,
+        qualifier: {
+            commercial_stage: 'problem_qualified',
+            facts: { motivation: 'lose weight' },
+        },
+        history: [
+            { direction: 'out', text: 'This is Ally. She lost 12kg in 16 weeks.' },
+            { direction: 'in', text: `She's done really well! Was this your client?` },
+        ],
+        flowVariant: 'plant_based_control',
+    });
+    assert.match(reply.joined, /^Yeah, she's one of my clients\./i);
+    assert.match(reply.joined, /keeping it going|drops off/i);
+    assert.doesNotMatch(reply.joined, /was it your client/i);
+});
+
 test('the reply after the goal is tailored and carries the right native proof media', () => {
     const history = [{
         direction: 'out',
