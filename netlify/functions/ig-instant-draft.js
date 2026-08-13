@@ -3819,6 +3819,10 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
     const reply = draftTextFromDraft(draft);
     const turn = String(currentMessage || '').replace(/\s+/g, ' ').trim();
     if (!reply || !turn) return [];
+    if (draft?.replyMode === 'campaign_first_reply'
+        && /^deterministic_meta_ad_founders_pass_v\d+$/.test(String(draft?.model || ''))) {
+        return [];
+    }
     const issues = [];
     const facts = qualifier?.facts && typeof qualifier.facts === 'object' ? qualifier.facts : {};
     const goal = String(facts.current_state || facts.motivation || '');

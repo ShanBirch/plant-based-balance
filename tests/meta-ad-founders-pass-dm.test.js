@@ -425,6 +425,16 @@ test('paid Meta writer contract enforces the exact $89 price', () => {
     assert.deepEqual(exactPriceIssues, []);
 });
 
+test('paid Meta writer contract does not hold the approved first ad greeting as a premature pitch', () => {
+    const opener = buildMetaAdFoundersPassFirstReply('What is the Founders Pass?');
+    assert.equal(opener.replyMode, 'campaign_first_reply');
+    assert.deepEqual(collectPaidMetaWriterContractIssues({
+        draft: opener,
+        currentMessage: 'What is the Founders Pass?',
+        qualifier: { facts: {} },
+    }), []);
+});
+
 test('fresh paid-ad test episode excludes messages from before the latest referral', () => {
     const history = [
         { direction: 'in', text: 'The kids make it hard', created_at: '2026-08-13T09:05:00.000Z' },
