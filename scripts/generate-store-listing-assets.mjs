@@ -277,12 +277,16 @@ async function renderMeals(spec) {
   const tilted = await sharp(phone).rotate(-3, { background: { r: 0, g: 0, b: 0, alpha: 0 } }).png().toBuffer();
   const left = Math.round(spec.width * 0.49);
   const top = Math.round(spec.height * 0.34);
+  const calloutX = spec.width * 0.04;
+  const calloutWidth = spec.width * 0.44;
+  const calloutTextX = spec.width * 0.075;
+  const calloutFontSize = Math.round(spec.width * 0.026);
   const callout = svg(spec.width, spec.height, `
-    <style>.pill { font-family: Arial, Helvetica, sans-serif; font-size: ${Math.round(spec.width * 0.031)}px; font-weight: 800; fill: ${palette.ink}; }</style>
-    <rect x="${spec.width * 0.04}" y="${spec.height * 0.67}" width="${spec.width * 0.42}" height="${spec.height * 0.18}" rx="${spec.width * 0.05}" fill="${palette.white}" opacity="0.96"/>
-    <text x="${spec.width * 0.11}" y="${spec.height * 0.72}" class="pill">✓ Plant-based meal plans</text>
-    <text x="${spec.width * 0.11}" y="${spec.height * 0.765}" class="pill">✓ Nutrition tracking</text>
-    <text x="${spec.width * 0.11}" y="${spec.height * 0.81}" class="pill">✓ Easy food logging</text>
+    <style>.pill { font-family: Arial, Helvetica, sans-serif; font-size: ${calloutFontSize}px; font-weight: 800; fill: ${palette.ink}; }</style>
+    <rect x="${calloutX}" y="${spec.height * 0.67}" width="${calloutWidth}" height="${spec.height * 0.18}" rx="${spec.width * 0.05}" fill="${palette.white}" opacity="0.96"/>
+    <text x="${calloutTextX}" y="${spec.height * 0.72}" class="pill">✓ Plant-based meal plans</text>
+    <text x="${calloutTextX}" y="${spec.height * 0.765}" class="pill">✓ Nutrition tracking</text>
+    <text x="${calloutTextX}" y="${spec.height * 0.81}" class="pill">✓ Easy food logging</text>
   `);
   return sharp(meal).composite([
     { input: shade }, { input: title }, { input: callout }, { input: tilted, left, top },

@@ -76,6 +76,9 @@ test('store visual generator keeps listing callouts readable and authentic', () 
     assert.doesNotMatch(generator, /\{ slug: 'founders-pass'/);
     assert.match(generator, /PLANT-BASED NUTRITION/);
     assert.match(generator, /Plant-based meal plans/);
+    assert.match(generator, /const calloutWidth = spec\.width \* 0\.44/);
+    assert.match(generator, /const calloutTextX = spec\.width \* 0\.075/);
+    assert.match(generator, /const calloutFontSize = Math\.round\(spec\.width \* 0\.026\)/);
     assert.doesNotMatch(generator, />[^<]*vegan[^<]*<\/text>/i);
     assert.match(generator, /community-meal-win\.jpg/);
     assert.match(generator, /community-milestone-win\.jpg/);
