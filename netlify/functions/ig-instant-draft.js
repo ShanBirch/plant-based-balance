@@ -1980,15 +1980,14 @@ function buildMetaAdFoundersPassFirstReply(currentMessage = '', { customData = {
         ? 'six weeks of the Balance app and community.'
         : 'six weeks of the Balance app and plant-based community.';
     const supportScope = `It's one AU$89 payment for the full six weeks. You get the six-week Foundations course, ${accessLine} It includes one weekly check-in plus workout and food review and adjustments with me, and it doesn't renew automatically.`;
+    const plantBasedOpeningQuestion = 'Are you currently plant-based or looking to adopt a plant-based lifestyle?';
     let answer;
     if (intent === 'fit' || intent === 'overview') {
-        answer = broadFlow
-            ? `Hey, yeah of course. Before I send you a heap of generic info, what's the main thing you're trying to change with your fitness right now?`
-            : `Hey, yeah of course. Are you currently plant-based, or are you interested in eating more plant-based?`;
+        answer = `Hey, yeah of course. The Founders Pass is for our six-week plant-based fitness program inside Balance. ${plantBasedOpeningQuestion}`;
     } else if (intent === 'plant_based_requirement') {
         answer = `Not at all. Plenty of people start while they're just trying to eat more plant-based. What does your food look like at the moment?`;
     } else if (intent === 'personalised_coaching') {
-            answer = `Yeah, I do. Balance Foundations gives you a clear six-week curriculum inside the app, plus a weekly check-in where I review and adjust your training and food. Are you currently plant-based, or interested in eating more plant-based?`;
+            answer = `Hey, yeah I do. Balance Foundations is our six-week plant-based fitness program inside the app, plus a weekly check-in where I review and adjust your training and food. ${plantBasedOpeningQuestion}`;
     } else if (intent === 'accountability') {
         answer = `You check in inside Balance and I can see what the week actually looked like, then I reply with the next bit of direction and a nudge if things are slipping. It's personal support from me, not just app reminders.`;
     } else if (intent === 'price') {
@@ -1998,7 +1997,7 @@ function buildMetaAdFoundersPassFirstReply(currentMessage = '', { customData = {
     } else if (intent === 'inclusions') {
         answer = broadFlow
                 ? `Yeah, Balance Foundations is a six-week curriculum inside the app, with me supporting you, plus training, food support and the community all together. What's the main thing you're trying to change with your fitness right now?`
-                : `Yeah, Balance Foundations is a six-week curriculum inside the app, with me supporting you, plus training, plant-based food support and the community all together. Are you currently plant-based, or interested in eating more plant-based?`;
+                : `Hey, yeah. Balance Foundations is our six-week plant-based fitness program inside the app, with me supporting you, plus training, plant-based food support and the community all together. ${plantBasedOpeningQuestion}`;
     }
     const chunks = [answer].filter(Boolean);
     return {
@@ -3324,8 +3323,11 @@ function isInternalMetaAdConversationOpeningTurn({
     history = [],
     currentMessage = '',
 } = {}) {
+    const repeatableTestOpener = /^what is the founders pass\??$/i.test(
+        String(currentMessage || '').replace(/\s+/g, ' ').trim()
+    );
     return isInternalMetaAdConversationTestLane({ linkedUserId, customData })
-        && (Array.isArray(history) ? history : []).length === 0
+        && ((Array.isArray(history) ? history : []).length === 0 || repeatableTestOpener)
         && shouldUseDeterministicMetaAdFirstReply(currentMessage);
 }
 

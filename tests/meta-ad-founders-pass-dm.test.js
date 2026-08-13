@@ -32,6 +32,7 @@ const {
     shouldUseDeterministicMetaAdFirstReply,
     getMetaAdSensitiveHoldReason,
     hasImmediateMetaDispatchFailure,
+    isInternalMetaAdConversationOpeningTurn,
     resolveInternalTestConversationResetAt,
     buildInternalTestQualifierThread,
 } = require('../netlify/functions/ig-instant-draft')._test;
@@ -67,7 +68,9 @@ test('Cocos paid-ad Founders Pass opener bypasses the false signup hold and mode
     });
 
     assert.equal(draft.firstReplyIntent, 'overview');
-    assert.match(draft.joined, /currently plant-based, or are you interested in eating more plant-based/i);
+    assert.match(draft.joined, /^Hey,/i);
+    assert.match(draft.joined, /six-week plant-based fitness program/i);
+    assert.match(draft.joined, /Are you currently plant-based or looking to adopt a plant-based lifestyle\?/i);
     assert.doesNotMatch(draft.joined, /https?:\/\//);
     assert.equal(approval.code, 'approved_meta_ad_first_reply');
     assert.equal(handoff.client_manager_review_required, false);
@@ -294,6 +297,24 @@ test('Coco paid-ad referral is the episode boundary when a stale writer restores
             last_referral_at: '2026-08-04T04:36:39.208Z',
         },
     }), '2026-08-04T04:40:00.000Z');
+});
+
+test('private paid-ad test FAQ restarts the opener even when the Instagram thread has older history', () => {
+    const customData = {
+        bot_account: 'shan_n_sunny',
+        internal_test_auto_reply_enabled: true,
+        internal_test_meta_ad_flow: 'plant_based_control',
+    };
+    assert.equal(isInternalMetaAdConversationOpeningTurn({
+        customData,
+        history: [{ direction: 'out', text: 'An older test reply' }],
+        currentMessage: 'What is the Founders Pass?',
+    }), true);
+    assert.equal(isInternalMetaAdConversationOpeningTurn({
+        customData,
+        history: [{ direction: 'out', text: 'An older test reply' }],
+        currentMessage: 'Okay sounds good',
+    }), false);
 });
 
 test('Coco qualifier evaluation cannot inherit terminal sales state from an older test episode', () => {
@@ -593,9 +614,9 @@ test('inclusions quick reply answers the direct ask without a raw preview URL', 
     assert.equal(reply.chunks.length, 1);
     assert.equal(reply.checkoutUrl, null);
     assert.doesNotMatch(reply.joined, /balance-founders-pass-dm-preview\.mp4/);
-    assert.match(reply.joined, /Balance Foundations is a six-week curriculum inside the app/i);
+    assert.match(reply.joined, /Balance Foundations is our six-week plant-based fitness program inside the app/i);
     assert.match(reply.joined, /training, plant-based food support and the community/i);
-    assert.match(reply.joined, /currently plant-based, or interested in eating more plant-based/i);
+    assert.match(reply.joined, /Are you currently plant-based or looking to adopt a plant-based lifestyle\?/i);
     assert.doesNotMatch(reply.joined, /https?:\/\//);
 });
 
@@ -614,7 +635,7 @@ test('personalised coaching FAQ answers from the advertised six-week program wit
             linkedUserId: null,
         });
 
-        assert.equal(reply.joined, 'Yeah, I do. Balance Foundations gives you a clear six-week curriculum inside the app, plus a weekly check-in where I review and adjust your training and food. Are you currently plant-based, or interested in eating more plant-based?');
+        assert.equal(reply.joined, 'Hey, yeah I do. Balance Foundations is our six-week plant-based fitness program inside the app, plus a weekly check-in where I review and adjust your training and food. Are you currently plant-based or looking to adopt a plant-based lifestyle?');
         assert.doesNotMatch(reply.joined, /Starter Coaching|\$29\.99/i);
         assert.equal(reply.checkoutUrl, null);
         assert.equal(reply.videoAttachmentUrl, undefined);
@@ -637,7 +658,7 @@ test('generic keyword and fit quick reply answer without a premature checkout li
 
     const reply = buildMetaAdFoundersPassFirstReply('Is this right for me?');
     assert.equal(reply.firstReplyIntent, 'fit');
-    assert.match(reply.joined, /currently plant-based, or are you interested in eating more plant-based/i);
+    assert.match(reply.joined, /Are you currently plant-based or looking to adopt a plant-based lifestyle\?/i);
     assert.doesNotMatch(reply.joined, /plant-based-fitness\.html/);
     assert.doesNotMatch(reply.joined, /vegan fitness community/i);
 });
@@ -646,7 +667,7 @@ test('plant-based answer advances to goal before blocker', () => {
     const reply = buildDeterministicPaidMetaConversationReply({
         currentMessage: 'I am interested but not fully plant-based yet',
         qualifier: { commercial_stage: 'engaged', facts: {} },
-        history: [{ direction: 'out', text: 'Are you currently plant-based, or are you interested in eating more plant-based?' }],
+        history: [{ direction: 'out', text: 'Are you currently plant-based or looking to adopt a plant-based lifestyle?' }],
         flowVariant: 'plant_based_control',
     });
     assert.match(reply.joined, /main thing you're trying to change with your health and fitness/i);
