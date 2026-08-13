@@ -7112,6 +7112,10 @@ exports.handler = async (event) => {
         linkedUserId: thread.linked_user_id,
         qualifier,
     });
+    const verifiedPaidMetaPreviewApproval = paidMetaConversationApproval?.required === false
+        && paidMetaConversationApproval?.code === 'approved_meta_ad_sales_progression'
+        && draft?.appPreviewHandoff === true
+        && isMetaAppPreviewUrl(draft?.appPreviewUrl);
     let challengeOfferWarning = metaAdFirstReplyApproval
         || paidMetaConversationApproval
         || buildChallengeOfferWarning({ draftText: draft.joined, qualifier, currentMessage: displayMessage });
@@ -7126,7 +7130,17 @@ exports.handler = async (event) => {
         linkedUserId: thread.linked_user_id,
         threadId: thread.id,
         manychatMessageId,
-    }) || (!skipGenericPaidMetaLinkHandoff && buildLeadOnboardingHandoffData({
+    }) || (verifiedPaidMetaPreviewApproval ? {
+        lead_onboarding_handoff: false,
+        needs_you_required: false,
+        operator_queue: null,
+        client_manager_review_required: false,
+        style_note: 'Verified paid Meta app-preview acceptance is approved for automatic sending.',
+        signup_link_manual_only: false,
+        signup_link_handoff_url: draft.appPreviewUrl,
+        approved_link_auto_sendable: true,
+        paid_meta_app_preview_handoff: true,
+    } : (!skipGenericPaidMetaLinkHandoff && buildLeadOnboardingHandoffData({
         draftText: draft.joined,
         qualifier,
         leadStage: effectiveLeadStage,
@@ -7135,7 +7149,7 @@ exports.handler = async (event) => {
         manychatMessageId,
         currentMessage: displayMessage,
         appPreviewHandoffUrl: draft.appPreviewHandoff ? draft.appPreviewUrl : '',
-    }));
+    })));
     const approvedCoachingLinkHandoff = leadOnboardingHandoffData?.approved_link_auto_sendable === true;
     if (leadOnboardingHandoffData?.client_manager_review_required) {
         challengeOfferWarning = {
