@@ -1805,6 +1805,8 @@ function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draf
     const effectiveContextBypass = contextBypass || cocosContextBypass;
     const verifiedPaidMetaProgression = /^deterministic_paid_meta_conversation_v\d+/i.test(String(draft?.model || ''))
         && ['campaign_sales_progression', 'campaign_buyer_handoff', 'campaign_app_preview_handoff'].includes(String(draft?.replyMode || ''));
+    const verifiedGuaranteedPaidMetaOffer = draft?.paidMetaGuaranteedContract === true
+        && draft?.replyMode === 'campaign_sales_progression';
     const metaAdSensitiveHold = getMetaAdSensitiveHoldReason({ alertData, currentMessage });
     if (metaAdSensitiveHold) return metaAdSensitiveHold;
     const appProblemHold = getAppProblemAutoSendHoldReason({
@@ -1857,6 +1859,7 @@ function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draf
         };
     }
     if (!verifiedPaidMetaProgression
+        && !verifiedGuaranteedPaidMetaOffer
         && draft?.appPreviewHandoff !== true
         && isPrematureChallengeInvite({ draftText: draft.joined, currentMessage, qualifier, leadStage, linkedUserId, leadReplyCount: meaningfulLeadReplyCount })) {
         return {
@@ -4128,6 +4131,7 @@ function isBlockingPaidMetaWriterContractIssue(issue = '') {
 function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = '', issues = [], qualifier = {}, history = [] } = {}) {
     const issueText = (Array.isArray(issues) ? issues : []).join(' ');
     const turn = String(currentMessage || '').replace(/\s+/g, ' ').trim();
+    const repairsEarnedOffer = /earned paid-Meta offer is missing/i.test(issueText);
     let joined = '';
     if (/sales suspicion|answer the sales question/i.test(issueText)) {
         joined = 'Yeah, Balance is a paid program. I’m just checking whether it actually fits what you need before I offer you anything.';
@@ -4174,7 +4178,7 @@ function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = 
         } else {
             joined = `Yeah, that makes sense. What's the main health or fitness goal you're working towards at the moment?`;
         }
-    } else if (/earned paid-Meta offer is missing/i.test(issueText)) {
+    } else if (repairsEarnedOffer) {
         joined = buildPaidMetaTailoredOfferText(turn);
     }
     if (!joined) return null;
@@ -4184,6 +4188,8 @@ function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = 
         chunks,
         joined: chunks.join('\n'),
         model: `${String(draft.model || 'unknown').replace(/\+paid-meta-guaranteed$/, '')}+paid-meta-guaranteed`,
+        replyMode: repairsEarnedOffer ? 'campaign_sales_progression' : draft.replyMode,
+        paidMetaGuaranteedContract: repairsEarnedOffer || undefined,
         shadowDraftInput: null,
     };
 }

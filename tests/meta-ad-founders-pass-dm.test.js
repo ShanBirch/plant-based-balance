@@ -37,6 +37,7 @@ const {
     shouldUseDeterministicMetaAdFirstReply,
     getMetaAdSensitiveHoldReason,
     hasImmediateMetaDispatchFailure,
+    shouldDispatchMetaAdReplyImmediately,
     isInternalMetaAdConversationOpeningTurn,
     resolveInternalTestConversationResetAt,
     resolveInternalTestVoiceCooldownResetAt,
@@ -566,6 +567,73 @@ test('paid Meta guaranteed fallback uses food and accountability to ask for the 
     assert.match(fallback.joined, /keeping you accountable/i);
     assert.match(fallback.joined, /what result are you mainly hoping to achieve/i);
     assert.doesNotMatch(fallback.joined, /partway there|help with fitness-wise/i);
+});
+
+test('paid Meta guaranteed earned offer is not held behind the ten-minute fallback sender', () => {
+    const currentMessage = 'I just slack off';
+    const history = [
+        { direction: 'in', text: 'I need to lose weight' },
+        { direction: 'out', text: 'Yeah, losing weight is a clear goal. What usually makes it hardest for you to stay consistent?' },
+    ];
+    const qualifier = {
+        facts: {
+            motivation: 'Lose weight',
+            current_state: 'Vegan, wants weight loss',
+            history_blockers: 'Slacks off and struggles with consistency',
+        },
+    };
+    const fallback = buildPaidMetaGuaranteedContractFallback({
+        draft: {
+            joined: 'Balance Foundations gives you workouts and a meal plan. Want the details?',
+            model: 'openai-gpt-5.4-mini-paid-meta',
+            replyMode: 'standard',
+            maxChunks: 3,
+        },
+        currentMessage,
+        issues: [
+            'Earned paid-Meta offer is missing six-week course.',
+            'Earned paid-Meta offer is missing look inside before payment.',
+        ],
+        qualifier,
+        history,
+    });
+    const review = {
+        verdict: 'pass',
+        confidence: 1,
+        issues: [],
+        notification_required: false,
+        context_loss_suspected: false,
+        reviewer_model: 'deterministic-paid-meta-guaranteed-send-v1',
+    };
+
+    assert.equal(fallback.replyMode, 'campaign_sales_progression');
+    assert.equal(fallback.paidMetaGuaranteedContract, true);
+    assert.deepStrictEqual(collectPaidMetaWriterContractIssues({
+        draft: fallback,
+        currentMessage,
+        qualifier,
+        history,
+    }), []);
+    assert.equal(getAutoDmHoldReason({
+        mediaReview: { required: false },
+        contextReview: { required: false },
+        draft: fallback,
+        draftReview: review,
+        currentMessage,
+        qualifier,
+        leadStage: 'qualifying',
+        linkedUserId: null,
+        meaningfulLeadReplyCount: 4,
+        alertData: { meta_ad_fast_lane: true },
+    }), null);
+    assert.equal(shouldDispatchMetaAdReplyImmediately({
+        alertData: {
+            meta_ad_fast_lane: true,
+            draft_review: review,
+        },
+        normalizedTiming: { action: 'send_now' },
+        scheduleResolution: { deferredForWorkingHours: false },
+    }), true);
 });
 
 test('paid Meta contract blocks asking the same question after the lead answers accountability', () => {
