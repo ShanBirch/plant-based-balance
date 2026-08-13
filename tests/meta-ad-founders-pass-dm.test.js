@@ -523,7 +523,11 @@ test('paid Meta opt-out, identity, and safety messages always hold while ordinar
     assert.equal(getMetaAdSensitiveHoldReason({ alertData: metaAlert, currentMessage: 'STOP' }).code, 'dm_opt_out');
     assert.equal(getMetaAdSensitiveHoldReason({ alertData: metaAlert, currentMessage: "Don't message me again" }).code, 'dm_opt_out');
     assert.equal(getMetaAdSensitiveHoldReason({ alertData: metaAlert, currentMessage: 'Are you an AI bot?' }).code, 'identity_question');
-    assert.equal(getMetaAdSensitiveHoldReason({ alertData: metaAlert, currentMessage: 'I am pregnant and injured' }).code, 'safety_or_medical');
+    assert.equal(getMetaAdSensitiveHoldReason({ alertData: metaAlert, currentMessage: 'I am pregnant and injured' }), null,
+        'ordinary pregnancy and injury context receives a safe non-diagnostic lead reply');
+    assert.equal(getMetaAdSensitiveHoldReason({ alertData: metaAlert, currentMessage: 'I want to be fitter and lose my pregnancy fat' }), null,
+        'a postpartum fitness goal must not be mistaken for an active medical emergency');
+    assert.equal(getMetaAdSensitiveHoldReason({ alertData: metaAlert, currentMessage: 'I am in immediate danger of self-harm' }).code, 'safety_or_medical');
     assert.equal(getMetaAdSensitiveHoldReason({ alertData: metaAlert, currentMessage: 'I need to stop snacking' }), null);
     assert.equal(getMetaAdSensitiveHoldReason({ alertData: {}, currentMessage: 'Are you an AI bot?' }), null);
 });

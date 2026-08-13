@@ -1962,7 +1962,10 @@ function resolveMetaAdFirstReplyIntent(currentMessage = '') {
 }
 
 const META_AD_IDENTITY_QUESTION_RE = /\b(are you (?:an? )?(?:ai|bot|robot|real|human)|is this (?:an? )?(?:ai|bot)|am i talking to|who is this)\b/i;
-const META_AD_SAFETY_OR_MEDICAL_RE = /\b(suicid\w*|self[- ]?harm\w*|eating disorder|pregnan\w*|injur\w*|medical emergency|hospital)\b/i;
+// Unlinked leads still receive a normal, non-diagnostic reply when they
+// mention pregnancy, postpartum goals, injury, pain, hospital history, or
+// body-image language. Only credible imminent-danger wording is a hard hold.
+const META_AD_SAFETY_OR_MEDICAL_RE = /\b(suicid\w*|self[- ]?harm\w*|kill(?:ing)? myself|medical emergency|immediate danger)\b/i;
 const META_AD_FIRST_REPLY_REVIEW_REQUIRED_RE = new RegExp(
     `${META_AD_IDENTITY_QUESTION_RE.source}|${META_AD_SAFETY_OR_MEDICAL_RE.source}`,
     'i'
@@ -2003,7 +2006,7 @@ function getMetaAdSensitiveHoldReason({ alertData = {}, currentMessage = '' } = 
         return { code: 'identity_question', label: 'lead asked who is replying' };
     }
     if (META_AD_SAFETY_OR_MEDICAL_RE.test(message)) {
-        return { code: 'safety_or_medical', label: 'safety or medical context needs Shannon' };
+        return { code: 'safety_or_medical', label: 'credible imminent safety risk needs Shannon' };
     }
     return null;
 }
