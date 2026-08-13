@@ -39,6 +39,8 @@ const {
     resolveInternalTestVoiceCooldownResetAt,
     buildCurrentInboundTurnText,
     buildInternalTestQualifierThread,
+    filterInternalTestHistoryAfterReset,
+    buildSafeMetaAdStyleFallback,
 } = require('../netlify/functions/ig-instant-draft')._test;
 const {
     buildInstagramGraphVideoMessagePayload,
@@ -341,13 +343,60 @@ test('Coco qualifier evaluation cannot inherit terminal sales state from an olde
             relationship_memory_compaction: {
                 summary: 'Lead bought in an older test episode.',
             },
+            relationship_context: 'Has kids and struggles with food prep.',
         },
+        goals: 'Lose pregnancy weight.',
+        running_notes: 'Work and kids make consistency difficult.',
+        personal_context: 'Has young children.',
     };
     const isolated = buildInternalTestQualifierThread(thread);
     assert.equal(isolated.qualifier, null);
     assert.equal(isolated.custom_data.relationship_memory_compaction, undefined);
+    assert.equal(isolated.custom_data.relationship_context, undefined);
+    assert.equal(isolated.goals, null);
+    assert.equal(isolated.running_notes, null);
+    assert.equal(isolated.personal_context, null);
     assert.equal(thread.qualifier.stage, 'won');
     assert.match(thread.custom_data.relationship_memory_compaction.summary, /older test episode/i);
+});
+
+test('fresh paid-ad test episode excludes messages from before the latest referral', () => {
+    const history = [
+        { direction: 'in', text: 'The kids make it hard', created_at: '2026-08-13T09:05:00.000Z' },
+        { direction: 'out', text: 'Work and kids can wreck the best intentions', created_at: '2026-08-13T09:06:00.000Z' },
+        { direction: 'in', text: 'I need accountability', created_at: '2026-08-13T09:16:34.585Z' },
+    ];
+    const filtered = filterInternalTestHistoryAfterReset({
+        history,
+        customData: {
+            bot_account: 'shan_n_sunny',
+            internal_test_auto_reply_enabled: true,
+            internal_test_meta_ad_flow: 'plant_based_control',
+            internal_test_conversation_reset_at: '2026-08-05T01:21:09.031Z',
+            meta_ad_attribution: { last_referral_at: '2026-08-13T09:08:55.411Z' },
+        },
+    });
+    assert.deepEqual(filtered.map(message => message.text), ['I need accountability']);
+});
+
+test('accountability fallback responds to the current message without inventing kids or work', () => {
+    const repaired = buildSafeMetaAdStyleFallback({
+        draft: {
+            chunks: ['Accountability can help. Would that support make it easier?'],
+            joined: 'Accountability can help. Would that support make it easier?',
+        },
+        draftReview: {
+            verdict: 'warn',
+            notification_required: false,
+            context_loss_suspected: false,
+            summary: 'The reply adds an unnecessary extra question.',
+            issues: ['extra question'],
+        },
+        currentMessage: "I've been plant based for 5 years! I think I need accountability",
+    });
+    assert.match(repaired.joined, /accountability can make a huge difference/i);
+    assert.match(repaired.joined, /what tends to slip first for you\?/i);
+    assert.doesNotMatch(repaired.joined, /\b(?:kids?|work|food|prep)\b/i);
 });
 
 test('paid Meta voice progression reflects different real blocker categories', () => {
@@ -694,8 +743,20 @@ test('plant-based identity answers stay with the guided live-message writer', ()
         history: [{ direction: 'out', text: 'Are you currently plant-based or looking to adopt a plant-based lifestyle?' }],
         flowVariant: 'plant_based_control',
     });
-    assert.equal(currentlyPlantBasedReply, null,
-        'an already plant-based answer must also be written from the person\'s actual wording and duration');
+    assert.equal(currentlyPlantBasedReply.identityProgression, true);
+    assert.equal(currentlyPlantBasedReply.replyMode, 'campaign_sales_progression');
+    assert.match(currentlyPlantBasedReply.joined, /That\'s awesome!/);
+    assert.match(currentlyPlantBasedReply.joined, /How long have you been plant-based for, and what\'s the main thing you\'d like help with fitness-wise\?/);
+    assert.equal((currentlyPlantBasedReply.joined.match(/\?/g) || []).length, 1);
+
+    const experiencedPlantBasedReply = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'I have been vegan for 9 years',
+        qualifier: { commercial_stage: 'engaged', facts: {} },
+        history: [{ direction: 'out', text: 'Are you currently plant-based or looking to adopt a plant-based lifestyle?' }],
+        flowVariant: 'plant_based_control',
+    });
+    assert.equal(experiencedPlantBasedReply, null,
+        'when they supply a duration, the live writer should reflect that exact experience');
 });
 
 test('paid Meta ad conversations are text-only without changing other voice lanes', () => {
@@ -719,6 +780,10 @@ test('paid Meta ad conversations are text-only without changing other voice lane
 
 test('only exact destination handoffs override the guided paid Meta reply', () => {
     assert.equal(shouldApplyDeterministicPaidMetaReplyOverride({ replyMode: 'campaign_sales_progression' }), false);
+    assert.equal(shouldApplyDeterministicPaidMetaReplyOverride({
+        replyMode: 'campaign_sales_progression',
+        identityProgression: true,
+    }), true, 'the narrow plant-identity step bypasses the slow model and style-warning hold');
     assert.equal(shouldApplyDeterministicPaidMetaReplyOverride({ replyMode: 'campaign_goal_proof' }), false);
     assert.equal(shouldApplyDeterministicPaidMetaReplyOverride({ replyMode: 'campaign_buyer_handoff' }), true);
     assert.equal(shouldApplyDeterministicPaidMetaReplyOverride({ replyMode: 'campaign_app_preview_handoff' }), true);

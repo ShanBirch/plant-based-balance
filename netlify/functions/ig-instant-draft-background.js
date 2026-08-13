@@ -10,6 +10,7 @@
 const { handler: runIgInstantDraft } = require('./ig-instant-draft');
 
 const PAID_META_INBOUND_SETTLE_MS = 10000;
+const PAID_META_LIVE_CHAT_SETTLE_MS = 1500;
 
 function resolvePaidMetaInboundSettleDelayMs(payload = {}) {
     const customData = payload?.customData && typeof payload.customData === 'object'
@@ -22,7 +23,9 @@ function resolvePaidMetaInboundSettleDelayMs(payload = {}) {
         || String(customData.latest_paid_acquisition || '').toLowerCase() === 'meta_ads'
         || String(customData.acquisition_source || '').toLowerCase() === 'meta_ads'
         || customData.internal_test_auto_reply_enabled === true;
-    return paidMeta ? PAID_META_INBOUND_SETTLE_MS : 0;
+    return paidMeta
+        ? (payload.paidMetaLiveChat === true ? PAID_META_LIVE_CHAT_SETTLE_MS : PAID_META_INBOUND_SETTLE_MS)
+        : 0;
 }
 
 exports.handler = async (event = {}) => {

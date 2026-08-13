@@ -460,6 +460,8 @@ async function dispatchDraft(thread, event) {
                 messageText: event.text || '',
                 manychatMessageId: graphMessageIds(event)[0] || event.messageId,
                 source: graphMessageSourceForEvent(event),
+                customData: thread.custom_data || {},
+                paidMetaLiveChat: Boolean(thread.last_outbound_at),
             }),
         });
         return { dispatched: res.ok, status: res.status };

@@ -2238,6 +2238,7 @@ async function dispatchDraft({ thread, messageText, dedupeId }) {
                 igUsername: thread.ig_username || null,
                 profileName: thread.profile_name || null,
                 customData: thread.custom_data || {},
+                paidMetaLiveChat: Boolean(thread.last_outbound_at),
             }),
         });
         if (!response.ok) {

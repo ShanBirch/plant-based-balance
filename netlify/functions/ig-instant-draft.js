@@ -827,7 +827,14 @@ function buildSafeMetaAdStyleFallback({ draft, draftReview, currentMessage } = {
             ? `Morning. ${kgGoal}kg and ${secondaryGoal} is a solid goal. When you've tried before, what tends to fall apart first?`
             : `Morning. That's a solid goal. When you've tried before, what tends to fall apart first?`;
     } else if (META_AD_CONSISTENCY_PROBLEM_RE.test(String(currentMessage || ''))) {
-        replacement = `Yeah, that makes total sense. Work and the kids can wreck the best intentions. Honestly, that's where having me check in, adjust the week with you and keep you accountable makes a big difference. Would that kind of support make it easier to stay on track?`;
+        const inbound = String(currentMessage || '');
+        if (/\baccountab(?:ility|le)?\b/i.test(inbound)) {
+            replacement = `Yeah absolutely. Accountability can make a huge difference when staying consistent is the hard part. What tends to slip first for you?`;
+        } else if (/\bwork\b/i.test(inbound) && /\bkids?\b/i.test(inbound)) {
+            replacement = `Yeah, that makes total sense. Juggling work and the kids can make consistency really hard. What tends to slip first for you?`;
+        } else {
+            replacement = `Yeah, I get you. Staying consistent can be the hardest part. What tends to knock you off track first?`;
+        }
     } else {
         const firstQuestionEnd = originalText.indexOf('?');
         const hasAnotherQuestion = firstQuestionEnd >= 0 && originalText.indexOf('?', firstQuestionEnd + 1) >= 0;
@@ -1322,6 +1329,30 @@ function isAdaptivePaidMetaPlantBasedIdentityTurn({
     return /\b(?:plant[ -]?based|vegan|vegetarian|not fully|not yet|already|currently|transition\w*|adopt\w*|curious|trying|want to (?:go|eat|be) more|eat\w* .{0,24}(?:times?|days?) (?:a|per) week|once|twice|few times|yes|yeah|yep|no|nah)\b/i.test(message);
 }
 
+function buildPaidMetaPlantBasedIdentityProgression({
+    currentMessage = '',
+    history = [],
+    flowVariant = 'plant_based_control',
+} = {}) {
+    if (!isAdaptivePaidMetaPlantBasedIdentityTurn({ currentMessage, history, flowVariant })) return null;
+    const message = String(currentMessage || '').replace(/\s+/g, ' ').trim();
+    const alreadyPlantBased = /\b(?:i(?:'m| am)|currently|already|yes|yeah|yep)\b[\s\S]{0,50}\b(?:plant[ -]?based|vegan)\b/i.test(message);
+    const transitioning = /\b(?:not fully|not yet|transition\w*|adopt\w*|trying|looking to|want to (?:go|eat|be) more)\b/i.test(message);
+    const suppliedDuration = /\b(?:for\s+)?(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten|a|couple(?: of)?|few)\s+(?:days?|weeks?|months?|years?)\b|\bsince\s+\d{4}\b/i.test(message);
+    if (!alreadyPlantBased || transitioning || suppliedDuration) return null;
+    const joined = `That's awesome! How long have you been plant-based for, and what's the main thing you'd like help with fitness-wise?`;
+    return {
+        chunks: [joined],
+        joined,
+        model: 'deterministic_paid_meta_conversation_v4',
+        replyMode: 'campaign_sales_progression',
+        identityProgression: true,
+        maxChunks: 1,
+        error: null,
+        flowVariant,
+    };
+}
+
 function buildDeterministicPaidMetaConversationReply({
     currentMessage = '',
     qualifier = {},
@@ -1340,7 +1371,9 @@ function buildDeterministicPaidMetaConversationReply({
     // This is a conversational identity turn, not a fixed funnel-copy turn.
     // Leave it with the model so it can reflect the person's exact habit,
     // duration, or reason before asking the next useful question.
-    if (isAdaptivePaidMetaPlantBasedIdentityTurn({ currentMessage: message, history, flowVariant })) return null;
+    if (isAdaptivePaidMetaPlantBasedIdentityTurn({ currentMessage: message, history, flowVariant })) {
+        return buildPaidMetaPlantBasedIdentityProgression({ currentMessage: message, history, flowVariant });
+    }
 
     const facts = qualifier?.facts && typeof qualifier.facts === 'object' ? qualifier.facts : {};
     const commercialStage = String(qualifier?.commercial_stage || '').toLowerCase();
@@ -1645,7 +1678,8 @@ function shouldApplyDeterministicPaidMetaReplyOverride(draft = null) {
     // Ordinary qualification, objections, explanations, and voice notes stay
     // model-written from the live message under the paid-Meta guidance.
     return draft.replyMode === 'campaign_buyer_handoff'
-        || draft.replyMode === 'campaign_app_preview_handoff';
+        || draft.replyMode === 'campaign_app_preview_handoff'
+        || draft.identityProgression === true;
 }
 
 function shouldUseOutboundSyntheticVoice({ personalVoicePlan = {}, metaAdConversationFastLane = false } = {}) {
@@ -3434,6 +3468,20 @@ function resolveInternalTestConversationResetAt(customData = {}) {
     )).value;
 }
 
+function buildInternalTestEpisodeCustomData(customData = {}) {
+    const source = customData && typeof customData === 'object' ? customData : {};
+    return {
+        bot_account: source.bot_account || source.instagram_graph?.bot_account || undefined,
+        instagram_graph: source.instagram_graph ? {
+            bot_account: source.instagram_graph.bot_account,
+        } : undefined,
+        meta_ad_attribution: source.meta_ad_attribution || undefined,
+        acquisition_mode: source.acquisition_mode || undefined,
+        offer_flow_variant: source.offer_flow_variant || undefined,
+        internal_test_conversation_reset_at: resolveInternalTestConversationResetAt(source) || undefined,
+    };
+}
+
 function resolveInternalTestVoiceCooldownResetAt(customData = {}, history = []) {
     const candidates = [resolveInternalTestConversationResetAt(customData)];
     for (const message of Array.isArray(history) ? history : []) {
@@ -3470,11 +3518,21 @@ function buildInternalTestQualifierThread(thread = {}) {
         && (!Number.isFinite(qualifierAtMs) || qualifierAtMs < resetAtMs)
         ? null
         : (thread.qualifier || null);
-    const customData = { ...(thread.custom_data || {}) };
-    // Relationship memory remains available to the reply writer for recognition,
-    // but an older Coco sales episode must not restore won/buyer-intent state.
-    delete customData.relationship_memory_compaction;
-    return { ...thread, qualifier, custom_data: customData };
+    // A fresh ad referral is a new test episode. Keep only routing/campaign data;
+    // old test facts (family, blockers, preferences, buyer state) must not leak
+    // into either qualification or the reply writer.
+    const customData = buildInternalTestEpisodeCustomData(thread.custom_data);
+    return {
+        ...thread,
+        qualifier,
+        custom_data: customData,
+        goals: null,
+        communication_style: null,
+        running_notes: null,
+        injuries_limits: null,
+        personal_context: null,
+        coach_instructions: null,
+    };
 }
 
 function filterInternalTestHistoryAfterReset({
@@ -6033,6 +6091,10 @@ exports.handler = async (event) => {
         memoryBlock = [memoryBlock, relationshipMemoryBlock].filter(Boolean).join('\n');
     }
 
+    if (internalMetaAdConversationTestLane) {
+        memoryBlock = '';
+    }
+
     let profileBlock = '';
     if (thread.linked_user_id) {
         try {
@@ -6046,6 +6108,9 @@ exports.handler = async (event) => {
             profile: { customData: thread.custom_data || {} },
             customData: thread.custom_data || {},
         });
+    }
+    if (internalMetaAdConversationTestLane) {
+        profileBlock = '';
     }
 
     // Resolve the lead stage we'll actually use for prompt routing.
@@ -6087,7 +6152,9 @@ exports.handler = async (event) => {
     const leadBlock = buildLeadBlock({
         profileName: thread.profile_name,
         igUsername: thread.ig_username,
-        customData: thread.custom_data,
+        customData: internalMetaAdConversationTestLane
+            ? buildInternalTestEpisodeCustomData(thread.custom_data)
+            : thread.custom_data,
         leadStage: effectiveLeadStage,
     });
 
@@ -6237,12 +6304,29 @@ exports.handler = async (event) => {
         { photo: '[photo]', audio: '[voice note]', video: '[video]' }
     );
     const meaningfulLeadReplyCount = countMeaningfulLeadReplies(history, qualifierCurrentMessage);
-    const qualifierEligible = isQualifierEligible({
+    const metaAdGoalReplyTurn = metaAdConversationFastLane
+        && isMetaAdGoalReplyTurn(history, messageText);
+    const qualifierEvaluationThread = buildInternalTestQualifierThread(thread);
+    let qualifier = qualifierEvaluationThread.qualifier || null;
+    const earlyDeterministicProgression = metaAdConversationFastLane && !metaAdOpeningTurn && !metaAdGoalReplyTurn
+        ? buildDeterministicPaidMetaConversationReply({
+            currentMessage: currentInboundTurnMessage,
+            qualifier,
+            history,
+            flowVariant: metaAdFlowVariant,
+            checkoutUrl: metaAdCheckoutUrl,
+            appPreviewUrl: buildMetaAppPreviewUrl(thread.id),
+            personalVoiceNoteMode: false,
+            allowVideoAttachment: hasInstagramGraphRoute,
+        })
+        : null;
+    const fastDeterministicProgression = shouldApplyDeterministicPaidMetaReplyOverride(earlyDeterministicProgression)
+        ? earlyDeterministicProgression
+        : null;
+    const qualifierEligible = !fastDeterministicProgression && isQualifierEligible({
         leadStage: effectiveLeadStage,
         linkedUserId: thread.linked_user_id,
     });
-    const qualifierEvaluationThread = buildInternalTestQualifierThread(thread);
-    let qualifier = qualifierEvaluationThread.qualifier || null;
     let qualifierEvaluated = false;
     let qualifierError = null;
     let qualifierModel = null;
@@ -6348,11 +6432,9 @@ exports.handler = async (event) => {
         metaAdConversationFastLane,
     });
     const outboundVoiceMessageReason = personalVoicePlan.reason;
-    const metaAdGoalReplyTurn = metaAdConversationFastLane
-        && isMetaAdGoalReplyTurn(history, messageText);
     let draft;
     try {
-        draft = metaAdOpeningTurn && shouldUseDeterministicMetaAdFirstReply(messageText) ? buildMetaAdFoundersPassFirstReply(messageText, {
+        draft = fastDeterministicProgression || (metaAdOpeningTurn && shouldUseDeterministicMetaAdFirstReply(messageText) ? buildMetaAdFoundersPassFirstReply(messageText, {
             customData: thread.custom_data,
             flowVariant: metaAdFlowVariant,
             acquisitionMode,
@@ -6387,7 +6469,7 @@ exports.handler = async (event) => {
             acquisitionMode,
             adFlowVariant: metaAdFlowVariant,
             checkoutUrl: metaAdCheckoutUrl,
-        });
+        }));
     } catch (err) {
         console.error('[ig-draft] draft generation threw after stale-send cleanup:', err.message);
         draft = {
@@ -6408,7 +6490,7 @@ exports.handler = async (event) => {
         };
     }
 
-    if (metaAdConversationFastLane && !metaAdOpeningTurn && !metaAdGoalReplyTurn) {
+    if (metaAdConversationFastLane && !metaAdOpeningTurn && !metaAdGoalReplyTurn && !fastDeterministicProgression) {
         const deterministicProgression = buildDeterministicPaidMetaConversationReply({
             currentMessage: currentInboundTurnMessage,
             qualifier,
