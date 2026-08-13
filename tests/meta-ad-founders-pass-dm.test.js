@@ -672,6 +672,15 @@ test('plant-based answer advances to goal before blocker', () => {
     });
     assert.match(reply.joined, /main thing you're trying to change with your health and fitness/i);
     assert.equal((reply.joined.match(/\?/g) || []).length, 1);
+
+    const currentlyPlantBasedReply = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'Yes, I am currently plant based',
+        qualifier: { commercial_stage: 'engaged', facts: {} },
+        history: [{ direction: 'out', text: 'Are you currently plant-based or looking to adopt a plant-based lifestyle?' }],
+        flowVariant: 'plant_based_control',
+    });
+    assert.equal(currentlyPlantBasedReply.joined, `That's awesome! How long have you been plant-based for? And what's the main goal you're working towards with your health and fitness right now?`);
+    assert.equal((currentlyPlantBasedReply.joined.match(/\?/g) || []).length, 2);
 });
 
 test('the reply after the goal is tailored and carries the right native proof media', () => {

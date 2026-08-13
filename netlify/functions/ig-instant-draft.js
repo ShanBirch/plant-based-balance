@@ -1335,7 +1335,12 @@ function buildDeterministicPaidMetaConversationReply({
     }
 
     if (!broadFlow && !hasGoal && hasRecentPaidMetaPlantBasedQuestion(history)) {
-        const joined = `Gotcha. What's the main thing you're trying to change with your health and fitness right now?`;
+        const stillAdoptingPlantBased = /\b(?:not|isn['\u2019]?t|aren['\u2019]?t|not fully|interested|looking|trying|transitioning|adopt)\b.{0,45}\b(?:plant[ -]?based|vegan)\b/i.test(message);
+        const confirmsCurrentlyPlantBased = !stillAdoptingPlantBased
+            && /\b(?:yes|yeah|yep|i am|i'm|im|already|currently|have been)\b.{0,45}\b(?:plant[ -]?based|vegan)\b|\b(?:plant[ -]?based|vegan)\b.{0,30}\b(?:for|since|already|currently|years?|months?)\b/i.test(message);
+        const joined = confirmsCurrentlyPlantBased
+            ? `That's awesome! How long have you been plant-based for? And what's the main goal you're working towards with your health and fitness right now?`
+            : `Gotcha. What's the main thing you're trying to change with your health and fitness right now?`;
         return {
             chunks: [joined],
             joined,
