@@ -6,6 +6,7 @@ const root = path.resolve(__dirname, '..');
 const {
     isCocosAlertData,
     isChallengeOfferSend,
+    isVerifiedPaidMetaProgressionAlertData,
     hasClientFacingAiSelfReference,
     isGratitudeCloserText,
     resolveLatestInboundTextForSend,
@@ -44,6 +45,25 @@ assert.strictEqual(isChallengeOfferSend({
     alertData: {},
     replyText: 'haha that looked like a good session',
 }), false);
+
+assert.strictEqual(isVerifiedPaidMetaProgressionAlertData({
+    meta_ad_conversation_fast_lane: true,
+    draft_model: 'deterministic_paid_meta_guided_sales_v1',
+    draft_reply_mode: 'campaign_sales_progression',
+    challenge_offer_warning: {
+        required: false,
+        code: 'approved_meta_ad_sales_progression',
+    },
+}), true);
+assert.strictEqual(isVerifiedPaidMetaProgressionAlertData({
+    meta_ad_conversation_fast_lane: true,
+    draft_model: 'openai-gpt-5.4-mini-paid-meta',
+    draft_reply_mode: 'campaign_sales_progression',
+    challenge_offer_warning: {
+        required: false,
+        code: 'approved_meta_ad_sales_progression',
+    },
+}), false, 'unverified model output must remain subject to the sender review block');
 
 assert.strictEqual(hasClientFacingAiSelfReference('Sorry that was shanbot'), true);
 assert.strictEqual(hasClientFacingAiSelfReference("haha fair call, I'm not AI"), true);

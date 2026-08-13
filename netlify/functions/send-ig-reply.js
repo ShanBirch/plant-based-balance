@@ -54,6 +54,15 @@ function isBlockedDraftReview(review) {
     return String(review.verdict || '').toLowerCase() === 'block';
 }
 
+function isVerifiedPaidMetaProgressionAlertData(data = {}) {
+    return data.meta_ad_conversation_fast_lane === true
+        && /^deterministic_paid_meta_(?:conversation|guided_sales)_v\d+/i.test(String(data.draft_model || ''))
+        && ['campaign_sales_progression', 'campaign_buyer_handoff', 'campaign_app_preview_handoff']
+            .includes(String(data.draft_reply_mode || ''))
+        && data.challenge_offer_warning?.required === false
+        && /^approved_meta_ad_/.test(String(data.challenge_offer_warning?.code || ''));
+}
+
 function blockedDraftReviewMessage(review) {
     const summary = String(review?.summary || '').trim();
     return summary
@@ -2249,7 +2258,10 @@ exports.handler = async (event) => {
         messagesToSend = [replyText];
         wasEdited = !!draftText && replyText !== draftText;
     }
-    if (!wasEdited && isBlockedDraftReview(alertData.draft_review) && !draftReviewOverride) {
+    if (!wasEdited
+        && isBlockedDraftReview(alertData.draft_review)
+        && !draftReviewOverride
+        && !isVerifiedPaidMetaProgressionAlertData(alertData)) {
         const errorMessage = blockedDraftReviewMessage(alertData.draft_review);
         const blockedData = {
             ...alertData,
@@ -2913,6 +2925,7 @@ exports._test = {
     isInstagramAudioUnsupportedError,
     isCocosAlertData,
     isChallengeOfferSend,
+    isVerifiedPaidMetaProgressionAlertData,
     isSendClaimStale,
     isHumanApprovedPermanentNeedsYouSendSource,
     isAutomatedPermanentNeedsYouSendSource,
