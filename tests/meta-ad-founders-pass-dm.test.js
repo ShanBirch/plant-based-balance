@@ -1162,7 +1162,7 @@ test('generic keyword and fit quick reply answer without a premature checkout li
     assert.doesNotMatch(reply.joined, /vegan fitness community/i);
 });
 
-test('plant-based identity answers stay with the guided live-message writer', () => {
+test('simple plant-based identity answers advance reliably while richer answers stay with the live writer', () => {
     const reply = buildDeterministicPaidMetaConversationReply({
         currentMessage: 'I am interested but not fully plant-based yet',
         qualifier: { commercial_stage: 'engaged', facts: {} },
@@ -1178,8 +1178,17 @@ test('plant-based identity answers stay with the guided live-message writer', ()
         history: [{ direction: 'out', text: 'Are you currently plant-based or looking to adopt a plant-based lifestyle?' }],
         flowVariant: 'plant_based_control',
     });
-    assert.equal(currentlyPlantBasedReply, null,
-        'even a simple identity answer stays with the live writer so reciprocal questions and extra bubbles are handled');
+    assert.equal(currentlyPlantBasedReply.model, 'deterministic_paid_meta_guided_sales_v1');
+    assert.equal(currentlyPlantBasedReply.joined, 'Nice. What’s your main health or fitness goal at the moment?');
+
+    const shortVeganReply = buildDeterministicPaidMetaConversationReply({
+        currentMessage: "I'm vegan yeah",
+        qualifier: { commercial_stage: 'buyer_intent', facts: {} },
+        history: [{ direction: 'out', text: 'Are you currently plant-based or looking to adopt a plant-based lifestyle?' }],
+        flowVariant: 'plant_based_control',
+    });
+    assert.equal(shortVeganReply.joined, 'Nice. What’s your main health or fitness goal at the moment?');
+    assert.doesNotMatch(shortVeganReply.joined, /\$89\.99|link/i);
 
     const experiencedPlantBasedReply = buildDeterministicPaidMetaConversationReply({
         currentMessage: 'I have been vegan for 9 years',

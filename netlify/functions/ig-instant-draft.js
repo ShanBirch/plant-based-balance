@@ -1317,9 +1317,25 @@ function buildPaidMetaPlantBasedIdentityProgression({
     history = [],
     flowVariant = 'plant_based_control',
 } = {}) {
-    // Identity answers frequently contain a duration, reciprocal question or
-    // second goal bubble. They must be written from the complete live turn.
-    return null;
+    const message = String(currentMessage || '').replace(/\s+/g, ' ').trim();
+    const simpleConfirmedIdentity = message.split(/\s+/).length <= 7
+        && /\b(?:vegan|vegetarian|plant[ -]?based)\b/i.test(message)
+        && !/\b(?:not|yet|trying|interested|adopt|transition|because|since|for\s+\d|years?|months?|weeks?)\b/i.test(message)
+        && !/\?/.test(message);
+    // Rich identity answers stay with the live writer so it can reflect a
+    // duration, reason or reciprocal question. A short confirmation has only
+    // one correct next sales-script move, so keep that transition reliable.
+    if (!simpleConfirmedIdentity || flowVariant !== 'plant_based_control') return null;
+    const joined = 'Nice. What’s your main health or fitness goal at the moment?';
+    return {
+        chunks: [joined],
+        joined,
+        model: 'deterministic_paid_meta_guided_sales_v1',
+        replyMode: 'campaign_sales_progression',
+        maxChunks: 1,
+        error: null,
+        flowVariant,
+    };
 }
 
 function buildDeterministicPaidMetaConversationReply({
