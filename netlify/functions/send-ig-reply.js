@@ -245,7 +245,7 @@ function resolveApprovedVoiceCompanionText(alertData = {}, voiceEnabled = false)
         || !text
         || text.length > 500
         || !text.includes(previewUrl)
-        || /https?:\/\/(?!plantbased-balance\.org\/meta-app-preview\.html)/i.test(text)) {
+        || /https?:\/\/(?!plantbased-balance\.org\/(?:meta-app-preview\.html|p\/))/i.test(text)) {
         return '';
     }
     return text;

@@ -6,6 +6,8 @@
     <script>
         (function () {
             var incoming = new URLSearchParams(window.location.search);
+            var shortPreview = window.location.pathname.match(/^\/p\/([^/]+)\/?$/i);
+            if (shortPreview && !incoming.get('meta_ref')) incoming.set('meta_ref', shortPreview[1]);
             if (!incoming.get('utm_source')) incoming.set('utm_source', 'facebook');
             if (!incoming.get('utm_medium')) incoming.set('utm_medium', 'paid_social');
             incoming.set('meta_preview', '1');

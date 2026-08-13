@@ -560,6 +560,12 @@
   force = true
 
 [[redirects]]
+  from = "/p/:meta_ref"
+  to = "/meta-app-preview.html"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/fitness"
   to = "/fitness-coaching.html"
   status = 200

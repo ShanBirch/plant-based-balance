@@ -116,9 +116,35 @@ async function verifyMetaPreviewRef(token, nowMs = Date.now()) {
         || "",
         4000,
     );
-    const parts = value.split(".");
-    if (!secret || parts.length !== 2 || !parts[0] || !parts[1]) return null;
+    if (!secret) return null;
     try {
+        if (!value.includes(".")) {
+            const compact = base64UrlBytes(value);
+            const payloadLength = 21;
+            const signatureLength = 12;
+            if (compact.length !== payloadLength + signatureLength || compact[0] !== 2) return null;
+            const payload = compact.slice(0, payloadLength);
+            const signature = compact.slice(payloadLength);
+            const key = await crypto.subtle.importKey(
+                "raw",
+                new TextEncoder().encode(secret),
+                { name: "HMAC", hash: "SHA-256" },
+                false,
+                ["sign"],
+            );
+            const expected = new Uint8Array(await crypto.subtle.sign("HMAC", key, payload)).slice(0, signatureLength);
+            let mismatch = 0;
+            for (let index = 0; index < signatureLength; index += 1) mismatch |= signature[index] ^ expected[index];
+            if (mismatch !== 0) return null;
+            const threadHex = Array.from(payload.slice(1, 17), byte => byte.toString(16).padStart(2, "0")).join("");
+            const threadId = `${threadHex.slice(0, 8)}-${threadHex.slice(8, 12)}-${threadHex.slice(12, 16)}-${threadHex.slice(16, 20)}-${threadHex.slice(20)}`;
+            const expiresMs = new DataView(payload.buffer, payload.byteOffset, payload.byteLength).getUint32(17) * 1000;
+            const issuedMs = expiresMs - (24 * 60 * 60 * 1000);
+            if (expiresMs <= nowMs || expiresMs > nowMs + (24 * 60 * 60 * 1000) + 60_000) return null;
+            return { threadId, issuedMs, expiresMs };
+        }
+        const parts = value.split(".");
+        if (parts.length !== 2 || !parts[0] || !parts[1]) return null;
         const key = await crypto.subtle.importKey(
             "raw",
             new TextEncoder().encode(secret),
@@ -614,7 +640,7 @@ async function recordMetaPreviewPurchaseAndQueue({ session, stripeEvent, email, 
     const canonicalOutbound = Array.isArray(messageRows) ? messageRows.find(message =>
         String(message.direction || "").toLowerCase() === "out"
         && String(message.text || "").includes(token)
-        && String(message.text || "").includes("https://plantbased-balance.org/meta-app-preview.html")
+        && /https:\/\/plantbased-balance\.org\/(?:meta-app-preview\.html|p\/)/i.test(String(message.text || ""))
     ) : null;
     if (!canonicalOutbound) return { skipped: "canonical_preview_missing" };
 

@@ -225,7 +225,7 @@ async function enqueueMetaAppPreviewFollowup(eventPayload, nowMs = Date.now(), c
     const previewOutbound = messages.find(message =>
         String(message.direction || '').toLowerCase() === 'out'
         && String(message.text || '').includes(token)
-        && String(message.text || '').includes('https://plantbased-balance.org/meta-app-preview.html')
+        && /https:\/\/plantbased-balance\.org\/(?:meta-app-preview\.html|p\/)/i.test(String(message.text || ''))
     );
     if (!previewOutbound) return { queued: false, reason: 'canonical_preview_missing' };
 

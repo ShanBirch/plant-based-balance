@@ -1,7 +1,10 @@
 const crypto = require('node:crypto');
 
 const META_APP_PREVIEW_URL = 'https://plantbased-balance.org/meta-app-preview.html';
+const META_APP_PREVIEW_SHORT_URL = 'https://plantbased-balance.org/p';
 const DEFAULT_TTL_MS = 24 * 60 * 60 * 1000;
+const COMPACT_REF_VERSION = 2;
+const COMPACT_SIGNATURE_BYTES = 12;
 
 function signingSecret(env = process.env) {
     return String(
@@ -24,6 +27,17 @@ function signPayload(encodedPayload, secret) {
     return crypto.createHmac('sha256', secret).update(encodedPayload).digest('base64url');
 }
 
+function uuidBytes(value = '') {
+    const hex = String(value || '').replace(/-/g, '');
+    if (!/^[0-9a-f]{32}$/i.test(hex)) return null;
+    return Buffer.from(hex, 'hex');
+}
+
+function uuidFromBytes(value) {
+    const hex = Buffer.from(value).toString('hex');
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
 function createMetaAppPreviewRef(threadId, {
     nowMs = Date.now(),
     ttlMs = DEFAULT_TTL_MS,
@@ -31,13 +45,15 @@ function createMetaAppPreviewRef(threadId, {
 } = {}) {
     const id = String(threadId || '').trim();
     const secret = signingSecret(env);
-    if (!/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(id) || !secret) return '';
-    const payload = encode(JSON.stringify({
-        t: id,
-        i: Math.floor(nowMs / 1000),
-        e: Math.floor((nowMs + ttlMs) / 1000),
-    }));
-    return `${payload}.${signPayload(payload, secret)}`;
+    const idBytes = uuidBytes(id);
+    const expiresAtSeconds = Math.floor((nowMs + ttlMs) / 1000);
+    if (!idBytes || !secret || !Number.isSafeInteger(expiresAtSeconds) || expiresAtSeconds > 0xffffffff) return '';
+    const payload = Buffer.alloc(21);
+    payload.writeUInt8(COMPACT_REF_VERSION, 0);
+    idBytes.copy(payload, 1);
+    payload.writeUInt32BE(expiresAtSeconds, 17);
+    const signature = crypto.createHmac('sha256', secret).update(payload).digest().subarray(0, COMPACT_SIGNATURE_BYTES);
+    return Buffer.concat([payload, signature]).toString('base64url');
 }
 
 function verifyMetaAppPreviewRef(token, {
@@ -47,6 +63,22 @@ function verifyMetaAppPreviewRef(token, {
     const value = String(token || '').trim();
     const secret = signingSecret(env);
     if (!secret || value.length > 700) return null;
+    if (!value.includes('.')) {
+        let compact;
+        try { compact = Buffer.from(value, 'base64url'); } catch (_) { return null; }
+        const payloadLength = 21;
+        if (compact.length !== payloadLength + COMPACT_SIGNATURE_BYTES
+            || compact.readUInt8(0) !== COMPACT_REF_VERSION) return null;
+        const payload = compact.subarray(0, payloadLength);
+        const signature = compact.subarray(payloadLength);
+        const expected = crypto.createHmac('sha256', secret).update(payload).digest().subarray(0, COMPACT_SIGNATURE_BYTES);
+        if (!crypto.timingSafeEqual(signature, expected)) return null;
+        const expiresMs = payload.readUInt32BE(17) * 1000;
+        const issuedMs = expiresMs - DEFAULT_TTL_MS;
+        const threadId = uuidFromBytes(payload.subarray(1, 17));
+        if (expiresMs <= nowMs || expiresMs > nowMs + DEFAULT_TTL_MS + 60_000) return null;
+        return { threadId, issuedAt: new Date(issuedMs).toISOString(), expiresAt: new Date(expiresMs).toISOString() };
+    }
     const [payload, signature, extra] = value.split('.');
     if (!payload || !signature || extra) return null;
     const expected = signPayload(payload, secret);
@@ -71,14 +103,15 @@ function verifyMetaAppPreviewRef(token, {
 function buildMetaAppPreviewUrl(threadId, options = {}) {
     const token = createMetaAppPreviewRef(threadId, options);
     if (!token) return META_APP_PREVIEW_URL;
-    return `${META_APP_PREVIEW_URL}?meta_ref=${encodeURIComponent(token)}`;
+    return `${META_APP_PREVIEW_SHORT_URL}/${encodeURIComponent(token)}`;
 }
 
 function isMetaAppPreviewUrl(value = '') {
     try {
         const url = new URL(String(value || ''));
         return url.origin === 'https://plantbased-balance.org'
-            && url.pathname === '/meta-app-preview.html';
+            && (url.pathname === '/meta-app-preview.html'
+                || /^\/p\/[A-Za-z0-9_-]{20,100}\/?$/.test(url.pathname));
     } catch (_) {
         return false;
     }
@@ -86,6 +119,7 @@ function isMetaAppPreviewUrl(value = '') {
 
 module.exports = {
     META_APP_PREVIEW_URL,
+    META_APP_PREVIEW_SHORT_URL,
     DEFAULT_TTL_MS,
     signingSecret,
     createMetaAppPreviewRef,

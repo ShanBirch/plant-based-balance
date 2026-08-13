@@ -13,9 +13,11 @@ test('preview references are signed, short-lived, and retain the canonical desti
     const threadId = '11111111-1111-4111-8111-111111111111';
     const url = refs.buildMetaAppPreviewUrl(threadId, { nowMs, env });
     const parsedUrl = new URL(url);
-    const token = parsedUrl.searchParams.get('meta_ref');
+    const token = parsedUrl.pathname.split('/').filter(Boolean).at(-1);
 
-    assert.equal(parsedUrl.origin + parsedUrl.pathname, refs.META_APP_PREVIEW_URL);
+    assert.equal(parsedUrl.origin + parsedUrl.pathname.slice(0, 2), refs.META_APP_PREVIEW_SHORT_URL);
+    assert.equal(parsedUrl.search, '');
+    assert.ok(url.length < 90, `preview DM URL should stay compact, got ${url.length} characters`);
     assert.equal(refs.isMetaAppPreviewUrl(url), true);
     assert.equal(refs.verifyMetaAppPreviewRef(token, { nowMs, env }).threadId, threadId);
     assert.equal(refs.verifyMetaAppPreviewRef(`${token}broken`, { nowMs, env }), null);
@@ -30,7 +32,7 @@ test('a verified five-minute gate schedules one canonical IG follow-up and no ou
     const threadId = '22222222-2222-4222-8222-222222222222';
     const refs = require(refModulePath);
     const previewUrl = refs.buildMetaAppPreviewUrl(threadId, { nowMs: now });
-    const token = new URL(previewUrl).searchParams.get('meta_ref');
+    const token = new URL(previewUrl).pathname.split('/').filter(Boolean).at(-1);
 
     global.fetch = async (url, options = {}) => {
         requests.push({ url: String(url), options });
@@ -120,7 +122,7 @@ test('opening Stripe schedules a separate buyer-safe abandonment check', async (
     const threadId = '77777777-7777-4777-8777-777777777777';
     const refs = require(refModulePath);
     const previewUrl = refs.buildMetaAppPreviewUrl(threadId, { nowMs: now });
-    const token = new URL(previewUrl).searchParams.get('meta_ref');
+    const token = new URL(previewUrl).pathname.split('/').filter(Boolean).at(-1);
 
     global.fetch = async (url, options = {}) => {
         requests.push({ url: String(url), options });
@@ -185,7 +187,7 @@ test('the scheduled worker rechecks preview checkout evidence before Graph deliv
     assert.match(worker, /meta_app_preview_checkout_or_purchase_started/);
     assert.match(worker, /founders_pass_purchases/);
     assert.match(worker, /meta_app_preview_purchase_completed/);
-    assert.ok(worker.indexOf('const conversion = await getMetaPreviewConversionAfterGate(alert)') < worker.indexOf('const newerMessage = await getNewerInstagramConversationMessage(alert)'),
+    assert.ok(worker.indexOf('const conversion = await getMetaPreviewConversionAfterGate(alert)') < worker.indexOf('const newerMessage = await cancelIfNewerInstagramConversationMessage(alert)', worker.indexOf('const conversion = await getMetaPreviewConversionAfterGate(alert)')),
         'conversion evidence is checked before the final conversation-delta send guard');
 });
 
