@@ -49,6 +49,11 @@ assert.deepStrictEqual([...worker.TAHLIA_SIMPLE_COMMENTS], [
     'nice job',
     'very nice',
     'this is great',
+    'sorry to hear',
+    'sending love',
+    'thinking of you',
+    'that sounds tough',
+    'hope you’re okay',
 ]);
 assert.strictEqual(worker.isBeforeBrisbaneDateKey(new Date('2026-07-04T13:59:00.000Z'), '2026-07-05'), true);
 assert.strictEqual(worker.isBeforeBrisbaneDateKey(new Date('2026-07-04T14:00:00.000Z'), '2026-07-05'), false);
@@ -249,6 +254,20 @@ assert.deepStrictEqual(worker.shouldConsiderStory({
     shannonId: 'coach-1',
 }), { ok: false, reason: 'sensitive_post' });
 
+assert.deepStrictEqual(worker.shouldConsiderStory({
+    story: { id: 'story-crisis', user_id: 'member-2', caption: 'I am in crisis' },
+    author: {},
+    tahliaId: tahliaUser.id,
+    shannonId: 'coach-1',
+}), { ok: false, reason: 'sensitive_post' });
+
+assert.deepStrictEqual(worker.shouldConsiderStory({
+    story: { id: 'story-sad', user_id: 'member-2', caption: 'feeling sad after a rough day' },
+    author: {},
+    tahliaId: tahliaUser.id,
+    shannonId: 'coach-1',
+}), { ok: true });
+
 assert.strictEqual(coachAction.isTahliaSocialAction({ type: 'publish_tahlia_feed_post' }), true);
 assert.strictEqual(coachAction.isTahliaSocialAction({ type: 'publish_tahlia_feed_comment' }), true);
 assert.strictEqual(coachAction.isTahliaSocialAction({ type: 'move_workout_days' }), false);
@@ -384,7 +403,20 @@ const generatedSimpleComments = new Set(
         seed: String(seed),
     }).comment)
 );
-assert.deepStrictEqual(generatedSimpleComments, worker.TAHLIA_SIMPLE_COMMENTS);
+assert.deepStrictEqual(generatedSimpleComments, worker.TAHLIA_UPBEAT_COMMENTS);
+const sadStory = { media_type: 'text', caption: 'feeling sad after a rough day' };
+assert.strictEqual(profile.inferStoryTheme(sadStory), 'sad');
+const generatedSadComments = new Set(
+    Array.from({ length: 200 }, (_, seed) => profile.buildTahliaCommentDraft({
+        story: sadStory,
+        seed: String(seed),
+    }).comment)
+);
+assert.deepStrictEqual(generatedSadComments, worker.TAHLIA_EMPATHETIC_COMMENTS);
+for (const comment of generatedSadComments) {
+    assert.ok(comment.split(/\s+/).length <= 3);
+    assert.ok(!worker.TAHLIA_UPBEAT_COMMENTS.has(comment));
+}
 
 assert.ok(workerSource.includes("mode: 'automatic_simple_comments_only'"));
 assert.ok(workerSource.includes("feed_posts: { disabled: true, reason: 'comments_only' }"));

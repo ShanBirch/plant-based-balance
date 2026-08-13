@@ -207,7 +207,16 @@ const SIMPLE_COMMENT_REACTIONS = Object.freeze([
     'this is great',
 ]);
 
+const EMPATHETIC_COMMENT_REACTIONS = Object.freeze([
+    'sorry to hear',
+    'sending love',
+    'thinking of you',
+    'that sounds tough',
+    'hope you’re okay',
+]);
+
 const COMMENT_TEMPLATES = {
+    sad: EMPATHETIC_COMMENT_REACTIONS,
     workout: SIMPLE_COMMENT_REACTIONS,
     meal: SIMPLE_COMMENT_REACTIONS,
     weigh_in: SIMPLE_COMMENT_REACTIONS,
@@ -311,6 +320,9 @@ function inferStoryTheme(story = {}) {
     const mediaType = String(story.media_type || '').toLowerCase();
     const text = `${mediaType} ${storyText(story)}`.toLowerCase();
 
+    if (/\b(sad|upset|frustrated|disappointed|discouraged|struggling|feeling down|feeling low|low mood|rough day|tough day|bad day|hard time|not feeling (?:good|great|it))\b/.test(text)) {
+        return 'sad';
+    }
     if (/\b(meal|breakfast|lunch|dinner|snack|protein|calorie|calories|bowl|smoothie|tofu|tempeh|salad)\b/.test(text)) {
         return 'meal';
     }
@@ -361,6 +373,7 @@ function buildTahliaCommentDraft({ story, seed }) {
 }
 
 module.exports = {
+    EMPATHETIC_COMMENT_REACTIONS,
     SIMPLE_COMMENT_REACTIONS,
     TAHLIA_PROFILE,
     activityLabel,

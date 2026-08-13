@@ -13,6 +13,7 @@ const {
     truncate,
 } = require('./_lib/client-context');
 const {
+    EMPATHETIC_COMMENT_REACTIONS,
     SIMPLE_COMMENT_REACTIONS,
     TAHLIA_PROFILE,
     activityLabel,
@@ -41,7 +42,9 @@ const DEFAULT_COMMENT_ELIGIBILITY_PERCENT = 50;
 const DEFAULT_RESUME_DATE_KEY = '2026-07-05';
 const TAHLIA_LEARNING_EXAMPLE_LIMIT = 8;
 const ALLOWED_TAHLIA_POST_ACTIVITY_TYPES = new Set(['workout', 'personal_best', 'weigh_in', 'fitness_diary']);
-const TAHLIA_SIMPLE_COMMENTS = new Set(SIMPLE_COMMENT_REACTIONS);
+const TAHLIA_UPBEAT_COMMENTS = new Set(SIMPLE_COMMENT_REACTIONS);
+const TAHLIA_EMPATHETIC_COMMENTS = new Set(EMPATHETIC_COMMENT_REACTIONS);
+const TAHLIA_SIMPLE_COMMENTS = new Set([...TAHLIA_UPBEAT_COMMENTS, ...TAHLIA_EMPATHETIC_COMMENTS]);
 
 function json(statusCode, body) {
     return {
@@ -95,7 +98,7 @@ function hashString(value) {
 }
 
 function isSensitiveFeedText(value = '') {
-    return /\b(grief|death|dead|died|hospital|surgery|injury|injured|pain|panic|depressed|depression|anxiety|self harm|eating disorder|binge|purge|pregnant|pregnancy|miscarriage|blood|diagnosis|trauma|abuse)\b/i
+    return /\b(grief|death|dead|died|hospital|surgery|injury|injured|pain|panic|depressed|depression|anxiety|self harm|suicide|suicidal|crisis|eating disorder|binge|purge|pregnant|pregnancy|miscarriage|blood|diagnosis|trauma|abuse|assault)\b/i
         .test(String(value || ''));
 }
 
@@ -453,7 +456,8 @@ ${examplesBlock}
 
 Rules:
 - Apply the pattern of Shannon's edits, but do not copy an old line unless it genuinely fits.
-- For a comment, use only one of these exact reactions: ${SIMPLE_COMMENT_REACTIONS.map(reaction => `"${reaction}"`).join(', ')}.
+- For a sad comment, use only one of these exact reactions: ${EMPATHETIC_COMMENT_REACTIONS.map(reaction => `"${reaction}"`).join(', ')}.
+- For any other comment, use only one of these exact reactions: ${SIMPLE_COMMENT_REACTIONS.map(reaction => `"${reaction}"`).join(', ')}.
 - Never use more than three words.
 - Do not use the words "win" or "wins". Use the actual detail, PB, number, meal, workout, or a simple reaction instead.
 - Avoid filler like "such a good little", "showing up is the whole thing", "it all adds up", or "that counts".
@@ -910,5 +914,7 @@ exports._test = {
     DEFAULT_MAX_COMMENT_ALERTS_PER_RUN,
     DEFAULT_MAX_POST_ALERTS_PER_RUN,
     DEFAULT_RESUME_DATE_KEY,
+    TAHLIA_EMPATHETIC_COMMENTS,
     TAHLIA_SIMPLE_COMMENTS,
+    TAHLIA_UPBEAT_COMMENTS,
 };
