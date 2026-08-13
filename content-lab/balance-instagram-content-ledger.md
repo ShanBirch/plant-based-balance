@@ -52,6 +52,7 @@ Times are Australia/Brisbane. Job and campaign labels are retrospective where th
 
 | Date | Job | Campaign or lane | Hook | Format | CTA or role | Instagram |
 | --- | --- | --- | --- | --- | --- | --- |
+| 2026-08-13 21:38 | BELIEF | Founder and product introduction | Hi, I'm Shannon. This is Sunshine. | 10-slide video carousel | Introduce Shannon, his fitness journey and Balance | [Post](https://www.instagram.com/p/Db-pi9gjsWo/) |
 | 2026-08-02 19:57 | BELIEF | Predictive brain | Ever told yourself, "I just need to try harder," then watched yourself do the exact same thing again? | Reel | Follow for Part 7 | [Reel](https://www.instagram.com/reel/DbiJJKRjIM7/) |
 
 Source ID: `sterling-2012-allostasis-model-of-predictive-regulation`
