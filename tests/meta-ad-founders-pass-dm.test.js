@@ -527,7 +527,10 @@ test('paid Meta opt-out, identity, and safety messages always hold while ordinar
         'ordinary pregnancy and injury context receives a safe non-diagnostic lead reply');
     assert.equal(getMetaAdSensitiveHoldReason({ alertData: metaAlert, currentMessage: 'I want to be fitter and lose my pregnancy fat' }), null,
         'a postpartum fitness goal must not be mistaken for an active medical emergency');
-    assert.equal(getMetaAdSensitiveHoldReason({ alertData: metaAlert, currentMessage: 'I am in immediate danger of self-harm' }).code, 'safety_or_medical');
+    assert.equal(getMetaAdSensitiveHoldReason({ alertData: metaAlert, currentMessage: 'This is a medical emergency and I am in immediate danger' }), null,
+        'medical wording alone stays in the careful AI-coach lead lane');
+    assert.equal(getMetaAdSensitiveHoldReason({ alertData: metaAlert, currentMessage: 'I am thinking about self-harm' }).code, 'safety_or_medical');
+    assert.equal(getMetaAdSensitiveHoldReason({ alertData: metaAlert, currentMessage: 'I feel suicidal' }).code, 'safety_or_medical');
     assert.equal(getMetaAdSensitiveHoldReason({ alertData: metaAlert, currentMessage: 'I need to stop snacking' }), null);
     assert.equal(getMetaAdSensitiveHoldReason({ alertData: {}, currentMessage: 'Are you an AI bot?' }), null);
 });
