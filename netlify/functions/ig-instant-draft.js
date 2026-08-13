@@ -1290,6 +1290,13 @@ function buildPaidMetaVoiceGoalPhrase(facts = {}) {
     return 'your goal';
 }
 
+function hasRecentPaidMetaPlantBasedQuestion(history = []) {
+    return (Array.isArray(history) ? history : [])
+        .filter(item => String(item?.direction || '').toLowerCase() === 'out')
+        .slice(-4)
+        .some(item => /currently plant-based|interested in (?:eating more )?plant-based/i.test(String(item?.text || '')));
+}
+
 function buildDeterministicPaidMetaConversationReply({
     currentMessage = '',
     qualifier = {},
@@ -1320,6 +1327,19 @@ function buildDeterministicPaidMetaConversationReply({
             chunks: [joined],
             joined,
             model: 'deterministic_paid_meta_conversation_v1',
+            replyMode: 'campaign_sales_progression',
+            maxChunks: 1,
+            error: null,
+            flowVariant,
+        };
+    }
+
+    if (!broadFlow && !hasGoal && hasRecentPaidMetaPlantBasedQuestion(history)) {
+        const joined = `Gotcha. What's the main thing you're trying to change with your health and fitness right now?`;
+        return {
+            chunks: [joined],
+            joined,
+            model: 'deterministic_paid_meta_conversation_v2',
             replyMode: 'campaign_sales_progression',
             maxChunks: 1,
             error: null,
@@ -1962,11 +1982,13 @@ function buildMetaAdFoundersPassFirstReply(currentMessage = '', { customData = {
     const supportScope = `It's one AU$89 payment for the full six weeks. You get the six-week Foundations course, ${accessLine} It includes one weekly check-in plus workout and food review and adjustments with me, and it doesn't renew automatically.`;
     let answer;
     if (intent === 'fit' || intent === 'overview') {
-        answer = `Hey, yeah of course. Before I send you a heap of generic info, what's the main thing you're trying to change with your fitness right now?`;
+        answer = broadFlow
+            ? `Hey, yeah of course. Before I send you a heap of generic info, what's the main thing you're trying to change with your fitness right now?`
+            : `Hey, yeah of course. Are you currently plant-based, or are you interested in eating more plant-based?`;
     } else if (intent === 'plant_based_requirement') {
         answer = `Not at all. Plenty of people start while they're just trying to eat more plant-based. What does your food look like at the moment?`;
     } else if (intent === 'personalised_coaching') {
-            answer = `Yeah, I do. Balance Foundations gives you a clear six-week curriculum inside the app, plus a weekly check-in where I review and adjust your training and food. What are you mainly trying to change at the moment?`;
+            answer = `Yeah, I do. Balance Foundations gives you a clear six-week curriculum inside the app, plus a weekly check-in where I review and adjust your training and food. Are you currently plant-based, or interested in eating more plant-based?`;
     } else if (intent === 'accountability') {
         answer = `You check in inside Balance and I can see what the week actually looked like, then I reply with the next bit of direction and a nudge if things are slipping. It's personal support from me, not just app reminders.`;
     } else if (intent === 'price') {
@@ -1976,7 +1998,7 @@ function buildMetaAdFoundersPassFirstReply(currentMessage = '', { customData = {
     } else if (intent === 'inclusions') {
         answer = broadFlow
                 ? `Yeah, Balance Foundations is a six-week curriculum inside the app, with me supporting you, plus training, food support and the community all together. What's the main thing you're trying to change with your fitness right now?`
-                : `Yeah, Balance Foundations is a six-week curriculum inside the app, with me supporting you, plus training, plant-based food support and the community all together. What's the main thing you're trying to change with your fitness right now?`;
+                : `Yeah, Balance Foundations is a six-week curriculum inside the app, with me supporting you, plus training, plant-based food support and the community all together. Are you currently plant-based, or interested in eating more plant-based?`;
     }
     const chunks = [answer].filter(Boolean);
     return {

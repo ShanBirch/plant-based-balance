@@ -67,7 +67,7 @@ test('Cocos paid-ad Founders Pass opener bypasses the false signup hold and mode
     });
 
     assert.equal(draft.firstReplyIntent, 'overview');
-    assert.match(draft.joined, /what's the main thing you're trying to change with your fitness right now/i);
+    assert.match(draft.joined, /currently plant-based, or are you interested in eating more plant-based/i);
     assert.doesNotMatch(draft.joined, /https?:\/\//);
     assert.equal(approval.code, 'approved_meta_ad_first_reply');
     assert.equal(handoff.client_manager_review_required, false);
@@ -595,7 +595,7 @@ test('inclusions quick reply answers the direct ask without a raw preview URL', 
     assert.doesNotMatch(reply.joined, /balance-founders-pass-dm-preview\.mp4/);
     assert.match(reply.joined, /Balance Foundations is a six-week curriculum inside the app/i);
     assert.match(reply.joined, /training, plant-based food support and the community/i);
-    assert.match(reply.joined, /main thing you're trying to change/i);
+    assert.match(reply.joined, /currently plant-based, or interested in eating more plant-based/i);
     assert.doesNotMatch(reply.joined, /https?:\/\//);
 });
 
@@ -614,14 +614,14 @@ test('personalised coaching FAQ answers from the advertised six-week program wit
             linkedUserId: null,
         });
 
-        assert.equal(reply.joined, 'Yeah, I do. Balance Foundations gives you a clear six-week curriculum inside the app, plus a weekly check-in where I review and adjust your training and food. What are you mainly trying to change at the moment?');
+        assert.equal(reply.joined, 'Yeah, I do. Balance Foundations gives you a clear six-week curriculum inside the app, plus a weekly check-in where I review and adjust your training and food. Are you currently plant-based, or interested in eating more plant-based?');
         assert.doesNotMatch(reply.joined, /Starter Coaching|\$29\.99/i);
         assert.equal(reply.checkoutUrl, null);
         assert.equal(reply.videoAttachmentUrl, undefined);
         assert.equal(approval.code, 'approved_meta_ad_first_reply');
         assert.equal(handoff.approved_link_auto_sendable, false);
         assert.equal(handoff.signup_link_handoff_url, undefined);
-        assert.equal(isMetaAdGoalReplyTurn([{ direction: 'out', text: reply.joined }]), true);
+        assert.equal(isMetaAdGoalReplyTurn([{ direction: 'out', text: reply.joined }]), false);
     }
 });
 
@@ -637,9 +637,20 @@ test('generic keyword and fit quick reply answer without a premature checkout li
 
     const reply = buildMetaAdFoundersPassFirstReply('Is this right for me?');
     assert.equal(reply.firstReplyIntent, 'fit');
-    assert.match(reply.joined, /main thing you're trying to change/i);
+    assert.match(reply.joined, /currently plant-based, or are you interested in eating more plant-based/i);
     assert.doesNotMatch(reply.joined, /plant-based-fitness\.html/);
     assert.doesNotMatch(reply.joined, /vegan fitness community/i);
+});
+
+test('plant-based answer advances to goal before blocker', () => {
+    const reply = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'I am interested but not fully plant-based yet',
+        qualifier: { commercial_stage: 'engaged', facts: {} },
+        history: [{ direction: 'out', text: 'Are you currently plant-based, or are you interested in eating more plant-based?' }],
+        flowVariant: 'plant_based_control',
+    });
+    assert.match(reply.joined, /main thing you're trying to change with your health and fitness/i);
+    assert.equal((reply.joined.match(/\?/g) || []).length, 1);
 });
 
 test('the reply after the goal is tailored and carries the right native proof media', () => {

@@ -118,7 +118,7 @@ test('paid Facebook and Instagram attribution activate without changing organic 
     assert.equal(organicInstagram.localStorage.getItem('onboardingComplete'), 'true');
 });
 
-test('the five-minute clock ends in the fixed six-week Stripe gate', async () => {
+test('finishing the guided tour opens the fixed six-week Stripe gate', async () => {
     const trial = runTrial('?guest=true&meta_trial=facebook_5m_foundations_v3&utm_source=facebook&utm_medium=paid_social&fbclid=test-click');
     const api = trial.window.BalanceMetaAdTrial;
     api.onOnboardingStarted();
@@ -137,12 +137,10 @@ test('the five-minute clock ends in the fixed six-week Stripe gate', async () =>
 
     api.onWalkthroughComplete();
     state = api.readState();
-    assert.equal(state.deadlineAt - state.previewStartedAt, 300_000);
+    assert.equal(state.deadlineAt, null);
     assert.ok(trial.events.some(event => event.event_type === 'trial_walkthrough_completed'));
     assert.ok(trial.events.some(event => event.event_type === 'trial_preview_started'));
 
-    trial.setNow(state.deadlineAt + 1);
-    assert.equal(api.showGate(), true);
     assert.equal(trial.elements['meta-ad-trial-gate'].style.display, 'flex');
     assert.ok(trial.events.some(event => event.event_type === 'trial_gate_shown'));
 
@@ -225,13 +223,17 @@ test('dashboard, signup, native handoffs, measurement, and both discovery system
     const ios = fs.readFileSync(path.join(root, 'ios/App/App/BalanceShortcutHandoff.swift'), 'utf8');
 
     assert.match(dashboard, /paid-facebook-stripe-unlock-v1/);
-    assert.match(dashboard, /title:'Your Weekly Goals'.*metaPreview:true/);
-    assert.match(dashboard, /title:'Your workout'.*metaPreview:true/);
-    assert.match(dashboard, /title:'Your plant-based meal plan'.*metaPreview:true/);
+    assert.match(dashboard, /title:'What to do today'.*metaPreview:true/);
+    assert.match(dashboard, /title:'Your workouts for the week'.*metaPreview:true/);
+    assert.match(dashboard, /title:'Open your workout'.*metaPreview:true/);
+    assert.match(dashboard, /title:'Track every set and rep'.*metaPreview:true/);
+    assert.match(dashboard, /title:'Track food with the camera'.*metaPreview:true/);
+    assert.match(dashboard, /title:'Your actual meal plan'.*metaPreview:true/);
+    assert.match(dashboard, /title:'Your six-week course'.*metaPreview:true/);
     assert.match(dashboard, /title:'The Balance community'.*metaPreview:true/);
-    assert.match(dashboard, /title:'Share a thought'.*metaPreview:true/);
+    assert.match(dashboard, /title:'Post when you need support'.*metaPreview:true/);
     assert.match(dashboard, /title:'Your message from Shannon'.*metaPreview:true/);
-    assert.match(dashboard, /title:'You’re all set'.*metaPreviewSignoff:true/);
+    assert.match(dashboard, /title:'Set your Weekly Goals'.*metaPreviewSignoff:true/);
     assert.match(dashboard, /showExitChoice\('tour'\)/);
     assert.match(onboarding, /closingMetaAdTrial[\s\S]*?showExitChoice\('onboarding'\)[\s\S]*?return;/);
     assert.match(onboarding, /window\.resumeMetaAdTrialOnboarding = function/);
@@ -267,7 +269,7 @@ test('dashboard, signup, native handoffs, measurement, and both discovery system
     assert.match(foundersLanding, /params\.set\('meta_trial', 'facebook_5m_foundations_v3'\)/);
     assert.match(foundersLanding, /id="foundations-hero-action"/);
     assert.match(foundersLanding, /Look inside Balance/);
-    assert.match(foundersLanding, /complete your setup, then take a five-minute look around/);
+    assert.match(foundersLanding, /complete your setup, then take the full guided tour/);
     assert.match(foundersLanding, /data-plan="founders-pass"/);
     assert.match(foundersLanding, /replace\(\/AU\\\$89\\\.99\/g, 'AU\$89'\)/);
     assert.match(dashboard, /AU\$89 once\. No auto-renewal\./);
