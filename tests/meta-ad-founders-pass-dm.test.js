@@ -39,6 +39,7 @@ const {
     hasImmediateMetaDispatchFailure,
     shouldDispatchMetaAdReplyImmediately,
     isInternalMetaAdConversationOpeningTurn,
+    buildInternalMetaAdTestResetCustomData,
     resolveInternalTestConversationResetAt,
     resolveInternalTestVoiceCooldownResetAt,
     buildCurrentInboundTurnText,
@@ -406,6 +407,24 @@ test('private paid-ad test FAQ restarts the opener even when the Instagram threa
         history: [{ direction: 'out', text: 'An older test reply' }],
         currentMessage: 'Okay sounds good',
     }), false);
+
+    const resetAt = '2026-08-13T19:10:00.000Z';
+    const resetCustomData = buildInternalMetaAdTestResetCustomData({
+        customData: {
+            ...customData,
+            relationship_context: 'Old test facts must not become the reset boundary.',
+        },
+        currentMessage: 'What is the Founders Pass?',
+        resetAt,
+    });
+    assert.equal(resetCustomData.internal_test_conversation_reset_at, resetAt);
+    assert.equal(resetCustomData.internal_test_auto_reply_enabled, true);
+    assert.equal(resetCustomData.internal_test_meta_ad_flow, 'plant_based_control');
+    assert.equal(buildInternalMetaAdTestResetCustomData({
+        customData,
+        currentMessage: 'Okay sounds good',
+        resetAt,
+    }), null);
 });
 
 test('Coco qualifier evaluation cannot inherit terminal sales state from an older test episode', () => {
@@ -1740,6 +1759,34 @@ test.skip('legacy deterministic conversational stages retired in favour of the l
         flowVariant: 'broad_pain',
     });
     assert.doesNotMatch(broad.joined, /plant[ -]?based|vegan|vegetarian/i);
+});
+
+test('Instagram split offer bubbles still turn a short Yes into the promised app preview', () => {
+    const splitInstagramOfferAcceptance = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'Yes',
+        qualifier: {
+            commercial_stage: 'problem_qualified',
+            facts: {
+                current_state: 'Wants to lose weight.',
+                history_blockers: 'Slacks off and struggles with consistency.',
+            },
+        },
+        history: [
+            {
+                direction: 'out',
+                text: 'Balance Foundations is a six-week course with your workout program built around your week and a plant-based meal plan.',
+            },
+            {
+                direction: 'out',
+                text: 'It is one $89.99 payment. You can look through the app before you pay. Want me to send you access?',
+            },
+        ],
+        flowVariant: 'plant_based_control',
+    });
+    assert.equal(splitInstagramOfferAcceptance.replyMode, 'campaign_app_preview_handoff');
+    assert.equal(splitInstagramOfferAcceptance.appPreviewHandoff, true);
+    assert.match(splitInstagramOfferAcceptance.joined, /meta-app-preview\.html/i);
+    assert.equal((splitInstagramOfferAcceptance.joined.match(/\?/g) || []).length, 0);
 });
 
 test('plant-based requirement and ready prompts receive different next steps', () => {

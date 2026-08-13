@@ -1196,17 +1196,18 @@ function isExplicitPaidMetaPreviewAcceptance(value = '') {
 }
 
 function hasRecentCompletePaidMetaOffer(history = []) {
-    return (Array.isArray(history) ? history : [])
+    const recentOutbound = (Array.isArray(history) ? history : [])
         .filter(item => String(item?.direction || '').toLowerCase() === 'out')
-        .slice(-4)
-        .some(item => {
-            const text = String(item?.text || '');
-            return /\b(?:six|6)[- ]week\b/i.test(text)
-                && /\b(?:workout|training program)\b/i.test(text)
-                && /\bmeal plan\b/i.test(text)
-                && /\$\s*89\.99\b/i.test(text)
-                && /\bbefore (?:you )?pay/i.test(text);
-        });
+        .slice(-4);
+    // Instagram can split one Graph API send into multiple native bubbles.
+    // Treat the recent outbound run as one offer so a short "Yes" still
+    // reaches the promised app preview instead of falling back to the writer.
+    const text = recentOutbound.map(item => String(item?.text || '')).join(' ');
+    return /\b(?:six|6)[- ]week\b/i.test(text)
+        && /\b(?:workout|training program)\b/i.test(text)
+        && /\bmeal plan\b/i.test(text)
+        && /\$\s*89\.99\b/i.test(text)
+        && /\bbefore (?:you )?pay/i.test(text);
 }
 
 function buildPaidMetaTailoredOfferText(blockerText = '') {
@@ -3503,12 +3504,30 @@ function isInternalMetaAdConversationOpeningTurn({
     history = [],
     currentMessage = '',
 } = {}) {
-    const repeatableTestOpener = /^what is the founders pass\??$/i.test(
-        String(currentMessage || '').replace(/\s+/g, ' ').trim()
-    );
+    const repeatableTestOpener = isRepeatableInternalMetaAdTestOpener(currentMessage);
     return isInternalMetaAdConversationTestLane({ linkedUserId, customData })
         && ((Array.isArray(history) ? history : []).length === 0 || repeatableTestOpener)
         && shouldUseDeterministicMetaAdFirstReply(currentMessage);
+}
+
+function isRepeatableInternalMetaAdTestOpener(value = '') {
+    return /^what is the founders pass\??$/i.test(
+        String(value || '').replace(/\s+/g, ' ').trim()
+    );
+}
+
+function buildInternalMetaAdTestResetCustomData({
+    linkedUserId = null,
+    customData = {},
+    currentMessage = '',
+    resetAt = new Date().toISOString(),
+} = {}) {
+    if (!isInternalMetaAdConversationTestLane({ linkedUserId, customData })
+        || !isRepeatableInternalMetaAdTestOpener(currentMessage)) return null;
+    return {
+        ...(customData || {}),
+        internal_test_conversation_reset_at: resetAt,
+    };
 }
 
 function resolveInternalTestConversationResetAt(customData = {}) {
@@ -6188,6 +6207,23 @@ exports.handler = async (event) => {
         linkedUserId: thread.linked_user_id,
         customData: thread.custom_data,
     });
+    const internalTestResetCustomData = buildInternalMetaAdTestResetCustomData({
+        linkedUserId: thread.linked_user_id,
+        customData: thread.custom_data,
+        currentMessage: messageText,
+    });
+    if (internalTestResetCustomData) {
+        try {
+            await supabaseQuery(`ig_threads?id=eq.${thread.id}`, {
+                method: 'PATCH',
+                body: { custom_data: internalTestResetCustomData },
+                prefer: 'return=minimal',
+            });
+            thread.custom_data = internalTestResetCustomData;
+        } catch (error) {
+            console.warn('[ig-draft] internal Meta ad test reset persist failed:', error.message);
+        }
+    }
     if (isMetaAdCardAttachmentTransportArtifact({
         currentMessage: messageText,
         metaAdFirstInbound,
@@ -8451,6 +8487,7 @@ exports._test = {
     isMetaAdConversationFastLaneEligible,
     isInternalMetaAdConversationTestLane,
     isInternalMetaAdConversationOpeningTurn,
+    buildInternalMetaAdTestResetCustomData,
     resolveInternalTestConversationResetAt,
     resolveInternalTestVoiceCooldownResetAt,
     buildCurrentInboundTurnText,
