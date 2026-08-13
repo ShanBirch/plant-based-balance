@@ -121,7 +121,7 @@ function hasHighSignalGoalBlocker(text = '') {
         return false;
     }
     return hasHighSignalConsistencyBlocker(value)
-        || /\b(?:struggl\w*|stuck|overwhelm\w*|procrastinat\w*|discourag\w*|lack(?:ing)? (?:time|energy|motivation|confidence)|low (?:energy|motivation|confidence)|no time|too busy|shift work|rotating shifts?|shifts? change|changing shifts?|schedule keeps?|caregiv\w*|kids?|children|family commitments?|family stuff|pain|injur\w*|sore|fatigue\w*|exhaust\w*|sleep|stress\w*|anxi\w*|nervous|self-conscious|embarrass\w*|confidence|motivat\w*|crav\w*|weekends?|food keeps?|routine|travel|gym anxiety|miss(?:ed|ing) (?:a )?(?:workout|session)|don['’]?t know (?:what|how|where)|not sure (?:what|how|where)|keeps? (?:me )?(?:stuck|stopping)|stops? me|holds? me back|gets? in the way|barrier|blocker)\b/i.test(value);
+        || /\b(?:struggl\w*|stuck|overwhelm\w*|procrastinat\w*|discourag\w*|lack(?:ing)?(?: of)? (?:time|energy|motivation|confidence)|low (?:energy|motivation|confidence)|no (?:time|prep|preparation)|nothing prep(?:ped)?|too busy|shift work|rotating shifts?|shifts? change|changing shifts?|schedule keeps?|caregiv\w*|kids?|children|family commitments?|family stuff|pain|injur\w*|sore|fatigue\w*|exhaust\w*|sleep|stress\w*|anxi\w*|nervous|self-conscious|embarrass\w*|confidence|motivat\w*|crav\w*|weekends?|food keeps?|routine|travel|gym anxiety|miss(?:ed|ing) (?:a )?(?:workout|session)|don['’]?t know (?:what|how|where)|not sure (?:what|how|where)|keeps? (?:me )?(?:stuck|stopping)|stops? me|holds? me back|gets? in the way|barrier|blocker)\b/i.test(value);
 }
 
 function hasQualifierPersonalEvidence(qualifier = {}) {

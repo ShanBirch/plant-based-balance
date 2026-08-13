@@ -3367,6 +3367,31 @@ function resolveInternalTestConversationResetAt(customData = {}) {
     )).value;
 }
 
+function resolveInternalTestVoiceCooldownResetAt(customData = {}, history = []) {
+    const candidates = [resolveInternalTestConversationResetAt(customData)];
+    for (const message of Array.isArray(history) ? history : []) {
+        if (String(message?.direction || '').toLowerCase() !== 'in') continue;
+        const text = String(message?.text || '').replace(/\s+/g, ' ').trim();
+        if (!/^what is the founders pass\??$/i.test(text)) continue;
+        candidates.push(String(message?.created_at || '').trim());
+    }
+    const valid = candidates
+        .map(value => ({ value, timestamp: Date.parse(value) }))
+        .filter(candidate => Number.isFinite(candidate.timestamp));
+    if (!valid.length) return '';
+    return valid.reduce((latest, candidate) => (
+        candidate.timestamp > latest.timestamp ? candidate : latest
+    )).value;
+}
+
+function buildCurrentInboundTurnText(currentMessage = '', recentInboundMessages = []) {
+    return [
+        ...(Array.isArray(recentInboundMessages) ? recentInboundMessages : [])
+            .map(message => String(message?.text || '').trim()),
+        String(currentMessage || '').trim(),
+    ].filter(Boolean).join('\n');
+}
+
 function buildInternalTestQualifierThread(thread = {}) {
     if (!isInternalMetaAdConversationTestLane({
         linkedUserId: thread?.linked_user_id,
@@ -6138,6 +6163,10 @@ exports.handler = async (event) => {
         sanitizeIgStoryReplyContextText(messageText),
         { photo: '[photo]', audio: '[voice note]', video: '[video]' }
     );
+    const currentInboundTurnMessage = replaceIgMediaMarkers(
+        sanitizeIgStoryReplyContextText(buildCurrentInboundTurnText(messageText, recentInboundMessages)),
+        { photo: '[photo]', audio: '[voice note]', video: '[video]' }
+    );
     const meaningfulLeadReplyCount = countMeaningfulLeadReplies(history, qualifierCurrentMessage);
     const qualifierEligible = isQualifierEligible({
         leadStage: effectiveLeadStage,
@@ -6224,7 +6253,7 @@ exports.handler = async (event) => {
         thread.id,
         1,
         internalMetaAdConversationTestLane
-            ? resolveInternalTestConversationResetAt(thread.custom_data)
+            ? resolveInternalTestVoiceCooldownResetAt(thread.custom_data, history)
             : ''
     );
     const inboundVoiceMessage = hasInboundVoiceNoteInUnansweredBatch({
@@ -6235,7 +6264,7 @@ exports.handler = async (event) => {
         channel,
         hasInstagramGraphRoute,
         linkedUserId: thread.linked_user_id,
-        currentMessage: qualifierCurrentMessage,
+        currentMessage: metaAdConversationFastLane ? currentInboundTurnMessage : qualifierCurrentMessage,
         qualifier,
         meaningfulLeadReplyCount,
         hasRecentVoiceMessage: recentOutboundVoiceMessage,
@@ -6310,7 +6339,7 @@ exports.handler = async (event) => {
 
     if (metaAdConversationFastLane && !metaAdOpeningTurn && !metaAdGoalReplyTurn) {
         const deterministicProgression = buildDeterministicPaidMetaConversationReply({
-            currentMessage: messageText,
+            currentMessage: currentInboundTurnMessage,
             qualifier,
             history,
             flowVariant: metaAdFlowVariant,
@@ -7770,6 +7799,8 @@ exports._test = {
     isInternalMetaAdConversationTestLane,
     isInternalMetaAdConversationOpeningTurn,
     resolveInternalTestConversationResetAt,
+    resolveInternalTestVoiceCooldownResetAt,
+    buildCurrentInboundTurnText,
     buildInternalTestQualifierThread,
     filterInternalTestHistoryAfterReset,
     isExerciseConversationFastLaneEligible,

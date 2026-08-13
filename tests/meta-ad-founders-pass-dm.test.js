@@ -34,6 +34,8 @@ const {
     hasImmediateMetaDispatchFailure,
     isInternalMetaAdConversationOpeningTurn,
     resolveInternalTestConversationResetAt,
+    resolveInternalTestVoiceCooldownResetAt,
+    buildCurrentInboundTurnText,
     buildInternalTestQualifierThread,
 } = require('../netlify/functions/ig-instant-draft')._test;
 const {
@@ -683,6 +685,22 @@ test('plant-based answer advances to goal before blocker', () => {
     assert.equal((currentlyPlantBasedReply.joined.match(/\?/g) || []).length, 2);
 });
 
+test('private paid-ad voice cooldown restarts at the newest repeated FAQ opener', () => {
+    assert.equal(resolveInternalTestVoiceCooldownResetAt({
+        meta_ad_attribution: { last_referral_at: '2026-08-04T04:36:39.208Z' },
+    }, [
+        { direction: 'out', text: '[voice note]', created_at: '2026-08-04T04:40:00.000Z' },
+        { direction: 'in', text: 'What is the Founders Pass?', created_at: '2026-08-04T05:10:00.000Z' },
+        { direction: 'in', text: 'I want to lose weight', created_at: '2026-08-04T05:11:00.000Z' },
+    ]), '2026-08-04T05:10:00.000Z');
+});
+
+test('paid-ad turn text keeps every rapid inbound bubble for progression checks', () => {
+    assert.equal(buildCurrentInboundTurnText('Bit of everything really', [
+        { text: "I think it's just lack of time no prep" },
+    ]), "I think it's just lack of time no prep\nBit of everything really");
+});
+
 test('rapid side question is answered while the newest blocker still advances the paid Meta conversation', () => {
     const reply = buildDeterministicPaidMetaConversationReply({
         currentMessage: `I just can't stick to it`,
@@ -997,6 +1015,24 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
     assert.equal(voiceBlocker.voiceCompanionText, '');
     assert.equal(inspectVoiceScriptQuality(voiceBlocker.joined).valid, true,
         'the deterministic accountability reply is ready for ElevenLabs without another repair round');
+
+    const rapidBubbleVoiceBlocker = buildDeterministicPaidMetaConversationReply({
+        currentMessage: "I think it's just lack of time no prep\nBit of everything really",
+        qualifier: {
+            commercial_stage: 'problem_qualified',
+            facts: {
+                current_state: 'Wants to lose weight.',
+                history_blockers: 'Lack of time and no food prep make consistency difficult.',
+            },
+        },
+        flowVariant: 'plant_based_control',
+        personalVoiceNoteMode: true,
+    });
+    assert.ok(rapidBubbleVoiceBlocker, 'the complete rapid-message turn should reach deterministic progression');
+    assert.ok(rapidBubbleVoiceBlocker.joined.trim().split(/\s+/).length >= 34);
+    assert.equal((rapidBubbleVoiceBlocker.joined.match(/\?/g) || []).length, 1,
+        'the voice note must finish with the next purposeful question');
+    assert.equal(inspectVoiceScriptQuality(rapidBubbleVoiceBlocker.joined).valid, true);
 
     const nextStep = buildDeterministicPaidMetaConversationReply({
         currentMessage: 'So what do I do',
