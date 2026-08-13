@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v311'; // v311: global cross-phone exercise video catalogue
+const CACHE_NAME = 'pbb-app-v312'; // v312: restore the live 6 PM end-of-day check-in rollover
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

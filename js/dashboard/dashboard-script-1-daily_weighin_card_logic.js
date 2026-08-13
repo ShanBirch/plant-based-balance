@@ -1712,6 +1712,23 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
 
     refreshDailyCardsAfterDeferredLoad();
 
+    // Keep the 6 PM rollover reliable when Balance stays open in the foreground.
+    // Previously the card was only re-checked on load or after returning to the app.
+    var _lastFitnessDiaryHour = new Date().getHours();
+    setInterval(function() {
+        if (document.visibilityState === 'hidden') return;
+        var currentHour = new Date().getHours();
+        if (currentHour === _lastFitnessDiaryHour) return;
+        _lastFitnessDiaryHour = currentHour;
+        Promise.resolve(checkAndShowFitnessDiaryCard()).then(function() {
+            if (window.pbbNextSteps && typeof window.pbbNextSteps.refresh === 'function') {
+                window.pbbNextSteps.refresh();
+            }
+        }).catch(function(e) {
+            console.warn('Timed daily card refresh failed: diary', e);
+        });
+    }, 30000);
+
     // PWA resume: re-check weigh-in when app comes back to foreground
     // (e.g., user opens PWA the next day without a hard refresh)
     let _lastWeighInCheckDate = new Date().toDateString();

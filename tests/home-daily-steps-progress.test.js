@@ -6,13 +6,18 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const read = file => fs.readFileSync(path.join(root, file), 'utf8');
 
-test('Home opens the imported activity review and clears it after sharing', () => {
+test('Home omits imported activity review from the daily to-do plan', () => {
   const nextSteps = read('js/dashboard/pbb-next-obvious-steps.js');
-  const activityShare = read('js/dashboard/dashboard-script-10-points_widget_functions.js');
 
-  assert.match(nextSteps, /id: 'imported_activity'[\s\S]*clickSourceCard\('#fitbit-imported-activity-share'\)/);
-  assert.doesNotMatch(nextSteps, /clickSourceCard\('#fitbit-imported-activity-card'\)/);
-  assert.match(activityShare, /shared_to_feed: true[\s\S]*await window\.refreshImportedActivityHomeCard\(\)[\s\S]*window\.pbbNextSteps\.refresh\(\)/);
+  assert.doesNotMatch(nextSteps, /id: 'imported_activity'/);
+  assert.doesNotMatch(nextSteps, /Review your imported activity/);
+  assert.doesNotMatch(nextSteps, /fitbit-imported-activity-card/);
+});
+
+test('End-of-day check-in re-evaluates the 6 PM rollover while the app stays open', () => {
+  const dailyCards = read('js/dashboard/dashboard-script-1-daily_weighin_card_logic.js');
+
+  assert.match(dailyCards, /_lastFitnessDiaryHour[\s\S]*setInterval\(function\(\)[\s\S]*checkAndShowFitnessDiaryCard\(\)[\s\S]*window\.pbbNextSteps\.refresh\(\)[\s\S]*30000/);
 });
 
 test('Home renders 10k steps as automatic daily progress instead of a dead-end link', () => {
@@ -33,8 +38,9 @@ test('versioned phone assets advance for the Home fix', () => {
 
   assert.match(dashboard, /pbb-social-journey\.css\?v=17/);
   assert.match(dashboard, /pbb-social-journey\.js\?v=28/);
-  assert.match(dashboard, /pbb-next-obvious-steps\.js\?v=19/);
+  assert.match(dashboard, /pbb-next-obvious-steps\.js\?v=20/);
+  assert.match(dashboard, /dashboard-script-1-daily_weighin_card_logic\.js\?v=73/);
   assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=44/);
-  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v309'/);
+  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v312'/);
   assert.match(serviceWorker, /dashboard-script-10-points_widget_functions\.js\?v=44/);
 });

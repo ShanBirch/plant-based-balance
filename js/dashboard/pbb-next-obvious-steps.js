@@ -566,16 +566,6 @@
       action: function(){ clickSourceCard('#weekly-progress-photo-card'); }
     },
     {
-      id: 'imported_activity',
-      title: 'Review your imported activity',
-      body: 'Confirm the activity Balance found for today.',
-      cta: 'Review',
-      accent: '#059669',
-      priority: 500,
-      goalIds: [],
-      action: function(){ clickSourceCard('#fitbit-imported-activity-share'); }
-    },
-    {
       id: 'fitness_diary',
       title: 'Complete your end-of-day check-in',
       body: 'Close the loop on today so tomorrow starts with useful information.',
@@ -679,8 +669,7 @@
     });
     [
       ['progress_photo', '#weekly-progress-photo-card'],
-      ['fitness_diary', '#fitness-diary-card'],
-      ['imported_activity', '#fitbit-imported-activity-card']
+      ['fitness_diary', '#fitness-diary-card']
     ].forEach(function(item){
       var action = ACTIONS.find(function(actionItem){ return actionItem.id === item[0]; });
       if (action && isSourceCardDue(item[1])) addUniqueAction(picked, action);
@@ -720,7 +709,6 @@
     if (action.id === 'weekly_review') return !isFirstProgramWeek() && isSourceCardDue('#weekly-checkin-card');
     if (action.id === 'progress_photo') return isSourceCardDue('#weekly-progress-photo-card');
     if (action.id === 'fitness_diary') return isSourceCardDue('#fitness-diary-card');
-    if (action.id === 'imported_activity') return isSourceCardDue('#fitbit-imported-activity-card');
     if (action.id === 'weighin') {
       if (!isSundayWeighInDay()) return false;
       if (isVisibleSelector('#daily-weigh-in-done-card')) return false;
