@@ -1892,7 +1892,12 @@ function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draf
         || allowBalanceLeadDraftReviewWarning
         || alertData?.meta_ad_style_warning_safe_after_sanitize === true)
         && isNonBlockingDraftStyleWarning(draftReview);
-    if (draftReview && !isDraftReviewAutoSendSafe(draftReview) && !effectiveContextBypass?.allowed && !nonBlockingStyleWarning) {
+    if (draftReview
+        && !isDraftReviewAutoSendSafe(draftReview)
+        && !effectiveContextBypass?.allowed
+        && !nonBlockingStyleWarning
+        && !verifiedPaidMetaProgression
+        && !verifiedGuaranteedPaidMetaOffer) {
         return {
             code: 'draft_review',
             label: draftReview?.summary || 'AI draft needs Shannon review',

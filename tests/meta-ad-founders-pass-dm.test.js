@@ -758,6 +758,27 @@ test('the verified guided-sales offer is not blocked as premature after goal and
         meaningfulLeadReplyCount: 3,
         alertData: { meta_ad_fast_lane: true, meta_ad_conversation_fast_lane: true },
     }), null);
+
+    assert.equal(getAutoDmHoldReason({
+        mediaReview: { required: false },
+        contextReview: { required: false },
+        draft: guidedOffer,
+        draftReview: {
+            verdict: 'warn',
+            confidence: 0.4,
+            issues: ['Subjective reviewer claims the earned offer moved too soon.'],
+        },
+        challengeOfferWarning: approval,
+        currentMessage: 'I just slack off when work gets busy',
+        qualifier: {
+            commercial_stage: 'problem_qualified',
+            facts: { history_blockers: 'Slacks off when work gets busy' },
+        },
+        leadStage: 'qualifying',
+        linkedUserId: null,
+        meaningfulLeadReplyCount: 3,
+        alertData: { meta_ad_fast_lane: true, meta_ad_conversation_fast_lane: true },
+    }), null, 'a subjective style veto cannot hold a verified guided offer that passed its deterministic contract');
 });
 
 test('paid Meta contract blocks asking the same question after the lead answers accountability', () => {
