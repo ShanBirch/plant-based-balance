@@ -1257,7 +1257,7 @@ function hasRecentPaidMetaSupportQuestion(history = []) {
         .slice(-4)
         .some(item => {
             const text = String(item?.text || '');
-            return /\b(?:would (?:having me|that kind of support)|would that help|accountability help|help you stay on track|make it easier|are you keen to (?:have|take) a look|want me to send you access)\b/i.test(text)
+            return /\b(?:would (?:having me|that kind of support)|would that help|accountability help|help you stay on track|make it easier|are you keen to (?:have|take) a look|would you like to (?:have|take) a look|want me to send you access)\b/i.test(text)
                 || /\b(?:set yourself up in the app|set yourself up before you pay|check it out before any payment|once you(?:'ve| have) seen it, we can take payment)\b[\s\S]{0,260}\b(?:how does that sound|have a look first, then decide)\b/i.test(text);
         });
 }

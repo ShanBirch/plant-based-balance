@@ -1121,6 +1121,22 @@ test('paid Meta conversation stages stay deterministic, purposeful, and immediat
     assert.doesNotMatch(naturalAcceptedSupport.joined, /does that feel like the kind of support you need/i,
         'support acceptance must not repeat the support-fit question the lead just answered');
 
+    const liveAppPreviewAcceptance = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'Yeah give me a look',
+        qualifier: blockerQualifier,
+        history: [{
+            direction: 'out',
+            text: "If you're keen, I can let you set yourself up in the app and see your workout program, meal plan, weekly goals and community before you pay. Would you like to have a look?",
+        }],
+        flowVariant: 'plant_based_control',
+    });
+    assert.equal(liveAppPreviewAcceptance.replyMode, 'campaign_app_preview_handoff');
+    assert.equal(liveAppPreviewAcceptance.appPreviewHandoff, true);
+    assert.match(liveAppPreviewAcceptance.joined, /meta-app-preview\.html/i);
+    assert.match(liveAppPreviewAcceptance.joined, /before any payment/i);
+    assert.equal((liveAppPreviewAcceptance.joined.match(/\?/g) || []).length, 0,
+        'an explicit preview acceptance should send the preview link and pause');
+
     const acceptedSupportWithVideo = buildDeterministicPaidMetaConversationReply({
         currentMessage: 'Yeah',
         qualifier: blockerQualifier,
