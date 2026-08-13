@@ -1070,7 +1070,7 @@ function buildContextualMetaAdOfferLinkReply({ checkoutUrl = '', flowVariant = '
     if (isPaidMetaFoundersPassSelection(currentMessage)) {
         if (!isBarePaidMetaFoundersPassSelection(currentMessage)
             && !hasDirectPaidMetaCheckoutIntent(currentMessage)) return null;
-        const joined = `Perfect, it's one $89 payment for the full six weeks. Here's the link: ${url}`;
+        const joined = `Perfect, it's one $89.99 payment for the full six weeks. Here's the link: ${url}`;
         return {
             chunks: [joined],
             joined,
@@ -1204,7 +1204,7 @@ function hasRecentCompletePaidMetaOffer(history = []) {
             return /\b(?:six|6)[- ]week\b/i.test(text)
                 && /\b(?:workout|training program)\b/i.test(text)
                 && /\bmeal plan\b/i.test(text)
-                && /\$\s*89(?!\.99)\b/i.test(text)
+                && /\$\s*89\.99\b/i.test(text)
                 && /\bbefore (?:you )?pay/i.test(text);
         });
 }
@@ -1225,7 +1225,7 @@ function buildPaidMetaTailoredOfferText(blockerText = '') {
     } else if (/\b(?:craving|weekend)\b/i.test(turn)) {
         acknowledgement = 'Yeah, if cravings and weekends are where it slips, the food plan needs to be flexible enough for real life.';
     }
-    return `${acknowledgement} Balance Foundations is a six-week course with your workout program built around your week, a plant-based meal plan, and one weekly check-in where I review your training and food and adjust things. It’s $89 once for the full six weeks, with no subscription or auto-renewal. You can set yourself up and look through the app before paying. Want me to send you access?`;
+    return `${acknowledgement} Balance Foundations is a six-week course with your workout program built around your week, a plant-based meal plan, and one weekly check-in where I review your training and food and adjust things. It’s one $89.99 payment for the full six weeks, with no subscription or auto-renewal. You can set yourself up and look through the app before paying. Want me to send you access?`;
 }
 
 function buildPaidMetaGoalToBlockerText(goalText = '') {
@@ -1506,7 +1506,7 @@ function buildDeterministicPaidMetaConversationReply({
         const nextAsk = selectedFixedStart
             ? 'Would you like me to send you the checkout link?'
             : 'Want me to show you how the first week would work around your goal?';
-        const joined = `${offerName} is one $89 payment for the full six weeks. You get the complete six-week curriculum, six weeks of ${communityCopy}, and one weekly check-in and plan review with me. It doesn't renew automatically.\n\n${nextAsk}`;
+        const joined = `${offerName} is one $89.99 payment for the full six weeks. You get the complete six-week curriculum, six weeks of ${communityCopy}, and one weekly check-in and plan review with me. It doesn't renew automatically.\n\n${nextAsk}`;
         return {
             chunks: [joined],
             joined,
@@ -1519,7 +1519,7 @@ function buildDeterministicPaidMetaConversationReply({
     }
 
     if (isPaidMetaFoundersPassSelection(message) && !hasDirectPaidMetaCheckoutIntent(message)) {
-        const joined = `Yeah, Balance Foundations sounds like the right fit. It's one $89 payment for the full six weeks, and it doesn't renew automatically.\n\nWould you like me to send you the checkout link?`;
+        const joined = `Yeah, Balance Foundations sounds like the right fit. It's one $89.99 payment for the full six weeks, and it doesn't renew automatically.\n\nWould you like me to send you the checkout link?`;
         return {
             chunks: [joined],
             joined,
@@ -1548,7 +1548,7 @@ function buildDeterministicPaidMetaConversationReply({
     if (PAID_META_NEXT_STEP_RE.test(message) && hasGoal && hasBlocker) {
         const offerName = broadFlow ? 'the six-week Balance kickstart' : 'Balance Foundations';
         if (!broadFlow) {
-            const joined = `${offerName} is one $89 payment for the complete six-week curriculum, with one weekly check-in and plan review from me.\n\nIf you're keen, I can give you access to the app so you can check it out before any payment. Are you keen to have a look?`;
+            const joined = `${offerName} is one $89.99 payment for the complete six-week curriculum, with one weekly check-in and plan review from me.\n\nIf you're keen, I can give you access to the app so you can check it out before any payment. Are you keen to have a look?`;
             return {
                 chunks: [joined],
                 joined,
@@ -1659,7 +1659,7 @@ function buildDeterministicPaidMetaConversationReply({
             ].join('\n\n')
             : [
                 `${proofAnswer}Yeah, I get you. ${reflection} A rigid plan just becomes another thing to fall behind on when it doesn't fit around real life.`,
-                `That's how I'd set Balance up for you. You'd get the six-week Foundations course, a workout program built around your week, a plant-based meal plan, and one weekly check-in with me where I review your training and food and adjust things. It's one $89 payment for the full six weeks, with no subscription or auto-renewal.`,
+                `That's how I'd set Balance up for you. You'd get the six-week Foundations course, a workout program built around your week, a plant-based meal plan, and one weekly check-in with me where I review your training and food and adjust things. It's one $89.99 payment for the full six weeks, with no subscription or auto-renewal.`,
                 `I can let you set it all up and look through the app before you pay. Want me to send you access?`,
             ].join('\n\n');
         return {
@@ -1694,7 +1694,7 @@ function buildDeterministicPaidMetaConversationReply({
     if (['problem_qualified', 'offer_ready'].includes(commercialStage) && PAID_META_NEXT_STEP_RE.test(message)) {
         const joined = broadFlow
             ? `The next step is getting the right level of support around the problem you've just described.\n\nWould you prefer a guided six-week kickstart, or hands-on plan changes every week?`
-            : `Balance Foundations is the best starting point here. It's one $89 payment for the complete six-week curriculum, with one weekly check-in and plan review from me.\n\nAre you keen to have a quick look inside the app?`;
+            : `Balance Foundations is the best starting point here. It's one $89.99 payment for the complete six-week curriculum, with one weekly check-in and plan review from me.\n\nAre you keen to have a quick look inside the app?`;
         return {
             chunks: [joined],
             joined,
@@ -2118,7 +2118,7 @@ function buildMetaAdFoundersPassFirstReply(currentMessage = '', { customData = {
     const accessLine = broadFlow
         ? 'six weeks of the Balance app and community.'
         : 'six weeks of the Balance app and plant-based community.';
-    const supportScope = `It's one AU$89 payment for the full six weeks. You get the six-week Foundations course, ${accessLine} It includes one weekly check-in plus workout and food review and adjustments with me, and it doesn't renew automatically.`;
+    const supportScope = `It's one AU$89.99 payment for the full six weeks. You get the six-week Foundations course, ${accessLine} It includes one weekly check-in plus workout and food review and adjustments with me, and it doesn't renew automatically.`;
     const plantBasedOpeningQuestion = 'Are you currently plant-based or looking to adopt a plant-based lifestyle?';
     let answer;
     if (intent === 'fit' || intent === 'overview') {
@@ -2513,7 +2513,7 @@ function buildApprovedDeterministicMetaAdFirstReplyReview({
 
 const META_AD_FUNNEL_CONTEXT = `
 LEAD ACQUISITION CONTEXT:
-The current paid Meta campaign promotes one public offer: Balance Foundations. It is AUD $89 as one payment for the full six weeks and does not auto-renew. It includes a clear six-week curriculum inside Balance, six weeks of app/community access, and one weekly check-in plus workout/food review and adjustments from Shannon. Do not rename this paid-ad offer Starter Coaching or switch a paid-ad lead to a weekly package merely because Meta's old prompt says "personalized coaching plans". The default close happens inside DMs. A short call is an escalation only when the lead explicitly wants to talk, remains genuinely uncertain after a clear DM explanation, or the situation needs Shannon's judgement. Balance no longer uses a free challenge as its acquisition or conversion path. The acquisition-mode block above is authoritative about whether Shannon initiated the relationship or the lead knowingly entered from a Meta ad. Meta may supply one of the example phrases below as the lead's prefilled opening. Treat it as their ordinary first sentence, not as a questionnaire step. Never restate a menu of options or ask them to choose from buttons. The preferred current campaign prompts are:
+The current paid Meta campaign promotes one public offer: Balance Foundations. It is one AUD $89.99 payment for the full six weeks and does not auto-renew. It includes a clear six-week curriculum inside Balance, six weeks of app/community access, and one weekly check-in plus workout/food review and adjustments from Shannon. Do not rename this paid-ad offer Starter Coaching or switch a paid-ad lead to a weekly package merely because Meta's old prompt says "personalized coaching plans". The default close happens inside DMs. A short call is an escalation only when the lead explicitly wants to talk, remains genuinely uncertain after a clear DM explanation, or the situation needs Shannon's judgement. Balance no longer uses a free challenge as its acquisition or conversion path. The acquisition-mode block above is authoritative about whether Shannon initiated the relationship or the lead knowingly entered from a Meta ad. Meta may supply one of the example phrases below as the lead's prefilled opening. Treat it as their ordinary first sentence, not as a questionnaire step. Never restate a menu of options or ask them to choose from buttons. The preferred current campaign prompts are:
   1. "What's included in the six-week Balance Foundations program?"
   2. "How does the weekly check-in work?"
   3. "Do I need to already be plant-based?"
@@ -2550,7 +2550,7 @@ THE OFFERING (for context — never list as a brochure; speak like a friend):
 - For a general ad-attributed "what is it?" or Balance Foundations opener, do not dump the offer or send a raw media URL. Ask one plain question about the main thing they are trying to change. After they answer, reflect that exact goal in one short sentence, announce the proof naturally and send the native Balance proof media. Treat the three ad FAQ prompts as informational, not transactional: answer the selected question in one concise beat, ask one useful context question, and do not send a signup link. Only send the Balance Foundations link after an explicit transactional message such as "send me the link", "I'm ready", "how do I join?", or clear acceptance after the offer. Only offer a quick call if they say they want to talk it through or remain genuinely uncertain after the clear explanation.
 - If they only ask "what's Balance?" or "what's your app?" while also saying they are already training hard or feeling good, answer in one plain beat and make any coaching mention casual. No feature list or link unless they ask for details.
 - Once they start, the Balance app gives them the guided kickstart, training and food structure, progress tools and community.
-- Outside this paid Meta campaign, the wider package ladder still exists and must not be changed. Inside this paid Meta campaign, keep the conversation focused on Balance Foundations at one $89 payment for the full six weeks. Only discuss another package if the lead explicitly rejects the six-week format and asks for a different ongoing or live-call service.
+- Outside this paid Meta campaign, the wider package ladder still exists and must not be changed. Inside this paid Meta campaign, keep the conversation focused on Balance Foundations at one $89.99 payment for the full six weeks. Only discuss another package if the lead explicitly rejects the six-week format and asks for a different ongoing or live-call service.
 - Keep it low-pressure. If they are not ready, leave a clean re-entry handle or use App + Community when it genuinely fits. Do not revive a free-challenge funnel.
 - Voice notes: when the system supplies a decoded voice-note transcript or media summary, treat it as heard. Reply to the content. Never ask them to resend, repeat, or type the gist of a voice note. If audio is genuinely inaccessible or unintelligible after retries, leave no public voice-note fallback and let the media-review hold/retry path handle it.
 
@@ -3110,7 +3110,7 @@ function buildOneOnOneCoachingBlock(flowVariant = 'plant_based_control', checkou
 
 BALANCE FOUNDERS PASS LINK:
 - This thread belongs to the broad Balance acquisition route. Keep the offer focused on fitness structure, follow-through, realistic routines, food guidance, coaching support and community. Do not introduce plant-based, vegan or vegetarian positioning unless the lead independently asks about it.
-- The Founders Pass is AUD $89 once for the fixed six-week Balance Foundations course, six weeks of app/community access and one weekly check-in plus workout/food review and adjustments. It does not auto-renew.
+- The Founders Pass is one AUD $89.99 payment for the fixed six-week Balance Foundations course, six weeks of app/community access and one weekly check-in plus workout/food review and adjustments. It does not auto-renew.
 - Approved broad-route link: ${approvedCheckoutUrl}
 - This exact URL carries the stored Meta attribution. Do not shorten it, rebuild it, remove its parameters or switch to the plant-based landing page from a later generic message.
 - When the latest message asks for the offer link/details, asks how to start, clearly accepts the offer, or replies positively to Shannon's direct Founders Pass/details invite, send the approved broad-route link in the draft.
@@ -3124,13 +3124,13 @@ BALANCE FOUNDERS PASS LINK:
     return `
 
 BALANCE PLANT-BASED FITNESS FOUNDERS PASS LINK:
-- The primary DM offer is the Balance Foundations Founders Pass: AUD $89 once for a fixed six-week course, six weeks of app/community access and one weekly check-in plus workout/food review and adjustments. It does not auto-renew. Starter Coaching is the ongoing individual progression option after Foundations or from day one. The normal path is explanation, acceptance, and checkout inside DMs.
+- The primary DM offer is the Balance Foundations Founders Pass: one AUD $89.99 payment for a fixed six-week course, six weeks of app/community access and one weekly check-in plus workout/food review and adjustments. It does not auto-renew. Starter Coaching is the ongoing individual progression option after Foundations or from day one. The normal path is explanation, acceptance, and checkout inside DMs.
 - Approved Founders Pass link: ${approvedCheckoutUrl}
 ${attributionRule}
 - When the latest message asks for the offer link/details, asks how to start, clearly accepts the offer, or replies positively to Shannon's direct Founders Pass/details invite, send the approved link in the draft.
 - If the latest message asks to reconnect with Balance, the app/helper, login, password, account access, or any app bug, treat it as support first and do not send the coaching link.
 - Keep the link handoff light, not a brochure: stoked they are keen, here's the link, it has the quick info on the six-week setup, app and community, check it out, then come back to Shannon here if they want to chat through it.
-- Frame it as an $89 once six-week Foundations course with one weekly coaching review and no auto-renewal. Mention the full app feature rundown only when they ask what is included.
+- Frame it as one $89.99 payment for the six-week Foundations course with one weekly coaching review and no auto-renewal. Mention the full app feature rundown only when they ask what is included.
 - If they only ask a general help question and have not asked for offer details/link, do not send the link yet. Reply to the question and use a low-pressure statement-led bridge if the Founders Pass might fit.
 - If they ask whether it is local/in-person or mention they already have a PT/trainer, do not send the link yet. Answer that the Founders Pass is an online guided app and plant-based community, not in-person training, and check whether that would still suit them.`;
 }
@@ -3896,7 +3896,7 @@ PAID META SINGLE-WRITER PLAYBOOK:
 - If Shannon's immediately previous message already explained the offer, do not explain it again when the lead answers her question. Acknowledge the answer and move to the next adjacent stage.
 - Privately track the next useful stage: plant-based connection -> goal -> real blocker -> tailored fit -> offer explanation -> invitation to look inside -> explicit checkout step. Skip any stage the lead has already answered.
 - Once both the goal and a real blocker are known, stop interviewing. Build the sales bridge in concise text: recognise the exact blocker, remove shame by explaining why a rigid plan fails around their life, then explain how Shannon would set Balance up for that situation.
-- That earned offer explanation should clearly include the six-week Foundations course, their workout program, their plant-based meal plan, and one weekly check-in where Shannon reviews their training and food and adjusts things. State one $89 payment for the full six weeks with no subscription or auto-renewal, then offer to let them set it up and look through the app before payment. End with one simple consent question such as whether they want access.
+- That earned offer explanation should clearly include the six-week Foundations course, their workout program, their plant-based meal plan, and one weekly check-in where Shannon reviews their training and food and adjusts things. State one $89.99 payment for the full six weeks with no subscription or auto-renewal, then offer to let them set it up and look through the app before payment. End with one simple consent question such as whether they want access.
 - Those offer facts are mandatory in the first earned offer after both goal and blocker are known. Do not replace them with vague wording like "could be a good fit", "I can send details", "support", or "a good rhythm".
 - "I need accountability" is a support need, not automatically a complete goal and blocker. Acknowledge it using only facts they supplied, then ask one tailored question that discovers the missing goal or the exact place accountability breaks. Do not pitch from that word alone.
 - If they mention pregnancy or post-pregnancy weight as a goal without reporting a symptom or complication, keep it in the ordinary fitness lane. Do not invent children, ask for medical history, or make pregnancy recency the next question; respond to the fitness goal and ask about the current practical obstacle only if needed.
@@ -3984,7 +3984,7 @@ CURRENT PAID-META TURN DIRECTIVE (mandatory; planning constraints, never recite 
 - Required move: ${requiredMove}
 - Ground the reply in at least two distinct exact details when the turn supplies two or more. Do not replace their details with generic phrases.
 ${directQuestions.length ? `- Mandatory direct questions to answer explicitly before anything else: ${directQuestions.join(' | ')}` : '- No unresolved direct question detected in this inbound batch.'}
-${hasFitnessGoal && hasConcreteBlocker ? '- Mandatory offer facts: six-week Balance Foundations course; workout program around their week; plant-based meal plan; one weekly training/food check-in and adjustments; one $89 payment; no subscription or auto-renewal; offer app access/look-through before payment; finish with one consent question. A reply missing even one of these is invalid.' : ''}`;
+${hasFitnessGoal && hasConcreteBlocker ? '- Mandatory offer facts: six-week Balance Foundations course; workout program around their week; plant-based meal plan; one weekly training/food check-in and adjustments; one $89.99 payment; no subscription or auto-renewal; offer app access/look-through before payment; finish with one consent question. A reply missing even one of these is invalid.' : ''}`;
 }
 
 function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', qualifier = {}, history = [] } = {}) {
@@ -4087,7 +4087,7 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
         ['workout program', /\bworkouts?|training program\b/i],
         ['plant-based meal plan', /\bplant[ -]?based\b[^.!?\n]{0,50}\bmeal plan\b|\bmeal plan\b[^.!?\n]{0,50}\bplant[ -]?based\b/i],
         ['weekly training/food review', /\bweekly\b[^.!?\n]{0,80}\b(?:check[ -]?in|review|adjust)\b/i],
-        ['$89 once', /\$\s*89(?!\.99)\b|\b89(?!\.99) dollars?\b/i],
+        ['$89.99 payment', /\$\s*89\.99\b|\b89\.99 dollars?\b/i],
         ['no renewal', /\b(?:no|doesn['\u2019]?t|does not|won['\u2019]?t|will not)\b[^.!?\n]{0,40}\b(?:subscription|renew(?:al)?|auto-renew(?:al)?)\b/i],
         ['look inside before payment', /\b(?:look|access|inside|set (?:it|yourself) up)\b[^.!?\n]{0,100}\bapp\b[^.!?\n]{0,100}\bbefore (?:you )?pay(?:ing|ment)?\b|\bapp\b[^.!?\n]{0,100}\b(?:look|access|inside|set (?:it|yourself) up)\b[^.!?\n]{0,100}\bbefore (?:you )?pay(?:ing|ment)?\b/i],
         ['consent question', /\?/],
@@ -4108,8 +4108,8 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
     if (asksOfferInfo && /\b(?:workouts?|meal plan)\b/i.test(turn) && !/\b(?:weekly|check[ -]?in|review)\b/i.test(reply)) {
         issues.push('The lead asked what they get. Include the one weekly training and food review/check-in in the direct answer.');
     }
-    if (/\b(?:how much|price|cost)\b/i.test(turn) && !/\$\s*89(?!\.99)\b|\b89(?!\.99) dollars?\b/i.test(reply)) {
-        issues.push('Answer the price exactly as $89 once for the full six weeks. Do not say $89.99.');
+    if (/\b(?:how much|price|cost)\b/i.test(turn) && !/\$\s*89\.99\b|\b89\.99 dollars?\b/i.test(reply)) {
+        issues.push('Answer the price exactly as one $89.99 payment for the full six weeks.');
     }
     const normalizeQuestion = value => String(value || '')
         .toLowerCase()
@@ -4521,7 +4521,7 @@ function buildNativeStoryOutreachContextBlock(thread, leadName) {
     if (sentComment) lines.push(`Shannon's native story reply/comment: "${sentComment}"`);
     if (storyUrl) lines.push(`Story URL: ${storyUrl}`);
     if (!thread?.linked_user_id && primaryOffer === 'balance_starter_coaching') {
-        lines.push('Sales context: story outreach lead. Voice priority: no sales script, brochure, or urgency. If real help/food/training/consistency signal appears, bridge to the paid Balance Foundations Founders Pass ($89 once, fixed six-week course, weekly check-in and plan review, no auto-renewal). Do not offer a free challenge.');
+        lines.push('Sales context: story outreach lead. Voice priority: no sales script, brochure, or urgency. If real help/food/training/consistency signal appears, bridge to the paid Balance Foundations Founders Pass (one $89.99 payment, fixed six-week course, weekly check-in and plan review, no auto-renewal). Do not offer a free challenge.');
     }
 
     return {

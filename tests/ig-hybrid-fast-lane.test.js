@@ -559,7 +559,7 @@ const foundersSelectionReply = instantDraft.buildContextualMetaAdOfferLinkReply(
     flowVariant: 'plant_based_control',
     currentMessage: 'Founders Pass',
 });
-assert.match(foundersSelectionReply.joined, /Perfect.*one \$89 payment for the full six weeks/i);
+assert.match(foundersSelectionReply.joined, /Perfect.*one \$89\.99 payment for the full six weeks/i);
 assert.match(foundersSelectionReply.joined, /plant-based-fitness\.html\?utm_source=instagram/);
 assert.equal(foundersSelectionReply.model, 'deterministic_paid_meta_conversation_v2');
 assert.equal(foundersSelectionReply.replyMode, 'campaign_buyer_handoff');
