@@ -105,6 +105,12 @@
         body.paid-meta-preview .paid-preview-route { display: flex; align-items: center; gap: 10px; }
         .paid-preview-route span { display: inline-flex; align-items: center; gap: 8px; }
         .paid-preview-route span + span::before { content: "\2192"; color: #9a6919; }
+        .paid-preview-downloads { display: none; max-width: 620px; margin-top: 18px; padding: 16px; border: 1px solid rgba(184,137,43,.24); border-radius: 18px; background: rgba(255,255,255,.82); box-shadow: 0 14px 34px rgba(26,32,44,.06); }
+        body.paid-meta-preview .paid-preview-downloads { display: block; }
+        .paid-preview-downloads p { margin: 0 0 12px; color: #4f5968; font-size: .88rem; line-height: 1.5; }
+        .paid-preview-store-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .paid-preview-store { display: flex; align-items: center; justify-content: center; min-height: 46px; padding: 11px 14px; border-radius: 12px; background: #151515; color: #fff; font-size: .86rem; font-weight: 800; text-decoration: none; }
+        .paid-preview-open { display: inline-flex; margin-top: 12px; color: #8a621e; font-size: .84rem; font-weight: 800; }
 
         .hero {
             position: relative;
@@ -340,6 +346,8 @@
             .phone-highlights { position: static; width: 100%; display: flex; flex-wrap: wrap; justify-content: center; gap: 9px; }
             .floating-note { position: static; transform: none; padding: 10px 12px; white-space: normal; text-align: left; box-shadow: 0 10px 25px rgba(26,32,44,.1); }
             .proof-grid, .card-grid, .fit-grid { grid-template-columns: 1fr; }
+            body.paid-meta-preview .paid-preview-route { flex-wrap: wrap; }
+            .paid-preview-store-row { grid-template-columns: 1fr; }
             .proof-item { border-right: 0; border-bottom: 1px solid rgba(255,255,255,.14); }
             section { padding: 65px 0; }
             .join-card { border-radius: 24px; }
@@ -385,7 +393,15 @@
                 <div class="price-line"><div class="price">AU$89.99</div><div class="price-note">one payment for the complete six weeks</div></div>
                 <a class="cta" id="foundations-hero-action" href="/founders#join" data-track="cta_click">Start Balance Foundations</a>
                 <p class="micro" id="foundations-hero-microcopy">Six weeks with Shannon in your corner. One payment, no auto-renewal.</p>
-                <div class="paid-preview-route" id="paid-preview-route" aria-label="Balance preview steps"><span>Set up your plan</span><span>Take the guided tour</span><span>Unlock Foundations</span></div>
+                <div class="paid-preview-route" id="paid-preview-route" aria-label="Balance preview steps"><span>Download Balance</span><span>Set up your plan</span><span>Take the guided tour</span><span>Unlock Foundations</span></div>
+                <div class="paid-preview-downloads" id="paid-preview-downloads">
+                    <p>Download Balance first. After it installs, come back here and tap <strong>Already installed? Open Balance</strong> so your app preview opens with this setup.</p>
+                    <div class="paid-preview-store-row">
+                        <a class="paid-preview-store" id="paid-preview-ios" href="https://apps.apple.com/us/app/balance-fitness-gamified/id6761238161" data-track="cta_click">Download for iPhone</a>
+                        <a class="paid-preview-store" id="paid-preview-android" href="https://play.google.com/store/apps/details?id=com.fitgotchi.app" data-track="cta_click">Download for Android</a>
+                    </div>
+                    <a class="paid-preview-open" id="paid-preview-open-installed" href="#">Already installed? Open Balance</a>
+                </div>
                 </div>
                 <div class="phone-stage reveal" aria-label="Preview of the Balance app">
                     <div class="phone">
@@ -517,23 +533,31 @@
             params.set('guest', 'true');
             params.set('meta_trial', 'facebook_5m_foundations_v3');
             params.delete('meta_preview');
-            var appUrl = '/dashboard.html?' + params.toString();
+            var appStoreUrl = 'https://apps.apple.com/us/app/balance-fitness-gamified/id6761238161';
+            var playStoreUrl = 'https://play.google.com/store/apps/details?id=com.fitgotchi.app';
+            var isAppleDevice = /iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+            var isAndroidDevice = /Android/i.test(navigator.userAgent || '');
+            var primaryStoreUrl = isAppleDevice ? appStoreUrl : (isAndroidDevice ? playStoreUrl : '#paid-preview-downloads');
+            var primaryStoreLabel = isAppleDevice ? 'Download Balance for iPhone' : (isAndroidDevice ? 'Download Balance for Android' : 'Choose your app store');
+            var nativePreviewUrl = 'com.fitgotchi.app://meta-trial?' + params.toString();
             var heroAction = document.getElementById('foundations-hero-action');
             var topAction = document.getElementById('foundations-top-action');
             var microcopy = document.getElementById('foundations-hero-microcopy');
             var checkoutButton = document.querySelector('.checkout-btn[data-plan="founders-pass"]');
             var checkoutTerms = document.getElementById('checkout-terms-container');
+            var openInstalled = document.getElementById('paid-preview-open-installed');
 
             document.body.classList.add('paid-meta-preview');
             document.body.dataset.landingVariant = 'facebook_5m_foundations_v3';
             [heroAction, topAction].forEach(function (action) {
                 if (!action) return;
-                action.href = appUrl;
-                action.textContent = action === heroAction ? 'Look inside Balance' : 'Open Balance';
+                action.href = primaryStoreUrl;
+                action.textContent = action === heroAction ? primaryStoreLabel : 'Download Balance';
                 action.dataset.previewHandoff = 'true';
             });
+            if (openInstalled) openInstalled.href = nativePreviewUrl;
             if (microcopy) {
-                microcopy.textContent = 'Open Balance, complete your setup, then take the full guided tour. Your answers stay saved if you unlock for AU$89 once.';
+                microcopy.textContent = 'Download the Balance app, complete your setup, then take the full guided tour. Your answers stay saved if you unlock for AU$89 once.';
             }
             // The organic page remains AU$89.99. Only this verified paid-Meta
             // runtime rewrites visible copy to the campaign's exact AU$89 offer.
@@ -552,11 +576,11 @@
             });
             if (checkoutTerms) checkoutTerms.style.display = 'none';
             if (checkoutButton) {
-                checkoutButton.textContent = 'Look inside Balance';
+                checkoutButton.textContent = primaryStoreLabel;
                 checkoutButton.addEventListener('click', function (event) {
                     event.preventDefault();
                     event.stopImmediatePropagation();
-                    window.location.href = appUrl;
+                    window.location.href = primaryStoreUrl;
                 }, true);
             }
         })();
