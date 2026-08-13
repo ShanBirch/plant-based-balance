@@ -1048,9 +1048,15 @@ function isPaidMetaFoundersPassSelection(value = '') {
     return PAID_META_FOUNDERS_PASS_SELECTION_RE.test(String(value || '').replace(/\s+/g, ' ').trim());
 }
 
+function isBarePaidMetaFoundersPassSelection(value = '') {
+    return /^(?:the\s+)?(?:founders?\s+pass|balance\s+foundations)(?:\s+please)?[.!?\s]*$/i
+        .test(String(value || '').replace(/\s+/g, ' ').trim());
+}
+
 function isPaidMetaContextualCheckoutIntent(value = '') {
     const message = String(value || '').replace(/\s+/g, ' ').trim();
     return hasDirectPaidMetaCheckoutIntent(message)
+        || isBarePaidMetaFoundersPassSelection(message)
         || PAID_META_CONTEXTUAL_OFFER_VIEW_RE.test(message);
 }
 
@@ -1061,7 +1067,8 @@ function isContextualMetaAdOfferLinkRequest({ currentMessage = '', qualifier = {
         .filter(item => String(item?.direction || '').toLowerCase() === 'out')
         .slice(-4);
     if (isPaidMetaFoundersPassSelection(message)) {
-        if (!hasDirectPaidMetaCheckoutIntent(message)) return false;
+        if (!isBarePaidMetaFoundersPassSelection(message)
+            && !hasDirectPaidMetaCheckoutIntent(message)) return false;
         return recentOutbound.some(item => {
             const text = String(item?.text || '');
             return /\b(?:founders? pass|balance foundations)\b/i.test(text)
@@ -1076,8 +1083,9 @@ function buildContextualMetaAdOfferLinkReply({ checkoutUrl = '', flowVariant = '
     const url = String(checkoutUrl || '').trim();
     if (!isApprovedChallengeBioLinkText(url)) return null;
     if (isPaidMetaFoundersPassSelection(currentMessage)) {
-        if (!hasDirectPaidMetaCheckoutIntent(currentMessage)) return null;
-        const joined = `Perfect — it's one $89 payment for the full six weeks. Here's the link: ${url}`;
+        if (!isBarePaidMetaFoundersPassSelection(currentMessage)
+            && !hasDirectPaidMetaCheckoutIntent(currentMessage)) return null;
+        const joined = `Perfect, it's one $89 payment for the full six weeks. Here's the link: ${url}`;
         return {
             chunks: [joined],
             joined,
@@ -1249,7 +1257,7 @@ function hasRecentPaidMetaSupportQuestion(history = []) {
         .slice(-4)
         .some(item => {
             const text = String(item?.text || '');
-            return /\b(?:would (?:having me|that kind of support)|would that help|accountability help|help you stay on track|make it easier|are you keen to (?:have|take) a look)\b/i.test(text)
+            return /\b(?:would (?:having me|that kind of support)|would that help|accountability help|help you stay on track|make it easier|are you keen to (?:have|take) a look|want me to send you access)\b/i.test(text)
                 || /\b(?:set yourself up in the app|set yourself up before you pay|check it out before any payment|once you(?:'ve| have) seen it, we can take payment)\b[\s\S]{0,260}\b(?:how does that sound|have a look first, then decide)\b/i.test(text);
         });
 }
@@ -1579,7 +1587,11 @@ function buildDeterministicPaidMetaConversationReply({
                 `It's eighty-nine dollars once for the full six weeks, and it doesn't renew.`,
                 `Have a look first, then decide. How does that sound?`,
             ].join('\n\n')
-            : `${proofAnswer}Yeah, that makes sense. ${reflection} Balance gives you a clear plan and support around ${voiceGoalPhrase}. It's one $89 payment for the full six weeks.\n\nIf you're keen, I can give you access to the app so you can check it out before any payment. Are you keen to have a look?`;
+            : [
+                `${proofAnswer}Yeah, I get you. ${reflection} A rigid plan just becomes another thing to fall behind on when it doesn't fit around real life.`,
+                `That's how I'd set Balance up for you. You'd get the six-week Foundations course, a workout program built around your week, a plant-based meal plan, and one weekly check-in with me where I review your training and food and adjust things. It's one $89 payment for the full six weeks, with no subscription or auto-renewal.`,
+                `I can let you set it all up and look through the app before you pay. Want me to send you access?`,
+            ].join('\n\n');
         return {
             chunks: [joined],
             joined,
@@ -1636,6 +1648,15 @@ function shouldApplyDeterministicPaidMetaReplyOverride(draft = null) {
         || draft.replyMode === 'campaign_app_preview_handoff';
 }
 
+function shouldUseOutboundSyntheticVoice({ personalVoicePlan = {}, metaAdConversationFastLane = false } = {}) {
+    // Paid Facebook/Instagram ad conversations stay in text. Synthetic voice
+    // added friction and made the sales bridge harder to review. Client and
+    // organic-lead voice lanes remain unchanged.
+    if (metaAdConversationFastLane) return false;
+    return personalVoicePlan.syntheticVoiceForbidden !== true
+        && personalVoicePlan.useSyntheticVoice === true;
+}
+
 function restoreCoalescedPaidMetaVoiceDraft({
     draft,
     existingPendingData = {},
@@ -1651,6 +1672,7 @@ function restoreCoalescedPaidMetaVoiceDraft({
     appPreviewUrl = '',
     allowVideoAttachment = false,
 } = {}) {
+    if (metaAdConversationFastLane) return draft;
     const inheritedVoice = existingPendingData?.outbound_voice_message === true;
     if (!inheritedVoice
         || outboundVoiceMessage
@@ -3754,10 +3776,12 @@ function buildPaidMetaConversationWriterBlock({ linkedUserId = null, acquisition
     return `
 
 PAID META SINGLE-WRITER PLAYBOOK:
-- You own the conversational reply. Other code may attach approved proof media, voice or an exact checkout link, but it must not invent or force a follow-up question after you write.
+- You own the conversational reply. Other code may attach approved proof media or an exact checkout link, but it must not invent or force a follow-up question after you write. Paid Meta replies are text-only; never write a synthetic voice-note script or announce a voice message.
 - Read the complete visible timeline. Answer the newest message first and treat an obvious answer as an answer to Shannon's last question.
 - If Shannon's immediately previous message already explained the offer, do not explain it again when the lead answers her question. Acknowledge the answer and move to the next adjacent stage.
-- Privately track the next useful stage: goal -> real blocker -> support fit -> offer explanation -> explicit next step. Move no more than one stage in a reply and skip any stage the lead has already answered.
+- Privately track the next useful stage: plant-based connection -> goal -> real blocker -> tailored fit -> offer explanation -> invitation to look inside -> explicit checkout step. Skip any stage the lead has already answered.
+- Once both the goal and a real blocker are known, stop interviewing. Build the sales bridge in concise text: recognise the exact blocker, remove shame by explaining why a rigid plan fails around their life, then explain how Shannon would set Balance up for that situation.
+- That earned offer explanation should clearly include the six-week Foundations course, their workout program, their plant-based meal plan, and one weekly check-in where Shannon reviews their training and food and adjusts things. State one $89 payment for the full six weeks with no subscription or auto-renewal, then offer to let them set it up and look through the app before payment. End with one simple consent question such as whether they want access.
 - While fit is still unclear, usually finish with one short NEW question whose answer changes the next sales or support decision. One question is the maximum, not a quota. A complete answer, acknowledgement, proof point, voice note, objection response or clean pause may stand alone.
 - Never repeat or lightly reword a question Shannon already asked. Never echo the lead's sentence back as Shannon's reply. Use their answer, add a relevant coaching or proof point, then make the next adjacent move.
 - Treat a stated target as a target, not completed progress. For example, "I want to lose 10kg" must never become "10kg down".
@@ -6319,8 +6343,10 @@ exports.handler = async (event) => {
     // Internal accounts exercise the same voice eligibility as real leads.
     // The Cocos -> Shan n Sunny flag opens the auto-reply test lane, but it
     // must not make a first informational reply feel unnaturally intimate.
-    const outboundVoiceMessage = !personalVoicePlan.syntheticVoiceForbidden
-        && personalVoicePlan.useSyntheticVoice;
+    const outboundVoiceMessage = shouldUseOutboundSyntheticVoice({
+        personalVoicePlan,
+        metaAdConversationFastLane,
+    });
     const outboundVoiceMessageReason = personalVoicePlan.reason;
     const metaAdGoalReplyTurn = metaAdConversationFastLane
         && isMetaAdGoalReplyTurn(history, messageText);
@@ -6869,9 +6895,10 @@ exports.handler = async (event) => {
         const previousCount = (existingPending.data && existingPending.data.coalesced_count) || 1;
         const isBlankRegeneration = regenerateExistingBlankAlert?.id === existingPending.id;
         const newCount = isBlankRegeneration ? previousCount : previousCount + 1;
-        const coalescedOutboundVoiceMessage = personalVoicePlan.syntheticVoiceForbidden
+        const coalescedOutboundVoiceMessage = metaAdConversationFastLane
             ? false
-            : (outboundVoiceMessage || existingPending.data?.outbound_voice_message || false);
+            : (!personalVoicePlan.syntheticVoiceForbidden
+                && (outboundVoiceMessage || existingPending.data?.outbound_voice_message || false));
         const coalescedOutboundVoiceReason = outboundVoiceMessageReason
             || existingPending.data?.outbound_voice_message_reason
             || '';
@@ -7280,7 +7307,8 @@ exports.handler = async (event) => {
                 draft_review_summary: reviewSummary,
             };
         }
-        const effectiveOutboundVoiceMessage = !personalVoicePlan.syntheticVoiceForbidden
+        const effectiveOutboundVoiceMessage = !metaAdConversationFastLane
+            && !personalVoicePlan.syntheticVoiceForbidden
             && (outboundVoiceMessage || !!existingPending?.data?.outbound_voice_message);
         const repairIssues = collectCocosAutoRepairIssues({
             draft,
@@ -7826,6 +7854,7 @@ exports._test = {
     buildContextualMetaAdOfferLinkReply,
     buildDeterministicPaidMetaConversationReply,
     shouldApplyDeterministicPaidMetaReplyOverride,
+    shouldUseOutboundSyntheticVoice,
     restoreCoalescedPaidMetaVoiceDraft,
     removePaidMetaBlockerVoiceGreeting,
     buildPaidMetaConversationApproval,

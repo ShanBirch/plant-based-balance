@@ -16,6 +16,7 @@ const {
     ensureMetaAdSalesProgressionQuestion,
     buildDeterministicPaidMetaConversationReply,
     shouldApplyDeterministicPaidMetaReplyOverride,
+    shouldUseOutboundSyntheticVoice,
     restoreCoalescedPaidMetaVoiceDraft,
     removePaidMetaBlockerVoiceGreeting,
     collectCocosAutoRepairIssues,
@@ -114,7 +115,11 @@ test('paid Meta blocker quotes the six-week payment and app access follows posit
 
     assert.match(blockerReply.joined, /work and the kids can wreck the best intentions/i);
     assert.match(blockerReply.joined, /one \$89 payment for the full six weeks/i);
-    assert.match(blockerReply.joined, /access to the app.*before any payment/i);
+    assert.match(blockerReply.joined, /six-week Foundations course/i);
+    assert.match(blockerReply.joined, /workout program built around your week/i);
+    assert.match(blockerReply.joined, /plant-based meal plan/i);
+    assert.match(blockerReply.joined, /one weekly check-in with me/i);
+    assert.match(blockerReply.joined, /look through the app before you pay/i);
     assert.doesNotMatch(blockerReply.joined, /meta-app-preview\.html/i);
     assert.doesNotMatch(blockerReply.joined, /what usually gets in the way/i);
     assert.doesNotMatch(blockerReply.joined, /clear (?:week|plan).*checking in.*(?:help|easier)/i);
@@ -230,9 +235,8 @@ test('paid Meta blocker quotes the six-week payment and app access follows posit
         flowVariant: 'plant_based_control',
         allowVideoAttachment: true,
     });
-    assert.match(coalescedVoiceReply.joined, /^Yeah, that makes total sense/);
-    assert.doesNotMatch(coalescedVoiceReply.joined, /^Hey/i);
-    assert.deepStrictEqual(coalescedVoiceReply.voiceThoughtPausesMs, [1700, 2400, 1500, 1000]);
+    assert.strictEqual(coalescedVoiceReply, blockerReply,
+        'an old pending voice flag must not restore synthetic voice in a paid Meta thread');
 
     assert.equal(restoreCoalescedPaidMetaVoiceDraft({
         draft: blockerReply,
@@ -692,6 +696,25 @@ test('plant-based identity answers stay with the guided live-message writer', ()
     });
     assert.equal(currentlyPlantBasedReply, null,
         'an already plant-based answer must also be written from the person\'s actual wording and duration');
+});
+
+test('paid Meta ad conversations are text-only without changing other voice lanes', () => {
+    const eligibleVoicePlan = {
+        syntheticVoiceForbidden: false,
+        useSyntheticVoice: true,
+    };
+    assert.equal(shouldUseOutboundSyntheticVoice({
+        personalVoicePlan: eligibleVoicePlan,
+        metaAdConversationFastLane: true,
+    }), false);
+    assert.equal(shouldUseOutboundSyntheticVoice({
+        personalVoicePlan: eligibleVoicePlan,
+        metaAdConversationFastLane: false,
+    }), true, 'organic lead and client voice behavior stays unchanged');
+    assert.equal(shouldUseOutboundSyntheticVoice({
+        personalVoicePlan: { ...eligibleVoicePlan, syntheticVoiceForbidden: true },
+        metaAdConversationFastLane: false,
+    }), false);
 });
 
 test('only exact destination handoffs override the guided paid Meta reply', () => {
