@@ -78,6 +78,12 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 - When anonymising real Story media, use a tightly fitted feathered oval/circular blur that blends naturally into the frame, or choose a safe crop, soft background treatment, still frame or branded proof card.
 - Inspect native-resolution frames across the full clip. If the treatment looks pasted on, has a box edge or obscures unrelated body/equipment detail, reject it and re-render.
 
+### Daily proof Stories reserve the Instagram UI
+
+- Treat Instagram's top progress/profile controls and bottom reply/reaction controls as reserved space in every 1080x1920 daily proof Story.
+- Keep all essential proof copy, metrics, coaching interpretation and CTA inside a conservative central content band, normally from about y=250 to y=1600 with at least 70 px side margins. Background media may extend behind the controls, but no important word, number, face or evidence detail may depend on those areas.
+- Review every new template with a realistic Instagram UI overlay before approval. Reject headline-at-the-top and CTA-at-the-bottom layouts even when the clean export looks technically inside the canvas.
+
 ### Client proof should show the receipts
 
 - Build feed proof as a visual sequence from the strongest real media available: the result, the earlier decision or check-in, the logged workout/meal details, and the relevant photo or footage.
@@ -176,6 +182,7 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 
 | Date | Shannon's direction | Scalable rule | Affected formats |
 | --- | --- | --- | --- |
+| 2026-08-13 | The daily proof posts look a bit ugly and do not always fit inside the Instagram UI. | Redesign daily proof as cleaner, phone-first proof compositions and reserve Instagram's top and bottom control areas. Every template must pass a realistic UI-overlay preview before animation or publishing. | Daily Proof Stories, proof templates, approval previews and Story automation |
 | 2026-08-05 | Make this an evergreen post for Balance rather than a membership offer, and show the whole Learning section instead of the six-week course. | When a Balance creative is product-led rather than offer-led, remove price, checkout, access-length and membership language. Show the current full Learning library and close on the Balance brand promise instead of repurposing a course sales card. | Balance product posts, app promos, learning showcases and evergreen video closes |
 | 2026-08-04 | Rename the offer from Founders Pass to Balance Foundations and remove the old lifelong-membership promise. | Validate offer claims against the current course and checkout before reusing older creative. Public copy should say `Balance Foundations`, describe the fixed six-week offer, and never carry forward legacy lifetime-access language. | Balance promo videos, offer pages, ads, DMs and checkout handoffs |
 | 2026-08-04 | I say `how ya going`, not `how are you going`. | Treat `How ya going?` as the canonical casual spoken greeting, reject the expanded form, and analyse exact audible surface forms rather than trusting normalised ASR spelling. | Meta voice notes, Reels, Stories, spoken scripts, voice QA and script-generation prompts |
