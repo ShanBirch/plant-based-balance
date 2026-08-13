@@ -13,6 +13,7 @@ const {
     truncate,
 } = require('./_lib/client-context');
 const {
+    SIMPLE_COMMENT_REACTIONS,
     TAHLIA_PROFILE,
     activityLabel,
     buildTahliaCommentDraft,
@@ -40,7 +41,7 @@ const DEFAULT_COMMENT_ELIGIBILITY_PERCENT = 50;
 const DEFAULT_RESUME_DATE_KEY = '2026-07-05';
 const TAHLIA_LEARNING_EXAMPLE_LIMIT = 8;
 const ALLOWED_TAHLIA_POST_ACTIVITY_TYPES = new Set(['workout', 'personal_best', 'weigh_in', 'fitness_diary']);
-const TAHLIA_SIMPLE_COMMENTS = new Set(['love this', 'amazing work', 'good job']);
+const TAHLIA_SIMPLE_COMMENTS = new Set(SIMPLE_COMMENT_REACTIONS);
 
 function json(statusCode, body) {
     return {
@@ -452,7 +453,7 @@ ${examplesBlock}
 
 Rules:
 - Apply the pattern of Shannon's edits, but do not copy an old line unless it genuinely fits.
-- For a comment, use only one of these exact reactions: "love this", "amazing work", or "good job".
+- For a comment, use only one of these exact reactions: "love this", "nice work", "good job", "well done", "so good", "love it", or "amazing work".
 - Never use more than three words.
 - Do not use the words "win" or "wins". Use the actual detail, PB, number, meal, workout, or a simple reaction instead.
 - Avoid filler like "such a good little", "showing up is the whole thing", "it all adds up", or "that counts".

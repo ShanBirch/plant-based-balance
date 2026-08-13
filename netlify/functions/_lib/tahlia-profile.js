@@ -187,32 +187,22 @@ function buildTahliaPostCardPayload(activityType, caption, seed) {
     return null;
 }
 
+const SIMPLE_COMMENT_REACTIONS = Object.freeze([
+    'love this',
+    'nice work',
+    'good job',
+    'well done',
+    'so good',
+    'love it',
+    'amazing work',
+]);
+
 const COMMENT_TEMPLATES = {
-    workout: [
-        'love this',
-        'amazing work',
-        'good job',
-    ],
-    meal: [
-        'love this',
-        'amazing work',
-        'good job',
-    ],
-    weigh_in: [
-        'love this',
-        'amazing work',
-        'good job',
-    ],
-    progress: [
-        'love this',
-        'amazing work',
-        'good job',
-    ],
-    default: [
-        'love this',
-        'amazing work',
-        'good job',
-    ],
+    workout: SIMPLE_COMMENT_REACTIONS,
+    meal: SIMPLE_COMMENT_REACTIONS,
+    weigh_in: SIMPLE_COMMENT_REACTIONS,
+    progress: SIMPLE_COMMENT_REACTIONS,
+    default: SIMPLE_COMMENT_REACTIONS,
 };
 
 function hashString(value) {
@@ -361,6 +351,7 @@ function buildTahliaCommentDraft({ story, seed }) {
 }
 
 module.exports = {
+    SIMPLE_COMMENT_REACTIONS,
     TAHLIA_PROFILE,
     activityLabel,
     buildTahliaCommentDraft,

@@ -31,7 +31,15 @@ assert.strictEqual(worker.DEFAULT_DAILY_COMMENT_TARGET_MAX, 7);
 assert.strictEqual(worker.DEFAULT_MIN_COMMENT_INTERVAL_MINUTES, 120);
 assert.strictEqual(worker.DEFAULT_COMMENT_ELIGIBILITY_PERCENT, 50);
 assert.strictEqual(worker.DEFAULT_RESUME_DATE_KEY, '2026-07-05');
-assert.deepStrictEqual([...worker.TAHLIA_SIMPLE_COMMENTS], ['love this', 'amazing work', 'good job']);
+assert.deepStrictEqual([...worker.TAHLIA_SIMPLE_COMMENTS], [
+    'love this',
+    'nice work',
+    'good job',
+    'well done',
+    'so good',
+    'love it',
+    'amazing work',
+]);
 assert.strictEqual(worker.isBeforeBrisbaneDateKey(new Date('2026-07-04T13:59:00.000Z'), '2026-07-05'), true);
 assert.strictEqual(worker.isBeforeBrisbaneDateKey(new Date('2026-07-04T14:00:00.000Z'), '2026-07-05'), false);
 assert.deepStrictEqual(worker.brisbaneDayBounds(new Date('2026-07-04T13:59:00.000Z')), {
@@ -360,6 +368,13 @@ for (const story of simpleCommentContexts) {
         assert.ok(comment.split(/\s+/).length <= 3);
     }
 }
+const generatedSimpleComments = new Set(
+    Array.from({ length: 200 }, (_, seed) => profile.buildTahliaCommentDraft({
+        story: simpleCommentContexts[0],
+        seed: String(seed),
+    }).comment)
+);
+assert.deepStrictEqual(generatedSimpleComments, worker.TAHLIA_SIMPLE_COMMENTS);
 
 assert.ok(workerSource.includes("mode: 'automatic_simple_comments_only'"));
 assert.ok(workerSource.includes("feed_posts: { disabled: true, reason: 'comments_only' }"));
