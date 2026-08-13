@@ -19,6 +19,8 @@ assert.deepStrictEqual(
   [],
   'every canonical exercise video must use the validated cross-phone compatibility library'
 );
+assert.doesNotMatch(catalogSource, /f005\.backblazeb2\.com\/file\/shannonsvideos\/[^"']+\.mp4/i, 'catalog source must not retain shadowed raw legacy MP4 URLs');
+assert.doesNotMatch(catalogSource, /drive\.google\.com/i, 'catalog source must not retain Drive preview URLs');
 
 const normalizer = fs.readFileSync(path.join(root, 'scripts', 'normalize-exercise-video-library.mjs'), 'utf8');
 assert.match(normalizer, /-profile:v', 'baseline'/, 'normalizer must emit H.264 Baseline');
