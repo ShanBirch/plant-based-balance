@@ -28,6 +28,15 @@ const scenarios = [
         required: [/plant|shift|transition|part way|partway/i, /fitness|health|goal|training|workout|change/i, /\?/],
     },
     {
+        name: 'adopt wording plus mistyped plant-based frequency',
+        history: [{ direction: 'out', text: opener }],
+        priorInbound: [{ text: "I'm looking to adopt" }],
+        inbound: 'Right now I eat any based 3 nights a week',
+        next: 'Recognise three nights a week as an adoption starting point, ask what they want help with fitness-wise, and do not pitch yet.',
+        required: [/3|three|part[ -]?way|solid start|good start/i, /fitness|health|goal|training|workout|change|help with/i, /\?/],
+        forbidden: [/\$|founders pass|six[- ]week|send (?:the )?(?:link|details)/i],
+    },
+    {
         name: 'five years and accountability',
         history: [
             { direction: 'out', text: opener },

@@ -435,6 +435,23 @@ test('paid Meta writer contract does not hold the approved first ad greeting as 
     }), []);
 });
 
+test('paid Meta transition contract catches adopt wording and a mistyped plant-based frequency', () => {
+    const currentMessage = "I'm looking to adopt\nRight now I eat any based 3 nights a week";
+    const weakReplyIssues = collectPaidMetaWriterContractIssues({
+        draft: { joined: "Three nights is a good start. The Founders Pass is $89 for six weeks. Want the details?" },
+        currentMessage,
+        qualifier: { facts: {} },
+    });
+    assert.ok(weakReplyIssues.some(issue => /fitness-wise/i.test(issue)));
+    assert.ok(weakReplyIssues.some(issue => /pitched before/i.test(issue)));
+
+    assert.deepEqual(collectPaidMetaWriterContractIssues({
+        draft: { joined: "Yeah, three nights a week is a good start if you're looking to make the shift. What would you mainly like help with fitness-wise?" },
+        currentMessage,
+        qualifier: { facts: {} },
+    }), []);
+});
+
 test('fresh paid-ad test episode excludes messages from before the latest referral', () => {
     const history = [
         { direction: 'in', text: 'The kids make it hard', created_at: '2026-08-13T09:05:00.000Z' },

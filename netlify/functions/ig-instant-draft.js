@@ -3793,7 +3793,7 @@ function buildPaidMetaTurnDirective({ qualifier = {}, inboundMessages = [] } = {
     const directQuestions = messages.filter(message => /\?|\b(?:how about you|what about you|was this your client|is this your client)\b/i.test(message));
     const exactDetails = messages.join(' | ');
     const asksReciprocalPlantHistory = /\b(?:how|what) about you\b/i.test(exactDetails) && /\b(?:vegan|plant[ -]?based)\b/i.test(exactDetails);
-    const plantTransition = /\b(?:go|be|become|eat) more plant[ -]?based\b/i.test(exactDetails);
+    const plantTransition = /\b(?:go|be|become|eat) more plant[ -]?based\b|\b(?:look(?:ing)?|try(?:ing)?) to (?:adopt|transition|go plant[ -]?based)\b|\bplant[ -]?based\b[^.!?\n]{0,40}\b\d+\s*(?:nights?|days?|times?)\s+(?:a|per)\s+week\b|\b\d+\s*(?:nights?|days?|times?)\s+(?:a|per)\s+week\b[^.!?\n]{0,40}\b(?:plant|based)\b/i.test(exactDetails);
     const requiredMove = hasFitnessGoal && hasConcreteBlocker
         ? 'TAILORED_OFFER: goal and blocker are both known. Give the complete matched Foundations offer now; do not ask another discovery question.'
         : asksReciprocalPlantHistory
@@ -3832,7 +3832,8 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
         && !/^\s*(?:needs?|wants?)\s+accountab/i.test(blocker);
     const asksOfferInfo = /\b(?:how much|price|cost|renew|what(?:'s| is) included|what do i get|do i (?:actually )?get|workouts?|meal plan|check[ -]?in|details|how (?:does|do) (?:it|the program) work)\b/i.test(turn);
     const asksPlantReciprocal = /\b(?:how|what) about you\b/i.test(turn) && /\b(?:vegan|plant[ -]?based)\b/i.test(turn);
-    const needsFitnessGoalQuestion = asksPlantReciprocal || /\b(?:go|be|become|eat) more plant[ -]?based\b/i.test(turn);
+    const needsFitnessGoalQuestion = asksPlantReciprocal
+        || /\b(?:go|be|become|eat) more plant[ -]?based\b|\b(?:look(?:ing)?|try(?:ing)?) to (?:adopt|transition|go plant[ -]?based)\b|\bplant[ -]?based\b[^.!?\n]{0,40}\b\d+\s*(?:nights?|days?|times?)\s+(?:a|per)\s+week\b|\b\d+\s*(?:nights?|days?|times?)\s+(?:a|per)\s+week\b[^.!?\n]{0,40}\b(?:plant|based)\b/i.test(turn);
     const fitnessGoalQuestion = /\b(?:fitness|fit|health|goal|training|workout|change|achieve|working towards|help with)\b[^?\n]{0,100}\?/i;
     const plantDuration = turn.match(/\b(?:for\s+)?(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+years?\b/i)?.[1] || '';
     const durationWordByNumber = { 1: 'one', 2: 'two', 3: 'three', 4: 'four', 5: 'five', 6: 'six', 7: 'seven', 8: 'eight', 9: 'nine', 10: 'ten' };
@@ -3844,6 +3845,14 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
     const plantDurationReplyPattern = plantDuration
         ? new RegExp(`\\b(?:${durationNumber || plantDuration}|${durationWord})\\b`, 'i')
         : null;
+    const plantFrequency = turn.match(/\b(\d+|one|two|three|four|five|six|seven)\s*(?:nights?|days?|times?)\s+(?:a|per)\s+week\b/i)?.[1] || '';
+    const plantFrequencyNumber = /^\d+$/.test(plantFrequency)
+        ? plantFrequency
+        : String(durationNumberByWord[plantFrequency.toLowerCase()] || '');
+    const plantFrequencyWord = durationWordByNumber[plantFrequencyNumber] || plantFrequency;
+    const plantFrequencyReplyPattern = plantFrequency
+        ? new RegExp(`\\b(?:${plantFrequencyNumber || plantFrequency}|${plantFrequencyWord})\\b`, 'i')
+        : null;
     if (asksPlantReciprocal && !/\b(?:five|5) years?\b/i.test(reply)) {
         issues.push('Answer the reciprocal plant-based question explicitly: Shannon has been vegan for five years.');
     }
@@ -3851,6 +3860,12 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
         issues.push(asksPlantReciprocal
             ? `Include that they have been vegan for ${plantDuration || 'the duration they supplied'} years, answer that Shannon has been vegan for five years, then ask what they want help with fitness-wise. Keep all three parts. Do not substitute another plant-based diet question.`
             : 'Preserve their exact transition detail, then ask what they want help with fitness-wise. Do not substitute another plant-based diet question.');
+    }
+    const semanticallyAcknowledgesTransitionProgress = /\b(?:part[ -]?way|already (?:started|there|doing)|(?:solid|good) start)\b/i.test(reply);
+    if (needsFitnessGoalQuestion && plantFrequency
+        && !plantFrequencyReplyPattern.test(reply)
+        && !semanticallyAcknowledgesTransitionProgress) {
+        issues.push(`The lead said they currently manage plant-based eating ${plantFrequency} nights a week. Preserve that exact frequency while asking what they want help with fitness-wise.`);
     }
     if (/\baccountab/i.test(turn)) {
         for (const inventedDetail of ['kids?', 'work', 'food', 'prep']) {
