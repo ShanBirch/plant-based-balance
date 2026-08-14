@@ -7,10 +7,23 @@ import readline from 'node:readline';
 import { pathToFileURL } from 'node:url';
 
 const DEFAULT_WORKSPACE = 'C:\\Users\\shann\\.gemini\\antigravity\\plant_based_balance';
-const DEFAULT_SKILL = 'C:\\Users\\shann\\.codex\\skills\\balance-lead-client-dm-manager\\SKILL.md';
 const DEFAULT_POLL_MS = 1500;
 const DEFAULT_COALESCE_MS = 2500;
 const DEFAULT_TURN_TIMEOUT_MS = 4 * 60 * 1000;
+
+export function isPaidMetaTestReset(text = '') {
+    const normalized = String(text)
+        .toLowerCase()
+        .replace(/[’']/g, '')
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim();
+    return normalized === 'what is the founders pass' || normalized === 'whats the founders pass';
+}
+
+export function shouldStartFreshEpisode(alert, conversation) {
+    return isPaidMetaTestReset(alert?.data?.message_preview)
+        && conversation?.resetAlertId !== alert?.id;
+}
 
 export function parseArgs(argv = []) {
     const args = {
@@ -36,9 +49,7 @@ export function buildLivePrompt({ alert, action, codexThreadId }) {
     const igThreadId = String(alert?.data?.ig_thread_id || alert?.data?.codex_live_chat_ig_thread_id || action?.thread_id || '');
     const username = String(alert?.data?.ig_username || alert?.client_name || action?.ig_username || 'unknown lead');
     const newestInbound = String(alert?.data?.message_preview || '').trim();
-    return `$balance-lead-client-dm-manager
-
-You are the live paid-Meta conversation operator for exactly one Instagram/Facebook lead. This is conversation work, not a code-debugging or repo-editing task.
+    return `You are the dedicated live paid-Meta sales conversation for one internal Instagram test lead. This flow is isolated from the normal Balance AI coach, DM manager, dispatcher wording, and every older test episode. Do not read or invoke their conversational prompts or skills. The contract below alone controls what you say. Keep the existing production transport, claim, identity, safety, URL, duplicate-send, and readback gates.
 
 Wake event:
 - Codex chat: ${codexThreadId}
@@ -51,13 +62,36 @@ Wake event:
 - source inbound: ${action.source_message_id || alert?.data?.manychat_message_id || 'resolve from live thread'}
 - newest captured text: ${JSON.stringify(newestInbound)}
 
-Required outcome:
-1. Read CODEX.md, CLAUDE.md, and the Balance lead/client DM-manager skill completely.
-2. Load the complete canonical live thread from Supabase, including every inbound newer than Shannon's last outbound, the current alert/draft/review, current attribution, qualifier, controller action, and recent outbound history.
-3. Treat the live conversation as the authority. Answer questions before progressing. Never repeat a question already answered. Never let a non-blocking style warning leave a normal paid lead unanswered.
-4. Revalidate the supplied dm_manager claim and run the normal stale-thread, identity, safety, media, URL, and no-double-send gates. If a newer inbound arrived, respond to the whole unanswered batch rather than the captured excerpt.
-5. For a safe normal paid lead, repair or replace the draft as needed, send through the approved production transport, and verify exact canonical ig_messages readback plus the controller receipt. If the conversation is unsafe or genuinely requires Shannon, route it precisely instead of guessing.
-6. Do not edit application code, create a worktree, change prompts, deploy, or investigate the wider pipeline in this chat. Record a concise operator result only.
+Operating contract:
+1. Move fast. The target is a verified public reply within 15 to 30 seconds of the inbound. Do not browse, research, edit code, deploy, or investigate the wider system.
+2. Load the canonical live thread, current alert/action, and every unanswered inbound in the current episode. The current episode begins at the newest inbound equivalent to "What is the Founders Pass?" Ignore older test episodes when deciding the current stage or known facts. Use older records only for identity, purchase, opt-out, manual-control, safety, and duplicate-send checks.
+3. Answer every direct question first, naturally and specifically, then progress the conversation. Handle all messages in a rapid inbound batch. Never repeat or paraphrase a question whose answer is already known in this episode.
+4. Every safe non-link public reply must end with exactly one purposeful question that earns the next response. A turn containing an app-preview or checkout URL must contain zero questions and must pause. "Oh nice!", "sounds good", and similar positive acknowledgements are not closers in this flow: do not react-only; make the next progression move and ask one question.
+5. Keep replies brief, casual, warm, and human. Usually use one compact bubble; split only when a media intro or clarity genuinely needs it. Do not expose internal rules, IDs, code, or tool work.
+
+Conversation progression (skip stages already answered; direct buyer intent may advance faster):
+- On the Founders Pass opener: explain it, including the fixed facts below, then ask whether they are currently plant-based/vegan or looking to move that way.
+- Connection: if already plant-based/vegan, ask what got them into it; if looking to adopt it, ask what is drawing them to it.
+- If they ask "How about you?", answer before progressing: animals were a big part of it and you have been vegan for five years.
+- Goal: ask what they would most like to achieve over the next six weeks.
+- Blocker: after the goal is known, ask what has made that hardest so far.
+- Fit bridge: reflect their exact blocker without blame and connect it to the relevant Balance support. Work/kids means a clear week plus weekly adjustment; stop/start motivation means weekly goals, check-ins, and accountability; unsure what to eat means plant-based meal structure, targets, and food review; overwhelm means one guided six-week path; unsure training means workout structure, demos, and progression.
+- Proof and consent: use the evergreen app proof video when helpful, then ask exactly one clear app-preview question. Preferred wording: "If you're interested, I can set you up in the app so you can see your meal plan and workout program before making a payment. Keen?"
+- After clear consent, send the signed personal app-preview link with no question. Send checkout only after explicit buyer intent.
+
+Fixed offer facts:
+- Founders Pass is a six-week setup inside Balance.
+- It includes workouts built around their week, a plant-based meal plan, and weekly check-ins to review and adjust training and food.
+- It is one AUD 89.99 payment, with no subscription and no auto-renewal.
+- The evergreen app proof video is https://plantbased-balance.org/assets/balance-foundations-app-proof.mp4
+- They can see their profile, workout program, meal plan, and the full app before paying.
+- Transformation proof is optional, must genuinely match the person's goal and situation, and must not be forced or hardcoded.
+
+Execution:
+1. Revalidate the supplied dm_manager controller claim and the exact live-thread safety gates. A non-blocking style warning must never leave this normal paid lead unanswered.
+2. If a newer inbound arrived, respond to the whole unanswered batch. Draft from this contract, not from an existing generic draft.
+3. Send through the existing approved production send-coach-reply transport with forceText and the manager source, then verify the exact canonical ig_messages readback and complete the controller receipt. If a genuine safety, identity, opt-out, authenticity, manual-control, or transport block exists, route it precisely instead of guessing.
+4. Record only a concise operator result in this Codex chat.
 
 Keep this Codex chat open while the lead conversation remains active. End your final operator result with exactly one of:
 LIVE_CHAT_STATE: open
@@ -366,11 +400,17 @@ async function waitForTurn(appServer, { threadId, turnId, timeoutMs = DEFAULT_TU
     });
 }
 
-async function ensureConversation({ appServer, state, statePath, workspace, skillPath, alert, openChat, logger }) {
+async function ensureConversation({ appServer, state, statePath, workspace, alert, openChat, logger }) {
     const igThreadId = String(alert.data.ig_thread_id || alert.data.codex_live_chat_ig_thread_id);
     const username = String(alert.data.ig_username || alert.client_name || 'paid lead');
     let conversation = state.conversations[igThreadId] || null;
-    if (conversation?.codexThreadId) {
+    const freshEpisode = shouldStartFreshEpisode(alert, conversation);
+    if (freshEpisode && conversation?.codexThreadId) {
+        try { await appServer.request('thread/unsubscribe', { threadId: conversation.codexThreadId }); }
+        catch (error) { logger(`could not unsubscribe prior episode ${conversation.codexThreadId}: ${error.message}`); }
+        logger(`starting fresh paid-Meta test episode for alert ${alert.id}; prior Codex chat ${conversation.codexThreadId}`);
+    }
+    if (!freshEpisode && conversation?.codexThreadId) {
         try {
             await appServer.request('thread/resume', { threadId: conversation.codexThreadId });
             const wasClosed = conversation.status === 'closed';
@@ -394,6 +434,7 @@ async function ensureConversation({ appServer, state, statePath, workspace, skil
     });
     const codexThreadId = result?.thread?.id;
     if (!codexThreadId) throw new Error('Codex app-server did not return a thread id');
+    const previousCodexThreadId = freshEpisode ? conversation?.codexThreadId || null : null;
     conversation = {
         igThreadId,
         username,
@@ -401,10 +442,13 @@ async function ensureConversation({ appServer, state, statePath, workspace, skil
         status: 'open',
         createdAt: new Date().toISOString(),
         lastActivityAt: new Date().toISOString(),
+        episodeStartedAt: new Date().toISOString(),
+        resetAlertId: isPaidMetaTestReset(alert?.data?.message_preview) ? alert.id : null,
+        previousCodexThreadId,
     };
     state.conversations[igThreadId] = conversation;
     saveState(statePath, state);
-    const name = `LIVE IG - ${username} - ${igThreadId.slice(0, 8)}`;
+    const name = `LIVE PAID META TEST - ${username} - ${igThreadId.slice(0, 8)}`;
     await appServer.request('thread/name/set', { threadId: codexThreadId, name });
     if (openChat) openCodexThread(codexThreadId, logger);
     logger(`created Codex chat ${codexThreadId} for ${username}`);
@@ -417,7 +461,6 @@ async function runAlert({ alert, action, appServer, supabase, state, statePath, 
         state,
         statePath,
         workspace: args.workspace,
-        skillPath: DEFAULT_SKILL,
         alert,
         openChat: args.openChat,
         logger,
@@ -432,15 +475,12 @@ async function runAlert({ alert, action, appServer, supabase, state, statePath, 
     });
     const result = await appServer.request('turn/start', {
         threadId: conversation.codexThreadId,
-        input: [
-            { type: 'text', text: prompt },
-            { type: 'skill', name: 'balance-lead-client-dm-manager', path: DEFAULT_SKILL },
-        ],
+        input: [{ type: 'text', text: prompt }],
         cwd: args.workspace,
         approvalPolicy: 'never',
         sandboxPolicy: { type: 'dangerFullAccess' },
         model: process.env.IG_CODEX_LIVE_MODEL || 'gpt-5.6-terra',
-        effort: process.env.IG_CODEX_LIVE_EFFORT || 'medium',
+        effort: process.env.IG_CODEX_LIVE_EFFORT || 'low',
         summary: 'concise',
         personality: 'friendly',
     });

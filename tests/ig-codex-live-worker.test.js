@@ -45,6 +45,13 @@ const { pathToFileURL } = require('url');
     assert.strictEqual(worker.shouldHandleAlert({ ...alert, status: 'sent' }, now, 2500), false);
     assert.strictEqual(worker.shouldHandleAlert({ ...alert, data: { ...alert.data, codex_live_chat_required: false } }, now, 2500), false);
 
+    assert.strictEqual(worker.isPaidMetaTestReset('What is the Founders Pass?'), true);
+    assert.strictEqual(worker.isPaidMetaTestReset("What's the founders pass"), true);
+    assert.strictEqual(worker.isPaidMetaTestReset('what is founders pass?'), false);
+    assert.strictEqual(worker.shouldStartFreshEpisode({ ...alert, data: { ...alert.data, message_preview: 'What is the Founders Pass?' } }, null), true);
+    assert.strictEqual(worker.shouldStartFreshEpisode({ ...alert, data: { ...alert.data, message_preview: 'What is the Founders Pass?' } }, { resetAlertId: 'alert-1' }), false);
+    assert.strictEqual(worker.shouldStartFreshEpisode(alert, { resetAlertId: null }), false);
+
     const prompt = worker.buildLivePrompt({
         alert,
         action: {
@@ -56,11 +63,16 @@ const { pathToFileURL } = require('url');
         },
         codexThreadId: 'codex-thread-1',
     });
-    assert.match(prompt, /\$balance-lead-client-dm-manager/);
-    assert.match(prompt, /Read CODEX\.md, CLAUDE\.md/);
-    assert.match(prompt, /Answer questions before progressing/);
-    assert.match(prompt, /Never repeat a question already answered/);
-    assert.match(prompt, /Do not edit application code/);
+    assert.doesNotMatch(prompt, /\$balance-lead-client-dm-manager/);
+    assert.doesNotMatch(prompt, /Read CODEX\.md, CLAUDE\.md/);
+    assert.match(prompt, /isolated from the normal Balance AI coach/);
+    assert.match(prompt, /15 to 30 seconds/);
+    assert.match(prompt, /exactly one purposeful question/);
+    assert.match(prompt, /positive acknowledgements are not closers/);
+    assert.match(prompt, /Ignore older test episodes/);
+    assert.match(prompt, /one AUD 89\.99 payment/);
+    assert.match(prompt, /before making a payment\. Keen\?/);
+    assert.match(prompt, /Do not browse, research, edit code/);
     assert.match(prompt, /LIVE_CHAT_STATE: open/);
     assert.match(prompt, /alert-1/);
     assert.match(prompt, /action-1/);
