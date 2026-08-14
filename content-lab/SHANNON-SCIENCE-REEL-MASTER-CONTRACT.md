@@ -107,7 +107,7 @@ Default runtime is 45–90 seconds. If the approved voice is too long, remove lo
 - Use the approved circular presenter bubble when the source or mechanism graphic genuinely needs most of the frame: complete face visible, blue ring, quiet orbit cue, `SHANNON` pill, fixed upper-right lane.
 - Keep Shannon visible as the human anchor. A long graphic or paper section should retain the bubble or return to Shannon within roughly 15–20 seconds.
 - Full-screen proof can briefly remove Shannon when it needs undivided attention, normally for about four seconds or less.
-- Check the fully entered and largest state of every animated CTA or card, not only its starting frame.
+- Check the fully entered and largest state of every animated CTA, card, strike, arrow, pulse and diagram, not only its starting frame. Decorative marks must remain behind readable text or stop outside its letterforms.
 
 ## Voice, lip-sync, and paid-production order
 
@@ -124,6 +124,7 @@ Default runtime is 45–90 seconds. If the approved voice is too long, remove lo
 
 - On a 1080×1920 Reel, keep essential content inside `x=64..890`, `y=220..1500`.
 - Give the main title, diagram/source, captions, CTA, and series marker separate lanes. Tiny labels still count as content.
+- Closing and next-part scenes reserve distinct title, presenter, teaching-card, CTA and caption zones. Do not let the final caption-active state collapse those elements into one crowded vertical band.
 - Use full spoken captions timed to the actual voice. Default to bold white text with stroke/shadow and no black caption box.
 - Never cover Shannon's mouth or important source text with captions.
 - Music is standard unless Shannon says otherwise. Keep the voice dominant and make the music perceptible on a phone.
@@ -139,7 +140,7 @@ Default runtime is 45–90 seconds. If the approved voice is too long, remove lo
 
 - Iterate with a low-resolution local composite, not another paid HeyGen generation.
 - Before final approval, provide the playable Reel, cover, caption, source trail, contact sheet, phone preview, and representative face-clear frames.
-- Inspect the encoded MP4 at the hook, dense captions, paper proof, diagrams, presenter bubble, CTA, and outro.
+- Inspect the encoded MP4 at the hook, dense captions, paper proof, diagrams, presenter bubble, CTA, and outro. For every scene, include its fully entered maximum-motion state and its longest caption-active state; sparse midpoint sampling is not sufficient collision QA.
 - Reject any face overlap, text collision, unreadable paper, detached connector, unfinished signal, black canvas edge, muffled voice, early audio ending, stale CTA, static long hold, or essential content outside the Instagram safe area.
 - Do not publish until Shannon approves the final MP4, cover, caption, and target accounts.
 - When the CTA uses a comment keyword, create or verify the matching unlock flow before publishing. Preserve the post, keyword, source, and lead context through the funnel.

@@ -81,6 +81,12 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 - Vary the split orientation across a longer explainer when the content supports it. Keep comparisons, papers and dense diagrams in the clearer side-by-side layout; use occasional top/bottom splits for simpler teaching beats and recaps. Every horizontal presenter crop must contain Shannon's complete head and face rather than turning into a narrow forehead/eyes crop.
 - In photo carousels, place copy in genuine negative space using a local translucent field; do not hide most of the photo behind an opaque panel.
 
+### Collision QA must test the busiest state
+
+- Sample every scene after all animated elements have fully entered and again while its longest caption is active. A clean midpoint or sparse contact sheet is not proof that the scene is collision-free.
+- Reserve separate title, presenter, teaching-card, CTA and caption lanes for next-part and closing scenes. If all five cannot remain readable at once, shorten or move the copy; never stack them into the same vertical band.
+- Decorative strokes, strike-throughs, arrows and pulses must sit behind readable text or stop outside its letterforms. Check their largest animated state in the encoded MP4, not only in the editor canvas.
+
 ### Face privacy must never look censored
 
 - Never place a visible square, rectangle, black patch, opaque block, hard-edged blur or pixel tile over a client's face.
@@ -201,6 +207,7 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 
 | Date | Shannon's direction | Scalable rule | Affected formats |
 | --- | --- | --- | --- |
+| 2026-08-14 | Some of the text overlaps a few places. | QA every scene at its fully entered, maximum-motion and caption-active states. Keep closing titles, presenter media, cards, CTA and captions in separate lanes, and place decorative strikes behind readable text. | Science Reels, talking-head explainers, animated diagrams, closing cards and encoded phone-preview QA |
 | 2026-08-14 | Split the screen horizontally sometimes as well. | Mix side-by-side and top/bottom presenter/graphic layouts across longer explainers. Use horizontal splits selectively for simple concepts or recaps, preserve the complete face/head in the presenter band, and keep captions in a third non-overlapping lane. | Science Reels, talking-head explainers, split-screen layouts and phone-preview QA |
 | 2026-08-14 | My face is hidden, the edit fights the Instagram UI, and it is visually boring. Start full-screen on me, then use split-screen for my head and the graphics. | Open Shannon-led explainers human-first and full-screen. Move into a designed presenter/graphics split with hard face protection, its own caption lane and the conservative Instagram-safe rectangle; never float cards over Shannon's head. Use narration-linked layout and graphic changes rather than leaving a static slide in place. | Science Reels, predictive-brain explainers, talking-head edits, caption layouts and phone-preview QA |
 | 2026-08-14 | What about meals as well? And walks? | Treat selectable text layouts as a shared photo-overlay feature, not a workout-only feature. Apply Bold, Scorecard and Simple to meals/nutrition and activities alongside workouts and PBs. | Balance Feed and Instagram photo shares for meals, activities, workouts and PBs |
