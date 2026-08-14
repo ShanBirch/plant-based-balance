@@ -1322,11 +1322,17 @@ function buildPaidMetaPlantBasedIdentityProgression({
         && /\b(?:vegan|vegetarian|plant[ -]?based)\b/i.test(message)
         && !/\b(?:not|yet|trying|interested|adopt|transition|because|since|for\s+\d|years?|months?|weeks?)\b/i.test(message)
         && !/\?/.test(message);
-    // Rich identity answers stay with the live writer so it can reflect a
-    // duration, reason or reciprocal question. A short confirmation has only
-    // one correct next sales-script move, so keep that transition reliable.
-    if (!simpleConfirmedIdentity || flowVariant !== 'plant_based_control') return null;
-    const joined = 'Nice. What’s your main health or fitness goal at the moment?';
+    const experiencedVeganIdentity = /\b(?:vegan|plant[ -]?based)\b/i.test(message)
+        && /\b(?:vegan|plant[ -]?based)\b.{0,28}\bfor\s+(?:years?|\d+\s+years?)\b/i.test(message)
+        && !/\b(?:not|yet|trying|interested|adopt|transition|because|since)\b/i.test(message);
+    const asksShannonBack = /\b(?:how|what)\s+about\s+you\b|\bare\s+you\b.*\b(?:vegan|plant[ -]?based)\b/i.test(message);
+    // A confirmed vegan identity, including a supplied duration or reciprocal
+    // question, has one verified next step in the paid-ad script. Answer the
+    // Shannon fact directly and advance without waiting on two model calls.
+    if ((!simpleConfirmedIdentity && !experiencedVeganIdentity) || flowVariant !== 'plant_based_control') return null;
+    const joined = experiencedVeganIdentity || asksShannonBack
+        ? 'I\'ve been vegan for five years too. What’s your main health or fitness goal at the moment?'
+        : 'Nice. What’s your main health or fitness goal at the moment?';
     return {
         chunks: [joined],
         joined,

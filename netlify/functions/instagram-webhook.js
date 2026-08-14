@@ -953,6 +953,57 @@ async function postInstagramTextMessage({ accountId, recipientId, text }) {
     return parsed;
 }
 
+function isVerifiedPaidMetaTypingThread(thread = {}) {
+    if (thread.linked_user_id) return false;
+    const attribution = safeObject(thread.custom_data?.meta_ad_attribution);
+    const graph = safeObject(thread.custom_data?.instagram_graph);
+    return attribution.source === 'meta_ads'
+        && String(attribution.platform_source || '').toUpperCase() === 'ADS'
+        && !!String(attribution.ad_id || '').trim()
+        && graph.send_ready === true
+        && !!resolveThreadGraphRecipientId(thread)
+        && !!resolveThreadGraphAccountId(thread);
+}
+
+async function startPaidMetaTypingImmediately(thread = {}) {
+    if (!isVerifiedPaidMetaTypingThread(thread)) {
+        return { attempted: false, ok: false, reason: 'not_verified_paid_meta' };
+    }
+    const accountId = resolveThreadGraphAccountId(thread);
+    const recipientId = resolveThreadGraphRecipientId(thread);
+    const accessToken = await getInstagramGraphAccessToken(accountId);
+    if (!accessToken) return { attempted: false, ok: false, reason: 'access_token_missing' };
+
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timeout = controller ? setTimeout(() => controller.abort(), 1500) : null;
+    try {
+        const response = await fetch(
+            `${GRAPH_BASE}/${INSTAGRAM_GRAPH_API_VERSION}/${encodeURIComponent(accountId)}/messages`,
+            {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json',
+                },
+                signal: controller?.signal,
+                body: JSON.stringify({
+                    recipient: { id: recipientId },
+                    sender_action: 'typing_on',
+                }),
+            }
+        );
+        return { attempted: true, ok: response.ok, status: response.status };
+    } catch (error) {
+        return {
+            attempted: true,
+            ok: false,
+            reason: error?.name === 'AbortError' ? 'typing_action_timeout' : 'typing_action_failed',
+        };
+    } finally {
+        if (timeout) clearTimeout(timeout);
+    }
+}
+
 async function insertPrivateReplyMessage({ threadId, text, dedupeId, nowIso }) {
     const existing = await findGraphMessageByDedupeId(dedupeId);
     if (existing) return { inserted: false, deduped: true, messageId: existing.id || null, dedupeId };
@@ -2211,6 +2262,10 @@ async function linkContentInteractionToGraphMessage({ graphMessageId, threadId, 
 }
 
 async function dispatchDraft({ thread, messageText, dedupeId }) {
+    // Paid-ad DMs are a live-chat lane. Start the native typing indicator before
+    // alert persistence, history loading, model generation, or draft review.
+    // The draft worker refreshes typing later if the reply takes longer.
+    await startPaidMetaTypingImmediately(thread);
     // Persist an actionable shell before any model/provider work starts. If
     // the background draft worker or its AI provider fails, the inbound still
     // appears in Needs You and the reconcile pass can retry the empty draft.
@@ -3081,6 +3136,7 @@ exports._test = {
     participantUsernameFromMessaging,
     normalizeMetaAdReferral,
     mergeGraphCustomData,
+    isVerifiedPaidMetaTypingThread,
     normalizeCommentKeyword,
     commentKeywordForPrivateReply,
     commentGiveawayCampaignsFromConfig,

@@ -1239,7 +1239,7 @@ test('generic keyword and fit quick reply answer without a premature checkout li
     assert.doesNotMatch(reply.joined, /vegan fitness community/i);
 });
 
-test('simple plant-based identity answers advance reliably while richer answers stay with the live writer', () => {
+test('plant-based identity answers advance reliably while transition details stay with the live writer', () => {
     const reply = buildDeterministicPaidMetaConversationReply({
         currentMessage: 'I am interested but not fully plant-based yet',
         qualifier: { commercial_stage: 'engaged', facts: {} },
@@ -1273,8 +1273,19 @@ test('simple plant-based identity answers advance reliably while richer answers 
         history: [{ direction: 'out', text: 'Are you currently plant-based or looking to adopt a plant-based lifestyle?' }],
         flowVariant: 'plant_based_control',
     });
-    assert.equal(experiencedPlantBasedReply, null,
-        'when they supply a duration, the live writer should reflect that exact experience');
+    assert.equal(experiencedPlantBasedReply.model, 'deterministic_paid_meta_guided_sales_v1');
+    assert.match(experiencedPlantBasedReply.joined, /vegan for five years too/i);
+    assert.match(experiencedPlantBasedReply.joined, /main health or fitness goal/i);
+
+    const reciprocalExperiencedReply = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'I am vegan, have been for years! How about you?',
+        qualifier: { commercial_stage: 'engaged', facts: {} },
+        history: [{ direction: 'out', text: 'Are you currently plant-based or looking to adopt a plant-based lifestyle?' }],
+        flowVariant: 'plant_based_control',
+    });
+    assert.equal(reciprocalExperiencedReply.model, 'deterministic_paid_meta_guided_sales_v1');
+    assert.match(reciprocalExperiencedReply.joined, /^I've been vegan for five years too\./i);
+    assert.match(reciprocalExperiencedReply.joined, /main health or fitness goal/i);
 });
 
 test('paid Meta ad conversations are text-only without changing other voice lanes', () => {
