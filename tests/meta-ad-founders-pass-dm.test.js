@@ -22,6 +22,7 @@ const {
     collectPaidMetaWriterContractIssues,
     isBlockingPaidMetaWriterContractIssue,
     buildPaidMetaGuaranteedContractFallback,
+    buildPaidMetaNonBlockingReviewFallback,
     collectCocosAutoRepairIssues,
     getAutoDmHoldReason,
     buildPaidMetaConversationApproval,
@@ -834,6 +835,81 @@ test('paid Meta contract blocks asking the same question after the lead answers 
     assert.doesNotMatch(fallback.joined, /partway there|help with fitness-wise/i);
 });
 
+test('paid Meta gets to know the plant-based reason before asking for the fitness goal', () => {
+    const identityReply = buildDeterministicPaidMetaConversationReply({
+        currentMessage: "I'm vegetarian",
+        history: [{
+            direction: 'out',
+            text: 'Are you currently plant-based or looking to adopt a plant-based lifestyle?',
+        }],
+        flowVariant: 'plant_based_control',
+    });
+    assert.match(identityReply.joined, /what made you decide to go vegetarian\?/i);
+    assert.doesNotMatch(identityReply.joined, /health or fitness goal/i);
+
+    const reasonReply = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'Mostly animals and the ethics side of it.',
+        history: [
+            { direction: 'out', text: 'Are you currently plant-based or looking to adopt a plant-based lifestyle?' },
+            { direction: 'in', text: "I'm vegetarian" },
+            { direction: 'out', text: identityReply.joined },
+        ],
+        flowVariant: 'plant_based_control',
+    });
+    assert.match(reasonReply.joined, /animals|ethics|I get that/i);
+    assert.match(reasonReply.joined, /main health or fitness goal/i);
+    assert.equal((reasonReply.joined.match(/\?/g) || []).length, 1);
+});
+
+test('paid Meta food confusion is a real blocker and cannot be silenced by a style warning', () => {
+    const history = [
+        { direction: 'out', text: 'What is your main health or fitness goal at the moment?' },
+        { direction: 'in', text: 'I want to grow muscle' },
+        { direction: 'out', text: 'What usually gets in the way of making that happen consistently?' },
+    ];
+    const qualifier = {
+        commercial_stage: 'engaged',
+        facts: {
+            motivation: 'Wants to grow muscle',
+            current_state: 'Mhmm I Dunn what to eat',
+            history_blockers: null,
+        },
+    };
+    const blockerReply = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'Mhmm I Dunn what to eat',
+        qualifier,
+        history,
+        flowVariant: 'plant_based_control',
+    });
+    assert.match(blockerReply.joined, /build muscle but don't know what to eat/i);
+    assert.match(blockerReply.joined, /plant-based meal plan/i);
+    assert.match(blockerReply.joined, /one \$89\.99 payment/i);
+    assert.equal(blockerReply.videoAttachmentUrl, BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL);
+    assert.doesNotMatch(blockerReply.joined, /what do you usually|what usually gets in the way/i);
+
+    const released = buildPaidMetaNonBlockingReviewFallback({
+        draft: {
+            chunks: ['Yeah, that is the bit that trips people up. What do you usually eat?'],
+            joined: 'Yeah, that is the bit that trips people up. What do you usually eat?',
+            model: 'openai-paid-meta',
+            replyMode: 'standard',
+        },
+        draftReview: {
+            verdict: 'warn',
+            notification_required: false,
+            context_loss_suspected: false,
+        },
+        currentMessage: 'Mhmm I Dunn what to eat',
+        qualifier,
+        history,
+        flowVariant: 'plant_based_control',
+    });
+    assert.equal(released.paidMetaNonBlockingReviewReleased, true);
+    assert.equal(released.model, 'deterministic_paid_meta_guided_sales_v1');
+    assert.equal(released.videoAttachmentUrl, BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL);
+    assert.doesNotMatch(released.joined, /what do you usually eat/i);
+});
+
 test('paid Meta guided sales stages move goal to blocker to complete offer to preview link', () => {
     const appPreviewUrl = buildMetaAppPreviewUrl('11111111-2222-4333-8444-555555555555', {
         env: { META_APP_PREVIEW_REF_SECRET: 'paid-meta-guided-sales-test-secret' },
@@ -1330,7 +1406,7 @@ test('plant-based identity answers advance reliably while transition details sta
         flowVariant: 'plant_based_control',
     });
     assert.equal(currentlyPlantBasedReply.model, 'deterministic_paid_meta_guided_sales_v1');
-    assert.equal(currentlyPlantBasedReply.joined, 'Nice. What’s your main health or fitness goal at the moment?');
+    assert.equal(currentlyPlantBasedReply.joined, 'Nice. What made you decide to go plant-based?');
 
     const shortVeganReply = buildDeterministicPaidMetaConversationReply({
         currentMessage: "I'm vegan yeah",
@@ -1338,7 +1414,7 @@ test('plant-based identity answers advance reliably while transition details sta
         history: [{ direction: 'out', text: 'Are you currently plant-based or looking to adopt a plant-based lifestyle?' }],
         flowVariant: 'plant_based_control',
     });
-    assert.equal(shortVeganReply.joined, 'Nice. What’s your main health or fitness goal at the moment?');
+    assert.equal(shortVeganReply.joined, 'Nice. What made you decide to go plant-based?');
     assert.doesNotMatch(shortVeganReply.joined, /\$89\.99|link/i);
 
     const experiencedPlantBasedReply = buildDeterministicPaidMetaConversationReply({
@@ -1349,7 +1425,7 @@ test('plant-based identity answers advance reliably while transition details sta
     });
     assert.equal(experiencedPlantBasedReply.model, 'deterministic_paid_meta_guided_sales_v1');
     assert.match(experiencedPlantBasedReply.joined, /vegan for five years too/i);
-    assert.match(experiencedPlantBasedReply.joined, /main health or fitness goal/i);
+    assert.match(experiencedPlantBasedReply.joined, /what made you decide to go plant-based/i);
 
     const reciprocalExperiencedReply = buildDeterministicPaidMetaConversationReply({
         currentMessage: 'I am vegan, have been for years! How about you?',
@@ -1359,7 +1435,7 @@ test('plant-based identity answers advance reliably while transition details sta
     });
     assert.equal(reciprocalExperiencedReply.model, 'deterministic_paid_meta_guided_sales_v1');
     assert.match(reciprocalExperiencedReply.joined, /^I've been vegan for five years too\./i);
-    assert.match(reciprocalExperiencedReply.joined, /main health or fitness goal/i);
+    assert.match(reciprocalExperiencedReply.joined, /what made you decide to go plant-based/i);
 });
 
 test('paid Meta ad conversations are text-only without changing other voice lanes', () => {

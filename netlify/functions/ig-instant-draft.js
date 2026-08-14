@@ -1138,10 +1138,21 @@ const PAID_META_BLOCKER_SIGNAL_RE = /\b(?:stop(?:ping)? and start(?:ing)?|stop[-
 const PAID_META_FITNESS_GOAL_RE = /\b(?:lose|losing|weight|body fat|fat loss|fit|fitter|fitness|strong|stronger|strength|muscle|energy|health|healthier|tone|toned|confidence|run|running|training|workout)\b/i;
 const PAID_META_CONCRETE_BLOCKER_RE = /\b(?:no time|not enough time|run out of time|too busy|work gets busy|prep|prepar\w*|routine|shift|roster|schedule|craving|weekend|motivat\w*|inconsisten\w*|consisten\w*|stick|fall(?:ing)? off|drop(?:ping)?|stop(?:ping)?|restart|follow[ -]?through|accountab\w*|miss(?:ed|ing)? (?:a )?(?:workout|session)|random(?:ly)?|never know|no (?:proper )?(?:workout )?(?:plan|program)|don['\u2019]?t (?:have|know) (?:a |what )?(?:proper )?(?:workout )?(?:plan|program|to do)|overwhelm\w*|too much information|pain|injur\w*|cost|money|confidence)\b/i;
 const PAID_META_STRONG_BLOCKER_RE = /\b(?:no time|not enough time|run out of time|too busy|work gets busy|prep|prepar\w*|routine|shift|roster|schedule|craving|weekend|lose motivation|no motivation|inconsisten\w*|can['\u2019]?t stick|fall(?:ing)? off|drop(?:ping)? off|stop(?:ping)?|restart|follow[ -]?through|miss(?:ed|ing)? (?:a )?(?:workout|session)|random(?:ly)?|never know|no (?:proper )?(?:workout )?(?:plan|program)|don['\u2019]?t (?:have|know) (?:a |what )?(?:proper )?(?:workout )?(?:plan|program|to do)|overwhelm\w*|too much information|pain|injur\w*|cost|money)\b/i;
+const PAID_META_FOOD_CONFUSION_RE = /\b(?:(?:i\s+)?(?:don['\u2019]?t|do not|dont)\s+know|(?:i\s+)?(?:dunno|dunn)|not sure|unsure|confused)\b[^.!?\n]{0,48}\b(?:what|how)\b[^.!?\n]{0,32}\b(?:eat|eating|meal|meals|food|protein)\b|\b(?:what|how)\b[^.!?\n]{0,32}\b(?:eat|eating|meal|meals|food|protein)\b[^.!?\n]{0,48}\b(?:confus|unsure|not sure)\w*/i;
 const PAID_META_NEXT_STEP_RE = /^(?:okay[, ]*)?(?:so[, ]*)?(?:what (?:do i do|should i do|now)|what(?:'s| is) next|where (?:do i|should i) start|how (?:do i|should i) start)(?: now)?[.!?\s]*$/i;
 const PAID_META_POSITIVE_FIT_RE = /^(?:(?:yes|yeah|yep|definitely|absolutely)\b(?!.*\b(?:but\s+(?:not|no)|don['’]?t|do not)\b)|probably\b|i think so\b|that would (?:really )?help\b|that sounds (?:really )?good\b|sounds (?:really )?good\b|i(?:'m| am) keen\b|keen\b|i(?:'d| would) (?:definitely )?like to (?:have )?(?:a )?(?:look|check(?: it)? out)\b)[\s\S]{0,160}$/i;
 const PAID_META_APP_INCLUSIONS_RE = /\b(?:what(?:'s| is| was) (?:actually )?(?:included in|in|inside)|what do (?:i|you) get (?:in|inside)) (?:the )?(?:balance(?: app)?|app)\b/i;
 const PAID_META_PROGRAM_WORKS_RE = /\bhow does (?:the |your )?(?:program|founders pass|course|coaching) work\b|\bwhat (?:is|comes) included\b/i;
+
+function isPaidMetaConcreteBlocker(value = '') {
+    const text = String(value || '');
+    return PAID_META_CONCRETE_BLOCKER_RE.test(text) || PAID_META_FOOD_CONFUSION_RE.test(text);
+}
+
+function isPaidMetaStrongBlocker(value = '') {
+    const text = String(value || '');
+    return PAID_META_STRONG_BLOCKER_RE.test(text) || PAID_META_FOOD_CONFUSION_RE.test(text);
+}
 const PAID_META_OFFER_INFO_RE = /^(?:(?:thanks?|thank you)[\s,.!]*)?(?:just to confirm[\s,.!]*)?(?:i (?:want|need|wanted) to know )?(?:how much|(?:your )?prices?(?: and what i get)?|pricing|cost|what(?:'s| is) (?:actually )?included|what do i get|what are the (?:details|prices)|tell me (?:the|about the) (?:price|pricing|details|inclusions))(?:\b|[?!.])/i;
 
 function buildPaidMetaBlockerReflection(message = '') {
@@ -1210,10 +1221,15 @@ function hasRecentCompletePaidMetaOffer(history = []) {
         && /\bbefore (?:you )?pay/i.test(text);
 }
 
-function buildPaidMetaTailoredOfferText(blockerText = '') {
+function buildPaidMetaTailoredOfferText(blockerText = '', goalText = '') {
     const turn = String(blockerText || '');
+    const goal = String(goalText || '');
     let acknowledgement = 'Yeah, that makes sense.';
-    if (/\b(?:shift|roster|schedule)\b/i.test(turn)) {
+    if (PAID_META_FOOD_CONFUSION_RE.test(turn)) {
+        acknowledgement = /\b(?:muscle|strong|strength)\b/i.test(goal)
+            ? 'Yeah, if you want to build muscle but don\'t know what to eat, the food side needs to make meals and protein simple instead of leaving you guessing.'
+            : 'Yeah, if you don\'t know what to eat, the food side needs to make each meal simple instead of leaving you guessing.';
+    } else if (/\b(?:shift|roster|schedule)\b/i.test(turn)) {
         acknowledgement = 'Yeah, with your week changing all the time, the plan needs to flex around your schedule.';
     } else if (/\b(?:food|prep|prepar|run out of time)\b/i.test(turn)) {
         acknowledgement = 'Yeah, if time and food prep are where it falls apart, the food side needs to stay simple on busy days.';
@@ -1250,7 +1266,7 @@ function buildPaidMetaGoalToBlockerText(goalText = '', transformationProof = nul
 function paidMetaHistoryHasConcreteBlocker(history = []) {
     return (Array.isArray(history) ? history : [])
         .filter(message => String(message?.direction || '').toLowerCase() === 'in')
-        .some(message => PAID_META_CONCRETE_BLOCKER_RE.test(String(message?.text || '')));
+        .some(message => isPaidMetaConcreteBlocker(String(message?.text || '')));
 }
 
 function isApprovedPaidMetaAppPreviewMoment({ currentMessage = '', qualifier = {} } = {}) {
@@ -1296,6 +1312,26 @@ function hasRecentPaidMetaPlantBasedQuestion(history = []) {
         .some(item => /currently plant-based|interested in (?:eating more )?plant-based/i.test(String(item?.text || '')));
 }
 
+function hasRecentPaidMetaPlantReasonQuestion(history = []) {
+    return (Array.isArray(history) ? history : [])
+        .filter(item => String(item?.direction || '').toLowerCase() === 'out')
+        .slice(-3)
+        .some(item => /\bwhat made you (?:decide to |want to )?(?:go |become )?(?:vegan|vegetarian|plant[ -]?based)\b|\bwhy did you (?:go|become) (?:vegan|vegetarian|plant[ -]?based)\b/i.test(String(item?.text || '')));
+}
+
+function buildPaidMetaPlantReasonToGoalText(reasonText = '') {
+    const reason = String(reasonText || '');
+    let acknowledgement = 'Yeah, that makes sense.';
+    if (/\b(?:animal|ethic\w*|cruel|welfare)\b/i.test(reason)) {
+        acknowledgement = 'Yeah, I get that. I\'ve been vegan for five years too.';
+    } else if (/\b(?:environment|planet|climate|sustainab)\w*\b/i.test(reason)) {
+        acknowledgement = 'Yeah, I get that. The environmental side matters a lot.';
+    } else if (/\b(?:health|feel better|energy|digestion|cholesterol)\b/i.test(reason)) {
+        acknowledgement = 'Yeah, that makes sense. Feeling better day to day is a solid reason.';
+    }
+    return `${acknowledgement} What's your main health or fitness goal at the moment?`;
+}
+
 function isAdaptivePaidMetaPlantBasedIdentityTurn({
     currentMessage = '',
     history = [],
@@ -1332,8 +1368,10 @@ function buildPaidMetaPlantBasedIdentityProgression({
     // Shannon fact directly and advance without waiting on two model calls.
     if ((!simpleConfirmedIdentity && !experiencedVeganIdentity) || flowVariant !== 'plant_based_control') return null;
     const joined = experiencedVeganIdentity || asksShannonBack
-        ? 'I\'ve been vegan for five years too. What’s your main health or fitness goal at the moment?'
-        : 'Nice. What’s your main health or fitness goal at the moment?';
+        ? 'I\'ve been vegan for five years too. What made you decide to go plant-based?'
+        : /\bvegetarian\b/i.test(message)
+            ? 'Nice. What made you decide to go vegetarian?'
+            : 'Nice. What made you decide to go plant-based?';
     return {
         chunks: [joined],
         joined,
@@ -1366,6 +1404,21 @@ function buildDeterministicPaidMetaConversationReply({
     if (isAdaptivePaidMetaPlantBasedIdentityTurn({ currentMessage: message, history, flowVariant })
         && !(isExplicitPaidMetaPreviewAcceptance(message) && hasRecentCompletePaidMetaOffer(history))) {
         return buildPaidMetaPlantBasedIdentityProgression({ currentMessage: message, history, flowVariant });
+    }
+
+    if (flowVariant === 'plant_based_control'
+        && hasRecentPaidMetaPlantReasonQuestion(history)
+        && !hasDirectPaidMetaCheckoutIntent(message)) {
+        const joined = buildPaidMetaPlantReasonToGoalText(message);
+        return {
+            chunks: [joined],
+            joined,
+            model: 'deterministic_paid_meta_guided_sales_v1',
+            replyMode: 'campaign_sales_progression',
+            maxChunks: 1,
+            error: null,
+            flowVariant,
+        };
     }
 
     const facts = qualifier?.facts && typeof qualifier.facts === 'object' ? qualifier.facts : {};
@@ -1420,7 +1473,7 @@ function buildDeterministicPaidMetaConversationReply({
     }
     if (!priorHistoryHasGoal
         && PAID_META_FITNESS_GOAL_RE.test(message)
-        && !PAID_META_STRONG_BLOCKER_RE.test(message)) {
+        && !isPaidMetaStrongBlocker(message)) {
         const transformationProof = resolvePaidMetaTransformationProof({ goalText: message });
         const joined = buildPaidMetaGoalToBlockerText(message, transformationProof);
         return {
@@ -1435,8 +1488,8 @@ function buildDeterministicPaidMetaConversationReply({
         };
     }
     if (historyHasGoal
-        && PAID_META_CONCRETE_BLOCKER_RE.test(message)) {
-        const joined = buildPaidMetaTailoredOfferText(message);
+        && isPaidMetaConcreteBlocker(message)) {
+        const joined = buildPaidMetaTailoredOfferText(message, facts.motivation || facts.current_state || '');
         return {
             chunks: splitCoachDraftIntoDmBubbles([joined]).slice(0, MAX_CHUNKS),
             joined,
@@ -3992,7 +4045,7 @@ function paidMetaBlockerFromFacts(facts = {}) {
     ]
         .map(value => String(value || '').trim())
         .filter(Boolean);
-    return candidates.find(value => PAID_META_CONCRETE_BLOCKER_RE.test(value)) || '';
+    return candidates.find(value => isPaidMetaConcreteBlocker(value)) || '';
 }
 
 function lastPaidMetaOutbound(history = []) {
@@ -4070,7 +4123,7 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
     const lastOutbound = lastPaidMetaOutbound(history);
     const hasFitnessGoal = !!goal || paidMetaHistoryHasFitnessGoal(history) || PAID_META_FITNESS_GOAL_RE.test(turn);
     const followsGoalQuestion = paidMetaOutboundAskedForGoal(lastOutbound?.text || '');
-    const hasBlocker = !!blocker || (!followsGoalQuestion && PAID_META_CONCRETE_BLOCKER_RE.test(turn));
+    const hasBlocker = !!blocker || (!followsGoalQuestion && isPaidMetaConcreteBlocker(turn));
     const asksOfferInfo = /\b(?:how much|price|cost|renew|what(?:'s| is) included|what do i get|do i (?:actually )?get|workouts?|meal plan|check[ -]?in|details|how (?:does|do) (?:it|the program) work)\b/i.test(turn);
     const asksPlantReciprocal = /\b(?:how|what) about you\b/i.test(turn) && /\b(?:vegan|plant[ -]?based)\b/i.test(turn);
     const answeringPlantIdentity = hasRecentPaidMetaPlantBasedQuestion(history)
@@ -4247,7 +4300,8 @@ function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = 
             joined = `Yeah, that makes sense. What's the main health or fitness goal you're working towards at the moment?`;
         }
     } else if (repairsEarnedOffer) {
-        joined = buildPaidMetaTailoredOfferText(turn);
+        const facts = qualifier?.facts && typeof qualifier.facts === 'object' ? qualifier.facts : {};
+        joined = buildPaidMetaTailoredOfferText(turn, facts.motivation || facts.current_state || '');
     }
     if (!joined) return null;
     const chunks = splitCoachDraftIntoDmBubbles([joined]).slice(0, draft.maxChunks || MAX_CHUNKS);
@@ -4258,6 +4312,43 @@ function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = 
         model: `${String(draft.model || 'unknown').replace(/\+paid-meta-guaranteed$/, '')}+paid-meta-guaranteed`,
         replyMode: repairsEarnedOffer ? 'campaign_sales_progression' : draft.replyMode,
         paidMetaGuaranteedContract: repairsEarnedOffer || undefined,
+        shadowDraftInput: null,
+    };
+}
+
+function buildPaidMetaNonBlockingReviewFallback({
+    draft = {},
+    draftReview = null,
+    currentMessage = '',
+    qualifier = {},
+    history = [],
+    flowVariant = 'plant_based_control',
+    checkoutUrl = '',
+    appPreviewUrl = META_APP_PREVIEW_URL,
+} = {}) {
+    if (!isNonBlockingDraftStyleWarning(draftReview)) return null;
+    const progression = buildDeterministicPaidMetaConversationReply({
+        currentMessage,
+        qualifier,
+        history,
+        flowVariant,
+        checkoutUrl,
+        appPreviewUrl,
+    });
+    if (progression?.joined) {
+        return {
+            ...draft,
+            ...progression,
+            paidMetaNonBlockingReviewReleased: true,
+            shadowDraftInput: null,
+        };
+    }
+    const reply = draftTextFromDraft(draft);
+    if (!reply || isUnsafeStockDiscoveryQuestion(reply)) return null;
+    return {
+        ...draft,
+        model: `${String(draft.model || 'unknown').replace(/\+paid-meta-style-release$/, '')}+paid-meta-style-release`,
+        paidMetaNonBlockingReviewReleased: true,
         shadowDraftInput: null,
     };
 }
@@ -8082,6 +8173,54 @@ exports.handler = async (event) => {
                 });
             }
         }
+        if (metaAdConversationFastLane
+            && !effectiveContextReview?.required
+            && isNonBlockingDraftStyleWarning(draftReview)) {
+            const warningBeforeRelease = draftReview;
+            const nonBlockingFallback = buildPaidMetaNonBlockingReviewFallback({
+                draft,
+                draftReview,
+                currentMessage: currentInboundTurnMessage,
+                qualifier,
+                history: displayHistory,
+                flowVariant: metaAdFlowVariant,
+                checkoutUrl: metaAdCheckoutUrl,
+                appPreviewUrl: buildMetaAppPreviewUrl(thread.id),
+            });
+            if (nonBlockingFallback?.joined) {
+                const releasedAt = new Date().toISOString();
+                draft = nonBlockingFallback;
+                draftReview = {
+                    verdict: 'pass',
+                    confidence: 1,
+                    summary: 'A non-blocking paid Meta wording warning was released through the verified stage fallback.',
+                    issues: [],
+                    suggested_fix: '',
+                    notification_required: false,
+                    notification_reason: null,
+                    context_loss_suspected: false,
+                    reviewed_at: releasedAt,
+                    reviewer_model: 'deterministic-paid-meta-nonblocking-release-v1',
+                };
+                currentAlertData = await persistCocosDraftRepair({
+                    alertId,
+                    currentAlertData: {
+                        ...(currentAlertData || {}),
+                        draft_review: draftReview,
+                        context_review: null,
+                    },
+                    draft,
+                    repairMeta: {
+                        status: 'accepted',
+                        repaired_at: releasedAt,
+                        strategy: 'paid_meta_nonblocking_review_release',
+                        original_warning: warningBeforeRelease,
+                    },
+                    challengeOfferWarning,
+                    repairField: 'paid_meta_nonblocking_review_release',
+                });
+            }
+        }
         let unresolvedPaidMetaContractIssues = metaAdConversationFastLane
             ? collectPaidMetaWriterContractIssues({
                 draft,
@@ -8522,6 +8661,7 @@ exports._test = {
     collectPaidMetaWriterContractIssues,
     isBlockingPaidMetaWriterContractIssue,
     buildPaidMetaGuaranteedContractFallback,
+    buildPaidMetaNonBlockingReviewFallback,
     buildLowContentStoryAcknowledgement,
     buildLowContentStoryReplyPolicyBlock,
     suppressAlreadyKnownContextQuestionsInDraftChunks,
