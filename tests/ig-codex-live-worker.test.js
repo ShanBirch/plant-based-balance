@@ -6,6 +6,9 @@ const { pathToFileURL } = require('url');
     const workerPath = path.resolve(__dirname, '../scripts/ig-codex-live-worker.mjs');
     const worker = await import(pathToFileURL(workerPath).href);
     const { isCodexLivePaidMetaThread } = require('../netlify/functions/ig-instant-draft')._test;
+    const { cleanOwner } = require('../netlify/functions/_lib/ig-next-action-queue');
+
+    assert.strictEqual(cleanOwner('codex_live_worker'), 'codex_live_worker');
 
     assert.strictEqual(isCodexLivePaidMetaThread({
         linkedUserId: null,
@@ -70,8 +73,19 @@ const { pathToFileURL } = require('url');
     assert.match(prompt, /exactly one purposeful question/);
     assert.match(prompt, /positive acknowledgements are not closers/);
     assert.match(prompt, /Ignore older test episodes/);
+    assert.match(prompt, /loose conversational path, not a scripted checklist/);
+    assert.match(prompt, /plant-based connection/);
+    assert.match(prompt, /optional genuinely matched client proof/);
+    assert.match(prompt, /Ally for weight loss/);
+    assert.match(prompt, /Gen for strength\/confidence/);
+    assert.match(prompt, /Dani for body recomposition/);
+    assert.match(prompt, /Bec\/Kirsty for shared accountability/);
+    assert.match(prompt, /63-second evergreen app video/);
+    assert.match(prompt, /codex_live_worker controller claim/);
+    assert.match(prompt, /free personalised look inside the app/);
+    assert.match(prompt, /Do not copy their wording/);
     assert.match(prompt, /one AUD 89\.99 payment/);
-    assert.match(prompt, /before making a payment\. Keen\?/);
+    assert.doesNotMatch(prompt, /before making a payment\. Keen\?/);
     assert.match(prompt, /Do not browse, research, edit code/);
     assert.match(prompt, /LIVE_CHAT_STATE: open/);
     assert.match(prompt, /alert-1/);

@@ -2,6 +2,7 @@ const { supabaseQuery } = require('./client-context');
 
 const OWNERS = new Set([
     'dm_manager',
+    'codex_live_worker',
     'browser_dispatcher',
     'story_operator',
     'external_comment_operator',

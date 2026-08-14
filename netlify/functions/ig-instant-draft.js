@@ -8545,11 +8545,44 @@ exports.handler = async (event) => {
             );
             if (rows?.[0]) {
                 currentAlertData = rows[0].data || liveData;
+                const routedRows = await supabaseQuery('rpc/route_paid_meta_live_codex_action', {
+                    method: 'POST',
+                    body: { p_thread_id: thread.id, p_alert_id: alertId },
+                });
+                const routedAction = Array.isArray(routedRows) ? routedRows[0] : routedRows;
+                if (!routedAction?.id) {
+                    throw new Error('live Codex controller action was already claimed or unavailable');
+                }
                 codexLiveWakeReady = true;
-                console.log(`[ig-draft] queued live Codex wake for paid-Meta thread ${thread.id}, alert ${alertId}`);
+                const routedData = {
+                    ...currentAlertData,
+                    codex_live_chat_action_id: routedAction.id,
+                    codex_live_chat_action_version: routedAction.action_version ?? null,
+                    codex_live_chat_action_owner: routedAction.owner,
+                };
+                const routedAlertRows = await supabaseQuery(
+                    `coach_alerts?id=eq.${encodeURIComponent(alertId)}&status=eq.pending`,
+                    { method: 'PATCH', body: { data: routedData }, prefer: 'return=representation' }
+                );
+                currentAlertData = routedAlertRows?.[0]?.data || routedData;
+                console.log(`[ig-draft] exclusively routed live Codex wake for paid-Meta thread ${thread.id}, alert ${alertId}`);
             }
         } catch (error) {
             console.warn(`[ig-draft] live Codex wake stamp failed for ${alertId}; preserving immediate sender fallback:`, error.message);
+            currentAlertData = {
+                ...(currentAlertData || {}),
+                codex_live_chat_required: false,
+                codex_live_chat_status: 'controller_route_failed_manager_fallback',
+                codex_live_chat_error: truncate(error.message || String(error), 260),
+            };
+            try {
+                await supabaseQuery(`coach_alerts?id=eq.${encodeURIComponent(alertId)}&status=eq.pending`, {
+                    method: 'PATCH',
+                    body: { data: currentAlertData },
+                });
+            } catch (stampError) {
+                console.warn(`[ig-draft] live Codex fallback stamp failed for ${alertId}:`, stampError.message);
+            }
         }
     }
 
