@@ -2798,7 +2798,8 @@ async function sharePendingPostWorkoutCompositeToFeed() {
         const compositeDataUrl = await renderBalanceShareCardImage(pending.cardPayload, {
             target: 'feed',
             photoDataUrl: cachedWorkoutShareBase64,
-            overlayStyle: getBalanceShareOverlayStyle(pending.type)
+            overlayStyle: getBalanceShareOverlayStyle(pending.type),
+            textStyle: getBalanceShareTextStyle(pending.type)
         });
         const compositeFile = postWorkoutShareFileFromDataUrl(compositeDataUrl, 'balance-workout-overlay.jpg');
         const tempStoryId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString();
@@ -2818,6 +2819,7 @@ async function sharePendingPostWorkoutCompositeToFeed() {
         const storyPayload = Object.assign({}, pending.cardPayload, {
             share_style: 'photo_overlay',
             share_overlay_style: getBalanceShareOverlayStyle(pending.type),
+            share_text_style: getBalanceShareTextStyle(pending.type),
             share_caption: pending.type === 'pb' ? 'Personal best, captured in the moment.' : 'Workout complete, captured in the moment.'
         });
         const story = await dbHelpers.stories.create(window.currentUser.id, {
@@ -3471,11 +3473,20 @@ const PBB_SHARE_OVERLAY_STYLES = [
     { id: 'midnight', label: 'Dark' },
     { id: 'fresh', label: 'Fresh' }
 ];
+const PBB_SHARE_TEXT_STYLES = [
+    { id: 'bold', label: 'Bold' },
+    { id: 'scorecard', label: 'Scorecard' },
+    { id: 'simple', label: 'Simple' }
+];
 const pbbShareOverlaySelections = {
     workout: 'classic',
     pb: 'classic',
     activity: 'classic',
     nutrition: 'classic'
+};
+const pbbShareTextSelections = {
+    workout: 'bold',
+    pb: 'bold'
 };
 const pbbShareStylePreviewState = {};
 
@@ -3492,6 +3503,21 @@ function getBalanceShareOverlayStyle(context) {
 function pbbShareNormalizeOverlayStyle(style) {
     const safeStyle = String(style || '').toLowerCase();
     return PBB_SHARE_OVERLAY_STYLES.some(option => option.id === safeStyle) ? safeStyle : 'classic';
+}
+
+function pbbShareSupportsTextStyle(context) {
+    const safeContext = pbbShareNormalizeContext(context);
+    return safeContext === 'workout' || safeContext === 'pb';
+}
+
+function getBalanceShareTextStyle(context) {
+    const safeContext = pbbShareNormalizeContext(context);
+    return pbbShareTextSelections[safeContext] || 'bold';
+}
+
+function pbbShareNormalizeTextStyle(style) {
+    const safeStyle = String(style || '').toLowerCase();
+    return PBB_SHARE_TEXT_STYLES.some(option => option.id === safeStyle) ? safeStyle : 'bold';
 }
 
 function pbbShareApplyPhotoStyle(ctx, width, height, style, target) {
@@ -3577,6 +3603,7 @@ function buildWorkoutShareCardPayload() {
         card_type: 'workout',
         share_variant: PBB_SHARE_CREATIVE_VARIANT,
         share_overlay_style: getBalanceShareOverlayStyle('workout'),
+        share_text_style: getBalanceShareTextStyle('workout'),
         workout_name: data.workoutName || 'Workout',
         duration: data.duration || pbbGetWorkoutShareDurationText(),
         exercises: exercises,
@@ -3600,6 +3627,7 @@ function buildPBShareCardPayload(pbData) {
         card_type: 'pb',
         share_variant: PBB_SHARE_CREATIVE_VARIANT,
         share_overlay_style: getBalanceShareOverlayStyle('pb'),
+        share_text_style: getBalanceShareTextStyle('pb'),
         pb_history_id: pbData.pbHistoryId || pbData.historyId || pbData.id || null,
         exercise: pbData.exercise_name || pbData.exercise || 'Personal best',
         pb_type: pbType,
@@ -3840,19 +3868,91 @@ async function pbbShareDrawMealCard(ctx, cardPayload, panelX, panelY, panelW, pa
     }
 }
 
+function pbbShareSetFittedFont(ctx, text, maxWidth, startSize, minimumSize, family = 'Arial, sans-serif') {
+    let size = startSize;
+    do {
+        ctx.font = `900 ${size}px ${family}`;
+        if (ctx.measureText(String(text || '')).width <= maxWidth) break;
+        size -= 4;
+    } while (size > minimumSize);
+    size = Math.max(size, minimumSize);
+    ctx.font = `900 ${size}px ${family}`;
+    return size;
+}
+
+function pbbShareWorkoutMetrics(cardPayload) {
+    return [
+        ['DURATION', cardPayload.duration || '00:00'],
+        ['SETS', String(cardPayload.total_sets || 0)],
+        ['VOLUME', cardPayload.total_volume || '-']
+    ];
+}
+
+function pbbSharePBImprovementText(cardPayload) {
+    if (!cardPayload.improvement) return '';
+    return cardPayload.pb_type === 'weight'
+        ? '+' + pbbPointsFormatWeightFromKg(cardPayload.improvement)
+        : '+' + cardPayload.improvement + ' REPS';
+}
+
+function pbbShareDrawLargeMetricColumns(ctx, metrics, x, y, width, options = {}) {
+    const metricW = width / metrics.length;
+    const valueSize = Number(options.valueSize || 48);
+    const labelSize = Number(options.labelSize || 22);
+    metrics.forEach((metric, index) => {
+        const metricX = x + (index * metricW);
+        if (index > 0) {
+            ctx.save();
+            ctx.shadowColor = 'transparent';
+            ctx.fillStyle = 'rgba(255,255,255,0.56)';
+            ctx.fillRect(metricX - 22, y - valueSize + 4, 2, valueSize + labelSize + 28);
+            ctx.restore();
+        }
+        ctx.fillStyle = '#ffffff';
+        pbbShareSetFittedFont(ctx, metric[1], metricW - 34, valueSize, Math.max(30, valueSize - 14));
+        ctx.fillText(metric[1], metricX, y);
+        ctx.fillStyle = 'rgba(255,255,255,0.84)';
+        ctx.font = `900 ${labelSize}px Arial, sans-serif`;
+        ctx.fillText(metric[0], metricX, y + labelSize + 18);
+    });
+}
+
+function pbbShareDrawFeaturedSets(ctx, cardPayload, x, y, width, limit) {
+    const exercises = (cardPayload.exercises || []).slice(0, limit);
+    if (!exercises.length) return y;
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.font = '900 24px Arial, sans-serif';
+    ctx.fillText(limit === 1 ? 'TOP SET' : 'TOP SETS', x, y);
+    y += 42;
+    exercises.forEach(exercise => {
+        const exerciseName = String(exercise.name || 'Exercise');
+        const exerciseBest = String(exercise.best || '');
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '800 29px Arial, sans-serif';
+        const nameBottom = pbbShareWrapText(ctx, exerciseName, x, y, width - 280, 34, 1);
+        ctx.textAlign = 'right';
+        ctx.font = '900 27px Arial, sans-serif';
+        pbbShareSetFittedFont(ctx, exerciseBest, 250, 27, 22);
+        ctx.fillText(exerciseBest, x + width, y);
+        ctx.textAlign = 'left';
+        y = Math.max(nameBottom, y + 34) + 18;
+    });
+    return y;
+}
+
 async function pbbShareDrawFullBleedWorkoutCard(ctx, cardPayload, width, height, target) {
     const cardType = cardPayload.card_type === 'pb' ? 'pb' : 'workout';
+    const textStyle = pbbShareNormalizeTextStyle(cardPayload.share_text_style);
     const contentX = 64;
     const contentW = width - (contentX * 2);
-    // Keep the post clear of Instagram's reply and navigation controls.
-    const contentBottom = target === 'feed' ? height - 260 : height - 132;
+    // Keep every important word and number clear of Instagram's reply and navigation controls.
+    const contentBottom = target === 'feed' ? height - 72 : height - 132;
 
-    // Keep the photo as the hero. The fade is only there to keep the white
-    // type readable on brighter gym shots, matching the food-share treatment.
-    const lowerGradient = ctx.createLinearGradient(0, height * 0.52, 0, height);
+    const fadeStart = textStyle === 'simple' ? 0.60 : 0.46;
+    const lowerGradient = ctx.createLinearGradient(0, height * fadeStart, 0, height);
     lowerGradient.addColorStop(0, 'rgba(2, 6, 23, 0)');
-    lowerGradient.addColorStop(0.62, 'rgba(2, 6, 23, 0.18)');
-    lowerGradient.addColorStop(1, 'rgba(2, 6, 23, 0.48)');
+    lowerGradient.addColorStop(0.58, textStyle === 'simple' ? 'rgba(2, 6, 23, 0.12)' : 'rgba(2, 6, 23, 0.24)');
+    lowerGradient.addColorStop(1, textStyle === 'simple' ? 'rgba(2, 6, 23, 0.62)' : 'rgba(2, 6, 23, 0.80)');
     ctx.fillStyle = lowerGradient;
     ctx.fillRect(0, 0, width, height);
 
@@ -3861,12 +3961,6 @@ async function pbbShareDrawFullBleedWorkoutCard(ctx, cardPayload, width, height,
         target,
         intensity: isMajorCelebration ? 'major' : 'standard'
     });
-
-    if (cardType === 'workout') {
-        const backdropY = target === 'feed' ? height - 790 : height - 920;
-        const backdropH = target === 'feed' ? 640 : 760;
-        pbbShareFillRoundRect(ctx, 40, backdropY, width - 80, backdropH, 38, 'rgba(2, 6, 23, 0.28)');
-    }
 
     const brandTop = target === 'feed' ? 48 : 228;
     try {
@@ -3881,95 +3975,147 @@ async function pbbShareDrawFullBleedWorkoutCard(ctx, cardPayload, width, height,
     ctx.fillStyle = '#ffffff';
     ctx.font = '900 34px Arial, sans-serif';
     ctx.fillText('BALANCE', 164, brandTop + 46);
-    ctx.fillStyle = 'rgba(255,255,255,0.74)';
+    ctx.fillStyle = 'rgba(255,255,255,0.78)';
     ctx.font = '750 21px Arial, sans-serif';
     ctx.fillText('SHOW UP. KEEP THE RECEIPTS.', 164, brandTop + 78);
 
     ctx.save();
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.82)';
-    ctx.shadowBlur = 18;
-    ctx.shadowOffsetY = 4;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.88)';
+    ctx.shadowBlur = 22;
+    ctx.shadowOffsetY = 5;
 
     const title = cardType === 'pb'
         ? (cardPayload.exercise || 'Personal best')
         : (cardPayload.workout_name || 'Workout');
-    const titleLineHeight = cardType === 'pb' ? 62 : 58;
-    const titleFontSize = cardType === 'pb' ? 60 : 56;
-    // PBs are the hero moment, so sit them higher in the frame rather than
-    // anchoring them to the bottom like a workout summary.
-    let y = cardType === 'pb'
-        ? Math.round(height * (target === 'feed' ? 0.56 : 0.60))
-        : contentBottom - 468;
 
-    ctx.fillStyle = 'rgba(255,255,255,0.96)';
-    ctx.font = '900 24px Arial, sans-serif';
-    ctx.fillText(cardType === 'pb' ? 'NEW PERSONAL BEST' : 'WORKOUT COMPLETE', contentX, y);
-    y += 58;
+    if (textStyle === 'scorecard') {
+        const panelHeight = cardType === 'pb'
+            ? (target === 'feed' ? 470 : 520)
+            : (target === 'feed' ? 560 : 630);
+        const panelX = 40;
+        const panelY = contentBottom - panelHeight + 24;
+        const panelW = width - 80;
+        pbbShareFillRoundRect(ctx, panelX, panelY, panelW, panelHeight, 38, 'rgba(2, 6, 23, 0.76)');
+        ctx.save();
+        ctx.shadowColor = 'transparent';
+        pbbShareRoundRect(ctx, panelX, panelY, panelW, panelHeight, 38);
+        ctx.strokeStyle = 'rgba(245,196,92,0.86)';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        ctx.restore();
 
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '900 ' + titleFontSize + 'px Georgia, serif';
-    y = pbbShareWrapText(ctx, title, contentX, y, contentW, titleLineHeight, 2) + 20;
+        let y = panelY + 62;
+        ctx.fillStyle = '#f5c45c';
+        ctx.font = '900 27px Arial, sans-serif';
+        ctx.fillText(cardType === 'pb' ? 'NEW PERSONAL BEST' : 'WORKOUT COMPLETE', contentX, y);
+        y += 68;
 
-    if (cardType === 'pb') {
+        if (cardType === 'pb') {
+            ctx.fillStyle = '#ffffff';
+            const result = pbbFormatPBShareValue(cardPayload);
+            pbbShareSetFittedFont(ctx, result, contentW, 104, 72);
+            ctx.fillText(result, contentX, y + 72);
+            y += 132;
+            pbbShareSetFittedFont(ctx, title.toUpperCase(), contentW, 66, 46);
+            ctx.fillText(title.toUpperCase(), contentX, y);
+            const improvementText = pbbSharePBImprovementText(cardPayload);
+            if (improvementText) {
+                const badgeW = Math.min(300, ctx.measureText(improvementText).width + 64);
+                pbbShareFillRoundRect(ctx, contentX, y + 38, badgeW, 68, 18, '#f5c45c');
+                ctx.fillStyle = '#111827';
+                ctx.font = '900 32px Arial, sans-serif';
+                ctx.fillText(improvementText, contentX + 30, y + 83);
+            }
+        } else {
+            ctx.fillStyle = '#ffffff';
+            pbbShareSetFittedFont(ctx, title.toUpperCase(), contentW, 86, 58);
+            ctx.fillText(title.toUpperCase(), contentX, y);
+            y += 54;
+            ctx.save();
+            ctx.shadowColor = 'transparent';
+            ctx.fillStyle = 'rgba(245,196,92,0.84)';
+            ctx.fillRect(contentX, y, contentW, 3);
+            ctx.restore();
+            y += 84;
+            pbbShareDrawLargeMetricColumns(ctx, pbbShareWorkoutMetrics(cardPayload), contentX, y, contentW, {
+                valueSize: 50,
+                labelSize: 22
+            });
+            y += 104;
+            pbbShareDrawFeaturedSets(ctx, cardPayload, contentX, y, contentW, 1);
+        }
+    } else if (textStyle === 'simple') {
+        let y = cardType === 'pb' ? contentBottom - 300 : contentBottom - 310;
+        ctx.fillStyle = '#f5c45c';
+        ctx.font = '900 27px Arial, sans-serif';
+        ctx.fillText(cardType === 'pb' ? 'NEW PERSONAL BEST' : 'WORKOUT COMPLETE', contentX, y);
+        y += 64;
+        if (cardType === 'pb') {
+            ctx.fillStyle = '#ffffff';
+            const result = pbbFormatPBShareValue(cardPayload);
+            pbbShareSetFittedFont(ctx, result, contentW, 116, 78);
+            ctx.fillText(result, contentX, y + 78);
+            y += 142;
+            pbbShareSetFittedFont(ctx, title.toUpperCase(), contentW, 58, 42);
+            ctx.fillText(title.toUpperCase(), contentX, y);
+        } else {
+            ctx.fillStyle = '#ffffff';
+            pbbShareSetFittedFont(ctx, title.toUpperCase(), contentW, 92, 58);
+            ctx.fillText(title.toUpperCase(), contentX, y);
+            y += 82;
+            pbbShareDrawLargeMetricColumns(ctx, pbbShareWorkoutMetrics(cardPayload), contentX, y, contentW, {
+                valueSize: 40,
+                labelSize: 19
+            });
+        }
+    } else if (cardType === 'pb') {
+        let y = contentBottom - 470;
+        ctx.fillStyle = '#f5c45c';
+        ctx.font = '900 29px Arial, sans-serif';
+        ctx.fillText('NEW PERSONAL BEST', contentX, y);
+        y += 48;
+        const result = pbbFormatPBShareValue(cardPayload);
         ctx.fillStyle = '#ffffff';
-        ctx.font = '900 44px Arial, sans-serif';
-        ctx.fillText(pbbFormatPBShareValue(cardPayload), contentX, y + 42);
-        if (cardPayload.improvement) {
-            ctx.font = '900 26px Arial, sans-serif';
-            const improvementText = cardPayload.pb_type === 'weight'
-                ? 'UP ' + pbbPointsFormatWeightFromKg(cardPayload.improvement)
-                : 'UP ' + cardPayload.improvement + ' REPS';
-            ctx.textAlign = 'right';
-            ctx.fillText(improvementText, contentX + contentW, y + 42);
-            ctx.textAlign = 'left';
+        pbbShareSetFittedFont(ctx, result, contentW, 156, 104);
+        ctx.fillText(result, contentX, y + 116);
+        y += 180;
+        pbbShareSetFittedFont(ctx, title.toUpperCase(), contentW, 72, 48);
+        ctx.fillText(title.toUpperCase(), contentX, y);
+        const improvementText = pbbSharePBImprovementText(cardPayload);
+        if (improvementText) {
+            const badgeW = Math.min(310, ctx.measureText(improvementText).width + 68);
+            pbbShareFillRoundRect(ctx, contentX, y + 38, badgeW, 72, 18, '#f5c45c');
+            ctx.fillStyle = '#111827';
+            ctx.font = '900 34px Arial, sans-serif';
+            ctx.fillText(improvementText, contentX + 32, y + 86);
+            ctx.fillStyle = '#f5c45c';
+            ctx.font = '900 25px Arial, sans-serif';
+            ctx.fillText('LOGGED IN BALANCE', contentX + badgeW + 28, y + 84);
         }
     } else {
-        const metrics = [
-            ['DURATION', cardPayload.duration || '00:00'],
-            ['SETS', String(cardPayload.total_sets || 0)],
-            ['VOLUME', cardPayload.total_volume || '-']
-        ];
-        const metricW = contentW / 3;
-        metrics.forEach((metric, index) => {
-            const x = contentX + (index * metricW);
-            if (index > 0) {
-                ctx.save();
-                ctx.shadowColor = 'transparent';
-                ctx.fillStyle = 'rgba(255,255,255,0.65)';
-                ctx.fillRect(x - 20, y - 10, 2, 76);
-                ctx.restore();
-            }
-            ctx.fillStyle = 'rgba(255,255,255,0.88)';
-            ctx.font = '800 18px Arial, sans-serif';
-            ctx.fillText(metric[0], x, y + 18);
-            ctx.fillStyle = '#ffffff';
-            ctx.font = '900 32px Arial, sans-serif';
-            pbbShareWrapText(ctx, metric[1], x, y + 58, metricW - 28, 34, 1);
+        let y = contentBottom - 560;
+        ctx.fillStyle = 'rgba(255,255,255,0.96)';
+        ctx.font = '900 28px Arial, sans-serif';
+        ctx.fillText('WORKOUT COMPLETE', contentX, y);
+        y += 50;
+        ctx.fillStyle = '#ffffff';
+        pbbShareSetFittedFont(ctx, title.toUpperCase(), contentW, 116, 72);
+        y = pbbShareWrapText(ctx, title.toUpperCase(), contentX, y, contentW, 116, 2) + 26;
+        ctx.save();
+        ctx.shadowColor = 'transparent';
+        ctx.fillStyle = '#f5c45c';
+        ctx.fillRect(contentX, y, contentW, 4);
+        ctx.restore();
+        y += 82;
+        pbbShareDrawLargeMetricColumns(ctx, pbbShareWorkoutMetrics(cardPayload), contentX, y, contentW, {
+            valueSize: 52,
+            labelSize: 22
         });
-        y += 104;
-
-        ctx.fillStyle = 'rgba(255,255,255,0.9)';
-        ctx.font = '900 20px Arial, sans-serif';
-        ctx.fillText('TOP SETS', contentX, y);
-        y += 30;
-        (cardPayload.exercises || []).slice(0, 3).forEach(exercise => {
-            const exerciseName = String(exercise.name || 'Exercise');
-            const exerciseBest = String(exercise.best || '');
-            ctx.fillStyle = '#ffffff';
-            ctx.font = '800 20px Arial, sans-serif';
-            ctx.fillText(exerciseName, contentX, y + 28);
-            const nameWidth = ctx.measureText(exerciseName).width;
-            const bestX = Math.min(contentX + nameWidth + 28, contentX + contentW - 170);
-            ctx.font = '800 19px Arial, sans-serif';
-            ctx.fillText(exerciseBest, bestX, y + 28);
-            y += 50;
-        });
+        y += 112;
+        pbbShareDrawFeaturedSets(ctx, cardPayload, contentX, y, contentW, 2);
     }
 
     ctx.restore();
-    ctx.fillStyle = 'rgba(255,255,255,0.82)';
-    ctx.font = '750 19px Arial, sans-serif';
-    ctx.fillText('Fuel. Track. Level up.', contentX, contentBottom);
 }
 
 async function pbbShareDrawBalanceBrandMark(ctx, x, y, size = 38) {
@@ -4422,6 +4568,7 @@ async function renderBalanceShareCardImage(cardPayload, options = {}) {
     const primaryPhotoDataUrl = options.photoDataUrl || photoDataUrls[0] || '';
     const requestedOverlayStyle = String(options.overlayStyle || cardPayload.share_overlay_style || '').toLowerCase();
     const overlayStyle = ['gold', 'midnight', 'fresh'].includes(requestedOverlayStyle) ? requestedOverlayStyle : 'classic';
+    const textStyle = pbbShareNormalizeTextStyle(options.textStyle || cardPayload.share_text_style);
 
     if (primaryPhotoDataUrl) {
         try {
@@ -4451,7 +4598,13 @@ async function renderBalanceShareCardImage(cardPayload, options = {}) {
     }
 
     if ((cardType === 'workout' || cardType === 'pb') && primaryPhotoDataUrl) {
-        await pbbShareDrawFullBleedWorkoutCard(ctx, cardPayload, width, height, target);
+        await pbbShareDrawFullBleedWorkoutCard(
+            ctx,
+            Object.assign({}, cardPayload, { share_text_style: textStyle }),
+            width,
+            height,
+            target
+        );
         return canvas.toDataURL('image/jpeg', 0.92);
     }
 
@@ -4614,14 +4767,24 @@ async function renderBalanceShareStylePreview(context, cardPayload, photoDataUrl
 
     previewWrap.style.display = 'block';
     controls.style.display = 'block';
+    const supportsTextStyle = pbbShareSupportsTextStyle(safeContext);
     controls.innerHTML = `
         <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:9px; color:#ffffff; -webkit-text-fill-color:#ffffff;">
-            <span style="font-size:0.78rem; font-weight:900;">Swipe to change the overlay</span>
+            <span style="font-size:0.78rem; font-weight:900;">Colour</span>
             <span data-balance-share-style-name="${safeContext}" style="font-size:0.72rem; font-weight:900; color:#fde68a; -webkit-text-fill-color:#fde68a;"></span>
         </div>
         <div style="display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:7px;">
             ${PBB_SHARE_OVERLAY_STYLES.map(option => `<button type="button" data-balance-share-style="${option.id}" onclick="selectBalanceShareOverlayStyle('${safeContext}','${option.id}')" style="min-width:0; border:1px solid rgba(255,255,255,0.28); border-radius:999px; padding:8px 5px; background:rgba(255,255,255,0.1); color:#ffffff; -webkit-text-fill-color:#ffffff; font:inherit; font-size:0.7rem; font-weight:900; cursor:pointer;">${option.label}</button>`).join('')}
-        </div>`;
+        </div>
+        ${supportsTextStyle ? `
+            <div style="height:1px; background:rgba(255,255,255,0.14); margin:13px 0 11px;"></div>
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:9px; color:#ffffff; -webkit-text-fill-color:#ffffff;">
+                <span style="font-size:0.78rem; font-weight:900;">Text layout</span>
+                <span data-balance-share-text-style-name="${safeContext}" style="font-size:0.72rem; font-weight:900; color:#fde68a; -webkit-text-fill-color:#fde68a;"></span>
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px;">
+                ${PBB_SHARE_TEXT_STYLES.map(option => `<button type="button" data-balance-share-text-style="${option.id}" onclick="selectBalanceShareTextStyle('${safeContext}','${option.id}')" style="min-width:0; border:1px solid rgba(255,255,255,0.28); border-radius:999px; padding:9px 6px; background:rgba(255,255,255,0.1); color:#ffffff; -webkit-text-fill-color:#ffffff; font:inherit; font-size:0.7rem; font-weight:900; cursor:pointer;">${option.label}</button>`).join('')}
+            </div>` : ''}`;
 
     if (previewWrap.dataset.balanceShareSwipeBound !== 'true') {
         let touchStartX = null;
@@ -4653,6 +4816,8 @@ async function updateBalanceShareStylePreview(context) {
 
     const style = getBalanceShareOverlayStyle(safeContext);
     const option = PBB_SHARE_OVERLAY_STYLES.find(item => item.id === style) || PBB_SHARE_OVERLAY_STYLES[0];
+    const textStyle = getBalanceShareTextStyle(safeContext);
+    const textOption = PBB_SHARE_TEXT_STYLES.find(item => item.id === textStyle) || PBB_SHARE_TEXT_STYLES[0];
     const token = ++state.renderToken;
     previewImage.style.opacity = '0.58';
     previewImage.setAttribute('aria-busy', 'true');
@@ -4666,13 +4831,27 @@ async function updateBalanceShareStylePreview(context) {
     });
     const name = controls.querySelector(`[data-balance-share-style-name="${safeContext}"]`);
     if (name) name.textContent = option.label;
+    controls.querySelectorAll('[data-balance-share-text-style]').forEach(button => {
+        const selected = button.dataset.balanceShareTextStyle === textStyle;
+        button.style.background = selected ? '#f5c45c' : 'rgba(255,255,255,0.1)';
+        button.style.color = selected ? '#111827' : '#ffffff';
+        button.style.webkitTextFillColor = selected ? '#111827' : '#ffffff';
+        button.style.borderColor = selected ? '#fde68a' : 'rgba(255,255,255,0.28)';
+        button.setAttribute('aria-pressed', String(selected));
+    });
+    const textName = controls.querySelector(`[data-balance-share-text-style-name="${safeContext}"]`);
+    if (textName) textName.textContent = textOption.label;
 
     try {
-        const previewPayload = Object.assign({}, state.cardPayload, { share_overlay_style: style });
+        const previewPayload = Object.assign({}, state.cardPayload, {
+            share_overlay_style: style,
+            share_text_style: textStyle
+        });
         const dataUrl = await renderBalanceShareCardImage(previewPayload, {
             target: 'feed',
             photoDataUrl: state.photoDataUrl,
-            overlayStyle: style
+            overlayStyle: style,
+            textStyle
         });
         if (token !== state.renderToken) return;
         previewImage.src = dataUrl;
@@ -4701,11 +4880,20 @@ function cycleBalanceShareOverlayStyle(context, direction) {
     return selectBalanceShareOverlayStyle(safeContext, PBB_SHARE_OVERLAY_STYLES[nextIndex].id);
 }
 
+function selectBalanceShareTextStyle(context, style) {
+    const safeContext = pbbShareNormalizeContext(context);
+    if (!pbbShareSupportsTextStyle(safeContext)) return Promise.resolve();
+    pbbShareTextSelections[safeContext] = pbbShareNormalizeTextStyle(style);
+    return updateBalanceShareStylePreview(safeContext);
+}
+
 if (typeof window !== 'undefined') {
     window.renderBalanceShareStylePreview = renderBalanceShareStylePreview;
     window.selectBalanceShareOverlayStyle = selectBalanceShareOverlayStyle;
     window.cycleBalanceShareOverlayStyle = cycleBalanceShareOverlayStyle;
     window.getBalanceShareOverlayStyle = getBalanceShareOverlayStyle;
+    window.selectBalanceShareTextStyle = selectBalanceShareTextStyle;
+    window.getBalanceShareTextStyle = getBalanceShareTextStyle;
 }
 
 async function shareBalanceCardImageExternally(dataUrl, target, text, options = {}) {
@@ -4993,7 +5181,8 @@ async function shareBalanceCardToInstagram(cardPayload, target, options = {}) {
         target: safeTarget,
         photoDataUrl: options.photoDataUrl || null,
         photoDataUrls: options.photoDataUrls || null,
-        overlayStyle: options.overlayStyle || cardPayload.share_overlay_style || 'classic'
+        overlayStyle: options.overlayStyle || cardPayload.share_overlay_style || 'classic',
+        textStyle: options.textStyle || cardPayload.share_text_style || 'bold'
     };
     let preparedNotified = false;
     const notifyPrepared = () => {
@@ -5071,6 +5260,10 @@ async function awardBalanceSocialShareXP(shareKind, shareDestination, referenceI
     const metadata = { shareKind, shareDestination };
     if (shareKind === 'workout' || shareKind === 'activity' || shareKind === 'pb') {
         metadata.creativeVariant = PBB_SHARE_CREATIVE_VARIANT;
+        metadata.overlayStyle = getBalanceShareOverlayStyle(shareKind);
+        if (pbbShareSupportsTextStyle(shareKind)) {
+            metadata.textStyle = getBalanceShareTextStyle(shareKind);
+        }
     }
     const result = await window.db.points.awardPoints(
         window.currentUser.id,
@@ -5212,6 +5405,7 @@ async function shareWorkoutCardToInstagram() {
         const opened = await shareBalanceCardToInstagram(cardPayload, 'story', {
             photoDataUrl: cachedWorkoutShareBase64,
             overlayStyle: getBalanceShareOverlayStyle('workout'),
+            textStyle: getBalanceShareTextStyle('workout'),
             onSharePrepared: () => markWorkoutInstagramShareCompleted()
         });
         if (!opened) clearWorkoutInstagramShareCompleted();
@@ -5404,7 +5598,8 @@ async function sharePendingPBToDestination(destination) {
             const instagramTarget = destination === 'instagram-feed' ? 'feed' : 'story';
             const opened = await shareBalanceCardToInstagram(cardPayload, instagramTarget, {
                 photoDataUrl: cachedWorkoutShareBase64,
-                overlayStyle: getBalanceShareOverlayStyle('pb')
+                overlayStyle: getBalanceShareOverlayStyle('pb'),
+                textStyle: getBalanceShareTextStyle('pb')
             });
             if (opened && instagramTarget === 'feed') {
                 const xpResult = await awardBalanceSocialShareXP(
@@ -5526,6 +5721,8 @@ async function handleWorkoutCardPhotoCaptureFromFile(file) {
         const cardPayload = {
             card_type: 'workout',
             share_variant: PBB_SHARE_CREATIVE_VARIANT,
+            share_overlay_style: getBalanceShareOverlayStyle('workout'),
+            share_text_style: getBalanceShareTextStyle('workout'),
             workout_name: data.workoutName || 'Workout',
             duration: data.duration || pbbGetWorkoutShareDurationText(),
             exercises: exercises,
@@ -5594,7 +5791,8 @@ async function sharePBCardToFeed(pbData, photoDataUrl) {
             const compositeDataUrl = await renderBalanceShareCardImage(cardPayload, {
                 target: 'feed',
                 photoDataUrl,
-                overlayStyle: getBalanceShareOverlayStyle('pb')
+                overlayStyle: getBalanceShareOverlayStyle('pb'),
+                textStyle: getBalanceShareTextStyle('pb')
             });
             const compositeFile = postWorkoutShareFileFromDataUrl(compositeDataUrl, 'balance-pb-overlay.jpg');
             if (typeof uploadStoryMediaToBackblaze !== 'function') {
@@ -5610,6 +5808,7 @@ async function sharePBCardToFeed(pbData, photoDataUrl) {
             mediaUrl = uploadData.url;
             cardPayload.share_style = 'photo_overlay';
             cardPayload.share_overlay_style = getBalanceShareOverlayStyle('pb');
+            cardPayload.share_text_style = getBalanceShareTextStyle('pb');
             cardPayload.share_caption = 'Personal best, captured in the moment.';
         }
 

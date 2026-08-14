@@ -38,9 +38,9 @@ assert.ok(
     'workout, PB, activity, and nutrition photo overlays must skip the full-frame dark tint'
 );
 assert.ok(
-    dashboardSource.includes('dashboard-script-10-points_widget_functions.js?v=44') &&
-  serviceWorkerSource.includes("const CACHE_NAME = 'pbb-app-v309'") &&
-        serviceWorkerSource.includes('./js/dashboard/dashboard-script-10-points_widget_functions.js?v=44'),
+    dashboardSource.includes('dashboard-script-10-points_widget_functions.js?v=45') &&
+  serviceWorkerSource.includes("const CACHE_NAME = 'pbb-app-v313'") &&
+        serviceWorkerSource.includes('./js/dashboard/dashboard-script-10-points_widget_functions.js?v=45'),
     'phones must fetch the repaired overlay share path'
 );
 
@@ -63,6 +63,7 @@ assert.ok(
     const sandbox = {
         document: { createElement() { return canvas; } },
         console: { warn() {} },
+        pbbShareNormalizeTextStyle: style => style || 'bold',
         pbbShareLoadImage: async () => ({}),
         pbbShareDrawCoverImage() {},
         pbbShareDrawFullBleedActivityCard: async () => {},
