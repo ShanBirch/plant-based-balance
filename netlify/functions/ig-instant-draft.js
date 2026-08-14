@@ -1338,14 +1338,14 @@ function buildPaidMetaPlantReasonToGoalText(reasonText = '') {
     const asksShannonBack = /\b(?:how|what) about you\b/i.test(reason);
     let acknowledgement = 'Yeah, that makes sense.';
     if (/\b(?:animal|ethic\w*|cruel|welfare)\b/i.test(reason)) {
-        acknowledgement = 'Yeah, I get that. I\'ve been vegan for five years too.';
+        acknowledgement = 'Yeah, I get that. Animals were a big part of it for me too. I\'ve been vegan for five years now.';
     } else if (/\b(?:environment|planet|climate|sustainab)\w*\b/i.test(reason)) {
         acknowledgement = 'Yeah, I get that. The environmental side matters a lot.';
     } else if (/\b(?:health|feel better|energy|digestion|cholesterol)\b/i.test(reason)) {
         acknowledgement = 'Yeah, that makes sense. Feeling better day to day is a solid reason.';
     }
     if (asksShannonBack && !/\b(?:five|5) years?\b/i.test(acknowledgement)) {
-        acknowledgement += ' I\'ve been vegan for five years too.';
+        acknowledgement += ' Animals were a big part of it for me too. I\'ve been vegan for five years now.';
     }
     return `${acknowledgement} What's your main health or fitness goal at the moment?`;
 }
@@ -4113,7 +4113,7 @@ function buildPaidMetaTurnDirective({ qualifier = {}, inboundMessages = [], hist
     const requiredMove = hasFitnessGoal && hasConcreteBlocker
         ? 'TAILORED_OFFER: goal and blocker are both known. Give the complete matched Foundations offer now; do not ask another discovery question.'
         : asksReciprocalPlantHistory
-            ? 'ANSWER_AND_DISCOVER_GOAL: answer that Shannon has been vegan for five years, acknowledge their exact history, then ask what health or fitness result they want.'
+            ? 'ANSWER_AND_DISCOVER_GOAL: answer that animals were a big part of Shannon going vegan and that he has been vegan for five years, acknowledge their exact history, then ask what health or fitness result they want.'
             : plantTransition
                 ? 'DISCOVER_FITNESS_GOAL: acknowledge their plant-based transition, then ask for their main health or fitness goal. Do not ask them to design the help or turn this into another diet-adherence interview.'
         : /\baccountab/i.test(exactDetails) && !goal
@@ -4178,6 +4178,9 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
         : null;
     if (asksPlantReciprocal && !/\b(?:five|5) years?\b/i.test(reply)) {
         issues.push('Answer the reciprocal plant-based question explicitly: Shannon has been vegan for five years.');
+    }
+    if (asksPlantReciprocal && !/\banimals?\b/i.test(reply)) {
+        issues.push('Answer why Shannon went vegan explicitly: animals were a big part of it for him.');
     }
     if (needsFitnessGoalQuestion && !hasFitnessGoal && !fitnessGoalQuestion.test(reply)) {
         issues.push(asksPlantReciprocal
@@ -4286,7 +4289,7 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
 }
 
 function isBlockingPaidMetaWriterContractIssue(issue = '') {
-    return /pitched before|repeated a question|directly asked whether|meal-plan question directly|sales suspicion|answer the sales question|earned paid-Meta offer is missing|main health or fitness goal|health\/fitness goal|answered the goal question|ask for the result or health|ignored the supplied plant-based duration/i.test(String(issue || ''));
+    return /pitched before|repeated a question|directly asked whether|answer why Shannon went vegan|meal-plan question directly|sales suspicion|answer the sales question|earned paid-Meta offer is missing|main health or fitness goal|health\/fitness goal|answered the goal question|ask for the result or health|ignored the supplied plant-based duration/i.test(String(issue || ''));
 }
 
 function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = '', issues = [], qualifier = {}, history = [] } = {}) {
@@ -4320,6 +4323,8 @@ function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = 
             joined = `That’s awesome, ${duration} ${/^1$|^one$/i.test(duration) ? 'year is' : 'years is'} a solid run.${shannonHistory} What’s your main health or fitness goal at the moment?`;
         } else if (frequency) {
             joined = `Nice, ${frequency} nights a week is a solid start if you’re looking to make the shift. What’s your main health or fitness goal at the moment?`;
+        } else if (reciprocal) {
+            joined = "Yeah, I get that. Animals were a big part of it for me too, and I've been vegan for five years now. What's your main health or fitness goal at the moment?";
         } else if (/\bvegetarian\b/i.test(turn)) {
             joined = 'Nice, you’re already partway there then. What’s your main health or fitness goal at the moment?';
         } else if (/\b(?:not fully|trying|transition|adopt|go more|more plant)\b/i.test(turn)) {

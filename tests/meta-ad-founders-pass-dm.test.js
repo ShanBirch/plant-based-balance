@@ -870,7 +870,8 @@ test('paid Meta gets to know the plant-based reason before asking for the fitnes
         ],
         flowVariant: 'plant_based_control',
     });
-    assert.match(reciprocalReasonReply.joined, /I've been vegan for five years too/i);
+    assert.match(reciprocalReasonReply.joined, /animals were a big part of it for me too/i);
+    assert.match(reciprocalReasonReply.joined, /I've been vegan for five years (?:too|now)/i);
     assert.match(reciprocalReasonReply.joined, /main health or fitness goal/i);
     assert.equal((reciprocalReasonReply.joined.match(/\?/g) || []).length, 1);
 
@@ -878,8 +879,16 @@ test('paid Meta gets to know the plant-based reason before asking for the fitnes
         inboundMessages: ['Ohhhh for the animals and health!', 'How about you?'],
         history: [{ direction: 'out', text: 'Nice. What made you decide to go plant-based?' }],
     });
-    assert.match(reciprocalDirective, /answer that Shannon has been vegan for five years/i);
+    assert.match(reciprocalDirective, /animals were a big part of Shannon going vegan.*five years/i);
     assert.match(reciprocalDirective, /Mandatory direct questions to answer explicitly.*How about you\?/i);
+
+    const incompleteReciprocalIssues = collectPaidMetaWriterContractIssues({
+        draft: { joined: "I've been vegan for five years too. What's your main health or fitness goal?" },
+        currentMessage: 'Ohhhh for the animals and health! How about you?',
+        qualifier: null,
+        history: [{ direction: 'out', text: 'Nice. What made you decide to go plant-based?' }],
+    });
+    assert.ok(incompleteReciprocalIssues.some(issue => /why Shannon went vegan/i.test(issue)));
 });
 
 test('paid Meta food confusion is a real blocker and cannot be silenced by a style warning', () => {
