@@ -1071,6 +1071,30 @@ assert.strictEqual(
     'an explicit media reference cannot enter the clean text fallback without decoded evidence'
 );
 
+const recoveredDeliveryNeedsDeepReview = makeAlert({
+    suggested_message: 'A previously approved reply that may now be stale.',
+    data: {
+        ig_thread_id: 'thread-delivery-rescue',
+        message_preview: 'Thanks',
+        delivery_rescue_required: true,
+        draft_review: {
+            verdict: 'pass',
+            confidence: 0.94,
+            issues: [],
+            notification_required: false,
+            context_loss_suspected: false,
+        },
+    },
+});
+assert.strictEqual(
+    manager.shouldAutoScheduleCleanLeadCloudFallback(
+        recoveredDeliveryNeedsDeepReview,
+        manager.classifyNeedsYou(recoveredDeliveryNeedsDeepReview)
+    ),
+    false,
+    'a recovered failed delivery must receive fresh manager/native review rather than blind cloud scheduling'
+);
+
 const rankedPending = manager.rankPendingDmAlerts([
     makeAlert({ id: 'old-banter', created_at: '2026-08-11T00:00:00.000Z', data: { message_preview: 'haha yep' } }),
     makeAlert({ id: 'fresh-question', created_at: '2026-08-11T09:58:00.000Z', data: { message_preview: 'Do you have a close friends story?' } }),
@@ -1081,6 +1105,26 @@ assert.ok(
     manager.pendingDmPriorityScore(rankedPending[1], new Date('2026-08-11T10:00:00.000Z'))
         > manager.pendingDmPriorityScore(rankedPending[2], new Date('2026-08-11T10:00:00.000Z')),
     'qualified fitness signals should outrank passive old banter'
+);
+
+assert.strictEqual(manager.resolveUnansweredDeliveryRecoveryLimit('999'), 80);
+assert.deepStrictEqual(
+    manager.summarizeUnansweredDeliveryRecoveries([
+        { recovery_owner: 'dm_manager', recovery_outcome: 'api_retry_reopened' },
+        { recovery_owner: 'browser_dispatcher', recovery_outcome: 'browser_rescue_queued' },
+        { recovery_owner: 'browser_dispatcher', recovery_outcome: 'browser_rescue_queued' },
+    ]),
+    {
+        scanned: 3,
+        api_retries_reopened: 1,
+        browser_rescues_queued: 2,
+        recoveries: [
+            { recovery_owner: 'dm_manager', recovery_outcome: 'api_retry_reopened' },
+            { recovery_owner: 'browser_dispatcher', recovery_outcome: 'browser_rescue_queued' },
+            { recovery_owner: 'browser_dispatcher', recovery_outcome: 'browser_rescue_queued' },
+        ],
+    },
+    'delivery recovery accounting should distinguish API retries from native browser rescues'
 );
 
 const exerciseSupportContext = manager.buildDraftReviewContextBlocks(makeAlert({

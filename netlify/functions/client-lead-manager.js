@@ -49,6 +49,7 @@ const APPROVED_COACHING_LINK_SEND_DELAY_MS = 2 * 60 * 1000;
 const CLEAN_LEAD_CLOUD_FALLBACK_SEND_DELAY_MS = 4 * 60 * 1000;
 const DEFAULT_CLEAN_LEAD_CLOUD_FALLBACK_LIMIT = 8;
 const DEFAULT_CLEAN_LEAD_CLOUD_REPAIR_LIMIT = 4;
+const DEFAULT_UNANSWERED_DELIVERY_RECOVERY_LIMIT = 40;
 
 function parseNonNegativeInteger(value, fallback) {
     const n = Number(value);
@@ -66,6 +67,33 @@ function resolveCleanLeadCloudFallbackLimit(value = process.env.CLIENT_LEAD_MANA
 
 function resolveCleanLeadCloudRepairLimit(value = process.env.CLIENT_LEAD_MANAGER_CLOUD_REPAIR_LIMIT) {
     return Math.min(MAX_PER_RUN, parseNonNegativeInteger(value, DEFAULT_CLEAN_LEAD_CLOUD_REPAIR_LIMIT));
+}
+
+function resolveUnansweredDeliveryRecoveryLimit(value = process.env.CLIENT_LEAD_MANAGER_DELIVERY_RECOVERY_LIMIT) {
+    return Math.min(MAX_PER_RUN, parseNonNegativeInteger(value, DEFAULT_UNANSWERED_DELIVERY_RECOVERY_LIMIT));
+}
+
+function summarizeUnansweredDeliveryRecoveries(rows = []) {
+    const recoveries = Array.isArray(rows) ? rows : [];
+    return {
+        scanned: recoveries.length,
+        api_retries_reopened: recoveries.filter(row => row?.recovery_owner === 'dm_manager').length,
+        browser_rescues_queued: recoveries.filter(row => row?.recovery_owner === 'browser_dispatcher').length,
+        recoveries,
+    };
+}
+
+async function reconcileUnansweredDeliveryFailures(limit = resolveUnansweredDeliveryRecoveryLimit()) {
+    const rows = await supabaseQuery('rpc/reconcile_unanswered_dm_delivery_failures', {
+        method: 'POST',
+        body: {
+            p_limit: Math.max(1, Number(limit) || DEFAULT_UNANSWERED_DELIVERY_RECOVERY_LIMIT),
+            p_manager_retry_after: '2 minutes',
+            p_browser_rescue_after: '60 minutes',
+        },
+        prefer: 'return=representation',
+    });
+    return summarizeUnansweredDeliveryRecoveries(rows);
 }
 
 function normalizeDraftReview(data = {}) {
@@ -685,6 +713,7 @@ function shouldAutoScheduleCleanLeadCloudFallback(alert = {}, classification = {
     if (hasApprovedCoachingLinkHandoff(alert)) return false;
 
     const data = alert.data || {};
+    if (data.delivery_rescue_required === true) return false;
     if (data.browser_story_reply_required === true
         || data.native_story_context_required === true
         || data.operator_queue === 'browser_dispatcher') return false;
@@ -1634,7 +1663,16 @@ async function runClientLeadManager({
     aiDraftReviewLimit = resolveAiDraftReviewLimit(),
     cleanLeadCloudFallbackLimit = resolveCleanLeadCloudFallbackLimit(),
     cleanLeadCloudRepairLimit = resolveCleanLeadCloudRepairLimit(),
+    unansweredDeliveryRecoveryLimit = resolveUnansweredDeliveryRecoveryLimit(),
 } = {}) {
+    let deliveryRecovery = summarizeUnansweredDeliveryRecoveries();
+    let deliveryRecoveryFailed = 0;
+    try {
+        deliveryRecovery = await reconcileUnansweredDeliveryFailures(unansweredDeliveryRecoveryLimit);
+    } catch (error) {
+        deliveryRecoveryFailed = 1;
+        console.warn('[client-lead-manager] unanswered delivery reconciliation failed:', error.message);
+    }
     const alerts = await loadPendingDmAlerts(limit);
     const routed = [];
     const autoScheduled = [];
@@ -1720,6 +1758,12 @@ async function runClientLeadManager({
         ai_draft_reviews_attempted: aiDraftReviewsAttempted,
         ai_draft_review_limit: maxAiDraftReviews,
         ai_draft_reviews_skipped: aiDraftReviewsSkipped,
+        delivery_recovery_scanned: deliveryRecovery.scanned,
+        delivery_recovery_api_retries_reopened: deliveryRecovery.api_retries_reopened,
+        delivery_recovery_browser_rescues_queued: deliveryRecovery.browser_rescues_queued,
+        delivery_recovery_failed: deliveryRecoveryFailed,
+        delivery_recovery_limit: unansweredDeliveryRecoveryLimit,
+        delivery_recoveries: deliveryRecovery.recoveries,
         routed_alerts: routed,
         auto_scheduled_alerts: autoScheduled,
         cloud_fallback_scheduled_alerts: cloudFallbackScheduled,
@@ -1746,6 +1790,11 @@ exports.handler = async () => {
             ai_draft_reviews_attempted: result.ai_draft_reviews_attempted,
             ai_draft_review_limit: result.ai_draft_review_limit,
             ai_draft_reviews_skipped: result.ai_draft_reviews_skipped,
+            delivery_recovery_scanned: result.delivery_recovery_scanned,
+            delivery_recovery_api_retries_reopened: result.delivery_recovery_api_retries_reopened,
+            delivery_recovery_browser_rescues_queued: result.delivery_recovery_browser_rescues_queued,
+            delivery_recovery_failed: result.delivery_recovery_failed,
+            delivery_recovery_limit: result.delivery_recovery_limit,
         }));
         return {
             statusCode: 200,
@@ -1789,6 +1838,8 @@ exports._test = {
     resolveAiDraftReviewLimit,
     resolveCleanLeadCloudFallbackLimit,
     resolveCleanLeadCloudRepairLimit,
+    resolveUnansweredDeliveryRecoveryLimit,
+    summarizeUnansweredDeliveryRecoveries,
     isAcquisitionLeadAlert,
     leadMediaContextMissing,
     leadNeedsReferencedMediaEvidence,
