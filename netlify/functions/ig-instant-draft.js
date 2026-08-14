@@ -566,6 +566,12 @@ function shouldDispatchMetaAdReplyImmediately({ alertData, normalizedTiming, sch
         && alertData?.needs_shannon_approval !== true;
 }
 
+function isCodexLivePaidMetaThread({ linkedUserId = null, customData = {}, acquisitionMode = '' } = {}) {
+    return !linkedUserId
+        && customData?.codex_live_chat_enabled === true
+        && isPaidMetaAcquisitionMode(acquisitionMode);
+}
+
 function hasImmediateMetaDispatchFailure(scheduleResult = {}) {
     return !!scheduleResult?.immediateDispatch
         && scheduleResult.immediateDispatch.ok !== true
@@ -6409,6 +6415,11 @@ exports.handler = async (event) => {
         linkedUserId: thread.linked_user_id,
         customData: thread.custom_data,
     });
+    const codexLivePaidMetaThread = isCodexLivePaidMetaThread({
+        linkedUserId: thread.linked_user_id,
+        customData: thread.custom_data,
+        acquisitionMode,
+    });
     const internalMetaAdConversationTestLane = isInternalMetaAdConversationTestLane({
         linkedUserId: thread.linked_user_id,
         customData: thread.custom_data,
@@ -8511,10 +8522,42 @@ exports.handler = async (event) => {
         }) || currentAlertData;
     }
 
+    let codexLiveWakeReady = false;
+    if (codexLivePaidMetaThread && alertId && draft.joined) {
+        const requestedAt = new Date().toISOString();
+        const liveData = {
+            ...(currentAlertData || {}),
+            codex_live_chat_required: true,
+            codex_live_chat_status: 'waiting_for_local_worker',
+            codex_live_chat_requested_at: requestedAt,
+            codex_live_chat_ig_thread_id: thread.id,
+            codex_live_chat_source_message_id: manychatMessageId || null,
+            codex_live_chat_fallback: 'balance_lead_client_dm_manager',
+        };
+        try {
+            const rows = await supabaseQuery(
+                `coach_alerts?id=eq.${encodeURIComponent(alertId)}&status=eq.pending`,
+                {
+                    method: 'PATCH',
+                    body: { data: liveData },
+                    prefer: 'return=representation',
+                }
+            );
+            if (rows?.[0]) {
+                currentAlertData = rows[0].data || liveData;
+                codexLiveWakeReady = true;
+                console.log(`[ig-draft] queued live Codex wake for paid-Meta thread ${thread.id}, alert ${alertId}`);
+            }
+        } catch (error) {
+            console.warn(`[ig-draft] live Codex wake stamp failed for ${alertId}; preserving immediate sender fallback:`, error.message);
+        }
+    }
+
     const igAutoSendAllowedForDelay = autoSendEnabled
         && !isDirectGraphManual
         && !autoHoldReason
         && !blockedStage
+        && !codexLiveWakeReady
         && ['instagram', 'messenger'].includes(channel);
     if (autoSendEnabled && blockedStage) {
         console.warn(`[ig-draft] auto-send blocked for churned thread ${thread.id}`);
@@ -8821,6 +8864,7 @@ exports._test = {
     buildNativeStoryConfusionRepairBlock,
     normalizeIgAutoTimingSuggestion,
     shouldDispatchMetaAdReplyImmediately,
+    isCodexLivePaidMetaThread,
     hasImmediateMetaDispatchFailure,
     resolveIgFastLaneDelayMs,
     isCocosToShanSunnyVoiceTest,
