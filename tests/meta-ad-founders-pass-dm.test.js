@@ -151,6 +151,23 @@ test('paid Meta goal reply that passes the progression contract bypasses subject
     }), null);
 });
 
+test('approved guided sales progression bypasses subjective style review', () => {
+    const review = buildApprovedDeterministicMetaAdFirstReplyReview({
+        metaAdConversationFastLane: true,
+        draft: {
+            joined: 'A tailored six-week offer.',
+            model: 'deterministic_paid_meta_guided_sales_v1',
+            replyMode: 'campaign_sales_progression',
+        },
+        linkedUserId: null,
+        currentMessage: 'Work gets hectic and I stop sticking to it.',
+        qualifier: { commercial_stage: 'problem_qualified' },
+        history: [],
+    });
+    assert.equal(review.verdict, 'pass');
+    assert.equal(review.reviewer_model, 'deterministic-paid-meta-conversation-approval');
+});
+
 test('paid Meta goal reply still goes through normal review when the progression contract fails', () => {
     const currentMessage = 'I need to lose weight';
     const history = [
