@@ -28,7 +28,7 @@ Run from the checked-out repository:
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/install-ig-codex-live-worker.ps1
 ```
 
-This copies the worker into `%LOCALAPPDATA%\Balance\CodexLiveWorker`, registers `Balance IG Paid Lead Live Codex Worker` at logon, and starts it. The first inbound for an enabled lead opens and pins the corresponding Codex chat using `codex://threads/<thread-id>`.
+This copies the worker into `%LOCALAPPDATA%\Balance\CodexLiveWorker`, registers `Balance IG Paid Lead Live Codex Worker` at logon, and starts it. The first inbound for an enabled lead opens the corresponding named Codex chat using `codex://threads/<thread-id>`.
 
 Disable a pilot thread by removing or setting `custom_data.codex_live_chat_enabled=false`. To remove the local scheduled task:
 

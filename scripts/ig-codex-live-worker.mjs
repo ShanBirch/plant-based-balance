@@ -378,10 +378,6 @@ async function ensureConversation({ appServer, state, statePath, workspace, skil
             conversation.lastActivityAt = new Date().toISOString();
             state.conversations[igThreadId] = conversation;
             saveState(statePath, state);
-            await appServer.request('thread/metadata/update', {
-                threadId: conversation.codexThreadId,
-                isPinned: true,
-            });
             if (wasClosed && openChat) openCodexThread(conversation.codexThreadId, logger);
             return conversation;
         } catch (error) {
@@ -410,9 +406,8 @@ async function ensureConversation({ appServer, state, statePath, workspace, skil
     saveState(statePath, state);
     const name = `LIVE IG - ${username} - ${igThreadId.slice(0, 8)}`;
     await appServer.request('thread/name/set', { threadId: codexThreadId, name });
-    await appServer.request('thread/metadata/update', { threadId: codexThreadId, isPinned: true });
     if (openChat) openCodexThread(codexThreadId, logger);
-    logger(`created pinned Codex chat ${codexThreadId} for ${username}`);
+    logger(`created Codex chat ${codexThreadId} for ${username}`);
     return conversation;
 }
 
@@ -467,7 +462,6 @@ async function runAlert({ alert, action, appServer, supabase, state, statePath, 
         codex_live_chat_turn_id: turnId,
     });
     if (closed) {
-        await appServer.request('thread/metadata/update', { threadId: conversation.codexThreadId, isPinned: false });
         await appServer.request('thread/unsubscribe', { threadId: conversation.codexThreadId });
     }
     logger(`completed Codex turn ${turnId} for alert ${alert.id}; conversation ${conversation.status}`);
