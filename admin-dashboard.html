@@ -6597,13 +6597,24 @@
             }
         }
 
+        function renderAdminAppMessageContent(messageText) {
+            const raw = String(messageText || '');
+            const audioMatch = raw.match(/\[AUDIO:(https?:\/\/[^\s\]]+)\]/i);
+            if (!audioMatch) return adminEsc(raw).replace(/\n/g, '<br>');
+            const label = raw
+                .replace(/\[AUDIO:https?:\/\/[^\s\]]+\]/ig, '')
+                .replace(/^\s*🎤\s*/, '')
+                .trim() || 'Voice message';
+            return `<div style="font-weight:700;margin-bottom:7px;">🎤 ${adminEsc(label)}</div><audio controls preload="metadata" src="${adminEsc(audioMatch[1])}" style="display:block;width:min(100%,360px);height:42px;"></audio>`;
+        }
+
         async function viewUserConversations(userId,userName,target=null){
             currentConvoUserId=userId;
             currentConvoTarget = target || { type: 'app', id: userId, name: userName, channelLabel: 'Balance app' };
             setConversationHeader(userName, 'Balance app');
             const c=document.getElementById('conversation-messages');c.innerHTML='<div class="loading">Loading conversations...</div>';
             try{const convos=await dbHelpers.admin.getUserConversations(userId);if(!convos.length){c.innerHTML='<p style="color:#64748b;text-align:center;padding:20px;">No conversation history yet.</p>';return;}
-            let h='';convos.forEach(m=>{h+=`<div class="chat-message ${m.role==='user'?'user':'bot'}"><div><strong>${m.role==='user'?'User':'Coach Shannon'}</strong></div><div>${adminEsc(m.message_text).replace(/\n/g,'<br>')}</div><div class="timestamp">${new Date(m.timestamp).toLocaleString()}</div></div>`;});c.innerHTML=h;c.scrollTop=c.scrollHeight;
+            let h='';convos.forEach(m=>{h+=`<div class="chat-message ${m.role==='user'?'user':'bot'}"><div><strong>${m.role==='user'?'User':'Coach Shannon'}</strong></div><div>${renderAdminAppMessageContent(m.message_text)}</div><div class="timestamp">${new Date(m.timestamp).toLocaleString()}</div></div>`;});c.innerHTML=h;c.scrollTop=c.scrollHeight;
             }catch(e){console.error('Failed to load conversations:',e);c.innerHTML='<p style="color:#ef4444;padding:20px;">Failed to load conversations.<br><br><pre>'+adminEsc(e.stack || e.message || e)+'</pre></p>';}
             lucide.createIcons();
         }

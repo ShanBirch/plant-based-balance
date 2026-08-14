@@ -10629,15 +10629,28 @@ if(!window._pbbIsIOSSafari) {
                 <!-- Messages will be loaded here -->
             </div>
             <!-- Input -->
-            <div style="padding: 15px; border-top: 1px solid #f1f5f9; display: flex; gap: 10px; align-items: center;">
+            <div id="dm-composer" style="padding: 15px; border-top: 1px solid #f1f5f9; display: flex; gap: 10px; align-items: center;">
                 <input type="file" id="dm-photo-input" accept="image/*" style="display: none;" onchange="sendChatPhoto('dm', this)">
-                <button onclick="document.getElementById('dm-photo-input').click()" style="width: 44px; height: 44px; background: #f1f5f9; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" title="Attach photo">
+                <button id="dm-photo-btn" type="button" onclick="document.getElementById('dm-photo-input').click()" style="width: 44px; height: 44px; background: #f1f5f9; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" title="Attach photo" aria-label="Attach photo">
                     <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: #64748b;"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
                 </button>
+                <button id="dm-voice-btn" type="button" onclick="startDmVoiceRecording()" style="width: 44px; height: 44px; background: #f1f5f9; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" title="Record voice message" aria-label="Record voice message">
+                    <svg viewBox="0 0 24 24" style="width: 21px; height: 21px; fill: #64748b;"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.49 6-3.31 6-6.72h-1.7z"/></svg>
+                </button>
                 <input type="text" id="dm-input" placeholder="Type a message..." style="flex: 1; min-width: 0; padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 24px; font-size: 0.95rem; outline: none;" onkeypress="if(event.key==='Enter') sendDirectMessage()">
-                <button onclick="sendDirectMessage()" style="width: 44px; height: 44px; background: var(--primary); border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <button id="dm-send-btn" type="button" onclick="sendDirectMessage()" style="width: 44px; height: 44px; background: var(--primary); border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" title="Send message" aria-label="Send message">
                     <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: white;"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                 </button>
+                <div id="dm-recording-panel" style="display:none; flex:1; min-width:0; align-items:center; gap:10px;">
+                    <button type="button" onclick="cancelDmVoiceRecording()" style="width:40px; height:40px; border:0; border-radius:50%; background:#f1f5f9; color:#475569; font-size:1.25rem; cursor:pointer; flex-shrink:0;" title="Cancel recording" aria-label="Cancel recording">&times;</button>
+                    <div style="flex:1; min-width:0; display:flex; align-items:center; justify-content:center; gap:8px; color:#991b1b; -webkit-text-fill-color:#991b1b; font-size:.86rem; font-weight:700;">
+                        <span id="dm-recording-dot" style="width:9px; height:9px; border-radius:50%; background:#ef4444; box-shadow:0 0 0 4px rgba(239,68,68,.12);"></span>
+                        <span id="dm-recording-status" aria-live="polite">Recording 0:00</span>
+                    </div>
+                    <button id="dm-voice-send-btn" type="button" onclick="sendDmVoiceRecording()" style="width:44px; height:44px; border:0; border-radius:50%; background:var(--primary); cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0;" title="Send voice message" aria-label="Send voice message">
+                        <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:white;"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -13662,6 +13675,7 @@ if(!window._pbbIsIOSSafari) {
 <script>
 (function(){
   const steps = [
+    { tab:'dashboard', sel:'#dm-voice-btn', fallbackSel:'.header-msg-icon', title:'Send a voice message', fallbackTitle:'Voice messages are in your DMs', body:'Tap the microphone, record your message, then tap send. You can cancel before it leaves.', fallbackBody:'Open Messages, choose a friend, then tap the microphone beside the message box.', action: async function(){ try { var coachId=window._coachUserId || (typeof getCoachUserId==='function' ? await getCoachUserId() : null); if(coachId && typeof openDirectMessage==='function') openDirectMessage(coachId,'Coach Shan',''); } catch(e){} await new Promise(function(r){ setTimeout(r,420); }); } },
     { tab:'dashboard', sel:'#weekly-goals-card', fallbackSel:'#next-obvious-steps-card', title:'Your starting goals', body:'These are the small promises Balance will help you keep this week. They are based on your setup and can change when real life changes.', clientActivation:true, clientActivationOnly:true },
     { tab:'meals', sel:'.camera-btn-widget,.meal-icon-btn', title:'Track what you actually eat', body:'A photo, barcode or quick entry gives us useful evidence. You are not trying to log perfectly; you are helping Balance learn your normal week.', clientActivation:true, clientActivationOnly:true },
     { tab:'meals', sel:'#ai-plan-meals-list .ai-plan-hero', fallbackSel:'#ai-plan-meals-list,#browse-plans-pill', title:'Your meal plan', fallbackTitle:'Your meal plan', body:'The large card is the next meal you have not logged. Open its recipe, log it, or tap another meal to look ahead.', fallbackBody:'Open your meal plan to see the next meal first.', clientActivation:true, clientActivationOnly:true },
@@ -14947,6 +14961,17 @@ window.endFeatureTour = function(skipped){
   // First-run onboarding now uses the guided walkthrough only. Keep legacy
   // feature-drop entries dormant so users do not see duplicate spotlight cards.
   allFeatures = [];
+  allFeatures.push({
+    id: 'dm-voice-messages-v1',
+    tab: 'dashboard',
+    sel: '#dm-voice-btn',
+    fallbackSel: '.header-msg-icon',
+    title: 'Voice messages are here',
+    fallbackTitle: 'Voice messages are here',
+    body: 'Tap the microphone, record your message, then tap send. You can cancel before it leaves.',
+    fallbackBody: 'Open Messages, choose a friend, then tap the microphone beside the message box.',
+    action: async function(){ try { var coachId=window._coachUserId || (typeof getCoachUserId==='function' ? await getCoachUserId() : null); if(coachId && typeof openDirectMessage==='function') openDirectMessage(coachId,'Coach Shan',''); } catch(e){} await new Promise(function(r){ setTimeout(r,420); }); }
+  });
   allFeatures.push({
     id: 'social-journey-your-next-step-v1',
     tab: 'dashboard',
@@ -16645,7 +16670,7 @@ if (window._pbbIsIOSSafari) {
         }, 2000);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=38"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=39"><\/script>');
 }
 </script>
 

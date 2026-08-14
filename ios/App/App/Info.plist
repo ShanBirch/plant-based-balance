@@ -97,7 +97,7 @@
 	<key>NSCameraUsageDescription</key>
 	<string>Balance needs camera access to film sets, take meal photos, progress photos, and scan barcodes.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Balance needs microphone access for voice meal logging and recording custom exercises.</string>
+	<string>Balance needs microphone access for voice messages, voice meal logging, and recording custom exercises.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Balance uses your location to record the route of walks, runs, rides and hikes you choose to track, and to show local weather.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>

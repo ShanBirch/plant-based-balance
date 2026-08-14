@@ -24,7 +24,9 @@ const ALLOWED_EVENT_TYPES = new Set([
     'first_workout_planned', 'first_workout_completed', 'trial_started',
     'trial_walkthrough_completed', 'trial_preview_started', 'trial_gate_shown', 'trial_signup_click',
     'trial_signup_view', 'trial_subscription_claimed', 'trial_purchase_claimed',
-    'trial_flow_interrupted', 'trial_flow_resumed', 'trial_inbox_preview_viewed'
+    'trial_flow_interrupted', 'trial_flow_resumed', 'trial_inbox_preview_viewed',
+    'dm_voice_record_started', 'dm_voice_record_cancelled',
+    'dm_voice_record_failed', 'dm_voice_message_sent'
 ]);
 const MAX_STR = 500;
 const PREVIEW_FOLLOWUP_DELAY_MS = 10 * 60 * 1000;

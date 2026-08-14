@@ -8120,6 +8120,7 @@ function openDirectMessage(userId, userName, userPhoto) {
 
 // Close direct message modal
 function closeDirectMessageModal() {
+    cancelDmVoiceRecording();
     const modal = document.getElementById('direct-message-modal');
     if (modal) modal.style.display = 'none';
     currentDMRecipient = null;
@@ -8246,6 +8247,26 @@ async function loadDirectMessages(recipientId) {
                         <div style="max-width: 75%;">
                             <img src="${photoUrl}" onclick="window.open('${photoUrl}', '_blank')" style="max-width: 100%; border-radius: ${isSent ? '16px 16px 4px 16px' : '16px 16px 16px 4px'}; display: block; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.15);" onerror="this.style.display='none'">
                             <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 4px; text-align: right;">${time}</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            const audioMatch = String(msg.message || '').match(/\[AUDIO:(https?:\/\/[^\s\]]+)\]/i);
+            if (audioMatch) {
+                const audioUrl = audioMatch[1];
+                const voiceLabel = String(msg.message || '')
+                    .replace(/\[AUDIO:https?:\/\/[^\s\]]+\]/ig, '')
+                    .replace(/^\s*🎤\s*/, '')
+                    .trim() || 'Voice message';
+                return `
+                    <div style="display:flex; justify-content:${isSent ? 'flex-end' : 'flex-start'}; margin-bottom:12px;">
+                        <div style="width:min(88%, 390px); background:${isSent ? 'linear-gradient(135deg,#f4df9f,#e2ba58)' : 'white'}; color:#171923; border:1px solid ${isSent ? 'rgba(146,103,29,.32)' : '#e2e8f0'}; border-radius:${isSent ? '19px 19px 5px 19px' : '19px 19px 19px 5px'}; padding:10px 12px 9px; box-shadow:0 2px 7px rgba(15,23,42,.09);">
+                            <div style="display:flex; align-items:center; gap:7px; margin:0 3px 5px; font-size:.69rem; font-weight:800; color:${isSent ? '#68480f' : '#475569'};">
+                                <span style="width:7px; height:7px; border-radius:50%; background:${isSent ? '#68480f' : '#64748b'};"></span>${escapeHtml(voiceLabel)}
+                            </div>
+                            <audio controls preload="metadata" src="${escapeHtml(audioUrl)}" style="display:block; width:100%; height:42px; border-radius:21px;"></audio>
+                            <div style="font-size:.7rem; color:${isSent ? '#68480f' : '#94a3b8'}; opacity:.8; margin-top:3px; text-align:right;">${time}</div>
                         </div>
                     </div>
                 `;
@@ -8668,6 +8689,341 @@ async function sendDirectMessage() {
     // MSN-style: trigger effect on sender's screen too
     try { if (window.triggerMsnEffect) window.triggerMsnEffect(message); } catch (e) {}
 }
+
+/* ---------- DM voice messages ---------- */
+const DM_VOICE_MAX_MS = 5 * 60 * 1000;
+const DM_VOICE_MAX_BYTES = 12 * 1024 * 1024;
+let dmVoiceRecorder = null;
+let dmVoiceStream = null;
+let dmVoiceChunks = [];
+let dmVoiceStartedAt = 0;
+let dmVoiceTimer = null;
+let dmVoiceLimitTimer = null;
+let dmVoiceShouldSend = false;
+let dmVoicePending = null;
+let dmVoiceUploading = false;
+let dmVoiceUploadController = null;
+
+function formatDmVoiceDuration(seconds) {
+    const total = Math.max(0, Math.round(Number(seconds) || 0));
+    return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
+}
+
+function setDmVoiceComposerMode(recording) {
+    ['dm-photo-btn', 'dm-voice-btn', 'dm-input', 'dm-send-btn'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = recording ? 'none' : (id === 'dm-input' ? '' : 'flex');
+    });
+    const panel = document.getElementById('dm-recording-panel');
+    if (panel) panel.style.display = recording ? 'flex' : 'none';
+}
+
+function setDmVoiceStatus(text, isError) {
+    const status = document.getElementById('dm-recording-status');
+    const dot = document.getElementById('dm-recording-dot');
+    if (status) {
+        status.textContent = text;
+        status.style.color = isError ? '#b91c1c' : '#991b1b';
+        status.style.webkitTextFillColor = isError ? '#b91c1c' : '#991b1b';
+    }
+    if (dot) dot.style.display = isError ? 'none' : '';
+}
+
+function stopDmVoiceTracks() {
+    if (dmVoiceStream) {
+        dmVoiceStream.getTracks().forEach(track => {
+            try { track.stop(); } catch (_) {}
+        });
+    }
+    dmVoiceStream = null;
+    clearInterval(dmVoiceTimer);
+    clearTimeout(dmVoiceLimitTimer);
+    dmVoiceTimer = null;
+    dmVoiceLimitTimer = null;
+}
+
+function resetDmVoiceComposer(options) {
+    const keepPending = !!options?.keepPending;
+    stopDmVoiceTracks();
+    dmVoiceRecorder = null;
+    dmVoiceChunks = [];
+    dmVoiceStartedAt = 0;
+    dmVoiceShouldSend = false;
+    if (!keepPending) dmVoicePending = null;
+    if (!keepPending) setDmVoiceComposerMode(false);
+    const sendBtn = document.getElementById('dm-voice-send-btn');
+    if (sendBtn) sendBtn.disabled = false;
+}
+
+function preferredDmVoiceMimeType() {
+    if (typeof MediaRecorder === 'undefined' || typeof MediaRecorder.isTypeSupported !== 'function') return '';
+    return [
+        'audio/mp4',
+        'audio/webm;codecs=opus',
+        'audio/webm',
+        'audio/ogg;codecs=opus'
+    ].find(type => MediaRecorder.isTypeSupported(type)) || '';
+}
+
+function trackDmVoiceEvent(name, details) {
+    try {
+        if (typeof window.trackBalanceEvent === 'function') {
+            window.trackBalanceEvent(name, { feature: 'dm_voice_messages_v1', ...(details || {}) });
+            return;
+        }
+        const visitorKey = 'balance_visitor_id';
+        const sessionKey = 'balance_analytics_session_id';
+        const makeId = prefix => `${prefix}-${window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`}`;
+        let visitorId = localStorage.getItem(visitorKey);
+        let sessionId = sessionStorage.getItem(sessionKey);
+        if (!visitorId) {
+            visitorId = makeId('visitor');
+            localStorage.setItem(visitorKey, visitorId);
+        }
+        if (!sessionId) {
+            sessionId = makeId('session');
+            sessionStorage.setItem(sessionKey, sessionId);
+        }
+        fetch('/.netlify/functions/log-lp-event', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            keepalive: true,
+            body: JSON.stringify({
+                event_id: makeId('event'),
+                event_type: name,
+                session_id: sessionId,
+                visitor_id: visitorId,
+                landing_page: 'dashboard',
+                page_variant: 'dm_voice_messages_v1',
+                page_url: window.location.href,
+                viewport_w: window.innerWidth,
+                viewport_h: window.innerHeight,
+                duration_ms: Number.isFinite(Number(details?.duration_ms)) ? Number(details.duration_ms) : null,
+                user_agent: navigator.userAgent,
+                metadata: { feature: 'dm_voice_messages_v1', ...(details || {}) }
+            })
+        }).catch(() => {});
+    } catch (_) {}
+}
+
+async function startDmVoiceRecording() {
+    if (!currentDMRecipient || dmVoiceRecorder || dmVoiceUploading) return;
+
+    if (window.NativePermissions && typeof window.NativePermissions.hasMicrophonePermission === 'function'
+        && !window.NativePermissions.hasMicrophonePermission()) {
+        setDmVoiceComposerMode(true);
+        setDmVoiceStatus('Requesting microphone access…');
+        window._onNativeMicrophonePermission = function(granted) {
+            window._onNativeMicrophonePermission = null;
+            if (granted) startDmVoiceRecording();
+            else {
+                resetDmVoiceComposer();
+                if (typeof showPermissionRecoveryDialog === 'function') showPermissionRecoveryDialog('microphone');
+                else showToast('Microphone access is needed for voice messages', 'error');
+            }
+        };
+        window.NativePermissions.requestMicrophonePermission();
+        return;
+    }
+
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+        showToast('Voice recording is not supported on this device', 'error');
+        return;
+    }
+
+    try {
+        dmVoiceStream = await navigator.mediaDevices.getUserMedia({
+            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+            video: false
+        });
+        if (!currentDMRecipient) {
+            stopDmVoiceTracks();
+            return;
+        }
+
+        const mimeType = preferredDmVoiceMimeType();
+        const options = { audioBitsPerSecond: 48000 };
+        if (mimeType) options.mimeType = mimeType;
+        dmVoiceRecorder = new MediaRecorder(dmVoiceStream, options);
+        dmVoiceChunks = [];
+        dmVoicePending = null;
+        dmVoiceShouldSend = false;
+        dmVoiceStartedAt = Date.now();
+        const recipientId = currentDMRecipient.id;
+
+        dmVoiceRecorder.ondataavailable = event => {
+            if (event.data?.size) dmVoiceChunks.push(event.data);
+        };
+        dmVoiceRecorder.onerror = event => {
+            console.error('[DM voice] recorder error:', event.error || event);
+            resetDmVoiceComposer();
+            showToast('Voice recording stopped unexpectedly', 'error');
+            trackDmVoiceEvent('dm_voice_record_failed', { stage: 'record' });
+        };
+        dmVoiceRecorder.onstop = async () => {
+            const shouldSend = dmVoiceShouldSend;
+            const durationSeconds = Math.max(1, Math.round((Date.now() - dmVoiceStartedAt) / 1000));
+            const blobType = dmVoiceRecorder?.mimeType || mimeType || dmVoiceChunks[0]?.type || 'audio/webm';
+            const blob = new Blob(dmVoiceChunks, { type: blobType });
+            stopDmVoiceTracks();
+            dmVoiceRecorder = null;
+            dmVoiceChunks = [];
+            dmVoiceStartedAt = 0;
+            dmVoiceShouldSend = false;
+
+            if (!shouldSend) {
+                resetDmVoiceComposer();
+                trackDmVoiceEvent('dm_voice_record_cancelled', { duration_ms: durationSeconds * 1000 });
+                return;
+            }
+            if (!blob.size || blob.size > DM_VOICE_MAX_BYTES) {
+                resetDmVoiceComposer();
+                showToast(blob.size ? 'That voice message is too large' : 'No audio was recorded', 'error');
+                trackDmVoiceEvent('dm_voice_record_failed', { stage: 'size', size_bytes: blob.size || 0 });
+                return;
+            }
+
+            dmVoicePending = { blob, durationSeconds, recipientId };
+            await uploadDmVoicePending();
+        };
+
+        setDmVoiceComposerMode(true);
+        setDmVoiceStatus('Recording 0:00');
+        dmVoiceRecorder.start(1000);
+        dmVoiceTimer = setInterval(() => {
+            setDmVoiceStatus(`Recording ${formatDmVoiceDuration((Date.now() - dmVoiceStartedAt) / 1000)}`);
+        }, 500);
+        dmVoiceLimitTimer = setTimeout(() => {
+            showToast('Five-minute limit reached. Sending voice message…', 'info');
+            sendDmVoiceRecording();
+        }, DM_VOICE_MAX_MS);
+        trackDmVoiceEvent('dm_voice_record_started');
+    } catch (error) {
+        console.error('[DM voice] microphone failed:', error);
+        resetDmVoiceComposer();
+        if (error?.name === 'NotAllowedError' && typeof showPermissionRecoveryDialog === 'function') {
+            showPermissionRecoveryDialog('microphone');
+        } else {
+            showToast('Could not start the microphone', 'error');
+        }
+        trackDmVoiceEvent('dm_voice_record_failed', { stage: 'permission', error_name: error?.name || 'unknown' });
+    }
+}
+
+function cancelDmVoiceRecording() {
+    if (dmVoiceUploadController) {
+        try { dmVoiceUploadController.abort(); } catch (_) {}
+        dmVoiceUploadController = null;
+    }
+    dmVoicePending = null;
+    if (dmVoiceRecorder && dmVoiceRecorder.state !== 'inactive') {
+        dmVoiceShouldSend = false;
+        try { dmVoiceRecorder.stop(); } catch (_) { resetDmVoiceComposer(); }
+        return;
+    }
+    resetDmVoiceComposer();
+}
+
+async function sendDmVoiceRecording() {
+    if (dmVoiceUploading) return;
+    if (dmVoicePending) {
+        await uploadDmVoicePending();
+        return;
+    }
+    if (!dmVoiceRecorder || dmVoiceRecorder.state === 'inactive') return;
+    if (Date.now() - dmVoiceStartedAt < 700) {
+        showToast('Hold on for a moment before sending', 'info');
+        return;
+    }
+    dmVoiceShouldSend = true;
+    clearInterval(dmVoiceTimer);
+    clearTimeout(dmVoiceLimitTimer);
+    setDmVoiceStatus('Preparing voice message…');
+    const sendBtn = document.getElementById('dm-voice-send-btn');
+    if (sendBtn) sendBtn.disabled = true;
+    try { dmVoiceRecorder.requestData(); } catch (_) {}
+    try { dmVoiceRecorder.stop(); } catch (error) {
+        console.error('[DM voice] stop failed:', error);
+        resetDmVoiceComposer();
+        showToast('Could not finish the recording', 'error');
+    }
+}
+
+async function uploadDmVoicePending() {
+    const pending = dmVoicePending;
+    if (!pending || dmVoiceUploading) return;
+    if (!window.currentUser?.id || !currentDMRecipient || currentDMRecipient.id !== pending.recipientId) {
+        resetDmVoiceComposer();
+        return;
+    }
+
+    dmVoiceUploading = true;
+    setDmVoiceComposerMode(true);
+    setDmVoiceStatus('Sending voice message…');
+    const sendBtn = document.getElementById('dm-voice-send-btn');
+    if (sendBtn) sendBtn.disabled = true;
+
+    try {
+        const { data: sessionData } = await window.supabaseClient.auth.getSession();
+        const accessToken = sessionData?.session?.access_token;
+        if (!accessToken) throw new Error('Please log in again before sending.');
+
+        const mimeType = String(pending.blob.type || 'audio/webm').split(';')[0];
+        const extension = mimeType.includes('mp4') || mimeType.includes('m4a') ? 'm4a'
+            : mimeType.includes('ogg') ? 'ogg'
+                : mimeType.includes('mpeg') ? 'mp3' : 'webm';
+        const formData = new FormData();
+        formData.append('file', pending.blob, `voice-message.${extension}`);
+        dmVoiceUploadController = new AbortController();
+        const response = await fetch('/api/upload-chat-audio', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${accessToken}` },
+            body: formData,
+            signal: dmVoiceUploadController.signal
+        });
+        const uploadData = await response.json().catch(() => ({}));
+        if (!response.ok || !uploadData.url) throw new Error(uploadData.error || 'Audio upload failed');
+
+        const message = `🎤 Voice message (${formatDmVoiceDuration(pending.durationSeconds)})\n[AUDIO:${uploadData.url}]`;
+        const { error } = await window.supabaseClient
+            .from('nudges')
+            .insert({
+                sender_id: window.currentUser.id,
+                receiver_id: pending.recipientId,
+                message
+            });
+        if (error) throw error;
+
+        trackDmVoiceEvent('dm_voice_message_sent', {
+            duration_ms: pending.durationSeconds * 1000,
+            size_bytes: pending.blob.size
+        });
+        dmVoicePending = null;
+        resetDmVoiceComposer();
+        loadDirectMessages(pending.recipientId);
+        if (typeof checkAdminUnrespondedMessages === 'function') {
+            setTimeout(checkAdminUnrespondedMessages, 500);
+        }
+    } catch (error) {
+        if (error?.name === 'AbortError') {
+            resetDmVoiceComposer();
+            return;
+        }
+        console.error('[DM voice] send failed:', error);
+        setDmVoiceComposerMode(true);
+        setDmVoiceStatus('Couldn’t send. Tap send to retry.', true);
+        if (sendBtn) sendBtn.disabled = false;
+        showToast('Voice message failed to send', 'error');
+        trackDmVoiceEvent('dm_voice_record_failed', { stage: 'upload', error_name: error?.name || 'unknown' });
+    } finally {
+        dmVoiceUploading = false;
+        dmVoiceUploadController = null;
+    }
+}
+
+window.startDmVoiceRecording = startDmVoiceRecording;
+window.cancelDmVoiceRecording = cancelDmVoiceRecording;
+window.sendDmVoiceRecording = sendDmVoiceRecording;
 
 /* ============================================================
    MESSAGE REACTIONS + MSN-STYLE TEXT EFFECTS
