@@ -2753,6 +2753,41 @@ window.sharePendingMealToInstagram = async function(btn) {
     }
 };
 
+function refreshMealSharePromptStyleButtons() {
+    const prompt = document.getElementById('meal-feed-share-prompt');
+    if (!prompt) return;
+    const overlayStyle = typeof window.getBalanceShareOverlayStyle === 'function'
+        ? window.getBalanceShareOverlayStyle('nutrition')
+        : 'classic';
+    const textStyle = typeof window.getBalanceShareTextStyle === 'function'
+        ? window.getBalanceShareTextStyle('nutrition')
+        : 'bold';
+    prompt.querySelectorAll('[data-meal-share-overlay-style]').forEach(button => {
+        const selected = button.dataset.mealShareOverlayStyle === overlayStyle;
+        button.style.background = selected ? '#f5c45c' : '#f1f5f9';
+        button.style.color = selected ? '#111827' : '#475569';
+        button.style.borderColor = selected ? '#d97706' : '#cbd5e1';
+        button.setAttribute('aria-pressed', String(selected));
+    });
+    prompt.querySelectorAll('[data-meal-share-text-style]').forEach(button => {
+        const selected = button.dataset.mealShareTextStyle === textStyle;
+        button.style.background = selected ? '#f5c45c' : '#f1f5f9';
+        button.style.color = selected ? '#111827' : '#475569';
+        button.style.borderColor = selected ? '#d97706' : '#cbd5e1';
+        button.setAttribute('aria-pressed', String(selected));
+    });
+}
+
+window.selectPendingMealShareStyle = function(kind, style) {
+    let result;
+    if (kind === 'text' && typeof window.selectBalanceShareTextStyle === 'function') {
+        result = window.selectBalanceShareTextStyle('nutrition', style);
+    } else if (kind === 'colour' && typeof window.selectBalanceShareOverlayStyle === 'function') {
+        result = window.selectBalanceShareOverlayStyle('nutrition', style);
+    }
+    Promise.resolve(result).finally(refreshMealSharePromptStyleButtons);
+};
+
 function showMealFeedSharePrompt(meal) {
     if (!meal || !meal.id) return;
     if (String(meal.meal_type || '').toLowerCase() === 'water') return;
@@ -2787,6 +2822,18 @@ function showMealFeedSharePrompt(meal) {
             </div>
             <button type="button" onclick="closeMealFeedSharePrompt()" aria-label="Dismiss meal share prompt" style="border:none;background:#f1f5f9;color:#64748b;border-radius:999px;width:32px;height:32px;font-size:1.1rem;line-height:1;cursor:pointer;flex-shrink:0;">&times;</button>
         </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:12px;">
+            <span style="font-size:0.68rem;font-weight:900;color:#475569;">Colour</span>
+            <div style="display:flex;gap:5px;min-width:0;">
+                ${[['classic','Clean'],['gold','Gold'],['midnight','Dark'],['fresh','Fresh']].map(option => `<button type="button" data-meal-share-overlay-style="${option[0]}" onclick="selectPendingMealShareStyle('colour','${option[0]}')" style="border:1px solid #cbd5e1;background:#f1f5f9;color:#475569;border-radius:999px;padding:5px 8px;font-size:0.62rem;font-weight:900;cursor:pointer;">${option[1]}</button>`).join('')}
+            </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;">
+            <span style="font-size:0.68rem;font-weight:900;color:#475569;">Text</span>
+            <div style="display:flex;gap:5px;min-width:0;">
+                ${[['bold','Bold'],['scorecard','Scorecard'],['simple','Simple']].map(option => `<button type="button" data-meal-share-text-style="${option[0]}" onclick="selectPendingMealShareStyle('text','${option[0]}')" style="border:1px solid #cbd5e1;background:#f1f5f9;color:#475569;border-radius:999px;padding:5px 10px;font-size:0.62rem;font-weight:900;cursor:pointer;">${option[1]}</button>`).join('')}
+            </div>
+        </div>
         <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;margin-top:12px;">
             ${feedButtonHtml}
             <button type="button" data-meal-share-destination="instagram" data-default-label="${instagramButtonLabel}" onclick="sharePendingMealToInstagram(this)" style="border:none;background:#be185d;color:white;border-radius:999px;padding:11px 12px;font-size:0.78rem;font-weight:900;cursor:pointer;white-space:nowrap;">${instagramButtonLabel}</button>
@@ -2801,10 +2848,11 @@ function showMealFeedSharePrompt(meal) {
         <style>@keyframes pbbMealShareProgress{0%{transform:translateX(-105%);background-position:100% 0}100%{transform:translateX(245%);background-position:-100% 0}}@media (prefers-reduced-motion:reduce){#meal-feed-share-prompt [data-meal-share-progress] div div{animation-duration:2.4s}}</style>
     `;
     document.body.appendChild(prompt);
+    refreshMealSharePromptStyleButtons();
     prompt._dismissTimer = setTimeout(function() {
         prompt._dismissTimer = null;
         if (document.getElementById('meal-feed-share-prompt') === prompt) closeMealFeedSharePrompt();
-    }, 12000);
+    }, 30000);
 }
 
 function scheduleMealFeedSharePrompt(meal, mealData) {
