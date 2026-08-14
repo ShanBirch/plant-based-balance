@@ -91,6 +91,13 @@ test('voice companion follows promptly enough for the sender to retain its produ
         plannedChunkGapsMs: [6500],
         chunkPacing: { minMs: 4200 },
     }), 6500);
+    assert.equal(sendIg.resolveOutboundItemGapMs({
+        index: 1,
+        outboundItems: [{ kind: 'text' }, { kind: 'video' }],
+        plannedChunkGapsMs: [30000],
+        chunkPacing: { minMs: 4200 },
+        paidMetaFastLane: true,
+    }), 1800);
 });
 
 test('paid Meta voice keeps its approved thought paragraphs through DM bubble splitting', () => {

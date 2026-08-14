@@ -165,6 +165,7 @@ const INSTAGRAM_GRAPH_TYPING_ACTION_TIMEOUT_MS = 1200;
 const FIRST_ITEM_TYPING_MIN_MS = 1800;
 const FIRST_ITEM_TYPING_MAX_MS = 4200;
 const VOICE_COMPANION_GAP_MS = 1800;
+const PAID_META_OUTBOUND_ITEM_GAP_MAX_MS = 1800;
 const SEND_CLAIM_STALE_MS = 10 * 60 * 1000;
 const INSTAGRAM_GRAPH_DM_BUBBLE_TARGET_CHARS = 210;
 const INSTAGRAM_GRAPH_DM_BUBBLE_HARD_MAX_CHARS = 240;
@@ -1084,11 +1085,24 @@ function resolveFirstItemTypingDelayMs({ kind = 'text', text = '', random = Math
     return clampNumber(base + (length * perCharMs) + jitter, FIRST_ITEM_TYPING_MIN_MS, FIRST_ITEM_TYPING_MAX_MS);
 }
 
-function resolveOutboundItemGapMs({ index, outboundItems = [], plannedChunkGapsMs = [], chunkPacing = {} } = {}) {
+function resolveOutboundItemGapMs({
+    index,
+    outboundItems = [],
+    plannedChunkGapsMs = [],
+    chunkPacing = {},
+    paidMetaFastLane = false,
+} = {}) {
     if (index === 1 && outboundItems[0]?.kind === 'audio' && outboundItems[1]?.kind === 'text') {
         return VOICE_COMPANION_GAP_MS;
     }
-    return plannedChunkGapsMs[index - 1] || chunkPacing.minMs || CHUNK_GAP_MIN_MS;
+    const plannedGapMs = plannedChunkGapsMs[index - 1] || chunkPacing.minMs || CHUNK_GAP_MIN_MS;
+    // A paid-ad reply can contain several text bubbles plus native media. The
+    // normal human-long pacing can otherwise outlive the synchronous Netlify
+    // function after Graph has delivered only the first items. Keep the typing
+    // presence, but finish the complete reply comfortably inside one request.
+    return paidMetaFastLane
+        ? Math.min(plannedGapMs, PAID_META_OUTBOUND_ITEM_GAP_MAX_MS)
+        : plannedGapMs;
 }
 
 function resolveVoiceSourceMessages(alertData = {}, messagesToSend = []) {
@@ -2483,6 +2497,7 @@ exports.handler = async (event) => {
                 outboundItems,
                 plannedChunkGapsMs,
                 chunkPacing,
+                paidMetaFastLane: alertData.meta_ad_fast_lane === true,
             });
             sentChunkGapsMs.push(gapMs);
             if (shouldUseGraph) {

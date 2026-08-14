@@ -13,6 +13,12 @@ test('a Graph echo can only clear a pending alert for the same inbound', () => {
     assert.equal(webhook._test.shouldApplyBalanceSendEchoToPending({}, newerBlockerShell), false);
 });
 
+test('an active sender claim keeps a one-item Graph echo from completing the whole reply', () => {
+    assert.equal(webhook._test.hasActiveGraphSendClaim({ send_claim_id: 'claim-123' }), true);
+    assert.equal(webhook._test.hasActiveGraphSendClaim({ send_claim_id: '  ' }), false);
+    assert.equal(webhook._test.hasActiveGraphSendClaim({}), false);
+});
+
 test('only unlinked verified paid Meta threads start immediate webhook typing', () => {
     const paidMetaThread = {
         linked_user_id: null,

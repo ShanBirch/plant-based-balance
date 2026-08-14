@@ -2669,6 +2669,10 @@ function shouldApplyBalanceSendEchoToPending(sentAlert = {}, pendingAlert = {}) 
     return !!sentKey && sentKey === pendingKey;
 }
 
+function hasActiveGraphSendClaim(alertData = {}) {
+    return !!String(alertData?.send_claim_id || '').trim();
+}
+
 async function markPendingGraphAlertsSent({ thread, threadId, messageText, nowIso, graphMessageId }) {
     if (!threadId || !messageText) return 0;
     let cleared = 0;
@@ -2729,6 +2733,11 @@ async function markPendingGraphAlertsSent({ thread, threadId, messageText, nowIs
                 cleared++;
                 continue;
             }
+            // send-ig-reply owns completion while its exact send claim is
+            // active. A Graph echo is only proof that this one item arrived;
+            // it must not mark a multi-bubble or media reply fully sent, and
+            // it must never create false "Shannon edited the draft" learning.
+            if (hasActiveGraphSendClaim(data)) continue;
             // A just-created inbound alert shell can still be waiting for its
             // draft while an older multi-part Graph send echoes back. Never
             // claim that blank shell as the reply to the newer inbound.
@@ -3150,6 +3159,7 @@ exports._test = {
     commentPrivateReplyDedupeId,
     alertNeedsDraftRecovery,
     shouldApplyBalanceSendEchoToPending,
+    hasActiveGraphSendClaim,
 };
 
 exports._internal = {
