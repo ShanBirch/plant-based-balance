@@ -25,6 +25,20 @@ if (-not (Test-Path -LiteralPath $Workspace)) {
 }
 $node = (Get-Command node.exe -ErrorAction Stop).Source
 New-Item -ItemType Directory -Path $installRoot -Force | Out-Null
+
+$existingTask = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+if ($existingTask -and $existingTask.State -eq 'Running') {
+    Stop-ScheduledTask -TaskName $taskName
+    $stopDeadline = (Get-Date).AddSeconds(10)
+    do {
+        Start-Sleep -Milliseconds 200
+        $existingTask = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+    } while ($existingTask -and $existingTask.State -eq 'Running' -and (Get-Date) -lt $stopDeadline)
+    if ($existingTask -and $existingTask.State -eq 'Running') {
+        throw "Timed out stopping the existing worker task: $taskName"
+    }
+}
+
 Copy-Item -LiteralPath $sourceWorker -Destination $installedWorker -Force
 
 $arguments = '"{0}" --workspace "{1}" --open-chat' -f $installedWorker, $Workspace
