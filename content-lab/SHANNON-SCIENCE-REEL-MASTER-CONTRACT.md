@@ -103,6 +103,7 @@ Default runtime is 45–90 seconds. If the approved voice is too long, remove lo
 - No title, caption, card, paper crop, diagram, CTA, logo, sticker, kinetic word, or decorative animation may touch or cross that space.
 - Open direct-to-camera hooks with clean full-screen Shannon before introducing graphic structure.
 - When Shannon and an explanation must remain visible together, prefer a true split-screen: one dedicated presenter/head panel, one dedicated graphic/source panel, and a third non-overlapping caption lane, all inside the Instagram-safe rectangle. Never simulate a split by floating a card over Shannon's face or torso.
+- Mix split orientations when it adds useful rhythm. Side-by-side remains the default for papers, comparisons and dense diagrams; occasional top/bottom splits suit simpler models, teaching beats and recaps. A horizontal presenter band must preserve Shannon's complete head, face, mouth and chin, with the graphic and captions in separate lower lanes.
 - Use the approved circular presenter bubble when the source or mechanism graphic genuinely needs most of the frame: complete face visible, blue ring, quiet orbit cue, `SHANNON` pill, fixed upper-right lane.
 - Keep Shannon visible as the human anchor. A long graphic or paper section should retain the bubble or return to Shannon within roughly 15–20 seconds.
 - Full-screen proof can briefly remove Shannon when it needs undivided attention, normally for about four seconds or less.
