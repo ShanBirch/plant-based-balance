@@ -19,7 +19,7 @@ for (const retiredUi of [
 }
 
 assert.doesNotMatch(serviceWorker, /pbb-gym-arrival\.js/);
-assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v313'/);
+assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v314'/);
 assert.match(dashboard, /localStorage\.removeItem\('balance_gym_arrival_v1'\)/);
 assert.match(dashboard, /removeGeofence\(\{ identifier: 'balance-shannon-gym-v1' \}\)/);
 assert.match(dashboard, /notifications\.cancel\(\{ notifications: \[\{ id: 38021 \}\] \}\)/);

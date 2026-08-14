@@ -8,6 +8,10 @@ const shareUi = fs.readFileSync(
   path.join(root, 'js', 'dashboard', 'dashboard-script-10-points_widget_functions.js'),
   'utf8'
 );
+const mealUi = fs.readFileSync(
+  path.join(root, 'js', 'dashboard', 'dashboard-script-11-calorie_tracker_functions.js'),
+  'utf8'
+);
 const serviceWorker = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
 
 for (const style of ['classic', 'gold', 'midnight', 'fresh']) {
@@ -25,6 +29,9 @@ assert.match(shareUi, /share_overlay_style:\s*getBalanceShareOverlayStyle\('acti
 assert.match(shareUi, /share_overlay_style:\s*getBalanceShareOverlayStyle\('nutrition'\)/);
 assert.match(shareUi, /share_text_style:\s*getBalanceShareTextStyle\('workout'\)/);
 assert.match(shareUi, /share_text_style:\s*getBalanceShareTextStyle\('pb'\)/);
+assert.match(shareUi, /share_text_style:\s*getBalanceShareTextStyle\('activity'\)/);
+assert.match(shareUi, /share_text_style:\s*getBalanceShareTextStyle\('nutrition'\)/);
+assert.match(shareUi, /\['workout', 'pb', 'activity', 'nutrition'\]\.includes\(safeContext\)/);
 assert.match(shareUi, /data-balance-share-text-style=/);
 assert.match(shareUi, /function selectBalanceShareTextStyle\(/);
 assert.match(shareUi, /const contentBottom = target === 'feed' \? height - 72 : height - 132;/);
@@ -39,8 +46,13 @@ assert.match(shareUi, /shareWorkoutCardToInstagram[\s\S]*textStyle:\s*getBalance
 assert.match(shareUi, /sharePBCardToFeed[\s\S]*overlayStyle:\s*getBalanceShareOverlayStyle\('pb'\)/);
 assert.match(shareUi, /sharePBCardToFeed[\s\S]*textStyle:\s*getBalanceShareTextStyle\('pb'\)/);
 assert.match(shareUi, /shareActivityCardToFeed[\s\S]*overlayStyle:\s*getBalanceShareOverlayStyle\('activity'\)/);
+assert.match(shareUi, /shareActivityCardToFeed[\s\S]*textStyle:\s*getBalanceShareTextStyle\('activity'\)/);
 assert.match(shareUi, /shareNutritionToFeed[\s\S]*source:\s*'feed_nutrition_photo_overlay'/);
+assert.match(shareUi, /shareNutritionToFeed[\s\S]*textStyle:\s*getBalanceShareTextStyle\('nutrition'\)/);
 assert.match(shareUi, /shareNutritionToInstagram[\s\S]*photoDataUrl:\s*cachedNutritionShareBase64/);
+assert.match(shareUi, /shareNutritionToInstagram[\s\S]*textStyle:\s*getBalanceShareTextStyle\('nutrition'\)/);
+assert.match(mealUi, /share_text_style:\s*typeof window\.getBalanceShareTextStyle/);
+assert.match(mealUi, /textStyle:\s*cardPayload\.share_text_style/);
 
 for (const id of [
   'workout-share-style-controls',
@@ -54,11 +66,13 @@ for (const id of [
 }
 
 assert.ok(dashboard.includes("id: 'swipeable-photo-share-overlays-v1'"), 'returning users must see the new Feature Drop');
-assert.ok(dashboard.includes("title:'Swipe your share style'"), 'new users must see the guided share-style tour step');
+assert.ok(dashboard.includes("title:'Choose colour and text'"), 'new users must see the expanded guided share-style tour step');
 assert.ok(dashboard.includes("id: 'workout-pb-text-layouts-v1'"), 'returning users must see the text-layout Feature Drop');
 assert.ok(dashboard.includes("title:'Choose your text layout'"), 'new users must see the guided text-layout tour step');
-assert.ok(dashboard.includes('dashboard-script-10-points_widget_functions.js?v=45'), 'phones must load the new share composer');
-assert.ok(serviceWorker.includes("const CACHE_NAME = 'pbb-app-v313'"), 'the app shell cache must be refreshed');
-assert.ok(serviceWorker.includes('dashboard-script-10-points_widget_functions.js?v=45'), 'the new share composer must be precached');
+assert.ok(dashboard.includes("id: 'meal-activity-text-layouts-v1'"), 'returning users must see the meal and activity text-layout Feature Drop');
+assert.ok(dashboard.includes('dashboard-script-10-points_widget_functions.js?v=46'), 'phones must load the new share composer');
+assert.ok(dashboard.includes('dashboard-script-11-calorie_tracker_functions.js?v=33'), 'phones must load the new meal share payload');
+assert.ok(serviceWorker.includes("const CACHE_NAME = 'pbb-app-v314'"), 'the app shell cache must be refreshed');
+assert.ok(serviceWorker.includes('dashboard-script-10-points_widget_functions.js?v=46'), 'the new share composer must be precached');
 
 console.log('Swipeable photo share overlay studio contract passed');

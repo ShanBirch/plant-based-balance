@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v313'; // v313: add selectable workout and PB text layouts
+const CACHE_NAME = 'pbb-app-v314'; // v314: extend selectable text layouts to meals and activities
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -22,7 +22,7 @@ const ASSETS = [
 './js/dashboard/pbb-deferred-weeklygoals.js?v=31',
   './css/dashboard/pbb-onboarding-comeback.css?v=2',
   './js/dashboard/dashboard-script-7-video_logic.js?v=20260603-video-stream',
-  './js/dashboard/dashboard-script-10-points_widget_functions.js?v=45',
+    './js/dashboard/dashboard-script-10-points_widget_functions.js?v=46',
   './js/dashboard/pbb-deferred-formcheck.js?v=56',
   './js/dashboard/pbb-deferred-workoutbuilder.js?v=9',
   './js/dashboard/pbb-deferred-yourworkouts.js',

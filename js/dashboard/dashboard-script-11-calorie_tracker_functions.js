@@ -2161,6 +2161,12 @@ function buildMealFeedCardPayload(meal) {
 
     const cardPayload = {
         card_type: 'meal',
+        share_overlay_style: typeof window.getBalanceShareOverlayStyle === 'function'
+            ? window.getBalanceShareOverlayStyle('nutrition')
+            : 'classic',
+        share_text_style: typeof window.getBalanceShareTextStyle === 'function'
+            ? window.getBalanceShareTextStyle('nutrition')
+            : 'bold',
         meal_id: (meal && meal.id) || null,
         meal_type: mealType,
         foods: foodItemsText,
@@ -2377,7 +2383,9 @@ async function shareMealRecordToFeed(meal, btn) {
         const photoDataUrl = await window.pbbShareImageUrlToDataUrl(cardPayload.photo_url);
         const compositeDataUrl = await window.renderBalanceShareCardImage(cardPayload, {
             target: 'feed',
-            photoDataUrl
+            photoDataUrl,
+            overlayStyle: cardPayload.share_overlay_style,
+            textStyle: cardPayload.share_text_style
         });
         const compositeFile = mealShareFileFromDataUrl(compositeDataUrl, `balance-meal-overlay-${Date.now()}.jpg`);
         if (typeof uploadStoryMediaToBackblaze !== 'function') {
@@ -2582,6 +2590,8 @@ async function shareMealRecordToInstagram(meal, btn, target = 'story') {
         const safeTarget = target === 'feed' ? 'feed' : 'story';
         const opened = await window.shareBalanceCardToInstagram(cardPayload, safeTarget, {
             photoDataUrl,
+            overlayStyle: cardPayload.share_overlay_style,
+            textStyle: cardPayload.share_text_style,
             onSharePrepared: () => {
                 if (typeof queuePendingMealInstagramShare === 'function') {
                     queuePendingMealInstagramShare(mealForShare.id, safeTarget);

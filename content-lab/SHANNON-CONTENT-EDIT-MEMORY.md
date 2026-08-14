@@ -91,11 +91,12 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 - Keep all essential proof copy, metrics, coaching interpretation and CTA inside a conservative central content band, normally from about y=250 to y=1600 with at least 70 px side margins. Background media may extend behind the controls, but no important word, number, face or evidence detail may depend on those areas.
 - Review every new template with a realistic Instagram UI overlay before approval. Reject headline-at-the-top and CTA-at-the-bottom layouts even when the clean export looks technically inside the canvas.
 
-### Workout and PB share text must be selectable and phone-readable
+### Photo-share text must be selectable and phone-readable
 
 - Keep share colour and text layout as separate choices. A member can mix any available colour treatment with Bold, Scorecard or Simple text.
-- Default workout and PB photo shares to a large result-first hierarchy that survives Instagram and Balance Feed scaling.
-- Preserve the photo as the hero and keep the whole head clear. Shorten or remove lower-priority set detail instead of shrinking the workout name, PB result or key metrics into caption-sized text.
+- Give workouts, PBs, meals and activities such as walks the same text-layout choice wherever the photo-share preview appears.
+- Default every photo share to a large result-first hierarchy that survives Instagram and Balance Feed scaling.
+- Preserve the photo as the hero and keep the whole head clear. Shorten or remove lower-priority detail instead of shrinking the activity, meal, workout or PB result into caption-sized text.
 - The selected text layout must appear in the preview and be the exact layout sent to Balance Feed or Instagram.
 - Structured Coach Metric proof uses the Balance cream-and-gold theme: warm cream central field, deep green contrast text and gold as the only accent. Keep deep green only in the narrow top and bottom UI-safe bands. Do not introduce mint or return to a full dark canvas unless Shannon asks.
 - For structured, metric-led proof, default to Shannon's selected `Coach Metric` direction: one oversized verified metric/action, one small real receipt, a divider, a large concrete coaching interpretation and a small context line. Keep the dark green, cream, restrained gold and mint hierarchy. Real photo/video proof still keeps the media as hero.
@@ -198,6 +199,7 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 
 | Date | Shannon's direction | Scalable rule | Affected formats |
 | --- | --- | --- | --- |
+| 2026-08-14 | What about meals as well? And walks? | Treat selectable text layouts as a shared photo-overlay feature, not a workout-only feature. Apply Bold, Scorecard and Simple to meals/nutrition and activities alongside workouts and PBs. | Balance Feed and Instagram photo shares for meals, activities, workouts and PBs |
 | 2026-08-14 | The workout and PB share text is too small. Keep the colour option, but also let people change the text overlay. | Give workout and PB photo shares an independent text-layout selector with large phone-readable options. Preserve the selected colour and text layout through the preview and both share destinations. | Balance Feed workout/PB shares, Instagram workout/PB shares, share preview renderer |
 | 2026-08-13 | Make them match our colour theme, cream and gold. | Use a warm cream central proof field, deep green contrast text and gold as the only accent for structured Coach Metric Stories. Keep narrow deep-green UI bands only so Instagram's white controls remain readable. | Daily Proof Stories, structured proof templates, approval previews and Story automation |
 | 2026-08-13 | I like 3. | Lock Concept 3, `Coach Metric`, as the default visual direction for structured daily proof: oversized metric, supporting real receipt, concrete coaching read and small factual context, all inside the Instagram-safe band. Preserve real photo/video as hero when that evidence is stronger. | Daily Proof Stories, structured proof templates, approval previews and Story automation |

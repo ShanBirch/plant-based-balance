@@ -13726,7 +13726,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'meals', sel:'.meal-icon-btn[onclick*="openRecentMealsModal"],.camera-btn-widget[onclick*="openRecentMealsModal"],[title="Recent & saved meals"]', title:'Recent & saved meals', body:"Use Recent & saved meals to re-log food you have already tracked. Tap the clock, pick the meal, and it drops back into today." },
     { tab:'meals', sel:'#meals-log-list,.meal-log-card', title:'Share meals to Feed', body:"Share any logged meal to Feed. The first meal share each day earns +15 XP, and later shares still post without extra XP.", quick: true },
     { tab:'meals', sel:'#meal-feed-share-prompt', fallbackSel:'#meals-log-list,.meal-log-card', title:'Share meals to both', fallbackTitle:'Share meals to both', body:"After tracking food, share it to Balance Feed and Instagram Story. The share tray stays open after the first one so you can tap the other.", fallbackBody:"Track a meal, then use the share tray to post it to Balance Feed and Instagram Story. Sharing to one keeps the other option ready.", quick: true },
-    { tab:'meals', sel:'#nutrition-share-photo-btn', title:'Swipe your share style', body:'Add a photo, preview your stats over it, then swipe through Clean, Gold, Dark, and Fresh styles. The style you choose is the one shared to Balance Feed or Instagram. This also works for activities, workouts, and PBs.', quick: true },
+    { tab:'meals', sel:'#nutrition-share-style-controls', fallbackSel:'#nutrition-share-photo-btn,#share-nutrition-btn', title:'Choose colour and text', fallbackTitle:'Choose colour and text', body:'After adding a meal photo, mix Clean, Gold, Dark, or Fresh with a Bold, Scorecard, or Simple text layout. The same choices appear for walks, workouts, and PBs.', fallbackBody:'Add a photo to a meal, walk, workout, or PB share. In the preview, choose the colour and text layout before posting to Balance Feed or Instagram.', quick: true, condition:function(){ return !!document.querySelector('#nutrition-share-style-controls,#nutrition-share-photo-btn,#share-nutrition-btn'); } },
     { tab:'meals', sel:'#hydration-section,#hydration-bar', title:'Hydration', body:"Your personalised daily water goal, based on your weight and activity." },
     { tab:'meals', sel:'#weekly-meal-evolution-btn', fallbackSel:'#browse-plans-pill', title:'A plan that learns your meals', fallbackTitle:'Open your meal plan', body:"At the end of each week, Balance keeps the meals you actually eat, adds two small variations, and suggests simple ways to cover nutrition gaps.", fallbackBody:"Open your meal plan to build next week from the meals you actually ate.", action:function(){ try { var pill=document.getElementById('browse-plans-pill'); if(typeof switchWeek==='function') switchWeek('meal-plan-store', pill); } catch(e){} } },
     { tab:'dashboard', sel:'.profile-icon[onclick*="profile"]', title:'Profile settings', body:"Open Profile when you need settings, dietary requirements, password changes, character customisation, or to replay this tour later." },
@@ -15028,6 +15028,17 @@ window.endFeatureTour = function(skipped){
     body: 'Workout and PB photo shares now have Bold, Scorecard, and Simple text layouts. Choose one under the colour controls, then send that exact preview to Balance Feed or Instagram.',
     fallbackBody: 'Finish a workout and add a photo. In the preview, mix any colour with a Bold, Scorecard, or Simple text layout before sharing.',
     condition: function(){ return !!document.getElementById('workout-share-style-controls') || !!document.getElementById('today-workout-card'); }
+  });
+  allFeatures.push({
+    id: 'meal-activity-text-layouts-v1',
+    tab: 'meals',
+    sel: '#nutrition-share-style-controls',
+    fallbackSel: '#nutrition-share-photo-btn,#share-nutrition-btn',
+    title: 'Text layouts for meals and walks',
+    fallbackTitle: 'Text layouts for meals and walks',
+    body: 'Meal and activity photo shares now have Bold, Scorecard, and Simple text layouts too. Mix one with any colour, then send that exact preview to Balance Feed or Instagram.',
+    fallbackBody: 'Add a photo when sharing a meal or activity. In the preview, mix any colour with a Bold, Scorecard, or Simple text layout before posting.',
+    condition: function(){ return !!document.querySelector('#nutrition-share-style-controls,#nutrition-share-photo-btn,#share-nutrition-btn'); }
   });
   allFeatures.push({
     id: 'activity-instagram-story-share-v1',
@@ -18095,13 +18106,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=45';
+        s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=46';
             s.onload = function() { if(window._crumb)window._crumb('script10_deferred_loaded'); };
             document.head.appendChild(s);
         }, 1500);
     }, { once: true });
 } else {
-document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=45"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=46"><\/script>');
 }
 </script>
 
@@ -18170,7 +18181,7 @@ document.write('<script src="js/dashboard/dashboard-script-10-points_widget_func
             }
 
             var s = document.createElement('script');
-        s.src = 'js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=32';
+        s.src = 'js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=33';
             s.dataset.pbbCalorieTracker = '1';
             s.onload = function() {
                 if (window._crumb) window._crumb('script11_loaded');
@@ -18230,7 +18241,7 @@ document.write('<script src="js/dashboard/dashboard-script-10-points_widget_func
             }, window._pbbIsMealShortcutLaunch ? 250 : 2500);
         }, { once: true });
     } else {
-      document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=32" data-pbb-calorie-tracker="1"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=33" data-pbb-calorie-tracker="1"><\/script>');
         document.write('<script src="js/dashboard/dashboard-script-meal-builder.js?v=3" data-pbb-meal-builder="1"><\/script>');
     }
 })();

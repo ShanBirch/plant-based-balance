@@ -3486,7 +3486,9 @@ const pbbShareOverlaySelections = {
 };
 const pbbShareTextSelections = {
     workout: 'bold',
-    pb: 'bold'
+    pb: 'bold',
+    activity: 'bold',
+    nutrition: 'bold'
 };
 const pbbShareStylePreviewState = {};
 
@@ -3507,7 +3509,7 @@ function pbbShareNormalizeOverlayStyle(style) {
 
 function pbbShareSupportsTextStyle(context) {
     const safeContext = pbbShareNormalizeContext(context);
-    return safeContext === 'workout' || safeContext === 'pb';
+    return ['workout', 'pb', 'activity', 'nutrition'].includes(safeContext);
 }
 
 function getBalanceShareTextStyle(context) {
@@ -4244,233 +4246,323 @@ function pbbShareDrawActivityRoute(ctx, cardPayload, x, y, w, h) {
 }
 
 async function pbbShareDrawFullBleedActivityCard(ctx, cardPayload, width, height, target) {
-    const isFeed = target === 'feed';
-    const top = isFeed ? 130 : 270;
-    const bottom = height - (isFeed ? 165 : 330);
-    const x = 70;
+    const textStyle = pbbShareNormalizeTextStyle(cardPayload.share_text_style);
+    const contentBottom = target === 'feed' ? height - 72 : height - 132;
+    const brandTop = target === 'feed' ? 48 : 228;
+    const x = 64;
     const w = width - (x * 2);
     const label = String(cardPayload.activity_label || 'Activity');
     const metrics = [
-        [String(cardPayload.duration || '-'), 'DURATION'],
-        [String(cardPayload.calories || '-'), 'KCAL'],
-        [String(cardPayload.intensity || 'moderate').toUpperCase(), 'INTENSITY']
+        ['DURATION', String(cardPayload.duration || '-')],
+        ['KCAL', String(cardPayload.calories || '-')],
+        ['INTENSITY', String(cardPayload.intensity || 'moderate').toUpperCase()]
     ];
 
-    const gradient = ctx.createLinearGradient(0, 0, 0, height);
-    gradient.addColorStop(0, 'rgba(3, 7, 18, 0.18)');
-    gradient.addColorStop(0.45, 'rgba(3, 7, 18, 0.08)');
-    gradient.addColorStop(1, 'rgba(3, 7, 18, 0.84)');
+    const fadeStart = textStyle === 'simple' ? 0.60 : 0.45;
+    const gradient = ctx.createLinearGradient(0, height * fadeStart, 0, height);
+    gradient.addColorStop(0, 'rgba(3, 7, 18, 0)');
+    gradient.addColorStop(0.56, textStyle === 'simple' ? 'rgba(3, 7, 18, 0.12)' : 'rgba(3, 7, 18, 0.24)');
+    gradient.addColorStop(1, textStyle === 'simple' ? 'rgba(3, 7, 18, 0.64)' : 'rgba(3, 7, 18, 0.82)');
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, width, height);
     pbbShareDrawCelebrationAccents(ctx, width, height, { target, intensity: 'standard' });
 
+    await pbbShareDrawBalanceBrandMark(ctx, x, brandTop, 72);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 32px Arial, sans-serif';
+    ctx.fillText('BALANCE', x + 92, brandTop + 38);
+    ctx.fillStyle = 'rgba(255,255,255,0.78)';
+    ctx.font = '750 20px Arial, sans-serif';
+    ctx.fillText('MOVE. TRACK. FEEL GOOD.', x + 92, brandTop + 68);
+
+    if (cardPayload.route_polyline) {
+        const routeY = brandTop + 128;
+        const routeH = target === 'feed' ? 280 : 360;
+        pbbShareDrawActivityRoute(ctx, cardPayload, x, routeY, w, routeH);
+    }
+
     ctx.save();
     ctx.shadowColor = 'rgba(0,0,0,0.72)';
-    ctx.shadowBlur = 16;
-    ctx.shadowOffsetY = 3;
-    ctx.fillStyle = 'rgba(255,255,255,0.92)';
-    ctx.font = '900 25px Arial, sans-serif';
-    ctx.fillText('BALANCE ACTIVITY', x, top);
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '900 70px Georgia, serif';
-    const titleEnd = pbbShareWrapText(ctx, label, x, top + 72, w, 76, 2);
-    ctx.restore();
+    ctx.shadowBlur = 20;
+    ctx.shadowOffsetY = 5;
 
-    const cardY = Math.max(titleEnd + 28, bottom - 205);
-    const routeH = target === 'feed' ? 270 : 340;
-    const routeY = Math.max(titleEnd + 30, cardY - routeH - 32);
-    if (cardPayload.route_polyline) {
-        pbbShareDrawActivityRoute(ctx, cardPayload, x, routeY, w, Math.max(170, cardY - routeY - 30));
-    }
-    pbbShareFillRoundRect(ctx, x, cardY, w, 156, 28, 'rgba(8, 47, 73, 0.72)');
-    ctx.save();
-    pbbShareRoundRect(ctx, x, cardY, w, 156, 28);
-    ctx.strokeStyle = 'rgba(255,255,255,0.28)';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    ctx.restore();
+    if (textStyle === 'scorecard') {
+        const panelH = target === 'feed' ? 500 : 560;
+        const panelY = contentBottom - panelH + 24;
+        pbbShareFillRoundRect(ctx, 40, panelY, width - 80, panelH, 38, 'rgba(2, 6, 23, 0.76)');
+        ctx.save();
+        ctx.shadowColor = 'transparent';
+        pbbShareRoundRect(ctx, 40, panelY, width - 80, panelH, 38);
+        ctx.strokeStyle = 'rgba(245,196,92,0.86)';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        ctx.restore();
 
-    const cellW = w / metrics.length;
-    metrics.forEach((metric, index) => {
-        const metricX = x + (cellW * index) + 25;
-        ctx.fillStyle = 'rgba(255,255,255,0.72)';
-        ctx.font = '800 19px Arial, sans-serif';
-        ctx.fillText(metric[1], metricX, cardY + 44);
+        let y = panelY + 62;
+        ctx.fillStyle = '#f5c45c';
+        ctx.font = '900 27px Arial, sans-serif';
+        ctx.fillText('ACTIVITY COMPLETE', x, y);
+        y += 74;
         ctx.fillStyle = '#ffffff';
-        ctx.font = '900 33px Arial, sans-serif';
-        pbbShareWrapText(ctx, metric[0], metricX, cardY + 95, cellW - 38, 36, 1);
-    });
-
-    ctx.fillStyle = 'rgba(255,255,255,0.88)';
-    ctx.font = '800 20px Arial, sans-serif';
-    ctx.fillText('Tracked in Balance', x, bottom + 30);
+        pbbShareSetFittedFont(ctx, label.toUpperCase(), w, 84, 56);
+        ctx.fillText(label.toUpperCase(), x, y);
+        y += 52;
+        ctx.save();
+        ctx.shadowColor = 'transparent';
+        ctx.fillStyle = 'rgba(245,196,92,0.84)';
+        ctx.fillRect(x, y, w, 3);
+        ctx.restore();
+        y += 92;
+        pbbShareDrawLargeMetricColumns(ctx, metrics, x, y, w, { valueSize: 48, labelSize: 21 });
+        if (cardPayload.distance_km) {
+            ctx.fillStyle = '#f5c45c';
+            ctx.font = '900 29px Arial, sans-serif';
+            ctx.fillText(`${Number(cardPayload.distance_km).toFixed(1)} KM ROUTE`, x, y + 110);
+        }
+    } else if (textStyle === 'simple') {
+        let y = contentBottom - 300;
+        ctx.fillStyle = '#f5c45c';
+        ctx.font = '900 27px Arial, sans-serif';
+        ctx.fillText('ACTIVITY COMPLETE', x, y);
+        y += 72;
+        ctx.fillStyle = '#ffffff';
+        pbbShareSetFittedFont(ctx, label.toUpperCase(), w, 92, 58);
+        ctx.fillText(label.toUpperCase(), x, y);
+        y += 88;
+        const simpleMetrics = [metrics[0], cardPayload.distance_km
+            ? ['DISTANCE', `${Number(cardPayload.distance_km).toFixed(1)} KM`]
+            : metrics[1]];
+        pbbShareDrawLargeMetricColumns(ctx, simpleMetrics, x, y, w, { valueSize: 46, labelSize: 20 });
+    } else {
+        let y = contentBottom - 500;
+        ctx.fillStyle = 'rgba(255,255,255,0.96)';
+        ctx.font = '900 28px Arial, sans-serif';
+        ctx.fillText('ACTIVITY COMPLETE', x, y);
+        y += 58;
+        ctx.fillStyle = '#ffffff';
+        pbbShareSetFittedFont(ctx, label.toUpperCase(), w, 118, 76);
+        y = pbbShareWrapText(ctx, label.toUpperCase(), x, y, w, 116, 2) + 28;
+        ctx.save();
+        ctx.shadowColor = 'transparent';
+        ctx.fillStyle = '#f5c45c';
+        ctx.fillRect(x, y, w, 4);
+        ctx.restore();
+        y += 84;
+        pbbShareDrawLargeMetricColumns(ctx, metrics, x, y, w, { valueSize: 52, labelSize: 22 });
+        if (cardPayload.distance_km) {
+            ctx.fillStyle = '#f5c45c';
+            ctx.font = '900 28px Arial, sans-serif';
+            ctx.fillText(`${Number(cardPayload.distance_km).toFixed(1)} KM ROUTE`, x, y + 116);
+        }
+    }
+    ctx.restore();
 }
 
 async function pbbShareDrawFullBleedMealCard(ctx, cardPayload, width, height, target) {
-    const isFeed = target === 'feed';
-    // This deliberately mirrors the Balance Feed meal card: photo first,
-    // white type, then a light food panel and three compact macro panels.
-    // The only difference is extra breathing room around Instagram chrome.
-    const instagramSafeTop = isFeed ? 118 : 250;
-    const instagramSafeBottom = isFeed ? 176 : 360;
-    const contentX = 68;
+    const textStyle = pbbShareNormalizeTextStyle(cardPayload.share_text_style);
+    const contentX = 64;
     const contentW = width - (contentX * 2);
-    const contentBottom = height - instagramSafeBottom;
-
-    const lowerGradient = ctx.createLinearGradient(0, height * 0.46, 0, height);
-    lowerGradient.addColorStop(0, 'rgba(4, 12, 9, 0)');
-    lowerGradient.addColorStop(0.58, 'rgba(4, 12, 9, 0.28)');
-    lowerGradient.addColorStop(1, 'rgba(4, 12, 9, 0.78)');
-    ctx.fillStyle = lowerGradient;
-    ctx.fillRect(0, 0, width, height);
-
-    const upperGradient = ctx.createLinearGradient(0, 0, 0, instagramSafeTop + 180);
-    upperGradient.addColorStop(0, 'rgba(4, 12, 9, 0.56)');
-    upperGradient.addColorStop(1, 'rgba(4, 12, 9, 0)');
-    ctx.fillStyle = upperGradient;
-    ctx.fillRect(0, 0, width, instagramSafeTop + 180);
-
-    ctx.save();
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.76)';
-    ctx.shadowBlur = 14;
-    ctx.shadowOffsetY = 3;
-
-    let y = instagramSafeTop + 40;
-    ctx.fillStyle = 'rgba(255,255,255,0.92)';
-    ctx.font = '900 23px Arial, sans-serif';
-    ctx.letterSpacing = '4px';
-    ctx.fillText('MEAL SHARED', contentX, y);
-    ctx.letterSpacing = '0px';
-    y += 64;
-
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '900 62px Georgia, serif';
-    y = pbbShareWrapText(ctx, cardPayload.meal_type || 'Meal', contentX, y, contentW, 68, 2) + 24;
-
-    ctx.save();
-    ctx.shadowColor = 'transparent';
-    pbbShareFillRoundRect(ctx, contentX, y, contentW, 142, 28, 'rgba(255,255,255,0.14)');
-    pbbShareRoundRect(ctx, contentX, y, contentW, 142, 28);
-    ctx.strokeStyle = 'rgba(255,255,255,0.18)';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    ctx.restore();
-
-    ctx.fillStyle = 'rgba(255,255,255,0.84)';
-    ctx.font = '800 20px Arial, sans-serif';
-    ctx.fillText('FOOD', contentX + 28, y + 42);
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '800 31px Arial, sans-serif';
-    pbbShareWrapText(ctx, cardPayload.foods || 'Tracked in Balance', contentX + 28, y + 88, contentW - 56, 36, 2);
-    y += 192;
-
+    const contentBottom = target === 'feed' ? height - 72 : height - 132;
+    const brandTop = target === 'feed' ? 48 : 228;
     const calories = Math.max(0, Math.round(Number(cardPayload.calories || 0)));
     const protein = Math.max(0, Math.round(Number(cardPayload.protein || 0)));
     const carbs = Math.max(0, Math.round(Number(cardPayload.carbs || 0)));
     const fat = Math.max(0, Math.round(Number(cardPayload.fat || 0)));
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '900 74px Arial, sans-serif';
-    ctx.fillText(calories > 0 ? String(calories) : '-', contentX, y + 58);
-    ctx.font = '800 28px Arial, sans-serif';
-    ctx.fillStyle = 'rgba(255,255,255,0.88)';
-    ctx.fillText('kcal', contentX + 176, y + 56);
+    const mealType = String(cardPayload.meal_type || 'Meal');
 
-    const macroY = Math.max(y + 116, contentBottom - 202);
-    const macroGap = 18;
-    const macroW = (contentW - (macroGap * 2)) / 3;
-    [[`${protein}g`, 'Protein'], [`${carbs}g`, 'Carbs'], [`${fat}g`, 'Fat']].forEach((metric, index) => {
-        const x = contentX + (index * (macroW + macroGap));
+    const lowerGradient = ctx.createLinearGradient(0, height * (textStyle === 'simple' ? 0.60 : 0.46), 0, height);
+    lowerGradient.addColorStop(0, 'rgba(4, 12, 9, 0)');
+    lowerGradient.addColorStop(0.58, textStyle === 'simple' ? 'rgba(4, 12, 9, 0.12)' : 'rgba(4, 12, 9, 0.28)');
+    lowerGradient.addColorStop(1, textStyle === 'simple' ? 'rgba(4, 12, 9, 0.64)' : 'rgba(4, 12, 9, 0.80)');
+    ctx.fillStyle = lowerGradient;
+    ctx.fillRect(0, 0, width, height);
+
+    await pbbShareDrawBalanceBrandMark(ctx, contentX, brandTop, 72);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 32px Arial, sans-serif';
+    ctx.fillText('BALANCE', contentX + 92, brandTop + 38);
+    ctx.fillStyle = 'rgba(255,255,255,0.78)';
+    ctx.font = '750 20px Arial, sans-serif';
+    ctx.fillText('PLANT-BASED. LOGGED.', contentX + 92, brandTop + 68);
+
+    ctx.save();
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.76)';
+    ctx.shadowBlur = 20;
+    ctx.shadowOffsetY = 5;
+
+    if (textStyle === 'scorecard') {
+        const panelH = target === 'feed' ? 560 : 620;
+        const panelY = contentBottom - panelH + 24;
+        pbbShareFillRoundRect(ctx, 40, panelY, width - 80, panelH, 38, 'rgba(2, 6, 23, 0.76)');
         ctx.save();
         ctx.shadowColor = 'transparent';
-        pbbShareFillRoundRect(ctx, x, macroY, macroW, 122, 24, 'rgba(15,23,42,0.54)');
+        pbbShareRoundRect(ctx, 40, panelY, width - 80, panelH, 38);
+        ctx.strokeStyle = 'rgba(245,196,92,0.86)';
+        ctx.lineWidth = 3;
+        ctx.stroke();
         ctx.restore();
+
+        let y = panelY + 62;
+        ctx.fillStyle = '#f5c45c';
+        ctx.font = '900 27px Arial, sans-serif';
+        ctx.fillText('MEAL LOGGED', contentX, y);
+        y += 72;
         ctx.fillStyle = '#ffffff';
-        ctx.font = '900 38px Arial, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(metric[0], x + (macroW / 2), macroY + 50);
+        pbbShareSetFittedFont(ctx, mealType.toUpperCase(), contentW, 84, 56);
+        ctx.fillText(mealType.toUpperCase(), contentX, y);
+        y += 62;
         ctx.fillStyle = 'rgba(255,255,255,0.84)';
-        ctx.font = '800 20px Arial, sans-serif';
-        ctx.fillText(metric[1], x + (macroW / 2), macroY + 88);
-    });
-    ctx.textAlign = 'left';
-    ctx.fillStyle = 'rgba(255,255,255,0.82)';
-    ctx.font = '800 20px Arial, sans-serif';
-    await pbbShareDrawBalanceBrandMark(ctx, contentX, contentBottom - 62, 32);
-    ctx.fillText('BALANCE', contentX + 42, contentBottom - 36);
+        ctx.font = '800 27px Arial, sans-serif';
+        y = pbbShareWrapText(ctx, cardPayload.foods || 'Tracked in Balance', contentX, y, contentW, 34, 2) + 42;
+        pbbShareDrawLargeMetricColumns(ctx, [
+            ['KCAL', calories > 0 ? String(calories) : '-'],
+            ['PROTEIN', `${protein}g`],
+            ['CARBS', `${carbs}g`],
+            ['FAT', `${fat}g`]
+        ], contentX, y, contentW, { valueSize: 40, labelSize: 18 });
+    } else if (textStyle === 'simple') {
+        let y = contentBottom - 300;
+        ctx.fillStyle = '#f5c45c';
+        ctx.font = '900 27px Arial, sans-serif';
+        ctx.fillText('MEAL LOGGED', contentX, y);
+        y += 72;
+        ctx.fillStyle = '#ffffff';
+        pbbShareSetFittedFont(ctx, mealType.toUpperCase(), contentW, 94, 60);
+        ctx.fillText(mealType.toUpperCase(), contentX, y);
+        y += 90;
+        pbbShareDrawLargeMetricColumns(ctx, [
+            ['KCAL', calories > 0 ? String(calories) : '-'],
+            ['PROTEIN', `${protein}g`]
+        ], contentX, y, contentW, { valueSize: 48, labelSize: 20 });
+    } else {
+        let y = contentBottom - 500;
+        ctx.fillStyle = 'rgba(255,255,255,0.96)';
+        ctx.font = '900 28px Arial, sans-serif';
+        ctx.fillText('MEAL LOGGED', contentX, y);
+        y += 58;
+        ctx.fillStyle = '#ffffff';
+        pbbShareSetFittedFont(ctx, mealType.toUpperCase(), contentW, 112, 72);
+        ctx.fillText(mealType.toUpperCase(), contentX, y);
+        y += 70;
+        ctx.fillStyle = 'rgba(255,255,255,0.88)';
+        ctx.font = '800 28px Arial, sans-serif';
+        y = pbbShareWrapText(ctx, cardPayload.foods || 'Tracked in Balance', contentX, y, contentW, 36, 2) + 56;
+        pbbShareDrawLargeMetricColumns(ctx, [
+            ['KCAL', calories > 0 ? String(calories) : '-'],
+            ['PROTEIN', `${protein}g`],
+            ['CARBS', `${carbs}g`],
+            ['FAT', `${fat}g`]
+        ], contentX, y, contentW, { valueSize: 42, labelSize: 18 });
+    }
     ctx.restore();
 }
 
 async function pbbShareDrawFullBleedNutritionCard(ctx, cardPayload, width, height, target) {
-    const isFeed = target === 'feed';
-    const safeTop = isFeed ? 78 : 240;
-    const safeBottom = isFeed ? 150 : 330;
+    const textStyle = pbbShareNormalizeTextStyle(cardPayload.share_text_style);
+    const brandTop = target === 'feed' ? 48 : 228;
+    const contentBottom = target === 'feed' ? height - 72 : height - 132;
     const x = 64;
     const w = width - 128;
-    const bottom = height - safeBottom;
+    const score = String(Math.round(Number(cardPayload.score || 0)));
+    const metrics = [
+        ['CALORIES', pbbShareFormatNumber(cardPayload.calories)],
+        ['PROTEIN', pbbShareFormatNumber(cardPayload.protein, 'g')],
+        ['CARBS', pbbShareFormatNumber(cardPayload.carbs, 'g')],
+        ['FAT', pbbShareFormatNumber(cardPayload.fat, 'g')]
+    ];
 
-    const upperGradient = ctx.createLinearGradient(0, 0, 0, safeTop + 220);
-    upperGradient.addColorStop(0, 'rgba(3,18,14,0.62)');
-    upperGradient.addColorStop(1, 'rgba(3,18,14,0)');
-    ctx.fillStyle = upperGradient;
-    ctx.fillRect(0, 0, width, safeTop + 220);
-    const lowerGradient = ctx.createLinearGradient(0, height * 0.42, 0, height);
+    const lowerGradient = ctx.createLinearGradient(0, height * (textStyle === 'simple' ? 0.60 : 0.44), 0, height);
     lowerGradient.addColorStop(0, 'rgba(3,18,14,0)');
-    lowerGradient.addColorStop(0.66, 'rgba(3,18,14,0.42)');
-    lowerGradient.addColorStop(1, 'rgba(3,18,14,0.82)');
+    lowerGradient.addColorStop(0.60, textStyle === 'simple' ? 'rgba(3,18,14,0.12)' : 'rgba(3,18,14,0.32)');
+    lowerGradient.addColorStop(1, textStyle === 'simple' ? 'rgba(3,18,14,0.64)' : 'rgba(3,18,14,0.82)');
     ctx.fillStyle = lowerGradient;
-    ctx.fillRect(0, height * 0.42, width, height * 0.58);
+    ctx.fillRect(0, 0, width, height);
+
+    await pbbShareDrawBalanceBrandMark(ctx, x, brandTop, 72);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 32px Arial, sans-serif';
+    ctx.fillText('BALANCE', x + 92, brandTop + 38);
+    ctx.fillStyle = 'rgba(255,255,255,0.78)';
+    ctx.font = '750 20px Arial, sans-serif';
+    ctx.fillText('PLANT-BASED. LOGGED.', x + 92, brandTop + 68);
 
     ctx.save();
     ctx.shadowColor = 'rgba(0,0,0,0.72)';
-    ctx.shadowBlur = 16;
-    ctx.shadowOffsetY = 3;
-    ctx.fillStyle = 'rgba(255,255,255,0.94)';
-    ctx.font = '900 24px Arial, sans-serif';
-    ctx.fillText('BALANCE NUTRITION', x, safeTop + 30);
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '900 104px Georgia, serif';
-    ctx.fillText(String(Math.round(Number(cardPayload.score || 0))), x, safeTop + 154);
-    ctx.font = '900 28px Arial, sans-serif';
-    ctx.fillStyle = 'rgba(255,255,255,0.88)';
-    ctx.fillText('DAILY SCORE', x + 176, safeTop + 136);
-    ctx.restore();
+    ctx.shadowBlur = 20;
+    ctx.shadowOffsetY = 5;
 
-    const panelH = 300;
-    const panelY = bottom - panelH;
-    pbbShareFillRoundRect(ctx, x, panelY, w, panelH, 32, 'rgba(2,6,23,0.62)');
-    ctx.save();
-    pbbShareRoundRect(ctx, x, panelY, w, panelH, 32);
-    ctx.strokeStyle = 'rgba(255,255,255,0.22)';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    ctx.restore();
+    if (textStyle === 'scorecard') {
+        const panelH = target === 'feed' ? 540 : 600;
+        const panelY = contentBottom - panelH + 24;
+        pbbShareFillRoundRect(ctx, 40, panelY, width - 80, panelH, 38, 'rgba(2,6,23,0.76)');
+        ctx.save();
+        ctx.shadowColor = 'transparent';
+        pbbShareRoundRect(ctx, 40, panelY, width - 80, panelH, 38);
+        ctx.strokeStyle = 'rgba(245,196,92,0.86)';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        ctx.restore();
 
-    const metrics = [
-        [pbbShareFormatNumber(cardPayload.calories), 'Calories'],
-        [pbbShareFormatNumber(cardPayload.protein, 'g'), 'Protein'],
-        [pbbShareFormatNumber(cardPayload.carbs, 'g'), 'Carbs'],
-        [pbbShareFormatNumber(cardPayload.fat, 'g'), 'Fat']
-    ];
-    const cellW = w / 2;
-    const cellH = 112;
-    metrics.forEach((metric, index) => {
-        const col = index % 2;
-        const row = Math.floor(index / 2);
-        const metricX = x + (col * cellW) + 28;
-        const metricY = panelY + 34 + (row * cellH);
+        let y = panelY + 62;
+        ctx.fillStyle = '#f5c45c';
+        ctx.font = '900 27px Arial, sans-serif';
+        ctx.fillText('DAILY NUTRITION', x, y);
+        y += 102;
         ctx.fillStyle = '#ffffff';
-        ctx.font = '900 38px Arial, sans-serif';
-        ctx.fillText(metric[0], metricX, metricY + 34);
-        ctx.fillStyle = 'rgba(255,255,255,0.72)';
-        ctx.font = '800 20px Arial, sans-serif';
-        ctx.fillText(metric[1], metricX, metricY + 66);
-    });
-    ctx.fillStyle = 'rgba(255,255,255,0.86)';
-    ctx.font = '800 20px Arial, sans-serif';
-    ctx.fillText(`${cardPayload.meal_count || 0} meals logged`, x + 28, panelY + panelH - 26);
-    ctx.textAlign = 'right';
-    ctx.fillText(`${cardPayload.streak || 0} day streak`, x + w - 28, panelY + panelH - 26);
-    ctx.textAlign = 'left';
+        pbbShareSetFittedFont(ctx, score, 250, 112, 82);
+        ctx.fillText(score, x, y);
+        ctx.font = '900 27px Arial, sans-serif';
+        ctx.fillStyle = 'rgba(255,255,255,0.86)';
+        ctx.fillText('DAILY SCORE', x + 190, y - 12);
+        y += 96;
+        pbbShareDrawLargeMetricColumns(ctx, metrics, x, y, w, { valueSize: 40, labelSize: 18 });
+        ctx.fillStyle = 'rgba(255,255,255,0.82)';
+        ctx.font = '800 22px Arial, sans-serif';
+        ctx.fillText(`${cardPayload.meal_count || 0} meals logged`, x, panelY + panelH - 42);
+        ctx.textAlign = 'right';
+        ctx.fillText(`${cardPayload.streak || 0} day streak`, x + w, panelY + panelH - 42);
+        ctx.textAlign = 'left';
+    } else if (textStyle === 'simple') {
+        let y = contentBottom - 300;
+        ctx.fillStyle = '#f5c45c';
+        ctx.font = '900 27px Arial, sans-serif';
+        ctx.fillText('DAILY NUTRITION', x, y);
+        y += 112;
+        ctx.fillStyle = '#ffffff';
+        pbbShareSetFittedFont(ctx, score, 260, 132, 94);
+        ctx.fillText(score, x, y);
+        ctx.fillStyle = 'rgba(255,255,255,0.88)';
+        ctx.font = '900 28px Arial, sans-serif';
+        ctx.fillText('SCORE', x + 210, y - 14);
+        pbbShareDrawLargeMetricColumns(ctx, metrics.slice(0, 2), x + 430, y, w - 430, { valueSize: 42, labelSize: 18 });
+    } else {
+        let y = contentBottom - 490;
+        ctx.fillStyle = 'rgba(255,255,255,0.96)';
+        ctx.font = '900 28px Arial, sans-serif';
+        ctx.fillText('DAILY NUTRITION', x, y);
+        y += 126;
+        ctx.fillStyle = '#ffffff';
+        pbbShareSetFittedFont(ctx, score, 300, 156, 108);
+        ctx.fillText(score, x, y);
+        ctx.fillStyle = 'rgba(255,255,255,0.88)';
+        ctx.font = '900 29px Arial, sans-serif';
+        ctx.fillText('DAILY SCORE', x + 238, y - 18);
+        y += 86;
+        ctx.save();
+        ctx.shadowColor = 'transparent';
+        ctx.fillStyle = '#f5c45c';
+        ctx.fillRect(x, y, w, 4);
+        ctx.restore();
+        y += 84;
+        pbbShareDrawLargeMetricColumns(ctx, metrics, x, y, w, { valueSize: 42, labelSize: 18 });
+        ctx.fillStyle = 'rgba(255,255,255,0.82)';
+        ctx.font = '800 22px Arial, sans-serif';
+        ctx.fillText(`${cardPayload.meal_count || 0} meals logged`, x, y + 112);
+        ctx.textAlign = 'right';
+        ctx.fillText(`${cardPayload.streak || 0} day streak`, x + w, y + 112);
+        ctx.textAlign = 'left';
+    }
+    ctx.restore();
 }
 
 async function pbbShareDrawProgressPhotoCard(ctx, cardPayload, panelX, panelY, panelW, panelH, photoDataUrls) {
@@ -4609,17 +4701,35 @@ async function renderBalanceShareCardImage(cardPayload, options = {}) {
     }
 
     if (cardType === 'meal' && primaryPhotoDataUrl) {
-        await pbbShareDrawFullBleedMealCard(ctx, cardPayload, width, height, target);
+        await pbbShareDrawFullBleedMealCard(
+            ctx,
+            Object.assign({}, cardPayload, { share_text_style: textStyle }),
+            width,
+            height,
+            target
+        );
         return canvas.toDataURL('image/jpeg', 0.92);
     }
 
     if (cardType === 'nutrition' && primaryPhotoDataUrl) {
-        await pbbShareDrawFullBleedNutritionCard(ctx, cardPayload, width, height, target);
+        await pbbShareDrawFullBleedNutritionCard(
+            ctx,
+            Object.assign({}, cardPayload, { share_text_style: textStyle }),
+            width,
+            height,
+            target
+        );
         return canvas.toDataURL('image/jpeg', 0.92);
     }
 
     if (cardType === 'activity') {
-        await pbbShareDrawFullBleedActivityCard(ctx, cardPayload, width, height, target);
+        await pbbShareDrawFullBleedActivityCard(
+            ctx,
+            Object.assign({}, cardPayload, { share_text_style: textStyle }),
+            width,
+            height,
+            target
+        );
         return canvas.toDataURL('image/jpeg', 0.92);
     }
 
@@ -5258,11 +5368,12 @@ window.pbbShareImageUrlToDataUrl = pbbShareImageUrlToDataUrl;
 async function awardBalanceSocialShareXP(shareKind, shareDestination, referenceId) {
     if (!window.currentUser?.id || !window.db?.points?.awardPoints) return null;
     const metadata = { shareKind, shareDestination };
-    if (shareKind === 'workout' || shareKind === 'activity' || shareKind === 'pb') {
+    const shareStyleContext = shareKind === 'meal' ? 'nutrition' : shareKind;
+    if (shareKind === 'workout' || shareKind === 'activity' || shareKind === 'pb' || shareKind === 'meal') {
         metadata.creativeVariant = PBB_SHARE_CREATIVE_VARIANT;
-        metadata.overlayStyle = getBalanceShareOverlayStyle(shareKind);
-        if (pbbShareSupportsTextStyle(shareKind)) {
-            metadata.textStyle = getBalanceShareTextStyle(shareKind);
+        metadata.overlayStyle = getBalanceShareOverlayStyle(shareStyleContext);
+        if (pbbShareSupportsTextStyle(shareStyleContext)) {
+            metadata.textStyle = getBalanceShareTextStyle(shareStyleContext);
         }
     }
     const result = await window.db.points.awardPoints(
@@ -5869,7 +5980,7 @@ async function useNutritionSharePhotoFile(file) {
             reader.onerror = reject;
             reader.readAsDataURL(preparedFile);
         });
-        if (label) label.textContent = 'Photo added, swipe to choose your overlay style';
+        if (label) label.textContent = 'Photo added, choose your colour and text layout';
         const cardPayload = await buildDailyNutritionInstagramPayload();
         await renderBalanceShareStylePreview('nutrition', cardPayload, cachedNutritionShareBase64, {
             previewImageId: 'nutrition-share-style-preview',
@@ -5969,6 +6080,7 @@ async function shareNutritionToFeed() {
         const cardPayload = {
             card_type: 'nutrition',
             share_overlay_style: getBalanceShareOverlayStyle('nutrition'),
+            share_text_style: getBalanceShareTextStyle('nutrition'),
             score: score,
             calories: dailyData.total_calories || 0,
             calorie_goal: dailyData.calorie_goal || 2000,
@@ -5987,7 +6099,8 @@ async function shareNutritionToFeed() {
             const compositeDataUrl = await renderBalanceShareCardImage(cardPayload, {
                 target: 'feed',
                 photoDataUrl: cachedNutritionShareBase64,
-                overlayStyle: getBalanceShareOverlayStyle('nutrition')
+                overlayStyle: getBalanceShareOverlayStyle('nutrition'),
+                textStyle: getBalanceShareTextStyle('nutrition')
             });
             const compositeFile = postWorkoutShareFileFromDataUrl(compositeDataUrl, 'balance-nutrition-overlay.jpg');
             if (typeof uploadStoryMediaToBackblaze !== 'function') {
@@ -6078,6 +6191,7 @@ async function buildDailyNutritionInstagramPayload() {
     return {
         card_type: 'nutrition',
         share_overlay_style: getBalanceShareOverlayStyle('nutrition'),
+        share_text_style: getBalanceShareTextStyle('nutrition'),
         score: scoreData ? scoreData.total : 0,
         calories: dailyData.total_calories || 0,
         calorie_goal: dailyData.calorie_goal || 2000,
@@ -6112,7 +6226,8 @@ async function shareNutritionToInstagram(target = 'story') {
         const safeTarget = target === 'feed' ? 'feed' : 'story';
         const opened = await shareBalanceCardToInstagram(cardPayload, safeTarget, {
             photoDataUrl: cachedNutritionShareBase64 || null,
-            overlayStyle: getBalanceShareOverlayStyle('nutrition')
+            overlayStyle: getBalanceShareOverlayStyle('nutrition'),
+            textStyle: getBalanceShareTextStyle('nutrition')
         });
         if (opened) {
             const xpResult = await awardBalanceSocialShareXP(
@@ -7006,7 +7121,7 @@ function showActivitySuccess(data) {
     if (sharePhotoLabel) {
         const routeCopy = data.routePolyline ? 'route and activity stats' : 'activity stats';
         sharePhotoLabel.textContent = data.photoBase64
-            ? `Photo ready, swipe to choose your ${routeCopy} style`
+            ? `Photo ready, choose your ${routeCopy} colour and text layout`
             : `Add a photo for your ${routeCopy}`;
     }
     const activityStyleWrap = document.getElementById('activity-share-style-preview-wrap');
@@ -7031,6 +7146,7 @@ function buildActivityShareCardPayload() {
         card_type: 'activity',
         share_variant: PBB_SHARE_CREATIVE_VARIANT,
         share_overlay_style: getBalanceShareOverlayStyle('activity'),
+        share_text_style: getBalanceShareTextStyle('activity'),
         activity_type: savedActivityData.activity_type,
         activity_label: savedActivityData.activity_label,
         duration: savedActivityData.duration + ' min',
@@ -7086,7 +7202,8 @@ async function shareActivityCardToFeed() {
             const compositeDataUrl = await renderBalanceShareCardImage(cardPayload, {
                 target: 'feed',
                 photoDataUrl: savedActivityData.photoBase64 || null,
-                overlayStyle: getBalanceShareOverlayStyle('activity')
+                overlayStyle: getBalanceShareOverlayStyle('activity'),
+                textStyle: getBalanceShareTextStyle('activity')
             });
             const compositeFile = postWorkoutShareFileFromDataUrl(compositeDataUrl, 'balance-activity-overlay.jpg');
             const formData = new FormData();
@@ -7186,7 +7303,8 @@ async function shareActivityCardToInstagram() {
             'story',
             {
                 photoDataUrl: savedActivityData.photoBase64 || null,
-                overlayStyle: getBalanceShareOverlayStyle('activity')
+                overlayStyle: getBalanceShareOverlayStyle('activity'),
+                textStyle: getBalanceShareTextStyle('activity')
             }
         );
         if (!opened) return false;
