@@ -19,6 +19,7 @@ const {
     shouldUseOutboundSyntheticVoice,
     restoreCoalescedPaidMetaVoiceDraft,
     removePaidMetaBlockerVoiceGreeting,
+    buildPaidMetaTurnDirective,
     collectPaidMetaWriterContractIssues,
     isBlockingPaidMetaWriterContractIssue,
     buildPaidMetaGuaranteedContractFallback,
@@ -859,6 +860,26 @@ test('paid Meta gets to know the plant-based reason before asking for the fitnes
     assert.match(reasonReply.joined, /animals|ethics|I get that/i);
     assert.match(reasonReply.joined, /main health or fitness goal/i);
     assert.equal((reasonReply.joined.match(/\?/g) || []).length, 1);
+
+    const reciprocalReasonReply = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'Ohhhh for the animals and health!\nHow about you?',
+        history: [
+            { direction: 'out', text: 'Are you currently plant-based or looking to adopt a plant-based lifestyle?' },
+            { direction: 'in', text: "I'm vegan!" },
+            { direction: 'out', text: 'Nice. What made you decide to go plant-based?' },
+        ],
+        flowVariant: 'plant_based_control',
+    });
+    assert.match(reciprocalReasonReply.joined, /I've been vegan for five years too/i);
+    assert.match(reciprocalReasonReply.joined, /main health or fitness goal/i);
+    assert.equal((reciprocalReasonReply.joined.match(/\?/g) || []).length, 1);
+
+    const reciprocalDirective = buildPaidMetaTurnDirective({
+        inboundMessages: ['Ohhhh for the animals and health!', 'How about you?'],
+        history: [{ direction: 'out', text: 'Nice. What made you decide to go plant-based?' }],
+    });
+    assert.match(reciprocalDirective, /answer that Shannon has been vegan for five years/i);
+    assert.match(reciprocalDirective, /Mandatory direct questions to answer explicitly.*How about you\?/i);
 });
 
 test('paid Meta food confusion is a real blocker and cannot be silenced by a style warning', () => {
@@ -916,6 +937,68 @@ test('paid Meta food confusion is a real blocker and cannot be silenced by a sty
     assert.equal(released.model, 'deterministic_paid_meta_guided_sales_v1');
     assert.equal(released.videoAttachmentUrl, BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL);
     assert.doesNotMatch(released.joined, /what do you usually eat/i);
+});
+
+test('paid Meta answers a rapid meal-plan question without asking the known goal twice', () => {
+    const history = [
+        { direction: 'out', text: 'Nice. What made you decide to go plant-based?' },
+        { direction: 'in', text: 'Ohhhh for the animals and health!' },
+        { direction: 'in', text: 'How about you?' },
+        { direction: 'out', text: "I've been vegan for five years too. What's your main health or fitness goal at the moment?" },
+        { direction: 'in', text: 'I want to lose 10 kilos' },
+        { direction: 'out', text: "Yeah, that's a clear goal. What usually gets in the way of making that happen consistently?" },
+    ];
+    const currentMessage = 'Mhmm I dunno what to eat\nDo you offer meal plans?';
+    const reply = buildDeterministicPaidMetaConversationReply({
+        currentMessage,
+        qualifier: null,
+        history,
+        flowVariant: 'plant_based_control',
+    });
+
+    assert.match(reply.chunks[0], /^Yeah, I do\. If you want to lose 10 kilos but don't know what to eat/i);
+    assert.match(reply.joined, /plant-based meal plan/i);
+    assert.match(reply.joined, /Keen\?$/i);
+    assert.doesNotMatch(reply.joined, /what's your main health or fitness goal/i);
+
+    const badDraft = {
+        joined: 'Yeah, that makes sense. What result are you mainly hoping to achieve?',
+    };
+    const issues = collectPaidMetaWriterContractIssues({
+        draft: badDraft,
+        currentMessage,
+        qualifier: null,
+        history,
+    });
+    assert.ok(issues.some(issue => /repeated a question/i.test(issue)));
+    const repaired = buildPaidMetaGuaranteedContractFallback({
+        draft: badDraft,
+        currentMessage,
+        issues,
+        qualifier: null,
+        history,
+    });
+    assert.match(repaired.chunks[0], /^Yeah, I do\. If you want to lose 10 kilos but don't know what to eat/i);
+    assert.match(repaired.joined, /Keen\?$/i);
+    assert.doesNotMatch(repaired.joined, /main health or fitness goal|what result are you/i);
+
+    const unansweredMealPlanIssues = collectPaidMetaWriterContractIssues({
+        draft: { joined: "That makes sense. What's your main health or fitness goal?" },
+        currentMessage: 'Do you offer meal plans?',
+        qualifier: null,
+        history: [],
+    });
+    assert.ok(unansweredMealPlanIssues.some(issue => /meal-plan question directly/i.test(issue)));
+    assert.ok(unansweredMealPlanIssues.some(isBlockingPaidMetaWriterContractIssue));
+    const directMealPlanRepair = buildPaidMetaGuaranteedContractFallback({
+        draft: { joined: "That makes sense. What's your main health or fitness goal?" },
+        currentMessage: 'Do you offer meal plans?',
+        issues: unansweredMealPlanIssues,
+        qualifier: null,
+        history: [],
+    });
+    assert.match(directMealPlanRepair.joined, /^Yeah, I do\./i);
+    assert.match(directMealPlanRepair.joined, /includes a plant-based meal plan/i);
 });
 
 test('paid Meta guided sales stages move goal to blocker to complete offer to preview link', () => {
