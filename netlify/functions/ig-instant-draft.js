@@ -1218,10 +1218,14 @@ function hasRecentCompletePaidMetaOffer(history = []) {
         && /\b(?:workout|training program)\b/i.test(text)
         && /\bmeal plan\b/i.test(text)
         && /\$\s*89\.99\b/i.test(text)
-        && /\bbefore (?:you )?pay/i.test(text);
+        && /\bbefore (?:(?:you )?pay|making a payment)/i.test(text);
 }
 
 function buildPaidMetaTailoredOfferText(blockerText = '', goalText = '') {
+    return buildPaidMetaTailoredOfferChunks(blockerText, goalText).join('\n\n');
+}
+
+function buildPaidMetaTailoredOfferChunks(blockerText = '', goalText = '') {
     const turn = String(blockerText || '');
     const goal = String(goalText || '');
     let acknowledgement = 'Yeah, that makes sense.';
@@ -1242,7 +1246,11 @@ function buildPaidMetaTailoredOfferText(blockerText = '', goalText = '') {
     } else if (/\b(?:craving|weekend)\b/i.test(turn)) {
         acknowledgement = 'Yeah, if cravings and weekends are where it slips, the food plan needs to be flexible enough for real life.';
     }
-    return `${acknowledgement} Balance Foundations is a six-week course with your workout program built around your week, a plant-based meal plan, and one weekly check-in where I review your training and food and adjust things. It’s one $89.99 payment for the full six weeks, with no subscription or auto-renewal. Here’s a quick video showing you how it works. If it feels right, I can help you set yourself up with a profile and starting plan, then you can look through the full app before paying and decide. Want me to send you access?`;
+    return [
+        `${acknowledgement} Here's a quick video showing you how it works.`,
+        'Balance Foundations is a six-week course with your workout program built around your week, a plant-based meal plan, and one weekly check-in where I review your training and food and adjust things.',
+        "It's one $89.99 payment for the full six weeks, with no subscription or auto-renewal. If you're interested, I can set you up in the app so you can see your meal plan and workout program before making a payment. Keen?",
+    ];
 }
 
 function buildPaidMetaGoalToBlockerText(goalText = '', transformationProof = null) {
@@ -1489,9 +1497,10 @@ function buildDeterministicPaidMetaConversationReply({
     }
     if (historyHasGoal
         && isPaidMetaConcreteBlocker(message)) {
-        const joined = buildPaidMetaTailoredOfferText(message, facts.motivation || facts.current_state || '');
+        const chunks = buildPaidMetaTailoredOfferChunks(message, facts.motivation || facts.current_state || '');
+        const joined = chunks.join('\n\n');
         return {
-            chunks: splitCoachDraftIntoDmBubbles([joined]).slice(0, MAX_CHUNKS),
+            chunks,
             joined,
             model: 'deterministic_paid_meta_guided_sales_v1',
             replyMode: 'campaign_sales_progression',
@@ -4210,14 +4219,14 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
         ['weekly training/food review', /\bweekly\b[^.!?\n]{0,80}\b(?:check[ -]?in|review|adjust)\b/i],
         ['$89.99 payment', /\$\s*89\.99\b|\b89\.99 dollars?\b/i],
         ['no renewal', /\b(?:no|doesn['\u2019]?t|does not|won['\u2019]?t|will not)\b[^.!?\n]{0,40}\b(?:subscription|renew(?:al)?|auto-renew(?:al)?)\b/i],
-        ['look inside before payment', /\b(?:look|access|inside|set (?:it|yourself) up)\b[^.!?\n]{0,100}\bapp\b[^.!?\n]{0,100}\bbefore (?:you )?pay(?:ing|ment)?\b|\bapp\b[^.!?\n]{0,100}\b(?:look|access|inside|set (?:it|yourself) up)\b[^.!?\n]{0,100}\bbefore (?:you )?pay(?:ing|ment)?\b/i],
+        ['look inside before payment', /\b(?:look|access|inside|set (?:it|you|yourself) up)\b[^.!?\n]{0,120}\bapp\b[^.!?\n]{0,120}\bbefore (?:(?:you )?pay(?:ing|ment)?|making a payment)\b|\bapp\b[^.!?\n]{0,120}\b(?:look|access|inside|see|set (?:it|you|yourself) up)\b[^.!?\n]{0,120}\bbefore (?:(?:you )?pay(?:ing|ment)?|making a payment)\b/i],
         ['consent question', /\?/],
     ];
     if (hasFitnessGoal && hasBlocker) {
         for (const [label, pattern] of offerSignals) {
             if (!pattern.test(reply)) {
                 const repairInstruction = label === 'look inside before payment'
-                    ? 'Say explicitly that they can set themselves up and look through the app before paying.'
+                    ? 'Say explicitly that Shannon can set them up in the app so they can see their meal plan and workout program before making a payment.'
                     : 'Add it accurately while staying concise and tailored to the live blocker.';
                 issues.push(`Earned paid-Meta offer is missing ${label}. ${repairInstruction}`);
             }
@@ -4304,7 +4313,12 @@ function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = 
         joined = buildPaidMetaTailoredOfferText(turn, facts.motivation || facts.current_state || '');
     }
     if (!joined) return null;
-    const chunks = splitCoachDraftIntoDmBubbles([joined]).slice(0, draft.maxChunks || MAX_CHUNKS);
+    const chunks = repairsEarnedOffer
+        ? buildPaidMetaTailoredOfferChunks(
+            turn,
+            qualifier?.facts?.motivation || qualifier?.facts?.current_state || ''
+        )
+        : splitCoachDraftIntoDmBubbles([joined]).slice(0, draft.maxChunks || MAX_CHUNKS);
     return {
         ...draft,
         chunks,

@@ -884,6 +884,14 @@ test('paid Meta food confusion is a real blocker and cannot be silenced by a sty
     assert.match(blockerReply.joined, /build muscle but don't know what to eat/i);
     assert.match(blockerReply.joined, /plant-based meal plan/i);
     assert.match(blockerReply.joined, /one \$89\.99 payment/i);
+    assert.equal(blockerReply.chunks.length, 3);
+    assert.ok(blockerReply.chunks.every(chunk => chunk.length <= 240),
+        'the complete offer must fit in three native Instagram text bubbles');
+    assert.match(blockerReply.chunks[0], /quick video showing you how it works/i);
+    assert.match(
+        blockerReply.chunks.at(-1),
+        /if you're interested, I can set you up in the app so you can see your meal plan and workout program before making a payment\. Keen\?$/i
+    );
     assert.equal(blockerReply.videoAttachmentUrl, BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL);
     assert.doesNotMatch(blockerReply.joined, /what do you usually|what usually gets in the way/i);
 
@@ -963,8 +971,8 @@ test('paid Meta guided sales stages move goal to blocker to complete offer to pr
         fs.statSync(path.join(__dirname, '..', 'assets', 'balance-foundations-app-proof.mp4')).size > 1_000_000,
         'the public evergreen app proof video must be packaged with the site'
     );
-    assert.match(offerReply.joined, /before paying/i);
-    assert.match(offerReply.joined, /want me to send you access\?/i);
+    assert.match(offerReply.joined, /before making a payment/i);
+    assert.match(offerReply.joined, /Keen\?/i);
     assert.doesNotMatch(offerReply.joined, /https?:\/\//i);
 
     const acceptHistory = [
