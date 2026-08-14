@@ -3192,6 +3192,25 @@ function summarizeWeeklyGoalsRow(row, { now = new Date() } = {}) {
     return `${heading}${windowLabel ? ` (${windowLabel})` : ''}: selected ${goals.length}/3 - ${selected}. Status ${row.status || 'unknown'}, ${progress}${rate}.`;
 }
 
+function buildWeeklyReviewHandoffBlock({ firstWeek = false, quickTouchpoint = false } = {}) {
+    const stageRule = firstWeek
+        ? '- This is week one. Treat missing photos, Feed posts, Course lessons, weigh-ins, or other setup actions as onboarding signal, not a list of failures. Choose at most ONE useful next step.'
+        : '- If something is missing, mention it only when it is the single most useful coaching next step. Do not turn the message into an app-usage audit.';
+    const depthRule = quickTouchpoint
+        ? '- This is only a quick human touchpoint. Do not restate any weekly statistics.'
+        : '- Use at most ONE or TWO specific observations from the evidence. Do not list workouts, food, weight, goals, photos, Feed, Course, mood, and app use back to the client.';
+
+    return `
+WEEKLY REVIEW HANDOFF:
+- Balance Weekly Review owns the factual report: calories and food logging, workouts, Weekly Goals, recovery, mood, and the detailed next-week recap.
+- Shannon's message is the personal follow-up: acknowledge the person, add a small piece of judgement or encouragement, then ask one useful question or give one clear priority.
+${depthRule}
+${stageRule}
+- Do not duplicate the Weekly Review paragraph by paragraph, and do not make the client repeat information already recorded in Balance.
+- Do not claim the client opened or read the Weekly Review unless the conversation explicitly proves that.
+- It is okay to refer naturally to "your Weekly Review in Balance" when that helps connect the two, but do not explain the automation.`;
+}
+
 async function loadWeeklyGoalsContext(userId, options = {}) {
     if (!userId) {
         return { text: '', row: null, selectedGoals: [], status: 'no_user' };
@@ -8214,6 +8233,7 @@ module.exports = {
     loadActiveCheckinThreadContext,
     buildCheckinConversationBlock,
     summarizeWeeklyGoalsRow,
+    buildWeeklyReviewHandoffBlock,
     loadWeeklyGoalsContext,
     loadRecentWorkouts,
     formatRecentWorkoutEvidence,

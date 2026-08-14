@@ -39,9 +39,9 @@
       'Weekly goals were all hit, so the overall plan is moving the right way.'
     ],
     adjustments: [
-      'We will make a small calorie bump next week so the average sits closer to target.',
-      'We will keep protein high and keep the current split exactly where it is.',
-      'We will keep the calorie tracker widget handy if logging becomes the bottleneck.'
+      'Bring average calories a little closer to target.',
+      'Keep protein high and keep the current split where it is.',
+      'Keep the calorie tracker widget handy if logging becomes the bottleneck.'
     ],
     tip: 'If calorie tracking is the bit that slips, add the calorie tracker widget to the home screen. One button, tap it, speak what you ate, and it logs it automatically.',
     note: 'Good week. The gym was consistent, protein was strong, and calories were close enough to give us a clean read. We will nudge food up next week and keep the same training rhythm.',
@@ -808,9 +808,9 @@
           : 'No weekly goals were saved for this week, so next week we will pick the three that matter.'
       ],
       adjustments: [
-        caloriesDelta < -100 ? 'We will make a small calorie bump next week so the average sits closer to target.' : 'We will keep calories steady next week and only nudge them if the numbers ask for it.',
-        'We will keep protein high and keep the current split exactly where it is.',
-        goalsTotal > 0 ? 'We will use the selected weekly goals as the scorecard, not a generic calories/protein/gym template.' : 'We will set weekly goals first so next week has a clear scorecard.'
+        caloriesDelta < -100 ? 'Bring average calories a little closer to target.' : 'Keep calories steady and only nudge them if the numbers ask for it.',
+        'Keep protein high and keep the current split where it is.',
+        goalsTotal > 0 ? 'Use the selected Weekly Goals as the scorecard.' : 'Set Weekly Goals first so next week has a clear scorecard.'
       ],
       tip: 'If calorie tracking is the bit that slips, add the calorie tracker widget to the home screen. One button, tap it, speak what you ate, and it logs it automatically.',
       note: note,
@@ -1334,6 +1334,16 @@
   function openWeeklyCheckinPreview(){
     ensureStyles();
     markReviewViewed();
+    try {
+      var trackedWeek = getWeekWindow();
+      if (typeof window.trackBalanceActivity === 'function') {
+        window.trackBalanceActivity('weekly_review_opened', {
+          source: 'weekly_review_card',
+          week_start: trackedWeek.startKey,
+          week_end: trackedWeek.endKey
+        }, { immediate: true });
+      }
+    } catch (_) {}
     renderCard();
 
     var existing = document.getElementById('weekly-checkin-preview-overlay');
@@ -1375,8 +1385,9 @@
       '    <section class="pbb-wci-section"><h3>Weekly goals</h3>' + renderGoals(data) + '</section>',
       '    <section class="pbb-wci-section"><h3>Recovery snapshot</h3>' + renderRecovery(data) + '</section>',
       renderCheckinMood(data),
-      '    <section class="pbb-wci-section"><h3>What we will change next week</h3>' + renderList(data.adjustments) + '</section>',
+      '    <section class="pbb-wci-section"><h3>Suggested focus for next week</h3>' + renderList(data.adjustments) + '</section>',
       '    <section class="pbb-wci-section"><h3>Tracking tip</h3><p>' + escapeHtml(data.tip) + '</p></section>',
+      '    <section class="pbb-wci-section"><h3>How this connects to your check-in</h3><p>This review keeps your weekly numbers in one place. If weekly coaching is part of your plan, your message with Shannon is the human follow-up for what felt good, what got in the way, and what needs changing. You will not need to repeat these stats.</p></section>',
       '    <div class="pbb-wci-actions">',
       '      <button type="button" class="pbb-wci-action primary" data-wci-action="goals">' + escapeHtml(actionLabel) + '</button>',
       '    </div>',

@@ -33,6 +33,7 @@ const {
     buildNameUsePolicyBlock,
     buildRelationshipDiscoveryBlock,
     buildHeardFirstConversationBlock,
+    buildWeeklyReviewHandoffBlock,
     loadEditExamples,
     loadRecentWorkouts,
     callVertexAIModel,
@@ -135,16 +136,18 @@ async function generateWeeklyCheckinDraft({ clientName, profileBlock, memoryBloc
     const nameUsePolicy = buildNameUsePolicyBlock();
     const relationshipDiscovery = buildRelationshipDiscoveryBlock();
     const heardFirstConversation = buildHeardFirstConversationBlock();
+    const weeklyReviewHandoff = buildWeeklyReviewHandoffBlock();
 
     const prompt = `Draft a SHORT weekly check-in from Shannon to a coaching client. This is the ongoing rhythm — week ${weeksInWithCoach} with him — not onboarding, not celebration.
 
 CRITICAL — DO NOT GREET with "hey [name]" / "hi" / "yo". Jump straight in. Aussie casual, 2-3 sentences max.
 
-Reference the SPECIFIC activity below — workouts actually done, PBs hit, gaps. Show you've been paying attention. End with ONE open question that invites a real reply (not "how's everything going?" — something grounded in the week, their routine, stress, support, food setup, or what life is throwing at them).
+Use the activity below to choose ONE or TWO specific observations, not to rebuild the client's full Weekly Review. Show you've been paying attention, add the human coaching layer, and end with ONE open question that invites a real reply, such as something grounded in the week, their routine, stress, support, food setup, or what life is throwing at them. Do not use a generic "how's everything going?" question.
 
 ${nameUsePolicy}
 ${relationshipDiscovery}
 ${heardFirstConversation}
+${weeklyReviewHandoff}
 
 CLIENT: ${clientName}${profileBlock || ''}${memoryBlock || ''}
 

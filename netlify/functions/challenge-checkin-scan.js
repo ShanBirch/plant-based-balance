@@ -20,6 +20,7 @@ const {
     buildNameUsePolicyBlock,
     buildRelationshipDiscoveryBlock,
     buildHeardFirstConversationBlock,
+    buildWeeklyReviewHandoffBlock,
     loadEditExamples,
     loadRecentWorkouts,
     formatRecentWorkoutEvidence,
@@ -877,6 +878,10 @@ async function generateDraft({
         ? `Rank: ${ranking.rank}/${ranking.total}, ${ranking.gapToNext ? `${ranking.gapToNext} points behind the next spot` : 'currently leading or tied at the top'}`
         : 'Rank: unknown';
     const isSundayQuickTouchpoint = cadence.key === 'sunday';
+    const weeklyReviewHandoff = buildWeeklyReviewHandoffBlock({
+        firstWeek: Number(challengeDay || 0) > 0 && Number(challengeDay || 0) <= 7,
+        quickTouchpoint: isSundayQuickTouchpoint,
+    });
     const cadenceRules = cadence.depth === 'encouragement'
         ? '\nMONDAY RULE: do not mention food, workouts, sleep, steps, rank, gaps, or compliance. Keep it to encouragement plus Weekly Goals setup. If Weekly Goals are not saved yet, ask them to choose 3 for the week as a bundle; never ask them to pick one main focus.'
         : '\nSUNDAY RULE: this is not the weekly review. The app already handles that. Send only a quick human DM based on the week: if they showed up, a tiny "smashed it this week" style celebration; if they were quiet, a simple "haven\'t seen you around much, everything okay?" check.';
@@ -958,6 +963,7 @@ ${cadence.label}: ${cadence.prompt}${cadenceRules}
 ${nameUsePolicy}
 ${relationshipDiscovery}
 ${heardFirstConversation}
+${weeklyReviewHandoff}
 
 CLIENT: ${clientName}${profileBlock || ''}${memoryBlock || ''}
 

@@ -29,6 +29,7 @@ const {
     buildNameUsePolicyBlock,
     buildRelationshipDiscoveryBlock,
     buildHeardFirstConversationBlock,
+    buildWeeklyReviewHandoffBlock,
     loadEditExamples,
     loadRecentWorkouts,
     callVertexAIModel,
@@ -51,6 +52,9 @@ function buildDayPrompt({ milestone, clientName, profileBlock, memoryBlock, acti
     const nameUsePolicy = buildNameUsePolicyBlock();
     const relationshipDiscovery = buildRelationshipDiscoveryBlock();
     const heardFirstConversation = buildHeardFirstConversationBlock();
+    const weeklyReviewHandoff = milestone.days >= 7
+        ? buildWeeklyReviewHandoffBlock({ firstWeek: milestone.days === 7 })
+        : '';
     const commonPrefix = `Draft a SHORT check-in message from Shannon to a client who just hit day ${milestone.days} with him.
 
 CRITICAL — DO NOT GREET with "hey [name]" / "hi". Jump straight in. This is an ongoing coaching relationship, not a first message. Aussie casual, warm, no corporate tone.
@@ -60,6 +64,7 @@ Keep it ${milestone.lengthBrief}. Reference something SPECIFIC about ${clientNam
 ${nameUsePolicy}
 ${relationshipDiscovery}
 ${heardFirstConversation}
+${weeklyReviewHandoff}
 
 CLIENT: ${clientName}${profileBlock || ''}${memoryBlock || ''}
 
@@ -97,7 +102,7 @@ const MILESTONES = [
         lengthBrief: '2-3 sentences max',
         windowLabel: 'WEEK',
         windowMs: 7 * 24 * 60 * 60 * 1000,
-        instructions: `First-week review. Call out actual patterns — consistency, what days they hit hardest, gaps. Be honest but encouraging. End with a steer for the next week ("this week let's focus on X") or one specific question about their routine, stress, food setup, support, or biggest friction point.`,
+        instructions: `First-week personal follow-up. The Balance Weekly Review carries the full recap, so acknowledge one or two real patterns at most and do not read the whole week back to them. Keep week-one gaps gentle. Choose one useful focus for week two or ask one specific question about their routine, stress, food setup, support, or biggest friction point.`,
     },
     {
         days: 14,
