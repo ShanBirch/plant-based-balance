@@ -409,6 +409,13 @@ const voiceTypingDelay = sendIgReply.resolveFirstItemTypingDelayMs({
 assert(voiceTypingDelay >= 1800 && voiceTypingDelay <= 4200);
 assert(voiceTypingDelay > textTypingDelay);
 
+assert.equal(sendIgReply.resolveFirstItemTypingDelayMs({
+    kind: 'text',
+    text: 'clean paid Meta reply',
+    random: () => 1,
+    paidMetaFastLane: true,
+}), 0, 'webhook typing means paid Meta must not sleep again at first-bubble delivery');
+
 const adReferral = instagramWebhook.normalizeMetaAdReferral({
     item: {
         referral: {

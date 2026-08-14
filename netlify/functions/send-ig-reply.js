@@ -1072,7 +1072,11 @@ async function stampLinkedClientAutomatedIgSendBlock({ alertId, alertData = {} }
     });
 }
 
-function resolveFirstItemTypingDelayMs({ kind = 'text', text = '', random = Math.random } = {}) {
+function resolveFirstItemTypingDelayMs({ kind = 'text', text = '', random = Math.random, paidMetaFastLane = false } = {}) {
+    // Paid-ad typing already starts at webhook ingestion and is refreshed by
+    // the draft worker. Do not add a second artificial pause after a clean
+    // draft has finally reached the sender.
+    if (paidMetaFastLane) return 0;
     const length = String(text || '').trim().length;
     const base = kind === 'audio' ? 2600 : 1800;
     const perCharMs = kind === 'audio' ? 6 : 9;
@@ -2457,6 +2461,7 @@ exports.handler = async (event) => {
             const firstTypingDelayMs = resolveFirstItemTypingDelayMs({
                 kind: firstItem.kind,
                 text: firstItem.text,
+                paidMetaFastLane: alertData.meta_ad_fast_lane === true,
             });
             const typingAction = await sendInstagramGraphTypingAction({
                 channel,
