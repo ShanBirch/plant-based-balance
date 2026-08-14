@@ -1226,10 +1226,10 @@ function buildPaidMetaTailoredOfferText(blockerText = '') {
     } else if (/\b(?:craving|weekend)\b/i.test(turn)) {
         acknowledgement = 'Yeah, if cravings and weekends are where it slips, the food plan needs to be flexible enough for real life.';
     }
-    return `${acknowledgement} Balance Foundations is a six-week course with your workout program built around your week, a plant-based meal plan, and one weekly check-in where I review your training and food and adjust things. It’s one $89.99 payment for the full six weeks, with no subscription or auto-renewal. You can set yourself up and look through the app before paying. Want me to send you access?`;
+    return `${acknowledgement} Balance Foundations is a six-week course with your workout program built around your week, a plant-based meal plan, and one weekly check-in where I review your training and food and adjust things. It’s one $89.99 payment for the full six weeks, with no subscription or auto-renewal. Here’s a quick video showing you how it works. If it feels right, I can help you set yourself up with a profile and starting plan, then you can look through the full app before paying and decide. Want me to send you access?`;
 }
 
-function buildPaidMetaGoalToBlockerText(goalText = '') {
+function buildPaidMetaGoalToBlockerText(goalText = '', transformationProof = null) {
     const turn = String(goalText || '');
     let acknowledgement = 'Yeah, that’s a clear goal.';
     if (/\b(?:8\s*kg|lose.+(?:kg|weight|fat)|body fat)\b/i.test(turn) && /\b(?:fit|fitter|energy)\b/i.test(turn)) {
@@ -1243,7 +1243,8 @@ function buildPaidMetaGoalToBlockerText(goalText = '') {
     } else if (/\benergy\b/i.test(turn)) {
         acknowledgement = 'Yeah, having more energy and feeling fitter is a solid goal.';
     }
-    return `${acknowledgement} What usually gets in the way of making that happen consistently?`;
+    const proofLine = String(transformationProof?.introduction || '').trim();
+    return `${acknowledgement}${proofLine ? ` ${proofLine}` : ''} What usually gets in the way of making that happen consistently?`;
 }
 
 function paidMetaHistoryHasConcreteBlocker(history = []) {
@@ -1404,7 +1405,7 @@ function buildDeterministicPaidMetaConversationReply({
         && appPreviewUrl
         && historyHasGoal
         && historyHasBlocker) {
-        const joined = `Here you go: ${appPreviewUrl}`;
+        const joined = `Yep. This takes you through your profile, starting workout program and plant-based meal plan, then opens the full app so you can look around before deciding: ${appPreviewUrl}`;
         return {
             chunks: [joined],
             joined,
@@ -1420,7 +1421,8 @@ function buildDeterministicPaidMetaConversationReply({
     if (!priorHistoryHasGoal
         && PAID_META_FITNESS_GOAL_RE.test(message)
         && !PAID_META_STRONG_BLOCKER_RE.test(message)) {
-        const joined = buildPaidMetaGoalToBlockerText(message);
+        const transformationProof = resolvePaidMetaTransformationProof({ goalText: message });
+        const joined = buildPaidMetaGoalToBlockerText(message, transformationProof);
         return {
             chunks: splitCoachDraftIntoDmBubbles([joined]).slice(0, MAX_CHUNKS),
             joined,
@@ -1429,6 +1431,7 @@ function buildDeterministicPaidMetaConversationReply({
             maxChunks: MAX_CHUNKS,
             error: null,
             flowVariant,
+            imageAttachmentUrl: broadFlow ? null : (transformationProof?.imageUrl || null),
         };
     }
     if (historyHasGoal
@@ -1442,6 +1445,7 @@ function buildDeterministicPaidMetaConversationReply({
             maxChunks: MAX_CHUNKS,
             error: null,
             flowVariant,
+            videoAttachmentUrl: broadFlow ? null : BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL,
         };
     }
     return null;
@@ -1996,12 +2000,13 @@ async function clearIgAutoSendHoldForCurrentDraft({ alertId, alertData, reason =
  *
  * Update this block when the ad's quick-replies or offering structure changes.
  */
-// The previous preview displayed the retired $99 lifetime offer. Keep the
-// attachment disabled until a Foundations-specific preview is published.
+// The retired $99 lifetime-preview export remains disabled. The current
+// Foundations proof video is offer-agnostic and is attached separately.
 const FOUNDERS_PASS_APP_PREVIEW_URL = '';
 const {
-    ALLY_WEIGHT_LOSS_PROOF_URL,
-    hasAllyProofIntroduction,
+    BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL,
+    maySendDraftImageAttachment,
+    resolvePaidMetaTransformationProof,
 } = require('./_lib/paid-meta-proof-media');
 const FOUNDERS_PASS_CHECKOUT_URL = 'https://plantbased-balance.org/founders';
 const FOUNDERS_PASS_BROAD_CHECKOUT_URL = 'https://future-balance.netlify.app/fitness';
@@ -2216,17 +2221,21 @@ function buildMetaAdGoalProofReply(currentMessage = '', { flowVariant = 'plant_b
     const text = rawMessage.toLowerCase();
     const broadFlow = flowVariant === 'broad_pain';
     const weightLossGoal = /weight|fat|lose|losing|lean|tone|confiden|body/.test(text);
+    const transformationProof = broadFlow
+        ? null
+        : resolvePaidMetaTransformationProof({ goalText: rawMessage });
     const courseProof = `Inside Balance, the six-week course turns that into a clear week to follow, with your learning, weekly goals and coaching review in one place.`;
     let bridge;
     if (/accountab|consisten|motivat|routine|habit|stick|on track|fall off|keep going/.test(text)) {
         bridge = `yeah okay, it sounds like the hard part isn't knowing you should do it, it's keeping the week on track once life gets busy. ${courseProof}`;
     } else if (weightLossGoal) {
-        const kgGoal = rawMessage.match(/\b(\d{1,2}(?:\.\d+)?)\s*(?:kg|kgs|kilograms?)\b/i)?.[1] || '';
-        bridge = kgGoal
-            ? `yeah absolutely, ${kgGoal}kg is a solid goal and that's a big part of what I help people with. This is Ally. She lost 12kg in 16 weeks while working full time and being a busy mum. The biggest thing was building the plan around her life so she could actually stick to it.`
-            : `yeah absolutely, that's a big part of what I help people with. This is Ally. She lost 12kg in 16 weeks while working full time and being a busy mum. The biggest thing was building the plan around her life so she could actually stick to it.`;
+        bridge = transformationProof
+            ? `yeah absolutely, that's a big part of what I help people with. ${transformationProof.introduction}`
+            : `yeah absolutely, that's a big part of what I help people with. ${courseProof}`;
     } else if (/strong|strength|muscle|lift|gym|fitter|fitness|run|cardio/.test(text)) {
-        bridge = `nice, so the goal is to actually feel stronger and fitter, not just collect another plan. ${courseProof}`;
+        bridge = transformationProof
+            ? `nice, so the goal is to actually feel stronger and fitter, not just collect another plan. ${transformationProof.introduction}`
+            : `nice, so the goal is to actually feel stronger and fitter, not just collect another plan. ${courseProof}`;
     } else if (/food|meal|eat|nutrition|plant|vegan|vegetarian|protein/.test(text)) {
         bridge = broadFlow
             ? `yeah okay, so food structure is the main thing. ${courseProof}`
@@ -2245,7 +2254,7 @@ function buildMetaAdGoalProofReply(currentMessage = '', { flowVariant = 'plant_b
         audioCount: 0,
         videoCount: 0,
         videoAttachmentUrl: broadFlow || weightLossGoal ? null : FOUNDERS_PASS_APP_PREVIEW_URL,
-        imageAttachmentUrl: weightLossGoal ? ALLY_WEIGHT_LOSS_PROOF_URL : null,
+        imageAttachmentUrl: transformationProof?.imageUrl || null,
         reelContextCount: 0,
         reelThumbnailCount: 0,
         mediaDecode: {},
@@ -2267,7 +2276,6 @@ function applyMetaAdGoalProofReply(draft = {}, currentMessage = '', { flowVarian
         ? draft.chunks.map(chunk => String(chunk || '').trim()).filter(Boolean)
         : [String(draft.joined || '').trim()].filter(Boolean);
     const joined = chunks.join('\n\n');
-    const introducedAlly = hasAllyProofIntroduction(joined);
     const introducedVideo = /\b(?:here(?:'s| is)|send(?:ing)?|show(?:ing)? you|quick)\b[^.!?\n]{0,80}\b(?:video|tour|look inside|how it works)\b/i.test(joined);
     return {
         ...proof,
@@ -2276,7 +2284,10 @@ function applyMetaAdGoalProofReply(draft = {}, currentMessage = '', { flowVarian
         joined,
         replyMode: proof.replyMode,
         flowVariant: proof.flowVariant,
-        imageAttachmentUrl: proof.imageAttachmentUrl && introducedAlly ? proof.imageAttachmentUrl : null,
+        imageAttachmentUrl: proof.imageAttachmentUrl && maySendDraftImageAttachment({
+            imageUrl: proof.imageAttachmentUrl,
+            replyText: joined,
+        }) ? proof.imageAttachmentUrl : null,
         videoAttachmentUrl: proof.videoAttachmentUrl && introducedVideo ? proof.videoAttachmentUrl : null,
         model: `${draft.model || 'unknown'}+guided_meta_goal_proof_v1`,
         timeline: draft.timeline || proof.timeline,

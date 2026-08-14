@@ -54,6 +54,10 @@ const {
 } = require('../netlify/functions/send-ig-reply')._test;
 const { inspectVoiceScriptQuality } = require('../netlify/functions/_lib/elevenlabs-voice-message');
 const { buildMetaAppPreviewUrl, isMetaAppPreviewUrl } = require('../netlify/functions/_lib/meta-app-preview-ref');
+const {
+    BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL,
+    resolvePaidMetaTransformationProof,
+} = require('../netlify/functions/_lib/paid-meta-proof-media');
 
 test('Cocos paid-ad Founders Pass opener bypasses the false signup hold and model review', () => {
     const currentMessage = 'What is the Founders Pass?';
@@ -849,6 +853,8 @@ test('paid Meta guided sales stages move goal to blocker to complete offer to pr
         appPreviewUrl,
     });
     assert.match(goalReply.joined, /losing the weight and feeling fitter/i);
+    assert.match(goalReply.joined, /This is Ally/i);
+    assert.match(goalReply.imageAttachmentUrl, /ally-cocos\.png/i);
     assert.match(goalReply.joined, /gets? in the way/i);
     assert.doesNotMatch(goalReply.joined, /founders|\$89/i);
 
@@ -870,6 +876,17 @@ test('paid Meta guided sales stages move goal to blocker to complete offer to pr
     assert.match(offerReply.joined, /weekly check-in/i);
     assert.match(offerReply.joined, /one \$89\.99 payment/i);
     assert.match(offerReply.joined, /no subscription or auto-renewal/i);
+    assert.match(offerReply.joined, /quick video showing you how it works/i);
+    assert.equal(offerReply.videoAttachmentUrl, BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL);
+    assert.equal(
+        buildDraftVideoAttachmentData(offerReply).draft_video_attachment_url,
+        BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL,
+        'the approved proof video must survive into the sender payload'
+    );
+    assert.ok(
+        fs.statSync(path.join(__dirname, '..', 'assets', 'balance-foundations-app-proof.mp4')).size > 1_000_000,
+        'the public evergreen app proof video must be packaged with the site'
+    );
     assert.match(offerReply.joined, /before paying/i);
     assert.match(offerReply.joined, /want me to send you access\?/i);
     assert.doesNotMatch(offerReply.joined, /https?:\/\//i);
@@ -888,7 +905,47 @@ test('paid Meta guided sales stages move goal to blocker to complete offer to pr
     });
     const sentUrl = linkReply.joined.match(/https?:\/\/\S+/)?.[0] || '';
     assert.equal(linkReply.replyMode, 'campaign_app_preview_handoff');
+    assert.match(linkReply.joined, /profile, starting workout program and plant-based meal plan/i);
+    assert.match(linkReply.joined, /full app so you can look around before deciding/i);
     assert.equal(isMetaAppPreviewUrl(sentUrl), true);
+});
+
+test('paid Meta transformation proof is selected from the lead goal and withheld when the fit is weak or sensitive', () => {
+    const strength = resolvePaidMetaTransformationProof({
+        goalText: 'I want to get stronger, fitter and feel more confident in the gym.',
+    });
+    assert.equal(strength.id, 'gen_strength_confidence');
+    assert.match(strength.imageUrl, /gen-cocos\.jpg/i);
+    assert.match(strength.introduction, /This is Gen/i);
+
+    const recomposition = resolvePaidMetaTransformationProof({
+        goalText: 'I want body recomposition and more tone, not just a lower number on the scale.',
+    });
+    assert.equal(recomposition.id, 'dani_recomposition');
+    assert.match(recomposition.imageUrl, /dani-front-mirror-8-weeks\.png/i);
+    assert.match(recomposition.introduction, /This is Dani/i);
+
+    const shared = resolvePaidMetaTransformationProof({
+        goalText: 'My friend and I want to train together, lose weight and keep each other accountable.',
+    });
+    assert.equal(shared.id, 'bec_kirsty_shared_momentum');
+    assert.match(shared.imageUrl, /bec-kirsty-cocos\.png/i);
+
+    assert.equal(resolvePaidMetaTransformationProof({
+        goalText: 'I want to improve my mobility.',
+    }), null);
+    assert.equal(resolvePaidMetaTransformationProof({
+        goalText: 'I am postpartum and want to lose weight after having a baby.',
+    }), null);
+
+    assert.equal(maySendDraftImageAttachment({
+        imageUrl: strength.imageUrl,
+        replyText: 'This is Gen. She built her strength with a repeatable plan.',
+    }), true);
+    assert.equal(maySendDraftImageAttachment({
+        imageUrl: strength.imageUrl,
+        replyText: 'Here is a transformation that might help.',
+    }), false, 'known proof media must never survive without the matching client introduction');
 });
 
 test('fresh paid-ad test episode excludes messages from before the latest referral', () => {
