@@ -76,7 +76,8 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 ### Shannon's face is protected
 
 - Never place text, captions, cards, diagrams, badges, logos, CTAs or decorative motion over Shannon's face, mouth, eyes, jawline, hairline or head silhouette.
-- In graphic-led Reels, use the approved Part Two circular presenter bubble when Shannon needs to remain visible.
+- When the hook is Shannon speaking directly to camera, open clean and full-screen before introducing the visual system.
+- When Shannon and explanatory graphics need to remain visible together, prefer a deliberate split-screen with a dedicated head/presenter panel and a separate graphics panel. The panels, caption lane and Instagram UI reserve must not intersect. Use the approved Part Two circular presenter bubble only when the graphic genuinely needs most of the frame.
 - In photo carousels, place copy in genuine negative space using a local translucent field; do not hide most of the photo behind an opaque panel.
 
 ### Face privacy must never look censored
@@ -199,6 +200,7 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 
 | Date | Shannon's direction | Scalable rule | Affected formats |
 | --- | --- | --- | --- |
+| 2026-08-14 | My face is hidden, the edit fights the Instagram UI, and it is visually boring. Start full-screen on me, then use split-screen for my head and the graphics. | Open Shannon-led explainers human-first and full-screen. Move into a designed presenter/graphics split with hard face protection, its own caption lane and the conservative Instagram-safe rectangle; never float cards over Shannon's head. Use narration-linked layout and graphic changes rather than leaving a static slide in place. | Science Reels, predictive-brain explainers, talking-head edits, caption layouts and phone-preview QA |
 | 2026-08-14 | What about meals as well? And walks? | Treat selectable text layouts as a shared photo-overlay feature, not a workout-only feature. Apply Bold, Scorecard and Simple to meals/nutrition and activities alongside workouts and PBs. | Balance Feed and Instagram photo shares for meals, activities, workouts and PBs |
 | 2026-08-14 | The workout and PB share text is too small. Keep the colour option, but also let people change the text overlay. | Give workout and PB photo shares an independent text-layout selector with large phone-readable options. Preserve the selected colour and text layout through the preview and both share destinations. | Balance Feed workout/PB shares, Instagram workout/PB shares, share preview renderer |
 | 2026-08-13 | Make them match our colour theme, cream and gold. | Use a warm cream central proof field, deep green contrast text and gold as the only accent for structured Coach Metric Stories. Keep narrow deep-green UI bands only so Instagram's white controls remain readable. | Daily Proof Stories, structured proof templates, approval previews and Story automation |

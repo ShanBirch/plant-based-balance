@@ -101,7 +101,9 @@ Default runtime is 45–90 seconds. If the approved voice is too long, remove lo
 
 - Shannon's full face, eyes, mouth, jawline, hairline, head silhouette, and hat are protected space.
 - No title, caption, card, paper crop, diagram, CTA, logo, sticker, kinetic word, or decorative animation may touch or cross that space.
-- Use the approved circular presenter bubble for graphic-led scenes: complete face visible, blue ring, quiet orbit cue, `SHANNON` pill, fixed upper-right lane.
+- Open direct-to-camera hooks with clean full-screen Shannon before introducing graphic structure.
+- When Shannon and an explanation must remain visible together, prefer a true split-screen: one dedicated presenter/head panel, one dedicated graphic/source panel, and a third non-overlapping caption lane, all inside the Instagram-safe rectangle. Never simulate a split by floating a card over Shannon's face or torso.
+- Use the approved circular presenter bubble when the source or mechanism graphic genuinely needs most of the frame: complete face visible, blue ring, quiet orbit cue, `SHANNON` pill, fixed upper-right lane.
 - Keep Shannon visible as the human anchor. A long graphic or paper section should retain the bubble or return to Shannon within roughly 15–20 seconds.
 - Full-screen proof can briefly remove Shannon when it needs undivided attention, normally for about four seconds or less.
 - Check the fully entered and largest state of every animated CTA or card, not only its starting frame.
