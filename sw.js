@@ -17,7 +17,7 @@ const ASSETS = [
   './workout_library_extended.js',
   './js/dashboard/script_part_2.js?v=13',
   './js/dashboard/dashboard-script-3-1_get_user_data.js?v=58',
-  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=180',
+  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=182',
   './js/dashboard/pbb-app-telemetry.js?v=1',
 './js/dashboard/pbb-deferred-weeklygoals.js?v=31',
   './css/dashboard/pbb-onboarding-comeback.css?v=2',
