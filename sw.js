@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v321'; // v321: premium Foundations onboarding motion and section handoffs
+const CACHE_NAME = 'pbb-app-v322'; // v322: readable full-page walkthrough context
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

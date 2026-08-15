@@ -13640,7 +13640,18 @@ if(!window._pbbIsIOSSafari) {
   /* Client activation keeps the cream-and-gold onboarding language. */
   #guided-tour-spotlight {
     border-color: rgba(216,178,94,.9);
-    box-shadow: 0 0 0 9999px rgba(26,24,20,.76), 0 0 0 5px rgba(216,178,94,.12);
+    box-shadow: 0 0 0 9999px rgba(26,24,20,.34), 0 0 0 5px rgba(216,178,94,.12);
+  }
+  #guided-tour-overlay.tour-page-view #guided-tour-spotlight {
+    border-color: rgba(185,132,40,.96);
+    box-shadow:
+      0 0 0 9999px rgba(26,24,20,.08),
+      0 0 0 5px rgba(216,178,94,.2),
+      0 0 24px rgba(154,105,25,.2);
+  }
+  #guided-tour-overlay.tour-page-view #guided-tour-bubble {
+    background: linear-gradient(145deg, rgba(255,253,247,.97), rgba(248,240,222,.97));
+    box-shadow: 0 18px 44px rgba(35,27,14,.24);
   }
   #guided-tour-bubble {
     border: 1px solid rgba(154,105,25,.34);
@@ -13678,19 +13689,19 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#dm-voice-btn', fallbackSel:'.header-msg-icon', title:'Send a voice message', fallbackTitle:'Voice messages are in your DMs', body:'Tap the microphone, record your message, then tap send. You can cancel before it leaves.', fallbackBody:'Open Messages, choose a friend, then tap the microphone beside the message box.', action: async function(){ try { var coachId=window._coachUserId || (typeof getCoachUserId==='function' ? await getCoachUserId() : null); if(coachId && typeof openDirectMessage==='function') openDirectMessage(coachId,'Coach Shan',''); } catch(e){} await new Promise(function(r){ setTimeout(r,420); }); } },
     { tab:'dashboard', sel:'#weekly-goals-card', fallbackSel:'#next-obvious-steps-card', title:'Your starting goals', body:'These are the small promises Balance will help you keep this week. They are based on your setup and can change when real life changes.', clientActivation:true, clientActivationOnly:true },
     { tab:'meals', sel:'.camera-btn-widget,.meal-icon-btn', title:'Track what you actually eat', body:'A photo, barcode or quick entry gives us useful evidence. You are not trying to log perfectly; you are helping Balance learn your normal week.', clientActivation:true, clientActivationOnly:true },
-    { tab:'meals', sel:'#ai-plan-meals-list .ai-plan-hero', fallbackSel:'#ai-plan-meals-list,#browse-plans-pill', title:'Your meal plan', fallbackTitle:'Your meal plan', body:'The large card is the next meal you have not logged. Open its recipe, log it, or tap another meal to look ahead.', fallbackBody:'Open your meal plan to see the next meal first.', clientActivation:true, clientActivationOnly:true },
+    { tab:'meals', sel:'#ai-plan-meals-list .ai-plan-hero', fallbackSel:'#ai-plan-meals-list,#browse-plans-pill', title:'Your meal plan', fallbackTitle:'Your meal plan', body:'The large card is the next meal you have not logged. Open its recipe, log it, or tap another meal to look ahead.', fallbackBody:'Open your meal plan to see the next meal first.', pageView:true, clientActivation:true, clientActivationOnly:true },
     { tab:'meals', sel:'#ai-plan-shopping-toggle', fallbackSel:'#meal-plan-shopping-pill,#browse-plans-pill', title:'Your weekly shopping list', fallbackTitle:'Your shopping list', body:'Balance combines every ingredient in the selected week. Tick off what you already have, then download one simple list for the shops.', fallbackBody:'Open Shopping List to build it from your current meal plan.', clientActivation:true, clientActivationOnly:true, action:async function(){ try { if(typeof openAiMealPlanShoppingList==='function') await openAiMealPlanShoppingList(document.getElementById('meal-plan-shopping-pill')); } catch(e){} await new Promise(function(r){ setTimeout(r,220); }); } },
-    { tab:'learning', sel:'.course-library-intro', fallbackSel:'#learning-content', title:'Learn as you go', fallbackTitle:'Your course', body:'Your first Balance lesson explains why small visible actions matter. The rest of your course lives here when you are ready.', fallbackBody:'Your first Balance lesson and the rest of your course live here.', clientActivation:true, clientActivationOnly:true },
-    { tab:'friends', sel:'#feed-composer-card', title:'Make the change visible', body:'Feed is your low-pressure practice space. Sharing a normal meal, workout or hello gives you evidence that this is becoming part of who you are.', clientActivation:true, clientActivationOnly:true },
+    { tab:'learning', sel:'.course-library-intro', fallbackSel:'#learning-content', title:'Learn as you go', fallbackTitle:'Your course', body:'Your first Balance lesson explains why small visible actions matter. The rest of your course lives here when you are ready.', fallbackBody:'Your first Balance lesson and the rest of your course live here.', pageView:true, clientActivation:true, clientActivationOnly:true },
+    { tab:'friends', sel:'#feed-composer-card', title:'Make the change visible', body:'Feed is your low-pressure practice space. Sharing a normal meal, workout or hello gives you evidence that this is becoming part of who you are.', pageView:true, clientActivation:true, clientActivationOnly:true },
     { tab:'movement-tab', sel:'#today-workout-card', title:'Your workout program', body:'Your home program lives here. Start with the version that fits today, even when today is a worst-week day.', clientActivation:true, clientActivationOnly:true },
     { tab:'dashboard', sel:'#next-obvious-steps-card', fallbackSel:'#weekly-goals-card', title:'What to do today', body:'Home is where you come to see the few things that matter today. Balance keeps the next steps clear instead of giving you another huge to-do list.', metaPreview:true },
-    { tab:'cycle', sel:'#weekly-calendar', title:'Your workouts for the week', body:'This is your weekly calendar. Your planned workouts sit here, and you can move the days around when life changes.', metaPreview:true, action:function(){ try { if(typeof switchCalendarView === 'function') switchCalendarView('weekly'); } catch(e){} } },
+    { tab:'cycle', sel:'#weekly-calendar', title:'Your workouts for the week', body:'This is your weekly calendar. Your planned workouts sit here, and you can move the days around when life changes.', pageView:true, metaPreview:true, action:function(){ try { if(typeof switchCalendarView === 'function') switchCalendarView('weekly'); } catch(e){} } },
     { tab:'movement-tab', sel:'#today-workout-card', title:'Open your workout', body:'This is your next planned workout. We will open it now so you can see exactly what a session looks like.', metaPreview:true },
-    { tab:'movement-tab', sel:'#workout-exercises-list', fallbackSel:'#today-workout-card', title:'Track every set and rep', fallbackTitle:'Track every set and rep', body:'Your exercises, sets and reps are all laid out here. Use Swipe to move right to the next exercise, or switch back to List whenever you want.', fallbackBody:'Tap your workout to open the exercise list, track each set and rep, then swipe right for the next exercise.', metaPreview:true, action:async function(){ try { var card=document.getElementById('today-workout-card'); var player=document.getElementById('view-active-workout'); if(card && (!player || player.style.display==='none')) card.click(); } catch(e){} await new Promise(function(r){ setTimeout(r,420); }); } },
+    { tab:'movement-tab', sel:'#workout-exercises-list', fallbackSel:'#today-workout-card', title:'Track every set and rep', fallbackTitle:'Track every set and rep', body:'Your exercises, sets and reps are all laid out here. Use Swipe to move right to the next exercise, or switch back to List whenever you want.', fallbackBody:'Tap your workout to open the exercise list, track each set and rep, then swipe right for the next exercise.', pageView:true, metaPreview:true, action:async function(){ try { var card=document.getElementById('today-workout-card'); var player=document.getElementById('view-active-workout'); if(card && (!player || player.style.display==='none')) card.click(); } catch(e){} await new Promise(function(r){ setTimeout(r,420); }); } },
     { tab:'meals', sel:'.camera-btn-widget,.meal-icon-btn', title:'Track food with the camera', body:'Use the camera, barcode scanner or quick entry to log what you actually eat. It gives Balance useful evidence without needing you to be perfect.', metaPreview:true },
-    { tab:'meals', sel:'#ai-plan-meals-list .ai-plan-hero', fallbackSel:'#ai-plan-meals-list,#browse-plans-pill', title:'Your actual meal plan', fallbackTitle:'Your meal plan is being prepared', body:'This is the meal plan generated from your setup answers. Open a recipe, log a meal, or look ahead through the week.', fallbackBody:'Balance prepares this from your setup answers before the tour reaches Nutrition, so your real plan is ready to explore.', metaPreview:true, action:async function(){ try { if(typeof window.ensureMetaPreviewMealPlan === 'function') await window.ensureMetaPreviewMealPlan(); if(typeof switchWeek === 'function') switchWeek('meal-plan-store', document.getElementById('browse-plans-pill')); } catch(e){} await new Promise(function(r){ setTimeout(r,320); }); } },
-    { tab:'learning', sel:'.course-library-intro', fallbackSel:'#learning-content', title:'Your six-week course', fallbackTitle:'Your six-week course', body:'Your complete Balance Foundations course lives here. Each week gives you the next lessons and actions without dumping everything on you at once.', fallbackBody:'Your six weeks of Balance Foundations lessons live in the Course tab.', metaPreview:true },
-    { tab:'friends', sel:'#friends-photo-feed .meta-preview-feed-post', fallbackSel:'#friends-photo-feed .feed-post-card,#feed-composer-card', title:'The Balance community', fallbackTitle:'The Balance community', body:'This is the live Feed. You can see Coach Shan’s posts, photos and the wins people share inside Balance.', fallbackBody:'This is the Balance Feed, where Coach Shan posts and members share meals, workouts and wins.', metaPreview:true, action:async function(){ try { if(window.BalanceMetaAdTrial && typeof window.BalanceMetaAdTrial.loadPreviewFeed === 'function') await window.BalanceMetaAdTrial.loadPreviewFeed(); } catch(e){} await new Promise(function(r){ setTimeout(r,220); }); } },
+    { tab:'meals', sel:'#ai-plan-meals-list .ai-plan-hero', fallbackSel:'#ai-plan-meals-list,#browse-plans-pill', title:'Your actual meal plan', fallbackTitle:'Your meal plan is being prepared', body:'This is the meal plan generated from your setup answers. Open a recipe, log a meal, or look ahead through the week.', fallbackBody:'Balance prepares this from your setup answers before the tour reaches Nutrition, so your real plan is ready to explore.', pageView:true, metaPreview:true, action:async function(){ try { if(typeof window.ensureMetaPreviewMealPlan === 'function') await window.ensureMetaPreviewMealPlan(); if(typeof switchWeek === 'function') switchWeek('meal-plan-store', document.getElementById('browse-plans-pill')); } catch(e){} await new Promise(function(r){ setTimeout(r,320); }); } },
+    { tab:'learning', sel:'.course-library-intro', fallbackSel:'#learning-content', title:'Your six-week course', fallbackTitle:'Your six-week course', body:'Your complete Balance Foundations course lives here. Each week gives you the next lessons and actions without dumping everything on you at once.', fallbackBody:'Your six weeks of Balance Foundations lessons live in the Course tab.', pageView:true, metaPreview:true },
+    { tab:'friends', sel:'#friends-photo-feed .meta-preview-feed-post', fallbackSel:'#friends-photo-feed .feed-post-card,#feed-composer-card', title:'The Balance community', fallbackTitle:'The Balance community', body:'This is the live Feed. You can see Coach Shan’s posts, photos and the wins people share inside Balance.', fallbackBody:'This is the Balance Feed, where Coach Shan posts and members share meals, workouts and wins.', pageView:true, metaPreview:true, action:async function(){ try { if(window.BalanceMetaAdTrial && typeof window.BalanceMetaAdTrial.loadPreviewFeed === 'function') await window.BalanceMetaAdTrial.loadPreviewFeed(); } catch(e){} await new Promise(function(r){ setTimeout(r,220); }); } },
     { tab:'friends', sel:'#feed-composer-card', title:'Post when you need support', body:'Share a meal, workout, question or win here. It helps Shannon see what is really happening and gives the community a chance to support you.', metaPreview:true },
     { tab:'dashboard', sel:'#meta-ad-trial-inbox-preview-card', title:'Your message from Shannon', body:'This is your Balance Inbox. Shannon’s welcome note and weekly check-ins live here, beside your actual plan.', metaPreview:true, action:async function(){ try { if(window.BalanceMetaAdTrial && typeof window.BalanceMetaAdTrial.showInboxPreview === 'function') window.BalanceMetaAdTrial.showInboxPreview(); } catch(e){} await new Promise(function(r){ setTimeout(r,180); }); } },
     { tab:'dashboard', sel:'#weekly-goals-card', fallbackSel:'#next-obvious-steps-card', title:'Set your Weekly Goals', body:'Choose the goals you are ready to commit to this week. When you finish the tour, your setup stays saved and you can unlock the full six-week Foundations course for AU$89 once.', metaPreview:true, metaPreviewSignoff:true, action:async function(){ try { var card=document.getElementById('weekly-goals-card'); if(card && typeof card.click==='function') card.click(); } catch(e){} await new Promise(function(r){ setTimeout(r,180); }); } },
@@ -13991,9 +14002,14 @@ if(!window._pbbIsIOSSafari) {
   }
 
   function positionBubbleAndSpotlight(target, step){
+    const overlay = document.getElementById('guided-tour-overlay');
     const spot = document.getElementById('guided-tour-spotlight');
     const bubble = document.getElementById('guided-tour-bubble');
     if (!spot || !bubble) return;
+
+    const pageView = !!(step && step.pageView);
+    if (overlay) overlay.classList.toggle('tour-page-view', pageView);
+    bubble.style.bottom = '';
 
     if (!target) {
       spot.style.opacity = '0';
@@ -14022,6 +14038,13 @@ if(!window._pbbIsIOSSafari) {
 
     const bubbleH = bubble.offsetHeight || 180;
     const safeTop = 40;
+    if (pageView) {
+      const pageBubbleTop = Math.max(safeTop, vh - bubbleH - Math.max(bottomReserve, 82));
+      bubble.style.top = pageBubbleTop + 'px';
+      const pageBubbleW = bubble.offsetWidth || 320;
+      bubble.style.left = Math.max(8, (vw - pageBubbleW) / 2) + 'px';
+      return;
+    }
     const spaceBelow = vh - (top + height);
     const spaceAbove = top;
     let bubbleTop;
@@ -15581,9 +15604,14 @@ window.endFeatureTour = function(skipped){
   }
 
   function positionReveal(target, step) {
+    var overlay = document.getElementById('guided-tour-overlay');
     var spot = document.getElementById('guided-tour-spotlight');
     var bubble = document.getElementById('guided-tour-bubble');
     if (!spot || !bubble) return;
+
+    var pageView = !!(step && step.pageView);
+    if (overlay) overlay.classList.toggle('tour-page-view', pageView);
+    bubble.style.bottom = '';
 
     if (!target) {
       spot.style.width = '0px'; spot.style.height = '0px';
@@ -15610,6 +15638,13 @@ window.endFeatureTour = function(skipped){
 
     var bubbleH = bubble.offsetHeight || 180;
     var safeTop = 40;
+    if (pageView) {
+      var pageBubbleTop = Math.max(safeTop, vh - bubbleH - Math.max(bottomReserve, 82));
+      bubble.style.top = pageBubbleTop + 'px';
+      var pageBubbleW = bubble.offsetWidth || 320;
+      bubble.style.left = Math.max(8, (vw - pageBubbleW) / 2) + 'px';
+      return;
+    }
     var spaceBelow = vh - (top + height);
     var spaceAbove = top;
     var bubbleTop;
@@ -16645,7 +16680,7 @@ if (window._pbbIsIOSSafari) {
 }
 </script>
 
-<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=95">
+<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=96-tour-context">
 <link rel="stylesheet" href="css/dashboard/pbb-onboarding-comeback.css?v=8">
 <link rel="stylesheet" href="css/dashboard/pbb-onboarding-foundations.css?v=4">
 
