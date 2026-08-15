@@ -1143,7 +1143,7 @@ test('paid Meta guided sales stages move goal to blocker to complete offer to pr
         'the approved proof video must survive into the sender payload'
     );
     assert.ok(
-        fs.statSync(path.join(__dirname, '..', 'assets', 'balance-foundations-app-proof.mp4')).size > 1_000_000,
+        fs.statSync(path.join(__dirname, '..', 'assets', 'balance-foundations-app-proof-v2.mp4')).size > 1_000_000,
         'the public evergreen app proof video must be packaged with the site'
     );
     assert.match(offerReply.joined, /before making a payment/i);
