@@ -13099,7 +13099,7 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=185-exercise-thumbnails-light-launch';
+s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=186-onboarding-motion';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
@@ -13141,7 +13141,7 @@ s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=185
         var s = document.createElement('script');
         s.async = false;
         s.dataset.metaTrialLoader = String(attempt);
-        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=185-exercise-thumbnails-light-launch&meta_retry=' + attempt;
+        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=186-onboarding-motion&meta_retry=' + attempt;
         s.onload = function() {
             if (window._pbbScript5Complete && window._switchAppTabReady && typeof window._switchAppTabReal === 'function') {
                 sessionStorage.removeItem('pbb_meta_script5_recovery_v1');
@@ -13160,7 +13160,7 @@ s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=185
         document.head.appendChild(s);
     })(0);
 } else {
-document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=185-exercise-thumbnails-light-launch"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=186-onboarding-motion"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=3"></script>
@@ -15990,6 +15990,22 @@ window.endFeatureTour = function(skipped){
             <h2 id="wizard-title" style="margin:0; color:var(--primary);">Setup Chat</h2>
         </div>
 
+        <div id="wizard-section-transition" class="wizard-section-transition" aria-hidden="true" aria-live="polite" aria-atomic="true">
+            <div class="wizard-section-transition-glow" aria-hidden="true"></div>
+            <div class="wizard-section-transition-orbit" aria-hidden="true">
+                <span></span><span></span><span></span>
+                <img src="balance_logo_transparent.svg" alt="">
+            </div>
+            <p id="wizard-section-transition-kicker" class="wizard-section-transition-kicker">PROFILE MATCHED</p>
+            <h3 id="wizard-section-transition-title">Shaping your Balance</h3>
+            <p id="wizard-section-transition-copy">Turning your answers into a practical first week.</p>
+            <div class="wizard-section-transition-stages" aria-hidden="true">
+                <span data-transition-stage="profile"><i></i>Profile</span>
+                <span data-transition-stage="training"><i></i>Training</span>
+                <span data-transition-stage="plan"><i></i>Plan</span>
+            </div>
+        </div>
+
         <!-- CONTENT SLIDES -->
         <div class="wizard-content" style="flex: 1; padding: 25px; overflow-y: auto; min-height: 0;">
 
@@ -16631,7 +16647,7 @@ if (window._pbbIsIOSSafari) {
 
 <link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=95">
 <link rel="stylesheet" href="css/dashboard/pbb-onboarding-comeback.css?v=8">
-<link rel="stylesheet" href="css/dashboard/pbb-onboarding-foundations.css?v=3">
+<link rel="stylesheet" href="css/dashboard/pbb-onboarding-foundations.css?v=4">
 
 
 <script src="js/dashboard/script_part_24.js?v=2"></script>

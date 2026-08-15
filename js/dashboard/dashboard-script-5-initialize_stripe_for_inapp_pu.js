@@ -7493,6 +7493,8 @@ const skippedWizardSlides = [2, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
 const finalWizardStep = 19;
 let wizardSlideTransitionTimer = null;
 const wizardSlideTransitionMs = 280;
+let wizardSectionTransitionTimer = null;
+const wizardSectionTransitionMs = 820;
 
 function setOnboardingScrollLock(locked) {
     try {
@@ -8236,6 +8238,8 @@ let wizardChatAskToken = 0;
 let wizardChatViewportBound = false;
 let wizardChatControlsBound = false;
 let wizardChatKeepKeyboardAfterSubmit = false;
+let wizardChatChoicePending = false;
+let wizardChatQuestionMotionTimer = null;
 
 function getWizardChatStep() {
     return WIZARD_CHAT_STEPS[wizardChatStepIndex] || null;
@@ -8578,6 +8582,40 @@ function setWizardChatLayoutMode({ noTextbox = false, intro = false } = {}) {
     wizard.classList.toggle('wizard-chat-complete', !!wizardChatComplete);
 }
 
+function wizardPrefersReducedMotion() {
+    return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+}
+
+function confirmWizardChatChoice(button, callback) {
+    if (wizardChatChoicePending || typeof callback !== 'function') return;
+    const choicesEl = document.getElementById('wizard-chat-choices');
+    wizardChatChoicePending = true;
+    if (choicesEl) {
+        choicesEl.setAttribute('aria-busy', 'true');
+        choicesEl.querySelectorAll('button').forEach(choice => { choice.disabled = true; });
+    }
+    if (button) button.classList.add('is-confirmed');
+
+    setTimeout(() => {
+        wizardChatChoicePending = false;
+        if (choicesEl) choicesEl.removeAttribute('aria-busy');
+        callback();
+    }, wizardPrefersReducedMotion() ? 20 : 190);
+}
+
+function restartWizardChatQuestionMotion() {
+    const intake = document.querySelector('#onboarding-wizard .wizard-chat-intake');
+    if (!intake) return;
+    if (wizardChatQuestionMotionTimer) clearTimeout(wizardChatQuestionMotionTimer);
+    intake.classList.remove('wizard-chat-question-entering');
+    void intake.offsetWidth;
+    intake.classList.add('wizard-chat-question-entering');
+    wizardChatQuestionMotionTimer = setTimeout(() => {
+        intake.classList.remove('wizard-chat-question-entering');
+        wizardChatQuestionMotionTimer = null;
+    }, wizardPrefersReducedMotion() ? 20 : 620);
+}
+
 function bindWizardChatControlEvents() {
     if (wizardChatControlsBound) return;
     const choicesEl = document.getElementById('wizard-chat-choices');
@@ -8596,10 +8634,10 @@ function bindWizardChatControlEvents() {
 
         const action = button.dataset.wizardChatAction;
         const value = button.dataset.value || '';
-        if (action === 'start') selectWizardChatStart(value);
-        else if (action === 'choice') selectWizardChatChoice(value);
+        if (action === 'start') confirmWizardChatChoice(button, () => selectWizardChatStart(value));
+        else if (action === 'choice') confirmWizardChatChoice(button, () => selectWizardChatChoice(value));
         else if (action === 'multi') toggleWizardChatMulti(value, button);
-        else if (action === 'multi-submit') submitWizardChatMultiAnswer();
+        else if (action === 'multi-submit') confirmWizardChatChoice(button, submitWizardChatMultiAnswer);
         else if (action === 'continue') wizardNext();
     });
 }
@@ -8694,6 +8732,7 @@ function renderWizardChatControls() {
     input.setAttribute('enterkeyhint', 'send');
 
     choicesEl.innerHTML = '';
+    choicesEl.removeAttribute('aria-busy');
     helper.textContent = '';
     sendBtn.onmousedown = event => event.preventDefault();
     sendBtn.onclick = event => {
@@ -8870,6 +8909,7 @@ function askWizardChatQuestion(options = {}) {
     renderWizardChatMessages();
     renderWizardChatProgress();
     renderWizardChatControls();
+    restartWizardChatQuestionMotion();
 }
 
 function initializeWizardChatIntake() {
@@ -10676,6 +10716,68 @@ function startFitgotchiStory(onComplete) {
     }
 }
 
+function getWizardSectionTransition(step) {
+    const transitions = {
+        3: {
+            kicker: 'PROFILE MATCHED',
+            title: 'Now for your body rhythm',
+            copy: 'One optional choice, then we will shape your training week.',
+            stage: 0
+        },
+        4: {
+            kicker: 'PROFILE MATCHED',
+            title: 'Shaping your training week',
+            copy: 'Matching session length and days to the routine you can actually keep.',
+            stage: 1
+        },
+        7: {
+            kicker: 'TRAINING MAPPED',
+            title: 'Your week is taking shape',
+            copy: 'A quick check of your days and times before Balance locks in the plan.',
+            stage: 1
+        },
+        19: {
+            kicker: 'BUILDING YOUR BALANCE',
+            title: 'Your first week is almost ready',
+            copy: 'Joining your profile, training week and meal settings into one clear start.',
+            stage: 2,
+            duration: 1160
+        }
+    };
+    return transitions[step] || null;
+}
+
+function playWizardSectionTransition(step, movingBack = false) {
+    const transition = document.getElementById('wizard-section-transition');
+    const config = !movingBack ? getWizardSectionTransition(step) : null;
+    if (!transition || !config) return;
+
+    if (wizardSectionTransitionTimer) clearTimeout(wizardSectionTransitionTimer);
+    const kicker = document.getElementById('wizard-section-transition-kicker');
+    const title = document.getElementById('wizard-section-transition-title');
+    const copy = document.getElementById('wizard-section-transition-copy');
+    if (kicker) kicker.textContent = config.kicker;
+    if (title) title.textContent = config.title;
+    if (copy) copy.textContent = config.copy;
+
+    transition.querySelectorAll('[data-transition-stage]').forEach((stage, index) => {
+        stage.classList.toggle('is-complete', index < config.stage);
+        stage.classList.toggle('is-active', index === config.stage);
+    });
+
+    transition.classList.remove('is-active');
+    transition.setAttribute('aria-hidden', 'false');
+    void transition.offsetWidth;
+    transition.classList.add('is-active');
+
+    const duration = wizardPrefersReducedMotion() ? 80 : (config.duration || wizardSectionTransitionMs);
+    wizardSectionTransitionTimer = setTimeout(() => {
+        transition.classList.remove('is-active');
+        transition.setAttribute('aria-hidden', 'true');
+        wizardSectionTransitionTimer = null;
+    }, duration);
+}
+
 function updateWizardUI() {
     const previouslyActiveSlide = document.querySelector('#onboarding-wizard .wizard-slide.slide-active');
     const previousStepMatch = previouslyActiveSlide?.id?.match(/^slide-(\d+)$/);
@@ -10704,6 +10806,8 @@ function updateWizardUI() {
         wizardOverlay.dataset.step = String(currentWizardStep);
         if (currentWizardStep !== 1) wizardOverlay.classList.remove('wizard-chat-keyboard');
     }
+
+    if (isChangingSlides) playWizardSectionTransition(currentWizardStep, isMovingBack);
 
     if (wizardContent && isChangingSlides) {
         const transitionHeight = Math.max(wizardContent.offsetHeight || 0, previouslyActiveSlide.offsetHeight || 0, 280);

@@ -26,9 +26,9 @@ test('training-day guidance is refreshed after a custom day selection', () => {
     );
 });
 
-test('new members receive the quick tour rather than the full replay tour', () => {
-    assert.doesNotMatch(onboardingSource, /startFeatureTour\(true\)/);
-    assert.ok((onboardingSource.match(/startFeatureTour\(\);/g) || []).length >= 2);
+test('new members and paid preview users enter the correct guided tour mode', () => {
+    assert.match(onboardingSource, /start\(true, \{ clientActivation: true \}\)/);
+    assert.match(onboardingSource, /start\(false, \{ metaPreview: true \}\)/);
 });
 
 test('Balance assigns and persists the first Weekly Goals from onboarding', () => {
@@ -63,7 +63,7 @@ test('comeback onboarding uses the Balance identity, mobile safe areas, and redu
 });
 
 test('calendar preview explains how to use the easy-session minimum', () => {
-    assert.match(onboardingSource, /Your \$\{starterMinutes\}-minute minimum:/);
+    assert.match(onboardingSource, /Your ' \+ starterMinutes \+ '-minute minimum:/);
     assert.match(onboardingSource, /The full session is there when you have more\./);
 });
 
@@ -74,7 +74,37 @@ test('onboarding ships a cache-busted authoritative cream-and-gold skin', () => 
     assert.match(foundationsCss, /#onboarding-wizard \.wizard-chat-bubble\.coach:last-child[\s\S]*?-webkit-text-fill-color: var\(--foundations-ink\) !important;/);
     assert.match(foundationsCss, /@media \(prefers-reduced-motion: reduce\)/);
     assert.match(dashboardSource, /pbb-onboarding-comeback\.css\?v=8/);
-    assert.match(dashboardSource, /pbb-onboarding-foundations\.css\?v=3/);
+    assert.match(dashboardSource, /pbb-onboarding-foundations\.css\?v=4/);
+});
+
+test('Foundations gives each real setup section a compact branded transition', () => {
+    assert.equal((dashboardSource.match(/id="wizard-section-transition"/g) || []).length, 1);
+    assert.match(dashboardSource, /id="onboarding-wizard"[\s\S]*?id="wizard-section-transition"[\s\S]*?aria-live="polite"/);
+    assert.match(dashboardSource, /data-transition-stage="profile"/);
+    assert.match(dashboardSource, /data-transition-stage="training"/);
+    assert.match(dashboardSource, /data-transition-stage="plan"/);
+    assert.match(onboardingSource, /function getWizardSectionTransition\(step\)/);
+    assert.match(onboardingSource, /3: \{[\s\S]*?PROFILE MATCHED/);
+    assert.match(onboardingSource, /4: \{[\s\S]*?Shaping your training week/);
+    assert.match(onboardingSource, /7: \{[\s\S]*?TRAINING MAPPED/);
+    assert.match(onboardingSource, /19: \{[\s\S]*?BUILDING YOUR BALANCE/);
+    assert.match(onboardingSource, /const wizardSectionTransitionMs = 820/);
+    assert.match(onboardingSource, /duration: 1160/);
+    assert.match(onboardingSource, /wizardPrefersReducedMotion\(\) \? 80/);
+    assert.match(foundationsCss, /\.wizard-section-transition\.is-active/);
+    assert.match(foundationsCss, /foundationsTransitionOrbit/);
+});
+
+test('question motion confirms a choice, blocks double taps, and respects reduced motion', () => {
+    assert.match(onboardingSource, /let wizardChatChoicePending = false/);
+    assert.match(onboardingSource, /function confirmWizardChatChoice\(button, callback\)/);
+    assert.match(onboardingSource, /choicesEl\.setAttribute\('aria-busy', 'true'\)/);
+    assert.match(onboardingSource, /button\.classList\.add\('is-confirmed'\)/);
+    assert.match(onboardingSource, /function restartWizardChatQuestionMotion\(\)/);
+    assert.match(foundationsCss, /\.wizard-chat-choice\.is-confirmed/);
+    assert.match(foundationsCss, /foundationsQuestionIn/);
+    assert.match(foundationsCss, /foundationsChoiceIn/);
+    assert.match(foundationsCss, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.wizard-section-transition-orbit > span/);
 });
 
 test('long answer lists scroll without overlapping the typed-answer controls', () => {

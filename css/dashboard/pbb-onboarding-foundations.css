@@ -162,6 +162,10 @@ html[data-pbb-theme="dark"] #onboarding-wizard .onboarding-modal.wizard-containe
     box-shadow: 0 0 14px rgba(138, 90, 18, .26) !important;
 }
 
+#onboarding-wizard #wizard-chat-progress-fill {
+    transition: width .42s cubic-bezier(.16, 1, .3, 1) !important;
+}
+
 #onboarding-wizard .wizard-content {
     min-height: 0 !important;
     padding: 12px 24px 20px !important;
@@ -322,6 +326,284 @@ html[data-pbb-theme="dark"] #onboarding-wizard .onboarding-modal.wizard-containe
     box-shadow: 0 12px 28px rgba(138, 90, 18, .20), inset 0 1px 0 rgba(255,255,255,.7) !important;
 }
 
+#onboarding-wizard .wizard-chat-choice.is-confirmed,
+#onboarding-wizard .wizard-chat-choice.is-confirmed:disabled {
+    opacity: 1 !important;
+    border-color: #8a5a12 !important;
+    background: linear-gradient(135deg, #f4e6c2, #d8b25e) !important;
+    box-shadow: 0 8px 18px rgba(138, 90, 18, .22), 0 0 0 4px rgba(216, 178, 94, .16) !important;
+    transform: scale(.975) !important;
+}
+
+#onboarding-wizard .wizard-chat-choice.is-confirmed::before {
+    content: "\2713";
+    display: inline-grid;
+    width: 22px;
+    height: 22px;
+    margin-right: 8px;
+    place-items: center;
+    border-radius: 50%;
+    background: #17130e;
+    color: #fffaf2;
+    -webkit-text-fill-color: #fffaf2;
+    font-size: .75rem;
+    line-height: 1;
+    animation: foundationsChoiceCheck .22s cubic-bezier(.16, 1, .3, 1) both;
+}
+
+#onboarding-wizard .wizard-chat-choices[aria-busy="true"] .wizard-chat-choice:not(.is-confirmed) {
+    opacity: .52 !important;
+}
+
+#onboarding-wizard .wizard-chat-question-entering .wizard-chat-bubble.coach {
+    animation: foundationsQuestionIn .42s cubic-bezier(.16, 1, .3, 1) both;
+}
+
+#onboarding-wizard .wizard-chat-question-entering .wizard-chat-bubble.coach:first-child:not(:last-child) {
+    animation-delay: 40ms;
+}
+
+#onboarding-wizard .wizard-chat-question-entering .wizard-chat-choice {
+    animation: foundationsChoiceIn .38s cubic-bezier(.16, 1, .3, 1) both;
+}
+
+#onboarding-wizard .wizard-chat-question-entering .wizard-chat-choice:nth-child(2) { animation-delay: 45ms; }
+#onboarding-wizard .wizard-chat-question-entering .wizard-chat-choice:nth-child(3) { animation-delay: 90ms; }
+#onboarding-wizard .wizard-chat-question-entering .wizard-chat-choice:nth-child(4) { animation-delay: 135ms; }
+#onboarding-wizard .wizard-chat-question-entering .wizard-chat-choice:nth-child(n+5) { animation-delay: 175ms; }
+
+#onboarding-wizard .wizard-section-transition {
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+    display: grid;
+    grid-template-rows: 148px auto auto auto auto;
+    align-content: center;
+    justify-items: center;
+    gap: 12px;
+    padding: 34px 28px;
+    overflow: hidden;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    text-align: center;
+    background:
+        radial-gradient(circle at 50% 27%, rgba(216, 178, 94, .27), transparent 30%),
+        linear-gradient(145deg, rgba(255, 253, 248, .995), rgba(247, 235, 207, .995));
+    color: var(--foundations-ink);
+    -webkit-text-fill-color: var(--foundations-ink);
+    transition: opacity .18s ease, visibility 0s linear .18s;
+}
+
+#onboarding-wizard .wizard-section-transition::before,
+#onboarding-wizard .wizard-section-transition::after {
+    content: "";
+    position: absolute;
+    pointer-events: none;
+}
+
+#onboarding-wizard .wizard-section-transition::before {
+    inset: 0;
+    opacity: .48;
+    background-image: radial-gradient(circle, rgba(138, 90, 18, .48) 0 1px, transparent 1.5px);
+    background-size: 32px 32px;
+    mask-image: linear-gradient(to bottom, #000, transparent 74%);
+    -webkit-mask-image: linear-gradient(to bottom, #000, transparent 74%);
+}
+
+#onboarding-wizard .wizard-section-transition::after {
+    top: 0;
+    bottom: 0;
+    width: 36%;
+    left: -42%;
+    background: linear-gradient(100deg, transparent, rgba(255,255,255,.88), transparent);
+    transform: skewX(-12deg);
+}
+
+#onboarding-wizard .wizard-section-transition.is-active {
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
+    transition-delay: 0s;
+}
+
+#onboarding-wizard .wizard-section-transition.is-active::after {
+    animation: foundationsTransitionSweep .92s cubic-bezier(.16, 1, .3, 1) both;
+}
+
+#onboarding-wizard .wizard-section-transition-glow {
+    position: absolute;
+    width: 250px;
+    aspect-ratio: 1;
+    top: calc(50% - 210px);
+    left: calc(50% - 125px);
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(216,178,94,.38), rgba(138,90,18,.08) 50%, transparent 70%);
+    filter: blur(8px);
+}
+
+#onboarding-wizard .wizard-section-transition-orbit {
+    position: relative;
+    width: 132px;
+    height: 132px;
+    display: grid;
+    place-items: center;
+}
+
+#onboarding-wizard .wizard-section-transition-orbit > span {
+    position: absolute;
+    inset: 9px;
+    border: 1px solid rgba(138,90,18,.42);
+    border-radius: 50%;
+    box-shadow: 0 0 24px rgba(216,178,94,.16);
+}
+
+#onboarding-wizard .wizard-section-transition-orbit > span:nth-child(1) {
+    border-top-color: #8a5a12;
+    border-right-color: transparent;
+    animation: foundationsTransitionOrbit 1.8s linear infinite;
+}
+
+#onboarding-wizard .wizard-section-transition-orbit > span:nth-child(2) {
+    inset: 22px;
+    border-bottom-color: #d8b25e;
+    border-left-color: transparent;
+    animation: foundationsTransitionOrbit 1.25s linear infinite reverse;
+}
+
+#onboarding-wizard .wizard-section-transition-orbit > span:nth-child(3) {
+    inset: 0;
+    border-color: rgba(216,178,94,.22);
+    box-shadow: 0 0 0 12px rgba(216,178,94,.045), 0 0 42px rgba(138,90,18,.14);
+    animation: foundationsTransitionPulse 1.35s ease-in-out infinite;
+}
+
+#onboarding-wizard .wizard-section-transition-orbit img {
+    position: relative;
+    z-index: 2;
+    width: 72px;
+    height: 72px;
+    object-fit: contain;
+    filter: drop-shadow(0 10px 16px rgba(74,48,10,.18));
+    animation: foundationsTransitionLogo .78s cubic-bezier(.16, 1, .3, 1) both;
+}
+
+#onboarding-wizard .wizard-section-transition-kicker {
+    position: relative;
+    z-index: 2;
+    margin: 2px 0 0;
+    color: var(--foundations-gold) !important;
+    -webkit-text-fill-color: var(--foundations-gold) !important;
+    font: 850 .76rem/1.2 "Montserrat", system-ui, sans-serif;
+    letter-spacing: .18em;
+}
+
+#onboarding-wizard .wizard-section-transition h3 {
+    position: relative;
+    z-index: 2;
+    max-width: 390px;
+    margin: 0;
+    color: var(--foundations-ink) !important;
+    -webkit-text-fill-color: var(--foundations-ink) !important;
+    font: 900 clamp(1.65rem, 6.5vw, 2.35rem)/1.02 "Montserrat", system-ui, sans-serif;
+    letter-spacing: -.045em;
+    text-wrap: balance;
+}
+
+#onboarding-wizard .wizard-section-transition > p:not(.wizard-section-transition-kicker) {
+    position: relative;
+    z-index: 2;
+    max-width: 360px;
+    margin: 0;
+    color: var(--foundations-muted) !important;
+    -webkit-text-fill-color: var(--foundations-muted) !important;
+    font: 650 .95rem/1.5 system-ui, sans-serif;
+}
+
+#onboarding-wizard .wizard-section-transition-stages {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: min(100%, 340px);
+    margin-top: 12px;
+}
+
+#onboarding-wizard .wizard-section-transition-stages span {
+    position: relative;
+    display: grid;
+    justify-items: center;
+    gap: 7px;
+    color: rgba(98, 89, 71, .62) !important;
+    -webkit-text-fill-color: rgba(98, 89, 71, .62) !important;
+    font: 750 .68rem/1.1 "Montserrat", system-ui, sans-serif;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+#onboarding-wizard .wizard-section-transition-stages span::before {
+    content: "";
+    position: absolute;
+    top: 7px;
+    left: -50%;
+    width: 100%;
+    height: 2px;
+    background: rgba(138, 90, 18, .16);
+}
+
+#onboarding-wizard .wizard-section-transition-stages span:first-child::before { display: none; }
+
+#onboarding-wizard .wizard-section-transition-stages i {
+    position: relative;
+    z-index: 2;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(138,90,18,.28);
+    border-radius: 50%;
+    background: var(--foundations-paper);
+}
+
+#onboarding-wizard .wizard-section-transition-stages span.is-complete,
+#onboarding-wizard .wizard-section-transition-stages span.is-active {
+    color: var(--foundations-gold) !important;
+    -webkit-text-fill-color: var(--foundations-gold) !important;
+}
+
+#onboarding-wizard .wizard-section-transition-stages span.is-complete i {
+    border-color: #8a5a12;
+    background: #8a5a12;
+    box-shadow: 0 0 0 4px rgba(216,178,94,.13);
+}
+
+#onboarding-wizard .wizard-section-transition-stages span.is-complete i::after {
+    content: "\2713";
+    position: absolute;
+    inset: -2px;
+    display: grid;
+    place-items: center;
+    color: #fffaf2;
+    -webkit-text-fill-color: #fffaf2;
+    font: 800 10px/1 system-ui, sans-serif;
+}
+
+#onboarding-wizard .wizard-section-transition-stages span.is-active i {
+    border-color: #8a5a12;
+    background: #d8b25e;
+    box-shadow: 0 0 0 5px rgba(216,178,94,.17), 0 0 18px rgba(138,90,18,.25);
+    animation: foundationsStagePulse 1s ease-in-out infinite;
+}
+
+#onboarding-wizard .wizard-section-transition.is-active .wizard-section-transition-kicker,
+#onboarding-wizard .wizard-section-transition.is-active h3,
+#onboarding-wizard .wizard-section-transition.is-active > p:not(.wizard-section-transition-kicker),
+#onboarding-wizard .wizard-section-transition.is-active .wizard-section-transition-stages {
+    animation: foundationsTransitionCopy .46s cubic-bezier(.16, 1, .3, 1) both;
+}
+
+#onboarding-wizard .wizard-section-transition.is-active h3 { animation-delay: 70ms; }
+#onboarding-wizard .wizard-section-transition.is-active > p:not(.wizard-section-transition-kicker) { animation-delay: 120ms; }
+#onboarding-wizard .wizard-section-transition.is-active .wizard-section-transition-stages { animation-delay: 165ms; }
+
 #onboarding-wizard .wizard-chat-input-row input,
 #onboarding-wizard .wizard-input,
 #onboarding-wizard input,
@@ -408,6 +690,50 @@ html[data-pbb-theme="dark"] #onboarding-wizard .onboarding-modal.wizard-containe
     to { background-position: 22% 16%, 76% 74%, 0 0; }
 }
 
+@keyframes foundationsQuestionIn {
+    from { opacity: 0; transform: translateY(12px); filter: blur(3px); }
+    to { opacity: 1; transform: none; filter: blur(0); }
+}
+
+@keyframes foundationsChoiceIn {
+    from { opacity: 0; transform: translateY(14px) scale(.985); }
+    to { opacity: 1; transform: translateZ(0); }
+}
+
+@keyframes foundationsChoiceCheck {
+    from { opacity: 0; transform: scale(.4) rotate(-20deg); }
+    to { opacity: 1; transform: scale(1) rotate(0); }
+}
+
+@keyframes foundationsTransitionOrbit {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes foundationsTransitionPulse {
+    0%, 100% { transform: scale(.94); opacity: .55; }
+    50% { transform: scale(1.05); opacity: 1; }
+}
+
+@keyframes foundationsTransitionLogo {
+    from { opacity: 0; transform: scale(.72) rotate(-8deg); }
+    to { opacity: 1; transform: scale(1) rotate(0); }
+}
+
+@keyframes foundationsTransitionCopy {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: none; }
+}
+
+@keyframes foundationsTransitionSweep {
+    from { left: -42%; }
+    to { left: 118%; }
+}
+
+@keyframes foundationsStagePulse {
+    0%, 100% { transform: scale(.9); }
+    50% { transform: scale(1.08); }
+}
+
 @media (max-width: 560px) {
     #onboarding-wizard.onboarding-overlay {
         align-items: flex-start !important;
@@ -449,6 +775,21 @@ html[data-pbb-theme="dark"] #onboarding-wizard .onboarding-modal.wizard-containe
         min-height: 58px !important;
         font-size: 1rem !important;
     }
+
+    #onboarding-wizard .wizard-section-transition {
+        grid-template-rows: 132px auto auto auto auto;
+        padding: 26px 22px;
+    }
+
+    #onboarding-wizard .wizard-section-transition-orbit {
+        width: 118px;
+        height: 118px;
+    }
+
+    #onboarding-wizard .wizard-section-transition-orbit img {
+        width: 64px;
+        height: 64px;
+    }
 }
 
 @media (max-height: 690px) and (max-width: 560px) {
@@ -473,6 +814,22 @@ html[data-pbb-theme="dark"] #onboarding-wizard .onboarding-modal.wizard-containe
         min-height: 50px !important;
         padding: 10px 13px !important;
     }
+
+    #onboarding-wizard .wizard-section-transition {
+        grid-template-rows: 102px auto auto auto auto;
+        gap: 8px;
+        padding: 18px;
+    }
+
+    #onboarding-wizard .wizard-section-transition-orbit {
+        width: 92px;
+        height: 92px;
+    }
+
+    #onboarding-wizard .wizard-section-transition-orbit img {
+        width: 50px;
+        height: 50px;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -481,11 +838,24 @@ html[data-pbb-theme="dark"] #onboarding-wizard .onboarding-modal.wizard-containe
     #onboarding-wizard .wizard-particles,
     #onboarding-wizard .onboarding-modal.wizard-container,
     #onboarding-wizard .onboarding-modal.wizard-container::before,
-    #onboarding-wizard .wizard-brand-mark {
+    #onboarding-wizard .wizard-brand-mark,
+    #onboarding-wizard .wizard-chat-question-entering .wizard-chat-bubble.coach,
+    #onboarding-wizard .wizard-chat-question-entering .wizard-chat-choice,
+    #onboarding-wizard .wizard-chat-choice.is-confirmed::before,
+    #onboarding-wizard .wizard-section-transition::after,
+    #onboarding-wizard .wizard-section-transition-orbit > span,
+    #onboarding-wizard .wizard-section-transition-orbit img,
+    #onboarding-wizard .wizard-section-transition-stages span.is-active i,
+    #onboarding-wizard .wizard-section-transition.is-active .wizard-section-transition-kicker,
+    #onboarding-wizard .wizard-section-transition.is-active h3,
+    #onboarding-wizard .wizard-section-transition.is-active > p,
+    #onboarding-wizard .wizard-section-transition.is-active .wizard-section-transition-stages {
         animation: none !important;
     }
 
-    #onboarding-wizard .wizard-chat-choice {
+    #onboarding-wizard .wizard-chat-choice,
+    #onboarding-wizard #wizard-chat-progress-fill,
+    #onboarding-wizard .wizard-section-transition {
         transition-duration: .01ms !important;
     }
 }
