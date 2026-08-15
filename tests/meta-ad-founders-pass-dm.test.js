@@ -89,7 +89,7 @@ test('Cocos paid-ad Founders Pass opener bypasses the false signup hold and mode
     assert.equal(draft.firstReplyIntent, 'overview');
     assert.match(draft.joined, /^Hey,/i);
     assert.match(draft.joined, /six-week plant-based fitness program/i);
-    assert.match(draft.joined, /Are you currently plant-based or looking to adopt a plant-based lifestyle\?/i);
+    assert.match(draft.joined, /Are you currently plant-based or vegan, or are you looking to go plant-based or vegan\?/i);
     assert.doesNotMatch(draft.joined, /https?:\/\//);
     assert.equal(approval.code, 'approved_meta_ad_first_reply');
     assert.equal(handoff.client_manager_review_required, false);
@@ -841,17 +841,17 @@ test('paid Meta gets to know the plant-based reason before asking for the fitnes
         currentMessage: "I'm vegetarian",
         history: [{
             direction: 'out',
-            text: 'Are you currently plant-based or looking to adopt a plant-based lifestyle?',
+            text: 'Are you currently plant-based or vegan, or are you looking to go plant-based or vegan?',
         }],
         flowVariant: 'plant_based_control',
     });
-    assert.match(identityReply.joined, /what made you decide to go vegetarian\?/i);
+    assert.match(identityReply.joined, /how long have you been vegetarian, and what made you go vegetarian\?/i);
     assert.doesNotMatch(identityReply.joined, /health or fitness goal/i);
 
     const reasonReply = buildDeterministicPaidMetaConversationReply({
         currentMessage: 'Mostly animals and the ethics side of it.',
         history: [
-            { direction: 'out', text: 'Are you currently plant-based or looking to adopt a plant-based lifestyle?' },
+            { direction: 'out', text: 'Are you currently plant-based or vegan, or are you looking to go plant-based or vegan?' },
             { direction: 'in', text: "I'm vegetarian" },
             { direction: 'out', text: identityReply.joined },
         ],
@@ -864,7 +864,7 @@ test('paid Meta gets to know the plant-based reason before asking for the fitnes
     const reciprocalReasonReply = buildDeterministicPaidMetaConversationReply({
         currentMessage: 'Ohhhh for the animals and health!\nHow about you?',
         history: [
-            { direction: 'out', text: 'Are you currently plant-based or looking to adopt a plant-based lifestyle?' },
+            { direction: 'out', text: 'Are you currently plant-based or vegan, or are you looking to go plant-based or vegan?' },
             { direction: 'in', text: "I'm vegan!" },
             { direction: 'out', text: 'Nice. What made you decide to go plant-based?' },
         ],
@@ -1014,7 +1014,7 @@ test('paid Meta guided sales stages move goal to blocker to complete offer to pr
     const appPreviewUrl = buildMetaAppPreviewUrl('11111111-2222-4333-8444-555555555555', {
         env: { META_APP_PREVIEW_REF_SECRET: 'paid-meta-guided-sales-test-secret' },
     });
-    const opener = 'Are you currently plant-based or looking to adopt a plant-based lifestyle?';
+    const opener = 'Are you currently plant-based or vegan, or are you looking to go plant-based or vegan?';
     const goalQuestion = 'Nice, three nights is a solid start. What is your main health or fitness goal at the moment?';
     const goalHistory = [
         { direction: 'out', text: opener },
@@ -1442,7 +1442,7 @@ test('inclusions quick reply answers the direct ask without a raw preview URL', 
     assert.doesNotMatch(reply.joined, /balance-founders-pass-dm-preview\.mp4/);
     assert.match(reply.joined, /Balance Foundations is our six-week plant-based fitness program inside the app/i);
     assert.match(reply.joined, /training, plant-based food support and the community/i);
-    assert.match(reply.joined, /Are you currently plant-based or looking to adopt a plant-based lifestyle\?/i);
+    assert.match(reply.joined, /Are you currently plant-based or vegan, or are you looking to go plant-based or vegan\?/i);
     assert.doesNotMatch(reply.joined, /https?:\/\//);
 });
 
@@ -1461,7 +1461,7 @@ test('personalised coaching FAQ answers from the advertised six-week program wit
             linkedUserId: null,
         });
 
-        assert.equal(reply.joined, 'Hey, yeah I do. Balance Foundations is our six-week plant-based fitness program inside the app, plus a weekly check-in where I review and adjust your training and food. Are you currently plant-based or looking to adopt a plant-based lifestyle?');
+        assert.equal(reply.joined, 'Hey, yeah I do. Balance Foundations is our six-week plant-based fitness program inside the app, plus a weekly check-in where I review and adjust your training and food. Are you currently plant-based or vegan, or are you looking to go plant-based or vegan?');
         assert.doesNotMatch(reply.joined, /Starter Coaching|\$29\.99/i);
         assert.equal(reply.checkoutUrl, null);
         assert.equal(reply.videoAttachmentUrl, undefined);
@@ -1484,7 +1484,7 @@ test('generic keyword and fit quick reply answer without a premature checkout li
 
     const reply = buildMetaAdFoundersPassFirstReply('Is this right for me?');
     assert.equal(reply.firstReplyIntent, 'fit');
-    assert.match(reply.joined, /Are you currently plant-based or looking to adopt a plant-based lifestyle\?/i);
+    assert.match(reply.joined, /Are you currently plant-based or vegan, or are you looking to go plant-based or vegan\?/i);
     assert.doesNotMatch(reply.joined, /plant-based-fitness\.html/);
     assert.doesNotMatch(reply.joined, /vegan fitness community/i);
 });
@@ -1493,7 +1493,7 @@ test('plant-based identity answers advance reliably while transition details sta
     const reply = buildDeterministicPaidMetaConversationReply({
         currentMessage: 'I am interested but not fully plant-based yet',
         qualifier: { commercial_stage: 'engaged', facts: {} },
-        history: [{ direction: 'out', text: 'Are you currently plant-based or looking to adopt a plant-based lifestyle?' }],
+        history: [{ direction: 'out', text: 'Are you currently plant-based or vegan, or are you looking to go plant-based or vegan?' }],
         flowVariant: 'plant_based_control',
     });
     assert.equal(reply, null,
@@ -1502,40 +1502,40 @@ test('plant-based identity answers advance reliably while transition details sta
     const currentlyPlantBasedReply = buildDeterministicPaidMetaConversationReply({
         currentMessage: 'Yes, I am currently plant based',
         qualifier: { commercial_stage: 'engaged', facts: {} },
-        history: [{ direction: 'out', text: 'Are you currently plant-based or looking to adopt a plant-based lifestyle?' }],
+        history: [{ direction: 'out', text: 'Are you currently plant-based or vegan, or are you looking to go plant-based or vegan?' }],
         flowVariant: 'plant_based_control',
     });
     assert.equal(currentlyPlantBasedReply.model, 'deterministic_paid_meta_guided_sales_v1');
-    assert.equal(currentlyPlantBasedReply.joined, 'Nice. What made you decide to go plant-based?');
+    assert.equal(currentlyPlantBasedReply.joined, 'Nice. How long have you been plant-based, and what made you go plant-based?');
 
     const shortVeganReply = buildDeterministicPaidMetaConversationReply({
         currentMessage: "I'm vegan yeah",
         qualifier: { commercial_stage: 'buyer_intent', facts: {} },
-        history: [{ direction: 'out', text: 'Are you currently plant-based or looking to adopt a plant-based lifestyle?' }],
+        history: [{ direction: 'out', text: 'Are you currently plant-based or vegan, or are you looking to go plant-based or vegan?' }],
         flowVariant: 'plant_based_control',
     });
-    assert.equal(shortVeganReply.joined, 'Nice. What made you decide to go plant-based?');
+    assert.equal(shortVeganReply.joined, 'Awesome. How long have you been vegan, and what made you go vegan?');
     assert.doesNotMatch(shortVeganReply.joined, /\$89\.99|link/i);
 
     const experiencedPlantBasedReply = buildDeterministicPaidMetaConversationReply({
         currentMessage: 'I have been vegan for 9 years',
         qualifier: { commercial_stage: 'engaged', facts: {} },
-        history: [{ direction: 'out', text: 'Are you currently plant-based or looking to adopt a plant-based lifestyle?' }],
+        history: [{ direction: 'out', text: 'Are you currently plant-based or vegan, or are you looking to go plant-based or vegan?' }],
         flowVariant: 'plant_based_control',
     });
     assert.equal(experiencedPlantBasedReply.model, 'deterministic_paid_meta_guided_sales_v1');
     assert.match(experiencedPlantBasedReply.joined, /vegan for five years too/i);
-    assert.match(experiencedPlantBasedReply.joined, /what made you decide to go plant-based/i);
+    assert.match(experiencedPlantBasedReply.joined, /what made you go vegan/i);
 
     const reciprocalExperiencedReply = buildDeterministicPaidMetaConversationReply({
         currentMessage: 'I am vegan, have been for years! How about you?',
         qualifier: { commercial_stage: 'engaged', facts: {} },
-        history: [{ direction: 'out', text: 'Are you currently plant-based or looking to adopt a plant-based lifestyle?' }],
+        history: [{ direction: 'out', text: 'Are you currently plant-based or vegan, or are you looking to go plant-based or vegan?' }],
         flowVariant: 'plant_based_control',
     });
     assert.equal(reciprocalExperiencedReply.model, 'deterministic_paid_meta_guided_sales_v1');
     assert.match(reciprocalExperiencedReply.joined, /^I've been vegan for five years too\./i);
-    assert.match(reciprocalExperiencedReply.joined, /what made you decide to go plant-based/i);
+    assert.match(reciprocalExperiencedReply.joined, /what made you go vegan/i);
 });
 
 test('paid Meta ad conversations are text-only without changing other voice lanes', () => {

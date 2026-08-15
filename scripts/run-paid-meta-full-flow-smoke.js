@@ -13,7 +13,7 @@ const {
 const { evaluateQualifier } = require('../netlify/functions/_lib/qualifier-engine');
 const { buildMetaAppPreviewUrl, isMetaAppPreviewUrl } = require('../netlify/functions/_lib/meta-app-preview-ref');
 
-const OPENER = 'Hey, yeah of course. The Founders Pass is for our six-week plant-based fitness program inside Balance. Are you currently plant-based or looking to adopt a plant-based lifestyle?';
+const OPENER = 'Hey, yeah of course. The Founders Pass is for our six-week plant-based fitness program inside Balance. Are you currently plant-based or vegan, or are you looking to go plant-based or vegan?';
 const TEST_THREAD_ID = '11111111-2222-4333-8444-555555555555';
 const APP_PREVIEW_URL = buildMetaAppPreviewUrl(TEST_THREAD_ID, {
     env: { META_APP_PREVIEW_REF_SECRET: 'paid-meta-full-flow-smoke-secret' },

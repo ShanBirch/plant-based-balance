@@ -1392,10 +1392,12 @@ function buildPaidMetaPlantBasedIdentityProgression({
     // Shannon fact directly and advance without waiting on two model calls.
     if ((!simpleConfirmedIdentity && !experiencedVeganIdentity) || flowVariant !== 'plant_based_control') return null;
     const joined = experiencedVeganIdentity || asksShannonBack
-        ? 'I\'ve been vegan for five years too. What made you decide to go plant-based?'
+        ? 'I\'ve been vegan for five years too. What made you go vegan?'
         : /\bvegetarian\b/i.test(message)
-            ? 'Nice. What made you decide to go vegetarian?'
-            : 'Nice. What made you decide to go plant-based?';
+            ? 'Nice. How long have you been vegetarian, and what made you go vegetarian?'
+            : /\bvegan\b/i.test(message)
+                ? 'Awesome. How long have you been vegan, and what made you go vegan?'
+                : 'Nice. How long have you been plant-based, and what made you go plant-based?';
     return {
         chunks: [joined],
         joined,
@@ -2237,7 +2239,7 @@ function buildMetaAdFoundersPassFirstReply(currentMessage = '', { customData = {
         ? 'six weeks of the Balance app and community.'
         : 'six weeks of the Balance app and plant-based community.';
     const supportScope = `It's one AU$89.99 payment for the full six weeks. You get the six-week Foundations course, ${accessLine} It includes one weekly check-in plus workout and food review and adjustments with me, and it doesn't renew automatically.`;
-    const plantBasedOpeningQuestion = 'Are you currently plant-based or looking to adopt a plant-based lifestyle?';
+    const plantBasedOpeningQuestion = 'Are you currently plant-based or vegan, or are you looking to go plant-based or vegan?';
     let answer;
     if (intent === 'fit' || intent === 'overview') {
         answer = `Hey, yeah of course. The Founders Pass is for our six-week plant-based fitness program inside Balance. ${plantBasedOpeningQuestion}`;

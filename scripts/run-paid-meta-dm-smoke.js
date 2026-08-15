@@ -8,7 +8,7 @@ const {
 } = require('../netlify/functions/ig-instant-draft')._test;
 const { evaluateQualifier } = require('../netlify/functions/_lib/qualifier-engine');
 
-const opener = 'Hey, yeah of course. The Founders Pass is for our six-week plant-based fitness program inside Balance. Are you currently plant-based or looking to adopt a plant-based lifestyle?';
+const opener = 'Hey, yeah of course. The Founders Pass is for our six-week plant-based fitness program inside Balance. Are you currently plant-based or vegan, or are you looking to go plant-based or vegan?';
 
 const scenarios = [
     {
