@@ -92,6 +92,10 @@ test('explicit paid Meta video retry always carries the native evergreen video',
         videoUrl: BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL,
         replyText: 'Yep, here it is again. Can you see it now?',
     }), true, 'the exact deterministic live-worker retry wording must retain the native video');
+    assert.equal(maySendDraftVideoAttachment({
+        videoUrl: BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL,
+        replyText: 'Yep, here it is. Once you’ve watched it, do you want me to set up a free personalised look at your own workout and meal plan?',
+    }), true, 'the exact live retry wording without again must retain the native video');
 });
 
 test('paid Meta fast lane marks Seen before starting the early typing indicator', () => {
