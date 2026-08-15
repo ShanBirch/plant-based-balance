@@ -13,6 +13,7 @@ const weeklyGoalsSource = fs.readFileSync(
 );
 const dashboardSource = fs.readFileSync(path.join(__dirname, '../dashboard.html'), 'utf8');
 const comebackCss = fs.readFileSync(path.join(__dirname, '../css/dashboard/pbb-onboarding-comeback.css'), 'utf8');
+const foundationsCss = fs.readFileSync(path.join(__dirname, '../css/dashboard/pbb-onboarding-foundations.css'), 'utf8');
 
 test('each onboarding slide starts at the top of its mobile scroll panel', () => {
     assert.match(onboardingSource, /if \(wizardContent && isChangingSlides\) wizardContent\.scrollTop = 0;/);
@@ -66,10 +67,12 @@ test('calendar preview explains how to use the easy-session minimum', () => {
     assert.match(onboardingSource, /The full session is there when you have more\./);
 });
 
-test('dark onboarding keeps entered details and generated calendar text readable before deferred CSS loads', () => {
+test('onboarding ships a cache-busted authoritative cream-and-gold skin', () => {
     assert.match(comebackCss, /#onboarding-wizard \.wizard-input,[\s\S]*?-webkit-text-fill-color: #17130e !important;/);
-    assert.match(comebackCss, /#onboarding-wizard \.wizard-input::placeholder,[\s\S]*?-webkit-text-fill-color: #716858 !important;/);
-    assert.match(comebackCss, /#onboarding-wizard #wizard-calendar-preview \.wizard-calendar-workout-name[\s\S]*?-webkit-text-fill-color: var\(--wizard-cream\) !important;/);
-    assert.match(comebackCss, /#onboarding-wizard #wizard-calendar-preview \.wizard-calendar-workout-desc[\s\S]*?-webkit-text-fill-color: rgba\(247,240,223,\.7\) !important;/);
-    assert.match(dashboardSource, /pbb-onboarding-comeback\.css\?v=3/);
+    assert.match(foundationsCss, /--foundations-cream: #fffaf2/);
+    assert.match(foundationsCss, /html\[data-pbb-theme="dark"\] #onboarding-wizard \.onboarding-modal\.wizard-container/);
+    assert.match(foundationsCss, /#onboarding-wizard \.wizard-chat-bubble\.coach:last-child[\s\S]*?-webkit-text-fill-color: var\(--foundations-ink\) !important;/);
+    assert.match(foundationsCss, /@media \(prefers-reduced-motion: reduce\)/);
+    assert.match(dashboardSource, /pbb-onboarding-comeback\.css\?v=8/);
+    assert.match(dashboardSource, /pbb-onboarding-foundations\.css\?v=1/);
 });

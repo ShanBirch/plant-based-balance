@@ -1,0 +1,459 @@
+/*
+ * Balance Foundations onboarding — authoritative presentation layer.
+ *
+ * This file intentionally loads after the legacy onboarding styles. Keep the
+ * palette and text fills explicit so a delayed app theme stylesheet cannot
+ * turn the cream experience back into a dark panel on iOS or Android.
+ */
+
+#onboarding-wizard.onboarding-overlay {
+    --foundations-ink: #17130e;
+    --foundations-muted: #625947;
+    --foundations-cream: #fffaf2;
+    --foundations-paper: #fffdf8;
+    --foundations-gold: #8a5a12;
+    --foundations-gold-soft: #d8b25e;
+    --foundations-line: rgba(138, 90, 18, .24);
+    isolation: isolate;
+    overflow: hidden;
+    padding: max(12px, env(safe-area-inset-top, 0px)) 12px max(12px, env(safe-area-inset-bottom, 0px)) !important;
+    background:
+        radial-gradient(circle at 8% 14%, rgba(216, 178, 94, .34), transparent 31%),
+        radial-gradient(circle at 92% 84%, rgba(138, 90, 18, .18), transparent 35%),
+        linear-gradient(145deg, #fffdf8 0%, #f8efd9 52%, #fffaf2 100%) !important;
+    color: var(--foundations-ink) !important;
+    -webkit-text-fill-color: var(--foundations-ink) !important;
+}
+
+#onboarding-wizard.onboarding-overlay::before,
+#onboarding-wizard.onboarding-overlay::after {
+    content: "";
+    position: fixed;
+    z-index: -1;
+    pointer-events: none;
+    border-radius: 50%;
+}
+
+#onboarding-wizard.onboarding-overlay::before {
+    width: min(78vw, 720px);
+    aspect-ratio: 1;
+    left: -26vw;
+    top: 16vh;
+    border: 1px solid rgba(138, 90, 18, .16);
+    box-shadow:
+        0 0 0 34px rgba(216, 178, 94, .055),
+        0 0 0 76px rgba(138, 90, 18, .035),
+        0 0 110px rgba(216, 178, 94, .18);
+    animation: foundationsOrbit 18s ease-in-out infinite alternate;
+}
+
+#onboarding-wizard.onboarding-overlay::after {
+    width: min(58vw, 540px);
+    aspect-ratio: 1;
+    right: -19vw;
+    bottom: -14vh;
+    background: radial-gradient(circle, rgba(216, 178, 94, .23), rgba(138, 90, 18, .04) 48%, transparent 70%);
+    filter: blur(2px);
+    animation: foundationsGlow 12s ease-in-out infinite alternate;
+}
+
+#onboarding-wizard .wizard-particles {
+    display: block !important;
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: -1 !important;
+    opacity: .52 !important;
+    pointer-events: none !important;
+    background-image:
+        radial-gradient(circle, rgba(138, 90, 18, .58) 0 1px, transparent 1.7px),
+        radial-gradient(circle, rgba(216, 178, 94, .52) 0 1.2px, transparent 1.9px) !important;
+    background-position: 0 0, 23px 31px !important;
+    background-size: 44px 44px, 67px 67px !important;
+    animation: foundationsDrift 24s linear infinite !important;
+}
+
+#onboarding-wizard .onboarding-modal.wizard-container,
+html[data-pbb-theme="light"] #onboarding-wizard .onboarding-modal.wizard-container,
+html[data-pbb-theme="dark"] #onboarding-wizard .onboarding-modal.wizard-container {
+    position: relative;
+    z-index: 1;
+    width: min(100%, 520px) !important;
+    height: min(92svh, 820px) !important;
+    max-width: 520px !important;
+    max-height: min(92svh, 820px) !important;
+    overflow: hidden !important;
+    border: 1px solid rgba(138, 90, 18, .30) !important;
+    border-radius: 28px !important;
+    background:
+        radial-gradient(circle at 12% 18%, rgba(216, 178, 94, .16), transparent 29%),
+        radial-gradient(circle at 88% 74%, rgba(138, 90, 18, .09), transparent 34%),
+        linear-gradient(155deg, rgba(255, 253, 248, .97), rgba(250, 241, 220, .94)) !important;
+    background-size: 135% 135%, 145% 145%, 100% 100% !important;
+    box-shadow: 0 28px 75px rgba(74, 48, 10, .20), inset 0 1px 0 rgba(255, 255, 255, .95) !important;
+    color: var(--foundations-ink) !important;
+    -webkit-text-fill-color: var(--foundations-ink) !important;
+    backdrop-filter: blur(18px) saturate(1.08);
+    -webkit-backdrop-filter: blur(18px) saturate(1.08);
+    animation: foundationsCardAura 14s ease-in-out infinite alternate;
+}
+
+#onboarding-wizard .onboarding-modal.wizard-container::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    z-index: 2;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #d8b25e 22%, #8a5a12 50%, #d8b25e 78%, transparent);
+    background-size: 180% 100%;
+    animation: foundationsSheen 5s ease-in-out infinite;
+}
+
+#onboarding-wizard .wizard-header,
+#onboarding-wizard .wizard-content,
+#onboarding-wizard .wizard-slide,
+#onboarding-wizard .wizard-chat-intake,
+#onboarding-wizard .wizard-chat-messages,
+#onboarding-wizard .wizard-chat-choices,
+#onboarding-wizard .wizard-chat-input-row {
+    background: transparent !important;
+    color: var(--foundations-ink) !important;
+    -webkit-text-fill-color: var(--foundations-ink) !important;
+}
+
+#onboarding-wizard .wizard-header {
+    padding: 22px 24px 0 !important;
+    border-bottom: 0 !important;
+}
+
+#onboarding-wizard .wizard-brand-lockup {
+    filter: drop-shadow(0 7px 14px rgba(138, 90, 18, .10));
+}
+
+#onboarding-wizard .wizard-brand-mark {
+    animation: foundationsMark 5.5s ease-in-out infinite !important;
+}
+
+#onboarding-wizard .wizard-brand-copy strong,
+#onboarding-wizard #wizard-title,
+#onboarding-wizard .wizard-chat-progress-row,
+#onboarding-wizard .wizard-chat-progress-row span,
+#onboarding-wizard .wizard-chat-back,
+#onboarding-wizard .wizard-chat-bubble,
+#onboarding-wizard .wizard-chat-choice,
+#onboarding-wizard .wizard-chat-choice *,
+#onboarding-wizard .wizard-chat-helper {
+    color: var(--foundations-ink) !important;
+    -webkit-text-fill-color: var(--foundations-ink) !important;
+}
+
+#onboarding-wizard .wizard-brand-copy small,
+#onboarding-wizard .wizard-chat-progress-row span {
+    color: var(--foundations-gold) !important;
+    -webkit-text-fill-color: var(--foundations-gold) !important;
+}
+
+#onboarding-wizard .wizard-progress .dot {
+    background: rgba(23, 19, 14, .11) !important;
+}
+
+#onboarding-wizard .wizard-progress .dot.active,
+#onboarding-wizard #wizard-chat-progress-fill {
+    background: linear-gradient(90deg, #8a5a12, #d8b25e) !important;
+    box-shadow: 0 0 14px rgba(138, 90, 18, .26) !important;
+}
+
+#onboarding-wizard .wizard-content {
+    min-height: 0 !important;
+    padding: 12px 24px 20px !important;
+    overscroll-behavior: contain;
+}
+
+#onboarding-wizard .wizard-chat-intake {
+    min-height: 100% !important;
+    justify-content: flex-start !important;
+    gap: 14px !important;
+    padding: 4px 0 8px !important;
+}
+
+#onboarding-wizard .wizard-chat-progress-row {
+    min-height: 38px;
+    gap: 10px !important;
+    padding: 2px 0 8px !important;
+    font-size: .76rem !important;
+    font-weight: 800 !important;
+    letter-spacing: .10em !important;
+    text-transform: uppercase;
+}
+
+#onboarding-wizard .wizard-chat-back {
+    min-height: 36px !important;
+    padding: 8px 13px !important;
+    border: 1px solid var(--foundations-line) !important;
+    border-radius: 999px !important;
+    background: rgba(255, 253, 248, .90) !important;
+    box-shadow: 0 5px 14px rgba(74, 48, 10, .08) !important;
+    font-size: .76rem !important;
+}
+
+#onboarding-wizard .wizard-chat-progress-track {
+    overflow: hidden;
+    background: rgba(23, 19, 14, .10) !important;
+}
+
+#onboarding-wizard.wizard-chat-mode:not(.wizard-chat-intro):not(.wizard-chat-complete) .wizard-chat-messages {
+    min-height: 92px !important;
+    flex: 0 0 auto !important;
+    justify-content: center !important;
+    padding: 6px 0 10px !important;
+    overflow: visible !important;
+}
+
+#onboarding-wizard .wizard-chat-bubble.coach {
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+}
+
+#onboarding-wizard .wizard-chat-bubble.coach:first-child:not(:last-child) {
+    color: var(--foundations-gold) !important;
+    -webkit-text-fill-color: var(--foundations-gold) !important;
+}
+
+#onboarding-wizard .wizard-chat-bubble.coach:last-child {
+    max-width: 460px !important;
+    color: var(--foundations-ink) !important;
+    -webkit-text-fill-color: var(--foundations-ink) !important;
+    font: 850 clamp(1.45rem, 5.6vw, 2.15rem)/1.08 "Montserrat", system-ui, sans-serif !important;
+    letter-spacing: -.035em !important;
+    text-wrap: balance;
+}
+
+#onboarding-wizard .wizard-chat-bubble.user {
+    display: none !important;
+}
+
+#onboarding-wizard .wizard-chat-choices {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    align-content: start;
+    gap: 10px !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    padding: 2px 1px 10px !important;
+    overflow: visible !important;
+}
+
+#onboarding-wizard .wizard-chat-choice {
+    position: relative;
+    min-height: 54px !important;
+    padding: 13px 15px !important;
+    overflow: hidden;
+    border: 1px solid rgba(138, 90, 18, .30) !important;
+    border-radius: 15px !important;
+    background: linear-gradient(145deg, rgba(255, 255, 255, .96), rgba(255, 248, 234, .92)) !important;
+    box-shadow: 0 9px 22px rgba(74, 48, 10, .08), inset 0 1px 0 #fff !important;
+    font-size: .96rem !important;
+    font-weight: 750 !important;
+    line-height: 1.25 !important;
+    transform: translateZ(0);
+    transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease !important;
+}
+
+#onboarding-wizard .wizard-chat-choice::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(110deg, transparent 25%, rgba(255,255,255,.72) 46%, transparent 67%);
+    transform: translateX(-130%);
+    transition: transform .55s ease;
+}
+
+#onboarding-wizard .wizard-chat-choice:hover,
+#onboarding-wizard .wizard-chat-choice:focus-visible {
+    border-color: #8a5a12 !important;
+    box-shadow: 0 13px 28px rgba(74, 48, 10, .13), 0 0 0 3px rgba(216, 178, 94, .18) !important;
+    transform: translateY(-2px);
+}
+
+#onboarding-wizard .wizard-chat-choice:hover::after,
+#onboarding-wizard .wizard-chat-choice:focus-visible::after {
+    transform: translateX(130%);
+}
+
+#onboarding-wizard .wizard-chat-choice.selected {
+    border-color: #8a5a12 !important;
+    background: linear-gradient(135deg, #f0ddb0, #d8b25e) !important;
+    color: var(--foundations-ink) !important;
+    -webkit-text-fill-color: var(--foundations-ink) !important;
+    box-shadow: 0 12px 28px rgba(138, 90, 18, .20), inset 0 1px 0 rgba(255,255,255,.7) !important;
+}
+
+#onboarding-wizard .wizard-chat-input-row input,
+#onboarding-wizard .wizard-input,
+#onboarding-wizard input,
+#onboarding-wizard select,
+#onboarding-wizard textarea {
+    border-color: rgba(138, 90, 18, .34) !important;
+    background: rgba(255, 253, 248, .96) !important;
+    color: var(--foundations-ink) !important;
+    -webkit-text-fill-color: var(--foundations-ink) !important;
+    caret-color: var(--foundations-gold) !important;
+}
+
+#onboarding-wizard input::placeholder,
+#onboarding-wizard textarea::placeholder {
+    color: var(--foundations-muted) !important;
+    -webkit-text-fill-color: var(--foundations-muted) !important;
+    opacity: 1 !important;
+}
+
+#onboarding-wizard .wizard-chat-input-row button,
+#onboarding-wizard .wizard-nav button,
+#onboarding-wizard .wizard-next-btn {
+    border: 1px solid #17130e !important;
+    background: linear-gradient(135deg, #211b13, #17130e) !important;
+    color: var(--foundations-cream) !important;
+    -webkit-text-fill-color: var(--foundations-cream) !important;
+    box-shadow: 0 11px 24px rgba(23, 19, 14, .18), inset 0 1px 0 rgba(216, 178, 94, .30) !important;
+}
+
+#onboarding-wizard .wizard-chat-helper {
+    color: var(--foundations-muted) !important;
+    -webkit-text-fill-color: var(--foundations-muted) !important;
+}
+
+#onboarding-wizard .wizard-input-group,
+#onboarding-wizard .wizard-option,
+#onboarding-wizard label[style*="background:white"],
+#onboarding-wizard button[style*="background:white"],
+#onboarding-wizard button[style*="background:#fff"] {
+    border-color: var(--foundations-line) !important;
+    background: rgba(255, 253, 248, .86) !important;
+    color: var(--foundations-ink) !important;
+    -webkit-text-fill-color: var(--foundations-ink) !important;
+}
+
+#onboarding-wizard .wizard-slide h2,
+#onboarding-wizard .wizard-slide h3,
+#onboarding-wizard .wizard-slide h4,
+#onboarding-wizard .wizard-slide p,
+#onboarding-wizard .wizard-slide label,
+#onboarding-wizard .wizard-slide label span,
+#onboarding-wizard .wizard-slide strong {
+    color: var(--foundations-ink) !important;
+    -webkit-text-fill-color: var(--foundations-ink) !important;
+}
+
+@keyframes foundationsOrbit {
+    from { transform: translate3d(-2%, -2%, 0) rotate(-5deg) scale(.96); opacity: .62; }
+    to { transform: translate3d(10%, 5%, 0) rotate(8deg) scale(1.06); opacity: 1; }
+}
+
+@keyframes foundationsGlow {
+    from { transform: translate3d(0, 0, 0) scale(.94); opacity: .55; }
+    to { transform: translate3d(-8%, -7%, 0) scale(1.12); opacity: .92; }
+}
+
+@keyframes foundationsDrift {
+    from { background-position: 0 0, 23px 31px; }
+    to { background-position: 44px -88px, -44px -103px; }
+}
+
+@keyframes foundationsSheen {
+    0%, 25% { background-position: 130% 0; opacity: .62; }
+    65%, 100% { background-position: -30% 0; opacity: 1; }
+}
+
+@keyframes foundationsMark {
+    0%, 100% { transform: translateY(0) rotate(0); filter: drop-shadow(0 5px 9px rgba(138,90,18,.10)); }
+    50% { transform: translateY(-3px) rotate(2deg); filter: drop-shadow(0 9px 13px rgba(138,90,18,.20)); }
+}
+
+@keyframes foundationsCardAura {
+    from { background-position: 0% 0%, 100% 100%, 0 0; }
+    to { background-position: 22% 16%, 76% 74%, 0 0; }
+}
+
+@media (max-width: 560px) {
+    #onboarding-wizard.onboarding-overlay {
+        align-items: flex-start !important;
+        padding: max(6px, env(safe-area-inset-top, 0px)) 6px max(6px, env(safe-area-inset-bottom, 0px)) !important;
+    }
+
+    #onboarding-wizard .onboarding-modal.wizard-container,
+    html[data-pbb-theme="light"] #onboarding-wizard .onboarding-modal.wizard-container,
+    html[data-pbb-theme="dark"] #onboarding-wizard .onboarding-modal.wizard-container {
+        width: calc(100vw - 12px) !important;
+        height: calc(100svh - max(12px, env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))) !important;
+        max-height: calc(100svh - max(12px, env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))) !important;
+        border-radius: 24px !important;
+    }
+
+    #onboarding-wizard .wizard-header {
+        padding: 18px 18px 0 !important;
+    }
+
+    #onboarding-wizard .wizard-content {
+        padding: 8px 18px max(14px, env(safe-area-inset-bottom, 0px)) !important;
+    }
+
+    #onboarding-wizard .wizard-chat-intake {
+        gap: 12px !important;
+    }
+
+    #onboarding-wizard .wizard-chat-bubble.coach:last-child {
+        font-size: clamp(1.35rem, 6.2vw, 1.82rem) !important;
+        line-height: 1.09 !important;
+    }
+
+    #onboarding-wizard .wizard-chat-choices {
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+    }
+
+    #onboarding-wizard .wizard-chat-choice {
+        min-height: 58px !important;
+        font-size: 1rem !important;
+    }
+}
+
+@media (max-height: 690px) and (max-width: 560px) {
+    #onboarding-wizard .wizard-header {
+        padding-top: 12px !important;
+    }
+
+    #onboarding-wizard .wizard-brand-lockup {
+        transform: scale(.88);
+        transform-origin: left center;
+    }
+
+    #onboarding-wizard .wizard-content {
+        padding-top: 4px !important;
+    }
+
+    #onboarding-wizard .wizard-chat-bubble.coach:last-child {
+        font-size: clamp(1.22rem, 5.7vw, 1.58rem) !important;
+    }
+
+    #onboarding-wizard .wizard-chat-choice {
+        min-height: 50px !important;
+        padding: 10px 13px !important;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #onboarding-wizard.onboarding-overlay::before,
+    #onboarding-wizard.onboarding-overlay::after,
+    #onboarding-wizard .wizard-particles,
+    #onboarding-wizard .onboarding-modal.wizard-container,
+    #onboarding-wizard .onboarding-modal.wizard-container::before,
+    #onboarding-wizard .wizard-brand-mark {
+        animation: none !important;
+    }
+
+    #onboarding-wizard .wizard-chat-choice {
+        transition-duration: .01ms !important;
+    }
+}
