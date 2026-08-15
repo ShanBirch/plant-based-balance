@@ -9785,3 +9785,914 @@ html[data-pbb-theme="dark"] .ai-plan-shopping__download {
     color: #120c18 !important;
     -webkit-text-fill-color: #120c18 !important;
 }
+
+/* ===========================================================================
+   Dark-theme contrast sweep
+   Keep legacy light surfaces from inheriting the dark theme's cream text.
+   ========================================================================== */
+
+html:not([data-pbb-theme="light"]) {
+    color-scheme: dark;
+}
+
+html[data-pbb-theme="light"] {
+    color-scheme: light;
+}
+
+/* Workout notes and set-entry states */
+html:not([data-pbb-theme="light"]) :is(#view-active-workout, #view-active-workout-stub) .exercise-note-section {
+    border-bottom-color: rgba(245, 217, 138, 0.12) !important;
+}
+
+html:not([data-pbb-theme="light"]) :is(#view-active-workout, #view-active-workout-stub) .coach-note-bubble {
+    background: linear-gradient(135deg, #241b31 0%, #17131d 100%) !important;
+    border-color: rgba(183, 148, 246, 0.34) !important;
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+}
+
+html:not([data-pbb-theme="light"]) :is(#view-active-workout, #view-active-workout-stub) .coach-note-badge {
+    background: linear-gradient(135deg, #f5d98a, #d8b25e) !important;
+    color: #120c18 !important;
+    -webkit-text-fill-color: #120c18 !important;
+}
+
+html:not([data-pbb-theme="light"]) :is(#view-active-workout, #view-active-workout-stub) .coach-note-badge svg {
+    color: #120c18 !important;
+    fill: currentColor !important;
+}
+
+html:not([data-pbb-theme="light"]) :is(#view-active-workout, #view-active-workout-stub) .coach-note-bubble span[style*="color:#7c3aed"],
+html:not([data-pbb-theme="light"]) :is(#view-active-workout, #view-active-workout-stub) .exercise-logger-card .coach-note-text {
+    color: #d8cfe0 !important;
+    -webkit-text-fill-color: #d8cfe0 !important;
+}
+
+html:not([data-pbb-theme="light"]) :is(#view-active-workout, #view-active-workout-stub) .exercise-note-toggle span {
+    color: #bdb5c4 !important;
+    -webkit-text-fill-color: #bdb5c4 !important;
+}
+
+html:not([data-pbb-theme="light"]) :is(#view-active-workout, #view-active-workout-stub) .exercise-note-toggle svg {
+    fill: #bdb5c4 !important;
+}
+
+html:not([data-pbb-theme="light"]) :is(#view-active-workout, #view-active-workout-stub) .exercise-note-toggle.has-note span {
+    color: #f5d98a !important;
+    -webkit-text-fill-color: #f5d98a !important;
+}
+
+html:not([data-pbb-theme="light"]) :is(#view-active-workout, #view-active-workout-stub) .exercise-note-toggle.has-note svg {
+    fill: #f5d98a !important;
+}
+
+html:not([data-pbb-theme="light"]) :is(#view-active-workout, #view-active-workout-stub) .exercise-note-input {
+    background: #121212 !important;
+    border-color: rgba(245, 217, 138, 0.24) !important;
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+    caret-color: #f5d98a !important;
+}
+
+html:not([data-pbb-theme="light"]) :is(#view-active-workout, #view-active-workout-stub) .exercise-note-input::placeholder,
+html:not([data-pbb-theme="light"]) :is(#view-active-workout, #view-active-workout-stub) :is(.input-time, .input-reps, .input-kg, .drop-reps, .drop-kg, .set-input)::placeholder {
+    color: #aaa2b0 !important;
+    -webkit-text-fill-color: #aaa2b0 !important;
+    opacity: 1 !important;
+}
+
+html:not([data-pbb-theme="light"]) :is(#view-active-workout, #view-active-workout-stub) .exercise-note-input:focus {
+    background: #181818 !important;
+    border-color: rgba(245, 217, 138, 0.64) !important;
+    outline: none !important;
+    box-shadow: 0 0 0 3px rgba(245, 217, 138, 0.12) !important;
+}
+
+/* Legacy meal-plan cards */
+html:not([data-pbb-theme="light"]) #view-meals {
+    --pbb-legacy-surface: #121212;
+    --pbb-legacy-surface-raised: #191919;
+    --pbb-legacy-surface-soft: #211b26;
+    --pbb-legacy-copy: #fffaf2;
+    --pbb-legacy-muted: #c9c1ce;
+    --pbb-legacy-accent: #f5d98a;
+    --pbb-legacy-border: rgba(245, 217, 138, 0.16);
+}
+
+html:not([data-pbb-theme="light"]) #view-meals :is(.day-view, #shopping, #supplements) .card {
+    background: var(--pbb-legacy-surface) !important;
+    border-color: var(--pbb-legacy-border) !important;
+    color: var(--pbb-legacy-copy) !important;
+    -webkit-text-fill-color: var(--pbb-legacy-copy) !important;
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.28) !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-meals :is(.day-view, #shopping, #supplements) .card-header {
+    background: var(--pbb-legacy-surface-raised) !important;
+    border-color: var(--pbb-legacy-border) !important;
+    color: var(--pbb-legacy-copy) !important;
+    -webkit-text-fill-color: var(--pbb-legacy-copy) !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-meals :is(.day-view, #shopping, #supplements) .card-body {
+    background: var(--pbb-legacy-surface) !important;
+    border-color: var(--pbb-legacy-border) !important;
+    color: var(--pbb-legacy-copy) !important;
+    -webkit-text-fill-color: var(--pbb-legacy-copy) !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-meals :is(.day-view, #shopping, #supplements) :is(.meal-title, h1, h2, h3, h4, strong),
+html:not([data-pbb-theme="light"]) #shopping .shopping-category h4 {
+    color: var(--pbb-legacy-copy) !important;
+    -webkit-text-fill-color: var(--pbb-legacy-copy) !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-meals :is(.day-view, #shopping, #supplements) :is(.meta, p, li),
+html:not([data-pbb-theme="light"]) #shopping .check-list li {
+    color: var(--pbb-legacy-muted) !important;
+    -webkit-text-fill-color: var(--pbb-legacy-muted) !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-meals :is(.day-view, #shopping, #supplements) :is(.meal-title, .expand-icon),
+html:not([data-pbb-theme="light"]) #shopping .shopping-category h4 {
+    color: var(--pbb-legacy-accent) !important;
+    -webkit-text-fill-color: var(--pbb-legacy-accent) !important;
+}
+
+html:not([data-pbb-theme="light"]) #shopping .check-list li::before {
+    background: #171717 !important;
+    border-color: #736b79 !important;
+}
+
+html:not([data-pbb-theme="light"]) #shopping .check-list li.checked::before {
+    background-color: #d8b25e !important;
+    border-color: #d8b25e !important;
+}
+
+/* Smoothie recipe cards were authored as inline pastel panels. */
+html:not([data-pbb-theme="light"]) #smoothies .hero-card,
+html:not([data-pbb-theme="light"]) #smoothies > div[style*="display: grid"] > div {
+    background: linear-gradient(145deg, #191919, #111111) !important;
+    border-color: var(--pbb-legacy-border) !important;
+    color: var(--pbb-legacy-copy) !important;
+    -webkit-text-fill-color: var(--pbb-legacy-copy) !important;
+}
+
+html:not([data-pbb-theme="light"]) #smoothies :is(h1, h4) {
+    color: var(--pbb-legacy-copy) !important;
+    -webkit-text-fill-color: var(--pbb-legacy-copy) !important;
+}
+
+html:not([data-pbb-theme="light"]) #smoothies :is(.hero-card p, ul, li) {
+    color: var(--pbb-legacy-muted) !important;
+    -webkit-text-fill-color: var(--pbb-legacy-muted) !important;
+}
+
+html:not([data-pbb-theme="light"]) #smoothies > div[style*="display: grid"] > div > div:last-child > div {
+    background: var(--pbb-legacy-surface-soft) !important;
+    color: var(--pbb-legacy-accent) !important;
+    -webkit-text-fill-color: var(--pbb-legacy-accent) !important;
+}
+
+/* Supplement disclaimer, category chips, and copy */
+html:not([data-pbb-theme="light"]) #supplements > div[style*="background: #fff3e0"] {
+    background: #251d12 !important;
+    border-color: rgba(245, 217, 138, 0.28) !important;
+}
+
+html:not([data-pbb-theme="light"]) #supplements > div[style*="background: #fff3e0"] h4,
+html:not([data-pbb-theme="light"]) #supplements .card-body > span {
+    background: #2a232d !important;
+    color: var(--pbb-legacy-accent) !important;
+    -webkit-text-fill-color: var(--pbb-legacy-accent) !important;
+}
+
+html:not([data-pbb-theme="light"]) #supplements > div[style*="background: #fff3e0"] p,
+html:not([data-pbb-theme="light"]) #supplements .card-body > p {
+    color: var(--pbb-legacy-muted) !important;
+    -webkit-text-fill-color: var(--pbb-legacy-muted) !important;
+}
+
+html:not([data-pbb-theme="light"]) #supplements > h3 {
+    color: var(--pbb-legacy-accent) !important;
+    -webkit-text-fill-color: var(--pbb-legacy-accent) !important;
+    border-bottom-color: var(--pbb-legacy-border) !important;
+}
+
+/* Quick-swaps table */
+html:not([data-pbb-theme="light"]) #swaps .card,
+html:not([data-pbb-theme="light"]) #swaps .card-body,
+html:not([data-pbb-theme="light"]) #swaps div[style*="linear-gradient(to bottom"] {
+    background: var(--pbb-legacy-surface) !important;
+    border-color: var(--pbb-legacy-border) !important;
+    color: var(--pbb-legacy-copy) !important;
+    -webkit-text-fill-color: var(--pbb-legacy-copy) !important;
+}
+
+html:not([data-pbb-theme="light"]) #swaps th {
+    background: linear-gradient(135deg, #f5d98a, #d8b25e) !important;
+    border-color: rgba(18, 12, 24, 0.18) !important;
+    color: #120c18 !important;
+    -webkit-text-fill-color: #120c18 !important;
+}
+
+html:not([data-pbb-theme="light"]) #swaps :is(td, td span) {
+    background: var(--pbb-legacy-surface) !important;
+    border-color: var(--pbb-legacy-border) !important;
+    color: var(--pbb-legacy-copy) !important;
+    -webkit-text-fill-color: var(--pbb-legacy-copy) !important;
+}
+
+html:not([data-pbb-theme="light"]) #swaps tr[style*="background: #fafafa"] td,
+html:not([data-pbb-theme="light"]) #swaps tbody tr:nth-child(even) td {
+    background: var(--pbb-legacy-surface-raised) !important;
+}
+
+html:not([data-pbb-theme="light"]) #swaps td:first-child {
+    color: var(--pbb-legacy-accent) !important;
+    -webkit-text-fill-color: var(--pbb-legacy-accent) !important;
+}
+
+/* Sleep protocol cards and timeline */
+html:not([data-pbb-theme="light"]) #sleep {
+    --pbb-sleep-copy: #fffaf2;
+    --pbb-sleep-muted: #c9c1ce;
+    --pbb-sleep-accent: #f5d98a;
+    color: var(--pbb-sleep-copy) !important;
+    -webkit-text-fill-color: var(--pbb-sleep-copy) !important;
+}
+
+html:not([data-pbb-theme="light"]) #sleep :is(h1, h2, h3, strong, .timeline-title, .check-item) {
+    color: var(--pbb-sleep-copy) !important;
+    -webkit-text-fill-color: var(--pbb-sleep-copy) !important;
+}
+
+html:not([data-pbb-theme="light"]) #sleep :is(p, li, ol, .timeline-content, .timeline-time, .check-item span) {
+    color: var(--pbb-sleep-muted) !important;
+    -webkit-text-fill-color: var(--pbb-sleep-muted) !important;
+}
+
+html:not([data-pbb-theme="light"]) #sleep .sleep-hero {
+    background: linear-gradient(145deg, #17131f 0%, #111827 58%, #0b0b0b 100%) !important;
+    border: 1px solid rgba(245, 217, 138, 0.17) !important;
+}
+
+html:not([data-pbb-theme="light"]) #sleep .sleep-hero :is(h1, p, strong, .glass-effect) {
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+}
+
+html:not([data-pbb-theme="light"]) #sleep :is(.recipe-card, .rescue-card, .check-item) {
+    background: linear-gradient(145deg, #191919, #111111) !important;
+    border-color: rgba(245, 217, 138, 0.17) !important;
+    color: var(--pbb-sleep-copy) !important;
+    -webkit-text-fill-color: var(--pbb-sleep-copy) !important;
+}
+
+html:not([data-pbb-theme="light"]) #sleep .rescue-card {
+    border-left-color: #ef6a6a !important;
+}
+
+html:not([data-pbb-theme="light"]) #sleep .rescue-card h4 {
+    color: #ff9a9a !important;
+    -webkit-text-fill-color: #ff9a9a !important;
+}
+
+html:not([data-pbb-theme="light"]) #sleep .recipe-card h3,
+html:not([data-pbb-theme="light"]) #sleep .timeline-time {
+    color: var(--pbb-sleep-accent) !important;
+    -webkit-text-fill-color: var(--pbb-sleep-accent) !important;
+}
+
+html:not([data-pbb-theme="light"]) #sleep .section-number {
+    background: linear-gradient(135deg, #f5d98a, #d8b25e) !important;
+    color: #120c18 !important;
+    -webkit-text-fill-color: #120c18 !important;
+}
+
+html:not([data-pbb-theme="light"]) #sleep .timeline-content::before {
+    background: #171717 !important;
+    border-color: #d8b25e !important;
+}
+
+html:not([data-pbb-theme="light"]) #sleep a > button {
+    background: linear-gradient(135deg, #f5d98a, #d8b25e) !important;
+    color: #120c18 !important;
+    -webkit-text-fill-color: #120c18 !important;
+}
+
+/* FitCoin shop: dark shell, readable packs, and accessible gold actions */
+html:not([data-pbb-theme="light"]) #coin-shop-modal > div {
+    background: #101010 !important;
+    border: 1px solid rgba(245, 217, 138, 0.2) !important;
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+}
+
+html:not([data-pbb-theme="light"]) #coin-shop-modal > div > div:first-child :is(h3, div, button) {
+    color: #120c18 !important;
+    -webkit-text-fill-color: #120c18 !important;
+}
+
+html:not([data-pbb-theme="light"]) #coin-shop-modal .coin-pack-option {
+    background: linear-gradient(145deg, #1a1a1a, #111111) !important;
+    border-color: rgba(245, 217, 138, 0.24) !important;
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+}
+
+html:not([data-pbb-theme="light"]) #coin-shop-modal .coin-pack-option > div:not([style*="position: absolute"]) > div {
+    color: #c9c1ce !important;
+    -webkit-text-fill-color: #c9c1ce !important;
+}
+
+html:not([data-pbb-theme="light"]) #coin-shop-modal .coin-pack-option > div:not([style*="position: absolute"]) > div:first-child {
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+}
+
+html:not([data-pbb-theme="light"]) #coin-shop-modal .coin-pack-option > div:last-child {
+    background: linear-gradient(135deg, #f5d98a, #d8b25e) !important;
+    color: #120c18 !important;
+    -webkit-text-fill-color: #120c18 !important;
+}
+
+html:not([data-pbb-theme="light"]) #coin-shop-modal .coin-pack-option > div[style*="position: absolute"] {
+    background: #991b1b !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+
+html:not([data-pbb-theme="light"]) #coin-shop-modal div[style*="background: #f8fafc"] {
+    background: #191919 !important;
+    border: 1px solid rgba(245, 217, 138, 0.14) !important;
+}
+
+html:not([data-pbb-theme="light"]) #coin-shop-modal div[style*="background: #f8fafc"] :is(div, span),
+html:not([data-pbb-theme="light"]) #coin-shop-modal #restore-purchases-row button {
+    color: #c9c1ce !important;
+    -webkit-text-fill-color: #c9c1ce !important;
+}
+
+/* Remaining dark-mode controls found by the computed contrast audit. */
+html:not([data-pbb-theme="light"]) #view-active-workout #total-volume-target-label {
+    color: #b7b1c0 !important;
+    -webkit-text-fill-color: #b7b1c0 !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-active-workout #last-volume-popup > div {
+    background: #171717 !important;
+    border: 1px solid rgba(245, 217, 138, 0.18) !important;
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-active-workout #last-volume-popup :is(h3, p) {
+    color: #c9c1ce !important;
+    -webkit-text-fill-color: #c9c1ce !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-active-workout #last-volume-popup button {
+    background: linear-gradient(135deg, #f5d98a, #d8b25e) !important;
+    color: #120c18 !important;
+    -webkit-text-fill-color: #120c18 !important;
+}
+
+/* Meals header and generated-plan controls */
+html:not([data-pbb-theme="light"]) #view-meals .coin-header-widget :is(.coin-emoji, .coin-amount, .coin-buy-btn) {
+    color: #120c18 !important;
+    -webkit-text-fill-color: #120c18 !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-meals .coin-header-widget .coin-buy-btn {
+    background: rgba(18, 12, 24, 0.12) !important;
+    border-color: rgba(18, 12, 24, 0.3) !important;
+}
+
+html:not([data-pbb-theme="light"]) #meal-plan-store button[onclick*="requestAiMealPlan"] {
+    color: #07150f !important;
+    -webkit-text-fill-color: #07150f !important;
+}
+
+html:not([data-pbb-theme="light"]) #meal-plan-store button[onclick*="requestAiMealPlan"] svg {
+    fill: #07150f !important;
+}
+
+html:not([data-pbb-theme="light"]) #meal-plan-store .sub-btn {
+    background: transparent !important;
+    color: #c9c1ce !important;
+    -webkit-text-fill-color: #c9c1ce !important;
+    border-color: rgba(245, 217, 138, 0.16) !important;
+}
+
+html:not([data-pbb-theme="light"]) #meal-plan-store .sub-btn.active {
+    background: rgba(245, 217, 138, 0.14) !important;
+    color: #f5d98a !important;
+    -webkit-text-fill-color: #f5d98a !important;
+    border-color: rgba(245, 217, 138, 0.4) !important;
+}
+
+/* Week overview and reflection cards */
+html:not([data-pbb-theme="light"]) #view-meals .day-view .hero-card {
+    background: linear-gradient(145deg, #21182c, #111111) !important;
+    border-color: var(--pbb-legacy-border) !important;
+    color: var(--pbb-legacy-copy) !important;
+    -webkit-text-fill-color: var(--pbb-legacy-copy) !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-meals .day-view .hero-card :is(h1, div) {
+    color: var(--pbb-legacy-accent) !important;
+    -webkit-text-fill-color: var(--pbb-legacy-accent) !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-meals .day-view .hero-card p {
+    color: var(--pbb-legacy-muted) !important;
+    -webkit-text-fill-color: var(--pbb-legacy-muted) !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-meals .reflection-card textarea {
+    background: #171717 !important;
+    border-color: rgba(245, 217, 138, 0.22) !important;
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+    caret-color: #f5d98a !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-meals .reflection-card textarea::placeholder {
+    color: #aaa2b0 !important;
+    -webkit-text-fill-color: #aaa2b0 !important;
+    opacity: 1 !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-meals .reflection-card button[onclick*="saveDayReflection"] {
+    background: linear-gradient(135deg, #f5d98a, #d8b25e) !important;
+    color: #120c18 !important;
+    -webkit-text-fill-color: #120c18 !important;
+}
+
+/* Movement Studio tracker and library */
+html:not([data-pbb-theme="light"]) #movement-archive .hero-card > div:first-child,
+html:not([data-pbb-theme="light"]) #movement-archive .hero-card p {
+    color: #e0fffb !important;
+    -webkit-text-fill-color: #e0fffb !important;
+}
+
+html:not([data-pbb-theme="light"]) #movement-archive #workout-list .card,
+html:not([data-pbb-theme="light"]) #movement-archive #workout-list .card > div,
+html:not([data-pbb-theme="light"]) #movement-archive #view-library > div:first-child {
+    background: #121212 !important;
+    border-color: rgba(245, 217, 138, 0.16) !important;
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+}
+
+html:not([data-pbb-theme="light"]) #movement-archive #workout-list :is(h4, strong) {
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+}
+
+html:not([data-pbb-theme="light"]) #movement-archive #workout-list div[style*="color:#64748b"],
+html:not([data-pbb-theme="light"]) #movement-archive #workout-list div[style*="color:#94a3b8"],
+html:not([data-pbb-theme="light"]) #movement-archive #view-library div[style*="color:#64748b"] {
+    color: #bdb5c4 !important;
+    -webkit-text-fill-color: #bdb5c4 !important;
+}
+
+html:not([data-pbb-theme="light"]) #movement-archive #workout-list input,
+html:not([data-pbb-theme="light"]) #movement-archive #db-search-input {
+    background: #171717 !important;
+    border-color: rgba(245, 217, 138, 0.22) !important;
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+    caret-color: #f5d98a !important;
+}
+
+html:not([data-pbb-theme="light"]) #movement-archive #workout-list input::placeholder,
+html:not([data-pbb-theme="light"]) #movement-archive #db-search-input::placeholder {
+    color: #aaa2b0 !important;
+    -webkit-text-fill-color: #aaa2b0 !important;
+    opacity: 1 !important;
+}
+
+html:not([data-pbb-theme="light"]) #movement-archive button[onclick*="saveWorkout"],
+html:not([data-pbb-theme="light"]) #movement-archive button[onclick*="loadExerciseLibrary"] {
+    background: linear-gradient(135deg, #f5d98a, #d8b25e) !important;
+    color: #120c18 !important;
+    -webkit-text-fill-color: #120c18 !important;
+}
+
+html:not([data-pbb-theme="light"]) #movement-archive button[onclick*="switchTrackerView('library')"] {
+    color: #c9c1ce !important;
+    -webkit-text-fill-color: #c9c1ce !important;
+    border-color: #736b79 !important;
+}
+
+/* Calorie tracker sheets, streaks, photo menu, and adaptive-goal modal */
+html:not([data-pbb-theme="light"]) #calorie-tracker .streak-inline {
+    background: linear-gradient(135deg, #2a2114, #191612) !important;
+    border-color: rgba(245, 217, 138, 0.32) !important;
+}
+
+html:not([data-pbb-theme="light"]) #calorie-tracker .streak-inline-count {
+    color: #f5d98a !important;
+    -webkit-text-fill-color: #f5d98a !important;
+}
+
+html:not([data-pbb-theme="light"]) #water-entry-sheet div[style*="color:#374151"] {
+    color: #d8cfe0 !important;
+    -webkit-text-fill-color: #d8cfe0 !important;
+}
+
+html:not([data-pbb-theme="light"]) #water-entry-sheet .water-amount-btn {
+    background: #12212b !important;
+    border-color: #285a73 !important;
+    color: #8edcff !important;
+    -webkit-text-fill-color: #8edcff !important;
+}
+
+html:not([data-pbb-theme="light"]) #water-entry-sheet .water-amount-btn.selected {
+    background: #075985 !important;
+    border-color: #38bdf8 !important;
+    color: #f0f9ff !important;
+    -webkit-text-fill-color: #f0f9ff !important;
+}
+
+html:not([data-pbb-theme="light"]) #water-entry-sheet button[onclick*="confirmWaterEntry"] {
+    background: linear-gradient(135deg, #075985, #0c4a6e) !important;
+    color: #f0f9ff !important;
+    -webkit-text-fill-color: #f0f9ff !important;
+}
+
+html:not([data-pbb-theme="light"]) #calorie-tracker #nutrition-share-photo-btn,
+html:not([data-pbb-theme="light"]) #calorie-tracker #nutrition-share-photo-source-menu,
+html:not([data-pbb-theme="light"]) #calorie-tracker #nutrition-share-photo-source-menu button {
+    background: #171717 !important;
+    border-color: rgba(245, 217, 138, 0.22) !important;
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+}
+
+html:not([data-pbb-theme="light"]) #calorie-tracker #nutrition-share-photo-source-menu button + button {
+    border-top-color: rgba(245, 217, 138, 0.14) !important;
+}
+
+html:not([data-pbb-theme="light"]) #calorie-tracker .streak-tracker-card span[style*="color: #92400e"] {
+    color: #c9c1ce !important;
+    -webkit-text-fill-color: #c9c1ce !important;
+}
+
+html:not([data-pbb-theme="light"]) .adaptive-modal-change {
+    background: #21182c !important;
+    border: 1px solid rgba(245, 217, 138, 0.16) !important;
+}
+
+html:not([data-pbb-theme="light"]) .adaptive-modal-change .adaptive-modal-old {
+    color: #bdb5c4 !important;
+    -webkit-text-fill-color: #bdb5c4 !important;
+}
+
+html:not([data-pbb-theme="light"]) .adaptive-modal-change :is(.adaptive-modal-arrow, .adaptive-modal-new) {
+    color: #f5d98a !important;
+    -webkit-text-fill-color: #f5d98a !important;
+}
+
+html:not([data-pbb-theme="light"]) .adaptive-modal-confirm {
+    background: linear-gradient(135deg, #f5d98a, #d8b25e) !important;
+    color: #120c18 !important;
+    -webkit-text-fill-color: #120c18 !important;
+}
+
+/* Dining guide cards */
+html:not([data-pbb-theme="light"]) #dining :is(.hero-card, .card, .card-body),
+html:not([data-pbb-theme="light"]) #dining .card-body > div[style*="display:grid"] > div {
+    background: linear-gradient(145deg, #191919, #111111) !important;
+    border-color: rgba(245, 217, 138, 0.16) !important;
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+}
+
+html:not([data-pbb-theme="light"]) #dining :is(h1, h3, h4, strong) {
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+}
+
+html:not([data-pbb-theme="light"]) #dining :is(p, li) {
+    color: #c9c1ce !important;
+    -webkit-text-fill-color: #c9c1ce !important;
+}
+
+html:not([data-pbb-theme="light"]) #dining p[style*="color: #e53e3e"] {
+    color: #ff9a9a !important;
+    -webkit-text-fill-color: #ff9a9a !important;
+}
+
+html:not([data-pbb-theme="light"]) #dining a > button {
+    background: linear-gradient(135deg, #f5d98a, #d8b25e) !important;
+    color: #120c18 !important;
+    -webkit-text-fill-color: #120c18 !important;
+}
+
+html:not([data-pbb-theme="light"]) #custom-exercise-upload-banner-icon {
+    color: #120c18 !important;
+    -webkit-text-fill-color: #120c18 !important;
+}
+
+html:not([data-pbb-theme="light"]) #coin-shop-modal #restore-purchases-row button {
+    background: none !important;
+    color: #f5d98a !important;
+    -webkit-text-fill-color: #f5d98a !important;
+}
+
+/* App-wide last line of defence for legacy inline light-mode fragments. */
+html:not([data-pbb-theme="light"]) :where(
+    .app-view,
+    [id$="-modal"],
+    [id$="-modal-overlay"],
+    [id$="-overlay"],
+    [id$="-sheet"]
+) :is(
+    [style*="background:white"],
+    [style*="background: white"],
+    [style*="background:#fff"],
+    [style*="background: #fff"],
+    [style*="background:#f8fafc"],
+    [style*="background: #f8fafc"],
+    [style*="background:#f1f5f9"],
+    [style*="background: #f1f5f9"],
+    [style*="background:#f0fdf4"],
+    [style*="background: #f0fdf4"],
+    [style*="background:#f0f9ff"],
+    [style*="background: #f0f9ff"]
+) {
+    background: #171717 !important;
+    border-color: rgba(245, 217, 138, 0.16) !important;
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+}
+
+html:not([data-pbb-theme="light"]) :where(
+    .app-view,
+    [id$="-modal"],
+    [id$="-modal-overlay"],
+    [id$="-overlay"],
+    [id$="-sheet"]
+) :is(
+    [style*="color:#0f172a"],
+    [style*="color: #0f172a"],
+    [style*="color:#1e293b"],
+    [style*="color: #1e293b"],
+    [style*="color:#334155"],
+    [style*="color: #334155"],
+    [style*="color:#374151"],
+    [style*="color: #374151"],
+    [style*="color:#4a5568"],
+    [style*="color: #4a5568"],
+    [style*="color:#555"],
+    [style*="color: #555"],
+    [style*="color:#666"],
+    [style*="color: #666"]
+) {
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+}
+
+html:not([data-pbb-theme="light"]) :where(
+    .app-view,
+    [id$="-modal"],
+    [id$="-modal-overlay"],
+    [id$="-overlay"],
+    [id$="-sheet"]
+) :is(
+    [style*="color:#475569"],
+    [style*="color: #475569"],
+    [style*="color:#64748b"],
+    [style*="color: #64748b"],
+    [style*="color:#6b7280"],
+    [style*="color: #6b7280"]
+) {
+    color: #c9c1ce !important;
+    -webkit-text-fill-color: #c9c1ce !important;
+}
+
+html:not([data-pbb-theme="light"]) :where(
+    .app-view,
+    [id$="-modal"],
+    [id$="-modal-overlay"],
+    [id$="-overlay"],
+    [id$="-sheet"]
+) :is(
+    input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="color"]),
+    textarea,
+    select
+) {
+    background-color: #171717 !important;
+    border-color: rgba(245, 217, 138, 0.22) !important;
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+    caret-color: #f5d98a !important;
+}
+
+html:not([data-pbb-theme="light"]) :where(
+    .app-view,
+    [id$="-modal"],
+    [id$="-modal-overlay"],
+    [id$="-overlay"],
+    [id$="-sheet"]
+) :is(input, textarea)::placeholder {
+    color: #aaa2b0 !important;
+    -webkit-text-fill-color: #aaa2b0 !important;
+    opacity: 1 !important;
+}
+
+html:not([data-pbb-theme="light"]) :where(
+    .app-view,
+    [id$="-modal"],
+    [id$="-modal-overlay"],
+    [id$="-overlay"],
+    [id$="-sheet"]
+) :is(
+    button[style*="background:var(--primary)"],
+    button[style*="background: var(--primary)"],
+    button[style*="background:linear-gradient(135deg, var(--primary)"],
+    button[style*="background: linear-gradient(135deg, var(--primary)"]
+) {
+    background: linear-gradient(135deg, #f5d98a, #d8b25e) !important;
+    border-color: rgba(245, 217, 138, 0.36) !important;
+    color: #120c18 !important;
+    -webkit-text-fill-color: #120c18 !important;
+}
+
+html:not([data-pbb-theme="light"]) .coin-header-widget :is(.coin-emoji, .coin-amount, .coin-buy-btn) {
+    color: #120c18 !important;
+    -webkit-text-fill-color: #120c18 !important;
+}
+
+/* High-use dashboard cards and transient reward controls. */
+html:not([data-pbb-theme="light"]) #view-dashboard :is(
+    #daily-progress-counter,
+    #dashboard-current-phase-title,
+    #dashboard-current-phase-name,
+    #weekly-progress-photo-uploading-copy,
+    #weigh-in-unit-label
+) {
+    color: #c9c1ce !important;
+    -webkit-text-fill-color: #c9c1ce !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-dashboard .levelup-banner :is(
+    .levelup-banner-title,
+    .star-icon,
+    #levelup-banner-number,
+    .levelup-banner-rank,
+    .levelup-unlocked-label,
+    .levelup-unlocked-icon,
+    #levelup-unlocked-text
+) {
+    color: #120c18 !important;
+    -webkit-text-fill-color: #120c18 !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-dashboard #battle-btn-block {
+    background: #1e3a8a !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-dashboard #battle-btn-fire {
+    background: #991b1b !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-dashboard #battle-btn-bash {
+    background: #854d0e !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-dashboard :is(#battle-btn-block, #battle-btn-fire, #battle-btn-bash) * {
+    color: inherit !important;
+    -webkit-text-fill-color: inherit !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-dashboard :is(
+    #progress-photo-share-feed-btn,
+    #fitness-diary-share-feed-btn,
+    #whoop-sync-btn
+) {
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+}
+
+/* Common high-traffic modal actions that used white type on gold. */
+html:not([data-pbb-theme="light"]) :is(
+    #guest-signup-modal,
+    #store-review-modal,
+    #create-challenge-modal,
+    #health-connect-modal,
+    #view-week-session
+) button {
+    background: #21182c !important;
+    border-color: rgba(245, 217, 138, 0.2) !important;
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+}
+
+html:not([data-pbb-theme="light"]) :is(
+    #store-review-primary-btn,
+    #store-review-fallback-primary-btn,
+    #create-challenge-btn,
+    #week-session-repeat-btn,
+    #guest-signup-modal button:first-of-type,
+    #health-connect-modal button:first-of-type,
+    #create-challenge-modal .create-challenge-bet-btn.active
+) {
+    background: linear-gradient(135deg, #f5d98a, #d8b25e) !important;
+    color: #120c18 !important;
+    -webkit-text-fill-color: #120c18 !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-interval-timer :is(#interval-start-btn, #interval-pause-btn, button[onclick*="resetInterval"]) {
+    background: linear-gradient(135deg, #f5d98a, #d8b25e) !important;
+    color: #120c18 !important;
+    -webkit-text-fill-color: #120c18 !important;
+}
+
+/* Ask Balance and feed composer inputs must not inherit dark ink. */
+html:not([data-pbb-theme="light"]) :is(#view-ask-balance, .ask-balance-palette) .ask-balance-input {
+    background: #171717 !important;
+    border-color: rgba(245, 217, 138, 0.22) !important;
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+}
+
+html:not([data-pbb-theme="light"]) :is(#view-ask-balance, .ask-balance-palette) .ask-balance-send {
+    background: linear-gradient(135deg, #f5d98a, #d8b25e) !important;
+    color: #120c18 !important;
+    -webkit-text-fill-color: #120c18 !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-friends :is(
+    #feed-composer-avatar,
+    #feed-composer-share-menu-button,
+    button[onclick*="createGroup"],
+    button[onclick*="submitPost"]
+) {
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-friends #feed-start-battle-button {
+    background: #1d2540 !important;
+    border-color: #59658c !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-friends #feed-start-battle-button :is(.feed-start-battle-title, .feed-start-battle-subtitle) {
+    color: #e8ebff !important;
+    -webkit-text-fill-color: #e8ebff !important;
+}
+
+/* Light cards inside operational modals become dark, readable panels. */
+html:not([data-pbb-theme="light"]) :is(
+    #rare-rewards-modal,
+    #share-win-modal,
+    #quick-entry-tutorial-modal,
+    #cycle-tracking-modal,
+    #weigh-in-modal,
+    #view-workout-library,
+    #workout-exercises-modal
+) :is(h1, h2, h3, h4, label, strong) {
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+}
+
+html:not([data-pbb-theme="light"]) :is(
+    #rare-rewards-modal,
+    #share-win-modal,
+    #quick-entry-tutorial-modal,
+    #cycle-tracking-modal,
+    #weigh-in-modal,
+    #view-workout-library,
+    #workout-exercises-modal
+) :is(p, small) {
+    color: #c9c1ce !important;
+    -webkit-text-fill-color: #c9c1ce !important;
+}
+
+html:not([data-pbb-theme="light"]) #share-win-modal [style*="background"] {
+    background: #21182c !important;
+    border-color: rgba(183, 148, 246, 0.34) !important;
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-profile #app-suggestion-input {
+    background: #171717 !important;
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+}
+
+html:not([data-pbb-theme="light"]) .multi-week-nav button.active {
+    color: #0c0c0c !important;
+    -webkit-text-fill-color: #0c0c0c !important;
+}
