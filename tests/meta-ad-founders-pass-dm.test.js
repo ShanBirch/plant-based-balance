@@ -55,6 +55,7 @@ const {
     buildInstagramGraphVideoMessagePayload,
     buildInstagramGraphImageMessagePayload,
     buildInstagramGraphButtonMessagePayload,
+    buildInstagramGraphOutboundItems,
     resolveApprovedInstagramLinkButton,
     requiresNativeProofVideoAttachment,
     maySendDraftImageAttachment,
@@ -118,6 +119,7 @@ test('approved Balance links become native Instagram buttons without a visible r
     assert.equal(preview.displayText, 'Your free preview is ready');
     assert.equal(preview.cardTitle, 'Your Balance preview is ready');
     assert.equal(preview.imageUrl, 'https://plantbased-balance.org/assets/balance-founders-og-cream-gold.png');
+    assert.equal(preview.separateDisplayText, true);
     assert.equal(resolveApprovedInstagramLinkButton('Try https://example.com/unsafe'), null);
 
     const payload = buildInstagramGraphButtonMessagePayload({
@@ -142,8 +144,26 @@ test('approved Balance links become native Instagram buttons without a visible r
     assert.equal(previewPayload.message.attachment.payload.template_type, 'generic');
     assert.equal(previewPayload.message.attachment.payload.elements[0].image_url, preview.imageUrl);
     assert.equal(previewPayload.message.attachment.payload.elements[0].title, 'Your Balance preview is ready');
+    assert.equal('subtitle' in previewPayload.message.attachment.payload.elements[0], true);
     assert.equal(previewPayload.message.attachment.payload.elements[0].buttons[0].title, 'Open your preview');
     assert.equal(previewPayload.message.attachment.payload.elements[0].buttons[0].url, preview.url);
+
+    const previewItems = buildInstagramGraphOutboundItems([
+        'Yep, here you go. This takes you through your setup: https://plantbased-balance.org/p/Abc_123-xyz',
+    ], true);
+    assert.deepEqual(previewItems.map(item => item.kind), ['text', 'link_button']);
+    assert.equal(previewItems[0].text, 'Yep, here you go. This takes you through your setup');
+    assert.equal(previewItems[1].displayText, '');
+    assert.equal(previewItems[1].text, 'Your Balance preview is ready');
+    const cleanPreviewPayload = buildInstagramGraphButtonMessagePayload({
+        recipientId: 'lead-1',
+        text: previewItems[1].displayText,
+        url: previewItems[1].url,
+        title: previewItems[1].title,
+        imageUrl: previewItems[1].imageUrl,
+        cardTitle: previewItems[1].cardTitle,
+    });
+    assert.equal('subtitle' in cleanPreviewPayload.message.attachment.payload.elements[0], false);
 });
 
 test('sender blocks a paid Meta resend claim when the native video is absent', () => {

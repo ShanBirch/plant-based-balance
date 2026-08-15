@@ -1540,7 +1540,7 @@ function buildInstagramGraphButtonMessagePayload({ recipientId, text, url, title
             elements: [{
                 title: cardTitle || BALANCE_PREVIEW_CARD_TITLE,
                 image_url: imageUrl,
-                subtitle: text,
+                ...(String(text || '').trim() ? { subtitle: String(text).trim() } : {}),
                 buttons: [button],
             }],
         }
@@ -1586,6 +1586,7 @@ function resolveApprovedInstagramLinkButton(text = '') {
     return {
         url: rawUrl,
         displayText,
+        ...(isPreview ? { separateDisplayText: true } : {}),
         title: isPreview
             ? 'Open your preview'
             : 'Open Balance',
@@ -1594,6 +1595,25 @@ function resolveApprovedInstagramLinkButton(text = '') {
             cardTitle: BALANCE_PREVIEW_CARD_TITLE,
         } : {}),
     };
+}
+
+function buildInstagramGraphOutboundItems(messages = [], shouldUseGraph = false) {
+    return messages.flatMap(text => {
+        const linkButton = shouldUseGraph ? resolveApprovedInstagramLinkButton(text) : null;
+        if (!linkButton) return [{ kind: 'text', text }];
+        if (!linkButton.separateDisplayText) {
+            return [{ kind: 'link_button', text, ...linkButton }];
+        }
+        return [
+            { kind: 'text', text: linkButton.displayText },
+            {
+                kind: 'link_button',
+                text: linkButton.cardTitle || BALANCE_PREVIEW_CARD_TITLE,
+                ...linkButton,
+                displayText: '',
+            },
+        ];
+    });
 }
 
 function requiresNativeProofVideoAttachment({ replyText = '', alertData = {} } = {}) {
@@ -2544,12 +2564,7 @@ exports.handler = async (event) => {
             text: messagesToSend.join('\n\n'),
             voiceConfig: voiceMessageConfig,
         }]
-        : messagesToSend.map(text => {
-            const linkButton = shouldUseGraph ? resolveApprovedInstagramLinkButton(text) : null;
-            return linkButton
-                ? { kind: 'link_button', text, ...linkButton }
-                : { kind: 'text', text };
-        });
+        : buildInstagramGraphOutboundItems(messagesToSend, shouldUseGraph);
     const voiceCompanionText = resolveApprovedVoiceCompanionText(alertData, voiceMessageConfig.enabled);
     const approvedVoiceCompanion = !!voiceCompanionText;
     if (approvedVoiceCompanion) {
@@ -3129,6 +3144,7 @@ exports._test = {
     buildInstagramGraphVideoMessagePayload,
     buildInstagramGraphImageMessagePayload,
     buildInstagramGraphButtonMessagePayload,
+    buildInstagramGraphOutboundItems,
     resolveApprovedInstagramLinkButton,
     requiresNativeProofVideoAttachment,
     isInstagramAudioUnsupportedError,
