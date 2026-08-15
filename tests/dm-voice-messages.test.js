@@ -22,7 +22,7 @@ assert.match(messaging, /fetch\('\/api\/upload-chat-audio'/);
 assert.match(messaging, /Authorization:\s*`Bearer \$\{accessToken\}`/);
 assert.match(messaging, /`🎤 Voice message \(\$\{formatDmVoiceDuration\(pending\.durationSeconds\)\}\)\\n\[AUDIO:\$\{uploadData\.url\}\]`/);
 assert.match(messaging, /audioMatch[\s\S]*<audio controls preload="metadata"/);
-assert.match(messaging, /function getDmAudioPlaybackUrl[\s\S]*chat-audio-proxy\?url=/);
+assert.match(messaging, /function getDmAudioPlaybackUrl[\s\S]*\/api\/chat-audio\?url=/);
 assert.match(messaging, /const playbackUrl = getDmAudioPlaybackUrl\(audioUrl\)/);
 assert.match(messaging, /function closeDirectMessageModal\(\) \{\s*cancelDmVoiceRecording\(\)/);
 assert.match(messaging, /Couldn’t send\. Tap send to retry\./);

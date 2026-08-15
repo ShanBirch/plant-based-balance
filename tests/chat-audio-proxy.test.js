@@ -1,19 +1,18 @@
 const assert = require('assert');
-const { handler, _test } = require('../netlify/functions/chat-audio-proxy');
-
 const validUrl = 'https://f005.backblazeb2.com/file/plantbasedbalancestories/chats/client-id/checkin.mp3';
 
-assert.strictEqual(_test.resolveAllowedAudioUrl(validUrl), validUrl);
-assert.strictEqual(_test.resolveAllowedAudioUrl('http://f005.backblazeb2.com/file/plantbasedbalancestories/chats/a.mp3'), null);
-assert.strictEqual(_test.resolveAllowedAudioUrl('https://example.com/file/plantbasedbalancestories/chats/a.mp3'), null);
-assert.strictEqual(_test.resolveAllowedAudioUrl('https://f005.backblazeb2.com/file/plantbasedbalancestories/private/a.mp3'), null);
-assert.strictEqual(_test.resolveAllowedAudioUrl('https://f005.backblazeb2.com/file/plantbasedbalancestories/chats/a.html'), null);
-assert.strictEqual(_test.boundedRange('bytes=0-'), 'bytes=0-1048575');
-assert.strictEqual(_test.boundedRange('bytes=100-199'), 'bytes=100-199');
-assert.strictEqual(_test.boundedRange('bytes=100-9999999'), 'bytes=100-1048675');
-assert.strictEqual(_test.boundedRange(''), 'bytes=0-1048575');
-
 (async () => {
+    const proxy = await import('../netlify/functions/chat-audio-proxy.mts');
+    assert.strictEqual(proxy.resolveAllowedAudioUrl(validUrl), validUrl);
+    assert.strictEqual(proxy.resolveAllowedAudioUrl('http://f005.backblazeb2.com/file/plantbasedbalancestories/chats/a.mp3'), null);
+    assert.strictEqual(proxy.resolveAllowedAudioUrl('https://example.com/file/plantbasedbalancestories/chats/a.mp3'), null);
+    assert.strictEqual(proxy.resolveAllowedAudioUrl('https://f005.backblazeb2.com/file/plantbasedbalancestories/private/a.mp3'), null);
+    assert.strictEqual(proxy.resolveAllowedAudioUrl('https://f005.backblazeb2.com/file/plantbasedbalancestories/chats/a.html'), null);
+    assert.strictEqual(proxy.boundedRange('bytes=0-'), 'bytes=0-1048575');
+    assert.strictEqual(proxy.boundedRange('bytes=100-199'), 'bytes=100-199');
+    assert.strictEqual(proxy.boundedRange('bytes=100-9999999'), 'bytes=100-1048675');
+    assert.strictEqual(proxy.boundedRange(''), 'bytes=0-1048575');
+
     const originalFetch = global.fetch;
     let receivedRequest;
     global.fetch = async (url, options) => {
@@ -30,24 +29,17 @@ assert.strictEqual(_test.boundedRange(''), 'bytes=0-1048575');
     };
 
     try {
-        const result = await handler({
-            httpMethod: 'GET',
-            queryStringParameters: { url: validUrl },
+        const result = await proxy.default(new Request(`https://plantbased-balance.org/api/chat-audio?url=${encodeURIComponent(validUrl)}`, {
             headers: { range: 'bytes=0-10' },
-        });
-        assert.strictEqual(result.statusCode, 206);
-        assert.strictEqual(result.isBase64Encoded, true);
-        assert.strictEqual(Buffer.from(result.body, 'base64').toString(), 'audio-bytes');
-        assert.strictEqual(result.headers['content-type'], 'audio/mpeg');
-        assert.strictEqual(result.headers['content-range'], 'bytes 0-10/100');
-        assert.strictEqual(receivedRequest.options.headers.Range, 'bytes=0-10');
+        }));
+        assert.strictEqual(result.status, 206);
+        assert.strictEqual(await result.text(), 'audio-bytes');
+        assert.strictEqual(result.headers.get('content-type'), 'audio/mpeg');
+        assert.strictEqual(result.headers.get('content-range'), 'bytes 0-10/100');
+        assert.strictEqual(receivedRequest.options.headers.get('Range'), 'bytes=0-10');
 
-        const rejected = await handler({
-            httpMethod: 'GET',
-            queryStringParameters: { url: 'https://example.com/audio.mp3' },
-            headers: {},
-        });
-        assert.strictEqual(rejected.statusCode, 400);
+        const rejected = await proxy.default(new Request('https://plantbased-balance.org/api/chat-audio?url=https%3A%2F%2Fexample.com%2Faudio.mp3'));
+        assert.strictEqual(rejected.status, 400);
     } finally {
         global.fetch = originalFetch;
     }

@@ -3050,7 +3050,7 @@ function getDmAudioPlaybackUrl(rawUrl) {
             && pathname.startsWith('/file/plantbasedbalancestories/chats/')
             && ['.mp3', '.m4a', '.wav'].includes(extension);
         if (!isBalanceChatAudio) return audioUrl.toString();
-        return `/.netlify/functions/chat-audio-proxy?url=${encodeURIComponent(audioUrl.toString())}`;
+        return `/api/chat-audio?url=${encodeURIComponent(audioUrl.toString())}`;
     } catch {
         return String(rawUrl || '');
     }
