@@ -3040,6 +3040,22 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+function getDmAudioPlaybackUrl(rawUrl) {
+    try {
+        const audioUrl = new URL(String(rawUrl || ''), window.location.origin);
+        const pathname = decodeURIComponent(audioUrl.pathname);
+        const extension = pathname.slice(pathname.lastIndexOf('.')).toLowerCase();
+        const isBalanceChatAudio = audioUrl.protocol === 'https:'
+            && audioUrl.hostname === 'f005.backblazeb2.com'
+            && pathname.startsWith('/file/plantbasedbalancestories/chats/')
+            && ['.mp3', '.m4a', '.wav'].includes(extension);
+        if (!isBalanceChatAudio) return audioUrl.toString();
+        return `/.netlify/functions/chat-audio-proxy?url=${encodeURIComponent(audioUrl.toString())}`;
+    } catch {
+        return String(rawUrl || '');
+    }
+}
+
 function getGroupChatMemberNames(memberNames = currentGroupChatMembers) {
     const text = String(memberNames || '').trim();
     if (!text || /^\d+\s+members?$/i.test(text)) return [];
@@ -8255,6 +8271,7 @@ async function loadDirectMessages(recipientId) {
             const audioMatch = String(msg.message || '').match(/\[AUDIO:(https?:\/\/[^\s\]]+)\]/i);
             if (audioMatch) {
                 const audioUrl = audioMatch[1];
+                const playbackUrl = getDmAudioPlaybackUrl(audioUrl);
                 const voiceLabel = String(msg.message || '')
                     .replace(/\[AUDIO:https?:\/\/[^\s\]]+\]/ig, '')
                     .replace(/^\s*🎤\s*/, '')
@@ -8265,7 +8282,7 @@ async function loadDirectMessages(recipientId) {
                             <div style="display:flex; align-items:center; gap:7px; margin:0 3px 5px; font-size:.69rem; font-weight:800; color:${isSent ? '#68480f' : '#475569'};">
                                 <span style="width:7px; height:7px; border-radius:50%; background:${isSent ? '#68480f' : '#64748b'};"></span>${escapeHtml(voiceLabel)}
                             </div>
-                            <audio controls preload="metadata" src="${escapeHtml(audioUrl)}" style="display:block; width:100%; height:42px; border-radius:21px;"></audio>
+                            <audio controls preload="metadata" src="${escapeHtml(playbackUrl)}" style="display:block; width:100%; height:42px; border-radius:21px;"></audio>
                             <div style="font-size:.7rem; color:${isSent ? '#68480f' : '#94a3b8'}; opacity:.8; margin-top:3px; text-align:right;">${time}</div>
                         </div>
                     </div>

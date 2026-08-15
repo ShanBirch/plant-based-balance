@@ -13,7 +13,7 @@ assert.match(dashboard, /id="dm-voice-btn"[\s\S]*Record voice message/);
 assert.match(dashboard, /id="dm-recording-panel"[\s\S]*Cancel recording[\s\S]*Send voice message/);
 assert.match(dashboard, /id:\s*'dm-voice-messages-v1'[\s\S]*sel:\s*'#dm-voice-btn'/);
 assert.match(dashboard, /sel:'#dm-voice-btn'[\s\S]*title:'Send a voice message'/);
-assert.match(dashboard, /dashboard-script-6-ai_coach_draft_mode_logic_auth\.js\?v=39/);
+assert.match(dashboard, /dashboard-script-6-ai_coach_draft_mode_logic_auth\.js\?v=40/);
 
 assert.match(messaging, /navigator\.mediaDevices\.getUserMedia\(\{[\s\S]*echoCancellation:\s*true/);
 assert.match(messaging, /const DM_VOICE_MAX_MS = 5 \* 60 \* 1000/);
@@ -22,6 +22,8 @@ assert.match(messaging, /fetch\('\/api\/upload-chat-audio'/);
 assert.match(messaging, /Authorization:\s*`Bearer \$\{accessToken\}`/);
 assert.match(messaging, /`🎤 Voice message \(\$\{formatDmVoiceDuration\(pending\.durationSeconds\)\}\)\\n\[AUDIO:\$\{uploadData\.url\}\]`/);
 assert.match(messaging, /audioMatch[\s\S]*<audio controls preload="metadata"/);
+assert.match(messaging, /function getDmAudioPlaybackUrl[\s\S]*chat-audio-proxy\?url=/);
+assert.match(messaging, /const playbackUrl = getDmAudioPlaybackUrl\(audioUrl\)/);
 assert.match(messaging, /function closeDirectMessageModal\(\) \{\s*cancelDmVoiceRecording\(\)/);
 assert.match(messaging, /Couldn’t send\. Tap send to retry\./);
 
