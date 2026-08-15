@@ -1526,6 +1526,93 @@ function buildInstagramGraphVideoMessagePayload({ recipientId, videoUrl, tag }) 
     };
 }
 
+function buildInstagramGraphButtonMessagePayload({ recipientId, text, url, title = 'Open Balance', tag }) {
+    return {
+        recipient: { id: recipientId },
+        message: {
+            attachment: {
+                type: 'template',
+                payload: {
+                    template_type: 'button',
+                    text,
+                    buttons: [{
+                        type: 'web_url',
+                        url,
+                        title,
+                    }],
+                },
+            },
+        },
+        ...(tag ? { tag } : {}),
+    };
+}
+
+function resolveApprovedInstagramLinkButton(text = '') {
+    const source = String(text || '').trim();
+    const urls = source.match(/https:\/\/[^\s]+/gi) || [];
+    if (urls.length !== 1) return null;
+    const rawUrl = urls[0].replace(/[),.!?]+$/, '');
+    let parsed;
+    try { parsed = new URL(rawUrl); } catch { return null; }
+    const host = parsed.hostname.toLowerCase();
+    const path = parsed.pathname;
+    const approved = (host === 'plantbased-balance.org' && (
+        /^\/p\/[A-Za-z0-9_-]+\/?$/.test(path)
+        || /^\/(?:founders|plant-based-fitness\.html|meta-app-preview\.html|login\.html|book)\/?$/.test(path)
+    )) || (host === 'future-balance.netlify.app' && /^\/(?:fitness|fitness-coaching\.html)\/?$/.test(path));
+    if (!approved) return null;
+
+    const displayText = source
+        .replace(urls[0], '')
+        .replace(/\s+([,.;!?])/g, '$1')
+        .replace(/[:\-]\s*$/, '')
+        .replace(/\s+/g, ' ')
+        .trim() || 'Here you go. This opens Balance.';
+    return {
+        url: rawUrl,
+        displayText,
+        title: /^\/p\//.test(path) || path === '/meta-app-preview.html'
+            ? 'Open your preview'
+            : 'Open Balance',
+    };
+}
+
+function requiresNativeProofVideoAttachment({ replyText = '', alertData = {} } = {}) {
+    const text = String(replyText || '');
+    const inbound = String(alertData.message_preview || alertData.current_message || '');
+    const paidMeta = alertData.meta_ad_fast_lane === true
+        || alertData.meta_ad_conversation_fast_lane === true
+        || String(alertData.acquisition_mode || '').toLowerCase() === 'paid_meta';
+    if (!paidMeta) return false;
+    const explicitVideoClaim = /\b(?:here(?:'s|\s+is)|sent|sending)\b[^.?!]{0,80}\b(?:video|vid)\b/i.test(text);
+    const retryClaim = /\b(?:sent|sending|here(?:'s|\s+is))\b[^.?!]{0,50}\bit\b[^.?!]{0,30}\bagain\b/i.test(text)
+        && /\b(?:video|vid|can(?:not|'t)\s+see|didn(?:'t)?\s+come\s+through)\b/i.test(inbound);
+    return explicitVideoClaim || retryClaim;
+}
+
+async function postInstagramGraphButton({ recipientId, accountId, text, url, title, tag }) {
+    const accessToken = await getInstagramGraphAccessToken(accountId);
+    if (!accessToken) throw new Error('INSTAGRAM_GRAPH_ACCESS_TOKEN not configured');
+    if (!recipientId) throw new Error('Instagram Graph recipient id missing');
+    const targetAccount = accountId || 'me';
+    const res = await fetch(`https://graph.instagram.com/${INSTAGRAM_GRAPH_API_VERSION}/${encodeURIComponent(targetAccount)}/messages`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(buildInstagramGraphButtonMessagePayload({ recipientId, text, url, title, tag })),
+    });
+    const responseText = await res.text();
+    let parsed;
+    try { parsed = responseText ? JSON.parse(responseText) : {}; } catch { parsed = { raw: responseText }; }
+    if (!res.ok) {
+        const detail = parsed?.error?.message || responseText;
+        throw new Error(`Instagram Graph button ${res.status}: ${String(detail || '').slice(0, 400)}`);
+    }
+    return parsed;
+}
+
 async function postInstagramGraphVideo({ recipientId, accountId, videoUrl, tag }) {
     const accessToken = await getInstagramGraphAccessToken(accountId);
     if (!accessToken) throw new Error('INSTAGRAM_GRAPH_ACCESS_TOKEN not configured');
@@ -2327,6 +2414,15 @@ exports.handler = async (event) => {
         imageUrl: draftImageAttachmentUrl,
         replyText: messagesToSend.join('\n\n'),
     });
+    if (requiresNativeProofVideoAttachment({ replyText: messagesToSend.join('\n\n'), alertData }) && !hasDraftVideoAttachment) {
+        return {
+            statusCode: 409,
+            body: JSON.stringify({
+                error: 'The reply says the proof video is being sent, but the native video attachment is missing.',
+                code: 'native_proof_video_attachment_required',
+            }),
+        };
+    }
     if (hasDraftVideoAttachment || hasDraftImageAttachment) {
         messagesToSend = splitTerminalQuestionForProofMedia(messagesToSend);
     }
@@ -2429,7 +2525,12 @@ exports.handler = async (event) => {
             text: messagesToSend.join('\n\n'),
             voiceConfig: voiceMessageConfig,
         }]
-        : messagesToSend.map(text => ({ kind: 'text', text }));
+        : messagesToSend.map(text => {
+            const linkButton = shouldUseGraph ? resolveApprovedInstagramLinkButton(text) : null;
+            return linkButton
+                ? { kind: 'link_button', text, ...linkButton }
+                : { kind: 'text', text };
+        });
     const voiceCompanionText = resolveApprovedVoiceCompanionText(alertData, voiceMessageConfig.enabled);
     const approvedVoiceCompanion = !!voiceCompanionText;
     if (approvedVoiceCompanion) {
@@ -2605,6 +2706,24 @@ exports.handler = async (event) => {
                     kind: 'image',
                     imageUrl: item.imageUrl,
                 });
+            } else if (item.kind === 'link_button') {
+                const r = await postInstagramGraphButton({
+                    recipientId: graphRecipientId,
+                    accountId: graphAccountId,
+                    text: item.displayText,
+                    url: item.url,
+                    title: item.title,
+                    tag: graphMessageTag,
+                });
+                sendResults.push({
+                    ok: true,
+                    response: r,
+                    text: chunkText,
+                    transport: deliveryTransport,
+                    kind: 'link_button',
+                    linkUrl: item.url,
+                    buttonTitle: item.title,
+                });
             } else {
                 const r = shouldUseGraph
                     ? await postToInstagramGraph({ recipientId: graphRecipientId, accountId: graphAccountId, text: chunkText, tag: graphMessageTag })
@@ -2721,7 +2840,11 @@ exports.handler = async (event) => {
         ...buildAlternateIgDeliveryData(alternateDelivery || {}),
         delivery_payload_kind: voiceMessageConfig.enabled
             ? (approvedVoiceCompanion ? 'audio_and_text' : 'audio')
-            : 'text',
+            : (hasDraftImageAttachment
+                ? 'image'
+                : (hasDraftVideoAttachment
+                    ? 'video'
+                    : (outboundItems.some(item => item.kind === 'link_button') ? 'link_button' : 'text'))),
         outbound_voice_message: voiceMessageConfig.enabled
             ? true
             : (forceText ? false : (alertData.outbound_voice_message || undefined)),
@@ -2954,7 +3077,11 @@ exports.handler = async (event) => {
             chunks_total: outboundItems.length,
             delivery_payload_kind: voiceMessageConfig.enabled
                 ? (approvedVoiceCompanion ? 'audio_and_text' : 'audio')
-                : (hasDraftImageAttachment ? 'image' : (hasDraftVideoAttachment ? 'video' : 'text')),
+                : (hasDraftImageAttachment
+                    ? 'image'
+                    : (hasDraftVideoAttachment
+                        ? 'video'
+                        : (outboundItems.some(item => item.kind === 'link_button') ? 'link_button' : 'text'))),
             ...cleanup,
         }),
     };
@@ -2979,6 +3106,9 @@ exports._test = {
     resolveApprovedVoiceCompanionText,
     buildInstagramGraphVideoMessagePayload,
     buildInstagramGraphImageMessagePayload,
+    buildInstagramGraphButtonMessagePayload,
+    resolveApprovedInstagramLinkButton,
+    requiresNativeProofVideoAttachment,
     isInstagramAudioUnsupportedError,
     isCocosAlertData,
     isChallengeOfferSend,

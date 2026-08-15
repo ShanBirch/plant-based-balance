@@ -15,6 +15,8 @@ const {
     buildApprovedDeterministicMetaAdFirstReplyReview,
     ensureMetaAdSalesProgressionQuestion,
     buildDeterministicPaidMetaConversationReply,
+    isExplicitPaidMetaProofVideoRetry,
+    buildPaidMetaProofVideoRetryReply,
     shouldApplyDeterministicPaidMetaReplyOverride,
     shouldUseOutboundSyntheticVoice,
     restoreCoalescedPaidMetaVoiceDraft,
@@ -52,6 +54,9 @@ const {
 const {
     buildInstagramGraphVideoMessagePayload,
     buildInstagramGraphImageMessagePayload,
+    buildInstagramGraphButtonMessagePayload,
+    resolveApprovedInstagramLinkButton,
+    requiresNativeProofVideoAttachment,
     maySendDraftImageAttachment,
     maySendDraftVideoAttachment,
     splitTerminalQuestionForProofMedia,
@@ -64,6 +69,72 @@ const {
     BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL,
     resolvePaidMetaTransformationProof,
 } = require('../netlify/functions/_lib/paid-meta-proof-media');
+
+test('explicit paid Meta video retry always carries the native evergreen video', () => {
+    assert.equal(isExplicitPaidMetaProofVideoRetry({
+        currentMessage: 'Show me the vid again',
+        history: [],
+    }), true);
+    assert.equal(isExplicitPaidMetaProofVideoRetry({
+        currentMessage: "I can't see it",
+        history: [{ direction: 'out', text: 'Yep, here it is. Once you have watched it, let me know.' }],
+    }), true);
+
+    const draft = buildPaidMetaProofVideoRetryReply("I can't see it");
+    assert.equal(draft.videoAttachmentUrl, BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL);
+    assert.match(draft.joined, /sent the video again/i);
+    assert.match(draft.joined, /can you see it now\?$/i);
+    assert.equal(maySendDraftVideoAttachment({
+        videoUrl: draft.videoAttachmentUrl,
+        replyText: draft.joined,
+    }), true);
+});
+
+test('paid Meta fast lane marks Seen before starting the early typing indicator', () => {
+    const source = fs.readFileSync(path.join(__dirname, '../netlify/functions/ig-instant-draft.js'), 'utf8');
+    const seenAt = source.indexOf('earlyInstagramSeenAction = await sendInstagramGraphTypingAction');
+    const typingAt = source.indexOf('earlyInstagramTypingAction = await sendInstagramGraphTypingAction');
+    assert.ok(seenAt >= 0);
+    assert.ok(typingAt > seenAt);
+});
+
+test('approved Balance links become native Instagram buttons without a visible raw URL', () => {
+    const link = resolveApprovedInstagramLinkButton('Here you go, download Balance here: https://plantbased-balance.org/founders');
+    assert.deepEqual(link, {
+        url: 'https://plantbased-balance.org/founders',
+        displayText: 'Here you go, download Balance here',
+        title: 'Open Balance',
+    });
+    const preview = resolveApprovedInstagramLinkButton('Your free preview is ready: https://plantbased-balance.org/p/Abc_123-xyz');
+    assert.equal(preview.title, 'Open your preview');
+    assert.equal(preview.displayText, 'Your free preview is ready');
+    assert.equal(resolveApprovedInstagramLinkButton('Try https://example.com/unsafe'), null);
+
+    const payload = buildInstagramGraphButtonMessagePayload({
+        recipientId: 'lead-1',
+        text: link.displayText,
+        url: link.url,
+        title: link.title,
+    });
+    assert.equal(payload.message.attachment.payload.template_type, 'button');
+    assert.equal(payload.message.attachment.payload.buttons[0].type, 'web_url');
+    assert.equal(payload.message.attachment.payload.buttons[0].url, link.url);
+    assert.doesNotMatch(payload.message.attachment.payload.text, /https:\/\//);
+});
+
+test('sender blocks a paid Meta resend claim when the native video is absent', () => {
+    assert.equal(requiresNativeProofVideoAttachment({
+        replyText: "Ah sorry, it didn't come through properly. I've sent the video again, can you see it now?",
+        alertData: {
+            acquisition_mode: 'paid_meta',
+            message_preview: "I can't see it",
+        },
+    }), true);
+    assert.equal(requiresNativeProofVideoAttachment({
+        replyText: 'Here is the information you asked for.',
+        alertData: { acquisition_mode: 'paid_meta' },
+    }), false);
+});
 
 test('Cocos paid-ad Founders Pass opener bypasses the false signup hold and model review', () => {
     const currentMessage = 'What is the Founders Pass?';

@@ -1314,6 +1314,39 @@ function hasRecentPaidMetaProofVideo(history = []) {
         .some(item => /\b(?:quick video|showing you how it works inside Balance)\b/i.test(String(item?.text || '')));
 }
 
+function isExplicitPaidMetaProofVideoRetry({ currentMessage = '', history = [] } = {}) {
+    const message = String(currentMessage || '').replace(/\s+/g, ' ').trim();
+    const directVideoRequest = /\b(?:show|send)\s+me\s+(?:the\s+)?(?:vid|video)(?:\s+again)?\b/i.test(message)
+        || /\b(?:vid|video)\s+(?:again|please|pls|plz)\b/i.test(message);
+    const failedDelivery = /\b(?:can(?:not|'t)|couldn(?:'t)?|didn(?:'t)?)\s+(?:see|watch|open|load)\s+(?:it|the\s+(?:vid|video))\b/i.test(message)
+        || /\b(?:it|the\s+(?:vid|video))\s+(?:isn't|is\s+not|didn't)\s+(?:showing|loading|coming\s+through)\b/i.test(message);
+    if (directVideoRequest) return true;
+    if (!failedDelivery) return false;
+
+    const recentOutbound = (Array.isArray(history) ? history : [])
+        .filter(item => String(item?.direction || '').toLowerCase() === 'out')
+        .slice(-6)
+        .map(item => String(item?.text || ''))
+        .join(' ');
+    return /\b(?:video|vid|quick\s+(?:look|video)|watch(?:ed)?|here\s+it\s+is)\b/i.test(recentOutbound);
+}
+
+function buildPaidMetaProofVideoRetryReply(currentMessage = '') {
+    const failedDelivery = /\b(?:can(?:not|'t)|couldn(?:'t)?|didn(?:'t)?)\s+(?:see|watch|open|load)\s+(?:it|the\s+(?:vid|video))\b/i.test(String(currentMessage || ''));
+    const joined = failedDelivery
+        ? `Ah sorry, it didn't come through properly. I've sent the video again, can you see it now?`
+        : `Yep, here it is again. Can you see it now?`;
+    return {
+        chunks: [joined],
+        joined,
+        videoAttachmentUrl: BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL,
+        model: 'deterministic_paid_meta_video_retry_v1',
+        replyMode: 'campaign_native_video_retry',
+        maxChunks: 1,
+        error: null,
+    };
+}
+
 function buildPaidMetaVoiceGoalPhrase(facts = {}) {
     const rawGoal = String(facts.current_state || facts.motivation || '').replace(/\s+/g, ' ').trim();
     const kgGoal = rawGoal.match(/\b(\d{1,2}(?:\.\d+)?)\s*(?:kg|kgs|kilograms?)\b/i)?.[1] || '';
@@ -6884,6 +6917,7 @@ exports.handler = async (event) => {
             || thread.custom_data?.instagram_graph?.source === 'meta_ig_webhook'
             || humanAgentRequired
         );
+    let earlyInstagramSeenAction = null;
     let earlyInstagramTypingAction = null;
     if (metaAdFastLane && hasInstagramGraphRoute && !getMetaAdSensitiveHoldReason({
         alertData: { meta_ad_fast_lane: true },
@@ -6897,6 +6931,14 @@ exports.handler = async (event) => {
         if (earlyTypingDelayMs > 0) {
             await new Promise(resolve => setTimeout(resolve, earlyTypingDelayMs));
         }
+        earlyInstagramSeenAction = await sendInstagramGraphTypingAction({
+            channel,
+            recipientId: graphRecipientId,
+            accountId: graphAccountId,
+            action: 'mark_seen',
+            beforeChunkIndex: 0,
+            gapMs: earlyTypingDelayMs,
+        });
         earlyInstagramTypingAction = await sendInstagramGraphTypingAction({
             channel,
             recipientId: graphRecipientId,
@@ -7147,6 +7189,16 @@ exports.handler = async (event) => {
     }
     if (metaAdGoalReplyTurn) {
         draft = applyMetaAdGoalProofReply(draft, messageText, { flowVariant: metaAdFlowVariant });
+    }
+    if (metaAdConversationFastLane
+        && hasInstagramGraphRoute
+        && metaAdFlowVariant !== 'broad_pain'
+        && isExplicitPaidMetaProofVideoRetry({ currentMessage: messageText, history })) {
+        draft = {
+            ...draft,
+            ...buildPaidMetaProofVideoRetryReply(messageText),
+            flowVariant: metaAdFlowVariant,
+        };
     }
     if (metaAdConversationFastLane) draft = ensureMetaAdSalesProgressionQuestion({
         draft,
@@ -7455,6 +7507,9 @@ exports.handler = async (event) => {
             meta_ad_first_inbound: metaAdOpeningTurn || undefined,
             meta_ad_conversation_fast_lane: metaAdConversationFastLane || undefined,
             meta_ad_internal_test_lane: internalMetaAdConversationTestLane || undefined,
+            instagram_early_seen_action: earlyInstagramSeenAction?.attempted
+                ? earlyInstagramSeenAction
+                : undefined,
             instagram_early_typing_action: earlyInstagramTypingAction?.attempted
                 ? earlyInstagramTypingAction
                 : undefined,
@@ -7736,6 +7791,9 @@ exports.handler = async (event) => {
             meta_ad_first_inbound: metaAdOpeningTurn || existingPending.data?.meta_ad_first_inbound || undefined,
             meta_ad_conversation_fast_lane: metaAdConversationFastLane || existingPending.data?.meta_ad_conversation_fast_lane || existingPending.data?.meta_ad_active_conversation_fast_lane || undefined,
             meta_ad_internal_test_lane: internalMetaAdConversationTestLane || existingPending.data?.meta_ad_internal_test_lane || undefined,
+            instagram_early_seen_action: earlyInstagramSeenAction?.attempted
+                ? earlyInstagramSeenAction
+                : existingPending.data?.instagram_early_seen_action || undefined,
             instagram_early_typing_action: earlyInstagramTypingAction?.attempted
                 ? earlyInstagramTypingAction
                 : existingPending.data?.instagram_early_typing_action || undefined,
@@ -8823,6 +8881,8 @@ exports._test = {
     isContextualMetaAdOfferLinkRequest,
     buildContextualMetaAdOfferLinkReply,
     buildDeterministicPaidMetaConversationReply,
+    isExplicitPaidMetaProofVideoRetry,
+    buildPaidMetaProofVideoRetryReply,
     shouldApplyDeterministicPaidMetaReplyOverride,
     shouldUseOutboundSyntheticVoice,
     restoreCoalescedPaidMetaVoiceDraft,
