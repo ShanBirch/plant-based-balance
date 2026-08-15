@@ -3726,45 +3726,6 @@ function pbbShareDrawMetricBox(ctx, x, y, w, h, label, value, fill) {
     pbbShareWrapText(ctx, value, x + 24, y + 90, w - 48, 36, 1);
 }
 
-function pbbShareDrawCelebrationAccents(ctx, width, height, options = {}) {
-    const target = options.target === 'feed' ? 'feed' : 'story';
-    const intensity = options.intensity === 'major' ? 'major' : 'standard';
-    const safeTop = target === 'feed' ? 64 : 220;
-    const centreX = width - 142;
-    const centreY = safeTop + 90;
-    const colours = intensity === 'major'
-        ? ['#fbbf24', '#fde68a', '#ffffff', '#34d399']
-        : ['#f5c45c', '#ffffff', '#5eead4'];
-    const particleCount = intensity === 'major' ? 22 : 14;
-
-    ctx.save();
-    ctx.globalCompositeOperation = 'screen';
-    for (let i = 0; i < particleCount; i++) {
-        const angle = ((Math.PI * 2) / particleCount) * i + 0.18;
-        const distance = 50 + ((i * 37) % 126);
-        const particleX = centreX + Math.cos(angle) * distance;
-        const particleY = centreY + Math.sin(angle) * distance * 0.68;
-        const length = 10 + ((i * 11) % 24);
-        ctx.save();
-        ctx.translate(particleX, particleY);
-        ctx.rotate(angle);
-        ctx.fillStyle = colours[i % colours.length];
-        ctx.globalAlpha = 0.5 + ((i % 3) * 0.16);
-        pbbShareFillRoundRect(ctx, -2, -length / 2, 4 + (i % 2) * 3, length, 4, ctx.fillStyle);
-        ctx.restore();
-    }
-
-    ctx.strokeStyle = intensity === 'major' ? 'rgba(251,191,36,0.42)' : 'rgba(245,196,92,0.28)';
-    ctx.lineWidth = 3;
-    [62, 92, 124].forEach((radius, index) => {
-        ctx.globalAlpha = 0.72 - (index * 0.18);
-        ctx.beginPath();
-        ctx.arc(centreX, centreY, radius, -0.58, 1.05);
-        ctx.stroke();
-    });
-    ctx.restore();
-}
-
 function pbbShareDrawNutritionCard(ctx, cardPayload, panelX, panelY, panelW, panelH) {
     let y = panelY + 154;
     ctx.fillStyle = '#111827';
@@ -3958,12 +3919,6 @@ async function pbbShareDrawFullBleedWorkoutCard(ctx, cardPayload, width, height,
     ctx.fillStyle = lowerGradient;
     ctx.fillRect(0, 0, width, height);
 
-    const isMajorCelebration = cardType === 'pb' || !!(cardPayload.pbs && cardPayload.pbs.length);
-    pbbShareDrawCelebrationAccents(ctx, width, height, {
-        target,
-        intensity: isMajorCelebration ? 'major' : 'standard'
-    });
-
     const brandTop = target === 'feed' ? 48 : 228;
     try {
         const logo = await pbbShareLoadImage('balance_logo_transparent.png');
@@ -3993,7 +3948,7 @@ async function pbbShareDrawFullBleedWorkoutCard(ctx, cardPayload, width, height,
     if (textStyle === 'scorecard') {
         const panelHeight = cardType === 'pb'
             ? (target === 'feed' ? 470 : 520)
-            : (target === 'feed' ? 560 : 630);
+            : (target === 'feed' ? 600 : 670);
         const panelX = 40;
         const panelY = contentBottom - panelHeight + 24;
         const panelW = width - 80;
@@ -4010,7 +3965,7 @@ async function pbbShareDrawFullBleedWorkoutCard(ctx, cardPayload, width, height,
         ctx.fillStyle = '#f5c45c';
         ctx.font = '900 27px Arial, sans-serif';
         ctx.fillText(cardType === 'pb' ? 'NEW PERSONAL BEST' : 'WORKOUT COMPLETE', contentX, y);
-        y += 68;
+        y += cardType === 'pb' ? 68 : 108;
 
         if (cardType === 'pb') {
             ctx.fillStyle = '#ffffff';
@@ -4047,11 +4002,11 @@ async function pbbShareDrawFullBleedWorkoutCard(ctx, cardPayload, width, height,
             pbbShareDrawFeaturedSets(ctx, cardPayload, contentX, y, contentW, 1);
         }
     } else if (textStyle === 'simple') {
-        let y = cardType === 'pb' ? contentBottom - 300 : contentBottom - 310;
+        let y = cardType === 'pb' ? contentBottom - 300 : contentBottom - 360;
         ctx.fillStyle = '#f5c45c';
         ctx.font = '900 27px Arial, sans-serif';
         ctx.fillText(cardType === 'pb' ? 'NEW PERSONAL BEST' : 'WORKOUT COMPLETE', contentX, y);
-        y += 64;
+        y += cardType === 'pb' ? 64 : 114;
         if (cardType === 'pb') {
             ctx.fillStyle = '#ffffff';
             const result = pbbFormatPBShareValue(cardPayload);
@@ -4095,11 +4050,11 @@ async function pbbShareDrawFullBleedWorkoutCard(ctx, cardPayload, width, height,
             ctx.fillText('LOGGED IN BALANCE', contentX + badgeW + 28, y + 84);
         }
     } else {
-        let y = contentBottom - 560;
+        let y = contentBottom - 642;
         ctx.fillStyle = 'rgba(255,255,255,0.96)';
         ctx.font = '900 28px Arial, sans-serif';
         ctx.fillText('WORKOUT COMPLETE', contentX, y);
-        y += 50;
+        y += 132;
         ctx.fillStyle = '#ffffff';
         pbbShareSetFittedFont(ctx, title.toUpperCase(), contentW, 116, 72);
         y = pbbShareWrapText(ctx, title.toUpperCase(), contentX, y, contentW, 116, 2) + 26;
@@ -4265,8 +4220,6 @@ async function pbbShareDrawFullBleedActivityCard(ctx, cardPayload, width, height
     gradient.addColorStop(1, textStyle === 'simple' ? 'rgba(3, 7, 18, 0.64)' : 'rgba(3, 7, 18, 0.82)');
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, width, height);
-    pbbShareDrawCelebrationAccents(ctx, width, height, { target, intensity: 'standard' });
-
     await pbbShareDrawBalanceBrandMark(ctx, x, brandTop, 72);
     ctx.fillStyle = '#ffffff';
     ctx.font = '900 32px Arial, sans-serif';
