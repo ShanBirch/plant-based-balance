@@ -769,7 +769,7 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
 
 <!-- A local, read-only Inbox proof moment for the paid Meta preview. It never queries a member Inbox. -->
 <div id="meta-ad-trial-inbox-preview" aria-hidden="true" style="display:none; position:fixed; inset:0; z-index:399900; background:#f6f0e3; align-items:center; justify-content:center; padding:72px 18px 110px; box-sizing:border-box; font-family:'Inter',sans-serif; pointer-events:none;">
-    <div id="meta-ad-trial-inbox-preview-card" style="width:min(100%,390px); background:#fff; border:1px solid #e4d7bd; border-radius:24px; box-shadow:0 18px 50px rgba(74,55,18,.16); overflow:hidden;">
+    <div id="meta-ad-trial-inbox-preview-card" style="width:min(100%,390px); background:#fff; border:1px solid #e4d7bd; border-radius:24px; box-shadow:0 18px 50px rgba(74,55,18,.16); overflow:hidden; pointer-events:auto;">
         <div style="display:flex; align-items:center; gap:11px; padding:16px 17px; border-bottom:1px solid #eee4d2; background:#fffdf8;">
             <div style="width:42px; height:42px; border-radius:50%; display:grid; place-items:center; background:linear-gradient(135deg,#d4ad52,#f0cf76); color:#171923; font:900 16px Georgia,serif;">S</div>
             <div><strong style="display:block; color:#171923; font-size:.96rem;">Coach Shannon</strong><span style="display:block; color:#7a7061; font-size:.72rem; margin-top:2px;">Your Balance Inbox</span></div>
@@ -778,7 +778,7 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
             <div style="max-width:88%; background:#fffaf0; border:1px solid rgba(183,138,46,.3); border-radius:18px 18px 18px 5px; padding:13px 14px; color:#3d3427; font-size:.84rem; line-height:1.48; box-shadow:0 5px 15px rgba(74,55,18,.07);">I’ve left you a quick voice note about your first week and how we’ll use Balance together.</div>
             <div style="max-width:92%; margin-top:10px; background:linear-gradient(135deg,#f4df9f,#e2ba58); border:1px solid rgba(146,103,29,.32); border-radius:18px 18px 18px 5px; padding:11px 12px; box-shadow:0 7px 20px rgba(112,77,16,.13);">
                 <div style="font-size:.67rem; font-weight:900; letter-spacing:.06em; color:#68480f; margin-bottom:7px;">● VOICE MESSAGE FROM SHANNON</div>
-                <audio controls preload="metadata" src="/assets/audio/shannon-balance-welcome.mp3" style="display:block; width:100%; height:42px; border-radius:21px; pointer-events:none;"></audio>
+                <audio id="meta-ad-trial-welcome-audio" controls preload="metadata" src="/assets/audio/shannon-balance-welcome.mp3" style="display:block; width:100%; height:42px; border-radius:21px; pointer-events:auto;"></audio>
             </div>
         </div>
     </div>
@@ -1936,15 +1936,15 @@ if(!window._pbbIsIOSSafari) {
     <script>
 if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-progressphoto.js?v=10"><\/script>');
-document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=31"><\/script>');
-    document.write('<script src="js/dashboard/pbb-social-journey.js?v=28"><\/script>');
+document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=32-goal-confirm"><\/script>');
+    document.write('<script src="js/dashboard/pbb-social-journey.js?v=29-welcome-gate"><\/script>');
     document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=20"><\/script>');
     document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=23"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
     window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=10');
-window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=31');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=28');
+window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=32-goal-confirm');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=29-welcome-gate');
     window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=20');
     window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=23');
 }
@@ -13099,7 +13099,7 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=186-onboarding-motion';
+s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=187-goal-confirm';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
@@ -13141,7 +13141,7 @@ s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=186
         var s = document.createElement('script');
         s.async = false;
         s.dataset.metaTrialLoader = String(attempt);
-        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=186-onboarding-motion&meta_retry=' + attempt;
+        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=187-goal-confirm&meta_retry=' + attempt;
         s.onload = function() {
             if (window._pbbScript5Complete && window._switchAppTabReady && typeof window._switchAppTabReal === 'function') {
                 sessionStorage.removeItem('pbb_meta_script5_recovery_v1');
@@ -13160,7 +13160,7 @@ s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=186
         document.head.appendChild(s);
     })(0);
 } else {
-document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=186-onboarding-motion"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=187-goal-confirm"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=3"></script>
@@ -13674,6 +13674,7 @@ if(!window._pbbIsIOSSafari) {
     <div class="tour-xp-note" id="tour-xp-note">Complete the walkthrough to earn XP and reach Level 4.</div>
     <h3 class="tour-title" id="tour-title"></h3>
     <p class="tour-body" id="tour-body"></p>
+    <div id="tour-gate-note" role="status" aria-live="polite" style="display:none;margin-top:10px;padding:9px 11px;border-radius:11px;background:rgba(183,138,46,.12);color:#5f430f;font-size:.78rem;font-weight:800;"></div>
     <div class="tour-actions">
       <button class="tour-skip" onclick="endFeatureTour(true)">Skip</button>
       <div class="tour-right">
@@ -13687,7 +13688,7 @@ if(!window._pbbIsIOSSafari) {
 (function(){
   const steps = [
     { tab:'dashboard', sel:'#dm-voice-btn', fallbackSel:'.header-msg-icon', title:'Send a voice message', fallbackTitle:'Voice messages are in your DMs', body:'Tap the microphone, record your message, then tap send. You can cancel before it leaves.', fallbackBody:'Open Messages, choose a friend, then tap the microphone beside the message box.', action: async function(){ try { var coachId=window._coachUserId || (typeof getCoachUserId==='function' ? await getCoachUserId() : null); if(coachId && typeof openDirectMessage==='function') openDirectMessage(coachId,'Coach Shan',''); } catch(e){} await new Promise(function(r){ setTimeout(r,420); }); } },
-    { tab:'dashboard', sel:'#weekly-goals-card', fallbackSel:'#next-obvious-steps-card', title:'Your starting goals', body:'These are the small promises Balance will help you keep this week. They are based on your setup and can change when real life changes.', clientActivation:true, clientActivationOnly:true },
+    { tab:'dashboard', sel:'#weekly-goals-card', fallbackSel:'#next-obvious-steps-card', title:'Choose your Weekly Goals', body:'Pick 1 to 3 commitments that feel realistic this week. Balance has suggested options from your setup, but nothing is saved until you tap Save goals.', clientActivation:true, clientActivationOnly:true, requiresWeeklyGoals:true, action:async function(){ try { if(typeof window.openWeeklyGoalsModal === 'function') await window.openWeeklyGoalsModal({ source:'client_activation_setup', week:'current' }); } catch(e){} await new Promise(function(r){ setTimeout(r,180); }); } },
     { tab:'meals', sel:'.camera-btn-widget,.meal-icon-btn', title:'Track what you actually eat', body:'A photo, barcode or quick entry gives us useful evidence. You are not trying to log perfectly; you are helping Balance learn your normal week.', clientActivation:true, clientActivationOnly:true },
     { tab:'meals', sel:'#ai-plan-meals-list .ai-plan-hero', fallbackSel:'#ai-plan-meals-list,#browse-plans-pill', title:'Your meal plan', fallbackTitle:'Your meal plan', body:'The large card is the next meal you have not logged. Open its recipe, log it, or tap another meal to look ahead.', fallbackBody:'Open your meal plan to see the next meal first.', pageView:true, clientActivation:true, clientActivationOnly:true },
     { tab:'meals', sel:'#ai-plan-shopping-toggle', fallbackSel:'#meal-plan-shopping-pill,#browse-plans-pill', title:'Your weekly shopping list', fallbackTitle:'Your shopping list', body:'Balance combines every ingredient in the selected week. Tick off what you already have, then download one simple list for the shops.', fallbackBody:'Open Shopping List to build it from your current meal plan.', clientActivation:true, clientActivationOnly:true, action:async function(){ try { if(typeof openAiMealPlanShoppingList==='function') await openAiMealPlanShoppingList(document.getElementById('meal-plan-shopping-pill')); } catch(e){} await new Promise(function(r){ setTimeout(r,220); }); } },
@@ -13703,8 +13704,8 @@ if(!window._pbbIsIOSSafari) {
     { tab:'learning', sel:'.course-library-intro', fallbackSel:'#learning-content', title:'Your six-week course', fallbackTitle:'Your six-week course', body:'Your complete Balance Foundations course lives here. Each week gives you the next lessons and actions without dumping everything on you at once.', fallbackBody:'Your six weeks of Balance Foundations lessons live in the Course tab.', pageView:true, metaPreview:true },
     { tab:'friends', sel:'#friends-photo-feed .meta-preview-feed-post', fallbackSel:'#friends-photo-feed .feed-post-card,#feed-composer-card', title:'The Balance community', fallbackTitle:'The Balance community', body:'This is the live Feed. You can see Coach Shan’s posts, photos and the wins people share inside Balance.', fallbackBody:'This is the Balance Feed, where Coach Shan posts and members share meals, workouts and wins.', pageView:true, metaPreview:true, action:async function(){ try { if(window.BalanceMetaAdTrial && typeof window.BalanceMetaAdTrial.loadPreviewFeed === 'function') await window.BalanceMetaAdTrial.loadPreviewFeed(); } catch(e){} await new Promise(function(r){ setTimeout(r,220); }); } },
     { tab:'friends', sel:'#feed-composer-card', title:'Post when you need support', body:'Share a meal, workout, question or win here. It helps Shannon see what is really happening and gives the community a chance to support you.', metaPreview:true },
-    { tab:'dashboard', sel:'#meta-ad-trial-inbox-preview-card', title:'Your message from Shannon', body:'This is your Balance Inbox. Shannon’s welcome note and weekly check-ins live here, beside your actual plan.', metaPreview:true, action:async function(){ try { if(window.BalanceMetaAdTrial && typeof window.BalanceMetaAdTrial.showInboxPreview === 'function') window.BalanceMetaAdTrial.showInboxPreview(); } catch(e){} await new Promise(function(r){ setTimeout(r,180); }); } },
-    { tab:'dashboard', sel:'#weekly-goals-card', fallbackSel:'#next-obvious-steps-card', title:'Set your Weekly Goals', body:'Choose the goals you are ready to commit to this week. When you finish the tour, your setup stays saved and you can unlock the full six-week Foundations course for AU$89 once.', metaPreview:true, metaPreviewSignoff:true, action:async function(){ try { var card=document.getElementById('weekly-goals-card'); if(card && typeof card.click==='function') card.click(); } catch(e){} await new Promise(function(r){ setTimeout(r,180); }); } },
+    { tab:'dashboard', sel:'#meta-ad-trial-inbox-preview-card', title:'Listen to Shannon’s welcome', body:'Press play and listen to the full welcome note. Next unlocks when the voice message finishes.', metaPreview:true, requiresWelcomeAudio:true, action:async function(){ try { if(window.BalanceMetaAdTrial && typeof window.BalanceMetaAdTrial.showInboxPreview === 'function') window.BalanceMetaAdTrial.showInboxPreview(); } catch(e){} await new Promise(function(r){ setTimeout(r,180); }); } },
+    { tab:'dashboard', sel:'#weekly-goals-card', fallbackSel:'#next-obvious-steps-card', title:'Set your Weekly Goals', body:'Choose 1 to 3 goals you are ready to commit to this week, then tap Save goals. When you finish the tour, your setup stays saved and you can unlock the full six-week Foundations course for AU$89 once.', metaPreview:true, metaPreviewSignoff:true, requiresWeeklyGoals:true, action:async function(){ try { if(typeof window.openWeeklyGoalsModal === 'function') await window.openWeeklyGoalsModal({ source:'meta_preview_setup', week:'current' }); } catch(e){} await new Promise(function(r){ setTimeout(r,180); }); } },
     { tab:'dashboard', sel:'#tamagotchi-stats-bar', fallbackSel:'#balance-level-bar', title:'Levels keep going', fallbackTitle:'Levels keep going', body:'Level 99 is no longer the finish line. Keep earning XP to climb higher and unlock a new character every 5 levels.', fallbackBody:'Level 99 is no longer the finish line. Keep earning XP to climb higher and unlock a new character every 5 levels.' },
     { tab:'movement-tab', sel:'#activity-share-section', title:'Share your activity twice', body:'The first activity share each day earns +15 XP in Balance Feed and another +15 XP in Instagram Story. Later activity shares still work without extra XP.', condition: function(){ return !!document.getElementById('activity-share-section'); } },
     { tab:'movement-tab', sel:'#activity-share-photo-btn', title:'Take a photo or choose one', body:'When you share an activity, tap Add a photo to open your camera or choose one from your gallery. Balance puts your activity stats straight on it for Feed.', condition: function(){ return !!document.getElementById('activity-share-photo-btn'); } },
@@ -13846,6 +13847,118 @@ if(!window._pbbIsIOSSafari) {
   let showingXpIntro = false;
   let metaPreviewTour = false;
   let clientActivationTour = false;
+  let activeTourGate = null;
+  const completedTourGates = new Set();
+
+  function setTourGateUi(complete, message, buttonText){
+    const next = document.getElementById('tour-next-btn');
+    const note = document.getElementById('tour-gate-note');
+    if (next) {
+      next.disabled = !complete;
+      next.setAttribute('aria-disabled', complete ? 'false' : 'true');
+      next.style.opacity = complete ? '1' : '.55';
+      next.style.cursor = complete ? 'pointer' : 'not-allowed';
+      if (buttonText) next.textContent = buttonText;
+    }
+    if (note) {
+      note.textContent = message || '';
+      note.style.display = message ? 'block' : 'none';
+    }
+  }
+
+  function clearActiveTourGate(){
+    if (activeTourGate && typeof activeTourGate.cleanup === 'function') {
+      try { activeTourGate.cleanup(); } catch(e) {}
+    }
+    activeTourGate = null;
+    const note = document.getElementById('tour-gate-note');
+    if (note) {
+      note.textContent = '';
+      note.style.display = 'none';
+    }
+  }
+
+  function armTourGate(step){
+    clearActiveTourGate();
+    const finalLabel = idx === activeSteps.length - 1 ? 'Finish' : 'Next';
+    setTourGateUi(true, '', finalLabel);
+
+    if (step && step.requiresWelcomeAudio) {
+      const key = 'welcome-audio';
+      const audio = document.getElementById('meta-ad-trial-welcome-audio');
+      if (completedTourGates.has(key)) {
+        setTourGateUi(true, 'Voice note complete. You can keep going.', finalLabel);
+        return;
+      }
+      const complete = function(){
+        completedTourGates.add(key);
+        if (activeTourGate && activeTourGate.key === key) {
+          activeTourGate.complete = true;
+          setTourGateUi(true, 'Voice note complete. You can keep going.', finalLabel);
+        }
+      };
+      const failed = function(){
+        if (activeTourGate && activeTourGate.key === key) {
+          setTourGateUi(false, 'The voice note could not load. Tap play to try again.', 'Listen first');
+        }
+      };
+      if (audio) {
+        audio.addEventListener('ended', complete);
+        audio.addEventListener('error', failed);
+      }
+      activeTourGate = {
+        key:key,
+        complete:false,
+        retry:function(){
+          setTourGateUi(false, 'Listen to the full voice note to unlock Next.', 'Listen first');
+          if (audio) {
+            try { audio.scrollIntoView({ block:'center', behavior:'smooth' }); audio.focus(); } catch(e) {}
+          }
+        },
+        cleanup:function(){
+          if (!audio) return;
+          audio.removeEventListener('ended', complete);
+          audio.removeEventListener('error', failed);
+          try { audio.pause(); } catch(e) {}
+        }
+      };
+      setTourGateUi(false, audio ? 'Listen to the full voice note to unlock Next.' : 'The voice note is still loading.', 'Listen first');
+      return;
+    }
+
+    if (step && step.requiresWeeklyGoals) {
+      const key = 'weekly-goals';
+      const setupSources = ['meta_preview_setup', 'client_activation_setup'];
+      const modal = document.getElementById('weekly-goals-modal');
+      if (modal) modal.style.zIndex = '400100';
+      if (completedTourGates.has(key)) {
+        setTourGateUi(true, 'Weekly Goals saved. You can keep going.', finalLabel);
+        return;
+      }
+      const saved = function(event){
+        const detail = event && event.detail ? event.detail : {};
+        if (Number(detail.selectedCount || 0) < 1 || setupSources.indexOf(String(detail.source || '')) === -1) return;
+        completedTourGates.add(key);
+        if (activeTourGate && activeTourGate.key === key) {
+          activeTourGate.complete = true;
+          setTourGateUi(true, 'Weekly Goals saved. You can keep going.', finalLabel);
+        }
+      };
+      window.addEventListener('pbbWeeklyGoalsSaved', saved);
+      activeTourGate = {
+        key:key,
+        complete:false,
+        retry:function(){
+          setTourGateUi(false, 'Choose at least 1 goal and tap Save goals.', 'Save goals first');
+          if (typeof window.openWeeklyGoalsModal === 'function') {
+            window.openWeeklyGoalsModal({ source:metaPreviewTour ? 'meta_preview_setup' : 'client_activation_setup', week:'current' });
+          }
+        },
+        cleanup:function(){ window.removeEventListener('pbbWeeklyGoalsSaved', saved); }
+      };
+      setTourGateUi(false, 'Choose at least 1 goal and tap Save goals.', 'Save goals first');
+    }
+  }
 
   function isVisible(el){
     if (!el) return false;
@@ -14081,6 +14194,7 @@ async function showStep(i){
     showingXpIntro = false;
     window.__balanceGuidedTourShowingIntro = false;
     const step = activeSteps[i];
+    clearActiveTourGate();
     resetTourTemporaryTargets();
     closeTourBlockingSurfaces();
     await ensureTab(step.tab);
@@ -14113,6 +14227,7 @@ async function showStep(i){
     setTourXpNote(false);
     document.getElementById('tour-back-btn').style.visibility = i === 0 ? 'hidden' : 'visible';
     document.getElementById('tour-next-btn').textContent = (i === activeSteps.length - 1) ? 'Finish' : 'Next';
+    armTourGate(step);
 
     positionBubbleAndSpotlight(target, step);
     setTimeout(function(){ positionBubbleAndSpotlight(resolveStepTarget(step).target, step); }, 180);
@@ -14139,6 +14254,10 @@ async function showStep(i){
       showStep(0);
       return;
     }
+    if (activeTourGate && !activeTourGate.complete) {
+      if (typeof activeTourGate.retry === 'function') activeTourGate.retry();
+      return;
+    }
     if (idx >= activeSteps.length - 1) { endFeatureTour(false); return; }
     showStep(idx + 1);
   };
@@ -14154,6 +14273,7 @@ async function showStep(i){
     showingXpIntro = true;
     window.__balanceGuidedTourShowingIntro = true;
     idx = -1;
+    clearActiveTourGate();
     resetTourTemporaryTargets();
     closeTourBlockingSurfaces();
     await ensureTab('dashboard');
@@ -14173,6 +14293,7 @@ window.endFeatureTour = function(skipped){
       || (((window.location.hostname === '127.0.0.1') || (window.location.hostname === 'localhost'))
         && new URLSearchParams(window.location.search).get('tourTest') === '1');
     try { window.trackBalanceActivity('guided_tour_completed', { mode: completedClientActivationTour ? 'client_activation' : (completedMetaPreviewTour ? 'meta_preview' : 'standard'), skipped: !!skipped, final_step_number: Number(idx) + 1, step_count: activeSteps.length }, { immediate:true }); } catch(e){}
+    clearActiveTourGate();
     resetTourTemporaryTargets();
     const overlay = document.getElementById('guided-tour-overlay');
     if (overlay) overlay.classList.remove('active');
@@ -14221,6 +14342,8 @@ window.endFeatureTour = function(skipped){
 
   window.startFeatureTour = function(force, options){
     try { if (!force && localStorage.getItem('featureTourComplete') === '1') return; } catch(e){}
+    completedTourGates.clear();
+    clearActiveTourGate();
     metaPreviewTour = !!(window.metaAdTrialMode && options && options.metaPreview === true);
     clientActivationTour = !!(!window.metaAdTrialMode && options && options.clientActivation === true);
     window.__balanceClientActivationTour = clientActivationTour;
@@ -16716,13 +16839,13 @@ if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
             var s = document.createElement('script');
-    s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=41-light-launch';
+    s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=42-welcome-gate';
             s.onload = function() { if(window._crumb)window._crumb('script6_deferred_loaded'); };
             document.head.appendChild(s);
         }, 2000);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=41-light-launch"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=42-welcome-gate"><\/script>');
 }
 </script>
 

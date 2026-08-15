@@ -31,13 +31,15 @@ test('new members and paid preview users enter the correct guided tour mode', ()
     assert.match(onboardingSource, /start\(false, \{ metaPreview: true \}\)/);
 });
 
-test('Balance assigns and persists the first Weekly Goals from onboarding', () => {
+test('Balance suggests Weekly Goals but requires the member to save their choice', () => {
     assert.match(weeklyGoalsSource, /function readOnboardingWeeklyGoalFocusIds\(\)/);
-    assert.match(weeklyGoalsSource, /async function applyOnboardingDefaults\(\)/);
-    assert.match(weeklyGoalsSource, /pbb_auto_weekly_goals_pending_v1/);
-    assert.match(weeklyGoalsSource, /const isGuestPreview = userId === 'guest-preview'/);
-    assert.match(weeklyGoalsSource, /if \(!isGuestPreview && !state\.lastSaveWasLocalOnly\)/);
-    assert.match(weeklyGoalsSource, /goal\.id === 'complete_workouts'/);
+    assert.match(weeklyGoalsSource, /function suggestWeeklyGoalsFromOnboarding\(\)/);
+    assert.doesNotMatch(weeklyGoalsSource, /async function applyOnboardingDefaults\(\)/);
+    assert.match(weeklyGoalsSource, /Choose your Weekly Goals/);
+    assert.match(weeklyGoalsSource, /Choose at least 1 goal to continue/);
+    assert.match(weeklyGoalsSource, /emitWeeklyGoalsSaved\(week, selected, saveSource/);
+    assert.match(onboardingSource, /pbb_weekly_goals_selection_required_v1/);
+    assert.doesNotMatch(onboardingSource, /weeklyGoals\.applyOnboardingDefaults/);
     assert.match(onboardingSource, /function inferWizardStarterPlan\(answers = \{\}\)/);
     assert.match(onboardingSource, /weeklyGoalFocusIds = inferredPlan\.weeklyGoalFocusIds/);
 });

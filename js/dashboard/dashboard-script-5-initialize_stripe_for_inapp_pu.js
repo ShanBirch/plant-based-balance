@@ -13855,16 +13855,13 @@ async function finishOnboarding() {
     // Sync quiz data to database
     await syncQuizDataToDb();
 
-    // Balance assigns the first three Weekly Goals from the onboarding answers.
-    // The deferred goals module also watches the pending key, so guest previews
-    // carry this across Stripe and apply it as soon as the paid account opens.
+    // Balance can suggest Weekly Goals from the onboarding answers, but the
+    // member must choose and save them during the walkthrough.
     try {
-        localStorage.setItem('pbb_auto_weekly_goals_pending_v1', 'true');
-        if (window.weeklyGoals && typeof window.weeklyGoals.applyOnboardingDefaults === 'function') {
-            await window.weeklyGoals.applyOnboardingDefaults();
-        }
+        localStorage.removeItem('pbb_auto_weekly_goals_pending_v1');
+        localStorage.setItem('pbb_weekly_goals_selection_required_v1', 'true');
     } catch (error) {
-        console.warn('[onboarding] first weekly goals will retry after app open', error);
+        console.warn('[onboarding] could not mark Weekly Goals as awaiting selection', error);
     }
 
     // Prepare the first plant-based meal plan before the coaching welcome is

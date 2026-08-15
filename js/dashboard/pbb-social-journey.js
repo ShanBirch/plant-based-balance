@@ -171,6 +171,13 @@
   let loading = false;
   let viewStage = 'lesson';
   let initialized = false;
+  let welcomeAudioComplete = false;
+  let welcomeAudioCompleteUserId = '';
+
+  function hasCompletedWelcomeAudio() {
+    const userId = window.currentUser && window.currentUser.id ? String(window.currentUser.id) : '';
+    return !!welcomeAudioComplete && !!userId && welcomeAudioCompleteUserId === userId;
+  }
 
   function task(id, label, hint, type, target, icon, action) {
     return { id, label, hint, type, target, icon, action };
@@ -694,13 +701,14 @@
     if (!container) return;
     document.querySelector('.social-journey-header__title').textContent = 'Your Next Step';
     document.querySelector('.social-journey-header__week').textContent = 'A message from Coach Shannon';
+    const welcomeReady = hasCompletedWelcomeAudio();
     container.innerHTML = '<section class="social-journey-welcome">'
       + '<div class="social-journey-welcome__eyebrow">YOUR FIRST CHECK-IN &middot; PRESS PLAY</div>'
       + '<h2>Start here.</h2>'
       + '<p>Press play for your first check-in, then complete your first Balance Foundations lesson. After that, Your Next Step will show you exactly what to do next.</p>'
-      + '<audio class="social-journey-welcome__audio" controls preload="metadata" onerror="this.classList.add(\'is-unavailable\')"><source src="' + escapeHtml(WELCOME_AUDIO_URL) + '" type="audio/mpeg"></audio>'
+      + '<audio id="social-journey-welcome-audio" class="social-journey-welcome__audio" controls preload="metadata" onended="socialJourney.completeWelcomeAudio()" onerror="socialJourney.welcomeAudioError(this)"><source src="' + escapeHtml(WELCOME_AUDIO_URL) + '" type="audio/mpeg"></audio>'
       + '<div class="social-journey-welcome__transcript"><strong>The short version</strong><p>Use the app as evidence, not judgment. Log the meal you actually ate, complete the workout that fits today, and share the ordinary reps. That is how we build something that lasts.</p></div>'
-      + '</section><div class="social-journey-lesson-action"><button type="button" class="social-journey-button" onclick="socialJourney.reviewLesson()">Open my first lesson</button><button type="button" class="social-journey-text-button" onclick="socialJourney.close()">Not now</button></div>';
+      + '</section><div class="social-journey-lesson-action"><div id="social-journey-welcome-status" role="status" aria-live="polite" style="font-size:.78rem;font-weight:800;color:#765315;margin-bottom:8px;">' + (welcomeReady ? 'Voice note complete. Your first lesson is ready.' : 'Listen to the full voice note to unlock your first lesson.') + '</div><button id="social-journey-welcome-continue" type="button" class="social-journey-button" onclick="socialJourney.reviewLesson()" ' + (welcomeReady ? '' : 'disabled') + ' style="opacity:' + (welcomeReady ? '1' : '.55') + ';cursor:' + (welcomeReady ? 'pointer' : 'not-allowed') + ';">' + (welcomeReady ? 'Open my first lesson' : 'Listen first') + '</button><button type="button" class="social-journey-text-button" onclick="socialJourney.close()">Not now</button></div>';
   }
 
   function startFirstCourseLesson() {
@@ -843,10 +851,19 @@
   }
 
   function reviewLesson() {
+    if (!hasCompletedWelcomeAudio()) {
+      showToast('Listen to Shannon’s full voice note before continuing.', 'info');
+      const audio = document.getElementById('social-journey-welcome-audio');
+      if (audio) {
+        try { audio.scrollIntoView({ block: 'center', behavior: 'smooth' }); audio.focus(); } catch (_) {}
+      }
+      return false;
+    }
     viewStage = 'lesson';
     renderJourney();
     const scroll = document.getElementById('social-journey-content');
     if (scroll) scroll.scrollTop = 0;
+    return true;
   }
 
   function openJourney(stage) {
@@ -907,6 +924,14 @@
   }
 
   function continueFromInbox() {
+    if (!hasCompletedWelcomeAudio()) {
+      showToast('Listen to Shannon’s full voice note before continuing.', 'info');
+      const audio = document.getElementById('balance-onboarding-welcome-audio');
+      if (audio) {
+        try { audio.scrollIntoView({ block: 'center', behavior: 'smooth' }); audio.focus(); } catch (_) {}
+      }
+      return false;
+    }
     try { window.trackBalanceActivity('coach_inbox_continued_to_lesson', { source: 'activation_journey' }, { immediate: true }); } catch (_) {}
     if (typeof window.closeDirectMessageModal === 'function') {
       window.closeDirectMessageModal();
@@ -915,6 +940,31 @@
       if (modal) modal.style.display = 'none';
     }
     openJourney('lesson');
+    return true;
+  }
+
+  function completeWelcomeAudio() {
+    welcomeAudioComplete = true;
+    welcomeAudioCompleteUserId = window.currentUser && window.currentUser.id ? String(window.currentUser.id) : '';
+    ['balance-onboarding-welcome-continue', 'social-journey-welcome-continue'].forEach(function(id){
+      const button = document.getElementById(id);
+      if (!button) return;
+      button.disabled = false;
+      button.style.opacity = '1';
+      button.style.cursor = 'pointer';
+      button.textContent = id === 'balance-onboarding-welcome-continue' ? 'Continue to my first lesson' : 'Open my first lesson';
+    });
+    ['balance-onboarding-welcome-status', 'social-journey-welcome-status'].forEach(function(id){
+      const status = document.getElementById(id);
+      if (status) status.textContent = 'Voice note complete. Your first lesson is ready.';
+    });
+    try { window.trackBalanceActivity('coach_welcome_audio_completed', { source: 'activation_journey' }, { immediate: true }); } catch (_) {}
+  }
+
+  function welcomeAudioError(audio) {
+    if (audio && audio.classList) audio.classList.add('is-unavailable');
+    const status = document.getElementById('balance-onboarding-welcome-status') || document.getElementById('social-journey-welcome-status');
+    if (status) status.textContent = 'The voice note could not load. Tap play to try again.';
   }
 
   function shouldShowWelcomeMessage(recipientId) {
@@ -1275,6 +1325,9 @@
     showWelcome,
     openCoachInbox,
     continueFromInbox,
+    completeWelcomeAudio,
+    welcomeAudioError,
+    isWelcomeAudioComplete: hasCompletedWelcomeAudio,
     shouldShowWelcomeMessage,
     getWelcomeAudioUrl: function () { return WELCOME_AUDIO_URL; },
     startActivation,

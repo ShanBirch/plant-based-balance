@@ -37,10 +37,10 @@ test('the phone shell cache ships the light-launch assets together', () => {
   const dashboard = read('dashboard.html');
   const serviceWorker = read('sw.js');
 
-  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v321'/);
+  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v323'/);
   assert.match(serviceWorker, /auth-guard\.js\?v=12-light-launch/);
   assert.match(serviceWorker, /script_part_2\.js\?v=14-light-launch/);
   assert.match(serviceWorker, /dashboard-script-3-1_get_user_data\.js\?v=59-light-launch/);
   assert.match(dashboard, /script_part_4\.js\?v=theme-toggle-shell-v2/);
-  assert.match(dashboard, /dashboard-script-6-ai_coach_draft_mode_logic_auth\.js\?v=41-light-launch/);
+  assert.match(dashboard, /dashboard-script-6-ai_coach_draft_mode_logic_auth\.js\?v=42-welcome-gate/);
 });
