@@ -282,9 +282,13 @@ test('dashboard, signup, native handoffs, measurement, and both discovery system
     assert.match(foundersLanding, /id="foundations-hero-action"/);
     assert.match(foundersLanding, /Download Balance for iPhone/);
     assert.match(foundersLanding, /Download Balance for Android/);
-    assert.match(foundersLanding, /Already installed\? Open Balance/);
+    assert.match(foundersLanding, /Already installed\? Open my free preview/);
     assert.match(foundersLanding, /com\.fitgotchi\.app:\/\/meta-trial\?/);
     assert.match(foundersLanding, /Download the Balance app, complete your setup, then take the full guided tour/);
+    assert.match(foundersLanding, /pbb_meta_store_handoff_pending_v1/);
+    assert.match(foundersLanding, /OPEN MY FREE PREVIEW/);
+    assert.match(foundersLanding, /return to this website page.not Instagram/);
+    assert.match(foundersLanding, /window\.addEventListener\('focus', showReadyToOpenState\)/);
     assert.doesNotMatch(foundersLanding, /var appUrl = '\/dashboard\.html\?/);
     assert.match(foundersLanding, /data-plan="founders-pass"/);
     assert.match(foundersLanding, /replace\(\/AU\\\$89\\\.99\/g, 'AU\$89'\)/);
