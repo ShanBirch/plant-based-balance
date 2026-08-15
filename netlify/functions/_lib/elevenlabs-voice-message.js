@@ -335,6 +335,62 @@ function isVoiceMessageRequested(alertData = {}) {
     );
 }
 
+function resolvePreRecordedVoiceMessageAudio(alertData = {}, fallbackText = '') {
+    const enabled = parseBoolean(
+        alertData.outbound_voice_pre_recorded
+        ?? alertData.outboundVoicePreRecorded
+        ?? alertData.reuse_recording_url_as_voice,
+        false
+    );
+    if (!enabled) return null;
+
+    const rawUrl = cleanString(
+        alertData.outbound_voice_audio_url
+        || alertData.outboundVoiceAudioUrl
+        || alertData.recording_url,
+        2000
+    );
+    let parsed;
+    try {
+        parsed = new URL(rawUrl);
+    } catch {
+        const error = new Error('Pre-recorded voice message URL is invalid');
+        error.code = 'pre_recorded_voice_url_invalid';
+        throw error;
+    }
+
+    const allowedHost = parsed.hostname === 'f005.backblazeb2.com'
+        || parsed.hostname === 'plantbased-balance.org'
+        || parsed.hostname === 'www.plantbased-balance.org';
+    const allowedPath = parsed.hostname === 'f005.backblazeb2.com'
+        ? parsed.pathname.startsWith('/file/plantbasedbalancestories/chats/')
+        : parsed.pathname.startsWith('/assets/audio/');
+    const extension = (parsed.pathname.match(/\.([a-z0-9]{2,5})$/i)?.[1] || '').toLowerCase();
+    if (parsed.protocol !== 'https:' || !allowedHost || !allowedPath || !['m4a', 'mp3', 'wav'].includes(extension)) {
+        const error = new Error('Pre-recorded voice message URL is not an approved Balance audio asset');
+        error.code = 'pre_recorded_voice_url_not_allowed';
+        throw error;
+    }
+
+    return {
+        url: parsed.toString(),
+        text: cleanString(
+            alertData.outbound_voice_audio_text
+            || alertData.outboundVoiceAudioText
+            || fallbackText,
+            MAX_TTS_CHARS
+        ),
+        extension,
+        contentType: extension === 'm4a' ? 'audio/mp4' : `audio/${extension === 'mp3' ? 'mpeg' : extension}`,
+        preRecorded: true,
+        sourceEncoding: 'pre_recorded',
+        sampleRate: null,
+        voiceId: null,
+        modelId: null,
+        outputFormat: null,
+    };
+}
+
 function resolveOutboundVoiceMessageConfig(alertData = {}, { shouldUseGraph = false, channel = '' } = {}) {
     const enabled = isVoiceMessageRequested(alertData);
     if (!enabled) return { enabled: false };
@@ -824,6 +880,13 @@ async function uploadVoiceNoteToB2({ buffer, contentType = 'audio/mpeg', extensi
 }
 
 async function createVoiceMessageAudio({ messages, alertId, alertData = {}, supabaseQuery }) {
+    const fallbackText = (Array.isArray(messages) ? messages : [messages])
+        .map(value => String(value || '').trim())
+        .filter(Boolean)
+        .join('\n\n');
+    const preRecorded = resolvePreRecordedVoiceMessageAudio(alertData, fallbackText);
+    if (preRecorded) return preRecorded;
+
     const preserveGreeting = shouldPreserveShannonVoiceGreeting(alertData);
     const text = buildTtsText(messages, { preserveGreeting });
     const quality = inspectVoiceScriptQuality(text);
@@ -961,6 +1024,7 @@ module.exports = {
     hasHighSignalGoalBlocker,
     resolveCocosShanSunnyVoiceTestReason,
     resolveOutboundVoiceMessageConfig,
+    resolvePreRecordedVoiceMessageAudio,
     _test: {
         isVoiceMessageRequested,
         hasAccountabilityConnectionSignal,

@@ -46,6 +46,24 @@ assert.match(personalVoicePrompt, /Never write laughter into a generated voice n
 assert.match(personalVoicePrompt, /any imitation of a chuckle/i);
 assert.strictEqual(igDraft.buildPersonalVoiceNoteDraftingBlock(false), '');
 
+const preRecordedVoice = voice.resolvePreRecordedVoiceMessageAudio({
+    outbound_voice_pre_recorded: true,
+    recording_url: 'https://f005.backblazeb2.com/file/plantbasedbalancestories/chats/client-id/checkin.m4a',
+    outbound_voice_audio_text: 'Week 1 check-in from Coach Shannon',
+});
+assert.strictEqual(preRecordedVoice.preRecorded, true);
+assert.strictEqual(preRecordedVoice.extension, 'm4a');
+assert.strictEqual(preRecordedVoice.contentType, 'audio/mp4');
+assert.strictEqual(preRecordedVoice.text, 'Week 1 check-in from Coach Shannon');
+
+assert.throws(
+    () => voice.resolvePreRecordedVoiceMessageAudio({
+        outbound_voice_pre_recorded: true,
+        recording_url: 'https://example.com/checkin.m4a',
+    }),
+    error => error && error.code === 'pre_recorded_voice_url_not_allowed'
+);
+
 assert.strictEqual(
     voice.isCocosToShanSunnyVoiceTest({
         botAccount: 'shan_n_sunny',
