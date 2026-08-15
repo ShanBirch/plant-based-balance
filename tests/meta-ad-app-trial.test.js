@@ -285,10 +285,10 @@ test('dashboard, signup, native handoffs, measurement, and both discovery system
     assert.match(foundersLanding, /Already installed\? Open my free preview/);
     assert.match(foundersLanding, /com\.fitgotchi\.app:\/\/meta-trial\?/);
     assert.match(foundersLanding, /Download the Balance app, complete your setup, then take the full guided tour/);
-    assert.match(foundersLanding, /pbb_meta_store_handoff_pending_v1/);
-    assert.match(foundersLanding, /OPEN MY FREE PREVIEW/);
-    assert.match(foundersLanding, /return to this website page.not Instagram/);
-    assert.match(foundersLanding, /window\.addEventListener\('focus', showReadyToOpenState\)/);
+    assert.match(foundersLanding, /pbb_meta_trial=/);
+    assert.match(foundersLanding, /referrer=/);
+    assert.match(foundersLanding, /You will not need to return to this website or Instagram/);
+    assert.doesNotMatch(foundersLanding, /return to this website page/);
     assert.doesNotMatch(foundersLanding, /var appUrl = '\/dashboard\.html\?/);
     assert.match(foundersLanding, /data-plan="founders-pass"/);
     assert.match(foundersLanding, /replace\(\/AU\\\$89\\\.99\/g, 'AU\$89'\)/);
@@ -299,5 +299,9 @@ test('dashboard, signup, native handoffs, measurement, and both discovery system
     assert.match(logger, /'trial_subscription_claimed'/);
     assert.match(logger, /'trial_purchase_claimed'/);
     assert.match(android, /getPendingMetaTrialQuery/);
+    assert.match(android, /InstallReferrerClient/);
+    assert.match(android, /INSTALL_REFERRER_PAYLOAD_KEY = "pbb_meta_trial"/);
+    assert.match(login, /function startFoundationsPreview\(\)/);
+    assert.match(login, /Open my free preview/);
     assert.match(ios, /enum BalanceMetaTrialHandoff/);
 });

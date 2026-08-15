@@ -56,6 +56,10 @@ dependencies {
     // Google Play Billing for In-App Purchases
     implementation "com.android.billingclient:billing:7.1.1"
 
+    // Carries the paid-Meta preview payload through Play Store install so
+    // first launch can open the guest preview without returning to the site.
+    implementation "com.android.installreferrer:installreferrer:2.2"
+
     // CameraX for native camera in QuickMealActivity
     def cameraxVersion = '1.4.1'
     implementation "androidx.camera:camera-core:${cameraxVersion}"

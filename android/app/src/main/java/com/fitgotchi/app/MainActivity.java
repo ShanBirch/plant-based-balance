@@ -47,6 +47,9 @@ import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.BridgeWebChromeClient;
+import com.android.installreferrer.api.InstallReferrerClient;
+import com.android.installreferrer.api.InstallReferrerStateListener;
+import com.android.installreferrer.api.ReferrerDetails;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -88,6 +91,10 @@ public class MainActivity extends BridgeActivity {
     private static final String QUICK_MEAL_KEY = "pending_quick_meal";
     private static final String SAVED_MEALS_CACHE_KEY = "saved_meals_cache";
     private static final String RECENT_MEALS_CACHE_KEY = "recent_meals_cache";
+    private static final String INSTALL_HANDOFF_PREFS = "balance_install_handoff";
+    private static final String INSTALL_REFERRER_CHECKED_KEY = "install_referrer_checked_v1";
+    private static final String INSTALL_REFERRER_PAYLOAD_KEY = "pbb_meta_trial";
+    private InstallReferrerClient installReferrerClient;
 
     private Bitmap decodeBitmapWithExifOrientation(Uri photoUri, File sourceFile) throws Exception {
         InputStream is = getContentResolver().openInputStream(photoUri);
@@ -607,6 +614,7 @@ public class MainActivity extends BridgeActivity {
                 pendingOAuthFragment = deepLinkData.getFragment();
             }
         }
+        if (pendingMetaTrialQuery == null) readPaidPreviewInstallReferrer();
 
         // Check if launched from a long-press app shortcut
         if (ACTION_CALORIE_TRACKER.equals(getIntent().getAction())) {
@@ -682,6 +690,62 @@ public class MainActivity extends BridgeActivity {
                 callback.invoke(origin, nativeGranted, false);
             }
         });
+    }
+
+    /**
+     * Google Play keeps the referrer supplied on the store URL across install.
+     * Consume it once, then hand the existing verified meta-trial query to the
+     * WebView. This is the Android deferred deep-link bridge.
+     */
+    private void readPaidPreviewInstallReferrer() {
+        SharedPreferences prefs = getSharedPreferences(INSTALL_HANDOFF_PREFS, MODE_PRIVATE);
+        if (prefs.getBoolean(INSTALL_REFERRER_CHECKED_KEY, false)) return;
+
+        installReferrerClient = InstallReferrerClient.newBuilder(this).build();
+        installReferrerClient.startConnection(new InstallReferrerStateListener() {
+            @Override
+            public void onInstallReferrerSetupFinished(int responseCode) {
+                if (responseCode != InstallReferrerClient.InstallReferrerResponse.OK) return;
+                try {
+                    ReferrerDetails details = installReferrerClient.getInstallReferrer();
+                    String referrer = details != null ? details.getInstallReferrer() : null;
+                    String query = null;
+                    if (referrer != null && !referrer.isEmpty()) {
+                        Uri parsed = Uri.parse("https://balance.invalid/?" + referrer);
+                        query = parsed.getQueryParameter(INSTALL_REFERRER_PAYLOAD_KEY);
+                    }
+                    prefs.edit().putBoolean(INSTALL_REFERRER_CHECKED_KEY, true).apply();
+                    if (query != null && !query.isEmpty()) queueMetaTrialQuery(query);
+                } catch (Exception ignored) {
+                    // Leave the receipt unchecked so a later launch can retry.
+                } finally {
+                    closeInstallReferrerConnection();
+                }
+            }
+
+            @Override
+            public void onInstallReferrerServiceDisconnected() {
+                closeInstallReferrerConnection();
+            }
+        });
+    }
+
+    private void queueMetaTrialQuery(String query) {
+        pendingMetaTrialQuery = query;
+        WebView wv = getBridge() != null ? getBridge().getWebView() : null;
+        if (wv == null) return;
+        String safe = query.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "");
+        String js = "window._pendingBalanceMetaTrialQuery='" + safe + "';" +
+                "if(window.BalanceMetaAdTrial&&window.BalanceMetaAdTrial.activateFromNativeQuery('" + safe + "')){" +
+                "window.location.replace('/dashboard.html')}";
+        runOnUiThread(() -> wv.evaluateJavascript(js, null));
+    }
+
+    private void closeInstallReferrerConnection() {
+        try {
+            if (installReferrerClient != null) installReferrerClient.endConnection();
+        } catch (Exception ignored) {}
+        installReferrerClient = null;
     }
 
     /**
@@ -1745,6 +1809,7 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     public void onDestroy() {
+        closeInstallReferrerConnection();
         stopNativeSpeechInternal();
         super.onDestroy();
     }

@@ -111,9 +111,6 @@
         .paid-preview-store-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .paid-preview-store { display: flex; align-items: center; justify-content: center; min-height: 46px; padding: 11px 14px; border-radius: 12px; background: #151515; color: #fff; font-size: .86rem; font-weight: 800; text-decoration: none; }
         .paid-preview-open { display: flex; align-items: center; justify-content: center; min-height: 46px; margin-top: 12px; padding: 11px 14px; border: 1px solid #b8892b; border-radius: 12px; color: #704d12; background: #fff8e8; font-size: .88rem; font-weight: 900; text-decoration: none; }
-        .paid-preview-ready { border-color: rgba(123,168,131,.55); background: #f3fbf4; box-shadow: 0 16px 38px rgba(76,120,84,.14); }
-        .paid-preview-ready .paid-preview-store-row { display: none; }
-        .paid-preview-ready .paid-preview-open { color: #fff; border-color: #315f3a; background: #315f3a; box-shadow: 0 10px 24px rgba(49,95,58,.22); }
 
         .hero {
             position: relative;
@@ -398,7 +395,7 @@
                 <p class="micro" id="foundations-hero-microcopy">Six weeks with Shannon in your corner. One payment, no auto-renewal.</p>
                 <div class="paid-preview-route" id="paid-preview-route" aria-label="Balance preview steps"><span>Download Balance</span><span>Set up your plan</span><span>Take the guided tour</span><span>Unlock Foundations</span></div>
                 <div class="paid-preview-downloads" id="paid-preview-downloads">
-                    <p id="paid-preview-instructions">Tap download and install Balance. When the store opens, install the app and then return to this website page—not Instagram. Your <strong>Open my free preview</strong> button will be waiting here.</p>
+                    <p id="paid-preview-instructions">Tap download, install Balance, then tap <strong>Open</strong> in the app store. Android opens your free preview automatically. On iPhone, tap <strong>Open my free preview</strong> on the first Balance screen. You will not need to return to this website or Instagram.</p>
                     <div class="paid-preview-store-row">
                         <a class="paid-preview-store" id="paid-preview-ios" href="https://apps.apple.com/us/app/balance-fitness-gamified/id6761238161" data-track="cta_click">Download for iPhone</a>
                         <a class="paid-preview-store" id="paid-preview-android" href="https://play.google.com/store/apps/details?id=com.fitgotchi.app" data-track="cta_click">Download for Android</a>
@@ -537,7 +534,9 @@
             params.set('meta_trial', 'facebook_5m_foundations_v3');
             params.delete('meta_preview');
             var appStoreUrl = 'https://apps.apple.com/us/app/balance-fitness-gamified/id6761238161';
-            var playStoreUrl = 'https://play.google.com/store/apps/details?id=com.fitgotchi.app';
+            var playStoreBaseUrl = 'https://play.google.com/store/apps/details?id=com.fitgotchi.app';
+            var playReferrer = 'pbb_meta_trial=' + encodeURIComponent(params.toString());
+            var playStoreUrl = playStoreBaseUrl + '&referrer=' + encodeURIComponent(playReferrer);
             var isAppleDevice = /iPhone|iPad|iPod/i.test(navigator.userAgent || '');
             var isAndroidDevice = /Android/i.test(navigator.userAgent || '');
             var primaryStoreUrl = isAppleDevice ? appStoreUrl : (isAndroidDevice ? playStoreUrl : '#paid-preview-downloads');
@@ -549,31 +548,6 @@
             var checkoutButton = document.querySelector('.checkout-btn[data-plan="founders-pass"]');
             var checkoutTerms = document.getElementById('checkout-terms-container');
             var openInstalled = document.getElementById('paid-preview-open-installed');
-            var downloadPanel = document.getElementById('paid-preview-downloads');
-            var downloadInstructions = document.getElementById('paid-preview-instructions');
-            var storeHandoffKey = 'pbb_meta_store_handoff_pending_v1';
-
-            function rememberStoreHandoff() {
-                try { sessionStorage.setItem(storeHandoffKey, String(Date.now())); } catch (error) {}
-            }
-
-            function hasPendingStoreHandoff() {
-                try { return !!sessionStorage.getItem(storeHandoffKey); } catch (error) { return false; }
-            }
-
-            function showReadyToOpenState() {
-                if (!hasPendingStoreHandoff()) return;
-                if (downloadPanel) downloadPanel.classList.add('paid-preview-ready');
-                if (downloadInstructions) {
-                    downloadInstructions.innerHTML = '<strong>Balance installed?</strong> Tap the button below to open your free personalised preview. You do not need an account or payment details yet.';
-                }
-                if (openInstalled) openInstalled.textContent = 'OPEN MY FREE PREVIEW';
-                [heroAction, topAction].forEach(function (action) {
-                    if (!action) return;
-                    action.href = nativePreviewUrl;
-                    action.textContent = action === heroAction ? 'Open my free preview' : 'Open preview';
-                });
-            }
 
             document.body.classList.add('paid-meta-preview');
             document.body.dataset.landingVariant = 'facebook_5m_foundations_v3';
@@ -582,13 +556,10 @@
                 action.href = primaryStoreUrl;
                 action.textContent = action === heroAction ? primaryStoreLabel : 'Download Balance';
                 action.dataset.previewHandoff = 'true';
-                if (primaryStoreUrl !== '#paid-preview-downloads') action.addEventListener('click', rememberStoreHandoff);
             });
             if (openInstalled) openInstalled.href = nativePreviewUrl;
-            ['paid-preview-ios', 'paid-preview-android'].forEach(function (id) {
-                var storeLink = document.getElementById(id);
-                if (storeLink) storeLink.addEventListener('click', rememberStoreHandoff);
-            });
+            var androidStoreLink = document.getElementById('paid-preview-android');
+            if (androidStoreLink) androidStoreLink.href = playStoreUrl;
             if (microcopy) {
                 microcopy.textContent = 'Download the Balance app, complete your setup, then take the full guided tour. Your answers stay saved if you unlock for AU$89 once.';
             }
@@ -613,21 +584,9 @@
                 checkoutButton.addEventListener('click', function (event) {
                     event.preventDefault();
                     event.stopImmediatePropagation();
-                    if (primaryStoreUrl !== '#paid-preview-downloads') rememberStoreHandoff();
                     window.location.href = primaryStoreUrl;
                 }, true);
             }
-
-            // App stores cannot launch a newly installed app with a campaign
-            // deep link. Keep the website as the handoff surface instead: when
-            // the visitor returns from the store, turn every primary action
-            // into the one-tap native preview link. Instagram is not needed again.
-            window.addEventListener('pageshow', showReadyToOpenState);
-            window.addEventListener('focus', showReadyToOpenState);
-            document.addEventListener('visibilitychange', function () {
-                if (document.visibilityState === 'visible') showReadyToOpenState();
-            });
-            showReadyToOpenState();
         })();
 
         (function () {

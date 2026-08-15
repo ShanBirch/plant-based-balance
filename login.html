@@ -480,7 +480,7 @@
             <div class="signup-prompt">
                 Don't have an account? <span class="toggle-form" onclick="showSignup()" style="color: var(--login-secondary-light); text-decoration: none; font-weight: 700; cursor: pointer;">Join Balance</span>
             </div>
-            <span class="explore-btn" onclick="sessionStorage.setItem('guestMode','true'); window.location.href='/dashboard.html?guest=true'">Explore the app first &rarr;</span>
+            <span class="explore-btn" onclick="startFoundationsPreview()">Open my free preview &rarr;</span>
         </div>
 
         <!-- Signup Form -->
@@ -543,7 +543,7 @@
             <div class="signup-prompt">
                 Already have an account? <span class="toggle-form" onclick="showLogin()">Log in here</span>
             </div>
-            <span class="explore-btn" onclick="sessionStorage.setItem('guestMode','true'); window.location.href='/dashboard.html?guest=true'">Explore the app first &rarr;</span>
+            <span class="explore-btn" onclick="startFoundationsPreview()">Open my free preview &rarr;</span>
         </div>
     </div>
 
@@ -553,6 +553,22 @@
     <!-- Initialize Supabase inline -->
     <script>
         // Store referral code if present in URL and show signup form
+        function startFoundationsPreview() {
+            const params = new URLSearchParams({
+                guest: 'true',
+                meta_trial: 'facebook_5m_foundations_v3',
+                utm_source: 'meta',
+                utm_medium: 'paid_social',
+                utm_campaign: 'balance_foundations_app_preview',
+                handoff_source: 'native_preview_button'
+            });
+            if (window.BalanceMetaAdTrial) {
+                window.BalanceMetaAdTrial.activateFromNativeQuery(params.toString());
+            }
+            sessionStorage.setItem('guestMode', 'true');
+            window.location.href = '/dashboard.html?' + params.toString();
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
             const ref = urlParams.get('ref');
