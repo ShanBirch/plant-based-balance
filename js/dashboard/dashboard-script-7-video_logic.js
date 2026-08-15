@@ -39,6 +39,125 @@ function findVideoMatch(name) {
     return '';
 }
 
+function getExerciseThumbnailSeekTime(video) {
+    const duration = Number(video && video.duration);
+    if (!Number.isFinite(duration) || duration <= 0) return 0.2;
+    if (duration <= 0.12) return 0;
+    return Math.min(0.35, Math.max(0.08, duration * 0.08), duration - 0.05);
+}
+
+function seekExerciseVideoThumbnailFrame(video, onReady, onError) {
+    if (!video) return;
+
+    const requestId = `${Date.now()}-${Math.random()}`;
+    video.dataset.exerciseThumbnailRequest = requestId;
+    let settled = false;
+    let fallbackTimer = null;
+
+    const isCurrent = () => video.dataset.exerciseThumbnailRequest === requestId;
+    const cleanup = () => {
+        if (fallbackTimer) clearTimeout(fallbackTimer);
+        video.removeEventListener('loadeddata', seekFrame);
+        video.removeEventListener('seeked', finish);
+        video.removeEventListener('error', fail);
+    };
+    const finish = () => {
+        if (settled) return;
+        if (!isCurrent()) {
+            settled = true;
+            cleanup();
+            return;
+        }
+        settled = true;
+        cleanup();
+        if (typeof onReady === 'function') onReady();
+    };
+    const fail = () => {
+        if (settled) return;
+        if (!isCurrent()) {
+            settled = true;
+            cleanup();
+            return;
+        }
+        settled = true;
+        cleanup();
+        if (typeof onError === 'function') onError();
+    };
+    const seekFrame = () => {
+        if (settled) return;
+        if (!isCurrent()) {
+            settled = true;
+            cleanup();
+            return;
+        }
+        if (video.readyState < 2) return;
+
+        const target = getExerciseThumbnailSeekTime(video);
+        if (target <= 0 || Math.abs(Number(video.currentTime || 0) - target) < 0.03) {
+            finish();
+            return;
+        }
+
+        video.addEventListener('seeked', finish, { once: true });
+        try {
+            video.currentTime = target;
+        } catch (_) {
+            finish();
+        }
+    };
+
+    video.addEventListener('error', fail, { once: true });
+    if (video.readyState >= 2) seekFrame();
+    else video.addEventListener('loadeddata', seekFrame, { once: true });
+
+    fallbackTimer = setTimeout(() => {
+        if (settled) return;
+        if (!isCurrent()) {
+            settled = true;
+            cleanup();
+            return;
+        }
+        if (video.readyState >= 2) finish();
+        else fail();
+    }, 5000);
+}
+
+function revealInlineExerciseThumbnail(video) {
+    const container = video && video.closest ? video.closest('[data-video-container]') : null;
+    if (!container) return;
+
+    const loading = container.querySelector('.inline-video-thumbnail-loading');
+    const playOverlay = container.querySelector('.inline-play-overlay');
+    video.style.opacity = '1';
+    container.dataset.thumbnailState = 'ready';
+    if (loading) loading.style.display = 'none';
+    if (playOverlay) playOverlay.style.display = 'flex';
+}
+
+function primeInlineExerciseThumbnail(video) {
+    if (!video || video.dataset.thumbnailPriming === 'true' || video.dataset.thumbnailPrimed === 'true') return;
+
+    if (video.getAttribute('poster')) {
+        video.dataset.thumbnailPrimed = 'true';
+        revealInlineExerciseThumbnail(video);
+        return;
+    }
+
+    video.dataset.thumbnailPriming = 'true';
+    seekExerciseVideoThumbnailFrame(video, () => {
+        video.dataset.thumbnailPriming = 'false';
+        video.dataset.thumbnailPrimed = 'true';
+        revealInlineExerciseThumbnail(video);
+    }, () => {
+        video.dataset.thumbnailPriming = 'false';
+        const container = video.closest('[data-video-container]');
+        const loading = container && container.querySelector('.inline-video-thumbnail-loading');
+        if (container) container.dataset.thumbnailState = 'unavailable';
+        if (loading) loading.innerHTML = '<span style="font-size:0.8rem; font-weight:750; color:rgba(255,255,255,0.88);">Tap to load exercise preview</span>';
+    });
+}
+window.primeInlineExerciseThumbnail = primeInlineExerciseThumbnail;
+
 // Inline video playback for workout cards
 let currentInlineVideo = null;
 
@@ -109,6 +228,14 @@ function startInlineVideoPlayback(container, video, videoUrl, playOverlay) {
     clearInlineVideoLoadTimer(video);
     hideInlineVideoStatus(container);
     cacheWorkoutVideosForOffline(videoUrl);
+
+    // A posterless exercise is primed to a real working frame. Rewind only
+    // when the user actually presses play so the complete demo still runs.
+    video.dataset.exerciseThumbnailRequest = '';
+    if (video.dataset.thumbnailPrimed === 'true' && Number(video.currentTime || 0) > 0) {
+        try { video.currentTime = 0; } catch (_) {}
+    }
+    revealInlineExerciseThumbnail(video);
 
     if (playOverlay) playOverlay.style.display = 'none';
     video.controls = true;
@@ -825,8 +952,15 @@ function playVideo() {
 
     // Play Backblaze B2 video in native player
     if (direct && pendingVideoUrl) {
+        direct.dataset.exerciseThumbnailRequest = '';
         direct.style.display = 'block';
-        direct.src = pendingVideoUrl;
+        direct.style.opacity = '1';
+        direct.controls = true;
+        direct.muted = false;
+        if (direct.src !== pendingVideoUrl) direct.src = pendingVideoUrl;
+        if (direct.dataset.modalThumbnailPrimed === 'true' && Number(direct.currentTime || 0) > 0) {
+            try { direct.currentTime = 0; } catch (_) {}
+        }
         direct.play().catch(e => {
             console.error("Video play error:", e);
             alert("Unable to play video. The video file may not be accessible.");
@@ -883,12 +1017,31 @@ function openExerciseVideo(url, title, autoplay = false) {
     if(direct) {
         direct.src = '';
         direct.style.display = 'none';
+        direct.style.opacity = '0';
+        direct.controls = false;
+        direct.muted = true;
+        direct.dataset.modalThumbnailPrimed = 'false';
     }
 
-    // Show poster with play button
+    // Show the play control over a decoded frame from the exercise itself.
     if(poster) {
         poster.style.display = 'flex';
-        poster.style.backgroundImage = 'none'; // B2 videos don't have thumbnails
+        poster.style.backgroundImage = 'none';
+        poster.style.backgroundColor = '#0f172a';
+    }
+
+    if (direct) {
+        direct.style.display = 'block';
+        direct.src = pendingVideoUrl;
+        direct.load();
+        seekExerciseVideoThumbnailFrame(direct, () => {
+            direct.pause();
+            direct.dataset.modalThumbnailPrimed = 'true';
+            direct.style.opacity = '1';
+            if (poster) poster.style.backgroundColor = 'transparent';
+        }, () => {
+            direct.style.display = 'none';
+        });
     }
 
     modal.style.display = 'flex';
@@ -921,8 +1074,10 @@ function closeVideoModal() {
 
     // Stop video player
     if(direct) {
+        direct.dataset.exerciseThumbnailRequest = '';
         direct.pause();
         direct.src = '';
+        direct.style.opacity = '0';
     }
 }
 

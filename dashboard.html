@@ -7741,10 +7741,10 @@ if (window._pbbIsIOSSafari) {
 
 <script>
 if(!window._pbbIsIOSSafari) {
-    document.write('<script src="js/dashboard/pbb-deferred-workoutbuilder.js?v=9"><\/script>');
+    document.write('<script src="js/dashboard/pbb-deferred-workoutbuilder.js?v=10"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
-    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-workoutbuilder.js?v=9');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-workoutbuilder.js?v=10');
 }
 </script>
 
@@ -13099,7 +13099,7 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=183';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=184-exercise-thumbnails';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
@@ -13141,7 +13141,7 @@ if (window._pbbIsIOSSafari) {
         var s = document.createElement('script');
         s.async = false;
         s.dataset.metaTrialLoader = String(attempt);
-        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=183&meta_retry=' + attempt;
+        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=184-exercise-thumbnails&meta_retry=' + attempt;
         s.onload = function() {
             if (window._pbbScript5Complete && window._switchAppTabReady && typeof window._switchAppTabReal === 'function') {
                 sessionStorage.removeItem('pbb_meta_script5_recovery_v1');
@@ -13160,7 +13160,7 @@ if (window._pbbIsIOSSafari) {
         document.head.appendChild(s);
     })(0);
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=183"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=184-exercise-thumbnails"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=3"></script>
@@ -16770,7 +16770,7 @@ if (typeof WORKOUT_LIBRARY !== 'undefined' && typeof WORKOUT_LIBRARY_EXTENDED !=
 </script>
 <script>
 // Script-7 (29KB) - video logic. Defer on iOS to reduce memory pressure.
-var pbbVideoLogicSrc = 'js/dashboard/dashboard-script-7-video_logic.js?v=20260603-video-stream';
+var pbbVideoLogicSrc = 'js/dashboard/dashboard-script-7-video_logic.js?v=20260815-exercise-thumbnails';
 if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
@@ -16844,10 +16844,10 @@ if (window._pbbIsIOSSafari) {
 </div>
 <script>
 if(!window._pbbIsIOSSafari) {
-    document.write('<script src="js/dashboard/pbb-deferred-savedworkouts.js?v=6"><\/script>');
+    document.write('<script src="js/dashboard/pbb-deferred-savedworkouts.js?v=7"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
-    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-savedworkouts.js?v=6');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-savedworkouts.js?v=7');
 }
 </script>
 

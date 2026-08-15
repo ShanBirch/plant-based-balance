@@ -14799,7 +14799,7 @@ function loadWorkoutBuilderScript() {
         };
         const appendScript = () => {
             const script = document.createElement('script');
-            script.src = `js/dashboard/pbb-deferred-workoutbuilder.js?v=2&builder_safe_load=${Date.now()}`;
+            script.src = `js/dashboard/pbb-deferred-workoutbuilder.js?v=10&builder_safe_load=${Date.now()}`;
             script.onload = finish;
             script.onerror = () => reject(new Error('Workout builder script failed to load'));
             document.head.appendChild(script);
@@ -16105,7 +16105,7 @@ async function startActiveWorkout(id, forcedDayIndex = null) {
 
             ${getExerciseNotesHtml(ex.name)}
 
-            ${videoUrl ? createExerciseVideoBlockHtml(videoUrl, ex.name) : ''}
+            ${videoUrl ? createExerciseVideoBlockHtml(videoUrl, ex.name, ex.thumbnail_url || ex.thumbnailUrl || '') : ''}
 
             <!-- Volume Tracker -->
             <div class="volume-display" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%); border-bottom: 1px solid #fef08a;">
@@ -21938,7 +21938,7 @@ function renderWorkoutExercises(exercises) {
 
             ${getExerciseNotesHtml(ex.name)}
 
-            ${videoUrl ? createExerciseVideoBlockHtml(videoUrl, ex.name) : ''}
+            ${videoUrl ? createExerciseVideoBlockHtml(videoUrl, ex.name, ex.thumbnail_url || ex.thumbnailUrl || '') : ''}
 
             ${getVolumeDisplayHtml(ex.name)}
 
@@ -22011,7 +22011,7 @@ function renderYogaExercises(exercises) {
 
                 ${getExerciseNotesHtml(ex.name)}
 
-                ${videoUrl ? createExerciseVideoBlockHtml(videoUrl, ex.name) : ''}
+                ${videoUrl ? createExerciseVideoBlockHtml(videoUrl, ex.name, ex.thumbnail_url || ex.thumbnailUrl || '') : ''}
 
                 <!-- Yoga Timer Section -->
                 <div class="yoga-timer-section" style="padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 15px;">
@@ -23765,23 +23765,51 @@ function shouldDefaultExerciseVideoToPortrait(exerciseName, videoUrl) {
     });
 }
 
-function createExerciseVideoBlockHtml(videoUrl, exerciseName = '') {
+function findExerciseThumbnail(exerciseName, videoUrl = '') {
+    const name = String(exerciseName || '').trim().toLowerCase();
+    const url = String(videoUrl || '').trim();
+    const customExercises = [
+        ...(Array.isArray(window._customExercisesCache) ? window._customExercisesCache : []),
+        ...(Array.isArray(window._myCustomExercisesCache) ? window._myCustomExercisesCache : [])
+    ];
+    const match = customExercises.find(ex => {
+        if (!ex) return false;
+        const exName = String(ex.exercise_name || '').trim().toLowerCase();
+        const exUrl = String(ex.video_url || '').trim();
+        return (name && exName === name) || (url && exUrl === url);
+    });
+    return String(match?.thumbnail_url || match?.thumbnailUrl || '').trim();
+}
+window.findExerciseThumbnail = findExerciseThumbnail;
+
+function createExerciseVideoBlockHtml(videoUrl, exerciseName = '', providedThumbnailUrl = '') {
     const safeUrl = String(videoUrl || '')
         .replace(/&/g, '&amp;')
         .replace(/"/g, '&quot;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;');
     const clickUrl = String(videoUrl || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    const thumbnailUrl = String(providedThumbnailUrl || findExerciseThumbnail(exerciseName, videoUrl) || '').trim();
+    const safeThumbnailUrl = thumbnailUrl
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    const posterAttr = safeThumbnailUrl ? ` poster="${safeThumbnailUrl}"` : '';
+    const thumbnailReady = !!safeThumbnailUrl;
     const defaultPortrait = shouldDefaultExerciseVideoToPortrait(exerciseName, videoUrl);
     const initialOrientation = defaultPortrait ? 'portrait' : 'pending';
     const initialAspectRatio = defaultPortrait ? '9 / 16' : '16 / 9';
     return `
-            <div data-video-container data-video-orientation="${initialOrientation}" style="position: relative; width: 100%; aspect-ratio: ${initialAspectRatio}; background: black; cursor: pointer; overflow: hidden;" onclick="playInlineVideo(event, '${clickUrl}')">
-                <video style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;" preload="metadata" muted playsinline onloadedmetadata="fitInlineExerciseVideoFrame(this)">
-                    <source src="${safeUrl}" type="video/mp4">
+            <div data-video-container data-video-orientation="${initialOrientation}" data-thumbnail-state="${thumbnailReady ? 'ready' : 'loading'}" style="position: relative; width: 100%; aspect-ratio: ${initialAspectRatio}; background: #0f172a; cursor: pointer; overflow: hidden;" onclick="playInlineVideo(event, '${clickUrl}')">
+                <div class="inline-video-thumbnail-loading" aria-hidden="true" style="position:absolute; inset:0; display:${thumbnailReady ? 'none' : 'flex'}; align-items:center; justify-content:center; background:linear-gradient(120deg,#111827 20%,#273449 45%,#111827 70%); background-size:220% 100%; color:rgba(255,255,255,0.72);">
+                    <span style="font-size:0.76rem; font-weight:750; letter-spacing:0.02em;">Loading exercise preview</span>
+                </div>
+                <video style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity:${thumbnailReady ? '1' : '0'}; transition:opacity 160ms ease;" preload="auto" muted playsinline webkit-playsinline${posterAttr} onloadedmetadata="fitInlineExerciseVideoFrame(this); primeInlineExerciseThumbnail(this)" onloadeddata="primeInlineExerciseThumbnail(this)">
+                    <source src="${safeUrl}">
                 </video>
-                <div class="inline-play-overlay" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; background: rgba(255,255,255,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
-                    <svg viewBox="0 0 24 24" style="width: 30px; height: 30px; fill: var(--primary); margin-left: 3px;">
+                <div class="inline-play-overlay" aria-hidden="true" style="position: absolute; right: 14px; bottom: 14px; width: 46px; height: 46px; background: rgba(255,255,255,0.92); border-radius: 50%; display: ${thumbnailReady ? 'flex' : 'none'}; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.32);">
+                    <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: var(--primary); margin-left: 3px;">
                         <path d="M8 5v14l11-7z"/>
                     </svg>
                 </div>
