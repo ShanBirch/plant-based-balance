@@ -97,6 +97,7 @@ const { pathToFileURL } = require('url');
     assert.match(prompt, /one AUD 89\.99 payment/);
     assert.doesNotMatch(prompt, /before making a payment\. Keen\?/);
     assert.match(prompt, /Do not browse, research, edit code/);
+    assert.match(prompt, /background conversation state open/);
     assert.match(prompt, /LIVE_CHAT_STATE: open/);
     assert.match(prompt, /alert-1/);
     assert.match(prompt, /action-1/);
@@ -108,6 +109,7 @@ const { pathToFileURL } = require('url');
     assert.match(installer, /-AllowStartIfOnBatteries/);
     assert.match(installer, /-DontStopIfGoingOnBatteries/);
     assert.match(installer, /-Trigger \$triggers/);
+    assert.doesNotMatch(installer, /--open-chat/);
 
     console.log('ig Codex live worker tests passed');
 })().catch(error => {

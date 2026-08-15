@@ -41,7 +41,7 @@ if ($existingTask -and $existingTask.State -eq 'Running') {
 
 Copy-Item -LiteralPath $sourceWorker -Destination $installedWorker -Force
 
-$arguments = '"{0}" --workspace "{1}" --open-chat' -f $installedWorker, $Workspace
+$arguments = '"{0}" --workspace "{1}"' -f $installedWorker, $Workspace
 $action = New-ScheduledTaskAction -Execute $node -Argument $arguments -WorkingDirectory $Workspace
 $logonTrigger = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
 $watchdogTrigger = New-ScheduledTaskTrigger `
@@ -64,7 +64,7 @@ Register-ScheduledTask `
     -Action $action `
     -Trigger $triggers `
     -Settings $settings `
-    -Description 'Wakes a persistent Codex chat for explicitly enabled paid IG and Facebook lead conversations.' `
+    -Description 'Runs the headless Codex worker for explicitly enabled paid IG and Facebook lead conversations.' `
     -Force | Out-Null
 
 if (-not $NoStart) {

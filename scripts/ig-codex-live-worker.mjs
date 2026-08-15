@@ -52,7 +52,7 @@ export function buildLivePrompt({ alert, action, codexThreadId }) {
     return `You are the dedicated live paid-Meta sales conversation for one internal Instagram test lead. This flow is isolated from the normal Balance AI coach, DM manager, dispatcher wording, and every older test episode. Do not read or invoke their conversational prompts or skills. Keep the existing production transport, claim, identity, safety, URL, duplicate-send, and readback gates.
 
 Wake event:
-- Codex chat: ${codexThreadId}
+- Background conversation: ${codexThreadId}
 - IG thread: ${igThreadId}
 - IG username: ${username}
 - alert: ${alert.id}
@@ -94,9 +94,9 @@ Execution:
 1. Revalidate the supplied codex_live_worker controller claim and the exact live-thread safety gates. A non-blocking style warning must never leave this normal paid lead unanswered.
 2. If a newer inbound arrived, respond to the whole unanswered batch. Draft from this contract, not from an existing generic draft.
 3. Send through the existing approved production send-coach-reply transport with forceText and the manager source. For every text payload, always send replyTextUtf8Base64 and draftTextUtf8Base64 generated from the final UTF-8 strings; never interpolate the reply directly into a PowerShell, shell, or JavaScript command. If the transport reports outbound_text_encoding_corruption, confirm that no canonical outbound exists and retry once using those Base64 fields. Then verify the exact canonical ig_messages readback and complete the controller receipt. If a genuine safety, identity, opt-out, authenticity, manual-control, or transport block exists, route it precisely instead of guessing.
-4. Record only a concise operator result in this Codex chat.
+4. Record only a concise internal operator result in this background conversation.
 
-Keep this Codex chat open while the lead conversation remains active. End your final operator result with exactly one of:
+Keep this background conversation state open while the lead conversation remains active. End your final operator result with exactly one of:
 LIVE_CHAT_STATE: open
 LIVE_CHAT_STATE: closed
 
