@@ -38,7 +38,11 @@ const {
     resolveUtf8TransportText,
     validateOutboundTextIntegrity,
 } = require('./_lib/outbound-text-integrity');
-const { maySendDraftImageAttachment } = require('./_lib/paid-meta-proof-media');
+const {
+    maySendDraftImageAttachment,
+    maySendDraftVideoAttachment,
+    stripPaidMetaProofMediaUrls,
+} = require('./_lib/paid-meta-proof-media');
 function normalizeGraphApiVersion(value) {
     const raw = String(value || '').trim();
     if (!raw) return 'v25.0';
@@ -47,6 +51,37 @@ function normalizeGraphApiVersion(value) {
 
 function envFlagEnabled(value) {
     return ['1', 'true', 'yes', 'on', 'enabled'].includes(String(value || '').trim().toLowerCase());
+}
+
+function splitTerminalQuestionForProofMedia(messages = []) {
+    const result = Array.isArray(messages) ? messages.map(value => String(value || '').trim()).filter(Boolean) : [];
+    for (let index = result.length - 1; index >= 0; index -= 1) {
+        const text = result[index];
+        const match = text.match(/(?:^|[.!]\s+|\n+)((?:would|do|want|keen|are|can|should|what|how|where|when|why|who)\b[^?]*\?)\s*$/i);
+        if (!match) continue;
+        const questionIndex = text.lastIndexOf(match[1]);
+        if (questionIndex <= 0) continue;
+        const before = text.slice(0, questionIndex).trim();
+        const question = match[1].trim();
+        if (!before || !question) continue;
+        result.splice(index, 1, before, question);
+        break;
+    }
+    return result;
+}
+
+function insertProofMediaBeforeFinalQuestion(outboundItems = [], mediaItem) {
+    const items = Array.isArray(outboundItems) ? [...outboundItems] : [];
+    if (!mediaItem) return items;
+    let insertAt = items.length;
+    for (let index = items.length - 1; index >= 0; index -= 1) {
+        if (items[index]?.kind === 'text' && /\?\s*$/.test(String(items[index]?.text || ''))) {
+            insertAt = index;
+            break;
+        }
+    }
+    items.splice(insertAt, 0, mediaItem);
+    return items;
 }
 
 function isBlockedDraftReview(review) {
@@ -1948,6 +1983,10 @@ exports.handler = async (event) => {
     let draftText = shouldSanitizeVisibleLeadCopy
         ? sanitizeVisibleOutboundDmText(draftTextInput)
         : draftTextInput;
+    if (alertData.draft_video_attachment_url) {
+        replyText = stripPaidMetaProofMediaUrls(replyText);
+        draftText = stripPaidMetaProofMediaUrls(draftText);
+    }
     if (!replyText) {
         return {
             statusCode: 400,
@@ -2276,6 +2315,21 @@ exports.handler = async (event) => {
         messagesToSend = [replyText];
         wasEdited = !!draftText && replyText !== draftText;
     }
+    const draftVideoAttachmentUrl = String(alertData.draft_video_attachment_url || '').trim();
+    const hasValidDraftVideoAttachment = /^https:\/\/[^\s]+\.mp4(?:[?#][^\s]*)?$/i.test(draftVideoAttachmentUrl);
+    const hasDraftVideoAttachment = hasValidDraftVideoAttachment && maySendDraftVideoAttachment({
+        videoUrl: draftVideoAttachmentUrl,
+        replyText: messagesToSend.join('\n\n'),
+    });
+    const draftImageAttachmentUrl = String(alertData.draft_image_attachment_url || '').trim();
+    const hasValidDraftImageAttachment = /^https:\/\/[^\s]+\.(?:png|jpe?g|webp)(?:[?#][^\s]*)?$/i.test(draftImageAttachmentUrl);
+    const hasDraftImageAttachment = hasValidDraftImageAttachment && maySendDraftImageAttachment({
+        imageUrl: draftImageAttachmentUrl,
+        replyText: messagesToSend.join('\n\n'),
+    });
+    if (hasDraftVideoAttachment || hasDraftImageAttachment) {
+        messagesToSend = splitTerminalQuestionForProofMedia(messagesToSend);
+    }
     if (!wasEdited
         && isBlockedDraftReview(alertData.draft_review)
         && !draftReviewOverride
@@ -2354,18 +2408,9 @@ exports.handler = async (event) => {
             }),
         };
     }
-    const draftVideoAttachmentUrl = useDraftMessageChunks
-        ? String(alertData.draft_video_attachment_url || '').trim()
-        : '';
-    const hasDraftVideoAttachment = /^https:\/\/[^\s]+\.mp4(?:[?#][^\s]*)?$/i.test(draftVideoAttachmentUrl);
-    const draftImageAttachmentUrl = useDraftMessageChunks
-        ? String(alertData.draft_image_attachment_url || '').trim()
-        : '';
-    const hasValidDraftImageAttachment = /^https:\/\/[^\s]+\.(?:png|jpe?g|webp)(?:[?#][^\s]*)?$/i.test(draftImageAttachmentUrl);
-    const hasDraftImageAttachment = hasValidDraftImageAttachment && maySendDraftImageAttachment({
-        imageUrl: draftImageAttachmentUrl,
-        replyText: messagesToSend.join('\n\n'),
-    });
+    if (hasValidDraftVideoAttachment && !hasDraftVideoAttachment) {
+        console.warn('[send-ig-reply] suppressed unintroduced paid-Meta proof video');
+    }
     if (hasValidDraftImageAttachment && !hasDraftImageAttachment) {
         console.warn('[send-ig-reply] suppressed unintroduced paid-Meta proof image');
     }
@@ -2391,25 +2436,17 @@ exports.handler = async (event) => {
         outboundItems.push({ kind: 'text', text: voiceCompanionText });
     }
     if (hasDraftVideoAttachment && !voiceMessageConfig.enabled) {
-        outboundItems = [
-            outboundItems[0],
-            {
-                kind: 'video',
-                text: `[VIDEO:${draftVideoAttachmentUrl}]`,
-                videoUrl: draftVideoAttachmentUrl,
-            },
-            ...outboundItems.slice(1),
-        ].filter(Boolean);
+        outboundItems = insertProofMediaBeforeFinalQuestion(outboundItems, {
+            kind: 'video',
+            text: `[VIDEO:${draftVideoAttachmentUrl}]`,
+            videoUrl: draftVideoAttachmentUrl,
+        });
     } else if (hasDraftImageAttachment && !voiceMessageConfig.enabled) {
-        outboundItems = [
-            outboundItems[0],
-            {
-                kind: 'image',
-                text: `[IMAGE:${draftImageAttachmentUrl}]`,
-                imageUrl: draftImageAttachmentUrl,
-            },
-            ...outboundItems.slice(1),
-        ].filter(Boolean);
+        outboundItems = insertProofMediaBeforeFinalQuestion(outboundItems, {
+            kind: 'image',
+            text: `[IMAGE:${draftImageAttachmentUrl}]`,
+            imageUrl: draftImageAttachmentUrl,
+        });
     }
 
     let claimedAlert;
@@ -2970,6 +3007,10 @@ exports._test = {
     joinSentChunkTexts,
     validateOutboundTextIntegrity,
     maySendDraftImageAttachment,
+    maySendDraftVideoAttachment,
+    splitTerminalQuestionForProofMedia,
+    insertProofMediaBeforeFinalQuestion,
+    stripPaidMetaProofMediaUrls,
 };
 
 exports.sendInstagramGraphTypingAction = sendInstagramGraphTypingAction;

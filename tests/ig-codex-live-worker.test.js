@@ -87,6 +87,8 @@ const { pathToFileURL } = require('url');
     assert.match(prompt, /approved transformation photos all feature women/i);
     assert.match(prompt, /known to be a man/i);
     assert.match(prompt, /63-second evergreen app video/);
+    assert.match(prompt, /URL is transport-only/);
+    assert.match(prompt, /never paste it into public reply or draft text/);
     assert.match(prompt, /same synchronous delivery/i);
     assert.match(prompt, /end the same video turn with one setup question/i);
     assert.match(prompt, /codex_live_worker controller claim/);

@@ -53,6 +53,10 @@ const {
     buildInstagramGraphVideoMessagePayload,
     buildInstagramGraphImageMessagePayload,
     maySendDraftImageAttachment,
+    maySendDraftVideoAttachment,
+    splitTerminalQuestionForProofMedia,
+    insertProofMediaBeforeFinalQuestion,
+    stripPaidMetaProofMediaUrls,
 } = require('../netlify/functions/send-ig-reply')._test;
 const { inspectVoiceScriptQuality } = require('../netlify/functions/_lib/elevenlabs-voice-message');
 const { buildMetaAppPreviewUrl, isMetaAppPreviewUrl } = require('../netlify/functions/_lib/meta-app-preview-ref');
@@ -1737,6 +1741,32 @@ test('the reply after the goal is tailored and carries the right native proof me
             },
         },
     });
+    const editedVideoReply = stripPaidMetaProofMediaUrls(
+        `That's what Balance is for. Quick look at the app: ${BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL} Would you like a free personalised look before paying?`
+    );
+    assert.equal(
+        editedVideoReply,
+        `That's what Balance is for. Quick look at the app. Would you like a free personalised look before paying?`,
+        'the public message must never expose the proof-video URL'
+    );
+    assert.equal(maySendDraftVideoAttachment({
+        videoUrl: BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL,
+        replyText: editedVideoReply,
+    }), true, 'a reviewed edit keeps the native video when it still introduces it');
+    assert.equal(maySendDraftVideoAttachment({
+        videoUrl: BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL,
+        replyText: 'That makes sense. Would you like a free personalised look?',
+    }), false, 'the native video is suppressed when a repair removes its introduction');
+    const videoTurnMessages = splitTerminalQuestionForProofMedia([editedVideoReply]);
+    assert.deepEqual(videoTurnMessages, [
+        `That's what Balance is for. Quick look at the app.`,
+        'Would you like a free personalised look before paying?',
+    ]);
+    assert.deepEqual(insertProofMediaBeforeFinalQuestion(
+        videoTurnMessages.map(text => ({ kind: 'text', text })),
+        { kind: 'video', videoUrl: BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL }
+    ).map(item => item.kind), ['text', 'video', 'text'],
+    'the native video must sit between its introduction and the purposeful question');
     assert.deepEqual(buildInstagramGraphImageMessagePayload({
         recipientId: 'ig-user-1',
         imageUrl: weightGoal.imageAttachmentUrl,
