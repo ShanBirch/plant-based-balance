@@ -1314,6 +1314,19 @@ function hasRecentPaidMetaProofVideo(history = []) {
         .some(item => /\b(?:quick video|showing you how it works inside Balance)\b/i.test(String(item?.text || '')));
 }
 
+function hasRecentPaidMetaSignupHandoffQuestion(history = []) {
+    return (Array.isArray(history) ? history : [])
+        .filter(item => String(item?.direction || '').toLowerCase() === 'out')
+        .slice(-4)
+        .some(item => /\b(?:do you )?want me to (?:set up|send|give you)\b[^?\n]{0,140}\b(?:sign[ -]?up|signup|access|free personalised look)\b/i.test(String(item?.text || '')));
+}
+
+function isApprovedPaidMetaCheckoutHandoffMoment({ currentMessage = '', history = [] } = {}) {
+    return isPaidMetaContextualCheckoutIntent(currentMessage)
+        || (isExplicitPaidMetaPreviewAcceptance(currentMessage)
+            && hasRecentPaidMetaSignupHandoffQuestion(history));
+}
+
 function isExplicitPaidMetaProofVideoRetry({ currentMessage = '', history = [] } = {}) {
     const message = String(currentMessage || '').replace(/\s+/g, ' ').trim();
     const directVideoRequest = /\b(?:show|send)\s+me\s+(?:the\s+)?(?:vid|video)(?:\s+again)?\b/i.test(message)
@@ -1500,6 +1513,23 @@ function buildDeterministicPaidMetaConversationReply({
     // blocker, FAQ, objection and offer wording belongs to the live writer.
     if (hasDirectPaidMetaCheckoutIntent(message) && approvedCheckoutUrl) {
         const joined = `Yep, you can get started here: ${approvedCheckoutUrl}`;
+        return {
+            chunks: [joined],
+            joined,
+            checkoutUrl: approvedCheckoutUrl,
+            model: 'deterministic_paid_meta_handoff_v1',
+            replyMode: 'campaign_buyer_handoff',
+            maxChunks: 1,
+            error: null,
+            flowVariant,
+        };
+    }
+    if (isExplicitPaidMetaPreviewAcceptance(message)
+        && hasRecentPaidMetaSignupHandoffQuestion(history)
+        && approvedCheckoutUrl
+        && historyHasGoal
+        && historyHasBlocker) {
+        const joined = `Yep, here you go. You can sign up for Balance Foundations here: ${approvedCheckoutUrl}`;
         return {
             chunks: [joined],
             joined,
@@ -2448,7 +2478,7 @@ function buildPaidMetaConversationApproval({
         && /^deterministic_paid_meta_(?:conversation|guided_sales|handoff)_v\d+(?:\+[a-z0-9_-]+)*$/i.test(String(draft?.model || ''))
         && !META_AD_FIRST_REPLY_OPT_OUT_RE.test(message)
         && !META_AD_FIRST_REPLY_REVIEW_REQUIRED_RE.test(message)
-        && (draft?.replyMode !== 'campaign_buyer_handoff' || isPaidMetaContextualCheckoutIntent(message))
+        && (draft?.replyMode !== 'campaign_buyer_handoff' || isApprovedPaidMetaCheckoutHandoffMoment({ currentMessage: message, history }))
         && (draft?.replyMode !== 'campaign_app_preview_handoff'
             || (draft?.appPreviewHandoff === true
                 && isMetaAppPreviewUrl(draft?.appPreviewUrl)
@@ -2621,7 +2651,7 @@ function buildApprovedDeterministicMetaAdFirstReplyReview({
     const approvedConversationProgression = metaAdConversationFastLane
         && ['campaign_sales_progression', 'campaign_buyer_handoff', 'campaign_app_preview_handoff'].includes(String(draft?.replyMode || ''))
         && /^deterministic_paid_meta_(?:conversation|guided_sales|handoff)_v\d+(?:\+[a-z0-9_-]+)*$/i.test(String(draft?.model || ''))
-        && (draft?.replyMode !== 'campaign_buyer_handoff' || isPaidMetaContextualCheckoutIntent(message))
+        && (draft?.replyMode !== 'campaign_buyer_handoff' || isApprovedPaidMetaCheckoutHandoffMoment({ currentMessage: message, history }))
         && (draft?.replyMode !== 'campaign_app_preview_handoff'
             || (draft?.appPreviewHandoff === true
                 && isMetaAppPreviewUrl(draft?.appPreviewUrl)
