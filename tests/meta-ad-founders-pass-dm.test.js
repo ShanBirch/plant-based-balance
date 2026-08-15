@@ -116,6 +116,8 @@ test('approved Balance links become native Instagram buttons without a visible r
     const preview = resolveApprovedInstagramLinkButton('Your free preview is ready: https://plantbased-balance.org/p/Abc_123-xyz');
     assert.equal(preview.title, 'Open your preview');
     assert.equal(preview.displayText, 'Your free preview is ready');
+    assert.equal(preview.cardTitle, 'Your Balance preview is ready');
+    assert.equal(preview.imageUrl, 'https://plantbased-balance.org/assets/balance-founders-og-cream-gold.png');
     assert.equal(resolveApprovedInstagramLinkButton('Try https://example.com/unsafe'), null);
 
     const payload = buildInstagramGraphButtonMessagePayload({
@@ -128,6 +130,20 @@ test('approved Balance links become native Instagram buttons without a visible r
     assert.equal(payload.message.attachment.payload.buttons[0].type, 'web_url');
     assert.equal(payload.message.attachment.payload.buttons[0].url, link.url);
     assert.doesNotMatch(payload.message.attachment.payload.text, /https:\/\//);
+
+    const previewPayload = buildInstagramGraphButtonMessagePayload({
+        recipientId: 'lead-1',
+        text: preview.displayText,
+        url: preview.url,
+        title: preview.title,
+        imageUrl: preview.imageUrl,
+        cardTitle: preview.cardTitle,
+    });
+    assert.equal(previewPayload.message.attachment.payload.template_type, 'generic');
+    assert.equal(previewPayload.message.attachment.payload.elements[0].image_url, preview.imageUrl);
+    assert.equal(previewPayload.message.attachment.payload.elements[0].title, 'Your Balance preview is ready');
+    assert.equal(previewPayload.message.attachment.payload.elements[0].buttons[0].title, 'Open your preview');
+    assert.equal(previewPayload.message.attachment.payload.elements[0].buttons[0].url, preview.url);
 });
 
 test('sender blocks a paid Meta resend claim when the native video is absent', () => {

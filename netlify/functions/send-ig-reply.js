@@ -28,6 +28,8 @@ const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 const MANYCHAT_API_TOKEN = process.env.MANYCHAT_API_TOKEN;
 const MANYCHAT_SEND_URL = process.env.MANYCHAT_SEND_URL || 'https://api.manychat.com/fb/sending/sendContent';
+const BALANCE_PREVIEW_CARD_IMAGE_URL = 'https://plantbased-balance.org/assets/balance-founders-og-cream-gold.png';
+const BALANCE_PREVIEW_CARD_TITLE = 'Your Balance preview is ready';
 const {
     mergeLearningReelContext,
     normalizeLearningReelItems,
@@ -1526,21 +1528,33 @@ function buildInstagramGraphVideoMessagePayload({ recipientId, videoUrl, tag }) 
     };
 }
 
-function buildInstagramGraphButtonMessagePayload({ recipientId, text, url, title = 'Open Balance', tag }) {
+function buildInstagramGraphButtonMessagePayload({ recipientId, text, url, title = 'Open Balance', imageUrl = '', cardTitle = '', tag }) {
+    const button = {
+        type: 'web_url',
+        url,
+        title,
+    };
+    const payload = imageUrl
+        ? {
+            template_type: 'generic',
+            elements: [{
+                title: cardTitle || BALANCE_PREVIEW_CARD_TITLE,
+                image_url: imageUrl,
+                subtitle: text,
+                buttons: [button],
+            }],
+        }
+        : {
+            template_type: 'button',
+            text,
+            buttons: [button],
+        };
     return {
         recipient: { id: recipientId },
         message: {
             attachment: {
                 type: 'template',
-                payload: {
-                    template_type: 'button',
-                    text,
-                    buttons: [{
-                        type: 'web_url',
-                        url,
-                        title,
-                    }],
-                },
+                payload,
             },
         },
         ...(tag ? { tag } : {}),
@@ -1568,12 +1582,17 @@ function resolveApprovedInstagramLinkButton(text = '') {
         .replace(/[:\-]\s*$/, '')
         .replace(/\s+/g, ' ')
         .trim() || 'Here you go. This opens Balance.';
+    const isPreview = /^\/p\//.test(path) || path === '/meta-app-preview.html';
     return {
         url: rawUrl,
         displayText,
-        title: /^\/p\//.test(path) || path === '/meta-app-preview.html'
+        title: isPreview
             ? 'Open your preview'
             : 'Open Balance',
+        ...(isPreview ? {
+            imageUrl: BALANCE_PREVIEW_CARD_IMAGE_URL,
+            cardTitle: BALANCE_PREVIEW_CARD_TITLE,
+        } : {}),
     };
 }
 
@@ -1590,7 +1609,7 @@ function requiresNativeProofVideoAttachment({ replyText = '', alertData = {} } =
     return explicitVideoClaim || retryClaim;
 }
 
-async function postInstagramGraphButton({ recipientId, accountId, text, url, title, tag }) {
+async function postInstagramGraphButton({ recipientId, accountId, text, url, title, imageUrl, cardTitle, tag }) {
     const accessToken = await getInstagramGraphAccessToken(accountId);
     if (!accessToken) throw new Error('INSTAGRAM_GRAPH_ACCESS_TOKEN not configured');
     if (!recipientId) throw new Error('Instagram Graph recipient id missing');
@@ -1601,7 +1620,7 @@ async function postInstagramGraphButton({ recipientId, accountId, text, url, tit
             'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify(buildInstagramGraphButtonMessagePayload({ recipientId, text, url, title, tag })),
+        body: JSON.stringify(buildInstagramGraphButtonMessagePayload({ recipientId, text, url, title, imageUrl, cardTitle, tag })),
     });
     const responseText = await res.text();
     let parsed;
@@ -2713,6 +2732,8 @@ exports.handler = async (event) => {
                     text: item.displayText,
                     url: item.url,
                     title: item.title,
+                    imageUrl: item.imageUrl,
+                    cardTitle: item.cardTitle,
                     tag: graphMessageTag,
                 });
                 sendResults.push({
@@ -2723,6 +2744,7 @@ exports.handler = async (event) => {
                     kind: 'link_button',
                     linkUrl: item.url,
                     buttonTitle: item.title,
+                    cardImageUrl: item.imageUrl || null,
                 });
             } else {
                 const r = shouldUseGraph
