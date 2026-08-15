@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v318'; // v318: show real exercise frames before workout videos play
+const CACHE_NAME = 'pbb-app-v319'; // v319: isolate keyboard-open onboarding choices from the input row
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -21,7 +21,7 @@ const ASSETS = [
   './js/dashboard/pbb-app-telemetry.js?v=1',
 './js/dashboard/pbb-deferred-weeklygoals.js?v=31',
   './css/dashboard/pbb-onboarding-comeback.css?v=8',
-  './css/dashboard/pbb-onboarding-foundations.css?v=2',
+  './css/dashboard/pbb-onboarding-foundations.css?v=3',
   './js/dashboard/dashboard-script-7-video_logic.js?v=20260815-exercise-thumbnails',
     './js/dashboard/dashboard-script-10-points_widget_functions.js?v=47',
   './js/dashboard/pbb-deferred-formcheck.js?v=56',
