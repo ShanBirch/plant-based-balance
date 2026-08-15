@@ -7494,7 +7494,7 @@ const finalWizardStep = 19;
 let wizardSlideTransitionTimer = null;
 const wizardSlideTransitionMs = 280;
 let wizardSectionTransitionTimer = null;
-const wizardSectionTransitionMs = 820;
+const wizardSectionTransitionMs = 1550;
 
 function setOnboardingScrollLock(locked) {
     try {
@@ -8649,26 +8649,54 @@ function setWizardChatKeyboardMode(active) {
     if (active) scrollWizardChatToPromptStart();
 }
 
+function syncWizardViewportMetrics() {
+    const wizard = document.getElementById('onboarding-wizard');
+    if (!wizard) return;
+    const visualViewport = window.visualViewport;
+    const viewportHeight = Math.max(
+        320,
+        Math.round(visualViewport?.height || window.innerHeight || document.documentElement.clientHeight || 0)
+    );
+    wizard.style.setProperty('--pbb-wizard-viewport-height', `${viewportHeight}px`);
+
+    const activeElement = document.activeElement;
+    const focusedWizardField = !!(
+        activeElement
+        && wizard.contains(activeElement)
+        && /^(INPUT|TEXTAREA|SELECT)$/.test(activeElement.tagName)
+    );
+    const compactViewport = !!(
+        visualViewport
+        && visualViewport.height < (window.innerHeight * 0.82)
+    );
+    wizard.classList.toggle('wizard-keyboard-open', focusedWizardField || compactViewport);
+    setWizardChatKeyboardMode(
+        wizard.classList.contains('wizard-chat-mode')
+        && ((activeElement && activeElement.id === 'wizard-chat-input') || compactViewport)
+    );
+}
+
 function bindWizardChatViewportEvents() {
     if (wizardChatViewportBound) return;
     wizardChatViewportBound = true;
-    const syncFromViewport = () => {
-        const activeInput = document.activeElement && document.activeElement.id === 'wizard-chat-input';
-        const compactViewport = window.visualViewport && window.visualViewport.height < (window.innerHeight * 0.78);
-        setWizardChatKeyboardMode(activeInput || compactViewport);
-    };
+    const syncFromViewport = () => syncWizardViewportMetrics();
     if (window.visualViewport) {
         window.visualViewport.addEventListener('resize', syncFromViewport);
         window.visualViewport.addEventListener('scroll', syncFromViewport);
     }
+    window.addEventListener('resize', syncFromViewport);
+    window.addEventListener('orientationchange', syncFromViewport);
     document.addEventListener('focusin', event => {
-        if (event.target && event.target.id === 'wizard-chat-input') setWizardChatKeyboardMode(true);
+        if (event.target && event.target.closest && event.target.closest('#onboarding-wizard')) {
+            syncFromViewport();
+        }
     });
     document.addEventListener('focusout', event => {
-        if (event.target && event.target.id === 'wizard-chat-input') {
+        if (event.target && event.target.closest && event.target.closest('#onboarding-wizard')) {
             setTimeout(syncFromViewport, 120);
         }
     });
+    syncFromViewport();
 }
 
 function syncWizardChatBackControls() {
@@ -9724,20 +9752,27 @@ async function checkAndTriggerOnboarding() {
 }
 
 function initOnboardingWizard() {
+    // Guard against multiple simultaneous triggers
+    const modal = document.getElementById('onboarding-wizard');
+    if (!modal) return;
+    if (modal.dataset.launchState || modal.classList.contains('active') || modal.style.display === 'flex') {
+        return false;
+    }
+    modal.dataset.launchState = 'opening';
     if (window._crumb) window._crumb('onboarding_wizard_init');
     if (window.metaAdTrialMode && window.BalanceMetaAdTrial) {
         window.BalanceMetaAdTrial.onOnboardingStarted();
     }
-    // Guard against multiple simultaneous triggers
-    const modal = document.getElementById('onboarding-wizard');
-    if (!modal) return;
     closeOnboardingBlockingSurfaces();
-    if (modal.style.display === 'flex') return; // Already showing
     initWizardKeyboardFlow();
+    syncWizardViewportMetrics();
 
     // Optional pre-onboarding welcome hook. It currently returns false because
     // challenge entry should be explicit, not inferred from a fresh signup.
-    if (typeof maybeShowLpWelcome === 'function' && maybeShowLpWelcome()) return;
+    if (typeof maybeShowLpWelcome === 'function' && maybeShowLpWelcome()) {
+        delete modal.dataset.launchState;
+        return false;
+    }
 
     // Generate ambient particles for wizard dark theme
     const wizardParticles = document.getElementById('wizard-particles');
@@ -9876,8 +9911,10 @@ function initOnboardingWizard() {
         modal.classList.add('active');
         modal.style.display = 'flex';
         modal.style.opacity = '1';
+        modal.dataset.launchState = 'open';
+        syncWizardViewportMetrics();
         updateWizardUI();
-        return;
+        return true;
     }
 
     // Show Fitgotchi story first, then wizard
@@ -9887,6 +9924,8 @@ function initOnboardingWizard() {
         modal.classList.add('active');
         modal.style.display = 'flex';
         modal.style.opacity = '1';
+        modal.dataset.launchState = 'open';
+        syncWizardViewportMetrics();
         updateWizardUI();
     });
 }
@@ -10741,7 +10780,7 @@ function getWizardSectionTransition(step) {
             title: 'Your first week is almost ready',
             copy: 'Joining your profile, training week and meal settings into one clear start.',
             stage: 2,
-            duration: 1160
+            duration: 1950
         }
     };
     return transitions[step] || null;
@@ -10770,7 +10809,7 @@ function playWizardSectionTransition(step, movingBack = false) {
     void transition.offsetWidth;
     transition.classList.add('is-active');
 
-    const duration = wizardPrefersReducedMotion() ? 80 : (config.duration || wizardSectionTransitionMs);
+    const duration = wizardPrefersReducedMotion() ? 700 : (config.duration || wizardSectionTransitionMs);
     wizardSectionTransitionTimer = setTimeout(() => {
         transition.classList.remove('is-active');
         transition.setAttribute('aria-hidden', 'true');
@@ -13637,6 +13676,8 @@ async function finishOnboarding() {
         wizardEl.style.display = 'none';
         wizardEl.style.opacity = '';
         wizardEl.classList.remove('active');
+        wizardEl.classList.remove('wizard-chat-keyboard', 'wizard-keyboard-open');
+        delete wizardEl.dataset.launchState;
     }
     setOnboardingScrollLock(false);
     // Hand off immediately through the retrying client-tour starter. The guided
@@ -13950,6 +13991,8 @@ async function closeWizardManually() {
          wizardEl.style.display = 'none';
          wizardEl.style.opacity = '';
          wizardEl.classList.remove('active');
+         wizardEl.classList.remove('wizard-chat-keyboard', 'wizard-keyboard-open');
+         delete wizardEl.dataset.launchState;
      }
      setOnboardingScrollLock(false);
 
@@ -14014,6 +14057,8 @@ window.resumeMetaAdTrialOnboarding = function() {
     wizardEl.style.display = 'flex';
     wizardEl.style.opacity = '1';
     wizardEl.classList.add('active');
+    wizardEl.dataset.launchState = 'open';
+    syncWizardViewportMetrics();
     setOnboardingScrollLock(true);
     updateWizardUI();
     return true;

@@ -15,6 +15,8 @@
     --foundations-gold-soft: #d8b25e;
     --foundations-line: rgba(138, 90, 18, .24);
     isolation: isolate;
+    height: var(--pbb-wizard-viewport-height, 100dvh) !important;
+    max-height: var(--pbb-wizard-viewport-height, 100dvh) !important;
     overflow: hidden;
     padding: max(12px, env(safe-area-inset-top, 0px)) 12px max(12px, env(safe-area-inset-bottom, 0px)) !important;
     background:
@@ -169,8 +171,15 @@ html[data-pbb-theme="dark"] #onboarding-wizard .onboarding-modal.wizard-containe
 #onboarding-wizard .wizard-content {
     min-height: 0 !important;
     padding: 12px 24px 20px !important;
-    overflow: hidden !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
     overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+}
+
+#onboarding-wizard.wizard-chat-mode .wizard-content {
+    overflow: hidden !important;
 }
 
 #onboarding-wizard .wizard-chat-intake {
@@ -744,8 +753,8 @@ html[data-pbb-theme="dark"] #onboarding-wizard .onboarding-modal.wizard-containe
     html[data-pbb-theme="light"] #onboarding-wizard .onboarding-modal.wizard-container,
     html[data-pbb-theme="dark"] #onboarding-wizard .onboarding-modal.wizard-container {
         width: calc(100vw - 12px) !important;
-        height: calc(100svh - max(12px, env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))) !important;
-        max-height: calc(100svh - max(12px, env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))) !important;
+        height: calc(var(--pbb-wizard-viewport-height, 100dvh) - max(12px, env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))) !important;
+        max-height: calc(var(--pbb-wizard-viewport-height, 100dvh) - max(12px, env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))) !important;
         border-radius: 24px !important;
     }
 
@@ -774,6 +783,56 @@ html[data-pbb-theme="dark"] #onboarding-wizard .onboarding-modal.wizard-containe
     #onboarding-wizard .wizard-chat-choice {
         min-height: 58px !important;
         font-size: 1rem !important;
+    }
+
+    #onboarding-wizard.wizard-chat-mode.wizard-chat-keyboard {
+        padding: 4px 6px !important;
+    }
+
+    #onboarding-wizard.wizard-chat-mode.wizard-chat-keyboard .onboarding-modal.wizard-container {
+        width: calc(100vw - 12px) !important;
+        height: calc(var(--pbb-wizard-viewport-height, 100dvh) - 8px) !important;
+        max-height: calc(var(--pbb-wizard-viewport-height, 100dvh) - 8px) !important;
+        border-radius: 18px !important;
+    }
+
+    #onboarding-wizard.wizard-chat-mode.wizard-chat-keyboard .wizard-header {
+        display: none !important;
+    }
+
+    #onboarding-wizard.wizard-chat-mode.wizard-chat-keyboard .wizard-content {
+        padding: 6px 14px 8px !important;
+    }
+
+    #onboarding-wizard.wizard-chat-mode.wizard-chat-keyboard .wizard-chat-intake {
+        grid-template-rows: auto auto minmax(0, 1fr) auto auto !important;
+        gap: 7px !important;
+        padding-bottom: 0 !important;
+    }
+
+    #onboarding-wizard.wizard-chat-mode.wizard-chat-keyboard .wizard-chat-progress-row {
+        min-height: 32px !important;
+        padding-bottom: 2px !important;
+    }
+
+    #onboarding-wizard.wizard-chat-mode.wizard-chat-keyboard .wizard-chat-messages {
+        min-height: 72px !important;
+        max-height: 34vh !important;
+        padding: 2px 0 4px !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    #onboarding-wizard.wizard-chat-mode.wizard-chat-keyboard .wizard-chat-bubble.coach:last-child {
+        font-size: clamp(1.18rem, 5.5vw, 1.5rem) !important;
+    }
+
+    #onboarding-wizard.wizard-chat-mode.wizard-chat-keyboard .wizard-chat-choices {
+        padding-bottom: 4px !important;
+    }
+
+    #onboarding-wizard.wizard-chat-mode.wizard-chat-keyboard .wizard-chat-input-row {
+        padding-top: 5px !important;
     }
 
     #onboarding-wizard .wizard-section-transition {

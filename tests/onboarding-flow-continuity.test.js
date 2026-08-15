@@ -76,7 +76,7 @@ test('onboarding ships a cache-busted authoritative cream-and-gold skin', () => 
     assert.match(foundationsCss, /#onboarding-wizard \.wizard-chat-bubble\.coach:last-child[\s\S]*?-webkit-text-fill-color: var\(--foundations-ink\) !important;/);
     assert.match(foundationsCss, /@media \(prefers-reduced-motion: reduce\)/);
     assert.match(dashboardSource, /pbb-onboarding-comeback\.css\?v=8/);
-    assert.match(dashboardSource, /pbb-onboarding-foundations\.css\?v=4/);
+    assert.match(dashboardSource, /pbb-onboarding-foundations\.css\?v=5-mobile-viewport/);
 });
 
 test('Foundations gives each real setup section a compact branded transition', () => {
@@ -90,9 +90,9 @@ test('Foundations gives each real setup section a compact branded transition', (
     assert.match(onboardingSource, /4: \{[\s\S]*?Shaping your training week/);
     assert.match(onboardingSource, /7: \{[\s\S]*?TRAINING MAPPED/);
     assert.match(onboardingSource, /19: \{[\s\S]*?BUILDING YOUR BALANCE/);
-    assert.match(onboardingSource, /const wizardSectionTransitionMs = 820/);
-    assert.match(onboardingSource, /duration: 1160/);
-    assert.match(onboardingSource, /wizardPrefersReducedMotion\(\) \? 80/);
+    assert.match(onboardingSource, /const wizardSectionTransitionMs = 1550/);
+    assert.match(onboardingSource, /duration: 1950/);
+    assert.match(onboardingSource, /wizardPrefersReducedMotion\(\) \? 700/);
     assert.match(foundationsCss, /\.wizard-section-transition\.is-active/);
     assert.match(foundationsCss, /foundationsTransitionOrbit/);
 });
@@ -117,4 +117,21 @@ test('long answer lists scroll without overlapping the typed-answer controls', (
     assert.match(onboardingSource, /const allowsTypedAnswer = step\.type === 'multi' \|\| Boolean\(step\.textPlaceholder\);/);
     assert.match(onboardingSource, /inputRow\.style\.display = allowsTypedAnswer \? 'flex' : 'none';/);
     assert.match(onboardingSource, /step\.key === 'routine_window' && parseWizardClockTime\(raw\)/);
+});
+
+test('mobile onboarding follows the visible keyboard viewport and keeps long setup steps scrollable', () => {
+    assert.match(onboardingSource, /function syncWizardViewportMetrics\(\)/);
+    assert.match(onboardingSource, /visualViewport\?\.height \|\| window\.innerHeight/);
+    assert.match(onboardingSource, /--pbb-wizard-viewport-height/);
+    assert.match(foundationsCss, /height: var\(--pbb-wizard-viewport-height, 100dvh\) !important;/);
+    assert.match(foundationsCss, /#onboarding-wizard \.wizard-content[\s\S]*?overflow-y: auto !important;/);
+    assert.match(foundationsCss, /#onboarding-wizard\.wizard-chat-mode \.wizard-content[\s\S]*?overflow: hidden !important;/);
+    assert.match(foundationsCss, /wizard-chat-mode\.wizard-chat-keyboard \.wizard-header[\s\S]*?display: none !important;/);
+});
+
+test('onboarding launch is idempotent until the current wizard closes', () => {
+    assert.match(onboardingSource, /if \(modal\.dataset\.launchState \|\| modal\.classList\.contains\('active'\) \|\| modal\.style\.display === 'flex'\)/);
+    assert.match(onboardingSource, /modal\.dataset\.launchState = 'opening'/);
+    assert.match(onboardingSource, /modal\.dataset\.launchState = 'open'/);
+    assert.match(onboardingSource, /delete wizardEl\.dataset\.launchState/);
 });
