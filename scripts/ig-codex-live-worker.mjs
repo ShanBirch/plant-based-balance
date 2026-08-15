@@ -92,7 +92,7 @@ Fixed offer facts:
 Execution:
 1. Revalidate the supplied codex_live_worker controller claim and the exact live-thread safety gates. A non-blocking style warning must never leave this normal paid lead unanswered.
 2. If a newer inbound arrived, respond to the whole unanswered batch. Draft from this contract, not from an existing generic draft.
-3. Send through the existing approved production send-coach-reply transport with forceText and the manager source, then verify the exact canonical ig_messages readback and complete the controller receipt. If a genuine safety, identity, opt-out, authenticity, manual-control, or transport block exists, route it precisely instead of guessing.
+3. Send through the existing approved production send-coach-reply transport with forceText and the manager source. For every text payload, always send replyTextUtf8Base64 and draftTextUtf8Base64 generated from the final UTF-8 strings; never interpolate the reply directly into a PowerShell, shell, or JavaScript command. If the transport reports outbound_text_encoding_corruption, confirm that no canonical outbound exists and retry once using those Base64 fields. Then verify the exact canonical ig_messages readback and complete the controller receipt. If a genuine safety, identity, opt-out, authenticity, manual-control, or transport block exists, route it precisely instead of guessing.
 4. Record only a concise operator result in this Codex chat.
 
 Keep this Codex chat open while the lead conversation remains active. End your final operator result with exactly one of:
@@ -346,6 +346,27 @@ class SupabaseRest {
             }),
         });
     }
+
+    async actionById(actionId) {
+        const query = new URLSearchParams({
+            select: 'id,status,owner,source_message_id,receipt,updated_at',
+            id: `eq.${actionId}`,
+            limit: '1',
+        });
+        const rows = await this.request(`ig_next_actions?${query.toString()}`);
+        return rows?.[0] || null;
+    }
+
+    async canonicalOutboundsForAlert(alertId, threadId) {
+        const query = new URLSearchParams({
+            select: 'id,created_at,text,alert_id,source',
+            alert_id: `eq.${alertId}`,
+            thread_id: `eq.${threadId}`,
+            direction: 'eq.out',
+            order: 'created_at.asc',
+        });
+        return this.request(`ig_messages?${query.toString()}`);
+    }
 }
 
 function openCodexThread(threadId, logger) {
@@ -484,6 +505,20 @@ async function runAlert({ alert, action, appServer, supabase, state, statePath, 
     if (!turnId) throw new Error('Codex app-server did not return a turn id');
     logger(`started Codex turn ${turnId} for alert ${alert.id}`);
     const completed = await waitForTurn(appServer, { threadId: conversation.codexThreadId, turnId });
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    const [finalAction, canonicalOutbounds] = await Promise.all([
+        supabase.actionById(action.id),
+        supabase.canonicalOutboundsForAlert(alert.id, action.thread_id),
+    ]);
+    const delivered = Array.isArray(canonicalOutbounds) && canonicalOutbounds.length > 0;
+    const actionClosed = ['completed', 'cancelled'].includes(String(finalAction?.status || ''));
+    if (!delivered) {
+        const transportCode = finalAction?.receipt?.transport_code || null;
+        throw new Error(`Codex turn finished without verified Instagram delivery (action=${finalAction?.status || 'missing'}, transport=${transportCode || 'none'}, outbound=${delivered})`);
+    }
+    if (!actionClosed) {
+        logger(`verified Instagram delivery for alert ${alert.id}, but controller readback is ${finalAction?.status || 'missing'}; preserving the no-repeat outbound as authoritative`);
+    }
     const closed = /LIVE_CHAT_STATE:\s*closed\b/i.test(completed.agentText);
     conversation.status = closed ? 'closed' : 'open';
     conversation.lastActivityAt = new Date().toISOString();
@@ -559,7 +594,11 @@ export async function main(argv = process.argv.slice(2)) {
             const alerts = await supabase.pendingAlerts();
             for (const alert of alerts || []) {
                 if (!shouldHandleAlert(alert)) continue;
-                if (state.alerts[alert.id]?.status === 'completed') continue;
+                if (state.alerts[alert.id]?.status === 'completed') {
+                    logger(`rechecking pending alert ${alert.id}; local turn completion is not delivery proof`);
+                    delete state.alerts[alert.id];
+                    saveState(statePath, state);
+                }
                 const igThreadId = String(alert.data.ig_thread_id || alert.data.codex_live_chat_ig_thread_id);
                 if (args.dryRun) {
                     logger(`dry-run eligible alert ${alert.id}, IG thread ${igThreadId}, ${alert.client_name || 'unknown'}`);

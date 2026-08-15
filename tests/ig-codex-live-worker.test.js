@@ -1,4 +1,5 @@
 const assert = require('assert');
+const fs = require('fs');
 const path = require('path');
 const { pathToFileURL } = require('url');
 
@@ -82,6 +83,8 @@ const { pathToFileURL } = require('url');
     assert.match(prompt, /Bec\/Kirsty for shared accountability/);
     assert.match(prompt, /63-second evergreen app video/);
     assert.match(prompt, /codex_live_worker controller claim/);
+    assert.match(prompt, /replyTextUtf8Base64 and draftTextUtf8Base64/);
+    assert.match(prompt, /outbound_text_encoding_corruption/);
     assert.match(prompt, /free personalised look inside the app/);
     assert.match(prompt, /Do not copy their wording/);
     assert.match(prompt, /one AUD 89\.99 payment/);
@@ -91,6 +94,13 @@ const { pathToFileURL } = require('url');
     assert.match(prompt, /alert-1/);
     assert.match(prompt, /action-1/);
     assert.match(prompt, /claim-1/);
+
+    const installer = fs.readFileSync(path.resolve(__dirname, '../scripts/install-ig-codex-live-worker.ps1'), 'utf8');
+    assert.match(installer, /\$watchdogTrigger\s*=\s*New-ScheduledTaskTrigger/);
+    assert.match(installer, /-RepetitionInterval \(New-TimeSpan -Minutes 1\)/);
+    assert.match(installer, /-AllowStartIfOnBatteries/);
+    assert.match(installer, /-DontStopIfGoingOnBatteries/);
+    assert.match(installer, /-Trigger \$triggers/);
 
     console.log('ig Codex live worker tests passed');
 })().catch(error => {

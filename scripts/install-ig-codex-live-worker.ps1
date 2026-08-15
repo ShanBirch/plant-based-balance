@@ -43,9 +43,17 @@ Copy-Item -LiteralPath $sourceWorker -Destination $installedWorker -Force
 
 $arguments = '"{0}" --workspace "{1}" --open-chat' -f $installedWorker, $Workspace
 $action = New-ScheduledTaskAction -Execute $node -Argument $arguments -WorkingDirectory $Workspace
-$trigger = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
+$logonTrigger = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
+$watchdogTrigger = New-ScheduledTaskTrigger `
+    -Once `
+    -At (Get-Date).AddMinutes(1) `
+    -RepetitionInterval (New-TimeSpan -Minutes 1) `
+    -RepetitionDuration (New-TimeSpan -Days 3650)
+$triggers = @($logonTrigger, $watchdogTrigger)
 $settings = New-ScheduledTaskSettingsSet `
     -StartWhenAvailable `
+    -AllowStartIfOnBatteries `
+    -DontStopIfGoingOnBatteries `
     -RestartCount 999 `
     -RestartInterval (New-TimeSpan -Minutes 1) `
     -ExecutionTimeLimit ([TimeSpan]::Zero) `
@@ -54,7 +62,7 @@ $settings = New-ScheduledTaskSettingsSet `
 Register-ScheduledTask `
     -TaskName $taskName `
     -Action $action `
-    -Trigger $trigger `
+    -Trigger $triggers `
     -Settings $settings `
     -Description 'Wakes a persistent Codex chat for explicitly enabled paid IG and Facebook lead conversations.' `
     -Force | Out-Null
