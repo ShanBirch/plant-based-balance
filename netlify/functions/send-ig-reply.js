@@ -1558,8 +1558,7 @@ function resolveApprovedInstagramLinkButton(text = '') {
     const path = parsed.pathname;
     const approved = (host === 'plantbased-balance.org' && (
         /^\/p\/[A-Za-z0-9_-]+\/?$/.test(path)
-        || /^\/founders(?:\/[A-Za-z0-9_-]{6,100})?\/?$/.test(path)
-        || /^\/(?:plant-based-fitness\.html|meta-app-preview\.html|login\.html|book)\/?$/.test(path)
+        || /^\/(?:founders|plant-based-fitness\.html|meta-app-preview\.html|login\.html|book)\/?$/.test(path)
     )) || (host === 'future-balance.netlify.app' && /^\/(?:fitness|fitness-coaching\.html)\/?$/.test(path));
     if (!approved) return null;
 
@@ -1574,9 +1573,7 @@ function resolveApprovedInstagramLinkButton(text = '') {
         displayText,
         title: /^\/p\//.test(path) || path === '/meta-app-preview.html'
             ? 'Open your preview'
-            : /^\/founders(?:\/|$)/.test(path)
-                ? 'Sign up for Balance'
-                : 'Open Balance',
+            : 'Open Balance',
     };
 }
 

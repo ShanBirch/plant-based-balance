@@ -111,16 +111,11 @@ test('approved Balance links become native Instagram buttons without a visible r
     assert.deepEqual(link, {
         url: 'https://plantbased-balance.org/founders',
         displayText: 'Here you go, download Balance here',
-        title: 'Sign up for Balance',
+        title: 'Open Balance',
     });
     const preview = resolveApprovedInstagramLinkButton('Your free preview is ready: https://plantbased-balance.org/p/Abc_123-xyz');
     assert.equal(preview.title, 'Open your preview');
     assert.equal(preview.displayText, 'Your free preview is ready');
-    const attributedSignup = resolveApprovedInstagramLinkButton('Yep, here you go. You can sign up for Balance Foundations here: https://plantbased-balance.org/founders/ww2iergd5h3');
-    assert.equal(attributedSignup.url, 'https://plantbased-balance.org/founders/ww2iergd5h3');
-    assert.equal(attributedSignup.title, 'Sign up for Balance');
-    assert.equal(attributedSignup.displayText, 'Yep, here you go. You can sign up for Balance Foundations here');
-    assert.doesNotMatch(attributedSignup.displayText, /https:\/\//);
     assert.equal(resolveApprovedInstagramLinkButton('Try https://example.com/unsafe'), null);
 
     const payload = buildInstagramGraphButtonMessagePayload({
@@ -2290,7 +2285,7 @@ test.skip('legacy deterministic conversational stages retired in favour of the l
     assert.doesNotMatch(broad.joined, /plant[ -]?based|vegan|vegetarian/i);
 });
 
-test('Instagram split offer bubbles turn a short Yes into the promised signup handoff', () => {
+test('Instagram split offer bubbles still turn a short Yes into the promised app preview', () => {
     const splitInstagramOfferAcceptance = buildDeterministicPaidMetaConversationReply({
         currentMessage: 'Yes',
         qualifier: {
@@ -2332,7 +2327,7 @@ test('Instagram split offer bubbles turn a short Yes into the promised signup ha
     assert.equal(approval?.required, false);
     assert.equal(approval?.code, 'approved_meta_ad_sales_progression');
 
-    const liveVideoSignupAcceptance = buildDeterministicPaidMetaConversationReply({
+    const liveVideoPreviewAcceptance = buildDeterministicPaidMetaConversationReply({
         currentMessage: 'Yes plz show me',
         qualifier: {
             commercial_stage: 'engaged',
@@ -2347,33 +2342,12 @@ test('Instagram split offer bubbles turn a short Yes into the promised signup ha
             { direction: 'out', text: 'Yep, here it is. Once you’ve watched it, do you want me to set up a free personalised look at your own workout and meal plan?' },
         ],
         flowVariant: 'plant_based_control',
-        checkoutUrl: 'https://plantbased-balance.org/founders/ww2iergd5h3',
         appPreviewUrl: 'https://plantbased-balance.org/p/Abc_123-xyz9876543210',
     });
-    assert.equal(liveVideoSignupAcceptance.replyMode, 'campaign_buyer_handoff');
-    assert.equal(liveVideoSignupAcceptance.appPreviewHandoff, undefined);
-    assert.match(liveVideoSignupAcceptance.joined, /sign up for Balance Foundations/i);
-    assert.match(liveVideoSignupAcceptance.joined, /plantbased-balance\.org\/founders\/ww2iergd5h3/);
-    assert.doesNotMatch(liveVideoSignupAcceptance.joined, /plantbased-balance\.org\/p\//);
-    assert.equal((liveVideoSignupAcceptance.joined.match(/\?/g) || []).length, 0);
-    const liveSignupApproval = buildPaidMetaConversationApproval({
-        metaAdConversationFastLane: true,
-        draft: liveVideoSignupAcceptance,
-        currentMessage: 'Yes plz show me',
-        linkedUserId: null,
-        qualifier: {
-            commercial_stage: 'engaged',
-            facts: {
-                current_state: 'Wants to lose 5kgs.',
-                history_blockers: "Doesn't know how to eat.",
-            },
-        },
-        history: [
-            { direction: 'out', text: 'Yep, here it is. Once you’ve watched it, do you want me to set up a free personalised look at your own workout and meal plan?' },
-        ],
-    });
-    assert.equal(liveSignupApproval?.required, false);
-    assert.equal(liveSignupApproval?.code, 'approved_meta_ad_conversation_buyer_handoff');
+    assert.equal(liveVideoPreviewAcceptance.replyMode, 'campaign_app_preview_handoff');
+    assert.equal(liveVideoPreviewAcceptance.appPreviewHandoff, true);
+    assert.match(liveVideoPreviewAcceptance.joined, /plantbased-balance\.org\/p\/Abc_123-xyz9876543210/);
+    assert.equal((liveVideoPreviewAcceptance.joined.match(/\?/g) || []).length, 0);
 });
 
 test('plant-based requirement and ready prompts receive different next steps', () => {
