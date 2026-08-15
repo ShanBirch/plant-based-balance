@@ -48,9 +48,9 @@ test('DM drafting knowledge knows all active packages and routes personalised co
     const guide = buildAppNavigationGuideBlock();
 
     assert.match(guide, /App \+ Community, AU\$19\.99\/month/i);
-    assert.match(guide, /Starter Coaching, AU\$29\.99\/week/i);
+    assert.match(guide, /Online Coaching.+AU\$29\.99.+AU\$49\.99.+AU\$74\.99/i);
     assert.match(guide, /Coaching \+ Calls, AU\$99\.99\/week/i);
-    assert.match(guide, /personalised, individual, one-to-one or weekly plan adjustment usually fits Starter Coaching/i);
+    assert.match(guide, /personalised, individual, one-to-one or weekly plan adjustment usually fits Online Coaching/i);
     assert.match(guide, /regular calls, deeper live support.+fits Coaching \+ Calls/i);
     assert.match(guide, /coaching\.html/);
     assert.match(guide, /Balance Foundations Founders Pass, AU\$89\.99 once/i);

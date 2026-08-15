@@ -3286,7 +3286,7 @@ BALANCE FOUNDERS PASS LINK:
     return `
 
 BALANCE PLANT-BASED FITNESS FOUNDERS PASS LINK:
-- The primary DM offer is the Balance Foundations Founders Pass: one AUD $89.99 payment for a fixed six-week course, six weeks of app/community access and one weekly check-in plus workout/food review and adjustments. It does not auto-renew. Starter Coaching is the ongoing individual progression option after Foundations or from day one. The normal path is explanation, acceptance, and checkout inside DMs.
+- The primary DM offer is the Balance Foundations Founders Pass: one AUD $89.99 payment for a fixed six-week course, six weeks of app/community access and one weekly check-in plus workout/food review and adjustments. It does not auto-renew. Online Coaching is the ongoing individual progression option after Foundations or from day one. The normal path is explanation, acceptance, and checkout inside DMs.
 - Approved Founders Pass link: ${approvedCheckoutUrl}
 ${attributionRule}
 - When the latest message asks for the offer link/details, asks how to start, clearly accepts the offer, or replies positively to Shannon's direct Founders Pass/details invite, send the approved link in the draft.

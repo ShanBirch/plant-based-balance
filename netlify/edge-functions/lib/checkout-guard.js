@@ -60,20 +60,63 @@ export function assertAcceptedCheckoutTerms(compliance) {
 }
 
 export function assertStarterCoachingPlan(priceId) {
-    if (priceId !== "balance_starter_coaching_weekly") {
+    const onlineCoachingPlans = new Set([
+        "balance_online_coaching_6_month_weekly",
+        "balance_online_coaching_3_month_weekly",
+        "balance_online_coaching_month_to_month_weekly",
+    ]);
+    if (!onlineCoachingPlans.has(priceId)) {
         throw new CheckoutGuardError("Invalid checkout plan.", 400);
     }
 }
 
 const BALANCE_CHECKOUT_PLANS = Object.freeze({
-    balance_starter_coaching_weekly: Object.freeze({
-        token: "balance_starter_coaching_weekly",
-        productName: "Balance Starter Coaching",
-        productDescription: "Online coaching with one weekly check-in from Shannon",
+    balance_online_coaching_6_month_weekly: Object.freeze({
+        token: "balance_online_coaching_6_month_weekly",
+        productName: "Balance Online Coaching, 6 Month",
+        productDescription: "Weekly online coaching with a 26-week initial minimum",
         unitAmount: 2999,
         interval: "week",
-        balanceProduct: "balance_starter_coaching",
-        balancePlan: "starter_weekly",
+        balanceProduct: "balance_online_coaching",
+        balancePlan: "online_coaching_6_month",
+        commitmentWeeks: 26,
+        commitmentLabel: "6-month initial term",
+        renewalTerms: "continues_weekly_until_cancelled",
+        checkoutDisclosure: "AU$29.99 is billed weekly for an initial minimum of 26 weeks. After that, coaching continues weekly at the same rate until cancelled.",
+        checkinsPerWeek: "1",
+        callsPerWeek: "0",
+        allowBump: true,
+        mode: "subscription",
+    }),
+    balance_online_coaching_3_month_weekly: Object.freeze({
+        token: "balance_online_coaching_3_month_weekly",
+        productName: "Balance Online Coaching, 3 Month",
+        productDescription: "Weekly online coaching with a 13-week initial minimum",
+        unitAmount: 4999,
+        interval: "week",
+        balanceProduct: "balance_online_coaching",
+        balancePlan: "online_coaching_3_month",
+        commitmentWeeks: 13,
+        commitmentLabel: "3-month initial term",
+        renewalTerms: "continues_weekly_until_cancelled",
+        checkoutDisclosure: "AU$49.99 is billed weekly for an initial minimum of 13 weeks. After that, coaching continues weekly at the same rate until cancelled.",
+        checkinsPerWeek: "1",
+        callsPerWeek: "0",
+        allowBump: true,
+        mode: "subscription",
+    }),
+    balance_online_coaching_month_to_month_weekly: Object.freeze({
+        token: "balance_online_coaching_month_to_month_weekly",
+        productName: "Balance Online Coaching, Month-to-Month",
+        productDescription: "Weekly online coaching with a four-week initial minimum",
+        unitAmount: 7499,
+        interval: "week",
+        balanceProduct: "balance_online_coaching",
+        balancePlan: "online_coaching_month_to_month",
+        commitmentWeeks: 4,
+        commitmentLabel: "month-to-month, 4-week initial term",
+        renewalTerms: "continues_weekly_until_cancelled",
+        checkoutDisclosure: "AU$74.99 is billed weekly for an initial minimum of four weeks. After that, coaching continues weekly and can be cancelled before the next weekly charge.",
         checkinsPerWeek: "1",
         callsPerWeek: "0",
         allowBump: true,

@@ -45,7 +45,7 @@ export default async (request, context) => {
 
         const stripe = new Stripe(STRIPE_SECRET_KEY, {
             httpClient: Stripe.createFetchHttpClient(),
-            apiVersion: "2026-02-25.clover",
+            apiVersion: "2026-06-24.dahlia",
         });
 
         const finalValue = plan.unitAmount / 100;
@@ -83,6 +83,9 @@ export default async (request, context) => {
                 checkout_email: checkoutEmail,
                 balance_product: plan.balanceProduct,
                 balance_plan: plan.balancePlan,
+                commitment_weeks: String(plan.commitmentWeeks || ""),
+                commitment_label: plan.commitmentLabel || "",
+                renewal_terms: plan.renewalTerms || "",
                 checkins_per_week: plan.checkinsPerWeek,
                 calls_per_week: plan.callsPerWeek,
                 ...stripeComplianceMetadata
@@ -112,6 +115,9 @@ export default async (request, context) => {
                 checkout_email: checkoutEmail,
                 balance_product: plan.balanceProduct,
                 balance_plan: plan.balancePlan,
+                commitment_weeks: String(plan.commitmentWeeks || ""),
+                commitment_label: plan.commitmentLabel || "",
+                renewal_terms: plan.renewalTerms || "",
                 checkins_per_week: plan.checkinsPerWeek,
                 calls_per_week: plan.callsPerWeek,
                 price_token: priceId || "",
@@ -120,7 +126,7 @@ export default async (request, context) => {
             expand: ['latest_invoice.payment_intent'],
         };
 
-        // No trial on the starter offer: the first weekly coaching payment is due today.
+        // No trial: the selected plan's first recurring payment is due today.
 
         const subscription = await stripe.subscriptions.create(subscriptionData);
 

@@ -135,7 +135,7 @@ const MILESTONES = [
         windowMs: 35 * 24 * 60 * 60 * 1000,
         requiredPlan: 'balance_foundations_six_week',
         requiresNeedsYou: true,
-        instructions: `This is the personal week-five review for a Balance Foundations member. Recognise specific progress, name the strongest useful pattern Shannon has seen, and set one clear focus for the final week. Do not sell yet. Ask one short question that helps Shannon decide whether self-directed app access or ongoing Starter Coaching will suit them after week six.`,
+        instructions: `This is the personal week-five review for a Balance Foundations member. Recognise specific progress, name the strongest useful pattern Shannon has seen, and set one clear focus for the final week. Do not sell yet. Ask one short question that helps Shannon decide whether self-directed app access or ongoing Online Coaching will suit them after week six.`,
     },
     {
         days: 42,
@@ -147,7 +147,7 @@ const MILESTONES = [
         windowMs: 42 * 24 * 60 * 60 * 1000,
         requiredPlan: 'balance_foundations_six_week',
         requiresNeedsYou: true,
-        instructions: `This is the end of their included six-week Balance Foundations block. Celebrate specific progress and briefly explain that the included course access and weekly support are ending. Recommend ONE next step based on their behaviour: App + Community at AUD $19.99/month if they are ready to continue self-directed, or Starter Coaching at AUD $29.99/week if they want Shannon to keep reviewing and adjusting their plan weekly. Keep it personal and low pressure. Do not imply automatic renewal.`,
+        instructions: `This is the end of their included six-week Balance Foundations block. Celebrate specific progress and briefly explain that the included course access and weekly support are ending. Recommend ONE next step based on their behaviour: App + Community at AUD $19.99/month if they are ready to continue self-directed, or Online Coaching if they want Shannon to keep reviewing and adjusting their plan weekly. Online Coaching is AUD $29.99/week for six months, AUD $49.99/week for three months, or AUD $74.99/week month-to-month. Keep it personal and low pressure. Do not imply automatic renewal.`,
     },
 ];
 

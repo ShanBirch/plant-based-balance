@@ -1,11 +1,11 @@
 import Stripe from "stripe";
 import { sendCAPIEvent } from "./lib/capi-utils.js";
 
-const STRIPE_API_VERSION = "2026-02-25.clover";
+const STRIPE_API_VERSION = "2026-06-24.dahlia";
 const ACTIVE_SUBSCRIPTION_STATUSES = new Set(["active", "trialing"]);
 const BALANCE_ADMIN_EMAIL = "shannonbirch@cocospersonaltraining.com";
 const SITE_URL = Deno.env.get("URL") || "https://plantbased-balance.org";
-const STARTER_COACHING_PRODUCT = "Balance Starter Coaching";
+const ONLINE_COACHING_PRODUCT = "Balance Online Coaching";
 const APP_COMMUNITY_PRODUCT = "Balance App + Community";
 const COACHING_CALLS_PRODUCT = "Balance Coaching + Calls";
 const FOUNDERS_PASS_PRODUCT = "Balance Foundations Founders Pass";
@@ -37,10 +37,28 @@ function subscriptionOfferDetails(plan) {
             needsYouReason: "coaching_calls_sale",
         };
     }
+    const onlineCoachingTerms = {
+        online_coaching_6_month: { label: "6 Month", commitmentWeeks: 26 },
+        online_coaching_3_month: { label: "3 Month", commitmentWeeks: 13 },
+        online_coaching_month_to_month: { label: "Month-to-Month", commitmentWeeks: 4 },
+    };
+    const onlineCoaching = onlineCoachingTerms[plan];
+    if (onlineCoaching) {
+        return {
+            productName: `${ONLINE_COACHING_PRODUCT}, ${onlineCoaching.label}`,
+            subtype: "online_coaching_sale",
+            recurringInterval: "week",
+            commitmentWeeks: onlineCoaching.commitmentWeeks,
+            checkinsPerWeek: "1",
+            callsPerWeek: "0",
+            needsYouReason: "online_coaching_sale",
+        };
+    }
     return {
-        productName: STARTER_COACHING_PRODUCT,
+        productName: ONLINE_COACHING_PRODUCT,
         subtype: "starter_coaching_sale",
         recurringInterval: "week",
+        commitmentWeeks: 0,
         checkinsPerWeek: "1",
         callsPerWeek: "0",
         needsYouReason: "starter_coaching_sale",
@@ -469,6 +487,9 @@ async function syncStripeSubscriptionToBalance(stripe, stripeEvent, { subscripti
         last_event_type: stripeEvent.type,
         raw_summary: {
             customer_email: email || null,
+            commitment_weeks: Number(metadata.commitment_weeks || 0) || null,
+            commitment_label: cleanString(metadata.commitment_label, 100) || null,
+            renewal_terms: cleanString(metadata.renewal_terms, 100) || null,
             billing_reason: invoice?.billing_reason || null,
             collection_method: subscription.collection_method || invoice?.collection_method || null,
             invoice_status: invoice?.status || null,
@@ -545,7 +566,7 @@ function buildSubscriptionSaleAlert({ adminId, syncResult, stripeEvent, subscrip
         alert_type: "subscription_sale",
         priority: "urgent",
         title: `New sale: ${clientName}`,
-        description: `${clientName} bought ${offer.productName} (${amountDisplay}/${offer.recurringInterval}).`,
+        description: `${clientName} bought ${offer.productName} (${amountDisplay}/${offer.recurringInterval}${offer.commitmentWeeks ? `, ${offer.commitmentWeeks}-week initial term` : ""}).`,
         suggested_message: null,
         status: "pending",
         data: {
@@ -556,6 +577,7 @@ function buildSubscriptionSaleAlert({ adminId, syncResult, stripeEvent, subscrip
             amount_display: amountDisplay,
             currency,
             recurring_interval: offer.recurringInterval,
+            commitment_weeks: offer.commitmentWeeks || null,
             checkins_per_week: offer.checkinsPerWeek,
             calls_per_week: offer.callsPerWeek,
             email: email || null,

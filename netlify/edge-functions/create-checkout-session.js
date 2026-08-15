@@ -6,10 +6,17 @@ import {
     getBalanceCheckoutPlan,
 } from "./lib/checkout-guard.js";
 
-const STRIPE_API_VERSION = "2026-02-25.clover";
+const STRIPE_API_VERSION = "2026-06-24.dahlia";
+
+function buildIntegrationIdentifier() {
+    const bytes = new Uint8Array(8);
+    crypto.getRandomValues(bytes);
+    const suffix = Array.from(bytes, byte => String.fromCharCode(97 + (byte % 26))).join("");
+    return `balance_checkout_${suffix}`;
+}
 
 function safeReturnPath(value, fallback) {
-    const allowed = new Set(["/plant-based-fitness.html", "/fitness-coaching.html", "/dashboard.html"]);
+    const allowed = new Set(["/plant-based-fitness.html", "/fitness-coaching.html", "/coaching.html", "/dashboard.html"]);
     if (allowed.has(value)) return value;
     if (/^\/(?:founders|fitness)(?:\/[0-9a-z]+)?\/?$/i.test(String(value || ""))) return value;
     return fallback;
@@ -26,6 +33,7 @@ function appendMetadata(params, prefix, metadata) {
 async function createStripeCheckoutSession(secretKey, checkout) {
     const params = new URLSearchParams();
     params.set("mode", checkout.plan.mode);
+    params.set("integration_identifier", buildIntegrationIdentifier());
     if (checkout.customerEmail) params.set("customer_email", checkout.customerEmail);
 
     params.set("line_items[0][price_data][currency]", "aud");
@@ -34,6 +42,9 @@ async function createStripeCheckoutSession(secretKey, checkout) {
     params.set("line_items[0][price_data][unit_amount]", String(checkout.plan.unitAmount));
     if (checkout.plan.mode === "subscription") {
         params.set("line_items[0][price_data][recurring][interval]", checkout.plan.interval);
+        if (checkout.plan.checkoutDisclosure) {
+            params.set("custom_text[submit][message]", checkout.plan.checkoutDisclosure);
+        }
     }
     params.set("line_items[0][quantity]", "1");
 
@@ -102,6 +113,9 @@ export default async (request, context) => {
                 checkout_email: checkoutEmail,
                 balance_product: plan.balanceProduct,
                 balance_plan: plan.balancePlan,
+                commitment_weeks: String(plan.commitmentWeeks || ""),
+                commitment_label: plan.commitmentLabel || "",
+                renewal_terms: plan.renewalTerms || "",
                 checkins_per_week: plan.checkinsPerWeek,
                 calls_per_week: plan.callsPerWeek,
                 ...stripeComplianceMetadata,
@@ -123,11 +137,14 @@ export default async (request, context) => {
             subscriptionMetadata: subscriptionData.metadata,
             paymentMetadata: purchaseMetadata,
             successUrl: checkoutOrigin + `/success.html?session_id={CHECKOUT_SESSION_ID}&plan=${encodeURIComponent(plan.balancePlan)}&amount=${(plan.unitAmount / 100).toFixed(2)}&bump=${bump && plan.allowBump ? "true" : "false"}${isMetaAdTrialCheckout ? "&source=meta_ad_trial_paid" : ""}`,
-            cancelUrl: checkoutOrigin + (isMetaAdTrialCheckout ? "/dashboard.html" : plan.balancePlan === "balance_foundations_six_week" ? `${cancelPath}#join` : "/plantbasedswitch.html"),
+            cancelUrl: checkoutOrigin + (isMetaAdTrialCheckout ? "/dashboard.html" : plan.balancePlan === "balance_foundations_six_week" ? `${cancelPath}#join` : "/coaching.html#plan-checkout"),
             metadata: {
                 checkout_email: checkoutEmail,
                 balance_product: plan.balanceProduct,
                 balance_plan: plan.balancePlan,
+                commitment_weeks: String(plan.commitmentWeeks || ""),
+                commitment_label: plan.commitmentLabel || "",
+                renewal_terms: plan.renewalTerms || "",
                 checkins_per_week: plan.checkinsPerWeek,
                 calls_per_week: plan.callsPerWeek,
                 price_token: priceId || "",

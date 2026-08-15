@@ -15,6 +15,14 @@ assert(
     guard.includes('assertAcceptedCheckoutTerms') &&
     guard.includes('assertStarterCoachingPlan') &&
     guard.includes('getBalanceCheckoutPlan') &&
+    guard.includes('balance_online_coaching_6_month_weekly') &&
+    guard.includes('balance_online_coaching_3_month_weekly') &&
+    guard.includes('balance_online_coaching_month_to_month_weekly') &&
+    guard.includes('commitmentWeeks: 26') &&
+    guard.includes('commitmentWeeks: 13') &&
+    guard.includes('commitmentWeeks: 4') &&
+    guard.includes('unitAmount: 4999') &&
+    guard.includes('unitAmount: 7499') &&
     guard.includes('balance_app_community_monthly') &&
     guard.includes('unitAmount: 1999') &&
     guard.includes('interval: "month"') &&
@@ -36,7 +44,11 @@ assert(
     checkoutSession.includes('const plan = getBalanceCheckoutPlan(priceId);') &&
     checkoutSession.includes('checkout.plan.unitAmount') &&
     checkoutSession.includes('params.set("mode", checkout.plan.mode)') &&
+    checkoutSession.includes('2026-06-24.dahlia') &&
+    checkoutSession.includes('params.set("integration_identifier", buildIntegrationIdentifier())') &&
     checkoutSession.includes('payment_intent_data[metadata]') &&
+    checkoutSession.includes('custom_text[submit][message]') &&
+    checkoutSession.includes('commitment_weeks: String(plan.commitmentWeeks || "")') &&
     checkoutSession.includes('calls_per_week: plan.callsPerWeek') &&
     checkoutSession.includes('customerEmail: checkoutEmail') &&
     checkoutSession.includes('checkoutSource === "meta_ad_trial"') &&
@@ -63,6 +75,9 @@ assert(
 
 assert(
     checkout.includes("'app-monthly': { amount: 1999, label: 'Balance App + Community', successPlan: 'app_community_monthly' }") &&
+    checkout.includes("'coaching-6-month': { amount: 2999, label: 'Balance Online Coaching, 6 Month', successPlan: 'online_coaching_6_month' }") &&
+    checkout.includes("'coaching-3-month': { amount: 4999, label: 'Balance Online Coaching, 3 Month', successPlan: 'online_coaching_3_month' }") &&
+    checkout.includes("'coaching-month-to-month': { amount: 7499, label: 'Balance Online Coaching, Month-to-Month', successPlan: 'online_coaching_month_to_month' }") &&
     checkout.includes("'coaching-calls': { amount: 9999, label: 'Balance Coaching + Calls', successPlan: 'coaching_calls_weekly' }") &&
     checkout.includes("'founders-pass': { amount: 8999, label: 'Balance Foundations Founders Pass', successPlan: 'balance_foundations_six_week' }") &&
     checkout.includes("walletAvailable && btn.dataset.hostedCheckoutOnly !== 'true' && !isBumpChecked") &&
@@ -76,6 +91,10 @@ assert(
     webhook.includes('patchUsersForSubscription(payload, { patchByEmail: isActive })') &&
     webhook.includes('mirrored without user/status side effects') &&
     webhook.includes('function subscriptionOfferDetails(plan)') &&
+    webhook.includes('online_coaching_6_month') &&
+    webhook.includes('online_coaching_3_month') &&
+    webhook.includes('online_coaching_month_to_month') &&
+    webhook.includes('commitment_weeks: offer.commitmentWeeks || null') &&
     webhook.includes('app_community_monthly') &&
     webhook.includes('checkinsPerWeek: "0"') &&
     webhook.includes('coaching_calls_weekly') &&

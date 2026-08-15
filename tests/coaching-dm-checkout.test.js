@@ -34,6 +34,14 @@ test('DM coaching page goes directly to hosted Stripe Checkout', () => {
     assert.match(coaching, /data-plan="coaching-calls"/);
     assert.match(checkout, /'coaching-calls': 'balance_coaching_calls_weekly'/);
     assert.match(coaching, /\$99\.99<span>\/week<\/span>/);
+    assert.match(coaching, /data-plan="coaching-6-month"/);
+    assert.match(coaching, /data-plan="coaching-3-month"/);
+    assert.match(coaching, /data-plan="coaching-month-to-month"/);
+    assert.match(checkout, /'coaching-6-month': 'balance_online_coaching_6_month_weekly'/);
+    assert.match(checkout, /'coaching-3-month': 'balance_online_coaching_3_month_weekly'/);
+    assert.match(checkout, /'coaching-month-to-month': 'balance_online_coaching_month_to_month_weekly'/);
+    assert.match(checkout, /website checkout required/);
+    assert.doesNotMatch(checkout, /window\.purchaseSubscription/);
 });
 
 test('What I Offer presents the Founders Pass as the primary offer', () => {
@@ -41,7 +49,10 @@ test('What I Offer presents the Founders Pass as the primary offer', () => {
     assert.match(coaching, /one weekly check-in, workout and food review/i);
     assert.match(coaching, /No auto-renewal/i);
     assert.match(coaching, /href="plant-based-fitness\.html#join">Get the Founders Pass<\/a>/);
-    assert.match(coaching, /Starter Coaching is AU\$29\.99 per week for ongoing individual progression/i);
+    assert.match(coaching, /online coaching starts at AU\$29\.99 per week/i);
+    assert.match(coaching, /\$29\.99<span>\/week<\/span>[\s\S]*26-week initial minimum/);
+    assert.match(coaching, /\$49\.99<span>\/week<\/span>[\s\S]*13-week initial minimum/);
+    assert.match(coaching, /\$74\.99<span>\/week<\/span>[\s\S]*four-week initial minimum/);
     assert.doesNotMatch(coaching, /The main offer is AUD \$29\.99\/week/);
 });
 
@@ -180,7 +191,7 @@ test('website sales chat uses the working OpenAI provider and shared compatibili
     assert.match(salesBot, /callOpenAIGeminiCompat/);
     assert.match(salesBot, /profile:\s*"coach_fallback"/);
     assert.match(salesBot, /Personalized\/personalised coaching plan/);
-    assert.match(salesBot, /means Starter Coaching at AUD \$29\.99\/week/);
+    assert.match(salesBot, /means Online Coaching with the three commitment options/);
     assert.match(salesBot, /Do not lead with Founders Pass/);
     assert.doesNotMatch(salesBot, /generativelanguage\.googleapis\.com/);
     assert.doesNotMatch(salesBot, /GEMINI_API_KEY/);

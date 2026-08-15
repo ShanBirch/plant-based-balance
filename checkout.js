@@ -7,10 +7,10 @@ console.log(`
 
 document.addEventListener('DOMContentLoaded', () => {
     const LEGAL_DOCUMENT_VERSIONS = {
-        terms: '2026-05-19',
-        privacy: '2026-05-19',
-        client_agreement: '2026-05-19',
-        refund_policy: '2026-05-19'
+        terms: '2026-08-16',
+        privacy: '2026-07-18',
+        client_agreement: '2026-08-16',
+        refund_policy: '2026-08-16'
     };
 
     const getComplianceSessionId = () => {
@@ -98,70 +98,21 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Referral code stored:', referralCode);
     }
 
-    // ─── Native App Store / Play Store: use IAP ────────────────────────
+    // These public offer pages use website-only plan tokens. Do not map them
+    // onto the legacy native subscription product, which has different terms.
     const isNative = window.Platform && window.Platform.isNative();
 
     if (isNative) {
-        console.log('[Checkout] Native platform detected - using In-App Purchase');
-
-        // Initialize IAP
-        if (window.NativeIAP) {
-            window.NativeIAP.initialize();
-        }
-
-        // Override checkout buttons for native IAP
+        console.log('[Checkout] Native platform detected - website checkout required');
         const checkoutButtons = document.querySelectorAll('.checkout-btn');
         checkoutButtons.forEach(btn => {
-            // Update button label for native
-            const plan = btn.getAttribute('data-plan');
-            if (plan === '6-month' || plan === '1-month') {
-                btn.innerHTML = `START COACHING <br/> <span style="font-size:0.8em; font-weight: 700;">Subscribe via ${window.Platform.isIOS() ? 'App Store' : 'Play Store'}</span>`;
-            }
-
-            btn.addEventListener('click', async (e) => {
+            btn.addEventListener('click', (e) => {
                 e.preventDefault();
-
-                // CHECK TERMS FIRST
-                const termsBox = document.getElementById('terms-checkbox');
-                if (termsBox && !termsBox.checked) {
-                    alert("Please agree to the Terms, Privacy Policy, Client Agreement and Refund Policy to proceed.");
-                    const container = document.getElementById('checkout-terms-container');
-                    if(container) {
-                        container.style.border = "2px solid #ef4444";
-                        container.style.background = "#fef2f2";
-                        container.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        setTimeout(() => {
-                            container.style.border = "1px solid #e2e8f0";
-                            container.style.background = "#f8fafc";
-                        }, 3000);
-                    }
-                    return;
-                }
-
-                await recordComplianceEvent('native_checkout_attempt', {
-                    plan_key: plan,
-                    metadata: {
-                        platform: window.Platform.isIOS() ? 'ios' : 'android'
-                    }
-                });
-
-                btn.innerText = "Loading...";
-                try {
-                    const result = await window.purchaseSubscription();
-                    if (result && !result.cancelled) {
-                        window.location.href = '/success.html?amount=29.99&source=iap';
-                    } else if (result && result.cancelled) {
-                        btn.innerHTML = `START COACHING <br/> <span style="font-size:0.8em; font-weight: 700;">Subscribe via ${window.Platform.isIOS() ? 'App Store' : 'Play Store'}</span>`;
-                    }
-                } catch (err) {
-                    console.error("IAP Error:", err);
-                    alert("Purchase failed. Please try again.");
-                    btn.innerText = "Try Again";
-                }
+                alert("Please open plantbased-balance.org/coaching.html in Safari or Chrome to choose and purchase a website plan.");
             });
         });
 
-        return; // Skip all Stripe setup on native
+        return;
     }
 
     // ─── Web (website download): use Stripe ────────────────────────────
@@ -182,16 +133,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // Hosted Checkout creates the selected recurring price server-side.
     // Keep a truthy plan token here so legacy client-side checks still pass.
     const PRICES = {
-        '1-month': 'balance_starter_coaching_weekly',
+        'coaching-6-month': 'balance_online_coaching_6_month_weekly',
+        'coaching-3-month': 'balance_online_coaching_3_month_weekly',
+        'coaching-month-to-month': 'balance_online_coaching_month_to_month_weekly',
         'app-monthly': 'balance_app_community_monthly',
         'coaching-calls': 'balance_coaching_calls_weekly',
         'founders-pass': 'balance_vegan_founders_pass'
     };
 
     // 4. One-Click Payment Logic (Apple Pay / Google Pay)
-    // Flat Pricing - no discount complexity
+    // The online coaching rate is tied to the selected initial commitment.
     const PLAN_DETAILS = {
-        '1-month': { amount: 2999, label: 'Balance Starter Coaching', successPlan: 'starter_weekly' },
+        'coaching-6-month': { amount: 2999, label: 'Balance Online Coaching, 6 Month', successPlan: 'online_coaching_6_month' },
+        'coaching-3-month': { amount: 4999, label: 'Balance Online Coaching, 3 Month', successPlan: 'online_coaching_3_month' },
+        'coaching-month-to-month': { amount: 7499, label: 'Balance Online Coaching, Month-to-Month', successPlan: 'online_coaching_month_to_month' },
         'app-monthly': { amount: 1999, label: 'Balance App + Community', successPlan: 'app_community_monthly' },
         'coaching-calls': { amount: 9999, label: 'Balance Coaching + Calls', successPlan: 'coaching_calls_weekly' },
         'founders-pass': { amount: 8999, label: 'Balance Foundations Founders Pass', successPlan: 'balance_foundations_six_week' }
@@ -272,7 +227,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    let currentSelectedPlan = '1-month';
+    let currentSelectedPlan = 'coaching-6-month';
     let walletAvailable = false;
 
     // Check Availability
@@ -294,12 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     walletLabel = "G-Pay";
                 }
 
-                // Keep wallet labels aligned with the current paid weekly offer.
-                if (plan === '6-month') {
-                     btn.innerHTML = `START COACHING <br/> <span style="font-size:0.8em; font-weight: 700;">via ${walletLabel}</span>`;
-                } else {
-                     btn.innerHTML = `START COACHING <br/> <span style="font-size:0.8em; font-weight: 700;">Pay with ${walletLabel}</span>`;
-                }
+                btn.innerHTML = `START COACHING <br/> <span style="font-size:0.8em; font-weight: 700;">Pay with ${walletLabel}</span>`;
             });
         }
     });
@@ -376,7 +326,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const priceId = PRICES[plan];
             if (!priceId) return;
 
-            // Referrals are tracked, but the starter coaching offer charges today.
+            // Referrals are tracked, and the selected plan's first payment is due today.
             const urlParams = new URLSearchParams(window.location.search);
             const referralCode = checkoutReferralCode || urlParams.get('ref') || sessionStorage.getItem('referralCode');
             btn.innerText = "Launching Checkout...";

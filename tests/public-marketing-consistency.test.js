@@ -49,7 +49,11 @@ test('offer facts agree across marketing and legal pages', () => {
     }
 
     assert.match(agreement, /does not include instant replies, unlimited daily one-to-one access or live calls/i);
-    assert.match(coaching, /Starter Coaching.*\$29\.99 \/week/s);
+    assert.match(coaching, /6-Month Coaching.*\$29\.99 \/week/s);
+    assert.match(coaching, /3-Month Coaching.*\$49\.99 \/week/s);
+    assert.match(coaching, /Month-to-Month Coaching.*\$74\.99 \/week/s);
+    assert.match(terms, /26 weekly payments at AU\$29\.99/);
+    assert.match(refunds, /26-week, 13-week or four-week initial minimum/);
     assert.match(terms, /Balance Foundations Founders Pass/);
     assert.match(refunds, /Founders Pass is a one-time purchase/);
     assert.match(founders, /BALANCE FOUNDATIONS AU\$89\.99 COMPLETE 6-WEEK CURRICULUM WEEKLY COACHING REVIEW/);
