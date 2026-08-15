@@ -11059,9 +11059,9 @@ function applyGenderTheme() {
         // Reset DBZ theme if female user has it selected (male-only themes)
         const currentTheme = localStorage.getItem('userThemePreference');
         if (currentTheme && currentTheme.startsWith('dbz-')) {
-            localStorage.setItem('userThemePreference', 'default');
+            localStorage.setItem('userThemePreference', 'light');
             if (typeof applyAppTheme === 'function') {
-                applyAppTheme('default');
+                applyAppTheme('light');
             }
         }
     }
@@ -11137,7 +11137,7 @@ function applyGenderSpecificUI() {
     // Show/hide DBZ character decorations based on theme and gender
     const dbzDecorations = document.getElementById('dbz-decorations');
     if (dbzDecorations) {
-        const currentTheme = localStorage.getItem('userThemePreference') || 'default';
+        const currentTheme = localStorage.getItem('userThemePreference') || 'light';
         const isDbzTheme = currentTheme.startsWith('dbz-');
         dbzDecorations.style.display = (isMale && isDbzTheme) ? 'block' : 'none';
     }

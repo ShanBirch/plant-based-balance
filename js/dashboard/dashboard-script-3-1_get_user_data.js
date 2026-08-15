@@ -419,7 +419,7 @@
                 // Apply saved theme AFTER gender is loaded from database
                 _crumb('applyTheme_start');
                 try {
-                    const savedTheme = localStorage.getItem('userThemePreference') || 'default';
+                const savedTheme = localStorage.getItem('userThemePreference') === 'dark' ? 'dark' : 'light';
                     if (typeof applyAppTheme === 'function') {
                         applyAppTheme(savedTheme);
                     }

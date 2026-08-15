@@ -222,16 +222,16 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
 <!-- CRITICAL: Early theme application to prevent flash of default theme -->
 <script>
 (function() {
-    // Immediately apply saved theme from localStorage before page renders
+    // Light is the launch default. Only the explicit `dark` value opts into dark mode.
+    // The legacy `default` value used to mean dark even when the user never chose it,
+    // so migrate it once to light rather than reopening the app in dark mode.
     var storedTheme = localStorage.getItem('userThemePreference');
-    var onboardingPending = localStorage.getItem('onboardingComplete') !== 'true';
-    var savedTheme = storedTheme || (onboardingPending ? 'light' : 'default');
-    if (!storedTheme && onboardingPending) localStorage.setItem('userThemePreference', 'light');
-    savedTheme = savedTheme === 'light' ? 'light' : 'default';
-    document.documentElement.setAttribute('data-pbb-theme', savedTheme === 'light' ? 'light' : 'dark');
+    var savedTheme = storedTheme === 'dark' ? 'dark' : 'light';
+    if (storedTheme !== savedTheme) localStorage.setItem('userThemePreference', savedTheme);
+    document.documentElement.setAttribute('data-pbb-theme', savedTheme);
     document.documentElement.classList.toggle('pbb-theme-light', savedTheme === 'light');
-    document.documentElement.classList.toggle('pbb-theme-dark', savedTheme !== 'light');
-    if (savedTheme === 'default') return; // Dark mode is already in CSS
+    document.documentElement.classList.toggle('pbb-theme-dark', savedTheme === 'dark');
+    if (savedTheme === 'dark') return; // Dark mode is already in CSS
 
     // Compact theme map: keys = CSS var names, stored as a flat string per theme.
     // Only the ACTIVE theme is parsed — avoids allocating 16 objects on iOS.
@@ -446,7 +446,7 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
 </script>
 
 <!-- Supabase & Auth Guard -->
-<script src="js/dashboard/script_part_2.js?v=13"></script>
+<script src="js/dashboard/script_part_2.js?v=14-light-launch"></script>
 <script>
 // ── Native OAuth warm-start callback (non-iOS) ────────────────────
 // On iOS this is set up inside the deferred chain above (after supabaseClient exists).
@@ -598,7 +598,7 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
 <!-- Outfit font combined into main Google Fonts request in <head> -->
 
 <!-- Early stub definitions to prevent "undefined" errors before main scripts load -->
-<script src="js/dashboard/script_part_4.js?v=theme-toggle-shell-v1"></script>
+<script src="js/dashboard/script_part_4.js?v=theme-toggle-shell-v2"></script>
 
 <link rel="stylesheet" href="css/dashboard/dashboard-style-1.css?v=67">
 <link rel="stylesheet" href="css/dashboard/pbb-social-journey.css?v=17">
@@ -2988,7 +2988,7 @@ if (window._pbbIsIOSSafari) {
     function _doLoadScript3() {
         if(window._crumb)window._crumb('script3_loading');
         var s = document.createElement('script');
-        s.src = 'js/dashboard/dashboard-script-3-1_get_user_data.js?v=58';
+    s.src = 'js/dashboard/dashboard-script-3-1_get_user_data.js?v=59-light-launch';
         document.head.appendChild(s);
     }
     if (window._pbbAuthIsReady) {
@@ -2999,7 +2999,7 @@ if (window._pbbIsIOSSafari) {
         }, { once: true });
     }
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-3-1_get_user_data.js?v=58"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-3-1_get_user_data.js?v=59-light-launch"><\/script>');
 }
 </script>
 
@@ -12566,13 +12566,13 @@ if(!window._pbbIsIOSSafari) {
                   <div style="padding:15px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
                       <div>Color Theme</div>
                       <select id="theme-selector" onchange="applyAppTheme(this.value)" style="border:1px solid #e2e8f0; padding:5px 10px; border-radius:8px; color:var(--primary); font-weight:600; outline:none; background:transparent; font-family: 'Inter', sans-serif; cursor: pointer;">
-                         <option value="default">Dark Mode</option>
+                         <option value="dark">Dark Mode</option>
                          <option value="light">Light Mode</option>
                      </select>
                      <script>
                          // Initialize theme selector with saved value immediately
                          (function() {
-                             var savedTheme = localStorage.getItem('userThemePreference') === 'light' ? 'light' : 'default';
+                             var savedTheme = localStorage.getItem('userThemePreference') === 'dark' ? 'dark' : 'light';
                              var selector = document.getElementById('theme-selector');
                              if (selector) selector.value = savedTheme;
                          })();
@@ -13099,7 +13099,7 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=184-exercise-thumbnails';
+s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=185-exercise-thumbnails-light-launch';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
@@ -13141,7 +13141,7 @@ if (window._pbbIsIOSSafari) {
         var s = document.createElement('script');
         s.async = false;
         s.dataset.metaTrialLoader = String(attempt);
-        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=184-exercise-thumbnails&meta_retry=' + attempt;
+        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=185-exercise-thumbnails-light-launch&meta_retry=' + attempt;
         s.onload = function() {
             if (window._pbbScript5Complete && window._switchAppTabReady && typeof window._switchAppTabReal === 'function') {
                 sessionStorage.removeItem('pbb_meta_script5_recovery_v1');
@@ -13160,7 +13160,7 @@ if (window._pbbIsIOSSafari) {
         document.head.appendChild(s);
     })(0);
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=184-exercise-thumbnails"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=185-exercise-thumbnails-light-launch"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=3"></script>
@@ -16665,13 +16665,13 @@ if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=40';
+    s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=41-light-launch';
             s.onload = function() { if(window._crumb)window._crumb('script6_deferred_loaded'); };
             document.head.appendChild(s);
         }, 2000);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=40"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=41-light-launch"><\/script>');
 }
 </script>
 

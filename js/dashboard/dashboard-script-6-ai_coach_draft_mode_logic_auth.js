@@ -10666,8 +10666,8 @@ function createFallingFlowerAnimation() {
 }
 
 async function _applyAppThemeRealImpl(themeKey) {
-    themeKey = themeKey === 'light' ? 'light' : 'default';
-    const theme = APP_THEMES[themeKey];
+    themeKey = themeKey === 'dark' ? 'dark' : 'light';
+    const theme = APP_THEMES[themeKey === 'dark' ? 'default' : 'light'];
     if(!theme) return;
     document.documentElement.setAttribute('data-pbb-theme', themeKey === 'light' ? 'light' : 'dark');
     document.documentElement.classList.toggle('pbb-theme-light', themeKey === 'light');
@@ -10682,25 +10682,25 @@ async function _applyAppThemeRealImpl(themeKey) {
     const isFemale = !isMale;
     if ((theme.maleOnly && !isMale) || (theme.femaleOnly && !isFemale)) {
         // User trying to use gender-restricted theme - fall back to default
-        themeKey = 'default';
-        const defaultTheme = APP_THEMES['default'];
-        for (const [key, value] of Object.entries(defaultTheme.colors)) {
+        themeKey = 'light';
+        const fallbackTheme = APP_THEMES['light'];
+        for (const [key, value] of Object.entries(fallbackTheme.colors)) {
             document.documentElement.style.setProperty(key, value);
         }
         // Skip localStorage and DB writes in admin view-as mode
         if (!window.isAdminViewing) {
-            localStorage.setItem('userThemePreference', 'default');
+            localStorage.setItem('userThemePreference', 'light');
             if (window.currentUser?.id && typeof dbHelpers !== 'undefined') {
                 try {
-                    await dbHelpers.users.update(window.currentUser.id, { theme_preference: 'default' });
-                    console.log("Theme preference saved to DB: default");
+                    await dbHelpers.users.update(window.currentUser.id, { theme_preference: 'light' });
+                    console.log("Theme preference saved to DB: light");
                 } catch (e) {
                     console.warn("Failed to save theme preference to DB:", e);
                 }
             }
         }
         const selector = document.getElementById('theme-selector');
-        if(selector) selector.value = 'default';
+        if(selector) selector.value = 'light';
         return;
     }
 
@@ -10834,8 +10834,8 @@ applyAppTheme = _applyAppThemeRealImpl;
 
 // Reusable function to toggle settings icon and profile icon based on current theme
 function updateSettingsIcon() {
-    const savedThemeRaw = localStorage.getItem('userThemePreference') || 'default';
-    const savedTheme = (savedThemeRaw === 'light' || document.documentElement.getAttribute('data-pbb-theme') === 'light') ? 'light' : 'default';
+    const savedThemeRaw = localStorage.getItem('userThemePreference') || 'light';
+    const savedTheme = (savedThemeRaw === 'dark' && document.documentElement.getAttribute('data-pbb-theme') !== 'light') ? 'dark' : 'light';
     const isDbzTheme = savedTheme.startsWith('dbz-');
     const isSailorMoonTheme = savedTheme.startsWith('sailor-');
     const isLightTheme = savedTheme === 'light';

@@ -48,7 +48,7 @@ async function applyAppTheme(themeKey) {
         return await _applyAppThemeReal(themeKey);
     }
 
-    themeKey = themeKey === 'light' ? 'light' : 'default';
+    themeKey = themeKey === 'dark' ? 'dark' : 'light';
     var isLightTheme = themeKey === 'light';
     document.documentElement.setAttribute('data-pbb-theme', isLightTheme ? 'light' : 'dark');
     document.documentElement.classList.toggle('pbb-theme-light', isLightTheme);

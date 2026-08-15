@@ -23,10 +23,12 @@
                     document.documentElement.setAttribute('data-pbb-theme', forcedTheme);
                     return;
                 }
-                var savedTheme = localStorage.getItem('userThemePreference') || 'default';
-                document.documentElement.setAttribute('data-pbb-theme', savedTheme === 'light' ? 'light' : 'dark');
+                var storedTheme = localStorage.getItem('userThemePreference');
+                var savedTheme = storedTheme === 'dark' ? 'dark' : 'light';
+                if (storedTheme !== savedTheme) localStorage.setItem('userThemePreference', savedTheme);
+                document.documentElement.setAttribute('data-pbb-theme', savedTheme);
             } catch (_) {
-                document.documentElement.setAttribute('data-pbb-theme', 'dark');
+                document.documentElement.setAttribute('data-pbb-theme', 'light');
             }
         })();
     </script>
