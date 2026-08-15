@@ -340,6 +340,16 @@ class SupabaseRest {
         return Array.isArray(rows) ? rows[0] || null : rows;
     }
 
+    async recoverPendingNoSendAction(threadId, alertId) {
+        return this.request('rpc/route_paid_meta_live_codex_action', {
+            method: 'POST',
+            body: JSON.stringify({
+                p_thread_id: threadId,
+                p_alert_id: alertId,
+            }),
+        });
+    }
+
     async mergeAlertData(alertId, patch) {
         const rows = await this.request(`coach_alerts?select=id,data&id=eq.${encodeURIComponent(alertId)}&limit=1`);
         if (!rows?.[0]) return null;
@@ -735,7 +745,14 @@ export async function main(argv = process.argv.slice(2)) {
                     continue;
                 }
                 const runId = `codex-live:${process.pid}:${Date.now()}`;
-                const action = await supabase.claimThread(igThreadId, runId);
+                let action = await supabase.claimThread(igThreadId, runId);
+                if (!action) {
+                    const recovered = await supabase.recoverPendingNoSendAction(igThreadId, alert.id);
+                    if (recovered?.id) {
+                        logger(`recovered pending no-send action ${recovered.id} for alert ${alert.id}`);
+                        action = await supabase.claimThread(igThreadId, runId);
+                    }
+                }
                 if (!action) {
                     logger(`no codex_live_worker claim available for alert ${alert.id}; it may still be routing or already handled`);
                     continue;

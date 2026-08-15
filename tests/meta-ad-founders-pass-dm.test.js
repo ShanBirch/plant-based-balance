@@ -2026,6 +2026,24 @@ test.skip('legacy deterministic conversational stages retired in favour of the l
         contextReview: { required: false },
     }).reviewer_model, 'deterministic-paid-meta-conversation-approval');
 
+    const emotionalEatingBlocker = buildDeterministicPaidMetaConversationReply({
+        currentMessage: "I'm an emotional eater for sure\nAnd having chocolate around",
+        qualifier: {
+            commercial_stage: 'problem_qualified',
+            facts: { current_state: 'Wants to lose 15 kilos.', history_blockers: null },
+        },
+        history: [
+            { direction: 'in', text: 'I want to lose 15 kilos' },
+            { direction: 'out', text: "For the 15 kilos, what's been the biggest thing getting in the way lately?" },
+        ],
+        flowVariant: 'plant_based_control',
+    });
+    assert.ok(emotionalEatingBlocker, 'emotional eating and food availability are concrete blockers');
+    assert.match(emotionalEatingBlocker.joined, /six-week Foundations course/i);
+    assert.match(emotionalEatingBlocker.joined, /plant-based meal plan/i);
+    assert.equal((emotionalEatingBlocker.joined.match(/\?/g) || []).length, 1,
+        'the blocker turn must progress with one consent question rather than a statement-only stall');
+
     const voiceBlocker = buildDeterministicPaidMetaConversationReply({
         currentMessage: 'I feel like I just stop and start again. So many times',
         qualifier: blockerQualifier,

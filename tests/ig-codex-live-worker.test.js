@@ -155,6 +155,10 @@ const { pathToFileURL } = require('url');
     assert.match(prompt, /claim-1/);
 
     const installer = fs.readFileSync(path.resolve(__dirname, '../scripts/install-ig-codex-live-worker.ps1'), 'utf8');
+    const workerSource = fs.readFileSync(workerPath, 'utf8');
+    assert.match(workerSource, /async recoverPendingNoSendAction\(threadId, alertId\)/);
+    assert.match(workerSource, /recovered pending no-send action/);
+    assert.match(workerSource, /route_paid_meta_live_codex_action/);
     assert.match(installer, /\$watchdogTrigger\s*=\s*New-ScheduledTaskTrigger/);
     assert.match(installer, /-RepetitionInterval \(New-TimeSpan -Minutes 1\)/);
     assert.match(installer, /-AllowStartIfOnBatteries/);
