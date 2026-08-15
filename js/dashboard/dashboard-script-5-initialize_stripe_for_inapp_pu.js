@@ -9537,11 +9537,17 @@ async function checkAndTriggerOnboarding() {
         }
     }
 
-    // Check if user has completed onboarding before (localStorage)
+    // Check if this guest or authenticated account has completed onboarding.
+    // A browser-level flag from a guest preview or another account must never
+    // skip setup for a newly created member.
     const onboardingComplete = localStorage.getItem('onboardingComplete');
+    const activeOnboardingOwnerId = window.currentUser && (window.currentUser.id || window.currentUser.user_id) || null;
+    const storedOnboardingOwnerId = localStorage.getItem('pbb_onboarding_owner_user_id');
+    const onboardingFlagBelongsToActiveUser = !activeOnboardingOwnerId
+        || storedOnboardingOwnerId === String(activeOnboardingOwnerId);
 
     // SELF-HEALING: Even if localStorage says complete, verify cycle data exists for females
-    if (onboardingComplete === 'true') {
+    if (onboardingComplete === 'true' && onboardingFlagBelongsToActiveUser) {
         const userGender = getActiveUserGender();
         if (userGender === 'female') {
             // Check if cycle data exists in localStorage
@@ -9610,12 +9616,12 @@ async function checkAndTriggerOnboarding() {
     }
 
     // Check if essential quiz data exists in sessionStorage
-    const quizJson = sessionStorage.getItem('userProfile');
+    const scopedQuizProfile = readSessionProfileForActiveUser();
     let hasEssentialData = false;
 
-    if (quizJson) {
+    if (scopedQuizProfile) {
         try {
-            const quizData = JSON.parse(quizJson);
+            const quizData = scopedQuizProfile;
             // Check for essential fields
             hasEssentialData = quizData.age && quizData.weight && quizData.height &&
                              quizData.sex && quizData.equipment_access &&
@@ -12145,6 +12151,59 @@ function startWizardClientActivationTour(attempt = 0, options = {}) {
 }
 window.startWizardClientActivationTour = startWizardClientActivationTour;
 
+function startWizardMetaPreviewTour(attempt = 0, options = {}) {
+    if (!window.metaAdTrialMode || (window.__balanceMetaPreviewTourStarted && !options.restart)) return;
+
+    if (attempt === 0) {
+        try { window.trackBalanceActivity('meta_preview_tour_handoff_started', { source: 'onboarding' }, { immediate:true }); } catch(e) {}
+        if (window.__balanceMetaPreviewTourQueued && !options.restart) return;
+        window.__balanceMetaPreviewTourQueued = true;
+        window.__balanceMetaPreviewTourStarted = false;
+    }
+
+    const wizard = document.getElementById('onboarding-wizard');
+    const wizardStillOpen = wizard && (wizard.classList.contains('active') || wizard.style.display === 'flex');
+    if (wizardStillOpen) {
+        if (attempt < 120) {
+            setTimeout(() => startWizardMetaPreviewTour(attempt + 1, options), 150);
+        } else {
+            window.__balanceMetaPreviewTourQueued = false;
+            try { window.trackBalanceActivity('meta_preview_tour_handoff_failed', { reason: 'onboarding_stayed_open', attempts: attempt }, { immediate:true }); } catch(e) {}
+            console.warn('Meta preview tour could not start because onboarding stayed open.');
+        }
+        return;
+    }
+
+    ensureGuidedFeatureTourRuntime();
+    const start = window.startFeatureTour;
+    if (typeof start === 'function') {
+        try {
+            localStorage.removeItem('featureTourComplete');
+            start(false, { metaPreview: true });
+
+            const overlay = document.getElementById('guided-tour-overlay');
+            if (overlay && overlay.classList.contains('active')) {
+                window.__balanceMetaPreviewTourStarted = true;
+                window.__balanceMetaPreviewTourQueued = false;
+                return;
+            }
+        } catch (error) {
+            try { window.trackBalanceActivity('meta_preview_tour_handoff_failed', { reason: 'tour_start_exception', error_name: error && error.name || 'error', attempts: attempt }, { immediate:true }); } catch(e) {}
+            console.warn('Meta preview tour start failed:', error);
+        }
+    }
+
+    window.__balanceMetaPreviewTourStarted = false;
+    if (attempt < 120) {
+        setTimeout(() => startWizardMetaPreviewTour(attempt + 1, options), 150);
+    } else {
+        window.__balanceMetaPreviewTourQueued = false;
+        try { window.trackBalanceActivity('meta_preview_tour_handoff_failed', { reason: 'tour_runtime_not_ready', attempts: attempt }, { immediate:true }); } catch(e) {}
+        console.warn('Meta preview tour was not ready after onboarding.');
+    }
+}
+window.startWizardMetaPreviewTour = startWizardMetaPreviewTour;
+
 function waitForWizardClientTourToFinish(callback, attempt = 0) {
     const tourIsBusy = window.__balanceGuidedTourActive || window.__balanceClientActivationTourQueued;
     if (tourIsBusy && attempt < 240) {
@@ -13473,7 +13532,13 @@ async function finishOnboarding() {
     // Hand off immediately through the retrying client-tour starter. The guided
     // tour script and its dashboard targets may finish mounting just after the
     // wizard closes, so a single delayed attempt is not reliable.
-    if (!window.metaAdTrialMode) {
+    if (window.metaAdTrialMode) {
+        // Start orientation as soon as the wizard closes. Meal-plan preparation
+        // continues below and the Nutrition tour step also retries it. Keeping
+        // this handoff behind unrelated async persistence can leave a guest on
+        // Home with "Finish your guided tour" but no tour visible.
+        setTimeout(() => startWizardMetaPreviewTour(), 80);
+    } else {
         setTimeout(() => startWizardClientActivationTour(), 350);
     }
 
@@ -13697,20 +13762,6 @@ async function finishOnboarding() {
     // Nutrition, while a generation failure still allows onboarding to finish.
     const initialMealPlan = await ensureInitialOnboardingMealPlan();
     console.log('[onboarding] initial meal plan state:', initialMealPlan.status);
-
-    // The paid Meta preview gets a deliberately short, tailored walkthrough.
-    // Its five-minute clock begins only after this tour closes, so setup and
-    // orientation never consume the person's actual look-around time.
-    if (window.metaAdTrialMode === true) {
-        setTimeout(() => {
-            try {
-                if (typeof startFeatureTour === 'function') {
-                    try { localStorage.removeItem('featureTourComplete'); } catch(e){}
-                    startFeatureTour(false, { metaPreview: true });
-                }
-            } catch (e) { console.warn('Meta preview walkthrough failed:', e); }
-        }, 450);
-    }
 
     // Mark onboarding complete in the database so it persists across browsers/sessions
     if (window.currentUser) {

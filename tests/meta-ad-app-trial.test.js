@@ -240,7 +240,10 @@ test('dashboard, signup, native handoffs, measurement, and both discovery system
     assert.match(dashboard, /id="meta-ad-trial-gate"/);
     assert.match(auth, /requestedMetaAdTrial/);
     assert.match(onboarding, /BalanceMetaAdTrial\.onOnboardingComplete\(\)/);
-    assert.match(onboarding, /startFeatureTour\(false, \{ metaPreview: true \}\)/);
+    assert.match(onboarding, /function startWizardMetaPreviewTour/);
+    assert.match(onboarding, /setTimeout\(\(\) => startWizardMetaPreviewTour\(\), 80\)/);
+    assert.match(onboarding, /start\(false, \{ metaPreview: true \}\)/);
+    assert.match(onboarding, /const scopedQuizProfile = readSessionProfileForActiveUser\(\)/);
     assert.match(onboarding, /window\.ensureMetaPreviewMealPlan = ensureMetaPreviewMealPlan/);
     assert.match(onboarding, /data-meal-plan-photo="true"/);
     assert.match(onboarding, /BalanceMetaAdTrial\.hasPendingClaim\(\)/);
@@ -251,6 +254,8 @@ test('dashboard, signup, native handoffs, measurement, and both discovery system
     assert.match(onboarding, /workout_calendar_times: calendarTimes/);
     assert.match(login, /applyMetaAdTrialHandoffCopy/);
     assert.match(login, /claimPendingMetaTrialPurchase/);
+    assert.match(login, /preservePaidPreview/);
+    assert.match(login, /pbb_onboarding_owner_user_id/);
     assert.match(login, /claim-founders-pass/);
     assert.match(login, /meta_ad_trial_paid/);
     assert.match(success, /Taking you straight back to Balance now/);

@@ -1194,6 +1194,31 @@
 
                 const newUserId = signupResult.user?.id;
 
+                // A normal signup must not inherit browser-level onboarding
+                // flags or guest answers from somebody who previously used this
+                // device. Preserve them only for the explicit paid-preview
+                // handoff, where checkout has already created a claim receipt.
+                if (newUserId) {
+                    const pendingPreviewSessionId = window.BalanceMetaAdTrial
+                        ? sessionStorage.getItem(window.BalanceMetaAdTrial.PAYMENT_SESSION_KEY) || ''
+                        : '';
+                    const preservePaidPreview = Boolean(pendingPreviewSessionId);
+                    const onboardingOwnerId = localStorage.getItem('pbb_onboarding_owner_user_id');
+                    if (!preservePaidPreview && onboardingOwnerId !== String(newUserId)) {
+                        [
+                            'onboardingComplete',
+                            'plantbased_onboarding_complete',
+                            'onboardingCompletedAt',
+                            'featureTourComplete',
+                            'pbbSocialJourneyStarted'
+                        ].forEach(function (key) { localStorage.removeItem(key); });
+                        sessionStorage.removeItem('userProfile');
+                        sessionStorage.removeItem('userResult');
+                        sessionStorage.removeItem('pbb_profile_owner_user_id');
+                    }
+                    localStorage.setItem('pbb_onboarding_owner_user_id', String(newUserId));
+                }
+
                 // If there's a referral code and signup was successful, process the referral
                 if (referralCode && newUserId) {
                     try {
@@ -1270,6 +1295,11 @@
 
                 await claimPendingFoundersPass(signupResult.session);
                 await claimPendingMetaTrialPurchase(signupResult.session);
+
+                try {
+                    sessionStorage.removeItem('guestMode');
+                    sessionStorage.removeItem('guestBannerDismissed');
+                } catch (e) {}
 
                 showSuccess('Account created! Logging you in...');
 
