@@ -1196,7 +1196,7 @@ function hasRecentPaidMetaSupportQuestion(history = []) {
         .slice(-4)
         .some(item => {
             const text = String(item?.text || '');
-            return /\b(?:would (?:having me|that kind of support)|would that help|accountability help|help you stay on track|make it easier|are you keen to (?:have|take) a look|would you like to (?:have|take) a look|want me to send you (?:access|the link)|want to (?:have|take) a look|should i send (?:you )?(?:access|the link)|is that something you(?:'d| would) want)\b/i.test(text)
+            return /\b(?:would (?:having me|that kind of support)|would that help|accountability help|help you stay on track|make it easier|are you keen to (?:have|take) a look|would you like to (?:have|take) a look|(?:do you )?want me to (?:set up|create|put together)\b[^?\n]{0,120}\b(?:look|preview)|want me to send you (?:access|the link)|want to (?:have|take) a look|should i send (?:you )?(?:access|the link)|is that something you(?:'d| would) want)\b/i.test(text)
                 || (/\b(?:six|6)[- ]week\b/i.test(text)
                     && /\b(?:meal plan|workout|training program)\b/i.test(text)
                     && /\b(?:send|access|look|link)\b[^?\n]{0,100}\?/i.test(text))

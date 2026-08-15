@@ -2326,6 +2326,28 @@ test('Instagram split offer bubbles still turn a short Yes into the promised app
     });
     assert.equal(approval?.required, false);
     assert.equal(approval?.code, 'approved_meta_ad_sales_progression');
+
+    const liveVideoPreviewAcceptance = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'Yes plz show me',
+        qualifier: {
+            commercial_stage: 'engaged',
+            facts: {
+                current_state: 'Wants to lose 5kgs.',
+                history_blockers: "Doesn't know how to eat.",
+            },
+        },
+        history: [
+            { direction: 'in', text: "Umm I don't know how to eat!" },
+            { direction: 'out', text: '[VIDEO:https://plantbased-balance.org/assets/balance-foundations-app-proof-v2.mp4]' },
+            { direction: 'out', text: 'Yep, here it is. Once you’ve watched it, do you want me to set up a free personalised look at your own workout and meal plan?' },
+        ],
+        flowVariant: 'plant_based_control',
+        appPreviewUrl: 'https://plantbased-balance.org/p/Abc_123-xyz9876543210',
+    });
+    assert.equal(liveVideoPreviewAcceptance.replyMode, 'campaign_app_preview_handoff');
+    assert.equal(liveVideoPreviewAcceptance.appPreviewHandoff, true);
+    assert.match(liveVideoPreviewAcceptance.joined, /plantbased-balance\.org\/p\/Abc_123-xyz9876543210/);
+    assert.equal((liveVideoPreviewAcceptance.joined.match(/\?/g) || []).length, 0);
 });
 
 test('plant-based requirement and ready prompts receive different next steps', () => {
