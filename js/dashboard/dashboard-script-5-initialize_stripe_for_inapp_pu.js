@@ -8730,10 +8730,10 @@ function renderWizardChatControls() {
         return;
     }
 
-    setWizardChatLayoutMode({ noTextbox: false, intro: false });
-
     if (step.type === 'choice' || step.type === 'multi') {
-        inputRow.style.display = 'flex';
+        const allowsTypedAnswer = step.type === 'multi' || Boolean(step.textPlaceholder);
+        setWizardChatLayoutMode({ noTextbox: !allowsTypedAnswer, intro: false });
+        inputRow.style.display = allowsTypedAnswer ? 'flex' : 'none';
         input.type = 'text';
         input.inputMode = 'text';
         input.placeholder = step.textPlaceholder || 'Or type your answer...';
@@ -8761,6 +8761,7 @@ function renderWizardChatControls() {
         return;
     }
 
+    setWizardChatLayoutMode({ noTextbox: false, intro: false });
     inputRow.style.display = 'flex';
     input.type = step.type === 'number' ? 'number' : 'text';
     input.inputMode = step.type === 'number' ? 'decimal' : 'text';
@@ -8976,6 +8977,11 @@ function submitWizardChatAnswer() {
         const value = wizardChatOptionFromText(step, raw);
         if (!raw) {
             showInputError('Choose or type an answer.');
+            return;
+        }
+        if (step.key === 'routine_window' && parseWizardClockTime(raw)) {
+            wizardChatFreeformAnswers[step.key] = raw;
+            advanceWizardChat(step, 'flexible', raw);
             return;
         }
         if (!value) {

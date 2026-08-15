@@ -74,5 +74,14 @@ test('onboarding ships a cache-busted authoritative cream-and-gold skin', () => 
     assert.match(foundationsCss, /#onboarding-wizard \.wizard-chat-bubble\.coach:last-child[\s\S]*?-webkit-text-fill-color: var\(--foundations-ink\) !important;/);
     assert.match(foundationsCss, /@media \(prefers-reduced-motion: reduce\)/);
     assert.match(dashboardSource, /pbb-onboarding-comeback\.css\?v=8/);
-    assert.match(dashboardSource, /pbb-onboarding-foundations\.css\?v=1/);
+    assert.match(dashboardSource, /pbb-onboarding-foundations\.css\?v=2/);
+});
+
+test('long answer lists scroll without overlapping the typed-answer controls', () => {
+    assert.match(foundationsCss, /grid-template-rows: auto auto minmax\(0, 1fr\) auto auto !important;/);
+    assert.match(foundationsCss, /#onboarding-wizard \.wizard-chat-choices[\s\S]*?overflow-y: auto !important;/);
+    assert.match(foundationsCss, /#onboarding-wizard\.wizard-chat-no-textbox \.wizard-chat-choices[\s\S]*?overflow-y: auto !important;/);
+    assert.match(onboardingSource, /const allowsTypedAnswer = step\.type === 'multi' \|\| Boolean\(step\.textPlaceholder\);/);
+    assert.match(onboardingSource, /inputRow\.style\.display = allowsTypedAnswer \? 'flex' : 'none';/);
+    assert.match(onboardingSource, /step\.key === 'routine_window' && parseWizardClockTime\(raw\)/);
 });

@@ -165,14 +165,19 @@ html[data-pbb-theme="dark"] #onboarding-wizard .onboarding-modal.wizard-containe
 #onboarding-wizard .wizard-content {
     min-height: 0 !important;
     padding: 12px 24px 20px !important;
+    overflow: hidden !important;
     overscroll-behavior: contain;
 }
 
 #onboarding-wizard .wizard-chat-intake {
-    min-height: 100% !important;
+    display: grid !important;
+    grid-template-rows: auto auto minmax(0, 1fr) auto auto !important;
+    height: 100% !important;
+    min-height: 0 !important;
     justify-content: flex-start !important;
     gap: 14px !important;
     padding: 4px 0 8px !important;
+    overflow: hidden !important;
 }
 
 #onboarding-wizard .wizard-chat-progress-row {
@@ -240,8 +245,31 @@ html[data-pbb-theme="dark"] #onboarding-wizard .onboarding-modal.wizard-containe
     gap: 10px !important;
     min-height: 0 !important;
     max-height: none !important;
-    padding: 2px 1px 10px !important;
-    overflow: visible !important;
+    padding: 2px 5px 16px 1px !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(138, 90, 18, .35) transparent;
+}
+
+#onboarding-wizard.wizard-chat-no-textbox .wizard-chat-choices {
+    height: 100% !important;
+    max-height: none !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    padding-bottom: 16px !important;
+}
+
+#onboarding-wizard .wizard-chat-input-row {
+    position: relative;
+    z-index: 2;
+    flex: 0 0 auto !important;
+    margin-top: 0 !important;
+    padding-top: 8px !important;
+    border-top: 1px solid rgba(138, 90, 18, .18) !important;
+    background: linear-gradient(180deg, rgba(255, 250, 242, .72), var(--foundations-cream) 34%) !important;
 }
 
 #onboarding-wizard .wizard-chat-choice {

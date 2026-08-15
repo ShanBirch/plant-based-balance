@@ -223,7 +223,7 @@ test('dashboard, signup, native handoffs, measurement, and both discovery system
     const ios = fs.readFileSync(path.join(root, 'ios/App/App/BalanceShortcutHandoff.swift'), 'utf8');
 
     assert.match(dashboard, /paid-facebook-stripe-unlock-v1/);
-    assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=182/);
+    assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=183/);
     assert.match(dashboard, /title:'What to do today'.*metaPreview:true/);
     assert.match(dashboard, /title:'Your workouts for the week'.*metaPreview:true/);
     assert.match(dashboard, /title:'Open your workout'.*metaPreview:true/);
