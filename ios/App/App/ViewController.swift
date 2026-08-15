@@ -140,7 +140,8 @@ class ViewController: CAPBridgeViewController {
         (function() {
             window._pendingBalanceMetaTrialQuery = '\(escapedQuery)';
             if (!window.BalanceMetaAdTrial || !window.BalanceMetaAdTrial.activateFromNativeQuery('\(escapedQuery)')) return 'waiting';
-            window.location.replace('/dashboard.html');
+            var p = new URLSearchParams('\(escapedQuery)');
+            window.location.replace(p.get('account_first') === '1' ? '/login.html?action=signup&\(escapedQuery)' : '/dashboard.html');
             return 'handled';
         })();
         """

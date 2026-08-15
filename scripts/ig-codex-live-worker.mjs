@@ -9,6 +9,8 @@ import { pathToFileURL } from 'node:url';
 const DEFAULT_WORKSPACE = 'C:\\Users\\shann\\.gemini\\antigravity\\plant_based_balance';
 const DEFAULT_POLL_MS = 1500;
 const DEFAULT_COALESCE_MS = 2500;
+const DEFAULT_INBOUND_QUIET_MS = 6500;
+const DEFAULT_BATCH_MAX_WAIT_MS = 24000;
 const DEFAULT_TURN_TIMEOUT_MS = 4 * 60 * 1000;
 
 export function isPaidMetaTestReset(text = '') {
@@ -43,6 +45,7 @@ export function parseArgs(argv = []) {
         once: false,
         openChat: false,
         testAppServer: false,
+        useAppServer: process.env.IG_CODEX_LIVE_USE_APP_SERVER === 'true',
     };
     for (let index = 0; index < argv.length; index += 1) {
         const value = argv[index];
@@ -50,6 +53,7 @@ export function parseArgs(argv = []) {
         else if (value === '--once') args.once = true;
         else if (value === '--open-chat') args.openChat = true;
         else if (value === '--test-app-server') args.testAppServer = true;
+        else if (value === '--codex-turn') args.useAppServer = true;
         else if (value === '--workspace' && argv[index + 1]) args.workspace = argv[++index];
         else if (value.startsWith('--workspace=')) args.workspace = value.slice('--workspace='.length);
     }
@@ -380,6 +384,35 @@ class SupabaseRest {
         return rows?.[0] || null;
     }
 
+    async deliveryAlertById(alertId) {
+        const query = new URLSearchParams({
+            select: 'id,status,created_at,client_name,suggested_message,data',
+            id: `eq.${alertId}`,
+            limit: '1',
+        });
+        const rows = await this.request(`coach_alerts?${query.toString()}`);
+        return rows?.[0] || null;
+    }
+
+    async threadById(threadId) {
+        const query = new URLSearchParams({ select: 'id,last_inbound_at', id: `eq.${threadId}`, limit: '1' });
+        const rows = await this.request(`ig_threads?${query.toString()}`);
+        return rows?.[0] || null;
+    }
+
+    async completeClaim(action, receipt) {
+        return this.request('rpc/complete_ig_next_action', {
+            method: 'POST',
+            body: JSON.stringify({
+                p_action_id: action.id,
+                p_claim_token: action.claim_token,
+                p_status: 'completed',
+                p_safe_after: null,
+                p_receipt: receipt,
+            }),
+        });
+    }
+
     async canonicalOutboundsForAlert(alertId, threadId) {
         const query = new URLSearchParams({
             select: 'id,created_at,text,alert_id,source',
@@ -390,6 +423,79 @@ class SupabaseRest {
         });
         return this.request(`ig_messages?${query.toString()}`);
     }
+}
+
+export function isSettledDraft(alert, thread, nowMs = Date.now(), quietMs = DEFAULT_INBOUND_QUIET_MS) {
+    if (!alert || alert.status !== 'pending' || !String(alert.data?.draft_text || alert.suggested_message || '').trim()) return false;
+    const inboundMs = Date.parse(thread?.last_inbound_at || '');
+    const draftedMs = Date.parse(alert.data?.drafted_at || '');
+    if (!Number.isFinite(inboundMs) || !Number.isFinite(draftedMs)) return false;
+    return draftedMs >= inboundMs && nowMs - inboundMs >= quietMs;
+}
+
+export async function waitForSettledDraft({ supabase, alertId, threadId, quietMs = DEFAULT_INBOUND_QUIET_MS, maxWaitMs = DEFAULT_BATCH_MAX_WAIT_MS, pollMs = 500, now = () => Date.now(), sleep = ms => new Promise(resolve => setTimeout(resolve, ms)) }) {
+    const started = now();
+    do {
+        const [alert, thread] = await Promise.all([
+            supabase.deliveryAlertById(alertId),
+            supabase.threadById(threadId),
+        ]);
+        if (!alert || alert.status !== 'pending') throw new Error('live alert is no longer pending');
+        if (isSettledDraft(alert, thread, now(), quietMs)) return alert;
+        await sleep(pollMs);
+    } while (now() - started < maxWaitMs);
+    throw new Error('latest inbound batch did not settle before the live reply deadline');
+}
+
+function utf8Base64(value) {
+    return Buffer.from(String(value || ''), 'utf8').toString('base64');
+}
+
+async function runDirectDraftAlert({ alert, action, supabase, state, statePath, logger }) {
+    const threadId = String(action.thread_id || alert.data?.ig_thread_id || alert.data?.codex_live_chat_ig_thread_id || '');
+    const latestAlert = await waitForSettledDraft({ supabase, alertId: alert.id, threadId });
+    const replyText = String(latestAlert.data?.draft_text || latestAlert.suggested_message || '').trim();
+    await supabase.mergeAlertData(alert.id, {
+        codex_live_chat_status: 'sending_settled_batch',
+        codex_live_chat_action_id: action.id,
+        codex_live_chat_started_at: new Date().toISOString(),
+    });
+    const siteUrl = String(process.env.BALANCE_SITE_URL || 'https://plantbased-balance.org').replace(/\/$/, '');
+    const response = await fetch(`${siteUrl}/.netlify/functions/send-coach-reply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            alertId: alert.id,
+            replyTextUtf8Base64: utf8Base64(replyText),
+            draftTextUtf8Base64: utf8Base64(replyText),
+            source: 'balance_lead_client_dm_manager',
+            forceText: true,
+        }),
+    });
+    const body = await response.text();
+    if (!response.ok) throw new Error(`direct Instagram send ${response.status}: ${body.slice(0, 500)}`);
+    await new Promise(resolve => setTimeout(resolve, 1200));
+    const canonicalOutbounds = await supabase.canonicalOutboundsForAlert(alert.id, threadId);
+    if (!Array.isArray(canonicalOutbounds) || canonicalOutbounds.length === 0) {
+        throw new Error('direct send returned success without canonical Instagram readback');
+    }
+    const receipt = {
+        transport_code: 'instagram_graph',
+        outcome: 'sent_settled_inbound_batch',
+        native_verified: true,
+        readback_verified: true,
+        verified_action_count: canonicalOutbounds.length,
+        alert_id: alert.id,
+    };
+    await supabase.completeClaim(action, receipt);
+    state.alerts[alert.id] = { status: 'completed', completedAt: new Date().toISOString(), directDraft: true };
+    saveState(statePath, state);
+    await supabase.mergeAlertData(alert.id, {
+        codex_live_chat_status: 'turn_completed',
+        codex_live_chat_completed_at: new Date().toISOString(),
+        codex_live_chat_direct_draft: true,
+    });
+    logger(`sent settled paid-Meta batch for alert ${alert.id} in ${canonicalOutbounds.length} Instagram bubble(s)`);
 }
 
 function openCodexThread(threadId, logger) {
@@ -597,19 +703,17 @@ export async function main(argv = process.argv.slice(2)) {
     const logger = createLogger(logPath);
     const releaseLock = acquireProcessLock(lockPath);
     const state = loadState(statePath);
-    const appServer = new JsonRpcAppServer({
-        binary: findCodexBinary(),
-        workspace: args.workspace,
-        logger,
-    });
+    const appServer = (args.testAppServer || args.useAppServer) ? new JsonRpcAppServer({
+        binary: findCodexBinary(), workspace: args.workspace, logger,
+    }) : null;
     const stop = () => {
-        appServer.stop();
+        if (appServer) appServer.stop();
         releaseLock();
     };
     process.once('SIGINT', () => { stop(); process.exit(0); });
     process.once('SIGTERM', () => { stop(); process.exit(0); });
     try {
-        await appServer.start();
+        if (appServer) await appServer.start();
         if (args.testAppServer) {
             await testAppServer({ args, appServer, logger });
             return;
@@ -637,7 +741,11 @@ export async function main(argv = process.argv.slice(2)) {
                     continue;
                 }
                 try {
-                    await runAlert({ alert, action, appServer, supabase, state, statePath, args, logger });
+                    if (args.useAppServer) {
+                        await runAlert({ alert, action, appServer, supabase, state, statePath, args, logger });
+                    } else {
+                        await runDirectDraftAlert({ alert, action, supabase, state, statePath, logger });
+                    }
                 } catch (error) {
                     state.alerts[alert.id] = {
                         status: 'failed',

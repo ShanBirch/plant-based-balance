@@ -107,12 +107,13 @@
 <script>
 (function () {
     var incoming = new URLSearchParams(window.location.search);
-    incoming.set('guest', 'true');
+    incoming.delete('guest');
+    incoming.set('account_first', '1');
     incoming.set('meta_trial', 'facebook_5m_foundations_v3');
     if (!incoming.get('utm_source')) incoming.set('utm_source', 'facebook');
     if (!incoming.get('utm_medium')) incoming.set('utm_medium', 'paid_social');
     var query = incoming.toString();
-    document.getElementById('start-preview').href = '/dashboard.html?' + query;
+    document.getElementById('start-preview').href = '/login.html?action=signup&' + query;
     var openInstalled = document.getElementById('open-installed');
     openInstalled.href = 'com.fitgotchi.app://meta-trial?' + query;
     // Enable this per campaign only after the matching native binaries are live.

@@ -75,6 +75,27 @@ const { pathToFileURL } = require('url');
         canonicalOutbounds,
         finalAlert: { data: { delivery_payload_kind: 'video' } },
     }), true);
+
+    const settledAlert = {
+        ...alert,
+        data: {
+            ...alert.data,
+            draft_text: 'Yep, 15 kilos is a clear goal. What has been getting in the way?',
+            drafted_at: '2026-08-14T12:00:04Z',
+        },
+    };
+    assert.strictEqual(worker.isSettledDraft(
+        settledAlert,
+        { last_inbound_at: '2026-08-14T12:00:03Z' },
+        Date.parse('2026-08-14T12:00:10Z'),
+        6500,
+    ), true);
+    assert.strictEqual(worker.isSettledDraft(
+        settledAlert,
+        { last_inbound_at: '2026-08-14T12:00:08Z' },
+        Date.parse('2026-08-14T12:00:10Z'),
+        6500,
+    ), false, 'a late second message resets the quiet window and requires a newer draft');
     assert.strictEqual(worker.hasVerifiedAlertDelivery({
         alert,
         canonicalOutbounds,

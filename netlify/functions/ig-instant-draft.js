@@ -2689,6 +2689,7 @@ GUIDED RESPONSE CONTRACT FOR EVERY PAID-META TURN:
 - Do not force the planned qualifier when their message offers a more natural thread. Rewrite the next move around their nouns, frequency, timing, reason, concern, or side question.
 - Keep exact checkout links, app-access links, safety holds, price, duration, and inclusions factual. Everything around those facts should still respond to the person.
 - If several rapid bubbles arrived, treat them as one message and respond to all meaningful parts without asking them to repeat anything.
+- Use one or two short Instagram bubbles when that feels natural. A useful split is the direct acknowledgement or answer first, then the single purposeful question second. Do not force two bubbles on every turn and never split one sentence arbitrarily.
 - After Shannon asks whether they are currently plant-based or looking to adopt it: if they are transitioning, reflect the exact habit they named, such as eating plant-based twice a week, then ask for their main health or fitness goal. Do not ask them to design the help. If they are already plant-based, react to any duration or experience they supplied; ask how long only when it is missing, and naturally bring in their main health or fitness goal.
 
 Important: when there is no prior tracked conversation, do NOT assume the lead started the DM. Most first captured lead messages happen because Shannon commented on or replied to their story/post natively, and that opener is not visible in ManyChat. Their reply may be tiny or ambiguous because they are answering that unseen opener. Treat it as an open door and build rapport from whatever signal exists. Use one light human move, which can be a short statement. Ask a question only when that is clearly the best next text, or when there is no better hook and Shannon has not asked a basic day/week opener yet.
@@ -8585,10 +8586,16 @@ exports.handler = async (event) => {
     let codexLiveWakeReady = false;
     if (codexLivePaidMetaThread && alertId && draft.joined) {
         const requestedAt = new Date().toISOString();
+        const existingLiveActionId = currentAlertData?.codex_live_chat_action_id || null;
+        const existingLiveOwner = currentAlertData?.codex_live_chat_action_owner || null;
+        const existingLiveStatus = String(currentAlertData?.codex_live_chat_status || '');
+        const existingLiveRoute = !!existingLiveActionId
+            && existingLiveOwner === 'codex_live_worker'
+            && ['waiting_for_local_worker', 'active', 'sending_settled_batch'].includes(existingLiveStatus);
         const liveData = {
             ...(currentAlertData || {}),
             codex_live_chat_required: true,
-            codex_live_chat_status: 'waiting_for_local_worker',
+            codex_live_chat_status: existingLiveRoute ? existingLiveStatus : 'waiting_for_local_worker',
             codex_live_chat_requested_at: requestedAt,
             codex_live_chat_ig_thread_id: thread.id,
             codex_live_chat_source_message_id: manychatMessageId || null,
@@ -8605,27 +8612,32 @@ exports.handler = async (event) => {
             );
             if (rows?.[0]) {
                 currentAlertData = rows[0].data || liveData;
-                const routedRows = await supabaseQuery('rpc/route_paid_meta_live_codex_action', {
-                    method: 'POST',
-                    body: { p_thread_id: thread.id, p_alert_id: alertId },
-                });
-                const routedAction = Array.isArray(routedRows) ? routedRows[0] : routedRows;
-                if (!routedAction?.id) {
-                    throw new Error('live Codex controller action was already claimed or unavailable');
+                if (existingLiveRoute) {
+                    codexLiveWakeReady = true;
+                    console.log(`[ig-draft] refreshed active live-worker batch for paid-Meta thread ${thread.id}, alert ${alertId}`);
+                } else {
+                    const routedRows = await supabaseQuery('rpc/route_paid_meta_live_codex_action', {
+                        method: 'POST',
+                        body: { p_thread_id: thread.id, p_alert_id: alertId },
+                    });
+                    const routedAction = Array.isArray(routedRows) ? routedRows[0] : routedRows;
+                    if (!routedAction?.id) {
+                        throw new Error('live Codex controller action was already claimed or unavailable');
+                    }
+                    codexLiveWakeReady = true;
+                    const routedData = {
+                        ...currentAlertData,
+                        codex_live_chat_action_id: routedAction.id,
+                        codex_live_chat_action_version: routedAction.action_version ?? null,
+                        codex_live_chat_action_owner: routedAction.owner,
+                    };
+                    const routedAlertRows = await supabaseQuery(
+                        `coach_alerts?id=eq.${encodeURIComponent(alertId)}&status=eq.pending`,
+                        { method: 'PATCH', body: { data: routedData }, prefer: 'return=representation' }
+                    );
+                    currentAlertData = routedAlertRows?.[0]?.data || routedData;
+                    console.log(`[ig-draft] exclusively routed live Codex wake for paid-Meta thread ${thread.id}, alert ${alertId}`);
                 }
-                codexLiveWakeReady = true;
-                const routedData = {
-                    ...currentAlertData,
-                    codex_live_chat_action_id: routedAction.id,
-                    codex_live_chat_action_version: routedAction.action_version ?? null,
-                    codex_live_chat_action_owner: routedAction.owner,
-                };
-                const routedAlertRows = await supabaseQuery(
-                    `coach_alerts?id=eq.${encodeURIComponent(alertId)}&status=eq.pending`,
-                    { method: 'PATCH', body: { data: routedData }, prefer: 'return=representation' }
-                );
-                currentAlertData = routedAlertRows?.[0]?.data || routedData;
-                console.log(`[ig-draft] exclusively routed live Codex wake for paid-Meta thread ${thread.id}, alert ${alertId}`);
             }
         } catch (error) {
             console.warn(`[ig-draft] live Codex wake stamp failed for ${alertId}; preserving immediate sender fallback:`, error.message);

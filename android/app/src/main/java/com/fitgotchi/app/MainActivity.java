@@ -737,7 +737,7 @@ public class MainActivity extends BridgeActivity {
         String safe = query.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "");
         String js = "window._pendingBalanceMetaTrialQuery='" + safe + "';" +
                 "if(window.BalanceMetaAdTrial&&window.BalanceMetaAdTrial.activateFromNativeQuery('" + safe + "')){" +
-                "window.location.replace('/dashboard.html')}";
+                "var p=new URLSearchParams('" + safe + "');window.location.replace(p.get('account_first')==='1'?'/login.html?action=signup&" + safe + "':'/dashboard.html')}";
         runOnUiThread(() -> wv.evaluateJavascript(js, null));
     }
 
@@ -1726,7 +1726,7 @@ public class MainActivity extends BridgeActivity {
             return true;
         }
         String safe = query.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "");
-        String js = "if(window.BalanceMetaAdTrial&&window.BalanceMetaAdTrial.activateFromNativeQuery('" + safe + "')){window.location.replace('/dashboard.html')}";
+        String js = "if(window.BalanceMetaAdTrial&&window.BalanceMetaAdTrial.activateFromNativeQuery('" + safe + "')){var p=new URLSearchParams('" + safe + "');window.location.replace(p.get('account_first')==='1'?'/login.html?action=signup&" + safe + "':'/dashboard.html')}";
         runOnUiThread(() -> wv.evaluateJavascript(js, null));
         return true;
     }

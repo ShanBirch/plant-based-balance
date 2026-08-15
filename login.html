@@ -12,7 +12,7 @@
     <meta property="og:url" content="https://plantbased-balance.org/login.html">
     <meta property="og:type" content="website">
     <link rel="stylesheet" href="styles.css">
-    <script src="lib/meta-ad-trial.js?v=3"></script>
+    <script src="lib/meta-ad-trial.js?v=6-account-first"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://js.stripe.com/v3/"></script>
     <script>
@@ -482,7 +482,6 @@
             <div class="signup-prompt">
                 Don't have an account? <span class="toggle-form" onclick="showSignup()" style="color: var(--login-secondary-light); text-decoration: none; font-weight: 700; cursor: pointer;">Join Balance</span>
             </div>
-            <span class="explore-btn" onclick="startFoundationsPreview()">Open my free preview &rarr;</span>
         </div>
 
         <!-- Signup Form -->
@@ -545,7 +544,6 @@
             <div class="signup-prompt">
                 Already have an account? <span class="toggle-form" onclick="showLogin()">Log in here</span>
             </div>
-            <span class="explore-btn" onclick="startFoundationsPreview()">Open my free preview &rarr;</span>
         </div>
     </div>
 
@@ -554,21 +552,27 @@
 
     <!-- Initialize Supabase inline -->
     <script>
-        // Store referral code if present in URL and show signup form
-        function startFoundationsPreview() {
-            const params = new URLSearchParams({
-                guest: 'true',
-                meta_trial: 'facebook_5m_foundations_v3',
-                utm_source: 'meta',
-                utm_medium: 'paid_social',
-                utm_campaign: 'balance_foundations_app_preview',
-                handoff_source: 'native_preview_button'
-            });
-            if (window.BalanceMetaAdTrial) {
-                window.BalanceMetaAdTrial.activateFromNativeQuery(params.toString());
+        function isAccountFirstPreview(params = new URLSearchParams(window.location.search)) {
+            return params.get('account_first') === '1'
+                && params.get('meta_trial') === 'facebook_5m_foundations_v3';
+        }
+
+        function postAuthDestination(fragment = '') {
+            const incoming = new URLSearchParams(window.location.search);
+            if (!isAccountFirstPreview(incoming)) {
+                return incoming.get('redirect') || '/dashboard.html' + fragment;
             }
-            sessionStorage.setItem('guestMode', 'true');
-            window.location.href = '/dashboard.html?' + params.toString();
+            const preserved = new URLSearchParams(incoming);
+            preserved.delete('action');
+            preserved.delete('redirect');
+            preserved.delete('switch_account');
+            preserved.delete('guest');
+            preserved.set('account_first', '1');
+            return '/dashboard.html?' + preserved.toString() + fragment;
+        }
+
+        function authReturnUrl() {
+            return window.location.origin + window.location.pathname + window.location.search;
         }
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -638,7 +642,7 @@
                         password,
                         options: {
                             data: userData,
-                            emailRedirectTo: `${window.location.origin}/login.html`
+                            emailRedirectTo: authReturnUrl()
                         }
                     });
                     if (error) throw error;
@@ -723,7 +727,7 @@
                                             refresh_token: refreshToken,
                                         });
                                         if (!sessionError) {
-                                            window.location.replace('/dashboard.html');
+                                            window.location.replace(postAuthDestination());
                                             return data;
                                         } else {
                                             throw new Error('Failed to set session: ' + sessionError.message);
@@ -765,7 +769,7 @@
                     const { data, error } = await supabase.auth.signInWithOAuth({
                         provider: 'google',
                         options: {
-                            redirectTo: `${window.location.origin}/login.html`
+                            redirectTo: authReturnUrl()
                         }
                     });
                     if (error) throw error;
@@ -890,6 +894,20 @@
             }
         }
 
+        function applyAccountFirstPreviewCopy(urlParams) {
+            if (!isAccountFirstPreview(urlParams)) return;
+            if (window.BalanceMetaAdTrial) {
+                window.BalanceMetaAdTrial.activate(urlParams, 'account_first_login');
+            }
+            try { sessionStorage.removeItem('guestMode'); } catch (e) {}
+            const heading = document.getElementById('signup-heading');
+            const intro = document.getElementById('signup-intro');
+            const button = document.getElementById('signup-btn');
+            if (heading) heading.textContent = 'Create your Balance account';
+            if (intro) intro.textContent = 'Create your free account first. Then we’ll build your workout plan and meal plan inside the app.';
+            if (button) button.textContent = 'CREATE MY ACCOUNT';
+        }
+
         async function claimPendingFoundersPass(session) {
             if (sessionStorage.getItem('balance_founders_pass_pending') !== 'true') return null;
             const accessToken = session?.access_token;
@@ -968,6 +986,7 @@
             captureFoundersPassHandoff(urlParams);
             applyFoundersPassHandoffCopy(urlParams);
             applyMetaAdTrialHandoffCopy(urlParams);
+            applyAccountFirstPreviewCopy(urlParams);
             const isSwitchingAccount = urlParams.get('switch_account') === '1';
 
             // Check if already logged in
@@ -1038,13 +1057,7 @@
                 await claimPendingMetaTrialPurchase(session);
 
                 // Already logged in - redirect to dashboard
-                let redirect = urlParams.get('redirect');
-
-                if (!redirect) {
-                    redirect = '/dashboard.html';
-                }
-
-                window.location.replace(redirect);
+                window.location.replace(postAuthDestination());
                 return;
             }
 
@@ -1055,7 +1068,7 @@
                     window.history.replaceState({}, document.title, '/login.html');
                 }
             }
-            if (urlParams.get('action') === 'signup') {
+            if (urlParams.get('action') === 'signup' || isAccountFirstPreview(urlParams)) {
                 showSignup();
             }
         }
@@ -1157,12 +1170,10 @@
 
                 // Redirect to dashboard
                 const urlParams = new URLSearchParams(window.location.search);
-                let redirect = urlParams.get('redirect');
+                let redirect = postAuthDestination();
                 const isDedicatedOnboardingTest = !!(user && String(user.email || '').trim().toLowerCase() === 'shannonrhysbirch+arunima-onboarding-test@gmail.com');
                 if (isDedicatedOnboardingTest) {
                     redirect = '/dashboard.html?onboarding_test_reset=1';
-                } else if (!redirect) {
-                    redirect = '/dashboard.html';
                 }
 
                 showSuccess('Login successful! Redirecting...');
@@ -1327,7 +1338,7 @@
                 const { access_token, refresh_token, expires_in, token_type } = signupResult.session;
                 const fragment = `access_token=${encodeURIComponent(access_token)}&refresh_token=${encodeURIComponent(refresh_token)}&expires_in=${expires_in}&token_type=${token_type || 'bearer'}&type=signup`;
                 setTimeout(() => {
-                    window.location.replace('/dashboard.html#' + fragment);
+                    window.location.replace(postAuthDestination('#' + fragment));
                 }, 500);
 
             } catch (error) {
@@ -1452,7 +1463,7 @@
                             }
                         }
 
-                        window.location.replace('/dashboard.html');
+                        window.location.replace(postAuthDestination());
                         return;
                     } catch (e) {
                         if (e.message && e.message.includes('cancelled')) {
@@ -1472,7 +1483,7 @@
                     options: {
                         redirectTo: isNative
                             ? window.location.origin + '/oauth-callback.html'
-                            : window.location.origin + '/login.html',
+                            : authReturnUrl(),
                         ...(isNative ? { skipBrowserRedirect: true } : {})
                     }
                 });
@@ -1512,7 +1523,7 @@
                     if (!error) {
                         // Use replace() so login.html is removed from history
                         // and the URL doesn't linger in the navigation stack.
-                        window.location.replace('/dashboard.html');
+                        window.location.replace(postAuthDestination());
                     } else {
                         console.error('OAuth setSession error:', error);
                         showError('Google sign-in failed. Please try again.');

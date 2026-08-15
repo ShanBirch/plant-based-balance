@@ -393,14 +393,14 @@
                 <div class="price-line"><div class="price">AU$89.99</div><div class="price-note">one payment for the complete six weeks</div></div>
                 <a class="cta" id="foundations-hero-action" href="/founders#join" data-track="cta_click">Start Balance Foundations</a>
                 <p class="micro" id="foundations-hero-microcopy">Six weeks with Shannon in your corner. One payment, no auto-renewal.</p>
-                <div class="paid-preview-route" id="paid-preview-route" aria-label="Balance preview steps"><span>Download Balance</span><span>Set up your plan</span><span>Take the guided tour</span><span>Unlock Foundations</span></div>
+                <div class="paid-preview-route" id="paid-preview-route" aria-label="Balance preview steps"><span>Download Balance</span><span>Create your account</span><span>Set up your plan</span><span>Take the guided tour</span></div>
                 <div class="paid-preview-downloads" id="paid-preview-downloads">
-                    <p id="paid-preview-instructions">Tap download, install Balance, then tap <strong>Open</strong> in the app store. Android opens your free preview automatically. On iPhone, tap <strong>Open my free preview</strong> on the first Balance screen. You will not need to return to this website or Instagram.</p>
+                    <p id="paid-preview-instructions">Tap download, install Balance, then tap <strong>Open</strong>. Create your free account, and Balance will take you straight through your personalised setup inside the app. You will not need to return to this website or Instagram.</p>
                     <div class="paid-preview-store-row">
                         <a class="paid-preview-store" id="paid-preview-ios" href="https://apps.apple.com/us/app/balance-fitness-gamified/id6761238161" data-track="cta_click">Download for iPhone</a>
                         <a class="paid-preview-store" id="paid-preview-android" href="https://play.google.com/store/apps/details?id=com.fitgotchi.app" data-track="cta_click">Download for Android</a>
                     </div>
-                    <a class="paid-preview-open" id="paid-preview-open-installed" href="#">Already installed? Open my free preview</a>
+                    <a class="paid-preview-open" id="paid-preview-open-installed" href="#">Already installed? Create my account</a>
                 </div>
                 </div>
                 <div class="phone-stage reveal" aria-label="Preview of the Balance app">
@@ -530,7 +530,8 @@
             var paidMetaMedia = ['paid_social', 'paid', 'cpc'];
             if (paidMetaSources.indexOf(source) === -1 || paidMetaMedia.indexOf(medium) === -1) return;
 
-            params.set('guest', 'true');
+            params.delete('guest');
+            params.set('account_first', '1');
             params.set('meta_trial', 'facebook_5m_foundations_v3');
             params.delete('meta_preview');
             var appStoreUrl = 'https://apps.apple.com/us/app/balance-fitness-gamified/id6761238161';
@@ -561,7 +562,7 @@
             var androidStoreLink = document.getElementById('paid-preview-android');
             if (androidStoreLink) androidStoreLink.href = playStoreUrl;
             if (microcopy) {
-                microcopy.textContent = 'Download the Balance app, complete your setup, then take the full guided tour. Your answers stay saved if you unlock for AU$89 once.';
+                microcopy.textContent = 'Download Balance, create your free account, then complete your personalised setup and guided tour without leaving the app.';
             }
             // The organic page remains AU$89.99. Only this verified paid-Meta
             // runtime rewrites visible copy to the campaign's exact AU$89 offer.
