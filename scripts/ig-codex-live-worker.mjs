@@ -25,6 +25,17 @@ export function shouldStartFreshEpisode(alert, conversation) {
         && conversation?.resetAlertId !== alert?.id;
 }
 
+export function requiresVerifiedVideoDelivery(alert) {
+    return String(alert?.data?.draft_video_attachment_url || '').trim() !== '';
+}
+
+export function hasVerifiedAlertDelivery({ alert, canonicalOutbounds, finalAlert }) {
+    const hasCanonicalOutbound = Array.isArray(canonicalOutbounds) && canonicalOutbounds.length > 0;
+    if (!hasCanonicalOutbound) return false;
+    if (!requiresVerifiedVideoDelivery(alert)) return true;
+    return String(finalAlert?.data?.delivery_payload_kind || '').toLowerCase() === 'video';
+}
+
 export function parseArgs(argv = []) {
     const args = {
         workspace: process.env.BALANCE_WORKSPACE || DEFAULT_WORKSPACE,
@@ -359,6 +370,16 @@ class SupabaseRest {
         return rows?.[0] || null;
     }
 
+    async alertById(alertId) {
+        const query = new URLSearchParams({
+            select: 'id,status,data,actioned_at',
+            id: `eq.${alertId}`,
+            limit: '1',
+        });
+        const rows = await this.request(`coach_alerts?${query.toString()}`);
+        return rows?.[0] || null;
+    }
+
     async canonicalOutboundsForAlert(alertId, threadId) {
         const query = new URLSearchParams({
             select: 'id,created_at,text,alert_id,source',
@@ -508,15 +529,18 @@ async function runAlert({ alert, action, appServer, supabase, state, statePath, 
     logger(`started Codex turn ${turnId} for alert ${alert.id}`);
     const completed = await waitForTurn(appServer, { threadId: conversation.codexThreadId, turnId });
     await new Promise(resolve => setTimeout(resolve, 1500));
-    const [finalAction, canonicalOutbounds] = await Promise.all([
+    const [finalAction, canonicalOutbounds, finalAlert] = await Promise.all([
         supabase.actionById(action.id),
         supabase.canonicalOutboundsForAlert(alert.id, action.thread_id),
+        supabase.alertById(alert.id),
     ]);
-    const delivered = Array.isArray(canonicalOutbounds) && canonicalOutbounds.length > 0;
+    const delivered = hasVerifiedAlertDelivery({ alert, canonicalOutbounds, finalAlert });
     const actionClosed = ['completed', 'cancelled'].includes(String(finalAction?.status || ''));
     if (!delivered) {
         const transportCode = finalAction?.receipt?.transport_code || null;
-        throw new Error(`Codex turn finished without verified Instagram delivery (action=${finalAction?.status || 'missing'}, transport=${transportCode || 'none'}, outbound=${delivered})`);
+        const expectedPayload = requiresVerifiedVideoDelivery(alert) ? 'video' : 'text';
+        const actualPayload = finalAlert?.data?.delivery_payload_kind || 'none';
+        throw new Error(`Codex turn finished without verified Instagram delivery (action=${finalAction?.status || 'missing'}, transport=${transportCode || 'none'}, outbound=${Array.isArray(canonicalOutbounds) && canonicalOutbounds.length > 0}, expected_payload=${expectedPayload}, actual_payload=${actualPayload})`);
     }
     if (!actionClosed) {
         logger(`verified Instagram delivery for alert ${alert.id}, but controller readback is ${finalAction?.status || 'missing'}; preserving the no-repeat outbound as authoritative`);

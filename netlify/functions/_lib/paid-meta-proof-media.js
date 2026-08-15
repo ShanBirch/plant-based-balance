@@ -3,7 +3,7 @@ const GEN_STRENGTH_CONFIDENCE_PROOF_URL = 'https://plantbased-balance.org/photos
 const BEC_KIRSTY_SHARED_MOMENTUM_PROOF_URL = 'https://plantbased-balance.org/photos/client-success/bec-kirsty-cocos.png';
 const DANI_RECOMPOSITION_PROOF_URL = 'https://plantbased-balance.org/photos/client-success/dani-front-mirror-8-weeks.png';
 const BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL = 'https://plantbased-balance.org/assets/balance-foundations-app-proof.mp4';
-const BALANCE_APP_VIDEO_INTRO_RE = /\b(?:quick\s+(?:look|video)|app\s+(?:video|walkthrough)|video\s+(?:of|showing|through)\s+(?:the\s+)?app|look\s+(?:at|inside)\s+(?:the\s+)?app|show(?:ing)?\s+you\s+(?:around|how)\s+(?:the\s+)?app|(?:sent|sending)\s+(?:the\s+)?(?:video|vid)(?:\s+again)?|here(?:'s|\s+is)\s+(?:the\s+)?(?:video|vid|it)\s+again)\b/i;
+const BALANCE_APP_VIDEO_INTRO_RE = /\b(?:quick\s+(?:look|video)|app\s+(?:video|walkthrough)|video\s+(?:of|showing|through)\s+(?:the\s+)?app|look\s+(?:at|inside)\s+(?:the\s+)?app|show(?:ing)?\s+you\s+(?:around|how)\s+(?:the\s+)?app|(?:sent|sending)\s+(?:the\s+)?(?:video|vid)(?:\s+again)?|here\s+it\s+is\s+again|here(?:'s|\s+is)\s+(?:the\s+)?(?:video|vid|it)\s+again)\b/i;
 
 const ALLY_INTRO_RE = /\b(?:this is ally|here(?:'s| is) ally|ally(?:,|\s+(?:is|was|lost|has))|one of my clients)\b/i;
 const GEN_INTRO_RE = /\b(?:this is gen|here(?:'s| is) gen|gen(?:,|\s+(?:is|was|got|built|became))|one of my clients)\b/i;

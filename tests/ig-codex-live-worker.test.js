@@ -56,6 +56,31 @@ const { pathToFileURL } = require('url');
     assert.strictEqual(worker.shouldStartFreshEpisode({ ...alert, data: { ...alert.data, message_preview: 'What is the Founders Pass?' } }, { resetAlertId: 'alert-1' }), false);
     assert.strictEqual(worker.shouldStartFreshEpisode(alert, { resetAlertId: null }), false);
 
+    const videoAlert = {
+        ...alert,
+        data: {
+            ...alert.data,
+            draft_video_attachment_url: 'https://plantbased-balance.org/assets/balance-foundations-app-proof.mp4',
+        },
+    };
+    const canonicalOutbounds = [{ id: 'outbound-1', text: 'Yep, here it is again. Can you see it now?' }];
+    assert.strictEqual(worker.requiresVerifiedVideoDelivery(videoAlert), true);
+    assert.strictEqual(worker.hasVerifiedAlertDelivery({
+        alert: videoAlert,
+        canonicalOutbounds,
+        finalAlert: { data: { delivery_payload_kind: 'text' } },
+    }), false, 'text-only delivery cannot complete a native-video retry');
+    assert.strictEqual(worker.hasVerifiedAlertDelivery({
+        alert: videoAlert,
+        canonicalOutbounds,
+        finalAlert: { data: { delivery_payload_kind: 'video' } },
+    }), true);
+    assert.strictEqual(worker.hasVerifiedAlertDelivery({
+        alert,
+        canonicalOutbounds,
+        finalAlert: { data: { delivery_payload_kind: 'text' } },
+    }), true);
+
     const prompt = worker.buildLivePrompt({
         alert,
         action: {
