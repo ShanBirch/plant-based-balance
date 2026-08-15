@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v315'; // v314: extend selectable text layouts to meals and activities
+const CACHE_NAME = 'pbb-app-v315'; // v315: fix share-card title spacing and remove celebration accents
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
