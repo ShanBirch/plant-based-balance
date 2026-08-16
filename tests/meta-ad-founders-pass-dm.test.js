@@ -34,6 +34,7 @@ const {
     buildContextualMetaAdOfferLinkReply,
     buildDraftVideoAttachmentData,
     buildDraftImageAttachmentData,
+    attachPaidMetaWriterSelectedMedia,
     filterMetaAdCardAttachmentHistory,
     buildLeadOnboardingHandoffData,
     resolveMetaAdFirstReplyIntent,
@@ -226,7 +227,7 @@ test('Cocos paid-ad Founders Pass opener bypasses the false signup hold and mode
     }), null);
 });
 
-test('paid Meta goal reply that passes the progression contract bypasses subjective style review', () => {
+test('AI-written paid Meta goal replies still receive normal review', () => {
     const currentMessage = 'I need to lose weight';
     const history = [
         { direction: 'out', text: 'Nice. What\u2019s your main health or fitness goal at the moment?' },
@@ -258,22 +259,7 @@ test('paid Meta goal reply that passes the progression contract bypasses subject
         history,
     });
 
-    assert.equal(review.verdict, 'pass');
-    assert.equal(review.notification_required, false);
-    assert.equal(review.reviewer_model, 'paid-meta-guided-goal-contract-approval');
-    assert.equal(getAutoDmHoldReason({
-        mediaReview: { required: false },
-        contextReview: { required: false },
-        draft,
-        draftReview: review,
-        challengeOfferWarning: null,
-        currentMessage,
-        qualifier: { commercial_stage: 'engaged', facts: {} },
-        leadStage: 'qualifying',
-        linkedUserId: null,
-        meaningfulLeadReplyCount: 2,
-        alertData: { meta_ad_fast_lane: true },
-    }), null);
+    assert.equal(review, null);
 });
 
 test('approved guided sales progression bypasses subjective style review', () => {
@@ -638,7 +624,7 @@ test('paid Meta writer contract requires an explicit answer to a proof-client qu
     assert.deepEqual(answeredIssues, []);
 });
 
-test('paid Meta writer contract preserves rapid-turn details and validates the earned offer', () => {
+test('paid Meta writer contract preserves rapid-turn details without forcing an offer checkpoint', () => {
     const detailIssues = collectPaidMetaWriterContractIssues({
         draft: { joined: "Food prep is usually the first thing to slip. What tends to throw it out?" },
         currentMessage: "I think it's lack of time, no prep. Bit of everything really, food is the main one.",
@@ -657,7 +643,7 @@ test('paid Meta writer contract preserves rapid-turn details and validates the e
         currentMessage: 'My shifts change every week so I can never keep a routine.',
         qualifier,
     });
-    assert.ok(incompleteOfferIssues.length >= 6);
+    assert.deepEqual(incompleteOfferIssues, []);
 
     const completeOfferIssues = collectPaidMetaWriterContractIssues({
         draft: {
@@ -695,15 +681,14 @@ test('paid Meta writer contract does not hold the approved first ad greeting as 
     }), []);
 });
 
-test('paid Meta transition contract catches adopt wording and a mistyped plant-based frequency', () => {
+test('paid Meta transition guidance leaves the next natural move to the writer', () => {
     const currentMessage = "I'm looking to adopt\nRight now I eat any based 3 nights a week";
     const weakReplyIssues = collectPaidMetaWriterContractIssues({
         draft: { joined: "Three nights is a good start. The Founders Pass is $89.99 for six weeks. Want the details?" },
         currentMessage,
         qualifier: { facts: {} },
     });
-    assert.ok(weakReplyIssues.some(issue => /health or fitness goal/i.test(issue)));
-    assert.ok(weakReplyIssues.some(issue => /pitched before/i.test(issue)));
+    assert.deepEqual(weakReplyIssues, []);
 
     assert.deepEqual(collectPaidMetaWriterContractIssues({
         draft: { joined: "Yeah, three nights a week is a good start if you're looking to make the shift. Outside of eating more plant-based, what's your main health or fitness goal at the moment?" },
@@ -999,7 +984,7 @@ test('paid Meta gets to know the plant-based reason before asking for the fitnes
         history: [{ direction: 'out', text: 'Nice. What made you decide to go plant-based?' }],
     });
     assert.match(reciprocalDirective, /animals were a big part of Shannon going vegan.*five years/i);
-    assert.match(reciprocalDirective, /Mandatory direct questions to answer explicitly.*How about you\?/i);
+    assert.match(reciprocalDirective, /Direct questions that must be answered.*How about you\?/i);
 
     const incompleteReciprocalIssues = collectPaidMetaWriterContractIssues({
         draft: { joined: "I've been vegan for five years too. What's your main health or fitness goal?" },
@@ -1010,7 +995,7 @@ test('paid Meta gets to know the plant-based reason before asking for the fitnes
     assert.ok(incompleteReciprocalIssues.some(issue => /why Shannon went vegan/i.test(issue)));
 });
 
-test('paid Meta food confusion is a real blocker and cannot be silenced by a style warning', () => {
+test('paid Meta food confusion can stay with the AI writer after a non-blocking style warning', () => {
     const history = [
         { direction: 'out', text: 'What is your main health or fitness goal at the moment?' },
         { direction: 'in', text: 'I want to grow muscle' },
@@ -1062,9 +1047,9 @@ test('paid Meta food confusion is a real blocker and cannot be silenced by a sty
         flowVariant: 'plant_based_control',
     });
     assert.equal(released.paidMetaNonBlockingReviewReleased, true);
-    assert.equal(released.model, 'deterministic_paid_meta_guided_sales_v1');
-    assert.equal(released.videoAttachmentUrl, BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL);
-    assert.doesNotMatch(released.joined, /what do you usually eat/i);
+    assert.equal(released.model, 'openai-paid-meta+paid-meta-style-release');
+    assert.equal(released.videoAttachmentUrl, undefined);
+    assert.match(released.joined, /what do you usually eat/i);
 });
 
 test('paid Meta treats broad overwhelm as the blocker and moves to the tailored app proof', () => {
@@ -1741,7 +1726,7 @@ test('paid Meta ad conversations are text-only without changing other voice lane
     }), false);
 });
 
-test('only destination handoffs and the narrow guided sales spine override the paid Meta writer', () => {
+test('only destination handoffs override the paid Meta writer', () => {
     assert.equal(shouldApplyDeterministicPaidMetaReplyOverride({ replyMode: 'campaign_sales_progression' }), false);
     assert.equal(shouldApplyDeterministicPaidMetaReplyOverride({
         replyMode: 'campaign_sales_progression',
@@ -1751,9 +1736,27 @@ test('only destination handoffs and the narrow guided sales spine override the p
     assert.equal(shouldApplyDeterministicPaidMetaReplyOverride({
         replyMode: 'campaign_sales_progression',
         model: 'deterministic_paid_meta_guided_sales_v1',
-    }), true);
+    }), false);
     assert.equal(shouldApplyDeterministicPaidMetaReplyOverride({ replyMode: 'campaign_buyer_handoff' }), true);
     assert.equal(shouldApplyDeterministicPaidMetaReplyOverride({ replyMode: 'campaign_app_preview_handoff' }), true);
+});
+
+test('AI writer can deliberately select approved proof and app media', () => {
+    const ally = attachPaidMetaWriterSelectedMedia({
+        joined: "This is Ally, one of my clients. I'll show you her photo because her weight-loss goal is close to yours.",
+    }, { allowAttachments: true });
+    assert.match(ally.imageAttachmentUrl, /ally-cocos\.png$/);
+
+    const video = attachPaidMetaWriterSelectedMedia({
+        joined: "Here's a quick app video so you can see how it works.",
+    }, { allowAttachments: true });
+    assert.equal(video.videoAttachmentUrl, BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL);
+
+    const noImplicitMedia = attachPaidMetaWriterSelectedMedia({
+        joined: 'That goal makes sense. What has made it hard to stick with?',
+    }, { allowAttachments: true });
+    assert.equal(noImplicitMedia.imageAttachmentUrl, null);
+    assert.equal(noImplicitMedia.videoAttachmentUrl, null);
 });
 
 test('private paid-ad voice cooldown restarts at the newest repeated FAQ opener', () => {

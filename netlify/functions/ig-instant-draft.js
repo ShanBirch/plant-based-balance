@@ -1899,12 +1899,10 @@ function buildDeterministicPaidMetaConversationReply({
 
 function shouldApplyDeterministicPaidMetaReplyOverride(draft = null) {
     if (!draft) return false;
-    // The exact destination handoffs and the narrow goal -> blocker -> offer
-    // spine are sales gates. All identity, FAQ, objection and normal-chat copy
-    // stays model-written from the live message.
+    // Only exact destinations are deterministic. Ordinary conversation copy is
+    // model-written from the complete episode and current unanswered batch.
     return draft.replyMode === 'campaign_buyer_handoff'
-        || draft.replyMode === 'campaign_app_preview_handoff'
-        || String(draft.model || '') === 'deterministic_paid_meta_guided_sales_v1';
+        || draft.replyMode === 'campaign_app_preview_handoff';
 }
 
 function shouldUseOutboundSyntheticVoice({ personalVoicePlan = {}, metaAdConversationFastLane = false } = {}) {
@@ -2165,8 +2163,13 @@ async function clearIgAutoSendHoldForCurrentDraft({ alertId, alertData, reason =
 // Foundations proof video is offer-agnostic and is attached separately.
 const FOUNDERS_PASS_APP_PREVIEW_URL = '';
 const {
+    ALLY_WEIGHT_LOSS_PROOF_URL,
+    GEN_STRENGTH_CONFIDENCE_PROOF_URL,
+    BEC_KIRSTY_SHARED_MOMENTUM_PROOF_URL,
+    DANI_RECOMPOSITION_PROOF_URL,
     BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL,
     maySendDraftImageAttachment,
+    maySendDraftVideoAttachment,
     resolvePaidMetaTransformationProof,
 } = require('./_lib/paid-meta-proof-media');
 const FOUNDERS_PASS_CHECKOUT_URL = 'https://plantbased-balance.org/founders';
@@ -2649,20 +2652,7 @@ function buildApprovedDeterministicMetaAdFirstReplyReview({
     const deterministicGoalProof = (metaAdGoalReplyTurn || metaAdConversationFastLane)
         && draft?.replyMode === 'campaign_goal_proof'
         && /^deterministic_meta_ad_goal_proof_v\d+(?:\+[a-z0-9_-]+)*$/i.test(String(draft?.model || ''));
-    const guidedGoalContractIssues = metaAdConversationFastLane && metaAdGoalReplyTurn
-        ? collectPaidMetaWriterContractIssues({
-            draft,
-            currentMessage: message,
-            qualifier,
-            history,
-        })
-        : [];
-    const approvedGuidedGoalReply = metaAdConversationFastLane
-        && metaAdGoalReplyTurn
-        && draft?.replyMode === 'campaign_goal_proof'
-        && /\+guided_meta_goal_proof_v\d+$/i.test(String(draft?.model || ''))
-        && guidedGoalContractIssues.length === 0;
-    const approvedGoalProof = deterministicGoalProof || approvedGuidedGoalReply;
+    const approvedGoalProof = deterministicGoalProof;
     const approvedConversationProgression = metaAdConversationFastLane
         && ['campaign_sales_progression', 'campaign_buyer_handoff', 'campaign_app_preview_handoff'].includes(String(draft?.replyMode || ''))
         && /^deterministic_paid_meta_(?:conversation|guided_sales|handoff)_v\d+(?:\+[a-z0-9_-]+)*$/i.test(String(draft?.model || ''))
@@ -2695,9 +2685,7 @@ function buildApprovedDeterministicMetaAdFirstReplyReview({
         verdict: 'pass',
         confidence: 1,
         summary: approvedGoalProof
-            ? (approvedGuidedGoalReply
-                ? 'Approved paid Meta goal reply against the guided progression contract.'
-                : 'Approved deterministic Meta ad goal reflection and proof.')
+            ? 'Approved deterministic Meta ad goal reflection and proof.'
             : (approvedConversationProgression
                 ? 'Approved deterministic paid Meta sales-progression reply.'
                 : 'Approved deterministic Meta ad first reply.'),
@@ -2708,9 +2696,7 @@ function buildApprovedDeterministicMetaAdFirstReplyReview({
         notification_reason: null,
         reviewed_at: new Date().toISOString(),
         reviewer_model: approvedGoalProof
-            ? (approvedGuidedGoalReply
-                ? 'paid-meta-guided-goal-contract-approval'
-                : 'deterministic-meta-ad-goal-proof-approval')
+            ? 'deterministic-meta-ad-goal-proof-approval'
             : (approvedConversationProgression
                 ? 'deterministic-paid-meta-conversation-approval'
                 : 'deterministic-meta-ad-first-reply-approval'),
@@ -4119,18 +4105,19 @@ function buildPaidMetaConversationWriterBlock({ linkedUserId = null, acquisition
     return `
 
 PAID META SINGLE-WRITER PLAYBOOK:
-- You own the conversational reply. Other code may attach approved proof media or an exact checkout link, but it must not invent or force a follow-up question after you write. Paid Meta replies are text-only; never write a synthetic voice-note script or announce a voice message.
+- You own the conversational reply from the complete conversation episode and the complete current unanswered message batch. Other code may attach approved proof media or an exact preview/checkout destination, but it must not invent or force ordinary conversation copy after you write. Paid Meta replies are text-only; never write a synthetic voice-note script or announce a voice message.
 - Read the complete visible timeline. Answer the newest message first and treat an obvious answer as an answer to Shannon's last question.
 - Treat all rapid unanswered inbound bubbles as one live turn. Answer every direct or reciprocal question in that batch before progressing the sale; never discard a side-question just because their last bubble adds a blocker.
 - Once Shannon has already sent any reply in the visible episode, do not restart with a time-of-day greeting or another hello.
 - If Shannon's immediately previous message already explained the offer, do not explain it again when the lead answers her question. Acknowledge the answer and move to the next adjacent stage.
-- Privately track the next useful stage: plant-based connection -> goal -> real blocker -> tailored fit -> offer explanation -> invitation to look inside -> explicit checkout step. Skip any stage the lead has already answered.
-- Once both the goal and a real blocker are known, stop interviewing. Build the sales bridge in concise text: recognise the exact blocker, remove shame by explaining why a rigid plan fails around their life, then explain how Shannon would set Balance up for that situation.
-- That earned offer explanation should clearly include the six-week Foundations course, their workout program, their plant-based meal plan, and one weekly check-in where Shannon reviews their training and food and adjusts things. State one $89.99 payment for the full six weeks with no subscription or auto-renewal, then offer to let them set it up and look through the app before payment. End with one simple consent question such as whether they want access.
-- Those offer facts are mandatory in the first earned offer after both goal and blocker are known. Do not replace them with vague wording like "could be a good fit", "I can send details", "support", or "a good rhythm".
-- "I need accountability" is a support need, not automatically a complete goal and blocker. Acknowledge it using only facts they supplied, then ask one tailored question that discovers the missing goal or the exact place accountability breaks. Do not pitch from that word alone.
+- Use this as a natural journey, not a checklist: find out whether they are already plant-based/vegan or looking to become so; when it fits, connect over why and how long; understand their health or fitness goal; understand what has made that goal difficult; optionally show a genuinely relevant client result; then offer to set up a free personalised look at their workout program and meal plan inside the app before they decide or pay.
+- Skip anything the lead has already answered. Do not force every stage into every conversation, and do not make goal or blocker fields mechanical gates. Use judgement about the most useful adjacent move.
+- When their difficulty is known, use it to explain specifically how Balance could make follow-through easier. Do not mine distress, diagnose them, or repeat their problem back without adding value.
+- Relevant proof is optional. Ally fits weight loss; Gen fits strength/confidence; Dani fits body recomposition; Bec and Kirsty fit shared accountability. Use no transformation when identity, sensitivity or fit is uncertain. If you choose one, explicitly name the approved person and say you are showing their photo so transport code can attach it.
+- When a short app demonstration would help, explicitly say you are sending the quick app video so transport code can attach the existing 63-second evergreen video. Never invent a URL.
+- When explaining the offer, keep the facts reliable: the six-week Foundations course includes their workout program, plant-based meal plan, and one weekly training/food check-in and adjustment. It is one $89.99 payment with no subscription or auto-renewal. The free personalised app preview comes before payment.
 - If they mention pregnancy or post-pregnancy weight as a goal without reporting a symptom or complication, keep it in the ordinary fitness lane. Do not invent children, ask for medical history, or make pregnancy recency the next question; respond to the fitness goal and ask about the current practical obstacle only if needed.
-- While fit is still unclear, finish ordinary paid-lead text turns with one short NEW question whose answer changes the next sales or support decision. Once a goal and blocker are known, stop discovery and use the required offer consent question instead. A direct link/media handoff, opt-out, sensitive safety response, sales-suspicion answer or explicit clean pause may stand alone; otherwise do not leave the conversation with no next move.
+- Usually end with one short new question when its answer will genuinely change the next reply. A direct answer, media/link handoff, opt-out, sensitive safety response, sales-suspicion answer or natural pause may stand alone. Questions earn the next response; they are not mandatory punctuation.
 - Never repeat or lightly reword a question Shannon already asked. Never echo the lead's sentence back as Shannon's reply. Use their answer, add a relevant coaching or proof point, then make the next adjacent move.
 - Treat a stated target as a target, not completed progress. For example, "I want to lose 10kg" must never become "10kg down".
 - When they ask about the program, price, inclusions or personalised coaching, answer that direct question before qualifying further. Do not send a signup link until they explicitly ask for it or clearly accept the offer.
@@ -4187,35 +4174,45 @@ function buildPaidMetaTurnDirective({ qualifier = {}, inboundMessages = [], hist
         .map(message => String(message?.text || message || '').replace(/\s+/g, ' ').trim())
         .filter(Boolean);
     if (!messages.length) return '';
-    const facts = qualifier?.facts && typeof qualifier.facts === 'object' ? qualifier.facts : {};
-    const goal = paidMetaFitnessGoalFromFacts(facts);
-    const blocker = paidMetaBlockerFromFacts(facts);
-    const hasFitnessGoal = !!goal;
-    const hasConcreteBlocker = !!blocker;
     const directQuestions = messages.filter(message => /\?|\b(?:how about you|what about you|was this your client|is this your client)\b/i.test(message));
     const exactDetails = messages.join(' | ');
     const asksReciprocalPlantHistory = /\b(?:how|what) about you\b/i.test(exactDetails)
         && (/\b(?:vegan|plant[ -]?based)\b/i.test(exactDetails) || hasRecentPaidMetaPlantReasonQuestion(history));
-    const plantTransition = /\b(?:go|be|become|eat) more plant[ -]?based\b|\b(?:look(?:ing)?|try(?:ing)?) to (?:adopt|transition|go plant[ -]?based)\b|\bplant[ -]?based\b[^.!?\n]{0,40}\b\d+\s*(?:nights?|days?|times?)\s+(?:a|per)\s+week\b|\b\d+\s*(?:nights?|days?|times?)\s+(?:a|per)\s+week\b[^.!?\n]{0,40}\b(?:plant|based)\b/i.test(exactDetails);
-    const requiredMove = hasFitnessGoal && hasConcreteBlocker
-        ? 'TAILORED_OFFER: goal and blocker are both known. Give the complete matched Foundations offer now; do not ask another discovery question.'
-        : asksReciprocalPlantHistory
-            ? 'ANSWER_AND_DISCOVER_GOAL: answer that animals were a big part of Shannon going vegan and that he has been vegan for five years, acknowledge their exact history, then ask what health or fitness result they want.'
-            : plantTransition
-                ? 'DISCOVER_FITNESS_GOAL: acknowledge their plant-based transition, then ask for their main health or fitness goal. Do not ask them to design the help or turn this into another diet-adherence interview.'
-        : /\baccountab/i.test(exactDetails) && !goal
-            ? 'DISCOVER_GOAL: acknowledge their exact plant-based/accountability details, then ask one question about the outcome they want.'
-            : 'NEXT_ADJACENT_STEP: answer the turn and use one purposeful question only when a missing answer changes the next move.';
     return `
 
-CURRENT PAID-META TURN DIRECTIVE (mandatory; planning constraints, never recite labels):
+CURRENT PAID-META TURN CONTEXT (use judgement; never recite labels):
 - Exact unanswered lead details: ${exactDetails}
-- Known goal: ${goal || '(not known)'}
-- Known blocker: ${blocker || '(not known)'}
-- Required move: ${requiredMove}
-- Ground the reply in at least two distinct exact details when the turn supplies two or more. Do not replace their details with generic phrases.
-${directQuestions.length ? `- Mandatory direct questions to answer explicitly before anything else: ${directQuestions.join(' | ')}` : '- No unresolved direct question detected in this inbound batch.'}
-${hasFitnessGoal && hasConcreteBlocker ? '- Mandatory offer facts: six-week Balance Foundations course; workout program around their week; plant-based meal plan; one weekly training/food check-in and adjustments; one $89.99 payment; no subscription or auto-renewal; offer app access/look-through before payment; finish with one consent question. A reply missing even one of these is invalid.' : ''}`;
+- Respond to every meaningful detail in this batch and ground the reply in their actual words rather than a generic script.
+${directQuestions.length ? `- Direct questions that must be answered before choosing the next natural move: ${directQuestions.join(' | ')}` : '- No unresolved direct question detected in this inbound batch.'}
+${asksReciprocalPlantHistory ? '- Reliable direct answer: animals were a big part of Shannon going vegan, and Shannon has been vegan for five years.' : ''}
+- Consult the complete episode to decide what they already told Shannon. Choose the most natural adjacent move from connection, goal, difficulty, relevant proof, app demonstration, or free personalised preview; do not repeat a question or force a stage.`;
+}
+
+function attachPaidMetaWriterSelectedMedia(draft = {}, {
+    allowAttachments = false,
+    flowVariant = 'plant_based_control',
+} = {}) {
+    if (!allowAttachments || flowVariant === 'broad_pain') return draft;
+    const replyText = draftTextFromDraft(draft);
+    if (!replyText) return draft;
+    const proofCandidates = [
+        { name: /\bally\b/i, imageUrl: ALLY_WEIGHT_LOSS_PROOF_URL },
+        { name: /\bgen\b/i, imageUrl: GEN_STRENGTH_CONFIDENCE_PROOF_URL },
+        { name: /\bbec\b[^.!?\n]{0,30}\bkirsty\b|\bkirsty\b[^.!?\n]{0,30}\bbec\b/i, imageUrl: BEC_KIRSTY_SHARED_MOMENTUM_PROOF_URL },
+        { name: /\bdani\b/i, imageUrl: DANI_RECOMPOSITION_PROOF_URL },
+    ];
+    const selectedProof = proofCandidates.find(candidate => candidate.name.test(replyText)
+        && maySendDraftImageAttachment({ imageUrl: candidate.imageUrl, replyText }));
+    const introducesVideo = maySendDraftVideoAttachment({
+        videoUrl: BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL,
+        replyText,
+    });
+    return {
+        ...draft,
+        imageAttachmentUrl: draft.imageAttachmentUrl || selectedProof?.imageUrl || null,
+        videoAttachmentUrl: draft.videoAttachmentUrl
+            || (introducesVideo ? BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL : null),
+    };
 }
 
 function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', qualifier = {}, history = [] } = {}) {
@@ -4227,16 +4224,6 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
         return [];
     }
     const issues = [];
-    const facts = qualifier?.facts && typeof qualifier.facts === 'object' ? qualifier.facts : {};
-    const goal = paidMetaFitnessGoalFromFacts(facts);
-    const blocker = paidMetaBlockerFromFacts(facts);
-    const lastOutbound = lastPaidMetaOutbound(history);
-    const hasFitnessGoal = !!goal || paidMetaHistoryHasFitnessGoal(history) || PAID_META_FITNESS_GOAL_RE.test(turn);
-    const followsGoalQuestion = paidMetaOutboundAskedForGoal(lastOutbound?.text || '');
-    const hasBlocker = !!blocker
-        || paidMetaHistoryHasConcreteBlocker(history)
-        || (!followsGoalQuestion
-            && (isPaidMetaConcreteBlocker(turn) || isPaidMetaBroadBlockerAnswer(turn, history)));
     const asksOfferInfo = /\b(?:how much|price|cost|renew|what(?:'s| is) included|what do i get|do i (?:actually )?get|workouts?|meal plan|check[ -]?in|details|how (?:does|do) (?:it|the program) work)\b/i.test(turn);
     const asksMealPlanQuestion = /\bdo you (?:offer|have|provide|include) (?:a |any )?(?:plant[ -]?based )?meal plans?\b|\bis (?:a |the )?meal plan included\b/i.test(turn);
     const asksGlutenFreeSupport = /\bgluten[ -]?free\b/i.test(turn)
@@ -4245,11 +4232,6 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
         && (/\b(?:vegan|plant[ -]?based)\b/i.test(turn) || hasRecentPaidMetaPlantReasonQuestion(history));
     const answeringPlantIdentity = hasRecentPaidMetaPlantBasedQuestion(history)
         && /\b(?:plant[ -]?based|vegan|vegetarian|not fully|trying|transition|adopt|mostly)\b/i.test(turn);
-    const needsFitnessGoalQuestion = asksPlantReciprocal
-        || answeringPlantIdentity
-        || /\b(?:go|be|become|eat) more plant[ -]?based\b|\b(?:look(?:ing)?|try(?:ing)?) to (?:adopt|transition|go plant[ -]?based)\b|\bplant[ -]?based\b[^.!?\n]{0,40}\b\d+\s*(?:nights?|days?|times?)\s+(?:a|per)\s+week\b|\b\d+\s*(?:nights?|days?|times?)\s+(?:a|per)\s+week\b[^.!?\n]{0,40}\b(?:plant|based)\b/i.test(turn);
-    const fitnessGoalQuestion = /\b(?:fitness|fit|health|goal|result|change|achieve|working towards)\b[^?\n]{0,100}\?/i;
-    const asksLeadToDesignHelp = /\bwhat (?:would you|do you) (?:mainly )?(?:like|want) help with\b|\bwhat would you mainly like help with fitness-wise\b/i;
     const plantDuration = turn.match(/\b(?:for\s+)?(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+years?\b/i)?.[1] || '';
     const durationWordByNumber = { 1: 'one', 2: 'two', 3: 'three', 4: 'four', 5: 'five', 6: 'six', 7: 'seven', 8: 'eight', 9: 'nine', 10: 'ten' };
     const durationNumberByWord = Object.fromEntries(Object.entries(durationWordByNumber).map(([number, word]) => [word, number]));
@@ -4260,33 +4242,11 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
     const plantDurationReplyPattern = plantDuration
         ? new RegExp(`\\b(?:${durationNumber || plantDuration}|${durationWord})\\b`, 'i')
         : null;
-    const plantFrequency = turn.match(/\b(\d+|one|two|three|four|five|six|seven)\s*(?:nights?|days?|times?)\s+(?:a|per)\s+week\b/i)?.[1] || '';
-    const plantFrequencyNumber = /^\d+$/.test(plantFrequency)
-        ? plantFrequency
-        : String(durationNumberByWord[plantFrequency.toLowerCase()] || '');
-    const plantFrequencyWord = durationWordByNumber[plantFrequencyNumber] || plantFrequency;
-    const plantFrequencyReplyPattern = plantFrequency
-        ? new RegExp(`\\b(?:${plantFrequencyNumber || plantFrequency}|${plantFrequencyWord})\\b`, 'i')
-        : null;
     if (asksPlantReciprocal && !/\b(?:five|5) years?\b/i.test(reply)) {
         issues.push('Answer the reciprocal plant-based question explicitly: Shannon has been vegan for five years.');
     }
     if (asksPlantReciprocal && !/\banimals?\b/i.test(reply)) {
         issues.push('Answer why Shannon went vegan explicitly: animals were a big part of it for him.');
-    }
-    if (needsFitnessGoalQuestion && !hasFitnessGoal && !fitnessGoalQuestion.test(reply)) {
-        issues.push(asksPlantReciprocal
-            ? `Include that they have been vegan for ${plantDuration || 'the duration they supplied'} years, answer that Shannon has been vegan for five years, then ask for their main health or fitness goal. Keep all three parts. Do not substitute another plant-based diet question.`
-            : 'Preserve their exact transition detail, then ask for their main health or fitness goal. Do not ask them to design the help or substitute another plant-based diet question.');
-    }
-    if (needsFitnessGoalQuestion && asksLeadToDesignHelp.test(reply)) {
-        issues.push('Ask for the result or health/fitness goal they want, not what they would like help with. The sales flow discovers the goal before the blocker.');
-    }
-    const semanticallyAcknowledgesTransitionProgress = /\b(?:part[ -]?way|already (?:started|there|doing)|(?:solid|good) start)\b/i.test(reply);
-    if (needsFitnessGoalQuestion && plantFrequency
-        && !plantFrequencyReplyPattern.test(reply)
-        && !semanticallyAcknowledgesTransitionProgress) {
-        issues.push(`The lead said they currently manage plant-based eating ${plantFrequency} nights a week. Preserve that exact frequency while asking for their main health or fitness goal.`);
     }
     if (/\baccountab/i.test(turn)) {
         for (const inventedDetail of ['kids?', 'work', 'prep']) {
@@ -4318,33 +4278,6 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
     if (/\b(?:trying to sell|sales pitch|just selling|sell me something)\b/i.test(turn)) {
         if (!/\b(?:paid|sell|sale|program)\b/i.test(reply)) issues.push('Answer the sales question honestly: Balance is a paid program.');
         if (/\?/.test(reply)) issues.push('Sales suspicion requires a direct answer and space: remove every follow-up question and continuation hook.');
-    }
-    const blockerQuestion = /\?/.test(reply) && /\b(?:get(?:s|ting)? in the way|hard|hardest|throw\w* (?:you )?off|knock\w* (?:you )?off|stop\w*|stick|consisten\w*|track|routine|barrier|obstacle|follow[ -]?through)\b/i.test(reply);
-    if (followsGoalQuestion && PAID_META_FITNESS_GOAL_RE.test(turn) && !hasBlocker && !blockerQuestion) {
-        issues.push('The lead answered the goal question. Acknowledge their exact goal and ask one tailored question about what currently gets in the way; do not stop at a statement.');
-    }
-    const offerSignals = [
-        ['six-week course', /\b(?:six|6)[- ]week\b/i],
-        ['workout program', /\bworkouts?|training program\b/i],
-        ['plant-based meal plan', /\bplant[ -]?based\b[^.!?\n]{0,50}\bmeal plan\b|\bmeal plan\b[^.!?\n]{0,50}\bplant[ -]?based\b/i],
-        ['weekly training/food review', /\bweekly\b[^.!?\n]{0,80}\b(?:check[ -]?in|review|adjust)\b/i],
-        ['$89.99 payment', /\$\s*89\.99\b|\b89\.99 dollars?\b/i],
-        ['no renewal', /\b(?:no|doesn['\u2019]?t|does not|won['\u2019]?t|will not)\b[^.!?\n]{0,40}\b(?:subscription|renew(?:al)?|auto-renew(?:al)?)\b/i],
-        ['look inside before payment', /\b(?:look|access|inside|set (?:it|you|yourself) up)\b[^.!?\n]{0,120}\bapp\b[^.!?\n]{0,120}\bbefore (?:(?:you )?pay(?:ing|ment)?|making a payment)\b|\bapp\b[^.!?\n]{0,120}\b(?:look|access|inside|see|set (?:it|you|yourself) up)\b[^.!?\n]{0,120}\bbefore (?:(?:you )?pay(?:ing|ment)?|making a payment)\b/i],
-        ['consent question', /\?/],
-    ];
-    if (hasFitnessGoal && hasBlocker) {
-        for (const [label, pattern] of offerSignals) {
-            if (!pattern.test(reply)) {
-                const repairInstruction = label === 'look inside before payment'
-                    ? 'Say explicitly that Shannon can set them up in the app so they can see their meal plan and workout program before making a payment.'
-                    : 'Add it accurately while staying concise and tailored to the live blocker.';
-                issues.push(`Earned paid-Meta offer is missing ${label}. ${repairInstruction}`);
-            }
-        }
-    } else if (/\b(?:foundations|founders pass|balance (?:is|was|could|would|has|gives|offers)|\$\s*89|send (?:the )?details|send (?:the )?link)\b/i.test(reply)
-        && !asksOfferInfo) {
-        issues.push('The reply pitched before a concrete fitness goal and real blocker were both known. Remove the offer and make the next adjacent guided move.');
     }
     if (asksOfferInfo && /\b(?:workouts?|meal plan)\b/i.test(turn) && !/\b(?:weekly|check[ -]?in|review)\b/i.test(reply)) {
         issues.push('The lead asked what they get. Include the one weekly training and food review/check-in in the direct answer.');
@@ -4385,7 +4318,7 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
 }
 
 function isBlockingPaidMetaWriterContractIssue(issue = '') {
-    return /pitched before|repeated a question|directly asked whether|answer why Shannon went vegan|meal-plan question directly|gluten-free question directly|sales suspicion|answer the sales question|earned paid-Meta offer is missing|main health or fitness goal|health\/fitness goal|answered the goal question|ask for the result or health|ignored the supplied plant-based duration/i.test(String(issue || ''));
+    return /repeated a question|directly asked whether|answer why Shannon went vegan|meal-plan question directly|gluten-free question directly|sales suspicion|answer the sales question|answer the price exactly|ignored the supplied plant-based duration/i.test(String(issue || ''));
 }
 
 function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = '', issues = [], qualifier = {}, history = [] } = {}) {
@@ -4494,22 +4427,6 @@ function buildPaidMetaNonBlockingReviewFallback({
     appPreviewUrl = META_APP_PREVIEW_URL,
 } = {}) {
     if (!isNonBlockingDraftStyleWarning(draftReview)) return null;
-    const progression = buildDeterministicPaidMetaConversationReply({
-        currentMessage,
-        qualifier,
-        history,
-        flowVariant,
-        checkoutUrl,
-        appPreviewUrl,
-    });
-    if (progression?.joined) {
-        return {
-            ...draft,
-            ...progression,
-            paidMetaNonBlockingReviewReleased: true,
-            shadowDraftInput: null,
-        };
-    }
     const reply = draftTextFromDraft(draft);
     if (!reply || isUnsafeStockDiscoveryQuestion(reply)) return null;
     return {
@@ -7247,9 +7164,6 @@ exports.handler = async (event) => {
             ...contextualLinkReply,
         };
     }
-    if (metaAdGoalReplyTurn) {
-        draft = applyMetaAdGoalProofReply(draft, messageText, { flowVariant: metaAdFlowVariant });
-    }
     if (metaAdConversationFastLane
         && hasInstagramGraphRoute
         && metaAdFlowVariant !== 'broad_pain'
@@ -7260,12 +7174,9 @@ exports.handler = async (event) => {
             flowVariant: metaAdFlowVariant,
         };
     }
-    if (metaAdConversationFastLane) draft = ensureMetaAdSalesProgressionQuestion({
-        draft,
-        currentMessage: messageText,
-        qualifier,
-        leadStage: effectiveLeadStage,
-        linkedUserId: thread.linked_user_id,
+    if (metaAdConversationFastLane) draft = attachPaidMetaWriterSelectedMedia(draft, {
+        allowAttachments: hasInstagramGraphRoute,
+        flowVariant: metaAdFlowVariant,
     });
     draft = removePaidMetaBlockerVoiceGreeting({
         draft,
@@ -8962,6 +8873,7 @@ exports._test = {
     hasDirectPaidMetaCheckoutIntent,
     buildDraftVideoAttachmentData,
     buildDraftImageAttachmentData,
+    attachPaidMetaWriterSelectedMedia,
     ensureMetaAdSalesProgressionQuestion,
     resolveMetaAdEarlyTypingDelayMs,
     resolveRecentVoiceSince,
