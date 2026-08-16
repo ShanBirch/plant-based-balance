@@ -12,6 +12,12 @@ const DEFAULT_COALESCE_MS = 2500;
 const DEFAULT_INBOUND_QUIET_MS = 2500;
 const DEFAULT_BATCH_MAX_WAIT_MS = 9000;
 const DEFAULT_TURN_TIMEOUT_MS = 4 * 60 * 1000;
+const DEFAULT_HTTP_TIMEOUT_MS = 10000;
+const DEFAULT_BARE_DRAFT_REDRIVE_MS = 30000;
+const INTERNAL_TEST_THREAD_IDS = new Set([
+    '4baea56e-eab4-4887-a732-39b14e983d44',
+    'ae26f9ef-b7aa-41ac-b9cd-8ecb616ab6fc',
+]);
 
 export function isPaidMetaTestReset(text = '') {
     const normalized = String(text)
@@ -121,10 +127,17 @@ Use closed only for a verified purchase/onboarding handoff, clear opt-out, perma
 
 export function shouldHandleAlert(alert, nowMs = Date.now(), coalesceMs = DEFAULT_COALESCE_MS) {
     if (!alert?.id || alert.status !== 'pending') return false;
-    if (alert?.data?.codex_live_chat_required !== true) return false;
+    if (alert?.data?.codex_live_chat_required !== true && !isRecoverableBareDraftAlert(alert)) return false;
     if (!alert?.data?.ig_thread_id && !alert?.data?.codex_live_chat_ig_thread_id) return false;
     const createdMs = Date.parse(alert.created_at || '');
     return !Number.isFinite(createdMs) || nowMs - createdMs >= coalesceMs;
+}
+
+export function isRecoverableBareDraftAlert(alert) {
+    const threadId = String(alert?.data?.ig_thread_id || '').trim();
+    return alert?.status === 'pending'
+        && alert?.data?.draft_error === 'draft_generation_pending'
+        && INTERNAL_TEST_THREAD_IDS.has(threadId);
 }
 
 export function findCodexBinary({ localAppData = process.env.LOCALAPPDATA, explicit = process.env.CODEX_BIN } = {}) {
@@ -306,8 +319,10 @@ class SupabaseRest {
     }
 
     async request(relative, options = {}) {
+        const timeoutMs = Number(options.timeoutMs || process.env.IG_CODEX_LIVE_HTTP_TIMEOUT_MS || DEFAULT_HTTP_TIMEOUT_MS);
         const response = await fetch(`${this.base}/${relative}`, {
             ...options,
+            signal: options.signal || AbortSignal.timeout(timeoutMs),
             headers: { ...this.headers, ...(options.headers || {}) },
         });
         const text = await response.text();
@@ -316,14 +331,47 @@ class SupabaseRest {
     }
 
     async pendingAlerts() {
-        const query = new URLSearchParams({
+        const routedQuery = new URLSearchParams({
             select: 'id,status,created_at,client_name,suggested_message,data',
             status: 'eq.pending',
             'data->>codex_live_chat_required': 'eq.true',
             order: 'created_at.asc',
             limit: '20',
         });
-        return this.request(`coach_alerts?${query.toString()}`);
+        const bareQuery = new URLSearchParams({
+            select: 'id,status,created_at,client_name,suggested_message,data',
+            status: 'eq.pending',
+            'data->>draft_error': 'eq.draft_generation_pending',
+            'data->>ig_thread_id': 'in.(4baea56e-eab4-4887-a732-39b14e983d44,ae26f9ef-b7aa-41ac-b9cd-8ecb616ab6fc)',
+            order: 'created_at.asc',
+            limit: '4',
+        });
+        const [routed, bare] = await Promise.all([
+            this.request(`coach_alerts?${routedQuery.toString()}`),
+            this.request(`coach_alerts?${bareQuery.toString()}`),
+        ]);
+        const byId = new Map([...(routed || []), ...(bare || [])].map(alert => [alert.id, alert]));
+        return [...byId.values()].sort((left, right) => Date.parse(left.created_at || '') - Date.parse(right.created_at || ''));
+    }
+
+    async redriveBareDraft(alert) {
+        const threadId = String(alert?.data?.ig_thread_id || '');
+        const messageText = String(alert?.data?.message_preview || '').trim();
+        const manychatMessageId = String(alert?.data?.manychat_message_id || '').trim();
+        if (!threadId || !messageText || !manychatMessageId) return false;
+        const siteUrl = String(process.env.BALANCE_SITE_URL || 'https://main--future-balance.netlify.app').replace(/\/$/, '');
+        const response = await fetch(`${siteUrl}/.netlify/functions/ig-instant-draft-background`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            signal: AbortSignal.timeout(DEFAULT_HTTP_TIMEOUT_MS),
+            body: JSON.stringify({ threadId, messageText, manychatMessageId, paidMetaLiveChat: true }),
+        });
+        if (!response.ok) throw new Error(`bare draft redrive ${response.status}: ${(await response.text()).slice(0, 300)}`);
+        await this.mergeAlertData(alert.id, {
+            codex_live_worker_redrive_at: new Date().toISOString(),
+            codex_live_worker_redrive_reason: 'stalled_draft_generation_pending',
+        });
+        return true;
     }
 
     async claimThread(threadId, runId) {
@@ -734,9 +782,29 @@ export async function main(argv = process.argv.slice(2)) {
         const supabase = new SupabaseRest(loadSupabaseCredentials(args.workspace));
         logger(`${args.dryRun ? 'dry-run ' : ''}worker started for ${args.workspace}`);
         do {
-            const alerts = await supabase.pendingAlerts();
+            let alerts = [];
+            try {
+                alerts = await supabase.pendingAlerts();
+            } catch (error) {
+                logger(`pending alert poll failed; retrying: ${error.message}`);
+                if (!args.once) await new Promise(resolve => setTimeout(resolve, Number(process.env.IG_CODEX_LIVE_POLL_MS || DEFAULT_POLL_MS)));
+                continue;
+            }
             for (const alert of alerts || []) {
                 if (!shouldHandleAlert(alert)) continue;
+                if (isRecoverableBareDraftAlert(alert)
+                    && alert?.data?.codex_live_chat_required !== true) {
+                    const lastRedriveMs = Date.parse(alert?.data?.codex_live_worker_redrive_at || '');
+                    if (!Number.isFinite(lastRedriveMs) || Date.now() - lastRedriveMs >= DEFAULT_BARE_DRAFT_REDRIVE_MS) {
+                        try {
+                            await supabase.redriveBareDraft(alert);
+                            logger(`redrove stalled bare draft alert ${alert.id}`);
+                        } catch (error) {
+                            logger(`bare draft redrive failed for alert ${alert.id}: ${error.message}`);
+                        }
+                    }
+                    continue;
+                }
                 if (state.alerts[alert.id]?.status === 'completed') {
                     logger(`rechecking pending alert ${alert.id}; local turn completion is not delivery proof`);
                     delete state.alerts[alert.id];

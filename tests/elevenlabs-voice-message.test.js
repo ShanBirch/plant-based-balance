@@ -473,6 +473,19 @@ assert.strictEqual(
     voice.resolvePersonalVoiceReplyPlan({
         channel: 'instagram',
         hasInstagramGraphRoute: true,
+        currentMessage: "I guess I'm busy",
+        qualifier: null,
+        meaningfulLeadReplyCount: 4,
+        hasRecentVoiceMessage: false,
+    }).useSyntheticVoice,
+    false,
+    'a temporarily null qualifier must safely stay in text instead of crashing the draft function'
+);
+
+assert.strictEqual(
+    voice.resolvePersonalVoiceReplyPlan({
+        channel: 'instagram',
+        hasInstagramGraphRoute: true,
         currentMessage: 'Do you offer personalized coaching plans?',
         qualifier: { facts: { current_state: 'wants to lose weight' } },
         meaningfulLeadReplyCount: 3,

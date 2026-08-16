@@ -125,7 +125,7 @@ function hasHighSignalGoalBlocker(text = '') {
 }
 
 function hasQualifierPersonalEvidence(qualifier = {}) {
-    const facts = safeObject(qualifier.facts);
+    const facts = safeObject(safeObject(qualifier).facts);
     const relationshipChecklist = safeObject(facts.relationship_checklist);
     return [
         facts.current_state,
@@ -138,7 +138,7 @@ function hasQualifierPersonalEvidence(qualifier = {}) {
 }
 
 function hasGoalAndBlockerEvidence(qualifier = {}) {
-    const facts = safeObject(qualifier.facts);
+    const facts = safeObject(safeObject(qualifier).facts);
     const relationshipChecklist = safeObject(facts.relationship_checklist);
     const goal = cleanString(facts.current_state || facts.motivation || '', 500);
     const blocker = cleanString(

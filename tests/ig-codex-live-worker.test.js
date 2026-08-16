@@ -14,6 +14,10 @@ const { pathToFileURL } = require('url');
     assert.doesNotMatch(productionOriginSource, /BALANCE_SITE_URL \|\| 'https:\/\/plantbased-balance\.org'/);
     assert.match(productionOriginSource, /DEFAULT_INBOUND_QUIET_MS = 2500/);
     assert.match(productionOriginSource, /DEFAULT_BATCH_MAX_WAIT_MS = 9000/);
+    assert.match(productionOriginSource, /DEFAULT_HTTP_TIMEOUT_MS = 10000/);
+    assert.match(productionOriginSource, /AbortSignal\.timeout\(timeoutMs\)/);
+    assert.match(productionOriginSource, /pending alert poll failed; retrying/);
+    assert.match(productionOriginSource, /stalled_draft_generation_pending/);
 
     assert.strictEqual(cleanOwner('codex_live_worker'), 'codex_live_worker');
 
@@ -54,6 +58,22 @@ const { pathToFileURL } = require('url');
     assert.strictEqual(worker.shouldHandleAlert(alert, now, 2500), true);
     assert.strictEqual(worker.shouldHandleAlert({ ...alert, status: 'sent' }, now, 2500), false);
     assert.strictEqual(worker.shouldHandleAlert({ ...alert, data: { ...alert.data, codex_live_chat_required: false } }, now, 2500), false);
+    assert.strictEqual(worker.shouldHandleAlert({
+        ...alert,
+        data: { ...alert.data, codex_live_chat_required: false, ig_thread_id: '4baea56e-eab4-4887-a732-39b14e983d44', draft_error: 'draft_generation_pending' },
+    }, now, 2500), true);
+    assert.strictEqual(worker.shouldHandleAlert({
+        ...alert,
+        data: { ...alert.data, codex_live_chat_required: false, ig_username: 'ordinary_lead', draft_error: 'draft_generation_pending' },
+    }, now, 2500), false);
+    assert.strictEqual(worker.isRecoverableBareDraftAlert({
+        ...alert,
+        data: { ...alert.data, ig_thread_id: '4baea56e-eab4-4887-a732-39b14e983d44', draft_error: 'draft_generation_pending' },
+    }), true);
+    assert.strictEqual(worker.isRecoverableBareDraftAlert({
+        ...alert,
+        data: { ...alert.data, ig_thread_id: 'ordinary-thread', draft_error: 'draft_generation_pending' },
+    }), false);
 
     assert.strictEqual(worker.isPaidMetaTestReset('What is the Founders Pass?'), true);
     assert.strictEqual(worker.isPaidMetaTestReset("What's the founders pass"), true);
