@@ -1310,7 +1310,7 @@ test('paid Meta guided sales stages move goal to blocker to complete offer to pr
     assert.equal(linkReply.replyMode, 'campaign_app_preview_handoff');
     assert.match(linkReply.joined, /set you up in the app/i);
     assert.match(linkReply.joined, /workout program and plant-based meal plan before paying/i);
-    assert.match(linkReply.joined, /full app so you can look around before deciding/i);
+    assert.match(linkReply.joined, /Here you go:/i);
     assert.equal(isMetaAppPreviewUrl(sentUrl), true);
 });
 
