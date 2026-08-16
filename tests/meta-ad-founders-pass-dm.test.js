@@ -1308,7 +1308,8 @@ test('paid Meta guided sales stages move goal to blocker to complete offer to pr
     });
     const sentUrl = linkReply.joined.match(/https?:\/\/\S+/)?.[0] || '';
     assert.equal(linkReply.replyMode, 'campaign_app_preview_handoff');
-    assert.match(linkReply.joined, /profile, starting workout program and plant-based meal plan/i);
+    assert.match(linkReply.joined, /set you up in the app/i);
+    assert.match(linkReply.joined, /workout program and plant-based meal plan before paying/i);
     assert.match(linkReply.joined, /full app so you can look around before deciding/i);
     assert.equal(isMetaAppPreviewUrl(sentUrl), true);
 });
@@ -2307,17 +2308,20 @@ test.skip('legacy deterministic conversational stages retired in favour of the l
 
     const exactLivePreviewAcceptance = buildDeterministicPaidMetaConversationReply({
         currentMessage: 'Yes',
-        qualifier: blockerQualifier,
+        qualifier: null,
         history: [{
             direction: 'out',
-            text: 'Would you like me to show you a quick preview of the meal plan and workout program inside the app?',
+            text: 'Do you want a free personalised look at what that would look like for your goal?',
         }],
         flowVariant: 'plant_based_control',
     });
     assert.equal(exactLivePreviewAcceptance.replyMode, 'campaign_app_preview_handoff');
     assert.equal(exactLivePreviewAcceptance.appPreviewHandoff, true);
     assert.match(exactLivePreviewAcceptance.joined, /meta-app-preview\.html/i);
+    assert.match(exactLivePreviewAcceptance.joined, /set you up in the app/i);
+    assert.match(exactLivePreviewAcceptance.joined, /before paying/i);
     assert.doesNotMatch(exactLivePreviewAcceptance.joined, /video|checkout/i);
+    assert.doesNotMatch(exactLivePreviewAcceptance.joined, /first name|email/i);
 
     const acceptedSupportWithVideo = buildDeterministicPaidMetaConversationReply({
         currentMessage: 'Yeah',

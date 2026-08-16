@@ -1240,7 +1240,7 @@ function hasRecentPaidMetaSupportQuestion(history = []) {
         .slice(-4)
         .some(item => {
             const text = String(item?.text || '');
-            return /\b(?:would (?:having me|that kind of support)|would that help|accountability help|help you stay on track|make it easier|are you keen to (?:have|take) a look|would you like (?:me to show you|to (?:have|take)) (?:a )?(?:quick )?(?:look|preview)|(?:do you )?want me to (?:show you|set up|create|put together)\b[^?\n]{0,120}\b(?:look|preview)|want me to send you (?:access|the link)|want to (?:have|take) a look|should i send (?:you )?(?:access|the link)|is that something you(?:'d| would) want)\b/i.test(text)
+            return /\b(?:would (?:having me|that kind of support)|would that help|accountability help|help you stay on track|make it easier|are you keen to (?:have|take) a look|would you like (?:me to show you|to (?:have|take)) (?:a )?(?:quick )?(?:look|preview)|do you want (?:a )?(?:free )?(?:personalised )?(?:quick )?(?:look|preview)|(?:do you )?want me to (?:show you|set up|create|put together)\b[^?\n]{0,120}\b(?:look|preview)|want me to send you (?:access|the link)|want to (?:have|take) a look|should i send (?:you )?(?:access|the link)|is that something you(?:'d| would) want)\b/i.test(text)
                 || (/\b(?:six|6)[- ]week\b/i.test(text)
                     && /\b(?:meal plan|workout|training program)\b/i.test(text)
                     && /\b(?:send|access|look|link)\b[^?\n]{0,100}\?/i.test(text))
@@ -1570,13 +1570,14 @@ function buildDeterministicPaidMetaConversationReply({
             flowVariant,
         };
     }
-    if ((PAID_META_POSITIVE_FIT_RE.test(message) || isExplicitPaidMetaPreviewAcceptance(message))
-        && (hasRecentPaidMetaSupportQuestion(history) || hasRecentCompletePaidMetaOffer(history))
+    const acceptedExplicitPreviewInvitation = isExplicitPaidMetaPreviewAcceptance(message)
+        && hasRecentPaidMetaSupportQuestion(history);
+    if ((acceptedExplicitPreviewInvitation
+            || (PAID_META_POSITIVE_FIT_RE.test(message) && hasRecentCompletePaidMetaOffer(history)))
         && !broadFlow
         && appPreviewUrl
-        && historyHasGoal
-        && historyHasBlocker) {
-        const joined = `Yep. This takes you through your profile, starting workout program and plant-based meal plan, then opens the full app so you can look around before deciding: ${appPreviewUrl}`;
+        && (acceptedExplicitPreviewInvitation || (historyHasGoal && historyHasBlocker))) {
+        const joined = `Yep, I can set you up in the app so you can check out your workout program and plant-based meal plan before paying. Here you go: ${appPreviewUrl}`;
         return {
             chunks: [joined],
             joined,
