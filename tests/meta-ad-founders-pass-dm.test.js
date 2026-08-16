@@ -77,13 +77,16 @@ test('paid Meta has a dedicated sales agent prompt with no general coach assumpt
 test('paid Meta lane bypasses the general qualifier and deterministic conversation overrides', () => {
     const source = fs.readFileSync(path.join(__dirname, '../netlify/functions/ig-instant-draft.js'), 'utf8');
     assert.match(source, /const qualifierEligible = !metaAdConversationFastLane/);
-    assert.match(source, /const earlyDeterministicProgression = null/);
+    assert.doesNotMatch(source, /const earlyDeterministicProgression = null/);
     assert.doesNotMatch(source, /animals were a big part of Shannon going vegan/i);
     assert.match(source, /paid Meta typing refresh failed/);
     assert.match(source, /10000, 'paid Meta OpenAI writer'/);
     assert.match(source, /IG_PAID_META_TYPING_REFRESH_MS = 4000/);
     assert.match(source, /startPaidMetaTypingHeartbeat/);
     assert.match(source, /deterministic-paid-meta-fast-contract-v1/);
+    assert.match(source, /exactPaidMetaHandoff/);
+    assert.match(source, /campaign_app_preview_handoff', 'campaign_buyer_handoff/);
+    assert.match(source, /Never ask the lead for an email address in Instagram/);
     assert.match(source, /paid Meta OpenAI timed out; used local sales fallback/);
     assert.match(source, /if \(paidMetaSingleWriter\) \{[\s\S]{0,2600}deterministic_paid_meta_timeout_v1[\s\S]{0,1200}\} else try \{/);
 });

@@ -4156,6 +4156,7 @@ PAID META SINGLE-WRITER PLAYBOOK:
 - Relevant proof is optional. Ally fits weight loss; Gen fits strength/confidence; Dani fits body recomposition; Bec and Kirsty fit shared accountability. Use no transformation when identity, sensitivity or fit is uncertain. If you choose one, explicitly name the approved person and say you are showing their photo so transport code can attach it.
 - When a short app demonstration would help, explicitly say you are sending the quick app video so transport code can attach the existing 63-second evergreen video. Never invent a URL.
 - When explaining the offer, keep the facts reliable: the six-week Foundations course includes their workout program, plant-based meal plan, and one weekly training/food check-in and adjustment. It is one $89.99 payment with no subscription or auto-renewal. The free personalised app preview comes before payment.
+- Never ask the lead for an email address in Instagram. When they accept the free personalised preview, transport code sends the signed Open your preview card immediately; account creation inside that onboarding collects their email.
 - If they mention pregnancy or post-pregnancy weight as a goal without reporting a symptom or complication, keep it in the ordinary fitness lane. Do not invent children, ask for medical history, or make pregnancy recency the next question; respond to the fitness goal and ask about the current practical obstacle only if needed.
 - Usually end with one short new question when its answer will genuinely change the next reply. A direct answer, media/link handoff, opt-out, sensitive safety response, sales-suspicion answer or natural pause may stand alone. Questions earn the next response; they are not mandatory punctuation.
 - Never repeat or lightly reword a question Shannon already asked. Never echo the lead's sentence back as Shannon's reply. Use their answer, add a relevant coaching or proof point, then make the next adjacent move.
@@ -4368,6 +4369,9 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
         && !/(?:\$\s*89\.99\b|\b(?:aud|au\$)\s*\$?\s*89\.99\b|\b89\.99 dollars?\b)/i.test(reply)) {
         issues.push('Answer the price exactly as one $89.99 payment for the full six weeks.');
     }
+    if (/\b(?:e-?mail|email address|best email)\b/i.test(reply)) {
+        issues.push('Do not ask for an email in Instagram. Send the signed app-preview card; onboarding collects the account email there.');
+    }
     const normalizeQuestion = value => String(value || '')
         .toLowerCase()
         .replace(/[^a-z0-9?\s]/g, '')
@@ -4393,7 +4397,7 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
 }
 
 function isBlockingPaidMetaWriterContractIssue(issue = '') {
-    return /repeated a question|directly asked whether|answer why Shannon went vegan|meal-plan question directly|gluten-free question directly|sales suspicion|answer the sales question|answer the price exactly|ignored the supplied plant-based duration/i.test(String(issue || ''));
+    return /repeated a question|directly asked whether|answer why Shannon went vegan|meal-plan question directly|gluten-free question directly|sales suspicion|answer the sales question|answer the price exactly|do not ask for an email|ignored the supplied plant-based duration/i.test(String(issue || ''));
 }
 
 function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = '', issues = [], qualifier = {}, history = [] } = {}) {
@@ -7055,9 +7059,25 @@ exports.handler = async (event) => {
         && isMetaAdGoalReplyTurn(history, messageText);
     const qualifierEvaluationThread = buildInternalTestQualifierThread(thread, history);
     let qualifier = qualifierEvaluationThread.qualifier || null;
-    // Paid Meta has its own conversation agent. Do not let the legacy
-    // deterministic qualifier ladder pre-empt what that agent writes.
-    const earlyDeterministicProgression = null;
+    // Paid Meta has its own conversation agent for ordinary wording. Exact
+    // destination handoffs remain deterministic so an accepted preview cannot
+    // turn into an invented email-collection step or lose its signed card.
+    const exactPaidMetaHandoff = metaAdConversationFastLane
+        ? buildDeterministicPaidMetaConversationReply({
+            currentMessage: currentInboundTurnMessage,
+            qualifier,
+            history,
+            flowVariant: metaAdFlowVariant,
+            checkoutUrl: metaAdCheckoutUrl,
+            appPreviewUrl: buildMetaAppPreviewUrl(thread.id),
+            personalVoiceNoteMode: false,
+            allowVideoAttachment: hasInstagramGraphRoute,
+        })
+        : null;
+    const earlyDeterministicProgression = ['campaign_app_preview_handoff', 'campaign_buyer_handoff']
+        .includes(String(exactPaidMetaHandoff?.replyMode || ''))
+        ? exactPaidMetaHandoff
+        : null;
     const fastDeterministicProgression = shouldApplyDeterministicPaidMetaReplyOverride(earlyDeterministicProgression)
         ? earlyDeterministicProgression
         : null;
