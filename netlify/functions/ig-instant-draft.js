@@ -1402,14 +1402,14 @@ function buildPaidMetaPlantReasonToGoalText(reasonText = '') {
     const asksShannonBack = /\b(?:how|what) about you\b/i.test(reason);
     let acknowledgement = 'Yeah, that makes sense.';
     if (/\b(?:animal|ethic\w*|cruel|welfare)\b/i.test(reason)) {
-        acknowledgement = 'Yeah, I get that. Animals were a big part of it for me too. I\'ve been vegan for five years now.';
+        acknowledgement = 'Yeah, I get that. I\'ve been vegan for five years now.';
     } else if (/\b(?:environment|planet|climate|sustainab)\w*\b/i.test(reason)) {
         acknowledgement = 'Yeah, I get that. The environmental side matters a lot.';
     } else if (/\b(?:health|feel better|energy|digestion|cholesterol)\b/i.test(reason)) {
         acknowledgement = 'Yeah, that makes sense. Feeling better day to day is a solid reason.';
     }
     if (asksShannonBack && !/\b(?:five|5) years?\b/i.test(acknowledgement)) {
-        acknowledgement += ' Animals were a big part of it for me too. I\'ve been vegan for five years now.';
+        acknowledgement += ' I\'ve been vegan for five years now.';
     }
     return `${acknowledgement} What's your main health or fitness goal at the moment?`;
 }
@@ -4130,6 +4130,46 @@ PAID META SINGLE-WRITER PLAYBOOK:
 - Keep it like a real active DM: concise, specific, warm and low-pressure. No intake bundles, option menus, canned therapy language or brochure dump.`;
 }
 
+function buildPaidMetaAgentPrompt({
+    leadName = 'Lead',
+    channelLabel = 'Instagram',
+    timeline = '',
+    unansweredMessages = [],
+    flowVariant = 'plant_based_control',
+} = {}) {
+    const batch = (Array.isArray(unansweredMessages) ? unansweredMessages : [])
+        .map(message => String(message?.text || message || '').trim())
+        .filter(Boolean)
+        .map((message, index) => `${index + 1}. ${message}`);
+    return `You are Shannon's dedicated paid-Meta lead conversation agent for Balance. You are not the in-app AI coach, client-support agent, organic-follower agent, or generic lead qualifier. Those agents' rules and state do not apply here.
+
+Your job is to read the complete paid-ad conversation and write Shannon's next Instagram DM. Treat every unanswered bubble as one current turn. Answer every live direct or reciprocal question before making the next sales move. The newest substantive message controls when it changes the topic.
+
+Natural journey, not a checklist: learn whether they are plant-based/vegan or looking to become so; connect over why and how long when natural; learn their health or fitness goal; learn what is making that goal difficult; optionally introduce genuinely relevant proof; explain how Balance helps with their stated situation; offer a free personalised look at their workout program and plant-based meal plan inside the app before they decide or pay.
+
+GUIDE THE SALE: every ordinary discovery reply must both respond to what they said and ask exactly one useful next question from the next adjacent part of that journey. Do not merely answer and stop. After answering a reciprocal question about Shannon, continue with the most natural unanswered question about them in the same turn. Once their plant-based reason or duration has enough context, move forward to their fitness goal instead of drilling deeper into the same reason. Once the goal is known, move to what is making it difficult. Once the difficulty is known, add useful value and move toward proof, the app demonstration, or the free preview.
+
+Skip anything already answered. Never repeat or lightly reword a question Shannon already asked. Do not invent personal facts about Shannon or the lead. The only approved reciprocal fact is that Shannon has been vegan for five years. If asked why Shannon went vegan, do not guess; answer briefly that he has been vegan five years and turn the focus naturally back to their story only if useful.
+
+Proof is optional and must genuinely match: Ally for weight loss, Gen for strength/confidence, Dani for body recomposition, Bec and Kirsty for shared accountability. If using proof, name the approved person and say you are showing their photo. If an app demonstration is useful, explicitly say you are sending the quick app video. Do not invent URLs.
+
+Reliable offer facts: Balance Foundations is a six-week program inside Balance with a personalised workout program, plant-based meal plan, and one weekly training/food review and adjustment. It costs AUD 89.99 once, with no subscription or auto-renewal. The personalised app preview comes before payment.
+
+Only send a preview or checkout destination after explicit acceptance or request. Hand off instead of improvising for medical/safety issues, account or payment support, existing-client app support, or a direct request for Shannon. Keep replies quick, warm, concise and human. The one-next-question rule applies unless this turn sends media/a link, handles an opt-out or sensitive issue, hands off, or is clearly closing the conversation. Never reveal automation or AI. No em dashes.
+
+Campaign variant: ${flowVariant}
+Channel: ${channelLabel}
+Lead: ${leadName}
+
+COMPLETE PAID-META CONVERSATION (oldest to newest):
+${timeline || '(no earlier tracked messages)'}
+
+CURRENT UNANSWERED TURN (oldest to newest):
+${batch.join('\n') || '(no text)'}
+
+Return JSON only: {"messages":["bubble 1","bubble 2 if a natural pause helps"]}. Use 1 to 3 short bubbles.`;
+}
+
 function paidMetaFitnessGoalFromFacts(facts = {}) {
     const candidates = [facts.motivation, facts.current_state]
         .map(value => String(value || '').trim())
@@ -4180,15 +4220,12 @@ function buildPaidMetaTurnDirective({ qualifier = {}, inboundMessages = [], hist
     if (!messages.length) return '';
     const directQuestions = messages.filter(message => /\?|\b(?:how about you|what about you|was this your client|is this your client)\b/i.test(message));
     const exactDetails = messages.join(' | ');
-    const asksReciprocalPlantHistory = /\b(?:how|what) about you\b/i.test(exactDetails)
-        && (/\b(?:vegan|plant[ -]?based)\b/i.test(exactDetails) || hasRecentPaidMetaPlantReasonQuestion(history));
     return `
 
 CURRENT PAID-META TURN CONTEXT (use judgement; never recite labels):
 - Exact unanswered lead details: ${exactDetails}
 - Respond to every meaningful detail in this batch and ground the reply in their actual words rather than a generic script.
 ${directQuestions.length ? `- Direct questions that must be answered before choosing the next natural move: ${directQuestions.join(' | ')}` : '- No unresolved direct question detected in this inbound batch.'}
-${asksReciprocalPlantHistory ? '- Reliable direct answer: animals were a big part of Shannon going vegan, and Shannon has been vegan for five years.' : ''}
 - Consult the complete episode to decide what they already told Shannon. Choose the most natural adjacent move from connection, goal, difficulty, relevant proof, app demonstration, or free personalised preview; do not repeat a question or force a stage.`;
 }
 
@@ -4248,9 +4285,6 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
         : null;
     if (asksPlantReciprocal && !/\b(?:five|5) years?\b/i.test(reply)) {
         issues.push('Answer the reciprocal plant-based question explicitly: Shannon has been vegan for five years.');
-    }
-    if (asksPlantReciprocal && !/\banimals?\b/i.test(reply)) {
-        issues.push('Answer why Shannon went vegan explicitly: animals were a big part of it for him.');
     }
     if (/\baccountab/i.test(turn)) {
         for (const inventedDetail of ['kids?', 'work', 'prep']) {
@@ -4362,7 +4396,7 @@ function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = 
         } else if (frequency) {
             joined = `Nice, ${frequency} nights a week is a solid start if you’re looking to make the shift. What’s your main health or fitness goal at the moment?`;
         } else if (reciprocal) {
-            joined = "Yeah, I get that. Animals were a big part of it for me too, and I've been vegan for five years now. What's your main health or fitness goal at the moment?";
+            joined = "Yeah, I get that. I've been vegan for five years now. What's your main health or fitness goal at the moment?";
         } else if (/\bvegetarian\b/i.test(turn)) {
             joined = 'Nice, you’re already partway there then. What’s your main health or fitness goal at the moment?';
         } else if (/\b(?:not fully|trying|transition|adopt|go more|more plant)\b/i.test(turn)) {
@@ -5831,6 +5865,15 @@ Rules:
 - The JSON wrapper is only for the system. The chunk strings must contain only the exact DM text Shannon would send. Never put "json", "messages", "chunk", labels, or formatting instructions inside a chunk.
 - When attached media is available, media_summary is required. Describe the useful visible or audible facts in one concise sentence without guessing identity, relationships, location, or intent. This is private context for later review and must not be copied mechanically into the DM.
 - No quotes, labels, code-fence, or commentary outside the JSON.`;
+    if (paidMetaSingleWriter) {
+        prompt = buildPaidMetaAgentPrompt({
+            leadName,
+            channelLabel,
+            timeline: totalConversationText,
+            unansweredMessages: unansweredBatch,
+            flowVariant: adFlowVariant,
+        });
+    }
     prompt = prompt.replace(
         /- 1 to 3 chunks\.[^\n]*\n- Split where/,
         `- ${replyMode.chunkRule}\n- Split where`
@@ -6951,22 +6994,13 @@ exports.handler = async (event) => {
         && isMetaAdGoalReplyTurn(history, messageText);
     const qualifierEvaluationThread = buildInternalTestQualifierThread(thread, history);
     let qualifier = qualifierEvaluationThread.qualifier || null;
-    const earlyDeterministicProgression = metaAdConversationFastLane && !metaAdOpeningTurn && !metaAdGoalReplyTurn
-        ? buildDeterministicPaidMetaConversationReply({
-            currentMessage: currentInboundTurnMessage,
-            qualifier,
-            history,
-            flowVariant: metaAdFlowVariant,
-            checkoutUrl: metaAdCheckoutUrl,
-            appPreviewUrl: buildMetaAppPreviewUrl(thread.id),
-            personalVoiceNoteMode: false,
-            allowVideoAttachment: hasInstagramGraphRoute,
-        })
-        : null;
+    // Paid Meta has its own conversation agent. Do not let the legacy
+    // deterministic qualifier ladder pre-empt what that agent writes.
+    const earlyDeterministicProgression = null;
     const fastDeterministicProgression = shouldApplyDeterministicPaidMetaReplyOverride(earlyDeterministicProgression)
         ? earlyDeterministicProgression
         : null;
-    const qualifierEligible = !fastDeterministicProgression && isQualifierEligible({
+    const qualifierEligible = !metaAdConversationFastLane && !fastDeterministicProgression && isQualifierEligible({
         leadStage: effectiveLeadStage,
         linkedUserId: thread.linked_user_id,
     });
@@ -7133,26 +7167,6 @@ exports.handler = async (event) => {
         };
     }
 
-    if (metaAdConversationFastLane && !metaAdOpeningTurn && !metaAdGoalReplyTurn && !fastDeterministicProgression) {
-        const deterministicProgression = buildDeterministicPaidMetaConversationReply({
-            currentMessage: currentInboundTurnMessage,
-            qualifier,
-            history,
-            flowVariant: metaAdFlowVariant,
-            checkoutUrl: metaAdCheckoutUrl,
-            appPreviewUrl: buildMetaAppPreviewUrl(thread.id),
-            personalVoiceNoteMode: outboundVoiceMessage,
-            allowVideoAttachment: hasInstagramGraphRoute,
-        });
-        if (shouldApplyDeterministicPaidMetaReplyOverride(deterministicProgression)) draft = {
-            ...draft,
-            ...deterministicProgression,
-            timeline: draft.timeline,
-            currentTurnAnchorBlock: draft.currentTurnAnchorBlock,
-            conversationEpisode: draft.conversationEpisode,
-        };
-    }
-
     if (metaAdConversationFastLane && isContextualMetaAdOfferLinkRequest({
         currentMessage: messageText,
         qualifier,
@@ -7182,6 +7196,22 @@ exports.handler = async (event) => {
         allowAttachments: hasInstagramGraphRoute,
         flowVariant: metaAdFlowVariant,
     });
+    if (metaAdConversationFastLane && hasInstagramGraphRoute && graphRecipientId) {
+        try {
+            // Meta's typing indicator expires while the dedicated agent is
+            // generating/reviewing. Refresh it here so it does not vanish and
+            // then reappear immediately before delivery.
+            earlyInstagramTypingAction = await sendInstagramGraphTypingAction({
+                recipientId: graphRecipientId,
+                accountId: graphAccountId,
+                action: 'typing_on',
+                beforeChunkIndex: 0,
+                gapMs: 0,
+            });
+        } catch (error) {
+            console.warn('[ig-draft] paid Meta typing refresh failed (non-fatal):', error.message);
+        }
+    }
     draft = removePaidMetaBlockerVoiceGreeting({
         draft,
         outboundVoiceMessage,
@@ -8846,6 +8876,7 @@ exports._test = {
     buildAcquisitionMomentumBlock,
     buildConversationLanePolicyBlock,
     buildPaidMetaConversationWriterBlock,
+    buildPaidMetaAgentPrompt,
     buildPaidMetaTurnDirective,
     collectPaidMetaWriterContractIssues,
     isBlockingPaidMetaWriterContractIssue,

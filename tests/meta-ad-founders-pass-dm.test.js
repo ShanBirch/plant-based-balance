@@ -21,6 +21,7 @@ const {
     shouldUseOutboundSyntheticVoice,
     restoreCoalescedPaidMetaVoiceDraft,
     removePaidMetaBlockerVoiceGreeting,
+    buildPaidMetaAgentPrompt,
     buildPaidMetaTurnDirective,
     collectPaidMetaWriterContractIssues,
     isBlockingPaidMetaWriterContractIssue,
@@ -52,6 +53,34 @@ const {
     filterInternalTestHistoryAfterReset,
     buildSafeMetaAdStyleFallback,
 } = require('../netlify/functions/ig-instant-draft')._test;
+
+test('paid Meta has a dedicated sales agent prompt with no general coach assumptions', () => {
+    const prompt = buildPaidMetaAgentPrompt({
+        leadName: 'Sunny',
+        channelLabel: 'Instagram',
+        timeline: 'Shannon: Are you plant-based?\nSunny: I am vegetarian.\nSunny: How about you?',
+        unansweredMessages: [
+            { text: 'I am vegetarian.' },
+            { text: 'How about you?' },
+        ],
+    });
+    assert.match(prompt, /dedicated paid-Meta lead conversation agent/i);
+    assert.match(prompt, /every ordinary discovery reply must both respond/i);
+    assert.match(prompt, /exactly one useful next question/i);
+    assert.match(prompt, /I am vegetarian[\s\S]*How about you/i);
+    assert.match(prompt, /vegan for five years/i);
+    assert.doesNotMatch(prompt, /animals were a big part/i);
+    assert.doesNotMatch(prompt, /CLIENT NOTES AND APP CONTEXT/i);
+    assert.doesNotMatch(prompt, /CONVERSATIONAL ELICITATION/i);
+});
+
+test('paid Meta lane bypasses the general qualifier and deterministic conversation overrides', () => {
+    const source = fs.readFileSync(path.join(__dirname, '../netlify/functions/ig-instant-draft.js'), 'utf8');
+    assert.match(source, /const qualifierEligible = !metaAdConversationFastLane/);
+    assert.match(source, /const earlyDeterministicProgression = null/);
+    assert.doesNotMatch(source, /animals were a big part of Shannon going vegan/i);
+    assert.match(source, /paid Meta typing refresh failed/);
+});
 const {
     buildInstagramGraphVideoMessagePayload,
     buildInstagramGraphImageMessagePayload,
@@ -974,7 +1003,6 @@ test('paid Meta gets to know the plant-based reason before asking for the fitnes
         ],
         flowVariant: 'plant_based_control',
     });
-    assert.match(reciprocalReasonReply.joined, /animals were a big part of it for me too/i);
     assert.match(reciprocalReasonReply.joined, /I've been vegan for five years (?:too|now)/i);
     assert.match(reciprocalReasonReply.joined, /main health or fitness goal/i);
     assert.equal((reciprocalReasonReply.joined.match(/\?/g) || []).length, 1);
@@ -983,16 +1011,15 @@ test('paid Meta gets to know the plant-based reason before asking for the fitnes
         inboundMessages: ['Ohhhh for the animals and health!', 'How about you?'],
         history: [{ direction: 'out', text: 'Nice. What made you decide to go plant-based?' }],
     });
-    assert.match(reciprocalDirective, /animals were a big part of Shannon going vegan.*five years/i);
     assert.match(reciprocalDirective, /Direct questions that must be answered.*How about you\?/i);
 
-    const incompleteReciprocalIssues = collectPaidMetaWriterContractIssues({
+    const completeReciprocalIssues = collectPaidMetaWriterContractIssues({
         draft: { joined: "I've been vegan for five years too. What's your main health or fitness goal?" },
         currentMessage: 'Ohhhh for the animals and health! How about you?',
         qualifier: null,
         history: [{ direction: 'out', text: 'Nice. What made you decide to go plant-based?' }],
     });
-    assert.ok(incompleteReciprocalIssues.some(issue => /why Shannon went vegan/i.test(issue)));
+    assert.equal(completeReciprocalIssues.some(issue => /why Shannon went vegan/i.test(issue)), false);
 });
 
 test('paid Meta food confusion can stay with the AI writer after a non-blocking style warning', () => {
