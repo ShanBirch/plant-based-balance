@@ -1145,8 +1145,9 @@ const PAID_META_FITNESS_GOAL_RE = /\b(?:lose|losing|weight|body fat|fat loss|fit
 const PAID_META_CONCRETE_BLOCKER_RE = /\b(?:no time|not enough time|run out of time|too busy|work gets busy|prep|prepar\w*|routine|shift|roster|schedule|craving|weekend|chocolate|emotional(?:ly)? eat\w*|having (?:it|chocolate|snacks?) around|motivat\w*|inconsisten\w*|consisten\w*|stick|fall(?:ing)? off|drop(?:ping)?|stop(?:ping)?|restart|follow[ -]?through|accountab\w*|miss(?:ed|ing)? (?:a )?(?:workout|session)|random(?:ly)?|never know|no (?:proper )?(?:workout )?(?:plan|program)|don['\u2019]?t (?:have|know) (?:a |what )?(?:proper )?(?:workout )?(?:plan|program|to do)|overwhelm\w*|too much information|pain|injur\w*|cost|money|confidence)\b/i;
 const PAID_META_STRONG_BLOCKER_RE = /\b(?:no time|not enough time|run out of time|too busy|work gets busy|prep|prepar\w*|routine|shift|roster|schedule|craving|weekend|chocolate|emotional(?:ly)? eat\w*|having (?:it|chocolate|snacks?) around|lose motivation|no motivation|inconsisten\w*|can['\u2019]?t stick|fall(?:ing)? off|drop(?:ping)? off|stop(?:ping)?|restart|follow[ -]?through|miss(?:ed|ing)? (?:a )?(?:workout|session)|random(?:ly)?|never know|no (?:proper )?(?:workout )?(?:plan|program)|don['\u2019]?t (?:have|know) (?:a |what )?(?:proper )?(?:workout )?(?:plan|program|to do)|overwhelm\w*|too much information|pain|injur\w*|cost|money)\b/i;
 const PAID_META_FOOD_CONFUSION_RE = /\b(?:(?:i\s+)?(?:don['\u2019]?t|do not|dont)\s+know|(?:i\s+)?(?:dunno|dunn)|not sure|unsure|confused)\b[^.!?\n]{0,48}\b(?:what|how)\b[^.!?\n]{0,32}\b(?:eat|eating|meal|meals|food|protein)\b|\b(?:what|how)\b[^.!?\n]{0,32}\b(?:eat|eating|meal|meals|food|protein)\b[^.!?\n]{0,48}\b(?:confus|unsure|not sure)\w*/i;
+const PAID_META_BROAD_BLOCKER_RE = /^(?:i\s+)?(?:dunno\s+)?(?:i\s+)?just\s+can['\u2019]?t\s+do\s+it[.!\s]*$|^(?:all|every)(?:\s+of)?\s+(?:it|that)[.!\s]*$|^everything[.!\s]*$/i;
 const PAID_META_NEXT_STEP_RE = /^(?:okay[, ]*)?(?:so[, ]*)?(?:what (?:do i do|should i do|now)|what(?:'s| is) next|where (?:do i|should i) start|how (?:do i|should i) start)(?: now)?[.!?\s]*$/i;
-const PAID_META_POSITIVE_FIT_RE = /^(?:(?:yes|yeah|yep|definitely|absolutely)\b(?!.*\b(?:but\s+(?:not|no)|don['’]?t|do not)\b)|probably\b|i think so\b|that would (?:really )?help\b|that sounds (?:really )?good\b|sounds (?:really )?good\b|i(?:'m| am) keen\b|keen\b|i(?:'d| would) (?:definitely )?like to (?:have )?(?:a )?(?:look|check(?: it)? out)\b)[\s\S]{0,160}$/i;
+const PAID_META_POSITIVE_FIT_RE = /^(?:(?:yes|yeah|yep|okay|ok|definitely|absolutely)\b(?!.*\b(?:but\s+(?:not|no)|don['’]?t|do not)\b)|probably\b|i think so\b|that would (?:really )?help\b|that sounds (?:really )?good\b|sounds (?:really )?good\b|i(?:'m| am) keen\b|keen\b|i(?:'d| would) (?:definitely )?like to (?:have )?(?:a )?(?:look|check(?: it)? out)\b)[\s\S]{0,160}$/i;
 const PAID_META_APP_INCLUSIONS_RE = /\b(?:what(?:'s| is| was) (?:actually )?(?:included in|in|inside)|what do (?:i|you) get (?:in|inside)) (?:the )?(?:balance(?: app)?|app)\b/i;
 const PAID_META_PROGRAM_WORKS_RE = /\bhow does (?:the |your )?(?:program|founders pass|course|coaching) work\b|\bwhat (?:is|comes) included\b/i;
 
@@ -1158,6 +1159,15 @@ function isPaidMetaConcreteBlocker(value = '') {
 function isPaidMetaStrongBlocker(value = '') {
     const text = String(value || '');
     return PAID_META_STRONG_BLOCKER_RE.test(text) || PAID_META_FOOD_CONFUSION_RE.test(text);
+}
+
+function isPaidMetaBroadBlockerAnswer(value = '', history = []) {
+    if (!PAID_META_BROAD_BLOCKER_RE.test(String(value || '').trim())) return false;
+    return (Array.isArray(history) ? history : [])
+        .filter(message => String(message?.direction || '').toLowerCase() === 'out')
+        .slice(-4)
+        .some(message => paidMetaOutboundAskedForBlocker(String(message?.text || ''))
+            || /\b(?:food|workouts?|sticking|consisten)\b[^?\n]{0,120}\?/i.test(String(message?.text || '')));
 }
 const PAID_META_OFFER_INFO_RE = /^(?:(?:thanks?|thank you)[\s,.!]*)?(?:just to confirm[\s,.!]*)?(?:i (?:want|need|wanted) to know )?(?:how much|(?:your )?prices?(?: and what i get)?|pricing|cost|what(?:'s| is) (?:actually )?included|what do i get|what are the (?:details|prices)|tell me (?:the|about the) (?:price|pricing|details|inclusions))(?:\b|[?!.])/i;
 
@@ -1236,7 +1246,9 @@ function buildPaidMetaTailoredOfferChunks(blockerText = '', goalText = '') {
     const goal = String(goalText || '');
     const asksForMealPlan = /\bdo you (?:offer|have|provide|include) (?:a |any )?(?:plant[ -]?based )?meal plans?\b|\bis (?:a |the )?meal plan included\b/i.test(turn);
     let acknowledgement = 'Yeah, that makes sense.';
-    if (PAID_META_FOOD_CONFUSION_RE.test(turn)) {
+    if (PAID_META_BROAD_BLOCKER_RE.test(turn)) {
+        acknowledgement = 'Yeah, if the food, workouts and consistency all feel hard at once, the answer is not more pressure. It needs to be one simple plan built around your week.';
+    } else if (PAID_META_FOOD_CONFUSION_RE.test(turn)) {
         const weightTarget = goal.match(/\b(?:lose|losing)\s+(\d+(?:\.\d+)?)\s*(?:kg|kgs|kilos?)\b/i)?.[1] || '';
         acknowledgement = /\b(?:muscle|strong|strength)\b/i.test(goal)
             ? 'Yeah, if you want to build muscle but don\'t know what to eat, the food side needs to make meals and protein simple instead of leaving you guessing.'
@@ -1286,9 +1298,22 @@ function buildPaidMetaGoalToBlockerText(goalText = '', transformationProof = nul
 }
 
 function paidMetaHistoryHasConcreteBlocker(history = []) {
-    return (Array.isArray(history) ? history : [])
-        .filter(message => String(message?.direction || '').toLowerCase() === 'in')
-        .some(message => isPaidMetaConcreteBlocker(String(message?.text || '')));
+    const messages = Array.isArray(history) ? history : [];
+    return messages.some((message, index) => String(message?.direction || '').toLowerCase() === 'in'
+        && (isPaidMetaConcreteBlocker(String(message?.text || ''))
+            || isPaidMetaBroadBlockerAnswer(String(message?.text || ''), messages.slice(0, index))));
+}
+
+function paidMetaLatestConcreteBlockerText(history = []) {
+    const messages = Array.isArray(history) ? history : [];
+    for (let index = messages.length - 1; index >= 0; index -= 1) {
+        const message = messages[index];
+        if (String(message?.direction || '').toLowerCase() !== 'in') continue;
+        const text = String(message?.text || '').trim();
+        if (isPaidMetaConcreteBlocker(text)
+            || isPaidMetaBroadBlockerAnswer(text, messages.slice(0, index))) return text;
+    }
+    return '';
 }
 
 function isApprovedPaidMetaAppPreviewMoment({ currentMessage = '', qualifier = {} } = {}) {
@@ -1547,7 +1572,7 @@ function buildDeterministicPaidMetaConversationReply({
         };
     }
     if (historyHasGoal
-        && isPaidMetaConcreteBlocker(message)) {
+        && (isPaidMetaConcreteBlocker(message) || isPaidMetaBroadBlockerAnswer(message, history))) {
         const chunks = buildPaidMetaTailoredOfferChunks(
             message,
             facts.motivation || facts.current_state || paidMetaLatestFitnessGoalText(history)
@@ -1556,6 +1581,26 @@ function buildDeterministicPaidMetaConversationReply({
         return {
             chunks,
             joined,
+            model: 'deterministic_paid_meta_guided_sales_v1',
+            replyMode: 'campaign_sales_progression',
+            maxChunks: MAX_CHUNKS,
+            error: null,
+            flowVariant,
+            videoAttachmentUrl: broadFlow ? null : BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL,
+        };
+    }
+    if (historyHasGoal
+        && historyHasBlocker
+        && PAID_META_POSITIVE_FIT_RE.test(message)
+        && !hasRecentCompletePaidMetaOffer(history)) {
+        const blockerText = paidMetaLatestConcreteBlockerText(history);
+        const chunks = buildPaidMetaTailoredOfferChunks(
+            blockerText,
+            facts.motivation || facts.current_state || paidMetaLatestFitnessGoalText(history)
+        );
+        return {
+            chunks,
+            joined: chunks.join('\n\n'),
             model: 'deterministic_paid_meta_guided_sales_v1',
             replyMode: 'campaign_sales_progression',
             maxChunks: MAX_CHUNKS,
@@ -4188,9 +4233,14 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
     const lastOutbound = lastPaidMetaOutbound(history);
     const hasFitnessGoal = !!goal || paidMetaHistoryHasFitnessGoal(history) || PAID_META_FITNESS_GOAL_RE.test(turn);
     const followsGoalQuestion = paidMetaOutboundAskedForGoal(lastOutbound?.text || '');
-    const hasBlocker = !!blocker || (!followsGoalQuestion && isPaidMetaConcreteBlocker(turn));
+    const hasBlocker = !!blocker
+        || paidMetaHistoryHasConcreteBlocker(history)
+        || (!followsGoalQuestion
+            && (isPaidMetaConcreteBlocker(turn) || isPaidMetaBroadBlockerAnswer(turn, history)));
     const asksOfferInfo = /\b(?:how much|price|cost|renew|what(?:'s| is) included|what do i get|do i (?:actually )?get|workouts?|meal plan|check[ -]?in|details|how (?:does|do) (?:it|the program) work)\b/i.test(turn);
     const asksMealPlanQuestion = /\bdo you (?:offer|have|provide|include) (?:a |any )?(?:plant[ -]?based )?meal plans?\b|\bis (?:a |the )?meal plan included\b/i.test(turn);
+    const asksGlutenFreeSupport = /\bgluten[ -]?free\b/i.test(turn)
+        && /\b(?:do you do that|can you (?:do|support|make|cater for) that|do you (?:support|cater for) that)\b|\?/i.test(turn);
     const asksPlantReciprocal = /\b(?:how|what) about you\b/i.test(turn)
         && (/\b(?:vegan|plant[ -]?based)\b/i.test(turn) || hasRecentPaidMetaPlantReasonQuestion(history));
     const answeringPlantIdentity = hasRecentPaidMetaPlantBasedQuestion(history)
@@ -4303,6 +4353,10 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
         && !/\b(?:yes|yeah|yep)[,.! ]{0,8}(?:i do|it does|there is)|\b(?:includes?|comes with|you get)\b[^.!?\n]{0,80}\bmeal plan\b/i.test(reply)) {
         issues.push('Answer the meal-plan question directly before progressing: yes, Balance Foundations includes a plant-based meal plan.');
     }
+    if (asksGlutenFreeSupport
+        && !/\b(?:yes|yeah|yep|absolutely)\b[^.!?\n]{0,100}\bgluten[ -]?free\b|\bgluten[ -]?free\b[^.!?\n]{0,100}\b(?:meal plan|meals?)\b/i.test(reply)) {
+        issues.push('Answer the gluten-free question directly before progressing: yes, Shannon can make their plant-based meal plan gluten-free.');
+    }
     if (/\b(?:how much|price|cost)\b/i.test(turn) && !/\$\s*89\.99\b|\b89\.99 dollars?\b/i.test(reply)) {
         issues.push('Answer the price exactly as one $89.99 payment for the full six weeks.');
     }
@@ -4331,7 +4385,7 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
 }
 
 function isBlockingPaidMetaWriterContractIssue(issue = '') {
-    return /pitched before|repeated a question|directly asked whether|answer why Shannon went vegan|meal-plan question directly|sales suspicion|answer the sales question|earned paid-Meta offer is missing|main health or fitness goal|health\/fitness goal|answered the goal question|ask for the result or health|ignored the supplied plant-based duration/i.test(String(issue || ''));
+    return /pitched before|repeated a question|directly asked whether|answer why Shannon went vegan|meal-plan question directly|gluten-free question directly|sales suspicion|answer the sales question|earned paid-Meta offer is missing|main health or fitness goal|health\/fitness goal|answered the goal question|ask for the result or health|ignored the supplied plant-based duration/i.test(String(issue || ''));
 }
 
 function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = '', issues = [], qualifier = {}, history = [] } = {}) {
@@ -4351,6 +4405,11 @@ function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = 
             .replace(/^(?:yeah|yes|yep)[,.! ]*/i, '')
             .trim();
         joined = `Yeah, she was one of my clients.${existing ? ` ${existing}` : ''}`;
+    } else if (/gluten-free question directly/i.test(issueText) && !repairsEarnedOffer) {
+        const nextQuestion = fallbackGoal
+            ? 'What usually gets in the way of making that happen consistently?'
+            : 'How long have you been plant-based, and what made you go plant-based?';
+        joined = `Yep, absolutely. I can make your plant-based meal plan gluten-free too. ${nextQuestion}`;
     } else if (/meal-plan question directly/i.test(issueText) && !repairsEarnedOffer) {
         const nextQuestion = fallbackGoal
             ? 'What usually gets in the way of making that happen consistently?'

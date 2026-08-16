@@ -1067,6 +1067,71 @@ test('paid Meta food confusion is a real blocker and cannot be silenced by a sty
     assert.doesNotMatch(released.joined, /what do you usually eat/i);
 });
 
+test('paid Meta treats broad overwhelm as the blocker and moves to the tailored app proof', () => {
+    const history = [
+        { direction: 'in', text: 'I need to lose weight' },
+        { direction: 'out', text: 'What is the biggest thing that makes weight loss hard for you right now?' },
+    ];
+    const reply = buildDeterministicPaidMetaConversationReply({
+        currentMessage: "I dunno I just can't do it",
+        history,
+        flowVariant: 'plant_based_control',
+    });
+    assert.match(reply.chunks[0], /food, workouts and consistency all feel hard at once/i);
+    assert.match(reply.chunks[0], /not more pressure/i);
+    assert.match(reply.joined, /quick video showing you how it works/i);
+    assert.match(reply.joined, /Keen\?$/i);
+    assert.equal(reply.videoAttachmentUrl, BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL);
+
+    const allOfIt = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'All of it',
+        history: [
+            ...history,
+            { direction: 'in', text: "I dunno I just can't do it" },
+            { direction: 'out', text: 'Is it the food, workouts, or sticking with it?' },
+        ],
+        flowVariant: 'plant_based_control',
+    });
+    assert.match(allOfIt.joined, /one simple plan built around your week/i);
+    assert.doesNotMatch(allOfIt.joined, /what(?:'s| is) your main health or fitness goal/i);
+
+    const acknowledgementAfterBrokenReflection = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'Ok',
+        history: [
+            ...history,
+            { direction: 'in', text: 'All of it' },
+            { direction: 'out', text: 'If it all feels messy, we would start by making one part easier first.' },
+        ],
+        flowVariant: 'plant_based_control',
+    });
+    assert.match(acknowledgementAfterBrokenReflection.joined, /one simple plan built around your week/i);
+    assert.match(acknowledgementAfterBrokenReflection.joined, /Keen\?$/i);
+    assert.equal(acknowledgementAfterBrokenReflection.videoAttachmentUrl, BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL);
+});
+
+test('paid Meta answers a rapid gluten-free support question before progressing', () => {
+    const currentMessage = "I'm plant based!\nAnd gluten free\nDo you do that?";
+    const issues = collectPaidMetaWriterContractIssues({
+        draft: { joined: "Nice. What's your main health or fitness goal?" },
+        currentMessage,
+        qualifier: null,
+        history: [],
+    });
+    assert.ok(issues.some(issue => /gluten-free question directly/i.test(issue)));
+    assert.ok(issues.some(isBlockingPaidMetaWriterContractIssue));
+    const repaired = buildPaidMetaGuaranteedContractFallback({
+        draft: { joined: "Nice. What's your main health or fitness goal?", maxChunks: 3 },
+        currentMessage,
+        issues,
+        qualifier: null,
+        history: [],
+    });
+    assert.match(repaired.joined, /^Yep, absolutely\./i);
+    assert.match(repaired.joined, /plant-based meal plan gluten-free/i);
+    assert.match(repaired.joined, /How long have you been plant-based, and what made you go plant-based\?$/i);
+    assert.equal((repaired.joined.match(/\?/g) || []).length, 1);
+});
+
 test('paid Meta answers a rapid meal-plan question without asking the known goal twice', () => {
     const history = [
         { direction: 'out', text: 'Nice. What made you decide to go plant-based?' },
