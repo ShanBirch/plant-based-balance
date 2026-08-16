@@ -2553,6 +2553,27 @@ test('inclusions are informational and do not create an approved checkout handof
     assert.doesNotMatch(reply.joined, /https?:\/\//);
 });
 
+test('paid Meta conversation text cannot be held as an inferred signup-link action', () => {
+    const input = {
+        draftText: "Yeah, food and training need to work together. What usually knocks you off track most?",
+        qualifier: { commercial_stage: 'engaged', stage: 'current_state' },
+        leadStage: 'qualifying',
+        linkedUserId: null,
+        threadId: 'gold-coast-test-thread',
+        manychatMessageId: 'latest-inbound',
+        currentMessage: 'I need help with my food and training. I need to lose 10kgs',
+    };
+    assert.equal(buildLeadOnboardingHandoffData({
+        ...input,
+        requireActualLinkAction: true,
+    }), null);
+    assert.equal(
+        buildLeadOnboardingHandoffData(input)?.client_manager_review_required,
+        true,
+        'the general organic lead coach retains its inferred commercial review behavior'
+    );
+});
+
 test('Meta referral hint preserves the broad route independently of message wording', () => {
     const variant = resolveMetaAdFlowVariant({
         customData: {

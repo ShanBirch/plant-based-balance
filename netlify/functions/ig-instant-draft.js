@@ -3542,7 +3542,7 @@ function isUnlinkedAcquisitionLeadForLinkGate({ leadStage, linkedUserId } = {}) 
     return !['in_app', 'paying', 'churned'].includes(stage);
 }
 
-function buildLeadOnboardingHandoffData({ draftText, qualifier, leadStage, linkedUserId, threadId, manychatMessageId, currentMessage, appPreviewHandoffUrl = '' }) {
+function buildLeadOnboardingHandoffData({ draftText, qualifier, leadStage, linkedUserId, threadId, manychatMessageId, currentMessage, appPreviewHandoffUrl = '', requireActualLinkAction = false }) {
     if (!isUnlinkedAcquisitionLeadForLinkGate({ leadStage, linkedUserId })) return null;
     const draftHasLinkDrop = isSignupLinkHandoffText(draftText);
     const acceptedCoaching = isCurrentChallengeHandoffMoment({ qualifier, currentMessage });
@@ -3551,6 +3551,10 @@ function buildLeadOnboardingHandoffData({ draftText, qualifier, leadStage, linke
     const visibleHandoffUrl = (String(draftText || '').match(/https?:\/\/\S+/gi) || [])
         .map(url => url.replace(/[),.!?]+$/, ''))
         .find(url => isApprovedChallengeBioLinkText(url)) || '';
+    // The general lead coach may ask a manager to review an inferred commercial
+    // moment before a link is written. Paid Meta has its own conversation writer
+    // and action gates, so conversational text must not become a fake link hold.
+    if (requireActualLinkAction && !draftHasLinkDrop && !approvedAppPreviewHandoff) return null;
     if (!draftHasLinkDrop && !acceptedCoaching && !approvedAppPreviewHandoff) return null;
 
     if (approvedAppPreviewHandoff) {
@@ -7363,6 +7367,7 @@ exports.handler = async (event) => {
         manychatMessageId,
         currentMessage: displayMessage,
         appPreviewHandoffUrl: draft.appPreviewHandoff ? draft.appPreviewUrl : '',
+        requireActualLinkAction: metaAdConversationFastLane,
     })));
     const approvedCoachingLinkHandoff = leadOnboardingHandoffData?.approved_link_auto_sendable === true;
     if (leadOnboardingHandoffData?.client_manager_review_required) {
