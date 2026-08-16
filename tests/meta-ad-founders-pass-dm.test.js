@@ -80,6 +80,9 @@ test('paid Meta lane bypasses the general qualifier and deterministic conversati
     assert.match(source, /const earlyDeterministicProgression = null/);
     assert.doesNotMatch(source, /animals were a big part of Shannon going vegan/i);
     assert.match(source, /paid Meta typing refresh failed/);
+    assert.match(source, /18000, 'paid Meta OpenAI writer'/);
+    assert.match(source, /paid Meta OpenAI timed out; used local sales fallback/);
+    assert.match(source, /if \(paidMetaSingleWriter\) \{[\s\S]{0,2600}deterministic_paid_meta_timeout_v1[\s\S]{0,1200}\} else try \{/);
 });
 const {
     buildInstagramGraphVideoMessagePayload,

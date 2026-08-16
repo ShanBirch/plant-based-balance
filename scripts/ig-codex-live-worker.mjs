@@ -470,7 +470,10 @@ async function runDirectDraftAlert({ alert, action, supabase, state, statePath, 
         codex_live_chat_action_id: action.id,
         codex_live_chat_started_at: new Date().toISOString(),
     });
-    const siteUrl = String(process.env.BALANCE_SITE_URL || 'https://plantbased-balance.org').replace(/\/$/, '');
+    // Use the direct production origin. The custom apex may temporarily lose
+    // its A/AAAA record, which must not push live paid-lead replies into the
+    // five-minute cloud fallback.
+    const siteUrl = String(process.env.BALANCE_SITE_URL || 'https://main--future-balance.netlify.app').replace(/\/$/, '');
     const response = await fetch(`${siteUrl}/.netlify/functions/send-coach-reply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

@@ -5943,11 +5943,11 @@ Rules:
         try {
             rawText = requireNonEmptyDraftText(
                 paidMetaSingleWriter
-                    ? await callOpenAITextModel(textContents, generationConfig, {
+                    ? await withTimeout(callOpenAITextModel(textContents, generationConfig, {
                         profile: 'coach_fallback',
                         label: 'openai-paid-meta-primary',
                         models: ['gpt-5.4-mini'],
-                    })
+                    }), 18000, 'paid Meta OpenAI writer')
                     : await callVertexAIModel(textContents, generationConfig),
                 paidMetaSingleWriter ? 'GPT-5.4 mini paid Meta writer' : 'Vertex v7'
             );
@@ -5955,9 +5955,27 @@ Rules:
                 ? (lastError ? 'openai-gpt-5.4-mini-paid-meta+media-failed' : 'openai-gpt-5.4-mini-paid-meta')
                 : (lastError ? 'vertex-v7+media-failed' : 'vertex-v7');
         } catch (err) {
-            console.warn(`[ig-draft] Vertex failed, falling back to Gemini: ${err.message}`);
-            lastError = `${lastError ? lastError + ' | ' : ''}vertex: ${err.message.slice(0, 200)}`;
-            try {
+            lastError = `${lastError ? lastError + ' | ' : ''}${paidMetaSingleWriter ? 'openai-paid-meta' : 'vertex'}: ${err.message.slice(0, 200)}`;
+            if (paidMetaSingleWriter) {
+                const timeoutFallback = buildDeterministicPaidMetaConversationReply({
+                    currentMessage: unansweredBatch.map(message => message.text).join('\n'),
+                    qualifier,
+                    history,
+                    flowVariant: adFlowVariant,
+                    checkoutUrl,
+                    appPreviewUrl: buildMetaAppPreviewUrl(igThreadId),
+                    personalVoiceNoteMode: false,
+                    allowVideoAttachment: false,
+                });
+                if (Array.isArray(timeoutFallback?.chunks) && timeoutFallback.chunks.length) {
+                    rawText = JSON.stringify({ messages: timeoutFallback.chunks });
+                    model = 'deterministic_paid_meta_timeout_v1';
+                    console.warn(`[ig-draft] paid Meta OpenAI timed out; used local sales fallback: ${err.message}`);
+                } else {
+                    return { chunks: [], joined: '', model: 'none', error: lastError, imageCount: imageParts.length, audioCount: audioParts.length, videoCount: videoParts.length, reelContextCount, reelThumbnailCount, mediaDecode, timeline: totalConversationText, conversationEpisode, currentTurnAnchorBlock, storyReplyPromptContextBlock, mediaContextPromptBlock, learningReelContextBlock, learningReelReplyAnchorBlock, learningReelEvidenceBlock };
+                }
+            } else try {
+                console.warn(`[ig-draft] Vertex failed, falling back to Gemini: ${err.message}`);
                 rawText = requireNonEmptyDraftText(
                     await callGeminiFallback(textContents, generationConfig),
                     'Gemini text fallback'

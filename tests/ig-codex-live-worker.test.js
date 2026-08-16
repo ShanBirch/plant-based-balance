@@ -9,6 +9,10 @@ const { pathToFileURL } = require('url');
     const { isCodexLivePaidMetaThread } = require('../netlify/functions/ig-instant-draft')._test;
     const { cleanOwner } = require('../netlify/functions/_lib/ig-next-action-queue');
 
+    const productionOriginSource = fs.readFileSync(workerPath, 'utf8');
+    assert.match(productionOriginSource, /https:\/\/main--future-balance\.netlify\.app/);
+    assert.doesNotMatch(productionOriginSource, /BALANCE_SITE_URL \|\| 'https:\/\/plantbased-balance\.org'/);
+
     assert.strictEqual(cleanOwner('codex_live_worker'), 'codex_live_worker');
 
     assert.strictEqual(isCodexLivePaidMetaThread({
