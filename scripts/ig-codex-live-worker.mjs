@@ -9,8 +9,8 @@ import { pathToFileURL } from 'node:url';
 const DEFAULT_WORKSPACE = 'C:\\Users\\shann\\.gemini\\antigravity\\plant_based_balance';
 const DEFAULT_POLL_MS = 1500;
 const DEFAULT_COALESCE_MS = 2500;
-const DEFAULT_INBOUND_QUIET_MS = 6500;
-const DEFAULT_BATCH_MAX_WAIT_MS = 24000;
+const DEFAULT_INBOUND_QUIET_MS = 2500;
+const DEFAULT_BATCH_MAX_WAIT_MS = 9000;
 const DEFAULT_TURN_TIMEOUT_MS = 4 * 60 * 1000;
 
 export function isPaidMetaTestReset(text = '') {

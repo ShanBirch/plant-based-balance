@@ -80,9 +80,17 @@ test('paid Meta lane bypasses the general qualifier and deterministic conversati
     assert.match(source, /const earlyDeterministicProgression = null/);
     assert.doesNotMatch(source, /animals were a big part of Shannon going vegan/i);
     assert.match(source, /paid Meta typing refresh failed/);
-    assert.match(source, /18000, 'paid Meta OpenAI writer'/);
+    assert.match(source, /10000, 'paid Meta OpenAI writer'/);
+    assert.match(source, /IG_PAID_META_TYPING_REFRESH_MS = 4000/);
+    assert.match(source, /startPaidMetaTypingHeartbeat/);
+    assert.match(source, /deterministic-paid-meta-fast-contract-v1/);
     assert.match(source, /paid Meta OpenAI timed out; used local sales fallback/);
     assert.match(source, /if \(paidMetaSingleWriter\) \{[\s\S]{0,2600}deterministic_paid_meta_timeout_v1[\s\S]{0,1200}\} else try \{/);
+});
+
+test('paid Meta price contract accepts Australian currency wording', () => {
+    const source = fs.readFileSync(path.join(__dirname, '../netlify/functions/ig-instant-draft.js'), 'utf8');
+    assert.match(source, /\(\?:aud\|au\\\$\).*89\\\.99/);
 });
 const {
     buildInstagramGraphVideoMessagePayload,

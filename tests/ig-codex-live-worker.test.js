@@ -12,6 +12,8 @@ const { pathToFileURL } = require('url');
     const productionOriginSource = fs.readFileSync(workerPath, 'utf8');
     assert.match(productionOriginSource, /https:\/\/main--future-balance\.netlify\.app/);
     assert.doesNotMatch(productionOriginSource, /BALANCE_SITE_URL \|\| 'https:\/\/plantbased-balance\.org'/);
+    assert.match(productionOriginSource, /DEFAULT_INBOUND_QUIET_MS = 2500/);
+    assert.match(productionOriginSource, /DEFAULT_BATCH_MAX_WAIT_MS = 9000/);
 
     assert.strictEqual(cleanOwner('codex_live_worker'), 'codex_live_worker');
 

@@ -173,7 +173,43 @@ const IG_FAST_LANE_MIN_DELAY_MS = 2 * 60 * 1000;
 const IG_META_AD_FAST_LANE_DELAY_MS = 0;
 const IG_DIRECT_CHALLENGE_MIN_DELAY_MS = 0;
 const IG_DRAFT_REVIEW_TIMEOUT_MS = 7000;
+const IG_PAID_META_TYPING_REFRESH_MS = 4000;
 const GRAPH_SUBSCRIBER_PREFIX = 'ig_graph:';
+
+function startPaidMetaTypingHeartbeat({ enabled, recipientId, accountId } = {}) {
+    if (!enabled || !recipientId) return () => {};
+    let stopped = false;
+    let inFlight = false;
+    const refresh = async () => {
+        if (stopped || inFlight) return;
+        inFlight = true;
+        try {
+            await sendInstagramGraphTypingAction({
+                recipientId,
+                accountId,
+                action: 'typing_on',
+                beforeChunkIndex: 0,
+                gapMs: 0,
+            });
+        } catch (error) {
+            console.warn('[ig-draft] paid Meta typing heartbeat failed (non-fatal):', error.message);
+        } finally {
+            inFlight = false;
+        }
+    };
+    const interval = setInterval(refresh, IG_PAID_META_TYPING_REFRESH_MS);
+    interval.unref?.();
+    const timeout = setTimeout(() => {
+        stopped = true;
+        clearInterval(interval);
+    }, 45000);
+    timeout.unref?.();
+    return () => {
+        stopped = true;
+        clearInterval(interval);
+        clearTimeout(timeout);
+    };
+}
 const STORY_OPENER_CONFUSION_RE = /\b(?:i\s+(?:don'?t|do\s+not|didn'?t|did\s+not)\s+(?:understand|get)\s+(?:what\s+you\s+mean|your\s+question|this|that|it)|(?:what|wat)\s+(?:do|did)\s+(?:you|u)\s+mean|what\s+you\s+mean|wdym|i'?m\s+confused|not\s+sure\s+what\s+you\s+mean)\b/i;
 const SHORT_STORY_OPENER_CONFUSION_RE = /^(?:sorry|sorry\?|huh\??|pardon\??|what\??|what sorry\??|sorry what\??)$/i;
 
@@ -4328,7 +4364,8 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
         && !/\b(?:yes|yeah|yep|absolutely)\b[^.!?\n]{0,100}\bgluten[ -]?free\b|\bgluten[ -]?free\b[^.!?\n]{0,100}\b(?:meal plan|meals?)\b/i.test(reply)) {
         issues.push('Answer the gluten-free question directly before progressing: yes, Shannon can make their plant-based meal plan gluten-free.');
     }
-    if (/\b(?:how much|price|cost)\b/i.test(turn) && !/\$\s*89\.99\b|\b89\.99 dollars?\b/i.test(reply)) {
+    if (/\b(?:how much|price|cost)\b/i.test(turn)
+        && !/(?:\$\s*89\.99\b|\b(?:aud|au\$)\s*\$?\s*89\.99\b|\b89\.99 dollars?\b)/i.test(reply)) {
         issues.push('Answer the price exactly as one $89.99 payment for the full six weeks.');
     }
     const normalizeQuestion = value => String(value || '')
@@ -5947,7 +5984,7 @@ Rules:
                         profile: 'coach_fallback',
                         label: 'openai-paid-meta-primary',
                         models: ['gpt-5.4-mini'],
-                    }), 18000, 'paid Meta OpenAI writer')
+                    }), 10000, 'paid Meta OpenAI writer')
                     : await callVertexAIModel(textContents, generationConfig),
                 paidMetaSingleWriter ? 'GPT-5.4 mini paid Meta writer' : 'Vertex v7'
             );
@@ -6961,6 +6998,7 @@ exports.handler = async (event) => {
         );
     let earlyInstagramSeenAction = null;
     let earlyInstagramTypingAction = null;
+    let stopPaidMetaTypingHeartbeat = () => {};
     if (metaAdFastLane && hasInstagramGraphRoute && !getMetaAdSensitiveHoldReason({
         alertData: { meta_ad_fast_lane: true },
         currentMessage: messageText,
@@ -6988,6 +7026,11 @@ exports.handler = async (event) => {
             action: 'typing_on',
             beforeChunkIndex: 0,
             gapMs: earlyTypingDelayMs,
+        });
+        stopPaidMetaTypingHeartbeat = startPaidMetaTypingHeartbeat({
+            enabled: true,
+            recipientId: graphRecipientId,
+            accountId: graphAccountId,
         });
     }
     const deliveryChannel = hasInstagramGraphRoute ? 'instagram_graph' : (isDirectGraphManual ? 'manual_ig' : channel);
@@ -8049,9 +8092,42 @@ exports.handler = async (event) => {
             qualifier,
             history: displayHistory,
         });
-        if (approvedDeterministicReview) {
-            draftReview = approvedDeterministicReview;
-            effectiveContextReview = approvedDeterministicReview.context_warning_overridden
+        const paidMetaFastContractIssues = metaAdConversationFastLane
+            ? collectPaidMetaWriterContractIssues({
+                draft,
+                currentMessage: currentInboundTurnMessage,
+                qualifier,
+                history: displayHistory,
+            })
+            : [];
+        const approvedPaidMetaFastReview = metaAdConversationFastLane
+            && !thread.linked_user_id
+            && !mediaReview?.required
+            && !contextReview?.required
+            && !getMetaAdSensitiveHoldReason({
+                alertData: currentAlertData || {},
+                currentMessage: currentInboundTurnMessage,
+            })
+            && !paidMetaFastContractIssues.some(isBlockingPaidMetaWriterContractIssue)
+            && !hasFirstPersonHealthClaim(draft.joined)
+            && !draftParrotsLatestInbound(draft.joined, displayMessage)
+            ? {
+                verdict: 'pass',
+                confidence: 1,
+                summary: 'Clean paid Meta text passed the local sales and safety contract.',
+                issues: [],
+                suggested_fix: '',
+                context_loss_suspected: false,
+                notification_required: false,
+                notification_reason: null,
+                reviewed_at: new Date().toISOString(),
+                reviewer_model: 'deterministic-paid-meta-fast-contract-v1',
+            }
+            : null;
+        const approvedFastReview = approvedDeterministicReview || approvedPaidMetaFastReview;
+        if (approvedFastReview) {
+            draftReview = approvedFastReview;
+            effectiveContextReview = approvedFastReview.context_warning_overridden
                 ? {
                     ...(contextReview || {}),
                     required: false,
@@ -8061,7 +8137,7 @@ exports.handler = async (event) => {
                     resolved_at: new Date().toISOString(),
                 }
                 : contextReview;
-            console.log(`[ig-draft] skipped model review for approved deterministic Meta ad first reply ${alertId}`);
+            console.log(`[ig-draft] skipped serial model review for approved paid Meta reply ${alertId}`);
         } else try {
             const reviewResult = await withTimeout(reviewDraftAndUpdateAlert({
                 alertId,
@@ -8746,6 +8822,8 @@ exports.handler = async (event) => {
             console.warn('[ig-draft] auto schedule failed, falling back to approve-gate:', e.message);
         }
     }
+
+    stopPaidMetaTypingHeartbeat();
     if (!autoHandled && balanceLeadAutoSendLane && !cocosAutoSendLane) {
         console.log(`[ig-draft] Balance AI coach did not auto-schedule thread ${thread.id}; preserving its explicit hold for review`);
     }
