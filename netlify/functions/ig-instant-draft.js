@@ -1083,8 +1083,7 @@ function isBarePaidMetaFoundersPassSelection(value = '') {
 function isPaidMetaContextualCheckoutIntent(value = '') {
     const message = String(value || '').replace(/\s+/g, ' ').trim();
     return hasDirectPaidMetaCheckoutIntent(message)
-        || isBarePaidMetaFoundersPassSelection(message)
-        || PAID_META_CONTEXTUAL_OFFER_VIEW_RE.test(message);
+        || isBarePaidMetaFoundersPassSelection(message);
 }
 
 function isContextualMetaAdOfferLinkRequest({ currentMessage = '', qualifier = {}, history = [] } = {}) {
@@ -1102,8 +1101,7 @@ function isContextualMetaAdOfferLinkRequest({ currentMessage = '', qualifier = {
                 && /\b(?:which (?:one|option) do you want to start with|\$89\.99|six-week|doesn['’]?t renew|full breakdown)\b/i.test(text);
         });
     }
-    if (!PAID_META_CONTEXTUAL_OFFER_VIEW_RE.test(message)) return false;
-    return recentOutbound.some(item => /\b(?:founders? pass|balance foundations|six-week|balance app|plant-based community|one-to-one in-app support)\b/i.test(String(item?.text || '')));
+    return false;
 }
 
 function buildContextualMetaAdOfferLinkReply({ checkoutUrl = '', flowVariant = 'plant_based_control', currentMessage = '' } = {}) {
@@ -1242,7 +1240,7 @@ function hasRecentPaidMetaSupportQuestion(history = []) {
         .slice(-4)
         .some(item => {
             const text = String(item?.text || '');
-            return /\b(?:would (?:having me|that kind of support)|would that help|accountability help|help you stay on track|make it easier|are you keen to (?:have|take) a look|would you like to (?:have|take) a look|(?:do you )?want me to (?:set up|create|put together)\b[^?\n]{0,120}\b(?:look|preview)|want me to send you (?:access|the link)|want to (?:have|take) a look|should i send (?:you )?(?:access|the link)|is that something you(?:'d| would) want)\b/i.test(text)
+            return /\b(?:would (?:having me|that kind of support)|would that help|accountability help|help you stay on track|make it easier|are you keen to (?:have|take) a look|would you like (?:me to show you|to (?:have|take)) (?:a )?(?:quick )?(?:look|preview)|(?:do you )?want me to (?:show you|set up|create|put together)\b[^?\n]{0,120}\b(?:look|preview)|want me to send you (?:access|the link)|want to (?:have|take) a look|should i send (?:you )?(?:access|the link)|is that something you(?:'d| would) want)\b/i.test(text)
                 || (/\b(?:six|6)[- ]week\b/i.test(text)
                     && /\b(?:meal plan|workout|training program)\b/i.test(text)
                     && /\b(?:send|access|look|link)\b[^?\n]{0,100}\?/i.test(text))
@@ -1309,9 +1307,9 @@ function buildPaidMetaTailoredOfferChunks(blockerText = '', goalText = '') {
         acknowledgement = `Yeah, I do. ${directAnswerDetail.charAt(0).toUpperCase()}${directAnswerDetail.slice(1)}`;
     }
     return [
-        `${acknowledgement} Here's a quick video showing you how it works.`,
+        acknowledgement,
         'Balance Foundations is a six-week course with your workout program built around your week, a plant-based meal plan, and one weekly check-in where I review your training and food and adjust things.',
-        "It's one $89.99 payment for the full six weeks, with no subscription or auto-renewal. If you're interested, I can set you up in the app so you can see your meal plan and workout program before making a payment. Keen?",
+        "It's one $89.99 payment for the full six weeks, with no subscription or auto-renewal. Want me to open your free personalised preview so you can see your meal plan and workout program before making a payment?",
     ];
 }
 
@@ -1622,7 +1620,7 @@ function buildDeterministicPaidMetaConversationReply({
             maxChunks: MAX_CHUNKS,
             error: null,
             flowVariant,
-            videoAttachmentUrl: broadFlow ? null : BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL,
+            videoAttachmentUrl: null,
         };
     }
     if (historyHasGoal
@@ -1642,7 +1640,7 @@ function buildDeterministicPaidMetaConversationReply({
             maxChunks: MAX_CHUNKS,
             error: null,
             flowVariant,
-            videoAttachmentUrl: broadFlow ? null : BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL,
+            videoAttachmentUrl: null,
         };
     }
     return null;
@@ -4150,18 +4148,18 @@ PAID META SINGLE-WRITER PLAYBOOK:
 - Treat all rapid unanswered inbound bubbles as one live turn. Answer every direct or reciprocal question in that batch before progressing the sale; never discard a side-question just because their last bubble adds a blocker.
 - Once Shannon has already sent any reply in the visible episode, do not restart with a time-of-day greeting or another hello.
 - If Shannon's immediately previous message already explained the offer, do not explain it again when the lead answers her question. Acknowledge the answer and move to the next adjacent stage.
-- Use this as a natural journey, not a checklist: find out whether they are already plant-based/vegan or looking to become so; when it fits, connect over why and how long; understand their health or fitness goal; understand what has made that goal difficult; optionally show a genuinely relevant client result; then offer to set up a free personalised look at their workout program and meal plan inside the app before they decide or pay.
+- Use this as a natural journey, not a checklist: find out whether they are already plant-based/vegan or looking to become so; when it fits, connect over why and how long; understand their health or fitness goal; understand what has made that goal difficult; show a genuinely relevant client result when identity, safety and outcome fit are reliable; then offer to open their free personalised workout and meal-plan preview inside the app before they decide or pay.
 - Skip anything the lead has already answered. Do not force every stage into every conversation, and do not make goal or blocker fields mechanical gates. Use judgement about the most useful adjacent move.
 - When their difficulty is known, use it to explain specifically how Balance could make follow-through easier. Do not mine distress, diagnose them, or repeat their problem back without adding value.
-- Relevant proof is optional. Ally fits weight loss; Gen fits strength/confidence; Dani fits body recomposition; Bec and Kirsty fit shared accountability. Use no transformation when identity, sensitivity or fit is uncertain. If you choose one, explicitly name the approved person and say you are showing their photo so transport code can attach it.
-- When a short app demonstration would help, explicitly say you are sending the quick app video so transport code can attach the existing 63-second evergreen video. End that video handoff by asking: "If this looks right for you, let me know. Want me to set up your program before payment so you can get a proper feel for what you're paying for?" Never invent a URL.
+- Relevant client proof should normally be used once when the match is reliable. Ally fits weight loss; Gen fits strength/confidence; Dani fits body recomposition; Bec and Kirsty fit shared accountability. Use no transformation when identity, sensitivity or fit is uncertain. If you choose one, explicitly name the approved person and say you are showing their photo so transport code can attach it.
+- Do not proactively send or introduce the app demonstration video. It does not represent the personalised preview closely enough. Move from the tailored explanation or matched client photo to the signed interactive app preview instead.
 - When explaining the offer, keep the facts reliable: the six-week Foundations course includes their workout program, plant-based meal plan, and one weekly training/food check-in and adjustment. It is one $89.99 payment with no subscription or auto-renewal. The free personalised app preview comes before payment.
 - Never ask the lead for an email address in Instagram. When they accept the free personalised preview, transport code sends the signed Open your preview card immediately; account creation inside that onboarding collects their email.
 - If they mention pregnancy or post-pregnancy weight as a goal without reporting a symptom or complication, keep it in the ordinary fitness lane. Do not invent children, ask for medical history, or make pregnancy recency the next question; respond to the fitness goal and ask about the current practical obstacle only if needed.
-- Usually end with one short new question when its answer will genuinely change the next reply. A direct answer, signed preview/checkout link handoff, opt-out, sensitive safety response, sales-suspicion answer or natural pause may stand alone. An app-video handoff is not an exception: it must end with the before-payment setup question above.
+- Usually end with one short new question when its answer will genuinely change the next reply. A direct answer, signed preview/checkout link handoff, opt-out, sensitive safety response, sales-suspicion answer or natural pause may stand alone.
 - Never repeat or lightly reword a question Shannon already asked. Never echo the lead's sentence back as Shannon's reply. Use their answer, add a relevant coaching or proof point, then make the next adjacent move.
 - Treat a stated target as a target, not completed progress. For example, "I want to lose 10kg" must never become "10kg down".
-- When they ask about the program, price, inclusions or personalised coaching, answer that direct question before qualifying further. Do not send a signup link until they explicitly ask for it or clearly accept the offer.
+- When they ask about the program, price, inclusions or personalised coaching, answer that direct question before qualifying further. A positive reaction such as "looks great" is not permission to offer checkout. Send checkout only after explicit transactional intent such as asking to join, pay, sign up or receive the checkout link.
 - For inclusions, answer accurately: workout programming, plant-based meal planning, six weeks of app/community access, and one weekly training/food review and adjustment. Do not claim an endlessly tailored daily meal plan or unlimited coaching.
 - If they ask whether Shannon is trying to sell them something, answer plainly that Balance is a paid program and Shannon is checking whether it fits before offering it. Then back off. No question, pitch, link, euphemism or continuation hook in that reply.
 - Keep it like a real active DM: concise, specific, warm and low-pressure. No intake bundles, option menus, canned therapy language or brochure dump.`;
@@ -4182,17 +4180,17 @@ function buildPaidMetaAgentPrompt({
 
 Your job is to read the complete paid-ad conversation and write Shannon's next Instagram DM. Treat every unanswered bubble as one current turn. Answer every live direct or reciprocal question before making the next sales move. The newest substantive message controls when it changes the topic.
 
-Natural journey, not a checklist: learn whether they are plant-based/vegan or looking to become so; connect over why and how long when natural; learn their health or fitness goal; learn what is making that goal difficult; optionally introduce genuinely relevant proof; explain how Balance helps with their stated situation; offer a free personalised look at their workout program and plant-based meal plan inside the app before they decide or pay.
+Natural journey, not a checklist: learn whether they are plant-based/vegan or looking to become so; connect over why and how long when natural; learn their health or fitness goal; learn what is making that goal difficult; introduce genuinely relevant proof when identity, safety and outcome fit are reliable; explain how Balance helps with their stated situation; offer a free personalised look at their workout program and plant-based meal plan inside the app before they decide or pay.
 
-GUIDE THE SALE: every ordinary discovery reply must both respond to what they said and ask exactly one useful next question from the next adjacent part of that journey. Do not merely answer and stop. After answering a reciprocal question about Shannon, continue with the most natural unanswered question about them in the same turn. Once their plant-based reason or duration has enough context, move forward to their fitness goal instead of drilling deeper into the same reason. Once the goal is known, move to what is making it difficult. Once the difficulty is known, add useful value and move toward proof, the app demonstration, or the free preview.
+GUIDE THE SALE: every ordinary discovery reply must both respond to what they said and ask exactly one useful next question from the next adjacent part of that journey. Do not merely answer and stop. After answering a reciprocal question about Shannon, continue with the most natural unanswered question about them in the same turn. Once their plant-based reason or duration has enough context, move forward to their fitness goal instead of drilling deeper into the same reason. Once the goal is known, move to what is making it difficult. Once the difficulty is known, add useful value and move toward matched client proof or the free preview.
 
 Skip anything already answered. Never repeat or lightly reword a question Shannon already asked. Do not invent personal facts about Shannon or the lead. The only approved reciprocal fact is that Shannon has been vegan for five years. If asked why Shannon went vegan, do not guess; answer briefly that he has been vegan five years and turn the focus naturally back to their story only if useful.
 
-Proof is optional and must genuinely match: Ally for weight loss, Gen for strength/confidence, Dani for body recomposition, Bec and Kirsty for shared accountability. If using proof, name the approved person and say you are showing their photo. If an app demonstration is useful, explicitly say you are sending the quick app video, then ask: "If this looks right for you, let me know. Want me to set up your program before payment so you can get a proper feel for what you're paying for?" Do not invent URLs.
+Client proof should normally be used once when it genuinely matches: Ally for weight loss, Gen for strength/confidence, Dani for body recomposition, Bec and Kirsty for shared accountability. Use no transformation when identity, safety or fit is uncertain. If using proof, name the approved person and say you are showing their photo. Do not proactively send or introduce the app video. Do not invent URLs.
 
 Reliable offer facts: Balance Foundations is a six-week program inside Balance with a personalised workout program, plant-based meal plan, and one weekly training/food review and adjustment. It costs AUD 89.99 once, with no subscription or auto-renewal. The personalised app preview comes before payment.
 
-Only send a preview or checkout destination after explicit acceptance or request. Hand off instead of improvising for medical/safety issues, account or payment support, existing-client app support, or a direct request for Shannon. Keep replies quick, warm, concise and human. The one-next-question rule applies unless this turn sends a signed preview/checkout link, handles an opt-out or sensitive issue, hands off, or is clearly closing the conversation. The app video must still end with the before-payment setup question. Never reveal automation or AI. No em dashes.
+Send the signed preview immediately after they accept the free personalised preview. A positive reaction such as "looks great" is not checkout intent. Send checkout only after they explicitly ask to join, pay, sign up or receive the checkout link. Hand off instead of improvising for medical/safety issues, account or payment support, existing-client app support, or a direct request for Shannon. Keep replies quick, warm, concise and human. The one-next-question rule applies unless this turn sends a signed preview/checkout link, handles an opt-out or sensitive issue, hands off, or is clearly closing the conversation. Never reveal automation or AI. No em dashes.
 
 Campaign variant: ${flowVariant}
 Channel: ${channelLabel}
@@ -4281,15 +4279,13 @@ function attachPaidMetaWriterSelectedMedia(draft = {}, {
     ];
     const selectedProof = proofCandidates.find(candidate => candidate.name.test(replyText)
         && maySendDraftImageAttachment({ imageUrl: candidate.imageUrl, replyText }));
-    const introducesVideo = maySendDraftVideoAttachment({
-        videoUrl: BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL,
-        replyText,
-    });
     return {
         ...draft,
         imageAttachmentUrl: draft.imageAttachmentUrl || selectedProof?.imageUrl || null,
-        videoAttachmentUrl: draft.videoAttachmentUrl
-            || (introducesVideo ? BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL : null),
+        // The paid-Meta funnel now opens the interactive personalised preview
+        // instead of proactively attaching the generic evergreen app video.
+        // Preserve only a video already selected by an explicit retry path.
+        videoAttachmentUrl: draft.videoAttachmentUrl || null,
     };
 }
 
@@ -4399,6 +4395,10 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
     if (/\b(?:e-?mail|email address|best email)\b/i.test(reply)) {
         issues.push('Do not ask for an email in Instagram. Send the signed app-preview card; onboarding collects the account email there.');
     }
+    if (!hasDirectPaidMetaCheckoutIntent(turn)
+        && /\b(?:checkout link|send you (?:the )?(?:payment|checkout) link|grab (?:the )?founders? pass|ready to (?:pay|join|sign up))\b/i.test(reply)) {
+        issues.push('The reply offered checkout without explicit transactional intent. Keep the lead in the free personalised preview flow until they ask to join, pay, sign up or receive checkout.');
+    }
     const normalizeQuestion = value => String(value || '')
         .toLowerCase()
         .replace(/[^a-z0-9?\s]/g, '')
@@ -4424,7 +4424,7 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
 }
 
 function isBlockingPaidMetaWriterContractIssue(issue = '') {
-    return /repeated a question|directly asked whether|answer why Shannon went vegan|meal-plan question directly|gluten-free question directly|sales suspicion|answer the sales question|answer the price exactly|do not ask for an email|ignored the supplied plant-based duration/i.test(String(issue || ''));
+    return /repeated a question|directly asked whether|answer why Shannon went vegan|meal-plan question directly|gluten-free question directly|sales suspicion|answer the sales question|answer the price exactly|do not ask for an email|offered checkout without explicit transactional intent|ignored the supplied plant-based duration/i.test(String(issue || ''));
 }
 
 function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = '', issues = [], qualifier = {}, history = [] } = {}) {
@@ -4437,7 +4437,9 @@ function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = 
             && !!fallbackGoal
             && isPaidMetaConcreteBlocker(turn));
     let joined = '';
-    if (/sales suspicion|answer the sales question/i.test(issueText)) {
+    if (/offered checkout without explicit transactional intent/i.test(issueText)) {
+        joined = 'The next step is your free personalised preview, so you can look through your own workout program and plant-based meal plan before paying. Want me to open that for you?';
+    } else if (/sales suspicion|answer the sales question/i.test(issueText)) {
         joined = 'Yeah, Balance is a paid program. I’m just checking whether it actually fits what you need before I offer you anything.';
     } else if (/directly asked whether/i.test(issueText)) {
         const existing = draftTextFromDraft(draft)

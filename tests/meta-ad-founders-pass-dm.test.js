@@ -70,8 +70,9 @@ test('paid Meta has a dedicated sales agent prompt with no general coach assumpt
     assert.match(prompt, /exactly one useful next question/i);
     assert.match(prompt, /I am vegetarian[\s\S]*How about you/i);
     assert.match(prompt, /vegan for five years/i);
-    assert.match(prompt, /set up your program before payment/i);
-    assert.match(prompt, /app video must still end with the before-payment setup question/i);
+    assert.match(prompt, /signed preview immediately/i);
+    assert.match(prompt, /do not proactively send or introduce the app video/i);
+    assert.match(prompt, /looks great.*not checkout intent/i);
     assert.doesNotMatch(prompt, /animals were a big part/i);
     assert.doesNotMatch(prompt, /CLIENT NOTES AND APP CONTEXT/i);
     assert.doesNotMatch(prompt, /CONVERSATIONAL ELICITATION/i);
@@ -717,6 +718,27 @@ test('paid Meta writer contract enforces the exact $89.99 price', () => {
     assert.deepEqual(exactPriceIssues, []);
 });
 
+test('a positive reaction cannot be turned into a checkout offer before the personalised preview', () => {
+    const issues = collectPaidMetaWriterContractIssues({
+        draft: {
+            joined: 'If you would like, I can send you the checkout link now so you can grab the Founders Pass.',
+        },
+        currentMessage: 'Looks great',
+        history: [{ direction: 'out', text: 'Here is a look at how Balance works.' }],
+    });
+    assert.ok(issues.some(issue => /offered checkout without explicit transactional intent/i.test(issue)));
+    assert.ok(issues.some(isBlockingPaidMetaWriterContractIssue));
+
+    const repaired = buildPaidMetaGuaranteedContractFallback({
+        draft: { joined: 'I can send you the checkout link now.' },
+        currentMessage: 'Looks great',
+        issues,
+        history: [],
+    });
+    assert.match(repaired.joined, /free personalised preview/i);
+    assert.doesNotMatch(repaired.joined, /checkout link/i);
+});
+
 test('paid Meta writer contract does not hold the approved first ad greeting as a premature pitch', () => {
     const opener = buildMetaAdFoundersPassFirstReply('What is the Founders Pass?');
     assert.equal(opener.replyMode, 'campaign_first_reply');
@@ -1065,12 +1087,12 @@ test('paid Meta food confusion can stay with the AI writer after a non-blocking 
     assert.equal(blockerReply.chunks.length, 3);
     assert.ok(blockerReply.chunks.every(chunk => chunk.length <= 240),
         'the complete offer must fit in three native Instagram text bubbles');
-    assert.match(blockerReply.chunks[0], /quick video showing you how it works/i);
+    assert.doesNotMatch(blockerReply.joined, /quick video/i);
     assert.match(
         blockerReply.chunks.at(-1),
-        /if you're interested, I can set you up in the app so you can see your meal plan and workout program before making a payment\. Keen\?$/i
+        /want me to open your free personalised preview.*before making a payment\?$/i
     );
-    assert.equal(blockerReply.videoAttachmentUrl, BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL);
+    assert.equal(blockerReply.videoAttachmentUrl, null);
     assert.doesNotMatch(blockerReply.joined, /what do you usually|what usually gets in the way/i);
 
     const released = buildPaidMetaNonBlockingReviewFallback({
@@ -1096,7 +1118,7 @@ test('paid Meta food confusion can stay with the AI writer after a non-blocking 
     assert.match(released.joined, /what do you usually eat/i);
 });
 
-test('paid Meta treats broad overwhelm as the blocker and moves to the tailored app proof', () => {
+test('paid Meta treats broad overwhelm as the blocker and moves to the interactive preview', () => {
     const history = [
         { direction: 'in', text: 'I need to lose weight' },
         { direction: 'out', text: 'What is the biggest thing that makes weight loss hard for you right now?' },
@@ -1108,9 +1130,9 @@ test('paid Meta treats broad overwhelm as the blocker and moves to the tailored 
     });
     assert.match(reply.chunks[0], /food, workouts and consistency all feel hard at once/i);
     assert.match(reply.chunks[0], /not more pressure/i);
-    assert.match(reply.joined, /quick video showing you how it works/i);
-    assert.match(reply.joined, /Keen\?$/i);
-    assert.equal(reply.videoAttachmentUrl, BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL);
+    assert.doesNotMatch(reply.joined, /quick video/i);
+    assert.match(reply.joined, /free personalised preview/i);
+    assert.equal(reply.videoAttachmentUrl, null);
 
     const allOfIt = buildDeterministicPaidMetaConversationReply({
         currentMessage: 'All of it',
@@ -1134,8 +1156,8 @@ test('paid Meta treats broad overwhelm as the blocker and moves to the tailored 
         flowVariant: 'plant_based_control',
     });
     assert.match(acknowledgementAfterBrokenReflection.joined, /one simple plan built around your week/i);
-    assert.match(acknowledgementAfterBrokenReflection.joined, /Keen\?$/i);
-    assert.equal(acknowledgementAfterBrokenReflection.videoAttachmentUrl, BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL);
+    assert.match(acknowledgementAfterBrokenReflection.joined, /free personalised preview/i);
+    assert.equal(acknowledgementAfterBrokenReflection.videoAttachmentUrl, null);
 });
 
 test('paid Meta answers a rapid gluten-free support question before progressing', () => {
@@ -1180,7 +1202,7 @@ test('paid Meta answers a rapid meal-plan question without asking the known goal
 
     assert.match(reply.chunks[0], /^Yeah, I do\. If you want to lose 10 kilos but don't know what to eat/i);
     assert.match(reply.joined, /plant-based meal plan/i);
-    assert.match(reply.joined, /Keen\?$/i);
+    assert.match(reply.joined, /free personalised preview/i);
     assert.doesNotMatch(reply.joined, /what's your main health or fitness goal/i);
 
     const badDraft = {
@@ -1201,7 +1223,7 @@ test('paid Meta answers a rapid meal-plan question without asking the known goal
         history,
     });
     assert.match(repaired.chunks[0], /^Yeah, I do\. If you want to lose 10 kilos but don't know what to eat/i);
-    assert.match(repaired.joined, /Keen\?$/i);
+    assert.match(repaired.joined, /free personalised preview/i);
     assert.doesNotMatch(repaired.joined, /main health or fitness goal|what result are you/i);
 
     const unansweredMealPlanIssues = collectPaidMetaWriterContractIssues({
@@ -1265,19 +1287,11 @@ test('paid Meta guided sales stages move goal to blocker to complete offer to pr
     assert.match(offerReply.joined, /weekly check-in/i);
     assert.match(offerReply.joined, /one \$89\.99 payment/i);
     assert.match(offerReply.joined, /no subscription or auto-renewal/i);
-    assert.match(offerReply.joined, /quick video showing you how it works/i);
-    assert.equal(offerReply.videoAttachmentUrl, BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL);
-    assert.equal(
-        buildDraftVideoAttachmentData(offerReply).draft_video_attachment_url,
-        BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL,
-        'the approved proof video must survive into the sender payload'
-    );
-    assert.ok(
-        fs.statSync(path.join(__dirname, '..', 'assets', 'balance-foundations-app-proof-v2.mp4')).size > 1_000_000,
-        'the public evergreen app proof video must be packaged with the site'
-    );
+    assert.doesNotMatch(offerReply.joined, /quick video/i);
+    assert.match(offerReply.joined, /free personalised preview/i);
+    assert.equal(offerReply.videoAttachmentUrl, null);
     assert.match(offerReply.joined, /before making a payment/i);
-    assert.match(offerReply.joined, /Keen\?/i);
+    assert.match(offerReply.joined, /Want me to open your free personalised preview/i);
     assert.doesNotMatch(offerReply.joined, /https?:\/\//i);
 
     const acceptHistory = [
@@ -1785,7 +1799,7 @@ test('only destination handoffs override the paid Meta writer', () => {
     assert.equal(shouldApplyDeterministicPaidMetaReplyOverride({ replyMode: 'campaign_app_preview_handoff' }), true);
 });
 
-test('AI writer can deliberately select approved proof and app media', () => {
+test('AI writer can select approved client proof but cannot proactively attach the generic app video', () => {
     const ally = attachPaidMetaWriterSelectedMedia({
         joined: "This is Ally, one of my clients. I'll show you her photo because her weight-loss goal is close to yours.",
     }, { allowAttachments: true });
@@ -1794,7 +1808,7 @@ test('AI writer can deliberately select approved proof and app media', () => {
     const video = attachPaidMetaWriterSelectedMedia({
         joined: "Here's a quick app video so you can see how it works.",
     }, { allowAttachments: true });
-    assert.equal(video.videoAttachmentUrl, BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL);
+    assert.equal(video.videoAttachmentUrl, null);
 
     const noImplicitMedia = attachPaidMetaWriterSelectedMedia({
         joined: 'That goal makes sense. What has made it hard to stick with?',
@@ -1803,7 +1817,7 @@ test('AI writer can deliberately select approved proof and app media', () => {
     assert.equal(noImplicitMedia.videoAttachmentUrl, null);
 });
 
-test('app video handoff always earns the preview response with a before-payment setup question', () => {
+test('generic app-video wording is left without media so it cannot replace the interactive preview', () => {
     const selected = attachPaidMetaWriterSelectedMedia({
         chunks: ["Absolutely, I'll send the quick app video now so you can see how it works."],
         joined: "Absolutely, I'll send the quick app video now so you can see how it works.",
@@ -1811,11 +1825,8 @@ test('app video handoff always earns the preview response with a before-payment 
     }, { allowAttachments: true });
     const completed = ensurePaidMetaAppVideoPreviewCta(selected);
 
-    assert.equal(completed.videoAttachmentUrl, BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL);
-    assert.equal(completed.chunks.length, 2);
-    assert.match(completed.chunks[1], /if this looks right for you, let me know/i);
-    assert.match(completed.chunks[1], /set up your program before payment/i);
-    assert.match(completed.chunks[1], /\?$/);
+    assert.equal(completed.videoAttachmentUrl, null);
+    assert.deepEqual(completed.chunks, selected.chunks);
 });
 
 test('app video handoff does not duplicate an existing before-payment setup question', () => {
@@ -2293,6 +2304,20 @@ test.skip('legacy deterministic conversational stages retired in favour of the l
     assert.match(liveAppPreviewAcceptance.joined, /before any payment/i);
     assert.equal((liveAppPreviewAcceptance.joined.match(/\?/g) || []).length, 0,
         'an explicit preview acceptance should send the preview link and pause');
+
+    const exactLivePreviewAcceptance = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'Yes',
+        qualifier: blockerQualifier,
+        history: [{
+            direction: 'out',
+            text: 'Would you like me to show you a quick preview of the meal plan and workout program inside the app?',
+        }],
+        flowVariant: 'plant_based_control',
+    });
+    assert.equal(exactLivePreviewAcceptance.replyMode, 'campaign_app_preview_handoff');
+    assert.equal(exactLivePreviewAcceptance.appPreviewHandoff, true);
+    assert.match(exactLivePreviewAcceptance.joined, /meta-app-preview\.html/i);
+    assert.doesNotMatch(exactLivePreviewAcceptance.joined, /video|checkout/i);
 
     const acceptedSupportWithVideo = buildDeterministicPaidMetaConversationReply({
         currentMessage: 'Yeah',
