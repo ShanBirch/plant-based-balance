@@ -10,7 +10,12 @@
 const { handler: runIgInstantDraft } = require('./ig-instant-draft');
 
 const PAID_META_INBOUND_SETTLE_MS = 10000;
-const PAID_META_LIVE_CHAT_SETTLE_MS = 1500;
+// Instagram often delivers one human thought as several bubbles a few seconds
+// apart. The live lane previously started after 1.5s, so the first webhook
+// could win the alert race and overwrite a later, complete draft. Keep this
+// aligned with the live worker's inbound quiet window: only the newest webhook
+// survives the freshness check and drafts the whole unanswered batch.
+const PAID_META_LIVE_CHAT_SETTLE_MS = 6500;
 
 function resolvePaidMetaInboundSettleDelayMs(payload = {}) {
     const customData = payload?.customData && typeof payload.customData === 'object'
