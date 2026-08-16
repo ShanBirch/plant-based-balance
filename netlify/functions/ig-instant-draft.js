@@ -4154,11 +4154,11 @@ PAID META SINGLE-WRITER PLAYBOOK:
 - Skip anything the lead has already answered. Do not force every stage into every conversation, and do not make goal or blocker fields mechanical gates. Use judgement about the most useful adjacent move.
 - When their difficulty is known, use it to explain specifically how Balance could make follow-through easier. Do not mine distress, diagnose them, or repeat their problem back without adding value.
 - Relevant proof is optional. Ally fits weight loss; Gen fits strength/confidence; Dani fits body recomposition; Bec and Kirsty fit shared accountability. Use no transformation when identity, sensitivity or fit is uncertain. If you choose one, explicitly name the approved person and say you are showing their photo so transport code can attach it.
-- When a short app demonstration would help, explicitly say you are sending the quick app video so transport code can attach the existing 63-second evergreen video. Never invent a URL.
+- When a short app demonstration would help, explicitly say you are sending the quick app video so transport code can attach the existing 63-second evergreen video. End that video handoff by asking: "If this looks right for you, let me know. Want me to set up your program before payment so you can get a proper feel for what you're paying for?" Never invent a URL.
 - When explaining the offer, keep the facts reliable: the six-week Foundations course includes their workout program, plant-based meal plan, and one weekly training/food check-in and adjustment. It is one $89.99 payment with no subscription or auto-renewal. The free personalised app preview comes before payment.
 - Never ask the lead for an email address in Instagram. When they accept the free personalised preview, transport code sends the signed Open your preview card immediately; account creation inside that onboarding collects their email.
 - If they mention pregnancy or post-pregnancy weight as a goal without reporting a symptom or complication, keep it in the ordinary fitness lane. Do not invent children, ask for medical history, or make pregnancy recency the next question; respond to the fitness goal and ask about the current practical obstacle only if needed.
-- Usually end with one short new question when its answer will genuinely change the next reply. A direct answer, media/link handoff, opt-out, sensitive safety response, sales-suspicion answer or natural pause may stand alone. Questions earn the next response; they are not mandatory punctuation.
+- Usually end with one short new question when its answer will genuinely change the next reply. A direct answer, signed preview/checkout link handoff, opt-out, sensitive safety response, sales-suspicion answer or natural pause may stand alone. An app-video handoff is not an exception: it must end with the before-payment setup question above.
 - Never repeat or lightly reword a question Shannon already asked. Never echo the lead's sentence back as Shannon's reply. Use their answer, add a relevant coaching or proof point, then make the next adjacent move.
 - Treat a stated target as a target, not completed progress. For example, "I want to lose 10kg" must never become "10kg down".
 - When they ask about the program, price, inclusions or personalised coaching, answer that direct question before qualifying further. Do not send a signup link until they explicitly ask for it or clearly accept the offer.
@@ -4188,11 +4188,11 @@ GUIDE THE SALE: every ordinary discovery reply must both respond to what they sa
 
 Skip anything already answered. Never repeat or lightly reword a question Shannon already asked. Do not invent personal facts about Shannon or the lead. The only approved reciprocal fact is that Shannon has been vegan for five years. If asked why Shannon went vegan, do not guess; answer briefly that he has been vegan five years and turn the focus naturally back to their story only if useful.
 
-Proof is optional and must genuinely match: Ally for weight loss, Gen for strength/confidence, Dani for body recomposition, Bec and Kirsty for shared accountability. If using proof, name the approved person and say you are showing their photo. If an app demonstration is useful, explicitly say you are sending the quick app video. Do not invent URLs.
+Proof is optional and must genuinely match: Ally for weight loss, Gen for strength/confidence, Dani for body recomposition, Bec and Kirsty for shared accountability. If using proof, name the approved person and say you are showing their photo. If an app demonstration is useful, explicitly say you are sending the quick app video, then ask: "If this looks right for you, let me know. Want me to set up your program before payment so you can get a proper feel for what you're paying for?" Do not invent URLs.
 
 Reliable offer facts: Balance Foundations is a six-week program inside Balance with a personalised workout program, plant-based meal plan, and one weekly training/food review and adjustment. It costs AUD 89.99 once, with no subscription or auto-renewal. The personalised app preview comes before payment.
 
-Only send a preview or checkout destination after explicit acceptance or request. Hand off instead of improvising for medical/safety issues, account or payment support, existing-client app support, or a direct request for Shannon. Keep replies quick, warm, concise and human. The one-next-question rule applies unless this turn sends media/a link, handles an opt-out or sensitive issue, hands off, or is clearly closing the conversation. Never reveal automation or AI. No em dashes.
+Only send a preview or checkout destination after explicit acceptance or request. Hand off instead of improvising for medical/safety issues, account or payment support, existing-client app support, or a direct request for Shannon. Keep replies quick, warm, concise and human. The one-next-question rule applies unless this turn sends a signed preview/checkout link, handles an opt-out or sensitive issue, hands off, or is clearly closing the conversation. The app video must still end with the before-payment setup question. Never reveal automation or AI. No em dashes.
 
 Campaign variant: ${flowVariant}
 Channel: ${channelLabel}
@@ -4290,6 +4290,33 @@ function attachPaidMetaWriterSelectedMedia(draft = {}, {
         imageAttachmentUrl: draft.imageAttachmentUrl || selectedProof?.imageUrl || null,
         videoAttachmentUrl: draft.videoAttachmentUrl
             || (introducesVideo ? BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL : null),
+    };
+}
+
+function ensurePaidMetaAppVideoPreviewCta(draft = {}) {
+    if (String(draft?.videoAttachmentUrl || '').trim() !== BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL) return draft;
+    const replyText = draftTextFromDraft(draft);
+    const alreadyOffersSetupBeforePayment = /\b(?:set(?:ting)?|build(?:ing)?)\b[^.!?\n]{0,80}\b(?:program|workout|meal plan|plan|preview)\b[^.!?\n]{0,100}\b(?:before (?:you )?(?:pay|decide)|before payment)\b/i.test(replyText)
+        && /\?/.test(replyText);
+    if (alreadyOffersSetupBeforePayment) return draft;
+
+    const cta = "If this looks right for you, let me know. Want me to set up your program before payment so you can get a proper feel for what you're paying for?";
+    const chunks = (Array.isArray(draft?.chunks) ? draft.chunks : [])
+        .map(value => String(value || '').trim())
+        .filter(Boolean);
+    if (!chunks.length && replyText) chunks.push(replyText);
+    const maxChunks = Math.max(2, Number(draft?.maxChunks) || MAX_CHUNKS);
+    if (chunks.length >= maxChunks) {
+        chunks[maxChunks - 1] = `${chunks[maxChunks - 1]}\n\n${cta}`;
+    } else {
+        chunks.push(cta);
+    }
+    const finalChunks = chunks.slice(0, maxChunks);
+    return {
+        ...draft,
+        chunks: finalChunks,
+        joined: finalChunks.join('\n\n'),
+        maxChunks,
     };
 }
 
@@ -7273,10 +7300,13 @@ exports.handler = async (event) => {
             flowVariant: metaAdFlowVariant,
         };
     }
-    if (metaAdConversationFastLane) draft = attachPaidMetaWriterSelectedMedia(draft, {
-        allowAttachments: hasInstagramGraphRoute,
-        flowVariant: metaAdFlowVariant,
-    });
+    if (metaAdConversationFastLane) {
+        draft = attachPaidMetaWriterSelectedMedia(draft, {
+            allowAttachments: hasInstagramGraphRoute,
+            flowVariant: metaAdFlowVariant,
+        });
+        draft = ensurePaidMetaAppVideoPreviewCta(draft);
+    }
     if (metaAdConversationFastLane && hasInstagramGraphRoute && graphRecipientId) {
         try {
             // Meta's typing indicator expires while the dedicated agent is
@@ -9026,6 +9056,7 @@ exports._test = {
     buildDraftVideoAttachmentData,
     buildDraftImageAttachmentData,
     attachPaidMetaWriterSelectedMedia,
+    ensurePaidMetaAppVideoPreviewCta,
     ensureMetaAdSalesProgressionQuestion,
     resolveMetaAdEarlyTypingDelayMs,
     resolveRecentVoiceSince,

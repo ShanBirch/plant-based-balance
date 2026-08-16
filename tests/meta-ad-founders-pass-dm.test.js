@@ -36,6 +36,7 @@ const {
     buildDraftVideoAttachmentData,
     buildDraftImageAttachmentData,
     attachPaidMetaWriterSelectedMedia,
+    ensurePaidMetaAppVideoPreviewCta,
     filterMetaAdCardAttachmentHistory,
     buildLeadOnboardingHandoffData,
     resolveMetaAdFirstReplyIntent,
@@ -69,6 +70,8 @@ test('paid Meta has a dedicated sales agent prompt with no general coach assumpt
     assert.match(prompt, /exactly one useful next question/i);
     assert.match(prompt, /I am vegetarian[\s\S]*How about you/i);
     assert.match(prompt, /vegan for five years/i);
+    assert.match(prompt, /set up your program before payment/i);
+    assert.match(prompt, /app video must still end with the before-payment setup question/i);
     assert.doesNotMatch(prompt, /animals were a big part/i);
     assert.doesNotMatch(prompt, /CLIENT NOTES AND APP CONTEXT/i);
     assert.doesNotMatch(prompt, /CONVERSATIONAL ELICITATION/i);
@@ -1798,6 +1801,34 @@ test('AI writer can deliberately select approved proof and app media', () => {
     }, { allowAttachments: true });
     assert.equal(noImplicitMedia.imageAttachmentUrl, null);
     assert.equal(noImplicitMedia.videoAttachmentUrl, null);
+});
+
+test('app video handoff always earns the preview response with a before-payment setup question', () => {
+    const selected = attachPaidMetaWriterSelectedMedia({
+        chunks: ["Absolutely, I'll send the quick app video now so you can see how it works."],
+        joined: "Absolutely, I'll send the quick app video now so you can see how it works.",
+        maxChunks: 1,
+    }, { allowAttachments: true });
+    const completed = ensurePaidMetaAppVideoPreviewCta(selected);
+
+    assert.equal(completed.videoAttachmentUrl, BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL);
+    assert.equal(completed.chunks.length, 2);
+    assert.match(completed.chunks[1], /if this looks right for you, let me know/i);
+    assert.match(completed.chunks[1], /set up your program before payment/i);
+    assert.match(completed.chunks[1], /\?$/);
+});
+
+test('app video handoff does not duplicate an existing before-payment setup question', () => {
+    const joined = "Here's the quick app video. Want me to set up your program before payment so you can see whether it feels right?";
+    const completed = ensurePaidMetaAppVideoPreviewCta({
+        chunks: [joined],
+        joined,
+        videoAttachmentUrl: BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL,
+        maxChunks: 3,
+    });
+
+    assert.deepEqual(completed.chunks, [joined]);
+    assert.equal(completed.joined, joined);
 });
 
 test('private paid-ad voice cooldown restarts at the newest repeated FAQ opener', () => {
