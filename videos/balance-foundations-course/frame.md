@@ -63,7 +63,7 @@ feel that the six weeks build on one another.
 - Lesson row: white or 4% gold tint, 2px gold-tint border, 18px radius, no shadow.
 - Week badge: solid gold pill with cream type.
 - Model line: 3px solid gold, rounded ends, never a decorative gradient.
-- CTA pill: the only large solid-gold surface.
+- End-card slogan: large near-black setup line followed by one large solid-gold resolution line.
 - Logo: official mark only. Give it one tasteful diagonal gold glimmer on the opening and close.
 
 ## Motion grammar
@@ -78,11 +78,11 @@ feel that the six weeks build on one another.
 
 - Essential content stays inside x=76-920, y=190-1585.
 - The rightmost 130px is atmosphere only.
-- No CTA or critical copy below y=1585.
+- No critical copy below y=1585.
 - The opening hook must remain readable in the centered 1:1 profile-grid crop.
 
 ## Content truth
 
 - Week titles, descriptions and lesson titles come from `lib/learning-inline.js` on origin/main.
-- The offer close uses AU$89.99 once, six weeks, one weekly check-in plus workout and food review/adjustment, six weeks of app/community access, and no automatic renewal.
+- The evergreen close uses `UNDERSTAND CHANGE. BUILD WHAT LASTS.` with no price, offer inclusions or sales prompt.
 - Never imply instant replies, unlimited support, live calls or guaranteed results.

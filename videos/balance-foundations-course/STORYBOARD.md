@@ -139,7 +139,7 @@ Redesign the Choice Around You; Other People Shape Your Habits.
 - beat: flexible plant-based nutrition without rigid rules
 - blueprint: grid-card-assemble
 - focal: a flexible plate and three fuel roles locking into one sustainable pattern
-- transition_out: brief cream flash into the offer close
+- transition_out: brief cream flash into the evergreen close
 
 Protein, carbs and fats assemble around a simple `YOUR GOAL / YOUR LIFE` plate.
 The pieces stay flexible rather than becoming a perfect-meal diagram. The five
@@ -153,14 +153,14 @@ of Eating.
 - src: compositions/08-course-cta.html
 - start: 77s
 - duration: 8s
-- type: CTA
-- beat: summarize the offer accurately and invite a DM
+- type: brand close
+- beat: resolve the curriculum into one evergreen Balance idea
 - blueprint: cta-morph-press
-- focal: Balance lockup, current one-time price and six-week support facts
+- focal: Balance lockup and `UNDERSTAND CHANGE. BUILD WHAT LASTS.`
 - transition_out: terminal hold
 
-The six chapter labels compress into one clean Balance Foundations card. The offer
-facts arrive one at a time: `AU$89.99 ONCE`; `6-WEEK COURSE`; `WEEKLY CHECK-IN +
-WORKOUT AND FOOD REVIEW`; `NO AUTO-RENEWAL`. The solid gold CTA resolves to
-`DM ME FOR THE DETAILS`, followed by the quiet line `Build something you can keep.`
-The official logo receives one diagonal gold glimmer, then the end card holds.
+The six chapter labels compress into one clean Balance Foundations card. The
+evergreen line resolves in two beats: `UNDERSTAND CHANGE.` then the gold
+`BUILD WHAT LASTS.` A quiet supporting line connects the curriculum to fitness,
+food and habits that fit real life. The official logo receives one diagonal gold
+glimmer, then the end card holds without pricing or a sales prompt.

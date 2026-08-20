@@ -35,7 +35,7 @@ all-or-nothing thinking toward repeatable habits and a sustainable way of eating
 - Give each week one simple explanatory visual model so the video feels like an edit, not a scrolling syllabus.
 - Keep all meaning readable muted; add a warm, understated instrumental bed and restrained sound marks rather than narration.
 - Design the opening frame so it also works as the Instagram profile-grid cover.
-- End with the current offer facts: AU$89.99 once, six weeks, weekly check-in and review, no automatic renewal.
+- End with the evergreen line `UNDERSTAND CHANGE. BUILD WHAT LASTS.` and no price, offer inclusions or sales CTA.
 
 ## Notes
 
