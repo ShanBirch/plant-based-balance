@@ -56,8 +56,8 @@ test('fast route totals and mobile script versions are current', () => {
   assert.match(dashboard, /Log an accepted meal[^\r\n]*\+33 XP/);
   assert.match(dashboard, /Log a workout[^\r\n]*\+31 XP/);
   assert.match(dashboard, /fresh daily quiz[^\r\n]*\+12 XP/);
-  assert.match(dashboard, /dashboard-script-6-ai_coach_draft_mode_logic_auth\.js\?v=42-welcome-gate/g);
-  assert.match(dashboard, /lib\/learning-inline\.js\?v=13/g);
+    assert.match(dashboard, /dashboard-script-6-ai_coach_draft_mode_logic_auth\.js\?v=43-home-canvas/g);
+    assert.match(dashboard, /lib\/learning-inline\.js\?v=21/g);
 });
 
 test('public XP guides do not expose internal automation wording or stale Health IQ rewards', () => {

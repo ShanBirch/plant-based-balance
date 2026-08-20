@@ -33,14 +33,26 @@ test('dark mode remains an explicit persistent choice', () => {
   assert.match(themeLogic, /theme_preference: themeKey/);
 });
 
+test('Home canvas follows the active mode instead of the inverse primary colour', () => {
+  const themeLogic = read('js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js');
+  const journeyCss = read('css/dashboard/pbb-social-journey.css');
+
+  assert.match(themeLogic, /welcomeSection\.style\.removeProperty\('background'\)/);
+  assert.doesNotMatch(themeLogic, /welcomeSection\.style\.background\s*=\s*'linear-gradient\(135deg, var\(--primary\)/);
+  assert.doesNotMatch(themeLogic, /children\.forEach\(c => \{[\s\S]*?c\.style\.color = 'white'/);
+  assert.match(journeyCss, /html\.pbb-unified-next-steps #view-dashboard \.dashboard-welcome\s*\{[\s\S]*?background: transparent !important/);
+  assert.match(journeyCss, /html\[data-pbb-theme="light"\]\.pbb-unified-next-steps #view-dashboard \.dashboard-welcome/);
+  assert.match(journeyCss, /html\[data-pbb-theme="dark"\]\.pbb-unified-next-steps #view-dashboard \.dashboard-welcome/);
+});
+
 test('the phone shell cache ships the light-launch assets together', () => {
   const dashboard = read('dashboard.html');
   const serviceWorker = read('sw.js');
 
-  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v326'/);
+  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v327'/);
   assert.match(serviceWorker, /auth-guard\.js\?v=12-light-launch/);
   assert.match(serviceWorker, /script_part_2\.js\?v=14-light-launch/);
   assert.match(serviceWorker, /dashboard-script-3-1_get_user_data\.js\?v=59-light-launch/);
   assert.match(dashboard, /script_part_4\.js\?v=theme-toggle-shell-v2/);
-  assert.match(dashboard, /dashboard-script-6-ai_coach_draft_mode_logic_auth\.js\?v=42-welcome-gate/);
+  assert.match(dashboard, /dashboard-script-6-ai_coach_draft_mode_logic_auth\.js\?v=43-home-canvas/);
 });

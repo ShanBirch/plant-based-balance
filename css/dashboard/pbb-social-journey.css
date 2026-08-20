@@ -146,6 +146,18 @@ html.pbb-unified-next-steps #weekly-checkin-card,
 html.pbb-unified-next-steps #fitbit-imported-activity-card { display: none !important; }
 html.pbb-unified-next-steps .pbb-next-step-active-source { display: block !important; }
 
+/* Weekly Goals and Your Plan live inside this legacy character wrapper. Keep
+   the wrapper transparent so the Home canvas follows the active app theme. */
+html.pbb-unified-next-steps #view-dashboard .dashboard-welcome {
+  background: transparent !important;
+}
+html[data-pbb-theme="light"].pbb-unified-next-steps #view-dashboard .dashboard-welcome {
+  color: #151515;
+}
+html[data-pbb-theme="dark"].pbb-unified-next-steps #view-dashboard .dashboard-welcome {
+  color: #f8f7f2;
+}
+
 #weekly-goals-card.weekly-goals-home-card {
   color: #f8f7f2;
   -webkit-text-fill-color: #f8f7f2;

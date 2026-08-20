@@ -10729,17 +10729,12 @@ async function _applyAppThemeRealImpl(themeKey) {
     const selector = document.getElementById('theme-selector');
     if(selector) selector.value = themeKey;
 
-    // Update dashboard-welcome background - keep gradient for all themes
+    // The Home canvas is themed by #view-dashboard. Do not repaint this wrapper
+    // with --primary: light mode uses a dark primary and dark mode uses gold.
     const welcomeSection = document.querySelector('.dashboard-welcome');
     if(welcomeSection) {
-        // Always use dynamic theme gradient
-        welcomeSection.style.background = 'linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%)';
-        welcomeSection.style.color = 'white';
-        // Ensure all child elements use white text for maximum readability
-        const children = welcomeSection.querySelectorAll('*');
-        children.forEach(c => {
-             c.style.color = 'white';
-        });
+        welcomeSection.style.removeProperty('background');
+        welcomeSection.style.removeProperty('color');
     }
 
     // Handle DBZ theme decorations (male users only)
