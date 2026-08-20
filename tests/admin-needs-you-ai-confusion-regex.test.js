@@ -204,4 +204,35 @@ assert.strictEqual(
     'current link intent or a draft URL should still count as a live handoff'
 );
 
+assert.ok(
+    dashboard.includes('id="needs-you-clear-all"') &&
+    dashboard.includes('onclick="clearAllNeedsYou()"') &&
+    dashboard.includes('async function clearAllNeedsYou()'),
+    'Needs You should expose the clear-all control and handler'
+);
+
+assert.ok(
+    dashboard.includes(".update({ status: 'dismissed', actioned_at: actionedAt })") &&
+    dashboard.includes(".in('id', ids)") &&
+    dashboard.includes(".eq('status', 'pending')"),
+    'clear all should only bulk-dismiss the currently pending Needs You rows'
+);
+
+assert.ok(
+    dashboard.includes('This dismisses them without sending any messages.') &&
+    dashboard.includes('window.confirm(`Clear all ${ids.length} Needs You item'),
+    'clear all should explain the effect and require confirmation before changing records'
+);
+
+assert.ok(
+    dashboard.includes("${currentFeed === 'needs-you' ? '' : renderMediaDecodeNotice(alert)}"),
+    'Needs You cards should not repeat the media warning already shown in the explanation strip'
+);
+
+assert.ok(
+    dashboard.includes('escapeHtml(repairAdminMojibake(lifecycle.dot))') &&
+    dashboard.includes('&#128172; Latest context'),
+    'Needs You should render lifecycle and context emoji without mojibake'
+);
+
 console.log('admin Needs You AI confusion regex tests passed');

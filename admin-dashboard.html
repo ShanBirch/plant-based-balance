@@ -915,6 +915,35 @@
         .alert-card.priority-low { border-left: 4px solid #94a3b8; }
         .alert-card.status-sent { opacity: 0.5; }
         .alert-card.status-dismissed { opacity: 0.3; }
+        .needs-you-shell { display:flex; flex-direction:column; gap:12px; height:calc(100vh - 48px); }
+        .needs-you-header-card { flex-shrink:0; }
+        .needs-you-header { padding:14px 18px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+        .needs-you-heading { min-width:0; }
+        .needs-you-heading h2 { font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:700; }
+        .needs-you-heading p { font-size:0.78rem; color:#64748b; margin-top:2px; line-height:1.35; }
+        .needs-you-header-actions { display:flex; align-items:center; justify-content:flex-end; gap:8px; flex-wrap:wrap; flex-shrink:0; }
+        .needs-you-count-label { display:inline-flex; align-items:center; gap:7px; font-size:0.75rem; color:#64748b; font-weight:800; }
+        .needs-you-clear-all { min-height:34px; padding:7px 11px; border:1px solid #fecaca; border-radius:8px; background:#fff; color:#b91c1c; -webkit-text-fill-color:#b91c1c; font:800 0.76rem 'Inter',sans-serif; cursor:pointer; display:inline-flex; align-items:center; gap:5px; }
+        .needs-you-clear-all:hover { background:#fef2f2; }
+        .needs-you-clear-all:disabled { color:#94a3b8; -webkit-text-fill-color:#94a3b8; border-color:#e2e8f0; background:#f8fafc; cursor:default; opacity:0.75; }
+        .needs-you-feed-card { flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; }
+        #needs-you-feed { padding:10px; }
+        @media (max-width: 768px) {
+            .needs-you-shell { gap:9px !important; }
+            .needs-you-header { padding:12px 13px; align-items:flex-start; }
+            .needs-you-heading h2 { font-size:1.08rem; }
+            .needs-you-heading p { max-width:33ch; font-size:0.72rem; }
+            .needs-you-header-actions { gap:6px; }
+            .needs-you-count-label span:last-child { display:none; }
+            .needs-you-clear-all { min-height:32px; padding:6px 9px; }
+            #needs-you-feed { padding:6px; }
+            #needs-you-feed .alert-card { padding:11px 10px; margin-bottom:7px; border-radius:10px; }
+            #needs-you-feed .dm-clean-explanation { margin:7px 0; padding:8px 9px; }
+            #needs-you-feed .alert-thread-panel { margin-top:7px; padding:8px; border-radius:8px; }
+            #needs-you-feed .alert-thread-scroll { max-height:min(42dvh, 360px); padding-right:0; }
+            #needs-you-feed .alert-thread-bubble { padding:7px 8px; font-size:0.8rem; }
+            #needs-you-feed .alert-actions { margin-top:8px; }
+        }
         .alert-type-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
         .alert-type-badge.type-unread_message { background: #dbeafe; color: #1e40af; }
         .alert-type-badge.type-incoming_dm { background: #fef9c3; color: #854d0e; }
@@ -2297,21 +2326,26 @@
             </div>
             <!-- NEEDS YOU (approval hub for human-pass automation work) -->
             <div id="needs-you" class="section active">
-                <div style="display:flex; flex-direction:column; gap:16px; height:calc(100vh - 48px);">
-                    <div class="content-card" style="flex-shrink:0;">
-                        <div style="padding:16px 20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
-                            <div>
-                                <h2 style="font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:700;">Needs You</h2>
-                                <p style="font-size:0.8rem; color:#64748b; margin-top:2px;">Client-manager reviewed DMs, month-one milestones and onboarding-link handoffs waiting for Shannon.</p>
+                <div class="needs-you-shell">
+                    <div class="content-card needs-you-header-card">
+                        <div class="needs-you-header">
+                            <div class="needs-you-heading">
+                                <h2>Needs You</h2>
+                                <p>Reviewed DMs and approvals waiting for Shannon.</p>
                             </div>
-                            <div style="display:inline-flex; align-items:center; gap:8px; font-size:0.78rem; color:#64748b; font-weight:800;">
-                                <span id="needs-you-view-all-count" class="alert-view-count">0</span>
-                                <span>reviewed DMs + milestones</span>
+                            <div class="needs-you-header-actions">
+                                <div class="needs-you-count-label">
+                                    <span id="needs-you-view-all-count" class="alert-view-count">0</span>
+                                    <span>waiting</span>
+                                </div>
+                                <button type="button" id="needs-you-clear-all" class="needs-you-clear-all" onclick="clearAllNeedsYou()" disabled title="Dismiss every item currently waiting in Needs You">
+                                    <i data-lucide="check-check" style="width:14px;height:14px;"></i>Clear all
+                                </button>
                             </div>
                         </div>
                     </div>
-                    <div class="content-card" style="flex:1; overflow-y:auto;" id="needs-you-feed-container">
-                        <div id="needs-you-feed" style="padding:12px;">
+                    <div class="content-card needs-you-feed-card" id="needs-you-feed-container">
+                        <div id="needs-you-feed">
                             <div style="text-align:center; padding:40px; color:#94a3b8;">
                                 <i data-lucide="inbox" style="width:40px; height:40px; margin-bottom:12px;"></i>
                                 <h3 style="font-family:'Montserrat',sans-serif; color:#64748b;">Loading Needs You...</h3>
@@ -13082,6 +13116,10 @@
             needsYouCounts = counts;
             NEEDS_YOU_TABS.forEach(tab => setBadgeText(`needs-you-view-${tab}-count`, counts[tab] || 0));
             setNeedsYouBadge(counts.all || 0);
+            const clearAllBtn = document.getElementById('needs-you-clear-all');
+            if (clearAllBtn && clearAllBtn.dataset.clearing !== 'true') {
+                clearAllBtn.disabled = Number(counts.all || 0) === 0;
+            }
         }
 
         function isCurrentNeedsYouLoad(loadSeq) {
@@ -13168,6 +13206,64 @@
             } catch (e) {
                 console.error('Failed to load Needs You:', e);
                 if (!renderedFromCache && container) container.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load Needs You: ${escapeHtml(e.message || e)}</div>`;
+            }
+        }
+
+        async function clearAllNeedsYou() {
+            const clearAllBtn = document.getElementById('needs-you-clear-all');
+            const activeClientIds = needsYouFeedCache.activeClientIds || dmClientIdsCache.ids;
+            const rows = uniqueAlertRows(needsYouFeedCache.rows || []);
+            const ids = rows
+                .filter(row => needsYouHasOperatorWork(row, activeClientIds))
+                .map(row => row.id)
+                .filter(Boolean);
+            if (!ids.length) {
+                renderNeedsYouCounts({ all: 0 });
+                return;
+            }
+
+            const confirmed = window.confirm(`Clear all ${ids.length} Needs You item${ids.length === 1 ? '' : 's'}?\n\nThis dismisses them without sending any messages.`);
+            if (!confirmed) return;
+
+            const actionedAt = new Date().toISOString();
+            if (clearAllBtn) {
+                clearAllBtn.dataset.clearing = 'true';
+                clearAllBtn.disabled = true;
+                clearAllBtn.innerHTML = '<i data-lucide="loader" style="width:14px;height:14px;animation:spin 1s linear infinite;"></i>Clearing...';
+                if (window.lucide?.createIcons) lucide.createIcons();
+            }
+
+            try {
+                const { error } = await window.supabaseClient
+                    .from('coach_alerts')
+                    .update({ status: 'dismissed', actioned_at: actionedAt })
+                    .in('id', ids)
+                    .eq('status', 'pending');
+                if (error) throw error;
+
+                const clearedIds = new Set(ids.map(String));
+                ids.forEach(clearAlertEditBuffer);
+                alertsCache = alertsCache.filter(row => !clearedIds.has(String(row?.id || '')));
+                needsYouFeedCache = {
+                    ...needsYouFeedCache,
+                    rows: rows.filter(row => !clearedIds.has(String(row?.id || ''))),
+                    loadedAt: Date.now(),
+                };
+                renderNeedsYouSnapshot(needsYouFeedCache.rows, activeClientIds);
+                refreshVisibleCountsAfterDismiss();
+                updateVoiceMatchRate();
+                if (typeof showToast === 'function') showToast(`${ids.length} Needs You item${ids.length === 1 ? '' : 's'} cleared`, 'success');
+            } catch (e) {
+                console.error('Failed to clear Needs You:', e);
+                window.alert(`Could not clear Needs You: ${e.message || e}`);
+                await loadNeedsYou(true);
+            } finally {
+                if (clearAllBtn) {
+                    delete clearAllBtn.dataset.clearing;
+                    clearAllBtn.innerHTML = '<i data-lucide="check-check" style="width:14px;height:14px;"></i>Clear all';
+                    clearAllBtn.disabled = Number(needsYouCounts.all || 0) === 0;
+                    if (window.lucide?.createIcons) lucide.createIcons();
+                }
             }
         }
 
@@ -18531,7 +18627,7 @@
             // the title with a tooltip so a hover surfaces the human label.
             const lifecycle = alert?.data?.lifecycle;
             const lifecycleDotHtml = (lifecycle?.dot)
-                ? `<span title="${escapeHtml(lifecycle.label || '')}" style="margin-right:4px;">${escapeHtml(lifecycle.dot)}</span>`
+                ? `<span title="${escapeHtml(lifecycle.label || '')}" style="margin-right:4px;">${escapeHtml(repairAdminMojibake(lifecycle.dot))}</span>`
                 : '';
             const isDmAlert = DM_ALERT_TYPES.includes(alert.alert_type);
             const humanAgentDmStripHtml = renderHumanAgentDmStrip(alert, isDmAlert);
@@ -19299,6 +19395,21 @@
         function escapeHtml(str) {
             if (!str) return '';
             return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        }
+
+        function repairAdminMojibake(value) {
+            const source = String(value || '');
+            if (!/[ÃÂâð]/.test(source)) return source;
+            const characters = Array.from(source);
+            if (characters.some(character => character.charCodeAt(0) > 255)) return source;
+            try {
+                const decoded = new TextDecoder('utf-8', { fatal: true })
+                    .decode(Uint8Array.from(characters, character => character.charCodeAt(0)));
+                const markerCount = text => (String(text).match(/[ÃÂâð]/g) || []).length;
+                return markerCount(decoded) < markerCount(source) ? decoded : source;
+            } catch {
+                return source;
+            }
         }
 
         // Per-client edit-rate mini-pill renders in each alert card's
@@ -20962,7 +21073,7 @@
                         &#128172; Latest context
                         <span class="alert-thread-header-count">${renderedThread.countLabel}</span>
                     </div>
-                    ${renderMediaDecodeNotice(alert)}
+                    ${currentFeed === 'needs-you' ? '' : renderMediaDecodeNotice(alert)}
                     ${renderStoryReplyContextStrip(alert)}
                     <div class="alert-thread-scroll">${renderedThread.bubbles}</div>
                 </div>`;
@@ -20994,7 +21105,7 @@
                 return `
                     <div class="alert-thread-panel">
                         <div class="alert-thread-header">
-                            ðŸ’¬ Latest context
+                            &#128172; Latest context
                             <span class="alert-thread-header-count">${countLabel}</span>
                         </div>
                         ${renderMediaDecodeNotice(alert)}
