@@ -604,7 +604,7 @@ function shouldDispatchMetaAdReplyImmediately({ alertData, normalizedTiming, sch
 
 function isCodexLivePaidMetaThread({ linkedUserId = null, customData = {}, acquisitionMode = '' } = {}) {
     return !linkedUserId
-        && customData?.codex_live_chat_enabled === true
+        && customData?.codex_live_chat_enabled !== false
         && isPaidMetaAcquisitionMode(acquisitionMode);
 }
 

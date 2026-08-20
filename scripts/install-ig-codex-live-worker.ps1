@@ -41,7 +41,7 @@ if ($existingTask -and $existingTask.State -eq 'Running') {
 
 Copy-Item -LiteralPath $sourceWorker -Destination $installedWorker -Force
 
-$arguments = '"{0}" --workspace "{1}"' -f $installedWorker, $Workspace
+$arguments = '"{0}" --codex-turn --workspace "{1}"' -f $installedWorker, $Workspace
 $action = New-ScheduledTaskAction -Execute $node -Argument $arguments -WorkingDirectory $Workspace
 $logonTrigger = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
 $watchdogTrigger = New-ScheduledTaskTrigger `

@@ -51,7 +51,9 @@ export function parseArgs(argv = []) {
         once: false,
         openChat: false,
         testAppServer: false,
-        useAppServer: process.env.IG_CODEX_LIVE_USE_APP_SERVER === 'true',
+        // The dedicated conversation is the production path. Direct-draft mode
+        // exists only for bounded diagnostics and must be selected explicitly.
+        useAppServer: process.env.IG_CODEX_LIVE_USE_APP_SERVER !== 'false',
     };
     for (let index = 0; index < argv.length; index += 1) {
         const value = argv[index];
@@ -60,6 +62,7 @@ export function parseArgs(argv = []) {
         else if (value === '--open-chat') args.openChat = true;
         else if (value === '--test-app-server') args.testAppServer = true;
         else if (value === '--codex-turn') args.useAppServer = true;
+        else if (value === '--direct-draft') args.useAppServer = false;
         else if (value === '--workspace' && argv[index + 1]) args.workspace = argv[++index];
         else if (value.startsWith('--workspace=')) args.workspace = value.slice('--workspace='.length);
     }
@@ -70,7 +73,7 @@ export function buildLivePrompt({ alert, action, codexThreadId }) {
     const igThreadId = String(alert?.data?.ig_thread_id || alert?.data?.codex_live_chat_ig_thread_id || action?.thread_id || '');
     const username = String(alert?.data?.ig_username || alert?.client_name || action?.ig_username || 'unknown lead');
     const newestInbound = String(alert?.data?.message_preview || '').trim();
-    return `You are the dedicated live paid-Meta sales conversation for one internal Instagram test lead. This flow is isolated from the normal Balance AI coach, DM manager, dispatcher wording, and every older test episode. Do not read or invoke their conversational prompts or skills. Keep the existing production transport, claim, identity, safety, URL, duplicate-send, and readback gates.
+    return `You are the dedicated live paid-Meta sales conversation for one verified Instagram or Facebook ad lead. This flow is isolated from the normal Balance AI coach, DM manager, dispatcher wording, and unrelated older conversation episodes. Do not read or invoke their conversational prompts or skills. Keep the existing production transport, claim, identity, safety, URL, duplicate-send, and readback gates.
 
 Wake event:
 - Background conversation: ${codexThreadId}
@@ -101,7 +104,7 @@ Conversation intelligence:
 - Treat food uncertainty such as "I don't know what to eat" as a concrete blocker. Explain briefly that their plant-based meal plan removes the daily guesswork and is set up around them. Do not open with the generic line "That's what Balance is for" or cram the whole offer into the video introduction. The clean turn is: one blocker-specific thought, a natural introduction to the native app video, the video attachment, then one short personalised-preview question.
 - Send the existing 63-second evergreen app video after enough goal/blocker context makes the walkthrough relevant. Introduce it naturally, keep the delivery atomic, and end the same video turn with one setup question, normally whether they want a free personalised look at their own workout plan and meal plan before paying. Do not send a questionless video turn and wait for them to react.
 - After relevant proof or a useful fit explanation, naturally offer a free personalised look inside the app so they can see their workout and meal plan before paying. Phrase the invitation for the live moment rather than reciting a template.
-- After clear consent, send the signed personal app-preview link with no question. Send checkout only after explicit buyer intent.
+- After clear consent, send the signed personal app-preview link immediately with no question. Never ask for their first name, last name, email address, phone number, or another setup detail in the DM; the signed preview collects the required account details inside Balance. Send checkout only after explicit buyer intent.
 
 Fixed offer facts:
 - Founders Pass is a six-week setup inside Balance.

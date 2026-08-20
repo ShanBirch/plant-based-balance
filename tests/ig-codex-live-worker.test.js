@@ -19,13 +19,17 @@ const { pathToFileURL } = require('url');
     assert.match(productionOriginSource, /pending alert poll failed; retrying/);
     assert.match(productionOriginSource, /stalled_draft_generation_pending/);
 
+    assert.strictEqual(worker.parseArgs([]).useAppServer, true, 'live conversation mode is the worker default');
+    assert.strictEqual(worker.parseArgs(['--direct-draft']).useAppServer, false, 'direct draft requires an explicit diagnostic flag');
+    assert.strictEqual(worker.parseArgs(['--direct-draft', '--codex-turn']).useAppServer, true, 'the explicit production flag wins when it appears last');
+
     assert.strictEqual(cleanOwner('codex_live_worker'), 'codex_live_worker');
 
     assert.strictEqual(isCodexLivePaidMetaThread({
         linkedUserId: null,
-        customData: { codex_live_chat_enabled: true },
+        customData: {},
         acquisitionMode: 'paid_meta',
-    }), true);
+    }), true, 'verified paid Meta threads use the dedicated worker by default');
     assert.strictEqual(isCodexLivePaidMetaThread({
         linkedUserId: 'client-1',
         customData: { codex_live_chat_enabled: true },
@@ -170,6 +174,8 @@ const { pathToFileURL } = require('url');
     assert.match(prompt, /replyTextUtf8Base64 and draftTextUtf8Base64/);
     assert.match(prompt, /outbound_text_encoding_corruption/);
     assert.match(prompt, /free personalised look inside the app/);
+    assert.match(prompt, /signed personal app-preview link immediately/i);
+    assert.match(prompt, /Never ask for their first name, last name, email address, phone number/i);
     assert.match(prompt, /Do not copy their wording/);
     assert.match(prompt, /one AUD 89\.99 payment/);
     assert.doesNotMatch(prompt, /before making a payment\. Keen\?/);
@@ -190,6 +196,8 @@ const { pathToFileURL } = require('url');
     assert.match(installer, /-AllowStartIfOnBatteries/);
     assert.match(installer, /-DontStopIfGoingOnBatteries/);
     assert.match(installer, /-Trigger \$triggers/);
+    assert.match(installer, /--codex-turn --workspace/);
+    assert.doesNotMatch(installer, /--direct-draft/);
     assert.doesNotMatch(installer, /--open-chat/);
 
     console.log('ig Codex live worker tests passed');
