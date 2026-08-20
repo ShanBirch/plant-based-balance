@@ -541,15 +541,6 @@
       action: function(){ openNutritionTarget('meals'); }
     },
     {
-      id: 'hydration',
-      title: 'Hit your water goal',
-      body: 'Recovery goal: update your water today.',
-      cta: 'Open Water',
-      accent: '#0891b2',
-      goalIds: ['water_goal_days'],
-      action: function(){ openNutritionTarget('hydration'); }
-    },
-    {
       id: 'steps',
       title: 'Reach 10k steps',
       body: 'Your steps update automatically through the day.',
@@ -576,15 +567,6 @@
       accent: '#7c3aed',
       goalIds: ['mood_checkin_days'],
       action: function(){ openDashboardTarget('#mood-checkin-card,#mood-checkin-done-card', { block: 'center' }); }
-    },
-    {
-      id: 'sleep',
-      title: 'Check your sleep trend',
-      body: 'Sleep goal: review the week and protect recovery.',
-      cta: 'Open Sleep',
-      accent: '#6366f1',
-      goalIds: ['sleep_7h_nights'],
-      action: function(){ openInsightsTarget('#insights-sleep-container'); }
     },
     {
       id: 'progress_photo',
@@ -663,7 +645,6 @@
     }
     if (action.id === 'quiz') return true;
     if (action.id === 'workout') return isSourceCardDue('#today-workout-card');
-    if (action.id === 'sleep') return !!(dailyState.status && dailyState.status.sleep_data);
     if (action.id === 'weighin') {
       if (!isSundayWeighInDay()) return false;
       return isSourceCardDue('#daily-weigh-in-card') || isSourceCardDue('#daily-weigh-in-done-card') || matchingGoalCount(action, selectedGoalIds) > 0;
@@ -737,7 +718,6 @@
     if (action.id === 'activity_insights_intro') return hasReachedSecondProgramWeek() && !hasSeenOnboardingStep(action.id);
     if (action.id === 'quiz') return true;
     if (action.id === 'workout') return isSourceCardDue('#today-workout-card');
-    if (action.id === 'sleep') return !!(dailyState.status && dailyState.status.sleep_data);
     if (action.id === 'weekly_review') return !isFirstProgramWeek() && isSourceCardDue('#weekly-checkin-card');
     if (action.id === 'progress_photo') return isSourceCardDue('#weekly-progress-photo-card');
     if (action.id === 'fitness_diary') return isSourceCardDue('#fitness-diary-card');

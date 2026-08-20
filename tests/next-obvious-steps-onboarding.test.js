@@ -14,7 +14,7 @@ const onboardingIds = [
   'first_meal'
 ];
 
-function loadPlan({ createdAt, seen = [], week = 1 }) {
+function loadPlan({ createdAt, seen = [], week = 1, goals = [] }) {
   const userId = 'test-user';
   const storage = new Map();
   seen.forEach(id => storage.set(`pbb_onboarding_step_seen:${userId}:${id}`, '1'));
@@ -42,6 +42,11 @@ function loadPlan({ createdAt, seen = [], week = 1 }) {
     socialJourney: {
       isUnifiedPlanActive() { return true; },
       getCurrentWeek() { return week; }
+    },
+    weeklyGoals: {
+      getState() {
+        return { selected: goals.map(id => ({ id })), progress: { goals: [] } };
+      }
     },
     addEventListener() {},
     getComputedStyle() { return { display: 'none', visibility: 'visible', opacity: '1' }; }
@@ -102,4 +107,17 @@ test('activity insights onboarding is also restricted to new accounts', () => {
 
   assert.equal(existingPlan.some(item => item.id === 'activity_insights_intro'), false);
   assert.equal(newPlan.some(item => item.id === 'activity_insights_intro'), true);
+});
+
+test('water and sleep review are not Home actions even when selected as goals', () => {
+  const plan = loadPlan({
+    createdAt: '2025-01-01T00:00:00Z',
+    goals: ['water_goal_days', 'sleep_7h_nights']
+  });
+  const ids = plan.map(item => item.id);
+
+  assert.equal(ids.includes('hydration'), false);
+  assert.equal(ids.includes('sleep'), false);
+  assert.doesNotMatch(source, /title: 'Hit your water goal'/);
+  assert.doesNotMatch(source, /title: 'Check your sleep trend'/);
 });
