@@ -4363,9 +4363,9 @@ async function loadHomeChallenges() {
     }
 
     const container = document.getElementById('home-challenges-list');
+    const homeChallengesContainer = document.getElementById('home-challenges-container');
     const cohortFeature = document.getElementById('home-cohort-challenge-featured');
     const cohortInviteFeature = document.getElementById('home-cohort-challenge-invite-top');
-    const emptyState = document.getElementById('home-challenges-empty');
     if (!container) return; // Only return if container is missing, currentUser check is already done
 
     // Cohort challenge plumbing — inject the pulse CSS once, kick off auto-enrollment.
@@ -4392,7 +4392,9 @@ async function loadHomeChallenges() {
             rawChallenges = fallbackData;
         }
 
-        const allChallenges = rawChallenges || [];
+        const allChallenges = (rawChallenges || []).filter(challenge => {
+            return typeof window.shouldDisplayChallenge !== 'function' || window.shouldDisplayChallenge(challenge);
+        });
         console.log('⚔️ [loadHomeChallenges] Records fetched:', allChallenges.length);
         if (allChallenges.length > 0) {
             console.log('⚔️ [loadHomeChallenges] Sample Record:', JSON.stringify(allChallenges[0]));
@@ -4401,7 +4403,10 @@ async function loadHomeChallenges() {
         // Cohort challenge (system 30-day challenge cohort) — render separately at
         // the top of the list and exclude from the regular friend-challenge feed below.
         const transformCohortChallenge = await loadUserCohortChallengeByType('transform_30');
-        const cohortChallenge = transformCohortChallenge || await loadHomeCohortChallengeData(['plant_based_30', 'manual_kayla_30']);
+        const cohortCandidate = transformCohortChallenge || await loadHomeCohortChallengeData(['plant_based_30', 'manual_kayla_30']);
+        const cohortChallenge = cohortCandidate && (
+            typeof window.shouldDisplayChallenge !== 'function' || window.shouldDisplayChallenge(cohortCandidate)
+        ) ? cohortCandidate : null;
         const cohortChallengeId = cohortChallenge?.challenge_id || null;
 
         // Steps & sleep challenges read their scores from wearable tables via
@@ -4429,16 +4434,11 @@ async function loadHomeChallenges() {
 
         console.log('⚔️ [loadHomeChallenges] Counts - Active:', activeChallenges.length, 'Pending:', pendingChallenges.length, 'Invites:', pendingInvites.length, 'Cohort:', cohortChallenge ? cohortChallenge.status : 'none');
 
-        const hasChallenges = activeChallenges.length > 0 || pendingInvites.length > 0 || pendingChallenges.length > 0 || !!cohortChallenge;
+        const hasRegularChallenges = activeChallenges.length > 0 || pendingInvites.length > 0 || pendingChallenges.length > 0;
+        const hasChallenges = hasRegularChallenges || !!cohortChallenge;
 
-        // Toggle visibility of the "Start a Challenge" empty state card
-        // USER REQUEST: "Start a challenge should always stay because then it shows you what challenges you have pending..."
-        if (emptyState) {
-            emptyState.style.display = 'block'; 
-            console.log('⚔️ [loadHomeChallenges] Setting emptyState display to block forever per user request.');
-        }
-        
         if (!hasChallenges) {
+            if (homeChallengesContainer) homeChallengesContainer.style.display = 'none';
             if (cohortInviteFeature) {
                 cohortInviteFeature.innerHTML = '';
                 cohortInviteFeature.style.display = 'none';
@@ -4447,6 +4447,10 @@ async function loadHomeChallenges() {
             container.innerHTML = '';
             console.log('⚔️ [loadHomeChallenges] No matching challenges found for user.');
             return;
+        }
+
+        if (homeChallengesContainer) {
+            homeChallengesContainer.style.display = hasRegularChallenges || !cohortInviteFeature ? 'block' : 'none';
         }
 
         let html = '';

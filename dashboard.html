@@ -550,6 +550,7 @@ if (window._pbbIsIOSSafari) {
     document.write('<script src="lib/weekly-wrapped.js?v=monthly-wrapped-layout-v3"><\/script>');
 }
 </script>
+<script src="lib/challenge-display-window.js?v=1"></script>
 <script src="lib/meal-plan-shopping-list.js?v=1"></script>
 <script>
 // platform.js is tiny (1KB) and needed for platform detection during init
@@ -2114,22 +2115,11 @@ if(!window._pbbIsIOSSafari) {
             </div>
         </div>
 
-        <div id="home-challenges-container" style="margin: 20px 0 15px 0;">
-            <!-- Active cohort challenge card rendered above the permanent Start a Challenge card -->
+        <div id="home-challenges-container" style="display: none; margin: 20px 0 15px 0;">
+            <!-- Active cohort challenge card -->
             <div id="home-cohort-challenge-featured"></div>
-            <!-- Permanent Start a Challenge card -->
-            <div id="home-challenges-empty" onclick="openChallengeTypePicker()" style="cursor: pointer; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 15px rgba(124,58,237,0.2); background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);">
-                <div style="padding: 18px 20px; display: flex; align-items: center; gap: 14px;">
-                    <div style="width: 48px; height: 48px; background: rgba(255,255,255,0.2); border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.4rem;">🏆</div>
-                    <div style="flex: 1; min-width: 0;">
-                        <div style="font-weight: 700; font-size: 0.95rem; color: white; margin-bottom: 3px;">Start a Challenge</div>
-                        <div style="font-size: 0.78rem; color: rgba(255,255,255,0.7);">Challenge friends, pick a mode & win rare drops</div>
-                    </div>
-                    <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: rgba(255,255,255,0.5); flex-shrink: 0;"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
-                </div>
-            </div>
             <!-- Active challenge cards rendered here by loadHomeChallenges() -->
-            <div id="home-challenges-list" style="margin-top: 12px;"></div>
+            <div id="home-challenges-list"></div>
         </div>
 
         <!-- Activity Insights Card (Consolidated) -->
@@ -9942,7 +9932,7 @@ if(!window._pbbIsIOSSafari) {
             </div>
         </section>
 
-        <!-- Feed Battle Launcher -->
+        <!-- Feed Battle and Challenge Launchers -->
         <style>
             .feed-start-battle-card,
             .feed-start-battle-card * {
@@ -9950,6 +9940,8 @@ if(!window._pbbIsIOSSafari) {
             }
             .feed-start-battle-card {
                 margin: 0 15px 12px;
+                display: grid;
+                gap: 10px;
             }
             .feed-start-battle-button {
                 width: 100%;
@@ -9972,6 +9964,12 @@ if(!window._pbbIsIOSSafari) {
             }
             .feed-start-battle-button:active {
                 transform: translateY(1px);
+            }
+            .feed-start-challenge-button {
+                background:
+                    linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.05) 36%, rgba(255, 255, 255, 0) 54%),
+                    linear-gradient(135deg, #3f2a75 0%, #6540a8 48%, #8b5fd3 100%);
+                box-shadow: 0 8px 20px rgba(101, 64, 168, 0.22);
             }
             .feed-start-battle-icon,
             .feed-start-battle-arrow {
@@ -10018,7 +10016,7 @@ if(!window._pbbIsIOSSafari) {
                 -webkit-text-fill-color: rgba(255, 255, 255, 0.82);
             }
         </style>
-        <section id="feed-start-battle-card" class="feed-start-battle-card" aria-label="Start a battle">
+        <section id="feed-start-battle-card" class="feed-start-battle-card" aria-label="Start a battle or challenge">
             <button id="feed-start-battle-button" class="feed-start-battle-button" type="button" onclick="window.openFeedBattleChooser ? window.openFeedBattleChooser() : (typeof showToast === 'function' ? showToast('Battles are still loading. Try again in a moment.', 'info') : alert('Battles are still loading. Try again in a moment.'))" aria-haspopup="dialog">
                 <span class="feed-start-battle-icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round;">
@@ -10028,6 +10026,18 @@ if(!window._pbbIsIOSSafari) {
                 <span class="feed-start-battle-copy">
                     <span class="feed-start-battle-title">Start Battle</span>
                     <span class="feed-start-battle-subtitle">Quiz, chess, checkers, and more</span>
+                </span>
+                <span class="feed-start-battle-arrow" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round;">
+                        <path d="M9 18l6-6-6-6"></path>
+                    </svg>
+                </span>
+            </button>
+            <button id="feed-start-challenge-button" class="feed-start-battle-button feed-start-challenge-button" type="button" onclick="openChallengeTypePicker()" aria-haspopup="dialog">
+                <span class="feed-start-battle-icon" aria-hidden="true">🏆</span>
+                <span class="feed-start-battle-copy">
+                    <span class="feed-start-battle-title">Start a Challenge</span>
+                    <span class="feed-start-battle-subtitle">Challenge friends, choose a mode, and win drops</span>
                 </span>
                 <span class="feed-start-battle-arrow" aria-hidden="true">
                     <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round;">
@@ -13743,7 +13753,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#mood-checkin-card', title:'Daily mood check-in', body:"Three quick check-ins a day (morning / afternoon / evening) earn you bonus XP and feed your AI coach." },
     { tab:'dashboard', sel:'#fitness-diary-card,#fitness-diary-done-card', title:'Fitness Diary', body:"At night, Fitness Diary asks how your day really went. Use the big box for work stress, wins, motivation, and anything you want to share to Feed.", quick: true, condition: function(){ var c = document.getElementById('fitness-diary-card'); var d = document.getElementById('fitness-diary-done-card'); return (c && c.style.display !== 'none') || (d && d.style.display !== 'none'); } },
     { tab:'dashboard', sel:'#daily-quiz-card', title:'Daily quiz', body:"A new quick quiz every day. Answer it to earn XP." },
-    { tab:'dashboard', sel:'#home-challenges-container,#home-challenges-list,#home-challenges-empty', title:'Wellness Challenges', body:"Tap a wellness challenge to start one — hydration, steps, sleep, mindfulness. You can invite friends to join any challenge." },
+    { tab:'friends', sel:'#feed-start-challenge-button', title:'Start a Challenge', body:"Tap Start a Challenge in Feed to choose a wellness challenge and invite friends to join." },
     { tab:'dashboard', sel:'#home-cohort-challenge-invite-top', title:'6-Week Challenge', body:"The 6-week challenge sits under your character on Home. Tap it to open the leaderboard or check how to earn XP.", quick: true, condition: function(){ var c = document.getElementById('home-cohort-challenge-invite-top'); return c && c.innerHTML.trim() !== ''; } },
     { tab:'dashboard', sel:'#challenge-info-actions', title:'Challenge details', body:"Open How to earn XP or Prizes from the challenge leaderboard to see scoring and rewards.", quick: true, condition: function(){ var c = document.getElementById('challenge-info-actions'); return c && c.offsetParent !== null; } },
 
@@ -15424,6 +15434,13 @@ window.endFeatureTour = function(skipped){
     body: "Tap Start Battle to choose Quiz Battle, chess, checkers, or another game before challenging a friend or bot."
   });
   allFeatures.push({
+    id: 'feed-challenge-launcher-v1',
+    tab: 'friends',
+    sel: '#feed-start-challenge-button',
+    title: 'Challenges moved to Feed',
+    body: "Tap Start a Challenge under Start Battle to choose a wellness challenge and invite friends."
+  });
+  allFeatures.push({
     id: 'feed-comment-mentions-v1',
     tab: 'friends',
     sel: '#friends-photo-feed .feed-post-card,#friends-feed-section',
@@ -16850,7 +16867,7 @@ if (window._pbbIsIOSSafari) {
         }, 2000);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=43-home-canvas"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=44-challenge-expiry"><\/script>');
 }
 </script>
 
