@@ -24203,7 +24203,23 @@ async function uploadCustomExerciseVideoInBackground(user, savedExercise, videoF
         if (videoFile._balanceNativeVideoPath
             && window.NativePermissions
             && typeof window.NativePermissions.enqueueExerciseVideoUpload === 'function') {
+            const bridgeVersion = typeof window.NativePermissions.getExerciseVideoUploadBridgeVersion === 'function'
+                ? Number(window.NativePermissions.getExerciseVideoUploadBridgeVersion() || 0)
+                : 0;
+            logCustomExerciseVideoDiagnostic('custom_exercise_native_bridge_check', {
+                exerciseId: savedExercise.id,
+                exerciseName,
+                bridgeVersion
+            });
+            if (bridgeVersion < 2) {
+                throw new Error('Update Balance before retrying this video. Your exercise is already saved.');
+            }
             const accessToken = await getCustomExerciseReviewAuthToken();
+            logCustomExerciseVideoDiagnostic('custom_exercise_native_worker_enqueue_start', {
+                exerciseId: savedExercise.id,
+                exerciseName,
+                bridgeVersion
+            });
             const accepted = accessToken && window.NativePermissions.enqueueExerciseVideoUpload(JSON.stringify({
                 accessToken,
                 userId: user.id,
@@ -24214,6 +24230,11 @@ async function uploadCustomExerciseVideoInBackground(user, savedExercise, videoF
                 technique: getCustomExerciseTechniqueReviewData(savedExercise)
             }));
             if (!accepted) throw new Error('Could not start the background upload.');
+            logCustomExerciseVideoDiagnostic('custom_exercise_native_worker_enqueue_success', {
+                exerciseId: savedExercise.id,
+                exerciseName,
+                bridgeVersion
+            });
             setCustomExerciseVideoUploadState(savedExercise.id, exerciseName, 'uploading', {
                 startedAt: Date.now(), progress: 0, nativeWorker: true
             });

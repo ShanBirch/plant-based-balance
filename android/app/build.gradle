@@ -7,8 +7,8 @@ android {
         applicationId "com.fitgotchi.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode = (System.getenv("ANDROID_VERSION_CODE") ?: "8").toInteger()
-        versionName = System.getenv("ANDROID_VERSION_NAME") ?: "1.6"
+        versionCode = (System.getenv("ANDROID_VERSION_CODE") ?: "9").toInteger()
+        versionName = System.getenv("ANDROID_VERSION_NAME") ?: "1.7"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -88,7 +88,9 @@ dependencies {
     // exponential backoff, and survives Doze / app kill. Broadcast receivers
     // on targetSdk 34+ have restricted background network access; WorkManager
     // is the supported way to do durable network I/O from a push entrypoint.
-    implementation "androidx.work:work-runtime:2.9.1"
+    // 2.11.2 includes Android 15/16 foreground-worker and blocked-network
+    // fixes. The exercise-video bridge must not run on the older 2.9 runtime.
+    implementation "androidx.work:work-runtime:2.11.2"
 
 }
 

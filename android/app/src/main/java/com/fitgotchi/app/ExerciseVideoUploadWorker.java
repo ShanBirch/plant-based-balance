@@ -4,6 +4,7 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.ServiceInfo;
 import android.os.Build;
 import android.util.Log;
 
@@ -247,6 +248,12 @@ public class ExerciseVideoUploadWorker extends Worker {
                 .setContentText("Balance will keep uploading in the background.")
                 .setOngoing(true)
                 .setOnlyAlertOnce(true);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            return new ForegroundInfo(
+                    NOTIFICATION_ID,
+                    builder.build(),
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
+        }
         return new ForegroundInfo(NOTIFICATION_ID, builder.build());
     }
 

@@ -1170,6 +1170,12 @@ public class MainActivity extends BridgeActivity {
 
         /** Queue a direct B2 exercise-video upload in WorkManager. */
         @JavascriptInterface
+        public int getExerciseVideoUploadBridgeVersion() {
+            return 2;
+        }
+
+        /** Queue a direct B2 exercise-video upload in WorkManager. */
+        @JavascriptInterface
         public boolean enqueueExerciseVideoUpload(String payloadJson) {
             try {
                 org.json.JSONObject payload = new org.json.JSONObject(payloadJson);

@@ -9,6 +9,15 @@ const script = fs.readFileSync(
   path.join(root, 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js'),
   'utf8'
 );
+const androidBuild = fs.readFileSync(path.join(root, 'android/app/build.gradle'), 'utf8');
+const mainActivity = fs.readFileSync(
+  path.join(root, 'android/app/src/main/java/com/fitgotchi/app/MainActivity.java'),
+  'utf8'
+);
+const uploadWorker = fs.readFileSync(
+  path.join(root, 'android/app/src/main/java/com/fitgotchi/app/ExerciseVideoUploadWorker.java'),
+  'utf8'
+);
 
 test('native exercise videos avoid WebView decoding and release playback resources', () => {
   assert.match(dashboard, /id="custom-exercise-video-native-placeholder"/);
@@ -33,9 +42,20 @@ test('new and retried native videos are durably handed off before modal close', 
   );
 });
 
-test('dashboard requests the crash-safe script revision', () => {
+test('dashboard requests the version-gated native bridge revision', () => {
   assert.match(
     dashboard,
-    /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=189-exercise-video-handoff/
+    /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=190-exercise-video-bridge/
   );
+  assert.match(
+    script,
+    /getExerciseVideoUploadBridgeVersion[\s\S]*bridgeVersion < 2[\s\S]*Update Balance before retrying this video[\s\S]*enqueueExerciseVideoUpload/
+  );
+});
+
+test('Android bridge uses the current WorkManager runtime and explicit data-sync type', () => {
+  assert.match(androidBuild, /versionCode = \(System\.getenv\("ANDROID_VERSION_CODE"\) \?: "9"\)/);
+  assert.match(androidBuild, /androidx\.work:work-runtime:2\.11\.2/);
+  assert.match(mainActivity, /getExerciseVideoUploadBridgeVersion\(\)[\s\S]*return 2;/);
+  assert.match(uploadWorker, /ServiceInfo\.FOREGROUND_SERVICE_TYPE_DATA_SYNC/);
 });

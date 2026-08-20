@@ -50,7 +50,7 @@ assert.match(
 );
 assert.match(
   dashboardHtml,
-  /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=189-exercise-video-handoff/,
+  /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=190-exercise-video-bridge/,
   'dashboard should bump script 5 so phones fetch the upload progress and background worker flow'
 );
 assert.match(
@@ -248,6 +248,11 @@ assert.match(
   workoutScript,
   /videoFile\._balanceNativeVideoPath[\s\S]*enqueueExerciseVideoUpload[\s\S]*watchNativeCustomExerciseVideoUpload/,
   'Android gallery videos should be handed to the durable native upload worker'
+);
+assert.match(
+  workoutScript,
+  /getExerciseVideoUploadBridgeVersion[\s\S]*bridgeVersion < 2[\s\S]*Update Balance before retrying this video[\s\S]*enqueueExerciseVideoUpload/,
+  'legacy Android upload bridges should fail safely instead of starting the crashing worker'
 );
 assert.match(
   formCheckScript,
