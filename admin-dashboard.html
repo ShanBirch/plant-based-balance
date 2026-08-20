@@ -926,6 +926,20 @@
         .needs-you-clear-all { min-height:34px; padding:7px 11px; border:1px solid #fecaca; border-radius:8px; background:#fff; color:#b91c1c; -webkit-text-fill-color:#b91c1c; font:800 0.76rem 'Inter',sans-serif; cursor:pointer; display:inline-flex; align-items:center; gap:5px; }
         .needs-you-clear-all:hover { background:#fef2f2; }
         .needs-you-clear-all:disabled { color:#94a3b8; -webkit-text-fill-color:#94a3b8; border-color:#e2e8f0; background:#f8fafc; cursor:default; opacity:0.75; }
+        .your-call-programs { display:none; flex-shrink:0; max-height:min(35vh, 320px); overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; }
+        .your-call-programs.visible { display:block; }
+        .your-call-programs-head { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:11px 14px 7px; }
+        .your-call-programs-title { font:800 0.78rem 'Montserrat',sans-serif; color:#334155; }
+        .your-call-programs-note { font-size:0.7rem; color:#94a3b8; }
+        .your-call-program-list { padding:0 9px 9px; display:flex; flex-direction:column; gap:7px; }
+        .your-call-program-row { display:flex; align-items:center; gap:10px; padding:9px 10px; border:1px solid #e2e8f0; border-left:4px solid #f59e0b; border-radius:10px; background:#fff; }
+        .your-call-program-row.overdue, .your-call-program-row.missing { border-left-color:#dc2626; background:#fffafa; }
+        .your-call-program-copy { min-width:0; flex:1; }
+        .your-call-program-name { font-size:0.82rem; font-weight:800; color:#1e293b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .your-call-program-meta { margin-top:2px; font-size:0.7rem; line-height:1.3; color:#64748b; }
+        .your-call-program-actions { display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
+        .your-call-program-btn { min-height:31px; padding:6px 9px; border:1px solid #cbd5e1; border-radius:8px; background:#f8fafc; color:#334155; -webkit-text-fill-color:#334155; font:800 0.7rem 'Inter',sans-serif; cursor:pointer; white-space:nowrap; }
+        .your-call-program-btn.primary { border-color:#48864B; background:#48864B; color:#fff; -webkit-text-fill-color:#fff; }
         .needs-you-feed-card { flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; }
         #needs-you-feed { padding:10px; }
         @media (max-width: 768px) {
@@ -936,6 +950,11 @@
             .needs-you-header-actions { gap:6px; }
             .needs-you-count-label span:last-child { display:none; }
             .needs-you-clear-all { min-height:32px; padding:6px 9px; }
+            .your-call-programs { max-height:min(39dvh, 330px); }
+            .your-call-programs-head { padding:9px 11px 6px; }
+            .your-call-program-row { align-items:flex-start; flex-direction:column; gap:7px; padding:9px; }
+            .your-call-program-actions { width:100%; justify-content:stretch; }
+            .your-call-program-btn { flex:1; }
             #needs-you-feed { padding:6px; }
             #needs-you-feed .alert-card { padding:11px 10px; margin-bottom:7px; border-radius:10px; }
             #needs-you-feed .dm-clean-explanation { margin:7px 0; padding:8px 9px; }
@@ -2179,7 +2198,7 @@
     <div class="admin-container">
         <div class="sidebar" id="sidebar">
             <div class="sidebar-logo">Balance Admin</div>
-            <div class="nav-item active" onclick="showSection('needs-you', this); loadNeedsYou();"><i data-lucide="inbox"></i><span>Needs You</span><span id="needs-you-badge" class="alert-badge" style="display:none;">0</span></div>
+            <div class="nav-item active" onclick="showSection('needs-you', this); loadNeedsYou();"><i data-lucide="circle-help"></i><span>Your Call</span><span id="needs-you-badge" class="alert-badge" style="display:none;">0</span></div>
             <div class="nav-item" onclick="showSection('ai-coach', this)"><i data-lucide="bot"></i><span>Coach</span></div>
             <div class="nav-item" onclick="showSection('your-day', this); loadYourDay();"><i data-lucide="calendar-heart"></i><span>Your Day</span></div>
             <div class="nav-item" onclick="showSection('users', this); renderUserDirectory();"><i data-lucide="user-search"></i><span>Users</span></div>
@@ -2330,25 +2349,26 @@
                     <div class="content-card needs-you-header-card">
                         <div class="needs-you-header">
                             <div class="needs-you-heading">
-                                <h2>Needs You</h2>
-                                <p>Reviewed DMs and approvals waiting for Shannon.</p>
+                                <h2>Your Call</h2>
+                                <p>Only decisions and client work that genuinely need you.</p>
                             </div>
                             <div class="needs-you-header-actions">
                                 <div class="needs-you-count-label">
                                     <span id="needs-you-view-all-count" class="alert-view-count">0</span>
                                     <span>waiting</span>
                                 </div>
-                                <button type="button" id="needs-you-clear-all" class="needs-you-clear-all" onclick="clearAllNeedsYou()" disabled title="Dismiss every item currently waiting in Needs You">
+                                <button type="button" id="needs-you-clear-all" class="needs-you-clear-all" onclick="clearAllNeedsYou()" disabled title="Dismiss every draft currently waiting in Your Call">
                                     <i data-lucide="check-check" style="width:14px;height:14px;"></i>Clear all
                                 </button>
                             </div>
                         </div>
                     </div>
+                    <div class="content-card your-call-programs" id="your-call-programs" aria-live="polite"></div>
                     <div class="content-card needs-you-feed-card" id="needs-you-feed-container">
                         <div id="needs-you-feed">
                             <div style="text-align:center; padding:40px; color:#94a3b8;">
                                 <i data-lucide="inbox" style="width:40px; height:40px; margin-bottom:12px;"></i>
-                                <h3 style="font-family:'Montserrat',sans-serif; color:#64748b;">Loading Needs You...</h3>
+                                <h3 style="font-family:'Montserrat',sans-serif; color:#64748b;">Loading Your Call...</h3>
                             </div>
                         </div>
                     </div>
@@ -3000,9 +3020,9 @@
                                 <i data-lucide="search"></i>
                                 <input id="conversion-operator-search-input" type="search" placeholder="Search people, handles, lanes" oninput="filterConversionOperator()">
                             </label>
-                            <button class="conversion-operator-text-btn" type="button" onclick="showSection('needs-you', getNavItemForSection('needs-you')); loadNeedsYou(true);" title="Open Needs You">
+                            <button class="conversion-operator-text-btn" type="button" onclick="showSection('needs-you', getNavItemForSection('needs-you')); loadNeedsYou(true);" title="Open Your Call">
                                 <i data-lucide="inbox"></i>
-                                Needs You
+                                Your Call
                             </button>
                             <button class="conversion-operator-text-btn" type="button" onclick="openDmAudience('clients', getNavItemForSection('dms'));" title="Open DMs">
                                 <i data-lucide="messages-square"></i>
@@ -10673,9 +10693,12 @@
             document.getElementById('my-clients-list-view').style.display = 'flex';
         }
 
-        function openClientAccountPreview(clientId) {
+        function openClientAccountPreview(clientId, target = 'profile') {
             if (!clientId) return;
-            const url = `/dashboard.html?view_as=${encodeURIComponent(clientId)}&qa=1&tab=profile`;
+            const url = new URL('/dashboard.html', window.location.origin);
+            url.searchParams.set('view_as', clientId);
+            url.searchParams.set('qa', '1');
+            if (target && target !== 'profile') url.searchParams.set('admin_target', target);
             window.open(url, '_blank', 'noopener');
         }
 
@@ -11142,8 +11165,10 @@
         let needsYouCounts = { all: 0 };
         let needsYouLoadSeq = 0;
         const NEEDS_YOU_FAST_CACHE_MS = 30 * 1000;
+        const YOUR_CALL_PROGRAM_WINDOW_DAYS = 14;
         const NEEDS_YOU_ALERT_SELECT_FIELDS = 'id,coach_id,client_id,client_name,alert_type,status,priority,title,description,suggested_message,scheduled_reply_text,created_at,actioned_at,scheduled_for,data';
-        let needsYouFeedCache = { rows: [], activeClientIds: new Set(), loadedAt: 0 };
+        let yourCallProgramRenewals = [];
+        let needsYouFeedCache = { rows: [], activeClientIds: new Set(), programRenewals: [], loadedAt: 0 };
         const NEEDS_YOU_TABS = ['all'];
         const NEEDS_YOU_ALERT_TYPES = [...DM_ALERT_TYPES, 'general_idea', 'onboarding_day_30', 'weekly_checkin', 'first_workout', 'subscription_sale', 'custom_exercise_review'];
         const CLIENT_MANAGER_REVIEW_MARKERS = [
@@ -11272,7 +11297,7 @@
             return !/\b(app_problem|context|media|learning_reel|manual_ig|human_agent|ai_suspicion|user_confused|signup|subscription_sale|first_workout|support_radar|daily_reel|coach_action|draft_review|exercise_lookup|redundant)\b/i.test(reasonText);
         }
         const NEEDS_YOU_EMPTY_STATES = {
-            all: { icon: 'check-circle', iconColor: '#48864B', headerColor: '#48864B', header: 'Nothing needs you', body: 'No client-manager handoffs, app suggestions, or manual review items are waiting right now.' },
+            all: { icon: 'check-circle', iconColor: '#48864B', headerColor: '#48864B', header: "You're clear", body: 'AI-handled sales and routine activity stay out of this queue.' },
         };
         let currentChallengeCheckinView = 'pending';
         const CHALLENGE_CHECKIN_TABS = ['pending', 'manual', 'later', 'sent_today', 'all'];
@@ -13056,6 +13081,9 @@
             // Tahlia social drafts are reviewed in their real chronological
             // context inside Balance Feed, not as detached Needs You cards.
             if (isTahliaSocialApprovalAlert(alert)) return false;
+            // Learning/content videos belong in Content Radar, never in the
+            // operator decision queue.
+            if (isLearningReelApprovalAlert(alert)) return false;
             if (isCoachActionReceipt(alert)) return true;
             if (isAppSuggestionAlert(alert)) return true;
             if (isSupportVerificationNeedsYouAlert(alert)) return true;
@@ -13077,7 +13105,6 @@
             if (isCocosDmAlert(alert)) return false;
             if (isLeadOnboardingHandoff(alert) && needsYouHasSuggestedDraft(alert)) return true;
             if (!DM_ALERT_TYPES.includes(alert.alert_type)) return false;
-            if (isLearningReelApprovalAlert(alert)) return needsYouHasSuggestedDraft(alert);
             const reasonInfo = needsYouAllowedReasonInfo(alert, activeClientIds);
             if (isNeedsYouRoutedDmAlert(alert) && reasonInfo.allowed && needsYouHasSuggestedDraft(alert)) return true;
             if (isNeedsYouRoutedDmAlert(alert) && reasonInfo.reason === 'client_media') return true;
@@ -13094,8 +13121,9 @@
             return view === 'all' && needsYouHasOperatorWork(alert, activeClientIds);
         }
 
-        function summarizeNeedsYouCounts(rows = [], activeClientIds = dmClientIdsCache.ids) {
-            return { all: rows.filter(a => needsYouHasOperatorWork(a, activeClientIds)).length };
+        function summarizeNeedsYouCounts(rows = [], activeClientIds = dmClientIdsCache.ids, programRenewals = yourCallProgramRenewals) {
+            const dismissible = rows.filter(a => needsYouHasOperatorWork(a, activeClientIds)).length;
+            return { all: dismissible + (programRenewals || []).length, dismissible };
         }
 
         function collapseNeedsYouRows(rows = []) {
@@ -13118,8 +13146,120 @@
             setNeedsYouBadge(counts.all || 0);
             const clearAllBtn = document.getElementById('needs-you-clear-all');
             if (clearAllBtn && clearAllBtn.dataset.clearing !== 'true') {
-                clearAllBtn.disabled = Number(counts.all || 0) === 0;
+                clearAllBtn.disabled = Number(counts.dismissible || 0) === 0;
             }
+        }
+
+        function addDaysToDate(value, days) {
+            const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+            const date = match
+                ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
+                : new Date(value);
+            if (!Number.isFinite(date.getTime())) return null;
+            date.setDate(date.getDate() + days);
+            return date;
+        }
+
+        async function loadYourCallProgramRenewals() {
+            try {
+                const session = await authHelpers.getSession();
+                const coachId = session?.session?.user?.id;
+                if (!coachId) return [];
+                const { data: assignments, error: assignmentError } = await window.supabaseClient
+                    .from('coach_clients')
+                    .select('client_id,client:client_id(id,name,email,is_test_account,subscription_status)')
+                    .eq('coach_id', coachId)
+                    .eq('status', 'active')
+                    .limit(200);
+                if (assignmentError) throw assignmentError;
+
+                const clientById = new Map();
+                (assignments || [])
+                    .map(row => row?.client)
+                    .filter(client => client?.id
+                        && client.is_test_account !== true
+                        && String(client.subscription_status || '').toLowerCase() === 'active')
+                    .forEach(client => {
+                        if (!clientById.has(String(client.id))) clientById.set(String(client.id), client);
+                    });
+                const clients = [...clientById.values()];
+                if (!clients.length) return [];
+
+                const clientIds = clients.map(client => client.id);
+                const { data: programs, error: programError } = await window.supabaseClient
+                    .from('custom_workout_programs')
+                    .select('id,user_id,program_name,start_date,updated_at,is_active')
+                    .in('user_id', clientIds)
+                    .eq('is_active', true)
+                    .order('updated_at', { ascending: false })
+                    .limit(500);
+                if (programError) throw programError;
+
+                const latestProgramByClient = new Map();
+                (programs || []).forEach(program => {
+                    const id = String(program?.user_id || '');
+                    if (id && !latestProgramByClient.has(id)) latestProgramByClient.set(id, program);
+                });
+
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                return clients.map(client => {
+                    const program = latestProgramByClient.get(String(client.id)) || null;
+                    const dueAt = program?.start_date ? addDaysToDate(program.start_date, 42) : null;
+                    const daysUntil = dueAt ? Math.ceil((dueAt.getTime() - today.getTime()) / 86400000) : null;
+                    if (!program || !dueAt || daysUntil > YOUR_CALL_PROGRAM_WINDOW_DAYS) return null;
+                    return {
+                        clientId: client.id,
+                        clientName: client.name || client.email?.split('@')[0] || 'Client',
+                        programId: program?.id || '',
+                        programName: program?.program_name || '',
+                        dueAt: dueAt ? dueAt.toISOString() : '',
+                        daysUntil,
+                        state: daysUntil < 0 ? 'overdue' : 'upcoming',
+                    };
+                }).filter(Boolean).sort((a, b) => {
+                    const rank = value => value.state === 'overdue' ? -1 : 0;
+                    return rank(a) - rank(b) || (a.daysUntil ?? -999) - (b.daysUntil ?? -999) || a.clientName.localeCompare(b.clientName);
+                });
+            } catch (e) {
+                console.warn('[your-call] program renewal lookup failed:', e?.message || e);
+                return [];
+            }
+        }
+
+        function yourCallProgramDueLabel(item) {
+            if (item.daysUntil < 0) return `Program review overdue by ${Math.abs(item.daysUntil)} day${Math.abs(item.daysUntil) === 1 ? '' : 's'}`;
+            if (item.daysUntil === 0) return 'Program review due today';
+            return `Program review due in ${item.daysUntil} day${item.daysUntil === 1 ? '' : 's'}`;
+        }
+
+        function renderYourCallProgramRenewals(items = yourCallProgramRenewals) {
+            const container = document.getElementById('your-call-programs');
+            if (!container) return;
+            if (!items?.length) {
+                container.classList.remove('visible');
+                container.innerHTML = '';
+                return;
+            }
+            container.innerHTML = `
+                <div class="your-call-programs-head">
+                    <div class="your-call-programs-title">Programs coming up</div>
+                    <div class="your-call-programs-note">42-day review window</div>
+                </div>
+                <div class="your-call-program-list">
+                    ${items.map(item => `
+                        <div class="your-call-program-row ${escapeHtml(item.state)}">
+                            <div class="your-call-program-copy">
+                                <div class="your-call-program-name">${escapeHtml(item.clientName)}</div>
+                                <div class="your-call-program-meta">${escapeHtml(yourCallProgramDueLabel(item))}${item.programName ? ` &middot; ${escapeHtml(item.programName)}` : ''}</div>
+                            </div>
+                            <div class="your-call-program-actions">
+                                <button type="button" class="your-call-program-btn primary" onclick="openClientAccountPreview('${escapeHtml(item.clientId)}', 'program')">Open program</button>
+                                <button type="button" class="your-call-program-btn" onclick="openClientAccountPreview('${escapeHtml(item.clientId)}', 'meal-plan')">Open meal plan</button>
+                            </div>
+                        </div>`).join('')}
+                </div>`;
+            container.classList.add('visible');
         }
 
         function isCurrentNeedsYouLoad(loadSeq) {
@@ -13128,10 +13268,12 @@
                 && currentView === 'needs-you';
         }
 
-        function renderNeedsYouSnapshot(rows = [], activeClientIds = dmClientIdsCache.ids) {
+        function renderNeedsYouSnapshot(rows = [], activeClientIds = dmClientIdsCache.ids, programRenewals = yourCallProgramRenewals) {
+            yourCallProgramRenewals = programRenewals || [];
             const baseRows = collapseNeedsYouRows(uniqueAlertRows(rows || []));
             alertsCache = baseRows.filter(a => needsYouMatchesView(a, currentNeedsYouView, activeClientIds));
-            renderNeedsYouCounts(summarizeNeedsYouCounts(baseRows, activeClientIds));
+            renderYourCallProgramRenewals(yourCallProgramRenewals);
+            renderNeedsYouCounts(summarizeNeedsYouCounts(baseRows, activeClientIds, yourCallProgramRenewals));
             renderAlertFeed(alertsCache, {
                 containerId: 'needs-you-feed',
                 viewKey: currentNeedsYouView,
@@ -13144,7 +13286,7 @@
         function maybeRenderNeedsYouCache(force = false) {
             if (force || !needsYouFeedCache.loadedAt) return false;
             if ((Date.now() - needsYouFeedCache.loadedAt) > NEEDS_YOU_FAST_CACHE_MS) return false;
-            renderNeedsYouSnapshot(needsYouFeedCache.rows, needsYouFeedCache.activeClientIds || dmClientIdsCache.ids);
+            renderNeedsYouSnapshot(needsYouFeedCache.rows, needsYouFeedCache.activeClientIds || dmClientIdsCache.ids, needsYouFeedCache.programRenewals || []);
             return true;
         }
 
@@ -13193,19 +13335,20 @@
                     .in('alert_type', NEEDS_YOU_ALERT_TYPES)
                     .order('created_at', { ascending: false })
                     .limit(300);
-                const [activeClientIds, alertsRes] = await Promise.all([
+                const [activeClientIds, alertsRes, programRenewals] = await Promise.all([
                     getActiveDmClientIds(),
                     alertsQuery,
+                    loadYourCallProgramRenewals(),
                 ]);
                 if (!isCurrentNeedsYouLoad(loadSeq)) return;
                 const { data, error } = alertsRes || {};
                 if (error) throw error;
                 const rows = uniqueAlertRows(data || []);
-                needsYouFeedCache = { rows, activeClientIds, loadedAt: Date.now() };
-                renderNeedsYouSnapshot(rows, activeClientIds);
+                needsYouFeedCache = { rows, activeClientIds, programRenewals, loadedAt: Date.now() };
+                renderNeedsYouSnapshot(rows, activeClientIds, programRenewals);
             } catch (e) {
-                console.error('Failed to load Needs You:', e);
-                if (!renderedFromCache && container) container.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load Needs You: ${escapeHtml(e.message || e)}</div>`;
+                console.error('Failed to load Your Call:', e);
+                if (!renderedFromCache && container) container.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load Your Call: ${escapeHtml(e.message || e)}</div>`;
             }
         }
 
@@ -13222,7 +13365,7 @@
                 return;
             }
 
-            const confirmed = window.confirm(`Clear all ${ids.length} Needs You item${ids.length === 1 ? '' : 's'}?\n\nThis dismisses them without sending any messages.`);
+            const confirmed = window.confirm(`Clear all ${ids.length} Your Call draft${ids.length === 1 ? '' : 's'}?\n\nThis dismisses them without sending any messages. Program reminders stay visible.`);
             if (!confirmed) return;
 
             const actionedAt = new Date().toISOString();
@@ -13252,16 +13395,16 @@
                 renderNeedsYouSnapshot(needsYouFeedCache.rows, activeClientIds);
                 refreshVisibleCountsAfterDismiss();
                 updateVoiceMatchRate();
-                if (typeof showToast === 'function') showToast(`${ids.length} Needs You item${ids.length === 1 ? '' : 's'} cleared`, 'success');
+                if (typeof showToast === 'function') showToast(`${ids.length} Your Call draft${ids.length === 1 ? '' : 's'} cleared`, 'success');
             } catch (e) {
-                console.error('Failed to clear Needs You:', e);
-                window.alert(`Could not clear Needs You: ${e.message || e}`);
+                console.error('Failed to clear Your Call:', e);
+                window.alert(`Could not clear Your Call: ${e.message || e}`);
                 await loadNeedsYou(true);
             } finally {
                 if (clearAllBtn) {
                     delete clearAllBtn.dataset.clearing;
                     clearAllBtn.innerHTML = '<i data-lucide="check-check" style="width:14px;height:14px;"></i>Clear all';
-                    clearAllBtn.disabled = Number(needsYouCounts.all || 0) === 0;
+                    clearAllBtn.disabled = Number(needsYouCounts.dismissible || 0) === 0;
                     if (window.lucide?.createIcons) lucide.createIcons();
                 }
             }
@@ -16273,7 +16416,7 @@
                     focusedField: 'message',
                 });
                 if (btn) btn.textContent = 'Saved';
-                if (typeof showToast === 'function') showToast('Draft saved in Needs You', 'success');
+                if (typeof showToast === 'function') showToast('Draft saved in Your Call', 'success');
             } catch (error) {
                 console.error('saveAlertDraft failed:', error);
                 if (btn) {
@@ -19358,7 +19501,7 @@
         async function cancelScheduledAlert(alertId) {
             const alertData = alertsCache.find(a => a.id === alertId);
             if (!alertData) return;
-            const destination = needsYouHasOperatorWork(alertData) ? 'Needs You' : 'the active feed';
+            const destination = needsYouHasOperatorWork(alertData) ? 'Your Call' : 'the active feed';
             if (!confirm(`Cancel scheduled send to ${alertData.client_name || 'this client'}? It will move back to ${destination} and will not fire automatically.`)) return;
 
             const btn = event?.target?.closest?.('.alert-btn-dismiss');
@@ -20912,23 +21055,23 @@
                 || linkHandoff
                 || !!needsYouApprovalInfo?.ready;
             let tone = isNeedsYou ? 'needs-you' : 'safe';
-            let pill = isNeedsYou ? 'Needs You' : 'Relevant';
+            let pill = isNeedsYou ? 'Your Call' : 'Relevant';
             let body = '';
 
             if (mediaReview.required) {
                 body = `${mediaReview.label || 'Media'} attached, so Shannon should check it before replying.`;
             } else if (contextReview.required) {
-                body = `Needs You because the saved thread context may be incomplete: ${contextReview.label || 'the latest message depends on missing context'}.`;
+                body = `Your call because the saved thread context may be incomplete: ${contextReview.label || 'the latest message depends on missing context'}.`;
             } else if (linkHandoff) {
                 body = linkUrl
-                    ? 'Needs You because this is a signup/link handoff. Check the timing and approve the URL before it goes out.'
-                    : 'Needs You because this is a signup/link handoff, but the final URL needs checking before anything is sent.';
+                    ? 'Your call because this is a signup/link handoff. Check the timing and approve the URL before it goes out.'
+                    : 'Your call because this is a signup/link handoff, but the final URL needs checking before anything is sent.';
             } else if (needsYouApprovalInfo?.ready) {
                 const reviewSummary = getDraftReviewSummary(alert);
-                body = reviewSummary || 'Needs You because the manager reviewed this DM and found a real manual-check reason.';
+                body = reviewSummary || 'Your call because the manager reviewed this DM and found a real manual-check reason.';
             } else if (isNeedsYou) {
                 body = cleanDmExplanationText(data.codex_review?.reason || data.needs_you_reason || getDraftReviewSummary(alert))
-                    || 'Needs You because this reply needs Shannon judgment before anything goes out.';
+                    || 'Your call because this reply needs Shannon judgment before anything goes out.';
             } else {
                 const qualifierWhy = cleanDmExplanationText(q.why_now || '');
                 const draftWhy = cleanDmExplanationText(data.draft_reasoning || data.reasoning || '');

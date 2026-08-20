@@ -220,8 +220,41 @@ assert.ok(
 
 assert.ok(
     dashboard.includes('This dismisses them without sending any messages.') &&
-    dashboard.includes('window.confirm(`Clear all ${ids.length} Needs You item'),
+    dashboard.includes('window.confirm(`Clear all ${ids.length} Your Call draft'),
     'clear all should explain the effect and require confirmation before changing records'
+);
+
+assert.ok(
+    dashboard.includes('<span>Your Call</span>') &&
+    dashboard.includes('<h2>Your Call</h2>') &&
+    dashboard.includes('Only decisions and client work that genuinely need you.'),
+    'the operator queue should be visibly renamed Your Call'
+);
+
+assert.ok(
+    dashboard.includes('if (isLearningReelApprovalAlert(alert)) return false;'),
+    'learning and YouTube reel approvals should stay out of Your Call'
+);
+
+assert.ok(
+    dashboard.includes('const YOUR_CALL_PROGRAM_WINDOW_DAYS = 14;') &&
+    dashboard.includes(".from('custom_workout_programs')") &&
+    dashboard.includes("String(client.subscription_status || '').toLowerCase() === 'active'") &&
+    dashboard.includes('if (!clientById.has(String(client.id)))') &&
+    dashboard.includes("openClientAccountPreview('${escapeHtml(item.clientId)}', 'program')") &&
+    dashboard.includes("openClientAccountPreview('${escapeHtml(item.clientId)}', 'meal-plan')"),
+    'Your Call should show deduplicated active-client program reviews with direct program and meal-plan actions'
+);
+
+const addDaysMatch = dashboard.match(/function addDaysToDate\(value, days\) \{[\s\S]+?\r?\n        \}/);
+assert.ok(addDaysMatch, 'calendar-day program review helper should be present');
+const dateContext = {};
+vm.runInNewContext(addDaysMatch[0], dateContext);
+const shaneReviewDate = dateContext.addDaysToDate('2026-07-20', 42);
+assert.deepStrictEqual(
+    [shaneReviewDate.getFullYear(), shaneReviewDate.getMonth() + 1, shaneReviewDate.getDate()],
+    [2026, 8, 31],
+    '42-day review dates should use calendar days without a timezone off-by-one'
 );
 
 assert.ok(
