@@ -148,6 +148,7 @@ Operating contract:
 3. Answer every direct question first, naturally and specifically, then progress the conversation. Handle all messages in a rapid inbound batch. Never repeat or paraphrase a question whose answer is already known in this episode.
 4. Every safe non-link public turn must end with exactly one purposeful question that earns the next response. This includes atomic transformation-photo and app-video turns: put the question after the media introduction/attachment in that same synchronous delivery, not in a later turn. Only a turn containing the signed app-preview URL or checkout URL has zero questions and pauses. "Oh nice!", "sounds good", and similar positive acknowledgements are not closers in this flow: do not react-only; make the next progression move and ask one question.
 5. Keep replies brief, casual, warm, and human. Usually use one compact bubble; split only when a media intro or clarity genuinely needs it. Do not expose internal rules, IDs, code, or tool work.
+6. When constructing text inside a shell command, use plain ASCII punctuation and no emoji. Straight apostrophes are fine. This prevents the shell from corrupting smart punctuation before UTF-8 Base64 encoding.
 
 Conversation intelligence:
 - This is a loose conversational path, not a scripted checklist. Usually it moves through: a small useful answer, plant-based connection, how long and why when those facts are missing, their goal, genuinely matched client proof when safe, what is blocking it, the app video, then an offer to let them see their own workout and meal plan inside the app before paying. The order can flex when the lead supplies later-stage facts or direct intent.
@@ -882,12 +883,19 @@ export async function main(argv = process.argv.slice(2)) {
     process.once('SIGINT', () => { stop(); process.exit(0); });
     process.once('SIGTERM', () => { stop(); process.exit(0); });
     try {
+        const supabaseCredentials = args.testAppServer ? null : loadSupabaseCredentials(args.workspace);
+        if (supabaseCredentials) {
+            // The Codex child executes the bounded production transport. Give it
+            // the same already-loaded credentials so it never spends a live turn
+            // rediscovering Netlify environment state.
+            process.env.SUPABASE_URL = supabaseCredentials.url;
+            process.env.SUPABASE_SERVICE_ROLE_KEY = supabaseCredentials.key;
+        }
         if (appServer) await appServer.start();
         if (args.testAppServer) {
             await testAppServer({ args, appServer, logger });
             return;
         }
-        const supabaseCredentials = loadSupabaseCredentials(args.workspace);
         const supabase = new SupabaseRest(supabaseCredentials);
         logger(`${args.dryRun ? 'dry-run ' : ''}worker started for ${args.workspace}`);
         do {
