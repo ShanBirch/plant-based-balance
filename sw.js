@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v330'; // v330: remove water and sleep review from Home actions
+const CACHE_NAME = 'pbb-app-v331-ios-exercise-video-upload'; // v331: iPhone native exercise-video upload
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -24,7 +24,7 @@ const ASSETS = [
   './css/dashboard/pbb-onboarding-foundations.css?v=5-mobile-viewport',
   './js/dashboard/dashboard-script-7-video_logic.js?v=20260815-exercise-thumbnails',
     './js/dashboard/dashboard-script-10-points_widget_functions.js?v=47',
-  './js/dashboard/pbb-deferred-formcheck.js?v=56',
+  './js/dashboard/pbb-deferred-formcheck.js?v=58-ios-exercise-video-upload',
   './js/dashboard/pbb-deferred-workoutbuilder.js?v=10',
   './js/dashboard/pbb-deferred-yourworkouts.js',
   './js/dashboard/pbb-deferred-savedworkouts.js?v=7',

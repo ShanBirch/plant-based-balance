@@ -24188,6 +24188,20 @@ async function requestCustomExerciseReview(savedExercise) {
     }
 }
 
+function getIosCustomExerciseVideoUploadPlugin() {
+    try {
+        const capacitor = window.Capacitor;
+        if (!capacitor || typeof capacitor.getPlatform !== 'function' || capacitor.getPlatform() !== 'ios') return null;
+        let plugin = capacitor.Plugins && capacitor.Plugins.BalanceVideoCapture;
+        if (!plugin && typeof capacitor.registerPlugin === 'function') {
+            plugin = capacitor.registerPlugin('BalanceVideoCapture');
+        }
+        return plugin || null;
+    } catch (_) {
+        return null;
+    }
+}
+
 async function uploadCustomExerciseVideoInBackground(user, savedExercise, videoFile, exerciseName) {
     if (!user?.id || !savedExercise?.id || !videoFile) return false;
 
@@ -24239,10 +24253,52 @@ async function uploadCustomExerciseVideoInBackground(user, savedExercise, videoF
                 startedAt: Date.now(), progress: 0, nativeWorker: true
             });
             updateCustomExerciseUploadStatus('Uploading video 0%...');
-            watchNativeCustomExerciseVideoUpload(savedExercise.id, exerciseName);
-            return true;
-        }
-        const result = await storageHelpers.uploadExerciseVideo(user.id, videoFile, savedExercise.id, {
+              watchNativeCustomExerciseVideoUpload(savedExercise.id, exerciseName);
+              return true;
+          }
+          const iosUploadPlugin = videoFile._balanceNativeVideoPath
+              ? getIosCustomExerciseVideoUploadPlugin()
+              : null;
+          if (iosUploadPlugin && typeof iosUploadPlugin.enqueueExerciseVideoUpload === 'function') {
+              const accessToken = await getCustomExerciseReviewAuthToken();
+              if (!accessToken) throw new Error('Please log in again before retrying this video.');
+              logCustomExerciseVideoDiagnostic('custom_exercise_native_worker_enqueue_start', {
+                  exerciseId: savedExercise.id,
+                  exerciseName,
+                  bridgeVersion: 1,
+                  nativePlatform: 'ios'
+              });
+              const enqueueResult = await iosUploadPlugin.enqueueExerciseVideoUpload({
+                  payload: {
+                      accessToken,
+                      userId: user.id,
+                      exerciseId: savedExercise.id,
+                      sourcePath: videoFile._balanceNativeVideoPath,
+                      fileName: videoFile.name || 'exercise-video.mp4',
+                      contentType: videoFile.type || 'video/mp4',
+                      technique: getCustomExerciseTechniqueReviewData(savedExercise)
+                  }
+              });
+              if (!enqueueResult || enqueueResult.accepted !== true) {
+                  throw new Error('Could not start the native iPhone upload.');
+              }
+              logCustomExerciseVideoDiagnostic('custom_exercise_native_worker_enqueue_success', {
+                  exerciseId: savedExercise.id,
+                  exerciseName,
+                  bridgeVersion: Number(enqueueResult.bridgeVersion || 1),
+                  nativePlatform: 'ios'
+              });
+              setCustomExerciseVideoUploadState(savedExercise.id, exerciseName, 'uploading', {
+                  startedAt: Date.now(), progress: 0, nativeWorker: true, nativePlatform: 'ios'
+              });
+              updateCustomExerciseUploadStatus('Uploading video 0%...');
+              watchNativeCustomExerciseVideoUpload(savedExercise.id, exerciseName);
+              return true;
+          }
+          if (videoFile._balanceNativeVideoPath) {
+              throw new Error('Update Balance before retrying this video. Your exercise is already saved.');
+          }
+          const result = await storageHelpers.uploadExerciseVideo(user.id, videoFile, savedExercise.id, {
             onProgress: function (percent) {
                 const progress = Math.max(0, Math.min(100, Math.round(Number(percent) || 0)));
                 setCustomExerciseVideoUploadState(savedExercise.id, exerciseName, 'uploading', {
@@ -24329,10 +24385,28 @@ async function uploadCustomExerciseVideoInBackground(user, savedExercise, videoF
 }
 
 function watchNativeCustomExerciseVideoUpload(exerciseId, exerciseName) {
-    if (!window.NativePermissions || typeof window.NativePermissions.getExerciseVideoUploadStatus !== 'function') return;
-    const poll = () => {
+    const hasAndroidStatus = !!(window.NativePermissions
+        && typeof window.NativePermissions.getExerciseVideoUploadStatus === 'function');
+    const iosUploadPlugin = getIosCustomExerciseVideoUploadPlugin();
+    const hasIosStatus = !!(iosUploadPlugin
+        && typeof iosUploadPlugin.getExerciseVideoUploadStatus === 'function');
+    if (!hasAndroidStatus && !hasIosStatus) return;
+    let polling = false;
+    const poll = async () => {
+        if (polling) return false;
+        polling = true;
         let result = null;
-        try { result = JSON.parse(window.NativePermissions.getExerciseVideoUploadStatus(exerciseId) || 'null'); } catch (_) {}
+        try {
+            if (hasAndroidStatus) {
+                result = JSON.parse(window.NativePermissions.getExerciseVideoUploadStatus(exerciseId) || 'null');
+            } else {
+                result = await iosUploadPlugin.getExerciseVideoUploadStatus({ exerciseId });
+            }
+        } catch (_) {
+            result = null;
+        } finally {
+            polling = false;
+        }
         if (!result) return false;
         const progress = Math.max(0, Math.min(100, Math.round(Number(result.progress) || 0)));
         if (result.status === 'uploaded') {
@@ -24357,8 +24431,15 @@ function watchNativeCustomExerciseVideoUpload(exerciseId, exerciseName) {
         updateCustomExerciseUploadStatus(result.status === 'retrying' ? 'Waiting for a connection...' : `Uploading video ${progress}%...`);
         return false;
     };
-    if (poll()) return;
-    const interval = setInterval(() => { if (poll()) clearInterval(interval); }, 600);
+    let interval = null;
+    void poll().then(done => {
+        if (done) return;
+        interval = setInterval(() => {
+            void poll().then(finished => {
+                if (finished && interval) clearInterval(interval);
+            });
+        }, 600);
+    });
 }
 
 function queueCustomExerciseVideoBackgroundUpload(user, savedExercise, videoFile, exerciseName) {

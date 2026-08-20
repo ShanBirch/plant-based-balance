@@ -2085,7 +2085,9 @@
             captureTarget: workoutFeedShareCaptureTarget,
             nativePlatform: isWorkoutFeedShareNativePlatform()
         });
-        if (window.NativePermissions && typeof window.NativePermissions.pickWorkoutVideo === 'function') {
+        const iosVideoPlugin = getBalanceVideoCapturePlugin();
+        if ((window.NativePermissions && typeof window.NativePermissions.pickWorkoutVideo === 'function')
+            || (iosVideoPlugin && typeof iosVideoPlugin.pickWorkoutVideo === 'function')) {
             void openNativeWorkoutFeedShareGallery();
         } else {
             openWorkoutFeedShareFilePicker();
@@ -2877,7 +2879,7 @@
         });
         const result = await plugin.captureWorkoutVideo({
             maxDurationSeconds: 75,
-            includeDataBase64: true
+            includeDataBase64: workoutFeedShareCaptureTarget !== 'custom-exercise'
         });
         logWorkoutFeedShareDiagnostic('share_set_native_camera_ios_result', {
             captureTarget: workoutFeedShareCaptureTarget,
@@ -3120,7 +3122,10 @@
     }
 
     async function openNativeWorkoutFeedShareGallery() {
-        if (!window.NativePermissions || typeof window.NativePermissions.pickWorkoutVideo !== 'function') {
+        const iosVideoPlugin = getBalanceVideoCapturePlugin();
+        const hasAndroidPicker = !!(window.NativePermissions && typeof window.NativePermissions.pickWorkoutVideo === 'function');
+        const hasIosPicker = !!(iosVideoPlugin && typeof iosVideoPlugin.pickWorkoutVideo === 'function');
+        if (!hasAndroidPicker && !hasIosPicker) {
             openWorkoutFeedShareFilePicker();
             return;
         }
@@ -3128,22 +3133,24 @@
             ? showWorkoutFeedShareUploadBanner('Opening photos...', 'info')
             : null;
         try {
-            const result = await new Promise(function (resolve) {
-                let settled = false;
-                window._onNativeWorkoutVideo = function (value) {
-                    if (settled) return;
-                    settled = true;
-                    delete window._onNativeWorkoutVideo;
-                    resolve(value || { cancelled: true });
-                };
-                window.NativePermissions.pickWorkoutVideo();
-                setTimeout(function () {
-                    if (settled) return;
-                    settled = true;
-                    delete window._onNativeWorkoutVideo;
-                    resolve({ cancelled: true });
-                }, 180000);
-            });
+            const result = hasAndroidPicker
+                ? await new Promise(function (resolve) {
+                    let settled = false;
+                    window._onNativeWorkoutVideo = function (value) {
+                        if (settled) return;
+                        settled = true;
+                        delete window._onNativeWorkoutVideo;
+                        resolve(value || { cancelled: true });
+                    };
+                    window.NativePermissions.pickWorkoutVideo();
+                    setTimeout(function () {
+                        if (settled) return;
+                        settled = true;
+                        delete window._onNativeWorkoutVideo;
+                        resolve({ cancelled: true });
+                    }, 180000);
+                })
+                : await iosVideoPlugin.pickWorkoutVideo({});
             if (result.cancelled) {
                 hideWorkoutFeedShareUploadBanner(300);
                 restoreWorkoutFeedShareCaptureSurface();
