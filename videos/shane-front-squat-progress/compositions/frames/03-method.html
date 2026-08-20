@@ -1,0 +1,17 @@
+<template>
+<style>
+#root{position:relative;width:1080px;height:1920px;overflow:hidden;color:#F4F0E6;font-family:Arial,sans-serif}.bg{position:absolute;inset:0;background:#0F1110}.kicker{position:absolute;left:64px;top:175px;font:700 24px Consolas,monospace;letter-spacing:.14em;color:#D7A94C}.title{position:absolute;left:64px;right:64px;top:245px;font:900 96px/.9 Impact,'Arial Narrow',sans-serif}.jobs{position:absolute;left:64px;right:64px;top:535px;display:grid;gap:28px}.job{display:grid;grid-template-columns:190px 1fr;min-height:260px;padding:34px 38px;border:3px solid #D7A94C;background:#171A18}.day{font:700 23px/1.25 Consolas,monospace;letter-spacing:.1em;color:#D7A94C}.name{font:900 54px/.94 Impact,'Arial Narrow',sans-serif}.work{margin-top:18px;font:900 34px/1.08 Impact,'Arial Narrow',sans-serif;color:#F4F0E6}.detail{margin-top:20px;font:700 21px/1.35 Consolas,monospace;color:#9AA09B}.footer{position:absolute;left:64px;right:64px;bottom:150px;padding-top:28px;border-top:9px solid #D7A94C;font:900 48px Impact,'Arial Narrow',sans-serif}.footer span{color:#D7A94C}
+</style>
+<div id="root" data-composition-id="03-method" data-start="0" data-duration="6.5" data-width="1080" data-height="1920">
+  <div class="bg"></div>
+  <div class="kicker">HOW WE TRAINED TOWARDS 150 KG</div>
+  <div id="method-title" class="title">THE PROGRAM HAD 3 JOBS.</div>
+  <div class="jobs">
+    <div id="method-heavy" class="job"><div class="day">MONDAY</div><div><div class="name">HEAVY + PAUSED</div><div class="work">1 TOP SET + 3 PAUSED BACK-OFF SETS</div><div class="detail">2-3 REPS · 2 SEC PAUSE</div></div></div>
+    <div id="method-volume" class="job"><div class="day">THURSDAY</div><div><div class="name">VOLUME + TEMPO</div><div class="work">VOLUME WORK + 3 TEMPO TRIPLES</div><div class="detail">3 SEC DOWN · DRIVE UP FAST</div></div></div>
+    <div id="method-speed" class="job"><div class="day">SATURDAY</div><div><div class="name">SPEED + SKILL</div><div class="work">6 FAST DOUBLES + 3 PAUSED DOUBLES</div><div class="detail">CLEAN PRACTICE · NOT FATIGUE</div></div></div>
+  </div>
+  <div id="method-footer" class="footer"><span>HEAVY.</span> CONTROLLED. FAST.</div>
+</div>
+<script>(()=>{const id='03-method',tl=gsap.timeline({paused:true});window.__timelines=window.__timelines||{};window.__timelines[id]=tl;tl.fromTo('#method-title',{x:-100,opacity:0},{x:0,opacity:1,duration:.5,ease:'expo.out'},.08).fromTo('.job',{x:110,opacity:0},{x:0,opacity:1,duration:.48,ease:'power4.out',stagger:.62},.48).fromTo('#method-footer',{y:70,opacity:0},{y:0,opacity:1,duration:.5,ease:'expo.out'},2.55)})();</script>
+</template>

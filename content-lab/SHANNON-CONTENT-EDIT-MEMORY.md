@@ -135,6 +135,7 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 - When footage exists, keep the full important rep visible and place the week label and target/result comparison around it rather than replacing the movement with graphics.
 - Give a progression Reel one explicit coaching belief before presenting the receipts. The timeline should prove a meaningful idea, not read like a list of weights or dates.
 - For goal-led client proof, use the Balance belief that a good goal gives each session a job: establish the goal, show how the plan turned it into weekly actions, credit the client for doing the work, then close on the confidence or capability earned through visible progress.
+- Do not let a progression Reel jump from goal to result without explaining the training method. When the saved program supports it, show the distinct jobs of the week in plain language, such as heavy exposure, controlled volume or tempo, and fast skill practice, while distinguishing prescriptions from verified completed work.
 
 ### Coaching posts must show how Shannon coaches
 

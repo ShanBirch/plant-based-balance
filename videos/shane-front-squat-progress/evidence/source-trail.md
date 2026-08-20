@@ -35,6 +35,16 @@ Live Balance/Supabase evidence reconstructed 20 August 2026 (Australia/Brisbane)
 
 The Reel labels weeks 1-4 as programmed targets, not completed lifts. Weeks 5-7 use the dated actual results above. Week 8 is labelled as the programmed test target.
 
+## Verified weekly training structure
+
+Read back from the saved `Shane Front Squat 150kg Block` program on 21 August 2026:
+
+- Monday, heavy and paused: one programmed top set, then three lighter paused back-off sets of 2-3 reps with a two-second pause.
+- Thursday, volume and tempo: the programmed volume sets changed across the block, then Shane had three tempo sets of three reps using a three-second lowering and a fast drive up.
+- Saturday, speed and skill: six speed sets of two reps, then three light paused doubles. The saved coaching cue explicitly prioritised fast, clean practice over fatigue.
+
+These are programmed prescriptions. The Reel does not claim every prescribed set was completed unless a dated actual result is separately listed above.
+
 ## Claim guardrails
 
 - Approved factual line: `150 kg was the week-8 target. Shane hit 2 reps on 20 July.`

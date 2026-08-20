@@ -1,6 +1,6 @@
 # Shane front-squat progression Reel
 
-Approval-ready 53-second Instagram Reel composition built from Shane's verified Balance coaching history, all eight programmed weeks, and workout footage with full rep visibility at 135 kg, 140 kg, and 150 kg.
+Approval-ready 59.5-second Instagram Reel composition built from Shane's verified Balance coaching history, the heavy, volume-tempo and speed-skill structure, all eight programmed weeks, and workout footage with full rep visibility at 135 kg, 140 kg, and 150 kg.
 
 ## Review
 
@@ -11,7 +11,7 @@ Approval-ready 53-second Instagram Reel composition built from Shane's verified 
 
 ## Included
 
-- Six-scene HyperFrames composition
+- Eight-scene HyperFrames composition
 - Real footage from early May through 20 July
 - Dated, evidence-backed target and result language
 - Music and purposeful transition accents

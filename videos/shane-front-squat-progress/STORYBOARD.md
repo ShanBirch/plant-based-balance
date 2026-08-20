@@ -1,7 +1,7 @@
 ---
-duration: 53s
+duration: 59.5s
 message: "A clear goal gave every session a job, and Shane turned a 150 kg target into two real reps"
-arc: Balance belief -> Honest goal and context -> Every week gets a job -> Shane does the work -> Target arrives early -> Earned confidence
+arc: Balance belief -> Honest goal and context -> How the program worked -> Every week gets a job -> Shane does the work -> Target arrives early -> Earned confidence
 ---
 
 ## Frame 1 - The belief and the proof
@@ -22,16 +22,25 @@ arc: Balance belief -> Honest goal and context -> Every week gets a job -> Shane
 - rules: discrete-text-sequence
 - transition_in: ledger-wipe
 
-## Frame 3 - Every week gets a job
+## Frame 3 - How we trained towards it
+- status: animated
+- src: compositions/frames/03-method.html
+- duration: 6.5s
+- beat: Explain the verified three-day front-squat structure: Monday heavy top-set and paused back-offs, Thursday volume plus tempo triples, and Saturday fast doubles plus paused doubles
+- blueprint: grid-card-assemble
+- rules: discrete-text-sequence, spring-pop-entrance
+- transition_in: gold-rule-wipe
+
+## Frame 4 - Every week gets a job
 - status: animated
 - src: compositions/frames/03-plan.html
 - duration: 6.5s
 - beat: Turn the belief into coaching action by labelling weeks 1 to 4 individually with their verified heavy-day targets, including the planned deload
 - blueprint: grid-card-assemble
 - rules: center-outward-expansion, spring-pop-entrance
-- transition_in: gold-rule-wipe
+- transition_in: ledger-wipe
 
-## Frame 4 - Shane does the work
+## Frame 5 - Shane does the work
 - status: animated
 - src: compositions/frames/04-progression.html
 - duration: 10.5s
@@ -40,7 +49,7 @@ arc: Balance belief -> Honest goal and context -> Every week gets a job -> Shane
 - rules: counting-dynamic-scale, stat-bars-and-fills
 - transition_in: hard-cut
 
-## Frame 5 - The target moved twice
+## Frame 6 - The target moved twice
 - status: animated
 - src: compositions/frames/05-result.html
 - duration: 15.5s
@@ -49,7 +58,7 @@ arc: Balance belief -> Honest goal and context -> Every week gets a job -> Shane
 - rules: discrete-text-sequence
 - transition_in: impact-flash
 
-## Frame 6 - Week 8 target
+## Frame 7 - Week 8 target
 - status: animated
 - src: compositions/frames/06-week8.html
 - duration: 4s
@@ -58,7 +67,7 @@ arc: Balance belief -> Honest goal and context -> Every week gets a job -> Shane
 - rules: discrete-text-sequence, spring-pop-entrance
 - transition_in: editorial-wipe
 
-## Frame 7 - Earned confidence
+## Frame 8 - Earned confidence
 - status: animated
 - src: compositions/frames/06-close.html
 - duration: 5s
