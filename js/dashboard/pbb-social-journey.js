@@ -509,6 +509,7 @@
     const levelStrip = document.getElementById('tamagotchi-stats-bar')
       || document.getElementById('balance-level-bar')
       || character;
+    const characterBlockTail = document.getElementById('battle-stats-row') || levelStrip;
     const programStart = new Date(safeObject(window.userProfile).program_start_date || '');
     const beforeFirstWeek = Number.isFinite(programStart.getTime())
       && Date.now() < programStart.getTime() + (7 * 24 * 60 * 60 * 1000);
@@ -518,8 +519,8 @@
     if (unified) {
       const weeklyGoals = document.getElementById('weekly-goals-card');
       const nextSteps = document.getElementById('next-obvious-steps-card');
-      if (levelStrip && levelStrip.parentNode && weeklyGoals && levelStrip.nextElementSibling !== weeklyGoals) {
-        levelStrip.parentNode.insertBefore(weeklyGoals, levelStrip.nextSibling);
+      if (characterBlockTail && characterBlockTail.parentNode && weeklyGoals && characterBlockTail.nextElementSibling !== weeklyGoals) {
+        characterBlockTail.parentNode.insertBefore(weeklyGoals, characterBlockTail.nextSibling);
       }
       if (weeklyGoals && weeklyGoals.parentNode && nextSteps && weeklyGoals.nextElementSibling !== nextSteps) {
         weeklyGoals.parentNode.insertBefore(nextSteps, weeklyGoals.nextSibling);
@@ -533,8 +534,8 @@
       }, 0);
       return;
     }
-    if (levelStrip && levelStrip.parentNode && levelStrip.nextElementSibling !== card) {
-      levelStrip.parentNode.insertBefore(card, levelStrip.nextSibling);
+    if (characterBlockTail && characterBlockTail.parentNode && characterBlockTail.nextElementSibling !== card) {
+      characterBlockTail.parentNode.insertBefore(card, characterBlockTail.nextSibling);
     }
     const definition = getWeekDefinition();
     const completed = progress ? progress.completed_count : 0;

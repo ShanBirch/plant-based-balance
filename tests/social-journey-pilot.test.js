@@ -75,6 +75,19 @@ test('dashboard ships both discovery systems and a visible pilot card target', (
     assert.match(html, /pbb-social-journey\.css\?v=\d+/);
 });
 
+test('Home plan cards stay below the complete FitGotchi stats block', () => {
+    const html = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
+    const source = fs.readFileSync(path.join(root, 'js/dashboard/pbb-social-journey.js'), 'utf8');
+    const serviceWorker = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
+
+    assert.match(source, /const characterBlockTail = document\.getElementById\('battle-stats-row'\) \|\| levelStrip/);
+    assert.match(source, /characterBlockTail\.parentNode\.insertBefore\(weeklyGoals, characterBlockTail\.nextSibling\)/);
+    assert.match(source, /characterBlockTail\.parentNode\.insertBefore\(card, characterBlockTail\.nextSibling\)/);
+    assert.doesNotMatch(source, /levelStrip\.parentNode\.insertBefore\((weeklyGoals|card), levelStrip\.nextSibling\)/);
+    assert.match(html, /pbb-social-journey\.js\?v=30-character-stats-tail/);
+    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v325'/);
+});
+
 test('first check-in ships the recorded Shannon welcome audio used by Inbox and Your Next Step', () => {
     const source = fs.readFileSync(path.join(root, 'js/dashboard/pbb-social-journey.js'), 'utf8');
     const inboxSource = fs.readFileSync(path.join(root, 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js'), 'utf8');
