@@ -7,7 +7,7 @@ destination: instagram-reel
 aspect: 1080x1920
 language: en-AU
 audience: "People who want proof that clear programming and feedback can build real strength"
-length: 49s
+length: 53s
 angle: client-progress-proof
 ---
 
@@ -24,7 +24,7 @@ Create a sharp, client-led Balance progress Reel about Shane Minahan's front squ
 ## Customizations
 
 - Use the real message receipts as short, legible proof cards rather than recreating a fake DM interface.
-- Use the real logged progression as a restrained vertical timeline: 100 kg, 130 kg, 135 kg, 140 kg, 150 kg x 2.
+- Use the verified eight-week heavy-day plan as a phone-readable weekly timeline. Clearly separate planned targets from actual results, and use text-led beats for weeks without useful footage.
 - Add a perceptible music bed and restrained impact/switch sounds; no narration or synthetic presenter.
 - Close with the standard Balance logo treatment and a soft coaching bridge, not a hard sales CTA.
 

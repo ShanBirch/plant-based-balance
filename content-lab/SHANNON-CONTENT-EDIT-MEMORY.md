@@ -127,6 +127,13 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 - Match the large, phone-readable hierarchy of the approved cravings coaching carousel. At 1080x1350, default to roughly 52-60 px bold story headlines, 28-36 px supporting copy, and 22-26 px labels. Do not use caption-sized explanation text on the artwork; shorten the line or split the story across another slide instead of shrinking it.
 - Covers must also pass a profile-grid test, not only a full-screen carousel test. Use a short hook with roughly 72-86 px bold type at 1080x1350, keep the core hook inside the central grid-safe crop, and verify it remains readable at profile-thumbnail size. Shorten the cover before reducing the font.
 
+### Client progression timelines can be text-led
+
+- Do not use a weak static client image merely to fill a missing-video week. If the image adds no new evidence or story information, replace it with a deliberate editorial text beat.
+- Label every week prominently enough to read on a phone. A cold viewer should never have to infer which week, target or result they are seeing.
+- Where footage is unavailable, continue the verified journey with text. Clearly distinguish the programmed target from the actual result, and never turn a planned number into a claimed completed lift.
+- When footage exists, keep the full important rep visible and place the week label and target/result comparison around it rather than replacing the movement with graphics.
+
 ### Coaching posts must show how Shannon coaches
 
 - A coaching carousel cannot stop at explaining the mechanism and then attach a coaching CTA. It must show what Shannon actually does with the person.

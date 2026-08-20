@@ -20,6 +20,21 @@ Live Balance/Supabase evidence reconstructed 20 August 2026 (Australia/Brisbane)
 - 20 July 2026, 18:35 AEST: Shane sent 150 kg x 2.
 - 20 July 2026, 18:46 AEST: the 150 kg x 2 workout was logged in the Balance feed.
 
+## Verified eight-week heavy-day plan
+
+| Week | Programmed top set | Verified actual used in Reel |
+| --- | --- | --- |
+| 1 | 115 kg x 2 | Plan only; no completion claim |
+| 2 | 120 kg x 2 | Plan only; no completion claim |
+| 3 | 125 kg x 1 | Plan only; no completion claim |
+| 4 | 105 kg x 3 deload | Plan only; no completion claim |
+| 5 | 130 kg x 1 | 135 kg x 1 logged on 6 July |
+| 6 | 135 kg x 1 | 140 kg x 2 sent on 13 July |
+| 7 | 140-145 kg x 1 | 150 kg x 2 sent on 20 July |
+| 8 | Build toward 150 kg x 1 | Target had already been beaten in week 7 |
+
+The Reel labels weeks 1-4 as programmed targets, not completed lifts. Weeks 5-7 use the dated actual results above. Week 8 is labelled as the programmed test target.
+
 ## Claim guardrails
 
 - Approved factual line: `150 kg was the week-8 target. Shane hit 2 reps on 20 July.`
