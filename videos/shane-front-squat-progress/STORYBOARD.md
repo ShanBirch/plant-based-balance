@@ -1,14 +1,23 @@
 ---
-duration: 59.5s
+duration: 62s
 message: "A clear goal gave every session a job, and Shane turned a 150 kg target into two real reps"
 arc: Balance belief -> Honest goal and context -> How the program worked -> Every week gets a job -> Shane does the work -> Target arrives early -> Earned confidence
 ---
 
-## Frame 1 - The belief and the proof
+## Frame 0 - Shane's journey
+- status: animated
+- src: compositions/frames/00-journey.html
+- duration: 2.5s
+- beat: Name the story immediately in huge type: Shane's front-squat journey
+- blueprint: video-text-pivot
+- rules: spring-pop-entrance
+- transition_in: hard-cut
+
+## Frame 1 - The Balance belief
 - status: animated
 - src: compositions/frames/01-payoff.html
 - duration: 5.5s
-- beat: State the Balance belief that a good goal should give every session a job, then prove why this story matters with Shane's 150 kg target and 150 kg x 2 result while one complete rep stays visible
+- beat: State the Balance belief in dominant type: a good goal should give every session a job
 - blueprint: video-text-pivot
 - rules: counting-dynamic-scale, spring-pop-entrance
 - transition_in: hard-cut

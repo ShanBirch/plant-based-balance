@@ -7,13 +7,13 @@ destination: instagram-reel
 aspect: 1080x1920
 language: en-AU
 audience: "People who want proof that clear programming and feedback can build real strength"
-length: 59.5s
+length: 62s
 angle: client-progress-proof
 ---
 
 ## Intent
 
-Create a sharp, client-led Balance progress Reel about Shane Minahan's front squat progression. Open on the Balance belief that a good goal should give every session a job, prove that belief with the 150 kg result, rewind to the dated goal and starting context, explain the verified heavy, volume-tempo and speed-skill structure, then build through the weekly plan and real reps. The edit should feel earned, warm, and strong rather than like a generic transformation montage.
+Create a sharp, client-led Balance progress Reel about Shane Minahan's front squat progression. Open with an unmistakable `SHANE'S FRONT-SQUAT JOURNEY` title, then state the Balance belief that a good goal should give every session a job in dominant type. Rewind to the dated goal and starting context, explain the verified heavy, volume-tempo and speed-skill structure, then build through the weekly plan and real reps. The edit should feel earned, warm, and strong rather than like a generic transformation montage.
 
 ## Assets
 
@@ -27,7 +27,8 @@ Create a sharp, client-led Balance progress Reel about Shane Minahan's front squ
 - Use the verified eight-week heavy-day plan as a phone-readable weekly timeline. Clearly separate planned targets from actual results, and use text-led beats for weeks without useful footage.
 - Make the roles honest and explicit: Balance set the direction and structured the block; Shane showed up, sent the lifts, and earned the result.
 - Explain how the block worked before showing the weekly numbers: Monday heavy top-set and paused back-offs, Thursday volume and tempo work, and Saturday fast doubles and paused skill work.
-- Add a perceptible music bed and restrained impact/switch sounds; no narration or synthetic presenter.
+- Use the determined rock soundtrack as a perceptible music bed with restrained impact/switch sounds; no narration or synthetic presenter.
+- Apply the zombie-scroll clarity gate: every major beat gets one large declarative headline, and the contact sheet must tell the complete story without sound.
 - Close with the standard Balance logo treatment and a soft coaching bridge, not a hard sales CTA.
 
 ## Notes

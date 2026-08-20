@@ -1,4 +1,4 @@
-# .media · 9 assets
+# .media · 10 assets
 
 id         type   dur    dims       path                                    description
 bgm_001    bgm    —      —          .media/audio/bgm/bgm_001.mp3            exercise-high-energy-124-techno-fest-vibes.mp3
@@ -10,3 +10,4 @@ video_002  video  20s    360×640    assets/video/2026-07-04-speed.mp4       202
 video_004  video  18.6s  356×634    assets/video/2026-07-07-135kg.mp4       2026 07 07 135kg
 video_006  video  22.5s  1920×1080  assets/video/2026-07-13-140kg.mov       2026 07 13 140kg
 video_007  video  22.6s  1920×1080  assets/video/2026-07-20-150kgx2.mov     2026 07 20 150kgx2
+bgm_002    bgm    —      —          .media/audio/bgm/bgm_002.mp3            hook-dramatic-998-hooligans.mp3

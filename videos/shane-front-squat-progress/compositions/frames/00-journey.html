@@ -1,0 +1,11 @@
+<template>
+<style>
+#root{position:relative;width:1080px;height:1920px;overflow:hidden;background:#0F1110;color:#F4F0E6;font-family:Arial,sans-serif}.hero{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(15,17,16,.18),rgba(15,17,16,.2) 36%,rgba(15,17,16,.95) 84%)}.title{position:absolute;left:54px;right:54px;bottom:220px;font:900 150px/.8 Impact,'Arial Narrow',sans-serif;letter-spacing:-.015em;text-transform:uppercase;text-shadow:0 9px 34px #000}.title span{display:block;color:#D7A94C}.rule{position:absolute;left:54px;right:54px;bottom:155px;height:12px;background:#D7A94C;transform-origin:left}.tag{position:absolute;right:54px;top:130px;padding:14px 18px;background:#0F1110;color:#D7A94C;border:2px solid #D7A94C;font:700 24px Consolas,monospace;letter-spacing:.1em}
+</style>
+<div id="root" data-composition-id="00-journey" data-start="0" data-duration="2.5" data-width="1080" data-height="1920">
+  <video id="journey-video" class="clip hero" src="assets/video/2026-07-20-150kgx2.mov" data-start="0" data-duration="2.5" data-track-index="0" data-media-start="17" muted playsinline></video>
+  <div class="shade"></div><div class="tag">150 KG × 2</div>
+  <div id="journey-title" class="title">SHANE'S<span>FRONT-SQUAT</span>JOURNEY.</div><div id="journey-rule" class="rule"></div>
+</div>
+<script>(()=>{const id='00-journey',tl=gsap.timeline({paused:true});window.__timelines=window.__timelines||{};window.__timelines[id]=tl;tl.fromTo('#journey-title',{y:120,opacity:0},{y:0,opacity:1,duration:.52,ease:'expo.out'},.06).fromTo('#journey-rule',{scaleX:0},{scaleX:1,duration:.55,ease:'power4.out'},.34)})();</script>
+</template>

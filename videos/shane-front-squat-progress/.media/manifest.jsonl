@@ -7,3 +7,4 @@
 {"id":"video_004","type":"video","path":"assets/video/2026-07-07-135kg.mp4","source":"existing","description":"2026 07 07 135kg","duration":18.6,"width":356,"height":634,"provenance":{"provider":"local","adopted":true}}
 {"id":"video_006","type":"video","path":"assets/video/2026-07-13-140kg.mov","source":"existing","description":"2026 07 13 140kg","duration":22.5,"width":1920,"height":1080,"provenance":{"provider":"local","adopted":true}}
 {"id":"video_007","type":"video","path":"assets/video/2026-07-20-150kgx2.mov","source":"existing","description":"2026 07 20 150kgx2","duration":22.6,"width":1920,"height":1080,"provenance":{"provider":"local","adopted":true}}
+{"id":"bgm_002","type":"bgm","path":".media/audio/bgm/bgm_002.mp3","source":"ingested","description":"hook-dramatic-998-hooligans.mp3","provenance":{"provider":"local","from":"C:\\Users\\shann\\.codex\\assets\\reel-audio\\music\\mixkit-curated\\hook-dramatic-998-hooligans.mp3"}}
