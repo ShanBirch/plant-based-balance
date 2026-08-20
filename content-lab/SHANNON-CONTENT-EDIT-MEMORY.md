@@ -13,6 +13,8 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 - A sales video can look polished and still fail if the viewer cannot tell what they receive or how the coaching works.
 - Introduce each promised inclusion explicitly, then immediately prove it with the real product flow. For Balance Foundations, show the workout program, plant-based meal plan, community Feed, six-week lesson-to-quiz course flow, Weekly Goals, and Shannon's weekly voice check-in with training and food review before the price.
 - Close with the exact commercial terms: one AU$89.99 payment for the full six weeks, with no subscription and no auto-renewal.
+- When a product animation is visually busy from its first frame, hold a plain inclusion title before the animation begins. At minimum, separate “YOUR WORKOUT PROGRAM” and “YOUR PLANT-BASED MEAL PLAN” from their demonstrations.
+- Do not trust a placed audio offset for the check-in voice. Bake the full lead-in silence into the audio file and verify the encoded master is silent before the visible check-in player opens.
 
 ### Social-proof metrics must strengthen perceived scale
 
