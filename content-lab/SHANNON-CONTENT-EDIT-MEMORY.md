@@ -11,9 +11,9 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 ### Paid offer videos must explain the delivery path
 
 - A sales video can look polished and still fail if the viewer cannot tell what they receive or how the coaching works.
-- Introduce each promised inclusion explicitly, then immediately prove it with the real product flow. For Balance Foundations, show the workout program, plant-based meal plan, community Feed, six-week lesson-to-quiz course flow, Weekly Goals, and Shannon's weekly voice check-in with training and food review before the price.
+- Open by naming the exact offer, such as “YOUR SIX-WEEK FOUNDERS PASS”, instead of generic framing such as “HERE IS EXACTLY WHAT YOU GET”. Then introduce each promised inclusion explicitly and immediately prove it with the real product flow. For Balance Foundations, show the workout program, plant-based meal plan, community Feed, six-week lesson-to-quiz course flow, Weekly Goals, and Shannon's weekly voice check-in with training and food review before the price.
 - Close with the exact commercial terms: one AU$89.99 payment for the full six weeks, with no subscription and no auto-renewal.
-- When a product animation is visually busy from its first frame, hold a plain inclusion title before the animation begins. At minimum, separate “YOUR WORKOUT PROGRAM” and “YOUR PLANT-BASED MEAL PLAN” from their demonstrations.
+- Give every inclusion its own plain, phone-readable title card before its product animation begins. For Balance Foundations this applies to the workout program, plant-based meal plan, community, guided course, Weekly Goals and weekly check-in.
 - Do not trust a placed audio offset for the check-in voice. Bake the full lead-in silence into the audio file and verify the encoded master is silent before the visible check-in player opens.
 
 ### Social-proof metrics must strengthen perceived scale

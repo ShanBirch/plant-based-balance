@@ -1,0 +1,39 @@
+<template>
+  <style>
+    #root { position: relative; width: 1080px; height: 1920px; overflow: hidden; container-type: size; font-family: Montserrat, Arial, sans-serif; color: #160d20; }
+    .f04-title-ground { position: absolute; inset: 0; overflow: hidden; background: #fff; }
+    .f04-title-plane { position: absolute; top: -16cqh; right: -22cqw; width: 86cqw; height: 122cqh; background: rgba(169,111,0,.075); transform: rotate(13deg); }
+    .f04-title-ring { position: absolute; left: -28cqw; top: 55cqh; width: 76cqw; height: 76cqw; border: 2px solid rgba(169,111,0,.12); border-radius: 50%; }
+    .f04-title-content { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 7cqw 13cqh; text-align: center; }
+    .f04-title-kicker { color: #a36b00; font-size: 2.05cqw; font-weight: 700; letter-spacing: .18em; }
+    .f04-title-rule { width: 11cqw; height: 3px; margin: 2.5cqh 0 2.8cqh; background: #c6942f; transform-origin: 50% 50%; }
+    .f04-title-heading { max-width: 90cqw; font-size: 8.1cqw; font-weight: 800; line-height: .98; letter-spacing: -.055em; text-wrap: balance; }
+    .f04-title-subline { margin-top: 2.8cqh; color: #8b6519; font-size: 2.8cqw; font-weight: 550; letter-spacing: .02em; }
+  </style>
+  <div data-hf-id="hf-f04-title-root" id="root" data-composition-id="04-community-title" data-start="0" data-duration="1.8" data-width="1080" data-height="1920">
+    <div data-hf-id="hf-f04-title-ground" id="f04-title-ground" class="clip f04-title-ground" data-start="0" data-duration="1.8" data-track-index="0">
+      <div data-hf-id="hf-f04-title-plane" class="f04-title-plane" data-layout-allow-overflow></div>
+      <div data-hf-id="hf-f04-title-ring" class="f04-title-ring" data-layout-allow-overflow></div>
+    </div>
+    <main data-hf-id="hf-f04-title-content" id="f04-title-content" class="clip f04-title-content" data-start="0" data-duration="1.8" data-track-index="1">
+      <p data-hf-id="hf-f04-title-kicker" id="f04-title-kicker" class="f04-title-kicker">BALANCE FOUNDATIONS / 03</p>
+      <div data-hf-id="hf-f04-title-rule" id="f04-title-rule" class="f04-title-rule"></div>
+      <h1 data-hf-id="hf-f04-title-heading" id="f04-title-heading" class="f04-title-heading">YOUR BALANCE COMMUNITY</h1>
+      <p data-hf-id="hf-f04-title-subline" id="f04-title-subline" class="f04-title-subline">Support that shows up.</p>
+    </main>
+  </div>
+  <script>
+    (() => {
+      const id = "04-community-title";
+      const root = document.querySelector('[data-composition-id="' + id + '"]');
+      const tl = gsap.timeline({ paused: true });
+      tl.fromTo(root.querySelector("#f04-title-kicker"), { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: .28, ease: "power2.out" }, .08);
+      tl.fromTo(root.querySelector("#f04-title-rule"), { scaleX: 0 }, { scaleX: 1, duration: .3, ease: "power2.out" }, .16);
+      tl.fromTo(root.querySelector("#f04-title-heading"), { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: .34, ease: "power3.out" }, .22);
+      tl.fromTo(root.querySelector("#f04-title-subline"), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: .28, ease: "power2.out" }, .4);
+      tl.to({}, { duration: 1.8 }, 0);
+      window.__timelines = window.__timelines || {};
+      window.__timelines[id] = tl;
+    })();
+  </script>
+</template>

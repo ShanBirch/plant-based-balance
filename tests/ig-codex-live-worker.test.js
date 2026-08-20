@@ -144,7 +144,7 @@ const { pathToFileURL } = require('url');
         ...alert,
         data: {
             ...alert.data,
-            draft_video_attachment_url: 'https://plantbased-balance.org/assets/balance-foundations-app-proof-v4.mp4',
+            draft_video_attachment_url: 'https://plantbased-balance.org/assets/balance-foundations-app-proof-v5.mp4',
         },
     };
     const canonicalOutbounds = [{ id: 'outbound-1', text: 'Yep, here it is again. Can you see it now?' }];

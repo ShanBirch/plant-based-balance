@@ -7,7 +7,7 @@ destination: instagram-dm
 aspect: 1080x1920
 language: en
 audience: "Plant-based adults who want a clear fitness plan, practical education and real human accountability"
-length: 65.1s
+length: 72.3s
 angle: "clear product proof: introduce every inclusion, then show exactly how it works inside Balance"
 narration: no
 style_preset: balance-editorial
@@ -32,7 +32,7 @@ The story order is: workout program, plant-based meal plan, community Feed, guid
 ## Visual and copy rules
 
 - Keep every promise readable on mute and pair it with faithful current app proof.
-- Give the workout program and plant-based meal plan their own held title cards before their interface animations begin.
+- Give every inclusion its own held title card before its interface animation begins: workout program, plant-based meal plan, Balance community, guided six-week course, Weekly Goals and weekly check-in.
 - Bake the check-in voice delay into the audio asset so no voice plays before the check-in section.
 - Use the existing full-screen Shannon exercise footage, meal-plan choreography, community imagery and Shannon voice-note moment.
 - Do not describe the course as a generic learning library.

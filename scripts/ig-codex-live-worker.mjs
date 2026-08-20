@@ -167,7 +167,7 @@ Fixed offer facts:
 - Founders Pass is a six-week setup inside Balance.
 - It includes workouts built around their week, a plant-based meal plan, and weekly check-ins to review and adjust training and food.
 - It is one AUD 89.99 payment, with no subscription and no auto-renewal.
-- The evergreen app proof video is https://plantbased-balance.org/assets/balance-foundations-app-proof-v4.mp4. This URL is transport-only: never paste it into public reply or draft text. Introduce the quick app video naturally and keep the alert's draft_video_attachment_url available so send-coach-reply delivers it as a native Instagram attachment.
+- The evergreen app proof video is https://plantbased-balance.org/assets/balance-foundations-app-proof-v5.mp4. This URL is transport-only: never paste it into public reply or draft text. Introduce the quick app video naturally and keep the alert's draft_video_attachment_url available so send-coach-reply delivers it as a native Instagram attachment.
 - Approved proof photos: Ally https://plantbased-balance.org/photos/client-success/ally-cocos.png ; Gen https://plantbased-balance.org/photos/client-success/gen-cocos.jpg ; Dani https://plantbased-balance.org/photos/client-success/dani-front-mirror-8-weeks.png ; Bec/Kirsty https://plantbased-balance.org/photos/client-success/bec-kirsty-cocos.png
 - They can see their profile, workout program, meal plan, and the full app before paying.
 - Transformation proof is optional, must genuinely match the person's goal and situation, and must not be forced or hardcoded.

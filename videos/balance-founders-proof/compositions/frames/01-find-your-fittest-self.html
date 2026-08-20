@@ -24,19 +24,19 @@
         </div>
       </section>
 
-      <section data-hf-id="hf-vmkb" class="f01-find-your-fittest-self-title" aria-label="Here is exactly what you get">
-        <div data-hf-id="hf-kfk4" class="f01-find-your-fittest-self-kicker" id="f01-find-your-fittest-self-kicker">HERE IS EXACTLY</div>
+      <section data-hf-id="hf-vmkb" class="f01-find-your-fittest-self-title" aria-label="Your six-week Founders Pass">
+        <div data-hf-id="hf-kfk4" class="f01-find-your-fittest-self-kicker" id="f01-find-your-fittest-self-kicker">BALANCE FOUNDATIONS</div>
         <div data-hf-id="hf-0thy" class="f01-find-your-fittest-self-display" id="f01-find-your-fittest-self-display">
           <div data-hf-id="hf-zgj1" class="f01-find-your-fittest-self-fittest-stack">
-            <span data-hf-id="hf-ko7g" class="f01-find-your-fittest-self-fittest-solid">WHAT YOU GET</span>
-            <span data-hf-id="hf-w6j6" class="f01-find-your-fittest-self-fittest-sweep" id="f01-find-your-fittest-self-fittest-sweep" data-layout-allow-occlusion="">WHAT YOU GET</span>
+            <span data-hf-id="hf-ko7g" class="f01-find-your-fittest-self-fittest-solid" data-layout-allow-occlusion="">YOUR SIX-WEEK FOUNDERS PASS</span>
+            <span data-hf-id="hf-w6j6" class="f01-find-your-fittest-self-fittest-sweep" id="f01-find-your-fittest-self-fittest-sweep" data-layout-allow-occlusion="">YOUR SIX-WEEK FOUNDERS PASS</span>
           </div>
         </div>
       </section>
 
       <section data-hf-id="hf-yp12" class="f01-find-your-fittest-self-subline" id="f01-find-your-fittest-self-subline">
         <span data-hf-id="hf-9vmx" class="f01-find-your-fittest-self-subline-rule"></span>
-        <p data-hf-id="hf-xlhi">Six weeks. Clear plan. Real coaching.</p>
+        <p data-hf-id="hf-xlhi">Your plan. Your coaching. One complete six-week experience.</p>
         <span data-hf-id="hf-0319" class="f01-find-your-fittest-self-subline-rule"></span>
       </section>
     </main>
@@ -198,10 +198,10 @@
     [class~="f01-find-your-fittest-self-kicker"] {
       min-height: 58px;
       color: #a96f00;
-      font-size: 42px;
+      font-size: 38px;
       font-weight: 600;
       line-height: 1.2;
-      letter-spacing: 0.12em;
+      letter-spacing: 0.105em;
     }
 
     [class~="f01-find-your-fittest-self-display"] {
@@ -210,10 +210,10 @@
       flex-direction: column;
       align-items: center;
       color: #160d20;
-      font-size: 131px;
+      font-size: 104px;
       font-weight: 700;
-      line-height: 0.91;
-      letter-spacing: -0.055em;
+      line-height: 0.94;
+      letter-spacing: -0.04em;
     }
 
     [class~="f01-find-your-fittest-self-fittest-stack"] {
@@ -259,9 +259,9 @@
 
     [class~="f01-find-your-fittest-self-subline"] {
       position: absolute;
-      top: 1270px;
-      left: 150px;
-      width: 780px;
+      top: 1050px;
+      left: 105px;
+      width: 870px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -271,16 +271,17 @@
 
     [class~="f01-find-your-fittest-self-subline"] p {
       margin: 0;
-      white-space: nowrap;
-      font-size: 29px;
+      max-width: 700px;
+      white-space: normal;
+      font-size: 30px;
       font-weight: 500;
-      line-height: 1.45;
+      line-height: 1.4;
       letter-spacing: 0.025em;
     }
 
     [class~="f01-find-your-fittest-self-subline-rule"] {
       display: block;
-      flex: 1;
+      flex: 0 0 52px;
       height: 1.5px;
       border-radius: 6px;
       background: rgba(169, 111, 0, 0.35);
@@ -302,9 +303,8 @@
       const kicker = root.querySelector("#f01-find-your-fittest-self-kicker");
       const kickerStates = [
         { t: 0, text: "" },
-        { t: 0.09, text: "HERE" },
-        { t: 0.24, text: "HERE IS" },
-        { t: 0.42, text: "HERE IS EXACTLY" }
+        { t: 0.12, text: "BALANCE" },
+        { t: 0.34, text: "BALANCE FOUNDATIONS" }
       ];
       const kickerDriver = { t: 0 };
       const kickerTextAt = (time) => {
@@ -341,8 +341,8 @@
       tl.to(
         kickerDriver,
         {
-          t: 0.55,
-          duration: 0.55,
+          t: 0.46,
+          duration: 0.46,
           ease: "none",
           onUpdate: () => {
             kicker.textContent = kickerTextAt(kickerDriver.t);

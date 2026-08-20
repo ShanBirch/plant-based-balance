@@ -2561,7 +2561,7 @@ test('Instagram split offer bubbles still turn a short Yes into the promised app
         },
         history: [
             { direction: 'in', text: "Umm I don't know how to eat!" },
-            { direction: 'out', text: '[VIDEO:https://plantbased-balance.org/assets/balance-foundations-app-proof-v4.mp4]' },
+            { direction: 'out', text: '[VIDEO:https://plantbased-balance.org/assets/balance-foundations-app-proof-v5.mp4]' },
             { direction: 'out', text: 'Yep, here it is. Once you’ve watched it, do you want me to set up a free personalised look at your own workout and meal plan?' },
         ],
         flowVariant: 'plant_based_control',
