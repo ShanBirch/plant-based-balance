@@ -14,6 +14,7 @@ const DEFAULT_INBOUND_QUIET_MS = 2500;
 const DEFAULT_BATCH_MAX_WAIT_MS = 9000;
 const DEFAULT_TURN_TIMEOUT_MS = 4 * 60 * 1000;
 const DEFAULT_HTTP_TIMEOUT_MS = 10000;
+const DEFAULT_APP_SERVER_REQUEST_TIMEOUT_MS = 15000;
 const DEFAULT_BARE_DRAFT_REDRIVE_MS = 30000;
 const DEFAULT_FAILED_ALERT_RETRY_MS = 30000;
 const META_APP_PREVIEW_SHORT_URL = 'https://plantbased-balance.org/p';
@@ -49,6 +50,18 @@ export function hasVerifiedAlertDelivery({ alert, canonicalOutbounds, finalAlert
     if (!hasCanonicalOutbound) return false;
     if (!requiresVerifiedVideoDelivery(alert)) return true;
     return String(finalAlert?.data?.delivery_payload_kind || '').toLowerCase() === 'video';
+}
+
+export function isLiveClaimCurrent({ claimedAction, currentAction, currentAlert, canonicalOutbounds }) {
+    if (!claimedAction?.id || !claimedAction?.claim_token || !currentAction) return false;
+    if (currentAction.id !== claimedAction.id) return false;
+    if (Number(currentAction.action_version) !== Number(claimedAction.action_version)) return false;
+    if (String(currentAction.source_message_id || '') !== String(claimedAction.source_message_id || '')) return false;
+    if (String(currentAction.claim_token || '') !== String(claimedAction.claim_token || '')) return false;
+    if (currentAction.status !== 'claimed' || currentAction.owner !== 'codex_live_worker') return false;
+    if (currentAction.claim_owner !== 'codex_live_worker') return false;
+    if (!currentAlert || currentAlert.status !== 'pending') return false;
+    return !Array.isArray(canonicalOutbounds) || canonicalOutbounds.length === 0;
 }
 
 export function buildSignedMetaAppPreviewUrl(threadId, {
@@ -208,7 +221,7 @@ export function findCodexBinary({ localAppData = process.env.LOCALAPPDATA, expli
     return process.platform === 'win32' ? 'codex.exe' : 'codex';
 }
 
-class JsonRpcAppServer extends EventEmitter {
+export class JsonRpcAppServer extends EventEmitter {
     constructor({ binary, workspace, logger }) {
         super();
         this.binary = binary;
@@ -233,7 +246,10 @@ class JsonRpcAppServer extends EventEmitter {
         });
         this.child.on('exit', (code, signal) => {
             const error = new Error(`Codex app-server exited (${code ?? signal ?? 'unknown'})`);
-            for (const pending of this.pending.values()) pending.reject(error);
+            for (const pending of this.pending.values()) {
+                clearTimeout(pending.timer);
+                pending.reject(error);
+            }
             this.pending.clear();
             this.child = null;
             this.emit('exit', error);
@@ -259,6 +275,7 @@ class JsonRpcAppServer extends EventEmitter {
         if (message.id !== undefined && this.pending.has(message.id)) {
             const pending = this.pending.get(message.id);
             this.pending.delete(message.id);
+            clearTimeout(pending.timer);
             if (message.error) pending.reject(new Error(message.error.message || JSON.stringify(message.error)));
             else pending.resolve(message.result);
             return;
@@ -266,11 +283,26 @@ class JsonRpcAppServer extends EventEmitter {
         if (message.method) this.emit(message.method, message.params || {});
     }
 
-    request(method, params = {}) {
+    request(method, params = {}, { timeoutMs = Number(process.env.IG_CODEX_LIVE_APP_SERVER_TIMEOUT_MS || DEFAULT_APP_SERVER_REQUEST_TIMEOUT_MS) } = {}) {
         const id = this.nextId++;
         return new Promise((resolve, reject) => {
-            this.pending.set(id, { resolve, reject });
-            this.child.stdin.write(`${JSON.stringify({ method, id, params })}\n`);
+            if (!this.child?.stdin?.writable) {
+                reject(new Error(`Codex app-server is unavailable for ${method}`));
+                return;
+            }
+            const timer = setTimeout(() => {
+                this.pending.delete(id);
+                const error = new Error(`Codex app-server ${method} timed out after ${timeoutMs}ms`);
+                error.code = 'APP_SERVER_REQUEST_TIMEOUT';
+                reject(error);
+            }, timeoutMs);
+            this.pending.set(id, { resolve, reject, timer });
+            this.child.stdin.write(`${JSON.stringify({ method, id, params })}\n`, error => {
+                if (!error || !this.pending.has(id)) return;
+                this.pending.delete(id);
+                clearTimeout(timer);
+                reject(error);
+            });
         });
     }
 
@@ -474,7 +506,7 @@ class SupabaseRest {
 
     async actionById(actionId) {
         const query = new URLSearchParams({
-            select: 'id,status,owner,source_message_id,receipt,updated_at',
+            select: 'id,status,owner,claim_owner,claim_token,action_version,source_message_id,receipt,updated_at',
             id: `eq.${actionId}`,
             limit: '1',
         });
@@ -663,7 +695,7 @@ async function ensureConversation({ appServer, state, statePath, workspace, aler
     let conversation = state.conversations[igThreadId] || null;
     const freshEpisode = shouldStartFreshEpisode(alert, conversation);
     if (freshEpisode && conversation?.codexThreadId) {
-        try { await appServer.request('thread/unsubscribe', { threadId: conversation.codexThreadId }); }
+        try { await appServer.request('thread/unsubscribe', { threadId: conversation.codexThreadId }, { timeoutMs: 5000 }); }
         catch (error) { logger(`could not unsubscribe prior episode ${conversation.codexThreadId}: ${error.message}`); }
         logger(`starting fresh paid-Meta test episode for alert ${alert.id}; prior Codex chat ${conversation.codexThreadId}`);
     }
@@ -688,7 +720,7 @@ async function ensureConversation({ appServer, state, statePath, workspace, aler
         sandbox: 'danger-full-access',
         personality: 'friendly',
         serviceName: 'balance_ig_live_worker',
-    });
+    }, { timeoutMs: DEFAULT_APP_SERVER_REQUEST_TIMEOUT_MS });
     const codexThreadId = result?.thread?.id;
     if (!codexThreadId) throw new Error('Codex app-server did not return a thread id');
     const previousCodexThreadId = freshEpisode ? conversation?.codexThreadId || null : null;
@@ -706,7 +738,8 @@ async function ensureConversation({ appServer, state, statePath, workspace, aler
     state.conversations[igThreadId] = conversation;
     saveState(statePath, state);
     const name = `LIVE PAID META TEST - ${username} - ${igThreadId.slice(0, 8)}`;
-    await appServer.request('thread/name/set', { threadId: codexThreadId, name });
+    try { await appServer.request('thread/name/set', { threadId: codexThreadId, name }, { timeoutMs: 5000 }); }
+    catch (error) { logger(`could not name Codex chat ${codexThreadId}: ${error.message}`); }
     if (openChat) openCodexThread(codexThreadId, logger);
     logger(`created Codex chat ${codexThreadId} for ${username}`);
     return conversation;
@@ -722,6 +755,22 @@ async function runAlert({ alert, action, appServer, supabase, state, statePath, 
         openChat: args.openChat,
         logger,
     });
+    const [currentAction, currentAlert, existingOutbounds] = await Promise.all([
+        supabase.actionById(action.id),
+        supabase.alertById(alert.id),
+        supabase.canonicalOutboundsForAlert(alert.id, action.thread_id),
+    ]);
+    if (!isLiveClaimCurrent({
+        claimedAction: action,
+        currentAction,
+        currentAlert,
+        canonicalOutbounds: existingOutbounds,
+    })) {
+        logger(`abandoned stale alert ${alert.id} after Codex setup; no turn or send was started`);
+        state.alerts[alert.id] = { status: 'stale', checkedAt: new Date().toISOString() };
+        saveState(statePath, state);
+        return { skipped: 'stale_after_setup' };
+    }
     const appPreviewUrl = buildSignedMetaAppPreviewUrl(action.thread_id, { secret: previewSigningSecret });
     const prompt = buildLivePrompt({
         alert,
@@ -924,6 +973,7 @@ export async function main(argv = process.argv.slice(2)) {
                         logger(`could not release controller claim for alert ${alert.id}: ${releaseError.message}`);
                     }
                     logger(`alert ${alert.id} failed: ${error.stack || error.message}`);
+                    if (error?.code === 'APP_SERVER_REQUEST_TIMEOUT') throw error;
                 }
             }
             if (!args.once) await new Promise(resolve => setTimeout(resolve, Number(process.env.IG_CODEX_LIVE_POLL_MS || DEFAULT_POLL_MS)));

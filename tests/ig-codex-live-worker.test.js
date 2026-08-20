@@ -16,6 +16,7 @@ const { pathToFileURL } = require('url');
     assert.match(productionOriginSource, /DEFAULT_INBOUND_QUIET_MS = 2500/);
     assert.match(productionOriginSource, /DEFAULT_BATCH_MAX_WAIT_MS = 9000/);
     assert.match(productionOriginSource, /DEFAULT_HTTP_TIMEOUT_MS = 10000/);
+    assert.match(productionOriginSource, /DEFAULT_APP_SERVER_REQUEST_TIMEOUT_MS = 15000/);
     assert.match(productionOriginSource, /AbortSignal\.timeout\(timeoutMs\)/);
     assert.match(productionOriginSource, /pending alert poll failed; retrying/);
     assert.match(productionOriginSource, /stalled_draft_generation_pending/);
@@ -41,6 +42,40 @@ const { pathToFileURL } = require('url');
     assert.strictEqual(worker.shouldRetryFailedAlert(null, previewNow), true);
     assert.strictEqual(worker.shouldRetryFailedAlert({ status: 'failed', failedAt: '2026-08-20T03:59:50Z' }, previewNow, 30000), false);
     assert.strictEqual(worker.shouldRetryFailedAlert({ status: 'failed', failedAt: '2026-08-20T03:59:20Z' }, previewNow, 30000), true);
+
+    const claimedAction = {
+        id: 'action-1', action_version: 3, source_message_id: 'message-1',
+        claim_token: 'claim-1',
+    };
+    const currentClaim = {
+        ...claimedAction, status: 'claimed', owner: 'codex_live_worker', claim_owner: 'codex_live_worker',
+    };
+    assert.strictEqual(worker.isLiveClaimCurrent({
+        claimedAction,
+        currentAction: currentClaim,
+        currentAlert: { status: 'pending' },
+        canonicalOutbounds: [],
+    }), true);
+    assert.strictEqual(worker.isLiveClaimCurrent({
+        claimedAction,
+        currentAction: { ...currentClaim, action_version: 4 },
+        currentAlert: { status: 'pending' },
+        canonicalOutbounds: [],
+    }), false, 'a superseded controller version cannot start a Codex turn');
+    assert.strictEqual(worker.isLiveClaimCurrent({
+        claimedAction,
+        currentAction: currentClaim,
+        currentAlert: { status: 'sent' },
+        canonicalOutbounds: [{ id: 'already-sent' }],
+    }), false, 'canonical delivery makes the slow local wake stale');
+
+    const rpc = new worker.JsonRpcAppServer({ binary: '', workspace: '', logger: () => {} });
+    rpc.child = { stdin: { writable: true, write: (_payload, callback) => { if (callback) callback(); } } };
+    await assert.rejects(
+        rpc.request('thread/start', {}, { timeoutMs: 5 }),
+        error => error?.code === 'APP_SERVER_REQUEST_TIMEOUT',
+        'an unresponsive app-server request must fail fast',
+    );
 
     assert.strictEqual(cleanOwner('codex_live_worker'), 'codex_live_worker');
 
