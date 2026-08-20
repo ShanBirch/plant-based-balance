@@ -109,6 +109,10 @@ const ADMIN_COMMUNITY_NOTIFICATION_TYPES = new Set([
 
 const DISPATCHER_APPROVAL_NOTIFICATION_TYPE = 'dispatcher_approval_ready';
 
+function isNativeDataOnlyType(type) {
+    return type === 'coach_draft_ready' || type === DISPATCHER_APPROVAL_NOTIFICATION_TYPE;
+}
+
 const ADMIN_CLIENT_LIFECYCLE_STAGES = new Set([
     'trial',
     'trial_expiring',
@@ -338,7 +342,11 @@ async function sendNativePush(token, payload) {
         // only our service is registered for MESSAGING_EVENT
         // (Capacitor's default was successfully removed by tools:node="remove").
         const isCoachDraft = stringData.type === 'coach_draft_ready';
-        const channelId = isCoachDraft ? 'coach-drafts' : 'dm-messages';
+        const isDispatcherApproval = stringData.type === DISPATCHER_APPROVAL_NOTIFICATION_TYPE;
+        const isNativeDataOnly = isNativeDataOnlyType(stringData.type);
+        const channelId = isCoachDraft
+            ? 'coach-drafts'
+            : (isDispatcherApproval ? 'dispatcher-approvals' : 'dm-messages');
 
         // Forward title/body inside `data` so the coach-draft service can read
         // them (data-only messages don't carry a `notification` block).
@@ -356,7 +364,7 @@ async function sendNativePush(token, payload) {
         if (payload.collapseKey) {
             message.android.collapse_key = payload.collapseKey;
         }
-        if (!isCoachDraft) {
+        if (!isNativeDataOnly) {
             const accent = pickAccent();
             message.notification = { title: payload.title, body: payload.body };
             message.android.notification = {
@@ -864,4 +872,5 @@ module.exports.__test = {
     isValidDispatcherApprovalPush,
     isAllowedAdminPhonePush,
     shouldSuppressExternalMessagePush,
+    isNativeDataOnlyType,
 };

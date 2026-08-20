@@ -61,6 +61,7 @@ public class CoachDraftMessagingService extends MessagingService {
 
     /** Channel id used for the rich draft-ready notification. */
     public static final String CHANNEL_ID = "coach-drafts";
+    public static final String DISPATCHER_CHANNEL_ID = "dispatcher-approvals";
 
     /** RemoteInput key — matches {@link CoachReplyReceiver#KEY_REPLY_TEXT}. */
     public static final String KEY_REPLY_TEXT = "coach_reply_text";
@@ -78,6 +79,10 @@ public class CoachDraftMessagingService extends MessagingService {
     public static final String EXTRA_ACTION_REQUIRED = "actionRequired";
     public static final String EXTRA_ACTION_LABEL = "actionLabel";
     public static final String EXTRA_NOTIFICATION_ID = "notificationId";
+    public static final String EXTRA_BATCH_ID = "batchId";
+    public static final String EXTRA_BATCH_VERSION = "batchVersion";
+    public static final String EXTRA_RECIPIENT_ID = "recipientId";
+    public static final String EXTRA_APPROVAL_TOKEN = "approvalToken";
 
     /**
      * Stable notification id keyed by the client (not the alert).
@@ -112,6 +117,18 @@ public class CoachDraftMessagingService extends MessagingService {
         // one receiving pushes. Fire-and-forget — no blocking on the network.
         sendDiagnosticBeacon("onMessageReceived", type, hasNotificationBlock, data);
 
+        if ("dispatcher_approval_ready".equals(type)) {
+            try {
+                showDispatcherApprovalNotification(data);
+                sendDiagnosticBeacon("dispatcher_notification_built", type, hasNotificationBlock, data);
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to show dispatcher approval notification", e);
+                sendDiagnosticBeacon("dispatcher_notification_error", type, hasNotificationBlock,
+                        data, e.getClass().getSimpleName() + ": " + e.getMessage());
+            }
+            return;
+        }
+
         if (!"coach_draft_ready".equals(type)) {
             // Not ours — let Capacitor's plugin handle it (meal reminders,
             // regular DMs, battle invites, etc.).
@@ -143,6 +160,61 @@ public class CoachDraftMessagingService extends MessagingService {
             // Fall back to default handling so Shannon still sees SOMETHING.
             super.onMessageReceived(remoteMessage);
         }
+    }
+
+    private void showDispatcherApprovalNotification(Map<String, String> data) {
+        final String batchId = safe(data.get(EXTRA_BATCH_ID));
+        final String batchVersion = safe(data.get(EXTRA_BATCH_VERSION));
+        final String recipientId = safe(data.get(EXTRA_RECIPIENT_ID));
+        final String approvalToken = safe(data.get(EXTRA_APPROVAL_TOKEN));
+        final String title = safe(data.get("title"));
+        final String body = safe(data.get("body"));
+
+        if (batchId.isEmpty() || batchVersion.isEmpty() || recipientId.isEmpty()
+                || approvalToken.isEmpty()) {
+            Log.w(TAG, "Dispatcher approval push missing signed batch fields");
+            return;
+        }
+
+        DispatcherApprovalNotifier.ensureChannel(this);
+        int notificationId = DispatcherApprovalNotifier.notificationIdFor(batchId, batchVersion);
+        Intent approveIntent = new Intent(this, DispatcherApprovalReceiver.class)
+                .setAction(DispatcherApprovalReceiver.ACTION_APPROVE_BATCH)
+                .putExtra(EXTRA_BATCH_ID, batchId)
+                .putExtra(EXTRA_BATCH_VERSION, batchVersion)
+                .putExtra(EXTRA_RECIPIENT_ID, recipientId)
+                .putExtra(EXTRA_APPROVAL_TOKEN, approvalToken)
+                .putExtra(EXTRA_NOTIFICATION_ID, notificationId);
+
+        int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) flags |= PendingIntent.FLAG_IMMUTABLE;
+        PendingIntent approvePendingIntent = PendingIntent.getBroadcast(
+                this, notificationId, approveIntent, flags);
+
+        NotificationCompat.Action approveAction = new NotificationCompat.Action.Builder(
+                android.R.drawable.ic_menu_send,
+                "Approve",
+                approvePendingIntent)
+                .setShowsUserInterface(false)
+                .build();
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, DISPATCHER_CHANNEL_ID)
+                .setSmallIcon(resolveSmallIcon())
+                .setContentTitle(title.isEmpty() ? "Instagram approvals" : title)
+                .setContentText(body)
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
+                .setSubText("Balance IG")
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setCategory(NotificationCompat.CATEGORY_STATUS)
+                .setDefaults(NotificationCompat.DEFAULT_ALL)
+                .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION))
+                .setAutoCancel(false)
+                .setOnlyAlertOnce(true)
+                .setContentIntent(approvePendingIntent)
+                .addAction(approveAction);
+
+        NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (nm != null) nm.notify(notificationId, builder.build());
     }
 
     private void sendDiagnosticBeacon(String event, String type, boolean hasNotif,

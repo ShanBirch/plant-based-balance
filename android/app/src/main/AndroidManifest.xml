@@ -163,6 +163,11 @@
             android:name=".CoachReplyReceiver"
             android:exported="false" />
 
+        <!-- Native lock-screen tap handler for signed Instagram approval batches. -->
+        <receiver
+            android:name=".DispatcherApprovalReceiver"
+            android:exported="false" />
+
         <!-- Ask Balance search-bar widget for Android home screens. -->
         <receiver
             android:name=".AskBalanceWidgetProvider"

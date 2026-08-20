@@ -26,7 +26,7 @@ sandbox.global = sandbox;
 
 vm.runInNewContext(code, sandbox, { filename: file });
 
-const { isAllowedAdminPhonePush, isValidDispatcherApprovalPush } = sandbox.module.exports.__test;
+const { isAllowedAdminPhonePush, isValidDispatcherApprovalPush, isNativeDataOnlyType } = sandbox.module.exports.__test;
 const {
     createApprovalToken,
     verifyApprovalToken,
@@ -41,6 +41,9 @@ const dispatcherApprovalPayload = {
 };
 
 assert.strictEqual(isValidDispatcherApprovalPush(dispatcherApprovalPayload), true);
+assert.strictEqual(isNativeDataOnlyType('dispatcher_approval_ready'), true);
+assert.strictEqual(isNativeDataOnlyType('coach_draft_ready'), true);
+assert.strictEqual(isNativeDataOnlyType('dm_message'), false);
 
 const tokenIdentity = {
     batchId: dispatcherApprovalPayload.batchId,
