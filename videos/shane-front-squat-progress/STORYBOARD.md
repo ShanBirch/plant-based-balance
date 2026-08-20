@@ -8,7 +8,7 @@ arc: Result first -> Honest starting context -> Dated target -> Training steps -
 - status: animated
 - src: compositions/frames/01-payoff.html
 - duration: 5.5s
-- beat: Cold-open on one complete 150 kg rep from standing through depth and back to the finish
+- beat: Make Shane's journey explicit immediately: 100 kg felt hard, an eight-week plan targeted 150 kg, and the result was 150 kg for two reps, while one complete rep stays visible
 - blueprint: video-text-pivot
 - rules: counting-dynamic-scale, spring-pop-entrance
 - transition_in: hard-cut

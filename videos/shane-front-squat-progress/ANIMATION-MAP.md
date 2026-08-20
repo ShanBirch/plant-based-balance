@@ -2,7 +2,7 @@
 
 | Time | Scene | Motion | Audio accent |
 | --- | --- | --- | --- |
-| 0.0-5.5 | 150 kg payoff | One complete rep stays uninterrupted while the result typography settles | Impact at 0.1s |
+| 0.0-5.5 | Shane's 100-to-150 journey | One complete rep stays uninterrupted while the progression title, eight-week plan and 150 kg x 2 result settle | Impact at 0.1s |
 | 5.5-11.5 | Before the block | Full-height ledger wipe; early-May frame settles; quote receipt rises | Music only |
 | 11.5-18.0 | Eight-week target | Coaching quote reveals left-to-right; heavy, volume and speed cards assemble | Click at 11.7s |
 | 18.0-28.5 | Progression | Complete 135 kg and 140 kg reps play at natural speed; gold route grows | Music-led cut at 23.3s |
