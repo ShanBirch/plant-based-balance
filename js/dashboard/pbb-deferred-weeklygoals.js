@@ -1097,21 +1097,21 @@
       const meta = getCategoryMeta(goal.category);
       const current = formatTarget(goal.current);
       const target = formatTarget(goal.target);
-      const muted = goal.helper ? '<div style="font-size:0.7rem;color:#64748b;margin-top:4px;font-weight:700;">' + escapeHtml(goal.helper) + '</div>' : '';
+      const muted = goal.helper ? '<div class="weekly-goal-progress-card__helper" style="font-size:0.7rem;margin-top:4px;font-weight:700;">' + escapeHtml(goal.helper) + '</div>' : '';
       return `
-        <div style="padding:11px 12px;margin-top:8px;border:1px solid rgba(255,255,255,0.13);background:rgba(255,255,255,0.92);border-radius:14px;box-shadow:0 8px 18px rgba(15,23,42,0.08);">
+        <div class="weekly-goal-progress-card" style="padding:11px 12px;margin-top:8px;border-radius:14px;">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px;">
             <div style="min-width:0;display:flex;gap:9px;align-items:flex-start;">
               <div style="width:30px;height:30px;border-radius:10px;background:${meta.gradient};color:white;font-size:0.72rem;font-weight:950;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 8px 18px ${meta.border};">${escapeHtml(meta.short)}</div>
               <div style="min-width:0;">
-                <div style="font-size:0.84rem;font-weight:900;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(goal.label)}</div>
+                <div class="weekly-goal-progress-card__title" style="font-size:0.84rem;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(goal.label)}</div>
                 <div style="font-size:0.68rem;color:${meta.accent};font-weight:800;text-transform:uppercase;letter-spacing:0.04em;">${escapeHtml(goal.category)}</div>
                 ${muted}
               </div>
             </div>
-            <div style="font-size:0.82rem;font-weight:900;color:${goal.complete ? '#047857' : '#334155'};white-space:nowrap;">${escapeHtml(current)} / ${escapeHtml(target)}</div>
+            <div class="weekly-goal-progress-card__value${goal.complete ? ' is-complete' : ''}" style="font-size:0.82rem;font-weight:900;white-space:nowrap;">${escapeHtml(current)} / ${escapeHtml(target)}</div>
           </div>
-          <div style="height:8px;background:#e2e8f0;border-radius:999px;overflow:hidden;">
+          <div class="weekly-goal-progress-card__track" style="height:8px;border-radius:999px;overflow:hidden;">
             <div style="height:100%;width:${Math.round(goal.percent)}%;background:${goal.complete ? 'linear-gradient(90deg,#059669,#22c55e)' : meta.gradient};border-radius:999px;transition:width 0.35s ease;"></div>
           </div>
         </div>
@@ -1123,28 +1123,29 @@
     const card = document.getElementById('weekly-goals-card');
     if (!card) return;
 
+    card.classList.add('weekly-goals-home-card');
     card.style.display = 'block';
-    card.style.background = 'radial-gradient(circle at 88% 14%, rgba(251,191,36,0.24) 0 38px, transparent 39px), radial-gradient(circle at 17% 92%, rgba(226,232,240,0.18) 0 44px, transparent 45px), linear-gradient(135deg,#24113f 0%,#3b1b66 48%,#160f2d 100%)';
-    card.style.border = '1px solid rgba(255,255,255,0.16)';
-    card.style.boxShadow = '0 16px 36px rgba(32,12,62,0.28)';
+    card.style.removeProperty('background');
+    card.style.removeProperty('border');
+    card.style.removeProperty('box-shadow');
     if (state.loading) {
-      card.innerHTML = '<div style="padding:18px 20px;font-weight:800;color:#0f172a;">Loading weekly goals...</div>';
+      card.innerHTML = '<div class="weekly-goals-home-card__loading" style="padding:18px 20px;font-weight:800;">Loading weekly goals...</div>';
       return;
     }
 
     if (!state.selected.length) {
       card.innerHTML = `
         <div style="padding:18px 20px;display:flex;gap:14px;align-items:center;position:relative;overflow:hidden;">
-          <div style="position:absolute;right:14px;top:14px;width:62px;height:62px;border-radius:999px;background:#f8c55a;box-shadow:0 0 28px rgba(248,197,90,0.36);opacity:.9;"></div>
-          <div style="position:absolute;right:32px;top:5px;width:54px;height:54px;border-radius:999px;background:#3b1b66;"></div>
-          <div style="position:absolute;left:16px;bottom:-46px;width:96px;height:96px;border-radius:999px;border:1px solid rgba(255,255,255,0.14);"></div>
-          <div style="width:52px;height:52px;border-radius:16px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;color:#fde68a;font-weight:950;font-size:1.02rem;flex-shrink:0;box-shadow:0 10px 24px rgba(15,23,42,0.22);position:relative;">1–3</div>
+          <div class="weekly-goals-home-card__orb" style="position:absolute;right:14px;top:14px;width:62px;height:62px;border-radius:999px;opacity:.9;"></div>
+          <div class="weekly-goals-home-card__orb-cutout" style="position:absolute;right:32px;top:5px;width:54px;height:54px;border-radius:999px;"></div>
+          <div class="weekly-goals-home-card__ring" style="position:absolute;left:16px;bottom:-46px;width:96px;height:96px;border-radius:999px;"></div>
+          <div class="weekly-goals-home-card__count-badge" style="width:52px;height:52px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-weight:950;font-size:1.02rem;flex-shrink:0;position:relative;">1–3</div>
           <div style="flex:1;min-width:0;">
-            <div style="font-size:0.68rem;color:#fde68a;text-transform:uppercase;letter-spacing:0.08em;font-weight:900;margin-bottom:3px;">Weekly goals</div>
-            <div style="font-size:1.08rem;color:white;font-weight:900;line-height:1.18;">Choose your Weekly Goals</div>
-            <div style="font-size:0.8rem;color:rgba(255,255,255,0.74);margin-top:4px;">Pick up to 3 commitments that feel realistic for this week.</div>
+            <div class="weekly-goals-home-card__eyebrow" style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.08em;font-weight:900;margin-bottom:3px;">Weekly goals</div>
+            <div class="weekly-goals-home-card__title" style="font-size:1.08rem;font-weight:900;line-height:1.18;">Choose your Weekly Goals</div>
+            <div class="weekly-goals-home-card__copy" style="font-size:0.8rem;margin-top:4px;">Pick up to 3 commitments that feel realistic for this week.</div>
           </div>
-          <button type="button" onclick="openWeeklyGoalsModal()" style="border:1px solid rgba(255,255,255,0.22);background:white;color:#24113f;font-size:0.78rem;font-weight:900;padding:10px 14px;border-radius:12px;cursor:pointer;box-shadow:0 10px 22px rgba(15,23,42,0.22);position:relative;">Choose</button>
+          <button type="button" class="weekly-goals-home-card__button" onclick="openWeeklyGoalsModal()" style="font-size:0.78rem;font-weight:900;padding:10px 14px;border-radius:12px;cursor:pointer;position:relative;">Choose</button>
         </div>
       `;
       return;
@@ -1161,33 +1162,33 @@
     const hitLabel = futureWeek ? 'waiting for new stats' : 'of ' + total + ' hit';
     const selectedChips = state.selected.map(goal => {
       const meta = getCategoryMeta(goal.category);
-      return '<span style="display:inline-flex;align-items:center;gap:5px;padding:6px 8px;border-radius:999px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.18);color:#fef3c7;font-size:0.68rem;font-weight:900;">' + escapeHtml(meta.short) + ' ' + escapeHtml(formatTarget(goal.target)) + ' ' + escapeHtml(goal.unit) + '</span>';
+      return '<span class="weekly-goals-home-card__chip" style="display:inline-flex;align-items:center;gap:5px;padding:6px 8px;border-radius:999px;font-size:0.68rem;font-weight:900;">' + escapeHtml(meta.short) + ' ' + escapeHtml(formatTarget(goal.target)) + ' ' + escapeHtml(goal.unit) + '</span>';
     }).join('');
 
     card.innerHTML = `
       <div style="padding:17px 20px 15px;position:relative;overflow:hidden;">
-        <div style="position:absolute;right:18px;top:16px;width:64px;height:64px;border-radius:999px;background:#f8c55a;box-shadow:0 0 30px rgba(248,197,90,0.34);opacity:.88;"></div>
-        <div style="position:absolute;right:36px;top:7px;width:56px;height:56px;border-radius:999px;background:#3b1b66;"></div>
-        <div style="position:absolute;left:-36px;bottom:-54px;width:128px;height:128px;border-radius:999px;border:1px solid rgba(255,255,255,0.13);"></div>
+        <div class="weekly-goals-home-card__orb" style="position:absolute;right:18px;top:16px;width:64px;height:64px;border-radius:999px;opacity:.88;"></div>
+        <div class="weekly-goals-home-card__orb-cutout" style="position:absolute;right:36px;top:7px;width:56px;height:56px;border-radius:999px;"></div>
+        <div class="weekly-goals-home-card__ring" style="position:absolute;left:-36px;bottom:-54px;width:128px;height:128px;border-radius:999px;"></div>
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:8px;">
           <div style="min-width:0;position:relative;">
-            <div style="font-size:0.68rem;color:#fde68a;text-transform:uppercase;letter-spacing:0.08em;font-weight:900;margin-bottom:3px;">Weekly goals</div>
-            <div style="font-size:1.08rem;color:white;font-weight:900;">${escapeHtml(title)}</div>
-            <div style="font-size:0.78rem;color:rgba(255,255,255,0.72);margin-top:3px;">${escapeHtml(state.week.start)} to ${escapeHtml(state.week.end)}</div>
+            <div class="weekly-goals-home-card__eyebrow" style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.08em;font-weight:900;margin-bottom:3px;">Weekly goals</div>
+            <div class="weekly-goals-home-card__title" style="font-size:1.08rem;font-weight:900;">${escapeHtml(title)}</div>
+            <div class="weekly-goals-home-card__copy" style="font-size:0.78rem;margin-top:3px;">${escapeHtml(state.week.start)} to ${escapeHtml(state.week.end)}</div>
           </div>
-          <button type="button" onclick="openWeeklyGoalsModal()" style="border:1px solid rgba(255,255,255,0.2);background:white;color:#24113f;font-size:0.75rem;font-weight:900;padding:8px 10px;border-radius:10px;cursor:pointer;position:relative;">Edit</button>
+          <button type="button" class="weekly-goals-home-card__button" onclick="openWeeklyGoalsModal()" style="font-size:0.75rem;font-weight:900;padding:8px 10px;border-radius:10px;cursor:pointer;position:relative;">Edit</button>
         </div>
         <div style="display:flex;align-items:baseline;gap:7px;margin:10px 0 6px;position:relative;">
-          <div style="font-size:2.15rem;line-height:1;font-weight:950;color:white;">${completed}</div>
-          <div style="font-size:0.95rem;font-weight:800;color:rgba(255,255,255,0.72);">${escapeHtml(hitLabel)}</div>
+          <div class="weekly-goals-home-card__title" style="font-size:2.15rem;line-height:1;font-weight:950;">${completed}</div>
+          <div class="weekly-goals-home-card__copy" style="font-size:0.95rem;font-weight:800;">${escapeHtml(hitLabel)}</div>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:6px;margin:0 0 5px;position:relative;">${selectedChips}</div>
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:10px 0 2px;padding:8px 10px;border-radius:999px;background:rgba(253,230,138,0.13);border:1px solid rgba(253,230,138,0.24);color:#fef3c7;font-size:0.73rem;font-weight:900;position:relative;">
+        <div class="weekly-goals-home-card__reward" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:10px 0 2px;padding:8px 10px;border-radius:999px;font-size:0.73rem;font-weight:900;position:relative;">
           <span>Weekly goal reward</span>
           <span>${escapeHtml(rewardText)}</span>
         </div>
         ${renderProgressRows(progress.goals)}
-        <div style="margin-top:12px;padding:11px 12px;border-radius:12px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.16);font-size:0.78rem;color:rgba(255,255,255,0.82);font-weight:800;position:relative;">
+        <div class="weekly-goals-home-card__arc" style="margin-top:12px;padding:11px 12px;border-radius:12px;font-size:0.78rem;font-weight:800;position:relative;">
           ${escapeHtml(arcLine)}
         </div>
       </div>

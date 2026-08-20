@@ -85,7 +85,20 @@ test('Home plan cards stay below the complete FitGotchi stats block', () => {
     assert.match(source, /characterBlockTail\.parentNode\.insertBefore\(card, characterBlockTail\.nextSibling\)/);
     assert.doesNotMatch(source, /levelStrip\.parentNode\.insertBefore\((weeklyGoals|card), levelStrip\.nextSibling\)/);
     assert.match(html, /pbb-social-journey\.js\?v=30-character-stats-tail/);
-    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v325'/);
+    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v326'/);
+});
+
+test('Home goals and plan cards follow light and dark mode', () => {
+    const html = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
+    const goals = fs.readFileSync(path.join(root, 'js/dashboard/pbb-deferred-weeklygoals.js'), 'utf8');
+    const css = fs.readFileSync(path.join(root, 'css/dashboard/pbb-social-journey.css'), 'utf8');
+
+    assert.match(goals, /card\.classList\.add\('weekly-goals-home-card'\)/);
+    assert.match(css, /html\[data-pbb-theme="light"\] #weekly-goals-card\.weekly-goals-home-card/);
+    assert.match(css, /html\[data-pbb-theme="dark"\]\.pbb-unified-next-steps #next-obvious-steps-card\.is-unified-plan \.next-step-action/);
+    assert.match(css, /weekly-goal-progress-card__value\.is-complete/);
+    assert.match(html, /pbb-social-journey\.css\?v=18-home-theme/);
+    assert.match(html, /pbb-deferred-weeklygoals\.js\?v=33-home-theme/);
 });
 
 test('first check-in ships the recorded Shannon welcome audio used by Inbox and Your Next Step', () => {

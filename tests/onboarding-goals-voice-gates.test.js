@@ -47,9 +47,9 @@ test('real Coach Shannon inbox also requires the full welcome note', () => {
 });
 
 test('changed onboarding assets are cache-busted', () => {
-  assert.match(dashboard, /pbb-deferred-weeklygoals\.js\?v=32-goal-confirm/);
+  assert.match(dashboard, /pbb-deferred-weeklygoals\.js\?v=33-home-theme/);
   assert.match(dashboard, /pbb-social-journey\.js\?v=30-character-stats-tail/);
   assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=189-exercise-video-handoff/);
   assert.match(dashboard, /dashboard-script-6-ai_coach_draft_mode_logic_auth\.js\?v=42-welcome-gate/);
-  assert.match(serviceWorker, /pbb-app-v325/);
+  assert.match(serviceWorker, /pbb-app-v326/);
 });

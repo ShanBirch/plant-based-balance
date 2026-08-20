@@ -146,6 +146,63 @@ html.pbb-unified-next-steps #weekly-checkin-card,
 html.pbb-unified-next-steps #fitbit-imported-activity-card { display: none !important; }
 html.pbb-unified-next-steps .pbb-next-step-active-source { display: block !important; }
 
+#weekly-goals-card.weekly-goals-home-card {
+  color: #f8f7f2;
+  -webkit-text-fill-color: #f8f7f2;
+  background:
+    radial-gradient(circle at 88% 14%, rgba(216,178,94,.2) 0 38px, transparent 39px),
+    radial-gradient(circle at 17% 92%, rgba(255,255,255,.05) 0 44px, transparent 45px),
+    linear-gradient(145deg,#202020 0%,#101010 68%,#080808 100%);
+  border: 1px solid rgba(245,217,138,.2);
+  box-shadow: 0 18px 42px rgba(0,0,0,.28);
+}
+#weekly-goals-card .weekly-goals-home-card__loading,
+#weekly-goals-card .weekly-goals-home-card__title { color:#f8f7f2; -webkit-text-fill-color:#f8f7f2; }
+#weekly-goals-card .weekly-goals-home-card__eyebrow { color:#f5d98a; -webkit-text-fill-color:#f5d98a; }
+#weekly-goals-card .weekly-goals-home-card__copy,
+#weekly-goals-card .weekly-goal-progress-card__helper { color:#c8c0b0; -webkit-text-fill-color:#c8c0b0; }
+#weekly-goals-card .weekly-goals-home-card__orb { background:#d8b25e; box-shadow:0 0 30px rgba(216,178,94,.3); }
+#weekly-goals-card .weekly-goals-home-card__orb-cutout { background:#151515; }
+#weekly-goals-card .weekly-goals-home-card__ring { border:1px solid rgba(245,217,138,.18); }
+#weekly-goals-card .weekly-goals-home-card__count-badge { color:#f5d98a; -webkit-text-fill-color:#f5d98a; background:rgba(216,178,94,.1); border:1px solid rgba(245,217,138,.22); box-shadow:0 10px 24px rgba(0,0,0,.22); }
+#weekly-goals-card .weekly-goals-home-card__button { border:1px solid rgba(245,217,138,.34); background:linear-gradient(135deg,#d8b25e,#f5d98a); color:#101010; -webkit-text-fill-color:#101010; box-shadow:0 10px 22px rgba(0,0,0,.2); }
+#weekly-goals-card .weekly-goals-home-card__chip { background:rgba(216,178,94,.1); border:1px solid rgba(245,217,138,.2); color:#f5d98a; -webkit-text-fill-color:#f5d98a; }
+#weekly-goals-card .weekly-goals-home-card__reward { background:rgba(216,178,94,.1); border:1px solid rgba(245,217,138,.22); color:#f5d98a; -webkit-text-fill-color:#f5d98a; }
+#weekly-goals-card .weekly-goals-home-card__arc { background:#202020; border:1px solid rgba(245,217,138,.14); color:#ddd5c6; -webkit-text-fill-color:#ddd5c6; }
+#weekly-goals-card .weekly-goal-progress-card { border:1px solid rgba(245,217,138,.14); background:#202020; box-shadow:0 8px 18px rgba(0,0,0,.2); }
+#weekly-goals-card .weekly-goal-progress-card__title,
+#weekly-goals-card .weekly-goal-progress-card__value { color:#f8f7f2; -webkit-text-fill-color:#f8f7f2; }
+#weekly-goals-card .weekly-goal-progress-card__value.is-complete { color:#34d399; -webkit-text-fill-color:#34d399; }
+#weekly-goals-card .weekly-goal-progress-card__track { background:#343434; }
+
+html[data-pbb-theme="light"] #weekly-goals-card.weekly-goals-home-card {
+  color:#181713;
+  -webkit-text-fill-color:#181713;
+  background:
+    radial-gradient(circle at 88% 14%, rgba(216,178,94,.18) 0 38px, transparent 39px),
+    radial-gradient(circle at 17% 92%, rgba(183,138,46,.07) 0 44px, transparent 45px),
+    linear-gradient(135deg,#fffaf0 0%,#fffdf8 54%,#f3ead6 100%);
+  border-color:rgba(167,125,43,.3);
+  box-shadow:0 14px 34px rgba(60,43,16,.12);
+}
+html[data-pbb-theme="light"] #weekly-goals-card .weekly-goals-home-card__loading,
+html[data-pbb-theme="light"] #weekly-goals-card .weekly-goals-home-card__title { color:#181713; -webkit-text-fill-color:#181713; }
+html[data-pbb-theme="light"] #weekly-goals-card .weekly-goals-home-card__eyebrow { color:#765410; -webkit-text-fill-color:#765410; }
+html[data-pbb-theme="light"] #weekly-goals-card .weekly-goals-home-card__copy,
+html[data-pbb-theme="light"] #weekly-goals-card .weekly-goal-progress-card__helper { color:#6b6255; -webkit-text-fill-color:#6b6255; }
+html[data-pbb-theme="light"] #weekly-goals-card .weekly-goals-home-card__orb-cutout { background:#fffaf0; }
+html[data-pbb-theme="light"] #weekly-goals-card .weekly-goals-home-card__ring { border-color:rgba(140,101,26,.18); }
+html[data-pbb-theme="light"] #weekly-goals-card .weekly-goals-home-card__count-badge { color:#765410; -webkit-text-fill-color:#765410; background:rgba(216,178,94,.15); border-color:rgba(140,101,26,.24); box-shadow:0 8px 20px rgba(68,48,17,.08); }
+html[data-pbb-theme="light"] #weekly-goals-card .weekly-goals-home-card__button { border-color:rgba(140,101,26,.34); background:linear-gradient(135deg,#d8b25e,#f5d98a); color:#151515; -webkit-text-fill-color:#151515; box-shadow:0 8px 18px rgba(68,48,17,.14); }
+html[data-pbb-theme="light"] #weekly-goals-card .weekly-goals-home-card__chip { background:rgba(216,178,94,.13); border-color:rgba(140,101,26,.2); color:#66470d; -webkit-text-fill-color:#66470d; }
+html[data-pbb-theme="light"] #weekly-goals-card .weekly-goals-home-card__reward { background:#f3e5c6; border-color:rgba(140,101,26,.2); color:#5f430c; -webkit-text-fill-color:#5f430c; }
+html[data-pbb-theme="light"] #weekly-goals-card .weekly-goals-home-card__arc { background:rgba(255,253,248,.88); border-color:rgba(140,101,26,.16); color:#554a38; -webkit-text-fill-color:#554a38; }
+html[data-pbb-theme="light"] #weekly-goals-card .weekly-goal-progress-card { border-color:rgba(140,101,26,.14); background:#fff; box-shadow:0 8px 18px rgba(68,48,17,.07); }
+html[data-pbb-theme="light"] #weekly-goals-card .weekly-goal-progress-card__title { color:#181713; -webkit-text-fill-color:#181713; }
+html[data-pbb-theme="light"] #weekly-goals-card .weekly-goal-progress-card__value { color:#334155; -webkit-text-fill-color:#334155; }
+html[data-pbb-theme="light"] #weekly-goals-card .weekly-goal-progress-card__value.is-complete { color:#047857; -webkit-text-fill-color:#047857; }
+html[data-pbb-theme="light"] #weekly-goals-card .weekly-goal-progress-card__track { background:#e2e8f0; }
+
 html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan { margin: 0 25px 16px !important; }
 html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-steps-shell { overflow: visible; border: 0; border-radius: 0; background: transparent; box-shadow: none; animation: none; }
 html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-steps-shell::before { display: none; }
@@ -188,6 +245,22 @@ html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-
 html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-action.is-progress .next-step-copy { padding-right: 4px; }
 html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-progress-track { background: rgba(5,150,105,.15); }
 html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-steps-complete { border: 1px solid rgba(183,138,46,.22); border-radius: 18px; background: #fffdf8; }
+
+html[data-pbb-theme="dark"].pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-steps-kicker { color:#f5d98a; -webkit-text-fill-color:#f5d98a; }
+html[data-pbb-theme="dark"].pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-steps-title { color:#f8f7f2; -webkit-text-fill-color:#f8f7f2; }
+html[data-pbb-theme="dark"].pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-steps-note { color:#c8c0b0; -webkit-text-fill-color:#c8c0b0; }
+html[data-pbb-theme="dark"].pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-action { border-color:rgba(245,217,138,.18); background:linear-gradient(118deg,#202020 0%,#171717 54%,#101010 100%); box-shadow:0 13px 31px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.04); }
+html[data-pbb-theme="dark"].pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-action::after { background:linear-gradient(105deg,rgba(216,178,94,.12),transparent 42%); }
+html[data-pbb-theme="dark"].pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-action:first-child { border-color:rgba(245,217,138,.34); box-shadow:0 16px 36px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.06); }
+html[data-pbb-theme="dark"].pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-mark { border-color:rgba(245,217,138,.2); background:#202020; box-shadow:0 8px 20px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.04); }
+html[data-pbb-theme="dark"].pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-copy strong { color:#f8f7f2; -webkit-text-fill-color:#f8f7f2; }
+html[data-pbb-theme="dark"].pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-copy span { color:#c8c0b0; -webkit-text-fill-color:#c8c0b0; }
+html[data-pbb-theme="dark"].pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-copy::before { color:#f5d98a; -webkit-text-fill-color:#f5d98a; }
+html[data-pbb-theme="dark"].pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-cta { border-color:rgba(245,217,138,.2); background:#202020; box-shadow:0 5px 14px rgba(0,0,0,.22); }
+html[data-pbb-theme="dark"].pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-cta::after { color:#f5d98a; -webkit-text-fill-color:#f5d98a; }
+html[data-pbb-theme="dark"].pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-steps-complete { border-color:rgba(245,217,138,.2); background:#171717; }
+html[data-pbb-theme="dark"].pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-steps-complete-copy strong { color:#f8f7f2; -webkit-text-fill-color:#f8f7f2; }
+html[data-pbb-theme="dark"].pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-steps-complete-copy span { color:#c8c0b0; -webkit-text-fill-color:#c8c0b0; }
 @media (max-width: 380px) {
   html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-action { grid-template-columns: 50px minmax(0,1fr) 30px; gap: 11px; padding: 13px 12px; }
   html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-action.is-progress { grid-template-columns: 50px minmax(0,1fr); }

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v325'; // v325: keep Home plan cards below the complete FitGotchi stats block
+const CACHE_NAME = 'pbb-app-v326'; // v326: theme Home goals and plan cards for light and dark mode
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -19,7 +19,7 @@ const ASSETS = [
   './js/dashboard/dashboard-script-3-1_get_user_data.js?v=59-light-launch',
   './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=189-exercise-video-handoff',
   './js/dashboard/pbb-app-telemetry.js?v=1',
-'./js/dashboard/pbb-deferred-weeklygoals.js?v=32-goal-confirm',
+  './js/dashboard/pbb-deferred-weeklygoals.js?v=33-home-theme',
   './css/dashboard/pbb-onboarding-comeback.css?v=8',
   './css/dashboard/pbb-onboarding-foundations.css?v=5-mobile-viewport',
   './js/dashboard/dashboard-script-7-video_logic.js?v=20260815-exercise-thumbnails',
