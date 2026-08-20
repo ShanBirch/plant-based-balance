@@ -8303,6 +8303,11 @@ if(!window._pbbIsIOSSafari) {
                 <!-- Video Preview (hidden until recorded/selected) -->
                 <div id="custom-exercise-video-preview" style="display: none; margin-bottom: 15px; border-radius: 12px; overflow: hidden; background: black; position: relative;">
                     <video id="custom-exercise-video-playback" style="width: 100%; max-height: 300px; object-fit: contain;" playsinline controls></video>
+                    <div id="custom-exercise-video-native-placeholder" style="display: none; min-height: 150px; padding: 24px; box-sizing: border-box; align-items: center; justify-content: center; flex-direction: column; gap: 8px; color: white; text-align: center;">
+                        <div style="font-size: 1.8rem; line-height: 1;">✓</div>
+                        <div style="font-weight: 850;">Video ready to upload</div>
+                        <div id="custom-exercise-video-native-placeholder-detail" style="font-size: 0.78rem; color: rgba(255,255,255,0.72);"></div>
+                    </div>
                     <button onclick="removeCustomExerciseVideo()" style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.6); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">×</button>
                 </div>
 
@@ -13099,7 +13104,7 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=188-mobile-onboarding';
+s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=189-exercise-video-handoff';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
@@ -13141,7 +13146,7 @@ s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=188
         var s = document.createElement('script');
         s.async = false;
         s.dataset.metaTrialLoader = String(attempt);
-        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=188-mobile-onboarding&meta_retry=' + attempt;
+        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=189-exercise-video-handoff&meta_retry=' + attempt;
         s.onload = function() {
             if (window._pbbScript5Complete && window._switchAppTabReady && typeof window._switchAppTabReal === 'function') {
                 sessionStorage.removeItem('pbb_meta_script5_recovery_v1');
@@ -13160,7 +13165,7 @@ s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=188
         document.head.appendChild(s);
     })(0);
 } else {
-document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=188-mobile-onboarding"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=189-exercise-video-handoff"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=3"></script>

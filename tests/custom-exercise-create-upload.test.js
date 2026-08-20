@@ -50,7 +50,7 @@ assert.match(
 );
 assert.match(
   dashboardHtml,
-  /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=148/,
+  /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=189-exercise-video-handoff/,
   'dashboard should bump script 5 so phones fetch the upload progress and background worker flow'
 );
 assert.match(
@@ -136,7 +136,12 @@ assert.match(
 );
 assert.match(
   workoutScript,
-  /const videoTarget = _customExerciseVideoTarget[\s\S]*queueCustomExerciseVideoBackgroundUpload\(user, videoTarget, videoFile, targetName\)/,
+  /const videoTarget = _customExerciseVideoTarget[\s\S]*videoFile\._balanceNativeVideoPath[\s\S]*await uploadCustomExerciseVideoInBackground\(user, videoTarget, videoFile, targetName\)[\s\S]*closeCreateCustomExerciseModal\(\)/,
+  'recovery uploads should hand Android clips to the durable worker before closing the modal'
+);
+assert.match(
+  workoutScript,
+  /if \(!videoFile\._balanceNativeVideoPath\) \{[\s\S]*queueCustomExerciseVideoBackgroundUpload\(user, videoTarget, videoFile, targetName\)/,
   'recovery uploads should attach their new clip to the existing exercise'
 );
 assert.match(
@@ -173,6 +178,21 @@ assert.match(
   workoutScript,
   /const pendingVideoFile = _customExerciseVideoFile[\s\S]*const saved = await dbHelpers\.customExercises\.create\(user\.id, exerciseData\)[\s\S]*queuePendingVideoUpload = \(\) =>/,
   'saving should create the exercise first and queue the video upload separately'
+);
+assert.match(
+  workoutScript,
+  /const saved = await dbHelpers\.customExercises\.create\(user\.id, exerciseData\)[\s\S]*pendingVideoFile\._balanceNativeVideoPath[\s\S]*await uploadCustomExerciseVideoInBackground\(user, saved, pendingVideoFile, name\)[\s\S]*window\._customExercisesCache\.unshift\(saved\)/,
+  'Android native video should reach the durable worker before modal and workout UI handoff work'
+);
+assert.match(
+  workoutScript,
+  /function setCustomExercisePreviewUrl\(source\)[\s\S]*source\._balanceNativePreviewUrl[\s\S]*videoPlayback\.style\.display = 'none'[\s\S]*placeholder\.style\.display = 'flex'[\s\S]*return;/,
+  'Android native gallery clips should use a lightweight selected state instead of WebView video decoding'
+);
+assert.match(
+  workoutScript,
+  /function clearCustomExercisePreviewPlayback\(\)[\s\S]*videoPlayback\.pause\(\)[\s\S]*videoPlayback\.removeAttribute\('src'\)[\s\S]*videoPlayback\.load\(\)/,
+  'closing the custom exercise flow should release the WebView video decoder'
 );
 assert.match(
   workoutScript,

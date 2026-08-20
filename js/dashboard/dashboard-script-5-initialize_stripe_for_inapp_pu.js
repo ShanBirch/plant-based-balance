@@ -23534,10 +23534,7 @@ function closeCreateCustomExerciseModal() {
     document.body.style.overflow = window._customExercisePreviousBodyOverflow || '';
     stopCameraStream();
     clearCustomExerciseRecordingTimer();
-    if (_customExerciseVideoObjectUrl) {
-        URL.revokeObjectURL(_customExerciseVideoObjectUrl);
-        _customExerciseVideoObjectUrl = null;
-    }
+    clearCustomExercisePreviewPlayback();
     _customExerciseVideoTarget = null;
 }
 
@@ -23735,15 +23732,38 @@ function clearCustomExerciseRecordingTimer() {
     if (timer) timer.textContent = '0:00';
 }
 
-function setCustomExercisePreviewUrl(source) {
+function clearCustomExercisePreviewPlayback() {
+    const videoPlayback = document.getElementById('custom-exercise-video-playback');
+    if (videoPlayback) {
+        try { videoPlayback.pause(); } catch (_) {}
+        videoPlayback.removeAttribute('src');
+        try { videoPlayback.load(); } catch (_) {}
+        videoPlayback.style.display = 'block';
+    }
     if (_customExerciseVideoObjectUrl) {
         URL.revokeObjectURL(_customExerciseVideoObjectUrl);
         _customExerciseVideoObjectUrl = null;
     }
 
+    const placeholder = document.getElementById('custom-exercise-video-native-placeholder');
+    if (placeholder) placeholder.style.display = 'none';
+}
+
+function setCustomExercisePreviewUrl(source) {
+    clearCustomExercisePreviewPlayback();
+
     const videoPlayback = document.getElementById('custom-exercise-video-playback');
     if (source && source._balanceNativePreviewUrl) {
-        videoPlayback.src = source._balanceNativePreviewUrl;
+        // Android already copied this clip into private storage for the native
+        // streaming worker. Decoding a large/high-resolution gallery file in
+        // WebView can kill its renderer before that worker is queued.
+        videoPlayback.style.display = 'none';
+        const placeholder = document.getElementById('custom-exercise-video-native-placeholder');
+        const detail = document.getElementById('custom-exercise-video-native-placeholder-detail');
+        if (detail) detail.textContent = source.size
+            ? `${Math.max(1, Math.round(Number(source.size) / (1024 * 1024)))} MB selected`
+            : 'Selected from your device';
+        if (placeholder) placeholder.style.display = 'flex';
         return;
     }
     _customExerciseVideoObjectUrl = URL.createObjectURL(source);
@@ -24091,10 +24111,7 @@ function removeCustomExerciseVideo() {
     _customExerciseVideoFile = null;
     document.getElementById('custom-exercise-video-preview').style.display = 'none';
     updateCustomExerciseUploadStatus('');
-    if (_customExerciseVideoObjectUrl) {
-        URL.revokeObjectURL(_customExerciseVideoObjectUrl);
-        _customExerciseVideoObjectUrl = null;
-    }
+    clearCustomExercisePreviewPlayback();
 
     // Reset record button
     document.getElementById('custom-exercise-record-btn').innerHTML = `
@@ -24172,7 +24189,7 @@ async function requestCustomExerciseReview(savedExercise) {
 }
 
 async function uploadCustomExerciseVideoInBackground(user, savedExercise, videoFile, exerciseName) {
-    if (!user?.id || !savedExercise?.id || !videoFile) return;
+    if (!user?.id || !savedExercise?.id || !videoFile) return false;
 
     setCustomExerciseVideoUploadState(savedExercise.id, exerciseName, 'uploading', { startedAt: Date.now(), progress: 0 });
     renderCustomExerciseVideoUploadProgress(exerciseName, 0);
@@ -24202,7 +24219,7 @@ async function uploadCustomExerciseVideoInBackground(user, savedExercise, videoF
             });
             updateCustomExerciseUploadStatus('Uploading video 0%...');
             watchNativeCustomExerciseVideoUpload(savedExercise.id, exerciseName);
-            return;
+            return true;
         }
         const result = await storageHelpers.uploadExerciseVideo(user.id, videoFile, savedExercise.id, {
             onProgress: function (percent) {
@@ -24267,6 +24284,7 @@ async function uploadCustomExerciseVideoInBackground(user, savedExercise, videoF
             );
         }
         loadMyCustomExercises();
+        return true;
     } catch (uploadErr) {
         console.error('Background exercise video upload failed:', uploadErr);
         logCustomExerciseVideoDiagnostic('custom_exercise_upload_failed', {
@@ -24285,6 +24303,7 @@ async function uploadCustomExerciseVideoInBackground(user, savedExercise, videoF
         if (typeof showToast === 'function') {
             showToast(`"${exerciseName}" was saved, but the video upload failed.`, 'error');
         }
+        return false;
     }
 }
 
@@ -24379,8 +24398,13 @@ async function saveCustomExercise() {
                 exerciseName: targetName,
                 ...getCustomExerciseVideoDiagnostic(videoFile)
             });
+            if (videoFile._balanceNativeVideoPath) {
+                await uploadCustomExerciseVideoInBackground(user, videoTarget, videoFile, targetName);
+            }
             closeCreateCustomExerciseModal();
-            queueCustomExerciseVideoBackgroundUpload(user, videoTarget, videoFile, targetName);
+            if (!videoFile._balanceNativeVideoPath) {
+                queueCustomExerciseVideoBackgroundUpload(user, videoTarget, videoFile, targetName);
+            }
             if (typeof showToast === 'function') {
                 showToast('"' + targetName + '" is saved. Video uploading now.', 'success');
             }
@@ -24433,6 +24457,15 @@ async function saveCustomExercise() {
             uploadQueued = true;
             queueCustomExerciseVideoBackgroundUpload(user, saved, pendingVideoFile, name);
         };
+
+        // This is the first durable handoff point after the exercise exists.
+        // Queue Android's private file before closing the modal, showing a
+        // confirm dialog, or rebuilding workout UI so a renderer exit cannot
+        // strand the saved exercise without an upload job.
+        if (hasPendingVideo && pendingVideoFile._balanceNativeVideoPath) {
+            uploadQueued = true;
+            await uploadCustomExerciseVideoInBackground(user, saved, pendingVideoFile, name);
+        }
 
         // Add to local cache
         window._customExercisesCache.unshift(saved);
