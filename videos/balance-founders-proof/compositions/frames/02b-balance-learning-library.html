@@ -1,327 +1,63 @@
 <template>
   <style>
-    #root {
-      position: relative;
-      width: 1080px;
-      height: 1920px;
-      overflow: hidden;
-      container-type: size;
-      color: #160d20;
-      font-family: Montserrat, Arial, sans-serif;
-      isolation: isolate;
-    }
-
-    .f02b-background,
-    .f02b-content {
-      position: absolute;
-      inset: 0;
-      overflow: hidden;
-    }
-
-    .f02b-background {
-      background: #ffffff;
-    }
-
-    .f02b-diagonal {
-      position: absolute;
-      top: -240px;
-      right: -360px;
-      width: 850px;
-      height: 1120px;
-      clip-path: polygon(38% 0, 100% 0, 100% 100%, 0 72%);
-      background: linear-gradient(153deg, rgba(169, 111, 0, 0.02), rgba(169, 111, 0, 0.13));
-    }
-
-    .f02b-ring {
-      position: absolute;
-      left: -510px;
-      top: 990px;
-      width: 760px;
-      height: 760px;
-      border: 2px solid rgba(169, 111, 0, 0.1);
-      border-radius: 50%;
-    }
-
-    .f02b-dots {
-      position: absolute;
-      top: 122px;
-      right: 88px;
-      width: 82px;
-      height: 82px;
-      opacity: 0.3;
-      background-image: radial-gradient(circle, #a96f00 0 3px, transparent 3.5px);
-      background-size: 27px 27px;
-    }
-
-    .f02b-header {
-      position: absolute;
-      top: 132px;
-      left: 110px;
-      width: 860px;
-    }
-
-    .f02b-eyebrow {
-      display: flex;
-      align-items: center;
-      gap: 18px;
-      color: #a96f00;
-      font-size: 22px;
-      font-weight: 700;
-      line-height: 1;
-      letter-spacing: 0.16em;
-    }
-
-    .f02b-eyebrow::before {
-      content: "";
-      display: block;
-      width: 56px;
-      height: 3px;
-      border-radius: 6px;
-      background: #a96f00;
-    }
-
-    .f02b-title {
-      width: 860px;
-      margin: 30px 0 0;
-      color: #160d20;
-      font-size: 74px;
-      font-weight: 700;
-      line-height: 1.02;
-      letter-spacing: -0.035em;
-    }
-
-    .f02b-subtitle {
-      margin: 24px 0 0;
-      color: #a96f00;
-      font-size: 28px;
-      font-weight: 500;
-      line-height: 1.4;
-    }
-
-    .f02b-learning-stage {
-      position: absolute;
-      top: 420px;
-      left: 110px;
-      width: 860px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .f02b-learning-rail {
-      position: absolute;
-      z-index: 0;
-      top: 68px;
-      bottom: 68px;
-      left: 53px;
-      width: 3px;
-      border-radius: 6px;
-      background: rgba(169, 111, 0, 0.32);
-      transform-origin: top center;
-    }
-
-    .f02b-week-card {
-      position: relative;
-      z-index: 1;
-      min-height: 118px;
-      display: grid;
-      grid-template-columns: 86px 1fr;
-      align-items: center;
-      gap: 20px;
-      padding: 16px 28px 16px 24px;
-      border: 2px solid rgba(169, 111, 0, 0.2);
-      border-radius: 14px;
-      background: rgba(169, 111, 0, 0.045);
-      box-sizing: border-box;
-      will-change: transform;
-    }
-
-    .f02b-week-number {
-      width: 58px;
-      height: 58px;
-      display: grid;
-      place-items: center;
-      border: 3px solid #a96f00;
-      border-radius: 50%;
-      background: #ffffff;
-      color: #a96f00;
-      font-size: 27px;
-      font-weight: 800;
-      line-height: 1;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .f02b-week-title {
-      margin: 0;
-      color: #160d20;
-      font-size: 31px;
-      font-weight: 700;
-      line-height: 1.13;
-      letter-spacing: -0.015em;
-    }
-
-    .f02b-week-description {
-      margin: 6px 0 0;
-      color: #160d20;
-      font-size: 24px;
-      font-weight: 500;
-      line-height: 1.28;
-    }
-
-    .f02b-footer {
-      position: absolute;
-      top: 1405px;
-      left: 110px;
-      width: 860px;
-    }
-
-    .f02b-footer-line {
-      margin: 0;
-      color: #160d20;
-      font-size: 31px;
-      font-weight: 700;
-      line-height: 1.25;
-      text-align: center;
-    }
-
-    .f02b-progress-meta {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-top: 28px;
-      color: #a96f00;
-      font-size: 20px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-    }
-
-    .f02b-progress-track {
-      width: 100%;
-      height: 8px;
-      margin-top: 12px;
-      overflow: hidden;
-      border-radius: 6px;
-      background: rgba(169, 111, 0, 0.15);
-    }
-
-    .f02b-progress-fill {
-      display: block;
-      width: 100%;
-      height: 100%;
-      border-radius: 6px;
-      background: #a96f00;
-      transform-origin: left center;
-      will-change: transform;
-    }
+    #root{position:relative;width:1080px;height:1920px;overflow:hidden;container-type:size;color:#160d20;font-family:Montserrat,Arial,sans-serif;isolation:isolate}
+    .f02b-background,.f02b-content{position:absolute;inset:0;overflow:hidden}.f02b-background{background:#fff}
+    .f02b-glow{position:absolute;top:250px;left:130px;width:820px;height:820px;border-radius:50%;background:radial-gradient(circle,rgba(169,111,0,.16) 0%,rgba(169,111,0,.055) 46%,rgba(169,111,0,0) 72%);will-change:transform}
+    .f02b-ring{position:absolute;right:-350px;bottom:-190px;width:720px;height:720px;border:3px solid rgba(169,111,0,.14);border-radius:50%;will-change:transform}
+    .f02b-dots{position:absolute;top:118px;right:84px;width:84px;height:84px;opacity:.34;background-image:radial-gradient(circle,#a96f00 0 3px,transparent 3.5px);background-size:28px 28px}
+    .f02b-header{position:absolute;top:124px;left:92px;width:896px}.f02b-eyebrow{display:flex;align-items:center;gap:18px;color:#a96f00;font-size:22px;font-weight:700;line-height:1;letter-spacing:.16em}.f02b-eyebrow:before{content:"";display:block;width:56px;height:3px;border-radius:6px;background:#a96f00}
+    .f02b-title{width:850px;margin:28px 0 0;color:#160d20;font-size:68px;font-weight:700;line-height:1.04;letter-spacing:-.035em}.f02b-subtitle{margin:20px 0 0;color:#a96f00;font-size:28px;font-weight:600;line-height:1.35}
+    .f02b-phone{position:absolute;top:452px;left:160px;width:760px;height:1220px;overflow:hidden;border:4px solid rgba(169,111,0,.24);border-radius:62px;background:#fff;box-sizing:border-box}.f02b-phone-bar{position:absolute;z-index:5;top:20px;left:50%;width:146px;height:28px;border-radius:100px;background:#160d20;transform:translateX(-50%)}
+    .f02b-view{position:absolute;inset:0;padding:88px 52px 54px;box-sizing:border-box;opacity:0;will-change:transform,opacity}.f02b-app-label{color:#a96f00;font-size:20px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}.f02b-app-title{margin:16px 0 0;color:#160d20;font-size:48px;font-weight:700;line-height:1.08;letter-spacing:-.025em}.f02b-app-copy{margin:14px 0 0;color:#6f636f;font-size:25px;font-weight:500;line-height:1.45}
+    .f02b-week-card{margin-top:48px;padding:34px;border:3px solid rgba(169,111,0,.2);border-radius:24px;background:rgba(169,111,0,.055)}.f02b-week-row{display:flex;align-items:center;justify-content:space-between}.f02b-week-number{display:grid;width:80px;height:80px;place-items:center;border-radius:50%;background:#a96f00;color:#fff;font-size:34px;font-weight:800}.f02b-week-status{padding:11px 20px;border-radius:100px;background:rgba(169,111,0,.1);color:#a96f00;font-size:18px;font-weight:700;letter-spacing:.06em}.f02b-week-name{margin:30px 0 0;color:#160d20;font-size:38px;font-weight:700;line-height:1.12}
+    .f02b-progress-track,.f02b-quiz-track{width:100%;height:12px;margin-top:28px;overflow:hidden;border-radius:6px;background:rgba(169,111,0,.14)}.f02b-progress-fill{display:block;width:22%;height:100%;border-radius:6px;background:#a96f00;transform-origin:left center}.f02b-five-quiz{margin-top:26px;color:#a96f00;font-size:23px;font-weight:700}.f02b-week-list{display:grid;gap:18px;margin-top:30px}.f02b-week-line{display:flex;align-items:center;gap:18px;padding:22px 24px;border:2px solid rgba(169,111,0,.16);border-radius:18px;color:#160d20;font-size:23px;font-weight:650}.f02b-line-dot{width:18px;height:18px;flex:0 0 auto;border:3px solid #a96f00;border-radius:50%}
+    .f02b-story-card{margin-top:42px;padding:42px 38px;border:3px solid rgba(169,111,0,.2);border-radius:28px;background:rgba(169,111,0,.045)}.f02b-story-kicker{color:#a96f00;font-size:19px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}.f02b-story-title{margin:20px 0 0;color:#160d20;font-size:43px;font-weight:700;line-height:1.1}.f02b-concept{margin:34px 0 0;padding:32px;border-left:6px solid #a96f00;border-radius:14px;background:rgba(169,111,0,.08);color:#160d20;font-size:29px;font-weight:600;line-height:1.43}.f02b-page-dots{display:flex;justify-content:center;gap:16px;margin-top:38px}.f02b-page-dot{width:14px;height:14px;border-radius:50%;background:rgba(169,111,0,.2)}.f02b-page-dot.is-active{width:44px;border-radius:100px;background:#a96f00}.f02b-test-button{display:flex;align-items:center;justify-content:center;gap:16px;margin-top:48px;padding:25px 24px;border-radius:100px;background:#a96f00;color:#fff;font-size:27px;font-weight:700}.f02b-arrow{font-size:34px;line-height:1}
+    .f02b-quiz-meta{display:flex;align-items:center;justify-content:space-between;color:#a96f00;font-size:20px;font-weight:700}.f02b-quiz-track{margin-top:18px}.f02b-quiz-track span{display:block;width:20%;height:100%;border-radius:6px;background:#a96f00}.f02b-question{margin:50px 0 0;color:#160d20;font-size:40px;font-weight:700;line-height:1.22;letter-spacing:-.02em}.f02b-options{display:grid;gap:24px;margin-top:48px}.f02b-option{position:relative;min-height:112px;overflow:hidden;display:flex;align-items:center;padding:26px 30px;border:3px solid rgba(169,111,0,.22);border-radius:20px;background:#fff;box-sizing:border-box;color:#160d20;font-size:29px;font-weight:700}.f02b-answer-wash{position:absolute;inset:0;background:rgba(169,111,0,.14);transform-origin:left center;will-change:transform}.f02b-option-label{position:relative;z-index:1}.f02b-check{position:absolute;z-index:2;right:26px;display:grid;width:52px;height:52px;place-items:center;border-radius:50%;background:#a96f00;color:#fff;font-size:30px;font-weight:800;opacity:0}.f02b-feedback{margin-top:34px;color:#a96f00;font-size:27px;font-weight:700;text-align:center;opacity:0}
+    .f02b-footer{position:absolute;left:92px;bottom:104px;width:896px;display:flex;align-items:center;justify-content:space-between;color:#a96f00;font-size:20px;font-weight:700;letter-spacing:.08em}.f02b-footer-rule{width:320px;height:4px;border-radius:6px;background:#a96f00;transform-origin:left center}
   </style>
-
-  <div data-hf-id="hf-f02b-root" id="root" data-composition-id="02b-balance-learning-library" data-start="0" data-duration="9.5" data-width="1080" data-height="1920">
-    <div data-hf-id="hf-f02b-bg" id="f02b-background" class="clip f02b-background" data-start="0" data-duration="9.5" data-track-index="0" aria-hidden="true">
-      <div data-hf-id="hf-f02b-diagonal" class="f02b-diagonal"></div>
-      <div data-hf-id="hf-f02b-ring" class="f02b-ring" data-layout-allow-overflow></div>
-      <div data-hf-id="hf-f02b-dots" class="f02b-dots"></div>
-    </div>
-
-    <main data-hf-id="hf-f02b-content" id="f02b-content" class="clip f02b-content" data-start="0" data-duration="9.5" data-track-index="1">
-      <header data-hf-id="hf-f02b-header" class="f02b-header" id="f02b-header">
-        <div data-hf-id="hf-f02b-eyebrow" class="f02b-eyebrow">BALANCE / LEARNING</div>
-        <h1 data-hf-id="hf-f02b-title" class="f02b-title">THE WHOLE<br data-hf-id="hf-f02b-title-break">LEARNING LIBRARY.</h1>
-        <p data-hf-id="hf-f02b-subtitle" class="f02b-subtitle">Explore every section inside Balance.</p>
-      </header>
-
-      <section data-hf-id="hf-f02b-stage" class="f02b-learning-stage" aria-label="All seven Balance learning sections">
-        <div data-hf-id="hf-f02b-rail" class="f02b-learning-rail" id="f02b-learning-rail" aria-hidden="true"></div>
-
-        <article data-hf-id="hf-f02b-week1" class="f02b-week-card" id="f02b-week-1">
-          <div data-hf-id="hf-f02b-week1-num" class="f02b-week-number">01</div>
-          <div data-hf-id="hf-yeow"><h2 data-hf-id="hf-f02b-week1-title" class="f02b-week-title">How Your Body Moves</h2><p data-hf-id="hf-f02b-week1-desc" class="f02b-week-description">Movement, anatomy &amp; training basics</p></div>
-        </article>
-
-        <article data-hf-id="hf-f02b-week2" class="f02b-week-card" id="f02b-week-2">
-          <div data-hf-id="hf-f02b-week2-num" class="f02b-week-number">02</div>
-          <div data-hf-id="hf-y7yw"><h2 data-hf-id="hf-f02b-week2-title" class="f02b-week-title">Fuel for Results</h2><p data-hf-id="hf-f02b-week2-desc" class="f02b-week-description">Plant-based nutrition &amp; energy</p></div>
-        </article>
-
-        <article data-hf-id="hf-f02b-week3" class="f02b-week-card" id="f02b-week-3">
-          <div data-hf-id="hf-f02b-week3-num" class="f02b-week-number">03</div>
-          <div data-hf-id="hf-x11t"><h2 data-hf-id="hf-f02b-week3-title" class="f02b-week-title">Make Progress Stick</h2><p data-hf-id="hf-f02b-week3-desc" class="f02b-week-description">Habits, identity &amp; lasting change</p></div>
-        </article>
-
-        <article data-hf-id="hf-f02b-week4" class="f02b-week-card" id="f02b-week-4">
-          <div data-hf-id="hf-f02b-week4-num" class="f02b-week-number">04</div>
-          <div data-hf-id="hf-xfcu"><h2 data-hf-id="hf-f02b-week4-title" class="f02b-week-title">Train With Purpose</h2><p data-hf-id="hf-f02b-week4-desc" class="f02b-week-description">Training science &amp; programming</p></div>
-        </article>
-
-        <article data-hf-id="hf-f02b-week5" class="f02b-week-card" id="f02b-week-5">
-          <div data-hf-id="hf-f02b-week5-num" class="f02b-week-number">05</div>
-          <div data-hf-id="hf-w8fr"><h2 data-hf-id="hf-f02b-week5-title" class="f02b-week-title">Build Muscle Intelligently</h2><p data-hf-id="hf-f02b-week5-desc" class="f02b-week-description">Hypertrophy for every muscle group</p></div>
-        </article>
-
-        <article data-hf-id="hf-f02b-week6" class="f02b-week-card" id="f02b-week-6">
-          <div data-hf-id="hf-f02b-week6-num" class="f02b-week-number">06</div>
-          <div data-hf-id="hf-wmqs"><h2 data-hf-id="hf-f02b-week6-title" class="f02b-week-title">Energy, Hormones &amp; Recovery</h2><p data-hf-id="hf-f02b-week6-desc" class="f02b-week-description">Metabolism, stress &amp; recovery</p></div>
-        </article>
-
-        <article data-hf-id="hf-f02b-week7" class="f02b-week-card" id="f02b-week-7">
-          <div data-hf-id="hf-f02b-week7-num" class="f02b-week-number">07</div>
-          <div data-hf-id="hf-f02b-week7-copy"><h2 data-hf-id="hf-f02b-week7-title" class="f02b-week-title">Healthy for Life</h2><p data-hf-id="hf-f02b-week7-desc" class="f02b-week-description">Health span &amp; disease prevention</p></div>
-        </article>
+  <div data-hf-id="hf-f02b-root" id="root" data-composition-id="02b-balance-learning-library" data-start="0" data-duration="11" data-width="1080" data-height="1920">
+    <div data-hf-id="hf-f02b-bg" id="f02b-background" class="clip f02b-background" data-start="0" data-duration="11" data-track-index="0" aria-hidden="true"><div data-hf-id="hf-f02b-glow" id="f02b-glow" class="f02b-glow"></div><div data-hf-id="hf-f02b-ring" id="f02b-ring" class="f02b-ring" data-layout-allow-overflow></div><div data-hf-id="hf-f02b-dots" class="f02b-dots"></div></div>
+    <main data-hf-id="hf-f02b-content" id="f02b-content" class="clip f02b-content" data-start="0" data-duration="11" data-track-index="1">
+      <header data-hf-id="hf-f02b-header" class="f02b-header" id="f02b-header"><div data-hf-id="hf-f02b-eyebrow" class="f02b-eyebrow">BALANCE FOUNDATIONS</div><h1 data-hf-id="hf-f02b-title" class="f02b-title">LEARN IT. TEST IT. USE IT.</h1><p data-hf-id="hf-f02b-subtitle" class="f02b-subtitle">A guided six-week course with five interactive quizzes each week.</p></header>
+      <section data-hf-id="hf-f02b-phone" class="f02b-phone" aria-label="Balance Foundations course progressing from Week 1 lesson to quiz">
+        <div data-hf-id="hf-f02b-phone-bar" class="f02b-phone-bar" aria-hidden="true"></div>
+        <div data-hf-id="hf-f02b-course-view" id="f02b-course-view" class="f02b-view">
+          <div data-hf-id="hf-f02b-course-label" class="f02b-app-label">Your course</div><h2 data-hf-id="hf-f02b-course-title" class="f02b-app-title">Balance Foundations</h2><p data-hf-id="hf-f02b-course-copy" class="f02b-app-copy">Follow one clear week at a time.</p>
+          <article data-hf-id="hf-f02b-week-card" class="f02b-week-card"><div data-hf-id="hf-f02b-week-row" class="f02b-week-row"><div data-hf-id="hf-f02b-week-number" class="f02b-week-number">1</div><div data-hf-id="hf-f02b-week-status" class="f02b-week-status">IN PROGRESS</div></div><h3 data-hf-id="hf-f02b-week-name" class="f02b-week-name">Week 1 · Build your foundation</h3><div data-hf-id="hf-f02b-progress-track" class="f02b-progress-track"><span data-hf-id="hf-f02b-progress-fill" id="f02b-progress-fill" class="f02b-progress-fill"></span></div><div data-hf-id="hf-f02b-five-quiz" class="f02b-five-quiz">5 interactive quizzes</div></article>
+          <div data-hf-id="hf-f02b-week-list" class="f02b-week-list"><div data-hf-id="hf-f02b-week-line-one" class="f02b-week-line"><span data-hf-id="hf-f02b-line-dot-one" class="f02b-line-dot"></span>Learn the concept</div><div data-hf-id="hf-f02b-week-line-two" class="f02b-week-line"><span data-hf-id="hf-f02b-line-dot-two" class="f02b-line-dot"></span>Test your understanding</div><div data-hf-id="hf-f02b-week-line-three" class="f02b-week-line"><span data-hf-id="hf-f02b-line-dot-three" class="f02b-line-dot"></span>Put it into practice</div></div>
+        </div>
+        <div data-hf-id="hf-f02b-lesson-view" id="f02b-lesson-view" class="f02b-view">
+          <div data-hf-id="hf-f02b-lesson-label" class="f02b-app-label">Week 1 · Lesson 1</div><h2 data-hf-id="hf-f02b-lesson-heading" class="f02b-app-title">Your brain predicts first</h2>
+          <article data-hf-id="hf-f02b-story-card" class="f02b-story-card"><div data-hf-id="hf-f02b-story-kicker" class="f02b-story-kicker">Key insight</div><h3 data-hf-id="hf-f02b-story-title" class="f02b-story-title">Prediction comes before sensation.</h3><p data-hf-id="hf-f02b-concept" class="f02b-concept">Your brain makes a best guess, then checks it against what your senses report.</p><div data-hf-id="hf-f02b-page-dots" class="f02b-page-dots" aria-label="Lesson page 3 of 5"><span data-hf-id="hf-f02b-page-dot-one" class="f02b-page-dot"></span><span data-hf-id="hf-f02b-page-dot-two" class="f02b-page-dot"></span><span data-hf-id="hf-f02b-page-dot-three" class="f02b-page-dot is-active"></span><span data-hf-id="hf-f02b-page-dot-four" class="f02b-page-dot"></span><span data-hf-id="hf-f02b-page-dot-five" class="f02b-page-dot"></span></div></article>
+          <div data-hf-id="hf-f02b-test-button" id="f02b-test-button" class="f02b-test-button"><span data-hf-id="hf-f02b-test-label">Test Your Understanding</span><span data-hf-id="hf-f02b-arrow" class="f02b-arrow">›</span></div>
+        </div>
+        <div data-hf-id="hf-f02b-quiz-view" id="f02b-quiz-view" class="f02b-view">
+          <div data-hf-id="hf-f02b-quiz-meta" class="f02b-quiz-meta"><span data-hf-id="hf-f02b-quiz-label">QUICK QUIZ</span><span data-hf-id="hf-f02b-quiz-count">1 / 5</span></div><div data-hf-id="hf-f02b-quiz-track" class="f02b-quiz-track"><span data-hf-id="hf-f02b-quiz-fill"></span></div>
+          <h2 data-hf-id="hf-f02b-question" class="f02b-question">Your brain waits for sensory information before deciding what you experience.</h2>
+          <div data-hf-id="hf-f02b-options" class="f02b-options"><div data-hf-id="hf-f02b-option-true" class="f02b-option"><span data-hf-id="hf-f02b-true-label" class="f02b-option-label">True</span></div><div data-hf-id="hf-f02b-option-false" id="f02b-option-false" class="f02b-option"><span data-hf-id="hf-f02b-answer-wash" id="f02b-answer-wash" class="f02b-answer-wash"></span><span data-hf-id="hf-f02b-false-label" class="f02b-option-label">False</span><span data-hf-id="hf-f02b-check" id="f02b-check" class="f02b-check">✓</span></div></div><div data-hf-id="hf-f02b-feedback" id="f02b-feedback" class="f02b-feedback">Exactly right. Prediction comes first.</div>
+        </div>
       </section>
-
-      <footer data-hf-id="hf-f02b-footer" class="f02b-footer" id="f02b-footer">
-        <p data-hf-id="hf-f02b-footer-line" class="f02b-footer-line">Seven learning areas. One place to keep building.</p>
-        <div data-hf-id="hf-f02b-progress-meta" class="f02b-progress-meta"><span data-hf-id="hf-97rq">EXPLORE</span><span data-hf-id="hf-80un">KEEP LEARNING</span></div>
-        <div data-hf-id="hf-f02b-progress-track" class="f02b-progress-track"><span data-hf-id="hf-f02b-progress-fill" class="f02b-progress-fill" id="f02b-progress-fill"></span></div>
-      </footer>
+      <footer data-hf-id="hf-f02b-footer" class="f02b-footer" id="f02b-footer"><span data-hf-id="hf-f02b-footer-copy">LEARN → QUIZ → APPLY</span><span data-hf-id="hf-f02b-footer-rule" id="f02b-footer-rule" class="f02b-footer-rule"></span></footer>
     </main>
   </div>
-
   <script>
-    (() => {
-      const frameId = "02b-balance-learning-library";
-      const composition = document.querySelector('[data-composition-id="02b-balance-learning-library"]');
-      const timeline = gsap.timeline({ paused: true });
-      const cards = Array.from(composition.querySelectorAll(".f02b-week-card"));
-
-      timeline.fromTo(
-        "#f02b-header",
-        { opacity: 0, y: 28 },
-        { opacity: 1, y: 0, duration: 0.58, ease: "power3.out" },
-        0.08
-      );
-
-      timeline.fromTo(
-        "#f02b-learning-rail",
-        { scaleY: 0, opacity: 0.35 },
-        { scaleY: 1, opacity: 1, duration: 4.7, ease: "power2.out" },
-        0.55
-      );
-
-      cards.forEach((card, index) => {
-        timeline.fromTo(
-          card,
-          { opacity: 0, x: index % 2 === 0 ? -24 : 24, y: 14, scale: 0.975 },
-          { opacity: 1, x: 0, y: 0, scale: 1, duration: 0.62, ease: "power3.out" },
-          0.78 + index * 0.62
-        );
-      });
-
-      timeline.fromTo(
-        "#f02b-footer",
-        { opacity: 0, y: 20 },
-        { opacity: 1, y: 0, duration: 0.52, ease: "power3.out" },
-        5.35
-      );
-
-      timeline.fromTo(
-        "#f02b-progress-fill",
-        { scaleX: 0 },
-        { scaleX: 1, duration: 1.8, ease: "power2.inOut" },
-        5.8
-      );
-
-      window.__timelines = window.__timelines || {};
-      window.__timelines[frameId] = timeline;
-    })();
+    (()=>{const frameId="02b-balance-learning-library";const timeline=gsap.timeline({paused:true});
+      timeline.fromTo("#f02b-header",{opacity:0,y:28},{opacity:1,y:0,duration:.55,ease:"power3.out"},.05);
+      timeline.fromTo("#f02b-course-view",{opacity:0,x:44},{opacity:1,x:0,duration:.62,ease:"power3.out"},.28);
+      timeline.fromTo("#f02b-progress-fill",{scaleX:0},{scaleX:1,duration:1.15,ease:"power2.inOut"},.78);
+      timeline.to("#f02b-course-view",{opacity:0,x:-42,duration:.4,ease:"power2.in"},3.05);
+      timeline.fromTo("#f02b-lesson-view",{opacity:0,x:46},{opacity:1,x:0,duration:.58,ease:"power3.out"},3.28);
+      timeline.fromTo("#f02b-test-button",{opacity:0,y:24,scale:.98},{opacity:1,y:0,scale:1,duration:.48,ease:"back.out(1.35)"},4.3);
+      timeline.to("#f02b-test-button",{scale:1.035,duration:.25,ease:"power2.out"},6.05).to("#f02b-test-button",{scale:1,duration:.2,ease:"power2.in"},6.3);
+      timeline.to("#f02b-lesson-view",{opacity:0,x:-42,duration:.4,ease:"power2.in"},6.55);
+      timeline.fromTo("#f02b-quiz-view",{opacity:0,x:46},{opacity:1,x:0,duration:.58,ease:"power3.out"},6.78);
+      timeline.fromTo("#f02b-answer-wash",{scaleX:0},{scaleX:1,duration:.46,ease:"power2.out"},8.5);
+      timeline.fromTo("#f02b-check",{opacity:0,scale:.55},{opacity:1,scale:1,duration:.42,ease:"back.out(1.7)"},8.74);
+      timeline.fromTo("#f02b-feedback",{opacity:0,y:14},{opacity:1,y:0,duration:.42,ease:"power3.out"},8.95);
+      timeline.fromTo("#f02b-footer",{opacity:0,y:16},{opacity:1,y:0,duration:.45,ease:"power3.out"},.35);
+      timeline.fromTo("#f02b-footer-rule",{scaleX:0},{scaleX:1,duration:1.25,ease:"power2.inOut"},.72);
+      timeline.fromTo("#f02b-glow",{scale:.92},{scale:1.08,duration:10.5,ease:"sine.inOut"},0);
+      timeline.fromTo("#f02b-ring",{x:0,y:0},{x:-34,y:-22,duration:10.5,ease:"sine.inOut"},0);
+      window.__timelines=window.__timelines||{};window.__timelines[frameId]=timeline;})();
   </script>
 </template>

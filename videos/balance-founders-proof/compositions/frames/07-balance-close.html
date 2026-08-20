@@ -6,7 +6,7 @@
       height: 100%;
       overflow: hidden;
       container-type: size;
-      color: #160d20;
+      color: #ffffff;
       font-family: Montserrat, Arial, sans-serif;
     }
 
@@ -17,115 +17,78 @@
     }
 
     .f07-background {
-      background: #ffffff;
+      background: #f8f5ef;
     }
 
-    .f07-atmosphere {
+    .f07-orbit {
       position: absolute;
       left: 50%;
-      top: 42%;
-      width: 96cqw;
-      height: 96cqw;
-      margin-left: -48cqw;
-      margin-top: -48cqw;
-      border: 1.5px solid rgba(169, 111, 0, 0.08);
+      top: 45%;
+      width: 108cqw;
+      height: 108cqw;
+      margin-left: -54cqw;
+      margin-top: -54cqw;
+      border: 1.5px solid rgba(169, 111, 0, 0.12);
       border-radius: 50%;
     }
 
-    .f07-atmosphere::before,
-    .f07-atmosphere::after {
+    .f07-orbit::before,
+    .f07-orbit::after {
       content: "";
       position: absolute;
-      border: 1.5px solid rgba(169, 111, 0, 0.08);
+      border: 1.5px solid rgba(169, 111, 0, 0.1);
       border-radius: 50%;
     }
 
-    .f07-atmosphere::before {
-      inset: 10cqw;
+    .f07-orbit::before {
+      inset: 13cqw;
     }
 
-    .f07-atmosphere::after {
-      inset: 22cqw;
+    .f07-orbit::after {
+      inset: 28cqw;
     }
 
-    .f07-accent-block {
-      position: absolute;
-      right: -15cqw;
-      top: 3cqh;
-      width: 46cqw;
-      height: 30cqh;
-      border-radius: 50%;
-      background: rgba(169, 111, 0, 0.04);
-    }
-
-    .f07-swap-stage {
+    .f07-offer-card {
       position: absolute;
       left: 6.7cqw;
-      top: 17.2cqh;
+      top: 6.5cqh;
       width: 86.6cqw;
-      height: 52.2cqh;
+      height: 87cqh;
+      box-sizing: border-box;
+      overflow: hidden;
+      border: 1.5px solid rgba(169, 111, 0, 0.66);
+      border-radius: 24px;
+      background: #160d20;
+      box-shadow: 0 24px 70px rgba(22, 13, 32, 0.18);
+      text-align: center;
     }
 
-    .f07-card,
-    .f07-final-card {
+    .f07-gold-wash {
+      position: absolute;
+      left: -16cqw;
+      top: -9cqh;
+      width: 78cqw;
+      height: 38cqh;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(169, 111, 0, 0.22) 0%, rgba(169, 111, 0, 0) 70%);
+    }
+
+    .f07-content {
       position: absolute;
       inset: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
       box-sizing: border-box;
-      overflow: hidden;
-      border: 1.5px solid rgba(169, 111, 0, 0.2);
-      border-radius: 14px;
-      background: rgba(169, 111, 0, 0.04);
-      transform-origin: 50% 50%;
-      text-align: center;
-    }
-
-    .f07-card {
-      padding: 8cqw;
-    }
-
-    .f07-card-rule {
-      width: 5.6cqw;
-      height: 4px;
-      margin-bottom: 3cqh;
-      border-radius: 2px;
-      background: #a96f00;
-    }
-
-    .f07-card-title {
-      max-width: 76cqw;
-      margin: 0;
-      font-size: 7.2cqw;
-      font-weight: 700;
-      line-height: 1.1;
-      letter-spacing: -0.02em;
-      color: #160d20;
-    }
-
-    .f07-card-subline {
-      max-width: 70cqw;
-      margin: 2.5cqh 0 0;
-      font-size: 3.1cqw;
-      font-weight: 500;
-      line-height: 1.45;
-      color: #a96f00;
-    }
-
-    .f07-final-card {
-      z-index: 4;
-      justify-content: flex-start;
-      padding: 4.1cqh 5cqw 3.3cqh;
+      padding: 4.2cqh 5.4cqw 3.8cqh;
     }
 
     .f07-logo-wrap {
       position: relative;
       display: grid;
       place-items: center;
-      width: 19cqw;
-      height: 19cqw;
+      width: 17cqw;
+      height: 17cqw;
       flex: 0 0 auto;
     }
 
@@ -139,114 +102,173 @@
 
     .f07-logo-ring circle {
       fill: none;
-      stroke: #a96f00;
+      stroke: #d5a63c;
       stroke-width: 5;
       stroke-linecap: round;
       transform: rotate(-90deg);
       transform-origin: 100px 100px;
     }
 
-    .f07-logo-image {
-      width: 14.5cqw;
-      height: 14.5cqw;
-      object-fit: cover;
+    .f07-logo-shell {
+      position: relative;
+      width: 13cqw;
+      height: 13cqw;
+      overflow: hidden;
       border-radius: 50%;
+      background: #ffffff;
     }
 
-    .f07-lockup-title {
-      max-width: 72cqw;
-      margin: 2.6cqh 0 0;
-      font-size: 5.45cqw;
-      font-weight: 700;
-      line-height: 1.08;
-      letter-spacing: -0.02em;
-      color: #160d20;
-    }
-
-    .f07-balance-pill {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 72cqw;
-      min-height: 5.7cqh;
-      margin-top: 3.2cqh;
-      padding: 0 3cqw;
-      box-sizing: border-box;
-      border-radius: 100px;
-      background: #a96f00;
-      color: #ffffff;
-      font-size: 2.65cqw;
-      font-weight: 700;
-      line-height: 1;
-      letter-spacing: 0.02em;
-      white-space: nowrap;
-    }
-
-    .f07-prompt {
-      max-width: 72cqw;
-      margin: 2.7cqh 0 0;
-      font-size: 2.65cqw;
-      font-weight: 500;
-      line-height: 1.45;
-      color: #a96f00;
-    }
-
-    .f07-progress {
-      position: absolute;
-      left: 6.7cqw;
-      top: 81.1cqh;
-      width: 86.6cqw;
-      height: 3px;
-      background: rgba(169, 111, 0, 0.15);
-    }
-
-    .f07-progress-fill {
+    .f07-logo-image {
       display: block;
       width: 100%;
       height: 100%;
+      object-fit: cover;
+    }
+
+    .f07-logo-glimmer {
+      position: absolute;
+      left: -56%;
+      top: -15%;
+      width: 36%;
+      height: 130%;
+      opacity: 0;
+      background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 231, 166, 0.92), rgba(255, 255, 255, 0));
+      filter: blur(2px);
+    }
+
+    .f07-kicker {
+      margin: 2.1cqh 0 0;
+      font-size: 3.35cqw;
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: 0.15em;
+      color: #d5a63c;
+    }
+
+    .f07-price {
+      margin: 2cqh 0 0;
+      font-size: 7.35cqw;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -0.035em;
+      color: #ffffff;
+    }
+
+    .f07-duration {
+      margin: 1.25cqh 0 0;
+      font-size: 3.2cqw;
+      font-weight: 700;
+      line-height: 1.2;
+      letter-spacing: 0.04em;
+      color: #d5a63c;
+    }
+
+    .f07-rule {
+      width: 12cqw;
+      height: 3px;
+      margin-top: 2.7cqh;
+      border-radius: 2px;
+      background: #d5a63c;
+      transform-origin: center;
+    }
+
+    .f07-inclusions {
+      width: 100%;
+      margin-top: 2.25cqh;
+      display: flex;
+      flex-direction: column;
+      gap: 0.8cqh;
+    }
+
+    .f07-inclusion {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 3.8cqh;
+      padding: 0.55cqh 3.1cqw;
+      box-sizing: border-box;
+      border: 1px solid rgba(213, 166, 60, 0.22);
+      border-radius: 100px;
+      background: rgba(255, 255, 255, 0.055);
+      text-align: left;
+      color: #ffffff;
+      font-size: 2.45cqw;
+      font-weight: 600;
+      line-height: 1.25;
+    }
+
+    .f07-dot {
+      width: 1.3cqw;
+      height: 1.3cqw;
+      margin-right: 2.1cqw;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      background: #d5a63c;
+      box-shadow: 0 0 14px rgba(213, 166, 60, 0.55);
+    }
+
+    .f07-no-renewal {
+      width: 100%;
+      min-height: 5.1cqh;
+      margin-top: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+      border-radius: 10px;
       background: #a96f00;
-      transform-origin: left center;
+      color: #ffffff;
+      font-size: 2.6cqw;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: 0.055em;
+      white-space: nowrap;
+    }
+
+    .f07-footer {
+      margin: 1.65cqh 0 0;
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 2.15cqw;
+      font-weight: 600;
+      line-height: 1.25;
     }
   </style>
 
-  <div data-hf-id="hf-mh0x" id="root" data-composition-id="07-balance-close" data-start="0" data-duration="6" data-width="1080" data-height="1920">
-    <div data-hf-id="hf-d966" id="f07-background" class="clip f07-background" data-start="0" data-duration="6" data-track-index="0">
-      <div data-hf-id="hf-1t44" class="f07-accent-block" data-layout-allow-overflow></div>
-      <div data-hf-id="hf-97xm" class="f07-atmosphere"></div>
+  <div data-hf-id="hf-mh0x" id="root" data-composition-id="07-balance-close" data-start="0" data-duration="7" data-width="1080" data-height="1920">
+    <div data-hf-id="hf-d966" id="f07-background" class="clip f07-background" data-start="0" data-duration="7" data-track-index="0">
+      <div data-hf-id="hf-f07-orbit" class="f07-orbit"></div>
 
-      <div data-hf-id="hf-rpte" class="f07-swap-stage">
-        <section data-hf-id="hf-y5s1" class="f07-card f07-card-one" aria-label="Learn how your body works">
-          <div data-hf-id="hf-795v" class="f07-card-rule"></div>
-          <h1 data-hf-id="hf-jf14" class="f07-card-title">LEARN HOW YOUR<br data-hf-id="hf-learning-break">BODY WORKS.</h1>
-          <p data-hf-id="hf-card1-subline" class="f07-card-subline">Movement · nutrition · habits · training</p>
-        </section>
-
-        <section data-hf-id="hf-vuyk" class="f07-card f07-card-two" aria-label="Train and eat with a plan">
-          <div data-hf-id="hf-tf6r" class="f07-card-rule"></div>
-          <h1 data-hf-id="hf-04wh" class="f07-card-title">TRAIN + EAT<br data-hf-id="hf-x5px">WITH A PLAN.</h1>
-          <p data-hf-id="hf-t03r" class="f07-card-subline">Clear meals · coached exercise · practical structure</p>
-        </section>
-
-        <section data-hf-id="hf-f8zu" class="f07-card f07-card-three" aria-label="See progress and get support">
-          <div data-hf-id="hf-t0vq" class="f07-card-rule"></div>
-          <h1 data-hf-id="hf-e0lj" class="f07-card-title">SEE PROGRESS.<br data-hf-id="hf-rsrt">GET SUPPORT.</h1>
-          <p data-hf-id="hf-y3ti" class="f07-card-subline">Check-ins · community · one clear view</p>
-        </section>
-
-        <section data-hf-id="hf-b5lp" class="f07-final-card" aria-label="Balance brand close">
+      <section data-hf-id="hf-f07-offer" class="f07-offer-card" aria-label="Balance Foundations six-week offer">
+        <div data-hf-id="hf-f07-wash" class="f07-gold-wash"></div>
+        <div data-hf-id="hf-f07-content" class="f07-content">
           <div data-hf-id="hf-jb1g" class="f07-logo-wrap">
             <svg data-hf-id="hf-yun3" class="f07-logo-ring" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
               <circle data-hf-id="hf-ittg" id="f07-logo-ring-path" cx="100" cy="100" r="91" />
             </svg>
-            <img data-hf-id="hf-fd7p" class="f07-logo-image" src="assets/balance-logo.png" alt="Balance">
+            <div data-hf-id="hf-f07-logo-shell" class="f07-logo-shell">
+              <img data-hf-id="hf-fd7p" class="f07-logo-image" src="assets/balance-logo.png" alt="Balance">
+              <span data-hf-id="hf-f07-glimmer" class="f07-logo-glimmer"></span>
+            </div>
           </div>
-          <h1 data-hf-id="hf-aeho" class="f07-lockup-title">IT'S TIME FOR<br data-hf-id="hf-szow">A COMEBACK</h1>
-          <div data-hf-id="hf-281h" class="f07-balance-pill">BALANCE</div>
-          <p data-hf-id="hf-pece" class="f07-prompt">A plan that fits real life.</p>
-        </section>
-      </div>
 
-      <div data-hf-id="hf-3vzr" class="f07-progress"><span data-hf-id="hf-y40s" class="f07-progress-fill"></span></div>
+          <h1 data-hf-id="hf-f07-kicker" class="f07-kicker">BALANCE FOUNDATIONS</h1>
+          <p data-hf-id="hf-f07-price" class="f07-price">ONE AU$89.99 PAYMENT</p>
+          <p data-hf-id="hf-f07-duration" class="f07-duration">FOR THE FULL SIX WEEKS</p>
+          <div data-hf-id="hf-f07-rule" class="f07-rule"></div>
+
+          <div data-hf-id="hf-f07-inclusions" class="f07-inclusions" aria-label="Everything included">
+            <div data-hf-id="hf-f07-inc-1" class="f07-inclusion"><span data-hf-id="hf-f07-dot-1" class="f07-dot"></span>Workout program</div>
+            <div data-hf-id="hf-f07-inc-2" class="f07-inclusion"><span data-hf-id="hf-f07-dot-2" class="f07-dot"></span>Plant-based meal plan</div>
+            <div data-hf-id="hf-f07-inc-3" class="f07-inclusion"><span data-hf-id="hf-f07-dot-3" class="f07-dot"></span>Balance community Feed</div>
+            <div data-hf-id="hf-f07-inc-4" class="f07-inclusion"><span data-hf-id="hf-f07-dot-4" class="f07-dot"></span>Six-week course + quizzes</div>
+            <div data-hf-id="hf-f07-inc-5" class="f07-inclusion"><span data-hf-id="hf-f07-dot-5" class="f07-dot"></span>Weekly Goals</div>
+            <div data-hf-id="hf-f07-inc-6" class="f07-inclusion"><span data-hf-id="hf-f07-dot-6" class="f07-dot"></span>One weekly check-in + plan review</div>
+          </div>
+
+          <div data-hf-id="hf-f07-no-renewal" class="f07-no-renewal">NO SUBSCRIPTION · NO AUTO-RENEWAL</div>
+          <p data-hf-id="hf-f07-footer" class="f07-footer">Everything you need, clearly mapped out in one app.</p>
+        </div>
+      </section>
     </div>
   </div>
 
@@ -255,125 +277,155 @@
     (() => {
       const composition = document.querySelector('[data-composition-id="07-balance-close"]');
       const select = (selector) => composition.querySelector(selector);
-      const cards = [
-        select(".f07-card-one"),
-        select(".f07-card-two"),
-        select(".f07-card-three")
-      ];
-      const finalCard = select(".f07-final-card");
+      const selectAll = (selector) => composition.querySelectorAll(selector);
       const timeline = gsap.timeline({ paused: true });
+      const logoRing = select("#f07-logo-ring-path");
+      const logoRingLength = logoRing.getTotalLength();
+      const glimmer = select(".f07-logo-glimmer");
 
       window.__timelines = window.__timelines || {};
       window.__timelines["07-balance-close"] = timeline;
 
-      const logoRing = select("#f07-logo-ring-path");
-      const logoRingLength = logoRing.getTotalLength();
-      logoRing.style.strokeDasharray = String(logoRingLength);
-      logoRing.style.strokeDashoffset = String(logoRingLength);
+      timeline.set(logoRing, {
+        strokeDasharray: logoRingLength,
+        strokeDashoffset: logoRingLength
+      }, 0);
+      timeline.set(glimmer, { opacity: 0, x: 0 }, 0);
 
-      timeline.set([cards[1], cards[2], finalCard], { opacity: 0 }, 0);
-      timeline.fromTo(cards[0], {
+      timeline.fromTo(".f07-offer-card", {
         opacity: 0,
-        y: 20,
-        scale: 0.97
+        y: 26,
+        scale: 0.975
       }, {
         opacity: 1,
         y: 0,
         scale: 1,
-        duration: 0.44,
+        duration: 0.58,
         ease: "power2.out"
-      }, 0.05);
-
-      const stateSequence = [
-        { t: 0.50, index: 0 },
-        { t: 1.50, index: 1 },
-        { t: 3.00, index: 2 }
-      ];
-      const stateAt = (time) => {
-        for (let index = stateSequence.length - 1; index >= 0; index -= 1) {
-          if (time >= stateSequence[index].t) return stateSequence[index].index;
-        }
-        return 0;
-      };
-      const stateDriver = { t: 0.50 };
-      timeline.to(stateDriver, {
-        t: 4.29,
-        duration: 3.79,
-        ease: "none",
-        onUpdate: () => {
-          const active = stateAt(stateDriver.t);
-          cards.forEach((card, index) => {
-            card.style.opacity = index === active ? "1" : "0";
-          });
-        }
-      }, 0.50);
-
-      timeline.to(cards[2], {
+      }, 0.08);
+      timeline.fromTo(".f07-logo-wrap", {
         opacity: 0,
-        scale: 0.96,
-        duration: 0.16,
-        ease: "power2.in"
-      }, 4.76);
-      timeline.fromTo(finalCard, {
-        opacity: 0,
-        scale: 0.84
+        scale: 0.82
       }, {
         opacity: 1,
         scale: 1,
-        duration: 0.52,
-        ease: "back.out(1.4)"
-      }, 4.16);
-
+        duration: 0.5,
+        ease: "back.out(1.35)"
+      }, 0.28);
       timeline.to(logoRing, {
         strokeDashoffset: 0,
-        duration: 0.54,
+        duration: 0.62,
         ease: "power2.out"
-      }, 4.60);
-      timeline.fromTo(".f07-logo-image", {
+      }, 0.36);
+      timeline.fromTo(glimmer, {
         opacity: 0,
-        scale: 0.9
+        x: 0
       }, {
-        opacity: 1,
-        scale: 1,
-        duration: 0.42,
-        ease: "power2.out"
-      }, 4.66);
-      timeline.fromTo(".f07-lockup-title", {
+        opacity: 0.88,
+        x: 235,
+        duration: 0.68,
+        ease: "power1.inOut"
+      }, 0.72);
+      timeline.to(glimmer, {
         opacity: 0,
-        y: 18
+        duration: 0.12,
+        ease: "power1.out"
+      }, 1.34);
+
+      timeline.fromTo(".f07-kicker", {
+        opacity: 0,
+        y: 14
       }, {
         opacity: 1,
         y: 0,
-        duration: 0.40,
+        duration: 0.42,
         ease: "power2.out"
-      }, 4.84);
-      timeline.fromTo(".f07-balance-pill", {
+      }, 0.66);
+      timeline.fromTo(".f07-price", {
         opacity: 0,
-        y: 16,
+        y: 18,
         scale: 0.96
       }, {
         opacity: 1,
         y: 0,
         scale: 1,
-        duration: 0.42,
+        duration: 0.5,
         ease: "power2.out"
-      }, 5.00);
-      timeline.fromTo(".f07-prompt", {
+      }, 1.02);
+      timeline.fromTo(".f07-duration", {
         opacity: 0,
         y: 12
       }, {
         opacity: 1,
         y: 0,
-        duration: 0.46,
+        duration: 0.4,
         ease: "power2.out"
-      }, 5.24);
-      timeline.fromTo(".f07-progress-fill", {
+      }, 1.42);
+      timeline.fromTo(".f07-rule", {
+        opacity: 0,
         scaleX: 0
       }, {
+        opacity: 1,
         scaleX: 1,
-        duration: 0.66,
+        duration: 0.38,
         ease: "power2.out"
-      }, 5.24);
+      }, 1.72);
+      timeline.fromTo(selectAll(".f07-inclusion"), {
+        opacity: 0,
+        y: 12
+      }, {
+        opacity: 1,
+        y: 0,
+        duration: 0.36,
+        stagger: 0.18,
+        ease: "power2.out"
+      }, 1.95);
+      timeline.fromTo(".f07-no-renewal", {
+        opacity: 0,
+        y: 14,
+        scale: 0.97
+      }, {
+        opacity: 1,
+        y: 0,
+        scale: 1,
+        duration: 0.45,
+        ease: "power2.out"
+      }, 3.35);
+      timeline.fromTo(".f07-footer", {
+        opacity: 0,
+        y: 10
+      }, {
+        opacity: 1,
+        y: 0,
+        duration: 0.38,
+        ease: "power2.out"
+      }, 3.67);
+
+      timeline.fromTo(glimmer, {
+        opacity: 0,
+        x: 0
+      }, {
+        opacity: 0.76,
+        x: 235,
+        duration: 0.72,
+        ease: "power1.inOut",
+        immediateRender: false
+      }, 5.18);
+      timeline.to(glimmer, {
+        opacity: 0,
+        duration: 0.14,
+        ease: "power1.out"
+      }, 5.82);
+      timeline.to(".f07-no-renewal", {
+        boxShadow: "0 0 24px rgba(213, 166, 60, 0.34)",
+        duration: 0.5,
+        ease: "power2.out"
+      }, 5.18);
+      timeline.to(".f07-no-renewal", {
+        boxShadow: "0 0 0 rgba(213, 166, 60, 0)",
+        duration: 0.55,
+        ease: "power2.inOut"
+      }, 5.68);
     })();
   </script>
 </template>

@@ -8,6 +8,12 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 
 ## Active production rules
 
+### Paid offer videos must explain the delivery path
+
+- A sales video can look polished and still fail if the viewer cannot tell what they receive or how the coaching works.
+- Introduce each promised inclusion explicitly, then immediately prove it with the real product flow. For Balance Foundations, show the workout program, plant-based meal plan, community Feed, six-week lesson-to-quiz course flow, Weekly Goals, and Shannon's weekly voice check-in with training and food review before the price.
+- Close with the exact commercial terms: one AU$89.99 payment for the full six weeks, with no subscription and no auto-renewal.
+
 ### Social-proof metrics must strengthen perceived scale
 
 - Do not headline small participation counts such as a low number of featured members or training contributors in public challenge recaps, proof videos or ad-flow media. Even when accurate, those numbers can make active community proof feel smaller than it is.

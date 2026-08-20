@@ -1,52 +1,40 @@
 ---
 workflow: product-launch-video
 flow: automation
-storyboard: no
-message: "It's time for a comeback: Balance brings a person's learning, plant-based meals, training, support, progress and community into one place"
+storyboard: yes
+message: "Balance Foundations gives you a workout program, plant-based meal plan, community, a guided six-week course, Weekly Goals, and one weekly Shannon check-in with plan review"
 destination: instagram-dm
 aspect: 1080x1920
 language: en
-audience: "Plant-based adults who want to become fitter but need structure and accountability that works in real life"
-length: 63s
-angle: "cinematic product proof: show exactly how support arrives and what daily life inside Balance feels like"
+audience: "Plant-based adults who want a clear fitness plan, practical education and real human accountability"
+length: 61s
+angle: "clear product proof: introduce every inclusion, then show exactly how it works inside Balance"
 narration: no
-style_preset: blue-professional
+style_preset: balance-editorial
 ---
 
 ## Intent
 
-Create a polished vertical evergreen post for Balance. Lead with “It's time for a
-comeback”, show the complete Learning library, then prove what everyday life inside
-Balance feels like as the person's week takes shape. The viewer should understand
-the seven learning areas, what their meal plan looks like, how it is delivered, how
-human support can arrive in their inbox, how progress is made visible, and that the
-plant-based community is active every day.
+Create the product explainer sent inside the paid Meta conversation. Keep the existing premium white, plum and gold edit, but make the sale unmistakable without sound. Introduce each inclusion in plain language and immediately show its real Balance experience.
 
-## Assets
+The story order is: workout program, plant-based meal plan, community Feed, guided six-week course from lesson to quiz, Weekly Goals, Shannon's weekly voice check-in and plan review, then the exact price and renewal terms.
 
-- `../balance-app-motion/.media/images/logo_001.png` — official Balance logo for the cover and close.
-- `../balance-app-motion/.media/images/image_006.jpg` — factual reference for weekly goals and progress.
-- `../balance-app-motion/.media/images/nutrition-tracker.jpg` — factual reference for nutrition delivery.
-- `../balance-app-motion/.media/images/movement-coach.jpg` — factual reference for coached training.
-- `../balance-app-motion/.media/images/feed-food.jpg` — real plant-based community food post.
-- `../balance-app-motion/.media/images/feed-walk.jpg` — real plant-based community activity post.
-- `../balance-app-motion/.media/images/feed-workout.jpg` — real plant-based community workout post.
+## Product truth
 
-## Customizations
+- Balance Foundations is one fixed six-week experience.
+- Members receive a personal workout program and plant-based meal plan.
+- The Feed contains coach and member meals, workouts and wins.
+- The guided course runs for six weeks with five quizzes each week. A quiz begins with learning cards and then moves into “Test Your Understanding”.
+- Weekly Goals lets a member choose one to three realistic commitments and save them for the week.
+- Shannon provides one weekly check-in plus workout and food review and adjustment.
+- The offer is one AU$89.99 payment for the full six weeks, with no subscription and no auto-renewal.
 
-- Use real Balance product truth, but present it as cinematic phone and UI choreography rather than flat screenshots.
-- Build a designed opening frame that also works as the Instagram thumbnail: “IT'S TIME FOR A COMEBACK” with “A plan that fits real life.”
-- Show every live Learning section: How Your Body Moves, Fuel for Results, Make Progress Stick, Train With Purpose, Build Muscle Intelligently, Energy, Hormones & Recovery, and Healthy for Life.
-- Animate meal cards assembling into a delivered weekly meal plan with a grocery-list handoff.
-- Show a real Shannon exercise demonstration full-screen, then pull back into the Balance exercise view with coaching cues, sets, reps and rest time.
-- Animate a Shannon voice-note check-in arriving in the Balance inbox, then play a real example check-in in Shannon's professional ElevenLabs voice.
-- Bring the community to life with layered real posts and a daily activity pulse.
-- Use tactile interface sound marks and a confident, warm electronic music bed. The check-in example uses Shannon's voice, while all core meaning must still work muted.
+## Visual and copy rules
 
-## Notes
-
-- Do not show a raw video URL in the Instagram conversation.
-- Do not present static screenshots one after another.
-- This is an evergreen Balance product post, not a membership or course offer. Do not show price, checkout, access length, auto-renewal, lifetime-access or fixed-course language.
-- Do not claim instant daily replies or unlimited support.
-- Keep critical text clear of the Instagram top header, bottom composer and right-side controls.
+- Keep every promise readable on mute and pair it with faithful current app proof.
+- Use the existing full-screen Shannon exercise footage, meal-plan choreography, community imagery and Shannon voice-note moment.
+- Do not describe the course as a generic learning library.
+- Do not imply unlimited, instant or daily one-to-one coaching.
+- Do not claim lifetime access.
+- Keep critical text clear of Instagram interface reserves.
+- End on the price long enough for an easy read.

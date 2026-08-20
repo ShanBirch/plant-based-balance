@@ -1,350 +1,113 @@
 <template>
   <style>
-    #root {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      container-type: size;
-      color: #160d20;
-      font-family: Montserrat, Arial, sans-serif;
-    }
-
-    .clip {
-      position: absolute;
-      inset: 0;
-      overflow: hidden;
-    }
-
-    [class~="f05-progress-build-background"] {
-      background: #ffffff;
-    }
-
-    [class~="f05-progress-build-reference"] {
-      position: absolute;
-      inset: -2cqh -2cqw;
-      width: 104cqw;
-      height: 104cqh;
-      object-fit: cover;
-      opacity: 0.38;
-      filter: saturate(0.56) contrast(0.92);
-    }
-
-    [class~="f05-progress-build-wash"] {
-      position: absolute;
-      inset: 0;
-      background:
-        linear-gradient(180deg, rgba(255,255,255,0.88) 0%, rgba(255,255,255,0.64) 39%, rgba(255,255,255,0.91) 83%, #ffffff 100%);
-    }
-
-    [class~="f05-progress-build-zoom-outer"],
-    [class~="f05-progress-build-zoom-inner"],
-    [class~="f05-progress-build-world"] {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-    }
-
-    [class~="f05-progress-build-zoom-outer"] {
-      transform-origin: 50% 50%;
-      will-change: transform;
-    }
-
-    [class~="f05-progress-build-zoom-inner"] {
-      will-change: transform;
-    }
-
-    [class~="f05-progress-build-heading"] {
-      position: absolute;
-      left: 6.7cqw;
-      top: 7.4cqh;
-      width: 78cqw;
-      margin: 0;
-      font-size: 6.5cqw;
-      font-weight: 700;
-      line-height: 1.08;
-      letter-spacing: -0.02em;
-      color: #160d20;
-    }
-
-    [class~="f05-progress-build-heading-rule"] {
-      display: block;
-      width: 5.6cqw;
-      height: 4px;
-      margin-bottom: 1.5cqh;
-      border-radius: 2px;
-      background: #a96f00;
-      transform-origin: left center;
-    }
-
-    [class~="f05-progress-build-ring-card"] {
-      position: absolute;
-      left: 6.8cqw;
-      top: 20.2cqh;
-      display: grid;
-      place-items: center;
-      width: 39cqw;
-      height: 39cqw;
-      border: 1.5px solid rgba(169, 111, 0, 0.2);
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.82);
-    }
-
-    [class~="f05-progress-build-ring-svg"] {
-      width: 34cqw;
-      height: 34cqw;
-      overflow: visible;
-    }
-
-    [class~="f05-progress-build-ring-track"],
-    [class~="f05-progress-build-ring-fill"] {
-      fill: none;
-      stroke-width: 18;
-      stroke-linecap: round;
-    }
-
-    [class~="f05-progress-build-ring-track"] {
-      stroke: rgba(169, 111, 0, 0.1);
-    }
-
-    [class~="f05-progress-build-ring-fill"] {
-      stroke: #a96f00;
-      transform: rotate(-90deg);
-      transform-origin: 210px 210px;
-    }
-
-    [class~="f05-progress-build-ring-center"] {
-      position: absolute;
-      inset: 0;
-      display: grid;
-      place-items: center;
-    }
-
-    [class~="f05-progress-build-calendar"] {
-      position: relative;
-      width: 9.2cqw;
-      height: 8.1cqw;
-      border: 1.5px solid rgba(169, 111, 0, 0.38);
-      border-radius: 12px;
-      background: rgba(169, 111, 0, 0.04);
-    }
-
-    [class~="f05-progress-build-calendar"]::before {
-      content: "";
-      position: absolute;
-      left: 1.5cqw;
-      right: 1.5cqw;
-      top: 2.35cqw;
-      height: 2px;
-      background: #a96f00;
-    }
-
-    [class~="f05-progress-build-calendar-dots"] {
-      position: absolute;
-      left: 1.5cqw;
-      right: 1.5cqw;
-      bottom: 1.5cqw;
-      display: flex;
-      justify-content: space-between;
-    }
-
-    [class~="f05-progress-build-calendar-dots"] span {
-      width: 1.1cqw;
-      height: 1.1cqw;
-      border-radius: 50%;
-      background: #a96f00;
-    }
-
-    [class~="f05-progress-build-rows"] {
-      position: absolute;
-      left: 43.8cqw;
-      top: 21.5cqh;
-      display: grid;
-      gap: 1.35cqh;
-      width: 49.4cqw;
-    }
-
-    [class~="f05-progress-build-row"] {
-      position: relative;
-      min-height: 8.4cqh;
-      padding: 2.5cqw 2.7cqw;
-      box-sizing: border-box;
-      border: 1.5px solid rgba(169, 111, 0, 0.2);
-      border-radius: 14px;
-      background: rgba(169, 111, 0, 0.04);
-    }
-
-    [class~="f05-progress-build-row-title"] {
-      margin-bottom: 1.55cqh;
-      font-size: 2.85cqw;
-      font-weight: 600;
-      line-height: 1.2;
-      letter-spacing: -0.02em;
-      color: #160d20;
-    }
-
-    [class~="f05-progress-build-track"] {
-      width: 100%;
-      height: 13px;
-      overflow: hidden;
-      border-radius: 6px;
-      background: rgba(169, 111, 0, 0.08);
-    }
-
-    [class~="f05-progress-build-fill"] {
-      width: 100%;
-      height: 100%;
-      border-radius: 6px;
-      background: #a96f00;
-      transform-origin: left center;
-    }
-
-    [class~="f05-progress-build-movement-card"] {
-      position: absolute;
-      left: 57.4cqw;
-      top: 44.7cqh;
-      width: 37cqw;
-      height: 32.3cqh;
-      overflow: hidden;
-      box-sizing: border-box;
-      border: 1.5px solid rgba(169, 111, 0, 0.2);
-      border-radius: 14px;
-      background: rgba(255, 255, 255, 0.96);
-    }
-
-    [class~="f05-progress-build-preview"] {
-      position: relative;
-      width: 100%;
-      height: 22.4cqh;
-      overflow: hidden;
-      background: rgba(169, 111, 0, 0.04);
-    }
-
-    [class~="f05-progress-build-movement-image"] {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      object-position: 50% 36%;
-      filter: saturate(0.86) contrast(0.98);
-      transform-origin: 50% 42%;
-    }
-
-    [class~="f05-progress-build-preview-wash"] {
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.16));
-    }
-
-    [class~="f05-progress-build-chip-row"] {
-      display: flex;
-      align-items: center;
-      gap: 1.15cqw;
-      padding: 1.6cqw 1.7cqw 1.25cqw;
-    }
-
-    [class~="f05-progress-build-chip"] {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 4cqw;
-      padding: 0 1.45cqw;
-      border: 1.5px solid rgba(169, 111, 0, 0.2);
-      border-radius: 100px;
-      background: rgba(169, 111, 0, 0.08);
-      color: #a96f00;
-      font-size: 1.65cqw;
-      font-weight: 600;
-      line-height: 1;
-      white-space: nowrap;
-    }
-
-    [class~="f05-progress-build-final-line"] {
-      margin: 0 1.7cqw;
-      padding: 1.1cqh 0 0 1.5cqw;
-      border-top: 1px solid rgba(169, 111, 0, 0.15);
-      border-left: 3px solid #a96f00;
-      font-size: 1.75cqw;
-      font-weight: 600;
-      line-height: 1.35;
-      letter-spacing: -0.01em;
-      color: #160d20;
-    }
-
-    [class~="f05-progress-build-progress"] {
-      position: absolute;
-      left: 6.7cqw;
-      top: 81.1cqh;
-      width: 86.6cqw;
-      height: 3px;
-      background: rgba(169, 111, 0, 0.15);
-    }
-
-    [class~="f05-progress-build-progress-fill"] {
-      display: block;
-      width: 100%;
-      height: 100%;
-      background: #a96f00;
-      transform-origin: left center;
-    }
+    #root { position: relative; width: 100%; height: 100%; overflow: hidden; container-type: size; color: #160d20; background: #ffffff; font-family: Montserrat, Arial, sans-serif; }
+    .clip { position: absolute; inset: 0; overflow: hidden; }
+    [class~="f05-progress-build-background"] { background: radial-gradient(circle at 94% 12%, rgba(169,111,0,.12) 0 9cqw, transparent 9.2cqw), radial-gradient(circle at 5% 73%, rgba(169,111,0,.07) 0 16cqw, transparent 16.2cqw), #ffffff; }
+    [class~="f05-progress-build-rail"] { position: absolute; left: 6.7cqw; top: 5.7cqh; width: 5.8cqw; height: 4px; border-radius: 2px; background: #a96f00; transform-origin: left center; }
+    [class~="f05-progress-build-kicker"] { position: absolute; left: 6.7cqw; top: 7.7cqh; margin: 0; color: #a96f00; font-size: 2.15cqw; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+    [class~="f05-progress-build-heading"] { position: absolute; left: 6.7cqw; top: 10.4cqh; width: 86.6cqw; margin: 0; color: #160d20; font-size: 6.4cqw; font-weight: 700; line-height: 1.05; letter-spacing: -.035em; }
+    [class~="f05-progress-build-subhead"] { position: absolute; left: 6.7cqw; top: 17.2cqh; width: 81cqw; margin: 0; color: rgba(22,13,32,.64); font-size: 2.8cqw; font-weight: 500; line-height: 1.4; }
+    [class~="f05-progress-build-phone"] { position: absolute; left: 6.7cqw; top: 22.5cqh; width: 86.6cqw; height: 57.3cqh; overflow: hidden; box-sizing: border-box; border: 2px solid rgba(169,111,0,.2); border-radius: 32px; background: #ffffff; }
+    [class~="f05-progress-build-phone-top"] { position: absolute; left: 0; right: 0; top: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between; height: 5.1cqh; padding: 0 4.2cqw; box-sizing: border-box; border-bottom: 1.5px solid rgba(169,111,0,.15); background: rgba(255,255,255,.98); }
+    [class~="f05-progress-build-brand"] { color: #160d20; font-size: 2.3cqw; font-weight: 800; letter-spacing: .06em; }
+    [class~="f05-progress-build-step-label"] { color: #a96f00; font-size: 1.8cqw; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+    [class~="f05-progress-build-panel"] { position: absolute; inset: 5.1cqh 0 0; box-sizing: border-box; padding: 3.2cqh 4.1cqw 2.8cqh; background: #ffffff; }
+    [class~="f05-progress-build-editor-title"] { margin: 0; color: #160d20; font-size: 4.1cqw; font-weight: 700; line-height: 1.12; letter-spacing: -.025em; }
+    [class~="f05-progress-build-suggestion-row"] { display: flex; align-items: center; justify-content: space-between; gap: 2cqw; margin-top: 1.35cqh; }
+    [class~="f05-progress-build-suggested"] { display: inline-flex; align-items: center; min-height: 4.4cqw; padding: 0 1.8cqw; border-radius: 100px; background: rgba(169,111,0,.08); color: #a96f00; font-size: 1.85cqw; font-weight: 700; letter-spacing: .02em; }
+    [class~="f05-progress-build-count-stack"] { position: relative; width: 8.5cqw; height: 3cqw; color: rgba(22,13,32,.54); font-size: 2.05cqw; font-weight: 700; text-align: right; }
+    [class~="f05-progress-build-count-stage"] { position: absolute; inset: 0; opacity: 0; }
+    [class~="f05-progress-build-goals"] { display: grid; gap: 1.35cqh; margin-top: 2.25cqh; }
+    [class~="f05-progress-build-goal"] { display: grid; grid-template-columns: 9.4cqw 1fr auto; align-items: center; gap: 2.25cqw; min-height: 9.2cqh; padding: 2.3cqw 2.7cqw; box-sizing: border-box; border: 2px solid rgba(169,111,0,.2); border-radius: 14px; background: rgba(169,111,0,.04); }
+    [class~="f05-progress-build-goal-icon"] { display: grid; place-items: center; width: 9.4cqw; height: 9.4cqw; border-radius: 12px; background: rgba(169,111,0,.12); color: #a96f00; font-size: 3.2cqw; font-weight: 800; }
+    [class~="f05-progress-build-goal-copy"] { min-width: 0; }
+    [class~="f05-progress-build-goal-name"] { color: #160d20; font-size: 2.75cqw; font-weight: 700; line-height: 1.2; letter-spacing: -.015em; }
+    [class~="f05-progress-build-goal-detail"] { margin-top: .55cqh; color: rgba(22,13,32,.55); font-size: 1.8cqw; font-weight: 600; line-height: 1.3; }
+    [class~="f05-progress-build-check"] { display: grid; place-items: center; width: 7cqw; height: 7cqw; border-radius: 50%; background: #a96f00; color: #ffffff; font-size: 3cqw; font-weight: 800; }
+    [class~="f05-progress-build-save"] { display: grid; place-items: center; width: 100%; height: 6.5cqh; margin-top: 2.1cqh; border-radius: 100px; background: #a96f00; color: #ffffff; font-size: 2.6cqw; font-weight: 700; letter-spacing: .01em; transform-origin: center; }
+    [class~="f05-progress-build-home-panel"] { opacity: 0; background: #ffffff; }
+    [class~="f05-progress-build-home-kicker"] { margin: 0 0 .7cqh; color: #a96f00; font-size: 1.85cqw; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+    [class~="f05-progress-build-home-title"] { margin: 0 0 2cqh; color: #160d20; font-size: 4.2cqw; font-weight: 700; letter-spacing: -.03em; }
+    [class~="f05-progress-build-home-card"] { padding: 3.5cqw; box-sizing: border-box; border: 2px solid rgba(169,111,0,.2); border-radius: 18px; background: rgba(169,111,0,.04); }
+    [class~="f05-progress-build-home-card-head"] { display: flex; align-items: flex-start; justify-content: space-between; gap: 3cqw; padding-bottom: 1.8cqh; border-bottom: 1.5px solid rgba(169,111,0,.15); }
+    [class~="f05-progress-build-home-card-title"] { color: #160d20; font-size: 3.15cqw; font-weight: 700; letter-spacing: -.02em; }
+    [class~="f05-progress-build-home-card-date"] { margin-top: .45cqh; color: rgba(22,13,32,.5); font-size: 1.7cqw; font-weight: 600; }
+    [class~="f05-progress-build-on-track"] { flex: 0 0 auto; padding: 1.1cqw 1.55cqw; border-radius: 100px; background: rgba(169,111,0,.12); color: #a96f00; font-size: 1.75cqw; font-weight: 700; }
+    [class~="f05-progress-build-progress-list"] { display: grid; gap: 2cqh; margin-top: 2.2cqh; }
+    [class~="f05-progress-build-progress-row"] { display: grid; grid-template-columns: 1fr auto; gap: .8cqh 3cqw; align-items: center; }
+    [class~="f05-progress-build-progress-name"] { color: #160d20; font-size: 2.35cqw; font-weight: 700; line-height: 1.2; }
+    [class~="f05-progress-build-progress-value"] { color: #a96f00; font-size: 2.15cqw; font-weight: 800; }
+    [class~="f05-progress-build-progress-track"] { grid-column: 1 / -1; width: 100%; height: 12px; overflow: hidden; border-radius: 6px; background: rgba(169,111,0,.1); }
+    [class~="f05-progress-build-progress-fill"] { display: block; width: 100%; height: 100%; border-radius: 6px; background: #a96f00; transform-origin: left center; }
+    [class~="f05-progress-build-home-note"] { margin: 2.1cqh 0 0; padding-top: 1.8cqh; border-top: 1.5px solid rgba(169,111,0,.15); color: rgba(22,13,32,.62); font-size: 2.05cqw; font-weight: 600; line-height: 1.35; }
+    [class~="f05-progress-build-payoff"] { position: absolute; left: 6.7cqw; top: 82.6cqh; width: 86.6cqw; margin: 0; color: #160d20; font-size: 3.3cqw; font-weight: 700; line-height: 1.25; letter-spacing: -.02em; }
+    [class~="f05-progress-build-payoff"] strong { color: #a96f00; }
+    [class~="f05-progress-build-progress"] { position: absolute; left: 6.7cqw; top: 91.7cqh; width: 86.6cqw; height: 3px; background: rgba(169,111,0,.15); }
+    [class~="f05-progress-build-progress-end"] { display: block; width: 100%; height: 100%; background: #a96f00; transform-origin: left center; }
   </style>
 
-  <div data-hf-id="hf-2dak" id="root" data-composition-id="05-progress-build" data-duration="6.5" data-width="1080" data-height="1920">
-    <div data-hf-id="hf-krt4" class="clip f05-progress-build-background" data-start="0" data-duration="6.5" data-track-index="0">
-      <img data-hf-id="hf-ac3m" class="f05-progress-build-reference" src="assets/ui/weekly-goals.jpg" alt="Balance weekly goals screen">
-      <div data-hf-id="hf-ff4e" class="f05-progress-build-wash"></div>
+  <div data-hf-id="hf-2dak" id="root" data-composition-id="05-progress-build" data-start="0" data-duration="8" data-width="1080" data-height="1920">
+    <div data-hf-id="hf-krt4" id="weekly-goals-scene" class="clip f05-progress-build-background" data-start="0" data-duration="8" data-track-index="0">
+      <div data-hf-id="hf-1r5q" class="f05-progress-build-rail"></div>
+      <p data-hf-id="hf-83hn" class="f05-progress-build-kicker">Weekly goals</p>
+      <h1 data-hf-id="hf-eegw" class="f05-progress-build-heading">Choose what feels realistic.</h1>
+      <p data-hf-id="hf-7b2m" class="f05-progress-build-subhead">Balance suggests a starting point from your setup. You choose 1–3 commitments for the week.</p>
 
-      <div data-hf-id="hf-p3ns" class="f05-progress-build-zoom-outer">
-        <div data-hf-id="hf-c44x" class="f05-progress-build-zoom-inner">
-          <div data-hf-id="hf-04j9" class="f05-progress-build-world">
-            <h1 data-hf-id="hf-eegw" class="f05-progress-build-heading">
-              <span data-hf-id="hf-w9sh" class="f05-progress-build-heading-rule"></span>
-              SEE YOUR<br data-hf-id="hf-x5px">PROGRESS BUILD
-            </h1>
-
-            <div data-hf-id="hf-afqc" class="f05-progress-build-ring-card">
-              <svg data-hf-id="hf-yva5" class="f05-progress-build-ring-svg" viewBox="0 0 420 420" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <circle data-hf-id="hf-s6dx" class="f05-progress-build-ring-track" cx="210" cy="210" r="160" />
-                <circle data-hf-id="hf-dmqy" id="f05-progress-build-ring-fill" class="f05-progress-build-ring-fill" cx="210" cy="210" r="160" />
-              </svg>
-              <div data-hf-id="hf-lo95" class="f05-progress-build-ring-center">
-                <div data-hf-id="hf-nz41" class="f05-progress-build-calendar">
-                  <div data-hf-id="hf-eiii" class="f05-progress-build-calendar-dots"><span data-hf-id="hf-uckh"></span><span data-hf-id="hf-l73p"></span><span data-hf-id="hf-me0s"></span></div>
-                </div>
-              </div>
-            </div>
-
-            <div data-hf-id="hf-6io4" class="f05-progress-build-rows">
-              <article data-hf-id="hf-ofso" class="f05-progress-build-row">
-                <div data-hf-id="hf-cgzu" class="f05-progress-build-row-title">Strength sessions</div>
-                <div data-hf-id="hf-qkaw" class="f05-progress-build-track"><div data-hf-id="hf-vka0" class="f05-progress-build-fill" data-fill="0.78"></div></div>
-              </article>
-              <article data-hf-id="hf-prkg" class="f05-progress-build-row">
-                <div data-hf-id="hf-jgcn" class="f05-progress-build-row-title">Plant-based meals</div>
-                <div data-hf-id="hf-2yf4" class="f05-progress-build-track"><div data-hf-id="hf-d64v" class="f05-progress-build-fill" data-fill="0.64"></div></div>
-              </article>
-              <article data-hf-id="hf-oknd" class="f05-progress-build-row">
-                <div data-hf-id="hf-xpoq" class="f05-progress-build-row-title">Daily movement</div>
-                <div data-hf-id="hf-1ri1" class="f05-progress-build-track"><div data-hf-id="hf-xj4z" class="f05-progress-build-fill" data-fill="0.86"></div></div>
-              </article>
-            </div>
-
-            <article data-hf-id="hf-0la0" id="f05-progress-build-target" class="f05-progress-build-movement-card">
-              <div data-hf-id="hf-a61l" class="f05-progress-build-preview">
-                <img data-hf-id="hf-irlq" class="f05-progress-build-movement-image" src="assets/ui/movement-coach.jpg" alt="Balance Movement Studio">
-                <div data-hf-id="hf-iu2z" class="f05-progress-build-preview-wash"></div>
-              </div>
-              <div data-hf-id="hf-hkka" class="f05-progress-build-chip-row">
-                <span data-hf-id="hf-atgs" class="f05-progress-build-chip">Form check</span>
-                <span data-hf-id="hf-qf7v" class="f05-progress-build-chip">Coach workout</span>
-              </div>
-              <p data-hf-id="hf-ak0a" class="f05-progress-build-final-line">Your training. Your habits. One clear view.</p>
-            </article>
-
-            <div data-hf-id="hf-1n3a" class="f05-progress-build-progress"><span data-hf-id="hf-jb9l" class="f05-progress-build-progress-fill"></span></div>
-          </div>
+      <div data-hf-id="hf-r9pz" class="f05-progress-build-phone">
+        <div data-hf-id="hf-v9jb" class="f05-progress-build-phone-top">
+          <span data-hf-id="hf-7w4m" class="f05-progress-build-brand">BALANCE</span>
+          <span data-hf-id="hf-c64s" class="f05-progress-build-step-label">This week</span>
         </div>
+        <section data-hf-id="hf-w0vt" class="f05-progress-build-panel f05-progress-build-editor-panel">
+          <h2 data-hf-id="hf-0x7a" class="f05-progress-build-editor-title">Pick up to 3 goals</h2>
+          <div data-hf-id="hf-nk2g" class="f05-progress-build-suggestion-row">
+            <span data-hf-id="hf-2ys8" class="f05-progress-build-suggested">Suggested from your setup</span>
+            <span data-hf-id="hf-6bqf" class="f05-progress-build-count-stack">
+              <span data-hf-id="hf-3j3n" class="f05-progress-build-count-stage" data-count="1">1 / 3</span>
+              <span data-hf-id="hf-4ruq" class="f05-progress-build-count-stage" data-count="2">2 / 3</span>
+              <span data-hf-id="hf-vs78" class="f05-progress-build-count-stage" data-count="3">3 / 3</span>
+            </span>
+          </div>
+          <div data-hf-id="hf-51jn" class="f05-progress-build-goals">
+            <article data-hf-id="hf-40ut" class="f05-progress-build-goal">
+              <div data-hf-id="hf-z7qt" class="f05-progress-build-goal-icon">03</div>
+              <div data-hf-id="hf-x7td" class="f05-progress-build-goal-copy"><div data-hf-id="hf-jk4z" class="f05-progress-build-goal-name">3 strength sessions</div><div data-hf-id="hf-h8z9" class="f05-progress-build-goal-detail">Training · this week</div></div>
+              <div data-hf-id="hf-j2so" class="f05-progress-build-check">✓</div>
+            </article>
+            <article data-hf-id="hf-2jsm" class="f05-progress-build-goal">
+              <div data-hf-id="hf-bw1a" class="f05-progress-build-goal-icon">02</div>
+              <div data-hf-id="hf-o2s1" class="f05-progress-build-goal-copy"><div data-hf-id="hf-9qma" class="f05-progress-build-goal-name">Prep two lunches</div><div data-hf-id="hf-s9ml" class="f05-progress-build-goal-detail">Food · this week</div></div>
+              <div data-hf-id="hf-8x7l" class="f05-progress-build-check">✓</div>
+            </article>
+            <article data-hf-id="hf-8c4u" class="f05-progress-build-goal">
+              <div data-hf-id="hf-5k8w" class="f05-progress-build-goal-icon">10</div>
+              <div data-hf-id="hf-tqte" class="f05-progress-build-goal-copy"><div data-hf-id="hf-kqwy" class="f05-progress-build-goal-name">10-minute walk on busy days</div><div data-hf-id="hf-4cx9" class="f05-progress-build-goal-detail">Movement · keep it doable</div></div>
+              <div data-hf-id="hf-p4m1" class="f05-progress-build-check">✓</div>
+            </article>
+          </div>
+          <div data-hf-id="hf-f93j" class="f05-progress-build-save">Save goals</div>
+        </section>
+
+        <section data-hf-id="hf-wc05" class="f05-progress-build-panel f05-progress-build-home-panel">
+          <p data-hf-id="hf-wq9p" class="f05-progress-build-home-kicker">Home</p>
+          <h2 data-hf-id="hf-eg6m" class="f05-progress-build-home-title">Your week at a glance</h2>
+          <article data-hf-id="hf-r0fa" class="f05-progress-build-home-card">
+            <div data-hf-id="hf-17dg" class="f05-progress-build-home-card-head">
+              <div data-hf-id="hf-t694"><div data-hf-id="hf-4nfa" class="f05-progress-build-home-card-title">Weekly Goals</div><div data-hf-id="hf-k13a" class="f05-progress-build-home-card-date">Your three commitments</div></div>
+              <span data-hf-id="hf-x95d" class="f05-progress-build-on-track">2 moving</span>
+            </div>
+            <div data-hf-id="hf-km0u" class="f05-progress-build-progress-list">
+              <div data-hf-id="hf-sf3s" class="f05-progress-build-progress-row"><span data-hf-id="hf-02de" class="f05-progress-build-progress-name">Strength sessions</span><span data-hf-id="hf-66ng" class="f05-progress-build-progress-value">2 / 3</span><span data-hf-id="hf-y0l1" class="f05-progress-build-progress-track"><span data-hf-id="hf-n6uw" class="f05-progress-build-progress-fill" data-progress="0.67"></span></span></div>
+              <div data-hf-id="hf-5m9b" class="f05-progress-build-progress-row"><span data-hf-id="hf-u85q" class="f05-progress-build-progress-name">Lunches prepped</span><span data-hf-id="hf-771r" class="f05-progress-build-progress-value">1 / 2</span><span data-hf-id="hf-5wtt" class="f05-progress-build-progress-track"><span data-hf-id="hf-9y6q" class="f05-progress-build-progress-fill" data-progress="0.5"></span></span></div>
+              <div data-hf-id="hf-64l7" class="f05-progress-build-progress-row"><span data-hf-id="hf-w8ub" class="f05-progress-build-progress-name">Busy-day walks</span><span data-hf-id="hf-yd1b" class="f05-progress-build-progress-value">0 / 3</span><span data-hf-id="hf-8gs1" class="f05-progress-build-progress-track"><span data-hf-id="hf-w2ow" class="f05-progress-build-progress-fill" data-progress="0.08"></span></span></div>
+            </div>
+          <p data-hf-id="hf-lt3m" class="f05-progress-build-home-note">See the goals you chose and the progress you’re making, right on Home.</p>
+          </article>
+        </section>
       </div>
+
+      <p data-hf-id="hf-qx5h" class="f05-progress-build-payoff"><strong>Simple commitments.</strong> A week you can actually follow.</p>
+      <div data-hf-id="hf-1n3a" class="f05-progress-build-progress"><span data-hf-id="hf-jb9l" class="f05-progress-build-progress-end"></span></div>
     </div>
   </div>
 
@@ -352,152 +115,48 @@
   <script>
     (() => {
       const composition = document.querySelector('[data-composition-id="05-progress-build"]');
-      const select = (selector) => composition.querySelector(selector);
       const selectAll = (selector) => Array.from(composition.querySelectorAll(selector));
       const timeline = gsap.timeline({ paused: true });
-
       window.__timelines = window.__timelines || {};
       window.__timelines["05-progress-build"] = timeline;
 
-      const ring = select('[id="f05-progress-build-ring-fill"]');
-      const ringLength = ring.getTotalLength();
-      ring.style.strokeDasharray = String(ringLength);
-      ring.style.strokeDashoffset = String(ringLength);
+      timeline.fromTo('[class~="f05-progress-build-rail"]', { scaleX: 0 }, { scaleX: 1, duration: .48, ease: "power2.out" }, .04);
+      timeline.fromTo('[class~="f05-progress-build-kicker"]', { opacity: 0, x: -18 }, { opacity: 1, x: 0, duration: .42, ease: "power2.out" }, .12);
+      timeline.fromTo('[class~="f05-progress-build-heading"]', { opacity: 0, y: 28 }, { opacity: 1, y: 0, duration: .58, ease: "power3.out" }, .20);
+      timeline.fromTo('[class~="f05-progress-build-subhead"]', { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: .48, ease: "power2.out" }, .48);
+      timeline.fromTo('[class~="f05-progress-build-phone"]', { opacity: 0, y: 46, scale: .97 }, { opacity: 1, y: 0, scale: 1, duration: .68, ease: "power3.out" }, .58);
+      timeline.fromTo('[class~="f05-progress-build-suggested"]', { opacity: 0, x: -16 }, { opacity: 1, x: 0, duration: .38, ease: "power2.out" }, .92);
 
-      timeline.fromTo('[class~="f05-progress-build-heading"]', {
-        opacity: 0,
-        y: 24
-      }, {
-        opacity: 1,
-        y: 0,
-        duration: 0.46,
-        ease: "power2.out"
-      }, 0.04);
-      timeline.fromTo('[class~="f05-progress-build-heading-rule"]', {
-        scaleX: 0
-      }, {
-        scaleX: 1,
-        duration: 0.52,
-        ease: "power2.out"
-      }, 0.10);
-      timeline.fromTo('[class~="f05-progress-build-ring-card"]', {
-        opacity: 0,
-        scale: 0.94
-      }, {
-        opacity: 1,
-        scale: 1,
-        duration: 0.48,
-        ease: "power2.out"
-      }, 0.06);
-      timeline.to(ring, {
-        strokeDashoffset: ringLength * 0.28,
-        duration: 1.14,
-        ease: "power2.out"
-      }, 0.18);
-      timeline.fromTo('[class~="f05-progress-build-calendar"]', {
-        opacity: 0,
-        scale: 0.78
-      }, {
-        opacity: 1,
-        scale: 1,
-        duration: 0.44,
-        ease: "power2.out"
-      }, 0.74);
-
-      const rows = selectAll('[class~="f05-progress-build-row"]');
-      const rowStarts = [1.50, 2.18, 2.86];
-      rows.forEach((row, index) => {
-        const start = rowStarts[index];
-        const fill = row.querySelector('[class~="f05-progress-build-fill"]');
-        const fillState = Number(fill.dataset.fill);
-        timeline.fromTo(row, {
-          opacity: 0,
-          x: 34,
-          scale: 0.98
-        }, {
-          opacity: 1,
-          x: 0,
-          scale: 1,
-          duration: 0.48,
-          ease: "power2.out"
-        }, start);
-        timeline.fromTo(fill, {
-          scaleX: 0
-        }, {
-          scaleX: fillState,
-          duration: 0.78,
-          ease: "power2.out"
-        }, start + 0.14);
+      const goals = selectAll('[class~="f05-progress-build-goal"]');
+      const starts = [1.12, 1.85, 2.58];
+      goals.forEach((goal, index) => {
+        const check = goal.querySelector('[class~="f05-progress-build-check"]');
+        timeline.fromTo(goal, { opacity: 0, y: 24, scale: .985 }, { opacity: 1, y: 0, scale: 1, duration: .46, ease: "power2.out" }, starts[index]);
+        timeline.fromTo(check, { opacity: 0, scale: .55, rotation: -16 }, { opacity: 1, scale: 1, rotation: 0, duration: .36, ease: "back.out(1.45)" }, starts[index] + .22);
       });
 
-      const outer = select('[class~="f05-progress-build-zoom-outer"]');
-      const inner = select('[class~="f05-progress-build-zoom-inner"]');
-      const target = select('[id="f05-progress-build-target"]');
-      const frameRect = composition.getBoundingClientRect();
-      const targetRect = target.getBoundingClientRect();
-      const targetOffsetX = targetRect.left + targetRect.width / 2 - (frameRect.left + frameRect.width / 2);
-      const targetOffsetY = targetRect.top + targetRect.height / 2 - (frameRect.top + frameRect.height / 2);
-      const maxScale = Math.min(
-        (0.88 * frameRect.width) / targetRect.width,
-        (0.88 * frameRect.height) / targetRect.height
-      );
-      const zoomScale = Math.min(1.55, maxScale);
+      const counts = selectAll('[class~="f05-progress-build-count-stage"]');
+      timeline.set(counts, { autoAlpha: 0 }, 0);
+      timeline.set('[data-count="1"]', { autoAlpha: 1 }, 1.38);
+      timeline.set('[data-count="1"]', { autoAlpha: 0 }, 2.10);
+      timeline.set('[data-count="2"]', { autoAlpha: 1 }, 2.10);
+      timeline.set('[data-count="2"]', { autoAlpha: 0 }, 2.83);
+      timeline.set('[data-count="3"]', { autoAlpha: 1 }, 2.83);
 
-      timeline.fromTo(target, {
-        opacity: 0,
-        scale: 0.92
-      }, {
-        opacity: 1,
-        scale: 1,
-        duration: 0.84,
-        ease: "power2.out"
-      }, 3.55);
-      timeline.to(outer, {
-        scale: zoomScale,
-        duration: 1.25,
-        ease: "power3.inOut"
-      }, 3.80);
-      timeline.to(inner, {
-        x: -targetOffsetX,
-        y: -targetOffsetY,
-        duration: 1.25,
-        ease: "power3.inOut"
-      }, 3.80);
-      timeline.fromTo('[class~="f05-progress-build-movement-image"]', {
-        scale: 1.08
-      }, {
-        scale: 1,
-        duration: 1.25,
-        ease: "power3.inOut"
-      }, 3.80);
-      timeline.fromTo('[class~="f05-progress-build-chip"]', {
-        opacity: 0,
-        y: 14,
-        scale: 0.94
-      }, {
-        opacity: 1,
-        y: 0,
-        scale: 1,
-        duration: 0.42,
-        ease: "power2.out",
-        stagger: 0.18
-      }, 4.42);
-      timeline.fromTo('[class~="f05-progress-build-final-line"]', {
-        opacity: 0,
-        x: -16
-      }, {
-        opacity: 1,
-        x: 0,
-        duration: 0.60,
-        ease: "power2.out"
-      }, 5.20);
-      timeline.fromTo('[class~="f05-progress-build-progress-fill"]', {
-        scaleX: 0
-      }, {
-        scaleX: 1,
-        duration: 0.70,
-        ease: "power2.out"
-      }, 5.20);
+      timeline.fromTo('[class~="f05-progress-build-save"]', { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: .42, ease: "power2.out" }, 3.06);
+      timeline.to('[class~="f05-progress-build-save"]', { scale: .965, duration: .13, ease: "power2.in" }, 3.62);
+      timeline.to('[class~="f05-progress-build-save"]', { scale: 1, duration: .24, ease: "back.out(1.7)" }, 3.76);
+      timeline.to('[class~="f05-progress-build-editor-panel"]', { opacity: 0, y: -34, duration: .52, ease: "power2.inOut" }, 4.02);
+      timeline.fromTo('[class~="f05-progress-build-home-panel"]', { opacity: 0, y: 48, scale: .975 }, { opacity: 1, y: 0, scale: 1, duration: .72, ease: "power3.out" }, 4.25);
+      timeline.fromTo('[class~="f05-progress-build-home-card"]', { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: .52, ease: "power2.out" }, 4.72);
+
+      selectAll('[class~="f05-progress-build-progress-fill"]').forEach((fill, index) => {
+        timeline.fromTo(fill, { scaleX: 0 }, { scaleX: Number(fill.dataset.progress), duration: .72, ease: "power2.out" }, 5.05 + index * .28);
+      });
+      timeline.fromTo('[class~="f05-progress-build-on-track"]', { opacity: 0, scale: .72 }, { opacity: 1, scale: 1, duration: .42, ease: "back.out(1.45)" }, 5.62);
+      timeline.fromTo('[class~="f05-progress-build-home-note"]', { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: .48, ease: "power2.out" }, 5.90);
+      timeline.fromTo('[class~="f05-progress-build-payoff"]', { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: .58, ease: "power3.out" }, 6.25);
+      timeline.fromTo('[class~="f05-progress-build-progress-end"]', { scaleX: 0 }, { scaleX: 1, duration: 1.1, ease: "power2.out" }, 6.30);
     })();
   </script>
 </template>
