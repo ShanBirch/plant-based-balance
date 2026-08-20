@@ -1,4 +1,5 @@
 import { spawn, spawnSync } from 'node:child_process';
+import crypto from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -14,6 +15,12 @@ const DEFAULT_BATCH_MAX_WAIT_MS = 9000;
 const DEFAULT_TURN_TIMEOUT_MS = 4 * 60 * 1000;
 const DEFAULT_HTTP_TIMEOUT_MS = 10000;
 const DEFAULT_BARE_DRAFT_REDRIVE_MS = 30000;
+const DEFAULT_FAILED_ALERT_RETRY_MS = 30000;
+const META_APP_PREVIEW_SHORT_URL = 'https://plantbased-balance.org/p';
+const FOUNDERS_PASS_CHECKOUT_URL = 'https://plantbased-balance.org/founders';
+const META_APP_PREVIEW_REF_TTL_MS = 24 * 60 * 60 * 1000;
+const META_APP_PREVIEW_REF_VERSION = 2;
+const META_APP_PREVIEW_SIGNATURE_BYTES = 12;
 const INTERNAL_TEST_THREAD_IDS = new Set([
     '4baea56e-eab4-4887-a732-39b14e983d44',
     'ae26f9ef-b7aa-41ac-b9cd-8ecb616ab6fc',
@@ -44,6 +51,36 @@ export function hasVerifiedAlertDelivery({ alert, canonicalOutbounds, finalAlert
     return String(finalAlert?.data?.delivery_payload_kind || '').toLowerCase() === 'video';
 }
 
+export function buildSignedMetaAppPreviewUrl(threadId, {
+    secret = '',
+    nowMs = Date.now(),
+    ttlMs = META_APP_PREVIEW_REF_TTL_MS,
+} = {}) {
+    const idHex = String(threadId || '').replace(/-/g, '');
+    const signingSecret = String(secret || '').trim();
+    const expiresAtSeconds = Math.floor((nowMs + ttlMs) / 1000);
+    if (!/^[0-9a-f]{32}$/i.test(idHex)
+        || !signingSecret
+        || !Number.isSafeInteger(expiresAtSeconds)
+        || expiresAtSeconds > 0xffffffff) return '';
+    const payload = Buffer.alloc(21);
+    payload.writeUInt8(META_APP_PREVIEW_REF_VERSION, 0);
+    Buffer.from(idHex, 'hex').copy(payload, 1);
+    payload.writeUInt32BE(expiresAtSeconds, 17);
+    const signature = crypto.createHmac('sha256', signingSecret)
+        .update(payload)
+        .digest()
+        .subarray(0, META_APP_PREVIEW_SIGNATURE_BYTES);
+    const token = Buffer.concat([payload, signature]).toString('base64url');
+    return `${META_APP_PREVIEW_SHORT_URL}/${encodeURIComponent(token)}`;
+}
+
+export function shouldRetryFailedAlert(alertState, nowMs = Date.now(), retryMs = DEFAULT_FAILED_ALERT_RETRY_MS) {
+    if (alertState?.status !== 'failed') return true;
+    const failedAtMs = Date.parse(alertState.failedAt || '');
+    return !Number.isFinite(failedAtMs) || nowMs - failedAtMs >= retryMs;
+}
+
 export function parseArgs(argv = []) {
     const args = {
         workspace: process.env.BALANCE_WORKSPACE || DEFAULT_WORKSPACE,
@@ -69,7 +106,13 @@ export function parseArgs(argv = []) {
     return args;
 }
 
-export function buildLivePrompt({ alert, action, codexThreadId }) {
+export function buildLivePrompt({
+    alert,
+    action,
+    codexThreadId,
+    appPreviewUrl = '',
+    checkoutUrl = FOUNDERS_PASS_CHECKOUT_URL,
+}) {
     const igThreadId = String(alert?.data?.ig_thread_id || alert?.data?.codex_live_chat_ig_thread_id || action?.thread_id || '');
     const username = String(alert?.data?.ig_username || alert?.client_name || action?.ig_username || 'unknown lead');
     const newestInbound = String(alert?.data?.message_preview || '').trim();
@@ -114,6 +157,10 @@ Fixed offer facts:
 - Approved proof photos: Ally https://plantbased-balance.org/photos/client-success/ally-cocos.png ; Gen https://plantbased-balance.org/photos/client-success/gen-cocos.jpg ; Dani https://plantbased-balance.org/photos/client-success/dani-front-mirror-8-weeks.png ; Bec/Kirsty https://plantbased-balance.org/photos/client-success/bec-kirsty-cocos.png
 - They can see their profile, workout program, meal plan, and the full app before paying.
 - Transformation proof is optional, must genuinely match the person's goal and situation, and must not be forced or hardcoded.
+- Exact signed app-preview URL for this wake: ${appPreviewUrl || 'unavailable; do not complete or send a generic preview URL'}
+- Exact approved Founders Pass checkout URL: ${checkoutUrl}
+- The signed preview URL above is already generated for this exact IG thread. When the newest inbound accepts the preview, send that exact URL now and do not search for, regenerate, shorten, or substitute it.
+- Never complete or cancel the controller action unless the required Instagram payload has been sent and canonically read back, or a genuine hold is being recorded.
 
 Execution:
 1. Revalidate the supplied codex_live_worker controller claim and the exact live-thread safety gates. A non-blocking style warning must never leave this normal paid lead unanswered.
@@ -665,7 +712,7 @@ async function ensureConversation({ appServer, state, statePath, workspace, aler
     return conversation;
 }
 
-async function runAlert({ alert, action, appServer, supabase, state, statePath, args, logger }) {
+async function runAlert({ alert, action, appServer, supabase, state, statePath, args, logger, previewSigningSecret }) {
     const conversation = await ensureConversation({
         appServer,
         state,
@@ -675,7 +722,14 @@ async function runAlert({ alert, action, appServer, supabase, state, statePath, 
         openChat: args.openChat,
         logger,
     });
-    const prompt = buildLivePrompt({ alert, action, codexThreadId: conversation.codexThreadId });
+    const appPreviewUrl = buildSignedMetaAppPreviewUrl(action.thread_id, { secret: previewSigningSecret });
+    const prompt = buildLivePrompt({
+        alert,
+        action,
+        codexThreadId: conversation.codexThreadId,
+        appPreviewUrl,
+        checkoutUrl: FOUNDERS_PASS_CHECKOUT_URL,
+    });
     await supabase.mergeAlertData(alert.id, {
         codex_live_chat_status: 'active',
         codex_live_chat_codex_thread_id: conversation.codexThreadId,
@@ -707,6 +761,8 @@ async function runAlert({ alert, action, appServer, supabase, state, statePath, 
     const delivered = hasVerifiedAlertDelivery({ alert, canonicalOutbounds, finalAlert });
     const actionClosed = ['completed', 'cancelled'].includes(String(finalAction?.status || ''));
     if (!delivered) {
+        const operatorResult = String(completed.agentText || '').replace(/\s+/g, ' ').trim().slice(0, 800);
+        if (operatorResult) logger(`Codex no-delivery operator result for alert ${alert.id}: ${operatorResult}`);
         const transportCode = finalAction?.receipt?.transport_code || null;
         const expectedPayload = requiresVerifiedVideoDelivery(alert) ? 'video' : 'text';
         const actualPayload = finalAlert?.data?.delivery_payload_kind || 'none';
@@ -782,7 +838,8 @@ export async function main(argv = process.argv.slice(2)) {
             await testAppServer({ args, appServer, logger });
             return;
         }
-        const supabase = new SupabaseRest(loadSupabaseCredentials(args.workspace));
+        const supabaseCredentials = loadSupabaseCredentials(args.workspace);
+        const supabase = new SupabaseRest(supabaseCredentials);
         logger(`${args.dryRun ? 'dry-run ' : ''}worker started for ${args.workspace}`);
         do {
             let alerts = [];
@@ -795,6 +852,7 @@ export async function main(argv = process.argv.slice(2)) {
             }
             for (const alert of alerts || []) {
                 if (!shouldHandleAlert(alert)) continue;
+                if (!shouldRetryFailedAlert(state.alerts[alert.id])) continue;
                 if (isRecoverableBareDraftAlert(alert)
                     && alert?.data?.codex_live_chat_required !== true) {
                     const lastRedriveMs = Date.parse(alert?.data?.codex_live_worker_redrive_at || '');
@@ -833,7 +891,17 @@ export async function main(argv = process.argv.slice(2)) {
                 }
                 try {
                     if (args.useAppServer) {
-                        await runAlert({ alert, action, appServer, supabase, state, statePath, args, logger });
+                        await runAlert({
+                            alert,
+                            action,
+                            appServer,
+                            supabase,
+                            state,
+                            statePath,
+                            args,
+                            logger,
+                            previewSigningSecret: supabaseCredentials.key,
+                        });
                     } else {
                         await runDirectDraftAlert({ alert, action, supabase, state, statePath, logger });
                     }

@@ -8,6 +8,7 @@ const { pathToFileURL } = require('url');
     const worker = await import(pathToFileURL(workerPath).href);
     const { isCodexLivePaidMetaThread } = require('../netlify/functions/ig-instant-draft')._test;
     const { cleanOwner } = require('../netlify/functions/_lib/ig-next-action-queue');
+    const { verifyMetaAppPreviewRef } = require('../netlify/functions/_lib/meta-app-preview-ref');
 
     const productionOriginSource = fs.readFileSync(workerPath, 'utf8');
     assert.match(productionOriginSource, /https:\/\/main--future-balance\.netlify\.app/);
@@ -22,6 +23,24 @@ const { pathToFileURL } = require('url');
     assert.strictEqual(worker.parseArgs([]).useAppServer, true, 'live conversation mode is the worker default');
     assert.strictEqual(worker.parseArgs(['--direct-draft']).useAppServer, false, 'direct draft requires an explicit diagnostic flag');
     assert.strictEqual(worker.parseArgs(['--direct-draft', '--codex-turn']).useAppServer, true, 'the explicit production flag wins when it appears last');
+
+    const previewThreadId = '4baea56e-eab4-4887-a732-39b14e983d44';
+    const previewNow = Date.parse('2026-08-20T04:00:00Z');
+    const previewSecret = 'test-preview-secret';
+    const signedPreviewUrl = worker.buildSignedMetaAppPreviewUrl(previewThreadId, {
+        secret: previewSecret,
+        nowMs: previewNow,
+    });
+    assert.match(signedPreviewUrl, /^https:\/\/plantbased-balance\.org\/p\/[A-Za-z0-9_-]+$/);
+    const previewToken = signedPreviewUrl.split('/').pop();
+    assert.strictEqual(verifyMetaAppPreviewRef(previewToken, {
+        nowMs: previewNow,
+        env: { META_APP_PREVIEW_REF_SECRET: previewSecret },
+    }).threadId, previewThreadId, 'the worker signs the same compact preview reference as the public preview route');
+    assert.strictEqual(worker.buildSignedMetaAppPreviewUrl('not-a-thread', { secret: previewSecret }), '');
+    assert.strictEqual(worker.shouldRetryFailedAlert(null, previewNow), true);
+    assert.strictEqual(worker.shouldRetryFailedAlert({ status: 'failed', failedAt: '2026-08-20T03:59:50Z' }, previewNow, 30000), false);
+    assert.strictEqual(worker.shouldRetryFailedAlert({ status: 'failed', failedAt: '2026-08-20T03:59:20Z' }, previewNow, 30000), true);
 
     assert.strictEqual(cleanOwner('codex_live_worker'), 'codex_live_worker');
 
@@ -142,6 +161,8 @@ const { pathToFileURL } = require('url');
             thread_id: 'ig-thread-1',
         },
         codexThreadId: 'codex-thread-1',
+        appPreviewUrl: signedPreviewUrl,
+        checkoutUrl: 'https://plantbased-balance.org/founders',
     });
     assert.doesNotMatch(prompt, /\$balance-lead-client-dm-manager/);
     assert.doesNotMatch(prompt, /Read CODEX\.md, CLAUDE\.md/);
@@ -176,6 +197,10 @@ const { pathToFileURL } = require('url');
     assert.match(prompt, /free personalised look inside the app/);
     assert.match(prompt, /signed personal app-preview link immediately/i);
     assert.match(prompt, /Never ask for their first name, last name, email address, phone number/i);
+    assert.match(prompt, new RegExp(signedPreviewUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    assert.match(prompt, /Exact approved Founders Pass checkout URL: https:\/\/plantbased-balance\.org\/founders/);
+    assert.match(prompt, /send that exact URL now and do not search for, regenerate, shorten, or substitute it/i);
+    assert.match(prompt, /Never complete or cancel the controller action unless the required Instagram payload has been sent/i);
     assert.match(prompt, /Do not copy their wording/);
     assert.match(prompt, /one AUD 89\.99 payment/);
     assert.doesNotMatch(prompt, /before making a payment\. Keen\?/);
