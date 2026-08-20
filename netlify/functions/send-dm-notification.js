@@ -106,6 +106,8 @@ const ADMIN_COMMUNITY_NOTIFICATION_TYPES = new Set([
     'feed_comment',
 ]);
 
+const DISPATCHER_APPROVAL_NOTIFICATION_TYPE = 'dispatcher_approval_ready';
+
 const ADMIN_CLIENT_LIFECYCLE_STAGES = new Set([
     'trial',
     'trial_expiring',
@@ -197,7 +199,24 @@ function isClientScopedAdminPush({ alert, payload = {} }) {
         && !!String(payload.messageText || payload.clientMessage || '').trim();
 }
 
+function isValidDispatcherApprovalPush(payload = {}) {
+    const batchId = String(payload.batchId || payload.batch_id || '').trim();
+    const batchVersion = Number(payload.batchVersion || payload.batch_version);
+    const batchSize = Number(payload.batchSize || payload.batch_size);
+
+    return payload.actionType === 'ig_dispatch_approval_batch'
+        && /^balance-ig-approval-[A-Za-z0-9_-]+$/.test(batchId)
+        && Number.isInteger(batchVersion)
+        && batchVersion > 0
+        && Number.isInteger(batchSize)
+        && batchSize > 0
+        && batchSize <= 30;
+}
+
 function isAllowedAdminPhonePush({ type, alert, payload }) {
+    if (type === DISPATCHER_APPROVAL_NOTIFICATION_TYPE) {
+        return !alert && isValidDispatcherApprovalPush(payload);
+    }
     if (ADMIN_WARNING_NOTIFICATION_TYPES.has(type)) {
         return isClientScopedAdminPush({ alert, payload });
     }
@@ -485,6 +504,9 @@ exports.handler = async (event) => {
         const challengeOfferReason = payload.challengeOfferReason || '';
         const storyId = String(payload.storyId || payload.story_id || payload.feedPostId || payload.feed_post_id || '');
         const commentId = String(payload.commentId || payload.comment_id || '');
+        const batchId = String(payload.batchId || payload.batch_id || '');
+        const batchVersion = String(payload.batchVersion || payload.batch_version || '');
+        const batchSize = String(payload.batchSize || payload.batch_size || '');
         const customCollapseKey = String(payload.collapseKey || payload.collapse_key || '').slice(0, 64);
 
         if (!recipientId || !messageText) {
@@ -661,6 +683,9 @@ exports.handler = async (event) => {
                                 url: notificationUrl,
                                 storyId,
                                 commentId,
+                                batchId,
+                                batchVersion,
+                                batchSize,
                                 // Coach-draft extras (empty strings for regular DMs, FCM V1 requires strings)
                                 alertId,
                                 clientId,
@@ -728,6 +753,9 @@ exports.handler = async (event) => {
                                 url: notificationUrl,
                                 storyId,
                                 commentId,
+                                batchId,
+                                batchVersion,
+                                batchSize,
                                 alertId,
                                 clientId,
                                 clientName,
@@ -822,6 +850,7 @@ module.exports.__test = {
     getExternalMessageChannel,
     getAlertExternalChannel,
     isClientScopedAdminPush,
+    isValidDispatcherApprovalPush,
     isAllowedAdminPhonePush,
     shouldSuppressExternalMessagePush,
 };

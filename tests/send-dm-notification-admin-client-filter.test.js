@@ -25,7 +25,44 @@ sandbox.global = sandbox;
 
 vm.runInNewContext(code, sandbox, { filename: file });
 
-const { isAllowedAdminPhonePush } = sandbox.module.exports.__test;
+const { isAllowedAdminPhonePush, isValidDispatcherApprovalPush } = sandbox.module.exports.__test;
+
+const dispatcherApprovalPayload = {
+    actionType: 'ig_dispatch_approval_batch',
+    batchId: 'balance-ig-approval-20260821T0130Z',
+    batchVersion: 6,
+    batchSize: 30,
+    messageText: '30 reviewed Instagram actions are ready for approval.',
+};
+
+assert.strictEqual(isValidDispatcherApprovalPush(dispatcherApprovalPayload), true);
+
+assert.strictEqual(
+    isAllowedAdminPhonePush({
+        type: 'dispatcher_approval_ready',
+        alert: null,
+        payload: dispatcherApprovalPayload,
+    }),
+    true
+);
+
+assert.strictEqual(
+    isAllowedAdminPhonePush({
+        type: 'dispatcher_approval_ready',
+        alert: null,
+        payload: { ...dispatcherApprovalPayload, batchVersion: 0 },
+    }),
+    false
+);
+
+assert.strictEqual(
+    isAllowedAdminPhonePush({
+        type: 'dispatcher_approval_ready',
+        alert: { alert_type: 'general_idea', client_id: null, data: {} },
+        payload: dispatcherApprovalPayload,
+    }),
+    false
+);
 
 assert.strictEqual(
     isAllowedAdminPhonePush({
