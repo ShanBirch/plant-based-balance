@@ -358,6 +358,26 @@ async function sendNativePush(token, payload) {
             android: { priority: 'high' },
             data: stringData,
         };
+        // Android's rich approval/draft actions require a data-only FCM
+        // message so our FirebaseMessagingService receives it while the app is
+        // backgrounded. iOS has no equivalent service in this target, so give
+        // APNs its own visible alert while keeping the FCM top-level
+        // `notification` block absent. The existing Capacitor tap handler then
+        // receives the signed data and performs the approval after launch.
+        if (isNativeDataOnly) {
+            message.apns = {
+                headers: { 'apns-priority': '10' },
+                payload: {
+                    aps: {
+                        alert: {
+                            title: payload.title || '',
+                            body: payload.body || '',
+                        },
+                        sound: 'default',
+                    },
+                },
+            };
+        }
         // Stable collapse_key so identical pushes (same alert fired twice) are
         // collapsed by FCM while the device is offline instead of queuing as
         // two separate deliveries.
