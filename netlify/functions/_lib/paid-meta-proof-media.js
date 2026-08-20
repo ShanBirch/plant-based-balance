@@ -3,6 +3,9 @@ const GEN_STRENGTH_CONFIDENCE_PROOF_URL = 'https://plantbased-balance.org/photos
 const BEC_KIRSTY_SHARED_MOMENTUM_PROOF_URL = 'https://plantbased-balance.org/photos/client-success/bec-kirsty-cocos.png';
 const DANI_RECOMPOSITION_PROOF_URL = 'https://plantbased-balance.org/photos/client-success/dani-front-mirror-8-weeks.png';
 const BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL = 'https://plantbased-balance.org/assets/balance-foundations-app-proof-v5.mp4';
+const BALANCE_FOUNDATIONS_THIS_WEEK_VIDEO_URL = 'https://plantbased-balance.org/assets/balance-foundations-app-proof-v6-this-week.mp4';
+const BALANCE_FOUNDATIONS_THIS_WEEK_START_MS = Date.parse('2026-08-20T14:00:00.000Z');
+const BALANCE_FOUNDATIONS_THIS_WEEK_END_MS = Date.parse('2026-08-23T14:00:00.000Z');
 const BALANCE_APP_VIDEO_INTRO_RE = /\b(?:quick\s+(?:look|video)|app\s+(?:video|walkthrough)|video\s+(?:of|showing|through)\s+(?:the\s+)?app|look\s+(?:at|inside)\s+(?:the\s+)?app|show(?:ing)?\s+you\s+(?:around|how)\s+(?:the\s+)?app|(?:sent|sending)\s+(?:the\s+)?(?:video|vid)(?:\s+again)?|here\s+it\s+is(?:\s+again)?|here(?:'s|\s+is)\s+(?:the\s+)?(?:video|vid|it)\s+again)\b/i;
 
 const ALLY_INTRO_RE = /\b(?:this is ally|here(?:'s| is) ally|ally(?:,|\s+(?:is|was|lost|has))|one of my clients)\b/i;
@@ -80,16 +83,33 @@ function maySendDraftImageAttachment({ imageUrl = '', replyText = '' } = {}) {
 
 function maySendDraftVideoAttachment({ videoUrl = '', replyText = '' } = {}) {
     const normalizedUrl = String(videoUrl || '').trim().toLowerCase();
-    if (normalizedUrl !== BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL.toLowerCase()) return true;
+    if (!isBalanceFoundationsAppProofVideoUrl(normalizedUrl)) return true;
     return BALANCE_APP_VIDEO_INTRO_RE.test(String(replyText || ''));
+}
+
+function isBalanceFoundationsAppProofVideoUrl(value = '') {
+    const normalizedUrl = String(value || '').trim().toLowerCase();
+    return [BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL, BALANCE_FOUNDATIONS_THIS_WEEK_VIDEO_URL]
+        .some(url => url.toLowerCase() === normalizedUrl);
+}
+
+function resolveBalanceFoundationsAppProofVideoUrl(nowMs = Date.now()) {
+    const timestamp = Number(nowMs);
+    return Number.isFinite(timestamp)
+        && timestamp >= BALANCE_FOUNDATIONS_THIS_WEEK_START_MS
+        && timestamp < BALANCE_FOUNDATIONS_THIS_WEEK_END_MS
+        ? BALANCE_FOUNDATIONS_THIS_WEEK_VIDEO_URL
+        : BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL;
 }
 
 function stripPaidMetaProofMediaUrls(text = '') {
     const raw = String(text || '');
-    const escapedUrl = BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    if (!new RegExp(escapedUrl, 'i').test(raw)) return raw;
+    const escapedUrls = [BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL, BALANCE_FOUNDATIONS_THIS_WEEK_VIDEO_URL]
+        .map(url => url.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    const proofVideoUrlRe = new RegExp(escapedUrls.join('|'), 'i');
+    if (!proofVideoUrlRe.test(raw)) return raw;
     return raw
-        .replace(new RegExp(`\\s*${escapedUrl}(?=\\s|$)`, 'gi'), '')
+        .replace(new RegExp(`\\s*(?:${escapedUrls.join('|')})(?=\\s|$)`, 'gi'), '')
         .replace(/:\s*(?=(?:would|do|want|keen|are|can|should|what|how|where|when|why|who)\b)/gi, '. ')
         .replace(/[ \t]{2,}/g, ' ')
         .replace(/[ \t]+\n/g, '\n')
@@ -102,10 +122,13 @@ module.exports = {
     BEC_KIRSTY_SHARED_MOMENTUM_PROOF_URL,
     DANI_RECOMPOSITION_PROOF_URL,
     BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL,
+    BALANCE_FOUNDATIONS_THIS_WEEK_VIDEO_URL,
     hasAllyProofIntroduction,
     isAllyWeightLossProofUrl,
     maySendDraftImageAttachment,
     maySendDraftVideoAttachment,
+    isBalanceFoundationsAppProofVideoUrl,
+    resolveBalanceFoundationsAppProofVideoUrl,
     resolvePaidMetaTransformationProof,
     stripPaidMetaProofMediaUrls,
 };

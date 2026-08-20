@@ -71,7 +71,7 @@ test('paid Meta has a dedicated sales agent prompt with no general coach assumpt
     assert.match(prompt, /I am vegetarian[\s\S]*How about you/i);
     assert.match(prompt, /vegan for five years/i);
     assert.match(prompt, /signed preview immediately/i);
-    assert.match(prompt, /do not proactively send or introduce the app video/i);
+    assert.match(prompt, /deterministic transport may add the approved quick app video after both goal and blocker are known/i);
     assert.match(prompt, /looks great.*not checkout intent/i);
     assert.doesNotMatch(prompt, /animals were a big part/i);
     assert.doesNotMatch(prompt, /CLIENT NOTES AND APP CONTEXT/i);
@@ -116,10 +116,23 @@ const { inspectVoiceScriptQuality } = require('../netlify/functions/_lib/elevenl
 const { buildMetaAppPreviewUrl, isMetaAppPreviewUrl } = require('../netlify/functions/_lib/meta-app-preview-ref');
 const {
     BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL,
+    BALANCE_FOUNDATIONS_THIS_WEEK_VIDEO_URL,
+    resolveBalanceFoundationsAppProofVideoUrl,
     resolvePaidMetaTransformationProof,
 } = require('../netlify/functions/_lib/paid-meta-proof-media');
 
-test('explicit paid Meta video retry always carries the native evergreen video', () => {
+test('time-limited Foundations proof resolves in Brisbane campaign time and expires to evergreen', () => {
+    assert.equal(
+        resolveBalanceFoundationsAppProofVideoUrl(Date.parse('2026-08-21T00:00:00.000Z')),
+        BALANCE_FOUNDATIONS_THIS_WEEK_VIDEO_URL
+    );
+    assert.equal(
+        resolveBalanceFoundationsAppProofVideoUrl(Date.parse('2026-08-23T14:00:00.000Z')),
+        BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL
+    );
+});
+
+test('explicit paid Meta video retry always carries the currently approved native video', () => {
     assert.equal(isExplicitPaidMetaProofVideoRetry({
         currentMessage: 'Show me the vid again',
         history: [],
@@ -130,7 +143,7 @@ test('explicit paid Meta video retry always carries the native evergreen video',
     }), true);
 
     const draft = buildPaidMetaProofVideoRetryReply("I can't see it");
-    assert.equal(draft.videoAttachmentUrl, BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL);
+    assert.equal(draft.videoAttachmentUrl, resolveBalanceFoundationsAppProofVideoUrl());
     assert.match(draft.joined, /sent the video again/i);
     assert.match(draft.joined, /can you see it now\?$/i);
     assert.equal(maySendDraftVideoAttachment({
@@ -1087,12 +1100,12 @@ test('paid Meta food confusion can stay with the AI writer after a non-blocking 
     assert.equal(blockerReply.chunks.length, 3);
     assert.ok(blockerReply.chunks.every(chunk => chunk.length <= 240),
         'the complete offer must fit in three native Instagram text bubbles');
-    assert.doesNotMatch(blockerReply.joined, /quick video/i);
+    assert.match(blockerReply.joined, /quick video showing you how it works inside Balance/i);
     assert.match(
         blockerReply.chunks.at(-1),
         /want me to open your free personalised preview.*before making a payment\?$/i
     );
-    assert.equal(blockerReply.videoAttachmentUrl, null);
+    assert.equal(blockerReply.videoAttachmentUrl, resolveBalanceFoundationsAppProofVideoUrl());
     assert.doesNotMatch(blockerReply.joined, /what do you usually|what usually gets in the way/i);
 
     const released = buildPaidMetaNonBlockingReviewFallback({
@@ -1130,9 +1143,9 @@ test('paid Meta treats broad overwhelm as the blocker and moves to the interacti
     });
     assert.match(reply.chunks[0], /food, workouts and consistency all feel hard at once/i);
     assert.match(reply.chunks[0], /not more pressure/i);
-    assert.doesNotMatch(reply.joined, /quick video/i);
+    assert.match(reply.joined, /quick video showing you how it works inside Balance/i);
     assert.match(reply.joined, /free personalised preview/i);
-    assert.equal(reply.videoAttachmentUrl, null);
+    assert.equal(reply.videoAttachmentUrl, resolveBalanceFoundationsAppProofVideoUrl());
 
     const allOfIt = buildDeterministicPaidMetaConversationReply({
         currentMessage: 'All of it',
@@ -1157,7 +1170,7 @@ test('paid Meta treats broad overwhelm as the blocker and moves to the interacti
     });
     assert.match(acknowledgementAfterBrokenReflection.joined, /one simple plan built around your week/i);
     assert.match(acknowledgementAfterBrokenReflection.joined, /free personalised preview/i);
-    assert.equal(acknowledgementAfterBrokenReflection.videoAttachmentUrl, null);
+    assert.equal(acknowledgementAfterBrokenReflection.videoAttachmentUrl, resolveBalanceFoundationsAppProofVideoUrl());
 });
 
 test('paid Meta answers a rapid gluten-free support question before progressing', () => {
@@ -1287,12 +1300,25 @@ test('paid Meta guided sales stages move goal to blocker to complete offer to pr
     assert.match(offerReply.joined, /weekly check-in/i);
     assert.match(offerReply.joined, /one \$89\.99 payment/i);
     assert.match(offerReply.joined, /no subscription or auto-renewal/i);
-    assert.doesNotMatch(offerReply.joined, /quick video/i);
+    assert.match(offerReply.joined, /quick video showing you how it works inside Balance/i);
     assert.match(offerReply.joined, /free personalised preview/i);
-    assert.equal(offerReply.videoAttachmentUrl, null);
+    assert.equal(offerReply.videoAttachmentUrl, resolveBalanceFoundationsAppProofVideoUrl());
     assert.match(offerReply.joined, /before making a payment/i);
     assert.match(offerReply.joined, /Want me to open your free personalised preview/i);
     assert.doesNotMatch(offerReply.joined, /https?:\/\//i);
+
+    const repeatedVideoSuppressed = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'My shifts change every week so I cannot keep a routine.',
+        qualifier: { facts: { motivation: 'Lose 8kg and feel fitter' } },
+        history: [
+            ...blockerHistory,
+            { direction: 'out', text: `[VIDEO:${resolveBalanceFoundationsAppProofVideoUrl()}]` },
+        ],
+        flowVariant: 'plant_based_control',
+        appPreviewUrl,
+    });
+    assert.equal(repeatedVideoSuppressed.videoAttachmentUrl, null);
+    assert.doesNotMatch(repeatedVideoSuppressed.joined, /quick video/i);
 
     const acceptHistory = [
         ...blockerHistory,

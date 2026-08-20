@@ -1313,6 +1313,22 @@ function buildPaidMetaTailoredOfferChunks(blockerText = '', goalText = '') {
     ];
 }
 
+function addPaidMetaProofVideoToOfferChunks(chunks = [], history = []) {
+    const offerChunks = (Array.isArray(chunks) ? chunks : []).map(chunk => String(chunk || '').trim());
+    if (!offerChunks.length || hasRecentPaidMetaProofVideo(history)) {
+        return { chunks: offerChunks, videoAttachmentUrl: null };
+    }
+    const finalIndex = offerChunks.length - 1;
+    offerChunks[finalIndex] = offerChunks[finalIndex].replace(
+        /Want me to open your free personalised preview[^?]*\?$/i,
+        "Here's a quick video showing you how it works inside Balance. Want me to open your free personalised preview before making a payment?"
+    );
+    return {
+        chunks: offerChunks,
+        videoAttachmentUrl: resolveBalanceFoundationsAppProofVideoUrl(),
+    };
+}
+
 function buildPaidMetaGoalToBlockerText(goalText = '', transformationProof = null) {
     const turn = String(goalText || '');
     let acknowledgement = 'Yeah, that’s a clear goal.';
@@ -1370,7 +1386,8 @@ function hasRecentPaidMetaProofVideo(history = []) {
     return (Array.isArray(history) ? history : [])
         .filter(item => String(item?.direction || '').toLowerCase() === 'out')
         .slice(-8)
-        .some(item => /\b(?:quick video|showing you how it works inside Balance)\b/i.test(String(item?.text || '')));
+        .some(item => /\b(?:quick video|showing you how it works inside Balance)\b|balance-foundations-app-proof-v(?:5|6)/i
+            .test(String(item?.text || '')));
 }
 
 function isExplicitPaidMetaProofVideoRetry({ currentMessage = '', history = [] } = {}) {
@@ -1398,7 +1415,7 @@ function buildPaidMetaProofVideoRetryReply(currentMessage = '') {
     return {
         chunks: [joined],
         joined,
-        videoAttachmentUrl: BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL,
+        videoAttachmentUrl: resolveBalanceFoundationsAppProofVideoUrl(),
         model: 'deterministic_paid_meta_video_retry_v1',
         replyMode: 'campaign_native_video_retry',
         maxChunks: 1,
@@ -1608,10 +1625,11 @@ function buildDeterministicPaidMetaConversationReply({
     }
     if (historyHasGoal
         && (isPaidMetaConcreteBlocker(message) || isPaidMetaBroadBlockerAnswer(message, history))) {
-        const chunks = buildPaidMetaTailoredOfferChunks(
+        const offer = addPaidMetaProofVideoToOfferChunks(buildPaidMetaTailoredOfferChunks(
             message,
             facts.motivation || facts.current_state || paidMetaLatestFitnessGoalText(history)
-        );
+        ), history);
+        const chunks = offer.chunks;
         const joined = chunks.join('\n\n');
         return {
             chunks,
@@ -1621,7 +1639,7 @@ function buildDeterministicPaidMetaConversationReply({
             maxChunks: MAX_CHUNKS,
             error: null,
             flowVariant,
-            videoAttachmentUrl: null,
+            videoAttachmentUrl: offer.videoAttachmentUrl,
         };
     }
     if (historyHasGoal
@@ -1629,10 +1647,11 @@ function buildDeterministicPaidMetaConversationReply({
         && PAID_META_POSITIVE_FIT_RE.test(message)
         && !hasRecentCompletePaidMetaOffer(history)) {
         const blockerText = paidMetaLatestConcreteBlockerText(history);
-        const chunks = buildPaidMetaTailoredOfferChunks(
+        const offer = addPaidMetaProofVideoToOfferChunks(buildPaidMetaTailoredOfferChunks(
             blockerText,
             facts.motivation || facts.current_state || paidMetaLatestFitnessGoalText(history)
-        );
+        ), history);
+        const chunks = offer.chunks;
         return {
             chunks,
             joined: chunks.join('\n\n'),
@@ -1641,7 +1660,7 @@ function buildDeterministicPaidMetaConversationReply({
             maxChunks: MAX_CHUNKS,
             error: null,
             flowVariant,
-            videoAttachmentUrl: null,
+            videoAttachmentUrl: offer.videoAttachmentUrl,
         };
     }
     return null;
@@ -2203,8 +2222,10 @@ const {
     BEC_KIRSTY_SHARED_MOMENTUM_PROOF_URL,
     DANI_RECOMPOSITION_PROOF_URL,
     BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL,
+    isBalanceFoundationsAppProofVideoUrl,
     maySendDraftImageAttachment,
     maySendDraftVideoAttachment,
+    resolveBalanceFoundationsAppProofVideoUrl,
     resolvePaidMetaTransformationProof,
 } = require('./_lib/paid-meta-proof-media');
 const FOUNDERS_PASS_CHECKOUT_URL = 'https://plantbased-balance.org/founders';
@@ -4154,7 +4175,7 @@ PAID META SINGLE-WRITER PLAYBOOK:
 - Skip anything the lead has already answered. Do not force every stage into every conversation, and do not make goal or blocker fields mechanical gates. Use judgement about the most useful adjacent move.
 - When their difficulty is known, use it to explain specifically how Balance could make follow-through easier. Do not mine distress, diagnose them, or repeat their problem back without adding value.
 - Relevant client proof should normally be used once when the match is reliable. Ally fits weight loss; Gen fits strength/confidence; Dani fits body recomposition; Bec and Kirsty fit shared accountability. Use no transformation when identity, sensitivity or fit is uncertain. If you choose one, explicitly name the approved person and say you are showing their photo so transport code can attach it.
-- Do not proactively send or introduce the app demonstration video. It does not represent the personalised preview closely enough. Move from the tailored explanation or matched client photo to the signed interactive app preview instead.
+- The deterministic transport may attach the approved quick app video once, after both their goal and practical blocker are known. Do not invent a video URL, repeat the video, or use it as a substitute for the signed personalised preview.
 - When explaining the offer, keep the facts reliable: the six-week Foundations course includes their workout program, plant-based meal plan, and one weekly training/food check-in and adjustment. It is one $89.99 payment with no subscription or auto-renewal. The free personalised app preview comes before payment.
 - Never ask the lead for an email address in Instagram. When they accept the free personalised preview, transport code sends the signed Open your preview card immediately; account creation inside that onboarding collects their email.
 - If they mention pregnancy or post-pregnancy weight as a goal without reporting a symptom or complication, keep it in the ordinary fitness lane. Do not invent children, ask for medical history, or make pregnancy recency the next question; respond to the fitness goal and ask about the current practical obstacle only if needed.
@@ -4188,7 +4209,7 @@ GUIDE THE SALE: every ordinary discovery reply must both respond to what they sa
 
 Skip anything already answered. Never repeat or lightly reword a question Shannon already asked. Do not invent personal facts about Shannon or the lead. The only approved reciprocal fact is that Shannon has been vegan for five years. If asked why Shannon went vegan, do not guess; answer briefly that he has been vegan five years and turn the focus naturally back to their story only if useful.
 
-Client proof should normally be used once when it genuinely matches: Ally for weight loss, Gen for strength/confidence, Dani for body recomposition, Bec and Kirsty for shared accountability. Use no transformation when identity, safety or fit is uncertain. If using proof, name the approved person and say you are showing their photo. Do not proactively send or introduce the app video. Do not invent URLs.
+Client proof should normally be used once when it genuinely matches: Ally for weight loss, Gen for strength/confidence, Dani for body recomposition, Bec and Kirsty for shared accountability. Use no transformation when identity, safety or fit is uncertain. If using proof, name the approved person and say you are showing their photo. The deterministic transport may add the approved quick app video after both goal and blocker are known; do not invent URLs or repeat it.
 
 Reliable offer facts: Balance Foundations is a six-week program inside Balance with a personalised workout program, plant-based meal plan, and one weekly training/food review and adjustment. It is one AUD $89.99 payment for the full six weeks, with no subscription or auto-renewal. The personalised app preview comes before payment.
 
@@ -4284,15 +4305,13 @@ function attachPaidMetaWriterSelectedMedia(draft = {}, {
     return {
         ...draft,
         imageAttachmentUrl: draft.imageAttachmentUrl || selectedProof?.imageUrl || null,
-        // The paid-Meta funnel now opens the interactive personalised preview
-        // instead of proactively attaching the generic evergreen app video.
-        // Preserve only a video already selected by an explicit retry path.
+        // Preserve only a video selected by the qualified-offer or explicit-retry path.
         videoAttachmentUrl: draft.videoAttachmentUrl || null,
     };
 }
 
 function ensurePaidMetaAppVideoPreviewCta(draft = {}) {
-    if (String(draft?.videoAttachmentUrl || '').trim() !== BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL) return draft;
+    if (!isBalanceFoundationsAppProofVideoUrl(draft?.videoAttachmentUrl)) return draft;
     const replyText = draftTextFromDraft(draft);
     const alreadyOffersSetupBeforePayment = /\b(?:set(?:ting)?|build(?:ing)?)\b[^.!?\n]{0,80}\b(?:program|workout|meal plan|plan|preview)\b[^.!?\n]{0,100}\b(?:before (?:you )?(?:pay|decide)|before payment)\b/i.test(replyText)
         && /\?/.test(replyText);

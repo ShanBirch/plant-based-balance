@@ -83,5 +83,5 @@ Retain the strong warm-white, near-black plum and Balance-gold visual language o
 
 - source: `compositions/frames/07-balance-close.html`
 - timing: 65.3-72.3s
-- copy: “BALANCE FOUNDATIONS”, “ONE AU$89.99 PAYMENT”, “FOR THE FULL SIX WEEKS”, the inclusion summary, and “No subscription. No auto-renewal.”
-- purpose: resolve what the viewer gets, the access period and the full price without ambiguity.
+- copy: “BALANCE FOUNDATIONS”, “ONE AU$89.99 PAYMENT”, “FOR THE FULL SIX WEEKS”, the inclusion summary, “No subscription. No auto-renewal.”, then “THIS WEEK ONLY” on the final beat.
+- purpose: resolve what the viewer gets, the access period and the full price without ambiguity, then close the time-limited paid-Meta campaign cut.

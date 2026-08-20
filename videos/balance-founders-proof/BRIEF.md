@@ -17,6 +17,8 @@ style_preset: balance-editorial
 
 Create the product explainer sent inside the paid Meta conversation. Keep the existing premium white, plum and gold edit, but make the sale unmistakable without sound. Introduce each inclusion in plain language and immediately show its real Balance experience.
 
+This v6 campaign cut ends on “THIS WEEK ONLY” and is eligible only through Sunday 23 August 2026 in Brisbane time. Paid-Meta transport must automatically fall back to the evergreen v5 asset after the campaign window.
+
 The story order is: workout program, plant-based meal plan, community Feed, guided six-week course from lesson to quiz, Weekly Goals, Shannon's weekly voice check-in and plan review, then the exact price and renewal terms.
 
 ## Product truth
@@ -40,3 +42,4 @@ The story order is: workout program, plant-based meal plan, community Feed, guid
 - Do not claim lifetime access.
 - Keep critical text clear of Instagram interface reserves.
 - End on the price long enough for an easy read.
+- Reveal “THIS WEEK ONLY” on the final beat; never keep this campaign cut active after Sunday 23 August 2026 Brisbane time.

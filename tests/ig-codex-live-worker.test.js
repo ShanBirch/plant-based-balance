@@ -221,7 +221,7 @@ const { pathToFileURL } = require('url');
     assert.match(prompt, /food uncertainty/);
     assert.match(prompt, /Do not open with the generic line/);
     assert.match(prompt, /native app video/);
-    assert.match(prompt, /63-second evergreen app video/);
+    assert.match(prompt, /currently approved app video/);
     assert.match(prompt, /URL is transport-only/);
     assert.match(prompt, /never paste it into public reply or draft text/);
     assert.match(prompt, /same synchronous delivery/i);
