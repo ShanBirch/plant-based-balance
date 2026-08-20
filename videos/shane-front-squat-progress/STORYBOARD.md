@@ -1,5 +1,5 @@
 ---
-duration: 42s
+duration: 49s
 message: "A structured front-squat block turned Shane's 150 kg target into two real reps"
 arc: Result first -> Honest starting context -> Dated target -> Training steps -> Full payoff -> Balance close
 ---
@@ -7,8 +7,8 @@ arc: Result first -> Honest starting context -> Dated target -> Training steps -
 ## Frame 1 - Two reps
 - status: animated
 - src: compositions/frames/01-payoff.html
-- duration: 4.5s
-- beat: Cold-open on the second 150 kg rep and land the result immediately
+- duration: 5.5s
+- beat: Cold-open on one complete 150 kg rep from standing through depth and back to the finish
 - blueprint: video-text-pivot
 - rules: counting-dynamic-scale, spring-pop-entrance
 - transition_in: hard-cut
@@ -16,7 +16,7 @@ arc: Result first -> Honest starting context -> Dated target -> Training steps -
 ## Frame 2 - Before the block
 - status: animated
 - src: compositions/frames/02-context.html
-- duration: 5s
+- duration: 6s
 - beat: Rewind to early-May footage and establish honestly that Shane had reached 130 kg before the block began
 - blueprint: titlecard-reveal
 - rules: discrete-text-sequence
@@ -34,8 +34,8 @@ arc: Result first -> Honest starting context -> Dated target -> Training steps -
 ## Frame 4 - The work
 - status: animated
 - src: compositions/frames/04-progression.html
-- duration: 9.5s
-- beat: Speed work, 135 kg and 140 kg step across a clear progression route
+- duration: 10.5s
+- beat: Show one complete 135 kg rep and one complete 140 kg rep across a clear progression route
 - blueprint: spatial-pan-stations
 - rules: counting-dynamic-scale, stat-bars-and-fills
 - transition_in: hard-cut
@@ -43,8 +43,8 @@ arc: Result first -> Honest starting context -> Dated target -> Training steps -
 ## Frame 5 - The target moved twice
 - status: animated
 - src: compositions/frames/05-result.html
-- duration: 11.5s
-- beat: Return to the final double, then let Shane's own reaction make the result human
+- duration: 15.5s
+- beat: Show the complete 150 kg double continuously, then let Shane's own reaction make the result human
 - blueprint: video-text-pivot
 - rules: discrete-text-sequence
 - transition_in: impact-flash

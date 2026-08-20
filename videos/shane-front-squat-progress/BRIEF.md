@@ -7,7 +7,7 @@ destination: instagram-reel
 aspect: 1080x1920
 language: en-AU
 audience: "People who want proof that clear programming and feedback can build real strength"
-length: 42s
+length: 49s
 angle: client-progress-proof
 ---
 
