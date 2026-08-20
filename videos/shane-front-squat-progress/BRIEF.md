@@ -2,7 +2,7 @@
 workflow: general-video
 flow: automation
 storyboard: no
-message: "A structured eight-week front-squat block turned Shane's 150 kg target into two real reps"
+message: "A clear goal gave every session a job, and Shane turned a 150 kg target into two real reps"
 destination: instagram-reel
 aspect: 1080x1920
 language: en-AU
@@ -13,7 +13,7 @@ angle: client-progress-proof
 
 ## Intent
 
-Create a sharp, client-led Balance progress Reel about Shane Minahan's front squat progression. Open on the 150 kg result, rewind to the dated goal and starting context, then build through real heavy, volume, and speed footage before returning to the two-rep finish. The edit should feel earned, warm, and strong rather than like a generic transformation montage.
+Create a sharp, client-led Balance progress Reel about Shane Minahan's front squat progression. Open on the Balance belief that a good goal should give every session a job, prove that belief with the 150 kg result, rewind to the dated goal and starting context, then build through the verified weekly plan and real reps. The edit should feel earned, warm, and strong rather than like a generic transformation montage.
 
 ## Assets
 
@@ -25,6 +25,7 @@ Create a sharp, client-led Balance progress Reel about Shane Minahan's front squ
 
 - Use the real message receipts as short, legible proof cards rather than recreating a fake DM interface.
 - Use the verified eight-week heavy-day plan as a phone-readable weekly timeline. Clearly separate planned targets from actual results, and use text-led beats for weeks without useful footage.
+- Make the roles honest and explicit: Balance set the direction and structured the block; Shane showed up, sent the lifts, and earned the result.
 - Add a perceptible music bed and restrained impact/switch sounds; no narration or synthetic presenter.
 - Close with the standard Balance logo treatment and a soft coaching bridge, not a hard sales CTA.
 
