@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en" data-resolution="portrait">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1080, height=1920">
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      *{margin:0;padding:0;box-sizing:border-box}html,body{width:1080px;height:1920px;overflow:hidden;background:#fbfaf5}#root{position:relative;width:1080px;height:1920px;overflow:hidden;background:#fbfaf5}.scene{position:absolute;inset:0;width:1080px;height:1920px;overflow:hidden}
+    </style>
+  </head>
+  <body>
+    <div data-hf-id="hf-gp4h" id="root" data-composition-id="main" data-start="0" data-duration="85" data-width="1080" data-height="1920">
+      <div data-hf-id="hf-77py" id="scene-01" class="clip scene" data-composition-id="01-course-hook" data-composition-src="compositions/01-course-hook.html" data-start="0" data-duration="5" data-track-index="1"></div>
+      <div data-hf-id="hf-wtseq" id="week-title-sequence" class="clip scene" data-composition-id="week-title-sequence" data-composition-src="compositions/week-title-card.html" data-start="5" data-duration="72" data-track-index="2" data-width="1080" data-height="1920"></div>
+      <div data-hf-id="hf-tivx" id="scene-02" class="clip scene" data-composition-id="02-week-one" data-composition-src="compositions/02-week-one.html" data-start="8" data-duration="9" data-track-index="1"></div>
+      <div data-hf-id="hf-5sar" id="scene-03" class="clip scene" data-composition-id="03-week-two" data-composition-src="compositions/03-week-two.html" data-start="20" data-duration="9" data-track-index="1"></div>
+      <div data-hf-id="hf-hr7l" id="scene-04" class="clip scene" data-composition-id="04-week-three" data-composition-src="compositions/04-week-three.html" data-start="32" data-duration="9" data-track-index="1"></div>
+      <div data-hf-id="hf-dyzt" id="scene-05" class="clip scene" data-composition-id="05-week-four" data-composition-src="compositions/05-week-four.html" data-start="44" data-duration="9" data-track-index="1"></div>
+      <div data-hf-id="hf-x271" id="scene-06" class="clip scene" data-composition-id="06-week-five" data-composition-src="compositions/06-week-five.html" data-start="56" data-duration="9" data-track-index="1"></div>
+      <div data-hf-id="hf-ucxf" id="scene-07" class="clip scene" data-composition-id="07-week-six" data-composition-src="compositions/07-week-six.html" data-start="68" data-duration="9" data-track-index="1"></div>
+      <div data-hf-id="hf-ggkn" id="scene-08" class="clip scene" data-composition-id="08-course-cta" data-composition-src="compositions/08-course-cta.html" data-start="77" data-duration="8" data-track-index="2"></div>
+      <audio data-hf-id="hf-aud-bed" id="course-music-bed" src=".media/audio/bgm/bgm_001.mp3" data-start="0" data-duration="85" data-track-index="20" data-automation="{&quot;version&quot;:1,&quot;lanes&quot;:[{&quot;target&quot;:&quot;volume&quot;,&quot;points&quot;:[{&quot;t&quot;:0,&quot;v&quot;:0},{&quot;t&quot;:1.2,&quot;v&quot;:0.18},{&quot;t&quot;:81.5,&quot;v&quot;:0.18},{&quot;t&quot;:85,&quot;v&quot;:0}]}]}"></audio>
+      <audio data-hf-id="hf-aud-hook" id="hook-reveal-whoosh" src=".media/audio/sfx/sfx_001.mp3" data-start="1.02" data-duration="0.6" data-track-index="21" data-volume="0.24"></audio>
+      <audio data-hf-id="hf-aud-w1" id="week-one-reveal-whoosh" src=".media/audio/sfx/sfx_001.mp3" data-start="5.68" data-duration="0.6" data-track-index="21" data-volume="0.18"></audio>
+      <audio data-hf-id="hf-aud-w2" id="week-two-reveal-whoosh" src=".media/audio/sfx/sfx_001.mp3" data-start="17.68" data-duration="0.6" data-track-index="21" data-volume="0.18"></audio>
+      <audio data-hf-id="hf-aud-w3" id="week-three-reveal-whoosh" src=".media/audio/sfx/sfx_001.mp3" data-start="29.68" data-duration="0.6" data-track-index="21" data-volume="0.18"></audio>
+      <audio data-hf-id="hf-aud-w4" id="week-four-reveal-whoosh" src=".media/audio/sfx/sfx_001.mp3" data-start="41.68" data-duration="0.6" data-track-index="21" data-volume="0.18"></audio>
+      <audio data-hf-id="hf-aud-w5" id="week-five-reveal-whoosh" src=".media/audio/sfx/sfx_001.mp3" data-start="53.68" data-duration="0.6" data-track-index="21" data-volume="0.18"></audio>
+      <audio data-hf-id="hf-aud-w6" id="week-six-reveal-whoosh" src=".media/audio/sfx/sfx_001.mp3" data-start="65.68" data-duration="0.6" data-track-index="21" data-volume="0.18"></audio>
+      <audio data-hf-id="hf-aud-cta" id="cta-button-click" src=".media/audio/sfx/sfx_002.mp3" data-start="81.5" data-duration="0.4" data-track-index="22" data-volume="0.28"></audio>
+    </div>
+    <script>
+      window.__timelines=window.__timelines||{};
+      const tl=gsap.timeline({paused:true});
+      tl.to({}, {duration:85}, 0);
+      window.__timelines.main=tl;
+    </script>
+  </body>
+</html>

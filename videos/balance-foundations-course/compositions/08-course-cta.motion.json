@@ -1,0 +1,1 @@
+{"scene":"08-course-cta","duration_s":8,"rules":["cta-morph-press","spring-pop-entrance","gradient-text-sweep"],"entry":{"vector":"down 32px over 0.62s","from_rest":true},"exit":{"vector":"none","still_moving":false}}

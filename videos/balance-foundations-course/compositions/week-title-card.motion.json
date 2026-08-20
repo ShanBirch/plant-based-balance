@@ -1,0 +1,1 @@
+{"scene":"week-title-sequence","duration_s":72,"rules":["titlecard-reveal","svg-path-draw"],"entry":{"vector":"down 42px over 0.68s","from_rest":true},"exit":{"vector":"none","still_moving":false}}

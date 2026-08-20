@@ -1,0 +1,1 @@
+{"scene":"01-course-hook","duration_s":5,"rules":["titlecard-reveal","svg-path-draw","gradient-text-sweep"],"entry":{"vector":"down 18px over 0.65s","from_rest":true},"exit":{"vector":"none","still_moving":false}}
