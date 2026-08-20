@@ -45,6 +45,6 @@ jobs:
           IOS_BUILD_NUMBER: ${{ inputs.build_number }}
           PROCESSING_WAIT_MINUTES: "35"
           SUBMIT_FOR_REVIEW: ${{ inputs.submit_for_review }}
-          IOS_RELEASE_NOTES: "Updates the App Store presentation with clearer plant-based nutrition artwork."
-          IOS_REVIEW_NOTES: "This update refreshes the App Store screenshots so the plant-based nutrition feature card is clear and readable. App functionality is unchanged."
+          IOS_RELEASE_NOTES: "Improves exercise video uploads on iPhone, especially for larger workout clips, by transferring the selected file through the native app instead of browser memory."
+          IOS_REVIEW_NOTES: "This update improves custom exercise video uploads on iPhone. The app now selects and uploads larger workout clips using a native file-based upload path, avoiding WebView memory pressure that could interrupt the app. To review: sign in, open Feed, choose the exercise video upload flow, select a video from Files or Photos, complete the exercise details, and submit."
         run: node scripts/submit-ios-appstore.mjs
