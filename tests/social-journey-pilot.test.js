@@ -85,7 +85,7 @@ test('Home plan cards stay below the complete FitGotchi stats block', () => {
     assert.match(source, /characterBlockTail\.parentNode\.insertBefore\(card, characterBlockTail\.nextSibling\)/);
     assert.doesNotMatch(source, /levelStrip\.parentNode\.insertBefore\((weeklyGoals|card), levelStrip\.nextSibling\)/);
     assert.match(html, /pbb-social-journey\.js\?v=30-character-stats-tail/);
-    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v327'/);
+    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v328'/);
 });
 
 test('Home goals and plan cards follow light and dark mode', () => {
@@ -97,7 +97,8 @@ test('Home goals and plan cards follow light and dark mode', () => {
     assert.match(css, /html\[data-pbb-theme="light"\] #weekly-goals-card\.weekly-goals-home-card/);
     assert.match(css, /html\[data-pbb-theme="dark"\]\.pbb-unified-next-steps #next-obvious-steps-card\.is-unified-plan \.next-step-action/);
     assert.match(css, /weekly-goal-progress-card__value\.is-complete/);
-    assert.match(html, /pbb-social-journey\.css\?v=19-home-canvas/);
+    assert.match(css, /html\.pbb-unified-next-steps #weekly-goals-card\.weekly-goals-home-card\s*\{[\s\S]*?margin: 10px 25px 14px !important/);
+    assert.match(html, /pbb-social-journey\.css\?v=20-goals-gap/);
     assert.match(html, /pbb-deferred-weeklygoals\.js\?v=33-home-theme/);
 });
 

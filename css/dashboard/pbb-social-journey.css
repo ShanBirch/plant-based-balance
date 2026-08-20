@@ -158,6 +158,10 @@ html[data-pbb-theme="dark"].pbb-unified-next-steps #view-dashboard .dashboard-we
   color: #f8f7f2;
 }
 
+html.pbb-unified-next-steps #weekly-goals-card.weekly-goals-home-card {
+  margin: 10px 25px 14px !important;
+}
+
 #weekly-goals-card.weekly-goals-home-card {
   color: #f8f7f2;
   -webkit-text-fill-color: #f8f7f2;
