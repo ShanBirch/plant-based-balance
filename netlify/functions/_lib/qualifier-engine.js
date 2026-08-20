@@ -968,6 +968,27 @@ const PSYCHOLOGY_MOVES = new Set([
     'invite',
     'pause',
 ]);
+const OBJECTION_TYPES = new Set([
+    'none',
+    'price',
+    'time',
+    'confidence',
+    'past_failure',
+    'partner_decision',
+    'needs_thinking_time',
+    'online_or_in_person_fit',
+    'existing_support',
+    'offer_fit',
+    'unknown',
+]);
+const DECISION_STATES = new Set([
+    'not_deciding',
+    'exploring',
+    'weighing',
+    'autonomy_pause',
+    'clear_no',
+    'unknown',
+]);
 
 function normalizeBridgePlan(raw = {}) {
     const source = raw && typeof raw === 'object' ? raw : {};
@@ -995,6 +1016,19 @@ function normalizeBridgePlan(raw = {}) {
 
 function normalizeConversationPsychology(raw = {}) {
     const source = raw && typeof raw === 'object' ? raw : {};
+    const objectionType = OBJECTION_TYPES.has(source.objection_type) ? source.objection_type : 'unknown';
+    const decisionState = DECISION_STATES.has(source.decision_state) ? source.decision_state : 'unknown';
+    let allowedMove = PSYCHOLOGY_MOVES.has(source.allowed_move) ? source.allowed_move : 'reflect';
+
+    // A no or a request for thinking space is a stopping signal, not a reason
+    // to intensify the close. Likewise, an unresolved objection cannot safely
+    // authorize another bridge or invite by itself.
+    if (decisionState === 'clear_no' || decisionState === 'autonomy_pause') {
+        allowedMove = 'pause';
+    } else if (!['none', 'unknown'].includes(objectionType) && ['bridge', 'invite'].includes(allowedMove)) {
+        allowedMove = ['confidence', 'past_failure'].includes(objectionType) ? 'affirm' : 'clarify';
+    }
+
     return {
         need_right_now: PSYCHOLOGY_NEEDS.has(source.need_right_now) ? source.need_right_now : 'unknown',
         change_talk_strength: CHANGE_TALK_STRENGTHS.has(source.change_talk_strength)
@@ -1004,7 +1038,10 @@ function normalizeConversationPsychology(raw = {}) {
             ? source.confidence_signal
             : 'unknown',
         friction_type: FRICTION_TYPES.has(source.friction_type) ? source.friction_type : 'unknown',
-        allowed_move: PSYCHOLOGY_MOVES.has(source.allowed_move) ? source.allowed_move : 'reflect',
+        allowed_move: allowedMove,
+        objection_type: objectionType,
+        decision_state: decisionState,
+        objection_evidence: cleanProfileText(source.objection_evidence, 180),
         change_talk_evidence: cleanProfileText(source.change_talk_evidence, 180),
         confidence_evidence: cleanProfileText(source.confidence_evidence, 180),
         desired_direction: cleanProfileText(source.desired_direction, 140),
@@ -1226,7 +1263,7 @@ function buildEvaluationPrompt({ leadName, channel, currentQualifier, history, c
 
     const customDataText = formatQualifierCustomDataText(customData);
 
-    return `You are scoring a lead's progress through a 4-stage qualifier funnel for Shannon, who is currently offering the Balance Foundations Founders Pass. It is AUD $89.99 once, does not need a phone call, and includes a fixed six-week course, six weeks of app/community access, one weekly check-in, and workout and food review/adjustments from Shannon. It does not auto-renew. Online Coaching is the ongoing individual progression option after Foundations or from day one at AUD $29.99/week for six months, AUD $49.99/week for three months, or AUD $74.99/week month-to-month. Close the Founders Pass through DMs by default. Balance no longer uses a free challenge as its acquisition or conversion path.
+    return `You are scoring a lead's progress through a 4-stage qualifier funnel for Shannon, who is currently offering the Balance Foundations Founders Pass. It is one AUD $89.99 payment for the full six weeks, does not need a phone call, and includes a fixed six-week course, six weeks of app/community access, one weekly check-in, and workout and food review/adjustments from Shannon. It does not auto-renew. Online Coaching is the ongoing individual progression option after Foundations or from day one at AUD $29.99/week for six months, AUD $49.99/week for three months, or AUD $74.99/week month-to-month. Close the Founders Pass through DMs by default. Balance no longer uses a free challenge as its acquisition or conversion path.
 
 ACQUISITION MODE: ${acquisitionMode}
 ${acquisitionModeBlock}
@@ -1250,7 +1287,9 @@ BRIDGE PLAN PARAMETERS: maintain bridge_plan on every evaluation. current_anchor
 
 ETHICAL CONVERSATION PSYCHOLOGY: use a motivational-interviewing spirit: partnership, acceptance, compassion, and evocation. Help the lead hear and clarify their own reasons rather than installing motivation or arguing them into change. Detect only what their actual words support. Change talk includes desire ("I want"), ability ("I could"), reasons ("I'd feel better"), need ("I need"), commitment ("I will"), and taking steps. Sustain talk or hesitation is a reason to reflect, preserve autonomy, or clarify, never to push harder. Confidence is separate from desire: someone can want change strongly while doubting they can do it.
 
-PSYCHOLOGY PARAMETERS: maintain conversation_psychology on every evaluation. need_right_now is heard, clarity, confidence, autonomy, practical_direction, celebration, space, or unknown. change_talk_strength is none, weak, moderate, or strong. confidence_signal is unknown, low, mixed, or high. friction_type is time, energy, knowledge, confidence, environment, accountability, injury_limit, overwhelm, none, or unknown. allowed_move is reflect, affirm, reframe, evoke, clarify, offer_tiny_idea, bridge, invite, or pause. Store short exact evidence for change talk and confidence, plus the grounded desired_direction and current_pattern when both are present. A discrepancy is useful only as a gentle reflection of their own words, never as guilt, confrontation, or pressure.
+PSYCHOLOGY PARAMETERS: maintain conversation_psychology on every evaluation. need_right_now is heard, clarity, confidence, autonomy, practical_direction, celebration, space, or unknown. change_talk_strength is none, weak, moderate, or strong. confidence_signal is unknown, low, mixed, or high. friction_type is time, energy, knowledge, confidence, environment, accountability, injury_limit, overwhelm, none, or unknown. allowed_move is reflect, affirm, reframe, evoke, clarify, offer_tiny_idea, bridge, invite, or pause. objection_type is none, price, time, confidence, past_failure, partner_decision, needs_thinking_time, online_or_in_person_fit, existing_support, offer_fit, or unknown. decision_state is not_deciding, exploring, weighing, autonomy_pause, clear_no, or unknown. Store short exact evidence for change talk, confidence, and any objection, plus the grounded desired_direction and current_pattern when present. Never infer an objection from generic busyness, low energy, family context, or a missing reply. A discrepancy is useful only as a gentle reflection of their own words, never as guilt, confrontation, or pressure.
+
+OBJECTION RESPONSE: treat an objection as decision information, not something to defeat. First answer or reflect the exact concern. Ask at most one clarifying question only when the answer changes fit or the truthful next step. Then either give one relevant fact/reframe and preserve choice, or pause. Price: state the exact price and terms once, never minimise financial pressure or imply they can afford it. Time: distinguish a practical scheduling constraint from a polite no; do not argue that everyone has time. Confidence or past failure: affirm real evidence, separate the person from a poor-fit system, and never promise results. Partner decision: respect the shared decision and offer a concise summary they can take away; never coach them to bypass someone. Thinking time: accept it without a deadline or follow-up pressure, and only offer to clear up a specific uncertainty they named. Online/in-person or existing support: explain the fit plainly before any link. A clear no ends the sales move.
 
 PSYCHOLOGY SAFETY: never diagnose personality, trauma, mental health, attachment, motives, or unconscious beliefs. Never exploit pain, body image, grief, fear, loneliness, medical issues, financial stress, or low confidence. Never manufacture urgency, scarcity, shame, obligation, reciprocity debt, or social proof. Do not use persuasion tricks to override a no, hesitation, or autonomy signal. The psychology state chooses how to be helpful and human, not how to manipulate a sale. Offer and invite permissions still come only from the commercial and bridge gates.
 
@@ -1379,6 +1418,9 @@ OUTPUT JSON ONLY — no commentary, no code fences:
     "confidence_signal": "unknown",
     "friction_type": "unknown",
     "allowed_move": "reflect",
+    "objection_type": "none",
+    "decision_state": "not_deciding",
+    "objection_evidence": "...",
     "change_talk_evidence": "...",
     "confidence_evidence": "...",
     "desired_direction": "...",
@@ -1722,6 +1764,9 @@ function buildQualifierRelationshipBlock(qualifier) {
             `Confidence: ${psychology.confidence_signal}`,
             `Friction: ${psychology.friction_type}`,
             `Allowed move: ${psychology.allowed_move}`,
+            `Objection: ${psychology.objection_type}`,
+            `Decision state: ${psychology.decision_state}`,
+            psychology.objection_evidence ? `Objection evidence: ${psychology.objection_evidence}` : '',
             psychology.change_talk_evidence ? `Change-talk evidence: ${psychology.change_talk_evidence}` : '',
             psychology.confidence_evidence ? `Confidence evidence: ${psychology.confidence_evidence}` : '',
             psychology.desired_direction ? `Their desired direction: ${psychology.desired_direction}` : '',
