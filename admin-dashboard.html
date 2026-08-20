@@ -940,6 +940,17 @@
         .your-call-program-actions { display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
         .your-call-program-btn { min-height:31px; padding:6px 9px; border:1px solid #cbd5e1; border-radius:8px; background:#f8fafc; color:#334155; -webkit-text-fill-color:#334155; font:800 0.7rem 'Inter',sans-serif; cursor:pointer; white-space:nowrap; }
         .your-call-program-btn.primary { border-color:#48864B; background:#48864B; color:#fff; -webkit-text-fill-color:#fff; }
+        .your-call-dispatch { display:none; flex-shrink:0; margin-bottom:10px; border:1px solid #fde68a; border-left:4px solid #f59e0b; background:#fffbeb; }
+        .your-call-dispatch.visible { display:block; }
+        .your-call-dispatch-inner { display:flex; align-items:center; gap:12px; padding:11px 13px; }
+        .your-call-dispatch-copy { flex:1; min-width:0; }
+        .your-call-dispatch-title { font:800 0.82rem 'Montserrat',sans-serif; color:#78350f; -webkit-text-fill-color:#78350f; }
+        .your-call-dispatch-meta { margin-top:3px; font-size:0.72rem; line-height:1.35; color:#92400e; -webkit-text-fill-color:#92400e; }
+        .your-call-dispatch-details { margin-top:5px; font-size:0.69rem; color:#64748b; -webkit-text-fill-color:#64748b; }
+        .your-call-dispatch-details summary { cursor:pointer; font-weight:700; color:#64748b; -webkit-text-fill-color:#64748b; }
+        .your-call-dispatch-details ul { margin:5px 0 0; padding-left:18px; }
+        .your-call-dispatch-approve { min-height:34px; padding:7px 11px; border:0; border-radius:8px; background:#48864B; color:#fff; -webkit-text-fill-color:#fff; font:800 0.74rem 'Inter',sans-serif; cursor:pointer; white-space:nowrap; }
+        .your-call-dispatch-approve:disabled { opacity:0.6; cursor:wait; }
         .needs-you-feed-card { flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; }
         #needs-you-feed { padding:10px; }
         @media (max-width: 768px) {
@@ -955,6 +966,8 @@
             .your-call-program-row { align-items:flex-start; flex-direction:column; gap:7px; padding:9px; }
             .your-call-program-actions { width:100%; justify-content:stretch; }
             .your-call-program-btn { flex:1; }
+            .your-call-dispatch-inner { align-items:stretch; flex-direction:column; gap:8px; }
+            .your-call-dispatch-approve { width:100%; }
             #needs-you-feed { padding:6px; }
             #needs-you-feed .alert-card { padding:11px 10px; margin-bottom:7px; border-radius:10px; }
             #needs-you-feed .dm-clean-explanation { margin:7px 0; padding:8px 9px; }
@@ -2363,6 +2376,7 @@
                             </div>
                         </div>
                     </div>
+                    <div class="content-card your-call-dispatch" id="your-call-dispatch" aria-live="polite"></div>
                     <div class="content-card your-call-programs" id="your-call-programs" aria-live="polite"></div>
                     <div class="content-card needs-you-feed-card" id="needs-you-feed-container">
                         <div id="needs-you-feed">
@@ -11168,7 +11182,7 @@
         const YOUR_CALL_PROGRAM_WINDOW_DAYS = 14;
         const NEEDS_YOU_ALERT_SELECT_FIELDS = 'id,coach_id,client_id,client_name,alert_type,status,priority,title,description,suggested_message,scheduled_reply_text,created_at,actioned_at,scheduled_for,data';
         let yourCallProgramRenewals = [];
-        let needsYouFeedCache = { rows: [], activeClientIds: new Set(), programRenewals: [], loadedAt: 0 };
+        let needsYouFeedCache = { rows: [], activeClientIds: new Set(), programRenewals: [], dispatcherApproval: null, loadedAt: 0 };
         const NEEDS_YOU_TABS = ['all'];
         const NEEDS_YOU_ALERT_TYPES = [...DM_ALERT_TYPES, 'general_idea', 'onboarding_day_30', 'weekly_checkin', 'first_workout', 'subscription_sale', 'custom_exercise_review'];
         const CLIENT_MANAGER_REVIEW_MARKERS = [
@@ -13121,9 +13135,9 @@
             return view === 'all' && needsYouHasOperatorWork(alert, activeClientIds);
         }
 
-        function summarizeNeedsYouCounts(rows = [], activeClientIds = dmClientIdsCache.ids, programRenewals = yourCallProgramRenewals) {
+        function summarizeNeedsYouCounts(rows = [], activeClientIds = dmClientIdsCache.ids, programRenewals = yourCallProgramRenewals, dispatcherApproval = needsYouFeedCache.dispatcherApproval) {
             const dismissible = rows.filter(a => needsYouHasOperatorWork(a, activeClientIds)).length;
-            return { all: dismissible + (programRenewals || []).length, dismissible };
+            return { all: dismissible + (programRenewals || []).length + (dispatcherApproval ? 1 : 0), dismissible };
         }
 
         function collapseNeedsYouRows(rows = []) {
@@ -13227,6 +13241,88 @@
             }
         }
 
+        async function loadYourCallDispatcherApproval() {
+            try {
+                const session = await authHelpers.getSession();
+                const accessToken = session?.session?.access_token;
+                if (!accessToken) return null;
+                const response = await fetch('/.netlify/functions/approve-ig-dispatch-batch', {
+                    method: 'GET',
+                    headers: { Authorization: `Bearer ${accessToken}` },
+                    cache: 'no-store',
+                });
+                const result = await response.json().catch(() => ({}));
+                if (!response.ok || !result.ok) throw new Error(result.reason || 'Could not load dispatcher approvals');
+                return result.approval || null;
+            } catch (error) {
+                console.warn('[your-call] dispatcher approval lookup failed:', error?.message || error);
+                return null;
+            }
+        }
+
+        function renderYourCallDispatcherApproval(approval = null) {
+            const container = document.getElementById('your-call-dispatch');
+            if (!container) return;
+            if (!approval) {
+                container.innerHTML = '';
+                container.classList.remove('visible');
+                return;
+            }
+            const itemCount = Number(approval.itemCount || 0);
+            const items = Array.isArray(approval.items) ? approval.items : [];
+            const itemList = items.length
+                ? `<details class="your-call-dispatch-details"><summary>Review ${itemCount} exact action${itemCount === 1 ? '' : 's'}</summary><ul>${items.map(item => `<li>${escapeHtml(item.handle ? `@${item.handle}` : 'Instagram')} · ${escapeHtml(item.action || 'action')}</li>`).join('')}</ul></details>`
+                : '';
+            container.innerHTML = `
+                <div class="your-call-dispatch-inner">
+                    <div class="your-call-dispatch-copy">
+                        <div class="your-call-dispatch-title">Instagram dispatcher ready</div>
+                        <div class="your-call-dispatch-meta">${itemCount} reviewed action${itemCount === 1 ? '' : 's'} waiting for your approval.</div>
+                        ${itemList}
+                    </div>
+                    <button type="button" class="your-call-dispatch-approve" id="your-call-dispatch-approve" onclick="approveYourCallDispatcherBatch()">Approve &amp; resume</button>
+                </div>`;
+            container.classList.add('visible');
+        }
+
+        async function approveYourCallDispatcherBatch() {
+            const approval = needsYouFeedCache.dispatcherApproval;
+            const button = document.getElementById('your-call-dispatch-approve');
+            if (!approval?.batchId || !approval?.batchVersion || !button) return;
+            button.disabled = true;
+            button.textContent = 'Approving...';
+            try {
+                const session = await authHelpers.getSession();
+                const accessToken = session?.session?.access_token;
+                if (!accessToken) throw new Error('Your admin session has expired');
+                const response = await fetch('/.netlify/functions/approve-ig-dispatch-batch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+                    body: JSON.stringify({ batchId: approval.batchId, batchVersion: approval.batchVersion }),
+                });
+                const result = await response.json().catch(() => ({}));
+                if (!response.ok || !result.approved) throw new Error(result.reason || 'Dispatcher approval failed');
+                needsYouFeedCache = { ...needsYouFeedCache, dispatcherApproval: null, loadedAt: Date.now() };
+                renderYourCallDispatcherApproval(null);
+                renderNeedsYouCounts(summarizeNeedsYouCounts(
+                    collapseNeedsYouRows(uniqueAlertRows(needsYouFeedCache.rows || [])),
+                    needsYouFeedCache.activeClientIds || dmClientIdsCache.ids,
+                    needsYouFeedCache.programRenewals || [],
+                    null
+                ));
+                if (typeof showToast === 'function') showToast('Dispatcher approved. It will resume on the next run.', 'success');
+            } catch (error) {
+                console.error('Failed to approve dispatcher batch:', error);
+                window.alert(`Could not approve dispatcher: ${error.message || error}`);
+                await loadNeedsYou(true);
+            } finally {
+                if (button.isConnected) {
+                    button.disabled = false;
+                    button.textContent = 'Approve & resume';
+                }
+            }
+        }
+
         function yourCallProgramDueLabel(item) {
             if (item.daysUntil < 0) return `Program review overdue by ${Math.abs(item.daysUntil)} day${Math.abs(item.daysUntil) === 1 ? '' : 's'}`;
             if (item.daysUntil === 0) return 'Program review due today';
@@ -13268,12 +13364,13 @@
                 && currentView === 'needs-you';
         }
 
-        function renderNeedsYouSnapshot(rows = [], activeClientIds = dmClientIdsCache.ids, programRenewals = yourCallProgramRenewals) {
+        function renderNeedsYouSnapshot(rows = [], activeClientIds = dmClientIdsCache.ids, programRenewals = yourCallProgramRenewals, dispatcherApproval = needsYouFeedCache.dispatcherApproval) {
             yourCallProgramRenewals = programRenewals || [];
             const baseRows = collapseNeedsYouRows(uniqueAlertRows(rows || []));
             alertsCache = baseRows.filter(a => needsYouMatchesView(a, currentNeedsYouView, activeClientIds));
+            renderYourCallDispatcherApproval(dispatcherApproval);
             renderYourCallProgramRenewals(yourCallProgramRenewals);
-            renderNeedsYouCounts(summarizeNeedsYouCounts(baseRows, activeClientIds, yourCallProgramRenewals));
+            renderNeedsYouCounts(summarizeNeedsYouCounts(baseRows, activeClientIds, yourCallProgramRenewals, dispatcherApproval));
             renderAlertFeed(alertsCache, {
                 containerId: 'needs-you-feed',
                 viewKey: currentNeedsYouView,
@@ -13286,7 +13383,7 @@
         function maybeRenderNeedsYouCache(force = false) {
             if (force || !needsYouFeedCache.loadedAt) return false;
             if ((Date.now() - needsYouFeedCache.loadedAt) > NEEDS_YOU_FAST_CACHE_MS) return false;
-            renderNeedsYouSnapshot(needsYouFeedCache.rows, needsYouFeedCache.activeClientIds || dmClientIdsCache.ids, needsYouFeedCache.programRenewals || []);
+            renderNeedsYouSnapshot(needsYouFeedCache.rows, needsYouFeedCache.activeClientIds || dmClientIdsCache.ids, needsYouFeedCache.programRenewals || [], needsYouFeedCache.dispatcherApproval || null);
             return true;
         }
 
@@ -13335,17 +13432,18 @@
                     .in('alert_type', NEEDS_YOU_ALERT_TYPES)
                     .order('created_at', { ascending: false })
                     .limit(300);
-                const [activeClientIds, alertsRes, programRenewals] = await Promise.all([
+                const [activeClientIds, alertsRes, programRenewals, dispatcherApproval] = await Promise.all([
                     getActiveDmClientIds(),
                     alertsQuery,
                     loadYourCallProgramRenewals(),
+                    loadYourCallDispatcherApproval(),
                 ]);
                 if (!isCurrentNeedsYouLoad(loadSeq)) return;
                 const { data, error } = alertsRes || {};
                 if (error) throw error;
                 const rows = uniqueAlertRows(data || []);
-                needsYouFeedCache = { rows, activeClientIds, programRenewals, loadedAt: Date.now() };
-                renderNeedsYouSnapshot(rows, activeClientIds, programRenewals);
+                needsYouFeedCache = { rows, activeClientIds, programRenewals, dispatcherApproval, loadedAt: Date.now() };
+                renderNeedsYouSnapshot(rows, activeClientIds, programRenewals, dispatcherApproval);
             } catch (e) {
                 console.error('Failed to load Your Call:', e);
                 if (!renderedFromCache && container) container.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load Your Call: ${escapeHtml(e.message || e)}</div>`;
@@ -13356,19 +13454,23 @@
             const clearAllBtn = document.getElementById('needs-you-clear-all');
             const activeClientIds = needsYouFeedCache.activeClientIds || dmClientIdsCache.ids;
             const rows = uniqueAlertRows(needsYouFeedCache.rows || []);
+            const displayedRows = collapseNeedsYouRows(rows);
+            const displayedIds = displayedRows
+                .filter(row => needsYouHasOperatorWork(row, activeClientIds))
+                .map(row => row.id)
+                .filter(Boolean);
             const ids = rows
                 .filter(row => needsYouHasOperatorWork(row, activeClientIds))
                 .map(row => row.id)
                 .filter(Boolean);
-            if (!ids.length) {
+            if (!displayedIds.length || !ids.length) {
                 renderNeedsYouCounts({ all: 0 });
                 return;
             }
 
-            const confirmed = window.confirm(`Clear all ${ids.length} Your Call draft${ids.length === 1 ? '' : 's'}?\n\nThis dismisses them without sending any messages. Program reminders stay visible.`);
+            const confirmed = window.confirm(`Clear all ${displayedIds.length} Your Call draft${displayedIds.length === 1 ? '' : 's'}?\n\nThis also removes their older grouped drafts so they do not reappear. No messages are sent, and program reminders stay visible.`);
             if (!confirmed) return;
 
-            const actionedAt = new Date().toISOString();
             if (clearAllBtn) {
                 clearAllBtn.dataset.clearing = 'true';
                 clearAllBtn.disabled = true;
@@ -13377,12 +13479,18 @@
             }
 
             try {
-                const { error } = await window.supabaseClient
-                    .from('coach_alerts')
-                    .update({ status: 'dismissed', actioned_at: actionedAt })
-                    .in('id', ids)
-                    .eq('status', 'pending');
-                if (error) throw error;
+                const session = await authHelpers.getSession();
+                const accessToken = session?.session?.access_token;
+                if (!accessToken) throw new Error('Your admin session has expired');
+                const response = await fetch('/.netlify/functions/clear-your-call-alerts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+                    body: JSON.stringify({ ids }),
+                });
+                const result = await response.json().catch(() => ({}));
+                if (!response.ok || !result.ok || Number(result.cleared) !== ids.length) {
+                    throw new Error(result.reason || `Only ${Number(result.cleared || 0)} of ${ids.length} drafts cleared`);
+                }
 
                 const clearedIds = new Set(ids.map(String));
                 ids.forEach(clearAlertEditBuffer);
@@ -13392,10 +13500,10 @@
                     rows: rows.filter(row => !clearedIds.has(String(row?.id || ''))),
                     loadedAt: Date.now(),
                 };
-                renderNeedsYouSnapshot(needsYouFeedCache.rows, activeClientIds);
+                renderNeedsYouSnapshot(needsYouFeedCache.rows, activeClientIds, needsYouFeedCache.programRenewals || [], needsYouFeedCache.dispatcherApproval || null);
                 refreshVisibleCountsAfterDismiss();
                 updateVoiceMatchRate();
-                if (typeof showToast === 'function') showToast(`${ids.length} Your Call draft${ids.length === 1 ? '' : 's'} cleared`, 'success');
+                if (typeof showToast === 'function') showToast(`${displayedIds.length} Your Call draft${displayedIds.length === 1 ? '' : 's'} cleared`, 'success');
             } catch (e) {
                 console.error('Failed to clear Your Call:', e);
                 window.alert(`Could not clear Your Call: ${e.message || e}`);

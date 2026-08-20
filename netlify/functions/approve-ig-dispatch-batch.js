@@ -97,20 +97,20 @@ function isBatchExpired(batch, nowMs = Date.now()) {
     return expiries.length === items.length && expiries.every(value => value <= nowMs);
 }
 
-function approvedBatch(batch, { recipientId, nowIso }) {
+function approvedBatch(batch, { recipientId, nowIso, approvalSource = 'balance_phone_notification_tap' }) {
     return {
         ...batch,
         state: 'approved',
         approved_at: nowIso,
         approved_by_user_id: recipientId,
-        approval_source: 'balance_phone_notification_tap',
+        approval_source: approvalSource,
         approval_confirmation_key: `${batchIdentity(batch).batchId}-v${batchIdentity(batch).batchVersion}`,
     };
 }
 
-function buildApprovalPatch(row, identity, nowIso) {
+function buildApprovalPatch(row, identity, nowIso, approvalSource) {
     const existing = rowBatch(row);
-    const approved = approvedBatch(existing, { recipientId: identity.recipientId, nowIso });
+    const approved = approvedBatch(existing, { recipientId: identity.recipientId, nowIso, approvalSource });
     const patch = {};
     for (const field of STATE_FIELDS) {
         const container = row?.[field];
@@ -133,10 +133,48 @@ async function verifyAdminRecipient(recipientId) {
     return email === BALANCE_ADMIN_EMAIL;
 }
 
-async function approveExactBatch(identity) {
-    const rows = await supabaseRequest(
+async function loadShiftRows() {
+    return supabaseRequest(
         'ig_browser_shift_runs?select=id,run_id,status,started_at,lease_expires_at,updated_at,cursor_start,cursor_current,cursor_end,next_resume,receipt&order=started_at.desc&limit=200'
     );
+}
+
+function currentAwaitingBatch(rows, nowMs = Date.now()) {
+    const row = (rows || []).find(candidate => rowBatch(candidate));
+    const batch = rowBatch(row);
+    return batch?.state === 'awaiting_approval' && !isBatchExpired(batch, nowMs) ? { row, batch } : null;
+}
+
+function safeBatchSummary(batch) {
+    const identity = batchIdentity(batch);
+    const items = Array.isArray(batch?.items) ? batch.items : [];
+    return {
+        batchId: identity?.batchId || '',
+        batchVersion: identity?.batchVersion || 0,
+        state: batch?.state || '',
+        itemCount: items.length,
+        updatedAt: batch?.updated_at || batch?.reviewed_at || batch?.created_at || null,
+        items: items.slice(0, 20).map(item => ({
+            handle: String(item?.username || item?.handle || item?.profile_name || item?.target || '').replace(/^@/, '').slice(0, 80),
+            action: String(item?.action_type || item?.action || item?.type || 'Instagram action').replace(/_/g, ' ').slice(0, 80),
+        })),
+    };
+}
+
+async function verifyAdminBearer(event) {
+    const auth = event?.headers?.authorization || event?.headers?.Authorization || '';
+    const token = String(auth).replace(/^Bearer\s+/i, '').trim();
+    if (!token) return null;
+    const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+        headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) return null;
+    const user = await response.json();
+    return String(user?.email || '').trim().toLowerCase() === BALANCE_ADMIN_EMAIL ? user : null;
+}
+
+async function approveExactBatch(identity, approvalSource = 'balance_phone_notification_tap') {
+    const rows = await loadShiftRows();
     const nowMs = Date.now();
     const healthyLease = (rows || []).find(row => row.status === 'running' && Date.parse(row.lease_expires_at || '') > nowMs);
     if (healthyLease) {
@@ -165,7 +203,7 @@ async function approveExactBatch(identity) {
         {
             method: 'PATCH',
             headers: { Prefer: 'return=representation' },
-            body: JSON.stringify(buildApprovalPatch(row, identity, nowIso)),
+            body: JSON.stringify(buildApprovalPatch(row, identity, nowIso, approvalSource)),
         }
     );
     if (!Array.isArray(updated) || updated.length !== 1) {
@@ -184,24 +222,48 @@ async function approveExactBatch(identity) {
 }
 
 exports.handler = async (event) => {
-    if (event.httpMethod !== 'POST') return json(405, { error: 'Method not allowed' });
+    if (!['GET', 'POST'].includes(event.httpMethod)) return json(405, { error: 'Method not allowed' });
     if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return json(500, { error: 'Server configuration error' });
 
+    if (event.httpMethod === 'GET') {
+        try {
+            const admin = await verifyAdminBearer(event);
+            if (!admin) return json(401, { ok: false, reason: 'admin_auth_required' });
+            const current = currentAwaitingBatch(await loadShiftRows());
+            return json(200, { ok: true, approval: current ? safeBatchSummary(current.batch) : null });
+        } catch (error) {
+            console.error('[IG Dispatch Approval] read failed:', error);
+            return json(500, { ok: false, reason: 'approval_read_failed' });
+        }
+    }
+
     const body = parseBody(event);
-    const identity = normalizeApprovalIdentity({
+    let identity = normalizeApprovalIdentity({
         batchId: body.batchId || body.batch_id,
         batchVersion: body.batchVersion || body.batch_version,
         recipientId: body.recipientId || body.recipient_id,
     });
-    if (!identity || !verifyApprovalToken(identity, body.approvalToken || body.approval_token, SUPABASE_SERVICE_KEY)) {
-        return json(401, { ok: false, reason: 'invalid_approval_token' });
-    }
 
     try {
-        if (!(await verifyAdminRecipient(identity.recipientId))) {
-            return json(403, { ok: false, reason: 'recipient_not_admin' });
+        let approvalSource = 'balance_phone_notification_tap';
+        const providedApprovalToken = body.approvalToken || body.approval_token || '';
+        const signed = identity && verifyApprovalToken(identity, providedApprovalToken, SUPABASE_SERVICE_KEY);
+        if (providedApprovalToken && !signed) return json(401, { ok: false, reason: 'invalid_approval_token' });
+        if (signed) {
+            if (!(await verifyAdminRecipient(identity.recipientId))) {
+                return json(403, { ok: false, reason: 'recipient_not_admin' });
+            }
+        } else {
+            const admin = await verifyAdminBearer(event);
+            identity = normalizeApprovalIdentity({
+                batchId: body.batchId || body.batch_id,
+                batchVersion: body.batchVersion || body.batch_version,
+                recipientId: admin?.id,
+            });
+            if (!admin || !identity) return json(401, { ok: false, reason: 'admin_auth_required' });
+            approvalSource = 'balance_admin_your_call';
         }
-        const result = await approveExactBatch(identity);
+        const result = await approveExactBatch(identity, approvalSource);
         return json(result.statusCode, result.body);
     } catch (error) {
         console.error('[IG Dispatch Approval] failed:', error);
@@ -216,4 +278,6 @@ module.exports.__test = {
     matchesBatch,
     isBatchExpired,
     buildApprovalPatch,
+    currentAwaitingBatch,
+    safeBatchSummary,
 };

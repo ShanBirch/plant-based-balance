@@ -212,15 +212,25 @@ assert.ok(
 );
 
 assert.ok(
-    dashboard.includes(".update({ status: 'dismissed', actioned_at: actionedAt })") &&
-    dashboard.includes(".in('id', ids)") &&
-    dashboard.includes(".eq('status', 'pending')"),
-    'clear all should only bulk-dismiss the currently pending Needs You rows'
+    dashboard.includes("const displayedRows = collapseNeedsYouRows(rows);") &&
+    dashboard.includes('const displayedIds = displayedRows') &&
+    dashboard.includes('This also removes their older grouped drafts so they do not reappear.') &&
+    dashboard.includes("fetch('/.netlify/functions/clear-your-call-alerts'") &&
+    dashboard.includes('Number(result.cleared) !== ids.length'),
+    'clear all should dismiss only displayed Your Call rows through the verified admin endpoint'
 );
 
 assert.ok(
-    dashboard.includes('This dismisses them without sending any messages.') &&
-    dashboard.includes('window.confirm(`Clear all ${ids.length} Your Call draft'),
+    dashboard.includes('id="your-call-dispatch"') &&
+    dashboard.includes("fetch('/.netlify/functions/approve-ig-dispatch-batch'") &&
+    dashboard.includes('Approve &amp; resume') &&
+    dashboard.includes('batchId: approval.batchId, batchVersion: approval.batchVersion'),
+    'Your Call should surface and approve the exact current dispatcher batch'
+);
+
+assert.ok(
+    dashboard.includes('No messages are sent, and program reminders stay visible.') &&
+    dashboard.includes('window.confirm(`Clear all ${displayedIds.length} Your Call draft'),
     'clear all should explain the effect and require confirmation before changing records'
 );
 

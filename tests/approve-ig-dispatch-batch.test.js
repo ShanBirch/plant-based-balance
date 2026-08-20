@@ -8,6 +8,8 @@ const {
     matchesBatch,
     isBatchExpired,
     buildApprovalPatch,
+    currentAwaitingBatch,
+    safeBatchSummary,
 } = approvalFunction.__test;
 
 const identity = {
@@ -34,6 +36,12 @@ assert.strictEqual(matchesBatch(rowBatch(row), identity), true);
 assert.strictEqual(isBatchExpired(awaiting, Date.parse('2026-08-21T00:00:00Z')), false);
 assert.strictEqual(isBatchExpired({ ...awaiting, items: [{ expires_at: '2026-08-20T00:00:00Z' }] }, Date.parse('2026-08-21T00:00:00Z')), true);
 assert.strictEqual(isBatchExpired({ ...awaiting, items: [{ expiry_evidence: { estimated_expires_at: '2026-08-20T00:00:00Z' } }] }, Date.parse('2026-08-21T00:00:00Z')), true);
+assert.strictEqual(currentAwaitingBatch([{ next_resume: { approval_batch: awaiting } }], Date.parse('2026-08-21T00:00:00Z')).batch, awaiting);
+assert.strictEqual(currentAwaitingBatch([
+    { next_resume: { approval_batch: { ...awaiting, state: 'collecting', version: 8 } } },
+    { next_resume: { approval_batch: awaiting } },
+], Date.parse('2026-08-21T00:00:00Z')), null, 'an older awaiting batch must not appear behind a newer collecting batch');
+assert.deepStrictEqual(safeBatchSummary(awaiting).items, [{ handle: 'example', action: 'Instagram action' }]);
 
 const approvedAt = '2026-08-20T22:00:00.000Z';
 const patch = buildApprovalPatch(row, identity, approvedAt);
@@ -55,6 +63,9 @@ assert.strictEqual(patch.updated_at, approvedAt);
     const calls = [];
     global.fetch = async (url, options = {}) => {
         calls.push({ url, options });
+        if (url.endsWith('/auth/v1/user')) {
+            return { ok: true, status: 200, json: async () => ({ id: identity.recipientId, email: 'shannonbirch@cocospersonaltraining.com' }) };
+        }
         if (url.includes('/rest/v1/users?')) {
             return { ok: true, status: 200, text: async () => JSON.stringify([{ id: identity.recipientId, email: 'shannonbirch@cocospersonaltraining.com' }]) };
         }
@@ -79,6 +90,24 @@ assert.strictEqual(patch.updated_at, approvedAt);
     assert.ok(patchCall.url.includes('updated_at=eq.'));
     const patchBody = JSON.parse(patchCall.options.body);
     assert.strictEqual(patchBody.next_resume.approval_batch.state, 'approved');
+
+    const readResponse = await approvalFunction.handler({
+        httpMethod: 'GET',
+        headers: { authorization: 'Bearer admin-user-token' },
+    });
+    const readBody = JSON.parse(readResponse.body);
+    assert.strictEqual(readResponse.statusCode, 200);
+    assert.strictEqual(readBody.approval.batchId, identity.batchId);
+    assert.strictEqual(readBody.approval.batchVersion, identity.batchVersion);
+
+    const dashboardResponse = await approvalFunction.handler({
+        httpMethod: 'POST',
+        headers: { authorization: 'Bearer admin-user-token' },
+        body: JSON.stringify({ batchId: identity.batchId, batchVersion: identity.batchVersion }),
+    });
+    assert.strictEqual(dashboardResponse.statusCode, 200);
+    const dashboardPatchCall = calls.filter(call => call.options.method === 'PATCH').at(-1);
+    assert.strictEqual(JSON.parse(dashboardPatchCall.options.body).next_resume.approval_batch.approval_source, 'balance_admin_your_call');
 })().catch(error => {
     console.error(error);
     process.exitCode = 1;
