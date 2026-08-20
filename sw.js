@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v328'; // v328: add breathing room above Home Weekly Goals
+const CACHE_NAME = 'pbb-app-v329'; // v329: keep onboarding prompts on new accounts only
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

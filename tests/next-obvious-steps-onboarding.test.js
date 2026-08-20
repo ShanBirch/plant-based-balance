@@ -1,0 +1,105 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+
+const source = fs.readFileSync(path.resolve(__dirname, '..', 'js/dashboard/pbb-next-obvious-steps.js'), 'utf8');
+const onboardingIds = [
+  'feed_intro',
+  'meal_plan_intro',
+  'workout_week_intro',
+  'connect_health',
+  'activity_insights_intro',
+  'first_meal'
+];
+
+function loadPlan({ createdAt, seen = [], week = 1 }) {
+  const userId = 'test-user';
+  const storage = new Map();
+  seen.forEach(id => storage.set(`pbb_onboarding_step_seen:${userId}:${id}`, '1'));
+
+  const localStorage = {
+    getItem(key) { return storage.has(key) ? storage.get(key) : null; },
+    setItem(key, value) { storage.set(key, String(value)); },
+    removeItem(key) { storage.delete(key); }
+  };
+  const document = {
+    readyState: 'loading',
+    hidden: false,
+    addEventListener() {},
+    getElementById() { return null; },
+    querySelector() { return null; },
+    querySelectorAll() { return []; },
+    createElement() { return {}; },
+    head: { appendChild() {} }
+  };
+  const window = {
+    currentUser: { id: userId, email: 'member@example.com', created_at: createdAt },
+    document,
+    localStorage,
+    location: { search: '' },
+    socialJourney: {
+      isUnifiedPlanActive() { return true; },
+      getCurrentWeek() { return week; }
+    },
+    addEventListener() {},
+    getComputedStyle() { return { display: 'none', visibility: 'visible', opacity: '1' }; }
+  };
+  window.window = window;
+
+  vm.runInNewContext(source, {
+    window,
+    document,
+    localStorage,
+    URLSearchParams,
+    CustomEvent: function CustomEvent() {},
+    console,
+    setTimeout() { return 0; },
+    clearTimeout() {},
+    setInterval() { return 0; },
+    Date,
+    Number,
+    Math
+  });
+
+  return window.pbbNextSteps.getPlan();
+}
+
+test('existing accounts never receive first-run introduction cards', () => {
+  const plan = loadPlan({ createdAt: '2025-01-01T00:00:00Z', week: 1 });
+  const ids = plan.map(item => item.id);
+
+  onboardingIds.forEach(id => assert.equal(ids.includes(id), false, `${id} should be hidden`));
+  assert.equal(ids.includes('quiz'), true, 'normal daily plan items should remain');
+});
+
+test('unknown account age fails closed instead of treating the member as new', () => {
+  const plan = loadPlan({ createdAt: null, week: 1 });
+  const ids = plan.map(item => item.id);
+
+  onboardingIds.forEach(id => assert.equal(ids.includes(id), false, `${id} should be hidden`));
+});
+
+test('new accounts receive incomplete onboarding cards only', () => {
+  const plan = loadPlan({
+    createdAt: '2026-08-20T01:00:00Z',
+    seen: ['meal_plan_intro'],
+    week: 1
+  });
+  const ids = plan.map(item => item.id);
+
+  assert.equal(ids.includes('feed_intro'), true);
+  assert.equal(ids.includes('meal_plan_intro'), false, 'meal plan prompt should stay gone after it is opened');
+  assert.equal(ids.includes('workout_week_intro'), true);
+  assert.equal(ids.includes('connect_health'), true);
+  assert.equal(ids.includes('first_meal'), true);
+});
+
+test('activity insights onboarding is also restricted to new accounts', () => {
+  const existingPlan = loadPlan({ createdAt: '2025-01-01T00:00:00Z', week: 2 });
+  const newPlan = loadPlan({ createdAt: '2026-08-20T01:00:00Z', week: 2 });
+
+  assert.equal(existingPlan.some(item => item.id === 'activity_insights_intro'), false);
+  assert.equal(newPlan.some(item => item.id === 'activity_insights_intro'), true);
+});

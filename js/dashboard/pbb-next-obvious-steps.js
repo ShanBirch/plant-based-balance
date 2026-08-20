@@ -12,6 +12,15 @@
   var PREVIEW_STORAGE_KEY = 'pbb_next_steps_preview';
   var SHOW_ALL_STORAGE_KEY = 'pbb_next_steps_show_all';
   var COMPLETION_XP = 10;
+  var ONBOARDING_ACCOUNT_CUTOFF = Date.parse('2026-08-19T14:00:00Z'); // 20 Aug 2026, Brisbane
+  var ONBOARDING_ACTION_IDS = [
+    'feed_intro',
+    'meal_plan_intro',
+    'workout_week_intro',
+    'connect_health',
+    'activity_insights_intro',
+    'first_meal'
+  ];
   var SHANNON_EMAILS = [
     'shannonbirch@cocospersonaltraining.com',
     'shannonrhysbirch@gmail.com'
@@ -143,6 +152,28 @@
   function markOnboardingStepSeen(actionId) {
     try { localStorage.setItem(onboardingStepKey(actionId), '1'); } catch (_) {}
     render();
+  }
+
+  function getAccountCreatedAtMs() {
+    var sources = [window.currentUser, window.userProfile];
+    for (var i = 0; i < sources.length; i++) {
+      var source = sources[i];
+      if (!source || typeof source !== 'object') continue;
+      var raw = source.created_at || source.createdAt;
+      if (!raw) continue;
+      var parsed = new Date(raw).getTime();
+      if (Number.isFinite(parsed)) return parsed;
+    }
+    return NaN;
+  }
+
+  function isOnboardingAccount() {
+    var createdAt = getAccountCreatedAtMs();
+    return Number.isFinite(createdAt) && createdAt >= ONBOARDING_ACCOUNT_CUTOFF;
+  }
+
+  function isOnboardingAction(actionId) {
+    return ONBOARDING_ACTION_IDS.indexOf(String(actionId || '')) !== -1;
   }
 
   function isVisibleSelector(selector) {
@@ -642,19 +673,19 @@
 
   function dailyActionSet(selectedGoalIds) {
     var picked = [];
-    var onboardingActionIds = ['feed_intro', 'meal_plan_intro', 'workout_week_intro', 'connect_health', 'first_meal'];
-    var hasIncompleteOnboarding = onboardingActionIds.some(function(id){
+    var onboardingEligible = isOnboardingAccount();
+    var hasIncompleteOnboarding = onboardingEligible && ONBOARDING_ACTION_IDS.some(function(id){
       var action = ACTIONS.find(function(item){ return item.id === id; });
       return action && !isActionComplete(action);
     });
-    if (isFirstProgramWeek() || hasIncompleteOnboarding) {
+    if (hasIncompleteOnboarding) {
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'feed_intro'; }));
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'meal_plan_intro'; }));
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'workout_week_intro'; }));
       if (!isHealthConnected()) addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'connect_health'; }));
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'first_meal'; }));
     }
-    if (hasReachedSecondProgramWeek() && !hasSeenOnboardingStep('activity_insights_intro')) {
+    if (onboardingEligible && hasReachedSecondProgramWeek() && !hasSeenOnboardingStep('activity_insights_intro')) {
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'activity_insights_intro'; }));
     }
     addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'quiz'; }));
@@ -696,6 +727,7 @@
   function isActionAvailable(action, selectedGoalIds) {
     if (!action || !action.id) return false;
     if (isActionComplete(action)) return false;
+    if (isOnboardingAction(action.id) && !isOnboardingAccount()) return false;
     if (action.id === 'mood') {
       return false;
     }
