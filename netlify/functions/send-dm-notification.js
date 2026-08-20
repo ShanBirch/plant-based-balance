@@ -2,6 +2,7 @@ const webpush = require('web-push');
 const crypto = require('crypto');
 const { normalizeCoachDraftText } = require('./_lib/client-context');
 const { loadFirebaseServiceAccount } = require('./_lib/firebase-service-account');
+const { createApprovalToken } = require('./_lib/ig-dispatch-approval-token');
 
 // Configure web-push with VAPID keys
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
@@ -548,6 +549,12 @@ exports.handler = async (event) => {
             };
         }
 
+        const approvalToken = type === DISPATCHER_APPROVAL_NOTIFICATION_TYPE
+            && adminPushContext.isAdmin
+            && isValidDispatcherApprovalPush(payload)
+            ? createApprovalToken({ batchId, batchVersion, recipientId }, SUPABASE_SERVICE_KEY)
+            : '';
+
         // Fetch push subscriptions for the recipient user
         const subscriptionsResponse = await fetch(
             `${SUPABASE_URL}/rest/v1/push_subscriptions?user_id=eq.${recipientId}&select=*`,
@@ -686,6 +693,8 @@ exports.handler = async (event) => {
                                 batchId,
                                 batchVersion,
                                 batchSize,
+                                recipientId,
+                                approvalToken,
                                 // Coach-draft extras (empty strings for regular DMs, FCM V1 requires strings)
                                 alertId,
                                 clientId,
@@ -756,6 +765,8 @@ exports.handler = async (event) => {
                                 batchId,
                                 batchVersion,
                                 batchSize,
+                                recipientId,
+                                approvalToken,
                                 alertId,
                                 clientId,
                                 clientName,

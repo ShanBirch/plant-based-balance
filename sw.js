@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v331-ios-exercise-video-upload'; // v331: iPhone native exercise-video upload
+const CACHE_NAME = 'pbb-app-v332-dispatch-one-tap-approval'; // v332: approve exact IG dispatch batch from a notification tap
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -10,7 +10,7 @@ const ASSETS = [
   './lib/supabase.js?v=14',
   './lib/auth-guard.js?v=12-light-launch',
   './lib/meta-ad-trial.js?v=4',
-  './lib/native-push.js?v=38',
+  './lib/native-push.js?v=40-dispatch-approval',
   './login.html',
   './exercise_videos.js?v=20260813-global-phone-video-v1',
   './workout_library.js',
@@ -318,6 +318,31 @@ self.addEventListener('notificationclick', (e) => {
 
   e.waitUntil(
     clients.matchAll({ type: 'window', includeUnmatched: true }).then(clientList => {
+      if (notificationData.type === 'dispatcher_approval_ready') {
+        return fetch('/.netlify/functions/approve-ig-dispatch-batch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            batchId: notificationData.batchId || notificationData.batch_id || '',
+            batchVersion: notificationData.batchVersion || notificationData.batch_version || '',
+            recipientId: notificationData.recipientId || notificationData.recipient_id || '',
+            approvalToken: notificationData.approvalToken || notificationData.approval_token || ''
+          })
+        }).then(function(response) {
+          const status = response.ok ? 'approved' : (response.status === 409 ? 'stale' : 'failed');
+          for (const client of clientList) {
+            if (client.url.includes('dashboard.html') && 'focus' in client) {
+              return client.focus().then(function(focused) {
+                focused.postMessage({ type: 'dispatcher_approval_click', status: status });
+                return focused;
+              });
+            }
+          }
+          if (clients.openWindow) {
+            return clients.openWindow(`./dashboard.html?dispatch_approval=${encodeURIComponent(status)}`);
+          }
+        });
+      }
       // Handle coach alert notifications — open admin dashboard
       if (notificationData.type === 'coach_checkins_ready') {
         for (let client of clientList) {

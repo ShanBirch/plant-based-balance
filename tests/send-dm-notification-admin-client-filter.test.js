@@ -15,6 +15,7 @@ const sandbox = {
         if (id === 'crypto') return require('crypto');
         if (id === './_lib/client-context') return { normalizeCoachDraftText: value => String(value || '') };
         if (id === './_lib/firebase-service-account') return { loadFirebaseServiceAccount: async () => null };
+        if (id === './_lib/ig-dispatch-approval-token') return require('../netlify/functions/_lib/ig-dispatch-approval-token');
         return require(id);
     },
     console: { log() {}, warn() {}, error() {} },
@@ -26,6 +27,10 @@ sandbox.global = sandbox;
 vm.runInNewContext(code, sandbox, { filename: file });
 
 const { isAllowedAdminPhonePush, isValidDispatcherApprovalPush } = sandbox.module.exports.__test;
+const {
+    createApprovalToken,
+    verifyApprovalToken,
+} = require('../netlify/functions/_lib/ig-dispatch-approval-token');
 
 const dispatcherApprovalPayload = {
     actionType: 'ig_dispatch_approval_batch',
@@ -36,6 +41,16 @@ const dispatcherApprovalPayload = {
 };
 
 assert.strictEqual(isValidDispatcherApprovalPush(dispatcherApprovalPayload), true);
+
+const tokenIdentity = {
+    batchId: dispatcherApprovalPayload.batchId,
+    batchVersion: dispatcherApprovalPayload.batchVersion,
+    recipientId: '11111111-1111-4111-8111-111111111111',
+};
+const approvalToken = createApprovalToken(tokenIdentity, 'test-service-secret');
+assert.match(approvalToken, /^[0-9a-f]{64}$/);
+assert.strictEqual(verifyApprovalToken(tokenIdentity, approvalToken, 'test-service-secret'), true);
+assert.strictEqual(verifyApprovalToken({ ...tokenIdentity, batchVersion: 7 }, approvalToken, 'test-service-secret'), false);
 
 assert.strictEqual(
     isAllowedAdminPhonePush({
