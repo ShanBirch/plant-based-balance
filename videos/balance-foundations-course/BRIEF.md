@@ -7,7 +7,7 @@ destination: instagram-feed-pinned
 aspect: 1080x1920
 language: en
 audience: "Plant-based adults considering Balance Foundations who want to understand exactly what the six-week course teaches"
-length: 85s
+length: 88s
 angle: "A premium week-by-week curriculum reveal that makes all 30 lessons feel practical, connected and useful in real life"
 narration: no
 ---
@@ -35,12 +35,13 @@ all-or-nothing thinking toward repeatable habits and a sustainable way of eating
 - Give each week one simple explanatory visual model so the video feels like an edit, not a scrolling syllabus.
 - Keep all meaning readable muted; add a warm, understated instrumental bed and restrained sound marks rather than narration.
 - Design the opening frame so it also works as the Instagram profile-grid cover.
+- Orient before explaining: open on a dedicated, unmistakable `BALANCE SIX-WEEK COURSE` page, then use the next page to state the benefit-led story.
 - End with the evergreen line `UNDERSTAND CHANGE. BUILD WHAT LASTS.` and no price, offer inclusions or sales CTA.
 
 ## Notes
 
 - Match the established warm cream canvas, near-black plum/charcoal type, Balance gold accent, fine editorial rules and cinematic UI choreography.
-- Open on `HOW TO MAKE CHANGE STICK`, supported by `Understand what keeps tripping you up — then learn how to change it.` This is benefit-led without promising permanent results.
+- Page one is `BALANCE SIX-WEEK COURSE` in oversized display type with only `FITNESS / FOOD / HABITS` as supporting context. Page two is `HOW TO MAKE CHANGE STICK`, supported by `Understand what keeps tripping you up — then learn how to change it.` This creates instant orientation before the benefit-led explanation without promising permanent results.
 - Use `plant-based`, not `vegan`, in offer and audience copy.
 - Do not claim instant replies, unlimited support, live calls, guaranteed results or access beyond the six-week pass.
 - Keep critical text clear of Instagram's header, bottom composer and right-side controls.

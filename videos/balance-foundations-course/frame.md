@@ -52,6 +52,7 @@ feel that the six weeks build on one another.
 
 ## Frame anatomy
 
+- Opening orientation page: oversized course name first, with no competing promise or curriculum detail.
 - Background: warm cream with a very subtle paper grain and one low-opacity gold atmosphere shape.
 - Header: `BALANCE / FOUNDATIONS` at the upper safe edge, plus the current week counter.
 - Main focal: the week title and its explanatory visual model.
@@ -68,6 +69,8 @@ feel that the six weeks build on one another.
 
 ## Motion grammar
 
+- Orient first, explain second: the viewer should know what the video is before the benefit-led hook appears.
+- Use oversized, plain-language title copy for the first reading beat; assume the viewer is distracted and watching muted.
 - One decisive camera or layout move per scene, then a readable hold.
 - Lesson rows arrive in a paced cascade, not all at once.
 - Visual models draw, fill, connect or re-route; they never float without meaning.

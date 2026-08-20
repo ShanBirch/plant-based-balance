@@ -1,0 +1,55 @@
+<template>
+  <div data-hf-id="hf-title-root" id="root" data-composition-id="00-course-title" data-width="1080" data-height="1920" data-duration="3">
+    <div data-hf-id="hf-title-bg" id="course-title-background" class="clip title-bg" data-start="0" data-duration="3" data-track-index="0" aria-hidden="true">
+      <div data-hf-id="hf-title-plane" class="title-plane"></div>
+      <div data-hf-id="hf-title-ring" class="title-ring"></div>
+      <div data-hf-id="hf-title-grain" class="title-grain"></div>
+    </div>
+    <main data-hf-id="hf-title-main" id="course-title-content" class="clip title-main" data-start="0" data-duration="3" data-track-index="1">
+      <header data-hf-id="hf-title-brand" id="title-brand" class="title-brand">
+        <div data-hf-id="hf-title-logo-shell" class="title-logo-shell">
+          <img data-hf-id="hf-title-logo" src="assets/balance-logo.png" alt="Balance">
+          <span data-hf-id="hf-title-glimmer" id="title-logo-glimmer" class="title-logo-glimmer"></span>
+        </div>
+        <span data-hf-id="hf-title-brand-name">BALANCE / FOUNDATIONS</span>
+      </header>
+      <section data-hf-id="hf-title-copy" class="title-copy" aria-label="Balance six-week course">
+        <div data-hf-id="hf-title-balance" id="title-balance" class="title-line title-balance">BALANCE</div>
+        <h1 data-hf-id="hf-title-six-week" id="title-six-week" class="title-line">SIX-WEEK</h1>
+        <div data-hf-id="hf-title-course" id="title-course" class="title-line title-course">COURSE</div>
+      </section>
+      <footer data-hf-id="hf-title-footer" id="title-footer" class="title-footer">
+        <span data-hf-id="hf-title-fit">FITNESS</span><i data-hf-id="hf-title-dot-1"></i>
+        <span data-hf-id="hf-title-food">FOOD</span><i data-hf-id="hf-title-dot-2"></i>
+        <span data-hf-id="hf-title-habits">HABITS</span>
+      </footer>
+      <div data-hf-id="hf-title-rule" id="title-rule" class="title-rule"></div>
+    </main>
+  </div>
+  <style>
+    #root{position:relative;width:1080px;height:1920px;overflow:hidden;container-type:size;color:#160d20;font-family:Montserrat,Arial,sans-serif;isolation:isolate}
+    .title-bg,.title-main{position:absolute;inset:0;overflow:hidden}.title-bg{background:#fbfaf5}
+    .title-plane{position:absolute;left:-330px;bottom:-250px;width:1010px;height:1180px;background:rgba(169,111,0,.08);clip-path:polygon(0 35%,69% 0,100% 100%,0 100%)}
+    .title-ring{position:absolute;right:-460px;top:330px;width:760px;height:760px;border:2px solid rgba(169,111,0,.16);border-radius:50%}
+    .title-grain{position:absolute;inset:0;opacity:.05;background-image:repeating-linear-gradient(0deg,rgba(22,13,32,.08) 0 1px,rgba(22,13,32,0) 1px 5px)}
+    .title-brand{position:absolute;top:190px;left:76px;display:flex;align-items:center;gap:22px;color:#a96f00;font-family:"Space Mono",monospace;font-size:22px;font-weight:700;letter-spacing:.08em}
+    .title-logo-shell{position:relative;width:92px;height:92px;overflow:hidden;border:2px solid rgba(169,111,0,.22);border-radius:50%;background:#fff}.title-logo-shell img{width:100%;height:100%;object-fit:cover}.title-logo-glimmer{position:absolute;inset:-45%;background:linear-gradient(110deg,rgba(216,164,58,0) 34%,rgba(216,164,58,.86) 49%,rgba(255,239,184,.96) 52%,rgba(216,164,58,0) 67%);transform:translateX(-160%) rotate(-8deg);mix-blend-mode:multiply;opacity:.8}
+    .title-copy{position:absolute;top:550px;left:76px;width:858px}.title-line{opacity:0;display:block;font-weight:900;line-height:.84;letter-spacing:-.06em}.title-balance{margin-bottom:30px;color:#a96f00;font-size:96px;line-height:.9;letter-spacing:-.045em}.title-copy h1{font-size:150px}.title-course{margin-top:50px;font-size:184px}
+    .title-footer{position:absolute;top:1450px;left:76px;display:flex;align-items:center;gap:24px;color:#504752;font-family:"Space Mono",monospace;font-size:26px;font-weight:700;letter-spacing:.08em;opacity:0}.title-footer i{display:block;width:8px;height:8px;border-radius:50%;background:#a96f00}
+    .title-rule{position:absolute;top:1548px;left:76px;width:0;height:4px;background:#a96f00;border-radius:4px}
+  </style>
+  <script>
+    (()=>{const tl=gsap.timeline({paused:true});
+      tl.fromTo('#title-brand',{opacity:0,y:-18},{opacity:1,y:0,duration:.42,ease:'power3.out'},.06)
+        .set('#title-balance',{opacity:1,y:72},.36)
+        .to('#title-balance',{y:0,duration:.2,ease:'power4.out'},.36)
+        .set('#title-six-week',{opacity:1,y:50},.54)
+        .to('#title-six-week',{y:0,duration:.16,ease:'power4.out'},.54)
+        .set('#title-course',{opacity:1,y:66},.67)
+        .to('#title-course',{y:0,duration:.17,ease:'power4.out'},.67)
+        .to('#title-logo-glimmer',{x:'160%',duration:.7,ease:'power2.inOut'},.78)
+        .fromTo('#title-footer',{opacity:0,y:18},{opacity:1,y:0,duration:.32,ease:'power2.out'},1.12)
+        .to('#title-rule',{width:858,duration:.42,ease:'power3.inOut'},1.38);
+      window.__timelines=window.__timelines||{};window.__timelines['00-course-title']=tl;})();
+  </script>
+</template>

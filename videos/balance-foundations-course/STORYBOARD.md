@@ -1,26 +1,43 @@
 ---
 format: 1080x1920
-duration: 85s
+duration: 88s
 message: "Balance Foundations teaches why change feels hard, then helps people build habits and a way of eating they can actually keep"
 audience: "Plant-based adults considering Balance Foundations"
 mode: autonomous
 music: "Curiosity by Diego Nava - warm, relaxed, positive instrumental bed"
-rhythm: hook-HOLD / week title-HOLD / detailed chapter, repeated six times / clear commercial close
+rhythm: course identity-HOLD / hook-HOLD / week title-HOLD / detailed chapter, repeated six times / evergreen brand close
 ---
 
 ## Week recognition pages
 
 Before each detailed curriculum page, a dedicated three-second cream-and-gold
 page shows only the week number, the exact week title and `WHAT YOU'LL LEARN`.
-These recognition beats run at 5-8s, 17-20s, 29-32s, 41-44s, 53-56s and
-65-68s from `compositions/week-title-card.html`. Their purpose is immediate
+These recognition beats run at 8-11s, 20-23s, 32-35s, 44-47s, 56-59s and
+68-71s from `compositions/week-title-card.html`. Their purpose is immediate
 comprehension before the viewer is asked to scan the five lesson titles.
 
-## Frame 1 - How to make change stick
+## Frame 1 - Balance six-week course
+
+- status: animated
+- src: compositions/00-course-title.html
+- start: 0s
+- duration: 3s
+- type: course identity
+- beat: orient the low-attention viewer before asking them to interpret the promise
+- blueprint: waterfall-entry
+- focal: oversized `BALANCE SIX-WEEK COURSE`
+- transition_out: hard cut into the benefit-led hook
+
+The first page answers the basic question immediately: this is the Balance
+six-week course. `BALANCE`, `SIX-WEEK` and `COURSE` land as a fast, overlapping
+waterfall from below, then hold. `FITNESS / FOOD / HABITS` gives the only
+supporting context. There is no syllabus, promise or sales message on this page.
+
+## Frame 2 - How to make change stick
 
 - status: animated
 - src: compositions/01-course-hook.html
-- start: 0s
+- start: 3s
 - duration: 5s
 - type: hook
 - beat: course promise and profile-grid cover
@@ -38,11 +55,11 @@ the curriculum and fades out across the final 3.5 seconds. A soft whoosh lands o
 the main hook and each week-title reveal; one tactile click lands with the final
 DM button. Detailed lesson rows remain unaccented so the sound design stays calm.
 
-## Frame 2 - Week 1: Understand why change feels hard
+## Frame 3 - Week 1: Understand why change feels hard
 
 - status: animated
 - src: compositions/02-week-one.html
-- start: 8s
+- start: 11s
 - duration: 9s
 - type: curriculum
 - beat: remove blame by explaining prediction and learning
@@ -57,11 +74,11 @@ in order: Your Brain Guesses First; Predictions Shape What You Notice; Surprise 
 How Your Brain Learns; Your Past Trains Today's Predictions; Update the Model, Not
 the Blame.
 
-## Frame 3 - Week 2: Work with your energy, not against it
+## Frame 4 - Week 2: Work with your energy, not against it
 
 - status: animated
 - src: compositions/03-week-two.html
-- start: 20s
+- start: 23s
 - duration: 9s
 - type: curriculum
 - beat: body-budget explanation for hard days
@@ -75,11 +92,11 @@ withdrawals are qualitative. The five exact lesson rows reveal: Your Brain Runs 
 Body Budget; Where Your Energy Budget Goes; Feelings Are Your Brain's Best Guess;
 Why Tiredness Can Arrive Early; Stress Changes the Prediction.
 
-## Frame 4 - Week 3: Build a rhythm that can stick
+## Frame 5 - Week 3: Build a rhythm that can stick
 
 - status: animated
 - src: compositions/04-week-three.html
-- start: 32s
+- start: 35s
 - duration: 9s
 - type: curriculum
 - beat: repetition and smaller actions make consistency easier
@@ -93,11 +110,11 @@ The five exact lesson rows reveal: Habits Save Brain Energy; Repetition Makes
 Actions Easier; Make the Helpful Choice Small; Your Environment Starts the Habit;
 Streaks Build Expectation.
 
-## Frame 5 - Week 4: Take the fight out of food
+## Frame 6 - Week 4: Take the fight out of food
 
 - status: animated
 - src: compositions/05-week-four.html
-- start: 44s
+- start: 47s
 - duration: 9s
 - type: curriculum
 - beat: craving is information, not a moral failure
@@ -111,11 +128,11 @@ exact lesson rows reveal: A Craving Is a Prediction; Low Body Budget, Louder
 Cravings; Why Comfort Food Works Briefly; Name the Feeling, Change the Choice;
 Fix the Need Behind the Craving.
 
-## Frame 6 - Week 5: Make the better choice easier
+## Frame 7 - Week 5: Make the better choice easier
 
 - status: animated
 - src: compositions/06-week-five.html
-- start: 56s
+- start: 59s
 - duration: 9s
 - type: curriculum
 - beat: redesign the environment instead of demanding more willpower
@@ -129,11 +146,11 @@ becomes shorter and clearer. The five lesson rows reveal: Why Willpower Lets You
 Down; Behaviour Follows Predictions; You Inherited More Habits Than You Chose;
 Redesign the Choice Around You; Other People Shape Your Habits.
 
-## Frame 7 - Week 6: Build a way of eating you can keep
+## Frame 8 - Week 6: Build a way of eating you can keep
 
 - status: animated
 - src: compositions/07-week-six.html
-- start: 68s
+- start: 71s
 - duration: 9s
 - type: curriculum
 - beat: flexible plant-based nutrition without rigid rules
@@ -147,11 +164,11 @@ exact lesson rows reveal: Energy Balance Without the Guilt; Protein That Support
 Your Goal; Carbs Are Useful Fuel; Why Your Body Needs Fat; Your Sustainable Way
 of Eating.
 
-## Frame 8 - The course, with Shannon in your corner
+## Frame 9 - Understand change. Build what lasts.
 
 - status: animated
 - src: compositions/08-course-cta.html
-- start: 77s
+- start: 80s
 - duration: 8s
 - type: brand close
 - beat: resolve the curriculum into one evergreen Balance idea
