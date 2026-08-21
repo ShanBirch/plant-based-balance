@@ -69,7 +69,7 @@ test('dashboard ships both discovery systems and a visible pilot card target', (
     assert.match(html, /aria-label="Open Your Next Step"/);
     assert.match(html, /social-journey-your-next-step-v1/);
     assert.match(html, /allFeatures = \[\];[\s\S]*?allFeatures\.push\(\{[\s\S]*?id: 'social-journey-your-next-step-v1'/);
-    assert.match(html, /sel:'#social-journey-card', title:'Your Next Step'/);
+    assert.match(html, /sel:'#next-obvious-steps-card', fallbackSel:'#social-journey-card', title:'Your Next Step'/);
     assert.match(html, /finish this App Tour and your first Balance Foundations lesson/);
     assert.match(html, /pbb-social-journey\.js\?v=\d+/);
     assert.match(html, /pbb-social-journey\.css\?v=\d+/);
@@ -84,8 +84,8 @@ test('Home plan cards stay below the complete FitGotchi stats block', () => {
     assert.match(source, /characterBlockTail\.parentNode\.insertBefore\(weeklyGoals, characterBlockTail\.nextSibling\)/);
     assert.match(source, /characterBlockTail\.parentNode\.insertBefore\(card, characterBlockTail\.nextSibling\)/);
     assert.doesNotMatch(source, /levelStrip\.parentNode\.insertBefore\((weeklyGoals|card), levelStrip\.nextSibling\)/);
-    assert.match(html, /pbb-social-journey\.js\?v=31-balance-identity/);
-    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v334-dashboard-restore'/);
+    assert.match(html, /pbb-social-journey\.js\?v=33-identity-course/);
+    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v336-balance-identity-course'/);
 });
 
 test('Home goals and plan cards follow light and dark mode', () => {
@@ -98,7 +98,7 @@ test('Home goals and plan cards follow light and dark mode', () => {
     assert.match(css, /html\[data-pbb-theme="dark"\]\.pbb-unified-next-steps #next-obvious-steps-card\.is-unified-plan \.next-step-action/);
     assert.match(css, /weekly-goal-progress-card__value\.is-complete/);
     assert.match(css, /html\.pbb-unified-next-steps #weekly-goals-card\.weekly-goals-home-card\s*\{[\s\S]*?margin: 10px 25px 14px !important/);
-    assert.match(html, /pbb-social-journey\.css\?v=21-identity-planner/);
+    assert.match(html, /pbb-social-journey\.css\?v=22-identity-rollout/);
     assert.match(html, /pbb-deferred-weeklygoals\.js\?v=33-home-theme/);
 });
 
@@ -141,6 +141,21 @@ test('Balance Identity teaches the input-output loop before the Instagram plan',
     assert.match(source, /socialJourney\.showGoals\(\)/);
     assert.match(html, /balance-identity-instagram-plan-v1/);
     assert.match(html, /title:'Build Your Fitness Instagram'|title: 'Build Your Fitness Instagram'/);
+});
+
+test('Balance Identity is available from the unified Home plan', () => {
+    const source = fs.readFileSync(path.join(root, 'js/dashboard/pbb-social-journey.js'), 'utf8');
+    const nextSteps = fs.readFileSync(path.join(root, 'js/dashboard/pbb-next-obvious-steps.js'), 'utf8');
+    const html = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
+
+    assert.match(source, /isUnifiedPlanActive: function \(\) \{ return isJourneyEligible\(\) && !!state; \}/);
+    assert.match(source, /function getUnifiedAction\(\)/);
+    assert.match(source, /function openUnifiedAction\(\)/);
+    assert.match(source, /item\.type !== 'daily_manual'[\s\S]*dailyTaskDates\(item\.id\)\.includes\(brisbaneDateKey\(\)\)/);
+    assert.match(nextSteps, /id: 'balance_journey'/);
+    assert.match(nextSteps, /addUniqueAction\(picked, getBalanceJourneyAction\(\)\)/);
+    assert.match(html, /balance-identity-home-rollout-v2/);
+    assert.match(html, /sel: '#next-obvious-steps-card'[\s\S]*getCurrentWeek\(\) >= 7/);
 });
 
 test('Instagram planner captures a complete strategy in owned journey settings', () => {

@@ -273,6 +273,18 @@
     }
   }
 
+  function getBalanceJourneyAction() {
+    try {
+      if (!window.socialJourney || typeof window.socialJourney.getUnifiedAction !== 'function') return null;
+      var journeyAction = window.socialJourney.getUnifiedAction();
+      if (!journeyAction) return null;
+      var base = ACTIONS.find(function(action){ return action.id === 'balance_journey'; });
+      return base ? Object.assign({}, base, journeyAction) : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   function isFirstProgramWeek() {
     try {
       if (window.socialJourney && typeof window.socialJourney.getCurrentWeek === 'function') {
@@ -418,6 +430,7 @@
 
   function isActionComplete(action) {
     if (!action || !action.id) return false;
+    if (action.id === 'balance_journey') return !getBalanceJourneyAction();
     if (visibleCompleteFallback(action.id)) return true;
     if (action.id === 'workout') return !!(dailyState.status && dailyState.status.workout && dailyState.status.workout_share);
     if (action.id === 'meal_plan_intro' || action.id === 'workout_week_intro' || action.id === 'activity_insights_intro') return hasSeenOnboardingStep(action.id);
@@ -438,6 +451,20 @@
       priority: 1000,
       goalIds: [],
       action: openCommunityTarget
+    },
+    {
+      id: 'balance_journey',
+      title: 'Open your Balance journey',
+      body: 'Continue the lesson or action that is ready for you now.',
+      cta: 'Open journey',
+      accent: '#b78a2e',
+      priority: 990,
+      goalIds: [],
+      action: function(){
+        if (window.socialJourney && typeof window.socialJourney.openUnifiedAction === 'function') {
+          window.socialJourney.openUnifiedAction();
+        }
+      }
     },
     {
       id: 'meal_plan_intro',
@@ -666,6 +693,7 @@
       if (!isHealthConnected()) addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'connect_health'; }));
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'first_meal'; }));
     }
+    addUniqueAction(picked, getBalanceJourneyAction());
     if (onboardingEligible && hasReachedSecondProgramWeek() && !hasSeenOnboardingStep('activity_insights_intro')) {
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'activity_insights_intro'; }));
     }
@@ -707,6 +735,7 @@
 
   function isActionAvailable(action, selectedGoalIds) {
     if (!action || !action.id) return false;
+    if (action.id === 'balance_journey') return !!getBalanceJourneyAction();
     if (isActionComplete(action)) return false;
     if (isOnboardingAction(action.id) && !isOnboardingAccount()) return false;
     if (action.id === 'mood') {

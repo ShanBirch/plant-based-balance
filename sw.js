@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v334-dashboard-restore'; // v334: evict the truncated dashboard shell and restore navigation
+const CACHE_NAME = 'pbb-app-v336-balance-identity-course'; // v336: add Balance Identity beneath Foundations in Course
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

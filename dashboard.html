@@ -602,7 +602,7 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
 <script src="js/dashboard/script_part_4.js?v=theme-toggle-shell-v2"></script>
 
 <link rel="stylesheet" href="css/dashboard/dashboard-style-1.css?v=67">
-<link rel="stylesheet" href="css/dashboard/pbb-social-journey.css?v=21-identity-planner">
+<link rel="stylesheet" href="css/dashboard/pbb-social-journey.css?v=22-identity-rollout">
 
 <script>if(window._crumb)window._crumb('head_complete');</script>
 <style id="balance-earned-celebration-styles">
@@ -1403,7 +1403,7 @@ window.addEventListener('load', function() {
     <!-- Weekly Goals Card (Home) -->
     <div id="weekly-goals-card" style="display: none; margin: 0 25px 14px; background: white; border-radius: 18px; overflow: hidden; box-shadow: 0 4px 18px rgba(15,23,42,0.08); border: 1px solid #e2e8f0;"></div>
 
-    <!-- Shannon-only Balance-to-Instagram journey pilot -->
+    <!-- Balance Foundations and Balance Identity journey -->
     <div id="social-journey-card" class="social-journey-card" style="display: none;" aria-label="Open Your Next Step"></div>
 
     <!-- Sunday Weigh-In Card (disappears after completion) -->
@@ -1938,15 +1938,15 @@ if(!window._pbbIsIOSSafari) {
 if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-progressphoto.js?v=10"><\/script>');
 document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=33-home-theme"><\/script>');
-    document.write('<script src="js/dashboard/pbb-social-journey.js?v=31-balance-identity"><\/script>');
-    document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=22-no-water-sleep"><\/script>');
+    document.write('<script src="js/dashboard/pbb-social-journey.js?v=33-identity-course"><\/script>');
+    document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=23-balance-identity"><\/script>');
     document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=23"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
     window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=10');
 window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=33-home-theme');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=31-balance-identity');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=22-no-water-sleep');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=33-identity-course');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=23-balance-identity');
     window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=23');
 }
 </script>
@@ -13742,8 +13742,8 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Meet your FitGotchi', body:"This is your FitGotchi. Feed and train it alongside you as it levels up with you.", quick: true, condition: function(){ return !(typeof window.isFitGotchiHidden === 'function' && window.isFitGotchiHidden()); } },
     { tab:'dashboard', sel:'#monthly-wrapped-card', title:'Your Month, Wrapped', body:"At the start of each month, tap this card for your workouts, PBs, mood, streaks, weekly goals, and next-month forecast.", quick: true, condition: function(){ var c = document.getElementById('monthly-wrapped-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#weekly-goals-card', title:'Your goals, set for you', body:"Balance uses your setup answers to choose the first three weekly goals. Open Weekly Goals whenever you want to adjust the targets for real life.", quick: true, condition: function(){ var c = document.getElementById('weekly-goals-card'); return c && c.style.display !== 'none'; } },
-    { tab:'dashboard', sel:'#social-journey-card', title:'Your Next Step', body:'Once you finish this App Tour and your first Balance Foundations lesson, tap Your Next Step near the top of Home to see exactly what to do next.', quick: true, condition: function(){ var c = document.getElementById('social-journey-card'); return !!(window.socialJourney && window.socialJourney.isEligibleUser() && c && c.style.display !== 'none'); } },
-    { tab:'dashboard', sel:'#social-journey-card', title:'Build Your Fitness Instagram', body:'Balance Identity now teaches you how your inputs shape your output, then helps you plan an Instagram that reinforces the person you want to become.', quick: true, condition: function(){ var c = document.getElementById('social-journey-card'); return !!(window.socialJourney && window.socialJourney.isEligibleUser() && c && c.style.display !== 'none'); } },
+    { tab:'dashboard', sel:'#next-obvious-steps-card', fallbackSel:'#social-journey-card', title:'Your Next Step', body:'Once you finish this App Tour and your first Balance Foundations lesson, use To do next near the top of Home to see exactly what to do next.', quick: true, condition: function(){ var c = document.getElementById('next-obvious-steps-card'); return !!(window.socialJourney && window.socialJourney.isEligibleUser() && c && c.style.display !== 'none'); } },
+    { tab:'dashboard', sel:'#next-obvious-steps-card', fallbackSel:'#social-journey-card', title:'Build Your Fitness Instagram', body:'Balance Identity now teaches you how your inputs shape your output, then helps you plan an Instagram that reinforces the person you want to become.', quick: true, condition: function(){ var c = document.getElementById('next-obvious-steps-card'); return !!(window.socialJourney && window.socialJourney.isEligibleUser() && window.socialJourney.getCurrentWeek() >= 7 && c && c.style.display !== 'none'); } },
     { tab:'dashboard', sel:'#next-obvious-steps-card', title:'Next steps', body:"Balance now gives you three clear actions for the day, aligned to your weekly goals and linked straight to the right part of the app.", quick: true, condition: function(){ try { return window.pbbNextSteps && window.pbbNextSteps.isPreviewEligible && window.pbbNextSteps.isPreviewEligible() && !!document.querySelector('#next-obvious-steps-card .next-step-action'); } catch(e){ return false; } } },
     { tab:'dashboard', sel:'#weekly-meal-evolution-home-card', title:'Next week, tailored to you', body:"Track a useful week of meals and Balance will keep the foods you enjoy, make small adjustments toward your targets, and introduce two fresh variations for next week.", quick: true, condition: function(){ var c = document.getElementById('weekly-meal-evolution-home-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#ptr-indicator', title:'Pull to refresh', body:"Pull down from the top of the Home screen to refresh your FitGotchi stats and dashboard cards — great when things are slow to load." },
@@ -14702,10 +14702,11 @@ window.endFeatureTour = function(skipped){
     {
       id: 'social-journey-your-next-step-v1',
       tab: 'dashboard',
-      sel: '#social-journey-card',
+      sel: '#next-obvious-steps-card',
+      fallbackSel: '#social-journey-card',
       title: 'Your Next Step',
-      body: 'Once you finish the App Tour and your first Balance Foundations lesson, tap Your Next Step near the top of Home to see exactly what to do next.',
-      condition: function(){ var c = document.getElementById('social-journey-card'); return !!(window.socialJourney && window.socialJourney.isEligibleUser() && window.socialJourney.isOnboardingComplete() && c && c.style.display !== 'none'); }
+      body: 'Once you finish the App Tour and your first Balance Foundations lesson, use To do next near the top of Home to see exactly what to do next.',
+      condition: function(){ var c = document.getElementById('next-obvious-steps-card'); return !!(window.socialJourney && window.socialJourney.isEligibleUser() && window.socialJourney.isOnboardingComplete() && c && c.style.display !== 'none'); }
     },
     {
       id: 'course-preview-locks-v1',
@@ -15137,18 +15138,38 @@ window.endFeatureTour = function(skipped){
   allFeatures.push({
     id: 'social-journey-your-next-step-v1',
     tab: 'dashboard',
-    sel: '#social-journey-card',
+    sel: '#next-obvious-steps-card',
+    fallbackSel: '#social-journey-card',
     title: 'Your Next Step',
-    body: 'Once you finish the App Tour and your first Balance Foundations lesson, tap Your Next Step near the top of Home to see exactly what to do next.',
-    condition: function(){ var c = document.getElementById('social-journey-card'); return !!(window.socialJourney && window.socialJourney.isEligibleUser() && window.socialJourney.isOnboardingComplete() && c && c.style.display !== 'none'); }
+    body: 'Once you finish the App Tour and your first Balance Foundations lesson, use To do next near the top of Home to see exactly what to do next.',
+    condition: function(){ var c = document.getElementById('next-obvious-steps-card'); return !!(window.socialJourney && window.socialJourney.isEligibleUser() && window.socialJourney.isOnboardingComplete() && c && c.style.display !== 'none'); }
   });
   allFeatures.push({
     id: 'balance-identity-instagram-plan-v1',
     tab: 'dashboard',
-    sel: '#social-journey-card',
+    sel: '#next-obvious-steps-card',
+    fallbackSel: '#social-journey-card',
     title: 'Build Your Fitness Instagram',
     body: 'Balance Identity now teaches you how your inputs shape your output, then helps you plan an Instagram that reinforces the person you want to become.',
-    condition: function(){ var c = document.getElementById('social-journey-card'); return !!(window.socialJourney && window.socialJourney.isEligibleUser() && window.socialJourney.isOnboardingComplete() && c && c.style.display !== 'none'); }
+    condition: function(){ var c = document.getElementById('next-obvious-steps-card'); return !!(window.socialJourney && window.socialJourney.isEligibleUser() && window.socialJourney.isOnboardingComplete() && window.socialJourney.getCurrentWeek() >= 7 && c && c.style.display !== 'none'); }
+  });
+  allFeatures.push({
+    id: 'balance-identity-home-rollout-v2',
+    tab: 'dashboard',
+    sel: '#next-obvious-steps-card',
+    fallbackSel: '#social-journey-card',
+    title: 'Balance Identity is in your plan',
+    body: 'Your current Identity lesson and Instagram action now appear directly in To do next on Home.',
+    condition: function(){ var c = document.getElementById('next-obvious-steps-card'); return !!(window.socialJourney && window.socialJourney.isEligibleUser() && window.socialJourney.isOnboardingComplete() && window.socialJourney.getCurrentWeek() >= 7 && c && c.style.display !== 'none'); }
+  });
+  allFeatures.push({
+    id: 'balance-identity-course-v1',
+    tab: 'learning',
+    sel: '#balance-identity-course-card',
+    fallbackSel: '.course-library-intro,#learning-content',
+    title: 'Balance Identity is now a course',
+    body: 'Find all six Identity lessons beneath Balance Foundations. Course and Home share the same weekly progress and action plan.',
+    condition: function(){ return !!(window.socialJourney && window.socialJourney.isEligibleUser() && window.socialJourney.getCurrentWeek() >= 7); }
   });
   allFeatures.push({
     id: 'paid-facebook-stripe-unlock-v1',
@@ -19028,11 +19049,11 @@ if (window._pbbIsIOSSafari) {
             });
             if (window.showQuizBattleInviteModal || learningAlreadyRequested) return;
             var s = document.createElement('script');
-      s.src = 'lib/learning-inline.js?v=21';
+      s.src = 'lib/learning-inline.js?v=22-identity-course';
             document.head.appendChild(s);
         }, { once: true });
     } else {
-    document.write('<script src="lib/learning-inline.js?v=21"><\/script>');
+    document.write('<script src="lib/learning-inline.js?v=22-identity-course"><\/script>');
     }
     </script>
     <!-- Battle System & Logic Overrides (130 lines — deferred on iOS) -->

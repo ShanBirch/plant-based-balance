@@ -176,6 +176,7 @@
   let candidatesLoaded = false;
   let loading = false;
   let viewStage = 'lesson';
+  let coursePreviewWeek = null;
   let initialized = false;
   let welcomeAudioComplete = false;
   let welcomeAudioCompleteUserId = '';
@@ -546,7 +547,7 @@
     const beforeFirstWeek = Number.isFinite(programStart.getTime())
       && Date.now() < programStart.getTime() + (7 * 24 * 60 * 60 * 1000);
     document.documentElement.classList.toggle('pbb-before-first-week', beforeFirstWeek);
-    const unified = isPilotUser() || isOnboardingTestUser();
+    const unified = isJourneyEligible() && !!state;
     document.documentElement.classList.toggle('pbb-unified-next-steps', unified);
     if (unified) {
       const weeklyGoals = document.getElementById('weekly-goals-card');
@@ -562,6 +563,7 @@
       setTimeout(function () {
         try {
           if (window.pbbNextSteps && typeof window.pbbNextSteps.refresh === 'function') window.pbbNextSteps.refresh();
+          if (typeof window.refreshLearningCourseHome === 'function') window.refreshLearningCourseHome();
         } catch (_) {}
       }, 0);
       return;
@@ -594,6 +596,9 @@
       + '<div class="social-journey-card__copy">' + escapeHtml(cardCopy) + '</div>'
       + '<div class="social-journey-card__row"><div class="social-journey-card__progress"><span style="width:' + percent + '%"></span></div><div class="social-journey-card__count">' + completed + ' / ' + total + '</div></div>'
       + '<div class="social-journey-card__cta">' + escapeHtml(cardCta) + ' <span>→</span></div></div>';
+    try {
+      if (typeof window.refreshLearningCourseHome === 'function') window.refreshLearningCourseHome();
+    } catch (_) {}
   }
 
   function taskActionLabel(item) {
@@ -606,6 +611,46 @@
     if (item.action === 'movement') return 'Open Movement';
     if (item.action === 'instagram') return 'Open Instagram';
     return 'Open';
+  }
+
+  function isTaskDueToday(item) {
+    if (!item || item.complete) return false;
+    if (item.type !== 'daily_manual') return true;
+    return !dailyTaskDates(item.id).includes(brisbaneDateKey());
+  }
+
+  function getUnifiedAction() {
+    if (!isJourneyEligible() || !state) return null;
+    const definition = getWeekDefinition();
+    const lesson = WEEK_LESSONS[definition.week - 1];
+    if (!isCurrentLessonSeen()) {
+      return {
+        title: definition.week >= 7
+          ? 'Start Balance Identity: Week ' + definition.week
+          : 'Complete this week\'s Balance Foundations lesson',
+        body: lesson ? lesson.title : definition.title,
+        cta: 'Open lesson',
+        accent: '#b78a2e'
+      };
+    }
+    const tasks = progress ? safeArray(progress.tasks) : [];
+    const nextTask = tasks.find(isTaskDueToday);
+    if (!nextTask) return null;
+    return {
+      title: (definition.week >= 7 ? 'Balance Identity: ' : 'Foundations: ') + nextTask.label,
+      body: nextTask.hint || definition.body,
+      cta: taskActionLabel(nextTask),
+      accent: definition.week >= 7 ? '#b78a2e' : '#0f766e'
+    };
+  }
+
+  function openUnifiedAction() {
+    if (!isJourneyEligible() || !state) return;
+    if (Number(state.current_week) === 1 && !isCurrentLessonSeen()) {
+      openJourney('welcome');
+      return;
+    }
+    openJourney(isCurrentLessonSeen() ? 'goals' : 'lesson');
   }
 
   function renderTasks() {
@@ -685,6 +730,10 @@
       renderLesson();
       return;
     }
+    if (viewStage === 'course-lesson') {
+      renderIdentityCourseLesson();
+      return;
+    }
     if (viewStage === 'welcome') {
       renderWelcome();
       return;
@@ -743,6 +792,80 @@
         ? '<div><span>01</span><p>Answer honestly rather than trying to guess the perfect response.</p></div><div><span>02</span><p>If you miss one, keep going. The explanation is part of the lesson.</p></div><div><span>03</span><p>When you finish, Balance will bring you back to your next steps.</p></div>'
         : lessonCopy.points.map(function(point, index){ return '<div><span>' + String(index + 1).padStart(2, '0') + '</span><p>' + escapeHtml(point) + '</p></div>'; }).join('')) + '</div></section>'
       + '<div class="social-journey-lesson-action"><button type="button" class="social-journey-button" onclick="' + (isFirstLesson ? 'socialJourney.startFirstCourseLesson()' : 'socialJourney.showGoals()') + '">' + (isFirstLesson ? 'Begin my first lesson' : (definition.week === 7 ? 'I understand the loop - build my plan' : 'Use this lesson')) + '</button><button type="button" class="social-journey-text-button" onclick="socialJourney.close()">Not now</button></div>';
+  }
+
+  function renderIdentityCourseLesson() {
+    ensureUi();
+    const container = document.getElementById('social-journey-content');
+    const week = Math.max(7, Math.min(12, Number(coursePreviewWeek) || 7));
+    const definition = WEEK_DEFINITIONS[week - 1];
+    const lessonCopy = WEEK_LESSONS[week - 1];
+    if (!container || !definition || !lessonCopy) return;
+    const isCurrentWeek = Number(state && state.current_week) === week;
+    document.querySelector('.social-journey-header__title').textContent = 'Balance Identity';
+    document.querySelector('.social-journey-header__week').textContent = 'Week ' + (week - 6) + ' of 6';
+    container.innerHTML = '<section class="social-journey-lesson">'
+      + '<div class="social-journey-lesson__number"><span>IDENTITY</span><strong>' + String(week - 6).padStart(2, '0') + '</strong></div>'
+      + '<div class="social-journey-lesson__eyebrow">' + escapeHtml(definition.phase) + '</div>'
+      + '<h2>' + escapeHtml(lessonCopy.title) + '</h2><p>' + escapeHtml(lessonCopy.body) + '</p></section>'
+      + '<section class="social-journey-learn-card"><div class="social-journey-section__heading">Put it into practice</div>'
+      + '<div class="social-journey-learn-points">' + lessonCopy.points.map(function(point, index){ return '<div><span>' + String(index + 1).padStart(2, '0') + '</span><p>' + escapeHtml(point) + '</p></div>'; }).join('') + '</div></section>'
+      + '<div class="social-journey-lesson-action">'
+      + (isCurrentWeek ? '<button type="button" class="social-journey-button" onclick="socialJourney.showGoals()">' + (week === 7 ? 'I understand the loop - build my plan' : 'Use this lesson') + '</button>' : '')
+      + '<button type="button" class="social-journey-button secondary" onclick="socialJourney.returnToCourse()">Back to Balance Identity</button></div>';
+  }
+
+  function getIdentityCourseProgress() {
+    const currentJourneyWeek = Math.max(1, Math.min(12, Number(state && state.current_week) || 1));
+    const seenWeeks = new Set(lessonSeenWeeks());
+    const weekProgress = WEEK_DEFINITIONS.slice(6).map(function(definition, index){
+      const journeyWeek = index + 7;
+      const lessonCopy = WEEK_LESSONS[journeyWeek - 1];
+      return {
+        number: index + 1,
+        journeyWeek,
+        title: lessonCopy.title,
+        description: definition.body,
+        isComplete: seenWeeks.has(journeyWeek),
+        isLocked: currentJourneyWeek < journeyWeek
+      };
+    });
+    const completed = weekProgress.filter(function(week){ return week.isComplete; }).length;
+    return {
+      completed,
+      total: weekProgress.length,
+      percent: Math.round((completed / weekProgress.length) * 100),
+      isComplete: completed === weekProgress.length,
+      isUnlocked: currentJourneyWeek >= 7,
+      currentJourneyWeek,
+      weekProgress
+    };
+  }
+
+  function openIdentityCourseWeek(weekNumber) {
+    if (!isJourneyEligible() || !state) return;
+    const week = Math.max(7, Math.min(12, Number(weekNumber) || 7));
+    if (week > Number(state.current_week)) {
+      showToast('That Balance Identity week will unlock when you reach it.', 'info');
+      return;
+    }
+    coursePreviewWeek = week;
+    ensureUi();
+    viewStage = 'course-lesson';
+    renderJourney();
+    const view = document.getElementById('social-journey-view');
+    view.classList.add('is-open');
+    view.setAttribute('aria-hidden', 'false');
+  }
+
+  function returnToCourse() {
+    closeJourney();
+    if (typeof window.switchAppTab === 'function') {
+      try { window.switchAppTab('learning'); } catch (_) {}
+    }
+    setTimeout(function(){
+      if (typeof window.openBalanceIdentityCourse === 'function') window.openBalanceIdentityCourse();
+    }, 80);
   }
 
   function renderWelcome() {
@@ -1463,7 +1586,12 @@
     showGoals,
     previewGoalsForTest,
     resetActivationForTest,
-    isUnifiedPlanActive: function () { return isPilotUser() || isOnboardingTestUser(); },
+    isUnifiedPlanActive: function () { return isJourneyEligible() && !!state; },
+    getUnifiedAction,
+    openUnifiedAction,
+    getIdentityCourseProgress,
+    openIdentityCourseWeek,
+    returnToCourse,
     getCurrentWeek: function () { return Number(state && state.current_week || 1); },
     runDailyAction,
     editWeeklyGoals,

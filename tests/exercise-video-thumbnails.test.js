@@ -102,5 +102,5 @@ test('phones fetch the thumbnail renderer and video logic together', () => {
     assert.match(dashboardSource, new RegExp(videoVersion.replace(/[.?]/g, '\\$&')));
     assert.match(serviceWorkerSource, new RegExp(workoutVersion.replace(/[.?]/g, '\\$&')));
     assert.match(serviceWorkerSource, new RegExp(videoVersion.replace(/[.?]/g, '\\$&')));
-  assert.match(serviceWorkerSource, /const CACHE_NAME = 'pbb-app-v334-dashboard-restore'/);
+  assert.match(serviceWorkerSource, /const CACHE_NAME = 'pbb-app-v336-balance-identity-course'/);
 });
