@@ -51,5 +51,5 @@ test('changed onboarding assets are cache-busted', () => {
   assert.match(dashboard, /pbb-social-journey\.js\?v=31-balance-identity/);
   assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=190-exercise-video-bridge/);
   assert.match(dashboard, /dashboard-script-6-ai_coach_draft_mode_logic_auth\.js\?v=43-home-canvas/);
-  assert.match(serviceWorker, /pbb-app-v334-dashboard-restore/);
+  assert.match(serviceWorker, /pbb-app-v335-weekly-checkin/);
 });
