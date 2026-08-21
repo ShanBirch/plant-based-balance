@@ -65,6 +65,7 @@
   var state = {
     data: null,
     loading: false,
+    submitting: false,
     overlayOpen: false,
     source: 'default',
     hasLiveData: false,
@@ -92,7 +93,7 @@
 
   function isReviewWindow(){
     var day = new Date().getDay();
-    return day === 0 || day === 1;
+    return day === 5 || day === 6 || day === 0;
   }
 
   function getReviewUserId(){
@@ -150,7 +151,7 @@
   }
 
   function isReviewEnabled(){
-    return isExplicitPreviewEnabled() || (isReviewWindow() && state.hasLiveData && !hasCompletedReviewAction());
+    return isExplicitPreviewEnabled() || (isReviewWindow() && !!getReviewUserId() && !hasCompletedReviewAction());
   }
 
   function cardPillLabel(){
@@ -227,8 +228,8 @@
   function getWeekWindow(){
     var now = new Date();
     var dayOfWeek = now.getDay();
-    // Sunday and Monday both review the completed Monday-to-Sunday week.
-    var mondayOffset = dayOfWeek === 0 ? -6 : (dayOfWeek === 1 ? -7 : 1 - dayOfWeek);
+    // The Friday-to-Sunday check-in always belongs to the current Monday-to-Sunday week.
+    var mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
     var start = new Date(now);
     start.setDate(now.getDate() + mondayOffset);
     start.setHours(0, 0, 0, 0);
@@ -277,11 +278,7 @@
   }
 
   function reviewActionLabel(data){
-    var goals = data && data.goals ? data.goals : {};
-    var reward = calculateReviewGoalReward(goals.completed, goals.total);
-    return reward.earned > 0
-      ? 'Claim your XP + set next week goals'
-      : 'Set next week goals';
+    return 'Set next week goals';
   }
 
   function buildWeeklyGoalsSummary(row, userId, weekStartKey){
@@ -482,6 +479,13 @@
       try { return JSON.parse(extra) || {}; } catch (_) { return {}; }
     }
     return typeof extra === 'object' ? extra : {};
+  }
+
+  function hasSubmittedWeeklyResponse(checkins, weekStartKey){
+    return (checkins || []).some(function(row){
+      var weekly = readCheckinExtra(row).weekly_checkin;
+      return weekly && weekly.week_start === weekStartKey && !!weekly.submitted_at;
+    });
   }
 
   function cleanFeedbackText(value){
@@ -901,6 +905,10 @@
     var weeklyGoalsRow = payload[9];
     var moodRows = payload[10] || [];
 
+    if (!isExplicitPreviewEnabled() && hasSubmittedWeeklyResponse(checkins, week.startKey)) {
+      markReviewCompleted();
+    }
+
     if (window.weeklyGoals && typeof window.weeklyGoals.refreshCompletedWeek === 'function') {
       try {
         var refreshedWeeklyGoals = await window.weeklyGoals.refreshCompletedWeek(week.startKey);
@@ -914,7 +922,7 @@
 
     var weeklyGoalsSummary = buildWeeklyGoalsSummary(weeklyGoalsRow, userId, week.startKey);
 
-    if ((!profile && !facts) || (!dailyNutrition.length && !workouts.length && !checkins.length && !stepsRows.length && !fitbitSleep.length && !ouraSleep.length && !whoopSleep.length && !moodRows.length)) {
+    if (!profile && !facts && !dailyNutrition.length && !workouts.length && !checkins.length && !stepsRows.length && !fitbitSleep.length && !ouraSleep.length && !whoopSleep.length && !moodRows.length && !weeklyGoalsSummary.total) {
       return null;
     }
 
@@ -1008,6 +1016,23 @@
       '.pbb-wci-feedback-day{font-size:.76rem;line-height:1.25;font-weight:950;color:#fff;white-space:nowrap;}',
       '.pbb-wci-feedback-date{display:block;margin-top:2px;font-size:.6rem;line-height:1.2;font-weight:900;color:rgba(245,217,138,.78);text-transform:uppercase;}',
       '.pbb-wci-feedback-text{min-width:0;font-size:.84rem;line-height:1.42;font-weight:720;color:rgba(255,255,255,.80);word-break:break-word;}',
+      '.pbb-wci-form{display:grid;gap:15px;}',
+      '.pbb-wci-form-intro{font-size:.83rem!important;color:rgba(255,255,255,.72)!important;}',
+      '.pbb-wci-field{display:grid;gap:7px;}',
+      '.pbb-wci-field-label{font-size:.78rem;line-height:1.3;font-weight:950;color:#fff;}',
+      '.pbb-wci-field-help{font-size:.68rem;line-height:1.35;font-weight:750;color:rgba(255,255,255,.56);}',
+      '.pbb-wci-choice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}',
+      '.pbb-wci-choice{position:relative;display:flex;align-items:center;justify-content:center;min-height:42px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);padding:8px;text-align:center;font-size:.74rem;line-height:1.25;font-weight:900;color:rgba(255,255,255,.78);cursor:pointer;}',
+      '.pbb-wci-choice input{position:absolute;opacity:0;pointer-events:none;}',
+      '.pbb-wci-choice:has(input:checked){border-color:rgba(245,217,138,.7);background:rgba(245,217,138,.18);color:#fff;box-shadow:0 0 0 1px rgba(245,217,138,.12) inset;}',
+      '.pbb-wci-rating{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;}',
+      '.pbb-wci-rating .pbb-wci-choice{min-height:40px;font-size:.84rem;}',
+      '.pbb-wci-input,.pbb-wci-select{width:100%;box-sizing:border-box;border-radius:13px;border:1px solid rgba(255,255,255,.13);background:rgba(0,0,0,.24);color:#fff;padding:11px 12px;font:750 .82rem/1.4 inherit;outline:none;}',
+      '.pbb-wci-input{min-height:78px;resize:vertical;}',
+      '.pbb-wci-input:focus,.pbb-wci-select:focus{border-color:rgba(245,217,138,.72);box-shadow:0 0 0 3px rgba(245,217,138,.12);}',
+      '.pbb-wci-select option{color:#111;background:#fff;}',
+      '.pbb-wci-form-error{display:none;border-radius:11px;background:rgba(239,68,68,.14);border:1px solid rgba(248,113,113,.32);padding:9px 10px;font-size:.73rem;line-height:1.35;font-weight:850;color:#fecaca;}',
+      '.pbb-wci-form-error.is-visible{display:block;}',
       '.pbb-wci-actions{display:grid;grid-template-columns:1fr;gap:10px;margin-top:14px;}',
       '.pbb-wci-action{min-height:44px;border-radius:14px;border:1px solid rgba(245,217,138,.22);font-family:inherit;font-size:.82rem;font-weight:950;cursor:pointer;}',
       '.pbb-wci-action:disabled{opacity:.72;cursor:wait;}',
@@ -1041,6 +1066,11 @@
       'html[data-pbb-theme="light"] .pbb-wci-feedback-day,html.pbb-theme-light .pbb-wci-feedback-day,body[data-pbb-theme="light"] .pbb-wci-feedback-day,body.pbb-theme-light .pbb-wci-feedback-day{color:#0f172a !important;-webkit-text-fill-color:#0f172a !important;}',
       'html[data-pbb-theme="light"] .pbb-wci-feedback-title,html[data-pbb-theme="light"] .pbb-wci-feedback-date,html.pbb-theme-light .pbb-wci-feedback-title,html.pbb-theme-light .pbb-wci-feedback-date,body[data-pbb-theme="light"] .pbb-wci-feedback-title,body[data-pbb-theme="light"] .pbb-wci-feedback-date,body.pbb-theme-light .pbb-wci-feedback-title,body.pbb-theme-light .pbb-wci-feedback-date{color:#9f7628 !important;-webkit-text-fill-color:#9f7628 !important;}',
       'html[data-pbb-theme="light"] .pbb-wci-feedback-text,html.pbb-theme-light .pbb-wci-feedback-text,body[data-pbb-theme="light"] .pbb-wci-feedback-text,body.pbb-theme-light .pbb-wci-feedback-text{color:#334155 !important;-webkit-text-fill-color:#334155 !important;}',
+      'html[data-pbb-theme="light"] .pbb-wci-field-label,html.pbb-theme-light .pbb-wci-field-label,body[data-pbb-theme="light"] .pbb-wci-field-label,body.pbb-theme-light .pbb-wci-field-label{color:#0f172a!important;-webkit-text-fill-color:#0f172a!important;}',
+      'html[data-pbb-theme="light"] .pbb-wci-form-intro,html[data-pbb-theme="light"] .pbb-wci-field-help,html.pbb-theme-light .pbb-wci-form-intro,html.pbb-theme-light .pbb-wci-field-help,body[data-pbb-theme="light"] .pbb-wci-form-intro,body[data-pbb-theme="light"] .pbb-wci-field-help,body.pbb-theme-light .pbb-wci-form-intro,body.pbb-theme-light .pbb-wci-field-help{color:#64748b!important;-webkit-text-fill-color:#64748b!important;}',
+      'html[data-pbb-theme="light"] .pbb-wci-choice,html.pbb-theme-light .pbb-wci-choice,body[data-pbb-theme="light"] .pbb-wci-choice,body.pbb-theme-light .pbb-wci-choice{background:#fff;border-color:#dbe2ea;color:#475569!important;-webkit-text-fill-color:#475569!important;}',
+      'html[data-pbb-theme="light"] .pbb-wci-choice:has(input:checked),html.pbb-theme-light .pbb-wci-choice:has(input:checked),body[data-pbb-theme="light"] .pbb-wci-choice:has(input:checked),body.pbb-theme-light .pbb-wci-choice:has(input:checked){background:#fff7df;border-color:#b78a2e;color:#7c580d!important;-webkit-text-fill-color:#7c580d!important;}',
+      'html[data-pbb-theme="light"] .pbb-wci-input,html[data-pbb-theme="light"] .pbb-wci-select,html.pbb-theme-light .pbb-wci-input,html.pbb-theme-light .pbb-wci-select,body[data-pbb-theme="light"] .pbb-wci-input,body[data-pbb-theme="light"] .pbb-wci-select,body.pbb-theme-light .pbb-wci-input,body.pbb-theme-light .pbb-wci-select{background:#fff;border-color:#dbe2ea;color:#0f172a!important;-webkit-text-fill-color:#0f172a!important;}',
       'html[data-pbb-theme="light"] .pbb-wci-metric span,html[data-pbb-theme="light"] .pbb-wci-gym-item span,html[data-pbb-theme="light"] .pbb-wci-recovery-item span,html[data-pbb-theme="light"] .pbb-wci-checkin-item span,html[data-pbb-theme="light"] .pbb-wci-goal-top span:last-child,html.pbb-theme-light .pbb-wci-metric span,html.pbb-theme-light .pbb-wci-gym-item span,html.pbb-theme-light .pbb-wci-recovery-item span,html.pbb-theme-light .pbb-wci-checkin-item span,html.pbb-theme-light .pbb-wci-goal-top span:last-child,body[data-pbb-theme="light"] .pbb-wci-metric span,body[data-pbb-theme="light"] .pbb-wci-gym-item span,body[data-pbb-theme="light"] .pbb-wci-recovery-item span,body[data-pbb-theme="light"] .pbb-wci-checkin-item span,body[data-pbb-theme="light"] .pbb-wci-goal-top span:last-child,body.pbb-theme-light .pbb-wci-metric span,body.pbb-theme-light .pbb-wci-gym-item span,body.pbb-theme-light .pbb-wci-recovery-item span,body.pbb-theme-light .pbb-wci-checkin-item span,body.pbb-theme-light .pbb-wci-goal-top span:last-child{color:#64748b !important;-webkit-text-fill-color:#64748b !important;}',
       'html[data-pbb-theme="light"] .pbb-wci-metric b,html[data-pbb-theme="light"] .pbb-wci-goal-banner b,html.pbb-theme-light .pbb-wci-metric b,html.pbb-theme-light .pbb-wci-goal-banner b,body[data-pbb-theme="light"] .pbb-wci-metric b,body[data-pbb-theme="light"] .pbb-wci-goal-banner b,body.pbb-theme-light .pbb-wci-metric b,body.pbb-theme-light .pbb-wci-goal-banner b{color:#111827 !important;-webkit-text-fill-color:#111827 !important;}',
       'html[data-pbb-theme="light"] .pbb-wci-gym-item small,html[data-pbb-theme="light"] .pbb-wci-recovery-item small,html[data-pbb-theme="light"] .pbb-wci-checkin-item small,html.pbb-theme-light .pbb-wci-gym-item small,html.pbb-theme-light .pbb-wci-recovery-item small,html.pbb-theme-light .pbb-wci-checkin-item small,body[data-pbb-theme="light"] .pbb-wci-gym-item small,body[data-pbb-theme="light"] .pbb-wci-recovery-item small,body[data-pbb-theme="light"] .pbb-wci-checkin-item small,body.pbb-theme-light .pbb-wci-gym-item small,body.pbb-theme-light .pbb-wci-recovery-item small,body.pbb-theme-light .pbb-wci-checkin-item small{color:#9f7628 !important;-webkit-text-fill-color:#9f7628 !important;}',
@@ -1141,7 +1171,212 @@
     return '<section class="pbb-wci-section"><h3>Check-ins and mood</h3>' + cards + feedbackHtml + note + '</section>';
   }
 
+  function renderWeeklyReflectionForm(data){
+    var goalCount = data && data.goals ? Number(data.goals.total || 0) : 0;
+    var goalPrompt = goalCount > 0
+      ? 'Use your ' + goalCount + ' weekly goal' + (goalCount === 1 ? '' : 's') + ' as the scorecard, then tell Shannon what the numbers cannot show.'
+      : 'Tell Shannon what went well, what got in the way, and what would help next week.';
+    return [
+      '<section class="pbb-wci-section pbb-wci-reflection-section">',
+      '  <h3>Share your week with Shannon</h3>',
+      '  <form class="pbb-wci-form" id="weekly-checkin-response-form">',
+      '    <p class="pbb-wci-form-intro">' + escapeHtml(goalPrompt) + '</p>',
+      '    <div class="pbb-wci-field">',
+      '      <div class="pbb-wci-field-label">How did this week feel overall?</div>',
+      '      <div class="pbb-wci-choice-grid">',
+      '        <label class="pbb-wci-choice"><input type="radio" name="overall" value="strong" required><span>Strong week</span></label>',
+      '        <label class="pbb-wci-choice"><input type="radio" name="overall" value="mostly_on_track"><span>Mostly on track</span></label>',
+      '        <label class="pbb-wci-choice"><input type="radio" name="overall" value="mixed"><span>Mixed week</span></label>',
+      '        <label class="pbb-wci-choice"><input type="radio" name="overall" value="tough"><span>Tough week</span></label>',
+      '      </div>',
+      '    </div>',
+      '    <label class="pbb-wci-field">',
+      '      <span class="pbb-wci-field-label">What was your biggest win?</span>',
+      '      <span class="pbb-wci-field-help">It can be training, food, routine, confidence, or something life-related.</span>',
+      '      <textarea class="pbb-wci-input" name="win" maxlength="600" required placeholder="The thing I am happiest with this week..."></textarea>',
+      '    </label>',
+      '    <label class="pbb-wci-field">',
+      '      <span class="pbb-wci-field-label">What got in the way?</span>',
+      '      <textarea class="pbb-wci-input" name="blocker" maxlength="600" placeholder="The hardest part was..."></textarea>',
+      '    </label>',
+      '    <div class="pbb-wci-field">',
+      '      <div class="pbb-wci-field-label">How confident do you feel about next week?</div>',
+      '      <div class="pbb-wci-rating" aria-label="Confidence from 1 to 5">',
+      '        <label class="pbb-wci-choice"><input type="radio" name="confidence" value="1" required><span>1</span></label>',
+      '        <label class="pbb-wci-choice"><input type="radio" name="confidence" value="2"><span>2</span></label>',
+      '        <label class="pbb-wci-choice"><input type="radio" name="confidence" value="3"><span>3</span></label>',
+      '        <label class="pbb-wci-choice"><input type="radio" name="confidence" value="4"><span>4</span></label>',
+      '        <label class="pbb-wci-choice"><input type="radio" name="confidence" value="5"><span>5</span></label>',
+      '      </div>',
+      '      <div class="pbb-wci-field-help">1 means you need a reset. 5 means the plan feels clear.</div>',
+      '    </div>',
+      '    <label class="pbb-wci-field">',
+      '      <span class="pbb-wci-field-label">What would you like help with next week?</span>',
+      '      <select class="pbb-wci-select" name="support" required>',
+      '        <option value="">Choose one</option>',
+      '        <option value="accountability">Keep me accountable</option>',
+      '        <option value="training">Adjust or explain my training</option>',
+      '        <option value="nutrition">Help with food or meal planning</option>',
+      '        <option value="routine">Help the plan fit my routine</option>',
+      '        <option value="talk">Talk something through with me</option>',
+      '        <option value="nothing_specific">Nothing specific right now</option>',
+      '      </select>',
+      '    </label>',
+      '    <label class="pbb-wci-field">',
+      '      <span class="pbb-wci-field-label">Anything else Shannon should know?</span>',
+      '      <textarea class="pbb-wci-input" name="note" maxlength="900" placeholder="Optional"></textarea>',
+      '    </label>',
+      '    <div class="pbb-wci-form-error" data-wci-form-error role="alert"></div>',
+      '    <button type="submit" class="pbb-wci-action primary" data-wci-action="submit">Send check-in to Shannon</button>',
+      '  </form>',
+      '</section>'
+    ].join('');
+  }
+
+  function weeklyGoalSnapshot(data){
+    var rows = data && data.goals && Array.isArray(data.goals.rows) ? data.goals.rows : [];
+    return rows.slice(0, 3).map(function(goal){
+      return {
+        id: goal.id || '',
+        label: String(goal.label || 'Goal').slice(0, 120),
+        current: Number(goal.current || 0),
+        target: Number(goal.target || 0),
+        value: String(goal.value || '').slice(0, 120),
+        complete: !!goal.complete
+      };
+    });
+  }
+
+  function setWeeklyReflectionError(form, message){
+    var errorBox = form && form.querySelector ? form.querySelector('[data-wci-form-error]') : null;
+    if (!errorBox) return;
+    errorBox.textContent = message || '';
+    errorBox.classList.toggle('is-visible', !!message);
+  }
+
+  async function weeklyCheckinAccessToken(){
+    var supabase = window.supabaseClient;
+    if (!supabase || !supabase.auth || typeof supabase.auth.getSession !== 'function') return '';
+    var result = await supabase.auth.getSession();
+    return result && result.data && result.data.session ? result.data.session.access_token || '' : '';
+  }
+
+  async function submitWeeklyReflection(event){
+    event.preventDefault();
+    var form = event.currentTarget;
+    if (!form || state.submitting) return;
+    setWeeklyReflectionError(form, '');
+
+    var formData = new FormData(form);
+    var payload = {
+      overall: String(formData.get('overall') || ''),
+      win: String(formData.get('win') || '').trim(),
+      blocker: String(formData.get('blocker') || '').trim(),
+      confidence: Number(formData.get('confidence') || 0),
+      support: String(formData.get('support') || ''),
+      note: String(formData.get('note') || '').trim(),
+      week_start: getWeekWindow().startKey,
+      week_end: localDateKey(new Date(getWeekWindow().end.getTime() - 24 * 60 * 60 * 1000)),
+      goals: weeklyGoalSnapshot(currentData())
+    };
+
+    if (!payload.overall || !payload.win || !payload.confidence || !payload.support) {
+      setWeeklyReflectionError(form, 'Please answer the overall, win, confidence, and support questions.');
+      return;
+    }
+
+    var submitButton = form.querySelector('[data-wci-action="submit"]');
+    state.submitting = true;
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = 'Sending check-in...';
+    }
+
+    try {
+      if (!isExplicitPreviewEnabled()) {
+        var accessToken = await weeklyCheckinAccessToken();
+        if (!accessToken) throw new Error('Please log in again before sending your check-in.');
+        var response = await fetch('/.netlify/functions/submit-weekly-checkin', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + accessToken
+          },
+          body: JSON.stringify(payload)
+        });
+        var result = await response.json().catch(function(){ return {}; });
+        if (!response.ok || !result.ok) throw new Error(result.error || 'Your check-in could not be sent.');
+      }
+
+      try {
+        if (typeof window.trackBalanceActivity === 'function') {
+          window.trackBalanceActivity('weekly_checkin_submitted', {
+            source: 'to_do_next',
+            week_start: payload.week_start,
+            overall: payload.overall,
+            confidence: payload.confidence,
+            support: payload.support,
+            goal_count: payload.goals.length
+          }, { immediate: true });
+        }
+      } catch (_) {}
+
+      markReviewCompleted();
+      closeWeeklyCheckinPreview();
+      renderCard();
+      if (window.pbbNextSteps && typeof window.pbbNextSteps.refresh === 'function') {
+        window.pbbNextSteps.refresh();
+      }
+      showToast('Check-in sent to Shannon.', 'success');
+    } catch (error) {
+      setWeeklyReflectionError(form, error && error.message ? error.message : 'Your check-in could not be sent. Please try again.');
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Send check-in to Shannon';
+      }
+    } finally {
+      state.submitting = false;
+    }
+  }
+
   function currentData(){
+    if (state.source === 'default' && !isExplicitPreviewEnabled()) {
+      var week = getWeekWindow();
+      var user = window.currentUser || {};
+      return normalizePreviewData({
+        profile: { name: user.name || user.display_name || 'Your week', accountLabel: '' },
+        weekLabel: 'Weekly Check-In',
+        dateRange: week.label,
+        objective: {
+          label: 'Your current goal',
+          detail: 'Your saved goals and progress will appear here when they are available.',
+          source: 'Balance'
+        },
+        calories: {
+          target: '--',
+          average: '--',
+          averageLabel: 'avg logged',
+          verdict: 'Keep logging what you can. Your answers below give Shannon the context the numbers cannot show.'
+        },
+        training: { sessions: 0, highlight: 'Training data will appear here when it is available.' },
+        goals: { completed: 0, total: 0, rows: [] },
+        wins: ['Use the check-in below to tell Shannon what felt like a win this week.'],
+        adjustments: ['Shannon will use your answers to shape the next coaching follow-up.'],
+        tip: 'A useful check-in does not need a perfect week. Honest context is what makes the next plan better.',
+        note: 'Your numbers are still loading, but you can complete the check-in and share the real story of your week.',
+        gym: [
+          { label: 'Sessions', value: '0', meta: 'loading' },
+          { label: 'Best lift', value: 'No lift data', meta: 'yet' },
+          { label: 'Top press', value: 'No press data', meta: 'yet' }
+        ],
+        recoveryRows: [
+          { label: 'Sleep', value: 'Not connected', meta: 'yet' },
+          { label: 'Steps', value: 'Not connected', meta: 'yet' },
+          { label: 'Water', value: 'No logs', meta: 'yet' }
+        ],
+        checkinMood: { rows: [], note: '', feedback: [] }
+      });
+    }
     return normalizePreviewData(state.data || DEFAULT_DATA);
   }
 
@@ -1183,22 +1418,22 @@
 
     var data = currentData();
     card.style.display = isReviewEnabled() ? 'block' : 'none';
-    card.setAttribute('aria-label', 'Open weekly review');
+    card.setAttribute('aria-label', 'Open weekly check-in');
     card.innerHTML = [
       '<div class="pbb-wci-card-inner">',
       '  <div class="pbb-wci-card-top">',
-      '    <div class="pbb-wci-kicker">Your Weekly Review</div>',
+      '    <div class="pbb-wci-kicker">Friday to Sunday</div>',
       '    <div class="pbb-wci-preview-pill">' + escapeHtml(cardPillLabel()) + '</div>',
       '  </div>',
-      '  <h3 class="pbb-wci-card-title">Your Weekly Review is ready</h3>',
-      '  <p class="pbb-wci-card-sub">Calories, current goal, gym progress, check-ins, mood, and recovery signals where we have them.</p>',
+      '  <h3 class="pbb-wci-card-title">Your weekly check-in is ready</h3>',
+      '  <p class="pbb-wci-card-sub">Review your goals, share the real story of your week, and tell Shannon what you need next.</p>',
       '  <div class="pbb-wci-card-goal"><span>Goal</span><b>' + escapeHtml(data.objective.label) + '</b></div>',
       '  <div class="pbb-wci-card-stats">',
       '    <div class="pbb-wci-card-stat"><b>' + escapeHtml(data.calories.target) + '</b><span>cal target</span></div>',
       '    <div class="pbb-wci-card-stat"><b>' + escapeHtml(data.calories.average) + '</b><span>' + escapeHtml(data.calories.averageLabel || 'avg logged') + '</span></div>',
       '    <div class="pbb-wci-card-stat"><b>' + escapeHtml(data.goals.completed) + '/' + escapeHtml(data.goals.total) + '</b><span>goals hit</span></div>',
       '  </div>',
-      '  <div class="pbb-wci-card-footer"><span>Tap to open the review</span><span class="pbb-wci-card-arrow" aria-hidden="true">&#8250;</span></div>',
+      '  <div class="pbb-wci-card-footer"><span>Tap to complete your check-in</span><span class="pbb-wci-card-arrow" aria-hidden="true">&#8250;</span></div>',
       '</div>'
     ].join('');
     card.onclick = openWeeklyCheckinPreview;
@@ -1315,14 +1550,6 @@
       button.disabled = true;
       button.textContent = 'Opening goals...';
     }
-    var rewardResult = await claimWeeklyReviewReward();
-    if (!rewardResult || (rewardResult.success === false && Number(rewardResult.expectedPoints || 0) > 0)) {
-      if (button) {
-        button.disabled = false;
-        button.textContent = reviewActionLabel(currentData());
-      }
-      return;
-    }
     closeWeeklyCheckinPreview();
     if (typeof window.openWeeklyGoalsModal === 'function') {
       window.openWeeklyGoalsModal({ week: 'next', source: 'weekly-checkin-review' });
@@ -1356,10 +1583,10 @@
     overlay.className = 'pbb-wci-overlay';
     overlay.setAttribute('role', 'presentation');
     overlay.innerHTML = [
-      '<section class="pbb-wci-sheet" role="dialog" aria-modal="true" aria-label="Weekly review">',
+      '<section class="pbb-wci-sheet" role="dialog" aria-modal="true" aria-label="Weekly check-in">',
       '  <header class="pbb-wci-head">',
-      '    <div><div class="pbb-wci-head-title">Weekly Review</div><div class="pbb-wci-head-sub">' + escapeHtml(data.dateRange) + '</div></div>',
-      '    <button type="button" class="pbb-wci-close" aria-label="Close weekly review">&times;</button>',
+      '    <div><div class="pbb-wci-head-title">Weekly Check-In</div><div class="pbb-wci-head-sub">' + escapeHtml(data.dateRange) + '</div></div>',
+      '    <button type="button" class="pbb-wci-close" aria-label="Close weekly check-in">&times;</button>',
       '  </header>',
       '  <div class="pbb-wci-body">',
       '    <div class="pbb-wci-hero">',
@@ -1383,13 +1610,14 @@
       '    <section class="pbb-wci-section"><h3>Calories and the call</h3><p>' + escapeHtml(data.calories.verdict) + '</p></section>',
       '    <section class="pbb-wci-section"><h3>Gym progress</h3>' + renderGym(data) + '<p style="margin-top:12px;">' + escapeHtml(data.training.highlight) + '</p></section>',
       '    <section class="pbb-wci-section"><h3>Weekly goals</h3>' + renderGoals(data) + '</section>',
+      renderWeeklyReflectionForm(data),
       '    <section class="pbb-wci-section"><h3>Recovery snapshot</h3>' + renderRecovery(data) + '</section>',
       renderCheckinMood(data),
       '    <section class="pbb-wci-section"><h3>Suggested focus for next week</h3>' + renderList(data.adjustments) + '</section>',
       '    <section class="pbb-wci-section"><h3>Tracking tip</h3><p>' + escapeHtml(data.tip) + '</p></section>',
-      '    <section class="pbb-wci-section"><h3>How this connects to your check-in</h3><p>This review keeps your weekly numbers in one place. If weekly coaching is part of your plan, your message with Shannon is the human follow-up for what felt good, what got in the way, and what needs changing. You will not need to repeat these stats.</p></section>',
+      '    <section class="pbb-wci-section"><h3>What happens after you send it</h3><p>Your answers go straight to Shannon alongside these stats and your weekly goals. They become the context for your coaching follow-up, so you will not need to repeat yourself.</p></section>',
       '    <div class="pbb-wci-actions">',
-      '      <button type="button" class="pbb-wci-action primary" data-wci-action="goals">' + escapeHtml(actionLabel) + '</button>',
+      '      <button type="button" class="pbb-wci-action secondary" data-wci-action="goals">' + escapeHtml(actionLabel) + '</button>',
       '    </div>',
       '  </div>',
       '</section>'
@@ -1401,6 +1629,7 @@
     var sheet = overlay.querySelector('.pbb-wci-sheet');
     var closeBtn = overlay.querySelector('.pbb-wci-close');
     var goalsBtn = overlay.querySelector('[data-wci-action="goals"]');
+    var responseForm = overlay.querySelector('#weekly-checkin-response-form');
 
     overlay.addEventListener('click', function(){
       closeWeeklyCheckinPreview();
@@ -1408,6 +1637,7 @@
     if (sheet) sheet.addEventListener('click', function(e){ e.stopPropagation(); });
     if (closeBtn) closeBtn.addEventListener('click', closeWeeklyCheckinPreview);
     if (goalsBtn) goalsBtn.addEventListener('click', openNextGoals);
+    if (responseForm) responseForm.addEventListener('submit', submitWeeklyReflection);
 
     if (typeof window.pushNavigationState === 'function') {
       try { window.pushNavigationState('weekly-checkin-preview-overlay', closeWeeklyCheckinPreview); } catch (_) {}
@@ -1450,11 +1680,6 @@
       renderCard();
       return;
     }
-    if (!state.reviewRewardClaimed) {
-      renderCard();
-      return;
-    }
-    markReviewCompleted();
     renderCard();
   }
 
@@ -1484,6 +1709,10 @@
     boot();
   }
   window.addEventListener('pbbInitComplete', function(){
+    renderCard();
+    maybeLoadLiveData();
+  });
+  window.addEventListener('pbbCurrentUserReady', function(){
     renderCard();
     maybeLoadLiveData();
   });
