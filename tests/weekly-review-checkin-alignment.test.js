@@ -35,7 +35,8 @@ test('all automated coaching check-in paths use the shared handoff', () => {
 test('the in-app check-in is goal-aware and tracks the coaching handoff', () => {
   const source = fs.readFileSync(path.join(repoRoot, 'js/dashboard/pbb-weekly-checkin-preview.js'), 'utf8');
   assert.match(source, /weeklyReflectionGoalContext/);
-  assert.match(source, /This week you were working on/);
+  assert.match(source, /Your goals this week/);
+  assert.match(source, /What support would make next week easier/);
   assert.match(source, /weeklyGoalSnapshot/);
   assert.match(source, /weekly_review_opened/);
   assert.match(source, /weekly_checkin_submitted/);

@@ -42,13 +42,21 @@ test('weekly client check-in is available Friday through Sunday', () => {
 test('the form captures useful goal-aligned coaching context', () => {
   assert.match(frontend, /weeklyGoalSnapshot/);
   assert.match(frontend, /weeklyReflectionGoalContext/);
-  assert.match(frontend, /This week you were working on/);
-  assert.match(frontend, /What was your biggest win with/);
-  assert.match(frontend, /What got in the way of/);
-  assert.match(frontend, /What would help you most with/);
+  assert.match(frontend, /Your goal this week/);
+  assert.match(frontend, /Your goals this week/);
+  assert.match(frontend, /Your main goal/);
+  assert.match(frontend, /What are you most proud of from this week\?/);
+  assert.match(frontend, /What made this week harder or got in the way\?/);
+  assert.match(frontend, /What support would make next week easier\?/);
   assert.match(frontend, /How did this week feel overall\?/);
   assert.match(frontend, /How confident do you feel about next week\?/);
   assert.match(frontend, /submit-weekly-checkin/);
+});
+
+test('the weekly form uses the same Inter typeface as the app', () => {
+  assert.match(frontend, /\.pbb-wci-sheet\{[^}]*font-family:\\'Inter\\',sans-serif/);
+  assert.match(frontend, /\.pbb-wci-form button,[^}]*font-family:\\'Inter\\',sans-serif!important/);
+  assert.doesNotMatch(frontend, /font:750 \.82rem\/1\.4 inherit/);
 });
 
 test('the opened check-in contains the form, not the old full weekly review', () => {

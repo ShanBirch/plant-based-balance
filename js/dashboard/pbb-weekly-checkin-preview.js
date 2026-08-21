@@ -969,7 +969,7 @@
       '.pbb-wci-card-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:15px;font-size:.76rem;font-weight:900;color:#f9e6a9;}',
       '.pbb-wci-card-arrow{width:26px;height:26px;border-radius:999px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;flex:0 0 auto;}',
       '.pbb-wci-overlay{position:fixed;inset:0;z-index:12120;display:flex;align-items:center;justify-content:center;background:rgba(3,7,18,.84);backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);padding:calc(14px + env(safe-area-inset-top,0px)) 12px calc(14px + env(safe-area-inset-bottom,0px));box-sizing:border-box;}',
-      '.pbb-wci-sheet{width:100%;max-width:560px;max-height:calc(100vh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 28px);overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;border-radius:24px;background:radial-gradient(circle at 18% 0,rgba(245,217,138,.22),transparent 31%),linear-gradient(180deg,#111 0%,#060606 100%);color:#fff;border:1px solid rgba(245,217,138,.20);box-shadow:0 30px 80px rgba(0,0,0,.54);font-family:inherit;}',
+      '.pbb-wci-sheet{width:100%;max-width:560px;max-height:calc(100vh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 28px);overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;border-radius:24px;background:radial-gradient(circle at 18% 0,rgba(245,217,138,.22),transparent 31%),linear-gradient(180deg,#111 0%,#060606 100%);color:#fff;border:1px solid rgba(245,217,138,.20);box-shadow:0 30px 80px rgba(0,0,0,.54);font-family:\'Inter\',sans-serif;}',
       '.pbb-wci-head{position:sticky;top:0;z-index:4;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:calc(15px + env(safe-area-inset-top,0px)) 18px 14px;background:linear-gradient(180deg,rgba(9,9,9,.98),rgba(9,9,9,.90));border-bottom:1px solid rgba(245,217,138,.16);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}',
       '.pbb-wci-head-title{font-size:.96rem;font-weight:950;color:#fff;}',
       '.pbb-wci-head-sub{font-size:.69rem;font-weight:850;color:#f5d98a;margin-top:2px;}',
@@ -993,7 +993,7 @@
       '.pbb-wci-goal-banner small{display:block;margin-top:4px;font-size:.76rem;line-height:1.35;font-weight:700;color:rgba(255,255,255,.72);}',
       '.pbb-wci-goal-source{display:block;margin-top:7px;font-size:.64rem;line-height:1.2;font-weight:900;font-style:normal;color:rgba(245,217,138,.8);text-transform:uppercase;letter-spacing:.08em;}',
       '.pbb-wci-section{margin-top:13px;border-radius:18px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.10);padding:15px;}',
-      '.pbb-wci-section h3{margin:0 0 10px;font-size:.98rem;line-height:1.2;font-weight:950;color:#fff;}',
+      '.pbb-wci-section h3{margin:0 0 10px;font-family:\'Inter\',sans-serif;font-size:.98rem;line-height:1.2;font-weight:950;color:#fff;}',
       '.pbb-wci-section p{margin:0;font-size:.88rem;line-height:1.48;font-weight:700;color:rgba(255,255,255,.78);}',
       '.pbb-wci-dot-list{list-style:none;margin:0;padding:0;display:grid;gap:9px;}',
       '.pbb-wci-dot-list li{position:relative;padding-left:17px;font-size:.86rem;line-height:1.42;font-weight:760;color:rgba(255,255,255,.82);}',
@@ -1016,7 +1016,8 @@
       '.pbb-wci-feedback-day{font-size:.76rem;line-height:1.25;font-weight:950;color:#fff;white-space:nowrap;}',
       '.pbb-wci-feedback-date{display:block;margin-top:2px;font-size:.6rem;line-height:1.2;font-weight:900;color:rgba(245,217,138,.78);text-transform:uppercase;}',
       '.pbb-wci-feedback-text{min-width:0;font-size:.84rem;line-height:1.42;font-weight:720;color:rgba(255,255,255,.80);word-break:break-word;}',
-      '.pbb-wci-form{display:grid;gap:15px;}',
+      '.pbb-wci-form{display:grid;gap:15px;font-family:\'Inter\',sans-serif;}',
+      '.pbb-wci-form button,.pbb-wci-form input,.pbb-wci-form textarea,.pbb-wci-form select{font-family:\'Inter\',sans-serif!important;}',
       '.pbb-wci-form-intro{font-size:.83rem!important;color:rgba(255,255,255,.72)!important;}',
       '.pbb-wci-field{display:grid;gap:7px;}',
       '.pbb-wci-field-label{font-size:.78rem;line-height:1.3;font-weight:950;color:#fff;}',
@@ -1027,7 +1028,7 @@
       '.pbb-wci-choice:has(input:checked){border-color:rgba(245,217,138,.7);background:rgba(245,217,138,.18);color:#fff;box-shadow:0 0 0 1px rgba(245,217,138,.12) inset;}',
       '.pbb-wci-rating{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;}',
       '.pbb-wci-rating .pbb-wci-choice{min-height:40px;font-size:.84rem;}',
-      '.pbb-wci-input,.pbb-wci-select{width:100%;box-sizing:border-box;border-radius:13px;border:1px solid rgba(255,255,255,.13);background:rgba(0,0,0,.24);color:#fff;padding:11px 12px;font:750 .82rem/1.4 inherit;outline:none;}',
+      '.pbb-wci-input,.pbb-wci-select{width:100%;box-sizing:border-box;border-radius:13px;border:1px solid rgba(255,255,255,.13);background:rgba(0,0,0,.24);color:#fff;padding:11px 12px;font-size:.82rem;font-weight:750;line-height:1.4;outline:none;}',
       '.pbb-wci-input{min-height:78px;resize:vertical;}',
       '.pbb-wci-input:focus,.pbb-wci-select:focus{border-color:rgba(245,217,138,.72);box-shadow:0 0 0 3px rgba(245,217,138,.12);}',
       '.pbb-wci-select option{color:#111;background:#fff;}',
@@ -1177,7 +1178,8 @@
       return String(goal && goal.label || '').trim();
     }).filter(Boolean).slice(0, 3);
 
-    if (!labels.length && data && data.objective && data.objective.label) {
+    var usesWeeklyGoals = labels.length > 0;
+    if (!usesWeeklyGoals && data && data.objective && data.objective.label) {
       labels.push(String(data.objective.label).trim());
     }
 
@@ -1189,30 +1191,22 @@
     return {
       labels: labels,
       list: list,
-      subject: labels.length === 1 ? labels[0] : 'your weekly goals',
-      blockerSubject: labels.length === 1 ? labels[0] : 'those goals'
+      heading: usesWeeklyGoals
+        ? (labels.length === 1 ? 'Your goal this week' : 'Your goals this week')
+        : 'Your main goal'
     };
   }
 
   function renderWeeklyReflectionForm(data){
     var goalContext = weeklyReflectionGoalContext(data);
     var goalPrompt = goalContext.labels.length
-      ? 'This week you were working on ' + goalContext.list + '. Tell Shannon what went well, what got in the way, and what would help next week.'
-      : 'Tell Shannon what went well, what got in the way, and what would help next week.';
-    var winPrompt = goalContext.labels.length
-      ? 'What was your biggest win with ' + goalContext.subject + '?'
-      : 'What was your biggest win?';
-    var blockerPrompt = goalContext.labels.length
-      ? 'What got in the way of ' + goalContext.blockerSubject + '?'
-      : 'What got in the way?';
-    var supportPrompt = goalContext.labels.length
-      ? 'What would help you most with ' + goalContext.blockerSubject + ' next week?'
-      : 'What would you like help with next week?';
+      ? '<strong>' + escapeHtml(goalContext.heading) + ':</strong> ' + escapeHtml(goalContext.list) + '. Tell Shannon what went well, what made the week harder, and what support would help next week.'
+      : 'Tell Shannon what went well, what made the week harder, and what support would help next week.';
     return [
       '<section class="pbb-wci-section pbb-wci-reflection-section">',
       '  <h3>Share your week with Shannon</h3>',
       '  <form class="pbb-wci-form" id="weekly-checkin-response-form">',
-      '    <p class="pbb-wci-form-intro">' + escapeHtml(goalPrompt) + '</p>',
+      '    <p class="pbb-wci-form-intro">' + goalPrompt + '</p>',
       '    <div class="pbb-wci-field">',
       '      <div class="pbb-wci-field-label">How did this week feel overall?</div>',
       '      <div class="pbb-wci-choice-grid">',
@@ -1223,12 +1217,12 @@
       '      </div>',
       '    </div>',
       '    <label class="pbb-wci-field">',
-      '      <span class="pbb-wci-field-label">' + escapeHtml(winPrompt) + '</span>',
-      '      <span class="pbb-wci-field-help">It can be training, food, routine, confidence, or something life-related.</span>',
+      '      <span class="pbb-wci-field-label">What are you most proud of from this week?</span>',
+      '      <span class="pbb-wci-field-help">It might be progress with your goal, training, food, routine, confidence, or something life-related.</span>',
       '      <textarea class="pbb-wci-input" name="win" maxlength="600" required placeholder="The thing I am happiest with this week..."></textarea>',
       '    </label>',
       '    <label class="pbb-wci-field">',
-      '      <span class="pbb-wci-field-label">' + escapeHtml(blockerPrompt) + '</span>',
+      '      <span class="pbb-wci-field-label">What made this week harder or got in the way?</span>',
       '      <textarea class="pbb-wci-input" name="blocker" maxlength="600" placeholder="The hardest part was..."></textarea>',
       '    </label>',
       '    <div class="pbb-wci-field">',
@@ -1243,7 +1237,7 @@
       '      <div class="pbb-wci-field-help">1 means you need a reset. 5 means the plan feels clear.</div>',
       '    </div>',
       '    <label class="pbb-wci-field">',
-      '      <span class="pbb-wci-field-label">' + escapeHtml(supportPrompt) + '</span>',
+      '      <span class="pbb-wci-field-label">What support would make next week easier?</span>',
       '      <select class="pbb-wci-select" name="support" required>',
       '        <option value="">Choose one</option>',
       '        <option value="accountability">Keep me accountable</option>',

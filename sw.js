@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v336-personal-checkin'; // v336: keep the weekly check-in form-only and tailor prompts to each client's goals
+const CACHE_NAME = 'pbb-app-v337-natural-checkin'; // v337: natural goal wording and app-consistent weekly check-in typography
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
