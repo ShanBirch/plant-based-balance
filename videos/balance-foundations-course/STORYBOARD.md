@@ -1,6 +1,6 @@
 ---
 format: 1080x1920
-duration: 95.5s
+duration: 98.5s
 message: "Balance Foundations teaches why change feels hard, then helps people build habits and a way of eating they can actually keep"
 audience: "Plant-based adults considering Balance Foundations"
 mode: autonomous
@@ -169,23 +169,23 @@ of Eating.
 - status: animated
 - src: compositions/08-course-reviews.html
 - start: 80s
-- duration: 7.5s
+- duration: 10.5s
 - type: social proof
-- beat: four distinct reactions accumulate into one undeniable final stack
-- rules: kinetic-beat-slam + spring-pop-entrance
+- beat: four readable reactions become an accelerating twelve-card proof cascade
+- rules: kinetic-beat-slam + dynamic-content-sequencing
 - focal: oversized quote cards landing at alternating angles
 - transition_out: hard cut from the held stack into the evergreen close
 
-The first reaction lands centrally, then three more cards slap over it from
-alternating directions. Every card keeps a visible edge beneath the next so the
-viewer feels the reactions accumulating rather than replacing one another. The
-scene uses Shannon's supplied wording without invented names, handles or ratings.
+The first four reactions land centrally from alternating directions at a steady,
+readable pace. Eight more cards then arrive with progressively shorter gaps until
+the sequence becomes a rapid physical cascade. Every card keeps a visible edge
+beneath the next, and no card carries a reaction number, name, handle or rating.
 
 ## Frame 10 - Understand change. Build what lasts.
 
 - status: animated
 - src: compositions/08-course-cta.html
-- start: 87.5s
+- start: 90.5s
 - duration: 8s
 - type: brand close
 - beat: resolve the curriculum into one evergreen Balance idea
