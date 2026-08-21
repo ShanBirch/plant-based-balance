@@ -73,6 +73,7 @@ feel that the six weeks build on one another.
 - Use oversized, plain-language title copy for the first reading beat; assume the viewer is distracted and watching muted.
 - One decisive camera or layout move per scene, then a readable hold.
 - Lesson rows arrive in a paced cascade, not all at once.
+- Social-proof cards may land in a physical stack at alternating angles, with each previous card remaining visibly present underneath the newest one.
 - Visual models draw, fill, connect or re-route; they never float without meaning.
 - The cream ground and footer progress rail persist as continuity across hard chapter cuts.
 - No bounce chains, random particles, generic gradients, arbitrary blobs or screensaver motion.

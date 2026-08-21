@@ -1,11 +1,11 @@
 ---
 format: 1080x1920
-duration: 88s
+duration: 95.5s
 message: "Balance Foundations teaches why change feels hard, then helps people build habits and a way of eating they can actually keep"
 audience: "Plant-based adults considering Balance Foundations"
 mode: autonomous
 music: "Curiosity by Diego Nava - warm, relaxed, positive instrumental bed"
-rhythm: course identity-HOLD / hook-HOLD / week title-HOLD / detailed chapter, repeated six times / evergreen brand close
+rhythm: course identity-HOLD / hook-HOLD / week title-HOLD / detailed chapter, repeated six times / reaction-card impacts / evergreen brand close
 ---
 
 ## Week recognition pages
@@ -156,7 +156,7 @@ Redesign the Choice Around You; Other People Shape Your Habits.
 - beat: flexible plant-based nutrition without rigid rules
 - blueprint: grid-card-assemble
 - focal: a flexible plate and three fuel roles locking into one sustainable pattern
-- transition_out: brief cream flash into the evergreen close
+- transition_out: hard cut into accumulated course reactions
 
 Protein, carbs and fats assemble around a simple `YOUR GOAL / YOUR LIFE` plate.
 The pieces stay flexible rather than becoming a perfect-meal diagram. The five
@@ -164,11 +164,28 @@ exact lesson rows reveal: Energy Balance Without the Guilt; Protein That Support
 Your Goal; Carbs Are Useful Fuel; Why Your Body Needs Fat; Your Sustainable Way
 of Eating.
 
-## Frame 9 - Understand change. Build what lasts.
+## Frame 9 - Course reactions stack
+
+- status: animated
+- src: compositions/08-course-reviews.html
+- start: 80s
+- duration: 7.5s
+- type: social proof
+- beat: four distinct reactions accumulate into one undeniable final stack
+- rules: kinetic-beat-slam + spring-pop-entrance
+- focal: oversized quote cards landing at alternating angles
+- transition_out: hard cut from the held stack into the evergreen close
+
+The first reaction lands centrally, then three more cards slap over it from
+alternating directions. Every card keeps a visible edge beneath the next so the
+viewer feels the reactions accumulating rather than replacing one another. The
+scene uses Shannon's supplied wording without invented names, handles or ratings.
+
+## Frame 10 - Understand change. Build what lasts.
 
 - status: animated
 - src: compositions/08-course-cta.html
-- start: 80s
+- start: 87.5s
 - duration: 8s
 - type: brand close
 - beat: resolve the curriculum into one evergreen Balance idea

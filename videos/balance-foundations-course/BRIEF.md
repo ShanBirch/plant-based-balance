@@ -7,7 +7,7 @@ destination: instagram-feed-pinned
 aspect: 1080x1920
 language: en
 audience: "Plant-based adults considering Balance Foundations who want to understand exactly what the six-week course teaches"
-length: 88s
+length: 95.5s
 angle: "A premium week-by-week curriculum reveal that makes all 30 lessons feel practical, connected and useful in real life"
 narration: no
 ---
@@ -36,6 +36,7 @@ all-or-nothing thinking toward repeatable habits and a sustainable way of eating
 - Keep all meaning readable muted; add a warm, understated instrumental bed and restrained sound marks rather than narration.
 - Design the opening frame so it also works as the Instagram profile-grid cover.
 - Orient before explaining: open on a dedicated, unmistakable `BALANCE SIX-WEEK COURSE` page, then use the next page to state the benefit-led story.
+- Before the final page, stack four oversized course-reaction cards over one another. Each new card lands from a different direction and rests at a different angle so the praise visibly accumulates.
 - End with the evergreen line `UNDERSTAND CHANGE. BUILD WHAT LASTS.` and no price, offer inclusions or sales CTA.
 
 ## Notes
@@ -45,4 +46,5 @@ all-or-nothing thinking toward repeatable habits and a sustainable way of eating
 - Use `plant-based`, not `vegan`, in offer and audience copy.
 - Do not claim instant replies, unlimited support, live calls, guaranteed results or access beyond the six-week pass.
 - Keep critical text clear of Instagram's header, bottom composer and right-side controls.
+- The reaction cards use Shannon's supplied wording without invented names, handles, star counts or other attribution.
 - Shannon's established HyperFrames preference is automation with no storyboard review; this run follows that same shape.
