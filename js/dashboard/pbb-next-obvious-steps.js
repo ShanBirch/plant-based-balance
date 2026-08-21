@@ -461,9 +461,9 @@
     },
     {
       id: 'weekly_review',
-      title: 'Your weekly review is ready',
-      body: 'Open Shannon\'s review of your week and the adjustments for what comes next.',
-      cta: 'Open Review',
+      title: 'Complete your weekly check-in',
+      body: 'Review your goals, share how the week really went, and tell Shannon what support you need next.',
+      cta: 'Check In',
       accent: '#b78a2e',
       priority: 950,
       goalIds: [],
@@ -686,7 +686,7 @@
       var action = ACTIONS.find(function(actionItem){ return actionItem.id === item[0]; });
       if (action && isSourceCardDue(item[1])) addUniqueAction(picked, action);
     });
-    if (!isFirstProgramWeek() && isSourceCardDue('#weekly-checkin-card')) {
+    if (isSourceCardDue('#weekly-checkin-card')) {
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'weekly_review'; }));
     }
     return picked;
@@ -718,7 +718,7 @@
     if (action.id === 'activity_insights_intro') return hasReachedSecondProgramWeek() && !hasSeenOnboardingStep(action.id);
     if (action.id === 'quiz') return true;
     if (action.id === 'workout') return isSourceCardDue('#today-workout-card');
-    if (action.id === 'weekly_review') return !isFirstProgramWeek() && isSourceCardDue('#weekly-checkin-card');
+    if (action.id === 'weekly_review') return isSourceCardDue('#weekly-checkin-card');
     if (action.id === 'progress_photo') return isSourceCardDue('#weekly-progress-photo-card');
     if (action.id === 'fitness_diary') return isSourceCardDue('#fitness-diary-card');
     if (action.id === 'weighin') {
