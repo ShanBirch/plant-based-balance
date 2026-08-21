@@ -13,13 +13,21 @@ const { pathToFileURL } = require('url');
     const productionOriginSource = fs.readFileSync(workerPath, 'utf8');
     assert.match(productionOriginSource, /https:\/\/main--future-balance\.netlify\.app/);
     assert.doesNotMatch(productionOriginSource, /BALANCE_SITE_URL \|\| 'https:\/\/plantbased-balance\.org'/);
-    assert.match(productionOriginSource, /DEFAULT_INBOUND_QUIET_MS = 2500/);
-    assert.match(productionOriginSource, /DEFAULT_BATCH_MAX_WAIT_MS = 9000/);
+    assert.match(productionOriginSource, /DEFAULT_POLL_MS = 750/);
+    assert.match(productionOriginSource, /DEFAULT_COALESCE_MS = 1200/);
+    assert.match(productionOriginSource, /DEFAULT_INBOUND_QUIET_MS = 1200/);
+    assert.match(productionOriginSource, /DEFAULT_BATCH_MAX_WAIT_MS = 5000/);
+    assert.match(productionOriginSource, /DEFAULT_TURN_TIMEOUT_MS = 20 \* 1000/);
     assert.match(productionOriginSource, /DEFAULT_HTTP_TIMEOUT_MS = 10000/);
     assert.match(productionOriginSource, /DEFAULT_APP_SERVER_REQUEST_TIMEOUT_MS = 15000/);
     assert.match(productionOriginSource, /AbortSignal\.timeout\(timeoutMs\)/);
     assert.match(productionOriginSource, /pending alert poll failed; retrying/);
     assert.match(productionOriginSource, /stalled_draft_generation_pending/);
+    assert.match(
+        productionOriginSource,
+        /alert = await waitForSettledDraft\([\s\S]*?const runId[\s\S]*?claimThread/,
+        'the production worker settles and reloads the full inbound batch before claiming the turn',
+    );
 
     assert.strictEqual(worker.parseArgs([]).useAppServer, true, 'live conversation mode is the worker default');
     assert.strictEqual(worker.parseArgs(['--direct-draft']).useAppServer, false, 'direct draft requires an explicit diagnostic flag');
@@ -139,6 +147,36 @@ const { pathToFileURL } = require('url');
     assert.strictEqual(worker.shouldStartFreshEpisode({ ...alert, data: { ...alert.data, message_preview: 'What is the Founders Pass?' } }, null), true);
     assert.strictEqual(worker.shouldStartFreshEpisode({ ...alert, data: { ...alert.data, message_preview: 'What is the Founders Pass?' } }, { resetAlertId: 'alert-1' }), false);
     assert.strictEqual(worker.shouldStartFreshEpisode(alert, { resetAlertId: null }), false);
+    assert.strictEqual(worker.shouldStartFreshEpisode(alert, {
+        resetAfterPreviewDelivery: true,
+        lastAlertId: 'prior-alert',
+    }), true, 'a verified preview handoff starts a fresh Codex conversation on the next test message');
+    assert.strictEqual(worker.shouldStartFreshEpisode(alert, {
+        resetAfterPreviewDelivery: true,
+        lastAlertId: alert.id,
+    }), false, 'the same alert cannot reset its conversation twice');
+
+    const previewDeliveryAlert = {
+        ...alert,
+        client_name: 'goldcoast_ai_solutions',
+        data: {
+            ...alert.data,
+            ig_username: 'goldcoast_ai_solutions',
+            ig_thread_id: '4baea56e-eab4-4887-a732-39b14e983d44',
+            paid_meta_app_preview_handoff: true,
+            paid_meta_app_preview_url: signedPreviewUrl,
+        },
+    };
+    assert.strictEqual(worker.shouldResetGoldCoastAiConversationAfterDelivery({
+        alert: previewDeliveryAlert,
+        finalAlert: previewDeliveryAlert,
+        canonicalOutbounds: [{ text: `Here you go: ${signedPreviewUrl}` }],
+    }), true);
+    assert.strictEqual(worker.shouldResetGoldCoastAiConversationAfterDelivery({
+        alert: { ...previewDeliveryAlert, data: { ...previewDeliveryAlert.data, ig_username: 'ordinary_lead' } },
+        finalAlert: { ...previewDeliveryAlert, data: { ...previewDeliveryAlert.data, ig_username: 'ordinary_lead' } },
+        canonicalOutbounds: [{ text: `Here you go: ${signedPreviewUrl}` }],
+    }), false, 'the live worker reset is scoped to Gold Coast AI Solutions');
 
     const videoAlert = {
         ...alert,
@@ -180,6 +218,51 @@ const { pathToFileURL } = require('url');
         Date.parse('2026-08-14T12:00:10Z'),
         6500,
     ), false, 'a late second message resets the quiet window and requires a newer draft');
+    let settleClock = Date.parse('2026-08-14T12:00:10Z');
+    let alertReads = 0;
+    const reloadedBatchAlert = {
+        ...settledAlert,
+        data: {
+            ...settledAlert.data,
+            draft_text: 'Yep, it includes both. And yes, you can train at home. What result are you aiming for?',
+            drafted_at: '2026-08-14T12:00:09Z',
+            message_preview: 'Can I train at home?',
+        },
+    };
+    const latestSettledAlert = await worker.waitForSettledDraft({
+        supabase: {
+            deliveryAlertById: async () => (++alertReads === 1 ? settledAlert : reloadedBatchAlert),
+            threadById: async () => ({ last_inbound_at: '2026-08-14T12:00:08Z' }),
+        },
+        alertId: settledAlert.id,
+        threadId: 'ig-thread-1',
+        quietMs: 1200,
+        maxWaitMs: 2000,
+        pollMs: 500,
+        now: () => settleClock,
+        sleep: async ms => { settleClock += ms; },
+    });
+    assert.strictEqual(latestSettledAlert, reloadedBatchAlert,
+        'the settling gate reloads a newer draft that covers a late second or third inbound');
+    assert.strictEqual(alertReads, 2);
+    const fallbackPatches = [];
+    let fallbackRan = false;
+    await worker.runDirectDraftFallbackAfterCodexFailure({
+        alert: settledAlert,
+        action: { id: 'action-fallback' },
+        error: new Error('Codex turn timed out'),
+        supabase: {
+            mergeAlertData: async (_alertId, patch) => { fallbackPatches.push(patch); },
+        },
+        state: { alerts: {} },
+        statePath: '/tmp/not-written-by-injected-runner',
+        logger: () => {},
+        directDraftRunner: async () => { fallbackRan = true; },
+    });
+    assert.strictEqual(fallbackRan, true);
+    assert.strictEqual(fallbackPatches[0].delivery_rescue_required, true);
+    assert.strictEqual(fallbackPatches[0].codex_live_chat_required, false);
+    assert.strictEqual(fallbackPatches[0].codex_live_chat_status, 'sending_approved_draft_after_codex_failure');
     assert.strictEqual(worker.hasVerifiedAlertDelivery({
         alert,
         canonicalOutbounds,
@@ -202,8 +285,12 @@ const { pathToFileURL } = require('url');
     assert.doesNotMatch(prompt, /\$balance-lead-client-dm-manager/);
     assert.doesNotMatch(prompt, /Read CODEX\.md, CLAUDE\.md/);
     assert.match(prompt, /isolated from the normal Balance AI coach/);
-    assert.match(prompt, /15 to 30 seconds/);
+    assert.match(prompt, /5 to 12 seconds/);
     assert.match(prompt, /exactly one purposeful question/);
+    assert.match(prompt, /Answer every distinct message, question, or useful detail/);
+    assert.match(prompt, /never silently answer only the first one/i);
+    assert.match(prompt, /two to three brief back-to-back bubbles/);
+    assert.match(prompt, /same synchronous delivery/);
     assert.match(prompt, /positive acknowledgements are not closers/);
     assert.match(prompt, /Ignore older test episodes/);
     assert.match(prompt, /loose conversational path, not a scripted checklist/);

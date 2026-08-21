@@ -16,6 +16,7 @@ const {
     joinSentChunkTexts,
     validateOutboundTextIntegrity,
     shouldForceTextDelivery,
+    shouldResetGoldCoastAiTestConversationAfterPreview,
 } = require('../netlify/functions/send-ig-reply')._test;
 
 assert.strictEqual(shouldForceTextDelivery({ forceText: true }), true);
@@ -32,6 +33,40 @@ assert.strictEqual(isCocosAlertData({
     instagram_graph: { ig_account_id: '17841435394720504' },
 }), true);
 assert.strictEqual(isCocosAlertData({ bot_account: 'shan_n_sunny' }), false);
+
+const signedPreviewUrl = 'https://plantbased-balance.org/p/AgAAAAAAAAAAAAAAAAAAAABqAAAAAA';
+const goldCoastTestThread = {
+    id: '4baea56e-eab4-4887-a732-39b14e983d44',
+    ig_username: 'goldcoast_ai_solutions',
+    linked_user_id: null,
+    custom_data: {
+        bot_account: 'shan_n_sunny',
+        internal_test_auto_reply_enabled: true,
+        internal_test_meta_ad_flow: 'plant_based_control',
+    },
+};
+const previewAlertData = {
+    paid_meta_app_preview_handoff: true,
+    paid_meta_app_preview_url: signedPreviewUrl,
+};
+assert.strictEqual(shouldResetGoldCoastAiTestConversationAfterPreview({
+    thread: goldCoastTestThread,
+    alertData: previewAlertData,
+    sentText: `Here you go: ${signedPreviewUrl}`,
+    canonicalOutboundIds: ['outbound-1'],
+}), true);
+assert.strictEqual(shouldResetGoldCoastAiTestConversationAfterPreview({
+    thread: { ...goldCoastTestThread, ig_username: 'ordinary_lead' },
+    alertData: previewAlertData,
+    sentText: `Here you go: ${signedPreviewUrl}`,
+    canonicalOutboundIds: ['outbound-1'],
+}), false, 'ordinary paid-Meta leads must never auto-reset');
+assert.strictEqual(shouldResetGoldCoastAiTestConversationAfterPreview({
+    thread: goldCoastTestThread,
+    alertData: previewAlertData,
+    sentText: `Here you go: ${signedPreviewUrl}`,
+    canonicalOutboundIds: [],
+}), false, 'delivery must be canonically logged before the test reset');
 
 assert.strictEqual(isChallengeOfferSend({
     alertData: { challenge_offer_warning: { required: true } },

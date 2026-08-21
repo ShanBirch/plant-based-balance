@@ -1165,8 +1165,8 @@ function resolveMetaAdEarlyTypingDelayMs({ lastInboundAt = '', seed = '', nowMs 
         hash = ((hash * 31) + key.charCodeAt(index)) >>> 0;
     }
     const targetDelayMs = firstReply
-        ? 12000 + (hash % 18001)
-        : 800 + (hash % 2201);
+        ? 500 + (hash % 1001)
+        : 350 + (hash % 851);
     const inboundAtMs = Date.parse(lastInboundAt || '');
     if (!Number.isFinite(inboundAtMs)) return targetDelayMs;
     const elapsedMs = Math.max(0, Number(nowMs) - inboundAtMs);

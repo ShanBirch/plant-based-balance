@@ -134,6 +134,7 @@ const COCOS_BOT_ACCOUNT = 'cocos_pt_studio';
 const COCOS_ALGORITHM_FORK = 'cocos_acquisition_v1';
 const COCOS_OWNER_IDS = new Set(['17841435394720504', '26328183736859579']);
 const IG_THREAD_SEND_SELECT = 'id,subscriber_id,channel,ig_username,profile_name,linked_user_id,lead_stage,last_inbound_at,last_outbound_at,custom_data';
+const GOLD_COAST_AI_TEST_HANDLE = 'goldcoast_ai_solutions';
 // Optional. ManyChat rejects most Meta message tags (HUMAN_AGENT, ACCOUNT_UPDATE,
 // etc.) with "Unsupported message tag" — they're only valid when the Page has
 // the corresponding subscription explicitly approved by Meta. Within the 24h
@@ -296,6 +297,89 @@ function resolveApprovedVoiceCompanionText(alertData = {}, voiceEnabled = false)
         return '';
     }
     return text;
+}
+
+function shouldResetGoldCoastAiTestConversationAfterPreview({
+    thread = {},
+    alertData = {},
+    sentText = '',
+    canonicalOutboundIds = [],
+} = {}) {
+    const customData = safeObject(thread.custom_data);
+    const graphData = safeObject(customData.instagram_graph);
+    const username = String(thread.ig_username || alertData.ig_username || '').trim().toLowerCase();
+    const botAccount = String(
+        customData.bot_account
+        || graphData.bot_account
+        || alertData.bot_account
+        || safeObject(alertData.instagram_graph).bot_account
+        || ''
+    ).trim().toLowerCase();
+    const previewUrl = String(alertData.paid_meta_app_preview_url || '').trim();
+    return !thread.linked_user_id
+        && username === GOLD_COAST_AI_TEST_HANDLE
+        && botAccount === 'shan_n_sunny'
+        && customData.internal_test_auto_reply_enabled === true
+        && String(customData.internal_test_meta_ad_flow || '').trim().toLowerCase() === 'plant_based_control'
+        && alertData.paid_meta_app_preview_handoff === true
+        && isMetaAppPreviewUrl(previewUrl)
+        && String(sentText || '').includes(previewUrl)
+        && Array.isArray(canonicalOutboundIds)
+        && canonicalOutboundIds.length > 0;
+}
+
+async function resetGoldCoastAiTestConversationAfterPreview({
+    thread = {},
+    alertData = {},
+    alertId = '',
+    sentText = '',
+    canonicalOutboundIds = [],
+    resetAt = new Date().toISOString(),
+} = {}) {
+    if (!shouldResetGoldCoastAiTestConversationAfterPreview({
+        thread,
+        alertData,
+        sentText,
+        canonicalOutboundIds,
+    })) return null;
+
+    const threadId = String(thread.id || alertData.ig_thread_id || '').trim();
+    if (!threadId) return null;
+    const rows = await supabase(
+        `ig_threads?select=id,ig_username,linked_user_id,custom_data&id=eq.${encodeURIComponent(threadId)}&limit=1`
+    );
+    const current = rows[0] || null;
+    if (!current || current.linked_user_id
+        || String(current.ig_username || '').trim().toLowerCase() !== GOLD_COAST_AI_TEST_HANDLE) return null;
+    if (!shouldResetGoldCoastAiTestConversationAfterPreview({
+        thread: current,
+        alertData,
+        sentText,
+        canonicalOutboundIds,
+    })) return null;
+
+    const customData = safeObject(current.custom_data);
+    const graphData = safeObject(customData.instagram_graph);
+    const nextCustomData = {
+        ...customData,
+        instagram_graph: graphData,
+        internal_test_conversation_reset_at: resetAt,
+        internal_test_auto_reset_after_preview_at: resetAt,
+        internal_test_auto_reset_after_preview_alert_id: alertId || null,
+        internal_test_auto_reset_after_preview_outbound_id: canonicalOutboundIds[0] || null,
+    };
+    await supabase(`ig_threads?id=eq.${encodeURIComponent(threadId)}`, {
+        method: 'PATCH',
+        body: { custom_data: nextCustomData },
+        prefer: 'return=minimal',
+    });
+    return {
+        reset_at: resetAt,
+        alert_id: alertId || null,
+        canonical_outbound_id: canonicalOutboundIds[0] || null,
+        last_graph_seen_at: graphData.last_graph_seen_at || null,
+        last_graph_message_id: graphData.last_graph_message_id || null,
+    };
 }
 
 function resolveLatestInboundTextForSend({ alertData = {}, alert = {} } = {}) {
@@ -683,6 +767,17 @@ function getActiveAutomatedReviewHold({ source = '', alertData = {} } = {}) {
     const hold = safeObject(alertData.auto_send_review_hold);
     const code = String(hold.code || '').trim();
     if (!code) return null;
+    const draftReview = safeObject(alertData.draft_review);
+    const reviewIssues = Array.isArray(draftReview.issues) ? draftReview.issues.filter(Boolean) : [];
+    const approvedFailedDeliveryRescue = code === 'immediate_dispatch_failed'
+        && alertData.delivery_rescue_required === true
+        && alertData.codex_live_chat_required !== true
+        && alertData.outbound_attempted !== true
+        && String(draftReview.verdict || '').toLowerCase() === 'pass'
+        && draftReview.notification_required !== true
+        && draftReview.context_loss_suspected !== true
+        && reviewIssues.length === 0;
+    if (approvedFailedDeliveryRescue) return null;
     return {
         code,
         label: String(hold.label || hold.reason || '').trim(),
@@ -2820,6 +2915,7 @@ exports.handler = async (event) => {
     // 4. Log every successfully-delivered chunk to ig_messages (so the next
     //    AI draft has the conversation history including our outbound).
     const loggedOutboundMessageIds = [];
+    const loggedOutboundCreatedAts = [];
     for (const result of sentChunks) {
         const graphMessageId = shouldUseGraph
             ? (result.response?.message_id || result.response?.id || null)
@@ -2840,6 +2936,7 @@ exports.handler = async (event) => {
                 prefer: 'return=representation',
             });
             if (insertedMessages?.[0]?.id) loggedOutboundMessageIds.push(insertedMessages[0].id);
+            if (insertedMessages?.[0]?.created_at) loggedOutboundCreatedAts.push(insertedMessages[0].created_at);
         } catch (err) {
             console.warn('[send-ig-reply] ig_messages insert failed (non-fatal):', err.message);
         }
@@ -3036,6 +3133,28 @@ exports.handler = async (event) => {
         }
     }
 
+    let internalTestConversationReset = null;
+    if (allOk && alertMarkedSent) {
+        try {
+            const latestCanonicalOutboundMs = loggedOutboundCreatedAts
+                .map(value => Date.parse(value || ''))
+                .filter(Number.isFinite)
+                .reduce((latest, value) => Math.max(latest, value), 0);
+            internalTestConversationReset = await resetGoldCoastAiTestConversationAfterPreview({
+                thread: threadForSend,
+                alertData: mergedData,
+                alertId,
+                sentText: sentMessageText || replyText,
+                canonicalOutboundIds: loggedOutboundMessageIds,
+                resetAt: latestCanonicalOutboundMs > 0
+                    ? new Date(latestCanonicalOutboundMs + 1).toISOString()
+                    : new Date().toISOString(),
+            });
+        } catch (err) {
+            console.warn('[send-ig-reply] Gold Coast AI test conversation reset failed (non-fatal):', err.message);
+        }
+    }
+
     if (!allOk) {
         const clientName = alertData.ig_username || alertData.client_name || 'IG lead';
         const sentSummary = sentChunks.length > 0
@@ -3119,6 +3238,7 @@ exports.handler = async (event) => {
                     : (hasDraftVideoAttachment
                         ? 'video'
                         : (outboundItems.some(item => item.kind === 'link_button') ? 'link_button' : 'text'))),
+            internal_test_conversation_reset: internalTestConversationReset,
             ...cleanup,
         }),
     };
@@ -3179,6 +3299,7 @@ exports._test = {
     splitTerminalQuestionForProofMedia,
     insertProofMediaBeforeFinalQuestion,
     stripPaidMetaProofMediaUrls,
+    shouldResetGoldCoastAiTestConversationAfterPreview,
 };
 
 exports.sendInstagramGraphTypingAction = sendInstagramGraphTypingAction;

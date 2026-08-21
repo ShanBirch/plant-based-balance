@@ -661,8 +661,8 @@ const firstReplyTypingDelay = instantDraft.resolveMetaAdEarlyTypingDelayMs({
     nowMs: Date.parse('2026-08-01T10:00:01.000Z'),
     firstReply: true,
 });
-assert.equal(firstReplyTypingDelay >= 11000 && firstReplyTypingDelay <= 29000, true,
-    'the opening ad reply waits long enough to feel considered but stays comfortably under a minute');
+assert.equal(firstReplyTypingDelay >= 0 && firstReplyTypingDelay <= 500, true,
+    'the opening ad reply starts typing almost immediately so the DM feels live');
 assert.equal(instantDraft.resolveMetaAdEarlyTypingDelayMs({
     lastInboundAt: '2026-08-01T10:00:00.000Z',
     seed: 'message-1',

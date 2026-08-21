@@ -32,6 +32,35 @@ test('automated send cannot bypass an active draft review hold', () => {
         source: 'balance_lead_client_manager_cron',
         alertData: { auto_send_review_hold: null },
     }), null);
+    assert.equal(sendIg.getActiveAutomatedReviewHold({
+        source: 'balance_lead_client_manager_cron',
+        alertData: {
+            ...heldData,
+            auto_send_review_hold: {
+                code: 'immediate_dispatch_failed',
+                label: 'immediate Meta reply failed to send',
+            },
+            delivery_rescue_required: true,
+            codex_live_chat_required: false,
+            outbound_attempted: false,
+            draft_review: {
+                verdict: 'pass',
+                issues: [],
+                notification_required: false,
+                context_loss_suspected: false,
+            },
+        },
+    }), null, 'a clean approved draft may recover from a mechanical Codex/immediate-send failure');
+    assert.deepEqual(sendIg.getActiveAutomatedReviewHold({
+        source: 'balance_lead_client_manager_cron',
+        alertData: {
+            ...heldData,
+            delivery_rescue_required: true,
+            codex_live_chat_required: false,
+            outbound_attempted: false,
+            draft_review: { verdict: 'pass', issues: [] },
+        },
+    }), heldData.auto_send_review_hold, 'delivery rescue never bypasses a substantive content review hold');
 });
 
 test('Instagram Graph replies split below the native 250-character visible cutoff', () => {

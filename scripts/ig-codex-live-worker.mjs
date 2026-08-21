@@ -8,11 +8,11 @@ import readline from 'node:readline';
 import { pathToFileURL } from 'node:url';
 
 const DEFAULT_WORKSPACE = 'C:\\Users\\shann\\.gemini\\antigravity\\plant_based_balance';
-const DEFAULT_POLL_MS = 1500;
-const DEFAULT_COALESCE_MS = 2500;
-const DEFAULT_INBOUND_QUIET_MS = 2500;
-const DEFAULT_BATCH_MAX_WAIT_MS = 9000;
-const DEFAULT_TURN_TIMEOUT_MS = 4 * 60 * 1000;
+const DEFAULT_POLL_MS = 750;
+const DEFAULT_COALESCE_MS = 1200;
+const DEFAULT_INBOUND_QUIET_MS = 1200;
+const DEFAULT_BATCH_MAX_WAIT_MS = 5000;
+const DEFAULT_TURN_TIMEOUT_MS = 20 * 1000;
 const DEFAULT_HTTP_TIMEOUT_MS = 10000;
 const DEFAULT_APP_SERVER_REQUEST_TIMEOUT_MS = 15000;
 const DEFAULT_BARE_DRAFT_REDRIVE_MS = 30000;
@@ -37,8 +37,24 @@ export function isPaidMetaTestReset(text = '') {
 }
 
 export function shouldStartFreshEpisode(alert, conversation) {
-    return isPaidMetaTestReset(alert?.data?.message_preview)
+    const openerReset = isPaidMetaTestReset(alert?.data?.message_preview)
         && conversation?.resetAlertId !== alert?.id;
+    const deliveredPreviewReset = conversation?.resetAfterPreviewDelivery === true
+        && conversation?.lastAlertId !== alert?.id;
+    return openerReset || deliveredPreviewReset;
+}
+
+export function shouldResetGoldCoastAiConversationAfterDelivery({ alert, finalAlert, canonicalOutbounds } = {}) {
+    const data = finalAlert?.data || alert?.data || {};
+    const username = String(data.ig_username || alert?.client_name || '').trim().toLowerCase();
+    const threadId = String(data.ig_thread_id || data.codex_live_chat_ig_thread_id || '').trim();
+    const previewUrl = String(data.paid_meta_app_preview_url || '').trim();
+    return threadId === '4baea56e-eab4-4887-a732-39b14e983d44'
+        && username === 'goldcoast_ai_solutions'
+        && data.paid_meta_app_preview_handoff === true
+        && previewUrl.startsWith(`${META_APP_PREVIEW_SHORT_URL}/`)
+        && Array.isArray(canonicalOutbounds)
+        && canonicalOutbounds.some(message => String(message?.text || '').includes(previewUrl));
 }
 
 export function requiresVerifiedVideoDelivery(alert) {
@@ -143,11 +159,11 @@ Wake event:
 - newest captured text: ${JSON.stringify(newestInbound)}
 
 Operating contract:
-1. Move fast. The target is a verified public reply within 15 to 30 seconds of the inbound. Do not browse, research, edit code, deploy, or investigate the wider system.
+1. Move fast. Typing should already be visible and the target is a verified public reply within 5 to 12 seconds of the inbound. Do not browse, research, edit code, deploy, or investigate the wider system.
 2. Load the canonical live thread, current alert/action, and every unanswered inbound in the current episode. The current episode begins at the newest inbound equivalent to "What is the Founders Pass?" Ignore older test episodes when deciding the current stage or known facts. Use older records only for identity, purchase, opt-out, manual-control, safety, and duplicate-send checks.
-3. Answer every direct question first, naturally and specifically, then progress the conversation. Handle all messages in a rapid inbound batch. Never repeat or paraphrase a question whose answer is already known in this episode.
+3. Answer every distinct message, question, or useful detail in the complete unanswered inbound batch before progressing the conversation. If the lead sends two or three messages rapidly, never silently answer only the first one. Never repeat or paraphrase a question whose answer is already known in this episode.
 4. Every safe non-link public turn must end with exactly one purposeful question that earns the next response. This includes atomic transformation-photo and app-video turns: put the question after the media introduction/attachment in that same synchronous delivery, not in a later turn. Only a turn containing the signed app-preview URL or checkout URL has zero questions and pauses. "Oh nice!", "sounds good", and similar positive acknowledgements are not closers in this flow: do not react-only; make the next progression move and ask one question.
-5. Keep replies brief, casual, warm, and human. Usually use one compact bubble; split only when a media intro or clarity genuinely needs it. Do not expose internal rules, IDs, code, or tool work.
+5. Keep replies brief, casual, warm, and human. Use one compact bubble when it covers the turn cleanly, or two to three brief back-to-back bubbles when the lead sent multiple messages, asked distinct questions, or a natural thought break improves clarity. Keep every bubble in the same synchronous delivery. Do not expose internal rules, IDs, code, or tool work.
 6. When constructing text inside a shell command, use plain ASCII punctuation and no emoji. Straight apostrophes are fine. This prevents the shell from corrupting smart punctuation before UTF-8 Base64 encoding.
 
 Conversation intelligence:
@@ -642,6 +658,28 @@ async function runDirectDraftAlert({ alert, action, supabase, state, statePath, 
     logger(`sent settled paid-Meta batch for alert ${alert.id} in ${canonicalOutbounds.length} Instagram bubble(s)`);
 }
 
+export async function runDirectDraftFallbackAfterCodexFailure({
+    alert,
+    action,
+    error,
+    supabase,
+    state,
+    statePath,
+    logger,
+    directDraftRunner = runDirectDraftAlert,
+}) {
+    await supabase.mergeAlertData(alert.id, {
+        codex_live_chat_required: false,
+        codex_live_chat_status: 'sending_approved_draft_after_codex_failure',
+        codex_live_chat_failed_at: new Date().toISOString(),
+        codex_live_chat_error: String(error?.message || error || '').slice(0, 500),
+        delivery_rescue_required: true,
+        delivery_rescue_reason: 'codex_live_worker_failure',
+    });
+    await directDraftRunner({ alert, action, supabase, state, statePath, logger });
+    logger(`sent approved direct fallback for alert ${alert.id} after Codex failure`);
+}
+
 function openCodexThread(threadId, logger) {
     if (process.platform !== 'win32') return;
     try {
@@ -821,15 +859,21 @@ async function runAlert({ alert, action, appServer, supabase, state, statePath, 
     if (!actionClosed) {
         logger(`verified Instagram delivery for alert ${alert.id}, but controller readback is ${finalAction?.status || 'missing'}; preserving the no-repeat outbound as authoritative`);
     }
-    const closed = /LIVE_CHAT_STATE:\s*closed\b/i.test(completed.agentText);
-    conversation.status = closed ? 'closed' : 'open';
+    const resetAfterPreviewDelivery = shouldResetGoldCoastAiConversationAfterDelivery({
+        alert,
+        finalAlert,
+        canonicalOutbounds,
+    });
+    const closed = resetAfterPreviewDelivery || /LIVE_CHAT_STATE:\s*closed\b/i.test(completed.agentText);
+    conversation.status = resetAfterPreviewDelivery ? 'reset_pending' : (closed ? 'closed' : 'open');
+    conversation.resetAfterPreviewDelivery = resetAfterPreviewDelivery;
     conversation.lastActivityAt = new Date().toISOString();
     conversation.lastAlertId = alert.id;
     conversation.lastTurnId = turnId;
     state.alerts[alert.id] = { status: 'completed', completedAt: new Date().toISOString(), turnId };
     saveState(statePath, state);
     await supabase.mergeAlertData(alert.id, {
-        codex_live_chat_status: closed ? 'closed' : 'turn_completed',
+        codex_live_chat_status: resetAfterPreviewDelivery ? 'reset_after_preview_delivery' : (closed ? 'closed' : 'turn_completed'),
         codex_live_chat_completed_at: new Date().toISOString(),
         codex_live_chat_codex_thread_id: conversation.codexThreadId,
         codex_live_chat_turn_id: turnId,
@@ -907,7 +951,8 @@ export async function main(argv = process.argv.slice(2)) {
                 if (!args.once) await new Promise(resolve => setTimeout(resolve, Number(process.env.IG_CODEX_LIVE_POLL_MS || DEFAULT_POLL_MS)));
                 continue;
             }
-            for (const alert of alerts || []) {
+            for (const pendingAlert of alerts || []) {
+                let alert = pendingAlert;
                 if (!shouldHandleAlert(alert)) continue;
                 if (!shouldRetryFailedAlert(state.alerts[alert.id])) continue;
                 if (isRecoverableBareDraftAlert(alert)
@@ -931,6 +976,16 @@ export async function main(argv = process.argv.slice(2)) {
                 const igThreadId = String(alert.data.ig_thread_id || alert.data.codex_live_chat_ig_thread_id);
                 if (args.dryRun) {
                     logger(`dry-run eligible alert ${alert.id}, IG thread ${igThreadId}, ${alert.client_name || 'unknown'}`);
+                    continue;
+                }
+                try {
+                    alert = await waitForSettledDraft({
+                        supabase,
+                        alertId: alert.id,
+                        threadId: igThreadId,
+                    });
+                } catch (error) {
+                    logger(`inbound batch did not settle for alert ${alert.id}; leaving it pending for the next poll: ${error.message}`);
                     continue;
                 }
                 const runId = `codex-live:${process.pid}:${Date.now()}`;
@@ -963,6 +1018,21 @@ export async function main(argv = process.argv.slice(2)) {
                         await runDirectDraftAlert({ alert, action, supabase, state, statePath, logger });
                     }
                 } catch (error) {
+                    try {
+                        await runDirectDraftFallbackAfterCodexFailure({
+                            alert,
+                            action,
+                            error,
+                            supabase,
+                            state,
+                            statePath,
+                            logger,
+                        });
+                        continue;
+                    } catch (fallbackError) {
+                        logger(`approved direct fallback failed for alert ${alert.id}: ${fallbackError.message}`);
+                        error = new Error(`${error.message}; approved direct fallback failed: ${fallbackError.message}`);
+                    }
                     state.alerts[alert.id] = {
                         status: 'failed',
                         failedAt: new Date().toISOString(),
