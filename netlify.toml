@@ -308,6 +308,12 @@
 # The shared runner also mutes non-DM/non-win pulse pushes as a safety net.
 # ============================================================
 
+# Balance business operating loop — 06:15 Brisbane every day. Persists one
+# source-backed acquisition/sales/delivery/autonomy snapshot and sends Shannon
+# one deduplicated phone summary naming the current constraint and next move.
+[functions."business-scorecard-daily"]
+  schedule = "15 20 * * *"
+
 # Morning pulse - daily at 19:30 UTC (≈ 5:30 AEST / 6:30 AEDT).
 # No proactive phone pushes.
 [functions."pulse-morning"]

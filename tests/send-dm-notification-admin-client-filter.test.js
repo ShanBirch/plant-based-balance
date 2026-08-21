@@ -16,21 +16,28 @@ const sandbox = {
         if (id === './_lib/client-context') return { normalizeCoachDraftText: value => String(value || '') };
         if (id === './_lib/firebase-service-account') return { loadFirebaseServiceAccount: async () => null };
         if (id === './_lib/ig-dispatch-approval-token') return require('../netlify/functions/_lib/ig-dispatch-approval-token');
+        if (id === './_lib/business-scorecard-token') return require('../netlify/functions/_lib/business-scorecard-token');
         return require(id);
     },
     console: { log() {}, warn() {}, error() {} },
-    process: { env: {} },
+    process: { env: { SUPABASE_SERVICE_ROLE_KEY: 'test-service-secret' } },
     Buffer,
 };
 sandbox.global = sandbox;
 
 vm.runInNewContext(code, sandbox, { filename: file });
 
-const { isAllowedAdminPhonePush, isValidDispatcherApprovalPush, isNativeDataOnlyType } = sandbox.module.exports.__test;
+const {
+    isAllowedAdminPhonePush,
+    isValidDispatcherApprovalPush,
+    isValidBusinessScorecardPush,
+    isNativeDataOnlyType,
+} = sandbox.module.exports.__test;
 const {
     createApprovalToken,
     verifyApprovalToken,
 } = require('../netlify/functions/_lib/ig-dispatch-approval-token');
+const { createScorecardToken } = require('../netlify/functions/_lib/business-scorecard-token');
 
 const dispatcherApprovalPayload = {
     actionType: 'ig_dispatch_approval_batch',
@@ -69,6 +76,35 @@ assert.strictEqual(
         type: 'dispatcher_approval_ready',
         alert: null,
         payload: { ...dispatcherApprovalPayload, batchVersion: 0 },
+    }),
+    false
+);
+
+const businessScorecardPayload = {
+    actionType: 'business_scorecard',
+    scorecardId: '22222222-2222-4222-8222-222222222222',
+    scorecardDate: '2026-08-21',
+    recipientId: '11111111-1111-4111-8111-111111111111',
+    messageText: 'This week: checkout conversion is the constraint.',
+};
+businessScorecardPayload.scorecardToken = createScorecardToken(
+    businessScorecardPayload,
+    'test-service-secret'
+);
+assert.strictEqual(isValidBusinessScorecardPush(businessScorecardPayload), true);
+assert.strictEqual(
+    isAllowedAdminPhonePush({
+        type: 'business_scorecard',
+        alert: null,
+        payload: businessScorecardPayload,
+    }),
+    true
+);
+assert.strictEqual(
+    isAllowedAdminPhonePush({
+        type: 'business_scorecard',
+        alert: null,
+        payload: { ...businessScorecardPayload, scorecardDate: '2026-08-22' },
     }),
     false
 );

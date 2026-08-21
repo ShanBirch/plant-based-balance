@@ -9,6 +9,7 @@
     "cap:build": "npx cap sync android && cd android && ./gradlew assembleDebug",
     "cap:build:release": "npx cap sync android && cd android && ./gradlew assembleRelease",
     "dm:sparring": "node scripts/run-dm-sparring-gym.js",
+    "business:change": "node scripts/record-business-change.mjs",
     "voice:check": "node scripts/check-shannon-script-voice.js",
     "voice:analyze": "node scripts/analyze-shannon-spoken-voice.js"
   },

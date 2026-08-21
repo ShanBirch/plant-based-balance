@@ -123,6 +123,14 @@ Current strategic priority: build the AI-operated business layer around Balance:
 - Coaching alerts, check-ins, celebrations, plateau prompts, and conversion prompts.
 - Control metrics for acquisition, activation, conversion, retention, and reply quality.
 
+Balance business operating loop:
+
+- `get_balance_business_scorecard(7)` is the canonical live answer to “how is the business going?” It joins verified acquisition progression, Founders Pass checkout/purchase truth, client progress coverage, content output, automation receipts, data-quality gaps, and the current highest-leverage constraint. Do not substitute intuition, queue status, or a manually copied dashboard number for this read.
+- `business-scorecard-daily` persists one Brisbane-date snapshot at 06:15 and sends Shannon one deduplicated phone summary naming the constraint and next move. The admin Metrics tab shows the same live model plus daily history, so the phone prompt and dashboard cannot drift into separate scorecards.
+- After shipping a business-impacting change, record it with `npm run business:change -- --area <area> --summary "<what changed>" --metric "<metric expected to move>"`. Run it only after the commit exists; the ledger is idempotent by commit plus summary. This lets later Codex sessions compare what changed with the next scorecards instead of asking Shannon to remember the experiment history.
+- Treat the scorecard's `primary_constraint` as the default next build/business focus until live evidence shows that another constraint is stronger. Keep one active constraint at a time. Never hide missing ad-spend, revenue, attribution, client-result, or delivery evidence by converting an unknown into zero.
+- The current profit view is intentionally conservative: Founders Pass revenue comes only from exact Stripe-backed `founders_pass_purchases`; recurring subscriptions are counted but not valued until their price truth is safely mapped; CAC and profit remain unavailable until a reviewed Meta ad-spend source is connected.
+
 ## Non-Negotiables
 
 - The 24-hour Instagram browser shift dispatcher's lease coordinates dispatcher instances only. Other Codex chats may use browser automation concurrently without checking or waiting for that lease. Use the chat's own browser binding and tab, and do not deliberately claim, navigate, close, recover, or otherwise disturb the dispatcher's active Instagram tab or alter its run ledger. Shannon's direct instruction that he is personally using a specific tab or browser remains a reason not to disturb that exact surface.

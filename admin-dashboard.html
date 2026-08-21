@@ -3154,13 +3154,44 @@
                     <div class="content-card">
                         <div style="padding:16px 20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
                             <div>
-                                <h2 style="font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:700;">Measurable Parameters</h2>
-                                <p style="font-size:0.8rem; color:#64748b; margin-top:2px;">Your business at a glance</p>
+                                <h2 style="font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:700;">Balance Operating Loop</h2>
+                                <p style="font-size:0.8rem; color:#64748b; margin-top:2px;">What happened, what changed, and what we work on next.</p>
+                                <div id="m-business-loop-status" style="font-size:0.7rem; color:#64748b; margin-top:5px;">Loading live business evidence...</div>
                             </div>
                             <button onclick="loadMetrics(true)" class="ai-view-account-btn" style="margin:0; font-size:0.8rem;">
                                 <i data-lucide="refresh-cw" style="width:14px; height:14px;"></i> Refresh
                             </button>
                         </div>
+                    </div>
+
+                    <!-- Revenue, results and autonomy operating loop -->
+                    <div class="content-card" style="padding:20px; border:2px solid #d7ead8; background:linear-gradient(145deg,#fbfffb,#f4faf4);">
+                        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:14px;">
+                            <div>
+                                <div style="font-size:0.68rem; font-weight:850; letter-spacing:0.08em; text-transform:uppercase; color:#48864B;">Current constraint</div>
+                                <h3 id="m-business-constraint" style="font-family:'Montserrat',sans-serif; font-size:1.05rem; font-weight:800; margin:4px 0 0; color:#17351d;">Loading...</h3>
+                            </div>
+                            <span id="m-business-window" style="padding:5px 9px; border-radius:999px; background:#e8f4e9; color:#285d31; font-size:0.68rem; font-weight:800;">7-day view</span>
+                        </div>
+                        <div id="m-business-next-action" style="padding:12px 14px; background:#fff; border-left:4px solid #48864B; border-radius:8px; color:#334155; font-size:0.82rem; line-height:1.5; margin-bottom:14px;">Finding the highest-leverage next move...</div>
+                        <div id="m-business-hero" class="stats-grid" style="margin-bottom:0;"></div>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px;">
+                        <div class="content-card" style="padding:20px;">
+                            <h3 style="font-family:'Montserrat',sans-serif; font-size:0.95rem; font-weight:700; margin-bottom:12px;">What We Changed</h3>
+                            <div id="m-business-changes" style="display:flex; flex-direction:column; gap:8px;"></div>
+                        </div>
+                        <div class="content-card" style="padding:20px;">
+                            <h3 style="font-family:'Montserrat',sans-serif; font-size:0.95rem; font-weight:700; margin-bottom:12px;">Measurement Trust</h3>
+                            <div id="m-business-data-quality" style="display:flex; flex-direction:column; gap:8px;"></div>
+                        </div>
+                    </div>
+
+                    <div class="content-card" style="padding:20px;">
+                        <h3 style="font-family:'Montserrat',sans-serif; font-size:0.95rem; font-weight:700; margin-bottom:4px;">Operating History</h3>
+                        <p style="font-size:0.72rem; color:#64748b; margin-bottom:12px;">Daily snapshots preserve the constraint we saw and the release running at the time.</p>
+                        <div id="m-business-history" style="display:flex; flex-direction:column; gap:7px;"></div>
                     </div>
 
                     <!-- Top-line numbers -->
@@ -7623,7 +7654,8 @@
                     clientsRes, usersRes, leadsRes, talkingRes,
                     active7Res, active30Res, workouts7Res, mood7Res, weighins7Res, pbs30Res,
                     alertsPendingRes, alertsTodayRes, dmsWeekRes, autosendRes, igAutosendRes,
-                    warmScorecardRes, moneyQueueRes, acquisitionCapacityRes
+                    warmScorecardRes, moneyQueueRes, acquisitionCapacityRes,
+                    businessScorecardRes, businessHistoryRes
                 ] = await Promise.all([
                     sb.from('coach_clients').select('id', { count: 'exact', head: true }).eq('status', 'active'),
                     sb.from('users').select('id', { count: 'exact', head: true }),
@@ -7642,8 +7674,95 @@
                     sb.from('ig_threads').select('id', { count: 'exact', head: true }).eq('auto_send_enabled', true),
                     sb.rpc('get_ig_warm_lead_scorecard', { p_days: 30 }),
                     sb.rpc('get_ig_money_queue', { p_limit: 20 }),
-                    sb.rpc('get_ig_acquisition_capacity')
+                    sb.rpc('get_ig_acquisition_capacity'),
+                    sb.rpc('get_balance_business_scorecard', { p_days: 7 }),
+                    sb.from('balance_business_scorecards')
+                        .select('scorecard_date,release_ref,metrics,primary_constraint,next_action,created_at')
+                        .order('scorecard_date', { ascending: false })
+                        .limit(8)
                 ]);
+
+                // The operating loop is the canonical summary: one constraint,
+                // one next action, plus the releases that may have moved it.
+                const business = businessScorecardRes.data || {};
+                const businessCurrent = business.current || {};
+                const businessPrevious = business.previous || {};
+                const businessConstraint = String(business.primary_constraint || 'measurement unavailable');
+                const businessConstraintLabel = businessConstraint.replaceAll('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
+                const businessGenerated = business.generated_at
+                    ? new Date(business.generated_at).toLocaleString('en-AU', { dateStyle: 'medium', timeStyle: 'short' })
+                    : 'not available';
+                const formatAud = minor => new Intl.NumberFormat('en-AU', {
+                    style: 'currency', currency: 'AUD', maximumFractionDigits: 0
+                }).format(Number(minor || 0) / 100);
+                const deltaText = (current, previous, suffix = '') => {
+                    const delta = Number(current || 0) - Number(previous || 0);
+                    if (!Number.isFinite(delta) || delta === 0) return `same as prior ${business.window_days || 7}d`;
+                    return `${delta > 0 ? '+' : ''}${delta.toFixed(Number.isInteger(delta) ? 0 : 1)}${suffix} vs prior`;
+                };
+
+                document.getElementById('m-business-loop-status').textContent = businessScorecardRes.error
+                    ? `Live scorecard unavailable: ${businessScorecardRes.error.message || 'query failed'}`
+                    : `Live through ${businessGenerated} · Australia/Brisbane`;
+                document.getElementById('m-business-constraint').textContent = businessConstraintLabel;
+                document.getElementById('m-business-window').textContent = `${business.window_days || 7}-day view`;
+                document.getElementById('m-business-next-action').textContent = business.next_action || 'The next action is unavailable until the live scorecard loads.';
+
+                const businessCards = [
+                    ['Confirmed revenue', formatAud(businessCurrent.founders_revenue_minor), 'Founders Pass · exact Stripe-backed purchases'],
+                    ['Sales', Number(businessCurrent.founders_sales || 0), deltaText(businessCurrent.founders_sales, businessPrevious.founders_sales)],
+                    ['Checkouts', Number(businessCurrent.checkout_sent || 0), deltaText(businessCurrent.checkout_sent, businessPrevious.checkout_sent)],
+                    ['Paid Meta leads', Number(businessCurrent.paid_meta_leads || 0), 'verified acquisition_mode=paid_meta'],
+                    ['Client progress coverage', `${Number(businessCurrent.client_progress_coverage_pct || 0).toFixed(1)}%`, 'active clients with a weekly progress signal'],
+                    ['Routine work automated', `${Number(businessCurrent.autonomy_pct || 0).toFixed(1)}%`, `${Number(businessCurrent.automated_completed || 0)} automated · ${Number(businessCurrent.human_required || 0)} human`],
+                ];
+                document.getElementById('m-business-hero').innerHTML = businessCards.map(([label, value, sub]) => `
+                    <div class="stat-card"><h3>${escapeHtml(label)}</h3><div class="value">${escapeHtml(value)}</div><p class="stat-sub" style="color:#64748b; font-size:0.68rem; margin-top:3px; line-height:1.35;">${escapeHtml(sub)}</p></div>
+                `).join('');
+
+                const businessChanges = Array.isArray(business.recent_changes) ? business.recent_changes : [];
+                document.getElementById('m-business-changes').innerHTML = businessChanges.length
+                    ? businessChanges.slice(0, 6).map(change => `
+                        <div style="padding:10px 11px; border:1px solid #e2e8f0; border-radius:9px; background:#fff;">
+                            <div style="display:flex; justify-content:space-between; gap:8px; align-items:flex-start;">
+                                <strong style="font-size:0.78rem; color:#172033;">${escapeHtml(change.summary || 'Shipped change')}</strong>
+                                <span style="font-size:0.62rem; font-weight:800; color:#48864B; text-transform:uppercase;">${escapeHtml(change.area || 'business')}</span>
+                            </div>
+                            <div style="font-size:0.68rem; color:#64748b; margin-top:4px;">Expected: ${escapeHtml(change.expected_metric || 'metric effect not recorded')}</div>
+                        </div>
+                    `).join('')
+                    : '<div style="padding:13px; border:1px dashed #cbd5e1; border-radius:9px; color:#64748b; font-size:0.75rem;">No shipped changes have been logged yet. Future Codex releases will appear here automatically.</div>';
+
+                const quality = business.data_quality || {};
+                const qualityRows = [
+                    ['Ad spend', quality.ad_spend?.status, quality.ad_spend?.impact],
+                    ['Revenue', quality.revenue?.status, quality.revenue?.scope],
+                    ['Client results', quality.client_results?.status, `${Number(quality.client_results?.coverage_pct || 0).toFixed(1)}% measurable coverage`],
+                    ['Attribution', quality.attribution?.status, `${Number(quality.attribution?.missing_events || 0)} events missing source`],
+                ];
+                document.getElementById('m-business-data-quality').innerHTML = qualityRows.map(([label, status, detail]) => {
+                    const usable = status === 'usable';
+                    const tone = usable ? { bg: '#dcfce7', text: '#166534' } : { bg: '#fef3c7', text: '#92400e' };
+                    return `<div style="padding:10px 11px; border:1px solid #e2e8f0; border-radius:9px; background:#fff;">
+                        <div style="display:flex; justify-content:space-between; gap:8px;"><strong style="font-size:0.76rem;">${escapeHtml(label)}</strong><span style="padding:2px 7px; border-radius:999px; background:${tone.bg}; color:${tone.text}; font-size:0.62rem; font-weight:850; text-transform:uppercase;">${escapeHtml(status || 'unknown')}</span></div>
+                        <div style="font-size:0.67rem; color:#64748b; margin-top:4px; line-height:1.35;">${escapeHtml(detail || 'No source detail')}</div>
+                    </div>`;
+                }).join('');
+
+                const businessHistory = businessHistoryRes.data || [];
+                document.getElementById('m-business-history').innerHTML = businessHistory.length
+                    ? businessHistory.map(row => {
+                        const current = row.metrics?.current || {};
+                        const release = row.release_ref ? String(row.release_ref).slice(0, 8) : 'no release ref';
+                        return `<div style="display:grid; grid-template-columns:minmax(76px,0.7fr) minmax(130px,1.5fr) repeat(3,minmax(54px,0.55fr)); gap:8px; align-items:center; padding:9px 10px; border:1px solid #e2e8f0; border-radius:8px; background:#fff; font-size:0.69rem;">
+                            <strong>${escapeHtml(new Date(String(row.scorecard_date) + 'T00:00:00').toLocaleDateString('en-AU', { day:'numeric', month:'short' }))}</strong>
+                            <span style="color:#334155; text-transform:capitalize;">${escapeHtml(String(row.primary_constraint || '').replaceAll('_', ' '))}<br><small style="color:#94a3b8;">${escapeHtml(release)}</small></span>
+                            <span><strong>${escapeHtml(formatAud(current.founders_revenue_minor))}</strong><br><small style="color:#94a3b8;">revenue</small></span>
+                            <span><strong>${Number(current.checkout_sent || 0)}</strong><br><small style="color:#94a3b8;">checkout</small></span>
+                            <span><strong>${Number(current.founders_sales || 0)}</strong><br><small style="color:#94a3b8;">sales</small></span>
+                        </div>`;
+                    }).join('')
+                    : '<div style="padding:13px; border:1px dashed #cbd5e1; border-radius:9px; color:#64748b; font-size:0.75rem;">The first daily snapshot will appear after the operating-loop run.</div>';
 
                 // Top-line
                 document.getElementById('m-coaching-clients').textContent = clientsRes.count || 0;

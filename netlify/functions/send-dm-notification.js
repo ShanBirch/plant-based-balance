@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const { normalizeCoachDraftText } = require('./_lib/client-context');
 const { loadFirebaseServiceAccount } = require('./_lib/firebase-service-account');
 const { createApprovalToken } = require('./_lib/ig-dispatch-approval-token');
+const { verifyScorecardToken } = require('./_lib/business-scorecard-token');
 
 // Configure web-push with VAPID keys
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
@@ -108,6 +109,7 @@ const ADMIN_COMMUNITY_NOTIFICATION_TYPES = new Set([
 ]);
 
 const DISPATCHER_APPROVAL_NOTIFICATION_TYPE = 'dispatcher_approval_ready';
+const BUSINESS_SCORECARD_NOTIFICATION_TYPE = 'business_scorecard';
 
 function isNativeDataOnlyType(type) {
     return type === 'coach_draft_ready' || type === DISPATCHER_APPROVAL_NOTIFICATION_TYPE;
@@ -218,9 +220,17 @@ function isValidDispatcherApprovalPush(payload = {}) {
         && batchSize <= 30;
 }
 
+function isValidBusinessScorecardPush(payload = {}) {
+    return payload.actionType === BUSINESS_SCORECARD_NOTIFICATION_TYPE
+        && verifyScorecardToken(payload, payload.scorecardToken, SUPABASE_SERVICE_KEY);
+}
+
 function isAllowedAdminPhonePush({ type, alert, payload }) {
     if (type === DISPATCHER_APPROVAL_NOTIFICATION_TYPE) {
         return !alert && isValidDispatcherApprovalPush(payload);
+    }
+    if (type === BUSINESS_SCORECARD_NOTIFICATION_TYPE) {
+        return !alert && isValidBusinessScorecardPush(payload);
     }
     if (ADMIN_WARNING_NOTIFICATION_TYPES.has(type)) {
         return isClientScopedAdminPush({ alert, payload });
@@ -537,6 +547,8 @@ exports.handler = async (event) => {
         const batchVersion = String(payload.batchVersion || payload.batch_version || '');
         const batchSize = String(payload.batchSize || payload.batch_size || '');
         const customCollapseKey = String(payload.collapseKey || payload.collapse_key || '').slice(0, 64);
+        const scorecardId = String(payload.scorecardId || '').slice(0, 36);
+        const scorecardDate = String(payload.scorecardDate || '').slice(0, 10);
 
         if (!recipientId || !messageText) {
             return {
@@ -755,6 +767,8 @@ exports.handler = async (event) => {
                                 challengeOfferDot,
                                 challengeOfferLabel,
                                 challengeOfferReason,
+                                scorecardId,
+                                scorecardDate,
                             }
                         });
                         // FCM V1 UNREGISTERED (404) or INVALID_ARGUMENT → delete the stale row
@@ -890,6 +904,7 @@ module.exports.__test = {
     getAlertExternalChannel,
     isClientScopedAdminPush,
     isValidDispatcherApprovalPush,
+    isValidBusinessScorecardPush,
     isAllowedAdminPhonePush,
     shouldSuppressExternalMessagePush,
     isNativeDataOnlyType,
