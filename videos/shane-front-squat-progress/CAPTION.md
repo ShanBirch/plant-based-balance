@@ -1,20 +1,31 @@
-A good goal should do more than sound exciting. It should give every session a job.
+Shane's front-squat journey actually started because the two of us were doing them together.
 
-On 30 May, we set Shane a clear target: build his front squat towards 150 kg over eight weeks.
+I'm pretty sure I hit around 100 kg. Then, a few days later, Shane sent through 100 kg too and told me it wasn't easy.
 
-Then we mapped out the work across three front-squat days.
+Then I backed out of front squats 😂
 
-Monday was one heavy top set, then three paused back-off sets. Thursday was volume work followed by three tempo triples with a three-second lowering. Saturday was six fast doubles, then three paused doubles for clean practice without more fatigue.
+But I told him he shouldn't. He was moving well, and I reckoned he had a lot more there.
 
-The load changed across the eight weeks, but each day kept its job. Shane showed up, sent through the lifts and did the part nobody can fake.
+A few weeks later he hit 130 kg after the rest of his session. That's when we set the proper target: 150 kg over eight weeks.
 
-By week seven, he didn’t just reach the 150 kg target. He hit it for two.
+Then every session got a job.
 
-Shane still picked apart the first rep because that’s Shane 😂 But the better bit was what he said afterwards: it felt good, and it didn’t feel like a one-off he’d never do again.
+Monday: a heavy top set and paused back-offs.
 
-Clear goal. Responsive plan. Earned confidence.
+Thursday: volume and tempo.
+
+Saturday: speed and skill.
+
+I set the direction and kept adjusting the plan. Shane did the bit nobody can fake. He showed up, sent the lifts through, took the feedback and kept moving forward.
+
+Honestly, watching him go through the whole journey and eventually smash 150 kg was an absolute pleasure.
+
+And by week seven, he didn't just hit it. He hit it for two.
+
+I backed out. Shane kept going 😂
+
+Fucking unreal effort, mate.
 
 ***
 
-Approval note: confirm Shane’s permission for the footage and quoted messages before posting.
-
+Approval note: confirm Shane's permission for the footage and quoted messages before posting.

@@ -53,3 +53,7 @@ These are programmed prescriptions. The Reel does not claim every prescribed set
 - Shane described the final set as two reps, while noting the first rep was not as clean/deep as he wanted.
 - Public posting requires Shane's permission for identifiable footage and message excerpts.
 
+## User-provided personal context
+
+On 21 August 2026, Shannon supplied the personal origin story for the caption: Shannon and Shane were front squatting together; Shannon remembers his own lift as approximately 100 kg; Shane front squatted 100 kg a few days later; Shannon then stopped doing front squats but encouraged Shane to keep increasing the load. Treat Shannon's number as an approximate personal recollection, not a verified logged result.
+
