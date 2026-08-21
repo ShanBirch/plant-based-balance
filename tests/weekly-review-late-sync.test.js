@@ -22,13 +22,13 @@ assert.match(
 assert.match(
   weeklyGoals,
   /refreshCompletedWeek: function\(weekStart\)/,
-  'Weekly Review should be able to request a completed-week refresh'
+  'Weekly Check-In should be able to request a live week refresh'
 );
 
 assert.match(
   review,
   /await window\.weeklyGoals\.refreshCompletedWeek\(week\.startKey\)/,
-  'Weekly Review should refresh the completed week before building the summary'
+  'Weekly Check-In should refresh the goal week before building the summary'
 );
 
 assert.match(
@@ -37,7 +37,7 @@ assert.match(
   'a refreshed server snapshot must win over stale local storage'
 );
 
-assert.match(dashboard, /pbb-deferred-weeklygoals\.js\?v=28/);
-assert.match(dashboard, /pbb-weekly-checkin-preview\.js\?v=22/);
+assert.match(dashboard, /pbb-deferred-weeklygoals\.js\?v=33-home-theme/);
+assert.match(dashboard, /pbb-weekly-checkin-preview\.js\?v=24-friday-checkin/);
 
 console.log('weekly review late-sync protection test passed');
