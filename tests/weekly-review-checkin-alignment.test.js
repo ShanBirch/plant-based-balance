@@ -32,10 +32,11 @@ test('all automated coaching check-in paths use the shared handoff', () => {
   });
 });
 
-test('the in-app check-in explains and tracks the coaching handoff', () => {
+test('the in-app check-in is goal-aware and tracks the coaching handoff', () => {
   const source = fs.readFileSync(path.join(repoRoot, 'js/dashboard/pbb-weekly-checkin-preview.js'), 'utf8');
-  assert.match(source, /What happens after you send it/);
-  assert.match(source, /you will not need to repeat yourself/i);
+  assert.match(source, /weeklyReflectionGoalContext/);
+  assert.match(source, /This week you were working on/);
+  assert.match(source, /weeklyGoalSnapshot/);
   assert.match(source, /weekly_review_opened/);
   assert.match(source, /weekly_checkin_submitted/);
 });

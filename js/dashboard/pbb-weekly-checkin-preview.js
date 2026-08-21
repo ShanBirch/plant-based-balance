@@ -1171,11 +1171,43 @@
     return '<section class="pbb-wci-section"><h3>Check-ins and mood</h3>' + cards + feedbackHtml + note + '</section>';
   }
 
+  function weeklyReflectionGoalContext(data){
+    var rows = data && data.goals && Array.isArray(data.goals.rows) ? data.goals.rows : [];
+    var labels = rows.map(function(goal){
+      return String(goal && goal.label || '').trim();
+    }).filter(Boolean).slice(0, 3);
+
+    if (!labels.length && data && data.objective && data.objective.label) {
+      labels.push(String(data.objective.label).trim());
+    }
+
+    var list = '';
+    if (labels.length === 1) list = labels[0];
+    if (labels.length === 2) list = labels[0] + ' and ' + labels[1];
+    if (labels.length > 2) list = labels.slice(0, -1).join(', ') + ' and ' + labels[labels.length - 1];
+
+    return {
+      labels: labels,
+      list: list,
+      subject: labels.length === 1 ? labels[0] : 'your weekly goals',
+      blockerSubject: labels.length === 1 ? labels[0] : 'those goals'
+    };
+  }
+
   function renderWeeklyReflectionForm(data){
-    var goalCount = data && data.goals ? Number(data.goals.total || 0) : 0;
-    var goalPrompt = goalCount > 0
-      ? 'Use your ' + goalCount + ' weekly goal' + (goalCount === 1 ? '' : 's') + ' as the scorecard, then tell Shannon what the numbers cannot show.'
+    var goalContext = weeklyReflectionGoalContext(data);
+    var goalPrompt = goalContext.labels.length
+      ? 'This week you were working on ' + goalContext.list + '. Tell Shannon what went well, what got in the way, and what would help next week.'
       : 'Tell Shannon what went well, what got in the way, and what would help next week.';
+    var winPrompt = goalContext.labels.length
+      ? 'What was your biggest win with ' + goalContext.subject + '?'
+      : 'What was your biggest win?';
+    var blockerPrompt = goalContext.labels.length
+      ? 'What got in the way of ' + goalContext.blockerSubject + '?'
+      : 'What got in the way?';
+    var supportPrompt = goalContext.labels.length
+      ? 'What would help you most with ' + goalContext.blockerSubject + ' next week?'
+      : 'What would you like help with next week?';
     return [
       '<section class="pbb-wci-section pbb-wci-reflection-section">',
       '  <h3>Share your week with Shannon</h3>',
@@ -1191,12 +1223,12 @@
       '      </div>',
       '    </div>',
       '    <label class="pbb-wci-field">',
-      '      <span class="pbb-wci-field-label">What was your biggest win?</span>',
+      '      <span class="pbb-wci-field-label">' + escapeHtml(winPrompt) + '</span>',
       '      <span class="pbb-wci-field-help">It can be training, food, routine, confidence, or something life-related.</span>',
       '      <textarea class="pbb-wci-input" name="win" maxlength="600" required placeholder="The thing I am happiest with this week..."></textarea>',
       '    </label>',
       '    <label class="pbb-wci-field">',
-      '      <span class="pbb-wci-field-label">What got in the way?</span>',
+      '      <span class="pbb-wci-field-label">' + escapeHtml(blockerPrompt) + '</span>',
       '      <textarea class="pbb-wci-input" name="blocker" maxlength="600" placeholder="The hardest part was..."></textarea>',
       '    </label>',
       '    <div class="pbb-wci-field">',
@@ -1211,7 +1243,7 @@
       '      <div class="pbb-wci-field-help">1 means you need a reset. 5 means the plan feels clear.</div>',
       '    </div>',
       '    <label class="pbb-wci-field">',
-      '      <span class="pbb-wci-field-label">What would you like help with next week?</span>',
+      '      <span class="pbb-wci-field-label">' + escapeHtml(supportPrompt) + '</span>',
       '      <select class="pbb-wci-select" name="support" required>',
       '        <option value="">Choose one</option>',
       '        <option value="accountability">Keep me accountable</option>',
@@ -1577,7 +1609,6 @@
     if (existing) existing.remove();
 
     var data = currentData();
-    var actionLabel = reviewActionLabel(data);
     var overlay = document.createElement('div');
     overlay.id = 'weekly-checkin-preview-overlay';
     overlay.className = 'pbb-wci-overlay';
@@ -1589,36 +1620,7 @@
       '    <button type="button" class="pbb-wci-close" aria-label="Close weekly check-in">&times;</button>',
       '  </header>',
       '  <div class="pbb-wci-body">',
-      '    <div class="pbb-wci-hero">',
-      '      <div class="pbb-wci-kicker">' + escapeHtml(data.weekLabel) + '</div>',
-      '      <div class="pbb-wci-profile">' + escapeHtml(data.profile.name) + '</div>',
-      '      <h2>Here\'s my read on your week.</h2>',
-      '      <p>' + escapeHtml(data.note) + '</p>',
-      '      <div class="pbb-wci-metrics">',
-      '        <div class="pbb-wci-metric"><span>Calories you are on</span><b>' + escapeHtml(data.calories.target) + '/day</b></div>',
-      '        <div class="pbb-wci-metric"><span>' + escapeHtml(data.calories.averageLabel || 'Average logged') + '</span><b>' + escapeHtml(data.calories.average) + '/day</b></div>',
-      '        <div class="pbb-wci-metric"><span>Weekly goals</span><b>' + escapeHtml(data.goals.completed) + '/' + escapeHtml(data.goals.total) + ' hit</b></div>',
-      '      </div>',
-      '      <div class="pbb-wci-goal-banner">',
-      '        <span>Your current goal</span>',
-      '        <b>' + escapeHtml(data.objective.label) + '</b>',
-      '        <small>' + escapeHtml(data.objective.detail) + '</small>',
-      '        <em class="pbb-wci-goal-source">' + escapeHtml(data.objective.source || 'From onboarding') + '</em>',
-      '      </div>',
-      '    </div>',
-      '    <section class="pbb-wci-section"><h3>What we made happen</h3>' + renderList(data.wins) + '</section>',
-      '    <section class="pbb-wci-section"><h3>Calories and the call</h3><p>' + escapeHtml(data.calories.verdict) + '</p></section>',
-      '    <section class="pbb-wci-section"><h3>Gym progress</h3>' + renderGym(data) + '<p style="margin-top:12px;">' + escapeHtml(data.training.highlight) + '</p></section>',
-      '    <section class="pbb-wci-section"><h3>Weekly goals</h3>' + renderGoals(data) + '</section>',
       renderWeeklyReflectionForm(data),
-      '    <section class="pbb-wci-section"><h3>Recovery snapshot</h3>' + renderRecovery(data) + '</section>',
-      renderCheckinMood(data),
-      '    <section class="pbb-wci-section"><h3>Suggested focus for next week</h3>' + renderList(data.adjustments) + '</section>',
-      '    <section class="pbb-wci-section"><h3>Tracking tip</h3><p>' + escapeHtml(data.tip) + '</p></section>',
-      '    <section class="pbb-wci-section"><h3>What happens after you send it</h3><p>Your answers go straight to Shannon alongside these stats and your weekly goals. They become the context for your coaching follow-up, so you will not need to repeat yourself.</p></section>',
-      '    <div class="pbb-wci-actions">',
-      '      <button type="button" class="pbb-wci-action secondary" data-wci-action="goals">' + escapeHtml(actionLabel) + '</button>',
-      '    </div>',
       '  </div>',
       '</section>'
     ].join('');
@@ -1628,7 +1630,6 @@
 
     var sheet = overlay.querySelector('.pbb-wci-sheet');
     var closeBtn = overlay.querySelector('.pbb-wci-close');
-    var goalsBtn = overlay.querySelector('[data-wci-action="goals"]');
     var responseForm = overlay.querySelector('#weekly-checkin-response-form');
 
     overlay.addEventListener('click', function(){
@@ -1636,7 +1637,6 @@
     });
     if (sheet) sheet.addEventListener('click', function(e){ e.stopPropagation(); });
     if (closeBtn) closeBtn.addEventListener('click', closeWeeklyCheckinPreview);
-    if (goalsBtn) goalsBtn.addEventListener('click', openNextGoals);
     if (responseForm) responseForm.addEventListener('submit', submitWeeklyReflection);
 
     if (typeof window.pushNavigationState === 'function') {

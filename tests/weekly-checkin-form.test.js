@@ -41,12 +41,26 @@ test('weekly client check-in is available Friday through Sunday', () => {
 
 test('the form captures useful goal-aligned coaching context', () => {
   assert.match(frontend, /weeklyGoalSnapshot/);
+  assert.match(frontend, /weeklyReflectionGoalContext/);
+  assert.match(frontend, /This week you were working on/);
+  assert.match(frontend, /What was your biggest win with/);
+  assert.match(frontend, /What got in the way of/);
+  assert.match(frontend, /What would help you most with/);
   assert.match(frontend, /How did this week feel overall\?/);
-  assert.match(frontend, /What was your biggest win\?/);
-  assert.match(frontend, /What got in the way\?/);
   assert.match(frontend, /How confident do you feel about next week\?/);
-  assert.match(frontend, /What would you like help with next week\?/);
   assert.match(frontend, /submit-weekly-checkin/);
+});
+
+test('the opened check-in contains the form, not the old full weekly review', () => {
+  const openFunction = frontend.slice(frontend.indexOf('function openWeeklyCheckinPreview(){'), frontend.indexOf('function handleKeydown'));
+  assert.match(openFunction, /renderWeeklyReflectionForm\(data\)/);
+  assert.doesNotMatch(openFunction, /What we made happen/);
+  assert.doesNotMatch(openFunction, /Calories and the call/);
+  assert.doesNotMatch(openFunction, /Gym progress/);
+  assert.doesNotMatch(openFunction, /Recovery snapshot/);
+  assert.doesNotMatch(openFunction, /Suggested focus for next week/);
+  assert.doesNotMatch(openFunction, /Tracking tip/);
+  assert.doesNotMatch(openFunction, /data-wci-action="goals"/);
 });
 
 test('To Do Next routes the due weekly card into the check-in', () => {

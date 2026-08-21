@@ -85,7 +85,7 @@ test('Home plan cards stay below the complete FitGotchi stats block', () => {
     assert.match(source, /characterBlockTail\.parentNode\.insertBefore\(card, characterBlockTail\.nextSibling\)/);
     assert.doesNotMatch(source, /levelStrip\.parentNode\.insertBefore\((weeklyGoals|card), levelStrip\.nextSibling\)/);
     assert.match(html, /pbb-social-journey\.js\?v=31-balance-identity/);
-    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v335-weekly-checkin'/);
+    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v336-personal-checkin'/);
 });
 
 test('Home goals and plan cards follow light and dark mode', () => {
