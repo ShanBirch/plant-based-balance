@@ -1,6 +1,6 @@
 const DEFAULT_GRAPH_BASE = 'https://graph.instagram.com';
 const DEFAULT_IG_USER_ID = '17841415641641750';
-const CONTENT_ID = '2026-08-21-shane-front-squat-progress';
+const CONTENT_ID = '2026-08-21-shane-front-squat-progress-ui-safe-v2';
 const REQUIRED_IDEMPOTENCY_KEY = `${CONTENT_ID}-instagram-reel`;
 const RECEIPT_KEY = `social_publish_receipt_${CONTENT_ID.replace(/-/g, '_')}`;
 
@@ -44,8 +44,8 @@ function postPlan() {
             mime: 'video/mp4',
             width: 1080,
             height: 1920,
-            durationSeconds: 62.016,
-            url: 'https://f005.backblazeb2.com/file/plantbasedbalancestories/stories/codex-social-publish/2026-08-21-shane-front-squat-progress.mp4',
+            durationSeconds: 62,
+            url: 'https://f005.backblazeb2.com/file/plantbasedbalancestories/stories/codex-social-publish/2026-08-21-shane-front-squat-progress-ui-safe-v2.mp4',
         },
         cover: {
             mime: 'image/jpeg',
@@ -53,7 +53,7 @@ function postPlan() {
             height: 1920,
             fullCoverChecked: true,
             profileGridChecked: true,
-            url: 'https://f005.backblazeb2.com/file/plantbasedbalancestories/stories/codex-social-publish/2026-08-21-shane-front-squat-progress-cover.jpg',
+            url: 'https://f005.backblazeb2.com/file/plantbasedbalancestories/stories/codex-social-publish/2026-08-21-shane-front-squat-progress-ui-safe-v2-cover.jpg',
         },
     };
 }
@@ -196,6 +196,14 @@ async function publishReel(validation) {
 
 async function reconcileReel(validation) {
     const { plan, token } = validation;
+    const recent = await graph(`${igUserId()}/media`, 'GET', {
+        fields: 'id,caption,permalink,timestamp,media_product_type,thumbnail_url',
+        limit: 25,
+        access_token: token,
+    });
+    const matches = Array.isArray(recent.data)
+        ? recent.data.filter(item => clean(item.caption, 5000) === plan.caption)
+        : [];
     const priorReceipt = await privateSecret(RECEIPT_KEY);
     if (priorReceipt) {
         let parsed = {};
@@ -204,18 +212,11 @@ async function reconcileReel(validation) {
         const media = mediaId
             ? await graph(mediaId, 'GET', { fields: 'id,caption,permalink,timestamp,media_product_type,thumbnail_url', access_token: token })
             : {};
-        return { found: Boolean(mediaId), source: 'receipt', ...parsed, media };
+        return { found: Boolean(mediaId), source: 'receipt', matchCount: matches.length, ...parsed, media };
     }
 
-    const recent = await graph(`${igUserId()}/media`, 'GET', {
-        fields: 'id,caption,permalink,timestamp,media_product_type,thumbnail_url',
-        limit: 25,
-        access_token: token,
-    });
-    const match = Array.isArray(recent.data)
-        ? recent.data.find(item => clean(item.caption, 5000) === plan.caption)
-        : null;
-    if (!match) return { found: false, source: 'recent_media' };
+    const match = matches[0] || null;
+    if (!match) return { found: false, source: 'recent_media', matchCount: 0 };
 
     const receipt = {
         creationId: '',
@@ -228,7 +229,7 @@ async function reconcileReel(validation) {
         reconciled: true,
     };
     await setPrivateSecret(RECEIPT_KEY, JSON.stringify(receipt));
-    return { found: true, source: 'recent_media', ...receipt, media: match };
+    return { found: true, source: 'recent_media', matchCount: matches.length, ...receipt, media: match };
 }
 
 export default async request => {

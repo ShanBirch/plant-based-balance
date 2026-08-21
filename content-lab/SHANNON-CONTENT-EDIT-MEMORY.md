@@ -107,6 +107,12 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 - Keep all essential proof copy, metrics, coaching interpretation and CTA inside a conservative central content band, normally from about y=250 to y=1600 with at least 70 px side margins. Background media may extend behind the controls, but no important word, number, face or evidence detail may depend on those areas.
 - Review every new template with a realistic Instagram UI overlay before approval. Reject headline-at-the-top and CTA-at-the-bottom layouts even when the clean export looks technically inside the canvas.
 
+### Reels reserve the full Instagram playback UI
+
+- Treat Instagram's top profile/audio controls, right action rail, and bottom username/caption/navigation controls as reserved space in every 1080x1920 Reel.
+- Keep critical text, results and proof inside the conservative band x=64..870 and y=250..1550 unless a current Instagram overlay proves another safe area. Background footage may extend behind the controls; the story must not depend on anything there.
+- Overlay realistic Instagram playback UI on the final encoded MP4 and inspect every text-bearing scene at its busiest or longest state before approval or publishing. A clean editor canvas, midpoint-only contact sheet, cover crop or generic phone preview is not enough.
+
 ### Photo-share text must be selectable and phone-readable
 
 - Keep share colour and text layout as separate choices. A member can mix any available colour treatment with Bold, Scorecard or Simple text.
@@ -225,6 +231,7 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 
 | Date | Shannon's direction | Scalable rule | Affected formats |
 | --- | --- | --- | --- |
+| 2026-08-21 | I deleted it because some of the text interacted with the Instagram UI. Always check this. | Before approval or publishing, overlay realistic Instagram playback UI on the final encoded Reel and inspect every text-bearing scene at its busiest state. Reserve the top profile/audio area, right action rail and bottom caption/navigation area; keep critical 1080x1920 content inside x=64..870 and y=250..1550 unless a current overlay proves otherwise. Cover and clean-canvas QA are separate and insufficient. | Instagram Reels, exercise and progression videos, encoded contact sheets, phone previews and publishing gates |
 | 2026-08-21 | Treat Instagram viewers like distracted zombies: make the story unmistakable with huge text, not small labels scattered through a polished edit. | Apply a zombie-scroll clarity gate to short-form video. Every major beat gets one large declarative headline that makes sense alone, and a 3-5-second contact sheet must tell the full story without sound. Shorten or split copy before shrinking the main message. | Reels, Stories, proof videos, client progress videos, covers and phone-preview QA |
 | 2026-08-14 | Some of the text overlaps a few places. | QA every scene at its fully entered, maximum-motion and caption-active states. Keep closing titles, presenter media, cards, CTA and captions in separate lanes, and place decorative strikes behind readable text. | Science Reels, talking-head explainers, animated diagrams, closing cards and encoded phone-preview QA |
 | 2026-08-14 | Split the screen horizontally sometimes as well. | Mix side-by-side and top/bottom presenter/graphic layouts across longer explainers. Use horizontal splits selectively for simple concepts or recaps, preserve the complete face/head in the presenter band, and keep captions in a third non-overlapping lane. | Science Reels, talking-head explainers, split-screen layouts and phone-preview QA |

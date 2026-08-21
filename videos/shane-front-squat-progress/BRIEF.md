@@ -29,6 +29,7 @@ Create a sharp, client-led Balance progress Reel about Shane Minahan's front squ
 - Explain how the block worked before showing the weekly numbers: Monday heavy top-set and paused back-offs, Thursday volume and tempo work, and Saturday fast doubles and paused skill work.
 - Use the determined rock soundtrack as a perceptible music bed with restrained impact/switch sounds; no narration or synthetic presenter.
 - Apply the zombie-scroll clarity gate: every major beat gets one large declarative headline, and the contact sheet must tell the complete story without sound.
+- Apply the Instagram playback-UI gate across the encoded Reel: critical copy stays inside x 64-870 and y 250-1550, and every text-bearing scene is inspected with realistic top, right and bottom Reel controls before approval or publishing.
 - Close with the standard Balance logo treatment and a soft coaching bridge, not a hard sales CTA.
 
 ## Notes

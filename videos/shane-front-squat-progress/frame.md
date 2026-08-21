@@ -7,7 +7,9 @@ An editorial training ledger built from real gym footage and dated coaching rece
 ## Canvas and safety
 
 - 1080 x 1920, 9:16.
-- Keep essential text inside x 64-890 and y 220-1500.
+- Keep every critical word and number inside the conservative Instagram Reel playback-safe band: x 64-870 and y 250-1550.
+- Treat the top profile/audio chrome, right action rail and bottom username/caption/navigation area as reserved. Background footage may extend behind them; essential text may not.
+- Apply a realistic Instagram Reel UI overlay to every text-bearing scene after its longest line and largest animation state have entered. A clean export or cover crop alone is not approval evidence.
 - Cover-safe title stays in the central grid crop.
 - Real message wording is presented as editorial quote cards, never as a fake Instagram UI.
 

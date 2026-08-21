@@ -1,4 +1,4 @@
-const CONTENT_ID = '2026-08-21-shane-front-squat-progress';
+const CONTENT_ID = '2026-08-21-shane-front-squat-progress-ui-safe-v2';
 const APPROVAL_KEY = `${CONTENT_ID}-instagram-reel`;
 
 function clean(value, max = 5000) {
