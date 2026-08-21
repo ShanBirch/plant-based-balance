@@ -110,7 +110,29 @@ test('Balance Foundations is a six-week course that preserves the existing lesso
     assert.match(dashboard, /id: 'course-preview-locks-v1'/);
     assert.match(dashboard, /sel: '\.course-library-intro'/);
     assert.match(dashboard, /fallbackSel: '#learning-content'/);
-    assert.match(dashboard, /learning-inline\.js\?v=21/);
+    assert.match(dashboard, /learning-inline\.js\?v=22-identity-course/);
+    assert.match(dashboard, /balance-identity-course-v1/);
+});
+
+test('Balance Identity follows Foundations and shares the Week 7 to 12 journey progress', () => {
+    const learning = read('lib/learning-inline.js');
+    const dashboard = read('dashboard.html');
+    const socialJourney = read('js/dashboard/pbb-social-journey.js');
+    const identitySource = learning.match(/const BALANCE_IDENTITY = Object\.freeze\(\{[\s\S]*?\n    \}\);/)?.[0] || '';
+
+    assert.match(identitySource, /title: 'Balance Identity'/);
+    assert.equal((identitySource.match(/journeyWeek:\s*(?:7|8|9|10|11|12),/g) || []).length, 6);
+    assert.match(learning, /type: 'foundations'[\s\S]*type: 'identity'[\s\S]*\.\.\.getModulesSorted\(\)/);
+    assert.match(learning, /window\.socialJourney\.getIdentityCourseProgress\(\)/);
+    assert.match(learning, /id="balance-identity-course-card"|balance-identity-course-card/);
+    assert.match(learning, /window\.startBalanceIdentityWeek/);
+    assert.match(learning, /6 weekly lessons \+ action plans/);
+    assert.match(learning, /identityProgress\.completed/);
+    assert.match(socialJourney, /function getIdentityCourseProgress\(\)/);
+    assert.match(socialJourney, /WEEK_DEFINITIONS\.slice\(6\)/);
+    assert.match(socialJourney, /function openIdentityCourseWeek\(weekNumber\)/);
+    assert.match(socialJourney, /viewStage = 'course-lesson'/);
+    assert.match(dashboard, /learning-inline\.js\?v=22-identity-course/);
 });
 
 test('Founders Pass onboarding captures the real-world blocker behind consistency', () => {
