@@ -288,9 +288,6 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
     html.pbb-fitgotchi-hidden #balance-level-bar {
         display: flex;
     }
-    html.pbb-before-first-week #weekly-checkin-card {
-        display: none !important;
-    }
     .balance-level-card {
         display: flex;
         align-items: center;
@@ -1939,15 +1936,15 @@ if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-progressphoto.js?v=10"><\/script>');
 document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=33-home-theme"><\/script>');
     document.write('<script src="js/dashboard/pbb-social-journey.js?v=31-balance-identity"><\/script>');
-    document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=22-no-water-sleep"><\/script>');
-    document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=23"><\/script>');
+    document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=23-weekly-checkin"><\/script>');
+    document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=24-friday-checkin"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
     window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=10');
 window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=33-home-theme');
     window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=31-balance-identity');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=22-no-water-sleep');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=23');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=23-weekly-checkin');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=24-friday-checkin');
 }
 </script>
 
@@ -14858,11 +14855,11 @@ window.endFeatureTour = function(skipped){
       condition: function(){ try { return window.pbbNextSteps && window.pbbNextSteps.isPreviewEligible && window.pbbNextSteps.isPreviewEligible() && !!document.querySelector('#next-obvious-steps-card .next-step-action'); } catch(e){ return false; } }
     },
     {
-      id: 'weekly-checkin-preview-v9',
+      id: 'weekly-checkin-friday-form-v10',
       tab: 'dashboard',
       sel: '#weekly-checkin-card',
-      title: 'Weekly Review',
-      body: "A shimmering gold review card shows the person's onboarding goal, weekly progress, check-ins, mood signals, and one clear action to set next week goals.",
+      title: 'Weekly Check-In',
+      body: "From Friday to Sunday, review your weekly goals and tell Shannon what went well, what got in the way, and what support you need next.",
       condition: function(){ var c = document.getElementById('weekly-checkin-card'); return c && c.style.display !== 'none'; }
     },
     {
