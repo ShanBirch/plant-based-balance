@@ -194,16 +194,54 @@ async function publishReel(validation) {
     return receipt;
 }
 
+async function reconcileReel(validation) {
+    const { plan, token } = validation;
+    const priorReceipt = await privateSecret(RECEIPT_KEY);
+    if (priorReceipt) {
+        let parsed = {};
+        try { parsed = JSON.parse(priorReceipt); } catch {}
+        const mediaId = clean(parsed.mediaId || '', 120);
+        const media = mediaId
+            ? await graph(mediaId, 'GET', { fields: 'id,caption,permalink,timestamp,media_product_type,thumbnail_url', access_token: token })
+            : {};
+        return { found: Boolean(mediaId), source: 'receipt', ...parsed, media };
+    }
+
+    const recent = await graph(`${igUserId()}/media`, 'GET', {
+        fields: 'id,caption,permalink,timestamp,media_product_type,thumbnail_url',
+        limit: 25,
+        access_token: token,
+    });
+    const match = Array.isArray(recent.data)
+        ? recent.data.find(item => clean(item.caption, 5000) === plan.caption)
+        : null;
+    if (!match) return { found: false, source: 'recent_media' };
+
+    const receipt = {
+        creationId: '',
+        mediaId: clean(match.id, 120),
+        permalink: clean(match.permalink, 700),
+        timestamp: clean(match.timestamp, 100),
+        mediaProductType: clean(match.media_product_type, 100),
+        thumbnailUrl: clean(match.thumbnail_url, 1000),
+        requestedCoverUrl: plan.cover.url,
+        reconciled: true,
+    };
+    await setPrivateSecret(RECEIPT_KEY, JSON.stringify(receipt));
+    return { found: true, source: 'recent_media', ...receipt, media: match };
+}
+
 export default async request => {
     if (request.method !== 'POST') return json(405, { ok: false, error: 'method_not_allowed' });
     const body = await readBody(request);
     if (!authorized(request, body)) return json(401, { ok: false, error: 'unauthorized' });
     const mode = clean(body.mode || 'dry_run', 30);
-    if (!['dry_run', 'publish'].includes(mode)) return json(400, { ok: false, error: 'invalid_mode' });
+    if (!['dry_run', 'publish', 'status'].includes(mode)) return json(400, { ok: false, error: 'invalid_mode' });
     if (clean(body.idempotencyKey, 200) !== REQUIRED_IDEMPOTENCY_KEY) return json(400, { ok: false, error: 'invalid_idempotency_key' });
     try {
         const validation = await validatePlan();
         if (mode === 'dry_run') return json(200, { ok: true, mode, account: validation.account, plan: validation.plan, media: validation.media, cover: validation.cover });
+        if (mode === 'status') return json(200, { ok: true, mode, contentId: CONTENT_ID, account: validation.account, result: await reconcileReel(validation) });
         const result = await publishReel(validation);
         return json(200, { ok: true, mode, contentId: CONTENT_ID, account: validation.account, result });
     } catch (error) {

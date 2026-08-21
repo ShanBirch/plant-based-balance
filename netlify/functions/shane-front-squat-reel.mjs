@@ -17,7 +17,7 @@ export default async request => {
 
     const body = await request.json().catch(() => ({}));
     const mode = clean(body.mode || 'dry_run', 30);
-    if (!['dry_run', 'publish'].includes(mode)) return json(400, { ok: false, error: 'invalid_mode' });
+    if (!['dry_run', 'publish', 'status'].includes(mode)) return json(400, { ok: false, error: 'invalid_mode' });
     if (clean(body.approvalKey, 200) !== APPROVAL_KEY) return json(401, { ok: false, error: 'approval_key_invalid' });
 
     const siteUrl = clean(process.env.URL || process.env.SITE_URL || 'https://plantbased-balance.org', 400).replace(/\/+$/, '');
