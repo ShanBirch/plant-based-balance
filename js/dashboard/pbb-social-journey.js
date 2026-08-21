@@ -81,70 +81,76 @@
     },
     {
       week: 7,
-      phase: 'CONTINUATION · CHOOSE YOUR IDENTITY',
-      title: 'Give the account one simple job.',
-      body: 'Document the process, connect with people doing the same and keep your receipts.',
+      phase: 'BALANCE IDENTITY · TRAIN THE INPUTS',
+      title: 'Choose the inputs. Then choose the account.',
+      body: 'Your attention trains your feed, and your feed influences what feels normal. Reset the loop, plan a clear fitness account and start participating on purpose.',
       instagramAction: true,
       tasks: [
-        task('w7_purpose', 'Choose your account purpose', 'Write one sentence about what belongs there.', 'manual', 1, '🎯', 'instagram'),
-        task('w7_bio', 'Write or refresh your bio', 'Say what you are working on.', 'manual', 1, '✍️', 'instagram'),
-        task('w7_first_post', 'Make your first public post', 'Start with evidence you already shared in Balance.', 'manual', 1, '📷', 'instagram')
+        task('w7_plan', 'Build your fitness Instagram plan', 'Define the purpose, niche, audience, pillars, bio, boundaries and first posts.', 'planner', 1, '🧭', 'planner'),
+        task('w7_account', 'Create or repurpose your account', 'Set up the handle and bio from your plan. A private account is allowed.', 'manual', 1, '📱', 'instagram'),
+        task('w7_reset', 'Reset twenty algorithm inputs', 'Mute five noisy accounts, follow ten useful accounts and save five useful posts.', 'manual', 1, '🔄', 'instagram'),
+        task('w7_daily_comments', 'Leave 3 meaningful Instagram comments today', 'Do this on at least seven days this week. Respond to the person or the idea, not just the photo.', 'daily_manual', 7, '💬', 'instagram')
       ]
     },
     {
       week: 8,
-      phase: 'CONTINUATION · KEEP IT LIGHT',
-      title: 'Build a routine you can repeat.',
-      body: 'Posting comes from the work you are already doing. It does not become another full-time job.',
+      phase: 'BALANCE IDENTITY · PUBLISH THE EVIDENCE',
+      title: 'Build your first content rhythm.',
+      body: 'Publish from work you already did, then use deliberate conversations to become part of the fitness community.',
       tasks: [
         task('w8_workouts', 'Complete two workouts', 'The behaviour still comes first.', 'workout_days', 2, '🏋️', 'movement'),
-        task('w8_ig_shares', 'Share two Instagram Stories', 'Use one workout and one meal.', 'instagram_shares', 2, '◎', 'instagram'),
-        task('w8_comments', 'Leave five Feed replies', 'Keep the safe community active too.', 'feed_comments', 5, '💬', 'feed')
+        task('w8_first_post', 'Publish your first fitness post', 'Use one of the three post ideas in your plan and evidence you already have.', 'manual', 1, '📷', 'instagram'),
+        task('w8_ig_shares', 'Share three Instagram Stories', 'Use a workout, a meal and one honest reflection.', 'instagram_shares', 3, '◎', 'instagram'),
+        task('w8_daily_comments', 'Leave 3 meaningful Instagram comments today', 'Repeat on at least seven days. Start real conversations in your niche.', 'daily_manual', 7, '💬', 'instagram')
       ]
     },
     {
       week: 9,
-      phase: 'CONTINUATION · REVIEW THE INPUTS',
+      phase: 'BALANCE IDENTITY · AUDIT THE LOOP',
       title: 'Notice what your feed is teaching you.',
       body: 'Review the algorithm again and keep only the signals that help the pattern you want.',
       instagramAction: true,
       tasks: [
         task('w9_review', 'Review your Explore page', 'Notice what your recent behaviour trained.', 'manual', 1, '🔎', 'instagram'),
         task('w9_remove', 'Remove five noisy inputs', 'Mute, unfollow or stop feeding them.', 'manual', 1, '🔇', 'instagram'),
-        task('w9_save', 'Save three useful examples', 'Collect ideas you would actually use.', 'manual', 1, '🔖', 'instagram')
+        task('w9_save', 'Save ten useful examples', 'Collect ideas you would genuinely adapt, not copy.', 'manual', 1, '🔖', 'instagram'),
+        task('w9_daily_comments', 'Leave 3 meaningful Instagram comments today', 'Repeat on at least seven days and notice which conversations change your feed.', 'daily_manual', 7, '💬', 'instagram')
       ]
     },
     {
       week: 10,
-      phase: 'CONTINUATION · YOUR WEEKLY RHYTHM',
+      phase: 'BALANCE IDENTITY · YOUR WEEKLY RHYTHM',
       title: 'Do the work, then document it.',
       body: 'The public routine stays downstream of training, food and real life.',
       tasks: [
         task('w10_workouts', 'Complete two workouts', 'Keep the centre of the system intact.', 'workout_days', 2, '🏋️', 'movement'),
+        task('w10_post', 'Publish one useful fitness post', 'Teach or document one thing from your real week.', 'manual', 1, '📷', 'instagram'),
         task('w10_ig_shares', 'Share three Instagram Stories', 'Use evidence from the week.', 'instagram_shares', 3, '◎', 'instagram'),
-        task('w10_comments', 'Leave five Feed replies', 'Support people without spamming them.', 'feed_comments', 5, '💬', 'feed')
+        task('w10_daily_comments', 'Leave 3 meaningful Instagram comments today', 'Repeat on at least seven days. Be specific, useful and human.', 'daily_manual', 7, '💬', 'instagram')
       ]
     },
     {
       week: 11,
-      phase: 'CONTINUATION · TELL ONE USEFUL STORY',
+      phase: 'BALANCE IDENTITY · TELL ONE USEFUL STORY',
       title: 'Give the evidence some meaning.',
       body: 'Move beyond posting a receipt and explain one small thing you learned from it.',
       tasks: [
         task('w11_story', 'Tell one useful progress story', 'What happened, what helped and what comes next.', 'manual', 1, '🗣️', 'instagram'),
         task('w11_ig_shares', 'Share three Instagram Stories', 'Keep the rest simple and honest.', 'instagram_shares', 3, '◎', 'instagram'),
-        task('w11_comments', 'Leave five Feed replies', 'Stay connected inside Balance.', 'feed_comments', 5, '💬', 'feed')
+        task('w11_balance_support', 'Support ten people in Balance Feed', 'Keep contributing inside the safe practice space too.', 'feed_comments', 10, '🤝', 'feed'),
+        task('w11_daily_comments', 'Leave 3 meaningful Instagram comments today', 'Repeat on at least seven days. Ask questions and follow up on replies.', 'daily_manual', 7, '💬', 'instagram')
       ]
     },
     {
       week: 12,
-      phase: 'CONTINUATION · KEEP THE PATTERN',
+      phase: 'BALANCE IDENTITY · KEEP THE PATTERN',
       title: 'Choose what you will keep doing.',
       body: 'Finish with a sustainable rhythm and a clear reason for documenting the journey.',
       tasks: [
         task('w12_recap', 'Post your twelve-week recap', 'Share the pattern, not just the result.', 'manual', 1, '📝', 'instagram'),
         task('w12_ig_shares', 'Share three Instagram Stories', 'Keep your normal weekly rhythm.', 'instagram_shares', 3, '◎', 'instagram'),
-        task('w12_comments', 'Support ten Feed posts', 'Finish by contributing to the community.', 'feed_comments', 10, '💬', 'feed')
+        task('w12_rhythm', 'Write your next four-week rhythm', 'Choose a sustainable number of workouts, posts, Stories and conversations.', 'manual', 1, '🗓️', 'planner'),
+        task('w12_daily_comments', 'Leave 3 meaningful Instagram comments today', 'Repeat on at least seven days. Finish as a contributor, not a broadcaster.', 'daily_manual', 7, '💬', 'instagram')
       ]
     }
   ];
@@ -156,7 +162,7 @@
     lesson('Your environment is part of the plan.', 'What you repeatedly see, save and return to quietly shapes what feels normal.', ['Mute inputs that create noise or comparison.', 'Follow people who model the pattern you want.', 'Train your algorithm with deliberate attention.']),
     lesson('Let the goal choose the share.', 'Sharing works best when it comes from real training and food choices instead of pressure to create content.', ['Start with a workout or meal you already completed.', 'Use Balance share tools to lower the friction.', 'One honest public rep is enough.']),
     lesson('Identity grows from visible repetitions.', 'You do not need to perform a new personality. Keep showing the small actions that already belong to you.', ['Document the process instead of proving a result.', 'Choose a rhythm that survives messy weeks.', 'Let consistency become the interesting part.']),
-    lesson('Give your account one simple job.', 'A clear purpose makes it easier to know what belongs on your Instagram and what does not.', ['Name what you are working on.', 'Write a bio that matches the journey.', 'Make the first post from evidence you already have.']),
+    lesson('Your inputs train two prediction systems.', 'Instagram learns from what you watch, search, save, follow, share and comment on. It predicts what will hold your attention and gives you more of it. Your own brain is also learning from repeated exposure: what you see often can start to feel more available, important and normal. The feed does not determine who you become, but it is part of the environment shaping your attention. Data input affects output, and that output becomes your next input.', ['Audit before you create: mute comparison and noise, then deliberately search, follow and save the kind of fitness you want around you.', 'Participate before you broadcast: three meaningful comments a day gives the platform clearer signals and gives you evidence that you belong in the conversation.', 'Plan an account with one purpose, a specific niche and honest boundaries. Every post then becomes both public evidence and a vote for the identity you are practising.']),
     lesson('Keep content downstream of the work.', 'Training and food remain the centre. Sharing is a light record of what happened.', ['Complete the behaviour first.', 'Reuse a meal or workout as a Story.', 'Keep Balance Feed as your safe practice space.']),
     lesson('Your feed reflects your attention.', 'An algorithm audit shows whether your recent choices are supporting the person you want to become.', ['Review Explore without judging it.', 'Remove five inputs that pull you off course.', 'Save examples you would genuinely use.']),
     lesson('A rhythm should fit real life.', 'A simple weekly pattern is more useful than a posting plan that needs perfect energy and spare time.', ['Keep workouts at the centre.', 'Choose three honest Story moments.', 'Stay connected without turning it into a job.']),
@@ -443,7 +449,11 @@
     };
     const definition = getWeekDefinition();
     const tasks = definition.tasks.map(item => {
-      const current = item.type === 'manual' ? (manual.has(item.id) ? 1 : 0) : Number(counts[item.type] || 0);
+      const current = item.type === 'manual'
+        ? (manual.has(item.id) ? 1 : 0)
+        : (item.type === 'planner'
+          ? (isInstagramPlanComplete(instagramPlan()) ? 1 : 0)
+          : (item.type === 'daily_manual' ? currentWeekDailyTaskCount(item.id) : Number(counts[item.type] || 0)));
       return Object.assign({}, item, {
         current,
         complete: current >= item.target,
@@ -471,6 +481,28 @@
     return safeArray(safeObject(state && state.settings).lesson_seen_weeks)
       .map(Number)
       .filter(week => week >= 1 && week <= 12);
+  }
+
+  function instagramPlan() {
+    return safeObject(safeObject(state && state.settings).instagram_plan);
+  }
+
+  function isInstagramPlanComplete(plan) {
+    const value = safeObject(plan);
+    const required = ['purpose', 'niche', 'audience', 'identity_statement', 'account_name', 'bio', 'posting_rhythm', 'boundaries', 'first_posts'];
+    const pillars = String(value.content_pillars || '').split(/\n|,/).map(item => item.trim()).filter(Boolean);
+    return required.every(key => String(value[key] || '').trim().length > 0) && pillars.length >= 3;
+  }
+
+  function dailyTaskDates(taskId) {
+    const dates = safeObject(safeObject(state && state.settings).daily_task_dates)[taskId];
+    return safeArray(dates).map(String);
+  }
+
+  function currentWeekDailyTaskCount(taskId) {
+    const start = state.week_started_at;
+    const end = addDaysKey(start, 7);
+    return new Set(dailyTaskDates(taskId).filter(key => key >= start && key < end)).size;
   }
 
   function isCurrentLessonSeen() {
@@ -557,7 +589,7 @@
     card.style.display = 'block';
     card.innerHTML = '<div class="social-journey-card__inner">'
       + '<div class="social-journey-card__week-art"><span>WEEK</span><strong>' + String(definition.week).padStart(2, '0') + '</strong></div>'
-      + '<div class="social-journey-card__eyebrow">' + (!lessonSeen ? 'A message from Coach Shannon' : 'Balance Foundations &middot; Week ' + definition.week) + '</div>'
+      + '<div class="social-journey-card__eyebrow">' + (!lessonSeen ? 'A message from Coach Shannon' : (definition.week >= 7 ? 'Balance Identity' : 'Balance Foundations') + ' &middot; Week ' + definition.week) + '</div>'
       + '<div class="social-journey-card__title">' + escapeHtml(cardTitle) + '</div>'
       + '<div class="social-journey-card__copy">' + escapeHtml(cardCopy) + '</div>'
       + '<div class="social-journey-card__row"><div class="social-journey-card__progress"><span style="width:' + percent + '%"></span></div><div class="social-journey-card__count">' + completed + ' / ' + total + '</div></div>'
@@ -566,6 +598,8 @@
 
   function taskActionLabel(item) {
     if (item.type === 'manual') return item.complete ? 'Completed' : 'Mark done';
+    if (item.type === 'planner') return item.complete ? 'Edit plan' : 'Build plan';
+    if (item.type === 'daily_manual') return dailyTaskDates(item.id).includes(brisbaneDateKey()) ? 'Today done' : 'Mark today done';
     if (item.action === 'feed') return 'Open Feed';
     if (item.action === 'feed-photo') return 'Take my first Feed photo';
     if (item.action === 'meals') return 'Open Nutrition';
@@ -579,12 +613,14 @@
     return tasks.map(item => {
       const value = item.type === 'manual'
         ? (item.complete ? 'Done' : 'Open')
-        : Math.min(item.current, item.target) + ' / ' + item.target;
+        : (item.type === 'planner'
+          ? (item.complete ? 'Ready' : 'Not started')
+          : (item.type === 'daily_manual' ? Math.min(item.current, item.target) + ' / ' + item.target + ' days' : Math.min(item.current, item.target) + ' / ' + item.target));
       return '<article class="social-journey-task ' + (item.complete ? 'is-complete' : '') + '">'
         + '<div class="social-journey-task__icon">' + (item.complete ? '✓' : item.icon) + '</div>'
         + '<div><div class="social-journey-task__title">' + escapeHtml(item.label) + '</div><div class="social-journey-task__hint">' + escapeHtml(item.hint) + '</div></div>'
         + '<div class="social-journey-task__value">' + escapeHtml(value) + '</div>'
-        + '<button type="button" class="social-journey-task__action ' + (item.type === 'manual' ? 'is-check' : '') + '" onclick="socialJourney.taskAction(\'' + item.id + '\')">' + escapeHtml(taskActionLabel(item)) + '</button>'
+        + '<button type="button" class="social-journey-task__action ' + ((item.type === 'manual' || item.type === 'daily_manual') ? 'is-check' : '') + '" onclick="socialJourney.taskAction(\'' + item.id + '\')">' + escapeHtml(taskActionLabel(item)) + '</button>'
         + '</article>';
     }).join('');
   }
@@ -631,6 +667,15 @@
     return '<section class="social-journey-section"><div class="social-journey-section-heading-row"><h3 class="social-journey-section__heading">This week\'s focus</h3><button type="button" onclick="socialJourney.editWeeklyGoals()">Edit goals</button></div><div class="social-journey-weekly-focus">' + rows + '</div></section>';
   }
 
+  function renderInstagramPlanSummary() {
+    if (!state || Number(state.current_week) < 7) return '';
+    const plan = instagramPlan();
+    if (!isInstagramPlanComplete(plan)) {
+      return '<section class="social-journey-section"><h3 class="social-journey-section__heading">Your fitness Instagram plan</h3><div class="social-journey-callout"><strong>Turn the idea into a decision.</strong><p>Define who the account is for, what it will document and the boundaries that keep it healthy.</p></div><button type="button" class="social-journey-button secondary" onclick="socialJourney.openInstagramPlanner()">Build my plan</button></section>';
+    }
+    return '<section class="social-journey-section"><h3 class="social-journey-section__heading">Your fitness Instagram plan</h3><div class="social-journey-plan-summary"><span>Purpose</span><strong>' + escapeHtml(plan.purpose) + '</strong><span>Niche</span><strong>' + escapeHtml(plan.niche) + '</strong><span>Identity</span><strong>' + escapeHtml(plan.identity_statement) + '</strong></div><button type="button" class="social-journey-button secondary" onclick="socialJourney.openInstagramPlanner()">Review my plan</button></section>';
+  }
+
   function renderJourney() {
     ensureUi();
     const container = document.getElementById('social-journey-content');
@@ -661,8 +706,9 @@
       + '<div class="social-journey-goals-hero__label">YOUR NEXT STEPS</div><h2>' + escapeHtml(definition.title) + '</h2><p>' + escapeHtml(definition.body) + '</p>' + weekDots() + '</section>'
       + renderDailyPlan()
       + renderWeeklyGoalFocus()
-      + '<section class="social-journey-section"><h3 class="social-journey-section__heading">Foundations this week</h3>' + renderTasks() + '</section>'
-      + (definition.week === 6 ? '<div class="social-journey-callout"><strong>Foundations is complete after this phase.</strong><p>Weeks 7 to 12 are the optional continuation track for building a public rhythm.</p></div>' : '')
+      + renderInstagramPlanSummary()
+      + '<section class="social-journey-section"><h3 class="social-journey-section__heading">' + (definition.week >= 7 ? 'Balance Identity this week' : 'Foundations this week') + '</h3>' + renderTasks() + '</section>'
+      + (definition.week === 6 ? '<div class="social-journey-callout"><strong>Next: Balance Identity.</strong><p>Before planning an account, you will learn how your data inputs train your feed and how repeated exposure can shape what feels normal.</p></div>' : '')
       + (complete ? '<div class="social-journey-callout"><strong>This week is complete.</strong><p>Your next lesson will arrive with the next week. For now, keep the actions small and repeatable.</p></div>' : '')
       + '<section class="social-journey-section"><h3 class="social-journey-section__heading">Reminder route</h3><div class="social-journey-callout"><strong>' + (connectedHandle ? connectedHandle : 'In-app first') + '</strong><p>' + escapeHtml(reminderText) + '</p></div>'
       + '<button type="button" class="social-journey-button secondary" onclick="socialJourney.openReminderSetup()">' + (connectedHandle ? 'Review Instagram reminder' : 'Connect Instagram reminder') + '</button>' + instagramButton + '</section>'
@@ -685,15 +731,18 @@
     if (!container || !state) return;
     const definition = getWeekDefinition();
     const lessonCopy = WEEK_LESSONS[definition.week - 1];
-    document.querySelector('.social-journey-header__title').textContent = 'Your first lesson';
-    document.querySelector('.social-journey-header__week').textContent = 'How the course works';
+    const isFirstLesson = definition.week === 1;
+    document.querySelector('.social-journey-header__title').textContent = isFirstLesson ? 'Your first lesson' : (definition.week >= 7 ? 'Balance Identity' : 'Week ' + definition.week + ' lesson');
+    document.querySelector('.social-journey-header__week').textContent = 'Week ' + definition.week + ' of 12';
     container.innerHTML = '<section class="social-journey-lesson">'
       + '<div class="social-journey-lesson__number"><span>WEEK</span><strong>' + String(definition.week).padStart(2, '0') + '</strong></div>'
       + '<div class="social-journey-lesson__eyebrow">' + escapeHtml(definition.phase) + '</div>'
-      + '<h2>' + escapeHtml(lessonCopy.title) + '</h2><p>Your first Balance Foundations lesson is interactive. Read each part, then choose the answer that makes the most sense to you.</p></section>'
-      + '<section class="social-journey-learn-card"><div class="social-journey-section__heading">How to answer</div>'
-      + '<div class="social-journey-learn-points"><div><span>01</span><p>Answer honestly rather than trying to guess the perfect response.</p></div><div><span>02</span><p>If you miss one, keep going. The explanation is part of the lesson.</p></div><div><span>03</span><p>When you finish, Balance will bring you back to your next steps.</p></div></div></section>'
-      + '<div class="social-journey-lesson-action"><button type="button" class="social-journey-button" onclick="socialJourney.startFirstCourseLesson()">Begin my first lesson</button><button type="button" class="social-journey-text-button" onclick="socialJourney.close()">Not now</button></div>';
+      + '<h2>' + escapeHtml(lessonCopy.title) + '</h2><p>' + escapeHtml(isFirstLesson ? 'Your first Balance Foundations lesson is interactive. Read each part, then choose the answer that makes the most sense to you.' : lessonCopy.body) + '</p></section>'
+      + '<section class="social-journey-learn-card"><div class="social-journey-section__heading">' + (isFirstLesson ? 'How to answer' : 'Put it into practice') + '</div>'
+      + '<div class="social-journey-learn-points">' + (isFirstLesson
+        ? '<div><span>01</span><p>Answer honestly rather than trying to guess the perfect response.</p></div><div><span>02</span><p>If you miss one, keep going. The explanation is part of the lesson.</p></div><div><span>03</span><p>When you finish, Balance will bring you back to your next steps.</p></div>'
+        : lessonCopy.points.map(function(point, index){ return '<div><span>' + String(index + 1).padStart(2, '0') + '</span><p>' + escapeHtml(point) + '</p></div>'; }).join('')) + '</div></section>'
+      + '<div class="social-journey-lesson-action"><button type="button" class="social-journey-button" onclick="' + (isFirstLesson ? 'socialJourney.startFirstCourseLesson()' : 'socialJourney.showGoals()') + '">' + (isFirstLesson ? 'Begin my first lesson' : (definition.week === 7 ? 'I understand the loop - build my plan' : 'Use this lesson')) + '</button><button type="button" class="social-journey-text-button" onclick="socialJourney.close()">Not now</button></div>';
   }
 
   function renderWelcome() {
@@ -852,7 +901,7 @@
   }
 
   function reviewLesson() {
-    if (!hasCompletedWelcomeAudio()) {
+    if (Number(state && state.current_week) === 1 && !hasCompletedWelcomeAudio()) {
       showToast('Listen to Shannon’s full voice note before continuing.', 'info');
       const audio = document.getElementById('social-journey-welcome-audio');
       if (audio) {
@@ -1014,6 +1063,93 @@
     await calculateProgress();
     renderCard();
     renderJourney();
+  }
+
+  async function completeDailyTask(taskId) {
+    const today = brisbaneDateKey();
+    const settings = Object.assign({}, safeObject(state.settings));
+    const allDates = Object.assign({}, safeObject(settings.daily_task_dates));
+    const dates = new Set(safeArray(allDates[taskId]).map(String));
+    if (dates.has(today)) {
+      showToast('Today is already counted. Come back tomorrow for the next three conversations.', 'info');
+      return;
+    }
+    dates.add(today);
+    allDates[taskId] = Array.from(dates).sort();
+    settings.daily_task_dates = allDates;
+    await upsertState({ settings });
+    await calculateProgress();
+    renderCard();
+    renderJourney();
+    showToast('Three meaningful Instagram comments counted for today.', 'success');
+  }
+
+  function plannerField(id, label, prompt, value, multiline) {
+    const tag = multiline
+      ? '<textarea id="' + id + '" rows="3" placeholder="' + escapeHtml(prompt) + '">' + escapeHtml(value || '') + '</textarea>'
+      : '<input id="' + id + '" type="text" placeholder="' + escapeHtml(prompt) + '" value="' + escapeHtml(value || '') + '">';
+    return '<label class="social-journey-planner-field"><span>' + escapeHtml(label) + '</span><small>' + escapeHtml(prompt) + '</small>' + tag + '</label>';
+  }
+
+  function renderInstagramPlanner() {
+    ensureUi();
+    const sheet = document.getElementById('social-journey-onboarding-sheet');
+    const plan = instagramPlan();
+    sheet.innerHTML = '<div class="social-journey-onboarding__visual"><div class="social-journey-onboarding__step">Balance Identity</div><h2>Plan your fitness Instagram.</h2><p>Make the decisions once, so posting becomes evidence instead of a daily identity crisis.</p></div>'
+      + '<form class="social-journey-onboarding__body social-journey-planner" onsubmit="event.preventDefault();socialJourney.saveInstagramPlan()">'
+      + plannerField('sj-plan-purpose', 'Purpose', 'Why does this account exist?', plan.purpose, true)
+      + plannerField('sj-plan-niche', 'Niche', 'Be specific: topic, angle and stage of the journey.', plan.niche, false)
+      + plannerField('sj-plan-audience', 'Audience', 'Who should feel understood or helped here?', plan.audience, true)
+      + plannerField('sj-plan-identity', 'Identity statement', 'I am someone who...', plan.identity_statement, true)
+      + plannerField('sj-plan-pillars', 'Three content pillars', 'Write at least three, one per line. Example: workouts, plant-based meals, honest progress.', plan.content_pillars, true)
+      + plannerField('sj-plan-account', 'Account name or handle', 'New account, existing account or a working name.', plan.account_name, false)
+      + plannerField('sj-plan-bio', 'Bio draft', 'Who you are, what you document and why someone should stay.', plan.bio, true)
+      + plannerField('sj-plan-rhythm', 'Posting rhythm', 'Example: one post and three Stories each week.', plan.posting_rhythm, false)
+      + plannerField('sj-plan-boundaries', 'Privacy and boundaries', 'Public or private? What will you never share?', plan.boundaries, true)
+      + plannerField('sj-plan-first-posts', 'First three post ideas', 'Write three simple posts you can make from real evidence.', plan.first_posts, true)
+      + '<div id="sj-plan-status" class="social-journey-status" role="status" aria-live="polite">Complete every field and include at least three content pillars.</div>'
+      + '<button type="submit" class="social-journey-button">Save my Instagram plan</button><button type="button" class="social-journey-text-button" onclick="socialJourney.closeReminderSetup()">Close</button></form>';
+  }
+
+  function openInstagramPlanner() {
+    renderInstagramPlanner();
+    const overlay = document.getElementById('social-journey-onboarding');
+    overlay.classList.add('is-open');
+    overlay.setAttribute('aria-hidden', 'false');
+  }
+
+  async function saveInstagramPlan() {
+    const read = id => String((document.getElementById(id) || {}).value || '').trim();
+    const plan = {
+      purpose: read('sj-plan-purpose'),
+      niche: read('sj-plan-niche'),
+      audience: read('sj-plan-audience'),
+      identity_statement: read('sj-plan-identity'),
+      content_pillars: read('sj-plan-pillars'),
+      account_name: read('sj-plan-account'),
+      bio: read('sj-plan-bio'),
+      posting_rhythm: read('sj-plan-rhythm'),
+      boundaries: read('sj-plan-boundaries'),
+      first_posts: read('sj-plan-first-posts'),
+      updated_at: new Date().toISOString()
+    };
+    const status = document.getElementById('sj-plan-status');
+    if (!isInstagramPlanComplete(plan)) {
+      if (status) status.textContent = 'Please complete every field and list at least three distinct content pillars.';
+      return;
+    }
+    if (status) status.textContent = 'Saving your plan...';
+    try {
+      const settings = Object.assign({}, safeObject(state.settings), { instagram_plan: plan });
+      await upsertState({ settings });
+      await calculateProgress();
+      renderCard();
+      renderJourney();
+      closeReminderSetup();
+      showToast('Your fitness Instagram plan is ready.', 'success');
+    } catch (error) {
+      if (status) status.textContent = error.message || 'Your plan could not be saved yet.';
+    }
   }
 
   function openInstagram() {
@@ -1197,6 +1333,14 @@
       await toggleManualTask(item.id);
       return;
     }
+    if (item.type === 'planner') {
+      openInstagramPlanner();
+      return;
+    }
+    if (item.type === 'daily_manual') {
+      await completeDailyTask(item.id);
+      return;
+    }
     switchTo(item.action);
   }
 
@@ -1333,12 +1477,15 @@
     getWelcomeAudioUrl: function () { return WELCOME_AUDIO_URL; },
     startActivation,
     useGoals,
+    showGoals,
     reviewLesson,
     startFirstCourseLesson,
     completeFirstCourseLesson,
     refresh,
     taskAction,
     openInstagram,
+    openInstagramPlanner,
+    saveInstagramPlan,
     openReminderSetup,
     closeReminderSetup,
     connectSelectedInstagram,
@@ -1347,6 +1494,8 @@
     restart,
     _test: {
       WEEK_DEFINITIONS,
+      WEEK_LESSONS,
+      isInstagramPlanComplete,
       brisbaneDateKey,
       getWeekDefinition: function () { return getWeekDefinition(); }
     }

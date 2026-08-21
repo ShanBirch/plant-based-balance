@@ -84,8 +84,8 @@ test('Home plan cards stay below the complete FitGotchi stats block', () => {
     assert.match(source, /characterBlockTail\.parentNode\.insertBefore\(weeklyGoals, characterBlockTail\.nextSibling\)/);
     assert.match(source, /characterBlockTail\.parentNode\.insertBefore\(card, characterBlockTail\.nextSibling\)/);
     assert.doesNotMatch(source, /levelStrip\.parentNode\.insertBefore\((weeklyGoals|card), levelStrip\.nextSibling\)/);
-    assert.match(html, /pbb-social-journey\.js\?v=30-character-stats-tail/);
-    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v330'/);
+    assert.match(html, /pbb-social-journey\.js\?v=31-balance-identity/);
+    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v333-balance-identity'/);
 });
 
 test('Home goals and plan cards follow light and dark mode', () => {
@@ -98,7 +98,7 @@ test('Home goals and plan cards follow light and dark mode', () => {
     assert.match(css, /html\[data-pbb-theme="dark"\]\.pbb-unified-next-steps #next-obvious-steps-card\.is-unified-plan \.next-step-action/);
     assert.match(css, /weekly-goal-progress-card__value\.is-complete/);
     assert.match(css, /html\.pbb-unified-next-steps #weekly-goals-card\.weekly-goals-home-card\s*\{[\s\S]*?margin: 10px 25px 14px !important/);
-    assert.match(html, /pbb-social-journey\.css\?v=20-goals-gap/);
+    assert.match(html, /pbb-social-journey\.css\?v=21-identity-planner/);
     assert.match(html, /pbb-deferred-weeklygoals\.js\?v=33-home-theme/);
 });
 
@@ -128,6 +128,41 @@ test('journey UI is lesson-led, card-triggered and preserves account data on res
     assert.doesNotMatch(source, /Your inbox|Welcome to your Inbox/);
     assert.match(source, /settings\s*\n\s*}\);/);
     assert.doesNotMatch(source, /from\(['"]users['"]\).*delete/i);
+});
+
+test('Balance Identity teaches the input-output loop before the Instagram plan', () => {
+    const source = fs.readFileSync(path.join(root, 'js/dashboard/pbb-social-journey.js'), 'utf8');
+    const html = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
+
+    assert.match(source, /Your inputs train two prediction systems/);
+    assert.match(source, /Data input affects output, and that output becomes your next input/);
+    assert.match(source, /The feed does not determine who you become/);
+    assert.match(source, /I understand the loop - build my plan/);
+    assert.match(source, /socialJourney\.showGoals\(\)/);
+    assert.match(html, /balance-identity-instagram-plan-v1/);
+    assert.match(html, /title:'Build Your Fitness Instagram'|title: 'Build Your Fitness Instagram'/);
+});
+
+test('Instagram planner captures a complete strategy in owned journey settings', () => {
+    const source = fs.readFileSync(path.join(root, 'js/dashboard/pbb-social-journey.js'), 'utf8');
+
+    for (const field of ['purpose', 'niche', 'audience', 'identity_statement', 'content_pillars', 'account_name', 'bio', 'posting_rhythm', 'boundaries', 'first_posts']) {
+        assert.match(source, new RegExp(field));
+    }
+    assert.match(source, /instagram_plan: plan/);
+    assert.match(source, /isInstagramPlanComplete\(instagramPlan\(\)\)/);
+    assert.match(source, /Save my Instagram plan/);
+});
+
+test('Weeks 7 to 12 require three meaningful Instagram comments on seven distinct days', () => {
+    const source = fs.readFileSync(path.join(root, 'js/dashboard/pbb-social-journey.js'), 'utf8');
+    const dailyTasks = source.match(/task\('w(?:7|8|9|10|11|12)_daily_comments',[\s\S]*?'daily_manual', 7/g) || [];
+
+    assert.equal(dailyTasks.length, 6);
+    assert.match(source, /Leave 3 meaningful Instagram comments today/);
+    assert.match(source, /daily_task_dates/);
+    assert.match(source, /new Set\(dailyTaskDates\(taskId\)/);
+    assert.match(source, /Today is already counted/);
 });
 
 test('journey styling uses the Balance cream and gold system in both themes', () => {

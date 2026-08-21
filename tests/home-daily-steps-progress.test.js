@@ -36,11 +36,11 @@ test('versioned phone assets advance for the Home fix', () => {
   const dashboard = read('dashboard.html');
   const serviceWorker = read('sw.js');
 
-  assert.match(dashboard, /pbb-social-journey\.css\?v=20-goals-gap/);
-  assert.match(dashboard, /pbb-social-journey\.js\?v=30-character-stats-tail/);
+  assert.match(dashboard, /pbb-social-journey\.css\?v=21-identity-planner/);
+  assert.match(dashboard, /pbb-social-journey\.js\?v=31-balance-identity/);
   assert.match(dashboard, /pbb-next-obvious-steps\.js\?v=22-no-water-sleep/);
   assert.match(dashboard, /dashboard-script-1-daily_weighin_card_logic\.js\?v=73/);
   assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=47/);
-  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v330'/);
+  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v333-balance-identity'/);
   assert.match(serviceWorker, /dashboard-script-10-points_widget_functions\.js\?v=47/);
 });
