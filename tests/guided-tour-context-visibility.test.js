@@ -26,7 +26,7 @@ test('walkthrough keeps surrounding page context readable', () => {
   assert.match(premiumOverlays, /#guided-tour-overlay\.tour-page-view #guided-tour-spotlight[\s\S]*?rgba\(26, 24, 20, 0\.08\)/);
   assert.doesNotMatch(premiumOverlays, /#guided-tour-spotlight[\s\S]*?rgba\(29, 15, 50, 0\.78\)/);
   assert.match(dashboard, /pbb-premium-overlays\.css\?v=96-tour-context/);
-  assert.match(serviceWorker, /pbb-app-v340-complete-workout-share/);
+  assert.match(serviceWorker, /pbb-app-v341-stacked-workout-share/);
 });
 
 test('page-level stops opt into the softer context view', () => {

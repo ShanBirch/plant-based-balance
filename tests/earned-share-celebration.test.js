@@ -24,8 +24,8 @@ assert.ok(dashboard.includes("id: 'earned-share-celebrations-v1'"), 'returning u
 assert.ok(dashboard.includes("title:'Your wins now move'"), 'new users need the guided tour step');
 assert.ok(dashboard.includes('lib/stories.js?v=73'), 'Feed renderer cache key must be bumped');
 assert.ok(dashboard.includes("id: 'instagram-motion-share-v1'"), 'returning users need the motion share Feature Drop');
-assert.ok(dashboard.includes('dashboard-script-10-points_widget_functions.js?v=48'), 'share renderer cache key must be bumped');
-assert.ok(serviceWorker.includes("const CACHE_NAME = 'pbb-app-v340-complete-workout-share'"), 'service worker cache must be bumped');
-assert.ok(serviceWorker.includes('dashboard-script-10-points_widget_functions.js?v=48'), 'service worker must precache the new renderer');
+assert.ok(dashboard.includes('dashboard-script-10-points_widget_functions.js?v=49'), 'share renderer cache key must be bumped');
+assert.ok(serviceWorker.includes("const CACHE_NAME = 'pbb-app-v341-stacked-workout-share'"), 'service worker cache must be bumped');
+assert.ok(serviceWorker.includes('dashboard-script-10-points_widget_functions.js?v=49'), 'service worker must precache the new renderer');
 
 console.log('earned share celebration contract passed');

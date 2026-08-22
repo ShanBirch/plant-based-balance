@@ -16,8 +16,8 @@ assert.match(
     'workout shares should offer a dedicated All lifts layout'
 );
 assert.ok(
-    dashboardSource.includes('dashboard-script-10-points_widget_functions.js?v=48')
-        && serviceWorkerSource.includes('dashboard-script-10-points_widget_functions.js?v=48'),
+    dashboardSource.includes('dashboard-script-10-points_widget_functions.js?v=49')
+        && serviceWorkerSource.includes('dashboard-script-10-points_widget_functions.js?v=49'),
     'phones should fetch and precache the comprehensive share composer'
 );
 assert.match(
@@ -39,6 +39,16 @@ assert.match(
     shareSource,
     /function pbbShareDrawCompleteWorkout\([\s\S]*pbbShareCompactSetDetails\(exercise\)/,
     'the comprehensive renderer should draw each exercise with all of its set details'
+);
+assert.match(
+    shareSource,
+    /pbbShareFillRoundRect\(ctx, contentX, y, contentW, metricH[\s\S]*pbbShareFillRoundRect\(ctx, x, rowY, columnW, cardH/,
+    'the chosen layout should use a compact metrics card followed by separate lift cards'
+);
+assert.match(
+    shareSource,
+    /if \(hasPB\) \{[\s\S]*ctx\.fillStyle = '#f5c45c';[\s\S]*ctx\.fill\(\);/,
+    'PB lift cards should receive the selected gold edge treatment'
 );
 assert.match(
     shareSource,

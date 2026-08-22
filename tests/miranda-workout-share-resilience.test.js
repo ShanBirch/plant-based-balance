@@ -58,11 +58,11 @@ assert.ok(
 assert.ok(
     dashboardSource.includes('dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=190-exercise-video-bridge') &&
         dashboardSource.includes('pbb-deferred-formcheck.js?v=58-ios-exercise-video-upload') &&
-        dashboardSource.includes('dashboard-script-10-points_widget_functions.js?v=48') &&
-        serviceWorkerSource.includes("const CACHE_NAME = 'pbb-app-v340-complete-workout-share'") &&
+        dashboardSource.includes('dashboard-script-10-points_widget_functions.js?v=49') &&
+        serviceWorkerSource.includes("const CACHE_NAME = 'pbb-app-v341-stacked-workout-share'") &&
         serviceWorkerSource.includes('./js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=190-exercise-video-bridge') &&
         serviceWorkerSource.includes('./js/dashboard/pbb-deferred-formcheck.js?v=58-ios-exercise-video-upload') &&
-        serviceWorkerSource.includes('./js/dashboard/dashboard-script-10-points_widget_functions.js?v=48'),
+        serviceWorkerSource.includes('./js/dashboard/dashboard-script-10-points_widget_functions.js?v=49'),
     'phones must fetch all three Miranda workout/share repairs'
 );
 

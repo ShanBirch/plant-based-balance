@@ -3954,76 +3954,95 @@ function pbbShareCompactSetDetails(exercise) {
     }).join('  |  ') || String(exercise && exercise.best || `${exercise && exercise.sets || 0} sets`);
 }
 
-function pbbShareDrawCompleteWorkout(ctx, cardPayload, width, contentBottom, brandTop) {
+function pbbShareDrawCompleteWorkout(ctx, cardPayload, width, contentBottom, brandTop, target) {
     const exercises = Array.isArray(cardPayload.exercises) ? cardPayload.exercises : [];
-    const contentX = 54;
+    const contentX = 64;
     const contentW = width - (contentX * 2);
-    const panelTop = brandTop + 112;
-    const panelBottom = contentBottom - 4;
-    const panelH = panelBottom - panelTop;
+    const pbCount = Array.isArray(cardPayload.pbs) ? cardPayload.pbs.length : 0;
+    const isFeed = target === 'feed';
+    const columnCount = exercises.length > 8 ? 2 : 1;
+    const rowsPerColumn = Math.max(1, Math.ceil(exercises.length / columnCount));
+    const columnGap = 14;
+    const columnW = (contentW - (columnGap * (columnCount - 1))) / columnCount;
+    const headerH = isFeed ? 72 : 84;
+    const metricH = isFeed ? 90 : 104;
+    const cardGap = isFeed ? 8 : 11;
+    const desiredCardH = isFeed ? 76 : 92;
+    const minimumStackTop = brandTop + (isFeed ? 190 : 350);
+    const fixedH = headerH + metricH + 24;
+    const availableCardH = Math.max(56, (contentBottom - minimumStackTop - fixedH - (cardGap * rowsPerColumn)) / rowsPerColumn);
+    const cardH = Math.min(desiredCardH, availableCardH);
+    const stackH = fixedH + (rowsPerColumn * (cardH + cardGap));
+    let y = contentBottom - stackH;
 
-    pbbShareFillRoundRect(ctx, 32, panelTop, width - 64, panelH, 34, 'rgba(2, 6, 23, 0.82)');
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `900 ${isFeed ? 30 : 36}px Arial, sans-serif`;
+    ctx.fillText('COMPLETE WORKOUT', contentX, y + (isFeed ? 30 : 36));
+    if (pbCount > 0) {
+        ctx.fillStyle = '#f5c45c';
+        ctx.font = `900 ${isFeed ? 17 : 20}px Arial, sans-serif`;
+        ctx.fillText(`${pbCount} PB${pbCount === 1 ? '' : 'S'}`, contentX, y + (isFeed ? 56 : 66));
+    }
+    y += headerH;
+
+    pbbShareFillRoundRect(ctx, contentX, y, contentW, metricH, 18, 'rgba(2, 6, 23, 0.62)');
     ctx.save();
     ctx.shadowColor = 'transparent';
-    pbbShareRoundRect(ctx, 32, panelTop, width - 64, panelH, 34);
-    ctx.strokeStyle = 'rgba(245,196,92,0.86)';
-    ctx.lineWidth = 3;
+    pbbShareRoundRect(ctx, contentX, y, contentW, metricH, 18);
+    ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+    ctx.lineWidth = 2;
     ctx.stroke();
     ctx.restore();
 
-    let y = panelTop + 48;
-    ctx.fillStyle = '#f5c45c';
-    ctx.font = '900 24px Arial, sans-serif';
-    ctx.fillText('COMPLETE WORKOUT', contentX, y);
-    const pbCount = Array.isArray(cardPayload.pbs) ? cardPayload.pbs.length : 0;
-    if (pbCount > 0) {
-        ctx.textAlign = 'right';
-        ctx.fillText(`${pbCount} PB${pbCount === 1 ? '' : 'S'}`, contentX + contentW, y);
-        ctx.textAlign = 'left';
-    }
-
-    y += 58;
-    ctx.fillStyle = '#ffffff';
-    pbbShareSetFittedFont(ctx, String(cardPayload.workout_name || 'Workout').toUpperCase(), contentW, 58, 34);
-    ctx.fillText(String(cardPayload.workout_name || 'Workout').toUpperCase(), contentX, y);
-    y += 54;
-
-    ctx.save();
-    ctx.shadowColor = 'transparent';
-    ctx.fillStyle = 'rgba(245,196,92,0.82)';
-    ctx.fillRect(contentX, y, contentW, 3);
-    ctx.restore();
-    y += 54;
-    pbbShareDrawLargeMetricColumns(ctx, pbbShareWorkoutMetrics(cardPayload), contentX, y, contentW, {
-        valueSize: 36,
-        labelSize: 17
+    const metrics = pbbShareWorkoutMetrics(cardPayload);
+    const metricW = contentW / metrics.length;
+    metrics.forEach((metric, index) => {
+        const metricCenter = contentX + (metricW * index) + (metricW / 2);
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#ffffff';
+        pbbShareSetFittedFont(ctx, metric[1], metricW - 30, isFeed ? 25 : 30, 19);
+        ctx.fillText(metric[1], metricCenter, y + (isFeed ? 38 : 44));
+        ctx.fillStyle = 'rgba(255,255,255,0.72)';
+        ctx.font = `800 ${isFeed ? 13 : 15}px Arial, sans-serif`;
+        ctx.fillText(metric[0], metricCenter, y + (isFeed ? 65 : 76));
     });
-    y += 78;
+    ctx.textAlign = 'left';
+    y += metricH + 14;
 
-    const columnCount = exercises.length > 7 ? 2 : 1;
-    const rowsPerColumn = Math.max(1, Math.ceil(exercises.length / columnCount));
-    const columnGap = 38;
-    const columnW = (contentW - (columnGap * (columnCount - 1))) / columnCount;
-    const availableH = Math.max(100, panelBottom - y - 24);
-    const rowH = availableH / rowsPerColumn;
-    const nameSize = Math.max(17, Math.min(columnCount === 1 ? 29 : 24, rowH * 0.32));
-    const detailSize = Math.max(14, Math.min(columnCount === 1 ? 23 : 19, rowH * 0.25));
+    const nameSize = Math.max(15, Math.min(columnCount === 1 ? 24 : 20, cardH * 0.28));
+    const detailSize = Math.max(12, Math.min(columnCount === 1 ? 18 : 15, cardH * 0.22));
 
     exercises.forEach((exercise, index) => {
         const column = Math.floor(index / rowsPerColumn);
         const row = index % rowsPerColumn;
         const x = contentX + (column * (columnW + columnGap));
-        const rowY = y + (row * rowH);
+        const rowY = y + (row * (cardH + cardGap));
         const hasPB = !!exercise.has_pb;
         const name = String(exercise.name || 'Exercise');
         const details = pbbShareCompactSetDetails(exercise);
 
-        ctx.fillStyle = hasPB ? '#f5c45c' : '#ffffff';
-        pbbShareSetFittedFont(ctx, name, columnW, nameSize, Math.max(14, nameSize - 8));
-        ctx.fillText(name, x, rowY);
+        pbbShareFillRoundRect(ctx, x, rowY, columnW, cardH, 16, 'rgba(2, 6, 23, 0.68)');
+        ctx.save();
+        ctx.shadowColor = 'transparent';
+        pbbShareRoundRect(ctx, x, rowY, columnW, cardH, 16);
+        ctx.strokeStyle = hasPB ? 'rgba(245,196,92,0.46)' : 'rgba(255,255,255,0.13)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        if (hasPB) {
+            pbbShareRoundRect(ctx, x, rowY, 7, cardH, 4);
+            ctx.fillStyle = '#f5c45c';
+            ctx.fill();
+        }
+        ctx.restore();
+
+        const textX = x + (hasPB ? 28 : 22);
+        const textW = columnW - (hasPB ? 48 : 44);
+        ctx.fillStyle = '#ffffff';
+        pbbShareSetFittedFont(ctx, name, textW, nameSize, Math.max(13, nameSize - 7));
+        ctx.fillText(name, textX, rowY + Math.max(24, cardH * 0.38));
         ctx.fillStyle = hasPB ? '#fde68a' : 'rgba(255,255,255,0.82)';
-        pbbShareSetFittedFont(ctx, details, columnW, detailSize, 12);
-        ctx.fillText(details, x, rowY + Math.max(24, rowH * 0.42));
+        pbbShareSetFittedFont(ctx, details, textW, detailSize, 11);
+        ctx.fillText(details, textX, rowY + Math.max(45, cardH * 0.73));
     });
 }
 
@@ -4070,7 +4089,7 @@ async function pbbShareDrawFullBleedWorkoutCard(ctx, cardPayload, width, height,
         : (cardPayload.workout_name || 'Workout');
 
     if (textStyle === 'full' && cardType === 'workout') {
-        pbbShareDrawCompleteWorkout(ctx, cardPayload, width, contentBottom, brandTop);
+        pbbShareDrawCompleteWorkout(ctx, cardPayload, width, contentBottom, brandTop, target);
         ctx.restore();
         return;
     }
