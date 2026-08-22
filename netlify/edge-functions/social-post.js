@@ -1,6 +1,6 @@
 const DEFAULT_GRAPH_BASE = 'https://graph.instagram.com';
 const DEFAULT_IG_USER_ID = '17841415641641750';
-const CONTENT_ID = '2026-08-21-shane-front-squat-progress-ui-safe-v2';
+const CONTENT_ID = '2026-08-22-balance-week-five-challenge-review-v2';
 const REQUIRED_IDEMPOTENCY_KEY = `${CONTENT_ID}-instagram-reel`;
 const RECEIPT_KEY = `social_publish_receipt_${CONTENT_ID.replace(/-/g, '_')}`;
 
@@ -38,14 +38,14 @@ function postPlan() {
         contentId: CONTENT_ID,
         kind: 'reel',
         account: 'shan_n_sunny',
-        caption: `Shane's front-squat journey actually started because the two of us were doing them together.\n\nI'm pretty sure I hit around 100 kg. Then, a few days later, Shane sent through 100 kg too and told me it wasn't easy.\n\nThen I backed out of front squats 😂\n\nBut I told him he shouldn't. He was moving well, and I reckoned he had a lot more there.\n\nA few weeks later he hit 130 kg after the rest of his session. That's when we set the proper target: 150 kg over eight weeks.\n\nThen every session got a job.\n\nMonday: a heavy top set and paused back-offs.\n\nThursday: volume and tempo.\n\nSaturday: speed and skill.\n\nI set the direction and kept adjusting the plan. Shane did the bit nobody can fake. He showed up, sent the lifts through, took the feedback and kept moving forward.\n\nHonestly, watching him go through the whole journey and eventually smash 150 kg was an absolute pleasure.\n\nAnd by week seven, he didn't just hit it. He hit it for two.\n\nI backed out. Shane kept going 😂\n\nFucking unreal effort, mate.`,
+        caption: `Week 5 of 6 complete.\n\nThe work kept moving. Kay brought the kicks, Shane kept the reps moving, the plant-based meals backed the week up, and the community kept showing up for each other.\n\nOne week left. Keep showing up.\n\nWhat was your win this week?`,
         media: {
             type: 'video',
             mime: 'video/mp4',
             width: 1080,
             height: 1920,
-            durationSeconds: 62,
-            url: 'https://f005.backblazeb2.com/file/plantbasedbalancestories/stories/codex-social-publish/2026-08-21-shane-front-squat-progress-ui-safe-v2.mp4',
+            durationSeconds: 34.58,
+            url: 'https://f005.backblazeb2.com/file/plantbasedbalancestories/stories/codex-social-publish/2026-08-22-balance-week-five-challenge-review-v2.mp4',
         },
         cover: {
             mime: 'image/jpeg',
@@ -53,7 +53,7 @@ function postPlan() {
             height: 1920,
             fullCoverChecked: true,
             profileGridChecked: true,
-            url: 'https://f005.backblazeb2.com/file/plantbasedbalancestories/stories/codex-social-publish/2026-08-21-shane-front-squat-progress-ui-safe-v2-cover.jpg',
+            url: 'https://f005.backblazeb2.com/file/plantbasedbalancestories/stories/codex-social-publish/2026-08-22-balance-week-five-challenge-review-v2-cover.jpg',
         },
     };
 }
@@ -251,3 +251,4 @@ export default async request => {
 };
 
 export const config = { path: '/api/social/post' };
+
