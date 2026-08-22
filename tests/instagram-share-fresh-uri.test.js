@@ -40,9 +40,9 @@ assert.ok(
     'the remote app must bypass legacy Android bridges that reuse Instagram URIs'
 );
 assert.ok(
-        dashboard.includes('dashboard-script-10-points_widget_functions.js?v=47') &&
-        serviceWorker.includes("const CACHE_NAME = 'pbb-app-v315'") &&
-        serviceWorker.includes('./js/dashboard/dashboard-script-10-points_widget_functions.js?v=47'),
+        dashboard.includes('dashboard-script-10-points_widget_functions.js?v=48') &&
+        serviceWorker.includes("const CACHE_NAME = 'pbb-app-v340-complete-workout-share'") &&
+        serviceWorker.includes('./js/dashboard/dashboard-script-10-points_widget_functions.js?v=48'),
     'the repaired share path must be cache-busted for installed apps'
 );
 

@@ -3476,7 +3476,8 @@ const PBB_SHARE_OVERLAY_STYLES = [
 const PBB_SHARE_TEXT_STYLES = [
     { id: 'bold', label: 'Bold' },
     { id: 'scorecard', label: 'Scorecard' },
-    { id: 'simple', label: 'Simple' }
+    { id: 'simple', label: 'Simple' },
+    { id: 'full', label: 'All lifts', contexts: ['workout'] }
 ];
 const pbbShareOverlaySelections = {
     workout: 'classic',
@@ -3522,6 +3523,11 @@ function pbbShareNormalizeTextStyle(style) {
     return PBB_SHARE_TEXT_STYLES.some(option => option.id === safeStyle) ? safeStyle : 'bold';
 }
 
+function pbbShareTextStyleOptions(context) {
+    const safeContext = pbbShareNormalizeContext(context);
+    return PBB_SHARE_TEXT_STYLES.filter(option => !option.contexts || option.contexts.includes(safeContext));
+}
+
 function pbbShareApplyPhotoStyle(ctx, width, height, style, target) {
     const safeStyle = pbbShareNormalizeOverlayStyle(style);
     if (safeStyle === 'classic') return;
@@ -3562,15 +3568,39 @@ function buildWorkoutShareCardPayload() {
     if (!completedWorkoutDataForShare) return null;
 
     const data = completedWorkoutDataForShare;
+    const workoutPBs = Array.isArray(data.newPBs) ? data.newPBs : [];
+    const normaliseExerciseName = value => String(value || '').trim().toLowerCase();
     const exerciseMap = {};
     (data.sets || []).forEach(set => {
         const name = set.exercise || set.exercise_name || 'Exercise';
         if (!exerciseMap[name]) {
-            exerciseMap[name] = { name, sets: 0, bestKg: 0, bestReps: 0 };
+            exerciseMap[name] = { name, sets: 0, bestKg: 0, bestReps: 0, setDetails: [] };
         }
         exerciseMap[name].sets++;
-        const kg = parseFloat(set.kg) || 0;
+        const kg = parseFloat(set.kg != null ? set.kg : set.weight_kg) || 0;
         const reps = parseInt(set.reps) || 0;
+        const seconds = parseInt(set.duration_seconds != null ? set.duration_seconds : set.seconds) || 0;
+        const matchingPB = workoutPBs.find(pb => {
+            if (normaliseExerciseName(pb.exercise || pb.exercise_name) !== normaliseExerciseName(name)) return false;
+            const pbType = String(pb.pb_type || pb.type || 'weight').toLowerCase();
+            if (pbType === 'reps') {
+                return Number(pb.value || pb.new_value || 0) === reps
+                    && (!Number(pb.weight || pb.new_weight_kg || 0) || Number(pb.weight || pb.new_weight_kg || 0) === kg);
+            }
+            return Number(pb.value || pb.new_value || 0) === kg
+                && (!Number(pb.reps || pb.new_reps || 0) || Number(pb.reps || pb.new_reps || 0) === reps);
+        });
+        const value = kg > 0
+            ? `${pbbPointsFormatWeightFromKg(kg)} x ${reps}`
+            : (reps > 0 ? `${reps} reps` : (seconds > 0 ? `${seconds} sec` : 'Completed'));
+        exerciseMap[name].setDetails.push({
+            set: Number(set.set || set.set_number || exerciseMap[name].sets),
+            weight_kg: kg,
+            reps: reps,
+            seconds: seconds,
+            value: value,
+            is_pb: !!matchingPB
+        });
         if (kg > exerciseMap[name].bestKg) {
             exerciseMap[name].bestKg = kg;
             exerciseMap[name].bestReps = reps;
@@ -3582,17 +3612,19 @@ function buildWorkoutShareCardPayload() {
     const exercises = Object.values(exerciseMap).map(ex => ({
         name: ex.name,
         sets: ex.sets,
-        best: ex.bestKg > 0 ? `${ex.sets}x${ex.bestReps} @ ${pbbPointsFormatWeightFromKg(ex.bestKg)}` : (ex.bestReps > 0 ? `${ex.sets}x${ex.bestReps}` : `${ex.sets} sets`)
+        best: ex.bestKg > 0 ? `${ex.sets}x${ex.bestReps} @ ${pbbPointsFormatWeightFromKg(ex.bestKg)}` : (ex.bestReps > 0 ? `${ex.sets}x${ex.bestReps}` : `${ex.sets} sets`),
+        set_details: ex.setDetails,
+        has_pb: ex.setDetails.some(set => set.is_pb)
     }));
 
     let totalVolume = 0;
     (data.sets || []).forEach(set => {
-        const kg = parseFloat(set.kg) || 0;
+        const kg = parseFloat(set.kg != null ? set.kg : set.weight_kg) || 0;
         const reps = parseInt(set.reps) || 0;
         totalVolume += kg * reps;
     });
 
-    const pbs = (data.newPBs || []).map(pb => ({
+    const pbs = workoutPBs.map(pb => ({
         exercise: pb.exercise,
         type: pb.type,
         value: pb.value,
@@ -3903,6 +3935,98 @@ function pbbShareDrawFeaturedSets(ctx, cardPayload, x, y, width, limit) {
     return y;
 }
 
+function pbbShareCompactSetDetails(exercise) {
+    const details = Array.isArray(exercise && exercise.set_details) ? exercise.set_details : [];
+    const groups = [];
+    details.forEach(detail => {
+        const value = String(detail.value || 'Completed');
+        const isPB = !!detail.is_pb;
+        const previous = groups[groups.length - 1];
+        if (previous && previous.value === value && previous.isPB === isPB) {
+            previous.count += 1;
+        } else {
+            groups.push({ value, isPB, count: 1 });
+        }
+    });
+    return groups.map(group => {
+        const value = group.count > 1 ? `${group.count} x (${group.value})` : group.value;
+        return group.isPB ? `${value}  PB` : value;
+    }).join('  |  ') || String(exercise && exercise.best || `${exercise && exercise.sets || 0} sets`);
+}
+
+function pbbShareDrawCompleteWorkout(ctx, cardPayload, width, contentBottom, brandTop) {
+    const exercises = Array.isArray(cardPayload.exercises) ? cardPayload.exercises : [];
+    const contentX = 54;
+    const contentW = width - (contentX * 2);
+    const panelTop = brandTop + 112;
+    const panelBottom = contentBottom - 4;
+    const panelH = panelBottom - panelTop;
+
+    pbbShareFillRoundRect(ctx, 32, panelTop, width - 64, panelH, 34, 'rgba(2, 6, 23, 0.82)');
+    ctx.save();
+    ctx.shadowColor = 'transparent';
+    pbbShareRoundRect(ctx, 32, panelTop, width - 64, panelH, 34);
+    ctx.strokeStyle = 'rgba(245,196,92,0.86)';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.restore();
+
+    let y = panelTop + 48;
+    ctx.fillStyle = '#f5c45c';
+    ctx.font = '900 24px Arial, sans-serif';
+    ctx.fillText('COMPLETE WORKOUT', contentX, y);
+    const pbCount = Array.isArray(cardPayload.pbs) ? cardPayload.pbs.length : 0;
+    if (pbCount > 0) {
+        ctx.textAlign = 'right';
+        ctx.fillText(`${pbCount} PB${pbCount === 1 ? '' : 'S'}`, contentX + contentW, y);
+        ctx.textAlign = 'left';
+    }
+
+    y += 58;
+    ctx.fillStyle = '#ffffff';
+    pbbShareSetFittedFont(ctx, String(cardPayload.workout_name || 'Workout').toUpperCase(), contentW, 58, 34);
+    ctx.fillText(String(cardPayload.workout_name || 'Workout').toUpperCase(), contentX, y);
+    y += 54;
+
+    ctx.save();
+    ctx.shadowColor = 'transparent';
+    ctx.fillStyle = 'rgba(245,196,92,0.82)';
+    ctx.fillRect(contentX, y, contentW, 3);
+    ctx.restore();
+    y += 54;
+    pbbShareDrawLargeMetricColumns(ctx, pbbShareWorkoutMetrics(cardPayload), contentX, y, contentW, {
+        valueSize: 36,
+        labelSize: 17
+    });
+    y += 78;
+
+    const columnCount = exercises.length > 7 ? 2 : 1;
+    const rowsPerColumn = Math.max(1, Math.ceil(exercises.length / columnCount));
+    const columnGap = 38;
+    const columnW = (contentW - (columnGap * (columnCount - 1))) / columnCount;
+    const availableH = Math.max(100, panelBottom - y - 24);
+    const rowH = availableH / rowsPerColumn;
+    const nameSize = Math.max(17, Math.min(columnCount === 1 ? 29 : 24, rowH * 0.32));
+    const detailSize = Math.max(14, Math.min(columnCount === 1 ? 23 : 19, rowH * 0.25));
+
+    exercises.forEach((exercise, index) => {
+        const column = Math.floor(index / rowsPerColumn);
+        const row = index % rowsPerColumn;
+        const x = contentX + (column * (columnW + columnGap));
+        const rowY = y + (row * rowH);
+        const hasPB = !!exercise.has_pb;
+        const name = String(exercise.name || 'Exercise');
+        const details = pbbShareCompactSetDetails(exercise);
+
+        ctx.fillStyle = hasPB ? '#f5c45c' : '#ffffff';
+        pbbShareSetFittedFont(ctx, name, columnW, nameSize, Math.max(14, nameSize - 8));
+        ctx.fillText(name, x, rowY);
+        ctx.fillStyle = hasPB ? '#fde68a' : 'rgba(255,255,255,0.82)';
+        pbbShareSetFittedFont(ctx, details, columnW, detailSize, 12);
+        ctx.fillText(details, x, rowY + Math.max(24, rowH * 0.42));
+    });
+}
+
 async function pbbShareDrawFullBleedWorkoutCard(ctx, cardPayload, width, height, target) {
     const cardType = cardPayload.card_type === 'pb' ? 'pb' : 'workout';
     const textStyle = pbbShareNormalizeTextStyle(cardPayload.share_text_style);
@@ -3911,7 +4035,7 @@ async function pbbShareDrawFullBleedWorkoutCard(ctx, cardPayload, width, height,
     // Keep every important word and number clear of Instagram's reply and navigation controls.
     const contentBottom = target === 'feed' ? height - 72 : height - 132;
 
-    const fadeStart = textStyle === 'simple' ? 0.60 : 0.46;
+    const fadeStart = textStyle === 'full' ? (target === 'feed' ? 0.08 : 0.22) : (textStyle === 'simple' ? 0.60 : 0.46);
     const lowerGradient = ctx.createLinearGradient(0, height * fadeStart, 0, height);
     lowerGradient.addColorStop(0, 'rgba(2, 6, 23, 0)');
     lowerGradient.addColorStop(0.58, textStyle === 'simple' ? 'rgba(2, 6, 23, 0.12)' : 'rgba(2, 6, 23, 0.24)');
@@ -3944,6 +4068,12 @@ async function pbbShareDrawFullBleedWorkoutCard(ctx, cardPayload, width, height,
     const title = cardType === 'pb'
         ? (cardPayload.exercise || 'Personal best')
         : (cardPayload.workout_name || 'Workout');
+
+    if (textStyle === 'full' && cardType === 'workout') {
+        pbbShareDrawCompleteWorkout(ctx, cardPayload, width, contentBottom, brandTop);
+        ctx.restore();
+        return;
+    }
 
     if (textStyle === 'scorecard') {
         const panelHeight = cardType === 'pb'
@@ -4831,6 +4961,7 @@ async function renderBalanceShareStylePreview(context, cardPayload, photoDataUrl
     previewWrap.style.display = 'block';
     controls.style.display = 'block';
     const supportsTextStyle = pbbShareSupportsTextStyle(safeContext);
+    const textStyleOptions = pbbShareTextStyleOptions(safeContext);
     controls.innerHTML = `
         <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:9px; color:#ffffff; -webkit-text-fill-color:#ffffff;">
             <span style="font-size:0.78rem; font-weight:900;">Colour</span>
@@ -4845,8 +4976,8 @@ async function renderBalanceShareStylePreview(context, cardPayload, photoDataUrl
                 <span style="font-size:0.78rem; font-weight:900;">Text layout</span>
                 <span data-balance-share-text-style-name="${safeContext}" style="font-size:0.72rem; font-weight:900; color:#fde68a; -webkit-text-fill-color:#fde68a;"></span>
             </div>
-            <div style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px;">
-                ${PBB_SHARE_TEXT_STYLES.map(option => `<button type="button" data-balance-share-text-style="${option.id}" onclick="selectBalanceShareTextStyle('${safeContext}','${option.id}')" style="min-width:0; border:1px solid rgba(255,255,255,0.28); border-radius:999px; padding:9px 6px; background:rgba(255,255,255,0.1); color:#ffffff; -webkit-text-fill-color:#ffffff; font:inherit; font-size:0.7rem; font-weight:900; cursor:pointer;">${option.label}</button>`).join('')}
+            <div style="display:grid; grid-template-columns:repeat(${textStyleOptions.length === 4 ? 2 : 3},minmax(0,1fr)); gap:7px;">
+                ${textStyleOptions.map(option => `<button type="button" data-balance-share-text-style="${option.id}" onclick="selectBalanceShareTextStyle('${safeContext}','${option.id}')" style="min-width:0; border:1px solid rgba(255,255,255,0.28); border-radius:999px; padding:9px 6px; background:rgba(255,255,255,0.1); color:#ffffff; -webkit-text-fill-color:#ffffff; font:inherit; font-size:0.7rem; font-weight:900; cursor:pointer;">${option.label}</button>`).join('')}
             </div>` : ''}`;
 
     if (previewWrap.dataset.balanceShareSwipeBound !== 'true') {
@@ -4880,7 +5011,8 @@ async function updateBalanceShareStylePreview(context) {
     const style = getBalanceShareOverlayStyle(safeContext);
     const option = PBB_SHARE_OVERLAY_STYLES.find(item => item.id === style) || PBB_SHARE_OVERLAY_STYLES[0];
     const textStyle = getBalanceShareTextStyle(safeContext);
-    const textOption = PBB_SHARE_TEXT_STYLES.find(item => item.id === textStyle) || PBB_SHARE_TEXT_STYLES[0];
+    const textStyleOptions = pbbShareTextStyleOptions(safeContext);
+    const textOption = textStyleOptions.find(item => item.id === textStyle) || textStyleOptions[0];
     const token = ++state.renderToken;
     previewImage.style.opacity = '0.58';
     previewImage.setAttribute('aria-busy', 'true');

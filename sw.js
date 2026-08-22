@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v339-next-step-actions'; // v339: prioritise Course work and keep every Home action tappable
+const CACHE_NAME = 'pbb-app-v340-complete-workout-share'; // v340: share every workout lift and mark exact PB sets
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -23,7 +23,7 @@ const ASSETS = [
   './css/dashboard/pbb-onboarding-comeback.css?v=8',
   './css/dashboard/pbb-onboarding-foundations.css?v=5-mobile-viewport',
   './js/dashboard/dashboard-script-7-video_logic.js?v=20260815-exercise-thumbnails',
-    './js/dashboard/dashboard-script-10-points_widget_functions.js?v=47',
+    './js/dashboard/dashboard-script-10-points_widget_functions.js?v=48',
   './js/dashboard/pbb-deferred-formcheck.js?v=58-ios-exercise-video-upload',
   './js/dashboard/pbb-deferred-workoutbuilder.js?v=10',
   './js/dashboard/pbb-deferred-yourworkouts.js',

@@ -13783,6 +13783,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'movement-tab', sel:'#share-workout-ig-story-btn', fallbackSel:'#today-workout-card', title:'Workout Story +15 XP', fallbackTitle:'Share your workout to Story', body:'After a workout, add a photo and tap the full-width IG Story button. The first workout Story share each day earns +15 XP.', fallbackBody:'Finish a workout, add a photo, then share it to IG Story for +15 XP once a day.', condition: function(){ return !!document.getElementById('share-workout-ig-story-btn') || !!document.getElementById('today-workout-card'); } },
     { tab:'movement-tab', sel:'#today-workout-card', title:'Photo + workout overlays', body:"Choose Photo + workout or Photo + PB after a session. Balance places the result over your gym photo in a clean transparent overlay, then shows you a preview before posting." },
     { tab:'movement-tab', sel:'#workout-share-style-controls', fallbackSel:'#today-workout-card', title:'Choose your text layout', fallbackTitle:'Choose your text layout', body:'After adding a workout or PB photo, choose Bold, Scorecard, or Simple under Text layout. Mix it with any colour, then share that exact preview to Balance Feed or Instagram.', fallbackBody:'Finish a workout and add a photo. In the preview, choose the colour and a Bold, Scorecard, or Simple text layout before sharing.', condition: function(){ return !!document.getElementById('workout-share-style-controls') || !!document.getElementById('today-workout-card'); } },
+    { tab:'movement-tab', sel:'#workout-share-style-controls', fallbackSel:'#today-workout-card', title:'Share every lift', fallbackTitle:'Share every lift', body:'Choose All lifts under Text layout to share every exercise and logged set from the workout. Any set that created a PB is marked in gold.', fallbackBody:'Finish a workout, add a gym photo, then choose All lifts under Text layout to share the complete session and mark any PBs.', condition: function(){ return !!document.getElementById('workout-share-style-controls') || !!document.getElementById('today-workout-card'); } },
     { tab:'friends', sel:'.feed-post-card', fallbackSel:'#feed-composer-card', title:'Your wins now move', fallbackTitle:'Your wins now move', body:'Workout, activity and PB posts play a quick gold celebration in Balance Feed. Instagram shares now open as a short motion card with your photo and results.', fallbackBody:'Share a workout, activity or PB to see the gold celebration. Instagram shares now move too, with an automatic still fallback on older phones.' },
     { tab:'movement-tab', sel:'#today-workout-card', title:'Milestone celebrations', body:"When you hit bigger workout count or streak milestones, Balance pops up a celebration card you can share to Feed for +10 XP.", quick: true },
     { tab:'dashboard', sel:'#weekly-progress-photo-card,#weekly-progress-photo-done-card', title:'Progress photos to Instagram', body:"After your weekly progress photos save, tap IG Story to share a Balance progress card straight to Instagram.", condition: function(){ return !!document.querySelector('#weekly-progress-photo-card,#weekly-progress-photo-done-card'); } },
@@ -15240,6 +15241,17 @@ window.endFeatureTour = function(skipped){
     fallbackTitle: 'Choose your text layout',
     body: 'Workout and PB photo shares now have Bold, Scorecard, and Simple text layouts. Choose one under the colour controls, then send that exact preview to Balance Feed or Instagram.',
     fallbackBody: 'Finish a workout and add a photo. In the preview, mix any colour with a Bold, Scorecard, or Simple text layout before sharing.',
+    condition: function(){ return !!document.getElementById('workout-share-style-controls') || !!document.getElementById('today-workout-card'); }
+  });
+  allFeatures.push({
+    id: 'complete-workout-share-layout-v1',
+    tab: 'movement-tab',
+    sel: '#workout-share-style-controls',
+    fallbackSel: '#today-workout-card',
+    title: 'Share every lift',
+    fallbackTitle: 'Share every lift',
+    body: 'Workout photo shares now include an All lifts layout. It lists every exercise and logged set, with the exact PB set marked in gold.',
+    fallbackBody: 'Finish a workout and add a gym photo. Choose All lifts under Text layout to share the complete session and mark any PBs.',
     condition: function(){ return !!document.getElementById('workout-share-style-controls') || !!document.getElementById('today-workout-card'); }
   });
   allFeatures.push({
@@ -18355,13 +18367,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-        s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=47';
+        s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=48';
             s.onload = function() { if(window._crumb)window._crumb('script10_deferred_loaded'); };
             document.head.appendChild(s);
         }, 1500);
     }, { once: true });
 } else {
-        document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=47"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=48"><\/script>');
 }
 </script>
 

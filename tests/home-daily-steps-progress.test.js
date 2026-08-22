@@ -52,7 +52,7 @@ test('versioned phone assets advance for the Home fix', () => {
   assert.match(dashboard, /pbb-social-journey\.js\?v=34-next-step-priority/);
   assert.match(dashboard, /pbb-next-obvious-steps\.js\?v=27-working-targets/);
   assert.match(dashboard, /dashboard-script-1-daily_weighin_card_logic\.js\?v=73/);
-  assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=47/);
-  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v339-next-step-actions'/);
-  assert.match(serviceWorker, /dashboard-script-10-points_widget_functions\.js\?v=47/);
+  assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=48/);
+  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v340-complete-workout-share'/);
+  assert.match(serviceWorker, /dashboard-script-10-points_widget_functions\.js\?v=48/);
 });
