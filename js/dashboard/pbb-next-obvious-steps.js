@@ -1142,7 +1142,7 @@
               ].join('');
             }
             return [
-              '<button type="button" class="next-step-action" data-next-step-id="', escapeHtml(action.id), '" style="--next-step-accent:', escapeHtml(action.accent), '">',
+              '<button type="button" class="next-step-action" data-next-step-id="', escapeHtml(action.id), '" data-next-step-direct="true" onclick="window.pbbNextSteps.runAction(\'', escapeHtml(action.id), '\')" style="--next-step-accent:', escapeHtml(action.accent), '">',
                 '<span class="next-step-mark" aria-hidden="true"></span>',
                 '<span class="next-step-copy"><strong>', escapeHtml(action.title), '</strong><span>', escapeHtml(action.body), '</span></span>',
                 '<span class="next-step-cta">', escapeHtml(action.cta), '</span>',
@@ -1176,6 +1176,7 @@
     }
     var button = event.target && event.target.closest ? event.target.closest('[data-next-step-id]') : null;
     if (!button) return;
+    if (button.getAttribute('data-next-step-direct') === 'true') return;
     if (button.getAttribute('data-next-step-readonly') === 'true') return;
     var id = button.getAttribute('data-next-step-id');
     var action = ACTIONS.find(function(item){ return item.id === id; });
