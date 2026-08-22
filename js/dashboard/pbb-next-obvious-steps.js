@@ -261,8 +261,14 @@
       if (expandName && typeof window[expandName] === 'function') {
         try { window[expandName](); } catch (_) {}
       }
+      if (selector === '#fitness-diary-card') {
+        var collapsed = document.getElementById('fitness-diary-collapsed');
+        var form = document.getElementById('fitness-diary-form');
+        if (collapsed) collapsed.style.display = 'none';
+        if (form) form.style.display = 'block';
+      }
       scrollToSelector(selector, { block: 'center' });
-    }, 260);
+    }, 620);
   }
 
   function isUnifiedPlanActive() {

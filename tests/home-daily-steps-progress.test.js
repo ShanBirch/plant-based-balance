@@ -22,10 +22,13 @@ test('End-of-day check-in re-evaluates the 6 PM rollover while the app stays ope
 
 test('Home Next Step actions stay bound through async card refreshes', () => {
   const nextSteps = read('js/dashboard/pbb-next-obvious-steps.js');
+  const journeyCss = read('css/dashboard/pbb-social-journey.css');
 
   assert.match(nextSteps, /document\.addEventListener\('click', handleClick, true\)/);
   assert.match(nextSteps, /data-next-step-direct="true" onclick="window\.pbbNextSteps\.runAction/);
   assert.match(nextSteps, /data-next-step-direct'\) === 'true'/);
+  assert.match(nextSteps, /selector === '#fitness-diary-card'[\s\S]*collapsed\.style\.display = 'none'[\s\S]*form\.style\.display = 'block'/);
+  assert.match(journeyCss, /#view-dashboard \.pbb-next-step-active-source \{ display: block !important; \}/);
   assert.doesNotMatch(nextSteps, /card\.addEventListener\('click', handleClick\)/);
 });
 
@@ -45,9 +48,9 @@ test('versioned phone assets advance for the Home fix', () => {
   const dashboard = read('dashboard.html');
   const serviceWorker = read('sw.js');
 
-  assert.match(dashboard, /pbb-social-journey\.css\?v=22-identity-rollout/);
+  assert.match(dashboard, /pbb-social-journey\.css\?v=23-working-targets/);
   assert.match(dashboard, /pbb-social-journey\.js\?v=34-next-step-priority/);
-  assert.match(dashboard, /pbb-next-obvious-steps\.js\?v=26-direct-actions/);
+  assert.match(dashboard, /pbb-next-obvious-steps\.js\?v=27-working-targets/);
   assert.match(dashboard, /dashboard-script-1-daily_weighin_card_logic\.js\?v=73/);
   assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=47/);
   assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v339-next-step-actions'/);
