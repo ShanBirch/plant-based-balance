@@ -58,6 +58,10 @@ test('the form captures useful goal-aligned coaching context', () => {
   assert.match(frontend, /What are you most proud of from this week\?/);
   assert.match(frontend, /What made this week harder or got in the way\?/);
   assert.match(frontend, /What support would make next week easier\?/);
+  assert.match(frontend, /What did you learn from the Course this week\?/);
+  assert.match(frontend, /name="course_learning"/);
+  assert.match(frontend, /Optional if you did not complete a Course lesson this week/);
+  assert.doesNotMatch(frontend, /name="course_learning"[^>]*required/);
   assert.match(frontend, /How did this week feel overall\?/);
   assert.match(frontend, /How confident do you feel about next week\?/);
   assert.match(frontend, /submit-weekly-checkin/);
@@ -95,6 +99,32 @@ test('submission is authenticated, durable, and routed to Shannon', () => {
   assert.match(endpoint, /operator_queue: 'needs_you'/);
   assert.match(endpoint, /suggested_message: suggestedMessage/);
   assert.match(endpoint, /client_weekly_checkin_response/);
+  assert.match(endpoint, /course_learning: courseLearning/);
+  assert.match(endpoint, /Course learning:/);
+});
+
+test('Wednesday and end-of-week Course learning answers persist independently', () => {
+  const helpers = loadEndpointTestHelpers();
+  const weekStart = '2026-08-17';
+  const midweek = {
+    week_start: weekStart,
+    occurrence: 'midweek_wednesday',
+    course_learning: 'Wednesday lesson answer',
+  };
+  const weekly = {
+    week_start: weekStart,
+    occurrence: 'weekly',
+    course_learning: 'Sunday lesson answer',
+  };
+  const afterWednesday = helpers.mergeWeeklyCheckinResponses({}, midweek);
+  const afterWeekly = helpers.mergeWeeklyCheckinResponses({ weekly_checkins: afterWednesday }, weekly);
+  assert.equal(afterWeekly.length, 2);
+  assert.equal(afterWeekly.find((row) => row.occurrence === 'midweek_wednesday').course_learning, 'Wednesday lesson answer');
+  assert.equal(afterWeekly.find((row) => row.occurrence === 'weekly').course_learning, 'Sunday lesson answer');
+
+  const reloaded = JSON.parse(JSON.stringify({ weekly_checkins: afterWeekly }));
+  assert.equal(reloaded.weekly_checkins[0].course_learning, 'Wednesday lesson answer');
+  assert.equal(reloaded.weekly_checkins[1].course_learning, 'Sunday lesson answer');
 });
 
 test('server validation accepts the current Monday week and rejects incomplete answers', () => {
@@ -107,11 +137,13 @@ test('server validation accepts the current Monday week and rejects incomplete a
     blocker: 'Late meetings.',
     confidence: 4,
     support: 'routine',
+    course_learning: 'Planning for the hard week matters more than planning for the perfect week.',
     goals: [{ id: 'complete_workouts', label: 'Complete workouts', current: 2, target: 3 }],
   }, now);
   assert.equal(valid.error, undefined);
   assert.equal(valid.value.week_end, '2026-08-23');
   assert.equal(valid.value.goals.length, 1);
+  assert.equal(valid.value.course_learning, 'Planning for the hard week matters more than planning for the perfect week.');
 
   assert.equal(helpers.occurrenceAllowed('midweek_wednesday', {
     enabled: true,

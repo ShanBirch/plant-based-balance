@@ -146,6 +146,7 @@ function validatePayload(body = {}, now = new Date()) {
     const win = cleanString(body.win, 600);
     const blocker = cleanString(body.blocker, 600);
     const note = cleanString(body.note, 900);
+    const courseLearning = cleanString(body.course_learning, 900);
     const confidence = Math.round(Number(body.confidence || 0));
 
     if (!OVERALL_VALUES.has(overall)) return { error: 'Choose how the week felt overall.' };
@@ -166,6 +167,7 @@ function validatePayload(body = {}, now = new Date()) {
             confidence,
             support,
             note,
+            course_learning: courseLearning,
             goals: cleanGoals(body.goals),
         },
     };
@@ -213,18 +215,7 @@ async function saveResponse(clientId, response) {
     ).catch(() => []);
     const existing = rows[0] || null;
     const existingAdditionalData = asObject(existing?.additional_data);
-    const priorResponses = Array.isArray(existingAdditionalData.weekly_checkins)
-        ? existingAdditionalData.weekly_checkins.filter((item) => item && typeof item === 'object')
-        : [];
-    if (existingAdditionalData.weekly_checkin && typeof existingAdditionalData.weekly_checkin === 'object') {
-        const legacy = { occurrence: 'weekly', ...existingAdditionalData.weekly_checkin };
-        if (!priorResponses.some((item) => item.occurrence === 'weekly' && item.week_start === legacy.week_start)) {
-            priorResponses.push(legacy);
-        }
-    }
-    const weeklyCheckins = priorResponses
-        .filter((item) => !(item.occurrence === response.occurrence && item.week_start === response.week_start))
-        .concat(response);
+    const weeklyCheckins = mergeWeeklyCheckinResponses(existingAdditionalData, response);
     const additionalData = {
         ...existingAdditionalData,
         weekly_checkins: weeklyCheckins,
@@ -249,6 +240,21 @@ async function saveResponse(clientId, response) {
         }],
         prefer: 'resolution=merge-duplicates,return=minimal',
     });
+}
+
+function mergeWeeklyCheckinResponses(existingAdditionalData, response) {
+    const priorResponses = Array.isArray(existingAdditionalData?.weekly_checkins)
+        ? existingAdditionalData.weekly_checkins.filter((item) => item && typeof item === 'object')
+        : [];
+    if (existingAdditionalData?.weekly_checkin && typeof existingAdditionalData.weekly_checkin === 'object') {
+        const legacy = { occurrence: 'weekly', ...existingAdditionalData.weekly_checkin };
+        if (!priorResponses.some((item) => item.occurrence === 'weekly' && item.week_start === legacy.week_start)) {
+            priorResponses.push(legacy);
+        }
+    }
+    return priorResponses
+        .filter((item) => !(item.occurrence === response.occurrence && item.week_start === response.week_start))
+        .concat(response);
 }
 
 const OVERALL_LABELS = {
@@ -280,6 +286,7 @@ function responseSummary(response) {
         response.blocker ? `What got in the way: ${response.blocker}` : 'What got in the way: nothing added.',
         `Support requested: ${SUPPORT_LABELS[response.support]}.`,
         response.note ? `Anything else: ${response.note}` : '',
+        response.course_learning ? `Course learning: ${response.course_learning}` : 'Course learning: nothing added.',
         `Weekly goals: ${goalSummary(response.goals)}`,
     ].filter(Boolean).join('\n');
 }
@@ -418,4 +425,5 @@ exports._test = {
     fallbackDraft,
     brisbaneWeekday,
     occurrenceAllowed,
+    mergeWeeklyCheckinResponses,
 };
