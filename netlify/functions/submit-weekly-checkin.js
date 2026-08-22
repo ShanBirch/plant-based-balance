@@ -67,6 +67,56 @@ function addDays(date, days) {
     return next;
 }
 
+function brisbaneWeekday(now = new Date()) {
+    return new Intl.DateTimeFormat('en-AU', {
+        timeZone: 'Australia/Brisbane',
+        weekday: 'long',
+    }).format(now).toLowerCase();
+}
+
+async function loadInAppCheckinSchedule(clientId) {
+    const rows = await supabaseQuery(
+        `client_memory?select=preferences&client_id=eq.${encodeURIComponent(clientId)}&order=updated_at.desc&limit=5`
+    ).catch(() => []);
+    for (const row of rows) {
+        const preferences = asObject(row?.preferences);
+        const schedule = asObject(preferences.in_app_checkins);
+        const weekly = asObject(schedule.weekly_reflection);
+        if (weekly.enabled !== true) continue;
+        const days = Array.isArray(weekly.additional_days)
+            ? weekly.additional_days.map((day) => cleanString(day, 20).toLowerCase()).filter(Boolean)
+            : [];
+        return {
+            enabled: true,
+            additional_days: [...new Set(days)],
+            timezone: cleanString(weekly.timezone, 80) || 'Australia/Brisbane',
+            presentation: cleanString(weekly.presentation, 80) || 'local_calendar_day',
+            form_type: 'weekly_reflection',
+        };
+    }
+    return {
+        enabled: false,
+        additional_days: [],
+        timezone: 'Australia/Brisbane',
+        presentation: 'local_calendar_day',
+        form_type: 'weekly_reflection',
+    };
+}
+
+function occurrenceForRequest(body = {}) {
+    const occurrence = cleanString(body.occurrence, 40).toLowerCase();
+    return occurrence || 'weekly';
+}
+
+function occurrenceAllowed(occurrence, schedule, now = new Date()) {
+    const weekday = brisbaneWeekday(now);
+    if (occurrence === 'weekly') return ['friday', 'saturday', 'sunday'].includes(weekday);
+    if (occurrence === 'midweek_wednesday') {
+        return weekday === 'wednesday' && schedule?.enabled === true && schedule.additional_days.includes('wednesday');
+    }
+    return false;
+}
+
 function dateKey(date) {
     return date.toISOString().slice(0, 10);
 }
@@ -162,9 +212,23 @@ async function saveResponse(clientId, response) {
         `daily_checkins?select=id,additional_data&user_id=eq.${encodeURIComponent(clientId)}&checkin_date=eq.${response.week_start}&limit=1`
     ).catch(() => []);
     const existing = rows[0] || null;
+    const existingAdditionalData = asObject(existing?.additional_data);
+    const priorResponses = Array.isArray(existingAdditionalData.weekly_checkins)
+        ? existingAdditionalData.weekly_checkins.filter((item) => item && typeof item === 'object')
+        : [];
+    if (existingAdditionalData.weekly_checkin && typeof existingAdditionalData.weekly_checkin === 'object') {
+        const legacy = { occurrence: 'weekly', ...existingAdditionalData.weekly_checkin };
+        if (!priorResponses.some((item) => item.occurrence === 'weekly' && item.week_start === legacy.week_start)) {
+            priorResponses.push(legacy);
+        }
+    }
+    const weeklyCheckins = priorResponses
+        .filter((item) => !(item.occurrence === response.occurrence && item.week_start === response.week_start))
+        .concat(response);
     const additionalData = {
-        ...asObject(existing?.additional_data),
-        weekly_checkin: response,
+        ...existingAdditionalData,
+        weekly_checkins: weeklyCheckins,
+        ...(response.occurrence === 'weekly' ? { weekly_checkin: response } : {}),
     };
 
     if (existing?.id) {
@@ -266,14 +330,20 @@ Reply with only the message text.`;
     }
 }
 
-function idempotencyKey(clientId, weekStart) {
-    const digest = crypto.createHash('sha256').update(`${clientId}:${weekStart}`).digest('hex').slice(0, 24);
+function idempotencyKey(clientId, weekStart, occurrence = 'weekly') {
+    const digest = crypto.createHash('sha256').update(`${clientId}:${weekStart}:${occurrence}`).digest('hex').slice(0, 24);
     return `client_weekly_checkin:${digest}`;
 }
 
 exports.handler = async (event) => {
-    if (event.httpMethod !== 'POST') return json(405, { error: 'Method not allowed' });
+    if (!['GET', 'POST'].includes(event.httpMethod)) return json(405, { error: 'Method not allowed' });
     if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return json(500, { error: 'Server misconfigured' });
+
+    const authUser = await getAuthedUser(bearerToken(event.headers || {}));
+    if (!authUser?.id) return json(401, { error: 'Login required' });
+
+    const schedule = await loadInAppCheckinSchedule(authUser.id);
+    if (event.httpMethod === 'GET') return json(200, { ok: true, schedule });
 
     let body;
     try {
@@ -282,12 +352,14 @@ exports.handler = async (event) => {
         return json(400, { error: 'Invalid JSON' });
     }
 
-    const authUser = await getAuthedUser(bearerToken(event.headers || {}));
-    if (!authUser?.id) return json(401, { error: 'Login required' });
+    const occurrence = occurrenceForRequest(body);
+    if (!occurrenceAllowed(occurrence, schedule)) {
+        return json(403, { error: 'That check-in is not scheduled for today.' });
+    }
 
     const checked = validatePayload(body);
     if (checked.error) return json(400, { error: checked.error });
-    const response = { ...checked.value, submitted_at: new Date().toISOString() };
+    const response = { ...checked.value, occurrence, submitted_at: new Date().toISOString() };
 
     const [profile, coachId] = await Promise.all([
         loadClientProfile(authUser.id, authUser),
@@ -321,11 +393,11 @@ exports.handler = async (event) => {
                 needs_you_reason: 'client_weekly_checkin_response',
                 response,
                 activity_snapshot: summary,
-                submitted_from: 'to_do_next',
+                submitted_from: occurrence === 'midweek_wednesday' ? 'wednesday_accountability_card' : 'to_do_next',
                 drafted_at: new Date().toISOString(),
                 draft_model: suggestedMessage ? 'shannon_voice_chain' : null,
             },
-        }, idempotencyKey(authUser.id, response.week_start));
+        }, idempotencyKey(authUser.id, response.week_start, occurrence));
 
         return json(200, {
             ok: true,
@@ -344,4 +416,6 @@ exports._test = {
     validatePayload,
     responseSummary,
     fallbackDraft,
+    brisbaneWeekday,
+    occurrenceAllowed,
 };

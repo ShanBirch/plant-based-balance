@@ -39,6 +39,16 @@ test('weekly client check-in is available Friday through Sunday', () => {
   assert.match(frontend, /Friday to Sunday/);
 });
 
+test('an assigned Wednesday uses the same in-app form as a separate occurrence', () => {
+  assert.match(frontend, /midweek_wednesday/);
+  assert.match(frontend, /Wednesday accountability check-in/);
+  assert.match(frontend, /schedule\.additional_days\.indexOf\('wednesday'\)/);
+  assert.match(frontend, /occurrence: activeOccurrence\(\) \|\| 'weekly'/);
+  assert.match(endpoint, /in_app_checkins/);
+  assert.match(endpoint, /weekly_checkins: weeklyCheckins/);
+  assert.match(endpoint, /wednesday_accountability_card/);
+});
+
 test('the form captures useful goal-aligned coaching context', () => {
   assert.match(frontend, /weeklyGoalSnapshot/);
   assert.match(frontend, /weeklyReflectionGoalContext/);
@@ -102,6 +112,15 @@ test('server validation accepts the current Monday week and rejects incomplete a
   assert.equal(valid.error, undefined);
   assert.equal(valid.value.week_end, '2026-08-23');
   assert.equal(valid.value.goals.length, 1);
+
+  assert.equal(helpers.occurrenceAllowed('midweek_wednesday', {
+    enabled: true,
+    additional_days: ['wednesday'],
+  }, new Date('2026-08-19T00:00:00Z')), true);
+  assert.equal(helpers.occurrenceAllowed('midweek_wednesday', {
+    enabled: false,
+    additional_days: [],
+  }, new Date('2026-08-19T00:00:00Z')), false);
 
   const invalid = helpers.validatePayload({
     week_start: '2026-08-17',

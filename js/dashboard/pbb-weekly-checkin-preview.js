@@ -69,7 +69,9 @@
     overlayOpen: false,
     source: 'default',
     hasLiveData: false,
-    reviewRewardClaimed: false
+    reviewRewardClaimed: false,
+    scheduleLoaded: false,
+    schedule: { enabled: false, additional_days: [] }
   };
 
   function readPreviewFlagFromQuery(){
@@ -93,7 +95,14 @@
 
   function isReviewWindow(){
     var day = new Date().getDay();
-    return day === 5 || day === 6 || day === 0;
+    return day === 5 || day === 6 || day === 0 || (day === 3 && state.schedule.enabled === true && state.schedule.additional_days.indexOf('wednesday') !== -1);
+  }
+
+  function activeOccurrence(){
+    var day = new Date().getDay();
+    if (day === 3 && state.schedule.enabled === true && state.schedule.additional_days.indexOf('wednesday') !== -1) return 'midweek_wednesday';
+    if (day === 5 || day === 6 || day === 0) return 'weekly';
+    return null;
   }
 
   function getReviewUserId(){
@@ -104,14 +113,14 @@
     var userId = getReviewUserId();
     if (!userId) return null;
     var week = getWeekWindow();
-    return 'pbb_weekly_checkin_seen_' + userId + '_' + week.startKey;
+    return 'pbb_weekly_checkin_seen_' + userId + '_' + week.startKey + '_' + (activeOccurrence() || 'weekly');
   }
 
   function getReviewCompletedKey(){
     var userId = getReviewUserId();
     if (!userId) return null;
     var week = getWeekWindow();
-    return 'pbb_weekly_checkin_completed_' + userId + '_' + week.startKey;
+    return 'pbb_weekly_checkin_completed_' + userId + '_' + week.startKey + '_' + (activeOccurrence() || 'weekly');
   }
 
   function hasViewedReview(){
@@ -481,10 +490,14 @@
     return typeof extra === 'object' ? extra : {};
   }
 
-  function hasSubmittedWeeklyResponse(checkins, weekStartKey){
+  function hasSubmittedWeeklyResponse(checkins, weekStartKey, occurrence){
     return (checkins || []).some(function(row){
-      var weekly = readCheckinExtra(row).weekly_checkin;
-      return weekly && weekly.week_start === weekStartKey && !!weekly.submitted_at;
+      var extra = readCheckinExtra(row);
+      var responses = Array.isArray(extra.weekly_checkins) ? extra.weekly_checkins.slice() : [];
+      if (extra.weekly_checkin) responses.push(Object.assign({ occurrence: 'weekly' }, extra.weekly_checkin));
+      return responses.some(function(weekly){
+        return weekly && weekly.week_start === weekStartKey && (weekly.occurrence || 'weekly') === (occurrence || 'weekly') && !!weekly.submitted_at;
+      });
     });
   }
 
@@ -905,7 +918,7 @@
     var weeklyGoalsRow = payload[9];
     var moodRows = payload[10] || [];
 
-    if (!isExplicitPreviewEnabled() && hasSubmittedWeeklyResponse(checkins, week.startKey)) {
+    if (!isExplicitPreviewEnabled() && hasSubmittedWeeklyResponse(checkins, week.startKey, activeOccurrence())) {
       markReviewCompleted();
     }
 
@@ -1303,6 +1316,7 @@
       note: String(formData.get('note') || '').trim(),
       week_start: getWeekWindow().startKey,
       week_end: localDateKey(new Date(getWeekWindow().end.getTime() - 24 * 60 * 60 * 1000)),
+      occurrence: activeOccurrence() || 'weekly',
       goals: weeklyGoalSnapshot(currentData())
     };
 
@@ -1448,7 +1462,7 @@
     card.innerHTML = [
       '<div class="pbb-wci-card-inner">',
       '  <div class="pbb-wci-card-top">',
-      '    <div class="pbb-wci-kicker">Friday to Sunday</div>',
+      '    <div class="pbb-wci-kicker">' + (activeOccurrence() === 'midweek_wednesday' ? 'Wednesday accountability check-in' : 'Friday to Sunday') + '</div>',
       '    <div class="pbb-wci-preview-pill">' + escapeHtml(cardPillLabel()) + '</div>',
       '  </div>',
       '  <h3 class="pbb-wci-card-title">Your weekly check-in is ready</h3>',
@@ -1667,6 +1681,28 @@
     }
   }
 
+  async function maybeLoadSchedule(){
+    if (isExplicitPreviewEnabled() || state.scheduleLoaded) return;
+    var accessToken = await weeklyCheckinAccessToken();
+    if (!accessToken) return;
+    try {
+      var response = await fetch('/.netlify/functions/submit-weekly-checkin', {
+        method: 'GET',
+        headers: { 'Authorization': 'Bearer ' + accessToken }
+      });
+      var result = await response.json().catch(function(){ return {}; });
+      if (response.ok && result.ok && result.schedule) {
+        state.schedule = result.schedule;
+      }
+    } catch (error) {
+      console.warn('[weekly-checkin-preview] schedule load failed', error);
+    } finally {
+      state.scheduleLoaded = true;
+      renderCard();
+      maybeLoadLiveData();
+    }
+  }
+
   function handleWeeklyGoalsSaved(event){
     var detail = event && event.detail ? event.detail : {};
     if (detail.source !== 'weekly-checkin-review') return;
@@ -1689,6 +1725,7 @@
       state.hasLiveData = false;
     }
     renderCard();
+    maybeLoadSchedule();
     maybeLoadLiveData();
   }
 
