@@ -84,8 +84,8 @@ test('Home plan cards stay below the complete FitGotchi stats block', () => {
     assert.match(source, /characterBlockTail\.parentNode\.insertBefore\(weeklyGoals, characterBlockTail\.nextSibling\)/);
     assert.match(source, /characterBlockTail\.parentNode\.insertBefore\(card, characterBlockTail\.nextSibling\)/);
     assert.doesNotMatch(source, /levelStrip\.parentNode\.insertBefore\((weeklyGoals|card), levelStrip\.nextSibling\)/);
-    assert.match(html, /pbb-social-journey\.js\?v=33-identity-course/);
-    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v338-identity-course-checkin'/);
+    assert.match(html, /pbb-social-journey\.js\?v=34-next-step-priority/);
+    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v339-next-step-actions'/);
 });
 
 test('Home goals and plan cards follow light and dark mode', () => {
@@ -150,10 +150,12 @@ test('Balance Identity is available from the unified Home plan', () => {
 
     assert.match(source, /isUnifiedPlanActive: function \(\) \{ return isJourneyEligible\(\) && !!state; \}/);
     assert.match(source, /function getUnifiedAction\(\)/);
+    assert.match(source, /kind: 'course_lesson'/);
     assert.match(source, /function openUnifiedAction\(\)/);
     assert.match(source, /item\.type !== 'daily_manual'[\s\S]*dailyTaskDates\(item\.id\)\.includes\(brisbaneDateKey\(\)\)/);
     assert.match(nextSteps, /id: 'balance_journey'/);
-    assert.match(nextSteps, /addUniqueAction\(picked, getBalanceJourneyAction\(\)\)/);
+    assert.match(nextSteps, /addUniqueAction\(picked, journeyAction\)/);
+    assert.match(nextSteps, /journeyAction\.kind !== 'course_lesson'/);
     assert.match(html, /balance-identity-home-rollout-v2/);
     assert.match(html, /sel: '#next-obvious-steps-card'[\s\S]*getCurrentWeek\(\) >= 7/);
 });

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v338-identity-course-checkin'; // v338: ship Balance Identity Course with the latest weekly check-in
+const CACHE_NAME = 'pbb-app-v339-next-step-actions'; // v339: prioritise Course work and keep every Home action tappable
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

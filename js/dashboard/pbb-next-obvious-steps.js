@@ -681,6 +681,7 @@
 
   function dailyActionSet(selectedGoalIds) {
     var picked = [];
+    var journeyAction = getBalanceJourneyAction();
     var onboardingEligible = isOnboardingAccount();
     var hasIncompleteOnboarding = onboardingEligible && ONBOARDING_ACTION_IDS.some(function(id){
       var action = ACTIONS.find(function(item){ return item.id === id; });
@@ -693,11 +694,16 @@
       if (!isHealthConnected()) addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'connect_health'; }));
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'first_meal'; }));
     }
-    addUniqueAction(picked, getBalanceJourneyAction());
+    addUniqueAction(picked, journeyAction);
     if (onboardingEligible && hasReachedSecondProgramWeek() && !hasSeenOnboardingStep('activity_insights_intro')) {
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'activity_insights_intro'; }));
     }
-    addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'quiz'; }));
+    // The Foundations/Identity lesson is the Course priority while it is due.
+    // Keep the separate daily quiz and its Weekly Goal credit available after
+    // the weekly lesson has been opened, rather than showing two Course CTAs.
+    if (!journeyAction || journeyAction.kind !== 'course_lesson') {
+      addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'quiz'; }));
+    }
     goalMatchedActions(selectedGoalIds).forEach(function(action){
       if (hasIncompleteOnboarding && action.id === 'nutrition') return;
       if (isActionTargetable(action, selectedGoalIds)) addUniqueAction(picked, action);
@@ -1181,7 +1187,11 @@
   function init() {
     var card = document.getElementById('next-obvious-steps-card');
     if (!card) return;
-    card.addEventListener('click', handleClick);
+    // The Home plan is re-rendered by several async account refreshes. Listen
+    // on the stable document in capture phase so every visible action keeps a
+    // working destination even when the card is replaced or another handler
+    // stops bubbling.
+    document.addEventListener('click', handleClick, true);
     document.addEventListener('click', function(event){
       var homeButton = event.target && event.target.closest ? event.target.closest('.bottom-nav .nav-item[onclick*="dashboard"]') : null;
       if (!homeButton) return;

@@ -625,6 +625,7 @@
     const lesson = WEEK_LESSONS[definition.week - 1];
     if (!isCurrentLessonSeen()) {
       return {
+        kind: 'course_lesson',
         title: definition.week >= 7
           ? 'Start Balance Identity: Week ' + definition.week
           : 'Complete this week\'s Balance Foundations lesson',
