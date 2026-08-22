@@ -2836,6 +2836,8 @@
                         </div>
                         <div id="conversation-messages" class="chat-container"><div class="loading">Loading...</div></div>
                         <div class="admin-reply-bar">
+                            <input type="file" id="admin-reply-audio-input" accept="audio/mpeg,.mp3" hidden onchange="adminSendAudioReply(event)">
+                            <button type="button" class="admin-reply-send" id="admin-reply-audio" onclick="document.getElementById('admin-reply-audio-input').click()" title="Send MP3 voice note" aria-label="Send MP3 voice note"><i data-lucide="mic" style="width:18px;height:18px;"></i></button>
                             <textarea id="admin-reply-input" rows="1" placeholder="Send a message as Shannon..." oninput="autosizeAdminReplyInput()" onkeydown="handleAdminReplyKeydown(event)"></textarea>
                             <button class="admin-reply-send" id="admin-reply-send" onclick="adminSendReply()"><i data-lucide="send" style="width:18px;height:18px;"></i></button>
                         </div>
@@ -7574,6 +7576,88 @@
             const json = await res.json().catch(() => ({}));
             if (!res.ok) throw new Error(json.details || json.error || `HTTP ${res.status}`);
             return json;
+        }
+
+        async function adminAudioFingerprint(file) {
+            const bytes = new Uint8Array(await file.arrayBuffer());
+            const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
+            const uuidBytes = digest.slice(0, 16);
+            uuidBytes[6] = (uuidBytes[6] & 0x0f) | 0x50;
+            uuidBytes[8] = (uuidBytes[8] & 0x3f) | 0x80;
+            const hex = Array.from(uuidBytes, value => value.toString(16).padStart(2, '0')).join('');
+            return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+        }
+
+        async function adminAudioDuration(file) {
+            const url = URL.createObjectURL(file);
+            try {
+                return await new Promise((resolve, reject) => {
+                    const audio = new Audio();
+                    audio.preload = 'metadata';
+                    audio.onloadedmetadata = () => resolve(Number(audio.duration || 0));
+                    audio.onerror = () => reject(new Error('Could not read the MP3 duration.'));
+                    audio.src = url;
+                });
+            } finally {
+                URL.revokeObjectURL(url);
+            }
+        }
+
+        function adminFormatAudioDuration(seconds) {
+            const whole = Math.max(0, Math.round(Number(seconds) || 0));
+            return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`;
+        }
+
+        async function adminSendAudioReply(event) {
+            const input = event?.target;
+            const file = input?.files?.[0];
+            const target = currentConvoTarget;
+            const button = document.getElementById('admin-reply-audio');
+            if (!file || !target || target.type !== 'app') return;
+            button.disabled = true;
+            try {
+                if (file.type !== 'audio/mpeg' && !/\.mp3$/i.test(file.name || '')) throw new Error('Choose an MP3 voice note.');
+                const referenceId = await adminAudioFingerprint(file);
+                const receiverId = target.id || currentConvoUserId;
+                const { data: existing, error: duplicateError } = await window.supabaseClient
+                    .from('nudges')
+                    .select('id')
+                    .eq('receiver_id', receiverId)
+                    .eq('reference_id', referenceId)
+                    .limit(1);
+                if (duplicateError) throw duplicateError;
+                if (existing?.length) throw new Error('This exact voice note has already been sent.');
+
+                const session = await authHelpers.getSession();
+                const token = session?.access_token || session?.data?.session?.access_token;
+                if (!token) throw new Error('Please log in again before sending.');
+                const duration = await adminAudioDuration(file);
+                const form = new FormData();
+                form.append('file', file, file.name || 'voice-note.mp3');
+                const response = await fetch('/api/upload-chat-audio', {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${token}` },
+                    body: form,
+                });
+                const upload = await response.json().catch(() => ({}));
+                if (!response.ok || !upload.url) throw new Error(upload.error || `Audio upload failed (${response.status})`);
+                const message = `🎤 Voice message (${adminFormatAudioDuration(duration)})\n[AUDIO:${upload.url}]`;
+                const { error } = await window.supabaseClient.from('nudges').insert({
+                    sender_id: session?.user?.id || session?.data?.session?.user?.id,
+                    receiver_id: receiverId,
+                    message,
+                    nudge_type: 'personal',
+                    reference_id: referenceId,
+                });
+                if (error) throw error;
+                appendAdminConversationMessage(message);
+            } catch (error) {
+                console.error('Failed to send voice note:', error);
+                alert(error.message || 'Failed to send voice note.');
+            } finally {
+                button.disabled = false;
+                input.value = '';
+            }
         }
 
         async function adminSendReply(){
