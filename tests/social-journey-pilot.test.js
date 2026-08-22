@@ -98,7 +98,7 @@ test('Home goals and plan cards follow light and dark mode', () => {
     assert.match(css, /html\[data-pbb-theme="dark"\]\.pbb-unified-next-steps #next-obvious-steps-card\.is-unified-plan \.next-step-action/);
     assert.match(css, /weekly-goal-progress-card__value\.is-complete/);
     assert.match(css, /html\.pbb-unified-next-steps #weekly-goals-card\.weekly-goals-home-card\s*\{[\s\S]*?margin: 10px 25px 14px !important/);
-    assert.match(html, /pbb-social-journey\.css\?v=22-identity-rollout/);
+    assert.match(html, /pbb-social-journey\.css\?v=23-working-targets/);
     assert.match(html, /pbb-deferred-weeklygoals\.js\?v=33-home-theme/);
 });
 
