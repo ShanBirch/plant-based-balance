@@ -73,8 +73,10 @@ test('the dispatcher runs one persistent lane under the live watchdog contract',
     assert.match(operatingBrief, /Each owned shift works one persistent lane task/i);
     assert.match(operatingBrief, /for at most one 30-minute shift/i);
     assert.match(operatingBrief, /reserves five minutes for reconciliation/i);
-    assert.match(operatingBrief, /up to 20 verified native Instagram interactions/i);
-    assert.match(operatingBrief, /Twenty is a hard ceiling/i);
+    assert.match(operatingBrief, /up to 30 verified native Instagram interactions/i);
+    assert.match(operatingBrief, /Thirty is a hard ceiling/i);
+    assert.match(operatingBrief, /phone approval close condition remains 60 minutes/i);
+    assert.match(operatingBrief, /does not change that hourly notification cadence/i);
     assert.match(operatingBrief, /start_ig_browser_shift\(\.\.\., 900\)/i);
     assert.match(operatingBrief, /lease_seconds=900/i);
     assert.doesNotMatch(operatingBrief, /rolls forward through later lanes when one finishes early/i);
