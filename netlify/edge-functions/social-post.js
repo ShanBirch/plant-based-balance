@@ -267,7 +267,21 @@ export default async request => {
     if (clean(body.idempotencyKey, 200) !== REQUIRED_IDEMPOTENCY_KEY) return json(400, { ok: false, error: 'invalid_idempotency_key' });
     try {
         const validation = await validatePlan();
-        if (mode === 'dry_run') return json(200, { ok: true, mode, account: validation.account, plan: validation.plan, media: validation.media, cover: validation.cover });
+        if (mode === 'dry_run') return json(200, {
+            ok: true,
+            mode,
+            account: validation.account,
+            plan: validation.plan,
+            media: validation.media,
+            cover: validation.cover,
+            apiPayload: {
+                media_type: 'REELS',
+                video_url: validation.plan.media.url,
+                cover_url: validation.plan.cover.url,
+                caption: validation.plan.caption,
+                share_to_feed: true,
+            },
+        });
         if (mode === 'status') return json(200, { ok: true, mode, contentId: CONTENT_ID, account: validation.account, result: await reconcileReel(validation) });
         const result = await publishReel(validation);
         return json(200, { ok: true, mode, contentId: CONTENT_ID, account: validation.account, result });
