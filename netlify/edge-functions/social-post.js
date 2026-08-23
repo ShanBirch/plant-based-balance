@@ -1,5 +1,6 @@
 const DEFAULT_GRAPH_BASE = 'https://graph.instagram.com';
 const DEFAULT_IG_USER_ID = '17841415641641750';
+// Production release: verified Week Five vertical Reel route.
 const CONTENT_ID = '2026-08-22-balance-week-five-challenge-review-v2';
 const REQUIRED_IDEMPOTENCY_KEY = `${CONTENT_ID}-instagram-reel`;
 const RECEIPT_KEY = `social_publish_receipt_${CONTENT_ID.replace(/-/g, '_')}`;
