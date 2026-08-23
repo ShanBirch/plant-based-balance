@@ -104,12 +104,37 @@ async function setPrivateSecret(key, value) {
 }
 
 async function accessToken() {
-    const names = ['INSTAGRAM_GRAPH_ACCESS_TOKEN', 'IG_GRAPH_ACCESS_TOKEN', 'META_IG_ACCESS_TOKEN', 'INSTAGRAM_ACCESS_TOKEN'];
-    for (const name of names) {
+    const accountSuffix = igUserId().replace(/[^A-Za-z0-9]+/g, '_');
+    const envSuffix = accountSuffix.toUpperCase();
+    const accountEnvNames = [
+        `INSTAGRAM_GRAPH_ACCESS_TOKEN_${envSuffix}`,
+        `IG_GRAPH_ACCESS_TOKEN_${envSuffix}`,
+        `META_IG_ACCESS_TOKEN_${envSuffix}`,
+        `META_IG_${envSuffix}_ACCESS_TOKEN`,
+    ];
+    for (const name of accountEnvNames) {
         const value = env(name);
         if (value.length >= 40 && !value.includes('*')) return value;
     }
-    return await privateSecret('instagram_graph_access_token');
+    const secretSuffix = accountSuffix.toLowerCase();
+    const accountSecretKeys = [
+        `instagram_graph_access_token_${secretSuffix}`,
+        `meta_ig_access_token_${secretSuffix}`,
+    ];
+    for (const key of accountSecretKeys) {
+        const value = await privateSecret(key);
+        if (value.length >= 40 && !value.includes('*')) return value;
+    }
+    const genericEnvNames = ['INSTAGRAM_GRAPH_ACCESS_TOKEN', 'IG_GRAPH_ACCESS_TOKEN', 'META_IG_ACCESS_TOKEN', 'INSTAGRAM_ACCESS_TOKEN'];
+    for (const name of genericEnvNames) {
+        const value = env(name);
+        if (value.length >= 40 && !value.includes('*')) return value;
+    }
+    for (const key of ['instagram_graph_access_token', 'meta_ig_access_token']) {
+        const value = await privateSecret(key);
+        if (value.length >= 40 && !value.includes('*')) return value;
+    }
+    return '';
 }
 
 async function graph(path, method, params = {}) {
