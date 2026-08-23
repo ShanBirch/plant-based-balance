@@ -20,7 +20,8 @@
       tasks: [
       task('w1_feed_intro', 'Introduce yourself to the Feed', 'Write a simple hello. No photo needed.', 'feed_posts', 1, '\uD83D\uDC4B', 'feed'),
         task('w1_first_workout_share', 'Complete and share your first workout', 'Finish the version that fits today, then share the completed workout to Feed.', 'workout_bundle', 1, '\uD83C\uDFAF', 'movement'),
-        task('w1_meal_feed', 'Share one normal meal', 'Eat first, then post it. No perfect plate required.', 'meal_feed_posts', 1, '\uD83E\uDD57', 'meals')
+        task('w1_meal_feed', 'Share one normal meal', 'Eat first, then post it. No perfect plate required.', 'meal_feed_posts', 1, '\uD83E\uDD57', 'meals'),
+        task('w1_weekly_checkin', 'Complete your weekly check-in', 'Tell Shannon what worked, what got in the way and what you need next.', 'weekly_checkin', 1, '✓', 'checkin')
       ]
     },
     {
@@ -31,7 +32,8 @@
       tasks: [
         task('w2_workout_feed', 'Share a workout to Feed', 'A normal session still counts.', 'workout_feed_posts', 1, '🏋️', 'movement'),
         task('w2_workout_days', 'Complete two workouts', 'Keep the minimum repeatable.', 'workout_days', 2, '🎯', 'movement'),
-        task('w2_comments', 'Support five Feed posts', 'Help someone else keep showing up.', 'feed_comments', 5, '💬', 'feed')
+        task('w2_comments', 'Support five Feed posts', 'Help someone else keep showing up.', 'feed_comments', 5, '💬', 'feed'),
+        task('w2_weekly_checkin', 'Complete your weekly check-in', 'Tell Shannon what worked, what got in the way and what you need next.', 'weekly_checkin', 1, '✓', 'checkin')
       ]
     },
     {
@@ -42,7 +44,8 @@
       tasks: [
         task('w3_meals', 'Post three meals to Feed', 'Use meals you are already eating.', 'meal_feed_posts', 3, '🥗', 'meals'),
         task('w3_reflection', 'Add one meal reflection', 'Write one line about how it fuelled the day.', 'manual', 1, '✍️', 'feed'),
-        task('w3_comments', 'Leave five real replies', 'React to the person, not just the photo.', 'feed_comments', 5, '💬', 'feed')
+        task('w3_comments', 'Leave five real replies', 'React to the person, not just the photo.', 'feed_comments', 5, '💬', 'feed'),
+        task('w3_weekly_checkin', 'Complete your weekly check-in', 'Tell Shannon what worked, what got in the way and what you need next.', 'weekly_checkin', 1, '✓', 'checkin')
       ]
     },
     {
@@ -54,7 +57,8 @@
       tasks: [
         task('w4_mute', 'Mute five unhelpful accounts', 'Remove comparison, noise and old cues.', 'manual', 1, '🔇', 'instagram'),
         task('w4_follow', 'Follow ten useful accounts', 'Training, meals and honest progress.', 'manual', 1, '➕', 'instagram'),
-        task('w4_save', 'Save three useful posts', 'Give the algorithm clearer evidence.', 'manual', 1, '🔖', 'instagram')
+        task('w4_save', 'Save three useful posts', 'Give the algorithm clearer evidence.', 'manual', 1, '🔖', 'instagram'),
+        task('w4_weekly_checkin', 'Complete your weekly check-in', 'Tell Shannon what worked, what got in the way and what you need next.', 'weekly_checkin', 1, '✓', 'checkin')
       ]
     },
     {
@@ -65,7 +69,8 @@
       tasks: [
         task('w5_workout_ig', 'Share one workout to IG Story', 'Use the share button after a workout.', 'workout_instagram_shares', 1, '◎', 'movement'),
         task('w5_meal_ig', 'Share one meal to Instagram', 'Use a real meal, not a staged one.', 'meal_instagram_shares', 1, '🥗', 'meals'),
-        task('w5_comments', 'Leave five Feed replies', 'Keep practising connection inside Balance.', 'feed_comments', 5, '💬', 'feed')
+        task('w5_comments', 'Leave five Feed replies', 'Keep practising connection inside Balance.', 'feed_comments', 5, '💬', 'feed'),
+        task('w5_weekly_checkin', 'Complete your weekly check-in', 'Tell Shannon what worked, what got in the way and what you need next.', 'weekly_checkin', 1, '✓', 'checkin')
       ]
     },
     {
@@ -76,7 +81,8 @@
       tasks: [
         task('w6_ig_shares', 'Share three honest Instagram Stories', 'Meal, workout or reflection.', 'instagram_shares', 3, '◎', 'instagram'),
         task('w6_recap', 'Post a six-week recap to Feed', 'Name what changed and what still feels hard.', 'manual', 1, '📝', 'feed'),
-        task('w6_comments', 'Support ten Feed posts', 'Close the phase by giving something back.', 'feed_comments', 10, '💬', 'feed')
+        task('w6_comments', 'Support ten Feed posts', 'Close the phase by giving something back.', 'feed_comments', 10, '💬', 'feed'),
+        task('w6_weekly_checkin', 'Complete your weekly check-in', 'Tell Shannon what worked, what got in the way and what you need next.', 'weekly_checkin', 1, '✓', 'checkin')
       ]
     },
     {
@@ -405,7 +411,7 @@
     const supabase = window.supabaseClient;
     const startIso = dateFromKey(state.week_started_at).toISOString();
     const endIso = dateFromKey(addDaysKey(state.week_started_at, 7)).toISOString();
-    const [stories, comments, transactions, workouts] = await Promise.all([
+    const [stories, comments, transactions, workouts, checkins] = await Promise.all([
       safeQuery(() => supabase.from('stories')
         .select('id,media_type,created_at')
         .eq('user_id', currentUserId())
@@ -431,12 +437,21 @@
         .eq('user_id', currentUserId())
         .eq('workout_type', 'history')
         .gte('workout_date', state.week_started_at)
-        .lt('workout_date', addDaysKey(state.week_started_at, 7)))
+        .lt('workout_date', addDaysKey(state.week_started_at, 7))),
+      safeQuery(() => supabase.from('daily_checkins')
+        .select('checkin_date,additional_data')
+        .eq('user_id', currentUserId())
+        .eq('checkin_date', state.week_started_at))
     ]);
 
     const manual = new Set(state.completed_task_ids);
     const workoutDays = new Set(workouts.map(row => row.workout_date).filter(Boolean)).size;
     const instagramShares = transactions.length;
+    const weeklyCheckinComplete = checkins.some(row => {
+      const extra = safeObject(row && row.additional_data);
+      const responses = safeArray(extra.weekly_checkins).concat(extra.weekly_checkin ? [Object.assign({ occurrence: 'weekly' }, extra.weekly_checkin)] : []);
+      return responses.some(item => item && item.week_start === state.week_started_at && (item.occurrence || 'weekly') === 'weekly' && !!item.submitted_at);
+    });
     const counts = {
       feed_posts: stories.length,
       meal_feed_posts: stories.filter(row => row.media_type === 'meal_card' || row.media_type === 'nutrition_card').length,
@@ -446,7 +461,8 @@
       workout_instagram_shares: transactions.filter(row => row.transaction_type === 'earn_workout_instagram_share').length,
       meal_instagram_shares: transactions.filter(row => row.transaction_type === 'earn_meal_instagram_share').length,
       workout_days: workoutDays,
-      workout_bundle: Math.min(workoutDays, stories.filter(row => row.media_type === 'workout_card').length)
+      workout_bundle: Math.min(workoutDays, stories.filter(row => row.media_type === 'workout_card').length),
+      weekly_checkin: weeklyCheckinComplete ? 1 : 0
     };
     const definition = getWeekDefinition();
     const tasks = definition.tasks.map(item => {
@@ -470,7 +486,13 @@
       tasks
     };
     state.progress_snapshot = progress;
-    await upsertState({ progress_snapshot: progress });
+    const settings = Object.assign({}, safeObject(state.settings));
+    const foundationWeekProgress = Object.assign({}, safeObject(settings.foundation_week_progress));
+    if (definition.week <= 6) {
+      foundationWeekProgress[String(definition.week)] = progress;
+      settings.foundation_week_progress = foundationWeekProgress;
+    }
+    await upsertState({ progress_snapshot: progress, settings });
     return progress;
   }
 
@@ -605,6 +627,7 @@
     if (item.type === 'manual') return item.complete ? 'Completed' : 'Mark done';
     if (item.type === 'planner') return item.complete ? 'Edit plan' : 'Build plan';
     if (item.type === 'daily_manual') return dailyTaskDates(item.id).includes(brisbaneDateKey()) ? 'Today done' : 'Mark today done';
+    if (item.type === 'weekly_checkin') return item.complete ? 'Sent' : 'Open check-in';
     if (item.action === 'feed') return 'Open Feed';
     if (item.action === 'feed-photo') return 'Take my first Feed photo';
     if (item.action === 'meals') return 'Open Nutrition';
@@ -841,6 +864,54 @@
       currentJourneyWeek,
       weekProgress
     };
+  }
+
+  function getFoundationsCourseProgress() {
+    if (!state) return { available: false, currentJourneyWeek: 1, weekProgress: [] };
+    const currentJourneyWeek = Math.max(1, Math.min(12, Number(state.current_week) || 1));
+    const snapshots = safeObject(safeObject(state.settings).foundation_week_progress);
+    const weekProgress = WEEK_DEFINITIONS.slice(0, 6).map(function(definition){
+      const saved = definition.week === currentJourneyWeek
+        ? progress
+        : safeObject(snapshots[String(definition.week)]);
+      const savedTasks = new Map(safeArray(saved && saved.tasks).map(function(item){ return [item.id, item]; }));
+      const tasks = definition.tasks.map(function(item){
+        const stored = savedTasks.get(item.id);
+        const current = Math.max(0, Number(stored && stored.current) || 0);
+        const complete = !!(stored && stored.complete) || current >= item.target;
+        return Object.assign({}, item, {
+          current,
+          complete,
+          actionLabel: definition.week === currentJourneyWeek ? taskActionLabel(Object.assign({}, item, { current, complete })) : (complete ? 'Done' : 'Not completed')
+        });
+      });
+      const completedTasks = tasks.filter(function(item){ return item.complete; }).length;
+      return {
+        number: definition.week,
+        title: definition.title,
+        description: definition.body,
+        tasks,
+        completedTasks,
+        totalTasks: tasks.length,
+        tasksComplete: tasks.length > 0 && completedTasks === tasks.length,
+        isCurrent: definition.week === currentJourneyWeek,
+        isLocked: definition.week > currentJourneyWeek
+      };
+    });
+    return { available: true, currentJourneyWeek, weekProgress };
+  }
+
+  function taskActionForCourse(weekNumber, taskId) {
+    const week = Math.max(1, Math.min(6, Number(weekNumber) || 1));
+    if (!state || week > Number(state.current_week)) {
+      showToast('That week will unlock when you reach it.', 'info');
+      return;
+    }
+    if (week !== Number(state.current_week)) {
+      showToast('This is a previous week. Its saved result is shown here.', 'info');
+      return;
+    }
+    taskAction(taskId);
   }
 
   function openIdentityCourseWeek(weekNumber) {
@@ -1156,6 +1227,7 @@
   }
 
   function switchTo(action) {
+    if (action === 'checkin' && typeof window.openWeeklyCheckinPreview === 'function') return window.openWeeklyCheckinPreview();
     closeJourney();
     if (action === 'instagram') return openInstagram();
     const isFeedAction = action === 'feed' || action === 'feed-photo';
@@ -1590,6 +1662,8 @@
     isUnifiedPlanActive: function () { return isJourneyEligible() && !!state; },
     getUnifiedAction,
     openUnifiedAction,
+    getFoundationsCourseProgress,
+    taskActionForCourse,
     getIdentityCourseProgress,
     openIdentityCourseWeek,
     returnToCourse,

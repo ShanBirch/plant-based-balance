@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v341-stacked-workout-share'; // v341: stacked full-workout cards with gold PB rows
+const CACHE_NAME = 'pbb-app-v342-foundations-actions'; // v342: show and track weekly Foundations actions in Course
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

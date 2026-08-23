@@ -91,13 +91,23 @@ test('Balance Foundations is a six-week course that preserves the existing lesso
     assert.match(foundationsSource, /Take the fight out of food/);
     assert.match(foundationsSource, /Make the better choice easier/);
     assert.match(foundationsSource, /Build a way of eating you can keep/);
-    assert.match(learning, /progress\.total} quizzes across 6 weeks/);
+    assert.match(learning, /progress\.quizTotal} quizzes/);
     assert.match(learning, /getFoundationsLessonTitle/);
     assert.match(learning, /expandedFoundationsWeekNumber/);
     assert.match(learning, /window\.toggleFoundationsWeek/);
     assert.match(learning, /data-foundations-quiz-id/);
     assert.match(learning, /window\.startFoundationsQuiz/);
-    assert.match(learning, /Week \$\{topic\.number\} &middot; \$\{completedLessons\}\/\$\{totalLessons\} quizzes/);
+    assert.match(learning, /topic\.actionCompleted.*topic\.actionTotal.*actions/);
+    assert.match(learning, /function renderFoundationsActionRow/);
+    assert.match(learning, /class="foundation-action-list"/);
+    assert.match(learning, /window\.runFoundationsCourseAction/);
+    assert.match(learning, /getFoundationsCourseProgress/);
+    assert.match(socialJourney, /function getFoundationsCourseProgress/);
+    assert.match(socialJourney, /foundation_week_progress/);
+    assert.match(socialJourney, /taskActionForCourse/);
+    assert.equal((socialJourney.match(/task\('w[1-6]_weekly_checkin'/g) || []).length, 6);
+    assert.match(socialJourney, /from\('daily_checkins'\)/);
+    assert.match(socialJourney, /weekly_checkin: weeklyCheckinComplete \? 1 : 0/);
     assert.match(learning, /aria-expanded="\$\{isExpanded\}"/);
     assert.match(socialJourney, /startFoundationsLesson\('mind-1-1'\)/);
     assert.match(learning, /getFoundationsProgress/);
@@ -110,7 +120,7 @@ test('Balance Foundations is a six-week course that preserves the existing lesso
     assert.match(dashboard, /id: 'course-preview-locks-v1'/);
     assert.match(dashboard, /sel: '\.course-library-intro'/);
     assert.match(dashboard, /fallbackSel: '#learning-content'/);
-    assert.match(dashboard, /learning-inline\.js\?v=22-identity-course/);
+    assert.match(dashboard, /learning-inline\.js\?v=23-foundations-actions/);
     assert.match(dashboard, /balance-identity-course-v1/);
 });
 
@@ -132,7 +142,7 @@ test('Balance Identity follows Foundations and shares the Week 7 to 12 journey p
     assert.match(socialJourney, /WEEK_DEFINITIONS\.slice\(6\)/);
     assert.match(socialJourney, /function openIdentityCourseWeek\(weekNumber\)/);
     assert.match(socialJourney, /viewStage = 'course-lesson'/);
-    assert.match(dashboard, /learning-inline\.js\?v=22-identity-course/);
+    assert.match(dashboard, /learning-inline\.js\?v=23-foundations-actions/);
 });
 
 test('Founders Pass onboarding captures the real-world blocker behind consistency', () => {
