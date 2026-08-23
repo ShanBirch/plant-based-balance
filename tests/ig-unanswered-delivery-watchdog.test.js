@@ -7,6 +7,10 @@ const migration = fs.readFileSync(path.join(
     __dirname,
     '../supabase/migrations/20260814123000_reconcile_unanswered_dm_delivery_failures.sql'
 ), 'utf8');
+const receiptRepair = fs.readFileSync(path.join(
+    __dirname,
+    '../supabase/migrations/20260823233455_clear_reopened_delivery_rescue_receipts.sql'
+), 'utf8');
 const managerSource = fs.readFileSync(path.join(
     __dirname,
     '../netlify/functions/client-lead-manager.js'
@@ -37,4 +41,16 @@ test('the ten-minute cloud manager reconciles failures before loading its reply 
     const loadAt = managerSource.indexOf('const alerts = await loadPendingDmAlerts', reconcileAt);
     assert.ok(reconcileAt > 0 && loadAt > reconcileAt);
     assert.match(managerSource, /if \(data\.delivery_rescue_required === true\) return false/);
+});
+
+test('reopened delivery rescues archive the old receipt and remain claimable', () => {
+    assert.match(receiptRepair, /reconcile_unanswered_dm_delivery_failures\(integer,interval,interval\)/i);
+    assert.match(receiptRepair, /receipt = '\{\}'::JSONB/i);
+    assert.match(receiptRepair, /owner = 'browser_dispatcher'/i);
+    assert.match(receiptRepair, /action_type = 'reply_inbound'/i);
+    assert.match(receiptRepair, /failed_delivery_rescue/i);
+    assert.match(receiptRepair, /browser_dispatch_required/i);
+    assert.match(receiptRepair, /browser_send_allowed/i);
+    assert.match(receiptRepair, /source_message_id IS NOT NULL/i);
+    assert.match(receiptRepair, /reopened_delivery_rescue_requires_empty_current_receipt/i);
 });
