@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v342-foundations-actions'; // v342: show and track weekly Foundations actions in Course
+const CACHE_NAME = 'pbb-app-v343-foundations-feed-tracking'; // v343: link each Foundations Feed action to durable evidence
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -7,7 +7,7 @@ const ASSETS = [
   './xp-guide.html',
   './assets/balance_logo.png',
   './welcome.html',
-  './lib/supabase.js?v=14',
+  './lib/supabase.js?v=15-foundations-feed',
   './lib/auth-guard.js?v=12-light-launch',
   './lib/meta-ad-trial.js?v=4',
   './lib/native-push.js?v=40-dispatch-approval',

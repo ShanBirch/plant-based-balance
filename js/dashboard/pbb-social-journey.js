@@ -18,9 +18,7 @@
       title: 'Make the first reps visible.',
       body: 'Do one real action, then record it. Feed is not a performance; it is a supportive environment that helps the new pattern feel normal.',
       tasks: [
-      task('w1_feed_intro', 'Introduce yourself to the Feed', 'Write a simple hello. No photo needed.', 'feed_posts', 1, '\uD83D\uDC4B', 'feed'),
-        task('w1_first_workout_share', 'Complete and share your first workout', 'Finish the version that fits today, then share the completed workout to Feed.', 'workout_bundle', 1, '\uD83C\uDFAF', 'movement'),
-        task('w1_meal_feed', 'Share one normal meal', 'Eat first, then post it. No perfect plate required.', 'meal_feed_posts', 1, '\uD83E\uDD57', 'meals'),
+        task('w1_feed_intro', 'Introduce yourself to the Feed', 'Write a simple hello in Balance Feed. No photo needed.', 'foundations_feed_intro', 1, '\uD83D\uDC4B', 'feed'),
         task('w1_weekly_checkin', 'Complete your weekly check-in', 'Tell Shannon what worked, what got in the way and what you need next.', 'weekly_checkin', 1, '✓', 'checkin')
       ]
     },
@@ -30,9 +28,7 @@
       title: 'Training becomes evidence.',
       body: 'Make the minimum visible. A normal session counts, and sharing it helps the repetition feel real.',
       tasks: [
-        task('w2_workout_feed', 'Share a workout to Feed', 'A normal session still counts.', 'workout_feed_posts', 1, '🏋️', 'movement'),
-        task('w2_workout_days', 'Complete two workouts', 'Keep the minimum repeatable.', 'workout_days', 2, '🎯', 'movement'),
-        task('w2_comments', 'Support five Feed posts', 'Help someone else keep showing up.', 'feed_comments', 5, '💬', 'feed'),
+        task('w2_feed_comment', 'Comment on someone else\'s Feed post', 'Respond to the person or what they shared.', 'foundations_feed_comments', 1, '💬', 'feed'),
         task('w2_weekly_checkin', 'Complete your weekly check-in', 'Tell Shannon what worked, what got in the way and what you need next.', 'weekly_checkin', 1, '✓', 'checkin')
       ]
     },
@@ -42,34 +38,27 @@
       title: 'Let normal meals count.',
       body: 'Document what you already eat. The goal is awareness and useful repetition, not performance.',
       tasks: [
-        task('w3_meals', 'Post three meals to Feed', 'Use meals you are already eating.', 'meal_feed_posts', 3, '🥗', 'meals'),
-        task('w3_reflection', 'Add one meal reflection', 'Write one line about how it fuelled the day.', 'manual', 1, '✍️', 'feed'),
-        task('w3_comments', 'Leave five real replies', 'React to the person, not just the photo.', 'feed_comments', 5, '💬', 'feed'),
+        task('w3_workout_feed', 'Share a completed workout to Feed', 'Choose a workout you completed in Balance and share its workout card.', 'foundations_workout_feed', 1, '🏋️', 'movement'),
         task('w3_weekly_checkin', 'Complete your weekly check-in', 'Tell Shannon what worked, what got in the way and what you need next.', 'weekly_checkin', 1, '✓', 'checkin')
       ]
     },
     {
       week: 4,
       phase: 'FOUNDATIONS · WORK WITH REAL LIFE',
-      title: 'Teach your algorithm what belongs there.',
-      body: 'Before posting publicly, deliberately change what you repeatedly see, save and return to.',
-      instagramAction: true,
+      title: 'Make a normal meal visible.',
+      body: 'Share food you actually logged in Balance. The useful meal counts without needing to look perfect.',
       tasks: [
-        task('w4_mute', 'Mute five unhelpful accounts', 'Remove comparison, noise and old cues.', 'manual', 1, '🔇', 'instagram'),
-        task('w4_follow', 'Follow ten useful accounts', 'Training, meals and honest progress.', 'manual', 1, '➕', 'instagram'),
-        task('w4_save', 'Save three useful posts', 'Give the algorithm clearer evidence.', 'manual', 1, '🔖', 'instagram'),
+        task('w4_meal_feed', 'Share a meal to Feed', 'Choose a meal you logged in Balance and share its meal card.', 'foundations_meal_feed', 1, '🥗', 'meals'),
         task('w4_weekly_checkin', 'Complete your weekly check-in', 'Tell Shannon what worked, what got in the way and what you need next.', 'weekly_checkin', 1, '✓', 'checkin')
       ]
     },
     {
       week: 5,
       phase: 'FOUNDATIONS · MAKE THE PLAN FIT THE GOAL',
-      title: 'Take one piece of evidence public.',
-      body: 'Use a Balance share card so the first public step is attached to something you actually did.',
+      title: 'Make progress visible.',
+      body: 'A personal best is evidence that the work is moving. Share the result from your Balance workout history.',
       tasks: [
-        task('w5_workout_ig', 'Share one workout to IG Story', 'Use the share button after a workout.', 'workout_instagram_shares', 1, '◎', 'movement'),
-        task('w5_meal_ig', 'Share one meal to Instagram', 'Use a real meal, not a staged one.', 'meal_instagram_shares', 1, '🥗', 'meals'),
-        task('w5_comments', 'Leave five Feed replies', 'Keep practising connection inside Balance.', 'feed_comments', 5, '💬', 'feed'),
+        task('w5_pb_feed', 'Achieve and share one exercise PB to Feed', 'Share a personal best recorded by Balance from a completed exercise.', 'foundations_pb_feed', 1, '🏆', 'movement'),
         task('w5_weekly_checkin', 'Complete your weekly check-in', 'Tell Shannon what worked, what got in the way and what you need next.', 'weekly_checkin', 1, '✓', 'checkin')
       ]
     },
@@ -79,9 +68,7 @@
       title: 'Show the process, not a performance.',
       body: 'Finish Foundations with a light routine that can survive an ordinary messy week.',
       tasks: [
-        task('w6_ig_shares', 'Share three honest Instagram Stories', 'Meal, workout or reflection.', 'instagram_shares', 3, '◎', 'instagram'),
-        task('w6_recap', 'Post a six-week recap to Feed', 'Name what changed and what still feels hard.', 'manual', 1, '📝', 'feed'),
-        task('w6_comments', 'Support ten Feed posts', 'Close the phase by giving something back.', 'feed_comments', 10, '💬', 'feed'),
+        task('w6_feed_reflection', 'Share your course reflections in Feed', 'Write what changed, what helped and what you want to keep doing.', 'foundations_feed_reflection', 1, '📝', 'feed'),
         task('w6_weekly_checkin', 'Complete your weekly check-in', 'Tell Shannon what worked, what got in the way and what you need next.', 'weekly_checkin', 1, '✓', 'checkin')
       ]
     },
@@ -411,15 +398,16 @@
     const supabase = window.supabaseClient;
     const startIso = dateFromKey(state.week_started_at).toISOString();
     const endIso = dateFromKey(addDaysKey(state.week_started_at, 7)).toISOString();
-    const [stories, comments, transactions, workouts, checkins] = await Promise.all([
+    const [stories, comments, transactions, workouts, checkins, personalBests] = await Promise.all([
       safeQuery(() => supabase.from('stories')
-        .select('id,media_type,created_at')
+        .select('id,media_type,caption,course_action_id,created_at')
         .eq('user_id', currentUserId())
         .gte('created_at', startIso)
         .lt('created_at', endIso)),
       safeQuery(() => supabase.from('feed_comments')
-        .select('id,created_at')
+        .select('id,story_id,created_at,stories!inner(user_id)')
         .eq('user_id', currentUserId())
+        .neq('stories.user_id', currentUserId())
         .gte('created_at', startIso)
         .lt('created_at', endIso)),
       safeQuery(() => supabase.from('point_transactions')
@@ -441,7 +429,12 @@
       safeQuery(() => supabase.from('daily_checkins')
         .select('checkin_date,additional_data')
         .eq('user_id', currentUserId())
-        .eq('checkin_date', state.week_started_at))
+        .eq('checkin_date', state.week_started_at)),
+      safeQuery(() => supabase.from('pb_history')
+        .select('id,achieved_at')
+        .eq('user_id', currentUserId())
+        .gte('achieved_at', startIso)
+        .lt('achieved_at', endIso))
     ]);
 
     const manual = new Set(state.completed_task_ids);
@@ -452,6 +445,13 @@
       const responses = safeArray(extra.weekly_checkins).concat(extra.weekly_checkin ? [Object.assign({ occurrence: 'weekly' }, extra.weekly_checkin)] : []);
       return responses.some(item => item && item.week_start === state.week_started_at && (item.occurrence || 'weekly') === 'weekly' && !!item.submitted_at);
     });
+    const storyCard = row => {
+      try { return safeObject(JSON.parse(String(row && row.caption || '{}'))); } catch (_) { return {}; }
+    };
+    const linkedTextPostCount = actionId => stories.filter(row =>
+      row.course_action_id === actionId && String(row.caption || '').trim().length > 0
+    ).length;
+    const currentWeekPbIds = new Set(personalBests.map(row => String(row.id || '')).filter(Boolean));
     const counts = {
       feed_posts: stories.length,
       meal_feed_posts: stories.filter(row => row.media_type === 'meal_card' || row.media_type === 'nutrition_card').length,
@@ -462,6 +462,12 @@
       meal_instagram_shares: transactions.filter(row => row.transaction_type === 'earn_meal_instagram_share').length,
       workout_days: workoutDays,
       workout_bundle: Math.min(workoutDays, stories.filter(row => row.media_type === 'workout_card').length),
+      foundations_feed_intro: linkedTextPostCount('w1_feed_intro'),
+      foundations_feed_comments: comments.length,
+      foundations_workout_feed: stories.filter(row => row.media_type === 'workout_card' && storyCard(row).card_type === 'workout' && !!storyCard(row).workout_date).length,
+      foundations_meal_feed: stories.filter(row => row.media_type === 'meal_card' && storyCard(row).card_type === 'meal').length,
+      foundations_pb_feed: stories.filter(row => row.media_type === 'workout_card' && storyCard(row).card_type === 'pb' && currentWeekPbIds.has(String(storyCard(row).pb_history_id || ''))).length,
+      foundations_feed_reflection: linkedTextPostCount('w6_feed_reflection'),
       weekly_checkin: weeklyCheckinComplete ? 1 : 0
     };
     const definition = getWeekDefinition();
@@ -1226,10 +1232,13 @@
     view.setAttribute('aria-hidden', 'true');
   }
 
-  function switchTo(action) {
+  function switchTo(action, taskId) {
     if (action === 'checkin' && typeof window.openWeeklyCheckinPreview === 'function') return window.openWeeklyCheckinPreview();
     closeJourney();
     if (action === 'instagram') return openInstagram();
+    if (action === 'feed' && (taskId === 'w1_feed_intro' || taskId === 'w6_feed_reflection')) {
+      try { sessionStorage.setItem('pbb_foundations_feed_action', taskId); } catch (_) {}
+    }
     const isFeedAction = action === 'feed' || action === 'feed-photo';
     const tab = isFeedAction ? 'friends' : (action === 'meals' ? 'meals' : (action === 'movement' ? 'movement-tab' : 'dashboard'));
     if (typeof window.switchAppTab === 'function') {
@@ -1537,7 +1546,7 @@
       await completeDailyTask(item.id);
       return;
     }
-    switchTo(item.action);
+    switchTo(item.action, item.id);
   }
 
   let onboardingTestResetRunning = false;

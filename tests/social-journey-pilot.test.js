@@ -84,8 +84,8 @@ test('Home plan cards stay below the complete FitGotchi stats block', () => {
     assert.match(source, /characterBlockTail\.parentNode\.insertBefore\(weeklyGoals, characterBlockTail\.nextSibling\)/);
     assert.match(source, /characterBlockTail\.parentNode\.insertBefore\(card, characterBlockTail\.nextSibling\)/);
     assert.doesNotMatch(source, /levelStrip\.parentNode\.insertBefore\((weeklyGoals|card), levelStrip\.nextSibling\)/);
-    assert.match(html, /pbb-social-journey\.js\?v=35-foundations-actions/);
-    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v342-foundations-actions'/);
+    assert.match(html, /pbb-social-journey\.js\?v=36-foundations-feed-tracking/);
+    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v343-foundations-feed-tracking'/);
 });
 
 test('Home goals and plan cards follow light and dark mode', () => {
