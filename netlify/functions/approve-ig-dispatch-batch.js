@@ -225,6 +225,13 @@ exports.handler = async (event) => {
     if (!['GET', 'POST'].includes(event.httpMethod)) return json(405, { error: 'Method not allowed' });
     if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return json(500, { error: 'Server configuration error' });
 
+    // Dispatcher approval moved to an exact batch/version reply in the Codex task.
+    // Keep GET temporarily available for read-only diagnostics, but fail every
+    // legacy Balance notification or dashboard approval attempt closed.
+    if (event.httpMethod === 'POST') {
+        return json(410, { ok: false, reason: 'balance_dispatch_approval_retired' });
+    }
+
     if (event.httpMethod === 'GET') {
         try {
             const admin = await verifyAdminBearer(event);
@@ -237,38 +244,6 @@ exports.handler = async (event) => {
         }
     }
 
-    const body = parseBody(event);
-    let identity = normalizeApprovalIdentity({
-        batchId: body.batchId || body.batch_id,
-        batchVersion: body.batchVersion || body.batch_version,
-        recipientId: body.recipientId || body.recipient_id,
-    });
-
-    try {
-        let approvalSource = 'balance_phone_notification_tap';
-        const providedApprovalToken = body.approvalToken || body.approval_token || '';
-        const signed = identity && verifyApprovalToken(identity, providedApprovalToken, SUPABASE_SERVICE_KEY);
-        if (providedApprovalToken && !signed) return json(401, { ok: false, reason: 'invalid_approval_token' });
-        if (signed) {
-            if (!(await verifyAdminRecipient(identity.recipientId))) {
-                return json(403, { ok: false, reason: 'recipient_not_admin' });
-            }
-        } else {
-            const admin = await verifyAdminBearer(event);
-            identity = normalizeApprovalIdentity({
-                batchId: body.batchId || body.batch_id,
-                batchVersion: body.batchVersion || body.batch_version,
-                recipientId: admin?.id,
-            });
-            if (!admin || !identity) return json(401, { ok: false, reason: 'admin_auth_required' });
-            approvalSource = 'balance_admin_your_call';
-        }
-        const result = await approveExactBatch(identity, approvalSource);
-        return json(result.statusCode, result.body);
-    } catch (error) {
-        console.error('[IG Dispatch Approval] failed:', error);
-        return json(500, { ok: false, reason: 'approval_failed' });
-    }
 };
 
 module.exports.__test = {

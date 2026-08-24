@@ -83,13 +83,9 @@ assert.strictEqual(patch.updated_at, approvedAt);
         httpMethod: 'POST',
         body: JSON.stringify({ ...identity, approvalToken: token }),
     });
-    assert.strictEqual(response.statusCode, 200);
-    assert.strictEqual(JSON.parse(response.body).approved, true);
-    const patchCall = calls.find(call => call.options.method === 'PATCH');
-    assert.ok(patchCall);
-    assert.ok(patchCall.url.includes('updated_at=eq.'));
-    const patchBody = JSON.parse(patchCall.options.body);
-    assert.strictEqual(patchBody.next_resume.approval_batch.state, 'approved');
+    assert.strictEqual(response.statusCode, 410);
+    assert.strictEqual(JSON.parse(response.body).reason, 'balance_dispatch_approval_retired');
+    assert.strictEqual(calls.length, 0, 'a retired Balance approval must not read or mutate durable state');
 
     const readResponse = await approvalFunction.handler({
         httpMethod: 'GET',
@@ -105,9 +101,9 @@ assert.strictEqual(patch.updated_at, approvedAt);
         headers: { authorization: 'Bearer admin-user-token' },
         body: JSON.stringify({ batchId: identity.batchId, batchVersion: identity.batchVersion }),
     });
-    assert.strictEqual(dashboardResponse.statusCode, 200);
-    const dashboardPatchCall = calls.filter(call => call.options.method === 'PATCH').at(-1);
-    assert.strictEqual(JSON.parse(dashboardPatchCall.options.body).next_resume.approval_batch.approval_source, 'balance_admin_your_call');
+    assert.strictEqual(dashboardResponse.statusCode, 410);
+    assert.strictEqual(JSON.parse(dashboardResponse.body).reason, 'balance_dispatch_approval_retired');
+    assert.strictEqual(calls.filter(call => call.options.method === 'PATCH').length, 0);
 })().catch(error => {
     console.error(error);
     process.exitCode = 1;
