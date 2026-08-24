@@ -48,7 +48,11 @@ const dispatcherApprovalPayload = {
 };
 
 assert.strictEqual(isValidDispatcherApprovalPush(dispatcherApprovalPayload), true);
-assert.strictEqual(isNativeDataOnlyType('dispatcher_approval_ready'), true);
+assert.strictEqual(
+    isNativeDataOnlyType('dispatcher_approval_ready'),
+    false,
+    'dispatcher approvals need a visible notification+data fallback for older installed builds'
+);
 assert.strictEqual(isNativeDataOnlyType('coach_draft_ready'), true);
 assert.strictEqual(isNativeDataOnlyType('dm_message'), false);
 

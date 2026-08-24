@@ -112,7 +112,12 @@ const DISPATCHER_APPROVAL_NOTIFICATION_TYPE = 'dispatcher_approval_ready';
 const BUSINESS_SCORECARD_NOTIFICATION_TYPE = 'business_scorecard';
 
 function isNativeDataOnlyType(type) {
-    return type === 'coach_draft_ready' || type === DISPATCHER_APPROVAL_NOTIFICATION_TYPE;
+    // Coach drafts must remain data-only so Android routes them through the
+    // custom inline-reply service. Dispatcher approvals deliberately use a
+    // visible notification+data payload: older installed Balance builds may
+    // not know the newer dispatcher message type, but Capacitor still opens
+    // the remote signed-token tap handler from the notification body.
+    return type === 'coach_draft_ready';
 }
 
 const ADMIN_CLIENT_LIFECYCLE_STAGES = new Set([
@@ -368,12 +373,14 @@ async function sendNativePush(token, payload) {
             android: { priority: 'high' },
             data: stringData,
         };
-        // Android's rich approval/draft actions require a data-only FCM
-        // message so our FirebaseMessagingService receives it while the app is
-        // backgrounded. iOS has no equivalent service in this target, so give
-        // APNs its own visible alert while keeping the FCM top-level
-        // `notification` block absent. The existing Capacitor tap handler then
-        // receives the signed data and performs the approval after launch.
+        // Android's rich coach-draft actions require a data-only FCM message
+        // so our FirebaseMessagingService receives it while the app is
+        // backgrounded. Dispatcher approvals are intentionally not data-only:
+        // their signed data travels beside a standard visible notification so
+        // older installed builds can still surface it and the remote
+        // Capacitor tap handler can approve the exact batch after launch.
+        // iOS has no equivalent native service, so data-only types receive an
+        // APNs alert while keeping the FCM top-level notification absent.
         if (isNativeDataOnly) {
             message.apns = {
                 headers: { 'apns-priority': '10' },
