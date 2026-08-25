@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <base href="/">
     <title>Balance Foundations | Six-Week Program</title>
-    <meta name="description" content="Complete the six-week Balance Foundations course with one weekly check-in, plan review and adjustment from Shannon. AU$89.99 once, with no auto-renewal.">
+    <meta name="description" content="Build practical consistency through the guided six-week Balance Foundations course, with weekly actions and Shannon's Saturday review. One AUD $149 payment.">
     <meta property="og:title" content="Balance Foundations | Six-Week Program">
-    <meta property="og:description" content="A six-week plant-based fitness course with weekly coaching review from Shannon. AU$89.99 once, with no auto-renewal.">
+    <meta property="og:description" content="A supported six-week behaviour-change course with practical weekly actions and Shannon's Saturday review. One AUD $149 payment.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://plantbased-balance.org/founders">
     <meta property="og:image" content="https://plantbased-balance.org/assets/balance-founders-og-cream-gold.png?v=20260804">
@@ -16,7 +15,7 @@
     <meta property="og:image:alt" content="The gold Balance harmony logo on a cream background">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Balance Foundations | Six-Week Program">
-    <meta name="twitter:description" content="A six-week plant-based fitness course with weekly coaching review from Shannon. AU$89.99 once, with no auto-renewal.">
+    <meta name="twitter:description" content="A supported six-week behaviour-change course with practical weekly actions and Shannon's Saturday review. One AUD $149 payment.">
     <meta name="twitter:image" content="https://plantbased-balance.org/assets/balance-founders-og-cream-gold.png?v=20260804">
     <meta name="theme-color" content="#f7f0e3">
     <link rel="icon" href="balance_logo.png">
@@ -110,7 +109,10 @@
         .paid-preview-downloads p { margin: 0 0 12px; color: #4f5968; font-size: .88rem; line-height: 1.5; }
         .paid-preview-store-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .paid-preview-store { display: flex; align-items: center; justify-content: center; min-height: 46px; padding: 11px 14px; border-radius: 12px; background: #151515; color: #fff; font-size: .86rem; font-weight: 800; text-decoration: none; }
+        .paid-preview-store[hidden] { display: none; }
         .paid-preview-open { display: flex; align-items: center; justify-content: center; min-height: 46px; margin-top: 12px; padding: 11px 14px; border: 1px solid #b8892b; border-radius: 12px; color: #704d12; background: #fff8e8; font-size: .88rem; font-weight: 900; text-decoration: none; }
+        .paid-preview-ios-recovery { margin: 12px 0 0 !important; padding: 11px 12px; border-left: 3px solid #b8892b; border-radius: 9px; color: #3f3525 !important; background: #fff8e8; }
+        .paid-preview-ios-recovery[hidden] { display: none; }
 
         .hero {
             position: relative;
@@ -249,27 +251,6 @@
         .proof-item strong { display: block; color: #f5d98a; font-size: 1.05rem; }
         .proof-item span { color: #c6ced8; font-size: .86rem; }
 
-        .course-section { background: #fffdf8; }
-        .course-intro { display: grid; grid-template-columns: .9fr 1.1fr; gap: 52px; align-items: end; margin-bottom: 34px; }
-        .course-intro .section-head { margin-bottom: 0; }
-        .course-method { padding: 24px; border: 1px solid rgba(184,137,43,.22); border-radius: 22px; background: linear-gradient(145deg, rgba(245,217,138,.22), rgba(255,255,255,.9)); }
-        .course-method strong { display: block; margin-bottom: 7px; color: #8b6418; font-family: 'Outfit', sans-serif; font-size: 1.15rem; }
-        .course-method p { margin: 0; color: var(--muted); }
-        .week-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
-        .course-week { position: relative; overflow: hidden; padding: 26px; border: 1px solid rgba(184,137,43,.2); border-radius: 24px; background: var(--paper); box-shadow: 0 16px 42px rgba(26,32,44,.055); }
-        .course-week::after { content: ""; position: absolute; right: -52px; top: -52px; width: 130px; height: 130px; border: 22px solid rgba(216,178,94,.09); border-radius: 50%; }
-        .week-label { display: inline-block; margin-bottom: 13px; color: #8b6418; font-size: .78rem; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
-        .course-week h3 { position: relative; z-index: 1; margin: 0 0 8px; color: var(--ink); font-family: 'Outfit', sans-serif; font-size: clamp(1.45rem, 3vw, 2rem); line-height: 1.05; letter-spacing: -.035em; }
-        .week-summary { margin: 0 0 18px; color: var(--muted); }
-        .lesson-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
-        .lesson-list li { position: relative; padding-left: 20px; color: #4f5968; font-size: .9rem; }
-        .lesson-list li::before { content: ""; position: absolute; left: 0; top: .62em; width: 7px; height: 7px; border-radius: 50%; background: var(--lime); box-shadow: 0 0 0 4px rgba(216,178,94,.13); }
-        .weekly-loop { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 24px; }
-        .loop-step { padding: 19px; border-radius: 18px; color: #fff; background: var(--forest); }
-        .loop-step b { display: block; margin-bottom: 5px; color: #f5d98a; font-family: 'Outfit', sans-serif; }
-        .loop-step span { color: #d5dbe3; font-size: .86rem; }
-        .goal-note { margin: 18px 0 0; padding: 16px 18px; border-left: 4px solid var(--leaf); color: #4f5968; background: rgba(216,178,94,.1); }
-
         section { padding: 88px 0; }
         .section-head { max-width: 760px; margin-bottom: 38px; }
         .section-head h2, .founder h2, .join-card h2 { margin: 12px 0 14px; color: var(--ink); font-family: 'Outfit', sans-serif; font-size: clamp(2.1rem, 5vw, 3.7rem); font-weight: 900; line-height: 1.02; letter-spacing: -.05em; }
@@ -277,7 +258,7 @@
         .card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
         .feature-card { min-height: 220px; padding: 25px; border: 1px solid var(--line); border-radius: 22px; background: var(--paper); transition: transform .2s, border-color .2s; }
         .feature-card:hover { transform: translateY(-3px); border-color: rgba(184,137,43,.3); }
-        .feature-number { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 12px; color: #111111; background: var(--lime); font-weight: 900; }
+        .feature-number { display: inline-grid; place-items: center; width: auto; min-width: 42px; height: 42px; padding: 0 12px; border-radius: 12px; color: #111111; background: var(--lime); font-weight: 900; white-space: nowrap; }
         .feature-card h3 { margin: 35px 0 8px; color: var(--ink); font-family: 'Outfit', sans-serif; font-size: 1.15rem; }
         .feature-card p { margin: 0; color: var(--muted); }
 
@@ -343,12 +324,11 @@
         .footer-links { display: flex; flex-wrap: wrap; gap: 16px; }
 
         @media (max-width: 850px) {
-            .hero-grid, .dark-grid, .founder-grid, .join-card, .course-intro { grid-template-columns: 1fr; }
+            .hero-grid, .dark-grid, .founder-grid, .join-card { grid-template-columns: 1fr; }
             .hero-grid { gap: 12px; padding-top: 35px; }
             .hero-copy { max-width: 560px; }
             .phone-stage { min-height: 590px; }
             .card-grid { grid-template-columns: 1fr 1fr; }
-            .weekly-loop { grid-template-columns: 1fr 1fr; }
             .founder-mark { min-height: 300px; }
             .app-showcase-grid { grid-template-columns: repeat(3, minmax(240px, 1fr)); overflow-x: auto; padding: 0 2px 36px; scroll-snap-type: x mandatory; scrollbar-width: none; }
             .app-showcase-grid::-webkit-scrollbar { display: none; }
@@ -367,8 +347,7 @@
             .screen { min-height: 515px; }
             .phone-highlights { position: static; width: 100%; display: flex; flex-wrap: wrap; justify-content: center; gap: 9px; }
             .floating-note { position: static; transform: none; padding: 10px 12px; white-space: normal; text-align: left; box-shadow: 0 10px 25px rgba(26,32,44,.1); }
-            .proof-grid, .card-grid, .fit-grid, .week-grid, .weekly-loop { grid-template-columns: 1fr; }
-            .course-week { padding: 22px; }
+            .proof-grid, .card-grid, .fit-grid { grid-template-columns: 1fr; }
             body.paid-meta-preview .paid-preview-route { flex-wrap: wrap; }
             .paid-preview-store-row { grid-template-columns: 1fr; }
             .proof-item { border-right: 0; border-bottom: 1px solid rgba(255,255,255,.14); }
@@ -410,20 +389,21 @@
         <section class="hero">
             <div class="wrap hero-grid">
                 <div class="reveal">
-                    <div class="eyebrow">For plant-based people who want fitness to stick</div>
-                    <h1>Your training plan. <span>Your people.</span> One payment.</h1>
-                <p class="hero-copy">Follow a clear six-week plant-based fitness course, with one weekly check-in, workout and food review, and plan adjustment from Shannon.</p>
-                <div class="price-line"><div class="price">AU$89.99</div><div class="price-note">one payment for the complete six weeks</div></div>
+                    <div class="eyebrow">For people who feel stuck, overwhelmed or tired of restarting</div>
+                    <h1>A supported six-week system for <span>consistency that survives real life.</span></h1>
+                <p class="hero-copy">Balance Foundations turns behaviour-change and neuroscience principles into one guided weekly rhythm: learn a useful idea, put it into practice, follow your plan, and review the real week with Shannon.</p>
+                <div class="price-line"><div class="price">AU$149</div><div class="price-note">one payment for the complete six weeks</div></div>
                 <a class="cta" id="foundations-hero-action" href="/founders#join" data-track="cta_click">Start Balance Foundations</a>
-                <p class="micro" id="foundations-hero-microcopy">Six weeks with Shannon in your corner. One payment, no auto-renewal.</p>
+                <p class="micro" id="foundations-hero-microcopy">Six weeks with Shannon in your corner. One payment. No subscription or automatic renewal.</p>
                 <div class="paid-preview-route" id="paid-preview-route" aria-label="Balance preview steps"><span>Download Balance</span><span>Create your account</span><span>Set up your plan</span><span>Take the guided tour</span></div>
                 <div class="paid-preview-downloads" id="paid-preview-downloads">
-                    <p id="paid-preview-instructions">Tap download, install Balance, then tap <strong>Open</strong>. Create your free account, and Balance will take you straight through your personalised setup inside the app. You will not need to return to this website or Instagram.</p>
+                    <p id="paid-preview-instructions">Download Balance and create your free account. On Android, your secure preview can continue through installation. If you are installing on iPhone for the first time, use the return step below so your personalised preview stays connected.</p>
                     <div class="paid-preview-store-row">
                         <a class="paid-preview-store" id="paid-preview-ios" href="https://apps.apple.com/us/app/balance-fitness-gamified/id6761238161" data-track="cta_click">Download for iPhone</a>
                         <a class="paid-preview-store" id="paid-preview-android" href="https://play.google.com/store/apps/details?id=com.fitgotchi.app" data-track="cta_click">Download for Android</a>
                     </div>
-                    <a class="paid-preview-open" id="paid-preview-open-installed" href="#">Already installed? Create my account</a>
+                    <p class="paid-preview-ios-recovery" id="paid-preview-ios-recovery" hidden><strong>Installing on iPhone?</strong> After Balance finishes installing, return to this page and tap the button below. Apple does not carry a private preview link through a new App Store install, so this second tap safely reconnects yours.</p>
+                    <a class="paid-preview-open" id="paid-preview-open-installed" href="#">Already installed? Open my personalised preview</a>
                 </div>
                 </div>
                 <div class="phone-stage reveal" aria-label="Preview of the Balance app">
@@ -434,7 +414,7 @@
                                 <div class="week-row"><strong>Week 2 momentum</strong><span>68%</span></div>
                                 <div class="bar"></div>
                                 <div class="workout"><div class="workout-icon">🏋️</div><div><strong>Full Body A</strong><p>45 min · strength</p></div><div class="tick">✓</div></div>
-                                <div class="workout"><div class="workout-icon">🌱</div><div><strong>Protein target</strong><p>Plant-based nutrition</p></div><div class="tick">✓</div></div>
+                                <div class="workout"><div class="workout-icon">✓</div><div><strong>Weekly Goal</strong><p>One practical action</p></div><div class="tick">✓</div></div>
                             </div>
                             <div class="community-preview">
                                 <div class="community-title"><strong>Community</strong><span>Today</span></div>
@@ -443,8 +423,8 @@
                         </div>
                     </div>
                     <div class="phone-highlights" aria-label="Balance highlights">
-                        <div class="floating-note note-one">Plant-based nutrition 🌱</div>
-                        <div class="floating-note note-two">Real community, not another tracker</div>
+                        <div class="floating-note note-one">A clear next action</div>
+                        <div class="floating-note note-two">Support when the week gets messy</div>
                     </div>
                 </div>
             </div>
@@ -452,78 +432,79 @@
 
         <div class="proof-strip">
             <div class="wrap proof-grid">
-                <div class="proof-item"><strong>Six weeks with Shannon</strong><span>Questions, direction and accountability</span></div>
-                <div class="proof-item"><strong>Plant-based community</strong><span>Train with people who get it</span></div>
-                    <div class="proof-item"><strong>AU$89.99 once</strong><span>No automatic renewal</span></div>
+                <div class="proof-item"><strong>Six guided course weeks</strong><span>30 lessons with practical actions</span></div>
+                <div class="proof-item"><strong>Saturday review</strong><span>Training and food reviewed and adjusted</span></div>
+                    <div class="proof-item"><strong>One AUD $149 payment</strong><span>Full six weeks, no automatic renewal</span></div>
             </div>
         </div>
 
-        <section class="course-section" id="course">
-            <div class="wrap">
-                <div class="course-intro">
-                    <div class="section-head reveal"><div class="eyebrow">The course, week by week</div><h2>Understand what keeps tripping you up—then learn how to change it.</h2><p>Balance Foundations is a guided course, not just app access. Across six weeks and 30 short lessons, you learn how your brain, energy, habits, environment and food choices work together, then practise one useful change in real life.</p></div>
-                    <div class="course-method reveal"><strong>The idea you keep coming back to</strong><p>Notice the signal. Check your body, context and environment. Choose one workable adjustment. Repeat and learn.</p></div>
-                </div>
-
-                <div class="week-grid">
-                    <article class="course-week reveal"><span class="week-label">Week 1 · 5 lessons</span><h3>Understand why change feels hard</h3><p class="week-summary">See how past experience shapes prediction—and how better evidence changes what feels possible.</p><ul class="lesson-list"><li>Your brain guesses first</li><li>Predictions shape what you notice</li><li>Surprise is how your brain learns</li><li>Your past trains today’s predictions</li><li>Update the model, not the blame</li></ul></article>
-                    <article class="course-week reveal"><span class="week-label">Week 2 · 5 lessons</span><h3>Work with your energy, not against it</h3><p class="week-summary">Plan for the days sleep, stress and low energy usually throw off.</p><ul class="lesson-list"><li>Your brain runs a body budget</li><li>Where your energy budget goes</li><li>Feelings are your brain’s best guess</li><li>Why tiredness can arrive early</li><li>Stress changes the prediction</li></ul></article>
-                    <article class="course-week reveal"><span class="week-label">Week 3 · 5 lessons</span><h3>Build a rhythm that can stick</h3><p class="week-summary">Use smaller actions and repetition to make the helpful choice easier to keep doing.</p><ul class="lesson-list"><li>Habits save brain energy</li><li>Repetition makes actions easier</li><li>Make the helpful choice small</li><li>Your environment starts the habit</li><li>Streaks build expectation</li></ul></article>
-                    <article class="course-week reveal"><span class="week-label">Week 4 · 5 lessons</span><h3>Take the fight out of food</h3><p class="week-summary">Understand what a craving is trying to solve, without turning food into a moral test.</p><ul class="lesson-list"><li>A craving is a prediction</li><li>Low body budget, louder cravings</li><li>Why comfort food works briefly</li><li>Name the feeling, change the choice</li><li>Fix the need behind the craving</li></ul></article>
-                    <article class="course-week reveal"><span class="week-label">Week 5 · 5 lessons</span><h3>Make the better choice easier</h3><p class="week-summary">Stop demanding more willpower and redesign the setup around the choice.</p><ul class="lesson-list"><li>Why willpower lets you down</li><li>Behaviour follows predictions</li><li>You inherited more habits than you chose</li><li>Redesign the choice around you</li><li>Other people shape your habits</li></ul></article>
-                    <article class="course-week reveal"><span class="week-label">Week 6 · 5 lessons</span><h3>Build a way of eating you can keep</h3><p class="week-summary">Bring the food basics together without rigid rules or all-or-nothing thinking.</p><ul class="lesson-list"><li>Energy balance without the guilt</li><li>Protein that supports your goal</li><li>Carbs are useful fuel</li><li>Why your body needs fat</li><li>Your sustainable way of eating</li></ul></article>
-                </div>
-
-                <div class="weekly-loop reveal" aria-label="How each week works">
-                    <div class="loop-step"><b>1. Learn</b><span>Complete five short, focused lessons.</span></div>
-                    <div class="loop-step"><b>2. Test it</b><span>Use a quick interactive quiz after each lesson.</span></div>
-                    <div class="loop-step"><b>3. Apply it</b><span>Choose one to three realistic Weekly Goals.</span></div>
-                    <div class="loop-step"><b>4. Review it</b><span>Shannon reviews your week and adjusts the plan.</span></div>
-                </div>
-                <p class="goal-note reveal"><strong>Your Weekly Goals are real actions inside Balance:</strong> complete your workouts, hit your protein target and get 7+ hours of sleep. They are a small weekly focus—not another endless checklist.</p>
-            </div>
-        </section>
-
         <section class="app-showcase">
             <div class="wrap">
-                <div class="section-head reveal"><div class="eyebrow">Inside your pass</div><h2>A real training app, not another downloadable plan.</h2><p>Movement, nutrition and community stay together, so the next useful action is easy to find.</p></div>
+                <div class="section-head reveal"><div class="eyebrow">The course lives inside Balance</div><h2>Your weekly learning and real-world actions stay connected.</h2><p>The app supports the course rather than replacing it. Course shows what to learn, Home makes the next action obvious, and your plans, Weekly Goals and Feed help you practise it during the week.</p></div>
                 <div class="app-showcase-grid" aria-label="Balance app previews">
-                    <article class="app-shot-card reveal"><img src="photos/balance-movement-shot.jpg?v=20260718" alt="Balance Movement screen with workouts and form checks" loading="lazy"><div class="app-shot-label"><strong>Train with direction</strong><span>Workouts, logging and form checks in one place.</span></div></article>
-                    <article class="app-shot-card reveal"><img src="photos/balance-nutrition-shot.jpg?v=20260718" alt="Balance Nutrition screen with plant-based food tracking" loading="lazy"><div class="app-shot-label"><strong>Plant-based nutrition, built in</strong><span>See the numbers that matter without translating every meal.</span></div></article>
-                    <article class="app-shot-card reveal"><img src="photos/balance-feed-shot.jpg?v=20260718" alt="Balance community feed and challenges" loading="lazy"><div class="app-shot-label"><strong>Your people are part of it</strong><span>Share wins, join challenges and keep momentum moving.</span></div></article>
+                    <article class="app-shot-card reveal"><img src="photos/balance-movement-shot.jpg?v=20260718" alt="Balance Movement screen with workouts and form checks"><div class="app-shot-label"><strong>Train with direction</strong><span>Workouts, logging and form checks in one place.</span></div></article>
+                    <article class="app-shot-card reveal"><img src="photos/balance-nutrition-shot.jpg?v=20260718" alt="Balance meal planning and food tracking screen"><div class="app-shot-label"><strong>Meal support that fits you</strong><span>Plan and review food without turning the week into a pass-or-fail test. Plant-based eating can be supported.</span></div></article>
+                    <article class="app-shot-card reveal"><img src="photos/balance-feed-shot.jpg?v=20260718" alt="Balance community feed and challenges"><div class="app-shot-label"><strong>Practice with people around you</strong><span>Share a useful action, reflection or win when the course prompts it.</span></div></article>
                 </div>
             </div>
         </section>
 
-        <section id="included">
+        <section id="how-foundations-works">
             <div class="wrap">
-                <div class="section-head reveal"><div class="eyebrow">Everything in the pass</div><h2>Coaching to get started. A community to keep going.</h2><p>You do not need another folder of workouts. You need a simple week, someone to ask when you get stuck and people around you who understand plant-based fitness.</p></div>
+                <div class="section-head reveal"><div class="eyebrow">Your complete six-week path</div><h2>Learn it, use it, review it, then make it fit real life.</h2><p>Foundations is a guided starting course, not a pile of information. Each week gives you a clear lesson theme, practical actions inside Balance, and one review point with Shannon.</p></div>
                 <div class="card-grid">
-                    <article class="feature-card"><div class="feature-number">01</div><h3>Six-week coaching introduction</h3><p>Shannon is available inside Balance for questions, direction and accountability while you build your training rhythm.</p></article>
-                    <article class="feature-card"><div class="feature-number">02</div><h3>Home and gym training</h3><p>Follow clear workouts with exercise guidance, logging and progress tracking inside Balance.</p></article>
-                    <article class="feature-card"><div class="feature-number">03</div><h3>Plant-based nutrition tools</h3><p>Keep protein, calories, meals and habits clear without advice built around foods you do not eat.</p></article>
-                    <article class="feature-card"><div class="feature-number">04</div><h3>Community accountability</h3><p>Share wins, join challenges and train alongside other plant-based members.</p></article>
-                    <article class="feature-card"><div class="feature-number">05</div><h3>Progress that feels alive</h3><p>See your training, habits, streaks and milestones build instead of disappearing into a spreadsheet.</p></article>
-                    <article class="feature-card"><div class="feature-number">06</div><h3>A complete six-week curriculum</h3><p>Follow the Foundations lessons and weekly structure from start to finish, with no automatic renewal at the end.</p></article>
+                    <article class="feature-card"><div class="feature-number">WEEK 1</div><h3>Why change feels hard</h3><p>Understand how your brain uses past experience, set your first Weekly Goals, and begin with a workout and meal-plan starting point you can actually use.</p></article>
+                    <article class="feature-card"><div class="feature-number">WEEK 2</div><h3>Work with your energy</h3><p>Notice how sleep, stress and low-energy days change your choices. Use the app to keep the next action visible when the week is not ideal.</p></article>
+                    <article class="feature-card"><div class="feature-number">WEEK 3</div><h3>Build a rhythm that sticks</h3><p>Use repetition, smaller actions and your surroundings to make training and food habits easier to return to.</p></article>
+                    <article class="feature-card"><div class="feature-number">WEEK 4</div><h3>Take the fight out of food</h3><p>Learn what cravings and emotional eating may be trying to solve, then use meal support and food tracking without turning the week into a test.</p></article>
+                    <article class="feature-card"><div class="feature-number">WEEK 5</div><h3>Make progress easier to repeat</h3><p>Shape the choices around you, follow your workout plan, and use your real training evidence to see what is working.</p></article>
+                    <article class="feature-card"><div class="feature-number">WEEK 6</div><h3>Build your sustainable way forward</h3><p>Bring your training, food and comeback plan together. Finish the course, complete your reflection, and receive your verified Certificate of Completion.</p></article>
                 </div>
             </div>
         </section>
 
         <section class="dark-section">
             <div class="wrap dark-grid">
-                <div><div class="eyebrow">Why Balance</div><h2>Fitness without having to translate everything first.</h2><p class="lead">Generic apps can count reps. They rarely understand the food questions, identity and community that come with plant-based fitness.</p></div>
+                <div><div class="eyebrow">What you actually do each week</div><h2>A simple rhythm with a clear Saturday review.</h2><p class="lead">Every week follows the same understandable loop. You are never expected to absorb the whole course at once or guess what to do next.</p></div>
                 <div class="difference-list">
-                    <div class="difference"><strong>Built around plant-based life</strong><p>Plant-based nutrition is part of the environment, not a tiny filter hidden in the settings.</p></div>
-                    <div class="difference"><strong>Community is inside the product</strong><p>Feed posts, challenges and shared wins give you a reason to return between workouts.</p></div>
-                    <div class="difference"><strong>Serious fitness, made easier to stick with</strong><p>The app can make progress feel fun, while your training and results remain the point.</p></div>
+                    <div class="difference"><strong>1. Learn the week's idea</strong><p>Complete the five short guided lessons in Course. Each lesson connects the behaviour-change idea to a decision you face in normal life.</p></div>
+                    <div class="difference"><strong>2. Choose the week's actions</strong><p>Turn the lessons into 1 to 3 Weekly Goals and a small set of practical course actions, so the week stays focused.</p></div>
+                    <div class="difference"><strong>3. Practise inside real life</strong><p>Follow your workout plan, use meal support, and record the useful evidence the course asks for. Feed gives you a place to share a reflection, action or win.</p></div>
+                    <div class="difference"><strong>Every Saturday</strong><p>Complete your weekly check-in. Shannon reviews your training and food, then makes practical adjustments for the next week.</p></div>
+                    <div class="difference"><strong>At completion</strong><p>When all 30 Foundations lessons and the required weekly course actions are genuinely complete, Balance issues your named Certificate of Completion with your course completion date. It is not an accredited qualification.</p></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="included">
+            <div class="wrap">
+                <div class="section-head reveal"><div class="eyebrow">Everything supporting the course</div><h2>The tools serve the six-week journey.</h2><p>You do not need another folder of information. The plans, goals, community and coaching review exist to help you use each week's lesson when life is not ideal.</p></div>
+                <div class="card-grid">
+                    <article class="feature-card"><div class="feature-number">01</div><h3>Complete guided curriculum</h3><p>Thirty lessons across six weekly themes, with actions that turn the ideas into repeatable behaviour.</p></article>
+                    <article class="feature-card"><div class="feature-number">02</div><h3>Home and gym training</h3><p>Follow clear workouts with exercise guidance, logging and progress tracking inside Balance.</p></article>
+                    <article class="feature-card"><div class="feature-number">03</div><h3>Meal planning support</h3><p>Keep meals, protein and habits clear. The support can fit plant-based eating when that is right for you.</p></article>
+                    <article class="feature-card"><div class="feature-number">04</div><h3>Community accountability</h3><p>Use Feed for course reflections, useful actions and shared wins during the six weeks.</p></article>
+                    <article class="feature-card"><div class="feature-number">05</div><h3>Progress that feels alive</h3><p>See your training, habits, streaks and milestones build instead of disappearing into a spreadsheet.</p></article>
+                    <article class="feature-card"><div class="feature-number">06</div><h3>Weekly review and adjustment</h3><p>Each Saturday, Shannon reviews your training and food, then adjusts the next week from the evidence you created.</p></article>
+                </div>
+            </div>
+        </section>
+
+        <section class="dark-section">
+            <div class="wrap dark-grid">
+                <div><div class="eyebrow">Why the system works differently</div><h2>Knowledge becomes useful when it changes the next action.</h2><p class="lead">Foundations combines clear learning, small practical commitments and a real weekly review, so a difficult day does not have to become another abandoned week.</p></div>
+                <div class="difference-list">
+                    <div class="difference"><strong>One focus at a time</strong><p>Each week has a defined theme, five lessons and a short set of actions instead of an overwhelming library.</p></div>
+                    <div class="difference"><strong>Evidence, not perfection</strong><p>Your training, meals, goals and reflections show what actually happened, giving the review something useful to work with.</p></div>
+                    <div class="difference"><strong>A planned return</strong><p>You learn how to make the next useful action smaller and clearer, so missing a day does not mean starting over.</p></div>
                 </div>
             </div>
         </section>
 
         <section class="founder">
             <div class="wrap founder-grid reveal">
-                <div class="founder-mark"><img class="founder-photo" src="photos/shannon-portrait.jpg" alt="Shannon Birch, exercise scientist and founder of Balance" loading="lazy"><img class="founder-logo" src="balance_logo_transparent.png" alt="" aria-hidden="true"></div>
-                <div><div class="eyebrow">Built by Shannon</div><h2>I wanted plant-based fitness to feel less lonely and less complicated.</h2><p>I am an exercise scientist and former gym owner. I was raised vegetarian from birth and have been vegan for five years. I built Balance to bring training, food, progress and community into the same place.</p><p><strong>Balance Foundations is a supported six-week curriculum with me.</strong> You receive one weekly check-in, workout and food review, and adjustment. The program finishes after week six and nothing renews automatically.</p></div>
+                <div class="founder-mark"><img class="founder-photo" src="photos/shannon-portrait.jpg" alt="Shannon Birch, exercise scientist and founder of Balance"><img class="founder-logo" src="balance_logo_transparent.png" alt="" aria-hidden="true"></div>
+                <div><div class="eyebrow">Built by Shannon</div><h2>I wanted people to understand why they keep restarting, then have a practical way forward.</h2><p>I am an exercise scientist and former gym owner. I built Balance Foundations to translate behaviour-change and neuroscience ideas into decisions you can use during an ordinary, imperfect week.</p><p><strong>Balance Foundations is a supported six-week curriculum with me.</strong> You receive one Saturday check-in, workout and food review, and practical adjustment each week. It is not a subscription, and the program finishes after week six without renewing automatically.</p></div>
             </div>
         </section>
 
@@ -531,7 +512,7 @@
             <div class="wrap">
                 <div class="section-head"><div class="eyebrow">Is this you?</div><h2>A good fit if you want a real system, not a fitness identity test.</h2></div>
                 <div class="fit-grid">
-                <div class="fit-card yes"><h3>Balance Foundations is for you if:</h3><ul><li>You are vegan, plant-based or moving that way.</li><li>You want to get stronger, leaner or simply more consistent.</li><li>You want a coach you can ask for direction while you find your rhythm.</li><li>You would use a community that understands how you eat and why.</li></ul></div>
+                <div class="fit-card yes"><h3>Balance Foundations is for you if:</h3><ul><li>You know some of what to do but struggle to keep doing it when life changes.</li><li>You feel overwhelmed by all-or-nothing plans or keep restarting after a missed day.</li><li>You want a clear weekly course, workout structure and practical accountability.</li><li>You are willing to complete the lessons, weekly actions and Saturday check-in.</li></ul></div>
                     <div class="fit-card no"><h3>It is probably not for you if:</h3><ul><li>You want instant replies or unlimited daily one-to-one coaching.</li><li>You need medical, injury or clinical nutrition treatment.</li><li>You only want a PDF and never plan to use the app or community.</li><li>You expect results without completing the training and check-ins.</li></ul></div>
                 </div>
             </div>
@@ -540,9 +521,9 @@
         <section>
             <div class="wrap faq">
                 <div class="section-head"><div class="eyebrow">Clear before you join</div><h2>Questions people usually ask.</h2></div>
-                <details><summary>What happens after the six weeks?</summary><p>Balance Foundations finishes after week six and does not renew automatically. You can decide what you want to do next without another payment being taken.</p></details>
+                <details><summary>What happens after the six weeks?</summary><p>Balance Foundations is not a subscription. It finishes after week six and does not renew automatically. You can decide what you want to do next without another payment being taken.</p></details>
                     <details><summary>What coaching is included?</summary><p>For six weeks, you receive one weekly check-in plus a workout and food review with practical adjustments from Shannon. You can also ask questions inside Balance. It does not include instant replies, unlimited daily access or live weekly calls.</p></details>
-                <details><summary>Do I need to be fully plant-based already?</summary><p>No. The community is designed for plant-based people and people moving that way. You only need to be comfortable training in a plant-based environment.</p></details>
+                <details><summary>Can the meal support fit plant-based eating?</summary><p>Yes. Meal-plan support can fit plant-based eating and other recorded dietary needs. Plant-based eating is an available support option, not a requirement or the focus of the course.</p></details>
                 <details><summary>Can I train at home?</summary><p>Yes. Balance supports home and gym training, and the starting structure can be matched to the equipment you have available.</p></details>
                 <details><summary>Is the character the main point of the app?</summary><p>No. Gamification is there to make consistency more enjoyable. Your workouts, nutrition, progress and community remain the main experience.</p></details>
             </div>
@@ -550,16 +531,16 @@
 
         <section class="join" id="join">
             <div class="wrap join-card">
-                <div><div class="eyebrow">BALANCE FOUNDATIONS</div><h2>AU$89.99</h2><p><strong>COMPLETE 6-WEEK CURRICULUM</strong><br><strong>WEEKLY COACHING REVIEW</strong></p><p>Complete Balance Foundations with six weeks of app and community access plus one weekly check-in, review and adjustment from Shannon.</p><p>It is one AU$89.99 payment for the full six weeks and does not renew automatically.</p></div>
+                <div><div class="eyebrow">BALANCE FOUNDATIONS</div><h2>AU$149</h2><p><strong>COMPLETE 6-WEEK CURRICULUM</strong><br><strong>WEEKLY COACHING REVIEW</strong></p><p>Complete Balance Foundations with six weeks of app and community access plus one weekly check-in, review and adjustment from Shannon.</p><p>It is one AUD $149 payment for the full six weeks. No subscription or automatic renewal.</p></div>
                 <div class="offer-box">
-                    <div class="price">AU$89.99</div>
-                    <strong>One payment. Six weeks. No auto-renewal.</strong>
-                    <ul><li>30 guided lessons across six clear weekly themes</li><li>A quick interactive quiz after every lesson</li><li>One to three practical Weekly Goals inside Balance</li><li>One weekly check-in with Shannon</li><li>Weekly workout and food review with adjustments</li><li>Six weeks of app and community access</li><li>A personal next-step recommendation at completion</li></ul>
+                    <div class="price">AU$149</div>
+                    <strong>One payment. Six weeks. No subscription or automatic renewal.</strong>
+                    <ul><li>The complete six-week Balance Foundations course</li><li>One weekly check-in with Shannon</li><li>Weekly workout and food review with adjustments</li><li>Questions, direction and accountability inside Balance</li><li>Six weeks of app and community access</li><li>A personal next-step recommendation at completion</li></ul>
                     <div id="checkout-terms-container">
                         <label><input type="checkbox" id="terms-checkbox"><span>I agree to the <a href="terms.html" target="_blank" rel="noopener">Terms &amp; Conditions</a>, <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>, <a href="client-agreement.html" target="_blank" rel="noopener">Client Agreement</a> and <a href="refund-policy.html" target="_blank" rel="noopener">Refund Policy</a>.</span></label>
                     </div>
                     <button class="cta checkout-btn" data-plan="founders-pass" data-hosted-checkout-only="true" data-track="checkout_click" type="button">Start Balance Foundations</button>
-                    <p class="secure-note">Secure Stripe checkout. AU$89.99 is due today. Nothing renews automatically.</p>
+                    <p class="secure-note">Secure Stripe checkout. AUD $149 is due today for the full six weeks. No subscription or automatic renewal.</p>
                 </div>
             </div>
         </section>
@@ -570,9 +551,21 @@
     </footer>
     <script src="analytics.js"></script>
     <script src="checkout.js"></script>
+    <script src="lib/ios-meta-preview-handoff.js?v=1"></script>
     <script>
         (function () {
             var params = new URLSearchParams(window.location.search);
+            var isAppleDevice = /iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+            var iosHandoff = window.BalanceIOSMetaPreviewHandoff;
+            var iosRecoveryStorage = null;
+            try { iosRecoveryStorage = window.localStorage; } catch (_) {}
+            if (isAppleDevice && iosHandoff) {
+                var recoveredParams = iosHandoff.recover({
+                    location: window.location,
+                    storage: iosRecoveryStorage
+                });
+                if (recoveredParams) params = recoveredParams;
+            }
             var source = (params.get('utm_source') || '').trim().toLowerCase();
             var medium = (params.get('utm_medium') || '').trim().toLowerCase();
             var paidMetaSources = ['facebook', 'fb', 'instagram', 'ig', 'meta'];
@@ -587,17 +580,31 @@
             var playStoreBaseUrl = 'https://play.google.com/store/apps/details?id=com.fitgotchi.app';
             var playReferrer = 'pbb_meta_trial=' + encodeURIComponent(params.toString());
             var playStoreUrl = playStoreBaseUrl + '&referrer=' + encodeURIComponent(playReferrer);
-            var isAppleDevice = /iPhone|iPad|iPod/i.test(navigator.userAgent || '');
             var isAndroidDevice = /Android/i.test(navigator.userAgent || '');
             var primaryStoreUrl = isAppleDevice ? appStoreUrl : (isAndroidDevice ? playStoreUrl : '#paid-preview-downloads');
             var primaryStoreLabel = isAppleDevice ? 'Download Balance for iPhone' : (isAndroidDevice ? 'Download Balance for Android' : 'Choose your app store');
-            var nativePreviewUrl = 'com.fitgotchi.app://meta-trial?' + params.toString();
+            var nativePreviewUrl = isAppleDevice && iosHandoff
+                ? iosHandoff.buildNativePreviewUrl(params)
+                : 'com.fitgotchi.app://meta-trial?' + params.toString();
             var heroAction = document.getElementById('foundations-hero-action');
             var topAction = document.getElementById('foundations-top-action');
             var microcopy = document.getElementById('foundations-hero-microcopy');
             var checkoutButton = document.querySelector('.checkout-btn[data-plan="founders-pass"]');
             var checkoutTerms = document.getElementById('checkout-terms-container');
             var openInstalled = document.getElementById('paid-preview-open-installed');
+            var iosStoreLink = document.getElementById('paid-preview-ios');
+            var iosRecoveryNote = document.getElementById('paid-preview-ios-recovery');
+            var previewInstructions = document.getElementById('paid-preview-instructions');
+
+            function rememberIosPreviewHandoff() {
+                if (!isAppleDevice || !iosHandoff) return;
+                var recovery = iosHandoff.remember(params, {
+                    location: window.location,
+                    history: window.history,
+                    storage: iosRecoveryStorage
+                });
+                if (recovery && iosRecoveryNote) iosRecoveryNote.hidden = false;
+            }
 
             document.body.classList.add('paid-meta-preview');
             document.body.dataset.landingVariant = 'facebook_5m_foundations_v3';
@@ -607,33 +614,42 @@
                 action.textContent = action === heroAction ? primaryStoreLabel : 'Download Balance';
                 action.dataset.previewHandoff = 'true';
             });
-            if (openInstalled) openInstalled.href = nativePreviewUrl;
-            var androidStoreLink = document.getElementById('paid-preview-android');
-            if (androidStoreLink) androidStoreLink.href = playStoreUrl;
-            if (microcopy) {
-                microcopy.textContent = 'Download Balance, create your free account, then complete your personalised setup and guided tour without leaving the app.';
-            }
-            // The organic page remains AU$89.99. Only this verified paid-Meta
-            // runtime rewrites visible copy to the campaign's exact AU$89 offer.
-            var priceWalker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-            var priceNodes = [];
-            while (priceWalker.nextNode()) {
-                var priceNode = priceWalker.currentNode;
-                var priceParentTag = priceNode.parentElement && priceNode.parentElement.tagName;
-                if (!['SCRIPT', 'STYLE', 'NOSCRIPT'].includes(priceParentTag)
-                    && priceNode.nodeValue.indexOf('AU$89.99') !== -1) {
-                    priceNodes.push(priceNode);
+            if (openInstalled) {
+                openInstalled.href = nativePreviewUrl || '#paid-preview-downloads';
+                if (!nativePreviewUrl) {
+                    openInstalled.textContent = 'This secure preview link has expired — ask Shannon for a fresh link';
+                    openInstalled.setAttribute('aria-disabled', 'true');
                 }
             }
-            priceNodes.forEach(function (priceNode) {
-                priceNode.nodeValue = priceNode.nodeValue.replace(/AU\$89\.99/g, 'AU$89');
-            });
+            var androidStoreLink = document.getElementById('paid-preview-android');
+            if (androidStoreLink) androidStoreLink.href = playStoreUrl;
+            if (isAppleDevice) {
+                if (androidStoreLink) androidStoreLink.hidden = true;
+                [heroAction, topAction, iosStoreLink].forEach(function (action) {
+                    if (!action) return;
+                    action.target = '_blank';
+                    action.rel = 'noopener';
+                    action.addEventListener('click', rememberIosPreviewHandoff);
+                });
+                if (iosRecoveryNote) iosRecoveryNote.hidden = false;
+                if (previewInstructions) {
+                    previewInstructions.innerHTML = 'Tap <strong>Download for iPhone</strong> and install Balance. Then return to this page and tap <strong>Open my personalised preview</strong> so your secure preview opens before account setup. You do not need to return to Instagram.';
+                }
+            } else if (isAndroidDevice && iosStoreLink) {
+                iosStoreLink.hidden = true;
+            }
+            if (microcopy) {
+                microcopy.textContent = isAppleDevice
+                    ? 'Install Balance, return here once, then open your secure personalised preview for setup and the guided tour.'
+                    : 'Download Balance, create your free account, then complete your personalised setup and guided tour without leaving the app.';
+            }
             if (checkoutTerms) checkoutTerms.style.display = 'none';
             if (checkoutButton) {
                 checkoutButton.textContent = primaryStoreLabel;
                 checkoutButton.addEventListener('click', function (event) {
                     event.preventDefault();
                     event.stopImmediatePropagation();
+                    rememberIosPreviewHandoff();
                     window.location.href = primaryStoreUrl;
                 }, true);
             }

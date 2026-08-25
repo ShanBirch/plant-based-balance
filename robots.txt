@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin-dashboard.html
+Disallow: /conversion-operator.html
+Disallow: /booking-settings.html
+Disallow: /success.html
+Disallow: /oauth-callback.html
+
+Sitemap: https://plantbased-balance.org/sitemap.xml

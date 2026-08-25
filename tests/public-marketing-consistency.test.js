@@ -26,12 +26,37 @@ const corePages = [
     'refund-policy.html'
 ];
 
-test('public journey consistently routes the primary action to the Founders Pass', () => {
-    assert.match(read('bio.html'), /class="hub-button primary" href="plant-based-fitness\.html"/);
-    assert.match(read('clients.html'), /class="nav-button primary" href="plant-based-fitness\.html">Founders Pass/);
-    assert.match(read('journey.html'), /class="nav-button primary" href="plant-based-fitness\.html">Founders Pass/);
-    assert.match(read('balance.html'), /class="btn primary" href="plant-based-fitness\.html">Get the Founders Pass/);
-    assert.match(visibleText('book.html'), /You do not need a call to join the Founders Pass/);
+test('public journey consistently routes the primary action to Balance Foundations', () => {
+    assert.match(read('bio.html'), /class="hub-button primary" href="\/founders"/);
+    assert.match(read('clients.html'), /class="nav-button primary" href="\/founders">See your Balance preview/);
+    assert.match(read('journey.html'), /class="nav-button primary" href="\/founders">See your Balance preview/);
+    assert.match(read('balance.html'), /class="btn primary" href="\/founders">See your personalised Balance preview/);
+    assert.match(visibleText('book.html'), /You do not need a call to start Balance Foundations/);
+});
+
+test('independent public resources use the Balance brand and Foundations-first action', () => {
+    const resourcePages = [
+        'blog.html',
+        'blog-fitness.html',
+        'calculators.html',
+        'calc-calorie-deficit.html',
+        'research.html',
+        'contact.html',
+        'learning.html'
+    ];
+
+    for (const file of resourcePages) {
+        const content = read(file);
+        const copy = visibleText(file);
+        assert.doesNotMatch(copy, /FitGotchi|Start Your Reset|Download Free/i, file);
+        assert.match(content, /href="\/founders"/, file);
+    }
+
+    assert.match(visibleText('balance.html'), /One AUD \$149 payment for the full six weeks\. No subscription or automatic renewal\./);
+    assert.match(visibleText('learning.html'), /Foundations gives every member the same practical six-week starting path/);
+    assert.match(read('netlify.toml'), /from = "\/welcome\.html"[\s\S]*?to = "\/balance\.html"[\s\S]*?status = 301/);
+    assert.match(read('robots.txt'), /Sitemap: https:\/\/plantbased-balance\.org\/sitemap\.xml/);
+    assert.match(read('sitemap.xml'), /https:\/\/plantbased-balance\.org\/founders/);
 });
 
 test('offer facts agree across marketing and legal pages', () => {
@@ -42,10 +67,13 @@ test('offer facts agree across marketing and legal pages', () => {
     const refunds = visibleText('refund-policy.html');
 
     for (const content of [founders, coaching]) {
-        assert.match(content, /(?:AU|AUD)?\$89\.99 once/i);
+        assert.match(content, /(?:AU|AUD)\s?\$149/i);
+        assert.match(content, /full six weeks|complete six weeks/i);
         assert.match(content, /six-week/i);
         assert.match(content, /one weekly check-in/i);
-        assert.match(content, /no auto-renewal|does not renew|does not auto-renew/i);
+        assert.match(content, /no subscription|not a subscription/i);
+        assert.match(content, /no auto-renewal|no automatic renewal|does not renew|does not auto-renew/i);
+        assert.doesNotMatch(content, /\$89(?:\.99)?|\b(?:8900|8999)\b/i);
     }
 
     assert.match(agreement, /does not include instant replies, unlimited daily one-to-one access or live calls/i);
@@ -54,16 +82,18 @@ test('offer facts agree across marketing and legal pages', () => {
     assert.match(coaching, /Month-to-Month Coaching.*\$74\.99 \/week/s);
     assert.match(terms, /26 weekly payments at AU\$29\.99/);
     assert.match(refunds, /26-week, 13-week or four-week initial minimum/);
-    assert.match(terms, /Balance Foundations Founders Pass/);
-    assert.match(refunds, /Founders Pass is a one-time purchase/);
-    assert.match(founders, /BALANCE FOUNDATIONS AU\$89\.99 COMPLETE 6-WEEK CURRICULUM WEEKLY COACHING REVIEW/);
+    assert.match(terms, /Balance Foundations is one AUD \$149 payment for the full six weeks/i);
+    assert.match(refunds, /Balance Foundations is one AUD \$149 payment for the full six weeks/i);
+    assert.match(founders, /Balance Foundations turns behaviour-change and neuroscience principles into one guided weekly rhythm/i);
+    assert.match(founders, /One AUD \$149 payment Full six weeks, no automatic renewal/i);
     assert.doesNotMatch(founders, /Starter Coaching/);
 });
 
 test('Shannon story agrees wherever it appears', () => {
     assert.match(visibleText('journey.html'), /plant-based from birth/i);
     assert.match(visibleText('journey.html'), /five years as a vegan/i);
-    assert.match(visibleText('plant-based-fitness.html'), /raised vegetarian from birth and have been vegan for five years/i);
+    assert.match(visibleText('plant-based-fitness.html'), /I am an exercise scientist and former gym owner/i);
+    assert.doesNotMatch(visibleText('plant-based-fitness.html'), /I am a neuroscientist/i);
     assert.doesNotMatch(visibleText('journey.html'), /building Balance/i);
 });
 
@@ -80,4 +110,6 @@ test('retired legacy offer pages are forced onto the aligned pages', () => {
     const netlify = read('netlify.toml');
     assert.match(netlify, /from = "\/shop\.html"[\s\S]*?to = "\/coaching\.html"[\s\S]*?status = 301[\s\S]*?force = true/);
     assert.match(netlify, /from = "\/success-stories\.html"[\s\S]*?to = "\/clients\.html"[\s\S]*?status = 301[\s\S]*?force = true/);
+    assert.match(netlify, /from = "\/fitness"[\s\S]*?to = "\/founders"[\s\S]*?status = 301[\s\S]*?force = true/);
+    assert.match(netlify, /from = "\/fitness-coaching\.html"[\s\S]*?to = "\/founders"[\s\S]*?status = 301[\s\S]*?force = true/);
 });

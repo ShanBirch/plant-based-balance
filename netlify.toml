@@ -537,6 +537,24 @@
   force = true
 
 [[redirects]]
+  from = "/index.html"
+  to = "/balance.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/welcome"
+  to = "/balance.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/welcome.html"
+  to = "/balance.html"
+  status = 301
+  force = true
+
+[[redirects]]
   from = "/quiz"
   to = "/quiz.html"
   status = 200
