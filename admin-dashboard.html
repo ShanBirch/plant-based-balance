@@ -13292,6 +13292,39 @@
             return /\b(app support|support_|support |program_fix|program review|needs verification|needs_ui_verification|patched_needs_verification|needs_you_after_failed_fix|upload_verification)\b/i.test(supportText);
         }
 
+        function needsYouAllowsUnlinkedLeadDecision(alert) {
+            if (!alert || !DM_ALERT_TYPES.includes(alert.alert_type) || getAlertClientIdentity(alert)) return true;
+            const { data, codexReview, draftReview } = needsYouReviewBundle(alert);
+            const decisionText = [
+                alert.title,
+                data.needs_you_reason,
+                ...(Array.isArray(data.needs_you_reasons) ? data.needs_you_reasons : []),
+                data.manual_reason,
+                data.hold_reason,
+                codexReview.decision,
+                codexReview.reason,
+                draftReview.notification_reason,
+                ...(Array.isArray(draftReview.issues) ? draftReview.issues : []),
+            ].map(value => String(value || '').toLowerCase()).join(' ');
+            const flagged = value => value === true || String(value || '').toLowerCase() === 'true';
+
+            // Ordinary lead follow-up belongs to the automated manager queue.
+            // Only explicit human decisions are allowed into Shannon's Your Call view.
+            if (flagged(data.sales_moment)
+                || flagged(data.phone_notification_required)
+                || /\b(sales[_ -]?(?:call|moment|opportunity)|buyer[_ -]?intent|ready to start|call opportunity)\b/i.test(decisionText)) return true;
+            if (flagged(data.self_harm_hold)
+                || flagged(data.imminent_danger)
+                || /\b(self[_ -]?harm|suicid|imminent[_ -]?danger|credible[_ -]?safety)\b/i.test(decisionText)) return true;
+            if (NEEDS_YOU_AI_CONFUSION_RE.test(needsYouLatestText(alert))
+                || /\b(ai[_ -]?(?:suspicion|authenticity|detection)|bot|automat(?:ed|ion)|not really shannon|scripted|generated)\b/i.test(decisionText)) return true;
+            if (/\b(vegan[_ -]?identity|identity[_ -]?inconsisten|not really vegan|eats animals)\b/i.test(decisionText)) return true;
+            if (/\b(flirt|personal[_ -]?(?:relationship|social|boundary)|facetime|video chat|social call|face to face|parcel|pickup|drop[_ -]?off|rent message|real[_ -]?world confirmation)\b/i.test(decisionText)) return true;
+            if (flagged(data.incomplete_voice_batch)
+                || /\b(unrecoverable[_ -]?media|incomplete[_ -]?(?:voice|audio)|partly decoded)\b/i.test(decisionText)) return true;
+            return false;
+        }
+
         function needsYouHasOperatorWork(alert, activeClientIds = dmClientIdsCache.ids) {
             if (!alert || alert.status !== 'pending') return false;
             if (!NEEDS_YOU_ALERT_TYPES.includes(alert.alert_type)) return false;
@@ -13320,6 +13353,10 @@
                 return isNeedsYouRoutedDmAlert(alert) && needsYouHasSuggestedDraft(alert);
             }
             if (isCocosDmAlert(alert)) return false;
+            if (DM_ALERT_TYPES.includes(alert.alert_type) && !getAlertClientIdentity(alert)) {
+                if (!needsYouAllowsUnlinkedLeadDecision(alert)) return false;
+                return isNeedsYouRoutedDmAlert(alert);
+            }
             if (isLeadOnboardingHandoff(alert) && needsYouHasSuggestedDraft(alert)) return true;
             if (!DM_ALERT_TYPES.includes(alert.alert_type)) return false;
             const reasonInfo = needsYouAllowedReasonInfo(alert, activeClientIds);

@@ -280,4 +280,68 @@ assert.ok(
     'Needs You should render lifecycle and context emoji without mojibake'
 );
 
+assert.ok(
+    dashboard.includes('function needsYouAllowsUnlinkedLeadDecision(alert)') &&
+    dashboard.includes('if (DM_ALERT_TYPES.includes(alert.alert_type) && !getAlertClientIdentity(alert)) {') &&
+    dashboard.includes('if (!needsYouAllowsUnlinkedLeadDecision(alert)) return false;') &&
+    dashboard.includes('return isNeedsYouRoutedDmAlert(alert);'),
+    'ordinary unlinked leads should stay in the automated manager queue instead of Your Call'
+);
+
+assert.ok(
+    dashboard.includes('flagged(data.sales_moment)') &&
+    dashboard.includes('flagged(data.self_harm_hold)') &&
+    dashboard.includes('NEEDS_YOU_AI_CONFUSION_RE.test(needsYouLatestText(alert))') &&
+    dashboard.includes('personal[_ -]?(?:relationship|social|boundary)') &&
+    dashboard.includes('flagged(data.incomplete_voice_batch)'),
+    'genuine unlinked-lead sales, safety, authenticity, personal-boundary, and incomplete-media decisions should remain visible'
+);
+
+const unlinkedLeadDecisionMatch = dashboard.match(/function needsYouAllowsUnlinkedLeadDecision\(alert\) \{[\s\S]+?\r?\n        \}\r?\n\s*\r?\n        function needsYouHasOperatorWork/);
+assert.ok(unlinkedLeadDecisionMatch, 'the unlinked-lead Your Call decision gate should be present');
+const unlinkedLeadDecisionContext = {
+    DM_ALERT_TYPES: ['incoming_dm', 'ig_incoming_dm', 'fb_incoming_dm'],
+    NEEDS_YOU_AI_CONFUSION_RE: /\b(?:ai|bot|automated)\b/i,
+    getAlertClientIdentity(alert) { return String(alert?.client_id || alert?.data?.linked_user_id || ''); },
+    needsYouReviewBundle(alert) {
+        const data = alert?.data || {};
+        return { data, codexReview: data.codex_review || {}, draftReview: data.draft_review || {} };
+    },
+    needsYouLatestText(alert) { return String(alert?.data?.message_preview || ''); },
+};
+vm.runInNewContext(
+    unlinkedLeadDecisionMatch[0].replace(/\r?\n\s*function needsYouHasOperatorWork[\s\S]*$/, ''),
+    unlinkedLeadDecisionContext
+);
+assert.strictEqual(
+    unlinkedLeadDecisionContext.needsYouAllowsUnlinkedLeadDecision({
+        alert_type: 'ig_incoming_dm',
+        client_id: null,
+        title: 'ordinary lead replied',
+        data: { operator_queue: 'needs_you', needs_you_required: true, message_preview: 'yeah fruit sounds good' },
+    }),
+    false,
+    'generic needs_you flags must not put an ordinary unlinked lead in Your Call'
+);
+assert.strictEqual(
+    unlinkedLeadDecisionContext.needsYouAllowsUnlinkedLeadDecision({
+        alert_type: 'ig_incoming_dm',
+        client_id: null,
+        title: 'Your Call: personal pickup request',
+        data: { needs_you_reason: 'real_world_confirmation' },
+    }),
+    true,
+    'a genuine personal or real-world lead decision should remain in Your Call'
+);
+assert.strictEqual(
+    unlinkedLeadDecisionContext.needsYouAllowsUnlinkedLeadDecision({
+        alert_type: 'incoming_dm',
+        client_id: 'nat-client-id',
+        title: 'Nat just messaged you',
+        data: { linked_user_id: 'nat-client-id' },
+    }),
+    true,
+    'linked clients such as Nat and Arunima must bypass the unlinked-lead filter'
+);
+
 console.log('admin Needs You AI confusion regex tests passed');
