@@ -47,7 +47,7 @@ function hasPersonalCallRequest(value) {
 function hasFlirtationSignal(value) {
     const text = cleanText(value);
     if (!text) return false;
-    return /\b(?:flirt(?:ing|y)?|thought you were cute|think (?:i'm|im|i am|you(?:'re| are)) cute|you(?:'re| are) (?:cute|gorgeous|hot|sexy|handsome)|i(?:'m| am) (?:cute|pretty|gorgeous|hot|sexy)|sexy(?:\s+x+)?|cute awkward|awkward cute|ador(?:e|ing) you|date me|go on a date|kiss(?:ing)? you|attracted to you|seeing you at the beach|send me (?:some )?(?:beach )?photos?|see (?:your|the) cute .*face)\b/i.test(text);
+    return /\b(?:flirt(?:ing|y)?|thought you were cute|think (?:i'm|im|i am|you(?:'re| are)) cute|you(?:'re| are) (?:cute|gorgeous|hot|sexy|handsome)|i(?:'m| am) (?:cute|pretty(?!\s+sure\b)|gorgeous|hot|sexy)|sexy(?:\s+x+)?|cute awkward|awkward cute|ador(?:e|ing) you|date me|go on a date|kiss(?:ing)? you|attracted to you|seeing you at the beach|send me (?:some )?(?:beach )?photos?|see (?:your|the) cute .*face)\b/i.test(text);
 }
 
 function hasSexualPersonalEscalation(value) {

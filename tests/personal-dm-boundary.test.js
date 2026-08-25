@@ -66,6 +66,14 @@ test('routes terse flirtation to Shannon, including for linked clients', () => {
     assert.equal(result.reason, 'flirtation_or_personal_relationship_manual_only');
 });
 
+test('does not treat uncertainty phrasing as flirtation', () => {
+    const result = boundary.classifyPersonalDmBoundary({
+        inboundText: "back when I drank I'm pretty sure that caused my cravings",
+        outboundText: 'three proper meals is already a decent base though',
+    });
+    assert.equal(result.requires_manual, false);
+});
+
 test('routes explicit personal sexual questions to Shannon', () => {
     const result = boundary.classifyPersonalDmBoundary({
         inboundText: 'I saw the Balance workout. Are you hung?',
