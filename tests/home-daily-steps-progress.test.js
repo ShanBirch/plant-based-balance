@@ -49,10 +49,10 @@ test('versioned phone assets advance for the Home fix', () => {
   const serviceWorker = read('sw.js');
 
   assert.match(dashboard, /pbb-social-journey\.css\?v=23-working-targets/);
-  assert.match(dashboard, /pbb-social-journey\.js\?v=36-foundations-feed-tracking/);
+  assert.match(dashboard, /pbb-social-journey\.js\?v=37-course-action-evidence/);
   assert.match(dashboard, /pbb-next-obvious-steps\.js\?v=27-working-targets/);
   assert.match(dashboard, /dashboard-script-1-daily_weighin_card_logic\.js\?v=73/);
   assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=49/);
-  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v343-foundations-feed-tracking'/);
+  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v344-course-action-evidence'/);
   assert.match(serviceWorker, /dashboard-script-10-points_widget_functions\.js\?v=49/);
 });

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v343-foundations-feed-tracking'; // v343: link each Foundations Feed action to durable evidence
+const CACHE_NAME = 'pbb-app-v344-course-action-evidence'; // v344: track diary, wearable and Identity actions with specific evidence
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

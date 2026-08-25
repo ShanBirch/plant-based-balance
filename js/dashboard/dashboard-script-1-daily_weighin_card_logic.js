@@ -1207,12 +1207,16 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
 
         try {
             var payload = await loadFitnessDiaryPayloadForDate(dateKey);
+            var courseActionId = window.socialJourney && typeof window.socialJourney.getFitnessDiaryCourseActionId === 'function'
+                ? window.socialJourney.getFitnessDiaryCourseActionId()
+                : null;
             var storyData = {
                 media_type: 'checkin_card',
                 media_url: '',
                 thumbnail_url: null,
                 caption: JSON.stringify(payload),
-                duration: 5
+                duration: 5,
+                course_action_id: courseActionId || null
             };
 
             var story;
@@ -1234,6 +1238,9 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
             }
             if (typeof window.refreshWeeklyGoalsCard === 'function') {
                 window.refreshWeeklyGoalsCard();
+            }
+            if (window.socialJourney && typeof window.socialJourney.refresh === 'function') {
+                await window.socialJourney.refresh();
             }
             if (typeof showToast === 'function') showToast('Fitness diary shared to Feed!', 'success');
             return story;

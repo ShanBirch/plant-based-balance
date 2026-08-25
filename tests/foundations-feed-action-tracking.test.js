@@ -16,6 +16,7 @@ test('Foundations community progression contains only the intended in-app Feed a
     ['w2_feed_comment', 'foundations_feed_comments'],
     ['w3_workout_feed', 'foundations_workout_feed'],
     ['w4_meal_feed', 'foundations_meal_feed'],
+    ['w4_diary_feed', 'foundations_diary_feed'],
     ['w5_pb_feed', 'foundations_pb_feed'],
     ['w6_feed_reflection', 'foundations_feed_reflection']
   ];
@@ -32,6 +33,7 @@ test('each Feed action requires specific durable evidence and cannot be satisfie
   assert.match(journey, /stories!inner\(user_id\)[\s\S]*?\.neq\('stories\.user_id', currentUserId\(\)\)/);
   assert.match(journey, /foundations_workout_feed: stories\.filter\(row => row\.media_type === 'workout_card' && storyCard\(row\)\.card_type === 'workout' && !!storyCard\(row\)\.workout_date\)/);
   assert.match(journey, /foundations_meal_feed: stories\.filter\(row => row\.media_type === 'meal_card' && storyCard\(row\)\.card_type === 'meal'\)/);
+  assert.match(journey, /foundations_diary_feed: linkedDiaryShares/);
   assert.match(journey, /from\('pb_history'\)[\s\S]*?\.gte\('achieved_at', startIso\)[\s\S]*?\.lt\('achieved_at', endIso\)/);
   assert.match(journey, /foundations_pb_feed: stories\.filter\(row => row\.media_type === 'workout_card' && storyCard\(row\)\.card_type === 'pb' && currentWeekPbIds\.has\(String\(storyCard\(row\)\.pb_history_id \|\| ''\)\)\)/);
   assert.match(journey, /foundations_feed_reflection: linkedTextPostCount\('w6_feed_reflection'\)/);

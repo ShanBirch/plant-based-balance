@@ -84,8 +84,8 @@ test('Home plan cards stay below the complete FitGotchi stats block', () => {
     assert.match(source, /characterBlockTail\.parentNode\.insertBefore\(weeklyGoals, characterBlockTail\.nextSibling\)/);
     assert.match(source, /characterBlockTail\.parentNode\.insertBefore\(card, characterBlockTail\.nextSibling\)/);
     assert.doesNotMatch(source, /levelStrip\.parentNode\.insertBefore\((weeklyGoals|card), levelStrip\.nextSibling\)/);
-    assert.match(html, /pbb-social-journey\.js\?v=36-foundations-feed-tracking/);
-    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v343-foundations-feed-tracking'/);
+    assert.match(html, /pbb-social-journey\.js\?v=37-course-action-evidence/);
+    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v344-course-action-evidence'/);
 });
 
 test('Home goals and plan cards follow light and dark mode', () => {
@@ -135,8 +135,7 @@ test('Balance Identity teaches the input-output loop before the Instagram plan',
     const html = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
 
     assert.match(source, /Your inputs train two prediction systems/);
-    assert.match(source, /Data input affects output, and that output becomes your next input/);
-    assert.match(source, /The feed does not determine who you become/);
+    assert.match(source, /Neither feed determines who you become/);
     assert.match(source, /I understand the loop - build my plan/);
     assert.match(source, /socialJourney\.showGoals\(\)/);
     assert.match(html, /balance-identity-instagram-plan-v1/);
@@ -163,7 +162,7 @@ test('Balance Identity is available from the unified Home plan', () => {
 test('Instagram planner captures a complete strategy in owned journey settings', () => {
     const source = fs.readFileSync(path.join(root, 'js/dashboard/pbb-social-journey.js'), 'utf8');
 
-    for (const field of ['purpose', 'niche', 'audience', 'identity_statement', 'content_pillars', 'account_name', 'bio', 'posting_rhythm', 'boundaries', 'first_posts']) {
+    for (const field of ['purpose', 'niche', 'audience', 'identity_statement', 'content_pillars', 'instagram_handle', 'account_name', 'bio', 'posting_rhythm', 'boundaries', 'first_posts']) {
         assert.match(source, new RegExp(field));
     }
     assert.match(source, /instagram_plan: plan/);
