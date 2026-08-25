@@ -10,6 +10,13 @@ assert.match(dashboard, /Balance IG Browser 24-Hour Shift Dispatcher/, 'browser-
 assert.match(dashboard, /informational only and did not send or approve a client message/, 'fallback copy must preserve approval and delivery boundaries');
 assert.match(dashboard, /currentFeed !== 'needs-you' \|\| !alert \|\| alert\.status !== 'pending'/, 'fallback must be tied to the live pending source card');
 assert.match(dashboard, /const codexTaskFallbackHtml = renderCodexTaskFallback\(alert\)/, 'alert cards should include the fallback renderer');
+
+assert.match(dashboard, /function renderYourCallDispatcherApproval\(approval = null\)/, 'Your Call should render the live dispatcher batch');
+assert.match(dashboard, /APPROVE IG DISPATCH \$\{batchId\} VERSION \$\{batchVersion\}/, 'dispatcher fallback should show the exact Codex reply for the live batch version');
+assert.match(dashboard, /Balance IG Browser 24-Hour Shift Dispatcher/, 'dispatcher fallback should name the exact Codex task');
+assert.match(dashboard, /This card cannot approve or send an Instagram action/, 'dispatcher fallback should be explicitly informational');
+assert.doesNotMatch(dashboard, /function approveYourCallDispatcherBatch\(/, 'the retired in-app dispatcher approval path must not exist');
+assert.doesNotMatch(dashboard, /onclick="approveYourCallDispatcherBatch\(\)"/, 'Your Call must not approve a dispatcher batch');
 assert.match(dashboard, /\$\{codexTaskFallbackHtml\}/, 'fallback notice should be rendered without creating another alert');
 
 console.log('admin Codex task fallback tests passed');

@@ -13473,57 +13473,24 @@
             }
             const itemCount = Number(approval.itemCount || 0);
             const items = Array.isArray(approval.items) ? approval.items : [];
+            const batchId = String(approval.batchId || '').trim();
+            const batchVersion = String(approval.batchVersion || '').trim();
+            const approvalReply = batchId && batchVersion
+                ? `APPROVE IG DISPATCH ${batchId} VERSION ${batchVersion}`
+                : '';
             const itemList = items.length
                 ? `<details class="your-call-dispatch-details"><summary>Review ${itemCount} exact action${itemCount === 1 ? '' : 's'}</summary><ul>${items.map(item => `<li>${escapeHtml(item.handle ? `@${item.handle}` : 'Instagram')} · ${escapeHtml(item.action || 'action')}</li>`).join('')}</ul></details>`
                 : '';
             container.innerHTML = `
                 <div class="your-call-dispatch-inner">
                     <div class="your-call-dispatch-copy">
-                        <div class="your-call-dispatch-title">Instagram dispatcher ready</div>
-                        <div class="your-call-dispatch-meta">${itemCount} reviewed action${itemCount === 1 ? '' : 's'} waiting for your approval.</div>
+                        <div class="your-call-dispatch-title">Instagram dispatcher approval waiting in Codex</div>
+                        <div class="your-call-dispatch-meta">Backup notice only: open the Codex task <strong>Balance IG Browser 24-Hour Shift Dispatcher</strong>. This card cannot approve or send an Instagram action.</div>
+                        ${approvalReply ? `<div class="your-call-dispatch-meta">Reply there with exactly: <code>${escapeHtml(approvalReply)}</code></div>` : ''}
                         ${itemList}
                     </div>
-                    <button type="button" class="your-call-dispatch-approve" id="your-call-dispatch-approve" onclick="approveYourCallDispatcherBatch()">Approve &amp; resume</button>
                 </div>`;
             container.classList.add('visible');
-        }
-
-        async function approveYourCallDispatcherBatch() {
-            const approval = needsYouFeedCache.dispatcherApproval;
-            const button = document.getElementById('your-call-dispatch-approve');
-            if (!approval?.batchId || !approval?.batchVersion || !button) return;
-            button.disabled = true;
-            button.textContent = 'Approving...';
-            try {
-                const session = await authHelpers.getSession();
-                const accessToken = session?.session?.access_token;
-                if (!accessToken) throw new Error('Your admin session has expired');
-                const response = await fetch('/.netlify/functions/approve-ig-dispatch-batch', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
-                    body: JSON.stringify({ batchId: approval.batchId, batchVersion: approval.batchVersion }),
-                });
-                const result = await response.json().catch(() => ({}));
-                if (!response.ok || !result.approved) throw new Error(result.reason || 'Dispatcher approval failed');
-                needsYouFeedCache = { ...needsYouFeedCache, dispatcherApproval: null, loadedAt: Date.now() };
-                renderYourCallDispatcherApproval(null);
-                renderNeedsYouCounts(summarizeNeedsYouCounts(
-                    collapseNeedsYouRows(uniqueAlertRows(needsYouFeedCache.rows || [])),
-                    needsYouFeedCache.activeClientIds || dmClientIdsCache.ids,
-                    needsYouFeedCache.programRenewals || [],
-                    null
-                ));
-                if (typeof showToast === 'function') showToast('Dispatcher approved. It will resume on the next run.', 'success');
-            } catch (error) {
-                console.error('Failed to approve dispatcher batch:', error);
-                window.alert(`Could not approve dispatcher: ${error.message || error}`);
-                await loadNeedsYou(true);
-            } finally {
-                if (button.isConnected) {
-                    button.disabled = false;
-                    button.textContent = 'Approve & resume';
-                }
-            }
         }
 
         function yourCallProgramDueLabel(item) {
