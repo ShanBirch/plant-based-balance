@@ -19020,6 +19020,34 @@
             }
         }
 
+        function renderCodexTaskFallback(alert) {
+            if (currentFeed !== 'needs-you' || !alert || alert.status !== 'pending') return '';
+
+            const data = alert.data || {};
+            const reason = data.reason || {};
+            const queue = String(data.operator_queue || '').trim().toLowerCase();
+            const isExternalDm = isExternalDmAlert(alert);
+            const isBrowserOwned = queue === 'browser_dispatcher'
+                || data.browser_dispatch_required === true
+                || data.browser_story_reply_required === true
+                || reason.browser_dispatch_required === true
+                || reason.browser_story_reply_required === true
+                || String(data.browser_dispatch_owner || '').toLowerCase() === 'browser_dispatcher';
+            const isManagerReview = isExternalDm && (
+                queue === 'needs_you'
+                || data.needs_you_required === true
+                || data.needs_shannon_approval === true
+                || data.client_manager_review_required === true
+            );
+
+            if (!isBrowserOwned && !isManagerReview) return '';
+
+            const taskName = isBrowserOwned
+                ? 'Balance IG Browser 24-Hour Shift Dispatcher'
+                : 'Balance Lead + Client DM Manager';
+            return `<div class="codex-task-fallback" role="note" style="margin:8px 0; padding:8px 10px; background:#eff6ff; border:1px solid #bfdbfe; color:#1e3a8a; -webkit-text-fill-color:#1e3a8a; border-radius:8px; font-size:0.76rem; line-height:1.4;"><strong>Backup notice:</strong> open the Codex task <strong>${escapeHtml(taskName)}</strong> for the full review. This notice is informational only and did not send or approve a client message.</div>`;
+        }
+
         function renderAlertCard(alert) {
             const isChallengeCheckin = isChallengeCheckinAlert(alert);
             const isActionReceipt = isCoachActionReceipt(alert);
@@ -19106,6 +19134,7 @@
             const needsYouApprovalHtml = needsYouApprovalInfo?.ready && !cleanExplanationHtml
                 ? `<div style="margin:8px 0; padding:8px 10px; background:${needsYouApprovalInfo.needsReview ? '#fff7ed' : '#f0fdf4'}; border:1px solid ${needsYouApprovalInfo.needsReview ? '#fed7aa' : '#bbf7d0'}; color:${needsYouApprovalInfo.needsReview ? '#9a3412' : '#166534'}; border-radius:8px; font-size:0.76rem; font-weight:800; line-height:1.35;">Codex checked this client DM draft${needsYouApprovalInfo.reviewer ? ` (${escapeHtml(needsYouApprovalInfo.reviewer)})` : ''}. Shannon can edit or send it from here.</div>`
                 : '';
+            const codexTaskFallbackHtml = renderCodexTaskFallback(alert);
             const learningReelContextHtml = renderLearningReelContextStrip(alert);
             const tahliaSocialContextHtml = isTahliaSocial ? renderTahliaSocialContext(alert) : '';
             const suggestedMessageHtml = hasMessage
@@ -19154,6 +19183,7 @@
                 ${checkinDeliveryHtml}
                 ${autoSendHoldNoticeHtml}
                 ${needsYouApprovalHtml}
+                ${codexTaskFallbackHtml}
                 ${conversationPanelHtml || ''}
                 ${learningReelContextHtml}
                 ${tahliaSocialContextHtml}
