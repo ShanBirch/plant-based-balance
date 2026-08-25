@@ -13485,12 +13485,27 @@
                 <div class="your-call-dispatch-inner">
                     <div class="your-call-dispatch-copy">
                         <div class="your-call-dispatch-title">Instagram dispatcher approval waiting in Codex</div>
-                        <div class="your-call-dispatch-meta">Backup notice only: open the Codex task <strong>Balance IG Browser 24-Hour Shift Dispatcher</strong>. This card cannot approve or send an Instagram action.</div>
+                        <div class="your-call-dispatch-meta">Backup notice only: in the ChatGPT phone app open <strong>Remote</strong>, then the pinned Codex task <strong>Balance IG Browser 24-Hour Shift Dispatcher</strong>. This card cannot approve or send an Instagram action.</div>
                         ${approvalReply ? `<div class="your-call-dispatch-meta">Reply there with exactly: <code>${escapeHtml(approvalReply)}</code></div>` : ''}
                         ${itemList}
                     </div>
+                    ${approvalReply ? `<button type="button" class="your-call-dispatch-approve" onclick="copyYourCallDispatcherApprovalReply()">Copy Codex reply</button>` : ''}
                 </div>`;
             container.classList.add('visible');
+        }
+
+        async function copyYourCallDispatcherApprovalReply() {
+            const approval = needsYouFeedCache.dispatcherApproval;
+            const batchId = String(approval?.batchId || '').trim();
+            const batchVersion = String(approval?.batchVersion || '').trim();
+            if (!batchId || !batchVersion) return;
+            const reply = `APPROVE IG DISPATCH ${batchId} VERSION ${batchVersion}`;
+            try {
+                await navigator.clipboard.writeText(reply);
+                if (typeof showToast === 'function') showToast('Exact Codex reply copied. Paste it into the pinned dispatcher task.', 'success');
+            } catch (error) {
+                window.prompt('Copy this exact reply, then paste it into the pinned dispatcher task:', reply);
+            }
         }
 
         function yourCallProgramDueLabel(item) {

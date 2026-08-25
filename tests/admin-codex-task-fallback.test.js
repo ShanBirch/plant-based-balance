@@ -15,6 +15,9 @@ assert.match(dashboard, /function renderYourCallDispatcherApproval\(approval = n
 assert.match(dashboard, /APPROVE IG DISPATCH \$\{batchId\} VERSION \$\{batchVersion\}/, 'dispatcher fallback should show the exact Codex reply for the live batch version');
 assert.match(dashboard, /Balance IG Browser 24-Hour Shift Dispatcher/, 'dispatcher fallback should name the exact Codex task');
 assert.match(dashboard, /This card cannot approve or send an Instagram action/, 'dispatcher fallback should be explicitly informational');
+assert.match(dashboard, /open <strong>Remote<\/strong>, then the pinned Codex task/, 'dispatcher fallback should explain the reliable mobile route');
+assert.match(dashboard, /function copyYourCallDispatcherApprovalReply\(\)/, 'dispatcher fallback should provide a copy-only exact confirmation affordance');
+assert.match(dashboard, /navigator\.clipboard\.writeText\(reply\)/, 'copy affordance should copy the versioned reply without changing batch state');
 assert.doesNotMatch(dashboard, /function approveYourCallDispatcherBatch\(/, 'the retired in-app dispatcher approval path must not exist');
 assert.doesNotMatch(dashboard, /onclick="approveYourCallDispatcherBatch\(\)"/, 'Your Call must not approve a dispatcher batch');
 assert.match(dashboard, /\$\{codexTaskFallbackHtml\}/, 'fallback notice should be rendered without creating another alert');

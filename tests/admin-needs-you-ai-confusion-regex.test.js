@@ -225,6 +225,7 @@ assert.ok(
     dashboard.includes("fetch('/.netlify/functions/approve-ig-dispatch-batch'") &&
     dashboard.includes('APPROVE IG DISPATCH ${batchId} VERSION ${batchVersion}') &&
     dashboard.includes('This card cannot approve or send an Instagram action.') &&
+    dashboard.includes('onclick="copyYourCallDispatcherApprovalReply()"') &&
     !dashboard.includes('onclick="approveYourCallDispatcherBatch()"'),
     'Your Call should surface the exact current dispatcher batch without becoming an approval path'
 );
