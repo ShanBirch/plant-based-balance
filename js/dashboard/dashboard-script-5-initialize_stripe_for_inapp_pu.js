@@ -4882,6 +4882,9 @@ let _aiMealPlanGenerationInProgress = false;
 let _aiMealPlanLoggedTypes = [];
 let _aiMealPlanLoggedDayKey = '';
 let _aiMealPlanMealSelection = null;
+let _metaPreviewMealPlanBuildPromise = null;
+let _metaPreviewMealPlanBuildSignature = '';
+let _metaPreviewMealPlanBuildState = { status: 'idle', progress: 0, message: '' };
 
 function getAiMealPlanTodayIndex() {
     const sundayFirstDay = new Date().getDay();
@@ -5196,7 +5199,8 @@ async function ensureExactMealPlanPhotos(plan, userId, options = {}) {
     const planId = plan?.id;
     if (!planId || !userId || _mealPhotoGenerationPlans.has(planId)) return { generated: 0, failed: 0 };
 
-    const missing = mealsInPlan(plan).filter(meal =>
+    const candidateMeals = Array.isArray(options.meals) ? options.meals : mealsInPlan(plan);
+    const missing = candidateMeals.filter(meal =>
         meal?.id && window.resolveMealPlanPhotoDetails?.(meal)?.source === 'missing'
     );
     if (!missing.length) return { generated: 0, failed: 0 };
@@ -6103,51 +6107,225 @@ function mealPlanNeedsPreferenceReview(preferences = {}) {
         || dislikes.length > 0;
 }
 
-async function ensureMetaPreviewMealPlan() {
-    if (window.metaAdTrialMode !== true) return null;
-    if (_aiMealPlanCache && Array.isArray(_aiMealPlanCache.weeks)) {
-        showAiPlanLoaded(_aiMealPlanCache);
-        return _aiMealPlanCache;
-    }
-
-    let savedPlan = null;
-    try { savedPlan = JSON.parse(localStorage.getItem('ai_meal_plan') || 'null'); } catch (e) {}
-    if (savedPlan && Array.isArray(savedPlan.weeks)) {
-        _aiMealPlanCache = savedPlan;
-        _aiMealPlanCurrentWeek = 1;
-        _aiMealPlanCurrentDay = 0;
-        showAiPlanLoaded(savedPlan);
-        return savedPlan;
-    }
-
-    if (typeof window.buildScaledMealPlan !== 'function') {
-        await waitForMealPlanDependencies(5000);
-    }
-    if (typeof window.buildScaledMealPlan !== 'function') return null;
-
+function readMetaPreviewMealInputs() {
     let profile = {};
+    let foodPreferences = {};
     try {
         profile = Object.assign(
             {},
             JSON.parse(localStorage.getItem('userProfile') || '{}'),
-            JSON.parse(sessionStorage.getItem('userProfile') || '{}'),
-            JSON.parse(sessionStorage.getItem('userResult') || '{}')
+            JSON.parse(sessionStorage.getItem('userProfile') || '{}')
         );
     } catch (e) {}
+    try { foodPreferences = JSON.parse(localStorage.getItem('user_food_preferences') || '{}') || {}; } catch (e) {}
+    if (!Array.isArray(foodPreferences.dietary_requirements) || !foodPreferences.dietary_requirements.length) {
+        const requirements = Array.isArray(profile.dietary_requirements) ? profile.dietary_requirements : [];
+        foodPreferences.dietary_requirements = requirements.length ? requirements : [profile.dietary_preference || 'omnivore'];
+    }
+    foodPreferences.diet_type = foodPreferences.diet_type || profile.dietary_preference || 'omnivore';
+    return { profile, foodPreferences };
+}
 
+function metaPreviewMealPlanSignature(profile, foodPreferences) {
+    const list = value => Array.isArray(value) ? value.map(item => String(item || '').trim().toLowerCase()).filter(Boolean).sort() : [];
+    return JSON.stringify({
+        calorie_goal: Math.round(Number(profile.calorie_goal || profile.calorieGoal || profile.daily_calorie_target || 2000)),
+        protein_goal_g: Math.round(Number(profile.protein_goal_g || profile.proteinGoal || 0)),
+        carbs_goal_g: Math.round(Number(profile.carbs_goal_g || profile.carbsGoal || 0)),
+        fat_goal_g: Math.round(Number(profile.fat_goal_g || profile.fatGoal || 0)),
+        diet_type: String(foodPreferences.diet_type || 'omnivore').toLowerCase(),
+        dietary_requirements: list(foodPreferences.dietary_requirements),
+        allergies: list(foodPreferences.allergies),
+        cuisines: list(foodPreferences.cuisine_preferences),
+        favorites: list(foodPreferences.favorites),
+        dislikes: list(foodPreferences.dislikes),
+        prep_time: String(foodPreferences.prep_time_preference || 'moderate').toLowerCase()
+    });
+}
+
+function setMetaPreviewMealPlanBuildStatus(message, progress, status = 'building') {
+    _metaPreviewMealPlanBuildState = { message: String(message || ''), progress: Math.max(0, Math.min(100, Number(progress) || 0)), status };
+    const card = document.getElementById('wizard-meal-plan-build-card');
+    const title = document.getElementById('wizard-meal-plan-build-title');
+    const detail = document.getElementById('wizard-meal-plan-build-detail');
+    const bar = document.getElementById('wizard-meal-plan-build-progress');
+    if (card) card.dataset.state = status;
+    if (title) title.textContent = status === 'ready' ? 'Your meal plan is ready' : status === 'error' ? 'Meal plan needs another try' : 'Building your meal plan';
+    if (detail) detail.textContent = _metaPreviewMealPlanBuildState.message || 'Using the food choices you just made.';
+    if (bar) bar.style.width = `${_metaPreviewMealPlanBuildState.progress}%`;
+}
+window.setMetaPreviewMealPlanBuildStatus = setMetaPreviewMealPlanBuildStatus;
+
+async function buildFreshMetaPreviewMealPlan(profile, foodPreferences, signature) {
+    const user = window.currentUser || await waitForCurrentUser();
+    if (!user || !window.supabaseClient) throw new Error('Your preview account is still connecting. Please try again.');
+    const dayNames = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+    const generatedDays = [];
+    let newPlanId = null;
     const calorieGoal = Number(profile.calorie_goal || profile.calorieGoal || profile.daily_calorie_target || 2000);
-    const plan = window.buildScaledMealPlan({
+    const targets = {
         calorie_goal: Number.isFinite(calorieGoal) && calorieGoal >= 1200 ? calorieGoal : 2000,
         protein_goal_g: Number(profile.protein_goal_g || profile.proteinGoal || 0) || null,
         carbs_goal_g: Number(profile.carbs_goal_g || profile.carbsGoal || 0) || null,
         fat_goal_g: Number(profile.fat_goal_g || profile.fatGoal || 0) || null
-    });
-    _aiMealPlanCache = plan;
-    _aiMealPlanCurrentWeek = 1;
-    _aiMealPlanCurrentDay = 0;
-    try { localStorage.setItem('ai_meal_plan', JSON.stringify(plan)); } catch (e) {}
-    showAiPlanLoaded(plan);
-    return plan;
+    };
+    const profileForGenerator = { ...profile, ...targets };
+
+    try {
+        const firstDayNumber = getAiMealPlanTodayIndex();
+        const remainingDayNumbers = [0,1,2,3,4,5,6].filter(dayNumber => dayNumber !== firstDayNumber);
+        const generateDay = async (dayNumber, previousDays) => {
+            const result = await fetchMealPlanDay({
+                userData: { profile: profileForGenerator, quizResults: profileForGenerator, facts: {}, foodPreferences },
+                weekNumber: 1,
+                dayNumber,
+                previousDays,
+                previousWeeks: []
+            });
+            return { ...result.day, day_of_week: dayNumber, day_name: result.day.day_name || dayNames[dayNumber] };
+        };
+
+        setMetaPreviewMealPlanBuildStatus(`Creating ${dayNames[firstDayNumber]} first so your tour has something real to show.`, 8);
+        generatedDays.push(await generateDay(firstDayNumber, []));
+        for (let batchStart = 0; batchStart < remainingDayNumbers.length; batchStart += 3) {
+            const batch = remainingDayNumbers.slice(batchStart, batchStart + 3);
+            const previousDays = generatedDays.map(day => ({ day_name: day.day_name, mealNames: (day.meals || []).map(meal => meal.name) }));
+            setMetaPreviewMealPlanBuildStatus(`Creating ${batch.map(dayNumber => dayNames[dayNumber]).join(', ')} around your choices.`, 18 + batchStart * 7);
+            const batchDays = await Promise.all(batch.map(dayNumber => generateDay(dayNumber, previousDays)));
+            generatedDays.push(...batchDays);
+        }
+        generatedDays.sort((a, b) => a.day_of_week - b.day_of_week);
+
+        setMetaPreviewMealPlanBuildStatus('Saving your personalised week.', 68);
+        const parent = await window.supabaseClient.from('ai_generated_meal_plans').insert({
+            user_id: user.id,
+            plan_name: 'Your Personalised First Week',
+            plan_description: 'Created fresh from the food choices in your Balance setup.',
+            status: 'generating',
+            ...targets,
+            diet_type: foodPreferences.diet_type || 'omnivore',
+            total_meals: generatedDays.reduce((sum, day) => sum + (day.meals || []).length, 0),
+            current_week: 1
+        }).select('id,generated_at').single();
+        if (parent.error) throw parent.error;
+        newPlanId = parent.data.id;
+
+        const weekInsert = await window.supabaseClient.from('ai_meal_plan_weeks').insert({
+            plan_id: newPlanId,
+            week_number: 1,
+            theme: 'Your personalised first week',
+            theme_description: 'Meals chosen around the food style and restrictions you selected during setup.'
+        });
+        if (weekInsert.error) throw weekInsert.error;
+
+        const mealRows = [];
+        generatedDays.forEach(day => (day.meals || []).forEach(meal => mealRows.push({
+            plan_id: newPlanId, week_number: 1, day_of_week: day.day_of_week, day_name: day.day_name,
+            meal_slot: meal.meal_slot, meal_time: meal.meal_time, name: meal.name,
+            description: meal.description, calories: meal.calories, protein_g: meal.protein_g,
+            carbs_g: meal.carbs_g, fat_g: meal.fat_g, fiber_g: meal.fiber_g,
+            ingredients: meal.ingredients || [], preparation: meal.preparation,
+            prep_time_mins: meal.prep_time_mins, cook_time_mins: meal.cook_time_mins,
+            tags: meal.tags || [], cuisine: meal.cuisine, image_url: ''
+        })));
+        const mealsInsert = await window.supabaseClient.from('ai_generated_meals').insert(mealRows).select('id,week_number,day_of_week,meal_slot');
+        if (mealsInsert.error) throw mealsInsert.error;
+        const insertedByPosition = new Map((mealsInsert.data || []).map(row => [`${row.week_number}:${row.day_of_week}:${row.meal_slot}`, row.id]));
+        generatedDays.forEach(day => (day.meals || []).forEach(meal => {
+            meal.id = insertedByPosition.get(`1:${day.day_of_week}:${meal.meal_slot}`) || meal.id;
+            meal.image_url = '';
+        }));
+
+        const plan = {
+            id: newPlanId,
+            plan_name: 'Your Personalised First Week',
+            plan_description: 'Created fresh from the food choices in your Balance setup.',
+            generated_at: parent.data.generated_at,
+            meta_preview_signature: signature,
+            meta_preview_owner_id: user.id,
+            diet_type: foodPreferences.diet_type || 'omnivore',
+            dietary_requirements: [...(foodPreferences.dietary_requirements || [])],
+            ...targets,
+            weeks: [{ week_number: 1, theme: 'Your personalised first week', theme_description: 'Meals chosen around your setup answers.', days: generatedDays }]
+        };
+        _aiMealPlanCache = plan;
+        _aiMealPlanCurrentWeek = 1;
+        _aiMealPlanCurrentDay = 0;
+        showAiPlanLoaded(plan);
+
+        const firstDayMeals = generatedDays.find(day => day.day_of_week === firstDayNumber)?.meals || [];
+        setMetaPreviewMealPlanBuildStatus('Creating photos that match your first meals.', 76);
+        await ensureExactMealPlanPhotos(plan, user.id, {
+            meals: firstDayMeals,
+            onProgress: (done, total) => setMetaPreviewMealPlanBuildStatus(`Creating meal photos ${done} of ${total}.`, 76 + Math.round((done / Math.max(total, 1)) * 18))
+        });
+        const firstDayWithoutPhotos = firstDayMeals.filter(meal => window.resolveMealPlanPhotoDetails?.(meal)?.source === 'missing');
+        if (firstDayWithoutPhotos.length) throw new Error('The first-day meal photos are not ready yet');
+
+        const activate = await window.supabaseClient.from('ai_generated_meal_plans').update({ status: 'active' }).eq('id', newPlanId).eq('user_id', user.id);
+        if (activate.error) throw activate.error;
+        const archive = await window.supabaseClient.from('ai_generated_meal_plans').update({ status: 'archived' }).eq('user_id', user.id).eq('status', 'active').neq('id', newPlanId);
+        if (archive.error) console.warn('[meta-ad-trial] Could not archive the previous meal plan:', archive.error);
+        try {
+            localStorage.setItem('ai_meal_plan', JSON.stringify(plan));
+            localStorage.setItem('pbb_meta_preview_meal_signature', signature);
+            localStorage.setItem(`pbb_meta_preview_plan_id_${user.id}`, newPlanId);
+        } catch (e) {}
+        setMetaPreviewMealPlanBuildStatus('Your first week and matching meal photos are ready.', 100, 'ready');
+        try { window.trackBalanceActivity('meta_preview_meal_plan_generation_ready', { meal_count: mealRows.length, dietary_tag_count: (foodPreferences.dietary_requirements || []).length }); } catch (e) {}
+        ensureExactMealPlanPhotos(plan, user.id).catch(error => console.warn('[meta-ad-trial] Remaining meal photos will retry later:', error));
+        return plan;
+    } catch (error) {
+        if (newPlanId) {
+            try { await window.supabaseClient.from('ai_generated_meal_plans').delete().eq('id', newPlanId).eq('user_id', user.id); } catch (cleanupError) {}
+        }
+        setMetaPreviewMealPlanBuildStatus('We could not finish it yet. Tap Choose my meal plan to try again.', 0, 'error');
+        try { window.trackBalanceActivity('meta_preview_meal_plan_generation_failed', { stage: newPlanId ? 'save_or_photos' : 'generation' }); } catch (e) {}
+        throw error;
+    }
+}
+
+function startFreshMetaPreviewMealPlan() {
+    if (window.metaAdTrialMode !== true) return Promise.resolve(null);
+    const { profile, foodPreferences } = readMetaPreviewMealInputs();
+    const signature = metaPreviewMealPlanSignature(profile, foodPreferences);
+    if (_metaPreviewMealPlanBuildPromise && _metaPreviewMealPlanBuildSignature === signature) return _metaPreviewMealPlanBuildPromise;
+
+    _metaPreviewMealPlanBuildSignature = signature;
+    _aiMealPlanCache = null;
+    try {
+        localStorage.removeItem('ai_meal_plan');
+        localStorage.removeItem('pbb_meta_preview_meal_signature');
+        const userId = window.currentUser?.id || window.currentUser?.user_id;
+        if (userId) localStorage.removeItem(`pbb_meta_preview_plan_id_${userId}`);
+    } catch (e) {}
+    setMetaPreviewMealPlanBuildStatus('Using the food choices you just made.', 3);
+    try { window.trackBalanceActivity('meta_preview_meal_plan_generation_started', { dietary_tag_count: (foodPreferences.dietary_requirements || []).length }); } catch (e) {}
+    _metaPreviewMealPlanBuildPromise = buildFreshMetaPreviewMealPlan(profile, foodPreferences, signature)
+        .finally(() => { _metaPreviewMealPlanBuildPromise = null; });
+    return _metaPreviewMealPlanBuildPromise;
+}
+window.startFreshMetaPreviewMealPlan = startFreshMetaPreviewMealPlan;
+
+async function ensureMetaPreviewMealPlan() {
+    if (window.metaAdTrialMode !== true) return null;
+    const user = window.currentUser || await waitForCurrentUser();
+    if (!user) return null;
+    const { profile, foodPreferences } = readMetaPreviewMealInputs();
+    const signature = metaPreviewMealPlanSignature(profile, foodPreferences);
+    if (_metaPreviewMealPlanBuildPromise && _metaPreviewMealPlanBuildSignature === signature) return _metaPreviewMealPlanBuildPromise;
+    if (_aiMealPlanCache?.meta_preview_signature === signature && _aiMealPlanCache?.meta_preview_owner_id === user.id && Array.isArray(_aiMealPlanCache.weeks)) {
+        showAiPlanLoaded(_aiMealPlanCache);
+        return _aiMealPlanCache;
+    }
+    let savedPlan = null;
+    try { savedPlan = JSON.parse(localStorage.getItem('ai_meal_plan') || 'null'); } catch (e) {}
+    if (savedPlan?.meta_preview_signature === signature && savedPlan?.meta_preview_owner_id === user.id && Array.isArray(savedPlan.weeks)) {
+        _aiMealPlanCache = savedPlan;
+        showAiPlanLoaded(savedPlan);
+        return savedPlan;
+    }
+    return startFreshMetaPreviewMealPlan();
 }
 window.ensureMetaPreviewMealPlan = ensureMetaPreviewMealPlan;
 
@@ -6184,11 +6362,21 @@ async function claimMetaPreviewMealPlan(userId) {
     if (!previewPlan || !Array.isArray(previewPlan.weeks) || previewPlan.weeks.length === 0) {
         throw new Error('Preview meal plan is missing');
     }
-    if (typeof window.persistBuiltMealPlan !== 'function') {
-        throw new Error('Meal plan persistence is not ready');
-    }
-
     const claimPlanKey = `pbb_meta_preview_plan_id_${userId}`;
+    if (previewPlan.id) {
+        const generatedPlan = await window.supabaseClient
+            .from('ai_generated_meal_plans')
+            .select('id')
+            .eq('id', previewPlan.id)
+            .eq('user_id', userId)
+            .eq('status', 'active')
+            .maybeSingle();
+        if (generatedPlan.error) throw generatedPlan.error;
+        if (generatedPlan.data?.id) {
+            localStorage.setItem(claimPlanKey, generatedPlan.data.id);
+            return previewPlan;
+        }
+    }
     const previouslySavedPlanId = localStorage.getItem(claimPlanKey);
     if (previouslySavedPlanId) {
         const existing = await window.supabaseClient
@@ -6208,6 +6396,9 @@ async function claimMetaPreviewMealPlan(userId) {
         localStorage.removeItem(claimPlanKey);
     }
 
+    if (typeof window.persistBuiltMealPlan !== 'function') {
+        throw new Error('Meal plan persistence is not ready');
+    }
     const result = await window.persistBuiltMealPlan(window.supabaseClient, userId, previewPlan);
     if (!result?.success || !result?.plan_id) {
         throw new Error('Preview meal plan was not confirmed in the account');
@@ -8226,7 +8417,7 @@ const WIZARD_CHAT_STEPS = [
             { value: 'low_fodmap', label: 'Low FODMAP' }
         ],
         emptyLabel: 'No restrictions',
-        submitLabel: 'Done'
+        submitLabel: 'Choose my meal plan'
     }
 ];
 
@@ -8993,6 +9184,12 @@ function toggleWizardChatMulti(value, button = null) {
         wizardChatMultiSelection.delete(value);
         if (button) button.classList.remove('selected');
     } else {
+        if (step.key === 'dietary_requirements' && ['vegan', 'vegetarian', 'omnivore'].includes(value)) {
+            ['vegan', 'vegetarian', 'omnivore'].forEach(style => wizardChatMultiSelection.delete(style));
+            document.querySelectorAll('[data-wizard-chat-action="multi-choice"]').forEach(option => {
+                if (['vegan', 'vegetarian', 'omnivore'].includes(option.dataset.value)) option.classList.remove('selected');
+            });
+        }
         if (step.maxSelect && wizardChatMultiSelection.size >= step.maxSelect) {
             wizardAlert(`Pick up to ${step.maxSelect} options.`);
             return;
@@ -9011,6 +9208,9 @@ function submitWizardChatMultiAnswer() {
         return;
     }
     advanceWizardChat(step, Array.from(wizardChatMultiSelection).slice(0, step.maxSelect || wizardChatMultiSelection.size));
+    if (step.key === 'dietary_requirements' && window.metaAdTrialMode === true) {
+        setTimeout(() => wizardNext(), 0);
+    }
 }
 
 function parseWizardChatNumber(raw) {
@@ -10936,6 +11136,11 @@ function updateWizardUI() {
     // 3b. Render weekly goal handoff on slide 19
     if(currentWizardStep === 19) {
         renderWizardWeeklyGoalRoutine();
+        setMetaPreviewMealPlanBuildStatus(
+            _metaPreviewMealPlanBuildState.message || 'Using the food choices you just made.',
+            _metaPreviewMealPlanBuildState.progress,
+            _metaPreviewMealPlanBuildState.status
+        );
     }
 
     if(currentWizardStep === 4) {
@@ -11553,6 +11758,18 @@ async function wizardNext() {
         // Store in sessionStorage
         sessionStorage.setItem('userProfile', JSON.stringify(quizData));
         stampSessionProfileForActiveUser();
+
+        // Paid onboarding starts the real plan immediately after the member
+        // confirms their food choices. Keep building while they finish setup.
+        if (window.metaAdTrialMode === true) {
+            wizardDietaryRequirements = new Set(dietaryRequirements);
+            const foodPreferences = await saveWizardFoodPreferences();
+            quizData.food_preferences = foodPreferences;
+            sessionStorage.setItem('userProfile', JSON.stringify(quizData));
+            startFreshMetaPreviewMealPlan().catch(error => {
+                console.warn('[meta-ad-trial] Fresh onboarding meal plan will retry in Nutrition:', error);
+            });
+        }
 
         console.log("Step 2 data collected:", quizData);
 
@@ -12357,7 +12574,7 @@ function installWizardTourPreviewShortcut() {
 
     const forceTourTest = new URLSearchParams(location.search).get('tourTest') === '1';
     const wizard = document.getElementById('onboarding-wizard');
-    if ((!wizard && !forceTourTest) || document.getElementById('wizard-tour-preview-shortcut')) return;
+    if (!forceTourTest || !wizard || document.getElementById('wizard-tour-preview-shortcut')) return;
 
     const button = document.createElement('button');
     button.id = 'wizard-tour-preview-shortcut';

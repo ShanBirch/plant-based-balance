@@ -50,8 +50,9 @@ test('paid preview opens and requires the real first Foundations lesson', () => 
   assert.match(dashboard, /window\.addEventListener\('pbbLearningLessonFinished', completed\)/);
   assert.match(dashboard, /detail\.completed !== true/);
   assert.match(dashboard, /Finish the first Foundations lesson with a perfect score to unlock Next/);
-  assert.match(learning, /Karl Friston is a theoretical neuroscientist at University College London/);
-  assert.match(learning, /Lisa Feldman Barrett is a Distinguished Professor of Psychology at Northeastern University/);
+  assert.match(learning, /Meet Karl Friston, a theoretical neuroscientist at University College London/);
+  assert.match(learning, /Meet Lisa Feldman Barrett, a neuroscientist and psychologist/);
+  assert.match(learning, /How Emotions Are Made/);
   assert.match(learning, /new CustomEvent\('pbbLearningLessonFinished'/);
   assert.match(dashboard, /#guided-tour-overlay\.tour-action-required:not\(\.tour-gate-complete\)[\s\S]*?\.tour-actions \{ display: none; \}/);
   assert.match(dashboard, /activeTourGate\.followTimer = setInterval/);
@@ -70,8 +71,8 @@ test('real Coach Shannon inbox also requires the full welcome note', () => {
 test('changed onboarding assets are cache-busted', () => {
   assert.match(dashboard, /pbb-deferred-weeklygoals\.js\?v=34-guided-goals/);
   assert.match(dashboard, /pbb-social-journey\.js\?v=37-course-action-evidence/);
-  assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=195-gentle-audio/);
+  assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=196-fresh-meta-meals/);
   assert.match(dashboard, /dashboard-script-6-ai_coach_draft_mode_logic_auth\.js\?v=43-home-canvas/);
   assert.match(dashboard, /learning-inline\.js\?v=24-meta-first-course/);
-  assert.match(serviceWorker, /pbb-app-v346-meta-preview-soundtrack/);
+  assert.match(serviceWorker, /pbb-app-v347-fresh-meta-meals/);
 });

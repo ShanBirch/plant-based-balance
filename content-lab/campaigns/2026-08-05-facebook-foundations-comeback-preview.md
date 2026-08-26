@@ -5,7 +5,7 @@
 - Destination: `https://plantbased-balance.org/founders?utm_source=facebook&utm_medium=paid_social&utm_campaign=<campaign>&utm_content=<creative>&campaign_id=<meta campaign id>&adset_id=<meta ad set id>&ad_id=<Meta ad id>`
 - Eligible traffic: attributed Facebook paid-social visitors only
 - Offer: Balance Foundations Founders Pass at AU$89.99 once for the fixed six-week course, six weeks of app and community access, and one weekly check-in plus workout and food review with Shannon. No automatic renewal.
-- Journey: the ad first opens the full Balance Foundations Pass page. Its paid-Facebook action opens guest setup, automatically assigns the first Weekly Goals and meal plan, then gives a compact walkthrough of Goals, workout, photo-based vegan meals, the live read-only Shannon/Balance Feed and Thoughts. The five-minute look-around begins only when that walkthrough ends, before the AU$89.99 Foundations unlock. The previous `/meta-app-preview.html` link redirects here with attribution retained.
+- Journey: the ad first opens the full Balance Foundations Pass page. Its paid-Facebook action opens guest setup, starts a fresh personalised meal plan from the food choices made in that setup, then gives a compact walkthrough of the recommended starting points, workout, personalised meals with exact photos, first Foundations lesson, live read-only Shannon/Balance Feed, Shannon voice note, and Weekly Goals. The five-minute look-around begins only when that walkthrough ends, before the AU$89.99 Foundations unlock. The previous `/meta-app-preview.html` link redirects here with attribution retained.
 - Hypothesis: explaining the complete Pass on the trusted website before a shorter comeback-style onboarding, assigned first training and weekly goals, and five minutes inside the real app will create more paid Foundations members than asking visitors to configure goals themselves.
 - Primary KPI: attributed paid Foundations purchases from `trial_started`.
 - Diagnostic metrics: onboarding start and completion, auto-goal assignment, walkthrough completion, preview start, timed gate reach, checkout start, purchase, authenticated purchase claim, first app open, first planned workout, and first completed workout.
@@ -21,6 +21,15 @@
 - Diagnostic metrics: soundtrack starts, mute toggles, walkthrough completion, voice-note completion, checkout start, and time from walkthrough start to checkout.
 - Guardrails: music is limited to the attributed paid preview, starts only after a user gesture, has a persistent visible mute control, fades to silence for Shannon's voice note, stays almost silent during the first course lesson, and stops if the preview is skipped.
 - Decision date: 2026-09-10, or after 100 attributed guided-tour starts if later.
+
+## Fresh personalised meal-plan refinement, 2026-08-27
+
+- Hypothesis: creating the first week from the food style and restrictions selected in the current setup, and showing matching first-day photos in the tour, will increase trust and attributed Foundations purchases compared with reusing a generic preview plan.
+- Variant: `facebook_5m_foundations_v3_fresh_meals`
+- Primary KPI: attributed paid Foundations purchases from `meta_preview_meal_plan_generation_ready`.
+- Diagnostic metrics: meal-plan generation starts, ready and failed events, first-day photo readiness, meal-plan tour-step completion, checkout start, and time from choosing a meal plan to checkout.
+- Guardrails: a cached preview is used only when its preference signature exactly matches the current setup; vegan, vegetarian, and omnivore are mutually exclusive; all restriction tags remain multi-select; no generic vegan fallback is shown after a personalised request fails; organic and returning-member meal plans remain unchanged.
+- Decision date: 2026-09-10, or after 100 attributed meal-plan generation starts if later.
 
 Required ad parameters:
 

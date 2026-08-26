@@ -8,7 +8,8 @@
     function isTester() {
         const host = String(window.location.hostname || '').toLowerCase();
         const userId = window.currentUser && window.currentUser.id;
-        return host === 'localhost' || host === '127.0.0.1' || TEST_USER_IDS.has(userId);
+        const explicitlyRequested = new URLSearchParams(window.location.search).get('testFlow') === '1';
+        return explicitlyRequested && (host === 'localhost' || host === '127.0.0.1' || TEST_USER_IDS.has(userId));
     }
 
     function visible(element) {
