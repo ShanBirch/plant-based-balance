@@ -41,7 +41,7 @@ test('the repaired Movement bundle is cache-busted', () => {
 
 test('all deployed functions are routed through the dedicated modern runtime directory', () => {
   assert.match(config, /functions = "netlify\/modern-functions"/);
-  assert.match(config, /external_node_modules = \["@supabase\/supabase-js", "web-push"\]/);
+  assert.doesNotMatch(config, /external_node_modules/);
   const wrappers = fs.readdirSync(wrappersDir).filter((name) => name.endsWith('.mts'));
   assert.equal(wrappers.length, 128);
   const legacyWrappers = wrappers.filter((name) => {
