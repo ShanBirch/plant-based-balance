@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v347-fresh-meta-meals'; // v347: fresh personalised paid-preview meals and compact course guide
+const CACHE_NAME = 'pbb-app-v348-researcher-first-course'; // v348: researcher-first Foundations lesson and matching quiz
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
