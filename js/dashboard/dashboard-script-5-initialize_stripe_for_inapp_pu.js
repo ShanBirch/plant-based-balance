@@ -7524,6 +7524,9 @@ function isTransferredWizardClient() {
 }
 
 function isWizardSlideSkipped(step) {
+    // Cycle alignment is relevant only when the member explicitly chose "For her".
+    // Keep this rule here so forward, back, and resumed onboarding paths all agree.
+    if (step === 3 && normalizeGenderValue(selectedGender) !== 'female') return true;
     if (step === 4 && isTransferredWizardClient()) return true;
     if (wizardAssignedProgram && [4, 5, 6].includes(step)) return true;
     if (step === 17 && window._wizardCustomizeOnlyMode) return false;
@@ -11561,6 +11564,8 @@ async function wizardNext() {
             existingData.menopause_status = 'not_applicable';
             existingData.last_period = null;
             existingData.profile = null; // Males don't have hormone profiles
+            existingData.cycle_sync_preference = 'no';
+            existingData.period_energy_response = null;
             sessionStorage.setItem('userProfile', JSON.stringify(existingData));
             sessionStorage.removeItem('userResult'); // Remove any existing hormone profile
 

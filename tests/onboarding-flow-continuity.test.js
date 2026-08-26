@@ -112,6 +112,12 @@ test('profile questions render once while choice confirmation still blocks doubl
     assert.match(foundationsCss, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.wizard-section-transition-orbit > span/);
 });
 
+test('cycle alignment appears only after the member chooses For her', () => {
+    assert.match(onboardingSource, /if \(step === 3 && normalizeGenderValue\(selectedGender\) !== 'female'\) return true;/);
+    assert.match(onboardingSource, /if \(selectedGender === 'male'\)[\s\S]*?cycle_sync_preference = 'no';/);
+    assert.match(onboardingSource, /if \(selectedGender === 'male' && currentWizardStep === 4\)/);
+});
+
 test('long answer lists scroll without overlapping the typed-answer controls', () => {
     assert.match(foundationsCss, /grid-template-rows: auto auto auto minmax\(0, 1fr\) auto !important;/);
     assert.match(foundationsCss, /#onboarding-wizard\.wizard-chat-no-textbox \.wizard-chat-intake[\s\S]*?grid-template-rows: auto auto minmax\(0, 1fr\) auto auto !important;/);

@@ -17,7 +17,7 @@ const ASSETS = [
   './workout_library_extended.js',
   './js/dashboard/script_part_2.js?v=14-light-launch',
   './js/dashboard/dashboard-script-3-1_get_user_data.js?v=59-light-launch',
-  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=192-onboarding-single-render',
+  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=193-cycle-for-her',
   './js/dashboard/pbb-app-telemetry.js?v=1',
   './js/dashboard/pbb-deferred-weeklygoals.js?v=33-home-theme',
   './css/dashboard/pbb-onboarding-comeback.css?v=8',
