@@ -76,7 +76,7 @@ test('onboarding ships a cache-busted authoritative cream-and-gold skin', () => 
     assert.match(foundationsCss, /#onboarding-wizard \.wizard-chat-bubble\.coach:last-child[\s\S]*?-webkit-text-fill-color: var\(--foundations-ink\) !important;/);
     assert.match(foundationsCss, /@media \(prefers-reduced-motion: reduce\)/);
     assert.match(dashboardSource, /pbb-onboarding-comeback\.css\?v=8/);
-    assert.match(dashboardSource, /pbb-onboarding-foundations\.css\?v=5-mobile-viewport/);
+    assert.match(dashboardSource, /pbb-onboarding-foundations\.css\?v=6-single-render/);
 });
 
 test('Foundations gives each real setup section a compact branded transition', () => {
@@ -97,15 +97,16 @@ test('Foundations gives each real setup section a compact branded transition', (
     assert.match(foundationsCss, /foundationsTransitionOrbit/);
 });
 
-test('question motion confirms a choice, blocks double taps, and respects reduced motion', () => {
+test('profile questions render once while choice confirmation still blocks double taps', () => {
     assert.match(onboardingSource, /let wizardChatChoicePending = false/);
     assert.match(onboardingSource, /function confirmWizardChatChoice\(button, callback\)/);
     assert.match(onboardingSource, /choicesEl\.setAttribute\('aria-busy', 'true'\)/);
     assert.match(onboardingSource, /button\.classList\.add\('is-confirmed'\)/);
-    assert.match(onboardingSource, /function restartWizardChatQuestionMotion\(\)/);
     assert.match(foundationsCss, /\.wizard-chat-choice\.is-confirmed/);
-    assert.match(foundationsCss, /foundationsQuestionIn/);
-    assert.match(foundationsCss, /foundationsChoiceIn/);
+    assert.doesNotMatch(onboardingSource, /restartWizardChatQuestionMotion/);
+    assert.doesNotMatch(foundationsCss, /wizard-chat-question-entering/);
+    assert.doesNotMatch(foundationsCss, /foundationsQuestionIn/);
+    assert.doesNotMatch(foundationsCss, /foundationsChoiceIn/);
     assert.match(foundationsCss, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.wizard-section-transition-orbit > span/);
 });
 

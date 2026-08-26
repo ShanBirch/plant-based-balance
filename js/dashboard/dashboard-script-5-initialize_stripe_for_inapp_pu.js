@@ -8239,7 +8239,6 @@ let wizardChatViewportBound = false;
 let wizardChatControlsBound = false;
 let wizardChatKeepKeyboardAfterSubmit = false;
 let wizardChatChoicePending = false;
-let wizardChatQuestionMotionTimer = null;
 
 function getWizardChatStep() {
     return WIZARD_CHAT_STEPS[wizardChatStepIndex] || null;
@@ -8603,19 +8602,6 @@ function confirmWizardChatChoice(button, callback) {
     }, wizardPrefersReducedMotion() ? 20 : 190);
 }
 
-function restartWizardChatQuestionMotion() {
-    const intake = document.querySelector('#onboarding-wizard .wizard-chat-intake');
-    if (!intake) return;
-    if (wizardChatQuestionMotionTimer) clearTimeout(wizardChatQuestionMotionTimer);
-    intake.classList.remove('wizard-chat-question-entering');
-    void intake.offsetWidth;
-    intake.classList.add('wizard-chat-question-entering');
-    wizardChatQuestionMotionTimer = setTimeout(() => {
-        intake.classList.remove('wizard-chat-question-entering');
-        wizardChatQuestionMotionTimer = null;
-    }, wizardPrefersReducedMotion() ? 20 : 620);
-}
-
 function bindWizardChatControlEvents() {
     if (wizardChatControlsBound) return;
     const choicesEl = document.getElementById('wizard-chat-choices');
@@ -8937,7 +8923,6 @@ function askWizardChatQuestion(options = {}) {
     renderWizardChatMessages();
     renderWizardChatProgress();
     renderWizardChatControls();
-    restartWizardChatQuestionMotion();
 }
 
 function initializeWizardChatIntake() {
