@@ -90,6 +90,14 @@ test('does not confuse ordinary coaching language about libido with sexual escal
     assert.equal(result.requires_manual, false);
 });
 
+test('does not treat ordinary pretty phrasing as flirtation', () => {
+    const result = boundary.classifyPersonalDmBoundary({
+        inboundText: "I'm pretty eclectic, depends on my mood lately",
+        outboundText: 'totally fair, different music for different sessions',
+    });
+    assert.equal(result.requires_manual, false);
+});
+
 test('collects decoded voice-note text for the same boundary check', () => {
     const inbound = boundary.collectAlertInboundText({
         message_preview: '[AUDIO:https://example.com/voice.m4a]',
