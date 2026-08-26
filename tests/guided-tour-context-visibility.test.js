@@ -60,7 +60,10 @@ test('Meta preview opens the next strength workout and waits for real proof medi
   assert.match(source, /title:'Your first strength workout'/);
   assert.match(source, /title:'See the exercise, sets and reps'/);
   assert.match(source, /data-thumbnail-state="ready"/);
-  assert.match(source, /waitForMetaPreviewWorkoutProof\(\{ requireThumbnail:true, timeoutMs:15000 \}\)/);
+  assert.ok(
+    (source.match(/waitForMetaPreviewWorkoutProof\(\{ requireThumbnail:true, timeoutMs:15000 \}\)/g) || []).length >= 2,
+    'both workout proof stops should wait for the real thumbnail'
+  );
 });
 
 test('Meta preview waits for the rendered meal photo and skips community detours', () => {
