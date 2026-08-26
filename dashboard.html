@@ -13070,6 +13070,13 @@ if(!window._pbbIsIOSSafari) {
 <script src="js/dashboard/pbb-exercise-technique-data.js?v=1"></script>
 <script src="lib/meal-plan-next-meal.js?v=1"></script>
 <script>
+if (window.metaAdTrialMode === true) {
+    var metaPreviewSoundtrack = document.createElement('script');
+    metaPreviewSoundtrack.src = 'js/dashboard/pbb-meta-preview-soundtrack.js?v=1-gentle-audio';
+    document.head.appendChild(metaPreviewSoundtrack);
+}
+</script>
+<script>
 // Script-5 (678KB) - Stripe/IAP, switchAppTab, initProgramDate, checkAndTriggerOnboarding.
 // On iOS Safari, defer to reduce memory pressure during page parsing.
 // Stubs defined in <head> handle calls during init; replayed when script loads.
@@ -13107,7 +13114,7 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=194-guided-tour-clarity';
+s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=195-gentle-audio';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
@@ -13149,7 +13156,7 @@ s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=194
         var s = document.createElement('script');
         s.async = false;
         s.dataset.metaTrialLoader = String(attempt);
-        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=194-guided-tour-clarity&meta_retry=' + attempt;
+        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=195-gentle-audio&meta_retry=' + attempt;
         s.onload = function() {
             if (window._pbbScript5Complete && window._switchAppTabReady && typeof window._switchAppTabReal === 'function') {
                 sessionStorage.removeItem('pbb_meta_script5_recovery_v1');
@@ -13168,7 +13175,7 @@ s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=194
         document.head.appendChild(s);
     })(0);
 } else {
-document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=194-guided-tour-clarity"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=195-gentle-audio"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=3"></script>
@@ -14346,6 +14353,12 @@ async function showStep(i){
     showingXpIntro = false;
     window.__balanceGuidedTourShowingIntro = false;
     const step = activeSteps[i];
+    if (metaPreviewTour && window.BalanceMetaPreviewSoundtrack) {
+      if (step.requiresWelcomeAudio) window.BalanceMetaPreviewSoundtrack.setPhase('voice');
+      else if (step.requiresFoundationsLesson) window.BalanceMetaPreviewSoundtrack.setPhase('course');
+      else if (step.requiresWeeklyGoals) window.BalanceMetaPreviewSoundtrack.setPhase('weekly_goals');
+      else window.BalanceMetaPreviewSoundtrack.setPhase('tour');
+    }
     clearActiveTourGate();
     resetTourTemporaryTargets();
     closeTourBlockingSurfaces();
@@ -14472,6 +14485,10 @@ window.endFeatureTour = function(skipped){
       resizeHandler = null;
     }
     if (completedMetaPreviewTour && window.BalanceMetaAdTrial) {
+      if (window.BalanceMetaPreviewSoundtrack) {
+        if (skipped) window.BalanceMetaPreviewSoundtrack.stop();
+        else window.BalanceMetaPreviewSoundtrack.setPhase('payment');
+      }
       if (skipped && typeof window.BalanceMetaAdTrial.showExitChoice === 'function') {
         window.BalanceMetaAdTrial.showExitChoice('tour');
       } else if (typeof window.BalanceMetaAdTrial.onWalkthroughComplete === 'function') {
@@ -14503,6 +14520,10 @@ window.endFeatureTour = function(skipped){
     completedTourGates.clear();
     clearActiveTourGate();
     metaPreviewTour = !!(window.metaAdTrialMode && options && options.metaPreview === true);
+    if (metaPreviewTour && window.BalanceMetaPreviewSoundtrack) {
+      window.BalanceMetaPreviewSoundtrack.setPhase('tour');
+      window.BalanceMetaPreviewSoundtrack.start();
+    }
     clientActivationTour = !!(!window.metaAdTrialMode && options && options.clientActivation === true);
     window.__balanceClientActivationTour = clientActivationTour;
     window.__balancePendingClientActivation = clientActivationTour;

@@ -14004,6 +14004,7 @@ async function closeWizardManually() {
      // Their close action becomes an explicit continue-or-pay decision. Normal
      // members and organic guests keep the existing onboarding close behaviour.
      if (closingMetaAdTrial) {
+         if (window.BalanceMetaPreviewSoundtrack) window.BalanceMetaPreviewSoundtrack.setPhase('payment');
          window.BalanceMetaAdTrial.showExitChoice('onboarding');
          return;
      }

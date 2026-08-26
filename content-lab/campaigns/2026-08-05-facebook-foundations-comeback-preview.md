@@ -13,6 +13,15 @@
 - Decision date: 2026-08-19, or after 100 attributed preview starts if later.
 - Keep/stop rule: keep the flow only if paid purchase conversion and week-one activation improve without more safety-support contacts or abandoned onboarding. Do not judge it from clicks or Stripe opens alone.
 
+## Gentle soundtrack refinement, 2026-08-27
+
+- Hypothesis: a very quiet, warm soundtrack during setup and the guided app preview will make the experience feel calmer and more complete without distracting from the actions that lead to checkout.
+- Variant: `facebook_5m_foundations_v3_gentle_audio`
+- Primary KPI: attributed paid Foundations purchases from `guided_tour_started`.
+- Diagnostic metrics: soundtrack starts, mute toggles, walkthrough completion, voice-note completion, checkout start, and time from walkthrough start to checkout.
+- Guardrails: music is limited to the attributed paid preview, starts only after a user gesture, has a persistent visible mute control, fades to silence for Shannon's voice note, stays almost silent during the first course lesson, and stops if the preview is skipped.
+- Decision date: 2026-09-10, or after 100 attributed guided-tour starts if later.
+
 Required ad parameters:
 
 ```text
