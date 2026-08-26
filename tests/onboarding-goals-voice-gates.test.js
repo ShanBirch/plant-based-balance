@@ -10,6 +10,7 @@ const directMessages = fs.readFileSync(path.join(root, 'js/dashboard/dashboard-s
 const weeklyGoals = fs.readFileSync(path.join(root, 'js/dashboard/pbb-deferred-weeklygoals.js'), 'utf8');
 const socialJourney = fs.readFileSync(path.join(root, 'js/dashboard/pbb-social-journey.js'), 'utf8');
 const serviceWorker = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
+const learning = fs.readFileSync(path.join(root, 'lib/learning-inline.js'), 'utf8');
 
 test('onboarding no longer silently saves default Weekly Goals', () => {
   assert.match(onboarding, /localStorage\.setItem\('pbb_weekly_goals_selection_required_v1', 'true'\)/);
@@ -36,6 +37,17 @@ test('preview walkthrough only unlocks Next after the welcome audio ends', () =>
   assert.match(dashboard, /Listen to the full voice note to unlock Next/);
 });
 
+test('paid preview opens and requires the real first Foundations lesson', () => {
+  assert.match(dashboard, /title:'Complete your first course lesson'[\s\S]*?requiresFoundationsLesson:'mind-1-1'/);
+  assert.match(dashboard, /window\.startFoundationsLesson\('mind-1-1'\)/);
+  assert.match(dashboard, /window\.addEventListener\('pbbLearningLessonFinished', completed\)/);
+  assert.match(dashboard, /detail\.completed !== true/);
+  assert.match(dashboard, /Finish the first Foundations lesson with a perfect score to unlock Next/);
+  assert.match(learning, /Karl Friston is a theoretical neuroscientist at University College London/);
+  assert.match(learning, /Lisa Feldman Barrett is a Distinguished Professor of Psychology at Northeastern University/);
+  assert.match(learning, /new CustomEvent\('pbbLearningLessonFinished'/);
+});
+
 test('real Coach Shannon inbox also requires the full welcome note', () => {
   assert.match(directMessages, /id="balance-onboarding-welcome-audio"/);
   assert.match(directMessages, /onended="window\.socialJourney\.completeWelcomeAudio\(\)"/);
@@ -51,5 +63,6 @@ test('changed onboarding assets are cache-busted', () => {
   assert.match(dashboard, /pbb-social-journey\.js\?v=37-course-action-evidence/);
   assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=193-cycle-for-her/);
   assert.match(dashboard, /dashboard-script-6-ai_coach_draft_mode_logic_auth\.js\?v=43-home-canvas/);
+  assert.match(dashboard, /learning-inline\.js\?v=24-meta-first-course/);
   assert.match(serviceWorker, /pbb-app-v344-course-action-evidence/);
 });

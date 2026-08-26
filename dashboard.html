@@ -13772,6 +13772,23 @@ if(!window._pbbIsIOSSafari) {
     return null;
   }
 
+  async function openMetaPreviewFirstFoundationsLesson(){
+    var timeoutAt = Date.now() + 9000;
+    while (Date.now() < timeoutAt) {
+      if (typeof window.startFoundationsLesson === 'function') {
+        try {
+          if (typeof window._ensureLearningProgressLoaded === 'function') {
+            await window._ensureLearningProgressLoaded();
+          }
+          window.startFoundationsLesson('mind-1-1');
+          return true;
+        } catch(e) {}
+      }
+      await new Promise(function(resolve){ setTimeout(resolve, 150); });
+    }
+    return false;
+  }
+
   const steps = [
     { tab:'dashboard', sel:'#dm-voice-btn', fallbackSel:'.header-msg-icon', title:'Send a voice message', fallbackTitle:'Voice messages are in your DMs', body:'Tap the microphone, record your message, then tap send. You can cancel before it leaves.', fallbackBody:'Open Messages, choose a friend, then tap the microphone beside the message box.', action: async function(){ try { var coachId=window._coachUserId || (typeof getCoachUserId==='function' ? await getCoachUserId() : null); if(coachId && typeof openDirectMessage==='function') openDirectMessage(coachId,'Coach Shan',''); } catch(e){} await new Promise(function(r){ setTimeout(r,420); }); } },
     { tab:'dashboard', sel:'#weekly-goals-card', fallbackSel:'#next-obvious-steps-card', title:'Choose your Weekly Goals', body:'Pick 1 to 3 commitments that feel realistic this week. Balance has suggested options from your setup, but nothing is saved until you tap Save goals.', clientActivation:true, clientActivationOnly:true, requiresWeeklyGoals:true, action:async function(){ try { if(typeof window.openWeeklyGoalsModal === 'function') await window.openWeeklyGoalsModal({ source:'client_activation_setup', week:'current' }); } catch(e){} await new Promise(function(r){ setTimeout(r,180); }); } },
@@ -13787,9 +13804,9 @@ if(!window._pbbIsIOSSafari) {
     { tab:'movement-tab', sel:'#workout-exercises-list .exercise-logger-card [data-video-container][data-thumbnail-state="ready"]', fallbackSel:'#workout-exercises-list .exercise-logger-card,#workout-exercises-list', title:'See the exercise, sets and reps', fallbackTitle:'See every set and rep', body:'The real exercise demonstration, prescribed sets and target reps are together here. Use Swipe for the next exercise or List to see the whole session.', fallbackBody:'Your exercises, sets and target reps are laid out in this workout. Use Swipe for the next exercise or List to see the whole session.', pageView:true, metaPreview:true, action:async function(){ try { await openMetaPreviewStrengthWorkout(); await waitForMetaPreviewWorkoutProof({ requireThumbnail:true, timeoutMs:15000 }); } catch(e){} } },
     { tab:'meals', sel:'.camera-btn-widget,.meal-icon-btn', title:'Track food with the camera', body:'Use the camera, barcode scanner or quick entry to log what you actually eat. It gives Balance useful evidence without needing you to be perfect.', metaPreview:true },
     { tab:'meals', sel:'#ai-plan-meals-list .ai-plan-hero', fallbackSel:'#ai-plan-meals-list,#browse-plans-pill', title:'Your actual meal plan', fallbackTitle:'Your meal plan is being prepared', body:'This is the meal plan generated from your setup answers. Open a recipe, log a meal, or look ahead through the week.', fallbackBody:'Balance is finishing your meal plan now. It will stay here in Nutrition when it is ready.', pageView:true, metaPreview:true, action:async function(){ try { if(typeof window.ensureMetaPreviewMealPlan === 'function') await window.ensureMetaPreviewMealPlan(); if(typeof switchWeek === 'function') switchWeek('meal-plan-store', document.getElementById('browse-plans-pill')); await waitForMetaPreviewMealPhoto(15000); } catch(e){} } },
-    { tab:'learning', sel:'.course-library-intro', fallbackSel:'#learning-content', title:'Your six-week course', fallbackTitle:'Your six-week course', body:'Your complete Balance Foundations course lives here. Each week gives you the next lessons and actions without dumping everything on you at once.', fallbackBody:'Your six weeks of Balance Foundations lessons live in the Course tab.', pageView:true, metaPreview:true },
-    { tab:'friends', sel:'#friends-photo-feed .meta-preview-feed-post', fallbackSel:'#friends-photo-feed .feed-post-card,#feed-composer-card', title:'The Balance community', fallbackTitle:'The Balance community', body:'This is the live Feed. You can see Coach Shan’s posts, photos and the wins people share inside Balance.', fallbackBody:'This is the Balance Feed, where Coach Shan posts and members share meals, workouts and wins.', pageView:true, action:async function(){ try { if(window.BalanceMetaAdTrial && typeof window.BalanceMetaAdTrial.loadPreviewFeed === 'function') await window.BalanceMetaAdTrial.loadPreviewFeed(); } catch(e){} await new Promise(function(r){ setTimeout(r,220); }); } },
-    { tab:'friends', sel:'#feed-composer-card', title:'Post when you need support', body:'Share a meal, workout, question or win here. It helps Shannon see what is really happening and gives the community a chance to support you.' },
+    { tab:'learning', sel:'#learning-content', title:'Complete your first course lesson', body:'Meet the researchers behind Balance, then complete the first interactive Foundations lesson. Next unlocks when you finish it.', pageView:true, interactivePage:true, metaPreview:true, requiresFoundationsLesson:'mind-1-1', action:async function(){ var opened = await openMetaPreviewFirstFoundationsLesson(); if(!opened && typeof showToast === 'function') showToast('Your first course lesson is still loading.', 'info'); } },
+    { tab:'friends', sel:'#friends-photo-feed .meta-preview-feed-post', fallbackSel:'#friends-photo-feed .feed-post-card,#feed-composer-card', title:'The Balance community', fallbackTitle:'The Balance community', body:'This is the live Feed. You can see Coach Shan’s posts, photos and the wins people share inside Balance.', fallbackBody:'This is the Balance Feed, where Coach Shan posts and members share meals, workouts and wins.', pageView:true, metaPreview:true, action:async function(){ try { if(window.BalanceMetaAdTrial && typeof window.BalanceMetaAdTrial.loadPreviewFeed === 'function') await window.BalanceMetaAdTrial.loadPreviewFeed(); } catch(e){} await new Promise(function(r){ setTimeout(r,220); }); } },
+    { tab:'friends', sel:'#feed-composer-card', title:'Post when you need support', body:'Share a meal, workout, question or win here. It helps Shannon see what is really happening and gives the community a chance to support you.', metaPreview:true },
     { tab:'dashboard', sel:'#meta-ad-trial-inbox-preview-card', title:'Listen to Shannon’s welcome', body:'Press play and listen to the full welcome note. Next unlocks when the voice message finishes.', metaPreview:true, requiresWelcomeAudio:true, action:async function(){ try { if(window.BalanceMetaAdTrial && typeof window.BalanceMetaAdTrial.showInboxPreview === 'function') window.BalanceMetaAdTrial.showInboxPreview(); } catch(e){} await new Promise(function(r){ setTimeout(r,180); }); } },
     { tab:'dashboard', sel:'#weekly-goals-card', fallbackSel:'#next-obvious-steps-card', title:'Set your Weekly Goals', body:'Choose 1 to 3 goals you are ready to commit to this week, then tap Save goals. When you finish the tour, your setup stays saved and you can unlock the full six-week Foundations course with one $89.99 payment.', metaPreview:true, metaPreviewSignoff:true, requiresWeeklyGoals:true, action:async function(){ try { if(typeof window.openWeeklyGoalsModal === 'function') await window.openWeeklyGoalsModal({ source:'meta_preview_setup', week:'current' }); } catch(e){} await new Promise(function(r){ setTimeout(r,180); }); } },
     { tab:'dashboard', sel:'#tamagotchi-stats-bar', fallbackSel:'#balance-level-bar', title:'Levels keep going', fallbackTitle:'Levels keep going', body:'Level 99 is no longer the finish line. Keep earning XP to climb higher and unlock a new character every 5 levels.', fallbackBody:'Level 99 is no longer the finish line. Keep earning XP to climb higher and unlock a new character every 5 levels.' },
@@ -14012,6 +14029,37 @@ if(!window._pbbIsIOSSafari) {
         }
       };
       setTourGateUi(false, audio ? 'Listen to the full voice note to unlock Next.' : 'The voice note is still loading.', 'Listen first');
+      return;
+    }
+
+    if (step && step.requiresFoundationsLesson) {
+      const lessonId = String(step.requiresFoundationsLesson);
+      const key = 'foundations-lesson:' + lessonId;
+      if (completedTourGates.has(key)) {
+        setTourGateUi(true, 'First lesson complete. You can keep going.', finalLabel);
+        return;
+      }
+      const completed = function(event){
+        const detail = event && event.detail ? event.detail : {};
+        if (String(detail.lessonId || '') !== lessonId || detail.completed !== true) return;
+        completedTourGates.add(key);
+        try { window.trackBalanceActivity('meta_preview_first_course_completed', { lesson_id:lessonId }, { immediate:true }); } catch(e) {}
+        if (activeTourGate && activeTourGate.key === key) {
+          activeTourGate.complete = true;
+          setTourGateUi(true, 'First lesson complete. You can keep going.', finalLabel);
+        }
+      };
+      window.addEventListener('pbbLearningLessonFinished', completed);
+      activeTourGate = {
+        key:key,
+        complete:false,
+        retry:function(){
+          setTourGateUi(false, 'Finish the first Foundations lesson with a perfect score to unlock Next.', 'Finish lesson first');
+          openMetaPreviewFirstFoundationsLesson();
+        },
+        cleanup:function(){ window.removeEventListener('pbbLearningLessonFinished', completed); }
+      };
+      setTourGateUi(false, 'Finish the first Foundations lesson with a perfect score to unlock Next.', 'Finish lesson first');
       return;
     }
 
@@ -14241,7 +14289,9 @@ if(!window._pbbIsIOSSafari) {
     const bubbleH = bubble.offsetHeight || 180;
     const safeTop = 40;
     if (pageView) {
-      const pageBubbleTop = Math.max(safeTop, vh - bubbleH - Math.max(bottomReserve, 82));
+      const pageBubbleTop = step && step.interactivePage
+        ? safeTop
+        : Math.max(safeTop, vh - bubbleH - Math.max(bottomReserve, 82));
       bubble.style.top = pageBubbleTop + 'px';
       const pageBubbleW = bubble.offsetWidth || 320;
       bubble.style.left = Math.max(8, (vw - pageBubbleW) / 2) + 'px';
@@ -19142,11 +19192,11 @@ if (window._pbbIsIOSSafari) {
             });
             if (window.showQuizBattleInviteModal || learningAlreadyRequested) return;
             var s = document.createElement('script');
-      s.src = 'lib/learning-inline.js?v=23-foundations-actions';
+      s.src = 'lib/learning-inline.js?v=24-meta-first-course';
             document.head.appendChild(s);
         }, { once: true });
     } else {
-    document.write('<script src="lib/learning-inline.js?v=23-foundations-actions"><\/script>');
+    document.write('<script src="lib/learning-inline.js?v=24-meta-first-course"><\/script>');
     }
     </script>
     <!-- Battle System & Logic Overrides (130 lines — deferred on iOS) -->
