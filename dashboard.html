@@ -672,8 +672,31 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
 (function() {
     var LOADING_VARIANTS = [
         { emoji: "🧠", label: "Carl Friston", tip: "Your brain learns by reducing prediction errors. Repeating a workout gives it clearer feedback, making the next session feel more familiar." },
+        { emoji: "🎯", label: "Prediction", tip: "Your brain is always predicting what comes next. A regular training time makes starting feel less uncertain." },
+        { emoji: "🔄", label: "Active inference", tip: "The brain can update its beliefs or take action to change what happens. Every completed session teaches it that you follow through." },
+        { emoji: "📉", label: "Prediction error", tip: "When an action goes differently than expected, your brain gets a learning signal. Small experiments help you discover what actually works." },
+        { emoji: "🗺️", label: "Brain maps", tip: "Practice builds a better internal map of a movement. That is one reason technique can feel smoother over time." },
+        { emoji: "🏋️", label: "Practice", tip: "Repeating a movement in a consistent setting reduces uncertainty, so your brain can spend more attention refining it." },
+        { emoji: "📈", label: "Progress", tip: "Your brain learns from the gap between what it predicted and what happened. Tracking a workout makes that feedback easier to see." },
+        { emoji: "🪜", label: "Small steps", tip: "A manageable challenge gives your brain useful feedback without making the next attempt feel impossible." },
         { emoji: "⚡", label: "Lisa Feldman Barrett", tip: "Your brain predicts your body's energy needs. Sleep, food and recovery can change how hard a workout feels before you even begin." },
-        { emoji: "🔁", label: "Behaviour change", tip: "Habits save mental energy. Pairing a small action with the same cue makes healthy behaviour easier to repeat." }
+        { emoji: "🔋", label: "Body budgeting", tip: "Your brain manages a body budget. Sleep, movement, food and stress all affect the resources it expects to need." },
+        { emoji: "😮‍💨", label: "Effort", tip: "Effort is not just in your muscles. Your brain interprets signals from your body and predicts how demanding the next action will be." },
+        { emoji: "😴", label: "Recovery", tip: "Poor sleep can make the same workout feel harder because your brain is working with a different estimate of your body's resources." },
+        { emoji: "❤️", label: "Body signals", tip: "Your brain constantly interprets signals like heart rate, breathing and temperature to guide how you feel and act." },
+        { emoji: "🌤️", label: "Context", tip: "The same body sensation can feel different depending on context. A racing heart may be read as danger, excitement or exercise." },
+        { emoji: "🧩", label: "Feelings", tip: "Feelings are shaped by body signals, past experience and the current situation. They are real, but they are not fixed instructions." },
+        { emoji: "🚶", label: "Movement", tip: "Movement changes the signals reaching your brain. A short walk can shift the state from which you make your next decision." },
+        { emoji: "🔁", label: "Behaviour change", tip: "Habits save mental energy. Pairing a small action with the same cue makes healthy behaviour easier to repeat." },
+        { emoji: "🔔", label: "Cues", tip: "A habit starts with a cue. Seeing your shoes by the door can prompt action before motivation enters the conversation." },
+        { emoji: "🧱", label: "Less friction", tip: "Make the helpful action easier to begin. Preparing your clothes or meal ingredients removes decisions when energy is low." },
+        { emoji: "🌱", label: "Tiny habits", tip: "A smaller action is easier to repeat. Repetition gives your brain more chances to learn the pattern." },
+        { emoji: "🗓️", label: "Consistency", tip: "Doing something at a similar time or after the same event helps the cue and behaviour become linked." },
+        { emoji: "✅", label: "Immediate reward", tip: "The brain learns faster when a behaviour has an immediate payoff. Tick it off, notice the win or enjoy how movement feels." },
+        { emoji: "🛤️", label: "Environment", tip: "Behaviour is easier when your surroundings support it. Put useful choices in sight and add friction to the ones that pull you off course." },
+        { emoji: "⏱️", label: "Starting", tip: "Motivation often follows action. Committing to the first two minutes can be enough to get the behaviour moving." },
+        { emoji: "🧭", label: "Identity", tip: "Each repetition is evidence for the kind of person you are becoming. Focus on casting another vote, not proving perfection." },
+        { emoji: "↩️", label: "Missed days", tip: "One missed day does not erase a habit. Returning at the next cue protects the pattern better than waiting for a perfect restart." }
     ];
     // Bar style variants — each app open picks one at random so the loading
     // screen feels fresh. Progress-driven (linear, circle, perimeter) fill as
