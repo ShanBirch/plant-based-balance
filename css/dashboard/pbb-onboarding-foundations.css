@@ -235,6 +235,7 @@ html[data-pbb-theme="dark"] #onboarding-wizard .onboarding-modal.wizard-containe
     background: transparent !important;
     box-shadow: none !important;
     text-shadow: none !important;
+    animation: none !important;
 }
 
 #onboarding-wizard .wizard-chat-bubble.coach:first-child:not(:last-child) {
@@ -303,6 +304,7 @@ html[data-pbb-theme="dark"] #onboarding-wizard .onboarding-modal.wizard-containe
     line-height: 1.25 !important;
     transform: translateZ(0);
     transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease !important;
+    animation: none !important;
 }
 
 #onboarding-wizard .wizard-chat-choice::after {

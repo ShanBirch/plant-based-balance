@@ -76,7 +76,7 @@ test('onboarding ships a cache-busted authoritative cream-and-gold skin', () => 
     assert.match(foundationsCss, /#onboarding-wizard \.wizard-chat-bubble\.coach:last-child[\s\S]*?-webkit-text-fill-color: var\(--foundations-ink\) !important;/);
     assert.match(foundationsCss, /@media \(prefers-reduced-motion: reduce\)/);
     assert.match(dashboardSource, /pbb-onboarding-comeback\.css\?v=8/);
-    assert.match(dashboardSource, /pbb-onboarding-foundations\.css\?v=6-single-render/);
+    assert.match(dashboardSource, /pbb-onboarding-foundations\.css\?v=7-single-render/);
 });
 
 test('Foundations gives each real setup section a compact branded transition', () => {
@@ -105,6 +105,8 @@ test('profile questions render once while choice confirmation still blocks doubl
     assert.match(foundationsCss, /\.wizard-chat-choice\.is-confirmed/);
     assert.doesNotMatch(onboardingSource, /restartWizardChatQuestionMotion/);
     assert.doesNotMatch(foundationsCss, /wizard-chat-question-entering/);
+    assert.match(foundationsCss, /\.wizard-chat-bubble\.coach\s*\{[^}]*animation:\s*none\s*!important/s);
+    assert.match(foundationsCss, /\.wizard-chat-choice\s*\{[^}]*animation:\s*none\s*!important/s);
     assert.doesNotMatch(foundationsCss, /foundationsQuestionIn/);
     assert.doesNotMatch(foundationsCss, /foundationsChoiceIn/);
     assert.match(foundationsCss, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.wizard-section-transition-orbit > span/);
