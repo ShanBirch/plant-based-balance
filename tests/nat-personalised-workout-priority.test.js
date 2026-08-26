@@ -56,18 +56,20 @@ test('all deployed functions are routed through the dedicated modern runtime dir
 test('dynamic legacy dependencies are pinned into modern function bundles', () => {
   for (const name of ['admin-reset-user-password', 'award-feed-top-post']) {
     const wrapper = read(`netlify/modern-functions/${name}.mts`);
-    assert.match(wrapper, /import \* as pbbSupabaseDependency from '@supabase\/supabase-js'/);
-    assert.match(wrapper, /export \{ pbbSupabaseDependency \}/);
+    assert.match(wrapper, /import pbbSupabaseDependency from '\.\.\/modern-runtime\/vendor\/supabase\.bundle\.mjs'/);
+    assert.match(wrapper, /globalThis\.__PBB_SUPABASE_DEPENDENCY__ = pbbSupabaseDependency/);
   }
 
   for (const name of ['send-dm-notification', 'send-meal-plan-ready']) {
     const wrapper = read(`netlify/modern-functions/${name}.mts`);
-    assert.match(wrapper, /import \* as pbbWebPushDependency from 'web-push'/);
-    assert.match(wrapper, /export \{ pbbWebPushDependency \}/);
+    assert.match(wrapper, /import pbbWebPushDependency from '\.\.\/modern-runtime\/vendor\/web-push\.bundle\.cjs'/);
+    assert.match(wrapper, /globalThis\.__PBB_WEB_PUSH_DEPENDENCY__ = pbbWebPushDependency/);
   }
 
   assert.match(
     read('netlify/functions/send-meal-reminders.mjs'),
-    /import webpush from 'web-push'/,
+    /import webpush from '\.\.\/modern-runtime\/vendor\/web-push\.bundle\.cjs'/,
   );
+  assert.ok(fs.statSync(path.join(root, 'netlify/modern-runtime/vendor/supabase.bundle.mjs')).size > 100_000);
+  assert.ok(fs.statSync(path.join(root, 'netlify/modern-runtime/vendor/web-push.bundle.cjs')).size > 100_000);
 });

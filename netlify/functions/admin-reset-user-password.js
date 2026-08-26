@@ -1,4 +1,4 @@
-const { createClient } = require('@supabase/supabase-js');
+const { createClient } = globalThis.__PBB_SUPABASE_DEPENDENCY__ || require('@supabase/supabase-js');
 const { randomInt } = require('crypto');
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;

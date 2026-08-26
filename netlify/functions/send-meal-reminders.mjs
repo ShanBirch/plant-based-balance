@@ -1,4 +1,4 @@
-import webpush from 'web-push';
+import webpush from '../modern-runtime/vendor/web-push.bundle.cjs';
 import crypto from 'crypto';
 import { createRequire } from 'module';
 

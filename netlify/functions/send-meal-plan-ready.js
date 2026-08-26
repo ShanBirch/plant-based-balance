@@ -1,4 +1,4 @@
-const webpush = require('web-push');
+const webpush = globalThis.__PBB_WEB_PUSH_DEPENDENCY__ || require('web-push');
 const crypto = require('crypto');
 const { loadFirebaseServiceAccount } = require('./_lib/firebase-service-account');
 

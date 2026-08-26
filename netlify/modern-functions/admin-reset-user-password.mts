@@ -1,6 +1,13 @@
 import { withLambda } from '../modern-runtime/lambda-compat.mts';
-import * as pbbSupabaseDependency from '@supabase/supabase-js';
-import legacy from '../functions/admin-reset-user-password.js';
+import pbbSupabaseDependency from '../modern-runtime/vendor/supabase.bundle.mjs';
 
-export { pbbSupabaseDependency };
-export default withLambda(legacy.handler);
+let wrappedHandler;
+
+export default async function handler(request, context) {
+  if (!wrappedHandler) {
+    globalThis.__PBB_SUPABASE_DEPENDENCY__ = pbbSupabaseDependency;
+    const legacy = await import('../functions/admin-reset-user-password.js');
+    wrappedHandler = withLambda(legacy.default.handler);
+  }
+  return wrappedHandler(request, context);
+}
