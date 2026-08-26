@@ -4,7 +4,7 @@
 
 [functions]
   node_bundler = "esbuild"
-  external_node_modules = ["@supabase/supabase-js", "web-push"]
+  external_node_modules = ["@netlify/aws-lambda-compat", "@supabase/supabase-js", "web-push"]
 
 [functions."admin-reset-user-password"]
   node_bundler = "esbuild"
