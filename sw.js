@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v344-course-action-evidence'; // v344: track diary, wearable and Identity actions with specific evidence
+const CACHE_NAME = 'pbb-app-v345-guided-tour-clarity'; // v345: keep paid onboarding actions obvious without covering the task
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -17,9 +17,9 @@ const ASSETS = [
   './workout_library_extended.js',
   './js/dashboard/script_part_2.js?v=14-light-launch',
   './js/dashboard/dashboard-script-3-1_get_user_data.js?v=59-light-launch',
-  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=193-cycle-for-her',
+  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=194-guided-tour-clarity',
   './js/dashboard/pbb-app-telemetry.js?v=1',
-  './js/dashboard/pbb-deferred-weeklygoals.js?v=33-home-theme',
+  './js/dashboard/pbb-deferred-weeklygoals.js?v=34-guided-goals',
   './css/dashboard/pbb-onboarding-comeback.css?v=8',
   './css/dashboard/pbb-onboarding-foundations.css?v=7-single-render',
   './js/dashboard/dashboard-script-7-video_logic.js?v=20260815-exercise-thumbnails',

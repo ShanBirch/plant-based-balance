@@ -28,6 +28,13 @@ test('both activation tours require an explicit Weekly Goals save', () => {
   assert.match(dashboard, /window\.addEventListener\('pbbWeeklyGoalsSaved', saved\)/);
   assert.match(dashboard, /Number\(detail\.selectedCount \|\| 0\) < 1/);
   assert.match(dashboard, /activeTourGate && !activeTourGate\.complete/);
+  assert.match(weeklyGoals, /state\.modalSource === 'meta_preview_setup' \|\| state\.modalSource === 'client_activation_setup'/);
+  assert.match(weeklyGoals, /state\.draftSelected = \[\]/);
+  assert.match(weeklyGoals, /Pick your first goal/);
+  assert.match(weeklyGoals, /Recommended match your setup answers/);
+  assert.match(weeklyGoals, /Save my weekly goals/);
+  assert.match(dashboard, /RECOMMENDED STARTING POINTS/);
+  assert.match(dashboard, /These are suggestions only/);
 });
 
 test('preview walkthrough only unlocks Next after the welcome audio ends', () => {
@@ -38,7 +45,7 @@ test('preview walkthrough only unlocks Next after the welcome audio ends', () =>
 });
 
 test('paid preview opens and requires the real first Foundations lesson', () => {
-  assert.match(dashboard, /title:'Complete your first course lesson'[\s\S]*?requiresFoundationsLesson:'mind-1-1'/);
+  assert.match(dashboard, /title:'Do your first course lesson'[\s\S]*?requiresFoundationsLesson:'mind-1-1'/);
   assert.match(dashboard, /window\.startFoundationsLesson\('mind-1-1'\)/);
   assert.match(dashboard, /window\.addEventListener\('pbbLearningLessonFinished', completed\)/);
   assert.match(dashboard, /detail\.completed !== true/);
@@ -46,6 +53,8 @@ test('paid preview opens and requires the real first Foundations lesson', () => 
   assert.match(learning, /Karl Friston is a theoretical neuroscientist at University College London/);
   assert.match(learning, /Lisa Feldman Barrett is a Distinguished Professor of Psychology at Northeastern University/);
   assert.match(learning, /new CustomEvent\('pbbLearningLessonFinished'/);
+  assert.match(dashboard, /#guided-tour-overlay\.tour-action-required:not\(\.tour-gate-complete\)[\s\S]*?\.tour-actions \{ display: none; \}/);
+  assert.match(dashboard, /activeTourGate\.followTimer = setInterval/);
 });
 
 test('real Coach Shannon inbox also requires the full welcome note', () => {
@@ -59,10 +68,10 @@ test('real Coach Shannon inbox also requires the full welcome note', () => {
 });
 
 test('changed onboarding assets are cache-busted', () => {
-  assert.match(dashboard, /pbb-deferred-weeklygoals\.js\?v=33-home-theme/);
+  assert.match(dashboard, /pbb-deferred-weeklygoals\.js\?v=34-guided-goals/);
   assert.match(dashboard, /pbb-social-journey\.js\?v=37-course-action-evidence/);
-  assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=193-cycle-for-her/);
+  assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=194-guided-tour-clarity/);
   assert.match(dashboard, /dashboard-script-6-ai_coach_draft_mode_logic_auth\.js\?v=43-home-canvas/);
   assert.match(dashboard, /learning-inline\.js\?v=24-meta-first-course/);
-  assert.match(serviceWorker, /pbb-app-v344-course-action-evidence/);
+  assert.match(serviceWorker, /pbb-app-v345-guided-tour-clarity/);
 });

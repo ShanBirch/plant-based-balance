@@ -223,18 +223,18 @@ test('dashboard, signup, native handoffs, measurement, and both discovery system
     const ios = fs.readFileSync(path.join(root, 'ios/App/App/BalanceShortcutHandoff.swift'), 'utf8');
 
     assert.match(dashboard, /paid-facebook-stripe-unlock-v1/);
-    assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=193-cycle-for-her/);
-    assert.match(dashboard, /title:'What to do today'.*metaPreview:true/);
-    assert.match(dashboard, /title:'Your workouts for the week'.*metaPreview:true/);
-    assert.match(dashboard, /title:'Your first strength workout'.*metaPreview:true/);
-    assert.match(dashboard, /title:'See the exercise, sets and reps'.*metaPreview:true/);
-    assert.match(dashboard, /title:'Track food with the camera'.*metaPreview:true/);
-    assert.match(dashboard, /title:'Your actual meal plan'.*metaPreview:true/);
-    assert.match(dashboard, /title:'Complete your first course lesson'.*metaPreview:true.*requiresFoundationsLesson:'mind-1-1'/);
+    assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=194-guided-tour-clarity/);
+    assert.match(dashboard, /title:'Start here each day'.*metaPreview:true/);
+    assert.match(dashboard, /title:'Check your workout week'.*metaPreview:true/);
+    assert.match(dashboard, /title:'Open your first workout'.*metaPreview:true/);
+    assert.match(dashboard, /title:'Follow the exercise card'.*metaPreview:true/);
+    assert.match(dashboard, /title:'Log what you eat'.*metaPreview:true/);
+    assert.match(dashboard, /title:'Open your meal plan'.*metaPreview:true/);
+    assert.match(dashboard, /title:'Do your first course lesson'.*metaPreview:true.*requiresFoundationsLesson:'mind-1-1'/);
     assert.match(dashboard, /title:'The Balance community'.*metaPreview:true/);
     assert.match(dashboard, /title:'Post when you need support'.*metaPreview:true/);
     assert.match(dashboard, /title:'Listen to Shannon’s welcome'.*metaPreview:true/);
-    assert.match(dashboard, /title:'Set your Weekly Goals'.*metaPreviewSignoff:true/);
+    assert.match(dashboard, /title:'Pick your Weekly Goals'.*metaPreviewSignoff:true/);
     assert.match(dashboard, /showExitChoice\('tour'\)/);
     assert.match(onboarding, /closingMetaAdTrial[\s\S]*?showExitChoice\('onboarding'\)[\s\S]*?return;/);
     assert.match(onboarding, /window\.resumeMetaAdTrialOnboarding = function/);

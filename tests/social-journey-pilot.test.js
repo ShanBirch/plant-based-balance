@@ -85,7 +85,7 @@ test('Home plan cards stay below the complete FitGotchi stats block', () => {
     assert.match(source, /characterBlockTail\.parentNode\.insertBefore\(card, characterBlockTail\.nextSibling\)/);
     assert.doesNotMatch(source, /levelStrip\.parentNode\.insertBefore\((weeklyGoals|card), levelStrip\.nextSibling\)/);
     assert.match(html, /pbb-social-journey\.js\?v=37-course-action-evidence/);
-    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v344-course-action-evidence'/);
+    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v345-guided-tour-clarity'/);
 });
 
 test('Home goals and plan cards follow light and dark mode', () => {
@@ -99,7 +99,7 @@ test('Home goals and plan cards follow light and dark mode', () => {
     assert.match(css, /weekly-goal-progress-card__value\.is-complete/);
     assert.match(css, /html\.pbb-unified-next-steps #weekly-goals-card\.weekly-goals-home-card\s*\{[\s\S]*?margin: 10px 25px 14px !important/);
     assert.match(html, /pbb-social-journey\.css\?v=23-working-targets/);
-    assert.match(html, /pbb-deferred-weeklygoals\.js\?v=33-home-theme/);
+    assert.match(html, /pbb-deferred-weeklygoals\.js\?v=34-guided-goals/);
 });
 
 test('first check-in ships the recorded Shannon welcome audio used by Inbox and Your Next Step', () => {

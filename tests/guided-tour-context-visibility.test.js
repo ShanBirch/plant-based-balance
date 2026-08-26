@@ -26,7 +26,7 @@ test('walkthrough keeps surrounding page context readable', () => {
   assert.match(premiumOverlays, /#guided-tour-overlay\.tour-page-view #guided-tour-spotlight[\s\S]*?rgba\(26, 24, 20, 0\.08\)/);
   assert.doesNotMatch(premiumOverlays, /#guided-tour-spotlight[\s\S]*?rgba\(29, 15, 50, 0\.78\)/);
   assert.match(dashboard, /pbb-premium-overlays\.css\?v=97-foundations-actions/);
-  assert.match(serviceWorker, /pbb-app-v344-course-action-evidence/);
+  assert.match(serviceWorker, /pbb-app-v345-guided-tour-clarity/);
 });
 
 test('page-level stops opt into the softer context view', () => {
@@ -34,10 +34,10 @@ test('page-level stops opt into the softer context view', () => {
 
   for (const title of [
     'Your meal plan',
-    'Your workouts for the week',
-    'See the exercise, sets and reps',
-    'Your actual meal plan',
-    'Your six-week course',
+    'Check your workout week',
+    'Follow the exercise card',
+    'Open your meal plan',
+    'Do your first course lesson',
     'The Balance community'
   ]) {
     const escapedTitle = title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -57,8 +57,8 @@ test('Meta preview opens the next strength workout and waits for real proof medi
   assert.match(source, /!workoutId\.startsWith\('yoga-'\)/);
   assert.match(source, /!workoutId\.startsWith\('recovery-'\)/);
   assert.match(source, /window\.openCalendarWorkout\(dayIndex\)/);
-  assert.match(source, /title:'Your first strength workout'/);
-  assert.match(source, /title:'See the exercise, sets and reps'/);
+  assert.match(source, /title:'Open your first workout'/);
+  assert.match(source, /title:'Follow the exercise card'/);
   assert.match(source, /data-thumbnail-state="ready"/);
   assert.ok(
     (source.match(/waitForMetaPreviewWorkoutProof\(\{ requireThumbnail:true, timeoutMs:15000 \}\)/g) || []).length >= 2,
@@ -66,14 +66,14 @@ test('Meta preview opens the next strength workout and waits for real proof medi
   );
 });
 
-test('Meta preview waits for the rendered meal photo and skips community detours', () => {
+test('Meta preview waits for the rendered meal photo and includes the guided community stops', () => {
   const source = featureTourSource();
 
   assert.match(source, /function waitForMetaPreviewMealPhoto\(timeoutMs\)/);
   assert.match(source, /photo\.complete && photo\.naturalWidth > 0/);
   assert.match(source, /await waitForMetaPreviewMealPhoto\(15000\)/);
-  assert.doesNotMatch(source, /title:'The Balance community'[^\n]*metaPreview:true/);
-  assert.doesNotMatch(source, /title:'Post when you need support'[^\n]*metaPreview:true/);
+  assert.match(source, /title:'The Balance community'[^\n]*metaPreview:true/);
+  assert.match(source, /title:'Post when you need support'[^\n]*metaPreview:true/);
 });
 
 test('guided tours and returning-user reveals both reset and apply page-view mode', () => {

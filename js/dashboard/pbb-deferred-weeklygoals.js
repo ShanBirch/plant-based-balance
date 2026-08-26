@@ -1233,7 +1233,8 @@
     modal.id = 'weekly-goals-modal';
     modal.style.cssText = 'display:none;position:fixed;inset:0;z-index:10020;background:rgba(20,12,38,0.74);align-items:flex-end;justify-content:center;backdrop-filter:blur(4px);';
     modal.onclick = function(event) {
-      if (event.target === modal) closeWeeklyGoalsModal();
+      const guidedSetup = state.modalSource === 'meta_preview_setup' || state.modalSource === 'client_activation_setup';
+      if (event.target === modal && !guidedSetup) closeWeeklyGoalsModal();
     };
     document.body.appendChild(modal);
 
@@ -1250,6 +1251,10 @@
       .weekly-goal-choice .weekly-goal-choice-pill{background:var(--goal-soft);border:1px solid var(--goal-border);color:var(--goal-accent);border-radius:999px;padding:4px 7px;font-size:.66rem;font-weight:950;white-space:nowrap;}
       .weekly-goal-choice.selected{border-color:var(--goal-accent);background:var(--goal-soft);box-shadow:0 0 0 2px rgba(15,23,42,.05) inset,0 10px 22px rgba(15,23,42,.08);}
       .weekly-goal-choice.selected .weekly-goal-choice-pill{background:#fff;}
+      .weekly-goal-choice.recommended:not(.selected){border-color:var(--goal-accent);box-shadow:0 0 0 1px var(--goal-border) inset,0 10px 22px rgba(15,23,42,.08);}
+      .weekly-goal-onboarding-guide{padding:13px 14px;border-radius:16px;background:linear-gradient(135deg,#fff9e8,#ffffff);border:2px solid #d8b25e;box-shadow:0 10px 24px rgba(154,105,25,.12);margin-bottom:12px;color:#172033;}
+      .weekly-goal-onboarding-guide strong{display:block;font-size:.92rem;font-weight:950;margin-bottom:4px;}
+      .weekly-goal-onboarding-guide span{display:block;font-size:.76rem;line-height:1.45;color:#5f5968;font-weight:800;}
       .weekly-goal-category{margin-top:14px;padding:13px;border-radius:18px;background:rgba(255,255,255,.92);border:1px solid rgba(255,255,255,.22);box-shadow:0 12px 26px rgba(18,8,34,.18);}
       .weekly-goal-category-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:9px;}
       .weekly-goal-category-title{display:flex;align-items:center;gap:8px;font-weight:950;color:#0f172a;font-size:.94rem;}
@@ -1282,22 +1287,27 @@
     const modal = document.getElementById('weekly-goals-modal');
     if (!modal) return;
     const selectedIds = new Set(state.draftSelected.map(goal => goal.id));
-    const showingOnboardingSuggestions = !state.selected.length && state.draftSelected.length > 0;
+    const guidedSetup = state.modalSource === 'meta_preview_setup' || state.modalSource === 'client_activation_setup';
+    const recommendedIds = new Set(suggestWeeklyGoalsFromOnboarding().map(goal => goal.id));
     const weekLabel = state.week ? state.week.start : 'this week';
-    const modalTitle = state.selected.length
-      ? 'Edit goals for ' + weekLabel
-      : 'Choose 3 for ' + weekLabel;
-    const saveLabel = state.selected.length ? 'Update goals' : 'Save goals';
+    const modalTitle = guidedSetup
+      ? (state.draftSelected.length ? 'Make your goals realistic' : 'Pick your first goal')
+      : (state.selected.length ? 'Edit goals for ' + weekLabel : 'Choose up to 3 for ' + weekLabel);
+    const saveLabel = guidedSetup ? 'Save my weekly goals' : (state.selected.length ? 'Update goals' : 'Save goals');
+    const guidedInstruction = state.draftSelected.length
+      ? 'Set the target beside each selected goal. Add another goal if it will help, or save when this feels achievable.'
+      : 'Start with one. The cards marked Recommended match your setup answers, but the choice is yours.';
     const groupHtml = GOAL_CATALOG.map(group => {
       const metaStyle = styleVarsForMeta(group);
       const goals = group.goals.map(goal => {
         const selected = selectedIds.has(goal.id);
+        const recommended = guidedSetup && recommendedIds.has(goal.id);
         return `
-          <button type="button" class="weekly-goal-choice ${selected ? 'selected' : ''}" style="${metaStyle}" onclick="toggleWeeklyGoalChoice('${goal.id}')">
+          <button type="button" class="weekly-goal-choice ${selected ? 'selected' : ''} ${recommended ? 'recommended' : ''}" style="${metaStyle}" onclick="toggleWeeklyGoalChoice('${goal.id}')">
             <strong>${escapeHtml(goal.label)}</strong>
             <div class="weekly-goal-choice-bottom">
               <span>${escapeHtml(goalChoiceHint(goal, selected))}</span>
-              <span class="weekly-goal-choice-pill">${selected ? 'Picked' : 'Choose'}</span>
+              <span class="weekly-goal-choice-pill">${selected ? 'Picked' : (recommended ? 'Recommended' : 'Choose')}</span>
             </div>
           </button>
         `;
@@ -1340,15 +1350,21 @@
               <div style="font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;font-weight:900;color:#fde68a;">Weekly goals</div>
               <div style="font-size:1.25rem;font-weight:950;color:white;margin-top:2px;">${escapeHtml(modalTitle)}</div>
             </div>
-            <button type="button" onclick="closeWeeklyGoalsModal()" style="width:38px;height:38px;border:none;border-radius:50%;background:white;color:#0f172a;font-size:1.4rem;line-height:1;cursor:pointer;box-shadow:0 8px 18px rgba(15,23,42,.08);">&times;</button>
+            ${guidedSetup ? '' : '<button type="button" onclick="closeWeeklyGoalsModal()" aria-label="Close Weekly Goals" style="width:38px;height:38px;border:none;border-radius:50%;background:white;color:#0f172a;font-size:1.4rem;line-height:1;cursor:pointer;box-shadow:0 8px 18px rgba(15,23,42,.08);">&times;</button>'}
           </div>
         </div>
         <div style="padding:16px 20px 112px;">
+          ${guidedSetup ? `
+            <div class="weekly-goal-onboarding-guide" role="status" aria-live="polite">
+              <strong>${state.draftSelected.length ? 'Now set a target you can actually do' : '1. Tap your first goal'}</strong>
+              <span>${escapeHtml(guidedInstruction)}</span>
+            </div>
+          ` : ''}
           <div style="padding:12px 14px;border-radius:16px;background:linear-gradient(135deg,#ffffff,#f8fafc);border:1px solid rgba(15,23,42,.08);box-shadow:0 8px 22px rgba(15,23,42,.05);">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px;">
               <div>
                 <div style="font-weight:900;color:#0f172a;font-size:.88rem;">Selected</div>
-                <div style="font-size:.68rem;color:#64748b;font-weight:800;margin-top:2px;">${showingOnboardingSuggestions ? 'Suggested from onboarding. Change anything before saving.' : 'Set the amount that feels right for your week.'}</div>
+                <div style="font-size:.68rem;color:#64748b;font-weight:800;margin-top:2px;">${guidedSetup ? 'You choose these. Nothing is saved until you tap the button below.' : 'Set the amount that feels right for your week.'}</div>
               </div>
               <div style="font-size:.75rem;font-weight:900;color:${state.draftSelected.length === MAX_GOALS ? '#047857' : '#64748b'};">${state.draftSelected.length} / ${MAX_GOALS}</div>
             </div>
@@ -1409,6 +1425,8 @@
       state.draftSelected = state.selected.map(goal => Object.assign({}, goal));
     } else if (carriedSelection.length) {
       state.draftSelected = carriedSelection;
+    } else if (state.modalSource === 'meta_preview_setup' || state.modalSource === 'client_activation_setup') {
+      state.draftSelected = [];
     } else {
       state.draftSelected = suggestWeeklyGoalsFromOnboarding();
     }
