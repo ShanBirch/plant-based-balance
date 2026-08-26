@@ -38,9 +38,6 @@ importers:
       '@google/generative-ai':
         specifier: ^0.21.0
         version: 0.21.0
-      '@netlify/aws-lambda-compat':
-        specifier: ^2.0.0
-        version: 2.0.0
       '@supabase/supabase-js':
         specifier: ^2.94.1
         version: 2.112.4
@@ -298,14 +295,6 @@ packages:
   '@isaacs/fs-minipass@4.0.1':
     resolution: {integrity: sha512-wgm9Ehl2jpeqP3zw/7mo3kRHFp5MEDhqAdwy1fTGkHAwnkGOVsgpvQhL8B5n1qlb01jV3n/bI0ZfZp5lWA1k4w==}
     engines: {node: '>=18.0.0'}
-
-  '@netlify/aws-lambda-compat@2.0.0':
-    resolution: {integrity: sha512-TsNIhX4B51DzQaiACG9GI6vYNOjuyC1cwaUsC09k4zYPjoCOo1ib8QjlsC6LjZ8koHHIuI/Bvk5oElnCGyoLQg==}
-    engines: {node: '>=22.12.0'}
-
-  '@netlify/types@3.0.0':
-    resolution: {integrity: sha512-zRCidsQgI4CZWrZB/kmwdPf0QbSNljakfNSLizFvrsSA3UcUrTWSBNMVKmZnob92/8ESeUN0ewXLOlffJU+ATQ==}
-    engines: {node: '>=22.12.0'}
 
   '@supabase/auth-js@2.112.4':
     resolution: {integrity: sha512-z8DesgwLzKM5PiT0yNmJU8VJyh1zAhYi+20Z7drdJQLXg/wWW4yGt/un+He5ERYUo94Vz66t5aeyr1DIDemI5A==}
@@ -980,12 +969,6 @@ snapshots:
   '@isaacs/fs-minipass@4.0.1':
     dependencies:
       minipass: 7.1.3
-
-  '@netlify/aws-lambda-compat@2.0.0':
-    dependencies:
-      '@netlify/types': 3.0.0
-
-  '@netlify/types@3.0.0': {}
 
   '@supabase/auth-js@2.112.4':
     dependencies:

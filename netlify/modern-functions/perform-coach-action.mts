@@ -1,4 +1,4 @@
-import { withLambda } from '@netlify/aws-lambda-compat';
+import { withLambda } from '../modern-runtime/lambda-compat.mts';
 import 'vm';
 import legacy from '../functions/perform-coach-action.js';
 

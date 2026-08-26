@@ -11,6 +11,10 @@ const movement = fs.readFileSync(
 const dashboard = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
 const config = fs.readFileSync(path.join(root, 'netlify.toml'), 'utf8');
 const wrappersDir = path.join(root, 'netlify/modern-functions');
+const compatibilityAdapter = fs.readFileSync(
+  path.join(root, 'netlify/modern-runtime/lambda-compat.mts'),
+  'utf8'
+);
 
 test('active personalised programs are not replaced by automatic recovery suggestions', () => {
   assert.match(movement, /usingCustomProgram && isAutomaticRecoveryOverride/);
@@ -40,4 +44,10 @@ test('all deployed functions are routed through the dedicated modern runtime dir
   assert.match(config, /external_node_modules = \["@supabase\/supabase-js", "web-push"\]/);
   const wrappers = fs.readdirSync(wrappersDir).filter((name) => name.endsWith('.mts'));
   assert.equal(wrappers.length, 128);
+  const legacyWrappers = wrappers.filter((name) => {
+    const source = fs.readFileSync(path.join(wrappersDir, name), 'utf8');
+    return source.includes('../modern-runtime/lambda-compat.mts');
+  });
+  assert.equal(legacyWrappers.length, 104);
+  assert.match(compatibilityAdapter, /export function withLambda/);
 });
