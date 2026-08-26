@@ -249,6 +249,27 @@
         .proof-item strong { display: block; color: #f5d98a; font-size: 1.05rem; }
         .proof-item span { color: #c6ced8; font-size: .86rem; }
 
+        .course-section { background: #fffdf8; }
+        .course-intro { display: grid; grid-template-columns: .9fr 1.1fr; gap: 52px; align-items: end; margin-bottom: 34px; }
+        .course-intro .section-head { margin-bottom: 0; }
+        .course-method { padding: 24px; border: 1px solid rgba(184,137,43,.22); border-radius: 22px; background: linear-gradient(145deg, rgba(245,217,138,.22), rgba(255,255,255,.9)); }
+        .course-method strong { display: block; margin-bottom: 7px; color: #8b6418; font-family: 'Outfit', sans-serif; font-size: 1.15rem; }
+        .course-method p { margin: 0; color: var(--muted); }
+        .week-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+        .course-week { position: relative; overflow: hidden; padding: 26px; border: 1px solid rgba(184,137,43,.2); border-radius: 24px; background: var(--paper); box-shadow: 0 16px 42px rgba(26,32,44,.055); }
+        .course-week::after { content: ""; position: absolute; right: -52px; top: -52px; width: 130px; height: 130px; border: 22px solid rgba(216,178,94,.09); border-radius: 50%; }
+        .week-label { display: inline-block; margin-bottom: 13px; color: #8b6418; font-size: .78rem; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+        .course-week h3 { position: relative; z-index: 1; margin: 0 0 8px; color: var(--ink); font-family: 'Outfit', sans-serif; font-size: clamp(1.45rem, 3vw, 2rem); line-height: 1.05; letter-spacing: -.035em; }
+        .week-summary { margin: 0 0 18px; color: var(--muted); }
+        .lesson-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+        .lesson-list li { position: relative; padding-left: 20px; color: #4f5968; font-size: .9rem; }
+        .lesson-list li::before { content: ""; position: absolute; left: 0; top: .62em; width: 7px; height: 7px; border-radius: 50%; background: var(--lime); box-shadow: 0 0 0 4px rgba(216,178,94,.13); }
+        .weekly-loop { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 24px; }
+        .loop-step { padding: 19px; border-radius: 18px; color: #fff; background: var(--forest); }
+        .loop-step b { display: block; margin-bottom: 5px; color: #f5d98a; font-family: 'Outfit', sans-serif; }
+        .loop-step span { color: #d5dbe3; font-size: .86rem; }
+        .goal-note { margin: 18px 0 0; padding: 16px 18px; border-left: 4px solid var(--leaf); color: #4f5968; background: rgba(216,178,94,.1); }
+
         section { padding: 88px 0; }
         .section-head { max-width: 760px; margin-bottom: 38px; }
         .section-head h2, .founder h2, .join-card h2 { margin: 12px 0 14px; color: var(--ink); font-family: 'Outfit', sans-serif; font-size: clamp(2.1rem, 5vw, 3.7rem); font-weight: 900; line-height: 1.02; letter-spacing: -.05em; }
@@ -322,11 +343,12 @@
         .footer-links { display: flex; flex-wrap: wrap; gap: 16px; }
 
         @media (max-width: 850px) {
-            .hero-grid, .dark-grid, .founder-grid, .join-card { grid-template-columns: 1fr; }
+            .hero-grid, .dark-grid, .founder-grid, .join-card, .course-intro { grid-template-columns: 1fr; }
             .hero-grid { gap: 12px; padding-top: 35px; }
             .hero-copy { max-width: 560px; }
             .phone-stage { min-height: 590px; }
             .card-grid { grid-template-columns: 1fr 1fr; }
+            .weekly-loop { grid-template-columns: 1fr 1fr; }
             .founder-mark { min-height: 300px; }
             .app-showcase-grid { grid-template-columns: repeat(3, minmax(240px, 1fr)); overflow-x: auto; padding: 0 2px 36px; scroll-snap-type: x mandatory; scrollbar-width: none; }
             .app-showcase-grid::-webkit-scrollbar { display: none; }
@@ -345,7 +367,8 @@
             .screen { min-height: 515px; }
             .phone-highlights { position: static; width: 100%; display: flex; flex-wrap: wrap; justify-content: center; gap: 9px; }
             .floating-note { position: static; transform: none; padding: 10px 12px; white-space: normal; text-align: left; box-shadow: 0 10px 25px rgba(26,32,44,.1); }
-            .proof-grid, .card-grid, .fit-grid { grid-template-columns: 1fr; }
+            .proof-grid, .card-grid, .fit-grid, .week-grid, .weekly-loop { grid-template-columns: 1fr; }
+            .course-week { padding: 22px; }
             body.paid-meta-preview .paid-preview-route { flex-wrap: wrap; }
             .paid-preview-store-row { grid-template-columns: 1fr; }
             .proof-item { border-right: 0; border-bottom: 1px solid rgba(255,255,255,.14); }
@@ -435,6 +458,32 @@
             </div>
         </div>
 
+        <section class="course-section" id="course">
+            <div class="wrap">
+                <div class="course-intro">
+                    <div class="section-head reveal"><div class="eyebrow">The course, week by week</div><h2>Understand what keeps tripping you up—then learn how to change it.</h2><p>Balance Foundations is a guided course, not just app access. Across six weeks and 30 short lessons, you learn how your brain, energy, habits, environment and food choices work together, then practise one useful change in real life.</p></div>
+                    <div class="course-method reveal"><strong>The idea you keep coming back to</strong><p>Notice the signal. Check your body, context and environment. Choose one workable adjustment. Repeat and learn.</p></div>
+                </div>
+
+                <div class="week-grid">
+                    <article class="course-week reveal"><span class="week-label">Week 1 · 5 lessons</span><h3>Understand why change feels hard</h3><p class="week-summary">See how past experience shapes prediction—and how better evidence changes what feels possible.</p><ul class="lesson-list"><li>Your brain guesses first</li><li>Predictions shape what you notice</li><li>Surprise is how your brain learns</li><li>Your past trains today’s predictions</li><li>Update the model, not the blame</li></ul></article>
+                    <article class="course-week reveal"><span class="week-label">Week 2 · 5 lessons</span><h3>Work with your energy, not against it</h3><p class="week-summary">Plan for the days sleep, stress and low energy usually throw off.</p><ul class="lesson-list"><li>Your brain runs a body budget</li><li>Where your energy budget goes</li><li>Feelings are your brain’s best guess</li><li>Why tiredness can arrive early</li><li>Stress changes the prediction</li></ul></article>
+                    <article class="course-week reveal"><span class="week-label">Week 3 · 5 lessons</span><h3>Build a rhythm that can stick</h3><p class="week-summary">Use smaller actions and repetition to make the helpful choice easier to keep doing.</p><ul class="lesson-list"><li>Habits save brain energy</li><li>Repetition makes actions easier</li><li>Make the helpful choice small</li><li>Your environment starts the habit</li><li>Streaks build expectation</li></ul></article>
+                    <article class="course-week reveal"><span class="week-label">Week 4 · 5 lessons</span><h3>Take the fight out of food</h3><p class="week-summary">Understand what a craving is trying to solve, without turning food into a moral test.</p><ul class="lesson-list"><li>A craving is a prediction</li><li>Low body budget, louder cravings</li><li>Why comfort food works briefly</li><li>Name the feeling, change the choice</li><li>Fix the need behind the craving</li></ul></article>
+                    <article class="course-week reveal"><span class="week-label">Week 5 · 5 lessons</span><h3>Make the better choice easier</h3><p class="week-summary">Stop demanding more willpower and redesign the setup around the choice.</p><ul class="lesson-list"><li>Why willpower lets you down</li><li>Behaviour follows predictions</li><li>You inherited more habits than you chose</li><li>Redesign the choice around you</li><li>Other people shape your habits</li></ul></article>
+                    <article class="course-week reveal"><span class="week-label">Week 6 · 5 lessons</span><h3>Build a way of eating you can keep</h3><p class="week-summary">Bring the food basics together without rigid rules or all-or-nothing thinking.</p><ul class="lesson-list"><li>Energy balance without the guilt</li><li>Protein that supports your goal</li><li>Carbs are useful fuel</li><li>Why your body needs fat</li><li>Your sustainable way of eating</li></ul></article>
+                </div>
+
+                <div class="weekly-loop reveal" aria-label="How each week works">
+                    <div class="loop-step"><b>1. Learn</b><span>Complete five short, focused lessons.</span></div>
+                    <div class="loop-step"><b>2. Test it</b><span>Use a quick interactive quiz after each lesson.</span></div>
+                    <div class="loop-step"><b>3. Apply it</b><span>Choose one to three realistic Weekly Goals.</span></div>
+                    <div class="loop-step"><b>4. Review it</b><span>Shannon reviews your week and adjusts the plan.</span></div>
+                </div>
+                <p class="goal-note reveal"><strong>Your Weekly Goals are real actions inside Balance:</strong> complete your workouts, hit your protein target and get 7+ hours of sleep. They are a small weekly focus—not another endless checklist.</p>
+            </div>
+        </section>
+
         <section class="app-showcase">
             <div class="wrap">
                 <div class="section-head reveal"><div class="eyebrow">Inside your pass</div><h2>A real training app, not another downloadable plan.</h2><p>Movement, nutrition and community stay together, so the next useful action is easy to find.</p></div>
@@ -505,7 +554,7 @@
                 <div class="offer-box">
                     <div class="price">AU$89.99</div>
                     <strong>One payment. Six weeks. No auto-renewal.</strong>
-                    <ul><li>The complete six-week Balance Foundations course</li><li>One weekly check-in with Shannon</li><li>Weekly workout and food review with adjustments</li><li>Questions, direction and accountability inside Balance</li><li>Six weeks of app and community access</li><li>A personal next-step recommendation at completion</li></ul>
+                    <ul><li>30 guided lessons across six clear weekly themes</li><li>A quick interactive quiz after every lesson</li><li>One to three practical Weekly Goals inside Balance</li><li>One weekly check-in with Shannon</li><li>Weekly workout and food review with adjustments</li><li>Six weeks of app and community access</li><li>A personal next-step recommendation at completion</li></ul>
                     <div id="checkout-terms-container">
                         <label><input type="checkbox" id="terms-checkbox"><span>I agree to the <a href="terms.html" target="_blank" rel="noopener">Terms &amp; Conditions</a>, <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>, <a href="client-agreement.html" target="_blank" rel="noopener">Client Agreement</a> and <a href="refund-policy.html" target="_blank" rel="noopener">Refund Policy</a>.</span></label>
                     </div>

@@ -22,6 +22,15 @@ test('one-time Founders Pass has a complete purchase and activation path', () =>
     assert.match(page, /Six weeks with Shannon in your corner/);
     assert.match(page, /one weekly check-in/i);
     assert.match(page, /does not renew automatically/i);
+    assert.match(page, /Across six weeks and 30 short lessons/);
+    assert.equal((page.match(/class="course-week reveal"/g) || []).length, 6);
+    assert.equal((page.match(/class="lesson-list"/g) || []).length, 6);
+    assert.equal((page.match(/<li>/g) || []).filter(Boolean).length >= 30, true);
+    assert.match(page, /Understand why change feels hard/);
+    assert.match(page, /Work with your energy, not against it/);
+    assert.match(page, /Build a way of eating you can keep/);
+    assert.match(page, /quick interactive quiz after each lesson/i);
+    assert.match(page, /complete your workouts, hit your protein target and get 7\+ hours of sleep/i);
     assert.match(guard, /balance_vegan_founders_pass[\s\S]*?unitAmount: 8999[\s\S]*?mode: "payment"/);
     assert.match(guard, /balance_meta_foundations_pass[\s\S]*?unitAmount: 8900[\s\S]*?balanceProduct: "balance_vegan_founders_pass"[\s\S]*?mode: "payment"/);
     assert.match(checkout, /checkout\.plan\.mode === "subscription"/);
