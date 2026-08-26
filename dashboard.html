@@ -13694,6 +13694,84 @@ if(!window._pbbIsIOSSafari) {
 </div>
 <script>
 (function(){
+  function getMetaPreviewStrengthDayIndex(){
+    var calendar = null;
+    try {
+      if (typeof getStoredOnboardingWorkoutCalendar === 'function') {
+        calendar = getStoredOnboardingWorkoutCalendar(window.userProfile || {});
+      }
+    } catch(e) {}
+    if (!calendar) {
+      try { calendar = JSON.parse(localStorage.getItem('workoutCalendar') || 'null'); } catch(e) {}
+    }
+    if (!calendar) return null;
+
+    var dayKeys = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+    var todayFromMonday = (new Date().getDay() + 6) % 7;
+    for (var offset = 0; offset < dayKeys.length; offset += 1) {
+      var dayIndex = (todayFromMonday + offset) % dayKeys.length;
+      var workoutId = String(calendar[dayKeys[dayIndex]] || '').toLowerCase();
+      if (workoutId && workoutId !== 'rest' && !workoutId.startsWith('yoga-') && !workoutId.startsWith('recovery-')) {
+        return dayIndex;
+      }
+    }
+    return null;
+  }
+
+  function isTourElementVisible(element){
+    if (!element || !element.getClientRects || element.getClientRects().length === 0) return false;
+    var styles = window.getComputedStyle(element);
+    return styles.display !== 'none' && styles.visibility !== 'hidden' && Number(styles.opacity || 1) > 0;
+  }
+
+  async function waitForMetaPreviewWorkoutProof(options){
+    options = options || {};
+    var timeoutAt = Date.now() + (options.timeoutMs || 15000);
+    while (Date.now() < timeoutAt) {
+      var player = document.getElementById('view-active-workout');
+      var firstCard = document.querySelector('#workout-exercises-list .exercise-logger-card');
+      if (isTourElementVisible(player) && firstCard) {
+        if (!options.requireThumbnail) return firstCard;
+        var media = firstCard.querySelector('[data-video-container]');
+        if (media && media.dataset.thumbnailState === 'ready' && isTourElementVisible(media)) return media;
+      }
+      await new Promise(function(resolve){ setTimeout(resolve, 140); });
+    }
+    return null;
+  }
+
+  async function openMetaPreviewStrengthWorkout(){
+    var player = document.getElementById('view-active-workout');
+    if (window.__balanceMetaPreviewStrengthOpened && isTourElementVisible(player)) {
+      return waitForMetaPreviewWorkoutProof({ timeoutMs: 6000 });
+    }
+    var dayIndex = getMetaPreviewStrengthDayIndex();
+    if (Number.isInteger(dayIndex) && typeof window.openCalendarWorkout === 'function') {
+      window.__balanceMetaPreviewStrengthOpened = true;
+      await window.openCalendarWorkout(dayIndex);
+      return waitForMetaPreviewWorkoutProof({ timeoutMs: 15000 });
+    }
+    var card = document.getElementById('today-workout-card');
+    if (card) card.click();
+    return waitForMetaPreviewWorkoutProof({ timeoutMs: 15000 });
+  }
+
+  async function waitForMetaPreviewMealPhoto(timeoutMs){
+    var timeoutAt = Date.now() + (timeoutMs || 15000);
+    while (Date.now() < timeoutAt) {
+      var hero = document.querySelector('#ai-plan-meals-list .ai-plan-hero');
+      var photo = hero && hero.querySelector('img');
+      if (photo && photo.complete && photo.naturalWidth > 0 && isTourElementVisible(photo)) {
+        if (typeof photo.decode === 'function') {
+          try { await photo.decode(); } catch(e) {}
+        }
+        return photo;
+      }
+      await new Promise(function(resolve){ setTimeout(resolve, 140); });
+    }
+    return null;
+  }
+
   const steps = [
     { tab:'dashboard', sel:'#dm-voice-btn', fallbackSel:'.header-msg-icon', title:'Send a voice message', fallbackTitle:'Voice messages are in your DMs', body:'Tap the microphone, record your message, then tap send. You can cancel before it leaves.', fallbackBody:'Open Messages, choose a friend, then tap the microphone beside the message box.', action: async function(){ try { var coachId=window._coachUserId || (typeof getCoachUserId==='function' ? await getCoachUserId() : null); if(coachId && typeof openDirectMessage==='function') openDirectMessage(coachId,'Coach Shan',''); } catch(e){} await new Promise(function(r){ setTimeout(r,420); }); } },
     { tab:'dashboard', sel:'#weekly-goals-card', fallbackSel:'#next-obvious-steps-card', title:'Choose your Weekly Goals', body:'Pick 1 to 3 commitments that feel realistic this week. Balance has suggested options from your setup, but nothing is saved until you tap Save goals.', clientActivation:true, clientActivationOnly:true, requiresWeeklyGoals:true, action:async function(){ try { if(typeof window.openWeeklyGoalsModal === 'function') await window.openWeeklyGoalsModal({ source:'client_activation_setup', week:'current' }); } catch(e){} await new Promise(function(r){ setTimeout(r,180); }); } },
@@ -13705,15 +13783,15 @@ if(!window._pbbIsIOSSafari) {
     { tab:'movement-tab', sel:'#today-workout-card', title:'Your workout program', body:'Your home program lives here. Start with the version that fits today, even when today is a worst-week day.', clientActivation:true, clientActivationOnly:true },
     { tab:'dashboard', sel:'#next-obvious-steps-card', fallbackSel:'#weekly-goals-card', title:'What to do today', body:'Home is where you come to see the few things that matter today. Balance keeps the next steps clear instead of giving you another huge to-do list.', metaPreview:true },
     { tab:'cycle', sel:'#weekly-calendar', title:'Your workouts for the week', body:'This is your weekly calendar. Your planned workouts sit here, and you can move the days around when life changes.', pageView:true, metaPreview:true, action:function(){ try { if(typeof switchCalendarView === 'function') switchCalendarView('weekly'); } catch(e){} } },
-    { tab:'movement-tab', sel:'#today-workout-card', title:'Open your workout', body:'This is your next planned workout. We will open it now so you can see exactly what a session looks like.', metaPreview:true },
-    { tab:'movement-tab', sel:'#workout-exercises-list', fallbackSel:'#today-workout-card', title:'Track every set and rep', fallbackTitle:'Track every set and rep', body:'Your exercises, sets and reps are all laid out here. Use Swipe to move right to the next exercise, or switch back to List whenever you want.', fallbackBody:'Tap your workout to open the exercise list, track each set and rep, then swipe right for the next exercise.', pageView:true, metaPreview:true, action:async function(){ try { var card=document.getElementById('today-workout-card'); var player=document.getElementById('view-active-workout'); if(card && (!player || player.style.display==='none')) card.click(); } catch(e){} await new Promise(function(r){ setTimeout(r,420); }); } },
+    { tab:'movement-tab', sel:'#workout-player-title', fallbackSel:'#today-workout-card', title:'Your first strength workout', fallbackTitle:'Your first strength workout', body:'This is the next strength session from the week you just built. Balance opens the exact workout, not a sample.', fallbackBody:'Your next strength session is ready in Movement.', pageView:true, metaPreview:true, action:async function(){ try { await openMetaPreviewStrengthWorkout(); } catch(e){} } },
+    { tab:'movement-tab', sel:'#workout-exercises-list .exercise-logger-card [data-video-container][data-thumbnail-state="ready"]', fallbackSel:'#workout-exercises-list .exercise-logger-card,#workout-exercises-list', title:'See the exercise, sets and reps', fallbackTitle:'See every set and rep', body:'The real exercise demonstration, prescribed sets and target reps are together here. Use Swipe for the next exercise or List to see the whole session.', fallbackBody:'Your exercises, sets and target reps are laid out in this workout. Use Swipe for the next exercise or List to see the whole session.', pageView:true, metaPreview:true, action:async function(){ try { await openMetaPreviewStrengthWorkout(); await waitForMetaPreviewWorkoutProof({ requireThumbnail:true, timeoutMs:15000 }); } catch(e){} } },
     { tab:'meals', sel:'.camera-btn-widget,.meal-icon-btn', title:'Track food with the camera', body:'Use the camera, barcode scanner or quick entry to log what you actually eat. It gives Balance useful evidence without needing you to be perfect.', metaPreview:true },
-    { tab:'meals', sel:'#ai-plan-meals-list .ai-plan-hero', fallbackSel:'#ai-plan-meals-list,#browse-plans-pill', title:'Your actual meal plan', fallbackTitle:'Your meal plan is being prepared', body:'This is the meal plan generated from your setup answers. Open a recipe, log a meal, or look ahead through the week.', fallbackBody:'Balance prepares this from your setup answers before the tour reaches Nutrition, so your real plan is ready to explore.', pageView:true, metaPreview:true, action:async function(){ try { if(typeof window.ensureMetaPreviewMealPlan === 'function') await window.ensureMetaPreviewMealPlan(); if(typeof switchWeek === 'function') switchWeek('meal-plan-store', document.getElementById('browse-plans-pill')); } catch(e){} await new Promise(function(r){ setTimeout(r,320); }); } },
+    { tab:'meals', sel:'#ai-plan-meals-list .ai-plan-hero', fallbackSel:'#ai-plan-meals-list,#browse-plans-pill', title:'Your actual meal plan', fallbackTitle:'Your meal plan is being prepared', body:'This is the meal plan generated from your setup answers. Open a recipe, log a meal, or look ahead through the week.', fallbackBody:'Balance is finishing your meal plan now. It will stay here in Nutrition when it is ready.', pageView:true, metaPreview:true, action:async function(){ try { if(typeof window.ensureMetaPreviewMealPlan === 'function') await window.ensureMetaPreviewMealPlan(); if(typeof switchWeek === 'function') switchWeek('meal-plan-store', document.getElementById('browse-plans-pill')); await waitForMetaPreviewMealPhoto(15000); } catch(e){} } },
     { tab:'learning', sel:'.course-library-intro', fallbackSel:'#learning-content', title:'Your six-week course', fallbackTitle:'Your six-week course', body:'Your complete Balance Foundations course lives here. Each week gives you the next lessons and actions without dumping everything on you at once.', fallbackBody:'Your six weeks of Balance Foundations lessons live in the Course tab.', pageView:true, metaPreview:true },
-    { tab:'friends', sel:'#friends-photo-feed .meta-preview-feed-post', fallbackSel:'#friends-photo-feed .feed-post-card,#feed-composer-card', title:'The Balance community', fallbackTitle:'The Balance community', body:'This is the live Feed. You can see Coach Shan’s posts, photos and the wins people share inside Balance.', fallbackBody:'This is the Balance Feed, where Coach Shan posts and members share meals, workouts and wins.', pageView:true, metaPreview:true, action:async function(){ try { if(window.BalanceMetaAdTrial && typeof window.BalanceMetaAdTrial.loadPreviewFeed === 'function') await window.BalanceMetaAdTrial.loadPreviewFeed(); } catch(e){} await new Promise(function(r){ setTimeout(r,220); }); } },
-    { tab:'friends', sel:'#feed-composer-card', title:'Post when you need support', body:'Share a meal, workout, question or win here. It helps Shannon see what is really happening and gives the community a chance to support you.', metaPreview:true },
+    { tab:'friends', sel:'#friends-photo-feed .meta-preview-feed-post', fallbackSel:'#friends-photo-feed .feed-post-card,#feed-composer-card', title:'The Balance community', fallbackTitle:'The Balance community', body:'This is the live Feed. You can see Coach Shan’s posts, photos and the wins people share inside Balance.', fallbackBody:'This is the Balance Feed, where Coach Shan posts and members share meals, workouts and wins.', pageView:true, action:async function(){ try { if(window.BalanceMetaAdTrial && typeof window.BalanceMetaAdTrial.loadPreviewFeed === 'function') await window.BalanceMetaAdTrial.loadPreviewFeed(); } catch(e){} await new Promise(function(r){ setTimeout(r,220); }); } },
+    { tab:'friends', sel:'#feed-composer-card', title:'Post when you need support', body:'Share a meal, workout, question or win here. It helps Shannon see what is really happening and gives the community a chance to support you.' },
     { tab:'dashboard', sel:'#meta-ad-trial-inbox-preview-card', title:'Listen to Shannon’s welcome', body:'Press play and listen to the full welcome note. Next unlocks when the voice message finishes.', metaPreview:true, requiresWelcomeAudio:true, action:async function(){ try { if(window.BalanceMetaAdTrial && typeof window.BalanceMetaAdTrial.showInboxPreview === 'function') window.BalanceMetaAdTrial.showInboxPreview(); } catch(e){} await new Promise(function(r){ setTimeout(r,180); }); } },
-    { tab:'dashboard', sel:'#weekly-goals-card', fallbackSel:'#next-obvious-steps-card', title:'Set your Weekly Goals', body:'Choose 1 to 3 goals you are ready to commit to this week, then tap Save goals. When you finish the tour, your setup stays saved and you can unlock the full six-week Foundations course for AU$89 once.', metaPreview:true, metaPreviewSignoff:true, requiresWeeklyGoals:true, action:async function(){ try { if(typeof window.openWeeklyGoalsModal === 'function') await window.openWeeklyGoalsModal({ source:'meta_preview_setup', week:'current' }); } catch(e){} await new Promise(function(r){ setTimeout(r,180); }); } },
+    { tab:'dashboard', sel:'#weekly-goals-card', fallbackSel:'#next-obvious-steps-card', title:'Set your Weekly Goals', body:'Choose 1 to 3 goals you are ready to commit to this week, then tap Save goals. When you finish the tour, your setup stays saved and you can unlock the full six-week Foundations course with one $89.99 payment.', metaPreview:true, metaPreviewSignoff:true, requiresWeeklyGoals:true, action:async function(){ try { if(typeof window.openWeeklyGoalsModal === 'function') await window.openWeeklyGoalsModal({ source:'meta_preview_setup', week:'current' }); } catch(e){} await new Promise(function(r){ setTimeout(r,180); }); } },
     { tab:'dashboard', sel:'#tamagotchi-stats-bar', fallbackSel:'#balance-level-bar', title:'Levels keep going', fallbackTitle:'Levels keep going', body:'Level 99 is no longer the finish line. Keep earning XP to climb higher and unlock a new character every 5 levels.', fallbackBody:'Level 99 is no longer the finish line. Keep earning XP to climb higher and unlock a new character every 5 levels.' },
     { tab:'movement-tab', sel:'#activity-share-section', title:'Share your activity twice', body:'The first activity share each day earns +15 XP in Balance Feed and another +15 XP in Instagram Story. Later activity shares still work without extra XP.', condition: function(){ return !!document.getElementById('activity-share-section'); } },
     { tab:'movement-tab', sel:'#activity-share-photo-btn', title:'Take a photo or choose one', body:'When you share an activity, tap Add a photo to open your camera or choose one from your gallery. Balance puts your activity stats straight on it for Feed.', condition: function(){ return !!document.getElementById('activity-share-photo-btn'); } },

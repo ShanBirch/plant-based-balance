@@ -35,7 +35,7 @@ test('page-level stops opt into the softer context view', () => {
   for (const title of [
     'Your meal plan',
     'Your workouts for the week',
-    'Track every set and rep',
+    'See the exercise, sets and reps',
     'Your actual meal plan',
     'Your six-week course',
     'The Balance community'
@@ -47,6 +47,30 @@ test('page-level stops opt into the softer context view', () => {
       `${title} should preserve the full-page context`
     );
   }
+});
+
+test('Meta preview opens the next strength workout and waits for real proof media', () => {
+  const source = featureTourSource();
+
+  assert.match(source, /function getMetaPreviewStrengthDayIndex\(\)/);
+  assert.match(source, /workoutId !== 'rest'/);
+  assert.match(source, /!workoutId\.startsWith\('yoga-'\)/);
+  assert.match(source, /!workoutId\.startsWith\('recovery-'\)/);
+  assert.match(source, /window\.openCalendarWorkout\(dayIndex\)/);
+  assert.match(source, /title:'Your first strength workout'/);
+  assert.match(source, /title:'See the exercise, sets and reps'/);
+  assert.match(source, /data-thumbnail-state="ready"/);
+  assert.match(source, /waitForMetaPreviewWorkoutProof\(\{ requireThumbnail:true, timeoutMs:15000 \}\)/);
+});
+
+test('Meta preview waits for the rendered meal photo and skips community detours', () => {
+  const source = featureTourSource();
+
+  assert.match(source, /function waitForMetaPreviewMealPhoto\(timeoutMs\)/);
+  assert.match(source, /photo\.complete && photo\.naturalWidth > 0/);
+  assert.match(source, /await waitForMetaPreviewMealPhoto\(15000\)/);
+  assert.doesNotMatch(source, /title:'The Balance community'[^\n]*metaPreview:true/);
+  assert.doesNotMatch(source, /title:'Post when you need support'[^\n]*metaPreview:true/);
 });
 
 test('guided tours and returning-user reveals both reset and apply page-view mode', () => {
