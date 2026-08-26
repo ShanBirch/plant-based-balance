@@ -15,6 +15,7 @@ const compatibilityAdapter = fs.readFileSync(
   path.join(root, 'netlify/modern-runtime/lambda-compat.mts'),
   'utf8'
 );
+const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8');
 
 test('active personalised programs are not replaced by automatic recovery suggestions', () => {
   assert.match(movement, /usingCustomProgram && isAutomaticRecoveryOverride/);
@@ -50,4 +51,23 @@ test('all deployed functions are routed through the dedicated modern runtime dir
   });
   assert.equal(legacyWrappers.length, 104);
   assert.match(compatibilityAdapter, /export function withLambda/);
+});
+
+test('dynamic legacy dependencies are pinned into modern function bundles', () => {
+  for (const name of ['admin-reset-user-password', 'award-feed-top-post']) {
+    const wrapper = read(`netlify/modern-functions/${name}.mts`);
+    assert.match(wrapper, /import \* as pbbSupabaseDependency from '@supabase\/supabase-js'/);
+    assert.match(wrapper, /export \{ pbbSupabaseDependency \}/);
+  }
+
+  for (const name of ['send-dm-notification', 'send-meal-plan-ready']) {
+    const wrapper = read(`netlify/modern-functions/${name}.mts`);
+    assert.match(wrapper, /import \* as pbbWebPushDependency from 'web-push'/);
+    assert.match(wrapper, /export \{ pbbWebPushDependency \}/);
+  }
+
+  assert.match(
+    read('netlify/functions/send-meal-reminders.mjs'),
+    /import webpush from 'web-push'/,
+  );
 });
