@@ -27,7 +27,7 @@ test('the first onboarding day gets exact photos before the tour opens it', () =
 });
 
 test('the first course guide is compact and the lesson introduces both researchers and the book', () => {
-  assert.match(dashboard, /title:'Do your first course lesson'[\s\S]*?edgePrompt:true/);
+  assert.match(dashboard, /title:'Read, then take the quiz'[\s\S]*?edgePrompt:true[\s\S]*?embeddedGuide:true/);
   assert.match(dashboard, /tour-edge-prompt/);
   assert.match(learning, /Professor Karl Friston/);
   assert.match(learning, /Professor Lisa Feldman Barrett/);

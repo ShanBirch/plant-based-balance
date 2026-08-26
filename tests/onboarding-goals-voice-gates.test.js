@@ -45,11 +45,14 @@ test('preview walkthrough only unlocks Next after the welcome audio ends', () =>
 });
 
 test('paid preview opens and requires the real first Foundations lesson', () => {
-  assert.match(dashboard, /title:'Do your first course lesson'[\s\S]*?requiresFoundationsLesson:'mind-1-1'/);
+  assert.match(dashboard, /title:'Read, then take the quiz'[\s\S]*?embeddedGuide:true[\s\S]*?requiresFoundationsLesson:'mind-1-1'/);
   assert.match(dashboard, /window\.startFoundationsLesson\('mind-1-1'\)/);
   assert.match(dashboard, /window\.addEventListener\('pbbLearningLessonFinished', completed\)/);
   assert.match(dashboard, /detail\.completed !== true/);
   assert.match(dashboard, /Finish the first Foundations lesson with a perfect score to unlock Next/);
+  assert.match(dashboard, /tour-embedded-guide:not\(\.tour-gate-complete\)[\s\S]*?#guided-tour-bubble/);
+  assert.match(dashboard, /sessionStorage\.setItem\('pbb_activation_first_lesson', 'true'\)/);
+  assert.match(dashboard, /showStep\(completedStepIndex \+ 1\)/);
   assert.match(learning, /Meet Karl Friston, a theoretical neuroscientist at University College London/);
   assert.match(learning, /Meet Lisa Feldman Barrett, a psychologist and neuroscientist at Northeastern University/);
   assert.match(learning, /How Emotions Are Made/);
@@ -75,6 +78,6 @@ test('changed onboarding assets are cache-busted', () => {
   assert.match(dashboard, /pbb-social-journey\.js\?v=37-course-action-evidence/);
   assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=196-fresh-meta-meals/);
   assert.match(dashboard, /dashboard-script-6-ai_coach_draft_mode_logic_auth\.js\?v=43-home-canvas/);
-  assert.match(dashboard, /learning-inline\.js\?v=25-researcher-first-course/);
-  assert.match(serviceWorker, /pbb-app-v348-researcher-first-course/);
+  assert.match(dashboard, /learning-inline\.js\?v=26-guided-researcher-lesson/);
+  assert.match(serviceWorker, /pbb-app-v349-guided-researcher-lesson/);
 });

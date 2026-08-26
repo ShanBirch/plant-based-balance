@@ -26,7 +26,7 @@ test('walkthrough keeps surrounding page context readable', () => {
   assert.match(premiumOverlays, /#guided-tour-overlay\.tour-page-view #guided-tour-spotlight[\s\S]*?rgba\(26, 24, 20, 0\.08\)/);
   assert.doesNotMatch(premiumOverlays, /#guided-tour-spotlight[\s\S]*?rgba\(29, 15, 50, 0\.78\)/);
   assert.match(dashboard, /pbb-premium-overlays\.css\?v=97-foundations-actions/);
-  assert.match(serviceWorker, /pbb-app-v348-researcher-first-course/);
+  assert.match(serviceWorker, /pbb-app-v349-guided-researcher-lesson/);
 });
 
 test('page-level stops opt into the softer context view', () => {
@@ -37,7 +37,7 @@ test('page-level stops opt into the softer context view', () => {
     'Check your workout week',
     'Follow the exercise card',
     'Open your meal plan',
-    'Do your first course lesson',
+    'Read, then take the quiz',
     'The Balance community'
   ]) {
     const escapedTitle = title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

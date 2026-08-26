@@ -120,7 +120,7 @@ test('Balance Foundations is a six-week course that preserves the existing lesso
     assert.match(dashboard, /id: 'course-preview-locks-v1'/);
     assert.match(dashboard, /sel: '\.course-library-intro'/);
     assert.match(dashboard, /fallbackSel: '#learning-content'/);
-    assert.match(dashboard, /learning-inline\.js\?v=25-researcher-first-course/);
+    assert.match(dashboard, /learning-inline\.js\?v=26-guided-researcher-lesson/);
     assert.match(dashboard, /balance-identity-course-v1/);
 });
 
@@ -142,7 +142,7 @@ test('Balance Identity follows Foundations and shares the Week 7 to 12 journey p
     assert.match(socialJourney, /WEEK_DEFINITIONS\.slice\(6\)/);
     assert.match(socialJourney, /function openIdentityCourseWeek\(weekNumber\)/);
     assert.match(socialJourney, /viewStage = 'course-lesson'/);
-    assert.match(dashboard, /learning-inline\.js\?v=25-researcher-first-course/);
+    assert.match(dashboard, /learning-inline\.js\?v=26-guided-researcher-lesson/);
 });
 
 test('Founders Pass onboarding captures the real-world blocker behind consistency', () => {

@@ -230,7 +230,7 @@ test('dashboard, signup, native handoffs, measurement, and both discovery system
     assert.match(dashboard, /title:'Follow the exercise card'.*metaPreview:true/);
     assert.match(dashboard, /title:'Log what you eat'.*metaPreview:true/);
     assert.match(dashboard, /title:'Open your meal plan'.*metaPreview:true/);
-    assert.match(dashboard, /title:'Do your first course lesson'.*metaPreview:true.*requiresFoundationsLesson:'mind-1-1'/);
+    assert.match(dashboard, /title:'Read, then take the quiz'.*embeddedGuide:true.*metaPreview:true.*requiresFoundationsLesson:'mind-1-1'/);
     assert.match(dashboard, /title:'The Balance community'.*metaPreview:true/);
     assert.match(dashboard, /title:'Post when you need support'.*metaPreview:true/);
     assert.match(dashboard, /title:'Listen to Shannon’s welcome'.*metaPreview:true/);

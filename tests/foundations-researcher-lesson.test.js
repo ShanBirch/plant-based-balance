@@ -30,3 +30,10 @@ test('the first Foundations quiz checks the researcher lesson instead of the pre
   assert.doesNotMatch(firstLesson, /Your eyes send a complete picture/);
   assert.doesNotMatch(firstLesson, /You walk into a dark room and 'see' a snake/);
 });
+
+test('the guided first lesson must be read before its researcher quiz starts', () => {
+  assert.match(learning, /isGuidedResearcherLesson/);
+  assert.match(learning, /Start researcher quiz/);
+  assert.match(learning, /questions about Karl Friston and Lisa Feldman Barrett/);
+  assert.doesNotMatch(learning, /keyInsight && keyInsight\.style\.display !== 'none'[\s\S]*?window\.startLessonGames\(\)/);
+});
