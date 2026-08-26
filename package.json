@@ -24,6 +24,7 @@
     "@capgo/background-geolocation": "^8.2.0",
     "@capgo/capacitor-health": "^8.2.13",
     "@google/generative-ai": "^0.21.0",
+    "@netlify/aws-lambda-compat": "^2.0.0",
     "@supabase/supabase-js": "^2.94.1",
     "stripe": "^22.5.0",
     "web-push": "^3.6.7"

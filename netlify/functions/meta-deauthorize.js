@@ -75,7 +75,7 @@ function readSignedRequest(event) {
 
 exports.handler = async function handler(event) {
     if (event.httpMethod === 'OPTIONS') {
-        return { statusCode: 204, headers: jsonHeaders, body: '' };
+        return { statusCode: 204, headers: jsonHeaders };
     }
 
     if (event.httpMethod === 'GET') {

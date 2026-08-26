@@ -15374,7 +15374,8 @@ async function renderMovementView() {
     // PRIORITY 0: Check for today's workout override (e.g., user accepted yoga recommendation or cycle sync)
     try {
         const override = JSON.parse(localStorage.getItem('todayWorkoutOverride') || 'null');
-        if (override && override.date === dateStr && override.program) {
+        const isAutomaticRecoveryOverride = override && ['cycle_sync_automatic', 'low_energy'].includes(override.reason);
+        if (override && override.date === dateStr && override.program && !(usingCustomProgram && isAutomaticRecoveryOverride)) {
             suggestedProgram = override.program;
             workoutDayIndex = 3; // Restorative Recovery for yoga
 
@@ -15399,7 +15400,7 @@ async function renderMovementView() {
     // Track if user explicitly selected equipment in today's check-in
     let userSelectedEquipmentToday = false;
 
-    if (userCycleData.logs && userCycleData.logs[dateStr] && !hasWorkoutOverride) {
+    if (!usingCustomProgram && userCycleData.logs && userCycleData.logs[dateStr] && !hasWorkoutOverride) {
         const log = userCycleData.logs[dateStr];
 
         // Map Energy - only auto-apply if user hasn't already made a choice via popup
@@ -15491,7 +15492,7 @@ async function renderMovementView() {
     // EXCEPTION: If mood is 'strong' (High Energy), we ignore 'fatigue' and 'anxiety' overrides to allow rigorous exercise
     const isHighEnergy = userCycleData.mood === 'strong';
 
-    if (todaySymptoms && todaySymptoms.length > 0) {
+    if (!usingCustomProgram && todaySymptoms && todaySymptoms.length > 0) {
         // Hot flash is female-specific, skip for males
         if (!isMale && (todaySymptoms.includes('hot_flash') || todaySymptoms.includes('dizziness'))) {
             suggestedProgram = 'yoga';
@@ -15502,7 +15503,7 @@ async function renderMovementView() {
             workoutDayIndex = 6; // Yin & Meditation
             personalizationReason = `${syncLabel}: Restorative practice for how you feel today`;
         }
-    } else if (userCycleData.mood === 'tired') {
+    } else if (!usingCustomProgram && userCycleData.mood === 'tired') {
         suggestedProgram = 'yoga';
         workoutDayIndex = 3; // Restorative Recovery
         personalizationReason = `${syncLabel}: Recovery & restoration for low energy`;
@@ -15521,7 +15522,7 @@ async function renderMovementView() {
         equipmentFromCheckin = userCycleData.logs[dateStr].equipment;
     }
 
-    if (checkin || equipmentFromCheckin) {
+    if (!usingCustomProgram && (checkin || equipmentFromCheckin)) {
         // If low energy, always suggest yoga (even overrides equipment choice)
         if (checkin && checkin.energy === 'low') {
             suggestedProgram = 'yoga';
@@ -15579,7 +15580,7 @@ async function renderMovementView() {
 
     // PRIORITY 4: Cycle Phase adjustments (automatic override handled at check-in)
     // This provides fallback messaging if user navigates directly to Movement tab
-    if (!isMale && !personalizationReason && !userSelectedEquipmentToday && !hasWorkoutOverride && profile && cyclePhaseInfo && phaseKey !== 'wellness' && phaseKey !== 'performance') {
+    if (!usingCustomProgram && !isMale && !personalizationReason && !userSelectedEquipmentToday && !hasWorkoutOverride && profile && cyclePhaseInfo && phaseKey !== 'wellness' && phaseKey !== 'performance') {
         const cycleSyncEnabled = profile.cycle_sync_preference === 'yes';
         const periodEnergyLow = profile.period_energy_response === 'low';
 
@@ -15852,7 +15853,11 @@ async function renderMovementView() {
     let flexibleInlineWorkout = null;
     let flexibleInlineDay = '';
     if (usingCustomProgram && !heroInlineWorkout && !heroLibraryInfo && Array.isArray(WEEKLY_SCHEDULE)) {
-        for (let offset = 1; offset <= 7; offset++) {
+        // A recovery recommendation can replace the hero card for today, but it
+        // must not hide today's planned custom-program session. Start with the
+        // current calendar day in that case; otherwise offer the next session.
+        const flexibleStartOffset = hasWorkoutOverride ? 0 : 1;
+        for (let offset = flexibleStartOffset; offset <= 7; offset++) {
             const candidateIndex = (calDayIndex + offset) % 7;
             const candidate = WEEKLY_SCHEDULE[candidateIndex];
             const workout = candidate?.inlineWorkout;
@@ -15919,7 +15924,34 @@ async function renderMovementView() {
     })();
     }
 
-    // Add 'Coach's Workouts This Week' Card - everyone sees Coach Shan's sessions and can repeat one
+    // Personalised-program members should see their own weekly plan here. The
+    // coach sample-workout card is useful for browsing, but makes an assigned
+    // plan look like several conflicting programs.
+    if (usingCustomProgram) {
+        const personalWeekDiv = document.createElement('div');
+        const personalSessions = WEEKLY_SCHEDULE
+            .filter(item => item?.inlineWorkout && Array.isArray(item.inlineWorkout.exercises) && item.inlineWorkout.exercises.length > 0)
+            .map(item => {
+                const day = typeof escapeCalendarHtml === 'function' ? escapeCalendarHtml(item.displayDay || item.day || '') : (item.displayDay || item.day || '');
+                const name = typeof escapeCalendarHtml === 'function' ? escapeCalendarHtml(item.inlineWorkout.name || 'Gym session') : (item.inlineWorkout.name || 'Gym session');
+                return `<div style="font-size:0.8rem; font-weight:800; padding:7px 10px; border:1px solid rgba(255,255,255,0.24); border-radius:12px; background:rgba(255,255,255,0.1);">${day} · ${name}</div>`;
+            })
+            .join('');
+        personalWeekDiv.id = 'mvmt-personal-week-card';
+        personalWeekDiv.style.cssText = "position:relative; min-height:140px; border-radius:24px; overflow:hidden; box-shadow:0 8px 25px rgba(0,0,0,0.15); background:linear-gradient(135deg,#111111 0%,#2a1a05 55%,#c9a227 100%); grid-column:span 2; padding:18px 20px; color:white;";
+        personalWeekDiv.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+                <div>
+                    <div style="font-size:0.7rem; font-weight:800; opacity:0.9; letter-spacing:0.5px; text-transform:uppercase;">Your personalised plan</div>
+                    <div style="font-size:1.15rem; font-weight:800; line-height:1.15; margin-top:3px;">Your training this week</div>
+                </div>
+                <div style="font-size:2rem; opacity:0.55;">🏋️</div>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:6px;">${personalSessions}</div>
+        `;
+        gridContainer.appendChild(personalWeekDiv);
+    } else {
+    // Add 'Coach's Workouts This Week' Card for people browsing the library.
     const weekDiv = document.createElement('div');
     weekDiv.id = 'mvmt-week-workouts-card';
     weekDiv.onclick = () => openWeekWorkoutsView();
@@ -15938,6 +15970,7 @@ async function renderMovementView() {
     `;
     gridContainer.appendChild(weekDiv);
     loadWeekWorkoutsCard();
+    }
 
     // Add 'Today's Workout' Card as first item (red background)
     const todayDiv = document.createElement('div');

@@ -86,7 +86,7 @@ function confirmationCode(metaUserId, requestId) {
 
 exports.handler = async function handler(event, context) {
     if (event.httpMethod === 'OPTIONS') {
-        return { statusCode: 204, headers: jsonHeaders, body: '' };
+        return { statusCode: 204, headers: jsonHeaders };
     }
 
     if (event.httpMethod === 'GET') {

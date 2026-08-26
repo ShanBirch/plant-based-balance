@@ -118,7 +118,7 @@ function pickUserWinningStory(stories, reactionCounts, commentCounts, userId) {
 
 exports.handler = async (event) => {
     if (event.httpMethod === 'OPTIONS') {
-        return { statusCode: 204, headers, body: '' };
+        return { statusCode: 204, headers };
     }
 
     if (event.httpMethod !== 'POST') {
