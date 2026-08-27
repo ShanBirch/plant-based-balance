@@ -44,7 +44,7 @@ assert(
     checkoutSession.includes('const plan = getBalanceCheckoutPlan(priceId);') &&
     checkoutSession.includes('checkout.plan.unitAmount') &&
     checkoutSession.includes('params.set("mode", checkout.plan.mode)') &&
-    checkoutSession.includes('2026-06-24.dahlia') &&
+    checkoutSession.includes('2026-07-29.dahlia') &&
     checkoutSession.includes('params.set("integration_identifier", buildIntegrationIdentifier())') &&
     checkoutSession.includes('payment_intent_data[metadata]') &&
     checkoutSession.includes('custom_text[submit][message]') &&

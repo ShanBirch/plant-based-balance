@@ -6,7 +6,7 @@ import {
     getBalanceCheckoutPlan,
 } from "./lib/checkout-guard.js";
 
-const STRIPE_API_VERSION = "2026-06-24.dahlia";
+const STRIPE_API_VERSION = "2026-07-29.dahlia";
 
 function buildIntegrationIdentifier() {
     const bytes = new Uint8Array(8);

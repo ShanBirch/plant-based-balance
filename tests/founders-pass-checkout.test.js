@@ -31,7 +31,7 @@ test('one-time Founders Pass has a complete purchase and activation path', () =>
     assert.match(page, /Complete the five short guided lessons in Course/);
     assert.match(page, /Turn the lessons into 1 to 3 Weekly Goals/);
     assert.match(guard, /balance_vegan_founders_pass[\s\S]*?unitAmount: 14900[\s\S]*?mode: "payment"/);
-    assert.match(guard, /balance_meta_foundations_pass[\s\S]*?unitAmount: 14900[\s\S]*?balanceProduct: "balance_vegan_founders_pass"[\s\S]*?mode: "payment"/);
+    assert.match(guard, /balance_meta_foundations_pass[\s\S]*?unitAmount: 8999[\s\S]*?balanceProduct: "balance_vegan_founders_pass"[\s\S]*?mode: "payment"/);
     assert.match(checkout, /checkout\.plan\.mode === "subscription"/);
     assert.match(checkout, /payment_intent_data\[metadata\]/);
     assert.match(checkout, /balance_foundations_six_week/);

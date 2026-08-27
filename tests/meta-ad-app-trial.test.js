@@ -217,6 +217,17 @@ test('an explicit fresh phone preview clears the previous local plan and starts 
     assert.equal(trial.localStorage.getItem('pbb_fitgotchi_needs_character_setup'), 'true');
 });
 
+test('payment gate prefills the signed-in email and sends it to Stripe', async () => {
+    const trial = runTrial('?guest=true&meta_trial=facebook_5m_foundations_v3&utm_source=facebook&utm_medium=paid_social');
+    trial.window.currentUser = { email: 'Signed.In@Example.com' };
+    assert.equal(trial.window.BalanceMetaAdTrial.openCheckoutGate(), true);
+    assert.equal(trial.elements['meta-ad-trial-email'].value, 'signed.in@example.com');
+    trial.elements['meta-ad-trial-terms'].checked = true;
+    assert.equal(await trial.window.BalanceMetaAdTrial.beginCheckout(), true);
+    const checkout = trial.events.find(event => event.event_type === 'checkout_request');
+    assert.equal(checkout.body.email, 'signed.in@example.com');
+});
+
 test('the dedicated phone account repeats onboarding even with a saved login', () => {
     const login = fs.readFileSync(path.join(root, 'login.html'), 'utf8');
     const onboarding = fs.readFileSync(path.join(root, 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js'), 'utf8');
@@ -321,7 +332,7 @@ test('dashboard, signup, native handoffs, measurement, and both discovery system
     assert.doesNotMatch(foundersLanding, /var appUrl = '\/dashboard\.html\?/);
     assert.match(foundersLanding, /data-plan="founders-pass"/);
     assert.match(foundersLanding, /replace\(\/AU\\\$89\\\.99\/g, 'AU\$89'\)/);
-    assert.match(dashboard, /AU\$89 once\. No auto-renewal\./);
+    assert.match(dashboard, /One AU\$89\.99 payment for the full six weeks\. No subscription or automatic renewal\./);
     assert.match(foundersClaim, /FOUNDERS_PLAN = "balance_foundations_six_week"/);
     assert.match(logger, /'trial_gate_shown'/);
     assert.match(logger, /'trial_walkthrough_completed'/);
