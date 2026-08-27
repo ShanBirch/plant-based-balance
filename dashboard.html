@@ -13613,6 +13613,137 @@ if(!window._pbbIsIOSSafari) {
 <style>
   #guided-tour-overlay { position: fixed; inset: 0; z-index: 400000; pointer-events: none; display: none; }
   #guided-tour-overlay.active { display: block; }
+  #guided-tour-overlay.meta-tour-welcome-active {
+    pointer-events: auto;
+    background:
+      radial-gradient(circle at 50% 6%, rgba(216,178,94,.2), transparent 34%),
+      rgba(26,24,20,.82);
+  }
+  #guided-tour-overlay.meta-tour-welcome-active #guided-tour-spotlight,
+  #guided-tour-overlay.meta-tour-welcome-active #guided-tour-bubble { display: none; }
+  #meta-tour-welcome {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding:
+      max(24px, env(safe-area-inset-top))
+      max(18px, env(safe-area-inset-right))
+      max(24px, env(safe-area-inset-bottom))
+      max(18px, env(safe-area-inset-left));
+  }
+  #guided-tour-overlay.meta-tour-welcome-active #meta-tour-welcome { display: flex; }
+  .meta-tour-welcome-card {
+    width: min(100%, 430px);
+    max-height: calc(100vh - 48px);
+    max-height: calc(100dvh - max(48px, calc(env(safe-area-inset-top) + env(safe-area-inset-bottom))));
+    overflow-y: auto;
+    border: 1px solid rgba(216,178,94,.64);
+    border-radius: 22px;
+    background:
+      radial-gradient(circle at 92% 5%, rgba(216,178,94,.2), transparent 31%),
+      #fffaf0;
+    color: #1a202c;
+    -webkit-text-fill-color: #1a202c;
+    box-shadow: 0 28px 80px rgba(0,0,0,.42);
+    padding: clamp(24px, 5vh, 36px) 24px 24px;
+    font-family: inherit;
+  }
+  .meta-tour-welcome-mark {
+    width: 52px;
+    height: 52px;
+    display: grid;
+    place-items: center;
+    margin-bottom: 18px;
+    border-radius: 16px;
+    background: #1a202c;
+    color: #fffaf0;
+    -webkit-text-fill-color: #fffaf0;
+    box-shadow: inset 0 0 0 1px rgba(216,178,94,.5);
+  }
+  .meta-tour-welcome-mark img { width: 38px; height: 38px; object-fit: contain; }
+  .meta-tour-welcome-eyebrow {
+    margin: 0 0 7px;
+    color: #8b5e17;
+    -webkit-text-fill-color: #8b5e17;
+    font-size: .72rem;
+    font-weight: 850;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+  }
+  .meta-tour-welcome-card h2 {
+    margin: 0 0 10px;
+    color: #1a202c;
+    -webkit-text-fill-color: #1a202c;
+    font: 700 clamp(1.75rem, 7vw, 2.25rem)/1.05 Georgia, serif;
+  }
+  .meta-tour-welcome-intro {
+    margin: 0 0 18px;
+    color: #4f5968;
+    -webkit-text-fill-color: #4f5968;
+    font-size: .98rem;
+    font-weight: 650;
+    line-height: 1.48;
+  }
+  .meta-tour-welcome-list {
+    display: grid;
+    gap: 10px;
+    margin: 0 0 20px;
+    padding: 0;
+    list-style: none;
+  }
+  .meta-tour-welcome-list li {
+    display: grid;
+    grid-template-columns: 25px minmax(0,1fr);
+    gap: 10px;
+    align-items: start;
+    color: #293241;
+    -webkit-text-fill-color: #293241;
+    font-size: .89rem;
+    font-weight: 750;
+    line-height: 1.34;
+  }
+  .meta-tour-welcome-list li::before {
+    content: '\2713';
+    display: grid;
+    place-items: center;
+    width: 23px;
+    height: 23px;
+    border-radius: 50%;
+    background: rgba(183,138,46,.15);
+    color: #74500e;
+    -webkit-text-fill-color: #74500e;
+    font-size: .75rem;
+    font-weight: 900;
+  }
+  #meta-tour-welcome-start {
+    width: 100%;
+    min-height: 52px;
+    border: 0;
+    border-radius: 14px;
+    background: #1a202c;
+    color: #fffaf0;
+    -webkit-text-fill-color: #fffaf0;
+    font-family: inherit;
+    font-size: .88rem;
+    font-weight: 850;
+    line-height: 1;
+    letter-spacing: .055em;
+    text-transform: uppercase;
+    box-shadow: inset 0 0 0 1px rgba(216,178,94,.42), 0 12px 28px rgba(26,32,44,.2);
+    cursor: pointer;
+  }
+  .meta-tour-welcome-time {
+    margin: 11px 0 0;
+    color: #687283;
+    -webkit-text-fill-color: #687283;
+    text-align: center;
+    font-size: .75rem;
+    font-weight: 700;
+  }
   #guided-tour-bubble { z-index: 400001; }
   #guided-tour-spotlight {
     position: absolute;
@@ -13704,6 +13835,23 @@ if(!window._pbbIsIOSSafari) {
   #guided-tour-bubble .tour-skip { color: #596273; }
 </style>
 <div id="guided-tour-overlay">
+  <div id="meta-tour-welcome" role="dialog" aria-modal="true" aria-labelledby="meta-tour-welcome-title">
+    <div class="meta-tour-welcome-card">
+      <div class="meta-tour-welcome-mark" aria-hidden="true"><img src="balance_logo.png" alt=""></div>
+      <p class="meta-tour-welcome-eyebrow">Your guided app tour</p>
+      <h2 id="meta-tour-welcome-title">Welcome to your app tour</h2>
+      <p class="meta-tour-welcome-intro">We will guide you through the plan Balance has built for you, one clear step at a time.</p>
+      <ul class="meta-tour-welcome-list">
+        <li>Open your first workout and see the sets, reps and demonstrations.</li>
+        <li>View your personalised meal plan.</li>
+        <li>Complete your first Foundations course lesson.</li>
+        <li>Listen to your welcome message from Shannon.</li>
+        <li>Choose your first Weekly Goals, then view the six-week course offer.</li>
+      </ul>
+      <button id="meta-tour-welcome-start" type="button" onclick="beginMetaPreviewTour()">Start my app tour</button>
+      <p class="meta-tour-welcome-time">About 5 minutes. We will wait for you at each step.</p>
+    </div>
+  </div>
   <div id="guided-tour-spotlight"></div>
   <div id="guided-tour-bubble">
     <div class="tour-counter" id="tour-counter">Step 1 / 1</div>
@@ -14496,6 +14644,28 @@ async function showStep(i){
     positionBubbleAndSpotlight(null);
   }
 
+  function showMetaTourWelcome(){
+    showingXpIntro = true;
+    idx = -1;
+    window.__balanceGuidedTourShowingIntro = true;
+    const overlay = document.getElementById('guided-tour-overlay');
+    if (overlay) overlay.classList.add('meta-tour-welcome-active');
+    const startButton = document.getElementById('meta-tour-welcome-start');
+    if (startButton) setTimeout(function(){ try { startButton.focus({ preventScroll:true }); } catch(e){} }, 60);
+  }
+
+  window.beginMetaPreviewTour = function(){
+    const overlay = document.getElementById('guided-tour-overlay');
+    if (overlay) overlay.classList.remove('meta-tour-welcome-active');
+    showingXpIntro = false;
+    window.__balanceGuidedTourShowingIntro = false;
+    if (window.BalanceMetaPreviewSoundtrack) {
+      window.BalanceMetaPreviewSoundtrack.setPhase('tour');
+      window.BalanceMetaPreviewSoundtrack.start();
+    }
+    showStep(0);
+  };
+
 window.endFeatureTour = function(skipped){
     const completedMetaPreviewTour = metaPreviewTour;
     const completedClientActivationTour = clientActivationTour
@@ -14507,7 +14677,7 @@ window.endFeatureTour = function(skipped){
     resetTourTemporaryTargets();
     const overlay = document.getElementById('guided-tour-overlay');
     if (overlay) overlay.classList.remove('active');
-    if (overlay) overlay.classList.remove('tour-action-required', 'tour-gate-complete', 'tour-page-view');
+    if (overlay) overlay.classList.remove('tour-action-required', 'tour-gate-complete', 'tour-page-view', 'meta-tour-welcome-active');
     window.__balanceGuidedTourActive = false;
     window.__balanceGuidedTourShowingIntro = false;
     showingXpIntro = false;
@@ -14607,7 +14777,9 @@ window.endFeatureTour = function(skipped){
     };
     window.addEventListener('resize', resizeHandler);
     window.addEventListener('scroll', resizeHandler, true);
-    if (metaPreviewTour || clientActivationTour) {
+    if (metaPreviewTour) {
+      showMetaTourWelcome();
+    } else if (clientActivationTour) {
       window.__balanceGuidedTourShowingIntro = false;
       showStep(0);
     } else {
