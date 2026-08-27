@@ -62,4 +62,3 @@ Before showing a response-optimized edit, watch it completely with sound and con
 - Required mechanism, evidence, offer, inclusions, price, risk reversal, and CTA remain clear where relevant.
 - Overlays and captions still prove or clarify what the voice says.
 - The revision improves the intended response arc rather than merely adding stimulation.
-
