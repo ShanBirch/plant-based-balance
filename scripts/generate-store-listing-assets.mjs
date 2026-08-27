@@ -21,12 +21,12 @@ const palette = {
 };
 
 const slides = [
-  { slug: 'coach', layout: 'coach' },
-  { slug: 'community', layout: 'community' },
+  { slug: 'neuroscience-fitness', layout: 'coach' },
+  { slug: 'behaviour-change', layout: 'learning' },
   { slug: 'training', layout: 'training' },
-  { slug: 'plant-based-meals', layout: 'meals' },
+  { slug: 'personalised-nutrition', layout: 'meals' },
   { slug: 'progress', layout: 'progress' },
-  { slug: 'challenges', layout: 'challenges' },
+  { slug: 'community', layout: 'community' },
 ];
 
 function escapeXml(value) {
@@ -154,7 +154,7 @@ async function challengeCard() {
 }
 
 async function renderCoach(spec) {
-  const photo = await fullPhoto(path.join(sourceDir, 'shannon-coaching.jpg'), spec.width, spec.height, 'right');
+  const photo = await fullPhoto(path.join(root, 'photos', 'shannon-portrait.jpg'), spec.width, spec.height, 'centre');
   const overlay = svg(spec.width, spec.height, `
     <defs>
       <linearGradient id="shade" x1="0" y1="0" x2="0" y2="1">
@@ -168,15 +168,37 @@ async function renderCoach(spec) {
   const logoSize = Math.round(spec.width * 0.11);
   const logo = await sharp(logoPath).resize(logoSize, logoSize, { fit: 'contain' }).png().toBuffer();
   const copy = textSvg({
-    width: spec.width, height: spec.height, eyebrow: 'MEET YOUR COACH',
-    lines: ['Plant-based fitness.', 'Real support.'],
+    width: spec.width, height: spec.height, eyebrow: 'BALANCE',
+    lines: ['Neuroscience for', 'real-life fitness.'],
     y: Math.round(spec.height * 0.72), fill: palette.white, align: 'start',
     x: Math.round(spec.width * 0.08), titleSize: Math.round(spec.width * 0.077), lineHeight: Math.round(spec.width * 0.09),
-    body: 'Coach-led training with Shannon', bodyY: Math.round(spec.height * 0.84),
-    badge: { text: 'TRAIN • CHECK IN • GROW', y: Math.round(spec.height * 0.885), width: Math.round(spec.width * 0.62), height: Math.round(spec.width * 0.075), fill: palette.goldLight },
+    body: 'Understand your patterns. Build change that lasts.', bodyY: Math.round(spec.height * 0.84),
+    badge: { text: 'LEARN • TRAIN • ADAPT', y: Math.round(spec.height * 0.885), width: Math.round(spec.width * 0.62), height: Math.round(spec.width * 0.075), fill: palette.goldLight },
   });
   return sharp(photo).composite([
     { input: overlay }, { input: logo, left: Math.round(spec.width * 0.07), top: Math.round(spec.height * 0.035) }, { input: copy },
+  ]).png().toBuffer();
+}
+
+async function renderLearning(spec) {
+  const title = textSvg({
+    width: spec.width, height: spec.height, eyebrow: 'THE SCIENCE OF CHANGE',
+    lines: ['Understand why.', 'Change what works.'], y: Math.round(spec.height * 0.11),
+    fill: palette.white, titleSize: Math.round(spec.width * 0.071), lineHeight: Math.round(spec.width * 0.083),
+  });
+  const screenWidth = Math.round(spec.width * 0.72);
+  const screenHeight = Math.round(screenWidth * 1.56);
+  const screen = await roundedImage(path.join(sourceDir, '04-learning.jpg'), screenWidth, screenHeight, Math.round(spec.width * 0.035), { fit: 'cover', position: 'top' });
+  const left = Math.round((spec.width - screenWidth) / 2);
+  const top = Math.round(spec.height * 0.31);
+  const footer = svg(spec.width, spec.height, `
+    <rect x="${spec.width * 0.06}" y="${spec.height * 0.86}" width="${spec.width * 0.88}" height="${spec.height * 0.085}" rx="${spec.width * 0.045}" fill="${palette.goldLight}"/>
+    <text x="${spec.width * 0.5}" y="${spec.height * 0.912}" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="${spec.width * 0.033}" font-weight="900" fill="${palette.ink}">NOTICE • ADJUST • REPEAT</text>
+  `);
+  return sharp(backgroundSvg(spec.width, spec.height, 'purple')).composite([
+    { input: title },
+    { input: frameSvg(spec.width, spec.height, left, top, screenWidth, screenHeight, Math.round(spec.width * 0.035)) },
+    { input: screen, left, top }, { input: footer },
   ]).png().toBuffer();
 }
 
@@ -262,13 +284,13 @@ async function renderChallenges(spec) {
 }
 
 async function renderMeals(spec) {
-  const meal = await fullPhoto(path.join(root, 'images', 'meals', 'sweet_potato_black_bean_tacos.png'), spec.width, spec.height, 'centre');
+  const meal = await fullPhoto(path.join(root, 'images', 'meals', 'chickpea_tuna_wrap.png'), spec.width, spec.height, 'centre');
   const shade = svg(spec.width, spec.height, `
     <defs><linearGradient id="shade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#111" stop-opacity="0.76"/><stop offset="0.43" stop-color="#111" stop-opacity="0.06"/><stop offset="1" stop-color="#111" stop-opacity="0.78"/></linearGradient></defs>
     <rect width="100%" height="100%" fill="url(#shade)"/>
   `);
   const title = textSvg({
-    width: spec.width, height: spec.height, eyebrow: 'PLANT-BASED NUTRITION', lines: ['Eat for strength.', 'Without guessing.'],
+    width: spec.width, height: spec.height, eyebrow: 'NUTRITION THAT FITS YOU', lines: ['Eat for strength.', 'Without guessing.'],
     y: Math.round(spec.height * 0.115), fill: palette.white, titleSize: Math.round(spec.width * 0.072), lineHeight: Math.round(spec.width * 0.083),
   });
   const phoneWidth = Math.round(spec.width * 0.5);
@@ -284,7 +306,7 @@ async function renderMeals(spec) {
   const callout = svg(spec.width, spec.height, `
     <style>.pill { font-family: Arial, Helvetica, sans-serif; font-size: ${calloutFontSize}px; font-weight: 800; fill: ${palette.ink}; }</style>
     <rect x="${calloutX}" y="${spec.height * 0.67}" width="${calloutWidth}" height="${spec.height * 0.18}" rx="${spec.width * 0.05}" fill="${palette.white}" opacity="0.96"/>
-    <text x="${calloutTextX}" y="${spec.height * 0.72}" class="pill">✓ Plant-based meal plans</text>
+    <text x="${calloutTextX}" y="${spec.height * 0.72}" class="pill">✓ Personalised meal plans</text>
     <text x="${calloutTextX}" y="${spec.height * 0.765}" class="pill">✓ Nutrition tracking</text>
     <text x="${calloutTextX}" y="${spec.height * 0.81}" class="pill">✓ Easy food logging</text>
   `);
@@ -368,7 +390,7 @@ async function renderProgress(spec) {
 }
 
 async function renderSlide(slide, index, spec) {
-  const renderers = { coach: renderCoach, challenges: renderChallenges, meals: renderMeals, training: renderTraining, community: renderCommunity, progress: renderProgress };
+  const renderers = { coach: renderCoach, learning: renderLearning, challenges: renderChallenges, meals: renderMeals, training: renderTraining, community: renderCommunity, progress: renderProgress };
   const buffer = await renderers[slide.layout](spec);
   const fileName = `${String(index + 1).padStart(2, '0')}-${slide.slug}.png`;
   const destination = path.join(outputRoot, spec.directory, fileName);
@@ -381,7 +403,7 @@ async function renderFeatureGraphic() {
   const width = 1024;
   const height = 500;
   const nutrition = await roundedImage(path.join(sourceDir, '02-vegan-meals.jpg'), 180, 390, 20, { fit: 'cover', position: 'top' });
-  const feed = await roundedImage(await prepareFeedSource(), 180, 390, 20, { fit: 'cover', position: 'top' });
+  const learning = await roundedImage(path.join(sourceDir, '04-learning.jpg'), 180, 390, 20, { fit: 'cover', position: 'top' });
   const logo = await sharp(logoPath).resize(84, 84, { fit: 'contain' }).png().toBuffer();
   const copy = svg(width, height, `
     <style>
@@ -390,15 +412,15 @@ async function renderFeatureGraphic() {
       .tag { font-family: Arial, Helvetica, sans-serif; font-size: 21px; font-weight: 700; letter-spacing: 2px; fill: ${palette.gold}; }
     </style>
     <text x="132" y="75" class="brand">Balance</text>
-    <text x="60" y="180" class="tag">PLANT-BASED FITNESS</text>
-    <text x="60" y="250" class="title">Training. Meals.</text>
-    <text x="60" y="315" class="title">Your community.</text>
-    <text x="60" y="380" class="brand" font-size="25">All in one place.</text>
+    <text x="60" y="180" class="tag">NEUROSCIENCE FOR REAL LIFE</text>
+    <text x="60" y="250" class="title">Understand.</text>
+    <text x="60" y="315" class="title">Train. Change.</text>
+    <text x="60" y="380" class="brand" font-size="25">Fitness built around how you work.</text>
   `);
   const output = path.join(root, 'store-listing', 'google-play', 'en-AU', 'images', 'featureGraphic.png');
   await fs.mkdir(path.dirname(output), { recursive: true });
   await sharp(backgroundSvg(width, height, 'cream')).composite([
-    { input: copy }, { input: logo, top: 18, left: 40 }, { input: feed, top: 38, left: 790 }, { input: nutrition, top: 88, left: 660 },
+    { input: copy }, { input: logo, top: 18, left: 40 }, { input: learning, top: 38, left: 790 }, { input: nutrition, top: 88, left: 660 },
   ]).png({ compressionLevel: 9 }).toFile(output);
   return output;
 }

@@ -7,7 +7,7 @@ const sharp = require('sharp');
 const root = path.join(__dirname, '..');
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8').trim();
 
-test('store copy leads with plant-based fitness within platform limits', () => {
+test('store copy leads with neuroscience-informed fitness within platform limits', () => {
     const appName = read('store-listing/app-store/en-AU/name.txt');
     const subtitle = read('store-listing/app-store/en-AU/subtitle.txt');
     const promo = read('store-listing/app-store/en-AU/promotional_text.txt');
@@ -18,7 +18,7 @@ test('store copy leads with plant-based fitness within platform limits', () => {
     const playDescription = read('store-listing/google-play/en-AU/full_description.txt');
     const combined = [appName, subtitle, promo, keywords, appleDescription, playTitle, shortDescription, playDescription].join('\n');
 
-    assert.equal(appName, 'Balance: Plant-Based Fitness');
+    assert.equal(appName, 'Balance: Neuroscience Fitness');
     assert.equal(playTitle, appName);
     assert.ok(appName.length <= 30);
     assert.ok(subtitle.length <= 30);
@@ -26,6 +26,8 @@ test('store copy leads with plant-based fitness within platform limits', () => {
     assert.ok(keywords.length <= 100);
     assert.ok(shortDescription.length <= 80);
     assert.ok(playDescription.length <= 4000);
+    assert.match(combined, /neuroscience/i);
+    assert.match(combined, /behaviour/i);
     assert.match(combined, /vegan/i);
     assert.match(combined, /community/i);
     assert.doesNotMatch(combined, /FitGotchi|Tamagotchi|AI coach|artificial intelligence/i);
@@ -40,12 +42,12 @@ test('store visuals use approved phone dimensions and no character assets', asyn
     assert.equal(appleFiles.length, 6);
     assert.equal(playFiles.length, 6);
     const expectedCampaign = [
-        '01-coach.png',
-        '02-community.png',
+        '01-neuroscience-fitness.png',
+        '02-behaviour-change.png',
         '03-training.png',
-        '04-plant-based-meals.png',
+        '04-personalised-nutrition.png',
         '05-progress.png',
-        '06-challenges.png',
+        '06-community.png',
     ];
     assert.deepEqual(appleFiles, expectedCampaign);
     assert.deepEqual(playFiles, expectedCampaign);
@@ -74,8 +76,9 @@ test('store visual generator keeps listing callouts readable and authentic', () 
     assert.doesNotMatch(generator, />COACH-LED CHALLENGE<\/text>/);
     assert.match(generator, /x="\$\{spec\.width \* 0\.05\}"[^>]+width="\$\{spec\.width \* 0\.9\}"/);
     assert.doesNotMatch(generator, /\{ slug: 'founders-pass'/);
-    assert.match(generator, /PLANT-BASED NUTRITION/);
-    assert.match(generator, /Plant-based meal plans/);
+    assert.match(generator, /THE SCIENCE OF CHANGE/);
+    assert.match(generator, /NUTRITION THAT FITS YOU/);
+    assert.match(generator, /Personalised meal plans/);
     assert.match(generator, /const calloutWidth = spec\.width \* 0\.44/);
     assert.match(generator, /const calloutTextX = spec\.width \* 0\.075/);
     assert.match(generator, /const calloutFontSize = Math\.round\(spec\.width \* 0\.026\)/);
