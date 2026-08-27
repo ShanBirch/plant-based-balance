@@ -96,11 +96,11 @@ test('every workout entry path uses the shared thumbnail renderer', () => {
 });
 
 test('phones fetch the thumbnail renderer and video logic together', () => {
-  const workoutVersion = 'dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=198-photo-retry';
+  const workoutVersion = 'dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=199-photo-diagnostics';
     const videoVersion = 'dashboard-script-7-video_logic.js?v=20260815-exercise-thumbnails';
     assert.match(dashboardSource, new RegExp(workoutVersion.replace(/[.?]/g, '\\$&')));
     assert.match(dashboardSource, new RegExp(videoVersion.replace(/[.?]/g, '\\$&')));
     assert.match(serviceWorkerSource, new RegExp(workoutVersion.replace(/[.?]/g, '\\$&')));
     assert.match(serviceWorkerSource, new RegExp(videoVersion.replace(/[.?]/g, '\\$&')));
-  assert.match(serviceWorkerSource, /const CACHE_NAME = 'pbb-app-v351-photo-retry'/);
+  assert.match(serviceWorkerSource, /const CACHE_NAME = 'pbb-app-v352-photo-diagnostics'/);
 });

@@ -85,5 +85,7 @@ test('the photo generator is authenticated and prompts for the exact meal', () =
     assert.match(source, /responseModalities: \["IMAGE"\]/);
     assert.doesNotMatch(source, /responseFormat/);
     assert.match(source, /exact prepared meal/);
+    assert.match(source, /failureStage = "image_generation"/);
+    assert.match(source, /failureStage = "photo_storage"/);
     assert.doesNotMatch(source, /data:\$\{mimeType\};base64/);
 });

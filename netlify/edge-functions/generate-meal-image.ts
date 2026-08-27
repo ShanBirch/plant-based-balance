@@ -118,7 +118,9 @@ async function uploadToB2(bytes: Uint8Array, mimeType: string, fileName: string)
 export default async function (request: Request, _context: Context) {
   if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
+  let failureStage = "request";
   try {
+    failureStage = "authentication";
     const user = await authenticate(request);
     if (!user?.id) return json({ error: "Unauthorized" }, 401);
 
@@ -130,7 +132,8 @@ export default async function (request: Request, _context: Context) {
     if (!mealName || !UUID.test(planId) || !UUID.test(mealId) || body.userId !== user.id) {
       return json({ error: "Invalid meal photo request" }, 400);
     }
-    if (!(await userOwnsMeal(user.id, planId, mealId))) return json({ error: "Forbidden" }, 403);
+    failureStage = "ownership";
+    if (!(await userOwnsMeal(user.id, planId, mealId))) return json({ error: "Forbidden", stage: failureStage }, 403);
 
     const apiKey = Deno.env.get("GEMINI_API_KEY") || "";
     if (!apiKey) return json({ error: "Meal photo generation is not configured" }, 500);
@@ -140,17 +143,19 @@ Meal description: ${mealDescription || mealName}.
 Ingredients that must be visually represented where visible: ${ingredients || "use only ingredients implied by the meal name and description"}.
 Show the finished meal as one realistic serving on a ceramic plate or bowl. Match the named cuisine, cooking method, key ingredients, sides, and presentation precisely. Do not substitute a different dish and do not add unrelated foods. Natural soft window light, appetizing editorial food photography, slightly overhead three-quarter camera angle, food filling the frame. No people, packaging, logos, labels, text, watermark, collage, or duplicate plate.`;
 
+    failureStage = "image_generation";
     const image = await generateImage(apiKey, prompt);
     const binary = atob(image.base64);
     const bytes = new Uint8Array(binary.length);
     for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
     const extension = image.mimeType.includes("jpeg") || image.mimeType.includes("jpg") ? "jpg" : "png";
     const fileName = `ai-meal-photos/${user.id}/${planId}/${mealId}.${extension}`;
+    failureStage = "photo_storage";
     const imageUrl = await uploadToB2(bytes, image.mimeType, fileName);
 
     return json({ success: true, imageUrl, mealId, model: image.model });
   } catch (error) {
     console.error("generate-meal-image failed:", error);
-    return json({ error: "Failed to create the matching meal photo" }, 500);
+    return json({ error: "Failed to create the matching meal photo", stage: failureStage }, 500);
   }
 }

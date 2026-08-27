@@ -27,6 +27,7 @@ test('the first onboarding day gets exact photos before the tour opens it', () =
   assert.match(onboarding, /FINISHING YOUR MEAL PLAN/);
   assert.match(onboarding, /initialMealPlan\.status !== 'preview_ready'/);
   assert.match(onboarding, /initialMealPlan = \{ status: 'preview_failed'/);
+  assert.match(onboarding, /authentication\|ownership\|image_generation\|photo_storage\|photo_service/);
   assert.match(onboarding, /TRY MEAL PLAN AGAIN/);
   assert.match(onboarding, /if \(_aiMealPlanCache\?\.id === newPlanId\) _aiMealPlanCache = null/);
 });

@@ -5186,7 +5186,8 @@ async function generateExactMealPhoto(meal, userId, planId, token) {
     });
     const result = await response.json().catch(() => ({}));
     if (!response.ok || !result.success || !/^https:\/\//i.test(result.imageUrl || '')) {
-        throw new Error(result.error || `Meal photo generation failed (${response.status})`);
+        const failureStage = String(result.stage || 'photo_service').replace(/[^a-z_]/gi, '');
+        throw new Error(`${result.error || `Meal photo generation failed (${response.status})`} [${failureStage}]`);
     }
     return result.imageUrl;
 }
@@ -13890,7 +13891,9 @@ async function finishOnboarding() {
             initialMealPlan = { status: 'preview_failed', error: error?.message || String(error) };
         }
         if (initialMealPlan.status !== 'preview_ready') {
-            setMetaPreviewMealPlanBuildStatus('Your meal photos did not finish. Tap below to try them again.', 0, 'error');
+            const safeStage = String(initialMealPlan.error || '').match(/\[(authentication|ownership|image_generation|photo_storage|photo_service)\]/)?.[1];
+            const stageLabel = safeStage ? ` (${safeStage.replace(/_/g, ' ')})` : '';
+            setMetaPreviewMealPlanBuildStatus(`Your meal photos did not finish${stageLabel}. Tap below to try them again.`, 0, 'error');
             if (finishButton) {
                 delete finishButton.dataset.mealPlanFinishing;
                 finishButton.disabled = false;
