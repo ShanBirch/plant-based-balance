@@ -56,7 +56,7 @@ async function generateImage(apiKey: string, prompt: string) {
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
-            responseModalities: ["Image"]
+            responseModalities: ["IMAGE"]
           }
         })
       }
