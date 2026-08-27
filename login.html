@@ -572,6 +572,19 @@
             return '/dashboard.html?' + preserved.toString() + fragment;
         }
 
+        const dedicatedOnboardingTestEmails = new Set([
+            'shannonrhysbirch+arunima-onboarding-test@gmail.com',
+            'shannonrhysbirch+phone-onboarding-test@gmail.com'
+        ]);
+
+        function isDedicatedOnboardingTestAccount(user) {
+            return !!(user && dedicatedOnboardingTestEmails.has(String(user.email || '').trim().toLowerCase()));
+        }
+
+        function dedicatedOnboardingTestDestination() {
+            return '/dashboard.html?fresh_preview=1&account_first=1&meta_trial=facebook_5m_foundations_v3&utm_source=facebook&utm_medium=paid_social&utm_campaign=onboarding_test';
+        }
+
         function authReturnUrl() {
             return window.location.origin + window.location.pathname + window.location.search;
         }
@@ -1064,8 +1077,11 @@
                 await claimPendingFoundersPass(session);
                 await claimPendingMetaTrialPurchase(session);
 
-                // Already logged in - redirect to dashboard
-                window.location.replace(postAuthDestination());
+                // A saved test-account session must take the same repeatable
+                // onboarding route as a freshly submitted login.
+                window.location.replace(isDedicatedOnboardingTestAccount(user)
+                    ? dedicatedOnboardingTestDestination()
+                    : postAuthDestination());
                 return;
             }
 
@@ -1179,13 +1195,8 @@
                 // Redirect to dashboard
                 const urlParams = new URLSearchParams(window.location.search);
                 let redirect = postAuthDestination();
-                const dedicatedOnboardingTestEmails = new Set([
-                    'shannonrhysbirch+arunima-onboarding-test@gmail.com',
-                    'shannonrhysbirch+phone-onboarding-test@gmail.com'
-                ]);
-                const isDedicatedOnboardingTest = !!(user && dedicatedOnboardingTestEmails.has(String(user.email || '').trim().toLowerCase()));
-                if (isDedicatedOnboardingTest) {
-                    redirect = '/dashboard.html?fresh_preview=1&account_first=1&meta_trial=facebook_5m_foundations_v3&utm_source=facebook&utm_medium=paid_social&utm_campaign=onboarding_test';
+                if (isDedicatedOnboardingTestAccount(user)) {
+                    redirect = dedicatedOnboardingTestDestination();
                 }
 
                 showSuccess('Login successful! Redirecting...');

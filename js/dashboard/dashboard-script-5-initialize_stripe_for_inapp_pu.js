@@ -9848,6 +9848,31 @@ async function saveWizardFoodPreferences() {
 async function checkAndTriggerOnboarding() {
     let isReturningMember = localStorage.getItem('onboardingComplete') === 'true';
     let databaseOnboardingStatusChecked = false;
+    const forcePaidOnboardingTest = window.metaAdTrialMode === true && (() => {
+        try {
+            const params = new URLSearchParams(window.location.search || '');
+            return params.get('account_first') === '1'
+                && params.get('meta_trial') === 'facebook_5m_foundations_v3'
+                && params.get('utm_campaign') === 'onboarding_test';
+        } catch (_) {
+            return false;
+        }
+    })();
+
+    // The dedicated authenticated test account is deliberately repeatable.
+    // Never let its completed database profile skip the paid onboarding run.
+    if (forcePaidOnboardingTest) {
+        localStorage.removeItem('onboardingComplete');
+        localStorage.removeItem('plantbased_onboarding_complete');
+        localStorage.setItem('pbb_fitgotchi_visibility', 'hidden');
+        localStorage.setItem('pbb_fitgotchi_needs_character_setup', 'true');
+        if (typeof window.applyFitGotchiVisibility === 'function') {
+            window.applyFitGotchiVisibility('hidden');
+        }
+        window._onboardingWizardPending = true;
+        initOnboardingWizard();
+        return;
+    }
 
     // A paid-Facebook preview runs the real wizard locally before signup. Once
     // the person creates an account, copy those answers into their authenticated

@@ -213,6 +213,17 @@ test('an explicit fresh phone preview clears the previous local plan and starts 
     assert.equal(trial.localStorage.getItem('ai_meal_plan'), null);
     assert.equal(trial.window.BalanceMetaAdTrial.readState().claimedAt, null);
     assert.equal(trial.window.metaAdTrialMode, true);
+    assert.equal(trial.localStorage.getItem('pbb_fitgotchi_visibility'), 'hidden');
+    assert.equal(trial.localStorage.getItem('pbb_fitgotchi_needs_character_setup'), 'true');
+});
+
+test('the dedicated phone account repeats onboarding even with a saved login', () => {
+    const login = fs.readFileSync(path.join(root, 'login.html'), 'utf8');
+    const onboarding = fs.readFileSync(path.join(root, 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js'), 'utf8');
+    assert.match(login, /session && !isSwitchingAccount[\s\S]*isDedicatedOnboardingTestAccount\(user\)[\s\S]*dedicatedOnboardingTestDestination\(\)/);
+    assert.match(login, /shannonrhysbirch\+phone-onboarding-test@gmail\.com/);
+    assert.match(onboarding, /const forcePaidOnboardingTest = window\.metaAdTrialMode === true/);
+    assert.match(onboarding, /if \(forcePaidOnboardingTest\)[\s\S]*pbb_fitgotchi_visibility', 'hidden'[\s\S]*initOnboardingWizard\(\)/);
 });
 
 test('dashboard, signup, native handoffs, measurement, and both discovery systems are wired', () => {
@@ -232,7 +243,7 @@ test('dashboard, signup, native handoffs, measurement, and both discovery system
     const ios = fs.readFileSync(path.join(root, 'ios/App/App/BalanceShortcutHandoff.swift'), 'utf8');
 
     assert.match(dashboard, /paid-facebook-stripe-unlock-v1/);
-    assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=202-personalising-screen/);
+    assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=203-repeatable-test-flow/);
     assert.match(dashboard, /title:'Start here each day'.*metaPreview:true/);
     assert.match(dashboard, /title:'Check your workout week'.*metaPreview:true/);
     assert.match(dashboard, /title:'Open your first workout'.*metaPreview:true/);
@@ -271,6 +282,10 @@ test('dashboard, signup, native handoffs, measurement, and both discovery system
     assert.match(login, /pbb_onboarding_owner_user_id/);
     assert.match(login, /shannonrhysbirch\+phone-onboarding-test@gmail\.com/);
     assert.match(login, /fresh_preview=1&account_first=1&meta_trial=facebook_5m_foundations_v3/);
+    assert.match(login, /session && !isSwitchingAccount[\s\S]*isDedicatedOnboardingTestAccount\(user\)[\s\S]*dedicatedOnboardingTestDestination\(\)/);
+    assert.match(onboarding, /const forcePaidOnboardingTest = window\.metaAdTrialMode === true/);
+    assert.match(onboarding, /if \(forcePaidOnboardingTest\)[\s\S]*pbb_fitgotchi_visibility', 'hidden'[\s\S]*initOnboardingWizard\(\)/);
+    assert.match(source, /resetOnboardingForNewTrial\(\)[\s\S]*local\.setItem\('pbb_fitgotchi_visibility', 'hidden'\)/);
     assert.match(login, /claim-founders-pass/);
     assert.match(login, /meta_ad_trial_paid/);
     assert.match(success, /Taking you straight back to Balance now/);
