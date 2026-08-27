@@ -56,12 +56,7 @@ async function generateImage(apiKey: string, prompt: string) {
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
-            responseModalities: ["Image"],
-            responseFormat: {
-              image: model === "gemini-3.1-flash-image"
-                ? { aspectRatio: "16:9", imageSize: "0.5K" }
-                : { aspectRatio: "16:9" }
-            }
+            responseModalities: ["Image"]
           }
         })
       }
@@ -143,7 +138,7 @@ export default async function (request: Request, _context: Context) {
     const prompt = `Create one photorealistic food photograph of the exact prepared meal named "${mealName}".
 Meal description: ${mealDescription || mealName}.
 Ingredients that must be visually represented where visible: ${ingredients || "use only ingredients implied by the meal name and description"}.
-Show the finished meal as one realistic serving on a ceramic plate or bowl. Match the named cuisine, cooking method, key ingredients, sides, and presentation precisely. Do not substitute a different dish and do not add unrelated foods. Natural soft window light, appetizing editorial food photography, slightly overhead three-quarter camera angle, landscape composition, food filling the frame. No people, packaging, logos, labels, text, watermark, collage, or duplicate plate.`;
+Show the finished meal as one realistic serving on a ceramic plate or bowl. Match the named cuisine, cooking method, key ingredients, sides, and presentation precisely. Do not substitute a different dish and do not add unrelated foods. Natural soft window light, appetizing editorial food photography, slightly overhead three-quarter camera angle, food filling the frame. No people, packaging, logos, labels, text, watermark, collage, or duplicate plate.`;
 
     const image = await generateImage(apiKey, prompt);
     const binary = atob(image.base64);
