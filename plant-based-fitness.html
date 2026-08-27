@@ -273,6 +273,17 @@
         .difference strong { color: #f5d98a; }
         .difference p { margin: 4px 0 0; color: #c6ced8; }
 
+        .client-stories { background: linear-gradient(180deg, rgba(216,178,94,.08), rgba(255,255,255,.35)); }
+        .story-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .story-card { overflow: hidden; border: 1px solid rgba(184,137,43,.2); border-radius: 26px; background: var(--paper); box-shadow: 0 20px 48px rgba(26,32,44,.09); }
+        .story-photo { width: 100%; aspect-ratio: 1.08 / 1; display: block; object-fit: cover; background: #eee8da; }
+        .story-card:first-child .story-photo { object-position: center 35%; }
+        .story-copy { padding: 24px; }
+        .story-kicker { display: block; margin-bottom: 7px; color: #9a6919; font-size: .76rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+        .story-copy h3 { margin: 0 0 9px; color: var(--ink); font-family: 'Outfit', sans-serif; font-size: 1.42rem; line-height: 1.08; }
+        .story-copy p { margin: 0; color: var(--muted); }
+        .story-note { max-width: 760px; margin: 24px 0 0; color: var(--muted); font-size: .84rem; }
+
         .founder-grid { display: grid; grid-template-columns: .8fr 1.2fr; gap: 60px; align-items: center; }
         .founder-mark { position: relative; min-height: 430px; overflow: hidden; border: 1px solid var(--line); border-radius: 30px; background: linear-gradient(145deg, #f5d98a, #d8b25e); box-shadow: var(--shadow); }
         .founder-photo { width: 100%; height: 100%; min-height: 430px; display: block; object-fit: cover; object-position: center 24%; }
@@ -327,6 +338,8 @@
 
         @media (max-width: 850px) {
             .hero-grid, .dark-grid, .founder-grid, .join-card { grid-template-columns: 1fr; }
+            .story-grid { grid-template-columns: 1fr 1fr; }
+            .story-card:first-child { grid-column: 1 / -1; display: grid; grid-template-columns: 1.08fr .92fr; }
             .hero-grid { gap: 12px; padding-top: 35px; }
             .hero-copy { max-width: 560px; }
             .phone-stage { min-height: 590px; }
@@ -349,7 +362,9 @@
             .screen { min-height: 515px; }
             .phone-highlights { position: static; width: 100%; display: flex; flex-wrap: wrap; justify-content: center; gap: 9px; }
             .floating-note { position: static; transform: none; padding: 10px 12px; white-space: normal; text-align: left; box-shadow: 0 10px 25px rgba(26,32,44,.1); }
-            .proof-grid, .card-grid, .fit-grid { grid-template-columns: 1fr; }
+            .proof-grid, .card-grid, .fit-grid, .story-grid { grid-template-columns: 1fr; }
+            .story-card:first-child { grid-column: auto; display: block; }
+            .story-photo { aspect-ratio: 1.12 / 1; }
             .feature-card.foundations-prelude { grid-template-columns: 1fr; gap: 14px; }
             body.paid-meta-preview .paid-preview-route { flex-wrap: wrap; }
             .paid-preview-store-row { grid-template-columns: 1fr; }
@@ -502,6 +517,27 @@
                     <div class="difference"><strong>Evidence, not perfection</strong><p>Your training, meals, goals and reflections show what actually happened, giving the review something useful to work with.</p></div>
                     <div class="difference"><strong>A planned return</strong><p>You learn how to make the next useful action smaller and clearer, so missing a day does not mean starting over.</p></div>
                 </div>
+            </div>
+        </section>
+
+        <section class="client-stories" aria-labelledby="client-stories-title">
+            <div class="wrap">
+                <div class="section-head reveal"><div class="eyebrow">Real people Shannon has coached</div><h2 id="client-stories-title">Different journeys. The same need for a plan that works in real life.</h2><p>These women were coached by Shannon before Balance Foundations. Their experiences helped shape the practical support, shared accountability and weekly adjustment now built into the course.</p></div>
+                <div class="story-grid">
+                    <article class="story-card reveal">
+                        <img class="story-photo" src="photos/client-success/bec-kirsty-cocos.png" alt="Chrissy and Bec together during their coaching journey and later celebrating together" loading="lazy">
+                        <div class="story-copy"><span class="story-kicker">Shared accountability</span><h3>Chrissy and Bec</h3><p>The sisters each lost more than 10 kg and became stronger. Having someone beside them made the plan easier to return to and helped turn individual effort into shared momentum.</p></div>
+                    </article>
+                    <article class="story-card reveal">
+                        <img class="story-photo" src="photos/client-success/gen-cocos.jpg" alt="Gen's coaching progress shown in two side-profile photographs" loading="lazy">
+                        <div class="story-copy"><span class="story-kicker">Strength and confidence</span><h3>Gen</h3><p>Gen's journey was about more than a visual change. Clear training direction and steady coaching helped her build strength, confidence and evidence that her effort was working.</p></div>
+                    </article>
+                    <article class="story-card reveal">
+                        <img class="story-photo" src="photos/client-success/dani-front-8-weeks.png" alt="Dani's eight-week coaching progress shown in two photographs" loading="lazy">
+                        <div class="story-copy"><span class="story-kicker">Eight weeks of steady work</span><h3>Dani</h3><p>Dani created visible body-composition progress over eight weeks by staying with the work. Her journey is a reminder that repeatable weeks matter more than chasing a perfect one.</p></div>
+                    </article>
+                </div>
+                <p class="story-note">Individual experiences vary. These are examples of Shannon's previous coaching work and are not promises of a particular result from Balance Foundations.</p>
             </div>
         </section>
 
