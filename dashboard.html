@@ -13114,7 +13114,7 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=201-phone-onboarding';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=202-personalising-screen';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
@@ -13156,7 +13156,7 @@ if (window._pbbIsIOSSafari) {
         var s = document.createElement('script');
         s.async = false;
         s.dataset.metaTrialLoader = String(attempt);
-        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=201-phone-onboarding&meta_retry=' + attempt;
+        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=202-personalising-screen&meta_retry=' + attempt;
         s.onload = function() {
             if (window._pbbScript5Complete && window._switchAppTabReady && typeof window._switchAppTabReal === 'function') {
                 sessionStorage.removeItem('pbb_meta_script5_recovery_v1');
@@ -13175,7 +13175,7 @@ if (window._pbbIsIOSSafari) {
         document.head.appendChild(s);
     })(0);
 } else {
-document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=201-phone-onboarding"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=202-personalising-screen"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=3"></script>
@@ -16414,6 +16414,22 @@ window.endFeatureTour = function(skipped){
     <div class="wizard-particles" id="wizard-particles"></div>
     <div class="onboarding-modal wizard-container" style="max-width: 450px; max-height: 90vh; padding: 0; overflow: hidden; display: flex; flex-direction: column;">
 
+        <section id="wizard-personalising-screen" class="wizard-personalising-screen" hidden aria-live="polite" aria-labelledby="wizard-personalising-title">
+            <div class="wizard-personalising-glow" aria-hidden="true"></div>
+            <img class="wizard-personalising-logo" src="balance_logo_transparent.svg" alt="Balance">
+            <p class="wizard-personalising-kicker">BALANCE FOUNDATIONS</p>
+            <h2 id="wizard-personalising-title">Preparing Balance for you</h2>
+            <p id="wizard-personalising-detail" class="wizard-personalising-detail">Turning your answers into a clear first week.</p>
+            <div class="wizard-personalising-stages" aria-label="Setup progress">
+                <div class="wizard-personalising-stage is-complete" data-personalising-stage="workout"><span>✓</span><strong>Preparing your workout program</strong></div>
+                <div class="wizard-personalising-stage is-active" data-personalising-stage="meal"><span></span><strong>Tailoring your meal plan</strong></div>
+                <div class="wizard-personalising-stage" data-personalising-stage="app"><span></span><strong>Preparing the app for you</strong></div>
+            </div>
+            <div class="wizard-personalising-progress" aria-hidden="true"><i id="wizard-personalising-progress"></i></div>
+            <button type="button" id="wizard-personalising-retry" class="wizard-personalising-retry" onclick="retryWizardPersonalisation()" hidden>TRY AGAIN</button>
+            <button type="button" class="wizard-personalising-switch" onclick="switchPaidPreviewAccount()">Switch account</button>
+        </section>
+
         <!-- HEADER -->
         <div class="wizard-header" style="padding: 25px 25px 0 25px; text-align: center; position:relative; flex-shrink: 0;">
             <div onclick="closeWizardManually()" style="position:absolute; top:15px; right:15px; width:30px; height:30px; line-height:30px; background:#f1f5f9; border-radius:50%; cursor:pointer; font-size:1.2rem; color:#64748b; font-weight:bold;">&times;</div>
@@ -17046,11 +17062,6 @@ window.endFeatureTour = function(skipped){
                     <span>WITH SHANNON</span>
                     One weekly check-in plus workout and food review during Balance Foundations.
                 </div>
-                <div id="wizard-meal-plan-build-card" data-state="idle" aria-live="polite" style="margin-top:14px;padding:14px 16px;border-radius:14px;background:#fffaf0;border:1px solid rgba(154,105,25,.25);box-shadow:0 8px 22px rgba(35,27,14,.08);">
-                    <strong id="wizard-meal-plan-build-title" style="display:block;color:#1a202c;font-size:.92rem;">Building your meal plan</strong>
-                    <span id="wizard-meal-plan-build-detail" style="display:block;color:#596273;font-size:.8rem;line-height:1.4;margin-top:3px;">Using the food choices you just made.</span>
-                    <div style="height:6px;border-radius:999px;background:#eadfca;overflow:hidden;margin-top:10px;"><i id="wizard-meal-plan-build-progress" style="display:block;width:0%;height:100%;border-radius:inherit;background:linear-gradient(90deg,#b7832d,#e0bc68);transition:width .3s ease;"></i></div>
-                </div>
                 <p class="wizard-edit-note">These are suggestions only. You’ll choose your actual Weekly Goals near the end of the app tour.</p>
             </div>
 
@@ -17080,7 +17091,7 @@ if (window._pbbIsIOSSafari) {
 
 <link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=97-foundations-actions">
 <link rel="stylesheet" href="css/dashboard/pbb-onboarding-comeback.css?v=8">
-<link rel="stylesheet" href="css/dashboard/pbb-onboarding-foundations.css?v=8-phone-flow-fixes">
+<link rel="stylesheet" href="css/dashboard/pbb-onboarding-foundations.css?v=9-personalising-screen">
 
 
 <script src="js/dashboard/script_part_24.js?v=2"></script>

@@ -930,3 +930,52 @@ html[data-pbb-theme="dark"] #onboarding-wizard .onboarding-modal.wizard-containe
         transition-duration: .01ms !important;
     }
 }
+
+/* Paid-preview handoff: a calm, dedicated setup screen replaces the small
+   inline meal-plan progress card. */
+#onboarding-wizard .wizard-container {
+    position: relative;
+}
+
+#onboarding-wizard .wizard-personalising-screen {
+    position: absolute;
+    inset: 0;
+    z-index: 40;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100%;
+    padding: calc(34px + env(safe-area-inset-top, 0px)) 28px calc(28px + env(safe-area-inset-bottom, 0px));
+    overflow-y: auto;
+    text-align: center;
+    color: #1a202c;
+    -webkit-text-fill-color: #1a202c;
+    background: radial-gradient(circle at 50% 24%, rgba(221, 183, 91, .2), transparent 14rem), linear-gradient(180deg, #fffaf2 0%, #f6eddd 100%);
+}
+
+#onboarding-wizard .wizard-personalising-screen[hidden] { display: none !important; }
+#onboarding-wizard .wizard-personalising-glow { position:absolute; width:180px; height:180px; top:15%; border-radius:50%; background:rgba(216,178,94,.13); filter:blur(18px); animation:wizardPersonalisingGlow 2.6s ease-in-out infinite; }
+#onboarding-wizard .wizard-personalising-logo { position:relative; width:88px; height:88px; object-fit:contain; filter:drop-shadow(0 12px 24px rgba(113,78,19,.18)); }
+#onboarding-wizard .wizard-personalising-kicker { position:relative; margin:16px 0 7px; color:#8b641d; -webkit-text-fill-color:#8b641d; font:900 .7rem/1.2 Montserrat,sans-serif; letter-spacing:.16em; }
+#onboarding-wizard .wizard-personalising-screen h2 { position:relative; margin:0; max-width:330px; color:#1a202c; -webkit-text-fill-color:#1a202c; font:800 clamp(1.7rem,7vw,2.15rem)/1.08 Georgia,serif; }
+#onboarding-wizard .wizard-personalising-detail { position:relative; min-height:42px; margin:11px 0 22px; max-width:330px; color:#625a4c; -webkit-text-fill-color:#625a4c; font:600 .88rem/1.5 Montserrat,sans-serif; }
+#onboarding-wizard .wizard-personalising-stages { position:relative; width:min(100%,340px); display:grid; gap:10px; text-align:left; }
+#onboarding-wizard .wizard-personalising-stage { display:flex; align-items:center; gap:12px; min-height:52px; padding:11px 13px; border:1px solid rgba(154,105,25,.16); border-radius:14px; background:rgba(255,255,255,.55); color:#847c70; -webkit-text-fill-color:#847c70; font:700 .78rem/1.3 Montserrat,sans-serif; transition:.25s ease; }
+#onboarding-wizard .wizard-personalising-stage span { width:24px; height:24px; flex:0 0 24px; display:grid; place-items:center; border:2px solid #d8cdb7; border-radius:50%; color:#fff; -webkit-text-fill-color:#fff; }
+#onboarding-wizard .wizard-personalising-stage.is-complete { color:#4e4639; -webkit-text-fill-color:#4e4639; border-color:rgba(154,105,25,.26); background:rgba(255,250,240,.88); }
+#onboarding-wizard .wizard-personalising-stage.is-complete span { border-color:#b8892b; background:#b8892b; }
+#onboarding-wizard .wizard-personalising-stage.is-active { color:#1a202c; -webkit-text-fill-color:#1a202c; border-color:#c99b3f; background:#fff; box-shadow:0 10px 25px rgba(103,73,18,.11); transform:translateY(-1px); }
+#onboarding-wizard .wizard-personalising-stage.is-active span { border-color:#b8892b; border-right-color:transparent; animation:wizardPersonalisingSpin .8s linear infinite; }
+#onboarding-wizard .wizard-personalising-progress { position:relative; width:min(100%,340px); height:7px; margin-top:18px; overflow:hidden; border-radius:999px; background:#e8ddc8; }
+#onboarding-wizard .wizard-personalising-progress i { display:block; width:12%; height:100%; border-radius:inherit; background:linear-gradient(90deg,#a97821,#e0bc68); transition:width .4s ease; }
+#onboarding-wizard .wizard-personalising-retry { position:relative; width:min(100%,340px); min-height:48px; margin-top:18px; border:0; border-radius:999px; background:#171923; color:#fff; -webkit-text-fill-color:#fff; font:900 .8rem Montserrat,sans-serif; letter-spacing:.06em; }
+#onboarding-wizard .wizard-personalising-switch { position:relative; margin-top:15px; padding:8px 12px; border:0; background:transparent; color:#756b5d; -webkit-text-fill-color:#756b5d; font:700 .75rem Montserrat,sans-serif; text-decoration:underline; text-underline-offset:3px; }
+#onboarding-wizard .wizard-personalising-screen.is-error .wizard-personalising-stage.is-active span { animation:none; border-color:#b42318; color:#b42318; -webkit-text-fill-color:#b42318; }
+
+@keyframes wizardPersonalisingSpin { to { transform:rotate(360deg); } }
+@keyframes wizardPersonalisingGlow { 50% { transform:scale(1.12); opacity:.62; } }
+@media (prefers-reduced-motion: reduce) {
+    #onboarding-wizard .wizard-personalising-glow,
+    #onboarding-wizard .wizard-personalising-stage.is-active span { animation:none; }
+}

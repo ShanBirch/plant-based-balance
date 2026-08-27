@@ -6156,8 +6156,137 @@ function setMetaPreviewMealPlanBuildStatus(message, progress, status = 'building
     if (title) title.textContent = status === 'ready' ? 'Your meal plan is ready' : status === 'error' ? 'Meal plan needs another try' : 'Building your meal plan';
     if (detail) detail.textContent = _metaPreviewMealPlanBuildState.message || 'Using the food choices you just made.';
     if (bar) bar.style.width = `${_metaPreviewMealPlanBuildState.progress}%`;
+    setWizardPersonalisingStage('meal', _metaPreviewMealPlanBuildState.message, Math.max(30, Math.min(86, _metaPreviewMealPlanBuildState.progress)), status);
 }
 window.setMetaPreviewMealPlanBuildStatus = setMetaPreviewMealPlanBuildStatus;
+
+function setWizardPersonalisingStage(stage, detail, progress, status = 'building') {
+    const screen = document.getElementById('wizard-personalising-screen');
+    if (!screen || screen.hidden) return;
+    const order = ['workout', 'meal', 'app'];
+    const activeIndex = Math.max(0, order.indexOf(stage));
+    screen.classList.toggle('is-error', status === 'error');
+    screen.querySelectorAll('[data-personalising-stage]').forEach(element => {
+        const index = order.indexOf(element.dataset.personalisingStage);
+        element.classList.toggle('is-complete', status === 'ready' || index < activeIndex);
+        element.classList.toggle('is-active', status !== 'ready' && index === activeIndex);
+        const marker = element.querySelector('span');
+        if (marker) marker.textContent = (status === 'ready' || index < activeIndex) ? '✓' : (status === 'error' && index === activeIndex ? '!' : '');
+    });
+    const detailElement = document.getElementById('wizard-personalising-detail');
+    const progressElement = document.getElementById('wizard-personalising-progress');
+    if (detailElement) detailElement.textContent = detail || 'Preparing your first week.';
+    if (progressElement) progressElement.style.width = `${Math.max(8, Math.min(100, Number(progress) || 0))}%`;
+}
+
+function showWizardPersonalisingScreen() {
+    const screen = document.getElementById('wizard-personalising-screen');
+    const retry = document.getElementById('wizard-personalising-retry');
+    if (!screen) return;
+    screen.hidden = false;
+    screen.classList.remove('is-error');
+    if (retry) retry.hidden = true;
+    setWizardPersonalisingStage('meal', 'Tailoring meals around the choices you just made.', 38);
+}
+
+function showWizardPersonalisingError(message) {
+    const retry = document.getElementById('wizard-personalising-retry');
+    setWizardPersonalisingStage('meal', message || 'Your meal plan needs another try.', 38, 'error');
+    if (retry) retry.hidden = false;
+}
+
+function onboardingPromiseWithTimeout(promise, timeoutMs) {
+    return Promise.race([
+        promise,
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Setup took too long. Please try again.')), timeoutMs))
+    ]);
+}
+
+async function retryWizardPersonalisation() {
+    const retry = document.getElementById('wizard-personalising-retry');
+    if (retry) retry.hidden = true;
+    const finishButton = document.getElementById('wizard-next');
+    if (finishButton) delete finishButton.dataset.mealPlanFinishing;
+    setWizardPersonalisingStage('meal', 'Trying your personalised meal plan again.', 38);
+    await finishOnboarding();
+}
+window.retryWizardPersonalisation = retryWizardPersonalisation;
+
+async function switchPaidPreviewAccount() {
+    const keys = [
+        'onboardingComplete', 'plantbased_onboarding_complete', 'featureTourComplete',
+        'userProfile', 'user_food_preferences', 'ai_meal_plan',
+        'pbb_meta_preview_meal_signature', 'pbb_onboarding_owner_user_id'
+    ];
+    keys.forEach(key => { try { localStorage.removeItem(key); } catch (_) {} });
+    try { sessionStorage.clear(); } catch (_) {}
+    try {
+        const signOut = window.authHelpers?.signOut
+            ? window.authHelpers.signOut()
+            : window.supabaseClient?.auth?.signOut?.();
+        if (signOut) await onboardingPromiseWithTimeout(Promise.resolve(signOut), 6000);
+    } catch (error) {
+        console.warn('[onboarding] Account switch sign-out will continue at login:', error);
+    }
+    const params = new URLSearchParams({
+        action: 'signup', switch_account: '1', fresh_preview: '1', account_first: '1',
+        meta_trial: 'facebook_5m_foundations_v3', utm_source: 'facebook',
+        utm_medium: 'paid_social', utm_campaign: 'onboarding_test'
+    });
+    window.location.replace('/login.html?' + params.toString());
+}
+window.switchPaidPreviewAccount = switchPaidPreviewAccount;
+
+async function completeRemainingMetaPreviewDaysInBackground({ user, plan, planId, profileForGenerator, foodPreferences, firstDayNumber, dayNames }) {
+    const remainingDayNumbers = [0,1,2,3,4,5,6].filter(dayNumber => dayNumber !== firstDayNumber);
+    const addedDays = [];
+    for (let batchStart = 0; batchStart < remainingDayNumbers.length; batchStart += 3) {
+        const batch = remainingDayNumbers.slice(batchStart, batchStart + 3);
+        const previousDays = plan.weeks[0].days.concat(addedDays).map(day => ({
+            day_name: day.day_name,
+            mealNames: (day.meals || []).map(meal => meal.name)
+        }));
+        const results = await Promise.all(batch.map(async dayNumber => {
+            const result = await fetchMealPlanDay({
+                userData: { profile: profileForGenerator, quizResults: profileForGenerator, facts: {}, foodPreferences },
+                weekNumber: 1,
+                dayNumber,
+                previousDays,
+                previousWeeks: []
+            }, { timeoutMs: 30000, maxAttempts: 2 });
+            return { ...result.day, day_of_week: dayNumber, day_name: result.day.day_name || dayNames[dayNumber] };
+        }));
+        addedDays.push(...results);
+    }
+
+    const mealRows = [];
+    addedDays.forEach(day => (day.meals || []).forEach(meal => mealRows.push({
+        plan_id: planId, week_number: 1, day_of_week: day.day_of_week, day_name: day.day_name,
+        meal_slot: meal.meal_slot, meal_time: meal.meal_time, name: meal.name,
+        description: meal.description, calories: meal.calories, protein_g: meal.protein_g,
+        carbs_g: meal.carbs_g, fat_g: meal.fat_g, fiber_g: meal.fiber_g,
+        ingredients: meal.ingredients || [], preparation: meal.preparation,
+        prep_time_mins: meal.prep_time_mins, cook_time_mins: meal.cook_time_mins,
+        tags: meal.tags || [], cuisine: meal.cuisine, image_url: ''
+    })));
+    if (!mealRows.length) return;
+    const insert = await window.supabaseClient.from('ai_generated_meals').insert(mealRows).select('id,week_number,day_of_week,meal_slot');
+    if (insert.error) throw insert.error;
+    const ids = new Map((insert.data || []).map(row => [`${row.day_of_week}:${row.meal_slot}`, row.id]));
+    addedDays.forEach(day => (day.meals || []).forEach(meal => {
+        meal.id = ids.get(`${day.day_of_week}:${meal.meal_slot}`) || meal.id;
+        meal.image_url = '';
+    }));
+    plan.weeks[0].days.push(...addedDays);
+    plan.weeks[0].days.sort((a, b) => a.day_of_week - b.day_of_week);
+    await window.supabaseClient.from('ai_generated_meal_plans').update({
+        total_meals: plan.weeks[0].days.reduce((total, day) => total + (day.meals || []).length, 0)
+    }).eq('id', planId).eq('user_id', user.id);
+    _aiMealPlanCache = plan;
+    try { localStorage.setItem('ai_meal_plan', JSON.stringify(plan)); } catch (_) {}
+    ensureExactMealPlanPhotos(plan, user.id, { meals: addedDays.flatMap(day => day.meals || []) })
+        .catch(error => console.warn('[meta-ad-trial] Remaining meal photos will retry later:', error));
+}
 
 async function buildFreshMetaPreviewMealPlan(profile, foodPreferences, signature) {
     const user = window.currentUser || await waitForCurrentUser();
@@ -6176,7 +6305,6 @@ async function buildFreshMetaPreviewMealPlan(profile, foodPreferences, signature
 
     try {
         const firstDayNumber = getAiMealPlanTodayIndex();
-        const remainingDayNumbers = [0,1,2,3,4,5,6].filter(dayNumber => dayNumber !== firstDayNumber);
         const generateDay = async (dayNumber, previousDays) => {
             const result = await fetchMealPlanDay({
                 userData: { profile: profileForGenerator, quizResults: profileForGenerator, facts: {}, foodPreferences },
@@ -6184,22 +6312,13 @@ async function buildFreshMetaPreviewMealPlan(profile, foodPreferences, signature
                 dayNumber,
                 previousDays,
                 previousWeeks: []
-            });
+            }, { timeoutMs: 30000, maxAttempts: 2 });
             return { ...result.day, day_of_week: dayNumber, day_name: result.day.day_name || dayNames[dayNumber] };
         };
 
         setMetaPreviewMealPlanBuildStatus(`Creating ${dayNames[firstDayNumber]} first so your tour has something real to show.`, 8);
         generatedDays.push(await generateDay(firstDayNumber, []));
-        for (let batchStart = 0; batchStart < remainingDayNumbers.length; batchStart += 3) {
-            const batch = remainingDayNumbers.slice(batchStart, batchStart + 3);
-            const previousDays = generatedDays.map(day => ({ day_name: day.day_name, mealNames: (day.meals || []).map(meal => meal.name) }));
-            setMetaPreviewMealPlanBuildStatus(`Creating ${batch.map(dayNumber => dayNames[dayNumber]).join(', ')} around your choices.`, 18 + batchStart * 7);
-            const batchDays = await Promise.all(batch.map(dayNumber => generateDay(dayNumber, previousDays)));
-            generatedDays.push(...batchDays);
-        }
-        generatedDays.sort((a, b) => a.day_of_week - b.day_of_week);
-
-        setMetaPreviewMealPlanBuildStatus('Saving your personalised week.', 68);
+        setMetaPreviewMealPlanBuildStatus('Saving your first personalised day.', 68);
         const parent = await window.supabaseClient.from('ai_generated_meal_plans').insert({
             user_id: user.id,
             plan_name: 'Your Personalised First Week',
@@ -6274,9 +6393,11 @@ async function buildFreshMetaPreviewMealPlan(profile, foodPreferences, signature
             localStorage.setItem('pbb_meta_preview_meal_signature', signature);
             localStorage.setItem(`pbb_meta_preview_plan_id_${user.id}`, newPlanId);
         } catch (e) {}
-        setMetaPreviewMealPlanBuildStatus('Your first week and matching meal photos are ready.', 100, 'ready');
+        setMetaPreviewMealPlanBuildStatus('Your first meals are ready. Finishing the rest of your week in the background.', 100, 'ready');
         try { window.trackBalanceActivity('meta_preview_meal_plan_generation_ready', { meal_count: mealRows.length, dietary_tag_count: (foodPreferences.dietary_requirements || []).length }); } catch (e) {}
-        ensureExactMealPlanPhotos(plan, user.id).catch(error => console.warn('[meta-ad-trial] Remaining meal photos will retry later:', error));
+        completeRemainingMetaPreviewDaysInBackground({
+            user, plan, planId: newPlanId, profileForGenerator, foodPreferences, firstDayNumber, dayNames
+        }).catch(error => console.warn('[meta-ad-trial] Remaining meal-plan days will retry later:', error));
         return plan;
     } catch (error) {
         if (newPlanId) {
@@ -13829,10 +13950,10 @@ async function finishOnboarding() {
     if (window.metaAdTrialMode === true) {
         const finishButton = document.getElementById('wizard-next');
         if (finishButton?.dataset.mealPlanFinishing === 'true') return;
+        showWizardPersonalisingScreen();
         if (finishButton) {
             finishButton.dataset.mealPlanFinishing = 'true';
             finishButton.disabled = true;
-            finishButton.textContent = 'FINISHING YOUR MEAL PLAN...';
         }
         setMetaPreviewMealPlanBuildStatus(
             _metaPreviewMealPlanBuildState.message || 'Finishing your personalised meals and matching photos.',
@@ -13840,7 +13961,7 @@ async function finishOnboarding() {
             'building'
         );
         try {
-            initialMealPlan = await ensureInitialOnboardingMealPlan();
+            initialMealPlan = await onboardingPromiseWithTimeout(ensureInitialOnboardingMealPlan(), 120000);
         } catch (error) {
             console.warn('[meta-ad-trial] Meal plan was not ready for the tour:', error);
             initialMealPlan = { status: 'preview_failed', error: error?.message || String(error) };
@@ -13848,16 +13969,20 @@ async function finishOnboarding() {
         if (initialMealPlan.status !== 'preview_ready') {
             const safeStage = String(initialMealPlan.error || '').match(/\[(authentication|ownership|image_generation|photo_storage|photo_service)\]/)?.[1];
             const stageLabel = safeStage ? ` (${safeStage.replace(/_/g, ' ')})` : '';
-            setMetaPreviewMealPlanBuildStatus(`Your meal photos did not finish${stageLabel}. Tap below to try them again.`, 0, 'error');
+            const retryMessage = `Your personalised setup did not finish${stageLabel}. Tap Try Again and we’ll continue from here.`;
+            setMetaPreviewMealPlanBuildStatus(retryMessage, 38, 'error');
+            showWizardPersonalisingError(retryMessage);
             if (finishButton) {
                 delete finishButton.dataset.mealPlanFinishing;
                 finishButton.disabled = false;
-                finishButton.textContent = 'TRY MEAL PLAN AGAIN';
             }
-            wizardAlert('Your meal plan is not ready yet. Tap Try Meal Plan Again so Balance can finish the matching photos before the app tour.');
             return;
         }
         if (finishButton) delete finishButton.dataset.mealPlanFinishing;
+        setWizardPersonalisingStage('app', 'Your first week is ready. Opening your guided app tour now.', 92);
+        await new Promise(resolve => setTimeout(resolve, 650));
+        setWizardPersonalisingStage('app', 'Balance is ready for you.', 100, 'ready');
+        await new Promise(resolve => setTimeout(resolve, 350));
     }
     if (window.__pbbTransferredSetupPending) {
         window.__pbbTransferredSetupPending = false;

@@ -14,7 +14,8 @@ test('paid onboarding builds a fresh plan from the selected food preferences', (
   assert.match(onboarding, /function metaPreviewMealPlanSignature\(profile, foodPreferences\)/);
   assert.match(onboarding, /localStorage\.removeItem\('ai_meal_plan'\)/);
   assert.match(onboarding, /remainingDayNumbers = \[0,1,2,3,4,5,6\]/);
-  assert.match(onboarding, /Promise\.all\(batch\.map\(dayNumber => generateDay\(dayNumber, previousDays\)\)\)/);
+  assert.match(onboarding, /completeRemainingMetaPreviewDaysInBackground/);
+  assert.match(onboarding, /generatedDays\.push\(await generateDay\(firstDayNumber, \[\]\)\)/);
   assert.match(onboarding, /userData: \{ profile: profileForGenerator, quizResults: profileForGenerator, facts: \{\}, foodPreferences \}/);
   assert.match(onboarding, /savedPlan\?\.meta_preview_signature === signature/);
   assert.doesNotMatch(onboarding.match(/async function ensureMetaPreviewMealPlan\(\)[\s\S]*?window\.ensureMetaPreviewMealPlan/)[0], /buildScaledMealPlan/);
@@ -22,14 +23,20 @@ test('paid onboarding builds a fresh plan from the selected food preferences', (
 
 test('the first onboarding day gets exact photos before the tour opens it', () => {
   assert.match(onboarding, /ensureExactMealPlanPhotos\(plan, user\.id, \{[\s\S]*?meals: firstDayMeals/);
-  assert.match(onboarding, /Your first week and matching meal photos are ready/);
+  assert.match(onboarding, /Your first meals are ready\. Finishing the rest of your week in the background/);
   assert.match(dashboard, /await window\.ensureMetaPreviewMealPlan\(\)/);
-  assert.match(onboarding, /FINISHING YOUR MEAL PLAN/);
+  assert.match(dashboard, /id="wizard-personalising-screen"/);
+  assert.match(dashboard, /Preparing your workout program/);
+  assert.match(dashboard, /Tailoring your meal plan/);
+  assert.match(dashboard, /Preparing the app for you/);
+  assert.doesNotMatch(dashboard, /id="wizard-meal-plan-build-card"/);
+  assert.match(onboarding, /showWizardPersonalisingScreen\(\)/);
+  assert.match(onboarding, /onboardingPromiseWithTimeout\(ensureInitialOnboardingMealPlan\(\), 120000\)/);
   assert.match(onboarding, /initialMealPlan\.status !== 'preview_ready'/);
   assert.match(onboarding, /initialMealPlan = \{ status: 'preview_failed'/);
   assert.match(onboarding, /authentication\|ownership\|image_generation\|photo_storage\|photo_service/);
   assert.match(onboarding, /firstDayPhotoResult\.failureStage \|\| 'photo_service'/);
-  assert.match(onboarding, /TRY MEAL PLAN AGAIN/);
+  assert.match(onboarding, /showWizardPersonalisingError\(retryMessage\)/);
   assert.match(onboarding, /if \(_aiMealPlanCache\?\.id === newPlanId\) _aiMealPlanCache = null/);
 });
 
@@ -67,5 +74,5 @@ test('the paid preview tour keeps the promised app order before payment', () => 
 test('test navigation is invisible unless a developer explicitly requests it', () => {
   assert.match(testNavigator, /get\('testFlow'\) === '1'/);
   assert.match(onboarding, /if \(!forceTourTest \|\| !wizard/);
-  assert.match(dashboard, /pbb-onboarding-test-navigator\.js\?v=7-explicit-only/);
+  assert.match(dashboard, /pbb-onboarding-test-navigator\.js\?v=7-hidden-phone-safe/);
 });
