@@ -5220,6 +5220,7 @@ async function ensureExactMealPlanPhotos(plan, userId, options = {}) {
     const queue = [...groups.values()];
     let generated = 0;
     let failed = 0;
+    let failureStage = '';
     let completed = 0;
     const worker = async () => {
         while (queue.length) {
@@ -5238,6 +5239,7 @@ async function ensureExactMealPlanPhotos(plan, userId, options = {}) {
                 if (_aiMealPlanCache === plan) renderAiPlanDay(_aiMealPlanCurrentDay);
             } catch (error) {
                 failed += 1;
+                failureStage = String(error?.message || '').match(/\[([a-z_]+)\]/i)?.[1] || failureStage || 'photo_service';
                 console.warn(`[meal-plan] exact photo failed for ${representative?.name || 'meal'}:`, error);
             } finally {
                 completed += 1;
@@ -5250,7 +5252,7 @@ async function ensureExactMealPlanPhotos(plan, userId, options = {}) {
         await Promise.all(Array.from({ length: Math.min(2, queue.length) }, () => worker()));
         try { localStorage.setItem('ai_meal_plan', JSON.stringify(plan)); } catch (e) {}
         if (_aiMealPlanCache === plan) renderAiPlanDay(_aiMealPlanCurrentDay);
-        return { generated, failed };
+        return { generated, failed, failureStage };
     } finally {
         _mealPhotoGenerationPlans.delete(planId);
     }
@@ -6256,12 +6258,12 @@ async function buildFreshMetaPreviewMealPlan(profile, foodPreferences, signature
 
         const firstDayMeals = generatedDays.find(day => day.day_of_week === firstDayNumber)?.meals || [];
         setMetaPreviewMealPlanBuildStatus('Creating photos that match your first meals.', 76);
-        await ensureExactMealPlanPhotos(plan, user.id, {
+        const firstDayPhotoResult = await ensureExactMealPlanPhotos(plan, user.id, {
             meals: firstDayMeals,
             onProgress: (done, total) => setMetaPreviewMealPlanBuildStatus(`Creating meal photos ${done} of ${total}.`, 76 + Math.round((done / Math.max(total, 1)) * 18))
         });
         const firstDayWithoutPhotos = firstDayMeals.filter(meal => window.resolveMealPlanPhotoDetails?.(meal)?.source === 'missing');
-        if (firstDayWithoutPhotos.length) throw new Error('The first-day meal photos are not ready yet');
+        if (firstDayWithoutPhotos.length) throw new Error(`The first-day meal photos are not ready yet [${firstDayPhotoResult.failureStage || 'photo_service'}]`);
 
         const activate = await window.supabaseClient.from('ai_generated_meal_plans').update({ status: 'active' }).eq('id', newPlanId).eq('user_id', user.id);
         if (activate.error) throw activate.error;
