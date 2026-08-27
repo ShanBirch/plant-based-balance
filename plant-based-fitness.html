@@ -274,7 +274,7 @@
         .difference p { margin: 4px 0 0; color: #c6ced8; }
 
         .client-stories { background: linear-gradient(180deg, rgba(216,178,94,.08), rgba(255,255,255,.35)); }
-        .story-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .story-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
         .story-card { overflow: hidden; border: 1px solid rgba(184,137,43,.2); border-radius: 26px; background: var(--paper); box-shadow: 0 20px 48px rgba(26,32,44,.09); }
         .story-photo { width: 100%; aspect-ratio: 1.08 / 1; display: block; object-fit: cover; background: #eee8da; }
         .story-card:first-child .story-photo { object-position: center 35%; }
@@ -339,7 +339,6 @@
         @media (max-width: 850px) {
             .hero-grid, .dark-grid, .founder-grid, .join-card { grid-template-columns: 1fr; }
             .story-grid { grid-template-columns: 1fr 1fr; }
-            .story-card:first-child { grid-column: 1 / -1; display: grid; grid-template-columns: 1.08fr .92fr; }
             .hero-grid { gap: 12px; padding-top: 35px; }
             .hero-copy { max-width: 560px; }
             .phone-stage { min-height: 590px; }
@@ -363,7 +362,6 @@
             .phone-highlights { position: static; width: 100%; display: flex; flex-wrap: wrap; justify-content: center; gap: 9px; }
             .floating-note { position: static; transform: none; padding: 10px 12px; white-space: normal; text-align: left; box-shadow: 0 10px 25px rgba(26,32,44,.1); }
             .proof-grid, .card-grid, .fit-grid, .story-grid { grid-template-columns: 1fr; }
-            .story-card:first-child { grid-column: auto; display: block; }
             .story-photo { aspect-ratio: 1.12 / 1; }
             .feature-card.foundations-prelude { grid-template-columns: 1fr; gap: 14px; }
             body.paid-meta-preview .paid-preview-route { flex-wrap: wrap; }
@@ -522,7 +520,7 @@
 
         <section class="client-stories" aria-labelledby="client-stories-title">
             <div class="wrap">
-                <div class="section-head reveal"><div class="eyebrow">Real people Shannon has coached</div><h2 id="client-stories-title">Different journeys. The same need for a plan that works in real life.</h2><p>These women were coached by Shannon before Balance Foundations. Their experiences helped shape the practical support, shared accountability and weekly adjustment now built into the course.</p></div>
+                <div class="section-head reveal"><div class="eyebrow">Real people Shannon has coached</div><h2 id="client-stories-title">Different journeys. The same need for a plan that works in real life.</h2><p>These people were coached by Shannon before Balance Foundations. Their experiences helped shape the practical support, shared accountability and weekly adjustment now built into the course.</p></div>
                 <div class="story-grid">
                     <article class="story-card reveal">
                         <img class="story-photo" src="photos/client-success/bec-kirsty-cocos.png" alt="Chrissy and Bec together during their coaching journey and later celebrating together" loading="lazy">
@@ -535,6 +533,10 @@
                     <article class="story-card reveal">
                         <img class="story-photo" src="photos/client-success/dani-front-8-weeks.png" alt="Dani's eight-week coaching progress shown in two photographs" loading="lazy">
                         <div class="story-copy"><span class="story-kicker">Eight weeks of steady work</span><h3>Dani</h3><p>Dani created visible body-composition progress over eight weeks by staying with the work. Her journey is a reminder that repeatable weeks matter more than chasing a perfect one.</p></div>
+                    </article>
+                    <article class="story-card reveal">
+                        <img class="story-photo" src="videos/shane-front-squat-progress/deliverables/shane-front-squat-cover-publish.jpg" alt="Shane completing a heavy front squat during his coached strength progression" loading="lazy">
+                        <div class="story-copy"><span class="story-kicker">Eight-week strength progression</span><h3>Shane</h3><p>A difficult 100 kg front squat became 150 kg for two reps. Each session had a clear job, Shannon adjusted the plan from Shane's lifts, and Shane kept showing up and using the feedback.</p></div>
                     </article>
                 </div>
                 <p class="story-note">Individual experiences vary. These are examples of Shannon's previous coaching work and are not promises of a particular result from Balance Foundations.</p>
