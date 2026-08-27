@@ -75,4 +75,3 @@ For each promoted, rejected, or retested pattern, save:
 - Goal/blocker, offer-ready, buyer-intent, checkout, and purchase outcomes where observable.
 - Decision: durable, supported, provisional, rejected, or retest.
 - Any Shannon wording correction and the skill or prompt updated from it.
-
