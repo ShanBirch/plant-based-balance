@@ -689,7 +689,7 @@ async function recordMetaPreviewPurchaseAndQueue({ session, stripeEvent, email, 
             utm_medium: cleanString(session?.metadata?.utm_medium, 128) || null,
             utm_campaign: cleanString(session?.metadata?.utm_campaign, 128) || null,
             score: 100,
-            score_breakdown: { stage: "purchase_completed", amount_minor: Number(session.amount_total || 8999) },
+            score_breakdown: { stage: "purchase_completed", amount_minor: Number(session.amount_total || 14900) },
             attribution: {
                 analytics_session_id: analyticsSessionId || null,
                 visitor_id: visitorId || null,
@@ -876,7 +876,7 @@ async function recordFoundersPassSale(context, stripeEvent, session) {
     ).toLowerCase();
     if (!email) return { skipped: "missing_checkout_email" };
 
-    const amountMinor = Math.max(0, Number(session.amount_total || 8999));
+    const amountMinor = Math.max(0, Number(session.amount_total || 14900));
     const currency = cleanCurrency(session.currency || "aud");
     const purchasedAt = isoFromStripeTimestamp(session.created) || new Date().toISOString();
     const sessionPlan = String(session?.metadata?.balance_plan || "");

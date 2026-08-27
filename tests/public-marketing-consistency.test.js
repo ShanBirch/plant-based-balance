@@ -110,6 +110,5 @@ test('retired legacy offer pages are forced onto the aligned pages', () => {
     const netlify = read('netlify.toml');
     assert.match(netlify, /from = "\/shop\.html"[\s\S]*?to = "\/coaching\.html"[\s\S]*?status = 301[\s\S]*?force = true/);
     assert.match(netlify, /from = "\/success-stories\.html"[\s\S]*?to = "\/clients\.html"[\s\S]*?status = 301[\s\S]*?force = true/);
-    assert.match(netlify, /from = "\/fitness"[\s\S]*?to = "\/founders"[\s\S]*?status = 301[\s\S]*?force = true/);
-    assert.match(netlify, /from = "\/fitness-coaching\.html"[\s\S]*?to = "\/founders"[\s\S]*?status = 301[\s\S]*?force = true/);
+    assert.match(netlify, /from = "\/fitness"[\s\S]*?to = "\/fitness-coaching\.html"[\s\S]*?status = 200[\s\S]*?force = true/);
 });

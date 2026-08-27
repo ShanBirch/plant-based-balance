@@ -261,6 +261,8 @@
         .feature-number { display: inline-grid; place-items: center; width: auto; min-width: 42px; height: 42px; padding: 0 12px; border-radius: 12px; color: #111111; background: var(--lime); font-weight: 900; white-space: nowrap; }
         .feature-card h3 { margin: 35px 0 8px; color: var(--ink); font-family: 'Outfit', sans-serif; font-size: 1.15rem; }
         .feature-card p { margin: 0; color: var(--muted); }
+        .feature-card.foundations-prelude { grid-column: 1 / -1; min-height: 0; display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 18px; background: linear-gradient(135deg, rgba(216,178,94,.16), var(--paper)); }
+        .feature-card.foundations-prelude h3 { margin: 0 0 6px; }
 
         .dark-section { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); color: white; background: #1a202c; }
         .dark-grid { display: grid; grid-template-columns: .92fr 1.08fr; gap: 70px; align-items: start; }
@@ -348,6 +350,7 @@
             .phone-highlights { position: static; width: 100%; display: flex; flex-wrap: wrap; justify-content: center; gap: 9px; }
             .floating-note { position: static; transform: none; padding: 10px 12px; white-space: normal; text-align: left; box-shadow: 0 10px 25px rgba(26,32,44,.1); }
             .proof-grid, .card-grid, .fit-grid { grid-template-columns: 1fr; }
+            .feature-card.foundations-prelude { grid-template-columns: 1fr; gap: 14px; }
             body.paid-meta-preview .paid-preview-route { flex-wrap: wrap; }
             .paid-preview-store-row { grid-template-columns: 1fr; }
             .proof-item { border-right: 0; border-bottom: 1px solid rgba(255,255,255,.14); }
@@ -432,7 +435,7 @@
 
         <div class="proof-strip">
             <div class="wrap proof-grid">
-                <div class="proof-item"><strong>Six guided course weeks</strong><span>30 lessons with practical actions</span></div>
+                <div class="proof-item"><strong>Prelude plus six guided weeks</strong><span>31 lessons with practical actions</span></div>
                 <div class="proof-item"><strong>Saturday review</strong><span>Training and food reviewed and adjusted</span></div>
                     <div class="proof-item"><strong>One AUD $149 payment</strong><span>Full six weeks, no automatic renewal</span></div>
             </div>
@@ -453,6 +456,7 @@
             <div class="wrap">
                 <div class="section-head reveal"><div class="eyebrow">Your complete six-week path</div><h2>Learn it, use it, review it, then make it fit real life.</h2><p>Foundations is a guided starting course, not a pile of information. Each week gives you a clear lesson theme, practical actions inside Balance, and one review point with Shannon.</p></div>
                 <div class="card-grid">
+                    <article class="feature-card foundations-prelude"><div class="feature-number">START HERE</div><div><h3>What Balance Is Built On</h3><p>Begin with the practical working model used throughout the course: notice the signal, check your body, context and environment, choose one workable adjustment, then repeat and learn. The lesson also explains the limits of the science and what the course does not claim.</p></div></article>
                     <article class="feature-card"><div class="feature-number">WEEK 1</div><h3>Why change feels hard</h3><p>Understand how your brain uses past experience, set your first Weekly Goals, and begin with a workout and meal-plan starting point you can actually use.</p></article>
                     <article class="feature-card"><div class="feature-number">WEEK 2</div><h3>Work with your energy</h3><p>Notice how sleep, stress and low-energy days change your choices. Use the app to keep the next action visible when the week is not ideal.</p></article>
                     <article class="feature-card"><div class="feature-number">WEEK 3</div><h3>Build a rhythm that sticks</h3><p>Use repetition, smaller actions and your surroundings to make training and food habits easier to return to.</p></article>
@@ -471,7 +475,7 @@
                     <div class="difference"><strong>2. Choose the week's actions</strong><p>Turn the lessons into 1 to 3 Weekly Goals and a small set of practical course actions, so the week stays focused.</p></div>
                     <div class="difference"><strong>3. Practise inside real life</strong><p>Follow your workout plan, use meal support, and record the useful evidence the course asks for. Feed gives you a place to share a reflection, action or win.</p></div>
                     <div class="difference"><strong>Every Saturday</strong><p>Complete your weekly check-in. Shannon reviews your training and food, then makes practical adjustments for the next week.</p></div>
-                    <div class="difference"><strong>At completion</strong><p>When all 30 Foundations lessons and the required weekly course actions are genuinely complete, Balance issues your named Certificate of Completion with your course completion date. It is not an accredited qualification.</p></div>
+                    <div class="difference"><strong>At completion</strong><p>When the required prelude, all 30 weekly Foundations lessons and the required weekly course actions are genuinely complete, Balance issues your named Certificate of Completion with your course completion date. It is not an accredited qualification.</p></div>
                 </div>
             </div>
         </section>
@@ -480,7 +484,7 @@
             <div class="wrap">
                 <div class="section-head reveal"><div class="eyebrow">Everything supporting the course</div><h2>The tools serve the six-week journey.</h2><p>You do not need another folder of information. The plans, goals, community and coaching review exist to help you use each week's lesson when life is not ideal.</p></div>
                 <div class="card-grid">
-                    <article class="feature-card"><div class="feature-number">01</div><h3>Complete guided curriculum</h3><p>Thirty lessons across six weekly themes, with actions that turn the ideas into repeatable behaviour.</p></article>
+                    <article class="feature-card"><div class="feature-number">01</div><h3>Complete guided curriculum</h3><p>Start with one required prelude, then complete 30 lessons across six weekly themes, with actions that turn the ideas into repeatable behaviour.</p></article>
                     <article class="feature-card"><div class="feature-number">02</div><h3>Home and gym training</h3><p>Follow clear workouts with exercise guidance, logging and progress tracking inside Balance.</p></article>
                     <article class="feature-card"><div class="feature-number">03</div><h3>Meal planning support</h3><p>Keep meals, protein and habits clear. The support can fit plant-based eating when that is right for you.</p></article>
                     <article class="feature-card"><div class="feature-number">04</div><h3>Community accountability</h3><p>Use Feed for course reflections, useful actions and shared wins during the six weeks.</p></article>

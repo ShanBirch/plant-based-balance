@@ -74,7 +74,7 @@ function purchaseFromSession(session) {
         stripe_payment_intent_id: typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id || null,
         stripe_customer_id: typeof session.customer === "string" ? session.customer : session.customer?.id || null,
         email,
-        amount_minor: Number(session.amount_total || 8999),
+        amount_minor: Number(session.amount_total || 14900),
         currency: String(session.currency || "aud").toLowerCase(),
         status: "paid",
         purchased_at: purchasedAt.toISOString(),
