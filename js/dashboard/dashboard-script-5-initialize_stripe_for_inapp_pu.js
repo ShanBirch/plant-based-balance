@@ -1218,8 +1218,44 @@ function scheduleDashboardTaskForActiveUser(task, delayMs) {
     }, delayMs || 0);
 }
 
+function isOnboardingNavigationLocked() {
+    const wizard = document.getElementById('onboarding-wizard');
+    const wizardIsOpen = !!(wizard && (
+        wizard.classList.contains('active') ||
+        wizard.style.display === 'flex' ||
+        wizard.dataset.launchState
+    ));
+    return localStorage.getItem('onboardingComplete') !== 'true'
+        && (window._onboardingWizardPending === true || wizardIsOpen);
+}
+
+function setOnboardingNavigationGate(locked) {
+    const bottomNav = document.querySelector('.bottom-nav');
+    if (bottomNav) {
+        bottomNav.style.display = locked ? 'none' : 'flex';
+        bottomNav.inert = locked;
+        bottomNav.setAttribute('aria-hidden', locked ? 'true' : 'false');
+    }
+
+    const closeButton = document.getElementById('onboarding-wizard-close');
+    if (closeButton) {
+        const canExitPreview = window.metaAdTrialMode === true;
+        closeButton.style.display = locked && !canExitPreview ? 'none' : '';
+        closeButton.disabled = locked && !canExitPreview;
+        closeButton.setAttribute('aria-hidden', locked && !canExitPreview ? 'true' : 'false');
+    }
+}
+
 // Real switchAppTab implementation - replaces the early stub
 function _switchAppTabReal(tabName, btn) {
+    // First-run setup is a required guided gate. Keep this check at the shared
+    // navigation boundary as a safety net even when another feature tries to
+    // restore or invoke the bottom tabs while the wizard is open.
+    if (isOnboardingNavigationLocked()) {
+        setOnboardingNavigationGate(true);
+        return false;
+    }
+
     // Track current active tab for level-up animation visibility
     if (typeof currentActiveTab !== 'undefined') {
         currentActiveTab = tabName;
@@ -1240,7 +1276,8 @@ function _switchAppTabReal(tabName, btn) {
     }
 
     // 1.5. Restore bottom navigation visibility for normal tabs
-    document.querySelector('.bottom-nav').style.display = 'flex';
+    const bottomNav = document.querySelector('.bottom-nav');
+    if (bottomNav) bottomNav.style.display = 'flex';
 
     // 1.6. Clear Android navigation stack when switching to main tabs
     try {
@@ -10140,6 +10177,7 @@ function initOnboardingWizard() {
         return false;
     }
     modal.dataset.launchState = 'opening';
+    setOnboardingNavigationGate(true);
     if (window._crumb) window._crumb('onboarding_wizard_init');
     if (window.metaAdTrialMode && window.BalanceMetaAdTrial) {
         window.BalanceMetaAdTrial.onOnboardingStarted();
@@ -11352,9 +11390,22 @@ function updateWizardUI() {
     const prevBtn = document.getElementById('wizard-back');
     const nextBtn = document.getElementById('wizard-next');
     const titleEl = document.getElementById('wizard-title');
+    const guidanceEl = document.getElementById('wizard-action-guidance');
 
     if(titleEl) {
         titleEl.textContent = currentWizardStep === 1 ? 'TIME FOR A COMEBACK.' : 'YOUR BALANCE SETUP';
+    }
+
+    if (guidanceEl) {
+        if (currentWizardStep === 1) {
+            guidanceEl.textContent = wizardChatComplete
+                ? 'Your setup chat is complete. Tap Continue to build your plan.'
+                : "Read Shannon's message and choose the answer that fits you.";
+        } else if (currentWizardStep === finalWizardStep) {
+            guidanceEl.textContent = 'Review your first week, then tap Open Balance.';
+        } else {
+            guidanceEl.textContent = 'Read this section, make your choice, then tap Next.';
+        }
     }
 
     // Always build the confirmation calendar when this slide becomes visible.
@@ -14081,6 +14132,7 @@ async function finishOnboarding() {
         window.BalanceMetaAdTrial.onOnboardingComplete();
     }
     window._onboardingWizardPending = false;
+    setOnboardingNavigationGate(false);
     const wizardEl = document.getElementById('onboarding-wizard');
     if (wizardEl) {
         wizardEl.style.display = 'none';
@@ -14395,6 +14447,10 @@ async function closeWizardManually() {
      const closingMetaAdTrial = window.metaAdTrialMode === true
          && window.BalanceMetaAdTrial
          && typeof window.BalanceMetaAdTrial.showExitChoice === 'function';
+     if (!closingMetaAdTrial && localStorage.getItem('onboardingComplete') !== 'true') {
+         setOnboardingNavigationGate(true);
+         return false;
+     }
      window._onboardingWizardPending = false;
      const wizardEl = document.getElementById('onboarding-wizard');
      if (wizardEl) {
@@ -14464,6 +14520,7 @@ window.resumeMetaAdTrialOnboarding = function() {
     const wizardEl = document.getElementById('onboarding-wizard');
     if (!wizardEl) return false;
     window._onboardingWizardPending = true;
+    setOnboardingNavigationGate(true);
     closeOnboardingBlockingSurfaces();
     wizardEl.style.display = 'flex';
     wizardEl.style.opacity = '1';

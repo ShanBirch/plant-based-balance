@@ -147,3 +147,19 @@ test('onboarding launch is idempotent until the current wizard closes', () => {
     assert.match(onboardingSource, /modal\.dataset\.launchState = 'open'/);
     assert.match(onboardingSource, /delete wizardEl\.dataset\.launchState/);
 });
+
+test('unfinished onboarding cannot escape through app navigation or the close control', () => {
+    assert.match(onboardingSource, /function isOnboardingNavigationLocked\(\)/);
+    assert.match(onboardingSource, /if \(isOnboardingNavigationLocked\(\)\) \{[\s\S]*?return false;/);
+    assert.match(onboardingSource, /bottomNav\.inert = locked/);
+    assert.match(onboardingSource, /if \(!closingMetaAdTrial && localStorage\.getItem\('onboardingComplete'\) !== 'true'\) \{[\s\S]*?return false;/);
+    assert.match(onboardingSource, /async function finishOnboarding\(\)[\s\S]*?setOnboardingNavigationGate\(false\)/);
+    assert.match(dashboardSource, /id="onboarding-wizard-close"/);
+});
+
+test('every onboarding screen tells the member what to do next', () => {
+    assert.match(dashboardSource, /id="wizard-action-guidance"/);
+    assert.match(onboardingSource, /Read Shannon's message and choose the answer that fits you/);
+    assert.match(onboardingSource, /Read this section, make your choice, then tap Next/);
+    assert.match(onboardingSource, /Review your first week, then tap Open Balance/);
+});
