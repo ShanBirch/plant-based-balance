@@ -83,6 +83,9 @@ test('the photo generator is authenticated and prompts for the exact meal', () =
     assert.match(source, /userOwnsMeal/);
     assert.match(source, /gemini-3\.1-flash-image/);
     assert.match(source, /responseModalities: \["IMAGE"\]/);
+    assert.match(source, /https:\/\/api\.openai\.com\/v1\/images\/generations/);
+    assert.match(source, /\["gpt-image-1\.5", "gpt-image-1"\]/);
+    assert.match(source, /output_format: "jpeg"/);
     assert.doesNotMatch(source, /responseFormat/);
     assert.match(source, /exact prepared meal/);
     assert.match(source, /failureStage = "image_generation"/);

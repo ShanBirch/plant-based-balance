@@ -44,7 +44,37 @@ function ingredientList(value: unknown) {
   }).filter(Boolean).join(", ").slice(0, 1200);
 }
 
-async function generateImage(apiKey: string, prompt: string) {
+async function generateOpenAIImage(apiKey: string, prompt: string) {
+  const models = ["gpt-image-1.5", "gpt-image-1"];
+  let lastError = "";
+  for (const model of models) {
+    const response = await fetch("https://api.openai.com/v1/images/generations", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        prompt,
+        size: "1024x1024",
+        quality: "medium",
+        output_format: "jpeg",
+      }),
+    });
+    if (!response.ok) {
+      lastError = `${model}: ${response.status} ${(await response.text()).slice(0, 200)}`;
+      continue;
+    }
+    const data = await response.json();
+    const base64 = data.data?.[0]?.b64_json;
+    if (base64) return { base64, mimeType: "image/jpeg", model };
+    lastError = `${model}: response contained no image`;
+  }
+  throw new Error(lastError || "OpenAI image generation returned no image");
+}
+
+async function generateGeminiImage(apiKey: string, prompt: string) {
   const models = ["gemini-3.1-flash-image", "gemini-2.5-flash-image"];
   let lastError = "";
   for (const model of models) {
@@ -72,6 +102,25 @@ async function generateImage(apiKey: string, prompt: string) {
     lastError = `${model}: response contained no image`;
   }
   throw new Error(lastError || "Image generation returned no image");
+}
+
+async function generateImage(openAiKey: string, geminiKey: string, prompt: string) {
+  const errors: string[] = [];
+  if (openAiKey) {
+    try {
+      return await generateOpenAIImage(openAiKey, prompt);
+    } catch (error) {
+      errors.push(`OpenAI: ${String(error)}`);
+    }
+  }
+  if (geminiKey) {
+    try {
+      return await generateGeminiImage(geminiKey, prompt);
+    } catch (error) {
+      errors.push(`Gemini: ${String(error)}`);
+    }
+  }
+  throw new Error(errors.join(" | ") || "No meal photo image provider is configured");
 }
 
 async function uploadToB2(bytes: Uint8Array, mimeType: string, fileName: string) {
@@ -135,8 +184,9 @@ export default async function (request: Request, _context: Context) {
     failureStage = "ownership";
     if (!(await userOwnsMeal(user.id, planId, mealId))) return json({ error: "Forbidden", stage: failureStage }, 403);
 
-    const apiKey = Deno.env.get("GEMINI_API_KEY") || "";
-    if (!apiKey) return json({ error: "Meal photo generation is not configured" }, 500);
+    const openAiKey = Deno.env.get("OPENAI_API_KEY") || "";
+    const geminiKey = Deno.env.get("GEMINI_API_KEY") || "";
+    if (!openAiKey && !geminiKey) return json({ error: "Meal photo generation is not configured" }, 500);
     const ingredients = ingredientList(body.ingredients);
     const prompt = `Create one photorealistic food photograph of the exact prepared meal named "${mealName}".
 Meal description: ${mealDescription || mealName}.
@@ -144,7 +194,7 @@ Ingredients that must be visually represented where visible: ${ingredients || "u
 Show the finished meal as one realistic serving on a ceramic plate or bowl. Match the named cuisine, cooking method, key ingredients, sides, and presentation precisely. Do not substitute a different dish and do not add unrelated foods. Natural soft window light, appetizing editorial food photography, slightly overhead three-quarter camera angle, food filling the frame. No people, packaging, logos, labels, text, watermark, collage, or duplicate plate.`;
 
     failureStage = "image_generation";
-    const image = await generateImage(apiKey, prompt);
+    const image = await generateImage(openAiKey, geminiKey, prompt);
     const binary = atob(image.base64);
     const bytes = new Uint8Array(binary.length);
     for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
