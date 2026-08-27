@@ -53,7 +53,7 @@ test('paid preview opens and requires the real first Foundations lesson', () => 
   assert.match(dashboard, /tour-embedded-guide:not\(\.tour-gate-complete\)[\s\S]*?#guided-tour-bubble/);
   assert.match(dashboard, /sessionStorage\.setItem\('pbb_activation_first_lesson', 'true'\)/);
   assert.match(dashboard, /sessionStorage\.removeItem\('pbb_activation_first_lesson'\)/);
-  assert.match(learning, /isGuidedMetaPreviewLesson = window\.metaAdTrialMode === true/);
+  assert.match(learning, /isGuidedMetaPreviewLesson = !!window\.metaAdTrialMode/);
   assert.match(learning, /isActivationFirstLesson = !isGuidedMetaPreviewLesson/);
   assert.match(dashboard, /showStep\(completedStepIndex \+ 1\)/);
   assert.match(learning, /Meet Karl Friston, a theoretical neuroscientist at University College London/);
@@ -81,6 +81,6 @@ test('changed onboarding assets are cache-busted', () => {
   assert.match(dashboard, /pbb-social-journey\.js\?v=37-course-action-evidence/);
   assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=200-photo-stage/);
   assert.match(dashboard, /dashboard-script-6-ai_coach_draft_mode_logic_auth\.js\?v=43-home-canvas/);
-  assert.match(dashboard, /learning-inline\.js\?v=28-paid-tour-handoff/);
+  assert.match(dashboard, /learning-inline\.js\?v=29-paid-tour-handoff/);
   assert.match(serviceWorker, /pbb-app-v353-photo-stage/);
 });
