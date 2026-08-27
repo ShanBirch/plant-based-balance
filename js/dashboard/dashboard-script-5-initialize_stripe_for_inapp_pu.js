@@ -13883,7 +13883,12 @@ async function finishOnboarding() {
             Math.max(3, _metaPreviewMealPlanBuildState.progress || 0),
             'building'
         );
-        initialMealPlan = await ensureInitialOnboardingMealPlan();
+        try {
+            initialMealPlan = await ensureInitialOnboardingMealPlan();
+        } catch (error) {
+            console.warn('[meta-ad-trial] Meal plan was not ready for the tour:', error);
+            initialMealPlan = { status: 'preview_failed', error: error?.message || String(error) };
+        }
         if (initialMealPlan.status !== 'preview_ready') {
             setMetaPreviewMealPlanBuildStatus('Your meal photos did not finish. Tap below to try them again.', 0, 'error');
             if (finishButton) {

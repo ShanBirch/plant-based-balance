@@ -82,6 +82,7 @@ test('the photo generator is authenticated and prompts for the exact meal', () =
     assert.match(source, /auth\/v1\/user/);
     assert.match(source, /userOwnsMeal/);
     assert.match(source, /gemini-3\.1-flash-image/);
+    assert.match(source, /imageSize: "0\.5K"/);
     assert.match(source, /exact prepared meal/);
     assert.doesNotMatch(source, /data:\$\{mimeType\};base64/);
 });

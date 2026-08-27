@@ -59,7 +59,7 @@ async function generateImage(apiKey: string, prompt: string) {
             responseModalities: ["Image"],
             responseFormat: {
               image: model === "gemini-3.1-flash-image"
-                ? { aspectRatio: "16:9", imageSize: "512" }
+                ? { aspectRatio: "16:9", imageSize: "0.5K" }
                 : { aspectRatio: "16:9" }
             }
           }
