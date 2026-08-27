@@ -1098,7 +1098,7 @@ function isContextualMetaAdOfferLinkRequest({ currentMessage = '', qualifier = {
         return recentOutbound.some(item => {
             const text = String(item?.text || '');
             return /\b(?:founders? pass|balance foundations)\b/i.test(text)
-                && /\b(?:which (?:one|option) do you want to start with|\$89\.99|six-week|doesn['’]?t renew|full breakdown)\b/i.test(text);
+                && /\b(?:which (?:one|option) do you want to start with|\$149|six-week|doesn['’]?t renew|full breakdown)\b/i.test(text);
         });
     }
     return false;
@@ -1683,7 +1683,7 @@ function buildDeterministicPaidMetaConversationReply({
     if (resolveMetaAdFirstReplyIntent(message) === 'personalised_coaching') {
         const knownProblem = hasGoal && hasBlocker;
         const body = personalVoiceNoteMode && knownProblem
-            ? `Yeah, I do. Ummmm... honestly, Balance Foundations gives you a clear six-week starting plan inside the app.\n\nYou can set yourself up before you pay and see your weekly goals, starter workouts, meal plan, community, and my welcome note in your Inbox.\n\nYou've also got me there once a week to review how training and food are actually going.\n\nIt's eighty-nine dollars once for the full six weeks, and it doesn't renew.\n\nHave a look first, then decide.`
+            ? `Yeah, I do. Ummmm... honestly, Balance Foundations gives you a clear six-week starting plan inside the app.\n\nYou can set yourself up before you pay and see your weekly goals, starter workouts, meal plan, community, and my welcome note in your Inbox.\n\nYou've also got me there once a week to review how training and food are actually going.\n\nIt's one hundred and forty-nine dollars once for the full six weeks, and it doesn't renew.\n\nHave a look first, then decide.`
             : knownProblem
             ? `Yeah, I do. Balance Foundations gives you a six-week curriculum inside the app, plus one weekly check-in where I review and adjust your training and food around what's actually happening.`
             : `Yeah, I do. Balance Foundations gives you a six-week curriculum inside the app, plus one weekly check-in where I review and adjust your training and food.`;
@@ -1896,7 +1896,7 @@ function buildDeterministicPaidMetaConversationReply({
                 `${proofAnswer}Yeah, that makes total sense. ${reflection}`,
                 `Ummmm... honestly, Balance is built for weeks like that. It gives you a simple starter plan around ${voiceGoalPhrase}, and we can adjust it when life changes.`,
                 `You can set yourself up before you pay. You'll see your weekly goals, starter workouts, meal plan, community, and my welcome note in your Inbox.`,
-                `It's eighty-nine dollars once for the full six weeks, and it doesn't renew.`,
+                `It's one hundred and forty-nine dollars once for the full six weeks, and it doesn't renew.`,
                 `Have a look first, then decide. How does that sound?`,
             ].join('\n\n')
             : [

@@ -64,11 +64,18 @@ function runTrial(search) {
         innerHeight: 844,
         crypto: { randomUUID: () => 'fixed-id' },
         fetch: async (url, options) => {
+            if (url.startsWith('/.netlify/functions/get-checkout-offer')) {
+                return { ok: true, json: async () => ({ offer: { token: 'balance_vegan_founders_pass', name: 'Balance Foundations', unitAmount: 14900, currency: 'AUD', plan: 'balance_foundations_six_week', accessDays: 42, renewal: 'none' } }) };
+            }
             const body = JSON.parse(options.body);
             if (url === '/.netlify/functions/log-lp-event') events.push(body);
             if (url === '/.netlify/functions/create-checkout-session') {
                 events.push({ event_type: 'checkout_request', body });
-                return { ok: true, json: async () => ({ sessionId: 'cs_live_preview', url: 'https://checkout.stripe.com/test-preview' }) };
+                return { ok: true, json: async () => ({
+                    sessionId: 'cs_live_preview',
+                    url: 'https://checkout.stripe.com/test-preview',
+                    offer: { token: 'balance_vegan_founders_pass', name: 'Balance Foundations', unitAmount: 14900, currency: 'AUD', plan: 'balance_foundations_six_week', accessDays: 42, renewal: 'none' }
+                }) };
             }
             return { ok: true, json: async () => ({ recorded: true }) };
         },
@@ -151,6 +158,7 @@ test('finishing the guided tour opens the fixed six-week Stripe gate', async () 
     assert.equal(checkout.body.priceId, 'balance_meta_foundations_pass');
     assert.equal(checkout.body.pageVariant, 'facebook_5m_foundations_v3');
     assert.equal(checkout.body.checkoutSource, 'meta_ad_trial');
+    assert.equal(api.META_FOUNDATIONS_PRICE_AUD, undefined);
     assert.equal(checkout.body.utm_data.visitor_id, 'visitor-fixed-id');
     assert.equal(checkout.body.utm_data.session_id, 'session-fixed-id');
     assert.equal(checkout.body.compliance.accepted.terms, true);
@@ -331,8 +339,9 @@ test('dashboard, signup, native handoffs, measurement, and both discovery system
     assert.doesNotMatch(foundersLanding, /return to this website page/);
     assert.doesNotMatch(foundersLanding, /var appUrl = '\/dashboard\.html\?/);
     assert.match(foundersLanding, /data-plan="founders-pass"/);
-    assert.match(foundersLanding, /replace\(\/AU\\\$89\\\.99\/g, 'AU\$89'\)/);
-    assert.match(dashboard, /One AU\$89\.99 payment for the full six weeks\. No subscription or automatic renewal\./);
+    assert.doesNotMatch(foundersLanding, /AU\$89\.99/);
+    assert.match(dashboard, /One AUD \$149 payment for the full six weeks\. No subscription or automatic renewal\./);
+    assert.match(source, /get-checkout-offer\?priceId=/);
     assert.match(foundersClaim, /FOUNDERS_PLAN = "balance_foundations_six_week"/);
     assert.match(logger, /'trial_gate_shown'/);
     assert.match(logger, /'trial_walkthrough_completed'/);

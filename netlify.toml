@@ -42,6 +42,10 @@
   path = "/.netlify/functions/create-checkout-session"
 
 [[edge_functions]]
+  function = "get-checkout-offer"
+  path = "/.netlify/functions/get-checkout-offer"
+
+[[edge_functions]]
   function = "claim-founders-pass"
   path = "/.netlify/functions/claim-founders-pass"
 

@@ -80,8 +80,8 @@ const scenarios = [
         name: 'direct price question',
         history: [{ direction: 'out', text: opener }],
         inbound: 'How much is it and does it renew?',
-        next: 'Answer $89 once for six weeks and no auto-renewal before any question.',
-        required: [/\$89(?!\.99)/i, /six[- ]weeks?/i, /doesn.t|no.*renew|not.*renew/i],
+        next: 'Answer $149 once for six weeks and no auto-renewal before any question.',
+        required: [/\$149/i, /six[- ]weeks?/i, /doesn.t|no.*renew|not.*renew/i],
         forbidden: [/89\.99/i],
     },
     {
@@ -111,8 +111,8 @@ const scenarios = [
             { direction: 'out', text: 'What has made that hard before?' },
         ],
         inbound: 'Shift work changes every week so I can never keep a routine',
-        next: 'Recognise changing shifts, explain a flexible setup, name the $89 six-week offer and ask whether they want to look inside.',
-        required: [/shift/i, /(?:six|6)[- ]week/i, /\$89(?!\.99)/i, /workout/i, /meal plan/i, /check-in|review/i, /look|access|inside/i, /\?/],
+        next: 'Recognise changing shifts, explain a flexible setup, name the $149 six-week offer and ask whether they want to look inside.',
+        required: [/shift/i, /(?:six|6)[- ]week/i, /\$149/i, /workout/i, /meal plan/i, /check-in|review/i, /look|access|inside/i, /\?/],
         forbidden: [/89\.99/i],
         qualifier: {
             commercial_stage: 'problem_qualified',

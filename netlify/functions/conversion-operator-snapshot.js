@@ -399,7 +399,7 @@ preview_cards as (
             when pp.purchase_at is not null then 'Purchase confirmed. The buyer welcome is queued and non-buyer reminders are canceled.'
             when pp.checkout_started_at is not null and pp.checkout_started_at <= now() - interval '45 minutes' then 'No payment is confirmed. Check the queued payment-help message before intervening.'
             when pp.checkout_started_at is not null then 'Stripe is open. Wait for payment confirmation before messaging.'
-            when pp.payment_gate_at is not null then 'They reached the $89 Meta-ad lock. The preview follow-up will handle the next step.'
+            when pp.payment_gate_at is not null then 'They reached the $149 Balance Foundations payment gate. The preview follow-up will handle the next step.'
             else 'Let them finish setup and explore. Their next stage will update automatically.'
         end as recommended_action,
         case

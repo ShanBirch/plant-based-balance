@@ -11,11 +11,11 @@ test('DM drafting knowledge covers the paid handoff and real onboarding stages',
     assert.match(guide, /plantbased-balance\.org\/founders/);
     assert.match(guide, /login\.html\?action=signup/);
     assert.match(guide, /meta-app-preview\.html/);
-    assert.match(guide, /five-minute look-around begins only after the walkthrough ends/i);
-    assert.match(guide, /photo-based vegan meal plan/i);
+    assert.match(guide, /guided walkthrough/i);
+    assert.match(guide, /personalised setup/i);
     assert.match(guide, /AU\$19\.99\/month/);
     assert.match(guide, /Stripe Checkout/);
-    assert.match(guide, /AU\$89\.99 once/);
+    assert.match(guide, /AUD \$149 once/);
     assert.match(guide, /usual blocker/i);
     assert.match(guide, /realistic weekly capacity/i);
     assert.match(guide, /Balance infers the six-week direction, starter duration, split, learning focus, and first three Weekly Goals/i);
@@ -53,7 +53,7 @@ test('DM drafting knowledge knows all active packages and routes personalised co
     assert.match(guide, /personalised, individual, one-to-one or weekly plan adjustment usually fits Online Coaching/i);
     assert.match(guide, /regular calls, deeper live support.+fits Coaching \+ Calls/i);
     assert.match(guide, /coaching\.html/);
-    assert.match(guide, /Balance Foundations Founders Pass, AU\$89\.99 once/i);
+    assert.match(guide, /Balance Foundations, one AU\$149 payment.+fixed six-week course/i);
     assert.match(guide, /does not auto-renew/i);
     assert.match(guide, /Do not dump every package/i);
 });

@@ -164,7 +164,19 @@ export default async (request, context) => {
             },
         });
 
-        return new Response(JSON.stringify({ sessionId: session.id, url: session.url || null }), {
+        return new Response(JSON.stringify({
+            sessionId: session.id,
+            url: session.url || null,
+            offer: {
+                token: plan.token,
+                name: plan.productName,
+                unitAmount: plan.unitAmount,
+                currency: plan.currency || "AUD",
+                plan: plan.balancePlan,
+                accessDays: plan.accessDays || null,
+                renewal: plan.renewal || (plan.mode === "payment" ? "none" : "recurring"),
+            },
+        }), {
             headers: { "Content-Type": "application/json" }
         });
 

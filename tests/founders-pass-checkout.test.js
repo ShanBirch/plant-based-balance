@@ -30,11 +30,14 @@ test('one-time Founders Pass has a complete purchase and activation path', () =>
     assert.match(page, /Build your sustainable way forward/);
     assert.match(page, /Complete the five short guided lessons in Course/);
     assert.match(page, /Turn the lessons into 1 to 3 Weekly Goals/);
-    assert.match(guard, /balance_vegan_founders_pass[\s\S]*?unitAmount: 14900[\s\S]*?mode: "payment"/);
-    assert.match(guard, /balance_meta_foundations_pass[\s\S]*?unitAmount: 8999[\s\S]*?balanceProduct: "balance_vegan_founders_pass"[\s\S]*?mode: "payment"/);
+    assert.match(guard, /BALANCE_FOUNDATIONS_SIX_WEEK_OFFER[\s\S]*?unitAmount: 14900[\s\S]*?balancePlan: "balance_foundations_six_week"/);
+    assert.match(guard, /balance_vegan_founders_pass: BALANCE_FOUNDATIONS_SIX_WEEK_OFFER/);
+    assert.match(guard, /balance_meta_foundations_pass: BALANCE_FOUNDATIONS_SIX_WEEK_OFFER/);
+    assert.match(guard, /getPublicCheckoutOffer/);
     assert.match(checkout, /checkout\.plan\.mode === "subscription"/);
     assert.match(checkout, /payment_intent_data\[metadata\]/);
     assert.match(checkout, /balance_foundations_six_week/);
+    assert.match(checkout, /unitAmount: plan\.unitAmount/);
     assert.match(checkout, /safeReturnPath/);
     assert.match(checkout, /"\/plant-based-fitness\.html", "\/fitness-coaching\.html"/);
     assert.match(checkout, /founders\|fitness/);

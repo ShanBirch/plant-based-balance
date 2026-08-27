@@ -70,6 +70,23 @@ export function assertStarterCoachingPlan(priceId) {
     }
 }
 
+const BALANCE_FOUNDATIONS_SIX_WEEK_OFFER = Object.freeze({
+    token: "balance_vegan_founders_pass",
+    productName: "Balance Foundations",
+    productDescription: "Six-week Balance Foundations course with one weekly check-in, plan review, app access, and support from Shannon",
+    unitAmount: 14900,
+    currency: "AUD",
+    interval: null,
+    balanceProduct: "balance_vegan_founders_pass",
+    balancePlan: "balance_foundations_six_week",
+    accessDays: 42,
+    checkinsPerWeek: "1",
+    callsPerWeek: "0",
+    allowBump: false,
+    mode: "payment",
+    renewal: "none",
+});
+
 const BALANCE_CHECKOUT_PLANS = Object.freeze({
     balance_online_coaching_6_month_weekly: Object.freeze({
         token: "balance_online_coaching_6_month_weekly",
@@ -148,40 +165,30 @@ const BALANCE_CHECKOUT_PLANS = Object.freeze({
         allowBump: false,
         mode: "subscription",
     }),
-    balance_vegan_founders_pass: Object.freeze({
-        token: "balance_vegan_founders_pass",
-        productName: "Balance Foundations Founders Pass",
-        productDescription: "Six-week Balance Foundations course with one weekly check-in, plan review, app access, and support from Shannon",
-        unitAmount: 14900,
-        interval: null,
-        balanceProduct: "balance_vegan_founders_pass",
-        balancePlan: "balance_foundations_six_week",
-        accessDays: 42,
-        checkinsPerWeek: "1",
-        callsPerWeek: "0",
-        allowBump: false,
-        mode: "payment",
-    }),
-    balance_meta_foundations_pass: Object.freeze({
-        token: "balance_meta_foundations_pass",
-        productName: "Balance Foundations Meta Ad Pass",
-        productDescription: "Six-week Balance Foundations course with one weekly check-in, plan review, app access, and support from Shannon",
-        unitAmount: 8999,
-        interval: null,
-        balanceProduct: "balance_vegan_founders_pass",
-        balancePlan: "balance_foundations_six_week",
-        accessDays: 42,
-        checkinsPerWeek: "1",
-        callsPerWeek: "0",
-        allowBump: false,
-        mode: "payment",
-    }),
+    balance_vegan_founders_pass: BALANCE_FOUNDATIONS_SIX_WEEK_OFFER,
+    // Backwards-compatible campaign token. It intentionally resolves to the
+    // exact same offer object so Meta onboarding can never carry a second price.
+    balance_meta_foundations_pass: BALANCE_FOUNDATIONS_SIX_WEEK_OFFER,
 });
 
 export function getBalanceCheckoutPlan(priceId) {
     const plan = BALANCE_CHECKOUT_PLANS[String(priceId || "")];
     if (!plan) throw new CheckoutGuardError("Invalid checkout plan.", 400);
     return plan;
+}
+
+export function getPublicCheckoutOffer(priceId) {
+    const plan = getBalanceCheckoutPlan(priceId);
+    return Object.freeze({
+        token: plan.token,
+        name: plan.productName,
+        description: plan.productDescription,
+        unitAmount: plan.unitAmount,
+        currency: plan.currency || "AUD",
+        plan: plan.balancePlan,
+        accessDays: plan.accessDays || null,
+        renewal: plan.renewal || (plan.mode === "payment" ? "none" : "recurring"),
+    });
 }
 
 export function assertRecurringCheckoutPlan(plan) {
