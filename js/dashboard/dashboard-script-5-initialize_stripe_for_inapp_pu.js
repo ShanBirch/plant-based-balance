@@ -5103,7 +5103,8 @@ function waitForCurrentUser(timeoutMs = 15000) {
 }
 
 function areMealPlanDependenciesReady() {
-    return typeof window.populateVeganChallengeMealPlan === 'function'
+    return typeof window.populatePreparedMealPlan === 'function'
+        && typeof window.buildPreparedMealPlan === 'function'
         && typeof window.getUserNutritionTargets === 'function'
         && typeof window.isVeganChallengeUser === 'function'
         && typeof window.resolveMealPlanPhoto === 'function';
@@ -6059,10 +6060,11 @@ async function generateAiMealPlan() {
             console.warn('Could not archive old plans:', e);
         }
 
-        const result = await window.populateVeganChallengeMealPlan(
+        const result = await window.populatePreparedMealPlan(
             window.supabaseClient,
             user.id,
-            targets
+            targets,
+            foodPreferences
         );
 
         if (progressEl) progressEl.style.width = '95%';
@@ -6091,7 +6093,8 @@ async function generateAiMealPlan() {
 
 function mealPlanNeedsPreferenceReview(preferences = {}) {
     const safeVeganRequirements = new Set([
-        'vegan', 'plant_based', 'vegetarian', 'dairy_free', 'egg_free',
+        'vegan', 'plant_based', 'vegetarian', 'omnivore', 'gluten_free',
+        'dairy_free', 'nut_free', 'soy_free', 'low_fodmap', 'egg_free',
         'shellfish_free', 'halal', 'kosher'
     ]);
     const requirements = Array.isArray(preferences.dietary_requirements)
@@ -6103,7 +6106,10 @@ function mealPlanNeedsPreferenceReview(preferences = {}) {
     const dislikes = Array.isArray(preferences.dislikes)
         ? preferences.dislikes.map(value => String(value || '').trim()).filter(Boolean)
         : [];
-    const veganSafeAllergies = new Set(['dairy', 'egg', 'eggs', 'shellfish', 'fish', 'meat']);
+    const veganSafeAllergies = new Set([
+        'gluten', 'dairy', 'nuts', 'nut', 'soy', 'fodmap',
+        'egg', 'eggs', 'shellfish', 'fish', 'meat'
+    ]);
 
     return requirements.some(value => !safeVeganRequirements.has(value))
         || allergies.some(value => !veganSafeAllergies.has(value))
@@ -6289,6 +6295,9 @@ async function completeRemainingMetaPreviewDaysInBackground({ user, plan, planId
 }
 
 async function buildFreshMetaPreviewMealPlan(profile, foodPreferences, signature) {
+    return buildPreparedMetaPreviewMealPlan(profile, foodPreferences, signature);
+    /* Legacy generated-plan implementation retained temporarily for rollback.
+       The customer flow above never enters it. */
     const user = window.currentUser || await waitForCurrentUser();
     if (!user || !window.supabaseClient) throw new Error('Your preview account is still connecting. Please try again.');
     const dayNames = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
@@ -6411,6 +6420,49 @@ async function buildFreshMetaPreviewMealPlan(profile, foodPreferences, signature
         } catch (cleanupError) {}
         setMetaPreviewMealPlanBuildStatus('We could not finish it yet. Tap Choose my meal plan to try again.', 0, 'error');
         try { window.trackBalanceActivity('meta_preview_meal_plan_generation_failed', { stage: newPlanId ? 'save_or_photos' : 'generation' }); } catch (e) {}
+        throw error;
+    }
+}
+
+async function buildPreparedMetaPreviewMealPlan(profile, foodPreferences, signature) {
+    const user = window.currentUser || await waitForCurrentUser();
+    if (!user || !window.supabaseClient) throw new Error('Your preview account is still connecting. Please try again.');
+    const calorieGoal = Number(profile.calorie_goal || profile.calorieGoal || profile.daily_calorie_target || 2000);
+    const targets = {
+        calorie_goal: Number.isFinite(calorieGoal) && calorieGoal >= 1200 ? calorieGoal : 2000,
+        protein_goal_g: Number(profile.protein_goal_g || profile.proteinGoal || 0) || null,
+        carbs_goal_g: Number(profile.carbs_goal_g || profile.carbsGoal || 0) || null,
+        fat_goal_g: Number(profile.fat_goal_g || profile.fatGoal || 0) || null
+    };
+    let result = null;
+    try {
+        setMetaPreviewMealPlanBuildStatus('Selecting your prepared meal plan.', 45);
+        await window.supabaseClient.from('ai_generated_meal_plans')
+            .update({ status: 'archived' }).eq('user_id', user.id).eq('status', 'active');
+        result = await window.populatePreparedMealPlan(window.supabaseClient, user.id, targets, foodPreferences);
+        const plan = result.plan;
+        plan.meta_preview_signature = signature;
+        plan.meta_preview_owner_id = user.id;
+        _aiMealPlanCache = plan;
+        _aiMealPlanCurrentWeek = 1;
+        _aiMealPlanCurrentDay = 0;
+        localStorage.setItem('ai_meal_plan', JSON.stringify(plan));
+        localStorage.setItem('pbb_meta_preview_meal_signature', signature);
+        localStorage.setItem(`pbb_meta_preview_plan_id_${user.id}`, result.plan_id);
+        showAiPlanLoaded(plan);
+        setMetaPreviewMealPlanBuildStatus('Your prepared meal plan is ready.', 100, 'ready');
+        try {
+            window.trackBalanceActivity('meta_preview_meal_plan_generation_ready', {
+                source: 'prepared_library', template_id: plan.template_id,
+                meal_count: 35, dietary_tag_count: (foodPreferences.dietary_requirements || []).length
+            });
+        } catch (_) {}
+        return plan;
+    } catch (error) {
+        if (result?.plan_id) {
+            try { await window.supabaseClient.from('ai_generated_meal_plans').delete().eq('id', result.plan_id).eq('user_id', user.id); } catch (_) {}
+        }
+        setMetaPreviewMealPlanBuildStatus('We could not select it yet. Tap Choose my meal plan to try again.', 0, 'error');
         throw error;
     }
 }

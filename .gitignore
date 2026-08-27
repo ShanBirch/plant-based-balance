@@ -44,6 +44,7 @@ videos/**/snapshots/
 videos/**/.hyperframes/
 videos/**/.thumbnails/
 videos/**/.waveform-cache/
+images/meals/prepared-v1/*.png
 android/capacitor-cordova-android-plugins/
 ios/capacitor-cordova-ios-plugins/
 ios/App/App/public/
