@@ -6279,6 +6279,12 @@ async function buildFreshMetaPreviewMealPlan(profile, foodPreferences, signature
         if (newPlanId) {
             try { await window.supabaseClient.from('ai_generated_meal_plans').delete().eq('id', newPlanId).eq('user_id', user.id); } catch (cleanupError) {}
         }
+        if (_aiMealPlanCache?.id === newPlanId) _aiMealPlanCache = null;
+        try {
+            localStorage.removeItem('ai_meal_plan');
+            localStorage.removeItem('pbb_meta_preview_meal_signature');
+            localStorage.removeItem(`pbb_meta_preview_plan_id_${user.id}`);
+        } catch (cleanupError) {}
         setMetaPreviewMealPlanBuildStatus('We could not finish it yet. Tap Choose my meal plan to try again.', 0, 'error');
         try { window.trackBalanceActivity('meta_preview_meal_plan_generation_failed', { stage: newPlanId ? 'save_or_photos' : 'generation' }); } catch (e) {}
         throw error;
@@ -13858,6 +13864,38 @@ function playHeaderCoinGrantAnimation(startBalance, endBalance, grantedAmount) {
 async function finishOnboarding() {
     const completingTransferredSetup = !!window.__pbbTransferredSetupPending;
     try { window.trackBalanceActivity('onboarding_finish_started', { transferred_setup: completingTransferredSetup }, { immediate:true }); } catch(e) {}
+
+    // The paid-ad walkthrough promises a real personalised meal plan and an
+    // actual food photo. Do not close setup and race into the tour while that
+    // work is still running. If it fails, keep the member on the final setup
+    // screen with a retry instead of showing a text-only or stale plan.
+    let initialMealPlan = null;
+    if (window.metaAdTrialMode === true) {
+        const finishButton = document.getElementById('wizard-next');
+        if (finishButton?.dataset.mealPlanFinishing === 'true') return;
+        if (finishButton) {
+            finishButton.dataset.mealPlanFinishing = 'true';
+            finishButton.disabled = true;
+            finishButton.textContent = 'FINISHING YOUR MEAL PLAN...';
+        }
+        setMetaPreviewMealPlanBuildStatus(
+            _metaPreviewMealPlanBuildState.message || 'Finishing your personalised meals and matching photos.',
+            Math.max(3, _metaPreviewMealPlanBuildState.progress || 0),
+            'building'
+        );
+        initialMealPlan = await ensureInitialOnboardingMealPlan();
+        if (initialMealPlan.status !== 'preview_ready') {
+            setMetaPreviewMealPlanBuildStatus('Your meal photos did not finish. Tap below to try them again.', 0, 'error');
+            if (finishButton) {
+                delete finishButton.dataset.mealPlanFinishing;
+                finishButton.disabled = false;
+                finishButton.textContent = 'TRY MEAL PLAN AGAIN';
+            }
+            wizardAlert('Your meal plan is not ready yet. Tap Try Meal Plan Again so Balance can finish the matching photos before the app tour.');
+            return;
+        }
+        if (finishButton) delete finishButton.dataset.mealPlanFinishing;
+    }
     if (window.__pbbTransferredSetupPending) {
         window.__pbbTransferredSetupPending = false;
         if (window.__pbbTransferredSetupVisibilityTimer) {
@@ -14115,7 +14153,7 @@ async function finishOnboarding() {
     // Prepare the first plant-based meal plan before the coaching welcome is
     // queued. This lets Shannon's first message truthfully point the member to
     // Nutrition, while a generation failure still allows onboarding to finish.
-    const initialMealPlan = await ensureInitialOnboardingMealPlan();
+    initialMealPlan = initialMealPlan || await ensureInitialOnboardingMealPlan();
     console.log('[onboarding] initial meal plan state:', initialMealPlan.status);
 
     // Mark onboarding complete in the database so it persists across browsers/sessions

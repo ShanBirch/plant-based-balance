@@ -39,7 +39,7 @@ test('both activation tours require an explicit Weekly Goals save', () => {
 
 test('preview walkthrough only unlocks Next after the welcome audio ends', () => {
   assert.match(dashboard, /id="meta-ad-trial-welcome-audio"/);
-  assert.match(dashboard, /requiresWelcomeAudio:true/);
+  assert.match(dashboard, /title:'Listen to Shannon’s welcome'[\s\S]*?embeddedGuide:true[\s\S]*?requiresWelcomeAudio:true/);
   assert.match(dashboard, /audio\.addEventListener\('ended', complete\)/);
   assert.match(dashboard, /Listen to the full voice note to unlock Next/);
 });
@@ -76,8 +76,8 @@ test('real Coach Shannon inbox also requires the full welcome note', () => {
 test('changed onboarding assets are cache-busted', () => {
   assert.match(dashboard, /pbb-deferred-weeklygoals\.js\?v=34-guided-goals/);
   assert.match(dashboard, /pbb-social-journey\.js\?v=37-course-action-evidence/);
-  assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=196-fresh-meta-meals/);
+  assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=197-photo-ready-tour/);
   assert.match(dashboard, /dashboard-script-6-ai_coach_draft_mode_logic_auth\.js\?v=43-home-canvas/);
   assert.match(dashboard, /learning-inline\.js\?v=26-guided-researcher-lesson/);
-  assert.match(serviceWorker, /pbb-app-v349-guided-researcher-lesson/);
+  assert.match(serviceWorker, /pbb-app-v350-photo-ready-tour/);
 });

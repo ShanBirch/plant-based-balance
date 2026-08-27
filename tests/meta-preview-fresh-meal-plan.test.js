@@ -24,6 +24,10 @@ test('the first onboarding day gets exact photos before the tour opens it', () =
   assert.match(onboarding, /ensureExactMealPlanPhotos\(plan, user\.id, \{[\s\S]*?meals: firstDayMeals/);
   assert.match(onboarding, /Your first week and matching meal photos are ready/);
   assert.match(dashboard, /await window\.ensureMetaPreviewMealPlan\(\)/);
+  assert.match(onboarding, /FINISHING YOUR MEAL PLAN/);
+  assert.match(onboarding, /initialMealPlan\.status !== 'preview_ready'/);
+  assert.match(onboarding, /TRY MEAL PLAN AGAIN/);
+  assert.match(onboarding, /if \(_aiMealPlanCache\?\.id === newPlanId\) _aiMealPlanCache = null/);
 });
 
 test('the first course guide is compact and the lesson introduces both researchers and the book', () => {
@@ -32,6 +36,29 @@ test('the first course guide is compact and the lesson introduces both researche
   assert.match(learning, /Professor Karl Friston/);
   assert.match(learning, /Professor Lisa Feldman Barrett/);
   assert.match(learning, /How Emotions Are Made by Lisa Feldman Barrett/);
+});
+
+test('the paid preview tour keeps the promised app order before payment', () => {
+  const titles = [
+    'Start here each day',
+    'Check your workout week',
+    'Open your first workout',
+    'Follow the exercise card',
+    'Log what you eat',
+    'Open your meal plan',
+    'Read, then take the quiz',
+    'The Balance community',
+    'Post when you need support',
+    'Listen to Shannon’s welcome',
+    'Pick your Weekly Goals'
+  ];
+  let cursor = dashboard.indexOf("title:'Start here each day'");
+  assert.ok(cursor >= 0);
+  titles.slice(1).forEach(title => {
+    const next = dashboard.indexOf(`title:'${title}'`, cursor + 1);
+    assert.ok(next > cursor, `${title} should follow the previous paid-preview step`);
+    cursor = next;
+  });
 });
 
 test('test navigation is invisible unless a developer explicitly requests it', () => {
