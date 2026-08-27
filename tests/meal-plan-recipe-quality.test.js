@@ -19,5 +19,5 @@ test('future generated recipes require complete ingredients and numbered methods
 test('the meal card renders numbered preparation steps', () => {
     assert.match(renderer, /function formatAiPlanPreparation\(value\)/);
     assert.match(renderer, /<ol>\$\{steps\.map/);
-    assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=178/);
+    assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=201-phone-onboarding/);
 });

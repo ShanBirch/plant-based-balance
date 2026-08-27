@@ -8296,7 +8296,7 @@ function getWizardStarterRoutine(answers = wizardChatAnswers || {}) {
 
 function getWizardStarterRoutineSummary(answers = wizardChatAnswers || {}) {
     const routine = getWizardStarterRoutine(answers);
-    return `${routine.frequency} x ${routine.minutes}-minute sessions, around ${routine.windowLabel.toLowerCase()}`;
+    return `${routine.frequency} x ${routine.minutes}-minute sessions`;
 }
 
 const WIZARD_CHAT_STEPS = [
@@ -8352,22 +8352,6 @@ const WIZARD_CHAT_STEPS = [
             { value: 'seven', label: WIZARD_WEEKLY_CAPACITY_LABELS.seven },
             { value: 'varies', label: WIZARD_WEEKLY_CAPACITY_LABELS.varies }
         ]
-    },
-    {
-        key: 'routine_window',
-        type: 'choice',
-        prelude: 'Brain fact: starting is easier when a behaviour is attached to something that already happens, like waking up, lunch, or finishing work.',
-        question: 'When are you most likely to do your workouts?',
-        options: [
-            { value: 'early_morning', label: 'Early morning' },
-            { value: 'later_morning', label: 'Later morning' },
-            { value: 'lunch_time', label: 'Lunch time' },
-            { value: 'afternoon', label: 'Afternoon' },
-            { value: 'after_work', label: 'After work' },
-            { value: 'evening', label: 'Evening' },
-            { value: 'flexible', label: 'It changes day to day' }
-        ],
-        textPlaceholder: 'Or type an exact time, like 7:00 am...'
     },
     {
         key: 'equipment_access',
@@ -8426,7 +8410,8 @@ const WIZARD_CHAT_STEPS = [
             { value: 'low_fodmap', label: 'Low FODMAP' }
         ],
         emptyLabel: 'No restrictions',
-        submitLabel: 'Choose my meal plan'
+        submitLabel: 'Choose my meal plan',
+        allowTypedAnswer: false
     }
 ];
 
@@ -8987,7 +8972,8 @@ function renderWizardChatControls() {
     }
 
     if (step.type === 'choice' || step.type === 'multi') {
-        const allowsTypedAnswer = step.type === 'multi' || Boolean(step.textPlaceholder);
+        const allowsTypedAnswer = Boolean(step.textPlaceholder)
+            || (step.type === 'multi' && step.allowTypedAnswer !== false);
         setWizardChatLayoutMode({ noTextbox: !allowsTypedAnswer, intro: false });
         inputRow.style.display = allowsTypedAnswer ? 'flex' : 'none';
         input.type = 'text';
@@ -12807,7 +12793,7 @@ function renderWizardStarterRoutineRecommendation() {
     title.textContent = frequencyWasChanged ? 'Your chosen starting routine' : 'Your week, based on your answers';
     const plan = document.createElement('div');
     plan.style.cssText = 'font-size:1.02rem; font-weight:800; color:#5f4516; margin:5px 0 4px;';
-    plan.textContent = `${displayedFrequency} x ${routine.minutes}-minute sessions - ${routine.windowLabel}`;
+    plan.textContent = `${displayedFrequency} x ${routine.minutes}-minute sessions`;
     const detail = document.createElement('div');
     detail.style.cssText = 'font-size:0.78rem; line-height:1.45; color:#705b33;';
     const overrideText = frequencyWasChanged
@@ -12816,8 +12802,6 @@ function renderWizardStarterRoutineRecommendation() {
     detail.textContent = `Why: ${reason}.${belowMaximum}${overrideText} Keep the minimum light until following through feels normal, then progress one thing at a time. Change anything below if another choice suits you better.`;
     container.append(title, plan, detail);
 
-    const windowSelect = document.getElementById('wizard-routine-window-choice');
-    if (windowSelect) windowSelect.value = wizardChatAnswers.routine_window || 'varies';
     document.querySelectorAll('.starter-minutes-btn').forEach(btn => {
         const selected = parseInt(btn.dataset.minutes, 10) === routine.minutes;
         btn.style.background = selected ? '#9b711d' : '#fffaf0';
@@ -13016,11 +13000,9 @@ function initializeWizardAssignedCalendar() {
         wizardWorkoutCalendar[day] = id;
     });
 
-    const defaultTime = getWizardDefaultWorkoutTime();
     ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].forEach(function (day) {
         if (!wizardWorkoutCalendar[day]) wizardWorkoutCalendar[day] = 'rest';
-        const info = getWizardAssignedWorkoutInfo(wizardWorkoutCalendar[day]);
-        if (info && info.name !== 'Rest Day' && !wizardWorkoutTimes[day]) wizardWorkoutTimes[day] = defaultTime;
+        wizardWorkoutTimes[day] = '';
     });
     wizardAssignedCalendarInitialized = true;
     syncWizardWorkoutTimes();
@@ -13188,13 +13170,8 @@ function generateWizardCalendar() {
         }
     });
 
-    const defaultTime = getWizardDefaultWorkoutTime();
     allDays.forEach(day => {
-        if (wizardWorkoutCalendar[day] === 'rest') {
-            wizardWorkoutTimes[day] = '';
-        } else if (!wizardWorkoutTimes[day]) {
-            wizardWorkoutTimes[day] = defaultTime;
-        }
+        wizardWorkoutTimes[day] = '';
     });
     syncWizardWorkoutTimes();
 }
@@ -13240,7 +13217,7 @@ function renderWizardCalendarPreview() {
     if (guidance) {
         guidance.textContent = wizardAssignedProgram
             ? 'Your coached sessions are already set. Keep all three, move them to days that suit you, and choose recovery or rest around them.'
-            : 'Check the days, session type and time. Tap any day to change it before we build your program.';
+            : 'Check the days and session type. Tap any day to change it before we build your program.';
     }
 
     const allDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
@@ -13342,30 +13319,6 @@ function renderWizardCalendarPreview() {
             descEl.className = 'wizard-calendar-workout-desc';
             descEl.textContent = info.desc;
             workoutText.appendChild(descEl);
-        }
-
-        if (workout !== 'rest') {
-            const timeWrap = document.createElement('label');
-            timeWrap.className = 'wizard-calendar-time-wrap';
-            timeWrap.style.cssText = 'display:inline-flex; align-items:center; gap:6px; margin-top:6px; color:#75684f; font-size:11px; font-weight:800;';
-            timeWrap.textContent = 'Time';
-
-            const timeInput = document.createElement('input');
-            timeInput.type = 'time';
-            timeInput.className = 'wizard-calendar-time';
-            timeInput.value = wizardWorkoutTimes[day] || getWizardDefaultWorkoutTime();
-            timeInput.setAttribute('aria-label', dayLabels[idx] + ' workout time');
-            timeInput.style.cssText = 'width:104px; min-height:32px; padding:4px 7px; border:1px solid rgba(154,105,25,.32); border-radius:7px; background:rgba(255,255,255,.82); color:#1a202c; font:800 12px/1 Montserrat,sans-serif;';
-            timeInput.onclick = event => event.stopPropagation();
-            timeInput.onpointerdown = event => event.stopPropagation();
-            timeInput.onchange = event => {
-                event.stopPropagation();
-                wizardWorkoutTimes[day] = timeInput.value;
-                syncWizardWorkoutTimes();
-            };
-
-            timeWrap.appendChild(timeInput);
-            workoutText.appendChild(timeWrap);
         }
 
         const editIcon = document.createElement('span');

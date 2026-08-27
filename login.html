@@ -12,7 +12,7 @@
     <meta property="og:url" content="https://plantbased-balance.org/login.html">
     <meta property="og:type" content="website">
     <link rel="stylesheet" href="styles.css">
-    <script src="lib/meta-ad-trial.js?v=6-account-first"></script>
+    <script src="lib/meta-ad-trial.js?v=8-fresh-phone-preview"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://js.stripe.com/v3/"></script>
     <script>
@@ -566,6 +566,7 @@
             preserved.delete('action');
             preserved.delete('redirect');
             preserved.delete('switch_account');
+            preserved.delete('fresh_preview');
             preserved.delete('guest');
             preserved.set('account_first', '1');
             return '/dashboard.html?' + preserved.toString() + fragment;
@@ -988,6 +989,13 @@
             applyMetaAdTrialHandoffCopy(urlParams);
             applyAccountFirstPreviewCopy(urlParams);
             const isSwitchingAccount = urlParams.get('switch_account') === '1';
+            const isFreshPreview = isAccountFirstPreview(urlParams) && urlParams.get('fresh_preview') === '1';
+
+            if (isFreshPreview) {
+                try { await authHelpers.signOut(); } catch (error) {
+                    console.warn('Fresh preview sign-out could not be confirmed:', error);
+                }
+            }
 
             // Check if already logged in
             let session = null;

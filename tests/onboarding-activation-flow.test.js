@@ -32,6 +32,13 @@ test('paid preview claim persists the exact meal plan before marking onboarding 
     );
 });
 
+test('paid preview builds a personalised plan and first-day meal photos from the chosen restrictions', () => {
+    assert.match(onboardingSource, /async function buildFreshMetaPreviewMealPlan\(profile, foodPreferences, signature\)/);
+    assert.match(onboardingSource, /foodPreferences[\s\S]+fetchMealPlanDay\(/);
+    assert.match(onboardingSource, /ensureExactMealPlanPhotos\(plan, user\.id,[\s\S]+meals: firstDayMeals/);
+    assert.match(onboardingSource, /startFreshMetaPreviewMealPlan\(\)[\s\S]+Fresh onboarding meal plan will retry in Nutrition/);
+});
+
 test('food preferences finish saving before onboarding advances', () => {
     assert.match(onboardingSource, /async function saveWizardFoodPreferences\(\)/);
     assert.match(onboardingSource, /const prefs = await saveWizardFoodPreferences\(\);/);

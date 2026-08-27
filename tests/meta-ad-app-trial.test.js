@@ -206,6 +206,15 @@ test('a claimed member revisiting the ad cannot have onboarding data cleared', (
     assert.equal(api.readState().claimedUserId, 'member-1');
 });
 
+test('an explicit fresh phone preview clears the previous local plan and starts a new trial', () => {
+    const trial = runTrial('?account_first=1&fresh_preview=1&meta_trial=facebook_5m_foundations_v3&utm_source=facebook&utm_medium=paid_social');
+    trial.localStorage.setItem('ai_meal_plan', JSON.stringify({ old: true }));
+    trial.window.BalanceMetaAdTrial.init();
+    assert.equal(trial.localStorage.getItem('ai_meal_plan'), null);
+    assert.equal(trial.window.BalanceMetaAdTrial.readState().claimedAt, null);
+    assert.equal(trial.window.metaAdTrialMode, true);
+});
+
 test('dashboard, signup, native handoffs, measurement, and both discovery systems are wired', () => {
     const dashboard = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
     const auth = fs.readFileSync(path.join(root, 'lib/auth-guard.js'), 'utf8');
@@ -223,7 +232,7 @@ test('dashboard, signup, native handoffs, measurement, and both discovery system
     const ios = fs.readFileSync(path.join(root, 'ios/App/App/BalanceShortcutHandoff.swift'), 'utf8');
 
     assert.match(dashboard, /paid-facebook-stripe-unlock-v1/);
-    assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=200-photo-stage/);
+    assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=201-phone-onboarding/);
     assert.match(dashboard, /title:'Start here each day'.*metaPreview:true/);
     assert.match(dashboard, /title:'Check your workout week'.*metaPreview:true/);
     assert.match(dashboard, /title:'Open your first workout'.*metaPreview:true/);

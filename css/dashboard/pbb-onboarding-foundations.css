@@ -866,6 +866,45 @@ html[data-pbb-theme="dark"] #onboarding-wizard .onboarding-modal.wizard-containe
     }
 }
 
+/* Test-account-only mobile hardening. Android WebViews can report a zero
+   safe-area inset while drawing the status bar over web content. */
+@media (max-width: 560px) {
+    html.pbb-onboarding-phone-test #onboarding-wizard.onboarding-overlay {
+        --pbb-wizard-safe-top: max(42px, env(safe-area-inset-top, 0px));
+        --pbb-wizard-safe-bottom: max(6px, env(safe-area-inset-bottom, 0px));
+        top: var(--pbb-wizard-viewport-top, 0px) !important;
+        bottom: auto !important;
+        align-items: flex-start !important;
+        padding: var(--pbb-wizard-safe-top) 6px var(--pbb-wizard-safe-bottom) !important;
+    }
+
+    html.pbb-onboarding-phone-test #onboarding-wizard .onboarding-modal.wizard-container {
+        width: calc(100vw - 12px) !important;
+        height: calc(var(--pbb-wizard-viewport-height, 100dvh) - var(--pbb-wizard-safe-top) - var(--pbb-wizard-safe-bottom)) !important;
+        max-height: calc(var(--pbb-wizard-viewport-height, 100dvh) - var(--pbb-wizard-safe-top) - var(--pbb-wizard-safe-bottom)) !important;
+    }
+
+    html.pbb-onboarding-phone-test #onboarding-wizard.wizard-chat-mode.wizard-chat-keyboard .wizard-chat-choices {
+        min-height: 0 !important;
+        overflow-y: auto !important;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    html.pbb-onboarding-phone-test #onboarding-wizard.wizard-chat-mode.wizard-chat-keyboard .wizard-chat-choice {
+        min-height: 48px !important;
+        padding-top: 10px !important;
+        padding-bottom: 10px !important;
+    }
+
+    html.pbb-onboarding-phone-test #onboarding-wizard.wizard-chat-mode.wizard-chat-keyboard .wizard-chat-input-row {
+        position: sticky !important;
+        bottom: 0 !important;
+        z-index: 8 !important;
+        background: rgba(255, 250, 242, .98) !important;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     #onboarding-wizard.onboarding-overlay::before,
     #onboarding-wizard.onboarding-overlay::after,

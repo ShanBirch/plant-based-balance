@@ -210,7 +210,9 @@
         attempts += 1;
         if (isTester()) {
             window.clearInterval(timer);
-            createNavigator();
+            document.documentElement.classList.add('pbb-onboarding-phone-test');
+            const oldNavigator = document.getElementById('pbb-test-flow-navigator');
+            if (oldNavigator) oldNavigator.remove();
         } else if (attempts > 80) {
             window.clearInterval(timer);
         }

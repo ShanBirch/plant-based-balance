@@ -53,6 +53,7 @@ test('first-run onboarding asks only plan-changing questions and does not ask me
     assert.doesNotMatch(stepsBlock, /key: 'ig_handle'/);
     assert.match(stepsBlock, /key: 'movement_limits'/);
     assert.match(stepsBlock, /key: 'dietary_requirements'/);
+    assert.doesNotMatch(stepsBlock, /key: 'routine_window'/);
 });
 
 test('comeback onboarding uses the Balance identity, mobile safe areas, and reduced-motion support', () => {
@@ -76,7 +77,7 @@ test('onboarding ships a cache-busted authoritative cream-and-gold skin', () => 
     assert.match(foundationsCss, /#onboarding-wizard \.wizard-chat-bubble\.coach:last-child[\s\S]*?-webkit-text-fill-color: var\(--foundations-ink\) !important;/);
     assert.match(foundationsCss, /@media \(prefers-reduced-motion: reduce\)/);
     assert.match(dashboardSource, /pbb-onboarding-comeback\.css\?v=8/);
-    assert.match(dashboardSource, /pbb-onboarding-foundations\.css\?v=7-single-render/);
+    assert.match(dashboardSource, /pbb-onboarding-foundations\.css\?v=8-phone-flow-fixes/);
 });
 
 test('Foundations gives each real setup section a compact branded transition', () => {
@@ -123,9 +124,11 @@ test('long answer lists scroll without overlapping the typed-answer controls', (
     assert.match(foundationsCss, /#onboarding-wizard\.wizard-chat-no-textbox \.wizard-chat-intake[\s\S]*?grid-template-rows: auto auto minmax\(0, 1fr\) auto auto !important;/);
     assert.match(foundationsCss, /#onboarding-wizard \.wizard-chat-choices[\s\S]*?overflow-y: auto !important;/);
     assert.match(foundationsCss, /#onboarding-wizard\.wizard-chat-no-textbox \.wizard-chat-choices[\s\S]*?overflow-y: auto !important;/);
-    assert.match(onboardingSource, /const allowsTypedAnswer = step\.type === 'multi' \|\| Boolean\(step\.textPlaceholder\);/);
+    assert.match(onboardingSource, /step\.type === 'multi' && step\.allowTypedAnswer !== false/);
+    assert.match(onboardingSource, /key: 'dietary_requirements'[\s\S]*?allowTypedAnswer: false/);
     assert.match(onboardingSource, /inputRow\.style\.display = allowsTypedAnswer \? 'flex' : 'none';/);
-    assert.match(onboardingSource, /step\.key === 'routine_window' && parseWizardClockTime\(raw\)/);
+    assert.doesNotMatch(onboardingSource, /key: 'routine_window'[\s\S]*?When are you most likely to do your workouts/);
+    assert.doesNotMatch(onboardingSource, /timeInput\.type = 'time'/);
 });
 
 test('mobile onboarding follows the visible keyboard viewport and keeps long setup steps scrollable', () => {
