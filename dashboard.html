@@ -181,7 +181,7 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
 <!-- CRITICAL: Admin view-as localStorage isolation — runs BEFORE any other localStorage reads -->
 <script src="js/dashboard/script_part_1.js"></script>
 <!-- Paid-Facebook preview attribution must be available before auth-guard decides guest vs member mode. -->
-<script src="lib/meta-ad-trial.js?v=8-fresh-phone-preview"></script>
+<script src="lib/meta-ad-trial.js?v=9-account-first-flow"></script>
 
 <!-- CRITICAL: Hide loading overlay for returning users and restore cached FitGotchi state -->
 <script>
@@ -13069,13 +13069,9 @@ if(!window._pbbIsIOSSafari) {
 
 <script src="js/dashboard/pbb-exercise-technique-data.js?v=1"></script>
 <script src="lib/meal-plan-next-meal.js?v=1"></script>
-<script>
-if (window.metaAdTrialMode === true) {
-    var metaPreviewSoundtrack = document.createElement('script');
-    metaPreviewSoundtrack.src = 'js/dashboard/pbb-meta-preview-soundtrack.js?v=1-gentle-audio';
-    document.head.appendChild(metaPreviewSoundtrack);
-}
-</script>
+<!-- Loaded for every account so a late auth decision cannot skip it. The
+     soundtrack remains inert unless this is the explicit paid onboarding. -->
+<script src="js/dashboard/pbb-meta-preview-soundtrack.js?v=2-fresh-account-audio"></script>
 <script>
 // Script-5 (678KB) - Stripe/IAP, switchAppTab, initProgramDate, checkAndTriggerOnboarding.
 // On iOS Safari, defer to reduce memory pressure during page parsing.

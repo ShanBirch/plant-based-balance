@@ -1,7 +1,21 @@
 (function () {
   'use strict';
 
-  if (window.metaAdTrialMode !== true || window.BalanceMetaPreviewSoundtrack) return;
+  if (window.BalanceMetaPreviewSoundtrack) return;
+
+  function isPaidOnboardingExperience() {
+    if (window.metaAdTrialMode === true) return true;
+    try {
+      const params = new URLSearchParams(window.location.search || '');
+      return params.get('account_first') === '1'
+        && params.get('meta_trial') === 'facebook_5m_foundations_v3'
+        && params.get('utm_campaign') === 'onboarding_test';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  if (!isPaidOnboardingExperience()) return;
 
   const STORAGE_KEY = 'pbb_meta_preview_music_muted_v1';
   const CONTROL_ID = 'meta-preview-music-control';
@@ -30,6 +44,7 @@
   let stopped = false;
   let voicePlaying = false;
   let phase = 'setup';
+  let removeUnlockListeners = null;
   let muted = false;
   try { muted = localStorage.getItem(STORAGE_KEY) === '1'; } catch (_) {}
 
@@ -107,22 +122,42 @@
   }
 
   async function start() {
-    if (started || stopped || muted || !AudioContextClass) return;
+    if (stopped || muted || !AudioContextClass) return false;
+    if (started && context) {
+      try {
+        if (context.state === 'suspended') await context.resume();
+        const running = !context.state || context.state === 'running';
+        if (running && removeUnlockListeners) removeUnlockListeners();
+        return running;
+      } catch (_) {
+        started = false;
+      }
+    }
     started = true;
     try {
       buildAudioGraph();
       await context.resume();
+      if (context.state && context.state !== 'running') {
+        throw new Error('AudioContext is waiting for a user interaction');
+      }
       scheduleChord();
       scheduler = window.setInterval(scheduleChord, 6000);
       fadeToCurrentVolume(1.2);
+      if (removeUnlockListeners) removeUnlockListeners();
       try {
         window.trackBalanceActivity('meta_preview_soundtrack_started', { phase: phase }, { dedupeKey: 'soundtrack', dedupeMs: 86400000 });
       } catch (_) {}
+      return true;
     } catch (error) {
       started = false;
       if (scheduler) window.clearInterval(scheduler);
       scheduler = null;
+      try { if (context && typeof context.close === 'function') await context.close(); } catch (_) {}
+      context = null;
+      masterGain = null;
+      toneFilter = null;
       console.warn('[meta preview] soundtrack unavailable', error);
+      return false;
     }
   }
 
@@ -210,12 +245,16 @@
     installMediaDucking();
     const unlock = function () {
       if (!muted) start();
+    };
+    removeUnlockListeners = function () {
       document.removeEventListener('pointerdown', unlock, true);
       document.removeEventListener('touchstart', unlock, true);
+      document.removeEventListener('click', unlock, true);
       document.removeEventListener('keydown', unlock, true);
     };
     document.addEventListener('pointerdown', unlock, true);
     document.addEventListener('touchstart', unlock, true);
+    document.addEventListener('click', unlock, true);
     document.addEventListener('keydown', unlock, true);
     document.addEventListener('visibilitychange', function () {
       if (!context) return;

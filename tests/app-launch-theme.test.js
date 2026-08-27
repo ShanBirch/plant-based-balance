@@ -50,7 +50,7 @@ test('the phone shell cache ships the light-launch assets together', () => {
   const serviceWorker = read('sw.js');
 
   assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v353-photo-stage'/);
-  assert.match(serviceWorker, /auth-guard\.js\?v=12-light-launch/);
+  assert.match(serviceWorker, /auth-guard\.js\?v=13-account-first-flow/);
   assert.match(serviceWorker, /script_part_2\.js\?v=14-light-launch/);
   assert.match(serviceWorker, /dashboard-script-3-1_get_user_data\.js\?v=59-light-launch/);
   assert.match(dashboard, /script_part_4\.js\?v=theme-toggle-shell-v2/);

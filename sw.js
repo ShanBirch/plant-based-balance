@@ -8,7 +8,7 @@ const ASSETS = [
   './assets/balance_logo.png',
   './welcome.html',
   './lib/supabase.js?v=15-foundations-feed',
-  './lib/auth-guard.js?v=12-light-launch',
+  './lib/auth-guard.js?v=13-account-first-flow',
   './lib/meta-ad-trial.js?v=4',
   './lib/native-push.js?v=40-dispatch-approval',
   './login.html',

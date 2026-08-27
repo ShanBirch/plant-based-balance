@@ -249,6 +249,9 @@ test('dashboard, signup, native handoffs, measurement, and both discovery system
     assert.match(onboarding, /window\.resumeMetaAdTrialOnboarding = function/);
     assert.match(dashboard, /id="meta-ad-trial-gate"/);
     assert.match(auth, /requestedMetaAdTrial/);
+    assert.match(auth, /isAuthenticatedOnboardingTest/);
+    assert.match(auth, /window\.metaAdTrialMode = isAuthenticatedOnboardingTest/);
+    assert.match(source, /searchParams\.delete\('fresh_preview'\)/);
     assert.match(onboarding, /BalanceMetaAdTrial\.onOnboardingComplete\(\)/);
     assert.match(onboarding, /function startWizardMetaPreviewTour/);
     assert.match(onboarding, /setTimeout\(\(\) => startWizardMetaPreviewTour\(\), 80\)/);
@@ -266,6 +269,8 @@ test('dashboard, signup, native handoffs, measurement, and both discovery system
     assert.match(login, /claimPendingMetaTrialPurchase/);
     assert.match(login, /preservePaidPreview/);
     assert.match(login, /pbb_onboarding_owner_user_id/);
+    assert.match(login, /shannonrhysbirch\+phone-onboarding-test@gmail\.com/);
+    assert.match(login, /fresh_preview=1&account_first=1&meta_trial=facebook_5m_foundations_v3/);
     assert.match(login, /claim-founders-pass/);
     assert.match(login, /meta_ad_trial_paid/);
     assert.match(success, /Taking you straight back to Balance now/);

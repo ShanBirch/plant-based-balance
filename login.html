@@ -1179,9 +1179,13 @@
                 // Redirect to dashboard
                 const urlParams = new URLSearchParams(window.location.search);
                 let redirect = postAuthDestination();
-                const isDedicatedOnboardingTest = !!(user && String(user.email || '').trim().toLowerCase() === 'shannonrhysbirch+arunima-onboarding-test@gmail.com');
+                const dedicatedOnboardingTestEmails = new Set([
+                    'shannonrhysbirch+arunima-onboarding-test@gmail.com',
+                    'shannonrhysbirch+phone-onboarding-test@gmail.com'
+                ]);
+                const isDedicatedOnboardingTest = !!(user && dedicatedOnboardingTestEmails.has(String(user.email || '').trim().toLowerCase()));
                 if (isDedicatedOnboardingTest) {
-                    redirect = '/dashboard.html?onboarding_test_reset=1';
+                    redirect = '/dashboard.html?fresh_preview=1&account_first=1&meta_trial=facebook_5m_foundations_v3&utm_source=facebook&utm_medium=paid_social&utm_campaign=onboarding_test';
                 }
 
                 showSuccess('Login successful! Redirecting...');
