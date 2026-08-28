@@ -5031,6 +5031,15 @@ function toggleAiPlanShoppingList(forceOpen) {
 }
 
 async function openAiMealPlanShoppingList(btn) {
+    // The paid preview keeps its prepared plan locally until checkout. Moving
+    // through the calorie tracker must not make the shopping-list handoff wait
+    // on an older account plan or a second generation request.
+    if (!_aiMealPlanCache && window.metaAdTrialMode === true) {
+        try {
+            const previewPlan = JSON.parse(localStorage.getItem('ai_meal_plan') || 'null');
+            if (previewPlan && Array.isArray(previewPlan.weeks)) _aiMealPlanCache = previewPlan;
+        } catch (e) {}
+    }
     const planView = document.getElementById('meal-plan-store');
     const planAlreadyOpen = !!(planView && planView.classList.contains('active') && _aiMealPlanCache);
     if (!planAlreadyOpen) {

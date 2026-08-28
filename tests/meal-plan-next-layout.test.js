@@ -13,7 +13,7 @@ const mealPlanScript = fs.readFileSync(
 test('ships the focused meal layout and cache-busted client assets', () => {
     assert.match(dashboard, /class="ai-plan-focus-layout"/);
     assert.match(dashboard, /lib\/meal-plan-next-meal\.js\?v=1/);
-    assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=210-smooth-guided-tour/);
+    assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=211-smooth-guided-tour/);
     assert.match(dashboard, /meal-plan-next-meal-focus-v1/);
 });
 
