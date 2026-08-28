@@ -305,7 +305,7 @@ test('Cocos paid-ad Founders Pass opener bypasses the false signup hold and mode
 
     assert.equal(draft.firstReplyIntent, 'overview');
     assert.match(draft.joined, /^Hey,/i);
-    assert.match(draft.joined, /six-week program in the app/i);
+    assert.match(draft.joined, /Balance Foundations runs for six weeks in the app/i);
     assert.doesNotMatch(draft.joined, /yeah,? of course|plant[ -]?based|vegan/i);
     assert.match(draft.joined, /main change.*next six weeks\?/i);
     assert.doesNotMatch(draft.joined, /plant[ -]?based|vegan|vegetarian/i);
@@ -2955,10 +2955,12 @@ test('verified broad route completes goal, blocker, neutral offer and signed pre
     assert.equal(isMetaAppPreviewUrl(previewUrl), true);
 
     const opener = buildMetaAdFoundersPassFirstReply('BALANCE', { flowVariant: 'broad_pain' });
-    assert.match(opener.joined, /six-week program in the app/i);
+    assert.match(opener.joined, /^Hey, how are you\? 😊/);
+    assert.match(opener.joined, /Balance Foundations runs for six weeks in the app/i);
     assert.doesNotMatch(opener.joined, /yeah,? of course|plant[ -]?based|vegan/i);
     assert.match(opener.joined, /main change.*next six weeks\?/i);
-    assert.equal((opener.joined.match(/\?/g) || []).length, 1);
+    assert.equal((opener.joined.match(/\?/g) || []).length, 2,
+        'the opener may use the approved greeting plus one decision-changing goal question');
     assert.ok(opener.joined.length <= 240, 'the paid-ad opener must stay in one Instagram bubble');
 
     const goal = 'I want to lose 8kg and feel fitter';

@@ -2693,7 +2693,7 @@ function buildMetaAdFoundersPassFirstReply(currentMessage = '', { customData = {
     } else if (broadFlow) {
         const directAnswer = intent === 'inclusions'
             ? 'Yep. Inside Balance, you get the six-week course, a workout program built around your week, food support fitted to your preferences, Weekly Goals, the community, and one weekly check-in where I review your training and food.'
-            : 'Hey, Balance Foundations is a six-week program in the app. You get the course, a workout program, food support and a weekly check-in with me, all built around your week.';
+            : 'Hey, how are you? 😊 Balance Foundations runs for six weeks in the app. You get the course, workouts, food support and a weekly check-in with me, all built around your week.';
         answer = `${directAnswer} What's the main change you'd like to make over the next six weeks?`;
     } else if (intent === 'fit' || intent === 'overview') {
         answer = `Hey, yeah of course. The Founders Pass is for our six-week plant-based fitness program inside Balance. ${plantBasedOpeningQuestion}`;
