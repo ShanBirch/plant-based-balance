@@ -1281,6 +1281,13 @@ function isExplicitPaidMetaPreviewAcceptance(value = '') {
         || /^(?:i(?:'d| would) like|give me|send me|let me|can i|i want)\b[\s\S]{0,120}\b(?:look|access|link|check it out|see it)\b[\s\S]{0,60}$/i.test(message);
 }
 
+function hasPaidMetaPreviewOrPriceDecline(value = '') {
+    const message = String(value || '').replace(/\s+/g, ' ').trim();
+    return /\b(?:don['\u2019]?t|do not)\s+send\s+(?:me\s+)?(?:a|the|that)?\s*(?:preview|link)\b/i.test(message)
+        || /\b(?:not now|no thanks|not interested)\b/i.test(message)
+        || /\b(?:\$?\s*149|price|cost|it|that)\b[\s\S]{0,45}\b(?:too (?:much|expensive)|can['\u2019]?t afford|cannot afford|not (?:in|within) (?:my )?budget)\b/i.test(message);
+}
+
 function isExplicitPaidMetaPreviewRequest(value = '') {
     const message = String(value || '').replace(/\s+/g, ' ').trim();
     if (!message || /\b(?:not now|no thanks|don['\u2019]?t|do not|not interested|can['\u2019]?t)\b/i.test(message)) return false;
@@ -1318,6 +1325,8 @@ function buildPaidMetaTailoredOfferChunks(blockerText = '', goalText = '', flowV
     const turn = String(blockerText || '');
     const goal = String(goalText || '');
     const asksForMealPlan = /\bdo you (?:offer|have|provide|include) (?:a |any )?(?:plant[ -]?based )?meal plans?\b|\bis (?:a |the )?meal plan included\b/i.test(turn);
+    const asksWhetherDietaryFitWorks = /\b(?:gluten[ -]?free|dietary (?:need|needs|preference|preferences|restriction|restrictions)|food side)\b[\s\S]{0,80}\b(?:work|fit|suit|okay|ok|possible|do you do that)\b/i.test(turn)
+        || /\b(?:would|will|can|does)\b[\s\S]{0,60}\b(?:food side|meal plan|nutrition)\b[\s\S]{0,50}\b(?:work|fit|suit)\b/i.test(turn);
     let acknowledgement = 'Yeah, that makes sense.';
     if (PAID_META_BROAD_BLOCKER_RE.test(turn)) {
         acknowledgement = 'Yeah, if the food, workouts and consistency all feel hard at once, the answer is not more pressure. It needs to be one simple plan built around your week.';
@@ -1344,10 +1353,26 @@ function buildPaidMetaTailoredOfferChunks(blockerText = '', goalText = '', flowV
     if (asksForMealPlan) {
         const directAnswerDetail = acknowledgement.replace(/^Yeah,\s*/i, '');
         acknowledgement = `Yeah, I do. ${directAnswerDetail.charAt(0).toUpperCase()}${directAnswerDetail.slice(1)}`;
+    } else if (flowVariant === 'broad_pain' && asksWhetherDietaryFitWorks) {
+        const dietaryAnswer = /\bgluten[ -]?free\b/i.test(turn)
+            ? 'Yep, gluten-free works.'
+            : 'Yep, the food side can fit your dietary preferences.';
+        acknowledgement = `${dietaryAnswer} ${acknowledgement.replace(/^Yeah,\s*/i, '')}`;
     }
     const mealPlanCopy = flowVariant === 'broad_pain'
         ? 'a meal plan fitted to your dietary preferences'
         : 'a plant-based meal plan';
+    if (flowVariant === 'broad_pain') {
+        const compactAcknowledgement = /\b(?:shifts?|roster|schedule)\b/i.test(turn)
+            ? (asksWhetherDietaryFitWorks && /\bgluten[ -]?free\b/i.test(turn)
+                ? 'Yep, gluten-free works. With a changing roster,'
+                : 'With a changing roster,')
+            : acknowledgement;
+        return [
+            `${compactAcknowledgement} Balance gives you a six-week workout program around your week, ${mealPlanCopy}, six weeks of app and community access, and one weekly training and food review and adjustment.`,
+            "It's one AUD $149 payment for the full six weeks, with no subscription or auto-renewal. Want me to open your free personalised preview before you pay?",
+        ];
+    }
     return [
         acknowledgement,
         `Balance Foundations is a six-week course with your workout program built around your week, ${mealPlanCopy}, and one weekly check-in where I review your training and food and adjust things.`,
@@ -1614,6 +1639,21 @@ function buildDeterministicPaidMetaConversationReply({
     const historyHasGoal = hasGoal || priorHistoryHasGoal;
     const historyHasBlocker = hasBlocker || paidMetaHistoryHasConcreteBlocker(history);
 
+    if (broadFlow && hasPaidMetaPreviewOrPriceDecline(message)) {
+        const joined = /\b(?:too (?:much|expensive)|can['\u2019]?t afford|cannot afford|not (?:in|within) (?:my )?budget)\b/i.test(message)
+            ? 'That’s completely fair. If $149 is too much right now, leave it there. I won’t send the link.'
+            : 'No worries. I won’t send the preview or link.';
+        return {
+            chunks: [joined],
+            joined,
+            model: 'deterministic_paid_meta_autonomy_v1',
+            replyMode: 'campaign_sales_progression',
+            maxChunks: 1,
+            error: null,
+            flowVariant,
+        };
+    }
+
     // Only exact transport handoffs are deterministic. Normal identity, goal,
     // blocker, FAQ, objection and offer wording belongs to the live writer.
     if (hasDirectPaidMetaCheckoutIntent(message) && approvedCheckoutUrl) {
@@ -1634,7 +1674,9 @@ function buildDeterministicPaidMetaConversationReply({
         && hasRecentPaidMetaSupportQuestion(history);
     const acceptedPreviewHandoff = directPreviewRequest
         || acceptedExplicitPreviewInvitation
-        || (PAID_META_POSITIVE_FIT_RE.test(message) && hasRecentCompletePaidMetaOffer(history));
+        || (!hasPaidMetaPreviewOrPriceDecline(message)
+            && PAID_META_POSITIVE_FIT_RE.test(message)
+            && hasRecentCompletePaidMetaOffer(history));
     if (acceptedPreviewHandoff
         && appPreviewUrl
         && (directPreviewRequest || acceptedExplicitPreviewInvitation || (historyHasGoal && historyHasBlocker))) {

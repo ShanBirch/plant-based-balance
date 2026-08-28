@@ -1218,6 +1218,61 @@ test('paid Meta answers a rapid gluten-free support question before progressing'
     assert.equal((repaired.joined.match(/\?/g) || []).length, 1);
 });
 
+test('broad paid Meta answers a rapid blocker plus dietary-fit question in the compact offer', () => {
+    const reply = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'My roster changes every week and I keep dropping workouts. I’m gluten-free too. Would the food side still work?',
+        history: [
+            { direction: 'out', text: "What's the main change you'd like to make over the next six weeks?" },
+            { direction: 'in', text: 'I want to get stronger and feel less puffed walking upstairs.' },
+            { direction: 'out', text: 'What is the main thing getting in the way right now?' },
+        ],
+        flowVariant: 'broad_pain',
+    });
+
+    assert.match(reply.joined, /gluten-free works/i);
+    assert.match(reply.joined, /changing roster/i);
+    assert.match(reply.joined, /six-week workout program around your week/i);
+    assert.match(reply.joined, /dietary preferences/i);
+    assert.match(reply.joined, /app and community access/i);
+    assert.match(reply.joined, /weekly training and food review/i);
+    assert.match(reply.joined, /one AUD \$149 payment/i);
+    assert.match(reply.joined, /no subscription or auto-renewal/i);
+    assert.equal(reply.chunks.length, 2);
+    assert.ok(reply.joined.split(/\s+/).length <= 80, 'qualified broad offer should stay compact');
+    assert.equal((reply.joined.match(/\?/g) || []).length, 1);
+    assert.doesNotMatch(reply.joined, /plant[ -]?based|vegan|vegetarian/i);
+    assert.equal(reply.videoAttachmentUrl, resolveBalanceFoundationsAppProofVideoUrl());
+});
+
+test('broad paid Meta treats a price objection and no-link request as a pause, not preview acceptance', () => {
+    const reply = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'That sounds good, but $149 is too much for me right now. Please don’t send a link.',
+        history: [
+            { direction: 'in', text: 'I want to get stronger.' },
+            { direction: 'in', text: 'My roster changes every week.' },
+            { direction: 'out', text: 'Balance Foundations is a six-week course with a workout program and meal plan.' },
+            { direction: 'out', text: 'It is one AUD $149 payment with no subscription. Want me to open your preview before you pay?' },
+        ],
+        qualifier: {
+            commercial_stage: 'problem_qualified',
+            facts: {
+                current_state: 'Wants to get stronger.',
+                history_blockers: 'Changing roster disrupts workouts.',
+            },
+        },
+        flowVariant: 'broad_pain',
+        appPreviewUrl: 'https://future-balance.netlify.app/p/test-preview-token',
+    });
+
+    assert.equal(reply.replyMode, 'campaign_sales_progression');
+    assert.equal(reply.appPreviewHandoff, undefined);
+    assert.match(reply.joined, /completely fair/i);
+    assert.match(reply.joined, /won’t send the link/i);
+    assert.doesNotMatch(reply.joined, /https?:\/\//i);
+    assert.equal((reply.joined.match(/\?/g) || []).length, 0);
+    assert.ok(reply.joined.split(/\s+/).length <= 25);
+});
+
 test('paid Meta answers a rapid meal-plan question without asking the known goal twice', () => {
     const history = [
         { direction: 'out', text: 'Nice. What made you decide to go plant-based?' },
@@ -2739,7 +2794,7 @@ test('verified broad route completes goal, blocker, neutral offer and signed pre
         appPreviewUrl: previewUrl,
         allowVideoAttachment: false,
     });
-    assert.match(offerReply.joined, /week changing all the time|changing shifts|schedule/i);
+    assert.match(offerReply.joined, /week changing all the time|changing shifts|changing roster|schedule/i);
     assert.match(offerReply.joined, /meal plan fitted to your dietary preferences/i);
     assert.match(offerReply.joined, /one (?:AUD )?\$149 payment for the full six weeks/i);
     assert.match(offerReply.joined, /no subscription or auto-renewal/i);
