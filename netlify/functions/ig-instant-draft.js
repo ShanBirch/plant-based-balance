@@ -660,6 +660,76 @@ function isDifferentInboundWebhookRevision({ latestRevisionId = '', requestedRev
     return !!latest && !!requested && latest !== requested;
 }
 
+function paidMetaWebhookEventTime(row = {}) {
+    const eventTimestamp = Number(row?.event_payload?.timestamp);
+    if (Number.isFinite(eventTimestamp) && eventTimestamp > 0) {
+        return new Date(eventTimestamp).toISOString();
+    }
+    return String(row?.created_at || '').trim();
+}
+
+function mergePaidMetaWebhookInboundsIntoHistory({
+    history = [],
+    webhookRows = [],
+    currentRevisionId = '',
+} = {}) {
+    const merged = Array.isArray(history) ? [...history] : [];
+    const currentRevision = normalizeGraphInboundRevisionId(currentRevisionId);
+    const existingRevisions = new Set(merged
+        .map(message => normalizeGraphInboundRevisionId(message?.manychat_message_id || message?.message_id || ''))
+        .filter(Boolean));
+    const lastOutboundMs = merged.reduce((latest, message) => {
+        if (String(message?.direction || '').toLowerCase() !== 'out') return latest;
+        const createdAtMs = Date.parse(message?.created_at || '');
+        return Number.isFinite(createdAtMs) ? Math.max(latest, createdAtMs) : latest;
+    }, -Infinity);
+
+    for (const row of Array.isArray(webhookRows) ? webhookRows : []) {
+        const revision = normalizeGraphInboundRevisionId(row?.message_id || '');
+        const text = String(row?.event_payload?.message?.text || '').replace(/\s+/g, ' ').trim();
+        const createdAt = paidMetaWebhookEventTime(row);
+        const createdAtMs = Date.parse(createdAt || '');
+        if (!revision || revision === currentRevision || existingRevisions.has(revision) || !text) continue;
+        if (Number.isFinite(lastOutboundMs) && (!Number.isFinite(createdAtMs) || createdAtMs <= lastOutboundMs)) continue;
+        merged.push({
+            id: `ig_webhook:${revision}`,
+            direction: 'in',
+            text,
+            created_at: createdAt,
+            manychat_message_id: `ig_graph:${revision}`,
+            source: 'ig_graph_webhook_audit',
+        });
+        existingRevisions.add(revision);
+    }
+
+    return merged.sort((a, b) => {
+        const aMs = Date.parse(a?.created_at || '');
+        const bMs = Date.parse(b?.created_at || '');
+        if (!Number.isFinite(aMs) && !Number.isFinite(bMs)) return 0;
+        if (!Number.isFinite(aMs)) return -1;
+        if (!Number.isFinite(bMs)) return 1;
+        return aMs - bMs;
+    });
+}
+
+async function loadPaidMetaWebhookInboundHistory({ thread, history = [], currentRevisionId = '' } = {}) {
+    const senderId = String(resolveThreadGraphRecipientId(thread) || '').trim();
+    const recipientId = String(resolveThreadGraphAccountId(thread) || '').trim();
+    if (!senderId || !recipientId) return history;
+    const lastOutboundMs = (Array.isArray(history) ? history : []).reduce((latest, message) => {
+        if (String(message?.direction || '').toLowerCase() !== 'out') return latest;
+        const createdAtMs = Date.parse(message?.created_at || '');
+        return Number.isFinite(createdAtMs) ? Math.max(latest, createdAtMs) : latest;
+    }, Date.now() - (10 * 60 * 1000));
+    const cutoffIso = new Date(lastOutboundMs - (60 * 1000)).toISOString();
+    const webhookRows = await supabaseQuery(
+        `ig_graph_webhook_events?select=message_id,created_at,event_payload&sender_id=eq.${encodeURIComponent(senderId)}`
+        + `&recipient_id=eq.${encodeURIComponent(recipientId)}&field=eq.messages&message_id=not.is.null`
+        + `&created_at=gte.${encodeURIComponent(cutoffIso)}&order=created_at.desc&limit=30`
+    );
+    return mergePaidMetaWebhookInboundsIntoHistory({ history, webhookRows, currentRevisionId });
+}
+
 async function dispatchScheduledMetaAdReplyNow({ alertId, scheduledFor, replyText }) {
     const claimedRows = await supabaseQuery(
         `coach_alerts?id=eq.${encodeURIComponent(alertId)}&status=eq.scheduled&scheduled_for=eq.${encodeURIComponent(scheduledFor)}`,
@@ -7009,6 +7079,17 @@ exports.handler = async (event) => {
         linkedUserId: thread.linked_user_id,
         customData: thread.custom_data,
     });
+    if (metaAdConversationFastLane) {
+        try {
+            history = await loadPaidMetaWebhookInboundHistory({
+                thread,
+                history,
+                currentRevisionId: manychatMessageId,
+            });
+        } catch (error) {
+            console.warn('[ig-draft] paid Meta rapid-message history recovery failed; using canonical history:', error.message);
+        }
+    }
     const metaAdOpeningTurn = metaAdFirstInbound || isInternalMetaAdConversationOpeningTurn({
         linkedUserId: thread.linked_user_id,
         customData: thread.custom_data,
@@ -9592,6 +9673,8 @@ exports._test = {
     isNewerCanonicalInboundRevision,
     normalizeGraphInboundRevisionId,
     isDifferentInboundWebhookRevision,
+    paidMetaWebhookEventTime,
+    mergePaidMetaWebhookInboundsIntoHistory,
     resolveIgFastLaneDelayMs,
     isCocosToShanSunnyVoiceTest,
     buildPersonalVoiceNoteDraftingBlock,

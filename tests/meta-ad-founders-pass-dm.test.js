@@ -49,6 +49,7 @@ const {
     isNewerCanonicalInboundRevision,
     normalizeGraphInboundRevisionId,
     isDifferentInboundWebhookRevision,
+    mergePaidMetaWebhookInboundsIntoHistory,
     shouldDispatchMetaAdReplyImmediately,
     isInternalMetaAdConversationOpeningTurn,
     buildInternalMetaAdTestResetCustomData,
@@ -1795,9 +1796,46 @@ test('rapid paid-ad coalescing cannot schedule an older draft revision', () => {
         latestRevisionId: 'message-three',
         requestedRevisionId: 'ig_graph:message-one',
     }), true);
+    const recoveredHistory = mergePaidMetaWebhookInboundsIntoHistory({
+        history: [{
+            id: 'opener',
+            direction: 'out',
+            text: 'What would you like to change?',
+            created_at: '2026-08-28T22:06:24.466Z',
+        }],
+        currentRevisionId: 'ig_graph:goal-message',
+        webhookRows: [{
+            message_id: 'blocker-message',
+            created_at: '2026-08-28T22:06:41.218Z',
+            event_payload: {
+                timestamp: Date.parse('2026-08-28T22:06:38.045Z'),
+                message: { text: 'My roster changes every week and I keep dropping workouts.' },
+            },
+        }, {
+            message_id: 'diet-message',
+            created_at: '2026-08-28T22:06:45.703Z',
+            event_payload: {
+                timestamp: Date.parse('2026-08-28T22:06:38.318Z'),
+                message: { text: 'I’m gluten-free. Does the food side still work?' },
+            },
+        }, {
+            message_id: 'goal-message',
+            created_at: '2026-08-28T22:06:49.944Z',
+            event_payload: {
+                timestamp: Date.parse('2026-08-28T22:06:40.566Z'),
+                message: { text: 'I want to feel stronger and not get puffed walking upstairs.' },
+            },
+        }],
+    });
+    assert.deepEqual(recoveredHistory.map(message => message.text), [
+        'What would you like to change?',
+        'My roster changes every week and I keep dropping workouts.',
+        'I’m gluten-free. Does the food side still work?',
+    ]);
     const source = fs.readFileSync(path.join(__dirname, '../netlify/functions/ig-instant-draft.js'), 'utf8');
     assert.match(source, /ig_messages\?select=manychat_message_id,created_at/);
     assert.match(source, /ig_graph_webhook_events\?select=message_id,created_at/);
+    assert.match(source, /loadPaidMetaWebhookInboundHistory/);
     assert.match(source, /supersededByNewerInbound:\s*true/);
     assert.match(source, /supersededByNewerWebhookInbound:\s*true/);
     assert.match(source, /draft_revision_id:\s*manychatMessageId \|\| idempotencyKey/);
