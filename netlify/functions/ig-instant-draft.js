@@ -1540,14 +1540,37 @@ function buildPaidMetaTailoredOfferChunks(blockerText = '', goalText = '', flowV
         ? 'a meal plan fitted to your dietary preferences'
         : 'a plant-based meal plan';
     if (flowVariant === 'broad_pain') {
-        const compactAcknowledgement = /\b(?:shifts?|roster|schedule)\b/i.test(turn)
-            ? (asksWhetherDietaryFitWorks && /\bgluten[ -]?free\b/i.test(turn)
-                ? 'Yep, gluten-free works. With a changing roster,'
-                : 'With a changing roster,')
-            : acknowledgement;
+        let compactAcknowledgement = 'That makes sense.';
+        if (PAID_META_BROAD_BLOCKER_RE.test(turn)) {
+            compactAcknowledgement = 'If it all feels hard at once, it needs to be one simple plan.';
+        } else if (PAID_META_FOOD_CONFUSION_RE.test(turn)) {
+            compactAcknowledgement = 'Not knowing what to eat is the part we need to simplify.';
+        } else if (/\b(?:shifts?|roster|schedule)\b/i.test(turn)) {
+            compactAcknowledgement = asksWhetherDietaryFitWorks && /\bgluten[ -]?free\b/i.test(turn)
+                ? 'Yep, gluten-free works. Changing rosters need a flexible plan.'
+                : 'Changing rosters need a flexible plan.';
+        } else if (/\b(?:food|prep|prepar|run out of time)\b/i.test(turn)) {
+            compactAcknowledgement = 'If food prep is where it falls apart, that part needs to stay simple.';
+        } else if (/\b(?:accountab|follow[ -]?through|fall off|stop|restart|consisten)\b/i.test(turn)) {
+            compactAcknowledgement = 'If follow-through is the hard part, a clear plan and a weekly check-in matter.';
+        } else if (/\b(?:overwhelm|too much information)\b/i.test(turn)) {
+            compactAcknowledgement = 'If too much information leaves you stuck, the next step needs to be obvious.';
+        } else if (/\b(?:random|workout|program|what to do next)\b/i.test(turn)) {
+            compactAcknowledgement = 'Not knowing which workout comes next is the part a clear program fixes.';
+        } else if (/\b(?:craving|weekend|chocolate|emotional(?:ly)? eat\w*|having (?:it|chocolate|snacks?) around)\b/i.test(turn)) {
+            compactAcknowledgement = 'If cravings and weekends are where it slips, the food plan needs to fit real life.';
+        }
+        if (asksForMealPlan) {
+            compactAcknowledgement = `Yeah, I do. ${compactAcknowledgement}`;
+        } else if (asksWhetherDietaryFitWorks && !/^Yep, gluten-free works\./i.test(compactAcknowledgement)) {
+            compactAcknowledgement = /\bgluten[ -]?free\b/i.test(turn)
+                ? `Yep, gluten-free works. ${compactAcknowledgement}`
+                : `Yep, the food side can fit your dietary preferences. ${compactAcknowledgement}`;
+        }
         return [
-            `${compactAcknowledgement} Balance gives you a six-week workout program around your week, ${mealPlanCopy}, six weeks of app and community access, and one weekly training and food review and adjustment.`,
-            "It's one AUD $149 payment for the full six weeks, with no subscription or auto-renewal. Want me to open your free personalised preview before you pay?",
+            `${compactAcknowledgement} Your six-week workout program fits your week, with a meal plan fitted to your dietary preferences.`,
+            'You get six weeks in the app and community, plus one weekly check-in where I review and adjust your training and food.',
+            "It's one AUD $149 payment for the full six weeks. No subscription or auto-renewal. Want me to open your free personalised preview before you pay?",
         ];
     }
     return [
@@ -1565,7 +1588,7 @@ function addPaidMetaProofVideoToOfferChunks(chunks = [], history = []) {
     const finalIndex = offerChunks.length - 1;
     offerChunks[finalIndex] = offerChunks[finalIndex].replace(
         /Want me to open your free personalised preview[^?]*\?$/i,
-        "Here's a quick video showing you how it works inside Balance. Want me to open your free personalised preview before making a payment?"
+        "Here's a quick video showing the course and what's inside Balance. Want me to open your free personalised preview before you pay?"
     );
     return {
         chunks: offerChunks,
@@ -1630,7 +1653,7 @@ function hasRecentPaidMetaProofVideo(history = []) {
     return (Array.isArray(history) ? history : [])
         .filter(item => String(item?.direction || '').toLowerCase() === 'out')
         .slice(-8)
-        .some(item => /\b(?:quick video|showing you how it works inside Balance)\b|balance-foundations-app-proof-v(?:5|6)/i
+        .some(item => /\b(?:quick video|showing you how it works inside Balance)\b|balance-foundations-(?:app-proof-v(?:5|6)|course-first-v7)/i
             .test(String(item?.text || '')));
 }
 
@@ -1818,7 +1841,7 @@ function buildDeterministicPaidMetaConversationReply({
 
     if (broadFlow && hasPaidMetaPreviewOrPriceDecline(message)) {
         const joined = /\b(?:too (?:much|expensive)|can['\u2019]?t afford|cannot afford|not (?:in|within) (?:my )?budget)\b/i.test(message)
-            ? 'That’s completely fair. If $149 is too much right now, leave it there. I won’t send the link.'
+            ? 'That’s completely fair. If $149 is too much right now, no stress. I won’t send the link.'
             : 'No worries. I won’t send the preview or link.';
         return {
             chunks: [joined],
@@ -1858,7 +1881,7 @@ function buildDeterministicPaidMetaConversationReply({
         && appPreviewUrl
         && (directPreviewRequest || acceptedExplicitPreviewInvitation || (historyHasGoal && historyHasBlocker))) {
         const mealPlanCopy = broadFlow ? 'meal plan fitted to your dietary preferences' : 'plant-based meal plan';
-        const joined = `Yep, I can set you up in the app so you can check out your workout program and ${mealPlanCopy} before paying. Here you go: ${appPreviewUrl}`;
+        const joined = `Yep, here you go. You can look through your workout program and ${mealPlanCopy} in the app before you pay: ${appPreviewUrl}`;
         return {
             chunks: [joined],
             joined,
@@ -2639,7 +2662,7 @@ function buildMetaAdFoundersPassFirstReply(currentMessage = '', { customData = {
     const accessLine = broadFlow
         ? 'six weeks of the Balance app and community.'
         : 'six weeks of the Balance app and plant-based community.';
-    const supportScope = `It's one AU$149 payment for the full six weeks. You get the six-week Foundations course, ${accessLine} It includes one weekly check-in plus workout and food review and adjustments with me, and it doesn't renew automatically.`;
+    const supportScope = `It's one AUD $149 payment for the full six weeks. You get the six-week Foundations course, ${accessLine} It includes one weekly check-in where I review your training and food and adjust what needs changing. There's no subscription or auto-renewal.`;
     const plantBasedOpeningQuestion = 'Are you currently plant-based or vegan, or are you looking to go plant-based or vegan?';
     let answer;
     let chunks;
@@ -2663,13 +2686,13 @@ function buildMetaAdFoundersPassFirstReply(currentMessage = '', { customData = {
     } else if (broadFlow && intent === 'accountability') {
         answer = `You check in inside Balance and I can see what the week actually looked like, then I give you the next bit of direction and adjust your training or food where needed. What's the main change you'd like to make over the next six weeks?`;
     } else if (broadFlow && intent === 'personalised_coaching') {
-        answer = `Yeah, I do. Balance Foundations is a six-week setup inside the app with a workout program, food support and one weekly review with me. What's the main change you'd like to make over the next six weeks?`;
+        answer = `Yeah, I do. Balance Foundations is a six-week program inside the app with a workout program, food support and one weekly check-in with me. What's the main change you'd like to make over the next six weeks?`;
     } else if (broadFlow && intent === 'curriculum') {
         answer = `Yeah. Week 1 is why change feels hard, week 2 is working with your energy, week 3 is building a rhythm that sticks, week 4 takes the fight out of food, week 5 makes progress easier to repeat, and week 6 builds your sustainable way forward. You apply it through your Weekly Goals, workout program and nutrition setup, with me reviewing your training and food each week. What's the main change you'd like to make over the next six weeks?`;
     } else if (broadFlow) {
         const directAnswer = intent === 'inclusions'
-            ? 'Yeah, Balance Foundations combines the six-week course, a workout program built around your week, nutrition support fitted to your preferences, Weekly Goals, app/community access and one weekly training and food review with me.'
-            : 'Hey, yeah of course. Balance Foundations is a six-week fitness setup inside the app, with me helping you build a plan around your real week.';
+            ? 'Yep. Inside Balance, you get the six-week course, a workout program built around your week, food support fitted to your preferences, Weekly Goals, the community, and one weekly check-in where I review your training and food.'
+            : 'Hey, Balance Foundations is a six-week program in the app. You get the course, a workout program, food support and a weekly check-in with me, all built around your week.';
         answer = `${directAnswer} What's the main change you'd like to make over the next six weeks?`;
     } else if (intent === 'fit' || intent === 'overview') {
         answer = `Hey, yeah of course. The Founders Pass is for our six-week plant-based fitness program inside Balance. ${plantBasedOpeningQuestion}`;
@@ -4629,7 +4652,7 @@ function attachPaidMetaWriterSelectedMedia(draft = {}, {
         const videoUrl = resolveBalanceFoundationsAppProofVideoUrl();
         if (!maySendDraftVideoAttachment({ videoUrl, replyText })) {
             const finalIndex = chunks.length - 1;
-            chunks[finalIndex] = `Here's a quick video showing you how it works inside Balance. ${chunks[finalIndex]}`;
+            chunks[finalIndex] = `Here's a quick video showing the course and what's inside Balance. ${chunks[finalIndex]}`;
         }
         return {
             ...draft,
@@ -4657,11 +4680,11 @@ function attachPaidMetaWriterSelectedMedia(draft = {}, {
 function ensurePaidMetaAppVideoPreviewCta(draft = {}) {
     if (!isBalanceFoundationsAppProofVideoUrl(draft?.videoAttachmentUrl)) return draft;
     const replyText = draftTextFromDraft(draft);
-    const alreadyOffersSetupBeforePayment = /\b(?:set(?:ting)?|build(?:ing)?)\b[^.!?\n]{0,80}\b(?:program|workout|meal plan|plan|preview)\b[^.!?\n]{0,100}\b(?:before (?:you )?(?:pay|decide)|before payment)\b/i.test(replyText)
+    const alreadyOffersSetupBeforePayment = /\b(?:open|show|send|set(?:ting)?|build(?:ing)?)\b[^.!?\n]{0,80}\b(?:program|workout|meal plan|plan|preview)\b[^.!?\n]{0,100}\b(?:before (?:you )?(?:pay|decide)|before payment)\b/i.test(replyText)
         && /\?/.test(replyText);
     if (alreadyOffersSetupBeforePayment) return draft;
 
-    const cta = "If this looks right for you, let me know. Want me to set up your program before payment so you can get a proper feel for what you're paying for?";
+    const cta = 'Want me to open your free personalised preview so you can look through it before you pay?';
     const chunks = (Array.isArray(draft?.chunks) ? draft.chunks : [])
         .map(value => String(value || '').trim())
         .filter(Boolean);

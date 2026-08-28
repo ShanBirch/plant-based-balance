@@ -141,6 +141,13 @@ test('time-limited Foundations proof resolves in Brisbane campaign time and expi
         resolveBalanceFoundationsAppProofVideoUrl(Date.parse('2026-08-23T14:00:00.000Z')),
         BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL
     );
+    assert.equal(
+        BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL,
+        'https://plantbased-balance.org/assets/balance-foundations-course-first-v7.mp4'
+    );
+    const courseFirstAsset = path.join(__dirname, '../assets/balance-foundations-course-first-v7.mp4');
+    assert.equal(fs.existsSync(courseFirstAsset), true);
+    assert.ok(fs.statSync(courseFirstAsset).size > 20_000_000);
 });
 
 test('explicit paid Meta video retry always carries the currently approved native video', () => {
@@ -284,7 +291,8 @@ test('Cocos paid-ad Founders Pass opener bypasses the false signup hold and mode
 
     assert.equal(draft.firstReplyIntent, 'overview');
     assert.match(draft.joined, /^Hey,/i);
-    assert.match(draft.joined, /six-week fitness setup inside the app/i);
+    assert.match(draft.joined, /six-week program in the app/i);
+    assert.doesNotMatch(draft.joined, /yeah,? of course|plant[ -]?based|vegan/i);
     assert.match(draft.joined, /main change.*next six weeks\?/i);
     assert.doesNotMatch(draft.joined, /plant[ -]?based|vegan|vegetarian/i);
     assert.doesNotMatch(draft.joined, /https?:\/\//);
@@ -1128,10 +1136,10 @@ test('paid Meta food confusion can stay with the AI writer after a non-blocking 
     assert.equal(blockerReply.chunks.length, 3);
     assert.ok(blockerReply.chunks.every(chunk => chunk.length <= 240),
         'the complete offer must fit in three native Instagram text bubbles');
-    assert.match(blockerReply.joined, /quick video showing you how it works inside Balance/i);
+    assert.match(blockerReply.joined, /quick video showing the course and what's inside Balance/i);
     assert.match(
         blockerReply.chunks.at(-1),
-        /want me to open your free personalised preview.*before making a payment\?$/i
+        /want me to open your free personalised preview.*before you pay\?$/i
     );
     assert.equal(blockerReply.videoAttachmentUrl, resolveBalanceFoundationsAppProofVideoUrl());
     assert.doesNotMatch(blockerReply.joined, /what do you usually|what usually gets in the way/i);
@@ -1171,7 +1179,7 @@ test('paid Meta treats broad overwhelm as the blocker and moves to the interacti
     });
     assert.match(reply.chunks[0], /food, workouts and consistency all feel hard at once/i);
     assert.match(reply.chunks[0], /not more pressure/i);
-    assert.match(reply.joined, /quick video showing you how it works inside Balance/i);
+    assert.match(reply.joined, /quick video showing the course and what's inside Balance/i);
     assert.match(reply.joined, /free personalised preview/i);
     assert.equal(reply.videoAttachmentUrl, resolveBalanceFoundationsAppProofVideoUrl());
 
@@ -1237,14 +1245,15 @@ test('broad paid Meta answers a rapid blocker plus dietary-fit question in the c
 
     assert.match(reply.joined, /gluten-free works/i);
     assert.match(reply.joined, /changing roster/i);
-    assert.match(reply.joined, /six-week workout program around your week/i);
+    assert.match(reply.joined, /six-week workout program fits your week/i);
     assert.match(reply.joined, /dietary preferences/i);
-    assert.match(reply.joined, /app and community access/i);
-    assert.match(reply.joined, /weekly training and food review/i);
+    assert.match(reply.joined, /six weeks in the app and community/i);
+    assert.match(reply.joined, /one weekly check-in where I review and adjust your training and food/i);
     assert.match(reply.joined, /one AUD \$149 payment/i);
     assert.match(reply.joined, /no subscription or auto-renewal/i);
-    assert.equal(reply.chunks.length, 2);
-    assert.ok(reply.joined.split(/\s+/).length <= 80, 'qualified broad offer should stay compact');
+    assert.equal(reply.chunks.length, 3);
+    assert.ok(reply.chunks.every(chunk => chunk.length <= 240));
+    assert.ok(reply.joined.split(/\s+/).length <= 85, 'qualified broad offer should stay compact');
     assert.equal((reply.joined.match(/\?/g) || []).length, 1);
     assert.doesNotMatch(reply.joined, /plant[ -]?based|vegan|vegetarian/i);
     assert.equal(reply.videoAttachmentUrl, resolveBalanceFoundationsAppProofVideoUrl());
@@ -1436,10 +1445,10 @@ test('paid Meta guided sales stages move goal to blocker to complete offer to pr
     assert.match(offerReply.joined, /weekly check-in/i);
     assert.match(offerReply.joined, /one (?:AUD )?\$149 payment/i);
     assert.match(offerReply.joined, /no subscription or auto-renewal/i);
-    assert.match(offerReply.joined, /quick video showing you how it works inside Balance/i);
+    assert.match(offerReply.joined, /quick video showing the course and what's inside Balance/i);
     assert.match(offerReply.joined, /free personalised preview/i);
     assert.equal(offerReply.videoAttachmentUrl, resolveBalanceFoundationsAppProofVideoUrl());
-    assert.match(offerReply.joined, /before making a payment/i);
+    assert.match(offerReply.joined, /before you pay/i);
     assert.match(offerReply.joined, /Want me to open your free personalised preview/i);
     assert.doesNotMatch(offerReply.joined, /https?:\/\//i);
 
@@ -1470,9 +1479,8 @@ test('paid Meta guided sales stages move goal to blocker to complete offer to pr
     });
     const sentUrl = linkReply.joined.match(/https?:\/\/\S+/)?.[0] || '';
     assert.equal(linkReply.replyMode, 'campaign_app_preview_handoff');
-    assert.match(linkReply.joined, /set you up in the app/i);
-    assert.match(linkReply.joined, /workout program and plant-based meal plan before paying/i);
-    assert.match(linkReply.joined, /Here you go:/i);
+    assert.match(linkReply.joined, /Yep, here you go/i);
+    assert.match(linkReply.joined, /workout program and plant-based meal plan in the app before you pay/i);
     assert.equal(isMetaAppPreviewUrl(sentUrl), true);
 });
 
@@ -1923,12 +1931,12 @@ test('inclusions quick reply answers the direct ask without a raw preview URL', 
     assert.equal(reply.chunks.length, 1);
     assert.equal(reply.checkoutUrl, null);
     assert.doesNotMatch(reply.joined, /balance-founders-pass-dm-preview\.mp4/);
-    assert.match(reply.joined, /Balance Foundations combines the six-week course/i);
+    assert.match(reply.joined, /Inside Balance, you get the six-week course/i);
     assert.match(reply.joined, /workout program built around your week/i);
-    assert.match(reply.joined, /nutrition support fitted to your preferences/i);
+    assert.match(reply.joined, /food support fitted to your preferences/i);
     assert.match(reply.joined, /Weekly Goals/i);
-    assert.match(reply.joined, /app\/community access/i);
-    assert.match(reply.joined, /one weekly training and food review with me/i);
+    assert.match(reply.joined, /the community/i);
+    assert.match(reply.joined, /one weekly check-in where I review your training and food/i);
     assert.match(reply.joined, /main change.*next six weeks\?/i);
     assert.doesNotMatch(reply.joined, /plant[ -]?based|vegan|vegetarian/i);
     assert.doesNotMatch(reply.joined, /https?:\/\//);
@@ -1971,7 +1979,7 @@ test('personalised coaching FAQ answers from the advertised six-week program wit
             linkedUserId: null,
         });
 
-        assert.equal(reply.joined, "Yeah, I do. Balance Foundations is a six-week setup inside the app with a workout program, food support and one weekly review with me. What's the main change you'd like to make over the next six weeks?");
+        assert.equal(reply.joined, "Yeah, I do. Balance Foundations is a six-week program inside the app with a workout program, food support and one weekly check-in with me. What's the main change you'd like to make over the next six weeks?");
         assert.doesNotMatch(reply.joined, /Starter Coaching|\$29\.99/i);
         assert.equal(reply.checkoutUrl, null);
         assert.equal(reply.videoAttachmentUrl, undefined);
@@ -2109,7 +2117,7 @@ test('AI writer attaches the approved app explainer only to a complete broad pai
         joined: "Busy weeks are the part that keeps breaking the rhythm. Balance Foundations is a six-week course with your workout program, a meal plan fitted to your dietary preferences, and a weekly review. It's one AUD $149 payment for the full six weeks, with no subscription or auto-renewal. Want me to open your personalised preview before you pay?",
     }, { allowAttachments: true, flowVariant: 'broad_pain', history: [] });
     assert.equal(completeBroadOffer.videoAttachmentUrl, BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL);
-    assert.match(completeBroadOffer.joined, /quick video showing you how it works inside Balance/i);
+    assert.match(completeBroadOffer.joined, /quick video showing the course and what's inside Balance/i);
     assert.equal(maySendDraftVideoAttachment({
         videoUrl: completeBroadOffer.videoAttachmentUrl,
         replyText: completeBroadOffer.joined,
@@ -2911,9 +2919,11 @@ test('verified broad route completes goal, blocker, neutral offer and signed pre
     assert.equal(isMetaAppPreviewUrl(previewUrl), true);
 
     const opener = buildMetaAdFoundersPassFirstReply('BALANCE', { flowVariant: 'broad_pain' });
-    assert.match(opener.joined, /six-week fitness setup/i);
+    assert.match(opener.joined, /six-week program in the app/i);
+    assert.doesNotMatch(opener.joined, /yeah,? of course|plant[ -]?based|vegan/i);
     assert.match(opener.joined, /main change.*next six weeks\?/i);
     assert.equal((opener.joined.match(/\?/g) || []).length, 1);
+    assert.ok(opener.joined.length <= 240, 'the paid-ad opener must stay in one Instagram bubble');
 
     const goal = 'I want to lose 8kg and feel fitter';
     const goalReply = buildDeterministicPaidMetaConversationReply({
@@ -3170,7 +3180,7 @@ test('broad writer contract repairs missing terms, adds the native explainer, an
     assert.match(repairedOffer.joined, /no subscription or auto-renewal/i);
     assert.match(repairedOffer.joined, /personalised preview/i);
     assert.equal(repairedOffer.videoAttachmentUrl, BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL);
-    assert.match(repairedOffer.joined, /quick video showing you how it works inside Balance/i);
+    assert.match(repairedOffer.joined, /quick video showing the course and what's inside Balance/i);
 
     const compressedCurriculum = {
         joined: 'You learn how to make change stick, work with your energy and build a sustainable routine.',
