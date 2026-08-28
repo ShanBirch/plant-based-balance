@@ -2891,6 +2891,28 @@ test('Instagram split offer bubbles still turn a short Yes into the promised app
     assert.equal(liveVideoPreviewAcceptance.appPreviewHandoff, true);
     assert.match(liveVideoPreviewAcceptance.joined, /plantbased-balance\.org\/p\/Abc_123-xyz9876543210/);
     assert.equal((liveVideoPreviewAcceptance.joined.match(/\?/g) || []).length, 0);
+
+    const exactBroadLiveAcceptance = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'Yes, open the preview please.',
+        qualifier: {
+            commercial_stage: 'problem_qualified',
+            facts: {
+                current_state: 'Wants to get stronger and feel more consistent.',
+                history_blockers: 'Changing roster makes training hard to plan.',
+            },
+        },
+        history: [
+            { direction: 'out', text: 'Yep, here is the course video again.' },
+            { direction: 'out', text: 'Want me to open your free personalised preview so you can look through it before you pay?' },
+        ],
+        flowVariant: 'broad_pain',
+        appPreviewUrl: 'https://future-balance.netlify.app/p/Abc_123-xyz9876543210',
+    });
+    assert.equal(exactBroadLiveAcceptance.replyMode, 'campaign_app_preview_handoff');
+    assert.equal(exactBroadLiveAcceptance.appPreviewHandoff, true);
+    assert.match(exactBroadLiveAcceptance.joined, /future-balance\.netlify\.app\/p\/Abc_123-xyz9876543210/);
+    assert.doesNotMatch(exactBroadLiveAcceptance.joined, /plant[ -]?based|vegan|vegetarian/i);
+    assert.equal((exactBroadLiveAcceptance.joined.match(/\?/g) || []).length, 0);
 });
 
 test('legacy plant-based requirement is answered neutrally and explicit start receives the paid route', () => {

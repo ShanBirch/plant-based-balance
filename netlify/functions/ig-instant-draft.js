@@ -1442,7 +1442,7 @@ function hasRecentPaidMetaSupportQuestion(history = []) {
         .slice(-4)
         .some(item => {
             const text = String(item?.text || '');
-            return /\b(?:would (?:having me|that kind of support)|would that help|accountability help|help you stay on track|make it easier|are you keen to (?:have|take) a look|would you like (?:me to show you|to (?:have|take)) (?:a )?(?:quick )?(?:look|preview)|do you want (?:a )?(?:free )?(?:personalised )?(?:quick )?(?:look|preview)|(?:do you )?want me to (?:show you|set up|create|put together)\b[^?\n]{0,120}\b(?:look|preview)|want me to send you (?:access|the link)|want to (?:have|take) a look|should i send (?:you )?(?:access|the link)|is that something you(?:'d| would) want)\b/i.test(text)
+            return /\b(?:would (?:having me|that kind of support)|would that help|accountability help|help you stay on track|make it easier|are you keen to (?:have|take) a look|would you like (?:me to show you|to (?:have|take)) (?:a )?(?:quick )?(?:look|preview)|do you want (?:a )?(?:free )?(?:personalised )?(?:quick )?(?:look|preview)|(?:do you )?want me to (?:show you|open|set up|create|put together)\b[^?\n]{0,120}\b(?:look|preview)|want me to send you (?:access|the link)|want to (?:have|take) a look|should i send (?:you )?(?:access|the link)|is that something you(?:'d| would) want)\b/i.test(text)
                 || (/\b(?:six|6)[- ]week\b/i.test(text)
                     && /\b(?:meal plan|workout|training program)\b/i.test(text)
                     && /\b(?:send|access|look|link)\b[^?\n]{0,100}\?/i.test(text))
@@ -1469,7 +1469,8 @@ function isExplicitPaidMetaPreviewRequest(value = '') {
     const message = String(value || '').replace(/\s+/g, ' ').trim();
     if (!message || hasPaidMetaPreviewOrPriceDecline(message)) return false;
     return /\b(?:can|could|may) i (?:just )?(?:see|view|open|try|look at) (?:it|the app|the preview|my preview|the program|the setup)\b/i.test(message)
-        || /\b(?:show|send|open|give) me (?:the |my )?(?:app )?preview\b/i.test(message)
+        || /\b(?:show|send|give) me (?:the |my )?(?:app )?preview\b/i.test(message)
+        || /\bopen (?:me )?(?:the |my )?(?:app )?preview\b/i.test(message)
         || /\bi (?:just )?want to (?:see|view|open|try|look at) (?:it|the app|the preview|the program|the setup)\b/i.test(message);
 }
 
