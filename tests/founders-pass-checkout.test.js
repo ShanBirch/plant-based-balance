@@ -54,6 +54,9 @@ test('one-time Founders Pass has a complete purchase and activation path', () =>
     assert.match(webhook, /sendCAPIEvent\('Purchase'/);
     assert.match(purchaseTracker, /sendCAPIEvent\('Purchase'/);
     assert.match(login, /claimPendingFoundersPass/);
+    assert.match(login, /The claim endpoint can safely recover[\s\S]*reconcile[\s\S]*every login/);
+    assert.match(login, /if \(!hasFoundersHandoff && pendingMetaSessionId\) return null/);
+    assert.match(login, /sessionId: hasFoundersHandoff[\s\S]*balance_founders_pass_session_id[\s\S]*: ''/);
     assert.match(login, /Set up your Balance account/);
     assert.match(login, /same email you used at checkout/i);
     assert.match(login, /OPEN MY FOUNDERS PASS/);

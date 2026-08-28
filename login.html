@@ -923,9 +923,20 @@
         }
 
         async function claimPendingFoundersPass(session) {
-            if (sessionStorage.getItem('balance_founders_pass_pending') !== 'true') return null;
             const accessToken = session?.access_token;
             if (!accessToken) return null;
+            const hasFoundersHandoff = sessionStorage.getItem('balance_founders_pass_pending') === 'true';
+            const pendingMetaSessionId = window.BalanceMetaAdTrial
+                ? sessionStorage.getItem(window.BalanceMetaAdTrial.PAYMENT_SESSION_KEY) || ''
+                : '';
+
+            // A Meta buyer may finish checkout in an in-app browser, then open
+            // the installed app on the same or a different phone. Session storage
+            // does not cross that boundary. The claim endpoint can safely recover
+            // the paid purchase by the authenticated account email, so reconcile
+            // on every login when there is no explicit Meta session for the
+            // dedicated Meta claim below to process.
+            if (!hasFoundersHandoff && pendingMetaSessionId) return null;
             try {
                 const response = await fetch('/.netlify/functions/claim-founders-pass', {
                     method: 'POST',
@@ -934,7 +945,9 @@
                         'Authorization': `Bearer ${accessToken}`
                     },
                     body: JSON.stringify({
-                        sessionId: sessionStorage.getItem('balance_founders_pass_session_id') || ''
+                        sessionId: hasFoundersHandoff
+                            ? sessionStorage.getItem('balance_founders_pass_session_id') || ''
+                            : ''
                     })
                 });
                 const result = await response.json().catch(() => ({}));
