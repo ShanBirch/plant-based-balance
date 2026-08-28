@@ -1260,6 +1260,14 @@ function isExplicitPaidMetaPreviewAcceptance(value = '') {
         || /^(?:i(?:'d| would) like|give me|send me|let me|can i|i want)\b[\s\S]{0,120}\b(?:look|access|link|check it out|see it)\b[\s\S]{0,60}$/i.test(message);
 }
 
+function isExplicitPaidMetaPreviewRequest(value = '') {
+    const message = String(value || '').replace(/\s+/g, ' ').trim();
+    if (!message || /\b(?:not now|no thanks|don['\u2019]?t|do not|not interested|can['\u2019]?t)\b/i.test(message)) return false;
+    return /\b(?:can|could|may) i (?:see|view|open|try|look at) (?:it|the app|the preview|my preview|the program|the setup)\b/i.test(message)
+        || /\b(?:show|send|open|give) me (?:the |my )?(?:app )?preview\b/i.test(message)
+        || /\bi want to (?:see|view|open|try|look at) (?:it|the app|the preview|the program|the setup)\b/i.test(message);
+}
+
 function hasRecentCompletePaidMetaOffer(history = []) {
     const recentOutbound = (Array.isArray(history) ? history : [])
         .filter(item => String(item?.direction || '').toLowerCase() === 'out')
@@ -1275,11 +1283,11 @@ function hasRecentCompletePaidMetaOffer(history = []) {
         && /\bbefore (?:(?:you )?pay|making a payment)/i.test(text);
 }
 
-function buildPaidMetaTailoredOfferText(blockerText = '', goalText = '') {
-    return buildPaidMetaTailoredOfferChunks(blockerText, goalText).join('\n\n');
+function buildPaidMetaTailoredOfferText(blockerText = '', goalText = '', flowVariant = 'plant_based_control') {
+    return buildPaidMetaTailoredOfferChunks(blockerText, goalText, flowVariant).join('\n\n');
 }
 
-function buildPaidMetaTailoredOfferChunks(blockerText = '', goalText = '') {
+function buildPaidMetaTailoredOfferChunks(blockerText = '', goalText = '', flowVariant = 'plant_based_control') {
     const turn = String(blockerText || '');
     const goal = String(goalText || '');
     const asksForMealPlan = /\bdo you (?:offer|have|provide|include) (?:a |any )?(?:plant[ -]?based )?meal plans?\b|\bis (?:a |the )?meal plan included\b/i.test(turn);
@@ -1293,7 +1301,7 @@ function buildPaidMetaTailoredOfferChunks(blockerText = '', goalText = '') {
             : /\b(?:lose|losing|weight|fat)\b/i.test(goal)
                 ? `Yeah, if you want to ${weightTarget ? `lose ${weightTarget} kilos` : 'lose weight'} but don't know what to eat, the food side needs to make meals simple instead of leaving you guessing.`
             : 'Yeah, if you don\'t know what to eat, the food side needs to make each meal simple instead of leaving you guessing.';
-    } else if (/\b(?:shift|roster|schedule)\b/i.test(turn)) {
+    } else if (/\b(?:shifts?|roster|schedule)\b/i.test(turn)) {
         acknowledgement = 'Yeah, with your week changing all the time, the plan needs to flex around your schedule.';
     } else if (/\b(?:food|prep|prepar|run out of time)\b/i.test(turn)) {
         acknowledgement = 'Yeah, if time and food prep are where it falls apart, the food side needs to stay simple on busy days.';
@@ -1310,9 +1318,12 @@ function buildPaidMetaTailoredOfferChunks(blockerText = '', goalText = '') {
         const directAnswerDetail = acknowledgement.replace(/^Yeah,\s*/i, '');
         acknowledgement = `Yeah, I do. ${directAnswerDetail.charAt(0).toUpperCase()}${directAnswerDetail.slice(1)}`;
     }
+    const mealPlanCopy = flowVariant === 'broad_pain'
+        ? 'a meal plan fitted to your dietary preferences'
+        : 'a plant-based meal plan';
     return [
         acknowledgement,
-        'Balance Foundations is a six-week course with your workout program built around your week, a plant-based meal plan, and one weekly check-in where I review your training and food and adjust things.',
+        `Balance Foundations is a six-week course with your workout program built around your week, ${mealPlanCopy}, and one weekly check-in where I review your training and food and adjust things.`,
         "It's one $149 payment for the full six weeks, with no subscription or auto-renewal. Want me to open your free personalised preview so you can see your meal plan and workout program before making a payment?",
     ];
 }
@@ -1591,14 +1602,17 @@ function buildDeterministicPaidMetaConversationReply({
             flowVariant,
         };
     }
+    const directPreviewRequest = broadFlow && isExplicitPaidMetaPreviewRequest(message);
     const acceptedExplicitPreviewInvitation = isExplicitPaidMetaPreviewAcceptance(message)
         && hasRecentPaidMetaSupportQuestion(history);
-    if ((acceptedExplicitPreviewInvitation
-            || (PAID_META_POSITIVE_FIT_RE.test(message) && hasRecentCompletePaidMetaOffer(history)))
-        && !broadFlow
+    const acceptedPreviewHandoff = directPreviewRequest
+        || acceptedExplicitPreviewInvitation
+        || (PAID_META_POSITIVE_FIT_RE.test(message) && hasRecentCompletePaidMetaOffer(history));
+    if (acceptedPreviewHandoff
         && appPreviewUrl
-        && (acceptedExplicitPreviewInvitation || (historyHasGoal && historyHasBlocker))) {
-        const joined = `Yep, I can set you up in the app so you can check out your workout program and plant-based meal plan before paying. Here you go: ${appPreviewUrl}`;
+        && (directPreviewRequest || acceptedExplicitPreviewInvitation || (historyHasGoal && historyHasBlocker))) {
+        const mealPlanCopy = broadFlow ? 'meal plan fitted to your dietary preferences' : 'plant-based meal plan';
+        const joined = `Yep, I can set you up in the app so you can check out your workout program and ${mealPlanCopy} before paying. Here you go: ${appPreviewUrl}`;
         return {
             chunks: [joined],
             joined,
@@ -1631,7 +1645,8 @@ function buildDeterministicPaidMetaConversationReply({
         && (isPaidMetaConcreteBlocker(message) || isPaidMetaBroadBlockerAnswer(message, history))) {
         const offer = addPaidMetaProofVideoToOfferChunks(buildPaidMetaTailoredOfferChunks(
             message,
-            facts.motivation || facts.current_state || paidMetaLatestFitnessGoalText(history)
+            facts.motivation || facts.current_state || paidMetaLatestFitnessGoalText(history),
+            flowVariant
         ), history);
         const chunks = offer.chunks;
         const joined = chunks.join('\n\n');
@@ -1653,7 +1668,8 @@ function buildDeterministicPaidMetaConversationReply({
         const blockerText = paidMetaLatestConcreteBlockerText(history);
         const offer = addPaidMetaProofVideoToOfferChunks(buildPaidMetaTailoredOfferChunks(
             blockerText,
-            facts.motivation || facts.current_state || paidMetaLatestFitnessGoalText(history)
+            facts.motivation || facts.current_state || paidMetaLatestFitnessGoalText(history),
+            flowVariant
         ), history);
         const chunks = offer.chunks;
         return {
@@ -2260,6 +2276,12 @@ function resolveMetaAdFlowVariant({ customData = {}, currentMessage = '', acquis
         && ['plant_based_control', 'broad_pain'].includes(internalTestVariant)) {
         return internalTestVariant;
     }
+    const storedVariant = String(
+        customData?.meta_ad_flow_variant
+        || customData?.offer_flow_variant
+        || ''
+    ).trim().toLowerCase();
+    if (['plant_based_control', 'broad_pain'].includes(storedVariant)) return storedVariant;
     const broadAdIds = new Set(String(process.env.META_BROAD_AD_IDS || '')
         .split(',')
         .map(value => value.trim())
@@ -2272,10 +2294,10 @@ function resolveMetaAdFlowVariant({ customData = {}, currentMessage = '', acquis
         return 'broad_pain';
     }
     if (/plant[ -]?based|vegan|vegetarian/.test(referralHint)) return 'plant_based_control';
-    const text = String(currentMessage || '').toLowerCase();
-    const plantBasedSignal = /plant[ -]?based|vegan|vegetarian/.test(text);
-    const broadPainSignal = /start(?:ing)? again|follow(?:ing)? through|busy|work|kids|shift|real life|routine|consisten|where do i start/.test(text);
-    return broadPainSignal && !plantBasedSignal ? 'broad_pain' : 'plant_based_control';
+    // Verified attribution is the only authority for the experiment variant.
+    // Fail closed to the control when an ad has not been mapped yet; never let
+    // a later generic message flip the route.
+    return 'plant_based_control';
 }
 
 function buildMetaAdCheckoutUrl({ customData = {}, flowVariant = '', currentMessage = '', acquisitionMode = '' } = {}) {
@@ -2382,7 +2404,34 @@ function buildMetaAdFoundersPassFirstReply(currentMessage = '', { customData = {
     const supportScope = `It's one AU$149 payment for the full six weeks. You get the six-week Foundations course, ${accessLine} It includes one weekly check-in plus workout and food review and adjustments with me, and it doesn't renew automatically.`;
     const plantBasedOpeningQuestion = 'Are you currently plant-based or vegan, or are you looking to go plant-based or vegan?';
     let answer;
-    if (intent === 'fit' || intent === 'overview') {
+    let chunks;
+    const directCheckoutIntent = hasDirectPaidMetaCheckoutIntent(currentMessage);
+    const broadGoalKnown = broadFlow && PAID_META_FITNESS_GOAL_RE.test(String(currentMessage || ''));
+    const broadBlockerKnown = broadFlow && (
+        isPaidMetaStrongBlocker(currentMessage)
+        || isPaidMetaConcreteBlocker(currentMessage)
+        || PAID_META_BROAD_BLOCKER_RE.test(String(currentMessage || ''))
+    );
+    if (broadFlow && directCheckoutIntent) {
+        answer = `Yep, you can get started here: ${checkoutUrl}`;
+    } else if (broadFlow && broadGoalKnown && broadBlockerKnown) {
+        chunks = buildPaidMetaTailoredOfferChunks(currentMessage, currentMessage, resolvedVariant);
+    } else if (broadFlow && broadGoalKnown) {
+        answer = buildPaidMetaGoalToBlockerText(currentMessage);
+    } else if (broadFlow && intent === 'plant_based_requirement') {
+        answer = `No, you do not need to be. Balance lets you record your dietary preferences so the food side can fit you. What's the main change you'd like to make over the next six weeks?`;
+    } else if (broadFlow && intent === 'price') {
+        answer = `${supportScope}\n\nWhat's the main change you'd like to make over the next six weeks?`;
+    } else if (broadFlow && intent === 'accountability') {
+        answer = `You check in inside Balance and I can see what the week actually looked like, then I give you the next bit of direction and adjust your training or food where needed. What's the main change you'd like to make over the next six weeks?`;
+    } else if (broadFlow && intent === 'personalised_coaching') {
+        answer = `Yeah, I do. Balance Foundations is a six-week setup inside the app with a workout program, food support and one weekly review with me. What's the main change you'd like to make over the next six weeks?`;
+    } else if (broadFlow) {
+        const directAnswer = intent === 'inclusions'
+            ? 'Yeah, Balance Foundations is a six-week setup inside the app, with me supporting you, plus training, food support and the community together.'
+            : 'Hey, yeah of course. Balance Foundations is a six-week fitness setup inside the app, with me helping you build a plan around your real week.';
+        answer = `${directAnswer} What's the main change you'd like to make over the next six weeks?`;
+    } else if (intent === 'fit' || intent === 'overview') {
         answer = `Hey, yeah of course. The Founders Pass is for our six-week plant-based fitness program inside Balance. ${plantBasedOpeningQuestion}`;
     } else if (intent === 'plant_based_requirement') {
         answer = `Not at all. Plenty of people start while they're just trying to eat more plant-based. What does your food look like at the moment?`;
@@ -2399,11 +2448,11 @@ function buildMetaAdFoundersPassFirstReply(currentMessage = '', { customData = {
                 ? `Yeah, Balance Foundations is a six-week curriculum inside the app, with me supporting you, plus training, food support and the community all together. What's the main thing you're trying to change with your fitness right now?`
                 : `Hey, yeah. Balance Foundations is our six-week plant-based fitness program inside the app, with me supporting you, plus training, plant-based food support and the community all together. ${plantBasedOpeningQuestion}`;
     }
-    const chunks = [answer].filter(Boolean);
+    chunks = Array.isArray(chunks) ? chunks : [answer].filter(Boolean);
     return {
         chunks,
         joined: chunks.join('\n\n'),
-        model: 'deterministic_meta_ad_founders_pass_v4',
+        model: 'deterministic_meta_ad_founders_pass_v5',
         replyMode: 'campaign_first_reply',
         maxChunks: chunks.length,
         error: null,
@@ -2415,7 +2464,7 @@ function buildMetaAdFoundersPassFirstReply(currentMessage = '', { customData = {
         mediaDecode: {},
         flowVariant: resolvedVariant,
         firstReplyIntent: intent,
-        checkoutUrl: intent === 'ready' ? checkoutUrl : null,
+        checkoutUrl: directCheckoutIntent ? checkoutUrl : null,
         timeline: '',
         conversationEpisode: null,
         currentTurnAnchorBlock: '',
@@ -4165,8 +4214,18 @@ CLIENT RELATIONSHIP MODE (HARD LANE SEPARATION):
 - A client's answer can simply be enough. Do not turn it into the next question in a ladder. This is not a ban on questions; it is a ban on lead-style progression pressure in client chats.`;
 }
 
-function buildPaidMetaConversationWriterBlock({ linkedUserId = null, acquisitionMode = '' } = {}) {
+function buildPaidMetaConversationWriterBlock({ linkedUserId = null, acquisitionMode = '', flowVariant = 'plant_based_control' } = {}) {
     if (linkedUserId || !isPaidMetaAcquisitionMode(acquisitionMode)) return '';
+    if (flowVariant === 'broad_pain') return `
+
+PAID META BROAD-PAIN SINGLE-WRITER PLAYBOOK:
+- This route came from verified broad-ad attribution. Keep it general fitness. Do not introduce plant-based, vegan or vegetarian positioning, and never ask vegan status, duration or reason.
+- Use no more than two discovery questions in the complete episode. The only discovery jobs are the desired change over the next six weeks, then the real-life blocker or support need. Skip either question when the lead already supplied that fact.
+- Every ordinary reply starts by answering or reflecting one exact detail from the newest lead turn. Keep it statement-led and use at most one decision-changing question in a turn.
+- Once goal and blocker/support need are known, stop discovery. Explain the six-week Foundations setup in neutral language: workout program around their week, meal-plan support fitted to dietary preferences, one weekly training/food review and adjustment, and six weeks of app/community access.
+- State the terms exactly when the offer is explained: one AUD $149 payment for the full six weeks, with no subscription or auto-renewal. Offer the free personalised app preview before payment.
+- When they ask to see the preview or accept it, the signed preview must be sent immediately without reconfirming or collecting contact details. A generic "I'm ready" stays on the promised preview path. Checkout is only for an explicit request to join, pay, sign up or receive the checkout link.
+- Keep replies concise, specific, warm and low-pressure. No intake bundles, option menus, brochure copy, or invented personal context.`;
     return `
 
 PAID META SINGLE-WRITER PLAYBOOK:
@@ -4203,21 +4262,36 @@ function buildPaidMetaAgentPrompt({
         .map(message => String(message?.text || message || '').trim())
         .filter(Boolean)
         .map((message, index) => `${index + 1}. ${message}`);
+    const broadFlow = flowVariant === 'broad_pain';
+    const journey = broadFlow
+        ? 'Natural journey, not a checklist: learn the change they most want over the next six weeks, then the real-life blocker or support need. Those are the only two discovery jobs. Skip either when the lead already supplied it. Once both are known, stop discovery, explain the neutral six-week setup and truthful terms, then offer the free personalised app preview before payment.'
+        : 'Natural journey, not a checklist: learn whether they are plant-based/vegan or looking to become so; connect over why and how long when natural; learn their health or fitness goal; learn what is making that goal difficult; introduce genuinely relevant proof when identity, safety and outcome fit are reliable; explain how Balance helps with their stated situation; offer a free personalised look at their workout program and plant-based meal plan inside the app before they decide or pay.';
+    const progression = broadFlow
+        ? `GUIDE THE SALE: use no more than two discovery questions across the complete episode. First ask the desired six-week change only if it is unknown. Then ask the real-life blocker only if it is unknown. Every ordinary reply should answer or reflect one exact detail from the newest lead turn and remain statement-led, with at most one decision-changing question. Once goal and blocker are known, do not ask another discovery question. Explain the program and offer the personalised preview. The preview-consent question is an offer decision, not a third discovery question.
+
+BROAD ROUTE GUARD: do not introduce plant-based, vegan or vegetarian positioning, and never ask status, duration or reason. Describe the meal plan as fitted to their dietary preferences. A generic "I'm ready" does not bypass the promised preview. Checkout is only for an explicit request to join, pay, sign up or receive the checkout link.`
+        : 'GUIDE THE SALE: every ordinary discovery reply must both respond to what they said and ask exactly one useful next question from the next adjacent part of that journey. Do not merely answer and stop. After answering a reciprocal question about Shannon, continue with the most natural unanswered question about them in the same turn. Once their plant-based reason or duration has enough context, move forward to their fitness goal instead of drilling deeper into the same reason. Once the goal is known, move to what is making it difficult. Once the difficulty is known, add useful value and move toward matched client proof or the free preview.';
+    const knownFactRule = broadFlow
+        ? 'Skip anything already answered. Never repeat or lightly reword a question Shannon already asked. Do not invent personal facts about Shannon or the lead.'
+        : 'Skip anything already answered. Never repeat or lightly reword a question Shannon already asked. Do not invent personal facts about Shannon or the lead. The only approved reciprocal fact is that Shannon has been vegan for five years. If asked why Shannon went vegan, do not guess; answer briefly that he has been vegan five years and turn the focus naturally back to their story only if useful.';
+    const linkQuestionRule = broadFlow
+        ? 'Use at most one decision-changing question in an ordinary turn. A signed preview/checkout link, opt-out, sensitive issue, handoff or natural close has no question and pauses.'
+        : 'The one-next-question rule applies unless this turn sends a signed preview/checkout link, handles an opt-out or sensitive issue, hands off, or is clearly closing the conversation.';
     return `You are Shannon's dedicated paid-Meta lead conversation agent for Balance. You are not the in-app AI coach, client-support agent, organic-follower agent, or generic lead qualifier. Those agents' rules and state do not apply here.
 
 Your job is to read the complete paid-ad conversation and write Shannon's next Instagram DM. Treat every unanswered bubble as one current turn. Answer every live direct or reciprocal question before making the next sales move. The newest substantive message controls when it changes the topic.
 
-Natural journey, not a checklist: learn whether they are plant-based/vegan or looking to become so; connect over why and how long when natural; learn their health or fitness goal; learn what is making that goal difficult; introduce genuinely relevant proof when identity, safety and outcome fit are reliable; explain how Balance helps with their stated situation; offer a free personalised look at their workout program and plant-based meal plan inside the app before they decide or pay.
+${journey}
 
-GUIDE THE SALE: every ordinary discovery reply must both respond to what they said and ask exactly one useful next question from the next adjacent part of that journey. Do not merely answer and stop. After answering a reciprocal question about Shannon, continue with the most natural unanswered question about them in the same turn. Once their plant-based reason or duration has enough context, move forward to their fitness goal instead of drilling deeper into the same reason. Once the goal is known, move to what is making it difficult. Once the difficulty is known, add useful value and move toward matched client proof or the free preview.
+${progression}
 
-Skip anything already answered. Never repeat or lightly reword a question Shannon already asked. Do not invent personal facts about Shannon or the lead. The only approved reciprocal fact is that Shannon has been vegan for five years. If asked why Shannon went vegan, do not guess; answer briefly that he has been vegan five years and turn the focus naturally back to their story only if useful.
+${knownFactRule}
 
 Client proof should normally be used once when it genuinely matches: Ally for weight loss, Gen for strength/confidence, Dani for body recomposition, Bec and Kirsty for shared accountability. Use no transformation when identity, safety or fit is uncertain. If using proof, name the approved person and say you are showing their photo. The deterministic transport may add the approved quick app video after both goal and blocker are known; do not invent URLs or repeat it.
 
 Reliable offer facts: Balance Foundations is a six-week program inside Balance with a personalised workout program, meal-plan support fitted to recorded dietary needs, and one weekly training/food review and adjustment. It is one AUD $149 payment for the full six weeks, with no subscription or auto-renewal. The personalised app preview comes before payment.
 
-Send the signed preview immediately after they accept the free personalised preview. A positive reaction such as "looks great" is not checkout intent. Send checkout only after they explicitly ask to join, pay, sign up or receive the checkout link. Hand off instead of improvising for medical/safety issues, account or payment support, existing-client app support, or a direct request for Shannon. Keep replies quick, warm, concise and human. The one-next-question rule applies unless this turn sends a signed preview/checkout link, handles an opt-out or sensitive issue, hands off, or is clearly closing the conversation. Never reveal automation or AI. No em dashes.
+Send the signed preview immediately after they ask to see it or accept the free personalised preview. A positive reaction such as "looks great" is not checkout intent. Send checkout only after they explicitly ask to join, pay, sign up or receive the checkout link. Hand off instead of improvising for medical/safety issues, account or payment support, existing-client app support, or a direct request for Shannon. Keep replies quick, warm, concise and human. ${linkQuestionRule} Never reveal automation or AI. No em dashes.
 
 Campaign variant: ${flowVariant}
 Channel: ${channelLabel}
@@ -4341,7 +4415,7 @@ function ensurePaidMetaAppVideoPreviewCta(draft = {}) {
     };
 }
 
-function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', qualifier = {}, history = [] } = {}) {
+function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', qualifier = {}, history = [], flowVariant = 'plant_based_control' } = {}) {
     const reply = draftTextFromDraft(draft);
     const turn = String(currentMessage || '').replace(/\s+/g, ' ').trim();
     if (!reply || !turn) return [];
@@ -4350,6 +4424,7 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
         return [];
     }
     const issues = [];
+    const broadFlow = flowVariant === 'broad_pain';
     const asksOfferInfo = /\b(?:how much|price|cost|renew|what(?:'s| is) included|what do i get|do i (?:actually )?get|workouts?|meal plan|check[ -]?in|details|how (?:does|do) (?:it|the program) work)\b/i.test(turn);
     const asksMealPlanQuestion = /\bdo you (?:offer|have|provide|include) (?:a |any )?(?:plant[ -]?based )?meal plans?\b|\bis (?:a |the )?meal plan included\b/i.test(turn);
     const asksGlutenFreeSupport = /\bgluten[ -]?free\b/i.test(turn)
@@ -4407,11 +4482,15 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
     }
     if (asksMealPlanQuestion
         && !/\b(?:yes|yeah|yep)[,.! ]{0,8}(?:i do|it does|there is)|\b(?:includes?|comes with|you get)\b[^.!?\n]{0,80}\bmeal plan\b/i.test(reply)) {
-        issues.push('Answer the meal-plan question directly before progressing: yes, Balance Foundations includes a plant-based meal plan.');
+        issues.push(broadFlow
+            ? 'Answer the meal-plan question directly before progressing: yes, Balance Foundations includes meal-plan support fitted to dietary preferences.'
+            : 'Answer the meal-plan question directly before progressing: yes, Balance Foundations includes a plant-based meal plan.');
     }
     if (asksGlutenFreeSupport
         && !/\b(?:yes|yeah|yep|absolutely)\b[^.!?\n]{0,100}\bgluten[ -]?free\b|\bgluten[ -]?free\b[^.!?\n]{0,100}\b(?:meal plan|meals?)\b/i.test(reply)) {
-        issues.push('Answer the gluten-free question directly before progressing: yes, Shannon can make their plant-based meal plan gluten-free.');
+        issues.push(broadFlow
+            ? 'Answer the gluten-free question directly before progressing: yes, the meal plan can be fitted to gluten-free dietary preferences.'
+            : 'Answer the gluten-free question directly before progressing: yes, Shannon can make their plant-based meal plan gluten-free.');
     }
     if (/\b(?:how much|price|cost)\b/i.test(turn)
         && !/\bone\s+(?:(?:aud|au\$)\s+)?\$149\s+payment\s+for\s+the\s+full\s+six\s+weeks\b/i.test(reply)) {
@@ -4423,6 +4502,15 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
     if (!hasDirectPaidMetaCheckoutIntent(turn)
         && /\b(?:checkout link|send you (?:the )?(?:payment|checkout) link|grab (?:the )?founders? pass|ready to (?:pay|join|sign up))\b/i.test(reply)) {
         issues.push('The reply offered checkout without explicit transactional intent. Keep the lead in the free personalised preview flow until they ask to join, pay, sign up or receive checkout.');
+    }
+    if (broadFlow && /\b(?:plant[ -]?based meal plan|plant[ -]?based fitness program|plant[ -]?based community)\b/i.test(reply)) {
+        issues.push('The broad paid-ad reply introduced plant-based offer positioning. Replace it with neutral fitness and dietary-preference language.');
+    }
+    if (broadFlow && /\b(?:are you|how long have you been|what made you (?:go|become))\b[^?\n]{0,80}\b(?:vegan|vegetarian|plant[ -]?based)\b[^?\n]*\?/i.test(reply)) {
+        issues.push('The broad paid-ad reply asked a vegan or plant-based discovery question. Remove it and use only the six-week change or real-life blocker question when still missing.');
+    }
+    if (broadFlow && (String(reply).match(/\?/g) || []).length > 1) {
+        issues.push('The broad paid-ad reply asked more than one question. Keep at most one decision-changing question in the turn.');
     }
     const normalizeQuestion = value => String(value || '')
         .toLowerCase()
@@ -4449,10 +4537,10 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
 }
 
 function isBlockingPaidMetaWriterContractIssue(issue = '') {
-    return /repeated a question|directly asked whether|answer why Shannon went vegan|meal-plan question directly|gluten-free question directly|sales suspicion|answer the sales question|answer the price exactly|do not ask for an email|offered checkout without explicit transactional intent|ignored the supplied plant-based duration/i.test(String(issue || ''));
+    return /repeated a question|directly asked whether|answer why Shannon went vegan|meal-plan question directly|gluten-free question directly|sales suspicion|answer the sales question|answer the price exactly|do not ask for an email|offered checkout without explicit transactional intent|ignored the supplied plant-based duration|broad paid-ad reply/i.test(String(issue || ''));
 }
 
-function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = '', issues = [], qualifier = {}, history = [] } = {}) {
+function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = '', issues = [], qualifier = {}, history = [], flowVariant = 'plant_based_control' } = {}) {
     const issueText = (Array.isArray(issues) ? issues : []).join(' ');
     const turn = String(currentMessage || '').replace(/\s+/g, ' ').trim();
     const fallbackFacts = qualifier?.facts && typeof qualifier.facts === 'object' ? qualifier.facts : {};
@@ -4463,7 +4551,19 @@ function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = 
             && isPaidMetaConcreteBlocker(turn));
     let joined = '';
     if (/offered checkout without explicit transactional intent/i.test(issueText)) {
-        joined = 'The next step is your free personalised preview, so you can look through your own workout program and plant-based meal plan before paying. Want me to open that for you?';
+        const mealPlanCopy = flowVariant === 'broad_pain'
+            ? 'meal plan fitted to your dietary preferences'
+            : 'plant-based meal plan';
+        joined = `The next step is your free personalised preview, so you can look through your own workout program and ${mealPlanCopy} before paying. Want me to open that for you?`;
+    } else if (/broad paid-ad reply/i.test(issueText)) {
+        const knownBlocker = isPaidMetaConcreteBlocker(turn) || paidMetaHistoryHasConcreteBlocker(history);
+        if (fallbackGoal && knownBlocker) {
+            joined = buildPaidMetaTailoredOfferText(turn || paidMetaLatestConcreteBlockerText(history), fallbackGoal, flowVariant);
+        } else if (fallbackGoal) {
+            joined = buildPaidMetaGoalToBlockerText(fallbackGoal);
+        } else {
+            joined = `Yeah, I can help you get a clear six-week starting plan around your real week. What's the main change you'd like to make over the next six weeks?`;
+        }
     } else if (/sales suspicion|answer the sales question/i.test(issueText)) {
         joined = 'Yeah, Balance is a paid program. I’m just checking whether it actually fits what you need before I offer you anything.';
     } else if (/directly asked whether/i.test(issueText)) {
@@ -4474,13 +4574,19 @@ function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = 
     } else if (/gluten-free question directly/i.test(issueText) && !repairsEarnedOffer) {
         const nextQuestion = fallbackGoal
             ? 'What usually gets in the way of making that happen consistently?'
-            : 'How long have you been plant-based, and what made you go plant-based?';
-        joined = `Yep, absolutely. I can make your plant-based meal plan gluten-free too. ${nextQuestion}`;
+            : (flowVariant === 'broad_pain'
+                ? `What's the main change you'd like to make over the next six weeks?`
+                : 'How long have you been plant-based, and what made you go plant-based?');
+        joined = flowVariant === 'broad_pain'
+            ? `Yep, absolutely. I can fit the meal plan to gluten-free dietary preferences too. ${nextQuestion}`
+            : `Yep, absolutely. I can make your plant-based meal plan gluten-free too. ${nextQuestion}`;
     } else if (/meal-plan question directly/i.test(issueText) && !repairsEarnedOffer) {
         const nextQuestion = fallbackGoal
             ? 'What usually gets in the way of making that happen consistently?'
             : "What's your main health or fitness goal at the moment?";
-        joined = `Yeah, I do. Balance Foundations includes a plant-based meal plan alongside your workout program and weekly check-in. ${nextQuestion}`;
+        joined = flowVariant === 'broad_pain'
+            ? `Yeah, I do. Balance Foundations includes meal-plan support fitted to your dietary preferences alongside your workout program and weekly check-in. ${nextQuestion}`
+            : `Yeah, I do. Balance Foundations includes a plant-based meal plan alongside your workout program and weekly check-in. ${nextQuestion}`;
     } else if (/main health or fitness goal|health\/fitness goal|ask for the result or health|ignored the supplied plant-based duration/i.test(issueText)) {
         const duration = turn.match(/\b(?:for\s+)?(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+years?\b/i)?.[1] || '';
         const frequency = turn.match(/\b(\d+|one|two|three|four|five|six|seven)\s*(?:nights?|days?|times?)\s+(?:a|per)\s+week\b/i)?.[1] || '';
@@ -4522,13 +4628,14 @@ function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = 
             joined = `Yeah, that makes sense. What's the main health or fitness goal you're working towards at the moment?`;
         }
     } else if (repairsEarnedOffer) {
-        joined = buildPaidMetaTailoredOfferText(turn, fallbackGoal);
+        joined = buildPaidMetaTailoredOfferText(turn, fallbackGoal, flowVariant);
     }
     if (!joined) return null;
     const chunks = repairsEarnedOffer
         ? buildPaidMetaTailoredOfferChunks(
             turn,
-            fallbackGoal
+            fallbackGoal,
+            flowVariant
         )
         : splitCoachDraftIntoDmBubbles([joined]).slice(0, draft.maxChunks || MAX_CHUNKS);
     return {
@@ -5469,7 +5576,7 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, c
     const acquisitionMomentumBlock = paidMetaSingleWriter ? '' : buildAcquisitionMomentumBlock({ botAccount, leadStage, linkedUserId });
     const acquisitionStyleBlock = paidMetaSingleWriter ? '' : buildAcquisitionStyleBlock({ leadStage, linkedUserId });
     const conversationLanePolicyBlock = paidMetaSingleWriter ? '' : buildConversationLanePolicyBlock({ linkedUserId });
-    const paidMetaConversationWriterBlock = buildPaidMetaConversationWriterBlock({ linkedUserId, acquisitionMode });
+    const paidMetaConversationWriterBlock = buildPaidMetaConversationWriterBlock({ linkedUserId, acquisitionMode, flowVariant: adFlowVariant });
     const acquisitionModePolicyBlock = isSalesLeadThread ? buildAcquisitionModePromptBlock(acquisitionMode) : '';
     const dmLanguageExperimentBlock = !paidMetaSingleWriter && isSalesLeadThread
         ? String(dmLanguageExperiment?.promptBlock || '')
@@ -6062,7 +6169,7 @@ Rules:
                     history,
                     flowVariant: adFlowVariant,
                     checkoutUrl,
-                    appPreviewUrl: buildMetaAppPreviewUrl(igThreadId),
+                    appPreviewUrl: buildMetaAppPreviewUrl(igThreadId, { flowVariant: adFlowVariant }),
                     personalVoiceNoteMode: false,
                     allowVideoAttachment: false,
                 });
@@ -6926,11 +7033,30 @@ exports.handler = async (event) => {
             console.warn('[ig-draft] mature-thread stage promotion failed:', e.message);
         }
     }
-    if (thread.custom_data?.acquisition_mode !== acquisitionMode) {
+    const shouldPersistAcquisitionMode = thread.custom_data?.acquisition_mode !== acquisitionMode;
+    const shouldPersistMetaVariant = !internalMetaAdConversationTestLane
+        && isPaidMetaAcquisitionMode(acquisitionMode)
+        && (thread.custom_data?.meta_ad_flow_variant !== metaAdFlowVariant
+            || thread.custom_data?.offer_flow_variant !== metaAdFlowVariant);
+    if (shouldPersistAcquisitionMode || shouldPersistMetaVariant) {
         const resolvedCustomData = {
             ...(thread.custom_data || {}),
             acquisition_mode: acquisitionMode,
-            acquisition_mode_resolved_at: new Date().toISOString(),
+            acquisition_mode_resolved_at: shouldPersistAcquisitionMode
+                ? new Date().toISOString()
+                : thread.custom_data?.acquisition_mode_resolved_at,
+            meta_ad_flow_variant: shouldPersistMetaVariant
+                ? metaAdFlowVariant
+                : thread.custom_data?.meta_ad_flow_variant,
+            offer_flow_variant: shouldPersistMetaVariant
+                ? metaAdFlowVariant
+                : thread.custom_data?.offer_flow_variant,
+            meta_ad_flow_variant_resolved_at: shouldPersistMetaVariant
+                ? new Date().toISOString()
+                : thread.custom_data?.meta_ad_flow_variant_resolved_at,
+            meta_ad_flow_variant_source: shouldPersistMetaVariant
+                ? 'verified_meta_attribution'
+                : thread.custom_data?.meta_ad_flow_variant_source,
         };
         try {
             await supabaseQuery(`ig_threads?id=eq.${thread.id}`, {
@@ -6940,7 +7066,7 @@ exports.handler = async (event) => {
             });
             thread.custom_data = resolvedCustomData;
         } catch (e) {
-            console.warn('[ig-draft] acquisition mode persist failed:', e.message);
+            console.warn('[ig-draft] acquisition mode/variant persist failed:', e.message);
         }
     }
 
@@ -7128,13 +7254,15 @@ exports.handler = async (event) => {
             history,
             flowVariant: metaAdFlowVariant,
             checkoutUrl: metaAdCheckoutUrl,
-            appPreviewUrl: buildMetaAppPreviewUrl(thread.id),
+            appPreviewUrl: buildMetaAppPreviewUrl(thread.id, { flowVariant: metaAdFlowVariant }),
             personalVoiceNoteMode: false,
             allowVideoAttachment: hasInstagramGraphRoute,
         })
         : null;
-    const earlyDeterministicProgression = ['campaign_app_preview_handoff', 'campaign_buyer_handoff']
+    const earlyDeterministicProgression = (['campaign_app_preview_handoff', 'campaign_buyer_handoff']
         .includes(String(exactPaidMetaHandoff?.replyMode || ''))
+        || (metaAdFlowVariant === 'broad_pain'
+            && String(exactPaidMetaHandoff?.replyMode || '') === 'campaign_sales_progression'))
         ? exactPaidMetaHandoff
         : null;
     const fastDeterministicProgression = shouldApplyDeterministicPaidMetaReplyOverride(earlyDeterministicProgression)
@@ -7257,7 +7385,8 @@ exports.handler = async (event) => {
     });
     let draft;
     try {
-        draft = fastDeterministicProgression || (metaAdOpeningTurn && shouldUseDeterministicMetaAdFirstReply(messageText) ? buildMetaAdFoundersPassFirstReply(messageText, {
+        draft = fastDeterministicProgression || (metaAdOpeningTurn
+            && (metaAdFlowVariant === 'broad_pain' || shouldUseDeterministicMetaAdFirstReply(messageText)) ? buildMetaAdFoundersPassFirstReply(messageText, {
             customData: thread.custom_data,
             flowVariant: metaAdFlowVariant,
             acquisitionMode,
@@ -7863,7 +7992,7 @@ exports.handler = async (event) => {
             history,
             flowVariant: metaAdFlowVariant,
             checkoutUrl: metaAdCheckoutUrl,
-            appPreviewUrl: buildMetaAppPreviewUrl(thread.id),
+            appPreviewUrl: buildMetaAppPreviewUrl(thread.id, { flowVariant: metaAdFlowVariant }),
             allowVideoAttachment: hasInstagramGraphRoute,
         });
         const mergedData = {
@@ -8209,6 +8338,7 @@ exports.handler = async (event) => {
                 currentMessage: currentInboundTurnMessage,
                 qualifier,
                 history: displayHistory,
+                flowVariant: metaAdFlowVariant,
             })
             : [];
         const approvedPaidMetaFastReview = metaAdConversationFastLane
@@ -8317,6 +8447,7 @@ exports.handler = async (event) => {
                 currentMessage: currentInboundTurnMessage,
                 qualifier,
                 history: displayHistory,
+                flowVariant: metaAdFlowVariant,
             })
             : [];
         const repairIssues = [...new Set([
@@ -8389,6 +8520,7 @@ exports.handler = async (event) => {
                             currentMessage: currentInboundTurnMessage,
                             qualifier,
                             history: displayHistory,
+                            flowVariant: metaAdFlowVariant,
                         })
                         : [];
                     const repairedReviewResult = await withTimeout(reviewDraftAndUpdateAlert({
@@ -8533,7 +8665,7 @@ exports.handler = async (event) => {
                 history: displayHistory,
                 flowVariant: metaAdFlowVariant,
                 checkoutUrl: metaAdCheckoutUrl,
-                appPreviewUrl: buildMetaAppPreviewUrl(thread.id),
+                appPreviewUrl: buildMetaAppPreviewUrl(thread.id, { flowVariant: metaAdFlowVariant }),
             });
             if (nonBlockingFallback?.joined) {
                 const releasedAt = new Date().toISOString();
@@ -8575,6 +8707,7 @@ exports.handler = async (event) => {
                 currentMessage: currentInboundTurnMessage,
                 qualifier,
                 history: displayHistory,
+                flowVariant: metaAdFlowVariant,
             })
             : [];
         let blockingPaidMetaContractIssues = unresolvedPaidMetaContractIssues.filter(isBlockingPaidMetaWriterContractIssue);
@@ -8585,6 +8718,7 @@ exports.handler = async (event) => {
                 issues: blockingPaidMetaContractIssues,
                 qualifier,
                 history: displayHistory,
+                flowVariant: metaAdFlowVariant,
             });
             if (guaranteedFallback?.joined) {
                 draft = guaranteedFallback;
@@ -8593,6 +8727,7 @@ exports.handler = async (event) => {
                     currentMessage: currentInboundTurnMessage,
                     qualifier,
                     history: displayHistory,
+                    flowVariant: metaAdFlowVariant,
                 });
                 blockingPaidMetaContractIssues = unresolvedPaidMetaContractIssues.filter(isBlockingPaidMetaWriterContractIssue);
                 if (blockingPaidMetaContractIssues.length === 0) {

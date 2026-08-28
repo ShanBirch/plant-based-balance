@@ -662,7 +662,7 @@ async function recordMetaPreviewPurchaseAndQueue({ session, stripeEvent, email, 
     const canonicalOutbound = Array.isArray(messageRows) ? messageRows.find(message =>
         String(message.direction || "").toLowerCase() === "out"
         && String(message.text || "").includes(token)
-        && /https:\/\/plantbased-balance\.org\/(?:meta-app-preview\.html|p\/)/i.test(String(message.text || ""))
+        && /https:\/\/(?:plantbased-balance\.org|future-balance\.netlify\.app)\/(?:meta-app-preview\.html|p\/)/i.test(String(message.text || ""))
     ) : null;
     if (!canonicalOutbound) return { skipped: "canonical_preview_missing" };
 

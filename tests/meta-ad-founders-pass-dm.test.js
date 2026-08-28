@@ -1693,7 +1693,7 @@ test('Meta ad card transport attachment does not poison the first reply or follo
 
 test('inclusions quick reply answers the direct ask without a raw preview URL', () => {
     const reply = buildMetaAdFoundersPassFirstReply("What's included?");
-    assert.equal(reply.model, 'deterministic_meta_ad_founders_pass_v4');
+    assert.equal(reply.model, 'deterministic_meta_ad_founders_pass_v5');
     assert.equal(reply.firstReplyIntent, 'inclusions');
     assert.equal(reply.chunks.length, 1);
     assert.equal(reply.checkoutUrl, null);
@@ -2627,6 +2627,186 @@ test('broad ad route stays broad through the informational first reply', () => {
     assert.doesNotMatch(reply.joined, /plant[ -]?based|vegan|vegetarian/i);
     assert.doesNotMatch(reply.joined, /balance-founders-pass-dm-preview\.mp4/);
     assert.doesNotMatch(reply.joined, /https?:\/\//);
+});
+
+test('verified broad route completes goal, blocker, neutral offer and signed preview before payment', () => {
+    const threadId = '11111111-2222-4333-8444-555555555555';
+    const previewUrl = buildMetaAppPreviewUrl(threadId, {
+        flowVariant: 'broad_pain',
+        nowMs: Date.parse('2026-08-28T00:00:00Z'),
+        env: { META_APP_PREVIEW_REF_SECRET: 'broad-preview-test-secret' },
+    });
+    assert.match(previewUrl, /^https:\/\/future-balance\.netlify\.app\/p\/[A-Za-z0-9_-]+$/);
+    assert.equal(isMetaAppPreviewUrl(previewUrl), true);
+
+    const opener = buildMetaAdFoundersPassFirstReply('BALANCE', { flowVariant: 'broad_pain' });
+    assert.match(opener.joined, /six-week fitness setup/i);
+    assert.match(opener.joined, /main change.*next six weeks\?/i);
+    assert.equal((opener.joined.match(/\?/g) || []).length, 1);
+
+    const goal = 'I want to lose 8kg and feel fitter';
+    const goalReply = buildDeterministicPaidMetaConversationReply({
+        currentMessage: goal,
+        qualifier: { commercial_stage: 'engaged', facts: { current_state: goal } },
+        history: [{ direction: 'out', text: opener.joined }],
+        flowVariant: 'broad_pain',
+        checkoutUrl: 'https://future-balance.netlify.app/fitness',
+        appPreviewUrl: previewUrl,
+    });
+    assert.match(goalReply.joined, /losing the weight and feeling fitter/i);
+    assert.match(goalReply.joined, /what usually gets in the way/i);
+    assert.equal((goalReply.joined.match(/\?/g) || []).length, 1);
+
+    const blocker = 'Changing shifts make it hard to stay consistent';
+    const historyThroughGoal = [
+        { direction: 'out', text: opener.joined },
+        { direction: 'in', text: goal },
+        { direction: 'out', text: goalReply.joined },
+    ];
+    const offerReply = buildDeterministicPaidMetaConversationReply({
+        currentMessage: blocker,
+        qualifier: {
+            commercial_stage: 'problem_qualified',
+            facts: { current_state: goal, history_blockers: blocker },
+        },
+        history: historyThroughGoal,
+        flowVariant: 'broad_pain',
+        checkoutUrl: 'https://future-balance.netlify.app/fitness',
+        appPreviewUrl: previewUrl,
+        allowVideoAttachment: false,
+    });
+    assert.match(offerReply.joined, /week changing all the time|changing shifts|schedule/i);
+    assert.match(offerReply.joined, /meal plan fitted to your dietary preferences/i);
+    assert.match(offerReply.joined, /one \$149 payment for the full six weeks/i);
+    assert.match(offerReply.joined, /no subscription or auto-renewal/i);
+    assert.match(offerReply.joined, /personalised preview/i);
+    assert.equal((offerReply.joined.match(/\?/g) || []).length, 1,
+        'the offer asks for preview consent, not another discovery fact');
+
+    const historyThroughOffer = [
+        ...historyThroughGoal,
+        { direction: 'in', text: blocker },
+        ...offerReply.chunks.map(text => ({ direction: 'out', text })),
+    ];
+    const previewReply = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'Yes please',
+        qualifier: {
+            commercial_stage: 'offer_ready',
+            facts: { current_state: goal, history_blockers: blocker },
+        },
+        history: historyThroughOffer,
+        flowVariant: 'broad_pain',
+        checkoutUrl: 'https://future-balance.netlify.app/fitness',
+        appPreviewUrl: previewUrl,
+    });
+    assert.equal(previewReply.replyMode, 'campaign_app_preview_handoff');
+    assert.equal(previewReply.appPreviewHandoff, true);
+    assert.match(previewReply.joined, /meal plan fitted to your dietary preferences/i);
+    assert.match(previewReply.joined, new RegExp(previewUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    assert.equal((previewReply.joined.match(/\?/g) || []).length, 0);
+
+    for (const reply of [opener, goalReply, offerReply, previewReply]) {
+        assert.doesNotMatch(reply.joined, /plant[ -]?based|vegan|vegetarian/i);
+    }
+});
+
+test('broad route skips supplied facts, sends preview on direct request, and reserves checkout for explicit joining', () => {
+    const previewUrl = 'https://future-balance.netlify.app/p/Abc_123-xyz9876543210';
+    const goalOnly = buildMetaAdFoundersPassFirstReply('BALANCE, I want to build muscle', { flowVariant: 'broad_pain' });
+    assert.match(goalOnly.joined, /building muscle and getting stronger/i);
+    assert.match(goalOnly.joined, /what usually gets in the way/i);
+    assert.doesNotMatch(goalOnly.joined, /main change.*six weeks/i);
+
+    const goalAndBlocker = buildMetaAdFoundersPassFirstReply(
+        'BALANCE, I want to build muscle but changing shifts keep ruining my routine',
+        { flowVariant: 'broad_pain' }
+    );
+    assert.match(goalAndBlocker.joined, /meal plan fitted to your dietary preferences/i);
+    assert.match(goalAndBlocker.joined, /one \$149 payment for the full six weeks/i);
+    assert.doesNotMatch(goalAndBlocker.joined, /what usually gets in the way|main change/i);
+
+    const directPreview = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'Can I see the preview?',
+        history: [],
+        qualifier: { facts: {} },
+        flowVariant: 'broad_pain',
+        checkoutUrl: 'https://future-balance.netlify.app/fitness',
+        appPreviewUrl: previewUrl,
+    });
+    assert.equal(directPreview.replyMode, 'campaign_app_preview_handoff');
+    assert.match(directPreview.joined, /future-balance\.netlify\.app\/p\//i);
+
+    const genericReady = buildMetaAdFoundersPassFirstReply("I'm ready", { flowVariant: 'broad_pain' });
+    assert.equal(genericReady.checkoutUrl, null);
+    assert.match(genericReady.joined, /main change.*next six weeks\?/i);
+    assert.doesNotMatch(genericReady.joined, /https?:\/\//i);
+
+    const explicitJoin = buildMetaAdFoundersPassFirstReply("I'm ready to join", { flowVariant: 'broad_pain' });
+    assert.equal(explicitJoin.checkoutUrl, 'https://future-balance.netlify.app/fitness');
+    assert.match(explicitJoin.joined, /get started here: https:\/\/future-balance\.netlify\.app\/fitness/i);
+});
+
+test('broad prompt and reviewer enforce neutral two-question discovery without changing plant control', () => {
+    const broadPrompt = buildPaidMetaAgentPrompt({
+        leadName: 'Lead',
+        timeline: 'Lead: BALANCE',
+        unansweredMessages: [{ text: 'BALANCE' }],
+        flowVariant: 'broad_pain',
+    });
+    assert.match(broadPrompt, /no more than two discovery questions/i);
+    assert.match(broadPrompt, /change.*next six weeks[\s\S]*real-life blocker/i);
+    assert.match(broadPrompt, /meal-plan support fitted to recorded dietary needs|meal-plan support fitted to dietary preferences/i);
+    assert.doesNotMatch(broadPrompt, /plant[ -]?based meal plan|plant[ -]?based connection|currently plant[ -]?based or vegan/i);
+
+    const issues = collectPaidMetaWriterContractIssues({
+        draft: { joined: 'Are you vegan? I can give you a plant-based meal plan. How long have you been vegan?' },
+        currentMessage: 'BALANCE',
+        qualifier: { facts: {} },
+        history: [],
+        flowVariant: 'broad_pain',
+    });
+    assert.ok(issues.some(issue => /broad paid-ad reply/i.test(issue)));
+    assert.ok(issues.some(issue => /more than one question/i.test(issue)));
+    assert.ok(issues.some(isBlockingPaidMetaWriterContractIssue));
+
+    const plantPrompt = buildPaidMetaAgentPrompt({
+        leadName: 'Lead',
+        timeline: 'Lead: What is the Founders Pass?',
+        unansweredMessages: [{ text: 'What is the Founders Pass?' }],
+        flowVariant: 'plant_based_control',
+    });
+    assert.match(plantPrompt, /plant-based\/vegan/i);
+    assert.match(plantPrompt, /why and how long/i);
+});
+
+test('stored verified Meta variant cannot be flipped by later message wording', () => {
+    assert.equal(resolveMetaAdFlowVariant({
+        customData: {
+            acquisition_mode: 'paid_meta',
+            meta_ad_flow_variant: 'broad_pain',
+            meta_ad_attribution: { source: 'meta_ads', ref: 'unknown' },
+        },
+        currentMessage: 'I have been vegan for years',
+    }), 'broad_pain');
+    assert.equal(resolveMetaAdFlowVariant({
+        customData: {
+            acquisition_mode: 'paid_meta',
+            offer_flow_variant: 'plant_based_control',
+            meta_ad_attribution: { source: 'meta_ads', ref: 'unknown' },
+        },
+        currentMessage: 'Work and kids make consistency hard',
+    }), 'plant_based_control');
+    assert.equal(resolveMetaAdFlowVariant({
+        customData: {
+            acquisition_mode: 'paid_meta',
+            meta_ad_attribution: { source: 'meta_ads', ref: 'unknown' },
+        },
+        currentMessage: 'Work and kids make consistency hard',
+    }), 'plant_based_control', 'unmapped verified attribution fails closed instead of using message text');
+    assert.equal(resolveMetaAdFlowVariant({
+        customData: { acquisition_mode: 'organic_inbound' },
+        currentMessage: 'Work and kids make consistency hard',
+    }), 'plant_based_control', 'organic routing cannot enter the broad paid experiment');
 });
 
 test('the public DM link stays clean while Meta identifiers remain thread data', () => {

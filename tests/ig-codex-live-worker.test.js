@@ -46,6 +46,16 @@ const { pathToFileURL } = require('url');
         nowMs: previewNow,
         env: { META_APP_PREVIEW_REF_SECRET: previewSecret },
     }).threadId, previewThreadId, 'the worker signs the same compact preview reference as the public preview route');
+    const broadSignedPreviewUrl = worker.buildSignedMetaAppPreviewUrl(previewThreadId, {
+        secret: previewSecret,
+        nowMs: previewNow,
+        flowVariant: 'broad_pain',
+    });
+    assert.match(broadSignedPreviewUrl, /^https:\/\/future-balance\.netlify\.app\/p\/[A-Za-z0-9_-]+$/);
+    assert.strictEqual(verifyMetaAppPreviewRef(broadSignedPreviewUrl.split('/').pop(), {
+        nowMs: previewNow,
+        env: { META_APP_PREVIEW_REF_SECRET: previewSecret },
+    }).threadId, previewThreadId, 'the broad host uses the same signed thread reference');
     assert.strictEqual(worker.buildSignedMetaAppPreviewUrl('not-a-thread', { secret: previewSecret }), '');
     assert.strictEqual(worker.shouldRetryFailedAlert(null, previewNow), true);
     assert.strictEqual(worker.shouldRetryFailedAlert({ status: 'failed', failedAt: '2026-08-20T03:59:50Z' }, previewNow, 30000), false);
@@ -324,7 +334,7 @@ const { pathToFileURL } = require('url');
     assert.match(prompt, /send that exact URL now and do not search for, regenerate, shorten, or substitute it/i);
     assert.match(prompt, /Never complete or cancel the controller action unless the required Instagram payload has been sent/i);
     assert.match(prompt, /Do not copy their wording/);
-    assert.match(prompt, /one AUD 89\.99 payment/);
+    assert.match(prompt, /one AUD 149 payment/);
     assert.doesNotMatch(prompt, /before making a payment\. Keen\?/);
     assert.match(prompt, /Do not browse, research, edit code/);
     assert.match(prompt, /plain ASCII punctuation and no emoji/);
@@ -333,6 +343,37 @@ const { pathToFileURL } = require('url');
     assert.match(prompt, /alert-1/);
     assert.match(prompt, /action-1/);
     assert.match(prompt, /claim-1/);
+
+    const broadPrompt = worker.buildLivePrompt({
+        alert: {
+            ...alert,
+            data: {
+                ...alert.data,
+                meta_ad_flow_variant: 'broad_pain',
+                offer_flow_variant: 'broad_pain',
+                meta_ad_checkout_url: 'https://future-balance.netlify.app/fitness',
+            },
+        },
+        action: {
+            id: 'action-broad',
+            action_version: 1,
+            claim_token: 'claim-broad',
+            source_message_id: 'message-broad',
+            thread_id: 'ig-thread-broad',
+        },
+        codexThreadId: 'codex-thread-broad',
+        appPreviewUrl: broadSignedPreviewUrl,
+        checkoutUrl: 'https://future-balance.netlify.app/fitness',
+        flowVariant: 'broad_pain',
+    });
+    assert.match(broadPrompt, /no more than two discovery questions/i);
+    assert.match(broadPrompt, /desired change.*next six weeks[\s\S]*real-life blocker/i);
+    assert.match(broadPrompt, /meal-plan support fitted to dietary preferences/i);
+    assert.match(broadPrompt, /one AUD 149 payment for the full six weeks/i);
+    assert.match(broadPrompt, /future-balance\.netlify\.app\/p\//i);
+    assert.match(broadPrompt, /future-balance\.netlify\.app\/fitness/i);
+    assert.match(broadPrompt, /Frozen campaign variant: broad_pain/i);
+    assert.doesNotMatch(broadPrompt, /plant[ -]?based meal plan|plant[ -]?based connection|currently plant[ -]?based or vegan/i);
 
     const installer = fs.readFileSync(path.resolve(__dirname, '../scripts/install-ig-codex-live-worker.ps1'), 'utf8');
     const workerSource = fs.readFileSync(workerPath, 'utf8');

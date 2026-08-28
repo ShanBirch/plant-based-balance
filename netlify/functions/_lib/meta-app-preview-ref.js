@@ -2,6 +2,8 @@ const crypto = require('node:crypto');
 
 const META_APP_PREVIEW_URL = 'https://plantbased-balance.org/meta-app-preview.html';
 const META_APP_PREVIEW_SHORT_URL = 'https://plantbased-balance.org/p';
+const META_APP_PREVIEW_BROAD_URL = 'https://future-balance.netlify.app/meta-app-preview.html';
+const META_APP_PREVIEW_BROAD_SHORT_URL = 'https://future-balance.netlify.app/p';
 const DEFAULT_TTL_MS = 24 * 60 * 60 * 1000;
 const COMPACT_REF_VERSION = 2;
 const COMPACT_SIGNATURE_BYTES = 12;
@@ -102,14 +104,17 @@ function verifyMetaAppPreviewRef(token, {
 
 function buildMetaAppPreviewUrl(threadId, options = {}) {
     const token = createMetaAppPreviewRef(threadId, options);
-    if (!token) return META_APP_PREVIEW_URL;
-    return `${META_APP_PREVIEW_SHORT_URL}/${encodeURIComponent(token)}`;
+    const broadFlow = String(options?.flowVariant || '').toLowerCase() === 'broad_pain';
+    const previewUrl = broadFlow ? META_APP_PREVIEW_BROAD_URL : META_APP_PREVIEW_URL;
+    const shortUrl = broadFlow ? META_APP_PREVIEW_BROAD_SHORT_URL : META_APP_PREVIEW_SHORT_URL;
+    if (!token) return previewUrl;
+    return `${shortUrl}/${encodeURIComponent(token)}`;
 }
 
 function isMetaAppPreviewUrl(value = '') {
     try {
         const url = new URL(String(value || ''));
-        return url.origin === 'https://plantbased-balance.org'
+        return ['https://plantbased-balance.org', 'https://future-balance.netlify.app'].includes(url.origin)
             && (url.pathname === '/meta-app-preview.html'
                 || /^\/p\/[A-Za-z0-9_-]{20,100}\/?$/.test(url.pathname));
     } catch (_) {
@@ -120,6 +125,8 @@ function isMetaAppPreviewUrl(value = '') {
 module.exports = {
     META_APP_PREVIEW_URL,
     META_APP_PREVIEW_SHORT_URL,
+    META_APP_PREVIEW_BROAD_URL,
+    META_APP_PREVIEW_BROAD_SHORT_URL,
     DEFAULT_TTL_MS,
     signingSecret,
     createMetaAppPreviewRef,
