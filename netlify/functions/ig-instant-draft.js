@@ -650,6 +650,16 @@ function isNewerCanonicalInboundRevision({
         && latestCreatedAtMs > requestedCreatedAtMs;
 }
 
+function normalizeGraphInboundRevisionId(value = '') {
+    return String(value || '').trim().replace(/^ig_graph:/, '');
+}
+
+function isDifferentInboundWebhookRevision({ latestRevisionId = '', requestedRevisionId = '' } = {}) {
+    const latest = normalizeGraphInboundRevisionId(latestRevisionId);
+    const requested = normalizeGraphInboundRevisionId(requestedRevisionId);
+    return !!latest && !!requested && latest !== requested;
+}
+
 async function dispatchScheduledMetaAdReplyNow({ alertId, scheduledFor, replyText }) {
     const claimedRows = await supabaseQuery(
         `coach_alerts?id=eq.${encodeURIComponent(alertId)}&status=eq.scheduled&scheduled_for=eq.${encodeURIComponent(scheduledFor)}`,
@@ -725,6 +735,31 @@ async function scheduleIgAutoReplyDirect({ alertId, alertData, replyText, delayM
         || requestedInboundBatch[requestedInboundBatch.length - 1]
         || null;
     const requestedCreatedAt = requestedInbound?.created_at || '';
+    const graphSenderId = String(alertData?.ig_graph_recipient_id || '').trim();
+    const graphRecipientId = String(alertData?.ig_graph_account_id || '').trim();
+    if (graphSenderId && graphRecipientId && requestedRevisionId) {
+        try {
+            const webhookRows = await supabaseQuery(
+                `ig_graph_webhook_events?select=message_id,created_at&sender_id=eq.${encodeURIComponent(graphSenderId)}`
+                + `&recipient_id=eq.${encodeURIComponent(graphRecipientId)}&field=eq.messages&message_id=not.is.null&order=created_at.desc&limit=1`
+            );
+            if (isDifferentInboundWebhookRevision({
+                latestRevisionId: webhookRows?.[0]?.message_id,
+                requestedRevisionId,
+            })) {
+                return {
+                    scheduledFor: null,
+                    data: alertData || {},
+                    alreadyActioned: true,
+                    supersededDraftRevision: true,
+                    supersededByNewerWebhookInbound: true,
+                    timing: normalizedTiming,
+                };
+            }
+        } catch (error) {
+            console.warn('[ig-draft] latest inbound webhook revision check failed; using canonical fallback:', error.message);
+        }
+    }
     if (threadId && requestedRevisionId) {
         const latestInboundRows = await supabaseQuery(
             `ig_messages?select=manychat_message_id,created_at&thread_id=eq.${encodeURIComponent(threadId)}&direction=eq.in&order=created_at.desc,id.desc&limit=1`
@@ -8457,7 +8492,7 @@ exports.handler = async (event) => {
         currentAlertData = mergedData;
         const coalescedSuggestion = draft.joined || null;
         try {
-            await supabaseQuery(`coach_alerts?id=eq.${existingPending.id}`, {
+            await supabaseQuery(`coach_alerts?id=eq.${existingPending.id}&status=eq.pending`, {
                 method: 'PATCH',
                 body: {
                     client_id: thread.linked_user_id || existingPending.client_id || null,
@@ -9555,6 +9590,8 @@ exports._test = {
     buildPendingAutoSchedulePath,
     isSupersededAutoScheduleRevision,
     isNewerCanonicalInboundRevision,
+    normalizeGraphInboundRevisionId,
+    isDifferentInboundWebhookRevision,
     resolveIgFastLaneDelayMs,
     isCocosToShanSunnyVoiceTest,
     buildPersonalVoiceNoteDraftingBlock,

@@ -47,6 +47,8 @@ const {
     buildPendingAutoSchedulePath,
     isSupersededAutoScheduleRevision,
     isNewerCanonicalInboundRevision,
+    normalizeGraphInboundRevisionId,
+    isDifferentInboundWebhookRevision,
     shouldDispatchMetaAdReplyImmediately,
     isInternalMetaAdConversationOpeningTurn,
     buildInternalMetaAdTestResetCustomData,
@@ -1784,10 +1786,22 @@ test('rapid paid-ad coalescing cannot schedule an older draft revision', () => {
         requestedRevisionId: 'new-webhook-inbound',
         requestedCreatedAt: '',
     }), false);
+    assert.equal(normalizeGraphInboundRevisionId('ig_graph:message-three'), 'message-three');
+    assert.equal(isDifferentInboundWebhookRevision({
+        latestRevisionId: 'message-three',
+        requestedRevisionId: 'ig_graph:message-three',
+    }), false);
+    assert.equal(isDifferentInboundWebhookRevision({
+        latestRevisionId: 'message-three',
+        requestedRevisionId: 'ig_graph:message-one',
+    }), true);
     const source = fs.readFileSync(path.join(__dirname, '../netlify/functions/ig-instant-draft.js'), 'utf8');
     assert.match(source, /ig_messages\?select=manychat_message_id,created_at/);
+    assert.match(source, /ig_graph_webhook_events\?select=message_id,created_at/);
     assert.match(source, /supersededByNewerInbound:\s*true/);
+    assert.match(source, /supersededByNewerWebhookInbound:\s*true/);
     assert.match(source, /draft_revision_id:\s*manychatMessageId \|\| idempotencyKey/);
+    assert.match(source, /coach_alerts\?id=eq\.\$\{existingPending\.id\}&status=eq\.pending/);
 });
 
 test('deterministic Meta review bypass remains closed for real review risks', () => {
