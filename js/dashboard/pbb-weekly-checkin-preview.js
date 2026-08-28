@@ -70,9 +70,13 @@
     source: 'default',
     hasLiveData: false,
     reviewRewardClaimed: false,
+    programStartKnown: false,
+    programStartDate: null,
     scheduleLoaded: false,
     schedule: { enabled: false, additional_days: [] }
   };
+
+  var FIRST_PROGRAM_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
   function readPreviewFlagFromQuery(){
     try {
@@ -159,8 +163,32 @@
     } catch (_) {}
   }
 
+  function syncProgramStartDate(profile){
+    var source = arguments.length ? profile : window.userProfile;
+    if (!source || !Object.prototype.hasOwnProperty.call(source, 'program_start_date')) return;
+    state.programStartKnown = true;
+    state.programStartDate = source.program_start_date || null;
+  }
+
+  function hasCompletedFirstProgramWeek(){
+    if (!state.programStartKnown) syncProgramStartDate();
+    var start = new Date(state.programStartDate || '');
+    return Number.isFinite(start.getTime()) && Date.now() >= start.getTime() + FIRST_PROGRAM_WEEK_MS;
+  }
+
+  function isGuidedTourActive(){
+    var overlay = document.getElementById('guided-tour-overlay');
+    return !!(overlay && overlay.classList.contains('active'));
+  }
+
   function isReviewEnabled(){
-    return isExplicitPreviewEnabled() || (isReviewWindow() && !!getReviewUserId() && !hasCompletedReviewAction());
+    return isExplicitPreviewEnabled() || (
+      !isGuidedTourActive()
+      && hasCompletedFirstProgramWeek()
+      && isReviewWindow()
+      && !!getReviewUserId()
+      && !hasCompletedReviewAction()
+    );
   }
 
   function cardPillLabel(){
@@ -907,6 +935,7 @@
     ]);
 
     var profile = payload[0];
+    syncProgramStartDate(profile);
     var facts = payload[1];
     var dailyNutrition = payload[2] || [];
     var workouts = payload[3] || [];
@@ -1719,8 +1748,16 @@
     renderCard();
   }
 
+  function observeGuidedTourVisibility(){
+    var overlay = document.getElementById('guided-tour-overlay');
+    if (!overlay || typeof MutationObserver !== 'function') return;
+    var observer = new MutationObserver(function(){ renderCard(); });
+    observer.observe(overlay, { attributes: true, attributeFilter: ['class'] });
+  }
+
   function boot(){
     readPreviewFlagFromQuery();
+    syncProgramStartDate();
     if (window.PBB_WEEKLY_CHECKIN_PREVIEW_DATA) {
       state.data = normalizePreviewData(window.PBB_WEEKLY_CHECKIN_PREVIEW_DATA);
       state.source = 'preview';
@@ -1731,6 +1768,7 @@
       state.hasLiveData = false;
     }
     renderCard();
+    observeGuidedTourVisibility();
     maybeLoadSchedule();
     maybeLoadLiveData();
   }
@@ -1750,6 +1788,7 @@
     maybeLoadLiveData();
   });
   window.addEventListener('pbbCurrentUserReady', function(){
+    syncProgramStartDate();
     renderCard();
     maybeLoadLiveData();
   });

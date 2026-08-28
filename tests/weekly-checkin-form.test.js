@@ -39,6 +39,17 @@ test('weekly client check-in is available Friday through Sunday', () => {
   assert.match(frontend, /Friday to Sunday/);
 });
 
+test('weekly check-in stays hidden until the first program week is complete', () => {
+  assert.match(frontend, /FIRST_PROGRAM_WEEK_MS = 7 \* 24 \* 60 \* 60 \* 1000/);
+  assert.match(frontend, /function hasCompletedFirstProgramWeek\(\)/);
+  assert.match(frontend, /Date\.now\(\) >= start\.getTime\(\) \+ FIRST_PROGRAM_WEEK_MS/);
+  assert.match(frontend, /programStartKnown: false/);
+  assert.match(frontend, /&& hasCompletedFirstProgramWeek\(\)/);
+  assert.match(frontend, /function isGuidedTourActive\(\)/);
+  assert.match(frontend, /!isGuidedTourActive\(\)/);
+  assert.match(frontend, /syncProgramStartDate\(profile\)/);
+});
+
 test('an assigned Wednesday uses the same in-app form as a separate occurrence', () => {
   assert.match(frontend, /midweek_wednesday/);
   assert.match(frontend, /Wednesday accountability check-in/);

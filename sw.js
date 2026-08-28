@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v373-start-clean-tour'; // v373: clear remembered setup actions when a fresh onboarding run begins
+const CACHE_NAME = 'pbb-app-v374-first-week-checkin-gate'; // v374: keep weekly check-ins hidden until the first program week is complete
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
