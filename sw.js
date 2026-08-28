@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v384-single-guided-action'; // v384: each guided Home task opens its destination exactly once
+const CACHE_NAME = 'pbb-app-v385-clear-tappable-prompts'; // v385: keep every highlighted Home task clear of the guide bubble
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

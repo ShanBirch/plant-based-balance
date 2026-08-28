@@ -14776,8 +14776,19 @@ async function showStep(i, options){
       resolved = { target: target, usedFallback: false };
     }
     if (target && typeof target.scrollIntoView === 'function') {
-      try { target.scrollIntoView({ block:'center', behavior:'auto' }); } catch(e){}
+      const isTapPromptTarget = !!(isPromptBeforeAction && step.promptRequiresTargetClick);
+      try { target.scrollIntoView({ block:isTapPromptTarget ? 'end' : 'center', behavior:'auto' }); } catch(e){}
       await new Promise(function(r){ setTimeout(r, 120); });
+      if (isTapPromptTarget) {
+        try {
+          const targetRect = target.getBoundingClientRect();
+          const targetBottomLimit = Math.max(220, (window.innerHeight || 640) - 118);
+          if (targetRect.bottom > targetBottomLimit) {
+            window.scrollBy({ top: targetRect.bottom - targetBottomLimit, behavior:'auto' });
+            await new Promise(function(r){ setTimeout(r, 80); });
+          }
+        } catch(e) {}
+      }
     }
 
     document.getElementById('tour-counter').textContent = 'Step ' + (i+1) + ' / ' + activeSteps.length;
