@@ -14671,6 +14671,18 @@ if(!window._pbbIsIOSSafari) {
 
     const bubbleH = bubble.offsetHeight || 180;
     const safeTop = 40;
+    if (step && step.promptRequiresTargetClick) {
+      // Checklist prompts use opposite halves of the viewport: if the task is
+      // low, keep the guide at the top; if the task is high, keep the guide at
+      // the bottom. This remains clear even when Home cards re-render and move.
+      const tapBubbleTop = r.top >= safeTop + bubbleH + 24
+        ? safeTop
+        : Math.max(safeTop, vh - bubbleH - bottomReserve);
+      bubble.style.top = tapBubbleTop + 'px';
+      const tapBubbleW = bubble.offsetWidth || 320;
+      bubble.style.left = Math.max(8, (vw - tapBubbleW) / 2) + 'px';
+      return;
+    }
     if (step && step.edgePrompt) {
       const bubbleW = bubble.offsetWidth || 238;
       if (vw >= 600) {
@@ -14824,6 +14836,14 @@ async function showStep(i, options){
       if (renderToken !== tourRenderToken) return;
       positionBubbleAndSpotlight(resolveStepTarget(displayStep).target, displayStep);
     }, 520);
+    setTimeout(function(){
+      if (renderToken !== tourRenderToken) return;
+      positionBubbleAndSpotlight(resolveStepTarget(displayStep).target, displayStep);
+    }, 1100);
+    setTimeout(function(){
+      if (renderToken !== tourRenderToken) return;
+      positionBubbleAndSpotlight(resolveStepTarget(displayStep).target, displayStep);
+    }, 1800);
 
     const checkpoint = step.xpReward
       || step.walkthroughReward

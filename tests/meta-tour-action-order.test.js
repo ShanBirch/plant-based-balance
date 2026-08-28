@@ -23,6 +23,7 @@ test('paid tour explains guided actions before performing them', () => {
   assert.match(dashboard, /event\.preventDefault\(\);\s*event\.stopImmediatePropagation\(\);\s*beginPromptedAction\(false\)/);
   assert.match(dashboard, /target\.scrollIntoView\(\{ block:isTapPromptTarget \? 'end' : 'center', behavior:'auto' \}\)/);
   assert.match(dashboard, /targetBottomLimit = Math\.max\(220, \(window\.innerHeight \|\| 640\) - 118\)/);
+  assert.match(dashboard, /if \(step && step\.promptRequiresTargetClick\)[\s\S]*const tapBubbleTop = r\.top >= safeTop \+ bubbleH \+ 24/);
   assert.match(dashboard, /promptRequiresTargetClick:true/);
 });
 
@@ -30,5 +31,5 @@ test('opened interactive screens keep their guide and gates', () => {
   assert.match(dashboard, /showStep\(idx, \{ afterPromptedAction:true \}\)/);
   assert.match(dashboard, /if \(!options\.afterPromptedAction\) \{\s*resetTourTemporaryTargets\(\)/);
   assert.match(dashboard, /completedPromptedActions\.clear\(\)/);
-  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v385-clear-tappable-prompts'/);
+  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v386-opposite-side-prompts'/);
 });
