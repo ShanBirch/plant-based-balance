@@ -50,7 +50,6 @@ test('the first course guide is compact and the lesson introduces both researche
 
 test('the paid preview tour keeps the promised app order before payment', () => {
   const titles = [
-    'Start here each day',
     'Check your workout week',
     'Open your first workout',
     'Follow the exercise card',
@@ -63,13 +62,14 @@ test('the paid preview tour keeps the promised app order before payment', () => 
     'Pick your Weekly Goals',
     'Read, then take the quiz'
   ];
-  let cursor = dashboard.indexOf("title:'Start here each day'");
+  let cursor = dashboard.indexOf("title:'Check your workout week'");
   assert.ok(cursor >= 0);
   titles.slice(1).forEach(title => {
     const next = dashboard.indexOf(`title:'${title}'`, cursor + 1);
     assert.ok(next > cursor, `${title} should follow the previous paid-preview step`);
     cursor = next;
   });
+  assert.doesNotMatch(dashboard, /title:'Start here each day'/);
   assert.match(dashboard, /title:'Read, then take the quiz'[^\n]*metaPreviewSignoff:true/);
 });
 

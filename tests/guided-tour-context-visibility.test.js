@@ -26,7 +26,7 @@ test('walkthrough keeps surrounding page context readable', () => {
   assert.match(premiumOverlays, /#guided-tour-overlay\.tour-page-view #guided-tour-spotlight[\s\S]*?rgba\(26, 24, 20, 0\.08\)/);
   assert.doesNotMatch(premiumOverlays, /#guided-tour-spotlight[\s\S]*?rgba\(29, 15, 50, 0\.78\)/);
   assert.match(dashboard, /pbb-premium-overlays\.css\?v=97-foundations-actions/);
-  assert.match(serviceWorker, /pbb-app-v366-tour-welcome-layout/);
+  assert.match(serviceWorker, /pbb-app-v368-smooth-tour-handoffs/);
 });
 
 test('page-level stops opt into the softer context view', () => {
@@ -61,10 +61,12 @@ test('Meta preview opens the next strength workout and waits for real proof medi
   assert.match(source, /title:'Open your first workout'/);
   assert.match(source, /title:'Follow the exercise card'/);
   assert.match(source, /data-thumbnail-state="ready"/);
-  assert.ok(
-    (source.match(/waitForMetaPreviewWorkoutProof\(\{ requireThumbnail:true, timeoutMs:15000 \}\)/g) || []).length >= 2,
-    'both workout proof stops should wait for the real thumbnail'
-  );
+  assert.match(source, /title:'Open your first workout'[^\n]*advanceAfterAction:true[^\n]*await openMetaPreviewStrengthWorkout\(\)/);
+  assert.match(source, /title:'Follow the exercise card'[^\n]*waitForMetaPreviewWorkoutProof\(\{ requireThumbnail:true, timeoutMs:8000 \}\)/);
+  assert.doesNotMatch(source, /title:'Follow the exercise card'[^\n]*openMetaPreviewStrengthWorkout\(\)/);
+  assert.match(source, /tour-transitioning #guided-tour-bubble/);
+  assert.match(source, /overlay\.classList\.add\('tour-transitioning'\)/);
+  assert.match(source, /overlay\.classList\.remove\('tour-transitioning'\)/);
 });
 
 test('Meta preview waits for the rendered meal photo and includes the guided community stops', () => {
