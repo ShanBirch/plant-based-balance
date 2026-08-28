@@ -4554,6 +4554,16 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
         || paidMetaHistoryHasConcreteBlocker(history)
         || qualifierHasKnownMetaAdBlocker(qualifier)
     );
+    const broadGoalNeedsBlockerQuestion = broadFlow
+        && PAID_META_FITNESS_GOAL_RE.test(turn)
+        && !knownBroadBlocker
+        && !asksForCurriculumOutline
+        && !asksOfferInfo
+        && !isExplicitPaidMetaPreviewRequest(turn)
+        && !hasDirectPaidMetaCheckoutIntent(turn);
+    if (broadGoalNeedsBlockerQuestion && !paidMetaOutboundAskedForBlocker(reply)) {
+        issues.push('The lead answered the goal question, but the reply stopped after acknowledging it. Ask the one real-life blocker question so the conversation can progress.');
+    }
     const earnedBroadOfferNow = knownBroadGoal
         && knownBroadBlocker
         && !asksForCurriculumOutline
@@ -4588,7 +4598,7 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
 }
 
 function isBlockingPaidMetaWriterContractIssue(issue = '') {
-    return /repeated a question|directly asked whether|answer why Shannon went vegan|meal-plan question directly|gluten-free question directly|sales suspicion|answer the sales question|answer the price exactly|do not ask for an email|offered checkout without explicit transactional intent|ignored the supplied plant-based duration|broad paid-ad reply|full six-week course outline|earned paid-Meta offer is missing/i.test(String(issue || ''));
+    return /repeated a question|directly asked whether|answer why Shannon went vegan|meal-plan question directly|gluten-free question directly|sales suspicion|answer the sales question|answer the price exactly|do not ask for an email|offered checkout without explicit transactional intent|ignored the supplied plant-based duration|broad paid-ad reply|answered the goal question|full six-week course outline|earned paid-Meta offer is missing/i.test(String(issue || ''));
 }
 
 function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = '', issues = [], qualifier = {}, history = [], flowVariant = 'plant_based_control' } = {}) {

@@ -2859,6 +2859,34 @@ test('broad prompt knows the verified curriculum and keeps it selective', () => 
 });
 
 test('broad writer contract repairs missing terms, adds the native explainer, and gives the full curriculum on request', () => {
+    const acknowledgementOnly = {
+        chunks: ['That makes sense, 8kg down and feeling fitter is a clear target.'],
+        joined: 'That makes sense, 8kg down and feeling fitter is a clear target.',
+        model: 'openai-gpt-5.4-mini-paid-meta+cocos-repair',
+        replyMode: 'standard',
+        maxChunks: 3,
+    };
+    const missingBlockerIssues = collectPaidMetaWriterContractIssues({
+        draft: acknowledgementOnly,
+        currentMessage: 'I want to lose around 8kg and feel fitter.',
+        qualifier: { facts: {} },
+        history: [{ direction: 'out', text: "What's the main change you'd like to make over the next six weeks?" }],
+        flowVariant: 'broad_pain',
+    });
+    assert.ok(missingBlockerIssues.some(issue => /answered the goal question/i.test(issue)));
+    assert.ok(missingBlockerIssues.some(isBlockingPaidMetaWriterContractIssue));
+    const repairedGoalReply = buildPaidMetaGuaranteedContractFallback({
+        draft: acknowledgementOnly,
+        currentMessage: 'I want to lose around 8kg and feel fitter.',
+        issues: missingBlockerIssues,
+        qualifier: { facts: {} },
+        history: [{ direction: 'out', text: "What's the main change you'd like to make over the next six weeks?" }],
+        flowVariant: 'broad_pain',
+    });
+    assert.match(repairedGoalReply.joined, /losing the weight and feeling fitter/i);
+    assert.match(repairedGoalReply.joined, /what usually gets in the way/i);
+    assert.equal((repairedGoalReply.joined.match(/\?/g) || []).length, 1);
+
     const goalHistory = [
         { direction: 'in', text: 'I want to lose around 8kg and feel fitter' },
         { direction: 'out', text: 'What usually gets in the way of making that happen consistently?' },
