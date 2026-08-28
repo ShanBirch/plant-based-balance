@@ -1950,14 +1950,14 @@ if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-progressphoto.js?v=10"><\/script>');
 document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=34-guided-goals"><\/script>');
     document.write('<script src="js/dashboard/pbb-social-journey.js?v=37-course-action-evidence"><\/script>');
-    document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=30-home-guided-tour"><\/script>');
+    document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=31-checklist-guided-tour"><\/script>');
     document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=27-first-week-gate"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
     window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=10');
 window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=34-guided-goals');
     window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=37-course-action-evidence');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=30-home-guided-tour');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=31-checklist-guided-tour');
     window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=27-first-week-gate');
 }
 </script>
@@ -13805,6 +13805,13 @@ if(!window._pbbIsIOSSafari) {
     opacity: 0;
     transition: opacity .16s ease;
   }
+  #guided-tour-overlay.tour-tap-target #guided-tour-bubble .tour-next { display: none; }
+  #guided-tour-overlay.tour-feature-view #guided-tour-spotlight { display: none; }
+  #guided-tour-overlay.tour-feature-view #guided-tour-bubble {
+    max-width: 390px;
+    border-radius: 18px;
+    box-shadow: 0 18px 44px rgba(35,27,14,.2);
+  }
   #guided-tour-bubble .tour-counter { font-size: 0.72rem; color: #4b5563; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; font-weight: 800; }
   #guided-tour-bubble .tour-xp-note { display: inline-flex; align-items: center; gap: 6px; background: rgba(245,158,11,0.12); color: #92400e; border: 1px solid rgba(245,158,11,0.18); border-radius: 999px; padding: 6px 10px; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 10px; }
   #guided-tour-bubble .tour-title { font-size: 1.08rem; font-weight: 800; margin: 0 0 6px; color: #111827; }
@@ -13880,7 +13887,7 @@ if(!window._pbbIsIOSSafari) {
       <h2 id="meta-tour-welcome-title">Your first week is ready</h2>
       <p id="meta-tour-welcome-intro" class="meta-tour-welcome-intro">Your answers are in. We will guide you through the plan Balance has built for you, one clear step at a time.</p>
       <ul class="meta-tour-welcome-list">
-        <li><span><strong>Your plan:</strong> meals, shopping list and every workout.</span></li>
+        <li><span><strong>Your plan:</strong> meal plan, shopping list, nutrition tracker and every workout.</span></li>
         <li><span><strong>Your support:</strong> Shannon’s message and the Balance community.</span></li>
         <li><span><strong>Your week:</strong> choose the goals you want Shannon to review.</span></li>
         <li><span><strong>Your course:</strong> finish with your first Foundations lesson.</span></li>
@@ -13995,6 +14002,43 @@ if(!window._pbbIsIOSSafari) {
     return null;
   }
 
+  async function openMetaPreviewMealPlanSurface(){
+    try {
+      if (typeof window.ensureMetaPreviewMealPlan === 'function') {
+        await window.ensureMetaPreviewMealPlan();
+      }
+      if (typeof switchWeek === 'function') {
+        switchWeek('meal-plan-store', document.getElementById('browse-plans-pill'));
+      }
+      if (typeof window.selectAiPlanFirstDay === 'function') window.selectAiPlanFirstDay();
+      var photo = await waitForMetaPreviewMealPhoto(30000);
+      if (!photo && typeof loadExistingAiMealPlan === 'function') {
+        await loadExistingAiMealPlan();
+        if (typeof window.selectAiPlanFirstDay === 'function') window.selectAiPlanFirstDay();
+        photo = await waitForMetaPreviewMealPhoto(12000);
+      }
+      return !!photo;
+    } catch(e) {
+      console.warn('[tour] prepared meal plan did not open', e);
+      return false;
+    }
+  }
+
+  async function openMetaPreviewShoppingListSurface(){
+    var planReady = await openMetaPreviewMealPlanSurface();
+    if (!planReady) return false;
+    try {
+      if (typeof openAiMealPlanShoppingList === 'function') {
+        await openAiMealPlanShoppingList(document.getElementById('meal-plan-shopping-pill'));
+      }
+      var list = document.getElementById('ai-plan-shopping-list');
+      return !!(list && String(list.textContent || '').trim());
+    } catch(e) {
+      console.warn('[tour] shopping list did not open', e);
+      return false;
+    }
+  }
+
   async function openMetaPreviewFirstFoundationsLesson(){
     var timeoutAt = Date.now() + 9000;
     while (Date.now() < timeoutAt) {
@@ -14023,17 +14067,17 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'.weekly-goal-onboarding-guide', fallbackSel:'#weekly-goals-card,#next-obvious-steps-card', title:'Pick your Weekly Goals', body:'Start by tapping one recommended goal. Set a realistic target, add up to two more if you want, then tap Save my weekly goals.', clientActivation:true, clientActivationOnly:true, requiresWeeklyGoals:true, promptBeforeAction:true, preActionSel:'#weekly-goals-card,#next-obvious-steps-card', preActionFallbackSel:'#view-dashboard', preActionTitle:'Choose your first Weekly Goals', preActionBody:'Now choose one to three realistic actions for this week. These become the commitments Shannon can review with you.', preActionButton:'Choose my goals', action:async function(){ try { if(typeof window.openWeeklyGoalsModal === 'function') await window.openWeeklyGoalsModal({ source:'client_activation_setup', week:'current' }); } catch(e){} await new Promise(function(r){ setTimeout(r,180); }); } },
     { tab:'learning', sel:'#story-next-btn,#story-quiz-btn button,.learning-game-stage button,.learning-game-stage .match-item,.learning-game-stage .order-item,#learning-content', title:'Read, then take the quiz', body:'Read all four researcher cards, continue to the key insight, then complete the short quiz. This is how Foundations teaches you to make change work, one lesson at a time.', pageView:true, interactivePage:true, edgePrompt:true, embeddedGuide:true, clientActivation:true, clientActivationOnly:true, requiresFoundationsLesson:'mind-1-1', promptBeforeAction:true, preActionSel:'.course-library-intro,#learning-content', preActionFallbackSel:'#view-learning', preActionTitle:'Take your first Foundations lesson', preActionBody:'This is the final part of your guided tour. Open Meet the Researchers, read each card and complete the short quiz. We will leave you here in the course section.', preActionButton:'Start first lesson', action:async function(){ var opened = await openMetaPreviewFirstFoundationsLesson(); if(!opened && typeof showToast === 'function') showToast('Your first course lesson is still loading.', 'info'); } },
     { tab:'dashboard', sel:'#next-obvious-steps-card', fallbackSel:'#view-dashboard', title:'Your app tour starts here', fallbackTitle:'Your app tour starts here', body:'To do next is your simple map. We will return here between each part of your plan, so you always know what comes next.', pageView:true, metaPreview:true, action:function(){ try { if(window.pbbNextSteps && typeof window.pbbNextSteps.refresh === 'function') window.pbbNextSteps.refresh(); } catch(e){} } },
-    { tab:'dashboard', sel:'#ai-plan-meals-list .ai-plan-hero', fallbackSel:'#meal-plan-store,#view-meals', title:'See every meal on Day 1', fallbackTitle:'Your meal plan is being prepared', body:'Tap the arrows on the photo to look through breakfast, lunch, dinner and snacks. Open any meal for the recipe, ingredients and an easy way to log it.', fallbackBody:'Balance is finishing the meal plan matched to your preferences. It will appear here in Nutrition as soon as it is ready.', pageView:true, metaPreview:true, promptBeforeAction:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="meal_plan_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'First: see your meal plan', preActionBody:'Tap this first action to open the meals Shannon has prepared for your week.', preActionButton:'See my meal plan', action:async function(){ try { if(window.pbbNextSteps) window.pbbNextSteps.runAction('meal_plan_intro'); await new Promise(function(r){ setTimeout(r,700); }); if(typeof window.ensureMetaPreviewMealPlan === 'function') await window.ensureMetaPreviewMealPlan(); if(typeof switchWeek === 'function') switchWeek('meal-plan-store', document.getElementById('browse-plans-pill')); if(typeof window.selectAiPlanFirstDay === 'function') window.selectAiPlanFirstDay(); await waitForMetaPreviewMealPhoto(15000); } catch(e){} } },
-    { tab:'meals', sel:'.camera-btn-widget,.meal-icon-btn', title:'Log what you eat', body:'Tap the camera for a photo, or use the barcode and quick-entry buttons beside it. You only need to log what you actually eat.', metaPreview:true, action:async function(){ try { var pill=document.querySelector('#view-meals .pill-btn[onclick*="calorie-tracker"]'); if(typeof switchWeek==='function') switchWeek('calorie-tracker', pill); } catch(e){} await new Promise(function(r){ setTimeout(r,260); }); } },
-    { tab:'meals', sel:'#ai-plan-shopping-toggle', fallbackSel:'#meal-plan-shopping-pill,#browse-plans-pill', title:'One shopping list for the week', fallbackTitle:'Your weekly shopping list', body:'Balance combines the ingredients from your meal plan into one list. Tick off what you already have, then take the rest to the shops.', fallbackBody:'Open Shopping List to build one list from the meals in your current plan.', pageView:true, metaPreview:true, action:async function(){ try { if(window.pbbNextSteps) window.pbbNextSteps.runAction('meal_plan_intro'); await new Promise(function(r){ setTimeout(r,700); }); if(typeof window.ensureMetaPreviewMealPlan === 'function') await window.ensureMetaPreviewMealPlan(); if(typeof switchWeek === 'function') switchWeek('meal-plan-store', document.getElementById('browse-plans-pill')); if(typeof window.selectAiPlanFirstDay === 'function') window.selectAiPlanFirstDay(); await waitForMetaPreviewMealPhoto(15000); if(typeof openAiMealPlanShoppingList==='function') await openAiMealPlanShoppingList(document.getElementById('meal-plan-shopping-pill')); } catch(e){} await new Promise(function(r){ setTimeout(r,220); }); } },
-    { tab:'dashboard', sel:'#weekly-calendar', fallbackSel:'#view-calendar,#view-cycle', title:'Check your workout week', fallbackTitle:'Check your workout week', body:'Your planned workouts are on this calendar. Tap a day to see what is planned, or move a workout when life changes.', pageView:true, metaPreview:true, promptBeforeAction:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="workout_week_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: see your workout program', preActionBody:'Back on Home, tap the next action to see exactly how your training week fits together.', preActionButton:'See my workouts', action:async function(){ try { if(window.pbbNextSteps) window.pbbNextSteps.runAction('workout_week_intro'); await new Promise(function(r){ setTimeout(r,700); }); if(typeof switchCalendarView === 'function') switchCalendarView('weekly'); } catch(e){} } },
-    { tab:'movement-tab', sel:'#workout-player-title', fallbackSel:'#today-workout-card', title:'Open your first workout', fallbackTitle:'Open your first workout', body:'Scroll down to see each exercise, then follow the sets and target reps underneath.', fallbackBody:'Tap this workout card to open the first real strength session from your plan.', pageView:true, metaPreview:true, promptBeforeAction:true, preActionSel:'#today-workout-card', preActionFallbackSel:'#view-movement-tab,#movement-content', preActionTitle:'Open your first workout', preActionBody:'Next, we will open the first real strength session from your plan so you can see exactly what to do.', preActionButton:'Open workout', action:async function(){ try { return !!(await openMetaPreviewStrengthWorkout()); } catch(e){ return false; } } },
-    { tab:'movement-tab', sel:'#workout-exercises-list .exercise-logger-card [data-video-container][data-thumbnail-state="ready"]', fallbackSel:'#workout-exercises-list .exercise-logger-card,#workout-exercises-list', title:'Follow the exercise card', fallbackTitle:'Follow the exercise card', body:'Watch the demonstration, then follow the sets and target reps shown underneath. Use Swipe for the next exercise or List for the full workout.', fallbackBody:'Each exercise card shows the sets and target reps. Use Swipe for the next exercise or List for the full workout.', pageView:true, metaPreview:true, preserveSurface:true, action:async function(){ try { await waitForMetaPreviewWorkoutProof({ requireThumbnail:true, timeoutMs:8000 }); } catch(e){} } },
-    { tab:'dashboard', sel:'#meta-ad-trial-welcome-audio', fallbackSel:'#meta-ad-trial-inbox-preview-card', title:'Listen to Shannon’s welcome', body:'Tap Play on the voice message and listen to the end. The tour will continue only after the message finishes.', metaPreview:true, embeddedGuide:true, requiresWelcomeAudio:true, promptBeforeAction:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="coach_message_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: hear from your coach', preActionBody:'Back on Home, open Shannon’s welcome message and listen to how your weekly support works.', preActionButton:'Open coach message', action:async function(){ try { if(window.pbbNextSteps) window.pbbNextSteps.runAction('coach_message_intro'); else if(window.BalanceMetaAdTrial) window.BalanceMetaAdTrial.showInboxPreview(); } catch(e){} await new Promise(function(r){ setTimeout(r,300); }); } },
-    { tab:'dashboard', sel:'#friends-photo-feed .meta-preview-feed-post', fallbackSel:'#feed-composer-card', title:'The Balance community', fallbackTitle:'The Balance community', body:'This is the live Feed. You can see Shannon’s posts, photos and the wins people share inside Balance.', fallbackBody:'This is where Shannon posts and members share meals, workouts and wins.', pageView:true, metaPreview:true, promptBeforeAction:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="feed_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: meet the community', preActionBody:'Return to To do next and open the Balance community.', preActionButton:'See the community', action:async function(){ try { if(window.pbbNextSteps) window.pbbNextSteps.runAction('feed_intro'); if(window.BalanceMetaAdTrial && typeof window.BalanceMetaAdTrial.loadPreviewFeed === 'function') await window.BalanceMetaAdTrial.loadPreviewFeed(); } catch(e){} await new Promise(function(r){ setTimeout(r,500); }); } },
-    { tab:'friends', sel:'#feed-composer-card', title:'Post when you need support', body:'Share a meal, workout, question or win here. It helps Shannon see what is really happening and gives the community a chance to support you.', metaPreview:true },
-    { tab:'dashboard', sel:'.weekly-goal-onboarding-guide', fallbackSel:'#weekly-goals-card', title:'Pick your Weekly Goals', body:'Pick one to three realistic actions for this week, set the targets, then save them. These become the simple commitments Shannon can review with you.', metaPreview:true, requiresWeeklyGoals:true, promptBeforeAction:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="weekly_goals_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: choose your Weekly Goals', preActionBody:'Back on Home, open Weekly Goals and choose the realistic actions you want Shannon to review.', preActionButton:'Choose my goals', action:async function(){ try { if(window.pbbNextSteps) window.pbbNextSteps.runAction('weekly_goals_intro'); else if(typeof window.openWeeklyGoalsModal === 'function') await window.openWeeklyGoalsModal({ source:'meta_preview_setup', week:'current' }); } catch(e){} await new Promise(function(r){ setTimeout(r,300); }); } },
-    { tab:'dashboard', sel:'#story-next-btn,#story-quiz-btn button,.learning-game-stage button,.learning-game-stage .match-item,.learning-game-stage .order-item,#learning-content', title:'Read, then take the quiz', body:'Read all four researcher cards, continue to the key insight, then complete the short quiz. This is how Foundations teaches you to make change work, one lesson at a time.', pageView:true, interactivePage:true, edgePrompt:true, embeddedGuide:true, metaPreview:true, metaPreviewSignoff:true, requiresFoundationsLesson:'mind-1-1', promptBeforeAction:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="foundations_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Finally: start Balance Foundations', preActionBody:'Your last To do next action opens the first lesson. Finish the short quiz and we will leave you in the course section.', preActionButton:'Start first lesson', action:async function(){ try { if(window.pbbNextSteps) window.pbbNextSteps.runAction('foundations_intro'); await new Promise(function(r){ setTimeout(r,420); }); } catch(e){} var opened = await openMetaPreviewFirstFoundationsLesson(); if(!opened && typeof showToast === 'function') showToast('Your first course lesson is still loading.', 'info'); } },
+    { tab:'dashboard', sel:'#ai-plan-meals-list .ai-plan-hero', fallbackSel:'#meal-plan-store,#view-meals', title:'See every meal on Day 1', fallbackTitle:'Your meal plan needs another moment', body:'Tap the arrows on the photo to look through breakfast, lunch, dinner and snacks. Open any meal for the recipe, ingredients and an easy way to log it.', fallbackBody:'Your prepared plan did not finish opening. Return Home and tap the meal-plan task again.', pageView:true, featureView:true, metaPreview:true, promptBeforeAction:true, promptRequiresTargetClick:true, returnHomeAfter:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="meal_plan_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'First: see your meal plan', preActionBody:'Tap the highlighted To Do card to open the meals Shannon has prepared for your week.', preActionButton:'Tap the meal plan card', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('meal_plan_intro'); await new Promise(function(r){ setTimeout(r,650); }); return await openMetaPreviewMealPlanSurface(); } catch(e){ return false; } } },
+    { tab:'dashboard', sel:'#ai-plan-shopping-toggle', fallbackSel:'#ai-plan-shopping-card,#meal-plan-store', title:'One shopping list for the week', fallbackTitle:'Your shopping list needs another moment', body:'Balance combines the ingredients from your meal plan into one list. Tick off what you already have, then take the rest to the shops.', fallbackBody:'The list did not finish opening. Return Home and tap the shopping-list task again.', pageView:true, featureView:true, metaPreview:true, promptBeforeAction:true, promptRequiresTargetClick:true, returnHomeAfter:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="shopping_list_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: open your shopping list', preActionBody:'Back on Home, tap the highlighted shopping-list card. It is built from the meal plan you just saw.', preActionButton:'Tap the shopping list card', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('shopping_list_intro'); await new Promise(function(r){ setTimeout(r,650); }); return await openMetaPreviewShoppingListSurface(); } catch(e){ return false; } } },
+    { tab:'dashboard', sel:'.camera-btn-widget,.meal-icon-btn', title:'Log what you eat', body:'Use a photo, barcode or quick entry. You only need to log what you actually eat so Balance and Shannon can see the real week.', pageView:true, featureView:true, metaPreview:true, promptBeforeAction:true, promptRequiresTargetClick:true, returnHomeAfter:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="nutrition_tracker_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: see your nutrition tracker', preActionBody:'Tap the highlighted To Do card to see the quick ways you can log a normal meal.', preActionButton:'Tap the tracker card', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('nutrition_tracker_intro'); await new Promise(function(r){ setTimeout(r,950); }); var pill=document.querySelector('#view-meals .pill-btn[onclick*="calorie-tracker"]'); if(typeof switchWeek==='function') switchWeek('calorie-tracker', pill); await new Promise(function(r){ setTimeout(r,320); }); return !!q('.camera-btn-widget,.meal-icon-btn'); } catch(e){ return false; } } },
+    { tab:'dashboard', sel:'#weekly-calendar', fallbackSel:'#view-calendar,#view-cycle', title:'Check your workout week', fallbackTitle:'Check your workout week', body:'Your planned workouts are on this calendar. Tap a day to see what is planned, or move a workout when life changes.', pageView:true, featureView:true, metaPreview:true, promptBeforeAction:true, promptRequiresTargetClick:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="workout_week_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: see your workout program', preActionBody:'Back on Home, tap the highlighted workout card to see exactly how your training week fits together.', preActionButton:'Tap the workout card', nextLabel:'See first workout', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('workout_week_intro'); await new Promise(function(r){ setTimeout(r,800); }); if(typeof switchCalendarView === 'function') switchCalendarView('weekly'); return true; } catch(e){ return false; } } },
+    { tab:'movement-tab', sel:'#workout-player-title', fallbackSel:'#workout-exercises-list,#today-workout-card', title:'Open your first workout', fallbackTitle:'Your first workout needs another moment', body:'This is the actual session from your plan. Scroll down to see each exercise, set and target rep.', fallbackBody:'The workout did not finish opening. Tap Back, then try the workout section again.', pageView:true, featureView:true, metaPreview:true, nextLabel:'See exercise card', action:async function(){ try { return !!(await openMetaPreviewStrengthWorkout()); } catch(e){ return false; } } },
+    { tab:'movement-tab', sel:'#workout-exercises-list .exercise-logger-card [data-video-container][data-thumbnail-state="ready"]', fallbackSel:'#workout-exercises-list .exercise-logger-card,#workout-exercises-list', title:'Follow the exercise card', fallbackTitle:'Follow the exercise card', body:'Watch the demonstration, then follow the sets and target reps shown underneath. Use Swipe for the next exercise or List for the full workout.', fallbackBody:'Each exercise card shows the sets and target reps. Use Swipe for the next exercise or List for the full workout.', pageView:true, featureView:true, metaPreview:true, preserveSurface:true, returnHomeAfter:true, action:async function(){ try { await waitForMetaPreviewWorkoutProof({ requireThumbnail:true, timeoutMs:8000 }); return true; } catch(e){ return false; } } },
+    { tab:'dashboard', sel:'#meta-ad-trial-welcome-audio', fallbackSel:'#meta-ad-trial-inbox-preview-card', title:'Listen to Shannon’s welcome', body:'Tap Play and listen to the end. This explains how Shannon will help adjust your week when real life changes.', metaPreview:true, embeddedGuide:true, requiresWelcomeAudio:true, promptBeforeAction:true, promptRequiresTargetClick:true, returnHomeAfter:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="coach_message_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: hear from your coach', preActionBody:'Back on Home, tap the highlighted coach-message card to hear how your weekly support works.', preActionButton:'Tap the coach message card', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('coach_message_intro'); else if(!(options && options.fromTargetClick) && window.BalanceMetaAdTrial) window.BalanceMetaAdTrial.showInboxPreview(); } catch(e){} await new Promise(function(r){ setTimeout(r,350); }); return true; } },
+    { tab:'dashboard', sel:'#friends-photo-feed .meta-preview-feed-post', fallbackSel:'#feed-composer-card', title:'The Balance community', fallbackTitle:'The Balance community', body:'This is the live Feed. You can see Shannon’s posts, photos and the wins people share inside Balance.', fallbackBody:'This is where Shannon posts and members share meals, workouts and wins.', pageView:true, featureView:true, metaPreview:true, promptBeforeAction:true, promptRequiresTargetClick:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="feed_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: meet the community', preActionBody:'Back on Home, tap the highlighted community card to see where everyone shares their real week.', preActionButton:'Tap the community card', nextLabel:'See how to post', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('feed_intro'); if(window.BalanceMetaAdTrial && typeof window.BalanceMetaAdTrial.loadPreviewFeed === 'function') await window.BalanceMetaAdTrial.loadPreviewFeed(); } catch(e){} await new Promise(function(r){ setTimeout(r,500); }); return true; } },
+    { tab:'friends', sel:'#feed-composer-card', title:'Post when you need support', body:'Share a meal, workout, question or win here. It helps Shannon see what is really happening and gives the community a chance to support you.', pageView:true, featureView:true, metaPreview:true, preserveSurface:true, returnHomeAfter:true },
+    { tab:'dashboard', sel:'.weekly-goal-onboarding-guide', fallbackSel:'#weekly-goals-card', title:'Pick your Weekly Goals', body:'Pick one to three realistic actions for this week, set the targets, then save them. These become the simple commitments Shannon can review with you.', metaPreview:true, requiresWeeklyGoals:true, promptBeforeAction:true, promptRequiresTargetClick:true, returnHomeAfter:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="weekly_goals_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: choose your Weekly Goals', preActionBody:'Back on Home, tap the highlighted Weekly Goals card and choose the realistic actions you want Shannon to review.', preActionButton:'Tap the Weekly Goals card', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('weekly_goals_intro'); else if(!(options && options.fromTargetClick) && typeof window.openWeeklyGoalsModal === 'function') await window.openWeeklyGoalsModal({ source:'meta_preview_setup', week:'current' }); } catch(e){} await new Promise(function(r){ setTimeout(r,350); }); return true; } },
+    { tab:'dashboard', sel:'#story-next-btn,#story-quiz-btn button,.learning-game-stage button,.learning-game-stage .match-item,.learning-game-stage .order-item,#learning-content', title:'Read, then take the quiz', body:'Read all four researcher cards, continue to the key insight, then complete the short quiz. This is how Foundations teaches you to make change work, one lesson at a time.', pageView:true, interactivePage:true, edgePrompt:true, embeddedGuide:true, metaPreview:true, metaPreviewSignoff:true, requiresFoundationsLesson:'mind-1-1', promptBeforeAction:true, promptRequiresTargetClick:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="foundations_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Finally: start Balance Foundations', preActionBody:'Tap the highlighted final To Do card. Complete the first short lesson and quiz, then we will leave you in Course.', preActionButton:'Tap the Course card', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('foundations_intro'); await new Promise(function(r){ setTimeout(r,480); }); } catch(e){} var opened = await openMetaPreviewFirstFoundationsLesson(); if(!opened && typeof showToast === 'function') showToast('Your first course lesson is still loading.', 'info'); return !!opened; } },
     { tab:'dashboard', sel:'#tamagotchi-stats-bar', fallbackSel:'#balance-level-bar', title:'Levels keep going', fallbackTitle:'Levels keep going', body:'Level 99 is no longer the finish line. Keep earning XP to climb higher and unlock a new character every 5 levels.', fallbackBody:'Level 99 is no longer the finish line. Keep earning XP to climb higher and unlock a new character every 5 levels.' },
     { tab:'movement-tab', sel:'#activity-share-section', title:'Share your activity twice', body:'The first activity share each day earns +15 XP in Balance Feed and another +15 XP in Instagram Story. Later activity shares still work without extra XP.', condition: function(){ return !!document.getElementById('activity-share-section'); } },
     { tab:'movement-tab', sel:'#activity-share-photo-btn', title:'Take a photo or choose one', body:'When you share an activity, tap Add a photo to open your camera or choose one from your gallery. Balance puts your activity stats straight on it for Feed.', condition: function(){ return !!document.getElementById('activity-share-photo-btn'); } },
@@ -14180,6 +14224,8 @@ if(!window._pbbIsIOSSafari) {
   let clientActivationTour = false;
   let activeTourGate = null;
   let pendingPromptedAction = null;
+  let activePromptTargetCleanup = null;
+  let tourRenderToken = 0;
   const completedTourGates = new Set();
   const completedPromptedActions = new Set();
 
@@ -14206,6 +14252,10 @@ if(!window._pbbIsIOSSafari) {
       try { activeTourGate.cleanup(); } catch(e) {}
     }
     activeTourGate = null;
+    if (typeof activePromptTargetCleanup === 'function') {
+      try { activePromptTargetCleanup(); } catch(e) {}
+    }
+    activePromptTargetCleanup = null;
     const note = document.getElementById('tour-gate-note');
     if (note) {
       note.textContent = '';
@@ -14213,9 +14263,49 @@ if(!window._pbbIsIOSSafari) {
     }
   }
 
+  function promptedActionId(step){
+    var match = String(step && step.preActionSel || '').match(/data-next-step-id=["']([^"']+)["']/);
+    return match ? match[1] : '';
+  }
+
+  function armPromptTarget(step, target, stepIndex){
+    if (!step || !target) return false;
+    var busy = false;
+    var handleTargetClick = function(event){
+      if (busy || !target.contains(event.target)) return;
+      busy = true;
+      completedPromptedActions.add(stepIndex);
+      pendingPromptedAction = null;
+      if (typeof activePromptTargetCleanup === 'function') activePromptTargetCleanup();
+      activePromptTargetCleanup = null;
+      var overlay = document.getElementById('guided-tour-overlay');
+      if (overlay) overlay.classList.add('tour-transitioning');
+      setTourGateUi(false, 'Opening now...', step.preActionButton || 'Opening');
+      setTimeout(async function(){
+        var result = true;
+        try { result = await step.action({ fromTargetClick:true }); }
+        catch(e) { result = false; console.warn('[tour] highlighted card action failed', e); }
+        if (result === false) {
+          completedPromptedActions.delete(stepIndex);
+          var actionId = promptedActionId(step);
+          if (actionId && window.pbbNextSteps && typeof window.pbbNextSteps.setOnboardingStepComplete === 'function') {
+            window.pbbNextSteps.setOnboardingStepComplete(actionId, false);
+          }
+          if (typeof showToast === 'function') showToast('That screen did not finish opening. Please tap the highlighted card again.', 'info');
+          await showStep(stepIndex);
+          return;
+        }
+        await showStep(stepIndex, { afterPromptedAction:true });
+      }, 180);
+    };
+    document.addEventListener('click', handleTargetClick, false);
+    activePromptTargetCleanup = function(){ document.removeEventListener('click', handleTargetClick, false); };
+    return true;
+  }
+
   function armTourGate(step){
     clearActiveTourGate();
-    const finalLabel = idx === activeSteps.length - 1 ? 'Finish' : 'Next';
+    const finalLabel = idx === activeSteps.length - 1 ? 'Finish' : (step && step.returnHomeAfter ? 'Back to Home' : (step && step.nextLabel ? step.nextLabel : 'Next'));
     setTourGateUi(true, '', finalLabel);
 
     if (step && step.requiresWelcomeAudio) {
@@ -14514,7 +14604,23 @@ if(!window._pbbIsIOSSafari) {
     const pageView = !!(step && step.pageView);
     if (overlay) overlay.classList.toggle('tour-page-view', pageView);
     if (overlay) overlay.classList.toggle('tour-edge-prompt', !!(step && step.edgePrompt));
+    if (overlay) overlay.classList.toggle('tour-feature-view', !!(step && step.featureView));
     bubble.style.bottom = '';
+
+    if (step && step.featureView) {
+      spot.style.opacity = '0';
+      spot.style.width = '0px';
+      spot.style.height = '0px';
+      spot.style.top = '-200px';
+      const featureVw = Math.max(window.innerWidth || 360, 240);
+      const featureVh = Math.max(window.innerHeight || 640, 320);
+      const featureBubbleH = bubble.offsetHeight || 180;
+      const featureBubbleW = bubble.offsetWidth || 320;
+      bubble.style.top = Math.max(44, featureVh - featureBubbleH - 94) + 'px';
+      bubble.style.left = Math.max(8, (featureVw - featureBubbleW) / 2) + 'px';
+      bubble.style.transform = '';
+      return;
+    }
 
     if (!target) {
       spot.style.opacity = '0';
@@ -14585,6 +14691,7 @@ if(!window._pbbIsIOSSafari) {
 
 async function showStep(i, options){
     options = options || {};
+    const renderToken = ++tourRenderToken;
     try {
       const trackedStep = activeSteps[i];
       window.trackBalanceActivity('guided_tour_step', {
@@ -14609,6 +14716,7 @@ async function showStep(i, options){
       body: step.preActionBody || step.body,
       fallbackBody: step.preActionBody || step.fallbackBody || step.body,
       edgePrompt: false,
+      featureView: false,
       embeddedGuide: false,
       requiresWelcomeAudio: false,
       requiresFoundationsLesson: false,
@@ -14654,22 +14762,34 @@ async function showStep(i, options){
     document.getElementById('tour-body').textContent = (resolved.usedFallback && displayStep.fallbackBody) ? displayStep.fallbackBody : displayStep.body;
     setTourXpNote(false);
     document.getElementById('tour-back-btn').style.visibility = i === 0 ? 'hidden' : 'visible';
-    document.getElementById('tour-next-btn').textContent = isPromptBeforeAction ? (step.preActionButton || 'Open') : ((i === activeSteps.length - 1) ? 'Finish' : 'Next');
+    const defaultNextLabel = (i === activeSteps.length - 1) ? 'Finish' : (step.returnHomeAfter ? 'Back to Home' : (step.nextLabel || 'Next'));
+    document.getElementById('tour-next-btn').textContent = isPromptBeforeAction ? (step.preActionButton || 'Open') : defaultNextLabel;
     const overlay = document.getElementById('guided-tour-overlay');
     if (overlay) {
       overlay.classList.toggle('tour-action-required', !!(displayStep.requiresWelcomeAudio || displayStep.requiresFoundationsLesson || displayStep.requiresWeeklyGoals));
       overlay.classList.toggle('tour-edge-prompt', !!displayStep.edgePrompt);
       overlay.classList.toggle('tour-embedded-guide', !!displayStep.embeddedGuide);
+      overlay.classList.toggle('tour-tap-target', !!(isPromptBeforeAction && step.promptRequiresTargetClick));
+      overlay.classList.toggle('tour-feature-view', !!displayStep.featureView);
       overlay.classList.remove('tour-gate-complete');
     }
-    pendingPromptedAction = isPromptBeforeAction ? { index:i, step:step } : null;
-    if (isPromptBeforeAction) setTourGateUi(true, '', step.preActionButton || 'Open');
+    pendingPromptedAction = (isPromptBeforeAction && !step.promptRequiresTargetClick) ? { index:i, step:step } : null;
+    if (isPromptBeforeAction && step.promptRequiresTargetClick) {
+      setTourGateUi(false, 'Tap the highlighted To Do card to open this part of the app.', step.preActionButton || 'Tap highlighted card');
+      armPromptTarget(step, target, i);
+    } else if (isPromptBeforeAction) setTourGateUi(true, '', step.preActionButton || 'Open');
     else armTourGate(step);
 
     positionBubbleAndSpotlight(target, displayStep);
     if (overlay) overlay.classList.remove('tour-transitioning');
-    setTimeout(function(){ positionBubbleAndSpotlight(resolveStepTarget(displayStep).target, displayStep); }, 180);
-    setTimeout(function(){ positionBubbleAndSpotlight(resolveStepTarget(displayStep).target, displayStep); }, 520);
+    setTimeout(function(){
+      if (renderToken !== tourRenderToken) return;
+      positionBubbleAndSpotlight(resolveStepTarget(displayStep).target, displayStep);
+    }, 180);
+    setTimeout(function(){
+      if (renderToken !== tourRenderToken) return;
+      positionBubbleAndSpotlight(resolveStepTarget(displayStep).target, displayStep);
+    }, 520);
 
     const checkpoint = step.xpReward
       || step.walkthroughReward
@@ -14709,7 +14829,7 @@ async function showStep(i, options){
         completedPromptedActions.delete(idx);
         pendingPromptedAction = prompted;
         if (overlay) overlay.classList.remove('tour-transitioning');
-        setTourGateUi(true, 'That screen did not finish opening. Tap Open workout to try again.', prompted.step.preActionButton || 'Try again');
+        setTourGateUi(true, 'That screen did not finish opening. Tap Try again.', prompted.step.preActionButton || 'Try again');
         return;
       }
       if (prompted.step.advanceAfterAction) await showStep(idx + 1);
@@ -14754,9 +14874,9 @@ async function showStep(i, options){
     if (title) title.textContent = 'Your first week is ready';
     if (clientActivationTour) {
       if (intro) intro.textContent = 'Your setup questions are finished. We will now guide you through the plan Balance has built for you, one clear step at a time.';
-      if (list) list.innerHTML = '<li><span><strong>Your plan:</strong> meals, shopping list and every workout.</span></li><li><span><strong>Your support:</strong> Shannon’s message and the Balance community.</span></li><li><span><strong>Your week:</strong> choose the goals you want Shannon to review.</span></li><li><span><strong>Your course:</strong> finish with your first Foundations lesson.</span></li>';
+      if (list) list.innerHTML = '<li><span><strong>Your plan:</strong> meal plan, shopping list, nutrition tracker and every workout.</span></li><li><span><strong>Your support:</strong> Shannon’s message and the Balance community.</span></li><li><span><strong>Your week:</strong> choose the goals you want Shannon to review.</span></li><li><span><strong>Your course:</strong> finish with your first Foundations lesson.</span></li>';
     } else {
-      if (list) list.innerHTML = '<li><span><strong>Your plan:</strong> meals, shopping list and every workout.</span></li><li><span><strong>Your support:</strong> Shannon’s message and the Balance community.</span></li><li><span><strong>Your week:</strong> choose the goals you want Shannon to review.</span></li><li><span><strong>Your course:</strong> finish with your first Foundations lesson.</span></li>';
+      if (list) list.innerHTML = '<li><span><strong>Your plan:</strong> meal plan, shopping list, nutrition tracker and every workout.</span></li><li><span><strong>Your support:</strong> Shannon’s message and the Balance community.</span></li><li><span><strong>Your week:</strong> choose the goals you want Shannon to review.</span></li><li><span><strong>Your course:</strong> finish with your first Foundations lesson.</span></li>';
       try {
         if (window.BalanceMetaAdTrial && typeof window.BalanceMetaAdTrial.renderPersonalisedSetup === 'function') {
           window.BalanceMetaAdTrial.renderPersonalisedSetup();
@@ -14782,6 +14902,7 @@ async function showStep(i, options){
   };
 
 window.endFeatureTour = function(skipped){
+    tourRenderToken += 1;
     const completedMetaPreviewTour = metaPreviewTour;
     const completedClientActivationTour = clientActivationTour
       || window.__balancePendingClientActivation === true
@@ -14800,7 +14921,7 @@ window.endFeatureTour = function(skipped){
     resetTourTemporaryTargets();
     const overlay = document.getElementById('guided-tour-overlay');
     if (overlay) overlay.classList.remove('active');
-    if (overlay) overlay.classList.remove('tour-action-required', 'tour-gate-complete', 'tour-page-view', 'meta-tour-welcome-active');
+    if (overlay) overlay.classList.remove('tour-action-required', 'tour-gate-complete', 'tour-page-view', 'tour-feature-view', 'tour-tap-target', 'tour-edge-prompt', 'tour-embedded-guide', 'tour-transitioning', 'meta-tour-welcome-active');
     window.__balanceGuidedTourActive = false;
     window.__balanceGuidedTourShowingIntro = false;
     showingXpIntro = false;

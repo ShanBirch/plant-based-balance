@@ -15,6 +15,8 @@
   var ONBOARDING_ACCOUNT_CUTOFF = Date.parse('2026-08-19T14:00:00Z'); // 20 Aug 2026, Brisbane
   var ONBOARDING_ACTION_IDS = [
     'meal_plan_intro',
+    'shopping_list_intro',
+    'nutrition_tracker_intro',
     'workout_week_intro',
     'coach_message_intro',
     'feed_intro',
@@ -155,6 +157,15 @@
     render();
   }
 
+  function setOnboardingStepComplete(actionId, complete) {
+    if (ONBOARDING_ACTION_IDS.indexOf(actionId) === -1 && actionId !== 'activity_insights_intro') return;
+    try {
+      if (complete) localStorage.setItem(onboardingStepKey(actionId), '1');
+      else localStorage.removeItem(onboardingStepKey(actionId));
+    } catch (_) {}
+    render();
+  }
+
   function getAccountCreatedAtMs() {
     var sources = [window.currentUser, window.userProfile];
     for (var i = 0; i < sources.length; i++) {
@@ -236,7 +247,12 @@
 
   function afterTab(callback, delay) {
     setTimeout(function(){
-      try { callback(); } catch (error) { console.warn('[next-steps] action failed:', error); }
+      try {
+        var result = callback();
+        if (result && typeof result.catch === 'function') {
+          result.catch(function(error){ console.warn('[next-steps] async action failed:', error); });
+        }
+      } catch (error) { console.warn('[next-steps] action failed:', error); }
     }, delay || 420);
   }
 
@@ -350,13 +366,43 @@
   function openMealPlanTarget() {
     markOnboardingStepSeen('meal_plan_intro');
     switchTab('meals');
-    afterTab(function(){
+    afterTab(async function(){
       var pill = document.getElementById('browse-plans-pill');
       try {
+        if (window.metaAdTrialMode === true && typeof window.ensureMetaPreviewMealPlan === 'function') {
+          await window.ensureMetaPreviewMealPlan();
+        }
         if (typeof window.switchWeek === 'function') window.switchWeek('meal-plan-store', pill);
+        if (typeof window.selectAiPlanFirstDay === 'function') window.selectAiPlanFirstDay();
       } catch (_) {}
       scrollToSelector('#meal-plan-store', { block: 'start' });
     }, 520);
+  }
+
+  function openShoppingListTarget() {
+    markOnboardingStepSeen('shopping_list_intro');
+    switchTab('meals');
+    afterTab(async function(){
+      try {
+        if (window.metaAdTrialMode === true && typeof window.ensureMetaPreviewMealPlan === 'function') {
+          await window.ensureMetaPreviewMealPlan();
+        }
+        var pill = document.getElementById('meal-plan-shopping-pill') || document.getElementById('browse-plans-pill');
+        if (typeof window.switchWeek === 'function') window.switchWeek('meal-plan-store', pill);
+        if (typeof window.selectAiPlanFirstDay === 'function') window.selectAiPlanFirstDay();
+        if (typeof window.openAiMealPlanShoppingList === 'function') {
+          await window.openAiMealPlanShoppingList(pill);
+        }
+      } catch (error) {
+        console.warn('[next-steps] shopping list failed:', error);
+      }
+      scrollToSelector('#ai-plan-shopping-card,#meal-plan-store', { block: 'center' });
+    }, 520);
+  }
+
+  function openNutritionTrackerTarget() {
+    markOnboardingStepSeen('nutrition_tracker_intro');
+    openNutritionTarget('meals');
   }
 
   function openWorkoutWeekTarget() {
@@ -489,7 +535,7 @@
       body: 'See where Shannon posts and members share meals, workouts, questions and wins.',
       cta: 'View Community',
       accent: '#b78a2e',
-      priority: 970,
+      priority: 950,
       goalIds: [],
       action: openCommunityTarget
     },
@@ -518,12 +564,32 @@
       action: openMealPlanTarget
     },
     {
+      id: 'shopping_list_intro',
+      title: 'Open your weekly shopping list',
+      body: 'See every ingredient from your meal plan combined into one list for the shops.',
+      cta: 'View Shopping List',
+      accent: '#b78a2e',
+      priority: 990,
+      goalIds: [],
+      action: openShoppingListTarget
+    },
+    {
+      id: 'nutrition_tracker_intro',
+      title: 'See your nutrition tracker',
+      body: 'Use a photo, barcode or quick entry to log what you actually eat.',
+      cta: 'Open Tracker',
+      accent: '#16a34a',
+      priority: 980,
+      goalIds: [],
+      action: openNutritionTrackerTarget
+    },
+    {
       id: 'workout_week_intro',
       title: 'Check out your workouts for the week',
       body: 'Open your Calendar to see your assigned sessions and how the week fits together.',
       cta: 'Open Calendar',
       accent: '#2563eb',
-      priority: 990,
+      priority: 970,
       goalIds: [],
       action: openWorkoutWeekTarget
     },
@@ -533,7 +599,7 @@
       body: 'Listen to Shannon’s welcome and see how weekly support works inside Balance.',
       cta: 'Open Message',
       accent: '#b78a2e',
-      priority: 980,
+      priority: 960,
       goalIds: [],
       action: openCoachMessageTarget
     },
@@ -543,7 +609,7 @@
       body: 'Pick the few realistic actions you want Shannon to review with you this week.',
       cta: 'Choose Goals',
       accent: '#7c3aed',
-      priority: 960,
+      priority: 940,
       goalIds: [],
       action: openWeeklyGoalsTarget
     },
@@ -553,7 +619,7 @@
       body: 'Open your first lesson and see how the course helps change work in real life.',
       cta: 'Start Course',
       accent: '#0f766e',
-      priority: 950,
+      priority: 930,
       goalIds: [],
       action: openFoundationsTarget
     },
@@ -760,6 +826,8 @@
     });
     if (hasIncompleteOnboarding) {
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'meal_plan_intro'; }));
+      addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'shopping_list_intro'; }));
+      addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'nutrition_tracker_intro'; }));
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'workout_week_intro'; }));
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'coach_message_intro'; }));
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'feed_intro'; }));
@@ -1314,6 +1382,7 @@
       setTimeout(function(){ refreshDailyStatus({ force: true }); }, 1400);
       setTimeout(function(){ refreshDailyStatus({ force: true }); }, 4500);
     },
+    setOnboardingStepComplete: setOnboardingStepComplete,
     refreshStatus: function(){ refreshDailyStatus({ force: true }); },
     enablePreview: function(){
       try { localStorage.setItem(PREVIEW_STORAGE_KEY, '1'); } catch (_) {}

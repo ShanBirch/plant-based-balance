@@ -52,8 +52,8 @@ test('the paid preview tour keeps the promised app order before payment', () => 
   const titles = [
     'Your app tour starts here',
     'See every meal on Day 1',
-    'Log what you eat',
     'One shopping list for the week',
+    'Log what you eat',
     'Check your workout week',
     'Open your first workout',
     'Follow the exercise card',
@@ -72,6 +72,8 @@ test('the paid preview tour keeps the promised app order before payment', () => 
   });
   assert.doesNotMatch(dashboard, /title:'Start here each day'/);
   assert.match(dashboard, /data-next-step-id="meal_plan_intro"/);
+  assert.match(dashboard, /data-next-step-id="shopping_list_intro"/);
+  assert.match(dashboard, /data-next-step-id="nutrition_tracker_intro"/);
   assert.match(dashboard, /data-next-step-id="workout_week_intro"/);
   assert.match(dashboard, /data-next-step-id="coach_message_intro"/);
   assert.match(dashboard, /data-next-step-id="feed_intro"/);

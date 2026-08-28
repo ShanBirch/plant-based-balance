@@ -26,7 +26,7 @@ test('walkthrough keeps surrounding page context readable', () => {
   assert.match(premiumOverlays, /#guided-tour-overlay\.tour-page-view #guided-tour-spotlight[\s\S]*?rgba\(26, 24, 20, 0\.08\)/);
   assert.doesNotMatch(premiumOverlays, /#guided-tour-spotlight[\s\S]*?rgba\(29, 15, 50, 0\.78\)/);
   assert.match(dashboard, /pbb-premium-overlays\.css\?v=97-foundations-actions/);
-  assert.match(serviceWorker, /pbb-app-v378-smooth-guided-tour/);
+  assert.match(serviceWorker, /pbb-app-v379-checklist-guided-tour/);
 });
 
 test('page-level stops opt into the softer context view', () => {
@@ -75,7 +75,7 @@ test('Meta preview waits for the rendered meal photo and includes the guided com
 
   assert.match(source, /function waitForMetaPreviewMealPhoto\(timeoutMs\)/);
   assert.match(source, /photo\.complete && photo\.naturalWidth > 0/);
-  assert.match(source, /await waitForMetaPreviewMealPhoto\(15000\)/);
+  assert.match(source, /await waitForMetaPreviewMealPhoto\(30000\)/);
   assert.match(source, /title:'The Balance community'[^\n]*metaPreview:true/);
   assert.match(source, /title:'Post when you need support'[^\n]*metaPreview:true/);
 });

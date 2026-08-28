@@ -37,8 +37,18 @@ test('duplicate guided-tour starts cannot change the live step count', () => {
 });
 
 test('shopping list restores the prepared preview plan before opening', () => {
-  assert.match(dashboard, /title:'One shopping list for the week'[^\n]*ensureMetaPreviewMealPlan[^\n]*waitForMetaPreviewMealPhoto\(15000\)[^\n]*openAiMealPlanShoppingList/);
+  assert.match(dashboard, /async function openMetaPreviewShoppingListSurface\(\)[\s\S]*openMetaPreviewMealPlanSurface\(\)[\s\S]*openAiMealPlanShoppingList/);
+  assert.match(dashboard, /title:'One shopping list for the week'[^\n]*promptRequiresTargetClick:true[^\n]*openMetaPreviewShoppingListSurface/);
   assert.match(onboarding, /if \(!_aiMealPlanCache && window\.metaAdTrialMode === true\)[\s\S]*localStorage\.getItem\('ai_meal_plan'\)[\s\S]*Array\.isArray\(previewPlan\.weeks\)/);
+});
+
+test('paid tour returns Home between sections and requires the real To Do cards', () => {
+  assert.match(dashboard, /promptRequiresTargetClick:true/);
+  assert.match(dashboard, /Tap the highlighted To Do card to open this part of the app/);
+  assert.match(dashboard, /step\.returnHomeAfter \? 'Back to Home'/);
+  assert.match(dashboard, /tour-feature-view/);
+  assert.match(dashboard, /const renderToken = \+\+tourRenderToken/);
+  assert.match(dashboard, /if \(renderToken !== tourRenderToken\) return/);
 });
 
 test('exercise guidance preserves the open workout player', () => {

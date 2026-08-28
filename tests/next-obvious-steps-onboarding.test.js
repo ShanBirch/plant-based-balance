@@ -7,6 +7,8 @@ const vm = require('node:vm');
 const source = fs.readFileSync(path.resolve(__dirname, '..', 'js/dashboard/pbb-next-obvious-steps.js'), 'utf8');
 const onboardingIds = [
   'meal_plan_intro',
+  'shopping_list_intro',
+  'nutrition_tracker_intro',
   'workout_week_intro',
   'coach_message_intro',
   'feed_intro',
@@ -107,8 +109,8 @@ test('the Meta onboarding preview exposes the full guided Home checklist', () =>
   const plan = loadPlan({ createdAt: null, metaTrial: true });
   const ids = plan.map(item => item.id);
 
-  assert.equal(JSON.stringify(ids.slice(0, 6)), JSON.stringify(onboardingIds));
-  assert.equal(ids.length, 6, 'the guided setup should not mix in normal daily actions');
+  assert.equal(JSON.stringify(ids.slice(0, onboardingIds.length)), JSON.stringify(onboardingIds));
+  assert.equal(ids.length, onboardingIds.length, 'the guided setup should not mix in normal daily actions');
   assert.match(source, /ONBOARDING_ACTION_IDS\.concat\(\['activity_insights_intro'\]\)/);
   assert.match(source, /storedKey\.indexOf\('pbb_onboarding_step_seen:'\)/);
 });

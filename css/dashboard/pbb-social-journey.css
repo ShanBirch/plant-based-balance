@@ -236,6 +236,8 @@ html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-
 html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-mark::after { content: "\2726"; color: var(--next-step-accent,#b78a2e); -webkit-text-fill-color: var(--next-step-accent,#b78a2e); font-size: 1.45rem; line-height: 1; }
 html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan [data-next-step-id="feed_intro"] .next-step-mark::after { content: "\1F44B"; }
 html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan [data-next-step-id="meal_plan_intro"] .next-step-mark::after { content: "\1F37D"; }
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan [data-next-step-id="shopping_list_intro"] .next-step-mark::after { content: "\1F6D2"; }
+html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan [data-next-step-id="nutrition_tracker_intro"] .next-step-mark::after { content: "\1F4F7"; }
 html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan [data-next-step-id="workout_week_intro"] .next-step-mark::after { content: "\1F4C5"; }
 html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan [data-next-step-id="coach_message_intro"] .next-step-mark::after { content: "\1F399"; }
 html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan [data-next-step-id="weekly_goals_intro"] .next-step-mark::after { content: "\2713"; }
