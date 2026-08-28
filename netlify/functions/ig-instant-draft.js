@@ -618,6 +618,20 @@ function hasImmediateMetaDispatchFailure(scheduleResult = {}) {
         && scheduleResult.immediateDispatch.reason !== 'claim_lost';
 }
 
+function buildPendingAutoSchedulePath(alertId = '', draftRevisionId = '') {
+    const revisionFilter = String(draftRevisionId || '').trim()
+        ? `&data->>draft_revision_id=eq.${encodeURIComponent(String(draftRevisionId).trim())}`
+        : '';
+    return `coach_alerts?id=eq.${encodeURIComponent(alertId)}&status=eq.pending${revisionFilter}`;
+}
+
+function isSupersededAutoScheduleRevision({ currentStatus = '', currentRevisionId = '', requestedRevisionId = '' } = {}) {
+    return String(currentStatus || '') === 'pending'
+        && !!String(currentRevisionId || '').trim()
+        && !!String(requestedRevisionId || '').trim()
+        && String(currentRevisionId).trim() !== String(requestedRevisionId).trim();
+}
+
 async function dispatchScheduledMetaAdReplyNow({ alertId, scheduledFor, replyText }) {
     const claimedRows = await supabaseQuery(
         `coach_alerts?id=eq.${encodeURIComponent(alertId)}&status=eq.scheduled&scheduled_for=eq.${encodeURIComponent(scheduledFor)}`,
@@ -684,7 +698,29 @@ async function scheduleIgAutoReplyDirect({ alertId, alertData, replyText, delayM
         },
         reply_timing_suggestion: normalizedTiming,
     };
-    const rows = await supabaseQuery(`coach_alerts?id=eq.${encodeURIComponent(alertId)}&status=eq.pending`, {
+    const requestedRevisionId = String(alertData?.draft_revision_id || '').trim();
+    const threadId = String(alertData?.ig_thread_id || '').trim();
+    if (threadId && requestedRevisionId) {
+        const latestInboundRows = await supabaseQuery(
+            `ig_messages?select=manychat_message_id,created_at&thread_id=eq.${encodeURIComponent(threadId)}&direction=eq.in&order=created_at.desc,id.desc&limit=1`
+        );
+        const latestInboundRevisionId = String(latestInboundRows?.[0]?.manychat_message_id || '').trim();
+        if (isSupersededAutoScheduleRevision({
+            currentStatus: 'pending',
+            currentRevisionId: latestInboundRevisionId,
+            requestedRevisionId,
+        })) {
+            return {
+                scheduledFor: null,
+                data: alertData || {},
+                alreadyActioned: true,
+                supersededDraftRevision: true,
+                supersededByNewerInbound: true,
+                timing: normalizedTiming,
+            };
+        }
+    }
+    const rows = await supabaseQuery(buildPendingAutoSchedulePath(alertId, requestedRevisionId), {
         method: 'PATCH',
         body: {
             status: 'scheduled',
@@ -720,6 +756,16 @@ async function scheduleIgAutoReplyDirect({ alertId, alertData, replyText, delayM
         `coach_alerts?select=status,data&id=eq.${encodeURIComponent(alertId)}&limit=1`
     );
     const currentStatus = currentRows?.[0]?.status || 'missing';
+    const currentRevisionId = String(currentRows?.[0]?.data?.draft_revision_id || '').trim();
+    if (isSupersededAutoScheduleRevision({ currentStatus, currentRevisionId, requestedRevisionId })) {
+        return {
+            scheduledFor: null,
+            data: currentRows[0]?.data || alertData || {},
+            alreadyActioned: true,
+            supersededDraftRevision: true,
+            timing: normalizedTiming,
+        };
+    }
     if (currentStatus === 'scheduled' || currentStatus === 'sent') {
         return { scheduledFor: null, data: currentRows[0]?.data || alertData || {}, alreadyActioned: true, timing: normalizedTiming };
     }
@@ -8009,6 +8055,7 @@ exports.handler = async (event) => {
             manual_native_voice_note_reason: personalVoicePlan.manualNativeVoiceReason || undefined,
             manual_native_voice_note_script: personalVoicePlan.manualNativeVoiceScript || undefined,
             manychat_message_id: manychatMessageId || null,
+            draft_revision_id: manychatMessageId || idempotencyKey,
             message_preview: truncate(displaySourceMessage, 400),
             last_outbound_message: lastOutboundMessage,
             learning_reels: learningReelHistory.length ? {
@@ -8203,6 +8250,7 @@ exports.handler = async (event) => {
             } : (existingPending.data?.learning_reels || null),
             proposed_actions: mergeProposedActions(existingPending.data?.proposed_actions, proposedActions),
             manychat_message_id: manychatMessageId || (existingPending.data && existingPending.data.manychat_message_id) || null,
+            draft_revision_id: manychatMessageId || idempotencyKey,
             lead_stage: effectiveLeadStage || thread.lead_stage || existingPending.data?.lead_stage || 'new',
             acquisition_mode: acquisitionMode,
             offer_flow_variant: metaAdFlowVariant,
@@ -9478,6 +9526,8 @@ exports._test = {
     shouldDispatchMetaAdReplyImmediately,
     isCodexLivePaidMetaThread,
     hasImmediateMetaDispatchFailure,
+    buildPendingAutoSchedulePath,
+    isSupersededAutoScheduleRevision,
     resolveIgFastLaneDelayMs,
     isCocosToShanSunnyVoiceTest,
     buildPersonalVoiceNoteDraftingBlock,

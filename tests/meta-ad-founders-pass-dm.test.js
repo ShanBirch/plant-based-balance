@@ -44,6 +44,8 @@ const {
     shouldUseDeterministicMetaAdFirstReply,
     getMetaAdSensitiveHoldReason,
     hasImmediateMetaDispatchFailure,
+    buildPendingAutoSchedulePath,
+    isSupersededAutoScheduleRevision,
     shouldDispatchMetaAdReplyImmediately,
     isInternalMetaAdConversationOpeningTurn,
     buildInternalMetaAdTestResetCustomData,
@@ -1741,6 +1743,32 @@ test('an attempted immediate Meta dispatch that does not succeed is treated as a
     assert.equal(hasImmediateMetaDispatchFailure({ immediateDispatch: { attempted: true, ok: true } }), false);
     assert.equal(hasImmediateMetaDispatchFailure({ immediateDispatch: { attempted: true, ok: false, status: 502 } }), true);
     assert.equal(hasImmediateMetaDispatchFailure({ immediateDispatch: { attempted: false, ok: false, reason: 'claim_lost' } }), false);
+});
+
+test('rapid paid-ad coalescing cannot schedule an older draft revision', () => {
+    const schedulePath = buildPendingAutoSchedulePath('alert id', 'latest/inbound');
+    assert.match(schedulePath, /id=eq\.alert%20id/);
+    assert.match(schedulePath, /status=eq\.pending/);
+    assert.match(schedulePath, /data->>draft_revision_id=eq\.latest%2Finbound/);
+    assert.equal(isSupersededAutoScheduleRevision({
+        currentStatus: 'pending',
+        currentRevisionId: 'third-inbound',
+        requestedRevisionId: 'first-inbound',
+    }), true);
+    assert.equal(isSupersededAutoScheduleRevision({
+        currentStatus: 'pending',
+        currentRevisionId: 'third-inbound',
+        requestedRevisionId: 'third-inbound',
+    }), false);
+    assert.equal(isSupersededAutoScheduleRevision({
+        currentStatus: 'scheduled',
+        currentRevisionId: 'third-inbound',
+        requestedRevisionId: 'first-inbound',
+    }), false);
+    const source = fs.readFileSync(path.join(__dirname, '../netlify/functions/ig-instant-draft.js'), 'utf8');
+    assert.match(source, /ig_messages\?select=manychat_message_id,created_at/);
+    assert.match(source, /supersededByNewerInbound:\s*true/);
+    assert.match(source, /draft_revision_id:\s*manychatMessageId \|\| idempotencyKey/);
 });
 
 test('deterministic Meta review bypass remains closed for real review risks', () => {
