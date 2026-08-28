@@ -19,6 +19,22 @@ test('an active sender claim keeps a one-item Graph echo from completing the who
     assert.equal(webhook._test.hasActiveGraphSendClaim({}), false);
 });
 
+test('multi-item and media replies can only be completed by their owning sender', () => {
+    assert.equal(webhook._test.requiresOwningGraphSenderCompletion({
+        draft_messages: ['First bubble', 'Second bubble'],
+    }), true);
+    assert.equal(webhook._test.requiresOwningGraphSenderCompletion({
+        draft_messages: ['Here is the course video.'],
+        draft_video_attachment_url: 'https://example.com/course.mp4',
+    }), true);
+    assert.equal(webhook._test.requiresOwningGraphSenderCompletion({
+        paid_meta_app_preview_handoff: true,
+    }), true);
+    assert.equal(webhook._test.requiresOwningGraphSenderCompletion({
+        draft_messages: ['A normal single text reply'],
+    }), false);
+});
+
 test('only unlinked verified paid Meta threads start immediate webhook typing', () => {
     const paidMetaThread = {
         linked_user_id: null,

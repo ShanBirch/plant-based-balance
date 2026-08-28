@@ -2684,6 +2684,16 @@ function hasActiveGraphSendClaim(alertData = {}) {
     return !!String(alertData?.send_claim_id || '').trim();
 }
 
+function requiresOwningGraphSenderCompletion(alertData = {}) {
+    const draftMessages = Array.isArray(alertData?.draft_messages)
+        ? alertData.draft_messages.map(value => String(value || '').trim()).filter(Boolean)
+        : [];
+    return draftMessages.length > 1
+        || !!String(alertData?.draft_video_attachment_url || '').trim()
+        || !!String(alertData?.draft_image_attachment_url || '').trim()
+        || alertData?.paid_meta_app_preview_handoff === true;
+}
+
 async function markPendingGraphAlertsSent({ thread, threadId, messageText, nowIso, graphMessageId }) {
     if (!threadId || !messageText) return 0;
     let cleared = 0;
@@ -2748,7 +2758,7 @@ async function markPendingGraphAlertsSent({ thread, threadId, messageText, nowIs
             // active. A Graph echo is only proof that this one item arrived;
             // it must not mark a multi-bubble or media reply fully sent, and
             // it must never create false "Shannon edited the draft" learning.
-            if (hasActiveGraphSendClaim(data)) continue;
+            if (hasActiveGraphSendClaim(data) || requiresOwningGraphSenderCompletion(data)) continue;
             // A just-created inbound alert shell can still be waiting for its
             // draft while an older multi-part Graph send echoes back. Never
             // claim that blank shell as the reply to the newer inbound.
@@ -2766,15 +2776,17 @@ async function markPendingGraphAlertsSent({ thread, threadId, messageText, nowIs
                 manual_dm_history_logged: true,
                 cancel_reason: null,
             };
-            await supabase(`coach_alerts?id=eq.${encodeURIComponent(row.id)}`, {
+            const updatedRows = await supabase(
+                `coach_alerts?id=eq.${encodeURIComponent(row.id)}&status=eq.pending&data->>send_claim_id=is.null`, {
                 method: 'PATCH',
                 body: {
                     status: 'sent',
                     actioned_at: nowIso,
                     data: mergedData,
                 },
-                prefer: 'return=minimal',
+                prefer: 'return=representation',
             });
+            if (!updatedRows?.length) continue;
             cleared++;
             if (sentMessage) {
                 analysisJobs.push(
@@ -3173,6 +3185,7 @@ exports._test = {
     shouldRecoverDedupedInboundAgainstAlerts,
     shouldApplyBalanceSendEchoToPending,
     hasActiveGraphSendClaim,
+    requiresOwningGraphSenderCompletion,
 };
 
 exports._internal = {
