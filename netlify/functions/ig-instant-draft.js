@@ -1659,7 +1659,7 @@ function hasRecentPaidMetaProofVideo(history = []) {
 
 function isExplicitPaidMetaProofVideoRetry({ currentMessage = '', history = [] } = {}) {
     const message = String(currentMessage || '').replace(/\s+/g, ' ').trim();
-    const directVideoRequest = /\b(?:show|send)\s+me\s+(?:the\s+)?(?:vid|video)(?:\s+again)?\b/i.test(message)
+    const directVideoRequest = /\b(?:show|send)(?:\s+me)?\s+(?:the\s+)?(?:(?:actual|course|app)\s+){0,2}(?:vid|video)(?:\s+again)?\b/i.test(message)
         || /\b(?:vid|video)\s+(?:again|please|pls|plz)\b/i.test(message);
     const failedDelivery = /\b(?:can(?:not|'t)|couldn(?:'t)?|didn(?:'t)?)\s+(?:see|watch|open|load)\s+(?:it|the\s+(?:vid|video))\b/i.test(message)
         || /\b(?:it|the\s+(?:vid|video))\s+(?:isn't|is\s+not|didn't)\s+(?:showing|loading|coming\s+through)\b/i.test(message);

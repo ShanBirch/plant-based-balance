@@ -162,6 +162,10 @@ test('explicit paid Meta video retry always carries the currently approved nativ
         history: [],
     }), true);
     assert.equal(isExplicitPaidMetaProofVideoRetry({
+        currentMessage: 'Can you send the actual course video again please?',
+        history: [],
+    }), true);
+    assert.equal(isExplicitPaidMetaProofVideoRetry({
         currentMessage: "I can't see it",
         history: [{ direction: 'out', text: 'Yep, here it is. Once you have watched it, let me know.' }],
     }), true);
