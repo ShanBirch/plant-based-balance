@@ -46,6 +46,7 @@ const {
     hasImmediateMetaDispatchFailure,
     buildPendingAutoSchedulePath,
     isSupersededAutoScheduleRevision,
+    isNewerCanonicalInboundRevision,
     shouldDispatchMetaAdReplyImmediately,
     isInternalMetaAdConversationOpeningTurn,
     buildInternalMetaAdTestResetCustomData,
@@ -1764,6 +1765,24 @@ test('rapid paid-ad coalescing cannot schedule an older draft revision', () => {
         currentStatus: 'scheduled',
         currentRevisionId: 'third-inbound',
         requestedRevisionId: 'first-inbound',
+    }), false);
+    assert.equal(isNewerCanonicalInboundRevision({
+        latestRevisionId: 'third-inbound',
+        latestCreatedAt: '2026-08-28T21:42:46.591Z',
+        requestedRevisionId: 'first-inbound',
+        requestedCreatedAt: '2026-08-28T21:42:41.695Z',
+    }), true);
+    assert.equal(isNewerCanonicalInboundRevision({
+        latestRevisionId: 'older-canonical-inbound',
+        latestCreatedAt: '2026-08-28T21:51:12.648Z',
+        requestedRevisionId: 'new-webhook-inbound',
+        requestedCreatedAt: '2026-08-28T21:52:17.874Z',
+    }), false);
+    assert.equal(isNewerCanonicalInboundRevision({
+        latestRevisionId: 'different-inbound',
+        latestCreatedAt: '2026-08-28T21:52:17.874Z',
+        requestedRevisionId: 'new-webhook-inbound',
+        requestedCreatedAt: '',
     }), false);
     const source = fs.readFileSync(path.join(__dirname, '../netlify/functions/ig-instant-draft.js'), 'utf8');
     assert.match(source, /ig_messages\?select=manychat_message_id,created_at/);

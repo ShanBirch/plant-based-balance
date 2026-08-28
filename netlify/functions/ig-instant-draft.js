@@ -632,6 +632,24 @@ function isSupersededAutoScheduleRevision({ currentStatus = '', currentRevisionI
         && String(currentRevisionId).trim() !== String(requestedRevisionId).trim();
 }
 
+function isNewerCanonicalInboundRevision({
+    latestRevisionId = '',
+    latestCreatedAt = '',
+    requestedRevisionId = '',
+    requestedCreatedAt = '',
+} = {}) {
+    if (!String(latestRevisionId || '').trim()
+        || !String(requestedRevisionId || '').trim()
+        || String(latestRevisionId).trim() === String(requestedRevisionId).trim()) {
+        return false;
+    }
+    const latestCreatedAtMs = Date.parse(latestCreatedAt || '');
+    const requestedCreatedAtMs = Date.parse(requestedCreatedAt || '');
+    return Number.isFinite(latestCreatedAtMs)
+        && Number.isFinite(requestedCreatedAtMs)
+        && latestCreatedAtMs > requestedCreatedAtMs;
+}
+
 async function dispatchScheduledMetaAdReplyNow({ alertId, scheduledFor, replyText }) {
     const claimedRows = await supabaseQuery(
         `coach_alerts?id=eq.${encodeURIComponent(alertId)}&status=eq.scheduled&scheduled_for=eq.${encodeURIComponent(scheduledFor)}`,
@@ -700,15 +718,23 @@ async function scheduleIgAutoReplyDirect({ alertId, alertData, replyText, delayM
     };
     const requestedRevisionId = String(alertData?.draft_revision_id || '').trim();
     const threadId = String(alertData?.ig_thread_id || '').trim();
+    const requestedInboundBatch = Array.isArray(alertData?.inbound_message_batch)
+        ? alertData.inbound_message_batch
+        : [];
+    const requestedInbound = [...requestedInboundBatch].reverse().find(message => message?.is_current)
+        || requestedInboundBatch[requestedInboundBatch.length - 1]
+        || null;
+    const requestedCreatedAt = requestedInbound?.created_at || '';
     if (threadId && requestedRevisionId) {
         const latestInboundRows = await supabaseQuery(
             `ig_messages?select=manychat_message_id,created_at&thread_id=eq.${encodeURIComponent(threadId)}&direction=eq.in&order=created_at.desc,id.desc&limit=1`
         );
         const latestInboundRevisionId = String(latestInboundRows?.[0]?.manychat_message_id || '').trim();
-        if (isSupersededAutoScheduleRevision({
-            currentStatus: 'pending',
-            currentRevisionId: latestInboundRevisionId,
+        if (isNewerCanonicalInboundRevision({
+            latestRevisionId: latestInboundRevisionId,
+            latestCreatedAt: latestInboundRows?.[0]?.created_at,
             requestedRevisionId,
+            requestedCreatedAt,
         })) {
             return {
                 scheduledFor: null,
@@ -9528,6 +9554,7 @@ exports._test = {
     hasImmediateMetaDispatchFailure,
     buildPendingAutoSchedulePath,
     isSupersededAutoScheduleRevision,
+    isNewerCanonicalInboundRevision,
     resolveIgFastLaneDelayMs,
     isCocosToShanSunnyVoiceTest,
     buildPersonalVoiceNoteDraftingBlock,
