@@ -18,10 +18,10 @@
     'shopping_list_intro',
     'nutrition_tracker_intro',
     'workout_week_intro',
-    'coach_message_intro',
     'feed_intro',
-    'weekly_goals_intro',
-    'foundations_intro'
+    'coach_message_intro',
+    'foundations_intro',
+    'weekly_goals_intro'
   ];
   var SHANNON_EMAILS = [
     'shannonbirch@cocospersonaltraining.com',
@@ -535,7 +535,7 @@
       body: 'See where Shannon posts and members share meals, workouts, questions and wins.',
       cta: 'View Community',
       accent: '#b78a2e',
-      priority: 950,
+      priority: 960,
       goalIds: [],
       action: openCommunityTarget
     },
@@ -599,7 +599,7 @@
       body: 'Listen to Shannon’s welcome and see how weekly support works inside Balance.',
       cta: 'Open Message',
       accent: '#b78a2e',
-      priority: 960,
+      priority: 950,
       goalIds: [],
       action: openCoachMessageTarget
     },
@@ -609,7 +609,7 @@
       body: 'Pick the few realistic actions you want Shannon to review with you this week.',
       cta: 'Choose Goals',
       accent: '#7c3aed',
-      priority: 940,
+      priority: 930,
       goalIds: [],
       action: openWeeklyGoalsTarget
     },
@@ -619,7 +619,7 @@
       body: 'Open your first lesson and see how the course helps change work in real life.',
       cta: 'Start Course',
       accent: '#0f766e',
-      priority: 930,
+      priority: 940,
       goalIds: [],
       action: openFoundationsTarget
     },
@@ -829,10 +829,10 @@
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'shopping_list_intro'; }));
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'nutrition_tracker_intro'; }));
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'workout_week_intro'; }));
-      addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'coach_message_intro'; }));
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'feed_intro'; }));
-      addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'weekly_goals_intro'; }));
+      addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'coach_message_intro'; }));
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'foundations_intro'; }));
+      addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'weekly_goals_intro'; }));
       if (window.metaAdTrialMode === true) return picked;
     }
     addUniqueAction(picked, journeyAction);

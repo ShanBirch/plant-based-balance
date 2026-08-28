@@ -10,10 +10,10 @@ const onboardingIds = [
   'shopping_list_intro',
   'nutrition_tracker_intro',
   'workout_week_intro',
-  'coach_message_intro',
   'feed_intro',
-  'weekly_goals_intro',
-  'foundations_intro'
+  'coach_message_intro',
+  'foundations_intro',
+  'weekly_goals_intro'
 ];
 
 function loadPlan({ createdAt, seen = [], week = 1, goals = [], metaTrial = false }) {

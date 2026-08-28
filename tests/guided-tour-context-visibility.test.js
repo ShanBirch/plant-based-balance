@@ -7,6 +7,7 @@ const root = path.resolve(__dirname, '..');
 const dashboard = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
 const premiumOverlays = fs.readFileSync(path.join(root, 'css/dashboard/pbb-premium-overlays.css'), 'utf8');
 const serviceWorker = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
+const stories = fs.readFileSync(path.join(root, 'lib/stories.js'), 'utf8');
 
 function featureTourSource() {
   const start = dashboard.indexOf('<!-- ========== GUIDED FEATURE TOUR ========== -->');
@@ -26,14 +27,13 @@ test('walkthrough keeps surrounding page context readable', () => {
   assert.match(premiumOverlays, /#guided-tour-overlay\.tour-page-view #guided-tour-spotlight[\s\S]*?rgba\(26, 24, 20, 0\.08\)/);
   assert.doesNotMatch(premiumOverlays, /#guided-tour-spotlight[\s\S]*?rgba\(29, 15, 50, 0\.78\)/);
   assert.match(dashboard, /pbb-premium-overlays\.css\?v=97-foundations-actions/);
-  assert.match(serviceWorker, /pbb-app-v396-required-guided-tour/);
+  assert.match(serviceWorker, /pbb-app-v397-complete-smooth-tour/);
 });
 
 test('page-level stops opt into the softer context view', () => {
   const source = featureTourSource();
 
   for (const title of [
-    'Your meal plan',
     'Check your workout week',
     'Follow the exercise card',
     'See every meal on Day 1',
@@ -87,7 +87,7 @@ test('Meta preview waits for the rendered meal photo and includes the guided com
   assert.match(source, /photo\.complete && photo\.naturalWidth > 0/);
   assert.match(source, /await waitForMetaPreviewMealPhoto\(30000\)/);
   assert.match(source, /title:'The Balance community'[^\n]*metaPreview:true/);
-  assert.match(source, /title:'Post when you need support'[^\n]*metaPreview:true/);
+  assert.match(source, /legacyFeedPostStep[\s\S]*?title:'Introduce yourself'[\s\S]*?requiresFeedPost:true/);
 });
 
 test('guided tours and returning-user reveals both reset and apply page-view mode', () => {
@@ -104,4 +104,23 @@ test('required onboarding tours cannot be skipped', () => {
   assert.match(source, /if \(skipped && \(completedMetaPreviewTour \|\| completedClientActivationTour\)\)/);
   assert.match(source, /showToast\('Finish the guided tour to continue\.'/);
   assert.match(source, /skipButton\.hidden = metaPreviewTour \|\| clientActivationTour/);
+  assert.match(source, /<button class="tour-skip" onclick="endFeatureTour\(true\)" hidden>Skip<\/button>/);
+});
+
+test('required onboarding continues from Feed through coach, Foundations, and Weekly Goals', () => {
+  const source = featureTourSource();
+  const order = [
+    "'The Balance community'",
+    "'Introduce yourself'",
+    "'Listen to Shannon’s welcome'",
+    "'Read, then take the quiz'",
+    "'Pick your Weekly Goals'"
+  ].map(title => source.indexOf(title, source.indexOf('REQUIRED_ONBOARDING_TOUR_TITLES')));
+
+  assert.ok(order.every(index => index >= 0));
+  assert.deepEqual(order, [...order].sort((a, b) => a - b));
+  assert.match(source, /activeSteps = requiredOnboardingTourSteps\(\)/);
+  assert.match(source, /requiresFeedPost[\s\S]*?pbbFeedPostCreated/);
+  assert.match(stories, /dispatchEvent\(new CustomEvent\('pbbFeedPostCreated'/);
+  assert.match(source, /waitForPromptedStepSurface\(step, 900\)/);
 });

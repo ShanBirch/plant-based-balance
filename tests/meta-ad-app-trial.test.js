@@ -302,7 +302,7 @@ test('dashboard, signup, native handoffs, measurement, and both discovery system
     const ios = fs.readFileSync(path.join(root, 'ios/App/App/BalanceShortcutHandoff.swift'), 'utf8');
 
     assert.match(dashboard, /paid-facebook-stripe-unlock-v1/);
-    assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=213-required-guided-tour/);
+    assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=214-complete-smooth-tour/);
     assert.match(dashboard, /title:'Your app tour starts here'.*metaPreview:true/);
     assert.match(dashboard, /title:'Check your workout week'.*metaPreview:true/);
     assert.match(dashboard, /title:'Open your first workout'.*metaPreview:true/);
@@ -311,7 +311,7 @@ test('dashboard, signup, native handoffs, measurement, and both discovery system
     assert.match(dashboard, /title:'See every meal on Day 1'.*metaPreview:true/);
     assert.match(dashboard, /title:'Read, then take the quiz'.*embeddedGuide:true.*metaPreview:true.*requiresFoundationsLesson:'mind-1-1'/);
     assert.match(dashboard, /title:'The Balance community'.*metaPreview:true/);
-    assert.match(dashboard, /title:'Post when you need support'.*metaPreview:true/);
+    assert.match(dashboard, /legacyFeedPostStep[\s\S]*?title:'Introduce yourself'[\s\S]*?requiresFeedPost:true/);
     assert.match(dashboard, /title:'Listen to Shannon’s welcome'.*metaPreview:true/);
     assert.match(dashboard, /title:'Pick your Weekly Goals'.*requiresWeeklyGoals:true/);
     assert.match(dashboard, /title:'Read, then take the quiz'.*metaPreviewSignoff:true.*requiresFoundationsLesson:'mind-1-1'/);
