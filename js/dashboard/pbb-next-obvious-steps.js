@@ -765,6 +765,7 @@
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'feed_intro'; }));
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'weekly_goals_intro'; }));
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'foundations_intro'; }));
+      if (window.metaAdTrialMode === true) return picked;
     }
     addUniqueAction(picked, journeyAction);
     if (onboardingEligible && hasReachedSecondProgramWeek() && !hasSeenOnboardingStep('activity_insights_intro')) {
@@ -1331,7 +1332,7 @@
       render();
     },
     resetOnboardingCards: function(){
-      ['meal_plan_intro', 'workout_week_intro', 'activity_insights_intro'].forEach(function(actionId){
+      ONBOARDING_ACTION_IDS.concat(['activity_insights_intro']).forEach(function(actionId){
         try { localStorage.removeItem(onboardingStepKey(actionId)); } catch (_) {}
       });
       render();
