@@ -78,6 +78,7 @@ test('paid Meta has a dedicated sales agent prompt with no general coach assumpt
     assert.match(prompt, /vegan for five years/i);
     assert.match(prompt, /signed preview immediately/i);
     assert.match(prompt, /deterministic transport may add the approved quick app video after both goal and blocker are known/i);
+    assert.match(prompt, /do not invent URLs, visible media placeholders such as \[course video\]/i);
     assert.match(prompt, /looks great.*not checkout intent/i);
     assert.doesNotMatch(prompt, /animals were a big part/i);
     assert.doesNotMatch(prompt, /CLIENT NOTES AND APP CONTEXT/i);
@@ -98,6 +99,9 @@ test('paid Meta lane bypasses the general qualifier and deterministic conversati
     assert.match(source, /campaign_app_preview_handoff', 'campaign_buyer_handoff/);
     assert.match(source, /Never ask the lead for an email address in Instagram/);
     assert.match(source, /paid Meta OpenAI timed out; used local sales fallback/);
+    assert.match(source, /hasInstagramGraphRoute\s*\n\s*&& isExplicitPaidMetaProofVideoRetry/,
+        'the neutral broad paid-ad route must retain deterministic native video retries');
+    assert.doesNotMatch(source, /hasInstagramGraphRoute\s*\n\s*&& metaAdFlowVariant !== 'broad_pain'\s*\n\s*&& isExplicitPaidMetaProofVideoRetry/);
     assert.match(source, /if \(paidMetaSingleWriter\) \{[\s\S]{0,2600}deterministic_paid_meta_timeout_v1[\s\S]{0,1200}\} else try \{/);
 });
 
@@ -164,12 +168,16 @@ test('explicit paid Meta video retry always carries the currently approved nativ
 
     const draft = buildPaidMetaProofVideoRetryReply("I can't see it");
     assert.equal(draft.videoAttachmentUrl, resolveBalanceFoundationsAppProofVideoUrl());
-    assert.match(draft.joined, /sent the video again/i);
-    assert.match(draft.joined, /can you see it now\?$/i);
+    assert.match(draft.joined, /sent the course video again/i);
+    assert.doesNotMatch(draft.joined, /\?/);
     assert.equal(maySendDraftVideoAttachment({
         videoUrl: draft.videoAttachmentUrl,
         replyText: draft.joined,
     }), true);
+    const completed = ensurePaidMetaAppVideoPreviewCta(draft);
+    assert.match(completed.joined, /free personalised preview/i);
+    assert.equal((completed.joined.match(/\?/g) || []).length, 1);
+    assert.doesNotMatch(completed.joined, /\[course video\]/i);
     assert.equal(maySendDraftVideoAttachment({
         videoUrl: BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL,
         replyText: 'Yep, here it is again. Can you see it now?',

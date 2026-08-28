@@ -1677,8 +1677,8 @@ function isExplicitPaidMetaProofVideoRetry({ currentMessage = '', history = [] }
 function buildPaidMetaProofVideoRetryReply(currentMessage = '') {
     const failedDelivery = /\b(?:can(?:not|'t)|couldn(?:'t)?|didn(?:'t)?)\s+(?:see|watch|open|load)\s+(?:it|the\s+(?:vid|video))\b/i.test(String(currentMessage || ''));
     const joined = failedDelivery
-        ? `Ah sorry, it didn't come through properly. I've sent the video again, can you see it now?`
-        : `Yep, here it is again. Can you see it now?`;
+        ? `Ah sorry, it didn't come through properly. I've sent the course video again.`
+        : `Yep, here is the course video again.`;
     return {
         chunks: [joined],
         joined,
@@ -4555,7 +4555,7 @@ ${progression}
 
 ${knownFactRule}
 
-Client proof should normally be used once when it genuinely matches: Ally for weight loss, Gen for strength/confidence, Dani for body recomposition, Bec and Kirsty for shared accountability. Use no transformation when identity, safety or fit is uncertain. If using proof, name the approved person and say you are showing their photo. The deterministic transport may add the approved quick app video after both goal and blocker are known; do not invent URLs or repeat it.
+Client proof should normally be used once when it genuinely matches: Ally for weight loss, Gen for strength/confidence, Dani for body recomposition, Bec and Kirsty for shared accountability. Use no transformation when identity, safety or fit is uncertain. If using proof, name the approved person and say you are showing their photo. The deterministic transport may add the approved quick app video after both goal and blocker are known; do not invent URLs, visible media placeholders such as [course video], or repeat it.
 
 Reliable offer facts: Balance Foundations is a six-week program inside Balance with a personalised workout program, meal-plan support fitted to recorded dietary needs, and one weekly training/food review and adjustment. It is one AUD $149 payment for the full six weeks, with no subscription or auto-renewal. The personalised app preview comes before payment.
 
@@ -7823,7 +7823,6 @@ exports.handler = async (event) => {
     }
     if (metaAdConversationFastLane
         && hasInstagramGraphRoute
-        && metaAdFlowVariant !== 'broad_pain'
         && isExplicitPaidMetaProofVideoRetry({ currentMessage: messageText, history })) {
         draft = {
             ...draft,
