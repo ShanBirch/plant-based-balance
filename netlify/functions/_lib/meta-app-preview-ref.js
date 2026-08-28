@@ -104,7 +104,7 @@ function verifyMetaAppPreviewRef(token, {
 
 function buildMetaAppPreviewUrl(threadId, options = {}) {
     const token = createMetaAppPreviewRef(threadId, options);
-    const broadFlow = String(options?.flowVariant || '').toLowerCase() === 'broad_pain';
+    const broadFlow = String(options?.flowVariant || 'broad_pain').toLowerCase() === 'broad_pain';
     const previewUrl = broadFlow ? META_APP_PREVIEW_BROAD_URL : META_APP_PREVIEW_URL;
     const shortUrl = broadFlow ? META_APP_PREVIEW_BROAD_SHORT_URL : META_APP_PREVIEW_SHORT_URL;
     if (!token) return previewUrl;

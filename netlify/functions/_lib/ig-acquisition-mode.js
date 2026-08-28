@@ -96,7 +96,7 @@ ORGANIC RELATIONSHIP CONVERSATION MODE:
 - Lead with the exact human context. Prefer a short observation, reflection or statement they can confirm, correct or expand.
 - Move only through evidence they supply: live topic, life rhythm, health or fitness context, their goal and blocker, then an optional Balance bridge when earned.
 - Do not hide a pitch inside friendliness. If there is no real problem or help signal, keep it human or leave space. A no-fit answer is valid.
-- Use the canonical plant-based Founders Pass route if they later ask for or accept the offer. Never place an organic lead into a paid broad-pain experiment because they mention work, kids, busyness, consistency or starting again.`;
+- Keep this as an organic relationship conversation unless verified paid attribution exists. Never place an organic lead into the paid-Meta route because they mention work, kids, busyness, consistency or starting again.`;
 }
 
 module.exports = {

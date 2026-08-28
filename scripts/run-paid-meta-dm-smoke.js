@@ -128,7 +128,7 @@ async function runScenario(scenario, index) {
             qualifier: scenario.qualifier || null,
             custom_data: {
                 acquisition_mode: 'paid_meta',
-                offer_flow_variant: 'plant_based_control',
+                offer_flow_variant: 'broad_pain',
                 meta_ad_attribution: { source: 'meta_ads' },
             },
         },
@@ -165,8 +165,8 @@ async function runScenario(scenario, index) {
         qualifierQuestion,
         botAccount: 'shan_n_sunny',
         acquisitionMode: 'paid_meta',
-        adFlowVariant: 'plant_based_control',
-        checkoutUrl: 'https://plantbased-balance.org/founders',
+        adFlowVariant: 'broad_pain',
+        checkoutUrl: 'https://future-balance.netlify.app/fitness',
     });
     const initialContractIssues = collectPaidMetaWriterContractIssues({
         draft: initialDraft,

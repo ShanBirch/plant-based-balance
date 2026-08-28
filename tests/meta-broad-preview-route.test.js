@@ -20,11 +20,13 @@ test('broad signed preview uses a neutral public wrapper and the existing previe
     assert.match(destination, /No subscription or automatic renewal/i);
 });
 
-test('active broad campaign source contains current terms and no stale 89-dollar offer', () => {
+test('active paid campaign source contains one neutral route and current terms', () => {
     const source = fs.readFileSync(path.join(root, 'scripts', 'build-meta-broad-pain-test.mjs'), 'utf8');
     assert.doesNotMatch(source, /(?:AU\$|AUD\s*\$?)89(?:\.99)?\b/i);
     assert.match(source, /one AUD \$149 payment for the full six weeks/i);
     assert.match(source, /no auto-renewal/i);
+    assert.doesNotMatch(source, /Existing plant-based control|plantBasedControl|plant_based_control/);
+    assert.match(source, /Every verified paid-Meta lead uses the one neutral general-fitness flow/i);
 });
 
 test('preview outcome reconciliation recognises both plant-control and broad signed hosts', () => {

@@ -135,7 +135,7 @@ for (const ad of ads) {
 }
 
 const plan = {
-  name: 'BAL | Founders Pass | Broad Pain Test | IG DM | AU | 2026-07-26',
+  name: 'BAL | Balance Foundations | General Fitness | IG DM | AU | 2026-08-28',
   status: 'PAUSED_FOR_REVIEW',
   objective: 'Instagram Direct conversations',
   offer: 'Balance Foundations, one AUD $149 payment for the full six weeks, no auto-renewal',
@@ -143,12 +143,11 @@ const plan = {
   structure: {
     campaign: 'Use the existing Instagram Direct conversations campaign.',
     adSet: 'Use one broad Australia ad set. Do not create separate interest or plant-based ad sets.',
-    testAds: ['Existing plant-based control', ...ads.map((ad) => ad.id)],
+    testAds: ads.map((ad) => ad.id),
   },
   destinations: {
-    plantBasedControl: 'https://plantbased-balance.org/plant-based-fitness.html?utm_source=instagram&utm_medium=paid_social&utm_campaign=founders_pass_test_20260726&utm_content=plant_based_control',
-    broadPainChallengers: 'https://future-balance.netlify.app/fitness-coaching.html?utm_source=instagram&utm_medium=paid_social&utm_campaign=founders_pass_test_20260726&utm_content={{ad.name}}&campaign_id={{campaign.id}}&adset_id={{adset.id}}&ad_id={{ad.id}}&placement={{placement}}',
-    dmRule: 'Keep the broad route free of plant-based positioning. Preserve the route and all attribution parameters when the lead asks for the link.',
+    paidMeta: 'https://future-balance.netlify.app/fitness-coaching.html?utm_source=instagram&utm_medium=paid_social&utm_campaign=balance_foundations_general_20260828&utm_content={{ad.name}}&campaign_id={{campaign.id}}&adset_id={{adset.id}}&ad_id={{ad.id}}&placement={{placement}}',
+    dmRule: 'Every verified paid-Meta lead uses the one neutral general-fitness flow. Preserve attribution parameters on the canonical thread and use the clean public URL in DMs.',
   },
   fate: {
     focus: 'Adults who keep restarting, struggle to follow through, or cannot fit rigid plans around real life.',
@@ -162,11 +161,11 @@ const plan = {
     warning: 'Do not choose a winner from cheap DMs alone.',
   },
   decisionRules: [
-    'Run the plant-based control and three challengers in the same broad ad set.',
+    'Run only the approved general-fitness ads in the same broad ad set.',
     'Make no creative edits during the first 72 hours unless delivery is broken.',
     'Assess after seven days or when each ad has meaningful spend, whichever is later.',
     'Keep the ads that produce qualified conversations and purchases, not simply the lowest cost per message.',
-    'Rotate one new challenger in at a time after the first test. Do not create a new ad set for every angle.',
+    'Rotate one new creative in at a time after the first review. Do not create a new ad set for every angle.',
   ],
   ads: exportsList.map((ad) => ({
     name: ad.id,
@@ -180,8 +179,8 @@ const plan = {
 };
 await fs.writeFile(path.join(OUT, 'campaign-plan.json'), `${JSON.stringify(plan, null, 2)}\n`);
 
-const cards = exportsList.map((ad, index) => `<article><img src="${ad.feed}" alt="${esc(ad.headline)}"><div><span>CHALLENGER ${index + 1}</span><h2>${esc(ad.headline)}</h2><p class="angle">${esc(ad.angle)}</p><p>${esc(ad.primaryText)}</p><p><strong>Headline:</strong> ${esc(ad.headline)}</p><p><strong>Description:</strong> ${esc(ad.description)}</p></div></article>`).join('');
-const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Balance Broad Pain Test</title><style>body{margin:0;background:#f7f2e8;color:#241a12;font:16px/1.55 Arial,sans-serif}header{padding:48px max(24px,5vw);background:linear-gradient(135deg,#fff9ed,#eadcc2);border-bottom:8px solid #d8a43a}h1{font-size:clamp(38px,6vw,76px);line-height:.96;margin:14px 0}header p{max-width:850px;color:#5b4a3a;font-size:18px}main{padding:36px max(20px,4vw);display:grid;gap:36px}article{display:grid;grid-template-columns:minmax(280px,520px) 1fr;gap:36px;align-items:start;background:#fff9ed;border:1px solid #d8a43a;border-radius:24px;padding:20px;box-shadow:0 18px 44px #6b4d241c}img{width:100%;border-radius:14px;background:#fff}.angle{color:#a96f00;font-weight:800}span{color:#a96f00;font-weight:900;letter-spacing:2px}h2{font-size:34px;line-height:1.05}p{color:#5b4a3a}@media(max-width:800px){article{grid-template-columns:1fr}header{padding-top:30px}}</style></head><body><header><span>PAUSED FOR YOUR REVIEW</span><h1>Broad audience.<br>Specific pain points.</h1><p>These three challengers are the fully broad Balance route. The ads, landing page and DM handoff stay focused on restarting, follow-through and fitting training around real life. Nothing here is approved to run until you choose it.</p></header><main>${cards}</main></body></html>`;
+const cards = exportsList.map((ad, index) => `<article><img src="${ad.feed}" alt="${esc(ad.headline)}"><div><span>CREATIVE ${index + 1}</span><h2>${esc(ad.headline)}</h2><p class="angle">${esc(ad.angle)}</p><p>${esc(ad.primaryText)}</p><p><strong>Headline:</strong> ${esc(ad.headline)}</p><p><strong>Description:</strong> ${esc(ad.description)}</p></div></article>`).join('');
+const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Balance General Fitness Ads</title><style>body{margin:0;background:#f7f2e8;color:#241a12;font:16px/1.55 Arial,sans-serif}header{padding:48px max(24px,5vw);background:linear-gradient(135deg,#fff9ed,#eadcc2);border-bottom:8px solid #d8a43a}h1{font-size:clamp(38px,6vw,76px);line-height:.96;margin:14px 0}header p{max-width:850px;color:#5b4a3a;font-size:18px}main{padding:36px max(20px,4vw);display:grid;gap:36px}article{display:grid;grid-template-columns:minmax(280px,520px) 1fr;gap:36px;align-items:start;background:#fff9ed;border:1px solid #d8a43a;border-radius:24px;padding:20px;box-shadow:0 18px 44px #6b4d241c}img{width:100%;border-radius:14px;background:#fff}.angle{color:#a96f00;font-weight:800}span{color:#a96f00;font-weight:900;letter-spacing:2px}h2{font-size:34px;line-height:1.05}p{color:#5b4a3a}@media(max-width:800px){article{grid-template-columns:1fr}header{padding-top:30px}}</style></head><body><header><span>PAUSED FOR YOUR REVIEW</span><h1>Broad audience.<br>Specific pain points.</h1><p>These creatives all use the single general-audience Balance route. The ads, landing page and DM handoff stay focused on restarting, follow-through and fitting training around real life. Nothing here is approved to run until you choose it.</p></header><main>${cards}</main></body></html>`;
 await fs.writeFile(path.join(OUT, 'review.html'), html);
 
 console.log(JSON.stringify({ outDir: OUT, review: path.join(OUT, 'review.html'), ads: exportsList.map(({ id, feed, story }) => ({ id, feed, story })) }, null, 2));

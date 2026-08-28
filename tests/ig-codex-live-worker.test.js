@@ -40,7 +40,7 @@ const { pathToFileURL } = require('url');
         secret: previewSecret,
         nowMs: previewNow,
     });
-    assert.match(signedPreviewUrl, /^https:\/\/plantbased-balance\.org\/p\/[A-Za-z0-9_-]+$/);
+    assert.match(signedPreviewUrl, /^https:\/\/future-balance\.netlify\.app\/p\/[A-Za-z0-9_-]+$/);
     const previewToken = signedPreviewUrl.split('/').pop();
     assert.strictEqual(verifyMetaAppPreviewRef(previewToken, {
         nowMs: previewNow,
@@ -291,50 +291,37 @@ const { pathToFileURL } = require('url');
         codexThreadId: 'codex-thread-1',
         appPreviewUrl: signedPreviewUrl,
         checkoutUrl: 'https://plantbased-balance.org/founders',
+        flowVariant: 'plant_based_control',
     });
     assert.doesNotMatch(prompt, /\$balance-lead-client-dm-manager/);
     assert.doesNotMatch(prompt, /Read CODEX\.md, CLAUDE\.md/);
     assert.match(prompt, /isolated from the normal Balance AI coach/);
     assert.match(prompt, /5 to 12 seconds/);
-    assert.match(prompt, /exactly one purposeful question/);
+    assert.match(prompt, /no more than two discovery questions/i);
     assert.match(prompt, /Answer every distinct message, question, or useful detail/);
     assert.match(prompt, /never silently answer only the first one/i);
     assert.match(prompt, /two to three brief back-to-back bubbles/);
     assert.match(prompt, /same synchronous delivery/);
-    assert.match(prompt, /positive acknowledgements are not closers/);
     assert.match(prompt, /Ignore older test episodes/);
-    assert.match(prompt, /loose conversational path, not a scripted checklist/);
-    assert.match(prompt, /plant-based connection/);
-    assert.match(prompt, /currently plant-based or vegan, or looking to go plant-based or vegan/i);
-    assert.match(prompt, /how long and why when those facts are missing/i);
-    assert.match(prompt, /ask the missing connection detail before goals/i);
-    assert.match(prompt, /genuinely matched client proof when safe/);
-    assert.match(prompt, /Ally for weight loss/);
-    assert.match(prompt, /Gen for strength\/confidence/);
-    assert.match(prompt, /Dani for body recomposition/);
-    assert.match(prompt, /Bec\/Kirsty for shared accountability/);
-    assert.match(prompt, /approved transformation photos all feature women/i);
-    assert.match(prompt, /known to be a man/i);
-    assert.match(prompt, /food uncertainty/);
-    assert.match(prompt, /Do not open with the generic line/);
-    assert.match(prompt, /native app video/);
-    assert.match(prompt, /currently approved app video/);
+    assert.match(prompt, /desired change.*next six weeks[\s\S]*real-life blocker/i);
+    assert.match(prompt, /meal-plan support fitted to dietary preferences/i);
+    assert.match(prompt, /approved time-limited app proof video/);
     assert.match(prompt, /URL is transport-only/);
     assert.match(prompt, /never paste it into public reply or draft text/);
     assert.match(prompt, /same synchronous delivery/i);
-    assert.match(prompt, /end the same video turn with one setup question/i);
     assert.match(prompt, /codex_live_worker controller claim/);
     assert.match(prompt, /replyTextUtf8Base64 and draftTextUtf8Base64/);
     assert.match(prompt, /outbound_text_encoding_corruption/);
-    assert.match(prompt, /free personalised look inside the app/);
-    assert.match(prompt, /signed personal app-preview link immediately/i);
+    assert.match(prompt, /free personalised app preview before payment/i);
+    assert.match(prompt, /send the signed preview immediately/i);
     assert.match(prompt, /Never ask for their first name, last name, email address, phone number/i);
     assert.match(prompt, new RegExp(signedPreviewUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
-    assert.match(prompt, /Exact approved Founders Pass checkout URL: https:\/\/plantbased-balance\.org\/founders/);
+    assert.match(prompt, /Exact approved Founders Pass checkout URL: https:\/\/future-balance\.netlify\.app\/fitness/);
     assert.match(prompt, /send that exact URL now and do not search for, regenerate, shorten, or substitute it/i);
     assert.match(prompt, /Never complete or cancel the controller action unless the required Instagram payload has been sent/i);
-    assert.match(prompt, /Do not copy their wording/);
     assert.match(prompt, /one AUD 149 payment/);
+    assert.match(prompt, /Frozen campaign variant: broad_pain/i);
+    assert.doesNotMatch(prompt, /plant[ -]?based meal plan|plant[ -]?based connection|currently plant[ -]?based or vegan/i);
     assert.doesNotMatch(prompt, /before making a payment\. Keen\?/);
     assert.match(prompt, /Do not browse, research, edit code/);
     assert.match(prompt, /plain ASCII punctuation and no emoji/);

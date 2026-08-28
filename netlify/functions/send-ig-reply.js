@@ -321,7 +321,9 @@ function shouldResetGoldCoastAiTestConversationAfterPreview({
         && username === GOLD_COAST_AI_TEST_HANDLE
         && botAccount === 'shan_n_sunny'
         && customData.internal_test_auto_reply_enabled === true
-        && String(customData.internal_test_meta_ad_flow || '').trim().toLowerCase() === 'plant_based_control'
+        && ['plant_based_control', 'broad_pain'].includes(
+            String(customData.internal_test_meta_ad_flow || '').trim().toLowerCase()
+        )
         && alertData.paid_meta_app_preview_handoff === true
         && isMetaAppPreviewUrl(previewUrl)
         && String(sentText || '').includes(previewUrl)

@@ -46,7 +46,7 @@ async function evaluateTurnQualifier({ qualifier, history, inbound }) {
             qualifier: qualifier || null,
             custom_data: {
                 acquisition_mode: 'paid_meta',
-                offer_flow_variant: 'plant_based_control',
+                offer_flow_variant: 'broad_pain',
                 meta_ad_attribution: { source: 'meta_ads', platform_source: 'ADS' },
             },
         },
@@ -70,8 +70,8 @@ async function composeTurn({ qualifier, history, inbound }) {
         currentMessage: inbound,
         qualifier: turnQualifier,
         history,
-        flowVariant: 'plant_based_control',
-        checkoutUrl: 'https://plantbased-balance.org/founders',
+        flowVariant: 'broad_pain',
+        checkoutUrl: 'https://future-balance.netlify.app/fitness',
         appPreviewUrl: APP_PREVIEW_URL,
         personalVoiceNoteMode: false,
         allowVideoAttachment: false,
@@ -101,8 +101,8 @@ async function composeTurn({ qualifier, history, inbound }) {
         qualifierQuestion: turnQualifier?.is_question_moment && turnQualifier?.next_question ? turnQualifier.next_question : null,
         botAccount: 'shan_n_sunny',
         acquisitionMode: 'paid_meta',
-        adFlowVariant: 'plant_based_control',
-        checkoutUrl: 'https://plantbased-balance.org/founders',
+        adFlowVariant: 'broad_pain',
+        checkoutUrl: 'https://future-balance.netlify.app/fitness',
     });
     let issues = collectPaidMetaWriterContractIssues({ draft, currentMessage: inbound, qualifier: turnQualifier, history });
     if (issues.length) {

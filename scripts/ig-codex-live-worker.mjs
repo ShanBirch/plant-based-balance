@@ -54,7 +54,8 @@ export function shouldResetGoldCoastAiConversationAfterDelivery({ alert, finalAl
     return threadId === '4baea56e-eab4-4887-a732-39b14e983d44'
         && username === 'goldcoast_ai_solutions'
         && data.paid_meta_app_preview_handoff === true
-        && previewUrl.startsWith(`${META_APP_PREVIEW_SHORT_URL}/`)
+        && (previewUrl.startsWith(`${META_APP_PREVIEW_SHORT_URL}/`)
+            || previewUrl.startsWith(`${META_APP_PREVIEW_BROAD_SHORT_URL}/`))
         && Array.isArray(canonicalOutbounds)
         && canonicalOutbounds.some(message => String(message?.text || '').includes(previewUrl));
 }
@@ -86,7 +87,7 @@ export function buildSignedMetaAppPreviewUrl(threadId, {
     secret = '',
     nowMs = Date.now(),
     ttlMs = META_APP_PREVIEW_REF_TTL_MS,
-    flowVariant = 'plant_based_control',
+    flowVariant = 'broad_pain',
 } = {}) {
     const idHex = String(threadId || '').replace(/-/g, '');
     const signingSecret = String(secret || '').trim();
@@ -146,25 +147,30 @@ export function buildLivePrompt({
     action,
     codexThreadId,
     appPreviewUrl = '',
-    checkoutUrl = FOUNDERS_PASS_CHECKOUT_URL,
+    checkoutUrl = FOUNDERS_PASS_BROAD_CHECKOUT_URL,
     flowVariant = '',
 }) {
     const igThreadId = String(alert?.data?.ig_thread_id || alert?.data?.codex_live_chat_ig_thread_id || action?.thread_id || '');
     const username = String(alert?.data?.ig_username || alert?.client_name || action?.ig_username || 'unknown lead');
     const newestInbound = String(alert?.data?.message_preview || '').trim();
-    const resolvedFlowVariant = flowVariant
-        || String(alert?.data?.meta_ad_flow_variant || alert?.data?.offer_flow_variant || '').trim().toLowerCase()
-        || 'plant_based_control';
-    const broadFlow = resolvedFlowVariant === 'broad_pain';
+    // This worker only handles verified paid-Meta conversations. The former
+    // plant control value may remain on queued alerts, but it is no longer a
+    // live routing choice.
+    const resolvedFlowVariant = 'broad_pain';
+    const broadFlow = true;
+    const approvedCheckoutUrl = String(checkoutUrl || '').startsWith(`${FOUNDERS_PASS_BROAD_CHECKOUT_URL}/`)
+        || checkoutUrl === FOUNDERS_PASS_BROAD_CHECKOUT_URL
+        ? checkoutUrl
+        : FOUNDERS_PASS_BROAD_CHECKOUT_URL;
     const questionContract = broadFlow
         ? `4. Use no more than two discovery questions in the complete episode: first the desired change over the next six weeks, then the real-life blocker or support need. Skip either when already answered. Start ordinary replies from one exact detail and keep them statement-led, with at most one decision-changing question in a turn. Once goal and blocker are known, stop discovery and move to the neutral offer plus preview. A signed preview or checkout turn has no question and pauses.`
         : `4. Every safe non-link public turn must end with exactly one purposeful question that earns the next response. This includes atomic transformation-photo and app-video turns: put the question after the media introduction/attachment in that same synchronous delivery, not in a later turn. Only a turn containing the signed app-preview URL or checkout URL has zero questions and pauses. "Oh nice!", "sounds good", and similar positive acknowledgements are not closers in this flow: do not react-only; make the next progression move and ask one question.`;
     const conversationIntelligence = broadFlow
-        ? `- This route is durably frozen from verified broad-ad attribution. Keep the public conversation general fitness. Do not introduce plant-based, vegan or vegetarian positioning, and never ask vegan status, duration or reason.
+        ? `- This route is durably fixed from verified paid-Meta attribution. Keep the public conversation general fitness. Do not introduce plant-based, vegan or vegetarian positioning, and never ask vegan status, duration or reason.
 - The complete discovery path has only two jobs: the change they most want over the next six weeks, then what makes that hard in real life. Skip a question when the lead supplied the fact in the opener or a later batch.
 - Write every ordinary reply fresh from one exact lead detail. Reflect or answer first, remain statement-led, and ask at most one decision-changing question.
 - Once goal plus blocker/support need are known, stop discovery. Explain Balance Foundations as a six-week setup with a workout program around their week, meal-plan support fitted to dietary preferences, one weekly training/food review and adjustment, and six weeks of app/community access.
-- State one AUD 149 payment for the full six weeks, with no subscription or auto-renewal, then offer the free personalised app preview before payment. When they ask to see it or accept, send the signed preview immediately without reconfirming or collecting contact details.
+- State one AUD 149 payment for the full six weeks, with no subscription or auto-renewal, then offer the free personalised app preview before payment. When they ask to see it or accept, send the signed preview immediately without reconfirming. Never ask for their first name, last name, email address, phone number or another setup detail in the DM; the preview collects what it needs inside Balance.
 - A generic "I'm ready" stays on the promised preview path. Send checkout only after an explicit request to join, pay, sign up or receive the checkout link. Dietary choices can be shown inside preview/onboarding without changing this public route.`
         : `- This is a loose conversational path, not a scripted checklist. Usually it moves through: a small useful answer, plant-based connection, how long and why when those facts are missing, their goal, genuinely matched client proof when safe, what is blocking it, the app video, then an offer to let them see their own workout and meal plan inside the app before paying. The order can flex when the lead supplies later-stage facts or direct intent.
 - On a fresh Founders Pass opener, after the short direct answer, the first connection question is whether they are currently plant-based or vegan, or looking to go plant-based or vegan, unless they already said. Do not ask the fitness goal first. If they confirm vegan, plant-based, or vegetarian and have not supplied duration or reason, ask the missing connection detail before goals. When both are missing, one natural compound question is allowed, for example: "How long have you been vegan, and what made you go vegan?" If one is already known, ask only the other. If both are known, connect briefly and move to the fitness goal. If they are looking to transition, ask what sparked it before the goal when natural.
@@ -215,7 +221,7 @@ ${offerFacts}
 - They can see their profile, workout program, meal plan, and the full app before paying.
 - Transformation proof is optional, must genuinely match the person's goal and situation, and must not be forced or hardcoded.
 - Exact signed app-preview URL for this wake: ${appPreviewUrl || 'unavailable; do not complete or send a generic preview URL'}
-- Exact approved Founders Pass checkout URL: ${checkoutUrl}
+- Exact approved Founders Pass checkout URL: ${approvedCheckoutUrl}
 - Frozen campaign variant: ${resolvedFlowVariant}
 - The signed preview URL above is already generated for this exact IG thread. When the newest inbound accepts the preview, send that exact URL now and do not search for, regenerate, shorten, or substitute it.
 - Never complete or cancel the controller action unless the required Instagram payload has been sent and canonically read back, or a genuine hold is being recorded.
@@ -838,15 +844,16 @@ async function runAlert({ alert, action, appServer, supabase, state, statePath, 
         saveState(statePath, state);
         return { skipped: 'stale_after_setup' };
     }
-    const flowVariant = String(alert?.data?.meta_ad_flow_variant || alert?.data?.offer_flow_variant || '').trim().toLowerCase() === 'broad_pain'
-        ? 'broad_pain'
-        : 'plant_based_control';
+    const flowVariant = 'broad_pain';
     const appPreviewUrl = buildSignedMetaAppPreviewUrl(action.thread_id, {
         secret: previewSigningSecret,
         flowVariant,
     });
-    const checkoutUrl = String(alert?.data?.meta_ad_checkout_url || '').trim()
-        || (flowVariant === 'broad_pain' ? FOUNDERS_PASS_BROAD_CHECKOUT_URL : FOUNDERS_PASS_CHECKOUT_URL);
+    const storedCheckoutUrl = String(alert?.data?.meta_ad_checkout_url || '').trim();
+    const checkoutUrl = storedCheckoutUrl.startsWith(`${FOUNDERS_PASS_BROAD_CHECKOUT_URL}/`)
+        || storedCheckoutUrl === FOUNDERS_PASS_BROAD_CHECKOUT_URL
+        ? storedCheckoutUrl
+        : FOUNDERS_PASS_BROAD_CHECKOUT_URL;
     const prompt = buildLivePrompt({
         alert,
         action,

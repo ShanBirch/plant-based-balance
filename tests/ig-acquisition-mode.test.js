@@ -30,7 +30,7 @@ assert.equal(resolveIgAcquisitionMode({
 const organicPolicy = buildAcquisitionModePromptBlock(ACQUISITION_MODES.ORGANIC_FOLLOWER);
 assert.match(organicPolicy, /may not expect a sales conversation yet/);
 assert.match(organicPolicy, /statement they can confirm, correct or expand/);
-assert.match(organicPolicy, /Never place an organic lead into a paid broad-pain experiment/);
+assert.match(organicPolicy, /Never place an organic lead into the paid-Meta route/);
 
 const paidPolicy = buildAcquisitionModePromptBlock(ACQUISITION_MODES.PAID_META);
 assert.match(paidPolicy, /knowingly entered from a verified Meta ad/);
@@ -41,7 +41,7 @@ const broadMessage = 'Work and the kids have made it hard to get consistent. I n
 assert.equal(instantDraft.resolveMetaAdFlowVariant({
     customData: { acquisition_source: 'native_story_outreach' },
     currentMessage: broadMessage,
-}), 'plant_based_control', 'organic pain language must not select the paid broad experiment');
+}), 'plant_based_control', 'organic pain language must not select the paid-Meta route');
 
 const paidBroadData = {
     acquisition_mode: 'paid_meta',
@@ -55,6 +55,14 @@ assert.equal(instantDraft.resolveMetaAdFlowVariant({
     customData: paidBroadData,
     currentMessage: broadMessage,
 }), 'broad_pain');
+assert.equal(instantDraft.resolveMetaAdFlowVariant({
+    customData: {
+        acquisition_mode: 'paid_meta',
+        offer_flow_variant: 'plant_based_control',
+        meta_ad_attribution: { source: 'meta_ads', ref: 'plant_based_control' },
+    },
+    currentMessage: 'I am vegan and ready',
+}), 'broad_pain', 'legacy plant flags must normalise to the single paid route');
 
 const organicCheckout = instantDraft.buildMetaAdCheckoutUrl({
     customData: { acquisition_source: 'native_story_outreach' },
@@ -67,7 +75,7 @@ assert.doesNotMatch(organicCheckout, /future-balance/);
 const paidCheckout = instantDraft.buildMetaAdCheckoutUrl({
     customData: paidBroadData,
     currentMessage: broadMessage,
-    flowVariant: 'broad_pain',
+    flowVariant: 'plant_based_control',
 });
 assert.equal(paidCheckout, 'https://future-balance.netlify.app/fitness');
 assert.equal(new URL(paidCheckout).search, '');

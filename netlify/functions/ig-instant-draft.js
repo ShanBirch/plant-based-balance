@@ -2271,39 +2271,16 @@ function buildDraftImageAttachmentData(draft = {}) {
 function resolveMetaAdFlowVariant({ customData = {}, currentMessage = '', acquisitionMode = '' } = {}) {
     const resolvedAcquisitionMode = acquisitionMode || resolveIgAcquisitionMode({ customData });
     if (!isPaidMetaAcquisitionMode(resolvedAcquisitionMode)) return 'plant_based_control';
-    const internalTestVariant = String(customData?.internal_test_meta_ad_flow || '').trim().toLowerCase();
-    if (customData?.internal_test_auto_reply_enabled === true
-        && ['plant_based_control', 'broad_pain'].includes(internalTestVariant)) {
-        return internalTestVariant;
-    }
-    const storedVariant = String(
-        customData?.meta_ad_flow_variant
-        || customData?.offer_flow_variant
-        || ''
-    ).trim().toLowerCase();
-    if (['plant_based_control', 'broad_pain'].includes(storedVariant)) return storedVariant;
-    const broadAdIds = new Set(String(process.env.META_BROAD_AD_IDS || '')
-        .split(',')
-        .map(value => value.trim())
-        .filter(Boolean));
-    const routing = customData?.current_inbound_routing || {};
-    const attribution = customData?.meta_ad_attribution || {};
-    const adId = String(routing.ad_id || attribution.ad_id || '').trim();
-    const referralHint = `${attribution.ref || ''} ${attribution.referer_uri || ''}`.toLowerCase();
-    if ((adId && broadAdIds.has(adId)) || /broad[_ -]?pain|balance[_ -]?general|fitness[_ -]?coaching/.test(referralHint)) {
-        return 'broad_pain';
-    }
-    if (/plant[ -]?based|vegan|vegetarian/.test(referralHint)) return 'plant_based_control';
-    // Verified attribution is the only authority for the experiment variant.
-    // Fail closed to the control when an ad has not been mapped yet; never let
-    // a later generic message flip the route.
-    return 'plant_based_control';
+    // There is one live paid-Meta conversation route. Legacy stored variants,
+    // referral wording and ad IDs remain attribution evidence only and must not
+    // revive the retired plant-based control path.
+    return 'broad_pain';
 }
 
 function buildMetaAdCheckoutUrl({ customData = {}, flowVariant = '', currentMessage = '', acquisitionMode = '' } = {}) {
     const resolvedAcquisitionMode = acquisitionMode || resolveIgAcquisitionMode({ customData });
     const resolvedVariant = isPaidMetaAcquisitionMode(resolvedAcquisitionMode)
-        ? (flowVariant || resolveMetaAdFlowVariant({ customData, currentMessage, acquisitionMode: resolvedAcquisitionMode }))
+        ? 'broad_pain'
         : 'plant_based_control';
     const baseUrl = resolvedVariant === 'broad_pain'
         ? FOUNDERS_PASS_BROAD_CHECKOUT_URL
@@ -2815,7 +2792,7 @@ function buildApprovedDeterministicMetaAdFirstReplyReview({
 
 const META_AD_FUNNEL_CONTEXT = `
 LEAD ACQUISITION CONTEXT:
-The current paid Meta campaign promotes one public offer: Balance Foundations. It is one AUD $149 payment for the full six weeks and does not auto-renew. It includes a clear six-week curriculum inside Balance, six weeks of app/community access, and one weekly check-in plus workout/food review and adjustments from Shannon. Do not rename this paid-ad offer Starter Coaching or switch a paid-ad lead to a weekly package merely because Meta's old prompt says "personalized coaching plans". The default close happens inside DMs. A short call is an escalation only when the lead explicitly wants to talk, remains genuinely uncertain after a clear DM explanation, or the situation needs Shannon's judgement. Balance no longer uses a free challenge as its acquisition or conversion path. The acquisition-mode block above is authoritative about whether Shannon initiated the relationship or the lead knowingly entered from a Meta ad. Meta may supply one of the example phrases below as the lead's prefilled opening. Treat it as their ordinary first sentence, not as a questionnaire step. Never restate a menu of options or ask them to choose from buttons. The preferred current campaign prompts are:
+The current paid Meta campaign promotes one public offer: Balance Foundations. It is one AUD $149 payment for the full six weeks and does not auto-renew. It includes a clear six-week curriculum inside Balance, six weeks of app/community access, and one weekly check-in plus workout/food review and adjustments from Shannon. Do not rename this paid-ad offer Starter Coaching or switch a paid-ad lead to a weekly package merely because Meta's old prompt says "personalized coaching plans". The default close happens inside DMs. A short call is an escalation only when the lead explicitly wants to talk, remains genuinely uncertain after a clear DM explanation, or the situation needs Shannon's judgement. Balance no longer uses a free challenge as its acquisition or conversion path. The acquisition-mode block above is authoritative about whether Shannon initiated the relationship or the lead knowingly entered from a Meta ad. Every verified paid-Meta lead uses this one neutral general-fitness route. Legacy plant-based variant fields, referral text and old ad prompts remain attribution or conversation context only and never select a different flow. Meta may supply one of the example phrases below as the lead's prefilled opening. Treat it as their ordinary first sentence, not as a questionnaire step. Never restate a menu of options or ask them to choose from buttons. Older ads may still supply prompts such as:
   1. "What's included in the six-week Balance Foundations program?"
   2. "How does the weekly check-in work?"
   3. "Do I need to already be plant-based?"
@@ -2830,7 +2807,7 @@ GUIDED RESPONSE CONTRACT FOR EVERY PAID-META TURN:
 - Keep exact checkout links, app-access links, safety holds, price, duration, and inclusions factual. Everything around those facts should still respond to the person.
 - If several rapid bubbles arrived, treat them as one message and respond to all meaningful parts without asking them to repeat anything.
 - Use one or two short Instagram bubbles when that feels natural. A useful split is the direct acknowledgement or answer first, then the single purposeful question second. Do not force two bubbles on every turn and never split one sentence arbitrarily.
-- After Shannon asks whether they are currently plant-based or looking to adopt it: if they are transitioning, reflect the exact habit they named, such as eating plant-based twice a week, then ask for their main health or fitness goal. Do not ask them to design the help. If they are already plant-based, react to any duration or experience they supplied; ask how long only when it is missing, and naturally bring in their main health or fitness goal.
+- Never ask whether the lead is vegan or plant-based, how long they have been, or why. If they independently ask about dietary fit, answer that Balance can fit nutrition support to their dietary preferences, then continue the same neutral route.
 
 Important: when there is no prior tracked conversation, do NOT assume the lead started the DM. Most first captured lead messages happen because Shannon commented on or replied to their story/post natively, and that opener is not visible in ManyChat. Their reply may be tiny or ambiguous because they are answering that unseen opener. Treat it as an open door and build rapport from whatever signal exists. Use one light human move, which can be a short statement. Ask a question only when that is clearly the best next text, or when there is no better hook and Shannon has not asked a basic day/week opener yet.
 
@@ -2847,10 +2824,9 @@ SHANNON FOLLOW-UP QUESTION FINGERPRINT:
 
 THE OFFERING (for context — never list as a brochure; speak like a friend):
 - The FIRST offer for leads in this paid campaign is the paid Balance Foundations program, not a free challenge, standalone custom meal plan, workout program, generic app trial or Starter Coaching.
-- If they are plant-based / vegan / vegetarian-curious, tailor the coaching explanation around plant-based food support.
-- If they just want fitness, muscle, weight loss, energy, or consistency with no plant-based signal, tailor the coaching explanation around training, food structure, and accountability.
-- Keep the public link clean. For the plant-based ad route use ${FOUNDERS_PASS_CHECKOUT_URL}. For the broad ad route use ${FOUNDERS_PASS_BROAD_CHECKOUT_URL}. The broad route must not introduce plant-based, vegan or vegetarian positioning in its ad reply, landing handoff or follow-up unless the lead independently asks about it. Preserve the route and Meta identifiers on the canonical thread and handoff receipt, never by pasting tracking parameters into the DM.
-- For a general ad-attributed "what is it?" or Balance Foundations opener, do not dump the offer or send a raw media URL. Ask one plain question about the main thing they are trying to change. After they answer, reflect that exact goal in one short sentence, announce the proof naturally and send the native Balance proof media. Treat the three ad FAQ prompts as informational, not transactional: answer the selected question in one concise beat, ask one useful context question, and do not send a signup link. Only send the Balance Foundations link after an explicit transactional message such as "send me the link", "I'm ready", "how do I join?", or clear acceptance after the offer. Only offer a quick call if they say they want to talk it through or remain genuinely uncertain after the clear explanation.
+- Tailor the coaching explanation around the person's goal, training, food structure and accountability. Dietary preferences belong inside personalised nutrition setup, not paid-ad positioning.
+- Keep the public link clean and use ${FOUNDERS_PASS_BROAD_CHECKOUT_URL} for every paid-Meta lead. Do not introduce plant-based, vegan or vegetarian positioning in an ad reply, landing handoff or follow-up unless the lead independently asks about dietary fit. Preserve Meta identifiers on the canonical thread and handoff receipt, never by pasting tracking parameters into the DM.
+- For a general ad-attributed "what is it?" or Balance Foundations opener, do not dump the offer or send a raw media URL. Ask only for the desired six-week change, then the real-life blocker, skipping either fact already supplied. Once both are known, explain the matched six-week setup, state the $149/no-renewal terms, and offer the personalised app preview before payment. Send that signed preview immediately when requested or accepted, including after a generic "I'm ready". Only bypass the preview for an explicit request to join, pay, sign up or receive checkout. Only offer a quick call if they say they want to talk it through or remain genuinely uncertain after the clear explanation.
 - If they only ask "what's Balance?" or "what's your app?" while also saying they are already training hard or feeling good, answer in one plain beat and make any coaching mention casual. No feature list or link unless they ask for details.
 - Once they start, the Balance app gives them the guided kickstart, training and food structure, progress tools and community.
 - Outside this paid Meta campaign, the wider package ladder still exists and must not be changed. Inside this paid Meta campaign, keep the conversation focused on Balance Foundations at one $149 payment for the full six weeks. Only discuss another package if the lead explicitly rejects the six-week format and asks for a different ongoing or live-call service.
@@ -2862,10 +2838,10 @@ RESPONSE PATTERNS (mimic Shannon's actual voice for each prompt):
 - "Do you offer personalized coaching plans?" -> answer yes in the current Balance Foundations context: it has a clear six-week curriculum plus one weekly check-in where Shannon reviews and adjusts training and food. Ask what they are mainly trying to change. Do not mention Starter Coaching or send a signup link from this FAQ branch.
 - "What's Balance?" / "what's your app?" -> answer plainly: it is Shannon's fitness app/coaching setup. If their latest training detail gives a natural opening, one casual line is enough: "honestly one weekly check-in would probably help keep that simple if you wanted the coaching details". Do not hardcode that wording, but keep that size and feel. No app feature list or signup link unless they ask what is included or ask for details.
 - "How does accountability work?" / "how would you keep me on track?" -> this is a connection moment, not a brochure request. Explain it plainly from Shannon's point of view: they check in and log what is happening, Shannon sees the real week and guides the next move, with a nudge when things start slipping. In PERSONAL VOICE NOTE MODE, make this one connected voice note and do not duplicate the explanation in text. Otherwise use one concise text bubble. Do not tack on another qualifier unless their answer would genuinely change the next step.
-- "Is it in person?" / "I'm looking for a local trainer" / "I already have a PT" -> treat this as a preference or compatibility objection. Answer plainly first: Balance Foundations is an online six-week curriculum inside the app and plant-based community, not in-person personal training. Do not push the link yet. Ask whether that would still be useful, or how it would need to fit around their current trainer.
-- "Do I need to already be Plant Based?" -> warm reassurance ("not at all, lots of my crew start curious"), then ask their current eating situation, ever cooked plant-based before.
-- "I'm In - save me a spot!" / "let's do it" / "send me the link" -> if they have already shared enough context or clearly accepted, send https://plantbased-balance.org/founders with the quick Balance Foundations handoff. Do NOT ask a Name + Age + Main goal intake bundle.
-- "I need help" / "I don't know what I'm doing" / "where do I start?" -> human first: validate the stuck feeling, ask one grounded context question if needed, then softly explain that Balance Foundations is the easiest starting point because it gives them the complete six-week curriculum plus app and plant-based community without another weekly bill. Do not sound like a canned invite.
+- "Is it in person?" / "I'm looking for a local trainer" / "I already have a PT" -> treat this as a preference or compatibility objection. Answer plainly first: Balance Foundations is an online six-week curriculum inside the app, not in-person personal training. Do not push the link yet. Ask whether that would still be useful, or how it would need to fit around their current trainer.
+- "Do I need to already be Plant Based?" -> answer plainly that they do not and that nutrition support is fitted to their dietary preferences. Do not turn this into vegan-status discovery.
+- "I'm In - save me a spot!" / "let's do it" / "send me the link" -> if they explicitly ask to join, pay, sign up or receive checkout, send ${FOUNDERS_PASS_BROAD_CHECKOUT_URL} with the quick Balance Foundations handoff. A generic "I'm ready" receives the promised personalised preview first. Do NOT ask a Name + Age + Main goal intake bundle.
+- "I need help" / "I don't know what I'm doing" / "where do I start?" -> human first: validate the stuck feeling, ask one grounded goal or blocker question if it is still missing, then softly explain that Balance Foundations is the easiest starting point because it gives them the complete six-week curriculum, app/community access and Shannon's weekly review without another weekly bill. Do not sound like a canned invite.
 - Warm lead with enough context already shared -> use a low-key bridge instead of endless discovery. Do not write stock lines that say the offer is made for this exact situation. Anchor it to their actual situation in one casual sentence, for example "Balance Foundations could give you a proper six-week starting rhythm without another weekly bill". End by asking if they want the details only when they have not already asked. Do not send the link or app feature rundown until they say yes or ask what is included.
 
 When the conversation has clearly moved past intake (qualifier answers received, or they're chatting about something else), drop this context and just chat naturally.`;
@@ -3801,7 +3777,9 @@ function isInternalMetaAdConversationTestLane({ linkedUserId = null, customData 
     );
     return botAccount === 'shan_n_sunny'
         && customData?.internal_test_auto_reply_enabled === true
-        && String(customData?.internal_test_meta_ad_flow || '').toLowerCase() === 'plant_based_control';
+        && ['plant_based_control', 'broad_pain'].includes(
+            String(customData?.internal_test_meta_ad_flow || '').trim().toLowerCase()
+        );
 }
 
 function isInternalMetaAdConversationOpeningTurn({

@@ -272,8 +272,9 @@ test('Cocos paid-ad Founders Pass opener bypasses the false signup hold and mode
 
     assert.equal(draft.firstReplyIntent, 'overview');
     assert.match(draft.joined, /^Hey,/i);
-    assert.match(draft.joined, /six-week plant-based fitness program/i);
-    assert.match(draft.joined, /Are you currently plant-based or vegan, or are you looking to go plant-based or vegan\?/i);
+    assert.match(draft.joined, /six-week fitness setup inside the app/i);
+    assert.match(draft.joined, /main change.*next six weeks\?/i);
+    assert.doesNotMatch(draft.joined, /plant[ -]?based|vegan|vegetarian/i);
     assert.doesNotMatch(draft.joined, /https?:\/\//);
     assert.equal(approval.code, 'approved_meta_ad_first_reply');
     assert.equal(handoff.client_manager_review_required, false);
@@ -1589,7 +1590,7 @@ test('preview-only Meta approval cannot make the worker invent a checkout link',
         linkedUserId: null,
     });
     assert.equal(readyHandoff.approved_link_auto_sendable, true);
-    assert.equal(readyHandoff.signup_link_handoff_url, 'https://plantbased-balance.org/founders');
+    assert.equal(readyHandoff.signup_link_handoff_url, 'https://future-balance.netlify.app/fitness');
 });
 
 test('paid Meta opt-out, identity, and safety messages always hold while ordinary flows are untouched', () => {
@@ -1698,9 +1699,10 @@ test('inclusions quick reply answers the direct ask without a raw preview URL', 
     assert.equal(reply.chunks.length, 1);
     assert.equal(reply.checkoutUrl, null);
     assert.doesNotMatch(reply.joined, /balance-founders-pass-dm-preview\.mp4/);
-    assert.match(reply.joined, /Balance Foundations is our six-week plant-based fitness program inside the app/i);
-    assert.match(reply.joined, /training, plant-based food support and the community/i);
-    assert.match(reply.joined, /Are you currently plant-based or vegan, or are you looking to go plant-based or vegan\?/i);
+    assert.match(reply.joined, /Balance Foundations is a six-week setup inside the app/i);
+    assert.match(reply.joined, /training, food support and the community/i);
+    assert.match(reply.joined, /main change.*next six weeks\?/i);
+    assert.doesNotMatch(reply.joined, /plant[ -]?based|vegan|vegetarian/i);
     assert.doesNotMatch(reply.joined, /https?:\/\//);
 });
 
@@ -1719,7 +1721,7 @@ test('personalised coaching FAQ answers from the advertised six-week program wit
             linkedUserId: null,
         });
 
-        assert.equal(reply.joined, 'Hey, yeah I do. Balance Foundations is our six-week plant-based fitness program inside the app, plus a weekly check-in where I review and adjust your training and food. Are you currently plant-based or vegan, or are you looking to go plant-based or vegan?');
+        assert.equal(reply.joined, "Yeah, I do. Balance Foundations is a six-week setup inside the app with a workout program, food support and one weekly review with me. What's the main change you'd like to make over the next six weeks?");
         assert.doesNotMatch(reply.joined, /Starter Coaching|\$29\.99/i);
         assert.equal(reply.checkoutUrl, null);
         assert.equal(reply.videoAttachmentUrl, undefined);
@@ -1742,7 +1744,8 @@ test('generic keyword and fit quick reply answer without a premature checkout li
 
     const reply = buildMetaAdFoundersPassFirstReply('Is this right for me?');
     assert.equal(reply.firstReplyIntent, 'fit');
-    assert.match(reply.joined, /Are you currently plant-based or vegan, or are you looking to go plant-based or vegan\?/i);
+    assert.match(reply.joined, /main change.*next six weeks\?/i);
+    assert.doesNotMatch(reply.joined, /plant[ -]?based|vegan|vegetarian/i);
     assert.doesNotMatch(reply.joined, /plant-based-fitness\.html/);
     assert.doesNotMatch(reply.joined, /vegan fitness community/i);
 });
@@ -2603,17 +2606,18 @@ test('Instagram split offer bubbles still turn a short Yes into the promised app
     assert.equal((liveVideoPreviewAcceptance.joined.match(/\?/g) || []).length, 0);
 });
 
-test('plant-based requirement and ready prompts receive different next steps', () => {
+test('legacy plant-based requirement is answered neutrally and explicit start receives the paid route', () => {
     const requirement = buildMetaAdFoundersPassFirstReply('Do I need to already be Plant Based?');
     assert.equal(requirement.firstReplyIntent, 'plant_based_requirement');
-    assert.match(requirement.joined, /plenty of people start while they're just trying to eat more plant-based/i);
-    assert.match(requirement.joined, /what does your food look like at the moment/i);
+    assert.match(requirement.joined, /do not need to be/i);
+    assert.match(requirement.joined, /dietary preferences/i);
+    assert.match(requirement.joined, /main change.*next six weeks\?/i);
     assert.doesNotMatch(requirement.joined, /plant-based-fitness\.html/);
 
     const ready = buildMetaAdFoundersPassFirstReply("I'm ready to start");
     assert.equal(ready.firstReplyIntent, 'ready');
-    assert.match(ready.joined, /quick setup and start here/i);
-    assert.match(ready.joined, /plantbased-balance\.org\/founders/);
+    assert.match(ready.joined, /get started here/i);
+    assert.match(ready.joined, /future-balance\.netlify\.app\/fitness/);
     assert.equal(buildMetaAdFirstReplyApproval({
         metaAdFirstInbound: true,
         draft: ready,
@@ -2779,7 +2783,7 @@ test('broad prompt and reviewer enforce neutral two-question discovery without c
     assert.match(plantPrompt, /why and how long/i);
 });
 
-test('stored verified Meta variant cannot be flipped by later message wording', () => {
+test('all verified Meta routing normalises to the single neutral paid flow', () => {
     assert.equal(resolveMetaAdFlowVariant({
         customData: {
             acquisition_mode: 'paid_meta',
@@ -2795,14 +2799,14 @@ test('stored verified Meta variant cannot be flipped by later message wording', 
             meta_ad_attribution: { source: 'meta_ads', ref: 'unknown' },
         },
         currentMessage: 'Work and kids make consistency hard',
-    }), 'plant_based_control');
+    }), 'broad_pain');
     assert.equal(resolveMetaAdFlowVariant({
         customData: {
             acquisition_mode: 'paid_meta',
             meta_ad_attribution: { source: 'meta_ads', ref: 'unknown' },
         },
         currentMessage: 'Work and kids make consistency hard',
-    }), 'plant_based_control', 'unmapped verified attribution fails closed instead of using message text');
+    }), 'broad_pain', 'unmapped verified attribution uses the single paid route');
     assert.equal(resolveMetaAdFlowVariant({
         customData: { acquisition_mode: 'organic_inbound' },
         currentMessage: 'Work and kids make consistency hard',
@@ -2828,12 +2832,15 @@ test('the public DM link stays clean while Meta identifiers remain thread data',
     };
     const checkoutUrl = buildMetaAdCheckoutUrl({ customData, flowVariant: 'plant_based_control' });
     const shortAdRef = BigInt('120210003').toString(36);
-    assert.equal(checkoutUrl, `https://plantbased-balance.org/founders/${shortAdRef}`);
+    assert.equal(checkoutUrl, `https://future-balance.netlify.app/fitness/${shortAdRef}`);
     assert.equal(new URL(checkoutUrl).search, '');
     assert.equal(customData.meta_ad_attribution.ad_id, '120210003');
     assert.equal(customData.meta_ad_attribution.ad_name, 'A1 Brain Angle');
 
-    const ready = buildMetaAdFoundersPassFirstReply("I'm ready to start", { customData });
+    const ready = buildMetaAdFoundersPassFirstReply("I'm ready to start", {
+        customData,
+        flowVariant: 'broad_pain',
+    });
     const handoff = buildLeadOnboardingHandoffData({
         draftText: ready.joined,
         qualifier: {},
@@ -2843,8 +2850,9 @@ test('the public DM link stays clean while Meta identifiers remain thread data',
         manychatMessageId: 'mid-1',
         currentMessage: "I'm ready to start",
     });
+    assert.equal(ready.checkoutUrl, `https://future-balance.netlify.app/fitness/${shortAdRef}`);
     assert.equal(handoff.approved_link_auto_sendable, true);
-    assert.equal(handoff.signup_link_handoff_url, `https://plantbased-balance.org/founders/${shortAdRef}`);
+    assert.equal(handoff.signup_link_handoff_url, `https://future-balance.netlify.app/fitness/${shortAdRef}`);
 });
 
 test('inclusions are informational and do not create an approved checkout handoff', () => {
@@ -2896,7 +2904,7 @@ test('Meta referral hint preserves the broad route independently of message word
     assert.equal(variant, 'broad_pain');
 });
 
-test('Coco internal Meta test lane keeps its configured route when ordinary wording contains broad-pain keywords', () => {
+test('Coco internal Meta test lane accepts its legacy arming flag but always runs the neutral paid flow', () => {
     assert.equal(resolveMetaAdFlowVariant({
         customData: {
             acquisition_mode: 'paid_meta',
@@ -2904,7 +2912,7 @@ test('Coco internal Meta test lane keeps its configured route when ordinary word
             internal_test_meta_ad_flow: 'plant_based_control',
         },
         currentMessage: "What's included in the Balance app, and how does the program work?",
-    }), 'plant_based_control');
+    }), 'broad_pain');
     assert.equal(resolveMetaAdFlowVariant({
         customData: {
             acquisition_mode: 'paid_meta',
