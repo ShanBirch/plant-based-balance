@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v389-settled-guided-actions'; // v389: validate each guided destination after its Home action settles
+const CACHE_NAME = 'pbb-app-v390-guided-real-actions'; // v390: highlight real tour actions and keep Home prompts clear
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

@@ -45,7 +45,7 @@ test('shopping list restores the prepared preview plan before opening', () => {
 test('paid tour returns Home between sections and requires the real To Do cards', () => {
   assert.match(dashboard, /promptRequiresTargetClick:true/);
   assert.match(dashboard, /Tap the highlighted To Do card to open this part of the app/);
-  assert.match(dashboard, /step\.returnHomeAfter \? 'Back to Home'/);
+  assert.match(dashboard, /step\.returnHomeAfter \? 'Next: back to Home'/);
   assert.match(dashboard, /tour-feature-view/);
   assert.match(dashboard, /pageView: false,[\s\S]*featureView: false/);
   assert.match(dashboard, /sel:'#next-obvious-steps-card \.next-steps-head'/);
@@ -57,4 +57,13 @@ test('paid tour returns Home between sections and requires the real To Do cards'
 test('exercise guidance preserves the open workout player', () => {
   assert.match(dashboard, /title:'Follow the exercise card'[^\n]*preserveSurface:true/);
   assert.match(dashboard, /if \(!step\.preserveSurface\) await ensureTab\(step\.tab\)/);
+});
+
+test('paid tour highlights the real in-section control before continuing', () => {
+  assert.match(dashboard, /sel:'#ai-plan-meals-list \.ai-plan-hero__carousel-button--next'[^\r\n]*requiresHighlightedClick:true/);
+  assert.match(dashboard, /sel:'#ai-plan-shopping-list \.ai-plan-shopping__item input'[^\r\n]*requiresHighlightedClick:true/);
+  assert.match(dashboard, /if \(step && step\.requiresHighlightedClick\)/);
+  assert.match(dashboard, /document\.addEventListener\('click', complete, true\)/);
+  assert.match(dashboard, /highlightedClickComplete/);
+  assert.match(dashboard, /displayStep\.requiresHighlightedClick/);
 });
