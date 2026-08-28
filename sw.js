@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v392-coach-note-clear'; // v392: keep the guide off Shannon's coach note
+const CACHE_NAME = 'pbb-app-v394-stable-tour-targets'; // v394: order community before coach and never spotlight a missing target
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

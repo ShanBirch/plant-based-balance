@@ -24,16 +24,26 @@ test('paid preview clearly shows the personalised setup and full Foundations val
 test('the guided preview ends in the real Foundations lesson', () => {
   const first = dashboard.indexOf("title:'Your app tour starts here'");
   const shopping = dashboard.indexOf("title:'One shopping list for the week'", first);
+  const community = dashboard.indexOf("title:'The Balance community'", shopping);
+  const coach = dashboard.indexOf("title:'Listen to Shannon’s welcome'", community);
   const goals = dashboard.indexOf("title:'Pick your Weekly Goals'", shopping);
   const course = dashboard.indexOf("title:'Read, then take the quiz'", goals);
 
   assert.ok(first >= 0);
   assert.ok(shopping > first);
+  assert.ok(community > shopping);
+  assert.ok(coach > community);
+  assert.ok(goals > coach);
   assert.ok(goals > shopping);
   assert.ok(course > goals);
   assert.match(dashboard.slice(course, dashboard.indexOf('\n', course)), /metaPreviewSignoff:true/);
   assert.match(dashboard.slice(course, dashboard.indexOf('\n', course)), /requiresFoundationsLesson:'mind-1-1'/);
   assert.match(dashboard, /We will leave you here in the course section/);
+});
+
+test('the spotlight never draws a box around a missing or zero-size target', () => {
+  assert.match(dashboard, /target && target\.isConnected && target\.getClientRects\(\)\.length/);
+  assert.match(dashboard, /if \(!targetRect \|\| targetRect\.width < 2 \|\| targetRect\.height < 2\)[\s\S]*?spot\.style\.opacity = '0'/);
 });
 
 test('shopping-list guidance keeps an already-rendered plan on screen', () => {
