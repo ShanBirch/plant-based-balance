@@ -13730,6 +13730,11 @@ if(!window._pbbIsIOSSafari) {
     font-weight: 750;
     line-height: 1.34;
   }
+  .meta-tour-welcome-list li > span {
+    display: block;
+    min-width: 0;
+    padding-top: 2px;
+  }
   .meta-tour-welcome-list li::before {
     content: '\2713';
     display: grid;
@@ -13866,11 +13871,11 @@ if(!window._pbbIsIOSSafari) {
       <h2 id="meta-tour-welcome-title">Your first week is ready</h2>
       <p id="meta-tour-welcome-intro" class="meta-tour-welcome-intro">Your answers are in. We will guide you through the plan Balance has built for you, one clear step at a time.</p>
       <ul class="meta-tour-welcome-list">
-        <li><strong>Workout program:</strong> open your first session and see every exercise, set and rep.</li>
-        <li><strong>Meal plan:</strong> view your recipes and the shopping list built from them.</li>
-        <li><strong>Support:</strong> see the community and listen to Shannon's welcome message.</li>
-        <li><strong>Weekly Goals:</strong> choose the actions that make this work in real life.</li>
-        <li><strong>Foundations course:</strong> finish the tour by completing your first lesson and quiz.</li>
+        <li><span><strong>Workout program:</strong> open your first session and see every exercise, set and rep.</span></li>
+        <li><span><strong>Meal plan:</strong> view your recipes and the shopping list built from them.</span></li>
+        <li><span><strong>Support:</strong> see the community and listen to Shannon's welcome message.</span></li>
+        <li><span><strong>Weekly Goals:</strong> choose the actions that make this work in real life.</span></li>
+        <li><span><strong>Foundations course:</strong> finish the tour by completing your first lesson and quiz.</span></li>
       </ul>
       <button id="meta-tour-welcome-start" type="button" onclick="beginMetaPreviewTour()">Start my app tour</button>
       <p class="meta-tour-welcome-time">About 5 minutes. We will wait for you at each step.</p>
@@ -14710,9 +14715,9 @@ async function showStep(i, options){
     if (title) title.textContent = 'Your first week is ready';
     if (clientActivationTour) {
       if (intro) intro.textContent = 'Your setup questions are finished. We will now guide you through the plan Balance has built for you, one clear step at a time.';
-      if (list) list.innerHTML = '<li><strong>Workout program:</strong> see where your sessions live and what to do.</li><li><strong>Meal plan:</strong> view your recipes and the shopping list built from them.</li><li><strong>Support:</strong> see where you can share a question, meal, workout or win.</li><li><strong>Weekly Goals:</strong> choose the actions that make this work in real life.</li><li><strong>Foundations course:</strong> finish the tour by completing your first lesson and quiz.</li>';
+      if (list) list.innerHTML = '<li><span><strong>Workout program:</strong> see where your sessions live and what to do.</span></li><li><span><strong>Meal plan:</strong> view your recipes and the shopping list built from them.</span></li><li><span><strong>Support:</strong> see where you can share a question, meal, workout or win.</span></li><li><span><strong>Weekly Goals:</strong> choose the actions that make this work in real life.</span></li><li><span><strong>Foundations course:</strong> finish the tour by completing your first lesson and quiz.</span></li>';
     } else {
-      if (list) list.innerHTML = '<li><strong>Workout program:</strong> open your first session and see every exercise, set and rep.</li><li><strong>Meal plan:</strong> view your recipes and the shopping list built from them.</li><li><strong>Support:</strong> see the community and listen to Shannon\'s welcome message.</li><li><strong>Weekly Goals:</strong> choose the actions that make this work in real life.</li><li><strong>Foundations course:</strong> finish the tour by completing your first lesson and quiz.</li>';
+      if (list) list.innerHTML = '<li><span><strong>Workout program:</strong> open your first session and see every exercise, set and rep.</span></li><li><span><strong>Meal plan:</strong> view your recipes and the shopping list built from them.</span></li><li><span><strong>Support:</strong> see the community and listen to Shannon\'s welcome message.</span></li><li><span><strong>Weekly Goals:</strong> choose the actions that make this work in real life.</span></li><li><span><strong>Foundations course:</strong> finish the tour by completing your first lesson and quiz.</span></li>';
       try {
         if (window.BalanceMetaAdTrial && typeof window.BalanceMetaAdTrial.renderPersonalisedSetup === 'function') {
           window.BalanceMetaAdTrial.renderPersonalisedSetup();
