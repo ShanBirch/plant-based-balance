@@ -2886,6 +2886,47 @@ test('broad writer contract repairs missing terms, adds the native explainer, an
     assert.match(repairedGoalReply.joined, /losing the weight and feeling fitter/i);
     assert.match(repairedGoalReply.joined, /what usually gets in the way/i);
     assert.equal((repairedGoalReply.joined.match(/\?/g) || []).length, 1);
+    const safeGoalRepairIssues = collectCocosAutoRepairIssues({
+        draft: repairedGoalReply,
+        draftReview: {
+            verdict: 'pass',
+            confidence: 1,
+            issues: [],
+            notification_required: false,
+            context_loss_suspected: false,
+        },
+        currentMessage: 'I want to lose around 8kg and feel fitter.',
+        qualifier: { facts: {} },
+        leadStage: 'qualifying',
+        linkedUserId: null,
+        meaningfulLeadReplyCount: 1,
+        metaAdConversationFastLane: true,
+        flowVariant: 'broad_pain',
+    });
+    assert.equal(safeGoalRepairIssues.some(issue => /stock discovery question/i.test(issue)), false);
+    assert.equal(getAutoDmHoldReason({
+        mediaReview: { required: false },
+        contextReview: { required: false },
+        onboardingPhase: null,
+        draft: repairedGoalReply,
+        draftReview: {
+            verdict: 'pass',
+            confidence: 1,
+            issues: [],
+            notification_required: false,
+            context_loss_suspected: false,
+        },
+        challengeOfferWarning: null,
+        currentMessage: 'I want to lose around 8kg and feel fitter.',
+        qualifier: { facts: {} },
+        leadStage: 'qualifying',
+        linkedUserId: null,
+        meaningfulLeadReplyCount: 1,
+        alertData: {
+            meta_ad_conversation_fast_lane: true,
+            offer_flow_variant: 'broad_pain',
+        },
+    }), null);
 
     const goalHistory = [
         { direction: 'in', text: 'I want to lose around 8kg and feel fitter' },

@@ -773,7 +773,23 @@ function reviewLooksLikePureContextGap(review) {
     return /\b(context[-_ ]?loss|missing[-_ ]?source[-_ ]?context|missing[-_ ]?context|open (?:the )?(?:source )?dm|source dm|tracked dm context may be incomplete)\b/.test(haystack);
 }
 
-function collectCocosAutoRepairIssues({ draft, draftReview, challengeOfferWarning, currentMessage, qualifier, leadStage, linkedUserId, meaningfulLeadReplyCount, voiceNoteMode = false }) {
+function isVerifiedBroadPaidMetaGoalToBlockerMove({
+    draft,
+    currentMessage = '',
+    flowVariant = '',
+    metaAdConversationFastLane = false,
+} = {}) {
+    const reply = draftTextFromDraft(draft);
+    return metaAdConversationFastLane === true
+        && flowVariant === 'broad_pain'
+        && PAID_META_FITNESS_GOAL_RE.test(String(currentMessage || ''))
+        && paidMetaOutboundAskedForBlocker(reply)
+        && (reply.match(/\?/g) || []).length === 1
+        && !/https?:\/\//i.test(reply)
+        && !/\b(?:checkout|pay|payment|join|sign up)\b/i.test(reply);
+}
+
+function collectCocosAutoRepairIssues({ draft, draftReview, challengeOfferWarning, currentMessage, qualifier, leadStage, linkedUserId, meaningfulLeadReplyCount, voiceNoteMode = false, metaAdConversationFastLane = false, flowVariant = '' }) {
     const issues = [];
     const draftText = draftTextFromDraft(draft);
     const verifiedPaidMetaProgression = /^deterministic_paid_meta_conversation_v\d+/i.test(String(draft?.model || ''))
@@ -800,7 +816,12 @@ function collectCocosAutoRepairIssues({ draft, draftReview, challengeOfferWarnin
     if (challengeOfferWarning?.required && !challengeOfferAllowed) {
         issues.push('Draft appears to offer or link coaching. Remove the pitch unless the latest message clearly asks how to start or asks for the link.');
     }
-    if (isUnsafeStockDiscoveryQuestion(draftText)) {
+    if (isUnsafeStockDiscoveryQuestion(draftText) && !isVerifiedBroadPaidMetaGoalToBlockerMove({
+        draft,
+        currentMessage,
+        flowVariant,
+        metaAdConversationFastLane,
+    })) {
         issues.push('Draft uses a stock discovery question. Replace it with a specific reply to the latest detail, or no question if a reaction is enough.');
     }
     if (prematureChallengeInvite && !verifiedPaidMetaProgression) {
@@ -2122,7 +2143,13 @@ function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draf
             label: `${activeChallengeOfferWarning.label || 'coaching invite'} needs timing review`,
         };
     }
-    if (isUnsafeStockDiscoveryQuestion(draft.joined)) {
+    const verifiedBroadPaidMetaGoalToBlocker = isVerifiedBroadPaidMetaGoalToBlockerMove({
+        draft,
+        currentMessage,
+        flowVariant: String(alertData?.offer_flow_variant || ''),
+        metaAdConversationFastLane: alertData?.meta_ad_conversation_fast_lane === true,
+    });
+    if (isUnsafeStockDiscoveryQuestion(draft.joined) && !verifiedBroadPaidMetaGoalToBlocker) {
         return {
             code: 'stock_question',
             label: 'stock discovery question needs Shannon review',
@@ -8518,6 +8545,8 @@ exports.handler = async (event) => {
             linkedUserId: thread.linked_user_id,
             meaningfulLeadReplyCount,
             voiceNoteMode: effectiveOutboundVoiceMessage,
+            metaAdConversationFastLane,
+            flowVariant: metaAdFlowVariant,
         });
         const paidMetaWriterContractIssues = metaAdConversationFastLane
             ? collectPaidMetaWriterContractIssues({
