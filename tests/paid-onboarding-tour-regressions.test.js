@@ -33,5 +33,14 @@ test('payment is hard-gated behind the completed Foundations lesson', () => {
 });
 
 test('duplicate guided-tour starts cannot change the live step count', () => {
-  assert.match(dashboard, /requestedGuidedActivation && window\.__balanceGuidedTourActive === true && options\.restart !== true/);
+  assert.match(dashboard, /if \(window\.__balanceGuidedTourActive === true && options\.restart !== true\) return true/);
+});
+
+test('shopping list restores the prepared preview plan before opening', () => {
+  assert.match(dashboard, /title:'One shopping list for the week'[^\n]*ensureMetaPreviewMealPlan[^\n]*openAiMealPlanShoppingList/);
+});
+
+test('exercise guidance preserves the open workout player', () => {
+  assert.match(dashboard, /title:'Follow the exercise card'[^\n]*preserveSurface:true/);
+  assert.match(dashboard, /if \(!step\.preserveSurface\) await ensureTab\(step\.tab\)/);
 });

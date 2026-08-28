@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v375-smooth-guided-tour'; // v375: keep paid onboarding in order and close stale tour surfaces
+const CACHE_NAME = 'pbb-app-v376-smooth-guided-tour'; // v376: preserve live tour surfaces and prevent duplicate restarts
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -17,7 +17,7 @@ const ASSETS = [
   './workout_library_extended.js',
   './js/dashboard/script_part_2.js?v=14-light-launch',
   './js/dashboard/dashboard-script-3-1_get_user_data.js?v=59-light-launch',
-  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=209-smooth-guided-tour',
+  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=210-smooth-guided-tour',
   './js/dashboard/pbb-meta-preview-soundtrack.js?v=1-gentle-audio',
   './js/dashboard/pbb-app-telemetry.js?v=1',
   './js/dashboard/pbb-deferred-weeklygoals.js?v=34-guided-goals',
