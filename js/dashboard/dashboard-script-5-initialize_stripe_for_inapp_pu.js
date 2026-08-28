@@ -5031,8 +5031,12 @@ function toggleAiPlanShoppingList(forceOpen) {
 }
 
 async function openAiMealPlanShoppingList(btn) {
-    openAiMealPlanView(btn || document.getElementById('meal-plan-shopping-pill'));
-    if (typeof loadExistingAiMealPlan === 'function') await loadExistingAiMealPlan();
+    const planView = document.getElementById('meal-plan-store');
+    const planAlreadyOpen = !!(planView && planView.classList.contains('active') && _aiMealPlanCache);
+    if (!planAlreadyOpen) {
+        openAiMealPlanView(btn || document.getElementById('meal-plan-shopping-pill'));
+        if (typeof loadExistingAiMealPlan === 'function') await loadExistingAiMealPlan();
+    }
     if (!_aiMealPlanCache) return;
 
     renderAiPlanShoppingList();

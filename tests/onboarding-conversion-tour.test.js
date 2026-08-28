@@ -18,6 +18,7 @@ test('paid preview clearly shows the personalised setup and full Foundations val
   assert.match(trial, /function renderPersonalisedSetup\(\)/);
   assert.match(trial, /onboardingGoalIntents/);
   assert.match(trial, /workoutCalendar/);
+  assert.match(trial, /!workout\.startsWith\('yoga-'\)/);
 });
 
 test('the guided preview ends in the real Foundations lesson', () => {
@@ -33,6 +34,13 @@ test('the guided preview ends in the real Foundations lesson', () => {
   assert.match(dashboard.slice(course, dashboard.indexOf('\n', course)), /metaPreviewSignoff:true/);
   assert.match(dashboard.slice(course, dashboard.indexOf('\n', course)), /requiresFoundationsLesson:'mind-1-1'/);
   assert.match(dashboard, /We will leave you here in the course section/);
+});
+
+test('shopping-list guidance keeps an already-rendered plan on screen', () => {
+  const onboarding = fs.readFileSync(path.join(root, 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js'), 'utf8');
+  assert.match(onboarding, /const planAlreadyOpen = !!\(planView && planView\.classList\.contains\('active'\) && _aiMealPlanCache\)/);
+  assert.match(onboarding, /if \(!planAlreadyOpen\) \{[\s\S]*?openAiMealPlanView/);
+  assert.match(onboarding, /renderAiPlanShoppingList\(\);[\s\S]*?toggleAiPlanShoppingList\(true\)/);
 });
 
 test('onboarding personalisation does not depend on an Instagram DM handoff', () => {

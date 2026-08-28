@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v360-personalised-course-finish'; // v360: clearer personalised tour that finishes in Foundations
+const CACHE_NAME = 'pbb-app-v362-training-summary'; // v362: keep recovery and yoga days out of the personalised workout count
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -9,7 +9,7 @@ const ASSETS = [
   './welcome.html',
   './lib/supabase.js?v=15-foundations-feed',
   './lib/auth-guard.js?v=13-account-first-flow',
-  './lib/meta-ad-trial.js?v=12-foundations-offer-source',
+  './lib/meta-ad-trial.js?v=14-training-summary',
   './lib/native-push.js?v=40-dispatch-approval',
   './login.html',
   './exercise_videos.js?v=20260813-global-phone-video-v1',

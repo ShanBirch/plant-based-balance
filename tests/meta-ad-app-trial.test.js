@@ -171,6 +171,33 @@ test('finishing the guided tour opens the fixed six-week Stripe gate', async () 
     assert.equal(trial.window.location.href, 'https://checkout.stripe.com/test-preview');
 });
 
+test('personalised setup counts training days without counting yoga recovery', () => {
+    const trial = runTrial('?guest=true&meta_trial=facebook_5m_foundations_v3&utm_source=facebook&utm_medium=paid_social');
+    const targets = {
+        goal: { textContent: '' },
+        training: { textContent: '' },
+        food: { textContent: '' },
+    };
+    trial.elements['meta-ad-trial-personal-summary'] = {
+        querySelector(selector) {
+            const match = selector.match(/data-summary="([^"]+)"/);
+            return match ? targets[match[1]] : null;
+        },
+    };
+    trial.localStorage.setItem('workoutCalendar', JSON.stringify({
+        monday: 'gym-upper',
+        tuesday: 'yoga-restorative',
+        wednesday: 'gym-lower',
+        thursday: 'rest',
+        friday: 'gym-upper',
+        saturday: 'recovery-walk',
+        sunday: 'rest',
+    }));
+
+    assert.equal(trial.window.BalanceMetaAdTrial.renderPersonalisedSetup(), true);
+    assert.equal(targets.training.textContent, '3 planned workouts each week');
+});
+
 test('paid Meta onboarding and tour exits stay locked behind continue-or-pay choices', () => {
     const trial = runTrial('?guest=true&meta_trial=facebook_5m_foundations_v3&utm_source=instagram&utm_medium=paid_social');
     const api = trial.window.BalanceMetaAdTrial;
@@ -262,7 +289,7 @@ test('dashboard, signup, native handoffs, measurement, and both discovery system
     const ios = fs.readFileSync(path.join(root, 'ios/App/App/BalanceShortcutHandoff.swift'), 'utf8');
 
     assert.match(dashboard, /paid-facebook-stripe-unlock-v1/);
-    assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=205-onboarding-navigation-gate/);
+    assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=206-guided-shopping-list/);
     assert.match(dashboard, /title:'Start here each day'.*metaPreview:true/);
     assert.match(dashboard, /title:'Check your workout week'.*metaPreview:true/);
     assert.match(dashboard, /title:'Open your first workout'.*metaPreview:true/);
