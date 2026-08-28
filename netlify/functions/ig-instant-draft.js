@@ -4514,6 +4514,7 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
     }
     const issues = [];
     const broadFlow = flowVariant === 'broad_pain';
+    const autonomyPause = broadFlow && hasPaidMetaPreviewOrPriceDecline(turn);
     const asksForCurriculumOutline = /\b(?:what do i (?:actually )?learn|what (?:will|do) (?:i|you) learn|what does (?:the )?course teach|week[ -]?by[ -]?week|curriculum|six[- ]week (?:course|outline)|course (?:content|lessons?))\b/i.test(turn);
     const asksOfferInfo = /\b(?:how much|price|cost|renew|what(?:'s| is) included|what do i get|do i (?:actually )?get|workouts?|meal plan|check[ -]?in|details|how (?:does|do) (?:it|the program) work)\b/i.test(turn);
     const asksMealPlanQuestion = /\bdo you (?:offer|have|provide|include) (?:a |any )?(?:plant[ -]?based )?meal plans?\b|\bis (?:a |the )?meal plan included\b/i.test(turn);
@@ -4629,6 +4630,7 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
     const broadGoalNeedsBlockerQuestion = broadFlow
         && PAID_META_FITNESS_GOAL_RE.test(turn)
         && !knownBroadBlocker
+        && !autonomyPause
         && !asksForCurriculumOutline
         && !asksOfferInfo
         && !isExplicitPaidMetaPreviewRequest(turn)
@@ -4638,6 +4640,7 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
     }
     const earnedBroadOfferNow = knownBroadGoal
         && knownBroadBlocker
+        && !autonomyPause
         && !asksForCurriculumOutline
         && !hasRecentCompletePaidMetaOffer(history)
         && !isExplicitPaidMetaPreviewRequest(turn)

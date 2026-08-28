@@ -1272,6 +1272,23 @@ test('broad paid Meta treats a price objection and no-link request as a pause, n
     assert.equal((reply.joined.match(/\?/g) || []).length, 0);
     assert.ok(reply.joined.split(/\s+/).length <= 25);
     assert.equal(shouldApplyDeterministicPaidMetaReplyOverride(reply), true);
+    const issues = collectPaidMetaWriterContractIssues({
+        draft: reply,
+        currentMessage: 'That sounds good, but $149 is too much for me right now. Please don’t send a link.',
+        qualifier: {
+            commercial_stage: 'problem_qualified',
+            facts: {
+                current_state: 'Wants to get stronger.',
+                history_blockers: 'Changing roster disrupts workouts.',
+            },
+        },
+        history: [
+            { direction: 'in', text: 'I want to get stronger.' },
+            { direction: 'in', text: 'My roster changes every week.' },
+        ],
+        flowVariant: 'broad_pain',
+    });
+    assert.equal(issues.some(issue => /earned paid-Meta offer is missing/i.test(issue)), false);
     const approval = buildPaidMetaConversationApproval({
         metaAdConversationFastLane: true,
         draft: reply,
