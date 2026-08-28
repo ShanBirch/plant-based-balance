@@ -232,6 +232,12 @@ test('paid Meta onboarding and tour exits stay locked behind continue-or-pay cho
     assert.equal(api.readState().interruptedStage, 'checkout');
 });
 
+test('a checkout reload restores the blocking gate before deferred app startup completes', () => {
+    assert.match(source, /function showInterruptedGateWhenParsed\(state\)/);
+    assert.match(source, /showInterruptedGateWhenParsed\(state\);[\s\S]*?DOMContentLoaded/);
+    assert.match(source, /getElementById\('meta-ad-trial-gate'\)[\s\S]*?showGate\(true, 'checkout_reload'\)/);
+});
+
 test('the Inbox proof is local to the verified paid Meta preview', () => {
     const paid = runTrial('?guest=true&meta_trial=facebook_5m_foundations_v3&utm_source=facebook&utm_medium=paid_social');
     assert.equal(paid.window.BalanceMetaAdTrial.showInboxPreview(), true);
