@@ -14315,6 +14315,20 @@ if(!window._pbbIsIOSSafari) {
       if (!event || !event.detail || event.detail.id !== expectedActionId) return;
       beginPromptedAction(true);
     };
+    var livePromptStep = Object.assign({}, step, {
+      sel:step.preActionSel || step.fallbackSel || step.sel,
+      fallbackSel:step.preActionFallbackSel || step.fallbackSel,
+      pageView:false,
+      edgePrompt:false,
+      featureView:false,
+      embeddedGuide:false
+    });
+    var keepPromptAligned = function(){
+      if (busy) return;
+      var livePromptTarget = resolveStepTarget(livePromptStep).target;
+      if (livePromptTarget) positionBubbleAndSpotlight(livePromptTarget, livePromptStep);
+    };
+    var promptAlignmentTimer = setInterval(keepPromptAligned, 280);
     // Capture the checklist tap before its inline destination handler changes
     // tabs or re-renders Home. Otherwise fast, synchronous destinations (the
     // nutrition tracker in particular) can remove the highlighted card before
@@ -14324,6 +14338,7 @@ if(!window._pbbIsIOSSafari) {
     activePromptTargetCleanup = function(){
       document.removeEventListener('click', handleTargetClick, true);
       window.removeEventListener('pbb-next-step-action', handleActionSignal);
+      clearInterval(promptAlignmentTimer);
     };
     return true;
   }
