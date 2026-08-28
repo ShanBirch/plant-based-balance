@@ -26,7 +26,7 @@ test('walkthrough keeps surrounding page context readable', () => {
   assert.match(premiumOverlays, /#guided-tour-overlay\.tour-page-view #guided-tour-spotlight[\s\S]*?rgba\(26, 24, 20, 0\.08\)/);
   assert.doesNotMatch(premiumOverlays, /#guided-tour-spotlight[\s\S]*?rgba\(29, 15, 50, 0\.78\)/);
   assert.match(dashboard, /pbb-premium-overlays\.css\?v=97-foundations-actions/);
-  assert.match(serviceWorker, /pbb-app-v364-meta-cross-phone-claim/);
+  assert.match(serviceWorker, /pbb-app-v365-day-one-meal-carousel/);
 });
 
 test('page-level stops opt into the softer context view', () => {
@@ -36,7 +36,7 @@ test('page-level stops opt into the softer context view', () => {
     'Your meal plan',
     'Check your workout week',
     'Follow the exercise card',
-    'Open your meal plan',
+    'See every meal on Day 1',
     'One shopping list for the week',
     'Read, then take the quiz',
     'The Balance community'

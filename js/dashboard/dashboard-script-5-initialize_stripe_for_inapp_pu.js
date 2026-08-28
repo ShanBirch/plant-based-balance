@@ -5681,6 +5681,30 @@ function selectAiPlanMeal(index) {
     if (hero) hero.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
+function selectAiPlanMealRelative(direction) {
+    const week = _aiMealPlanCache?.weeks?.find(item => item.week_number === _aiMealPlanCurrentWeek);
+    const day = week?.days?.find(item => item.day_of_week === _aiMealPlanCurrentDay);
+    const mealCount = day?.meals?.length || 0;
+    if (!mealCount) return;
+    const heroIndex = Number(document.querySelector('#ai-plan-meals-list .ai-plan-hero')?.dataset.mealIndex);
+    const currentIndex = Number.isInteger(heroIndex) ? heroIndex : 0;
+    const nextIndex = (currentIndex + Number(direction || 0) + mealCount) % mealCount;
+    selectAiPlanMeal(nextIndex);
+}
+
+function selectAiPlanFirstDay() {
+    const firstDay = _aiMealPlanCache?.weeks
+        ?.find(item => item.week_number === _aiMealPlanCurrentWeek)
+        ?.days?.filter(day => day?.meals?.length)
+        ?.sort((a, b) => a.day_of_week - b.day_of_week)?.[0];
+    if (!firstDay) return false;
+    const dayButtons = [...document.querySelectorAll('#ai-plan-day-tabs .sub-btn')];
+    switchAiPlanDay(firstDay.day_of_week, dayButtons[firstDay.day_of_week] || null);
+    return true;
+}
+
+window.selectAiPlanFirstDay = selectAiPlanFirstDay;
+
 function toggleAiPlanMealDetails(button) {
     const hero = button?.closest('.ai-plan-hero');
     if (!hero) return;
@@ -5761,8 +5785,15 @@ function renderAiPlanFocusedDay(dayNum) {
             <strong>${focusLabel}</strong>
             <span>${escapeAiPlanText(selectedSlot)}${selected.meal_time ? ` · ${escapeAiPlanText(selected.meal_time)}` : ''}</span>
         </div>
-        <article class="ai-plan-hero" data-next-meal="${selectedIndex === nextIndex ? 'true' : 'false'}">
-            ${imageUrl ? `<img class="ai-plan-hero__photo" src="${imageUrl}" alt="${imageAlt}" loading="eager" data-meal-plan-photo="true" onerror="this.style.display='none'">` : ''}
+        <article class="ai-plan-hero" data-next-meal="${selectedIndex === nextIndex ? 'true' : 'false'}" data-meal-index="${selectedIndex}" data-meal-carousel="true">
+            <div class="ai-plan-hero__photo-stage">
+                ${imageUrl ? `<img class="ai-plan-hero__photo" src="${imageUrl}" alt="${imageAlt}" loading="eager" data-meal-plan-photo="true" onerror="this.style.display='none'">` : ''}
+                ${sortedMeals.length > 1 ? `
+                    <button type="button" class="ai-plan-hero__carousel-button ai-plan-hero__carousel-button--previous" onclick="selectAiPlanMealRelative(-1)" aria-label="Previous meal">&#8249;</button>
+                    <button type="button" class="ai-plan-hero__carousel-button ai-plan-hero__carousel-button--next" onclick="selectAiPlanMealRelative(1)" aria-label="Next meal">&#8250;</button>
+                    <span class="ai-plan-hero__carousel-count">${selectedIndex + 1} of ${sortedMeals.length}</span>
+                ` : ''}
+            </div>
             <div class="ai-plan-hero__content">
                 <div class="ai-plan-hero__meta"><span>${escapeAiPlanText(selectedSlot)}</span><span>${escapeAiPlanText(selected.meal_time || '')}</span></div>
                 <h3 class="ai-plan-hero__title">${escapeAiPlanText(selected.name)}</h3>
@@ -5785,7 +5816,7 @@ function renderAiPlanFocusedDay(dayNum) {
             </div>
         </article>
         ${previews.length ? `
-            <div class="ai-plan-preview-heading"><strong>Other meals</strong><span>${isToday ? `${completeCount} of ${sortedMeals.length} logged` : escapeAiPlanText(day.day_name || '')}</span></div>
+            <div class="ai-plan-preview-heading"><strong>${escapeAiPlanText(day.day_name || 'Day')} meals</strong><span>${isToday ? `${completeCount} of ${sortedMeals.length} logged` : 'Tap to preview'}</span></div>
             <div class="ai-plan-preview-row">
                 ${previews.map(entry => {
                     const previewMeal = entry.meal;

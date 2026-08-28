@@ -55,7 +55,7 @@ test('the paid preview tour keeps the promised app order before payment', () => 
     'Open your first workout',
     'Follow the exercise card',
     'Log what you eat',
-    'Open your meal plan',
+    'See every meal on Day 1',
     'One shopping list for the week',
     'The Balance community',
     'Post when you need support',

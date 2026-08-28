@@ -2243,7 +2243,13 @@ if(!window._pbbIsIOSSafari) {
     .ai-plan-focus-label strong { font-family: 'Playfair Display', serif; font-size: 1.45rem; }
     .ai-plan-focus-label span { color: #77736b; -webkit-text-fill-color: #77736b; font-size: .78rem; font-weight: 650; }
     .ai-plan-hero { overflow: hidden; border: 1px solid rgba(23,22,19,.09); border-radius: 22px; background: #fff; box-shadow: 0 12px 30px rgba(32,25,13,.08); }
+    .ai-plan-hero__photo-stage { position: relative; overflow: hidden; background: #f2ecdf; }
     .ai-plan-hero__photo { display: block; width: 100%; aspect-ratio: 1.7 / 1; object-fit: cover; background: #f2ecdf; }
+    .ai-plan-hero__carousel-button { position: absolute; top: 50%; z-index: 2; display: grid; width: 42px; height: 42px; place-items: center; padding: 0; transform: translateY(-50%); border: 1px solid rgba(255,255,255,.7); border-radius: 50%; background: rgba(23,22,19,.78); color: #fff; -webkit-text-fill-color: #fff; font: inherit; font-size: 1.15rem; font-weight: 800; box-shadow: 0 5px 14px rgba(0,0,0,.22); cursor: pointer; backdrop-filter: blur(5px); }
+    .ai-plan-hero__carousel-button--previous { left: 11px; }
+    .ai-plan-hero__carousel-button--next { right: 11px; }
+    .ai-plan-hero__carousel-button:focus-visible { outline: 3px solid rgba(255,255,255,.9); outline-offset: 2px; }
+    .ai-plan-hero__carousel-count { position: absolute; right: 12px; bottom: 11px; z-index: 2; padding: 6px 10px; border-radius: 999px; background: rgba(23,22,19,.8); color: #fff; -webkit-text-fill-color: #fff; font-size: .7rem; font-weight: 750; letter-spacing: .02em; box-shadow: 0 4px 12px rgba(0,0,0,.18); backdrop-filter: blur(5px); }
     .ai-plan-hero__content { padding: 17px; }
     .ai-plan-hero__meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #8c681b; -webkit-text-fill-color: #8c681b; font-size: .76rem; font-weight: 750; letter-spacing: .05em; text-transform: uppercase; }
     .ai-plan-hero__title { margin: 8px 0 5px; font-family: 'Playfair Display', serif; font-size: 1.42rem; line-height: 1.18; }
@@ -13128,7 +13134,7 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=206-guided-shopping-list';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=207-day-one-meal-carousel';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
@@ -13170,7 +13176,7 @@ if (window._pbbIsIOSSafari) {
         var s = document.createElement('script');
         s.async = false;
         s.dataset.metaTrialLoader = String(attempt);
-        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=206-guided-shopping-list&meta_retry=' + attempt;
+        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=207-day-one-meal-carousel&meta_retry=' + attempt;
         s.onload = function() {
             if (window._pbbScript5Complete && window._switchAppTabReady && typeof window._switchAppTabReal === 'function') {
                 sessionStorage.removeItem('pbb_meta_script5_recovery_v1');
@@ -13189,7 +13195,7 @@ if (window._pbbIsIOSSafari) {
         document.head.appendChild(s);
     })(0);
 } else {
-document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=206-guided-shopping-list"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=207-day-one-meal-carousel"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=3"></script>
@@ -13998,7 +14004,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'movement-tab', sel:'#workout-player-title', fallbackSel:'#today-workout-card', title:'Open your first workout', fallbackTitle:'Open your first workout', body:'Scroll down to see each exercise, then follow the sets and target reps underneath.', fallbackBody:'Tap this workout card to open the first real strength session from your plan.', pageView:true, metaPreview:true, promptBeforeAction:true, preActionSel:'#today-workout-card', preActionFallbackSel:'#view-movement-tab,#movement-content', preActionTitle:'Open your first workout', preActionBody:'Next, we will open the first real strength session from your plan so you can see exactly what to do.', preActionButton:'Open workout', advanceAfterAction:true, action:async function(){ try { await openMetaPreviewStrengthWorkout(); await waitForMetaPreviewWorkoutProof({ requireThumbnail:true, timeoutMs:15000 }); } catch(e){} } },
     { tab:'movement-tab', sel:'#workout-exercises-list .exercise-logger-card [data-video-container][data-thumbnail-state="ready"]', fallbackSel:'#workout-exercises-list .exercise-logger-card,#workout-exercises-list', title:'Follow the exercise card', fallbackTitle:'Follow the exercise card', body:'Watch the demonstration, then follow the sets and target reps shown underneath. Use Swipe for the next exercise or List for the full workout.', fallbackBody:'Each exercise card shows the sets and target reps. Use Swipe for the next exercise or List for the full workout.', pageView:true, metaPreview:true, action:async function(){ try { await openMetaPreviewStrengthWorkout(); await waitForMetaPreviewWorkoutProof({ requireThumbnail:true, timeoutMs:15000 }); } catch(e){} } },
     { tab:'meals', sel:'.camera-btn-widget,.meal-icon-btn', title:'Log what you eat', body:'Tap the camera for a photo, or use the barcode and quick-entry buttons beside it. You only need to log what you actually eat.', metaPreview:true },
-    { tab:'meals', sel:'#ai-plan-meals-list .ai-plan-hero', fallbackSel:'#ai-plan-meals-list,#browse-plans-pill', title:'Open your meal plan', fallbackTitle:'Your meal plan is being prepared', body:'This was built from the food preferences you chose. Open any meal for the recipe, ingredients and an easy way to log what you actually eat.', fallbackBody:'Balance is finishing the meal plan matched to your preferences. It will appear here in Nutrition as soon as it is ready.', pageView:true, metaPreview:true, promptBeforeAction:true, preActionSel:'#browse-plans-pill,#ai-plan-meals-list', preActionFallbackSel:'#view-meals,#meal-plan-store', preActionTitle:'See your personalised meal plan', preActionBody:'Next, we will open the meal plan made from the food preferences you just chose.', preActionButton:'Open meal plan', action:async function(){ try { if(typeof window.ensureMetaPreviewMealPlan === 'function') await window.ensureMetaPreviewMealPlan(); if(typeof switchWeek === 'function') switchWeek('meal-plan-store', document.getElementById('browse-plans-pill')); await waitForMetaPreviewMealPhoto(15000); } catch(e){} } },
+    { tab:'meals', sel:'#ai-plan-meals-list .ai-plan-hero', fallbackSel:'#ai-plan-meals-list,#browse-plans-pill', title:'See every meal on Day 1', fallbackTitle:'Your meal plan is being prepared', body:'Tap the arrows on the photo to look through breakfast, lunch, dinner and snacks. Open any meal for the recipe, ingredients and an easy way to log it.', fallbackBody:'Balance is finishing the meal plan matched to your preferences. It will appear here in Nutrition as soon as it is ready.', pageView:true, metaPreview:true, promptBeforeAction:true, preActionSel:'#browse-plans-pill,#ai-plan-meals-list', preActionFallbackSel:'#view-meals,#meal-plan-store', preActionTitle:'See your personalised meal plan', preActionBody:'Next, we will open Day 1 of the meal plan made from the food preferences you just chose.', preActionButton:'Open meal plan', action:async function(){ try { if(typeof window.ensureMetaPreviewMealPlan === 'function') await window.ensureMetaPreviewMealPlan(); if(typeof switchWeek === 'function') switchWeek('meal-plan-store', document.getElementById('browse-plans-pill')); if(typeof window.selectAiPlanFirstDay === 'function') window.selectAiPlanFirstDay(); await waitForMetaPreviewMealPhoto(15000); } catch(e){} } },
     { tab:'meals', sel:'#ai-plan-shopping-toggle', fallbackSel:'#meal-plan-shopping-pill,#browse-plans-pill', title:'One shopping list for the week', fallbackTitle:'Your weekly shopping list', body:'Balance combines the ingredients from your meal plan into one list. Tick off what you already have, then take the rest to the shops.', fallbackBody:'Open Shopping List to build one list from the meals in your current plan.', pageView:true, metaPreview:true, action:async function(){ try { if(typeof openAiMealPlanShoppingList==='function') await openAiMealPlanShoppingList(document.getElementById('meal-plan-shopping-pill')); } catch(e){} await new Promise(function(r){ setTimeout(r,220); }); } },
     { tab:'friends', sel:'#friends-photo-feed .meta-preview-feed-post', fallbackSel:'#friends-photo-feed .feed-post-card,#feed-composer-card', title:'The Balance community', fallbackTitle:'The Balance community', body:'This is the live Feed. You can see Coach Shan’s posts, photos and the wins people share inside Balance.', fallbackBody:'This is the Balance Feed, where Coach Shan posts and members share meals, workouts and wins.', pageView:true, metaPreview:true, action:async function(){ try { if(window.BalanceMetaAdTrial && typeof window.BalanceMetaAdTrial.loadPreviewFeed === 'function') await window.BalanceMetaAdTrial.loadPreviewFeed(); } catch(e){} await new Promise(function(r){ setTimeout(r,220); }); } },
     { tab:'friends', sel:'#feed-composer-card', title:'Post when you need support', body:'Share a meal, workout, question or win here. It helps Shannon see what is really happening and gives the community a chance to support you.', metaPreview:true },

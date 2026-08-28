@@ -13,7 +13,7 @@ const mealPlanScript = fs.readFileSync(
 test('ships the focused meal layout and cache-busted client assets', () => {
     assert.match(dashboard, /class="ai-plan-focus-layout"/);
     assert.match(dashboard, /lib\/meal-plan-next-meal\.js\?v=1/);
-    assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=178/);
+    assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=207-day-one-meal-carousel/);
     assert.match(dashboard, /meal-plan-next-meal-focus-v1/);
 });
 
@@ -23,5 +23,17 @@ test('uses today meal logs to advance the hero and exposes real actions', () => 
     assert.match(mealPlanScript, />View recipe<\/button>/);
     assert.match(mealPlanScript, />Log meal<\/button>/);
     assert.match(mealPlanScript, /function selectAiPlanMeal\(index\)/);
+    assert.match(mealPlanScript, /function selectAiPlanMealRelative\(direction\)/);
+    assert.match(mealPlanScript, /aria-label="Previous meal"/);
+    assert.match(mealPlanScript, /aria-label="Next meal"/);
+    assert.match(mealPlanScript, /ai-plan-hero__carousel-count/);
     assert.match(mealPlanScript, /function openAiMealPlanView\(btn\)[\s\S]+_aiMealPlanLoggedDayKey = ''/);
+});
+
+test('the paid preview can open the first day and explain the meal carousel', () => {
+    assert.match(mealPlanScript, /function selectAiPlanFirstDay\(\)/);
+    assert.match(mealPlanScript, /window\.selectAiPlanFirstDay = selectAiPlanFirstDay/);
+    assert.match(dashboard, /title:'See every meal on Day 1'/);
+    assert.match(dashboard, /Tap the arrows on the photo to look through breakfast, lunch, dinner and snacks/);
+    assert.match(dashboard, /window\.selectAiPlanFirstDay/);
 });
