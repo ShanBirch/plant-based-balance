@@ -14284,7 +14284,18 @@ if(!window._pbbIsIOSSafari) {
       setTourGateUi(false, 'Opening now...', step.preActionButton || 'Opening');
       setTimeout(async function(){
         var result = true;
-        try { result = await step.action(actionAlreadyStarted ? { fromTargetClick:true } : undefined); }
+        try {
+          if (expectedActionId && window.pbbNextSteps && typeof window.pbbNextSteps.runAction === 'function') {
+            if (!actionAlreadyStarted) window.pbbNextSteps.runAction(expectedActionId);
+            // Let the checklist destination finish its tab change before the
+            // tour validates the real surface. This prevents the meal-plan and
+            // shopping-list helpers from racing each other.
+            await new Promise(function(resolve){ setTimeout(resolve, 1500); });
+            result = await step.action({ fromTargetClick:true });
+          } else {
+            result = await step.action(actionAlreadyStarted ? { fromTargetClick:true } : undefined);
+          }
+        }
         catch(e) { result = false; console.warn('[tour] highlighted card action failed', e); }
         if (result === false) {
           completedPromptedActions.delete(stepIndex);
