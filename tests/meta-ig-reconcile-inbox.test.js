@@ -85,6 +85,21 @@ assert.strictEqual(webhookTest.alertNeedsDraftRecovery({
     suggested_message: null,
     data: { draft_text: '' },
 }), false);
+assert.strictEqual(webhookTest.shouldRecoverDedupedInboundAgainstAlerts({
+    exactAlerts: [],
+    activeAlerts: [{ id: 'earlier-paid-meta-alert', status: 'pending' }],
+    allowActiveAlertCoalesce: true,
+}), true, 'a new paid-Meta mirror duplicate must still join the active rapid-message batch');
+assert.strictEqual(webhookTest.shouldRecoverDedupedInboundAgainstAlerts({
+    exactAlerts: [{ status: 'sent', suggested_message: 'Already sent', data: {} }],
+    activeAlerts: [],
+    allowActiveAlertCoalesce: true,
+}), false, 'the exact same paid-Meta inbound must never be drafted twice');
+assert.strictEqual(webhookTest.shouldRecoverDedupedInboundAgainstAlerts({
+    exactAlerts: [],
+    activeAlerts: [{ id: 'ordinary-active-alert', status: 'pending' }],
+    allowActiveAlertCoalesce: false,
+}), false, 'ordinary recovery behavior remains unchanged outside paid Meta');
 
 assert.deepStrictEqual(
     reconcileTest.sortAccountsByRecentActivity([

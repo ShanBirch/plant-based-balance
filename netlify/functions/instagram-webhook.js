@@ -2583,7 +2583,18 @@ async function maybeHandleFoodPhotoTracking({ thread, event, rawMessageText, mes
     }
 }
 
-async function shouldRecoverMissingDraftForDedupedInbound({ thread, dedupeId, messageCreatedAt }) {
+function shouldRecoverDedupedInboundAgainstAlerts({ exactAlerts = [], activeAlerts = [], allowActiveAlertCoalesce = false } = {}) {
+    if (exactAlerts.length) return alertNeedsDraftRecovery(exactAlerts[0]);
+    if (allowActiveAlertCoalesce) return true;
+    return activeAlerts.length === 0;
+}
+
+async function shouldRecoverMissingDraftForDedupedInbound({
+    thread,
+    dedupeId,
+    messageCreatedAt,
+    allowActiveAlertCoalesce = false,
+}) {
     if (!thread?.id || !dedupeId) return false;
     if (isAtOrAfterTimestamp(thread.last_outbound_at, messageCreatedAt)) return false;
 
@@ -2592,8 +2603,8 @@ async function shouldRecoverMissingDraftForDedupedInbound({ thread, dedupeId, me
         const exactRows = await supabase(
             `coach_alerts?select=id,status,suggested_message,scheduled_reply_text,data&idempotency_key=eq.${encodeURIComponent(idempotencyKey)}&limit=1`
         );
-        if (exactRows.length) {
-            return alertNeedsDraftRecovery(exactRows[0]);
+        if (exactRows.length || allowActiveAlertCoalesce) {
+            return shouldRecoverDedupedInboundAgainstAlerts({ exactAlerts: exactRows, allowActiveAlertCoalesce });
         }
     } catch (err) {
         console.warn('[instagram-webhook] reconcile exact alert lookup failed:', err.message);
@@ -2604,7 +2615,7 @@ async function shouldRecoverMissingDraftForDedupedInbound({ thread, dedupeId, me
         const activeRows = await supabase(
             `coach_alerts?select=id,status&data->>ig_thread_id=eq.${encodeURIComponent(thread.id)}&status=in.(pending,scheduled)&alert_type=in.(ig_incoming_dm,fb_incoming_dm)&limit=1`
         );
-        return activeRows.length === 0;
+        return shouldRecoverDedupedInboundAgainstAlerts({ activeAlerts: activeRows, allowActiveAlertCoalesce });
     } catch (err) {
         console.warn('[instagram-webhook] reconcile active alert lookup failed:', err.message);
         return false;
@@ -2912,47 +2923,48 @@ async function processGraphMessages(payload, contentContextByMessageId = new Map
                         nowIso,
                         graphMessageId,
                     });
-                } else if (
-                    direction === 'in'
-                    && (options.recoverMissingDrafts || resolveIgAcquisitionMode({
+                } else if (direction === 'in') {
+                    const paidMetaDedupedInbound = resolveIgAcquisitionMode({
                         customData: thread.custom_data,
-                    }) === 'paid_meta')
-                    && await shouldRecoverMissingDraftForDedupedInbound({
-                        thread,
-                        dedupeId: inserted.dedupeId,
-                        messageCreatedAt: nowIso,
-                    })
-                ) {
-                    if (inboundStoryReply) {
-                        const routed = await routeInboundStoryReplyToBrowser({
+                    }) === 'paid_meta';
+                    if ((options.recoverMissingDrafts || paidMetaDedupedInbound)
+                        && await shouldRecoverMissingDraftForDedupedInbound({
                             thread,
-                            messageText,
-                            sourceMessageId: inserted.messageId,
-                            graphMessageId: inserted.dedupeId,
-                            storyId: storyReference.storyId,
-                            storyUrl: storyReference.storyUrl,
-                            storyContext: storyReference.contextText,
-                            query: supabase,
-                        });
-                        if (routed.routed) summary.storyRepliesRouted++;
-                        else summary.storyReplyRouteFailed++;
-                        continue;
-                    }
-                    const hasMedia = extractMediaReferences(messageText).length > 0;
-                    if (hasMedia) {
-                        await registerInboundMedia({
-                            igMessageId: inserted.messageId,
-                            threadId: thread.id,
-                            graphMessageId,
-                            messageText,
-                        });
-                    }
-                    const dispatched = hasMedia
-                        ? await dispatchMediaProcessing(inserted.messageId)
-                        : await dispatchDraft({ thread, messageText, dedupeId: inserted.dedupeId });
-                    if (dispatched) {
-                        summary.drafted++;
-                        summary.recoveredDrafts++;
+                            dedupeId: inserted.dedupeId,
+                            messageCreatedAt: nowIso,
+                            allowActiveAlertCoalesce: paidMetaDedupedInbound,
+                        })) {
+                        if (inboundStoryReply) {
+                            const routed = await routeInboundStoryReplyToBrowser({
+                                thread,
+                                messageText,
+                                sourceMessageId: inserted.messageId,
+                                graphMessageId: inserted.dedupeId,
+                                storyId: storyReference.storyId,
+                                storyUrl: storyReference.storyUrl,
+                                storyContext: storyReference.contextText,
+                                query: supabase,
+                            });
+                            if (routed.routed) summary.storyRepliesRouted++;
+                            else summary.storyReplyRouteFailed++;
+                            continue;
+                        }
+                        const hasMedia = extractMediaReferences(messageText).length > 0;
+                        if (hasMedia) {
+                            await registerInboundMedia({
+                                igMessageId: inserted.messageId,
+                                threadId: thread.id,
+                                graphMessageId,
+                                messageText,
+                            });
+                        }
+                        const dispatched = hasMedia
+                            ? await dispatchMediaProcessing(inserted.messageId)
+                            : await dispatchDraft({ thread, messageText, dedupeId: inserted.dedupeId });
+                        if (dispatched) {
+                            summary.drafted++;
+                            summary.recoveredDrafts++;
+                        }
                     }
                 }
                 continue;
@@ -3158,6 +3170,7 @@ exports._test = {
     buildGoldCoastWebsitePrivateReply,
     commentPrivateReplyDedupeId,
     alertNeedsDraftRecovery,
+    shouldRecoverDedupedInboundAgainstAlerts,
     shouldApplyBalanceSendEchoToPending,
     hasActiveGraphSendClaim,
 };
