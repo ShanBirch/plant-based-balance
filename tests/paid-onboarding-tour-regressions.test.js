@@ -37,7 +37,7 @@ test('duplicate guided-tour starts cannot change the live step count', () => {
 });
 
 test('shopping list restores the prepared preview plan before opening', () => {
-  assert.match(dashboard, /title:'One shopping list for the week'[^\n]*ensureMetaPreviewMealPlan[^\n]*openAiMealPlanShoppingList/);
+  assert.match(dashboard, /title:'One shopping list for the week'[^\n]*ensureMetaPreviewMealPlan[^\n]*waitForMetaPreviewMealPhoto\(15000\)[^\n]*openAiMealPlanShoppingList/);
   assert.match(onboarding, /if \(!_aiMealPlanCache && window\.metaAdTrialMode === true\)[\s\S]*localStorage\.getItem\('ai_meal_plan'\)[\s\S]*Array\.isArray\(previewPlan\.weeks\)/);
 });
 

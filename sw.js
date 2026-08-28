@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v377-smooth-guided-tour'; // v377: keep the prepared meal plan through the shopping-list handoff
+const CACHE_NAME = 'pbb-app-v378-smooth-guided-tour'; // v378: wait for the prepared plan before opening its shopping list
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
