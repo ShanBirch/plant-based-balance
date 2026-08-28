@@ -45,6 +45,7 @@ const {
     maySendDraftVideoAttachment,
     stripPaidMetaProofMediaUrls,
 } = require('./_lib/paid-meta-proof-media');
+const { measureDmLanguageShape } = require('./_lib/dm-language-contract');
 function normalizeGraphApiVersion(value) {
     const raw = String(value || '').trim();
     if (!raw) return 'v25.0';
@@ -742,6 +743,25 @@ function isHumanApprovedPermanentNeedsYouSendSource(source) {
     return normalized.startsWith('admin_dashboard')
         || normalized === 'android_inline_reply_worker'
         || normalized === 'manual_instagram';
+}
+
+function resolveDmLanguageAuthorship({ wasEdited = false, source = '', alertData = {} } = {}) {
+    if (!wasEdited) return 'automated_draft_unchanged';
+    const normalized = String(source || '').trim().toLowerCase();
+    const automatedSources = new Set([
+        'auto_send',
+        'scheduled_worker',
+        'send_later',
+        'balance_lead_client_manager_cron',
+        'balance_app_repair_worker',
+    ]);
+    if (automatedSources.has(normalized) || String(alertData.scheduled_via || '').trim().toLowerCase() === 'auto_send') {
+        return 'automated_rewrite';
+    }
+    if (normalized === 'inline_reply' || isHumanApprovedPermanentNeedsYouSendSource(normalized)) {
+        return 'shannon_edited';
+    }
+    return 'edited_source_uncertain';
 }
 
 function isAutomatedPermanentNeedsYouSendSource(source, data = {}) {
@@ -3013,6 +3033,11 @@ exports.handler = async (event) => {
             }
             : alertData.draft_messages_stale_ignored,
         draft_text: draftJoined || alertData.draft_text,
+        dm_language_final_shape: measureDmLanguageShape({
+            chunks: outboundItems.filter(item => item.kind === 'text').map(item => item.text),
+            inboundText: alertData.message_preview || '',
+        }),
+        dm_language_authorship: resolveDmLanguageAuthorship({ wasEdited, source, alertData }),
         health_progression_attempt: healthProgressionAttempt.is_attempt ? {
             attempted_at: sentAtIso,
             ai_authored: healthProgressionAttempt.ai_authored,
@@ -3273,6 +3298,7 @@ exports._test = {
     isVerifiedPaidMetaProgressionAlertData,
     isSendClaimStale,
     isHumanApprovedPermanentNeedsYouSendSource,
+    resolveDmLanguageAuthorship,
     isAutomatedPermanentNeedsYouSendSource,
     getActiveAutomatedReviewHold,
     isAppSupportFastFixException,

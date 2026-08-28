@@ -150,11 +150,11 @@ function stageFailures(stage, reply, history) {
     if (repeated.length) failures.push(`${stage}:repeated_question:${repeated.join('|')}`);
     if (stage === 'identity') {
         if (!/\b(?:goal|result|achiev|health|fitness|fit|strong|energy|weight|change|working towards)\b/i.test(reply) || !/\?/.test(reply)) failures.push('identity:missing_goal_question');
-        if (/\$\s*89|founders pass|send (?:you )?(?:the )?(?:link|access)|https?:\/\//i.test(reply)) failures.push('identity:pitched_too_early');
+        if (/\$\s*149|founders pass|send (?:you )?(?:the )?(?:link|access)|https?:\/\//i.test(reply)) failures.push('identity:pitched_too_early');
     }
     if (stage === 'goal') {
         if (!/\?/.test(reply) || !/\b(?:get in the way|gets in the way|getting in the way|hard|stop|stick|consistent|consistently|track|routine|knock|disrupt|prevent)\b/i.test(reply)) failures.push('goal:missing_blocker_question');
-        if (/\$\s*89|founders pass|send (?:you )?(?:the )?(?:link|access)|https?:\/\//i.test(reply)) failures.push('goal:pitched_before_blocker');
+        if (/\$\s*149|founders pass|send (?:you )?(?:the )?(?:link|access)|https?:\/\//i.test(reply)) failures.push('goal:pitched_before_blocker');
     }
     if (stage === 'blocker') {
         const required = [
@@ -162,7 +162,7 @@ function stageFailures(stage, reply, history) {
             ['workout', /\bworkout|training program/i],
             ['meal_plan', /\bmeal plan/i],
             ['weekly_review', /\bweekly\b[\s\S]{0,90}\b(?:check[ -]?in|review|adjust)/i],
-            ['price', /\$\s*89(?!\.99)/i],
+            ['price', /\$\s*149\b/i],
             ['no_renewal', /\b(?:no|doesn['’]?t|does not|won['’]?t|will not)\b[\s\S]{0,60}\b(?:subscription|renew|auto-renew)/i],
             ['before_payment', /\b(?:look|inside|access|set yourself up)\b[\s\S]{0,140}\bbefore (?:you )?pay/i],
             ['consent', /\?/],

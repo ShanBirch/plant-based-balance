@@ -96,8 +96,12 @@ test('paid Meta lane bypasses the general qualifier and deterministic conversati
 });
 
 test('paid Meta price contract accepts Australian currency wording', () => {
-    const source = fs.readFileSync(path.join(__dirname, '../netlify/functions/ig-instant-draft.js'), 'utf8');
-    assert.match(source, /\(\?:aud\|au\\\$\).*89\\\.99/);
+    const issues = collectPaidMetaWriterContractIssues({
+        draft: { joined: "It's one AUD $149 payment for the full six weeks, with no subscription or auto-renewal." },
+        currentMessage: 'How much is it?',
+        qualifier: { facts: {} },
+    });
+    assert.deepEqual(issues, []);
 });
 const {
     buildInstagramGraphVideoMessagePayload,
@@ -345,8 +349,8 @@ test('paid Meta goal reply still goes through normal review when the progression
         { direction: 'out', text: 'Nice. What\u2019s your main health or fitness goal at the moment?' },
     ];
     const draft = {
-        chunks: ['The Founders Pass is $89.99. Want the link?'],
-        joined: 'The Founders Pass is $89.99. Want the link?',
+        chunks: ['The Founders Pass is $149. Want the link?'],
+        joined: 'The Founders Pass is $149. Want the link?',
         model: 'openai-gpt-5.4-mini-paid-meta+guided_meta_goal_proof_v1',
         replyMode: 'campaign_goal_proof',
         maxChunks: 1,
@@ -386,7 +390,7 @@ test.skip('legacy deterministic blocker copy retired in favour of the live write
     });
 
     assert.match(blockerReply.joined, /work and the kids can wreck the best intentions/i);
-    assert.match(blockerReply.joined, /one \$89\.99 payment for the full six weeks/i);
+    assert.match(blockerReply.joined, /one \$149 payment for the full six weeks/i);
     assert.match(blockerReply.joined, /six-week Foundations course/i);
     assert.match(blockerReply.joined, /workout program built around your week/i);
     assert.match(blockerReply.joined, /plant-based meal plan/i);
@@ -707,7 +711,7 @@ test('paid Meta writer contract preserves rapid-turn details without forcing an 
 
     const completeOfferIssues = collectPaidMetaWriterContractIssues({
         draft: {
-            joined: "Changing shifts make a rigid routine hard. Balance Foundations gives you a six-week workout program around your week, a plant-based meal plan, and one weekly check-in where I review your training and food and adjust both. It's one $89.99 payment for the full six weeks, with no subscription or auto-renewal. You can set yourself up and look through the app before paying. Want me to send you access?",
+            joined: "Changing shifts make a rigid routine hard. Balance Foundations gives you a six-week workout program around your week, a plant-based meal plan, and one weekly check-in where I review your training and food and adjust both. It's one $149 payment for the full six weeks, with no subscription or auto-renewal. You can set yourself up and look through the app before paying. Want me to send you access?",
         },
         currentMessage: 'My shifts change every week so I can never keep a routine.',
         qualifier,
@@ -715,16 +719,16 @@ test('paid Meta writer contract preserves rapid-turn details without forcing an 
     assert.deepEqual(completeOfferIssues, []);
 });
 
-test('paid Meta writer contract enforces the exact $89.99 price', () => {
+test('paid Meta writer contract enforces the exact $149 price', () => {
     const incorrectPriceIssues = collectPaidMetaWriterContractIssues({
-        draft: { joined: "It's $89 once for six weeks and it doesn't renew." },
+        draft: { joined: "It's $149 once for six weeks and it doesn't renew." },
         currentMessage: 'How much is it?',
         qualifier: { facts: {} },
     });
-    assert.ok(incorrectPriceIssues.some(issue => /exactly as one \$89\.99 payment/i.test(issue)));
+    assert.ok(incorrectPriceIssues.some(issue => /exactly as one \$149 payment/i.test(issue)));
 
     const exactPriceIssues = collectPaidMetaWriterContractIssues({
-        draft: { joined: "It's one $89.99 payment for the full six weeks and it doesn't renew." },
+        draft: { joined: "It's one $149 payment for the full six weeks and it doesn't renew." },
         currentMessage: 'How much is it?',
         qualifier: { facts: {} },
     });
@@ -765,7 +769,7 @@ test('paid Meta writer contract does not hold the approved first ad greeting as 
 test('paid Meta transition guidance leaves the next natural move to the writer', () => {
     const currentMessage = "I'm looking to adopt\nRight now I eat any based 3 nights a week";
     const weakReplyIssues = collectPaidMetaWriterContractIssues({
-        draft: { joined: "Three nights is a good start. The Founders Pass is $89.99 for six weeks. Want the details?" },
+        draft: { joined: "Three nights is a good start. The Founders Pass is $149 for six weeks. Want the details?" },
         currentMessage,
         qualifier: { facts: {} },
     });
@@ -781,7 +785,7 @@ test('paid Meta transition guidance leaves the next natural move to the writer',
 test('paid Meta guaranteed fallback removes a premature offer and keeps the lead moving', () => {
     const currentMessage = "I'm looking to adopt\nRight now I eat any based 3 nights a week";
     const fallback = buildPaidMetaGuaranteedContractFallback({
-        draft: { joined: 'Three nights is a start. The Founders Pass is $89.99 for six weeks. Want the details?', maxChunks: 3 },
+        draft: { joined: 'Three nights is a start. The Founders Pass is $149 for six weeks. Want the details?', maxChunks: 3 },
         currentMessage,
         issues: ['The reply pitched before a concrete fitness goal and real blocker were both known.'],
     });
@@ -955,7 +959,7 @@ test('the verified guided-sales offer is not blocked as premature after goal and
             },
             {
                 direction: 'out',
-                text: 'It is one $89.99 payment. You can look through the app before you pay. Want me to send you access?',
+                text: 'It is one $149 payment. You can look through the app before you pay. Want me to send you access?',
             },
         ],
     });
@@ -1096,7 +1100,7 @@ test('paid Meta food confusion can stay with the AI writer after a non-blocking 
     });
     assert.match(blockerReply.joined, /build muscle but don't know what to eat/i);
     assert.match(blockerReply.joined, /plant-based meal plan/i);
-    assert.match(blockerReply.joined, /one \$89\.99 payment/i);
+    assert.match(blockerReply.joined, /one \$149 payment/i);
     assert.equal(blockerReply.chunks.length, 3);
     assert.ok(blockerReply.chunks.every(chunk => chunk.length <= 240),
         'the complete offer must fit in three native Instagram text bubbles');
@@ -1280,7 +1284,7 @@ test('paid Meta guided sales stages move goal to blocker to complete offer to pr
     assert.match(goalReply.joined, /This is Ally/i);
     assert.match(goalReply.imageAttachmentUrl, /ally-cocos\.png/i);
     assert.match(goalReply.joined, /gets? in the way/i);
-    assert.doesNotMatch(goalReply.joined, /founders|\$89/i);
+    assert.doesNotMatch(goalReply.joined, /founders|\$149/i);
 
     const blockerHistory = [
         ...goalHistory,
@@ -1298,7 +1302,7 @@ test('paid Meta guided sales stages move goal to blocker to complete offer to pr
     assert.match(offerReply.joined, /workout program/i);
     assert.match(offerReply.joined, /plant-based meal plan/i);
     assert.match(offerReply.joined, /weekly check-in/i);
-    assert.match(offerReply.joined, /one \$89\.99 payment/i);
+    assert.match(offerReply.joined, /one \$149 payment/i);
     assert.match(offerReply.joined, /no subscription or auto-renewal/i);
     assert.match(offerReply.joined, /quick video showing you how it works inside Balance/i);
     assert.match(offerReply.joined, /free personalised preview/i);
@@ -1769,7 +1773,7 @@ test('plant-based identity answers advance reliably while transition details sta
         flowVariant: 'plant_based_control',
     });
     assert.equal(shortVeganReply.joined, 'Awesome. How long have you been vegan, and what made you go vegan?');
-    assert.doesNotMatch(shortVeganReply.joined, /\$89\.99|link/i);
+    assert.doesNotMatch(shortVeganReply.joined, /\$149|link/i);
 
     const experiencedPlantBasedReply = buildDeterministicPaidMetaConversationReply({
         currentMessage: 'I have been vegan for 9 years',
@@ -2206,7 +2210,7 @@ test.skip('legacy deterministic conversational stages retired in favour of the l
         qualifier: blockerQualifier,
         flowVariant: 'plant_based_control',
     });
-    assert.match(blocker.joined, /one \$89\.99 payment for the full six weeks/i);
+    assert.match(blocker.joined, /one \$149 payment for the full six weeks/i);
     assert.doesNotMatch(blocker.joined, /meta-app-preview\.html/i);
     assert.equal((blocker.joined.match(/\?/g) || []).length, 1);
     assert.equal(buildPaidMetaConversationApproval({
@@ -2277,8 +2281,8 @@ test.skip('legacy deterministic conversational stages retired in favour of the l
         history: [],
         flowVariant: 'plant_based_control',
     });
-    assert.match(nextStep.joined, /Balance Foundations is one \$89\.99 payment/i);
-    assert.match(nextStep.joined, /one \$89\.99 payment for the complete six-week curriculum/i);
+    assert.match(nextStep.joined, /Balance Foundations is one \$149 payment/i);
+    assert.match(nextStep.joined, /one \$149 payment for the complete six-week curriculum/i);
     assert.doesNotMatch(nextStep.joined, /ongoing weekly coaching|Starter Coaching/i);
     assert.match(nextStep.joined, /access to the app so you can check it out before any payment/i);
     assert.equal((nextStep.joined.match(/\?/g) || []).length, 1);
@@ -2420,7 +2424,7 @@ test.skip('legacy deterministic conversational stages retired in favour of the l
         ],
         flowVariant: 'plant_based_control',
     });
-    assert.match(selectedFoundersPrice.joined, /one \$89\.99 payment for the full six weeks/i);
+    assert.match(selectedFoundersPrice.joined, /one \$149 payment for the full six weeks/i);
     assert.match(selectedFoundersPrice.joined, /send you the checkout link/i);
     assert.doesNotMatch(selectedFoundersPrice.joined, /show you how the first week/i,
         'price after selecting Founders Pass must advance to checkout permission, not repeat week-one discovery');
@@ -2431,7 +2435,7 @@ test.skip('legacy deterministic conversational stages retired in favour of the l
         qualifier: blockerQualifier,
         flowVariant: 'plant_based_control',
     });
-    assert.match(naturalFoundationsPrice.joined, /one \$89\.99 payment for the full six weeks/i);
+    assert.match(naturalFoundationsPrice.joined, /one \$149 payment for the full six weeks/i);
     assert.match(naturalFoundationsPrice.joined, /complete six-week curriculum/i);
     assert.match(naturalFoundationsPrice.joined, /send you the checkout link/i);
     assert.doesNotMatch(naturalFoundationsPrice.joined, /would that kind of support|stay on track/i);
@@ -2444,7 +2448,7 @@ test.skip('legacy deterministic conversational stages retired in favour of the l
         checkoutUrl,
     });
     assert.equal(confirmFoundationsPrice.replyMode, 'campaign_sales_progression');
-    assert.match(confirmFoundationsPrice.joined, /one \$89\.99 payment for the full six weeks/i);
+    assert.match(confirmFoundationsPrice.joined, /one \$149 payment for the full six weeks/i);
     assert.match(confirmFoundationsPrice.joined, /send you the checkout link/i);
     assert.doesNotMatch(confirmFoundationsPrice.joined, /https?:\/\//,
         'a price check is not clear buying intent and must not send any link');
@@ -2457,7 +2461,7 @@ test.skip('legacy deterministic conversational stages retired in favour of the l
         checkoutUrl,
     });
     assert.equal(priceAndInclusions.replyMode, 'campaign_sales_progression');
-    assert.match(priceAndInclusions.joined, /one \$89\.99 payment for the full six weeks/i);
+    assert.match(priceAndInclusions.joined, /one \$149 payment for the full six weeks/i);
     assert.doesNotMatch(priceAndInclusions.joined, /https?:\/\//);
     assert.equal(hasDirectPaidMetaCheckoutIntent("What's included in Balance app?"), false);
     assert.equal(hasDirectPaidMetaCheckoutIntent('I want to know your prices and what I get'), false);
@@ -2480,7 +2484,7 @@ test.skip('legacy deterministic conversational stages retired in favour of the l
         qualifier: { commercial_stage: 'buyer_intent' },
         history: [{
             direction: 'out',
-            text: "The Founders Pass is $89.99 once. You get the six-week Foundations course and it doesn't renew automatically.",
+            text: "The Founders Pass is $149 once. You get the six-week Foundations course and it doesn't renew automatically.",
         }],
     }), true);
     assert.match(buildContextualMetaAdOfferLinkReply({
@@ -2493,7 +2497,7 @@ test.skip('legacy deterministic conversational stages retired in favour of the l
         qualifier: { commercial_stage: 'buyer_intent' },
         history: [{
             direction: 'out',
-            text: "The Founders Pass is $89.99 once. It is a fixed six-week start and doesn't renew automatically.",
+            text: "The Founders Pass is $149 once. It is a fixed six-week start and doesn't renew automatically.",
         }],
     }), false, 'choosing the best-fit offer is not yet a request to release checkout');
     const fixedSixWeekHandoff = buildContextualMetaAdOfferLinkReply({
@@ -2507,7 +2511,7 @@ test.skip('legacy deterministic conversational stages retired in favour of the l
         flowVariant: 'plant_based_control',
         checkoutUrl,
     });
-    assert.match(fixedSixWeekSelectionReply.joined, /one \$89\.99 payment for the full six weeks/i);
+    assert.match(fixedSixWeekSelectionReply.joined, /one \$149 payment for the full six weeks/i);
     assert.match(fixedSixWeekSelectionReply.joined, /send you the checkout link/i);
     assert.doesNotMatch(fixedSixWeekSelectionReply.joined, /https?:\/\//);
     assert.equal((fixedSixWeekSelectionReply.joined.match(/\?/g) || []).length, 1);
@@ -2551,7 +2555,7 @@ test('Instagram split offer bubbles still turn a short Yes into the promised app
             },
             {
                 direction: 'out',
-                text: 'It is one $89.99 payment. You can look through the app before you pay. Want me to send you access?',
+                text: 'It is one $149 payment. You can look through the app before you pay. Want me to send you access?',
             },
         ],
         flowVariant: 'plant_based_control',

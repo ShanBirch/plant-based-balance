@@ -106,6 +106,10 @@ const {
     isPaidMetaAcquisitionMode,
     buildAcquisitionModePromptBlock,
 } = require('./_lib/ig-acquisition-mode');
+const {
+    resolveDmLanguageExperiment,
+    measureDmLanguageShape,
+} = require('./_lib/dm-language-contract');
 
 const {
     isQualifierEligible,
@@ -1267,7 +1271,7 @@ function hasRecentCompletePaidMetaOffer(history = []) {
     return /\b(?:six|6)[- ]week\b/i.test(text)
         && /\b(?:workout|training program)\b/i.test(text)
         && /\bmeal plan\b/i.test(text)
-        && /\$\s*89\.99\b/i.test(text)
+        && /\$\s*149\b/i.test(text)
         && /\bbefore (?:(?:you )?pay|making a payment)/i.test(text);
 }
 
@@ -4410,7 +4414,7 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
         issues.push('Answer the gluten-free question directly before progressing: yes, Shannon can make their plant-based meal plan gluten-free.');
     }
     if (/\b(?:how much|price|cost)\b/i.test(turn)
-        && !/(?:\$\s*89\.99\b|\b(?:aud|au\$)\s*\$?\s*89\.99\b|\b89\.99 dollars?\b)/i.test(reply)) {
+        && !/\bone\s+(?:(?:aud|au\$)\s+)?\$149\s+payment\s+for\s+the\s+full\s+six\s+weeks\b/i.test(reply)) {
         issues.push('Answer the price exactly as one $149 payment for the full six weeks.');
     }
     if (/\b(?:e-?mail|email address|best email)\b/i.test(reply)) {
@@ -5439,7 +5443,7 @@ This exact draft will be spoken in Shannon's approved voice-note voice, not sent
 - Prefer one fuller message bubble so the audio reads as one connected note. Return to concise text for links, prices, or detailed instructions.`;
 }
 
-async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, coachDayContextBlock = '', checkinThreadBlock = '', learningReelContextBlock = '', learningReelReplyAnchorBlock = '', nativeStoryOutreachContext = null, history, currentMessage, recentInboundMessages = [], leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, recentWorkoutEvidence, weeklyAppContext, onboardingPhase, qualifier, qualifierQuestion, botAccount, coachId = null, audioTranscriptOverrides = [], personalVoiceNoteMode = false, acquisitionMode = ACQUISITION_MODES.ORGANIC_INBOUND, adFlowVariant = 'plant_based_control', checkoutUrl = '' }) {
+async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, coachDayContextBlock = '', checkinThreadBlock = '', learningReelContextBlock = '', learningReelReplyAnchorBlock = '', nativeStoryOutreachContext = null, history, currentMessage, recentInboundMessages = [], leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, recentWorkoutEvidence, weeklyAppContext, onboardingPhase, qualifier, qualifierQuestion, botAccount, coachId = null, audioTranscriptOverrides = [], personalVoiceNoteMode = false, acquisitionMode = ACQUISITION_MODES.ORGANIC_INBOUND, adFlowVariant = 'plant_based_control', checkoutUrl = '', dmLanguageExperiment = null }) {
     // Scope edits to THIS conversation first. Pulls per-IG-thread edits
     // (and per-app-user when a converted lead has been linked) so the AI
     // picks up the specific voice Shannon uses with this person. General
@@ -5467,6 +5471,9 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, c
     const conversationLanePolicyBlock = paidMetaSingleWriter ? '' : buildConversationLanePolicyBlock({ linkedUserId });
     const paidMetaConversationWriterBlock = buildPaidMetaConversationWriterBlock({ linkedUserId, acquisitionMode });
     const acquisitionModePolicyBlock = isSalesLeadThread ? buildAcquisitionModePromptBlock(acquisitionMode) : '';
+    const dmLanguageExperimentBlock = !paidMetaSingleWriter && isSalesLeadThread
+        ? String(dmLanguageExperiment?.promptBlock || '')
+        : '';
     const cocosRewardLearningBlock = isSalesLeadThread && !paidMetaSingleWriter ? await loadCocosRewardLearningBlock(botAccount) : '';
 
     const promptNow = new Date();
@@ -5844,6 +5851,7 @@ ${openAiShannonVoice}
 ${personalVoiceNoteDraftingBlock}
 ${conversationLanePolicyBlock}
 ${acquisitionModePolicyBlock}
+${dmLanguageExperimentBlock}
 ${paidMetaConversationWriterBlock}
 ${paidMetaTurnDirective}
 ${accountExperimentBlock}
@@ -6257,6 +6265,7 @@ Rules:
         learningReelReplyAnchorBlock,
         learningReelEvidenceBlock,
         emptyDraftRecovery,
+        dmLanguageExperiment,
     };
 }
 
@@ -7240,6 +7249,12 @@ exports.handler = async (event) => {
         metaAdConversationFastLane,
     });
     const outboundVoiceMessageReason = personalVoicePlan.reason;
+    const dmLanguageExperiment = resolveDmLanguageExperiment({
+        acquisitionMode,
+        linkedUserId: thread.linked_user_id || null,
+        threadId: thread.id,
+        channel,
+    });
     let draft;
     try {
         draft = fastDeterministicProgression || (metaAdOpeningTurn && shouldUseDeterministicMetaAdFirstReply(messageText) ? buildMetaAdFoundersPassFirstReply(messageText, {
@@ -7277,6 +7292,7 @@ exports.handler = async (event) => {
             acquisitionMode,
             adFlowVariant: metaAdFlowVariant,
             checkoutUrl: metaAdCheckoutUrl,
+            dmLanguageExperiment,
         }));
     } catch (err) {
         console.error('[ig-draft] draft generation threw after stale-send cleanup:', err.message);
@@ -7353,6 +7369,26 @@ exports.handler = async (event) => {
         metaAdConversationFastLane,
         flowVariant: metaAdFlowVariant,
     });
+    const dmLanguageShape = measureDmLanguageShape({
+        chunks: draft.chunks,
+        inboundText: currentInboundTurnMessage,
+    });
+    const dmLanguageObservation = {
+        dm_language_contract_version: dmLanguageExperiment.contractVersion,
+        dm_language_experiment: dmLanguageExperiment.experiment || undefined,
+        dm_language_variant: dmLanguageExperiment.variant,
+        dm_language_enrolled: dmLanguageExperiment.enrolled,
+        dm_language_protected_lane: dmLanguageExperiment.protectedLane,
+        dm_language_assignment_reason: dmLanguageExperiment.reason,
+        dm_language_shape: dmLanguageShape,
+        dm_language_stage_before: priorQualifier?.commercial_stage || 'engaged',
+        dm_language_stage_after: qualifier?.commercial_stage || priorQualifier?.commercial_stage || 'engaged',
+        dm_language_goal_evidence_present: !!(
+            cleanFactValue(qualifier?.facts?.current_state)
+            || cleanFactValue(qualifier?.facts?.motivation)
+        ),
+        dm_language_blocker_evidence_present: !!cleanFactValue(qualifier?.facts?.history_blockers),
+    };
 
     if (Array.isArray(durableMediaIds) && durableMediaIds.length) {
         try {
@@ -7626,6 +7662,7 @@ exports.handler = async (event) => {
             lead_stage: effectiveLeadStage || thread.lead_stage || 'new',
             acquisition_mode: acquisitionMode,
             offer_flow_variant: metaAdFlowVariant,
+            ...dmLanguageObservation,
             conversation_episode_started_at: draft.conversationEpisode?.startedAt || null,
             conversation_episode_reason: draft.conversationEpisode?.reason || 'continuous_thread',
             conversation_episode_new: draft.conversationEpisode?.isNewEpisode === true,
@@ -7887,6 +7924,7 @@ exports.handler = async (event) => {
             lead_stage: effectiveLeadStage || thread.lead_stage || existingPending.data?.lead_stage || 'new',
             acquisition_mode: acquisitionMode,
             offer_flow_variant: metaAdFlowVariant,
+            ...dmLanguageObservation,
             channel,
             delivery_channel: deliveryChannel,
             manual_ig_required: isDirectGraphManual || undefined,

@@ -541,7 +541,7 @@ assert.equal(instantDraft.isContextualMetaAdOfferLinkRequest({
 }), false, 'the same phrase outside an offer context cannot trigger a checkout link');
 const foundersSelectionHistory = [{
     direction: 'out',
-    text: 'Starter Coaching is $29.99/week. Founders Pass is $89.99 once. Which one do you want to start with?',
+    text: 'Starter Coaching is $29.99/week. Founders Pass is $149 once. Which one do you want to start with?',
 }];
 assert.equal(instantDraft.isContextualMetaAdOfferLinkRequest({
     currentMessage: 'Founders pass',
@@ -566,7 +566,7 @@ const foundersSelectionReply = instantDraft.buildContextualMetaAdOfferLinkReply(
     flowVariant: 'plant_based_control',
     currentMessage: 'Founders Pass',
 });
-assert.match(foundersSelectionReply.joined, /Perfect.*one \$89\.99 payment for the full six weeks/i);
+assert.match(foundersSelectionReply.joined, /Perfect.*one \$149 payment for the full six weeks/i);
 assert.match(foundersSelectionReply.joined, /plant-based-fitness\.html\?utm_source=instagram/);
 assert.equal(foundersSelectionReply.model, 'deterministic_paid_meta_conversation_v2');
 assert.equal(foundersSelectionReply.replyMode, 'campaign_buyer_handoff');
