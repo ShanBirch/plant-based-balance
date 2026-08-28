@@ -3002,6 +3002,18 @@ test('verified broad route completes goal, blocker, neutral offer and signed pre
     assert.equal((offerReply.joined.match(/\?/g) || []).length, 1,
         'the offer asks for preview consent, not another discovery fact');
 
+    const pluralNightShiftOffer = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'Night shifts and low energy usually knock me off track.',
+        qualifier: null,
+        history: historyThroughGoal,
+        flowVariant: 'broad_pain',
+        checkoutUrl: 'https://future-balance.netlify.app/fitness',
+        appPreviewUrl: previewUrl,
+        allowVideoAttachment: false,
+    });
+    assert.equal(pluralNightShiftOffer.replyMode, 'campaign_sales_progression');
+    assert.match(pluralNightShiftOffer.joined, /changing rosters|changing shifts|schedule|week changing/i);
+
     const historyThroughOffer = [
         ...historyThroughGoal,
         { direction: 'in', text: blocker },
