@@ -78,11 +78,11 @@ test('real Coach Shannon inbox also requires the full welcome note', () => {
 });
 
 test('changed onboarding assets are cache-busted', () => {
-  assert.match(dashboard, /meta-ad-trial\.js\?v=14-training-summary/);
+  assert.match(dashboard, /meta-ad-trial\.js\?v=15-tour-completion-gate/);
   assert.match(dashboard, /pbb-deferred-weeklygoals\.js\?v=34-guided-goals/);
   assert.match(dashboard, /pbb-social-journey\.js\?v=37-course-action-evidence/);
-  assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=208-guided-tour-reset/);
+  assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=209-smooth-guided-tour/);
   assert.match(dashboard, /dashboard-script-6-ai_coach_draft_mode_logic_auth\.js\?v=43-home-canvas/);
   assert.match(dashboard, /learning-inline\.js\?v=29-paid-tour-handoff/);
-  assert.match(serviceWorker, /pbb-app-v374-first-week-checkin-gate/);
+  assert.match(serviceWorker, /pbb-app-v375-smooth-guided-tour/);
 });

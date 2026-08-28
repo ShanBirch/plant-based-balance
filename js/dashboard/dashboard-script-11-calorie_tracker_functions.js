@@ -6655,6 +6655,10 @@ let _pendingAdaptiveAdjustment = null;
  */
 async function loadAdaptiveAdjustment() {
     try {
+        // A brand-new guided setup must never inherit a coaching adjustment
+        // from older account history. The onboarding plan is the source of
+        // truth until the member has completed a real week of tracking.
+        if (window.metaAdTrialMode === true || window.__balanceGuidedTourActive === true || window.__balancePendingClientActivation === true) return;
         const session = await window.authHelpers?.getSession();
         if (!session?.user) return;
         const userId = window.currentUser.id;

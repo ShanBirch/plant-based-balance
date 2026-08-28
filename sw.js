@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v374-first-week-checkin-gate'; // v374: keep weekly check-ins hidden until the first program week is complete
+const CACHE_NAME = 'pbb-app-v375-smooth-guided-tour'; // v375: keep paid onboarding in order and close stale tour surfaces
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -9,7 +9,7 @@ const ASSETS = [
   './welcome.html',
   './lib/supabase.js?v=15-foundations-feed',
   './lib/auth-guard.js?v=13-account-first-flow',
-  './lib/meta-ad-trial.js?v=14-training-summary',
+  './lib/meta-ad-trial.js?v=15-tour-completion-gate',
   './lib/native-push.js?v=40-dispatch-approval',
   './login.html',
   './exercise_videos.js?v=20260813-global-phone-video-v1',
@@ -17,7 +17,7 @@ const ASSETS = [
   './workout_library_extended.js',
   './js/dashboard/script_part_2.js?v=14-light-launch',
   './js/dashboard/dashboard-script-3-1_get_user_data.js?v=59-light-launch',
-  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=208-guided-tour-reset',
+  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=209-smooth-guided-tour',
   './js/dashboard/pbb-meta-preview-soundtrack.js?v=1-gentle-audio',
   './js/dashboard/pbb-app-telemetry.js?v=1',
   './js/dashboard/pbb-deferred-weeklygoals.js?v=34-guided-goals',

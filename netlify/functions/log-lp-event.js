@@ -22,7 +22,7 @@ const ALLOWED_EVENT_TYPES = new Set([
     'lead_created', 'purchase', 'signup', 'onboarding_started',
     'onboarding_completed', 'weekly_goals_set', 'meal_plan_created',
     'first_workout_planned', 'first_workout_completed', 'trial_started',
-    'trial_walkthrough_completed', 'trial_preview_started', 'trial_gate_shown', 'trial_signup_click',
+    'trial_walkthrough_completed', 'trial_walkthrough_blocked', 'trial_preview_started', 'trial_gate_shown', 'trial_signup_click',
     'trial_signup_view', 'trial_subscription_claimed', 'trial_purchase_claimed',
     'trial_flow_interrupted', 'trial_flow_resumed', 'trial_inbox_preview_viewed',
     'dm_voice_record_started', 'dm_voice_record_cancelled',

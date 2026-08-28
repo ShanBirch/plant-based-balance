@@ -22,7 +22,7 @@ test('paid preview clearly shows the personalised setup and full Foundations val
 });
 
 test('the guided preview ends in the real Foundations lesson', () => {
-  const first = dashboard.indexOf("title:'Start here each day'");
+  const first = dashboard.indexOf("title:'Your app tour starts here'");
   const shopping = dashboard.indexOf("title:'One shopping list for the week'", first);
   const goals = dashboard.indexOf("title:'Pick your Weekly Goals'", shopping);
   const course = dashboard.indexOf("title:'Read, then take the quiz'", goals);

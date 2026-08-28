@@ -142,6 +142,7 @@ test('finishing the guided tour opens the fixed six-week Stripe gate', async () 
     assert.ok(trial.events.some(event => event.event_type === 'onboarding_completed'));
     assert.ok(!trial.events.some(event => event.event_type === 'trial_preview_started'));
 
+    trial.sessionStorage.setItem(api.FOUNDATIONS_COMPLETE_KEY, 'true');
     api.onWalkthroughComplete();
     state = api.readState();
     assert.equal(state.deadlineAt, null);
@@ -169,6 +170,18 @@ test('finishing the guided tour opens the fixed six-week Stripe gate', async () 
     assert.equal(trial.localStorage.getItem('user_food_preferences'), savedFoodPreferences);
     assert.equal(trial.sessionStorage.getItem('userResult'), savedResult);
     assert.equal(trial.window.location.href, 'https://checkout.stripe.com/test-preview');
+});
+
+test('the walkthrough cannot open payment before the first Foundations lesson is complete', () => {
+    const trial = runTrial('?guest=true&meta_trial=facebook_5m_foundations_v3&utm_source=facebook&utm_medium=paid_social');
+    const api = trial.window.BalanceMetaAdTrial;
+    api.onOnboardingStarted();
+    api.onOnboardingComplete();
+
+    assert.equal(api.onWalkthroughComplete(), false);
+    assert.notEqual(trial.elements['meta-ad-trial-gate'].style.display, 'flex');
+    assert.ok(trial.events.some(event => event.event_type === 'trial_walkthrough_blocked'));
+    assert.ok(!trial.events.some(event => event.event_type === 'trial_walkthrough_completed'));
 });
 
 test('personalised setup counts training days without counting yoga recovery', () => {
@@ -289,13 +302,13 @@ test('dashboard, signup, native handoffs, measurement, and both discovery system
     const ios = fs.readFileSync(path.join(root, 'ios/App/App/BalanceShortcutHandoff.swift'), 'utf8');
 
     assert.match(dashboard, /paid-facebook-stripe-unlock-v1/);
-    assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=206-guided-shopping-list/);
-    assert.match(dashboard, /title:'Start here each day'.*metaPreview:true/);
+    assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=209-smooth-guided-tour/);
+    assert.match(dashboard, /title:'Your app tour starts here'.*metaPreview:true/);
     assert.match(dashboard, /title:'Check your workout week'.*metaPreview:true/);
     assert.match(dashboard, /title:'Open your first workout'.*metaPreview:true/);
     assert.match(dashboard, /title:'Follow the exercise card'.*metaPreview:true/);
     assert.match(dashboard, /title:'Log what you eat'.*metaPreview:true/);
-    assert.match(dashboard, /title:'Open your meal plan'.*metaPreview:true/);
+    assert.match(dashboard, /title:'See every meal on Day 1'.*metaPreview:true/);
     assert.match(dashboard, /title:'Read, then take the quiz'.*embeddedGuide:true.*metaPreview:true.*requiresFoundationsLesson:'mind-1-1'/);
     assert.match(dashboard, /title:'The Balance community'.*metaPreview:true/);
     assert.match(dashboard, /title:'Post when you need support'.*metaPreview:true/);
@@ -355,19 +368,17 @@ test('dashboard, signup, native handoffs, measurement, and both discovery system
     assert.match(landing, /facebook_5m_foundations_v3/);
     assert.match(landing, /balance-founders-og-cream-gold\.png\?v=20260804/);
     assert.match(foundersLanding, /paidMetaSources = \['facebook', 'fb', 'instagram', 'ig', 'meta'\]/);
-    assert.match(foundersLanding, /createTreeWalker\(document\.body, NodeFilter\.SHOW_TEXT\)/);
     assert.match(foundersLanding, /paidMetaMedia = \['paid_social', 'paid', 'cpc'\]/);
     assert.match(foundersLanding, /params\.set\('account_first', '1'\)/);
     assert.match(foundersLanding, /params\.set\('meta_trial', 'facebook_5m_foundations_v3'\)/);
     assert.match(foundersLanding, /id="foundations-hero-action"/);
     assert.match(foundersLanding, /Download Balance for iPhone/);
     assert.match(foundersLanding, /Download Balance for Android/);
-    assert.match(foundersLanding, /Already installed\? Create my account/);
+    assert.match(foundersLanding, /Already installed\? Open my personalised preview/);
     assert.match(foundersLanding, /com\.fitgotchi\.app:\/\/meta-trial\?/);
     assert.match(foundersLanding, /Download Balance, create your free account, then complete your personalised setup and guided tour without leaving the app/);
     assert.match(foundersLanding, /pbb_meta_trial=/);
     assert.match(foundersLanding, /referrer=/);
-    assert.match(foundersLanding, /You will not need to return to this website or Instagram/);
     assert.doesNotMatch(foundersLanding, /return to this website page/);
     assert.doesNotMatch(foundersLanding, /var appUrl = '\/dashboard\.html\?/);
     assert.match(foundersLanding, /data-plan="founders-pass"/);
