@@ -26,7 +26,7 @@ test('walkthrough keeps surrounding page context readable', () => {
   assert.match(premiumOverlays, /#guided-tour-overlay\.tour-page-view #guided-tour-spotlight[\s\S]*?rgba\(26, 24, 20, 0\.08\)/);
   assert.doesNotMatch(premiumOverlays, /#guided-tour-spotlight[\s\S]*?rgba\(29, 15, 50, 0\.78\)/);
   assert.match(dashboard, /pbb-premium-overlays\.css\?v=97-foundations-actions/);
-  assert.match(serviceWorker, /pbb-app-v395-phone-test-reset/);
+  assert.match(serviceWorker, /pbb-app-v396-required-guided-tour/);
 });
 
 test('page-level stops opt into the softer context view', () => {
@@ -96,4 +96,12 @@ test('guided tours and returning-user reveals both reset and apply page-view mod
   assert.match(source, /function positionBubbleAndSpotlight\(target, step\)[\s\S]*?classList\.toggle\('tour-page-view', pageView\)/);
   assert.match(source, /function positionReveal\(target, step\)[\s\S]*?classList\.toggle\('tour-page-view', pageView\)/);
   assert.ok((source.match(/if \(pageView\) \{/g) || []).length >= 2);
+});
+
+test('required onboarding tours cannot be skipped', () => {
+  const source = featureTourSource();
+
+  assert.match(source, /if \(skipped && \(completedMetaPreviewTour \|\| completedClientActivationTour\)\)/);
+  assert.match(source, /showToast\('Finish the guided tour to continue\.'/);
+  assert.match(source, /skipButton\.hidden = metaPreviewTour \|\| clientActivationTour/);
 });
