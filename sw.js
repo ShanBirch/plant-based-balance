@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v382-capture-guided-taps'; // v382: record checklist taps before the destination re-renders Home
+const CACHE_NAME = 'pbb-app-v383-guided-action-signal'; // v383: keep the tour synced with every Home checklist destination
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

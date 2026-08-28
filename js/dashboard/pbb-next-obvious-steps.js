@@ -1377,6 +1377,9 @@
       });
     },
     runAction: function(id){
+      try {
+        window.dispatchEvent(new CustomEvent('pbb-next-step-action', { detail: { id: id } }));
+      } catch (_) {}
       var action = ACTIONS.find(function(item){ return item.id === id; });
       if (action && typeof action.action === 'function') action.action();
       setTimeout(function(){ refreshDailyStatus({ force: true }); }, 1400);

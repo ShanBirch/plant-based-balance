@@ -5,6 +5,7 @@ const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
 const dashboard = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
+const nextSteps = fs.readFileSync(path.join(root, 'js', 'dashboard', 'pbb-next-obvious-steps.js'), 'utf8');
 const serviceWorker = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
 
 test('paid tour explains guided actions before performing them', () => {
@@ -16,6 +17,9 @@ test('paid tour explains guided actions before performing them', () => {
   assert.match(dashboard, /function armPromptTarget\(step, target, stepIndex\)[\s\S]*step\.action\(\{ fromTargetClick:true \}\)/);
   assert.match(dashboard, /document\.addEventListener\('click', handleTargetClick, true\)/);
   assert.match(dashboard, /document\.removeEventListener\('click', handleTargetClick, true\)/);
+  assert.match(dashboard, /window\.addEventListener\('pbb-next-step-action', handleActionSignal\)/);
+  assert.match(dashboard, /window\.removeEventListener\('pbb-next-step-action', handleActionSignal\)/);
+  assert.match(nextSteps, /window\.dispatchEvent\(new CustomEvent\('pbb-next-step-action'/);
   assert.match(dashboard, /promptRequiresTargetClick:true/);
 });
 
@@ -23,5 +27,5 @@ test('opened interactive screens keep their guide and gates', () => {
   assert.match(dashboard, /showStep\(idx, \{ afterPromptedAction:true \}\)/);
   assert.match(dashboard, /if \(!options\.afterPromptedAction\) \{\s*resetTourTemporaryTargets\(\)/);
   assert.match(dashboard, /completedPromptedActions\.clear\(\)/);
-  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v382-capture-guided-taps'/);
+  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v383-guided-action-signal'/);
 });

@@ -1950,14 +1950,14 @@ if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-progressphoto.js?v=10"><\/script>');
 document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=34-guided-goals"><\/script>');
     document.write('<script src="js/dashboard/pbb-social-journey.js?v=37-course-action-evidence"><\/script>');
-    document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=31-checklist-guided-tour"><\/script>');
+    document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=32-guided-action-signal"><\/script>');
     document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=27-first-week-gate"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
     window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=10');
 window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=34-guided-goals');
     window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=37-course-action-evidence');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=31-checklist-guided-tour');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=32-guided-action-signal');
     window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=27-first-week-gate');
 }
 </script>
@@ -14271,8 +14271,8 @@ if(!window._pbbIsIOSSafari) {
   function armPromptTarget(step, target, stepIndex){
     if (!step || !target) return false;
     var busy = false;
-    var handleTargetClick = function(event){
-      if (busy || !target.contains(event.target)) return;
+    var beginPromptedAction = function(){
+      if (busy) return;
       busy = true;
       completedPromptedActions.add(stepIndex);
       pendingPromptedAction = null;
@@ -14298,12 +14298,25 @@ if(!window._pbbIsIOSSafari) {
         await showStep(stepIndex, { afterPromptedAction:true });
       }, 180);
     };
+    var handleTargetClick = function(event){
+      if (!target.contains(event.target)) return;
+      beginPromptedAction();
+    };
+    var expectedActionId = promptedActionId(step);
+    var handleActionSignal = function(event){
+      if (!event || !event.detail || event.detail.id !== expectedActionId) return;
+      beginPromptedAction();
+    };
     // Capture the checklist tap before its inline destination handler changes
     // tabs or re-renders Home. Otherwise fast, synchronous destinations (the
     // nutrition tracker in particular) can remove the highlighted card before
     // the tour records the tap, leaving the guide stuck on the prompt screen.
     document.addEventListener('click', handleTargetClick, true);
-    activePromptTargetCleanup = function(){ document.removeEventListener('click', handleTargetClick, true); };
+    window.addEventListener('pbb-next-step-action', handleActionSignal);
+    activePromptTargetCleanup = function(){
+      document.removeEventListener('click', handleTargetClick, true);
+      window.removeEventListener('pbb-next-step-action', handleActionSignal);
+    };
     return true;
   }
 
