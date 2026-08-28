@@ -2042,10 +2042,13 @@ function buildDeterministicPaidMetaConversationReply({
 
 function shouldApplyDeterministicPaidMetaReplyOverride(draft = null) {
     if (!draft) return false;
-    // Only exact destinations are deterministic. Ordinary conversation copy is
+    // Exact destinations and an explicit autonomy pause are deterministic.
+    // Ordinary discovery, FAQ, objection-detail and offer wording remains
     // model-written from the complete episode and current unanswered batch.
     return draft.replyMode === 'campaign_buyer_handoff'
-        || draft.replyMode === 'campaign_app_preview_handoff';
+        || draft.replyMode === 'campaign_app_preview_handoff'
+        || (draft.replyMode === 'campaign_sales_progression'
+            && /^deterministic_paid_meta_autonomy_v\d+$/i.test(String(draft.model || '')));
 }
 
 function shouldUseOutboundSyntheticVoice({ personalVoicePlan = {}, metaAdConversationFastLane = false } = {}) {
@@ -2662,7 +2665,7 @@ function buildPaidMetaConversationApproval({
     const deterministicProgression = metaAdConversationFastLane
         && !linkedUserId
         && ['campaign_sales_progression', 'campaign_buyer_handoff', 'campaign_app_preview_handoff'].includes(String(draft?.replyMode || ''))
-        && /^deterministic_paid_meta_(?:conversation|guided_sales|handoff)_v\d+(?:\+[a-z0-9_-]+)*$/i.test(String(draft?.model || ''))
+        && /^deterministic_paid_meta_(?:conversation|guided_sales|handoff|autonomy)_v\d+(?:\+[a-z0-9_-]+)*$/i.test(String(draft?.model || ''))
         && !META_AD_FIRST_REPLY_OPT_OUT_RE.test(message)
         && !META_AD_FIRST_REPLY_REVIEW_REQUIRED_RE.test(message)
         && (draft?.replyMode !== 'campaign_buyer_handoff' || isPaidMetaContextualCheckoutIntent(message))

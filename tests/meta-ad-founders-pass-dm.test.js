@@ -1271,6 +1271,22 @@ test('broad paid Meta treats a price objection and no-link request as a pause, n
     assert.doesNotMatch(reply.joined, /https?:\/\//i);
     assert.equal((reply.joined.match(/\?/g) || []).length, 0);
     assert.ok(reply.joined.split(/\s+/).length <= 25);
+    assert.equal(shouldApplyDeterministicPaidMetaReplyOverride(reply), true);
+    const approval = buildPaidMetaConversationApproval({
+        metaAdConversationFastLane: true,
+        draft: reply,
+        currentMessage: 'That sounds good, but $149 is too much for me right now. Please don’t send a link.',
+        linkedUserId: null,
+        qualifier: {
+            commercial_stage: 'problem_qualified',
+            facts: {
+                current_state: 'Wants to get stronger.',
+                history_blockers: 'Changing roster disrupts workouts.',
+            },
+        },
+    });
+    assert.equal(approval?.required, false);
+    assert.equal(approval?.code, 'approved_meta_ad_sales_progression');
 });
 
 test('paid Meta answers a rapid meal-plan question without asking the known goal twice', () => {
