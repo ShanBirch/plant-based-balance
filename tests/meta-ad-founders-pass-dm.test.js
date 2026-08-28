@@ -1306,6 +1306,26 @@ test('broad paid Meta treats a price objection and no-link request as a pause, n
     assert.equal(approval?.code, 'approved_meta_ad_sales_progression');
 });
 
+test('broad paid Meta keeps a direct preview request when a rapid second bubble rejects more questions', () => {
+    const previewUrl = 'https://future-balance.netlify.app/p/test-preview-token';
+    const reply = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'Can I just see the preview first?\nI don’t want to answer a bunch of questions.',
+        history: [{
+            direction: 'out',
+            text: "What's the main change you'd like to make over the next six weeks?",
+        }],
+        qualifier: { commercial_stage: 'engaged', facts: {} },
+        flowVariant: 'broad_pain',
+        appPreviewUrl: previewUrl,
+    });
+
+    assert.equal(reply.replyMode, 'campaign_app_preview_handoff');
+    assert.equal(reply.appPreviewHandoff, true);
+    assert.match(reply.joined, new RegExp(previewUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    assert.equal((reply.joined.match(/\?/g) || []).length, 0);
+    assert.doesNotMatch(reply.joined, /main change|what gets in the way/i);
+});
+
 test('paid Meta answers a rapid meal-plan question without asking the known goal twice', () => {
     const history = [
         { direction: 'out', text: 'Nice. What made you decide to go plant-based?' },

@@ -1290,10 +1290,10 @@ function hasPaidMetaPreviewOrPriceDecline(value = '') {
 
 function isExplicitPaidMetaPreviewRequest(value = '') {
     const message = String(value || '').replace(/\s+/g, ' ').trim();
-    if (!message || /\b(?:not now|no thanks|don['\u2019]?t|do not|not interested|can['\u2019]?t)\b/i.test(message)) return false;
-    return /\b(?:can|could|may) i (?:see|view|open|try|look at) (?:it|the app|the preview|my preview|the program|the setup)\b/i.test(message)
+    if (!message || hasPaidMetaPreviewOrPriceDecline(message)) return false;
+    return /\b(?:can|could|may) i (?:just )?(?:see|view|open|try|look at) (?:it|the app|the preview|my preview|the program|the setup)\b/i.test(message)
         || /\b(?:show|send|open|give) me (?:the |my )?(?:app )?preview\b/i.test(message)
-        || /\bi want to (?:see|view|open|try|look at) (?:it|the app|the preview|the program|the setup)\b/i.test(message);
+        || /\bi (?:just )?want to (?:see|view|open|try|look at) (?:it|the app|the preview|the program|the setup)\b/i.test(message);
 }
 
 function hasRecentCompletePaidMetaOffer(history = []) {
