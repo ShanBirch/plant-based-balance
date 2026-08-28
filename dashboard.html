@@ -14227,6 +14227,10 @@ if(!window._pbbIsIOSSafari) {
     communityTourStep.nextLabel = 'Make your first post';
     communityTourStep.action = async function(options){
       try {
+        // The required tour's hello is also the member's Week 1 Foundations
+        // introduction. Tag the next text post so the Home plan does not ask
+        // them to introduce themselves a second time after checkout.
+        sessionStorage.setItem('pbb_foundations_feed_action', 'w1_feed_intro');
         if (!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('feed_intro');
         if (window.BalanceMetaAdTrial && typeof window.BalanceMetaAdTrial.loadPreviewFeed === 'function') {
           await window.BalanceMetaAdTrial.loadPreviewFeed();

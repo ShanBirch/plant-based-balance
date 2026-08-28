@@ -135,3 +135,12 @@ test('community handoff keeps one tap from skipping its explanation', () => {
   const source = featureTourSource();
   assert.match(source, /const communityTourStep = findTourStep\('The Balance community'\)[\s\S]*?setTimeout\(resolve, 140\)/);
 });
+
+test('the required tour introduction also completes the Week 1 Feed action', () => {
+  const source = featureTourSource();
+  assert.match(
+    source,
+    /const communityTourStep = findTourStep\('The Balance community'\)[\s\S]*?sessionStorage\.setItem\('pbb_foundations_feed_action', 'w1_feed_intro'\)/
+  );
+  assert.match(stories, /course_action_id: foundationsCourseActionId \|\| null/);
+});
