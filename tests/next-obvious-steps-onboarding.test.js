@@ -110,6 +110,7 @@ test('the Meta onboarding preview exposes the full guided Home checklist', () =>
   assert.equal(JSON.stringify(ids.slice(0, 6)), JSON.stringify(onboardingIds));
   assert.equal(ids.length, 6, 'the guided setup should not mix in normal daily actions');
   assert.match(source, /ONBOARDING_ACTION_IDS\.concat\(\['activity_insights_intro'\]\)/);
+  assert.match(source, /storedKey\.indexOf\('pbb_onboarding_step_seen:'\)/);
 });
 
 test('activity insights onboarding is also restricted to new accounts', () => {

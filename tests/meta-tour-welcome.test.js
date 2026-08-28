@@ -20,5 +20,5 @@ test('tour welcome is phone-safe and refreshes the app shell', () => {
   assert.match(dashboard, /#meta-tour-welcome[\s\S]*env\(safe-area-inset-top\)[\s\S]*env\(safe-area-inset-bottom\)/);
   assert.match(dashboard, /max-height: calc\(100dvh/);
   assert.match(dashboard, /\.meta-tour-welcome-card[\s\S]*overflow-y: auto/);
-  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v371-home-guided-tour-reset'/);
+  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v372-full-tour-reset'/);
 });

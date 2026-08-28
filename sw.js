@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v371-home-guided-tour-reset'; // v371: keep the paid setup checklist focused and reset-safe
+const CACHE_NAME = 'pbb-app-v372-full-tour-reset'; // v372: clear every account-keyed setup action during test resets
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

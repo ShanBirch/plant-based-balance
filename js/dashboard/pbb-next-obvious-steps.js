@@ -1332,9 +1332,19 @@
       render();
     },
     resetOnboardingCards: function(){
-      ONBOARDING_ACTION_IDS.concat(['activity_insights_intro']).forEach(function(actionId){
+      var resetIds = ONBOARDING_ACTION_IDS.concat(['activity_insights_intro']);
+      resetIds.forEach(function(actionId){
         try { localStorage.removeItem(onboardingStepKey(actionId)); } catch (_) {}
       });
+      try {
+        for (var storageIndex = localStorage.length - 1; storageIndex >= 0; storageIndex -= 1) {
+          var storedKey = localStorage.key(storageIndex);
+          if (!storedKey || storedKey.indexOf('pbb_onboarding_step_seen:') !== 0) continue;
+          if (resetIds.some(function(actionId){ return storedKey.endsWith(':' + actionId); })) {
+            localStorage.removeItem(storedKey);
+          }
+        }
+      } catch (_) {}
       render();
     }
   };
