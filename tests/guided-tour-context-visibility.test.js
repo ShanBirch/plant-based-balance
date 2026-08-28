@@ -124,3 +124,14 @@ test('required onboarding continues from Feed through coach, Foundations, and We
   assert.match(stories, /dispatchEvent\(new CustomEvent\('pbbFeedPostCreated'/);
   assert.match(source, /waitForPromptedStepSurface\(step, 900\)/);
 });
+
+test('shopping-list tour accepts a tap anywhere on the highlighted ingredient row', () => {
+  const source = featureTourSource();
+  assert.match(source, /sel:'#ai-plan-shopping-list \.ai-plan-shopping__item'.*title:'One shopping list for the week'/);
+  assert.doesNotMatch(source, /sel:'#ai-plan-shopping-list \.ai-plan-shopping__item input'.*title:'One shopping list for the week'/);
+});
+
+test('community handoff keeps one tap from skipping its explanation', () => {
+  const source = featureTourSource();
+  assert.match(source, /const communityTourStep = findTourStep\('The Balance community'\)[\s\S]*?setTimeout\(resolve, 140\)/);
+});
