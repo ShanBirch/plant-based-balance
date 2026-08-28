@@ -14271,6 +14271,7 @@ if(!window._pbbIsIOSSafari) {
   function armPromptTarget(step, target, stepIndex){
     if (!step || !target) return false;
     var busy = false;
+    var expectedActionId = promptedActionId(step);
     var beginPromptedAction = function(actionAlreadyStarted){
       if (busy) return;
       busy = true;
@@ -14299,7 +14300,10 @@ if(!window._pbbIsIOSSafari) {
       }, 180);
     };
     var handleTargetClick = function(event){
-      if (!target.contains(event.target)) return;
+      var clickedAction = event.target && event.target.closest ? event.target.closest('[data-next-step-id]') : null;
+      if (expectedActionId) {
+        if (!clickedAction || clickedAction.getAttribute('data-next-step-id') !== expectedActionId) return;
+      } else if (!target.contains(event.target)) return;
       // Own this one tap. The tour opens the destination once, then renders the
       // in-section guide. Allowing the card's inline handler to run as well can
       // create two competing tab changes and skip a later tour stop.
@@ -14307,7 +14311,6 @@ if(!window._pbbIsIOSSafari) {
       event.stopImmediatePropagation();
       beginPromptedAction(false);
     };
-    var expectedActionId = promptedActionId(step);
     var handleActionSignal = function(event){
       if (!event || !event.detail || event.detail.id !== expectedActionId) return;
       beginPromptedAction(true);
