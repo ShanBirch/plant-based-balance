@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v362-training-summary'; // v362: keep recovery and yoga days out of the personalised workout count
+const CACHE_NAME = 'pbb-app-v363-guided-client-tour'; // v363: start signed-in onboarding with the guided plan tour and finish in Course
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

@@ -44,9 +44,29 @@ test('food preferences finish saving before onboarding advances', () => {
     assert.match(onboardingSource, /const prefs = await saveWizardFoodPreferences\(\);/);
 });
 
-test('every new client reaches the Inbox welcome even when they skip the App Tour', () => {
-    assert.match(dashboardSource, /else if \(completedClientActivationTour\) \{[\s\S]+window\.socialJourney\.startActivation\(\)/);
-    assert.doesNotMatch(dashboardSource, /completedClientActivationTour && !skipped/);
+test('skipping still opens the welcome journey while completing leaves the member in Course', () => {
+    assert.match(dashboardSource, /else if \(completedClientActivationTour\) \{[\s\S]+if \(skipped\)[\s\S]+window\.socialJourney\.startActivation\(\)[\s\S]+ensureTab\('learning'\)/);
+});
+
+test('the signed-in app tour starts with the plan, saves Weekly Goals near the end, and finishes in Foundations', () => {
+    const workout = dashboardSource.indexOf("title:'Your workout program'");
+    const foodLog = dashboardSource.indexOf("title:'Track what you actually eat'", workout);
+    const mealPlan = dashboardSource.indexOf("title:'Your meal plan'", foodLog);
+    const shopping = dashboardSource.indexOf("title:'Your weekly shopping list'", mealPlan);
+    const community = dashboardSource.indexOf("title:'Make the change visible'", shopping);
+    const goals = dashboardSource.indexOf("title:'Pick your Weekly Goals'", community);
+    const course = dashboardSource.indexOf("title:'Read, then take the quiz'", goals);
+
+    assert.ok(workout >= 0);
+    assert.ok(foodLog > workout);
+    assert.ok(mealPlan > foodLog);
+    assert.ok(shopping > mealPlan);
+    assert.ok(community > shopping);
+    assert.ok(goals > community);
+    assert.ok(course > goals);
+    assert.match(dashboardSource.slice(course, dashboardSource.indexOf('\n', course)), /clientActivation:true[\s\S]*requiresFoundationsLesson:'mind-1-1'/);
+    assert.match(dashboardSource, /if \(metaPreviewTour \|\| clientActivationTour\) \{[\s\S]*showMetaTourWelcome\(\)/);
+    assert.match(dashboardSource, /\(metaPreviewTour \|\| clientActivationTour\) && step\.promptBeforeAction/);
 });
 
 test('the curated starter plan is held when preferences need an individual safety review', () => {
