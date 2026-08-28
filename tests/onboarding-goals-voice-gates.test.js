@@ -13,6 +13,7 @@ const serviceWorker = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
 const learning = fs.readFileSync(path.join(root, 'lib/learning-inline.js'), 'utf8');
 
 test('onboarding no longer silently saves default Weekly Goals', () => {
+  assert.match(onboarding, /function selectWizardChatStart\(value\)[\s\S]*?pbbNextSteps\.resetOnboardingCards\(\)/);
   assert.match(onboarding, /localStorage\.setItem\('pbb_weekly_goals_selection_required_v1', 'true'\)/);
   assert.doesNotMatch(onboarding, /weeklyGoals\.applyOnboardingDefaults/);
   assert.doesNotMatch(weeklyGoals, /async function applyOnboardingDefaults/);
@@ -80,8 +81,8 @@ test('changed onboarding assets are cache-busted', () => {
   assert.match(dashboard, /meta-ad-trial\.js\?v=14-training-summary/);
   assert.match(dashboard, /pbb-deferred-weeklygoals\.js\?v=34-guided-goals/);
   assert.match(dashboard, /pbb-social-journey\.js\?v=37-course-action-evidence/);
-  assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=207-day-one-meal-carousel/);
+  assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=208-guided-tour-reset/);
   assert.match(dashboard, /dashboard-script-6-ai_coach_draft_mode_logic_auth\.js\?v=43-home-canvas/);
   assert.match(dashboard, /learning-inline\.js\?v=29-paid-tour-handoff/);
-  assert.match(serviceWorker, /pbb-app-v372-full-tour-reset/);
+  assert.match(serviceWorker, /pbb-app-v373-start-clean-tour/);
 });

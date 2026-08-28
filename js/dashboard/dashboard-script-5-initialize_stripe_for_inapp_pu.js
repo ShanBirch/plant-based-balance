@@ -9414,6 +9414,11 @@ function selectWizardChatChoice(value) {
 function selectWizardChatStart(value) {
     const step = getWizardChatStep();
     if (!step || step.type !== 'start') return;
+    try {
+        if (window.pbbNextSteps && typeof window.pbbNextSteps.resetOnboardingCards === 'function') {
+            window.pbbNextSteps.resetOnboardingCards();
+        }
+    } catch (_) {}
     advanceWizardChat(step, value || 'lets_go');
 }
 
