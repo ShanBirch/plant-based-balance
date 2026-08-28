@@ -50,19 +50,20 @@ test('the first course guide is compact and the lesson introduces both researche
 
 test('the paid preview tour keeps the promised app order before payment', () => {
   const titles = [
+    'Your app tour starts here',
+    'See every meal on Day 1',
+    'Log what you eat',
+    'One shopping list for the week',
     'Check your workout week',
     'Open your first workout',
     'Follow the exercise card',
-    'Log what you eat',
-    'See every meal on Day 1',
-    'One shopping list for the week',
+    'Listen to Shannon’s welcome',
     'The Balance community',
     'Post when you need support',
-    'Listen to Shannon’s welcome',
     'Pick your Weekly Goals',
     'Read, then take the quiz'
   ];
-  let cursor = dashboard.indexOf("title:'Check your workout week'");
+  let cursor = dashboard.indexOf("title:'Your app tour starts here'");
   assert.ok(cursor >= 0);
   titles.slice(1).forEach(title => {
     const next = dashboard.indexOf(`title:'${title}'`, cursor + 1);
@@ -70,6 +71,12 @@ test('the paid preview tour keeps the promised app order before payment', () => 
     cursor = next;
   });
   assert.doesNotMatch(dashboard, /title:'Start here each day'/);
+  assert.match(dashboard, /data-next-step-id="meal_plan_intro"/);
+  assert.match(dashboard, /data-next-step-id="workout_week_intro"/);
+  assert.match(dashboard, /data-next-step-id="coach_message_intro"/);
+  assert.match(dashboard, /data-next-step-id="feed_intro"/);
+  assert.match(dashboard, /data-next-step-id="weekly_goals_intro"/);
+  assert.match(dashboard, /data-next-step-id="foundations_intro"/);
   assert.match(dashboard, /title:'Read, then take the quiz'[^\n]*metaPreviewSignoff:true/);
 });
 

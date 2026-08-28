@@ -6,15 +6,15 @@ const vm = require('node:vm');
 
 const source = fs.readFileSync(path.resolve(__dirname, '..', 'js/dashboard/pbb-next-obvious-steps.js'), 'utf8');
 const onboardingIds = [
-  'feed_intro',
   'meal_plan_intro',
   'workout_week_intro',
-  'connect_health',
-  'activity_insights_intro',
-  'first_meal'
+  'coach_message_intro',
+  'feed_intro',
+  'weekly_goals_intro',
+  'foundations_intro'
 ];
 
-function loadPlan({ createdAt, seen = [], week = 1, goals = [] }) {
+function loadPlan({ createdAt, seen = [], week = 1, goals = [], metaTrial = false }) {
   const userId = 'test-user';
   const storage = new Map();
   seen.forEach(id => storage.set(`pbb_onboarding_step_seen:${userId}:${id}`, '1'));
@@ -35,6 +35,7 @@ function loadPlan({ createdAt, seen = [], week = 1, goals = [] }) {
     head: { appendChild() {} }
   };
   const window = {
+    metaAdTrialMode: metaTrial,
     currentUser: { id: userId, email: 'member@example.com', created_at: createdAt },
     document,
     localStorage,
@@ -97,8 +98,16 @@ test('new accounts receive incomplete onboarding cards only', () => {
   assert.equal(ids.includes('feed_intro'), true);
   assert.equal(ids.includes('meal_plan_intro'), false, 'meal plan prompt should stay gone after it is opened');
   assert.equal(ids.includes('workout_week_intro'), true);
-  assert.equal(ids.includes('connect_health'), true);
-  assert.equal(ids.includes('first_meal'), true);
+  assert.equal(ids.includes('coach_message_intro'), true);
+  assert.equal(ids.includes('weekly_goals_intro'), true);
+  assert.equal(ids.includes('foundations_intro'), true);
+});
+
+test('the Meta onboarding preview exposes the full guided Home checklist', () => {
+  const plan = loadPlan({ createdAt: null, metaTrial: true });
+  const ids = plan.map(item => item.id);
+
+  assert.equal(JSON.stringify(ids.slice(0, 6)), JSON.stringify(onboardingIds));
 });
 
 test('activity insights onboarding is also restricted to new accounts', () => {

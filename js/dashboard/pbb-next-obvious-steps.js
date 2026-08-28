@@ -14,12 +14,12 @@
   var COMPLETION_XP = 10;
   var ONBOARDING_ACCOUNT_CUTOFF = Date.parse('2026-08-19T14:00:00Z'); // 20 Aug 2026, Brisbane
   var ONBOARDING_ACTION_IDS = [
-    'feed_intro',
     'meal_plan_intro',
     'workout_week_intro',
-    'connect_health',
-    'activity_insights_intro',
-    'first_meal'
+    'coach_message_intro',
+    'feed_intro',
+    'weekly_goals_intro',
+    'foundations_intro'
   ];
   var SHANNON_EMAILS = [
     'shannonbirch@cocospersonaltraining.com',
@@ -75,6 +75,7 @@
   }
 
   function isPreviewEligible() {
+    if (window.metaAdTrialMode === true) return true;
     if (isPreviewOverrideEnabled()) return true;
     if (window.isAdminViewing) return false;
     var email = normalizeEmail(window.currentUser && window.currentUser.email);
@@ -168,6 +169,7 @@
   }
 
   function isOnboardingAccount() {
+    if (window.metaAdTrialMode === true) return true;
     var createdAt = getAccountCreatedAtMs();
     return Number.isFinite(createdAt) && createdAt >= ONBOARDING_ACCOUNT_CUTOFF;
   }
@@ -395,10 +397,43 @@
   }
 
   function openCommunityTarget() {
+    markOnboardingStepSeen('feed_intro');
     switchTab('friends');
     afterTab(function(){
       scrollToSelector('#feed-composer-card,#friends-feed-section', { block: 'start' });
     }, 520);
+  }
+
+  function openCoachMessageTarget() {
+    markOnboardingStepSeen('coach_message_intro');
+    switchTab('dashboard');
+    afterTab(function(){
+      try {
+        if (window.BalanceMetaAdTrial && typeof window.BalanceMetaAdTrial.showInboxPreview === 'function') {
+          window.BalanceMetaAdTrial.showInboxPreview();
+          return;
+        }
+      } catch (_) {}
+      var messageButton = document.querySelector('.header-msg-icon');
+      if (messageButton && typeof messageButton.click === 'function') messageButton.click();
+    }, 260);
+  }
+
+  function openWeeklyGoalsTarget() {
+    markOnboardingStepSeen('weekly_goals_intro');
+    switchTab('dashboard');
+    afterTab(function(){
+      try {
+        if (typeof window.openWeeklyGoalsModal === 'function') {
+          window.openWeeklyGoalsModal({ source:'meta_preview_setup', week:'current' });
+        }
+      } catch (_) {}
+    }, 260);
+  }
+
+  function openFoundationsTarget() {
+    markOnboardingStepSeen('foundations_intro');
+    switchTab('learning');
   }
 
   function openQuizTarget() {
@@ -439,7 +474,7 @@
     if (action.id === 'balance_journey') return !getBalanceJourneyAction();
     if (visibleCompleteFallback(action.id)) return true;
     if (action.id === 'workout') return !!(dailyState.status && dailyState.status.workout && dailyState.status.workout_share);
-    if (action.id === 'meal_plan_intro' || action.id === 'workout_week_intro' || action.id === 'activity_insights_intro') return hasSeenOnboardingStep(action.id);
+    if (isOnboardingAction(action.id) || action.id === 'activity_insights_intro') return hasSeenOnboardingStep(action.id);
     if (action.id === 'connect_health') return isHealthConnected();
     if (action.id === 'nutrition' && getSelectedGoalIds().indexOf('share_meal_feed') !== -1) {
       return !!(dailyState.status && dailyState.status.nutrition && dailyState.status.meal_share);
@@ -450,11 +485,11 @@
   var ACTIONS = [
     {
       id: 'feed_intro',
-      title: 'Introduce yourself to the Feed',
-      body: 'Write a simple hello so everyone knows who you are. No photo needed.',
-      cta: 'Open Feed',
+      title: 'See the Balance community',
+      body: 'See where Shannon posts and members share meals, workouts, questions and wins.',
+      cta: 'View Community',
       accent: '#b78a2e',
-      priority: 1000,
+      priority: 970,
       goalIds: [],
       action: openCommunityTarget
     },
@@ -478,7 +513,7 @@
       body: 'See the meals Shannon has prepared for your week and where to find them again.',
       cta: 'View Meal Plan',
       accent: '#16a34a',
-      priority: 980,
+      priority: 1000,
       goalIds: [],
       action: openMealPlanTarget
     },
@@ -488,9 +523,39 @@
       body: 'Open your Calendar to see your assigned sessions and how the week fits together.',
       cta: 'Open Calendar',
       accent: '#2563eb',
-      priority: 970,
+      priority: 990,
       goalIds: [],
       action: openWorkoutWeekTarget
+    },
+    {
+      id: 'coach_message_intro',
+      title: 'Hear from your coach',
+      body: 'Listen to Shannon’s welcome and see how weekly support works inside Balance.',
+      cta: 'Open Message',
+      accent: '#b78a2e',
+      priority: 980,
+      goalIds: [],
+      action: openCoachMessageTarget
+    },
+    {
+      id: 'weekly_goals_intro',
+      title: 'Choose your Weekly Goals',
+      body: 'Pick the few realistic actions you want Shannon to review with you this week.',
+      cta: 'Choose Goals',
+      accent: '#7c3aed',
+      priority: 960,
+      goalIds: [],
+      action: openWeeklyGoalsTarget
+    },
+    {
+      id: 'foundations_intro',
+      title: 'Start Balance Foundations',
+      body: 'Open your first lesson and see how the course helps change work in real life.',
+      cta: 'Start Course',
+      accent: '#0f766e',
+      priority: 950,
+      goalIds: [],
+      action: openFoundationsTarget
     },
     {
       id: 'weekly_review',
@@ -694,11 +759,12 @@
       return action && !isActionComplete(action);
     });
     if (hasIncompleteOnboarding) {
-      addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'feed_intro'; }));
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'meal_plan_intro'; }));
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'workout_week_intro'; }));
-      if (!isHealthConnected()) addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'connect_health'; }));
-      addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'first_meal'; }));
+      addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'coach_message_intro'; }));
+      addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'feed_intro'; }));
+      addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'weekly_goals_intro'; }));
+      addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'foundations_intro'; }));
     }
     addUniqueAction(picked, journeyAction);
     if (onboardingEligible && hasReachedSecondProgramWeek() && !hasSeenOnboardingStep('activity_insights_intro')) {
@@ -754,7 +820,7 @@
       return false;
     }
     if (action.id === 'daily_checkin') return isSourceCardDue('#check-in-prompt-card');
-    if (action.id === 'meal_plan_intro' || action.id === 'workout_week_intro') return !hasSeenOnboardingStep(action.id);
+    if (isOnboardingAction(action.id)) return !hasSeenOnboardingStep(action.id);
     if (action.id === 'connect_health') return !isHealthConnected();
     if (action.id === 'activity_insights_intro') return hasReachedSecondProgramWeek() && !hasSeenOnboardingStep(action.id);
     if (action.id === 'quiz') return true;
@@ -805,13 +871,14 @@
     });
 
     var picked = [];
-    var limit = isUnifiedPlanActive() ? ranked.length : 3;
+    var guidedSetup = window.metaAdTrialMode === true;
+    var limit = (isUnifiedPlanActive() || guidedSetup) ? ranked.length : 3;
     ranked.forEach(function(item){
       if (picked.length >= limit) return;
       picked.push(item.action);
     });
 
-    return isUnifiedPlanActive() ? picked : picked.slice(0, 3);
+    return (isUnifiedPlanActive() || guidedSetup) ? picked : picked.slice(0, 3);
   }
 
   function hasCompletedDay() {
@@ -1071,7 +1138,11 @@
     var card = document.getElementById('next-obvious-steps-card');
     if (!card) return;
 
-    var unified = isUnifiedPlanActive();
+    var guidedSetup = window.metaAdTrialMode === true;
+    var unified = isUnifiedPlanActive() || guidedSetup;
+    if (guidedSetup && document.documentElement) {
+      document.documentElement.classList.add('pbb-unified-next-steps');
+    }
     if (!isPreviewEligible() && !unified) {
       card.style.display = 'none';
       card.innerHTML = '';
@@ -1123,12 +1194,12 @@
       '<div class="next-steps-shell">',
         '<div class="next-steps-head">',
           '<div>',
-            '<div class="next-steps-kicker">', unified ? 'Your plan' : 'Next steps', '</div>',
+            '<div class="next-steps-kicker">', guidedSetup ? 'Your guided app tour' : (unified ? 'Your plan' : 'Next steps'), '</div>',
             '<div class="next-steps-title">', unified ? 'To do next' : (showAll ? 'Test every route' : 'What to do today'), '</div>',
           '</div>',
           '<div class="next-steps-head-actions">',
             unified ? '' : '<button type="button" class="next-steps-test-toggle' + (showAll ? ' active' : '') + '" data-next-steps-test-toggle="1">' + (showAll ? 'Show 3' : 'Test all') + '</button>',
-            '<div class="next-steps-note">', unified ? 'Today' : 'Private preview', '</div>',
+            '<div class="next-steps-note">', guidedSetup ? 'One step at a time' : (unified ? 'Today' : 'Private preview'), '</div>',
           '</div>',
         '</div>',
         '<div class="next-steps-list">',
