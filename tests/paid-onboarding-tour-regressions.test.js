@@ -47,6 +47,8 @@ test('paid tour returns Home between sections and requires the real To Do cards'
   assert.match(dashboard, /Tap the highlighted To Do card to open this part of the app/);
   assert.match(dashboard, /step\.returnHomeAfter \? 'Back to Home'/);
   assert.match(dashboard, /tour-feature-view/);
+  assert.match(dashboard, /pageView: false,[\s\S]*featureView: false/);
+  assert.match(dashboard, /sel:'#next-obvious-steps-card \.next-steps-head'/);
   assert.match(dashboard, /const renderToken = \+\+tourRenderToken/);
   assert.match(dashboard, /if \(renderToken !== tourRenderToken\) return/);
 });
