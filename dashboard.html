@@ -14298,8 +14298,12 @@ if(!window._pbbIsIOSSafari) {
         await showStep(stepIndex, { afterPromptedAction:true });
       }, 180);
     };
-    document.addEventListener('click', handleTargetClick, false);
-    activePromptTargetCleanup = function(){ document.removeEventListener('click', handleTargetClick, false); };
+    // Capture the checklist tap before its inline destination handler changes
+    // tabs or re-renders Home. Otherwise fast, synchronous destinations (the
+    // nutrition tracker in particular) can remove the highlighted card before
+    // the tour records the tap, leaving the guide stuck on the prompt screen.
+    document.addEventListener('click', handleTargetClick, true);
+    activePromptTargetCleanup = function(){ document.removeEventListener('click', handleTargetClick, true); };
     return true;
   }
 

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v381-clear-guided-targets'; // v381: place prompts above tasks when bottom navigation reduces space
+const CACHE_NAME = 'pbb-app-v382-capture-guided-taps'; // v382: record checklist taps before the destination re-renders Home
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
