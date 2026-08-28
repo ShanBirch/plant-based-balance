@@ -40,7 +40,11 @@ test('both activation tours require an explicit Weekly Goals save', () => {
 
 test('preview walkthrough only unlocks Next after the welcome audio ends', () => {
   assert.match(dashboard, /id="meta-ad-trial-welcome-audio"/);
-  assert.match(dashboard, /title:'Listen to Shannon’s welcome'[\s\S]*?embeddedGuide:true[\s\S]*?requiresWelcomeAudio:true/);
+  assert.match(dashboard, /id="meta-ad-trial-welcome-continue"/);
+  assert.match(dashboard, /title:'Listen to Shannon’s welcome'[\s\S]*?embeddedGuide:true[\s\S]*?coachNoteGuide:true[\s\S]*?requiresWelcomeAudio:true/);
+  assert.match(dashboard, /#guided-tour-overlay\.tour-coach-note #guided-tour-bubble,[\s\S]*?#guided-tour-overlay\.tour-coach-note #guided-tour-spotlight[\s\S]*?display: none/);
+  assert.match(dashboard, /if \(step\.coachNoteGuide && continueButton\)[\s\S]*?continueButton\.style\.display = 'block'/);
+  assert.match(dashboard, /overlay\.classList\.toggle\('tour-coach-note', !!displayStep\.coachNoteGuide\)/);
   assert.match(dashboard, /audio\.addEventListener\('ended', complete\)/);
   assert.match(dashboard, /Listen to the full voice note to unlock Next/);
 });
@@ -84,5 +88,5 @@ test('changed onboarding assets are cache-busted', () => {
   assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=211-smooth-guided-tour/);
   assert.match(dashboard, /dashboard-script-6-ai_coach_draft_mode_logic_auth\.js\?v=43-home-canvas/);
   assert.match(dashboard, /learning-inline\.js\?v=29-paid-tour-handoff/);
-  assert.match(serviceWorker, /pbb-app-v391-guided-clear-targets/);
+  assert.match(serviceWorker, /pbb-app-v392-coach-note-clear/);
 });

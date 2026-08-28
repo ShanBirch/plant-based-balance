@@ -791,6 +791,7 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
             <div style="max-width:92%; margin-top:10px; background:linear-gradient(135deg,#f4df9f,#e2ba58); border:1px solid rgba(146,103,29,.32); border-radius:18px 18px 18px 5px; padding:11px 12px; box-shadow:0 7px 20px rgba(112,77,16,.13);">
                 <div style="font-size:.67rem; font-weight:900; letter-spacing:.06em; color:#68480f; margin-bottom:7px;">● VOICE MESSAGE FROM SHANNON</div>
                 <audio id="meta-ad-trial-welcome-audio" controls preload="metadata" src="/assets/audio/shannon-balance-welcome.mp3" style="display:block; width:100%; height:42px; border-radius:21px; pointer-events:auto;"></audio>
+                <button id="meta-ad-trial-welcome-continue" type="button" onclick="tourNext()" style="display:none; width:100%; margin-top:10px; border:1px solid rgba(104,72,15,.4); border-radius:12px; padding:12px 14px; background:#171923; color:#fffaf0; -webkit-text-fill-color:#fffaf0; font:850 .78rem/1 'Montserrat',sans-serif; letter-spacing:.045em; text-transform:uppercase; cursor:pointer; pointer-events:auto;">Next: back to Home</button>
             </div>
         </div>
     </div>
@@ -13829,6 +13830,10 @@ if(!window._pbbIsIOSSafari) {
   #guided-tour-overlay.tour-embedded-guide:not(.tour-gate-complete) #guided-tour-spotlight {
     display: none;
   }
+  #guided-tour-overlay.tour-coach-note #guided-tour-bubble,
+  #guided-tour-overlay.tour-coach-note #guided-tour-spotlight {
+    display: none;
+  }
   #guided-tour-overlay.tour-edge-prompt #guided-tour-bubble {
     width: 238px;
     max-width: 238px;
@@ -14073,7 +14078,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#weekly-calendar', fallbackSel:'#view-calendar,#view-cycle', title:'Check your workout week', fallbackTitle:'Check your workout week', body:'Your planned workouts are highlighted on this calendar. Tap a day to inspect it, or use Next to open the first strength workout for this tour.', pageView:true, metaPreview:true, promptBeforeAction:true, promptRequiresTargetClick:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="workout_week_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: see your workout program', preActionBody:'Back on Home, tap the highlighted workout card to see exactly how your training week fits together.', preActionButton:'Tap the workout card', nextLabel:'See first workout', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('workout_week_intro'); await new Promise(function(r){ setTimeout(r,800); }); if(typeof switchCalendarView === 'function') switchCalendarView('weekly'); return true; } catch(e){ return false; } } },
     { tab:'movement-tab', sel:'#workout-player-title', fallbackSel:'#workout-exercises-list,#today-workout-card', title:'Open your first workout', fallbackTitle:'Your first workout needs another moment', body:'This is the actual session from your plan. There is nothing you need to change here—use Next to see the exercise cards, sets and target reps.', fallbackBody:'The workout did not finish opening. Tap Back, then try the workout section again.', pageView:true, metaPreview:true, nextLabel:'See exercise card', action:async function(){ try { return !!(await openMetaPreviewStrengthWorkout()); } catch(e){ return false; } } },
     { tab:'movement-tab', sel:'#workout-exercises-list .exercise-logger-card [data-video-container][data-thumbnail-state="ready"]', fallbackSel:'#workout-exercises-list .exercise-logger-card,#workout-exercises-list', title:'Follow the exercise card', fallbackTitle:'Follow the exercise card', body:'The highlighted card contains the demonstration, sets and target reps. Use Swipe for the next exercise or List for the full workout, then continue to your next task.', fallbackBody:'Each exercise card shows the sets and target reps. Use Swipe for the next exercise or List for the full workout.', pageView:true, metaPreview:true, preserveSurface:true, returnHomeAfter:true, action:async function(){ try { await waitForMetaPreviewWorkoutProof({ requireThumbnail:true, timeoutMs:8000 }); return true; } catch(e){ return false; } } },
-    { tab:'dashboard', sel:'#meta-ad-trial-welcome-audio', fallbackSel:'#meta-ad-trial-inbox-preview-card', title:'Listen to Shannon’s welcome', body:'Tap Play and listen to the end. This explains how Shannon will help adjust your week when real life changes.', metaPreview:true, embeddedGuide:true, requiresWelcomeAudio:true, promptBeforeAction:true, promptRequiresTargetClick:true, returnHomeAfter:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="coach_message_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: hear from your coach', preActionBody:'Back on Home, tap the highlighted coach-message card to hear how your weekly support works.', preActionButton:'Tap the coach message card', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('coach_message_intro'); else if(!(options && options.fromTargetClick) && window.BalanceMetaAdTrial) window.BalanceMetaAdTrial.showInboxPreview(); } catch(e){} await new Promise(function(r){ setTimeout(r,350); }); return true; } },
+    { tab:'dashboard', sel:'#meta-ad-trial-welcome-audio', fallbackSel:'#meta-ad-trial-inbox-preview-card', title:'Listen to Shannon’s welcome', body:'Tap Play and listen to the end. This explains how Shannon will help adjust your week when real life changes.', metaPreview:true, embeddedGuide:true, coachNoteGuide:true, requiresWelcomeAudio:true, promptBeforeAction:true, promptRequiresTargetClick:true, returnHomeAfter:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="coach_message_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: hear from your coach', preActionBody:'Back on Home, tap the highlighted coach-message card to hear how your weekly support works.', preActionButton:'Tap the coach message card', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('coach_message_intro'); else if(!(options && options.fromTargetClick) && window.BalanceMetaAdTrial) window.BalanceMetaAdTrial.showInboxPreview(); } catch(e){} await new Promise(function(r){ setTimeout(r,350); }); return true; } },
     { tab:'dashboard', sel:'#friends-photo-feed .meta-preview-feed-post', fallbackSel:'#feed-composer-card', title:'The Balance community', fallbackTitle:'The Balance community', body:'The highlighted Feed post shows where Shannon and members share normal meals, workouts, questions and wins.', fallbackBody:'This is where Shannon posts and members share meals, workouts and wins.', pageView:true, metaPreview:true, promptBeforeAction:true, promptRequiresTargetClick:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="feed_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: meet the community', preActionBody:'Back on Home, tap the highlighted community card to see where everyone shares their real week.', preActionButton:'Tap the community card', nextLabel:'See how to post', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('feed_intro'); if(window.BalanceMetaAdTrial && typeof window.BalanceMetaAdTrial.loadPreviewFeed === 'function') await window.BalanceMetaAdTrial.loadPreviewFeed(); } catch(e){} await new Promise(function(r){ setTimeout(r,500); }); return true; } },
     { tab:'friends', sel:'#feed-composer-card', title:'Post when you need support', body:'The highlighted composer is where you share a meal, workout, question or win. There is nothing to post during the tour—use Next to return Home.', pageView:true, metaPreview:true, preserveSurface:true, returnHomeAfter:true },
     { tab:'dashboard', sel:'.weekly-goal-onboarding-guide', fallbackSel:'#weekly-goals-card', title:'Pick your Weekly Goals', body:'Pick one to three realistic actions for this week, set the targets, then save them. These become the simple commitments Shannon can review with you.', metaPreview:true, requiresWeeklyGoals:true, promptBeforeAction:true, promptRequiresTargetClick:true, returnHomeAfter:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="weekly_goals_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: choose your Weekly Goals', preActionBody:'Back on Home, tap the highlighted Weekly Goals card and choose the realistic actions you want Shannon to review.', preActionButton:'Tap the Weekly Goals card', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('weekly_goals_intro'); else if(!(options && options.fromTargetClick) && typeof window.openWeeklyGoalsModal === 'function') await window.openWeeklyGoalsModal({ source:'meta_preview_setup', week:'current' }); } catch(e){} await new Promise(function(r){ setTimeout(r,350); }); return true; } },
@@ -14412,8 +14417,11 @@ if(!window._pbbIsIOSSafari) {
     if (step && step.requiresWelcomeAudio) {
       const key = 'welcome-audio';
       const audio = document.getElementById('meta-ad-trial-welcome-audio');
+      const continueButton = document.getElementById('meta-ad-trial-welcome-continue');
+      if (continueButton) continueButton.style.display = 'none';
       if (completedTourGates.has(key)) {
         setTourGateUi(true, 'Voice note complete. You can keep going.', finalLabel);
+        if (step.coachNoteGuide && continueButton) continueButton.style.display = 'block';
         return;
       }
       const complete = function(){
@@ -14421,6 +14429,10 @@ if(!window._pbbIsIOSSafari) {
         if (activeTourGate && activeTourGate.key === key) {
           activeTourGate.complete = true;
           setTourGateUi(true, 'Voice note complete. You can keep going.', finalLabel);
+          if (step.coachNoteGuide && continueButton) {
+            continueButton.style.display = 'block';
+            try { continueButton.focus({ preventScroll:true }); } catch(e) {}
+          }
         }
       };
       const failed = function(){
@@ -14442,6 +14454,7 @@ if(!window._pbbIsIOSSafari) {
           }
         },
         cleanup:function(){
+          if (continueButton) continueButton.style.display = 'none';
           if (!audio) return;
           audio.removeEventListener('ended', complete);
           audio.removeEventListener('error', failed);
@@ -14911,6 +14924,7 @@ async function showStep(i, options){
       overlay.classList.toggle('tour-action-required', !!(displayStep.requiresWelcomeAudio || displayStep.requiresFoundationsLesson || displayStep.requiresWeeklyGoals || displayStep.requiresHighlightedClick));
       overlay.classList.toggle('tour-edge-prompt', !!displayStep.edgePrompt);
       overlay.classList.toggle('tour-embedded-guide', !!displayStep.embeddedGuide);
+      overlay.classList.toggle('tour-coach-note', !!displayStep.coachNoteGuide);
       overlay.classList.toggle('tour-tap-target', !!(isPromptBeforeAction && step.promptRequiresTargetClick));
       overlay.classList.toggle('tour-feature-view', !!displayStep.featureView);
       overlay.classList.remove('tour-gate-complete');
@@ -15071,7 +15085,7 @@ window.endFeatureTour = function(skipped){
     resetTourTemporaryTargets();
     const overlay = document.getElementById('guided-tour-overlay');
     if (overlay) overlay.classList.remove('active');
-    if (overlay) overlay.classList.remove('tour-action-required', 'tour-gate-complete', 'tour-page-view', 'tour-feature-view', 'tour-tap-target', 'tour-edge-prompt', 'tour-embedded-guide', 'tour-transitioning', 'meta-tour-welcome-active');
+    if (overlay) overlay.classList.remove('tour-action-required', 'tour-gate-complete', 'tour-page-view', 'tour-feature-view', 'tour-tap-target', 'tour-edge-prompt', 'tour-embedded-guide', 'tour-coach-note', 'tour-transitioning', 'meta-tour-welcome-active');
     window.__balanceGuidedTourActive = false;
     window.__balanceGuidedTourShowingIntro = false;
     showingXpIntro = false;
