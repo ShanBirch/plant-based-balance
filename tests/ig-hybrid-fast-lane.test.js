@@ -533,7 +533,7 @@ assert.equal(instantDraft.isContextualMetaAdOfferLinkRequest({
         { direction: 'out', text: 'Founders Pass is a guided six-week kickstart in the Balance app.' },
         { direction: 'out', text: 'It includes one-to-one in-app support from me.' },
     ],
-}), true, 'a contextual request to see the just-explained offer is a link request');
+}), false, 'a request to see the offer stays on the promised personalised-preview path, not checkout');
 assert.equal(instantDraft.isContextualMetaAdOfferLinkRequest({
     currentMessage: 'Can I see it?',
     qualifier: { commercial_stage: 'engaged' },
@@ -596,11 +596,12 @@ assert.equal(repairedBlockerReply.joined, 'Yeah chocolate every weekend is bruta
 const paidMetaWriterPolicy = instantDraft.buildPaidMetaConversationWriterBlock({
     linkedUserId: null,
     acquisitionMode: 'paid_meta',
+    flowVariant: 'broad_pain',
 });
-assert.match(paidMetaWriterPolicy, /You own the conversational reply/i);
-assert.match(paidMetaWriterPolicy, /must not invent or force a follow-up question/i);
-assert.match(paidMetaWriterPolicy, /Never repeat or lightly reword a question Shannon already asked/i);
-assert.match(paidMetaWriterPolicy, /One question is the maximum, not a quota/i);
+assert.match(paidMetaWriterPolicy, /no more than two discovery questions/i);
+assert.match(paidMetaWriterPolicy, /at most one decision-changing question/i);
+assert.match(paidMetaWriterPolicy, /signed preview must be sent immediately/i);
+assert.match(paidMetaWriterPolicy, /one AUD \$149 payment for the full six weeks/i);
 assert.equal(instantDraft.buildPaidMetaConversationWriterBlock({
     linkedUserId: 'client-user-1',
     acquisitionMode: 'paid_meta',

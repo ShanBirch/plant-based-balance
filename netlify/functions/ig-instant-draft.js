@@ -1276,11 +1276,17 @@ function hasRecentCompletePaidMetaOffer(history = []) {
     // Treat the recent outbound run as one offer so a short "Yes" still
     // reaches the promised app preview instead of falling back to the writer.
     const text = recentOutbound.map(item => String(item?.text || '')).join(' ');
-    return /\b(?:six|6)[- ]week\b/i.test(text)
-        && /\b(?:workout|training program)\b/i.test(text)
-        && /\bmeal plan\b/i.test(text)
-        && /\$\s*149\b/i.test(text)
-        && /\bbefore (?:(?:you )?pay|making a payment)/i.test(text);
+    return hasCompletePaidMetaOfferText(text);
+}
+
+function hasCompletePaidMetaOfferText(text = '') {
+    const value = String(text || '');
+    return /\b(?:six|6)[- ]week\b/i.test(value)
+        && /\b(?:workout|training program)\b/i.test(value)
+        && /\bmeal plan\b/i.test(value)
+        && /\$\s*149\b/i.test(value)
+        && /\b(?:no subscription|no auto-renewal|does not auto-renew|doesn't auto-renew)\b/i.test(value)
+        && /\bbefore (?:(?:you )?pay|making a payment)/i.test(value);
 }
 
 function buildPaidMetaTailoredOfferText(blockerText = '', goalText = '', flowVariant = 'plant_based_control') {
@@ -1324,7 +1330,7 @@ function buildPaidMetaTailoredOfferChunks(blockerText = '', goalText = '', flowV
     return [
         acknowledgement,
         `Balance Foundations is a six-week course with your workout program built around your week, ${mealPlanCopy}, and one weekly check-in where I review your training and food and adjust things.`,
-        "It's one $149 payment for the full six weeks, with no subscription or auto-renewal. Want me to open your free personalised preview so you can see your meal plan and workout program before making a payment?",
+        "It's one AUD $149 payment for the full six weeks, with no subscription or auto-renewal. Want me to open your free personalised preview so you can see your meal plan and workout program before making a payment?",
     ];
 }
 
@@ -2594,7 +2600,8 @@ function buildPaidMetaConversationApproval({
         && (draft?.replyMode !== 'campaign_app_preview_handoff'
             || (draft?.appPreviewHandoff === true
                 && isMetaAppPreviewUrl(draft?.appPreviewUrl)
-                && (isApprovedPaidMetaAppPreviewMoment({ currentMessage: message, qualifier })
+                && (isExplicitPaidMetaPreviewRequest(message)
+                    || isApprovedPaidMetaAppPreviewMoment({ currentMessage: message, qualifier })
                     || (isExplicitPaidMetaPreviewAcceptance(message)
                         && hasRecentCompletePaidMetaOffer(history)))));
     if (!deterministicProgression) return null;
@@ -3805,9 +3812,8 @@ function isInternalMetaAdConversationOpeningTurn({
 }
 
 function isRepeatableInternalMetaAdTestOpener(value = '') {
-    return /^what is the founders pass\??$/i.test(
-        String(value || '').replace(/\s+/g, ' ').trim()
-    );
+    const message = String(value || '').replace(/\s+/g, ' ').trim();
+    return /^(?:balance|what is (?:the )?founders pass)\??$/i.test(message);
 }
 
 function buildInternalMetaAdTestResetCustomData({
@@ -4360,10 +4366,29 @@ ${directQuestions.length ? `- Direct questions that must be answered before choo
 function attachPaidMetaWriterSelectedMedia(draft = {}, {
     allowAttachments = false,
     flowVariant = 'plant_based_control',
+    history = [],
 } = {}) {
-    if (!allowAttachments || flowVariant === 'broad_pain') return draft;
+    if (!allowAttachments) return draft;
     const replyText = draftTextFromDraft(draft);
     if (!replyText) return draft;
+    if (flowVariant === 'broad_pain') {
+        if (!hasCompletePaidMetaOfferText(replyText) || hasRecentPaidMetaProofVideo(history)) return draft;
+        const chunks = (Array.isArray(draft?.chunks) ? draft.chunks : [])
+            .map(value => String(value || '').trim())
+            .filter(Boolean);
+        if (!chunks.length) chunks.push(replyText);
+        const videoUrl = resolveBalanceFoundationsAppProofVideoUrl();
+        if (!maySendDraftVideoAttachment({ videoUrl, replyText })) {
+            const finalIndex = chunks.length - 1;
+            chunks[finalIndex] = `Here's a quick video showing you how it works inside Balance. ${chunks[finalIndex]}`;
+        }
+        return {
+            ...draft,
+            chunks,
+            joined: chunks.join('\n\n'),
+            videoAttachmentUrl: draft.videoAttachmentUrl || videoUrl,
+        };
+    }
     const proofCandidates = [
         { name: /\bally\b/i, imageUrl: ALLY_WEIGHT_LOSS_PROOF_URL },
         { name: /\bgen\b/i, imageUrl: GEN_STRENGTH_CONFIDENCE_PROOF_URL },
@@ -4417,6 +4442,7 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
     }
     const issues = [];
     const broadFlow = flowVariant === 'broad_pain';
+    const asksForCurriculumOutline = /\b(?:what do i (?:actually )?learn|what (?:will|do) (?:i|you) learn|what does (?:the )?course teach|week[ -]?by[ -]?week|curriculum|six[- ]week (?:course|outline)|course (?:content|lessons?))\b/i.test(turn);
     const asksOfferInfo = /\b(?:how much|price|cost|renew|what(?:'s| is) included|what do i get|do i (?:actually )?get|workouts?|meal plan|check[ -]?in|details|how (?:does|do) (?:it|the program) work)\b/i.test(turn);
     const asksMealPlanQuestion = /\bdo you (?:offer|have|provide|include) (?:a |any )?(?:plant[ -]?based )?meal plans?\b|\bis (?:a |the )?meal plan included\b/i.test(turn);
     const asksGlutenFreeSupport = /\bgluten[ -]?free\b/i.test(turn)
@@ -4504,6 +4530,39 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
     if (broadFlow && (String(reply).match(/\?/g) || []).length > 1) {
         issues.push('The broad paid-ad reply asked more than one question. Keep at most one decision-changing question in the turn.');
     }
+    if (broadFlow && asksForCurriculumOutline) {
+        const requiredCurriculumTitles = [
+            'Why change feels hard',
+            'Work with your energy',
+            'Build a rhythm that sticks',
+            'Take the fight out of food',
+            'Make progress easier to repeat',
+            'Build your sustainable way forward',
+        ];
+        const missingCurriculumTitles = requiredCurriculumTitles.filter(title => !reply.toLowerCase().includes(title.toLowerCase()));
+        if (missingCurriculumTitles.length > 0) {
+            issues.push('The direct course question requires the full six-week course outline. Include all six verified week titles, then keep the fixed curriculum distinct from the personalised workout and nutrition setup.');
+        }
+    }
+    const knownBroadGoal = broadFlow && (
+        PAID_META_FITNESS_GOAL_RE.test(turn)
+        || paidMetaHistoryHasFitnessGoal(history)
+        || !!paidMetaFitnessGoalFromFacts(qualifier?.facts || {})
+    );
+    const knownBroadBlocker = broadFlow && (
+        isPaidMetaConcreteBlocker(turn)
+        || paidMetaHistoryHasConcreteBlocker(history)
+        || qualifierHasKnownMetaAdBlocker(qualifier)
+    );
+    const earnedBroadOfferNow = knownBroadGoal
+        && knownBroadBlocker
+        && !asksForCurriculumOutline
+        && !hasRecentCompletePaidMetaOffer(history)
+        && !isExplicitPaidMetaPreviewRequest(turn)
+        && !hasDirectPaidMetaCheckoutIntent(turn);
+    if (earnedBroadOfferNow && !hasCompletePaidMetaOfferText(reply)) {
+        issues.push('The earned paid-Meta offer is missing the complete offer contract. State the neutral six-week setup, one AUD $149 payment for the full six weeks, no subscription or auto-renewal, and offer the personalised preview before payment.');
+    }
     const normalizeQuestion = value => String(value || '')
         .toLowerCase()
         .replace(/[^a-z0-9?\s]/g, '')
@@ -4529,7 +4588,7 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
 }
 
 function isBlockingPaidMetaWriterContractIssue(issue = '') {
-    return /repeated a question|directly asked whether|answer why Shannon went vegan|meal-plan question directly|gluten-free question directly|sales suspicion|answer the sales question|answer the price exactly|do not ask for an email|offered checkout without explicit transactional intent|ignored the supplied plant-based duration|broad paid-ad reply/i.test(String(issue || ''));
+    return /repeated a question|directly asked whether|answer why Shannon went vegan|meal-plan question directly|gluten-free question directly|sales suspicion|answer the sales question|answer the price exactly|do not ask for an email|offered checkout without explicit transactional intent|ignored the supplied plant-based duration|broad paid-ad reply|full six-week course outline|earned paid-Meta offer is missing/i.test(String(issue || ''));
 }
 
 function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = '', issues = [], qualifier = {}, history = [], flowVariant = 'plant_based_control' } = {}) {
@@ -4542,7 +4601,16 @@ function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = 
             && !!fallbackGoal
             && isPaidMetaConcreteBlocker(turn));
     let joined = '';
-    if (/offered checkout without explicit transactional intent/i.test(issueText)) {
+    let fixedChunks = null;
+    if (/full six-week course outline/i.test(issueText)) {
+        fixedChunks = [
+            'Yep, the course gives you one practical focus each week:',
+            'Week 1, Why change feels hard. Week 2, Work with your energy. Week 3, Build a rhythm that sticks.',
+            'Week 4, Take the fight out of food. Week 5, Make progress easier to repeat. Week 6, Build your sustainable way forward.',
+            'The lessons, practical actions and Weekly Goals sit alongside your workout and nutrition setup. The six themes stay consistent, while your workout and meal support are fitted to you.',
+        ];
+        joined = fixedChunks.join('\n\n');
+    } else if (/offered checkout without explicit transactional intent/i.test(issueText)) {
         const mealPlanCopy = flowVariant === 'broad_pain'
             ? 'meal plan fitted to your dietary preferences'
             : 'plant-based meal plan';
@@ -4623,13 +4691,19 @@ function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = 
         joined = buildPaidMetaTailoredOfferText(turn, fallbackGoal, flowVariant);
     }
     if (!joined) return null;
-    const chunks = repairsEarnedOffer
+    let videoAttachmentUrl = draft.videoAttachmentUrl || null;
+    let chunks = fixedChunks || (repairsEarnedOffer
         ? buildPaidMetaTailoredOfferChunks(
             turn,
             fallbackGoal,
             flowVariant
         )
-        : splitCoachDraftIntoDmBubbles([joined]).slice(0, draft.maxChunks || MAX_CHUNKS);
+        : splitCoachDraftIntoDmBubbles([joined]).slice(0, draft.maxChunks || MAX_CHUNKS));
+    if (repairsEarnedOffer && flowVariant === 'broad_pain') {
+        const offerWithVideo = addPaidMetaProofVideoToOfferChunks(chunks, history);
+        chunks = offerWithVideo.chunks;
+        videoAttachmentUrl = offerWithVideo.videoAttachmentUrl;
+    }
     return {
         ...draft,
         chunks,
@@ -4637,6 +4711,7 @@ function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = 
         model: `${String(draft.model || 'unknown').replace(/\+paid-meta-guaranteed$/, '')}+paid-meta-guaranteed`,
         replyMode: repairsEarnedOffer ? 'campaign_sales_progression' : draft.replyMode,
         paidMetaGuaranteedContract: repairsEarnedOffer || undefined,
+        videoAttachmentUrl,
         shadowDraftInput: null,
     };
 }
@@ -7464,6 +7539,7 @@ exports.handler = async (event) => {
         draft = attachPaidMetaWriterSelectedMedia(draft, {
             allowAttachments: hasInstagramGraphRoute,
             flowVariant: metaAdFlowVariant,
+            history,
         });
         draft = ensurePaidMetaAppVideoPreviewCta(draft);
     }

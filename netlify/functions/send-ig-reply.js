@@ -300,11 +300,34 @@ function resolveApprovedVoiceCompanionText(alertData = {}, voiceEnabled = false)
     return text;
 }
 
+function ensurePaidMetaAppPreviewHandoffText(text = '', alertData = {}) {
+    const source = String(text || '').trim();
+    if (alertData.paid_meta_app_preview_handoff !== true) {
+        return { ok: true, text: source, previewUrl: '' };
+    }
+    const previewUrl = String(alertData.paid_meta_app_preview_url || '').trim();
+    if (!isMetaAppPreviewUrl(previewUrl)) {
+        return {
+            ok: false,
+            text: source,
+            previewUrl,
+            code: 'paid_meta_app_preview_url_required',
+            error: 'The personalised preview handoff is missing its approved signed URL.',
+        };
+    }
+    if (source.includes(previewUrl)) return { ok: true, text: source, previewUrl };
+    const appended = /(?:here you go|open it here|your preview):\s*$/i.test(source)
+        ? `${source} ${previewUrl}`
+        : `${source}\n\nOpen your personalised preview: ${previewUrl}`;
+    return { ok: true, text: appended.trim(), previewUrl };
+}
+
 function shouldResetGoldCoastAiTestConversationAfterPreview({
     thread = {},
     alertData = {},
     sentText = '',
     canonicalOutboundIds = [],
+    sentLinkButtons = [],
 } = {}) {
     const customData = safeObject(thread.custom_data);
     const graphData = safeObject(customData.instagram_graph);
@@ -326,7 +349,12 @@ function shouldResetGoldCoastAiTestConversationAfterPreview({
         )
         && alertData.paid_meta_app_preview_handoff === true
         && isMetaAppPreviewUrl(previewUrl)
-        && String(sentText || '').includes(previewUrl)
+        && (String(sentText || '').includes(previewUrl)
+            || (Array.isArray(sentLinkButtons) && sentLinkButtons.some(button => (
+                String(button?.url || '') === previewUrl
+                && button?.canonical_outbound_id
+                && button?.graph_message_id
+            ))))
         && Array.isArray(canonicalOutboundIds)
         && canonicalOutboundIds.length > 0;
 }
@@ -337,6 +365,7 @@ async function resetGoldCoastAiTestConversationAfterPreview({
     alertId = '',
     sentText = '',
     canonicalOutboundIds = [],
+    sentLinkButtons = [],
     resetAt = new Date().toISOString(),
 } = {}) {
     if (!shouldResetGoldCoastAiTestConversationAfterPreview({
@@ -344,6 +373,7 @@ async function resetGoldCoastAiTestConversationAfterPreview({
         alertData,
         sentText,
         canonicalOutboundIds,
+        sentLinkButtons,
     })) return null;
 
     const threadId = String(thread.id || alertData.ig_thread_id || '').trim();
@@ -359,6 +389,7 @@ async function resetGoldCoastAiTestConversationAfterPreview({
         alertData,
         sentText,
         canonicalOutboundIds,
+        sentLinkButtons,
     })) return null;
 
     const customData = safeObject(current.custom_data);
@@ -1690,7 +1721,10 @@ function resolveApprovedInstagramLinkButton(text = '') {
     const approved = (host === 'plantbased-balance.org' && (
         /^\/p\/[A-Za-z0-9_-]+\/?$/.test(path)
         || /^\/(?:founders|plant-based-fitness\.html|meta-app-preview\.html|login\.html|book)\/?$/.test(path)
-    )) || (host === 'future-balance.netlify.app' && /^\/(?:fitness|fitness-coaching\.html)\/?$/.test(path));
+    )) || (host === 'future-balance.netlify.app' && (
+        /^\/p\/[A-Za-z0-9_-]+\/?$/.test(path)
+        || /^\/(?:fitness|fitness-coaching\.html|meta-app-preview\.html)\/?$/.test(path)
+    ));
     if (!approved) return null;
 
     const displayText = source
@@ -2143,6 +2177,23 @@ exports.handler = async (event) => {
     const requestedIgThreadId = rawAlertData.ig_thread_id || requestedThreadForSend?.id || '';
     let alternateDelivery = null;
     let alertData = enrichAlertDataWithThreadGraph(rawAlertData, threadForSend);
+    const previewReplyContract = ensurePaidMetaAppPreviewHandoffText(replyTextInput, alertData);
+    if (!previewReplyContract.ok) {
+        return {
+            statusCode: 409,
+            body: JSON.stringify({
+                error: previewReplyContract.error,
+                code: previewReplyContract.code,
+            }),
+        };
+    }
+    if (alertData.paid_meta_app_preview_handoff === true) {
+        replyTextInput = previewReplyContract.text;
+        draftTextInput = ensurePaidMetaAppPreviewHandoffText(
+            draftTextInput || replyTextInput,
+            alertData
+        ).text;
+    }
     const activeAutomatedReviewHold = getActiveAutomatedReviewHold({ source, alertData });
     if (activeAutomatedReviewHold) {
         const blockedAt = new Date().toISOString();
@@ -2682,6 +2733,20 @@ exports.handler = async (event) => {
             voiceConfig: voiceMessageConfig,
         }]
         : buildInstagramGraphOutboundItems(messagesToSend, shouldUseGraph);
+    if (alertData.paid_meta_app_preview_handoff === true) {
+        const requiredPreviewUrl = String(alertData.paid_meta_app_preview_url || '').trim();
+        const matchingPreviewButtons = outboundItems.filter(item => item.kind === 'link_button'
+            && item.url === requiredPreviewUrl);
+        if (!shouldUseGraph || matchingPreviewButtons.length !== 1) {
+            return {
+                statusCode: 409,
+                body: JSON.stringify({
+                    error: 'The personalised preview could not be built as one exact native link button, so nothing was sent.',
+                    code: 'paid_meta_app_preview_link_button_required',
+                }),
+            };
+        }
+    }
     const voiceCompanionText = resolveApprovedVoiceCompanionText(alertData, voiceMessageConfig.enabled);
     const approvedVoiceCompanion = !!voiceCompanionText;
     if (approvedVoiceCompanion) {
@@ -2903,7 +2968,7 @@ exports.handler = async (event) => {
     }
 
     const sentChunks = sendResults.filter(r => r.ok);
-    const allOk = firstError === null && sentChunks.length === outboundItems.length;
+    let allOk = firstError === null && sentChunks.length === outboundItems.length;
     const sentAtIso = new Date().toISOString();
     const sentMessageText = joinSentChunkTexts(sentChunks, replyText);
     const threadBotAccount = String(
@@ -2938,6 +3003,7 @@ exports.handler = async (event) => {
     //    AI draft has the conversation history including our outbound).
     const loggedOutboundMessageIds = [];
     const loggedOutboundCreatedAts = [];
+    const loggedOutboundReceipts = [];
     for (const result of sentChunks) {
         const graphMessageId = shouldUseGraph
             ? (result.response?.message_id || result.response?.id || null)
@@ -2957,10 +3023,30 @@ exports.handler = async (event) => {
                 }],
                 prefer: 'return=representation',
             });
-            if (insertedMessages?.[0]?.id) loggedOutboundMessageIds.push(insertedMessages[0].id);
+            if (insertedMessages?.[0]?.id) {
+                loggedOutboundMessageIds.push(insertedMessages[0].id);
+                loggedOutboundReceipts.push({
+                    canonical_outbound_id: insertedMessages[0].id,
+                    kind: result.kind,
+                    graph_message_id: graphMessageId,
+                    link_url: result.linkUrl || null,
+                    button_title: result.buttonTitle || null,
+                });
+            }
             if (insertedMessages?.[0]?.created_at) loggedOutboundCreatedAts.push(insertedMessages[0].created_at);
         } catch (err) {
             console.warn('[send-ig-reply] ig_messages insert failed (non-fatal):', err.message);
+        }
+    }
+    if (alertData.paid_meta_app_preview_handoff === true) {
+        const requiredPreviewUrl = String(alertData.paid_meta_app_preview_url || '').trim();
+        const canonicalPreviewReceipt = loggedOutboundReceipts.find(receipt => receipt.kind === 'link_button'
+            && receipt.link_url === requiredPreviewUrl
+            && receipt.canonical_outbound_id
+            && receipt.graph_message_id);
+        if (!canonicalPreviewReceipt) {
+            allOk = false;
+            firstError = 'The preview button was not canonically logged with its exact signed URL.';
         }
     }
 
@@ -3024,6 +3110,14 @@ exports.handler = async (event) => {
         sent_graph_message_ids: shouldUseGraph
             ? sentChunks.map(r => r.response?.message_id || r.response?.id || null).filter(Boolean)
             : (alertData.sent_graph_message_ids || undefined),
+        sent_link_buttons: loggedOutboundReceipts
+            .filter(receipt => receipt.kind === 'link_button')
+            .map(receipt => ({
+                canonical_outbound_id: receipt.canonical_outbound_id,
+                graph_message_id: receipt.graph_message_id,
+                url: receipt.link_url,
+                title: receipt.button_title,
+            })),
         draft_messages: useDraftMessageChunks
             ? draftMessages
             : [replyText],
@@ -3173,6 +3267,7 @@ exports.handler = async (event) => {
                 alertId,
                 sentText: sentMessageText || replyText,
                 canonicalOutboundIds: loggedOutboundMessageIds,
+                sentLinkButtons: mergedData.sent_link_buttons,
                 resetAt: latestCanonicalOutboundMs > 0
                     ? new Date(latestCanonicalOutboundMs + 1).toISOString()
                     : new Date().toISOString(),
@@ -3288,6 +3383,7 @@ exports._test = {
     resolveOutboundDmBubbleOptions,
     resolveOutboundVoiceMessageConfig,
     resolveApprovedVoiceCompanionText,
+    ensurePaidMetaAppPreviewHandoffText,
     buildInstagramGraphVideoMessagePayload,
     buildInstagramGraphImageMessagePayload,
     buildInstagramGraphButtonMessagePayload,

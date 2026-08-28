@@ -55,6 +55,22 @@ assert.strictEqual(shouldResetGoldCoastAiTestConversationAfterPreview({
     sentText: `Here you go: ${signedPreviewUrl}`,
     canonicalOutboundIds: ['outbound-1'],
 }), true);
+const neutralSignedPreviewUrl = 'https://future-balance.netlify.app/p/Abc_123-xyz9876543210';
+assert.strictEqual(shouldResetGoldCoastAiTestConversationAfterPreview({
+    thread: goldCoastTestThread,
+    alertData: {
+        paid_meta_app_preview_handoff: true,
+        paid_meta_app_preview_url: neutralSignedPreviewUrl,
+    },
+    sentText: 'Yep, your preview is ready.',
+    canonicalOutboundIds: ['outbound-text', 'outbound-button'],
+    sentLinkButtons: [{
+        canonical_outbound_id: 'outbound-button',
+        graph_message_id: 'graph-button',
+        url: neutralSignedPreviewUrl,
+        title: 'Open your preview',
+    }],
+}), true, 'the native button receipt proves the neutral preview handoff without exposing the raw URL in visible text');
 assert.strictEqual(shouldResetGoldCoastAiTestConversationAfterPreview({
     thread: { ...goldCoastTestThread, ig_username: 'ordinary_lead' },
     alertData: previewAlertData,

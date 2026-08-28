@@ -109,6 +109,7 @@ const {
     buildInstagramGraphButtonMessagePayload,
     buildInstagramGraphOutboundItems,
     resolveApprovedInstagramLinkButton,
+    ensurePaidMetaAppPreviewHandoffText,
     requiresNativeProofVideoAttachment,
     maySendDraftImageAttachment,
     maySendDraftVideoAttachment,
@@ -185,6 +186,11 @@ test('approved Balance links become native Instagram buttons without a visible r
     assert.equal(preview.cardTitle, 'Your Balance preview is ready');
     assert.equal(preview.imageUrl, 'https://plantbased-balance.org/assets/balance-founders-og-cream-gold.png');
     assert.equal(preview.separateDisplayText, true);
+    const neutralPreviewUrl = 'https://future-balance.netlify.app/p/Abc_123-xyz9876543210';
+    const neutralPreview = resolveApprovedInstagramLinkButton(`Here you go: ${neutralPreviewUrl}`);
+    assert.equal(neutralPreview.url, neutralPreviewUrl);
+    assert.equal(neutralPreview.title, 'Open your preview');
+    assert.equal(neutralPreview.separateDisplayText, true);
     assert.equal(resolveApprovedInstagramLinkButton('Try https://example.com/unsafe'), null);
 
     const payload = buildInstagramGraphButtonMessagePayload({
@@ -391,7 +397,7 @@ test.skip('legacy deterministic blocker copy retired in favour of the live write
     });
 
     assert.match(blockerReply.joined, /work and the kids can wreck the best intentions/i);
-    assert.match(blockerReply.joined, /one \$149 payment for the full six weeks/i);
+    assert.match(blockerReply.joined, /one (?:AUD )?\$149 payment for the full six weeks/i);
     assert.match(blockerReply.joined, /six-week Foundations course/i);
     assert.match(blockerReply.joined, /workout program built around your week/i);
     assert.match(blockerReply.joined, /plant-based meal plan/i);
@@ -598,6 +604,11 @@ test('private paid-ad test FAQ restarts the opener even when the Instagram threa
     assert.equal(isInternalMetaAdConversationOpeningTurn({
         customData,
         history: [{ direction: 'out', text: 'An older test reply' }],
+        currentMessage: 'BALANCE',
+    }), true, 'the live ad keyword must start a clean internal test episode too');
+    assert.equal(isInternalMetaAdConversationOpeningTurn({
+        customData,
+        history: [{ direction: 'out', text: 'An older test reply' }],
         currentMessage: 'Okay sounds good',
     }), false);
 
@@ -613,6 +624,12 @@ test('private paid-ad test FAQ restarts the opener even when the Instagram threa
     assert.equal(resetCustomData.internal_test_conversation_reset_at, resetAt);
     assert.equal(resetCustomData.internal_test_auto_reply_enabled, true);
     assert.equal(resetCustomData.internal_test_meta_ad_flow, 'plant_based_control');
+    const balanceReset = buildInternalMetaAdTestResetCustomData({
+        customData,
+        currentMessage: 'BALANCE',
+        resetAt,
+    });
+    assert.equal(balanceReset.internal_test_conversation_reset_at, resetAt);
     assert.equal(buildInternalMetaAdTestResetCustomData({
         customData,
         currentMessage: 'Okay sounds good',
@@ -1101,7 +1118,7 @@ test('paid Meta food confusion can stay with the AI writer after a non-blocking 
     });
     assert.match(blockerReply.joined, /build muscle but don't know what to eat/i);
     assert.match(blockerReply.joined, /plant-based meal plan/i);
-    assert.match(blockerReply.joined, /one \$149 payment/i);
+    assert.match(blockerReply.joined, /one (?:AUD )?\$149 payment/i);
     assert.equal(blockerReply.chunks.length, 3);
     assert.ok(blockerReply.chunks.every(chunk => chunk.length <= 240),
         'the complete offer must fit in three native Instagram text bubbles');
@@ -1303,7 +1320,7 @@ test('paid Meta guided sales stages move goal to blocker to complete offer to pr
     assert.match(offerReply.joined, /workout program/i);
     assert.match(offerReply.joined, /plant-based meal plan/i);
     assert.match(offerReply.joined, /weekly check-in/i);
-    assert.match(offerReply.joined, /one \$149 payment/i);
+    assert.match(offerReply.joined, /one (?:AUD )?\$149 payment/i);
     assert.match(offerReply.joined, /no subscription or auto-renewal/i);
     assert.match(offerReply.joined, /quick video showing you how it works inside Balance/i);
     assert.match(offerReply.joined, /free personalised preview/i);
@@ -1859,7 +1876,7 @@ test('only destination handoffs override the paid Meta writer', () => {
     assert.equal(shouldApplyDeterministicPaidMetaReplyOverride({ replyMode: 'campaign_app_preview_handoff' }), true);
 });
 
-test('AI writer can select approved client proof but cannot proactively attach the generic app video', () => {
+test('AI writer attaches the approved app explainer only to a complete broad paid offer', () => {
     const ally = attachPaidMetaWriterSelectedMedia({
         joined: "This is Ally, one of my clients. I'll show you her photo because her weight-loss goal is close to yours.",
     }, { allowAttachments: true });
@@ -1872,9 +1889,24 @@ test('AI writer can select approved client proof but cannot proactively attach t
 
     const noImplicitMedia = attachPaidMetaWriterSelectedMedia({
         joined: 'That goal makes sense. What has made it hard to stick with?',
-    }, { allowAttachments: true });
-    assert.equal(noImplicitMedia.imageAttachmentUrl, null);
-    assert.equal(noImplicitMedia.videoAttachmentUrl, null);
+    }, { allowAttachments: true, flowVariant: 'broad_pain' });
+    assert.equal(noImplicitMedia.imageAttachmentUrl ?? null, null);
+    assert.equal(noImplicitMedia.videoAttachmentUrl ?? null, null);
+
+    const completeBroadOffer = attachPaidMetaWriterSelectedMedia({
+        chunks: [
+            'Busy weeks are the part that keeps breaking the rhythm.',
+            'Balance Foundations is a six-week course with your workout program, a meal plan fitted to your dietary preferences, and a weekly review.',
+            "It's one AUD $149 payment for the full six weeks, with no subscription or auto-renewal. Want me to open your personalised preview before you pay?",
+        ],
+        joined: "Busy weeks are the part that keeps breaking the rhythm. Balance Foundations is a six-week course with your workout program, a meal plan fitted to your dietary preferences, and a weekly review. It's one AUD $149 payment for the full six weeks, with no subscription or auto-renewal. Want me to open your personalised preview before you pay?",
+    }, { allowAttachments: true, flowVariant: 'broad_pain', history: [] });
+    assert.equal(completeBroadOffer.videoAttachmentUrl, BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL);
+    assert.match(completeBroadOffer.joined, /quick video showing you how it works inside Balance/i);
+    assert.equal(maySendDraftVideoAttachment({
+        videoUrl: completeBroadOffer.videoAttachmentUrl,
+        replyText: completeBroadOffer.joined,
+    }), true);
 });
 
 test('generic app-video wording is left without media so it cannot replace the interactive preview', () => {
@@ -2239,7 +2271,7 @@ test.skip('legacy deterministic conversational stages retired in favour of the l
         qualifier: blockerQualifier,
         flowVariant: 'plant_based_control',
     });
-    assert.match(blocker.joined, /one \$149 payment for the full six weeks/i);
+    assert.match(blocker.joined, /one (?:AUD )?\$149 payment for the full six weeks/i);
     assert.doesNotMatch(blocker.joined, /meta-app-preview\.html/i);
     assert.equal((blocker.joined.match(/\?/g) || []).length, 1);
     assert.equal(buildPaidMetaConversationApproval({
@@ -2709,7 +2741,7 @@ test('verified broad route completes goal, blocker, neutral offer and signed pre
     });
     assert.match(offerReply.joined, /week changing all the time|changing shifts|schedule/i);
     assert.match(offerReply.joined, /meal plan fitted to your dietary preferences/i);
-    assert.match(offerReply.joined, /one \$149 payment for the full six weeks/i);
+    assert.match(offerReply.joined, /one (?:AUD )?\$149 payment for the full six weeks/i);
     assert.match(offerReply.joined, /no subscription or auto-renewal/i);
     assert.match(offerReply.joined, /personalised preview/i);
     assert.equal((offerReply.joined.match(/\?/g) || []).length, 1,
@@ -2754,7 +2786,7 @@ test('broad route skips supplied facts, sends preview on direct request, and res
         { flowVariant: 'broad_pain' }
     );
     assert.match(goalAndBlocker.joined, /meal plan fitted to your dietary preferences/i);
-    assert.match(goalAndBlocker.joined, /one \$149 payment for the full six weeks/i);
+    assert.match(goalAndBlocker.joined, /one (?:AUD )?\$149 payment for the full six weeks/i);
     assert.doesNotMatch(goalAndBlocker.joined, /what usually gets in the way|main change/i);
 
     const directPreview = buildDeterministicPaidMetaConversationReply({
@@ -2767,6 +2799,16 @@ test('broad route skips supplied facts, sends preview on direct request, and res
     });
     assert.equal(directPreview.replyMode, 'campaign_app_preview_handoff');
     assert.match(directPreview.joined, /future-balance\.netlify\.app\/p\//i);
+    const directPreviewApproval = buildPaidMetaConversationApproval({
+        metaAdConversationFastLane: true,
+        draft: directPreview,
+        currentMessage: 'Can I see the preview?',
+        linkedUserId: null,
+        qualifier: { facts: {} },
+        history: [],
+    });
+    assert.equal(directPreviewApproval?.required, false,
+        'an explicit preview request must bypass wording repair and preserve the signed URL');
 
     const genericReady = buildMetaAdFoundersPassFirstReply("I'm ready", { flowVariant: 'broad_pain' });
     assert.equal(genericReady.checkoutUrl, null);
@@ -2814,6 +2856,100 @@ test('broad prompt knows the verified curriculum and keeps it selective', () => 
     });
     assert.match(plantPrompt, /plant-based\/vegan/i);
     assert.match(plantPrompt, /why and how long/i);
+});
+
+test('broad writer contract repairs missing terms, adds the native explainer, and gives the full curriculum on request', () => {
+    const goalHistory = [
+        { direction: 'in', text: 'I want to lose around 8kg and feel fitter' },
+        { direction: 'out', text: 'What usually gets in the way of making that happen consistently?' },
+    ];
+    const blocker = 'Work gets busy and I lose consistency';
+    const incompleteOffer = {
+        chunks: [
+            'Busy work weeks are usually what break the rhythm.',
+            'Balance Foundations gives you a workout program and meal support fitted to your dietary preferences. If you want, I can send a preview.',
+        ],
+        joined: 'Busy work weeks are usually what break the rhythm. Balance Foundations gives you a workout program and meal support fitted to your dietary preferences. If you want, I can send a preview.',
+        model: 'openai-gpt-5.4-mini-paid-meta',
+        replyMode: 'campaign_sales_progression',
+        maxChunks: 3,
+    };
+    const offerIssues = collectPaidMetaWriterContractIssues({
+        draft: incompleteOffer,
+        currentMessage: blocker,
+        qualifier: { facts: {} },
+        history: goalHistory,
+        flowVariant: 'broad_pain',
+    });
+    assert.ok(offerIssues.some(issue => /earned paid-Meta offer is missing/i.test(issue)));
+    const repairedOffer = buildPaidMetaGuaranteedContractFallback({
+        draft: incompleteOffer,
+        currentMessage: blocker,
+        issues: offerIssues,
+        qualifier: { facts: {} },
+        history: goalHistory,
+        flowVariant: 'broad_pain',
+    });
+    assert.match(repairedOffer.joined, /one AUD \$149 payment for the full six weeks/i);
+    assert.match(repairedOffer.joined, /no subscription or auto-renewal/i);
+    assert.match(repairedOffer.joined, /personalised preview/i);
+    assert.equal(repairedOffer.videoAttachmentUrl, BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL);
+    assert.match(repairedOffer.joined, /quick video showing you how it works inside Balance/i);
+
+    const compressedCurriculum = {
+        joined: 'You learn how to make change stick, work with your energy and build a sustainable routine.',
+        model: 'openai-gpt-5.4-mini-paid-meta',
+        replyMode: 'campaign_sales_progression',
+        maxChunks: 3,
+    };
+    const curriculumIssues = collectPaidMetaWriterContractIssues({
+        draft: compressedCurriculum,
+        currentMessage: 'What do I actually learn over the six weeks?',
+        qualifier: { facts: {} },
+        history: goalHistory,
+        flowVariant: 'broad_pain',
+    });
+    assert.ok(curriculumIssues.some(issue => /full six-week course outline/i.test(issue)));
+    const curriculumReply = buildPaidMetaGuaranteedContractFallback({
+        draft: compressedCurriculum,
+        currentMessage: 'What do I actually learn over the six weeks?',
+        issues: curriculumIssues,
+        qualifier: { facts: {} },
+        history: goalHistory,
+        flowVariant: 'broad_pain',
+    });
+    for (const title of [
+        'Why change feels hard',
+        'Work with your energy',
+        'Build a rhythm that sticks',
+        'Take the fight out of food',
+        'Make progress easier to repeat',
+        'Build your sustainable way forward',
+    ]) assert.match(curriculumReply.joined, new RegExp(title, 'i'));
+    assert.match(curriculumReply.joined, /six themes stay consistent/i);
+    assert.match(curriculumReply.joined, /workout and meal support are fitted to you/i);
+    assert.doesNotMatch(curriculumReply.joined, /plant[ -]?based|vegan|vegetarian/i);
+});
+
+test('signed broad preview handoff survives a wording repair and becomes one native button', () => {
+    const previewUrl = 'https://future-balance.netlify.app/p/Abc_123-xyz9876543210';
+    const repairedText = 'Yep, I can send the preview so you can see your setup. Here you go:';
+    const restored = ensurePaidMetaAppPreviewHandoffText(repairedText, {
+        paid_meta_app_preview_handoff: true,
+        paid_meta_app_preview_url: previewUrl,
+    });
+    assert.equal(restored.ok, true);
+    assert.match(restored.text, new RegExp(previewUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    const items = buildInstagramGraphOutboundItems([restored.text], true);
+    assert.equal(items.filter(item => item.kind === 'link_button').length, 1);
+    assert.equal(items.find(item => item.kind === 'link_button').url, previewUrl);
+    assert.equal(items.find(item => item.kind === 'link_button').title, 'Open your preview');
+
+    const missingUrl = ensurePaidMetaAppPreviewHandoffText(repairedText, {
+        paid_meta_app_preview_handoff: true,
+    });
+    assert.equal(missingUrl.ok, false);
+    assert.equal(missingUrl.code, 'paid_meta_app_preview_url_required');
 });
 
 test('all verified Meta routing normalises to the single neutral paid flow', () => {

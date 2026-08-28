@@ -15,7 +15,7 @@ test('preview references are signed, short-lived, and retain the canonical desti
     const parsedUrl = new URL(url);
     const token = parsedUrl.pathname.split('/').filter(Boolean).at(-1);
 
-    assert.equal(parsedUrl.origin + parsedUrl.pathname.slice(0, 2), refs.META_APP_PREVIEW_SHORT_URL);
+    assert.equal(parsedUrl.origin + parsedUrl.pathname.slice(0, 2), refs.META_APP_PREVIEW_BROAD_SHORT_URL);
     assert.equal(parsedUrl.search, '');
     assert.ok(url.length < 90, `preview DM URL should stay compact, got ${url.length} characters`);
     assert.equal(refs.isMetaAppPreviewUrl(url), true);
