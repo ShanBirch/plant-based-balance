@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v380-clear-guided-targets'; // v380: keep Home task prompts clear of the tappable target
+const CACHE_NAME = 'pbb-app-v381-clear-guided-targets'; // v381: place prompts above tasks when bottom navigation reduces space
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

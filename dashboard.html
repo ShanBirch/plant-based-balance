@@ -14669,7 +14669,7 @@ if(!window._pbbIsIOSSafari) {
       bubble.style.left = Math.max(8, (vw - pageBubbleW) / 2) + 'px';
       return;
     }
-    const spaceBelow = vh - (top + height);
+    const spaceBelow = vh - bottomReserve - (top + height);
     const spaceAbove = top;
     let bubbleTop;
     if (spaceBelow > bubbleH + 20 || spaceBelow >= spaceAbove) {
