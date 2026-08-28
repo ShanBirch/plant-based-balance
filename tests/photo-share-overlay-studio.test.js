@@ -82,7 +82,7 @@ assert.ok(dashboard.includes('dashboard-script-11-calorie_tracker_functions.js?v
 assert.match(mealUi, /data-meal-share-overlay-style=/);
 assert.match(mealUi, /data-meal-share-text-style=/);
 assert.match(mealUi, /function refreshMealSharePromptStyleButtons\(/);
-assert.ok(serviceWorker.includes("const CACHE_NAME = 'pbb-app-v390-guided-real-actions'"), 'the app shell cache must be refreshed');
+assert.ok(serviceWorker.includes("const CACHE_NAME = 'pbb-app-v391-guided-clear-targets'"), 'the app shell cache must be refreshed');
 assert.ok(serviceWorker.includes('dashboard-script-10-points_widget_functions.js?v=49'), 'the new share composer must be precached');
 
 console.log('Swipeable photo share overlay studio contract passed');
