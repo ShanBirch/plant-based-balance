@@ -1,41 +1,41 @@
 {
-  "campaign": "Balance Founders Pass, plant-based fitness and real community",
-  "generatedAt": "2026-07-22",
+  "campaign": "Balance — Neuroscience for Real-Life Fitness",
+  "generatedAt": "2026-08-27",
   "generator": "scripts/generate-store-listing-assets.mjs",
   "sources": {
     "coachPhoto": "store-listing/source/shannon-coaching.jpg",
     "trainingPhoto": "store-listing/source/shannon-training.jpg",
     "challengeScreenshot": "store-listing/source/challenge-home.jpg",
-    "veganMealPhoto": "images/meals/sweet_potato_black_bean_tacos.png",
+    "nutritionPhoto": "images/meals/chickpea_tuna_wrap.png",
     "communityMealWin": "store-listing/source/community-meal-win.jpg",
     "communityMilestoneWin": "store-listing/source/community-milestone-win.jpg",
     "communityWorkoutWin": "store-listing/source/community-workout-win.jpg",
     "appFrames": "store-listing/source/*.jpg"
   },
-  "sourcePolicy": "Real supplied photography and real app screens only. No generated or altered faces. Feed identity and comments are redacted.",
+  "sourcePolicy": "Real supplied photography of Shannon and real Balance app screens only. No generated or altered people. Feed identity and comments are redacted.",
   "exports": {
     "googlePlay": {
       "directory": "store-listing/google-play/en-AU/images/phoneScreenshots",
       "dimensions": "1080x1920",
       "files": [
-        "01-coach.png",
-        "02-community.png",
+        "01-neuroscience-fitness.png",
+        "02-behaviour-change.png",
         "03-training.png",
-        "04-plant-based-meals.png",
+        "04-personalised-nutrition.png",
         "05-progress.png",
-        "06-challenges.png"
+        "06-community.png"
       ]
     },
     "appStore": {
       "directory": "store-listing/app-store-screenshots/en-AU",
       "dimensions": "1290x2796",
       "files": [
-        "01-coach.png",
-        "02-community.png",
+        "01-neuroscience-fitness.png",
+        "02-behaviour-change.png",
         "03-training.png",
-        "04-plant-based-meals.png",
+        "04-personalised-nutrition.png",
         "05-progress.png",
-        "06-challenges.png"
+        "06-community.png"
       ]
     }
   }
