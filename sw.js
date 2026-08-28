@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v368-smooth-tour-handoffs'; // v368: use specific tour targets and hide stale guidance while app screens load
+const CACHE_NAME = 'pbb-app-v369-direct-guided-tour'; // v369: enter the useful guided tour directly after onboarding setup
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

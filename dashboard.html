@@ -14869,7 +14869,7 @@ window.endFeatureTour = function(skipped){
     window.addEventListener('resize', resizeHandler);
     window.addEventListener('scroll', resizeHandler, true);
     if (metaPreviewTour || clientActivationTour) {
-      showMetaTourWelcome();
+      window.beginMetaPreviewTour();
     } else {
       showTourXpIntro();
     }

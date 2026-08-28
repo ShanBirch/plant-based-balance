@@ -7,14 +7,12 @@ const root = path.resolve(__dirname, '..');
 const dashboard = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
 const serviceWorker = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
 
-test('paid and signed-in onboarding introduce the guided app tour before step one', () => {
+test('paid and signed-in onboarding enter the useful guided tour without a duplicate intro card', () => {
   assert.match(dashboard, /id="meta-tour-welcome"[^>]*role="dialog"[^>]*aria-modal="true"/);
-  assert.match(dashboard, /Your first week is ready/);
-  assert.match(dashboard, /finish the tour by completing your first lesson and quiz/i);
-  assert.match(dashboard, /Start my app tour/);
   assert.match(dashboard, /\.meta-tour-welcome-list li > span/);
   assert.match(dashboard, /<li><span><strong>Workout program:<\/strong>/);
-  assert.match(dashboard, /if \(metaPreviewTour \|\| clientActivationTour\) \{\s*showMetaTourWelcome\(\);/);
+  assert.match(dashboard, /if \(metaPreviewTour \|\| clientActivationTour\) \{\s*window\.beginMetaPreviewTour\(\);/);
+  assert.doesNotMatch(dashboard, /if \(metaPreviewTour \|\| clientActivationTour\) \{\s*showMetaTourWelcome\(\);/);
   assert.match(dashboard, /window\.beginMetaPreviewTour = function\(\)[\s\S]*BalanceMetaPreviewSoundtrack\.start\(\);[\s\S]*showStep\(0\);/);
 });
 
@@ -22,5 +20,5 @@ test('tour welcome is phone-safe and refreshes the app shell', () => {
   assert.match(dashboard, /#meta-tour-welcome[\s\S]*env\(safe-area-inset-top\)[\s\S]*env\(safe-area-inset-bottom\)/);
   assert.match(dashboard, /max-height: calc\(100dvh/);
   assert.match(dashboard, /\.meta-tour-welcome-card[\s\S]*overflow-y: auto/);
-  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v368-smooth-tour-handoffs'/);
+  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v369-direct-guided-tour'/);
 });
