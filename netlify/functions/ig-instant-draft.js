@@ -2300,9 +2300,14 @@ function foundersPassCheckoutUrlForMessage(message = '', customData = {}, flowVa
     return buildMetaAdCheckoutUrl({ customData, flowVariant, currentMessage: message, acquisitionMode });
 }
 
+const META_AD_CURRICULUM_QUESTION_RE = /\b(?:what|which|how|can|could|do|does).{0,40}\b(?:learn|teach|cover|curriculum|lessons?|week[ -]?by[ -]?week|happens? (?:each|every) week|the six weeks)\b|\btell me\b.{0,30}\b(?:course|curriculum|lessons?|six weeks)\b|\b(?:course|curriculum|lessons?)\b.{0,30}\b(?:include|inside|cover|work)\b/i;
+
 function resolveMetaAdFirstReplyIntent(currentMessage = '') {
     const text = String(currentMessage || '').toLowerCase().replace(/[’]/g, "'");
     if (/^(?:what(?:'s| is) (?:the )?)?(?:price|cost)(?: of (?:it|this|the (?:pass|program)))?[!?.\s]*$/.test(text)) return 'price';
+    if (META_AD_CURRICULUM_QUESTION_RE.test(text)) {
+        return 'curriculum';
+    }
     if (/\b(?:do you (?:offer|have)|is there|can i get)\b.{0,35}\bpersonali[sz]ed\b.{0,35}\b(?:coaching|plans?)\b|\bpersonali[sz]ed\b.{0,35}\b(?:coaching|plans?)\b/.test(text)) {
         return 'personalised_coaching';
     }
@@ -2343,6 +2348,7 @@ function shouldUseDeterministicMetaAdFirstReply(currentMessage = '') {
     const normalized = message.toLowerCase().replace(/[\u2018\u2019]/g, "'");
     if (/^balance[!?.\s]*$/i.test(message)) return true;
     if (/\bfounders?\s+pass\b/i.test(message)) return true;
+    if (META_AD_CURRICULUM_QUESTION_RE.test(normalized)) return true;
     if (/\b(what(?:'s| is) (?:actually )?included|what do i get|inclusions?|details|tell me more|show me what(?:'s| is) included)\b/i.test(normalized)) return true;
     if (/\b(?:do you (?:offer|have)|is there|can i get)\b.{0,35}\bpersonali[sz]ed\b.{0,35}\b(?:coaching|plans?)\b|\bpersonali[sz]ed\b.{0,35}\b(?:coaching|plans?)\b/i.test(normalized)) return true;
     if (/\b(do i need to (?:already )?be plant[ -]?based|already plant[ -]?based|not plant[ -]?based|vegan already|already vegan)\b/i.test(normalized)) return true;
@@ -2403,9 +2409,11 @@ function buildMetaAdFoundersPassFirstReply(currentMessage = '', { customData = {
         answer = `You check in inside Balance and I can see what the week actually looked like, then I give you the next bit of direction and adjust your training or food where needed. What's the main change you'd like to make over the next six weeks?`;
     } else if (broadFlow && intent === 'personalised_coaching') {
         answer = `Yeah, I do. Balance Foundations is a six-week setup inside the app with a workout program, food support and one weekly review with me. What's the main change you'd like to make over the next six weeks?`;
+    } else if (broadFlow && intent === 'curriculum') {
+        answer = `Yeah. Week 1 is why change feels hard, week 2 is working with your energy, week 3 is building a rhythm that sticks, week 4 takes the fight out of food, week 5 makes progress easier to repeat, and week 6 builds your sustainable way forward. You apply it through your Weekly Goals, workout program and nutrition setup, with me reviewing your training and food each week. What's the main change you'd like to make over the next six weeks?`;
     } else if (broadFlow) {
         const directAnswer = intent === 'inclusions'
-            ? 'Yeah, Balance Foundations is a six-week setup inside the app, with me supporting you, plus training, food support and the community together.'
+            ? 'Yeah, Balance Foundations combines the six-week course, a workout program built around your week, nutrition support fitted to your preferences, Weekly Goals, app/community access and one weekly training and food review with me.'
             : 'Hey, yeah of course. Balance Foundations is a six-week fitness setup inside the app, with me helping you build a plan around your real week.';
         answer = `${directAnswer} What's the main change you'd like to make over the next six weeks?`;
     } else if (intent === 'fit' || intent === 'overview') {
@@ -2824,6 +2832,8 @@ SHANNON FOLLOW-UP QUESTION FINGERPRINT:
 
 THE OFFERING (for context — never list as a brochure; speak like a friend):
 - The FIRST offer for leads in this paid campaign is the paid Balance Foundations program, not a free challenge, standalone custom meal plan, workout program, generic app trial or Starter Coaching.
+- The fixed six-week curriculum is: week 1, Why change feels hard; week 2, Work with your energy; week 3, Build a rhythm that sticks; week 4, Take the fight out of food; week 5, Make progress easier to repeat; week 6, Build your sustainable way forward. It combines lessons, practical actions and Weekly Goals with their workout and nutrition setup. Use this detail when they ask what the course teaches, what happens across the weeks, or which part fits their problem. Do not recite the full outline in every pitch.
+- The curriculum themes are fixed. The workout program, nutrition setup and Shannon's weekly review are the personalised parts. Never imply that every lesson or the six-week curriculum is individually rewritten for the lead.
 - Tailor the coaching explanation around the person's goal, training, food structure and accountability. Dietary preferences belong inside personalised nutrition setup, not paid-ad positioning.
 - Keep the public link clean and use ${FOUNDERS_PASS_BROAD_CHECKOUT_URL} for every paid-Meta lead. Do not introduce plant-based, vegan or vegetarian positioning in an ad reply, landing handoff or follow-up unless the lead independently asks about dietary fit. Preserve Meta identifiers on the canonical thread and handoff receipt, never by pasting tracking parameters into the DM.
 - For a general ad-attributed "what is it?" or Balance Foundations opener, do not dump the offer or send a raw media URL. Ask only for the desired six-week change, then the real-life blocker, skipping either fact already supplied. Once both are known, explain the matched six-week setup, state the $149/no-renewal terms, and offer the personalised app preview before payment. Send that signed preview immediately when requested or accepted, including after a generic "I'm ready". Only bypass the preview for an explicit request to join, pay, sign up or receive checkout. Only offer a quick call if they say they want to talk it through or remain genuinely uncertain after the clear explanation.
@@ -4202,6 +4212,8 @@ PAID META BROAD-PAIN SINGLE-WRITER PLAYBOOK:
 - Every ordinary reply starts by answering or reflecting one exact detail from the newest lead turn. Keep it statement-led and use at most one decision-changing question in a turn.
 - Once goal and blocker/support need are known, stop discovery. Explain the six-week Foundations setup in neutral language: workout program around their week, meal-plan support fitted to dietary preferences, one weekly training/food review and adjustment, and six weeks of app/community access.
 - State the terms exactly when the offer is explained: one AUD $149 payment for the full six weeks, with no subscription or auto-renewal. Offer the free personalised app preview before payment.
+- Know the fixed course curriculum so you can answer accurately when asked: week 1, Why change feels hard; week 2, Work with your energy; week 3, Build a rhythm that sticks; week 4, Take the fight out of food; week 5, Make progress easier to repeat; week 6, Build your sustainable way forward. The course uses lessons, practical actions and Weekly Goals alongside their workout and nutrition setup. Do not recite all six weeks in an ordinary pitch. Give the full outline only when they ask about the curriculum or week-by-week course, otherwise mention only the one or two themes relevant to their goal or blocker.
+- Keep the fixed curriculum distinct from the personalised parts. The workout program, nutrition setup and Shannon's review can fit the person; do not claim the six course themes themselves are individually rewritten for every lead.
 - When they ask to see the preview or accept it, the signed preview must be sent immediately without reconfirming or collecting contact details. A generic "I'm ready" stays on the promised preview path. Checkout is only for an explicit request to join, pay, sign up or receive the checkout link.
 - Keep replies concise, specific, warm and low-pressure. No intake bundles, option menus, brochure copy, or invented personal context.`;
     return `
@@ -4268,6 +4280,8 @@ ${knownFactRule}
 Client proof should normally be used once when it genuinely matches: Ally for weight loss, Gen for strength/confidence, Dani for body recomposition, Bec and Kirsty for shared accountability. Use no transformation when identity, safety or fit is uncertain. If using proof, name the approved person and say you are showing their photo. The deterministic transport may add the approved quick app video after both goal and blocker are known; do not invent URLs or repeat it.
 
 Reliable offer facts: Balance Foundations is a six-week program inside Balance with a personalised workout program, meal-plan support fitted to recorded dietary needs, and one weekly training/food review and adjustment. It is one AUD $149 payment for the full six weeks, with no subscription or auto-renewal. The personalised app preview comes before payment.
+
+Verified course curriculum, for direct course, lesson or week-by-week questions: week 1, Why change feels hard; week 2, Work with your energy; week 3, Build a rhythm that sticks; week 4, Take the fight out of food; week 5, Make progress easier to repeat; week 6, Build your sustainable way forward. The course uses lessons, practical actions and Weekly Goals alongside the person's workout and nutrition setup. Do not dump all six weeks into an ordinary pitch. Give the full outline only when they ask for curriculum detail; otherwise use only the one or two themes relevant to their words.
 
 Send the signed preview immediately after they ask to see it or accept the free personalised preview. A positive reaction such as "looks great" is not checkout intent. Send checkout only after they explicitly ask to join, pay, sign up or receive the checkout link. Hand off instead of improvising for medical/safety issues, account or payment support, existing-client app support, or a direct request for Shannon. Keep replies quick, warm, concise and human. ${linkQuestionRule} Never reveal automation or AI. No em dashes.
 

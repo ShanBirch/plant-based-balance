@@ -1699,11 +1699,37 @@ test('inclusions quick reply answers the direct ask without a raw preview URL', 
     assert.equal(reply.chunks.length, 1);
     assert.equal(reply.checkoutUrl, null);
     assert.doesNotMatch(reply.joined, /balance-founders-pass-dm-preview\.mp4/);
-    assert.match(reply.joined, /Balance Foundations is a six-week setup inside the app/i);
-    assert.match(reply.joined, /training, food support and the community/i);
+    assert.match(reply.joined, /Balance Foundations combines the six-week course/i);
+    assert.match(reply.joined, /workout program built around your week/i);
+    assert.match(reply.joined, /nutrition support fitted to your preferences/i);
+    assert.match(reply.joined, /Weekly Goals/i);
+    assert.match(reply.joined, /app\/community access/i);
+    assert.match(reply.joined, /one weekly training and food review with me/i);
     assert.match(reply.joined, /main change.*next six weeks\?/i);
     assert.doesNotMatch(reply.joined, /plant[ -]?based|vegan|vegetarian/i);
     assert.doesNotMatch(reply.joined, /https?:\/\//);
+});
+
+test('direct curriculum question receives the verified six-week course outline without a checkout pitch', () => {
+    const message = 'What do I actually learn over the six weeks?';
+    assert.equal(resolveMetaAdFirstReplyIntent(message), 'curriculum');
+    assert.equal(shouldUseDeterministicMetaAdFirstReply(message), true);
+    assert.equal(resolveMetaAdFirstReplyIntent('What happens each week?'), 'curriculum');
+    assert.equal(shouldUseDeterministicMetaAdFirstReply('Can you show me the week-by-week curriculum?'), true);
+
+    const reply = buildMetaAdFoundersPassFirstReply(message);
+    assert.equal(reply.firstReplyIntent, 'curriculum');
+    assert.match(reply.joined, /week 1 is why change feels hard/i);
+    assert.match(reply.joined, /week 2 is working with your energy/i);
+    assert.match(reply.joined, /week 3 is building a rhythm that sticks/i);
+    assert.match(reply.joined, /week 4 takes the fight out of food/i);
+    assert.match(reply.joined, /week 5 makes progress easier to repeat/i);
+    assert.match(reply.joined, /week 6 builds your sustainable way forward/i);
+    assert.match(reply.joined, /Weekly Goals, workout program and nutrition setup/i);
+    assert.match(reply.joined, /reviewing your training and food each week/i);
+    assert.equal((reply.joined.match(/\?/g) || []).length, 1);
+    assert.equal(reply.checkoutUrl, null);
+    assert.doesNotMatch(reply.joined, /plant[ -]?based|vegan|vegetarian|https?:\/\//i);
 });
 
 test('personalised coaching FAQ answers from the advertised six-week program without a premature handoff', () => {
@@ -2630,6 +2656,8 @@ test('broad ad route stays broad through the informational first reply', () => {
     assert.equal(reply.checkoutUrl, null);
     assert.doesNotMatch(reply.joined, /plant[ -]?based|vegan|vegetarian/i);
     assert.doesNotMatch(reply.joined, /balance-founders-pass-dm-preview\.mp4/);
+    assert.doesNotMatch(reply.joined, /week 1|why change feels hard|work with your energy/i,
+        'an ordinary inclusions answer must not dump the six-week curriculum');
     assert.doesNotMatch(reply.joined, /https?:\/\//);
 });
 
@@ -2750,7 +2778,7 @@ test('broad route skips supplied facts, sends preview on direct request, and res
     assert.match(explicitJoin.joined, /get started here: https:\/\/future-balance\.netlify\.app\/fitness/i);
 });
 
-test('broad prompt and reviewer enforce neutral two-question discovery without changing plant control', () => {
+test('broad prompt knows the verified curriculum and keeps it selective', () => {
     const broadPrompt = buildPaidMetaAgentPrompt({
         leadName: 'Lead',
         timeline: 'Lead: BALANCE',
@@ -2760,6 +2788,11 @@ test('broad prompt and reviewer enforce neutral two-question discovery without c
     assert.match(broadPrompt, /no more than two discovery questions/i);
     assert.match(broadPrompt, /change.*next six weeks[\s\S]*real-life blocker/i);
     assert.match(broadPrompt, /meal-plan support fitted to recorded dietary needs|meal-plan support fitted to dietary preferences/i);
+    assert.match(broadPrompt, /week 1, Why change feels hard/i);
+    assert.match(broadPrompt, /week 4, Take the fight out of food/i);
+    assert.match(broadPrompt, /week 6, Build your sustainable way forward/i);
+    assert.match(broadPrompt, /Do not dump all six weeks into an ordinary pitch/i);
+    assert.match(broadPrompt, /full outline only when they ask for curriculum detail/i);
     assert.doesNotMatch(broadPrompt, /plant[ -]?based meal plan|plant[ -]?based connection|currently plant[ -]?based or vegan/i);
 
     const issues = collectPaidMetaWriterContractIssues({
