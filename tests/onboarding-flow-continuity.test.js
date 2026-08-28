@@ -157,6 +157,12 @@ test('unfinished onboarding cannot escape through app navigation or the close co
     assert.match(dashboardSource, /id="onboarding-wizard-close"/);
 });
 
+test('the dedicated phone-test account clears stale local completion after a remote reset', () => {
+    assert.match(onboardingSource, /userData && userData\.is_test_account && !userData\.onboarding_complete/);
+    assert.match(onboardingSource, /'onboardingComplete',[\s\S]*?'featureTourComplete',[\s\S]*?'pbb_seen_features'/);
+    assert.match(onboardingSource, /sessionStorage\.removeItem\('userProfile'\)/);
+});
+
 test('every onboarding screen tells the member what to do next', () => {
     assert.match(dashboardSource, /id="wizard-action-guidance"/);
     assert.match(onboardingSource, /Read Shannon's message and choose the answer that fits you/);

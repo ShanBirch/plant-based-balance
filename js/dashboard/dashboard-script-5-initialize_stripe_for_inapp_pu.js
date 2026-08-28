@@ -10057,6 +10057,23 @@ async function checkAndTriggerOnboarding() {
                 ? await window.getUserProfile()
                 : await dbHelpers.users.get(window.currentUser.id);
             databaseOnboardingStatusChecked = true;
+            // The dedicated phone-test account can be reset from another device.
+            // Its database flag is the source of truth, so a stale local completion
+            // flag must never make the next phone launch skip the fresh onboarding.
+            if (userData && userData.is_test_account && !userData.onboarding_complete) {
+                [
+                    'onboardingComplete',
+                    'plantbased_onboarding_complete',
+                    'featureTourComplete',
+                    'pbb_seen_features',
+                    'pbb_onboarding_owner_user_id',
+                    'onboardingCompletedAt'
+                ].forEach(function (key) {
+                    try { localStorage.removeItem(key); } catch (_) {}
+                });
+                try { sessionStorage.removeItem('userProfile'); } catch (_) {}
+                isReturningMember = false;
+            }
             if (userData && userData.is_transferred_client && userData.onboarding_complete) {
                 isReturningMember = true;
                 console.log('🎁 Transferred client detected — running trimmed setup flow');
