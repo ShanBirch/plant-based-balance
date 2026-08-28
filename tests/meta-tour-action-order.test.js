@@ -14,12 +14,13 @@ test('paid tour explains guided actions before performing them', () => {
   }
   assert.match(dashboard, /const isPromptBeforeAction = !!\(\(metaPreviewTour/);
   assert.match(dashboard, /if \(!isPromptBeforeAction && !options\.afterPromptedAction && typeof step\.action === 'function'\)/);
-  assert.match(dashboard, /function armPromptTarget\(step, target, stepIndex\)[\s\S]*step\.action\(\{ fromTargetClick:true \}\)/);
+  assert.match(dashboard, /function armPromptTarget\(step, target, stepIndex\)[\s\S]*step\.action\(actionAlreadyStarted \? \{ fromTargetClick:true \} : undefined\)/);
   assert.match(dashboard, /document\.addEventListener\('click', handleTargetClick, true\)/);
   assert.match(dashboard, /document\.removeEventListener\('click', handleTargetClick, true\)/);
   assert.match(dashboard, /window\.addEventListener\('pbb-next-step-action', handleActionSignal\)/);
   assert.match(dashboard, /window\.removeEventListener\('pbb-next-step-action', handleActionSignal\)/);
   assert.match(nextSteps, /window\.dispatchEvent\(new CustomEvent\('pbb-next-step-action'/);
+  assert.match(dashboard, /event\.preventDefault\(\);\s*event\.stopImmediatePropagation\(\);\s*beginPromptedAction\(false\)/);
   assert.match(dashboard, /promptRequiresTargetClick:true/);
 });
 
@@ -27,5 +28,5 @@ test('opened interactive screens keep their guide and gates', () => {
   assert.match(dashboard, /showStep\(idx, \{ afterPromptedAction:true \}\)/);
   assert.match(dashboard, /if \(!options\.afterPromptedAction\) \{\s*resetTourTemporaryTargets\(\)/);
   assert.match(dashboard, /completedPromptedActions\.clear\(\)/);
-  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v383-guided-action-signal'/);
+  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v384-single-guided-action'/);
 });

@@ -14271,7 +14271,7 @@ if(!window._pbbIsIOSSafari) {
   function armPromptTarget(step, target, stepIndex){
     if (!step || !target) return false;
     var busy = false;
-    var beginPromptedAction = function(){
+    var beginPromptedAction = function(actionAlreadyStarted){
       if (busy) return;
       busy = true;
       completedPromptedActions.add(stepIndex);
@@ -14283,7 +14283,7 @@ if(!window._pbbIsIOSSafari) {
       setTourGateUi(false, 'Opening now...', step.preActionButton || 'Opening');
       setTimeout(async function(){
         var result = true;
-        try { result = await step.action({ fromTargetClick:true }); }
+        try { result = await step.action(actionAlreadyStarted ? { fromTargetClick:true } : undefined); }
         catch(e) { result = false; console.warn('[tour] highlighted card action failed', e); }
         if (result === false) {
           completedPromptedActions.delete(stepIndex);
@@ -14300,12 +14300,17 @@ if(!window._pbbIsIOSSafari) {
     };
     var handleTargetClick = function(event){
       if (!target.contains(event.target)) return;
-      beginPromptedAction();
+      // Own this one tap. The tour opens the destination once, then renders the
+      // in-section guide. Allowing the card's inline handler to run as well can
+      // create two competing tab changes and skip a later tour stop.
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      beginPromptedAction(false);
     };
     var expectedActionId = promptedActionId(step);
     var handleActionSignal = function(event){
       if (!event || !event.detail || event.detail.id !== expectedActionId) return;
-      beginPromptedAction();
+      beginPromptedAction(true);
     };
     // Capture the checklist tap before its inline destination handler changes
     // tabs or re-renders Home. Otherwise fast, synchronous destinations (the
