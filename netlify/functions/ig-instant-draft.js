@@ -1653,7 +1653,7 @@ function hasRecentPaidMetaProofVideo(history = []) {
     return (Array.isArray(history) ? history : [])
         .filter(item => String(item?.direction || '').toLowerCase() === 'out')
         .slice(-8)
-        .some(item => /\b(?:quick video|showing you how it works inside Balance)\b|balance-foundations-(?:app-proof-v(?:5|6)|course-first-v7)/i
+        .some(item => /\b(?:quick video|showing you how it works inside Balance)\b|balance-foundations-(?:app-proof-v(?:5|6)|course-first-v(?:7|8))/i
             .test(String(item?.text || '')));
 }
 

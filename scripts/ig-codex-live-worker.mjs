@@ -219,7 +219,7 @@ ${conversationIntelligence}
 
 Fixed offer facts:
 ${offerFacts}
-- The approved time-limited app proof video is https://plantbased-balance.org/assets/balance-foundations-app-proof-v6-this-week.mp4 through Sunday 23 August 2026 Brisbane time; after that use the evergreen course-first explainer https://plantbased-balance.org/assets/balance-foundations-course-first-v7.mp4. The selected URL is transport-only: never paste it into public reply or draft text. Introduce the quick course video naturally and keep the alert's draft_video_attachment_url available so send-coach-reply delivers it as a native Instagram attachment.
+- The approved time-limited app proof video is https://plantbased-balance.org/assets/balance-foundations-app-proof-v6-this-week.mp4 through Sunday 23 August 2026 Brisbane time; after that use the evergreen course-first explainer https://plantbased-balance.org/assets/balance-foundations-course-first-v8.mp4. The selected URL is transport-only: never paste it into public reply or draft text. Introduce the quick course video naturally and keep the alert's draft_video_attachment_url available so send-coach-reply delivers it as a native Instagram attachment.
 - Approved proof photos: Ally https://plantbased-balance.org/photos/client-success/ally-cocos.png ; Gen https://plantbased-balance.org/photos/client-success/gen-cocos.jpg ; Dani https://plantbased-balance.org/photos/client-success/dani-front-mirror-8-weeks.png ; Bec/Kirsty https://plantbased-balance.org/photos/client-success/bec-kirsty-cocos.png
 - They can see their profile, workout program, meal plan, and the full app before paying.
 - Transformation proof is optional, must genuinely match the person's goal and situation, and must not be forced or hardcoded.
