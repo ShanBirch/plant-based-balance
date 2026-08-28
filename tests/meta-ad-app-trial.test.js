@@ -262,7 +262,7 @@ test('dashboard, signup, native handoffs, measurement, and both discovery system
     const ios = fs.readFileSync(path.join(root, 'ios/App/App/BalanceShortcutHandoff.swift'), 'utf8');
 
     assert.match(dashboard, /paid-facebook-stripe-unlock-v1/);
-    assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=203-repeatable-test-flow/);
+    assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=205-onboarding-navigation-gate/);
     assert.match(dashboard, /title:'Start here each day'.*metaPreview:true/);
     assert.match(dashboard, /title:'Check your workout week'.*metaPreview:true/);
     assert.match(dashboard, /title:'Open your first workout'.*metaPreview:true/);
@@ -273,11 +273,16 @@ test('dashboard, signup, native handoffs, measurement, and both discovery system
     assert.match(dashboard, /title:'The Balance community'.*metaPreview:true/);
     assert.match(dashboard, /title:'Post when you need support'.*metaPreview:true/);
     assert.match(dashboard, /title:'Listen to Shannon’s welcome'.*metaPreview:true/);
-    assert.match(dashboard, /title:'Pick your Weekly Goals'.*metaPreviewSignoff:true/);
+    assert.match(dashboard, /title:'Pick your Weekly Goals'.*requiresWeeklyGoals:true/);
+    assert.match(dashboard, /title:'Read, then take the quiz'.*metaPreviewSignoff:true.*requiresFoundationsLesson:'mind-1-1'/);
+    assert.match(dashboard, /title:'One shopping list for the week'.*metaPreview:true/);
     assert.match(dashboard, /showExitChoice\('tour'\)/);
     assert.match(onboarding, /closingMetaAdTrial[\s\S]*?showExitChoice\('onboarding'\)[\s\S]*?return;/);
     assert.match(onboarding, /window\.resumeMetaAdTrialOnboarding = function/);
     assert.match(dashboard, /id="meta-ad-trial-gate"/);
+    assert.match(dashboard, /id="meta-ad-trial-personal-summary"/);
+    assert.match(dashboard, /EVERYTHING YOU GET/);
+    assert.match(source, /function renderPersonalisedSetup\(\)/);
     assert.match(auth, /requestedMetaAdTrial/);
     assert.match(auth, /isAuthenticatedOnboardingTest/);
     assert.match(auth, /window\.metaAdTrialMode = isAuthenticatedOnboardingTest/);

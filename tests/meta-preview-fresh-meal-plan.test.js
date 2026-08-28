@@ -56,11 +56,12 @@ test('the paid preview tour keeps the promised app order before payment', () => 
     'Follow the exercise card',
     'Log what you eat',
     'Open your meal plan',
-    'Read, then take the quiz',
+    'One shopping list for the week',
     'The Balance community',
     'Post when you need support',
     'Listen to Shannon’s welcome',
-    'Pick your Weekly Goals'
+    'Pick your Weekly Goals',
+    'Read, then take the quiz'
   ];
   let cursor = dashboard.indexOf("title:'Start here each day'");
   assert.ok(cursor >= 0);
@@ -69,6 +70,7 @@ test('the paid preview tour keeps the promised app order before payment', () => 
     assert.ok(next > cursor, `${title} should follow the previous paid-preview step`);
     cursor = next;
   });
+  assert.match(dashboard, /title:'Read, then take the quiz'[^\n]*metaPreviewSignoff:true/);
 });
 
 test('test navigation is invisible unless a developer explicitly requests it', () => {
