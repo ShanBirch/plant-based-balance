@@ -3322,6 +3322,14 @@ test('broad writer contract repairs missing terms, adds the native explainer, an
     });
     assert.match(repairedCurriculumSequence.joined, /main change.*next six weeks\?/i);
     assert.doesNotMatch(repairedCurriculumSequence.joined, /preview|before you pay/i);
+    const resolvedCurriculumIssues = collectPaidMetaWriterContractIssues({
+        draft: repairedCurriculumSequence,
+        currentMessage: 'Before I answer that, what do the six weeks actually teach?',
+        qualifier: { facts: {} },
+        history: [{ direction: 'out', text: "What's the main change you'd like to make over the next six weeks?" }],
+        flowVariant: 'broad_pain',
+    });
+    assert.equal(resolvedCurriculumIssues.filter(isBlockingPaidMetaWriterContractIssue).length, 0);
 });
 
 test('signed broad preview handoff survives a wording repair and becomes one native button', () => {

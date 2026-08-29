@@ -4887,7 +4887,11 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
         if (paidMetaOutboundAskedForBlocker(question)) return 'blocker';
         return '';
     };
-    if (replyQuestions.some(question => previousQuestions.some(previous => (
+    const resumesExplicitlyDeferredGoal = broadFlow
+        && asksForCurriculumOutline
+        && /\bbefore i (?:answer|tell you)\b/i.test(turn)
+        && replyQuestions.some(question => paidMetaOutboundAskedForGoal(question));
+    if (!resumesExplicitlyDeferredGoal && replyQuestions.some(question => previousQuestions.some(previous => (
         normalizeQuestion(previous) === normalizeQuestion(question)
         || (!!questionKind(question) && questionKind(previous) === questionKind(question))
     )))) {
