@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v411-stable-home-handoff'; // v411: hold guided section exits on Home through delayed callbacks
+const CACHE_NAME = 'pbb-app-v412-first-touch-tour-cards'; // v412: record highlighted Home-card taps before their content rerenders
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

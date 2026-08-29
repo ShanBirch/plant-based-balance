@@ -27,7 +27,7 @@ test('walkthrough keeps surrounding page context readable', () => {
   assert.match(premiumOverlays, /#guided-tour-overlay\.tour-page-view #guided-tour-spotlight[\s\S]*?rgba\(26, 24, 20, 0\.08\)/);
   assert.doesNotMatch(premiumOverlays, /#guided-tour-spotlight[\s\S]*?rgba\(29, 15, 50, 0\.78\)/);
   assert.match(dashboard, /pbb-premium-overlays\.css\?v=97-foundations-actions/);
-  assert.match(serviceWorker, /pbb-app-v411-stable-home-handoff/);
+  assert.match(serviceWorker, /pbb-app-v412-first-touch-tour-cards/);
   assert.match(source, /#guided-tour-overlay \{[^}]*pointer-events: auto/);
   assert.match(source, /#guided-tour-overlay\.tour-tap-target,[\s\S]*?#guided-tour-overlay\.tour-action-required:not\(\.tour-gate-complete\) \{ pointer-events: none; \}/);
   assert.match(source, /#guided-tour-overlay\.tour-coach-note \{ pointer-events: none; \}/);
@@ -100,6 +100,8 @@ test('Home prompts only become tappable after their first-tap handler is ready',
   assert.match(source, /async function showStep\(i, options\)[\s\S]*?overlay\.classList\.add\('tour-transitioning'\)/);
   assert.match(source, /await ensureTab\(step\.tab\);[\s\S]*?if \(renderToken !== tourRenderToken\) return/);
   assert.match(source, /armPromptTarget\(step, target, i\);[\s\S]*?overlay\.classList\.remove\('tour-transitioning'\)/);
+  assert.match(source, /document\.addEventListener\('pointerdown', handleTargetClick, true\)/);
+  assert.match(source, /document\.removeEventListener\('pointerdown', handleTargetClick, true\)/);
   assert.match(source, /if \(idx >= activeSteps\.length - 1\)[\s\S]*?await showStep\(idx \+ 1\)/);
   assert.match(source, /window\.tourBack = async function\(\)/);
 });

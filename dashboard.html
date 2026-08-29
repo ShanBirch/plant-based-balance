@@ -14491,9 +14491,11 @@ if(!window._pbbIsIOSSafari) {
     // tabs or re-renders Home. Otherwise fast, synchronous destinations (the
     // nutrition tracker in particular) can remove the highlighted card before
     // the tour records the tap, leaving the guide stuck on the prompt screen.
+    document.addEventListener('pointerdown', handleTargetClick, true);
     document.addEventListener('click', handleTargetClick, true);
     window.addEventListener('pbb-next-step-action', handleActionSignal);
     activePromptTargetCleanup = function(){
+      document.removeEventListener('pointerdown', handleTargetClick, true);
       document.removeEventListener('click', handleTargetClick, true);
       window.removeEventListener('pbb-next-step-action', handleActionSignal);
       clearInterval(promptAlignmentTimer);
