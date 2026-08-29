@@ -285,6 +285,18 @@ test('a broad offer reflects gym anxiety and random workouts before generic cons
     assert.doesNotMatch(chunks[0], /^If follow-through is the hard part/i);
 });
 
+test('a broad postpartum pain offer follows physio guidance without diagnosing or prescribing', () => {
+    const chunks = buildPaidMetaTailoredOfferChunks(
+        'I have lower back pain and my physio told me to keep training gentle. I just need something adaptable.',
+        'I want to get strong again after having a baby.',
+        'broad_pain',
+    );
+    assert.match(chunks[0], /getting strong again after having a baby/i);
+    assert.match(chunks[0], /gentle and adaptable around your physio's guidance/i);
+    assert.doesNotMatch(chunks.join(' '), /diagnos|treat|heal|rehab|fix your (?:back|pain)/i);
+    assert.ok(chunks.every(chunk => chunk.length <= 240));
+});
+
 test('paid Meta price contract accepts Australian currency wording', () => {
     const issues = collectPaidMetaWriterContractIssues({
         draft: { joined: "It's one AUD $149 payment for the full six weeks, with no subscription or auto-renewal." },

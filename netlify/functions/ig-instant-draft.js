@@ -1566,6 +1566,11 @@ function buildPaidMetaTailoredOfferChunks(blockerText = '', goalText = '', flowV
             compactAcknowledgement = `Yeah, ${daysPerWeek} days a week can work for losing fat and building muscle. Because big plans overwhelm you, keep those sessions focused.`;
         } else if (daysPerWeek && asksCanWork) {
             compactAcknowledgement = `Yeah, ${daysPerWeek} days a week can work. The plan needs to make those sessions focused and realistic.`;
+        } else if (/\b(?:postpartum|after (?:having )?(?:a )?baby)\b/i.test(goal)
+            && /\bphysio\b/i.test(turn)) {
+            compactAcknowledgement = `Getting strong again after having a baby can stay the goal, with training kept gentle and adaptable around your physio's guidance.`;
+        } else if (/\bphysio\b/i.test(turn)) {
+            compactAcknowledgement = `With the pain and your physio's guidance in mind, training needs to stay gentle and adaptable.`;
         } else if (PAID_META_BROAD_BLOCKER_RE.test(turn)) {
             compactAcknowledgement = 'If it all feels hard at once, it needs to be one simple plan.';
         } else if (PAID_META_FOOD_CONFUSION_RE.test(turn)) {
@@ -1580,6 +1585,8 @@ function buildPaidMetaTailoredOfferChunks(blockerText = '', goalText = '', flowV
                 : 'Changing rosters need a flexible plan.';
         } else if (/\b(?:food|prep|prepar|run out of time)\b/i.test(turn)) {
             compactAcknowledgement = 'If food prep is where it falls apart, that part needs to stay simple.';
+        } else if (/\b(?:pain|injur\w*|sore)\b/i.test(turn)) {
+            compactAcknowledgement = 'Because you mentioned pain, the plan needs to stay gentle and adaptable rather than forcing anything.';
         } else if (/\b(?:gym anxiety|anxious|self-conscious|confidence)\b/i.test(turn)
             && /\b(?:random|workouts?|what to do)\b/i.test(turn)) {
             compactAcknowledgement = 'If gym anxiety and random workouts make you stop, each session needs to feel clear and manageable.';
