@@ -13640,6 +13640,9 @@ if(!window._pbbIsIOSSafari) {
   #guided-tour-overlay.active { display: block; }
   #guided-tour-overlay.tour-tap-target,
   #guided-tour-overlay.tour-action-required:not(.tour-gate-complete) { pointer-events: none; }
+  /* The coach note carries its own visible Continue button. Keep the clear
+     overlay from swallowing that button once the audio gate completes. */
+  #guided-tour-overlay.tour-coach-note { pointer-events: none; }
   #guided-tour-overlay.meta-tour-welcome-active {
     pointer-events: auto;
     background:
