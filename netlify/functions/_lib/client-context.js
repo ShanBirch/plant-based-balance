@@ -2840,9 +2840,12 @@ function sanitizeVisibleOutboundDmText(text, options = {}) {
     let out = normalizeCoachDraftText(text || '');
     if (!out) return '';
 
+    const visibleLabelRe = options.allowAssistantIdentityDisclosure === true
+        ? /\b(?:ephemeral|internal|draft|system|bot|ai)\b(?:\s+note)?\s*:?\s*/ig
+        : /\b(?:ephemeral|internal|draft|assistant|system|bot|ai)\b(?:\s+note)?\s*:?\s*/ig;
     out = out
         .replace(OUTBOUND_VISIBLE_ARTIFACT_RE, ' ')
-        .replace(/\b(?:ephemeral|internal|draft|assistant|system|bot|ai)\b(?:\s+note)?\s*:?\s*/ig, ' ');
+        .replace(visibleLabelRe, ' ');
 
     if (options.stripProfanity !== false) {
         out = out.replace(OUTBOUND_VISIBLE_STRONG_PROFANITY_RE, ' ');

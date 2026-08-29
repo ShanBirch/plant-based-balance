@@ -50,6 +50,17 @@ assert.strictEqual(
     sanitizeVisibleOutboundDmText('yeah sounds good mate'),
     'Yeah sounds good mate'
 );
+assert.strictEqual(
+    sanitizeVisibleOutboundDmText("You're chatting with Shannon's Balance assistant."),
+    "You're chatting with Shannon's Balance ."
+);
+assert.strictEqual(
+    sanitizeVisibleOutboundDmText(
+        "You're chatting with Shannon's Balance assistant.",
+        { allowAssistantIdentityDisclosure: true }
+    ),
+    "You're chatting with Shannon's Balance assistant."
+);
 
 assert.strictEqual(
     replaceLongDashesWithPhonePunctuation('Balance—getting structure around food without making life restrictive.'),

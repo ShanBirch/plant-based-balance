@@ -322,6 +322,7 @@ const {
     splitTerminalQuestionForProofMedia,
     insertProofMediaBeforeFinalQuestion,
     stripPaidMetaProofMediaUrls,
+    shouldAllowPaidMetaAssistantIdentityDisclosure,
 } = require('../netlify/functions/send-ig-reply')._test;
 const { inspectVoiceScriptQuality } = require('../netlify/functions/_lib/elevenlabs-voice-message');
 const { buildMetaAppPreviewUrl, isMetaAppPreviewUrl } = require('../netlify/functions/_lib/meta-app-preview-ref');
@@ -2027,6 +2028,14 @@ test('paid Meta identity questions answer honestly and continue from the earned 
     assert.match(identityOnly.joined, /main change you'd like to make over the next six weeks\?/i);
     assert.equal((identityOnly.joined.match(/\?/g) || []).length, 1);
     assert.doesNotMatch(identityOnly.joined, /\bno[,—-]?\s+(?:it|this) isn['’]?t\b/i);
+    assert.equal(shouldAllowPaidMetaAssistantIdentityDisclosure({
+        meta_ad_conversation_fast_lane: true,
+        draft_model: 'deterministic_paid_meta_identity_v1',
+    }, identityOnly.joined), true);
+    assert.equal(shouldAllowPaidMetaAssistantIdentityDisclosure({
+        meta_ad_conversation_fast_lane: true,
+        draft_model: 'openai-generic',
+    }, identityOnly.joined), false);
 
     const identityAfterGoalQuestion = buildPaidMetaIdentityReply({
         ...base,
