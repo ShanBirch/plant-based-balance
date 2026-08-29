@@ -37,9 +37,12 @@ test('duplicate guided-tour starts cannot change the live step count', () => {
 });
 
 test('shopping list restores the prepared preview plan before opening', () => {
-  assert.match(dashboard, /async function openMetaPreviewShoppingListSurface\(\)[\s\S]*openMetaPreviewMealPlanSurface\(\)[\s\S]*openAiMealPlanShoppingList/);
+  assert.match(dashboard, /async function openMetaPreviewShoppingListSurface\(\)[\s\S]*openAiMealPlanShoppingList[\s\S]*resetChecked:true[\s\S]*scrollBlock:'start'/);
+  assert.doesNotMatch(dashboard.match(/async function openMetaPreviewShoppingListSurface\(\)[\s\S]*?\n  }/)[0], /openMetaPreviewMealPlanSurface\(\)/);
   assert.match(dashboard, /title:'One shopping list for the week'[^\n]*promptRequiresTargetClick:true[^\n]*openMetaPreviewShoppingListSurface/);
   assert.match(onboarding, /if \(!_aiMealPlanCache && window\.metaAdTrialMode === true\)[\s\S]*localStorage\.getItem\('ai_meal_plan'\)[\s\S]*Array\.isArray\(previewPlan\.weeks\)/);
+  assert.match(onboarding, /async function openAiMealPlanShoppingList\(btn, options = \{\}\)[\s\S]*options\.resetChecked === true[\s\S]*localStorage\.removeItem\(getAiPlanShoppingStorageKey\(\)\)/);
+  assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=216-shopping-tour-direct/);
 });
 
 test('paid tour returns Home between sections and requires the real To Do cards', () => {
@@ -56,6 +59,9 @@ test('paid tour returns Home between sections and requires the real To Do cards'
 
 test('exercise guidance preserves the open workout player', () => {
   assert.match(dashboard, /title:'Follow the exercise card'[^\n]*preserveSurface:true/);
+  assert.match(dashboard, /title:'Check your workout week'[^\n]*Click Next to open the program/);
+  assert.match(dashboard, /title:'Follow the exercise card'[^\n]*Click Next to continue to your next task/);
+  assert.doesNotMatch(dashboard, /title:'Follow the exercise card'[^\n]*Use Swipe/);
   assert.match(dashboard, /if \(!step\.preserveSurface\) await ensureTab\(step\.tab\)/);
 });
 
@@ -63,10 +69,14 @@ test('paid tour highlights the real in-section control before continuing', () =>
   assert.match(dashboard, /sel:'#ai-plan-meals-list \.ai-plan-hero__carousel-button--next'[^\r\n]*requiresHighlightedClick:true/);
   assert.match(dashboard, /sel:'#ai-plan-meals-list \.ai-plan-hero__carousel-button--next'[^\r\n]*controlPromptPosition:'top'/);
   assert.match(dashboard, /sel:'#ai-plan-shopping-list \.ai-plan-shopping__item'[^\r\n]*requiresHighlightedClick:true/);
+  assert.match(dashboard, /sel:'#ai-plan-shopping-list \.ai-plan-shopping__item'[^\r\n]*tourScrollContextSel:'#ai-plan-shopping-card'/);
+  assert.match(dashboard, /const tourScrollTarget = displayStep\.tourScrollContextSel/);
   assert.match(dashboard, /if \(step && step\.requiresHighlightedClick\)/);
   assert.match(dashboard, /document\.addEventListener\('pointerdown', complete, true\)/);
   assert.match(dashboard, /document\.addEventListener\('click', complete, true\)/);
   assert.match(dashboard, /document\.removeEventListener\('pointerdown', complete, true\)/);
+  assert.match(dashboard, /event\.type === 'pointerdown'[\s\S]*?setTimeout\(function\(\)[\s\S]*?350\)/);
+  assert.match(dashboard, /if \(!eventHitTarget && !highlightedPressSeen\) return/);
   assert.match(dashboard, /highlightedClickComplete/);
   assert.match(dashboard, /displayStep\.requiresHighlightedClick/);
   assert.match(dashboard, /tour-control-prompt:not\(\.tour-gate-complete\) #guided-tour-bubble[\s\S]*?pointer-events: none/);

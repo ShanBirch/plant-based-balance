@@ -27,7 +27,7 @@ test('walkthrough keeps surrounding page context readable', () => {
   assert.match(premiumOverlays, /#guided-tour-overlay\.tour-page-view #guided-tour-spotlight[\s\S]*?rgba\(26, 24, 20, 0\.08\)/);
   assert.doesNotMatch(premiumOverlays, /#guided-tour-spotlight[\s\S]*?rgba\(29, 15, 50, 0\.78\)/);
   assert.match(dashboard, /pbb-premium-overlays\.css\?v=97-foundations-actions/);
-  assert.match(serviceWorker, /pbb-app-v414-captioned-coach-video/);
+  assert.match(serviceWorker, /pbb-app-v415-tour-actions-land-cleanly/);
   assert.match(source, /#guided-tour-overlay \{[^}]*pointer-events: auto/);
   assert.match(source, /#guided-tour-overlay\.tour-tap-target,[\s\S]*?#guided-tour-overlay\.tour-action-required:not\(\.tour-gate-complete\) \{ pointer-events: none; \}/);
   assert.match(source, /#guided-tour-overlay\.tour-coach-note \{ pointer-events: none; \}/);
@@ -159,6 +159,8 @@ test('required onboarding continues from Feed through Foundations, coach, and We
 test('shopping-list tour accepts a tap anywhere on the highlighted ingredient row', () => {
   const source = featureTourSource();
   assert.match(source, /sel:'#ai-plan-shopping-list \.ai-plan-shopping__item'.*title:'One shopping list for the week'/);
+  assert.match(source, /title:'One shopping list for the week'[^\n]*tourScrollContextSel:'#ai-plan-shopping-card'/);
+  assert.match(source, /tourScrollTarget\.scrollIntoView\(\{ block:displayStep\.tourScrollContextSel \? 'start'/);
   assert.doesNotMatch(source, /sel:'#ai-plan-shopping-list \.ai-plan-shopping__item input'.*title:'One shopping list for the week'/);
 });
 
@@ -174,4 +176,11 @@ test('the required tour introduction also completes the Week 1 Feed action', () 
     /const communityTourStep = findTourStep\('The Balance community'\)[\s\S]*?sessionStorage\.setItem\('pbb_foundations_feed_action', 'w1_feed_intro'\)/
   );
   assert.match(stories, /course_action_id: foundationsCourseActionId \|\| null/);
+});
+
+test('completed required actions leave their old instruction card automatically', () => {
+  const source = featureTourSource();
+  assert.match(source, /requiresFeedPost[\s\S]*?Your introduction is posted[\s\S]*?showStep\(completedStepIndex \+ 1\)/);
+  assert.match(source, /requiresFoundationsLesson[\s\S]*?First lesson complete[\s\S]*?showStep\(completedStepIndex \+ 1\)/);
+  assert.match(source, /requiresWeeklyGoals[\s\S]*?Weekly Goals saved[\s\S]*?showStep\(completedStepIndex \+ 1\)/);
 });

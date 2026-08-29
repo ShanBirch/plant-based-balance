@@ -23,8 +23,10 @@ test('onboarding no longer silently saves default Weekly Goals', () => {
 });
 
 test('both activation tours require an explicit Weekly Goals save', () => {
+  assert.match(dashboard, /source:'meta_preview_setup', week:'current'/);
   assert.match(dashboard, /source:metaPreviewTour \? 'meta_preview_setup' : 'client_activation_setup', week:'current'/);
   assert.ok((dashboard.match(/requiresWeeklyGoals:true/g) || []).length >= 1);
+  assert.match(dashboard, /REQUIRED_ONBOARDING_TOUR_TITLES[\s\S]*?'Pick your Weekly Goals'/);
   assert.match(dashboard, /window\.addEventListener\('pbbWeeklyGoalsSaved', saved\)/);
   assert.match(dashboard, /Number\(detail\.selectedCount \|\| 0\) < 1/);
   assert.match(dashboard, /activeTourGate && !activeTourGate\.complete/);
@@ -63,6 +65,9 @@ test('paid preview opens and requires the real first Foundations lesson', () => 
   assert.match(learning, /isGuidedMetaPreviewLesson = !!window\.metaAdTrialMode/);
   assert.match(learning, /isActivationFirstLesson = !isGuidedMetaPreviewLesson/);
   assert.match(dashboard, /showStep\(completedStepIndex \+ 1\)/);
+  assert.match(dashboard, /body\.guided-tour-course-locked \.bottom-nav/);
+  assert.match(dashboard, /document\.body\.classList\.add\('guided-tour-course-locked'\)/);
+  assert.match(dashboard, /document\.body\.classList\.remove\('guided-tour-course-locked'\)/);
   assert.match(learning, /Meet Karl Friston, a theoretical neuroscientist at University College London/);
   assert.match(learning, /Meet Lisa Feldman Barrett, a psychologist and neuroscientist at Northeastern University/);
   assert.match(learning, /How Emotions Are Made/);
@@ -88,8 +93,8 @@ test('changed onboarding assets are cache-busted', () => {
   assert.match(dashboard, /meta-ad-trial\.js\?v=16-captioned-coach-video/);
   assert.match(dashboard, /pbb-deferred-weeklygoals\.js\?v=34-guided-goals/);
   assert.match(dashboard, /pbb-social-journey\.js\?v=38-captioned-coach-video/);
-  assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=215-wizard-button-label/);
+  assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=216-shopping-tour-direct/);
   assert.match(dashboard, /dashboard-script-6-ai_coach_draft_mode_logic_auth\.js\?v=45-captioned-coach-video/);
   assert.match(dashboard, /learning-inline\.js\?v=29-paid-tour-handoff/);
-  assert.match(serviceWorker, /pbb-app-v414-captioned-coach-video/);
+  assert.match(serviceWorker, /pbb-app-v415-tour-actions-land-cleanly/);
 });

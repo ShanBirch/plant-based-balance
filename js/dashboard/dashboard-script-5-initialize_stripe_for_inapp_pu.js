@@ -5030,7 +5030,7 @@ function toggleAiPlanShoppingList(forceOpen) {
     return isOpen;
 }
 
-async function openAiMealPlanShoppingList(btn) {
+async function openAiMealPlanShoppingList(btn, options = {}) {
     // The paid preview keeps its prepared plan locally until checkout. Moving
     // through the calorie tracker must not make the shopping-list handoff wait
     // on an older account plan or a second generation request.
@@ -5048,11 +5048,19 @@ async function openAiMealPlanShoppingList(btn) {
     }
     if (!_aiMealPlanCache) return;
 
+    if (options.resetChecked === true) {
+        try { localStorage.removeItem(getAiPlanShoppingStorageKey()); } catch(e) {}
+    }
     renderAiPlanShoppingList();
     toggleAiPlanShoppingList(true);
     const card = document.getElementById('ai-plan-shopping-card');
     if (card) {
-        try { card.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch(e) {}
+        try {
+            card.scrollIntoView({
+                behavior: options.scrollBehavior || 'smooth',
+                block: options.scrollBlock || 'center'
+            });
+        } catch(e) {}
     }
 }
 

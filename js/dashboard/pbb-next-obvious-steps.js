@@ -399,12 +399,18 @@
         if (typeof window.switchWeek === 'function') window.switchWeek('meal-plan-store', pill);
         if (typeof window.selectAiPlanFirstDay === 'function') window.selectAiPlanFirstDay();
         if (typeof window.openAiMealPlanShoppingList === 'function') {
-          await window.openAiMealPlanShoppingList(pill);
+          await window.openAiMealPlanShoppingList(pill, window.__balanceGuidedTourActive === true ? {
+            resetChecked: true,
+            scrollBehavior: 'auto',
+            scrollBlock: 'start'
+          } : {
+            scrollBlock: 'start'
+          });
         }
       } catch (error) {
         console.warn('[next-steps] shopping list failed:', error);
       }
-      scrollToSelector('#ai-plan-shopping-card,#meal-plan-store', { block: 'center' });
+      scrollToSelector('#ai-plan-shopping-card,#meal-plan-store', { block: 'start' });
     }, 520);
   }
 
