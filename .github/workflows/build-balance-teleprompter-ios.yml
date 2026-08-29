@@ -7,6 +7,7 @@ on:
     paths:
       - apps/balance-teleprompter/**
       - scripts/prepare-balance-teleprompter-apple.mjs
+      - scripts/release-balance-teleprompter-ios.mjs
       - .github/workflows/build-balance-teleprompter-ios.yml
   workflow_dispatch:
 
@@ -173,6 +174,16 @@ jobs:
             --type ios --file "$IPA_PATH" \
             --apiKey "$APP_STORE_CONNECT_API_KEY_ID" \
             --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID"
+
+      - name: Configure listing, lifetime purchase, and submit for review
+        env:
+          APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_SCREENSHOT_DIR: apps/balance-teleprompter/store-listing/app-store-assets
+          IOS_BUILD_NUMBER: ${{ github.run_number }}
+          SUBMIT_FOR_REVIEW: "true"
+        run: node scripts/release-balance-teleprompter-ios.mjs
 
       - name: Keep the signed IPA
         if: always()

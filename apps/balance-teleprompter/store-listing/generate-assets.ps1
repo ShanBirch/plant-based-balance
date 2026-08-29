@@ -114,6 +114,110 @@ New-Screenshot '02-frame-first.png' 'Frame it first' 'Hide the words until your 
 New-Screenshot '03-speed-control.png' 'Your pace, your way' 'Fine control from genuinely slow to super fast.' 'slow'
 New-Screenshot '04-high-resolution.png' 'Record in high resolution' 'Choose 720p, Full HD or 4K when your phone supports it.' 'prompt'
 
+# Apple accepts 6.9-inch iPhone screenshots at 1320 x 2868. Reframe the
+# accurate store artwork on an opaque cream canvas and save as JPEG so the
+# files cannot contain an alpha channel.
+$appStoreAssetDir = Join-Path $PSScriptRoot 'app-store-assets'
+New-Item -ItemType Directory -Path $appStoreAssetDir -Force | Out-Null
+$jpegCodec = [System.Drawing.Imaging.ImageCodecInfo]::GetImageEncoders() |
+  Where-Object { $_.MimeType -eq 'image/jpeg' }
+$jpegParams = [System.Drawing.Imaging.EncoderParameters]::new(1)
+$jpegParams.Param[0] = [System.Drawing.Imaging.EncoderParameter]::new(
+  [System.Drawing.Imaging.Encoder]::Quality,
+  [long]96
+)
+
+foreach ($screenName in @(
+  '01-read-by-the-lens',
+  '02-frame-first',
+  '03-speed-control',
+  '04-high-resolution'
+)) {
+  $sourcePath = Join-Path $assetDir "$screenName.png"
+  $source = [System.Drawing.Image]::FromFile($sourcePath)
+  $appleBitmap = [System.Drawing.Bitmap]::new(
+    1320,
+    2868,
+    [System.Drawing.Imaging.PixelFormat]::Format24bppRgb
+  )
+  $appleGraphics = [System.Drawing.Graphics]::FromImage($appleBitmap)
+  $appleGraphics.Clear($cream)
+  $appleGraphics.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+  $appleGraphics.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::HighQuality
+  $appleGraphics.DrawImage($source, 0, 260, 1320, 2347)
+  $appleBitmap.Save(
+    (Join-Path $appStoreAssetDir "$screenName-1320x2868.jpg"),
+    $jpegCodec,
+    $jpegParams
+  )
+  $appleGraphics.Dispose()
+  $appleBitmap.Dispose()
+  $source.Dispose()
+}
+
+# Review-only screenshot for the non-consumable lifetime purchase. This mirrors
+# the native unlock sheet and is not used as a public product-page screenshot.
+$reviewBitmap = [System.Drawing.Bitmap]::new(
+  1320,
+  2868,
+  [System.Drawing.Imaging.PixelFormat]::Format24bppRgb
+)
+$reviewGraphics = [System.Drawing.Graphics]::FromImage($reviewBitmap)
+$reviewGraphics.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
+$reviewGraphics.TextRenderingHint = [System.Drawing.Text.TextRenderingHint]::ClearTypeGridFit
+$reviewGraphics.Clear($ink)
+$reviewPaper = [System.Drawing.SolidBrush]::new($cream)
+$reviewInk = [System.Drawing.SolidBrush]::new($ink)
+$reviewMuted = [System.Drawing.SolidBrush]::new($muted)
+$reviewGold = [System.Drawing.SolidBrush]::new($gold)
+$reviewWhite = [System.Drawing.SolidBrush]::new($white)
+$reviewTitle = [System.Drawing.Font]::new('Segoe UI Semibold', 66)
+$reviewBody = [System.Drawing.Font]::new('Segoe UI', 31)
+$reviewLabel = [System.Drawing.Font]::new('Segoe UI Semibold', 22)
+$reviewPrice = [System.Drawing.Font]::new('Segoe UI Semibold', 46)
+
+Draw-RoundRect $reviewGraphics $reviewPaper 100 330 1120 2208 58
+$reviewLogo = [System.Drawing.Image]::FromFile((Join-Path $PSScriptRoot '..\public\balance-logo.png'))
+$reviewGraphics.DrawImage($reviewLogo, 170, 430, 170, 170)
+Draw-RoundRect $reviewGraphics $reviewGold 170 700 430 64 18
+Draw-CenteredText $reviewGraphics 'ONE PAYMENT. NO SUBSCRIPTION.' $reviewLabel $reviewInk 170 700 430 64
+$reviewGraphics.DrawString("Keep creating,`nforever.", $reviewTitle, $reviewInk, 170, 830)
+$reviewGraphics.DrawString(
+  "Your first three recordings are free. Unlock unlimited scripts, recordings, 4K quality, zoom controls, and every future update.",
+  $reviewBody,
+  $reviewMuted,
+  [System.Drawing.RectangleF]::new(170, 1080, 960, 320)
+)
+$reviewGraphics.DrawLine([System.Drawing.Pen]::new($line, 3), 170, 1500, 1150, 1500)
+$reviewGraphics.DrawString('Lifetime access', $reviewBody, $reviewMuted, 170, 1570)
+$reviewGraphics.DrawString('$9.99', $reviewPrice, $reviewInk, 940, 1555)
+$reviewGraphics.DrawLine([System.Drawing.Pen]::new($line, 3), 170, 1660, 1150, 1660)
+Draw-RoundRect $reviewGraphics $reviewInk 170 1790 980 150 34
+Draw-CenteredText $reviewGraphics 'Unlock for $9.99' $reviewPrice $reviewWhite 170 1790 980 150
+Draw-CenteredText $reviewGraphics 'Restore purchase' $reviewBody $reviewMuted 170 1980 980 100
+Draw-CenteredText $reviewGraphics 'One-time, non-consumable purchase. Price is shown by the App Store before payment.' $reviewLabel $reviewMuted 220 2140 880 150
+$reviewBitmap.Save(
+  (Join-Path $appStoreAssetDir 'lifetime-purchase-review-1320x2868.jpg'),
+  $jpegCodec,
+  $jpegParams
+)
+foreach ($item in @(
+  $reviewLogo,
+  $reviewPaper,
+  $reviewInk,
+  $reviewMuted,
+  $reviewGold,
+  $reviewWhite,
+  $reviewTitle,
+  $reviewBody,
+  $reviewLabel,
+  $reviewPrice,
+  $reviewGraphics,
+  $reviewBitmap
+)) { $item.Dispose() }
+
+$jpegParams.Dispose()
+
 $iconSource = [System.Drawing.Image]::FromFile((Join-Path $PSScriptRoot '..\public\icon.png'))
 $icon = [System.Drawing.Bitmap]::new(512, 512)
 $iconGraphics = [System.Drawing.Graphics]::FromImage($icon)
