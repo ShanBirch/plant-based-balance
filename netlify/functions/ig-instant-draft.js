@@ -3079,10 +3079,17 @@ function buildApprovedDeterministicMetaAdFirstReplyReview({
             'first_captured_reply_with_hidden_context',
             'reference_heavy_reply_without_tracked_context',
         ].includes(reason));
+    const safeApprovedPreviewContextWarning = approvedConversationProgression
+        && draft?.replyMode === 'campaign_app_preview_handoff'
+        && approval?.required === false
+        && contextReview?.required === true
+        && (isExplicitPaidMetaPreviewRequest(message) || isExplicitPaidMetaPreviewAcceptance(message));
     if ((!approvedFirstReply && !approvedGoalProof && !approvedConversationProgression)
         || linkedUserId
         || mediaReview?.required === true
-        || (contextReview?.required === true && !safeFirstReplyContextWarning)
+        || (contextReview?.required === true
+            && !safeFirstReplyContextWarning
+            && !safeApprovedPreviewContextWarning)
         || META_AD_FIRST_REPLY_OPT_OUT_RE.test(message)
         || META_AD_FIRST_REPLY_REVIEW_REQUIRED_RE.test(message)) {
         return null;
@@ -3107,7 +3114,7 @@ function buildApprovedDeterministicMetaAdFirstReplyReview({
             : (approvedConversationProgression
                 ? 'deterministic-paid-meta-conversation-approval'
                 : 'deterministic-meta-ad-first-reply-approval'),
-        context_warning_overridden: safeFirstReplyContextWarning || undefined,
+        context_warning_overridden: safeFirstReplyContextWarning || safeApprovedPreviewContextWarning || undefined,
     };
 }
 

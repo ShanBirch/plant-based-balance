@@ -167,6 +167,21 @@ test('natural preview acceptance remains approved when curriculum bubbles push o
         history: longSplitHistory,
     });
     assert.equal(review?.verdict, 'pass');
+    const contextWarningReview = buildApprovedDeterministicMetaAdFirstReplyReview({
+        metaAdConversationFastLane: true,
+        draft: previewDraft,
+        approval,
+        linkedUserId: null,
+        currentMessage: 'Yes, open it for me.',
+        qualifier: { facts: {} },
+        history: longSplitHistory,
+        contextReview: {
+            required: true,
+            reasons: ['reference_heavy_reply_without_tracked_context'],
+        },
+    });
+    assert.equal(contextWarningReview?.verdict, 'pass');
+    assert.equal(contextWarningReview?.context_warning_overridden, true);
 });
 
 test('generic readiness after the preview invitation opens preview rather than checkout', () => {
