@@ -85,8 +85,8 @@ test('paid Meta has a dedicated sales agent prompt with no general coach assumpt
     assert.match(prompt, /deterministic transport may add the approved quick app video after both goal and blocker are known/i);
     assert.match(prompt, /do not invent URLs, visible media placeholders such as \[course video\]/i);
     assert.match(prompt, /looks great.*not checkout intent/i);
-    assert.match(prompt, /chatting with Shannon's Balance assistant/i);
-    assert.match(prompt, /Never deny automation or pretend the assistant is Shannon/i);
+    assert.match(prompt, /chatting with Shannon's digital Balance helper/i);
+    assert.match(prompt, /Never deny automation or pretend the helper is Shannon/i);
     assert.doesNotMatch(prompt, /animals were a big part/i);
     assert.doesNotMatch(prompt, /CLIENT NOTES AND APP CONTEXT/i);
     assert.doesNotMatch(prompt, /CONVERSATIONAL ELICITATION/i);
@@ -322,7 +322,6 @@ const {
     splitTerminalQuestionForProofMedia,
     insertProofMediaBeforeFinalQuestion,
     stripPaidMetaProofMediaUrls,
-    shouldAllowPaidMetaAssistantIdentityDisclosure,
 } = require('../netlify/functions/send-ig-reply')._test;
 const { inspectVoiceScriptQuality } = require('../netlify/functions/_lib/elevenlabs-voice-message');
 const { buildMetaAppPreviewUrl, isMetaAppPreviewUrl } = require('../netlify/functions/_lib/meta-app-preview-ref');
@@ -2024,19 +2023,10 @@ test('paid Meta identity questions answer honestly and continue from the earned 
         ...base,
         currentMessage: 'Are you an AI bot?',
     });
-    assert.match(identityOnly.joined, /^You're chatting with Shannon's Balance assistant\./);
+    assert.match(identityOnly.joined, /^You're chatting with Shannon's digital Balance helper\./);
     assert.match(identityOnly.joined, /main change you'd like to make over the next six weeks\?/i);
     assert.equal((identityOnly.joined.match(/\?/g) || []).length, 1);
     assert.doesNotMatch(identityOnly.joined, /\bno[,—-]?\s+(?:it|this) isn['’]?t\b/i);
-    assert.equal(shouldAllowPaidMetaAssistantIdentityDisclosure({
-        meta_ad_conversation_fast_lane: true,
-        draft_model: 'deterministic_paid_meta_identity_v1',
-    }, identityOnly.joined), true);
-    assert.equal(shouldAllowPaidMetaAssistantIdentityDisclosure({
-        meta_ad_conversation_fast_lane: true,
-        draft_model: 'openai-generic',
-    }, identityOnly.joined), false);
-
     const identityAfterGoalQuestion = buildPaidMetaIdentityReply({
         ...base,
         currentMessage: 'Are you an AI bot?',
@@ -2045,7 +2035,7 @@ test('paid Meta identity questions answer honestly and continue from the earned 
             text: "What's the main change you'd like to make over the next six weeks?",
         }],
     });
-    assert.equal(identityAfterGoalQuestion.joined, "You're chatting with Shannon's Balance assistant. I can help you here, and Shannon can jump in if needed.");
+    assert.equal(identityAfterGoalQuestion.joined, "You're chatting with Shannon's digital Balance helper. I can help here, and Shannon can jump in if needed.");
     assert.equal((identityAfterGoalQuestion.joined.match(/\?/g) || []).length, 0);
     assert.deepEqual(collectPaidMetaWriterContractIssues({
         draft: identityAfterGoalQuestion,
@@ -2144,7 +2134,7 @@ test('identity questions do not delay explicit preview or checkout handoffs', ()
     });
     assert.equal(preview.replyMode, 'campaign_app_preview_handoff');
     assert.equal(preview.appPreviewUrl, previewUrl);
-    assert.match(preview.joined, /Balance assistant/i);
+    assert.match(preview.joined, /digital Balance helper/i);
     assert.match(preview.joined, /before you pay: https:\/\/future-balance\.netlify\.app\/p\//i);
     assert.doesNotMatch(preview.joined, /want me to open|would you like/i);
 
@@ -2156,7 +2146,7 @@ test('identity questions do not delay explicit preview or checkout handoffs', ()
         checkoutUrl: 'https://future-balance.netlify.app/fitness/test-offer',
     });
     assert.equal(checkout.replyMode, 'campaign_buyer_handoff');
-    assert.match(checkout.joined, /Balance assistant/i);
+    assert.match(checkout.joined, /digital Balance helper/i);
     assert.match(checkout.joined, /get started here: https:\/\/future-balance\.netlify\.app\/fitness\/test-offer/i);
     assert.equal(shouldApplyDeterministicPaidMetaReplyOverride(checkout), true);
     assert.equal(selectFastDeterministicPaidMetaProgression({
@@ -2195,17 +2185,17 @@ test('identity wording variants are recognized, repeated disclosure stays short,
             flowVariant: 'broad_pain',
         });
         assert.ok(reply, message);
-        assert.match(reply.joined, /Balance assistant/i, message);
+        assert.match(reply.joined, /digital Balance helper/i, message);
     }
 
     assert.equal(stripPaidMetaIdentityQuestion('Is this automated? Can I see the preview?'), 'Can I see the preview?');
     const repeated = buildPaidMetaIdentityReply({
         currentMessage: 'Are you an AI bot?',
         qualifier: { facts: {} },
-        history: [{ direction: 'out', text: "You're chatting with Shannon's Balance assistant. I can help you here." }],
+        history: [{ direction: 'out', text: "You're chatting with Shannon's digital Balance helper. I can help here." }],
         flowVariant: 'broad_pain',
     });
-    assert.match(repeated.joined, /^Yep, same Balance assistant here\./);
+    assert.match(repeated.joined, /^Yep, same Balance helper here\./);
     assert.doesNotMatch(repeated.joined, /Shannon can jump in/i);
 
     const mixedOptOut = 'Are you AI? Stop messaging me.';

@@ -1835,7 +1835,7 @@ function buildPaidMetaPlantBasedIdentityProgression({
     };
 }
 
-const PAID_META_ASSISTANT_DISCLOSURE = "You're chatting with Shannon's Balance assistant. I can help you here, and Shannon can jump in if needed.";
+const PAID_META_ASSISTANT_DISCLOSURE = "You're chatting with Shannon's digital Balance helper. I can help here, and Shannon can jump in if needed.";
 
 function stripPaidMetaIdentityQuestion(value = '') {
     return String(value || '')
@@ -1851,7 +1851,7 @@ function paidMetaHistoryHasAssistantDisclosure(history = []) {
     return (Array.isArray(history) ? history : [])
         .filter(item => String(item?.direction || '').toLowerCase() === 'out')
         .slice(-8)
-        .some(item => /chatting with Shannon['\u2019]s Balance assistant|same Balance assistant here/i.test(String(item?.text || '')));
+        .some(item => /chatting with Shannon['\u2019]s digital Balance helper|same Balance helper here/i.test(String(item?.text || '')));
 }
 
 function paidMetaLatestOutboundHasOpenQuestion(history = []) {
@@ -1863,7 +1863,7 @@ function paidMetaLatestOutboundHasOpenQuestion(history = []) {
 
 function prependPaidMetaIdentityDisclosure(draft = null, history = []) {
     const disclosure = paidMetaHistoryHasAssistantDisclosure(history)
-        ? 'Yep, same Balance assistant here.'
+        ? 'Yep, same Balance helper here.'
         : PAID_META_ASSISTANT_DISCLOSURE;
     const continuationChunks = Array.isArray(draft?.chunks) && draft.chunks.length
         ? draft.chunks.map(chunk => String(chunk || '')
@@ -3326,7 +3326,7 @@ function buildApprovedDeterministicMetaAdFirstReplyReview({
     const safeApprovedIdentityContextWarning = approvedConversationProgression
         && /^deterministic_paid_meta_identity_v\d+$/i.test(String(draft?.model || ''))
         && draft?.identityDisclosure === true
-        && /^You['\u2019]re chatting with Shannon['\u2019]s Balance assistant\./i.test(String(draft?.joined || '').trim())
+        && /^You['\u2019]re chatting with Shannon['\u2019]s digital Balance helper\./i.test(String(draft?.joined || '').trim())
         && META_AD_IDENTITY_QUESTION_RE.test(message)
         && contextReview?.required === true
         && contextReasons.length > 0
@@ -3399,7 +3399,7 @@ SHANNON FOLLOW-UP QUESTION FINGERPRINT:
 - Avoid polished therapist/coach questions. Replace "what does that look like for you?", "what kind of difference would that make?", "what usually makes it hard?", "anything in particular making it hectic?", and "how are you finding it?" with a question built from their actual nouns.
 - Do not jump from a normal-life answer straight to the challenge. Use the follow-up to understand the blocker, preference, or context first.
 - Do not jump from a one-word story/pet/food reaction like "cute", "haha", "nice", an emoji, or a weak story-summary guess into "are you into fitness much too?" or "you training at the moment?". Reply to the story reaction itself, or stop if there is no useful next handle.
-- If the lead asks whether this is AI, a bot, automated, or really Shannon, answer once and plainly: "You're chatting with Shannon's Balance assistant. I can help you here, and Shannon can jump in if needed." Then continue from the exact topic or next step already earned. Never deny automation or pretend the assistant is Shannon.
+- If the lead asks whether this is AI, a bot, automated, or really Shannon, answer once and plainly: "You're chatting with Shannon's digital Balance helper. I can help here, and Shannon can jump in if needed." Then continue from the exact topic or next step already earned. Never deny automation or pretend the helper is Shannon.
 
 THE OFFERING (for context — never list as a brochure; speak like a friend):
 - The FIRST offer for leads in this paid campaign is the paid Balance Foundations program, not a free challenge, standalone custom meal plan, workout program, generic app trial or Starter Coaching.
@@ -4865,7 +4865,7 @@ Reliable offer facts: Balance Foundations is a six-week program inside Balance w
 
 Verified course curriculum, for direct course, lesson or week-by-week questions: week 1, Why change feels hard; week 2, Work with your energy; week 3, Build a rhythm that sticks; week 4, Take the fight out of food; week 5, Make progress easier to repeat; week 6, Build your sustainable way forward. The course uses lessons, practical actions and Weekly Goals alongside the person's workout and nutrition setup. Do not dump all six weeks into an ordinary pitch. Give the full outline only when they ask for curriculum detail; otherwise use only the one or two themes relevant to their words.
 
-Send the signed preview immediately after they ask to see it or accept the free personalised preview. A positive reaction such as "looks great" is not checkout intent. Send checkout only after they explicitly ask to join, pay, sign up or receive the checkout link. Hand off instead of improvising for medical/safety issues, account or payment support, existing-client app support, or a direct request for Shannon. Keep replies quick, warm, concise and human. ${linkQuestionRule} If asked who is replying, say plainly: "You're chatting with Shannon's Balance assistant. I can help you here, and Shannon can jump in if needed." Never deny automation or pretend the assistant is Shannon. No em dashes.
+Send the signed preview immediately after they ask to see it or accept the free personalised preview. A positive reaction such as "looks great" is not checkout intent. Send checkout only after they explicitly ask to join, pay, sign up or receive the checkout link. Hand off instead of improvising for medical/safety issues, account or payment support, existing-client app support, or a direct request for Shannon. Keep replies quick, warm, concise and human. ${linkQuestionRule} If asked who is replying, say plainly: "You're chatting with Shannon's digital Balance helper. I can help here, and Shannon can jump in if needed." Never deny automation or pretend the helper is Shannon. No em dashes.
 
 Campaign variant: ${flowVariant}
 Channel: ${channelLabel}

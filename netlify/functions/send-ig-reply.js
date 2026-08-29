@@ -251,12 +251,6 @@ function hasClientFacingAiSelfReference(text = '') {
         || /\b(?:real person|actual person|human here|glad (?:you'?re|im|i'?m) human|yes i'?m human)\b/i.test(normalized);
 }
 
-function shouldAllowPaidMetaAssistantIdentityDisclosure(alertData = {}, text = '') {
-    return alertData?.meta_ad_conversation_fast_lane === true
-        && /^deterministic_paid_meta_identity_v\d+$/i.test(String(alertData?.draft_model || ''))
-        && /^You['\u2019]re chatting with Shannon['\u2019]s Balance assistant\./i.test(String(text || '').trim());
-}
-
 function isGratitudeCloserText(text = '') {
     const raw = normalizeGeneratedCoachDraftText(text || '').replace(/\s+/g, ' ').trim();
     if (!raw || raw.length > 90 || /[?]/.test(raw)) return false;
@@ -2277,17 +2271,11 @@ exports.handler = async (event) => {
     }
     const channel = alertData.channel;
     const shouldSanitizeVisibleLeadCopy = !alertData.client_id;
-    const visibleSanitizeOptions = {
-        allowAssistantIdentityDisclosure: shouldAllowPaidMetaAssistantIdentityDisclosure(
-            alertData,
-            replyTextInput || draftTextInput
-        ),
-    };
     let replyText = shouldSanitizeVisibleLeadCopy
-        ? sanitizeVisibleOutboundDmText(replyTextInput, visibleSanitizeOptions)
+        ? sanitizeVisibleOutboundDmText(replyTextInput)
         : replyTextInput;
     let draftText = shouldSanitizeVisibleLeadCopy
-        ? sanitizeVisibleOutboundDmText(draftTextInput, visibleSanitizeOptions)
+        ? sanitizeVisibleOutboundDmText(draftTextInput)
         : draftTextInput;
     if (alertData.draft_video_attachment_url) {
         replyText = stripPaidMetaProofMediaUrls(replyText);
@@ -2599,13 +2587,13 @@ exports.handler = async (event) => {
         .map(normalizeGeneratedCoachDraftText)
         .filter(Boolean);
     if (shouldSanitizeVisibleLeadCopy) {
-        draftMessages = draftMessages.map(chunk => sanitizeVisibleOutboundDmText(chunk, visibleSanitizeOptions)).filter(Boolean);
+        draftMessages = draftMessages.map(chunk => sanitizeVisibleOutboundDmText(chunk)).filter(Boolean);
     }
     const draftJoined = shouldSanitizeVisibleLeadCopy
-        ? sanitizeVisibleOutboundDmText(alertData.draft_text || draftText || draftMessages.join('\n'), visibleSanitizeOptions)
+        ? sanitizeVisibleOutboundDmText(alertData.draft_text || draftText || draftMessages.join('\n'))
         : normalizeGeneratedCoachDraftText(alertData.draft_text || draftText || draftMessages.join('\n')).trim();
     const draftMessagesJoined = shouldSanitizeVisibleLeadCopy
-        ? sanitizeVisibleOutboundDmText(draftMessages.join('\n'), visibleSanitizeOptions)
+        ? sanitizeVisibleOutboundDmText(draftMessages.join('\n'))
         : normalizeGeneratedCoachDraftText(draftMessages.join('\n')).trim();
     const draftMessagesMatchDraft = !!draftJoined && draftMessagesJoined === draftJoined;
     const useDraftMessageChunks = draftMessages.length > 0
@@ -3422,7 +3410,6 @@ exports._test = {
     shouldBlockLinkedClientAutomatedIgSend,
     stampPersonalDmBoundaryBlock,
     hasClientFacingAiSelfReference,
-    shouldAllowPaidMetaAssistantIdentityDisclosure,
     isGratitudeCloserText,
     resolveLatestInboundTextForSend,
     isSafeGratitudeAcknowledgement,

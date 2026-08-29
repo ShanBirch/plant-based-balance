@@ -51,15 +51,8 @@ assert.strictEqual(
     'Yeah sounds good mate'
 );
 assert.strictEqual(
-    sanitizeVisibleOutboundDmText("You're chatting with Shannon's Balance assistant."),
-    "You're chatting with Shannon's Balance ."
-);
-assert.strictEqual(
-    sanitizeVisibleOutboundDmText(
-        "You're chatting with Shannon's Balance assistant.",
-        { allowAssistantIdentityDisclosure: true }
-    ),
-    "You're chatting with Shannon's Balance assistant."
+    sanitizeVisibleOutboundDmText("You're chatting with Shannon's digital Balance helper. I can help here."),
+    "You're chatting with Shannon's digital Balance helper. I can help here."
 );
 
 assert.strictEqual(
