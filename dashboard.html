@@ -13636,8 +13636,10 @@ if(!window._pbbIsIOSSafari) {
 
 <!-- ========== GUIDED FEATURE TOUR ========== -->
 <style>
-  #guided-tour-overlay { position: fixed; inset: 0; z-index: 400000; pointer-events: none; display: none; }
+  #guided-tour-overlay { position: fixed; inset: 0; z-index: 400000; pointer-events: auto; display: none; }
   #guided-tour-overlay.active { display: block; }
+  #guided-tour-overlay.tour-tap-target,
+  #guided-tour-overlay.tour-action-required:not(.tour-gate-complete) { pointer-events: none; }
   #guided-tour-overlay.meta-tour-welcome-active {
     pointer-events: auto;
     background:
