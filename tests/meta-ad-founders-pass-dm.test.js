@@ -102,6 +102,8 @@ test('paid Meta lane bypasses the general qualifier and deterministic conversati
     assert.match(source, /campaign_app_preview_handoff', 'campaign_buyer_handoff/);
     assert.match(source, /Never ask the lead for an email address in Instagram/);
     assert.match(source, /paid Meta OpenAI timed out; used local sales fallback/);
+    assert.match(source, /suggested_message: draft\.joined,[\s\S]{0,500}scheduled_reply_text: draft\.joined/,
+        'a late guaranteed repair must also replace the scheduler transport text');
     assert.match(source, /hasInstagramGraphRoute\s*\n\s*&& isExplicitPaidMetaProofVideoRetry/,
         'the neutral broad paid-ad route must retain deterministic native video retries');
     assert.doesNotMatch(source, /hasInstagramGraphRoute\s*\n\s*&& metaAdFlowVariant !== 'broad_pain'\s*\n\s*&& isExplicitPaidMetaProofVideoRetry/);

@@ -1194,6 +1194,12 @@ async function persistCocosDraftRepair({ alertId, currentAlertData, draft, repai
             method: 'PATCH',
             body: {
                 suggested_message: draft.joined,
+                // The human-like scheduler transports scheduled_reply_text in
+                // preference to suggested_message. Keep both canonical when a
+                // late contract repair replaces the writer draft, otherwise
+                // the scheduler can send the unrepaired wording and then
+                // overwrite the repaired chunk metadata with its receipt.
+                scheduled_reply_text: draft.joined,
                 data: merged,
             },
             prefer: 'return=minimal',
