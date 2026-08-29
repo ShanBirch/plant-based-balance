@@ -4728,7 +4728,8 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
     const issues = [];
     const broadFlow = flowVariant === 'broad_pain';
     const autonomyPause = broadFlow && hasPaidMetaPreviewOrPriceDecline(turn);
-    const asksForCurriculumOutline = /\b(?:what do i (?:actually )?learn|what (?:will|do) (?:i|you) learn|what does (?:the )?course teach|week[ -]?by[ -]?week|curriculum|six[- ]week (?:course|outline)|course (?:content|lessons?))\b/i.test(turn);
+    const asksForCurriculumOutline = META_AD_CURRICULUM_QUESTION_RE.test(turn)
+        || /\b(?:what do i (?:actually )?learn|what (?:will|do) (?:i|you) learn|what does (?:the )?course teach|week[ -]?by[ -]?week|curriculum|six[- ]week (?:course|outline)|course (?:content|lessons?))\b/i.test(turn);
     const asksOfferInfo = /\b(?:how much|price|cost|renew|what(?:'s| is) included|what do i get|do i (?:actually )?get|workouts?|meal plan|check[ -]?in|details|how (?:does|do) (?:it|the program) work)\b/i.test(turn);
     const asksMealPlanQuestion = /\bdo you (?:offer|have|provide|include) (?:a |any )?(?:plant[ -]?based )?meal plans?\b|\bis (?:a |the )?meal plan included\b/i.test(turn);
     const asksGlutenFreeSupport = /\bgluten[ -]?free\b/i.test(turn)
@@ -4829,6 +4830,13 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
         if (missingCurriculumTitles.length > 0) {
             issues.push('The direct course question requires the full six-week course outline. Include all six verified week titles, then keep the fixed curriculum distinct from the personalised workout and nutrition setup.');
         }
+        const goalKnownBeforeCurriculum = PAID_META_FITNESS_GOAL_RE.test(turn)
+            || paidMetaHistoryHasFitnessGoal(history)
+            || !!paidMetaFitnessGoalFromFacts(qualifier?.facts || {});
+        if (!goalKnownBeforeCurriculum
+            && (!paidMetaOutboundAskedForGoal(reply) || /\b(?:preview|look inside|open it for you)\b/i.test(reply))) {
+            issues.push('The course answer must return to the still-missing six-week goal. Ask that one goal question after the outline and do not offer the preview yet.');
+        }
     }
     const knownBroadGoal = broadFlow && (
         PAID_META_FITNESS_GOAL_RE.test(turn)
@@ -4886,7 +4894,7 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
 }
 
 function isBlockingPaidMetaWriterContractIssue(issue = '') {
-    return /repeated a question|directly asked whether|answer why Shannon went vegan|meal-plan question directly|gluten-free question directly|sales suspicion|answer the sales question|answer the price exactly|do not ask for an email|offered checkout without explicit transactional intent|ignored the supplied plant-based duration|broad paid-ad reply|answered the goal question|full six-week course outline|earned paid-Meta offer is missing/i.test(String(issue || ''));
+    return /repeated a question|directly asked whether|answer why Shannon went vegan|meal-plan question directly|gluten-free question directly|sales suspicion|answer the sales question|answer the price exactly|do not ask for an email|offered checkout without explicit transactional intent|ignored the supplied plant-based duration|broad paid-ad reply|answered the goal question|full six-week course outline|course answer must return|earned paid-Meta offer is missing/i.test(String(issue || ''));
 }
 
 function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = '', issues = [], qualifier = {}, history = [], flowVariant = 'plant_based_control' } = {}) {
@@ -4900,13 +4908,16 @@ function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = 
             && isPaidMetaConcreteBlocker(turn));
     let joined = '';
     let fixedChunks = null;
-    if (/full six-week course outline/i.test(issueText)) {
+    if (/full six-week course outline|course answer must return/i.test(issueText)) {
         fixedChunks = [
             'Yep, the course gives you one practical focus each week:',
             'Week 1, Why change feels hard. Week 2, Work with your energy. Week 3, Build a rhythm that sticks.',
             'Week 4, Take the fight out of food. Week 5, Make progress easier to repeat. Week 6, Build your sustainable way forward.',
             'The lessons, practical actions and Weekly Goals sit alongside your workout and nutrition setup. The six themes stay consistent, while your workout and meal support are fitted to you.',
         ];
+        if (!fallbackGoal) {
+            fixedChunks.push("What's the main change you'd like to make over the next six weeks?");
+        }
         joined = fixedChunks.join('\n\n');
     } else if (/offered checkout without explicit transactional intent/i.test(issueText)) {
         const mealPlanCopy = flowVariant === 'broad_pain'

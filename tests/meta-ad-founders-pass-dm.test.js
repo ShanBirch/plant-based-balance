@@ -3293,6 +3293,35 @@ test('broad writer contract repairs missing terms, adds the native explainer, an
     assert.match(curriculumReply.joined, /six themes stay consistent/i);
     assert.match(curriculumReply.joined, /workout and meal support are fitted to you/i);
     assert.doesNotMatch(curriculumReply.joined, /plant[ -]?based|vegan|vegetarian/i);
+
+    const prematureCurriculumPreview = {
+        joined: [
+            'Week 1, Why change feels hard. Week 2, Work with your energy. Week 3, Build a rhythm that sticks.',
+            'Week 4, Take the fight out of food. Week 5, Make progress easier to repeat. Week 6, Build your sustainable way forward.',
+            'If you want, I can open your personalised preview before you pay.',
+        ].join('\n\n'),
+        model: 'openai-gpt-5.4-mini-paid-meta',
+        replyMode: 'standard',
+        maxChunks: 4,
+    };
+    const prematureIssues = collectPaidMetaWriterContractIssues({
+        draft: prematureCurriculumPreview,
+        currentMessage: 'Before I answer that, what do the six weeks actually teach?',
+        qualifier: { facts: {} },
+        history: [{ direction: 'out', text: "What's the main change you'd like to make over the next six weeks?" }],
+        flowVariant: 'broad_pain',
+    });
+    assert.ok(prematureIssues.some(issue => /course answer must return/i.test(issue)));
+    const repairedCurriculumSequence = buildPaidMetaGuaranteedContractFallback({
+        draft: prematureCurriculumPreview,
+        currentMessage: 'Before I answer that, what do the six weeks actually teach?',
+        issues: prematureIssues,
+        qualifier: { facts: {} },
+        history: [{ direction: 'out', text: "What's the main change you'd like to make over the next six weeks?" }],
+        flowVariant: 'broad_pain',
+    });
+    assert.match(repairedCurriculumSequence.joined, /main change.*next six weeks\?/i);
+    assert.doesNotMatch(repairedCurriculumSequence.joined, /preview|before you pay/i);
 });
 
 test('signed broad preview handoff survives a wording repair and becomes one native button', () => {
