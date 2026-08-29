@@ -2192,7 +2192,17 @@ async function insertGraphMessage({ threadId, direction, text, graphMessageId, n
     const dedupeId = graphMessageId
         ? `${GRAPH_SUBSCRIBER_PREFIX}${graphMessageId}`
         : `${GRAPH_SUBSCRIBER_PREFIX}${threadId}:${Date.now()}`;
-    const duplicate = await findRecentDuplicateMessage({ threadId, direction, text, nowIso });
+    // Meta gives each real message a stable `mid`, including across mirrored
+    // webhook subscriptions. Prefer that exact identity whenever it exists.
+    // Text-only dedupe would otherwise swallow a person intentionally sending
+    // the same short reply again (for example BALANCE, yes, or help) during the
+    // broad twelve-minute mirror-correlation window.
+    const exactDuplicate = graphMessageId
+        ? await findGraphMessageByDedupeId(dedupeId)
+        : null;
+    const duplicate = exactDuplicate || (!graphMessageId
+        ? await findRecentDuplicateMessage({ threadId, direction, text, nowIso })
+        : null);
     if (duplicate) {
         if (shouldRefreshGraphMessageText(duplicate.text, text)) {
             await refreshGraphMessageText({ messageId: duplicate.id, text });
@@ -2212,7 +2222,7 @@ async function insertGraphMessage({ threadId, direction, text, graphMessageId, n
         return {
             inserted: false,
             deduped: true,
-            duplicateReason: 'recent_same_text',
+            duplicateReason: exactDuplicate ? 'exact_graph_message_id' : 'recent_same_text',
             messageId: duplicate.id || null,
             dedupeId,
         };

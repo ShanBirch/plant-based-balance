@@ -57,3 +57,14 @@ test('only unlinked verified paid Meta threads start immediate webhook typing', 
         custom_data: { instagram_graph: paidMetaThread.custom_data.instagram_graph },
     }), false);
 });
+
+test('intentional repeated inbound text keeps its distinct Graph message identity', () => {
+    const source = require('node:fs').readFileSync(
+        require.resolve('../netlify/functions/instagram-webhook'),
+        'utf8',
+    );
+
+    assert.match(source, /const exactDuplicate = graphMessageId\s*\? await findGraphMessageByDedupeId\(dedupeId\)/);
+    assert.match(source, /!graphMessageId\s*\? await findRecentDuplicateMessage/);
+    assert.match(source, /duplicateReason: exactDuplicate \? 'exact_graph_message_id' : 'recent_same_text'/);
+});
