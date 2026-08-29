@@ -102,7 +102,7 @@ test('Home omits the automated review card while retaining the client check-in f
   assert.doesNotMatch(renderFunction, /Your weekly check-in is ready/);
   assert.match(frontend, /window\.openWeeklyCheckinPreview = openWeeklyCheckinPreview/);
   assert.match(frontend, /window\.isWeeklyCheckinDue = isReviewEnabled/);
-  assert.match(serviceWorker, /pbb-app-v408-readable-exit-choice/);
+  assert.match(serviceWorker, /pbb-app-v409-tour-press-gate/);
 });
 
 test('To Do Next routes a due weekly check-in directly into the client form', () => {

@@ -14562,6 +14562,10 @@ if(!window._pbbIsIOSSafari) {
           }, 120);
         }
       };
+      // Capture the initial press as well as click. Some carousel controls
+      // replace their rendered child during the tap, which can make the later
+      // click look unrelated even though the requested action succeeded.
+      document.addEventListener('pointerdown', complete, true);
       document.addEventListener('click', complete, true);
       activeTourGate = {
         key:key,
@@ -14574,6 +14578,7 @@ if(!window._pbbIsIOSSafari) {
           }
         },
         cleanup:function(){
+          document.removeEventListener('pointerdown', complete, true);
           document.removeEventListener('click', complete, true);
           if (activeTourGate && activeTourGate.followTimer) clearInterval(activeTourGate.followTimer);
         }

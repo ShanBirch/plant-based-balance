@@ -61,9 +61,11 @@ test('exercise guidance preserves the open workout player', () => {
 
 test('paid tour highlights the real in-section control before continuing', () => {
   assert.match(dashboard, /sel:'#ai-plan-meals-list \.ai-plan-hero__carousel-button--next'[^\r\n]*requiresHighlightedClick:true/);
-  assert.match(dashboard, /sel:'#ai-plan-shopping-list \.ai-plan-shopping__item input'[^\r\n]*requiresHighlightedClick:true/);
+  assert.match(dashboard, /sel:'#ai-plan-shopping-list \.ai-plan-shopping__item'[^\r\n]*requiresHighlightedClick:true/);
   assert.match(dashboard, /if \(step && step\.requiresHighlightedClick\)/);
+  assert.match(dashboard, /document\.addEventListener\('pointerdown', complete, true\)/);
   assert.match(dashboard, /document\.addEventListener\('click', complete, true\)/);
+  assert.match(dashboard, /document\.removeEventListener\('pointerdown', complete, true\)/);
   assert.match(dashboard, /highlightedClickComplete/);
   assert.match(dashboard, /displayStep\.requiresHighlightedClick/);
 });

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v408-readable-exit-choice'; // v408: keep interruption modal text readable against its light surface
+const CACHE_NAME = 'pbb-app-v409-tour-press-gate'; // v409: recognise highlighted carousel taps before a control re-renders
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
