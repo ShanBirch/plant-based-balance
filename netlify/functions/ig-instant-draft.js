@@ -4900,7 +4900,13 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
         && asksForCurriculumOutline
         && /\bbefore i (?:answer|tell you)\b/i.test(turn)
         && replyQuestions.some(question => paidMetaOutboundAskedForGoal(question));
-    if (!resumesExplicitlyDeferredGoal && replyQuestions.some(question => previousQuestions.some(previous => (
+    const resumesUnansweredGoalAfterFaq = broadFlow
+        && (asksForCurriculumOutline || asksOfferInfo)
+        && !knownBroadGoal
+        && replyQuestions.some(question => paidMetaOutboundAskedForGoal(question));
+    if (!resumesExplicitlyDeferredGoal
+        && !resumesUnansweredGoalAfterFaq
+        && replyQuestions.some(question => previousQuestions.some(previous => (
         normalizeQuestion(previous) === normalizeQuestion(question)
         || (!!questionKind(question) && questionKind(previous) === questionKind(question))
     )))) {

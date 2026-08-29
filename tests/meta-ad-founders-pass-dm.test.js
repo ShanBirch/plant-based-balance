@@ -3405,6 +3405,14 @@ test('price-first broad replies repair to exact terms and return to the missing 
     assert.match(repaired.joined, /no subscription or auto-renewal/i);
     assert.match(repaired.joined, /main change.*next six weeks\?/i);
     assert.doesNotMatch(repaired.joined, /preview/i);
+    const resolved = collectPaidMetaWriterContractIssues({
+        draft: repaired,
+        currentMessage: 'How much is it and is there a subscription?',
+        qualifier: { facts: {} },
+        history: [{ direction: 'out', text: "What's the main change you'd like to make over the next six weeks?" }],
+        flowVariant: 'broad_pain',
+    });
+    assert.equal(resolved.filter(isBlockingPaidMetaWriterContractIssue).length, 0);
 });
 
 test('signed broad preview handoff survives a wording repair and becomes one native button', () => {
