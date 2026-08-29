@@ -23,9 +23,8 @@ test('onboarding no longer silently saves default Weekly Goals', () => {
 });
 
 test('both activation tours require an explicit Weekly Goals save', () => {
-  assert.match(dashboard, /source:'client_activation_setup', week:'current'/);
-  assert.match(dashboard, /source:'meta_preview_setup', week:'current'/);
-  assert.ok((dashboard.match(/requiresWeeklyGoals:true/g) || []).length >= 2);
+  assert.match(dashboard, /source:metaPreviewTour \? 'meta_preview_setup' : 'client_activation_setup', week:'current'/);
+  assert.ok((dashboard.match(/requiresWeeklyGoals:true/g) || []).length >= 1);
   assert.match(dashboard, /window\.addEventListener\('pbbWeeklyGoalsSaved', saved\)/);
   assert.match(dashboard, /Number\(detail\.selectedCount \|\| 0\) < 1/);
   assert.match(dashboard, /activeTourGate && !activeTourGate\.complete/);
@@ -38,15 +37,18 @@ test('both activation tours require an explicit Weekly Goals save', () => {
   assert.match(dashboard, /These are suggestions only/);
 });
 
-test('preview walkthrough only unlocks Next after the welcome audio ends', () => {
-  assert.match(dashboard, /id="meta-ad-trial-welcome-audio"/);
+test('preview walkthrough only unlocks Next after the full coach video plays', () => {
+  assert.match(dashboard, /id="meta-ad-trial-welcome-video"/);
+  assert.match(dashboard, /balance-onboarding-coach-note-captioned\.mp4/);
   assert.match(dashboard, /id="meta-ad-trial-welcome-continue"/);
-  assert.match(dashboard, /title:'Listen to Shannon’s welcome'[\s\S]*?embeddedGuide:true[\s\S]*?coachNoteGuide:true[\s\S]*?requiresWelcomeAudio:true/);
+  assert.match(dashboard, /title:'Watch Shannon’s coach note'[\s\S]*?embeddedGuide:true[\s\S]*?coachNoteGuide:true[\s\S]*?requiresWelcomeVideo:true/);
   assert.match(dashboard, /#guided-tour-overlay\.tour-coach-note #guided-tour-bubble,[\s\S]*?#guided-tour-overlay\.tour-coach-note #guided-tour-spotlight[\s\S]*?display: none/);
   assert.match(dashboard, /if \(step\.coachNoteGuide && continueButton\)[\s\S]*?continueButton\.style\.display = 'block'/);
   assert.match(dashboard, /overlay\.classList\.toggle\('tour-coach-note', !!displayStep\.coachNoteGuide\)/);
-  assert.match(dashboard, /audio\.addEventListener\('ended', complete\)/);
-  assert.match(dashboard, /Listen to the full voice note to unlock Next/);
+  assert.match(dashboard, /video\.addEventListener\('ended', complete\)/);
+  assert.match(dashboard, /video\.addEventListener\('seeking', stopSkipping\)/);
+  assert.match(dashboard, /duration - furthest > 1\.6/);
+  assert.match(dashboard, /Watch the full coach note to unlock Next/);
 });
 
 test('paid preview opens and requires the real first Foundations lesson', () => {
@@ -71,22 +73,23 @@ test('paid preview opens and requires the real first Foundations lesson', () => 
   assert.match(dashboard, /activeTourGate\.followTimer = setInterval/);
 });
 
-test('real Coach Shannon inbox also requires the full welcome note', () => {
-  assert.match(directMessages, /id="balance-onboarding-welcome-audio"/);
-  assert.match(directMessages, /onended="window\.socialJourney\.completeWelcomeAudio\(\)"/);
+test('real Coach Shannon inbox also requires the full coach video', () => {
+  assert.match(directMessages, /id="balance-onboarding-welcome-video"/);
+  assert.match(directMessages, /onloadedmetadata="window\.socialJourney\.guardWelcomeVideo\(this\)"/);
   assert.match(directMessages, /id="balance-onboarding-welcome-continue"/);
-  assert.match(directMessages, /Listen to the full voice note to unlock your first lesson/);
-  assert.match(socialJourney, /if \(!hasCompletedWelcomeAudio\(\)\)/);
-  assert.match(socialJourney, /function completeWelcomeAudio\(\)/);
-  assert.match(socialJourney, /welcomeAudioCompleteUserId/);
+  assert.match(directMessages, /Watch the full coach note to unlock your first lesson/);
+  assert.match(socialJourney, /if \(!hasCompletedWelcomeVideo\(\)\)/);
+  assert.match(socialJourney, /function guardWelcomeVideo\(video\)/);
+  assert.match(socialJourney, /function completeWelcomeVideo\(\)/);
+  assert.match(socialJourney, /welcomeVideoCompleteUserId/);
 });
 
 test('changed onboarding assets are cache-busted', () => {
-  assert.match(dashboard, /meta-ad-trial\.js\?v=15-tour-completion-gate/);
+  assert.match(dashboard, /meta-ad-trial\.js\?v=16-captioned-coach-video/);
   assert.match(dashboard, /pbb-deferred-weeklygoals\.js\?v=34-guided-goals/);
-  assert.match(dashboard, /pbb-social-journey\.js\?v=37-course-action-evidence/);
-  assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=211-smooth-guided-tour/);
-  assert.match(dashboard, /dashboard-script-6-ai_coach_draft_mode_logic_auth\.js\?v=43-home-canvas/);
+  assert.match(dashboard, /pbb-social-journey\.js\?v=38-captioned-coach-video/);
+  assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=215-wizard-button-label/);
+  assert.match(dashboard, /dashboard-script-6-ai_coach_draft_mode_logic_auth\.js\?v=45-captioned-coach-video/);
   assert.match(dashboard, /learning-inline\.js\?v=29-paid-tour-handoff/);
-  assert.match(serviceWorker, /pbb-app-v394-stable-tour-targets/);
+  assert.match(serviceWorker, /pbb-app-v414-captioned-coach-video/);
 });

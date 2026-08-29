@@ -61,6 +61,7 @@ test('exercise guidance preserves the open workout player', () => {
 
 test('paid tour highlights the real in-section control before continuing', () => {
   assert.match(dashboard, /sel:'#ai-plan-meals-list \.ai-plan-hero__carousel-button--next'[^\r\n]*requiresHighlightedClick:true/);
+  assert.match(dashboard, /sel:'#ai-plan-meals-list \.ai-plan-hero__carousel-button--next'[^\r\n]*controlPromptPosition:'top'/);
   assert.match(dashboard, /sel:'#ai-plan-shopping-list \.ai-plan-shopping__item'[^\r\n]*requiresHighlightedClick:true/);
   assert.match(dashboard, /if \(step && step\.requiresHighlightedClick\)/);
   assert.match(dashboard, /document\.addEventListener\('pointerdown', complete, true\)/);
@@ -68,4 +69,6 @@ test('paid tour highlights the real in-section control before continuing', () =>
   assert.match(dashboard, /document\.removeEventListener\('pointerdown', complete, true\)/);
   assert.match(dashboard, /highlightedClickComplete/);
   assert.match(dashboard, /displayStep\.requiresHighlightedClick/);
+  assert.match(dashboard, /tour-control-prompt:not\(\.tour-gate-complete\) #guided-tour-bubble[\s\S]*?pointer-events: none/);
+  assert.match(dashboard, /step && step\.controlPromptPosition === 'top'/);
 });

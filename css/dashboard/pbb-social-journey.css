@@ -466,8 +466,8 @@ html[data-pbb-theme="light"] .social-journey-pilot-controls { background: rgba(2
 .social-journey-welcome__eyebrow { color:var(--sj-gold-light); -webkit-text-fill-color:var(--sj-gold-light); font-size:.63rem; font-weight:950; letter-spacing:.12em; }
 .social-journey-welcome h2 { margin:10px 0 9px; color:var(--sj-cream); -webkit-text-fill-color:var(--sj-cream); font:800 1.72rem/1.08 Georgia,serif; }
 .social-journey-welcome > p { margin:0; color:var(--sj-muted); -webkit-text-fill-color:var(--sj-muted); font-size:.84rem; line-height:1.55; }
-.social-journey-welcome__audio { width:100%; margin-top:20px; accent-color:#b8892b; }
-.social-journey-welcome__audio.is-unavailable { display:none; }
+.social-journey-welcome__video { display:block; width:100%; max-height:min(58dvh,620px); margin-top:20px; aspect-ratio:9/16; object-fit:contain; border-radius:16px; background:#111; accent-color:#b8892b; }
+.social-journey-welcome__video.is-unavailable { display:none; }
 .social-journey-welcome__transcript { margin-top:18px; padding:16px; border:1px solid rgba(154,105,25,.24); border-radius:16px; background:rgba(216,178,94,.1); }
 .social-journey-welcome__transcript strong { color:#8b5e17; -webkit-text-fill-color:#8b5e17; font-size:.72rem; letter-spacing:.08em; text-transform:uppercase; }
 .social-journey-welcome__transcript p { margin:7px 0 0; color:inherit; -webkit-text-fill-color:inherit; font-size:.78rem; line-height:1.5; }

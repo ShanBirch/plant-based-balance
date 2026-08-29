@@ -210,7 +210,7 @@
   }
 
   function isWelcomeVoice(target) {
-    return !!(target && target.matches && target.matches('#meta-ad-trial-welcome-audio,#balance-onboarding-welcome-audio,#social-journey-welcome-audio'));
+    return !!(target && target.matches && target.matches('#meta-ad-trial-welcome-video,#balance-onboarding-welcome-video,#social-journey-welcome-video'));
   }
 
   function installMediaDucking() {

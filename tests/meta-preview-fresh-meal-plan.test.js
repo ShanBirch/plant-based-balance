@@ -59,7 +59,7 @@ test('the paid preview tour keeps the promised app order before payment', () => 
     'Follow the exercise card',
     'The Balance community',
     'Post when you need support',
-    'Listen to Shannon’s welcome',
+    'Watch Shannon’s coach note',
     'Pick your Weekly Goals',
     'Read, then take the quiz'
   ];

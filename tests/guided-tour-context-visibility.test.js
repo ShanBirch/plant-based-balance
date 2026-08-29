@@ -27,11 +27,13 @@ test('walkthrough keeps surrounding page context readable', () => {
   assert.match(premiumOverlays, /#guided-tour-overlay\.tour-page-view #guided-tour-spotlight[\s\S]*?rgba\(26, 24, 20, 0\.08\)/);
   assert.doesNotMatch(premiumOverlays, /#guided-tour-spotlight[\s\S]*?rgba\(29, 15, 50, 0\.78\)/);
   assert.match(dashboard, /pbb-premium-overlays\.css\?v=97-foundations-actions/);
-  assert.match(serviceWorker, /pbb-app-v412-first-touch-tour-cards/);
+  assert.match(serviceWorker, /pbb-app-v414-captioned-coach-video/);
   assert.match(source, /#guided-tour-overlay \{[^}]*pointer-events: auto/);
   assert.match(source, /#guided-tour-overlay\.tour-tap-target,[\s\S]*?#guided-tour-overlay\.tour-action-required:not\(\.tour-gate-complete\) \{ pointer-events: none; \}/);
   assert.match(source, /#guided-tour-overlay\.tour-coach-note \{ pointer-events: none; \}/);
   assert.match(source, /#guided-tour-bubble \{[\s\S]*?visibility: visible !important;/);
+  assert.match(source, /tour-control-prompt:not\(\.tour-gate-complete\) #guided-tour-bubble[\s\S]*?pointer-events: none/);
+  assert.match(source, /classList\.toggle\('tour-control-prompt', !!\(step && step\.requiresHighlightedClick\)\)/);
 });
 
 test('guided-tour tab handoffs verify Home is actually visible after delayed feature work', () => {
@@ -139,7 +141,7 @@ test('required onboarding continues from Feed through Foundations, coach, and We
     "'The Balance community'",
     "'Introduce yourself'",
     "'Read, then take the quiz'",
-    "'Listen to Shannon’s welcome'",
+    "'Watch Shannon’s coach note'",
     "'Pick your Weekly Goals'"
   ].map(title => source.indexOf(title, source.indexOf('REQUIRED_ONBOARDING_TOUR_TITLES')));
 
@@ -149,7 +151,7 @@ test('required onboarding continues from Feed through Foundations, coach, and We
   assert.match(source, /requiresFeedPost[\s\S]*?pbbFeedPostCreated/);
   assert.match(stories, /dispatchEvent\(new CustomEvent\('pbbFeedPostCreated'/);
   assert.match(source, /waitForPromptedStepSurface\(step, 900\)/);
-  assert.match(source, /const displayStep = isPromptBeforeAction[\s\S]*?coachNoteGuide: false,[\s\S]*?requiresWelcomeAudio: false/);
+  assert.match(source, /const displayStep = isPromptBeforeAction[\s\S]*?coachNoteGuide: false,[\s\S]*?requiresWelcomeVideo: false/);
   assert.match(source, /if \(options\.afterPromptedAction\) tourNextBlockedUntil = Date\.now\(\) \+ 900/);
   assert.match(source, /window\.tourNext = async function\(\)\{[\s\S]*?if \(Date\.now\(\) < tourNextBlockedUntil\) return/);
 });

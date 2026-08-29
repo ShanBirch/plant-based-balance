@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v412-first-touch-tour-cards'; // v412: record highlighted Home-card taps before their content rerenders
+const CACHE_NAME = 'pbb-app-v414-captioned-coach-video'; // v414: replace the onboarding voice note with Shannon's required coach video
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -9,7 +9,7 @@ const ASSETS = [
   './welcome.html',
   './lib/supabase.js?v=15-foundations-feed',
   './lib/auth-guard.js?v=13-account-first-flow',
-  './lib/meta-ad-trial.js?v=15-tour-completion-gate',
+  './lib/meta-ad-trial.js?v=16-captioned-coach-video',
   './lib/native-push.js?v=40-dispatch-approval',
   './login.html',
   './exercise_videos.js?v=20260813-global-phone-video-v1',
@@ -17,8 +17,8 @@ const ASSETS = [
   './workout_library_extended.js',
   './js/dashboard/script_part_2.js?v=14-light-launch',
   './js/dashboard/dashboard-script-3-1_get_user_data.js?v=59-light-launch',
-  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=214-complete-smooth-tour',
-  './js/dashboard/pbb-meta-preview-soundtrack.js?v=1-gentle-audio',
+  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=215-wizard-button-label',
+  './js/dashboard/pbb-meta-preview-soundtrack.js?v=3-coach-video-ducking',
   './js/dashboard/pbb-app-telemetry.js?v=1',
   './js/dashboard/pbb-deferred-weeklygoals.js?v=34-guided-goals',
   './css/dashboard/pbb-onboarding-comeback.css?v=8',

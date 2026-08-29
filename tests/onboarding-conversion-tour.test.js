@@ -27,7 +27,7 @@ test('the guided preview completes Foundations before coach support and Weekly G
   const shopping = dashboard.indexOf("'One shopping list for the week'", required);
   const community = dashboard.indexOf("'The Balance community'", required);
   const course = dashboard.indexOf("'Read, then take the quiz'", required);
-  const coach = dashboard.indexOf("'Listen to Shannon’s welcome'", required);
+  const coach = dashboard.indexOf("'Watch Shannon’s coach note'", required);
   const goals = dashboard.indexOf("'Pick your Weekly Goals'", required);
 
   assert.ok(first >= 0);
@@ -38,7 +38,7 @@ test('the guided preview completes Foundations before coach support and Weekly G
   assert.ok(goals > coach);
   assert.ok(goals > shopping);
   assert.match(dashboard, /title:'Read, then take the quiz'[^\n]*requiresFoundationsLesson:'mind-1-1'/);
-  assert.match(dashboard, /title:'Listen to Shannon’s welcome'[^\n]*requiresWelcomeAudio:true/);
+  assert.match(dashboard, /title:'Watch Shannon’s coach note'[^\n]*requiresWelcomeVideo:true/);
   assert.match(dashboard, /return Home for Shannon’s welcome/);
 });
 

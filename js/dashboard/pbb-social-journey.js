@@ -9,7 +9,7 @@
   const TABLE = 'social_journey_progress';
   const VERSION = 'social_identity_v1';
   const BRISBANE_TIMEZONE = 'Australia/Brisbane';
-  const WELCOME_AUDIO_URL = window.PBB_BALANCE_WELCOME_AUDIO_URL || '/assets/audio/shannon-balance-welcome.mp3';
+  const WELCOME_VIDEO_URL = window.PBB_BALANCE_WELCOME_VIDEO_URL || '/assets/balance-onboarding-coach-note-captioned.mp4';
 
   const WEEK_DEFINITIONS = [
     {
@@ -180,12 +180,12 @@
   let viewStage = 'lesson';
   let coursePreviewWeek = null;
   let initialized = false;
-  let welcomeAudioComplete = false;
-  let welcomeAudioCompleteUserId = '';
+  let welcomeVideoComplete = false;
+  let welcomeVideoCompleteUserId = '';
 
-  function hasCompletedWelcomeAudio() {
+  function hasCompletedWelcomeVideo() {
     const userId = window.currentUser && window.currentUser.id ? String(window.currentUser.id) : '';
-    return !!welcomeAudioComplete && !!userId && welcomeAudioCompleteUserId === userId;
+    return !!welcomeVideoComplete && !!userId && welcomeVideoCompleteUserId === userId;
   }
 
   function task(id, label, hint, type, target, icon, action) {
@@ -1086,14 +1086,14 @@
     if (!container) return;
     document.querySelector('.social-journey-header__title').textContent = 'Your Next Step';
     document.querySelector('.social-journey-header__week').textContent = 'A message from Coach Shannon';
-    const welcomeReady = hasCompletedWelcomeAudio();
+    const welcomeReady = hasCompletedWelcomeVideo();
     container.innerHTML = '<section class="social-journey-welcome">'
-      + '<div class="social-journey-welcome__eyebrow">YOUR FIRST CHECK-IN &middot; PRESS PLAY</div>'
+      + '<div class="social-journey-welcome__eyebrow">YOUR COACH NOTE &middot; PRESS PLAY</div>'
       + '<h2>Start here.</h2>'
-      + '<p>Press play for your first check-in, then complete your first Balance Foundations lesson. After that, Your Next Step will show you exactly what to do next.</p>'
-      + '<audio id="social-journey-welcome-audio" class="social-journey-welcome__audio" controls preload="metadata" onended="socialJourney.completeWelcomeAudio()" onerror="socialJourney.welcomeAudioError(this)"><source src="' + escapeHtml(WELCOME_AUDIO_URL) + '" type="audio/mpeg"></audio>'
+      + '<p>Watch Shannon’s coach note, then complete your first Balance Foundations lesson. After that, Your Next Step will show you exactly what to do next.</p>'
+      + '<video id="social-journey-welcome-video" class="social-journey-welcome__video" controls playsinline preload="metadata" controlslist="nodownload noplaybackrate" disablepictureinpicture onloadedmetadata="socialJourney.guardWelcomeVideo(this)" onerror="socialJourney.welcomeVideoError(this)"><source src="' + escapeHtml(WELCOME_VIDEO_URL) + '" type="video/mp4"></video>'
       + '<div class="social-journey-welcome__transcript"><strong>The short version</strong><p>Use the app as evidence, not judgment. Log the meal you actually ate, complete the workout that fits today, and share the ordinary reps. That is how we build something that lasts.</p></div>'
-      + '</section><div class="social-journey-lesson-action"><div id="social-journey-welcome-status" role="status" aria-live="polite" style="font-size:.78rem;font-weight:800;color:#765315;margin-bottom:8px;">' + (welcomeReady ? 'Voice note complete. Your first lesson is ready.' : 'Listen to the full voice note to unlock your first lesson.') + '</div><button id="social-journey-welcome-continue" type="button" class="social-journey-button" onclick="socialJourney.reviewLesson()" ' + (welcomeReady ? '' : 'disabled') + ' style="opacity:' + (welcomeReady ? '1' : '.55') + ';cursor:' + (welcomeReady ? 'pointer' : 'not-allowed') + ';">' + (welcomeReady ? 'Open my first lesson' : 'Listen first') + '</button><button type="button" class="social-journey-text-button" onclick="socialJourney.close()">Not now</button></div>';
+      + '</section><div class="social-journey-lesson-action"><div id="social-journey-welcome-status" role="status" aria-live="polite" style="font-size:.78rem;font-weight:800;color:#765315;margin-bottom:8px;">' + (welcomeReady ? 'Coach note complete. Your first lesson is ready.' : 'Watch the full coach note to unlock your first lesson.') + '</div><button id="social-journey-welcome-continue" type="button" class="social-journey-button" onclick="socialJourney.reviewLesson()" ' + (welcomeReady ? '' : 'disabled') + ' style="opacity:' + (welcomeReady ? '1' : '.55') + ';cursor:' + (welcomeReady ? 'pointer' : 'not-allowed') + ';">' + (welcomeReady ? 'Open my first lesson' : 'Watch first') + '</button><button type="button" class="social-journey-text-button" onclick="socialJourney.close()">Not now</button></div>';
   }
 
   function startFirstCourseLesson() {
@@ -1236,11 +1236,11 @@
   }
 
   function reviewLesson() {
-    if (Number(state && state.current_week) === 1 && !hasCompletedWelcomeAudio()) {
-      showToast('Listen to Shannon’s full voice note before continuing.', 'info');
-      const audio = document.getElementById('social-journey-welcome-audio');
-      if (audio) {
-        try { audio.scrollIntoView({ block: 'center', behavior: 'smooth' }); audio.focus(); } catch (_) {}
+    if (Number(state && state.current_week) === 1 && !hasCompletedWelcomeVideo()) {
+      showToast('Watch Shannon’s full coach note before continuing.', 'info');
+      const video = document.getElementById('social-journey-welcome-video');
+      if (video) {
+        try { video.scrollIntoView({ block: 'center', behavior: 'smooth' }); video.focus(); } catch (_) {}
       }
       return false;
     }
@@ -1309,11 +1309,11 @@
   }
 
   function continueFromInbox() {
-    if (!hasCompletedWelcomeAudio()) {
-      showToast('Listen to Shannon’s full voice note before continuing.', 'info');
-      const audio = document.getElementById('balance-onboarding-welcome-audio');
-      if (audio) {
-        try { audio.scrollIntoView({ block: 'center', behavior: 'smooth' }); audio.focus(); } catch (_) {}
+    if (!hasCompletedWelcomeVideo()) {
+      showToast('Watch Shannon’s full coach note before continuing.', 'info');
+      const video = document.getElementById('balance-onboarding-welcome-video');
+      if (video) {
+        try { video.scrollIntoView({ block: 'center', behavior: 'smooth' }); video.focus(); } catch (_) {}
       }
       return false;
     }
@@ -1328,9 +1328,39 @@
     return true;
   }
 
-  function completeWelcomeAudio() {
-    welcomeAudioComplete = true;
-    welcomeAudioCompleteUserId = window.currentUser && window.currentUser.id ? String(window.currentUser.id) : '';
+  function guardWelcomeVideo(video) {
+    if (!video || video.dataset.balanceWatchGuard === 'true') return;
+    video.dataset.balanceWatchGuard = 'true';
+    video.dataset.furthestWatched = '0';
+    const statusId = video.id === 'balance-onboarding-welcome-video' ? 'balance-onboarding-welcome-status' : 'social-journey-welcome-status';
+    const status = function(){ return document.getElementById(statusId); };
+    const stopSkipping = function(){
+      const furthest = Number(video.dataset.furthestWatched) || 0;
+      if (video.currentTime > furthest + 1.5) {
+        try { video.currentTime = furthest; } catch (_) {}
+        const label = status();
+        if (label) label.textContent = 'Watch the full coach note to continue. You can rewind at any time.';
+      }
+    };
+    video.addEventListener('seeking', stopSkipping);
+    video.addEventListener('timeupdate', function(){
+      const furthest = Number(video.dataset.furthestWatched) || 0;
+      if (video.currentTime > furthest + 1.5) {
+        stopSkipping();
+        return;
+      }
+      video.dataset.furthestWatched = String(Math.max(furthest, Number(video.currentTime) || 0));
+    });
+    video.addEventListener('ended', function(){
+      const duration = Number(video.duration) || 0;
+      const furthest = Number(video.dataset.furthestWatched) || 0;
+      if (duration && duration - furthest <= 1.6) completeWelcomeVideo();
+    });
+  }
+
+  function completeWelcomeVideo() {
+    welcomeVideoComplete = true;
+    welcomeVideoCompleteUserId = window.currentUser && window.currentUser.id ? String(window.currentUser.id) : '';
     ['balance-onboarding-welcome-continue', 'social-journey-welcome-continue'].forEach(function(id){
       const button = document.getElementById(id);
       if (!button) return;
@@ -1341,15 +1371,15 @@
     });
     ['balance-onboarding-welcome-status', 'social-journey-welcome-status'].forEach(function(id){
       const status = document.getElementById(id);
-      if (status) status.textContent = 'Voice note complete. Your first lesson is ready.';
+      if (status) status.textContent = 'Coach note complete. Your first lesson is ready.';
     });
-    try { window.trackBalanceActivity('coach_welcome_audio_completed', { source: 'activation_journey' }, { immediate: true }); } catch (_) {}
+    try { window.trackBalanceActivity('coach_welcome_video_completed', { source: 'activation_journey' }, { immediate: true }); } catch (_) {}
   }
 
-  function welcomeAudioError(audio) {
-    if (audio && audio.classList) audio.classList.add('is-unavailable');
+  function welcomeVideoError(video) {
+    if (video && video.classList) video.classList.add('is-unavailable');
     const status = document.getElementById('balance-onboarding-welcome-status') || document.getElementById('social-journey-welcome-status');
-    if (status) status.textContent = 'The voice note could not load. Tap play to try again.';
+    if (status) status.textContent = 'The coach note could not load. Tap Play to try again.';
   }
 
   function shouldShowWelcomeMessage(recipientId) {
@@ -1875,11 +1905,12 @@
     showWelcome,
     openCoachInbox,
     continueFromInbox,
-    completeWelcomeAudio,
-    welcomeAudioError,
-    isWelcomeAudioComplete: hasCompletedWelcomeAudio,
+    guardWelcomeVideo,
+    completeWelcomeVideo,
+    welcomeVideoError,
+    isWelcomeVideoComplete: hasCompletedWelcomeVideo,
     shouldShowWelcomeMessage,
-    getWelcomeAudioUrl: function () { return WELCOME_AUDIO_URL; },
+    getWelcomeVideoUrl: function () { return WELCOME_VIDEO_URL; },
     startActivation,
     useGoals,
     showGoals,

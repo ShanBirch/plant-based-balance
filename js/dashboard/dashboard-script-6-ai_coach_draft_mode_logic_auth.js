@@ -8216,29 +8216,29 @@ async function loadDirectMessages(recipientId) {
         const showBalanceWelcome = !!(window.socialJourney
             && typeof window.socialJourney.shouldShowWelcomeMessage === 'function'
             && window.socialJourney.shouldShowWelcomeMessage(recipientId));
-        const balanceWelcomeAudio = showBalanceWelcome && typeof window.socialJourney.getWelcomeAudioUrl === 'function'
-            ? window.socialJourney.getWelcomeAudioUrl()
-            : '/assets/audio/shannon-balance-welcome.mp3';
-        const balanceWelcomeAudioComplete = !!(showBalanceWelcome
+        const balanceWelcomeVideo = showBalanceWelcome && typeof window.socialJourney.getWelcomeVideoUrl === 'function'
+            ? window.socialJourney.getWelcomeVideoUrl()
+            : '/assets/balance-onboarding-coach-note-captioned.mp4';
+        const balanceWelcomeVideoComplete = !!(showBalanceWelcome
             && window.socialJourney
-            && typeof window.socialJourney.isWelcomeAudioComplete === 'function'
-            && window.socialJourney.isWelcomeAudioComplete());
+            && typeof window.socialJourney.isWelcomeVideoComplete === 'function'
+            && window.socialJourney.isWelcomeVideoComplete());
         const balanceWelcomeHtml = showBalanceWelcome ? `
             <div class="balance-onboarding-inbox-message" style="display:flex; flex-direction:column; align-items:flex-start; gap:9px; margin-bottom:18px;">
                 <div style="width:min(82%, 350px); background:#fffaf0; color:#171923; border:1px solid rgba(183,138,46,.30); border-radius:19px 19px 19px 5px; padding:14px 15px; box-shadow:0 6px 18px rgba(74,55,18,.08);">
                     <div style="font-size:.64rem; font-weight:900; letter-spacing:.12em; text-transform:uppercase; color:#92671d; margin-bottom:6px;">Your first check-in</div>
                     <div style="font:800 1.08rem/1.2 Georgia,serif; margin-bottom:6px; color:#171923;">Welcome to Balance.</div>
-                    <div style="font-size:.84rem; line-height:1.46; color:#4b5563;">I have left you a quick voice note about how we will use the app together. Press play when you are ready.</div>
+                    <div style="font-size:.84rem; line-height:1.46; color:#4b5563;">I have left you a coach note about how we will use the app together. Press play when you are ready.</div>
                 </div>
                 <div style="width:min(88%, 390px); background:linear-gradient(135deg,#f4df9f,#e2ba58); color:#171923; border:1px solid rgba(146,103,29,.32); border-radius:19px 19px 19px 5px; padding:10px 12px 11px; box-shadow:0 7px 20px rgba(112,77,16,.13);">
                     <div style="display:flex; align-items:center; gap:8px; margin:0 3px 5px; font-size:.67rem; font-weight:900; letter-spacing:.06em; color:#68480f;">
-                        <span style="width:7px; height:7px; border-radius:50%; background:#68480f;"></span>Voice message from Coach Shannon
+                        <span style="width:7px; height:7px; border-radius:50%; background:#68480f;"></span>Video coach note from Coach Shannon
                     </div>
-                    <audio id="balance-onboarding-welcome-audio" controls preload="metadata" src="${escapeHtml(balanceWelcomeAudio)}" onended="window.socialJourney.completeWelcomeAudio()" onerror="window.socialJourney.welcomeAudioError(this)" style="display:block; width:100%; height:42px; border-radius:21px;"></audio>
+                    <video id="balance-onboarding-welcome-video" controls playsinline preload="metadata" controlslist="nodownload noplaybackrate" disablepictureinpicture src="${escapeHtml(balanceWelcomeVideo)}" onloadedmetadata="window.socialJourney.guardWelcomeVideo(this)" onerror="window.socialJourney.welcomeVideoError(this)" style="display:block; width:100%; max-height:min(62dvh,620px); aspect-ratio:9/16; object-fit:contain; background:#171923; border-radius:13px;"></video>
                 </div>
                 <div style="width:min(82%, 350px); background:#fffdf8; color:#171923; border:1px solid rgba(183,138,46,.25); border-radius:19px 19px 19px 5px; padding:12px; box-shadow:0 6px 18px rgba(74,55,18,.08);">
-                    <div id="balance-onboarding-welcome-status" role="status" aria-live="polite" style="font-size:.76rem;line-height:1.35;font-weight:800;color:#765315;margin:0 2px 9px;">${balanceWelcomeAudioComplete ? 'Voice note complete. Your first lesson is ready.' : 'Listen to the full voice note to unlock your first lesson.'}</div>
-                    <button id="balance-onboarding-welcome-continue" type="button" onclick="window.socialJourney.continueFromInbox()" ${balanceWelcomeAudioComplete ? '' : 'disabled'} style="width:100%; border:1px solid #b78a2e; border-radius:13px; padding:12px 14px; background:linear-gradient(135deg,#d4ad52,#f0cf76); color:#171923; font-weight:900; cursor:${balanceWelcomeAudioComplete ? 'pointer' : 'not-allowed'}; opacity:${balanceWelcomeAudioComplete ? '1' : '.55'}; box-shadow:0 5px 14px rgba(183,138,46,.18);">${balanceWelcomeAudioComplete ? 'Continue to my first lesson' : 'Listen first'}</button>
+                    <div id="balance-onboarding-welcome-status" role="status" aria-live="polite" style="font-size:.76rem;line-height:1.35;font-weight:800;color:#765315;margin:0 2px 9px;">${balanceWelcomeVideoComplete ? 'Coach note complete. Your first lesson is ready.' : 'Watch the full coach note to unlock your first lesson.'}</div>
+                    <button id="balance-onboarding-welcome-continue" type="button" onclick="window.socialJourney.continueFromInbox()" ${balanceWelcomeVideoComplete ? '' : 'disabled'} style="width:100%; border:1px solid #b78a2e; border-radius:13px; padding:12px 14px; background:linear-gradient(135deg,#d4ad52,#f0cf76); color:#171923; font-weight:900; cursor:${balanceWelcomeVideoComplete ? 'pointer' : 'not-allowed'}; opacity:${balanceWelcomeVideoComplete ? '1' : '.55'}; box-shadow:0 5px 14px rgba(183,138,46,.18);">${balanceWelcomeVideoComplete ? 'Continue to my first lesson' : 'Watch first'}</button>
                 </div>
             </div>` : '';
 
