@@ -1437,10 +1437,10 @@ test('broad paid Meta answers a rapid blocker plus dietary-fit question in the c
 
     assert.match(reply.joined, /gluten-free works/i);
     assert.match(reply.joined, /changing roster/i);
-    assert.match(reply.joined, /six-week workout program fits your week/i);
+    assert.match(reply.joined, /six-week workout program/i);
     assert.match(reply.joined, /dietary preferences/i);
     assert.match(reply.joined, /six weeks in the app and community/i);
-    assert.match(reply.joined, /one weekly check-in where I review and adjust your training and food/i);
+    assert.match(reply.joined, /weekly check-in/i);
     assert.match(reply.joined, /one AUD \$149 payment/i);
     assert.match(reply.joined, /no subscription or auto-renewal/i);
     assert.equal(reply.chunks.length, 3);
@@ -3496,6 +3496,14 @@ test('broad writer contract repairs missing terms, adds the native explainer, an
     assert.match(multiBubbleOffer.joined, /big plans overwhelm you/i);
     assert.equal((multiBubbleOffer.joined.match(/\?/g) || []).length, 1);
     assert.match(multiBubbleOffer.joined, /one AUD \$149 payment/i);
+    assert.ok(multiBubbleOffer.chunks.every(chunk => chunk.length <= 240));
+    const multiBubbleItems = insertProofMediaBeforeFinalQuestion(
+        splitTerminalQuestionForProofMedia(multiBubbleOffer.chunks)
+            .map(text => ({ kind: 'text', text })),
+        { kind: 'video', videoUrl: BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL },
+    );
+    assert.deepEqual(multiBubbleItems.map(item => item.kind), ['text', 'text', 'video', 'text'],
+        'a rich paid-ad offer must finish terms, video and preview CTA inside four native items');
 
     const compressedCurriculum = {
         joined: 'You learn how to make change stick, work with your energy and build a sustainable routine.',

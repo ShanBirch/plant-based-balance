@@ -1557,7 +1557,7 @@ function buildPaidMetaTailoredOfferChunks(blockerText = '', goalText = '', flowV
     if (flowVariant === 'broad_pain') {
         let compactAcknowledgement = 'That makes sense.';
         if (daysPerWeek && asksCanWork && wantsFatLossAndMuscle) {
-            compactAcknowledgement = `Yeah, ${daysPerWeek} days a week can work for losing fat and building muscle. If big plans overwhelm you, those sessions need to stay focused and manageable.`;
+            compactAcknowledgement = `Yeah, ${daysPerWeek} days a week can work for losing fat and building muscle. Because big plans overwhelm you, keep those sessions focused.`;
         } else if (daysPerWeek && asksCanWork) {
             compactAcknowledgement = `Yeah, ${daysPerWeek} days a week can work. The plan needs to make those sessions focused and realistic.`;
         } else if (PAID_META_BROAD_BLOCKER_RE.test(turn)) {
@@ -1596,9 +1596,9 @@ function buildPaidMetaTailoredOfferChunks(blockerText = '', goalText = '', flowV
                 : `Yep, the food side can fit your dietary preferences. ${compactAcknowledgement}`;
         }
         return [
-            `${compactAcknowledgement} Your six-week workout program fits your week, with a meal plan fitted to your dietary preferences.`,
-            'You get six weeks in the app and community, plus one weekly check-in where I review and adjust your training and food.',
-            "It's one AUD $149 payment for the full six weeks. No subscription or auto-renewal. Want me to open your free personalised preview before you pay?",
+            `${compactAcknowledgement} You get a six-week workout program, a meal plan fitted to your dietary preferences, and a weekly check-in.`,
+            "You get six weeks in the app and community. It's one AUD $149 payment for the full six weeks, with no subscription or auto-renewal.",
+            'Want me to open your free personalised preview before you pay?',
         ];
     }
     return [
@@ -1614,10 +1614,19 @@ function addPaidMetaProofVideoToOfferChunks(chunks = [], history = []) {
         return { chunks: offerChunks, videoAttachmentUrl: null };
     }
     const finalIndex = offerChunks.length - 1;
-    offerChunks[finalIndex] = offerChunks[finalIndex].replace(
-        /Want me to open your free personalised preview[^?]*\?$/i,
-        "Here's a quick video showing the course and what's inside Balance. Want me to open your free personalised preview before you pay?"
-    );
+    const terminalPreviewQuestion = /^Want me to open your free personalised preview[^?]*\?$/i.test(offerChunks[finalIndex]);
+    if (terminalPreviewQuestion && finalIndex > 0) {
+        // Keep this as four native items: tailored offer, terms + video
+        // introduction, video, then the purposeful preview question. Longer
+        // rich-detail replies used to split into an extra pre-video bubble and
+        // could outlive the synchronous Graph sender before the CTA was sent.
+        offerChunks[finalIndex - 1] = `${offerChunks[finalIndex - 1]} Here's a quick video showing the course and what's inside Balance.`;
+    } else {
+        offerChunks[finalIndex] = offerChunks[finalIndex].replace(
+            /Want me to open your free personalised preview[^?]*\?$/i,
+            "Here's a quick video showing the course and what's inside Balance. Want me to open your free personalised preview before you pay?"
+        );
+    }
     return {
         chunks: offerChunks,
         videoAttachmentUrl: resolveBalanceFoundationsAppProofVideoUrl(),
