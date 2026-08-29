@@ -27,7 +27,7 @@ test('walkthrough keeps surrounding page context readable', () => {
   assert.match(premiumOverlays, /#guided-tour-overlay\.tour-page-view #guided-tour-spotlight[\s\S]*?rgba\(26, 24, 20, 0\.08\)/);
   assert.doesNotMatch(premiumOverlays, /#guided-tour-spotlight[\s\S]*?rgba\(29, 15, 50, 0\.78\)/);
   assert.match(dashboard, /pbb-premium-overlays\.css\?v=97-foundations-actions/);
-  assert.match(serviceWorker, /pbb-app-v397-complete-smooth-tour/);
+  assert.match(serviceWorker, /pbb-app-v398-course-before-coach/);
 });
 
 test('page-level stops opt into the softer context view', () => {
@@ -107,13 +107,13 @@ test('required onboarding tours cannot be skipped', () => {
   assert.match(source, /<button class="tour-skip" onclick="endFeatureTour\(true\)" hidden>Skip<\/button>/);
 });
 
-test('required onboarding continues from Feed through coach, Foundations, and Weekly Goals', () => {
+test('required onboarding continues from Feed through Foundations, coach, and Weekly Goals', () => {
   const source = featureTourSource();
   const order = [
     "'The Balance community'",
     "'Introduce yourself'",
-    "'Listen to Shannon’s welcome'",
     "'Read, then take the quiz'",
+    "'Listen to Shannon’s welcome'",
     "'Pick your Weekly Goals'"
   ].map(title => source.indexOf(title, source.indexOf('REQUIRED_ONBOARDING_TOUR_TITLES')));
 

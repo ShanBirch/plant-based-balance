@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v397-complete-smooth-tour'; // v397: full coach, course, goals sequence with adaptive transitions
+const CACHE_NAME = 'pbb-app-v398-course-before-coach'; // v398: complete Foundations before coach welcome and Weekly Goals
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

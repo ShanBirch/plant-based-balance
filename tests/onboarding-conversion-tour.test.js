@@ -21,24 +21,25 @@ test('paid preview clearly shows the personalised setup and full Foundations val
   assert.match(trial, /!workout\.startsWith\('yoga-'\)/);
 });
 
-test('the guided preview ends in the real Foundations lesson', () => {
-  const first = dashboard.indexOf("title:'Your app tour starts here'");
-  const shopping = dashboard.indexOf("title:'One shopping list for the week'", first);
-  const community = dashboard.indexOf("title:'The Balance community'", shopping);
-  const coach = dashboard.indexOf("title:'Listen to Shannon’s welcome'", community);
-  const goals = dashboard.indexOf("title:'Pick your Weekly Goals'", shopping);
-  const course = dashboard.indexOf("title:'Read, then take the quiz'", goals);
+test('the guided preview completes Foundations before coach support and Weekly Goals', () => {
+  const required = dashboard.indexOf('REQUIRED_ONBOARDING_TOUR_TITLES');
+  const first = dashboard.indexOf("'Your app tour starts here'", required);
+  const shopping = dashboard.indexOf("'One shopping list for the week'", required);
+  const community = dashboard.indexOf("'The Balance community'", required);
+  const course = dashboard.indexOf("'Read, then take the quiz'", required);
+  const coach = dashboard.indexOf("'Listen to Shannon’s welcome'", required);
+  const goals = dashboard.indexOf("'Pick your Weekly Goals'", required);
 
   assert.ok(first >= 0);
   assert.ok(shopping > first);
   assert.ok(community > shopping);
-  assert.ok(coach > community);
+  assert.ok(course > community);
+  assert.ok(coach > course);
   assert.ok(goals > coach);
   assert.ok(goals > shopping);
-  assert.ok(course > goals);
-  assert.match(dashboard.slice(course, dashboard.indexOf('\n', course)), /metaPreviewSignoff:true/);
-  assert.match(dashboard.slice(course, dashboard.indexOf('\n', course)), /requiresFoundationsLesson:'mind-1-1'/);
-  assert.match(dashboard, /We will leave you here in the course section/);
+  assert.match(dashboard, /title:'Read, then take the quiz'[^\n]*requiresFoundationsLesson:'mind-1-1'/);
+  assert.match(dashboard, /title:'Listen to Shannon’s welcome'[^\n]*requiresWelcomeAudio:true/);
+  assert.match(dashboard, /return Home for Shannon’s welcome/);
 });
 
 test('the spotlight never draws a box around a missing or zero-size target', () => {

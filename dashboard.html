@@ -1951,14 +1951,14 @@ if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-progressphoto.js?v=10"><\/script>');
 document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=34-guided-goals"><\/script>');
     document.write('<script src="js/dashboard/pbb-social-journey.js?v=37-course-action-evidence"><\/script>');
-    document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=33-complete-tour-order"><\/script>');
+    document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=34-course-before-coach"><\/script>');
     document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=27-first-week-gate"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
     window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=10');
 window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=34-guided-goals');
     window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=37-course-action-evidence');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=33-complete-tour-order');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=34-course-before-coach');
     window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=27-first-week-gate');
 }
 </script>
@@ -13893,9 +13893,10 @@ if(!window._pbbIsIOSSafari) {
       <p id="meta-tour-welcome-intro" class="meta-tour-welcome-intro">Your answers are in. We will guide you through the plan Balance has built for you, one clear step at a time.</p>
       <ul class="meta-tour-welcome-list">
         <li><span><strong>Your plan:</strong> meal plan, shopping list, nutrition tracker and every workout.</span></li>
-        <li><span><strong>Your support:</strong> Shannon’s message and the Balance community.</span></li>
+        <li><span><strong>Your community:</strong> meet the group and introduce yourself.</span></li>
+        <li><span><strong>Your course:</strong> complete your first Foundations lesson and quiz.</span></li>
+        <li><span><strong>Your support:</strong> hear how Shannon will help adjust your week.</span></li>
         <li><span><strong>Your week:</strong> choose the goals you want Shannon to review.</span></li>
-        <li><span><strong>Your course:</strong> finish with your first Foundations lesson.</span></li>
       </ul>
       <button id="meta-tour-welcome-start" type="button" onclick="beginMetaPreviewTour()">Start guided tour</button>
       <p class="meta-tour-welcome-time">About 5 minutes. We will wait for you at each step.</p>
@@ -14205,8 +14206,8 @@ if(!window._pbbIsIOSSafari) {
     'Follow the exercise card',
     'The Balance community',
     'Introduce yourself',
-    'Listen to Shannon’s welcome',
     'Read, then take the quiz',
+    'Listen to Shannon’s welcome',
     'Pick your Weekly Goals'
   ];
 
@@ -14288,7 +14289,7 @@ if(!window._pbbIsIOSSafari) {
   if (foundationsTourStep && foundationsTourStep.metaPreview) Object.assign(foundationsTourStep, {
     returnHomeAfter:true,
     preActionTitle:'Next: start Balance Foundations',
-    preActionBody:'Tap the highlighted Course card. Complete the first short lesson and quiz, then we will return Home for your Weekly Goals.'
+    preActionBody:'Tap the highlighted Course card. Complete the first short lesson and quiz, then we will return Home for Shannon’s welcome.'
   });
 
   const weeklyGoalsTourStep = findTourStep('Pick your Weekly Goals');
@@ -15191,9 +15192,9 @@ async function showStep(i, options){
     if (title) title.textContent = 'Your first week is ready';
     if (clientActivationTour) {
       if (intro) intro.textContent = 'Your setup questions are finished. We will now guide you through the plan Balance has built for you, one clear step at a time.';
-      if (list) list.innerHTML = '<li><span><strong>Your plan:</strong> meal plan, shopping list, nutrition tracker and every workout.</span></li><li><span><strong>Your support:</strong> Shannon’s message and the Balance community.</span></li><li><span><strong>Your week:</strong> choose the goals you want Shannon to review.</span></li><li><span><strong>Your course:</strong> finish with your first Foundations lesson.</span></li>';
+      if (list) list.innerHTML = '<li><span><strong>Your plan:</strong> meal plan, shopping list, nutrition tracker and every workout.</span></li><li><span><strong>Your community:</strong> meet the group and introduce yourself.</span></li><li><span><strong>Your course:</strong> complete your first Foundations lesson and quiz.</span></li><li><span><strong>Your support:</strong> hear how Shannon will help adjust your week.</span></li><li><span><strong>Your week:</strong> choose the goals you want Shannon to review.</span></li>';
     } else {
-      if (list) list.innerHTML = '<li><span><strong>Your plan:</strong> meal plan, shopping list, nutrition tracker and every workout.</span></li><li><span><strong>Your support:</strong> Shannon’s message and the Balance community.</span></li><li><span><strong>Your week:</strong> choose the goals you want Shannon to review.</span></li><li><span><strong>Your course:</strong> finish with your first Foundations lesson.</span></li>';
+      if (list) list.innerHTML = '<li><span><strong>Your plan:</strong> meal plan, shopping list, nutrition tracker and every workout.</span></li><li><span><strong>Your community:</strong> meet the group and introduce yourself.</span></li><li><span><strong>Your course:</strong> complete your first Foundations lesson and quiz.</span></li><li><span><strong>Your support:</strong> hear how Shannon will help adjust your week.</span></li><li><span><strong>Your week:</strong> choose the goals you want Shannon to review.</span></li>';
       try {
         if (window.BalanceMetaAdTrial && typeof window.BalanceMetaAdTrial.renderPersonalisedSetup === 'function') {
           window.BalanceMetaAdTrial.renderPersonalisedSetup();

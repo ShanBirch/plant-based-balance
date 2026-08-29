@@ -11,8 +11,8 @@ const onboardingIds = [
   'nutrition_tracker_intro',
   'workout_week_intro',
   'feed_intro',
-  'coach_message_intro',
   'foundations_intro',
+  'coach_message_intro',
   'weekly_goals_intro'
 ];
 

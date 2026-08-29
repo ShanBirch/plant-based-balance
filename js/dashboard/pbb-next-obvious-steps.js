@@ -19,8 +19,8 @@
     'nutrition_tracker_intro',
     'workout_week_intro',
     'feed_intro',
-    'coach_message_intro',
     'foundations_intro',
+    'coach_message_intro',
     'weekly_goals_intro'
   ];
   var SHANNON_EMAILS = [
@@ -619,7 +619,7 @@
       body: 'Open your first lesson and see how the course helps change work in real life.',
       cta: 'Start Course',
       accent: '#0f766e',
-      priority: 940,
+      priority: 955,
       goalIds: [],
       action: openFoundationsTarget
     },
@@ -830,8 +830,8 @@
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'nutrition_tracker_intro'; }));
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'workout_week_intro'; }));
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'feed_intro'; }));
-      addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'coach_message_intro'; }));
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'foundations_intro'; }));
+      addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'coach_message_intro'; }));
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'weekly_goals_intro'; }));
       if (window.metaAdTrialMode === true) return picked;
     }
