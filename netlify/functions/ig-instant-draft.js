@@ -1512,6 +1512,10 @@ function buildPaidMetaTailoredOfferText(blockerText = '', goalText = '', flowVar
 function buildPaidMetaTailoredOfferChunks(blockerText = '', goalText = '', flowVariant = 'plant_based_control') {
     const turn = String(blockerText || '');
     const goal = String(goalText || '');
+    const daysPerWeek = turn.match(/\b(\d+|one|two|three|four|five|six|seven)\s+days?\s+(?:a|per)\s+week\b/i)?.[1] || '';
+    const asksCanWork = /\bcan (?:you|this|that|it)\b[\s\S]{0,45}\bwork\b|\bcan you (?:actually )?make (?:that|this|it) work\b/i.test(turn);
+    const wantsFatLossAndMuscle = /\b(?:lose|fat|weight)\b/i.test(goal)
+        && /\b(?:build|muscle|strong|strength)\b/i.test(goal);
     const asksForMealPlan = /\bdo you (?:offer|have|provide|include) (?:a |any )?(?:plant[ -]?based )?meal plans?\b|\bis (?:a |the )?meal plan included\b/i.test(turn);
     const asksWhetherDietaryFitWorks = /\b(?:gluten[ -]?free|dietary (?:need|needs|preference|preferences|restriction|restrictions)|food side)\b[\s\S]{0,80}\b(?:work|fit|suit|okay|ok|possible|do you do that)\b/i.test(turn)
         || /\b(?:would|will|can|does)\b[\s\S]{0,60}\b(?:food side|meal plan|nutrition)\b[\s\S]{0,50}\b(?:work|fit|suit)\b/i.test(turn);
@@ -1552,7 +1556,11 @@ function buildPaidMetaTailoredOfferChunks(blockerText = '', goalText = '', flowV
         : 'a plant-based meal plan';
     if (flowVariant === 'broad_pain') {
         let compactAcknowledgement = 'That makes sense.';
-        if (PAID_META_BROAD_BLOCKER_RE.test(turn)) {
+        if (daysPerWeek && asksCanWork && wantsFatLossAndMuscle) {
+            compactAcknowledgement = `Yeah, ${daysPerWeek} days a week can work for losing fat and building muscle. If big plans overwhelm you, those sessions need to stay focused and manageable.`;
+        } else if (daysPerWeek && asksCanWork) {
+            compactAcknowledgement = `Yeah, ${daysPerWeek} days a week can work. The plan needs to make those sessions focused and realistic.`;
+        } else if (PAID_META_BROAD_BLOCKER_RE.test(turn)) {
             compactAcknowledgement = 'If it all feels hard at once, it needs to be one simple plan.';
         } else if (PAID_META_FOOD_CONFUSION_RE.test(turn)) {
             compactAcknowledgement = 'Not knowing what to eat is the part we need to simplify.';
@@ -4989,6 +4997,8 @@ function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = 
     const fallbackGoal = explicitlyDefersGoal
         ? ''
         : (paidMetaFitnessGoalFromFacts(fallbackFacts) || paidMetaLatestFitnessGoalText(history));
+    const currentInboundRun = paidMetaCurrentInboundRunText(history, turn);
+    const offerContext = currentInboundRun || turn || paidMetaLatestConcreteBlockerText(history);
     const repairsEarnedOffer = /earned paid-Meta offer is missing/i.test(issueText)
         || (/pitched before|repeated a question/i.test(issueText)
             && !!fallbackGoal
@@ -5024,7 +5034,7 @@ function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = 
     } else if (/broad paid-ad reply/i.test(issueText)) {
         const knownBlocker = isPaidMetaConcreteBlocker(turn) || paidMetaHistoryHasConcreteBlocker(history);
         if (fallbackGoal && knownBlocker) {
-            joined = buildPaidMetaTailoredOfferText(turn || paidMetaLatestConcreteBlockerText(history), fallbackGoal, flowVariant);
+            joined = buildPaidMetaTailoredOfferText(offerContext, fallbackGoal, flowVariant);
         } else if (fallbackGoal) {
             joined = buildPaidMetaGoalToBlockerText(fallbackGoal);
         } else {
@@ -5108,13 +5118,13 @@ function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = 
             joined = `Yeah, that makes sense. What's the main health or fitness goal you're working towards at the moment?`;
         }
     } else if (repairsEarnedOffer) {
-        joined = buildPaidMetaTailoredOfferText(turn, fallbackGoal, flowVariant);
+        joined = buildPaidMetaTailoredOfferText(offerContext, fallbackGoal, flowVariant);
     }
     if (!joined) return null;
     let videoAttachmentUrl = draft.videoAttachmentUrl || null;
     let chunks = fixedChunks || (repairsEarnedOffer
         ? buildPaidMetaTailoredOfferChunks(
-            turn,
+            offerContext,
             fallbackGoal,
             flowVariant
         )
@@ -5143,6 +5153,23 @@ function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = 
         videoAttachmentUrl,
         shadowDraftInput: null,
     };
+}
+
+function paidMetaCurrentInboundRunText(history = [], currentMessage = '') {
+    const messages = Array.isArray(history) ? history : [];
+    const run = [];
+    for (let index = messages.length - 1; index >= 0; index -= 1) {
+        const message = messages[index];
+        const direction = String(message?.direction || '').toLowerCase();
+        if (direction === 'out') break;
+        if (direction === 'in') {
+            const text = String(message?.text || '').replace(/\s+/g, ' ').trim();
+            if (text) run.unshift(text);
+        }
+    }
+    const current = String(currentMessage || '').replace(/\s+/g, ' ').trim();
+    if (current && !run.some(text => text.toLowerCase() === current.toLowerCase())) run.push(current);
+    return run.join(' ').trim();
 }
 
 function paidMetaLatestFitnessGoalText(history = []) {

@@ -3478,6 +3478,25 @@ test('broad writer contract repairs missing terms, adds the native explainer, an
     assert.equal(repairedOffer.videoAttachmentUrl, BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL);
     assert.match(repairedOffer.joined, /quick video showing the course and what's inside Balance/i);
 
+    const multiBubbleOffer = buildPaidMetaGuaranteedContractFallback({
+        draft: incompleteOffer,
+        currentMessage: 'Can you actually make that work?',
+        issues: ['The earned paid-Meta offer is missing the complete offer contract.'],
+        qualifier: { facts: {} },
+        history: [
+            { direction: 'out', text: "What's the main change you'd like to make over the next six weeks?" },
+            { direction: 'in', text: 'I want to lose fat but I also want to build muscle' },
+            { direction: 'in', text: 'I only have 3 days a week' },
+            { direction: 'in', text: 'I get overwhelmed when plans tell me to do too much' },
+            { direction: 'in', text: 'Can you actually make that work?' },
+        ],
+        flowVariant: 'broad_pain',
+    });
+    assert.match(multiBubbleOffer.joined, /Yeah, 3 days a week can work for losing fat and building muscle/i);
+    assert.match(multiBubbleOffer.joined, /big plans overwhelm you/i);
+    assert.equal((multiBubbleOffer.joined.match(/\?/g) || []).length, 1);
+    assert.match(multiBubbleOffer.joined, /one AUD \$149 payment/i);
+
     const compressedCurriculum = {
         joined: 'You learn how to make change stick, work with your energy and build a sustainable routine.',
         model: 'openai-gpt-5.4-mini-paid-meta',
