@@ -2887,9 +2887,11 @@ function buildPaidMetaConversationApproval({
                 && isMetaAppPreviewUrl(draft?.appPreviewUrl)
                 && (isExplicitPaidMetaPreviewRequest(message)
                     || isApprovedPaidMetaAppPreviewMoment({ currentMessage: message, qualifier })
-                    || (isExplicitPaidMetaPreviewAcceptance(message)
-                        && (hasRecentCompletePaidMetaOffer(history)
-                            || hasRecentPaidMetaSupportQuestion(history))))));
+                    // The deterministic handoff builder has already proved
+                    // that this acceptance follows a preview offer. Requiring
+                    // the approval layer to rediscover that offer in another
+                    // short history window can strand valid long journeys.
+                    || isExplicitPaidMetaPreviewAcceptance(message))));
     if (!deterministicProgression) return null;
     return {
         required: false,
