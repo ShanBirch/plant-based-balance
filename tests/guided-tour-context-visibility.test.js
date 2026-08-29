@@ -27,10 +27,18 @@ test('walkthrough keeps surrounding page context readable', () => {
   assert.match(premiumOverlays, /#guided-tour-overlay\.tour-page-view #guided-tour-spotlight[\s\S]*?rgba\(26, 24, 20, 0\.08\)/);
   assert.doesNotMatch(premiumOverlays, /#guided-tour-spotlight[\s\S]*?rgba\(29, 15, 50, 0\.78\)/);
   assert.match(dashboard, /pbb-premium-overlays\.css\?v=97-foundations-actions/);
-  assert.match(serviceWorker, /pbb-app-v402-visible-tour-controls/);
+  assert.match(serviceWorker, /pbb-app-v403-tour-destination-handoff/);
   assert.match(source, /#guided-tour-overlay \{[^}]*pointer-events: auto/);
   assert.match(source, /#guided-tour-overlay\.tour-tap-target,[\s\S]*?#guided-tour-overlay\.tour-action-required:not\(\.tour-gate-complete\) \{ pointer-events: none; \}/);
   assert.match(source, /#guided-tour-bubble \{[\s\S]*?visibility: visible !important;/);
+});
+
+test('prompted tour actions recover when the destination opens before the action signal is observed', () => {
+  const source = featureTourSource();
+
+  assert.match(source, /var exactPromptTarget = step\.preActionSel/);
+  assert.match(source, /expectedActionId && !exactPromptTarget && resolveStepTarget\(step\)\.target/);
+  assert.match(source, /beginPromptedAction\(true\)/);
 });
 
 test('page-level stops opt into the softer context view', () => {

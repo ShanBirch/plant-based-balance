@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v402-visible-tour-controls'; // v402: keep the active guide card visible above changing app surfaces
+const CACHE_NAME = 'pbb-app-v403-tour-destination-handoff'; // v403: recover when a To Do card opens its destination before the tour observes the action signal
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

@@ -14457,6 +14457,19 @@ if(!window._pbbIsIOSSafari) {
     });
     var keepPromptAligned = function(){
       if (busy) return;
+      // A To Do card can mark itself complete and re-render Home as part of
+      // its normal click handler. If the browser delivered that handler but
+      // the tour missed the companion action signal, the exact card vanishes
+      // while the destination is already open. Treat that visible destination
+      // as the same successful tap so the guide never stays behind highlighting
+      // an empty part of Home or requires a second tap.
+      var exactPromptTarget = step.preActionSel
+        ? resolveStepTarget({ sel:step.preActionSel }).target
+        : resolveStepTarget(livePromptStep).target;
+      if (expectedActionId && !exactPromptTarget && resolveStepTarget(step).target) {
+        beginPromptedAction(true);
+        return;
+      }
       var livePromptTarget = resolveStepTarget(livePromptStep).target;
       if (livePromptTarget) positionBubbleAndSpotlight(livePromptTarget, livePromptStep);
     };
