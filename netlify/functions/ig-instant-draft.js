@@ -1538,12 +1538,14 @@ function hasRecentCompletePaidMetaOffer(history = []) {
 
 function hasCompletePaidMetaOfferText(text = '') {
     const value = String(text || '');
-    return /\b(?:six|6)[- ]week\b/i.test(value)
+    const offersPreviewBeforeDecision = /\bbefore (?:(?:you )?pay|making a payment|(?:you )?decide(?: anything)?)/i.test(value)
+        || /\b(?:free )?personalised (?:app )?preview first\b/i.test(value);
+    return /\b(?:six|6)[- ]weeks?\b/i.test(value)
         && /\b(?:workout|training program)\b/i.test(value)
         && /\bmeal plan\b/i.test(value)
         && /\$\s*149\b/i.test(value)
         && /\b(?:no subscription|no auto-renewal|does not auto-renew|doesn't auto-renew)\b/i.test(value)
-        && /\bbefore (?:(?:you )?pay|making a payment)/i.test(value);
+        && offersPreviewBeforeDecision;
 }
 
 function buildPaidMetaTailoredOfferText(blockerText = '', goalText = '', flowVariant = 'plant_based_control') {

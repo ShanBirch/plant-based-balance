@@ -2368,6 +2368,20 @@ test('AI writer attaches the approved app explainer only to a complete broad pai
         videoUrl: completeBroadOffer.videoAttachmentUrl,
         replyText: completeBroadOffer.joined,
     }), true);
+
+    const liveWriterWording = attachPaidMetaWriterSelectedMedia({
+        chunks: [
+            'Balance Foundations is $149 AUD for the full 6 weeks, with no subscription or auto-renewal.',
+            'I can also show you a free personalised app preview first so you can see exactly how it would be set up for your week. The workout and meal plan are fitted to your recorded preferences before you decide anything.',
+            'If you want, I’ll send the personalised preview next.',
+        ],
+        joined: 'Balance Foundations is $149 AUD for the full 6 weeks, with no subscription or auto-renewal. I can also show you a free personalised app preview first so you can see exactly how it would be set up for your week. The workout and meal plan are fitted to your recorded preferences before you decide anything. If you want, I’ll send the personalised preview next.',
+        maxChunks: 3,
+    }, { allowAttachments: true, flowVariant: 'broad_pain', history: [] });
+    assert.equal(liveWriterWording.videoAttachmentUrl, BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL);
+    const liveWriterWithCta = ensurePaidMetaAppVideoPreviewCta(liveWriterWording);
+    assert.match(liveWriterWithCta.joined, /quick video showing the course and what's inside Balance/i);
+    assert.match(liveWriterWithCta.joined, /before you pay/i);
 });
 
 test('generic app-video wording is left without media so it cannot replace the interactive preview', () => {
