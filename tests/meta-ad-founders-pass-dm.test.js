@@ -18,6 +18,7 @@ const {
     isExplicitPaidMetaProofVideoRetry,
     buildPaidMetaProofVideoRetryReply,
     shouldApplyDeterministicPaidMetaReplyOverride,
+    selectFastDeterministicPaidMetaProgression,
     shouldUseOutboundSyntheticVoice,
     restoreCoalescedPaidMetaVoiceDraft,
     removePaidMetaBlockerVoiceGreeting,
@@ -103,6 +104,22 @@ test('paid Meta lane bypasses the general qualifier and deterministic conversati
         'the neutral broad paid-ad route must retain deterministic native video retries');
     assert.doesNotMatch(source, /hasInstagramGraphRoute\s*\n\s*&& metaAdFlowVariant !== 'broad_pain'\s*\n\s*&& isExplicitPaidMetaProofVideoRetry/);
     assert.match(source, /if \(paidMetaSingleWriter\) \{[\s\S]{0,2600}deterministic_paid_meta_timeout_v1[\s\S]{0,1200}\} else try \{/);
+});
+
+test('a fresh BALANCE episode outranks a coalescing preview acceptance from the prior episode', () => {
+    const stalePreviewAcceptance = {
+        replyMode: 'campaign_app_preview_handoff',
+        model: 'deterministic_paid_meta_conversation_v1',
+        joined: 'Yep, here you go. Open your personalised preview.',
+    };
+    assert.equal(selectFastDeterministicPaidMetaProgression({
+        metaAdOpeningTurn: true,
+        draft: stalePreviewAcceptance,
+    }), null);
+    assert.equal(selectFastDeterministicPaidMetaProgression({
+        metaAdOpeningTurn: false,
+        draft: stalePreviewAcceptance,
+    }), stalePreviewAcceptance);
 });
 
 test('paid Meta price contract accepts Australian currency wording', () => {

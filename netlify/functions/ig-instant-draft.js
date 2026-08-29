@@ -2252,6 +2252,14 @@ function shouldApplyDeterministicPaidMetaReplyOverride(draft = null) {
             && /^deterministic_paid_meta_autonomy_v\d+$/i.test(String(draft.model || '')));
 }
 
+function selectFastDeterministicPaidMetaProgression({ metaAdOpeningTurn = false, draft = null } = {}) {
+    // A fresh verified ad referral or repeatable internal BALANCE opener is a
+    // hard episode boundary. A still-coalescing "yes" from the prior episode
+    // must never outrank the new opener and resend its preview/checkout handoff.
+    if (metaAdOpeningTurn) return null;
+    return shouldApplyDeterministicPaidMetaReplyOverride(draft) ? draft : null;
+}
+
 function shouldUseOutboundSyntheticVoice({ personalVoicePlan = {}, metaAdConversationFastLane = false } = {}) {
     // Paid Facebook/Instagram ad conversations stay in text. Synthetic voice
     // added friction and made the sales bridge harder to review. Client and
@@ -7629,9 +7637,10 @@ exports.handler = async (event) => {
             && String(exactPaidMetaHandoff?.replyMode || '') === 'campaign_sales_progression'))
         ? exactPaidMetaHandoff
         : null;
-    const fastDeterministicProgression = shouldApplyDeterministicPaidMetaReplyOverride(earlyDeterministicProgression)
-        ? earlyDeterministicProgression
-        : null;
+    const fastDeterministicProgression = selectFastDeterministicPaidMetaProgression({
+        metaAdOpeningTurn,
+        draft: earlyDeterministicProgression,
+    });
     const qualifierEligible = !metaAdConversationFastLane && !fastDeterministicProgression && isQualifierEligible({
         leadStage: effectiveLeadStage,
         linkedUserId: thread.linked_user_id,
@@ -9612,6 +9621,7 @@ exports._test = {
     isExplicitPaidMetaProofVideoRetry,
     buildPaidMetaProofVideoRetryReply,
     shouldApplyDeterministicPaidMetaReplyOverride,
+    selectFastDeterministicPaidMetaProgression,
     shouldUseOutboundSyntheticVoice,
     restoreCoalescedPaidMetaVoiceDraft,
     removePaidMetaBlockerVoiceGreeting,
