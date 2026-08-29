@@ -769,13 +769,13 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
 
 <!-- Only verified paid Facebook/Instagram preview sessions can open this interruption choice. -->
 <div id="meta-ad-trial-exit-choice" role="dialog" aria-modal="true" aria-labelledby="meta-ad-trial-exit-title" style="display:none; position:fixed; inset:0; z-index:500001; background:rgba(3,7,18,0.88); align-items:center; justify-content:center; padding:calc(20px + env(safe-area-inset-top, 0px)) 20px calc(20px + env(safe-area-inset-bottom, 0px)); box-sizing:border-box; font-family:'Inter',sans-serif;">
-    <div style="background:#fffdf8; color:#171923; border:1px solid rgba(183,138,46,.34); border-radius:24px; padding:30px 24px; max-width:380px; width:100%; text-align:center; box-shadow:0 28px 80px rgba(0,0,0,.42); box-sizing:border-box;">
+    <div style="background:#fffdf8; color:#171923; -webkit-text-fill-color:#171923; border:1px solid rgba(183,138,46,.34); border-radius:24px; padding:30px 24px; max-width:380px; width:100%; text-align:center; box-shadow:0 28px 80px rgba(0,0,0,.42); box-sizing:border-box;">
         <img src="balance_logo.png" alt="Balance" style="width:58px; height:58px; object-fit:contain; margin:0 auto 14px; display:block;">
-        <h3 id="meta-ad-trial-exit-title" style="margin:0 0 9px; font:800 1.35rem/1.2 'Montserrat',sans-serif; color:#171923;">Keep setting up?</h3>
-        <p id="meta-ad-trial-exit-body" style="margin:0 0 20px; color:#5f5a50; font-size:.92rem; line-height:1.5;">Continue where you left off, or unlock the complete six-week program now.</p>
-        <button id="meta-ad-trial-resume-btn" type="button" onclick="window.BalanceMetaAdTrial.resumeInterruptedFlow()" style="width:100%; background:linear-gradient(135deg,#d4ad52,#f0cf76); color:#171923; border:1px solid #b78a2e; padding:14px; border-radius:12px; font:800 .92rem 'Montserrat',sans-serif; cursor:pointer; margin-bottom:10px;">CONTINUE SETUP</button>
-        <button id="meta-ad-trial-exit-pay" type="button" onclick="window.BalanceMetaAdTrial.openCheckoutGate()" style="width:100%; background:#111; color:#fff; border:none; padding:14px; border-radius:12px; font:800 .92rem 'Montserrat',sans-serif; cursor:pointer;">PAY AUD $149 NOW</button>
-        <p style="margin:11px 0 0; color:#777166; font-size:.7rem; line-height:1.4;">One payment for the full six weeks. No subscription or automatic renewal.</p>
+        <h3 id="meta-ad-trial-exit-title" style="margin:0 0 9px; font:800 1.35rem/1.2 'Montserrat',sans-serif; color:#171923; -webkit-text-fill-color:#171923;">Keep setting up?</h3>
+        <p id="meta-ad-trial-exit-body" style="margin:0 0 20px; color:#4f4a43; -webkit-text-fill-color:#4f4a43; font-size:.92rem; line-height:1.5;">Continue where you left off, or unlock the complete six-week program now.</p>
+        <button id="meta-ad-trial-resume-btn" type="button" onclick="window.BalanceMetaAdTrial.resumeInterruptedFlow()" style="width:100%; background:linear-gradient(135deg,#d4ad52,#f0cf76); color:#171923; -webkit-text-fill-color:#171923; border:1px solid #b78a2e; padding:14px; border-radius:12px; font:800 .92rem 'Montserrat',sans-serif; cursor:pointer; margin-bottom:10px;">CONTINUE SETUP</button>
+        <button id="meta-ad-trial-exit-pay" type="button" onclick="window.BalanceMetaAdTrial.openCheckoutGate()" style="width:100%; background:#111; color:#fffaf0; -webkit-text-fill-color:#fffaf0; border:none; padding:14px; border-radius:12px; font:800 .92rem 'Montserrat',sans-serif; cursor:pointer;">PAY AUD $149 NOW</button>
+        <p style="margin:11px 0 0; color:#625c52; -webkit-text-fill-color:#625c52; font-size:.7rem; line-height:1.4;">One payment for the full six weeks. No subscription or automatic renewal.</p>
     </div>
 </div>
 

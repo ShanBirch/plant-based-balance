@@ -6,6 +6,7 @@ const vm = require('node:vm');
 
 const root = path.join(__dirname, '..');
 const source = fs.readFileSync(path.join(root, 'lib/meta-ad-trial.js'), 'utf8');
+const dashboard = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
 
 function makeStorage(initial = {}) {
     const values = new Map(Object.entries(initial));
@@ -230,6 +231,14 @@ test('paid Meta onboarding and tour exits stay locked behind continue-or-pay cho
     assert.equal(trial.elements['meta-ad-trial-exit-choice'].style.display, 'none');
     assert.equal(trial.elements['meta-ad-trial-gate'].style.display, 'flex');
     assert.equal(api.readState().interruptedStage, 'checkout');
+});
+
+test('setup interruption choice keeps readable foreground colours on its light surface', () => {
+    assert.match(dashboard, /id="meta-ad-trial-exit-choice"[\s\S]*?background:#fffdf8; color:#171923; -webkit-text-fill-color:#171923;/);
+    assert.match(dashboard, /id="meta-ad-trial-exit-title"[^>]*color:#171923; -webkit-text-fill-color:#171923;/);
+    assert.match(dashboard, /id="meta-ad-trial-exit-body"[^>]*color:#4f4a43; -webkit-text-fill-color:#4f4a43;/);
+    assert.match(dashboard, /id="meta-ad-trial-resume-btn"[^>]*color:#171923; -webkit-text-fill-color:#171923;/);
+    assert.match(dashboard, /id="meta-ad-trial-exit-pay"[^>]*color:#fffaf0; -webkit-text-fill-color:#fffaf0;/);
 });
 
 test('a checkout reload restores the blocking gate before deferred app startup completes', () => {
