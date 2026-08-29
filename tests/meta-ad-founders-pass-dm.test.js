@@ -147,6 +147,16 @@ test('natural preview acceptance remains approved when curriculum bubbles push o
         history: longSplitHistory,
     });
     assert.equal(approval?.required, false);
+    const repairedPreviewApproval = buildPaidMetaConversationApproval({
+        metaAdConversationFastLane: true,
+        draft: { ...previewDraft, model: 'openai-gpt-5.4-mini-paid-meta+cocos-repair' },
+        currentMessage: 'Yes, open it for me.',
+        linkedUserId: null,
+        qualifier: { facts: {} },
+        history: longSplitHistory,
+    });
+    assert.equal(repairedPreviewApproval?.required, false,
+        'a repaired signed preview handoff keeps its explicit approval');
     const review = buildApprovedDeterministicMetaAdFirstReplyReview({
         metaAdConversationFastLane: true,
         draft: previewDraft,

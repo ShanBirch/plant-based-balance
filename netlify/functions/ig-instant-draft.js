@@ -2875,10 +2875,15 @@ function buildPaidMetaConversationApproval({
     history = [],
 } = {}) {
     const message = String(currentMessage || '').trim();
+    const verifiedExplicitPreviewHandoff = draft?.replyMode === 'campaign_app_preview_handoff'
+        && draft?.appPreviewHandoff === true
+        && isMetaAppPreviewUrl(draft?.appPreviewUrl)
+        && (isExplicitPaidMetaPreviewRequest(message) || isExplicitPaidMetaPreviewAcceptance(message));
     const deterministicProgression = metaAdConversationFastLane
         && !linkedUserId
         && ['campaign_sales_progression', 'campaign_buyer_handoff', 'campaign_app_preview_handoff'].includes(String(draft?.replyMode || ''))
-        && /^deterministic_paid_meta_(?:conversation|guided_sales|handoff|autonomy)_v\d+(?:\+[a-z0-9_-]+)*$/i.test(String(draft?.model || ''))
+        && (/^deterministic_paid_meta_(?:conversation|guided_sales|handoff|autonomy)_v\d+(?:\+[a-z0-9_-]+)*$/i.test(String(draft?.model || ''))
+            || verifiedExplicitPreviewHandoff)
         && !META_AD_FIRST_REPLY_OPT_OUT_RE.test(message)
         && !META_AD_FIRST_REPLY_REVIEW_REQUIRED_RE.test(message)
         && (draft?.replyMode !== 'campaign_buyer_handoff' || isPaidMetaContextualCheckoutIntent(message))
@@ -8511,6 +8516,9 @@ exports.handler = async (event) => {
             exercise_conversation_fast_lane: exerciseConversationFastLane || existingPending.data?.exercise_conversation_fast_lane || undefined,
             meta_ad_flow_variant: metaAdFastLane ? draft.flowVariant : (metaAdFlowVariant || existingPending.data?.meta_ad_flow_variant || undefined),
             meta_ad_first_reply_intent: metaAdOpeningTurn ? draft.firstReplyIntent : existingPending.data?.meta_ad_first_reply_intent,
+            paid_meta_conversation_approval: paidMetaConversationApproval
+                || existingPending.data?.paid_meta_conversation_approval
+                || undefined,
             meta_ad_checkout_url: draft.checkoutUrl || existingPending.data?.meta_ad_checkout_url || undefined,
             meta_ad_attribution: metaAdFastLane
                 ? (thread.custom_data?.meta_ad_attribution || existingPending.data?.meta_ad_attribution || undefined)
