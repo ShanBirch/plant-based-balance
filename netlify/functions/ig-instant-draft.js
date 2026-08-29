@@ -1854,6 +1854,13 @@ function paidMetaHistoryHasAssistantDisclosure(history = []) {
         .some(item => /chatting with Shannon['\u2019]s Balance assistant|same Balance assistant here/i.test(String(item?.text || '')));
 }
 
+function paidMetaLatestOutboundHasOpenQuestion(history = []) {
+    const latestOutbound = [...(Array.isArray(history) ? history : [])]
+        .reverse()
+        .find(item => String(item?.direction || '').toLowerCase() === 'out');
+    return /\?/.test(String(latestOutbound?.text || ''));
+}
+
 function prependPaidMetaIdentityDisclosure(draft = null, history = []) {
     const disclosure = paidMetaHistoryHasAssistantDisclosure(history)
         ? 'Yep, same Balance assistant here.'
@@ -1912,6 +1919,9 @@ function buildPaidMetaIdentityReply({
         })
         : null;
     if (continuation) return prependPaidMetaIdentityDisclosure(continuation, history);
+    if (!topicMessage && paidMetaLatestOutboundHasOpenQuestion(history)) {
+        return prependPaidMetaIdentityDisclosure(null, history);
+    }
 
     const facts = qualifier?.facts && typeof qualifier.facts === 'object' ? qualifier.facts : {};
     const historyHasGoal = !!String(facts.current_state || facts.motivation || '').trim()
@@ -2860,7 +2870,7 @@ function resolveMetaAdFirstReplyIntent(currentMessage = '') {
     return 'overview';
 }
 
-const META_AD_IDENTITY_QUESTION_RE = /\b(?:are you\s+(?:(?:an?\s+)?(?:ai|bot|robot|human)|(?:a\s+)?real(?:\s+person)?|(?:actually|really)\s+shannon|shannon)|is this\s+(?:(?:an?\s+)?(?:ai|bot|robot|human)|automated|(?:a\s+)?real(?:\s+person)?|(?:actually|really)\s+shannon|shannon|you(?:\s*,?\s*shannon)?)|are (?:these|your)\s+(?:(?:messages?|replies)\s+automated|automated\s+(?:messages?|replies)|(?:messages?|replies)\s+from\s+an?\s+(?:ai|bot|robot))|am i\s+(?:talking|chatting)\s+(?:to|with)\s+(?:you|shannon|an?\s+(?:ai|bot|robot)|a\s+real\s+person)|who\s+am i\s+(?:talking|chatting)\s+(?:to|with)|who(?:'s|\s+is)\s+(?:this|replying|responding|messaging\s+me)|is (?:this|that)\s+(?:a\s+)?(?:real\s+person|human))\b/i;
+const META_AD_IDENTITY_QUESTION_RE = /\b(?:are you\s+(?:(?:an?\s+)?(?:ai(?:\s+(?:bot|assistant))?|bot|robot|human)|(?:a\s+)?real(?:\s+person)?|(?:actually|really)\s+shannon|shannon)|is this\s+(?:(?:an?\s+)?(?:ai(?:\s+(?:bot|assistant))?|bot|robot|human)|automated|(?:a\s+)?real(?:\s+person)?|(?:actually|really)\s+shannon|shannon|you(?:\s*,?\s*shannon)?)|are (?:these|your)\s+(?:(?:messages?|replies)\s+automated|automated\s+(?:messages?|replies)|(?:messages?|replies)\s+from\s+an?\s+(?:ai|bot|robot))|am i\s+(?:talking|chatting)\s+(?:to|with)\s+(?:you|shannon|an?\s+(?:ai(?:\s+bot)?|bot|robot)|a\s+real\s+person)|who\s+am i\s+(?:talking|chatting)\s+(?:to|with)|who(?:'s|\s+is)\s+(?:this|replying|responding|messaging\s+me)|is (?:this|that)\s+(?:a\s+)?(?:real\s+person|human))\b/i;
 // Unlinked leads still receive a normal, non-diagnostic reply when they
 // mention pregnancy, postpartum goals, injury, pain, hospital history, or
 // body-image language. Only explicit suicide or self-harm wording is a hard hold.

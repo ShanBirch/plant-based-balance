@@ -2028,6 +2028,27 @@ test('paid Meta identity questions answer honestly and continue from the earned 
     assert.equal((identityOnly.joined.match(/\?/g) || []).length, 1);
     assert.doesNotMatch(identityOnly.joined, /\bno[,—-]?\s+(?:it|this) isn['’]?t\b/i);
 
+    const identityAfterGoalQuestion = buildPaidMetaIdentityReply({
+        ...base,
+        currentMessage: 'Are you an AI bot?',
+        history: [{
+            direction: 'out',
+            text: "What's the main change you'd like to make over the next six weeks?",
+        }],
+    });
+    assert.equal(identityAfterGoalQuestion.joined, "You're chatting with Shannon's Balance assistant. I can help you here, and Shannon can jump in if needed.");
+    assert.equal((identityAfterGoalQuestion.joined.match(/\?/g) || []).length, 0);
+    assert.deepEqual(collectPaidMetaWriterContractIssues({
+        draft: identityAfterGoalQuestion,
+        currentMessage: 'Are you an AI bot?',
+        qualifier: { facts: {} },
+        history: [{
+            direction: 'out',
+            text: "What's the main change you'd like to make over the next six weeks?",
+        }],
+        flowVariant: 'broad_pain',
+    }), []);
+
     const identityAndGoal = buildPaidMetaIdentityReply({
         ...base,
         currentMessage: 'Are you AI? I want to lose 8kg and feel fitter.',
