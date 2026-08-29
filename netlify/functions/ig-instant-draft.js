@@ -1862,7 +1862,8 @@ function paidMetaLatestOutboundHasOpenQuestion(history = []) {
 }
 
 function prependPaidMetaIdentityDisclosure(draft = null, history = []) {
-    const disclosure = paidMetaHistoryHasAssistantDisclosure(history)
+    const repeatedDisclosure = paidMetaHistoryHasAssistantDisclosure(history);
+    const disclosure = repeatedDisclosure
         ? 'Yep, same Balance helper here.'
         : PAID_META_ASSISTANT_DISCLOSURE;
     const continuationChunks = Array.isArray(draft?.chunks) && draft.chunks.length
@@ -1875,8 +1876,14 @@ function prependPaidMetaIdentityDisclosure(draft = null, history = []) {
             .replace(/\band adjust your training or food\b/g, 'and adjusts your training or food')
             .trim()).filter(Boolean)
         : [String(draft?.joined || '').trim()].filter(Boolean);
+    const firstContinuation = repeatedDisclosure
+        ? String(continuationChunks[0] || '').replace(/^(?:yep|yeah)[,!]?\s*/i, '')
+        : String(continuationChunks[0] || '');
+    const naturalFirstContinuation = firstContinuation
+        ? `${firstContinuation.charAt(0).toUpperCase()}${firstContinuation.slice(1)}`
+        : '';
     const chunks = continuationChunks.length
-        ? [`${disclosure} ${continuationChunks[0]}`, ...continuationChunks.slice(1)]
+        ? [`${disclosure} ${naturalFirstContinuation}`, ...continuationChunks.slice(1)]
         : [disclosure];
     return {
         ...(draft || {}),
@@ -9106,7 +9113,7 @@ exports.handler = async (event) => {
             metaAdGoalReplyTurn,
             metaAdConversationFastLane,
             draft,
-            approval: metaAdFirstReplyApproval,
+            approval: paidMetaConversationApproval || metaAdFirstReplyApproval,
             linkedUserId: thread.linked_user_id,
             mediaReview,
             contextReview,

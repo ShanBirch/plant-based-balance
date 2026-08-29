@@ -2137,6 +2137,30 @@ test('identity questions do not delay explicit preview or checkout handoffs', ()
     assert.match(preview.joined, /digital Balance helper/i);
     assert.match(preview.joined, /before you pay: https:\/\/future-balance\.netlify\.app\/p\//i);
     assert.doesNotMatch(preview.joined, /want me to open|would you like/i);
+    const previewApproval = buildPaidMetaConversationApproval({
+        metaAdConversationFastLane: true,
+        draft: preview,
+        currentMessage: 'Is this automated? Can I see the preview?',
+        linkedUserId: null,
+        qualifier: { facts: {} },
+        history: [],
+    });
+    const previewReview = buildApprovedDeterministicMetaAdFirstReplyReview({
+        metaAdConversationFastLane: true,
+        draft: preview,
+        approval: previewApproval,
+        linkedUserId: null,
+        mediaReview: { required: false },
+        contextReview: {
+            required: true,
+            reasons: ['ai_suspicion_or_authenticity_question'],
+        },
+        currentMessage: 'Is this automated? Can I see the preview?',
+        qualifier: { facts: {} },
+        history: [],
+    });
+    assert.equal(previewReview?.verdict, 'pass');
+    assert.equal(previewReview?.context_warning_overridden, true);
 
     const checkout = buildPaidMetaIdentityReply({
         currentMessage: 'Are you actually Shannon? Send me the checkout link.',
@@ -2197,6 +2221,16 @@ test('identity wording variants are recognized, repeated disclosure stays short,
     });
     assert.match(repeated.joined, /^Yep, same Balance helper here\./);
     assert.doesNotMatch(repeated.joined, /Shannon can jump in/i);
+
+    const repeatedPreview = buildPaidMetaIdentityReply({
+        currentMessage: 'Is this automated? Can I see the preview?',
+        qualifier: { facts: {} },
+        history: [{ direction: 'out', text: "You're chatting with Shannon's digital Balance helper. I can help here." }],
+        flowVariant: 'broad_pain',
+        appPreviewUrl: 'https://future-balance.netlify.app/p/Test_123-xyz9876543210',
+    });
+    assert.match(repeatedPreview.joined, /^Yep, same Balance helper here\. Here you go\./);
+    assert.doesNotMatch(repeatedPreview.joined, /here\. Yep,/i);
 
     const mixedOptOut = 'Are you AI? Stop messaging me.';
     assert.equal(getMetaAdSensitiveHoldReason({
