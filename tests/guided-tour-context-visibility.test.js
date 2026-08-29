@@ -27,7 +27,7 @@ test('walkthrough keeps surrounding page context readable', () => {
   assert.match(premiumOverlays, /#guided-tour-overlay\.tour-page-view #guided-tour-spotlight[\s\S]*?rgba\(26, 24, 20, 0\.08\)/);
   assert.doesNotMatch(premiumOverlays, /#guided-tour-spotlight[\s\S]*?rgba\(29, 15, 50, 0\.78\)/);
   assert.match(dashboard, /pbb-premium-overlays\.css\?v=97-foundations-actions/);
-  assert.match(serviceWorker, /pbb-app-v398-course-before-coach/);
+  assert.match(serviceWorker, /pbb-app-v399-visible-coach-handoff/);
 });
 
 test('page-level stops opt into the softer context view', () => {
@@ -123,6 +123,7 @@ test('required onboarding continues from Feed through Foundations, coach, and We
   assert.match(source, /requiresFeedPost[\s\S]*?pbbFeedPostCreated/);
   assert.match(stories, /dispatchEvent\(new CustomEvent\('pbbFeedPostCreated'/);
   assert.match(source, /waitForPromptedStepSurface\(step, 900\)/);
+  assert.match(source, /const displayStep = isPromptBeforeAction[\s\S]*?coachNoteGuide: false,[\s\S]*?requiresWelcomeAudio: false/);
 });
 
 test('shopping-list tour accepts a tap anywhere on the highlighted ingredient row', () => {
