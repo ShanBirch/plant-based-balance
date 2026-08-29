@@ -195,6 +195,23 @@ test('generic readiness after the preview invitation opens preview rather than c
         history,
     });
     assert.equal(approval?.required, false);
+
+    const qualifiedHistoryWithoutVisibleCta = [
+        { direction: 'in', text: 'I want to lose body fat and feel confident in the gym.' },
+        { direction: 'out', text: 'What usually gets in the way?' },
+        { direction: 'in', text: 'Gym anxiety and random workouts make me stop after a week.' },
+        { direction: 'out', text: "It's one AUD $149 payment for the full six weeks. No subscription or auto-renewal. Here's a quick video showing the course and what's inside Balance." },
+    ];
+    const qualifiedReady = buildDeterministicPaidMetaConversationReply({
+        currentMessage: "I'm ready.",
+        qualifier: { facts: {} },
+        history: qualifiedHistoryWithoutVisibleCta,
+        flowVariant: 'broad_pain',
+        appPreviewUrl: previewUrl,
+    });
+    assert.equal(qualifiedReady.replyMode, 'campaign_app_preview_handoff');
+    assert.equal(qualifiedReady.appPreviewUrl, previewUrl);
+    assert.equal(qualifiedReady.checkoutUrl, undefined);
 });
 
 test('a broad offer reflects the supplied kids and time blocker instead of using a vague acknowledgement', () => {

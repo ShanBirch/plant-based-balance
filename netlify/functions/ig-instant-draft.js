@@ -1883,14 +1883,20 @@ function buildDeterministicPaidMetaConversationReply({
     const directPreviewRequest = broadFlow && isExplicitPaidMetaPreviewRequest(message);
     const acceptedExplicitPreviewInvitation = isExplicitPaidMetaPreviewAcceptance(message)
         && hasRecentPaidMetaSupportQuestion(history);
+    const genericReadyAfterQualifiedOffer = broadFlow
+        && /^(?:i(?:'m| am) ready)[.!\s]*$/i.test(message)
+        && historyHasGoal
+        && historyHasBlocker
+        && recentProofVideo;
     const acceptedPreviewHandoff = directPreviewRequest
         || acceptedExplicitPreviewInvitation
+        || genericReadyAfterQualifiedOffer
         || (!hasPaidMetaPreviewOrPriceDecline(message)
             && PAID_META_POSITIVE_FIT_RE.test(message)
             && hasRecentCompletePaidMetaOffer(history));
     if (acceptedPreviewHandoff
         && appPreviewUrl
-        && (directPreviewRequest || acceptedExplicitPreviewInvitation || (historyHasGoal && historyHasBlocker))) {
+        && (directPreviewRequest || acceptedExplicitPreviewInvitation || genericReadyAfterQualifiedOffer || (historyHasGoal && historyHasBlocker))) {
         const mealPlanCopy = broadFlow ? 'meal plan fitted to your dietary preferences' : 'plant-based meal plan';
         const joined = `Yep, here you go. You can look through your workout program and ${mealPlanCopy} in the app before you pay: ${appPreviewUrl}`;
         return {
