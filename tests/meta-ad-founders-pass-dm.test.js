@@ -15,6 +15,8 @@ const {
     buildApprovedDeterministicMetaAdFirstReplyReview,
     ensureMetaAdSalesProgressionQuestion,
     buildDeterministicPaidMetaConversationReply,
+    buildPaidMetaIdentityReply,
+    stripPaidMetaIdentityQuestion,
     buildPaidMetaTailoredOfferChunks,
     isExplicitPaidMetaProofVideoRetry,
     buildPaidMetaProofVideoRetryReply,
@@ -83,6 +85,8 @@ test('paid Meta has a dedicated sales agent prompt with no general coach assumpt
     assert.match(prompt, /deterministic transport may add the approved quick app video after both goal and blocker are known/i);
     assert.match(prompt, /do not invent URLs, visible media placeholders such as \[course video\]/i);
     assert.match(prompt, /looks great.*not checkout intent/i);
+    assert.match(prompt, /chatting with Shannon's Balance assistant/i);
+    assert.match(prompt, /Never deny automation or pretend the assistant is Shannon/i);
     assert.doesNotMatch(prompt, /animals were a big part/i);
     assert.doesNotMatch(prompt, /CLIENT NOTES AND APP CONTEXT/i);
     assert.doesNotMatch(prompt, /CONVERSATIONAL ELICITATION/i);
@@ -1990,11 +1994,11 @@ test('preview-only Meta approval cannot make the worker invent a checkout link',
     assert.equal(readyHandoff.signup_link_handoff_url, 'https://future-balance.netlify.app/fitness');
 });
 
-test('paid Meta opt-out, identity, and safety messages always hold while ordinary flows are untouched', () => {
+test('paid Meta opt-out and safety messages hold while identity questions continue transparently', () => {
     const metaAlert = { meta_ad_fast_lane: true };
     assert.equal(getMetaAdSensitiveHoldReason({ alertData: metaAlert, currentMessage: 'STOP' }).code, 'dm_opt_out');
     assert.equal(getMetaAdSensitiveHoldReason({ alertData: metaAlert, currentMessage: "Don't message me again" }).code, 'dm_opt_out');
-    assert.equal(getMetaAdSensitiveHoldReason({ alertData: metaAlert, currentMessage: 'Are you an AI bot?' }).code, 'identity_question');
+    assert.equal(getMetaAdSensitiveHoldReason({ alertData: metaAlert, currentMessage: 'Are you an AI bot?' }), null);
     assert.equal(getMetaAdSensitiveHoldReason({ alertData: metaAlert, currentMessage: 'I am pregnant and injured' }), null,
         'ordinary pregnancy and injury context receives a safe non-diagnostic lead reply');
     assert.equal(getMetaAdSensitiveHoldReason({ alertData: metaAlert, currentMessage: 'I want to be fitter and lose my pregnancy fat' }), null,
@@ -2005,6 +2009,164 @@ test('paid Meta opt-out, identity, and safety messages always hold while ordinar
     assert.equal(getMetaAdSensitiveHoldReason({ alertData: metaAlert, currentMessage: 'I feel suicidal' }).code, 'safety_or_medical');
     assert.equal(getMetaAdSensitiveHoldReason({ alertData: metaAlert, currentMessage: 'I need to stop snacking' }), null);
     assert.equal(getMetaAdSensitiveHoldReason({ alertData: {}, currentMessage: 'Are you an AI bot?' }), null);
+});
+
+test('paid Meta identity questions answer honestly and continue from the earned stage', () => {
+    const base = {
+        qualifier: { facts: {} },
+        flowVariant: 'broad_pain',
+        checkoutUrl: 'https://future-balance.netlify.app/fitness/test-offer',
+        appPreviewUrl: 'https://future-balance.netlify.app/p/Test_123-xyz9876543210',
+        allowVideoAttachment: true,
+    };
+    const identityOnly = buildPaidMetaIdentityReply({
+        ...base,
+        currentMessage: 'Are you an AI bot?',
+    });
+    assert.match(identityOnly.joined, /^You're chatting with Shannon's Balance assistant\./);
+    assert.match(identityOnly.joined, /main change you'd like to make over the next six weeks\?/i);
+    assert.equal((identityOnly.joined.match(/\?/g) || []).length, 1);
+    assert.doesNotMatch(identityOnly.joined, /\bno[,—-]?\s+(?:it|this) isn['’]?t\b/i);
+
+    const identityAndGoal = buildPaidMetaIdentityReply({
+        ...base,
+        currentMessage: 'Are you AI? I want to lose 8kg and feel fitter.',
+    });
+    assert.match(identityAndGoal.joined, /losing the weight and feeling fitter/i);
+    assert.match(identityAndGoal.joined, /what usually gets in the way/i);
+    assert.equal((identityAndGoal.joined.match(/\?/g) || []).length, 1);
+
+    const identityGoalAndBlocker = buildPaidMetaIdentityReply({
+        ...base,
+        currentMessage: 'Is this really Shannon? I want to lose 6kg, but work and the kids make me fall off every week.',
+    });
+    assert.match(identityGoalAndBlocker.joined, /workout program/i);
+    assert.match(identityGoalAndBlocker.joined, /dietary preferences/i);
+    assert.match(identityGoalAndBlocker.joined, /AUD \$149/i);
+    assert.match(identityGoalAndBlocker.joined, /no subscription or auto-renewal/i);
+    assert.match(identityGoalAndBlocker.joined, /personalised preview before you pay\?/i);
+    assert.ok(identityGoalAndBlocker.videoAttachmentUrl);
+    assert.equal((identityGoalAndBlocker.joined.match(/\?/g) || []).length, 1);
+    assert.doesNotMatch(identityGoalAndBlocker.joined, /plant[ -]?based|vegan/i);
+
+    const identityAndInclusions = buildPaidMetaIdentityReply({
+        ...base,
+        currentMessage: 'Are you AI? What is included?',
+    });
+    assert.match(identityAndInclusions.joined, /six-week course/i);
+    assert.match(identityAndInclusions.joined, /where Shannon reviews your training and food/i);
+    assert.doesNotMatch(identityAndInclusions.joined, /where I review|with me/i);
+
+    const identityAndCheckIn = buildPaidMetaIdentityReply({
+        ...base,
+        currentMessage: 'Is this automated? How does the weekly check-in work?',
+    });
+    assert.match(identityAndCheckIn.joined, /check in inside Balance/i);
+    assert.match(identityAndCheckIn.joined, /Shannon/i);
+    assert.doesNotMatch(identityAndCheckIn.joined, /\bI can see\b|\bI give\b/i);
+
+    const identityAndPrice = buildPaidMetaIdentityReply({
+        ...base,
+        currentMessage: 'Are you Shannon? How much does it cost?',
+    });
+    assert.match(identityAndPrice.joined, /AUD \$149/i);
+    assert.match(identityAndPrice.joined, /no subscription or auto-renewal/i);
+});
+
+test('identity questions do not delay explicit preview or checkout handoffs', () => {
+    const previewUrl = 'https://future-balance.netlify.app/p/Test_123-xyz9876543210';
+    const preview = buildPaidMetaIdentityReply({
+        currentMessage: 'Is this automated? Can I see the preview?',
+        qualifier: { facts: {} },
+        history: [],
+        flowVariant: 'broad_pain',
+        appPreviewUrl: previewUrl,
+    });
+    assert.equal(preview.replyMode, 'campaign_app_preview_handoff');
+    assert.equal(preview.appPreviewUrl, previewUrl);
+    assert.match(preview.joined, /Balance assistant/i);
+    assert.match(preview.joined, /before you pay: https:\/\/future-balance\.netlify\.app\/p\//i);
+    assert.doesNotMatch(preview.joined, /want me to open|would you like/i);
+
+    const checkout = buildPaidMetaIdentityReply({
+        currentMessage: 'Are you actually Shannon? Send me the checkout link.',
+        qualifier: { facts: {} },
+        history: [],
+        flowVariant: 'broad_pain',
+        checkoutUrl: 'https://future-balance.netlify.app/fitness/test-offer',
+    });
+    assert.equal(checkout.replyMode, 'campaign_buyer_handoff');
+    assert.match(checkout.joined, /Balance assistant/i);
+    assert.match(checkout.joined, /get started here: https:\/\/future-balance\.netlify\.app\/fitness\/test-offer/i);
+    assert.equal(shouldApplyDeterministicPaidMetaReplyOverride(checkout), true);
+    assert.equal(selectFastDeterministicPaidMetaProgression({
+        metaAdOpeningTurn: true,
+        draft: checkout,
+    }), checkout, 'identity handling must outrank the normal new-episode opener');
+    const checkoutApproval = buildPaidMetaConversationApproval({
+        metaAdConversationFastLane: true,
+        draft: checkout,
+        currentMessage: 'Are you actually Shannon? Send me the checkout link.',
+        linkedUserId: null,
+        qualifier: { facts: {} },
+        history: [],
+    });
+    assert.equal(checkoutApproval?.required, false);
+    assert.equal(checkoutApproval?.code, 'approved_meta_ad_conversation_buyer_handoff');
+});
+
+test('identity wording variants are recognized, repeated disclosure stays short, and safety still wins', () => {
+    for (const message of [
+        'Is this really Shannon?',
+        'Are you actually Shannon?',
+        'Is this automated?',
+        'Who am I chatting with?',
+        'Are these automated messages?',
+        'Is this you Shannon?',
+        'Are you a real person?',
+        'Are you a human?',
+        'Are these messages from a bot?',
+        'Is this a bot or are you Shannon?',
+    ]) {
+        const reply = buildPaidMetaIdentityReply({
+            currentMessage: message,
+            qualifier: { facts: {} },
+            history: [],
+            flowVariant: 'broad_pain',
+        });
+        assert.ok(reply, message);
+        assert.match(reply.joined, /Balance assistant/i, message);
+    }
+
+    assert.equal(stripPaidMetaIdentityQuestion('Is this automated? Can I see the preview?'), 'Can I see the preview?');
+    const repeated = buildPaidMetaIdentityReply({
+        currentMessage: 'Are you an AI bot?',
+        qualifier: { facts: {} },
+        history: [{ direction: 'out', text: "You're chatting with Shannon's Balance assistant. I can help you here." }],
+        flowVariant: 'broad_pain',
+    });
+    assert.match(repeated.joined, /^Yep, same Balance assistant here\./);
+    assert.doesNotMatch(repeated.joined, /Shannon can jump in/i);
+
+    const mixedOptOut = 'Are you AI? Stop messaging me.';
+    assert.equal(getMetaAdSensitiveHoldReason({
+        alertData: { meta_ad_fast_lane: true },
+        currentMessage: mixedOptOut,
+    }).code, 'dm_opt_out');
+    assert.equal(buildDeterministicPaidMetaConversationReply({
+        currentMessage: mixedOptOut,
+        flowVariant: 'broad_pain',
+    }), null);
+
+    const mixedSafety = 'Are you AI? I am thinking about self-harm.';
+    assert.equal(getMetaAdSensitiveHoldReason({
+        alertData: { meta_ad_fast_lane: true },
+        currentMessage: mixedSafety,
+    }).code, 'safety_or_medical');
+    assert.equal(buildDeterministicPaidMetaConversationReply({
+        currentMessage: mixedSafety,
+        flowVariant: 'broad_pain',
+    }), null);
 });
 
 test('an attempted immediate Meta dispatch that does not succeed is treated as a failed handoff', () => {

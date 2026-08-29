@@ -1835,6 +1835,182 @@ function buildPaidMetaPlantBasedIdentityProgression({
     };
 }
 
+const PAID_META_ASSISTANT_DISCLOSURE = "You're chatting with Shannon's Balance assistant. I can help you here, and Shannon can jump in if needed.";
+
+function stripPaidMetaIdentityQuestion(value = '') {
+    return String(value || '')
+        .replace(new RegExp(META_AD_IDENTITY_QUESTION_RE.source, 'ig'), ' ')
+        .replace(/^[\s,.;:!?-]*(?:and|also|but|or|so)\s+/i, '')
+        .replace(/^[\s,.;:!?-]+/, '')
+        .replace(/\s+([,.;:!?])/g, '$1')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+}
+
+function paidMetaHistoryHasAssistantDisclosure(history = []) {
+    return (Array.isArray(history) ? history : [])
+        .filter(item => String(item?.direction || '').toLowerCase() === 'out')
+        .slice(-8)
+        .some(item => /chatting with Shannon['\u2019]s Balance assistant|same Balance assistant here/i.test(String(item?.text || '')));
+}
+
+function prependPaidMetaIdentityDisclosure(draft = null, history = []) {
+    const disclosure = paidMetaHistoryHasAssistantDisclosure(history)
+        ? 'Yep, same Balance assistant here.'
+        : PAID_META_ASSISTANT_DISCLOSURE;
+    const continuationChunks = Array.isArray(draft?.chunks) && draft.chunks.length
+        ? draft.chunks.map(chunk => String(chunk || '')
+            .replace(/\bwith me\b/gi, 'with Shannon')
+            .replace(/\bwhere I review\b/g, 'where Shannon reviews')
+            .replace(/\bI review your training and food\b/g, 'Shannon reviews your training and food')
+            .replace(/\bI can see\b/g, 'Shannon can see')
+            .replace(/\bthen I give\b/g, 'then Shannon gives')
+            .replace(/\band adjust your training or food\b/g, 'and adjusts your training or food')
+            .trim()).filter(Boolean)
+        : [String(draft?.joined || '').trim()].filter(Boolean);
+    const chunks = continuationChunks.length
+        ? [`${disclosure} ${continuationChunks[0]}`, ...continuationChunks.slice(1)]
+        : [disclosure];
+    return {
+        ...(draft || {}),
+        chunks,
+        joined: chunks.join('\n\n'),
+        model: 'deterministic_paid_meta_identity_v1',
+        replyMode: draft?.replyMode || 'campaign_sales_progression',
+        maxChunks: Math.min(MAX_CHUNKS, Math.max(1, Number(draft?.maxChunks) || chunks.length)),
+        error: null,
+        flowVariant: draft?.flowVariant || 'broad_pain',
+        identityDisclosure: true,
+    };
+}
+
+function buildPaidMetaIdentityReply({
+    currentMessage = '',
+    qualifier = {},
+    history = [],
+    flowVariant = 'broad_pain',
+    checkoutUrl = '',
+    appPreviewUrl = META_APP_PREVIEW_URL,
+    personalVoiceNoteMode = false,
+    allowVideoAttachment = false,
+} = {}) {
+    const message = String(currentMessage || '').replace(/\s+/g, ' ').trim();
+    if (!message || !META_AD_IDENTITY_QUESTION_RE.test(message)) return null;
+
+    const topicMessage = stripPaidMetaIdentityQuestion(message);
+    const continuation = topicMessage
+        ? buildDeterministicPaidMetaConversationReply({
+            currentMessage: topicMessage,
+            qualifier,
+            history,
+            flowVariant,
+            checkoutUrl,
+            appPreviewUrl,
+            personalVoiceNoteMode,
+            allowVideoAttachment,
+            skipIdentityDisclosure: true,
+        })
+        : null;
+    if (continuation) return prependPaidMetaIdentityDisclosure(continuation, history);
+
+    const facts = qualifier?.facts && typeof qualifier.facts === 'object' ? qualifier.facts : {};
+    const historyHasGoal = !!String(facts.current_state || facts.motivation || '').trim()
+        || paidMetaHistoryHasFitnessGoal(history);
+    const historyHasBlocker = qualifierHasKnownMetaAdBlocker(qualifier)
+        || paidMetaHistoryHasConcreteBlocker(history);
+    const currentHasGoal = PAID_META_FITNESS_GOAL_RE.test(topicMessage);
+    const currentHasBlocker = isPaidMetaConcreteBlocker(topicMessage)
+        || isPaidMetaBroadBlockerAnswer(topicMessage, history);
+    let fallback;
+
+    if (flowVariant === 'broad_pain' && currentHasGoal && currentHasBlocker) {
+        const offer = addPaidMetaProofVideoToOfferChunks(
+            buildPaidMetaTailoredOfferChunks(topicMessage, topicMessage, flowVariant),
+            history
+        );
+        fallback = {
+            chunks: offer.chunks,
+            joined: offer.chunks.join('\n\n'),
+            model: 'deterministic_paid_meta_guided_sales_v1',
+            replyMode: 'campaign_sales_progression',
+            maxChunks: MAX_CHUNKS,
+            error: null,
+            flowVariant,
+            videoAttachmentUrl: allowVideoAttachment ? offer.videoAttachmentUrl : null,
+        };
+    } else if (currentHasGoal && !historyHasGoal) {
+        const joined = buildPaidMetaGoalToBlockerText(topicMessage);
+        fallback = {
+            chunks: [joined],
+            joined,
+            model: 'deterministic_paid_meta_guided_sales_v1',
+            replyMode: 'campaign_sales_progression',
+            maxChunks: 1,
+            error: null,
+            flowVariant,
+        };
+    } else if (historyHasGoal && historyHasBlocker) {
+        if (hasRecentCompletePaidMetaOffer(history)) {
+            const joined = 'Want me to open your free personalised preview before you pay?';
+            fallback = {
+                chunks: [joined],
+                joined,
+                model: 'deterministic_paid_meta_guided_sales_v1',
+                replyMode: 'campaign_sales_progression',
+                maxChunks: 1,
+                error: null,
+                flowVariant,
+            };
+        } else {
+            const blockerText = topicMessage || paidMetaLatestConcreteBlockerText(history);
+            const goalText = facts.motivation || facts.current_state || paidMetaLatestFitnessGoalText(history);
+            const offer = addPaidMetaProofVideoToOfferChunks(
+                buildPaidMetaTailoredOfferChunks(blockerText, goalText, flowVariant),
+                history
+            );
+            fallback = {
+                chunks: offer.chunks,
+                joined: offer.chunks.join('\n\n'),
+                model: 'deterministic_paid_meta_guided_sales_v1',
+                replyMode: 'campaign_sales_progression',
+                maxChunks: MAX_CHUNKS,
+                error: null,
+                flowVariant,
+                videoAttachmentUrl: allowVideoAttachment ? offer.videoAttachmentUrl : null,
+            };
+        }
+    } else if (historyHasGoal) {
+        const joined = 'What usually gets in the way of making that happen consistently?';
+        fallback = {
+            chunks: [joined],
+            joined,
+            model: 'deterministic_paid_meta_guided_sales_v1',
+            replyMode: 'campaign_sales_progression',
+            maxChunks: 1,
+            error: null,
+            flowVariant,
+        };
+    } else {
+        const directIntent = resolveMetaAdFirstReplyIntent(topicMessage);
+        if (topicMessage && ['accountability', 'curriculum', 'inclusions', 'personalised_coaching', 'plant_based_requirement', 'price'].includes(directIntent)) {
+            fallback = buildMetaAdFoundersPassFirstReply(topicMessage, { flowVariant });
+        } else {
+            const joined = "What's the main change you'd like to make over the next six weeks?";
+            fallback = {
+                chunks: [joined],
+                joined,
+                model: 'deterministic_paid_meta_guided_sales_v1',
+                replyMode: 'campaign_sales_progression',
+                maxChunks: 1,
+                error: null,
+                flowVariant,
+            };
+        }
+    }
+
+    return prependPaidMetaIdentityDisclosure(fallback, history);
+}
+
 function buildDeterministicPaidMetaConversationReply({
     currentMessage = '',
     qualifier = {},
@@ -1844,11 +2020,25 @@ function buildDeterministicPaidMetaConversationReply({
     appPreviewUrl = META_APP_PREVIEW_URL,
     personalVoiceNoteMode = false,
     allowVideoAttachment = false,
+    skipIdentityDisclosure = false,
 } = {}) {
     const message = String(currentMessage || '').replace(/\s+/g, ' ').trim();
     if (!message
         || META_AD_FIRST_REPLY_OPT_OUT_RE.test(message)
         || META_AD_FIRST_REPLY_REVIEW_REQUIRED_RE.test(message)) return null;
+
+    if (!skipIdentityDisclosure && META_AD_IDENTITY_QUESTION_RE.test(message)) {
+        return buildPaidMetaIdentityReply({
+            currentMessage: message,
+            qualifier,
+            history,
+            flowVariant,
+            checkoutUrl,
+            appPreviewUrl,
+            personalVoiceNoteMode,
+            allowVideoAttachment,
+        });
+    }
 
     // This is a conversational identity turn, not a fixed funnel-copy turn.
     // Leave it with the model so it can reflect the person's exact habit,
@@ -2303,6 +2493,7 @@ function shouldApplyDeterministicPaidMetaReplyOverride(draft = null) {
     // model-written from the complete episode and current unanswered batch.
     return draft.replyMode === 'campaign_buyer_handoff'
         || draft.replyMode === 'campaign_app_preview_handoff'
+        || /^deterministic_paid_meta_identity_v\d+$/i.test(String(draft.model || ''))
         || (draft.replyMode === 'campaign_sales_progression'
             && /^deterministic_paid_meta_autonomy_v\d+$/i.test(String(draft.model || '')));
 }
@@ -2311,7 +2502,8 @@ function selectFastDeterministicPaidMetaProgression({ metaAdOpeningTurn = false,
     // A fresh verified ad referral or repeatable internal BALANCE opener is a
     // hard episode boundary. A still-coalescing "yes" from the prior episode
     // must never outrank the new opener and resend its preview/checkout handoff.
-    if (metaAdOpeningTurn) return null;
+    if (metaAdOpeningTurn
+        && !/^deterministic_paid_meta_identity_v\d+$/i.test(String(draft?.model || ''))) return null;
     return shouldApplyDeterministicPaidMetaReplyOverride(draft) ? draft : null;
 }
 
@@ -2646,14 +2838,15 @@ const META_AD_CURRICULUM_QUESTION_RE = /\b(?:what|which|how|can|could|do|does).{
 
 function resolveMetaAdFirstReplyIntent(currentMessage = '') {
     const text = String(currentMessage || '').toLowerCase().replace(/[’]/g, "'");
-    if (/^(?:what(?:'s| is) (?:the )?)?(?:price|cost)(?: of (?:it|this|the (?:pass|program)))?[!?.\s]*$/.test(text)) return 'price';
+    if (/^(?:what(?:'s| is) (?:the )?)?(?:price|cost)(?: of (?:it|this|the (?:pass|program)))?[!?.\s]*$/.test(text)
+        || /^how much (?:is|does) (?:it|this|balance|the (?:pass|program|course))(?: cost)?[!?.\s]*$/.test(text)) return 'price';
     if (META_AD_CURRICULUM_QUESTION_RE.test(text)) {
         return 'curriculum';
     }
     if (/\b(?:do you (?:offer|have)|is there|can i get)\b.{0,35}\bpersonali[sz]ed\b.{0,35}\b(?:coaching|plans?)\b|\bpersonali[sz]ed\b.{0,35}\b(?:coaching|plans?)\b/.test(text)) {
         return 'personalised_coaching';
     }
-    if (/\b(?:how does|how would|what(?:'s| is)).{0,35}\b(?:support|accountability)\b|\b(?:support|accountability)\b.{0,35}\b(?:work|included)\b/.test(text)) return 'accountability';
+    if (/\b(?:how does|how would|what(?:'s| is)).{0,35}\b(?:support|accountability|weekly check[ -]?in)\b|\b(?:support|accountability|weekly check[ -]?in)\b.{0,35}\b(?:work|included)\b/.test(text)) return 'accountability';
     if (/right for me|would this suit|is this for me|good fit|would it work for me/.test(text)) return 'fit';
     if (/do i need to (?:already )?be plant[ -]?based|already plant[ -]?based|not plant[ -]?based|vegan already|already vegan/.test(text)) {
         return 'plant_based_requirement';
@@ -2667,13 +2860,13 @@ function resolveMetaAdFirstReplyIntent(currentMessage = '') {
     return 'overview';
 }
 
-const META_AD_IDENTITY_QUESTION_RE = /\b(are you (?:an? )?(?:ai|bot|robot|real|human)|is this (?:an? )?(?:ai|bot)|am i talking to|who is this)\b/i;
+const META_AD_IDENTITY_QUESTION_RE = /\b(?:are you\s+(?:(?:an?\s+)?(?:ai|bot|robot|human)|(?:a\s+)?real(?:\s+person)?|(?:actually|really)\s+shannon|shannon)|is this\s+(?:(?:an?\s+)?(?:ai|bot|robot|human)|automated|(?:a\s+)?real(?:\s+person)?|(?:actually|really)\s+shannon|shannon|you(?:\s*,?\s*shannon)?)|are (?:these|your)\s+(?:(?:messages?|replies)\s+automated|automated\s+(?:messages?|replies)|(?:messages?|replies)\s+from\s+an?\s+(?:ai|bot|robot))|am i\s+(?:talking|chatting)\s+(?:to|with)\s+(?:you|shannon|an?\s+(?:ai|bot|robot)|a\s+real\s+person)|who\s+am i\s+(?:talking|chatting)\s+(?:to|with)|who(?:'s|\s+is)\s+(?:this|replying|responding|messaging\s+me)|is (?:this|that)\s+(?:a\s+)?(?:real\s+person|human))\b/i;
 // Unlinked leads still receive a normal, non-diagnostic reply when they
 // mention pregnancy, postpartum goals, injury, pain, hospital history, or
 // body-image language. Only explicit suicide or self-harm wording is a hard hold.
 const META_AD_SAFETY_OR_MEDICAL_RE = /\b(suicid\w*|self[- ]?harm\w*|kill(?:ing)? myself)\b/i;
 const META_AD_FIRST_REPLY_REVIEW_REQUIRED_RE = new RegExp(
-    `${META_AD_IDENTITY_QUESTION_RE.source}|${META_AD_SAFETY_OR_MEDICAL_RE.source}`,
+    META_AD_SAFETY_OR_MEDICAL_RE.source,
     'i'
 );
 const META_AD_FIRST_REPLY_OPT_OUT_RE = /^(?:stop|unsubscribe|leave me alone|remove me)[.!?\s]*$|\b(?:stop|do not|don['\u2019]?t)\s+(?:messaging|contacting|sending|replying|dm(?:ing)?)(?:\s+me)?\b/i;
@@ -2708,9 +2901,6 @@ function getMetaAdSensitiveHoldReason({ alertData = {}, currentMessage = '' } = 
         || /\b(?:stop|do not|don['\u2019]?t)\s+(?:message|messaging|contact|contacting|dm|dming)\s+me\b/i.test(message)
         || /\b(?:leave me alone|remove me from (?:this|your) list)\b/i.test(message)) {
         return { code: 'dm_opt_out', label: 'lead asked not to be messaged' };
-    }
-    if (META_AD_IDENTITY_QUESTION_RE.test(message)) {
-        return { code: 'identity_question', label: 'lead asked who is replying' };
     }
     if (META_AD_SAFETY_OR_MEDICAL_RE.test(message)) {
         return { code: 'safety_or_medical', label: 'explicit suicide or self-harm language needs Shannon' };
@@ -2933,7 +3123,7 @@ function buildPaidMetaConversationApproval({
     const deterministicProgression = metaAdConversationFastLane
         && !linkedUserId
         && ['campaign_sales_progression', 'campaign_buyer_handoff', 'campaign_app_preview_handoff'].includes(String(draft?.replyMode || ''))
-        && (/^deterministic_paid_meta_(?:conversation|guided_sales|handoff|autonomy)_v\d+(?:\+[a-z0-9_-]+)*$/i.test(String(draft?.model || ''))
+        && (/^deterministic_paid_meta_(?:conversation|guided_sales|handoff|autonomy|identity)_v\d+(?:\+[a-z0-9_-]+)*$/i.test(String(draft?.model || ''))
             || verifiedExplicitPreviewHandoff)
         && !META_AD_FIRST_REPLY_OPT_OUT_RE.test(message)
         && !META_AD_FIRST_REPLY_REVIEW_REQUIRED_RE.test(message)
@@ -3100,7 +3290,7 @@ function buildApprovedDeterministicMetaAdFirstReplyReview({
     const approvedGoalProof = deterministicGoalProof;
     const approvedConversationProgression = metaAdConversationFastLane
         && ['campaign_sales_progression', 'campaign_buyer_handoff', 'campaign_app_preview_handoff'].includes(String(draft?.replyMode || ''))
-        && /^deterministic_paid_meta_(?:conversation|guided_sales|handoff)_v\d+(?:\+[a-z0-9_-]+)*$/i.test(String(draft?.model || ''))
+        && /^deterministic_paid_meta_(?:conversation|guided_sales|handoff|identity)_v\d+(?:\+[a-z0-9_-]+)*$/i.test(String(draft?.model || ''))
         && (draft?.replyMode !== 'campaign_buyer_handoff' || isPaidMetaContextualCheckoutIntent(message))
         && (draft?.replyMode !== 'campaign_app_preview_handoff'
             || (draft?.appPreviewHandoff === true
@@ -3187,7 +3377,7 @@ SHANNON FOLLOW-UP QUESTION FINGERPRINT:
 - Avoid polished therapist/coach questions. Replace "what does that look like for you?", "what kind of difference would that make?", "what usually makes it hard?", "anything in particular making it hectic?", and "how are you finding it?" with a question built from their actual nouns.
 - Do not jump from a normal-life answer straight to the challenge. Use the follow-up to understand the blocker, preference, or context first.
 - Do not jump from a one-word story/pet/food reaction like "cute", "haha", "nice", an emoji, or a weak story-summary guess into "are you into fitness much too?" or "you training at the moment?". Reply to the story reaction itself, or stop if there is no useful next handle.
-- If the lead asks whether this is AI, a bot, automated, or really Shannon, do not draft a public denial and do not continue the sales thread. That must be held for Shannon.
+- If the lead asks whether this is AI, a bot, automated, or really Shannon, answer once and plainly: "You're chatting with Shannon's Balance assistant. I can help you here, and Shannon can jump in if needed." Then continue from the exact topic or next step already earned. Never deny automation or pretend the assistant is Shannon.
 
 THE OFFERING (for context — never list as a brochure; speak like a friend):
 - The FIRST offer for leads in this paid campaign is the paid Balance Foundations program, not a free challenge, standalone custom meal plan, workout program, generic app trial or Starter Coaching.
@@ -4653,7 +4843,7 @@ Reliable offer facts: Balance Foundations is a six-week program inside Balance w
 
 Verified course curriculum, for direct course, lesson or week-by-week questions: week 1, Why change feels hard; week 2, Work with your energy; week 3, Build a rhythm that sticks; week 4, Take the fight out of food; week 5, Make progress easier to repeat; week 6, Build your sustainable way forward. The course uses lessons, practical actions and Weekly Goals alongside the person's workout and nutrition setup. Do not dump all six weeks into an ordinary pitch. Give the full outline only when they ask for curriculum detail; otherwise use only the one or two themes relevant to their words.
 
-Send the signed preview immediately after they ask to see it or accept the free personalised preview. A positive reaction such as "looks great" is not checkout intent. Send checkout only after they explicitly ask to join, pay, sign up or receive the checkout link. Hand off instead of improvising for medical/safety issues, account or payment support, existing-client app support, or a direct request for Shannon. Keep replies quick, warm, concise and human. ${linkQuestionRule} Never reveal automation or AI. No em dashes.
+Send the signed preview immediately after they ask to see it or accept the free personalised preview. A positive reaction such as "looks great" is not checkout intent. Send checkout only after they explicitly ask to join, pay, sign up or receive the checkout link. Hand off instead of improvising for medical/safety issues, account or payment support, existing-client app support, or a direct request for Shannon. Keep replies quick, warm, concise and human. ${linkQuestionRule} If asked who is replying, say plainly: "You're chatting with Shannon's Balance assistant. I can help you here, and Shannon can jump in if needed." Never deny automation or pretend the assistant is Shannon. No em dashes.
 
 Campaign variant: ${flowVariant}
 Channel: ${channelLabel}
@@ -9822,6 +10012,8 @@ exports._test = {
     isContextualMetaAdOfferLinkRequest,
     buildContextualMetaAdOfferLinkReply,
     buildDeterministicPaidMetaConversationReply,
+    buildPaidMetaIdentityReply,
+    stripPaidMetaIdentityQuestion,
     buildPaidMetaTailoredOfferChunks,
     isExplicitPaidMetaProofVideoRetry,
     buildPaidMetaProofVideoRetryReply,
