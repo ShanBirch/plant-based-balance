@@ -1454,7 +1454,7 @@ function isExplicitPaidMetaPreviewAcceptance(value = '') {
     const message = String(value || '').replace(/\s+/g, ' ').trim();
     if (!message || /\b(?:not now|no thanks|don['\u2019]?t|do not|not interested|can['\u2019]?t)\b/i.test(message)) return false;
     return /^(?:yes|yeah|yep|definitely|absolutely|sure|okay|ok|keen)\b[\s\S]{0,180}$/i.test(message)
-        || /^(?:i(?:'m| am) ready)[.!\s]*$/i.test(message)
+        || /^(?:(?:i(?:'m| am) ready)[.!]?\s*)+$/i.test(message)
         || /^(?:that|it) sounds (?:really )?(?:good|great|perfect)\b[\s\S]{0,120}$/i.test(message)
         || /^(?:i(?:'d| would) like|give me|send me|let me|can i|i want)\b[\s\S]{0,120}\b(?:look|access|link|check it out|see it)\b[\s\S]{0,60}$/i.test(message);
 }
@@ -1884,7 +1884,7 @@ function buildDeterministicPaidMetaConversationReply({
     const acceptedExplicitPreviewInvitation = isExplicitPaidMetaPreviewAcceptance(message)
         && hasRecentPaidMetaSupportQuestion(history);
     const genericReadyAfterQualifiedOffer = broadFlow
-        && /^(?:i(?:'m| am) ready)[.!\s]*$/i.test(message)
+        && /^(?:(?:i(?:'m| am) ready)[.!]?\s*)+$/i.test(message)
         && historyHasGoal
         && historyHasBlocker
         && recentProofVideo;

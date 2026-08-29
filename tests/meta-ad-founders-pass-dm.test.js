@@ -227,6 +227,15 @@ test('generic readiness after the preview invitation opens preview rather than c
     assert.equal(qualifiedReady.replyMode, 'campaign_app_preview_handoff');
     assert.equal(qualifiedReady.appPreviewUrl, previewUrl);
     assert.equal(qualifiedReady.checkoutUrl, undefined);
+    const repeatedReady = buildDeterministicPaidMetaConversationReply({
+        currentMessage: "I'm ready.\nI'm ready.",
+        qualifier: { facts: {} },
+        history: qualifiedHistoryWithoutVisibleCta,
+        flowVariant: 'broad_pain',
+        appPreviewUrl: previewUrl,
+    });
+    assert.equal(repeatedReady.replyMode, 'campaign_app_preview_handoff');
+    assert.equal(repeatedReady.checkoutUrl, undefined);
 });
 
 test('a broad offer reflects the supplied kids and time blocker instead of using a vague acknowledgement', () => {
