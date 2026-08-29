@@ -4830,9 +4830,12 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
         if (missingCurriculumTitles.length > 0) {
             issues.push('The direct course question requires the full six-week course outline. Include all six verified week titles, then keep the fixed curriculum distinct from the personalised workout and nutrition setup.');
         }
-        const goalKnownBeforeCurriculum = PAID_META_FITNESS_GOAL_RE.test(turn)
+        const explicitlyDefersGoal = /\bbefore i (?:answer|tell you)\b/i.test(turn);
+        const goalKnownBeforeCurriculum = !explicitlyDefersGoal && (
+            PAID_META_FITNESS_GOAL_RE.test(turn)
             || paidMetaHistoryHasFitnessGoal(history)
-            || !!paidMetaFitnessGoalFromFacts(qualifier?.facts || {});
+            || !!paidMetaFitnessGoalFromFacts(qualifier?.facts || {})
+        );
         if (!goalKnownBeforeCurriculum
             && (!paidMetaOutboundAskedForGoal(reply) || /\b(?:preview|look inside|open it for you)\b/i.test(reply))) {
             issues.push('The course answer must return to the still-missing six-week goal. Ask that one goal question after the outline and do not offer the preview yet.');
@@ -4901,7 +4904,10 @@ function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = 
     const issueText = (Array.isArray(issues) ? issues : []).join(' ');
     const turn = String(currentMessage || '').replace(/\s+/g, ' ').trim();
     const fallbackFacts = qualifier?.facts && typeof qualifier.facts === 'object' ? qualifier.facts : {};
-    const fallbackGoal = paidMetaFitnessGoalFromFacts(fallbackFacts) || paidMetaLatestFitnessGoalText(history);
+    const explicitlyDefersGoal = /\bbefore i (?:answer|tell you)\b/i.test(turn);
+    const fallbackGoal = explicitlyDefersGoal
+        ? ''
+        : (paidMetaFitnessGoalFromFacts(fallbackFacts) || paidMetaLatestFitnessGoalText(history));
     const repairsEarnedOffer = /earned paid-Meta offer is missing/i.test(issueText)
         || (/pitched before|repeated a question/i.test(issueText)
             && !!fallbackGoal
