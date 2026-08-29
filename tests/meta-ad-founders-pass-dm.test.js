@@ -179,6 +179,17 @@ test('a broad offer reflects the supplied kids and time blocker instead of using
     assert.doesNotMatch(chunks[0], /^That makes sense\./i);
 });
 
+test('a broad offer reflects gym anxiety and random workouts before generic consistency language', () => {
+    const chunks = buildPaidMetaTailoredOfferChunks(
+        'Gym anxiety and doing random workouts make me stop after a week.',
+        'I want to lose body fat and feel confident in the gym.',
+        'broad_pain',
+    );
+    assert.match(chunks[0], /gym anxiety and random workouts/i);
+    assert.match(chunks[0], /clear and manageable/i);
+    assert.doesNotMatch(chunks[0], /^If follow-through is the hard part/i);
+});
+
 test('paid Meta price contract accepts Australian currency wording', () => {
     const issues = collectPaidMetaWriterContractIssues({
         draft: { joined: "It's one AUD $149 payment for the full six weeks, with no subscription or auto-renewal." },

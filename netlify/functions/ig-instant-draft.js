@@ -1556,6 +1556,11 @@ function buildPaidMetaTailoredOfferChunks(blockerText = '', goalText = '', flowV
                 : 'Changing rosters need a flexible plan.';
         } else if (/\b(?:food|prep|prepar|run out of time)\b/i.test(turn)) {
             compactAcknowledgement = 'If food prep is where it falls apart, that part needs to stay simple.';
+        } else if (/\b(?:gym anxiety|anxious|self-conscious|confidence)\b/i.test(turn)
+            && /\b(?:random|workouts?|what to do)\b/i.test(turn)) {
+            compactAcknowledgement = 'If gym anxiety and random workouts make you stop, each session needs to feel clear and manageable.';
+        } else if (/\b(?:gym anxiety|anxious|self-conscious|confidence)\b/i.test(turn)) {
+            compactAcknowledgement = 'If gym anxiety is getting in the way, the plan needs to make each session feel clear and manageable.';
         } else if (/\b(?:accountab|follow[ -]?through|fall off|stop|restart|consisten)\b/i.test(turn)) {
             compactAcknowledgement = 'If follow-through is the hard part, a clear plan and a weekly check-in matter.';
         } else if (/\b(?:overwhelm|too much information)\b/i.test(turn)) {
