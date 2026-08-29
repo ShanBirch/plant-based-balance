@@ -168,4 +168,6 @@ test('every onboarding screen tells the member what to do next', () => {
     assert.match(onboardingSource, /Read Shannon's message and choose the answer that fits you/);
     assert.match(onboardingSource, /Read this section, make your choice, then tap Next/);
     assert.match(onboardingSource, /Review your first week, then tap Open Balance/);
+    assert.match(onboardingSource, /nextBtn\.setAttribute\('aria-label', 'Open Balance'\)/);
+    assert.match(onboardingSource, /nextBtn\.setAttribute\('aria-label', 'Next'\)/);
 });

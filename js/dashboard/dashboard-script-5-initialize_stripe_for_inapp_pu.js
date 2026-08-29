@@ -11492,12 +11492,15 @@ function updateWizardUI() {
     if(nextBtn) {
         if(currentWizardStep === finalWizardStep) {
             nextBtn.textContent = 'OPEN BALANCE';
+            nextBtn.setAttribute('aria-label', 'Open Balance');
             nextBtn.onclick = finishOnboarding;
         } else if(currentWizardStep === 1) {
             nextBtn.innerHTML = wizardChatComplete ? "Continue &rarr;" : "Finish chat";
+            nextBtn.setAttribute('aria-label', wizardChatComplete ? 'Continue' : 'Finish chat');
             nextBtn.onclick = wizardNext;
         } else {
             nextBtn.innerHTML = "Next &rarr;";
+            nextBtn.setAttribute('aria-label', 'Next');
             nextBtn.onclick = wizardNext;
         }
     }
