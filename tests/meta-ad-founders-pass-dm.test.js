@@ -123,6 +123,42 @@ test('a fresh BALANCE episode outranks a coalescing preview acceptance from the 
     }), stalePreviewAcceptance);
 });
 
+test('natural preview acceptance remains approved when curriculum bubbles push offer terms outside the short history window', () => {
+    const previewDraft = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'Yes, open it for me.',
+        qualifier: { facts: {} },
+        history: [{ direction: 'out', text: 'Want me to open your free personalised preview before you pay?' }],
+        flowVariant: 'broad_pain',
+        appPreviewUrl: 'https://future-balance.netlify.app/p/Abc_123-xyz9876543210',
+    });
+    const longSplitHistory = [
+        { direction: 'out', text: 'Your six-week workout program fits your week, with a meal plan fitted to your dietary preferences.' },
+        { direction: 'out', text: 'You get the course and weekly review.' },
+        { direction: 'out', text: 'It is one AUD $149 payment with no subscription or auto-renewal.' },
+        { direction: 'out', text: 'Here is the course video.' },
+        { direction: 'out', text: 'Want me to open your free personalised preview before you pay?' },
+    ];
+    const approval = buildPaidMetaConversationApproval({
+        metaAdConversationFastLane: true,
+        draft: previewDraft,
+        currentMessage: 'Yes, open it for me.',
+        linkedUserId: null,
+        qualifier: { facts: {} },
+        history: longSplitHistory,
+    });
+    assert.equal(approval?.required, false);
+    const review = buildApprovedDeterministicMetaAdFirstReplyReview({
+        metaAdConversationFastLane: true,
+        draft: previewDraft,
+        approval,
+        linkedUserId: null,
+        currentMessage: 'Yes, open it for me.',
+        qualifier: { facts: {} },
+        history: longSplitHistory,
+    });
+    assert.equal(review?.verdict, 'pass');
+});
+
 test('a broad offer reflects the supplied kids and time blocker instead of using a vague acknowledgement', () => {
     const chunks = buildPaidMetaTailoredOfferChunks(
         'I want more energy and to train at home, but the kids and lack of time keep breaking my routine.',

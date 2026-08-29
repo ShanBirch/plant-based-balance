@@ -2888,7 +2888,8 @@ function buildPaidMetaConversationApproval({
                 && (isExplicitPaidMetaPreviewRequest(message)
                     || isApprovedPaidMetaAppPreviewMoment({ currentMessage: message, qualifier })
                     || (isExplicitPaidMetaPreviewAcceptance(message)
-                        && hasRecentCompletePaidMetaOffer(history)))));
+                        && (hasRecentCompletePaidMetaOffer(history)
+                            || hasRecentPaidMetaSupportQuestion(history))))));
     if (!deterministicProgression) return null;
     return {
         required: false,
@@ -3046,7 +3047,8 @@ function buildApprovedDeterministicMetaAdFirstReplyReview({
         && (draft?.replyMode !== 'campaign_app_preview_handoff'
             || (draft?.appPreviewHandoff === true
                 && isMetaAppPreviewUrl(draft?.appPreviewUrl)
-                && isApprovedPaidMetaAppPreviewMoment({ currentMessage: message, qualifier })));
+                && approval?.required === false
+                && approval?.code === 'approved_meta_ad_sales_progression'));
     const contextReasons = Array.isArray(contextReview?.reasons)
         ? contextReview.reasons.map(reason => String(reason || '').trim()).filter(Boolean)
         : [];
