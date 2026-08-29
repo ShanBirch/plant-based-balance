@@ -798,55 +798,12 @@ async function scheduleIgAutoReplyDirect({ alertId, alertData, replyText, delayM
     };
     const requestedRevisionId = String(alertData?.draft_revision_id || '').trim();
     const threadId = String(alertData?.ig_thread_id || '').trim();
-    const requestedInboundBatch = Array.isArray(alertData?.inbound_message_batch)
-        ? alertData.inbound_message_batch
-        : [];
-    const requestedInbound = [...requestedInboundBatch].reverse().find(message => message?.is_current)
-        || requestedInboundBatch[requestedInboundBatch.length - 1]
-        || null;
-    const requestedCreatedAt = requestedInbound?.created_at || '';
-    const graphSenderId = String(alertData?.ig_graph_recipient_id || '').trim();
-    const graphRecipientId = String(alertData?.ig_graph_account_id || '').trim();
-    let authoritativeWebhookRevisionConfirmed = false;
-    if (graphSenderId && graphRecipientId && requestedRevisionId) {
-        try {
-            const webhookRows = await supabaseQuery(
-                `ig_graph_webhook_events?select=message_id,created_at&sender_id=eq.${encodeURIComponent(graphSenderId)}`
-                + `&recipient_id=eq.${encodeURIComponent(graphRecipientId)}&field=eq.messages&message_id=not.is.null&order=created_at.desc&limit=1`
-            );
-            if (isDifferentInboundWebhookRevision({
-                latestRevisionId: webhookRows?.[0]?.message_id,
-                requestedRevisionId,
-            })) {
-                return await cancelSupersededAutoReplyAlert({
-                    alertId,
-                    alertData,
-                    requestedRevisionId,
-                    supersededBy: webhookRows?.[0]?.message_id,
-                    reason: 'newer_graph_webhook_inbound',
-                    timing: normalizedTiming,
-                });
-            }
-            authoritativeWebhookRevisionConfirmed = !!normalizeGraphInboundRevisionId(webhookRows?.[0]?.message_id)
-                && !isDifferentInboundWebhookRevision({
-                    latestRevisionId: webhookRows?.[0]?.message_id,
-                    requestedRevisionId,
-                });
-        } catch (error) {
-            console.warn('[ig-draft] latest inbound webhook revision check failed; using canonical fallback:', error.message);
-        }
-    }
-    if (threadId && requestedRevisionId && !authoritativeWebhookRevisionConfirmed) {
+    if (threadId && requestedRevisionId) {
         const latestInboundRows = await supabaseQuery(
             `ig_messages?select=manychat_message_id,created_at&thread_id=eq.${encodeURIComponent(threadId)}&direction=eq.in&order=created_at.desc,id.desc&limit=1`
         );
         const latestInboundRevisionId = String(latestInboundRows?.[0]?.manychat_message_id || '').trim();
-        if (isNewerCanonicalInboundRevision({
-            latestRevisionId: latestInboundRevisionId,
-            latestCreatedAt: latestInboundRows?.[0]?.created_at,
-            requestedRevisionId,
-            requestedCreatedAt,
-        })) {
+        if (isDifferentInboundWebhookRevision({ latestRevisionId: latestInboundRevisionId, requestedRevisionId })) {
             return await cancelSupersededAutoReplyAlert({
                 alertId,
                 alertData,
@@ -4338,7 +4295,6 @@ async function isLatestInboundMessageForThread({ threadId, manychatMessageId }) 
 function classifySourceMessageFreshness({
     sourceMessage,
     latestMessage,
-    latestWebhookRevisionId = '',
     resetAt = '',
 } = {}) {
     if (!sourceMessage?.id || String(sourceMessage.direction || '').toLowerCase() !== 'in') {
@@ -4350,13 +4306,6 @@ function classifySourceMessageFreshness({
         && Number.isFinite(sourceCreatedAtMs)
         && sourceCreatedAtMs < resetAtMs) {
         return { state: 'stale', reason: 'source_predates_conversation_reset' };
-    }
-    const sourceRevisionId = normalizeGraphInboundRevisionId(sourceMessage.manychat_message_id || '');
-    const latestWebhookRevision = normalizeGraphInboundRevisionId(latestWebhookRevisionId);
-    if (sourceRevisionId && latestWebhookRevision) {
-        return sourceRevisionId === latestWebhookRevision
-            ? { state: 'current', reason: 'source_is_latest_graph_webhook' }
-            : { state: 'stale', reason: 'newer_graph_webhook_inbound_exists' };
     }
     if (!latestMessage?.id) {
         return { state: 'unknown', reason: 'canonical_latest_message_not_found' };
@@ -4375,8 +4324,6 @@ function classifySourceMessageFreshness({
 async function inspectSourceMessageFreshness({
     threadId,
     manychatMessageId,
-    graphSenderId = '',
-    graphRecipientId = '',
     resetAt = '',
 } = {}) {
     if (!threadId || !manychatMessageId) {
@@ -4392,19 +4339,10 @@ async function inspectSourceMessageFreshness({
     );
     const sourceMessage = sourceRows?.[0] || null;
     const latestMessage = latestRows?.[0] || null;
-    let latestWebhookRevisionId = '';
-    if (graphSenderId && graphRecipientId) {
-        const webhookRows = await supabaseQuery(
-            `ig_graph_webhook_events?select=message_id&sender_id=eq.${encodeURIComponent(graphSenderId)}`
-            + `&recipient_id=eq.${encodeURIComponent(graphRecipientId)}&field=eq.messages&message_id=not.is.null&order=created_at.desc&limit=1`
-        );
-        latestWebhookRevisionId = webhookRows?.[0]?.message_id || '';
-    }
     return {
         ...classifySourceMessageFreshness({
             sourceMessage,
             latestMessage,
-            latestWebhookRevisionId,
             resetAt,
         }),
         sourceMessage,
@@ -7183,8 +7121,6 @@ exports.handler = async (event) => {
             const freshness = await inspectSourceMessageFreshness({
                 threadId,
                 manychatMessageId,
-                graphSenderId: resolveThreadGraphRecipientId(thread),
-                graphRecipientId: resolveThreadGraphAccountId(thread),
                 resetAt: thread.custom_data?.internal_test_conversation_reset_at || '',
             });
             if (freshness.state === 'stale') {
