@@ -8,6 +8,7 @@ const repoRoot = path.resolve(__dirname, '..');
 const frontend = fs.readFileSync(path.join(repoRoot, 'js/dashboard/pbb-weekly-checkin-preview.js'), 'utf8');
 const endpoint = fs.readFileSync(path.join(repoRoot, 'netlify/functions/submit-weekly-checkin.js'), 'utf8');
 const nextSteps = fs.readFileSync(path.join(repoRoot, 'js/dashboard/pbb-next-obvious-steps.js'), 'utf8');
+const serviceWorker = fs.readFileSync(path.join(repoRoot, 'sw.js'), 'utf8');
 
 function loadEndpointTestHelpers() {
   const module = { exports: {} };
@@ -101,6 +102,7 @@ test('Home omits the automated review card while retaining the client check-in f
   assert.doesNotMatch(renderFunction, /Your weekly check-in is ready/);
   assert.match(frontend, /window\.openWeeklyCheckinPreview = openWeeklyCheckinPreview/);
   assert.match(frontend, /window\.isWeeklyCheckinDue = isReviewEnabled/);
+  assert.match(serviceWorker, /pbb-app-v406-checkin-form-only/);
 });
 
 test('To Do Next routes a due weekly check-in directly into the client form', () => {
