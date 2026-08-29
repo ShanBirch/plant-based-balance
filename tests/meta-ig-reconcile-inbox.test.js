@@ -67,6 +67,15 @@ assert.strictEqual(
     '2026-05-25T01:02:03.000Z'
 );
 assert.strictEqual(
+    webhookTest.timestampIsoFromMessaging({
+        timestamp: Date.parse('2026-05-25T01:02:03.909Z'),
+        item: { timestamp: Math.floor(Date.parse('2026-05-25T01:02:03.909Z') / 1000), message: { mid: 'rapid-final', text: 'one more thing' } },
+        value: {},
+    }),
+    '2026-05-25T01:02:03.909Z',
+    'the native event timestamp preserves millisecond order across rapid bubbles'
+);
+assert.strictEqual(
     webhookTest.timestampIsoFromMessaging({ item: { message: { created_time: '2026-05-25T01:02:03+0000' } }, value: {} }),
     '2026-05-25T01:02:03.000Z'
 );

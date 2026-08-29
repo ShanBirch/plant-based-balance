@@ -1334,6 +1334,12 @@ function messageIdFromMessaging(event) {
 function timestampMsFromMessaging(event) {
     const message = messageFromMessaging(event);
     const candidates = [
+        // Native Instagram messaging webhooks put the authoritative
+        // millisecond timestamp directly on the messaging event. Keep it
+        // ahead of wrapper/fallback fields: rapid bubbles can share the same
+        // whole second, and losing these milliseconds can reverse their
+        // canonical order.
+        event?.timestamp,
         event?.item?.timestamp,
         event?.value?.timestamp,
         event?.value?.created_time,

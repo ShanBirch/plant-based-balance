@@ -807,6 +807,7 @@ async function scheduleIgAutoReplyDirect({ alertId, alertData, replyText, delayM
     const requestedCreatedAt = requestedInbound?.created_at || '';
     const graphSenderId = String(alertData?.ig_graph_recipient_id || '').trim();
     const graphRecipientId = String(alertData?.ig_graph_account_id || '').trim();
+    let authoritativeWebhookRevisionConfirmed = false;
     if (graphSenderId && graphRecipientId && requestedRevisionId) {
         try {
             const webhookRows = await supabaseQuery(
@@ -817,20 +818,25 @@ async function scheduleIgAutoReplyDirect({ alertId, alertData, replyText, delayM
                 latestRevisionId: webhookRows?.[0]?.message_id,
                 requestedRevisionId,
             })) {
-                return {
-                    scheduledFor: null,
-                    data: alertData || {},
-                    alreadyActioned: true,
-                    supersededDraftRevision: true,
-                    supersededByNewerWebhookInbound: true,
+                return await cancelSupersededAutoReplyAlert({
+                    alertId,
+                    alertData,
+                    requestedRevisionId,
+                    supersededBy: webhookRows?.[0]?.message_id,
+                    reason: 'newer_graph_webhook_inbound',
                     timing: normalizedTiming,
-                };
+                });
             }
+            authoritativeWebhookRevisionConfirmed = !!normalizeGraphInboundRevisionId(webhookRows?.[0]?.message_id)
+                && !isDifferentInboundWebhookRevision({
+                    latestRevisionId: webhookRows?.[0]?.message_id,
+                    requestedRevisionId,
+                });
         } catch (error) {
             console.warn('[ig-draft] latest inbound webhook revision check failed; using canonical fallback:', error.message);
         }
     }
-    if (threadId && requestedRevisionId) {
+    if (threadId && requestedRevisionId && !authoritativeWebhookRevisionConfirmed) {
         const latestInboundRows = await supabaseQuery(
             `ig_messages?select=manychat_message_id,created_at&thread_id=eq.${encodeURIComponent(threadId)}&direction=eq.in&order=created_at.desc,id.desc&limit=1`
         );
@@ -841,14 +847,14 @@ async function scheduleIgAutoReplyDirect({ alertId, alertData, replyText, delayM
             requestedRevisionId,
             requestedCreatedAt,
         })) {
-            return {
-                scheduledFor: null,
-                data: alertData || {},
-                alreadyActioned: true,
-                supersededDraftRevision: true,
-                supersededByNewerInbound: true,
+            return await cancelSupersededAutoReplyAlert({
+                alertId,
+                alertData,
+                requestedRevisionId,
+                supersededBy: latestInboundRevisionId,
+                reason: 'newer_canonical_inbound',
                 timing: normalizedTiming,
-            };
+            });
         }
     }
     const rows = await supabaseQuery(buildPendingAutoSchedulePath(alertId, requestedRevisionId), {
@@ -901,6 +907,50 @@ async function scheduleIgAutoReplyDirect({ alertId, alertData, replyText, delayM
         return { scheduledFor: null, data: currentRows[0]?.data || alertData || {}, alreadyActioned: true, timing: normalizedTiming };
     }
     throw new Error(`alert not pending for auto schedule: ${currentStatus}`);
+}
+
+async function cancelSupersededAutoReplyAlert({
+    alertId,
+    alertData,
+    requestedRevisionId,
+    supersededBy,
+    reason,
+    timing,
+} = {}) {
+    const canceledAt = new Date().toISOString();
+    const data = {
+        ...(alertData || {}),
+        cancel_reason: 'superseded_by_new_message',
+        canceled_at: canceledAt,
+        superseded_draft_revision_id: requestedRevisionId || null,
+        superseded_by_revision_id: supersededBy || null,
+        superseded_revision_source: reason || 'newer_inbound',
+        outbound_attempted: false,
+    };
+    const rows = await supabaseQuery(
+        `coach_alerts?id=eq.${encodeURIComponent(alertId)}&status=in.(pending,scheduled)&data->>draft_revision_id=eq.${encodeURIComponent(requestedRevisionId || '')}`,
+        {
+            method: 'PATCH',
+            body: {
+                status: 'canceled',
+                actioned_at: canceledAt,
+                scheduled_for: null,
+                scheduled_reply_text: null,
+                data,
+            },
+            prefer: 'return=representation',
+        }
+    );
+    return {
+        scheduledFor: null,
+        data: rows?.[0]?.data || data,
+        alreadyActioned: true,
+        supersededDraftRevision: true,
+        supersededByNewerWebhookInbound: reason === 'newer_graph_webhook_inbound',
+        supersededByNewerInbound: reason === 'newer_canonical_inbound',
+        canceledSupersededAlert: !!rows?.[0],
+        timing,
+    };
 }
 
 const COCOS_SOFT_CONTEXT_REASONS = new Set([
@@ -4283,7 +4333,12 @@ async function isLatestInboundMessageForThread({ threadId, manychatMessageId }) 
     return String(rows?.[0]?.manychat_message_id || '') === String(manychatMessageId);
 }
 
-function classifySourceMessageFreshness({ sourceMessage, latestMessage, resetAt = '' } = {}) {
+function classifySourceMessageFreshness({
+    sourceMessage,
+    latestMessage,
+    latestWebhookRevisionId = '',
+    resetAt = '',
+} = {}) {
     if (!sourceMessage?.id || String(sourceMessage.direction || '').toLowerCase() !== 'in') {
         return { state: 'unknown', reason: 'canonical_source_inbound_not_found' };
     }
@@ -4293,6 +4348,13 @@ function classifySourceMessageFreshness({ sourceMessage, latestMessage, resetAt 
         && Number.isFinite(sourceCreatedAtMs)
         && sourceCreatedAtMs < resetAtMs) {
         return { state: 'stale', reason: 'source_predates_conversation_reset' };
+    }
+    const sourceRevisionId = normalizeGraphInboundRevisionId(sourceMessage.manychat_message_id || '');
+    const latestWebhookRevision = normalizeGraphInboundRevisionId(latestWebhookRevisionId);
+    if (sourceRevisionId && latestWebhookRevision) {
+        return sourceRevisionId === latestWebhookRevision
+            ? { state: 'current', reason: 'source_is_latest_graph_webhook' }
+            : { state: 'stale', reason: 'newer_graph_webhook_inbound_exists' };
     }
     if (!latestMessage?.id) {
         return { state: 'unknown', reason: 'canonical_latest_message_not_found' };
@@ -4308,7 +4370,13 @@ function classifySourceMessageFreshness({ sourceMessage, latestMessage, resetAt 
     };
 }
 
-async function inspectSourceMessageFreshness({ threadId, manychatMessageId, resetAt = '' } = {}) {
+async function inspectSourceMessageFreshness({
+    threadId,
+    manychatMessageId,
+    graphSenderId = '',
+    graphRecipientId = '',
+    resetAt = '',
+} = {}) {
     if (!threadId || !manychatMessageId) {
         return { state: 'unknown', reason: 'source_identity_missing' };
     }
@@ -4322,8 +4390,21 @@ async function inspectSourceMessageFreshness({ threadId, manychatMessageId, rese
     );
     const sourceMessage = sourceRows?.[0] || null;
     const latestMessage = latestRows?.[0] || null;
+    let latestWebhookRevisionId = '';
+    if (graphSenderId && graphRecipientId) {
+        const webhookRows = await supabaseQuery(
+            `ig_graph_webhook_events?select=message_id&sender_id=eq.${encodeURIComponent(graphSenderId)}`
+            + `&recipient_id=eq.${encodeURIComponent(graphRecipientId)}&field=eq.messages&message_id=not.is.null&order=created_at.desc&limit=1`
+        );
+        latestWebhookRevisionId = webhookRows?.[0]?.message_id || '';
+    }
     return {
-        ...classifySourceMessageFreshness({ sourceMessage, latestMessage, resetAt }),
+        ...classifySourceMessageFreshness({
+            sourceMessage,
+            latestMessage,
+            latestWebhookRevisionId,
+            resetAt,
+        }),
         sourceMessage,
         latestMessage,
     };
@@ -7077,6 +7158,8 @@ exports.handler = async (event) => {
             const freshness = await inspectSourceMessageFreshness({
                 threadId,
                 manychatMessageId,
+                graphSenderId: resolveThreadGraphRecipientId(thread),
+                graphRecipientId: resolveThreadGraphAccountId(thread),
                 resetAt: thread.custom_data?.internal_test_conversation_reset_at || '',
             });
             if (freshness.state === 'stale') {
@@ -8423,13 +8506,21 @@ exports.handler = async (event) => {
     // same ManyChat burst" failure when the webhook, draft worker, and
     // reconcile backstop land a few seconds apart.
     const coalesceCutoffIso = new Date(Date.now() - PENDING_THREAD_COALESCE_LOOKBACK_HOURS * 60 * 60 * 1000).toISOString();
-    let existingPending = null;
-    try {
-        const rows = await supabaseQuery(
-            `coach_alerts?select=id,client_id,data&data->>ig_thread_id=eq.${thread.id}&status=eq.pending&created_at=gte.${encodeURIComponent(coalesceCutoffIso)}&alert_type=in.(ig_incoming_dm,fb_incoming_dm)&order=created_at.desc&limit=1`
-        );
-        existingPending = rows[0] || null;
-    } catch (e) { /* non-critical, fall through to insert */ }
+    let existingPending = metaAdFastLane && regenerateExistingBlankAlert
+        ? regenerateExistingBlankAlert
+        : null;
+    // Paid-Meta bursts keep one exact alert shell per inbound revision.
+    // Older workers can then be canceled safely when a newer webhook
+    // arrives, while the final worker owns the complete settled batch.
+    // Non-paid lanes retain their review-card coalescing behaviour.
+    if (!metaAdFastLane) {
+        try {
+            const rows = await supabaseQuery(
+                `coach_alerts?select=id,client_id,data&data->>ig_thread_id=eq.${thread.id}&status=eq.pending&created_at=gte.${encodeURIComponent(coalesceCutoffIso)}&alert_type=in.(ig_incoming_dm,fb_incoming_dm)&order=created_at.desc&limit=1`
+            );
+            existingPending = rows[0] || null;
+        } catch (e) { /* non-critical, fall through to exact insert */ }
+    }
 
     let alertId = null;
     let coalesced = false;

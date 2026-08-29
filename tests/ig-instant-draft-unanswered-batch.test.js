@@ -16,6 +16,40 @@ assert.deepStrictEqual(
 );
 assert.deepStrictEqual(
     classifySourceMessageFreshness({
+        sourceMessage: {
+            id: 'final-inbound',
+            direction: 'in',
+            manychat_message_id: 'ig_graph:final-revision',
+        },
+        latestMessage: {
+            id: 'rounded-later-canonical-row',
+            direction: 'in',
+            manychat_message_id: 'ig_graph:price-revision',
+        },
+        latestWebhookRevisionId: 'final-revision',
+    }),
+    { state: 'current', reason: 'source_is_latest_graph_webhook' },
+    'authoritative webhook order wins when canonical timestamps rounded two rapid bubbles incorrectly'
+);
+assert.deepStrictEqual(
+    classifySourceMessageFreshness({
+        sourceMessage: {
+            id: 'older-inbound',
+            direction: 'in',
+            manychat_message_id: 'ig_graph:older-revision',
+        },
+        latestMessage: {
+            id: 'older-inbound',
+            direction: 'in',
+            manychat_message_id: 'ig_graph:older-revision',
+        },
+        latestWebhookRevisionId: 'final-revision',
+    }),
+    { state: 'stale', reason: 'newer_graph_webhook_inbound_exists' },
+    'an older rapid-bubble worker yields to the final webhook revision'
+);
+assert.deepStrictEqual(
+    classifySourceMessageFreshness({
         sourceMessage: { id: 'old-inbound', direction: 'in' },
         latestMessage: { id: 'new-inbound', direction: 'in' },
     }),

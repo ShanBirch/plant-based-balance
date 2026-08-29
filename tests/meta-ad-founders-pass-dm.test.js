@@ -2036,8 +2036,10 @@ test('rapid paid-ad coalescing cannot schedule an older draft revision', () => {
     assert.match(source, /ig_messages\?select=manychat_message_id,created_at/);
     assert.match(source, /ig_graph_webhook_events\?select=message_id,created_at/);
     assert.match(source, /loadPaidMetaWebhookInboundHistory/);
-    assert.match(source, /supersededByNewerInbound:\s*true/);
-    assert.match(source, /supersededByNewerWebhookInbound:\s*true/);
+    assert.match(source, /supersededByNewerInbound:\s*reason === 'newer_canonical_inbound'/);
+    assert.match(source, /supersededByNewerWebhookInbound:\s*reason === 'newer_graph_webhook_inbound'/);
+    assert.match(source, /cancel_reason:\s*'superseded_by_new_message'/);
+    assert.match(source, /if \(!metaAdFastLane\)/, 'paid Meta revisions keep exact alert ownership instead of cross-coalescing');
     assert.match(source, /draft_revision_id:\s*manychatMessageId \|\| idempotencyKey/);
     assert.match(source, /coach_alerts\?id=eq\.\$\{existingPending\.id\}&status=eq\.pending/);
 });

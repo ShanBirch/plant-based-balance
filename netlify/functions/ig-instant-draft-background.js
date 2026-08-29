@@ -9,12 +9,12 @@
 
 const { handler: runIgInstantDraft } = require('./ig-instant-draft');
 
-const PAID_META_INBOUND_SETTLE_MS = 1200;
+const PAID_META_INBOUND_SETTLE_MS = 6000;
 // Instagram often delivers one human thought as several quick bubbles. Keep a
 // short live-chat window aligned with the worker quiet window; newer webhooks
 // invalidate older drafts, so a later bubble is handled by the newest turn
 // without making every lead wait several seconds before drafting begins.
-const PAID_META_LIVE_CHAT_SETTLE_MS = 1200;
+const PAID_META_LIVE_CHAT_SETTLE_MS = 6000;
 
 function resolvePaidMetaInboundSettleDelayMs(payload = {}) {
     const customData = payload?.customData && typeof payload.customData === 'object'

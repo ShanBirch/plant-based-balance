@@ -6,13 +6,13 @@ const { resolvePaidMetaInboundSettleDelayMs } = require('../netlify/functions/ig
 test('paid Meta messages get a short settling window for multi-bubble replies', () => {
     assert.equal(resolvePaidMetaInboundSettleDelayMs({
         customData: { meta_ad_attribution: { source: 'meta_ads' } },
-    }), 1200);
+    }), 6000);
     assert.equal(resolvePaidMetaInboundSettleDelayMs({
         customData: { internal_test_auto_reply_enabled: true },
-    }), 1200);
+    }), 6000);
     assert.equal(resolvePaidMetaInboundSettleDelayMs({
         customData: { meta_ad_attribution: { source: 'meta_ads' } },
         paidMetaLiveChat: true,
-    }), 1200, 'an established paid-ad chat gets a brief rapid-bubble window without losing the live feel');
+    }), 6000, 'an established paid-ad chat gets a rapid-bubble quiet window before drafting the settled batch');
     assert.equal(resolvePaidMetaInboundSettleDelayMs({ customData: {} }), 0);
 });
