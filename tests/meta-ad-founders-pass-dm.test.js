@@ -3378,6 +3378,35 @@ test('broad writer contract repairs missing terms, adds the native explainer, an
     assert.equal(resolvedCurriculumIssues.filter(isBlockingPaidMetaWriterContractIssue).length, 0);
 });
 
+test('price-first broad replies repair to exact terms and return to the missing goal', () => {
+    const draft = {
+        joined: 'It’s AUD $149 for the full 6 weeks, with no subscription or auto-renewal. Want the preview?',
+        chunks: ['It’s AUD $149 for the full 6 weeks, with no subscription or auto-renewal. Want the preview?'],
+        model: 'openai-gpt-5.4-mini-paid-meta',
+        replyMode: 'standard',
+        maxChunks: 3,
+    };
+    const issues = collectPaidMetaWriterContractIssues({
+        draft,
+        currentMessage: 'How much is it and is there a subscription?',
+        qualifier: { facts: {} },
+        history: [{ direction: 'out', text: "What's the main change you'd like to make over the next six weeks?" }],
+        flowVariant: 'broad_pain',
+    });
+    const repaired = buildPaidMetaGuaranteedContractFallback({
+        draft,
+        currentMessage: 'How much is it and is there a subscription?',
+        issues,
+        qualifier: { facts: {} },
+        history: [{ direction: 'out', text: "What's the main change you'd like to make over the next six weeks?" }],
+        flowVariant: 'broad_pain',
+    });
+    assert.match(repaired.joined, /one AUD \$149 payment for the full six weeks/i);
+    assert.match(repaired.joined, /no subscription or auto-renewal/i);
+    assert.match(repaired.joined, /main change.*next six weeks\?/i);
+    assert.doesNotMatch(repaired.joined, /preview/i);
+});
+
 test('signed broad preview handoff survives a wording repair and becomes one native button', () => {
     const previewUrl = 'https://future-balance.netlify.app/p/Abc_123-xyz9876543210';
     const repairedText = 'Yep, I can send the preview so you can see your setup. Here you go:';

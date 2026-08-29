@@ -4938,6 +4938,16 @@ function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = 
             fixedChunks.push("What's the main change you'd like to make over the next six weeks?");
         }
         joined = fixedChunks.join('\n\n');
+    } else if (/answer the price exactly/i.test(issueText)) {
+        const knownBlocker = isPaidMetaConcreteBlocker(turn)
+            || paidMetaHistoryHasConcreteBlocker(history)
+            || qualifierHasKnownMetaAdBlocker(qualifier);
+        const nextQuestion = !fallbackGoal
+            ? "What's the main change you'd like to make over the next six weeks?"
+            : !knownBlocker
+                ? 'What usually gets in the way of making that happen consistently?'
+                : 'Want me to open your free personalised preview before you pay?';
+        joined = `It's one AUD $149 payment for the full six weeks, with no subscription or auto-renewal. ${nextQuestion}`;
     } else if (/offered checkout without explicit transactional intent/i.test(issueText)) {
         const mealPlanCopy = flowVariant === 'broad_pain'
             ? 'meal plan fitted to your dietary preferences'
