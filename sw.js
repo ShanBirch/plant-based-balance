@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v410-wizard-button-label'; // v410: keep setup button names aligned with their visible actions
+const CACHE_NAME = 'pbb-app-v411-stable-home-handoff'; // v411: hold guided section exits on Home through delayed callbacks
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

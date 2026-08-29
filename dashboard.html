@@ -14884,10 +14884,17 @@ if(!window._pbbIsIOSSafari) {
     // Course completion and Feed rendering can finish on a delayed callback and
     // briefly restore their old tab after the tour has asked for Home. Verify
     // the requested destination, then repeat the same tab switch if necessary.
-    for (var attempt = 0; attempt < 3; attempt += 1) {
+    var stableDestinationChecks = 0;
+    for (var attempt = 0; attempt < 10; attempt += 1) {
       try { if (typeof switchAppTab === 'function') switchAppTab(tabName, navButton); } catch(e){}
-      await new Promise(function(r){ setTimeout(r, attempt === 0 ? 320 : 260); });
-      if (!targetSelector || q(targetSelector)) break;
+      await new Promise(function(r){ setTimeout(r, attempt === 0 ? 320 : 280); });
+      if (!targetSelector) break;
+      if (q(targetSelector)) stableDestinationChecks += 1;
+      else stableDestinationChecks = 0;
+      // A Course/Feed completion callback can restore its old tab shortly
+      // after Home first appears. Keep reaffirming Home until it stays visible
+      // across several checks instead of accepting the first transient frame.
+      if (stableDestinationChecks >= 5) break;
     }
   }
 
