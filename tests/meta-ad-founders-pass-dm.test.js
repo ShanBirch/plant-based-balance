@@ -1418,7 +1418,7 @@ test('paid Meta answers a rapid gluten-free support question before progressing'
         qualifier: null,
         history: [],
     });
-    assert.match(repaired.joined, /^Yep, absolutely\./i);
+    assert.match(repaired.joined, /^Yep, I can absolutely/i);
     assert.match(repaired.joined, /plant-based meal plan gluten-free/i);
     assert.match(repaired.joined, /How long have you been plant-based, and what made you go plant-based\?$/i);
     assert.equal((repaired.joined.match(/\?/g) || []).length, 1);
@@ -1449,6 +1449,58 @@ test('broad paid Meta answers a rapid blocker plus dietary-fit question in the c
     assert.equal((reply.joined.match(/\?/g) || []).length, 1);
     assert.doesNotMatch(reply.joined, /plant[ -]?based|vegan|vegetarian/i);
     assert.equal(reply.videoAttachmentUrl, resolveBalanceFoundationsAppProofVideoUrl());
+});
+
+test('a long broad burst repairs the direct gluten-free answer without repeating discovery', () => {
+    const currentMessage = [
+        'I want to lose 10kg',
+        'and feel strong again',
+        'I work rotating shifts',
+        "I've got two kids",
+        'I barely get time to meal prep',
+        "my knee gets sore sometimes so I don't want anything crazy",
+        "I'm gluten-free",
+        'also how much is it?',
+        "and please don't ask me heaps of questions",
+    ].join('\n');
+    const history = [
+        { direction: 'out', text: "What's the main change you'd like to make over the next six weeks?" },
+        { direction: 'in', text: 'I want to lose 10kg and feel strong again.' },
+        { direction: 'in', text: 'Rotating shifts, two kids and no meal-prep time keep getting in the way.' },
+    ];
+    const draft = {
+        joined: "That makes sense, and I’ll keep it simple. Balance Foundations is $149 AUD for the full 6 weeks, with no subscription or auto-renewal. It’s set up around your rotating shifts, two kids, gluten-free eating, and sore-knee-friendly training, so the plan fits your week rather than adding more stress. If you want, I can send your free personalised app preview next.\nIt’ll show you how the workouts and food support would look for you before you decide anything.",
+        maxChunks: 3,
+        videoAttachmentUrl: resolveBalanceFoundationsAppProofVideoUrl(),
+    };
+    const issues = collectPaidMetaWriterContractIssues({
+        draft,
+        currentMessage,
+        history,
+        flowVariant: 'broad_pain',
+    });
+    assert.ok(issues.some(issue => /gluten-free question directly/i.test(issue)));
+
+    const repaired = buildPaidMetaGuaranteedContractFallback({
+        draft,
+        currentMessage,
+        issues,
+        history,
+        flowVariant: 'broad_pain',
+    });
+    assert.match(repaired.joined, /^Yep, the meal plan can absolutely be fitted to your gluten-free dietary preferences\./i);
+    assert.match(repaired.joined, /kids and lack of time/i);
+    assert.match(repaired.joined, /no subscription or auto-renewal/i);
+    assert.match(repaired.joined, /personalised (?:app )?preview/i);
+    assert.doesNotMatch(repaired.joined, /what usually gets in the way/i);
+    assert.ok((repaired.joined.match(/\?/g) || []).length <= 1);
+    assert.deepEqual(collectPaidMetaWriterContractIssues({
+        draft: repaired,
+        currentMessage,
+        history,
+        flowVariant: 'broad_pain',
+    }).filter(isBlockingPaidMetaWriterContractIssue), []);
+    assert.equal(repaired.videoAttachmentUrl, resolveBalanceFoundationsAppProofVideoUrl());
 });
 
 test('broad paid Meta treats a price objection and no-link request as a pause, not preview acceptance', () => {

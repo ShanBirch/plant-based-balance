@@ -5098,14 +5098,28 @@ function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = 
             .trim();
         joined = `Yeah, she was one of my clients.${existing ? ` ${existing}` : ''}`;
     } else if (/gluten-free question directly/i.test(issueText) && !repairsEarnedOffer) {
+        const knownBlocker = isPaidMetaConcreteBlocker(turn)
+            || paidMetaHistoryHasConcreteBlocker(history)
+            || qualifierHasKnownMetaAdBlocker(qualifier);
+        const existingReply = draftTextFromDraft(draft);
         const nextQuestion = fallbackGoal
             ? 'What usually gets in the way of making that happen consistently?'
             : (flowVariant === 'broad_pain'
                 ? `What's the main change you'd like to make over the next six weeks?`
                 : 'How long have you been plant-based, and what made you go plant-based?');
-        joined = flowVariant === 'broad_pain'
-            ? `Yep, absolutely. I can fit the meal plan to gluten-free dietary preferences too. ${nextQuestion}`
-            : `Yep, absolutely. I can make your plant-based meal plan gluten-free too. ${nextQuestion}`;
+        if (fallbackGoal && knownBlocker && existingReply) {
+            // The writer may already have produced a complete, well-tailored
+            // offer for a long rapid burst and only missed the explicit yes.
+            // Preserve that useful answer and add the one direct dietary-fit
+            // sentence instead of regressing to another blocker question.
+            joined = flowVariant === 'broad_pain'
+                ? `Yep, the meal plan can absolutely be fitted to your gluten-free dietary preferences. ${existingReply}`
+                : `Yep, I can absolutely make your plant-based meal plan gluten-free too. ${existingReply}`;
+        } else {
+            joined = flowVariant === 'broad_pain'
+                ? `Yep, I can absolutely fit the meal plan to gluten-free dietary preferences too. ${nextQuestion}`
+                : `Yep, I can absolutely make your plant-based meal plan gluten-free too. ${nextQuestion}`;
+        }
     } else if (/meal-plan question directly/i.test(issueText) && !repairsEarnedOffer) {
         const nextQuestion = fallbackGoal
             ? 'What usually gets in the way of making that happen consistently?'
@@ -5165,6 +5179,15 @@ function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = 
             flowVariant
         )
         : splitCoachDraftIntoDmBubbles([joined]).slice(0, draft.maxChunks || MAX_CHUNKS));
+    if (/gluten-free question directly/i.test(issueText)) {
+        const directFit = flowVariant === 'broad_pain'
+            ? 'Yep, the meal plan can absolutely be fitted to your gluten-free dietary preferences.'
+            : 'Yep, I can absolutely make your plant-based meal plan gluten-free too.';
+        const combined = chunks.join('\n');
+        if (!/\b(?:yes|yeah|yep|absolutely)\b[^.!?\n]{0,100}\bgluten[ -]?free\b|\bgluten[ -]?free\b[^.!?\n]{0,100}\b(?:meal plan|meals?)\b/i.test(combined)) {
+            chunks[0] = `${directFit} ${chunks[0]}`;
+        }
+    }
     if (repairsEarnedOffer && flowVariant === 'broad_pain') {
         const offerWithVideo = addPaidMetaProofVideoToOfferChunks(chunks, history);
         chunks = offerWithVideo.chunks;
