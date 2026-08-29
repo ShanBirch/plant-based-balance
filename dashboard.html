@@ -14467,9 +14467,19 @@ if(!window._pbbIsIOSSafari) {
       // as the same successful tap so the guide never stays behind highlighting
       // an empty part of Home or requires a second tap.
       var exactPromptTarget = step.preActionSel
-        ? resolveStepTarget({ sel:step.preActionSel }).target
+        ? document.querySelector(step.preActionSel)
         : resolveStepTarget(livePromptStep).target;
-      if (expectedActionId && !exactPromptTarget && resolveStepTarget(step).target) {
+      var exactPromptRect = exactPromptTarget && exactPromptTarget.getBoundingClientRect
+        ? exactPromptTarget.getBoundingClientRect()
+        : null;
+      var exactPromptStyle = exactPromptTarget ? window.getComputedStyle(exactPromptTarget) : null;
+      var exactPromptVisible = !!(exactPromptRect
+        && exactPromptRect.width > 1
+        && exactPromptRect.height > 1
+        && exactPromptStyle
+        && exactPromptStyle.display !== 'none'
+        && exactPromptStyle.visibility !== 'hidden');
+      if (expectedActionId && !exactPromptVisible && resolveStepTarget(step).target) {
         beginPromptedAction(true);
         return;
       }

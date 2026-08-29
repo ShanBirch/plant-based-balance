@@ -27,7 +27,7 @@ test('walkthrough keeps surrounding page context readable', () => {
   assert.match(premiumOverlays, /#guided-tour-overlay\.tour-page-view #guided-tour-spotlight[\s\S]*?rgba\(26, 24, 20, 0\.08\)/);
   assert.doesNotMatch(premiumOverlays, /#guided-tour-spotlight[\s\S]*?rgba\(29, 15, 50, 0\.78\)/);
   assert.match(dashboard, /pbb-premium-overlays\.css\?v=97-foundations-actions/);
-  assert.match(serviceWorker, /pbb-app-v404-coach-continue-layer/);
+  assert.match(serviceWorker, /pbb-app-v405-visible-prompt-handoff/);
   assert.match(source, /#guided-tour-overlay \{[^}]*pointer-events: auto/);
   assert.match(source, /#guided-tour-overlay\.tour-tap-target,[\s\S]*?#guided-tour-overlay\.tour-action-required:not\(\.tour-gate-complete\) \{ pointer-events: none; \}/);
   assert.match(source, /#guided-tour-overlay\.tour-coach-note \{ pointer-events: none; \}/);
@@ -38,7 +38,8 @@ test('prompted tour actions recover when the destination opens before the action
   const source = featureTourSource();
 
   assert.match(source, /var exactPromptTarget = step\.preActionSel/);
-  assert.match(source, /expectedActionId && !exactPromptTarget && resolveStepTarget\(step\)\.target/);
+  assert.match(source, /var exactPromptVisible = !!\(exactPromptRect/);
+  assert.match(source, /expectedActionId && !exactPromptVisible && resolveStepTarget\(step\)\.target/);
   assert.match(source, /beginPromptedAction\(true\)/);
 });
 
