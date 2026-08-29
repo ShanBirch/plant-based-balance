@@ -203,6 +203,14 @@
     return !!(el && !el.hidden && el.style.display !== 'none');
   }
 
+  function isWeeklyCheckinDue() {
+    try {
+      return typeof window.isWeeklyCheckinDue === 'function' && window.isWeeklyCheckinDue();
+    } catch (_) {
+      return false;
+    }
+  }
+
   function scrollToSelector(selector, options) {
     options = options || {};
     var el = null;
@@ -633,7 +641,6 @@
       goalIds: [],
       action: function(){
         if (typeof window.openWeeklyCheckinPreview === 'function') window.openWeeklyCheckinPreview();
-        else clickSourceCard('#weekly-checkin-card');
       }
     },
     {
@@ -861,7 +868,7 @@
       var action = ACTIONS.find(function(actionItem){ return actionItem.id === item[0]; });
       if (action && isSourceCardDue(item[1])) addUniqueAction(picked, action);
     });
-    if (isSourceCardDue('#weekly-checkin-card')) {
+    if (isWeeklyCheckinDue()) {
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'weekly_review'; }));
     }
     return picked;
@@ -894,7 +901,7 @@
     if (action.id === 'activity_insights_intro') return hasReachedSecondProgramWeek() && !hasSeenOnboardingStep(action.id);
     if (action.id === 'quiz') return true;
     if (action.id === 'workout') return isSourceCardDue('#today-workout-card');
-    if (action.id === 'weekly_review') return isSourceCardDue('#weekly-checkin-card');
+    if (action.id === 'weekly_review') return isWeeklyCheckinDue();
     if (action.id === 'progress_photo') return isSourceCardDue('#weekly-progress-photo-card');
     if (action.id === 'fitness_diary') return isSourceCardDue('#fitness-diary-card');
     if (action.id === 'weighin') {
@@ -1428,6 +1435,7 @@
   }
   document.addEventListener('pbbWeeklyGoalsSaved', function(){ refreshSoon(120); });
   window.addEventListener('pbbCurrentUserReady', function(){ refreshSoon(120); });
+  window.addEventListener('pbbWeeklyCheckinAvailabilityChanged', function(){ refreshSoon(0); });
   document.addEventListener('pbbInitComplete', function(){ refreshSoon(300); });
   document.addEventListener('appCriticalContentReady', function(){ refreshSoon(300); });
   document.addEventListener('visibilitychange', function(){ if (!document.hidden) { refreshDailyStatus({ force: true }); refreshSoon(0); } });

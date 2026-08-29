@@ -1455,63 +1455,10 @@
     return normalizePreviewData(state.data || DEFAULT_DATA);
   }
 
-  function placeCard(card){
-    var wrapped = document.getElementById('monthly-wrapped-card');
-    var goals = document.getElementById('weekly-goals-card');
-    var fitgotchi = document.getElementById('tamagotchi-widget-container');
-
-    if (wrapped && wrapped.parentNode && wrapped !== card) {
-      if (wrapped.previousSibling !== card) wrapped.parentNode.insertBefore(card, wrapped);
-      return;
-    }
-    if (goals && goals.parentNode && goals !== card) {
-      if (goals.previousSibling !== card) goals.parentNode.insertBefore(card, goals);
-      return;
-    }
-    if (fitgotchi && fitgotchi.parentNode && fitgotchi !== card) {
-      if (fitgotchi.nextSibling !== card) fitgotchi.parentNode.insertBefore(card, fitgotchi.nextSibling);
-    }
-  }
-
   function renderCard(){
-    ensureStyles();
     var card = document.getElementById('weekly-checkin-card');
-    if (!card) {
-      card = document.createElement('button');
-      card.id = 'weekly-checkin-card';
-      card.type = 'button';
-      card.className = 'pbb-wci-card';
-      var anchor = document.getElementById('weekly-wrapped-card') ||
-        document.getElementById('weekly-goals-card');
-      if (anchor && anchor.parentNode) {
-        anchor.parentNode.insertBefore(card, anchor.nextSibling);
-      } else if (document.body) {
-        document.body.appendChild(card);
-      }
-    }
-    placeCard(card);
-
-    var data = currentData();
-    card.style.display = isReviewEnabled() ? 'block' : 'none';
-    card.setAttribute('aria-label', 'Open weekly check-in');
-    card.innerHTML = [
-      '<div class="pbb-wci-card-inner">',
-      '  <div class="pbb-wci-card-top">',
-      '    <div class="pbb-wci-kicker">' + (activeOccurrence() === 'midweek_wednesday' ? 'Wednesday accountability check-in' : 'Friday to Sunday') + '</div>',
-      '    <div class="pbb-wci-preview-pill">' + escapeHtml(cardPillLabel()) + '</div>',
-      '  </div>',
-      '  <h3 class="pbb-wci-card-title">Your weekly check-in is ready</h3>',
-      '  <p class="pbb-wci-card-sub">Review your goals, share the real story of your week, and tell Shannon what you need next.</p>',
-      '  <div class="pbb-wci-card-goal"><span>Goal</span><b>' + escapeHtml(data.objective.label) + '</b></div>',
-      '  <div class="pbb-wci-card-stats">',
-      '    <div class="pbb-wci-card-stat"><b>' + escapeHtml(data.calories.target) + '</b><span>cal target</span></div>',
-      '    <div class="pbb-wci-card-stat"><b>' + escapeHtml(data.calories.average) + '</b><span>' + escapeHtml(data.calories.averageLabel || 'avg logged') + '</span></div>',
-      '    <div class="pbb-wci-card-stat"><b>' + escapeHtml(data.goals.completed) + '/' + escapeHtml(data.goals.total) + '</b><span>goals hit</span></div>',
-      '  </div>',
-      '  <div class="pbb-wci-card-footer"><span>Tap to complete your check-in</span><span class="pbb-wci-card-arrow" aria-hidden="true">&#8250;</span></div>',
-      '</div>'
-    ].join('');
-    card.onclick = openWeeklyCheckinPreview;
+    if (card) card.remove();
+    try { window.dispatchEvent(new CustomEvent('pbbWeeklyCheckinAvailabilityChanged')); } catch (_) {}
   }
 
   function showToast(message, type){
@@ -1640,7 +1587,7 @@
       var trackedWeek = getWeekWindow();
       if (typeof window.trackBalanceActivity === 'function') {
         window.trackBalanceActivity('weekly_review_opened', {
-          source: 'weekly_review_card',
+          source: 'todo_next',
           week_start: trackedWeek.startKey,
           week_end: trackedWeek.endKey
         }, { immediate: true });
@@ -1775,6 +1722,7 @@
 
   window.openWeeklyCheckinPreview = openWeeklyCheckinPreview;
   window.closeWeeklyCheckinPreview = closeWeeklyCheckinPreview;
+  window.isWeeklyCheckinDue = isReviewEnabled;
   window.refreshWeeklyCheckinPreviewCard = renderCard;
   window.addEventListener('pbbWeeklyGoalsSaved', handleWeeklyGoalsSaved);
 

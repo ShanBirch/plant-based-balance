@@ -36,7 +36,6 @@ function loadEndpointTestHelpers() {
 test('weekly client check-in is available Friday through Sunday', () => {
   assert.match(frontend, /day === 5 \|\| day === 6 \|\| day === 0/);
   assert.match(frontend, /current Monday-to-Sunday week/);
-  assert.match(frontend, /Friday to Sunday/);
 });
 
 test('weekly check-in stays hidden until the first program week is complete', () => {
@@ -52,7 +51,6 @@ test('weekly check-in stays hidden until the first program week is complete', ()
 
 test('an assigned Wednesday uses the same in-app form as a separate occurrence', () => {
   assert.match(frontend, /midweek_wednesday/);
-  assert.match(frontend, /Wednesday accountability check-in/);
   assert.match(frontend, /schedule\.additional_days\.indexOf\('wednesday'\)/);
   assert.match(frontend, /occurrence: activeOccurrence\(\) \|\| 'weekly'/);
   assert.match(endpoint, /in_app_checkins/);
@@ -96,9 +94,20 @@ test('the opened check-in contains the form, not the old full weekly review', ()
   assert.doesNotMatch(openFunction, /data-wci-action="goals"/);
 });
 
-test('To Do Next routes the due weekly card into the check-in', () => {
+test('Home omits the automated review card while retaining the client check-in form', () => {
+  const renderFunction = frontend.slice(frontend.indexOf('function renderCard(){'), frontend.indexOf('function showToast'));
+  assert.match(renderFunction, /card\.remove\(\)/);
+  assert.doesNotMatch(renderFunction, /createElement\('button'\)/);
+  assert.doesNotMatch(renderFunction, /Your weekly check-in is ready/);
+  assert.match(frontend, /window\.openWeeklyCheckinPreview = openWeeklyCheckinPreview/);
+  assert.match(frontend, /window\.isWeeklyCheckinDue = isReviewEnabled/);
+});
+
+test('To Do Next routes a due weekly check-in directly into the client form', () => {
   assert.match(nextSteps, /id: 'weekly_review'/);
-  assert.match(nextSteps, /isSourceCardDue\('#weekly-checkin-card'\)/);
+  assert.match(nextSteps, /function isWeeklyCheckinDue\(\)/);
+  assert.match(nextSteps, /if \(isWeeklyCheckinDue\(\)\)/);
+  assert.doesNotMatch(nextSteps, /clickSourceCard\('#weekly-checkin-card'\)/);
   assert.match(nextSteps, /openWeeklyCheckinPreview/);
 });
 
