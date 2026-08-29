@@ -27,7 +27,7 @@ test('walkthrough keeps surrounding page context readable', () => {
   assert.match(premiumOverlays, /#guided-tour-overlay\.tour-page-view #guided-tour-spotlight[\s\S]*?rgba\(26, 24, 20, 0\.08\)/);
   assert.doesNotMatch(premiumOverlays, /#guided-tour-spotlight[\s\S]*?rgba\(29, 15, 50, 0\.78\)/);
   assert.match(dashboard, /pbb-premium-overlays\.css\?v=97-foundations-actions/);
-  assert.match(serviceWorker, /pbb-app-v399-visible-coach-handoff/);
+  assert.match(serviceWorker, /pbb-app-v400-stable-tour-handoffs/);
 });
 
 test('page-level stops opt into the softer context view', () => {
@@ -124,6 +124,8 @@ test('required onboarding continues from Feed through Foundations, coach, and We
   assert.match(stories, /dispatchEvent\(new CustomEvent\('pbbFeedPostCreated'/);
   assert.match(source, /waitForPromptedStepSurface\(step, 900\)/);
   assert.match(source, /const displayStep = isPromptBeforeAction[\s\S]*?coachNoteGuide: false,[\s\S]*?requiresWelcomeAudio: false/);
+  assert.match(source, /if \(options\.afterPromptedAction\) tourNextBlockedUntil = Date\.now\(\) \+ 900/);
+  assert.match(source, /window\.tourNext = async function\(\)\{[\s\S]*?if \(Date\.now\(\) < tourNextBlockedUntil\) return/);
 });
 
 test('shopping-list tour accepts a tap anywhere on the highlighted ingredient row', () => {

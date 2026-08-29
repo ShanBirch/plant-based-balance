@@ -14332,6 +14332,7 @@ if(!window._pbbIsIOSSafari) {
   let clientActivationTour = false;
   let activeTourGate = null;
   let pendingPromptedAction = null;
+  let tourNextBlockedUntil = 0;
   let activePromptTargetCleanup = null;
   let tourRenderToken = 0;
   const completedTourGates = new Set();
@@ -14995,6 +14996,7 @@ async function showStep(i, options){
     showingXpIntro = false;
     window.__balanceGuidedTourShowingIntro = false;
     const step = activeSteps[i];
+    if (options.afterPromptedAction) tourNextBlockedUntil = Date.now() + 900;
     const overlay = document.getElementById('guided-tour-overlay');
     // Keep the previous prompt hidden while Home changes tabs or rebuilds its
     // To Do cards. The new prompt becomes visible only after its tap handler
@@ -15126,6 +15128,7 @@ async function showStep(i, options){
   }
 
   window.tourNext = async function(){
+    if (Date.now() < tourNextBlockedUntil) return;
     if (showingXpIntro) {
       showingXpIntro = false;
       await showStep(0);
@@ -15305,6 +15308,7 @@ window.endFeatureTour = function(skipped){
     completedTourGates.clear();
     completedPromptedActions.clear();
     pendingPromptedAction = null;
+    tourNextBlockedUntil = 0;
     clearActiveTourGate();
     metaPreviewTour = !!(window.metaAdTrialMode && options && options.metaPreview === true);
     if (metaPreviewTour) {
