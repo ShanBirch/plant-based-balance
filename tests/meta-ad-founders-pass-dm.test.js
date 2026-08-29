@@ -2057,6 +2057,36 @@ test('paid Meta identity questions answer honestly and continue from the earned 
         }],
         flowVariant: 'broad_pain',
     }), []);
+    const approvedIdentityReview = buildApprovedDeterministicMetaAdFirstReplyReview({
+        metaAdConversationFastLane: true,
+        draft: identityAfterGoalQuestion,
+        linkedUserId: null,
+        mediaReview: { required: false },
+        contextReview: {
+            required: true,
+            reasons: ['ai_suspicion_or_authenticity_question'],
+        },
+        currentMessage: 'Are you an AI bot?',
+        qualifier: { facts: {} },
+        history: [],
+    });
+    assert.equal(approvedIdentityReview?.verdict, 'pass');
+    assert.equal(approvedIdentityReview?.context_warning_overridden, true);
+    assert.equal(buildApprovedDeterministicMetaAdFirstReplyReview({
+        metaAdConversationFastLane: true,
+        draft: {
+            ...identityAfterGoalQuestion,
+            joined: "No, I'm Shannon and this isn't automated.",
+            chunks: ["No, I'm Shannon and this isn't automated."],
+        },
+        linkedUserId: null,
+        mediaReview: { required: false },
+        contextReview: {
+            required: true,
+            reasons: ['ai_suspicion_or_authenticity_question'],
+        },
+        currentMessage: 'Are you an AI bot?',
+    }), null, 'a denial or impersonation never receives the narrow identity override');
 
     const identityAndGoal = buildPaidMetaIdentityReply({
         ...base,

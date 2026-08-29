@@ -3323,12 +3323,21 @@ function buildApprovedDeterministicMetaAdFirstReplyReview({
         && approval?.required === false
         && contextReview?.required === true
         && (isExplicitPaidMetaPreviewRequest(message) || isExplicitPaidMetaPreviewAcceptance(message));
+    const safeApprovedIdentityContextWarning = approvedConversationProgression
+        && /^deterministic_paid_meta_identity_v\d+$/i.test(String(draft?.model || ''))
+        && draft?.identityDisclosure === true
+        && /^You['\u2019]re chatting with Shannon['\u2019]s Balance assistant\./i.test(String(draft?.joined || '').trim())
+        && META_AD_IDENTITY_QUESTION_RE.test(message)
+        && contextReview?.required === true
+        && contextReasons.length > 0
+        && contextReasons.every(reason => reason === 'ai_suspicion_or_authenticity_question');
     if ((!approvedFirstReply && !approvedGoalProof && !approvedConversationProgression)
         || linkedUserId
         || mediaReview?.required === true
         || (contextReview?.required === true
             && !safeFirstReplyContextWarning
-            && !safeApprovedPreviewContextWarning)
+            && !safeApprovedPreviewContextWarning
+            && !safeApprovedIdentityContextWarning)
         || META_AD_FIRST_REPLY_OPT_OUT_RE.test(message)
         || META_AD_FIRST_REPLY_REVIEW_REQUIRED_RE.test(message)) {
         return null;
@@ -3353,7 +3362,10 @@ function buildApprovedDeterministicMetaAdFirstReplyReview({
             : (approvedConversationProgression
                 ? 'deterministic-paid-meta-conversation-approval'
                 : 'deterministic-meta-ad-first-reply-approval'),
-        context_warning_overridden: safeFirstReplyContextWarning || safeApprovedPreviewContextWarning || undefined,
+        context_warning_overridden: safeFirstReplyContextWarning
+            || safeApprovedPreviewContextWarning
+            || safeApprovedIdentityContextWarning
+            || undefined,
     };
 }
 
