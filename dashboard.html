@@ -14868,9 +14868,22 @@ if(!window._pbbIsIOSSafari) {
 
   async function ensureTab(tabName){
     if (!tabName) return;
-    try { if (typeof switchAppTab === 'function') switchAppTab(tabName); } catch(e){}
-    // setTimeout only (rAF can be throttled on hidden/background tabs).
-    await new Promise(function(r){ setTimeout(r, 320); });
+    var navButton = null;
+    try {
+      var needle = "switchAppTab('" + tabName + "'";
+      navButton = Array.from(document.querySelectorAll('.bottom-nav .nav-item')).find(function(button){
+        return String(button.getAttribute('onclick') || '').indexOf(needle) !== -1;
+      }) || null;
+    } catch(e){}
+    var targetSelector = tabName === 'dashboard' ? '#view-dashboard' : '';
+    // Course completion and Feed rendering can finish on a delayed callback and
+    // briefly restore their old tab after the tour has asked for Home. Verify
+    // the requested destination, then repeat the same tab switch if necessary.
+    for (var attempt = 0; attempt < 3; attempt += 1) {
+      try { if (typeof switchAppTab === 'function') switchAppTab(tabName, navButton); } catch(e){}
+      await new Promise(function(r){ setTimeout(r, attempt === 0 ? 320 : 260); });
+      if (!targetSelector || q(targetSelector)) break;
+    }
   }
 
   async function waitForWalkthroughAwarder(timeoutMs){
