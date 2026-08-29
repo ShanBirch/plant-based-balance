@@ -1546,6 +1546,10 @@ function buildPaidMetaTailoredOfferChunks(blockerText = '', goalText = '', flowV
             compactAcknowledgement = 'If it all feels hard at once, it needs to be one simple plan.';
         } else if (PAID_META_FOOD_CONFUSION_RE.test(turn)) {
             compactAcknowledgement = 'Not knowing what to eat is the part we need to simplify.';
+        } else if (/\b(?:kids?|children)\b[\s\S]{0,70}\b(?:time|routine)\b|\b(?:time|routine)\b[\s\S]{0,70}\b(?:kids?|children)\b/i.test(turn)) {
+            compactAcknowledgement = 'When the kids and lack of time keep breaking the routine, the plan needs to fit into home life.';
+        } else if (/\b(?:lack of time|not enough time|too busy|short on time)\b/i.test(turn)) {
+            compactAcknowledgement = 'If lack of time keeps breaking the routine, the plan needs to fit into small, realistic pockets.';
         } else if (/\b(?:shifts?|roster|schedule)\b/i.test(turn)) {
             compactAcknowledgement = asksWhetherDietaryFitWorks && /\bgluten[ -]?free\b/i.test(turn)
                 ? 'Yep, gluten-free works. Changing rosters need a flexible plan.'
@@ -9618,6 +9622,7 @@ exports._test = {
     isContextualMetaAdOfferLinkRequest,
     buildContextualMetaAdOfferLinkReply,
     buildDeterministicPaidMetaConversationReply,
+    buildPaidMetaTailoredOfferChunks,
     isExplicitPaidMetaProofVideoRetry,
     buildPaidMetaProofVideoRetryReply,
     shouldApplyDeterministicPaidMetaReplyOverride,

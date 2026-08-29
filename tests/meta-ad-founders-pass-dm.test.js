@@ -15,6 +15,7 @@ const {
     buildApprovedDeterministicMetaAdFirstReplyReview,
     ensureMetaAdSalesProgressionQuestion,
     buildDeterministicPaidMetaConversationReply,
+    buildPaidMetaTailoredOfferChunks,
     isExplicitPaidMetaProofVideoRetry,
     buildPaidMetaProofVideoRetryReply,
     shouldApplyDeterministicPaidMetaReplyOverride,
@@ -120,6 +121,16 @@ test('a fresh BALANCE episode outranks a coalescing preview acceptance from the 
         metaAdOpeningTurn: false,
         draft: stalePreviewAcceptance,
     }), stalePreviewAcceptance);
+});
+
+test('a broad offer reflects the supplied kids and time blocker instead of using a vague acknowledgement', () => {
+    const chunks = buildPaidMetaTailoredOfferChunks(
+        'I want more energy and to train at home, but the kids and lack of time keep breaking my routine.',
+        'I want more energy and to train at home.',
+        'broad_pain',
+    );
+    assert.match(chunks.join(' '), /kids and lack of time keep breaking the routine/i);
+    assert.doesNotMatch(chunks[0], /^That makes sense\./i);
 });
 
 test('paid Meta price contract accepts Australian currency wording', () => {
