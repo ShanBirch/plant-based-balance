@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v401-reliable-tour-taps'; // v401: route taps to highlighted controls or the active guide card
+const CACHE_NAME = 'pbb-app-v402-visible-tour-controls'; // v402: keep the active guide card visible above changing app surfaces
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
