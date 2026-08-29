@@ -169,6 +169,34 @@ test('natural preview acceptance remains approved when curriculum bubbles push o
     assert.equal(review?.verdict, 'pass');
 });
 
+test('generic readiness after the preview invitation opens preview rather than checkout', () => {
+    const previewUrl = 'https://future-balance.netlify.app/p/Ready_123-xyz9876543210';
+    const history = [{
+        direction: 'out',
+        text: 'Want me to open your free personalised preview before you pay?',
+    }];
+    const draft = buildDeterministicPaidMetaConversationReply({
+        currentMessage: "I'm ready.",
+        qualifier: { facts: {} },
+        history,
+        flowVariant: 'broad_pain',
+        appPreviewUrl: previewUrl,
+    });
+    assert.equal(draft.replyMode, 'campaign_app_preview_handoff');
+    assert.equal(draft.appPreviewHandoff, true);
+    assert.equal(draft.appPreviewUrl, previewUrl);
+    assert.equal(draft.checkoutUrl, undefined);
+    const approval = buildPaidMetaConversationApproval({
+        metaAdConversationFastLane: true,
+        draft,
+        currentMessage: "I'm ready.",
+        linkedUserId: null,
+        qualifier: { facts: {} },
+        history,
+    });
+    assert.equal(approval?.required, false);
+});
+
 test('a broad offer reflects the supplied kids and time blocker instead of using a vague acknowledgement', () => {
     const chunks = buildPaidMetaTailoredOfferChunks(
         'I want more energy and to train at home, but the kids and lack of time keep breaking my routine.',
