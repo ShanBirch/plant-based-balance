@@ -27,6 +27,7 @@ const {
     buildPaidMetaTurnDirective,
     collectPaidMetaWriterContractIssues,
     isBlockingPaidMetaWriterContractIssue,
+    filterVerifiedPreviewHandoffContractIssues,
     buildPaidMetaGuaranteedContractFallback,
     buildPaidMetaNonBlockingReviewFallback,
     collectCocosAutoRepairIssues,
@@ -236,6 +237,29 @@ test('generic readiness after the preview invitation opens preview rather than c
     });
     assert.equal(repeatedReady.replyMode, 'campaign_app_preview_handoff');
     assert.equal(repeatedReady.checkoutUrl, undefined);
+
+    const carriedDiscoveryIssue = filterVerifiedPreviewHandoffContractIssues({
+        issues: [
+            'The reply repeated a question Shannon had just asked. Use the lead\'s answer and move to the next missing goal or blocker instead.',
+            'A genuine safety issue must remain blocking.',
+        ],
+        draft: repeatedReady,
+        approval: buildPaidMetaConversationApproval({
+            metaAdConversationFastLane: true,
+            draft: repeatedReady,
+            currentMessage: "I'm ready.\nI'm ready.",
+            linkedUserId: null,
+            qualifier: { facts: {} },
+            history: qualifiedHistoryWithoutVisibleCta,
+        }),
+    });
+    assert.deepEqual(carriedDiscoveryIssue, ['A genuine safety issue must remain blocking.']);
+    assert.deepEqual(filterVerifiedPreviewHandoffContractIssues({
+        issues: ['The reply repeated a question Shannon had just asked.'],
+        draft: { ...repeatedReady, joined: `${repeatedReady.joined} Anything else?` },
+        approval,
+    }), ['The reply repeated a question Shannon had just asked.'],
+        'a preview draft that really contains a question keeps the repetition hold');
 });
 
 test('a broad offer reflects the supplied kids and time blocker instead of using a vague acknowledgement', () => {

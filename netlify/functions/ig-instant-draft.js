@@ -4938,6 +4938,28 @@ function isBlockingPaidMetaWriterContractIssue(issue = '') {
     return /repeated a question|directly asked whether|answer why Shannon went vegan|meal-plan question directly|gluten-free question directly|sales suspicion|answer the sales question|answer the price exactly|do not ask for an email|offered checkout without explicit transactional intent|ignored the supplied plant-based duration|broad paid-ad reply|answered the goal question|full six-week course outline|course answer must return|earned paid-Meta offer is missing/i.test(String(issue || ''));
 }
 
+function filterVerifiedPreviewHandoffContractIssues({
+    issues = [],
+    draft = null,
+    approval = null,
+} = {}) {
+    const verifiedQuestionFreePreviewHandoff = draft?.replyMode === 'campaign_app_preview_handoff'
+        && draft?.appPreviewHandoff === true
+        && isMetaAppPreviewUrl(draft?.appPreviewUrl)
+        && approval?.required === false
+        && approval?.code === 'approved_meta_ad_sales_progression'
+        && !/\?/.test(draftTextFromDraft(draft));
+    if (!verifiedQuestionFreePreviewHandoff) return Array.isArray(issues) ? issues : [];
+
+    // A coalesced alert can retain a repeated-question finding from the
+    // discovery draft that existed before an accepted preview invitation was
+    // converted to its exact signed-link handoff. Re-evaluate that one issue
+    // against the final question-free handoff; all other contract and safety
+    // findings remain blocking.
+    return (Array.isArray(issues) ? issues : [])
+        .filter(issue => !/repeated a question/i.test(String(issue || '')));
+}
+
 function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = '', issues = [], qualifier = {}, history = [], flowVariant = 'plant_based_control' } = {}) {
     const issueText = (Array.isArray(issues) ? issues : []).join(' ');
     const turn = String(currentMessage || '').replace(/\s+/g, ' ').trim();
@@ -8891,12 +8913,16 @@ exports.handler = async (event) => {
             flowVariant: metaAdFlowVariant,
         });
         const paidMetaWriterContractIssues = metaAdConversationFastLane
-            ? collectPaidMetaWriterContractIssues({
+            ? filterVerifiedPreviewHandoffContractIssues({
+                issues: collectPaidMetaWriterContractIssues({
                 draft,
                 currentMessage: currentInboundTurnMessage,
                 qualifier,
                 history: displayHistory,
                 flowVariant: metaAdFlowVariant,
+                }),
+                draft,
+                approval: paidMetaConversationApproval,
             })
             : [];
         const repairIssues = [...new Set([
@@ -9151,12 +9177,16 @@ exports.handler = async (event) => {
             }
         }
         let unresolvedPaidMetaContractIssues = metaAdConversationFastLane
-            ? collectPaidMetaWriterContractIssues({
+            ? filterVerifiedPreviewHandoffContractIssues({
+                issues: collectPaidMetaWriterContractIssues({
                 draft,
                 currentMessage: currentInboundTurnMessage,
                 qualifier,
                 history: displayHistory,
                 flowVariant: metaAdFlowVariant,
+                }),
+                draft,
+                approval: paidMetaConversationApproval,
             })
             : [];
         let blockingPaidMetaContractIssues = unresolvedPaidMetaContractIssues.filter(isBlockingPaidMetaWriterContractIssue);
@@ -9671,6 +9701,7 @@ exports._test = {
     buildPaidMetaTurnDirective,
     collectPaidMetaWriterContractIssues,
     isBlockingPaidMetaWriterContractIssue,
+    filterVerifiedPreviewHandoffContractIssues,
     buildPaidMetaGuaranteedContractFallback,
     buildPaidMetaNonBlockingReviewFallback,
     buildLowContentStoryAcknowledgement,
