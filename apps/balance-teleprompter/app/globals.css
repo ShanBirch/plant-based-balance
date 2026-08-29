@@ -1,0 +1,104 @@
+@import 'tailwindcss';
+
+:root { color-scheme: dark; }
+
+* { box-sizing: border-box; }
+
+html { background: #F8F5EE; }
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: #F8F5EE;
+  color: #151515;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+button, textarea, input { font: inherit; }
+button { cursor: pointer; }
+button:focus-visible, textarea:focus-visible, input:focus-visible, a:focus-visible {
+  outline: 2px solid #D8B25E;
+  outline-offset: 3px;
+}
+
+input[type='range'] {
+  width: 100%;
+  height: 4px;
+  cursor: pointer;
+}
+
+.settings-slider {
+  appearance: none;
+  height: 44px !important;
+  margin: 5px 0 -3px;
+  background: transparent;
+  touch-action: pan-y;
+}
+
+.settings-slider::-webkit-slider-runnable-track {
+  height: 10px;
+  border-radius: 999px;
+  background: #E7E0D2;
+}
+
+.settings-slider::-webkit-slider-thumb {
+  width: 30px;
+  height: 30px;
+  margin-top: -10px;
+  appearance: none;
+  border: 3px solid #FFFFFF;
+  border-radius: 999px;
+  background: #D8B25E;
+  box-shadow: 0 2px 8px rgba(21,21,21,.24);
+}
+
+.settings-slider::-moz-range-track {
+  height: 10px;
+  border-radius: 999px;
+  background: #E7E0D2;
+}
+
+.settings-slider::-moz-range-thumb {
+  width: 26px;
+  height: 26px;
+  border: 3px solid #FFFFFF;
+  border-radius: 999px;
+  background: #D8B25E;
+  box-shadow: 0 2px 8px rgba(21,21,21,.24);
+}
+
+.control-button {
+  min-height: 40px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 999px;
+  background: rgba(0,0,0,.38);
+  padding: 0 13px;
+  color: rgba(255,255,255,.68);
+  font-size: 11px;
+  font-weight: 550;
+  backdrop-filter: blur(14px);
+  transition: border-color .2s ease, color .2s ease, background .2s ease;
+}
+
+.control-button:hover:not(:disabled) {
+  border-color: rgba(255,255,255,.28);
+  background: rgba(0,0,0,.58);
+  color: #fff;
+}
+
+.control-button:disabled { cursor: not-allowed; opacity: .35; }
+
+.teleprompter-scroll {
+  scrollbar-width: none;
+  mask-image: linear-gradient(to bottom, transparent 0%, black 23%, black 75%, transparent 100%);
+}
+
+.teleprompter-scroll::-webkit-scrollbar { display: none; }
+
+@media (max-width: 639px) {
+  .control-button { min-height: 36px; max-width: 78px; padding: 0 10px; line-height: 1.1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+}

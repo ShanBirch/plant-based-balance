@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Balance Teleprompter</string>
+    <string name="title_activity_main">Balance Teleprompter</string>
+    <string name="package_name">com.balance.teleprompter</string>
+    <string name="custom_url_scheme">com.balance.teleprompter</string>
+</resources>

@@ -1,0 +1,82 @@
+name: Build Balance Teleprompter Android
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/balance-teleprompter/**"
+      - ".github/workflows/build-balance-teleprompter-android.yml"
+  workflow_dispatch:
+
+jobs:
+  build-and-upload:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/balance-teleprompter
+    env:
+      ANDROID_VERSION_CODE: ${{ github.run_number }}
+      ANDROID_VERSION_NAME: 1.0.${{ github.run_number }}
+      BALANCE_KEY_ALIAS: balance
+      BALANCE_KEYSTORE_PASSWORD: Cyywp7nyk3
+      BALANCE_KEY_PASSWORD: Cyywp7nyk3
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build native web assets
+        run: pnpm run native:build
+
+      - name: Sync Android project
+        run: pnpm exec cap sync android
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK platform 36
+        run: sdkmanager "platforms;android-36"
+
+      - name: Decode release keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: echo "$KEYSTORE_BASE64" | base64 -d > android/app/balance-release.jks
+
+      - name: Build signed Android App Bundle
+        working-directory: apps/balance-teleprompter/android
+        run: chmod +x gradlew && ./gradlew bundleRelease
+
+      - name: Keep a downloadable build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: balance-teleprompter-release-aab
+          path: apps/balance-teleprompter/android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 30
+
+      - name: Upload draft to Google Play internal testing
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.balance.teleprompter
+          releaseFiles: apps/balance-teleprompter/android/app/build/outputs/bundle/release/app-release.aab
+          track: internal
+          status: draft
