@@ -1953,14 +1953,14 @@ if(!window._pbbIsIOSSafari) {
 document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=34-guided-goals"><\/script>');
     document.write('<script src="js/dashboard/pbb-social-journey.js?v=38-captioned-coach-video"><\/script>');
     document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=36-shopping-list-direct"><\/script>');
-    document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=28-checkin-form-only"><\/script>');
+    document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=29-accountability-checkout"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
     window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=10');
 window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=34-guided-goals');
     window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=38-captioned-coach-video');
     window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=36-shopping-list-direct');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=28-checkin-form-only');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=29-accountability-checkout');
 }
 </script>
 
@@ -14096,6 +14096,7 @@ if(!window._pbbIsIOSSafari) {
 
   const steps = [
     { tab:'dashboard', sel:'#dm-voice-btn', fallbackSel:'.header-msg-icon', title:'Send a voice message', fallbackTitle:'Voice messages are in your DMs', body:'Tap the microphone, record your message, then tap send. You can cancel before it leaves.', fallbackBody:'Open Messages, choose a friend, then tap the microphone beside the message box.', action: async function(){ try { var coachId=window._coachUserId || (typeof getCoachUserId==='function' ? await getCoachUserId() : null); if(coachId && typeof openDirectMessage==='function') openDirectMessage(coachId,'Coach Shan',''); } catch(e){} await new Promise(function(r){ setTimeout(r,420); }); } },
+    { tab:'dashboard', sel:'#weekly-checkin-card', title:'Extra accountability when you need it', body:'Choose Keep me accountable in your Weekly Check-In to see optional extra support, including a mid-week voice check-in or a recurring live PT session.', condition:function(){ var c=document.getElementById('weekly-checkin-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#next-obvious-steps-card .next-steps-head', fallbackSel:'#next-obvious-steps-card .next-step-action,#next-obvious-steps-card', title:'Your app tour starts here', fallbackTitle:'Your app tour starts here', body:'To do next is your simple map. We will return here between each part of your plan, so you always know what comes next.', metaPreview:true, clientActivation:true, action:function(){ try { if(window.pbbNextSteps && typeof window.pbbNextSteps.refresh === 'function') window.pbbNextSteps.refresh(); } catch(e){} } },
     { tab:'dashboard', sel:'#ai-plan-meals-list .ai-plan-hero__carousel-button--next', fallbackSel:'#ai-plan-meals-list .ai-plan-hero', title:'See every meal on Day 1', fallbackTitle:'Your meal plan needs another moment', body:'Tap the highlighted arrow to look through breakfast, lunch, dinner and snacks. Open any meal for the recipe, ingredients and an easy way to log it.', fallbackBody:'Your prepared plan did not finish opening. Return Home and tap the meal-plan task again.', pageView:true, metaPreview:true, promptBeforeAction:true, promptRequiresTargetClick:true, requiresHighlightedClick:true, controlPromptPosition:'top', highlightedClickPrompt:'Tap the highlighted arrow to see another Day 1 meal.', highlightedClickComplete:'Perfect. Keep looking through the meals, or continue to your next task.', returnHomeAfter:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="meal_plan_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'First: see your meal plan', preActionBody:'Tap the highlighted To Do card to open the meals Shannon has prepared for your week.', preActionButton:'Tap the meal plan card', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('meal_plan_intro'); await new Promise(function(r){ setTimeout(r,650); }); return await openMetaPreviewMealPlanSurface(); } catch(e){ return false; } } },
     { tab:'dashboard', sel:'#ai-plan-shopping-list .ai-plan-shopping__item', fallbackSel:'#ai-plan-shopping-toggle,#ai-plan-shopping-card,#meal-plan-store', title:'One shopping list for the week', fallbackTitle:'Your shopping list needs another moment', body:'Balance combines the ingredients from your meal plan into one list. Tap the highlighted ingredient to tick off what you already have.', fallbackBody:'The list did not finish opening. Return Home and tap the shopping-list task again.', pageView:true, tourScrollContextSel:'#ai-plan-shopping-card', metaPreview:true, promptBeforeAction:true, promptRequiresTargetClick:true, requiresHighlightedClick:true, highlightedClickPrompt:'Tap the highlighted ingredient to check it off your shopping list.', highlightedClickComplete:'That is how the list works. Keep ticking items, or continue to your next task.', returnHomeAfter:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="shopping_list_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: open your shopping list', preActionBody:'Back on Home, tap the highlighted shopping-list card. It is built from the meal plan you just saw.', preActionButton:'Tap the shopping list card', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('shopping_list_intro'); await new Promise(function(r){ setTimeout(r,650); }); return await openMetaPreviewShoppingListSurface(); } catch(e){ return false; } } },
@@ -16246,6 +16247,14 @@ window.endFeatureTour = function(skipped){
     body: 'Tap the microphone, record your message, then tap send. You can cancel before it leaves.',
     fallbackBody: 'Open Messages, choose a friend, then tap the microphone beside the message box.',
     action: async function(){ try { var coachId=window._coachUserId || (typeof getCoachUserId==='function' ? await getCoachUserId() : null); if(coachId && typeof openDirectMessage==='function') openDirectMessage(coachId,'Coach Shan',''); } catch(e){} await new Promise(function(r){ setTimeout(r,420); }); }
+  });
+  allFeatures.push({
+    id: 'weekly-checkin-accountability-addons-v1',
+    tab: 'dashboard',
+    sel: '#weekly-checkin-card',
+    title: 'Choose extra accountability',
+    body: 'Choose Keep me accountable in your Weekly Check-In to see optional extra support. Pick a live PT time before payment, or add a mid-week voice check-in.',
+    condition: function(){ var c=document.getElementById('weekly-checkin-card'); return c && c.style.display !== 'none'; }
   });
   allFeatures.push({
     id: 'social-journey-your-next-step-v1',

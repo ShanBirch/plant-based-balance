@@ -1076,6 +1076,15 @@
       '.pbb-wci-select option{color:#111;background:#fff;}',
       '.pbb-wci-form-error{display:none;border-radius:11px;background:rgba(239,68,68,.14);border:1px solid rgba(248,113,113,.32);padding:9px 10px;font-size:.73rem;line-height:1.35;font-weight:850;color:#fecaca;}',
       '.pbb-wci-form-error.is-visible{display:block;}',
+      '.pbb-wci-accountability-addons{display:none;margin:4px 0 14px;padding:14px;border:1px solid rgba(245,217,138,.34);border-radius:14px;background:rgba(245,217,138,.08);}',
+      '.pbb-wci-accountability-addons.is-visible{display:block;}',
+      '.pbb-wci-addon-title{font-size:.84rem;font-weight:950;color:#fff;margin:0 0 5px;}',
+      '.pbb-wci-addon-copy{font-size:.73rem;line-height:1.42;color:rgba(255,255,255,.76);margin:0 0 10px;}',
+      '.pbb-wci-addon-option{display:flex;gap:9px;align-items:flex-start;margin:9px 0;padding:10px;border-radius:11px;background:rgba(0,0,0,.16);cursor:pointer;}',
+      '.pbb-wci-addon-option input{margin-top:3px;accent-color:#e6c16d;}',
+      '.pbb-wci-addon-option strong{display:block;font-size:.78rem;color:#fff;}',
+      '.pbb-wci-addon-option span{display:block;font-size:.7rem;line-height:1.35;color:rgba(255,255,255,.72);margin-top:2px;}',
+      '.pbb-wci-addon-total{margin:10px 0 0;font-size:.76rem;font-weight:850;color:#f8d98b;}',
       '.pbb-wci-actions{display:grid;grid-template-columns:1fr;gap:10px;margin-top:14px;}',
       '.pbb-wci-action{min-height:44px;border-radius:14px;border:1px solid rgba(245,217,138,.22);font-family:inherit;font-size:.82rem;font-weight:950;cursor:pointer;}',
       '.pbb-wci-action:disabled{opacity:.72;cursor:wait;}',
@@ -1290,6 +1299,15 @@
       '        <option value="nothing_specific">Nothing specific right now</option>',
       '      </select>',
       '    </label>',
+      '    <section class="pbb-wci-accountability-addons" data-wci-accountability-addons aria-live="polite">',
+      '      <p class="pbb-wci-addon-title">Add a little more support next week</p>',
+      '      <p class="pbb-wci-addon-copy">Choose one optional weekly support upgrade, or keep your current support.</p>',
+      '      <label class="pbb-wci-addon-option"><input type="radio" name="accountability_addon" value="voice_checkin"><span><strong>Extra voice-message check-in · $25/week</strong><span>A second mid-week voice check-in to troubleshoot food, training, or routine. Continue to secure payment after sending your check-in.</span></span></label>',
+      '      <label class="pbb-wci-addon-option"><input type="radio" name="accountability_addon" value="zoom_pt_1_upgrade"><span><strong>Start Zoom PT 1 · $125/week total</strong><span>Choose your recurring 30-minute time, then pay. This replaces your current coaching payment and keeps your app, weekly check-in, programming and food guidance included.</span></span></label>',
+      '      <label class="pbb-wci-addon-option"><input type="radio" name="accountability_addon" value="extra_zoom_pt"><span><strong>Already on Zoom PT? Add another 30-minute session · $75/week</strong><span>Choose the extra recurring time, then pay. Select this only if you already have a weekly Zoom PT session.</span></span></label>',
+      '      <label class="pbb-wci-addon-option"><input type="radio" name="accountability_addon" value=""><span><strong>Keep my current support</strong><span>No change to your plan or weekly payment.</span></span></label>',
+      '      <p class="pbb-wci-addon-total" data-wci-addon-total>Choose an option only if it would genuinely help next week.</p>',
+      '    </section>',
       '    <label class="pbb-wci-field">',
       '      <span class="pbb-wci-field-label">What did you learn from the Course this week?</span>',
       '      <span class="pbb-wci-field-help">Optional if you did not complete a Course lesson this week.</span>',
@@ -1354,6 +1372,7 @@
       occurrence: activeOccurrence() || 'weekly',
       goals: weeklyGoalSnapshot(currentData())
     };
+    payload.accountability_addons = formData.getAll('accountability_addon').map(function(value){ return String(value || ''); }).filter(Boolean);
 
     if (!payload.overall || !payload.win || !payload.confidence || !payload.support) {
       setWeeklyReflectionError(form, 'Please answer the overall, win, confidence, and support questions.');
@@ -1381,6 +1400,28 @@
         });
         var result = await response.json().catch(function(){ return {}; });
         if (!response.ok || !result.ok) throw new Error(result.error || 'Your check-in could not be sent.');
+
+        if (payload.support === 'accountability' && payload.accountability_addons.length) {
+          var addonResponse = await fetch('/.netlify/functions/create-accountability-addon-checkout', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + accessToken
+            },
+            body: JSON.stringify({ addons: payload.accountability_addons, week_start: payload.week_start })
+          });
+          var addonResult = await addonResponse.json().catch(function(){ return {}; });
+          if (!addonResponse.ok || !addonResult.ok) throw new Error(addonResult.error || 'Your support request was saved, but checkout could not be opened.');
+          if (addonResult.booking_url) {
+            window.location.assign(addonResult.booking_url);
+            return;
+          }
+          if (addonResult.checkout_url) {
+            window.location.assign(addonResult.checkout_url);
+            return;
+          }
+          if (addonResult.message) showToast(addonResult.message, 'success');
+        }
       }
 
       try {
@@ -1411,6 +1452,24 @@
       }
     } finally {
       state.submitting = false;
+    }
+  }
+
+  function updateAccountabilityAddons(form){
+    var panel = form && form.querySelector ? form.querySelector('[data-wci-accountability-addons]') : null;
+    var support = form && form.elements ? form.elements.support : null;
+    if (!panel || !support) return;
+    var visible = support.value === 'accountability';
+    panel.classList.toggle('is-visible', visible);
+    if (!visible) panel.querySelectorAll('input[name="accountability_addon"]').forEach(function(input){ input.checked = false; });
+    var selected = visible ? Array.prototype.slice.call(panel.querySelectorAll('input:checked')).map(function(input){ return input.value; }) : [];
+    var extra = (selected.indexOf('voice_checkin') >= 0 ? 25 : 0) + (selected.indexOf('extra_zoom_pt') >= 0 ? 75 : 0);
+    var total = panel.querySelector('[data-wci-addon-total]');
+    if (!total) return;
+    if (selected.indexOf('zoom_pt_1_upgrade') >= 0) {
+      total.textContent = 'Zoom PT 1 is $125.00/week total, including your current coaching support. Shannon will confirm your recurring time before changing payment.';
+    } else {
+      total.textContent = extra ? 'Added support: $' + extra.toFixed(2) + '/week. Your current plan stays separate.' : 'Choose an option only if it would genuinely help next week.';
     }
   }
 
@@ -1627,7 +1686,11 @@
     });
     if (sheet) sheet.addEventListener('click', function(e){ e.stopPropagation(); });
     if (closeBtn) closeBtn.addEventListener('click', closeWeeklyCheckinPreview);
-    if (responseForm) responseForm.addEventListener('submit', submitWeeklyReflection);
+    if (responseForm) {
+      responseForm.addEventListener('submit', submitWeeklyReflection);
+      responseForm.addEventListener('change', function(){ updateAccountabilityAddons(responseForm); });
+      updateAccountabilityAddons(responseForm);
+    }
 
     if (typeof window.pushNavigationState === 'function') {
       try { window.pushNavigationState('weekly-checkin-preview-overlay', closeWeeklyCheckinPreview); } catch (_) {}
@@ -1685,6 +1748,33 @@
     }
   }
 
+  var ptCheckoutStarting = false;
+  async function maybeStartBookedPtCheckout(){
+    if (ptCheckoutStarting || isExplicitPreviewEnabled()) return;
+    var params;
+    try { params = new URLSearchParams(window.location.search || ''); } catch (_) { return; }
+    var addon = String(params.get('pt_addon_checkout') || '');
+    var bookingId = String(params.get('booking_id') || '');
+    if (['zoom_pt_1_upgrade', 'extra_zoom_pt'].indexOf(addon) < 0 || !/^[0-9a-f-]{36}$/i.test(bookingId)) return;
+    var accessToken = await weeklyCheckinAccessToken();
+    if (!accessToken) return;
+    ptCheckoutStarting = true;
+    try {
+      showToast('Opening secure Zoom PT payment...', 'info');
+      var response = await fetch('/.netlify/functions/create-accountability-addon-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + accessToken },
+        body: JSON.stringify({ addons: [addon], booking_id: bookingId })
+      });
+      var result = await response.json().catch(function(){ return {}; });
+      if (!response.ok || !result.ok || !result.checkout_url) throw new Error(result.error || 'Secure payment could not be opened.');
+      window.location.assign(result.checkout_url);
+    } catch (error) {
+      ptCheckoutStarting = false;
+      showToast(error && error.message ? error.message : 'Secure payment could not be opened.', 'error');
+    }
+  }
+
   function handleWeeklyGoalsSaved(event){
     var detail = event && event.detail ? event.detail : {};
     if (detail.source !== 'weekly-checkin-review') return;
@@ -1718,6 +1808,7 @@
     observeGuidedTourVisibility();
     maybeLoadSchedule();
     maybeLoadLiveData();
+    maybeStartBookedPtCheckout();
   }
 
   window.openWeeklyCheckinPreview = openWeeklyCheckinPreview;
@@ -1739,5 +1830,6 @@
     syncProgramStartDate();
     renderCard();
     maybeLoadLiveData();
+    maybeStartBookedPtCheckout();
   });
 })();

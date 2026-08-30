@@ -13,10 +13,22 @@ const FOUNDERS_PASS_PRODUCT_TYPE = "balance_vegan_founders_pass";
 const FOUNDERS_PASS_PLAN = "balance_foundations_six_week";
 const LEGACY_FOUNDERS_PASS_PLAN = "founders_pass_lifetime";
 const FOUNDATIONS_ACCESS_DAYS = 42;
+const ACCOUNTABILITY_ADDON_PRODUCT = "balance_accountability_addon";
 const META_PREVIEW_PURCHASE_MESSAGE = "You're in 🙌 Your Balance Foundations pass is sorted. Finish signing in to the app and everything you set up will be there.";
 const META_PREVIEW_PURCHASE_DELAY_MS = 60 * 1000;
 
 function subscriptionOfferDetails(plan) {
+    if (plan === "zoom_pt_1_weekly") {
+        return {
+            productName: "Balance Zoom PT 1",
+            subtype: "zoom_pt_1_sale",
+            recurringInterval: "week",
+            commitmentWeeks: 6,
+            checkinsPerWeek: "1",
+            callsPerWeek: "1",
+            needsYouReason: "zoom_pt_1_sale",
+        };
+    }
     if (plan === "app_community_monthly") {
         return {
             productName: APP_COMMUNITY_PRODUCT,
@@ -107,6 +119,7 @@ function createStripeRestClient(secretKey) {
         },
         subscriptions: {
             retrieve: subscriptionId => stripeRestRequest(secretKey, "GET", `subscriptions/${encodeURIComponent(subscriptionId)}`),
+            cancel: subscriptionId => stripeRestRequest(secretKey, "DELETE", `subscriptions/${encodeURIComponent(subscriptionId)}`),
         },
     };
 }
@@ -500,7 +513,18 @@ async function syncStripeSubscriptionToBalance(stripe, stripeEvent, { subscripti
 
     const isActive = ACTIVE_SUBSCRIPTION_STATUSES.has(status);
     const mirrorRow = await mirrorStripeSubscription(payload);
-    const patchedUsers = await patchUsersForSubscription(payload, { patchByEmail: isActive });
+    let replacedByActiveSubscription = false;
+    if (!isActive && customerId) {
+        const activeLinks = await supabaseRequest(
+            `stripe_subscription_links?select=stripe_subscription_id,subscription_plan&stripe_customer_id=eq.${encodeURIComponent(customerId)}&subscription_status=in.(active,trialing)&stripe_subscription_id=neq.${encodeURIComponent(subscription.id)}&limit=10`
+        ).catch(() => []);
+        replacedByActiveSubscription = Array.isArray(activeLinks) && activeLinks.some(link =>
+            !["extra_voice_checkin_weekly", "extra_zoom_pt_weekly"].includes(String(link.subscription_plan || ""))
+        );
+    }
+    const patchedUsers = replacedByActiveSubscription
+        ? []
+        : await patchUsersForSubscription(payload, { patchByEmail: isActive });
     const userIds = patchedUsers.map(row => row.id);
 
     if (mirrorRow && userIds[0] && mirrorRow.user_id !== userIds[0]) {
@@ -514,7 +538,9 @@ async function syncStripeSubscriptionToBalance(stripe, stripeEvent, { subscripti
         );
     }
 
-    if (isActive || userIds.length > 0) {
+    if (replacedByActiveSubscription) {
+        console.log(`[stripe-sync] ${subscription.id} ended after replacement; current Balance plan preserved`);
+    } else if (isActive || userIds.length > 0) {
         await syncLinkedLeadStages(userIds, status);
         await recordStripeGrowthOutcome({ payload, mirrorRow, userIds, stripeEvent, status });
     } else {
@@ -529,6 +555,77 @@ async function syncStripeSubscriptionToBalance(stripe, stripeEvent, { subscripti
         customer,
         metadata,
     };
+}
+
+function isAccountabilityAddonSubscription(subscription, invoice, session) {
+    const metadata = {
+        ...(subscription?.metadata || {}),
+        ...(invoice?.metadata || {}),
+        ...(session?.metadata || {}),
+    };
+    return metadata.balance_product === ACCOUNTABILITY_ADDON_PRODUCT
+        && (metadata.addon_type === "voice_checkin" || metadata.addon_type === "extra_zoom_pt");
+}
+
+async function recordAccountabilityAddonPurchase({ subscription, invoice, session }) {
+    const metadata = {
+        ...(subscription?.metadata || {}),
+        ...(invoice?.metadata || {}),
+        ...(session?.metadata || {}),
+    };
+    const clientId = cleanString(metadata.balance_user_id, 80);
+    if (!clientId || !subscription?.id) return;
+    const existing = await supabaseRequest(`coach_alerts?select=id&data->>stripe_subscription_id=eq.${encodeURIComponent(subscription.id)}&limit=1`).catch(() => []);
+    if (Array.isArray(existing) && existing.length) return;
+    const clients = await supabaseRequest(`users?select=id,name,email&id=eq.${encodeURIComponent(clientId)}&limit=1`).catch(() => []);
+    const client = Array.isArray(clients) ? clients[0] : null;
+    const coaches = await supabaseRequest(`coach_clients?select=coach_id&client_id=eq.${encodeURIComponent(clientId)}&status=eq.active&limit=1`).catch(() => []);
+    const coachId = Array.isArray(coaches) ? coaches[0]?.coach_id : null;
+    if (!coachId) return;
+    const isExtraPt = metadata.addon_type === 'extra_zoom_pt';
+    await supabaseRequest('coach_alerts', {
+        method: 'POST',
+        prefer: 'return=minimal',
+        body: [{
+            client_id: clientId,
+            client_name: client?.name || cleanEmail(metadata.checkout_email) || 'Client',
+            coach_id: coachId,
+            alert_type: 'subscription_sale',
+            priority: 'medium',
+            title: isExtraPt
+                ? `${client?.name || 'Client'} added an extra weekly Zoom PT session`
+                : `${client?.name || 'Client'} added an extra voice check-in`,
+            description: isExtraPt
+                ? 'AU$75/week payment received. Their recurring 30-minute Zoom PT time is booked in.'
+                : 'AU$25/week payment received. Add the mid-week accountability voice check-in to their coaching rhythm.',
+            status: 'pending',
+            data: {
+                subtype: isExtraPt ? 'accountability_extra_zoom_pt_paid' : 'accountability_extra_voice_checkin_paid',
+                operator_queue: 'needs_you',
+                needs_you_required: true,
+                addon_type: isExtraPt ? 'extra_zoom_pt' : 'voice_checkin',
+                weekly_price_aud: isExtraPt ? 75 : 25,
+                stripe_subscription_id: subscription.id,
+                stripe_customer_id: normalizeStripeId(subscription.customer),
+                week_start: cleanString(metadata.week_start, 10) || null,
+                booking_id: cleanString(metadata.booking_id, 80) || null,
+                recurring_starts_at: cleanString(metadata.recurring_starts_at, 80) || null,
+            },
+        }],
+    });
+}
+
+async function cancelReplacedCoachingSubscription(stripe, subscription, session) {
+    const metadata = { ...(subscription?.metadata || {}), ...(session?.metadata || {}) };
+    const previousId = cleanString(metadata.previous_subscription_id, 120);
+    if (metadata.addon_type !== "zoom_pt_1_upgrade" || !previousId || previousId === subscription?.id) return;
+    try {
+        await stripe.subscriptions.cancel(previousId);
+        console.log(`[stripe-sync] replaced coaching subscription ${previousId} with ${subscription.id}`);
+    } catch (error) {
+        const message = cleanString(error?.message, 300).toLowerCase();
+        if (!message.includes("no such subscription") && !message.includes("already canceled")) throw error;
+    }
 }
 
 function saleCustomerName({ syncResult, session } = {}) {
@@ -1110,8 +1207,12 @@ export default async (request, context) => {
         if (stripeEvent.type === 'invoice.paid') {
             const invoice = stripeEvent.data.object;
             const subscription = await retrieveSubscriptionForInvoice(stripe, invoice);
-            const syncResult = await syncStripeSubscriptionToBalance(stripe, stripeEvent, { subscription, invoice });
-            await createSaleAlertAndNotify(context, { syncResult, stripeEvent, subscription, invoice });
+            if (isAccountabilityAddonSubscription(subscription, invoice)) {
+                await recordAccountabilityAddonPurchase({ subscription, invoice });
+            } else {
+                const syncResult = await syncStripeSubscriptionToBalance(stripe, stripeEvent, { subscription, invoice });
+                await createSaleAlertAndNotify(context, { syncResult, stripeEvent, subscription, invoice });
+            }
 
             const amount = invoice.amount_paid / 100;
             const customerEmail = invoice.customer_email;
@@ -1155,8 +1256,13 @@ export default async (request, context) => {
 
             if (session.mode === "subscription" || session.subscription) {
                 const subscription = await retrieveSubscriptionForSession(stripe, session);
-                const syncResult = await syncStripeSubscriptionToBalance(stripe, stripeEvent, { subscription, session });
-                await createSaleAlertAndNotify(context, { syncResult, stripeEvent, subscription, session });
+                if (!isAccountabilityAddonSubscription(subscription, null, session)) {
+                    const syncResult = await syncStripeSubscriptionToBalance(stripe, stripeEvent, { subscription, session });
+                    await createSaleAlertAndNotify(context, { syncResult, stripeEvent, subscription, session });
+                    await cancelReplacedCoachingSubscription(stripe, subscription, session);
+                } else {
+                    await recordAccountabilityAddonPurchase({ subscription, session });
+                }
             }
 
             if (session.metadata?.product_type === FOUNDERS_PASS_PRODUCT_TYPE) {
