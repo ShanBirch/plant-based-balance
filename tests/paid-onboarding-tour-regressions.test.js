@@ -67,6 +67,9 @@ test('exercise guidance preserves the open workout player', () => {
 
 test('paid tour highlights the real in-section control before continuing', () => {
   assert.match(dashboard, /sel:'#ai-plan-meals-list \.ai-plan-hero__carousel-button--next'[^\r\n]*requiresHighlightedClick:true/);
+  assert.match(dashboard, /sel:'#ai-plan-meals-list \.ai-plan-hero__carousel-button--next'[^\r\n]*requiredHighlightedClicks:4/);
+  assert.match(dashboard, /You have seen ' \+ \(clicks \+ 1\) \+ ' of 5 meals/);
+  assert.match(dashboard, /Perfect\. You have seen all five Day 1 meals/);
   assert.match(dashboard, /sel:'#ai-plan-meals-list \.ai-plan-hero__carousel-button--next'[^\r\n]*controlPromptPosition:'top'/);
   assert.match(dashboard, /sel:'#ai-plan-shopping-list \.ai-plan-shopping__item'[^\r\n]*requiresHighlightedClick:true/);
   assert.match(dashboard, /sel:'#ai-plan-shopping-list \.ai-plan-shopping__item'[^\r\n]*tourScrollContextSel:'#ai-plan-shopping-card'/);
@@ -76,6 +79,8 @@ test('paid tour highlights the real in-section control before continuing', () =>
   assert.match(dashboard, /document\.addEventListener\('click', complete, true\)/);
   assert.match(dashboard, /document\.removeEventListener\('pointerdown', complete, true\)/);
   assert.match(dashboard, /event\.type === 'pointerdown'[\s\S]*?setTimeout\(function\(\)[\s\S]*?350\)/);
+  assert.match(dashboard, /highlightedClickCount \+= 1/);
+  assert.match(dashboard, /highlightedClickCount < requiredHighlightedClicks/);
   assert.match(dashboard, /if \(!eventHitTarget && !highlightedPressSeen\) return/);
   assert.match(dashboard, /highlightedClickComplete/);
   assert.match(dashboard, /displayStep\.requiresHighlightedClick/);

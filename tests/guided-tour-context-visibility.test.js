@@ -27,12 +27,14 @@ test('walkthrough keeps surrounding page context readable', () => {
   assert.match(premiumOverlays, /#guided-tour-overlay\.tour-page-view #guided-tour-spotlight[\s\S]*?rgba\(26, 24, 20, 0\.08\)/);
   assert.doesNotMatch(premiumOverlays, /#guided-tour-spotlight[\s\S]*?rgba\(29, 15, 50, 0\.78\)/);
   assert.match(dashboard, /pbb-premium-overlays\.css\?v=97-foundations-actions/);
-  assert.match(serviceWorker, /pbb-app-v415-tour-actions-land-cleanly/);
+  assert.match(serviceWorker, /pbb-app-v416-five-meal-carousel/);
   assert.match(source, /#guided-tour-overlay \{[^}]*pointer-events: auto/);
   assert.match(source, /#guided-tour-overlay\.tour-tap-target,[\s\S]*?#guided-tour-overlay\.tour-action-required:not\(\.tour-gate-complete\) \{ pointer-events: none; \}/);
   assert.match(source, /#guided-tour-overlay\.tour-coach-note \{ pointer-events: none; \}/);
   assert.match(source, /#guided-tour-bubble \{[\s\S]*?visibility: visible !important;/);
   assert.match(source, /tour-control-prompt:not\(\.tour-gate-complete\) #guided-tour-bubble[\s\S]*?pointer-events: none/);
+  assert.match(source, /#guided-tour-overlay\.tour-control-prompt \{ pointer-events: none; \}/);
+  assert.match(source, /tour-control-prompt\.tour-gate-complete #guided-tour-bubble \{ pointer-events: auto; \}/);
   assert.match(source, /classList\.toggle\('tour-control-prompt', !!\(step && step\.requiresHighlightedClick\)\)/);
 });
 

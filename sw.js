@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v415-tour-actions-land-cleanly'; // v415: keep the captioned coach video and make guided tour actions land cleanly
+const CACHE_NAME = 'pbb-app-v416-five-meal-carousel'; // v416: keep the meal carousel tappable until all five Day 1 meals are viewed
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
