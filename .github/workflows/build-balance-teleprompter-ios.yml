@@ -1,4 +1,5 @@
 name: Build Balance Teleprompter iOS
+# Release retry after the App Store Connect record was created.
 
 on:
   push:
