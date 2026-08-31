@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v423-settings-functionality'; // v423: retain the course-tour handoff and fix Settings actions across web, iOS, and Android
+const CACHE_NAME = 'pbb-app-v424-settings-functionality'; // v424: make Health guidance reliable before session hydration, alongside the Settings fixes
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

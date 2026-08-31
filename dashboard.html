@@ -20725,6 +20725,14 @@ if(!window._pbbIsIOSSafari) {
 // ===== HEALTH CONNECT INTEGRATION =====
 
 function toggleHealthConnect() {
+    var nativeHealthAvailable = !!(
+        (window.NativePermissions && typeof window.NativePermissions.openHealthConnect === 'function') ||
+        (window.NativeHealth && typeof window.NativeHealth.isNativeApp === 'function' && window.NativeHealth.isNativeApp())
+    );
+    if (!nativeHealthAvailable) {
+        showHealthConnectModal();
+        return;
+    }
     if (!window.currentUser) return;
 
     var btn = document.getElementById('health-connect-btn');

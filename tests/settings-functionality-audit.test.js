@@ -47,6 +47,8 @@ test('Health explains the mobile-app requirement instead of looping on web', () 
   const showBody = dashboard.match(/function showHealthConnectModal\(\) \{([\s\S]*?)\n\}/)?.[1] || '';
   assert.doesNotMatch(showBody, /window\.guestMode/);
   assert.match(dashboard, /function checkHealthConnectPrompt\(\) \{\s*if \(window\.guestMode\) return/);
+  const toggleBody = dashboard.match(/function toggleHealthConnect\(\) \{([\s\S]*?)\n\}/)?.[1] || '';
+  assert.ok(toggleBody.indexOf('showHealthConnectModal();') < toggleBody.indexOf('if (!window.currentUser) return;'));
 });
 
 test('payment management follows the platform used for payment', () => {
@@ -73,5 +75,5 @@ test('changed Settings scripts are cache-busted for returning phones', () => {
   assert.match(dashboard, /dashboard-script-4-symptoms_list_removed_symptoms\.js\?v=settings-functionality-v1/);
   assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=223-settings-functionality/);
   assert.match(dashboard, /script_part_25\.js\?v=settings-functionality-v1/);
-  assert.match(read('sw.js'), /pbb-app-v423-settings-functionality/);
+  assert.match(read('sw.js'), /pbb-app-v424-settings-functionality/);
 });
