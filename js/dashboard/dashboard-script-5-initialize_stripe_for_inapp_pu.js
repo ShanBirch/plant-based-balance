@@ -137,6 +137,31 @@ async function openBillingPortal() {
     const btn = document.getElementById('settings-payment-method-btn');
     const originalText = btn ? btn.textContent : '';
     try {
+        const platformName = window.Platform && typeof window.Platform.name === 'function'
+            ? window.Platform.name()
+            : (window.Capacitor && typeof window.Capacitor.getPlatform === 'function'
+                ? window.Capacitor.getPlatform()
+                : 'web');
+
+        if (platformName === 'ios' || platformName === 'android') {
+            const storeUrl = platformName === 'ios'
+                ? 'https://apps.apple.com/account/subscriptions'
+                : 'https://play.google.com/store/account/subscriptions?package=com.fitgotchi.app';
+
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'Opening...';
+            }
+
+            if (window.Capacitor?.Plugins?.Browser?.open) {
+                await window.Capacitor.Plugins.Browser.open({ url: storeUrl });
+            } else {
+                const opened = window.open(storeUrl, '_blank', 'noopener,noreferrer');
+                if (!opened) window.location.href = storeUrl;
+            }
+            return;
+        }
+
         if (!window.currentUser?.id) {
             throw new Error('Please log in again to manage your payment method.');
         }
@@ -963,8 +988,11 @@ async function _loadProfileDataRealImpl() {
     }
 
     // Load saved avatar if exists
-    const savedPhoto = localStorage.getItem('profile_photo');
+    const savedPhoto = localStorage.getItem('profile_photo') || profile?.profile_photo || '';
     if(savedPhoto) {
+        if (!localStorage.getItem('profile_photo')) {
+            try { localStorage.setItem('profile_photo', savedPhoto); } catch (_) {}
+        }
         const mainImg = document.getElementById('profile-photo-img');
         if(mainImg) mainImg.src = savedPhoto;
         document.querySelectorAll('.profile-icon').forEach(el => {
@@ -1068,6 +1096,26 @@ async function _loadProfileDataRealImpl() {
 _loadProfileDataReal = _loadProfileDataRealImpl;
 loadProfileData = _loadProfileDataRealImpl;
 
+async function syncProfilePhotoToAccount(photoData) {
+    if (!photoData || !window.currentUser?.id || !window.dbHelpers?.users?.update) return;
+    try {
+        const updated = await window.dbHelpers.users.update(window.currentUser.id, { profile_photo: photoData });
+        window.currentUser.profile_photo = photoData;
+        window.userProfile = { ...(window.userProfile || {}), profile_photo: photoData };
+        try {
+            const stored = JSON.parse(localStorage.getItem('userProfile') || '{}');
+            stored.profile_photo = photoData;
+            localStorage.setItem('userProfile', JSON.stringify(stored));
+        } catch (_) {}
+        return updated;
+    } catch (error) {
+        console.error('Failed to sync profile photo to account:', error);
+        if (typeof showToast === 'function') {
+            showToast('Photo saved on this device, but account sync failed.', 'error');
+        }
+    }
+}
+
 function handlePhotoUpload(input) {
     if (input.files && input.files[0]) {
         const file = input.files[0];
@@ -1103,6 +1151,8 @@ function handlePhotoUpload(input) {
                 el.innerHTML = `<img src="${photoData}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
                 el.style.background = 'transparent';
             });
+
+            syncProfilePhotoToAccount(photoData);
 
             // Reset input to allow re-selecting the same file
             input.value = '';
@@ -1194,6 +1244,8 @@ function handleWizardProfilePhoto(input) {
                 el.innerHTML = `<img src="${photoData}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
                 el.style.background = 'transparent';
             });
+
+            syncProfilePhotoToAccount(photoData);
 
             input.value = '';
         }).catch(err => {
@@ -7577,20 +7629,40 @@ window.addEventListener('pbbInitComplete', function requestPermissionsAfterLogin
     setTimeout(requestWhenReady, 700);
 }, { once: true });
 
-function openAppNotificationSettings() {
+async function openAppNotificationSettings() {
+    let openedNativeSettings = false;
     if (window.NativePermissions && typeof window.NativePermissions.openNotificationSettings === 'function') {
-        window.NativePermissions.openNotificationSettings();
-    } else if (window.Capacitor) {
+        await Promise.resolve(window.NativePermissions.openNotificationSettings()).catch(() => {});
+        openedNativeSettings = true;
+    } else if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
         let AppPlugin = window.Capacitor.Plugins && window.Capacitor.Plugins.App;
         if (!AppPlugin && typeof window.Capacitor.registerPlugin === 'function') {
             try { AppPlugin = window.Capacitor.registerPlugin('App'); } catch (e) {}
         }
         if (AppPlugin && typeof AppPlugin.openUrl === 'function') {
-            AppPlugin.openUrl({ url: 'app-settings:' }).catch(() => {});
+            await AppPlugin.openUrl({ url: 'app-settings:' }).catch(() => {});
+            openedNativeSettings = true;
         }
     }
+
+    if (!openedNativeSettings && 'Notification' in window) {
+        if (Notification.permission === 'default') {
+            const permission = await Notification.requestPermission();
+            if (typeof showToast === 'function') {
+                showToast(permission === 'granted' ? 'Notifications enabled' : 'Notifications were not enabled', permission === 'granted' ? 'success' : 'info');
+            }
+        } else if (Notification.permission === 'granted') {
+            if (typeof showToast === 'function') showToast('Notifications are enabled', 'success');
+        } else if (typeof showToast === 'function') {
+            showToast('Notifications are blocked in your browser settings.', 'error');
+        } else {
+            alert('Notifications are blocked. Open this site in your browser settings to enable them.');
+        }
+    } else if (!openedNativeSettings) {
+        if (typeof showToast === 'function') showToast('Notifications are not available in this browser.', 'info');
+    }
     // After returning from settings, refresh the status display
-    setTimeout(updatePushNotifSettingsUI, 1500);
+    setTimeout(updatePushNotifSettingsUI, openedNativeSettings ? 1500 : 100);
 }
 
 /**

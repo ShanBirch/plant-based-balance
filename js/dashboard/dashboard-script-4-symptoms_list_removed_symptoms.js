@@ -5,7 +5,6 @@ function toggleProfileEditMode() {
 
         const editMap = [
              { id: 'profile-name-display', type: 'text' },
-             { id: 'profile-email-display', type: 'text' },
              { id: 'profile-age-display', type: 'text' },
              { id: 'profile-weight-display', type: 'text' },
              { id: 'profile-goal-display', type: 'text' }
@@ -76,7 +75,6 @@ function toggleProfileEditMode() {
     function saveProfileChanges() {
         const fields = [
             { id: 'profile-name-display', key: 'name' },
-            { id: 'profile-email-display', key: 'email' },
             { id: 'profile-age-display', key: 'age' },
             { id: 'profile-weight-display', key: 'weight' },
             { id: 'profile-goal-display', key: 'goal_weight' }
@@ -103,7 +101,7 @@ function toggleProfileEditMode() {
         
         // Save to Supabase (Split Logic)
         if (window.currentUser) {
-            const userColumns = ['name', 'email'];
+            const userColumns = ['name'];
             const coreData = {};
             const factsData = {};
 

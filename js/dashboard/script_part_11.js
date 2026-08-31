@@ -7,7 +7,8 @@
             if (!window.currentUser) return;
             try {
                 const res  = await fetch(`/api/spotify/data?user_id=${window.currentUser.id}`);
-                const data = await res.json();
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(data.error || 'Spotify status could not be loaded');
                 updateSpotifyDisplay(data);
             } catch (err) {
                 console.warn('Spotify data fetch error:', err);
@@ -55,11 +56,13 @@
                 const btn = document.getElementById('spotify-connect-btn');
                 btn.disabled = true; btn.textContent = 'Disconnecting...';
                 try {
-                    await fetch('/api/spotify/disconnect', {
+                    const res = await fetch('/api/spotify/disconnect', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ user_id: window.currentUser.id }),
                     });
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok) throw new Error(data.error || 'Spotify could not be disconnected');
                     updateSpotifyDisplay({ connected: false });
                 } catch (err) {
                     console.error('Spotify disconnect error:', err);

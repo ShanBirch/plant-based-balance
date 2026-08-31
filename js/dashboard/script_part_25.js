@@ -268,35 +268,4 @@ function initDraggableBubble() {
 }
 
 
-window.installPWA = async function() {
-    if (deferredPrompt) {
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        if (outcome === 'accepted') {
-            dismissInstall();
-        }
-        deferredPrompt = null;
-    } else {
-        // User requested "No instructions, just download".
-        // If we are here, the browser hasn't fired the event yet or doesn't support it (iOS).
-        // specific check for iOS
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-        if (isIOS) {
-             alert("On iOS, please tap 'Share' then 'Add to Home Screen' manually."); 
-        } else {
-             console.log("Install prompt not ready yet.");
-             // Try to force it? No API for that.
-             alert("App installation is getting ready. Please try again in a moment.");
-        }
-    }
-};
-
-window.dismissInstall = function() {
-    const banner = document.getElementById('pwa-install-banner');
-    if(banner) {
-        banner.style.display = 'none';
-        document.body.style.paddingTop = '0';
-    }
-    localStorage.setItem('pwa_banner_dismissed_v2', 'true');
-};
 } // end else (non-iOS PWA install banner)

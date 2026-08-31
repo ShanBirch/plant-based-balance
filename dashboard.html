@@ -1846,7 +1846,7 @@ if(!window._pbbIsIOSSafari) {
 
     <script src="js/dashboard/script_part_9.js"></script>
 
-    <script src="js/dashboard/script_part_11.js?v=settings-spotify-row-v1"></script>
+    <script src="js/dashboard/script_part_11.js?v=settings-functionality-v1"></script>
 
     <!-- Spotify mini player moved to global scope (before bottom-nav) for cross-tab visibility -->
 
@@ -12556,8 +12556,8 @@ if(!window._pbbIsIOSSafari) {
             <section class="settings-v2-section" aria-labelledby="settings-account-title">
                 <h3 id="settings-account-title">Account &amp; help</h3>
                 <div class="settings-v2-card">
-                    <button id="settings-change-password" class="settings-v2-row" type="button" onclick="openChangePasswordModal()"><span class="settings-v2-icon">🔒</span><span class="settings-v2-copy"><strong>Password</strong><small>Update your login password</small></span><span class="settings-v2-chevron">›</span></button>
-                    <div id="settings-payment-method" class="settings-v2-row settings-v2-row-static"><span class="settings-v2-icon">💳</span><span class="settings-v2-copy"><strong>Payment method</strong><small>Update your saved card</small></span><button id="settings-payment-method-btn" class="settings-v2-pill" type="button" onclick="openBillingPortal()">Manage</button></div>
+                    <button id="settings-change-password" class="settings-v2-row" type="button" onclick="openChangePasswordModal()"><span class="settings-v2-icon">🔒</span><span class="settings-v2-copy"><strong>Password</strong><small>Add or update a login password</small></span><span class="settings-v2-chevron">›</span></button>
+                    <div id="settings-payment-method" class="settings-v2-row settings-v2-row-static"><span class="settings-v2-icon">💳</span><span class="settings-v2-copy"><strong>Payments &amp; subscription</strong><small>Managed where you paid for Balance</small></span><button id="settings-payment-method-btn" class="settings-v2-pill" type="button" onclick="openBillingPortal()">Manage</button></div>
                     <div id="settings-app-suggestions" class="settings-v2-suggestion">
                         <button class="settings-v2-row" type="button" onclick="toggleAppSuggestionBox()"><span class="settings-v2-icon">💬</span><span class="settings-v2-copy"><strong>Suggestions &amp; support</strong><small>Send ideas or fixes straight to Shannon</small></span><span class="settings-v2-open"><span id="app-suggestion-toggle-label">Open</span><span id="app-suggestion-toggle-icon">›</span></span></button>
                         <div id="app-suggestion-panel" style="display:none;"><textarea id="app-suggestion-input" maxlength="1200" rows="3" placeholder="What should we add or improve?"></textarea><div class="settings-v2-suggestion-actions"><button id="app-suggestion-submit-btn" type="button" onclick="submitAppSuggestion()">Send</button><div id="app-suggestion-status" style="display:none;"></div></div></div>
@@ -12735,15 +12735,15 @@ if(!window._pbbIsIOSSafari) {
         <div style="width:100%; max-width:420px; max-height:100%; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; background:white; border-radius:16px; box-shadow:0 24px 70px rgba(15,23,42,0.35); padding:22px; box-sizing:border-box;">
             <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:18px;">
                 <div>
-                    <h3 style="margin:0; color:var(--text-main); font-size:1.1rem;">Change Password</h3>
-                    <div style="font-size:0.82rem; color:var(--text-muted); margin-top:4px;">Keep your Balance login current.</div>
+                    <h3 id="change-password-title" style="margin:0; color:var(--text-main); font-size:1.1rem;">Change Password</h3>
+                    <div id="change-password-copy" style="font-size:0.82rem; color:var(--text-muted); margin-top:4px;">Keep your Balance login current.</div>
                 </div>
                 <button type="button" onclick="closeChangePasswordModal()" aria-label="Close" style="width:38px; height:38px; border-radius:50%; border:1px solid #e2e8f0; background:white; color:var(--text-main); display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;">
                     <svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round;"><path d="M6 6l12 12M18 6L6 18"></path></svg>
                 </button>
             </div>
             <form id="change-password-form" onsubmit="handleChangePasswordSubmit(event)">
-                <div style="margin-bottom:14px;">
+                <div id="change-password-current-wrap" style="margin-bottom:14px;">
                     <label for="change-password-current" style="display:block; font-size:0.75rem; font-weight:800; text-transform:uppercase; color:#64748b; margin-bottom:7px;">Current Password</label>
                     <input id="change-password-current" type="password" autocomplete="current-password" required style="width:100%; padding:12px 14px; border-radius:10px; border:1px solid #cbd5e1; font-size:1rem; box-sizing:border-box;">
                 </div>
@@ -12777,12 +12777,24 @@ if(!window._pbbIsIOSSafari) {
         window.openChangePasswordModal = function() {
             var overlay = document.getElementById('change-password-modal-overlay');
             var form = document.getElementById('change-password-form');
+            var currentWrap = document.getElementById('change-password-current-wrap');
+            var currentInput = document.getElementById('change-password-current');
+            var title = document.getElementById('change-password-title');
+            var copy = document.getElementById('change-password-copy');
+            var provider = String((window.currentUser && window.currentUser.app_metadata && window.currentUser.app_metadata.provider) || 'email').toLowerCase();
+            var usesSocialLogin = provider !== 'email';
             if (form) form.reset();
+            if (currentWrap) currentWrap.style.display = usesSocialLogin ? 'none' : 'block';
+            if (currentInput) currentInput.required = !usesSocialLogin;
+            if (title) title.textContent = usesSocialLogin ? 'Add a Password' : 'Change Password';
+            if (copy) copy.textContent = usesSocialLogin
+                ? 'Add email and password login alongside ' + (provider === 'apple' ? 'Apple' : provider === 'google' ? 'Google' : 'your connected account') + '.'
+                : 'Keep your Balance login current.';
             setChangePasswordMessage('', 'error');
             if (overlay) overlay.style.display = 'flex';
             setTimeout(function(){
-                var current = document.getElementById('change-password-current');
-                if (current) current.focus();
+                var target = usesSocialLogin ? document.getElementById('change-password-new') : currentInput;
+                if (target) target.focus();
             }, 80);
         };
 
@@ -12891,12 +12903,12 @@ if(!window._pbbIsIOSSafari) {
         window.addEventListener('pbbInitComplete', function() {
             setTimeout(function() {
                 var s = document.createElement('script');
-                s.src = 'js/dashboard/dashboard-script-4-symptoms_list_removed_symptoms.js';
+                s.src = 'js/dashboard/dashboard-script-4-symptoms_list_removed_symptoms.js?v=settings-functionality-v1';
                 document.head.appendChild(s);
             }, 500);
         }, { once: true });
     } else {
-        document.write('<script src="js/dashboard/dashboard-script-4-symptoms_list_removed_symptoms.js"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-4-symptoms_list_removed_symptoms.js?v=settings-functionality-v1"><\/script>');
     }
     </script>
 
@@ -12948,7 +12960,7 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=222-add-exercise-contrast';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=223-settings-functionality';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
@@ -12990,7 +13002,7 @@ if (window._pbbIsIOSSafari) {
         var s = document.createElement('script');
         s.async = false;
         s.dataset.metaTrialLoader = String(attempt);
-        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=222-add-exercise-contrast&meta_retry=' + attempt;
+        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=223-settings-functionality&meta_retry=' + attempt;
         s.onload = function() {
             if (window._pbbScript5Complete && window._switchAppTabReady && typeof window._switchAppTabReal === 'function') {
                 sessionStorage.removeItem('pbb_meta_script5_recovery_v1');
@@ -13009,7 +13021,7 @@ if (window._pbbIsIOSSafari) {
         document.head.appendChild(s);
     })(0);
 } else {
-document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=222-add-exercise-contrast"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=223-settings-functionality"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=3"></script>
@@ -18104,7 +18116,7 @@ if (window._pbbIsIOSSafari) {
     }
 </script>
 
-<script src="js/dashboard/script_part_25.js?v=2"></script>
+<script src="js/dashboard/script_part_25.js?v=settings-functionality-v1"></script>
 
 <script>
 // Script-6 (324KB) - AI coach/chat. On iOS, defer to reduce memory pressure.
@@ -20687,11 +20699,11 @@ if(!window._pbbIsIOSSafari) {
             <div style="width:64px; height:64px; background:rgba(255,255,255,0.2); border-radius:50%; margin:0 auto 16px; display:flex; align-items:center; justify-content:center;">
                 <svg viewBox="0 0 24 24" style="width:32px; height:32px; fill:white;"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
             </div>
-            <div style="color:white; font-size:1.2rem; font-weight:800; margin-bottom:6px;">Connect Your Health</div>
-            <div style="color:rgba(255,255,255,0.85); font-size:0.85rem; line-height:1.5;">Sync steps, activity calories, and sleep to track daily progress and score Balance challenges.</div>
+            <div id="health-connect-modal-title" style="color:white; font-size:1.2rem; font-weight:800; margin-bottom:6px;">Connect Your Health</div>
+            <div id="health-connect-modal-copy" style="color:rgba(255,255,255,0.85); font-size:0.85rem; line-height:1.5;">Sync steps, activity calories, and sleep to track daily progress and score Balance challenges.</div>
         </div>
         <div style="padding:24px;">
-            <div style="display:flex; justify-content:center; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
+            <div id="health-connect-provider-list" style="display:flex; justify-content:center; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
                 <div style="display:flex; align-items:center; gap:6px; font-size:0.78rem; color:#64748b;"><span style="color:#34A853;">&#10003;</span> Fitbit</div>
                 <div style="display:flex; align-items:center; gap:6px; font-size:0.78rem; color:#64748b;"><span style="color:#34A853;">&#10003;</span> Apple Watch</div>
                 <div style="display:flex; align-items:center; gap:6px; font-size:0.78rem; color:#64748b;"><span style="color:#34A853;">&#10003;</span> Garmin</div>
@@ -20699,7 +20711,7 @@ if(!window._pbbIsIOSSafari) {
                 <div style="display:flex; align-items:center; gap:6px; font-size:0.78rem; color:#64748b;"><span style="color:#34A853;">&#10003;</span> Oura</div>
                 <div style="display:flex; align-items:center; gap:6px; font-size:0.78rem; color:#64748b;"><span style="color:#34A853;">&#10003;</span> Samsung</div>
             </div>
-            <button onclick="acceptHealthConnect()" style="width:100%; padding:14px; border-radius:12px; border:none; background:#4285F4; color:white; font-weight:700; font-size:0.95rem; cursor:pointer; margin-bottom:10px;">
+            <button id="health-connect-modal-primary" onclick="acceptHealthConnect()" style="width:100%; padding:14px; border-radius:12px; border:none; background:#4285F4; color:white; font-weight:700; font-size:0.95rem; cursor:pointer; margin-bottom:10px;">
                 Connect Health
             </button>
             <button onclick="dismissHealthConnectModal()" style="width:100%; padding:12px; border-radius:12px; border:none; background:transparent; color:#94a3b8; font-weight:600; font-size:0.85rem; cursor:pointer;">
@@ -20844,8 +20856,18 @@ function updateDashboardWithHealthData(data) {
 }
 
 function showHealthConnectModal() {
-    if (window.guestMode) return; // Skip in guest preview mode
     var modal = document.getElementById('health-connect-modal');
+    var title = document.getElementById('health-connect-modal-title');
+    var copy = document.getElementById('health-connect-modal-copy');
+    var providers = document.getElementById('health-connect-provider-list');
+    var primary = document.getElementById('health-connect-modal-primary');
+    var isNativeShell = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+    if (title) title.textContent = isNativeShell ? 'Health sync is unavailable' : 'Health sync needs the mobile app';
+    if (copy) copy.textContent = isNativeShell
+        ? 'This app build could not open Apple Health or Health Connect. Update Balance, then try again.'
+        : 'Open the installed iPhone or Android Balance app to connect Apple Health or Health Connect.';
+    if (providers) providers.style.display = 'none';
+    if (primary) primary.textContent = 'Got it';
     if (modal) modal.style.display = 'flex';
 }
 
@@ -20858,11 +20880,14 @@ function dismissHealthConnectModal() {
 function acceptHealthConnect() {
     dismissHealthConnectModal();
     localStorage.setItem('healthConnectPromptShown', 'true');
-    toggleHealthConnect();
+    if (typeof showWearableToast === 'function') {
+        showWearableToast('Health syncing is available in the iPhone and Android app');
+    }
 }
 
 // First-login Health Connect prompt
 function checkHealthConnectPrompt() {
+    if (window.guestMode) return; // Guests can open Learn more manually, but never get an automatic prompt
     // Only prompt once, and only after onboarding is complete
     if (localStorage.getItem('healthConnectPromptShown') === 'true') return;
     if (localStorage.getItem('onboardingComplete') !== 'true') return;
@@ -20893,6 +20918,17 @@ function updateHealthConnectSettingsUI() {
     var btn = document.getElementById('health-connect-btn');
     var statusEl = document.getElementById('health-connect-status-text');
     if (!btn) return;
+
+    var nativeHealthAvailable = !!(
+        (window.NativePermissions && typeof window.NativePermissions.openHealthConnect === 'function') ||
+        (window.NativeHealth && window.NativeHealth.isNativeApp && window.NativeHealth.isNativeApp())
+    );
+    if (!nativeHealthAvailable) {
+        btn.textContent = 'Learn more';
+        btn.style.background = '#64748b';
+        if (statusEl) statusEl.textContent = 'Available in the iPhone and Android app';
+        return;
+    }
 
     if (localStorage.getItem('healthConnectEnabled') === 'true') {
         btn.textContent = 'Disconnect';
