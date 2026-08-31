@@ -827,6 +827,199 @@ const WORKOUT_LIBRARY_EXTENDED = {
         ]
       },
 
+      // MAT-ONLY UPPER BODY (no chairs, bars, dumbbells, or bands)
+      "noequipment_upper": {
+        name: "Mat-Only Upper Body",
+        description: "Balanced push and posterior-chain sessions requiring only floor space",
+        workouts: [
+          {
+            id: "bw-mat-upper-1",
+            name: "Mat Upper A",
+            duration: "28 min",
+            difficulty: "Beginner",
+            equipment: ["None"],
+            exercises: [
+              { name: "Push Up", sets: 4, reps: "8-15", desc: "Chest and triceps" },
+              { name: "Superman", sets: 4, reps: "12-15", desc: "Posterior chain" },
+              { name: "Pike Push Up", sets: 3, reps: "8-12", desc: "Shoulders" },
+              { name: "Prone Arm Swimmers", sets: 3, reps: "12", desc: "Upper back control" },
+              { name: "Diamond Push Up", sets: 3, reps: "6-12", desc: "Triceps" },
+              { name: "Bird Dog", sets: 3, reps: "10/side", desc: "Back and core stability" }
+            ]
+          },
+          {
+            id: "bw-mat-upper-2",
+            name: "Mat Upper B",
+            duration: "30 min",
+            difficulty: "Intermediate",
+            equipment: ["None"],
+            exercises: [
+              { name: "Wide Push Up", sets: 4, reps: "8-15", desc: "Chest" },
+              { name: "Prone Back Extension T's", sets: 4, reps: "12", desc: "Mid-back" },
+              { name: "Close Grip Push Up", sets: 3, reps: "8-12", desc: "Arms" },
+              { name: "Prone Y Raise", sets: 3, reps: "12", desc: "Upper back and shoulders" },
+              { name: "Push Up to Plank", sets: 3, reps: "10", desc: "Shoulders and triceps" },
+              { name: "Reverse Plank", sets: 3, reps: "30 sec", desc: "Posterior shoulders" }
+            ]
+          }
+        ]
+      },
+
+      "noequipment_chest": {
+        name: "Mat-Only Chest",
+        description: "Chest and triceps without equipment",
+        workouts: [
+          {
+            id: "bw-mat-chest-1",
+            name: "Bodyweight Chest",
+            duration: "26 min",
+            difficulty: "Intermediate",
+            equipment: ["None"],
+            exercises: [
+              { name: "Push Up", sets: 4, reps: "8-15", desc: "Chest foundation" },
+              { name: "Wide Push Up", sets: 4, reps: "8-15", desc: "Chest emphasis" },
+              { name: "Diamond Push Up", sets: 3, reps: "6-12", desc: "Chest and triceps" },
+              { name: "Archer Push Up", sets: 3, reps: "6/side", desc: "Single-side chest strength" },
+              { name: "Push Up Hold (bottom)", sets: 3, reps: "20 sec", desc: "Chest isometric" },
+              { name: "Kneeling Push Up", sets: 2, reps: "max quality reps", desc: "Controlled finisher" }
+            ]
+          }
+        ]
+      },
+
+      "noequipment_back": {
+        name: "Mat-Only Back",
+        description: "Prone back strength without a pull-up bar or weights",
+        workouts: [
+          {
+            id: "bw-mat-back-1",
+            name: "Bodyweight Back A",
+            duration: "24 min",
+            difficulty: "Beginner",
+            equipment: ["None"],
+            exercises: [
+              { name: "Superman", sets: 4, reps: "15", desc: "Lower and mid-back" },
+              { name: "Prone Arm Swimmers", sets: 4, reps: "12", desc: "Shoulder blade control" },
+              { name: "Prone Back Extension T's", sets: 3, reps: "12", desc: "Mid-back" },
+              { name: "Prone Y Raise", sets: 3, reps: "12", desc: "Upper back" },
+              { name: "Bird Dog", sets: 3, reps: "12/side", desc: "Back stability" },
+              { name: "Prone Cobra Hold", sets: 3, reps: "30 sec", desc: "Postural endurance" }
+            ]
+          },
+          {
+            id: "bw-mat-back-2",
+            name: "Bodyweight Back B",
+            duration: "26 min",
+            difficulty: "Intermediate",
+            equipment: ["None"],
+            exercises: [
+              { name: "Swimmers", sets: 4, reps: "20", desc: "Full posterior chain" },
+              { name: "Prone Back Extension with Retraction", sets: 4, reps: "12", desc: "Back and shoulder blades" },
+              { name: "Prone Arm Swimmers", sets: 3, reps: "15", desc: "Upper back mobility" },
+              { name: "Bird Dog", sets: 4, reps: "10/side", desc: "Contralateral back strength" },
+              { name: "Reverse Plank", sets: 3, reps: "35 sec", desc: "Posterior-chain hold" },
+              { name: "Prone Cobra Hold", sets: 3, reps: "35 sec", desc: "Postural strength" }
+            ]
+          }
+        ]
+      },
+
+      "noequipment_shoulders": {
+        name: "Mat-Only Shoulders",
+        description: "Shoulder strength using bodyweight only",
+        workouts: [
+          {
+            id: "bw-mat-shoulders-1",
+            name: "Bodyweight Shoulders",
+            duration: "25 min",
+            difficulty: "Intermediate",
+            equipment: ["None"],
+            exercises: [
+              { name: "Pike Push Up", sets: 4, reps: "8-12", desc: "Shoulder press pattern" },
+              { name: "Dolphin Push Up", sets: 3, reps: "10", desc: "Shoulder and tricep strength" },
+              { name: "Plank to Down Dog", sets: 3, reps: "12", desc: "Dynamic shoulders" },
+              { name: "Arm Circles", sets: 3, reps: "30 sec each way", desc: "Shoulder endurance" },
+              { name: "Prone Y Raise", sets: 3, reps: "12", desc: "Rear shoulders" },
+              { name: "Push Up to Plank", sets: 3, reps: "10", desc: "Shoulder stability" }
+            ]
+          }
+        ]
+      },
+
+      "noequipment_arms": {
+        name: "Mat-Only Arms",
+        description: "Arm strength without chairs or weights",
+        workouts: [
+          {
+            id: "bw-mat-arms-1",
+            name: "Bodyweight Arms",
+            duration: "24 min",
+            difficulty: "Intermediate",
+            equipment: ["None"],
+            exercises: [
+              { name: "Close Grip Push Up", sets: 4, reps: "8-12", desc: "Triceps" },
+              { name: "Diamond Push Up", sets: 4, reps: "6-12", desc: "Triceps and chest" },
+              { name: "Push Up to Plank", sets: 3, reps: "10", desc: "Triceps and shoulders" },
+              { name: "Plank To Push Up", sets: 3, reps: "10", desc: "Arm endurance" },
+              { name: "Reverse Plank", sets: 3, reps: "35 sec", desc: "Triceps and posterior arms" },
+              { name: "Kneeling Push Up", sets: 2, reps: "max quality reps", desc: "Arm finisher" }
+            ]
+          }
+        ]
+      },
+
+      "noequipment_fullbody": {
+        name: "Mat-Only Full Body",
+        description: "Complete bodyweight sessions requiring no equipment",
+        workouts: [
+          {
+            id: "bw-mat-full-1",
+            name: "Full Body A",
+            duration: "30 min",
+            difficulty: "Beginner",
+            equipment: ["None"],
+            exercises: [
+              { name: "Body Weight Squat", sets: 4, reps: "15", desc: "Legs" },
+              { name: "Push Up", sets: 4, reps: "8-15", desc: "Chest and arms" },
+              { name: "Body Weight Reverse Lunge", sets: 3, reps: "10/leg", desc: "Single-leg strength" },
+              { name: "Superman", sets: 3, reps: "15", desc: "Back" },
+              { name: "Glute Bridge", sets: 3, reps: "15", desc: "Glutes" },
+              { name: "Dead Bug", sets: 3, reps: "10/side", desc: "Core" }
+            ]
+          },
+          {
+            id: "bw-mat-full-2",
+            name: "Full Body B",
+            duration: "32 min",
+            difficulty: "Intermediate",
+            equipment: ["None"],
+            exercises: [
+              { name: "Body Weight Sumo Squat", sets: 4, reps: "15", desc: "Legs and glutes" },
+              { name: "Wide Push Up", sets: 4, reps: "10", desc: "Chest" },
+              { name: "Lateral Lunge", sets: 3, reps: "10/side", desc: "Lateral legs" },
+              { name: "Prone Arm Swimmers", sets: 3, reps: "12", desc: "Back" },
+              { name: "Single Leg Glute Bridge", sets: 3, reps: "10/leg", desc: "Glutes" },
+              { name: "Bicycle Crunch", sets: 3, reps: "20", desc: "Core" }
+            ]
+          },
+          {
+            id: "bw-mat-full-3",
+            name: "Full Body C",
+            duration: "30 min",
+            difficulty: "Intermediate",
+            equipment: ["None"],
+            exercises: [
+              { name: "Bodyweight Split Squat", sets: 4, reps: "10/leg", desc: "Legs" },
+              { name: "Pike Push Up", sets: 3, reps: "10", desc: "Shoulders" },
+              { name: "Glute Bridge", sets: 4, reps: "15", desc: "Glutes" },
+              { name: "Prone Back Extension T's", sets: 3, reps: "12", desc: "Back" },
+              { name: "Close Grip Push Up", sets: 3, reps: "8-12", desc: "Arms" },
+              { name: "Mountain Climber", sets: 3, reps: "30 sec", desc: "Core and conditioning" }
+            ]
+          }
+        ]
+      },
+
       // CORE & ABS
       "core": {
         name: "Core & Abs",

@@ -13098,6 +13098,7 @@ if(!window._pbbIsIOSSafari) {
 <!-- Loaded for every account so a late auth decision cannot skip it. The
      soundtrack remains inert unless this is the explicit paid onboarding. -->
 <script src="js/dashboard/pbb-meta-preview-soundtrack.js?v=3-coach-video-ducking"></script>
+<script src="js/dashboard/pbb-onboarding-workout-plans.js?v=1-prebuilt-matrix"></script>
 <script>
 // Script-5 (678KB) - Stripe/IAP, switchAppTab, initProgramDate, checkAndTriggerOnboarding.
 // On iOS Safari, defer to reduce memory pressure during page parsing.
@@ -13136,7 +13137,7 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=220-course-text-cleanup';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=220-course-text-cleanup-onboarding-prebuilt-matrix';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
@@ -13178,7 +13179,7 @@ if (window._pbbIsIOSSafari) {
         var s = document.createElement('script');
         s.async = false;
         s.dataset.metaTrialLoader = String(attempt);
-        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=220-course-text-cleanup&meta_retry=' + attempt;
+        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=220-course-text-cleanup-onboarding-prebuilt-matrix&meta_retry=' + attempt;
         s.onload = function() {
             if (window._pbbScript5Complete && window._switchAppTabReady && typeof window._switchAppTabReal === 'function') {
                 sessionStorage.removeItem('pbb_meta_script5_recovery_v1');
@@ -13197,7 +13198,7 @@ if (window._pbbIsIOSSafari) {
         document.head.appendChild(s);
     })(0);
 } else {
-document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=220-course-text-cleanup"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=220-course-text-cleanup-onboarding-prebuilt-matrix"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=3"></script>
@@ -17867,7 +17868,7 @@ window.endFeatureTour = function(skipped){
 
                 <div class="wizard-input-group" style="background:#fff7f7; padding:14px; border-radius:12px; border:1px solid #fecaca;">
                     <label style="display:block; font-weight:700; margin-bottom:6px; font-size:0.9rem; color:#991b1b;">Anything you dislike or want to avoid?</label>
-                    <p style="margin:0 0 10px; color:#7f1d1d; font-size:0.76rem; line-height:1.4;">We will save these so your plan can work around them.</p>
+                    <p style="margin:0 0 10px; color:#7f1d1d; font-size:0.76rem; line-height:1.4;">We’ll save these for future plan changes and coaching.</p>
                     <div id="wizard-avoid-exercise-chips" style="display:flex; flex-wrap:wrap; gap:7px; margin-bottom:10px;"></div>
                     <input type="text" id="wizard-avoid-exercises-input" list="wizard-exercise-suggestions" class="wizard-input" placeholder="e.g. burpees, jumping lunges" style="width:100%; padding:10px; border:1px solid #fecaca; border-radius:8px;">
                 </div>
@@ -18205,7 +18206,7 @@ if (window._pbbIsIOSSafari) {
 if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
-            var scripts = ['exercise_videos.js?v=20260813-global-phone-video-v1', 'workout_library.js', 'workout_library_extended.js'];
+            var scripts = ['exercise_videos.js?v=20260813-global-phone-video-v1', 'workout_library.js', 'workout_library_extended.js?v=1-mat-only-prebuilt'];
             var loaded = 0;
             scripts.forEach(function(src) {
                 var s = document.createElement('script');
@@ -18225,7 +18226,7 @@ if (window._pbbIsIOSSafari) {
 } else {
     document.write('<script src="exercise_videos.js?v=20260813-global-phone-video-v1"><\/script>');
     document.write('<script src="workout_library.js"><\/script>');
-    document.write('<script src="workout_library_extended.js"><\/script>');
+    document.write('<script src="workout_library_extended.js?v=1-mat-only-prebuilt"><\/script>');
 }
 </script>
 <script>

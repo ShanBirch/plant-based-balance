@@ -2586,6 +2586,9 @@ function attachCalendarDayDrag(row) {
 }
 
 function getOnboardingWorkoutDefinition(workoutId, isMale) {
+    const prebuiltDefinition = window.PBBOnboardingWorkoutPlans?.getDefinition(workoutId, isMale);
+    if (prebuiltDefinition) return prebuiltDefinition;
+
     const gymProgram = isMale ? 'gym_split' : 'female_gym_split';
     const map = {
         'gym-push': { label: 'Push', program: gymProgram, muscleGroup: 'push', icon: '🏋️', fallback: 'yoga', fallbackIdx: 4 },
@@ -2695,6 +2698,14 @@ function buildOnboardingWeeklySchedule(profile = {}, isMale = false) {
     });
 
     return schedule.every(Boolean) ? schedule : null;
+}
+
+function getScheduledLibraryWorkout(scheduleItem, workouts, storageKey, referenceDate = new Date()) {
+    if (!Array.isArray(workouts) || workouts.length === 0) return null;
+    if (Number.isInteger(scheduleItem?.libraryWorkoutIndex)) {
+        return workouts[scheduleItem.libraryWorkoutIndex] || workouts[0];
+    }
+    return getWorkoutRotationSelection(workouts, storageKey, referenceDate);
 }
 
 function escapeCalendarHtml(value) {
@@ -3073,7 +3084,7 @@ function renderWeeklyCalendar() {
         }
 
         // Override program based on equipment selection for this day
-        if (dayEquipment) {
+        if (dayEquipment && !usingOnboardingSchedule) {
             if (dayEquipment === 'gym' && (useMaleGymSplit || useFemaleGymSplit)) {
                 // Keep gym split
                 // scheduleItem stays the same
@@ -3099,9 +3110,7 @@ function renderWeeklyCalendar() {
             if (gymCategory && gymCategory.subcategories && gymCategory.subcategories[muscleGroup]) {
                 const workouts = gymCategory.subcategories[muscleGroup].workouts;
 
-                // Get workout index based on current week in 48-week cycle
-                const workoutIndex = getWorkoutIndexForWeek(workouts.length);
-                const workout = workouts[workoutIndex];
+                const workout = getScheduledLibraryWorkout(scheduleItem, workouts, 'gym_split_start_date');
 
                 // Calculate which 4-week program we're in (1-12)
                 const programNumber = Math.floor((currentWeek - 1) / 4) + 1;
@@ -3126,9 +3135,7 @@ function renderWeeklyCalendar() {
             if (category && category.subcategories && category.subcategories[scheduleItem.subcategory]) {
                 const workouts = category.subcategories[scheduleItem.subcategory].workouts;
 
-                // Get workout index based on current week
-                const workoutIndex = getWorkoutIndexForWeek(workouts.length);
-                const workout = workouts[workoutIndex];
+                const workout = getScheduledLibraryWorkout(scheduleItem, workouts, 'program_start_date');
 
                 if (workout) {
                     // For 48-week programs (10+ workouts), show program/week info
@@ -3926,7 +3933,7 @@ window.openCalendarWorkout = async function(dayIndexFromMonday, replacementDate)
 
         if (gymCategory && gymCategory.subcategories && gymCategory.subcategories[muscleGroup]) {
             const workouts = gymCategory.subcategories[muscleGroup].workouts;
-            const workout = getWorkoutRotationSelection(workouts, 'gym_split_start_date');
+            const workout = getScheduledLibraryWorkout(scheduleItem, workouts, 'gym_split_start_date');
 
             if (workout && typeof startLibraryWorkout === 'function') {
                 startLibraryWorkout('gym', muscleGroup, workout.id);
@@ -3942,7 +3949,7 @@ window.openCalendarWorkout = async function(dayIndexFromMonday, replacementDate)
 
         if (category && category.subcategories && category.subcategories[scheduleItem.subcategory]) {
             const workouts = category.subcategories[scheduleItem.subcategory].workouts;
-            const workout = getWorkoutRotationSelection(workouts, 'program_start_date');
+            const workout = getScheduledLibraryWorkout(scheduleItem, workouts, 'program_start_date');
 
             if (workout && typeof startLibraryWorkout === 'function') {
                 startLibraryWorkout(programId, scheduleItem.subcategory, workout.id);
@@ -4189,7 +4196,7 @@ function getTodaysWorkout() {
 
         if (gymCategory && gymCategory.subcategories && gymCategory.subcategories[muscleGroup]) {
             const workouts = gymCategory.subcategories[muscleGroup].workouts;
-            const workout = getWorkoutRotationSelection(workouts, 'gym_split_start_date', today);
+            const workout = getScheduledLibraryWorkout(scheduleItem, workouts, 'gym_split_start_date', today);
 
             workoutName = workout ? workout.name : scheduleItem.day + ' Workout';
             workoutIcon = scheduleItem.icon;
@@ -4203,7 +4210,7 @@ function getTodaysWorkout() {
 
         if (category && category.subcategories && category.subcategories[scheduleItem.subcategory]) {
             const workouts = category.subcategories[scheduleItem.subcategory].workouts;
-            const workout = getWorkoutRotationSelection(workouts, 'program_start_date', today);
+            const workout = getScheduledLibraryWorkout(scheduleItem, workouts, 'program_start_date', today);
 
             workoutName = workout ? workout.name : scheduleItem.day + ' Workout';
             workoutIcon = scheduleItem.icon;
@@ -7905,7 +7912,7 @@ _onDomReady(initPushPermissionReminder);
 // --- ONBOARDING WIZARD LOGIC ---
 let currentWizardStep = 1;
 const totalWizardSteps = 19;
-const skippedWizardSlides = [2, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+const skippedWizardSlides = [2, 5, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
 const finalWizardStep = 19;
 let wizardSlideTransitionTimer = null;
 const wizardSlideTransitionMs = 280;
@@ -12218,7 +12225,8 @@ async function wizardNext() {
         existingData.training_frequency = wizardTrainingFrequency;
         existingData.training_days = Array.from(wizardSelectedDays).join(',');
         existingData.recovery_on_rest_days = document.getElementById('wizard-recovery-days')?.checked;
-        existingData.split_preference = wizardTrainingFrequency >= 4 ? 'upper_lower' : 'full_body';
+        const recommendedPlan = window.PBBOnboardingWorkoutPlans?.getPlan(existingData.equipment_access, wizardTrainingFrequency);
+        existingData.split_preference = recommendedPlan?.split || 'full_body';
         existingData.exercise_preferences = existingData.exercise_preferences || { liked: [], avoid: [] };
         sessionStorage.setItem('userProfile', JSON.stringify(existingData));
 
@@ -13138,9 +13146,9 @@ function updateWizardFrequencyTip() {
         2: 'Perfect for beginners or busy schedules',
         3: 'Great balance of training and recovery',
         4: 'Ideal for building strength with good recovery',
-        5: 'Dedicated training with rest built in',
-        6: 'Serious training - we\'ll ensure proper recovery',
-        7: 'Every day! We\'ll include active recovery days'
+        5: 'Chest, back, legs, shoulders and arms',
+        6: 'Push, pull and legs twice through the week',
+        7: 'Seven strength sessions, including a second upper and lower stimulus'
     };
     const selectedDays = Array.from(wizardSelectedDays);
     const selectedText = selectedDays.length
@@ -13425,46 +13433,43 @@ function generateWizardCalendar() {
     try { userData = JSON.parse(sessionStorage.getItem('userProfile') || '{}'); } catch(e) {}
     const trainingDays = Array.from(wizardSelectedDays);
     const equipment = userData.equipment_access || 'none';
-    const split = wizardSplitPreference || 'full_body';
     const recoveryOnRestDays = document.getElementById('wizard-recovery-days')?.checked;
     const allDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
     // Reset calendar
     wizardWorkoutCalendar = {};
 
-    // Determine workout sequence based on split and equipment
-    let workoutSequence = [];
+    // One deterministic source owns both the split label and every prebuilt
+    // session. Onboarding selects from the library; it never generates a workout.
+    const builtCalendar = equipment === 'yoga_only' ? null
+        : window.PBBOnboardingWorkoutPlans?.buildCalendar(equipment, wizardTrainingFrequency, trainingDays, recoveryOnRestDays);
+    const plan = builtCalendar?.plan || (equipment === 'yoga_only'
+        ? { split: 'yoga_only', sequence: ['yoga-flow', 'yoga-restorative', 'yoga-mobility'] }
+        : null);
+    const workoutSequence = plan?.sequence || [];
+    wizardSplitPreference = plan?.split || 'full_body';
+    userData.split_preference = wizardSplitPreference;
+    sessionStorage.setItem('userProfile', JSON.stringify(userData));
 
-    if (equipment === 'gym') {
-        if (split === 'ppl') {
-            workoutSequence = ['gym-push', 'gym-pull', 'gym-legs'];
-        } else if (split === 'upper_lower') {
-            workoutSequence = ['gym-upper', 'gym-lower'];
-        } else if (split === 'bro_split') {
-            workoutSequence = ['gym-chest', 'gym-back', 'gym-shoulders', 'gym-legs', 'gym-arms'];
-        } else {
-            workoutSequence = ['gym-fullbody'];
-        }
-    } else if (equipment === 'dumbbells') {
-        workoutSequence = ['home-upper', 'home-lower', 'home-fullbody'];
-    } else if (equipment === 'bands') {
-        workoutSequence = ['bands-upper', 'bands-lower', 'bands-fullbody'];
-    } else if (equipment === 'none' || equipment === 'bodyweight') {
-        workoutSequence = ['bw-upper', 'bw-lower', 'bw-core', 'bw-fullbody'];
-    } else if (equipment === 'yoga_only') {
-        workoutSequence = ['yoga-flow', 'yoga-restorative', 'yoga-mobility'];
+    if (!workoutSequence.length) {
+        console.error('No prebuilt onboarding workout plan found', { equipment, trainingFrequency: wizardTrainingFrequency });
+        return;
     }
 
     // Assign workouts to training days
-    let workoutIndex = 0;
-    allDays.forEach(day => {
-        if (trainingDays.includes(day)) {
-            wizardWorkoutCalendar[day] = workoutSequence[workoutIndex % workoutSequence.length];
-            workoutIndex++;
-        } else {
-            wizardWorkoutCalendar[day] = recoveryOnRestDays ? 'yoga-restorative' : 'rest';
-        }
-    });
+    if (builtCalendar) {
+        wizardWorkoutCalendar = builtCalendar.calendar;
+    } else {
+        let workoutIndex = 0;
+        allDays.forEach(day => {
+            if (trainingDays.includes(day)) {
+                wizardWorkoutCalendar[day] = workoutSequence[workoutIndex % workoutSequence.length];
+                workoutIndex++;
+            } else {
+                wizardWorkoutCalendar[day] = recoveryOnRestDays ? 'yoga-restorative' : 'rest';
+            }
+        });
+    }
 
     allDays.forEach(day => {
         wizardWorkoutTimes[day] = '';
@@ -13580,7 +13585,12 @@ function renderWizardCalendarPreview() {
     // Create day rows
     allDays.forEach((day, idx) => {
         const workout = wizardWorkoutCalendar[day] || 'rest';
-        const info = getWizardAssignedWorkoutInfo(workout) || workoutInfo[workout] || { icon: '?', name: 'Unknown', desc: '' };
+        const prebuilt = window.PBBOnboardingWorkoutPlans?.definitions?.[workout];
+        const info = getWizardAssignedWorkoutInfo(workout) || (prebuilt ? {
+            icon: prebuilt.icon,
+            name: prebuilt.label,
+            desc: prebuilt.description || 'Prebuilt strength session'
+        } : null) || workoutInfo[workout] || { icon: '?', name: 'Unknown', desc: '' };
 
         const row = document.createElement('div');
         row.className = 'wizard-calendar-row';
@@ -13701,42 +13711,13 @@ function getWizardWorkoutOptions(day) {
         { id: 'rest', name: 'Rest Day', icon: '⏸️' }
     ]});
 
-    // Equipment-specific options
-    if (equipment === 'gym') {
-        options.unshift({ category: 'GYM', items: [
-            { id: 'gym-push', name: 'Push (Chest, Shoulders, Triceps)', icon: '🏋️' },
-            { id: 'gym-pull', name: 'Pull (Back, Biceps)', icon: '🏋️' },
-            { id: 'gym-legs', name: 'Legs', icon: '🏋️' },
-            { id: 'gym-chest', name: 'Chest', icon: '🏋️' },
-            { id: 'gym-back', name: 'Back', icon: '🏋️' },
-            { id: 'gym-shoulders', name: 'Shoulders', icon: '🏋️' },
-            { id: 'gym-arms', name: 'Arms', icon: '🏋️' },
-            { id: 'gym-core', name: 'Core', icon: '🏋️' },
-            { id: 'gym-upper', name: 'Upper Body', icon: '🏋️' },
-            { id: 'gym-lower', name: 'Lower Body', icon: '🏋️' },
-            { id: 'gym-fullbody', name: 'Full Body', icon: '🏋️' }
-        ]});
-    } else if (equipment === 'dumbbells') {
-        options.unshift({ category: 'HOME WEIGHTS', items: [
-            { id: 'home-upper', name: 'Upper Body', icon: '🏠' },
-            { id: 'home-lower', name: 'Lower Body', icon: '🏠' },
-            { id: 'home-fullbody', name: 'Full Body', icon: '🏠' },
-            { id: 'home-arms', name: 'Arms', icon: '🏠' },
-            { id: 'home-shoulders', name: 'Shoulders', icon: '🏠' }
-        ]});
-    } else if (equipment === 'bands') {
-        options.unshift({ category: 'BANDS', items: [
-            { id: 'bands-upper', name: 'Upper Body', icon: '🔗' },
-            { id: 'bands-lower', name: 'Lower Body', icon: '🔗' },
-            { id: 'bands-fullbody', name: 'Full Body', icon: '🔗' }
-        ]});
-    } else if (equipment === 'none' || equipment === 'bodyweight') {
-        options.unshift({ category: 'BODYWEIGHT', items: [
-            { id: 'bw-upper', name: 'Upper Body', icon: '🤸' },
-            { id: 'bw-lower', name: 'Lower Body', icon: '🤸' },
-            { id: 'bw-core', name: 'Core', icon: '🤸' },
-            { id: 'bw-fullbody', name: 'Full Body', icon: '🤸' }
-        ]});
+    // The editor uses the same equipment-scoped prebuilt definitions as the
+    // automatic plan. A bands-only member cannot accidentally choose dumbbells.
+    const strengthItems = window.PBBOnboardingWorkoutPlans?.getEquipmentOptions(equipment, wizardTrainingFrequency) || [];
+    if (strengthItems.length) {
+        const categoryLabels = { gym: 'FULL GYM', dumbbells: 'DUMBBELLS', bands: 'BANDS', none: 'BODYWEIGHT ONLY' };
+        const normalizedEquipment = window.PBBOnboardingWorkoutPlans.normalizeEquipment(equipment);
+        options.unshift({ category: categoryLabels[normalizedEquipment] || 'STRENGTH', items: strengthItems });
     }
 
     return options;
@@ -16226,7 +16207,7 @@ async function renderMovementView() {
 
         if (gymCategory && gymCategory.subcategories && gymCategory.subcategories[muscleGroup]) {
             const workouts = gymCategory.subcategories[muscleGroup].workouts;
-            const workout = getWorkoutRotationSelection(workouts, 'gym_split_start_date', today);
+            const workout = getScheduledLibraryWorkout(scheduleItem, workouts, 'gym_split_start_date', today);
 
             // Create a pseudo-program object for rendering
             heroProg = {
@@ -16258,7 +16239,7 @@ async function renderMovementView() {
 
         if (subcategory && subcategory.workouts && subcategory.workouts.length > 0) {
             const workouts = subcategory.workouts;
-            const workout = getWorkoutRotationSelection(workouts, 'program_start_date', today);
+            const workout = getScheduledLibraryWorkout(scheduleItem, workouts, 'program_start_date', today);
 
             // Create a pseudo-program object for rendering
             heroProg = {
