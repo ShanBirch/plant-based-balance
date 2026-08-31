@@ -11333,6 +11333,149 @@ html:not([data-pbb-theme="light"]) #view-profile .settings-v2-time-row input[typ
     color-scheme: dark;
 }
 
+/* Settings pickers — explicit paired text/surface roles for light and dark mode. */
+html[data-pbb-theme] .settings-picker-overlay {
+    background: var(--pbb-readable-overlay) !important;
+    color: var(--pbb-readable-text) !important;
+}
+
+html[data-pbb-theme] .settings-picker-sheet {
+    background: var(--pbb-readable-sheet) !important;
+    border: 1px solid var(--pbb-readable-border) !important;
+    color: var(--pbb-readable-text) !important;
+    font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+html[data-pbb-theme] .settings-picker-header,
+html[data-pbb-theme] .settings-picker-footer {
+    border-color: var(--pbb-readable-border-soft) !important;
+}
+
+html[data-pbb-theme] .settings-picker-title,
+html[data-pbb-theme] .settings-picker-option-label {
+    color: var(--pbb-readable-text) !important;
+    -webkit-text-fill-color: var(--pbb-readable-text) !important;
+}
+
+html[data-pbb-theme] .settings-picker-helper,
+html[data-pbb-theme] .dietary-picker-group-title {
+    color: var(--pbb-readable-muted) !important;
+    -webkit-text-fill-color: var(--pbb-readable-muted) !important;
+}
+
+html[data-pbb-theme] .settings-picker-close {
+    align-items: center;
+    background: var(--pbb-readable-surface-soft) !important;
+    border: 1px solid var(--pbb-readable-border-soft) !important;
+    border-radius: 50%;
+    color: var(--pbb-readable-text) !important;
+    -webkit-text-fill-color: var(--pbb-readable-text) !important;
+    cursor: pointer;
+    display: flex;
+    font: inherit;
+    font-size: 1.3rem;
+    height: 40px;
+    justify-content: center;
+    line-height: 1;
+    width: 40px;
+}
+
+html[data-pbb-theme] .settings-picker-option {
+    align-items: center;
+    background: var(--pbb-readable-surface-soft) !important;
+    border: 1px solid var(--pbb-readable-border-soft) !important;
+    border-radius: 12px;
+    color: var(--pbb-readable-text) !important;
+    cursor: pointer;
+    display: flex;
+    font: inherit;
+    gap: 14px;
+    margin-bottom: 7px;
+    min-height: 52px;
+    padding: 12px;
+    text-align: left;
+    width: 100%;
+}
+
+html[data-pbb-theme] .settings-picker-option.is-selected,
+html[data-pbb-theme] .dietary-picker-chip.is-selected {
+    background: var(--pbb-readable-action-bg) !important;
+    border-color: transparent !important;
+    color: var(--pbb-readable-action-text) !important;
+    -webkit-text-fill-color: var(--pbb-readable-action-text) !important;
+}
+
+html[data-pbb-theme] .settings-picker-option-label {
+    font-size: 0.92rem;
+    font-weight: 700;
+}
+
+html[data-pbb-theme] .settings-picker-option.is-selected .settings-picker-option-label {
+    color: var(--pbb-readable-action-text) !important;
+    -webkit-text-fill-color: var(--pbb-readable-action-text) !important;
+}
+
+html[data-pbb-theme] .settings-picker-check {
+    fill: currentColor;
+    height: 18px;
+    margin-left: auto;
+    width: 18px;
+}
+
+html[data-pbb-theme] .dietary-picker-group-title {
+    font-size: 0.76rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    margin: 7px 0 9px;
+    text-transform: uppercase;
+}
+
+html[data-pbb-theme] .dietary-picker-chip-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+html[data-pbb-theme] .dietary-picker-chip {
+    align-items: center;
+    background: var(--pbb-readable-surface-soft) !important;
+    border: 1px solid var(--pbb-readable-border-soft) !important;
+    border-radius: 999px;
+    color: var(--pbb-readable-text) !important;
+    -webkit-text-fill-color: var(--pbb-readable-text) !important;
+    cursor: pointer;
+    display: inline-flex;
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 700;
+    gap: 6px;
+    line-height: 1.25;
+    min-height: 38px;
+    padding: 8px 12px;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+html[data-pbb-theme] .settings-picker-primary {
+    background: var(--pbb-readable-action-bg) !important;
+    border: 0 !important;
+    border-radius: 12px;
+    color: var(--pbb-readable-action-text) !important;
+    -webkit-text-fill-color: var(--pbb-readable-action-text) !important;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.92rem;
+    font-weight: 800;
+    min-height: 46px;
+    padding: 12px 16px;
+    width: 100%;
+}
+
+html[data-pbb-theme] :where(.settings-picker-close, .settings-picker-option, .dietary-picker-chip, .settings-picker-primary):focus-visible {
+    outline: 3px solid var(--pbb-readable-success);
+    outline-offset: 2px;
+}
+
 #view-profile .settings-v2-save-reminders {
     border-radius: 10px;
     margin-top: 3px;

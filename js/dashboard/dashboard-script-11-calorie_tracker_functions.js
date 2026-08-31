@@ -2992,8 +2992,8 @@ _runWhenDomReady(function() {
         textInput.addEventListener('input', updateSubmitButtonState);
     }
 
-    // Initialize meal reminder settings
-    loadMealReminderSettings().then(() => { checkAndShowNotificationStatus(); updateActiveRemindersStatus(); });
+    // Retire any reminder state left by older app versions.
+    retireMealReminderSettings();
 
     // Update the Push Notifications settings row status
     if (typeof updatePushNotifSettingsUI === 'function') updatePushNotifSettingsUI();
@@ -3040,6 +3040,55 @@ if ('serviceWorker' in navigator) {
 // ==========================================
 // MEAL REMINDER SETTINGS FUNCTIONS
 // ==========================================
+
+async function retireMealReminderSettings() {
+    let existingSettings = {};
+    try {
+        existingSettings = JSON.parse(localStorage.getItem('meal_reminder_settings') || '{}');
+    } catch (_) {}
+
+    const retiredSettings = {
+        ...existingSettings,
+        reminders_enabled: false,
+        breakfast_reminder: false,
+        lunch_reminder: false,
+        dinner_reminder: false,
+        breakfast_time: existingSettings.breakfast_time || '08:00:00',
+        lunch_time: existingSettings.lunch_time || '12:30:00',
+        dinner_time: existingSettings.dinner_time || '18:30:00',
+        timezone: existingSettings.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
+        updated_at: new Date().toISOString()
+    };
+
+    try {
+        localStorage.setItem('meal_reminder_settings', JSON.stringify(retiredSettings));
+    } catch (_) {}
+
+    if (window.NativePush && typeof window.NativePush.scheduleMealReminders === 'function') {
+        await window.NativePush.scheduleMealReminders(retiredSettings);
+    }
+
+    try {
+        const user = await window.supabaseClient?.auth?.getUser();
+        const userId = user?.data?.user?.id;
+        if (!userId) return;
+        const { error } = await window.supabaseClient
+            .from('meal_reminder_preferences')
+            .update({
+                reminders_enabled: false,
+                breakfast_reminder: false,
+                lunch_reminder: false,
+                dinner_reminder: false,
+                updated_at: retiredSettings.updated_at
+            })
+            .eq('user_id', userId);
+        if (error && error.code !== 'PGRST205' && error.code !== '42P01') {
+            console.warn('Could not retire saved meal reminders:', error);
+        }
+    } catch (error) {
+        console.warn('Could not retire saved meal reminders:', error);
+    }
+}
 
 // Handle tapping the meal reminders header row to expand/collapse
 function toggleMealReminderSection(event) {

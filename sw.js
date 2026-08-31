@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v425-direct-weekly-actions'; // v425: route weekly To Do Next cards directly and introduce Week 2 Activity Insights
+const CACHE_NAME = 'pbb-app-v426-meal-reminders-retired'; // v426: retire meal reminders after the direct weekly-action release
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -7,15 +7,15 @@ const ASSETS = [
   './xp-guide.html',
   './assets/balance_logo.png',
   './welcome.html',
-  './lib/supabase.js?v=15-foundations-feed',
+  './lib/supabase.js?v=16-meal-reminders-retired',
   './lib/auth-guard.js?v=13-account-first-flow',
   './lib/meta-ad-trial.js?v=17-goal-alignment',
-  './lib/native-push.js?v=40-dispatch-approval',
+  './lib/native-push.js?v=41-meal-reminders-retired',
   './login.html',
   './exercise_videos.js?v=20260813-global-phone-video-v1',
   './workout_library.js',
   './workout_library_extended.js',
-  './js/dashboard/script_part_2.js?v=14-light-launch',
+  './js/dashboard/script_part_2.js?v=15-meal-reminders-retired',
   './js/dashboard/dashboard-script-3-1_get_user_data.js?v=59-light-launch',
   './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=223-settings-functionality',
   './js/dashboard/pbb-meta-preview-soundtrack.js?v=3-coach-video-ducking',

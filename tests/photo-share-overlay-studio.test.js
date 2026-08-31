@@ -78,11 +78,11 @@ assert.ok(dashboard.includes("id: 'workout-pb-text-layouts-v1'"), 'returning use
 assert.ok(dashboard.includes("title:'Choose your text layout'"), 'new users must see the guided text-layout tour step');
 assert.ok(dashboard.includes("id: 'meal-activity-text-layouts-v1'"), 'returning users must see the meal and activity text-layout Feature Drop');
 assert.ok(dashboard.includes('dashboard-script-10-points_widget_functions.js?v=49'), 'phones must load the new share composer');
-assert.ok(dashboard.includes('dashboard-script-11-calorie_tracker_functions.js?v=35-onboarding-adaptive-gate'), 'phones must load the new meal share controls');
+assert.ok(dashboard.includes('dashboard-script-11-calorie_tracker_functions.js?v=36-meal-reminders-retired'), 'phones must load the current meal tracker controls');
 assert.match(mealUi, /data-meal-share-overlay-style=/);
 assert.match(mealUi, /data-meal-share-text-style=/);
 assert.match(mealUi, /function refreshMealSharePromptStyleButtons\(/);
-assert.ok(serviceWorker.includes("const CACHE_NAME = 'pbb-app-v394-stable-tour-targets'"), 'the app shell cache must be refreshed');
+assert.ok(serviceWorker.includes("const CACHE_NAME = 'pbb-app-v426-meal-reminders-retired'"), 'the app shell cache must be refreshed');
 assert.ok(serviceWorker.includes('dashboard-script-10-points_widget_functions.js?v=49'), 'the new share composer must be precached');
 
 console.log('Swipeable photo share overlay studio contract passed');

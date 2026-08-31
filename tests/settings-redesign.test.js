@@ -42,8 +42,6 @@ test('all existing Settings capabilities and identifiers remain available once',
     'fitgotchi-visibility-toggle', 'fitgotchi-visibility-status',
     'settings-customize-character-btn', 'settings-push-notifications',
     'push-notif-settings-status', 'push-notif-settings-btn',
-    'meal-reminders-toggle', 'meal-reminder-times', 'breakfast-reminder-time',
-    'lunch-reminder-time', 'dinner-reminder-time', 'save-meal-reminders-btn',
     'settings-health-connect', 'health-connect-btn', 'settings-spotify-connect',
     'spotify-connect-btn', 'settings-download-app', 'settings-change-password',
     'settings-payment-method', 'settings-payment-method-btn',
@@ -100,6 +98,6 @@ test('Settings defines complete readable light and dark colour pairs', () => {
 });
 
 test('phone caches receive the redesign', () => {
-  assert.match(dashboard, /pbb-premium-overlays\.css\?v=99-settings-redesign/);
-  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v424-settings-functionality'/);
+  assert.match(dashboard, /pbb-premium-overlays\.css\?v=100-food-preferences-contrast/);
+  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v426-meal-reminders-retired'/);
 });

@@ -222,7 +222,7 @@ function buildAppNavigationGuideBlock() {
 
 const APP_XP_GUIDE = `
 BALANCE XP GUIDE (use only when relevant, especially if a client asks how to earn XP):
-- Meals: +1 XP per accepted meal log. Photo/AI meal logs are the safest path. If meal reminders are set, logging within 30 minutes of the scheduled meal time can add +1 on-time meal XP.
+- Meals: +1 XP per accepted meal log. Photo/AI meal logs are the safest path. Logging within 30 minutes of a meal time set during onboarding can add +1 on-time meal XP.
 - Daily nutrition: +2 XP once per day for completing the nutrition day with at least one meal logged and calories/protein/carbs/fat within 20% of the user's targets. Finishing the day without hitting targets records the day but gives no bonus.
 - Workout wins: +1 XP for each new personal best, including volume PRs. Verified workout photo/log routes can earn +1 XP. Do not tell clients to wait for a post-workout share/photo popup, that prompt has been removed.
 - Feed and social: one regular daily check-in post to Feed can earn +2 XP per Brisbane day. Commenting on someone else's Feed post earns +2 XP. Eligible food shares earn +15 XP once per Brisbane day in Balance Feed and another independent +15 XP in Instagram Feed. Workout and activity shares earn +15 XP once in Balance Feed and another independent +15 XP in Instagram Story. Nudging an inactive friend from Home earns +1 XP, capped once per friend per week.

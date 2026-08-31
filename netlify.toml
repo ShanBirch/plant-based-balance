@@ -308,8 +308,8 @@
 [functions."sync-wearable-data"]
   schedule = "0 1-23/2 * * *"
 
-# Meal reminders - schedule is defined inline in send-meal-reminders.mjs via export config
-# Runs every 10 minutes to check if any users need meal reminders
+# Meal reminder notifications were retired in August 2026. Meal times remain
+# available for on-time meal XP, but no scheduled reminder function is active.
 
 # Onboarding sequence scheduled scan - days 3/7/14/30 plus Foundations days 35/42
 # Runs every 4 hours at :17 to stagger from the pulse scans and sync jobs.

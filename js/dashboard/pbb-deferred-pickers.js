@@ -11,11 +11,11 @@ function openEquipmentPicker() {
     const current = (document.getElementById('profile-equipment-display')?.dataset.raw) || 'none';
     const container = document.getElementById('equipment-picker-options');
     container.innerHTML = _eqOptions.map(opt => `
-        <div onclick="selectEquipment('${opt.value}')" style="display:flex; align-items:center; gap:14px; padding:14px 12px; border-radius:12px; cursor:pointer; margin-bottom:6px; background:${opt.value===current?'#f0fdf4':'#f8fafc'}; border:2px solid ${opt.value===current?'var(--primary)':'transparent'};">
+        <button type="button" class="settings-picker-option${opt.value===current?' is-selected':''}" aria-pressed="${opt.value===current?'true':'false'}" onclick="selectEquipment('${opt.value}')">
             <span style="font-size:1.4rem;">${opt.icon}</span>
-            <span style="font-weight:600; font-size:0.95rem; color:var(--text-main);">${opt.label}</span>
-            ${opt.value===current?'<svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:var(--primary);margin-left:auto;"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>':''}
-        </div>
+            <span class="settings-picker-option-label">${opt.label}</span>
+            ${opt.value===current?'<svg class="settings-picker-check" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>':''}
+        </button>
     `).join('');
     const overlay = document.getElementById('equipment-picker-overlay');
     overlay.style.display = 'flex';
@@ -114,13 +114,13 @@ function _renderDietaryPickerChips() {
     const container = document.getElementById('dietary-picker-options');
     if (!container) return;
     const renderGroup = (title, opts) => `
-        <div style="font-weight:600; font-size:0.78rem; color:#475569; margin:6px 0 8px;">${title}</div>
-        <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px;">
+        <div class="dietary-picker-group-title">${title}</div>
+        <div class="dietary-picker-chip-list">
             ${opts.map(opt => {
                 const sel = _dietPickerSelected.has(opt.value);
-                return `<div onclick="toggleDietaryPickerChip('${opt.value}')" style="display:inline-flex; align-items:center; gap:6px; padding:8px 12px; border-radius:999px; cursor:pointer; font-size:0.82rem; font-weight:600; background:${sel?'#dcfce7':'#f1f5f9'}; color:${sel?'#166534':'var(--text-main)'}; border:2px solid ${sel?'var(--primary)':'transparent'}; transition:all 0.15s ease;">
+                return `<button type="button" class="dietary-picker-chip${sel?' is-selected':''}" role="checkbox" aria-checked="${sel?'true':'false'}" onclick="toggleDietaryPickerChip('${opt.value}')">
                     <span>${opt.icon}</span><span>${opt.label}</span>
-                </div>`;
+                </button>`;
             }).join('')}
         </div>`;
     container.innerHTML = renderGroup('Eating style', _dietEatingStyles)

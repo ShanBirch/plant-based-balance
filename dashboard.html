@@ -443,7 +443,7 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
 </script>
 
 <!-- Supabase & Auth Guard -->
-<script src="js/dashboard/script_part_2.js?v=14-light-launch"></script>
+<script src="js/dashboard/script_part_2.js?v=15-meal-reminders-retired"></script>
 <script>
 // ── Native OAuth warm-start callback (non-iOS) ────────────────────
 // On iOS this is set up inside the deferred chain above (after supabaseClient exists).
@@ -512,7 +512,7 @@ if (window._pbbIsIOSSafari) {
             'lib/vegan-meal-safety.js?v=2',
             'lib/migrate-localstorage.js',
             'lib/native-health.js',
-            'lib/native-push.js?v=40-dispatch-approval',
+            'lib/native-push.js?v=41-meal-reminders-retired',
             'lib/native-iap.js',
             'lib/stories.js?v=75-onboarding-introduction',
             'lib/ai-opponents.js',
@@ -559,7 +559,7 @@ if (window._pbbIsIOSSafari) {
 if (!window._pbbIsIOSSafari) {
     // Non-iOS: load native scripts synchronously
     document.write('<script src="lib/native-health.js"><\/script>');
-    document.write('<script src="lib/native-push.js?v=40-dispatch-approval"><\/script>');
+    document.write('<script src="lib/native-push.js?v=41-meal-reminders-retired"><\/script>');
     document.write('<script src="lib/native-iap.js"><\/script>');
 }
 </script>
@@ -12531,18 +12531,7 @@ if(!window._pbbIsIOSSafari) {
                     </div>
                     <div id="settings-fitgotchi-visibility" class="settings-v2-row settings-v2-row-static"><span class="settings-v2-icon">🐣</span><span class="settings-v2-copy"><strong>Show FitGotchi</strong><small id="fitgotchi-visibility-status">Shown on Home</small></span><button id="fitgotchi-visibility-toggle" class="fitgotchi-visibility-switch" type="button" role="switch" aria-checked="true" aria-label="Hide FitGotchi on Home" onclick="toggleFitGotchiVisibility()"></button></div>
                     <button id="settings-customize-character-btn" class="settings-v2-row" type="button" onclick="openCharacterCustomizationShortcut()"><span class="settings-v2-icon">✨</span><span class="settings-v2-copy"><strong>Customise character</strong><small>Change your FitGotchi look</small></span><span class="settings-v2-chevron">›</span></button>
-                    <div id="settings-push-notifications" class="settings-v2-row settings-v2-row-static"><span class="settings-v2-icon">🔔</span><span class="settings-v2-copy"><strong>Notifications</strong><small id="push-notif-settings-status">Coach messages and reminders</small></span><button id="push-notif-settings-btn" class="settings-v2-pill" type="button" onclick="openAppNotificationSettings()">Manage</button></div>
-                    <div class="settings-v2-reminders">
-                        <div class="settings-v2-row settings-v2-row-static" onclick="toggleMealReminderSection(event)"><span class="settings-v2-icon">⏰</span><span class="settings-v2-copy"><strong>Meal timing reminders</strong><small>Breakfast, lunch and dinner</small></span><label class="toggle-switch" aria-label="Meal timing reminders"><input type="checkbox" id="meal-reminders-toggle" onchange="toggleMealReminders(this.checked)"><span class="slider"></span><span class="knob"></span></label></div>
-                        <div id="notification-status-banner" style="display:none;"></div>
-                        <div id="meal-reminder-times" style="display:none;">
-                            <div class="settings-v2-time-row"><label><input type="checkbox" id="breakfast-reminder-check" checked>Breakfast</label><input type="time" id="breakfast-reminder-time" value="08:00"></div>
-                            <div class="settings-v2-time-row"><label><input type="checkbox" id="lunch-reminder-check" checked>Lunch</label><input type="time" id="lunch-reminder-time" value="12:30"></div>
-                            <div class="settings-v2-time-row"><label><input type="checkbox" id="dinner-reminder-check" checked>Dinner</label><input type="time" id="dinner-reminder-time" value="18:30"></div>
-                            <button id="save-meal-reminders-btn" class="settings-v2-save-reminders" type="button" onclick="saveAndConfirmMealReminders()">Save reminders</button>
-                            <div id="active-reminders-status" style="display:none;"></div>
-                        </div>
-                    </div>
+                    <div id="settings-push-notifications" class="settings-v2-row settings-v2-row-static"><span class="settings-v2-icon">🔔</span><span class="settings-v2-copy"><strong>Notifications</strong><small id="push-notif-settings-status">Coach messages and app alerts</small></span><button id="push-notif-settings-btn" class="settings-v2-pill" type="button" onclick="openAppNotificationSettings()">Manage</button></div>
                 </div>
             </section>
 
@@ -18110,7 +18099,7 @@ if (window._pbbIsIOSSafari) {
 }
 </script>
 
-<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=99-settings-redesign">
+<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=100-food-preferences-contrast">
 <link rel="stylesheet" href="css/dashboard/pbb-onboarding-comeback.css?v=8">
 <link rel="stylesheet" href="css/dashboard/pbb-onboarding-foundations.css?v=10-preference-contrast">
 
@@ -18146,13 +18135,13 @@ if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=47-dm-voice-wake-lock';
+            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=48-meal-reminders-retired';
             s.onload = function() { if(window._crumb)window._crumb('script6_deferred_loaded'); };
             document.head.appendChild(s);
         }, 2000);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=47-dm-voice-wake-lock"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=48-meal-reminders-retired"><\/script>');
 }
 </script>
 
@@ -19688,7 +19677,7 @@ if (window._pbbIsIOSSafari) {
             }
 
             var s = document.createElement('script');
-        s.src = 'js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=35-onboarding-adaptive-gate';
+        s.src = 'js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=36-meal-reminders-retired';
             s.dataset.pbbCalorieTracker = '1';
             s.onload = function() {
                 if (window._crumb) window._crumb('script11_loaded');
@@ -19748,7 +19737,7 @@ if (window._pbbIsIOSSafari) {
             }, window._pbbIsMealShortcutLaunch ? 250 : 2500);
         }, { once: true });
     } else {
-    document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=35-onboarding-adaptive-gate" data-pbb-calorie-tracker="1"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=36-meal-reminders-retired" data-pbb-calorie-tracker="1"><\/script>');
         document.write('<script src="js/dashboard/dashboard-script-meal-builder.js?v=3" data-pbb-meal-builder="1"><\/script>');
     }
 })();
@@ -20667,11 +20656,11 @@ if(!window._pbbIsIOSSafari) {
 </script>
 
 <!-- Equipment Access Picker Modal -->
-<div id="equipment-picker-overlay" onclick="if(event.target===this)closeEquipmentPicker()" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:99999; align-items:flex-end; justify-content:center;">
-    <div style="background:white; border-radius:20px 20px 0 0; width:100%; max-width:480px; padding:0 0 env(safe-area-inset-bottom,0px) 0; animation:slideUpSheet 0.25s ease;">
-        <div style="padding: calc(16px + env(safe-area-inset-top,0px)) 20px 16px; border-bottom:1px solid #f1f5f9; display:flex; align-items:center; justify-content:space-between;">
-            <h3 style="margin:0; font-size:1.05rem; color:var(--text-main); font-weight:700;">Equipment Access</h3>
-            <button onclick="closeEquipmentPicker()" style="background:none; border:none; font-size:1.4rem; color:#94a3b8; cursor:pointer; line-height:1;">×</button>
+<div id="equipment-picker-overlay" class="settings-picker-overlay" onclick="if(event.target===this)closeEquipmentPicker()" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:99999; align-items:flex-end; justify-content:center;">
+    <div class="settings-picker-sheet" style="background:white; border-radius:20px 20px 0 0; width:100%; max-width:480px; padding:0 0 env(safe-area-inset-bottom,0px) 0; animation:slideUpSheet 0.25s ease;">
+        <div class="settings-picker-header" style="padding: calc(16px + env(safe-area-inset-top,0px)) 20px 16px; border-bottom:1px solid #f1f5f9; display:flex; align-items:center; justify-content:space-between;">
+            <h3 class="settings-picker-title" style="margin:0; font-size:1.05rem; color:var(--text-main); font-weight:700;">Equipment Access</h3>
+            <button class="settings-picker-close" type="button" aria-label="Close equipment picker" onclick="closeEquipmentPicker()">×</button>
         </div>
         <div style="padding:12px 16px 24px;">
             <div id="equipment-picker-options"></div>
@@ -20680,18 +20669,18 @@ if(!window._pbbIsIOSSafari) {
 </div>
 
 <!-- Dietary Requirements Picker Modal (multi-select) -->
-<div id="dietary-picker-overlay" onclick="if(event.target===this)closeDietaryPicker()" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:99999; align-items:flex-end; justify-content:center;">
-    <div style="background:white; border-radius:20px 20px 0 0; width:100%; max-width:520px; max-height:calc(100vh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)); display:flex; flex-direction:column; padding:0 0 env(safe-area-inset-bottom,0px) 0; animation:slideUpSheet 0.25s ease;">
-        <div style="padding: calc(16px + env(safe-area-inset-top,0px)) 20px 14px; border-bottom:1px solid #f1f5f9; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
-            <h3 style="margin:0; font-size:1.05rem; color:var(--text-main); font-weight:700;">Dietary Requirements</h3>
-            <button onclick="closeDietaryPicker()" style="background:none; border:none; font-size:1.4rem; color:#94a3b8; cursor:pointer; line-height:1;">×</button>
+<div id="dietary-picker-overlay" class="settings-picker-overlay" onclick="if(event.target===this)closeDietaryPicker()" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:99999; align-items:flex-end; justify-content:center;">
+    <div class="settings-picker-sheet" style="background:white; border-radius:20px 20px 0 0; width:100%; max-width:520px; max-height:calc(100vh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)); display:flex; flex-direction:column; padding:0 0 env(safe-area-inset-bottom,0px) 0; animation:slideUpSheet 0.25s ease;">
+        <div class="settings-picker-header" style="padding: calc(16px + env(safe-area-inset-top,0px)) 20px 14px; border-bottom:1px solid #f1f5f9; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
+            <h3 class="settings-picker-title" style="margin:0; font-size:1.05rem; color:var(--text-main); font-weight:700;">Food Preferences</h3>
+            <button class="settings-picker-close" type="button" aria-label="Close food preferences" onclick="closeDietaryPicker()">×</button>
         </div>
         <div style="padding:14px 16px 12px; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; flex:1 1 auto;">
-            <p style="margin:0 0 12px; font-size:0.82rem; color:#64748b; line-height:1.4;">Pick any that apply — your meal plan and grocery list will follow these rules.</p>
+            <p class="settings-picker-helper" style="margin:0 0 12px; font-size:0.82rem; color:#64748b; line-height:1.4;">Pick any that apply — your meal plan and grocery list will follow these rules.</p>
             <div id="dietary-picker-options"></div>
         </div>
-        <div style="padding:12px 16px calc(14px + env(safe-area-inset-bottom,0px)); border-top:1px solid #f1f5f9; flex-shrink:0;">
-            <button id="dietary-picker-save-btn" onclick="saveDietaryPreferences()" style="width:100%; padding:13px; border-radius:12px; border:none; background:var(--primary); color:white; font-weight:700; font-size:0.95rem; cursor:pointer;">Save</button>
+        <div class="settings-picker-footer" style="padding:12px 16px calc(14px + env(safe-area-inset-bottom,0px)); border-top:1px solid #f1f5f9; flex-shrink:0;">
+            <button id="dietary-picker-save-btn" class="settings-picker-primary" type="button" onclick="saveDietaryPreferences()">Save preferences</button>
         </div>
     </div>
 </div>
@@ -20703,14 +20692,7 @@ if(!window._pbbIsIOSSafari) {
 }
 </style>
 
-<script>
-if(!window._pbbIsIOSSafari) {
-    document.write('<script src="js/dashboard/pbb-deferred-pickers.js"><\/script>');
-} else {
-    window._pbbDeferredQueue = window._pbbDeferredQueue || [];
-    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-pickers.js');
-}
-</script>
+<script src="js/dashboard/pbb-deferred-pickers.js?v=3-food-preferences-direct-load"></script>
 
 
 <!-- Health Connect Prompt Modal -->

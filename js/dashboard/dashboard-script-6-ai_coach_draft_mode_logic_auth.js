@@ -5261,7 +5261,7 @@ const CHALLENGE_XP_INFO_GROUPS = [
         title: 'Meals and Nutrition',
         rows: [
             { amount: '+1', title: 'Accepted meal log', body: 'Verified photo, quick log, text log, and accepted meal routes can award this.' },
-            { amount: '+1', title: 'On-time meal', body: 'Log within 30 minutes of a scheduled meal reminder.' },
+            { amount: '+1', title: 'On-time meal', body: 'Log within 30 minutes of a meal time set during onboarding.' },
             { amount: '+2', title: 'Daily nutrition target', body: 'Log at least one meal and finish within 20% of calories, protein, carbs, and fat.' },
             { amount: '+15', title: 'Meal Balance Feed share', body: 'Share one logged meal card to Balance Feed per Brisbane day.' },
             { amount: '+15', title: 'Meal Instagram Feed share', body: 'Share one logged meal card to Instagram Feed per Brisbane day.' },

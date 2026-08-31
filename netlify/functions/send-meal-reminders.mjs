@@ -312,6 +312,5 @@ export default async function(req) {
     console.log(`[MealReminders] Done. Sent: ${totalSent}, Failed: ${totalFailed}`);
 }
 
-export const config = {
-    schedule: "*/10 * * * *"
-};
+// Scheduled delivery retired: the function remains available temporarily for
+// deployment rollback and historical diagnostics, but Netlify no longer invokes it.
