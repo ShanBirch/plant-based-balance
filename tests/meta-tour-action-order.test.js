@@ -22,7 +22,7 @@ test('paid tour explains guided actions before performing them', () => {
   assert.match(nextSteps, /window\.dispatchEvent\(new CustomEvent\('pbb-next-step-action'/);
   assert.match(dashboard, /event\.preventDefault\(\);\s*event\.stopImmediatePropagation\(\);\s*beginPromptedAction\(false\)/);
   assert.match(dashboard, /clickedAction\.getAttribute\('data-next-step-id'\) !== expectedActionId/);
-  assert.match(dashboard, /var promptAlignmentTimer = setInterval\(keepPromptAligned, 280\)/);
+  assert.match(dashboard, /var promptAlignmentTimer = setInterval\(keepPromptAligned, 420\)/);
   assert.match(dashboard, /clearInterval\(promptAlignmentTimer\)/);
   assert.match(dashboard, /var livePromptStep = Object\.assign\(\{\}, step,[\s\S]*tapTargetPrompt:true/);
   assert.match(dashboard, /if \(!actionAlreadyStarted\) window\.pbbNextSteps\.runAction\(expectedActionId\)[\s\S]*waitForPromptedStepSurface\(step, 900\)[\s\S]*step\.action\(\{ fromTargetClick:true \}\)/);
@@ -37,5 +37,5 @@ test('opened interactive screens keep their guide and gates', () => {
   assert.match(dashboard, /showStep\(idx, \{ afterPromptedAction:true \}\)/);
   assert.match(dashboard, /if \(!options\.afterPromptedAction\) \{\s*resetTourTemporaryTargets\(\)/);
   assert.match(dashboard, /completedPromptedActions\.clear\(\)/);
-  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v416-five-meal-carousel'/);
+  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v419-tour-smoothness'/);
 });

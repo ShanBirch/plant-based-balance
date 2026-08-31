@@ -48,23 +48,29 @@ test('skipping still opens the welcome journey while completing leaves the membe
     assert.match(dashboardSource, /else if \(completedClientActivationTour\) \{[\s\S]+if \(skipped\)[\s\S]+window\.socialJourney\.startActivation\(\)[\s\S]+ensureTab\('learning'\)/);
 });
 
-test('the signed-in app tour starts with the plan, saves Weekly Goals near the end, and finishes in Foundations', () => {
-    const workout = dashboardSource.indexOf("title:'Your workout program'");
-    const foodLog = dashboardSource.indexOf("title:'Track what you actually eat'", workout);
-    const mealPlan = dashboardSource.indexOf("title:'Your meal plan'", foodLog);
-    const shopping = dashboardSource.indexOf("title:'Your weekly shopping list'", mealPlan);
-    const community = dashboardSource.indexOf("title:'Make the change visible'", shopping);
-    const goals = dashboardSource.indexOf("title:'Pick your Weekly Goals'", community);
-    const course = dashboardSource.indexOf("title:'Read, then take the quiz'", goals);
+test('the signed-in app tour covers the plan, completes Foundations, then coach support and Weekly Goals', () => {
+    const requiredStart = dashboardSource.indexOf('const REQUIRED_ONBOARDING_TOUR_TITLES');
+    const requiredEnd = dashboardSource.indexOf('];', requiredStart);
+    const requiredTour = dashboardSource.slice(requiredStart, requiredEnd);
+    const mealPlan = requiredTour.indexOf("'See every meal on Day 1'");
+    const shopping = requiredTour.indexOf("'One shopping list for the week'", mealPlan);
+    const foodLog = requiredTour.indexOf("'Log what you eat'", shopping);
+    const workout = requiredTour.indexOf("'Check your workout week'", foodLog);
+    const community = requiredTour.indexOf("'The Balance community'", workout);
+    const course = requiredTour.indexOf("'Read, then take the quiz'", community);
+    const coach = requiredTour.indexOf("'Watch Shannon’s coach note'", course);
+    const goals = requiredTour.indexOf("'Pick your Weekly Goals'", coach);
 
-    assert.ok(workout >= 0);
-    assert.ok(foodLog > workout);
-    assert.ok(mealPlan > foodLog);
+    assert.ok(mealPlan >= 0);
     assert.ok(shopping > mealPlan);
-    assert.ok(community > shopping);
-    assert.ok(goals > community);
-    assert.ok(course > goals);
-    assert.match(dashboardSource.slice(course, dashboardSource.indexOf('\n', course)), /clientActivation:true[\s\S]*requiresFoundationsLesson:'mind-1-1'/);
+    assert.ok(foodLog > shopping);
+    assert.ok(workout > foodLog);
+    assert.ok(community > workout);
+    assert.ok(course > community);
+    assert.ok(coach > course);
+    assert.ok(goals > coach);
+    assert.match(dashboardSource, /title:'Read, then take the quiz'[\s\S]*?requiresFoundationsLesson:'mind-1-1'/);
+    assert.match(dashboardSource, /activeSteps = requiredOnboardingTourSteps\(\)/);
     assert.match(dashboardSource, /if \(metaPreviewTour \|\| clientActivationTour\) \{[\s\S]*showMetaTourWelcome\(\)/);
     assert.match(dashboardSource, /\(metaPreviewTour \|\| clientActivationTour\) && step\.promptBeforeAction/);
 });

@@ -1950,14 +1950,14 @@ if(!window._pbbIsIOSSafari) {
     <script>
 if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-progressphoto.js?v=10"><\/script>');
-document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=34-guided-goals"><\/script>');
+document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=35-balance-theme"><\/script>');
     document.write('<script src="js/dashboard/pbb-social-journey.js?v=39-coach-video-poster"><\/script>');
     document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=36-shopping-list-direct"><\/script>');
     document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=29-accountability-checkout"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
     window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=10');
-window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=34-guided-goals');
+window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=35-balance-theme');
     window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=39-coach-video-poster');
     window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=36-shopping-list-direct');
     window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=29-accountability-checkout');
@@ -13799,7 +13799,8 @@ if(!window._pbbIsIOSSafari) {
     position: absolute;
     border-radius: 14px;
     box-shadow: 0 0 0 9999px rgba(0,0,0,0.72);
-    transition: all 0.28s cubic-bezier(.4,0,.2,1);
+    transition: opacity .14s ease, box-shadow .16s ease, border-color .16s ease;
+    will-change: opacity;
     pointer-events: none;
     border: 2px solid rgba(255,255,255,0.55);
   }
@@ -13816,12 +13817,23 @@ if(!window._pbbIsIOSSafari) {
     pointer-events: auto;
     visibility: visible !important;
     font-family: inherit;
-    transition: top 0.28s cubic-bezier(.4,0,.2,1), left 0.28s cubic-bezier(.4,0,.2,1);
+    transition: opacity .14s ease;
+    will-change: opacity;
   }
+  #guided-tour-overlay::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: rgba(26,24,20,.12);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .12s ease;
+  }
+  #guided-tour-overlay.tour-transitioning::before { opacity: 1; }
   #guided-tour-overlay.tour-transitioning #guided-tour-bubble,
   #guided-tour-overlay.tour-transitioning #guided-tour-spotlight {
     opacity: 0;
-    transition: opacity .16s ease;
+    transition: opacity .1s ease;
   }
   #guided-tour-overlay.tour-tap-target #guided-tour-bubble .tour-next { display: none; }
   #guided-tour-overlay.tour-feature-view #guided-tour-spotlight { display: none; }
@@ -14420,8 +14432,55 @@ if(!window._pbbIsIOSSafari) {
   let tourNextBlockedUntil = 0;
   let activePromptTargetCleanup = null;
   let tourRenderToken = 0;
+  let tourPositionFrame = 0;
+  let tourSettleTimer = 0;
+  let activeTourDisplayStep = null;
+  let activeTourFallbackTarget = null;
   const completedTourGates = new Set();
   const completedPromptedActions = new Set();
+
+  function cancelScheduledTourPosition(){
+    if (tourPositionFrame) cancelAnimationFrame(tourPositionFrame);
+    if (tourSettleTimer) clearTimeout(tourSettleTimer);
+    tourPositionFrame = 0;
+    tourSettleTimer = 0;
+  }
+
+  function currentTourPositionTarget(step){
+    const liveTarget = resolveStepTarget(step).target;
+    if (liveTarget) return liveTarget;
+    return activeTourFallbackTarget && activeTourFallbackTarget.isConnected
+      ? activeTourFallbackTarget
+      : null;
+  }
+
+  function scheduleTourPosition(step, options){
+    options = options || {};
+    const displayStep = step || activeTourDisplayStep || activeSteps[idx];
+    if (!displayStep) return;
+    if (options.settleOnly) {
+      if (tourSettleTimer) clearTimeout(tourSettleTimer);
+      tourSettleTimer = setTimeout(function(){
+        tourSettleTimer = 0;
+        scheduleTourPosition(displayStep);
+      }, Math.max(120, Number(options.settleDelay || 240)));
+      return;
+    }
+    const renderToken = tourRenderToken;
+    if (tourPositionFrame) cancelAnimationFrame(tourPositionFrame);
+    tourPositionFrame = requestAnimationFrame(function(){
+      tourPositionFrame = 0;
+      if (renderToken !== tourRenderToken || !window.__balanceGuidedTourActive) return;
+      positionBubbleAndSpotlight(currentTourPositionTarget(displayStep), displayStep);
+    });
+    if (options.settle) {
+      if (tourSettleTimer) clearTimeout(tourSettleTimer);
+      tourSettleTimer = setTimeout(function(){
+        tourSettleTimer = 0;
+        scheduleTourPosition(displayStep);
+      }, Math.max(120, Number(options.settleDelay || 240)));
+    }
+  }
 
   function setTourGateUi(complete, message, buttonText){
     const next = document.getElementById('tour-next-btn');
@@ -14563,9 +14622,12 @@ if(!window._pbbIsIOSSafari) {
         return;
       }
       var livePromptTarget = resolveStepTarget(livePromptStep).target;
-      if (livePromptTarget) positionBubbleAndSpotlight(livePromptTarget, livePromptStep);
+      if (livePromptTarget) {
+        activeTourFallbackTarget = livePromptTarget;
+        scheduleTourPosition(livePromptStep);
+      }
     };
-    var promptAlignmentTimer = setInterval(keepPromptAligned, 280);
+    var promptAlignmentTimer = setInterval(keepPromptAligned, 420);
     // Capture the checklist tap before its inline destination handler changes
     // tabs or re-renders Home. Otherwise fast, synchronous destinations (the
     // nutrition tracker in particular) can remove the highlighted card before
@@ -14627,7 +14689,7 @@ if(!window._pbbIsIOSSafari) {
         retry:function(){
           setTourGateUi(false, 'Write a quick hello, then tap Post to continue.', 'Post your hello first');
           try {
-            if (composer) composer.scrollIntoView({ block:'center', behavior:'smooth' });
+            if (composer) composer.scrollIntoView({ block:'center', behavior:'auto' });
             if (textInput) textInput.focus({ preventScroll:true });
           } catch(e){}
         },
@@ -14668,7 +14730,8 @@ if(!window._pbbIsIOSSafari) {
           setTourGateUi(false, progressMessage, 'Keep looking');
           setTimeout(function(){
             const refreshedTarget = q(step.sel) || currentTarget;
-            positionBubbleAndSpotlight(refreshedTarget, step);
+            activeTourFallbackTarget = refreshedTarget;
+            scheduleTourPosition(step);
           }, 120);
           return;
         }
@@ -14678,7 +14741,8 @@ if(!window._pbbIsIOSSafari) {
           setTourGateUi(true, step.highlightedClickComplete || 'Done. You can keep going.', finalLabel);
           setTimeout(function(){
             const refreshedTarget = q(step.sel) || currentTarget;
-            positionBubbleAndSpotlight(refreshedTarget, step);
+            activeTourFallbackTarget = refreshedTarget;
+            scheduleTourPosition(step);
           }, 120);
         }
       };
@@ -14717,7 +14781,7 @@ if(!window._pbbIsIOSSafari) {
           setTourGateUi(false, step.highlightedClickPrompt || 'Tap the highlighted control to continue.', 'Tap highlighted control');
           const currentTarget = q(step.sel);
           if (currentTarget) {
-            try { currentTarget.scrollIntoView({ block:'center', behavior:'smooth' }); currentTarget.focus(); } catch(e) {}
+            try { currentTarget.scrollIntoView({ block:'center', behavior:'auto' }); currentTarget.focus(); } catch(e) {}
           }
         },
         cleanup:function(){
@@ -14730,7 +14794,10 @@ if(!window._pbbIsIOSSafari) {
       activeTourGate.followTimer = setInterval(function(){
         if (!activeTourGate || activeTourGate.key !== key) return;
         const currentTarget = q(step.sel);
-        if (currentTarget) positionBubbleAndSpotlight(currentTarget, step);
+        if (currentTarget) {
+          activeTourFallbackTarget = currentTarget;
+          scheduleTourPosition(step);
+        }
       }, 420);
       setTourGateUi(false, step.highlightedClickPrompt || 'Tap the highlighted control to continue.', 'Tap highlighted control');
       return;
@@ -14800,7 +14867,7 @@ if(!window._pbbIsIOSSafari) {
         retry:function(){
           setTourGateUi(false, 'Watch the full coach note to unlock Next.', 'Watch first');
           if (video) {
-            try { video.scrollIntoView({ block:'center', behavior:'smooth' }); video.focus(); } catch(e) {}
+            try { video.scrollIntoView({ block:'center', behavior:'auto' }); video.focus(); } catch(e) {}
           }
         },
         cleanup:function(){
@@ -14863,7 +14930,7 @@ if(!window._pbbIsIOSSafari) {
       };
       activeTourGate.followTimer = setInterval(function(){
         if (!activeTourGate || activeTourGate.key !== key) return;
-        positionBubbleAndSpotlight(resolveStepTarget(step).target, step);
+        scheduleTourPosition(step);
       }, 650);
       setTourGateUi(false, 'Finish the first Foundations lesson with a perfect score to unlock Next.', 'Finish lesson first');
       return;
@@ -15063,21 +15130,32 @@ if(!window._pbbIsIOSSafari) {
         return String(button.getAttribute('onclick') || '').indexOf(needle) !== -1;
       }) || null;
     } catch(e){}
-    var targetSelector = tabName === 'dashboard' ? '#view-dashboard' : '';
-    // Course completion and Feed rendering can finish on a delayed callback and
-    // briefly restore their old tab after the tour has asked for Home. Verify
-    // the requested destination, then repeat the same tab switch if necessary.
+    var targetSelectors = {
+      dashboard:'#view-dashboard',
+      meals:'#view-meals',
+      'movement-tab':'#movement-tab',
+      learning:'#view-learning',
+      friends:'#view-friends',
+      cycle:'#view-cycle',
+      profile:'#view-profile'
+    };
+    var targetSelector = targetSelectors[tabName] || '';
+    // Switch only when the destination is not already visible. The old loop
+    // repeatedly reopened Home while merely checking it, which caused the
+    // underlying page to rebuild several times beneath an otherwise stable
+    // guide. A short read-only stability check still catches delayed Course or
+    // Feed callbacks that restore their old tab.
     var stableDestinationChecks = 0;
-    for (var attempt = 0; attempt < 10; attempt += 1) {
-      try { if (typeof switchAppTab === 'function') switchAppTab(tabName, navButton); } catch(e){}
-      await new Promise(function(r){ setTimeout(r, attempt === 0 ? 320 : 280); });
-      if (!targetSelector) break;
+    for (var attempt = 0; attempt < 8; attempt += 1) {
+      var destinationVisible = targetSelector ? !!q(targetSelector) : !!(navButton && navButton.classList.contains('active'));
+      if (!destinationVisible) {
+        try { if (typeof switchAppTab === 'function') switchAppTab(tabName, navButton); } catch(e){}
+      }
+      await new Promise(function(r){ setTimeout(r, attempt === 0 && !destinationVisible ? 180 : 120); });
+      if (!targetSelector) return;
       if (q(targetSelector)) stableDestinationChecks += 1;
       else stableDestinationChecks = 0;
-      // A Course/Feed completion callback can restore its old tab shortly
-      // after Home first appears. Keep reaffirming Home until it stays visible
-      // across several checks instead of accepting the first transient frame.
-      if (stableDestinationChecks >= 5) break;
+      if (stableDestinationChecks >= 2) return;
     }
   }
 
@@ -15247,6 +15325,9 @@ if(!window._pbbIsIOSSafari) {
 async function showStep(i, options){
     options = options || {};
     const renderToken = ++tourRenderToken;
+    cancelScheduledTourPosition();
+    activeTourDisplayStep = null;
+    activeTourFallbackTarget = null;
     try {
       const trackedStep = activeSteps[i];
       window.trackBalanceActivity('guided_tour_step', {
@@ -15361,24 +15442,15 @@ async function showStep(i, options){
     } else if (isPromptBeforeAction) setTourGateUi(true, '', step.preActionButton || 'Open');
     else armTourGate(step);
 
-    positionBubbleAndSpotlight(target, displayStep);
+    activeTourDisplayStep = displayStep;
+    activeTourFallbackTarget = target;
+    await new Promise(function(resolve){ requestAnimationFrame(resolve); });
+    if (renderToken !== tourRenderToken) return;
+    positionBubbleAndSpotlight(currentTourPositionTarget(displayStep), displayStep);
     if (overlay) overlay.classList.remove('tour-transitioning');
-    setTimeout(function(){
-      if (renderToken !== tourRenderToken) return;
-      positionBubbleAndSpotlight(resolveStepTarget(displayStep).target, displayStep);
-    }, 180);
-    setTimeout(function(){
-      if (renderToken !== tourRenderToken) return;
-      positionBubbleAndSpotlight(resolveStepTarget(displayStep).target, displayStep);
-    }, 520);
-    setTimeout(function(){
-      if (renderToken !== tourRenderToken) return;
-      positionBubbleAndSpotlight(resolveStepTarget(displayStep).target, displayStep);
-    }, 1100);
-    setTimeout(function(){
-      if (renderToken !== tourRenderToken) return;
-      positionBubbleAndSpotlight(resolveStepTarget(displayStep).target, displayStep);
-    }, 1800);
+    // One quiet settle pass catches late image/font layout without making the
+    // card chase the page for the next two seconds.
+    scheduleTourPosition(displayStep, { settleOnly:true, settleDelay:240 });
 
     const checkpoint = step.xpReward
       || step.walkthroughReward
@@ -15502,6 +15574,9 @@ window.endFeatureTour = function(skipped){
       return false;
     }
     tourRenderToken += 1;
+    cancelScheduledTourPosition();
+    activeTourDisplayStep = null;
+    activeTourFallbackTarget = null;
     if (completedMetaPreviewTour && !skipped && !completedTourGates.has('foundations-lesson:mind-1-1')) {
       var foundationsStepIndex = activeSteps.findIndex(function(step){ return step && step.metaPreviewSignoff === true; });
       if (foundationsStepIndex >= 0) {
@@ -15532,6 +15607,7 @@ window.endFeatureTour = function(skipped){
     if (resizeHandler) {
       window.removeEventListener('resize', resizeHandler);
       window.removeEventListener('scroll', resizeHandler, true);
+      document.removeEventListener('load', resizeHandler, true);
       if (window.visualViewport) {
         window.visualViewport.removeEventListener('resize', resizeHandler);
         window.visualViewport.removeEventListener('scroll', resizeHandler);
@@ -15632,18 +15708,24 @@ window.endFeatureTour = function(skipped){
       try { pushNavigationState('guided-tour-overlay', function(){ endFeatureTour(true); }); } catch(e){}
     }
     resizeHandler = function(){
-      const step = activeSteps[idx];
+      const step = activeTourDisplayStep || activeSteps[idx];
       if (!step) return;
-      positionBubbleAndSpotlight(resolveStepTarget(step).target, step);
+      scheduleTourPosition(step);
     };
     window.addEventListener('resize', resizeHandler);
     window.addEventListener('scroll', resizeHandler, true);
+    // Re-align only when real late media changes the layout. This replaces the
+    // old blind 180/520/1100/1800ms polling sequence.
+    document.addEventListener('load', resizeHandler, true);
     if (window.visualViewport) {
       window.visualViewport.addEventListener('resize', resizeHandler);
       window.visualViewport.addEventListener('scroll', resizeHandler);
     }
     document.addEventListener('focusin', resizeHandler, true);
     document.addEventListener('focusout', resizeHandler, true);
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(function(){ if (resizeHandler) resizeHandler(); }).catch(function(){});
+    }
     if (metaPreviewTour || clientActivationTour) {
       showMetaTourWelcome();
     } else {

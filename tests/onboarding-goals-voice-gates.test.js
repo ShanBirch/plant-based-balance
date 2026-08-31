@@ -34,9 +34,21 @@ test('both activation tours require an explicit Weekly Goals save', () => {
   assert.match(weeklyGoals, /state\.draftSelected = \[\]/);
   assert.match(weeklyGoals, /Pick your first goal/);
   assert.match(weeklyGoals, /Recommended match your setup answers/);
-  assert.match(weeklyGoals, /Save my weekly goals/);
+  assert.match(weeklyGoals, /Save My Weekly Goals/);
   assert.match(dashboard, /RECOMMENDED STARTING POINTS/);
   assert.match(dashboard, /These are suggestions only/);
+});
+
+test('Weekly Goals chooser uses one readable cream, white and gold Balance theme', () => {
+  assert.match(weeklyGoals, /function styleVarsForMeta\(meta\) \{[\s\S]*?--goal-accent:#765410;--goal-soft:#fff8e7;--goal-border:#d8b25e/);
+  assert.match(weeklyGoals, /#weekly-goals-modal \.weekly-goal-sheet\{background:linear-gradient\(180deg,#fffdf8 0%,#f6eddb 100%\) !important/);
+  assert.match(weeklyGoals, /font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif !important/);
+  assert.match(weeklyGoals, /#weekly-goals-modal \.weekly-goal-hero[^{]*\{[^}]*background:linear-gradient\(135deg,#fffdf8 0%,#f4e6c8 100%\) !important/);
+  assert.match(weeklyGoals, /weekly-goal-hero > div > div:first-child\{max-width:calc\(100% - 104px\)/);
+  assert.match(weeklyGoals, /#weekly-goals-modal \.weekly-goal-stepper input\{[^}]*background:#fffdf8 !important;[^}]*color:#181713 !important/);
+  assert.match(weeklyGoals, /weekly-goal-selected-count\{white-space:nowrap/);
+  assert.match(weeklyGoals, /#weekly-goals-modal \.weekly-goal-save-btn\{[^}]*background:#d8b25e !important;[^}]*color:#181713 !important/);
+  assert.doesNotMatch(weeklyGoals, /weekly-goal-save-btn\{[^}]*#321a55/);
 });
 
 test('preview walkthrough only unlocks Next after the full coach video plays', () => {
@@ -98,10 +110,10 @@ test('every onboarding coach video shows Shannon as its poster frame', () => {
 
 test('changed onboarding assets are cache-busted', () => {
   assert.match(dashboard, /meta-ad-trial\.js\?v=16-captioned-coach-video/);
-  assert.match(dashboard, /pbb-deferred-weeklygoals\.js\?v=34-guided-goals/);
+  assert.match(dashboard, /pbb-deferred-weeklygoals\.js\?v=35-balance-theme/);
   assert.match(dashboard, /pbb-social-journey\.js\?v=39-coach-video-poster/);
-  assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=216-shopping-tour-direct/);
+  assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=221-onboarding-preference-contrast-copy/);
   assert.match(dashboard, /dashboard-script-6-ai_coach_draft_mode_logic_auth\.js\?v=46-coach-video-poster/);
   assert.match(dashboard, /learning-inline\.js\?v=29-paid-tour-handoff/);
-  assert.match(serviceWorker, /pbb-app-v416-five-meal-carousel/);
+  assert.match(serviceWorker, /pbb-app-v419-tour-smoothness/);
 });

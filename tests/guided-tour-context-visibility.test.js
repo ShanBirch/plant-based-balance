@@ -27,7 +27,7 @@ test('walkthrough keeps surrounding page context readable', () => {
   assert.match(premiumOverlays, /#guided-tour-overlay\.tour-page-view #guided-tour-spotlight[\s\S]*?rgba\(26, 24, 20, 0\.08\)/);
   assert.doesNotMatch(premiumOverlays, /#guided-tour-spotlight[\s\S]*?rgba\(29, 15, 50, 0\.78\)/);
   assert.match(dashboard, /pbb-premium-overlays\.css\?v=97-foundations-actions/);
-  assert.match(serviceWorker, /pbb-app-v418-course-text-cleanup/);
+  assert.match(serviceWorker, /pbb-app-v419-tour-smoothness/);
   assert.match(source, /#guided-tour-overlay \{[^}]*pointer-events: auto/);
   assert.match(source, /#guided-tour-overlay\.tour-tap-target,[\s\S]*?#guided-tour-overlay\.tour-action-required:not\(\.tour-gate-complete\) \{ pointer-events: none; \}/);
   assert.match(source, /#guided-tour-overlay\.tour-coach-note \{ pointer-events: none; \}/);
@@ -41,12 +41,29 @@ test('walkthrough keeps surrounding page context readable', () => {
 test('guided-tour tab handoffs verify Home is actually visible after delayed feature work', () => {
   const source = featureTourSource();
 
-  assert.match(source, /var targetSelector = tabName === 'dashboard' \? '#view-dashboard' : ''/);
+  assert.match(source, /var targetSelectors = \{[\s\S]*?dashboard:'#view-dashboard'[\s\S]*?learning:'#view-learning'[\s\S]*?friends:'#view-friends'/);
   assert.match(source, /var stableDestinationChecks = 0/);
-  assert.match(source, /for \(var attempt = 0; attempt < 10; attempt \+= 1\)/);
+  assert.match(source, /for \(var attempt = 0; attempt < 8; attempt \+= 1\)/);
   assert.match(source, /switchAppTab\(tabName, navButton\)/);
   assert.match(source, /if \(q\(targetSelector\)\) stableDestinationChecks \+= 1/);
-  assert.match(source, /if \(stableDestinationChecks >= 5\) break/);
+  assert.match(source, /if \(stableDestinationChecks >= 2\) return/);
+  assert.match(source, /if \(!destinationVisible\) \{[\s\S]*?switchAppTab\(tabName, navButton\)/);
+});
+
+test('guided-tour positioning is frame-coordinated and settles once without chasing the page', () => {
+  const source = featureTourSource();
+
+  assert.match(source, /function scheduleTourPosition\(step, options\)/);
+  assert.match(source, /tourPositionFrame = requestAnimationFrame/);
+  assert.match(source, /scheduleTourPosition\(displayStep, \{ settleOnly:true, settleDelay:240 \}\)/);
+  assert.match(source, /resizeHandler = function\(\)\{[\s\S]*?scheduleTourPosition\(step\)/);
+  assert.match(source, /document\.addEventListener\('load', resizeHandler, true\)/);
+  assert.match(source, /document\.removeEventListener\('load', resizeHandler, true\)/);
+  assert.match(source, /transition: opacity \.14s ease, box-shadow \.16s ease, border-color \.16s ease/);
+  assert.doesNotMatch(source, /#guided-tour-spotlight[\s\S]{0,220}transition: all/);
+  assert.doesNotMatch(source, /transition: top 0\.28s/);
+  assert.doesNotMatch(source, /\}, 1100\);[\s\S]{0,240}positionBubbleAndSpotlight/);
+  assert.doesNotMatch(source, /\}, 1800\);[\s\S]{0,240}positionBubbleAndSpotlight/);
 });
 
 test('prompted tour actions recover when the destination opens before the action signal is observed', () => {

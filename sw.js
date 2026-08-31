@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v418-course-text-cleanup'; // v418: replace the cached shell that could render legacy guided-tour text in Course
+const CACHE_NAME = 'pbb-app-v419-tour-smoothness'; // v419: ship the frame-coordinated guided tour and replace the older cached shell
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -20,7 +20,7 @@ const ASSETS = [
   './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=220-course-text-cleanup',
   './js/dashboard/pbb-meta-preview-soundtrack.js?v=3-coach-video-ducking',
   './js/dashboard/pbb-app-telemetry.js?v=1',
-  './js/dashboard/pbb-deferred-weeklygoals.js?v=34-guided-goals',
+  './js/dashboard/pbb-deferred-weeklygoals.js?v=35-balance-theme',
   './css/dashboard/pbb-onboarding-comeback.css?v=8',
   './css/dashboard/pbb-onboarding-foundations.css?v=7-single-render',
   './js/dashboard/dashboard-script-7-video_logic.js?v=20260815-exercise-thumbnails',
