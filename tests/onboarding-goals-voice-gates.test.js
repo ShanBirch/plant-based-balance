@@ -89,12 +89,19 @@ test('real Coach Shannon inbox also requires the full coach video', () => {
   assert.match(socialJourney, /welcomeVideoCompleteUserId/);
 });
 
+test('every onboarding coach video shows Shannon as its poster frame', () => {
+  const poster = 'poster="/assets/balance-onboarding-coach-note-poster.jpg"';
+  assert.match(dashboard, new RegExp('id="meta-ad-trial-welcome-video"[^>]*' + poster));
+  assert.match(directMessages, new RegExp('id="balance-onboarding-welcome-video"[^>]*' + poster));
+  assert.match(socialJourney, new RegExp('id="social-journey-welcome-video"[^>]*' + poster));
+});
+
 test('changed onboarding assets are cache-busted', () => {
   assert.match(dashboard, /meta-ad-trial\.js\?v=16-captioned-coach-video/);
   assert.match(dashboard, /pbb-deferred-weeklygoals\.js\?v=34-guided-goals/);
-  assert.match(dashboard, /pbb-social-journey\.js\?v=38-captioned-coach-video/);
+  assert.match(dashboard, /pbb-social-journey\.js\?v=39-coach-video-poster/);
   assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=216-shopping-tour-direct/);
-  assert.match(dashboard, /dashboard-script-6-ai_coach_draft_mode_logic_auth\.js\?v=45-captioned-coach-video/);
+  assert.match(dashboard, /dashboard-script-6-ai_coach_draft_mode_logic_auth\.js\?v=46-coach-video-poster/);
   assert.match(dashboard, /learning-inline\.js\?v=29-paid-tour-handoff/);
   assert.match(serviceWorker, /pbb-app-v416-five-meal-carousel/);
 });

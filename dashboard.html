@@ -790,7 +790,7 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
             <div style="max-width:92%; background:#fffaf0; border:1px solid rgba(183,138,46,.3); border-radius:18px 18px 18px 5px; padding:9px 11px; color:#3d3427; font-size:.78rem; line-height:1.42; box-shadow:0 5px 15px rgba(74,55,18,.07);">I’ve left you a coach note about your first week and how we’ll use Balance together.</div>
             <div style="width:100%; margin-top:8px; background:linear-gradient(135deg,#f4df9f,#e2ba58); border:1px solid rgba(146,103,29,.32); border-radius:18px 18px 18px 5px; padding:8px; box-sizing:border-box; box-shadow:0 7px 20px rgba(112,77,16,.13);">
                 <div style="font-size:.64rem; font-weight:900; letter-spacing:.06em; color:#68480f; margin:0 3px 6px;">● VIDEO COACH NOTE FROM SHANNON</div>
-                <video id="meta-ad-trial-welcome-video" controls playsinline preload="metadata" controlslist="nodownload noplaybackrate" disablepictureinpicture src="/assets/balance-onboarding-coach-note-captioned.mp4" style="display:block; width:100%; max-height:min(67dvh,650px); aspect-ratio:9/16; object-fit:contain; background:#171923; border-radius:12px; pointer-events:auto;"></video>
+                <video id="meta-ad-trial-welcome-video" poster="/assets/balance-onboarding-coach-note-poster.jpg" controls playsinline preload="metadata" controlslist="nodownload noplaybackrate" disablepictureinpicture src="/assets/balance-onboarding-coach-note-captioned.mp4" style="display:block; width:100%; max-height:min(67dvh,650px); aspect-ratio:9/16; object-fit:contain; background:#171923; border-radius:12px; pointer-events:auto;"></video>
                 <div id="meta-ad-trial-welcome-status" role="status" aria-live="polite" style="margin:7px 3px 0; color:#68480f; font-size:.69rem; line-height:1.35; font-weight:800;">Watch the full coach note to unlock Next.</div>
                 <button id="meta-ad-trial-welcome-continue" type="button" onclick="tourNext()" style="display:none; width:100%; margin-top:8px; border:1px solid rgba(104,72,15,.4); border-radius:12px; padding:12px 14px; background:#171923; color:#fffaf0; -webkit-text-fill-color:#fffaf0; font:850 .78rem/1 'Montserrat',sans-serif; letter-spacing:.045em; text-transform:uppercase; cursor:pointer; pointer-events:auto;">Next: choose Weekly Goals</button>
             </div>
@@ -1951,14 +1951,14 @@ if(!window._pbbIsIOSSafari) {
 if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-progressphoto.js?v=10"><\/script>');
 document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=34-guided-goals"><\/script>');
-    document.write('<script src="js/dashboard/pbb-social-journey.js?v=38-captioned-coach-video"><\/script>');
+    document.write('<script src="js/dashboard/pbb-social-journey.js?v=39-coach-video-poster"><\/script>');
     document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=36-shopping-list-direct"><\/script>');
     document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=29-accountability-checkout"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
     window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=10');
 window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=34-guided-goals');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=38-captioned-coach-video');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=39-coach-video-poster');
     window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=36-shopping-list-direct');
     window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=29-accountability-checkout');
 }
@@ -18133,13 +18133,13 @@ if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=45-captioned-coach-video';
+            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=46-coach-video-poster';
             s.onload = function() { if(window._crumb)window._crumb('script6_deferred_loaded'); };
             document.head.appendChild(s);
         }, 2000);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=45-captioned-coach-video"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=46-coach-video-poster"><\/script>');
 }
 </script>
 
