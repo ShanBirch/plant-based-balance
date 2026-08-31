@@ -15232,7 +15232,12 @@ async function showStep(i, options){
     if (!options.afterPromptedAction) {
       resetTourTemporaryTargets();
       closeTourBlockingSurfaces();
-      if (!step.preserveSurface) await ensureTab(step.tab);
+      // A prompted step first belongs to the surface containing the real
+      // action card (normally Home), not the destination it will open. Using
+      // step.tab here moved to Course before the Home prompt was painted and
+      // left the spotlight attached to a card that was no longer visible.
+      const promptTab = isPromptBeforeAction ? (step.preActionTab || 'dashboard') : step.tab;
+      if (!step.preserveSurface) await ensureTab(promptTab);
       if (renderToken !== tourRenderToken) return;
     }
     if (step.sel === '#ptr-indicator') showTourPullToRefreshHint();

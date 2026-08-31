@@ -71,4 +71,6 @@ test('posting the introduction returns Home before the course To do prompt', () 
     feedGate.indexOf("ensureTab('dashboard')") < feedGate.indexOf('showStep(completedStepIndex + 1)'),
     'Home should be visible before the next required prompt is rendered'
   );
+  assert.match(dashboard, /const promptTab = isPromptBeforeAction \? \(step\.preActionTab \|\| 'dashboard'\) : step\.tab/);
+  assert.match(dashboard, /if \(!step\.preserveSurface\) await ensureTab\(promptTab\)/);
 });
