@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v417-workout-tour-repair'; // v417: keep setup workout choices consistent and guarantee a playable first workout
+const CACHE_NAME = 'pbb-app-v418-course-text-cleanup'; // v418: replace the cached shell that could render legacy guided-tour text in Course
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -17,7 +17,7 @@ const ASSETS = [
   './workout_library_extended.js',
   './js/dashboard/script_part_2.js?v=14-light-launch',
   './js/dashboard/dashboard-script-3-1_get_user_data.js?v=59-light-launch',
-  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=217-workout-tour-repair',
+  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=220-course-text-cleanup',
   './js/dashboard/pbb-meta-preview-soundtrack.js?v=3-coach-video-ducking',
   './js/dashboard/pbb-app-telemetry.js?v=1',
   './js/dashboard/pbb-deferred-weeklygoals.js?v=34-guided-goals',

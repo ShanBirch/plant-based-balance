@@ -19,3 +19,9 @@ test('shopping list stays tied to the current active meal plan and week', () => 
   assert.match(mealPlan, /function getAiPlanShoppingStorageKey\(\)[\s\S]*?_aiMealPlanCache\?\.id[\s\S]*?_aiMealPlanCurrentWeek/);
   assert.match(mealPlan, /async function openAiMealPlanShoppingList\(btn, options = \{\}\)[\s\S]*?renderAiPlanShoppingList\(\);[\s\S]*?toggleAiPlanShoppingList\(true\)/);
 });
+
+test('a cached page cannot render the legacy guided-tour code as Course text', () => {
+  assert.match(mealPlan, /function removeLegacyGuidedTourTextLeak\(\)/);
+  assert.match(mealPlan, /#guided-tour-overlay\.tour-keyboard-open/);
+  assert.match(mealPlan, /new MutationObserver\(removeLegacyGuidedTourTextLeak\)/);
+});

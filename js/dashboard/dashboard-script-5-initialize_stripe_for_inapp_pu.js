@@ -19,6 +19,30 @@ function _onDomReady(fn) {
     }
 }
 
+// A short-lived release accidentally left part of a guided-tour stylesheet
+// after </html>. A cached native shell can still parse that orphaned text into
+// the Course page. Remove only that unmistakable legacy fragment whenever a
+// delayed/cached document hands control to the current app script.
+function removeLegacyGuidedTourTextLeak() {
+    const marker = '#guided-tour-overlay.tour-keyboard-open';
+    [document.documentElement, document.body].filter(Boolean).forEach(function(root) {
+        Array.from(root.childNodes || []).forEach(function(node) {
+            if (node.nodeType === Node.TEXT_NODE && String(node.textContent || '').includes(marker)) {
+                node.remove();
+            }
+        });
+    });
+}
+
+_onDomReady(function() {
+    removeLegacyGuidedTourTextLeak();
+    const root = document.documentElement;
+    if (!root || typeof MutationObserver === 'undefined') return;
+    const cleanupObserver = new MutationObserver(removeLegacyGuidedTourTextLeak);
+    cleanupObserver.observe(root, { childList: true });
+    setTimeout(function() { cleanupObserver.disconnect(); }, 5000);
+});
+
 // Initialize Stripe for in-app purchases
 // On iOS Safari, Stripe.js is deferred until after init completes to reduce memory pressure.
 // Guard against Stripe being undefined to prevent the script from failing entirely.
