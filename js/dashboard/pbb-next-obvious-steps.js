@@ -666,8 +666,8 @@
     },
     {
       id: 'activity_insights_intro',
-      title: 'See what your activity is telling you',
-      body: 'Open Activity Insights to see how your workouts, recovery and health data come together.',
+      title: 'Review your first week in Activity Insights',
+      body: 'See how your workouts, recovery and health data came together before you begin Week 2.',
       cta: 'View Insights',
       accent: '#0f766e',
       priority: 910,

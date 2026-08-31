@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v424-settings-functionality'; // v424: make Health guidance reliable before session hydration, alongside the Settings fixes
+const CACHE_NAME = 'pbb-app-v425-direct-weekly-actions'; // v425: route weekly To Do Next cards directly and introduce Week 2 Activity Insights
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

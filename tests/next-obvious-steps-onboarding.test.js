@@ -123,6 +123,22 @@ test('activity insights onboarding is also restricted to new accounts', () => {
   assert.equal(newPlan.some(item => item.id === 'activity_insights_intro'), true);
 });
 
+test('activity insights reviews the first week at the start of Week 2', () => {
+  const weekOnePlan = loadPlan({ createdAt: '2026-08-20T01:00:00Z', week: 1 });
+  const weekTwoPlan = loadPlan({ createdAt: '2026-08-20T01:00:00Z', week: 2 });
+  const weekTwoIds = weekTwoPlan.map(item => item.id);
+  const insight = weekTwoPlan.find(item => item.id === 'activity_insights_intro');
+
+  assert.equal(weekOnePlan.some(item => item.id === 'activity_insights_intro'), false);
+  assert.ok(insight);
+  assert.equal(insight.title, 'Review your first week in Activity Insights');
+  assert.match(insight.body, /before you begin Week 2/);
+  assert.equal(insight.cta, 'View Insights');
+  assert.ok(weekTwoIds.indexOf('balance_journey') < weekTwoIds.indexOf('activity_insights_intro'));
+  assert.ok(weekTwoIds.indexOf('activity_insights_intro') < weekTwoIds.indexOf('quiz'));
+  assert.match(source, /openInsightsTarget\(\)/);
+});
+
 test('water and sleep review are not Home actions even when selected as goals', () => {
   const plan = loadPlan({
     createdAt: '2025-01-01T00:00:00Z',

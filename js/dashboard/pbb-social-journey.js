@@ -714,6 +714,11 @@
     return !dailyTaskDates(item.id).includes(brisbaneDateKey());
   }
 
+  function getNextJourneyTask() {
+    const tasks = progress ? safeArray(progress.tasks) : [];
+    return tasks.find(isTaskDueToday) || null;
+  }
+
   function getUnifiedAction() {
     if (!isJourneyEligible() || !state) return null;
     const definition = getWeekDefinition();
@@ -729,8 +734,7 @@
         accent: '#b78a2e'
       };
     }
-    const tasks = progress ? safeArray(progress.tasks) : [];
-    const nextTask = tasks.find(isTaskDueToday);
+    const nextTask = getNextJourneyTask();
     if (!nextTask) return null;
     return {
       title: (definition.week >= 7 ? 'Balance Identity: ' : 'Foundations: ') + nextTask.label,
@@ -746,7 +750,16 @@
       openJourney('welcome');
       return;
     }
-    openJourney(isCurrentLessonSeen() ? 'goals' : 'lesson');
+    if (!isCurrentLessonSeen()) {
+      openJourney('lesson');
+      return;
+    }
+    const nextTask = getNextJourneyTask();
+    if (nextTask) {
+      taskAction(nextTask.id);
+      return;
+    }
+    openJourney('goals');
   }
 
   function renderTasks() {

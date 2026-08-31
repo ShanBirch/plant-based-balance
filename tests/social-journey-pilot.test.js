@@ -84,8 +84,8 @@ test('Home plan cards stay below the complete FitGotchi stats block', () => {
     assert.match(source, /characterBlockTail\.parentNode\.insertBefore\(weeklyGoals, characterBlockTail\.nextSibling\)/);
     assert.match(source, /characterBlockTail\.parentNode\.insertBefore\(card, characterBlockTail\.nextSibling\)/);
     assert.doesNotMatch(source, /levelStrip\.parentNode\.insertBefore\((weeklyGoals|card), levelStrip\.nextSibling\)/);
-    assert.match(html, /pbb-social-journey\.js\?v=37-course-action-evidence/);
-    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v394-stable-tour-targets'/);
+    assert.match(html, /pbb-social-journey\.js\?v=40-direct-weekly-actions/);
+    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v425-direct-weekly-actions'/);
 });
 
 test('Home goals and plan cards follow light and dark mode', () => {
@@ -98,19 +98,19 @@ test('Home goals and plan cards follow light and dark mode', () => {
     assert.match(css, /html\[data-pbb-theme="dark"\]\.pbb-unified-next-steps #next-obvious-steps-card\.is-unified-plan \.next-step-action/);
     assert.match(css, /weekly-goal-progress-card__value\.is-complete/);
     assert.match(css, /html\.pbb-unified-next-steps #weekly-goals-card\.weekly-goals-home-card\s*\{[\s\S]*?margin: 10px 25px 14px !important/);
-    assert.match(html, /pbb-social-journey\.css\?v=24-home-guided-tour/);
+    assert.match(html, /pbb-social-journey\.css\?v=25-captioned-coach-video/);
     assert.match(html, /pbb-deferred-weeklygoals\.js\?v=35-balance-theme/);
 });
 
-test('first check-in ships the recorded Shannon welcome audio used by Inbox and Your Next Step', () => {
+test('first check-in ships the captioned Shannon welcome video used by Inbox and Your Next Step', () => {
     const source = fs.readFileSync(path.join(root, 'js/dashboard/pbb-social-journey.js'), 'utf8');
     const inboxSource = fs.readFileSync(path.join(root, 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js'), 'utf8');
-    const audioPath = path.join(root, 'assets/audio/shannon-balance-welcome.mp3');
-    assert.match(source, /\/assets\/audio\/shannon-balance-welcome\.mp3/);
+    const videoPath = path.join(root, 'assets/balance-onboarding-coach-note-captioned.mp4');
+    assert.match(source, /\/assets\/balance-onboarding-coach-note-captioned\.mp4/);
     assert.match(inboxSource, /balance-onboarding-inbox-message/);
-    assert.match(inboxSource, /\/assets\/audio\/shannon-balance-welcome\.mp3/);
-    assert.equal(fs.existsSync(audioPath), true);
-    assert.ok(fs.statSync(audioPath).size > 1_000_000);
+    assert.match(inboxSource, /\/assets\/balance-onboarding-coach-note-captioned\.mp4/);
+    assert.equal(fs.existsSync(videoPath), true);
+    assert.ok(fs.statSync(videoPath).size > 1_000_000);
 });
 
 test('journey UI is lesson-led, card-triggered and preserves account data on restart', () => {
@@ -151,6 +151,8 @@ test('Balance Identity is available from the unified Home plan', () => {
     assert.match(source, /function getUnifiedAction\(\)/);
     assert.match(source, /kind: 'course_lesson'/);
     assert.match(source, /function openUnifiedAction\(\)/);
+    assert.match(source, /function getNextJourneyTask\(\)/);
+    assert.match(source, /const nextTask = getNextJourneyTask\(\);[\s\S]*taskAction\(nextTask\.id\);/);
     assert.match(source, /item\.type !== 'daily_manual'[\s\S]*dailyTaskDates\(item\.id\)\.includes\(brisbaneDateKey\(\)\)/);
     assert.match(nextSteps, /id: 'balance_journey'/);
     assert.match(nextSteps, /addUniqueAction\(picked, journeyAction\)/);
