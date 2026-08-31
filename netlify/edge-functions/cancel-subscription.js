@@ -2,7 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 
 const ACTIVE_STATUSES = new Set(["active", "trialing", "past_due", "unpaid"]);
 const NOTICE_DAYS = 30;
-const PAUSE_DAYS = 30;
+const PAUSE_DAY_OPTIONS = new Set([30, 60, 90]);
 const DAY_SECONDS = 24 * 60 * 60;
 
 function json(body, status = 200) {
@@ -131,6 +131,10 @@ export default async (request) => {
 
         const requestedAt = new Date().toISOString();
         const nowSeconds = Math.floor(Date.now() / 1000);
+        const requestedPauseDays = cleanInteger(body.pauseDays);
+        if (action === "pause" && !PAUSE_DAY_OPTIONS.has(requestedPauseDays)) {
+            return json({ error: "Choose a 30, 60 or 90 day pause" }, 400);
+        }
         const updated = [];
         for (const subscription of subscriptions) {
             const existing = subscriptionSummary(subscription, nowSeconds);
@@ -139,12 +143,12 @@ export default async (request) => {
                     updated.push(existing);
                     continue;
                 }
-                const resumesAt = nowSeconds + (PAUSE_DAYS * DAY_SECONDS);
+                const resumesAt = nowSeconds + (requestedPauseDays * DAY_SECONDS);
                 const pauseParams = new URLSearchParams();
                 pauseParams.set("pause_collection[behavior]", "void");
                 pauseParams.set("pause_collection[resumes_at]", String(resumesAt));
                 pauseParams.set("metadata[retention_pause_used_at]", requestedAt);
-                pauseParams.set("metadata[retention_pause_days]", String(PAUSE_DAYS));
+                pauseParams.set("metadata[retention_pause_days]", String(requestedPauseDays));
                 pauseParams.set("metadata[retention_pause_source]", "balance_self_service");
                 const paused = await stripeRequest(stripeKey, "POST", `/v1/subscriptions/${encodeURIComponent(subscription.id)}`, pauseParams);
                 updated.push(subscriptionSummary(paused, nowSeconds));
@@ -173,7 +177,7 @@ export default async (request) => {
             subscriptions: updated,
             message: updated.length
                 ? action === "pause"
-                    ? "Your subscription payments are paused for 30 days. Access continues and billing resumes automatically."
+                    ? `Your subscription payments are paused for ${requestedPauseDays} days. Access continues and billing resumes automatically.`
                     : "Your cancellation has been scheduled."
                 : "No active direct Balance subscription was found.",
         });
@@ -183,4 +187,4 @@ export default async (request) => {
     }
 };
 
-export const _test = { cancellationTiming, subscriptionSummary, PAUSE_DAYS };
+export const _test = { cancellationTiming, subscriptionSummary, PAUSE_DAY_OPTIONS };

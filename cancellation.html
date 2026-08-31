@@ -30,6 +30,14 @@
         button:disabled { opacity:.55; cursor:wait; }
         .button.secondary { background:var(--green); }
         .button.ghost { background:transparent; border:1px solid var(--line); color:var(--ink); -webkit-text-fill-color:var(--ink); }
+        .pause-choices { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; margin-top:14px; }
+        .pause-choice { margin:0; cursor:pointer; }
+        .pause-choice input { position:absolute; opacity:0; pointer-events:none; }
+        .pause-choice span { display:block; height:100%; padding:13px 8px; border:1px solid var(--line); border-radius:11px; background:#fff; text-align:center; transition:border-color .18s,background .18s; }
+        .pause-choice strong,.pause-choice small { display:block; }
+        .pause-choice small { margin-top:4px; font-size:.72rem; }
+        .pause-choice input:checked + span { border-color:var(--green); background:#edf5ee; box-shadow:0 0 0 1px var(--green); }
+        .pause-choice input:focus-visible + span { outline:3px solid rgba(47,107,59,.25); outline-offset:2px; }
         .status { padding:14px; border-radius:10px; background:#edf5ee; color:#214c2a; -webkit-text-fill-color:#214c2a; font-weight:600; }
         .error { background:#faecea; color:#7b2925; -webkit-text-fill-color:#7b2925; }
         .hidden { display:none !important; }
@@ -62,10 +70,10 @@
     <section id="cancel-card" class="card hidden">
         <div id="pause-option" class="notice">
             <div class="eyebrow">Not ready to leave?</div>
-            <h2>Pause payments for 30 days</h2>
-            <p>Keep your Balance access while taking a month off payments. New invoices during the pause are waived, billing resumes automatically on the date shown, and any balance already issued remains due. This one-time pause is available before cancellation.</p>
-            <div id="pause-summary" class="summary"></div>
-            <button id="pause-button" class="button secondary" type="button">Pause for 30 days instead</button>
+            <h2>Choose how long to pause</h2>
+            <p>Keep your Balance access while taking time off payments. New invoices during the pause are waived, billing resumes automatically on the date you choose, and any balance already issued remains due. This one-time pause is available before cancellation.</p>
+            <div id="pause-choices" class="pause-choices" role="radiogroup" aria-label="Pause duration"></div>
+            <button id="pause-button" class="button secondary" type="button">Pause payments instead</button>
         </div>
         <div id="pause-active" class="status hidden"></div>
         <hr style="border:0;border-top:1px solid var(--line);margin:24px 0;">
@@ -117,13 +125,22 @@
         const paused = subscriptions.filter(item => item.pauseUntil);
         byId('pause-option').classList.toggle('hidden', pauseable.length === 0);
         byId('pause-active').classList.toggle('hidden', paused.length === 0);
-        byId('pause-summary').innerHTML = pauseable.map(item => {
-            const resume = Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60);
-            return `<div class="subscription"><strong>Payments pause today</strong><span>Automatic billing resumes ${formatDate(resume)}</span><span>Your Balance access continues</span></div>`;
-        }).join('');
+        if (pauseable.length) renderPauseChoices();
         if (paused.length) {
             byId('pause-active').textContent = `Payments are paused. Billing resumes automatically ${formatDate(paused[0].pauseUntil)}.`;
         }
+    }
+
+    function selectedPauseDays() {
+        return Number(document.querySelector('input[name="pause-days"]:checked')?.value || 30);
+    }
+
+    function renderPauseChoices() {
+        const now = Math.floor(Date.now() / 1000);
+        byId('pause-choices').innerHTML = [30,60,90].map((days,index) => {
+            const label = days === 30 ? '1 month' : days === 60 ? '2 months' : '3 months';
+            return `<label class="pause-choice"><input type="radio" name="pause-days" value="${days}" ${index === 0 ? 'checked' : ''}><span><strong>${label}</strong><small>to ${formatDate(now + days * 86400)}</small></span></label>`;
+        }).join('');
     }
 
     async function request(method, token, body) {
@@ -148,12 +165,14 @@
             renderSubscriptions(result.subscriptions);
             show('cancel-card');
             byId('pause-button').addEventListener('click', async () => {
-                if (!window.confirm('Pause payments for 30 days? Your access will continue and billing will resume automatically.')) return;
+                const pauseDays = selectedPauseDays();
+                const resumeAt = Math.floor(Date.now() / 1000) + (pauseDays * 86400);
+                if (!window.confirm(`Pause payments until ${formatDate(resumeAt)}? Your access will continue and billing will resume automatically.`)) return;
                 const button = byId('pause-button');
                 button.disabled = true;
                 button.textContent = 'Pausing...';
                 try {
-                    const paused = await request('POST', token, { action:'pause', confirmation:'PAUSE' });
+                    const paused = await request('POST', token, { action:'pause', confirmation:'PAUSE', pauseDays });
                     renderSubscriptions(paused.subscriptions || []);
                     byId('result-status').classList.remove('error');
                     byId('result-status').textContent = paused.message;
@@ -164,7 +183,7 @@
                     show('result-card');
                 } finally {
                     button.disabled = false;
-                    button.textContent = 'Pause for 30 days instead';
+                    button.textContent = 'Pause payments instead';
                 }
             });
             byId('cancel-button').addEventListener('click', async () => {

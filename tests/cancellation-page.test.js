@@ -17,7 +17,11 @@ assert.match(page, /Apple and Google subscriptions use the store's cancellation 
 assert.match(page, /Australian Consumer Law rights are not limited/);
 assert.match(page, /Type CANCEL/);
 assert.match(page, /Delete account/);
-assert.match(page, /Pause payments for 30 days/);
+assert.match(page, /Choose how long to pause/);
+assert.match(page, /\[30,60,90\]/);
+assert.match(page, /1 month/);
+assert.match(page, /2 months/);
+assert.match(page, /3 months/);
 assert.match(page, /billing resumes automatically/);
 assert.match(page, /any balance already issued remains due/);
 assert.doesNotMatch(page, /—/);
@@ -32,6 +36,8 @@ assert.match(endpoint, /pause_collection\[behavior\]/);
 assert.match(endpoint, /pause_collection\[resumes_at\]/);
 assert.match(endpoint, /retention_pause_used_at/);
 assert.match(endpoint, /action === "pause"/);
+assert.match(endpoint, /new Set\(\[30, 60, 90\]\)/);
+assert.match(endpoint, /requestedPauseDays/);
 
 assert.equal((checkout.match(/cancellationNoticeDays: 30/g) || []).length, 5);
 assert.match(checkout, /AU\$779\.74 minimum total/);
