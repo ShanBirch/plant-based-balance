@@ -10005,7 +10005,23 @@ async function checkAndTriggerOnboarding() {
                     'featureTourComplete',
                     'pbb_seen_features',
                     'pbb_onboarding_owner_user_id',
-                    'onboardingCompletedAt'
+                    'onboardingCompletedAt',
+                    // A reset must also clear the locally prepared plan and goals.
+                    // Otherwise a phone can look as if it is still mid-way through
+                    // the previous test run even though the account is clean.
+                    'userProfile',
+                    'user_food_preferences',
+                    'ai_meal_plan',
+                    'workoutCalendar',
+                    'workoutCalendarTimes',
+                    'onboardingGoalIntentIds',
+                    'onboardingGoalIntents',
+                    'onboardingWeeklyGoalFocusIds',
+                    'onboardingWeeklyGoalFocus',
+                    'onboardingLearningInterestIds',
+                    'onboardingLearningInterests',
+                    'pbb_auto_weekly_goals_pending_v1',
+                    'pbb_weekly_goals_selection_required_v1'
                 ].forEach(function (key) {
                     try { localStorage.removeItem(key); } catch (_) {}
                 });
