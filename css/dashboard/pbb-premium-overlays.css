@@ -10818,3 +10818,41 @@ html:not([data-pbb-theme="light"]) .multi-week-nav button.active {
     color: #0c0c0c !important;
     -webkit-text-fill-color: #0c0c0c !important;
 }
+
+/* Add Exercise suggestion badges need explicit paired colours. The app-wide
+   legacy surface sweep can otherwise darken their inline light background
+   while an older workout-sheet rule keeps the label text dark. */
+#add-exercise-modal [data-add-exercise-suggestion-badge] {
+    display: inline-flex;
+    align-items: center;
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 6px;
+    color: var(--add-exercise-badge-light, #7c5b18) !important;
+    -webkit-text-fill-color: var(--add-exercise-badge-light, #7c5b18) !important;
+    flex-shrink: 0;
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+    padding: 2px 6px;
+    text-transform: uppercase;
+}
+
+html:not([data-pbb-theme="light"]) #add-exercise-modal [data-add-exercise-suggestion-badge] {
+    background: #2a2418 !important;
+    border-color: rgba(245, 217, 138, 0.34) !important;
+    color: var(--add-exercise-badge-dark, #f5d98a) !important;
+    -webkit-text-fill-color: var(--add-exercise-badge-dark, #f5d98a) !important;
+}
+
+#add-exercise-modal [data-add-exercise-solid-badge],
+#view-active-workout [data-add-exercise-solid-badge] {
+    background: #d8b25e !important;
+    border-radius: 4px;
+    color: #120c18 !important;
+    -webkit-text-fill-color: #120c18 !important;
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.25px;
+    padding: 2px 6px;
+}

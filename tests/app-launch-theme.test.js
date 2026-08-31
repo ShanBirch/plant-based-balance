@@ -49,10 +49,10 @@ test('the phone shell cache ships the light-launch assets together', () => {
   const dashboard = read('dashboard.html');
   const serviceWorker = read('sw.js');
 
-  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v354-repeatable-test-flow'/);
+  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v420-add-exercise-contrast'/);
   assert.match(serviceWorker, /auth-guard\.js\?v=13-account-first-flow/);
   assert.match(serviceWorker, /script_part_2\.js\?v=14-light-launch/);
   assert.match(serviceWorker, /dashboard-script-3-1_get_user_data\.js\?v=59-light-launch/);
   assert.match(dashboard, /script_part_4\.js\?v=theme-toggle-shell-v2/);
-  assert.match(dashboard, /dashboard-script-6-ai_coach_draft_mode_logic_auth\.js\?v=43-home-canvas/);
+  assert.match(dashboard, /dashboard-script-6-ai_coach_draft_mode_logic_auth\.js\?v=46-coach-video-poster/);
 });

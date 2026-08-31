@@ -143,7 +143,7 @@ test('every exercise selected by onboarding has an exact canonical video entry',
 
 test('the reduced onboarding loads the matrix first and includes workout preferences', () => {
     const matrixPosition = dashboard.indexOf('pbb-onboarding-workout-plans.js?v=2-library-display-names');
-    const onboardingPosition = dashboard.indexOf('dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=221-onboarding-preference-contrast-copy');
+    const onboardingPosition = dashboard.indexOf('dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=222-add-exercise-contrast');
     assert.ok(matrixPosition >= 0 && matrixPosition < onboardingPosition);
     assert.match(onboardingSource, /const skippedWizardSlides = \[2, 5, 8,/);
     assert.doesNotMatch(onboardingSource, /wizardTrainingFrequency >= 4 \? 'upper_lower'/);

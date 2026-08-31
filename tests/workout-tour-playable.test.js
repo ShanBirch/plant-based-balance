@@ -45,5 +45,5 @@ test('guided workout waits for real workout data and records proof', () => {
   assert.match(dashboard, /await waitForMetaPreviewWorkoutLibrary\(12000\)/);
   assert.match(dashboard, /recordWorkoutTourDiagnostic\('calendar-result'/);
   assert.match(dashboard, /exerciseCount:document\.querySelectorAll\('#workout-exercises-list \.exercise-logger-card'\)\.length/);
-  assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=220-course-text-cleanup/);
+  assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=222-add-exercise-contrast/);
 });

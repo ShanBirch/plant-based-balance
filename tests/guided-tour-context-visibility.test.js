@@ -26,8 +26,8 @@ test('walkthrough keeps surrounding page context readable', () => {
   assert.match(premiumOverlays, /rgba\(26, 24, 20, 0\.34\)/);
   assert.match(premiumOverlays, /#guided-tour-overlay\.tour-page-view #guided-tour-spotlight[\s\S]*?rgba\(26, 24, 20, 0\.08\)/);
   assert.doesNotMatch(premiumOverlays, /#guided-tour-spotlight[\s\S]*?rgba\(29, 15, 50, 0\.78\)/);
-  assert.match(dashboard, /pbb-premium-overlays\.css\?v=97-foundations-actions/);
-  assert.match(serviceWorker, /pbb-app-v419-tour-smoothness/);
+  assert.match(dashboard, /pbb-premium-overlays\.css\?v=98-add-exercise-contrast/);
+  assert.match(serviceWorker, /pbb-app-v420-add-exercise-contrast/);
   assert.match(source, /#guided-tour-overlay \{[^}]*pointer-events: auto/);
   assert.match(source, /#guided-tour-overlay\.tour-tap-target,[\s\S]*?#guided-tour-overlay\.tour-action-required:not\(\.tour-gate-complete\) \{ pointer-events: none; \}/);
   assert.match(source, /#guided-tour-overlay\.tour-coach-note \{ pointer-events: none; \}/);

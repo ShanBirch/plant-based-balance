@@ -23495,15 +23495,15 @@ function getSuggestedExercisesForAdd(limit = 5) {
 
 function getAddExerciseSuggestionIconHtml(suggestion) {
     if (suggestion.badge === 'Progressing') {
-        return '<svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:white;"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6h-6z"/></svg>';
+        return '<svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:currentColor;"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6h-6z"/></svg>';
     }
     if (suggestion.badge === 'Due again' || suggestion.badge === 'Worth revisiting') {
-        return '<svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:white;"><path d="M12 6V3L8 7l4 4V8c2.76 0 5 2.24 5 5 0 1.57-.73 2.97-1.86 3.89l1.42 1.42A6.96 6.96 0 0019 13c0-3.86-3.14-7-7-7zm-5 5c0-1.57.73-2.97 1.86-3.89L7.44 5.69A6.96 6.96 0 005 11c0 3.86 3.14 7 7 7v3l4-4-4-4v3c-2.76 0-5-2.24-5-5z"/></svg>';
+        return '<svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:currentColor;"><path d="M12 6V3L8 7l4 4V8c2.76 0 5 2.24 5 5 0 1.57-.73 2.97-1.86 3.89l1.42 1.42A6.96 6.96 0 0019 13c0-3.86-3.14-7-7-7zm-5 5c0-1.57.73-2.97 1.86-3.89L7.44 5.69A6.96 6.96 0 005 11c0 3.86 3.14 7 7 7v3l4-4-4-4v3c-2.76 0-5-2.24-5-5z"/></svg>';
     }
     if (suggestion.isCustom) {
-        return '<svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:white;"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>';
+        return '<svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:currentColor;"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>';
     }
-    return '<svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:white;"><path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/></svg>';
+    return '<svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:currentColor;"><path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/></svg>';
 }
 
 function renderAddExerciseSuggestions(options = {}) {
@@ -23541,16 +23541,26 @@ function renderAddExerciseSuggestions(options = {}) {
             : suggestion.badge === 'Due again'
                 ? '#d97706'
                 : 'var(--primary)';
+        const badgeTextLight = suggestion.badge === 'Progressing'
+            ? '#166534'
+            : suggestion.badge === 'Due again'
+                ? '#92400e'
+                : '#7c5b18';
+        const badgeTextDark = suggestion.badge === 'Progressing'
+            ? '#86efac'
+            : suggestion.badge === 'Due again'
+                ? '#fbbf24'
+                : '#f5d98a';
 
         return `
             <button type="button" onclick="selectExerciseToAdd('${escapedName}')" style="width:100%; border:1px solid #e2e8f0; background:white; border-radius:12px; padding:14px; margin-bottom:10px; cursor:pointer; display:flex; align-items:center; gap:12px; text-align:left; font-family:inherit; box-shadow:0 6px 16px rgba(15,23,42,0.04);">
-                <div style="width:42px; height:42px; background:${badgeColor}; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                <div style="width:42px; height:42px; background:${badgeColor}; border-radius:10px; color:#120c18; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
                     ${getAddExerciseSuggestionIconHtml(suggestion)}
                 </div>
                 <div style="flex:1; min-width:0;">
                     <div style="display:flex; align-items:center; gap:8px; min-width:0; flex-wrap:wrap;">
                         <div style="font-weight:800; color:var(--text-main); font-size:0.95rem; line-height:1.2; min-width:0; overflow:hidden; text-overflow:ellipsis;">${safeName}</div>
-                        <span style="background:#f8fafc; color:${badgeColor}; border:1px solid #e2e8f0; font-size:0.62rem; padding:2px 6px; border-radius:6px; font-weight:800; text-transform:uppercase; letter-spacing:0.3px; flex-shrink:0;">${safeBadge}</span>
+                        <span data-add-exercise-suggestion-badge style="--add-exercise-badge-light:${badgeTextLight}; --add-exercise-badge-dark:${badgeTextDark};">${safeBadge}</span>
                     </div>
                     <div style="font-size:0.8rem; color:#64748b; font-weight:600; margin-top:4px; line-height:1.35;">${safeDetail}</div>
                     ${metaHtml}
@@ -23625,16 +23635,16 @@ function searchExercisesForAdd(query) {
             const hasVideo = ex.video_url ? true : false;
             return `
                 <div onclick="selectExerciseToAdd('${escapedName}')" style="padding: 15px; border-bottom: 1px solid #f1f5f9; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: background 0.2s; background: #f0fdf4;" onmouseover="this.style.background='#dcfce7'" onmouseout="this.style.background='#f0fdf4'">
-                    <div style="width: 40px; height: 40px; background: linear-gradient(135deg, var(--primary), #4ade80); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                    <div style="width: 40px; height: 40px; background: linear-gradient(135deg, var(--primary), #4ade80); border-radius: 8px; color:#120c18; display: flex; align-items: center; justify-content: center;">
                         ${hasVideo
-                            ? '<svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: white;"><path d="M8 5v14l11-7z"/></svg>'
-                            : '<svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: white;"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>'
+                            ? '<svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: currentColor;"><path d="M8 5v14l11-7z"/></svg>'
+                            : '<svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: currentColor;"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>'
                         }
                     </div>
                     <div style="flex: 1;">
                         <div style="font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
                             ${ex.exercise_name}
-                            <span style="background: var(--primary); color: white; font-size: 0.6rem; padding: 1px 5px; border-radius: 4px; font-weight: 700;">YOURS</span>
+                            <span data-add-exercise-solid-badge>YOURS</span>
                         </div>
                         <div style="font-size: 0.8rem; color: var(--text-muted);">${ex.muscle_group ? ex.muscle_group.replace('_', ' ') : ''} ${hasVideo ? '· Has video' : ''}</div>
                     </div>
@@ -23763,7 +23773,7 @@ function addExerciseToUI(exercise) {
                     <div style="flex: 1;">
                         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px; min-width: 0; flex-wrap: wrap;">
                             <span style="font-weight: 700; font-size: 1.05rem; flex: 1; min-width: 0;">${exercise.name}</span>
-                            <span style="background: var(--primary); color: white; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 600;">ADDED</span>
+                            <span data-add-exercise-solid-badge>ADDED</span>
                             ${previousSummaryHtml}
                         </div>
                         <div class="workout-exercise-tip" style="color: var(--text-muted); font-size: 0.85rem;">${exercise.desc || ''}</div>
