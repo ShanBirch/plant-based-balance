@@ -119,7 +119,7 @@ test('Home prompts only become tappable after their first-tap handler is ready',
   const source = featureTourSource();
 
   assert.match(source, /async function showStep\(i, options\)[\s\S]*?overlay\.classList\.add\('tour-transitioning'\)/);
-  assert.match(source, /await ensureTab\(step\.tab\);[\s\S]*?if \(renderToken !== tourRenderToken\) return/);
+  assert.match(source, /const promptTab = isPromptBeforeAction \? \(step\.preActionTab \|\| 'dashboard'\) : step\.tab;[\s\S]*?await ensureTab\(promptTab\);[\s\S]*?if \(renderToken !== tourRenderToken\) return/);
   assert.match(source, /armPromptTarget\(step, target, i\);[\s\S]*?overlay\.classList\.remove\('tour-transitioning'\)/);
   assert.match(source, /document\.addEventListener\('pointerdown', handleTargetClick, true\)/);
   assert.match(source, /document\.removeEventListener\('pointerdown', handleTargetClick, true\)/);
