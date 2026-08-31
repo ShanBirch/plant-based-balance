@@ -572,39 +572,31 @@ async function configureIapLocalization(iapVersion) {
   });
 }
 
-async function configureIapImage(iapVersion) {
-  const listed = await asc(`/v1/inAppPurchaseVersions/${iapVersion.id}/images?${query({ limit: 50 })}`);
+async function configureIapReviewImage(iap, iapVersion) {
+  const promotionImages = await asc(`/v1/inAppPurchaseVersions/${iapVersion.id}/images?${query({ limit: 50 })}`);
+  for (const image of promotionImages.body.data || []) {
+    await asc(`/v2/inAppPurchaseImages/${image.id}`, { method: 'DELETE' });
+    console.log(`Removed rejected temporary promotion image ${image.id}.`);
+  }
+
   const reviewFile = path.join(screenshotDirectory, 'lifetime-purchase-review-1320x2868.jpg');
   await stat(reviewFile);
-  const existing = listed.body.data?.[0];
-  if (existing) {
-    if (existing.attributes?.assetDeliveryState?.state !== 'COMPLETE') {
-      await asc(`/v2/inAppPurchaseImages/${existing.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({
-          data: {
-            type: 'inAppPurchaseImages',
-            id: existing.id,
-            attributes: { uploaded: true },
-          },
-        }),
-      });
-      await waitForAssetCompletion('/v2/inAppPurchaseImages', existing.id, path.basename(reviewFile));
-    }
-    console.log('Lifetime-purchase review screenshot already present.');
+  const existing = await asc(`/v2/inAppPurchases/${iap.id}/appStoreReviewScreenshot`, {}, [404]);
+  if (existing.body.data?.attributes?.assetDeliveryState?.state === 'COMPLETE') {
+    console.log('Lifetime-purchase App Review screenshot already present.');
     return;
   }
+
   await uploadReservedAsset({
-    createPath: '/v2/inAppPurchaseImages',
-    updatePath: '/v2/inAppPurchaseImages',
-    type: 'inAppPurchaseImages',
-    relationshipName: 'version',
-    relationshipType: 'inAppPurchaseVersions',
-    relationshipId: iapVersion.id,
+    createPath: '/v1/inAppPurchaseAppStoreReviewScreenshots',
+    updatePath: '/v1/inAppPurchaseAppStoreReviewScreenshots',
+    type: 'inAppPurchaseAppStoreReviewScreenshots',
+    relationshipName: 'inAppPurchaseV2',
+    relationshipType: 'inAppPurchases',
+    relationshipId: iap.id,
     filePath: reviewFile,
-    includeChecksum: false,
   });
-  console.log('Uploaded the lifetime-purchase review screenshot.');
+  console.log('Uploaded the lifetime-purchase App Review screenshot.');
 }
 
 async function ensureIapAvailability(iap, territories) {
@@ -758,7 +750,7 @@ await ensureFreeAppPrice(app);
 const iap = await getOrCreateIap(app);
 const iapVersion = await getOrCreateIapVersion(iap);
 await configureIapLocalization(iapVersion);
-await configureIapImage(iapVersion);
+await configureIapReviewImage(iap, iapVersion);
 await ensureIapAvailability(iap, territories);
 await ensureIapPrice(iap);
 const build = await waitForBuild(app);
