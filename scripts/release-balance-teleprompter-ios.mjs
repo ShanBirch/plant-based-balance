@@ -558,7 +558,7 @@ async function configureIapLocalization(iapVersion) {
         attributes: {
           locale,
           name: 'Lifetime Access',
-          description: 'Unlimited lifetime use of Balance Teleprompter. One payment, no subscription.',
+          description: 'Unlock Balance Teleprompter forever. One payment.',
         },
         relationships: { version: { data: { type: 'inAppPurchaseVersions', id: iapVersion.id } } },
       },
