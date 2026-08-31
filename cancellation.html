@@ -60,6 +60,15 @@
     <section id="loading-card" class="card"><p>Loading your subscription...</p></section>
 
     <section id="cancel-card" class="card hidden">
+        <div id="pause-option" class="notice">
+            <div class="eyebrow">Not ready to leave?</div>
+            <h2>Pause payments for 30 days</h2>
+            <p>Keep your Balance access while taking a month off payments. New invoices during the pause are waived, billing resumes automatically on the date shown, and any balance already issued remains due. This one-time pause is available before cancellation.</p>
+            <div id="pause-summary" class="summary"></div>
+            <button id="pause-button" class="button secondary" type="button">Pause for 30 days instead</button>
+        </div>
+        <div id="pause-active" class="status hidden"></div>
+        <hr style="border:0;border-top:1px solid var(--line);margin:24px 0;">
         <h2>Your cancellation date</h2>
         <div id="subscription-summary" class="summary"></div>
         <p>Type <strong>CANCEL</strong> below to confirm. This stops renewal on the date shown. It does not delete your Balance account or automatically refund past charges.</p>
@@ -103,6 +112,18 @@
             const rule = item.noticeDays === 30 ? '30-day notice applies' : 'Original purchase terms apply';
             return `<div class="subscription"><strong>${label}</strong><span>${timing}</span><span>${rule}</span></div>`;
         }).join('');
+
+        const pauseable = subscriptions.filter(item => item.pauseAvailable);
+        const paused = subscriptions.filter(item => item.pauseUntil);
+        byId('pause-option').classList.toggle('hidden', pauseable.length === 0);
+        byId('pause-active').classList.toggle('hidden', paused.length === 0);
+        byId('pause-summary').innerHTML = pauseable.map(item => {
+            const resume = Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60);
+            return `<div class="subscription"><strong>Payments pause today</strong><span>Automatic billing resumes ${formatDate(resume)}</span><span>Your Balance access continues</span></div>`;
+        }).join('');
+        if (paused.length) {
+            byId('pause-active').textContent = `Payments are paused. Billing resumes automatically ${formatDate(paused[0].pauseUntil)}.`;
+        }
     }
 
     async function request(method, token, body) {
@@ -126,12 +147,32 @@
             if (!result.subscriptions?.length) { show('store-card'); return; }
             renderSubscriptions(result.subscriptions);
             show('cancel-card');
+            byId('pause-button').addEventListener('click', async () => {
+                if (!window.confirm('Pause payments for 30 days? Your access will continue and billing will resume automatically.')) return;
+                const button = byId('pause-button');
+                button.disabled = true;
+                button.textContent = 'Pausing...';
+                try {
+                    const paused = await request('POST', token, { action:'pause', confirmation:'PAUSE' });
+                    renderSubscriptions(paused.subscriptions || []);
+                    byId('result-status').classList.remove('error');
+                    byId('result-status').textContent = paused.message;
+                    show('result-card');
+                } catch (error) {
+                    byId('result-status').classList.add('error');
+                    byId('result-status').textContent = error.message;
+                    show('result-card');
+                } finally {
+                    button.disabled = false;
+                    button.textContent = 'Pause for 30 days instead';
+                }
+            });
             byId('cancel-button').addEventListener('click', async () => {
                 const button = byId('cancel-button');
                 button.disabled = true;
                 button.textContent = 'Scheduling...';
                 try {
-                    const cancelled = await request('POST', token, { confirmation:byId('confirmation').value });
+                    const cancelled = await request('POST', token, { action:'cancel', confirmation:byId('confirmation').value });
                     renderSubscriptions(cancelled.subscriptions || []);
                     byId('result-status').classList.remove('error');
                     byId('result-status').textContent = cancelled.message || 'Your cancellation has been scheduled.';

@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 
 const ACTIVE_STATUSES = new Set(["active", "trialing", "past_due", "unpaid"]);
 const NOTICE_DAYS = 30;
+const PAUSE_DAYS = 30;
 const DAY_SECONDS = 24 * 60 * 60;
 
 function json(body, status = 200) {
@@ -17,7 +18,13 @@ function getEnv(name) {
 
 async function stripeRequest(secretKey, method, path, params = null) {
     const url = new URL(path, "https://api.stripe.com");
-    const options = { method, headers: { Authorization: `Bearer ${secretKey}` } };
+    const options = {
+        method,
+        headers: {
+            Authorization: `Bearer ${secretKey}`,
+            "Stripe-Version": "2026-07-29.dahlia",
+        },
+    };
     if (method === "GET" && params) {
         for (const [key, value] of params.entries()) url.searchParams.set(key, value);
     } else if (params) {
@@ -56,6 +63,8 @@ function subscriptionSummary(subscription, nowSeconds = Math.floor(Date.now() / 
     const timing = cancellationTiming(subscription, nowSeconds);
     const scheduledAt = cleanInteger(subscription.cancel_at)
         || (subscription.cancel_at_period_end ? cleanInteger(subscription.current_period_end) : 0);
+    const pauseUntil = cleanInteger(subscription.pause_collection?.resumes_at);
+    const pauseUsedAt = subscription.metadata?.retention_pause_used_at || null;
     return {
         id: subscription.id,
         status: subscription.status,
@@ -65,6 +74,9 @@ function subscriptionSummary(subscription, nowSeconds = Math.floor(Date.now() / 
         currentPeriodEnd: cleanInteger(subscription.current_period_end) || null,
         cancellationScheduledAt: scheduledAt || null,
         estimatedCancellationAt: scheduledAt || timing.effectiveAt,
+        pauseUntil: pauseUntil > nowSeconds ? pauseUntil : null,
+        pauseUsedAt,
+        pauseAvailable: !pauseUsedAt && !scheduledAt && !(pauseUntil > nowSeconds),
     };
 }
 
@@ -108,8 +120,13 @@ export default async (request) => {
         }
 
         const body = await request.json().catch(() => ({}));
-        if (String(body.confirmation || "").trim().toUpperCase() !== "CANCEL") {
-            return json({ error: "Type CANCEL to confirm" }, 400);
+        const action = String(body.action || "cancel").trim().toLowerCase();
+        if (!new Set(["cancel", "pause"]).has(action)) {
+            return json({ error: "Unsupported subscription action" }, 400);
+        }
+        const expectedConfirmation = action === "pause" ? "PAUSE" : "CANCEL";
+        if (String(body.confirmation || "").trim().toUpperCase() !== expectedConfirmation) {
+            return json({ error: `Type ${expectedConfirmation} to confirm` }, 400);
         }
 
         const requestedAt = new Date().toISOString();
@@ -117,6 +134,22 @@ export default async (request) => {
         const updated = [];
         for (const subscription of subscriptions) {
             const existing = subscriptionSummary(subscription, nowSeconds);
+            if (action === "pause") {
+                if (!existing.pauseAvailable) {
+                    updated.push(existing);
+                    continue;
+                }
+                const resumesAt = nowSeconds + (PAUSE_DAYS * DAY_SECONDS);
+                const pauseParams = new URLSearchParams();
+                pauseParams.set("pause_collection[behavior]", "void");
+                pauseParams.set("pause_collection[resumes_at]", String(resumesAt));
+                pauseParams.set("metadata[retention_pause_used_at]", requestedAt);
+                pauseParams.set("metadata[retention_pause_days]", String(PAUSE_DAYS));
+                pauseParams.set("metadata[retention_pause_source]", "balance_self_service");
+                const paused = await stripeRequest(stripeKey, "POST", `/v1/subscriptions/${encodeURIComponent(subscription.id)}`, pauseParams);
+                updated.push(subscriptionSummary(paused, nowSeconds));
+                continue;
+            }
             if (existing.cancellationScheduledAt) {
                 updated.push(existing);
                 continue;
@@ -135,10 +168,13 @@ export default async (request) => {
 
         return json({
             success: true,
+            action,
             requestedAt,
             subscriptions: updated,
             message: updated.length
-                ? "Your cancellation has been scheduled."
+                ? action === "pause"
+                    ? "Your subscription payments are paused for 30 days. Access continues and billing resumes automatically."
+                    : "Your cancellation has been scheduled."
                 : "No active direct Balance subscription was found.",
         });
     } catch (error) {
@@ -147,4 +183,4 @@ export default async (request) => {
     }
 };
 
-export const _test = { cancellationTiming, subscriptionSummary };
+export const _test = { cancellationTiming, subscriptionSummary, PAUSE_DAYS };
