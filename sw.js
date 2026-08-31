@@ -9,7 +9,7 @@ const ASSETS = [
   './welcome.html',
   './lib/supabase.js?v=15-foundations-feed',
   './lib/auth-guard.js?v=13-account-first-flow',
-  './lib/meta-ad-trial.js?v=16-captioned-coach-video',
+  './lib/meta-ad-trial.js?v=17-goal-alignment',
   './lib/native-push.js?v=40-dispatch-approval',
   './login.html',
   './exercise_videos.js?v=20260813-global-phone-video-v1',

@@ -212,6 +212,30 @@ test('personalised setup counts training days without counting yoga recovery', (
     assert.equal(targets.training.textContent, '3 planned workouts each week');
 });
 
+test('checkout summary keeps the exact six-week goal stated during onboarding', () => {
+    const trial = runTrial('?guest=true&meta_trial=facebook_5m_foundations_v3&utm_source=facebook&utm_medium=paid_social');
+    const targets = {
+        goal: { textContent: '' },
+        training: { textContent: '' },
+        food: { textContent: '' },
+    };
+    trial.elements['meta-ad-trial-personal-summary'] = {
+        querySelector(selector) {
+            const match = selector.match(/data-summary="([^"]+)"/);
+            return match ? targets[match[1]] : null;
+        },
+    };
+    trial.localStorage.setItem('onboardingGoalIntents', JSON.stringify([
+        { id: 'more_energy', label: 'Energy and longevity' },
+    ]));
+    trial.sessionStorage.setItem('userProfile', JSON.stringify({
+        why_now: 'weight loss',
+    }));
+
+    assert.equal(trial.window.BalanceMetaAdTrial.renderPersonalisedSetup(), true);
+    assert.equal(targets.goal.textContent, 'Weight loss');
+});
+
 test('paid Meta onboarding and tour exits stay locked behind continue-or-pay choices', () => {
     const trial = runTrial('?guest=true&meta_trial=facebook_5m_foundations_v3&utm_source=instagram&utm_medium=paid_social');
     const api = trial.window.BalanceMetaAdTrial;

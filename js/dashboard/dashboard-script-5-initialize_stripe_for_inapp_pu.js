@@ -8281,7 +8281,7 @@ function inferWizardStarterPlan(answers = {}) {
     const containsAny = words => words.some(word => combined.includes(normalizeWizardChatText(word)));
     const goalIntentIds = ['consistent_workouts'];
 
-    if (containsAny(['lose weight', 'lose fat', 'body fat', 'fat loss', 'drop fat', 'lean', 'drop weight', 'smaller'])) {
+    if (containsAny(['lose weight', 'weight loss', 'lose fat', 'body fat', 'fat loss', 'drop fat', 'lean', 'drop weight', 'smaller'])) {
         goalIntentIds.unshift('lose_weight');
     } else if (containsAny(['strong', 'strength', 'muscle', 'tone', 'toned', 'build'])) {
         goalIntentIds.unshift('build_strength');

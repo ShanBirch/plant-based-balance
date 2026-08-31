@@ -109,7 +109,7 @@ test('every onboarding coach video shows Shannon as its poster frame', () => {
 });
 
 test('changed onboarding assets are cache-busted', () => {
-  assert.match(dashboard, /meta-ad-trial\.js\?v=16-captioned-coach-video/);
+  assert.match(dashboard, /meta-ad-trial\.js\?v=17-goal-alignment/);
   assert.match(dashboard, /pbb-deferred-weeklygoals\.js\?v=35-balance-theme/);
   assert.match(dashboard, /pbb-social-journey\.js\?v=39-coach-video-poster/);
   assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=221-onboarding-preference-contrast-copy/);

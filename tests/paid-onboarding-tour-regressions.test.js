@@ -10,7 +10,7 @@ const calorieTracker = fs.readFileSync(path.join(root, 'js/dashboard/dashboard-s
 const metaTrial = fs.readFileSync(path.join(root, 'lib/meta-ad-trial.js'), 'utf8');
 
 test('fat-loss language maps to the fat-loss onboarding intent', () => {
-  assert.match(onboarding, /containsAny\(\['lose weight', 'lose fat', 'body fat', 'fat loss', 'drop fat'/);
+  assert.match(onboarding, /containsAny\(\['lose weight', 'weight loss', 'lose fat', 'body fat', 'fat loss', 'drop fat'/);
 });
 
 test('fresh guided setup suppresses inherited calorie adjustments', () => {
