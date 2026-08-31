@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { Directory, Filesystem } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
+import type { ImageSegmenter } from '@mediapipe/tasks-vision';
 import { initialisePurchases, purchaseLifetimeAccess, restoreLifetimeAccess } from '../lib/purchases';
 
 const starterScript = `Take a breath. Look into the lens. You’ve got this.
@@ -14,6 +15,7 @@ Speak a little slower than feels natural. Pause between ideas. And remember: the
 
 type CameraState = 'off' | 'starting' | 'ready' | 'error';
 type VideoQuality = '720p' | '1080p' | '4k';
+type PortraitState = 'off' | 'loading' | 'native' | 'processed' | 'error';
 
 const QUALITY_SETTINGS: Record<VideoQuality, { width: number; height: number; videoBitsPerSecond: number }> = {
   '720p': { width: 1280, height: 720, videoBitsPerSecond: 5_000_000 },
@@ -45,10 +47,37 @@ function blobToBase64(blob: Blob) {
   });
 }
 
+function drawCameraFrame(
+  context: CanvasRenderingContext2D,
+  video: HTMLVideoElement,
+  width: number,
+  height: number,
+  zoom: number,
+  overscan = 0,
+) {
+  const sourceWidth = video.videoWidth / zoom;
+  const sourceHeight = video.videoHeight / zoom;
+  const sourceX = (video.videoWidth - sourceWidth) / 2;
+  const sourceY = (video.videoHeight - sourceHeight) / 2;
+  context.drawImage(
+    video,
+    sourceX,
+    sourceY,
+    sourceWidth,
+    sourceHeight,
+    -overscan,
+    -overscan,
+    width + overscan * 2,
+    height + overscan * 2,
+  );
+}
+
 export default function Home() {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const portraitCanvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
+  const processedRecordingTrackRef = useRef<MediaStreamTrack | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const nativeWriteQueueRef = useRef<Promise<void>>(Promise.resolve());
   const cameraWantedRef = useRef(false);
@@ -61,6 +90,14 @@ export default function Home() {
   const animationRef = useRef<number | null>(null);
   const lastFrameRef = useRef<number | null>(null);
   const scrollPositionRef = useRef(0);
+  const portraitBlurRef = useRef(18);
+  const cameraZoomRef = useRef(1);
+  const supportsNativeZoomRef = useRef(false);
+  const portraitSegmenterRef = useRef<ImageSegmenter | null>(null);
+  const portraitAnimationRef = useRef<number | null>(null);
+  const portraitLastVideoTimeRef = useRef(-1);
+  const portraitMaskCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const portraitForegroundCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const [script, setScript] = useState(starterScript);
   const [speed, setSpeed] = useState(32);
@@ -84,6 +121,10 @@ export default function Home() {
   const [zoomMax, setZoomMax] = useState(3);
   const [supportsNativeZoom, setSupportsNativeZoom] = useState(false);
   const [videoQuality, setVideoQuality] = useState<VideoQuality>('1080p');
+  const [portraitEnabled, setPortraitEnabled] = useState(false);
+  const [portraitState, setPortraitState] = useState<PortraitState>('off');
+  const [portraitBlur, setPortraitBlur] = useState(18);
+  const [portraitError, setPortraitError] = useState('');
   const [usedRecordings, setUsedRecordings] = useState(0);
   const [lifetimeUnlocked, setLifetimeUnlocked] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
@@ -104,6 +145,7 @@ export default function Home() {
     const savedSize = Number(window.localStorage.getItem('sightline-font-size'));
     const savedUses = Number(window.localStorage.getItem('balance-teleprompter-recordings'));
     const savedLifetime = window.localStorage.getItem('balance-teleprompter-lifetime') === 'true';
+    const savedPortraitBlur = Number(window.localStorage.getItem('balance-teleprompter-portrait-blur'));
 
     window.queueMicrotask(() => {
       if (cancelled) return;
@@ -112,6 +154,7 @@ export default function Home() {
       if (savedSize >= 28 && savedSize <= 72) setFontSize(savedSize);
       if (Number.isFinite(savedUses) && savedUses > 0) setUsedRecordings(savedUses);
       if (savedLifetime) setLifetimeUnlocked(true);
+      if (savedPortraitBlur >= 8 && savedPortraitBlur <= 28) setPortraitBlur(savedPortraitBlur);
     });
 
     initialisePurchases()
@@ -144,11 +187,23 @@ export default function Home() {
     isRecordingRef.current = isRecording;
   }, [isRecording]);
 
+  useEffect(() => {
+    window.localStorage.setItem('balance-teleprompter-portrait-blur', String(portraitBlur));
+    portraitBlurRef.current = portraitBlur;
+  }, [portraitBlur]);
+
+  useEffect(() => {
+    cameraZoomRef.current = cameraZoom;
+    supportsNativeZoomRef.current = supportsNativeZoom;
+  }, [cameraZoom, supportsNativeZoom]);
+
   const stopCamera = useCallback(() => {
     cameraWantedRef.current = false;
     resumeCameraAfterBackgroundRef.current = false;
     videoHealthFailuresRef.current = 0;
     cameraRequestRef.current += 1;
+    processedRecordingTrackRef.current?.stop();
+    processedRecordingTrackRef.current = null;
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
     if (videoRef.current) videoRef.current.srcObject = null;
@@ -253,6 +308,7 @@ export default function Home() {
   useEffect(() => () => {
     cameraWantedRef.current = false;
     cameraRequestRef.current += 1;
+    processedRecordingTrackRef.current?.stop();
     streamRef.current?.getTracks().forEach((track) => track.stop());
   }, []);
 
@@ -334,6 +390,169 @@ export default function Home() {
   }, [cameraState, recoverCamera]);
 
   useEffect(() => {
+    let cancelled = false;
+    let nativeBlurTrack: MediaStreamTrack | null = null;
+
+    const stopPortraitProcessor = () => {
+      if (portraitAnimationRef.current !== null) cancelAnimationFrame(portraitAnimationRef.current);
+      portraitAnimationRef.current = null;
+      portraitLastVideoTimeRef.current = -1;
+      portraitSegmenterRef.current?.close();
+      portraitSegmenterRef.current = null;
+    };
+
+    if (!portraitEnabled || cameraState !== 'ready') {
+      stopPortraitProcessor();
+      window.queueMicrotask(() => {
+        if (!cancelled) setPortraitState('off');
+      });
+      return () => {
+        cancelled = true;
+        stopPortraitProcessor();
+      };
+    }
+
+    const activatePortrait = async () => {
+      setPortraitState('loading');
+      setPortraitError('');
+      const track = streamRef.current?.getVideoTracks()[0];
+      const capabilities = typeof track?.getCapabilities === 'function'
+        ? track.getCapabilities() as MediaTrackCapabilities & { backgroundBlur?: boolean | boolean[] }
+        : undefined;
+      const backgroundBlur = capabilities?.backgroundBlur;
+      const hasNativeBlur = Array.isArray(backgroundBlur) ? backgroundBlur.includes(true) : backgroundBlur === true;
+
+      if (track && hasNativeBlur) {
+        try {
+          await track.applyConstraints({ advanced: [{ backgroundBlur: true } as MediaTrackConstraintSet] });
+          nativeBlurTrack = track;
+          if (!cancelled) setPortraitState('native');
+          return;
+        } catch {
+          // Fall through to the on-device person segmentation path.
+        }
+      }
+
+      try {
+        const { FilesetResolver, ImageSegmenter } = await import('@mediapipe/tasks-vision');
+        const wasmPath = new URL('./mediapipe/wasm', document.baseURI).href.replace(/\/$/, '');
+        const modelPath = new URL('./mediapipe/selfie_segmenter.tflite', document.baseURI).href;
+        const fileset = await FilesetResolver.forVisionTasks(wasmPath);
+        let segmenter: ImageSegmenter;
+        try {
+          segmenter = await ImageSegmenter.createFromOptions(fileset, {
+            baseOptions: { modelAssetPath: modelPath, delegate: 'GPU' },
+            runningMode: 'VIDEO',
+            outputCategoryMask: true,
+            outputConfidenceMasks: false,
+          });
+        } catch {
+          segmenter = await ImageSegmenter.createFromOptions(fileset, {
+            baseOptions: { modelAssetPath: modelPath, delegate: 'CPU' },
+            runningMode: 'VIDEO',
+            outputCategoryMask: true,
+            outputConfidenceMasks: false,
+          });
+        }
+        if (cancelled) {
+          segmenter.close();
+          return;
+        }
+        portraitSegmenterRef.current = segmenter;
+        setPortraitState('processed');
+
+        const renderPortraitFrame = () => {
+          if (cancelled) return;
+          const video = videoRef.current;
+          const outputCanvas = portraitCanvasRef.current;
+          if (!video || !outputCanvas || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA || !video.videoWidth) {
+            portraitAnimationRef.current = requestAnimationFrame(renderPortraitFrame);
+            return;
+          }
+
+          if (video.currentTime !== portraitLastVideoTimeRef.current) {
+            portraitLastVideoTimeRef.current = video.currentTime;
+            const longestSide = Math.max(video.videoWidth, video.videoHeight);
+            const scale = Math.min(1, 1920 / longestSide);
+            const width = Math.max(2, Math.round(video.videoWidth * scale));
+            const height = Math.max(2, Math.round(video.videoHeight * scale));
+            if (outputCanvas.width !== width || outputCanvas.height !== height) {
+              outputCanvas.width = width;
+              outputCanvas.height = height;
+            }
+
+            segmenter.segmentForVideo(video, performance.now(), (result) => {
+              const mask = result.categoryMask;
+              const outputContext = outputCanvas.getContext('2d', { alpha: false });
+              if (!mask || !outputContext) return;
+
+              const maskCanvas = portraitMaskCanvasRef.current ?? document.createElement('canvas');
+              portraitMaskCanvasRef.current = maskCanvas;
+              if (maskCanvas.width !== mask.width || maskCanvas.height !== mask.height) {
+                maskCanvas.width = mask.width;
+                maskCanvas.height = mask.height;
+              }
+              const maskContext = maskCanvas.getContext('2d');
+              if (!maskContext) return;
+              const categories = mask.getAsUint8Array();
+              const maskImage = maskContext.createImageData(mask.width, mask.height);
+              for (let index = 0; index < categories.length; index += 1) {
+                const pixel = index * 4;
+                maskImage.data[pixel] = 255;
+                maskImage.data[pixel + 1] = 255;
+                maskImage.data[pixel + 2] = 255;
+                maskImage.data[pixel + 3] = categories[index] === 0 ? 0 : 255;
+              }
+              maskContext.putImageData(maskImage, 0, 0);
+
+              const foregroundCanvas = portraitForegroundCanvasRef.current ?? document.createElement('canvas');
+              portraitForegroundCanvasRef.current = foregroundCanvas;
+              if (foregroundCanvas.width !== width || foregroundCanvas.height !== height) {
+                foregroundCanvas.width = width;
+                foregroundCanvas.height = height;
+              }
+              const foregroundContext = foregroundCanvas.getContext('2d');
+              if (!foregroundContext) return;
+              foregroundContext.clearRect(0, 0, width, height);
+              foregroundContext.save();
+              foregroundContext.filter = 'blur(4px)';
+              foregroundContext.drawImage(maskCanvas, 0, 0, width, height);
+              foregroundContext.filter = 'none';
+              foregroundContext.globalCompositeOperation = 'source-in';
+              drawCameraFrame(foregroundContext, video, width, height, supportsNativeZoomRef.current ? 1 : cameraZoomRef.current);
+              foregroundContext.restore();
+
+              outputContext.clearRect(0, 0, width, height);
+              outputContext.save();
+              outputContext.filter = `blur(${portraitBlurRef.current}px)`;
+              drawCameraFrame(outputContext, video, width, height, supportsNativeZoomRef.current ? 1 : cameraZoomRef.current, portraitBlurRef.current);
+              outputContext.restore();
+              outputContext.drawImage(foregroundCanvas, 0, 0, width, height);
+            });
+          }
+          portraitAnimationRef.current = requestAnimationFrame(renderPortraitFrame);
+        };
+
+        portraitAnimationRef.current = requestAnimationFrame(renderPortraitFrame);
+      } catch {
+        if (!cancelled) {
+          setPortraitState('error');
+          setPortraitError('Portrait mode is unavailable on this phone. Your normal camera is still ready.');
+        }
+      }
+    };
+
+    void activatePortrait();
+    return () => {
+      cancelled = true;
+      if (nativeBlurTrack?.readyState === 'live') {
+        void nativeBlurTrack.applyConstraints({ advanced: [{ backgroundBlur: false } as MediaTrackConstraintSet] }).catch(() => undefined);
+      }
+      stopPortraitProcessor();
+    };
+  }, [cameraState, facingMode, portraitEnabled]);
+
+  useEffect(() => {
     if (!isPrompting) {
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
       animationRef.current = null;
@@ -397,7 +616,16 @@ export default function Home() {
     setNativeRecordingUri('');
     const mimeType = ['video/mp4;codecs=h264,aac', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm']
       .find((type) => MediaRecorder.isTypeSupported(type));
-    const recorder = new MediaRecorder(stream, {
+    let recordingStream = stream;
+    if (portraitState === 'processed' && portraitCanvasRef.current?.captureStream) {
+      const canvasStream = portraitCanvasRef.current.captureStream(30);
+      processedRecordingTrackRef.current = canvasStream.getVideoTracks()[0] ?? null;
+      recordingStream = new MediaStream([
+        ...canvasStream.getVideoTracks(),
+        ...stream.getAudioTracks(),
+      ]);
+    }
+    const recorder = new MediaRecorder(recordingStream, {
       ...(mimeType ? { mimeType } : {}),
       videoBitsPerSecond: QUALITY_SETTINGS[videoQuality].videoBitsPerSecond,
       audioBitsPerSecond: 128_000,
@@ -427,6 +655,8 @@ export default function Home() {
       }
     };
     recorder.onstop = async () => {
+      processedRecordingTrackRef.current?.stop();
+      processedRecordingTrackRef.current = null;
       setRecordingExtension(extension);
       setRecordingFilename(filename);
       if (nativeRecording) {
@@ -453,7 +683,7 @@ export default function Home() {
       scrollPositionRef.current = promptRef.current?.scrollTop ?? 0;
       setIsPrompting(true);
     }
-  }, [isNativeStore, isPrompting, lifetimeUnlocked, recordingUrl, videoQuality]);
+  }, [isNativeStore, isPrompting, lifetimeUnlocked, portraitState, recordingUrl, videoQuality]);
 
   const startCountdown = async () => {
     if (isNativeStore && !lifetimeUnlocked && freeRecordingsLeft <= 0) {
@@ -545,6 +775,15 @@ export default function Home() {
     if (cameraState === 'ready' && !isRecording) await startCamera(facingMode, quality);
   };
 
+  const togglePortrait = async () => {
+    const nextEnabled = !portraitEnabled;
+    setPortraitEnabled(nextEnabled);
+    setPortraitError('');
+    if (nextEnabled && videoQuality === '4k') {
+      await changeVideoQuality('1080p');
+    }
+  };
+
   const resetPrompt = () => {
     setIsPrompting(false);
     scrollPositionRef.current = 0;
@@ -595,10 +834,17 @@ export default function Home() {
             ref={videoRef}
             muted
             playsInline
+            aria-hidden={portraitState === 'processed'}
             onStalled={() => void recoverCamera(false)}
             onError={() => void recoverCamera(true)}
-            className={`absolute inset-0 h-full w-full object-cover transition-[opacity,transform] duration-300 ${cameraState === 'ready' ? 'opacity-100' : 'opacity-0'}`}
+            className={`absolute inset-0 h-full w-full object-cover transition-[opacity,transform] duration-300 ${cameraState === 'ready' && portraitState !== 'processed' ? 'opacity-100' : 'opacity-0'}`}
             style={{ transform: `scale(${supportsNativeZoom ? 1 : cameraZoom}) scaleX(${facingMode === 'user' ? -1 : 1})` }}
+          />
+          <canvas
+            ref={portraitCanvasRef}
+            aria-label="Portrait camera preview"
+            className={`absolute inset-0 h-full w-full object-cover transition-[opacity,transform] duration-300 ${cameraState === 'ready' && portraitState === 'processed' ? 'opacity-100' : 'opacity-0'}`}
+            style={{ transform: `scaleX(${facingMode === 'user' ? -1 : 1})` }}
           />
           <div className={`absolute inset-0 bg-[#111111] transition-opacity ${cameraState === 'ready' ? 'opacity-0' : 'opacity-100'}`} />
           <div className="pointer-events-none absolute inset-0 bg-black/20" />
@@ -617,6 +863,7 @@ export default function Home() {
             <span className="rounded-full border border-white/10 bg-black/35 px-3 py-1.5 text-[11px] font-medium text-white/65 backdrop-blur-xl">
               {cameraState === 'ready' ? '● Camera ready' : cameraState === 'starting' ? 'Starting camera…' : 'Camera preview'}
             </span>
+            {portraitEnabled && <span className="rounded-full border border-[#D8B25E]/50 bg-black/45 px-3 py-1.5 text-[11px] font-semibold text-[#F5D98A] backdrop-blur-xl">Portrait {portraitState === 'loading' ? 'loading…' : portraitState === 'error' ? 'unavailable' : 'on'}</span>}
             {isRecording && <span className="rounded-full bg-red-500/90 px-3 py-1.5 text-[11px] font-semibold shadow-lg">● REC {formatTime(recordingSeconds)}</span>}
           </div>
 
@@ -636,9 +883,21 @@ export default function Home() {
                   <option value="4k" className="bg-[#111111]">Ultra HD 4K</option>
                 </select>
               </label>
+              <div className="flex items-center gap-2 rounded-full border border-white/10 bg-black/45 px-2 py-1.5 text-white backdrop-blur-xl">
+                <button onClick={() => void togglePortrait()} disabled={isRecording} className={`rounded-full px-2 py-1 text-[11px] font-semibold transition ${portraitEnabled ? 'bg-[#D8B25E] text-[#111111]' : 'text-white/70 hover:text-white'}`}>
+                  Portrait {portraitEnabled ? 'on' : 'off'}
+                </button>
+                {portraitEnabled && portraitState !== 'native' && (
+                  <>
+                    <input aria-label="Portrait blur strength" type="range" min="8" max="28" step="1" value={portraitBlur} onChange={(event) => setPortraitBlur(Number(event.target.value))} className="!w-20 accent-[#D8B25E] sm:!w-24" />
+                    <span className="w-5 text-right text-[10px] font-semibold text-white/60">{portraitBlur}</span>
+                  </>
+                )}
+              </div>
               <button onClick={() => setShowPromptText((value) => !value)} className="rounded-full border border-white/10 bg-black/45 px-3 py-2 text-[11px] font-semibold text-white/70 backdrop-blur-xl hover:border-[#D8B25E]/60 hover:text-white">
                 {showPromptText ? 'Hide script' : 'Show script'}
               </button>
+              {portraitError && <p role="alert" className="max-w-56 rounded-xl bg-black/65 px-3 py-2 text-right text-[11px] leading-4 text-amber-200">{portraitError}</p>}
             </div>
           )}
 
@@ -685,8 +944,9 @@ export default function Home() {
             {cameraState === 'ready' && (
               <button
                 onClick={isRecording ? stopRecording : startCountdown}
+                disabled={portraitState === 'loading'}
                 aria-label={isRecording ? 'Stop recording' : 'Start recording'}
-                className={`grid h-16 w-16 shrink-0 place-items-center rounded-full border-[3px] transition sm:h-[72px] sm:w-[72px] ${isAppFullscreen ? 'fixed bottom-[calc(env(safe-area-inset-bottom)+1rem)] left-1/2 z-50 -translate-x-1/2 shadow-2xl' : ''} ${isRecording ? 'border-red-400 bg-red-500' : 'border-white bg-white/10 hover:scale-105'}`}
+                className={`grid h-16 w-16 shrink-0 place-items-center rounded-full border-[3px] transition disabled:cursor-wait disabled:opacity-45 sm:h-[72px] sm:w-[72px] ${isAppFullscreen ? 'fixed bottom-[calc(env(safe-area-inset-bottom)+1rem)] left-1/2 z-50 -translate-x-1/2 shadow-2xl' : ''} ${isRecording ? 'border-red-400 bg-red-500' : 'border-white bg-white/10 hover:scale-105'}`}
               >
                 <span className={`${isRecording ? 'h-6 w-6 rounded-md bg-white' : 'h-12 w-12 rounded-full bg-red-500 sm:h-14 sm:w-14'}`} />
               </button>
@@ -772,7 +1032,8 @@ export default function Home() {
               {[
                 ['1', 'Paste your words', 'Add your script, then tune the speed and text size.'],
                 ['2', 'Enable your camera', 'Allow camera and microphone access when your browser asks.'],
-                ['3', 'Record with confidence', 'Press the red button. The prompt starts after a short countdown.'],
+                ['3', 'Choose your look', 'Turn on Portrait to keep yourself sharp and softly blur the background.'],
+                ['4', 'Record with confidence', 'Press the red button. The prompt starts after a short countdown.'],
               ].map(([number, title, body]) => (
                 <li key={number} className="flex gap-4 rounded-2xl border border-[#DED7C9] bg-white p-4">
                   <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#D8B25E] font-bold text-[#111111]">{number}</span>
@@ -794,7 +1055,7 @@ export default function Home() {
             </div>
             <p className="mt-6 inline-flex bg-[#D8B25E] px-2 py-1 text-[10px] font-semibold uppercase tracking-[.18em] text-[#111111]">One payment. No subscription.</p>
             <h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em]">Keep creating, forever.</h2>
-            <p className="mt-3 text-sm leading-6 text-[#6F6A61]">Your first three recordings are free. Unlock unlimited scripts, recordings, 4K quality, zoom controls, and every future update.</p>
+            <p className="mt-3 text-sm leading-6 text-[#6F6A61]">Your first three recordings are free. Unlock unlimited scripts, recordings, 4K quality, Portrait background blur, zoom controls, and every future update.</p>
             <div className="mt-5 flex items-end justify-between border-y border-[#DED7C9] py-4">
               <span className="text-sm text-[#6F6A61]">Lifetime access</span>
               <span className="text-2xl font-semibold">{lifetimePrice}</span>

@@ -18,7 +18,7 @@ Record naturally in 4K
 
 ### Promotional text
 
-Stay focused on your audience while your script scrolls beside the lens. Frame your shot first, then record in Full HD or 4K with simple speed, text and zoom controls.
+Stay focused on your audience while your script scrolls beside the lens. Add Portrait background blur, frame your shot, then record in Full HD or 4K with simple controls.
 
 ### Description
 
@@ -31,6 +31,7 @@ Set up your shot before showing the script, choose your preferred recording qual
 FEATURES
 
 • Record in 720p, Full HD 1080p or 4K when supported by your device
+• Portrait mode keeps you sharp and blurs the background in preview and recordings
 • Hide or show the script whenever you like
 • Smooth auto-scroll with adjustable speed
 • Adjustable text size and mirrored text
@@ -52,7 +53,7 @@ teleprompter,video,script,camera,creator,reels,presenter,speech,recording,autocu
 
 ### Review notes
 
-The app grants three completed recordings before showing the lifetime unlock screen. Camera and microphone permissions are requested only after the user taps Enable camera. The Restore Purchases button is available on the unlock screen. Recording resolution depends on hardware support.
+The app grants three completed recordings before showing the lifetime unlock screen. Camera and microphone permissions are requested only after the user taps Enable camera. Portrait mode uses native camera blur when available, otherwise it performs on-device person segmentation and records at up to 1080p. The Restore Purchases button is available on the unlock screen. Recording resolution depends on hardware support.
 
 ## Google Play
 
@@ -66,12 +67,13 @@ Speak naturally. Stay connected.
 
 Balance Teleprompter keeps your script beside the camera so you can present with confidence and maintain eye contact.
 
-Frame the shot with the script hidden, reveal it when you are ready, then record in 720p, Full HD 1080p or 4K when your phone supports it. Adjust the scrolling speed, text size and camera zoom without breaking your flow.
+Frame the shot with the script hidden, add Portrait background blur if you like, reveal the script when you are ready, then record in 720p, Full HD 1080p or 4K when your phone supports it. Adjust the scrolling speed, text size and camera zoom without breaking your flow.
 
 Features:
 • Three free recordings
 • One-time lifetime unlock — no subscription
 • Full HD and 4K recording options
+• Portrait background blur in preview and recordings
 • Hide and show the script
 • Adjustable prompt speed and text size
 • Camera zoom and front/rear camera controls

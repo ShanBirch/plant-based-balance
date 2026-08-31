@@ -19,6 +19,7 @@ Set up your shot before showing the script, choose your preferred recording qual
 FEATURES
 
 • Record in 720p, Full HD 1080p or 4K when supported by your device
+• Portrait mode keeps you sharp and blurs the background in preview and recordings
 • Hide or show the script whenever you like
 • Smooth auto-scroll with adjustable speed
 • Adjustable text size and mirrored text
@@ -38,11 +39,11 @@ const versionMetadata = {
   description,
   keywords: 'teleprompter,video,script,camera,creator,reels,presenter,speech,recording,autocue',
   marketingUrl: 'https://sightline-teleprompter.shanizle.chatgpt.site',
-  promotionalText: 'Keep your script beside the lens, frame your shot first, then record in Full HD or 4K with simple speed, text and zoom controls.',
+  promotionalText: 'Keep your script beside the lens, add Portrait background blur, then record in Full HD or 4K with simple speed, text and zoom controls.',
   supportUrl: 'https://plantbased-balance.org/contact.html',
 };
 
-const reviewNotes = `No sign-in is required. A fresh install provides three completed recordings with every feature enabled. The lifetime purchase only unlocks continued use after those recordings. The Restore Purchase button is available on the lifetime access screen. Camera, microphone, scripts, and recordings stay on the device.`;
+const reviewNotes = `No sign-in is required. A fresh install provides three completed recordings with every feature enabled. The lifetime purchase only unlocks continued use after those recordings. Portrait mode uses native camera blur when available, otherwise it performs on-device person segmentation and records at up to 1080p. The Restore Purchase button is available on the lifetime access screen. Camera, microphone, scripts, and recordings stay on the device.`;
 
 function requiredEnv(name) {
   const value = process.env[name];
