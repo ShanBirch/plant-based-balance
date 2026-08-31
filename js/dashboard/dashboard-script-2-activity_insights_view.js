@@ -13,6 +13,7 @@
         }
         const nav = document.getElementById('bottom-nav');
         if (nav) nav.style.display = 'none';
+        refreshInsightsCheckinPhotoCard();
         initInsightsView().then(function(){
             refreshInsightsStepData({ force: true });
         });
@@ -31,6 +32,123 @@
         const nav = document.getElementById('bottom-nav');
         if (nav) nav.style.display = '';
     }
+
+    function renderInsightsCheckinPhotoCard(photo, error) {
+        const card = document.getElementById('insights-checkin-photo-card');
+        const message = document.getElementById('insights-checkin-photo-message');
+        const status = document.getElementById('insights-checkin-photo-status');
+        const dueActions = document.getElementById('insights-checkin-photo-due-actions');
+        const completeActions = document.getElementById('insights-checkin-photo-complete-actions');
+        if (!card || !message || !status || !dueActions || !completeActions) return;
+
+        const isComplete = !!photo;
+        card.dataset.state = isComplete ? 'complete' : 'due';
+        status.textContent = isComplete ? 'Complete' : 'This week';
+        message.textContent = isComplete
+            ? 'Your front, side and back photos are saved for this week.'
+            : (error ? 'Take this week’s front, side and back photos.' : 'Take one front, side and back photo for this week.');
+        dueActions.style.display = isComplete ? 'none' : 'flex';
+        completeActions.style.display = isComplete ? 'flex' : 'none';
+    }
+
+    async function refreshInsightsCheckinPhotoCard() {
+        const card = document.getElementById('insights-checkin-photo-card');
+        if (!card) return;
+
+        const userId = window.currentUser && window.currentUser.id;
+        if (!userId || !window.db || !window.db.progressPhotos || typeof window.db.progressPhotos.getThisWeeksPhoto !== 'function') {
+            renderInsightsCheckinPhotoCard(null, true);
+            return;
+        }
+
+        card.dataset.state = 'loading';
+        try {
+            const photo = await window.db.progressPhotos.getThisWeeksPhoto(userId);
+            window._pbbCurrentProgressPhoto = photo || null;
+            renderInsightsCheckinPhotoCard(photo || null, false);
+        } catch (error) {
+            console.warn('[Insights] Weekly check-in photo state unavailable:', error);
+            renderInsightsCheckinPhotoCard(null, true);
+        }
+    }
+
+    async function ensureInsightsProgressEntryReady(capability) {
+        const wantsHistory = capability === 'history';
+        const ready = function() {
+            return wantsHistory
+                ? typeof window.openProgressFromHome === 'function'
+                : typeof window.addProgressPhotoFromInsightsView === 'function';
+        };
+        const scriptName = wantsHistory
+            ? 'pbb-deferred-performance.js'
+            : 'dashboard-script-8-progress_analytics_view.js';
+        const scriptSrc = wantsHistory
+            ? 'js/dashboard/pbb-deferred-performance.js?v=2'
+            : 'js/dashboard/dashboard-script-8-progress_analytics_view.js?v=2';
+        const promiseKey = wantsHistory
+            ? '_pbbInsightsHistoryEntryPromise'
+            : '_pbbInsightsCaptureEntryPromise';
+
+        if (ready()) return true;
+        if (window[promiseKey]) return window[promiseKey];
+
+        window[promiseKey] = new Promise(function(resolve) {
+            const existing = Array.from(document.scripts || []).find(function(script) {
+                return String(script.src || '').includes(scriptName);
+            });
+
+            function finish() {
+                resolve(ready());
+            }
+
+            if (existing) {
+                if (ready()) {
+                    finish();
+                    return;
+                }
+                existing.addEventListener('load', finish, { once: true });
+                existing.addEventListener('error', finish, { once: true });
+                setTimeout(finish, 4000);
+                return;
+            }
+
+            const script = document.createElement('script');
+            script.src = scriptSrc;
+            script.onload = finish;
+            script.onerror = finish;
+            document.head.appendChild(script);
+        });
+
+        return window[promiseKey];
+    }
+
+    async function startInsightsCheckinPhotos() {
+        await ensureInsightsProgressEntryReady('capture');
+        if (typeof window.addProgressPhotoFromInsightsView === 'function') {
+            window.addProgressPhotoFromInsightsView();
+            return;
+        }
+        alert('Photo check-in is still loading. Please try again in a moment.');
+    }
+
+    async function viewInsightsCheckinPhotos() {
+        await ensureInsightsProgressEntryReady('history');
+        if (typeof window.openProgressFromHome === 'function') {
+            window.openProgressFromHome({ source: 'insights' });
+            return;
+        }
+        alert('Your photos are still loading. Please try again in a moment.');
+    }
+
+    async function replaceInsightsCheckinPhotos() {
+        if (!window.confirm('Replace this week’s front, side and back photos?')) return;
+        await startInsightsCheckinPhotos();
+    }
+
+    window.refreshInsightsCheckinPhotoCard = refreshInsightsCheckinPhotoCard;
+    window.startInsightsCheckinPhotos = startInsightsCheckinPhotos;
+    window.viewInsightsCheckinPhotos = viewInsightsCheckinPhotos;
+    window.replaceInsightsCheckinPhotos = replaceInsightsCheckinPhotos;
 
     async function initInsightsView() {
         if (!window.currentUser) return;

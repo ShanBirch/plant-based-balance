@@ -990,6 +990,9 @@ let progressPhotoCaptureState = null;
                 refreshPointsDisplay();
             }
             await refreshProgressPhotoTimeline(userId);
+            if (typeof window.refreshInsightsCheckinPhotoCard === 'function') {
+                await window.refreshInsightsCheckinPhotoCard();
+            }
 
             console.log('Progress photo set uploaded successfully!');
 

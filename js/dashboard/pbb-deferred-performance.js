@@ -3,8 +3,9 @@
     /**
      * Opens the progress view from the home page performance card
      */
-    function openProgressFromHome() {
-        window._progressViewOrigin = 'home';
+    function openProgressFromHome(options) {
+        const source = options && options.source === 'insights' ? 'insights' : 'home';
+        window._progressViewOrigin = source;
         // Use hideAllAppViews if available, otherwise manual hide
         if (typeof hideAllAppViews === 'function') {
             hideAllAppViews();
@@ -30,14 +31,25 @@
 
         // Push navigation state for back button support
         if (typeof pushNavigationState === 'function') {
-            pushNavigationState('view-progress', () => closeProgressFromHome());
+            pushNavigationState('view-progress', () => closeProgressFromHome({ source }));
         }
     }
 
-    function closeProgressFromHome() {
+    function closeProgressFromHome(options) {
         const viewEl = document.getElementById('view-progress');
         if (viewEl) {
             viewEl.style.display = 'none';
+        }
+        const source = (options && options.source) || window._progressViewOrigin;
+        if (source === 'insights') {
+            const insightsView = document.getElementById('view-insights');
+            if (insightsView) insightsView.style.display = 'block';
+            const bottomNav = document.querySelector('.bottom-nav');
+            if (bottomNav) bottomNav.style.display = 'none';
+            if (typeof window.refreshInsightsCheckinPhotoCard === 'function') {
+                window.refreshInsightsCheckinPhotoCard();
+            }
+            return;
         }
         switchAppTab('dashboard');
     }
