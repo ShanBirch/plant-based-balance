@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v420-add-exercise-contrast'; // v420: ship the paired Add Exercise badge colours to phone shells
+const CACHE_NAME = 'pbb-app-v421-settings-redesign'; // v421: ship the grouped Settings redesign and paired theme colours
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
