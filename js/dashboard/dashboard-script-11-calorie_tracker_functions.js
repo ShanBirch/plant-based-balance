@@ -2021,6 +2021,12 @@ function normalizeMealSharePhotoUrl(value) {
     if (['text-input', 'photo_captured', 'null', 'undefined', 'none'].includes(lower)) return '';
     if (/^(https?:\/\/|data:image\/|blob:)/i.test(raw)) return raw;
 
+    // Older rows can contain the B2 object key rather than the complete URL.
+    // Resolve it here so every meal-photo surface uses the same saved image.
+    if (/^meals\/[a-z0-9-]+\/[a-z0-9._-]+$/i.test(raw)) {
+        return `https://f005.backblazeb2.com/file/plantbasedbalancestories/${raw}`;
+    }
+
     return '';
 }
 
@@ -9407,18 +9413,18 @@ function renderMealsList(meals) {
     // Store meals for popup access
     currentMealsList = meals || [];
 
-    // Debug: Log meal photo URLs and check accessibility
+    // Debug: Log resolved meal photo URLs and check accessibility
     console.log('Meals data received:', meals?.map(m => ({
         time: m.meal_time,
-        photo_url: m.photo_url,
-        hasValidPhoto: m.photo_url && m.photo_url.trim() !== '' && m.photo_url !== 'text-input'
+        photo_url: getMealSharePhotoUrl(m),
+        hasValidPhoto: !!getMealSharePhotoUrl(m)
     })));
 
     // Check first meal photo URL for debugging
     if (meals && meals.length > 0) {
-        const firstMealWithPhoto = meals.find(m => m.photo_url && m.photo_url.trim() !== '' && m.photo_url !== 'text-input');
+        const firstMealWithPhoto = meals.find(m => getMealSharePhotoUrl(m));
         if (firstMealWithPhoto) {
-            checkImageUrl(firstMealWithPhoto.photo_url).then(result => {
+            checkImageUrl(getMealSharePhotoUrl(firstMealWithPhoto)).then(result => {
                 console.log('Image URL accessibility check:', result);
             });
         }
@@ -9448,10 +9454,12 @@ function renderMealsList(meals) {
             ? meal.food_items.map(item => item.name).join(', ')
             : 'Food';
 
-        // Handle photo display - show placeholder if no photo or text-input placeholder
-        const hasPhoto = meal.photo_url && meal.photo_url.trim() !== '' && meal.photo_url !== 'text-input';
+        // Resolve every supported meal-photo field rather than only the legacy
+        // photo_url column, which leaves a blank label when storage_path holds it.
+        const photoUrl = getMealSharePhotoUrl(meal);
+        const hasPhoto = !!photoUrl;
         const imageHtml = hasPhoto
-            ? `<div class="meal-log-image" style="overflow: hidden;"><img src="${meal.photo_url}" alt="Meal" style="width: 100%; height: 100%; object-fit: cover;" referrerpolicy="no-referrer" onerror="try{console.log('Meal card image failed to load:', this.src);var p=this.parentElement;if(p){p.innerHTML='🍽️';p.style.display='flex';p.style.alignItems='center';p.style.justifyContent='center';p.style.fontSize='2rem';}}catch(e){}"></div>`
+            ? `<div class="meal-log-image" style="overflow: hidden;"><img src="${photoUrl}" alt="Meal photo" loading="lazy" style="display:block;width:100%;height:100%;object-fit:cover;" referrerpolicy="no-referrer" onerror="try{console.log('Meal card image failed to load:', this.src);var p=this.parentElement;if(p){p.innerHTML='🍽️';p.style.display='flex';p.style.alignItems='center';p.style.justifyContent='center';p.style.fontSize='2rem';}}catch(e){}"></div>`
             : `<div class="meal-log-image" style="display: flex; align-items: center; justify-content: center; font-size: 2rem;">🍽️</div>`;
 
         // Check if any item in this meal is verified
@@ -9533,13 +9541,15 @@ function openMealDetailPopup(index) {
         ? meal.food_items.map(item => item.name).join(', ')
         : 'Food';
 
-    // Handle photo display - exclude 'text-input' placeholder
-    const hasPhoto = meal.photo_url && meal.photo_url.trim() !== '' && meal.photo_url !== 'text-input';
-    console.log('Popup photo URL:', meal.photo_url);
+    // Use the same resolver as the meal card so its detail view cannot lose a
+    // photo that was saved in storage_path or another supported photo field.
+    const photoUrl = getMealSharePhotoUrl(meal);
+    const hasPhoto = !!photoUrl;
+    console.log('Popup photo URL:', photoUrl);
     if (hasPhoto) {
         photoSection.innerHTML = `
             <div class="meal-detail-photo" style="position: relative; overflow: hidden;">
-                <img src="${meal.photo_url}" alt="Meal photo"
+                <img src="${photoUrl}" alt="Meal photo"
                      style="width: 100%; height: 100%; object-fit: cover;"
                      referrerpolicy="no-referrer"
                      onerror="try{console.log('Popup image failed to load:', this.src);this.style.display='none';var p=this.nextElementSibling;if(p)p.style.display='flex';}catch(e){}"
