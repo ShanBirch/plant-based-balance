@@ -600,7 +600,7 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
 <!-- Early stub definitions to prevent "undefined" errors before main scripts load -->
 <script src="js/dashboard/script_part_4.js?v=theme-toggle-shell-v2"></script>
 
-<link rel="stylesheet" href="css/dashboard/dashboard-style-1.css?v=68">
+<link rel="stylesheet" href="css/dashboard/dashboard-style-1.css?v=69">
 <link rel="stylesheet" href="css/dashboard/pbb-social-journey.css?v=25-captioned-coach-video">
 
 <script>if(window._crumb)window._crumb('head_complete');</script>
@@ -1925,12 +1925,12 @@ if(!window._pbbIsIOSSafari) {
         window.addEventListener('pbbInitComplete', function() {
             setTimeout(function() {
                 var s = document.createElement('script');
-                s.src = 'js/dashboard/dashboard-script-2-activity_insights_view.js?v=checkin-card-v1';
+                s.src = 'js/dashboard/dashboard-script-2-activity_insights_view.js?v=checkin-history-v1';
                 document.head.appendChild(s);
             }, 4000);
         }, { once: true });
     } else {
-        document.write('<script src="js/dashboard/dashboard-script-2-activity_insights_view.js?v=checkin-card-v1"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-2-activity_insights_view.js?v=checkin-history-v1"><\/script>');
     }
     </script>
 
@@ -11804,23 +11804,17 @@ if(!window._pbbIsIOSSafari) {
                         <svg viewBox="0 0 24 24"><path d="M9 3 7.2 5H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.2L15 3H9Zm3 14.2A5.2 5.2 0 1 1 12 6.8a5.2 5.2 0 0 1 0 10.4Zm0-2A3.2 3.2 0 1 0 12 8.8a3.2 3.2 0 0 0 0 6.4Z"/></svg>
                     </div>
                     <div class="insights-checkin-photo-copy">
-                        <div class="insights-checkin-photo-kicker">Weekly check-in</div>
-                        <h2 id="insights-checkin-photo-title">Check-in photos</h2>
+                        <h2 id="insights-checkin-photo-title">Weekly check-in photos</h2>
                         <p id="insights-checkin-photo-message">Checking this week’s photos...</p>
                     </div>
-                    <div id="insights-checkin-photo-status" class="insights-checkin-photo-status">Checking</div>
-                </div>
-                <div class="insights-checkin-photo-angles" aria-label="Front, side and back photos">
-                    <div><span aria-hidden="true">1</span><strong>Front</strong></div>
-                    <div><span aria-hidden="true">2</span><strong>Side</strong></div>
-                    <div><span aria-hidden="true">3</span><strong>Back</strong></div>
                 </div>
                 <div id="insights-checkin-photo-due-actions" class="insights-checkin-photo-actions">
-                    <button type="button" class="insights-checkin-photo-primary" onclick="startInsightsCheckinPhotos()">Take photos</button>
+                    <button type="button" class="insights-checkin-photo-primary" onclick="startInsightsCheckinPhotos()">Take your photos</button>
+                    <button type="button" class="insights-checkin-photo-history-link" onclick="openCheckinPhotoHistoryView()">View photo history</button>
                 </div>
                 <div id="insights-checkin-photo-complete-actions" class="insights-checkin-photo-actions" style="display:none;">
-                    <button type="button" class="insights-checkin-photo-primary" onclick="viewInsightsCheckinPhotos()">View photos</button>
-                    <button type="button" class="insights-checkin-photo-secondary" onclick="replaceInsightsCheckinPhotos()">Replace set</button>
+                    <button type="button" class="insights-checkin-photo-primary" onclick="openCheckinPhotoHistoryView()">View your photos</button>
+                    <button type="button" class="insights-checkin-photo-history-link" onclick="replaceInsightsCheckinPhotos()">Replace this week’s photos</button>
                 </div>
             </section>
 
@@ -11994,6 +11988,50 @@ if(!window._pbbIsIOSSafari) {
             </section>
 
         </div>
+    </div>
+
+    <!-- ===== CHECK-IN PHOTO HISTORY VIEW ===== -->
+    <div id="view-checkin-photo-history" class="app-view checkin-photo-history-view" style="display:none; min-height:100vh; height:auto; z-index:100100; position:fixed; inset:0; width:100%; overflow-y:auto; overflow-x:hidden;">
+        <div class="checkin-photo-history-header">
+            <div style="width:30px;"></div>
+            <div>Check-in Photos</div>
+            <div style="width:30px;"></div>
+        </div>
+        <main class="checkin-photo-history-content">
+            <section class="checkin-photo-history-intro">
+                <div class="checkin-photo-history-intro-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M9 3 7.2 5H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.2L15 3H9Zm3 14.2A5.2 5.2 0 1 1 12 6.8a5.2 5.2 0 0 1 0 10.4Z"/></svg>
+                </div>
+                <div>
+                    <h1>Your photo timeline</h1>
+                    <p id="checkin-photo-history-summary">Your weekly check-ins, kept together by date.</p>
+                </div>
+            </section>
+            <div id="checkin-photo-history-loading" class="checkin-photo-history-state">
+                <div class="checkin-photo-history-loader" aria-hidden="true"></div>
+                <p>Loading your check-in photos...</p>
+            </div>
+            <div id="checkin-photo-history-empty" class="checkin-photo-history-state" style="display:none;">
+                <div class="checkin-photo-history-empty-icon" aria-hidden="true">📷</div>
+                <h2>Your first check-in will appear here</h2>
+                <p>Take this week’s photos from Activity Insights to start your timeline.</p>
+                <button type="button" onclick="closeCheckinPhotoHistoryView(); startInsightsCheckinPhotos();">Take your photos</button>
+            </div>
+            <div id="checkin-photo-history-error" class="checkin-photo-history-state" style="display:none;">
+                <h2>We couldn’t load your photos</h2>
+                <p>Please try again.</p>
+                <button type="button" onclick="loadCheckinPhotoHistory()">Try again</button>
+            </div>
+            <div id="checkin-photo-history-list" class="checkin-photo-history-list" aria-live="polite"></div>
+        </main>
+    </div>
+
+    <div id="checkin-photo-lightbox" class="checkin-photo-lightbox" style="display:none;" role="dialog" aria-modal="true" aria-label="Check-in photo viewer">
+        <button type="button" class="checkin-photo-lightbox-close" onclick="closeCheckinPhotoLightbox()" aria-label="Close photo">&#x2715;</button>
+        <button type="button" id="checkin-photo-lightbox-previous" class="checkin-photo-lightbox-nav checkin-photo-lightbox-nav--previous" onclick="moveCheckinPhotoLightbox(-1)" aria-label="Previous photo">&#x276E;</button>
+        <img id="checkin-photo-lightbox-image" alt="Weekly check-in photo">
+        <div id="checkin-photo-lightbox-caption" class="checkin-photo-lightbox-caption"></div>
+        <button type="button" id="checkin-photo-lightbox-next" class="checkin-photo-lightbox-nav checkin-photo-lightbox-nav--next" onclick="moveCheckinPhotoLightbox(1)" aria-label="Next photo">&#x276F;</button>
     </div>
 
     <div id="view-progress" class="app-view" style="display:none; min-height: 100vh; height: auto; background: #f8fafc; z-index: 100000; position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100%; overflow-y: auto; overflow-x: hidden;">
@@ -14043,7 +14081,8 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#ptr-indicator', title:'Pull to refresh', body:"Pull down from the top of the Home screen to refresh your FitGotchi stats and dashboard cards — great when things are slow to load." },
     { tab:'dashboard', sel:'#daily-weigh-in-card,#daily-weigh-in-done-card', title:'Daily weigh-in', body:"Tap here each morning to log your weight. Sunday board day can earn 5 XP if you are down from last Sunday, plus 5 XP for sharing the review card to Feed.", quick: true },
     { tab:'dashboard', sel:'#weekly-progress-photo-card', title:'Weekly progress photos', body:"Every Monday, take front, side, and back photos for 10 XP. Review each photo, then use it or retake it before moving to the next angle.", condition: function(){ var c = document.getElementById('weekly-progress-photo-card'); return c && c.style.display !== 'none'; } },
-    { tab:'dashboard', sel:'#insights-checkin-photo-card', fallbackSel:'#fitbit-performance-card', title:'Check-in photos in Insights', fallbackTitle:'Check-in photos live here', body:"Open Activity Insights any day to take your front, side, and back check-in photos. Once this week's set is done, you can view it or deliberately replace it.", fallbackBody:'Open Activity Insights from this Home card to take or review your weekly check-in photos.', action: async function(){ try { if (typeof openInsightsView === 'function') openInsightsView(); } catch(e){} await new Promise(function(resolve){ setTimeout(resolve, 450); }); } },
+    { tab:'dashboard', sel:'#insights-checkin-photo-card', fallbackSel:'#fitbit-performance-card', title:'Weekly check-in photos', fallbackTitle:'Weekly check-in photos', body:"Open Activity Insights any day to take this week's photos or open your dated photo history.", fallbackBody:'Open Activity Insights from this Home card to take or review your weekly check-in photos.', action: async function(){ try { if (typeof openInsightsView === 'function') openInsightsView(); } catch(e){} await new Promise(function(resolve){ setTimeout(resolve, 450); }); } },
+    { tab:'dashboard', sel:'#checkin-photo-history-list,#checkin-photo-history-empty,#checkin-photo-history-loading', fallbackSel:'#fitbit-performance-card', title:'Your photo timeline', fallbackTitle:'Your photo timeline', body:'See every weekly check-in by date, with the same-day weight or nearest weigh-in shown beside it.', fallbackBody:'Open Activity Insights, then View photo history to see every dated weekly check-in and its linked weight.', action: async function(){ try { if (typeof openCheckinPhotoHistoryView === 'function') openCheckinPhotoHistoryView(); } catch(e){} await new Promise(function(resolve){ setTimeout(resolve, 500); }); } },
     { tab:'dashboard', sel:'#progress-photo-share-feed-btn,#weekly-progress-photo-done-card', title:'Share progress photos', body:"After your Monday progress photos are saved, share them to Feed for an extra 20 XP.", condition: function(){ var c = document.getElementById('weekly-progress-photo-done-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#weekly-checkin-card', title:'Weekly Review', body:"A shimmering gold review card shows the person's onboarding goal, weekly progress, check-ins, mood signals, and one clear action to set next week goals.", quick: true, condition: function(){ var c = document.getElementById('weekly-checkin-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#mood-checkin-card', title:'Daily mood check-in', body:"Three quick check-ins a day (morning / afternoon / evening) earn you bonus XP and feed your AI coach." },
@@ -15989,11 +16028,22 @@ window.endFeatureTour = function(skipped){
       tab: 'dashboard',
       sel: '#insights-checkin-photo-card',
       fallbackSel: '#fitbit-performance-card',
-      title: 'Check-in photos in Insights',
-      fallbackTitle: 'Check-in photos live here',
-      body: "Open Activity Insights any day to take your front, side, and back check-in photos. Once this week's set is done, you can view it or deliberately replace it.",
+      title: 'Weekly check-in photos',
+      fallbackTitle: 'Weekly check-in photos',
+      body: "Open Activity Insights any day to take this week's photos or open your dated photo history.",
       fallbackBody: 'Open Activity Insights from this Home card to take or review your weekly check-in photos.',
       action: async function(){ try { if (typeof openInsightsView === 'function') openInsightsView(); } catch(e){} await new Promise(function(resolve){ setTimeout(resolve, 450); }); }
+    },
+    {
+      id: 'checkin-photo-history-with-weight-v1',
+      tab: 'dashboard',
+      sel: '#checkin-photo-history-list,#checkin-photo-history-empty,#checkin-photo-history-loading',
+      fallbackSel: '#fitbit-performance-card',
+      title: 'Your photo timeline',
+      fallbackTitle: 'Your photo timeline',
+      body: 'See every weekly check-in by date, with the same-day weight or nearest weigh-in shown beside it.',
+      fallbackBody: 'Open Activity Insights, then View photo history to see every dated weekly check-in and its linked weight.',
+      action: async function(){ try { if (typeof openCheckinPhotoHistoryView === 'function') openCheckinPhotoHistoryView(); } catch(e){} await new Promise(function(resolve){ setTimeout(resolve, 500); }); }
     },
     {
       id: 'weekly-progress-photo-feed-share-v1',

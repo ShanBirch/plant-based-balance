@@ -36,17 +36,15 @@
     function renderInsightsCheckinPhotoCard(photo, error) {
         const card = document.getElementById('insights-checkin-photo-card');
         const message = document.getElementById('insights-checkin-photo-message');
-        const status = document.getElementById('insights-checkin-photo-status');
         const dueActions = document.getElementById('insights-checkin-photo-due-actions');
         const completeActions = document.getElementById('insights-checkin-photo-complete-actions');
-        if (!card || !message || !status || !dueActions || !completeActions) return;
+        if (!card || !message || !dueActions || !completeActions) return;
 
         const isComplete = !!photo;
         card.dataset.state = isComplete ? 'complete' : 'due';
-        status.textContent = isComplete ? 'Complete' : 'This week';
         message.textContent = isComplete
-            ? 'Your front, side and back photos are saved for this week.'
-            : (error ? 'Take this week’s front, side and back photos.' : 'Take one front, side and back photo for this week.');
+            ? 'This week’s photos are saved.'
+            : (error ? 'Your weekly photo check-in is ready.' : 'Keep your progress together, one week at a time.');
         dueActions.style.display = isComplete ? 'none' : 'flex';
         completeActions.style.display = isComplete ? 'flex' : 'none';
     }
@@ -132,23 +130,290 @@
     }
 
     async function viewInsightsCheckinPhotos() {
-        await ensureInsightsProgressEntryReady('history');
-        if (typeof window.openProgressFromHome === 'function') {
-            window.openProgressFromHome({ source: 'insights' });
-            return;
-        }
-        alert('Your photos are still loading. Please try again in a moment.');
+        openCheckinPhotoHistoryView();
     }
 
     async function replaceInsightsCheckinPhotos() {
-        if (!window.confirm('Replace this week’s front, side and back photos?')) return;
+        if (!window.confirm('Replace this week’s check-in photos?')) return;
         await startInsightsCheckinPhotos();
+    }
+
+    function _parseCheckinPhotoNotes(photo) {
+        if (!photo || !photo.notes) return {};
+        if (typeof photo.notes === 'object') return photo.notes;
+        try {
+            const parsed = JSON.parse(photo.notes);
+            return parsed && typeof parsed === 'object' ? parsed : {};
+        } catch (error) {
+            return {};
+        }
+    }
+
+    function _getCheckinPhotoItems(photo, notes) {
+        const items = [];
+        const seen = new Set();
+        const shots = notes && Array.isArray(notes.shots) ? notes.shots : [];
+        shots.forEach(function(shot) {
+            const url = shot && (shot.photo_url || shot.url);
+            if (!url || seen.has(url)) return;
+            seen.add(url);
+            items.push({ url: url });
+        });
+        if (photo && photo.photo_url && !seen.has(photo.photo_url)) {
+            items.unshift({ url: photo.photo_url });
+        }
+        return items;
+    }
+
+    function _getCheckinCaptureDate(photo, notes) {
+        const savedAt = notes && notes.saved_at;
+        const source = savedAt || (photo && photo.created_at);
+        if (source) {
+            const parsed = new Date(source);
+            if (!Number.isNaN(parsed.getTime())) return parsed;
+        }
+        if (photo && photo.photo_week) {
+            const weekDate = new Date(photo.photo_week + 'T12:00:00');
+            if (!Number.isNaN(weekDate.getTime())) return weekDate;
+        }
+        return new Date();
+    }
+
+    function _getLocalDateKey(date) {
+        return date.getFullYear() + '-'
+            + String(date.getMonth() + 1).padStart(2, '0') + '-'
+            + String(date.getDate()).padStart(2, '0');
+    }
+
+    function _formatCheckinHistoryDate(date, options) {
+        return date.toLocaleDateString('en-AU', options || {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+        });
+    }
+
+    function _matchCheckinWeight(captureDate, weighIns) {
+        const rows = Array.isArray(weighIns) ? weighIns : [];
+        const captureKey = _getLocalDateKey(captureDate);
+        const captureDay = new Date(captureKey + 'T12:00:00');
+        const exact = rows.find(function(row) {
+            return row && row.weigh_in_date === captureKey && Number.isFinite(Number(row.weight_kg));
+        });
+        if (exact) return { row: exact, exact: true };
+
+        let nearest = null;
+        let nearestDays = Infinity;
+        rows.forEach(function(row) {
+            if (!row || !row.weigh_in_date || !Number.isFinite(Number(row.weight_kg))) return;
+            const rowDate = new Date(row.weigh_in_date + 'T12:00:00');
+            const days = Math.abs(rowDate.getTime() - captureDay.getTime()) / 86400000;
+            if (days <= 3 && days < nearestDays) {
+                nearest = row;
+                nearestDays = days;
+            }
+        });
+        return nearest ? { row: nearest, exact: false } : null;
+    }
+
+    function _formatCheckinWeight(weightKg) {
+        const preferLbs = localStorage.getItem('weightUnitPreference') === 'lbs';
+        const value = preferLbs ? Number(weightKg) * 2.20462 : Number(weightKg);
+        return value.toFixed(1) + ' ' + (preferLbs ? 'lbs' : 'kg');
+    }
+
+    function _setCheckinHistoryState(state) {
+        ['loading', 'empty', 'error'].forEach(function(name) {
+            const element = document.getElementById('checkin-photo-history-' + name);
+            if (element) element.style.display = state === name ? 'flex' : 'none';
+        });
+        const list = document.getElementById('checkin-photo-history-list');
+        if (list) list.style.display = state === 'ready' ? 'grid' : 'none';
+    }
+
+    function _renderCheckinPhotoHistory(photos, weighIns) {
+        const list = document.getElementById('checkin-photo-history-list');
+        const summary = document.getElementById('checkin-photo-history-summary');
+        if (!list || !summary) return;
+
+        list.innerHTML = '';
+        window._checkinPhotoHistoryViewerItems = [];
+
+        if (!Array.isArray(photos) || photos.length === 0) {
+            summary.textContent = 'Your weekly check-ins will be kept together here.';
+            _setCheckinHistoryState('empty');
+            return;
+        }
+
+        summary.textContent = photos.length + ' weekly check-in' + (photos.length === 1 ? '' : 's') + ', saved by date.';
+        photos.forEach(function(photo) {
+            const notes = _parseCheckinPhotoNotes(photo);
+            const photoItems = _getCheckinPhotoItems(photo, notes);
+            const captureDate = _getCheckinCaptureDate(photo, notes);
+            const weekDate = photo && photo.photo_week
+                ? new Date(photo.photo_week + 'T12:00:00')
+                : captureDate;
+            const weightMatch = _matchCheckinWeight(captureDate, weighIns);
+
+            const card = document.createElement('article');
+            card.className = 'checkin-photo-history-card';
+
+            const cardHeader = document.createElement('div');
+            cardHeader.className = 'checkin-photo-history-card-header';
+
+            const dateGroup = document.createElement('div');
+            const kicker = document.createElement('div');
+            kicker.className = 'checkin-photo-history-card-kicker';
+            kicker.textContent = 'Weekly check-in';
+            const title = document.createElement('h2');
+            title.textContent = _formatCheckinHistoryDate(weekDate);
+            const taken = document.createElement('p');
+            taken.textContent = 'Taken ' + _formatCheckinHistoryDate(captureDate, {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+            dateGroup.append(kicker, title, taken);
+            cardHeader.appendChild(dateGroup);
+
+            const weight = document.createElement('div');
+            weight.className = 'checkin-photo-history-weight';
+            if (weightMatch) {
+                const weightDate = new Date(weightMatch.row.weigh_in_date + 'T12:00:00');
+                const weightValue = document.createElement('strong');
+                weightValue.textContent = _formatCheckinWeight(weightMatch.row.weight_kg);
+                const weightLabel = document.createElement('small');
+                weightLabel.textContent = weightMatch.exact
+                    ? 'Same-day weight'
+                    : 'Nearest weigh-in, ' + _formatCheckinHistoryDate(weightDate, { day: 'numeric', month: 'short' });
+                weight.append(weightValue, weightLabel);
+            } else {
+                weight.classList.add('checkin-photo-history-weight--empty');
+                const weightValue = document.createElement('strong');
+                weightValue.textContent = 'No weight';
+                const weightLabel = document.createElement('small');
+                weightLabel.textContent = 'logged near this date';
+                weight.append(weightValue, weightLabel);
+            }
+            cardHeader.appendChild(weight);
+            card.appendChild(cardHeader);
+
+            const grid = document.createElement('div');
+            grid.className = 'checkin-photo-history-grid';
+            grid.dataset.count = String(Math.min(photoItems.length, 3));
+            photoItems.forEach(function(item) {
+                const viewerIndex = window._checkinPhotoHistoryViewerItems.length;
+                const caption = _formatCheckinHistoryDate(captureDate, {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                });
+                window._checkinPhotoHistoryViewerItems.push({ url: item.url, caption: caption });
+
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'checkin-photo-history-photo';
+                button.setAttribute('aria-label', 'Open check-in photo from ' + caption);
+                button.addEventListener('click', function() { openCheckinPhotoLightbox(viewerIndex); });
+                const image = document.createElement('img');
+                image.src = item.url;
+                image.alt = 'Weekly check-in photo from ' + caption;
+                image.loading = 'lazy';
+                button.appendChild(image);
+                grid.appendChild(button);
+            });
+            card.appendChild(grid);
+            list.appendChild(card);
+        });
+
+        _setCheckinHistoryState('ready');
+    }
+
+    async function loadCheckinPhotoHistory() {
+        const userId = window.currentUser && window.currentUser.id;
+        if (!userId || !window.db || !window.db.progressPhotos || !window.db.weighIns) {
+            _setCheckinHistoryState('error');
+            return;
+        }
+
+        _setCheckinHistoryState('loading');
+        try {
+            const results = await Promise.all([
+                window.db.progressPhotos.getAll(userId, 1000),
+                window.db.weighIns.getRecent(userId, 1000)
+            ]);
+            _renderCheckinPhotoHistory(results[0] || [], results[1] || []);
+        } catch (error) {
+            console.warn('[Insights] Check-in photo history unavailable:', error);
+            _setCheckinHistoryState('error');
+        }
+    }
+
+    function openCheckinPhotoHistoryView() {
+        if (typeof hideAllAppViews === 'function') hideAllAppViews();
+        const historyView = document.getElementById('view-checkin-photo-history');
+        if (!historyView) return;
+        historyView.style.display = 'block';
+        historyView.scrollTop = 0;
+        const nav = document.getElementById('bottom-nav');
+        if (nav) nav.style.display = 'none';
+        loadCheckinPhotoHistory();
+        if (typeof pushNavigationState === 'function') {
+            pushNavigationState('view-checkin-photo-history', closeCheckinPhotoHistoryView);
+        } else {
+            history.pushState({ view: 'checkin-photo-history' }, '', '');
+        }
+    }
+
+    function closeCheckinPhotoHistoryView() {
+        closeCheckinPhotoLightbox();
+        const historyView = document.getElementById('view-checkin-photo-history');
+        if (historyView) historyView.style.display = 'none';
+        const insightsView = document.getElementById('view-insights');
+        if (insightsView) insightsView.style.display = 'block';
+        const nav = document.getElementById('bottom-nav');
+        if (nav) nav.style.display = 'none';
+    }
+
+    function openCheckinPhotoLightbox(index) {
+        const items = window._checkinPhotoHistoryViewerItems || [];
+        if (!items[index]) return;
+        window._checkinPhotoLightboxIndex = index;
+        const lightbox = document.getElementById('checkin-photo-lightbox');
+        const image = document.getElementById('checkin-photo-lightbox-image');
+        const caption = document.getElementById('checkin-photo-lightbox-caption');
+        const previous = document.getElementById('checkin-photo-lightbox-previous');
+        const next = document.getElementById('checkin-photo-lightbox-next');
+        if (!lightbox || !image || !caption || !previous || !next) return;
+        image.src = items[index].url;
+        caption.textContent = items[index].caption;
+        previous.style.display = index > 0 ? 'flex' : 'none';
+        next.style.display = index < items.length - 1 ? 'flex' : 'none';
+        lightbox.style.display = 'flex';
+    }
+
+    function moveCheckinPhotoLightbox(direction) {
+        const current = Number(window._checkinPhotoLightboxIndex || 0);
+        openCheckinPhotoLightbox(current + direction);
+    }
+
+    function closeCheckinPhotoLightbox() {
+        const lightbox = document.getElementById('checkin-photo-lightbox');
+        if (lightbox) lightbox.style.display = 'none';
     }
 
     window.refreshInsightsCheckinPhotoCard = refreshInsightsCheckinPhotoCard;
     window.startInsightsCheckinPhotos = startInsightsCheckinPhotos;
     window.viewInsightsCheckinPhotos = viewInsightsCheckinPhotos;
     window.replaceInsightsCheckinPhotos = replaceInsightsCheckinPhotos;
+    window.openCheckinPhotoHistoryView = openCheckinPhotoHistoryView;
+    window.closeCheckinPhotoHistoryView = closeCheckinPhotoHistoryView;
+    window.loadCheckinPhotoHistory = loadCheckinPhotoHistory;
+    window.openCheckinPhotoLightbox = openCheckinPhotoLightbox;
+    window.moveCheckinPhotoLightbox = moveCheckinPhotoLightbox;
+    window.closeCheckinPhotoLightbox = closeCheckinPhotoLightbox;
 
     async function initInsightsView() {
         if (!window.currentUser) return;
