@@ -100,11 +100,11 @@ test('Balance Foundations is a six-week course that preserves the existing lesso
     assert.equal((foundationsSource.match(/number:\s*[1-6],/g) || []).length, 6);
     assert.equal(weekLessonLists.length, 6);
     weekLessonLists.forEach(([, ids]) => assert.equal((ids.match(/'[a-z]+-\d+-\d+'/g) || []).length, 5));
-    assert.match(foundationsSource, /Understand why change feels hard/);
-    assert.match(foundationsSource, /Build a rhythm that can stick/);
+    assert.match(foundationsSource, /Why change feels hard/);
+    assert.match(foundationsSource, /Build a rhythm that sticks/);
     assert.match(foundationsSource, /Take the fight out of food/);
-    assert.match(foundationsSource, /Make the better choice easier/);
-    assert.match(foundationsSource, /Build a way of eating you can keep/);
+    assert.match(foundationsSource, /Make progress easier to repeat/);
+    assert.match(foundationsSource, /Build your sustainable way forward/);
     assert.match(learning, /progress\.quizTotal} quizzes/);
     assert.match(learning, /getFoundationsLessonTitle/);
     assert.match(learning, /expandedFoundationsWeekNumber/);
@@ -134,7 +134,7 @@ test('Balance Foundations is a six-week course that preserves the existing lesso
     assert.match(dashboard, /id: 'course-preview-locks-v1'/);
     assert.match(dashboard, /sel: '\.course-library-intro'/);
     assert.match(dashboard, /fallbackSel: '#learning-content'/);
-    assert.match(dashboard, /learning-inline\.js\?v=29-paid-tour-handoff/);
+    assert.match(dashboard, /learning-inline\.js\?v=30-course-preview-tour/);
     assert.match(dashboard, /balance-identity-course-v1/);
 });
 
@@ -156,7 +156,7 @@ test('Balance Identity follows Foundations and shares the Week 7 to 12 journey p
     assert.match(socialJourney, /WEEK_DEFINITIONS\.slice\(6\)/);
     assert.match(socialJourney, /function openIdentityCourseWeek\(weekNumber\)/);
     assert.match(socialJourney, /viewStage = 'course-lesson'/);
-    assert.match(dashboard, /learning-inline\.js\?v=29-paid-tour-handoff/);
+    assert.match(dashboard, /learning-inline\.js\?v=30-course-preview-tour/);
 });
 
 test('Founders Pass onboarding captures the real-world blocker behind consistency', () => {
