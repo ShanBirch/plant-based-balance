@@ -286,7 +286,7 @@ async function configureAppInfo(app) {
   console.log('Configured category, product-page identity, privacy URL, and age rating.');
 }
 
-async function uploadReservedAsset({ createPath, updatePath, type, relationshipName, relationshipType, relationshipId, filePath }) {
+async function uploadReservedAsset({ createPath, updatePath, type, relationshipName, relationshipType, relationshipId, filePath, includeChecksum = true }) {
   const fileBuffer = await readFile(filePath);
   const fileName = path.basename(filePath);
   const reservation = await asc(createPath, {
@@ -318,16 +318,22 @@ async function uploadReservedAsset({ createPath, updatePath, type, relationshipN
         id: asset.id,
         attributes: {
           uploaded: true,
-          sourceFileChecksum: createHash('md5').update(fileBuffer).digest('hex'),
+          ...(includeChecksum
+            ? { sourceFileChecksum: createHash('md5').update(fileBuffer).digest('hex') }
+            : {}),
         },
       },
     }),
   });
 
+  return waitForAssetCompletion(updatePath, asset.id, fileName);
+}
+
+async function waitForAssetCompletion(updatePath, assetId, fileName) {
   for (let attempt = 0; attempt < 30; attempt += 1) {
-    const result = await asc(`${updatePath}/${asset.id}`);
+    const result = await asc(`${updatePath}/${assetId}`);
     const state = result.body.data?.attributes?.assetDeliveryState?.state;
-    if (state === 'COMPLETE') return asset.id;
+    if (state === 'COMPLETE') return assetId;
     if (state === 'FAILED') throw new Error(`Apple rejected asset ${fileName}.`);
     await sleep(5_000);
   }
@@ -568,9 +574,26 @@ async function configureIapLocalization(iapVersion) {
 
 async function configureIapImage(iapVersion) {
   const listed = await asc(`/v1/inAppPurchaseVersions/${iapVersion.id}/images?${query({ limit: 50 })}`);
-  if (listed.body.data?.length) return;
   const reviewFile = path.join(screenshotDirectory, 'lifetime-purchase-review-1320x2868.jpg');
   await stat(reviewFile);
+  const existing = listed.body.data?.[0];
+  if (existing) {
+    if (existing.attributes?.assetDeliveryState?.state !== 'COMPLETE') {
+      await asc(`/v2/inAppPurchaseImages/${existing.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          data: {
+            type: 'inAppPurchaseImages',
+            id: existing.id,
+            attributes: { uploaded: true },
+          },
+        }),
+      });
+      await waitForAssetCompletion('/v2/inAppPurchaseImages', existing.id, path.basename(reviewFile));
+    }
+    console.log('Lifetime-purchase review screenshot already present.');
+    return;
+  }
   await uploadReservedAsset({
     createPath: '/v2/inAppPurchaseImages',
     updatePath: '/v2/inAppPurchaseImages',
@@ -579,6 +602,7 @@ async function configureIapImage(iapVersion) {
     relationshipType: 'inAppPurchaseVersions',
     relationshipId: iapVersion.id,
     filePath: reviewFile,
+    includeChecksum: false,
   });
   console.log('Uploaded the lifetime-purchase review screenshot.');
 }
