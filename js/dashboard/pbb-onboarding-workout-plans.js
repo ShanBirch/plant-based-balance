@@ -175,17 +175,27 @@
         return definition;
     }
 
-    function getEquipmentOptions(equipment, frequency) {
+    function getLibraryWorkout(id, library) {
+        const source = definitions[id];
+        if (!source || !library) return null;
+        const categoryKey = source.program === 'gym' ? 'gym' : source.program;
+        const subcategoryKey = source.muscleGroup || source.subcategory;
+        const workouts = library[categoryKey]?.subcategories?.[subcategoryKey]?.workouts;
+        if (!Array.isArray(workouts)) return null;
+        return workouts[source.libraryWorkoutIndex] || null;
+    }
+
+    function getEquipmentOptions(equipment, frequency, library) {
         const normalizedEquipment = normalizeEquipment(equipment);
         const ids = getPlan(normalizedEquipment, frequency).sequence.filter(function (id, index, sequence) {
             return sequence.indexOf(id) === index;
         });
         return ids.map(id => ({
             id,
-            name: definitions[id].label,
+            name: getLibraryWorkout(id, library)?.name || definitions[id].label,
             icon: definitions[id].icon
         }));
     }
 
-    return { definitions, strengthMatrix, normalizeEquipment, getPlan, buildCalendar, getDefinition, getEquipmentOptions };
+    return { definitions, strengthMatrix, normalizeEquipment, getPlan, buildCalendar, getDefinition, getLibraryWorkout, getEquipmentOptions };
 });

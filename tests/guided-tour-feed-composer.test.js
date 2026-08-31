@@ -8,10 +8,20 @@ const mealPlan = fs.readFileSync(path.join(__dirname, '..', 'js', 'dashboard', '
 
 test('Feed introduction gives typing a clear, usable surface', () => {
   assert.match(dashboard, /title:'Introduce yourself'[\s\S]*?hideGuideWhileTyping:true/);
-  assert.match(dashboard, /#guided-tour-overlay\.tour-typing #guided-tour-bubble,[\s\S]*?#guided-tour-overlay\.tour-typing #guided-tour-spotlight/);
+  assert.match(dashboard, /#guided-tour-overlay\.tour-typing #guided-tour-bubble \{[\s\S]*?opacity: 0 !important/);
+  assert.match(dashboard, /#guided-tour-overlay\.tour-typing #guided-tour-spotlight \{[\s\S]*?opacity: 1 !important/);
   assert.match(dashboard, /const typingInTarget = !!\(step && step\.hideGuideWhileTyping/);
+  assert.match(dashboard, /composer\.scrollIntoView\(\{ block:'center', behavior:'auto' \}\)/);
+  assert.match(dashboard, /visualViewport\.addEventListener\('resize', keepComposerVisible\)/);
   assert.match(dashboard, /document\.addEventListener\('focusin', resizeHandler, true\)/);
   assert.match(dashboard, /document\.removeEventListener\('focusout', resizeHandler, true\)/);
+});
+
+test('workout demonstration stays playable during its onboarding tour stop', () => {
+  assert.match(dashboard, /title:'Follow the exercise card'[^\n]*allowTargetInteraction:true/);
+  assert.match(dashboard, /#guided-tour-overlay\.tour-target-interactive \{ pointer-events: none; \}/);
+  assert.match(dashboard, /tour-target-interactive #guided-tour-bubble \{ pointer-events: auto; \}/);
+  assert.match(dashboard, /classList\.toggle\('tour-target-interactive', !!displayStep\.allowTargetInteraction\)/);
 });
 
 test('shopping list stays tied to the current active meal plan and week', () => {

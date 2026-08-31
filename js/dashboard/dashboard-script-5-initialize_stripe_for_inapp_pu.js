@@ -9745,7 +9745,7 @@ function renderWizardExerciseChipGroup(containerId, mode, exercises) {
             data-mode="${mode}"
             data-exercise="${name.replace(/"/g, '&quot;')}"
             onclick="toggleWizardExercisePreference('${name.replace(/'/g, "\\'")}', '${mode}')"
-            style="padding:8px 11px; border-radius:999px; border:1px solid rgba(255,255,255,0.16); background:rgba(255,255,255,0.08); color:rgba(255,255,255,0.9); font-size:0.8rem; font-weight:600; cursor:pointer;">
+            style="padding:8px 11px; border-radius:999px; border:1px solid #cdbf9f; background:#fffdf8; color:#2d261d; -webkit-text-fill-color:#2d261d; font-size:0.8rem; font-weight:700; cursor:pointer;">
             ${name}
         </button>
     `).join('');
@@ -9756,9 +9756,13 @@ function syncWizardExercisePreferenceChipState() {
         const mode = chip.dataset.mode;
         const name = chip.dataset.exercise || '';
         const selected = mode === 'liked' ? hasWizardExercise(wizardLikedExercises, name) : hasWizardExercise(wizardAvoidedExercises, name);
-        chip.style.background = selected ? (mode === 'liked' ? 'rgba(34, 197, 94, 0.18)' : 'rgba(239, 68, 68, 0.16)') : 'rgba(255,255,255,0.08)';
-        chip.style.borderColor = selected ? (mode === 'liked' ? '#22c55e' : '#ef4444') : 'rgba(255,255,255,0.16)';
-        chip.style.color = selected ? (mode === 'liked' ? '#bbf7d0' : '#fecaca') : 'rgba(255,255,255,0.9)';
+        chip.classList.toggle('is-liked-selected', selected && mode === 'liked');
+        chip.classList.toggle('is-avoided-selected', selected && mode === 'avoided');
+        const color = selected ? (mode === 'liked' ? '#1f5f32' : '#8b2020') : '#2d261d';
+        chip.style.background = selected ? (mode === 'liked' ? '#e8f5e9' : '#fff0ef') : '#fffdf8';
+        chip.style.borderColor = selected ? (mode === 'liked' ? '#48864b' : '#c94b4b') : '#cdbf9f';
+        chip.style.color = color;
+        chip.style.webkitTextFillColor = color;
     });
 }
 
@@ -13586,10 +13590,13 @@ function renderWizardCalendarPreview() {
     allDays.forEach((day, idx) => {
         const workout = wizardWorkoutCalendar[day] || 'rest';
         const prebuilt = window.PBBOnboardingWorkoutPlans?.definitions?.[workout];
+        const libraryWorkout = window.PBBOnboardingWorkoutPlans?.getLibraryWorkout(workout, window.WORKOUT_LIBRARY);
         const info = getWizardAssignedWorkoutInfo(workout) || (prebuilt ? {
             icon: prebuilt.icon,
-            name: prebuilt.label,
-            desc: prebuilt.description || 'Prebuilt strength session'
+            name: libraryWorkout?.name || prebuilt.label,
+            desc: libraryWorkout?.exercises?.length
+                ? libraryWorkout.exercises.length + ' exercises'
+                : (prebuilt.description || 'Your strength session')
         } : null) || workoutInfo[workout] || { icon: '?', name: 'Unknown', desc: '' };
 
         const row = document.createElement('div');
@@ -13713,7 +13720,7 @@ function getWizardWorkoutOptions(day) {
 
     // The editor uses the same equipment-scoped prebuilt definitions as the
     // automatic plan. A bands-only member cannot accidentally choose dumbbells.
-    const strengthItems = window.PBBOnboardingWorkoutPlans?.getEquipmentOptions(equipment, wizardTrainingFrequency) || [];
+    const strengthItems = window.PBBOnboardingWorkoutPlans?.getEquipmentOptions(equipment, wizardTrainingFrequency, window.WORKOUT_LIBRARY) || [];
     if (strengthItems.length) {
         const categoryLabels = { gym: 'FULL GYM', dumbbells: 'DUMBBELLS', bands: 'BANDS', none: 'BODYWEIGHT ONLY' };
         const normalizedEquipment = window.PBBOnboardingWorkoutPlans.normalizeEquipment(equipment);

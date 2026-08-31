@@ -13098,7 +13098,7 @@ if(!window._pbbIsIOSSafari) {
 <!-- Loaded for every account so a late auth decision cannot skip it. The
      soundtrack remains inert unless this is the explicit paid onboarding. -->
 <script src="js/dashboard/pbb-meta-preview-soundtrack.js?v=3-coach-video-ducking"></script>
-<script src="js/dashboard/pbb-onboarding-workout-plans.js?v=1-prebuilt-matrix"></script>
+<script src="js/dashboard/pbb-onboarding-workout-plans.js?v=2-library-display-names"></script>
 <script>
 // Script-5 (678KB) - Stripe/IAP, switchAppTab, initProgramDate, checkAndTriggerOnboarding.
 // On iOS Safari, defer to reduce memory pressure during page parsing.
@@ -13137,7 +13137,7 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=220-course-text-cleanup-onboarding-prebuilt-matrix';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=221-onboarding-preference-contrast-copy';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
@@ -13179,7 +13179,7 @@ if (window._pbbIsIOSSafari) {
         var s = document.createElement('script');
         s.async = false;
         s.dataset.metaTrialLoader = String(attempt);
-        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=220-course-text-cleanup-onboarding-prebuilt-matrix&meta_retry=' + attempt;
+        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=221-onboarding-preference-contrast-copy&meta_retry=' + attempt;
         s.onload = function() {
             if (window._pbbScript5Complete && window._switchAppTabReady && typeof window._switchAppTabReal === 'function') {
                 sessionStorage.removeItem('pbb_meta_script5_recovery_v1');
@@ -13198,7 +13198,7 @@ if (window._pbbIsIOSSafari) {
         document.head.appendChild(s);
     })(0);
 } else {
-document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=220-course-text-cleanup-onboarding-prebuilt-matrix"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=221-onboarding-preference-contrast-copy"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=3"></script>
@@ -13645,6 +13645,8 @@ if(!window._pbbIsIOSSafari) {
   /* The coach note carries its own visible Continue button. Keep the clear
      overlay from swallowing that button once the audio gate completes. */
   #guided-tour-overlay.tour-coach-note { pointer-events: none; }
+  #guided-tour-overlay.tour-target-interactive { pointer-events: none; }
+  #guided-tour-overlay.tour-target-interactive #guided-tour-bubble { pointer-events: auto; }
   /* Foundations is a required part of onboarding. Keep its real lesson
      controls usable, but prevent the bottom navigation from abandoning the
      guided scene before the lesson and quiz are complete. */
@@ -13871,10 +13873,14 @@ if(!window._pbbIsIOSSafari) {
   }
   /* The Feed introduction is explained before typing. Once the composer is
      focused, leave the person a completely clear writing surface. */
-  #guided-tour-overlay.tour-typing #guided-tour-bubble,
-  #guided-tour-overlay.tour-typing #guided-tour-spotlight {
+  #guided-tour-overlay.tour-typing #guided-tour-bubble {
     opacity: 0 !important;
     pointer-events: none !important;
+  }
+  #guided-tour-overlay.tour-typing #guided-tour-spotlight {
+    opacity: 1 !important;
+    border-color: #c49331 !important;
+    box-shadow: 0 0 0 4px rgba(216,178,94,.28), 0 0 22px rgba(138,90,18,.22) !important;
   }
   #guided-tour-overlay.tour-typing {
     pointer-events: none !important;
@@ -14149,7 +14155,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'.meal-icon-btn[title="Take a photo"],.camera-btn-widget,.meal-icon-btn', title:'Log what you eat', body:'The highlighted photo button is one option. You can also use a barcode, type the meal or quick-log it. You only need to record what you actually eat.', pageView:true, metaPreview:true, promptBeforeAction:true, promptRequiresTargetClick:true, returnHomeAfter:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="nutrition_tracker_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: see your nutrition tracker', preActionBody:'Tap the highlighted To Do card to see the quick ways you can log a normal meal.', preActionButton:'Tap the tracker card', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('nutrition_tracker_intro'); await new Promise(function(r){ setTimeout(r,950); }); var pill=document.querySelector('#view-meals .pill-btn[onclick*="calorie-tracker"]'); if(typeof switchWeek==='function') switchWeek('calorie-tracker', pill); await new Promise(function(r){ setTimeout(r,320); }); return !!q('.camera-btn-widget,.meal-icon-btn'); } catch(e){ return false; } } },
     { tab:'dashboard', sel:'#weekly-calendar', fallbackSel:'#view-calendar,#view-cycle', title:'Check your workout week', fallbackTitle:'Check your workout week', body:'This calendar shows the workouts planned for your week. Click Next to open the program and see your first session.', pageView:true, metaPreview:true, promptBeforeAction:true, promptRequiresTargetClick:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="workout_week_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: see your workout program', preActionBody:'Back on Home, tap the highlighted workout card to see exactly how your training week fits together.', preActionButton:'Tap the workout card', nextLabel:'Open the program', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('workout_week_intro'); await new Promise(function(r){ setTimeout(r,800); }); if(typeof switchCalendarView === 'function') switchCalendarView('weekly'); return true; } catch(e){ return false; } } },
     { tab:'movement-tab', sel:'#workout-player-title', fallbackSel:'#workout-exercises-list,#today-workout-card', title:'Open your first workout', fallbackTitle:'Your first workout needs another moment', body:'This is the actual session from your plan. There is nothing you need to change here—use Next to see the exercise cards, sets and target reps.', fallbackBody:'The workout did not finish opening. Tap Back, then try the workout section again.', pageView:true, metaPreview:true, nextLabel:'See exercise card', action:async function(){ try { return !!(await openMetaPreviewStrengthWorkout()); } catch(e){ return false; } } },
-    { tab:'movement-tab', sel:'#workout-exercises-list .exercise-logger-card [data-video-container][data-thumbnail-state="ready"]', fallbackSel:'#workout-exercises-list .exercise-logger-card,#workout-exercises-list', title:'Follow the exercise card', fallbackTitle:'Follow the exercise card', body:'The highlighted card contains the demonstration, sets and target reps. Click Next to continue to your next task.', fallbackBody:'Each exercise card shows the demonstration, sets and target reps. Click Next to continue to your next task.', pageView:true, metaPreview:true, preserveSurface:true, returnHomeAfter:true, action:async function(){ try { await waitForMetaPreviewWorkoutProof({ requireThumbnail:true, timeoutMs:8000 }); return true; } catch(e){ return false; } } },
+    { tab:'movement-tab', sel:'#workout-exercises-list .exercise-logger-card [data-video-container][data-thumbnail-state="ready"]', fallbackSel:'#workout-exercises-list .exercise-logger-card,#workout-exercises-list', title:'Follow the exercise card', fallbackTitle:'Follow the exercise card', body:'The highlighted card contains the demonstration, sets and target reps. Click Next to continue to your next task.', fallbackBody:'Each exercise card shows the demonstration, sets and target reps. Click Next to continue to your next task.', pageView:true, allowTargetInteraction:true, metaPreview:true, preserveSurface:true, returnHomeAfter:true, action:async function(){ try { await waitForMetaPreviewWorkoutProof({ requireThumbnail:true, timeoutMs:8000 }); return true; } catch(e){ return false; } } },
     { tab:'dashboard', sel:'#friends-photo-feed .meta-preview-feed-post', fallbackSel:'#feed-composer-card', title:'The Balance community', fallbackTitle:'The Balance community', body:'The highlighted Feed post shows where Shannon and members share normal meals, workouts, questions and wins.', fallbackBody:'This is where Shannon posts and members share meals, workouts and wins.', pageView:true, metaPreview:true, promptBeforeAction:true, promptRequiresTargetClick:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="feed_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: meet the community', preActionBody:'Back on Home, tap the highlighted community card to see where everyone shares their real week.', preActionButton:'Tap the community card', nextLabel:'See how to post', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('feed_intro'); if(window.BalanceMetaAdTrial && typeof window.BalanceMetaAdTrial.loadPreviewFeed === 'function') await window.BalanceMetaAdTrial.loadPreviewFeed(); } catch(e){} await new Promise(function(r){ setTimeout(r,500); }); return true; } },
     { tab:'friends', sel:'#feed-composer-card', title:'Post when you need support', body:'The highlighted composer is where you share a meal, workout, question or win. There is nothing to post during the tour—use Next to return Home.', pageView:true, metaPreview:true, preserveSurface:true, returnHomeAfter:true },
     { tab:'dashboard', sel:'#meta-ad-trial-welcome-video', fallbackSel:'#meta-ad-trial-inbox-preview-card', title:'Watch Shannon’s coach note', body:'Tap Play and watch to the end. Shannon explains your weekly check-ins, your first six weeks and what comes next.', metaPreview:true, embeddedGuide:true, coachNoteGuide:true, requiresWelcomeVideo:true, promptBeforeAction:true, promptRequiresTargetClick:true, returnHomeAfter:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="coach_message_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: hear from your coach', preActionBody:'Back on Home, tap the highlighted coach-message card to hear how your weekly support works.', preActionButton:'Tap the coach message card', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('coach_message_intro'); else if(!(options && options.fromTargetClick) && window.BalanceMetaAdTrial) window.BalanceMetaAdTrial.showInboxPreview(); } catch(e){} await new Promise(function(r){ setTimeout(r,350); }); return true; } },
@@ -14603,6 +14609,18 @@ if(!window._pbbIsIOSSafari) {
         }
       };
       window.addEventListener('pbbFeedPostCreated', completed);
+      const composerAlignTimers = [];
+      const keepComposerVisible = function(){
+        [0, 180, 420].forEach(function(delay){
+          composerAlignTimers.push(setTimeout(function(){
+            if (!composer || !textInput || document.activeElement !== textInput) return;
+            try { composer.scrollIntoView({ block:'center', behavior:'auto' }); } catch(e){}
+            try { positionBubbleAndSpotlight(composer, step); } catch(e){}
+          }, delay));
+        });
+      };
+      if (textInput) textInput.addEventListener('focus', keepComposerVisible);
+      if (window.visualViewport) window.visualViewport.addEventListener('resize', keepComposerVisible);
       activeTourGate = {
         key:key,
         complete:false,
@@ -14613,7 +14631,12 @@ if(!window._pbbIsIOSSafari) {
             if (textInput) textInput.focus({ preventScroll:true });
           } catch(e){}
         },
-        cleanup:function(){ window.removeEventListener('pbbFeedPostCreated', completed); }
+        cleanup:function(){
+          window.removeEventListener('pbbFeedPostCreated', completed);
+          if (textInput) textInput.removeEventListener('focus', keepComposerVisible);
+          if (window.visualViewport) window.visualViewport.removeEventListener('resize', keepComposerVisible);
+          composerAlignTimers.forEach(clearTimeout);
+        }
       };
       setTourGateUi(false, 'Write a quick hello, then tap Post to continue.', 'Post your hello first');
       return;
@@ -15078,6 +15101,7 @@ if(!window._pbbIsIOSSafari) {
     if (overlay) overlay.classList.toggle('tour-edge-prompt', !!(step && step.edgePrompt));
     if (overlay) overlay.classList.toggle('tour-feature-view', !!(step && step.featureView));
     if (overlay) overlay.classList.toggle('tour-control-prompt', !!(step && step.requiresHighlightedClick));
+    if (overlay) overlay.classList.toggle('tour-target-interactive', !!(step && step.allowTargetInteraction));
     bubble.style.bottom = '';
 
     if (step && step.featureView) {
@@ -15104,7 +15128,21 @@ if(!window._pbbIsIOSSafari) {
       && /^(INPUT|TEXTAREA)$/i.test(activeElement.tagName || ''));
     if (overlay) overlay.classList.toggle('tour-typing', typingInTarget);
     if (typingInTarget) {
-      spot.style.opacity = '0';
+      if (targetRect && targetRect.width >= 2 && targetRect.height >= 2) {
+        const typingPad = 7;
+        const viewport = window.visualViewport;
+        const viewportTop = viewport ? viewport.offsetTop : 0;
+        const viewportLeft = viewport ? viewport.offsetLeft : 0;
+        const viewportWidth = viewport ? viewport.width : Math.max(window.innerWidth || 360, 240);
+        const viewportHeight = viewport ? viewport.height : Math.max(window.innerHeight || 640, 320);
+        const typingTop = Math.max(targetRect.top - typingPad, viewportTop + 6);
+        const typingLeft = Math.max(targetRect.left - typingPad, viewportLeft + 6);
+        spot.style.top = typingTop + 'px';
+        spot.style.left = typingLeft + 'px';
+        spot.style.width = Math.max(24, Math.min(targetRect.width + typingPad * 2, viewportLeft + viewportWidth - typingLeft - 6)) + 'px';
+        spot.style.height = Math.max(24, Math.min(targetRect.height + typingPad * 2, viewportTop + viewportHeight - typingTop - 6)) + 'px';
+        spot.style.opacity = '1';
+      }
       bubble.style.opacity = '0';
       return;
     }
@@ -15313,6 +15351,7 @@ async function showStep(i, options){
       overlay.classList.toggle('tour-coach-note', !!displayStep.coachNoteGuide);
       overlay.classList.toggle('tour-tap-target', !!(isPromptBeforeAction && step.promptRequiresTargetClick));
       overlay.classList.toggle('tour-feature-view', !!displayStep.featureView);
+      overlay.classList.toggle('tour-target-interactive', !!displayStep.allowTargetInteraction);
       overlay.classList.remove('tour-gate-complete');
     }
     pendingPromptedAction = (isPromptBeforeAction && !step.promptRequiresTargetClick) ? { index:i, step:step } : null;
@@ -15476,7 +15515,7 @@ window.endFeatureTour = function(skipped){
     resetTourTemporaryTargets();
     const overlay = document.getElementById('guided-tour-overlay');
     if (overlay) overlay.classList.remove('active');
-    if (overlay) overlay.classList.remove('tour-action-required', 'tour-gate-complete', 'tour-page-view', 'tour-feature-view', 'tour-tap-target', 'tour-edge-prompt', 'tour-control-prompt', 'tour-embedded-guide', 'tour-coach-note', 'tour-typing', 'tour-transitioning', 'meta-tour-welcome-active');
+    if (overlay) overlay.classList.remove('tour-action-required', 'tour-gate-complete', 'tour-page-view', 'tour-feature-view', 'tour-tap-target', 'tour-edge-prompt', 'tour-control-prompt', 'tour-target-interactive', 'tour-embedded-guide', 'tour-coach-note', 'tour-typing', 'tour-transitioning', 'meta-tour-welcome-active');
     window.__balanceGuidedTourActive = false;
     window.__balanceGuidedTourShowingIntro = false;
     showingXpIntro = false;
@@ -18099,7 +18138,7 @@ if (window._pbbIsIOSSafari) {
 
 <link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=97-foundations-actions">
 <link rel="stylesheet" href="css/dashboard/pbb-onboarding-comeback.css?v=8">
-<link rel="stylesheet" href="css/dashboard/pbb-onboarding-foundations.css?v=9-personalising-screen">
+<link rel="stylesheet" href="css/dashboard/pbb-onboarding-foundations.css?v=10-preference-contrast">
 
 
 <script src="js/dashboard/script_part_24.js?v=2"></script>

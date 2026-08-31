@@ -654,6 +654,30 @@ html[data-pbb-theme="dark"] #onboarding-wizard .onboarding-modal.wizard-containe
     -webkit-text-fill-color: var(--foundations-ink) !important;
 }
 
+/* Exercise preference chips are rendered after the theme styles load. Keep
+   their text explicit so the legacy dark-wizard rules cannot leave white
+   labels sitting on the Foundations cream cards. */
+#onboarding-wizard #slide-6 .wizard-exercise-pref-chip {
+    border-color: #cdbf9f !important;
+    background: #fffdf8 !important;
+    color: #2d261d !important;
+    -webkit-text-fill-color: #2d261d !important;
+}
+
+#onboarding-wizard #slide-6 .wizard-exercise-pref-chip.is-liked-selected {
+    border-color: #48864b !important;
+    background: #e8f5e9 !important;
+    color: #1f5f32 !important;
+    -webkit-text-fill-color: #1f5f32 !important;
+}
+
+#onboarding-wizard #slide-6 .wizard-exercise-pref-chip.is-avoided-selected {
+    border-color: #c94b4b !important;
+    background: #fff0ef !important;
+    color: #8b2020 !important;
+    -webkit-text-fill-color: #8b2020 !important;
+}
+
 @keyframes foundationsOrbit {
     from { transform: translate3d(-2%, -2%, 0) rotate(-5deg) scale(.96); opacity: .62; }
     to { transform: translate3d(10%, 5%, 0) rotate(8deg) scale(1.06); opacity: 1; }

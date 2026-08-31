@@ -11,6 +11,7 @@ const onboardingSource = fs.readFileSync(
     path.join(root, 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js'),
     'utf8'
 );
+const foundationsCss = fs.readFileSync(path.join(root, 'css/dashboard/pbb-onboarding-foundations.css'), 'utf8');
 
 function loadData(file, expression) {
     const context = { window: {} };
@@ -53,6 +54,27 @@ test('every equipment and frequency choice maps to the requested number of prebu
             });
         }
     }
+});
+
+test('onboarding preview names are the exact names later shown by the workout library', () => {
+    for (const equipment of ['gym', 'dumbbells', 'bands', 'none']) {
+        for (let frequency = 2; frequency <= 7; frequency++) {
+            plans.getPlan(equipment, frequency).sequence.forEach(id => {
+                assert.equal(plans.getLibraryWorkout(id, library)?.name, libraryWorkout(id).name, id);
+            });
+        }
+    }
+    assert.equal(plans.getLibraryWorkout('bands-upper-a', library).name, 'Band Upper 1 - Push Focus');
+    assert.doesNotMatch(onboardingSource, /Prebuilt strength session/i);
+    assert.match(onboardingSource, /getLibraryWorkout\(workout, window\.WORKOUT_LIBRARY\)/);
+});
+
+test('exercise preference chips stay readable and visibly selected on the cream card', () => {
+    assert.match(onboardingSource, /classList\.toggle\('is-liked-selected'/);
+    assert.match(onboardingSource, /classList\.toggle\('is-avoided-selected'/);
+    assert.match(foundationsCss, /wizard-exercise-pref-chip \{[\s\S]*?background: #fffdf8 !important;[\s\S]*?color: #2d261d !important/);
+    assert.match(foundationsCss, /wizard-exercise-pref-chip\.is-liked-selected \{[\s\S]*?background: #e8f5e9 !important/);
+    assert.match(foundationsCss, /wizard-exercise-pref-chip\.is-avoided-selected \{[\s\S]*?background: #fff0ef !important/);
 });
 
 test('five days is a chest, back, legs, shoulders and arms split for every equipment choice', () => {
@@ -120,11 +142,11 @@ test('every exercise selected by onboarding has an exact canonical video entry',
 });
 
 test('the reduced onboarding loads the matrix first and includes workout preferences', () => {
-    const matrixPosition = dashboard.indexOf('pbb-onboarding-workout-plans.js?v=1-prebuilt-matrix');
-    const onboardingPosition = dashboard.indexOf('dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=220-course-text-cleanup-onboarding-prebuilt-matrix');
+    const matrixPosition = dashboard.indexOf('pbb-onboarding-workout-plans.js?v=2-library-display-names');
+    const onboardingPosition = dashboard.indexOf('dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=221-onboarding-preference-contrast-copy');
     assert.ok(matrixPosition >= 0 && matrixPosition < onboardingPosition);
     assert.match(onboardingSource, /const skippedWizardSlides = \[2, 5, 8,/);
     assert.doesNotMatch(onboardingSource, /wizardTrainingFrequency >= 4 \? 'upper_lower'/);
     assert.match(onboardingSource, /PBBOnboardingWorkoutPlans\?\.buildCalendar/);
-    assert.match(onboardingSource, /getEquipmentOptions\(equipment, wizardTrainingFrequency\)/);
+    assert.match(onboardingSource, /getEquipmentOptions\(equipment, wizardTrainingFrequency, window\.WORKOUT_LIBRARY\)/);
 });
