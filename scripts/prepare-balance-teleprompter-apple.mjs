@@ -1,5 +1,6 @@
 import { createPrivateKey, sign } from 'node:crypto';
-import { appendFile } from 'node:fs/promises';
+import { appendFile, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 
 const apiBase = 'https://api.appstoreconnect.apple.com/v1';
 const bundleIdentifier = 'com.balance.teleprompter';
@@ -85,7 +86,64 @@ async function findApp() {
   return result.data?.[0] || null;
 }
 
-await ensureBundleId();
+async function ensureAppStoreProfile(bundleId) {
+  const profiles = await request(`/bundleIds/${bundleId.id}/profiles?limit=200`);
+  let profile = profiles.data?.find(
+    (candidate) =>
+      candidate.attributes?.profileType === 'IOS_APP_STORE' &&
+      candidate.attributes?.profileState === 'ACTIVE',
+  );
+
+  if (!profile) {
+    const certificates = await request('/certificates?limit=200');
+    const now = Date.now();
+    const distributionCertificates = (certificates.data || []).filter((certificate) => {
+      const type = certificate.attributes?.certificateType;
+      const expiration = Date.parse(certificate.attributes?.expirationDate || '');
+      return ['DISTRIBUTION', 'IOS_DISTRIBUTION'].includes(type) && expiration > now;
+    });
+
+    if (!distributionCertificates.length) {
+      throw new Error('No active Apple Distribution certificate is available for the App Store profile.');
+    }
+
+    const created = await request('/profiles', {
+      method: 'POST',
+      body: JSON.stringify({
+        data: {
+          type: 'profiles',
+          attributes: {
+            name: `Balance Teleprompter App Store ${new Date().toISOString().slice(0, 10)}`,
+            profileType: 'IOS_APP_STORE',
+          },
+          relationships: {
+            bundleId: { data: { type: 'bundleIds', id: bundleId.id } },
+            certificates: {
+              data: distributionCertificates.map((certificate) => ({
+                type: 'certificates',
+                id: certificate.id,
+              })),
+            },
+          },
+        },
+      }),
+    });
+    profile = created.data;
+    console.log(`Created App Store provisioning profile: ${profile.attributes?.name}`);
+  } else {
+    console.log(`Using App Store provisioning profile: ${profile.attributes?.name}`);
+  }
+
+  if (!profile.attributes?.profileContent) {
+    profile = (await request(`/profiles/${profile.id}`)).data;
+  }
+
+  const profilePath = join(requiredEnv('RUNNER_TEMP'), 'BalanceTeleprompter.mobileprovision');
+  await writeFile(profilePath, Buffer.from(profile.attributes.profileContent, 'base64'));
+  return { profile, profilePath };
+}
+
+const bundleId = await ensureBundleId();
 const app = await findApp();
 if (!app) {
   if (process.env.GITHUB_OUTPUT) {
@@ -96,7 +154,11 @@ if (!app) {
   );
 }
 
+const { profile, profilePath } = await ensureAppStoreProfile(bundleId);
 console.log(`Found App Store Connect app: ${app.attributes?.name || appName} (${app.id})`);
 if (process.env.GITHUB_OUTPUT) {
-  await appendFile(process.env.GITHUB_OUTPUT, `app_record_exists=true\napp_id=${app.id}\n`);
+  await appendFile(
+    process.env.GITHUB_OUTPUT,
+    `app_record_exists=true\napp_id=${app.id}\nprovisioning_profile_path=${profilePath}\nprovisioning_profile_name=${profile.attributes.name}\n`,
+  );
 }
