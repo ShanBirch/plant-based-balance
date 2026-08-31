@@ -688,7 +688,7 @@ async function attachBuild(version, build) {
     body: JSON.stringify({
       data: { type: 'builds', id: build.id, attributes: { usesNonExemptEncryption: false } },
     }),
-  });
+  }, [409]);
   await asc(`/v1/appStoreVersions/${version.id}/relationships/build`, {
     method: 'PATCH',
     body: JSON.stringify({ data: { type: 'builds', id: build.id } }),
