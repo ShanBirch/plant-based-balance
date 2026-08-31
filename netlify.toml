@@ -363,10 +363,8 @@
 [functions."auto-feed-comment"]
   schedule = "37 * * * *"
 
-# Tahlia seeded Feed engagement - posts 3-7 spaced simple comments per
-# Brisbane day on a stable subset of posts, with no Tahlia-authored Feed posts.
-[functions."tahlia-social-worker"]
-  schedule = "*/20 * * * *"
+# Tahlia's seeded Feed activity was retired on 2026-09-01. The function remains
+# as a hard-disabled tombstone so old/manual requests cannot restart it.
 
 # Weekly coach digest - Sunday evening 20:37 UTC (≈ Mon 06:37 AEST / 07:37 AEDT).
 # Per-client planning report for Shannon. Not sent to clients.

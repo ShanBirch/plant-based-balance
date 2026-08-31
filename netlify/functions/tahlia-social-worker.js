@@ -25,6 +25,9 @@ const {
 } = require('./_lib/tahlia-profile');
 
 const SOURCE = 'tahlia-social-worker';
+// Retired 2026-09-01 at Shannon's request. Keep the endpoint as a harmless
+// tombstone so an old deploy hook or manual request cannot restart activity.
+const TAHLIA_SOCIAL_WORKER_RETIRED = true;
 const TAHLIA_EMAIL = 'seed.tahlia.brooks+kayla30@plantbased-balance.org';
 const SHANNON_EMAIL = 'shannonbirch@cocospersonaltraining.com';
 const BRISBANE_OFFSET_MS = 10 * 60 * 60 * 1000;
@@ -769,6 +772,14 @@ async function runTahliaSocialWorker({
     storyLookbackHours = DEFAULT_STORY_LOOKBACK_HOURS,
     minStoryAgeMinutes = DEFAULT_MIN_STORY_AGE_MINUTES,
 } = {}) {
+    if (TAHLIA_SOCIAL_WORKER_RETIRED) {
+        return {
+            ok: true,
+            skipped: 'retired',
+            retired_at: '2026-09-01',
+            reason: 'tahlia_wound_down',
+        };
+    }
     if (String(process.env.TAHLIA_SOCIAL_WORKER_DISABLED || '').toLowerCase() === 'true') {
         return { ok: true, skipped: 'disabled' };
     }

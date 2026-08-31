@@ -229,17 +229,17 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 - The closing bridge must explain the real service before the keyword: `This is what I do with my clients inside Balance`, followed by how Shannon watches the person's movement, finds where it breaks down, chooses a suitable version and gives a clear progression. Then end with the direct spoken and visible action `Comment BALANCE below`.
 - Treat `abs` pronunciation as a transcript gate. Reject any generated voice that spells it out as `A B` or otherwise damages the word.
 
-### Tahlia Feed engagement
+### Tahlia is retired
 
-- Tahlia does not publish her own Balance Feed posts, including workout, PB, weigh-in or fitness-diary cards.
-- Tahlia may automatically comment once per eligible Feed post. Each comment must be one to three words and use only a simple supportive reaction: `love this`, `amazing work` or `good job`.
-- Keep Tahlia's Feed presence natural: choose a stable daily target of 3-7 comments, leave at least two hours between comments, and permanently select only about half of otherwise eligible posts. Do not work through every post or revisit skipped posts on a later day.
-- Never generate or learn longer Tahlia comments, add advice, ask a question or post a second comment on the same Feed post.
+- As of 1 September 2026, do not generate or publish any new Tahlia Feed posts, comments, approval cards, XP or challenge activity.
+- Keep the worker and database automation disabled even if an older Tahlia rule describes an allowed cadence. This retirement rule supersedes the July 2026 Tahlia Feed rules.
+- Preserve Tahlia's existing account and historical activity unless Shannon separately asks for removal.
 
 ## Edit log
 
 | Date | Shannon's direction | Scalable rule | Affected formats |
 | --- | --- | --- | --- |
+| 2026-09-01 | Turn off Tahlia's automatic Feed activity and wind Tahlia down completely for now. | Retire every Tahlia generator: no scheduled or manual Feed posts/comments, no approval cards and no seeded XP/challenge activity. Keep existing history unless removal is separately requested. This supersedes the July Tahlia engagement rules. | Balance Feed, Tahlia social worker, Needs You approvals, seeded XP and challenge activity |
 | 2026-08-29 | Make the paid-ad opening say `Hey, how are you?` and test the complete flow repeatedly against edge cases. | Use the exact short greeting `Hey, how are you? 😊` before the neutral six-week explanation, keep only one decision-changing question in the opener, and live-test the entire path through the signed preview rather than approving the greeting in isolation. | Paid Meta DMs, deterministic opener, multi-turn regression tests and live Instagram QA |
 | 2026-08-29 | `Yeah, of course` sounds strange after someone only messages `BALANCE`, and the DM is sending the wrong older video instead of the newer in-depth course-first version. | Never agree with a keyword or prefilled opener as though it were a request. Start directly with the six-week program, keep each offer bubble conversational, and use the verified price-free course-first explainer before the signed preview. | Paid Meta DMs, deterministic opener, offer bridge, native video attachment and DM automation prompts |
 | 2026-08-27 | Slow the little quiz section down because it rushes through too quickly. | Pace every five-beat course quiz for a distracted phone viewer: let the question settle, hold the choices long enough to compare, keep the selected choice visible, and leave the answer explanation readable before transitioning. Preserve approved narration sync by redistributing nearby visual time when possible instead of stretching the voice. | Balance course-first explainers, DM videos, curriculum overviews, onboarding videos and phone-preview QA |
