@@ -45,6 +45,26 @@ function audioExtension(contentType) {
     return 'webm';
 }
 
+function hasValidAudioHeader(bytes, contentType) {
+    const type = String(contentType || '').toLowerCase();
+    if (type === 'audio/mp4' || type === 'audio/x-m4a') {
+        // ISO BMFF files must carry an initialization box before media
+        // fragments. A recording that starts with `moof` cannot be played on
+        // its own and should never be published as a chat attachment.
+        const header = new TextDecoder('latin1').decode(bytes.slice(0, 64));
+        return header.includes('ftyp') || header.includes('moov');
+    }
+    if (type === 'audio/webm') {
+        return bytes.length >= 4
+            && bytes[0] === 0x1a && bytes[1] === 0x45
+            && bytes[2] === 0xdf && bytes[3] === 0xa3;
+    }
+    if (type === 'audio/ogg') {
+        return new TextDecoder('latin1').decode(bytes.slice(0, 4)) === 'OggS';
+    }
+    return true;
+}
+
 async function authenticateUser(request) {
     const token = String(request.headers.get('authorization') || '')
         .replace(/^Bearer\s+/i, '')
@@ -124,6 +144,10 @@ export default async (request) => {
         const uploadTarget = await uploadUrlResponse.json();
 
         const fileBuffer = await file.arrayBuffer();
+        const fileBytes = new Uint8Array(fileBuffer);
+        if (!hasValidAudioHeader(fileBytes, contentType)) {
+            return jsonResponse(422, { error: 'That recording was interrupted. Please record it again.' });
+        }
         const hashBuffer = await crypto.subtle.digest('SHA-1', fileBuffer);
         const sha1Hash = Array.from(new Uint8Array(hashBuffer))
             .map(byte => byte.toString(16).padStart(2, '0'))

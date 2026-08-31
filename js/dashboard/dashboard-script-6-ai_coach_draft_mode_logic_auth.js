@@ -8729,6 +8729,26 @@ let dmVoiceShouldSend = false;
 let dmVoicePending = null;
 let dmVoiceUploading = false;
 let dmVoiceUploadController = null;
+let dmVoiceWakeLock = null;
+
+async function requestDmVoiceWakeLock() {
+    if (!navigator.wakeLock?.request || document.hidden || dmVoiceWakeLock) return;
+    try {
+        dmVoiceWakeLock = await navigator.wakeLock.request('screen');
+        dmVoiceWakeLock.addEventListener('release', () => {
+            dmVoiceWakeLock = null;
+        }, { once: true });
+    } catch (error) {
+        console.warn('[DM voice] screen wake lock unavailable:', error?.name || error);
+    }
+}
+
+async function releaseDmVoiceWakeLock() {
+    const wakeLock = dmVoiceWakeLock;
+    dmVoiceWakeLock = null;
+    if (!wakeLock) return;
+    try { await wakeLock.release(); } catch (_) {}
+}
 
 function formatDmVoiceDuration(seconds) {
     const total = Math.max(0, Math.round(Number(seconds) || 0));
@@ -8762,6 +8782,7 @@ function stopDmVoiceTracks() {
         });
     }
     dmVoiceStream = null;
+    releaseDmVoiceWakeLock();
     clearInterval(dmVoiceTimer);
     clearTimeout(dmVoiceLimitTimer);
     dmVoiceTimer = null;
@@ -8915,7 +8936,13 @@ async function startDmVoiceRecording() {
 
         setDmVoiceComposerMode(true);
         setDmVoiceStatus('Recording 0:00');
-        dmVoiceRecorder.start(1000);
+        // Safari/iOS records MP4 as fragments when a timeslice is supplied. If
+        // the WebView sleeps between fragments, the saved blob can begin with a
+        // `moof` box and have no MP4 initialization header. Let MP4 record as a
+        // single complete blob; other formats can keep progressive chunks.
+        if (String(mimeType).toLowerCase().startsWith('audio/mp4')) dmVoiceRecorder.start();
+        else dmVoiceRecorder.start(1000);
+        requestDmVoiceWakeLock();
         dmVoiceTimer = setInterval(() => {
             setDmVoiceStatus(`Recording ${formatDmVoiceDuration((Date.now() - dmVoiceStartedAt) / 1000)}`);
         }, 500);
@@ -8967,7 +8994,11 @@ async function sendDmVoiceRecording() {
     setDmVoiceStatus('Preparing voice message…');
     const sendBtn = document.getElementById('dm-voice-send-btn');
     if (sendBtn) sendBtn.disabled = true;
-    try { dmVoiceRecorder.requestData(); } catch (_) {}
+    // Calling requestData() splits Safari's MP4 stream into another fragment.
+    // stop() already emits the final complete dataavailable event.
+    if (!String(dmVoiceRecorder.mimeType || '').toLowerCase().startsWith('audio/mp4')) {
+        try { dmVoiceRecorder.requestData(); } catch (_) {}
+    }
     try { dmVoiceRecorder.stop(); } catch (error) {
         console.error('[DM voice] stop failed:', error);
         resetDmVoiceComposer();
@@ -9050,6 +9081,12 @@ async function uploadDmVoicePending() {
 window.startDmVoiceRecording = startDmVoiceRecording;
 window.cancelDmVoiceRecording = cancelDmVoiceRecording;
 window.sendDmVoiceRecording = sendDmVoiceRecording;
+
+document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && dmVoiceRecorder && dmVoiceRecorder.state === 'recording') {
+        requestDmVoiceWakeLock();
+    }
+});
 
 /* ============================================================
    MESSAGE REACTIONS + MSN-STYLE TEXT EFFECTS
