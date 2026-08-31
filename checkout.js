@@ -7,10 +7,10 @@ console.log(`
 
 document.addEventListener('DOMContentLoaded', () => {
     const LEGAL_DOCUMENT_VERSIONS = {
-        terms: '2026-08-16',
+        terms: '2026-09-01',
         privacy: '2026-07-18',
-        client_agreement: '2026-08-16',
-        refund_policy: '2026-08-16'
+        client_agreement: '2026-09-01',
+        refund_policy: '2026-09-01'
     };
 
     const getComplianceSessionId = () => {

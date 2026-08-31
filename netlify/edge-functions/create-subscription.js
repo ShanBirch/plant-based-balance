@@ -86,6 +86,7 @@ export default async (request, context) => {
                 commitment_weeks: String(plan.commitmentWeeks || ""),
                 commitment_label: plan.commitmentLabel || "",
                 renewal_terms: plan.renewalTerms || "",
+                cancellation_notice_days: String(plan.cancellationNoticeDays || ""),
                 checkins_per_week: plan.checkinsPerWeek,
                 calls_per_week: plan.callsPerWeek,
                 ...stripeComplianceMetadata
@@ -118,6 +119,7 @@ export default async (request, context) => {
                 commitment_weeks: String(plan.commitmentWeeks || ""),
                 commitment_label: plan.commitmentLabel || "",
                 renewal_terms: plan.renewalTerms || "",
+                cancellation_notice_days: String(plan.cancellationNoticeDays || ""),
                 checkins_per_week: plan.checkinsPerWeek,
                 calls_per_week: plan.callsPerWeek,
                 price_token: priceId || "",

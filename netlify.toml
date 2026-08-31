@@ -62,6 +62,10 @@
   path = "/update-payment-card"
 
 [[edge_functions]]
+  function = "cancel-subscription"
+  path = "/.netlify/functions/cancel-subscription"
+
+[[edge_functions]]
   function = "track-purchase"
   path = "/.netlify/functions/track-purchase"
 

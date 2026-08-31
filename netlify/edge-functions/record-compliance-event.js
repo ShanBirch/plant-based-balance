@@ -1,8 +1,8 @@
 const DOCUMENT_VERSIONS = {
-  terms: "2026-05-19",
+  terms: "2026-09-01",
   privacy: "2026-05-19",
-  client_agreement: "2026-05-19",
-  refund_policy: "2026-05-19",
+  client_agreement: "2026-09-01",
+  refund_policy: "2026-09-01",
 };
 
 const CORS_HEADERS = {
