@@ -20898,3 +20898,56 @@ if (document.readyState === 'complete') {
 <script src="js/dashboard/pbb-admin-deep-link.js?v=your-call-v1"></script>
 </body>
 </html>
+  /* A tour must never cover the field a member is actively typing into. */
+  #guided-tour-overlay.tour-keyboard-open #guided-tour-bubble {
+    width: calc(100% - 24px);
+    max-width: 420px;
+    padding: 10px 14px;
+    border-radius: 14px;
+  }
+  #guided-tour-overlay.tour-keyboard-open #guided-tour-bubble .tour-counter,
+  #guided-tour-overlay.tour-keyboard-open #guided-tour-bubble .tour-xp-note,
+  #guided-tour-overlay.tour-keyboard-open #guided-tour-bubble .tour-actions {
+    display: none !important;
+  }
+  #guided-tour-overlay.tour-keyboard-open #guided-tour-bubble .tour-title {
+    font-size: 1rem;
+    line-height: 1.15;
+    margin-bottom: 3px;
+  }
+  #guided-tour-overlay.tour-keyboard-open #guided-tour-bubble .tour-body {
+    font-size: .82rem;
+    line-height: 1.28;
+    margin: 0;
+  }
+    const visualViewport = window.visualViewport;
+    const activeElement = document.activeElement;
+    const editingTarget = !!(target && activeElement && target.contains(activeElement)
+      && /^(INPUT|TEXTAREA|SELECT)$/i.test(activeElement.tagName || ''));
+    const keyboardOpen = !!(editingTarget && visualViewport
+      && visualViewport.height < (window.innerHeight * 0.88));
+    if (overlay) overlay.classList.toggle('tour-keyboard-open', keyboardOpen);
+    const visibleTop = keyboardOpen ? Math.max(0, visualViewport.offsetTop || 0) : 0;
+    const visibleBottom = keyboardOpen ? Math.min(vh, visibleTop + visualViewport.height) : vh;
+    if (keyboardOpen) {
+      const keyboardBubbleTop = Math.max(
+        visibleTop + 8,
+        Math.min(top - bubbleH - 10, visibleBottom - bubbleH - 8)
+      );
+      bubble.style.top = keyboardBubbleTop + 'px';
+      const keyboardBubbleW = bubble.offsetWidth || 320;
+      bubble.style.left = Math.max(8, Math.min(vw - keyboardBubbleW - 8, (vw - keyboardBubbleW) / 2)) + 'px';
+      return;
+    }
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', resizeHandler);
+        window.visualViewport.removeEventListener('scroll', resizeHandler);
+      }
+      document.removeEventListener('focusin', resizeHandler, true);
+      document.removeEventListener('focusout', resizeHandler, true);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', resizeHandler);
+      window.visualViewport.addEventListener('scroll', resizeHandler);
+    }
+    document.addEventListener('focusin', resizeHandler, true);
+    document.addEventListener('focusout', resizeHandler, true);
