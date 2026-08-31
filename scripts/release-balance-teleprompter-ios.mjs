@@ -448,7 +448,7 @@ async function ensureAppAvailability(app, territories) {
   if (existing.body.data?.id) return;
   const included = territories.map((territory, index) => ({
     type: 'territoryAvailabilities',
-    id: `territory-${index}`,
+    id: `\${territory${index}}`,
     attributes: { available: true, preOrderEnabled: false },
     relationships: { territory: { data: { type: 'territories', id: territory.id } } },
   }));
