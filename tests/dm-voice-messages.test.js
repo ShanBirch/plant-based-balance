@@ -13,7 +13,7 @@ assert.match(dashboard, /id="dm-voice-btn"[\s\S]*Record voice message/);
 assert.match(dashboard, /id="dm-recording-panel"[\s\S]*Cancel recording[\s\S]*Send voice message/);
 assert.match(dashboard, /id:\s*'dm-voice-messages-v1'[\s\S]*sel:\s*'#dm-voice-btn'/);
 assert.match(dashboard, /sel:'#dm-voice-btn'[\s\S]*title:'Send a voice message'/);
-assert.match(dashboard, /dashboard-script-6-ai_coach_draft_mode_logic_auth\.js\?v=48-meal-reminders-retired/);
+assert.match(dashboard, /dashboard-script-6-ai_coach_draft_mode_logic_auth\.js\?v=49-community-games-settings/);
 
 assert.match(messaging, /navigator\.mediaDevices\.getUserMedia\(\{[\s\S]*echoCancellation:\s*true/);
 assert.match(messaging, /const DM_VOICE_MAX_MS = 5 \* 60 \* 1000/);

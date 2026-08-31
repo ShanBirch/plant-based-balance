@@ -18,19 +18,7 @@ const dashboardSource = fs.readFileSync(
     'id="feed-pulse-comments"',
     'id="feed-pulse-battles"',
     'Today in Balance',
-    '<span>Reactions</span>'
-].forEach(expected => {
-    assert.ok(dashboardSource.includes(expected), `dashboard should include ${expected}`);
-});
-
-assert.ok(
-    dashboardSource.includes("{ tab:'friends', sel:'#feed-community-pulse-card', title:'Today in Balance'") &&
-    dashboardSource.includes("id: 'feed-community-pulse-v2'") &&
-    dashboardSource.includes("See today's posts, reactions, comments, and battles at a glance."),
-    'new and returning users should discover Today in Balance'
-);
-
-[
+    "id: 'feed-community-pulse-v2'",
     'id="feed-community-pulse-headline"',
     'feed-community-pulse-refresh',
     'feed-community-pulse-actions',

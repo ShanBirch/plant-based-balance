@@ -10764,12 +10764,12 @@ html:not([data-pbb-theme="light"]) #view-friends :is(
     -webkit-text-fill-color: #fffaf2 !important;
 }
 
-html:not([data-pbb-theme="light"]) #view-friends #feed-start-battle-button {
+html:not([data-pbb-theme="light"]) #view-profile #feed-start-battle-button {
     background: #1d2540 !important;
     border-color: #59658c !important;
 }
 
-html:not([data-pbb-theme="light"]) #view-friends #feed-start-battle-button :is(.feed-start-battle-title, .feed-start-battle-subtitle) {
+html:not([data-pbb-theme="light"]) #view-profile #feed-start-battle-button :is(.feed-start-battle-title, .feed-start-battle-subtitle) {
     color: #e8ebff !important;
     -webkit-text-fill-color: #e8ebff !important;
 }
@@ -11088,6 +11088,36 @@ html:not([data-pbb-theme="light"]) #view-profile .settings-v2-more {
     letter-spacing: 0.12em;
     margin: 0 0 8px 7px !important;
     text-transform: uppercase;
+}
+
+#view-profile .settings-community-games .feed-level-leaderboard,
+#view-profile .settings-community-games .feed-start-battle-card {
+    margin-left: 0;
+    margin-right: 0;
+}
+
+#view-profile .settings-community-games .feed-level-leaderboard {
+    border-radius: 18px;
+}
+
+#view-profile .settings-community-games .feed-level-leaderboard :is(
+    .feed-level-leaderboard-title,
+    .feed-level-leaderboard-summary,
+    .feed-level-leaderboard-top-value,
+    .feed-level-leaderboard-chevron
+) {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+
+#view-profile .settings-community-games .feed-level-leaderboard-summary {
+    color: rgba(255, 255, 255, 0.76) !important;
+    -webkit-text-fill-color: rgba(255, 255, 255, 0.76) !important;
+}
+
+#view-profile .settings-community-games .feed-start-battle-card {
+    margin-top: 12px;
+    margin-bottom: 0;
 }
 
 #view-profile .settings-v2-card,

@@ -23,10 +23,14 @@ test('does not hide pending challenges without an end date', () => {
     assert.equal(shouldDisplayChallenge({ status: 'pending', end_date: null }, new Date()), true);
 });
 
-test('places the challenge launcher in Feed and removes the Home launcher', () => {
+test('places the challenge launcher in Settings and removes the Home launcher', () => {
     const dashboard = fs.readFileSync(path.join(__dirname, '..', 'dashboard.html'), 'utf8');
     assert.match(dashboard, /id="feed-start-challenge-button"[^>]+onclick="openChallengeTypePicker\(\)"/);
     assert.doesNotMatch(dashboard, /id="home-challenges-empty"/);
     assert.match(dashboard, /id: 'feed-challenge-launcher-v1'/);
-    assert.match(dashboard, /tab:'friends', sel:'#feed-start-challenge-button', title:'Start a Challenge'/);
+    assert.match(dashboard, /tab:'profile', sel:'#feed-start-challenge-button', title:'Start a Challenge'/);
+    const feedView = dashboard.slice(dashboard.indexOf('<div id="view-friends"'), dashboard.indexOf('<div id="view-profile"'));
+    const settingsView = dashboard.slice(dashboard.indexOf('<div id="view-profile"'));
+    assert.doesNotMatch(feedView, /id="feed-start-challenge-button"/);
+    assert.match(settingsView, /id="feed-start-challenge-button"/);
 });

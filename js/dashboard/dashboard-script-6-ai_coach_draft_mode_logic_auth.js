@@ -9756,7 +9756,7 @@ function getFeedLevelLeaderboardShellHtml() {
                 <span class="feed-level-leaderboard-badge">10</span>
                 <span class="feed-level-leaderboard-copy">
                     <span class="feed-level-leaderboard-title">Top Levels</span>
-                    <span id="feed-level-leaderboard-summary" class="feed-level-leaderboard-summary">Highest level in Balance so far.</span>
+                    <span id="feed-level-leaderboard-summary" class="feed-level-leaderboard-summary">See the highest levels in Balance</span>
                 </span>
                 <span id="feed-level-leaderboard-top-value" class="feed-level-leaderboard-top-value">--</span>
                 <span class="feed-level-leaderboard-chevron" aria-hidden="true">
@@ -9800,48 +9800,39 @@ function removeLegacyFeedChallengeCards(view) {
 function ensureFeedLevelLeaderboardShell() {
     const existing = document.getElementById('feed-level-leaderboard-card');
     const view = document.getElementById('view-friends');
+    const settingsHost = document.getElementById('settings-community-games');
     if (existing) {
         removeLegacyFeedChallengeCards(view);
         return existing;
     }
-    if (!view) return null;
+    if (!settingsHost) return null;
 
     const wrapper = document.createElement('div');
     wrapper.innerHTML = getFeedLevelLeaderboardShellHtml().trim();
     const card = wrapper.firstElementChild;
-    const legacyCards = findLegacyFeedChallengeCards(view);
-    const legacyCard = legacyCards[0] || null;
-    const composer = document.getElementById('feed-composer-card');
-
-    if (legacyCard && legacyCard.parentNode) {
-        legacyCard.replaceWith(card);
-    } else if (composer && composer.parentNode) {
-        composer.parentNode.insertBefore(card, composer);
+    const gameLaunchers = document.getElementById('feed-start-battle-card');
+    if (gameLaunchers && gameLaunchers.parentNode === settingsHost) {
+        settingsHost.insertBefore(card, gameLaunchers);
     } else {
-        view.appendChild(card);
+        settingsHost.appendChild(card);
     }
-
-    legacyCards.slice(1).forEach(extraCard => {
-        if (extraCard.parentNode) extraCard.remove();
-    });
+    removeLegacyFeedChallengeCards(view);
 
     return card;
 }
 
 function observeFeedLevelLeaderboardShell() {
-    const view = document.getElementById('view-friends');
-    if (!view || view.dataset.feedLevelLeaderboardObserver === 'true') return;
-    view.dataset.feedLevelLeaderboardObserver = 'true';
+    const settingsHost = document.getElementById('settings-community-games');
+    if (!settingsHost || settingsHost.dataset.feedLevelLeaderboardObserver === 'true') return;
+    settingsHost.dataset.feedLevelLeaderboardObserver = 'true';
 
     const observer = new MutationObserver(() => {
         if (!document.getElementById('feed-level-leaderboard-card')) {
             ensureFeedLevelLeaderboardShell();
-        } else {
-            removeLegacyFeedChallengeCards(view);
         }
         bindFeedLevelLeaderboardTouchEvents();
     });
-    observer.observe(view, { childList: true, subtree: true });
+    observer.observe(settingsHost, { childList: true, subtree: true });
 }
 
 function bindFeedLevelLeaderboardTouchEvents() {

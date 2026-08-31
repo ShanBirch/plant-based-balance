@@ -24,11 +24,20 @@ const gamesSource = fs.readFileSync(
 });
 
 assert.ok(
-    dashboardSource.includes("{ tab:'friends', sel:'#feed-start-battle-card', title:'Start Battle'") &&
+    dashboardSource.includes("{ tab:'profile', sel:'#feed-start-battle-card', title:'Start Battle'") &&
     dashboardSource.includes("id: 'feed-battle-launcher-v1'") &&
-    dashboardSource.includes('Tap Start Battle to choose Quiz Battle, chess, checkers, or another game before challenging a friend or bot.'),
-    'new and returning users should discover the Feed battle launcher'
+    dashboardSource.includes('Open Community & Games in Settings to choose Quiz Battle, chess, checkers, or another game before challenging a friend or bot.'),
+    'new and returning users should discover the Settings battle launcher'
 );
+
+const feedView = dashboardSource.slice(
+    dashboardSource.indexOf('<div id="view-friends"'),
+    dashboardSource.indexOf('<div id="view-profile"')
+);
+const settingsView = dashboardSource.slice(dashboardSource.indexOf('<div id="view-profile"'));
+assert.ok(!feedView.includes('id="feed-start-battle-card"'), 'battle launcher should not clutter Feed');
+assert.ok(settingsView.includes('id="settings-community-games"'), 'Settings should include Community & games');
+assert.ok(settingsView.includes('id="feed-start-battle-card"'), 'battle launcher should live in Settings');
 
 [
     'const FEED_BATTLE_BADGES = {',
@@ -38,7 +47,7 @@ assert.ok(
     "type: 'quiz'",
     'window.showQuizBattleInviteModal',
     'requestQuizBattleScriptIfNeeded();',
-    "script.src = 'lib/learning-inline.js?v=9';",
+    "script.src = 'lib/learning-inline.js?v=10';",
     'window.openGameChallengeModal({ preselectGameType: battleType })',
     'async function openGameChallengeModal(options = {})',
     "const preselectGameType = typeof options === 'string' ? options : options?.preselectGameType;",
