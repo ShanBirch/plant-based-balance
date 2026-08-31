@@ -13136,7 +13136,7 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=218-reset-clean-state';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=219-feed-typing-clear';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
@@ -13178,7 +13178,7 @@ if (window._pbbIsIOSSafari) {
         var s = document.createElement('script');
         s.async = false;
         s.dataset.metaTrialLoader = String(attempt);
-        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=218-reset-clean-state&meta_retry=' + attempt;
+        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=219-feed-typing-clear&meta_retry=' + attempt;
         s.onload = function() {
             if (window._pbbScript5Complete && window._switchAppTabReady && typeof window._switchAppTabReal === 'function') {
                 sessionStorage.removeItem('pbb_meta_script5_recovery_v1');
@@ -13197,7 +13197,7 @@ if (window._pbbIsIOSSafari) {
         document.head.appendChild(s);
     })(0);
 } else {
-document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=218-reset-clean-state"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=219-feed-typing-clear"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=3"></script>
@@ -13868,6 +13868,16 @@ if(!window._pbbIsIOSSafari) {
   #guided-tour-overlay.tour-coach-note #guided-tour-spotlight {
     display: none;
   }
+  /* The Feed introduction is explained before typing. Once the composer is
+     focused, leave the person a completely clear writing surface. */
+  #guided-tour-overlay.tour-typing #guided-tour-bubble,
+  #guided-tour-overlay.tour-typing #guided-tour-spotlight {
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+  #guided-tour-overlay.tour-typing {
+    pointer-events: none !important;
+  }
   #guided-tour-overlay.tour-edge-prompt #guided-tour-bubble {
     width: 238px;
     max-width: 238px;
@@ -14287,6 +14297,7 @@ if(!window._pbbIsIOSSafari) {
     title:'Introduce yourself',
     body:'Write a quick hello and tap Post. Keep it simple—your name, what you are working on, or what brought you to Balance.',
     requiresFeedPost:true,
+    hideGuideWhileTyping:true,
     returnHomeAfter:true
   });
 
@@ -15086,6 +15097,17 @@ if(!window._pbbIsIOSSafari) {
     const targetRect = target && target.isConnected && target.getClientRects().length
       ? target.getBoundingClientRect()
       : null;
+    const activeElement = document.activeElement;
+    const typingInTarget = !!(step && step.hideGuideWhileTyping && target && activeElement
+      && target.contains(activeElement)
+      && /^(INPUT|TEXTAREA)$/i.test(activeElement.tagName || ''));
+    if (overlay) overlay.classList.toggle('tour-typing', typingInTarget);
+    if (typingInTarget) {
+      spot.style.opacity = '0';
+      bubble.style.opacity = '0';
+      return;
+    }
+    bubble.style.opacity = '';
     if (!targetRect || targetRect.width < 2 || targetRect.height < 2) {
       spot.style.opacity = '0';
       spot.style.width = '0px'; spot.style.height = '0px';
@@ -15453,7 +15475,7 @@ window.endFeatureTour = function(skipped){
     resetTourTemporaryTargets();
     const overlay = document.getElementById('guided-tour-overlay');
     if (overlay) overlay.classList.remove('active');
-    if (overlay) overlay.classList.remove('tour-action-required', 'tour-gate-complete', 'tour-page-view', 'tour-feature-view', 'tour-tap-target', 'tour-edge-prompt', 'tour-control-prompt', 'tour-embedded-guide', 'tour-coach-note', 'tour-transitioning', 'meta-tour-welcome-active');
+    if (overlay) overlay.classList.remove('tour-action-required', 'tour-gate-complete', 'tour-page-view', 'tour-feature-view', 'tour-tap-target', 'tour-edge-prompt', 'tour-control-prompt', 'tour-embedded-guide', 'tour-coach-note', 'tour-typing', 'tour-transitioning', 'meta-tour-welcome-active');
     window.__balanceGuidedTourActive = false;
     window.__balanceGuidedTourShowingIntro = false;
     showingXpIntro = false;
@@ -15470,6 +15492,12 @@ window.endFeatureTour = function(skipped){
     if (resizeHandler) {
       window.removeEventListener('resize', resizeHandler);
       window.removeEventListener('scroll', resizeHandler, true);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', resizeHandler);
+        window.visualViewport.removeEventListener('scroll', resizeHandler);
+      }
+      document.removeEventListener('focusin', resizeHandler, true);
+      document.removeEventListener('focusout', resizeHandler, true);
       resizeHandler = null;
     }
     if (completedMetaPreviewTour && window.BalanceMetaAdTrial) {
@@ -15570,6 +15598,12 @@ window.endFeatureTour = function(skipped){
     };
     window.addEventListener('resize', resizeHandler);
     window.addEventListener('scroll', resizeHandler, true);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', resizeHandler);
+      window.visualViewport.addEventListener('scroll', resizeHandler);
+    }
+    document.addEventListener('focusin', resizeHandler, true);
+    document.addEventListener('focusout', resizeHandler, true);
     if (metaPreviewTour || clientActivationTour) {
       showMetaTourWelcome();
     } else {
@@ -20898,56 +20932,3 @@ if (document.readyState === 'complete') {
 <script src="js/dashboard/pbb-admin-deep-link.js?v=your-call-v1"></script>
 </body>
 </html>
-  /* A tour must never cover the field a member is actively typing into. */
-  #guided-tour-overlay.tour-keyboard-open #guided-tour-bubble {
-    width: calc(100% - 24px);
-    max-width: 420px;
-    padding: 10px 14px;
-    border-radius: 14px;
-  }
-  #guided-tour-overlay.tour-keyboard-open #guided-tour-bubble .tour-counter,
-  #guided-tour-overlay.tour-keyboard-open #guided-tour-bubble .tour-xp-note,
-  #guided-tour-overlay.tour-keyboard-open #guided-tour-bubble .tour-actions {
-    display: none !important;
-  }
-  #guided-tour-overlay.tour-keyboard-open #guided-tour-bubble .tour-title {
-    font-size: 1rem;
-    line-height: 1.15;
-    margin-bottom: 3px;
-  }
-  #guided-tour-overlay.tour-keyboard-open #guided-tour-bubble .tour-body {
-    font-size: .82rem;
-    line-height: 1.28;
-    margin: 0;
-  }
-    const visualViewport = window.visualViewport;
-    const activeElement = document.activeElement;
-    const editingTarget = !!(target && activeElement && target.contains(activeElement)
-      && /^(INPUT|TEXTAREA|SELECT)$/i.test(activeElement.tagName || ''));
-    const keyboardOpen = !!(editingTarget && visualViewport
-      && visualViewport.height < (window.innerHeight * 0.88));
-    if (overlay) overlay.classList.toggle('tour-keyboard-open', keyboardOpen);
-    const visibleTop = keyboardOpen ? Math.max(0, visualViewport.offsetTop || 0) : 0;
-    const visibleBottom = keyboardOpen ? Math.min(vh, visibleTop + visualViewport.height) : vh;
-    if (keyboardOpen) {
-      const keyboardBubbleTop = Math.max(
-        visibleTop + 8,
-        Math.min(top - bubbleH - 10, visibleBottom - bubbleH - 8)
-      );
-      bubble.style.top = keyboardBubbleTop + 'px';
-      const keyboardBubbleW = bubble.offsetWidth || 320;
-      bubble.style.left = Math.max(8, Math.min(vw - keyboardBubbleW - 8, (vw - keyboardBubbleW) / 2)) + 'px';
-      return;
-    }
-      if (window.visualViewport) {
-        window.visualViewport.removeEventListener('resize', resizeHandler);
-        window.visualViewport.removeEventListener('scroll', resizeHandler);
-      }
-      document.removeEventListener('focusin', resizeHandler, true);
-      document.removeEventListener('focusout', resizeHandler, true);
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', resizeHandler);
-      window.visualViewport.addEventListener('scroll', resizeHandler);
-    }
-    document.addEventListener('focusin', resizeHandler, true);
-    document.addEventListener('focusout', resizeHandler, true);
