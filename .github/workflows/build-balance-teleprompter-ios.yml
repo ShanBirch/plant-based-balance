@@ -8,7 +8,6 @@ on:
     paths:
       - apps/balance-teleprompter/**
       - scripts/prepare-balance-teleprompter-apple.mjs
-      - scripts/release-balance-teleprompter-ios.mjs
       - .github/workflows/build-balance-teleprompter-ios.yml
   workflow_dispatch:
 
