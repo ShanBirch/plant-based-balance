@@ -14513,7 +14513,13 @@ if(!window._pbbIsIOSSafari) {
           if (overlay) overlay.classList.add('tour-transitioning');
           setTourGateUi(true, 'Your introduction is posted. Welcome to the community.', finalLabel);
           const completedStepIndex = idx;
-          setTimeout(function(){
+          setTimeout(async function(){
+            if (idx !== completedStepIndex) return;
+            // The introduction step finishes on Feed, but the next required
+            // action is a Home To do next card. Return Home before rendering
+            // that prompt so the guide never highlights a missing card on the
+            // Course or Feed surface.
+            if (step.returnHomeAfter) await ensureTab('dashboard');
             if (idx === completedStepIndex) showStep(completedStepIndex + 1);
           }, 650);
         }
@@ -20260,11 +20266,11 @@ if (window._pbbIsIOSSafari) {
             });
             if (window.showQuizBattleInviteModal || learningAlreadyRequested) return;
             var s = document.createElement('script');
-      s.src = 'lib/learning-inline.js?v=30-course-preview-tour';
+      s.src = 'lib/learning-inline.js?v=31-course-preview-tour-handoff';
             document.head.appendChild(s);
         }, { once: true });
     } else {
-    document.write('<script src="lib/learning-inline.js?v=30-course-preview-tour"><\/script>');
+    document.write('<script src="lib/learning-inline.js?v=31-course-preview-tour-handoff"><\/script>');
     }
     </script>
     <!-- Battle System & Logic Overrides (130 lines — deferred on iOS) -->

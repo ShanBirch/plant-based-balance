@@ -101,5 +101,5 @@ test('Settings defines complete readable light and dark colour pairs', () => {
 
 test('phone caches receive the redesign', () => {
   assert.match(dashboard, /pbb-premium-overlays\.css\?v=99-settings-redesign/);
-  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v421-settings-redesign'/);
+  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v422-course-tour-handoff'/);
 });

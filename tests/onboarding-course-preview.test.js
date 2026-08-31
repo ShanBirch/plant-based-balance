@@ -60,5 +60,15 @@ test('the tour opens each real course week without starting or completing it', (
 test('the first quiz starts directly after the Week 6 preview', () => {
   assert.match(dashboard, /title:'Week 6: Build your sustainable way forward'[^\n]*nextLabel:'Start Week 1'/);
   assert.match(dashboard, /Object\.assign\(foundationsTourStep, \{[\s\S]*?tab:'learning'[\s\S]*?promptBeforeAction:false[\s\S]*?openMetaPreviewFirstFoundationsLesson\(\)/);
-  assert.match(dashboard, /learning-inline\.js\?v=30-course-preview-tour/g);
+  assert.match(dashboard, /learning-inline\.js\?v=31-course-preview-tour-handoff/g);
+});
+
+test('posting the introduction returns Home before the course To do prompt', () => {
+  const feedGate = dashboard.match(/if \(step && step\.requiresFeedPost\)[\s\S]*?if \(step && step\.requiresFoundationsLesson\)/)?.[0] || '';
+  assert.match(feedGate, /if \(step\.returnHomeAfter\) await ensureTab\('dashboard'\)/);
+  assert.match(feedGate, /showStep\(completedStepIndex \+ 1\)/);
+  assert.ok(
+    feedGate.indexOf("ensureTab('dashboard')") < feedGate.indexOf('showStep(completedStepIndex + 1)'),
+    'Home should be visible before the next required prompt is rendered'
+  );
 });

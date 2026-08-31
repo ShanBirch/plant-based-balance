@@ -37,5 +37,5 @@ test('opened interactive screens keep their guide and gates', () => {
   assert.match(dashboard, /showStep\(idx, \{ afterPromptedAction:true \}\)/);
   assert.match(dashboard, /if \(!options\.afterPromptedAction\) \{\s*resetTourTemporaryTargets\(\)/);
   assert.match(dashboard, /completedPromptedActions\.clear\(\)/);
-  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v421-settings-redesign'/);
+  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v422-course-tour-handoff'/);
 });
