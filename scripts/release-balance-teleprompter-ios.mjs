@@ -219,7 +219,7 @@ async function configureAppInfo(app) {
         type: 'appInfos',
         id: appInfo.id,
         relationships: {
-          primaryCategory: { data: { type: 'appCategories', id: '6008' } },
+          primaryCategory: { data: { type: 'appCategories', id: 'PHOTO_AND_VIDEO' } },
         },
       },
     }),
@@ -640,15 +640,16 @@ async function ensureIapPrice(iap) {
 }
 
 async function waitForBuild(app) {
-  const buildNumber = process.env.IOS_BUILD_NUMBER || process.env.GITHUB_RUN_NUMBER;
-  if (!buildNumber) return null;
+  const buildNumber = process.env.IOS_BUILD_NUMBER;
   for (let attempt = 0; attempt < 30; attempt += 1) {
-    const builds = await asc(`/v1/builds?${query({
+    const buildQuery = {
       'filter[app]': app.id,
-      'filter[version]': buildNumber,
       include: 'preReleaseVersion',
+      sort: '-uploadedDate',
       limit: 50,
-    })}`);
+    };
+    if (buildNumber) buildQuery['filter[version]'] = buildNumber;
+    const builds = await asc(`/v1/builds?${query(buildQuery)}`);
     const preRelease = new Map((builds.body.included || []).map((item) => [item.id, item]));
     const build = (builds.body.data || []).find((item) => {
       const preId = item.relationships?.preReleaseVersion?.data?.id;
@@ -658,7 +659,7 @@ async function waitForBuild(app) {
     if (['FAILED', 'INVALID'].includes(build?.attributes?.processingState)) {
       throw new Error(`Apple rejected build ${buildNumber} during processing.`);
     }
-    console.log(`Waiting for Apple to process build ${buildNumber} (${attempt + 1}/30).`);
+    console.log(`Waiting for Apple to process build ${buildNumber || 'for version 1.0'} (${attempt + 1}/30).`);
     await sleep(60_000);
   }
   throw new Error('Timed out waiting for the uploaded build to finish processing.');

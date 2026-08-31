@@ -1,0 +1,37 @@
+name: Configure Balance Teleprompter App Store
+
+on:
+  push:
+    branches:
+      - codex/balance-teleprompter-ios
+    paths:
+      - scripts/release-balance-teleprompter-ios.mjs
+      - apps/balance-teleprompter/store-listing/app-store-assets/**
+      - apps/balance-teleprompter/store-listing/en-AU.md
+      - .github/workflows/configure-balance-teleprompter-ios.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  configure-and-submit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout release source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Configure listing, lifetime purchase, and submit for review
+        env:
+          APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_SCREENSHOT_DIR: apps/balance-teleprompter/store-listing/app-store-assets
+          SUBMIT_FOR_REVIEW: "true"
+        run: node scripts/release-balance-teleprompter-ios.mjs
