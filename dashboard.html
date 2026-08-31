@@ -1953,14 +1953,14 @@ if(!window._pbbIsIOSSafari) {
 document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=34-guided-goals"><\/script>');
     document.write('<script src="js/dashboard/pbb-social-journey.js?v=38-captioned-coach-video"><\/script>');
     document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=36-shopping-list-direct"><\/script>');
-    document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=28-checkin-form-only"><\/script>');
+    document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=29-accountability-checkout"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
     window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=10');
 window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=34-guided-goals');
     window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=38-captioned-coach-video');
     window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=36-shopping-list-direct');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=28-checkin-form-only');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=29-accountability-checkout');
 }
 </script>
 
@@ -13136,7 +13136,7 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=216-shopping-tour-direct';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=220-course-text-cleanup';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
@@ -13178,7 +13178,7 @@ if (window._pbbIsIOSSafari) {
         var s = document.createElement('script');
         s.async = false;
         s.dataset.metaTrialLoader = String(attempt);
-        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=216-shopping-tour-direct&meta_retry=' + attempt;
+        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=220-course-text-cleanup&meta_retry=' + attempt;
         s.onload = function() {
             if (window._pbbScript5Complete && window._switchAppTabReady && typeof window._switchAppTabReal === 'function') {
                 sessionStorage.removeItem('pbb_meta_script5_recovery_v1');
@@ -13197,7 +13197,7 @@ if (window._pbbIsIOSSafari) {
         document.head.appendChild(s);
     })(0);
 } else {
-document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=216-shopping-tour-direct"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=220-course-text-cleanup"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=3"></script>
@@ -13845,6 +13845,11 @@ if(!window._pbbIsIOSSafari) {
   #guided-tour-overlay.tour-control-prompt:not(.tour-gate-complete) #guided-tour-bubble {
     pointer-events: none;
   }
+  /* Keep the highlighted in-section control usable after its first successful
+     tap. The guide itself can still receive Back/Next taps once the gate is
+     complete, while the clear overlay no longer blocks the meal carousel. */
+  #guided-tour-overlay.tour-control-prompt { pointer-events: none; }
+  #guided-tour-overlay.tour-control-prompt.tour-gate-complete #guided-tour-bubble { pointer-events: auto; }
   #guided-tour-overlay.tour-control-prompt #guided-tour-bubble {
     width: min(260px, calc(100% - 24px));
     max-width: 260px;
@@ -13862,6 +13867,16 @@ if(!window._pbbIsIOSSafari) {
   #guided-tour-overlay.tour-coach-note #guided-tour-bubble,
   #guided-tour-overlay.tour-coach-note #guided-tour-spotlight {
     display: none;
+  }
+  /* The Feed introduction is explained before typing. Once the composer is
+     focused, leave the person a completely clear writing surface. */
+  #guided-tour-overlay.tour-typing #guided-tour-bubble,
+  #guided-tour-overlay.tour-typing #guided-tour-spotlight {
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+  #guided-tour-overlay.tour-typing {
+    pointer-events: none !important;
   }
   #guided-tour-overlay.tour-edge-prompt #guided-tour-bubble {
     width: 238px;
@@ -13979,6 +13994,24 @@ if(!window._pbbIsIOSSafari) {
     return styles.display !== 'none' && styles.visibility !== 'hidden' && Number(styles.opacity || 1) > 0;
   }
 
+  function recordWorkoutTourDiagnostic(stage, details){
+    var entry = { stage:stage, at:new Date().toISOString(), details:details || {} };
+    window.__pbbWorkoutTourDiagnostics = (window.__pbbWorkoutTourDiagnostics || []).slice(-19);
+    window.__pbbWorkoutTourDiagnostics.push(entry);
+    try { console.info('[workout-tour]', entry); } catch(e) {}
+  }
+
+  async function waitForMetaPreviewWorkoutLibrary(timeoutMs){
+    var timeoutAt = Date.now() + (timeoutMs || 12000);
+    while (Date.now() < timeoutAt) {
+      if (typeof window.WORKOUT_LIBRARY !== 'undefined'
+          && window.WORKOUT_LIBRARY.gym
+          && typeof window.startLibraryWorkout === 'function') return true;
+      await new Promise(function(resolve){ setTimeout(resolve, 140); });
+    }
+    return false;
+  }
+
   async function waitForMetaPreviewWorkoutProof(options){
     options = options || {};
     var timeoutAt = Date.now() + (options.timeoutMs || 15000);
@@ -14007,16 +14040,28 @@ if(!window._pbbIsIOSSafari) {
         if (calendarModal) calendarModal.style.display = 'none';
       }
     } catch(e) {}
+    var libraryReady = await waitForMetaPreviewWorkoutLibrary(12000);
     var dayIndex = getMetaPreviewStrengthDayIndex();
+    recordWorkoutTourDiagnostic('open-start', { libraryReady:libraryReady, dayIndex:dayIndex });
     if (Number.isInteger(dayIndex) && typeof window.openCalendarWorkout === 'function') {
       await window.openCalendarWorkout(dayIndex);
       var proof = await waitForMetaPreviewWorkoutProof({ timeoutMs: 15000 });
+      recordWorkoutTourDiagnostic('calendar-result', {
+        opened:!!proof,
+        title:(document.getElementById('workout-player-title') || {}).textContent || '',
+        exerciseCount:document.querySelectorAll('#workout-exercises-list .exercise-logger-card').length
+      });
       window.__balanceMetaPreviewStrengthOpened = !!proof;
       return proof;
     }
     var card = document.getElementById('today-workout-card');
     if (card) card.click();
     var fallbackProof = await waitForMetaPreviewWorkoutProof({ timeoutMs: 15000 });
+    recordWorkoutTourDiagnostic('card-result', {
+      opened:!!fallbackProof,
+      title:(document.getElementById('workout-player-title') || {}).textContent || '',
+      exerciseCount:document.querySelectorAll('#workout-exercises-list .exercise-logger-card').length
+    });
     window.__balanceMetaPreviewStrengthOpened = !!fallbackProof;
     return fallbackProof;
   }
@@ -14096,8 +14141,9 @@ if(!window._pbbIsIOSSafari) {
 
   const steps = [
     { tab:'dashboard', sel:'#dm-voice-btn', fallbackSel:'.header-msg-icon', title:'Send a voice message', fallbackTitle:'Voice messages are in your DMs', body:'Tap the microphone, record your message, then tap send. You can cancel before it leaves.', fallbackBody:'Open Messages, choose a friend, then tap the microphone beside the message box.', action: async function(){ try { var coachId=window._coachUserId || (typeof getCoachUserId==='function' ? await getCoachUserId() : null); if(coachId && typeof openDirectMessage==='function') openDirectMessage(coachId,'Coach Shan',''); } catch(e){} await new Promise(function(r){ setTimeout(r,420); }); } },
+    { tab:'dashboard', sel:'#weekly-checkin-card', title:'Extra accountability when you need it', body:'Choose Keep me accountable in your Weekly Check-In to see optional extra support, including a mid-week voice check-in or a recurring live PT session.', condition:function(){ var c=document.getElementById('weekly-checkin-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#next-obvious-steps-card .next-steps-head', fallbackSel:'#next-obvious-steps-card .next-step-action,#next-obvious-steps-card', title:'Your app tour starts here', fallbackTitle:'Your app tour starts here', body:'To do next is your simple map. We will return here between each part of your plan, so you always know what comes next.', metaPreview:true, clientActivation:true, action:function(){ try { if(window.pbbNextSteps && typeof window.pbbNextSteps.refresh === 'function') window.pbbNextSteps.refresh(); } catch(e){} } },
-    { tab:'dashboard', sel:'#ai-plan-meals-list .ai-plan-hero__carousel-button--next', fallbackSel:'#ai-plan-meals-list .ai-plan-hero', title:'See every meal on Day 1', fallbackTitle:'Your meal plan needs another moment', body:'Tap the highlighted arrow to look through breakfast, lunch, dinner and snacks. Open any meal for the recipe, ingredients and an easy way to log it.', fallbackBody:'Your prepared plan did not finish opening. Return Home and tap the meal-plan task again.', pageView:true, metaPreview:true, promptBeforeAction:true, promptRequiresTargetClick:true, requiresHighlightedClick:true, controlPromptPosition:'top', highlightedClickPrompt:'Tap the highlighted arrow to see another Day 1 meal.', highlightedClickComplete:'Perfect. Keep looking through the meals, or continue to your next task.', returnHomeAfter:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="meal_plan_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'First: see your meal plan', preActionBody:'Tap the highlighted To Do card to open the meals Shannon has prepared for your week.', preActionButton:'Tap the meal plan card', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('meal_plan_intro'); await new Promise(function(r){ setTimeout(r,650); }); return await openMetaPreviewMealPlanSurface(); } catch(e){ return false; } } },
+    { tab:'dashboard', sel:'#ai-plan-meals-list .ai-plan-hero__carousel-button--next', fallbackSel:'#ai-plan-meals-list .ai-plan-hero', title:'See every meal on Day 1', fallbackTitle:'Your meal plan needs another moment', body:'Tap the highlighted arrow to look through breakfast, lunch, dinner and snacks. Open any meal for the recipe, ingredients and an easy way to log it.', fallbackBody:'Your prepared plan did not finish opening. Return Home and tap the meal-plan task again.', pageView:true, metaPreview:true, promptBeforeAction:true, promptRequiresTargetClick:true, requiresHighlightedClick:true, requiredHighlightedClicks:4, controlPromptPosition:'top', highlightedClickPrompt:'Tap the highlighted arrow to see another Day 1 meal.', highlightedClickProgress:function(clicks){ return 'You have seen ' + (clicks + 1) + ' of 5 meals. Keep tapping the arrow.'; }, highlightedClickComplete:'Perfect. You have seen all five Day 1 meals.', returnHomeAfter:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="meal_plan_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'First: see your meal plan', preActionBody:'Tap the highlighted To Do card to open the meals Shannon has prepared for your week.', preActionButton:'Tap the meal plan card', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('meal_plan_intro'); await new Promise(function(r){ setTimeout(r,650); }); return await openMetaPreviewMealPlanSurface(); } catch(e){ return false; } } },
     { tab:'dashboard', sel:'#ai-plan-shopping-list .ai-plan-shopping__item', fallbackSel:'#ai-plan-shopping-toggle,#ai-plan-shopping-card,#meal-plan-store', title:'One shopping list for the week', fallbackTitle:'Your shopping list needs another moment', body:'Balance combines the ingredients from your meal plan into one list. Tap the highlighted ingredient to tick off what you already have.', fallbackBody:'The list did not finish opening. Return Home and tap the shopping-list task again.', pageView:true, tourScrollContextSel:'#ai-plan-shopping-card', metaPreview:true, promptBeforeAction:true, promptRequiresTargetClick:true, requiresHighlightedClick:true, highlightedClickPrompt:'Tap the highlighted ingredient to check it off your shopping list.', highlightedClickComplete:'That is how the list works. Keep ticking items, or continue to your next task.', returnHomeAfter:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="shopping_list_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: open your shopping list', preActionBody:'Back on Home, tap the highlighted shopping-list card. It is built from the meal plan you just saw.', preActionButton:'Tap the shopping list card', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('shopping_list_intro'); await new Promise(function(r){ setTimeout(r,650); }); return await openMetaPreviewShoppingListSurface(); } catch(e){ return false; } } },
     { tab:'dashboard', sel:'.meal-icon-btn[title="Take a photo"],.camera-btn-widget,.meal-icon-btn', title:'Log what you eat', body:'The highlighted photo button is one option. You can also use a barcode, type the meal or quick-log it. You only need to record what you actually eat.', pageView:true, metaPreview:true, promptBeforeAction:true, promptRequiresTargetClick:true, returnHomeAfter:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="nutrition_tracker_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: see your nutrition tracker', preActionBody:'Tap the highlighted To Do card to see the quick ways you can log a normal meal.', preActionButton:'Tap the tracker card', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('nutrition_tracker_intro'); await new Promise(function(r){ setTimeout(r,950); }); var pill=document.querySelector('#view-meals .pill-btn[onclick*="calorie-tracker"]'); if(typeof switchWeek==='function') switchWeek('calorie-tracker', pill); await new Promise(function(r){ setTimeout(r,320); }); return !!q('.camera-btn-widget,.meal-icon-btn'); } catch(e){ return false; } } },
     { tab:'dashboard', sel:'#weekly-calendar', fallbackSel:'#view-calendar,#view-cycle', title:'Check your workout week', fallbackTitle:'Check your workout week', body:'This calendar shows the workouts planned for your week. Click Next to open the program and see your first session.', pageView:true, metaPreview:true, promptBeforeAction:true, promptRequiresTargetClick:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="workout_week_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: see your workout program', preActionBody:'Back on Home, tap the highlighted workout card to see exactly how your training week fits together.', preActionButton:'Tap the workout card', nextLabel:'Open the program', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('workout_week_intro'); await new Promise(function(r){ setTimeout(r,800); }); if(typeof switchCalendarView === 'function') switchCalendarView('weekly'); return true; } catch(e){ return false; } } },
@@ -14251,6 +14297,7 @@ if(!window._pbbIsIOSSafari) {
     title:'Introduce yourself',
     body:'Write a quick hello and tap Post. Keep it simple—your name, what you are working on, or what brought you to Balance.',
     requiresFeedPost:true,
+    hideGuideWhileTyping:true,
     returnHomeAfter:true
   });
 
@@ -14584,9 +14631,23 @@ if(!window._pbbIsIOSSafari) {
       }
       let highlightedPressSeen = false;
       let highlightedPressFallback = null;
-      const markHighlightedComplete = function(currentTarget){
+      let highlightedClickCount = 0;
+      const requiredHighlightedClicks = Math.max(1, Number(step.requiredHighlightedClicks) || 1);
+      const markHighlightedProgress = function(currentTarget){
         currentTarget = currentTarget || q(step.sel);
         if (!currentTarget) return;
+        highlightedClickCount += 1;
+        if (highlightedClickCount < requiredHighlightedClicks) {
+          const progressMessage = typeof step.highlightedClickProgress === 'function'
+            ? step.highlightedClickProgress(highlightedClickCount, requiredHighlightedClicks)
+            : 'Keep using the highlighted control to continue.';
+          setTourGateUi(false, progressMessage, 'Keep looking');
+          setTimeout(function(){
+            const refreshedTarget = q(step.sel) || currentTarget;
+            positionBubbleAndSpotlight(refreshedTarget, step);
+          }, 120);
+          return;
+        }
         completedTourGates.add(key);
         if (activeTourGate && activeTourGate.key === key) {
           activeTourGate.complete = true;
@@ -14607,7 +14668,10 @@ if(!window._pbbIsIOSSafari) {
           // Keep the clear overlay pass-through active until the browser has
           // delivered the real click to the meal arrow or shopping row.
           highlightedPressFallback = setTimeout(function(){
-            if (highlightedPressSeen) markHighlightedComplete(q(step.sel) || currentTarget);
+            if (highlightedPressSeen) {
+              highlightedPressSeen = false;
+              markHighlightedProgress(q(step.sel) || currentTarget);
+            }
           }, 350);
           return;
         }
@@ -14615,7 +14679,7 @@ if(!window._pbbIsIOSSafari) {
         highlightedPressSeen = false;
         if (highlightedPressFallback) clearTimeout(highlightedPressFallback);
         highlightedPressFallback = null;
-        markHighlightedComplete(currentTarget || q(step.sel));
+        markHighlightedProgress(currentTarget || q(step.sel));
       };
       // Capture the initial press as well as click. Some carousel controls
       // replace their rendered child during the tap, which can make the later
@@ -15033,6 +15097,17 @@ if(!window._pbbIsIOSSafari) {
     const targetRect = target && target.isConnected && target.getClientRects().length
       ? target.getBoundingClientRect()
       : null;
+    const activeElement = document.activeElement;
+    const typingInTarget = !!(step && step.hideGuideWhileTyping && target && activeElement
+      && target.contains(activeElement)
+      && /^(INPUT|TEXTAREA)$/i.test(activeElement.tagName || ''));
+    if (overlay) overlay.classList.toggle('tour-typing', typingInTarget);
+    if (typingInTarget) {
+      spot.style.opacity = '0';
+      bubble.style.opacity = '0';
+      return;
+    }
+    bubble.style.opacity = '';
     if (!targetRect || targetRect.width < 2 || targetRect.height < 2) {
       spot.style.opacity = '0';
       spot.style.width = '0px'; spot.style.height = '0px';
@@ -15400,7 +15475,7 @@ window.endFeatureTour = function(skipped){
     resetTourTemporaryTargets();
     const overlay = document.getElementById('guided-tour-overlay');
     if (overlay) overlay.classList.remove('active');
-    if (overlay) overlay.classList.remove('tour-action-required', 'tour-gate-complete', 'tour-page-view', 'tour-feature-view', 'tour-tap-target', 'tour-edge-prompt', 'tour-control-prompt', 'tour-embedded-guide', 'tour-coach-note', 'tour-transitioning', 'meta-tour-welcome-active');
+    if (overlay) overlay.classList.remove('tour-action-required', 'tour-gate-complete', 'tour-page-view', 'tour-feature-view', 'tour-tap-target', 'tour-edge-prompt', 'tour-control-prompt', 'tour-embedded-guide', 'tour-coach-note', 'tour-typing', 'tour-transitioning', 'meta-tour-welcome-active');
     window.__balanceGuidedTourActive = false;
     window.__balanceGuidedTourShowingIntro = false;
     showingXpIntro = false;
@@ -15417,6 +15492,12 @@ window.endFeatureTour = function(skipped){
     if (resizeHandler) {
       window.removeEventListener('resize', resizeHandler);
       window.removeEventListener('scroll', resizeHandler, true);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', resizeHandler);
+        window.visualViewport.removeEventListener('scroll', resizeHandler);
+      }
+      document.removeEventListener('focusin', resizeHandler, true);
+      document.removeEventListener('focusout', resizeHandler, true);
       resizeHandler = null;
     }
     if (completedMetaPreviewTour && window.BalanceMetaAdTrial) {
@@ -15517,6 +15598,12 @@ window.endFeatureTour = function(skipped){
     };
     window.addEventListener('resize', resizeHandler);
     window.addEventListener('scroll', resizeHandler, true);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', resizeHandler);
+      window.visualViewport.addEventListener('scroll', resizeHandler);
+    }
+    document.addEventListener('focusin', resizeHandler, true);
+    document.addEventListener('focusout', resizeHandler, true);
     if (metaPreviewTour || clientActivationTour) {
       showMetaTourWelcome();
     } else {
@@ -16246,6 +16333,14 @@ window.endFeatureTour = function(skipped){
     body: 'Tap the microphone, record your message, then tap send. You can cancel before it leaves.',
     fallbackBody: 'Open Messages, choose a friend, then tap the microphone beside the message box.',
     action: async function(){ try { var coachId=window._coachUserId || (typeof getCoachUserId==='function' ? await getCoachUserId() : null); if(coachId && typeof openDirectMessage==='function') openDirectMessage(coachId,'Coach Shan',''); } catch(e){} await new Promise(function(r){ setTimeout(r,420); }); }
+  });
+  allFeatures.push({
+    id: 'weekly-checkin-accountability-addons-v1',
+    tab: 'dashboard',
+    sel: '#weekly-checkin-card',
+    title: 'Choose extra accountability',
+    body: 'Choose Keep me accountable in your Weekly Check-In to see optional extra support. Pick a live PT time before payment, or add a mid-week voice check-in.',
+    condition: function(){ var c=document.getElementById('weekly-checkin-card'); return c && c.style.display !== 'none'; }
   });
   allFeatures.push({
     id: 'social-journey-your-next-step-v1',

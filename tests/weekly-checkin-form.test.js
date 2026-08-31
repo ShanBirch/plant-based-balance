@@ -9,6 +9,7 @@ const frontend = fs.readFileSync(path.join(repoRoot, 'js/dashboard/pbb-weekly-ch
 const endpoint = fs.readFileSync(path.join(repoRoot, 'netlify/functions/submit-weekly-checkin.js'), 'utf8');
 const nextSteps = fs.readFileSync(path.join(repoRoot, 'js/dashboard/pbb-next-obvious-steps.js'), 'utf8');
 const serviceWorker = fs.readFileSync(path.join(repoRoot, 'sw.js'), 'utf8');
+const addonCheckout = fs.readFileSync(path.join(repoRoot, 'netlify/functions/create-accountability-addon-checkout.js'), 'utf8');
 
 function loadEndpointTestHelpers() {
   const module = { exports: {} };
@@ -77,6 +78,20 @@ test('the form captures useful goal-aligned coaching context', () => {
   assert.match(frontend, /submit-weekly-checkin/);
 });
 
+test('accountability opens optional, correctly-priced extra support', () => {
+  assert.match(frontend, /data-wci-accountability-addons/);
+  assert.match(frontend, /Extra voice-message check-in · \$25\/week/);
+  assert.match(frontend, /Start Zoom PT 1 · \$125\/week total/);
+  assert.match(frontend, /Already on Zoom PT\? Add another 30-minute session · \$75\/week/);
+  assert.match(frontend, /create-accountability-addon-checkout/);
+  assert.match(addonCheckout, /balance_accountability_addon/);
+  assert.match(addonCheckout, /extra_voice_checkin_weekly/);
+  assert.match(addonCheckout, /AU\$125\.00 is your total weekly Zoom PT 1 payment/);
+  assert.match(addonCheckout, /weekly_checkin_pt/);
+  assert.match(addonCheckout, /previous_subscription_id/);
+  assert.match(addonCheckout, /loadBookedPtSlot/);
+});
+
 test('the weekly form uses the same Inter typeface as the app', () => {
   assert.match(frontend, /\.pbb-wci-sheet\{[^}]*font-family:\\'Inter\\',sans-serif/);
   assert.match(frontend, /\.pbb-wci-form button,[^}]*font-family:\\'Inter\\',sans-serif!important/);
@@ -102,7 +117,7 @@ test('Home omits the automated review card while retaining the client check-in f
   assert.doesNotMatch(renderFunction, /Your weekly check-in is ready/);
   assert.match(frontend, /window\.openWeeklyCheckinPreview = openWeeklyCheckinPreview/);
   assert.match(frontend, /window\.isWeeklyCheckinDue = isReviewEnabled/);
-  assert.match(serviceWorker, /pbb-app-v415-tour-actions-land-cleanly/);
+  assert.match(serviceWorker, /pbb-app-v416-five-meal-carousel/);
 });
 
 test('To Do Next routes a due weekly check-in directly into the client form', () => {

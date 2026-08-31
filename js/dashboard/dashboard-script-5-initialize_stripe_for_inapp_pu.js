@@ -19,6 +19,30 @@ function _onDomReady(fn) {
     }
 }
 
+// A short-lived release accidentally left part of a guided-tour stylesheet
+// after </html>. A cached native shell can still parse that orphaned text into
+// the Course page. Remove only that unmistakable legacy fragment whenever a
+// delayed/cached document hands control to the current app script.
+function removeLegacyGuidedTourTextLeak() {
+    const marker = '#guided-tour-overlay.tour-keyboard-open';
+    [document.documentElement, document.body].filter(Boolean).forEach(function(root) {
+        Array.from(root.childNodes || []).forEach(function(node) {
+            if (node.nodeType === Node.TEXT_NODE && String(node.textContent || '').includes(marker)) {
+                node.remove();
+            }
+        });
+    });
+}
+
+_onDomReady(function() {
+    removeLegacyGuidedTourTextLeak();
+    const root = document.documentElement;
+    if (!root || typeof MutationObserver === 'undefined') return;
+    const cleanupObserver = new MutationObserver(removeLegacyGuidedTourTextLeak);
+    cleanupObserver.observe(root, { childList: true });
+    setTimeout(function() { cleanupObserver.disconnect(); }, 5000);
+});
+
 // Initialize Stripe for in-app purchases
 // On iOS Safari, Stripe.js is deferred until after init completes to reduce memory pressure.
 // Guard against Stripe being undefined to prevent the script from failing entirely.
@@ -2607,7 +2631,9 @@ function parseStoredWorkoutCalendar(value) {
 
 function getStoredOnboardingWorkoutCalendar(profile = {}) {
     const sources = [];
-    try { sources.push(localStorage.getItem('workoutCalendar')); } catch(e) {}
+    // The freshly saved profile is authoritative. A reset/re-onboarding can
+    // leave the legacy standalone key behind on the phone; reading that first
+    // made Calendar and Movement disagree about the selected split.
     if (profile.workout_calendar) sources.push(profile.workout_calendar);
     try {
         const localProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
@@ -2617,12 +2643,39 @@ function getStoredOnboardingWorkoutCalendar(profile = {}) {
         const sessionProfile = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
         if (sessionProfile.workout_calendar) sources.push(sessionProfile.workout_calendar);
     } catch(e) {}
+    try { sources.push(localStorage.getItem('workoutCalendar')); } catch(e) {}
 
     for (const source of sources) {
         const calendar = parseStoredWorkoutCalendar(source);
         if (calendar && PBB_ONBOARDING_DAY_KEYS.some(day => calendar[day])) return calendar;
     }
     return null;
+}
+
+function getWorkoutRotationSelection(workouts, storageKey, referenceDate = new Date()) {
+    if (!Array.isArray(workouts) || workouts.length === 0) return null;
+
+    const now = referenceDate instanceof Date && Number.isFinite(referenceDate.getTime())
+        ? referenceDate
+        : new Date();
+    let storedStart = null;
+    try { storedStart = localStorage.getItem(storageKey); } catch(e) {}
+    let start = storedStart ? new Date(storedStart) : null;
+
+    // Fresh test accounts and reset accounts can retain an invalid or future
+    // rotation date. Normalise it to this week's Monday so the selected index
+    // is always valid and every displayed workout has real exercises.
+    if (!start || !Number.isFinite(start.getTime()) || start.getTime() > now.getTime()) {
+        const distToMon = (now.getDay() + 6) % 7;
+        start = new Date(now);
+        start.setDate(now.getDate() - distToMon);
+        start.setHours(0, 0, 0, 0);
+        try { localStorage.setItem(storageKey, getLocalDateString(start)); } catch(e) {}
+    }
+
+    const elapsedWeeks = Math.max(0, Math.floor((now - start) / (7 * 24 * 60 * 60 * 1000)));
+    const programNumber = Math.floor((elapsedWeeks % 48) / 4);
+    return workouts[programNumber % workouts.length] || workouts[0];
 }
 
 function buildOnboardingWeeklySchedule(profile = {}, isMale = false) {
@@ -2766,28 +2819,9 @@ function renderWeeklyCalendar() {
     // Calculate which week we're in for 12 different 4-week programs (48 weeks total)
     function getGymSplitWeekNumber() {
         if (!useMaleGymSplit && !useFemaleGymSplit) return 1;
-
-        let startDate = localStorage.getItem('gym_split_start_date');
-        if (!startDate) {
-            // First time using gym split - set start date to this week's Monday
-            const today = new Date();
-            const dayOfWeek = today.getDay();
-            const distToMon = (dayOfWeek + 6) % 7;
-            const monday = new Date(today);
-            monday.setDate(today.getDate() - distToMon);
-            monday.setHours(0, 0, 0, 0);
-            startDate = getLocalDateString(monday);
-            localStorage.setItem('gym_split_start_date', startDate);
-        }
-
-        // Calculate weeks elapsed since start
-        const start = new Date(startDate);
-        const now = new Date();
-        const msPerWeek = 7 * 24 * 60 * 60 * 1000;
-        const weeksElapsed = Math.floor((now - start) / msPerWeek);
-
-        // Return week number 1-48 (12 programs × 4 weeks each)
-        return (weeksElapsed % 48) + 1;
+        const programNumbers = Array.from({ length: 12 }, (_, index) => index);
+        const programNumber = getWorkoutRotationSelection(programNumbers, 'gym_split_start_date');
+        return (Number.isInteger(programNumber) ? programNumber : 0) * 4 + 1;
     }
 
     const currentWeek = getGymSplitWeekNumber();
@@ -3891,32 +3925,12 @@ window.openCalendarWorkout = async function(dayIndexFromMonday, replacementDate)
         const gymCategory = WORKOUT_LIBRARY['gym'];
 
         if (gymCategory && gymCategory.subcategories && gymCategory.subcategories[muscleGroup]) {
-            // Calculate which week in 48-week cycle (12 programs × 4 weeks)
-            let startDate = localStorage.getItem('gym_split_start_date');
-            if (!startDate) {
-                const today = new Date();
-                const dayOfWeek = today.getDay();
-                const distToMon = (dayOfWeek + 6) % 7;
-                const monday = new Date(today);
-                monday.setDate(today.getDate() - distToMon);
-                monday.setHours(0, 0, 0, 0);
-                startDate = getLocalDateString(monday);
-                localStorage.setItem('gym_split_start_date', startDate);
-            }
-            const start = new Date(startDate);
-            const now = new Date();
-            const msPerWeek = 7 * 24 * 60 * 60 * 1000;
-            const weeksElapsed = Math.floor((now - start) / msPerWeek);
-            const currentWeek = (weeksElapsed % 48) + 1;
-
             const workouts = gymCategory.subcategories[muscleGroup].workouts;
-            // Calculate which 4-week program (same workout for 4 weeks)
-            const programNumber = Math.floor((currentWeek - 1) / 4);
-            const workoutIndex = programNumber % workouts.length;
-            const workout = workouts[workoutIndex];
+            const workout = getWorkoutRotationSelection(workouts, 'gym_split_start_date');
 
             if (workout && typeof startLibraryWorkout === 'function') {
                 startLibraryWorkout('gym', muscleGroup, workout.id);
+                return workout;
             } else {
                 console.error("Library workout not found or player function missing");
             }
@@ -3927,35 +3941,12 @@ window.openCalendarWorkout = async function(dayIndexFromMonday, replacementDate)
         const category = WORKOUT_LIBRARY[programId];
 
         if (category && category.subcategories && category.subcategories[scheduleItem.subcategory]) {
-            // Calculate which week in rotation cycle
-            let startDate = localStorage.getItem('program_start_date');
-            if (!startDate) {
-                const profile = await window.getUserProfile();
-                startDate = profile?.program_start_date;
-                if (!startDate) {
-                    const today = new Date();
-                    const dayOfWeek = today.getDay();
-                    const distToMon = (dayOfWeek + 6) % 7;
-                    const monday = new Date(today);
-                    monday.setDate(today.getDate() - distToMon);
-                    monday.setHours(0, 0, 0, 0);
-                    startDate = getLocalDateString(monday);
-                }
-            }
-            const start = new Date(startDate);
-            const now = new Date();
-            const msPerWeek = 7 * 24 * 60 * 60 * 1000;
-            const weeksElapsed = Math.floor((now - start) / msPerWeek);
-            const currentWeek = (weeksElapsed % 48) + 1;
-
             const workouts = category.subcategories[scheduleItem.subcategory].workouts;
-            // Calculate which 4-week program (same workout for 4 weeks)
-            const programNumber = Math.floor((currentWeek - 1) / 4);
-            const workoutIndex = programNumber % workouts.length;
-            const workout = workouts[workoutIndex];
+            const workout = getWorkoutRotationSelection(workouts, 'program_start_date');
 
             if (workout && typeof startLibraryWorkout === 'function') {
                 startLibraryWorkout(programId, scheduleItem.subcategory, workout.id);
+                return workout;
             } else {
                 console.error("Library workout not found or player function missing");
             }
@@ -4197,27 +4188,8 @@ function getTodaysWorkout() {
         const gymCategory = WORKOUT_LIBRARY['gym'];
 
         if (gymCategory && gymCategory.subcategories && gymCategory.subcategories[muscleGroup]) {
-            // Calculate which week in 48-week cycle (12 programs × 4 weeks)
-            let startDate = localStorage.getItem('gym_split_start_date');
-            if (!startDate) {
-                const dayOfWeek = today.getDay();
-                const distToMon = (dayOfWeek + 6) % 7;
-                const monday = new Date(today);
-                monday.setDate(today.getDate() - distToMon);
-                monday.setHours(0, 0, 0, 0);
-                startDate = getLocalDateString(monday);
-                localStorage.setItem('gym_split_start_date', startDate);
-            }
-            const start = new Date(startDate);
-            const msPerWeek = 7 * 24 * 60 * 60 * 1000;
-            const weeksElapsed = Math.floor((today - start) / msPerWeek);
-            const currentWeek = (weeksElapsed % 48) + 1;
-
             const workouts = gymCategory.subcategories[muscleGroup].workouts;
-            // Calculate which 4-week program (same workout for 4 weeks)
-            const programNumber = Math.floor((currentWeek - 1) / 4);
-            const workoutIndex = programNumber % workouts.length;
-            const workout = workouts[workoutIndex];
+            const workout = getWorkoutRotationSelection(workouts, 'gym_split_start_date', today);
 
             workoutName = workout ? workout.name : scheduleItem.day + ' Workout';
             workoutIcon = scheduleItem.icon;
@@ -4230,26 +4202,8 @@ function getTodaysWorkout() {
         const category = WORKOUT_LIBRARY[scheduleItem.program];
 
         if (category && category.subcategories && category.subcategories[scheduleItem.subcategory]) {
-            // Calculate which week in rotation cycle
-            let startDate = localStorage.getItem('program_start_date');
-            if (!startDate) {
-                const dayOfWeek = today.getDay();
-                const distToMon = (dayOfWeek + 6) % 7;
-                const monday = new Date(today);
-                monday.setDate(today.getDate() - distToMon);
-                monday.setHours(0, 0, 0, 0);
-                startDate = getLocalDateString(monday);
-            }
-            const start = new Date(startDate);
-            const msPerWeek = 7 * 24 * 60 * 60 * 1000;
-            const weeksElapsed = Math.floor((today - start) / msPerWeek);
-            const currentWeek = (weeksElapsed % 48) + 1;
-
             const workouts = category.subcategories[scheduleItem.subcategory].workouts;
-            // Calculate which 4-week program (same workout for 4 weeks)
-            const programNumber = Math.floor((currentWeek - 1) / 4);
-            const workoutIndex = programNumber % workouts.length;
-            const workout = workouts[workoutIndex];
+            const workout = getWorkoutRotationSelection(workouts, 'program_start_date', today);
 
             workoutName = workout ? workout.name : scheduleItem.day + ' Workout';
             workoutIcon = scheduleItem.icon;
@@ -10075,7 +10029,23 @@ async function checkAndTriggerOnboarding() {
                     'featureTourComplete',
                     'pbb_seen_features',
                     'pbb_onboarding_owner_user_id',
-                    'onboardingCompletedAt'
+                    'onboardingCompletedAt',
+                    // A reset must also clear the locally prepared plan and goals.
+                    // Otherwise a phone can look as if it is still mid-way through
+                    // the previous test run even though the account is clean.
+                    'userProfile',
+                    'user_food_preferences',
+                    'ai_meal_plan',
+                    'workoutCalendar',
+                    'workoutCalendarTimes',
+                    'onboardingGoalIntentIds',
+                    'onboardingGoalIntents',
+                    'onboardingWeeklyGoalFocusIds',
+                    'onboardingWeeklyGoalFocus',
+                    'onboardingLearningInterestIds',
+                    'onboardingLearningInterests',
+                    'pbb_auto_weekly_goals_pending_v1',
+                    'pbb_weekly_goals_selection_required_v1'
                 ].forEach(function (key) {
                     try { localStorage.removeItem(key); } catch (_) {}
                 });
@@ -15645,6 +15615,9 @@ async function renderMovementView() {
 
     // Merge with database profile for other fields like program_start_date
     profile = { ...dbProfile, ...profile };
+    if (dbProfile?.workout_calendar) {
+        profile.workout_calendar = dbProfile.workout_calendar;
+    }
 
     // PRIORITY 0.5: Smart equipment override - most recent selection wins (check-in vs onboarding)
     const todayDateStr = getLocalDateString();
@@ -16252,26 +16225,8 @@ async function renderMovementView() {
         const gymCategory = WORKOUT_LIBRARY['gym'];
 
         if (gymCategory && gymCategory.subcategories && gymCategory.subcategories[muscleGroup]) {
-            // Calculate which week in 48-week cycle (same logic as calendar)
-            let startDate = localStorage.getItem('gym_split_start_date');
-            if (!startDate) {
-                const dayOfWeek = today.getDay();
-                const distToMon = (dayOfWeek + 6) % 7;
-                const monday = new Date(today);
-                monday.setDate(today.getDate() - distToMon);
-                monday.setHours(0, 0, 0, 0);
-                startDate = getLocalDateString(monday);
-                localStorage.setItem('gym_split_start_date', startDate);
-            }
-            const start = new Date(startDate);
-            const msPerWeek = 7 * 24 * 60 * 60 * 1000;
-            const weeksElapsed = Math.floor((today - start) / msPerWeek);
-            const currentWeek = (weeksElapsed % 48) + 1;
-
             const workouts = gymCategory.subcategories[muscleGroup].workouts;
-            const programNumber = Math.floor((currentWeek - 1) / 4);
-            const workoutIndex = programNumber % workouts.length;
-            const workout = workouts[workoutIndex];
+            const workout = getWorkoutRotationSelection(workouts, 'gym_split_start_date', today);
 
             // Create a pseudo-program object for rendering
             heroProg = {
@@ -16302,25 +16257,8 @@ async function renderMovementView() {
         const subcategory = category?.subcategories?.[effectiveSubcategory];
 
         if (subcategory && subcategory.workouts && subcategory.workouts.length > 0) {
-            // Calculate which week in rotation cycle
-            let startDate = localStorage.getItem('program_start_date');
-            if (!startDate) {
-                const dayOfWeek = today.getDay();
-                const distToMon = (dayOfWeek + 6) % 7;
-                const monday = new Date(today);
-                monday.setDate(today.getDate() - distToMon);
-                monday.setHours(0, 0, 0, 0);
-                startDate = getLocalDateString(monday);
-            }
-            const start = new Date(startDate);
-            const msPerWeek = 7 * 24 * 60 * 60 * 1000;
-            const weeksElapsed = Math.floor((today - start) / msPerWeek);
-            const currentWeek = (weeksElapsed % 48) + 1;
-
             const workouts = subcategory.workouts;
-            const programNumber = Math.floor((currentWeek - 1) / 4);
-            const workoutIndex = programNumber % workouts.length;
-            const workout = workouts[workoutIndex];
+            const workout = getWorkoutRotationSelection(workouts, 'program_start_date', today);
 
             // Create a pseudo-program object for rendering
             heroProg = {

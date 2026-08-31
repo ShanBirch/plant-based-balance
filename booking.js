@@ -27,6 +27,11 @@
         ? urlParams.get('pt_sessions')
         : null;
     const isZoomPtEnquiry = bookingSource === 'zoom_pt';
+    const ptAddon = ['zoom_pt_1_upgrade', 'extra_zoom_pt'].includes(urlParams.get('addon'))
+        ? urlParams.get('addon')
+        : null;
+    const isWeeklyCheckinPt = bookingSource === 'weekly_checkin_pt' && Boolean(ptAddon);
+    const isAnyZoomPt = isZoomPtEnquiry || isWeeklyCheckinPt;
     const isFirstCoachingCall = urlParams.get('first_call') === '1'
         && bookingSource === 'coaching_calls_purchase';
 
@@ -38,6 +43,18 @@
         byId('booking-intro-title').innerHTML = 'Check your Zoom PT<br><span>availability.</span>';
         byId('booking-intro-copy').textContent = 'Choose a short fit call so we can check your goals, injury history and recurring session times before you pay anything.';
         byId('booking-card-title').textContent = 'Choose your fit call.';
+    }
+
+    if (isWeeklyCheckinPt) {
+        const isUpgrade = ptAddon === 'zoom_pt_1_upgrade';
+        document.title = 'Choose Your Weekly Zoom PT Time | Balance';
+        byId('booking-intro-kicker').textContent = isUpgrade ? 'Zoom PT 1 · $125/week total' : 'Extra Zoom PT · $75/week';
+        byId('booking-intro-title').innerHTML = 'Choose your weekly<br><span>Zoom PT time.</span>';
+        byId('booking-intro-copy').textContent = 'Pick a recurring 30-minute time from Shannon’s live availability. Once the time is confirmed, you will continue straight to secure payment.';
+        byId('booking-card-title').textContent = 'Choose your recurring time.';
+        const submitLabel = form?.querySelector('.booking-submit span:first-child');
+        if (submitLabel) submitLabel.textContent = 'Choose this time and continue to payment';
+        show(document.querySelector('.booking-outside-hours'), false);
     }
 
     if (isFirstCoachingCall) {
@@ -129,29 +146,35 @@
     }
 
     function prepareZoomPtForm(targetForm) {
-        if (!isZoomPtEnquiry || !targetForm) return;
+        if (!isAnyZoomPt || !targetForm) return;
         const callType = targetForm.querySelector('[name="callType"]');
         const goal = targetForm.querySelector('[name="goal"]');
         if (callType) callType.value = 'video';
         if (goal) {
-            goal.placeholder = requestedPtSessions
+            goal.placeholder = isWeeklyCheckinPt
+                ? 'Add any injuries, limitations, or notes Shannon should know before your live session.'
+                : requestedPtSessions
                 ? `I am interested in Zoom PT ${requestedPtSessions}. Add your main goal, current injuries or limitations, and the days or times that usually work.`
                 : 'I am interested in 1:1 Zoom PT. Add your main goal, current injuries or limitations, and the days or times that usually work.';
         }
     }
 
     function prepareZoomPtFallback() {
-        if (!isZoomPtEnquiry) return;
-        const packageName = requestedPtSessions ? `Zoom PT ${requestedPtSessions}` : '1:1 Zoom PT';
+        if (!isAnyZoomPt) return;
+        const packageName = isWeeklyCheckinPt
+            ? (ptAddon === 'zoom_pt_1_upgrade' ? 'Zoom PT 1' : 'an extra Zoom PT session')
+            : requestedPtSessions ? `Zoom PT ${requestedPtSessions}` : '1:1 Zoom PT';
         const title = byId('booking-unavailable-title');
         const copy = byId('booking-unavailable-copy');
         const action = byId('booking-unavailable-action');
         const subject = encodeURIComponent(`${packageName} availability`);
         const body = encodeURIComponent(`Hey Shannon, I am interested in ${packageName}.\n\nMy main goal:\n\nCurrent injuries or limitations:\n\nDays and times that usually work:`);
-        if (title) title.textContent = 'Send me your preferred times.';
-        if (copy) copy.textContent = 'The live calendar is unavailable right now. Email your goal, injury notes and preferred weekly times, and I will check the schedule personally.';
+        if (title) title.textContent = isWeeklyCheckinPt ? 'No payment taken.' : 'Send me your preferred times.';
+        if (copy) copy.textContent = isWeeklyCheckinPt
+            ? 'The live calendar is unavailable right now, so your plan has not changed. Message Shannon and he will open a time for you.'
+            : 'The live calendar is unavailable right now. Email your goal, injury notes and preferred weekly times, and I will check the schedule personally.';
         if (action) {
-            action.textContent = 'Email my availability';
+            action.textContent = isWeeklyCheckinPt ? 'Message Shannon' : 'Email my availability';
             action.href = `mailto:shannon@plantbased-balance.org?subject=${subject}&body=${body}`;
         }
     }
@@ -296,8 +319,9 @@
                     company: String(details.data.get('company') || '').trim(),
                     visitorTimeZone: localTimeZone,
                     bookingMode,
-                    source: isZoomPtEnquiry ? 'zoom_pt' : 'public_booking_page',
+                    source: isWeeklyCheckinPt ? 'weekly_checkin_pt' : isZoomPtEnquiry ? 'zoom_pt' : 'public_booking_page',
                     ptSessionsPerWeek: isZoomPtEnquiry && requestedPtSessions ? Number(requestedPtSessions) : null,
+                    addonType: isWeeklyCheckinPt ? ptAddon : null,
                 }),
             });
             const result = await response.json().catch(() => ({}));
@@ -308,6 +332,13 @@
                     return;
                 }
                 throw new Error(result.error || 'booking_failed');
+            }
+            if (isWeeklyCheckinPt) {
+                const next = new URL('/dashboard.html', window.location.origin);
+                next.searchParams.set('pt_addon_checkout', ptAddon);
+                next.searchParams.set('booking_id', result.booking.id);
+                window.location.assign(next.toString());
+                return;
             }
             show(flow, false);
             show(success, true);

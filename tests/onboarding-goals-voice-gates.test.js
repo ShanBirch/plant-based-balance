@@ -96,5 +96,5 @@ test('changed onboarding assets are cache-busted', () => {
   assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=216-shopping-tour-direct/);
   assert.match(dashboard, /dashboard-script-6-ai_coach_draft_mode_logic_auth\.js\?v=45-captioned-coach-video/);
   assert.match(dashboard, /learning-inline\.js\?v=29-paid-tour-handoff/);
-  assert.match(serviceWorker, /pbb-app-v415-tour-actions-land-cleanly/);
+  assert.match(serviceWorker, /pbb-app-v416-five-meal-carousel/);
 });

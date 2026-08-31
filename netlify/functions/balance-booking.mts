@@ -90,8 +90,15 @@ function normalizeBookingMode(value: unknown): BookingMode {
     return trimText(value, 30).toLowerCase() === "outside_hours" ? "outside_hours" : "standard";
 }
 
-function normalizeBookingSource(value: unknown): "public_booking_page" | "zoom_pt" {
-    return trimText(value, 40).toLowerCase() === "zoom_pt" ? "zoom_pt" : "public_booking_page";
+function normalizeBookingSource(value: unknown): "public_booking_page" | "zoom_pt" | "weekly_checkin_pt" {
+    const source = trimText(value, 40).toLowerCase();
+    if (source === "zoom_pt" || source === "weekly_checkin_pt") return source;
+    return "public_booking_page";
+}
+
+function normalizePtAddonType(value: unknown): "zoom_pt_1_upgrade" | "extra_zoom_pt" | null {
+    const addon = trimText(value, 40).toLowerCase();
+    return addon === "zoom_pt_1_upgrade" || addon === "extra_zoom_pt" ? addon : null;
 }
 
 function normalizePtSessionsPerWeek(value: unknown): number | null {
@@ -653,8 +660,11 @@ async function createCalendarEvent(settings: BookingSettings, booking: Record<st
         ? booking.metadata as Record<string, unknown>
         : {};
     const bookingSource = normalizeBookingSource(metadata.source);
+    const ptAddonType = normalizePtAddonType(metadata.addon_type);
     const ptSessionsPerWeek = normalizePtSessionsPerWeek(metadata.pt_sessions_per_week);
-    const eventPrefix = bookingSource === "zoom_pt" && ptSessionsPerWeek
+    const eventPrefix = bookingSource === "weekly_checkin_pt"
+        ? (ptAddonType === "extra_zoom_pt" ? "Extra weekly Zoom PT" : "Weekly Zoom PT")
+        : bookingSource === "zoom_pt" && ptSessionsPerWeek
         ? `Zoom PT ${ptSessionsPerWeek} fit call`
         : settings.event_name;
     const createMeet = callType === "video";
@@ -669,6 +679,7 @@ async function createCalendarEvent(settings: BookingSettings, booking: Record<st
                 `Booked through Balance`,
                 `Call type: ${callTypeLabel(callType)}`,
                 bookingSource === "zoom_pt" && ptSessionsPerWeek ? `Requested Zoom PT sessions each week: ${ptSessionsPerWeek}` : "",
+                bookingSource === "weekly_checkin_pt" ? `Recurring weekly time selected before payment` : "",
                 goal ? `What they want to cover: ${goal}` : "",
                 `Booking: ${bookingUrl()}`,
             ].filter(Boolean).join("\n\n"),
@@ -744,12 +755,16 @@ async function createBooking(req: Request): Promise<Response> {
     const callType = normalizeCallType(body.callType);
     const bookingMode = normalizeBookingMode(body.bookingMode);
     const bookingSource = normalizeBookingSource(body.source);
+    const ptAddonType = bookingSource === "weekly_checkin_pt" ? normalizePtAddonType(body.addonType) : null;
     const ptSessionsPerWeek = bookingSource === "zoom_pt"
         ? normalizePtSessionsPerWeek(body.ptSessionsPerWeek)
         : null;
     const visitorTimeZone = normalizeTimeZone(body.visitorTimeZone);
     if (!name || !EMAIL_RE.test(email) || !startsAt || Number.isNaN(Date.parse(startsAt))) {
         return json(400, { ok: false, error: "check_your_details" });
+    }
+    if (bookingSource === "weekly_checkin_pt" && !ptAddonType) {
+        return json(400, { ok: false, error: "invalid_pt_option" });
     }
     if (!phone) {
         return json(400, { ok: false, error: "mobile_required_for_booking_updates" });
@@ -781,6 +796,7 @@ async function createBooking(req: Request): Promise<Response> {
                     booking_mode: bookingMode,
                     call_type: callType,
                     pt_sessions_per_week: ptSessionsPerWeek,
+                    addon_type: ptAddonType,
                     user_agent: trimText(req.headers.get("user-agent"), 300) || null,
                 },
             }]),
