@@ -10,6 +10,15 @@ const terms = fs.readFileSync(path.join(root, 'terms.html'), 'utf8');
 const dashboard = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
 const coaching = fs.readFileSync(path.join(root, 'coaching.html'), 'utf8');
 const checkoutScript = fs.readFileSync(path.join(root, 'checkout.js'), 'utf8');
+const publicLinkFiles = [
+  'index.html',
+  'balance.html',
+  'coaching.html',
+  'contact.html',
+  'plant-based-fitness.html',
+  'fitness-coaching.html',
+  'privacy.html',
+];
 
 assert.match(page, /Cancel your subscription/);
 assert.match(page, /30 days' notice/);
@@ -47,5 +56,10 @@ assert.match(terms, /purchased on or after 1 September 2026/);
 assert.match(dashboard, /settings-cancel-subscription/);
 assert.match(coaching, /Direct recurring subscriptions require 30 days' notice/);
 assert.match(checkoutScript, /terms: '2026-09-01'/);
+for (const file of publicLinkFiles) {
+  const source = fs.readFileSync(path.join(root, file), 'utf8');
+  assert.match(source, /href="\/?cancellation\.html"/, `${file} should link to cancellation.html`);
+}
+assert.match(coaching, /Manage, pause or cancel your subscription/);
 
 console.log('cancellation page contract passed');
