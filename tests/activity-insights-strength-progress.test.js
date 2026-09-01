@@ -26,9 +26,10 @@ test('muscle filter uses a compact accessible themed dropdown', () => {
   assert.match(insights, /insights-strength-muscle-filter/);
   assert.match(insights, /All muscles/);
   assert.match(insights, /onchange="setInsightsVolumeArea\(this\.value\)"/);
-  assert.match(css, /\.insights-strength-muscle-select select[\s\S]*?var\(--pbb-insights-soft-bg\)/);
+  assert.match(css, /\.insights-strength-detail-card \.insights-strength-muscle-select select[\s\S]*?var\(--pbb-insights-soft-bg\)/);
   assert.match(css, /-webkit-text-fill-color: var\(--pbb-insights-text\)/);
   assert.match(css, /\.insights-strength-muscle-select select:focus-visible/);
+  assert.doesNotMatch(css, /#view-insights \.insights-strength-(?:muscle|pb|pbs)/);
 });
 
 test('personal bests are a collapsed range-aware exercise dropdown', () => {
