@@ -41,6 +41,11 @@ test('Home To Do Next opens the due weekly action directly', () => {
   assert.match(journey, /if \(action === 'checkin'[\s\S]*?openWeeklyCheckinPreview/);
 });
 
+test('Fitness Diary is excluded from To Do Next until the evening window opens', () => {
+  assert.match(journey, /function taskAvailability\(item, date\)[\s\S]*item\.type === 'foundations_diary_feed'[\s\S]*clock\.hour >= 18/);
+  assert.match(journey, /function isTaskDueToday\(item\)[\s\S]*!taskAvailability\(item\)\.availableNow\) return false/);
+});
+
 test('Week 2 adds the one-time first-week Activity Insights review', () => {
   assert.match(nextSteps, /id: 'activity_insights_intro'[\s\S]*?title: 'Review your first week in Activity Insights'/);
   assert.match(nextSteps, /hasReachedSecondProgramWeek\(\) && !hasSeenOnboardingStep\('activity_insights_intro'\)/);

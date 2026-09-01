@@ -973,8 +973,8 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
         var doneCard = document.getElementById('fitness-diary-done-card');
         if (!card) return;
 
-        // Only show from 6 PM onwards
-        if (getBrisbaneHour() < 18) {
+        // The diary is evening-only and remains hidden until its Home action is tapped.
+        if (getBrisbaneHour() < 18 || window._fitnessDiaryActionOpen !== true) {
             card.style.display = 'none';
             if (doneCard) doneCard.style.display = 'none';
             return;
@@ -1021,6 +1021,7 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
     }
 
     function openFitnessDiaryForAction() {
+        if (getBrisbaneHour() < 18) return false;
         var card = document.getElementById('fitness-diary-card');
         var doneCard = document.getElementById('fitness-diary-done-card');
         if (!card) return false;

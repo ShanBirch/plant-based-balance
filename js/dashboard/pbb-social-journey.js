@@ -748,6 +748,7 @@
 
   function isTaskDueToday(item) {
     if (!item || item.complete) return false;
+    if (!taskAvailability(item).availableNow) return false;
     if (item.type !== 'daily_manual') return true;
     return !dailyTaskDates(item.id).includes(brisbaneDateKey());
   }

@@ -55,5 +55,5 @@ test('returning phones receive the picker and retirement updates', () => {
   assert.doesNotMatch(dashboard, /_pbbDeferredQueue\.push\('js\/dashboard\/pbb-deferred-pickers/);
   assert.match(dashboard, /dashboard-script-11-calorie_tracker_functions\.js\?v=38-meal-history/);
   assert.match(dashboard, /native-push\.js\?v=41-meal-reminders-retired/);
-  assert.match(read('sw.js'), /pbb-app-v441-diary-action-open/);
+  assert.match(read('sw.js'), /pbb-app-v442-evening-diary-action/);
 });

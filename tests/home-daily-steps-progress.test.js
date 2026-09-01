@@ -32,17 +32,21 @@ test('Home Next Step actions stay bound through async card refreshes', () => {
   assert.doesNotMatch(nextSteps, /card\.addEventListener\('click', handleClick\)/);
 });
 
-test('Fitness Diary course actions open the diary even before the nightly card window', () => {
+test('Fitness Diary stays hidden until its evening To Do action is clicked', () => {
   const dailyCards = read('js/dashboard/dashboard-script-1-daily_weighin_card_logic.js');
   const nextSteps = read('js/dashboard/pbb-next-obvious-steps.js');
   const journey = read('js/dashboard/pbb-social-journey.js');
 
   assert.match(dailyCards, /function openFitnessDiaryForAction\(\)/);
+  assert.match(dailyCards, /getBrisbaneHour\(\) < 18 \|\| window\._fitnessDiaryActionOpen !== true/);
+  assert.match(dailyCards, /function openFitnessDiaryForAction\(\) \{[\s\S]*?getBrisbaneHour\(\) < 18\) return false/);
   assert.match(dailyCards, /card\.style\.display = 'block';[\s\S]*expandFitnessDiary\(\)/);
   assert.match(dailyCards, /alreadyDone[\s\S]*doneCard\.style\.display = 'flex'/);
   assert.match(dailyCards, /window\.openFitnessDiaryForAction = openFitnessDiaryForAction/);
   assert.match(nextSteps, /selector === '#fitness-diary-card' && typeof window\.openFitnessDiaryForAction === 'function'/);
   assert.match(journey, /action === 'diary'[\s\S]*window\.openFitnessDiaryForAction\(\)/);
+  assert.match(journey, /function isTaskDueToday\(item\)[\s\S]*!taskAvailability\(item\)\.availableNow\) return false/);
+  assert.match(nextSteps, /action\.id === 'fitness_diary'\) return new Date\(\)\.getHours\(\) >= 18/);
 });
 
 test('Home renders 10k steps as automatic daily progress instead of a dead-end link', () => {
@@ -62,10 +66,10 @@ test('versioned phone assets advance for the Home fix', () => {
   const serviceWorker = read('sw.js');
 
   assert.match(dashboard, /pbb-social-journey\.css\?v=25-captioned-coach-video/);
-  assert.match(dashboard, /pbb-social-journey\.js\?v=42-diary-action-open/);
-  assert.match(dashboard, /pbb-next-obvious-steps\.js\?v=40-diary-action-open/);
-  assert.match(dashboard, /dashboard-script-1-daily_weighin_card_logic\.js\?v=74-diary-action-open/);
+  assert.match(dashboard, /pbb-social-journey\.js\?v=43-evening-diary-action/);
+  assert.match(dashboard, /pbb-next-obvious-steps\.js\?v=41-evening-diary-action/);
+  assert.match(dashboard, /dashboard-script-1-daily_weighin_card_logic\.js\?v=75-evening-diary-action/);
   assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=49/);
-  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v441-diary-action-open'/);
+  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v442-evening-diary-action'/);
   assert.match(serviceWorker, /dashboard-script-10-points_widget_functions\.js\?v=49/);
 });

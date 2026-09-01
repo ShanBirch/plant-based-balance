@@ -84,8 +84,8 @@ test('Home plan cards stay below the complete FitGotchi stats block', () => {
     assert.match(source, /characterBlockTail\.parentNode\.insertBefore\(weeklyGoals, characterBlockTail\.nextSibling\)/);
     assert.match(source, /characterBlockTail\.parentNode\.insertBefore\(card, characterBlockTail\.nextSibling\)/);
     assert.doesNotMatch(source, /levelStrip\.parentNode\.insertBefore\((weeklyGoals|card), levelStrip\.nextSibling\)/);
-    assert.match(html, /pbb-social-journey\.js\?v=42-diary-action-open/);
-    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v441-diary-action-open'/);
+    assert.match(html, /pbb-social-journey\.js\?v=43-evening-diary-action/);
+    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v442-evening-diary-action'/);
 });
 
 test('Home course actions bypass legacy journey pages and spotlight the next Course card', () => {
@@ -114,7 +114,7 @@ test('Home course actions bypass legacy journey pages and spotlight the next Cou
     assert.match(premiumCss, /\.foundation-quiz-row\.is-next-course-lesson-target/);
     assert.match(premiumCss, /\.identity-week-row\.is-next-course-lesson-target/);
     assert.match(premiumCss, /prefers-reduced-motion: reduce/);
-    assert.match(html, /pbb-next-obvious-steps\.js\?v=40-diary-action-open/);
+    assert.match(html, /pbb-next-obvious-steps\.js\?v=41-evening-diary-action/);
 });
 
 test('Home goals and plan cards follow light and dark mode', () => {

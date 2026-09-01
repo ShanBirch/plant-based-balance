@@ -975,7 +975,7 @@
     if (action.id === 'workout') return isSourceCardDue('#today-workout-card');
     if (action.id === 'weekly_review') return isWeeklyCheckinDue();
     if (action.id === 'progress_photo') return isSourceCardDue('#weekly-progress-photo-card');
-    if (action.id === 'fitness_diary') return isSourceCardDue('#fitness-diary-card');
+    if (action.id === 'fitness_diary') return new Date().getHours() >= 18 && isSourceCardDue('#fitness-diary-card');
     if (action.id === 'weighin') {
       if (!isSundayWeighInDay()) return false;
       if (isVisibleSelector('#daily-weigh-in-done-card')) return false;

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v441-diary-action-open'; // v441: course Fitness Diary actions can open the diary directly at any time of day
+const CACHE_NAME = 'pbb-app-v442-evening-diary-action'; // v442: show the Fitness Diary task only in the evening and open it only after a tap
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
