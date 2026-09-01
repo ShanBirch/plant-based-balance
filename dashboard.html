@@ -14193,6 +14193,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'movement-tab', sel:'#workout-library-card,[onclick*="openWorkoutLibrary"]', title:'Program Library', body:"Prebuilt 48-week programs — pick one and follow along." },
     { tab:'movement-tab', sel:'#form-check-quick-card', title:'Form Checks', body:"Film a quick exercise clip and send it to Shannon when you want him to check your technique. During a workout, use the form-check button at the top of workout mode." },
 
+    { tab:'learning', sel:'#balance-foundations-course-card', fallbackSel:'.course-library-intro,#learning-content', title:'Your week at a glance', fallbackTitle:'Your week at a glance', body:'Open Balance Foundations, then tap Continue course to see your current lessons, actions, progress, and next step on one simple screen.', fallbackBody:'Continue Balance Foundations to open a simple view of your current week.' },
     { tab:'learning', sel:'.course-library-intro', fallbackSel:'#learning-content', title:'Preview every course', fallbackTitle:'Your course path lives here', body:"Complete Balance Foundations to unlock every course. You can open any card now to preview its topics, even while it is locked.", fallbackBody:"Open Course to preview the full curriculum. Complete Balance Foundations to start the other courses." },
 
     { tab:'cycle', sel:'#cycle-hero-card,#view-cycle', title:'Cycle Syncing', body:"Log your period and get workouts synced to your hormonal phases.", condition: function(){ try { return (window.currentUser && (window.currentUser.gender === 'female' || window.currentUser.gender === 'Female')); } catch(e){ return false; } } },
@@ -16006,6 +16007,16 @@ window.endFeatureTour = function(skipped){
       fallbackTitle: 'Your course path lives here',
       body: 'Complete Balance Foundations to unlock every course. You can open any card now to preview its topics, even while it is locked.',
       fallbackBody: 'Open Course to preview the full curriculum. Complete Balance Foundations to start the other courses.'
+    },
+    {
+      id: 'course-your-week-v1',
+      tab: 'learning',
+      sel: '#balance-foundations-course-card',
+      fallbackSel: '.course-library-intro,#learning-content',
+      title: 'Your week at a glance',
+      fallbackTitle: 'Your week at a glance',
+      body: 'Open Balance Foundations, then tap Continue course to see your current lessons, actions, progress, and next step on one simple screen.',
+      fallbackBody: 'Continue Balance Foundations to open a simple view of your current week.'
     },
     {
       id: 'unlimited-level-progression-v1',

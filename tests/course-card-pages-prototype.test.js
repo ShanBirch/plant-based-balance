@@ -1,0 +1,57 @@
+const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
+
+const root = path.join(__dirname, '..');
+const learning = fs.readFileSync(path.join(root, 'lib/learning-inline.js'), 'utf8');
+const css = fs.readFileSync(path.join(root, 'css/dashboard/pbb-premium-overlays.css'), 'utf8');
+const dashboard = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
+
+assert.match(learning, /class="course-path-card-open" onclick="window\.openCoursePage\('\$\{course\.id\}'\)"/);
+assert.match(learning, /Course \$\{String\(course\.number\)\.padStart\(2, '0'\)\}/);
+assert.match(learning, /function renderCourseDetail\(course\)/);
+assert.match(learning, /class="course-week-page-nav-title">Course overview/);
+assert.match(learning, /class="course-detail-curriculum"/);
+assert.match(learning, /topics\.map\(\(topic, index\) => renderCourseTopicRow\(course, topic, index, topics\)\)/);
+assert.match(learning, /window\.openBalanceFoundationsCourse = function\(\)[\s\S]*window\.openCoursePage\(BALANCE_FOUNDATIONS\.id\)/);
+assert.match(learning, /window\.openBalanceIdentityCourse = function\(\)[\s\S]*window\.openCoursePage\(BALANCE_IDENTITY\.id\)/);
+assert.match(learning, /You can preview every topic now/);
+assert.match(learning, /if \(!course\.isUnlocked\)[\s\S]*course-detail-curriculum/);
+assert.match(learning, /function isCourseStarted\(course\)/);
+assert.match(learning, /function renderCourseWelcome\(course\)/);
+assert.match(learning, /window\.startCourseFromWelcome = function\(courseId\)/);
+assert.match(learning, /function renderFoundationsWeekPage\(course\)/);
+assert.match(learning, /class="course-week-page"/);
+assert.match(learning, /class="course-week-action-open"/);
+assert.match(learning, /week\.actions\.map\(action => renderFoundationsWeekAction/);
+assert.match(learning, /window\.backToCourseDetail = function\(courseId\)/);
+assert.match(learning, /view === 'courseWeek'/);
+assert.match(learning, /pushLearningHistoryState\(\)/);
+assert.doesNotMatch(learning, /\$\{renderFoundationsWeeklyBriefing\(course\)\}/);
+assert.doesNotMatch(learning, /class="course-detail-back"/);
+assert.match(learning, /class="course-card-logo"/);
+assert.match(learning, /accent: '#b8892b'/);
+assert.doesNotMatch(learning, /class="course-path-card-toggle"/);
+assert.doesNotMatch(learning, /class="course-card-monogram"/);
+
+assert.match(css, /Course library prototype: editorial cards opening dedicated course pages/);
+assert.match(css, /\.course-path-card-open\s*\{/);
+assert.match(css, /\.course-detail-hero\s*\{/);
+assert.match(css, /\.course-card-logo,/);
+assert.match(css, /\.course-week-briefing\s*\{/);
+assert.match(css, /\.course-week-page\s*\{/);
+assert.match(css, /\.course-week-action-row\s*\{/);
+assert.match(css, /\.course-week-action-open\s*\{/);
+assert.match(css, /\.course-welcome\s*\{/);
+assert.match(css, /@keyframes courseWelcomeLogo/);
+assert.match(css, /--course-hero:/);
+assert.match(css, /html\[data-pbb-theme="light"\] #course-learning-home[\s\S]*--course-hero:/);
+assert.doesNotMatch(css.slice(css.indexOf('/* Course tab: sequential'), css.indexOf('/* Personalized meal-plan shopping list */')), /#14271e|#0d1712|#09110d|#0f8b65|rgba\(16,\s*185,\s*129/);
+assert.match(css, /\.course-path-list\s*\{[\s\S]*max-width:\s*680px/);
+assert.match(css, /\.course-path-cards\s*\{[\s\S]*grid-template-columns:\s*minmax\(0, 1fr\)/);
+assert.match(css, /html\[data-pbb-theme="light"\] #course-learning-home/);
+assert.match(css, /@media \(max-width: 360px\)/);
+assert.match(dashboard, /id: 'course-your-week-v1'/);
+assert.ok((dashboard.match(/title:'Your week at a glance'|title: 'Your week at a glance'/g) || []).length >= 2);
+
+console.log('Course card-page prototype contract passed');
