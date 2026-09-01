@@ -99,5 +99,5 @@ test('Settings defines complete readable light and dark colour pairs', () => {
 
 test('phone caches receive the redesign', () => {
   assert.match(dashboard, /pbb-premium-overlays\.css\?v=111-meal-builder-search/);
-  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v454-meal-builder-grams'/);
+assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v455-guided-activity-log'/);
 });

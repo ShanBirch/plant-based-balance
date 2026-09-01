@@ -25,5 +25,5 @@ test('Form Check and Add an Exercise remain available inside workouts', () => {
 });
 
 test('returning phones receive the Movement cleanup', () => {
-  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v454-meal-builder-grams'/);
+assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v455-guided-activity-log'/);
 });

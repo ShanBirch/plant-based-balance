@@ -8650,29 +8650,64 @@ if(!window._pbbIsIOSSafari) {
 </div>
 
 <style>
-/* Move your way: a quieter, editorial Balance logging surface. */
-#view-log-activity { background: radial-gradient(circle at 88% 3%, rgba(14, 165, 233, .16), transparent 29%), var(--bg) !important; }
-#view-log-activity .activity-log-shell { padding: 0 20px calc(138px + env(safe-area-inset-bottom, 0px)) !important; }
-#view-log-activity .activity-log-header { min-height: 74px; border-bottom: 1px solid var(--border); }
-#view-log-activity .activity-log-header h2 { font-size: 2rem !important; letter-spacing: -.035em; text-align: left !important; }
-#view-log-activity .activity-section { margin-bottom: 22px !important; }
-#view-log-activity .activity-section-title { font-size: .72rem !important; letter-spacing: .13em !important; color: var(--text-muted) !important; }
-#activity-type-grid { gap: 9px !important; }
-#activity-type-grid .activity-type-choice { min-height: 92px; padding: 12px 6px !important; border: 1px solid var(--border) !important; background: color-mix(in srgb, var(--card-bg) 88%, transparent) !important; box-shadow: none !important; }
-#activity-type-grid .activity-type-choice.is-selected { border-color: #38bdf8 !important; background: linear-gradient(145deg, rgba(14,165,233,.22), rgba(34,197,94,.12)) !important; box-shadow: 0 0 0 3px rgba(14,165,233,.12) !important; }
-#activity-type-grid .activity-type-choice > div:first-child { font-size: 1.75rem !important; }
-#activity-type-grid .activity-type-choice > div:last-child { font-size: .76rem !important; }
-#view-log-activity .activity-text-input { padding: 16px 17px !important; border: 1px solid var(--border) !important; border-radius: 16px !important; box-shadow: inset 0 1px 0 rgba(255,255,255,.03); }
-#view-log-activity .activity-duration-card { border: 1px solid var(--border) !important; border-radius: 20px !important; padding: 14px !important; background: linear-gradient(135deg, color-mix(in srgb, var(--card-bg) 92%, #0ea5e9), var(--card-bg)) !important; }
-#view-log-activity .activity-duration-card button { background: var(--bg) !important; border: 1px solid var(--border) !important; width: 46px !important; height: 46px !important; }
-#view-log-activity #activity-duration-display { font-size: 2.35rem !important; letter-spacing: -.06em; }
-#view-log-activity #activity-intensity-row .intensity-btn { min-height: 82px; padding: 11px 6px !important; border: 1px solid var(--border) !important; background: var(--card-bg) !important; }
-#view-log-activity #activity-intensity-row .intensity-btn.is-selected { border-color: #38bdf8 !important; background: rgba(14,165,233,.14) !important; box-shadow: 0 0 0 3px rgba(14,165,233,.1) !important; }
-#view-log-activity .activity-burn-card { display:flex; align-items:center; justify-content:space-between; padding: 16px 18px !important; border: 1px solid rgba(56,189,248,.34); border-radius: 18px !important; background: linear-gradient(135deg, #0f3a53, #075985) !important; text-align:left !important; }
-#view-log-activity .activity-burn-card > div:first-child { font-size:.72rem !important; }
-#view-log-activity .activity-burn-card > div:last-child { margin:0 !important; }
-#view-log-activity #activity-photo-btn { border-radius: 18px !important; padding: 18px !important; border-color: var(--border) !important; }
-#view-log-activity #activity-save-btn { border-radius: 18px !important; background: linear-gradient(135deg, #16a34a, #0891b2) !important; box-shadow: 0 10px 24px rgba(8,145,178,.25) !important; }
+/* Guided activity logging: Balance cream, white and gold with paired dark roles. */
+#view-log-activity { --activity-accent:#d6ad55; --activity-accent-soft:rgba(214,173,85,.14); --activity-action:#f0d27a; background:radial-gradient(circle at 86% 2%,rgba(214,173,85,.12),transparent 28%),var(--bg)!important; }
+html[data-pbb-theme="light"] #view-log-activity { --activity-accent:#9a6b12; --activity-accent-soft:rgba(184,137,43,.11); --activity-action:#d9ad42; }
+#view-log-activity .activity-log-shell { padding:0 20px calc(116px + env(safe-area-inset-bottom,0px))!important; }
+#view-log-activity .activity-log-header { min-height:72px;border-bottom:1px solid var(--border); }
+#view-log-activity .activity-log-header h2 { font-size:1.55rem!important;letter-spacing:-.025em;text-align:center!important;color:var(--text-main)!important;-webkit-text-fill-color:var(--text-main)!important; }
+.activity-guided-progress { display:flex;gap:6px;padding:20px 0 24px; }
+.activity-guided-progress span { height:4px;flex:1;border-radius:999px;background:var(--border);transition:background .2s ease; }
+.activity-guided-progress span.is-active { background:var(--activity-accent); }
+.activity-guided-kicker { margin:0 0 7px;color:var(--activity-accent);font-size:.7rem;font-weight:900;letter-spacing:.14em;text-transform:uppercase; }
+.activity-guided-question { margin:0 0 8px;font-family:'Playfair Display',serif;font-size:1.9rem;line-height:1.08;color:var(--text-main);-webkit-text-fill-color:var(--text-main); }
+.activity-guided-helper { margin:0 0 20px;color:var(--text-muted);font-size:.88rem;line-height:1.48; }
+#activity-type-grid { display:flex!important;flex-direction:column;gap:10px!important; }
+#activity-type-grid .activity-type-choice { min-height:64px;padding:0 16px!important;border:1px solid var(--border)!important;border-radius:17px!important;background:var(--card-bg)!important;display:grid!important;grid-template-columns:36px 1fr 20px;align-items:center;text-align:left!important;box-shadow:none!important;transform:none!important; }
+#activity-type-grid .activity-type-choice.is-extra { display:none!important; }
+#activity-type-grid.is-expanded .activity-type-choice.is-extra { display:grid!important; }
+#activity-type-grid .activity-type-choice::after { content:'›';grid-column:3;font-size:1.2rem;color:var(--text-muted); }
+#activity-type-grid .activity-type-choice.is-selected { border:2px solid var(--activity-accent)!important;background:var(--activity-accent-soft)!important;box-shadow:0 8px 22px rgba(80,58,17,.12)!important; }
+#activity-type-grid .activity-type-choice.is-selected::after { content:'✓';color:var(--activity-accent);font-weight:900; }
+#activity-type-grid .activity-type-choice>div:first-child { grid-column:1;font-size:1.55rem!important; }
+#activity-type-grid .activity-type-choice>div:last-child { grid-column:2;font-size:.92rem!important;color:var(--text-main)!important;-webkit-text-fill-color:var(--text-main)!important; }
+#view-log-activity .activity-section { margin-bottom:16px!important;padding:17px;border:1px solid var(--border);border-radius:19px;background:var(--card-bg); }
+#view-log-activity .activity-section-title { font-size:.67rem!important;letter-spacing:.13em!important;color:var(--text-muted)!important;-webkit-text-fill-color:var(--text-muted)!important; }
+#view-log-activity .activity-text-input { padding:15px 16px!important;border:1px solid var(--border)!important;border-radius:14px!important;background:var(--bg)!important;color:var(--text-main)!important;-webkit-text-fill-color:var(--text-main)!important; }
+#view-log-activity .activity-text-input:focus { border:2px solid var(--activity-accent)!important; }
+#view-log-activity .activity-duration-card { border:0!important;border-radius:14px!important;padding:2px!important;background:transparent!important; }
+#view-log-activity .activity-duration-card button { background:var(--bg)!important;border:1px solid var(--border)!important;color:var(--text-main)!important;width:46px!important;height:46px!important; }
+#view-log-activity #activity-duration-display { font-size:2.2rem!important;letter-spacing:-.05em;color:var(--text-main)!important;-webkit-text-fill-color:var(--text-main)!important; }
+#view-log-activity #activity-intensity-row .intensity-btn { min-height:52px;padding:9px 5px!important;border:1px solid var(--border)!important;background:var(--bg)!important; }
+#view-log-activity #activity-intensity-row .intensity-btn>div:first-child { display:none; }
+#view-log-activity #activity-intensity-row .intensity-btn.is-selected { border-color:var(--activity-accent)!important;background:var(--activity-accent-soft)!important;box-shadow:0 0 0 2px var(--activity-accent-soft)!important; }
+#view-log-activity .activity-burn-card { display:flex;align-items:center;justify-content:space-between;padding:15px 17px!important;border:1px solid var(--border)!important;border-radius:17px!important;background:var(--bg)!important;color:var(--text-main)!important;text-align:left!important; }
+#view-log-activity .activity-burn-card>div:first-child { color:var(--text-muted)!important;-webkit-text-fill-color:var(--text-muted)!important;opacity:1!important; }
+#view-log-activity .activity-burn-card>div:last-child { margin:0!important;color:var(--activity-accent)!important;-webkit-text-fill-color:var(--activity-accent)!important; }
+.activity-guided-footer { position:fixed;left:50%;bottom:0;transform:translateX(-50%);z-index:510;width:min(100%,500px);padding:14px 20px calc(14px + env(safe-area-inset-bottom,0px));display:flex;gap:10px;background:linear-gradient(transparent,var(--bg) 20%,var(--bg)); }
+.activity-guided-footer button { min-height:56px;border-radius:17px;font:inherit;font-size:.96rem;font-weight:900;cursor:pointer; }
+#activity-guided-back-btn { display:none;width:76px;border:1px solid var(--border);background:var(--card-bg);color:var(--text-main); }
+#activity-guided-next-btn,#activity-save-btn { flex:1;border:0;background:linear-gradient(100deg,var(--activity-accent),var(--activity-action))!important;color:#17130d!important;-webkit-text-fill-color:#17130d!important;box-shadow:0 10px 24px rgba(147,105,21,.22)!important; }
+#activity-guided-next-btn:disabled { opacity:.42;box-shadow:none!important; }
+.activity-guided-review { padding:22px;border:1px solid var(--border);border-radius:23px;background:linear-gradient(145deg,var(--card-bg),var(--activity-accent-soft)); }
+.activity-guided-review-head { display:flex;align-items:center;gap:13px;margin-bottom:18px; }
+.activity-guided-review-emoji { font-size:2.5rem; }
+.activity-guided-review h3 { margin:0;font-family:'Playfair Display',serif;font-size:1.65rem;color:var(--text-main);-webkit-text-fill-color:var(--text-main); }
+.activity-guided-review-date { margin-top:4px;color:var(--text-muted);font-size:.78rem; }
+.activity-guided-review-stats { display:grid;grid-template-columns:repeat(3,1fr);gap:8px; }
+.activity-guided-review-stat { padding:12px 5px;border:1px solid var(--border);border-radius:13px;background:var(--card-bg);text-align:center; }
+.activity-guided-review-stat span { display:block;color:var(--text-muted);font-size:.6rem;letter-spacing:.08em;text-transform:uppercase; }
+.activity-guided-review-stat strong { display:block;margin-top:5px;color:var(--text-main);font-size:.86rem; }
+.activity-guided-edit { margin-top:15px;border:0;background:transparent;color:var(--activity-accent);font-weight:900;cursor:pointer; }
+#view-activity-success { --activity-success-accent:#d6ad55;background:radial-gradient(circle at 82% 3%,rgba(214,173,85,.14),transparent 29%),var(--bg)!important;color:var(--text-main)!important; }
+html[data-pbb-theme="light"] #view-activity-success { --activity-success-accent:#9a6b12; }
+#view-activity-success h1,#view-activity-success #activity-success-label { color:var(--text-main)!important;-webkit-text-fill-color:var(--text-main)!important; }
+#view-activity-success [style*="rgba(255,255,255,0.15)"] { background:var(--card-bg)!important;border:1px solid var(--border)!important;color:var(--text-main)!important; }
+#view-activity-success #activity-share-section { background:var(--card-bg)!important;border:1px solid var(--border)!important;color:var(--text-main)!important; }
+#view-activity-success #activity-share-photo-btn { background:var(--activity-accent-soft,var(--card-bg))!important;border-color:var(--activity-success-accent)!important;color:var(--text-main)!important;-webkit-text-fill-color:var(--text-main)!important; }
+#view-activity-success #activity-share-destination-actions button { background:linear-gradient(100deg,var(--activity-success-accent),#e6c86d)!important;color:#17130d!important;-webkit-text-fill-color:#17130d!important; }
+#view-activity-success #activity-xp-status,#view-activity-success #activity-no-xp-hint { color:var(--text-main)!important;-webkit-text-fill-color:var(--text-main)!important; }
+#view-activity-success [onclick="closeActivitySuccess()"] { background:var(--card-bg)!important;border:1px solid var(--border)!important;color:var(--text-main)!important;-webkit-text-fill-color:var(--text-main)!important; }
 </style>
 
 <!-- LOG ACTIVITY VIEW -->
@@ -8681,18 +8716,26 @@ if(!window._pbbIsIOSSafari) {
 
         <!-- Header -->
         <div class="activity-log-header" style="display: flex; align-items: center; padding: calc(15px + env(safe-area-inset-top, 0px)) 0 16px 0; gap: 12px; position: sticky; top: 0; background: var(--bg); z-index: 10;">
-            <div style="width: 40px;"></div>
+            <button type="button" onclick="closeLogActivity()" aria-label="Close activity log" style="width:40px;height:40px;border-radius:50%;border:1px solid var(--border);background:var(--card-bg);color:var(--text-main);font-size:1.25rem;cursor:pointer;">&#x2039;</button>
             <h2 style="font-family: 'Playfair Display', serif; font-size: 1.5rem; margin: 0; flex: 1; text-align: center;">Log Activity</h2>
             <div style="width: 40px;"></div>
         </div>
 
-        <!-- Activity Type Grid -->
-        <div class="activity-section" style="margin-bottom: 24px;">
-            <div class="activity-section-title" style="font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 12px;">Activity Type</div>
-            <div id="activity-type-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;"></div>
-        </div>
+        <div id="activity-guided-progress" class="activity-guided-progress" aria-label="Step 1 of 3"><span class="is-active"></span><span></span><span></span></div>
 
-        <!-- Balance GPS route recording -->
+        <section id="activity-guided-step-1">
+            <div class="activity-guided-kicker">Step 1 of 3</div>
+            <h3 class="activity-guided-question">What did you do?</h3>
+            <p class="activity-guided-helper">Choose the movement that best matches your session.</p>
+            <div id="activity-type-grid"></div>
+        </section>
+
+        <section id="activity-guided-step-2" style="display:none;">
+            <div class="activity-guided-kicker">Step 2 of 3</div>
+            <h3 class="activity-guided-question">Add the details</h3>
+            <p class="activity-guided-helper">Keep it quick. You can add a photo or workout screenshot after saving.</p>
+
+        <!-- Real Balance GPS route recording -->
         <div id="activity-route-section" class="activity-section" style="display:none; margin-bottom:24px; padding:18px; border-radius:18px; background:linear-gradient(135deg,rgba(5,150,105,.12),rgba(8,145,178,.12)); border:1px solid rgba(8,145,178,.3);">
             <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
                 <div>
@@ -8711,7 +8754,7 @@ if(!window._pbbIsIOSSafari) {
                     <div id="activity-route-duration" style="font-size:1.1rem; font-weight:800; color:var(--text-main); margin-top:3px;">00:00</div>
                 </div>
             </div>
-            <button id="activity-route-toggle-btn" type="button" onclick="toggleBalanceRouteTracking()" style="width:100%; margin-top:12px; border:0; border-radius:13px; padding:13px 14px; background:linear-gradient(135deg,#059669,#0891b2); color:white; font:inherit; font-weight:800; cursor:pointer;">Start route recording</button>
+            <button id="activity-route-toggle-btn" type="button" onclick="toggleBalanceRouteTracking()" style="width:100%; margin-top:12px; border:0; border-radius:13px; padding:13px 14px; background:linear-gradient(100deg,var(--activity-accent),var(--activity-action)); color:#17130d; font:inherit; font-weight:900; cursor:pointer;">Start route recording</button>
         </div>
 
         <!-- Custom Label -->
@@ -8739,15 +8782,15 @@ if(!window._pbbIsIOSSafari) {
             <div id="activity-intensity-row" style="display: flex; gap: 8px;">
                 <button onclick="selectActivityIntensity('light')" class="intensity-btn" data-intensity="light" style="flex: 1; padding: 14px 8px; border-radius: 14px; border: 2px solid var(--border); background: var(--card-bg); cursor: pointer; text-align: center; transition: all 0.2s;">
                     <div style="font-size: 1.2rem;">🚶</div>
-                    <div style="font-weight: 700; font-size: 0.85rem; margin-top: 4px; color: var(--text-main);">Light</div>
+                    <div style="font-weight: 700; font-size: 0.85rem; margin-top: 4px; color: var(--text-main);">Easy</div>
                 </button>
                 <button onclick="selectActivityIntensity('moderate')" class="intensity-btn" data-intensity="moderate" style="flex: 1; padding: 14px 8px; border-radius: 14px; border: 2px solid #0ea5e9; background: rgba(14,165,233,0.1); cursor: pointer; text-align: center; transition: all 0.2s;">
                     <div style="font-size: 1.2rem;">🏃</div>
-                    <div style="font-weight: 700; font-size: 0.85rem; margin-top: 4px; color: var(--text-main);">Moderate</div>
+                    <div style="font-weight: 700; font-size: 0.85rem; margin-top: 4px; color: var(--text-main);">Steady</div>
                 </button>
                 <button onclick="selectActivityIntensity('vigorous')" class="intensity-btn" data-intensity="vigorous" style="flex: 1; padding: 14px 8px; border-radius: 14px; border: 2px solid var(--border); background: var(--card-bg); cursor: pointer; text-align: center; transition: all 0.2s;">
                     <div style="font-size: 1.2rem;">🔥</div>
-                    <div style="font-weight: 700; font-size: 0.85rem; margin-top: 4px; color: var(--text-main);">Vigorous</div>
+                    <div style="font-weight: 700; font-size: 0.85rem; margin-top: 4px; color: var(--text-main);">Hard</div>
                 </button>
             </div>
         </div>
@@ -8761,42 +8804,50 @@ if(!window._pbbIsIOSSafari) {
             </div>
         </div>
 
-        <!-- Photo Section -->
-        <div class="activity-section" style="margin-bottom: 24px;">
-            <div id="activity-photo-heading" style="font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 12px;">Venue Photo</div>
-            <div id="activity-photo-preview" style="display: none; margin-bottom: 12px; border-radius: 16px; overflow: hidden; position: relative;">
-                <img id="activity-photo-img" src="" style="width: 100%; max-height: 250px; object-fit: cover;">
-                <button onclick="removeActivityPhoto()" style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.6); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 1.1rem;">×</button>
-            </div>
-            <button id="activity-photo-btn" onclick="captureActivityPhoto()" style="width: 100%; padding: 16px; border-radius: 14px; border: 2px dashed var(--border); background: var(--card-bg); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--text-main);">
-                <span style="font-size: 1.3rem;">📸</span>
-                <span style="font-weight: 600;">Add venue photo for XP</span>
-            </button>
-            <input id="activity-photo-input" type="file" accept="image/*" capture="environment" style="display: none;" onchange="handleActivityPhotoCapture(this)">
-            <div id="activity-photo-hint" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 6px; text-align: center;">Photos of gyms, courts, pools, treadmills = XP. Outdoor scenery = no XP.</div>
-        </div>
-
         <!-- Notes -->
         <div class="activity-section" style="margin-bottom: 24px;">
             <div id="activity-notes-heading" style="font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 8px;">Notes <span style="font-weight:400; text-transform:none;">(optional)</span></div>
             <textarea class="activity-text-input" id="activity-notes-input" placeholder="How was your session?" rows="3" style="width: 100%; padding: 14px 16px; border-radius: 14px; border: 2px solid var(--border); background: var(--card-bg); color: var(--text-main); font-size: 1rem; box-sizing: border-box; resize: none; outline: none; font-family: inherit;" onfocus="this.style.borderColor='#0ea5e9'" onblur="this.style.borderColor='var(--border)'"></textarea>
         </div>
 
-        <!-- Save Button -->
-        <button id="activity-save-btn" onclick="saveActivity()" style="width: 100%; padding: 18px; border-radius: 16px; background: linear-gradient(135deg, #0ea5e9, #06b6d4); color: white; border: none; font-size: 1.1rem; font-weight: 800; cursor: pointer; box-shadow: 0 8px 20px rgba(14,165,233,0.3);">
-            Log Activity
-        </button>
+        </section>
+
+        <section id="activity-guided-step-3" style="display:none;">
+            <div class="activity-guided-kicker">Step 3 of 3</div>
+            <h3 class="activity-guided-question">Ready to save?</h3>
+            <p class="activity-guided-helper">Check the details below. Your photo and sharing choices come next.</p>
+            <div class="activity-guided-review">
+                <div class="activity-guided-review-head"><span id="activity-guided-review-emoji" class="activity-guided-review-emoji">🏃</span><div><h3 id="activity-guided-review-name">Activity</h3><div class="activity-guided-review-date">Today</div></div></div>
+                <div class="activity-guided-review-stats">
+                    <div class="activity-guided-review-stat"><span>Duration</span><strong id="activity-guided-review-duration">30 min</strong></div>
+                    <div class="activity-guided-review-stat"><span>Effort</span><strong id="activity-guided-review-intensity">Steady</strong></div>
+                    <div class="activity-guided-review-stat"><span>GPS</span><strong id="activity-guided-review-gps">Off</strong></div>
+                </div>
+                <div class="activity-burn-card" style="margin-top:12px!important;margin-bottom:0!important;"><div>Estimated burn</div><div><span id="activity-guided-review-calories" style="font-size:1.25rem;font-weight:900;">0</span> kcal</div></div>
+                <button type="button" class="activity-guided-edit" onclick="setActivityGuidedStep(2)">Edit details</button>
+            </div>
+        </section>
+
+        <!-- Compatibility hooks: photos now belong to the post-save share screen. -->
+        <div id="activity-photo-preview" style="display:none;"><img id="activity-photo-img" alt=""></div>
+        <button id="activity-photo-btn" type="button" style="display:none;"></button>
+        <input id="activity-photo-input" type="file" accept="image/*" capture="environment" style="display:none;" onchange="handleActivityPhotoCapture(this)">
+    </div>
+    <div class="activity-guided-footer">
+        <button id="activity-guided-back-btn" type="button" onclick="previousActivityGuidedStep()">Back</button>
+        <button id="activity-guided-next-btn" type="button" onclick="advanceActivityGuidedStep()" disabled>Choose an activity</button>
+        <button id="activity-save-btn" type="button" onclick="saveActivity()" style="display:none;">Save activity</button>
     </div>
 </div>
 
 <!-- ACTIVITY SUCCESS VIEW -->
-<div id="view-activity-success" class="app-view" style="display:none; height: 100vh; position: fixed; top: 0; left: 0; width: 100%; z-index: 500; background: linear-gradient(135deg, #0c4a6e, #0284c7, #0ea5e9); color: white; overflow-y: auto;">
+<div id="view-activity-success" class="app-view" style="display:none; height: 100vh; position: fixed; top: 0; left: 0; width: 100%; z-index: 500; background:var(--bg); color:var(--text-main); overflow-y: auto;">
     <div style="padding: 20px; text-align: center; max-width: 500px; margin: 0 auto; display: flex; flex-direction: column;">
 
         <!-- Header -->
         <div style="padding: 30px 15px 20px;">
             <div id="activity-success-emoji" style="font-size: 3.5rem; margin-bottom: 10px;">🏃</div>
-            <h1 style="font-family: 'Playfair Display', serif; font-size: 2rem; margin: 0; color: white;">Activity Logged!</h1>
+            <h1 style="font-family: 'Playfair Display', serif; font-size: 2rem; margin: 0; color:var(--text-main);">Activity logged</h1>
             <p id="activity-success-label" style="font-size: 1rem; opacity: 0.9; margin-top: 5px;">Great work</p>
         </div>
 
@@ -8818,7 +8869,8 @@ if(!window._pbbIsIOSSafari) {
 
         <!-- Share Section -->
         <div id="activity-share-section" style="background: rgba(255,255,255,0.15); padding: 20px; border-radius: 16px; margin: 15px 0;">
-            <div style="font-size: 1.1rem; font-weight: 700; margin-bottom: 10px;">Share your activity</div>
+            <div style="font-family:'Playfair Display',serif;font-size:1.35rem;font-weight:700;margin-bottom:5px;">Add a photo or screenshot</div>
+            <div style="font-size:.8rem;color:var(--text-muted);margin-bottom:12px;line-height:1.45;">Personalise your activity, then choose where you want to share it.</div>
             <div style="position:relative; margin:0 0 10px;">
             <input id="activity-share-photo-gallery-input" type="file" accept="image/*" style="display:none;" onchange="handleActivitySharePhotoSelected(this)">
             <input id="activity-share-photo-camera-input" type="file" accept="image/*" capture="environment" style="display:none;" onchange="handleActivitySharePhotoSelected(this)">
@@ -8835,7 +8887,7 @@ if(!window._pbbIsIOSSafari) {
                 <img id="activity-share-style-preview" alt="Activity share preview" style="width:100%; height:100%; object-fit:cover; display:block; transition:opacity 0.18s ease;" />
             </div>
             <div id="activity-share-style-controls" style="display:none; background:#0f172a; border-radius:12px; padding:11px; margin:0 0 10px;"></div>
-            <div style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px;">
+            <div id="activity-share-destination-actions" style="display:none; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px;">
                 <button id="activity-share-btn" onclick="shareActivityCardToFeed()" style="width: 100%; background: white; color: #0284c7; padding: 14px 8px; border-radius: 12px; font-weight: 700; cursor: pointer; border: none; display: flex; align-items:center; justify-content:center; gap:6px; font-size:0.88rem;">
                     <span id="activity-share-btn-text">Balance Feed (+15 XP)</span>
                 </button>
@@ -19674,13 +19726,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-        s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=49';
+        s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=50-guided-activity';
             s.onload = function() { if(window._crumb)window._crumb('script10_deferred_loaded'); };
             document.head.appendChild(s);
         }, 1500);
     }, { once: true });
 } else {
-        document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=49"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=50-guided-activity"><\/script>');
 }
 </script>
 

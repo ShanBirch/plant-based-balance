@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v454-meal-builder-grams'; // v454: Exact gram weights in the search-first Meal Builder
+const CACHE_NAME = 'pbb-app-v455-guided-activity-log'; // v455: Guided activity logging with real GPS and post-save photo sharing
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -25,7 +25,7 @@ const ASSETS = [
   './css/dashboard/pbb-onboarding-comeback.css?v=8',
   './css/dashboard/pbb-onboarding-foundations.css?v=7-single-render',
   './js/dashboard/dashboard-script-7-video_logic.js?v=20260815-exercise-thumbnails',
-    './js/dashboard/dashboard-script-10-points_widget_functions.js?v=49',
+  './js/dashboard/dashboard-script-10-points_widget_functions.js?v=50-guided-activity',
   './js/dashboard/pbb-deferred-formcheck.js?v=58-ios-exercise-video-upload&video_health=2',
   './js/dashboard/pbb-deferred-workoutbuilder.js?v=10',
   './js/dashboard/pbb-deferred-yourworkouts.js',

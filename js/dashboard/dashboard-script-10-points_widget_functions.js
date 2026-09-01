@@ -6609,6 +6609,7 @@ let activityFormState = {
 
 // Saved activity data for sharing after save
 let savedActivityData = null;
+let activityGuidedStep = 1;
 
 const BALANCE_ROUTE_ACTIVITY_TYPES = new Set(['walking', 'running', 'cycling', 'hiking']);
 const BALANCE_ROUTE_STORAGE_KEY = 'balance_active_route_v1';
@@ -6686,7 +6687,8 @@ function updateBalanceRouteUI() {
     const duration = document.getElementById('activity-route-duration');
     if (button) {
         button.textContent = balanceRouteTracker.active ? 'Stop route recording' : (balanceRouteTracker.points.length > 1 ? 'Record route again' : 'Start route recording');
-        button.style.background = balanceRouteTracker.active ? '#dc2626' : 'linear-gradient(135deg,#059669,#0891b2)';
+        button.style.background = balanceRouteTracker.active ? '#a33b32' : 'linear-gradient(100deg,var(--activity-accent),var(--activity-action))';
+        button.style.color = balanceRouteTracker.active ? '#ffffff' : '#17130d';
     }
     if (status) {
         const nativeRouteRecorder = !!window.Capacitor?.Plugins?.BackgroundGeolocation;
@@ -6695,7 +6697,7 @@ function updateBalanceRouteUI() {
                 ? 'Balance is recording your route. You can lock your phone and keep moving.'
                 : 'Balance is recording your route. Keep this page open while you move.'
             : balanceRouteTracker.points.length > 1
-                ? 'Route ready. Add a photo now or after you finish.'
+                ? 'Route ready. Your photo and sharing choices come after you save.'
                 : 'Balance uses your phone GPS to record the route you choose.';
     }
     if (distance) distance.textContent = `${(balanceRouteTracker.distanceMeters / 1000).toFixed(2)} km`;
@@ -6703,6 +6705,10 @@ function updateBalanceRouteUI() {
         const end = balanceRouteTracker.active ? Date.now() : (balanceRouteTracker.stoppedAt || Date.now());
         const seconds = balanceRouteTracker.startedAt ? Math.max(0, Math.floor((end - balanceRouteTracker.startedAt) / 1000)) : 0;
         duration.textContent = `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+    }
+    const guidedNext = document.getElementById('activity-guided-next-btn');
+    if (guidedNext && activityGuidedStep === 2) {
+        guidedNext.textContent = balanceRouteTracker.active ? 'Stop GPS & review' : 'Next · Review';
     }
 }
 
@@ -6825,6 +6831,95 @@ async function toggleBalanceRouteTracking() {
 }
 window.toggleBalanceRouteTracking = toggleBalanceRouteTracking;
 
+function updateActivityGuidedReview() {
+    const typeInfo = ACTIVITY_TYPES.find(type => type.key === activityFormState.selectedType) || ACTIVITY_TYPES[ACTIVITY_TYPES.length - 1];
+    const label = document.getElementById('activity-label-input')?.value.trim() || typeInfo.label;
+    const intensityLabels = { light: 'Easy', moderate: 'Steady', vigorous: 'Hard' };
+    const calories = estimateCaloriesBurned(
+        activityFormState.selectedType || 'other',
+        activityFormState.intensity,
+        activityFormState.duration,
+        activityFormState.userWeightKg
+    );
+    const hasRoute = balanceRouteTracker.active || balanceRouteTracker.points.length > 1;
+    const emoji = document.getElementById('activity-guided-review-emoji');
+    const name = document.getElementById('activity-guided-review-name');
+    const duration = document.getElementById('activity-guided-review-duration');
+    const intensity = document.getElementById('activity-guided-review-intensity');
+    const gps = document.getElementById('activity-guided-review-gps');
+    const calorieValue = document.getElementById('activity-guided-review-calories');
+    if (emoji) emoji.textContent = typeInfo.emoji;
+    if (name) name.textContent = label;
+    if (duration) duration.textContent = activityFormState.duration + ' min';
+    if (intensity) intensity.textContent = intensityLabels[activityFormState.intensity] || 'Steady';
+    if (gps) gps.textContent = hasRoute ? (balanceRouteTracker.distanceMeters / 1000).toFixed(2) + ' km' : 'Off';
+    if (calorieValue) calorieValue.textContent = String(calories);
+}
+
+function setActivityGuidedStep(step) {
+    activityGuidedStep = Math.max(1, Math.min(3, Number(step) || 1));
+    [1, 2, 3].forEach(number => {
+        const section = document.getElementById('activity-guided-step-' + number);
+        if (section) section.style.display = number === activityGuidedStep ? 'block' : 'none';
+    });
+    document.querySelectorAll('#activity-guided-progress span').forEach((segment, index) => {
+        segment.classList.toggle('is-active', index < activityGuidedStep);
+    });
+    const progress = document.getElementById('activity-guided-progress');
+    if (progress) progress.setAttribute('aria-label', 'Step ' + activityGuidedStep + ' of 3');
+    const backButton = document.getElementById('activity-guided-back-btn');
+    const nextButton = document.getElementById('activity-guided-next-btn');
+    const saveButton = document.getElementById('activity-save-btn');
+    if (backButton) backButton.style.display = activityGuidedStep > 1 ? 'block' : 'none';
+    if (nextButton) {
+        nextButton.style.display = activityGuidedStep < 3 ? 'block' : 'none';
+        nextButton.disabled = activityGuidedStep === 1 && !activityFormState.selectedType;
+        nextButton.textContent = activityGuidedStep === 1
+            ? (activityFormState.selectedType ? 'Next · Add details' : 'Choose an activity')
+            : (balanceRouteTracker.active ? 'Stop GPS & review' : 'Next · Review');
+    }
+    if (saveButton) {
+        saveButton.style.display = activityGuidedStep === 3 ? 'block' : 'none';
+        saveButton.disabled = false;
+        saveButton.textContent = 'Save activity';
+    }
+    if (activityGuidedStep === 3) updateActivityGuidedReview();
+    const view = document.getElementById('view-log-activity');
+    if (view) view.scrollTo({ top: 0, behavior: 'smooth' });
+}
+window.setActivityGuidedStep = setActivityGuidedStep;
+
+async function advanceActivityGuidedStep() {
+    if (activityGuidedStep === 1 && !activityFormState.selectedType) {
+        showToast('Choose an activity first', 'info');
+        return;
+    }
+    if (activityGuidedStep === 2 && balanceRouteTracker.active) {
+        const button = document.getElementById('activity-guided-next-btn');
+        if (button) {
+            button.disabled = true;
+            button.textContent = 'Finishing GPS route...';
+        }
+        await stopBalanceRouteTracking({ silent: true });
+    }
+    setActivityGuidedStep(activityGuidedStep + 1);
+}
+window.advanceActivityGuidedStep = advanceActivityGuidedStep;
+
+function previousActivityGuidedStep() {
+    setActivityGuidedStep(activityGuidedStep - 1);
+}
+window.previousActivityGuidedStep = previousActivityGuidedStep;
+
+function toggleActivityTypeChoices() {
+    const grid = document.getElementById('activity-type-grid');
+    const shouldShow = !grid?.classList.contains('is-expanded');
+    grid?.classList.toggle('is-expanded', shouldShow);
+    const button = document.getElementById('activity-type-more-btn');
+    if (button) button.textContent = shouldShow ? 'Show fewer activities' : 'More activities';
+}
+window.toggleActivityTypeChoices = toggleActivityTypeChoices;
+
 function openLogActivityForm(prefill = null) {
     const activityPrefill = prefill && typeof prefill === 'object' ? prefill : {};
     const prefillDuration = parseInt(activityPrefill.durationMinutes || activityPrefill.duration, 10);
@@ -6870,33 +6965,33 @@ function openLogActivityForm(prefill = null) {
     document.getElementById('activity-label-input').value = activityPrefill.label || '';
     document.getElementById('activity-notes-input').value = activityPrefill.notes || '';
     document.getElementById('activity-duration-display').textContent = String(activityFormState.duration);
-    document.getElementById('activity-photo-preview').style.display = 'none';
-    document.getElementById('activity-photo-btn').style.display = 'flex';
+    const activityPhotoPreview = document.getElementById('activity-photo-preview');
+    const activityPhotoButton = document.getElementById('activity-photo-btn');
+    if (activityPhotoPreview) activityPhotoPreview.style.display = 'none';
+    if (activityPhotoButton) activityPhotoButton.style.display = 'none';
     document.getElementById('activity-calories-display').textContent = '0';
     document.getElementById('activity-save-btn').disabled = false;
-    document.getElementById('activity-save-btn').textContent = 'Log Activity';
+    document.getElementById('activity-save-btn').textContent = 'Save activity';
 
     const isPilot = isMoveYourWayPilotUser();
     const title = document.querySelector('#view-log-activity h2');
-    if (title) title.textContent = isPilot ? 'Log your movement' : 'Log Activity';
-    const photoLabel = document.getElementById('activity-photo-heading');
-    const photoHint = document.getElementById('activity-photo-hint');
+    if (title) title.textContent = 'Log Activity';
     const notesHeading = document.getElementById('activity-notes-heading');
-    if (photoLabel) photoLabel.textContent = isPilot ? 'Photo or workout screenshot' : 'Venue Photo';
-    if (photoHint) photoHint.textContent = isPilot ? 'Optional. Add a photo now, or write a caption to make it your own.' : 'Photos of gyms, courts, pools, treadmills = XP. Outdoor scenery = no XP.';
     if (notesHeading) notesHeading.innerHTML = isPilot ? 'Caption <span style="font-weight:400; text-transform:none;">(optional)</span>' : 'Notes <span style="font-weight:400; text-transform:none;">(optional)</span>';
 
     // Build activity type grid
     const grid = document.getElementById('activity-type-grid');
-    const visibleTypes = isPilot
-        ? ACTIVITY_TYPES.filter(t => ['fitness_class', 'running', 'walking', 'cycling', 'pilates', 'other'].includes(t.key))
-        : ACTIVITY_TYPES;
-    grid.innerHTML = visibleTypes.map(t => `
-        <button class="activity-type-choice" onclick="selectActivityType('${t.key}')" id="activity-type-btn-${t.key}" style="padding: 14px 8px; border-radius: 14px; border: 2px solid var(--border); background: var(--card-bg); cursor: pointer; text-align: center; transition: all 0.2s;">
+    const primaryTypeKeys = ['walking', 'running', 'cycling', 'fitness_class', 'swimming', 'other'];
+    const orderedTypes = primaryTypeKeys
+        .map(key => ACTIVITY_TYPES.find(type => type.key === key))
+        .filter(Boolean)
+        .concat(ACTIVITY_TYPES.filter(type => !primaryTypeKeys.includes(type.key)));
+    grid.innerHTML = orderedTypes.map(t => `
+        <button class="activity-type-choice${primaryTypeKeys.includes(t.key) ? '' : ' is-extra'}" onclick="selectActivityType('${t.key}')" id="activity-type-btn-${t.key}" style="padding:14px 8px;border-radius:14px;border:2px solid var(--border);background:var(--card-bg);cursor:pointer;text-align:center;transition:all .2s;">
             <div style="font-size: 1.5rem;">${t.emoji}</div>
             <div style="font-weight: 700; font-size: 0.75rem; margin-top: 4px; color: var(--text-main);">${t.label}</div>
         </button>
-    `).join('');
+    `).join('') + '<button id="activity-type-more-btn" type="button" onclick="toggleActivityTypeChoices()" style="min-height:48px;border:1px dashed var(--border);border-radius:14px;background:transparent;color:var(--text-muted);font:inherit;font-weight:800;cursor:pointer;">More activities</button>';
 
     selectActivityIntensity(activityFormState.intensity);
     if (activityFormState.selectedType) {
@@ -6905,6 +7000,7 @@ function openLogActivityForm(prefill = null) {
         updateActivityCalories();
         updateBalanceRouteUI();
     }
+    setActivityGuidedStep(1);
 
     // Load user weight for calorie estimation
     loadUserWeightForActivity();
@@ -6938,17 +7034,22 @@ function selectActivityType(typeKey) {
         const btn = document.getElementById(`activity-type-btn-${t.key}`);
         if (btn) {
             btn.classList.toggle('is-selected', t.key === typeKey);
-            if (t.key === typeKey) {
-                btn.style.border = `2px solid ${t.color}`;
-                btn.style.background = `${t.color}15`;
-                btn.style.transform = 'scale(1.05)';
-            } else {
-                btn.style.border = '2px solid var(--border)';
-                btn.style.background = 'var(--card-bg)';
-                btn.style.transform = 'scale(1)';
-            }
+            btn.style.removeProperty('border');
+            btn.style.removeProperty('background');
+            btn.style.removeProperty('transform');
         }
     });
+    const selectedButton = document.getElementById(`activity-type-btn-${typeKey}`);
+    if (selectedButton?.classList.contains('is-extra')) {
+        document.getElementById('activity-type-grid')?.classList.add('is-expanded');
+        const moreButton = document.getElementById('activity-type-more-btn');
+        if (moreButton) moreButton.textContent = 'Show fewer activities';
+    }
+    const guidedNext = document.getElementById('activity-guided-next-btn');
+    if (guidedNext && activityGuidedStep === 1) {
+        guidedNext.disabled = false;
+        guidedNext.textContent = 'Next · Add details';
+    }
     updateActivityCalories();
     updateBalanceRouteUI();
 }
@@ -6966,8 +7067,8 @@ function selectActivityIntensity(level) {
     document.querySelectorAll('#activity-intensity-row .intensity-btn').forEach(btn => {
         const isSelected = btn.getAttribute('data-intensity') === level;
         btn.classList.toggle('is-selected', isSelected);
-        btn.style.border = isSelected ? '2px solid #0ea5e9' : '2px solid var(--border)';
-        btn.style.background = isSelected ? 'rgba(14,165,233,0.1)' : 'var(--card-bg)';
+        btn.style.removeProperty('border');
+        btn.style.removeProperty('background');
     });
     updateActivityCalories();
 }
@@ -7045,7 +7146,7 @@ async function saveActivity() {
         if (!session?.user) {
             showToast('Please log in to save activities', 'error');
             saveBtn.disabled = false;
-            saveBtn.textContent = 'Log Activity';
+            saveBtn.textContent = 'Save activity';
             return;
         }
 
@@ -7160,7 +7261,7 @@ async function saveActivity() {
         console.error('Error saving activity:', error);
         showToast('Failed to save activity. Please try again.', 'error');
         saveBtn.disabled = false;
-        saveBtn.textContent = 'Log Activity';
+        saveBtn.textContent = 'Save activity';
     }
 }
 window.saveActivity = saveActivity;
@@ -7230,13 +7331,16 @@ function showActivitySuccess(data) {
     }
     const activityStyleWrap = document.getElementById('activity-share-style-preview-wrap');
     const activityStyleControls = document.getElementById('activity-share-style-controls');
+    const destinationActions = document.getElementById('activity-share-destination-actions');
     if (data.photoBase64) {
+        if (destinationActions) destinationActions.style.display = 'grid';
         void renderBalanceShareStylePreview('activity', buildActivityShareCardPayload(), data.photoBase64, {
             previewImageId: 'activity-share-style-preview',
             previewWrapId: 'activity-share-style-preview-wrap',
             controlsId: 'activity-share-style-controls'
         });
     } else {
+        if (destinationActions) destinationActions.style.display = 'none';
         if (activityStyleWrap) activityStyleWrap.style.display = 'none';
         if (activityStyleControls) activityStyleControls.style.display = 'none';
     }
@@ -7472,6 +7576,8 @@ async function useActivitySharePhotoFile(file) {
             previewWrapId: 'activity-share-style-preview-wrap',
             controlsId: 'activity-share-style-controls'
         });
+        const destinationActions = document.getElementById('activity-share-destination-actions');
+        if (destinationActions) destinationActions.style.display = 'grid';
     } catch (error) {
         console.error('Could not read activity share photo:', error);
         showToast('Could not use that photo. Please try another one.', 'error');
