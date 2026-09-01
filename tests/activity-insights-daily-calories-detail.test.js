@@ -19,14 +19,11 @@ test('Meal History lives inside Daily Calories and opens the complete existing h
   const dailyStart = dashboard.indexOf('class="insights-legacy-graph-card insights-calories-detail-card"');
   const dailyEnd = dashboard.indexOf('<!-- Sleep Chart -->', dailyStart);
   const dailyCard = dashboard.slice(dailyStart, dailyEnd);
-  const moreStart = dashboard.indexOf('<section class="insights-more-detail"');
-  const moreEnd = dashboard.indexOf('</section>', moreStart);
-  const moreDetail = dashboard.slice(moreStart, moreEnd);
 
   assert.match(dailyCard, /class="insights-calories-meal-history"/);
   assert.match(dailyCard, /View meal history/);
   assert.match(dailyCard, /openWeeklyTrendsPage\('insights'\)/);
-  assert.doesNotMatch(moreDetail, /<strong>Nutrition<\/strong>/);
+  assert.doesNotMatch(dashboard, /class="insights-more-detail"/);
 });
 
 test('Daily Calories and its history action use paired theme roles and visible states', () => {

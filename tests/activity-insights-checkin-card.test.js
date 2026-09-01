@@ -82,10 +82,9 @@ test('all graphs remain and optional detail links are compact at the bottom', ()
         assert.match(dashboard, new RegExp(`id="${id}"`));
     }
 
-    assert.match(dashboard, /class="insights-more-detail"/);
+    assert.doesNotMatch(dashboard, /class="insights-more-detail"/);
+    assert.doesNotMatch(dashboard, /Journals and patterns/);
     assert.match(dashboard, /onclick="openWeeklyTrendsPage\('insights'\)"/);
-    assert.match(dashboard, /onclick="openMovementWeeklyTrendsPage\(\)"/);
-    assert.match(dashboard, /onclick="openRecoveryTrendsPage\(\)"/);
 });
 
 test('the photo action is state-aware and refreshes after a successful save', () => {
