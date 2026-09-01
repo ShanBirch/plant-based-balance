@@ -2,9 +2,59 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const vm = require('node:vm');
 
 const root = path.resolve(__dirname, '..');
 const read = file => fs.readFileSync(path.join(root, file), 'utf8');
+
+function loadNextStepsAtHour(hour) {
+  class TestDate extends Date {
+    constructor(...args) {
+      super(...(args.length ? args : ['2026-09-01T09:00:00Z']));
+    }
+    getHours() { return hour; }
+  }
+  const values = new Map();
+  const localStorage = {
+    getItem: key => values.has(key) ? values.get(key) : null,
+    setItem: (key, value) => values.set(key, String(value)),
+    removeItem: key => values.delete(key),
+    get length() { return values.size; },
+    key: index => Array.from(values.keys())[index] || null
+  };
+  const document = {
+    readyState: 'loading',
+    hidden: false,
+    addEventListener() {},
+    getElementById() { return null; },
+    querySelector() { return null; },
+    querySelectorAll() { return []; },
+    documentElement: { classList: { add() {} } },
+    head: { appendChild() {} },
+    createElement() { return { style: {}, classList: { add() {} } }; }
+  };
+  const window = {
+    currentUser: { id: 'ordinary-member', email: 'member@example.com' },
+    location: { hostname: 'plantbased-balance.org', search: '' },
+    addEventListener() {},
+    dispatchEvent() {},
+    metaAdTrialMode: false
+  };
+  const context = vm.createContext({
+    window,
+    document,
+    localStorage,
+    Date: TestDate,
+    URLSearchParams,
+    CustomEvent: class CustomEvent {},
+    console,
+    setTimeout() { return 1; },
+    clearTimeout() {},
+    setInterval() { return 1; }
+  });
+  vm.runInContext(read('js/dashboard/pbb-next-obvious-steps.js'), context);
+  return { window, localStorage };
+}
 
 test('Home omits imported activity review from the daily to-do plan', () => {
   const nextSteps = read('js/dashboard/pbb-next-obvious-steps.js');
@@ -46,7 +96,22 @@ test('Fitness Diary stays hidden until its evening To Do action is clicked', () 
   assert.match(nextSteps, /selector === '#fitness-diary-card' && typeof window\.openFitnessDiaryForAction === 'function'/);
   assert.match(journey, /action === 'diary'[\s\S]*window\.openFitnessDiaryForAction\(\)/);
   assert.match(journey, /function isTaskDueToday\(item\)[\s\S]*!taskAvailability\(item\)\.availableNow\) return false/);
-  assert.match(nextSteps, /action\.id === 'fitness_diary'\) return new Date\(\)\.getHours\(\) >= 18/);
+  assert.match(nextSteps, /function isFitnessDiaryDue\(\)[\s\S]*new Date\(\)\.getHours\(\) < 18[\s\S]*fitnessDiaryDone_/);
+  assert.match(nextSteps, /fitnessDiaryAction && isFitnessDiaryDue\(\)/);
+  assert.match(nextSteps, /publicDiaryOnly[\s\S]*nightlyDiary && isFitnessDiaryDue\(\) \? \[nightlyDiary\] : \[\]/);
+  assert.match(nextSteps, /!isPreviewEligible\(\) && !unified && !isFitnessDiaryDue\(\)/);
+  assert.match(dailyCards, /localStorage\.setItem\('fitnessDiaryDone_' \+ dateKey, '1'\);[\s\S]*window\.pbbNextSteps\.refresh\(\)/);
+});
+
+test('ordinary members receive only the nightly Fitness Diary To Do action after 6 PM', () => {
+  const evening = loadNextStepsAtHour(19);
+  assert.equal(evening.window.pbbNextSteps.getSuggestions().map(action => action.id).join(','), 'fitness_diary');
+
+  evening.localStorage.setItem('fitnessDiaryDone_2026-09-01', '1');
+  assert.equal(evening.window.pbbNextSteps.getSuggestions().length, 0);
+
+  const afternoon = loadNextStepsAtHour(17);
+  assert.equal(afternoon.window.pbbNextSteps.getSuggestions().length, 0);
 });
 
 test('Home renders 10k steps as automatic daily progress instead of a dead-end link', () => {
@@ -67,8 +132,8 @@ test('versioned phone assets advance for the Home fix', () => {
 
   assert.match(dashboard, /pbb-social-journey\.css\?v=27-direct-course-lesson/);
   assert.match(dashboard, /pbb-social-journey\.js\?v=45-exact-course-label/);
-  assert.match(dashboard, /pbb-next-obvious-steps\.js\?v=46-completion-aware-course/);
-  assert.match(dashboard, /dashboard-script-1-daily_weighin_card_logic\.js\?v=75-evening-diary-action/);
+  assert.match(dashboard, /pbb-next-obvious-steps\.js\?v=47-nightly-diary-todo-next/);
+  assert.match(dashboard, /dashboard-script-1-daily_weighin_card_logic\.js\?v=76-nightly-diary-todo-next/);
   assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=50-guided-activity/);
 assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v455-guided-activity-log'/);
   assert.match(serviceWorker, /dashboard-script-10-points_widget_functions\.js\?v=50-guided-activity/);

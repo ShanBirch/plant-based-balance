@@ -212,6 +212,15 @@
     }
   }
 
+  function isFitnessDiaryDue() {
+    if (new Date().getHours() < 18) return false;
+    try {
+      return localStorage.getItem('fitnessDiaryDone_' + todayKey()) !== '1';
+    } catch (_) {
+      return true;
+    }
+  }
+
   function scrollToSelector(selector, options) {
     options = options || {};
     var el = null;
@@ -981,13 +990,10 @@
       var selector = id === 'daily_checkin' ? '#check-in-prompt-card' : '#daily-weigh-in-card';
       if (action && isSourceCardDue(selector)) addUniqueAction(picked, action);
     });
-    [
-      ['progress_photo', '#weekly-progress-photo-card'],
-      ['fitness_diary', '#fitness-diary-card']
-    ].forEach(function(item){
-      var action = ACTIONS.find(function(actionItem){ return actionItem.id === item[0]; });
-      if (action && isSourceCardDue(item[1])) addUniqueAction(picked, action);
-    });
+    var progressPhotoAction = ACTIONS.find(function(actionItem){ return actionItem.id === 'progress_photo'; });
+    if (progressPhotoAction && isSourceCardDue('#weekly-progress-photo-card')) addUniqueAction(picked, progressPhotoAction);
+    var fitnessDiaryAction = ACTIONS.find(function(actionItem){ return actionItem.id === 'fitness_diary'; });
+    if (fitnessDiaryAction && isFitnessDiaryDue()) addUniqueAction(picked, fitnessDiaryAction);
     if (isWeeklyCheckinDue()) {
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'weekly_review'; }));
     }
@@ -1023,7 +1029,7 @@
     if (action.id === 'workout') return isSourceCardDue('#today-workout-card');
     if (action.id === 'weekly_review') return isWeeklyCheckinDue();
     if (action.id === 'progress_photo') return isSourceCardDue('#weekly-progress-photo-card');
-    if (action.id === 'fitness_diary') return new Date().getHours() >= 18 && isSourceCardDue('#fitness-diary-card');
+    if (action.id === 'fitness_diary') return isFitnessDiaryDue();
     if (action.id === 'weighin') {
       if (!isSundayWeighInDay()) return false;
       if (isVisibleSelector('#daily-weigh-in-done-card')) return false;
@@ -1050,6 +1056,11 @@
   function pickSuggestions() {
     var selectedGoalIds = getSelectedGoalIds();
     if (isShowAllEnabled()) return ACTIONS.slice();
+    var publicDiaryOnly = !isPreviewEligible() && !isUnifiedPlanActive() && window.metaAdTrialMode !== true;
+    if (publicDiaryOnly) {
+      var nightlyDiary = ACTIONS.find(function(action){ return action.id === 'fitness_diary'; });
+      return nightlyDiary && isFitnessDiaryDue() ? [nightlyDiary] : [];
+    }
     if (areDailyActionsComplete(selectedGoalIds)) return [];
 
     var targetActions = dailyActionSet(selectedGoalIds);
@@ -1339,7 +1350,7 @@
     if (guidedSetup && document.documentElement) {
       document.documentElement.classList.add('pbb-unified-next-steps');
     }
-    if (!isPreviewEligible() && !unified) {
+    if (!isPreviewEligible() && !unified && !isFitnessDiaryDue()) {
       card.style.display = 'none';
       card.innerHTML = '';
       return;

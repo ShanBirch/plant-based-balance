@@ -1361,6 +1361,9 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
 
             // Mark as done in localStorage
             localStorage.setItem('fitnessDiaryDone_' + dateKey, '1');
+            if (window.pbbNextSteps && typeof window.pbbNextSteps.refresh === 'function') {
+                window.pbbNextSteps.refresh();
+            }
             window._lastFitnessDiaryPayload = diaryPayload;
             setFitnessDiaryStoredPayload(dateKey, diaryPayload);
             updateFitnessDiaryShareButtons(dateKey);

@@ -130,7 +130,7 @@ test('Home course actions bypass legacy journey pages and open the exact current
     assert.doesNotMatch(nextStepsSource, /is-next-course-target|is-course-guidance-home|applyActiveCourseGuidance/);
     assert.doesNotMatch(learningSource, /is-next-course-lesson-target|guideToCurrentCourseLesson/);
     assert.doesNotMatch(premiumCss, /pbb-next-course-pulse|is-next-course-target|is-next-course-lesson-target/);
-    assert.match(html, /pbb-next-obvious-steps\.js\?v=46-completion-aware-course/);
+    assert.match(html, /pbb-next-obvious-steps\.js\?v=47-nightly-diary-todo-next/);
     assert.match(html, /pbb-social-journey\.css\?v=27-direct-course-lesson/);
     assert.match(html, /pbb-premium-overlays\.css\?v=111-meal-builder-search/);
     assert.match(html, /learning-inline\.js\?v=37-completion-aware-course/);

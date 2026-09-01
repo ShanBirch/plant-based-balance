@@ -42,7 +42,7 @@ test('Home To Do Next opens the due weekly action directly', () => {
 });
 
 test('Fitness Diary is excluded from To Do Next until the evening window opens', () => {
-  assert.match(journey, /function taskAvailability\(item, date\)[\s\S]*item\.type === 'foundations_diary_feed'[\s\S]*clock\.hour >= 18/);
+  assert.match(journey, /function taskAvailability\(item, date\)[\s\S]*item\.type === 'foundations_diary_feed'[\s\S]*localHour >= 18/);
   assert.match(journey, /function isTaskDueToday\(item\)[\s\S]*!taskAvailability\(item\)\.availableNow\) return false/);
 });
 
