@@ -1962,14 +1962,14 @@ if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-progressphoto.js?v=12-private-share-studio"><\/script>');
 document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=35-balance-theme"><\/script>');
     document.write('<script src="js/dashboard/pbb-social-journey.js?v=45-exact-course-label"><\/script>');
-    document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=50-hide-shared-diary"><\/script>');
+    document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=51-coach-checkin-tour"><\/script>');
     document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=29-accountability-checkout"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
     window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=12-private-share-studio');
 window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=35-balance-theme');
     window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=45-exact-course-label');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=50-hide-shared-diary');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=51-coach-checkin-tour');
     window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=29-accountability-checkout');
 }
 </script>
@@ -13522,6 +13522,7 @@ if(!window._pbbIsIOSSafari) {
   /* The coach note carries its own visible Continue button. Keep the clear
      overlay from swallowing that button once the audio gate completes. */
   #guided-tour-overlay.tour-coach-note { pointer-events: none; }
+  #guided-tour-overlay.tour-checkin-explainer { pointer-events: none; }
   #guided-tour-overlay.tour-target-interactive { pointer-events: none; }
   #guided-tour-overlay.tour-target-interactive #guided-tour-bubble { pointer-events: auto; }
   /* Foundations is a required part of onboarding. Keep its real lesson
@@ -13758,6 +13759,10 @@ if(!window._pbbIsIOSSafari) {
   }
   #guided-tour-overlay.tour-coach-note #guided-tour-bubble,
   #guided-tour-overlay.tour-coach-note #guided-tour-spotlight {
+    display: none;
+  }
+  #guided-tour-overlay.tour-checkin-explainer #guided-tour-bubble,
+  #guided-tour-overlay.tour-checkin-explainer #guided-tour-spotlight {
     display: none;
   }
   /* The Feed introduction is explained before typing. Once the composer is
@@ -14077,7 +14082,8 @@ if(!window._pbbIsIOSSafari) {
     { tab:'learning', sel:'#foundations-week-4', fallbackSel:'#balance-foundations-course-card', title:'Week 4: Take the fight out of food', body:'Learn what cravings and emotional eating are trying to solve. Do this week: five short quizzes, share a logged meal, add a Fitness Diary entry, and complete your check-in.', fallbackBody:'Week 4 takes the fight out of food with a meal, diary and check-in action.', pageView:true, metaPreview:true, preserveSurface:true, action:function(){ return openMetaPreviewFoundationsWeek(4); } },
     { tab:'learning', sel:'#foundations-week-5', fallbackSel:'#balance-foundations-course-card', title:'Week 5: Make progress easier to repeat', body:'Learn to rely less on willpower and shape better choices around real life. Do this week: five short quizzes, achieve and share an exercise PB, and complete your check-in.', fallbackBody:'Week 5 makes progress easier to repeat, with a PB share and your weekly check-in.', pageView:true, metaPreview:true, preserveSurface:true, action:function(){ return openMetaPreviewFoundationsWeek(5); } },
     { tab:'learning', sel:'#foundations-week-6', fallbackSel:'#balance-foundations-course-card', title:'Week 6: Build your sustainable way forward', body:'Bring the food basics together without rigid rules. Do this week: five short quizzes, share your course reflection, and complete your final check-in. To do next keeps it to one clear action at a time.', fallbackBody:'Week 6 brings everything together. To do next will keep showing the next clear action.', pageView:true, metaPreview:true, preserveSurface:true, nextLabel:'Start Week 1', action:function(){ return openMetaPreviewFoundationsWeek(6); } },
-    { tab:'dashboard', sel:'#story-next-btn,#story-quiz-btn button,.learning-game-stage button,.learning-game-stage .match-item,.learning-game-stage .order-item,#learning-content', title:'Read, then take the quiz', body:'Read all four researcher cards, continue to the key insight, then complete the short quiz. This is how Foundations teaches you to make change work, one lesson at a time.', pageView:true, interactivePage:true, edgePrompt:true, embeddedGuide:true, metaPreview:true, metaPreviewSignoff:true, requiresFoundationsLesson:'mind-1-1', promptBeforeAction:true, promptRequiresTargetClick:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="foundations_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: start Balance Foundations', preActionBody:'Tap the highlighted Course card. Complete the first short lesson and quiz, then we will return Home for Shannon’s welcome.', preActionButton:'Tap the Course card', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('foundations_intro'); await new Promise(function(r){ setTimeout(r,480); }); } catch(e){} var opened = await openMetaPreviewFirstFoundationsLesson(); if(!opened && typeof showToast === 'function') showToast('Your first course lesson is still loading.', 'info'); return !!opened; } },
+    { tab:'dashboard', sel:'#story-next-btn,#story-quiz-btn button,.learning-game-stage button,.learning-game-stage .match-item,.learning-game-stage .order-item,#learning-content', title:'Read, then take the quiz', body:'Read all four researcher cards, continue to the key insight, then complete the short quiz. This is how Foundations teaches you to make change work, one lesson at a time.', pageView:true, interactivePage:true, edgePrompt:true, embeddedGuide:true, metaPreview:true, metaPreviewSignoff:true, requiresFoundationsLesson:'mind-1-1', promptBeforeAction:true, promptRequiresTargetClick:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="foundations_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: start Balance Foundations', preActionBody:'Tap the highlighted Course card. Complete the first short lesson and quiz, then we will return Home to show how Shannon reviews your week.', preActionButton:'Tap the Course card', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('foundations_intro'); await new Promise(function(r){ setTimeout(r,480); }); } catch(e){} var opened = await openMetaPreviewFirstFoundationsLesson(); if(!opened && typeof showToast === 'function') showToast('Your first course lesson is still loading.', 'info'); return !!opened; } },
+    { tab:'dashboard', sel:'#coach-checkin-explainer .coach-checkin-explainer__panel', fallbackSel:'#next-obvious-steps-card', title:'What Shannon checks each week', body:'See how your goals, meals, course, workouts, check-in, progress photos, sleep, steps and recovery help Shannon adjust the next week.', metaPreview:true, checkinExplainerGuide:true, promptBeforeAction:true, promptRequiresTargetClick:true, returnHomeAfter:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="coach_checkin_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: see how check-ins work', preActionBody:'Tap the highlighted check-in card to see exactly what Shannon reviews and what to keep updated during the week.', preActionButton:'Tap the check-in card', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('coach_checkin_intro'); await new Promise(function(r){ setTimeout(r,180); }); return !!document.querySelector('#coach-checkin-explainer.is-open .coach-checkin-explainer__panel'); } catch(e){ return false; } } },
     { tab:'dashboard', sel:'#tamagotchi-stats-bar', fallbackSel:'#balance-level-bar', title:'Levels keep going', fallbackTitle:'Levels keep going', body:'Level 99 is no longer the finish line. Keep earning XP to climb higher and unlock a new character every 5 levels.', fallbackBody:'Level 99 is no longer the finish line. Keep earning XP to climb higher and unlock a new character every 5 levels.' },
     { tab:'movement-tab', sel:'#activity-share-section', title:'Share your activity twice', body:'The first activity share each day earns +15 XP in Balance Feed and another +15 XP in Instagram Story. Later activity shares still work without extra XP.', condition: function(){ return !!document.getElementById('activity-share-section'); } },
     { tab:'movement-tab', sel:'#activity-share-photo-btn', title:'Take a photo or choose one', body:'When you share an activity, tap Add a photo to open your camera or choose one from your gallery. Balance puts your activity stats straight on it for Feed.', condition: function(){ return !!document.getElementById('activity-share-photo-btn'); } },
@@ -14217,6 +14223,7 @@ if(!window._pbbIsIOSSafari) {
     'Week 5: Make progress easier to repeat',
     'Week 6: Build your sustainable way forward',
     'Read, then take the quiz',
+    'What Shannon checks each week',
     'Watch Shannon’s coach note',
     'Pick your Weekly Goals'
   ];
@@ -14941,6 +14948,11 @@ if(!window._pbbIsIOSSafari) {
   }
 
   function closeTourBlockingSurfaces(){
+    try {
+      if (window.pbbNextSteps && typeof window.pbbNextSteps.closeCoachCheckinExplainer === 'function') {
+        window.pbbNextSteps.closeCoachCheckinExplainer(false);
+      }
+    } catch(e) {}
     ['health-connect-modal', 'native-permissions-modal', 'guest-signup-modal'].forEach(function(id){
       var el = document.getElementById(id);
       if (!el) return;
@@ -15289,6 +15301,7 @@ async function showStep(i, options){
       featureView: false,
       embeddedGuide: false,
       coachNoteGuide: false,
+      checkinExplainerGuide: false,
       requiresWelcomeVideo: false,
       requiresFeedPost: false,
       requiresFoundationsLesson: false,
@@ -15362,6 +15375,7 @@ async function showStep(i, options){
       overlay.classList.toggle('tour-edge-prompt', !!displayStep.edgePrompt);
       overlay.classList.toggle('tour-embedded-guide', !!displayStep.embeddedGuide);
       overlay.classList.toggle('tour-coach-note', !!displayStep.coachNoteGuide);
+      overlay.classList.toggle('tour-checkin-explainer', !!displayStep.checkinExplainerGuide);
       overlay.classList.toggle('tour-tap-target', !!(isPromptBeforeAction && step.promptRequiresTargetClick));
       overlay.classList.toggle('tour-feature-view', !!displayStep.featureView);
       overlay.classList.toggle('tour-target-interactive', !!displayStep.allowTargetInteraction);
@@ -15522,7 +15536,7 @@ window.endFeatureTour = function(skipped){
     resetTourTemporaryTargets();
     const overlay = document.getElementById('guided-tour-overlay');
     if (overlay) overlay.classList.remove('active');
-    if (overlay) overlay.classList.remove('tour-action-required', 'tour-gate-complete', 'tour-page-view', 'tour-feature-view', 'tour-tap-target', 'tour-edge-prompt', 'tour-control-prompt', 'tour-target-interactive', 'tour-embedded-guide', 'tour-coach-note', 'tour-typing', 'tour-transitioning', 'meta-tour-welcome-active');
+    if (overlay) overlay.classList.remove('tour-action-required', 'tour-gate-complete', 'tour-page-view', 'tour-feature-view', 'tour-tap-target', 'tour-edge-prompt', 'tour-control-prompt', 'tour-target-interactive', 'tour-embedded-guide', 'tour-coach-note', 'tour-checkin-explainer', 'tour-typing', 'tour-transitioning', 'meta-tour-welcome-active');
     window.__balanceGuidedTourActive = false;
     window.__balanceGuidedTourShowingIntro = false;
     showingXpIntro = false;
@@ -15959,6 +15973,16 @@ window.endFeatureTour = function(skipped){
       title: 'Your Next Step',
       body: 'Once you finish the App Tour and your first Balance Foundations lesson, use To do next near the top of Home to see exactly what to do next.',
       condition: function(){ var c = document.getElementById('next-obvious-steps-card'); return !!(window.socialJourney && window.socialJourney.isEligibleUser() && window.socialJourney.isOnboardingComplete() && c && c.style.display !== 'none'); }
+    },
+    {
+      id: 'coach-weekly-review-explained-v1',
+      tab: 'dashboard',
+      sel: '#weekly-checkin-card,#next-obvious-steps-card',
+      fallbackSel: '#weekly-goals-card',
+      title: 'What Shannon reviews each week',
+      fallbackTitle: 'What Shannon reviews each week',
+      body: 'Your goals, meal logs and photos, course, workouts, check-in form, progress photos, sleep, steps and recovery give Shannon the full picture for your next week.',
+      fallbackBody: 'Keep your week updated in Balance so Shannon can review the full picture and help adjust what comes next.'
     },
     {
       id: 'course-preview-locks-v1',

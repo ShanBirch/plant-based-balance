@@ -178,7 +178,7 @@ test('versioned phone assets advance for the Home fix', () => {
 
   assert.match(dashboard, /pbb-social-journey\.css\?v=27-direct-course-lesson/);
   assert.match(dashboard, /pbb-social-journey\.js\?v=45-exact-course-label/);
-  assert.match(dashboard, /pbb-next-obvious-steps\.js\?v=50-hide-shared-diary/);
+  assert.match(dashboard, /pbb-next-obvious-steps\.js\?v=51-coach-checkin-tour/);
   assert.match(dashboard, /dashboard-script-3-1_get_user_data\.js\?v=61-remove-primary-test-seed/);
   assert.match(dashboard, /pbb-deferred-fitbit\.js\?v=3-latest-import-only/);
   assert.match(dashboard, /dashboard-script-1-daily_weighin_card_logic\.js\?v=78-hide-shared-diary-todo/);

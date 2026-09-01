@@ -20,6 +20,7 @@
     'workout_week_intro',
     'feed_intro',
     'foundations_intro',
+    'coach_checkin_intro',
     'coach_message_intro',
     'weekly_goals_intro'
   ];
@@ -579,6 +580,87 @@
     }, 260);
   }
 
+  function ensureCoachCheckinExplainer() {
+    var existing = document.getElementById('coach-checkin-explainer');
+    if (existing) return existing;
+
+    var style = document.createElement('style');
+    style.id = 'coach-checkin-explainer-style';
+    style.textContent = [
+      '#coach-checkin-explainer{position:fixed;inset:0;z-index:399990;display:none;align-items:center;justify-content:center;padding:calc(18px + env(safe-area-inset-top,0px)) 16px calc(18px + env(safe-area-inset-bottom,0px));box-sizing:border-box;background:rgba(17,15,10,.72);backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);}',
+      '#coach-checkin-explainer.is-open{display:flex;}',
+      '.coach-checkin-explainer__panel{position:relative;width:min(100%,430px);max-height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;border:1px solid rgba(183,138,46,.42);border-radius:26px;padding:22px 18px 18px;box-sizing:border-box;background:linear-gradient(155deg,#fffdf7 0%,#fffaf0 60%,#f7edda 100%);box-shadow:0 28px 80px rgba(0,0,0,.34);color:#17130d;-webkit-text-fill-color:#17130d;font-family:inherit;}',
+      '.coach-checkin-explainer__eyebrow{margin:0 0 7px;color:#8a651c;-webkit-text-fill-color:#8a651c;font-size:.68rem;font-weight:950;letter-spacing:.12em;text-transform:uppercase;}',
+      '.coach-checkin-explainer__title{margin:0 0 8px;color:#17130d;-webkit-text-fill-color:#17130d;font-size:1.58rem;line-height:1.05;font-weight:950;}',
+      '.coach-checkin-explainer__intro{margin:0 0 15px;color:#554a3b;-webkit-text-fill-color:#554a3b;font-size:.88rem;line-height:1.48;font-weight:700;}',
+      '.coach-checkin-explainer__grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 14px;}',
+      '.coach-checkin-explainer__item{min-width:0;padding:10px;border:1px solid rgba(183,138,46,.2);border-radius:14px;background:rgba(255,255,255,.72);}',
+      '.coach-checkin-explainer__item strong{display:block;margin-bottom:3px;color:#2a2117;-webkit-text-fill-color:#2a2117;font-size:.78rem;line-height:1.2;}',
+      '.coach-checkin-explainer__item span{display:block;color:#665a49;-webkit-text-fill-color:#665a49;font-size:.68rem;line-height:1.32;font-weight:650;}',
+      '.coach-checkin-explainer__outcome{margin:0 0 14px;padding:12px 13px;border-radius:15px;background:#17130d;color:#fffaf0;-webkit-text-fill-color:#fffaf0;font-size:.78rem;line-height:1.42;font-weight:760;}',
+      '.coach-checkin-explainer__button{width:100%;min-height:48px;border:0;border-radius:14px;background:#d6ad52;color:#17130d;-webkit-text-fill-color:#17130d;font:900 .84rem/1 inherit;letter-spacing:.01em;cursor:pointer;box-shadow:0 10px 24px rgba(138,101,28,.22);}',
+      '.coach-checkin-explainer__button:active{transform:scale(.99);}',
+      '@media(max-width:360px){.coach-checkin-explainer__panel{padding:18px 14px 14px}.coach-checkin-explainer__title{font-size:1.35rem}.coach-checkin-explainer__grid{grid-template-columns:1fr}.coach-checkin-explainer__item{padding:8px 10px}}'
+    ].join('');
+    document.head.appendChild(style);
+
+    var overlay = document.createElement('section');
+    overlay.id = 'coach-checkin-explainer';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-labelledby', 'coach-checkin-explainer-title');
+    overlay.innerHTML = [
+      '<div class="coach-checkin-explainer__panel">',
+        '<p class="coach-checkin-explainer__eyebrow">Your weekly review</p>',
+        '<h2 class="coach-checkin-explainer__title" id="coach-checkin-explainer-title">What Shannon checks each week</h2>',
+        '<p class="coach-checkin-explainer__intro">This is not about having a perfect week. Shannon looks at the full picture so your next week can be adjusted around real life.</p>',
+        '<div class="coach-checkin-explainer__grid">',
+          '<div class="coach-checkin-explainer__item"><strong>Weekly Goals</strong><span>What felt realistic, what you completed and what got in the way.</span></div>',
+          '<div class="coach-checkin-explainer__item"><strong>Meals and photos</strong><span>Log your meals and add photos so Shannon can see what the week actually looked like.</span></div>',
+          '<div class="coach-checkin-explainer__item"><strong>Course progress</strong><span>What you learned, completed or found difficult in Balance Foundations.</span></div>',
+          '<div class="coach-checkin-explainer__item"><strong>Workouts</strong><span>Your completed sessions, logged sets and any workouts you had to move or miss.</span></div>',
+          '<div class="coach-checkin-explainer__item"><strong>Check-in form</strong><span>Your honest recap of what worked, what did not and what support you need.</span></div>',
+          '<div class="coach-checkin-explainer__item"><strong>Progress photos</strong><span>Your private visual record, used to look for changes beyond one number.</span></div>',
+          '<div class="coach-checkin-explainer__item"><strong>Sleep and steps</strong><span>Your recovery and daily movement, whether entered or brought in from your watch.</span></div>',
+          '<div class="coach-checkin-explainer__item"><strong>Mood, energy and stress</strong><span>The context that helps explain why the rest of your week went the way it did.</span></div>',
+        '</div>',
+        '<p class="coach-checkin-explainer__outcome">Shannon uses all of this to review your food and training, then help make the next week clearer and more achievable.</p>',
+        '<button type="button" class="coach-checkin-explainer__button" data-coach-checkin-complete>Got it, back to Home</button>',
+      '</div>'
+    ].join('');
+    overlay.querySelector('[data-coach-checkin-complete]').addEventListener('click', function(){
+      closeCoachCheckinExplainer(true);
+      if (window.__balanceGuidedTourActive === true && typeof window.tourNext === 'function') {
+        setTimeout(function(){ window.tourNext(); }, 80);
+      }
+    });
+    document.body.appendChild(overlay);
+    return overlay;
+  }
+
+  function openCoachCheckinExplainer() {
+    switchTab('dashboard');
+    var overlay = ensureCoachCheckinExplainer();
+    overlay.classList.add('is-open');
+    overlay.setAttribute('aria-hidden', 'false');
+    setTimeout(function(){
+      var button = overlay.querySelector('[data-coach-checkin-complete]');
+      if (button && typeof button.focus === 'function') button.focus({ preventScroll:true });
+    }, 80);
+    return true;
+  }
+
+  function closeCoachCheckinExplainer(complete) {
+    var overlay = document.getElementById('coach-checkin-explainer');
+    var wasOpen = !!(overlay && overlay.classList.contains('is-open'));
+    if (overlay) {
+      overlay.classList.remove('is-open');
+      overlay.setAttribute('aria-hidden', 'true');
+    }
+    if (complete) markOnboardingStepSeen('coach_checkin_intro');
+    if (complete || wasOpen) switchTab('dashboard');
+  }
+
   function openWeeklyGoalsTarget() {
     markOnboardingStepSeen('weekly_goals_intro');
     switchTab('dashboard');
@@ -770,6 +852,16 @@
       priority: 970,
       goalIds: [],
       action: openWorkoutWeekTarget
+    },
+    {
+      id: 'coach_checkin_intro',
+      title: 'Check how Shannon does check-ins',
+      body: 'See exactly what Shannon reviews each week and what helps him adjust your plan.',
+      cta: 'See What He Checks',
+      accent: '#b78a2e',
+      priority: 952,
+      goalIds: [],
+      action: openCoachCheckinExplainer
     },
     {
       id: 'coach_message_intro',
@@ -1009,6 +1101,7 @@
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'workout_week_intro'; }));
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'feed_intro'; }));
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'foundations_intro'; }));
+      addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'coach_checkin_intro'; }));
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'coach_message_intro'; }));
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'weekly_goals_intro'; }));
       if (window.metaAdTrialMode === true) return picked;
@@ -1571,6 +1664,8 @@
       setTimeout(function(){ refreshDailyStatus({ force: true }); }, 1400);
       setTimeout(function(){ refreshDailyStatus({ force: true }); }, 4500);
     },
+    openCoachCheckinExplainer: openCoachCheckinExplainer,
+    closeCoachCheckinExplainer: closeCoachCheckinExplainer,
     setOnboardingStepComplete: setOnboardingStepComplete,
     refreshStatus: function(){ refreshDailyStatus({ force: true }); },
     enablePreview: function(){

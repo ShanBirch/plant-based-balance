@@ -12,6 +12,7 @@ const onboardingIds = [
   'workout_week_intro',
   'feed_intro',
   'foundations_intro',
+  'coach_checkin_intro',
   'coach_message_intro',
   'weekly_goals_intro'
 ];
@@ -33,7 +34,7 @@ function loadPlan({ createdAt, seen = [], week = 1, goals = [], metaTrial = fals
     getElementById() { return null; },
     querySelector() { return null; },
     querySelectorAll() { return []; },
-    createElement() { return {}; },
+    createElement() { return { addEventListener() {} }; },
     head: { appendChild() {} }
   };
   const window = {
@@ -50,6 +51,9 @@ function loadPlan({ createdAt, seen = [], week = 1, goals = [], metaTrial = fals
       getState() {
         return { selected: goals.map(id => ({ id })), progress: { goals: [] } };
       }
+    },
+    getCurrentCourseLessonDestination() {
+      return { courseId: 'balance-foundations', itemId: 'mind-1-1', title: 'Complete today\'s Balance lesson', body: 'Keep going.', cta: 'Open Course' };
     },
     addEventListener() {},
     getComputedStyle() { return { display: 'none', visibility: 'visible', opacity: '1' }; }
@@ -100,9 +104,33 @@ test('new accounts receive incomplete onboarding cards only', () => {
   assert.equal(ids.includes('feed_intro'), true);
   assert.equal(ids.includes('meal_plan_intro'), false, 'meal plan prompt should stay gone after it is opened');
   assert.equal(ids.includes('workout_week_intro'), true);
+  assert.equal(ids.includes('coach_checkin_intro'), true);
   assert.equal(ids.includes('coach_message_intro'), true);
   assert.equal(ids.includes('weekly_goals_intro'), true);
   assert.equal(ids.includes('foundations_intro'), true);
+});
+
+test('the Shannon check-in explainer sits before the welcome video and covers the full review', () => {
+  const onboardingStart = source.indexOf('var ONBOARDING_ACTION_IDS');
+  const onboardingEnd = source.indexOf('];', onboardingStart);
+  const onboardingSource = source.slice(onboardingStart, onboardingEnd);
+  const foundationsIndex = onboardingSource.indexOf("'foundations_intro'");
+  const checkinIndex = onboardingSource.indexOf("'coach_checkin_intro'");
+  const coachIndex = onboardingSource.indexOf("'coach_message_intro'");
+
+  assert.ok(foundationsIndex >= 0 && checkinIndex > foundationsIndex && coachIndex > checkinIndex);
+  assert.match(source, /title: 'Check how Shannon does check-ins'/);
+  assert.match(source, /<strong>Weekly Goals<\/strong>/);
+  assert.match(source, /<strong>Meals and photos<\/strong>/);
+  assert.match(source, /<strong>Course progress<\/strong>/);
+  assert.match(source, /<strong>Workouts<\/strong>/);
+  assert.match(source, /<strong>Check-in form<\/strong>/);
+  assert.match(source, /<strong>Progress photos<\/strong>/);
+  assert.match(source, /<strong>Sleep and steps<\/strong>/);
+  assert.match(source, /<strong>Mood, energy and stress<\/strong>/);
+  assert.match(source, /max-height:100%;overflow-y:auto/);
+  assert.match(source, /env\(safe-area-inset-top,0px\)/);
+  assert.match(source, /-webkit-text-fill-color:#17130d/);
 });
 
 test('the Meta onboarding preview exposes the full guided Home checklist', () => {

@@ -75,6 +75,7 @@ test('the paid preview tour keeps the promised app order before payment', () => 
   assert.match(dashboard, /data-next-step-id="shopping_list_intro"/);
   assert.match(dashboard, /data-next-step-id="nutrition_tracker_intro"/);
   assert.match(dashboard, /data-next-step-id="workout_week_intro"/);
+  assert.match(dashboard, /data-next-step-id="coach_checkin_intro"/);
   assert.match(dashboard, /data-next-step-id="coach_message_intro"/);
   assert.match(dashboard, /data-next-step-id="feed_intro"/);
   assert.match(dashboard, /data-next-step-id="weekly_goals_intro"/);

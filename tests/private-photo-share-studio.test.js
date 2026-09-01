@@ -138,5 +138,5 @@ test('private reveal, tour, and cache-busted modules ship together', () => {
   assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=61-exact-activity-share/);
   assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=[^'\"]+/);
   assert.match(dashboard, /dashboard-script-11-calorie_tracker_functions\.js\?v=41-share-done-flow/);
-  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v470-share-studio-rollout'/);
+  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v471-coach-checkin-tour'/);
 });

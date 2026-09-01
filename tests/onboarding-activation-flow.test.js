@@ -58,7 +58,8 @@ test('the signed-in app tour covers the plan, completes Foundations, then coach 
     const workout = requiredTour.indexOf("'Check your workout week'", foodLog);
     const community = requiredTour.indexOf("'The Balance community'", workout);
     const course = requiredTour.indexOf("'Read, then take the quiz'", community);
-    const coach = requiredTour.indexOf("'Watch Shannon’s coach note'", course);
+    const checkin = requiredTour.indexOf("'What Shannon checks each week'", course);
+    const coach = requiredTour.indexOf("'Watch Shannon’s coach note'", checkin);
     const goals = requiredTour.indexOf("'Pick your Weekly Goals'", coach);
 
     assert.ok(mealPlan >= 0);
@@ -67,7 +68,8 @@ test('the signed-in app tour covers the plan, completes Foundations, then coach 
     assert.ok(workout > foodLog);
     assert.ok(community > workout);
     assert.ok(course > community);
-    assert.ok(coach > course);
+    assert.ok(checkin > course);
+    assert.ok(coach > checkin);
     assert.ok(goals > coach);
     assert.match(dashboardSource, /title:'Read, then take the quiz'[\s\S]*?requiresFoundationsLesson:'mind-1-1'/);
     assert.match(dashboardSource, /activeSteps = requiredOnboardingTourSteps\(\)/);

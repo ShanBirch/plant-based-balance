@@ -27,6 +27,7 @@ test('the guided preview completes Foundations before coach support and Weekly G
   const shopping = dashboard.indexOf("'One shopping list for the week'", required);
   const community = dashboard.indexOf("'The Balance community'", required);
   const course = dashboard.indexOf("'Read, then take the quiz'", required);
+  const checkin = dashboard.indexOf("'What Shannon checks each week'", required);
   const coach = dashboard.indexOf("'Watch Shannon’s coach note'", required);
   const goals = dashboard.indexOf("'Pick your Weekly Goals'", required);
 
@@ -34,12 +35,13 @@ test('the guided preview completes Foundations before coach support and Weekly G
   assert.ok(shopping > first);
   assert.ok(community > shopping);
   assert.ok(course > community);
-  assert.ok(coach > course);
+  assert.ok(checkin > course);
+  assert.ok(coach > checkin);
   assert.ok(goals > coach);
   assert.ok(goals > shopping);
   assert.match(dashboard, /title:'Read, then take the quiz'[^\n]*requiresFoundationsLesson:'mind-1-1'/);
   assert.match(dashboard, /title:'Watch Shannon’s coach note'[^\n]*requiresWelcomeVideo:true/);
-  assert.match(dashboard, /return Home for Shannon’s welcome/);
+  assert.match(dashboard, /return Home to show how Shannon reviews your week/);
 });
 
 test('the spotlight never draws a box around a missing or zero-size target', () => {
