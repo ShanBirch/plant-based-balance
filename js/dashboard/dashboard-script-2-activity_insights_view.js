@@ -2524,8 +2524,8 @@
                         ${bfLabel}
                     </div>
                     <div style="display:flex; gap:8px; flex-shrink:0;">
-                        <button onclick="openWeighInEditorModal('${record.id}')" style="background:white; border:1px solid #cbd5e1; color:#334155; padding:8px 10px; border-radius:10px; font-size:0.78rem; font-weight:800; cursor:pointer;">Edit</button>
-                        <button onclick="deleteWeighInRecord('${record.id}')" style="background:#fff1f2; border:1px solid #fecaca; color:#be123c; padding:8px 10px; border-radius:10px; font-size:0.78rem; font-weight:800; cursor:pointer;">Delete</button>
+                        <button class="insights-weigh-in-action insights-weigh-in-action--edit" onclick="openWeighInEditorModal('${record.id}')">Edit</button>
+                        <button class="insights-weigh-in-action insights-weigh-in-action--delete" onclick="deleteWeighInRecord('${record.id}')">Delete</button>
                     </div>
                 </div>
             `;

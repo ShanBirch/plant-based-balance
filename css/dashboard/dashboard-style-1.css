@@ -4101,6 +4101,59 @@
         --card-shadow: 0 12px 34px rgba(31, 26, 16, 0.08);
     }
 
+    /* Keep Body Weight history actions readable when inline legacy colours are themed. */
+    .insights-weigh-in-action {
+        min-height: 36px;
+        padding: 8px 11px;
+        border: 1px solid var(--pbb-insights-gold-strong, #d8b25e) !important;
+        border-radius: 10px;
+        background: var(--pbb-insights-gold-soft, rgba(245, 217, 138, 0.12)) !important;
+        color: var(--pbb-insights-gold, #f5d98a) !important;
+        -webkit-text-fill-color: var(--pbb-insights-gold, #f5d98a) !important;
+        font-size: 0.78rem;
+        font-weight: 850;
+        line-height: 1;
+        opacity: 1 !important;
+        cursor: pointer;
+        transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
+    }
+
+    .insights-weigh-in-action--delete {
+        border-color: #fb7185 !important;
+        background: rgba(251, 113, 133, 0.12) !important;
+        color: #fda4af !important;
+        -webkit-text-fill-color: #fda4af !important;
+    }
+
+    html[data-pbb-theme="light"] .insights-weigh-in-action--edit {
+        border-color: #8a681f !important;
+        background: #fbf3df !important;
+        color: #6c5017 !important;
+        -webkit-text-fill-color: #6c5017 !important;
+    }
+
+    html[data-pbb-theme="light"] .insights-weigh-in-action--delete {
+        border-color: #dc2626 !important;
+        background: #fff1f2 !important;
+        color: #991b1b !important;
+        -webkit-text-fill-color: #991b1b !important;
+    }
+
+    .insights-weigh-in-action:hover,
+    .insights-weigh-in-action:active {
+        transform: translateY(-1px);
+        filter: brightness(0.96);
+    }
+
+    .insights-weigh-in-action:focus-visible {
+        outline: 3px solid var(--pbb-insights-gold, #f5d98a) !important;
+        outline-offset: 2px;
+    }
+
+    .insights-weigh-in-action--delete:focus-visible {
+        outline-color: #fb7185 !important;
+    }
+
     #view-checkin-photo-history {
         --checkin-history-page-bg: #050505;
         --checkin-history-header-bg: rgba(18, 18, 18, 0.98);
