@@ -50,7 +50,7 @@ test('sharing keeps the editor open until Done', () => {
   assert.match(activity, /onDone: \(\) => closeSuccessScreen\(\)/g);
 });
 
-test('the pilot gets both guided and returning-user discovery', () => {
+test('all members get both guided and returning-user discovery', () => {
   assert.match(dashboard, /title:'Activities and meals now match'/);
-  assert.match(dashboard, /id: 'activity-meal-photo-share-flow-shannon-v1'/);
+  assert.match(dashboard, /id: 'activity-meal-photo-share-all-members-v1'/);
 });

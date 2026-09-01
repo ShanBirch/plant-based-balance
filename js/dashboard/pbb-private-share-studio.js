@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  var PILOT_EMAIL = 'shannonbirch@cocospersonaltraining.com';
+  var ROLLOUT_VERSION = 'all-members-v1';
   var active = null;
   var renderTimer = null;
   var renderSequence = 0;
@@ -57,12 +57,8 @@
     return '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' + (icons[name] || '') + '</svg>';
   }
 
-  function accountEmail() {
-    return String(window.currentUser && window.currentUser.email || '').trim().toLowerCase();
-  }
-
   function isEnabled() {
-    return accountEmail() === PILOT_EMAIL;
+    return !!(window.currentUser && (window.currentUser.id || window.currentUser.email));
   }
 
   function ensureWorkoutCompleteStyles() {
@@ -1436,6 +1432,6 @@
     renderMealCompletePage: renderMealCompletePage,
     closeMealCompletePage: closeMealCompletePage,
     close: close,
-    pilotEmail: PILOT_EMAIL
+    rolloutVersion: ROLLOUT_VERSION
   };
 })();

@@ -16,11 +16,11 @@ const dashboard = read('dashboard.html');
 const serviceWorker = read('sw.js');
 const modernStudio = studio.slice(studio.indexOf('function ensureElement()'), studio.indexOf('function customizationLegacy()'));
 
-test('photo share studio is locked to Shannon account', () => {
-  assert.match(studio, /PILOT_EMAIL = 'shannonbirch@cocospersonaltraining\.com'/);
-  assert.doesNotMatch(studio, /shannonrhysbirch@gmail\.com/);
-  assert.match(studio, /return accountEmail\(\) === PILOT_EMAIL/);
-  assert.doesNotMatch(studio, /localStorage.*pilot/i);
+test('photo share studio is available to every signed-in member', () => {
+  assert.match(studio, /ROLLOUT_VERSION = 'all-members-v1'/);
+  assert.match(studio, /return !!\(window\.currentUser && \(window\.currentUser\.id \|\| window\.currentUser\.email\)\)/);
+  assert.doesNotMatch(studio, /PILOT_EMAIL|pilotEmail|accountEmail\(\)/);
+  assert.doesNotMatch(studio, /shannonbirch@cocospersonaltraining\.com/);
 });
 
 test('studio is full-screen, safe-area aware, and interactive', () => {
@@ -114,7 +114,7 @@ test('custom text is burned into designed share images', () => {
   assert.match(studio, /selectBalanceShareTextStyle/);
 });
 
-test('Shannon receives the progress-first workout completed page', () => {
+test('members receive the progress-first workout completed page', () => {
   assert.match(studio, /function renderWorkoutCompletePage/);
   assert.match(studio, /Workout saved/);
   assert.match(studio, /Today’s work/);
@@ -132,11 +132,11 @@ test('Shannon receives the progress-first workout completed page', () => {
 });
 
 test('private reveal, tour, and cache-busted modules ship together', () => {
-  assert.match(dashboard, /private-photo-share-studio-shannon-v4/);
+  assert.match(dashboard, /photo-share-studio-all-members-v1/);
   assert.match(dashboard, /BalancePrivateShareStudio\.isEnabled\(\)/);
-  assert.match(dashboard, /pbb-private-share-studio\.js\?v=15-smooth-story-export/);
+  assert.match(dashboard, /pbb-private-share-studio\.js\?v=16-all-members-rollout/);
   assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=61-exact-activity-share/);
   assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=[^'\"]+/);
   assert.match(dashboard, /dashboard-script-11-calorie_tracker_functions\.js\?v=41-share-done-flow/);
-  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v469-smooth-story-export'/);
+  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v470-share-studio-rollout'/);
 });

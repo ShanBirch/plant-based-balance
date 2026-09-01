@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v469-smooth-story-export'; // v469: frame-synced gestures and non-stretched 9:16 export
+const CACHE_NAME = 'pbb-app-v470-share-studio-rollout'; // v470: tested saved and photo-share flow for every signed-in member
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
