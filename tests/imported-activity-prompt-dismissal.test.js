@@ -37,5 +37,5 @@ test('sharing to Feed records the prompt as handled for every grouped activity',
 test('Android receives the repeat-prompt fix', () => {
   assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=58-reliable-share-actions/);
   assert.match(dashboard, /pbb-deferred-fitbit\.js\?v=3-latest-import-only/);
-  assert.match(serviceWorker, /pbb-app-v464-reliable-share-actions/);
+  assert.match(serviceWorker, /pbb-app-v465-two-share-actions/);
 });

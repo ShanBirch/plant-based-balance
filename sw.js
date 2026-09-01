@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v464-reliable-share-actions'; // v464: still-image share handoff with visible progress and repaired editor close
+const CACHE_NAME = 'pbb-app-v465-two-share-actions'; // v465: two clear share destinations plus Save and Done editor utilities
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

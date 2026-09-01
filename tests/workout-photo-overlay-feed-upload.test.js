@@ -39,7 +39,7 @@ assert.ok(
 );
 assert.ok(
 dashboardSource.includes('dashboard-script-10-points_widget_functions.js?v=58-reliable-share-actions') &&
-        serviceWorkerSource.includes("const CACHE_NAME = 'pbb-app-v464-reliable-share-actions'") &&
+        serviceWorkerSource.includes("const CACHE_NAME = 'pbb-app-v465-two-share-actions'") &&
         serviceWorkerSource.includes('./js/dashboard/dashboard-script-10-points_widget_functions.js?v=58-reliable-share-actions'),
     'phones must fetch the repaired overlay share path'
 );

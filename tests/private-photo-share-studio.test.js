@@ -14,6 +14,7 @@ const stories = read('lib/stories.js');
 const progressPhotos = read('js/dashboard/pbb-deferred-progressphoto.js');
 const dashboard = read('dashboard.html');
 const serviceWorker = read('sw.js');
+const modernStudio = studio.slice(studio.indexOf('function ensureElement()'), studio.indexOf('function customizationLegacy()'));
 
 test('photo share studio is locked to Shannon account', () => {
   assert.match(studio, /PILOT_EMAIL = 'shannonbirch@cocospersonaltraining\.com'/);
@@ -39,9 +40,14 @@ test('studio is full-screen, safe-area aware, and interactive', () => {
   assert.match(studio, /data-share-preset="cream"/);
   assert.match(studio, /data-share-preset="minimal"/);
   assert.match(studio, /data-share-download/);
-  assert.match(studio, /data-share-native/);
-  assert.match(studio, /Sharing to Community\.\.\./);
+  assert.doesNotMatch(modernStudio, /data-share-native/);
+  assert.doesNotMatch(modernStudio, />Next</);
+  assert.match(modernStudio, /data-share-done>Done/);
+  assert.match(modernStudio, /data-share-feed>Share to Feed/);
+  assert.match(modernStudio, /data-share-instagram>Share to IG Story/);
+  assert.match(studio, /Posting your workout to Feed\.\.\./);
   assert.match(studio, /Opening Instagram Story\.\.\./);
+  assert.match(studio, /pbbShareStudioProgress/);
   assert.match(studio, /outputCachePromise/);
   assert.match(studio, /document\.getElementById\('pbb-private-share-studio-v3'\) \|\| document\.getElementById\('pbb-private-share-studio'\)/);
   assert.match(studio, /pointermove/);
@@ -128,9 +134,9 @@ test('Shannon receives the progress-first workout completed page', () => {
 test('private reveal, tour, and cache-busted modules ship together', () => {
   assert.match(dashboard, /private-photo-share-studio-shannon-v4/);
   assert.match(dashboard, /BalancePrivateShareStudio\.isEnabled\(\)/);
-  assert.match(dashboard, /pbb-private-share-studio\.js\?v=10-reliable-share-actions/);
+  assert.match(dashboard, /pbb-private-share-studio\.js\?v=11-two-share-actions/);
   assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=58-reliable-share-actions/);
   assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=[^'\"]+/);
   assert.match(dashboard, /dashboard-script-11-calorie_tracker_functions\.js\?v=39-private-share-studio/);
-  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v464-reliable-share-actions'/);
+  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v465-two-share-actions'/);
 });
