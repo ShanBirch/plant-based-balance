@@ -512,72 +512,20 @@
 
   function openNextCourseTarget(courseId) {
     var resolvedCourseId = courseId || getNextCourseId();
-    window.__pbbGuideCourseCardId = resolvedCourseId;
     switchTab('learning');
-    watchCourseGuidanceExit();
     afterTab(function(){
       if (typeof window.renderLearningHome === 'function') window.renderLearningHome();
       var attempts = 0;
-      function revealCourseCard() {
-        var card = applyActiveCourseGuidance();
-        if (!card && attempts++ < 12) {
-          setTimeout(revealCourseCard, 150);
+      function openExactLesson() {
+        if (typeof window.openCurrentCourseLesson === 'function' && window.openCurrentCourseLesson(resolvedCourseId)) return;
+        if (attempts++ < 12) {
+          setTimeout(openExactLesson, 150);
           return;
         }
-        if (!card) return;
-        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (typeof window.openCoursePage === 'function') window.openCoursePage(resolvedCourseId);
       }
-      revealCourseCard();
+      openExactLesson();
     }, 360);
-  }
-
-  function applyActiveCourseGuidance() {
-    var courseId = window.__pbbGuideCourseCardId;
-    if (!courseId) return null;
-    var selector = courseId === 'balance-identity'
-      ? '#balance-identity-course-card'
-      : '#balance-foundations-course-card';
-    var card = document.querySelector(selector);
-    if (!card) return null;
-    document.querySelectorAll('.course-path-card.is-next-course-target').forEach(function(item){
-      if (item !== card) item.classList.remove('is-next-course-target');
-    });
-    card.classList.add('is-next-course-target');
-    var button = card.querySelector('.course-path-card-open');
-    if (button && button.dataset.pbbCourseGuideBound !== courseId) {
-      button.dataset.pbbCourseGuideBound = courseId;
-      button.addEventListener('click', function(){
-        window.__pbbGuideCourseCardId = null;
-        window.__pbbGuideNextCourseId = courseId;
-        window.__pbbGuideLessonCourseId = courseId;
-        card.classList.remove('is-next-course-target');
-      }, { once: true, capture: true });
-    }
-    if (button) button.focus({ preventScroll: true });
-    return card;
-  }
-
-  function clearCourseGuidance() {
-    window.__pbbGuideCourseCardId = null;
-    window.__pbbGuideNextCourseId = null;
-    window.__pbbGuideLessonCourseId = null;
-    document.querySelectorAll('.is-next-course-target,.is-next-course-lesson-target').forEach(function(item){
-      item.classList.remove('is-next-course-target', 'is-next-course-lesson-target');
-    });
-  }
-
-  function watchCourseGuidanceExit() {
-    if (window.__pbbCourseGuidanceExitWatcher) return;
-    var learningView = document.getElementById('view-learning');
-    if (!learningView || typeof MutationObserver !== 'function') return;
-    window.__pbbCourseGuidanceExitWatcher = new MutationObserver(function(){
-      if (window.getComputedStyle(learningView).display === 'none') {
-        clearCourseGuidance();
-        return;
-      }
-      if (window.__pbbGuideCourseCardId) setTimeout(applyActiveCourseGuidance, 0);
-    });
-    window.__pbbCourseGuidanceExitWatcher.observe(learningView, { attributes: true, attributeFilter: ['style', 'class', 'hidden'], childList: true, subtree: true });
   }
 
   function openQuizTarget() {
@@ -1385,7 +1333,7 @@
               ].join('');
             }
             return [
-              '<button type="button" class="next-step-action', action.kind === 'course_lesson' ? ' is-course-guidance-home' : '', '" data-next-step-id="', escapeHtml(action.id), '" data-next-step-direct="true" onclick="window.pbbNextSteps.runAction(\'', escapeHtml(action.id), '\')" style="--next-step-accent:', escapeHtml(action.accent), '">',
+              '<button type="button" class="next-step-action" data-next-step-id="', escapeHtml(action.id), '" data-next-step-direct="true" onclick="window.pbbNextSteps.runAction(\'', escapeHtml(action.id), '\')" style="--next-step-accent:', escapeHtml(action.accent), '">',
                 '<span class="next-step-mark" aria-hidden="true"></span>',
                 '<span class="next-step-copy"><strong>', escapeHtml(action.title), '</strong><span>', escapeHtml(action.body), '</span></span>',
                 '<span class="next-step-cta">', escapeHtml(action.cta), '</span>',
@@ -1449,6 +1397,7 @@
     setTimeout(render, 3500);
   }
 
+  window.pbbOpenCurrentCourseLesson = openNextCourseTarget;
   window.pbbOpenNextCourseTarget = openNextCourseTarget;
 
   window.pbbNextSteps = {

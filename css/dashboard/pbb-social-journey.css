@@ -232,16 +232,6 @@ html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-
 html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-action::before { content: ""; position: absolute; z-index: -1; width: 145px; height: 145px; left: -52px; top: 50%; border-radius: 50%; background: var(--next-step-accent,#b78a2e); opacity: .09; transform: translateY(-50%); filter: blur(3px); }
 html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-action::after { content: ""; position: absolute; z-index: -1; inset: 0; background: linear-gradient(105deg,rgba(255,224,140,.2),transparent 42%); pointer-events: none; }
 html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-action:first-child { border-color: rgba(183,138,46,.42); box-shadow: 0 16px 36px rgba(154,107,22,.14), inset 0 1px 0 #fff; }
-@keyframes pbb-home-course-guidance-pulse {
-  0%,100% { box-shadow:0 14px 34px rgba(154,107,22,.14),0 0 0 2px rgba(183,138,46,.38),0 0 18px rgba(216,178,94,.16),inset 0 1px 0 #fff; transform:translateY(0) scale(1); }
-  50% { box-shadow:0 18px 42px rgba(154,107,22,.22),0 0 0 5px rgba(245,217,138,.34),0 0 34px rgba(216,178,94,.3),inset 0 1px 0 #fff; transform:translateY(-2px) scale(1.008); }
-}
-html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-action.is-course-guidance-home {
-  z-index:2;
-  overflow:visible;
-  border-color:rgba(183,138,46,.72);
-  animation:pbb-home-course-guidance-pulse 1.65s ease-in-out infinite;
-}
 html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-mark { width: 54px; height: 54px; align-self: center; border: 1px solid rgba(183,138,46,.19); border-radius: 17px; display: grid; place-items: center; background: rgba(255,250,235,.9); box-shadow: 0 8px 20px rgba(68,48,17,.07), inset 0 1px 0 #fff; }
 html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-mark::after { content: "\2726"; color: var(--next-step-accent,#b78a2e); -webkit-text-fill-color: var(--next-step-accent,#b78a2e); font-size: 1.45rem; line-height: 1; }
 html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan [data-next-step-id="feed_intro"] .next-step-mark::after { content: "\1F44B"; }
@@ -284,7 +274,6 @@ html[data-pbb-theme="dark"].pbb-unified-next-steps #next-obvious-steps-card.is-u
 html[data-pbb-theme="dark"].pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-action { border-color:rgba(245,217,138,.18); background:linear-gradient(118deg,#202020 0%,#171717 54%,#101010 100%); box-shadow:0 13px 31px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.04); }
 html[data-pbb-theme="dark"].pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-action::after { background:linear-gradient(105deg,rgba(216,178,94,.12),transparent 42%); }
 html[data-pbb-theme="dark"].pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-action:first-child { border-color:rgba(245,217,138,.34); box-shadow:0 16px 36px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.06); }
-html[data-pbb-theme="dark"].pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-action.is-course-guidance-home { border-color:rgba(245,217,138,.72); }
 html[data-pbb-theme="dark"].pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-mark { border-color:rgba(245,217,138,.2); background:#202020; box-shadow:0 8px 20px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.04); }
 html[data-pbb-theme="dark"].pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-copy strong { color:#f8f7f2; -webkit-text-fill-color:#f8f7f2; }
 html[data-pbb-theme="dark"].pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-copy span { color:#c8c0b0; -webkit-text-fill-color:#c8c0b0; }
@@ -527,9 +516,5 @@ html[data-pbb-theme="light"] .social-journey-pilot-controls { background: rgba(2
   .balance-activation-lesson-target {
     animation: none;
     box-shadow: 0 0 0 4px rgba(216, 178, 94, .18), 0 8px 22px rgba(154, 105, 25, .15) !important;
-  }
-  html.pbb-unified-next-steps #next-obvious-steps-card.is-unified-plan .next-step-action.is-course-guidance-home {
-    animation: none;
-    box-shadow: 0 0 0 4px rgba(183,138,46,.4), 0 16px 38px rgba(183,138,46,.24);
   }
 }

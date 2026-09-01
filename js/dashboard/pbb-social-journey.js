@@ -789,8 +789,8 @@
     if (!isJourneyEligible() || !state) return;
     if (!isCurrentLessonSeen()) {
       const courseId = Number(state.current_week || 1) >= 7 ? 'balance-identity' : 'balance-foundations';
-      if (typeof window.pbbOpenNextCourseTarget === 'function') {
-        window.pbbOpenNextCourseTarget(courseId);
+      if (typeof window.pbbOpenCurrentCourseLesson === 'function') {
+        window.pbbOpenCurrentCourseLesson(courseId);
       } else if (typeof window.switchAppTab === 'function') {
         window.switchAppTab('learning');
       }
