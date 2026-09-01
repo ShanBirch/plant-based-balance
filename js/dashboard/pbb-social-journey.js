@@ -764,14 +764,21 @@
     const definition = getWeekDefinition();
     const lesson = WEEK_LESSONS[definition.week - 1];
     if (!isCurrentLessonSeen()) {
+      const courseId = definition.week >= 7 ? 'balance-identity' : 'balance-foundations';
+      let exactDestination = null;
+      try {
+        if (typeof window.getCurrentCourseLessonDestination === 'function') {
+          exactDestination = window.getCurrentCourseLessonDestination(courseId);
+        }
+      } catch (_) {}
       return {
         kind: 'course_lesson',
-        courseId: definition.week >= 7 ? 'balance-identity' : 'balance-foundations',
-        title: definition.week >= 7
+        courseId,
+        title: exactDestination?.title || (definition.week >= 7
           ? 'Start Balance Identity: Week ' + definition.week
-          : 'Complete this week\'s Balance Foundations lesson',
-        body: lesson ? lesson.title : definition.title,
-        cta: 'Open lesson',
+          : 'Complete this week\'s Balance Foundations lesson'),
+        body: exactDestination?.body || (lesson ? lesson.title : definition.title),
+        cta: exactDestination?.cta || 'Open lesson',
         accent: '#b78a2e'
       };
     }

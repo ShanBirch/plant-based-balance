@@ -84,8 +84,8 @@ test('Home plan cards stay below the complete FitGotchi stats block', () => {
     assert.match(source, /characterBlockTail\.parentNode\.insertBefore\(weeklyGoals, characterBlockTail\.nextSibling\)/);
     assert.match(source, /characterBlockTail\.parentNode\.insertBefore\(card, characterBlockTail\.nextSibling\)/);
     assert.doesNotMatch(source, /levelStrip\.parentNode\.insertBefore\((weeklyGoals|card), levelStrip\.nextSibling\)/);
-    assert.match(html, /pbb-social-journey\.js\?v=44-direct-course-lesson/);
-    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v444-direct-course-lesson'/);
+    assert.match(html, /pbb-social-journey\.js\?v=45-exact-course-label/);
+    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v445-exact-course-label'/);
 });
 
 test('Home course actions bypass legacy journey pages and open the exact current lesson', () => {
@@ -95,7 +95,7 @@ test('Home course actions bypass legacy journey pages and open the exact current
     const premiumCss = fs.readFileSync(path.join(root, 'css/dashboard/pbb-premium-overlays.css'), 'utf8');
     const html = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
 
-    assert.match(socialSource, /courseId: definition\.week >= 7 \? 'balance-identity' : 'balance-foundations'/);
+    assert.match(socialSource, /const courseId = definition\.week >= 7 \? 'balance-identity' : 'balance-foundations'/);
     assert.match(socialSource, /window\.pbbOpenCurrentCourseLesson\(courseId\)/);
     assert.doesNotMatch(socialSource, /if \(!isCurrentLessonSeen\(\)\) \{\s*openJourney\('lesson'\)/);
     assert.match(nextStepsSource, /function openNextCourseTarget\(courseId\)/);
@@ -103,6 +103,13 @@ test('Home course actions bypass legacy journey pages and open the exact current
     assert.match(nextStepsSource, /window\.openCurrentCourseLesson\(resolvedCourseId\)/);
     assert.match(nextStepsSource, /window\.pbbOpenCurrentCourseLesson = openNextCourseTarget/);
     assert.match(learningSource, /window\.openCurrentCourseLesson = function\(courseId\)/);
+    assert.match(learningSource, /window\.getCurrentCourseLessonDestination = function\(courseId\)/);
+    assert.match(learningSource, /title: `\$\{course\.title\}: \$\{quizTitle\}`/);
+    assert.match(learningSource, /body: week \? `Next quiz · Week \$\{week\.number\}: \$\{week\.title\}`/);
+    assert.match(learningSource, /body: nextWeek \? `Current learning path · Week \$\{nextWeek\.number\}`/);
+    assert.match(socialSource, /exactDestination\?\.title/);
+    assert.match(socialSource, /exactDestination\?\.body/);
+    assert.match(socialSource, /exactDestination\?\.cta/);
     assert.match(learningSource, /window\.startFoundationsLesson\(nextLessonId\)/);
     assert.match(learningSource, /window\.startBalanceIdentityWeek\(nextWeek\.journeyWeek\)/);
     assert.doesNotMatch(nextStepsSource, /is-next-course-target|is-course-guidance-home|applyActiveCourseGuidance/);
@@ -111,7 +118,7 @@ test('Home course actions bypass legacy journey pages and open the exact current
     assert.match(html, /pbb-next-obvious-steps\.js\?v=43-direct-course-lesson/);
     assert.match(html, /pbb-social-journey\.css\?v=27-direct-course-lesson/);
     assert.match(html, /pbb-premium-overlays\.css\?v=107-direct-course-lesson/);
-    assert.match(html, /learning-inline\.js\?v=34-direct-course-lesson/);
+    assert.match(html, /learning-inline\.js\?v=35-exact-course-label/);
 });
 
 test('Home goals and plan cards follow light and dark mode', () => {

@@ -1961,14 +1961,14 @@ if(!window._pbbIsIOSSafari) {
 if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-progressphoto.js?v=11"><\/script>');
 document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=35-balance-theme"><\/script>');
-    document.write('<script src="js/dashboard/pbb-social-journey.js?v=44-direct-course-lesson"><\/script>');
+    document.write('<script src="js/dashboard/pbb-social-journey.js?v=45-exact-course-label"><\/script>');
     document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=43-direct-course-lesson"><\/script>');
     document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=29-accountability-checkout"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
     window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=11');
 window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=35-balance-theme');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=44-direct-course-lesson');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=45-exact-course-label');
     window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=43-direct-course-lesson');
     window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=29-accountability-checkout');
 }
@@ -20447,11 +20447,11 @@ if (window._pbbIsIOSSafari) {
             });
             if (window.showQuizBattleInviteModal || learningAlreadyRequested) return;
             var s = document.createElement('script');
-      s.src = 'lib/learning-inline.js?v=34-direct-course-lesson';
+      s.src = 'lib/learning-inline.js?v=35-exact-course-label';
             document.head.appendChild(s);
         }, { once: true });
     } else {
-    document.write('<script src="lib/learning-inline.js?v=34-direct-course-lesson"><\/script>');
+    document.write('<script src="lib/learning-inline.js?v=35-exact-course-label"><\/script>');
     }
     </script>
     <!-- Battle System & Logic Overrides (130 lines — deferred on iOS) -->

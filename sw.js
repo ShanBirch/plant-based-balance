@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v444-direct-course-lesson'; // v444: open the exact current course lesson directly from Home
+const CACHE_NAME = 'pbb-app-v445-exact-course-label'; // v445: name the exact course and current quiz or learning path on Home
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
