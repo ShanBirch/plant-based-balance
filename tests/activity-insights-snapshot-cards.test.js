@@ -67,14 +67,19 @@ test('new and returning members discover snapshots and manual steps', () => {
 });
 
 test('returning phones receive the snapshot release', () => {
-  assert.match(dashboard, /dashboard-style-1\.css\?v=75/);
-  assert.ok((dashboard.match(/dashboard-script-2-activity_insights_view\.js\?v=insights-history-toggle-v4/g) || []).length >= 2);
-  assert.match(serviceWorker, /pbb-app-v437-feed-composer-label/);
+  assert.match(dashboard, /dashboard-style-1\.css\?v=76/);
+  assert.ok((dashboard.match(/dashboard-script-2-activity_insights_view\.js\?v=insights-contrast-v5/g) || []).length >= 2);
+  assert.match(serviceWorker, /pbb-app-v438-insights-note-contrast/);
 });
 
 test('metric detail screens show only the heading inside the content card', () => {
   assert.match(css, /\.insights-metric-detail-header\s*\{[^}]*display:\s*none;/s);
   assert.match(css, /\.insights-metric-detail-content\s*\{[^}]*padding:\s*calc\(20px \+ env\(safe-area-inset-top, 0px\)\)/s);
+});
+
+test('calorie burn guidance stays readable in light and dark themes', () => {
+  assert.match(insights, /class="insights-burn-note"/);
+  assert.match(css, /#view-insights-metric-detail \.insights-burn-note\s*\{[^}]*background:\s*var\(--pbb-insights-soft-bg\) !important;[^}]*color:\s*var\(--pbb-insights-muted\) !important;[^}]*-webkit-text-fill-color:\s*var\(--pbb-insights-muted\) !important;/s);
 });
 
 test('body weight detail has one entry point and a live history summary', () => {

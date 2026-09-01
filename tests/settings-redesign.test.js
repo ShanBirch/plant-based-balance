@@ -99,5 +99,5 @@ test('Settings defines complete readable light and dark colour pairs', () => {
 
 test('phone caches receive the redesign', () => {
   assert.match(dashboard, /pbb-premium-overlays\.css\?v=103-daily-score-theme/);
-  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v437-feed-composer-label'/);
+  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v438-insights-note-contrast'/);
 });

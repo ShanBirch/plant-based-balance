@@ -11233,6 +11233,24 @@ html[data-pbb-theme="light"] #view-insights-metric-detail {
     padding: calc(20px + env(safe-area-inset-top, 0px)) 20px calc(30px + env(safe-area-inset-bottom, 0px));
 }
 
+#view-insights-metric-detail .insights-burn-note {
+    margin-top: 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--pbb-insights-border);
+    border-radius: 10px;
+    background: var(--pbb-insights-soft-bg) !important;
+    color: var(--pbb-insights-muted) !important;
+    -webkit-text-fill-color: var(--pbb-insights-muted) !important;
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1.5;
+}
+
+#view-insights-metric-detail .insights-burn-note strong {
+    color: var(--pbb-insights-text) !important;
+    -webkit-text-fill-color: var(--pbb-insights-text) !important;
+}
+
 #view-insights-metric-detail .insights-legacy-graph-card {
     display: none;
     box-sizing: border-box;
