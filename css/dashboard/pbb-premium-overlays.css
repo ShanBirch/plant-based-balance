@@ -10667,8 +10667,16 @@ html[data-pbb-theme="light"] .course-card-art {
 
 .course-week-action-copy small b { color: var(--course-gold-strong); }
 
+.course-week-action-timing,
+.foundation-action-timing {
+    color: var(--course-gold-strong);
+    font-size: .54rem;
+    font-weight: 850;
+    line-height: 1.25;
+}
+
 .course-week-action-open {
-    min-width: 54px;
+    min-width: 58px;
     min-height: 30px;
     padding: 5px 9px;
     border: 1px solid color-mix(in srgb, var(--course-gold-strong) 38%, transparent);

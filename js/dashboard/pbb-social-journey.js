@@ -260,6 +260,44 @@
     }
   }
 
+  function brisbaneClockParts(date) {
+    try {
+      const parts = new Intl.DateTimeFormat('en-AU', {
+        timeZone: BRISBANE_TIMEZONE,
+        weekday: 'short',
+        hour: '2-digit',
+        hour12: false
+      }).formatToParts(date || new Date());
+      const map = {};
+      parts.forEach(part => { if (part.type !== 'literal') map[part.type] = part.value; });
+      return { weekday: map.weekday || '', hour: Number(map.hour || 0) };
+    } catch (_) {
+      const fallback = date || new Date();
+      return { weekday: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][fallback.getDay()], hour: fallback.getHours() };
+    }
+  }
+
+  function taskAvailability(item, date) {
+    const clock = brisbaneClockParts(date);
+    if (item && item.type === 'weekly_checkin') {
+      const availableNow = ['Fri', 'Sat', 'Sun'].includes(clock.weekday);
+      return {
+        availableNow,
+        availabilityLabel: availableNow ? 'Available now · closes Sunday' : 'Available Friday–Sunday',
+        availabilityButtonLabel: availableNow ? 'Open' : 'Friday'
+      };
+    }
+    if (item && (item.type === 'foundations_diary_feed' || item.type === 'identity_diary_feed')) {
+      const availableNow = clock.hour >= 17;
+      return {
+        availableNow,
+        availabilityLabel: availableNow ? 'Available now · daily after 5 pm' : 'Available from 5 pm today',
+        availabilityButtonLabel: availableNow ? 'Open' : '5 pm'
+      };
+    }
+    return { availableNow: true, availabilityLabel: '', availabilityButtonLabel: 'Open' };
+  }
+
   function dateFromKey(key) {
     return new Date(String(key || brisbaneDateKey()) + 'T00:00:00+10:00');
   }
@@ -1034,7 +1072,7 @@
         const stored = savedTasks.get(item.id);
         const current = Math.max(0, Number(stored && stored.current) || 0);
         const complete = !!(stored && stored.complete) || current >= item.target;
-        return Object.assign({}, item, {
+        return Object.assign({}, item, taskAvailability(item), {
           current,
           complete,
           actionLabel: definition.week === currentJourneyWeek ? taskActionLabel(Object.assign({}, item, { current, complete })) : (complete ? 'Done' : 'Not completed')
@@ -1959,6 +1997,8 @@
       WEEK_LESSONS,
       isInstagramPlanComplete,
       brisbaneDateKey,
+      brisbaneClockParts,
+      taskAvailability,
       getWeekDefinition: function () { return getWeekDefinition(); }
     }
   };

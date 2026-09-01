@@ -1639,7 +1639,24 @@
     showToast('Next week goals would open from here.', 'info');
   }
 
+  function isWeeklyCheckinWindowOpen(date){
+    try {
+      var weekday = new Intl.DateTimeFormat('en-AU', {
+        timeZone: 'Australia/Brisbane',
+        weekday: 'short'
+      }).format(date || new Date());
+      return weekday === 'Fri' || weekday === 'Sat' || weekday === 'Sun';
+    } catch (_) {
+      var day = (date || new Date()).getDay();
+      return day === 5 || day === 6 || day === 0;
+    }
+  }
+
   function openWeeklyCheckinPreview(){
+    if (!isWeeklyCheckinWindowOpen()) {
+      showToast('Your weekly check-in opens Friday and stays available through Sunday.', 'info');
+      return;
+    }
     ensureStyles();
     markReviewViewed();
     try {
@@ -1812,6 +1829,7 @@
   }
 
   window.openWeeklyCheckinPreview = openWeeklyCheckinPreview;
+  window.isWeeklyCheckinWindowOpen = isWeeklyCheckinWindowOpen;
   window.closeWeeklyCheckinPreview = closeWeeklyCheckinPreview;
   window.isWeeklyCheckinDue = isReviewEnabled;
   window.refreshWeeklyCheckinPreviewCard = renderCard;
