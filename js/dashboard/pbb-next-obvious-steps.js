@@ -416,7 +416,7 @@
     switchTab('movement-tab');
     afterTab(function(){
       if (!scrollToSelector('#today-workout-card', { block: 'center' })) {
-        scrollToSelector('#movement-grid-container,#form-check-quick-card', { block: 'start' });
+        scrollToSelector('#movement-grid-container', { block: 'start' });
       }
     }, 620);
   }

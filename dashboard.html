@@ -7444,38 +7444,7 @@ if (window._pbbIsIOSSafari) {
         </div>
     </div>
 
-    <div style="padding: 25px;">
-        <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:20px;">
-            <div>
-                <h1 style="color:var(--primary); margin:0; font-size:2rem; letter-spacing:-1px;">Movement</h1>
-            </div>
-            <!-- Button Removed -->
-        </div>
-
-        <!-- Form Check Quick Access -->
-        <button id="form-check-quick-card" type="button" onclick="openFormCheck({ source: 'movement' })" style="width:100%; margin:0 0 16px 0; border:none; border-radius:18px; padding:16px; background:linear-gradient(135deg,#102a1d 0%,#48864B 100%); color:white; text-align:left; display:flex; align-items:center; gap:14px; cursor:pointer; box-shadow:0 10px 24px rgba(16,42,29,0.18);">
-            <div style="width:48px; height:48px; border-radius:14px; background:rgba(255,255,255,0.16); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-                <svg viewBox="0 0 24 24" style="width:26px; height:26px; fill:currentColor;"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
-            </div>
-            <div style="min-width:0; flex:1;">
-                <div style="font-size:0.76rem; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; opacity:0.85; margin-bottom:4px;">Form Check</div>
-                <div style="font-size:1rem; font-weight:900; line-height:1.2;">Film an exercise for Shannon to review</div>
-                <div style="font-size:0.78rem; opacity:0.9; margin-top:4px;">Use this anytime from Movement.</div>
-            </div>
-        </button>
-
-        <!-- Custom Exercise Quick Access -->
-        <button id="movement-add-exercise-btn" type="button" onclick="openCreateCustomExerciseModal('library')" style="width:100%; margin:0 0 16px 0; border:1.5px solid rgba(245,158,11,0.45); border-radius:18px; padding:16px; background:linear-gradient(135deg,#fffaf0 0%,#fef3c7 100%); color:#3f2d08; -webkit-text-fill-color:#3f2d08; text-align:left; display:flex; align-items:center; gap:14px; cursor:pointer; box-shadow:0 10px 24px rgba(120,80,20,0.10);">
-            <div style="width:48px; height:48px; border-radius:14px; background:#f59e0b; color:#ffffff; -webkit-text-fill-color:#ffffff; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-                <svg viewBox="0 0 24 24" style="width:27px; height:27px; fill:currentColor;"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-6 10h-2v2H9v-2H7v-2h2V9h2v2h2v2zm2 2.5v-7l5 3.5-5 3.5z"/></svg>
-            </div>
-            <div style="min-width:0; flex:1;">
-                <div style="font-size:0.76rem; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; color:#7c5b18; -webkit-text-fill-color:#7c5b18; margin-bottom:4px;">Exercise Library</div>
-                <div style="font-size:1rem; font-weight:900; line-height:1.2; color:#3f2d08; -webkit-text-fill-color:#3f2d08;">Add an Exercise</div>
-                <div style="font-size:0.78rem; color:#5f430b; -webkit-text-fill-color:#5f430b; margin-top:4px;">Create one, add its video, or finish an upload later.</div>
-            </div>
-        </button>
-
+    <div style="padding:25px;">
         <!-- Dynamic Grid Container -->
         <div id="movement-grid-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;"></div>
 
@@ -14164,7 +14133,6 @@ if(!window._pbbIsIOSSafari) {
     { tab:'movement-tab', sel:'#workout-player-experiment-controls', fallbackSel:'#today-workout-card', title:'Swipe through your workout', fallbackTitle:'Swipe through your workout', body:'Use Swipe to focus on one exercise at a time, then swipe left or right to move between exercises. Switch back to List any time.', fallbackBody:"Start today's workout, then choose Swipe to focus on one exercise at a time. Swipe left or right to move through the session, or switch back to List any time.", quick:true, condition:function(){ return !!document.getElementById('workout-player-experiment-controls') || !!document.getElementById('today-workout-card'); } },
     { tab:'movement-tab', sel:'#move-your-way-pilot-card', title:'Move your way', body:'Classes, runs, walks and rides all count. Log the movement, then add a photo or caption if you want to share it.', quick:true, condition:function(){ return !!(window.isMoveYourWayPilotUser && window.isMoveYourWayPilotUser()); } },
       { tab:'movement-tab', sel:'#workout-share-set-btn', fallbackSel:'#today-workout-card', title:'Share a Set', fallbackTitle:'Open a workout to Share a Set', body:"Tap Share a Set under Film Form Check, then choose Camera to film in-app or Photos to choose an existing clip. Balance compresses the clip and shares it to Feed while you stay in workout mode. First share each day earns +15 XP. If reception drops, the clip is saved at the top of Feed so you can post it later.", fallbackBody:"Start today's workout and you will see Share a Set under Film Form Check. First share each day earns +15 XP. If reception drops, the clip is saved at the top of Feed so you can post it later.", quick: true, condition: function(){ return !!document.getElementById('workout-share-set-btn') || !!document.getElementById('today-workout-card'); } },
-    { tab:'movement-tab', sel:'#movement-add-exercise-btn', title:'Add an Exercise', body:"Tap here to create an exercise, add its demo video, or finish a saved exercise video later. Upload progress stays on screen while you keep using Balance.", quick: true, condition: function(){ return !!document.getElementById('movement-add-exercise-btn'); } },
     { tab:'movement-tab', sel:'#today-workout-card', title:'Post-workout Share', body:"Finish a workout, then tap the single Share button to post the workout, a PB, or a photo to Feed." },
     { tab:'movement-tab', sel:'#share-workout-ig-story-btn', fallbackSel:'#today-workout-card', title:'Workout Story +15 XP', fallbackTitle:'Share your workout to Story', body:'After a workout, add a photo and tap the full-width IG Story button. The first workout Story share each day earns +15 XP.', fallbackBody:'Finish a workout, add a photo, then share it to IG Story for +15 XP once a day.', condition: function(){ return !!document.getElementById('share-workout-ig-story-btn') || !!document.getElementById('today-workout-card'); } },
     { tab:'movement-tab', sel:'#today-workout-card', title:'Photo + workout overlays', body:"Choose Photo + workout or Photo + PB after a session. Balance places the result over your gym photo in a clean transparent overlay, then shows you a preview before posting." },
@@ -14175,7 +14143,6 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#weekly-progress-photo-card,#weekly-progress-photo-done-card', title:'Progress photos to Instagram', body:"After your weekly progress photos save, tap IG Story to share a Balance progress card straight to Instagram.", condition: function(){ return !!document.querySelector('#weekly-progress-photo-card,#weekly-progress-photo-done-card'); } },
     { tab:'movement-tab', sel:'#build-custom-card,[onclick*="openWorkoutBuilder"]', title:'Workout Builder', body:"Build custom workouts set-by-set and save them to reuse later." },
     { tab:'movement-tab', sel:'#workout-library-card,[onclick*="openWorkoutLibrary"]', title:'Program Library', body:"Prebuilt 48-week programs — pick one and follow along." },
-    { tab:'movement-tab', sel:'#form-check-quick-card', title:'Form Checks', body:"Film a quick exercise clip and send it to Shannon when you want him to check your technique. During a workout, use the form-check button at the top of workout mode." },
 
     { tab:'learning', sel:'#balance-foundations-course-card', fallbackSel:'.course-library-intro,#learning-content', title:'Your week at a glance', fallbackTitle:'Your week at a glance', body:'Open Balance Foundations, then tap Continue course to see your current lessons, actions, progress, and next step on one simple screen.', fallbackBody:'Continue Balance Foundations to open a simple view of your current week.' },
     { tab:'learning', sel:'.course-library-intro', fallbackSel:'#learning-content', title:'Preview every course', fallbackTitle:'Your course path lives here', body:"Complete Balance Foundations to unlock every course. You can open any card now to preview its topics, even while it is locked.", fallbackBody:"Open Course to preview the full curriculum. Complete Balance Foundations to start the other courses." },
@@ -16419,13 +16386,6 @@ window.endFeatureTour = function(skipped){
       body: "Each workout exercise now has a Science & form cues spot. Open it between sets for force transfer, core bracing, posture, scapula, and glute med cues."
     },
     {
-      id: 'form-check-v1',
-      tab: 'movement-tab',
-      sel: '#form-check-quick-card',
-      title: 'Form Checks',
-      body: "Not sure if a movement looks right? Film a quick clip and send it to Shannon for a technique check. Workouts also have an in-session form-check button."
-    },
-    {
       id: 'ig-workout-pb-share-v1',
       tab: 'movement-tab',
       sel: '#today-workout-card',
@@ -16689,14 +16649,6 @@ window.endFeatureTour = function(skipped){
     body: 'Add an exercise without leaving your workout. If its video did not finish, open Add an Exercise again and tap Add video beside the saved exercise. It will not create a duplicate.',
     fallbackBody: "Start a workout, then tap Add an Exercise under Film Form Check. Your saved exercises stay there until you're ready to add or retry a video.",
     condition: function(){ return !!document.getElementById('workout-add-exercise-video-btn') || !!document.getElementById('today-workout-card'); }
-  });
-  allFeatures.push({
-    id: 'movement-exercise-upload-progress-v1',
-    tab: 'movement-tab',
-    sel: '#movement-add-exercise-btn',
-    title: 'Add exercises from Movement',
-    body: 'Create an exercise or add a video to one you already saved. A live progress bar stays on screen until the video finishes uploading.',
-    condition: function(){ return !!document.getElementById('movement-add-exercise-btn'); }
   });
   allFeatures.push({
     id: 'fitness-diary-day-story-v1',

@@ -50,7 +50,7 @@ assert.match(
 );
 assert.match(
   dashboardHtml,
-  /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=225-calendar-home-coins&video_health=2/,
+  /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=227-meal-primary-tabs&video_health=2/,
   'dashboard should bump script 5 so phones fetch the upload progress and background worker flow'
 );
 assert.match(
@@ -60,8 +60,8 @@ assert.match(
 );
 assert.match(
   dashboardHtml,
-  /title:'Add an Exercise'[\s\S]*finish a saved exercise video later[\s\S]*Upload progress stays on screen/,
-  'custom exercise retry should be in the guided feature tour'
+  /id: 'custom-exercise-video-retry-v1'[\s\S]*sel: '#workout-add-exercise-video-btn'[\s\S]*title: 'Finish an exercise video later'/,
+  'custom exercise retry guidance should point to the in-workout action'
 );
 assert.match(
   dashboardHtml,
@@ -229,21 +229,8 @@ assert.match(
   /data-custom-exercise-upload-row[\s\S]*data-custom-exercise-upload-progress/,
   'saved exercise rows should show their current upload percentage'
 );
-assert.match(
-  dashboardHtml,
-  /id="movement-add-exercise-btn"[\s\S]*Add an Exercise[\s\S]*finish an upload later/,
-  'Movement should provide direct access to create and manage custom exercises'
-);
-assert.match(
-  dashboardHtml,
-  /id: 'movement-exercise-upload-progress-v1'[\s\S]*sel: '#movement-add-exercise-btn'/,
-  'Movement exercise uploads should have a returning-user Feature Drop'
-);
-assert.match(
-  dashboardHtml,
-  /sel:'#movement-add-exercise-btn'[\s\S]*Upload progress stays on screen/,
-  'Movement exercise uploads should be included in the guided feature tour'
-);
+assert.doesNotMatch(dashboardHtml, /id="movement-add-exercise-btn"/, 'Movement should not duplicate the in-workout Add an Exercise action');
+assert.doesNotMatch(dashboardHtml, /id: 'movement-exercise-upload-progress-v1'/, 'removed Movement shortcuts should not keep dead Feature Drops');
 assert.match(
   workoutScript,
   /videoFile\._balanceNativeVideoPath[\s\S]*enqueueExerciseVideoUpload[\s\S]*watchNativeCustomExerciseVideoUpload/,
@@ -266,7 +253,7 @@ assert.match(
 );
 assert.match(
   workoutScript,
-  /onloadedmetadata="fitInlineExerciseVideoFrame\(this\)"/,
+  /onloadedmetadata="fitInlineExerciseVideoFrame\(this\);[^\"]*"/,
   'inline exercise videos should detect their orientation from video metadata'
 );
 assert.match(
@@ -281,7 +268,7 @@ assert.match(
 );
 assert.match(
   workoutScript,
-  /\$\{videoUrl \? createExerciseVideoBlockHtml\(videoUrl, ex\.name\) : ''\}/,
+  /\$\{videoUrl \? createExerciseVideoBlockHtml\(videoUrl, ex\.name(?:,[^)]*)?\) : ''\}/,
   'active workout cards should use the reusable orientation-aware video block'
 );
 assert.match(

@@ -70,6 +70,6 @@ test('versioned phone assets advance for the Home fix', () => {
   assert.match(dashboard, /pbb-next-obvious-steps\.js\?v=46-completion-aware-course/);
   assert.match(dashboard, /dashboard-script-1-daily_weighin_card_logic\.js\?v=75-evening-diary-action/);
   assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=49/);
-  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v451-meals-header-no-divider'/);
+  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v452-movement-studio-cleanup'/);
   assert.match(serviceWorker, /dashboard-script-10-points_widget_functions\.js\?v=49/);
 });
