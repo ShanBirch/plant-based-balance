@@ -115,7 +115,8 @@ exports.handler = async (event) => {
             statusCode: 200,
             headers: {
                 'Content-Type': 'application/json',
-                'Cache-Control': 'public, max-age=300, stale-while-revalidate=3600'
+                'Cache-Control': 'public, max-age=300, stale-while-revalidate=3600',
+                'Netlify-CDN-Cache-Control': 'public, durable, s-maxage=3600, stale-while-revalidate=86400'
             },
             body: JSON.stringify({ success: true, query, results })
         };

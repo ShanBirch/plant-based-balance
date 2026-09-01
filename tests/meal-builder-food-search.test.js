@@ -44,3 +44,24 @@ test('search, results, serving controls, and focus states have paired theme rule
   assert.match(theme, /html\[data-pbb-theme="light"\] #meal-builder-food-search/);
   assert.match(theme, /html\[data-pbb-theme="light"\] \.meal-builder-serving-preview/);
 });
+
+test('food search responses use Netlify durable caching', async () => {
+  const originalFetch = global.fetch;
+  const originalKey = process.env.USDA_FOODDATA_API_KEY;
+  process.env.USDA_FOODDATA_API_KEY = 'test-key';
+  global.fetch = async () => ({
+    ok: true,
+    json: async () => ({ foods: [] })
+  });
+
+  try {
+    const response = await foodSearch.handler({ queryStringParameters: { q: 'banana' } });
+    assert.equal(response.statusCode, 200);
+    assert.match(response.headers['Netlify-CDN-Cache-Control'], /durable/);
+    assert.match(response.headers['Netlify-CDN-Cache-Control'], /s-maxage=3600/);
+  } finally {
+    global.fetch = originalFetch;
+    if (originalKey === undefined) delete process.env.USDA_FOODDATA_API_KEY;
+    else process.env.USDA_FOODDATA_API_KEY = originalKey;
+  }
+});
