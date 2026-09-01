@@ -51,7 +51,7 @@ function addMealOverlayShareStubs(context) {
 }
 
 test('dashboard loads the refreshed meal share logic', () => {
-    assert.match(dashboardSource, /dashboard-script-11-calorie_tracker_functions\.js\?v=40-meal-complete-share/g);
+    assert.match(dashboardSource, /dashboard-script-11-calorie_tracker_functions\.js\?v=41-share-done-flow/g);
 });
 
 test('meal share prompt stays visible and locks every action while its photo uploads', () => {

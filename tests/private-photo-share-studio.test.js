@@ -134,9 +134,9 @@ test('Shannon receives the progress-first workout completed page', () => {
 test('private reveal, tour, and cache-busted modules ship together', () => {
   assert.match(dashboard, /private-photo-share-studio-shannon-v4/);
   assert.match(dashboard, /BalancePrivateShareStudio\.isEnabled\(\)/);
-  assert.match(dashboard, /pbb-private-share-studio\.js\?v=12-activity-meal-complete/);
-  assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=59-activity-complete-share/);
+  assert.match(dashboard, /pbb-private-share-studio\.js\?v=14-exact-editor-export/);
+  assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=61-exact-activity-share/);
   assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=[^'\"]+/);
-  assert.match(dashboard, /dashboard-script-11-calorie_tracker_functions\.js\?v=40-meal-complete-share/);
-  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v466-activity-meal-complete'/);
+  assert.match(dashboard, /dashboard-script-11-calorie_tracker_functions\.js\?v=41-share-done-flow/);
+  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v468-exact-editor-export'/);
 });

@@ -30,6 +30,9 @@ test('finished editor image is used for both destinations', () => {
   assert.match(activity, /preparedDataUrl: studioShare\.renderedDataUrl/);
   assert.match(meals, /preparedDataUrl: studioShare\.renderedDataUrl/g);
   assert.match(studio, /studio_editor: editorState\(\)/);
+  assert.match(studio, /async function captureExactEditorStage\(el\)/);
+  assert.match(studio, /output = await captureExactEditorStage\(el\)/);
+  assert.match(studio, /html2canvas@1\.4\.1/);
 });
 
 test('sharing keeps the editor open until Done', () => {
@@ -37,7 +40,9 @@ test('sharing keeps the editor open until Done', () => {
   assert.doesNotMatch(actionBody, /close\(\{ action: kind/);
   assert.match(actionBody, /Shared to Feed/);
   assert.match(actionBody, /IG Story opened/);
-  assert.match(studio, /data-share-done[^\n]+close\(\{ action: 'done'/);
+  assert.match(studio, /var doneCallback = active\.onDone/);
+  assert.match(studio, /Promise\.resolve\(doneCallback\(\)\)/);
+  assert.match(activity, /onDone: \(\) => closeSuccessScreen\(\)/g);
 });
 
 test('the pilot gets both guided and returning-user discovery', () => {

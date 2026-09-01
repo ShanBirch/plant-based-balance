@@ -287,6 +287,7 @@
       .pbb-share-studio__rail{position:absolute;z-index:21;right:10px;top:calc(82px + env(safe-area-inset-top));display:flex;flex-direction:column;gap:8px}.pbb-share-studio__tool{width:66px;min-height:62px;padding:7px 4px;border:1px solid rgba(255,255,255,.3);border-radius:17px;background:rgba(10,10,10,.56);color:#fff;-webkit-text-fill-color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;backdrop-filter:blur(14px);font-size:.66rem;font-weight:850}.pbb-share-studio__tool svg{width:22px;height:22px;flex:0 0 auto}.pbb-share-studio__tool span{display:block;line-height:1.05;white-space:nowrap}.pbb-share-studio__tool.is-active{background:var(--gold);border-color:var(--gold);color:var(--ink);-webkit-text-fill-color:var(--ink)}
       .pbb-share-studio__tool small{display:block;max-width:58px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.48rem;font-weight:800;opacity:.76}.pbb-share-studio__tool i{display:block;width:18px;height:4px;border-radius:99px;background:#d8b25e;box-shadow:0 0 0 1px rgba(255,255,255,.35)}
       .pbb-share-studio__layer{position:absolute;z-index:6;touch-action:none;user-select:none;cursor:grab;transform-origin:center}.pbb-share-studio__layer.is-selected{outline:1px dashed rgba(255,255,255,.8);outline-offset:8px}.pbb-share-studio__workout{left:7%;top:58%;width:78%;color:#fff;text-shadow:0 2px 14px rgba(0,0,0,.9)}.pbb-share-studio__workout-kicker{font-size:.62rem;font-weight:950;letter-spacing:.08em;color:var(--gold);-webkit-text-fill-color:var(--gold)}.pbb-share-studio__workout-title{margin:8px 0 14px;font-size:clamp(1.8rem,10vw,3.4rem);line-height:.9;font-weight:950;letter-spacing:-.05em;text-transform:uppercase}.pbb-share-studio__metrics{display:grid;grid-template-columns:repeat(3,1fr);border-top:2px solid var(--gold);padding-top:12px}.pbb-share-studio__metric{padding:0 10px;border-left:1px solid rgba(255,255,255,.48)}.pbb-share-studio__metric:first-child{padding-left:0;border-left:0}.pbb-share-studio__metric strong{display:block;font-size:clamp(.8rem,4.7vw,1.35rem);white-space:nowrap}.pbb-share-studio__metric small{font-size:.48rem;font-weight:900;letter-spacing:.05em;opacity:.82}.pbb-share-studio__caption{left:50%;top:26%;max-width:78%;padding:7px 11px;border-radius:9px;color:#fff;-webkit-text-fill-color:#fff;text-align:center;font-size:clamp(1.25rem,6vw,2.3rem);line-height:1.06;font-weight:900;white-space:pre-wrap;overflow-wrap:anywhere;text-shadow:0 2px 12px rgba(0,0,0,.9)}.pbb-share-studio__caption:empty{display:none}.pbb-share-studio__caption[data-style=label]{background:rgba(17,17,17,.86);text-shadow:none}.pbb-share-studio__caption[data-style=gold]{background:var(--gold);color:var(--ink);-webkit-text-fill-color:var(--ink);text-shadow:none}.pbb-share-studio__sticker{font-size:clamp(2rem,11vw,4.5rem);line-height:1;filter:drop-shadow(0 3px 8px rgba(0,0,0,.38))}.pbb-share-studio__delete-sticker{position:absolute;right:-19px;top:-19px;width:27px;height:27px;border:1px solid #fff;border-radius:50%;background:#111;color:#fff;-webkit-text-fill-color:#fff;display:none;place-items:center;font-size:.85rem}.pbb-share-studio__sticker.is-selected .pbb-share-studio__delete-sticker{display:grid}
+      .pbb-share-studio__stage.is-exporting .pbb-share-studio__layer.is-selected{outline:none}.pbb-share-studio__stage.is-exporting .pbb-share-studio__delete-sticker{display:none!important}
       .pbb-share-studio__workout[data-layout=scorecard]{padding:18px;border:1px solid var(--gold);border-radius:22px;background:rgba(8,8,8,.72);text-shadow:none}.pbb-share-studio__workout[data-layout=scorecard] .pbb-share-studio__workout-title{font-size:clamp(1.55rem,8vw,2.8rem)}.pbb-share-studio__workout[data-layout=simple] .pbb-share-studio__metrics{display:none}.pbb-share-studio__workout[data-layout=simple] .pbb-share-studio__workout-title{font-size:clamp(2.1rem,12vw,4rem)}.pbb-share-studio__workout[data-layout=receipt]{padding:16px 18px;background:rgba(8,8,8,.76);color:#fff;-webkit-text-fill-color:#fff;text-shadow:none;border:1px solid rgba(216,178,94,.72);border-radius:18px;box-shadow:0 10px 35px rgba(0,0,0,.3)}.pbb-share-studio__workout[data-layout=receipt] .pbb-share-studio__workout-title{font-size:clamp(1.45rem,7.6vw,2.5rem)}.pbb-share-studio__lifts{display:none;margin-top:10px}.pbb-share-studio__workout[data-layout=receipt] .pbb-share-studio__lifts{display:grid;gap:5px}.pbb-share-studio__lifts div{display:flex;justify-content:space-between;gap:10px;padding:6px 8px;border-radius:8px;background:rgba(255,255,255,.1);font-size:.55rem}.pbb-share-studio__lifts strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pbb-share-studio__lifts span{flex:0 0 auto;color:var(--gold);-webkit-text-fill-color:var(--gold)}
       .pbb-share-studio__workout{--workout-accent:#d8b25e;--workout-surface:rgba(8,8,8,.78);--workout-text:#fff;color:var(--workout-text);-webkit-text-fill-color:var(--workout-text)}.pbb-share-studio__workout-kicker{color:var(--workout-accent);-webkit-text-fill-color:var(--workout-accent)}.pbb-share-studio__metrics{border-top-color:var(--workout-accent)}.pbb-share-studio__lifts span{color:var(--workout-accent);-webkit-text-fill-color:var(--workout-accent)}.pbb-share-studio__workout[data-layout=scorecard],.pbb-share-studio__workout[data-layout=outline],.pbb-share-studio__workout[data-layout=receipt],.pbb-share-studio__workout[data-layout=full]{border-color:var(--workout-accent)}.pbb-share-studio__workout[data-layout=scorecard]{background:var(--workout-surface)}.pbb-share-studio__workout[data-layout=stamp]{width:62%;padding:18px;text-align:center;border:3px solid var(--workout-accent);border-radius:50%;background:rgba(8,8,8,.32)}.pbb-share-studio__workout[data-layout=stamp] .pbb-share-studio__workout-title{font-size:clamp(1.4rem,8vw,2.8rem)}.pbb-share-studio__workout[data-layout=stamp] .pbb-share-studio__metrics{display:none}.pbb-share-studio__workout[data-layout=split]{display:grid;grid-template-columns:1.12fr .88fr;gap:14px;align-items:end;padding-left:15px;border-left:6px solid var(--workout-accent)}.pbb-share-studio__workout[data-layout=split] .pbb-share-studio__metrics{grid-column:2;grid-row:1/3;display:flex;flex-direction:column;border-top:0;padding:0}.pbb-share-studio__workout[data-layout=split] .pbb-share-studio__metric{padding:5px 0;border-left:0;border-top:1px solid rgba(255,255,255,.34)}.pbb-share-studio__workout[data-layout=compact]{width:86%;display:flex;align-items:center;gap:12px;padding:12px 15px;border-radius:999px;background:var(--workout-surface);text-shadow:none}.pbb-share-studio__workout[data-layout=compact] .pbb-share-studio__workout-kicker{display:none}.pbb-share-studio__workout[data-layout=compact] .pbb-share-studio__workout-title{flex:1;margin:0;font-size:clamp(1rem,5vw,1.8rem)}.pbb-share-studio__workout[data-layout=compact] .pbb-share-studio__metrics{flex:1.4;border-top:0;padding:0}.pbb-share-studio__workout[data-layout=outline]{padding:18px;border:2px solid var(--workout-accent);border-radius:4px;background:transparent}.pbb-share-studio__workout[data-layout=receipt]{background:var(--workout-surface)}.pbb-share-studio__workout[data-layout=editorial]{padding-left:18px;border-left:10px solid var(--workout-accent)}.pbb-share-studio__workout[data-layout=editorial] .pbb-share-studio__workout-title{font-family:Georgia,serif;font-weight:700;letter-spacing:-.03em;text-transform:none}.pbb-share-studio__workout[data-layout=editorial] .pbb-share-studio__metrics{border-top:0;padding-top:3px}.pbb-share-studio__workout[data-layout=full]{padding:16px 18px;border:1px solid var(--workout-accent);border-radius:18px;background:var(--workout-surface);text-shadow:none}.pbb-share-studio__workout[data-layout=full] .pbb-share-studio__lifts{display:grid;gap:5px}
       .pbb-share-studio__drawer{position:absolute;z-index:22;left:10px;right:10px;bottom:calc(74px + env(safe-area-inset-bottom));min-height:104px;max-height:39dvh;padding:13px;border:1px solid rgba(255,255,255,.25);border-radius:20px;background:rgba(10,10,10,.88);box-shadow:0 18px 60px rgba(0,0,0,.4);backdrop-filter:blur(20px);overflow:auto}.pbb-share-studio__drawer[hidden]{display:none}.pbb-share-studio__drawer-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}.pbb-share-studio__drawer-title{font-size:.72rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.pbb-share-studio__drawer-done{min-height:34px;padding:0 13px;border:0;border-radius:999px;background:var(--gold);color:var(--ink);-webkit-text-fill-color:var(--ink);font-weight:900;font-size:.72rem}.pbb-share-studio__scroll-row{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none}.pbb-share-studio__scroll-row::-webkit-scrollbar{display:none}.pbb-share-studio__filter{flex:0 0 62px;border:0;background:transparent;color:#fff;-webkit-text-fill-color:#fff;padding:0;font-size:.66rem;font-weight:800;text-align:center}.pbb-share-studio__filter-preview{width:52px;height:52px;margin:0 auto 5px;border:2px solid transparent;border-radius:50%;background-position:center;background-size:cover}.pbb-share-studio__filter.is-active .pbb-share-studio__filter-preview{border-color:var(--gold);box-shadow:0 0 0 2px #111,0 0 0 4px var(--gold)}
@@ -848,6 +849,37 @@
     return { dataUrl: dataUrl, file: new File([blob], 'balance-share-' + Date.now() + '.jpg', { type: 'image/jpeg' }) };
   }
 
+  var html2CanvasLoader = null;
+  function ensureHtml2Canvas() {
+    if (typeof window.html2canvas === 'function') return Promise.resolve(window.html2canvas);
+    if (html2CanvasLoader) return html2CanvasLoader;
+    html2CanvasLoader = new Promise(function (resolve, reject) {
+      var script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
+      script.onload = function () { typeof window.html2canvas === 'function' ? resolve(window.html2canvas) : reject(new Error('Photo capture did not load')); };
+      script.onerror = function () { reject(new Error('Photo capture did not load')); };
+      document.head.appendChild(script);
+    });
+    return html2CanvasLoader;
+  }
+
+  async function captureExactEditorStage(el) {
+    var stage = el.querySelector('[data-share-stage]');
+    if (!stage) throw new Error('Share editor stage is missing');
+    var capture = await ensureHtml2Canvas();
+    var bounds = stage.getBoundingClientRect();
+    var scale = clamp(1080 / Math.max(1, bounds.width), 1, 3);
+    stage.classList.add('is-exporting');
+    try {
+      var canvas = await capture(stage, { backgroundColor: '#111111', scale: scale, useCORS: true, allowTaint: false, logging: false, width: Math.round(bounds.width), height: Math.round(bounds.height), scrollX: 0, scrollY: 0 });
+      var dataUrl = canvas.toDataURL('image/jpeg', .92);
+      var blob = await (await fetch(dataUrl)).blob();
+      return { dataUrl: dataUrl, file: new File([blob], 'balance-share-' + Date.now() + '.jpg', { type: 'image/jpeg' }) };
+    } finally {
+      stage.classList.remove('is-exporting');
+    }
+  }
+
   async function currentRenderedFile(el) {
     if (!active) throw new Error('Share editor is closed');
     var state = active;
@@ -857,8 +889,13 @@
     state.outputCacheKey = cacheKey;
     state.outputCachePromise = (async function () {
       var output;
-      if (state.rawPhoto || !state.cardPayload || typeof window.renderBalanceShareCardImage !== 'function') output = await makeRawOutput(state);
-      else output = { dataUrl: await window.renderBalanceShareCardImage(Object.assign({}, state.cardPayload, { studio_editor: editorState() }), { target: state.previewTarget || 'story', photoDataUrl: state.photoDataUrl, overlayStyle: state.overlayStyle, textStyle: state.textStyle }) };
+      try {
+        output = await captureExactEditorStage(el);
+      } catch (captureError) {
+        console.warn('Exact editor capture unavailable, using canvas renderer:', captureError);
+        if (state.rawPhoto || !state.cardPayload || typeof window.renderBalanceShareCardImage !== 'function') output = await makeRawOutput(state);
+        else output = { dataUrl: await window.renderBalanceShareCardImage(Object.assign({}, state.cardPayload, { studio_editor: editorState() }), { target: state.previewTarget || 'story', photoDataUrl: state.photoDataUrl, overlayStyle: state.overlayStyle, textStyle: state.textStyle }) };
+      }
       var dataUrl = output.dataUrl;
       var response = await fetch(dataUrl);
       var blob = await response.blob();
@@ -1106,7 +1143,18 @@
     el.querySelector('[data-share-close]').addEventListener('click', function () { close({ action: 'closed' }); });
     el.querySelector('[data-share-undo]').addEventListener('click', function () { if (!active || !active.initial) return; Object.assign(active, JSON.parse(JSON.stringify(active.initial))); closeDrawer(el); renderLayers(el); });
     el.querySelector('[data-share-download]').addEventListener('click', function () { downloadCurrentImage(el); });
-    el.querySelector('[data-share-done]').addEventListener('click', function () { close({ action: 'done', customization: customization() }); });
+    el.querySelector('[data-share-done]').addEventListener('click', function () {
+      if (!active) return;
+      var doneCallback = active.onDone;
+      close({ action: 'done', customization: customization() });
+      if (typeof doneCallback === 'function') {
+        var reportDoneError = function (error) {
+          console.error('Private share studio Done action failed:', error);
+          if (typeof window.showToast === 'function') window.showToast('Could not finish that share screen. Please try again.', 'error');
+        };
+        try { Promise.resolve(doneCallback()).catch(reportDoneError); } catch (error) { reportDoneError(error); }
+      }
+    });
     el.querySelector('[data-share-feed]').addEventListener('click', function () { runAction('feed', el); });
     el.querySelector('[data-share-instagram]').addEventListener('click', function () { runAction('instagram', el); });
     el.querySelector('[data-share-cycle-layout]').addEventListener('click', function () {

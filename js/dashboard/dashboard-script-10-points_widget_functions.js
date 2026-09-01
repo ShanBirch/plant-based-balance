@@ -2632,7 +2632,8 @@ async function onWorkoutSharePhotoReady(file) {
                             overlayStyle: getBalanceShareOverlayStyle(pending.type),
                             textStyle: getBalanceShareTextStyle(pending.type),
                             animate: false
-                        })
+                        }),
+                    onDone: () => closeSuccessScreen()
                 });
             }
         } else {
@@ -2652,7 +2653,8 @@ async function onWorkoutSharePhotoReady(file) {
                         overlayStyle: getBalanceShareOverlayStyle('workout'),
                         textStyle: getBalanceShareTextStyle('workout'),
                         onFeed: async () => shareWorkoutCardToFeed(),
-                        onInstagram: async (studioShare) => shareWorkoutCardToInstagram({ preparedDataUrl: studioShare?.renderedDataUrl, animate: false })
+                        onInstagram: async (studioShare) => shareWorkoutCardToInstagram({ preparedDataUrl: studioShare?.renderedDataUrl, animate: false }),
+                        onDone: () => closeSuccessScreen()
                     });
                 }
             }
@@ -8079,7 +8081,8 @@ async function openPrivateActivityShareEditor(photoDataUrl) {
         context: 'activity', photoDataUrl, cardPayload: buildActivityShareCardPayload(), previewTarget: 'story',
         overlayStyle: getBalanceShareOverlayStyle('activity'), textStyle: getBalanceShareTextStyle('activity'),
         onFeed: async studioShare => shareActivityCardToFeed(studioShare),
-        onInstagram: async studioShare => shareActivityCardToInstagram({ preparedDataUrl: studioShare.renderedDataUrl })
+        onInstagram: async studioShare => shareActivityCardToInstagram({ preparedDataUrl: studioShare.renderedDataUrl }),
+        onDone: () => closeActivitySuccess()
     });
     return true;
 }

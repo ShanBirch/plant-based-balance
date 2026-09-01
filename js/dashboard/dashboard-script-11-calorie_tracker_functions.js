@@ -9846,7 +9846,8 @@ async function openPrivateMealShareStudio(meal) {
         overlayStyle: cardPayload.share_overlay_style,
         textStyle: cardPayload.share_text_style,
         onFeed: async studioShare => shareMealRecordToFeed(freshMeal, document.getElementById('mealDetailShareBtn'), { skipPrivateStudio: true, preparedDataUrl: studioShare.renderedDataUrl }),
-        onInstagram: async studioShare => shareMealRecordToInstagram(freshMeal, document.getElementById('mealDetailIgStoryBtn'), 'story', { skipPrivateStudio: true, preparedDataUrl: studioShare.renderedDataUrl })
+        onInstagram: async studioShare => shareMealRecordToInstagram(freshMeal, document.getElementById('mealDetailIgStoryBtn'), 'story', { skipPrivateStudio: true, preparedDataUrl: studioShare.renderedDataUrl }),
+        onDone: () => window.BalancePrivateShareStudio?.closeMealCompletePage?.()
     });
     return true;
 }
