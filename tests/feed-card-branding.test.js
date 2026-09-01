@@ -30,8 +30,7 @@ assert.strictEqual(
     'activity, PB, workout, nutrition, and level-up cards should all use Balance branding'
 );
 assert.ok(
-    dashboardSource.includes("'lib/stories.js?v=75-onboarding-introduction'") &&
-    dashboardSource.includes('lib/stories.js?v=75-onboarding-introduction'),
+    (dashboardSource.match(/lib\/stories\.js\?v=76-feed-composer-profile-photo/g) || []).length === 2,
     'dashboard should fetch the updated feed-card renderer'
 );
 

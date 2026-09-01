@@ -30,7 +30,7 @@ assert.match(stories, /options\.fallbackVideoBitsPerSecond/);
 assert.match(stories, /options\.finalVideoBitsPerSecond/);
 assert.match(stories, /options\.primaryLabel/);
 
-assert.match(dashboard, /lib\/stories\.js\?v=63/);
+assert.match(dashboard, /lib\/stories\.js\?v=76-feed-composer-profile-photo/);
 assert.match(dashboard, /pbb-deferred-formcheck\.js\?v=51/);
 assert.match(dashboard, /choose Camera to use your phone camera/);
 

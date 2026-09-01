@@ -20,6 +20,6 @@ test('clickable Feed mentions reset native button paint for light mode', () => {
 });
 
 test('dashboard cache-busts the repaired Feed script in both loaders', () => {
-    const references = dashboardSource.match(/lib\/stories\.js\?v=71/g) || [];
+    const references = dashboardSource.match(/lib\/stories\.js\?v=76-feed-composer-profile-photo/g) || [];
     assert.equal(references.length, 2);
 });

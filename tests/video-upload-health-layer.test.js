@@ -11,9 +11,9 @@ const formCheck = read('js/dashboard/pbb-deferred-formcheck.js');
 const customExercise = read('js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js');
 const iosPlugin = read('ios/App/App/BalanceVideoCapturePlugin.swift');
 
-assert.match(dashboard, /openFeedComposerMediaSource\('library-video'\)[\s\S]*Choose Video/);
+assert.match(dashboard, /openFeedComposerMediaSource\('library-video'\)[\s\S]*Video library/);
 assert.match(dashboard, /id="feed-composer-video-input"[^>]*accept="video\/\*,\.mp4,\.mov,\.m4v,\.webm,\.3gp,\.3gpp"/);
-assert.match(dashboard, /lib\/stories\.js\?v=75-onboarding-introduction&video_health=2/);
+assert.match(dashboard, /lib\/stories\.js\?v=76-feed-composer-profile-photo&video_health=2/);
 assert.match(dashboard, /pbb-deferred-formcheck\.js\?v=58-ios-exercise-video-upload&video_health=2/);
 
 assert.match(stories, /FEED_UPLOAD_DIAGNOSTIC_SCHEMA_VERSION = 2/);

@@ -13,6 +13,6 @@ assert.match(stories, /feed-post-media-brand-shell/);
 assert.match(shareScript, /async function pbbShareDrawBalanceBrandMark/);
 assert.match(shareScript, /await pbbShareDrawBalanceBrandMark\(ctx, contentX/);
 assert.match(shareScript, /await pbbShareDrawBalanceBrandMark\(ctx, 76, height - 142, 34\)/);
-assert.match(dashboard, /lib\/stories\.js\?v=68/);
+assert.match(dashboard, /lib\/stories\.js\?v=76-feed-composer-profile-photo/);
 
 console.log('Feed brand logo tests passed');

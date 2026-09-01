@@ -760,8 +760,13 @@ async function _loadProfileDataRealImpl() {
     // authoritative gender source; older quiz rows can have sex=null.
     if (quizResult) {
         const profileSex = profile?.sex || profile?.user_gender || null;
+        const accountProfilePhoto = profile?.profile_photo || null;
         const quizSex = quizResult?.sex || quizResult?.user_gender || null;
         profile = { ...profile, ...quizResult };
+        // Quiz rows are not the source of truth for avatars. Older quiz rows can
+        // contain a blank profile_photo field, which previously replaced the
+        // saved account photo during startup and made Feed avatars disappear.
+        if (accountProfilePhoto) profile.profile_photo = accountProfilePhoto;
         const resolvedSex = profileSex || quizSex || profile?.sex || profile?.user_gender;
         if (resolvedSex) {
             profile.sex = resolvedSex;
@@ -877,6 +882,10 @@ async function _loadProfileDataRealImpl() {
     } else {
         profile = { ...profileFallback, ...profile };
     }
+    profile.profile_photo = profile.profile_photo
+        || profileFallback.profile_photo
+        || localStorage.getItem('profile_photo')
+        || null;
 
     const context = {
         name: profile?.name || window.currentUser?.user_metadata?.full_name || window.currentUser?.user_metadata?.name || (profile?.email ? profile.email.split('@')[0] : 'Profile'),
@@ -988,17 +997,10 @@ async function _loadProfileDataRealImpl() {
     }
 
     // Load saved avatar if exists
-    const savedPhoto = localStorage.getItem('profile_photo') || profile?.profile_photo || '';
+    const savedPhoto = profile?.profile_photo || localStorage.getItem('profile_photo') || '';
     if(savedPhoto) {
-        if (!localStorage.getItem('profile_photo')) {
-            try { localStorage.setItem('profile_photo', savedPhoto); } catch (_) {}
-        }
-        const mainImg = document.getElementById('profile-photo-img');
-        if(mainImg) mainImg.src = savedPhoto;
-        document.querySelectorAll('.profile-icon').forEach(el => {
-            el.innerHTML = `<img src="${savedPhoto}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
-            el.style.background = 'transparent';
-        });
+        cacheProfilePhoto(savedPhoto);
+        applyProfilePhotoToUi(savedPhoto);
     }
 
     // CRITICAL: Always sync gender from database to localStorage
@@ -1096,72 +1098,102 @@ async function _loadProfileDataRealImpl() {
 _loadProfileDataReal = _loadProfileDataRealImpl;
 loadProfileData = _loadProfileDataRealImpl;
 
-async function syncProfilePhotoToAccount(photoData) {
-    if (!photoData || !window.currentUser?.id || !window.dbHelpers?.users?.update) return;
-    try {
-        const updated = await window.dbHelpers.users.update(window.currentUser.id, { profile_photo: photoData });
-        window.currentUser.profile_photo = photoData;
-        window.userProfile = { ...(window.userProfile || {}), profile_photo: photoData };
+function cacheProfilePhoto(photoSrc) {
+    if (!photoSrc) return;
+    try { localStorage.setItem('profile_photo', photoSrc); } catch (_) {}
+
+    window.currentUser = window.currentUser || {};
+    window.currentUser.profile_photo = photoSrc;
+    window.userProfile = { ...(window.userProfile || {}), profile_photo: photoSrc };
+
+    ['localStorage', 'sessionStorage'].forEach(storageName => {
         try {
-            const stored = JSON.parse(localStorage.getItem('userProfile') || '{}');
-            stored.profile_photo = photoData;
-            localStorage.setItem('userProfile', JSON.stringify(stored));
+            const storage = window[storageName];
+            const stored = JSON.parse(storage.getItem('userProfile') || '{}');
+            stored.profile_photo = photoSrc;
+            if (window.currentUser?.id && !stored.id && !stored.user_id) stored.id = window.currentUser.id;
+            storage.setItem('userProfile', JSON.stringify(stored));
         } catch (_) {}
-        return updated;
+    });
+}
+
+function applyProfilePhotoToUi(photoSrc) {
+    if (!photoSrc) return;
+    const mainImg = document.getElementById('profile-photo-img');
+    if (mainImg) {
+        mainImg.src = photoSrc;
+        mainImg.style.opacity = '1';
+    }
+    document.querySelectorAll('.profile-icon').forEach(el => {
+        el.innerHTML = `<img src="${photoSrc}" alt="" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+        el.style.background = 'transparent';
+    });
+    if (typeof window.updateFeedComposerAvatar === 'function') window.updateFeedComposerAvatar();
+    try {
+        window.dispatchEvent(new CustomEvent('pbbProfilePhotoUpdated', { detail: { profilePhoto: photoSrc } }));
+    } catch (_) {}
+}
+
+async function resizedProfilePhotoFile(photoData) {
+    const response = await fetch(photoData);
+    const blob = await response.blob();
+    return new File([blob], 'profile.jpg', { type: 'image/jpeg', lastModified: Date.now() });
+}
+
+async function syncProfilePhotoToAccount(photoData, resizedFile) {
+    if (!photoData || !window.currentUser?.id || !window.dbHelpers?.users?.update) return photoData;
+
+    let savedPhoto = photoData;
+    try {
+        if (window.storageHelpers?.uploadProfilePhoto && resizedFile) {
+            const publicUrl = await window.storageHelpers.uploadProfilePhoto(window.currentUser.id, resizedFile);
+            if (publicUrl) savedPhoto = publicUrl + (publicUrl.includes('?') ? '&' : '?') + 'v=' + Date.now();
+        }
+    } catch (uploadError) {
+        // Keep the resized data URL as a backwards-compatible account fallback
+        // if storage is temporarily unavailable.
+        console.warn('Profile photo storage upload failed; using account fallback:', uploadError);
+    }
+
+    try {
+        await window.dbHelpers.users.update(window.currentUser.id, { profile_photo: savedPhoto });
+        cacheProfilePhoto(savedPhoto);
+        applyProfilePhotoToUi(savedPhoto);
+        return savedPhoto;
     } catch (error) {
         console.error('Failed to sync profile photo to account:', error);
         if (typeof showToast === 'function') {
             showToast('Photo saved on this device, but account sync failed.', 'error');
         }
+        return photoData;
     }
 }
 
-function handlePhotoUpload(input) {
-    if (input.files && input.files[0]) {
-        const file = input.files[0];
+async function handlePhotoUpload(input) {
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
 
-        // Validate file type
-        if (!file.type.startsWith('image/')) {
-            alert('Please select an image file.');
-            input.value = '';
-            return;
-        }
+    if (!file.type.startsWith('image/')) {
+        alert('Please select an image file.');
+        input.value = '';
+        return;
+    }
 
-        // Show loading state
-        const mainImg = document.getElementById('profile-photo-img');
-        if (mainImg) mainImg.style.opacity = '0.5';
+    const mainImg = document.getElementById('profile-photo-img');
+    if (mainImg) mainImg.style.opacity = '0.5';
 
-        // Resize image to prevent localStorage overflow (max 500KB)
-        resizeImageFile(file, 400, 0.8).then(photoData => {
-            // Update main profile photo
-            if (mainImg) {
-                mainImg.src = photoData;
-                mainImg.style.opacity = '1';
-            }
-
-            // Save to localStorage
-            try {
-                localStorage.setItem('profile_photo', photoData);
-            } catch (e) {
-                console.error('Failed to save photo to localStorage:', e);
-            }
-
-            // Update all small icons
-            document.querySelectorAll('.profile-icon').forEach(el => {
-                el.innerHTML = `<img src="${photoData}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
-                el.style.background = 'transparent';
-            });
-
-            syncProfilePhotoToAccount(photoData);
-
-            // Reset input to allow re-selecting the same file
-            input.value = '';
-        }).catch(err => {
-            console.error('Failed to process image:', err);
-            alert('Failed to process image. Please try a different photo.');
-            if (mainImg) mainImg.style.opacity = '1';
-            input.value = '';
-        });
+    try {
+        const photoData = await resizeImageFile(file, 400, 0.8);
+        cacheProfilePhoto(photoData);
+        applyProfilePhotoToUi(photoData);
+        const uploadFile = await resizedProfilePhotoFile(photoData);
+        await syncProfilePhotoToAccount(photoData, uploadFile);
+    } catch (err) {
+        console.error('Failed to process image:', err);
+        alert('Failed to process image. Please try a different photo.');
+        if (mainImg) mainImg.style.opacity = '1';
+    } finally {
+        input.value = '';
     }
 }
 
@@ -1221,7 +1253,7 @@ function handleWizardProfilePhoto(input) {
 
         if (container) container.style.opacity = '0.5';
 
-        resizeImageFile(file, 400, 0.8).then(photoData => {
+        resizeImageFile(file, 400, 0.8).then(async photoData => {
             // Show the image, hide placeholder
             if (img) {
                 img.src = photoData;
@@ -1230,22 +1262,10 @@ function handleWizardProfilePhoto(input) {
             if (placeholder) placeholder.style.display = 'none';
             if (container) container.style.opacity = '1';
 
-            // Save to localStorage (same key as main profile photo)
-            try {
-                localStorage.setItem('profile_photo', photoData);
-            } catch (e) {
-                console.error('Failed to save wizard profile photo:', e);
-            }
-
-            // Also update main profile photo elements if they exist
-            const mainImg = document.getElementById('profile-photo-img');
-            if (mainImg) mainImg.src = photoData;
-            document.querySelectorAll('.profile-icon').forEach(el => {
-                el.innerHTML = `<img src="${photoData}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
-                el.style.background = 'transparent';
-            });
-
-            syncProfilePhotoToAccount(photoData);
+            cacheProfilePhoto(photoData);
+            applyProfilePhotoToUi(photoData);
+            const uploadFile = await resizedProfilePhotoFile(photoData);
+            await syncProfilePhotoToAccount(photoData, uploadFile);
 
             input.value = '';
         }).catch(err => {

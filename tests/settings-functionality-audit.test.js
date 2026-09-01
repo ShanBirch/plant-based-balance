@@ -26,10 +26,12 @@ test('profile edit does not pretend to change the login email', () => {
 });
 
 test('profile photos restore from and sync to the signed-in account', () => {
-  assert.match(settings, /localStorage\.getItem\('profile_photo'\) \|\| profile\?\.profile_photo/);
-  assert.match(settings, /async function syncProfilePhotoToAccount\(photoData\)/);
-  assert.match(settings, /users\.update\(window\.currentUser\.id, \{ profile_photo: photoData \}\)/);
-  assert.equal((settings.match(/syncProfilePhotoToAccount\(photoData\);/g) || []).length, 2);
+  assert.match(settings, /profile\?\.profile_photo \|\| localStorage\.getItem\('profile_photo'\)/);
+  assert.match(settings, /const accountProfilePhoto = profile\?\.profile_photo \|\| null/);
+  assert.match(settings, /async function syncProfilePhotoToAccount\(photoData, resizedFile\)/);
+  assert.match(settings, /storageHelpers\?\.uploadProfilePhoto/);
+  assert.match(settings, /users\.update\(window\.currentUser\.id, \{ profile_photo: savedPhoto \}\)/);
+  assert.equal((settings.match(/syncProfilePhotoToAccount\(photoData, uploadFile\)/g) || []).length, 2);
 });
 
 test('notification management has both native and browser actions', () => {
@@ -73,7 +75,7 @@ test('download and Spotify keep only confirmed-success states', () => {
 test('changed Settings scripts are cache-busted for returning phones', () => {
   assert.match(dashboard, /script_part_11\.js\?v=settings-functionality-v1/);
   assert.match(dashboard, /dashboard-script-4-symptoms_list_removed_symptoms\.js\?v=settings-functionality-v1/);
-  assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=225-calendar-home-coins/);
+  assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=226-profile-photo-persistence/);
   assert.match(dashboard, /script_part_25\.js\?v=settings-functionality-v1/);
-  assert.match(read('sw.js'), /pbb-app-v434-insights-light-contrast/);
+  assert.match(read('sw.js'), /pbb-app-v435-feed-profile-photo/);
 });

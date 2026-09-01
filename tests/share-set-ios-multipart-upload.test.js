@@ -35,6 +35,6 @@ assert.match(edge, /action === 'cancel'/);
 assert.match(edge, /session\.userId !== userId/);
 
 assert.match(netlify, /function = "story-media-multipart"[\s\S]*?path = "\/api\/story-media-multipart"/);
-assert.match(dashboard, /lib\/stories\.js\?v=63/);
+assert.match(dashboard, /lib\/stories\.js\?v=76-feed-composer-profile-photo/);
 
 console.log('Share a Set iOS multipart upload contract ok');

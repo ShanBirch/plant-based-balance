@@ -53,7 +53,7 @@ test('animal-product meal cards are hidden only from vegan viewers', () => {
 
 test('the safety module loads before Feed and blocks meal sharing in the client', () => {
     const safetyIndex = dashboardSource.indexOf('lib/vegan-meal-safety.js?v=2');
-    const storiesIndex = dashboardSource.indexOf('lib/stories.js?v=75-onboarding-introduction');
+    const storiesIndex = dashboardSource.indexOf('lib/stories.js?v=76-feed-composer-profile-photo');
     assert.ok(safetyIndex >= 0 && storiesIndex > safetyIndex);
     assert.match(storiesSource, /window\.shouldShowMealFeedStory\(story\)/);
     assert.match(trackerSource, /window\.getVeganMealSafetyIssue\(meal\)/);

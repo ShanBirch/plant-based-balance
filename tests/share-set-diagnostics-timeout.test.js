@@ -37,7 +37,7 @@ assert.match(formCheck, /const retryUploadTimeoutMs = getWorkoutFeedShareUploadT
 assert.match(formCheck, /async function materializeWorkoutFeedShareFile\(file, stage\)/);
 assert.match(formCheck, /await materializeWorkoutFeedShareFile\(rawFile, 'gallery_picker'\)/);
 assert.match(formCheck, /await materializeWorkoutFeedShareFile\(queuedFile, 'retry_queue'\)/);
-assert.match(dashboard, /lib\/stories\.js\?v=63/);
+assert.match(dashboard, /lib\/stories\.js\?v=76-feed-composer-profile-photo/);
 assert.match(dashboard, /pbb-deferred-formcheck\.js\?v=51/);
 
 console.log('Share a Set diagnostics and timeout contract ok');

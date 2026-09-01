@@ -639,8 +639,6 @@
                     } catch(e) {}
                 }
                 if (wasReturningUser) {
-                    // Show feature reveal for new features (returning users only, after UI settles)
-                    setTimeout(function(){ try { if (typeof checkFeatureReveals === 'function') checkFeatureReveals(); } catch(e){} }, 3000);
                     // Month Wrapped - show home card on days 1-3 if the completed month is unseen
                     setTimeout(function(){ try { if (typeof checkWeeklyWrappedAutoOpen === 'function') checkWeeklyWrappedAutoOpen(); } catch(e){} }, 4500);
                 }
