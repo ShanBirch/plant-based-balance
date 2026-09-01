@@ -11210,7 +11210,7 @@ html[data-pbb-theme="light"] #view-insights-metric-detail {
     position: sticky;
     top: 0;
     z-index: 10;
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: space-between;
     padding: 15px 20px;
@@ -11230,7 +11230,7 @@ html[data-pbb-theme="light"] #view-insights-metric-detail {
     max-width: 760px;
     min-height: calc(100vh - 70px);
     margin: 0 auto;
-    padding: 20px 20px calc(30px + env(safe-area-inset-bottom, 0px));
+    padding: calc(20px + env(safe-area-inset-top, 0px)) 20px calc(30px + env(safe-area-inset-bottom, 0px));
 }
 
 #view-insights-metric-detail .insights-legacy-graph-card {

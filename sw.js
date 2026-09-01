@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v435-feed-profile-photo'; // v435: refreshed Feed composer, manual-only Feature Drops and persistent account profile photos
+const CACHE_NAME = 'pbb-app-v436-insights-detail-title'; // v436: removed the duplicate title bar from Activity Insights detail screens
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

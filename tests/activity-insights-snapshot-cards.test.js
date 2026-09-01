@@ -67,9 +67,14 @@ test('new and returning members discover snapshots and manual steps', () => {
 });
 
 test('returning phones receive the snapshot release', () => {
-  assert.match(dashboard, /dashboard-style-1\.css\?v=74/);
+  assert.match(dashboard, /dashboard-style-1\.css\?v=75/);
   assert.ok((dashboard.match(/dashboard-script-2-activity_insights_view\.js\?v=insights-history-toggle-v4/g) || []).length >= 2);
-  assert.match(serviceWorker, /pbb-app-v434-insights-light-contrast/);
+  assert.match(serviceWorker, /pbb-app-v436-insights-detail-title/);
+});
+
+test('metric detail screens show only the heading inside the content card', () => {
+  assert.match(css, /\.insights-metric-detail-header\s*\{[^}]*display:\s*none;/s);
+  assert.match(css, /\.insights-metric-detail-content\s*\{[^}]*padding:\s*calc\(20px \+ env\(safe-area-inset-top, 0px\)\)/s);
 });
 
 test('body weight detail has one entry point and a live history summary', () => {
