@@ -1418,7 +1418,12 @@
     if (action === 'diary') {
       if (typeof window.switchAppTab === 'function') window.switchAppTab('dashboard');
       setTimeout(function(){
+        if (typeof window.openFitnessDiaryForAction === 'function') {
+          window.openFitnessDiaryForAction();
+          return;
+        }
         const card = document.getElementById('fitness-diary-card') || document.getElementById('fitness-diary-done-card');
+        if (card && card.id === 'fitness-diary-card') card.style.display = 'block';
         if (card && typeof card.scrollIntoView === 'function') card.scrollIntoView({ block: 'center', behavior: 'smooth' });
         if (typeof window.expandFitnessDiary === 'function' && document.getElementById('fitness-diary-card')) window.expandFitnessDiary();
       }, 350);

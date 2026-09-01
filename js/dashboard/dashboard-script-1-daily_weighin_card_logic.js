@@ -1008,6 +1008,28 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
         if (form) form.style.display = 'block';
     }
 
+    function openFitnessDiaryForAction() {
+        var card = document.getElementById('fitness-diary-card');
+        var doneCard = document.getElementById('fitness-diary-done-card');
+        if (!card) return false;
+        var dateKey = getTodayDateKey();
+        var alreadyDone = !!localStorage.getItem('fitnessDiaryDone_' + dateKey);
+        window._fitnessDiaryActionOpen = true;
+        if (alreadyDone) {
+            card.style.display = 'none';
+            if (doneCard) doneCard.style.display = 'flex';
+            updateFitnessDiaryShareButtons(dateKey);
+            if (doneCard && typeof doneCard.scrollIntoView === 'function') doneCard.scrollIntoView({ block: 'center', behavior: 'smooth' });
+            return true;
+        }
+        card.style.display = 'block';
+        if (doneCard) doneCard.style.display = 'none';
+        expandFitnessDiary();
+        card.classList.add('pbb-next-step-active-source');
+        if (typeof card.scrollIntoView === 'function') card.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        return true;
+    }
+
     function selectFitnessDiaryOption(group, value, el) {
         window._fitnessDiaryData[group] = value;
         var chips = document.querySelectorAll('.wcheckin-chip[data-group="' + group + '"]');
@@ -1381,6 +1403,7 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
 
     window.checkAndShowFitnessDiaryCard = checkAndShowFitnessDiaryCard;
     window.expandFitnessDiary = expandFitnessDiary;
+    window.openFitnessDiaryForAction = openFitnessDiaryForAction;
     window.selectFitnessDiaryOption = selectFitnessDiaryOption;
     window.submitFitnessDiary = submitFitnessDiary;
     window.shareFitnessDiaryToFeed = shareFitnessDiaryToFeed;

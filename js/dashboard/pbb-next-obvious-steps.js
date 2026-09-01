@@ -281,6 +281,10 @@
   function openHiddenHomeCard(selector, expandName) {
     switchTab('dashboard');
     afterTab(function(){
+      if (selector === '#fitness-diary-card' && typeof window.openFitnessDiaryForAction === 'function') {
+        window.openFitnessDiaryForAction();
+        return;
+      }
       var el = null;
       try { el = document.querySelector(selector); } catch (_) {}
       if (el) el.classList.add('pbb-next-step-active-source');
@@ -288,6 +292,7 @@
         try { window[expandName](); } catch (_) {}
       }
       if (selector === '#fitness-diary-card') {
+        if (el) el.style.display = 'block';
         var collapsed = document.getElementById('fitness-diary-collapsed');
         var form = document.getElementById('fitness-diary-form');
         if (collapsed) collapsed.style.display = 'none';
