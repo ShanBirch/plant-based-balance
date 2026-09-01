@@ -9,6 +9,8 @@ const stories = fs.readFileSync(path.join(root, 'lib/stories.js'), 'utf8');
 
 test('Feed composer uses the approved single-field layout', () => {
   assert.match(dashboard, /id="feed-composer-text"[^>]*placeholder="What’s happening\?"/);
+  assert.match(dashboard, /id="feed-composer-text"[^>]*aria-label="What’s happening\?"/);
+  assert.doesNotMatch(dashboard, /<label[^>]*for="feed-composer-text"/);
   assert.doesNotMatch(dashboard, /id="feed-composer-avatar"/);
   assert.match(dashboard, /id="feed-composer-share-menu-button"[^>]*feed-composer-action-primary/);
   assert.match(dashboard, />From Balance</);

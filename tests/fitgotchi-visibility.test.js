@@ -16,7 +16,7 @@ assert.match(dashboard, /id:\s*'fitgotchi-visibility-toggle-v1'/, 'returning mem
 assert.match(dashboard, /title:'Choose your Home style'/, 'new members should see the visibility option in the guided tour');
 assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=226-profile-photo-persistence/, 'phones should fetch the current Dashboard behavior');
 assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=49/, 'phones should fetch the compact level updates');
-assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v436-insights-detail-title'/, 'the app shell cache should advance for this feature');
+assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v437-feed-composer-label'/, 'the app shell cache should advance for this feature');
 
 assert.match(onboarding, /let isReturningMember = localStorage\.getItem\('onboardingComplete'\) === 'true'/, 'local onboarding history should preserve returning members');
 assert.match(onboarding, /if \(!isReturningMember && databaseOnboardingStatusChecked/, 'only database-confirmed new members should receive the hidden default');
