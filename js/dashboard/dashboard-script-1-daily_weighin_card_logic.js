@@ -949,19 +949,6 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
         return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
     }
 
-    function getBrisbaneHour(date) {
-        try {
-            var hour = new Intl.DateTimeFormat('en-AU', {
-                timeZone: 'Australia/Brisbane',
-                hour: '2-digit',
-                hour12: false
-            }).format(date || new Date());
-            return Number(hour) % 24;
-        } catch (e) {
-            return (date || new Date()).getHours();
-        }
-    }
-
     async function checkAndShowFitnessDiaryCard() {
         if (!window.currentUser) return;
         // Don't show if onboarding wizard is active
@@ -974,7 +961,7 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
         if (!card) return;
 
         // The diary is evening-only and remains hidden until its Home action is tapped.
-        if (getBrisbaneHour() < 18 || window._fitnessDiaryActionOpen !== true) {
+        if (new Date().getHours() < 18 || window._fitnessDiaryActionOpen !== true) {
             card.style.display = 'none';
             if (doneCard) doneCard.style.display = 'none';
             return;
@@ -1021,7 +1008,7 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
     }
 
     function openFitnessDiaryForAction() {
-        if (getBrisbaneHour() < 18) return false;
+        if (new Date().getHours() < 18) return false;
         var card = document.getElementById('fitness-diary-card');
         var doneCard = document.getElementById('fitness-diary-done-card');
         if (!card) return false;

@@ -288,7 +288,8 @@
       };
     }
     if (item && (item.type === 'foundations_diary_feed' || item.type === 'identity_diary_feed')) {
-      const availableNow = clock.hour >= 18;
+      const localHour = (date || new Date()).getHours();
+      const availableNow = localHour >= 18;
       return {
         availableNow,
         availabilityLabel: availableNow ? 'Available now · daily after 6 pm' : 'Available from 6 pm today',
