@@ -111,7 +111,7 @@ test('Balance Foundations is a six-week course that preserves the existing lesso
     assert.match(learning, /window\.toggleFoundationsWeek/);
     assert.match(learning, /data-foundations-quiz-id/);
     assert.match(learning, /window\.startFoundationsQuiz/);
-    assert.match(learning, /topic\.actionCompleted.*topic\.actionTotal.*actions/);
+    assert.match(learning, /topic\.actionCompleted.*topic\.actionTotal.*weekly steps/);
     assert.match(learning, /function renderFoundationsActionRow/);
     assert.match(learning, /class="foundation-action-list"/);
     assert.match(learning, /window\.runFoundationsCourseAction/);

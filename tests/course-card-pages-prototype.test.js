@@ -28,6 +28,10 @@ assert.match(learning, /weekProgress\.find\(week => week\.isCurrent\)[\s\S]*week
 assert.match(learning, /<h3>Actions to take this week<\/h3>/);
 assert.match(learning, /\$\{complete \? 'Done' : 'Open'\}/);
 assert.doesNotMatch(learning, /function renderFoundationsWeekAction[\s\S]{0,1200}'Locked'/);
+assert.match(learning, /const actionLabel = isComplete \? 'Done' : canAct \? 'Open' : locked \? 'Later' : 'Not done'/);
+assert.match(learning, /Actions to take this week'[\s\S]*'What you did this week'[\s\S]*'Coming up this week'/);
+assert.match(learning, /\$\{topic\.actionCompleted\}\/\$\{topic\.actionTotal\} weekly steps/);
+assert.doesNotMatch(learning, /function renderFoundationsActionRow[\s\S]{0,1400}'Review'/);
 assert.match(learning, /window\.backToCourseDetail = function\(courseId\)/);
 assert.match(learning, /view === 'courseWeek'/);
 assert.match(learning, /pushLearningHistoryState\(\)/);
