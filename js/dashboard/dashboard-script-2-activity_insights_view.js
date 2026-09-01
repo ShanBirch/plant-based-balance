@@ -1806,14 +1806,78 @@
     }
 
     function _renderVolumeAreaChips(selectedArea) {
-        return '<div style="display:flex;gap:7px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:2px 0 12px;margin-bottom:4px;">'
+        return '<div class="insights-strength-area-chips" aria-label="Muscle group">'
             + INSIGHTS_VOLUME_AREAS.map(area => {
                 const active = area.key === selectedArea;
                 return '<button type="button" onclick="setInsightsVolumeArea(\'' + area.key + '\')"'
-                    + ' style="border:1px solid ' + (active ? area.color : '#e2e8f0') + ';background:' + (active ? area.color : 'white') + ';color:' + (active ? 'white' : '#64748b') + ';border-radius:999px;padding:7px 12px;font-size:0.72rem;font-weight:800;white-space:nowrap;box-shadow:' + (active ? '0 6px 14px rgba(15,23,42,0.12)' : 'none') + ';">'
+                    + ' class="insights-strength-area-chip' + (active ? ' is-active' : '') + '" aria-pressed="' + active + '">'
                     + area.label + '</button>';
             }).join('')
             + '</div>';
+    }
+
+    function _getInsightsStrengthMonths() {
+        const months = Number(window._insightsVolumeMonths || 1);
+        return [1, 3, 6, 12].includes(months) ? months : 1;
+    }
+
+    function _renderStrengthRangeNav() {
+        const selected = _getInsightsStrengthMonths();
+        return '<div class="multi-week-nav insights-strength-range-nav" aria-label="Strength history range">'
+            + [1, 3, 6, 12].map(months => '<button type="button" class="' + (months === selected ? 'active' : '')
+                + '" aria-pressed="' + (months === selected) + '" onclick="setInsightsVolumeRange(' + months + ')">'
+                + (months === 12 ? '12M' : months + 'M') + '</button>').join('')
+            + '</div>';
+    }
+
+    function _strengthRangeCutoff(months) {
+        const cutoff = new Date();
+        cutoff.setMonth(cutoff.getMonth() - months);
+        return cutoff.toISOString().split('T')[0];
+    }
+
+    function _renderRecentStrengthPbs(allRows, cutoffDate, preferLbs) {
+        const escapeLabel = value => String(value || '').replace(/[&<>"']/g, character => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        })[character]);
+        const sorted = (allRows || []).filter(row => row.workout_date && row.exercise_name)
+            .slice().sort((a, b) => String(a.workout_date).localeCompare(String(b.workout_date)));
+        const bestByExercise = {};
+        const pbs = [];
+        sorted.forEach(row => {
+            const weight = Number(row.weight_kg || 0);
+            if (weight <= 0) return;
+            const key = _normaliseExerciseLookupName(row.exercise_name);
+            const previous = bestByExercise[key] || 0;
+            if (weight > previous) {
+                if (row.workout_date >= cutoffDate && previous > 0) {
+                    pbs.push({ name: row.exercise_name, weight, previous, date: row.workout_date });
+                }
+                bestByExercise[key] = weight;
+            }
+        });
+
+        const latestByExercise = [];
+        const seen = new Set();
+        pbs.sort((a, b) => String(b.date).localeCompare(String(a.date))).forEach(pb => {
+            const key = _normaliseExerciseLookupName(pb.name);
+            if (!seen.has(key)) { seen.add(key); latestByExercise.push(pb); }
+        });
+
+        const rangeLabel = _getInsightsStrengthMonths() === 1 ? 'this month' : 'in this range';
+        if (!latestByExercise.length) {
+            return '<section class="insights-strength-pbs"><div class="insights-strength-section-heading"><div><span>PERSONAL BESTS</span><h3>Your strongest lifts</h3></div></div>'
+                + '<p class="insights-strength-empty">No new weight PBs ' + rangeLabel + ' yet. Keep logging your sets and they will appear here automatically.</p></section>';
+        }
+
+        return '<section class="insights-strength-pbs"><div class="insights-strength-section-heading"><div><span>PERSONAL BESTS</span><h3>Your strongest lifts</h3></div><strong>' + latestByExercise.length + ' PB' + (latestByExercise.length === 1 ? '' : 's') + '</strong></div>'
+            + '<div class="insights-strength-pb-list">' + latestByExercise.slice(0, 4).map(pb => {
+                const displayWeight = preferLbs ? pb.weight * 2.20462 : pb.weight;
+                const improvement = preferLbs ? (pb.weight - pb.previous) * 2.20462 : pb.weight - pb.previous;
+                const unit = preferLbs ? 'lb' : 'kg';
+                const date = new Date(pb.date + 'T12:00:00').toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
+                return '<div class="insights-strength-pb-row"><span class="insights-strength-pb-icon">★</span><span><strong>' + escapeLabel(pb.name) + '</strong><small>' + date + ' · +' + improvement.toFixed(improvement < 10 ? 1 : 0) + ' ' + unit + '</small></span><b>' + displayWeight.toFixed(displayWeight < 100 ? 1 : 0) + ' ' + unit + '</b></div>';
+            }).join('') + '</div></section>';
     }
 
     function _renderVolumeProgressVerdict(selectedArea, byAreaWeek, displayWeeks, rows, customMuscleMap, preferLbs) {
@@ -2098,22 +2162,26 @@
         if (!container) return;
 
         const preferLbs = localStorage.getItem('weightUnitPreference') === 'lbs';
+        const selectedMonths = _getInsightsStrengthMonths();
+        const cutoffDate = _strengthRangeCutoff(selectedMonths);
+        const rangeRows = (rows || []).filter(row => row.workout_date >= cutoffDate);
         const selectedArea = _getInsightsVolumeArea(window._insightsVolumeSelectedArea || 'all').key;
         window._insightsVolumeSelectedArea = selectedArea;
 
-        const byAreaWeek = _buildVolumeAggregation(rows, customMuscleMap);
+        const byAreaWeek = _buildVolumeAggregation(rangeRows, customMuscleMap);
         const allWeeks = Object.keys(byAreaWeek.all).sort();
         if (allWeeks.length === 0) {
             if (headlineEl) headlineEl.textContent = '';
             if (sublineEl) sublineEl.textContent = '';
-            container.innerHTML = _renderVolumeAreaChips(selectedArea)
+            container.innerHTML = _renderStrengthRangeNav() + _renderVolumeAreaChips(selectedArea)
                 + '<div style="text-align: center; padding: 16px; color: var(--text-muted); font-size: 0.85rem;">Log workouts with weights to see your weekly volume trend here.</div>';
             return;
         }
 
         const currentWeekStart = _getWeekStart(new Date().toISOString().split('T')[0]);
         const firstWeek = allWeeks[0] < currentWeekStart ? allWeeks[0] : currentWeekStart;
-        const displayWeeks = _buildContinuousWeekRange(firstWeek, currentWeekStart).slice(-12);
+        const maxWeeks = Math.ceil(selectedMonths * 4.35) + 1;
+        const displayWeeks = _buildContinuousWeekRange(firstWeek, currentWeekStart).slice(-maxWeeks);
         const selectedByWeek = byAreaWeek[selectedArea] || {};
         const volumeKg = displayWeeks.map(w => selectedByWeek[w] || 0);
         const n = displayWeeks.length;
@@ -2123,10 +2191,11 @@
         if (!hasSelectedVolume) {
             if (headlineEl) headlineEl.textContent = _fmtVolume(0, preferLbs);
             if (sublineEl) sublineEl.textContent = selectedArea === 'all' ? 'No lifting volume in this window' : 'No ' + areaMeta.label.toLowerCase() + ' volume in this window';
-            container.innerHTML = _renderVolumeAreaChips(selectedArea)
-                + _renderVolumeProgressVerdict(selectedArea, byAreaWeek, displayWeeks, rows, customMuscleMap, preferLbs)
-                + '<div style="text-align: center; padding: 16px; color: var(--text-muted); font-size: 0.85rem;">No ' + areaMeta.label.toLowerCase() + ' volume found in the last 12 weeks.</div>'
-                + _renderVolumeSplit(byAreaWeek, currentWeekStart, preferLbs);
+            container.innerHTML = _renderStrengthRangeNav() + _renderVolumeAreaChips(selectedArea)
+                + _renderVolumeProgressVerdict(selectedArea, byAreaWeek, displayWeeks, rangeRows, customMuscleMap, preferLbs)
+                + '<div style="text-align: center; padding: 16px; color: var(--text-muted); font-size: 0.85rem;">No ' + areaMeta.label.toLowerCase() + ' volume found in this range.</div>'
+                + _renderVolumeSplit(byAreaWeek, currentWeekStart, preferLbs)
+                + _renderRecentStrengthPbs(rows, cutoffDate, preferLbs);
             return;
         }
 
@@ -2240,10 +2309,11 @@
             + '</div>';
 
         const splitWeek = byAreaWeek.all[currentWeekStart] ? currentWeekStart : displayWeeks.slice().reverse().find(w => byAreaWeek.all[w] > 0) || currentWeekStart;
-        container.innerHTML = _renderVolumeAreaChips(selectedArea)
-            + _renderVolumeProgressVerdict(selectedArea, byAreaWeek, displayWeeks, rows, customMuscleMap, preferLbs)
-            + '<div style="font-size:0.7rem;color:var(--text-muted);font-weight:600;margin-bottom:10px;">Last ' + n + ' weeks &middot; ' + (selectedArea === 'all' ? 'all exercises' : areaMeta.label.toLowerCase() + ' volume') + ' &middot; weight x reps per set</div>'
-            + svg + statsHtml + _renderVolumeSplit(byAreaWeek, splitWeek, preferLbs);
+        container.innerHTML = _renderStrengthRangeNav() + _renderVolumeAreaChips(selectedArea)
+            + _renderVolumeProgressVerdict(selectedArea, byAreaWeek, displayWeeks, rangeRows, customMuscleMap, preferLbs)
+            + '<div style="font-size:0.7rem;color:var(--text-muted);font-weight:600;margin-bottom:10px;">Last ' + selectedMonths + ' month' + (selectedMonths === 1 ? '' : 's') + ' &middot; ' + (selectedArea === 'all' ? 'all exercises' : areaMeta.label.toLowerCase() + ' volume') + ' &middot; weight x reps per set</div>'
+            + svg + statsHtml + _renderVolumeSplit(byAreaWeek, splitWeek, preferLbs)
+            + _renderRecentStrengthPbs(rows, cutoffDate, preferLbs);
     }
 
     async function renderVolumeGraphWithBodyPartSplit(userId) {
@@ -2252,9 +2322,9 @@
         const sublineEl  = document.getElementById('insights-volume-subline');
         if (!container) return;
 
-        const sixMonthsAgo = new Date();
-        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-        const sinceDate = sixMonthsAgo.toISOString().split('T')[0];
+        const twelveMonthsAgo = new Date();
+        twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+        const sinceDate = twelveMonthsAgo.toISOString().split('T')[0];
 
         const { data: rows, error } = await supabaseClient
             .from('workouts')
@@ -2314,12 +2384,20 @@
         }
     }
 
+    function setInsightsVolumeRange(months) {
+        window._insightsVolumeMonths = [1, 3, 6, 12].includes(Number(months)) ? Number(months) : 1;
+        if (window._insightsVolumeRows) {
+            _renderVolumeGraphFromRows(window._insightsVolumeRows, window._insightsVolumeCustomMuscles || {});
+        }
+    }
+
     renderVolumeGraph = renderVolumeGraphWithBodyPartSplit;
 
     window.openInsightsView   = openInsightsView;
     window.closeInsightsView  = closeInsightsView;
     window.renderVolumeGraph = renderVolumeGraph;
     window.setInsightsVolumeArea = setInsightsVolumeArea;
+    window.setInsightsVolumeRange = setInsightsVolumeRange;
     window.refreshInsightsStepData = refreshInsightsStepData;
 
     document.addEventListener('visibilitychange', function() {

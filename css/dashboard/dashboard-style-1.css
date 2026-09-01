@@ -4931,6 +4931,120 @@
         color: var(--pbb-insights-control-active-text) !important;
     }
 
+    #view-insights .insights-strength-detail-card {
+        min-height: calc(100dvh - 150px);
+    }
+
+    #view-insights .insights-strength-range-nav {
+        margin: 0 0 12px;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    #view-insights .insights-strength-area-chips {
+        display: flex;
+        gap: 7px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 2px 0 12px;
+        margin-bottom: 4px;
+        scrollbar-width: none;
+    }
+
+    #view-insights .insights-strength-area-chips::-webkit-scrollbar { display: none; }
+
+    #view-insights .insights-strength-area-chip {
+        flex: 0 0 auto;
+        border: 1px solid var(--pbb-insights-border) !important;
+        background: var(--pbb-insights-control-bg) !important;
+        color: var(--pbb-insights-text) !important;
+        -webkit-text-fill-color: var(--pbb-insights-text) !important;
+        border-radius: 999px;
+        padding: 8px 13px;
+        font-size: 0.72rem;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    #view-insights .insights-strength-area-chip.is-active {
+        background: var(--pbb-insights-control-active-bg) !important;
+        border-color: var(--pbb-insights-control-active-bg) !important;
+        color: var(--pbb-insights-control-active-text) !important;
+        -webkit-text-fill-color: var(--pbb-insights-control-active-text) !important;
+        box-shadow: 0 6px 14px rgba(82, 58, 9, 0.18);
+    }
+
+    #view-insights .insights-strength-area-chip:focus-visible,
+    #view-insights .insights-strength-range-nav button:focus-visible {
+        outline: 3px solid rgba(190, 142, 44, 0.35);
+        outline-offset: 2px;
+    }
+
+    #view-insights .insights-strength-pbs {
+        margin-top: 20px;
+        padding-top: 18px;
+        border-top: 1px solid var(--pbb-insights-border-soft);
+    }
+
+    #view-insights .insights-strength-section-heading {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+
+    #view-insights .insights-strength-section-heading span {
+        display: block;
+        color: var(--pbb-insights-accent);
+        font-size: 0.62rem;
+        font-weight: 850;
+        letter-spacing: 0.12em;
+    }
+
+    #view-insights .insights-strength-section-heading h3 {
+        margin: 3px 0 0;
+        color: var(--pbb-insights-text);
+        font-family: Georgia, serif;
+        font-size: 1.18rem;
+    }
+
+    #view-insights .insights-strength-section-heading > strong {
+        color: var(--pbb-insights-accent);
+        font-size: 0.72rem;
+    }
+
+    #view-insights .insights-strength-pb-list { display: grid; gap: 8px; }
+
+    #view-insights .insights-strength-pb-row {
+        display: grid;
+        grid-template-columns: 34px minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 10px;
+        padding: 11px 12px;
+        border: 1px solid var(--pbb-insights-border-soft);
+        border-radius: 14px;
+        background: var(--pbb-insights-soft-bg);
+        color: var(--pbb-insights-text);
+    }
+
+    #view-insights .insights-strength-pb-icon {
+        display: grid;
+        place-items: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--pbb-insights-control-active-bg);
+        color: var(--pbb-insights-control-active-text);
+        -webkit-text-fill-color: var(--pbb-insights-control-active-text);
+    }
+
+    #view-insights .insights-strength-pb-row strong,
+    #view-insights .insights-strength-pb-row small { display: block; }
+    #view-insights .insights-strength-pb-row strong { font-size: 0.82rem; }
+    #view-insights .insights-strength-pb-row small { margin-top: 2px; color: var(--pbb-insights-muted); font-size: 0.68rem; }
+    #view-insights .insights-strength-pb-row b { color: var(--pbb-insights-accent); font-size: 0.78rem; white-space: nowrap; }
+    #view-insights .insights-strength-empty { margin: 0; padding: 14px; border-radius: 14px; background: var(--pbb-insights-soft-bg); color: var(--pbb-insights-muted); font-size: 0.78rem; line-height: 1.45; }
+
     #view-insights #insights-volume-container button[style*="background:white"],
     #view-insights #insights-volume-container button[style*="background: white"] {
         background: var(--pbb-insights-control-bg) !important;
