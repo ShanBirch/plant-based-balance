@@ -12666,6 +12666,22 @@ html[data-pbb-theme] :where(.settings-picker-close, .settings-picker-option, .di
     animation: pbb-next-course-pulse 1.65s ease-in-out infinite;
 }
 
+.foundation-quiz-row.is-next-course-lesson-target,
+.identity-week-row.is-next-course-lesson-target,
+.course-detail-primary.is-next-course-lesson-target {
+    position: relative;
+    z-index: 3;
+    border-color: #b78a2e !important;
+    animation: pbb-next-course-pulse 1.65s ease-in-out infinite;
+}
+
+.foundation-quiz-row.is-next-course-lesson-target:focus-visible,
+.identity-week-row.is-next-course-lesson-target:focus-visible,
+.course-detail-primary.is-next-course-lesson-target:focus-visible {
+    outline: 3px solid #f5d98a;
+    outline-offset: 4px;
+}
+
 .course-path-card.is-next-course-target .course-path-card-open:focus-visible {
     outline: 3px solid #f5d98a;
     outline-offset: 4px;
@@ -12676,7 +12692,10 @@ html[data-pbb-theme="dark"] .course-path-card.is-next-course-target {
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .course-path-card.is-next-course-target {
+    .course-path-card.is-next-course-target,
+    .foundation-quiz-row.is-next-course-lesson-target,
+    .identity-week-row.is-next-course-lesson-target,
+    .course-detail-primary.is-next-course-lesson-target {
         animation: none;
         box-shadow: 0 0 0 4px rgba(183, 138, 46, 0.34), 0 16px 38px rgba(183, 138, 46, 0.22);
     }

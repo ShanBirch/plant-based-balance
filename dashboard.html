@@ -1962,14 +1962,14 @@ if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-progressphoto.js?v=11"><\/script>');
 document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=35-balance-theme"><\/script>');
     document.write('<script src="js/dashboard/pbb-social-journey.js?v=41-course-tab-handoff"><\/script>');
-    document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=38-course-tab-highlight"><\/script>');
+    document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=39-lesson-handoff-highlight"><\/script>');
     document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=29-accountability-checkout"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
     window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=11');
 window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=35-balance-theme');
     window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=41-course-tab-handoff');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=38-course-tab-highlight');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=39-lesson-handoff-highlight');
     window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=29-accountability-checkout');
 }
 </script>
@@ -18253,7 +18253,7 @@ if (window._pbbIsIOSSafari) {
 }
 </script>
 
-<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=104-next-course-highlight">
+<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=105-course-lesson-highlight">
 <link rel="stylesheet" href="css/dashboard/pbb-onboarding-comeback.css?v=8">
 <link rel="stylesheet" href="css/dashboard/pbb-onboarding-foundations.css?v=10-preference-contrast">
 
@@ -20447,11 +20447,11 @@ if (window._pbbIsIOSSafari) {
             });
             if (window.showQuizBattleInviteModal || learningAlreadyRequested) return;
             var s = document.createElement('script');
-      s.src = 'lib/learning-inline.js?v=31-course-preview-tour-handoff';
+      s.src = 'lib/learning-inline.js?v=32-course-lesson-highlight';
             document.head.appendChild(s);
         }, { once: true });
     } else {
-    document.write('<script src="lib/learning-inline.js?v=31-course-preview-tour-handoff"><\/script>');
+    document.write('<script src="lib/learning-inline.js?v=32-course-lesson-highlight"><\/script>');
     }
     </script>
     <!-- Battle System & Logic Overrides (130 lines — deferred on iOS) -->

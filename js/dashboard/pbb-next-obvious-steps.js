@@ -511,6 +511,7 @@
       ? '#balance-identity-course-card'
       : '#balance-foundations-course-card';
     switchTab('learning');
+    watchCourseGuidanceExit();
     afterTab(function(){
       if (typeof window.renderLearningHome === 'function') window.renderLearningHome();
       var attempts = 0;
@@ -529,11 +530,31 @@
         var button = card.querySelector('.course-path-card-open');
         if (button) {
           button.focus({ preventScroll: true });
-          button.addEventListener('click', function(){ card.classList.remove('is-next-course-target'); }, { once: true });
+          button.addEventListener('click', function(){
+            window.__pbbGuideNextCourseId = resolvedCourseId;
+            card.classList.remove('is-next-course-target');
+          }, { once: true, capture: true });
         }
       }
       revealCourseCard();
     }, 360);
+  }
+
+  function clearCourseGuidance() {
+    window.__pbbGuideNextCourseId = null;
+    document.querySelectorAll('.is-next-course-target,.is-next-course-lesson-target').forEach(function(item){
+      item.classList.remove('is-next-course-target', 'is-next-course-lesson-target');
+    });
+  }
+
+  function watchCourseGuidanceExit() {
+    if (window.__pbbCourseGuidanceExitWatcher) return;
+    var learningView = document.getElementById('view-learning');
+    if (!learningView || typeof MutationObserver !== 'function') return;
+    window.__pbbCourseGuidanceExitWatcher = new MutationObserver(function(){
+      if (window.getComputedStyle(learningView).display === 'none') clearCourseGuidance();
+    });
+    window.__pbbCourseGuidanceExitWatcher.observe(learningView, { attributes: true, attributeFilter: ['style', 'class', 'hidden'] });
   }
 
   function openQuizTarget() {

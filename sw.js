@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v439-next-course-handoff'; // v439: Home course actions now open and highlight the next Course card
+const CACHE_NAME = 'pbb-app-v440-course-lesson-handoff'; // v440: Course guidance continues from the Home card to the member's current lesson
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

@@ -85,12 +85,13 @@ test('Home plan cards stay below the complete FitGotchi stats block', () => {
     assert.match(source, /characterBlockTail\.parentNode\.insertBefore\(card, characterBlockTail\.nextSibling\)/);
     assert.doesNotMatch(source, /levelStrip\.parentNode\.insertBefore\((weeklyGoals|card), levelStrip\.nextSibling\)/);
     assert.match(html, /pbb-social-journey\.js\?v=41-course-tab-handoff/);
-    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v439-next-course-handoff'/);
+    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v440-course-lesson-handoff'/);
 });
 
 test('Home course actions bypass legacy journey pages and spotlight the next Course card', () => {
     const socialSource = fs.readFileSync(path.join(root, 'js/dashboard/pbb-social-journey.js'), 'utf8');
     const nextStepsSource = fs.readFileSync(path.join(root, 'js/dashboard/pbb-next-obvious-steps.js'), 'utf8');
+    const learningSource = fs.readFileSync(path.join(root, 'lib/learning-inline.js'), 'utf8');
     const premiumCss = fs.readFileSync(path.join(root, 'css/dashboard/pbb-premium-overlays.css'), 'utf8');
     const html = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
 
@@ -100,9 +101,20 @@ test('Home course actions bypass legacy journey pages and spotlight the next Cou
     assert.match(nextStepsSource, /function openNextCourseTarget\(courseId\)/);
     assert.match(nextStepsSource, /window\.renderLearningHome\(\)/);
     assert.match(nextStepsSource, /card\.classList\.add\('is-next-course-target'\)/);
+    assert.match(nextStepsSource, /window\.__pbbGuideNextCourseId = resolvedCourseId/);
+    assert.match(nextStepsSource, /\{ once: true, capture: true \}/);
+    assert.match(nextStepsSource, /function watchCourseGuidanceExit\(\)/);
+    assert.match(nextStepsSource, /display === 'none'\) clearCourseGuidance\(\)/);
+    assert.match(learningSource, /const shouldGuideToLesson = window\.__pbbGuideNextCourseId === course\.id/);
+    assert.match(learningSource, /function guideToCurrentCourseLesson\(course\)/);
+    assert.match(learningSource, /data-foundations-quiz-id/);
+    assert.match(learningSource, /data-identity-journey-week/);
+    assert.match(learningSource, /target\.classList\.add\('is-next-course-lesson-target'\)/);
     assert.match(premiumCss, /@keyframes pbb-next-course-pulse/);
+    assert.match(premiumCss, /\.foundation-quiz-row\.is-next-course-lesson-target/);
+    assert.match(premiumCss, /\.identity-week-row\.is-next-course-lesson-target/);
     assert.match(premiumCss, /prefers-reduced-motion: reduce/);
-    assert.match(html, /pbb-next-obvious-steps\.js\?v=38-course-tab-highlight/);
+    assert.match(html, /pbb-next-obvious-steps\.js\?v=39-lesson-handoff-highlight/);
 });
 
 test('Home goals and plan cards follow light and dark mode', () => {

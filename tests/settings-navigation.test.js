@@ -64,7 +64,7 @@ test('cancellation returns to Settings by button, browser history, swipe, or saf
 
 test('the navigation layer is loaded and refreshed on returning phones', () => {
   assert.match(dashboard, /pbb-settings-navigation\.js\?v=1-settings-navigation/);
-  assert.match(sw, /pbb-app-v439-next-course-handoff/);
+  assert.match(sw, /pbb-app-v440-course-lesson-handoff/);
   assert.match(sw, /pbb-settings-navigation\.js\?v=1-settings-navigation/);
 });
 
