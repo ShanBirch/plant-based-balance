@@ -13,6 +13,7 @@ const meals = read('js/dashboard/dashboard-script-11-calorie_tracker_functions.j
 const stories = read('lib/stories.js');
 const progressPhotos = read('js/dashboard/pbb-deferred-progressphoto.js');
 const dashboard = read('dashboard.html');
+const serviceWorker = read('sw.js');
 
 test('photo share studio is locked to Shannon account', () => {
   assert.match(studio, /PILOT_EMAIL = 'shannonbirch@cocospersonaltraining\.com'/);
@@ -95,6 +96,11 @@ test('Shannon receives the progress-first workout completed page', () => {
   assert.match(studio, /pbb-private-complete-active/);
   assert.match(studio, /bottomNav\.style\.display = 'none'/);
   assert.match(studio, /durationUnit/);
+  assert.match(studio, /min-height:100dvh/);
+  assert.match(studio, /display:flex;flex-direction:column/);
+  assert.match(studio, /class="pwc-hero-mark"/);
+  assert.match(studio, /Session complete/);
+  assert.match(studio, /position:sticky;bottom:0/);
   assert.match(workoutRuntime, /BalancePrivateShareStudio\.renderWorkoutCompletePage/);
   assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=230-remove-volume-popup/);
 });
@@ -102,8 +108,9 @@ test('Shannon receives the progress-first workout completed page', () => {
 test('private reveal, tour, and cache-busted modules ship together', () => {
   assert.match(dashboard, /private-photo-share-studio-shannon-v3/);
   assert.match(dashboard, /BalancePrivateShareStudio\.isEnabled\(\)/);
-  assert.match(dashboard, /pbb-private-share-studio\.js\?v=7-movable-workout-card/);
+  assert.match(dashboard, /pbb-private-share-studio\.js\?v=8-fullscreen-workout-complete/);
   assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=56-movable-workout-card/);
   assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=[^'\"]+/);
   assert.match(dashboard, /dashboard-script-11-calorie_tracker_functions\.js\?v=39-private-share-studio/);
+  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v462-fullscreen-workout-complete'/);
 });
