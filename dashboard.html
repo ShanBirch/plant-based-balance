@@ -7828,12 +7828,13 @@ if(!window._pbbIsIOSSafari) {
 <div id="view-active-workout" class="app-view" style="display:none; height: 100vh; background: #f8fafc; z-index: 500; position: fixed; top: 0; left: 0; width: 100%; overflow-y: auto;">
 
     <!-- Top Nav Bar -->
-    <div style="position: sticky; top: 0; z-index: 100; background: black; color: white; padding: 15px 20px; padding-top: calc(15px + env(safe-area-inset-top, 0px)); display: flex; align-items: center; justify-content: space-between;">
-        <div onclick="quitWorkout()" style="font-weight: 600; cursor: pointer; color: #FF4444; padding: 10px; touch-action: manipulation; user-select: none;">Cancel</div>
-        <div style="text-align: center;">
+    <div id="workout-player-topbar" style="position: sticky; top: 0; z-index: 100; background: black; color: white; padding: 15px 20px; padding-top: calc(15px + env(safe-area-inset-top, 0px)); display: flex; align-items: center; justify-content: space-between;">
+        <button id="workout-cancel-action" type="button" onclick="quitWorkout()" style="font:inherit; border:0; background:transparent; font-weight: 600; cursor: pointer; color: #FF4444; padding: 10px; touch-action: manipulation; user-select: none;">Cancel</button>
+        <div id="workout-player-topbar-center" style="text-align: center;">
+            <div id="workout-focus-title" aria-hidden="true" style="display:none;">Workout</div>
             <div id="workout-timer" style="font-family: monospace; font-size: 1.2rem; font-weight: 700; color: white;">00:00</div>
         </div>
-        <div onclick="finishWorkout()" style="font-weight: 600; cursor: pointer; color: #44FF44; padding: 10px; touch-action: manipulation; user-select: none;">Save</div>
+        <button id="workout-save-action" type="button" onclick="finishWorkout()" style="font:inherit; border:0; background:transparent; font-weight: 600; cursor: pointer; color: #44FF44; padding: 10px; touch-action: manipulation; user-select: none;">Save</button>
     </div>
 
     <!-- Total Workout Volume Bar -->
@@ -13118,7 +13119,7 @@ if (window._pbbIsIOSSafari) {
 document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=227-meal-primary-tabs&video_health=2"><\/script>');
 }
 </script>
-<script src="js/dashboard/pbb-workout-swipe-player.js?v=3"></script>
+<script src="js/dashboard/pbb-workout-swipe-player.js?v=4"></script>
 <script src="js/dashboard/pbb-onboarding-test-navigator.js?v=7-hidden-phone-safe"></script>
 
 <!-- Image Modal HTML -->
@@ -14177,7 +14178,8 @@ if(!window._pbbIsIOSSafari) {
 
     { tab:'movement-tab', sel:'#mvmt-week-workouts-card', title:"Train with Coach Shan!", body:"Shannon updates his workouts daily — tap this gold card to see what he's doing in the gym this week and follow along with his exact sessions." },
     { tab:'movement-tab', sel:'#today-workout-card', title:"Your workout for the day", body:"Here's your workout for today. Tap to start it.", quick: true, xpReward:'movement' },
-    { tab:'movement-tab', sel:'#workout-player-experiment-controls', fallbackSel:'#today-workout-card', title:'Swipe through your workout', fallbackTitle:'Swipe through your workout', body:'Use Swipe to focus on one exercise at a time, then swipe left or right to move between exercises. Switch back to List any time.', fallbackBody:"Start today's workout, then choose Swipe to focus on one exercise at a time. Swipe left or right to move through the session, or switch back to List any time.", quick:true, condition:function(){ return !!document.getElementById('workout-player-experiment-controls') || !!document.getElementById('today-workout-card'); } },
+    { tab:'movement-tab', sel:'#workout-player-experiment-controls', fallbackSel:'#today-workout-card', title:'Swipe through your workout', fallbackTitle:'Swipe through your workout', body:'Use Swipe to focus on one exercise at a time, then swipe left or right to move between exercises. Switch back to List any time.', fallbackBody:"Start today's workout, then choose Swipe to focus on one exercise at a time. Swipe left or right to move through the session, or switch back to List any time.", quick:true, condition:function(){ var p=window.PBBWorkoutSwipePlayer; if(p && p.isFocusPilotUser && p.isFocusPilotUser(window.currentUser)) return false; return !!document.getElementById('workout-player-experiment-controls') || !!document.getElementById('today-workout-card'); } },
+    { tab:'movement-tab', sel:'#workout-focus-menu-button', fallbackSel:'#today-workout-card', title:'Your private Focus Mode', fallbackTitle:'Your private Focus Mode', body:'The three dots open every workout action: form check, share a set, add an exercise, notes, and Finish & Save. Tick off sets and start rest without leaving the exercise.', fallbackBody:'Start a workout to open your new one-exercise-at-a-time Focus Mode. It is switched on only for your account while you test it.', quick:true, condition:function(){ var u=window.currentUser||{}; return String(u.id||'')==='00a6605e-8edb-4917-85ba-24a23f179059' && String(u.email||'').toLowerCase()==='shannonbirch@cocospersonaltraining.com'; } },
     { tab:'movement-tab', sel:'#move-your-way-pilot-card', title:'Move your way', body:'Classes, runs, walks and rides all count. Log the movement, then add a photo or caption if you want to share it.', quick:true, condition:function(){ return !!(window.isMoveYourWayPilotUser && window.isMoveYourWayPilotUser()); } },
       { tab:'movement-tab', sel:'#workout-share-set-btn', fallbackSel:'#today-workout-card', title:'Share a Set', fallbackTitle:'Open a workout to Share a Set', body:"Tap Share a Set under Film Form Check, then choose Camera to film in-app or Photos to choose an existing clip. Balance compresses the clip and shares it to Feed while you stay in workout mode. First share each day earns +15 XP. If reception drops, the clip is saved at the top of Feed so you can post it later.", fallbackBody:"Start today's workout and you will see Share a Set under Film Form Check. First share each day earns +15 XP. If reception drops, the clip is saved at the top of Feed so you can post it later.", quick: true, condition: function(){ return !!document.getElementById('workout-share-set-btn') || !!document.getElementById('today-workout-card'); } },
     { tab:'movement-tab', sel:'#today-workout-card', title:'Post-workout Share', body:"Finish a workout, then tap the single Share button to post the workout, a PB, or a photo to Feed." },
@@ -16772,7 +16774,18 @@ window.endFeatureTour = function(skipped){
     fallbackTitle: 'Swipe through your workout',
     body: 'Use Swipe to focus on one exercise at a time, then swipe left or right to move between exercises. Switch back to List any time.',
     fallbackBody: "Start today's workout, then choose Swipe to focus on one exercise at a time. Swipe left or right to move through the session, or switch back to List any time.",
-    condition: function(){ return !!document.getElementById('workout-player-experiment-controls') || !!document.getElementById('today-workout-card'); }
+    condition: function(){ var p=window.PBBWorkoutSwipePlayer; if(p && p.isFocusPilotUser && p.isFocusPilotUser(window.currentUser)) return false; return !!document.getElementById('workout-player-experiment-controls') || !!document.getElementById('today-workout-card'); }
+  });
+  allFeatures.push({
+    id: 'shannon-workout-focus-mode-v1',
+    tab: 'movement-tab',
+    sel: '#workout-focus-menu-button',
+    fallbackSel: '#today-workout-card',
+    title: 'Private Focus Mode',
+    fallbackTitle: 'Private Focus Mode',
+    body: 'Use the three dots for form check, sharing, adding exercises, notes, and Finish & Save. Complete sets and start the rest timer from the main exercise card.',
+    fallbackBody: 'Start a workout to try your new one-exercise-at-a-time Focus Mode. It is live only for your account while you test it.',
+    condition: function(){ var u=window.currentUser||{}; return String(u.id||'')==='00a6605e-8edb-4917-85ba-24a23f179059' && String(u.email||'').toLowerCase()==='shannonbirch@cocospersonaltraining.com'; }
   });
   allFeatures.push({
     id: 'feed-post-actions-menu-v1',
