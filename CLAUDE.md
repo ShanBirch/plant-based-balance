@@ -31,6 +31,8 @@ If you add a new popup/modal/overlay, verify on a small phone viewport that the 
 
 Always verify that fonts are readable in light mode before shipping mobile UI. Any card, popup, or generated style block that changes backgrounds must set explicit readable text colors for headings, body text, labels, buttons, and nested cards. For Capacitor/iOS views, include `-webkit-text-fill-color` when overriding contrast-sensitive text so WebKit does not keep stale or inherited white text on light surfaces.
 
+Every UI change must be checked in both light and dark mode. Treat paired theme styling and readable text, icon, border, focus, disabled, and action states as part of the change, not as a later polish pass.
+
 ### Balance Cream-and-Gold Opening Treatment
 
 For branded opening, reveal, and onboarding hero screens, use the established Balance editorial treatment:

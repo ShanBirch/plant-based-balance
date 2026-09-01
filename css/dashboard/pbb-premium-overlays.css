@@ -5175,6 +5175,53 @@ html[data-pbb-theme="light"] {
     --pbb-readable-shadow: 0 24px 58px rgba(57, 47, 31, 0.16);
 }
 
+/* Daily Score popup: Capacitor/WebKit can retain an inherited text fill when
+   the app theme changes, so every readable text role is explicit here. */
+html[data-pbb-theme] .score-popup-modal {
+    color: var(--pbb-readable-text) !important;
+    -webkit-text-fill-color: var(--pbb-readable-text) !important;
+}
+
+html[data-pbb-theme] .score-popup-modal :where(
+    .score-popup-header,
+    .nutrition-score-value,
+    #popup-score-grade,
+    .calorie-projection-value
+) {
+    color: var(--pbb-readable-text) !important;
+    -webkit-text-fill-color: var(--pbb-readable-text) !important;
+}
+
+html[data-pbb-theme] .score-popup-modal :where(
+    .score-popup-close,
+    .score-breakdown-item,
+    .daily-insight-item,
+    .calorie-projection-text,
+    .calorie-projection-unit,
+    .calorie-projection-subtext,
+    #popup-claim-hint,
+    #popup-finish-hint
+) {
+    color: var(--pbb-readable-muted) !important;
+    -webkit-text-fill-color: var(--pbb-readable-muted) !important;
+}
+
+html[data-pbb-theme] .score-popup-modal .daily-insight-item,
+html[data-pbb-theme] .score-popup-modal .calorie-projection-section {
+    background: var(--pbb-readable-surface-soft) !important;
+    border: 1px solid var(--pbb-readable-border-soft) !important;
+}
+
+html[data-pbb-theme] .score-popup-modal :where(#popup-claim-btn, #popup-finish-day-btn) {
+    color: var(--pbb-readable-action-text) !important;
+    -webkit-text-fill-color: var(--pbb-readable-action-text) !important;
+}
+
+html[data-pbb-theme] .score-popup-modal :where(#popup-claim-btn, #popup-finish-day-btn) span {
+    color: inherit !important;
+    -webkit-text-fill-color: inherit !important;
+}
+
 html[data-pbb-theme] :where(
     .modal-overlay,
     .adaptive-modal-overlay,
