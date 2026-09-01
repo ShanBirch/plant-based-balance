@@ -26,7 +26,11 @@ test('studio is full-screen, safe-area aware, and interactive', () => {
   assert.match(studio, /env\(safe-area-inset-top\)/);
   assert.match(studio, /env\(safe-area-inset-bottom\)/);
   assert.match(studio, /data-share-input/);
+  assert.match(studio, /data-share-text-toggle/);
+  assert.match(studio, /data-share-text-panel/);
   assert.match(studio, /data-caption-style="gold"/);
+  assert.match(studio, /object-fit:cover/);
+  assert.doesNotMatch(studio, /max-height:42dvh;overflow:auto;padding:12px 14px/);
   assert.match(studio, /pointermove/);
   assert.match(studio, /choosePhoto/);
   assert.match(studio, /Take a photo/);
@@ -65,7 +69,7 @@ test('Shannon receives the progress-first workout completed page', () => {
 test('private reveal, tour, and cache-busted modules ship together', () => {
   assert.match(dashboard, /private-photo-share-studio-shannon-v1/);
   assert.match(dashboard, /BalancePrivateShareStudio\.isEnabled\(\)/);
-  assert.match(dashboard, /pbb-private-share-studio\.js\?v=4-compact-workout-complete/);
+  assert.match(dashboard, /pbb-private-share-studio\.js\?v=5-fullscreen-editor-redesign/);
   assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=[^'\"]+/);
   assert.match(dashboard, /dashboard-script-11-calorie_tracker_functions\.js\?v=39-private-share-studio/);
 });
