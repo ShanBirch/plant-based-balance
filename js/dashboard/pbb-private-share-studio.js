@@ -116,19 +116,19 @@
     style.textContent = `
       .pbb-share-studio{--ps-canvas:#f8f5ee;--ps-soft:#f4f0e7;--ps-ink:#151515;--ps-muted:#6f6a61;--ps-border:#ded7c9;--ps-gold:#d8b25e;position:fixed;inset:0;z-index:100120;display:none;overflow:hidden;background:#111;color:#fff;-webkit-text-fill-color:currentColor;font-family:inherit}
       .pbb-share-studio.is-open{display:block}.pbb-share-studio *{box-sizing:border-box}.pbb-share-studio button,.pbb-share-studio textarea{font:inherit}
-      .pbb-share-studio__stage{position:absolute;inset:0;display:grid;place-items:center;overflow:hidden;background:#111;touch-action:none}.pbb-share-studio__photo{display:block;width:100%;height:100%;object-fit:cover;background:#111}.pbb-share-studio__loading{position:absolute;inset:0;display:grid;place-items:center;background:rgba(17,17,17,.3);font-size:.82rem;font-weight:800;pointer-events:none}.pbb-share-studio__loading[hidden]{display:none}
-      .pbb-share-studio__top{position:absolute;z-index:4;top:0;left:0;right:0;min-height:calc(58px + env(safe-area-inset-top));display:flex;align-items:flex-end;justify-content:space-between;padding:calc(8px + env(safe-area-inset-top)) 14px 8px;background:rgba(17,17,17,.78);border-bottom:1px solid rgba(245,217,138,.22);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
-      .pbb-share-studio__top-title{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);font-weight:850;font-size:.96rem;white-space:nowrap}.pbb-share-studio__icon{width:40px;height:40px;border:1px solid rgba(255,255,255,.18);border-radius:999px;background:rgba(17,17,17,.7);color:#fff;-webkit-text-fill-color:#fff;font-size:1.25rem;display:grid;place-items:center;cursor:pointer}.pbb-share-studio__done{min-height:40px;border:0;border-radius:999px;background:var(--ps-gold);color:var(--ps-ink);-webkit-text-fill-color:var(--ps-ink);padding:0 16px;font-size:.82rem;font-weight:900;cursor:pointer}
+      .pbb-share-studio__stage{position:absolute;inset:0;display:grid;place-items:center;overflow:hidden;background:#111;touch-action:none}.pbb-share-studio__photo{display:block;width:100%;height:100%;object-fit:contain;background:#111}.pbb-share-studio__loading{position:absolute;inset:0;display:grid;place-items:center;background:rgba(17,17,17,.3);font-size:.82rem;font-weight:800;pointer-events:none}.pbb-share-studio__loading[hidden]{display:none}
+      .pbb-share-studio__top{position:absolute;z-index:4;top:0;left:0;right:0;min-height:calc(66px + env(safe-area-inset-top));display:flex;align-items:flex-end;justify-content:space-between;padding:calc(10px + env(safe-area-inset-top)) 14px 10px;background:linear-gradient(to bottom,rgba(0,0,0,.76),rgba(0,0,0,.12));pointer-events:none}.pbb-share-studio__top-group{display:flex;align-items:center;gap:8px;pointer-events:auto}
+      .pbb-share-studio__icon{min-width:42px;height:42px;padding:0 12px;border:1px solid rgba(255,255,255,.28);border-radius:999px;background:rgba(10,10,10,.48);color:#fff;-webkit-text-fill-color:#fff;font-size:1.12rem;display:grid;place-items:center;cursor:pointer;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}.pbb-share-studio__done{min-height:42px;border:1px solid var(--ps-gold);border-radius:999px;background:var(--ps-gold);color:var(--ps-ink);-webkit-text-fill-color:var(--ps-ink);padding:0 16px;font-size:.82rem;font-weight:900;cursor:pointer}.pbb-share-studio__done[hidden]{display:none}
       .pbb-share-studio__caption{position:absolute;left:50%;top:22%;max-width:82%;transform:translate(-50%,-50%);padding:5px 9px;border-radius:8px;color:#fff;-webkit-text-fill-color:#fff;text-align:center;font-size:clamp(1.15rem,5vw,2rem);line-height:1.08;font-weight:900;white-space:pre-wrap;overflow-wrap:anywhere;text-shadow:0 2px 10px rgba(0,0,0,.82);cursor:grab;touch-action:none;user-select:none}.pbb-share-studio__caption[data-style="label"]{background:rgba(17,17,17,.82);padding:9px 13px;text-shadow:none}.pbb-share-studio__caption[data-style="gold"]{background:var(--ps-gold);color:var(--ps-ink);-webkit-text-fill-color:var(--ps-ink);text-shadow:none}.pbb-share-studio__caption:empty{display:none}
-      .pbb-share-studio__tools{position:absolute;z-index:5;inset:0;pointer-events:none}.pbb-share-studio__text-toggle{pointer-events:auto;position:absolute;right:14px;bottom:calc(82px + env(safe-area-inset-bottom));width:48px;height:48px;border:1px solid rgba(255,255,255,.22);border-radius:50%;background:rgba(17,17,17,.78);color:#fff;-webkit-text-fill-color:#fff;font-size:1.05rem;font-weight:900;box-shadow:0 8px 28px rgba(0,0,0,.24);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);cursor:pointer}.pbb-share-studio__text-toggle.is-active{background:var(--ps-gold);border-color:var(--ps-gold);color:var(--ps-ink);-webkit-text-fill-color:var(--ps-ink)}
-      .pbb-share-studio__text-panel{pointer-events:auto;position:absolute;left:12px;right:12px;bottom:calc(76px + env(safe-area-inset-bottom));max-height:min(42dvh,330px);overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px;border:1px solid var(--ps-border);border-radius:18px;background:rgba(248,245,238,.96);color:var(--ps-ink);-webkit-text-fill-color:var(--ps-ink);box-shadow:0 18px 60px rgba(0,0,0,.34);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}.pbb-share-studio__text-panel[hidden]{display:none}.pbb-share-studio__panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 8px}.pbb-share-studio__label{font-size:.7rem;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:var(--ps-muted);-webkit-text-fill-color:var(--ps-muted)}.pbb-share-studio__panel-done{border:0;background:transparent;color:var(--ps-ink);-webkit-text-fill-color:var(--ps-ink);padding:4px;font-size:.78rem;font-weight:900;cursor:pointer}
-      .pbb-share-studio__input{width:100%;min-height:44px;max-height:88px;resize:none;border:1px solid var(--ps-border);border-radius:12px;background:#fff;color:var(--ps-ink);-webkit-text-fill-color:var(--ps-ink);padding:11px 12px;font-size:.92rem;line-height:1.3;outline:none}.pbb-share-studio__input:focus{border-color:#9b792e;box-shadow:0 0 0 3px rgba(216,178,94,.2)}.pbb-share-studio__input::placeholder{color:var(--ps-muted);-webkit-text-fill-color:var(--ps-muted)}
-      .pbb-share-studio__row{display:flex;gap:7px;overflow-x:auto;padding-top:9px;scrollbar-width:none}.pbb-share-studio__row::-webkit-scrollbar{display:none}.pbb-share-studio__chip{flex:0 0 auto;min-height:34px;border:1px solid var(--ps-border);border-radius:999px;background:#fff;color:var(--ps-ink);-webkit-text-fill-color:var(--ps-ink);padding:0 12px;font-size:.75rem;font-weight:850;cursor:pointer}.pbb-share-studio__chip.is-active{background:var(--ps-gold);border-color:var(--ps-gold);color:var(--ps-ink);-webkit-text-fill-color:var(--ps-ink)}
-      .pbb-share-studio__actions{pointer-events:auto;position:absolute;left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom));display:grid;grid-template-columns:1fr 1fr;gap:9px}.pbb-share-studio__action{min-height:54px;border:1px solid rgba(255,255,255,.2);border-radius:16px;background:#111;color:#fff;-webkit-text-fill-color:#fff;font-weight:900;cursor:pointer;box-shadow:0 10px 32px rgba(0,0,0,.28)}.pbb-share-studio__action--ig{background:var(--ps-gold);border-color:var(--ps-gold);color:var(--ps-ink);-webkit-text-fill-color:var(--ps-ink)}.pbb-share-studio__action:disabled{opacity:.55;cursor:wait}
+      .pbb-share-studio__tools{position:absolute;z-index:5;inset:0;pointer-events:none}.pbb-share-studio__tool-rail{position:absolute;top:calc(86px + env(safe-area-inset-top));right:12px;display:flex;flex-direction:column;gap:9px;pointer-events:auto}.pbb-share-studio__tool{width:50px;min-height:52px;padding:5px 3px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:1px solid rgba(255,255,255,.28);border-radius:15px;background:rgba(10,10,10,.48);color:#fff;-webkit-text-fill-color:#fff;font-size:.62rem;font-weight:800;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);cursor:pointer}.pbb-share-studio__tool strong{font-size:1rem;line-height:1}.pbb-share-studio__tool.is-active,.pbb-share-studio__tool[aria-pressed="true"]{background:var(--ps-gold);border-color:var(--ps-gold);color:var(--ps-ink);-webkit-text-fill-color:var(--ps-ink)}
+      .pbb-share-studio__text-panel{pointer-events:auto;position:absolute;left:12px;right:12px;bottom:calc(146px + env(safe-area-inset-bottom));max-height:min(42dvh,330px);overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px;border:1px solid rgba(255,255,255,.28);border-radius:17px;background:rgba(12,12,12,.88);color:#fff;-webkit-text-fill-color:#fff;box-shadow:0 18px 60px rgba(0,0,0,.34);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}.pbb-share-studio__text-panel[hidden]{display:none}.pbb-share-studio__panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 8px}.pbb-share-studio__label{font-size:.7rem;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.76);-webkit-text-fill-color:rgba(255,255,255,.76)}.pbb-share-studio__panel-done{border:0;border-radius:10px;background:var(--ps-gold);color:var(--ps-ink);-webkit-text-fill-color:var(--ps-ink);padding:7px 12px;font-size:.78rem;font-weight:900;cursor:pointer}
+      .pbb-share-studio__input{width:100%;min-height:44px;max-height:88px;resize:none;border:1px solid rgba(255,255,255,.28);border-radius:12px;background:rgba(255,255,255,.1);color:#fff;-webkit-text-fill-color:#fff;padding:11px 12px;font-size:.92rem;line-height:1.3;outline:none}.pbb-share-studio__input:focus{border-color:var(--ps-gold);box-shadow:0 0 0 3px rgba(216,178,94,.2)}.pbb-share-studio__input::placeholder{color:rgba(255,255,255,.65);-webkit-text-fill-color:rgba(255,255,255,.65)}
+      .pbb-share-studio__row{display:flex;gap:7px;overflow-x:auto;padding-top:9px;scrollbar-width:none}.pbb-share-studio__row::-webkit-scrollbar{display:none}.pbb-share-studio__chip{flex:0 0 auto;min-height:34px;border:1px solid rgba(255,255,255,.28);border-radius:999px;background:transparent;color:#fff;-webkit-text-fill-color:#fff;padding:0 12px;font-size:.75rem;font-weight:850;cursor:pointer}.pbb-share-studio__chip.is-active{border-color:var(--ps-gold);color:var(--ps-gold);-webkit-text-fill-color:var(--ps-gold)}
+      .pbb-share-studio__bottom{position:absolute;left:0;right:0;bottom:0;padding:52px 12px calc(10px + env(safe-area-inset-bottom));background:linear-gradient(to top,rgba(0,0,0,.9),rgba(0,0,0,.34),transparent);pointer-events:none}.pbb-share-studio__style-row{display:flex;justify-content:center;gap:12px;margin-bottom:12px;pointer-events:auto}.pbb-share-studio__style{width:58px;height:50px;border:2px solid transparent;border-radius:14px;background:rgba(10,10,10,.56);color:#fff;-webkit-text-fill-color:#fff;font-size:.68rem;font-weight:850;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);cursor:pointer}.pbb-share-studio__style[aria-pressed="true"]{border-color:var(--ps-gold);color:var(--ps-gold);-webkit-text-fill-color:var(--ps-gold)}
+      .pbb-share-studio__actions{pointer-events:auto;display:grid;grid-template-columns:1fr 1fr 1.12fr;gap:8px}.pbb-share-studio__action{min-height:50px;border:1px solid rgba(255,255,255,.28);border-radius:14px;background:rgba(10,10,10,.56);color:#fff;-webkit-text-fill-color:#fff;font-size:.76rem;font-weight:900;cursor:pointer;box-shadow:0 10px 32px rgba(0,0,0,.28);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}.pbb-share-studio__action--share{background:var(--ps-gold);border-color:var(--ps-gold);color:var(--ps-ink);-webkit-text-fill-color:var(--ps-ink)}.pbb-share-studio__action:disabled{opacity:.55;cursor:wait}
       .pbb-photo-source{position:fixed;inset:0;z-index:100119;display:grid;align-items:end;background:rgba(15,12,7,.55);padding:18px;padding-bottom:calc(18px + env(safe-area-inset-bottom))}.pbb-photo-source__card{width:min(100%,480px);margin:0 auto;background:#f8f5ee;color:#151515;-webkit-text-fill-color:#151515;border:1px solid #ded7c9;border-radius:22px;padding:18px;box-shadow:0 24px 70px rgba(0,0,0,.35)}.pbb-photo-source__title{font-size:1.05rem;font-weight:900;margin-bottom:4px}.pbb-photo-source__copy{font-size:.82rem;color:#6f6a61;margin-bottom:14px}.pbb-photo-source__button{width:100%;min-height:50px;border:0;border-radius:14px;background:#111;color:#fff;-webkit-text-fill-color:#fff;font:inherit;font-weight:900;margin-top:8px}.pbb-photo-source__button--gold{background:#d8b25e;color:#151515;-webkit-text-fill-color:#151515}.pbb-photo-source__button--cancel{background:transparent;color:#151515;-webkit-text-fill-color:#151515;border:1px solid #ded7c9}
-      html[data-theme="light"] .pbb-share-studio__text-panel,body.light-mode .pbb-share-studio__text-panel{background:rgba(248,245,238,.96);color:#151515;-webkit-text-fill-color:#151515;border-color:#ded7c9}
-      html[data-theme="dark"] .pbb-share-studio__text-panel,body.dark-mode .pbb-share-studio__text-panel{background:rgba(17,17,17,.96);color:#f8f5ee;-webkit-text-fill-color:#f8f5ee;border-color:#4b453a}html[data-theme="dark"] .pbb-share-studio__label,body.dark-mode .pbb-share-studio__label{color:#d8cdb9;-webkit-text-fill-color:#d8cdb9}html[data-theme="dark"] .pbb-share-studio__panel-done,body.dark-mode .pbb-share-studio__panel-done{color:#f5d98a;-webkit-text-fill-color:#f5d98a}html[data-theme="dark"] .pbb-share-studio__input,body.dark-mode .pbb-share-studio__input{background:#25221c;color:#f8f5ee;-webkit-text-fill-color:#f8f5ee;border-color:#4b453a}html[data-theme="dark"] .pbb-share-studio__chip,body.dark-mode .pbb-share-studio__chip{background:#25221c;color:#f8f5ee;-webkit-text-fill-color:#f8f5ee;border-color:#4b453a}html[data-theme="dark"] .pbb-share-studio__chip.is-active,body.dark-mode .pbb-share-studio__chip.is-active{background:#d8b25e;color:#151515;-webkit-text-fill-color:#151515;border-color:#d8b25e}
-      @media(max-height:680px){.pbb-share-studio__top{min-height:calc(52px + env(safe-area-inset-top))}.pbb-share-studio__top-title{bottom:16px}.pbb-share-studio__action{min-height:48px}.pbb-share-studio__actions{bottom:calc(7px + env(safe-area-inset-bottom))}.pbb-share-studio__text-toggle{bottom:calc(68px + env(safe-area-inset-bottom))}.pbb-share-studio__text-panel{bottom:calc(64px + env(safe-area-inset-bottom));max-height:46dvh}}
+      html[data-theme="light"] .pbb-share-studio__style[aria-pressed="true"],body.light-mode .pbb-share-studio__style[aria-pressed="true"]{border-color:#f5d98a;color:#f5d98a;-webkit-text-fill-color:#f5d98a}html[data-theme="dark"] .pbb-share-studio__style[aria-pressed="true"],body.dark-mode .pbb-share-studio__style[aria-pressed="true"]{border-color:#d8b25e;color:#d8b25e;-webkit-text-fill-color:#d8b25e}
+      @media(max-height:680px){.pbb-share-studio__top{min-height:calc(58px + env(safe-area-inset-top))}.pbb-share-studio__tool-rail{top:calc(70px + env(safe-area-inset-top));gap:6px}.pbb-share-studio__tool{min-height:46px}.pbb-share-studio__bottom{padding-top:36px}.pbb-share-studio__style-row{margin-bottom:8px}.pbb-share-studio__style{height:42px}.pbb-share-studio__action{min-height:44px}.pbb-share-studio__text-panel{bottom:calc(126px + env(safe-area-inset-bottom));max-height:46dvh}}
     `;
     document.head.appendChild(style);
   }
@@ -145,9 +145,8 @@
     el.setAttribute('aria-label', 'Edit your share photo');
     el.innerHTML = `
       <div class="pbb-share-studio__top">
-        <button type="button" class="pbb-share-studio__icon" data-share-close aria-label="Close editor">×</button>
-        <div class="pbb-share-studio__top-title">Edit photo</div>
-        <button type="button" class="pbb-share-studio__done" data-share-done>Use photo</button>
+        <div class="pbb-share-studio__top-group"><button type="button" class="pbb-share-studio__icon" data-share-close aria-label="Close editor">×</button><button type="button" class="pbb-share-studio__icon" data-share-undo aria-label="Undo changes">↶</button></div>
+        <div class="pbb-share-studio__top-group"><button type="button" class="pbb-share-studio__icon" data-share-download aria-label="Save image">↓</button><button type="button" class="pbb-share-studio__done" data-share-done>Next</button></div>
       </div>
       <div class="pbb-share-studio__stage" data-share-stage>
         <img class="pbb-share-studio__photo" data-share-image alt="Your share preview">
@@ -155,7 +154,12 @@
         <div class="pbb-share-studio__loading" data-share-loading hidden>Updating preview...</div>
       </div>
       <div class="pbb-share-studio__tools">
-        <button type="button" class="pbb-share-studio__text-toggle" data-share-text-toggle aria-expanded="false" aria-controls="pbb-share-text-panel" aria-label="Add text">Aa</button>
+        <aside class="pbb-share-studio__tool-rail" aria-label="Photo editing tools">
+          <button type="button" class="pbb-share-studio__tool" data-share-text-toggle aria-expanded="false" aria-controls="pbb-share-text-panel"><strong>Aa</strong><span>Text</span></button>
+          <button type="button" class="pbb-share-studio__tool" data-share-toggle-pb aria-pressed="true"><strong>★</strong><span>PB</span></button>
+          <button type="button" class="pbb-share-studio__tool" data-share-toggle-stats aria-pressed="true"><strong>▥</strong><span>Stats</span></button>
+          <button type="button" class="pbb-share-studio__tool" data-share-cycle-layout><strong>▤</strong><span>Layout</span></button>
+        </aside>
         <div id="pbb-share-text-panel" class="pbb-share-studio__text-panel" data-share-text-panel hidden>
           <div class="pbb-share-studio__panel-head"><label class="pbb-share-studio__label" for="pbb-share-caption-input">Add text</label><button type="button" class="pbb-share-studio__panel-done" data-share-text-done>Done</button></div>
           <textarea id="pbb-share-caption-input" class="pbb-share-studio__input" data-share-input rows="1" maxlength="120" placeholder="Type your caption..."></textarea>
@@ -168,9 +172,17 @@
             <button type="button" class="pbb-share-studio__chip" data-caption-position="bottom">Bottom</button>
           </div>
         </div>
-        <div class="pbb-share-studio__actions" data-share-actions>
-          <button type="button" class="pbb-share-studio__action" data-share-feed>Share to Feed</button>
-          <button type="button" class="pbb-share-studio__action pbb-share-studio__action--ig" data-share-instagram>IG Story</button>
+        <div class="pbb-share-studio__bottom">
+          <div class="pbb-share-studio__style-row" aria-label="Share design style">
+            <button type="button" class="pbb-share-studio__style" data-share-preset="gold" aria-pressed="true">Gold</button>
+            <button type="button" class="pbb-share-studio__style" data-share-preset="cream" aria-pressed="false">Cream</button>
+            <button type="button" class="pbb-share-studio__style" data-share-preset="minimal" aria-pressed="false">Minimal</button>
+          </div>
+          <div class="pbb-share-studio__actions" data-share-actions>
+            <button type="button" class="pbb-share-studio__action" data-share-feed>Community</button>
+            <button type="button" class="pbb-share-studio__action" data-share-instagram>Story</button>
+            <button type="button" class="pbb-share-studio__action pbb-share-studio__action--share" data-share-native>Share</button>
+          </div>
         </div>
       </div>`;
     document.body.appendChild(el);
@@ -184,7 +196,12 @@
       caption: active.caption || '',
       captionStyle: active.captionStyle || 'plain',
       captionX: active.captionX == null ? 0.5 : active.captionX,
-      captionY: active.captionY == null ? 0.22 : active.captionY
+      captionY: active.captionY == null ? 0.22 : active.captionY,
+      overlayStyle: active.overlayStyle || 'gold',
+      textStyle: active.textStyle || 'bold',
+      editorPreset: active.editorPreset || 'gold',
+      showPB: active.showPB !== false,
+      showStats: active.showStats !== false
     };
   }
 
@@ -207,6 +224,25 @@
     saveCustomization();
   }
 
+  function syncEditorControls(el) {
+    if (!active) return;
+    el.querySelectorAll('[data-share-preset]').forEach(function (button) {
+      button.setAttribute('aria-pressed', button.dataset.sharePreset === active.editorPreset ? 'true' : 'false');
+    });
+    var pbButton = el.querySelector('[data-share-toggle-pb]');
+    var statsButton = el.querySelector('[data-share-toggle-stats]');
+    var layoutButton = el.querySelector('[data-share-cycle-layout]');
+    var styleRow = el.querySelector('.pbb-share-studio__style-row');
+    var workoutTools = active.context === 'workout';
+    var designedCard = !active.rawPhoto && !!active.cardPayload;
+    pbButton.style.display = workoutTools ? '' : 'none';
+    statsButton.style.display = workoutTools ? '' : 'none';
+    layoutButton.style.display = designedCard ? '' : 'none';
+    styleRow.style.display = designedCard ? 'flex' : 'none';
+    pbButton.setAttribute('aria-pressed', active.showPB === false ? 'false' : 'true');
+    statsButton.setAttribute('aria-pressed', active.showStats === false ? 'false' : 'true');
+  }
+
   async function renderPreview(el) {
     if (!active) return;
     var sequence = ++renderSequence;
@@ -215,15 +251,31 @@
     try {
       var output = active.photoDataUrl;
       if (!active.rawPhoto && active.cardPayload && typeof window.renderBalanceShareCardImage === 'function') {
-        output = await window.renderBalanceShareCardImage(active.cardPayload, {
+        var previewPayload = Object.assign({}, active.cardPayload);
+        if (active.showPB === false) {
+          previewPayload.pbs = null;
+          previewPayload.improvement = null;
+          previewPayload.exercises = (previewPayload.exercises || []).map(function (exercise) {
+            return Object.assign({}, exercise, {
+              has_pb: false,
+              set_details: (exercise.set_details || []).map(function (set) { return Object.assign({}, set, { is_pb: false }); })
+            });
+          });
+        }
+        previewPayload.studio_hide_stats = active.showStats === false;
+        output = await window.renderBalanceShareCardImage(previewPayload, {
           target: active.previewTarget || 'story',
           photoDataUrl: active.photoDataUrl,
-          overlayStyle: active.overlayStyle,
-          textStyle: active.textStyle,
+          overlayStyle: active.overlayStyle || 'gold',
+          textStyle: active.textStyle || 'bold',
           suppressCustomCaption: true
         });
       }
-      if (sequence === renderSequence && active) el.querySelector('[data-share-image]').src = output;
+      if (sequence === renderSequence && active) {
+        active.renderedDataUrl = output;
+        el.querySelector('[data-share-image]').src = output;
+      }
+      return output;
     } catch (error) {
       console.warn('Could not update private share studio preview:', error);
       if (active) el.querySelector('[data-share-image]').src = active.photoDataUrl;
@@ -300,6 +352,44 @@
     return { dataUrl: dataUrl, file: new File([blob], 'balance-share-' + Date.now() + '.jpg', { type: 'image/jpeg' }) };
   }
 
+  async function currentRenderedFile(el) {
+    if (!active) throw new Error('Share editor is closed');
+    var dataUrl = active.renderedDataUrl || await renderPreview(el) || active.photoDataUrl;
+    var response = await fetch(dataUrl);
+    var blob = await response.blob();
+    return { dataUrl: dataUrl, file: new File([blob], 'balance-share-' + Date.now() + '.jpg', { type: 'image/jpeg' }) };
+  }
+
+  async function downloadCurrentImage(el) {
+    try {
+      var output = await currentRenderedFile(el);
+      var link = document.createElement('a');
+      link.href = output.dataUrl;
+      link.download = output.file.name;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error('Could not save share image:', error);
+      if (typeof window.showToast === 'function') window.showToast('Could not save that image. Please try again.', 'error');
+    }
+  }
+
+  async function shareCurrentImage(el) {
+    try {
+      var output = await currentRenderedFile(el);
+      if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [output.file] }))) {
+        await navigator.share({ files: [output.file], title: 'Balance' });
+        return;
+      }
+      await downloadCurrentImage(el);
+    } catch (error) {
+      if (error && error.name === 'AbortError') return;
+      console.error('Could not open native share:', error);
+      if (typeof window.showToast === 'function') window.showToast('Could not open sharing. Please try again.', 'error');
+    }
+  }
+
   async function runAction(kind, el) {
     if (!active) return;
     var fn = kind === 'feed' ? active.onFeed : kind === 'instagram' ? active.onInstagram : active.onDone;
@@ -311,6 +401,16 @@
     try {
       saveCustomization();
       var state = active;
+      if (state.cardPayload) {
+        state.cardPayload.studio_hide_pb = state.showPB === false;
+        state.cardPayload.studio_hide_stats = state.showStats === false;
+      }
+      if (typeof window.selectBalanceShareOverlayStyle === 'function') {
+        window.selectBalanceShareOverlayStyle(state.context, state.overlayStyle || 'gold');
+      }
+      if (typeof window.selectBalanceShareTextStyle === 'function') {
+        window.selectBalanceShareTextStyle(state.context, state.textStyle || 'bold');
+      }
       var rawOutput = state.rawPhoto ? await makeRawOutput(state) : null;
       window.dispatchEvent(new CustomEvent('pbb:share-studio-action', { detail: { context: state.context, action: kind } }));
       if (typeof window._crumb === 'function') window._crumb('private_share_studio_' + state.context + '_' + kind);
@@ -341,9 +441,22 @@
     }
 
     el.querySelector('[data-share-close]').addEventListener('click', function () { close({ action: 'closed' }); });
-    el.querySelector('[data-share-done]').addEventListener('click', function () { runAction('done', el); });
+    el.querySelector('[data-share-done]').addEventListener('click', function () {
+      if (active && typeof active.onDone === 'function') runAction('done', el);
+      else el.querySelector('[data-share-native]').focus();
+    });
+    el.querySelector('[data-share-undo]').addEventListener('click', function () {
+      if (!active || !active.initial) return;
+      Object.assign(active, active.initial);
+      el.querySelector('[data-share-input]').value = active.caption || '';
+      renderCaptionOverlay(el);
+      syncEditorControls(el);
+      schedulePreview(el);
+    });
+    el.querySelector('[data-share-download]').addEventListener('click', function () { downloadCurrentImage(el); });
     el.querySelector('[data-share-feed]').addEventListener('click', function () { runAction('feed', el); });
     el.querySelector('[data-share-instagram]').addEventListener('click', function () { runAction('instagram', el); });
+    el.querySelector('[data-share-native]').addEventListener('click', function () { shareCurrentImage(el); });
     el.querySelector('[data-share-text-toggle]').addEventListener('click', function () {
       var panel = el.querySelector('[data-share-text-panel]');
       setTextPanelOpen(panel.hidden, panel.hidden);
@@ -351,6 +464,34 @@
     el.querySelector('[data-share-text-done]').addEventListener('click', function () {
       setTextPanelOpen(false, false);
       el.querySelector('[data-share-input]').blur();
+    });
+    el.querySelector('[data-share-toggle-pb]').addEventListener('click', function () {
+      if (!active) return;
+      active.showPB = active.showPB === false;
+      syncEditorControls(el);
+      schedulePreview(el);
+    });
+    el.querySelector('[data-share-toggle-stats]').addEventListener('click', function () {
+      if (!active) return;
+      active.showStats = active.showStats === false;
+      syncEditorControls(el);
+      schedulePreview(el);
+    });
+    el.querySelector('[data-share-cycle-layout]').addEventListener('click', function () {
+      if (!active) return;
+      var layouts = active.context === 'workout' ? ['bold', 'scorecard', 'simple', 'full'] : ['bold', 'scorecard', 'simple'];
+      var index = Math.max(0, layouts.indexOf(active.textStyle));
+      active.textStyle = layouts[(index + 1) % layouts.length];
+      schedulePreview(el);
+    });
+    el.querySelectorAll('[data-share-preset]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        if (!active) return;
+        active.editorPreset = button.dataset.sharePreset;
+        active.overlayStyle = active.editorPreset === 'gold' ? 'gold' : active.editorPreset === 'minimal' ? 'midnight' : 'classic';
+        syncEditorControls(el);
+        schedulePreview(el);
+      });
     });
     el.querySelector('[data-share-stage]').addEventListener('click', function (event) {
       if (event.target.matches('[data-share-stage],[data-share-image]')) setTextPanelOpen(false, false);
@@ -413,8 +554,11 @@
         cardPayload: options.cardPayload || null,
         rawPhoto: !!options.rawPhoto,
         previewTarget: options.previewTarget || 'story',
-        overlayStyle: options.overlayStyle,
-        textStyle: options.textStyle,
+        overlayStyle: previous.overlayStyle || options.overlayStyle || 'gold',
+        textStyle: previous.textStyle || options.textStyle || 'bold',
+        editorPreset: previous.editorPreset || 'gold',
+        showPB: previous.showPB !== false,
+        showStats: previous.showStats !== false,
         caption: options.caption != null ? options.caption : (previous.caption || ''),
         captionStyle: previous.captionStyle || 'plain',
         captionX: previous.captionX == null ? 0.5 : previous.captionX,
@@ -424,17 +568,29 @@
         onDone: options.onDone,
         resolve: resolve
       };
+      active.initial = {
+        caption: active.caption,
+        captionStyle: active.captionStyle,
+        captionX: active.captionX,
+        captionY: active.captionY,
+        overlayStyle: active.overlayStyle,
+        textStyle: active.textStyle,
+        editorPreset: active.editorPreset,
+        showPB: active.showPB,
+        showStats: active.showStats
+      };
       el.querySelector('[data-share-input]').value = active.caption;
       el.querySelector('[data-share-text-panel]').hidden = true;
       el.querySelector('[data-share-text-toggle]').classList.remove('is-active');
       el.querySelector('[data-share-text-toggle]').setAttribute('aria-expanded', 'false');
       el.querySelector('[data-share-feed]').style.display = typeof active.onFeed === 'function' ? '' : 'none';
       el.querySelector('[data-share-instagram]').style.display = typeof active.onInstagram === 'function' ? '' : 'none';
-      el.querySelector('[data-share-done]').style.display = typeof active.onDone === 'function' ? '' : 'none';
-      el.querySelector('[data-share-actions]').style.display = (active.onFeed || active.onInstagram) ? 'grid' : 'none';
+      el.querySelector('[data-share-done]').hidden = false;
+      el.querySelector('[data-share-actions]').style.display = 'grid';
       el.classList.add('is-open');
       document.body.style.overflow = 'hidden';
       renderCaptionOverlay(el);
+      syncEditorControls(el);
       renderPreview(el);
       if (typeof window.pushNavigationState === 'function') {
         try { window.pushNavigationState('private-share-studio', function () { close({ action: 'closed' }); }); } catch (_) {}

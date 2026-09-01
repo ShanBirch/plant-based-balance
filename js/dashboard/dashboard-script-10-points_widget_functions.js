@@ -3938,6 +3938,7 @@ function pbbShareSetFittedFont(ctx, text, maxWidth, startSize, minimumSize, fami
 }
 
 function pbbShareWorkoutMetrics(cardPayload) {
+    if (cardPayload && cardPayload.studio_hide_stats) return [];
     return [
         ['DURATION', cardPayload.duration || '00:00'],
         ['SETS', String(cardPayload.total_sets || 0)],
@@ -4869,6 +4870,17 @@ function pbbShareDrawStudioCaption(ctx, width, height, cardType, options) {
 
 async function renderBalanceShareCardImage(cardPayload, options = {}) {
     if (!cardPayload) throw new Error('Missing share card payload');
+
+    if (cardPayload.studio_hide_pb) {
+        cardPayload = Object.assign({}, cardPayload, {
+            pbs: null,
+            improvement: null,
+            exercises: (cardPayload.exercises || []).map(exercise => Object.assign({}, exercise, {
+                has_pb: false,
+                set_details: (exercise.set_details || []).map(set => Object.assign({}, set, { is_pb: false }))
+            }))
+        });
+    }
 
     const target = options.target === 'feed' ? 'feed' : 'story';
     const cardType = cardPayload.card_type || 'workout';

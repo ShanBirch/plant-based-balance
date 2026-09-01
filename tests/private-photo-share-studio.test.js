@@ -29,8 +29,16 @@ test('studio is full-screen, safe-area aware, and interactive', () => {
   assert.match(studio, /data-share-text-toggle/);
   assert.match(studio, /data-share-text-panel/);
   assert.match(studio, /data-caption-style="gold"/);
-  assert.match(studio, /object-fit:cover/);
+  assert.match(studio, /object-fit:contain/);
   assert.doesNotMatch(studio, /max-height:42dvh;overflow:auto;padding:12px 14px/);
+  assert.match(studio, /data-share-toggle-pb/);
+  assert.match(studio, /data-share-toggle-stats/);
+  assert.match(studio, /data-share-cycle-layout/);
+  assert.match(studio, /data-share-preset="gold"/);
+  assert.match(studio, /data-share-preset="cream"/);
+  assert.match(studio, /data-share-preset="minimal"/);
+  assert.match(studio, /data-share-download/);
+  assert.match(studio, /data-share-native/);
   assert.match(studio, /pointermove/);
   assert.match(studio, /choosePhoto/);
   assert.match(studio, /Take a photo/);
@@ -52,6 +60,12 @@ test('studio connects to every requested photo-sharing surface', () => {
 test('custom text is burned into designed share images', () => {
   assert.match(points, /function pbbShareDrawStudioCaption/);
   assert.ok((points.match(/pbbShareDrawStudioCaption\(ctx, width, height, cardType, options\)/g) || []).length >= 5);
+  assert.match(studio, /cardPayload\.studio_hide_pb = state\.showPB === false/);
+  assert.match(studio, /cardPayload\.studio_hide_stats = state\.showStats === false/);
+  assert.match(points, /if \(cardPayload && cardPayload\.studio_hide_stats\) return \[\]/);
+  assert.match(points, /if \(cardPayload\.studio_hide_pb\)/);
+  assert.match(studio, /selectBalanceShareOverlayStyle/);
+  assert.match(studio, /selectBalanceShareTextStyle/);
 });
 
 test('Shannon receives the progress-first workout completed page', () => {
@@ -67,9 +81,10 @@ test('Shannon receives the progress-first workout completed page', () => {
 });
 
 test('private reveal, tour, and cache-busted modules ship together', () => {
-  assert.match(dashboard, /private-photo-share-studio-shannon-v1/);
+  assert.match(dashboard, /private-photo-share-studio-shannon-v2/);
   assert.match(dashboard, /BalancePrivateShareStudio\.isEnabled\(\)/);
-  assert.match(dashboard, /pbb-private-share-studio\.js\?v=5-fullscreen-editor-redesign/);
+  assert.match(dashboard, /pbb-private-share-studio\.js\?v=6-approved-editor-layout/);
+  assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=55-approved-share-editor/);
   assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=[^'\"]+/);
   assert.match(dashboard, /dashboard-script-11-calorie_tracker_functions\.js\?v=39-private-share-studio/);
 });
