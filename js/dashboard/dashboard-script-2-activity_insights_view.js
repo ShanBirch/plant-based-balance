@@ -1562,20 +1562,23 @@
 
         const fmt = hrs => Math.floor(hrs) + 'h ' + Math.round((hrs % 1) * 60) + 'm';
         const avgTotal = totalVals.reduce((s, v) => s + v, 0) / totalVals.length;
-        let statsGrid;
+        const avgDeep = hasStages ? deepVals.reduce((s, v) => s + v, 0) / deepVals.length : 0;
+        const avgRem = hasStages ? remVals.reduce((s, v) => s + v, 0) / remVals.length : 0;
+        const lastNight = chartData[chartData.length - 1];
+        const stageValue = hrs => hrs > 0 ? fmt(hrs) : '—';
+        const statsGrid = '<section class="insights-sleep-last-night" aria-label="Last night sleep summary">'
+            + '<div style="font-size:0.68rem;font-weight:850;letter-spacing:0.08em;text-transform:uppercase;color:var(--pbb-insights-gold);margin:16px 0 8px;">Last night · ' + lastNight.dateLabel + '</div>'
+            + '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;">'
+            + '<div style="background:var(--pbb-insights-soft-bg);padding:12px 6px;border-radius:12px;text-align:center;border:1px solid var(--pbb-insights-border);"><div style="font-size:1.02rem;font-weight:850;color:var(--pbb-sleep-total);">' + fmt(lastNight.totalHrs) + '</div><div style="font-size:0.58rem;color:var(--text-muted);margin-top:4px;font-weight:750;letter-spacing:0.04em;">TOTAL</div></div>'
+            + '<div style="background:var(--pbb-insights-soft-bg);padding:12px 6px;border-radius:12px;text-align:center;border:1px solid var(--pbb-insights-border);"><div style="font-size:1.02rem;font-weight:850;color:var(--pbb-sleep-deep);">' + stageValue(lastNight.deepHrs) + '</div><div style="font-size:0.58rem;color:var(--text-muted);margin-top:4px;font-weight:750;letter-spacing:0.04em;">DEEP</div></div>'
+            + '<div style="background:var(--pbb-insights-soft-bg);padding:12px 6px;border-radius:12px;text-align:center;border:1px solid var(--pbb-insights-border);"><div style="font-size:1.02rem;font-weight:850;color:var(--pbb-sleep-rem);">' + stageValue(lastNight.remHrs) + '</div><div style="font-size:0.58rem;color:var(--text-muted);margin-top:4px;font-weight:750;letter-spacing:0.04em;">REM</div></div>'
+            + '</div></section>';
+
+        let averages;
         if (hasStages) {
-            const avgDeep = deepVals.reduce((s, v) => s + v, 0) / deepVals.length;
-            const avgRem  = remVals.reduce((s, v) => s + v, 0) / remVals.length;
-            statsGrid = '<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 16px;">'
-                + '<div style="background: var(--pbb-insights-soft-bg); padding: 12px 8px; border-radius: 12px; text-align: center;"><div style="font-size: 1.05rem; font-weight: 800; color: var(--pbb-sleep-total);">' + fmt(avgTotal) + '</div><div style="font-size: 0.62rem; color: var(--text-muted); margin-top: 3px; font-weight: 700; letter-spacing: 0.5px;">AVG TOTAL</div></div>'
-                + '<div style="background: var(--pbb-insights-soft-bg); padding: 12px 8px; border-radius: 12px; text-align: center;"><div style="font-size: 1.05rem; font-weight: 800; color: var(--pbb-sleep-deep);">' + fmt(avgDeep) + '</div><div style="font-size: 0.62rem; color: var(--text-muted); margin-top: 3px; font-weight: 700; letter-spacing: 0.5px;">AVG DEEP</div></div>'
-                + '<div style="background: var(--pbb-insights-soft-bg); padding: 12px 8px; border-radius: 12px; text-align: center;"><div style="font-size: 1.05rem; font-weight: 800; color: var(--pbb-sleep-rem);">' + fmt(avgRem) + '</div><div style="font-size: 0.62rem; color: var(--text-muted); margin-top: 3px; font-weight: 700; letter-spacing: 0.5px;">AVG REM</div></div>'
-                + '</div>';
+            averages = '<div class="insights-sleep-period-averages" style="margin-top:10px;padding:10px 12px;border-radius:11px;background:var(--pbb-insights-gold-soft);color:var(--text-muted);font-size:0.68rem;line-height:1.5;">Period averages · <strong style="color:var(--pbb-sleep-total);">Total ' + fmt(avgTotal) + '</strong> · <strong style="color:var(--pbb-sleep-deep);">Deep ' + fmt(avgDeep) + '</strong> · <strong style="color:var(--pbb-sleep-rem);">REM ' + fmt(avgRem) + '</strong></div>';
         } else {
-            statsGrid = '<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 16px;">'
-                + '<div style="background: var(--pbb-insights-soft-bg); padding: 12px 8px; border-radius: 12px; text-align: center;"><div style="font-size: 1.05rem; font-weight: 800; color: var(--pbb-sleep-total);">' + fmt(avgTotal) + '</div><div style="font-size: 0.62rem; color: var(--text-muted); margin-top: 3px; font-weight: 700; letter-spacing: 0.5px;">AVG (THIS PERIOD)</div></div>'
-                + '<div style="background: var(--pbb-insights-soft-bg); padding: 12px 8px; border-radius: 12px; text-align: center;"><div style="font-size: 1.05rem; font-weight: 800; color: var(--pbb-sleep-total);">' + avgHrs30 + 'h ' + avgMinsRem30 + 'm</div><div style="font-size: 0.62rem; color: var(--text-muted); margin-top: 3px; font-weight: 700; letter-spacing: 0.5px;">30-DAY AVG</div></div>'
-                + '</div>';
+            averages = '<div class="insights-sleep-period-averages" style="margin-top:10px;padding:10px 12px;border-radius:11px;background:var(--pbb-insights-gold-soft);color:var(--text-muted);font-size:0.68rem;line-height:1.5;">Period average · <strong style="color:var(--pbb-sleep-total);">' + fmt(avgTotal) + '</strong> · 30-day average <strong style="color:var(--pbb-sleep-total);">' + avgHrs30 + 'h ' + avgMinsRem30 + 'm</strong></div>';
         }
 
         const header = '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">'
@@ -1595,7 +1598,7 @@
             + '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>'
             + '<ol class="insights-sleep-history-list" hidden>' + historyRows + '</ol></section>';
 
-        container.innerHTML = header + legend + svg + statsGrid + history;
+        container.innerHTML = header + legend + svg + statsGrid + averages + history;
     }
 
     function toggleInsightsSleepHistory(button) {

@@ -33,3 +33,11 @@ test('Sleep history has visible collapsed, expanded and focus states', () => {
   assert.match(css, /\.insights-sleep-history-toggle:focus-visible/);
   assert.match(css, /\.insights-sleep-history-list\[hidden\]\s*\{[^}]*display:\s*none/s);
 });
+
+test('last night Total, Deep and REM sit directly beneath the graph', () => {
+  assert.match(insights, /class="insights-sleep-last-night"/);
+  assert.match(insights, /Last night ·/);
+  assert.match(insights, /lastNight\.totalHrs[\s\S]*lastNight\.deepHrs[\s\S]*lastNight\.remHrs/);
+  assert.match(insights, /TOTAL[\s\S]*DEEP[\s\S]*REM/);
+  assert.match(insights, /header \+ legend \+ svg \+ statsGrid \+ averages \+ history/);
+});
