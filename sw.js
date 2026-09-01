@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v448-completion-aware-course'; // v448: Home only shows an exact, incomplete account course item and opens it directly
+const CACHE_NAME = 'pbb-app-v449-meal-primary-tabs'; // v449: Calorie Tracker and Your Meal Plan use a full-width 50/50 tab bar
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -17,7 +17,7 @@ const ASSETS = [
   './workout_library_extended.js',
   './js/dashboard/script_part_2.js?v=15-meal-reminders-retired',
   './js/dashboard/dashboard-script-3-1_get_user_data.js?v=60-manual-feature-reveals',
-  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=226-profile-photo-persistence&video_health=2',
+  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=227-meal-primary-tabs&video_health=2',
   './js/dashboard/pbb-settings-navigation.js?v=1-settings-navigation',
   './js/dashboard/pbb-meta-preview-soundtrack.js?v=3-coach-video-ducking',
   './js/dashboard/pbb-app-telemetry.js?v=1',

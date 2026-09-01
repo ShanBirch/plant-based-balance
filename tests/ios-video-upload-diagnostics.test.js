@@ -73,7 +73,7 @@ assert.match(supabase, /custom_exercise_direct_upload_network_error/);
 assert.match(supabase, /custom_exercise_direct_upload_success/);
 assert.match(dashboard, /onclick="openCustomExerciseVideoGallery\(event\)"/);
 assert.match(dashboard, /lib\/stories\.js\?v=76-feed-composer-profile-photo&video_health=2/);
-assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=226-profile-photo-persistence&video_health=2/);
+assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=227-meal-primary-tabs&video_health=2/);
 assert.match(dashboard, /pbb-deferred-formcheck\.js\?v=58-ios-exercise-video-upload&video_health=2/);
 
 console.log('iPhone video upload diagnostics contract ok');

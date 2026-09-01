@@ -112,8 +112,8 @@ test('changed onboarding assets are cache-busted', () => {
   assert.match(dashboard, /meta-ad-trial\.js\?v=17-goal-alignment/);
   assert.match(dashboard, /pbb-deferred-weeklygoals\.js\?v=35-balance-theme/);
   assert.match(dashboard, /pbb-social-journey\.js\?v=45-exact-course-label/);
-  assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=226-profile-photo-persistence/);
+  assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=227-meal-primary-tabs/);
   assert.match(dashboard, /dashboard-script-6-ai_coach_draft_mode_logic_auth\.js\?v=50-community-games-theme/);
   assert.match(dashboard, /learning-inline\.js\?v=37-completion-aware-course/);
-  assert.match(serviceWorker, /pbb-app-v448-completion-aware-course/);
+  assert.match(serviceWorker, /pbb-app-v449-meal-primary-tabs/);
 });

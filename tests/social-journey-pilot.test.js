@@ -85,7 +85,7 @@ test('Home plan cards stay below the complete FitGotchi stats block', () => {
     assert.match(source, /characterBlockTail\.parentNode\.insertBefore\(card, characterBlockTail\.nextSibling\)/);
     assert.doesNotMatch(source, /levelStrip\.parentNode\.insertBefore\((weeklyGoals|card), levelStrip\.nextSibling\)/);
     assert.match(html, /pbb-social-journey\.js\?v=45-exact-course-label/);
-    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v448-completion-aware-course'/);
+    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v449-meal-primary-tabs'/);
 });
 
 test('Home course actions bypass legacy journey pages and open the exact current lesson', () => {
@@ -132,7 +132,7 @@ test('Home course actions bypass legacy journey pages and open the exact current
     assert.doesNotMatch(premiumCss, /pbb-next-course-pulse|is-next-course-target|is-next-course-lesson-target/);
     assert.match(html, /pbb-next-obvious-steps\.js\?v=46-completion-aware-course/);
     assert.match(html, /pbb-social-journey\.css\?v=27-direct-course-lesson/);
-    assert.match(html, /pbb-premium-overlays\.css\?v=107-direct-course-lesson/);
+    assert.match(html, /pbb-premium-overlays\.css\?v=108-meal-primary-tabs/);
     assert.match(html, /learning-inline\.js\?v=37-completion-aware-course/);
 });
 

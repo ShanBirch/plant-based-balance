@@ -4592,8 +4592,14 @@ function setMealNavActive(id, btn) {
     const navPills = document.getElementById('meals-nav-pills');
     if (!navPills) return;
     const activeBtn = btn || navPills.querySelector(`[onclick*="${id}"]`);
-    navPills.querySelectorAll('.pill-btn').forEach(b => b.classList.remove('active'));
-    if (activeBtn) activeBtn.classList.add('active');
+    navPills.querySelectorAll('.pill-btn').forEach(b => {
+        b.classList.remove('active');
+        if (b.getAttribute('role') === 'tab') b.setAttribute('aria-selected', 'false');
+    });
+    if (activeBtn) {
+        activeBtn.classList.add('active');
+        if (activeBtn.getAttribute('role') === 'tab') activeBtn.setAttribute('aria-selected', 'true');
+    }
 }
 
 function showMealSection(id) {
@@ -4750,11 +4756,16 @@ function initializeMealPlanView() {
     if (navPills && !mealPlanPill) {
         mealPlanPill = document.createElement('button');
         mealPlanPill.id = 'browse-plans-pill';
-        mealPlanPill.className = 'pill-btn';
-        mealPlanPill.innerHTML = '🍽️ Your Meal Plan';
+        mealPlanPill.className = 'pill-btn meals-primary-tab';
+        mealPlanPill.setAttribute('role', 'tab');
+        mealPlanPill.setAttribute('aria-selected', 'false');
+        mealPlanPill.textContent = 'Your Meal Plan';
         // Insert after Calorie Tracker pill
         const calorieTrackerPill = Array.from(navPills.querySelectorAll('.pill-btn')).find(p => p.textContent.toLowerCase().includes('calorie'));
-        if (calorieTrackerPill && calorieTrackerPill.nextSibling) {
+        const primaryTabs = navPills.querySelector('.meals-primary-tabs');
+        if (primaryTabs) {
+            primaryTabs.appendChild(mealPlanPill);
+        } else if (calorieTrackerPill && calorieTrackerPill.nextSibling) {
             navPills.insertBefore(mealPlanPill, calorieTrackerPill.nextSibling);
         } else {
             navPills.appendChild(mealPlanPill);
@@ -4770,6 +4781,7 @@ function initializeMealPlanView() {
     }
 
     if (!access.hasAccess) {
+        if (navPills) navPills.classList.add('meals-nav-simple');
         // User needs a plan - hide Today's Priority section on dashboard
         if (todaysPrioritySection) {
             todaysPrioritySection.style.display = 'none';
@@ -4798,6 +4810,7 @@ function initializeMealPlanView() {
             });
         }
     } else {
+        if (navPills) navPills.classList.remove('meals-nav-simple');
         // User has meal plan access - show full navigation
         if (navPills) {
             const allPills = navPills.querySelectorAll('.pill-btn');
@@ -4824,6 +4837,12 @@ function initializeMealPlanView() {
         if (todaysPrioritySection) {
             todaysPrioritySection.style.display = '';
         }
+    }
+
+    if (navPills) {
+        navPills.querySelectorAll('.meals-primary-tab').forEach(tab => {
+            tab.setAttribute('aria-selected', tab.classList.contains('active') ? 'true' : 'false');
+        });
     }
 
     // Always try to load existing AI meal plan
