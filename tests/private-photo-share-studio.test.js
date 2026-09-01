@@ -56,6 +56,8 @@ test('Shannon receives the progress-first workout completed page', () => {
   assert.match(studio, /Today’s work/);
   assert.match(studio, /Share a photo/);
   assert.match(studio, /pbb-private-complete-active/);
+  assert.match(studio, /bottomNav\.style\.display = 'none'/);
+  assert.match(studio, /durationUnit/);
   assert.match(workoutRuntime, /BalancePrivateShareStudio\.renderWorkoutCompletePage/);
   assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=229-private-workout-complete/);
 });
@@ -63,7 +65,7 @@ test('Shannon receives the progress-first workout completed page', () => {
 test('private reveal, tour, and cache-busted modules ship together', () => {
   assert.match(dashboard, /private-photo-share-studio-shannon-v1/);
   assert.match(dashboard, /BalancePrivateShareStudio\.isEnabled\(\)/);
-  assert.match(dashboard, /pbb-private-share-studio\.js\?v=3-workout-complete/);
+  assert.match(dashboard, /pbb-private-share-studio\.js\?v=4-compact-workout-complete/);
   assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=[^'\"]+/);
   assert.match(dashboard, /dashboard-script-11-calorie_tracker_functions\.js\?v=39-private-share-studio/);
 });
