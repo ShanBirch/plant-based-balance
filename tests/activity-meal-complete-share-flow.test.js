@@ -33,6 +33,11 @@ test('finished editor image is used for both destinations', () => {
   assert.match(studio, /async function captureExactEditorStage\(el\)/);
   assert.match(studio, /output = await captureExactEditorStage\(el\)/);
   assert.match(studio, /html2canvas@1\.4\.1/);
+  assert.match(studio, /canvas\.width = 1080; canvas\.height = 1920/);
+  assert.match(studio, /containScale = Math\.min/);
+  assert.match(studio, /function scheduleInteractiveRender\(el\)/);
+  assert.match(studio, /requestAnimationFrame\(function \(\)/);
+  assert.match(studio, /active\.gestureActive/);
 });
 
 test('sharing keeps the editor open until Done', () => {

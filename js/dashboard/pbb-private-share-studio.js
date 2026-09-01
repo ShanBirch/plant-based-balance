@@ -5,6 +5,7 @@
   var active = null;
   var renderTimer = null;
   var renderSequence = 0;
+  var interactionFrame = 0;
   var FILTERS = [
     { id: 'original', label: 'Original', css: 'none' },
     { id: 'warm', label: 'Warm', css: 'saturate(1.08) contrast(1.04) sepia(.12)' },
@@ -288,6 +289,7 @@
       .pbb-share-studio__tool small{display:block;max-width:58px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.48rem;font-weight:800;opacity:.76}.pbb-share-studio__tool i{display:block;width:18px;height:4px;border-radius:99px;background:#d8b25e;box-shadow:0 0 0 1px rgba(255,255,255,.35)}
       .pbb-share-studio__layer{position:absolute;z-index:6;touch-action:none;user-select:none;cursor:grab;transform-origin:center}.pbb-share-studio__layer.is-selected{outline:1px dashed rgba(255,255,255,.8);outline-offset:8px}.pbb-share-studio__workout{left:7%;top:58%;width:78%;color:#fff;text-shadow:0 2px 14px rgba(0,0,0,.9)}.pbb-share-studio__workout-kicker{font-size:.62rem;font-weight:950;letter-spacing:.08em;color:var(--gold);-webkit-text-fill-color:var(--gold)}.pbb-share-studio__workout-title{margin:8px 0 14px;font-size:clamp(1.8rem,10vw,3.4rem);line-height:.9;font-weight:950;letter-spacing:-.05em;text-transform:uppercase}.pbb-share-studio__metrics{display:grid;grid-template-columns:repeat(3,1fr);border-top:2px solid var(--gold);padding-top:12px}.pbb-share-studio__metric{padding:0 10px;border-left:1px solid rgba(255,255,255,.48)}.pbb-share-studio__metric:first-child{padding-left:0;border-left:0}.pbb-share-studio__metric strong{display:block;font-size:clamp(.8rem,4.7vw,1.35rem);white-space:nowrap}.pbb-share-studio__metric small{font-size:.48rem;font-weight:900;letter-spacing:.05em;opacity:.82}.pbb-share-studio__caption{left:50%;top:26%;max-width:78%;padding:7px 11px;border-radius:9px;color:#fff;-webkit-text-fill-color:#fff;text-align:center;font-size:clamp(1.25rem,6vw,2.3rem);line-height:1.06;font-weight:900;white-space:pre-wrap;overflow-wrap:anywhere;text-shadow:0 2px 12px rgba(0,0,0,.9)}.pbb-share-studio__caption:empty{display:none}.pbb-share-studio__caption[data-style=label]{background:rgba(17,17,17,.86);text-shadow:none}.pbb-share-studio__caption[data-style=gold]{background:var(--gold);color:var(--ink);-webkit-text-fill-color:var(--ink);text-shadow:none}.pbb-share-studio__sticker{font-size:clamp(2rem,11vw,4.5rem);line-height:1;filter:drop-shadow(0 3px 8px rgba(0,0,0,.38))}.pbb-share-studio__delete-sticker{position:absolute;right:-19px;top:-19px;width:27px;height:27px;border:1px solid #fff;border-radius:50%;background:#111;color:#fff;-webkit-text-fill-color:#fff;display:none;place-items:center;font-size:.85rem}.pbb-share-studio__sticker.is-selected .pbb-share-studio__delete-sticker{display:grid}
       .pbb-share-studio__stage.is-exporting .pbb-share-studio__layer.is-selected{outline:none}.pbb-share-studio__stage.is-exporting .pbb-share-studio__delete-sticker{display:none!important}
+      .pbb-share-studio__stage{contain:layout paint}.pbb-share-studio__photo{backface-visibility:hidden}.pbb-share-studio__layer{will-change:transform,left,top;backface-visibility:hidden}
       .pbb-share-studio__workout[data-layout=scorecard]{padding:18px;border:1px solid var(--gold);border-radius:22px;background:rgba(8,8,8,.72);text-shadow:none}.pbb-share-studio__workout[data-layout=scorecard] .pbb-share-studio__workout-title{font-size:clamp(1.55rem,8vw,2.8rem)}.pbb-share-studio__workout[data-layout=simple] .pbb-share-studio__metrics{display:none}.pbb-share-studio__workout[data-layout=simple] .pbb-share-studio__workout-title{font-size:clamp(2.1rem,12vw,4rem)}.pbb-share-studio__workout[data-layout=receipt]{padding:16px 18px;background:rgba(8,8,8,.76);color:#fff;-webkit-text-fill-color:#fff;text-shadow:none;border:1px solid rgba(216,178,94,.72);border-radius:18px;box-shadow:0 10px 35px rgba(0,0,0,.3)}.pbb-share-studio__workout[data-layout=receipt] .pbb-share-studio__workout-title{font-size:clamp(1.45rem,7.6vw,2.5rem)}.pbb-share-studio__lifts{display:none;margin-top:10px}.pbb-share-studio__workout[data-layout=receipt] .pbb-share-studio__lifts{display:grid;gap:5px}.pbb-share-studio__lifts div{display:flex;justify-content:space-between;gap:10px;padding:6px 8px;border-radius:8px;background:rgba(255,255,255,.1);font-size:.55rem}.pbb-share-studio__lifts strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pbb-share-studio__lifts span{flex:0 0 auto;color:var(--gold);-webkit-text-fill-color:var(--gold)}
       .pbb-share-studio__workout{--workout-accent:#d8b25e;--workout-surface:rgba(8,8,8,.78);--workout-text:#fff;color:var(--workout-text);-webkit-text-fill-color:var(--workout-text)}.pbb-share-studio__workout-kicker{color:var(--workout-accent);-webkit-text-fill-color:var(--workout-accent)}.pbb-share-studio__metrics{border-top-color:var(--workout-accent)}.pbb-share-studio__lifts span{color:var(--workout-accent);-webkit-text-fill-color:var(--workout-accent)}.pbb-share-studio__workout[data-layout=scorecard],.pbb-share-studio__workout[data-layout=outline],.pbb-share-studio__workout[data-layout=receipt],.pbb-share-studio__workout[data-layout=full]{border-color:var(--workout-accent)}.pbb-share-studio__workout[data-layout=scorecard]{background:var(--workout-surface)}.pbb-share-studio__workout[data-layout=stamp]{width:62%;padding:18px;text-align:center;border:3px solid var(--workout-accent);border-radius:50%;background:rgba(8,8,8,.32)}.pbb-share-studio__workout[data-layout=stamp] .pbb-share-studio__workout-title{font-size:clamp(1.4rem,8vw,2.8rem)}.pbb-share-studio__workout[data-layout=stamp] .pbb-share-studio__metrics{display:none}.pbb-share-studio__workout[data-layout=split]{display:grid;grid-template-columns:1.12fr .88fr;gap:14px;align-items:end;padding-left:15px;border-left:6px solid var(--workout-accent)}.pbb-share-studio__workout[data-layout=split] .pbb-share-studio__metrics{grid-column:2;grid-row:1/3;display:flex;flex-direction:column;border-top:0;padding:0}.pbb-share-studio__workout[data-layout=split] .pbb-share-studio__metric{padding:5px 0;border-left:0;border-top:1px solid rgba(255,255,255,.34)}.pbb-share-studio__workout[data-layout=compact]{width:86%;display:flex;align-items:center;gap:12px;padding:12px 15px;border-radius:999px;background:var(--workout-surface);text-shadow:none}.pbb-share-studio__workout[data-layout=compact] .pbb-share-studio__workout-kicker{display:none}.pbb-share-studio__workout[data-layout=compact] .pbb-share-studio__workout-title{flex:1;margin:0;font-size:clamp(1rem,5vw,1.8rem)}.pbb-share-studio__workout[data-layout=compact] .pbb-share-studio__metrics{flex:1.4;border-top:0;padding:0}.pbb-share-studio__workout[data-layout=outline]{padding:18px;border:2px solid var(--workout-accent);border-radius:4px;background:transparent}.pbb-share-studio__workout[data-layout=receipt]{background:var(--workout-surface)}.pbb-share-studio__workout[data-layout=editorial]{padding-left:18px;border-left:10px solid var(--workout-accent)}.pbb-share-studio__workout[data-layout=editorial] .pbb-share-studio__workout-title{font-family:Georgia,serif;font-weight:700;letter-spacing:-.03em;text-transform:none}.pbb-share-studio__workout[data-layout=editorial] .pbb-share-studio__metrics{border-top:0;padding-top:3px}.pbb-share-studio__workout[data-layout=full]{padding:16px 18px;border:1px solid var(--workout-accent);border-radius:18px;background:var(--workout-surface);text-shadow:none}.pbb-share-studio__workout[data-layout=full] .pbb-share-studio__lifts{display:grid;gap:5px}
       .pbb-share-studio__drawer{position:absolute;z-index:22;left:10px;right:10px;bottom:calc(74px + env(safe-area-inset-bottom));min-height:104px;max-height:39dvh;padding:13px;border:1px solid rgba(255,255,255,.25);border-radius:20px;background:rgba(10,10,10,.88);box-shadow:0 18px 60px rgba(0,0,0,.4);backdrop-filter:blur(20px);overflow:auto}.pbb-share-studio__drawer[hidden]{display:none}.pbb-share-studio__drawer-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}.pbb-share-studio__drawer-title{font-size:.72rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.pbb-share-studio__drawer-done{min-height:34px;padding:0 13px;border:0;border-radius:999px;background:var(--gold);color:var(--ink);-webkit-text-fill-color:var(--ink);font-weight:900;font-size:.72rem}.pbb-share-studio__scroll-row{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none}.pbb-share-studio__scroll-row::-webkit-scrollbar{display:none}.pbb-share-studio__filter{flex:0 0 62px;border:0;background:transparent;color:#fff;-webkit-text-fill-color:#fff;padding:0;font-size:.66rem;font-weight:800;text-align:center}.pbb-share-studio__filter-preview{width:52px;height:52px;margin:0 auto 5px;border:2px solid transparent;border-radius:50%;background-position:center;background-size:cover}.pbb-share-studio__filter.is-active .pbb-share-studio__filter-preview{border-color:var(--gold);box-shadow:0 0 0 2px #111,0 0 0 4px var(--gold)}
@@ -543,11 +545,47 @@
   }
 
   function photoTransform() {
-    return 'translate(' + Math.round(active.photoX * 100) + '%, ' + Math.round(active.photoY * 100) + '%) scale(' + active.photoScale + ')';
+    return 'translate3d(' + Math.round(active.photoX * 100) + '%, ' + Math.round(active.photoY * 100) + '%, 0) scale(' + active.photoScale + ')';
   }
 
   function layerTransform(x, y, scale) {
-    return 'translate(-50%,-50%) scale(' + scale + ')';
+    return 'translate3d(-50%,-50%,0) scale(' + scale + ')';
+  }
+
+  function renderInteractiveTransforms(el) {
+    if (!active) return;
+    var photo = el.querySelector('[data-share-image]');
+    var card = el.querySelector('[data-share-workout-layer]');
+    var caption = el.querySelector('[data-share-caption]');
+    photo.style.transform = photoTransform();
+    card.style.left = Math.round(active.overlayX * 100) + '%';
+    card.style.top = Math.round(active.overlayY * 100) + '%';
+    card.style.transform = layerTransform(active.overlayX, active.overlayY, active.overlayScale);
+    caption.style.left = Math.round(active.captionX * 100) + '%';
+    caption.style.top = Math.round(active.captionY * 100) + '%';
+    caption.style.transform = layerTransform(active.captionX, active.captionY, active.captionSize);
+    (active.stickers || []).forEach(function (sticker) {
+      var node = el.querySelector('[data-sticker-id="' + sticker.id + '"]');
+      if (!node) return;
+      node.style.left = Math.round(sticker.x * 100) + '%';
+      node.style.top = Math.round(sticker.y * 100) + '%';
+      node.style.transform = 'translate3d(-50%,-50%,0) scale(' + (sticker.scale || 1) + ') rotate(' + (sticker.rotation || 0) + 'deg)';
+    });
+  }
+
+  function scheduleInteractiveRender(el) {
+    if (interactionFrame) return;
+    interactionFrame = requestAnimationFrame(function () {
+      interactionFrame = 0;
+      renderInteractiveTransforms(el);
+    });
+  }
+
+  function finishInteractiveRender(el) {
+    if (interactionFrame) { cancelAnimationFrame(interactionFrame); interactionFrame = 0; }
+    if (!active) return;
+    active.gestureActive = false;
+    renderLayers(el);
   }
 
   function metricValues() {
@@ -871,7 +909,17 @@
     var scale = clamp(1080 / Math.max(1, bounds.width), 1, 3);
     stage.classList.add('is-exporting');
     try {
-      var canvas = await capture(stage, { backgroundColor: '#111111', scale: scale, useCORS: true, allowTaint: false, logging: false, width: Math.round(bounds.width), height: Math.round(bounds.height), scrollX: 0, scrollY: 0 });
+      var captured = await capture(stage, { backgroundColor: '#111111', scale: scale, useCORS: true, allowTaint: false, logging: false, width: Math.round(bounds.width), height: Math.round(bounds.height), scrollX: 0, scrollY: 0 });
+      var canvas = document.createElement('canvas');
+      canvas.width = 1080; canvas.height = 1920;
+      var ctx = canvas.getContext('2d');
+      var coverScale = Math.max(canvas.width / captured.width, canvas.height / captured.height);
+      var coverW = captured.width * coverScale, coverH = captured.height * coverScale;
+      ctx.save(); ctx.filter = 'blur(34px) brightness(.56)'; ctx.drawImage(captured, (canvas.width - coverW) / 2, (canvas.height - coverH) / 2, coverW, coverH); ctx.restore();
+      ctx.fillStyle = 'rgba(0,0,0,.14)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+      var containScale = Math.min(canvas.width / captured.width, canvas.height / captured.height);
+      var drawW = captured.width * containScale, drawH = captured.height * containScale;
+      ctx.drawImage(captured, (canvas.width - drawW) / 2, (canvas.height - drawH) / 2, drawW, drawH);
       var dataUrl = canvas.toDataURL('image/jpeg', .92);
       var blob = await (await fetch(dataUrl)).blob();
       return { dataUrl: dataUrl, file: new File([blob], 'balance-share-' + Date.now() + '.jpg', { type: 'image/jpeg' }) };
@@ -910,13 +958,13 @@
   }
 
   function schedulePreparedOutput(el) {
-    if (!active || active.busy) return;
+    if (!active || active.busy || active.gestureActive) return;
     clearTimeout(active.outputWarmTimer);
     var state = active;
     state.outputWarmTimer = setTimeout(function () {
       if (active !== state || state.busy) return;
       currentRenderedFile(el).catch(function (error) { console.warn('Could not prebuild share image:', error); });
-    }, 180);
+    }, 900);
   }
 
   function setActionBusy(el, busy, message) {
@@ -1176,6 +1224,8 @@
     function distance(a, b) { return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY); }
     stage.addEventListener('pointerdown', function (event) {
       if (!active || event.target.closest('.pbb-share-studio__layer') || event.target.closest('button')) return;
+      active.gestureActive = true;
+      clearTimeout(active.outputWarmTimer);
       stage.setPointerCapture(event.pointerId);
       photoPointers.set(event.pointerId, event);
       if (photoPointers.size === 1) photoStart = { x: event.clientX, y: event.clientY, photoX: active.photoX, photoY: active.photoY, time: Date.now() };
@@ -1188,11 +1238,19 @@
       var bounds = stage.getBoundingClientRect();
       if (photoPointers.size >= 2) { var pair = Array.from(photoPointers.values()); active.photoScale = clamp(photoStart.scale * distance(pair[0], pair[1]) / Math.max(20, photoStart.distance), .72, 2.4); }
       else if (photoStart && photoStart.x != null) { active.photoX = clamp(photoStart.photoX + (event.clientX - photoStart.x) / bounds.width, -.45, .45); active.photoY = clamp(photoStart.photoY + (event.clientY - photoStart.y) / bounds.height, -.45, .45); }
-      renderLayers(el); event.preventDefault();
+      scheduleInteractiveRender(el); event.preventDefault();
     });
-    function endPhoto(event) { photoPointers.delete(event.pointerId); if (!photoPointers.size) photoStart = null; }
+    function endPhoto(event) { if (!photoPointers.has(event.pointerId)) return; photoPointers.delete(event.pointerId); if (!photoPointers.size) { photoStart = null; finishInteractiveRender(el); } }
     stage.addEventListener('pointerup', endPhoto); stage.addEventListener('pointercancel', endPhoto);
-    stage.addEventListener('wheel', function (event) { if (!active) return; active.photoScale = clamp(active.photoScale - event.deltaY * .001, .72, 2.4); renderLayers(el); event.preventDefault(); }, { passive: false });
+    var wheelFinishTimer = 0;
+    stage.addEventListener('wheel', function (event) {
+      if (!active) return;
+      active.gestureActive = true; clearTimeout(active.outputWarmTimer); clearTimeout(wheelFinishTimer);
+      active.photoScale = clamp(active.photoScale - event.deltaY * .001, .72, 2.4);
+      scheduleInteractiveRender(el);
+      wheelFinishTimer = setTimeout(function () { finishInteractiveRender(el); }, 140);
+      event.preventDefault();
+    }, { passive: false });
 
     var layerPointers = new Map();
     var layerGesture = null;
@@ -1207,6 +1265,8 @@
       if (!active || !node) return;
       if (event.target.closest('[data-delete-sticker]')) return;
       var state = layerState(node); if (!state) return;
+      active.gestureActive = true;
+      clearTimeout(active.outputWarmTimer);
       node.setPointerCapture(event.pointerId); layerPointers.set(event.pointerId, { event: event, node: node });
       if (state.kind === 'sticker') active.selectedSticker = state.item.id;
       layerGesture = { node: node, state: state, startX: event.clientX, startY: event.clientY, x: state.x, y: state.y, scale: state.scale };
@@ -1223,9 +1283,9 @@
       if (state.kind === 'overlay') { active.overlayX = state.x; active.overlayY = state.y; active.overlayScale = state.scale; }
       else if (state.kind === 'caption') { active.captionX = state.x; active.captionY = state.y; active.captionSize = state.scale; }
       else { state.item.x = state.x; state.item.y = state.y; state.item.scale = state.scale; }
-      renderLayers(el); event.preventDefault(); event.stopPropagation();
+      scheduleInteractiveRender(el); event.preventDefault(); event.stopPropagation();
     });
-    function endLayer(event) { layerPointers.delete(event.pointerId); if (!layerPointers.size) layerGesture = null; }
+    function endLayer(event) { if (!layerPointers.has(event.pointerId)) return; layerPointers.delete(event.pointerId); if (!layerPointers.size) { layerGesture = null; finishInteractiveRender(el); } }
     stage.addEventListener('pointerup', endLayer); stage.addEventListener('pointercancel', endLayer);
     stage.addEventListener('click', function (event) { var remove = event.target.closest('[data-delete-sticker]'); if (!remove || !active) return; var node = remove.closest('[data-sticker-id]'); active.stickers = active.stickers.filter(function (item) { return item.id !== node.dataset.stickerId; }); active.selectedSticker = ''; renderLayers(el); });
   }

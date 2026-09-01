@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v468-exact-editor-export'; // v468: Feed and Instagram receive the exact editor stage
+const CACHE_NAME = 'pbb-app-v469-smooth-story-export'; // v469: frame-synced gestures and non-stretched 9:16 export
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
