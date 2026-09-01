@@ -40,6 +40,10 @@ test('studio is full-screen, safe-area aware, and interactive', () => {
   assert.match(studio, /data-share-preset="minimal"/);
   assert.match(studio, /data-share-download/);
   assert.match(studio, /data-share-native/);
+  assert.match(studio, /Sharing to Community\.\.\./);
+  assert.match(studio, /Opening Instagram Story\.\.\./);
+  assert.match(studio, /outputCachePromise/);
+  assert.match(studio, /document\.getElementById\('pbb-private-share-studio-v3'\) \|\| document\.getElementById\('pbb-private-share-studio'\)/);
   assert.match(studio, /pointermove/);
   assert.match(studio, /choosePhoto/);
   assert.match(studio, /Take a photo/);
@@ -71,6 +75,16 @@ test('focused editor can reframe the photo and move the workout card', () => {
   assert.match(points, /function pbbShareStudioWorkoutPalette/);
   assert.match(points, /PBB_PRIVATE_WORKOUT_TEXT_STYLES = \['stamp', 'split', 'compact', 'outline', 'receipt', 'editorial'\]/);
   assert.match(points, /cardPayload\.studio_editor/);
+});
+
+test('share actions reuse the finished still and report their progress', () => {
+  assert.match(studio, /var result = await fn\(\{/);
+  assert.match(studio, /renderedDataUrl: output\.dataUrl/);
+  assert.match(studio, /if \(result === false \|\| result === null\)/);
+  assert.match(points, /onFeed: async \(studioShare\) => sharePendingPostWorkoutCompositeToFeed\(studioShare\)/);
+  assert.match(points, /studioShare\?\.renderedDataUrl \|\| await renderBalanceShareCardImage/);
+  assert.match(points, /preparedDataUrl: studioShare\?\.renderedDataUrl, animate: false/);
+  assert.match(points, /const motionEligible = !preparedDataUrl && options\.animate !== false/);
 });
 
 test('studio connects to every requested photo-sharing surface', () => {
@@ -114,9 +128,9 @@ test('Shannon receives the progress-first workout completed page', () => {
 test('private reveal, tour, and cache-busted modules ship together', () => {
   assert.match(dashboard, /private-photo-share-studio-shannon-v4/);
   assert.match(dashboard, /BalancePrivateShareStudio\.isEnabled\(\)/);
-  assert.match(dashboard, /pbb-private-share-studio\.js\?v=9-ten-workout-styles/);
-  assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=57-ten-workout-styles/);
+  assert.match(dashboard, /pbb-private-share-studio\.js\?v=10-reliable-share-actions/);
+  assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=58-reliable-share-actions/);
   assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=[^'\"]+/);
   assert.match(dashboard, /dashboard-script-11-calorie_tracker_functions\.js\?v=39-private-share-studio/);
-  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v463-ten-workout-styles'/);
+  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v464-reliable-share-actions'/);
 });

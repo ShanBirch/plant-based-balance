@@ -2623,13 +2623,15 @@ async function onWorkoutSharePhotoReady(file) {
                     previewTarget: 'story',
                     overlayStyle: getBalanceShareOverlayStyle(pending?.type),
                     textStyle: getBalanceShareTextStyle(pending?.type),
-                    onFeed: async () => sharePendingPostWorkoutCompositeToFeed(),
-                    onInstagram: async () => pending.type === 'workout'
-                        ? shareWorkoutCardToInstagram()
+                    onFeed: async (studioShare) => sharePendingPostWorkoutCompositeToFeed(studioShare),
+                    onInstagram: async (studioShare) => pending.type === 'workout'
+                        ? shareWorkoutCardToInstagram({ preparedDataUrl: studioShare?.renderedDataUrl, animate: false })
                         : shareBalanceCardToInstagram(pending.cardPayload, 'story', {
+                            preparedDataUrl: studioShare?.renderedDataUrl,
                             photoDataUrl: cachedWorkoutShareBase64,
                             overlayStyle: getBalanceShareOverlayStyle(pending.type),
-                            textStyle: getBalanceShareTextStyle(pending.type)
+                            textStyle: getBalanceShareTextStyle(pending.type),
+                            animate: false
                         })
                 });
             }
@@ -2650,7 +2652,7 @@ async function onWorkoutSharePhotoReady(file) {
                         overlayStyle: getBalanceShareOverlayStyle('workout'),
                         textStyle: getBalanceShareTextStyle('workout'),
                         onFeed: async () => shareWorkoutCardToFeed(),
-                        onInstagram: async () => shareWorkoutCardToInstagram()
+                        onInstagram: async (studioShare) => shareWorkoutCardToInstagram({ preparedDataUrl: studioShare?.renderedDataUrl, animate: false })
                     });
                 }
             }
@@ -2840,11 +2842,11 @@ async function beginPostWorkoutCompositeShare(cardPayload, type, index) {
     openWorkoutCamera(useSelectedWorkoutPhoto, 'Take a gym photo for your workout share');
 }
 
-async function sharePendingPostWorkoutCompositeToFeed() {
+async function sharePendingPostWorkoutCompositeToFeed(studioShare) {
     const pending = pendingPostWorkoutCompositeShare;
     if (!pending || !cachedWorkoutShareBase64) {
         showToast('Take a gym photo first.', 'info');
-        return;
+        return null;
     }
 
     postWorkoutShareBusy = pending.type === 'pb' ? 'pb:' + pending.index : 'workout-photo';
@@ -2857,7 +2859,7 @@ async function sharePendingPostWorkoutCompositeToFeed() {
     }
 
     try {
-        const compositeDataUrl = await renderBalanceShareCardImage(pending.cardPayload, {
+        const compositeDataUrl = studioShare?.renderedDataUrl || await renderBalanceShareCardImage(pending.cardPayload, {
             target: 'feed',
             photoDataUrl: cachedWorkoutShareBase64,
             overlayStyle: getBalanceShareOverlayStyle(pending.type),
@@ -5795,7 +5797,10 @@ async function shareBalanceCardToInstagram(cardPayload, target, options = {}) {
         preparedNotified = true;
         if (typeof options.onSharePrepared === 'function') options.onSharePrepared();
     };
-    const motionEligible = options.animate !== false
+    const preparedDataUrl = typeof options.preparedDataUrl === 'string' && options.preparedDataUrl.startsWith('data:image/')
+        ? options.preparedDataUrl
+        : '';
+    const motionEligible = !preparedDataUrl && options.animate !== false
         && !!renderOptions.photoDataUrl
         && ['workout', 'pb', 'activity'].includes(String(cardPayload.card_type || ''));
 
@@ -5816,7 +5821,7 @@ async function shareBalanceCardToInstagram(cardPayload, target, options = {}) {
         }
     }
 
-    const dataUrl = await renderBalanceShareCardImage(cardPayload, renderOptions);
+    const dataUrl = preparedDataUrl || await renderBalanceShareCardImage(cardPayload, renderOptions);
 
     notifyPrepared();
 
@@ -5958,16 +5963,16 @@ function clearWorkoutInstagramShareCompleted() {
     renderWorkoutInstagramShareButton();
 }
 
-async function shareWorkoutCardToInstagram() {
+async function shareWorkoutCardToInstagram(options = {}) {
     if (!canUseBalanceInstagramShareTest()) {
         showToast('Instagram sharing is in test mode for now.', 'info');
         updateWorkoutInstagramShareVisibility();
-        return;
+        return false;
     }
 
     if (!completedWorkoutDataForShare) {
         showToast('No workout data to share', 'error');
-        return;
+        return false;
     }
 
     const btn = document.getElementById('share-workout-ig-story-btn');
@@ -5996,12 +6001,12 @@ async function shareWorkoutCardToInstagram() {
                         btn.style.opacity = '1';
                         btn.innerHTML = originalHtml;
                     }
-                    return;
+                    return false;
                 }
                 await onWorkoutSharePhotoReady(file);
                 showToast('Swipe to choose a style, then tap IG Story again.', 'info');
             }, 'Take a workout photo');
-            return;
+            return false;
         }
 
         const cardPayload = buildWorkoutShareCardPayload();
@@ -6009,9 +6014,11 @@ async function shareWorkoutCardToInstagram() {
         // The native plugin can successfully open Instagram before its
         // promise continuation gets another chance to run in JavaScript.
         const opened = await shareBalanceCardToInstagram(cardPayload, 'story', {
+            preparedDataUrl: options.preparedDataUrl,
             photoDataUrl: cachedWorkoutShareBase64,
             overlayStyle: getBalanceShareOverlayStyle('workout'),
             textStyle: getBalanceShareTextStyle('workout'),
+            animate: options.animate,
             onSharePrepared: () => markWorkoutInstagramShareCompleted()
         });
         if (!opened) clearWorkoutInstagramShareCompleted();
@@ -6028,10 +6035,12 @@ async function shareWorkoutCardToInstagram() {
                 'success'
             );
         }
+        return opened;
     } catch (error) {
         clearWorkoutInstagramShareCompleted();
         console.error('Error sharing workout card to Instagram:', error);
         showToast('Could not open Instagram Story. Please try again.', 'error');
+        return false;
     } finally {
         if (btn && !workoutInstagramShareCompleted.story) {
             btn.disabled = false;

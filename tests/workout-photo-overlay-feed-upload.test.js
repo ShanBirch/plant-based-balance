@@ -11,7 +11,7 @@ const pointsSource = fs.readFileSync(
 const dashboardSource = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
 const serviceWorkerSource = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
 
-const functionStart = pointsSource.indexOf('async function sharePendingPostWorkoutCompositeToFeed()');
+const functionStart = pointsSource.indexOf('async function sharePendingPostWorkoutCompositeToFeed(studioShare)');
 const functionEnd = pointsSource.indexOf('\nfunction getPostWorkoutShareViewportBottom()', functionStart);
 const shareSource = pointsSource.slice(functionStart, functionEnd);
 const rendererStart = pointsSource.indexOf('async function renderBalanceShareCardImage(');
@@ -38,9 +38,9 @@ assert.ok(
     'workout, PB, activity, and nutrition photo overlays must skip the full-frame dark tint'
 );
 assert.ok(
-dashboardSource.includes('dashboard-script-10-points_widget_functions.js?v=57-ten-workout-styles') &&
-        serviceWorkerSource.includes("const CACHE_NAME = 'pbb-app-v463-ten-workout-styles'") &&
-        serviceWorkerSource.includes('./js/dashboard/dashboard-script-10-points_widget_functions.js?v=57-ten-workout-styles'),
+dashboardSource.includes('dashboard-script-10-points_widget_functions.js?v=58-reliable-share-actions') &&
+        serviceWorkerSource.includes("const CACHE_NAME = 'pbb-app-v464-reliable-share-actions'") &&
+        serviceWorkerSource.includes('./js/dashboard/dashboard-script-10-points_widget_functions.js?v=58-reliable-share-actions'),
     'phones must fetch the repaired overlay share path'
 );
 

@@ -16,8 +16,8 @@ assert.match(
     'workout shares should offer a dedicated All lifts layout'
 );
 assert.ok(
-dashboardSource.includes('dashboard-script-10-points_widget_functions.js?v=57-ten-workout-styles')
-        && serviceWorkerSource.includes('dashboard-script-10-points_widget_functions.js?v=57-ten-workout-styles'),
+dashboardSource.includes('dashboard-script-10-points_widget_functions.js?v=58-reliable-share-actions')
+        && serviceWorkerSource.includes('dashboard-script-10-points_widget_functions.js?v=58-reliable-share-actions'),
     'phones should fetch and precache the comprehensive share composer'
 );
 assert.match(

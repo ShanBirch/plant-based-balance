@@ -203,7 +203,7 @@
       .pbb-share-studio__workout{--workout-accent:#d8b25e;--workout-surface:rgba(8,8,8,.78);--workout-text:#fff;color:var(--workout-text);-webkit-text-fill-color:var(--workout-text)}.pbb-share-studio__workout-kicker{color:var(--workout-accent);-webkit-text-fill-color:var(--workout-accent)}.pbb-share-studio__metrics{border-top-color:var(--workout-accent)}.pbb-share-studio__lifts span{color:var(--workout-accent);-webkit-text-fill-color:var(--workout-accent)}.pbb-share-studio__workout[data-layout=scorecard],.pbb-share-studio__workout[data-layout=outline],.pbb-share-studio__workout[data-layout=receipt],.pbb-share-studio__workout[data-layout=full]{border-color:var(--workout-accent)}.pbb-share-studio__workout[data-layout=scorecard]{background:var(--workout-surface)}.pbb-share-studio__workout[data-layout=stamp]{width:62%;padding:18px;text-align:center;border:3px solid var(--workout-accent);border-radius:50%;background:rgba(8,8,8,.32)}.pbb-share-studio__workout[data-layout=stamp] .pbb-share-studio__workout-title{font-size:clamp(1.4rem,8vw,2.8rem)}.pbb-share-studio__workout[data-layout=stamp] .pbb-share-studio__metrics{display:none}.pbb-share-studio__workout[data-layout=split]{display:grid;grid-template-columns:1.12fr .88fr;gap:14px;align-items:end;padding-left:15px;border-left:6px solid var(--workout-accent)}.pbb-share-studio__workout[data-layout=split] .pbb-share-studio__metrics{grid-column:2;grid-row:1/3;display:flex;flex-direction:column;border-top:0;padding:0}.pbb-share-studio__workout[data-layout=split] .pbb-share-studio__metric{padding:5px 0;border-left:0;border-top:1px solid rgba(255,255,255,.34)}.pbb-share-studio__workout[data-layout=compact]{width:86%;display:flex;align-items:center;gap:12px;padding:12px 15px;border-radius:999px;background:var(--workout-surface);text-shadow:none}.pbb-share-studio__workout[data-layout=compact] .pbb-share-studio__workout-kicker{display:none}.pbb-share-studio__workout[data-layout=compact] .pbb-share-studio__workout-title{flex:1;margin:0;font-size:clamp(1rem,5vw,1.8rem)}.pbb-share-studio__workout[data-layout=compact] .pbb-share-studio__metrics{flex:1.4;border-top:0;padding:0}.pbb-share-studio__workout[data-layout=outline]{padding:18px;border:2px solid var(--workout-accent);border-radius:4px;background:transparent}.pbb-share-studio__workout[data-layout=receipt]{background:var(--workout-surface)}.pbb-share-studio__workout[data-layout=editorial]{padding-left:18px;border-left:10px solid var(--workout-accent)}.pbb-share-studio__workout[data-layout=editorial] .pbb-share-studio__workout-title{font-family:Georgia,serif;font-weight:700;letter-spacing:-.03em;text-transform:none}.pbb-share-studio__workout[data-layout=editorial] .pbb-share-studio__metrics{border-top:0;padding-top:3px}.pbb-share-studio__workout[data-layout=full]{padding:16px 18px;border:1px solid var(--workout-accent);border-radius:18px;background:var(--workout-surface);text-shadow:none}.pbb-share-studio__workout[data-layout=full] .pbb-share-studio__lifts{display:grid;gap:5px}
       .pbb-share-studio__drawer{position:absolute;z-index:22;left:10px;right:10px;bottom:calc(74px + env(safe-area-inset-bottom));min-height:104px;max-height:39dvh;padding:13px;border:1px solid rgba(255,255,255,.25);border-radius:20px;background:rgba(10,10,10,.88);box-shadow:0 18px 60px rgba(0,0,0,.4);backdrop-filter:blur(20px);overflow:auto}.pbb-share-studio__drawer[hidden]{display:none}.pbb-share-studio__drawer-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}.pbb-share-studio__drawer-title{font-size:.72rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.pbb-share-studio__drawer-done{min-height:34px;padding:0 13px;border:0;border-radius:999px;background:var(--gold);color:var(--ink);-webkit-text-fill-color:var(--ink);font-weight:900;font-size:.72rem}.pbb-share-studio__scroll-row{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none}.pbb-share-studio__scroll-row::-webkit-scrollbar{display:none}.pbb-share-studio__filter{flex:0 0 62px;border:0;background:transparent;color:#fff;-webkit-text-fill-color:#fff;padding:0;font-size:.66rem;font-weight:800;text-align:center}.pbb-share-studio__filter-preview{width:52px;height:52px;margin:0 auto 5px;border:2px solid transparent;border-radius:50%;background-position:center;background-size:cover}.pbb-share-studio__filter.is-active .pbb-share-studio__filter-preview{border-color:var(--gold);box-shadow:0 0 0 2px #111,0 0 0 4px var(--gold)}
       .pbb-share-studio__input{width:100%;min-height:54px;resize:none;border:1px solid rgba(255,255,255,.3);border-radius:13px;background:rgba(255,255,255,.09);color:#fff;-webkit-text-fill-color:#fff;padding:12px;font-size:1rem;outline:none}.pbb-share-studio__input:focus{border-color:var(--gold)}.pbb-share-studio__chip-row{display:flex;gap:8px;overflow-x:auto;margin-top:10px;scrollbar-width:none}.pbb-share-studio__chip{flex:0 0 auto;min-height:36px;padding:0 13px;border:1px solid rgba(255,255,255,.28);border-radius:999px;background:transparent;color:#fff;-webkit-text-fill-color:#fff;font-size:.72rem;font-weight:850}.pbb-share-studio__chip.is-active{border-color:var(--gold);color:var(--gold);-webkit-text-fill-color:var(--gold)}.pbb-share-studio__colour{width:36px;height:36px;padding:0;border-radius:50%;border:2px solid rgba(255,255,255,.5);flex:0 0 36px}.pbb-share-studio__colour.is-active{box-shadow:0 0 0 2px #111,0 0 0 4px var(--gold)}.pbb-share-studio__range-row{display:grid;grid-template-columns:58px 1fr 46px;align-items:center;gap:9px;margin-top:12px;font-size:.7rem;font-weight:850}.pbb-share-studio__range{accent-color:var(--gold);width:100%}.pbb-share-studio__emoji{flex:0 0 50px;width:50px;height:50px;border:1px solid rgba(255,255,255,.22);border-radius:14px;background:rgba(255,255,255,.08);font-size:1.65rem}.pbb-share-studio__hint{margin:8px 0 0;color:rgba(255,255,255,.72);font-size:.67rem;line-height:1.35}
-      .pbb-share-studio__actions{position:absolute;z-index:24;left:10px;right:10px;bottom:calc(9px + env(safe-area-inset-bottom));height:56px;display:grid;grid-template-columns:1fr 1fr 1.15fr;gap:8px}.pbb-share-studio__action{border:1px solid rgba(255,255,255,.3);border-radius:16px;background:rgba(10,10,10,.74);color:#fff;-webkit-text-fill-color:#fff;font-size:.76rem;font-weight:900;backdrop-filter:blur(14px)}.pbb-share-studio__action--gold{background:var(--gold);border-color:var(--gold);color:var(--ink);-webkit-text-fill-color:var(--ink)}.pbb-share-studio__loading{position:absolute;z-index:30;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.45);font-weight:900}.pbb-share-studio__loading[hidden]{display:none}
+      .pbb-share-studio__actions{position:absolute;z-index:24;left:10px;right:10px;bottom:calc(9px + env(safe-area-inset-bottom));height:56px;display:grid;grid-template-columns:1fr 1fr 1.15fr;gap:8px}.pbb-share-studio__action{border:1px solid rgba(255,255,255,.3);border-radius:16px;background:rgba(10,10,10,.74);color:#fff;-webkit-text-fill-color:#fff;font-size:.76rem;font-weight:900;backdrop-filter:blur(14px)}.pbb-share-studio__action--gold{background:var(--gold);border-color:var(--gold);color:var(--ink);-webkit-text-fill-color:var(--ink)}.pbb-share-studio__loading{position:absolute;z-index:30;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:13px;background:rgba(0,0,0,.68);font-weight:900;text-align:center;padding:24px;backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px)}.pbb-share-studio__loading::before{content:'';width:34px;height:34px;border:3px solid rgba(255,255,255,.3);border-top-color:var(--gold);border-radius:50%;animation:pbbShareStudioSpin .75s linear infinite}.pbb-share-studio__loading[hidden]{display:none}@keyframes pbbShareStudioSpin{to{transform:rotate(360deg)}}
       .pbb-photo-source{position:fixed;inset:0;z-index:100119;display:grid;align-items:end;background:rgba(15,12,7,.55);padding:18px calc(18px + env(safe-area-inset-right)) calc(18px + env(safe-area-inset-bottom)) calc(18px + env(safe-area-inset-left))}.pbb-photo-source__card{width:min(100%,480px);margin:auto;background:var(--cream,#f8f5ee);color:#151515;-webkit-text-fill-color:#151515;border-radius:22px;padding:18px}.pbb-photo-source__title{font-size:1.05rem;font-weight:900}.pbb-photo-source__copy{font-size:.82rem;color:#6f6a61;margin:4px 0 12px}.pbb-photo-source__button{width:100%;min-height:50px;border:0;border-radius:14px;background:#111;color:#fff;-webkit-text-fill-color:#fff;font-weight:900;margin-top:8px}.pbb-photo-source__button--gold{background:#d8b25e;color:#151515;-webkit-text-fill-color:#151515}.pbb-photo-source__button--cancel{background:transparent;color:#151515;-webkit-text-fill-color:#151515;border:1px solid #ded7c9}
       @media(max-height:700px){.pbb-share-studio__rail{top:calc(70px + env(safe-area-inset-top));gap:5px}.pbb-share-studio__tool{min-height:54px}.pbb-share-studio__drawer{bottom:calc(68px + env(safe-area-inset-bottom));max-height:34dvh}.pbb-share-studio__actions{height:50px}.pbb-share-studio__workout{top:52%}}
     `;
@@ -448,7 +448,6 @@
     window.__balanceShareStudioCustomizations = window.__balanceShareStudioCustomizations || {};
     window.__balanceShareStudioCustomizations[active.context] = editorState();
     if (active.cardPayload) active.cardPayload.studio_editor = editorState();
-    active.renderedDataUrl = '';
   }
 
   function filterById(id) {
@@ -568,6 +567,7 @@
     if (colourName) colourName.textContent = workoutColour(active.workoutColour).label;
     if (colourSwatch) colourSwatch.style.background = workoutColour(active.workoutColour).value;
     saveCustomization();
+    schedulePreparedOutput(el);
   }
 
   function renderPreview(el) {
@@ -646,9 +646,10 @@
   }
 
   function close(result) {
-    var el = document.getElementById('pbb-private-share-studio');
+    var el = document.getElementById('pbb-private-share-studio-v3') || document.getElementById('pbb-private-share-studio');
     if (!active) return;
     var finish = active.resolve;
+    clearTimeout(active.outputWarmTimer);
     active = null;
     renderSequence += 1;
     clearTimeout(renderTimer);
@@ -762,59 +763,107 @@
 
   async function currentRenderedFile(el) {
     if (!active) throw new Error('Share editor is closed');
-    var output;
-    if (active.rawPhoto || !active.cardPayload || typeof window.renderBalanceShareCardImage !== 'function') output = await makeRawOutput(active);
-    else {
-      saveCustomization();
-      output = { dataUrl: await window.renderBalanceShareCardImage(active.cardPayload, { target: active.previewTarget || 'story', photoDataUrl: active.photoDataUrl, overlayStyle: active.overlayStyle, textStyle: active.textStyle }) };
+    var state = active;
+    var cacheKey = JSON.stringify({ editor: editorState(), context: state.context, target: state.previewTarget || 'story', photo: state.photoDataUrl });
+    if (state.outputCacheKey === cacheKey && state.outputCachePromise) return state.outputCachePromise;
+    saveCustomization();
+    state.outputCacheKey = cacheKey;
+    state.outputCachePromise = (async function () {
+      var output;
+      if (state.rawPhoto || !state.cardPayload || typeof window.renderBalanceShareCardImage !== 'function') output = await makeRawOutput(state);
+      else output = { dataUrl: await window.renderBalanceShareCardImage(state.cardPayload, { target: state.previewTarget || 'story', photoDataUrl: state.photoDataUrl, overlayStyle: state.overlayStyle, textStyle: state.textStyle }) };
+      var dataUrl = output.dataUrl;
+      var response = await fetch(dataUrl);
+      var blob = await response.blob();
+      return { dataUrl: dataUrl, file: new File([blob], 'balance-share-' + Date.now() + '.jpg', { type: 'image/jpeg' }) };
+    })();
+    try {
+      return await state.outputCachePromise;
+    } catch (error) {
+      if (active === state) { state.outputCacheKey = ''; state.outputCachePromise = null; }
+      throw error;
     }
-    var dataUrl = output.dataUrl;
-    var response = await fetch(dataUrl);
-    var blob = await response.blob();
-    return { dataUrl: dataUrl, file: new File([blob], 'balance-share-' + Date.now() + '.jpg', { type: 'image/jpeg' }) };
+  }
+
+  function schedulePreparedOutput(el) {
+    if (!active || active.busy) return;
+    clearTimeout(active.outputWarmTimer);
+    var state = active;
+    state.outputWarmTimer = setTimeout(function () {
+      if (active !== state || state.busy) return;
+      currentRenderedFile(el).catch(function (error) { console.warn('Could not prebuild share image:', error); });
+    }, 180);
+  }
+
+  function setActionBusy(el, busy, message) {
+    var loading = el.querySelector('[data-share-loading]');
+    if (loading) {
+      loading.textContent = message || 'Preparing your photo...';
+      loading.hidden = !busy;
+    }
+    el.setAttribute('aria-busy', busy ? 'true' : 'false');
+    el.querySelectorAll('[data-share-feed],[data-share-instagram],[data-share-native],[data-share-done],[data-share-download]').forEach(function (button) { button.disabled = !!busy; });
+  }
+
+  function downloadRenderedOutput(output) {
+    var link = document.createElement('a');
+    link.href = output.dataUrl;
+    link.download = output.file.name;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
   }
 
   async function downloadCurrentImage(el) {
+    if (!active || active.busy) return;
+    var state = active;
+    state.busy = true;
+    setActionBusy(el, true, 'Saving your photo...');
     try {
       var output = await currentRenderedFile(el);
-      var link = document.createElement('a');
-      link.href = output.dataUrl;
-      link.download = output.file.name;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+      downloadRenderedOutput(output);
     } catch (error) {
       console.error('Could not save share image:', error);
       if (typeof window.showToast === 'function') window.showToast('Could not save that image. Please try again.', 'error');
+    } finally {
+      if (active === state) { state.busy = false; setActionBusy(el, false); }
     }
   }
 
   async function shareCurrentImage(el) {
+    if (!active || active.busy) return;
+    var state = active;
+    state.busy = true;
+    setActionBusy(el, true, 'Opening share options...');
     try {
       var output = await currentRenderedFile(el);
       if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [output.file] }))) {
         await navigator.share({ files: [output.file], title: 'Balance' });
         return;
       }
-      await downloadCurrentImage(el);
+      downloadRenderedOutput(output);
+      if (typeof window.showToast === 'function') window.showToast('Photo saved. You can share it from your photos.', 'info');
     } catch (error) {
       if (error && error.name === 'AbortError') return;
       console.error('Could not open native share:', error);
       if (typeof window.showToast === 'function') window.showToast('Could not open sharing. Please try again.', 'error');
+    } finally {
+      if (active === state) { state.busy = false; setActionBusy(el, false); }
     }
   }
 
   async function runAction(kind, el) {
-    if (!active) return;
+    if (!active || active.busy) return;
     var fn = kind === 'feed' ? active.onFeed : kind === 'instagram' ? active.onInstagram : active.onDone;
     if (typeof fn !== 'function') {
       close({ action: kind, customization: customization() });
       return;
     }
-    el.querySelectorAll('[data-share-feed],[data-share-instagram],[data-share-done]').forEach(function (button) { button.disabled = true; });
+    var state = active;
+    state.busy = true;
+    setActionBusy(el, true, kind === 'feed' ? 'Sharing to Community...' : kind === 'instagram' ? 'Opening Instagram Story...' : 'Preparing your photo...');
     try {
       saveCustomization();
-      var state = active;
       if (state.cardPayload) {
         state.cardPayload.studio_hide_pb = state.showPB === false;
         state.cardPayload.studio_hide_stats = state.showStats === false;
@@ -825,20 +874,22 @@
       if (typeof window.selectBalanceShareTextStyle === 'function') {
         window.selectBalanceShareTextStyle(state.context, state.textStyle || 'bold');
       }
-      var rawOutput = state.rawPhoto ? await makeRawOutput(state) : null;
+      var output = await currentRenderedFile(el);
       window.dispatchEvent(new CustomEvent('pbb:share-studio-action', { detail: { context: state.context, action: kind } }));
       if (typeof window._crumb === 'function') window._crumb('private_share_studio_' + state.context + '_' + kind);
-      close({ action: kind, customization: customization() });
-      await fn({
+      var result = await fn({
         customization: window.__balanceShareStudioCustomizations[state.context],
-        photoDataUrl: rawOutput ? rawOutput.dataUrl : state.photoDataUrl,
-        file: rawOutput ? rawOutput.file : null
+        photoDataUrl: state.photoDataUrl,
+        renderedDataUrl: output.dataUrl,
+        file: output.file
       });
+      if (result === false || result === null) throw new Error('The share action did not complete');
+      if (active === state) close({ action: kind, customization: window.__balanceShareStudioCustomizations[state.context] });
     } catch (error) {
       console.error('Private share studio action failed:', error);
       if (typeof window.showToast === 'function') window.showToast('Could not share that photo. Please try again.', 'error');
     } finally {
-      el.querySelectorAll('[data-share-feed],[data-share-instagram],[data-share-done]').forEach(function (button) { button.disabled = false; });
+      if (active === state) { state.busy = false; setActionBusy(el, false); schedulePreparedOutput(el); }
     }
   }
 
