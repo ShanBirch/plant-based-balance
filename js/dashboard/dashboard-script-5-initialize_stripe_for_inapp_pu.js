@@ -11856,7 +11856,7 @@ function applyGenderSpecificUI() {
     const sailorDecorations = document.getElementById('sailor-decorations');
     if (sailorDecorations) { sailorDecorations.style.display = 'none'; }
 
-    // Update Hormone Hub for males
+    // Adapt calendar content for males while keeping the shared Calendar label.
     if (isMale) {
         // Update cycle phase display for males
         const phaseName = document.getElementById('cycle-phase-name');
@@ -11883,12 +11883,12 @@ function applyGenderSpecificUI() {
         const phaseTags = document.getElementById('cycle-phase-tags');
         if (phaseTags) phaseTags.style.display = 'none';
 
-        // Update Hormone Hub title and subtitle
-        const hormoneHubHeader = document.querySelector('#view-cycle div[style*="sticky"]');
-        if (hormoneHubHeader) {
-            const title = hormoneHubHeader.querySelector('h2');
-            const subtitle = hormoneHubHeader.querySelector('div[style*="0.8rem"]');
-            if (title) title.textContent = 'Performance Hub';
+        // Keep the shared Calendar title and remove the female-only subtitle.
+        const calendarHeader = document.querySelector('#view-cycle div[style*="sticky"]');
+        if (calendarHeader) {
+            const title = calendarHeader.querySelector('h2');
+            const subtitle = calendarHeader.querySelector('div[style*="0.8rem"]');
+            if (title) title.textContent = 'Calendar';
             if (subtitle) subtitle.remove();
         }
 
@@ -11903,7 +11903,7 @@ function applyGenderSpecificUI() {
             completedCard.style.display = 'none';
         }
 
-        // Update bottom navigation "Cycle" tab to "Calendar"
+        // Keep the shared Calendar label for male users too.
         const navCycleLabel = document.getElementById('nav-cycle-label');
         if (navCycleLabel) navCycleLabel.textContent = 'Calendar';
 
@@ -11916,7 +11916,7 @@ function applyGenderSpecificUI() {
             bottomNav.insertBefore(cycleBtn, progressBtn);
         }
 
-        // Update nav icon to calendar for males
+        // Keep the shared calendar icon for male users too.
         const navCycleIcon = document.getElementById('nav-cycle-icon');
         if (navCycleIcon) {
             navCycleIcon.innerHTML = '<path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM9 10H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm-8 4H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2z"/>';

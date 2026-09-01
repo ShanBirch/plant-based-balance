@@ -60,13 +60,13 @@ assert.ok(
 
 assert.ok(
     dashboardSource.includes('script_part_2.js?v=15-meal-reminders-retired') &&
-    dashboardSource.includes('dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=224-meal-history') &&
+    dashboardSource.includes('dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=225-calendar-home-coins') &&
         dashboardSource.includes('pbb-deferred-workoutbuilder.js?v=10') &&
         dashboardSource.includes('pbb-deferred-savedworkouts.js?v=7') &&
         loaderSource.includes('lib/supabase.js?v=16-meal-reminders-retired') &&
-        serviceWorkerSource.includes("const CACHE_NAME = 'pbb-app-v427-meal-history'") &&
+        serviceWorkerSource.includes("const CACHE_NAME = 'pbb-app-v428-calendar-home-coins'") &&
         serviceWorkerSource.includes('./lib/supabase.js?v=16-meal-reminders-retired') &&
-        serviceWorkerSource.includes('./js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=224-meal-history'),
+        serviceWorkerSource.includes('./js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=225-calendar-home-coins'),
     'phones must fetch the repaired PB and previous-session code instead of cached versions'
 );
 
