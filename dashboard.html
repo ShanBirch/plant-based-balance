@@ -1925,12 +1925,12 @@ if(!window._pbbIsIOSSafari) {
         window.addEventListener('pbbInitComplete', function() {
             setTimeout(function() {
                 var s = document.createElement('script');
-                s.src = 'js/dashboard/dashboard-script-2-activity_insights_view.js?v=insights-theme-history-v3';
+                s.src = 'js/dashboard/dashboard-script-2-activity_insights_view.js?v=insights-history-toggle-v4';
                 document.head.appendChild(s);
             }, 4000);
         }, { once: true });
     } else {
-        document.write('<script src="js/dashboard/dashboard-script-2-activity_insights_view.js?v=insights-theme-history-v3"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-2-activity_insights_view.js?v=insights-history-toggle-v4"><\/script>');
     }
     </script>
 
@@ -11710,7 +11710,7 @@ if(!window._pbbIsIOSSafari) {
                             <div style="min-width: 0;">
                                 <div style="font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 4px;">Weigh-In History</div>
                                 <div id="weigh-in-management-summary" style="font-size: 0.98rem; font-weight: 800; color: var(--text-main); line-height: 1.25; margin-bottom: 2px;">No weigh-ins yet</div>
-                                <div style="font-size: 0.76rem; color: var(--text-muted); line-height: 1.35;">Tap the chevron to open history.</div>
+                                <div style="font-size: 0.76rem; color: var(--text-muted); line-height: 1.35;">Tap to see every dated weigh-in.</div>
                             </div>
                             <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
                                 <div id="weigh-in-management-chevron" class="insights-weigh-in-chevron">&#8964;</div>

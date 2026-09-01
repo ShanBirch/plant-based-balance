@@ -2535,6 +2535,19 @@
         container.innerHTML = html;
     }
 
+    function toggleWeighInManagerCard(forceOpen) {
+        const body = document.getElementById('weigh-in-management-body');
+        const toggle = document.getElementById('weigh-in-management-toggle');
+        const chevron = document.getElementById('weigh-in-management-chevron');
+        if (!body || !toggle) return;
+
+        const isOpen = body.style.display !== 'none';
+        const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : !isOpen;
+        body.style.display = shouldOpen ? 'block' : 'none';
+        toggle.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+        if (chevron) chevron.classList.toggle('is-open', shouldOpen);
+    }
+
     async function refreshWeighInDisplays() {
         if (!window.currentUser) return;
 
@@ -2706,6 +2719,7 @@
     }
 
     window.renderWeighInManager = renderWeighInManager;
+    window.toggleWeighInManagerCard = toggleWeighInManagerCard;
     window.refreshWeighInDisplays = refreshWeighInDisplays;
     window.openWeighInEditorModal = openWeighInEditorModal;
     window.closeWeighInEditorModal = closeWeighInEditorModal;

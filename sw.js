@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v432-insights-theme-controls'; // v432: readable paired Insights fonts, controls and accurate weigh-in history summary
+const CACHE_NAME = 'pbb-app-v433-insights-history-toggle'; // v433: working dated weigh-in history dropdown with paired Insights themes
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

@@ -68,8 +68,8 @@ test('new and returning members discover snapshots and manual steps', () => {
 
 test('returning phones receive the snapshot release', () => {
   assert.match(dashboard, /dashboard-style-1\.css\?v=73/);
-  assert.ok((dashboard.match(/dashboard-script-2-activity_insights_view\.js\?v=insights-theme-history-v3/g) || []).length >= 2);
-  assert.match(serviceWorker, /pbb-app-v432-insights-theme-controls/);
+  assert.ok((dashboard.match(/dashboard-script-2-activity_insights_view\.js\?v=insights-history-toggle-v4/g) || []).length >= 2);
+  assert.match(serviceWorker, /pbb-app-v433-insights-history-toggle/);
 });
 
 test('body weight detail has one entry point and a live history summary', () => {
@@ -77,6 +77,11 @@ test('body weight detail has one entry point and a live history summary', () => 
   assert.doesNotMatch(insights, /Add your first entry here/);
   assert.match(insights, /summary\.textContent = total \+ ' weigh-in'/);
   assert.match(insights, /latest ' \+ latestWeight/);
+  assert.match(insights, /function toggleWeighInManagerCard\(forceOpen\)/);
+  assert.match(insights, /body\.style\.display = shouldOpen \? 'block' : 'none'/);
+  assert.match(insights, /toggle\.setAttribute\('aria-expanded', shouldOpen \? 'true' : 'false'\)/);
+  assert.match(insights, /window\.toggleWeighInManagerCard = toggleWeighInManagerCard/);
+  assert.match(dashboard, /Tap to see every dated weigh-in\./);
 });
 
 test('every metric detail uses paired readable font roles', () => {
