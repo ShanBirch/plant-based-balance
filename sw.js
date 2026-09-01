@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v460-imported-activity-dismissed'; // v460: Focus updates plus handled wearable prompts no longer returning to Home
+const CACHE_NAME = 'pbb-app-v461-movable-workout-share'; // v461: movable workout share card plus photo reframing
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -25,7 +25,7 @@ const ASSETS = [
   './css/dashboard/pbb-onboarding-comeback.css?v=8',
   './css/dashboard/pbb-onboarding-foundations.css?v=7-single-render',
   './js/dashboard/dashboard-script-7-video_logic.js?v=20260815-exercise-thumbnails',
-  './js/dashboard/dashboard-script-10-points_widget_functions.js?v=54-imported-activity-dismissed',
+  './js/dashboard/dashboard-script-10-points_widget_functions.js?v=56-movable-workout-card',
   './js/dashboard/pbb-deferred-fitbit.js?v=3-latest-import-only',
   './js/dashboard/pbb-next-obvious-steps.js?v=50-hide-shared-diary',
   './js/dashboard/pbb-deferred-formcheck.js?v=58-ios-exercise-video-upload&video_health=2',

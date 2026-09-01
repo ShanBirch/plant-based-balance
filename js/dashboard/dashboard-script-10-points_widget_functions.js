@@ -3775,6 +3775,46 @@ function pbbShareDrawCoverImage(ctx, img, x, y, w, h) {
     ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
 }
 
+function pbbShareStudioPhotoFilter(filter) {
+    const filters = {
+        warm: 'saturate(1.08) contrast(1.04) sepia(0.12)',
+        clean: 'brightness(1.07) saturate(0.9) contrast(1.02)',
+        mono: 'grayscale(1) contrast(1.12)',
+        film: 'sepia(0.24) saturate(0.78) contrast(1.08)',
+        cool: 'hue-rotate(8deg) saturate(0.92) contrast(1.03)',
+        punch: 'saturate(1.3) contrast(1.13)',
+        soft: 'brightness(1.06) contrast(0.92) saturate(0.88)'
+    };
+    return filters[String(filter || '').toLowerCase()] || 'none';
+}
+
+function pbbShareDrawStudioPhoto(ctx, img, x, y, w, h, editor) {
+    const zoom = Math.max(0.72, Math.min(2.4, Number(editor && editor.photoScale) || 1));
+    const offsetX = Math.max(-0.45, Math.min(0.45, Number(editor && editor.photoX) || 0));
+    const offsetY = Math.max(-0.45, Math.min(0.45, Number(editor && editor.photoY) || 0));
+    const scale = Math.max(w / img.width, h / img.height) * zoom;
+    const drawW = img.width * scale;
+    const drawH = img.height * scale;
+    ctx.save();
+    ctx.filter = pbbShareStudioPhotoFilter(editor && editor.filter);
+    ctx.drawImage(img, x + ((w - drawW) / 2) + (offsetX * w), y + ((h - drawH) / 2) + (offsetY * h), drawW, drawH);
+    ctx.restore();
+}
+
+async function pbbShareWithStudioOverlayTransform(ctx, width, height, editor, draw) {
+    if (!editor || Number(editor.version) < 3) return draw();
+    const x = Math.max(0.08, Math.min(0.92, Number(editor.overlayX) || 0.5));
+    const y = Math.max(0.16, Math.min(0.88, Number(editor.overlayY) || 0.68));
+    const scale = Math.max(0.5, Math.min(1.55, Number(editor.overlayScale) || 1));
+    const anchorY = height * 0.68;
+    ctx.save();
+    ctx.translate((x - 0.5) * width, (y - 0.68) * height);
+    ctx.translate(width / 2, anchorY);
+    ctx.scale(scale, scale);
+    ctx.translate(-width / 2, -anchorY);
+    try { return await draw(); } finally { ctx.restore(); }
+}
+
 function pbbShareLoadImage(src) {
     return new Promise((resolve, reject) => {
         const img = new Image();
@@ -4143,6 +4183,17 @@ async function pbbShareDrawFullBleedWorkoutCard(ctx, cardPayload, width, height,
     ctx.fillText('SHOW UP. KEEP THE RECEIPTS.', 164, brandTop + 78);
 
     ctx.save();
+    const studioEditor = cardPayload.studio_editor;
+    if (studioEditor && Number(studioEditor.version) >= 3) {
+        const studioX = Math.max(0.08, Math.min(0.92, Number(studioEditor.overlayX) || 0.5));
+        const studioY = Math.max(0.16, Math.min(0.88, Number(studioEditor.overlayY) || 0.68));
+        const studioScale = Math.max(0.5, Math.min(1.55, Number(studioEditor.overlayScale) || 1));
+        const anchorY = height * 0.68;
+        ctx.translate((studioX - 0.5) * width, (studioY - 0.68) * height);
+        ctx.translate(width / 2, anchorY);
+        ctx.scale(studioScale, studioScale);
+        ctx.translate(-width / 2, -anchorY);
+    }
     ctx.shadowColor = 'rgba(0, 0, 0, 0.88)';
     ctx.shadowBlur = 22;
     ctx.shadowOffsetY = 5;
@@ -4871,6 +4922,9 @@ function pbbShareDrawStudioCaption(ctx, width, height, cardType, options) {
 async function renderBalanceShareCardImage(cardPayload, options = {}) {
     if (!cardPayload) throw new Error('Missing share card payload');
 
+    const savedStudioEditor = cardPayload.studio_editor || pbbShareGetStudioCustomization(cardPayload.card_type);
+    const studioEditor = savedStudioEditor && Number(savedStudioEditor.version) >= 3 ? savedStudioEditor : null;
+
     if (cardPayload.studio_hide_pb) {
         cardPayload = Object.assign({}, cardPayload, {
             pbs: null,
@@ -4902,19 +4956,21 @@ async function renderBalanceShareCardImage(cardPayload, options = {}) {
     const primaryPhotoDataUrl = options.photoDataUrl || photoDataUrls[0] || '';
     const requestedOverlayStyle = String(options.overlayStyle || cardPayload.share_overlay_style || '').toLowerCase();
     const overlayStyle = ['gold', 'midnight', 'fresh'].includes(requestedOverlayStyle) ? requestedOverlayStyle : 'classic';
-    const textStyle = pbbShareNormalizeTextStyle(options.textStyle || cardPayload.share_text_style);
+    const textStyle = pbbShareNormalizeTextStyle((studioEditor && studioEditor.textStyle) || options.textStyle || cardPayload.share_text_style);
 
     if (primaryPhotoDataUrl) {
         try {
             const photo = await pbbShareLoadImage(primaryPhotoDataUrl);
             if (overlayStyle === 'classic') {
-                pbbShareDrawCoverImage(ctx, photo, 0, 0, width, height);
+                if (studioEditor) pbbShareDrawStudioPhoto(ctx, photo, 0, 0, width, height, studioEditor);
+                else pbbShareDrawCoverImage(ctx, photo, 0, 0, width, height);
             } else {
                 ctx.save();
                 if (overlayStyle === 'midnight') ctx.filter = 'grayscale(0.72) contrast(1.08) brightness(0.86)';
                 if (overlayStyle === 'gold') ctx.filter = 'saturate(0.88) contrast(1.04)';
                 if (overlayStyle === 'fresh') ctx.filter = 'saturate(1.08) contrast(1.02)';
-                pbbShareDrawCoverImage(ctx, photo, 0, 0, width, height);
+                if (studioEditor) pbbShareDrawStudioPhoto(ctx, photo, 0, 0, width, height, studioEditor);
+                else pbbShareDrawCoverImage(ctx, photo, 0, 0, width, height);
                 ctx.restore();
                 pbbShareApplyPhotoStyle(ctx, width, height, overlayStyle, target);
             }
@@ -4932,49 +4988,31 @@ async function renderBalanceShareCardImage(cardPayload, options = {}) {
     }
 
     if ((cardType === 'workout' || cardType === 'pb') && primaryPhotoDataUrl) {
-        await pbbShareDrawFullBleedWorkoutCard(
-            ctx,
-            Object.assign({}, cardPayload, { share_text_style: textStyle }),
-            width,
-            height,
-            target
-        );
+        await pbbShareDrawFullBleedWorkoutCard(ctx, Object.assign({}, cardPayload, { share_text_style: textStyle, studio_editor: studioEditor }), width, height, target);
         pbbShareDrawStudioCaption(ctx, width, height, cardType, options);
         return canvas.toDataURL('image/jpeg', 0.92);
     }
 
     if (cardType === 'meal' && primaryPhotoDataUrl) {
-        await pbbShareDrawFullBleedMealCard(
-            ctx,
-            Object.assign({}, cardPayload, { share_text_style: textStyle }),
-            width,
-            height,
-            target
-        );
+        const drawMeal = () => pbbShareDrawFullBleedMealCard(ctx, Object.assign({}, cardPayload, { share_text_style: textStyle }), width, height, target);
+        if (studioEditor) await pbbShareWithStudioOverlayTransform(ctx, width, height, studioEditor, drawMeal);
+        else await drawMeal();
         pbbShareDrawStudioCaption(ctx, width, height, cardType, options);
         return canvas.toDataURL('image/jpeg', 0.92);
     }
 
     if (cardType === 'nutrition' && primaryPhotoDataUrl) {
-        await pbbShareDrawFullBleedNutritionCard(
-            ctx,
-            Object.assign({}, cardPayload, { share_text_style: textStyle }),
-            width,
-            height,
-            target
-        );
+        const drawNutrition = () => pbbShareDrawFullBleedNutritionCard(ctx, Object.assign({}, cardPayload, { share_text_style: textStyle }), width, height, target);
+        if (studioEditor) await pbbShareWithStudioOverlayTransform(ctx, width, height, studioEditor, drawNutrition);
+        else await drawNutrition();
         pbbShareDrawStudioCaption(ctx, width, height, cardType, options);
         return canvas.toDataURL('image/jpeg', 0.92);
     }
 
     if (cardType === 'activity') {
-        await pbbShareDrawFullBleedActivityCard(
-            ctx,
-            Object.assign({}, cardPayload, { share_text_style: textStyle }),
-            width,
-            height,
-            target
-        );
+        const drawActivity = () => pbbShareDrawFullBleedActivityCard(ctx, Object.assign({}, cardPayload, { share_text_style: textStyle }), width, height, target);
+        if (studioEditor) await pbbShareWithStudioOverlayTransform(ctx, width, height, studioEditor, drawActivity);
+        else await drawActivity();
         pbbShareDrawStudioCaption(ctx, width, height, cardType, options);
         return canvas.toDataURL('image/jpeg', 0.92);
     }

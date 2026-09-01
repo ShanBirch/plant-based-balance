@@ -55,7 +55,7 @@ assert.doesNotMatch(dashboard, /id="share-workout-ig-feed-btn"/);
 assert.match(shareUi, /shareWorkoutCardToInstagram[\s\S]*shareBalanceCardToInstagram\(cardPayload, 'story'/);
 assert.match(dashboard, /id:\s*'independent-balance-instagram-share-xp-v1'/);
 assert.match(dashboard, /title:\s*'Two shares, two XP rewards'/);
-assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=55-approved-share-editor/);
+assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=56-movable-workout-card/);
 assert.match(shareUi, /onSharePrepared:\s*\(\)\s*=>\s*markWorkoutInstagramShareCompleted\(\)/);
 assert.match(shareUi, /if \(!opened\) clearWorkoutInstagramShareCompleted\(\)/);
 assert.match(dashboard, /dashboard-script-11-calorie_tracker_functions\.js\?v=39-private-share-studio/);

@@ -29,7 +29,7 @@ test('studio is full-screen, safe-area aware, and interactive', () => {
   assert.match(studio, /data-share-text-toggle/);
   assert.match(studio, /data-share-text-panel/);
   assert.match(studio, /data-caption-style="gold"/);
-  assert.match(studio, /object-fit:contain/);
+  assert.match(studio, /object-fit:cover/);
   assert.doesNotMatch(studio, /max-height:42dvh;overflow:auto;padding:12px 14px/);
   assert.match(studio, /data-share-toggle-pb/);
   assert.match(studio, /data-share-toggle-stats/);
@@ -45,6 +45,25 @@ test('studio is full-screen, safe-area aware, and interactive', () => {
   assert.match(studio, /Choose from photos/);
   assert.match(studio, /data-theme=\"dark\"/);
   assert.match(studio, /data-theme=\"light\"/);
+});
+
+test('focused editor can reframe the photo and move the workout card', () => {
+  assert.match(studio, /data-photo-scale/);
+  assert.match(studio, /Fit smaller/);
+  assert.match(studio, /photoScale = clamp/);
+  assert.match(studio, /photoPointers/);
+  assert.match(studio, /data-share-workout-layer/);
+  assert.match(studio, /overlayX/);
+  assert.match(studio, /overlayY/);
+  assert.match(studio, /overlayScale/);
+  assert.match(studio, /data-card-layout="bold"/);
+  assert.match(studio, /data-card-layout="scorecard"/);
+  assert.match(studio, /data-card-layout="simple"/);
+  assert.match(studio, /data-card-layout="full"/);
+  assert.match(studio, /Drag the whole workout card anywhere/);
+  assert.match(points, /function pbbShareDrawStudioPhoto/);
+  assert.match(points, /function pbbShareWithStudioOverlayTransform/);
+  assert.match(points, /cardPayload\.studio_editor/);
 });
 
 test('studio connects to every requested photo-sharing surface', () => {
@@ -81,10 +100,10 @@ test('Shannon receives the progress-first workout completed page', () => {
 });
 
 test('private reveal, tour, and cache-busted modules ship together', () => {
-  assert.match(dashboard, /private-photo-share-studio-shannon-v2/);
+  assert.match(dashboard, /private-photo-share-studio-shannon-v3/);
   assert.match(dashboard, /BalancePrivateShareStudio\.isEnabled\(\)/);
-  assert.match(dashboard, /pbb-private-share-studio\.js\?v=6-approved-editor-layout/);
-  assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=55-approved-share-editor/);
+  assert.match(dashboard, /pbb-private-share-studio\.js\?v=7-movable-workout-card/);
+  assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=56-movable-workout-card/);
   assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=[^'\"]+/);
   assert.match(dashboard, /dashboard-script-11-calorie_tracker_functions\.js\?v=39-private-share-studio/);
 });
