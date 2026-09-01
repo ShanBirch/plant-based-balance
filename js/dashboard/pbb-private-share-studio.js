@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  var PILOT_EMAIL = 'shannonrhysbirch@gmail.com';
+  var PILOT_EMAIL = 'shannonbirch@cocospersonaltraining.com';
   var active = null;
   var renderTimer = null;
   var renderSequence = 0;

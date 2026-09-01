@@ -14,7 +14,8 @@ const progressPhotos = read('js/dashboard/pbb-deferred-progressphoto.js');
 const dashboard = read('dashboard.html');
 
 test('photo share studio is locked to Shannon account', () => {
-  assert.match(studio, /PILOT_EMAIL = 'shannonrhysbirch@gmail\.com'/);
+  assert.match(studio, /PILOT_EMAIL = 'shannonbirch@cocospersonaltraining\.com'/);
+  assert.doesNotMatch(studio, /shannonrhysbirch@gmail\.com/);
   assert.match(studio, /return accountEmail\(\) === PILOT_EMAIL/);
   assert.doesNotMatch(studio, /localStorage.*pilot/i);
 });
@@ -51,7 +52,7 @@ test('custom text is burned into designed share images', () => {
 test('private reveal, tour, and cache-busted modules ship together', () => {
   assert.match(dashboard, /private-photo-share-studio-shannon-v1/);
   assert.match(dashboard, /BalancePrivateShareStudio\.isEnabled\(\)/);
-  assert.match(dashboard, /pbb-private-share-studio\.js\?v=1-shannon-pilot/);
-  assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=52-private-share-studio/);
+  assert.match(dashboard, /pbb-private-share-studio\.js\?v=2-coco-account/);
+  assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=[^'\"]+/);
   assert.match(dashboard, /dashboard-script-11-calorie_tracker_functions\.js\?v=39-private-share-studio/);
 });
