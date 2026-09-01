@@ -250,8 +250,8 @@
                             Upload Clip
                         </button>
                     </div>
-                    <input type="file" id="form-check-camera-input" accept="video/*" capture="environment" style="display:none;" onchange="handleFormCheckFileSelect(event)">
-                    <input type="file" id="form-check-gallery-input" accept="video/*" style="display:none;" onchange="handleFormCheckFileSelect(event)">
+                    <input type="file" id="form-check-camera-input" accept="video/*,.mp4,.mov,.m4v,.webm,.3gp,.3gpp" capture="environment" style="display:none;" onchange="handleFormCheckFileSelect(event)">
+                    <input type="file" id="form-check-gallery-input" accept="video/*,.mp4,.mov,.m4v,.webm,.3gp,.3gpp" style="display:none;" onchange="handleFormCheckFileSelect(event)">
                     <video id="form-check-video-preview" controls playsinline></video>
                     <button type="button" id="form-check-remove-video" class="form-check-btn form-check-btn-danger" style="display:none; width:100%; margin-top:10px;" onclick="clearFormCheckVideo()">Remove Clip</button>
                 </div>
@@ -447,15 +447,49 @@
     }
 
     async function uploadFormCheckClip(userId, file, requestId) {
+        logWorkoutFeedShareDiagnostic('form_check_upload_request_start', {
+            requestId,
+            uploadMode: typeof window.uploadBalanceVideoToBackblaze === 'function' ? 'direct_b2' : 'legacy_netlify',
+            ...getWorkoutFeedShareFileDiagnostic(file)
+        });
+
+        if (typeof window.uploadBalanceVideoToBackblaze === 'function') {
+            try {
+                const upload = await window.uploadBalanceVideoToBackblaze(file, {
+                    userId,
+                    storyId: requestId,
+                    source: 'feed_form_check',
+                    attemptId: workoutFeedShareDiagnosticAttemptId,
+                    timeoutMs: getWorkoutFeedShareUploadTimeoutMs(file)
+                });
+                if (!upload?.url) throw new Error('Form check upload finished without a public URL.');
+                logWorkoutFeedShareDiagnostic('form_check_upload_response', {
+                    requestId,
+                    uploadMode: upload.multipartUpload ? 'multipart_b2' : 'direct_b2',
+                    responseOk: true,
+                    uploadedBytes: Number(upload.size || file.size || 0)
+                });
+                return {
+                    publicUrl: upload.url,
+                    storagePath: upload.fileName,
+                    upload
+                };
+            } catch (error) {
+                logWorkoutFeedShareDiagnostic('form_check_upload_network_error', {
+                    requestId,
+                    uploadMode: 'direct_b2',
+                    errorName: error && error.name ? error.name : 'Error',
+                    errorMessage: error && error.message ? error.message : String(error || 'upload request failed'),
+                    ...getWorkoutFeedShareFileDiagnostic(file)
+                });
+                throw error;
+            }
+        }
+
         const formData = new FormData();
         formData.append('file', file);
         formData.append('userId', userId);
         formData.append('requestId', requestId);
-
-        logWorkoutFeedShareDiagnostic('form_check_upload_request_start', {
-            requestId,
-            ...getWorkoutFeedShareFileDiagnostic(file)
-        });
 
         let response;
         try {
@@ -648,14 +682,19 @@
             if (typeof showToast === 'function') showToast('Form check sent to Shannon', 'success');
         } catch (error) {
             console.error('[FormCheck] background submit failed', error);
+            const supportCode = typeof window.getBalanceVideoUploadSupportCode === 'function'
+                ? window.getBalanceVideoUploadSupportCode(job.attemptId || workoutFeedShareDiagnosticAttemptId)
+                : '';
             logWorkoutFeedShareDiagnostic('form_check_submit_failed', {
                 requestId: job.requestId,
+                supportCode,
                 errorName: error && error.name ? error.name : 'Error',
                 errorMessage: error && error.message ? error.message : String(error || 'form check failed'),
                 ...getWorkoutFeedShareFileDiagnostic(job.file)
             });
             if (typeof showToast === 'function') {
-                showToast(error.message || 'Form check upload failed. Please try again.', 'error');
+                const message = error.message || 'Form check upload failed. Please try again.';
+                showToast(message + (supportCode ? ` Code ${supportCode}.` : ''), 'error');
             }
         }
     }
@@ -996,15 +1035,21 @@
 
     function logWorkoutFeedShareDiagnostic(event, data) {
         if (typeof window.logFeedUploadDiagnostic !== 'function') return;
+        const supportCode = typeof window.getBalanceVideoUploadSupportCode === 'function'
+            ? window.getBalanceVideoUploadSupportCode(workoutFeedShareDiagnosticAttemptId)
+            : '';
         window.logFeedUploadDiagnostic(event, {
             source: workoutFeedShareCaptureTarget === 'form-check'
                 ? 'form_check'
                 : workoutFeedShareCaptureTarget === 'custom-exercise'
                     ? 'custom_exercise'
+                    : workoutFeedShareCaptureTarget === 'feed-composer'
+                        ? 'feed_composer'
                     : 'feed_workout_share',
             userId: window.currentUser && window.currentUser.id,
             captureTarget: workoutFeedShareCaptureTarget,
             attemptId: workoutFeedShareDiagnosticAttemptId,
+            supportCode,
             ...data
         });
     }
@@ -2129,7 +2174,9 @@
         logWorkoutFeedShareDiagnostic('video_gallery_picker_open', {
             nativePlatform: isWorkoutFeedShareNativePlatform()
         });
-        if (window.NativePermissions && typeof window.NativePermissions.pickWorkoutVideo === 'function') {
+        const iosVideoPlugin = getBalanceVideoCapturePlugin();
+        if ((window.NativePermissions && typeof window.NativePermissions.pickWorkoutVideo === 'function')
+            || (iosVideoPlugin && typeof iosVideoPlugin.pickWorkoutVideo === 'function')) {
             void openNativeWorkoutFeedShareGallery();
         } else {
             openWorkoutFeedShareFilePicker();
@@ -2221,6 +2268,15 @@
                 return;
             }
             showWorkoutFeedShareUploadBanner('Exercise video tool is still loading. Try Camera again.', 'error');
+            return;
+        }
+        if (workoutFeedShareCaptureTarget === 'feed-composer') {
+            if (typeof window.handleFeedComposerNativeVideoFile === 'function') {
+                window.handleFeedComposerNativeVideoFile(file);
+                hideWorkoutFeedShareUploadBanner(300);
+                return;
+            }
+            showWorkoutFeedShareUploadBanner('Feed video tool is still loading. Try again.', 'error');
             return;
         }
         void processWorkoutFeedShareSelectedFile(file);
@@ -2888,6 +2944,7 @@
             hasWebPath: !!(result && result.webPath),
             hasFilePath: !!(result && (result.path || result.filePath)),
             hasInlineData: !!(result && result.dataBase64),
+            deliveryMode: result && result.deliveryMode || '',
             reportedSizeBytes: Number(result && result.size || 0),
             reportedMimeType: result && result.mimeType || '',
             reportedFileName: result && result.name || ''
@@ -3755,6 +3812,12 @@
     window.prepareBalanceVideoUploadFile = function (file, stage, target) {
         if (target) workoutFeedShareCaptureTarget = target;
         return materializeWorkoutFeedShareFile(file, stage);
+    };
+    window.getBalanceVideoUploadAttemptContext = function () {
+        return {
+            attemptId: workoutFeedShareDiagnosticAttemptId,
+            captureTarget: workoutFeedShareCaptureTarget
+        };
     };
     window.handleWorkoutFeedShareFileSelect = handleWorkoutFeedShareFileSelect;
     window.clearWorkoutFeedShareVideo = clearWorkoutFeedShareVideo;

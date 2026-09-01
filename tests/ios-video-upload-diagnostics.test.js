@@ -47,13 +47,14 @@ assert.match(formCheck, /window\.prepareBalanceVideoUploadFile = function \(file
 assert.match(formCheck, /async function readWorkoutFeedShareNativeVideoBlob\(source\)/);
 assert.match(formCheck, /request\.responseType = 'blob';[\s\S]*request\.status === 0/);
 assert.match(formCheck, /function nativeWorkoutVideoBase64ToBlob\(dataBase64, mimeType\)/);
-assert.match(formCheck, /includeDataBase64: true/);
+assert.match(formCheck, /includeDataBase64: workoutFeedShareCaptureTarget !== 'custom-exercise'/);
 assert.match(formCheck, /const hasInlineNativeVideoData = !!result\.dataBase64;/);
 assert.match(formCheck, /if \(!hasInlineNativeVideoData\)\s*{\s*await assertWorkoutFeedShareVideoFile\(file\);/);
 assert.match(formCheck, /const workoutFeedShareNativeValidatedFiles = typeof WeakSet/);
 assert.match(formCheck, /workoutFeedShareNativeValidatedFiles\.has\(file\)/);
 assert.match(formCheck, /workoutFeedShareNativeValidatedFiles\.add\(file\)/);
-assert.match(read('ios/App/App/BalanceVideoCapturePlugin.swift'), /result\["dataBase64"\] = videoData\.base64EncodedString\(\)/);
+assert.match(read('ios/App/App/BalanceVideoCapturePlugin.swift'), /maxInlineVideoBytes: Int64 = 24 \* 1024 \* 1024/);
+assert.match(read('ios/App/App/BalanceVideoCapturePlugin.swift'), /fileSize <= Self\.maxInlineVideoBytes[\s\S]*result\["dataBase64"\] = videoData\.base64EncodedString\(\)/);
 
 for (const eventName of [
     'custom_exercise_gallery_open',
@@ -68,11 +69,11 @@ for (const eventName of [
 
 assert.match(customExercise, /prepareBalanceVideoUploadFile\(rawFile, 'custom_exercise_picker', 'custom-exercise'\)/);
 assert.match(supabase, /custom_exercise_upload_request_start/);
-assert.match(supabase, /custom_exercise_upload_network_error/);
-assert.match(supabase, /custom_exercise_upload_response/);
+assert.match(supabase, /custom_exercise_direct_upload_network_error/);
+assert.match(supabase, /custom_exercise_direct_upload_success/);
 assert.match(dashboard, /onclick="openCustomExerciseVideoGallery\(event\)"/);
-assert.match(dashboard, /lib\/stories\.js\?v=64/);
-assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=138/);
-assert.match(dashboard, /pbb-deferred-formcheck\.js\?v=55/);
+assert.match(dashboard, /lib\/stories\.js\?v=75-onboarding-introduction&video_health=2/);
+assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=225-calendar-home-coins&video_health=2/);
+assert.match(dashboard, /pbb-deferred-formcheck\.js\?v=58-ios-exercise-video-upload&video_health=2/);
 
 console.log('iPhone video upload diagnostics contract ok');

@@ -514,7 +514,7 @@ if (window._pbbIsIOSSafari) {
             'lib/native-health.js',
             'lib/native-push.js?v=41-meal-reminders-retired',
             'lib/native-iap.js',
-            'lib/stories.js?v=75-onboarding-introduction',
+            'lib/stories.js?v=75-onboarding-introduction&video_health=2',
             'lib/ai-opponents.js',
             'lib/games.js?v=3',
             'lib/nutrition-calculator.js',
@@ -537,7 +537,7 @@ if (window._pbbIsIOSSafari) {
 } else {
     document.write('<script src="lib/vegan-meal-safety.js?v=2"><\/script>');
     document.write('<script src="lib/migrate-localstorage.js"><\/script>');
-    document.write('<script src="lib/stories.js?v=75-onboarding-introduction"><\/script>');
+    document.write('<script src="lib/stories.js?v=75-onboarding-introduction&video_health=2"><\/script>');
     document.write('<script src="lib/ai-opponents.js"><\/script>');
     document.write('<script src="lib/games.js?v=3"><\/script>');
     document.write('<script src="lib/nutrition-calculator.js"><\/script>');
@@ -10218,11 +10218,16 @@ if(!window._pbbIsIOSSafari) {
                                 <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="M21 15l-5-5L5 21"></path></svg>
                                 Photos
                             </button>
+                            <button type="button" role="menuitem" onclick="openFeedComposerMediaSource('library-video')" style="width: 100%; display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: none; border-top: 1px solid #f1f5f9; background: white; color: var(--text-main); font-family: inherit; font-size: 0.88rem; font-weight: 700; text-align: left; cursor: pointer;">
+                                <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;"><path d="M23 7l-7 5 7 5V7z"></path><rect x="1" y="5" width="15" height="14" rx="2"></rect></svg>
+                                Choose Video
+                            </button>
                         </div>
                     </div>
                 </div>
                 <input type="file" id="feed-composer-camera-photo-input" accept="image/*" capture="environment" style="display: none;" onchange="handleFeedComposerFileSelect(event)">
                 <input type="file" id="feed-composer-camera-video-input" accept="video/*" capture="environment" style="display: none;" onchange="handleFeedComposerFileSelect(event)">
+                <input type="file" id="feed-composer-video-input" accept="video/*,.mp4,.mov,.m4v,.webm,.3gp,.3gpp" style="display: none;" onchange="handleFeedComposerFileSelect(event)">
                 <input type="file" id="feed-composer-file-input" accept="image/*,video/*" multiple style="display: none;" onchange="handleFeedComposerFileSelect(event)">
                 <button id="feed-composer-post-btn" onclick="submitFeedComposerPost()" disabled style="min-width: 72px; padding: 9px 18px; border: none; border-radius: 999px; background: var(--primary); color: white; font-size: 0.85rem; font-weight: 800; cursor: pointer; opacity: 0.45; transition: opacity 0.2s, transform 0.2s;">Post</button>
             </div>
@@ -12902,7 +12907,7 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=225-calendar-home-coins';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=225-calendar-home-coins&video_health=2';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
@@ -12944,7 +12949,7 @@ if (window._pbbIsIOSSafari) {
         var s = document.createElement('script');
         s.async = false;
         s.dataset.metaTrialLoader = String(attempt);
-        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=225-calendar-home-coins&meta_retry=' + attempt;
+        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=225-calendar-home-coins&video_health=2&meta_retry=' + attempt;
         s.onload = function() {
             if (window._pbbScript5Complete && window._switchAppTabReady && typeof window._switchAppTabReal === 'function') {
                 sessionStorage.removeItem('pbb_meta_script5_recovery_v1');
@@ -12963,7 +12968,7 @@ if (window._pbbIsIOSSafari) {
         document.head.appendChild(s);
     })(0);
 } else {
-document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=225-calendar-home-coins"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=225-calendar-home-coins&video_health=2"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=3"></script>
@@ -18093,7 +18098,7 @@ if (window._pbbIsIOSSafari) {
 
 
 <script src="js/dashboard/script_part_24.js?v=2"></script>
-<script src="js/dashboard/pbb-deferred-formcheck.js?v=58-ios-exercise-video-upload"></script>
+<script src="js/dashboard/pbb-deferred-formcheck.js?v=58-ios-exercise-video-upload&video_health=2"></script>
 
 
 <script>

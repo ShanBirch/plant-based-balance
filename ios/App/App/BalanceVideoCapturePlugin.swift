@@ -18,6 +18,7 @@ public class BalanceVideoCapturePlugin: CAPPlugin, CAPBridgedPlugin, UIImagePick
     private var pendingCall: CAPPluginCall?
     private var pendingPickerCall: CAPPluginCall?
     private var shouldIncludeVideoData = false
+    private static let maxInlineVideoBytes: Int64 = 24 * 1024 * 1024
     private static let uploadStatusPrefix = "exercise_video_"
     private static let siteURL = "https://plantbased-balance.org"
 
@@ -303,9 +304,13 @@ public class BalanceVideoCapturePlugin: CAPPlugin, CAPBridgedPlugin, UIImagePick
         if let size = size {
             result["size"] = size.int64Value
         }
-        if shouldIncludeVideoData {
+        let fileSize = size?.int64Value ?? 0
+        if shouldIncludeVideoData && fileSize > 0 && fileSize <= Self.maxInlineVideoBytes {
             let videoData = try Data(contentsOf: destination, options: .mappedIfSafe)
             result["dataBase64"] = videoData.base64EncodedString()
+            result["deliveryMode"] = "inline_base64"
+        } else {
+            result["deliveryMode"] = "native_file"
         }
         return result
     }

@@ -50,7 +50,7 @@ assert.match(
 );
 assert.match(
   dashboardHtml,
-  /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=190-exercise-video-bridge/,
+  /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=225-calendar-home-coins&video_health=2/,
   'dashboard should bump script 5 so phones fetch the upload progress and background worker flow'
 );
 assert.match(

@@ -45,7 +45,7 @@ test('new and retried native videos are durably handed off before modal close', 
 test('dashboard requests the version-gated native bridge revision', () => {
   assert.match(
     dashboard,
-    /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=190-exercise-video-bridge/
+    /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=225-calendar-home-coins&video_health=2/
   );
   assert.match(
     script,
