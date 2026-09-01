@@ -493,7 +493,47 @@
 
   function openFoundationsTarget() {
     markOnboardingStepSeen('foundations_intro');
+    openNextCourseTarget('balance-foundations');
+  }
+
+  function getNextCourseId() {
+    try {
+      if (window.socialJourney && typeof window.socialJourney.getCurrentWeek === 'function') {
+        return Number(window.socialJourney.getCurrentWeek() || 1) >= 7 ? 'balance-identity' : 'balance-foundations';
+      }
+    } catch (_) {}
+    return 'balance-foundations';
+  }
+
+  function openNextCourseTarget(courseId) {
+    var resolvedCourseId = courseId || getNextCourseId();
+    var selector = resolvedCourseId === 'balance-identity'
+      ? '#balance-identity-course-card'
+      : '#balance-foundations-course-card';
     switchTab('learning');
+    afterTab(function(){
+      if (typeof window.renderLearningHome === 'function') window.renderLearningHome();
+      var attempts = 0;
+      function revealCourseCard() {
+        var card = document.querySelector(selector);
+        if (!card && attempts++ < 12) {
+          setTimeout(revealCourseCard, 150);
+          return;
+        }
+        if (!card) return;
+        document.querySelectorAll('.course-path-card.is-next-course-target').forEach(function(item){
+          item.classList.remove('is-next-course-target');
+        });
+        card.classList.add('is-next-course-target');
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        var button = card.querySelector('.course-path-card-open');
+        if (button) {
+          button.focus({ preventScroll: true });
+          button.addEventListener('click', function(){ card.classList.remove('is-next-course-target'); }, { once: true });
+        }
+      }
+      revealCourseCard();
+    }, 360);
   }
 
   function openQuizTarget() {
@@ -501,7 +541,7 @@
       openDashboardTarget('#daily-quiz-card', { block: 'center' });
       return;
     }
-    switchTab('learning');
+    openNextCourseTarget();
   }
 
   function openInsightsTarget(selector) {
@@ -1364,6 +1404,8 @@
     setTimeout(function(){ refreshDailyStatus({ force: true }); }, 1800);
     setTimeout(render, 3500);
   }
+
+  window.pbbOpenNextCourseTarget = openNextCourseTarget;
 
   window.pbbNextSteps = {
     refresh: render,

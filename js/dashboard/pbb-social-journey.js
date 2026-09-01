@@ -726,6 +726,7 @@
     if (!isCurrentLessonSeen()) {
       return {
         kind: 'course_lesson',
+        courseId: definition.week >= 7 ? 'balance-identity' : 'balance-foundations',
         title: definition.week >= 7
           ? 'Start Balance Identity: Week ' + definition.week
           : 'Complete this week\'s Balance Foundations lesson',
@@ -746,12 +747,13 @@
 
   function openUnifiedAction() {
     if (!isJourneyEligible() || !state) return;
-    if (Number(state.current_week) === 1 && !isCurrentLessonSeen()) {
-      openJourney('welcome');
-      return;
-    }
     if (!isCurrentLessonSeen()) {
-      openJourney('lesson');
+      const courseId = Number(state.current_week || 1) >= 7 ? 'balance-identity' : 'balance-foundations';
+      if (typeof window.pbbOpenNextCourseTarget === 'function') {
+        window.pbbOpenNextCourseTarget(courseId);
+      } else if (typeof window.switchAppTab === 'function') {
+        window.switchAppTab('learning');
+      }
       return;
     }
     const nextTask = getNextJourneyTask();

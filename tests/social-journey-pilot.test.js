@@ -84,8 +84,25 @@ test('Home plan cards stay below the complete FitGotchi stats block', () => {
     assert.match(source, /characterBlockTail\.parentNode\.insertBefore\(weeklyGoals, characterBlockTail\.nextSibling\)/);
     assert.match(source, /characterBlockTail\.parentNode\.insertBefore\(card, characterBlockTail\.nextSibling\)/);
     assert.doesNotMatch(source, /levelStrip\.parentNode\.insertBefore\((weeklyGoals|card), levelStrip\.nextSibling\)/);
-    assert.match(html, /pbb-social-journey\.js\?v=40-direct-weekly-actions/);
-    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v438-insights-note-contrast'/);
+    assert.match(html, /pbb-social-journey\.js\?v=41-course-tab-handoff/);
+    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v439-next-course-handoff'/);
+});
+
+test('Home course actions bypass legacy journey pages and spotlight the next Course card', () => {
+    const socialSource = fs.readFileSync(path.join(root, 'js/dashboard/pbb-social-journey.js'), 'utf8');
+    const nextStepsSource = fs.readFileSync(path.join(root, 'js/dashboard/pbb-next-obvious-steps.js'), 'utf8');
+    const premiumCss = fs.readFileSync(path.join(root, 'css/dashboard/pbb-premium-overlays.css'), 'utf8');
+    const html = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
+
+    assert.match(socialSource, /courseId: definition\.week >= 7 \? 'balance-identity' : 'balance-foundations'/);
+    assert.match(socialSource, /window\.pbbOpenNextCourseTarget\(courseId\)/);
+    assert.doesNotMatch(socialSource, /if \(!isCurrentLessonSeen\(\)\) \{\s*openJourney\('lesson'\)/);
+    assert.match(nextStepsSource, /function openNextCourseTarget\(courseId\)/);
+    assert.match(nextStepsSource, /window\.renderLearningHome\(\)/);
+    assert.match(nextStepsSource, /card\.classList\.add\('is-next-course-target'\)/);
+    assert.match(premiumCss, /@keyframes pbb-next-course-pulse/);
+    assert.match(premiumCss, /prefers-reduced-motion: reduce/);
+    assert.match(html, /pbb-next-obvious-steps\.js\?v=38-course-tab-highlight/);
 });
 
 test('Home goals and plan cards follow light and dark mode', () => {

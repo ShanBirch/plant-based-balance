@@ -12648,3 +12648,36 @@ html[data-pbb-theme] :where(.settings-picker-close, .settings-picker-option, .di
         font-size: 0.82rem;
     }
 }
+@keyframes pbb-next-course-pulse {
+    0%, 100% {
+        box-shadow: 0 0 0 2px rgba(183, 138, 46, 0.78), 0 12px 30px rgba(183, 138, 46, 0.16);
+        transform: translateY(0);
+    }
+    50% {
+        box-shadow: 0 0 0 6px rgba(245, 217, 138, 0.3), 0 18px 42px rgba(183, 138, 46, 0.3);
+        transform: translateY(-2px);
+    }
+}
+
+.course-path-card.is-next-course-target {
+    position: relative;
+    z-index: 2;
+    border-color: #b78a2e !important;
+    animation: pbb-next-course-pulse 1.65s ease-in-out infinite;
+}
+
+.course-path-card.is-next-course-target .course-path-card-open:focus-visible {
+    outline: 3px solid #f5d98a;
+    outline-offset: 4px;
+}
+
+html[data-pbb-theme="dark"] .course-path-card.is-next-course-target {
+    border-color: #f5d98a !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .course-path-card.is-next-course-target {
+        animation: none;
+        box-shadow: 0 0 0 4px rgba(183, 138, 46, 0.34), 0 16px 38px rgba(183, 138, 46, 0.22);
+    }
+}
