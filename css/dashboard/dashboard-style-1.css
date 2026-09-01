@@ -11289,6 +11289,8 @@ html[data-pbb-theme="light"] #view-insights-metric-detail {
 }
 
 #view-insights-metric-detail .multi-week-nav button {
+    border-color: var(--pbb-insights-border) !important;
+    background: var(--pbb-insights-soft-bg) !important;
     color: var(--pbb-insights-muted) !important;
     -webkit-text-fill-color: var(--pbb-insights-muted) !important;
 }
@@ -11298,6 +11300,15 @@ html[data-pbb-theme="light"] #view-insights-metric-detail {
     background: var(--pbb-insights-gold-soft) !important;
     color: var(--pbb-insights-text) !important;
     -webkit-text-fill-color: var(--pbb-insights-text) !important;
+}
+
+#view-insights-metric-detail [style*="background: rgba(59, 130, 246"],
+#view-insights-metric-detail [style*="background:rgba(59, 130, 246"],
+#view-insights-metric-detail [style*="background: rgba(99, 102, 241"],
+#view-insights-metric-detail [style*="background:rgba(99, 102, 241"],
+#view-insights-metric-detail [style*="background: rgba(16, 185, 129"],
+#view-insights-metric-detail [style*="background:rgba(16, 185, 129"] {
+    background: var(--pbb-insights-gold-soft) !important;
 }
 
 #view-insights-metric-detail .insights-bodyweight-card,

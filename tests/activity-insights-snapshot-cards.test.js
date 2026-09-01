@@ -67,9 +67,9 @@ test('new and returning members discover snapshots and manual steps', () => {
 });
 
 test('returning phones receive the snapshot release', () => {
-  assert.match(dashboard, /dashboard-style-1\.css\?v=72/);
-  assert.ok((dashboard.match(/dashboard-script-2-activity_insights_view\.js\?v=insights-theme-history-v2/g) || []).length >= 2);
-  assert.match(serviceWorker, /pbb-app-v431-insights-theme-history/);
+  assert.match(dashboard, /dashboard-style-1\.css\?v=73/);
+  assert.ok((dashboard.match(/dashboard-script-2-activity_insights_view\.js\?v=insights-theme-history-v3/g) || []).length >= 2);
+  assert.match(serviceWorker, /pbb-app-v432-insights-theme-controls/);
 });
 
 test('body weight detail has one entry point and a live history summary', () => {
@@ -86,4 +86,6 @@ test('every metric detail uses paired readable font roles', () => {
   assert.match(css, /#view-insights-metric-detail svg text\[fill="#94a3b8"\]/);
   assert.match(css, /#view-insights-metric-detail \.cb-tooltip/);
   assert.match(css, /#view-insights-metric-detail \.multi-week-nav button\.active/);
+  assert.match(css, /\.multi-week-nav button\s*\{[^}]*background: var\(--pbb-insights-soft-bg\) !important/s);
+  assert.match(css, /background: rgba\(59, 130, 246/);
 });
