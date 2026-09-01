@@ -971,6 +971,11 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
         var dateKey = getTodayDateKey();
         var lsKey = 'fitnessDiaryDone_' + dateKey;
 
+        if (isFitnessDiaryShared(dateKey)) {
+            hideFitnessDiaryShareCards(dateKey);
+            return;
+        }
+
         if (localStorage.getItem(lsKey)) {
             // Already done — show done card (unless dismissed)
             card.style.display = 'none';
@@ -1014,6 +1019,10 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
         if (!card) return false;
         var dateKey = getTodayDateKey();
         var alreadyDone = !!localStorage.getItem('fitnessDiaryDone_' + dateKey);
+        if (isFitnessDiaryShared(dateKey)) {
+            hideFitnessDiaryShareCards(dateKey);
+            return false;
+        }
         window._fitnessDiaryActionOpen = true;
         if (alreadyDone) {
             card.style.display = 'none';
@@ -1103,8 +1112,27 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
         } catch (_) {}
     }
 
+    function hideFitnessDiaryShareCards(dateKey) {
+        var targetDate = dateKey || getTodayDateKey();
+        if (!isFitnessDiaryShared(targetDate)) return false;
+        var card = document.getElementById('fitness-diary-card');
+        var doneCard = document.getElementById('fitness-diary-done-card');
+        if (card) {
+            card.style.display = 'none';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }
+        if (doneCard) doneCard.style.display = 'none';
+        window._fitnessDiaryActionOpen = false;
+        return true;
+    }
+
     function updateFitnessDiaryShareButtons(dateKey) {
         var shared = isFitnessDiaryShared(dateKey || getTodayDateKey());
+        if (shared) {
+            hideFitnessDiaryShareCards(dateKey || getTodayDateKey());
+            return;
+        }
         [
             { id: 'fitness-diary-share-feed-btn', label: 'Share to Feed' },
             { id: 'fitness-diary-success-share-feed-btn', label: 'Share Fitness Diary to Feed' }
@@ -1210,7 +1238,7 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
         if (isFitnessDiaryShared(dateKey)) {
             if (typeof showToast === 'function') showToast('Fitness diary already shared to Feed', 'info');
             closeFitnessDiaryFeedSharePrompt();
-            updateFitnessDiaryShareButtons(dateKey);
+            hideFitnessDiaryShareCards(dateKey);
             return null;
         }
 
@@ -1254,7 +1282,7 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
 
             markFitnessDiaryShared(dateKey);
             closeFitnessDiaryFeedSharePrompt();
-            updateFitnessDiaryShareButtons(dateKey);
+            hideFitnessDiaryShareCards(dateKey);
             if (typeof loadPhotoFeed === 'function') {
                 loadPhotoFeed('friends-photo-feed', 'friends-feed-empty');
             }
@@ -1373,11 +1401,19 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
 
             // Transition to done card
             setTimeout(function() {
+                if (isFitnessDiaryShared(dateKey)) {
+                    hideFitnessDiaryShareCards(dateKey);
+                    return;
+                }
                 if (card) {
                     card.style.transition = 'opacity 0.5s, transform 0.5s';
                     card.style.opacity = '0';
                     card.style.transform = 'translateY(-20px)';
                     setTimeout(function() {
+                        if (isFitnessDiaryShared(dateKey)) {
+                            hideFitnessDiaryShareCards(dateKey);
+                            return;
+                        }
                         card.style.display = 'none';
                         card.style.opacity = '1';
                         card.style.transform = 'translateY(0)';
@@ -1413,6 +1449,7 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
     window.showFitnessDiaryFeedSharePrompt = showFitnessDiaryFeedSharePrompt;
     window.closeFitnessDiaryFeedSharePrompt = closeFitnessDiaryFeedSharePrompt;
     window.dismissFitnessDiaryDoneCard = dismissFitnessDiaryDoneCard;
+    window.hideFitnessDiaryShareCards = hideFitnessDiaryShareCards;
 
     // ===== MOOD CHECK-IN CARD (3x daily: morning, afternoon, evening) =====
 
