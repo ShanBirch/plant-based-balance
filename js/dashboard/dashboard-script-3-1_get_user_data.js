@@ -387,13 +387,13 @@
 
                 // Phase 1: Run independent async operations in parallel for faster startup
                 // - syncQuizDataToDb: sync local quiz data to DB (independent)
-                // - seedTestAccount: inject test data if test user (independent)
+                // - prepareOnboardingTestAccount: reset only the dedicated onboarding test user
                 // - initCalendarView: load cycle data (loadProfileData depends on this)
                 // - loadCharacterColorsFromDb: load gender & colors (loadPointsWidget depends on this)
                 _crumb('phase1_parallel_start');
                 await Promise.all([
                     syncQuizDataToDb().catch(e => { _crumb('syncQuiz_error: ' + (e&&e.message||e)); }),
-                    seedTestAccount().catch(e => { _crumb('seedTest_error: ' + (e&&e.message||e)); }),
+                    prepareOnboardingTestAccount().catch(e => { _crumb('onboardingTest_error: ' + (e&&e.message||e)); }),
                     (typeof initCalendarView === 'function'
                         ? initCalendarView().then(() => { _crumb('initCalendarView_done'); }).catch(e => { _crumb('initCalendarView_error: ' + (e&&e.message||e)); })
                         : Promise.resolve()),
@@ -644,60 +644,8 @@
                 }
             })();
 
-            // --- TEST DATA SEEDING ---
-            async function seedTestAccount() {
-                if (window.currentUser?.email === 'shannonbirch@cocospersonaltraining.com') {
-                    console.log("🧪 Seeding Test Account Data...");
-                    
-                    const coreUpdates = {
-                        name: 'Coach Shannon'
-                    };
-
-                    const factUpdates = {
-                        profile: 'CORTISOL', // Hormone Type
-                        equipment_access: 'none', // Just a mat (Triggers: Yoga, Bodyweight only)
-                        energy_status: 'moderate',
-                        goal: 'Fat Loss',
-                        // Quiz Answers mapping to symptoms
-                        keeps_awake: 'worry',     // -> Anxiety
-                        midday_crash: 'yes',      // -> Fatigue
-                        brain_fog: 'yes',         // -> Fatigue
-                        symptoms: ['anxiety', 'fatigue'] // Explicitly set for immediate testing
-                    };
-                    
-                    try {
-                        // 1. Core Profile (users table)
-                        try {
-                            await dbHelpers.users.update(window.currentUser.id, coreUpdates);
-                        } catch (coreError) {
-                            console.warn("⚠️ Could not update core 'users' table (likely RLS). Proceeding to 'user_facts'.", coreError);
-                        }
-                        
-                        // 2. Extended Facts (user_facts table)
-                        let existingFacts = {}; 
-                        try { existingFacts = await dbHelpers.userFacts.get(window.currentUser.id); } catch(e){}
-                        const currentDetails = existingFacts?.personal_details || {};
-                        
-                        // Force explicit symptoms to prove it works
-                        const finalFacts = { ...currentDetails, ...factUpdates };
-                        // Ensure symptoms are set if not already present or if forceful overwrite needed
-                        // For test account, we force them.
-                        finalFacts.symptoms = ['anxiety', 'bloating', 'fatigue'];
-
-                        await dbHelpers.userFacts.upsert(window.currentUser.id, {
-                            personal_details: finalFacts
-                        });
-
-                        window.userProfile = { ...window.userProfile, ...coreUpdates, ...factUpdates, symptoms: finalFacts.symptoms };
-                        console.log("✅ Test Data Injected Successfully: ", window.userProfile);
-                        
-                        // Force UI refresh if profile view is active
-                        if(typeof loadProfileData === 'function') setTimeout(loadProfileData, 500);
-                    } catch (e) {
-                        console.error("❌ Failed to seed test data (Fatal)", e);
-                    }
-                }
-
+            // --- DEDICATED ONBOARDING TEST ACCOUNT ---
+            async function prepareOnboardingTestAccount() {
                 // Test account that skips quiz but shows onboarding slides
                 if (window.currentUser?.email === 'shannonrhysbirch@gmail.com') {
                     console.log("🧪 Setting up Onboarding Test Account (skips quiz, shows onboarding)...");

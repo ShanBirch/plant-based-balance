@@ -89,6 +89,11 @@
     return SHANNON_EMAILS.indexOf(email) !== -1;
   }
 
+  function isMemberEligible() {
+    if (window.metaAdTrialMode === true || isPreviewOverrideEnabled()) return true;
+    return !!(window.currentUser && !window.guestMode && !window.isAdminViewing);
+  }
+
   function todayKey(date) {
     try {
       if (typeof window.getLocalDateString === 'function') return window.getLocalDateString(date || new Date());
@@ -1096,14 +1101,6 @@
   function pickSuggestions() {
     var selectedGoalIds = getSelectedGoalIds();
     if (isShowAllEnabled()) return ACTIONS.slice();
-    var publicEssentialOnly = !isPreviewEligible() && !isUnifiedPlanActive() && window.metaAdTrialMode !== true;
-    if (publicEssentialOnly) {
-      var publicActions = [];
-      addUniqueAction(publicActions, getImportedActivityAction());
-      var nightlyDiary = ACTIONS.find(function(action){ return action.id === 'fitness_diary'; });
-      if (nightlyDiary && isFitnessDiaryDue()) addUniqueAction(publicActions, nightlyDiary);
-      return publicActions;
-    }
     if (areDailyActionsComplete(selectedGoalIds)) return [];
 
     var targetActions = dailyActionSet(selectedGoalIds);
@@ -1390,10 +1387,11 @@
 
     var guidedSetup = window.metaAdTrialMode === true;
     var unified = isUnifiedPlanActive() || guidedSetup;
+    var showTestControls = isPreviewEligible() && !unified;
     if (guidedSetup && document.documentElement) {
       document.documentElement.classList.add('pbb-unified-next-steps');
     }
-    if (!isPreviewEligible() && !unified && !isFitnessDiaryDue() && !getImportedActivityAction()) {
+    if (!isMemberEligible()) {
       card.style.display = 'none';
       card.innerHTML = '';
       return;
@@ -1425,7 +1423,7 @@
               '<div class="next-steps-title">', unified ? 'You are clear for now' : 'Tasks complete', '</div>',
             '</div>',
             '<div class="next-steps-head-actions">',
-              unified ? '' : '<button type="button" class="next-steps-test-toggle" data-next-steps-test-toggle="1">Test all</button>',
+              showTestControls ? '<button type="button" class="next-steps-test-toggle" data-next-steps-test-toggle="1">Test all</button>' : '',
               '<div class="next-steps-note">', unified ? 'Today' : (dailyState.awarded ? '10 XP banked' : '+10 XP'), '</div>',
             '</div>',
           '</div>',
@@ -1448,8 +1446,8 @@
             '<div class="next-steps-title">', unified ? 'To do next' : (showAll ? 'Test every route' : 'What to do today'), '</div>',
           '</div>',
           '<div class="next-steps-head-actions">',
-            unified ? '' : '<button type="button" class="next-steps-test-toggle' + (showAll ? ' active' : '') + '" data-next-steps-test-toggle="1">' + (showAll ? 'Show 3' : 'Test all') + '</button>',
-            '<div class="next-steps-note">', guidedSetup ? 'One step at a time' : (unified ? 'Today' : 'Private preview'), '</div>',
+            showTestControls ? '<button type="button" class="next-steps-test-toggle' + (showAll ? ' active' : '') + '" data-next-steps-test-toggle="1">' + (showAll ? 'Show 3' : 'Test all') + '</button>' : '',
+            '<div class="next-steps-note">', guidedSetup ? 'One step at a time' : 'Today', '</div>',
           '</div>',
         '</div>',
         '<div class="next-steps-list">',
@@ -1540,6 +1538,7 @@
   window.pbbNextSteps = {
     refresh: render,
     isPreviewEligible: isPreviewEligible,
+    isMemberEligible: isMemberEligible,
     getSuggestions: pickSuggestions,
     getPlan: function(){
       var selectedGoalIds = getSelectedGoalIds();

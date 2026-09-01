@@ -1358,7 +1358,7 @@ window.addEventListener('load', function() {
     <!-- Six-week challenge card for enrolled participants. -->
     <div id="home-cohort-challenge-invite-top" style="display: none; margin: 8px 25px 16px;"></div>
 
-    <!-- Next Obvious Steps Card (private preview) -->
+    <!-- To Do Next Card -->
     <div id="next-obvious-steps-card" style="display: none; margin: 0 25px 14px;"></div>
 
     <script>
@@ -1962,14 +1962,14 @@ if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-progressphoto.js?v=11"><\/script>');
 document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=35-balance-theme"><\/script>');
     document.write('<script src="js/dashboard/pbb-social-journey.js?v=45-exact-course-label"><\/script>');
-    document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=48-imported-activity-todo"><\/script>');
+    document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=49-public-todo-next"><\/script>');
     document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=29-accountability-checkout"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
     window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=11');
 window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=35-balance-theme');
     window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=45-exact-course-label');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=48-imported-activity-todo');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=49-public-todo-next');
     window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=29-accountability-checkout');
 }
 </script>
@@ -2965,7 +2965,7 @@ if (window._pbbIsIOSSafari) {
     function _doLoadScript3() {
         if(window._crumb)window._crumb('script3_loading');
         var s = document.createElement('script');
-    s.src = 'js/dashboard/dashboard-script-3-1_get_user_data.js?v=60-manual-feature-reveals';
+    s.src = 'js/dashboard/dashboard-script-3-1_get_user_data.js?v=61-remove-primary-test-seed';
         document.head.appendChild(s);
     }
     if (window._pbbAuthIsReady) {
@@ -2976,7 +2976,7 @@ if (window._pbbIsIOSSafari) {
         }, { once: true });
     }
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-3-1_get_user_data.js?v=60-manual-feature-reveals"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-3-1_get_user_data.js?v=61-remove-primary-test-seed"><\/script>');
 }
 </script>
 
@@ -14139,7 +14139,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#next-obvious-steps-card', fallbackSel:'#social-journey-card', title:'Your Next Step', body:'Once you finish this App Tour and your first Balance Foundations lesson, use To do next near the top of Home to see exactly what to do next.', quick: true, condition: function(){ var c = document.getElementById('next-obvious-steps-card'); return !!(window.socialJourney && window.socialJourney.isEligibleUser() && c && c.style.display !== 'none'); } },
     { tab:'dashboard', sel:'#next-obvious-steps-card', fallbackSel:'#social-journey-card', title:'Build Your Fitness Instagram', body:'Balance Identity now teaches you how your inputs shape your output, then helps you plan an Instagram that reinforces the person you want to become.', quick: true, condition: function(){ var c = document.getElementById('next-obvious-steps-card'); return !!(window.socialJourney && window.socialJourney.isEligibleUser() && window.socialJourney.getCurrentWeek() >= 7 && c && c.style.display !== 'none'); } },
     { tab:'dashboard', sel:'#next-obvious-steps-card', fallbackSel:'#social-journey-card', title:'Proof that matches the action', body:'Foundations and Balance Identity now connect Fitness Diary shares to the exact weekly action. Identity keeps Balance Feed as your weekly reflection home and clearly separates verified Balance activity from your own Instagram confirmations.', quick: true, condition: function(){ var c = document.getElementById('next-obvious-steps-card'); return !!(window.socialJourney && window.socialJourney.isEligibleUser() && c && c.style.display !== 'none'); } },
-    { tab:'dashboard', sel:'#next-obvious-steps-card', title:'Next steps', body:"Balance now gives you three clear actions for the day, aligned to your weekly goals and linked straight to the right part of the app.", quick: true, condition: function(){ try { return window.pbbNextSteps && window.pbbNextSteps.isPreviewEligible && window.pbbNextSteps.isPreviewEligible() && !!document.querySelector('#next-obvious-steps-card .next-step-action'); } catch(e){ return false; } } },
+    { tab:'dashboard', sel:'#next-obvious-steps-card', title:'Next steps', body:"Balance now gives you clear actions for the day, aligned to your weekly goals and linked straight to the right part of the app.", quick: true, condition: function(){ try { return window.pbbNextSteps && window.pbbNextSteps.isMemberEligible && window.pbbNextSteps.isMemberEligible() && !!document.querySelector('#next-obvious-steps-card .next-step-action'); } catch(e){ return false; } } },
     { tab:'dashboard', sel:'#weekly-meal-evolution-home-card', title:'Next week, tailored to you', body:"Track a useful week of meals and Balance will keep the foods you enjoy, make small adjustments toward your targets, and introduce two fresh variations for next week.", quick: true, condition: function(){ var c = document.getElementById('weekly-meal-evolution-home-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#ptr-indicator', title:'Pull to refresh', body:"Pull down from the top of the Home screen to refresh your FitGotchi stats and dashboard cards — great when things are slow to load." },
     { tab:'dashboard', sel:'#daily-weigh-in-card,#daily-weigh-in-done-card', title:'Daily weigh-in', body:"Tap here each morning to log your weight. Sunday board day can earn 5 XP if you are down from last Sunday, plus 5 XP for sharing the review card to Feed.", quick: true },
@@ -16213,7 +16213,7 @@ window.endFeatureTour = function(skipped){
       sel: '#next-obvious-steps-card',
       title: 'Next Steps',
       body: "Balance now shows three clear things to do next, matched to your Weekly Goals. Tap any action to jump straight to the right tab or card.",
-      condition: function(){ try { return window.pbbNextSteps && window.pbbNextSteps.isPreviewEligible && window.pbbNextSteps.isPreviewEligible() && !!document.querySelector('#next-obvious-steps-card .next-step-action'); } catch(e){ return false; } }
+      condition: function(){ try { return window.pbbNextSteps && window.pbbNextSteps.isMemberEligible && window.pbbNextSteps.isMemberEligible() && !!document.querySelector('#next-obvious-steps-card .next-step-action'); } catch(e){ return false; } }
     },
     {
       id: 'weekly-checkin-friday-form-v10',
