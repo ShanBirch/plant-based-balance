@@ -30,7 +30,7 @@ test('photos happen after save and reveal both sharing destinations', () => {
   const successStart = dashboard.indexOf('id="view-activity-success"');
   const formMarkup = dashboard.slice(formStart, successStart);
   const successMarkup = dashboard.slice(successStart, dashboard.indexOf('<!-- QUICK SHARE TO GROUP CHAT MODAL -->'));
-  assert.doesNotMatch(formMarkup, /Photo or workout screenshot|Add venue photo for XP/);
+  assert.doesNotMatch(formMarkup, /photo|screenshot/i);
   assert.match(successMarkup, /Add a photo or screenshot/);
   assert.match(successMarkup, /id="activity-share-destination-actions" style="display:none;/);
   assert.match(successMarkup, /id="activity-share-btn"[\s\S]*Balance Feed/);
