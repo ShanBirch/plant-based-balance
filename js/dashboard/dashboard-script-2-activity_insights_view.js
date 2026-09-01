@@ -1806,14 +1806,12 @@
     }
 
     function _renderVolumeAreaChips(selectedArea) {
-        return '<div class="insights-strength-area-chips" aria-label="Muscle group">'
-            + INSIGHTS_VOLUME_AREAS.map(area => {
-                const active = area.key === selectedArea;
-                return '<button type="button" onclick="setInsightsVolumeArea(\'' + area.key + '\')"'
-                    + ' class="insights-strength-area-chip' + (active ? ' is-active' : '') + '" aria-pressed="' + active + '">'
-                    + area.label + '</button>';
-            }).join('')
-            + '</div>';
+        return '<div class="insights-strength-muscle-select">'
+            + '<label for="insights-strength-muscle-filter">Volume lifted</label>'
+            + '<span><select id="insights-strength-muscle-filter" aria-label="Choose a muscle group" onchange="setInsightsVolumeArea(this.value)">'
+            + INSIGHTS_VOLUME_AREAS.map(area => '<option value="' + area.key + '"' + (area.key === selectedArea ? ' selected' : '') + '>'
+                + (area.key === 'all' ? 'All muscles' : area.label) + '</option>').join('')
+            + '</select></span></div>';
     }
 
     function _getInsightsStrengthMonths() {
@@ -1864,20 +1862,22 @@
             if (!seen.has(key)) { seen.add(key); latestByExercise.push(pb); }
         });
 
-        const rangeLabel = _getInsightsStrengthMonths() === 1 ? 'this month' : 'in this range';
+        const selectedMonths = _getInsightsStrengthMonths();
+        const rangeLabel = selectedMonths === 1 ? 'this month' : 'in the last ' + selectedMonths + ' months';
         if (!latestByExercise.length) {
-            return '<section class="insights-strength-pbs"><div class="insights-strength-section-heading"><div><span>PERSONAL BESTS</span><h3>Your strongest lifts</h3></div></div>'
-                + '<p class="insights-strength-empty">No new weight PBs ' + rangeLabel + ' yet. Keep logging your sets and they will appear here automatically.</p></section>';
+            return '<details class="insights-strength-pbs"><summary><span class="insights-strength-pb-icon">★</span><span><strong>Personal bests</strong><small>No new weight PBs ' + rangeLabel + '</small></span><i aria-hidden="true"></i></summary>'
+                + '<div class="insights-strength-pb-list"><p class="insights-strength-empty">Keep logging your sets and new PBs will appear here automatically.</p></div></details>';
         }
 
-        return '<section class="insights-strength-pbs"><div class="insights-strength-section-heading"><div><span>PERSONAL BESTS</span><h3>Your strongest lifts</h3></div><strong>' + latestByExercise.length + ' PB' + (latestByExercise.length === 1 ? '' : 's') + '</strong></div>'
-            + '<div class="insights-strength-pb-list">' + latestByExercise.slice(0, 4).map(pb => {
+        return '<details class="insights-strength-pbs"><summary><span class="insights-strength-pb-icon">★</span><span><strong>Personal bests</strong><small>' + latestByExercise.length + ' exercise' + (latestByExercise.length === 1 ? '' : 's') + ' improved ' + rangeLabel + '</small></span><i aria-hidden="true"></i></summary>'
+            + '<div class="insights-strength-pb-list">' + latestByExercise.map(pb => {
                 const displayWeight = preferLbs ? pb.weight * 2.20462 : pb.weight;
                 const improvement = preferLbs ? (pb.weight - pb.previous) * 2.20462 : pb.weight - pb.previous;
                 const unit = preferLbs ? 'lb' : 'kg';
                 const date = new Date(pb.date + 'T12:00:00').toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
-                return '<div class="insights-strength-pb-row"><span class="insights-strength-pb-icon">★</span><span><strong>' + escapeLabel(pb.name) + '</strong><small>' + date + ' · +' + improvement.toFixed(improvement < 10 ? 1 : 0) + ' ' + unit + '</small></span><b>' + displayWeight.toFixed(displayWeight < 100 ? 1 : 0) + ' ' + unit + '</b></div>';
-            }).join('') + '</div></section>';
+                return '<details class="insights-strength-pb-row"><summary><span><strong>' + escapeLabel(pb.name) + '</strong><small>' + date + '</small></span><b>' + displayWeight.toFixed(displayWeight < 100 ? 1 : 0) + ' ' + unit + '</b></summary>'
+                    + '<div class="insights-strength-pb-detail">New heaviest set · up ' + improvement.toFixed(improvement < 10 ? 1 : 0) + ' ' + unit + '</div></details>';
+            }).join('') + '</div></details>';
     }
 
     function _renderVolumeProgressVerdict(selectedArea, byAreaWeek, displayWeeks, rows, customMuscleMap, preferLbs) {

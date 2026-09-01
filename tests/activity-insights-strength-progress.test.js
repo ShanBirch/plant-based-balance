@@ -18,14 +18,23 @@ test('strength insight offers useful history ranges and fills the detail view', 
 test('strength insight identifies and displays recent weight PBs', () => {
   assert.match(insights, /function _renderRecentStrengthPbs/);
   assert.match(insights, /weight > previous/);
-  assert.match(insights, /PERSONAL BESTS/);
-  assert.match(insights, /Your strongest lifts/);
+  assert.match(insights, /Personal bests/);
+  assert.doesNotMatch(insights, /Your strongest lifts/);
 });
 
-test('muscle chips use explicit accessible theme states', () => {
-  assert.match(insights, /insights-strength-area-chip/);
-  assert.match(insights, /aria-pressed/);
-  assert.match(css, /\.insights-strength-area-chip\.is-active[\s\S]*?var\(--pbb-insights-control-active-bg\)/);
-  assert.match(css, /-webkit-text-fill-color: var\(--pbb-insights-control-active-text\)/);
-  assert.match(css, /\.insights-strength-area-chip:focus-visible/);
+test('muscle filter uses a compact accessible themed dropdown', () => {
+  assert.match(insights, /insights-strength-muscle-filter/);
+  assert.match(insights, /All muscles/);
+  assert.match(insights, /onchange="setInsightsVolumeArea\(this\.value\)"/);
+  assert.match(css, /\.insights-strength-muscle-select select[\s\S]*?var\(--pbb-insights-soft-bg\)/);
+  assert.match(css, /-webkit-text-fill-color: var\(--pbb-insights-text\)/);
+  assert.match(css, /\.insights-strength-muscle-select select:focus-visible/);
+});
+
+test('personal bests are a collapsed range-aware exercise dropdown', () => {
+  assert.match(insights, /<details class="insights-strength-pbs">/);
+  assert.match(insights, /last ' \+ selectedMonths \+ ' months/);
+  assert.match(insights, /latestByExercise\.map\(pb/);
+  assert.doesNotMatch(insights, /Your strongest lifts/);
+  assert.match(insights, /<details class="insights-strength-pb-row">/);
 });
