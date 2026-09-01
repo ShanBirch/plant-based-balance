@@ -85,7 +85,7 @@ test('Home plan cards stay below the complete FitGotchi stats block', () => {
     assert.match(source, /characterBlockTail\.parentNode\.insertBefore\(card, characterBlockTail\.nextSibling\)/);
     assert.doesNotMatch(source, /levelStrip\.parentNode\.insertBefore\((weeklyGoals|card), levelStrip\.nextSibling\)/);
     assert.match(html, /pbb-social-journey\.js\?v=43-evening-diary-action/);
-    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v442-evening-diary-action'/);
+    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v443-course-guidance-chain'/);
 });
 
 test('Home course actions bypass legacy journey pages and spotlight the next Course card', () => {
@@ -101,20 +101,29 @@ test('Home course actions bypass legacy journey pages and spotlight the next Cou
     assert.match(nextStepsSource, /function openNextCourseTarget\(courseId\)/);
     assert.match(nextStepsSource, /window\.renderLearningHome\(\)/);
     assert.match(nextStepsSource, /card\.classList\.add\('is-next-course-target'\)/);
-    assert.match(nextStepsSource, /window\.__pbbGuideNextCourseId = resolvedCourseId/);
+    assert.match(nextStepsSource, /action\.kind === 'course_lesson' \? ' is-course-guidance-home'/);
+    assert.match(nextStepsSource, /window\.__pbbGuideCourseCardId = resolvedCourseId/);
+    assert.match(nextStepsSource, /function applyActiveCourseGuidance\(\)/);
+    assert.match(nextStepsSource, /childList: true, subtree: true/);
+    assert.match(nextStepsSource, /window\.__pbbGuideNextCourseId = courseId/);
     assert.match(nextStepsSource, /\{ once: true, capture: true \}/);
     assert.match(nextStepsSource, /function watchCourseGuidanceExit\(\)/);
-    assert.match(nextStepsSource, /display === 'none'\) clearCourseGuidance\(\)/);
+    assert.match(nextStepsSource, /display === 'none'\) \{[\s\S]*clearCourseGuidance\(\)/);
     assert.match(learningSource, /const shouldGuideToLesson = window\.__pbbGuideNextCourseId === course\.id/);
     assert.match(learningSource, /function guideToCurrentCourseLesson\(course\)/);
     assert.match(learningSource, /data-foundations-quiz-id/);
     assert.match(learningSource, /data-identity-journey-week/);
     assert.match(learningSource, /target\.classList\.add\('is-next-course-lesson-target'\)/);
+    assert.match(learningSource, /window\.__pbbGuideLessonCourseId === course\.id/);
+    assert.match(learningSource, /window\.__pbbGuideLessonCourseId = null/);
     assert.match(premiumCss, /@keyframes pbb-next-course-pulse/);
     assert.match(premiumCss, /\.foundation-quiz-row\.is-next-course-lesson-target/);
     assert.match(premiumCss, /\.identity-week-row\.is-next-course-lesson-target/);
     assert.match(premiumCss, /prefers-reduced-motion: reduce/);
-    assert.match(html, /pbb-next-obvious-steps\.js\?v=41-evening-diary-action/);
+    assert.match(html, /pbb-next-obvious-steps\.js\?v=42-course-guidance-chain/);
+    assert.match(html, /pbb-social-journey\.css\?v=26-course-guidance-chain/);
+    assert.match(html, /pbb-premium-overlays\.css\?v=106-course-guidance-chain/);
+    assert.match(html, /learning-inline\.js\?v=33-course-guidance-chain/);
 });
 
 test('Home goals and plan cards follow light and dark mode', () => {
@@ -127,7 +136,7 @@ test('Home goals and plan cards follow light and dark mode', () => {
     assert.match(css, /html\[data-pbb-theme="dark"\]\.pbb-unified-next-steps #next-obvious-steps-card\.is-unified-plan \.next-step-action/);
     assert.match(css, /weekly-goal-progress-card__value\.is-complete/);
     assert.match(css, /html\.pbb-unified-next-steps #weekly-goals-card\.weekly-goals-home-card\s*\{[\s\S]*?margin: 10px 25px 14px !important/);
-    assert.match(html, /pbb-social-journey\.css\?v=25-captioned-coach-video/);
+    assert.match(html, /pbb-social-journey\.css\?v=26-course-guidance-chain/);
     assert.match(html, /pbb-deferred-weeklygoals\.js\?v=35-balance-theme/);
 });
 

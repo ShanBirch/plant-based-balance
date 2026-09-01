@@ -12658,12 +12658,12 @@ html[data-pbb-theme] :where(.settings-picker-close, .settings-picker-option, .di
 }
 @keyframes pbb-next-course-pulse {
     0%, 100% {
-        box-shadow: 0 0 0 2px rgba(183, 138, 46, 0.78), 0 12px 30px rgba(183, 138, 46, 0.16);
+        box-shadow: 0 0 0 2px rgba(183, 138, 46, 0.82), 0 12px 30px rgba(183, 138, 46, 0.2), 0 0 20px rgba(216, 178, 94, 0.18);
         transform: translateY(0);
     }
     50% {
-        box-shadow: 0 0 0 6px rgba(245, 217, 138, 0.3), 0 18px 42px rgba(183, 138, 46, 0.3);
-        transform: translateY(-2px);
+        box-shadow: 0 0 0 7px rgba(245, 217, 138, 0.38), 0 20px 46px rgba(183, 138, 46, 0.34), 0 0 38px rgba(216, 178, 94, 0.3);
+        transform: translateY(-2px) scale(1.008);
     }
 }
 

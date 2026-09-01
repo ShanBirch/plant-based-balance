@@ -38,8 +38,8 @@ test('Fitness Diary stays hidden until its evening To Do action is clicked', () 
   const journey = read('js/dashboard/pbb-social-journey.js');
 
   assert.match(dailyCards, /function openFitnessDiaryForAction\(\)/);
-  assert.match(dailyCards, /getBrisbaneHour\(\) < 18 \|\| window\._fitnessDiaryActionOpen !== true/);
-  assert.match(dailyCards, /function openFitnessDiaryForAction\(\) \{[\s\S]*?getBrisbaneHour\(\) < 18\) return false/);
+  assert.match(dailyCards, /new Date\(\)\.getHours\(\) < 18 \|\| window\._fitnessDiaryActionOpen !== true/);
+  assert.match(dailyCards, /function openFitnessDiaryForAction\(\) \{[\s\S]*?new Date\(\)\.getHours\(\) < 18\) return false/);
   assert.match(dailyCards, /card\.style\.display = 'block';[\s\S]*expandFitnessDiary\(\)/);
   assert.match(dailyCards, /alreadyDone[\s\S]*doneCard\.style\.display = 'flex'/);
   assert.match(dailyCards, /window\.openFitnessDiaryForAction = openFitnessDiaryForAction/);
@@ -65,11 +65,11 @@ test('versioned phone assets advance for the Home fix', () => {
   const dashboard = read('dashboard.html');
   const serviceWorker = read('sw.js');
 
-  assert.match(dashboard, /pbb-social-journey\.css\?v=25-captioned-coach-video/);
+  assert.match(dashboard, /pbb-social-journey\.css\?v=26-course-guidance-chain/);
   assert.match(dashboard, /pbb-social-journey\.js\?v=43-evening-diary-action/);
-  assert.match(dashboard, /pbb-next-obvious-steps\.js\?v=41-evening-diary-action/);
+  assert.match(dashboard, /pbb-next-obvious-steps\.js\?v=42-course-guidance-chain/);
   assert.match(dashboard, /dashboard-script-1-daily_weighin_card_logic\.js\?v=75-evening-diary-action/);
   assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=49/);
-  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v442-evening-diary-action'/);
+  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v443-course-guidance-chain'/);
   assert.match(serviceWorker, /dashboard-script-10-points_widget_functions\.js\?v=49/);
 });
