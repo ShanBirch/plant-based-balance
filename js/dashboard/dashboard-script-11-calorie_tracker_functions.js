@@ -7087,6 +7087,202 @@ function renderMealJournal(meals) {
     container.innerHTML = html;
 }
 
+// --- All-time Meal History ---
+function setMealHistoryState(state) {
+    ['loading', 'empty', 'error'].forEach(name => {
+        const element = document.getElementById(`meal-history-${name}`);
+        if (element) element.style.display = state === name ? 'flex' : 'none';
+    });
+    const list = document.getElementById('meal-history-list');
+    if (list) list.style.display = state === 'ready' ? 'grid' : 'none';
+}
+
+function getMealHistoryDateKey(meal) {
+    if (meal?.meal_date) return meal.meal_date;
+    const createdAt = meal?.created_at ? new Date(meal.created_at) : null;
+    if (!createdAt || Number.isNaN(createdAt.getTime())) return 'unknown';
+    return getLocalDateString(createdAt);
+}
+
+function formatMealHistoryDate(dateKey) {
+    if (!dateKey || dateKey === 'unknown') return 'Date not recorded';
+    const date = new Date(`${dateKey}T12:00:00`);
+    if (Number.isNaN(date.getTime())) return 'Date not recorded';
+    return date.toLocaleDateString('en-AU', {
+        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+    });
+}
+
+function formatMealHistoryTime(meal) {
+    if (meal?.meal_time) {
+        const time = new Date(`2000-01-01T${meal.meal_time}`);
+        if (!Number.isNaN(time.getTime())) {
+            return time.toLocaleTimeString('en-AU', {
+                hour: 'numeric', minute: '2-digit', hour12: true
+            });
+        }
+    }
+    if (meal?.created_at) {
+        const createdAt = new Date(meal.created_at);
+        if (!Number.isNaN(createdAt.getTime())) {
+            return createdAt.toLocaleTimeString('en-AU', {
+                hour: 'numeric', minute: '2-digit', hour12: true
+            });
+        }
+    }
+    return 'Time not recorded';
+}
+
+function getMealHistoryLabel(meal) {
+    const foodNames = Array.isArray(meal?.food_items)
+        ? meal.food_items.map(item => String(item?.name || '').trim()).filter(Boolean)
+        : [];
+    if (foodNames.length) return foodNames.join(', ');
+    if (meal?.meal_description && !/^https?:\/\//i.test(meal.meal_description)) {
+        return String(meal.meal_description).trim();
+    }
+    const mealType = String(meal?.meal_type || '').trim();
+    return mealType ? mealType.charAt(0).toUpperCase() + mealType.slice(1) : 'Meal';
+}
+
+function openMealHistoryPhoto(photoUrl, caption) {
+    const lightbox = document.getElementById('meal-history-lightbox');
+    const image = document.getElementById('meal-history-lightbox-image');
+    const captionElement = document.getElementById('meal-history-lightbox-caption');
+    if (!lightbox || !image || !captionElement || !photoUrl) return;
+    image.src = photoUrl;
+    captionElement.textContent = caption || '';
+    lightbox.style.display = 'flex';
+}
+
+function closeMealHistoryPhoto() {
+    const lightbox = document.getElementById('meal-history-lightbox');
+    const image = document.getElementById('meal-history-lightbox-image');
+    if (lightbox) lightbox.style.display = 'none';
+    if (image) image.removeAttribute('src');
+}
+
+function renderMealHistory(meals) {
+    const container = document.getElementById('meal-history-list');
+    const summary = document.getElementById('meal-history-summary');
+    if (!container || !summary) return;
+
+    container.innerHTML = '';
+    const visibleMeals = (Array.isArray(meals) ? meals : []).filter(meal => {
+        return String(meal?.meal_type || '').toLowerCase() !== 'water';
+    });
+    if (!visibleMeals.length) {
+        summary.textContent = 'Every meal you log will be kept here by date and time.';
+        setMealHistoryState('empty');
+        return;
+    }
+
+    summary.textContent = `${visibleMeals.length} meal${visibleMeals.length === 1 ? '' : 's'}, newest first.`;
+    const grouped = new Map();
+    visibleMeals.forEach(meal => {
+        const dateKey = getMealHistoryDateKey(meal);
+        if (!grouped.has(dateKey)) grouped.set(dateKey, []);
+        grouped.get(dateKey).push(meal);
+    });
+
+    grouped.forEach((dayMeals, dateKey) => {
+        const section = document.createElement('section');
+        section.className = 'meal-history-day';
+        const heading = document.createElement('h2');
+        heading.textContent = formatMealHistoryDate(dateKey);
+        section.appendChild(heading);
+
+        const grid = document.createElement('div');
+        grid.className = 'meal-history-grid';
+        dayMeals.forEach(meal => {
+            const card = document.createElement('article');
+            card.className = 'meal-history-card';
+            const photoUrl = getMealSharePhotoUrl(meal);
+            const timeLabel = formatMealHistoryTime(meal);
+            const mealLabel = getMealHistoryLabel(meal);
+
+            if (photoUrl) {
+                const photoButton = document.createElement('button');
+                photoButton.type = 'button';
+                photoButton.className = 'meal-history-photo';
+                photoButton.setAttribute('aria-label', `Open ${mealLabel} photo from ${timeLabel}`);
+                photoButton.addEventListener('click', () => {
+                    openMealHistoryPhoto(photoUrl, `${mealLabel}, ${formatMealHistoryDate(dateKey)} at ${timeLabel}`);
+                });
+                const image = document.createElement('img');
+                image.src = photoUrl;
+                image.alt = `${mealLabel}, logged at ${timeLabel}`;
+                image.loading = 'lazy';
+                image.referrerPolicy = 'no-referrer';
+                image.addEventListener('error', () => {
+                    photoButton.classList.add('meal-history-photo--missing');
+                    photoButton.textContent = 'Photo unavailable';
+                    photoButton.disabled = true;
+                });
+                photoButton.appendChild(image);
+                card.appendChild(photoButton);
+            } else {
+                const placeholder = document.createElement('div');
+                placeholder.className = 'meal-history-photo meal-history-photo--missing';
+                placeholder.innerHTML = '<span aria-hidden="true">🍽️</span><small>No photo saved</small>';
+                card.appendChild(placeholder);
+            }
+
+            const details = document.createElement('div');
+            details.className = 'meal-history-details';
+            const time = document.createElement('strong');
+            time.textContent = timeLabel;
+            const label = document.createElement('span');
+            label.textContent = mealLabel;
+            label.title = mealLabel;
+            details.append(time, label);
+            card.appendChild(details);
+            grid.appendChild(card);
+        });
+
+        section.appendChild(grid);
+        container.appendChild(section);
+    });
+    setMealHistoryState('ready');
+}
+
+async function loadMealHistory() {
+    if (!window.currentUser?.id || !window.supabaseClient) {
+        setMealHistoryState('error');
+        return;
+    }
+
+    setMealHistoryState('loading');
+    const pageSize = 500;
+    let offset = 0;
+    const meals = [];
+    try {
+        while (true) {
+            const { data, error } = await window.supabaseClient
+                .from('meal_logs')
+                .select('id, meal_date, meal_time, meal_type, food_items, meal_description, notes, photo_url, storage_path, created_at')
+                .eq('user_id', window.currentUser.id)
+                .order('meal_date', { ascending: false, nullsFirst: false })
+                .order('meal_time', { ascending: false, nullsFirst: false })
+                .order('created_at', { ascending: false, nullsFirst: false })
+                .range(offset, offset + pageSize - 1);
+            if (error) throw error;
+            const page = data || [];
+            meals.push(...page);
+            if (page.length < pageSize) break;
+            offset += pageSize;
+        }
+        renderMealHistory(meals);
+    } catch (error) {
+        console.error('Error loading meal history:', error);
+        setMealHistoryState('error');
+    }
+}
+
+window.loadMealHistory = loadMealHistory;
+window.openMealHistoryPhoto = openMealHistoryPhoto;
+window.closeMealHistoryPhoto = closeMealHistoryPhoto;
+
 // ============================================================
 // ENHANCED NUTRITION TAB FEATURES - PHASE 2
 // ============================================================
@@ -7543,9 +7739,11 @@ async function saveHydrationToDb(ml) {
 }
 
 // --- Weekly Trends Page ---
-function openWeeklyTrendsPage() {
+function openWeeklyTrendsPage(source) {
     const page = document.getElementById('weekly-trends-page');
     if (!page) return;
+
+    window._weeklyTrendsReturnView = source === 'insights' ? 'insights' : 'meals';
 
     // Move to body so it stacks above all app views
     if (page.parentElement !== document.body) {
@@ -7561,13 +7759,7 @@ function openWeeklyTrendsPage() {
 
     pushNavigationState('weekly-trends-page', () => closeWeeklyTrendsPage());
 
-    // Load data for the page
-    Promise.allSettled([
-        loadWeeklyMetrics(window.currentUser?.id),
-        loadMultiWeekData(4),
-        loadMealPatterns(),
-        loadMealJournal()
-    ]);
+    loadMealHistory();
 
 }
 
@@ -7576,14 +7768,13 @@ function closeWeeklyTrendsPage() {
     const page = document.getElementById('weekly-trends-page');
     if (!page) return;
 
-    // Close adaptive modal if open
-    closeAdaptiveModal();
+    closeMealHistoryPhoto();
 
-    // Ensure we return to the Nutrition tab
-    const mealsBtn = document.querySelector('.bottom-nav .nav-item[onclick*="meals"]');
-    if (mealsBtn) {
-        switchAppTab('meals', mealsBtn);
+    if (window._weeklyTrendsReturnView !== 'insights') {
+        const mealsBtn = document.querySelector('.bottom-nav .nav-item[onclick*="meals"]');
+        if (mealsBtn) switchAppTab('meals', mealsBtn);
     }
+    window._weeklyTrendsReturnView = null;
 
     page.style.transition = 'transform 0.3s ease-out';
     page.style.transform = 'translateX(100%)';

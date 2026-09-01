@@ -21738,11 +21738,12 @@ function initializeWeeklyTrendsSwipeNavigation() {
             page.style.transform = '';
             page.style.transition = '';
         }
-        // Return to Nutrition tab
-        const mealsBtn = document.querySelector('.bottom-nav .nav-item[onclick*="meals"]');
-        if (mealsBtn) {
-            switchAppTab('meals', mealsBtn);
+        if (typeof closeMealHistoryPhoto === 'function') closeMealHistoryPhoto();
+        if (window._weeklyTrendsReturnView !== 'insights') {
+            const mealsBtn = document.querySelector('.bottom-nav .nav-item[onclick*="meals"]');
+            if (mealsBtn) switchAppTab('meals', mealsBtn);
         }
+        window._weeklyTrendsReturnView = null;
     });
 }
 

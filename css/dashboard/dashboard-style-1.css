@@ -5895,6 +5895,288 @@
         padding-bottom: 100px;
     }
 
+    #weekly-trends-page {
+        --meal-history-page: #050505;
+        --meal-history-header: rgba(18, 18, 18, 0.98);
+        --meal-history-card: #121212;
+        --meal-history-soft: #1a1a1a;
+        --meal-history-text: #f8f7f2;
+        --meal-history-muted: #b7b1a2;
+        --meal-history-gold: #f5d98a;
+        --meal-history-gold-button: #d8b25e;
+        --meal-history-on-gold: #171208;
+        --meal-history-border: rgba(245, 217, 138, 0.16);
+        --meal-history-shadow: 0 14px 38px rgba(0, 0, 0, 0.3);
+        background: var(--meal-history-page);
+        color: var(--meal-history-text);
+        overscroll-behavior-y: contain;
+    }
+
+    html[data-pbb-theme="light"] #weekly-trends-page {
+        --meal-history-page: #f8f5ee;
+        --meal-history-header: rgba(255, 255, 255, 0.98);
+        --meal-history-card: #ffffff;
+        --meal-history-soft: #f4f0e7;
+        --meal-history-text: #151515;
+        --meal-history-muted: #6f6a61;
+        --meal-history-gold: #7a5918;
+        --meal-history-border: rgba(17, 17, 17, 0.09);
+        --meal-history-shadow: 0 10px 30px rgba(31, 26, 16, 0.08);
+    }
+
+    #weekly-trends-page .weekly-trends-page-header {
+        background: var(--meal-history-header);
+        border-bottom-color: var(--meal-history-border);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+    }
+
+    #weekly-trends-page .weekly-trends-page-title {
+        color: var(--meal-history-text);
+        -webkit-text-fill-color: var(--meal-history-text);
+    }
+
+    #weekly-trends-page .meal-history-content {
+        width: 100%;
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 20px 18px calc(34px + env(safe-area-inset-bottom, 0px));
+    }
+
+    .meal-history-summary {
+        margin: 0 0 18px;
+        color: var(--meal-history-muted);
+        -webkit-text-fill-color: var(--meal-history-muted);
+        font-size: 0.82rem;
+        line-height: 1.45;
+    }
+
+    .meal-history-list {
+        display: grid;
+        gap: 24px;
+    }
+
+    .meal-history-day h2 {
+        margin: 0 0 10px;
+        color: var(--meal-history-gold);
+        -webkit-text-fill-color: var(--meal-history-gold);
+        font-size: 0.76rem;
+        font-weight: 850;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    .meal-history-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .meal-history-card {
+        min-width: 0;
+        overflow: hidden;
+        border: 1px solid var(--meal-history-border);
+        border-radius: 17px;
+        background: var(--meal-history-card);
+        box-shadow: var(--meal-history-shadow);
+    }
+
+    .meal-history-photo {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 5px;
+        width: 100%;
+        aspect-ratio: 4 / 5;
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+        background: var(--meal-history-soft);
+        color: var(--meal-history-muted);
+        -webkit-text-fill-color: var(--meal-history-muted);
+        font: inherit;
+        cursor: pointer;
+    }
+
+    .meal-history-photo img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .meal-history-photo--missing {
+        cursor: default;
+        font-size: 0.72rem;
+    }
+
+    .meal-history-photo--missing span {
+        font-size: 1.8rem;
+    }
+
+    .meal-history-photo--missing small {
+        color: var(--meal-history-muted);
+        -webkit-text-fill-color: var(--meal-history-muted);
+        font-size: 0.68rem;
+        font-weight: 700;
+    }
+
+    .meal-history-details {
+        min-width: 0;
+        padding: 11px 12px 12px;
+    }
+
+    .meal-history-details strong,
+    .meal-history-details span {
+        display: block;
+    }
+
+    .meal-history-details strong {
+        color: var(--meal-history-text);
+        -webkit-text-fill-color: var(--meal-history-text);
+        font-size: 0.82rem;
+        font-weight: 850;
+    }
+
+    .meal-history-details span {
+        overflow: hidden;
+        margin-top: 3px;
+        color: var(--meal-history-muted);
+        -webkit-text-fill-color: var(--meal-history-muted);
+        font-size: 0.69rem;
+        line-height: 1.35;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .meal-history-state {
+        display: flex;
+        min-height: 300px;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        padding: 30px 22px;
+        border: 1px solid var(--meal-history-border);
+        border-radius: 20px;
+        background: var(--meal-history-card);
+        color: var(--meal-history-text);
+        text-align: center;
+        box-shadow: var(--meal-history-shadow);
+    }
+
+    .meal-history-state h2 {
+        margin: 0;
+        color: var(--meal-history-text);
+        -webkit-text-fill-color: var(--meal-history-text);
+        font-size: 1rem;
+    }
+
+    .meal-history-state p {
+        margin: 7px 0 0;
+        color: var(--meal-history-muted);
+        -webkit-text-fill-color: var(--meal-history-muted);
+        font-size: 0.8rem;
+        line-height: 1.45;
+    }
+
+    .meal-history-state button {
+        min-height: 44px;
+        margin-top: 16px;
+        padding: 11px 18px;
+        border: 1px solid var(--meal-history-gold-button);
+        border-radius: 13px;
+        background: var(--meal-history-gold-button);
+        color: var(--meal-history-on-gold);
+        -webkit-text-fill-color: var(--meal-history-on-gold);
+        font: inherit;
+        font-size: 0.82rem;
+        font-weight: 850;
+        cursor: pointer;
+    }
+
+    .meal-history-empty-icon {
+        margin-bottom: 12px;
+        font-size: 2rem;
+    }
+
+    .meal-history-loader {
+        width: 34px;
+        height: 34px;
+        border: 3px solid var(--meal-history-border);
+        border-top-color: var(--meal-history-gold);
+        border-radius: 50%;
+        animation: meal-history-spin 0.8s linear infinite;
+    }
+
+    @keyframes meal-history-spin {
+        to { transform: rotate(360deg); }
+    }
+
+    .meal-history-lightbox {
+        position: fixed;
+        inset: 0;
+        z-index: 200100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        padding: calc(18px + env(safe-area-inset-top, 0px)) 18px calc(18px + env(safe-area-inset-bottom, 0px));
+        background: rgba(0, 0, 0, 0.94);
+    }
+
+    .meal-history-lightbox img {
+        max-width: 100%;
+        max-height: 78vh;
+        border-radius: 14px;
+        object-fit: contain;
+    }
+
+    .meal-history-lightbox-close {
+        position: absolute;
+        top: calc(14px + env(safe-area-inset-top, 0px));
+        right: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        border: 1px solid rgba(245, 217, 138, 0.32);
+        border-radius: 50%;
+        background: rgba(18, 18, 18, 0.82);
+        color: #fffaf2;
+        -webkit-text-fill-color: #fffaf2;
+        font-size: 1.1rem;
+        cursor: pointer;
+    }
+
+    .meal-history-lightbox-caption {
+        max-width: 620px;
+        margin-top: 14px;
+        color: #fffaf2;
+        -webkit-text-fill-color: #fffaf2;
+        font-size: 0.82rem;
+        font-weight: 700;
+        line-height: 1.4;
+        text-align: center;
+    }
+
+    .meal-history-photo:focus-visible,
+    .meal-history-state button:focus-visible,
+    .meal-history-lightbox button:focus-visible {
+        outline: 3px solid var(--meal-history-gold);
+        outline-offset: 2px;
+    }
+
+    @media (min-width: 620px) {
+        .meal-history-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .meal-history-loader { animation: none; }
+    }
+
     /* Macro Ratio Pie Chart */
     .macro-pie-card {
         background: white;

@@ -83,7 +83,7 @@ test('all graphs remain and optional detail links are compact at the bottom', ()
     }
 
     assert.match(dashboard, /class="insights-more-detail"/);
-    assert.match(dashboard, /onclick="openWeeklyTrendsPage\(\)"/);
+    assert.match(dashboard, /onclick="openWeeklyTrendsPage\('insights'\)"/);
     assert.match(dashboard, /onclick="openMovementWeeklyTrendsPage\(\)"/);
     assert.match(dashboard, /onclick="openRecoveryTrendsPage\(\)"/);
 });

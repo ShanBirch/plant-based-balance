@@ -600,7 +600,7 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
 <!-- Early stub definitions to prevent "undefined" errors before main scripts load -->
 <script src="js/dashboard/script_part_4.js?v=theme-toggle-shell-v2"></script>
 
-<link rel="stylesheet" href="css/dashboard/dashboard-style-1.css?v=69">
+<link rel="stylesheet" href="css/dashboard/dashboard-style-1.css?v=70">
 <link rel="stylesheet" href="css/dashboard/pbb-social-journey.css?v=25-captioned-coach-video">
 
 <script>if(window._crumb)window._crumb('head_complete');</script>
@@ -2881,74 +2881,33 @@ if(!window._pbbIsIOSSafari) {
 
         <!-- Week views will be injected/shown here -->
 
-    <!-- Weekly Trends Page (full-screen overlay) -->
+    <!-- Meal History Page (full-screen overlay) -->
     <div class="weekly-trends-page" id="weekly-trends-page">
         <div class="weekly-trends-page-header">
-            <span class="weekly-trends-page-title">Weekly Trends</span>
+            <span class="weekly-trends-page-title">Meal history</span>
         </div>
-        <div class="weekly-trends-page-content">
-            <!-- Weekly Summary -->
-            <div class="weekly-metrics-card" style="padding: 20px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 12px; border: 1px solid #dee2e6; margin-bottom: 20px;">
-                <h3 style="margin: 0 0 20px 0; font-size: 1.2rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
-                    Weekly Summary
-                </h3>
-                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
-                    <div style="text-align: center; padding: 12px; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">Total Calories</div>
-                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--primary);"><span id="weekly-total-calories">0</span></div>
-                    </div>
-                    <div style="text-align: center; padding: 12px; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">Daily Average</div>
-                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--primary);"><span id="weekly-avg-calories">0</span></div>
-                    </div>
-                    <div style="text-align: center; padding: 12px; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">Days Logged</div>
-                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--primary);"><span id="weekly-days-logged">0</span>/7</div>
-                    </div>
-                </div>
-                <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                    <div style="font-size: 0.9rem; font-weight: 600; color: var(--text-main); margin-bottom: 12px;">Last 7 Days</div>
-                    <div id="weekly-daily-breakdown">
-                        <p style="text-align: center; color: var(--text-muted); padding: 20px 0;">Loading weekly data...</p>
-                    </div>
-                </div>
+        <main class="weekly-trends-page-content meal-history-content">
+            <p id="meal-history-summary" class="meal-history-summary">Loading every meal you’ve logged...</p>
+            <div id="meal-history-loading" class="meal-history-state">
+                <div class="meal-history-loader" aria-hidden="true"></div>
+                <p>Loading your meal history...</p>
             </div>
-
-            <!-- Weekly Meals (Photo Journal) -->
-            <div class="meal-journal-card" id="meal-journal-section">
-                <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; color: var(--text-main);">Weekly Meals</h3>
-                <p style="margin: 0; font-size: 0.78rem; color: var(--text-muted);">Your recent meals at a glance</p>
-                <div class="journal-timeline" id="journal-timeline">
-                    <p style="text-align: center; color: var(--text-muted); padding: 12px 0; font-size: 0.85rem;">Loading your meal photos...</p>
-                </div>
+            <div id="meal-history-empty" class="meal-history-state" style="display:none;">
+                <div class="meal-history-empty-icon" aria-hidden="true">🍽️</div>
+                <h2>Your meals will appear here</h2>
+                <p>Log a meal with a photo to start your history.</p>
             </div>
-
-            <!-- Weekly Trends (Multi-Week History) -->
-            <div class="multi-week-card" id="multi-week-section">
-                <div class="multi-week-header">
-                    <h3 style="margin: 0; font-size: 1.1rem; color: var(--text-main);">Weekly Trends</h3>
-                    <div class="multi-week-nav" id="multi-week-nav">
-                        <button class="active" onclick="loadMultiWeekData(4)">4 Weeks</button>
-                        <button onclick="loadMultiWeekData(8)">8 Weeks</button>
-                    </div>
-                </div>
-                <div id="multi-week-sparklines">
-                    <p style="text-align: center; color: var(--text-muted); padding: 20px 0; font-size: 0.85rem;">Loading trend data...</p>
-                </div>
-                <div class="week-compare-grid" id="week-compare-grid">
-                    <!-- Comparison stats rendered by JS -->
-                </div>
+            <div id="meal-history-error" class="meal-history-state" style="display:none;">
+                <h2>We couldn’t load your meals</h2>
+                <p>Please try again.</p>
+                <button type="button" onclick="loadMealHistory()">Try again</button>
             </div>
-
-            <!-- Meal Pattern Analysis -->
-            <div class="meal-pattern-card" id="meal-pattern-section">
-                <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; color: var(--text-main);">Meal Patterns</h3>
-                <p style="margin: 0 0 14px 0; font-size: 0.78rem; color: var(--text-muted);">Insights from your last 7 days</p>
-                <div id="meal-pattern-insights">
-                    <p style="text-align: center; color: var(--text-muted); padding: 12px 0; font-size: 0.85rem;">Log more meals to see patterns</p>
-                </div>
-            </div>
-
+            <div id="meal-history-list" class="meal-history-list" aria-live="polite"></div>
+        </main>
+        <div id="meal-history-lightbox" class="meal-history-lightbox" style="display:none;" role="dialog" aria-modal="true" aria-label="Meal photo viewer">
+            <button type="button" class="meal-history-lightbox-close" onclick="closeMealHistoryPhoto()" aria-label="Close meal photo">&#x2715;</button>
+            <img id="meal-history-lightbox-image" alt="Logged meal">
+            <div id="meal-history-lightbox-caption" class="meal-history-lightbox-caption"></div>
         </div>
     </div>
 
@@ -11839,9 +11798,9 @@ if(!window._pbbIsIOSSafari) {
                     </div>
                     <span>Optional</span>
                 </div>
-                <button type="button" onclick="openWeeklyTrendsPage()">
+                <button type="button" onclick="openWeeklyTrendsPage('insights')">
                     <span class="insights-more-detail-icon" aria-hidden="true">🥗</span>
-                    <span><strong>Nutrition</strong><small>Meal journal and weekly patterns</small></span>
+                    <span><strong>Nutrition</strong><small>Every meal, photo, date and time</small></span>
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
                 </button>
                 <button type="button" onclick="openMovementWeeklyTrendsPage()">
@@ -12887,7 +12846,7 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=223-settings-functionality';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=224-meal-history';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
@@ -12929,7 +12888,7 @@ if (window._pbbIsIOSSafari) {
         var s = document.createElement('script');
         s.async = false;
         s.dataset.metaTrialLoader = String(attempt);
-        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=223-settings-functionality&meta_retry=' + attempt;
+        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=224-meal-history&meta_retry=' + attempt;
         s.onload = function() {
             if (window._pbbScript5Complete && window._switchAppTabReady && typeof window._switchAppTabReal === 'function') {
                 sessionStorage.removeItem('pbb_meta_script5_recovery_v1');
@@ -12948,7 +12907,7 @@ if (window._pbbIsIOSSafari) {
         document.head.appendChild(s);
     })(0);
 } else {
-document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=223-settings-functionality"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=224-meal-history"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=3"></script>
@@ -13978,6 +13937,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#weekly-progress-photo-card', title:'Weekly progress photos', body:"Every Monday, take front, side, and back photos for 10 XP. Review each photo, then use it or retake it before moving to the next angle.", condition: function(){ var c = document.getElementById('weekly-progress-photo-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#insights-checkin-photo-card', fallbackSel:'#fitbit-performance-card', title:'Weekly check-in photos', fallbackTitle:'Weekly check-in photos', body:"Open Activity Insights any day to take this week's photos or open your dated photo history.", fallbackBody:'Open Activity Insights from this Home card to take or review your weekly check-in photos.', action: async function(){ try { if (typeof openInsightsView === 'function') openInsightsView(); } catch(e){} await new Promise(function(resolve){ setTimeout(resolve, 450); }); } },
     { tab:'dashboard', sel:'#checkin-photo-history-list,#checkin-photo-history-empty,#checkin-photo-history-loading', fallbackSel:'#fitbit-performance-card', title:'Your photo timeline', fallbackTitle:'Your photo timeline', body:'See every weekly check-in by date, with the same-day weight or nearest weigh-in shown beside it.', fallbackBody:'Open Activity Insights, then View photo history to see every dated weekly check-in and its linked weight.', action: async function(){ try { if (typeof openCheckinPhotoHistoryView === 'function') openCheckinPhotoHistoryView(); } catch(e){} await new Promise(function(resolve){ setTimeout(resolve, 500); }); } },
+    { tab:'dashboard', sel:'#meal-history-list,#meal-history-empty,#meal-history-loading', fallbackSel:'#fitbit-performance-card', title:'Your complete meal history', fallbackTitle:'Your complete meal history', body:'Open Nutrition at the bottom of Activity Insights to see every logged meal with its photo, date and time.', fallbackBody:'Open Activity Insights, then Nutrition to see your complete meal history.', action: async function(){ try { if (typeof openInsightsView === 'function') openInsightsView(); await new Promise(function(resolve){ setTimeout(resolve, 350); }); if (typeof openWeeklyTrendsPage === 'function') openWeeklyTrendsPage('insights'); } catch(e){} await new Promise(function(resolve){ setTimeout(resolve, 500); }); } },
     { tab:'dashboard', sel:'#progress-photo-share-feed-btn,#weekly-progress-photo-done-card', title:'Share progress photos', body:"After your Monday progress photos are saved, share them to Feed for an extra 20 XP.", condition: function(){ var c = document.getElementById('weekly-progress-photo-done-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#weekly-checkin-card', title:'Weekly Review', body:"A shimmering gold review card shows the person's onboarding goal, weekly progress, check-ins, mood signals, and one clear action to set next week goals.", quick: true, condition: function(){ var c = document.getElementById('weekly-checkin-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#mood-checkin-card', title:'Daily mood check-in', body:"Three quick check-ins a day (morning / afternoon / evening) earn you bonus XP and feed your AI coach." },
@@ -15938,6 +15898,17 @@ window.endFeatureTour = function(skipped){
       body: 'See every weekly check-in by date, with the same-day weight or nearest weigh-in shown beside it.',
       fallbackBody: 'Open Activity Insights, then View photo history to see every dated weekly check-in and its linked weight.',
       action: async function(){ try { if (typeof openCheckinPhotoHistoryView === 'function') openCheckinPhotoHistoryView(); } catch(e){} await new Promise(function(resolve){ setTimeout(resolve, 500); }); }
+    },
+    {
+      id: 'activity-insights-complete-meal-history-v1',
+      tab: 'dashboard',
+      sel: '#meal-history-list,#meal-history-empty,#meal-history-loading',
+      fallbackSel: '#fitbit-performance-card',
+      title: 'Your complete meal history',
+      fallbackTitle: 'Your complete meal history',
+      body: 'Open Nutrition at the bottom of Activity Insights to see every logged meal with its photo, date and time.',
+      fallbackBody: 'Open Activity Insights, then Nutrition to see your complete meal history.',
+      action: async function(){ try { if (typeof openInsightsView === 'function') openInsightsView(); await new Promise(function(resolve){ setTimeout(resolve, 350); }); if (typeof openWeeklyTrendsPage === 'function') openWeeklyTrendsPage('insights'); } catch(e){} await new Promise(function(resolve){ setTimeout(resolve, 500); }); }
     },
     {
       id: 'weekly-progress-photo-feed-share-v1',
@@ -19614,7 +19585,7 @@ if (window._pbbIsIOSSafari) {
             }
 
             var s = document.createElement('script');
-        s.src = 'js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=37-meal-photo-link';
+        s.src = 'js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=38-meal-history';
             s.dataset.pbbCalorieTracker = '1';
             s.onload = function() {
                 if (window._crumb) window._crumb('script11_loaded');
@@ -19674,7 +19645,7 @@ if (window._pbbIsIOSSafari) {
             }, window._pbbIsMealShortcutLaunch ? 250 : 2500);
         }, { once: true });
     } else {
-    document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=37-meal-photo-link" data-pbb-calorie-tracker="1"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=38-meal-history" data-pbb-calorie-tracker="1"><\/script>');
         document.write('<script src="js/dashboard/dashboard-script-meal-builder.js?v=3" data-pbb-meal-builder="1"><\/script>');
     }
 })();
