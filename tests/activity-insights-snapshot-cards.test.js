@@ -68,7 +68,7 @@ test('new and returning members discover snapshots and manual steps', () => {
 
 test('returning phones receive the snapshot release', () => {
   assert.match(dashboard, /dashboard-style-1\.css\?v=77/);
-  assert.ok((dashboard.match(/dashboard-script-2-activity_insights_view\.js\?v=insights-contrast-v5/g) || []).length >= 2);
+  assert.ok((dashboard.match(/dashboard-script-2-activity_insights_view\.js\?v=insights-contrast-v6/g) || []).length >= 2);
   assert.match(serviceWorker, /pbb-app-v444-direct-course-lesson/);
 });
 
