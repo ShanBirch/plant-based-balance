@@ -10764,16 +10764,6 @@ html:not([data-pbb-theme="light"]) #view-friends :is(
     -webkit-text-fill-color: #fffaf2 !important;
 }
 
-html:not([data-pbb-theme="light"]) #view-profile #feed-start-battle-button {
-    background: #1d2540 !important;
-    border-color: #59658c !important;
-}
-
-html:not([data-pbb-theme="light"]) #view-profile #feed-start-battle-button :is(.feed-start-battle-title, .feed-start-battle-subtitle) {
-    color: #e8ebff !important;
-    -webkit-text-fill-color: #e8ebff !important;
-}
-
 /* Light cards inside operational modals become dark, readable panels. */
 html:not([data-pbb-theme="light"]) :is(
     #rare-rewards-modal,
@@ -11090,34 +11080,73 @@ html:not([data-pbb-theme="light"]) #view-profile .settings-v2-more {
     text-transform: uppercase;
 }
 
-#view-profile .settings-community-games .feed-level-leaderboard,
-#view-profile .settings-community-games .feed-start-battle-card {
-    margin-left: 0;
-    margin-right: 0;
-}
-
 #view-profile .settings-community-games .feed-level-leaderboard {
-    border-radius: 18px;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    color: var(--settings-text);
+    margin: 0;
 }
 
-#view-profile .settings-community-games .feed-level-leaderboard :is(
-    .feed-level-leaderboard-title,
-    .feed-level-leaderboard-summary,
-    .feed-level-leaderboard-top-value,
-    .feed-level-leaderboard-chevron
-) {
-    color: #ffffff !important;
-    -webkit-text-fill-color: #ffffff !important;
+#view-profile .settings-community-games .feed-level-leaderboard-top-value {
+    color: var(--settings-accent) !important;
+    -webkit-text-fill-color: var(--settings-accent) !important;
+    font-size: 0.72rem;
 }
 
-#view-profile .settings-community-games .feed-level-leaderboard-summary {
-    color: rgba(255, 255, 255, 0.76) !important;
-    -webkit-text-fill-color: rgba(255, 255, 255, 0.76) !important;
+#view-profile .settings-community-games .feed-level-leaderboard-chevron {
+    background: transparent;
+    border-radius: 0;
+    height: auto;
+    transform: rotate(0deg);
+    width: auto;
 }
 
-#view-profile .settings-community-games .feed-start-battle-card {
-    margin-top: 12px;
-    margin-bottom: 0;
+#view-profile .settings-community-games .feed-level-leaderboard.is-open .feed-level-leaderboard-chevron,
+#view-profile .settings-community-games .feed-level-leaderboard:focus-within .feed-level-leaderboard-chevron,
+#view-profile .settings-community-games .feed-level-leaderboard:active .feed-level-leaderboard-chevron {
+    background: transparent;
+    transform: rotate(90deg);
+}
+
+#view-profile .settings-community-games .feed-level-leaderboard-body {
+    background: var(--settings-card-soft);
+    border-top: 0;
+}
+
+#view-profile .settings-community-games .feed-level-leaderboard-actions,
+#view-profile .settings-community-games .feed-level-leaderboard-state,
+#view-profile .settings-community-games .feed-level-meta,
+#view-profile .settings-community-games .feed-level-points small {
+    color: var(--settings-muted) !important;
+    -webkit-text-fill-color: var(--settings-muted) !important;
+}
+
+#view-profile .settings-community-games .feed-level-leaderboard-actions button {
+    background: var(--settings-icon-bg);
+    border: 1px solid var(--settings-border);
+    color: var(--settings-accent);
+    -webkit-text-fill-color: var(--settings-accent);
+}
+
+#view-profile .settings-community-games .feed-level-row {
+    background: transparent;
+    border-top-color: var(--settings-border);
+}
+
+#view-profile .settings-community-games .feed-level-row.is-current-user {
+    background: var(--settings-icon-bg);
+}
+
+#view-profile .settings-community-games .feed-level-name {
+    color: var(--settings-text) !important;
+    -webkit-text-fill-color: var(--settings-text) !important;
+}
+
+#view-profile .settings-community-games .feed-level-points {
+    color: var(--settings-accent) !important;
+    -webkit-text-fill-color: var(--settings-accent) !important;
 }
 
 #view-profile .settings-v2-card,

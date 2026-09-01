@@ -67,7 +67,7 @@ test('wires the personalized list into meal-plan navigation and release guidance
     assert.match(dashboard, /meal-plan-shopping-list-v1/);
     assert.match(dashboard, /Your weekly shopping list/);
     assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=223-settings-functionality/);
-    assert.match(dashboard, /pbb-premium-overlays\.css\?v=101-community-games-settings/);
+    assert.match(dashboard, /pbb-premium-overlays\.css\?v=102-community-games-theme/);
 
     assert.match(mealPlanScript, /function renderAiPlanShoppingList\(\)/);
     assert.match(mealPlanScript, /function updateAiPlanShoppingItem\(input\)/);

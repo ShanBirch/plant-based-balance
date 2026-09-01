@@ -9751,17 +9751,15 @@ function getFeedLevelCurrentUserProfile() {
 
 function getFeedLevelLeaderboardShellHtml() {
     return `
-        <section id="feed-level-leaderboard-card" class="feed-level-leaderboard is-collapsed" aria-label="Top Levels" onclick="window.pbbToggleFeedLevelLeaderboardFromEvent ? window.pbbToggleFeedLevelLeaderboardFromEvent(event) : (window.toggleFeedLevelLeaderboard && window.toggleFeedLevelLeaderboard())">
-            <button type="button" class="feed-level-leaderboard-toggle" onclick="window.pbbToggleFeedLevelLeaderboardFromEvent ? window.pbbToggleFeedLevelLeaderboardFromEvent(event) : (window.toggleFeedLevelLeaderboard && window.toggleFeedLevelLeaderboard())" aria-expanded="false" aria-controls="feed-level-leaderboard-body">
-                <span class="feed-level-leaderboard-badge">10</span>
-                <span class="feed-level-leaderboard-copy">
-                    <span class="feed-level-leaderboard-title">Top Levels</span>
-                    <span id="feed-level-leaderboard-summary" class="feed-level-leaderboard-summary">See the highest levels in Balance</span>
+        <section id="feed-level-leaderboard-card" class="feed-level-leaderboard settings-community-level is-collapsed" aria-label="Top Levels" onclick="window.pbbToggleFeedLevelLeaderboardFromEvent ? window.pbbToggleFeedLevelLeaderboardFromEvent(event) : (window.toggleFeedLevelLeaderboard && window.toggleFeedLevelLeaderboard())">
+            <button type="button" class="feed-level-leaderboard-toggle settings-v2-row" onclick="window.pbbToggleFeedLevelLeaderboardFromEvent ? window.pbbToggleFeedLevelLeaderboardFromEvent(event) : (window.toggleFeedLevelLeaderboard && window.toggleFeedLevelLeaderboard())" aria-expanded="false" aria-controls="feed-level-leaderboard-body">
+                <span class="settings-v2-icon" aria-hidden="true">🏅</span>
+                <span class="feed-level-leaderboard-copy settings-v2-copy">
+                    <strong class="feed-level-leaderboard-title">Top Levels</strong>
+                    <small id="feed-level-leaderboard-summary" class="feed-level-leaderboard-summary">See the highest levels in Balance</small>
                 </span>
-                <span id="feed-level-leaderboard-top-value" class="feed-level-leaderboard-top-value">--</span>
-                <span class="feed-level-leaderboard-chevron" aria-hidden="true">
-                    <svg viewBox="0 0 24 24"><path d="M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>
-                </span>
+                <span id="feed-level-leaderboard-top-value" class="feed-level-leaderboard-top-value settings-community-level-value">--</span>
+                <span class="feed-level-leaderboard-chevron settings-v2-chevron" aria-hidden="true">›</span>
             </button>
             <div id="feed-level-leaderboard-body" class="feed-level-leaderboard-body" aria-hidden="true">
                 <div class="feed-level-leaderboard-actions">
@@ -9800,7 +9798,7 @@ function removeLegacyFeedChallengeCards(view) {
 function ensureFeedLevelLeaderboardShell() {
     const existing = document.getElementById('feed-level-leaderboard-card');
     const view = document.getElementById('view-friends');
-    const settingsHost = document.getElementById('settings-community-games');
+    const settingsHost = document.getElementById('settings-community-games-card') || document.getElementById('settings-community-games');
     if (existing) {
         removeLegacyFeedChallengeCards(view);
         return existing;
@@ -9822,7 +9820,7 @@ function ensureFeedLevelLeaderboardShell() {
 }
 
 function observeFeedLevelLeaderboardShell() {
-    const settingsHost = document.getElementById('settings-community-games');
+    const settingsHost = document.getElementById('settings-community-games-card') || document.getElementById('settings-community-games');
     if (!settingsHost || settingsHost.dataset.feedLevelLeaderboardObserver === 'true') return;
     settingsHost.dataset.feedLevelLeaderboardObserver = 'true';
 

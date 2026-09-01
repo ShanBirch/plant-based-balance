@@ -24,13 +24,15 @@ test('keeps Feed focused on posting and community posts', () => {
 
 test('groups Top Levels, Battle, and Challenge in Settings', () => {
     assert.match(settingsView, /id="settings-community-games"/);
+    assert.match(settingsView, /id="settings-community-games-card" class="settings-v2-card"/);
     assert.match(settingsView, /id="feed-level-leaderboard-card"/);
-    assert.match(settingsView, /id="feed-start-battle-button"/);
-    assert.match(settingsView, /id="feed-start-challenge-button"/);
+    assert.match(settingsView, /feed-level-leaderboard-toggle settings-v2-row/);
+    assert.match(settingsView, /id="feed-start-battle-button" class="settings-v2-row"/);
+    assert.match(settingsView, /id="feed-start-challenge-button" class="settings-v2-row"/);
 });
 
 test('restores a missing leaderboard only inside Settings', () => {
-    assert.match(leaderboardScript, /const settingsHost = document\.getElementById\('settings-community-games'\)/);
+    assert.match(leaderboardScript, /const settingsHost = document\.getElementById\('settings-community-games-card'\) \|\| document\.getElementById\('settings-community-games'\)/);
     assert.match(leaderboardScript, /settingsHost\.insertBefore\(card, gameLaunchers\)/);
     assert.doesNotMatch(leaderboardScript, /composer\.parentNode\.insertBefore\(card, composer\)/);
     assert.doesNotMatch(leaderboardScript, /view\.appendChild\(card\)/);
