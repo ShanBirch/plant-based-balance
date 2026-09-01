@@ -600,7 +600,7 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
 <!-- Early stub definitions to prevent "undefined" errors before main scripts load -->
 <script src="js/dashboard/script_part_4.js?v=theme-toggle-shell-v2"></script>
 
-<link rel="stylesheet" href="css/dashboard/dashboard-style-1.css?v=77">
+<link rel="stylesheet" href="css/dashboard/dashboard-style-1.css?v=78">
 <link rel="stylesheet" href="css/dashboard/pbb-social-journey.css?v=27-direct-course-lesson">
 
 <script>if(window._crumb)window._crumb('head_complete');</script>
@@ -1935,12 +1935,12 @@ if(!window._pbbIsIOSSafari) {
         window.addEventListener('pbbInitComplete', function() {
             setTimeout(function() {
                 var s = document.createElement('script');
-                s.src = 'js/dashboard/dashboard-script-2-activity_insights_view.js?v=insights-contrast-v6';
+                s.src = 'js/dashboard/dashboard-script-2-activity_insights_view.js?v=insights-burn-detail-v7';
                 document.head.appendChild(s);
             }, 4000);
         }, { once: true });
     } else {
-        document.write('<script src="js/dashboard/dashboard-script-2-activity_insights_view.js?v=insights-contrast-v6"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-2-activity_insights_view.js?v=insights-burn-detail-v7"><\/script>');
     }
     </script>
 
@@ -11887,7 +11887,7 @@ if(!window._pbbIsIOSSafari) {
             </div>
 
             <!-- Calories Burned Chart -->
-            <div class="insights-legacy-graph-card" data-insights-metric="burn" style="background: white; border-radius: 20px; padding: 20px; box-shadow: var(--card-shadow); margin-bottom: 14px; border: 1px solid rgba(59, 130, 246, 0.08);">
+            <div class="insights-legacy-graph-card insights-burn-detail-card" data-insights-metric="burn" style="background: white; border-radius: 20px; padding: 20px; box-shadow: var(--card-shadow); margin-bottom: 14px; border: 1px solid rgba(59, 130, 246, 0.08);">
                 <div style="margin-bottom: 12px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                         <div style="font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted);">Calories Burned</div>

@@ -20,7 +20,7 @@ test('Activity Insights uses quiet snapshot cards instead of inline graphs', () 
     'insights-steps-summary-card'
   ]) assert.match(dashboard, new RegExp(`id="${id}"`));
 
-  assert.match(dashboard, /class="insights-legacy-graph-card" data-insights-metric="burn"/);
+  assert.match(dashboard, /class="insights-legacy-graph-card insights-burn-detail-card" data-insights-metric="burn"/);
   assert.match(css, /#view-insights \.insights-legacy-graph-card\s*\{[^}]*display: none !important/s);
   assert.match(dashboard, /id="view-insights-metric-detail"/);
   assert.match(insights, /function openInsightsMetricDetail\(metricKey\)/);
@@ -67,8 +67,8 @@ test('new and returning members discover snapshots and manual steps', () => {
 });
 
 test('returning phones receive the snapshot release', () => {
-  assert.match(dashboard, /dashboard-style-1\.css\?v=77/);
-  assert.ok((dashboard.match(/dashboard-script-2-activity_insights_view\.js\?v=insights-contrast-v6/g) || []).length >= 2);
+  assert.match(dashboard, /dashboard-style-1\.css\?v=78/);
+  assert.ok((dashboard.match(/dashboard-script-2-activity_insights_view\.js\?v=insights-burn-detail-v7/g) || []).length >= 2);
   assert.match(serviceWorker, /pbb-app-v445-exact-course-label/);
 });
 

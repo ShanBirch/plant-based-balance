@@ -3106,7 +3106,7 @@ function _interpolateWeightsForCB(weighIns, dates) {
 }
 
 function _renderCaloriesBurnedSVG(container, dates, watchLineData, physicsLineData, hasPhysics, hasWatch, nutritionByDate) {
-    const svgW = 380, svgH = 220;
+    const svgW = 380, svgH = 260;
     const pad = { top: 24, right: 16, bottom: 38, left: 46 };
     const cW = svgW - pad.left - pad.right;
     const cH = svgH - pad.top - pad.bottom;
@@ -3238,7 +3238,7 @@ function _renderCaloriesBurnedSVG(container, dates, watchLineData, physicsLineDa
         watchLineData.forEach((pt, i) => {
             if (pt.calories == null || (i % dotStep !== 0 && i !== n - 1)) return;
             const x = toX(i), y = toY(pt.calories);
-            svg += `<circle class="cb-dot" data-date="${pt.date}" cx="${x}" cy="${y}" r="12" fill="transparent" style="cursor:pointer;"/>`;
+            svg += `<circle class="cb-dot" data-date="${pt.date}" cx="${x}" cy="${y}" r="12" fill="transparent" style="cursor:pointer;" tabindex="0" role="button" aria-label="View burn for ${pt.date}"/>`;
             svg += `<circle cx="${x}" cy="${y}" r="3" fill="white" stroke="#3b82f6" stroke-width="2" style="pointer-events:none;"/>`;
         });
     }
@@ -3246,7 +3246,7 @@ function _renderCaloriesBurnedSVG(container, dates, watchLineData, physicsLineDa
         physicsLineData.forEach((pt, i) => {
             if (pt.calories == null || (i % dotStep !== 0 && i !== n - 1)) return;
             const x = toX(i), y = toY(pt.calories);
-            svg += `<circle class="cb-dot" data-date="${pt.date}" cx="${x}" cy="${y}" r="12" fill="transparent" style="cursor:pointer;"/>`;
+            svg += `<circle class="cb-dot" data-date="${pt.date}" cx="${x}" cy="${y}" r="12" fill="transparent" style="cursor:pointer;" tabindex="0" role="button" aria-label="View burn for ${pt.date}"/>`;
             svg += `<circle cx="${x}" cy="${y}" r="3" fill="white" stroke="#f97316" stroke-width="2" style="pointer-events:none;"/>`;
         });
     }
@@ -3292,6 +3292,43 @@ function _renderCaloriesBurnedSVG(container, dates, watchLineData, physicsLineDa
     }
     statsRow += '</div>';
 
+    // A compact read of the period makes the full-page view useful beyond the average.
+    const preferredLine = hasWatch ? watchLineData : physicsLineData;
+    const preferredLabel = hasWatch ? 'Watch' : 'Actual';
+    const trackedPoints = preferredLine.filter(d => d.calories != null);
+    const latestPoint = trackedPoints[trackedPoints.length - 1];
+    const highPoint = trackedPoints.reduce((best, point) => !best || point.calories > best.calories ? point : best, null);
+    const lowPoint = trackedPoints.reduce((best, point) => !best || point.calories < best.calories ? point : best, null);
+    const formatBurn = point => point ? Math.round(point.calories).toLocaleString() : '—';
+    const formatShortDate = point => point
+        ? new Date(point.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        : 'No data';
+    const preferredAverage = trackedPoints.length
+        ? trackedPoints.reduce((sum, point) => sum + point.calories, 0) / trackedPoints.length
+        : 0;
+    const spreadRatio = preferredAverage && highPoint && lowPoint
+        ? (highPoint.calories - lowPoint.calories) / preferredAverage
+        : 0;
+    const consistencyCopy = spreadRatio <= 0.2
+        ? `Your ${preferredLabel.toLowerCase()} estimate stayed fairly consistent across this period.`
+        : `Your highest ${preferredLabel.toLowerCase()} estimate was ${formatBurn(highPoint)} kcal on ${formatShortDate(highPoint)}.`;
+    const syncCopy = hasWatch && latestPoint
+        ? `Watch data last synced ${formatShortDate(latestPoint)}.`
+        : 'Keep logging meals and weigh-ins to strengthen your actual burn estimate.';
+    const periodSummary = `<section class="insights-burn-period" aria-label="Burn summary for this period">
+        <div class="insights-burn-period-heading">
+            <div><span>At a glance</span><h3>Your burn this period</h3></div>
+            <small>${trackedPoints.length}/${dates.length} days tracked</small>
+        </div>
+        <div class="insights-burn-period-grid">
+            <div><span>Latest</span><strong>${formatBurn(latestPoint)}</strong><small>kcal · ${formatShortDate(latestPoint)}</small></div>
+            <div><span>Highest</span><strong>${formatBurn(highPoint)}</strong><small>kcal · ${formatShortDate(highPoint)}</small></div>
+            <div><span>Lowest</span><strong>${formatBurn(lowPoint)}</strong><small>kcal · ${formatShortDate(lowPoint)}</small></div>
+            <div><span>Coverage</span><strong>${Math.round((trackedPoints.length / dates.length) * 100)}%</strong><small>${preferredLabel} data</small></div>
+        </div>
+        <div class="insights-burn-period-insight"><span aria-hidden="true">✦</span><div><strong>What this shows</strong><p>${consistencyCopy} ${syncCopy}</p></div></div>
+    </section>`;
+
     // Explainer note
     let note = '';
     if (hasPhysics && hasWatch) {
@@ -3311,7 +3348,7 @@ function _renderCaloriesBurnedSVG(container, dates, watchLineData, physicsLineDa
         + '<div class="cb-tooltip" style="display:none;position:absolute;pointer-events:none;background:white;border:1px solid #e2e8f0;border-radius:10px;padding:8px 11px;box-shadow:0 4px 14px rgba(15,23,42,0.12);font-size:0.72rem;color:var(--text-main);line-height:1.45;z-index:10;white-space:nowrap;"></div>'
         + '</div>';
 
-    container.innerHTML = legend + chartWrapper + statsRow + note;
+    container.innerHTML = legend + chartWrapper + statsRow + periodSummary + note;
 
     // Build a per-date lookup for tooltip content
     const dataByDate = {};
@@ -3376,6 +3413,11 @@ function _renderCaloriesBurnedSVG(container, dates, watchLineData, physicsLineDa
     container.querySelectorAll('.cb-dot').forEach(dot => {
         dot.addEventListener('click', e => {
             e.stopPropagation();
+            showTooltipForDot(dot);
+        });
+        dot.addEventListener('keydown', e => {
+            if (e.key !== 'Enter' && e.key !== ' ') return;
+            e.preventDefault();
             showTooltipForDot(dot);
         });
     });

@@ -11319,6 +11319,126 @@ html[data-pbb-theme="light"] #view-insights-metric-detail {
     display: block;
 }
 
+#view-insights-metric-detail .insights-burn-detail-card.is-active {
+    min-height: calc(100dvh - 40px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    margin-bottom: 0 !important;
+    padding: clamp(20px, 5vw, 28px) !important;
+}
+
+#view-insights-metric-detail .insights-burn-detail-card .cb-chart-wrapper {
+    margin: 4px -4px 0;
+}
+
+#view-insights-metric-detail .insights-burn-detail-card .cb-dot:focus-visible {
+    outline: none;
+    stroke: var(--pbb-insights-text) !important;
+    stroke-width: 2px !important;
+}
+
+.insights-burn-period {
+    margin-top: 16px;
+    padding-top: 18px;
+    border-top: 1px solid var(--pbb-insights-border);
+}
+
+.insights-burn-period-heading {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.insights-burn-period-heading span,
+.insights-burn-period-grid span {
+    display: block;
+    color: var(--pbb-insights-gold);
+    -webkit-text-fill-color: var(--pbb-insights-gold);
+    font-size: 0.64rem;
+    font-weight: 850;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.insights-burn-period-heading h3 {
+    margin: 3px 0 0;
+    color: var(--pbb-insights-text);
+    -webkit-text-fill-color: var(--pbb-insights-text);
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: 1.2rem;
+    line-height: 1.1;
+}
+
+.insights-burn-period-heading > small {
+    color: var(--pbb-insights-muted);
+    -webkit-text-fill-color: var(--pbb-insights-muted);
+    font-size: 0.7rem;
+    white-space: nowrap;
+}
+
+.insights-burn-period-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+}
+
+.insights-burn-period-grid > div {
+    min-width: 0;
+    padding: 12px;
+    border: 1px solid var(--pbb-insights-border);
+    border-radius: 12px;
+    background: var(--pbb-insights-soft-bg);
+}
+
+.insights-burn-period-grid strong {
+    display: block;
+    margin-top: 5px;
+    color: var(--pbb-insights-text);
+    -webkit-text-fill-color: var(--pbb-insights-text);
+    font-size: 1.08rem;
+    line-height: 1;
+}
+
+.insights-burn-period-grid small {
+    display: block;
+    margin-top: 5px;
+    overflow: hidden;
+    color: var(--pbb-insights-muted);
+    -webkit-text-fill-color: var(--pbb-insights-muted);
+    font-size: 0.66rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.insights-burn-period-insight {
+    display: flex;
+    gap: 11px;
+    margin-top: 10px;
+    padding: 13px;
+    border: 1px solid var(--pbb-insights-border);
+    border-radius: 12px;
+    background: var(--pbb-insights-gold-soft);
+}
+
+.insights-burn-period-insight > span {
+    color: var(--pbb-insights-gold);
+    -webkit-text-fill-color: var(--pbb-insights-gold);
+}
+
+.insights-burn-period-insight strong {
+    color: var(--pbb-insights-text);
+    -webkit-text-fill-color: var(--pbb-insights-text);
+    font-size: 0.75rem;
+}
+
+.insights-burn-period-insight p {
+    margin: 3px 0 0;
+    color: var(--pbb-insights-muted);
+    -webkit-text-fill-color: var(--pbb-insights-muted);
+    font-size: 0.71rem;
+    line-height: 1.45;
+}
+
 /* Older chart renderers carry fixed light-theme font colours inline. Keep every
    metric detail readable and Balance-themed without changing its data logic. */
 #view-insights-metric-detail .insights-legacy-graph-card.is-active,
