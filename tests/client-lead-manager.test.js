@@ -76,6 +76,10 @@ assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ client_name: 'Shane' }
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ profile_name: 'Fra' }), true);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ ig_username: 'francesca_balance' }), true);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ ig_username: 'cavazzanafrancesca' }), true);
+assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({
+    ig_username: 'cavazzanafrancesca',
+    custom_data: { client_manager_auto_reply_enabled: true },
+}), false);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ client_name: 'Kay' }), true);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ ig_username: 'kay_balance' }), true);
 assert.strictEqual(clientContext.isAlwaysNeedsYouPerson({ client_name: 'Kayla' }), false);
