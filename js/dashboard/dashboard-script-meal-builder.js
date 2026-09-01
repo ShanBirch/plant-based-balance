@@ -321,10 +321,16 @@
         if (select) {
             select.innerHTML = (selectedBuilderFood.measures || [{ label: '100 g', grams: 100 }]).map(function (measure, measureIndex) {
                 return '<option value="' + measureIndex + '">' + escapeHtml(measure.label || '100 g') + '</option>';
-            }).join('');
+            }).join('') + '<option value="custom-grams">Custom weight in grams</option>';
             select.value = '0';
         }
-        if (count) count.value = '1';
+        if (count) {
+            count.value = '1';
+            count.min = '0.25';
+            count.max = '50';
+            count.step = '0.25';
+        }
+        updateBuilderServingCountLabel(false);
         updateBuilderServingPreview();
         if (modal) modal.classList.add('visible');
     };
@@ -337,21 +343,49 @@
 
     window.adjustBuilderServingCount = function (delta) {
         var input = document.getElementById('meal-builder-serving-count');
+        var select = document.getElementById('meal-builder-serving-measure');
         if (!input) return;
-        var next = Math.min(50, Math.max(0.25, (parseFloat(input.value) || 1) + delta));
+        var customGrams = !!(select && select.value === 'custom-grams');
+        var step = customGrams ? 10 : 0.5;
+        var min = customGrams ? 1 : 0.25;
+        var max = customGrams ? 5000 : 50;
+        var next = Math.min(max, Math.max(min, (parseFloat(input.value) || (customGrams ? 100 : 1)) + (delta * step)));
         input.value = String(Math.round(next * 100) / 100);
         updateBuilderServingPreview();
     };
+
+    function updateBuilderServingCountLabel(customGrams) {
+        var label = document.getElementById('meal-builder-serving-count-label');
+        if (label) label.textContent = customGrams ? 'Weight in grams' : 'Number of servings';
+    }
+
+    function handleBuilderServingMeasureChange() {
+        var select = document.getElementById('meal-builder-serving-measure');
+        var input = document.getElementById('meal-builder-serving-count');
+        var customGrams = !!(select && select.value === 'custom-grams');
+        updateBuilderServingCountLabel(customGrams);
+        if (input) {
+            input.value = customGrams ? '100' : '1';
+            input.min = customGrams ? '1' : '0.25';
+            input.max = customGrams ? '5000' : '50';
+            input.step = customGrams ? '1' : '0.25';
+        }
+        updateBuilderServingPreview();
+    }
 
     function selectedServingValues() {
         if (!selectedBuilderFood) return null;
         var select = document.getElementById('meal-builder-serving-measure');
         var countEl = document.getElementById('meal-builder-serving-count');
         var measures = selectedBuilderFood.measures || [{ label: '100 g', grams: 100 }];
-        var measure = measures[Math.max(0, parseInt(select && select.value, 10) || 0)] || measures[0];
-        var count = Math.min(50, Math.max(0.25, parseFloat(countEl && countEl.value) || 1));
+        var customGrams = !!(select && select.value === 'custom-grams');
+        var measure = customGrams ? { label: 'g', grams: 1 } : (measures[Math.max(0, parseInt(select && select.value, 10) || 0)] || measures[0]);
+        var count = customGrams
+            ? Math.min(5000, Math.max(1, parseFloat(countEl && countEl.value) || 100))
+            : Math.min(50, Math.max(0.25, parseFloat(countEl && countEl.value) || 1));
         var grams = (parseFloat(measure.grams) || 100) * count;
-        return { measure: measure, count: count, grams: grams, scale: grams / 100 };
+        var portionLabel = customGrams ? Math.round(grams * 10) / 10 + ' g' : ((count === 1 ? '' : count + ' × ') + (measure.label || Math.round(grams) + ' g'));
+        return { measure: measure, count: count, grams: grams, scale: grams / 100, portionLabel: portionLabel };
     }
 
     function updateBuilderServingPreview() {
@@ -376,7 +410,7 @@
         }
         builderState.items.push({
             name: selectedBuilderFood.name || 'Food',
-            portion: (values.count === 1 ? '' : values.count + ' × ') + (values.measure.label || Math.round(values.grams) + ' g'),
+            portion: values.portionLabel,
             portion_weight_g: values.grams,
             calories: (per100g.calories || 0) * values.scale,
             protein_g: (per100g.protein_g || 0) * values.scale,
@@ -1084,7 +1118,7 @@
 
         var servingMeasure = document.getElementById('meal-builder-serving-measure');
         var servingCount = document.getElementById('meal-builder-serving-count');
-        if (servingMeasure) servingMeasure.addEventListener('change', updateBuilderServingPreview);
+        if (servingMeasure) servingMeasure.addEventListener('change', handleBuilderServingMeasureChange);
         if (servingCount) servingCount.addEventListener('input', updateBuilderServingPreview);
 
         var input = document.getElementById('meal-builder-text-input');

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v453-meal-builder-search'; // v453: Search-first Meal Builder on top of the Movement cleanup release
+const CACHE_NAME = 'pbb-app-v454-meal-builder-grams'; // v454: Exact gram weights in the search-first Meal Builder
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

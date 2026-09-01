@@ -31,6 +31,8 @@ test('the live builder is search first and supports serving selection', () => {
   assert.match(dashboard, /id="meal-builder-food-search"[^>]*placeholder="Search an ingredient"/);
   assert.match(dashboard, /id="meal-builder-serving-measure"/);
   assert.match(dashboard, /id="meal-builder-serving-count"/);
+  assert.match(builder, /custom-grams/);
+  assert.match(builder, /Weight in grams/);
   assert.doesNotMatch(dashboard, /data-builder-barcode-type="1"/);
   assert.match(builder, /searchBuilderFoods\(query\)/);
   assert.match(builder, /source: 'usda-food-search'/);

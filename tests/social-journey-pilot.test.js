@@ -85,7 +85,7 @@ test('Home plan cards stay below the complete FitGotchi stats block', () => {
     assert.match(source, /characterBlockTail\.parentNode\.insertBefore\(card, characterBlockTail\.nextSibling\)/);
     assert.doesNotMatch(source, /levelStrip\.parentNode\.insertBefore\((weeklyGoals|card), levelStrip\.nextSibling\)/);
     assert.match(html, /pbb-social-journey\.js\?v=45-exact-course-label/);
-    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v453-meal-builder-search'/);
+    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v454-meal-builder-grams'/);
 });
 
 test('Home course actions bypass legacy journey pages and open the exact current lesson', () => {

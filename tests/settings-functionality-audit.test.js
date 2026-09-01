@@ -77,5 +77,5 @@ test('changed Settings scripts are cache-busted for returning phones', () => {
   assert.match(dashboard, /dashboard-script-4-symptoms_list_removed_symptoms\.js\?v=settings-functionality-v1/);
   assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=227-meal-primary-tabs/);
   assert.match(dashboard, /script_part_25\.js\?v=settings-functionality-v1/);
-  assert.match(read('sw.js'), /pbb-app-v453-meal-builder-search/);
+  assert.match(read('sw.js'), /pbb-app-v454-meal-builder-grams/);
 });
