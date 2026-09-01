@@ -1260,6 +1260,11 @@ html[data-pbb-theme="dark"] #ai-plan-meals-list .card-body [style*="background:#
 }
 
 /* Nutrition's two primary destinations read as one full-width tab bar. */
+#view-meals > .app-header {
+    border-bottom: 0 !important;
+    box-shadow: none !important;
+}
+
 #view-meals #meals-nav-pills.meals-nav-shell {
     background: var(--bg) !important;
     color: var(--text-main) !important;

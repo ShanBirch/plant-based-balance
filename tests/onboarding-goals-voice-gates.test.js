@@ -115,5 +115,5 @@ test('changed onboarding assets are cache-busted', () => {
   assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=227-meal-primary-tabs/);
   assert.match(dashboard, /dashboard-script-6-ai_coach_draft_mode_logic_auth\.js\?v=50-community-games-theme/);
   assert.match(dashboard, /learning-inline\.js\?v=37-completion-aware-course/);
-  assert.match(serviceWorker, /pbb-app-v450-meal-tabs-no-top-divider/);
+  assert.match(serviceWorker, /pbb-app-v451-meals-header-no-divider/);
 });

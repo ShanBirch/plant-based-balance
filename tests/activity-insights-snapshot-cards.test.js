@@ -67,9 +67,9 @@ test('new and returning members discover snapshots and manual steps', () => {
 });
 
 test('returning phones receive the snapshot release', () => {
-  assert.match(dashboard, /dashboard-style-1\.css\?v=82/);
-  assert.ok((dashboard.match(/dashboard-script-2-activity_insights_view\.js\?v=insights-strength-clean-v12/g) || []).length >= 2);
-  assert.match(serviceWorker, /pbb-app-v450-meal-tabs-no-top-divider/);
+  assert.match(dashboard, /dashboard-style-1\.css\?v=81/);
+  assert.ok((dashboard.match(/dashboard-script-2-activity_insights_view\.js\?v=insights-strength-progress-v11/g) || []).length >= 2);
+  assert.match(serviceWorker, /pbb-app-v451-meals-header-no-divider/);
 });
 
 test('metric detail screens show only the heading inside the content card', () => {
