@@ -8848,25 +8848,25 @@ html[data-pbb-theme="light"] #view-activity-success { --activity-success-accent:
         </div>
 
         <!-- Stats -->
-        <div style="display: flex; gap: 10px; margin: 15px 0;">
-            <div style="flex: 1; background: rgba(255,255,255,0.15); padding: 15px; border-radius: 14px;">
-                <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8;">Duration</div>
+        <div class="activity-success-stats" style="display: flex; gap: 10px; margin: 15px 0;">
+            <div class="activity-success-stat" style="flex: 1; background: rgba(255,255,255,0.15); padding: 15px; border-radius: 14px;">
+                <div class="activity-success-stat-label" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8;">Duration</div>
                 <div id="activity-success-duration" style="font-size: 1.6rem; font-weight: 700; margin-top: 5px;">30 min</div>
             </div>
-            <div style="flex: 1; background: rgba(255,255,255,0.15); padding: 15px; border-radius: 14px;">
-                <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8;">Calories</div>
+            <div class="activity-success-stat" style="flex: 1; background: rgba(255,255,255,0.15); padding: 15px; border-radius: 14px;">
+                <div class="activity-success-stat-label" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8;">Calories</div>
                 <div id="activity-success-calories" style="font-size: 1.6rem; font-weight: 700; margin-top: 5px;">0 kcal</div>
             </div>
-            <div style="flex: 1; background: rgba(255,255,255,0.15); padding: 15px; border-radius: 14px;">
-                <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8;">Intensity</div>
+            <div class="activity-success-stat" style="flex: 1; background: rgba(255,255,255,0.15); padding: 15px; border-radius: 14px;">
+                <div class="activity-success-stat-label" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8;">Intensity</div>
                 <div id="activity-success-intensity" style="font-size: 1.6rem; font-weight: 700; margin-top: 5px;">🏃</div>
             </div>
         </div>
 
         <!-- Share Section -->
         <div id="activity-share-section" style="background: rgba(255,255,255,0.15); padding: 20px; border-radius: 16px; margin: 15px 0;">
-            <div style="font-family:'Playfair Display',serif;font-size:1.35rem;font-weight:700;margin-bottom:5px;">Add a photo or screenshot</div>
-            <div style="font-size:.8rem;color:var(--text-muted);margin-bottom:12px;line-height:1.45;">Personalise your activity, then choose where you want to share it.</div>
+            <div class="activity-share-title" style="font-family:'Playfair Display',serif;font-size:1.35rem;font-weight:700;margin-bottom:5px;">Add a photo or screenshot</div>
+            <div class="activity-share-helper" style="font-size:.8rem;color:var(--text-muted);margin-bottom:12px;line-height:1.45;">Personalise your activity, then choose where you want to share it.</div>
             <div style="position:relative; margin:0 0 10px;">
             <input id="activity-share-photo-gallery-input" type="file" accept="image/*" style="display:none;" onchange="handleActivitySharePhotoSelected(this)">
             <input id="activity-share-photo-camera-input" type="file" accept="image/*" capture="environment" style="display:none;" onchange="handleActivitySharePhotoSelected(this)">
@@ -8903,7 +8903,7 @@ html[data-pbb-theme="light"] #view-activity-success { --activity-success-accent:
 
         <!-- Done Button -->
         <div style="padding: 15px 0 100px 0; margin-top: 10px;">
-            <button onclick="closeActivitySuccess()" style="background: white; color: #0284c7; border: none; padding: 16px 60px; border-radius: 50px; font-size: 1.1rem; font-weight: 700; cursor: pointer; box-shadow: 0 8px 20px rgba(0,0,0,0.2); width: 100%; max-width: 280px;">
+            <button class="activity-done-btn" onclick="closeActivitySuccess()" style="background: white; color: #0284c7; border: none; padding: 16px 60px; border-radius: 50px; font-size: 1.1rem; font-weight: 700; cursor: pointer; box-shadow: 0 8px 20px rgba(0,0,0,0.2); width: 100%; max-width: 280px;">
                 DONE
             </button>
         </div>
@@ -18236,7 +18236,7 @@ if (window._pbbIsIOSSafari) {
 }
 </script>
 
-<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=111-meal-builder-search">
+<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=112-activity-success-theme">
 <link rel="stylesheet" href="css/dashboard/pbb-onboarding-comeback.css?v=8">
 <link rel="stylesheet" href="css/dashboard/pbb-onboarding-foundations.css?v=10-preference-contrast">
 

@@ -6,6 +6,7 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const dashboard = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
 const activityScript = fs.readFileSync(path.join(root, 'js/dashboard/dashboard-script-10-points_widget_functions.js'), 'utf8');
+const premiumCss = fs.readFileSync(path.join(root, 'css/dashboard/pbb-premium-overlays.css'), 'utf8');
 const serviceWorker = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
 
 test('activity logging uses the approved three-step guided flow', () => {
@@ -42,5 +43,9 @@ test('guided activity surfaces use paired Balance themes and refresh returning p
   assert.match(dashboard, /#view-log-activity \{ --activity-accent:#d6ad55/);
   assert.match(dashboard, /html\[data-pbb-theme="light"\] #view-log-activity \{ --activity-accent:#9a6b12/);
   assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=51-imported-activity-todo/);
+  assert.match(dashboard, /pbb-premium-overlays\.css\?v=112-activity-success-theme/);
+  assert.match(premiumCss, /html\[data-pbb-theme="light"\] #view-activity-success[\s\S]*#fffdf8[\s\S]*#211b12/);
+  assert.match(premiumCss, /html:not\(\[data-pbb-theme="light"\]\) #view-activity-success[\s\S]*#121212[\s\S]*#f8f1df/);
+  assert.match(premiumCss, /#view-activity-success #activity-share-photo-btn:focus-visible/);
   assert.match(serviceWorker, /pbb-app-v456-imported-activity-todo/);
 });

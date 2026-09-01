@@ -3736,6 +3736,100 @@ html:not([data-pbb-theme="light"]) .meal-breakdown-dismiss {
     color: #f8f7f2 !important;
 }
 
+/* Activity completion is a full themed surface, not the fixed black workout
+   overlay. Keep brand gold for accents and use explicit readable foregrounds
+   in both supported Balance modes. */
+html[data-pbb-theme="light"] #view-activity-success {
+    background:
+        radial-gradient(circle at 82% 2%, rgba(216, 178, 94, 0.2), transparent 30%),
+        linear-gradient(180deg, #fffdf8 0%, #f8f5ee 56%, #eee6d7 100%) !important;
+    color: #211b12 !important;
+    -webkit-text-fill-color: #211b12 !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-activity-success {
+    background:
+        radial-gradient(circle at 82% 2%, rgba(245, 217, 138, 0.13), transparent 30%),
+        linear-gradient(180deg, #121212 0%, #090909 58%, #050505 100%) !important;
+    color: #f8f1df !important;
+    -webkit-text-fill-color: #f8f1df !important;
+}
+
+html[data-pbb-theme="light"] #view-activity-success h1,
+html[data-pbb-theme="light"] #view-activity-success #activity-success-label,
+html[data-pbb-theme="light"] #view-activity-success .activity-success-stat,
+html[data-pbb-theme="light"] #view-activity-success .activity-share-title {
+    color: #211b12 !important;
+    -webkit-text-fill-color: #211b12 !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-activity-success h1,
+html:not([data-pbb-theme="light"]) #view-activity-success #activity-success-label,
+html:not([data-pbb-theme="light"]) #view-activity-success .activity-success-stat,
+html:not([data-pbb-theme="light"]) #view-activity-success .activity-share-title {
+    color: #f8f1df !important;
+    -webkit-text-fill-color: #f8f1df !important;
+}
+
+html[data-pbb-theme="light"] #view-activity-success .activity-success-stat,
+html[data-pbb-theme="light"] #view-activity-success #activity-share-section {
+    background: rgba(255, 255, 255, 0.9) !important;
+    border: 1px solid rgba(184, 137, 43, 0.24) !important;
+    box-shadow: 0 14px 34px rgba(70, 53, 25, 0.09) !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-activity-success .activity-success-stat,
+html:not([data-pbb-theme="light"]) #view-activity-success #activity-share-section {
+    background: rgba(24, 24, 24, 0.94) !important;
+    border: 1px solid rgba(245, 217, 138, 0.2) !important;
+    box-shadow: 0 16px 38px rgba(0, 0, 0, 0.32) !important;
+}
+
+html[data-pbb-theme="light"] #view-activity-success .activity-success-stat-label,
+html[data-pbb-theme="light"] #view-activity-success .activity-share-helper {
+    color: #6f6252 !important;
+    -webkit-text-fill-color: #6f6252 !important;
+    opacity: 1 !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-activity-success .activity-success-stat-label,
+html:not([data-pbb-theme="light"]) #view-activity-success .activity-share-helper {
+    color: #c7bda8 !important;
+    -webkit-text-fill-color: #c7bda8 !important;
+    opacity: 1 !important;
+}
+
+#view-activity-success #activity-share-photo-btn {
+    background: rgba(216, 178, 94, 0.12) !important;
+    border: 1px dashed #b8892b !important;
+    color: inherit !important;
+    -webkit-text-fill-color: currentColor !important;
+}
+
+#view-activity-success #activity-xp-status,
+#view-activity-success #activity-no-xp-hint {
+    background: rgba(216, 178, 94, 0.14) !important;
+    border: 1px solid rgba(184, 137, 43, 0.42) !important;
+    color: inherit !important;
+    -webkit-text-fill-color: currentColor !important;
+}
+
+#view-activity-success #activity-share-destination-actions button,
+#view-activity-success .activity-done-btn {
+    background: linear-gradient(135deg, #f5d98a 0%, #d8b25e 58%, #b8892b 100%) !important;
+    border: 1px solid rgba(184, 137, 43, 0.4) !important;
+    color: #17130d !important;
+    -webkit-text-fill-color: #17130d !important;
+    box-shadow: 0 12px 28px rgba(147, 105, 21, 0.2) !important;
+}
+
+#view-activity-success #activity-share-photo-btn:focus-visible,
+#view-activity-success #activity-share-destination-actions button:focus-visible,
+#view-activity-success .activity-done-btn:focus-visible {
+    outline: 3px solid #d8b25e !important;
+    outline-offset: 3px;
+}
+
 #workout-capture-area,
 #success-improvements,
 #success-milestones > div,
