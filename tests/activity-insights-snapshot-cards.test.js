@@ -67,7 +67,7 @@ test('new and returning members discover snapshots and manual steps', () => {
 });
 
 test('returning phones receive the snapshot release', () => {
-  assert.match(dashboard, /dashboard-style-1\.css\?v=78/);
+  assert.match(dashboard, /dashboard-style-1\.css\?v=79/);
   assert.ok((dashboard.match(/dashboard-script-2-activity_insights_view\.js\?v=insights-burn-detail-v7/g) || []).length >= 2);
   assert.match(serviceWorker, /pbb-app-v446-exact-quiz-label/);
 });

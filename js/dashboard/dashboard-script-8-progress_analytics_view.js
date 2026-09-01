@@ -253,7 +253,7 @@ function renderBodyWeightGraph(weighIns, containerId = 'bodyweight-graph') {
 
     // Chart dimensions
     const width = 400;
-    const height = 230;
+    const height = 270;
     const padding = { top: 20, right: 15, bottom: 45, left: 45 };
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
@@ -344,6 +344,16 @@ function renderBodyWeightGraph(weighIns, containerId = 'bodyweight-graph') {
     const changeColor = change < 0 ? '#10b981' : (change > 0 ? '#ef4444' : '#94a3b8');
     const changePrefix = change > 0 ? '+' : '';
 
+    const highCal = Math.max(...calories);
+    const lowCal = Math.min(...calories);
+    const highIndex = calories.indexOf(highCal);
+    const lowIndex = calories.indexOf(lowCal);
+    const loggedDays = calories.filter(cal => cal > 0).length;
+    const coverage = Math.round((loggedDays / calories.length) * 100);
+    const consistencyCopy = coverage >= 80
+        ? 'You logged meals consistently across this period, giving you a clearer intake trend.'
+        : `You logged ${loggedDays} of ${calories.length} tracked days. More complete days will make this trend more useful.`;
+
     const stats = `
         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px;">
             <div style="background: #f0fdf4; padding: 12px 8px; border-radius: 12px; text-align: center;">
@@ -361,7 +371,23 @@ function renderBodyWeightGraph(weighIns, containerId = 'bodyweight-graph') {
         </div>
     `;
 
-    container.innerHTML = svg + stats;
+    const periodSummary = `
+        <section class="insights-calories-period" aria-label="Daily calorie summary for this period">
+            <div class="insights-calories-period-heading">
+                <div><span>At a glance</span><h3>Your intake this period</h3></div>
+                <small>${loggedDays}/${calories.length} days logged</small>
+            </div>
+            <div class="insights-calories-period-grid">
+                <div><span>Latest</span><strong>${latestCal.toLocaleString()}</strong><small>kcal · ${dates[dates.length - 1]}</small></div>
+                <div><span>Highest</span><strong>${highCal.toLocaleString()}</strong><small>kcal · ${dates[highIndex]}</small></div>
+                <div><span>Lowest</span><strong>${lowCal.toLocaleString()}</strong><small>kcal · ${dates[lowIndex]}</small></div>
+                <div><span>Coverage</span><strong>${coverage}%</strong><small>Days with meals</small></div>
+            </div>
+            <div class="insights-calories-period-insight"><span aria-hidden="true">✦</span><div><strong>What this shows</strong><p>${consistencyCopy}</p></div></div>
+        </section>
+    `;
+
+    container.innerHTML = svg + stats + periodSummary;
 }
 
 // Render Daily Calorie Intake Graph

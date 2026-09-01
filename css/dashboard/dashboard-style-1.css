@@ -11325,6 +11325,186 @@ html[data-pbb-theme="light"] #view-insights-metric-detail {
     padding: clamp(20px, 5vw, 28px) !important;
 }
 
+#view-insights-metric-detail .insights-calories-detail-card.is-active {
+    min-height: calc(100dvh - 40px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    margin-bottom: 0 !important;
+    padding: clamp(20px, 5vw, 28px) !important;
+}
+
+.insights-calories-period {
+    margin-top: 16px;
+    padding-top: 18px;
+    border-top: 1px solid var(--pbb-insights-border);
+}
+
+.insights-calories-period-heading {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.insights-calories-period-heading span,
+.insights-calories-period-grid span {
+    display: block;
+    color: var(--pbb-insights-gold);
+    -webkit-text-fill-color: var(--pbb-insights-gold);
+    font-size: 0.64rem;
+    font-weight: 850;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.insights-calories-period-heading h3 {
+    margin: 3px 0 0;
+    color: var(--pbb-insights-text);
+    -webkit-text-fill-color: var(--pbb-insights-text);
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: 1.2rem;
+    line-height: 1.1;
+}
+
+.insights-calories-period-heading > small {
+    color: var(--pbb-insights-muted);
+    -webkit-text-fill-color: var(--pbb-insights-muted);
+    font-size: 0.7rem;
+    white-space: nowrap;
+}
+
+.insights-calories-period-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+}
+
+.insights-calories-period-grid > div {
+    min-width: 0;
+    padding: 12px;
+    border: 1px solid var(--pbb-insights-border);
+    border-radius: 12px;
+    background: var(--pbb-insights-soft-bg);
+}
+
+.insights-calories-period-grid strong {
+    display: block;
+    margin-top: 5px;
+    color: var(--pbb-insights-text);
+    -webkit-text-fill-color: var(--pbb-insights-text);
+    font-size: 1.08rem;
+    line-height: 1;
+}
+
+.insights-calories-period-grid small {
+    display: block;
+    margin-top: 5px;
+    overflow: hidden;
+    color: var(--pbb-insights-muted);
+    -webkit-text-fill-color: var(--pbb-insights-muted);
+    font-size: 0.66rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.insights-calories-period-insight {
+    display: flex;
+    gap: 11px;
+    margin-top: 10px;
+    padding: 13px;
+    border: 1px solid var(--pbb-insights-border);
+    border-radius: 12px;
+    background: var(--pbb-insights-gold-soft);
+}
+
+.insights-calories-period-insight > span {
+    color: var(--pbb-insights-gold);
+    -webkit-text-fill-color: var(--pbb-insights-gold);
+}
+
+.insights-calories-period-insight strong {
+    color: var(--pbb-insights-text);
+    -webkit-text-fill-color: var(--pbb-insights-text);
+    font-size: 0.75rem;
+}
+
+.insights-calories-period-insight p {
+    margin: 3px 0 0;
+    color: var(--pbb-insights-muted);
+    -webkit-text-fill-color: var(--pbb-insights-muted);
+    font-size: 0.71rem;
+    line-height: 1.45;
+}
+
+.insights-calories-meal-history {
+    display: flex;
+    width: 100%;
+    min-height: 58px;
+    align-items: center;
+    gap: 12px;
+    margin-top: 16px;
+    padding: 12px 13px;
+    border: 1px solid var(--pbb-insights-gold-strong);
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--pbb-insights-button-gold-light, #f5d98a), var(--pbb-insights-button-gold, #d8b25e));
+    color: var(--pbb-insights-on-gold, #171208);
+    -webkit-text-fill-color: var(--pbb-insights-on-gold, #171208);
+    text-align: left;
+    cursor: pointer;
+}
+
+.insights-calories-meal-history-icon {
+    display: grid;
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    place-items: center;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.42);
+}
+
+.insights-calories-meal-history > span:nth-child(2) {
+    min-width: 0;
+    flex: 1;
+}
+
+.insights-calories-meal-history strong,
+.insights-calories-meal-history small {
+    display: block;
+    color: inherit !important;
+    -webkit-text-fill-color: inherit !important;
+}
+
+.insights-calories-meal-history strong {
+    font-size: 0.84rem;
+    font-weight: 850;
+}
+
+.insights-calories-meal-history small {
+    margin-top: 3px;
+    font-size: 0.68rem;
+    line-height: 1.35;
+}
+
+.insights-calories-meal-history svg {
+    width: 20px;
+    height: 20px;
+    flex: 0 0 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+}
+
+.insights-calories-meal-history:hover,
+.insights-calories-meal-history:active {
+    filter: brightness(0.96);
+    transform: translateY(-1px);
+}
+
+.insights-calories-meal-history:focus-visible {
+    outline: 3px solid var(--pbb-insights-gold);
+    outline-offset: 3px;
+}
+
 #view-insights-metric-detail .insights-burn-detail-card .cb-chart-wrapper {
     margin: 4px -4px 0;
 }
