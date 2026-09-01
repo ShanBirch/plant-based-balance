@@ -1959,14 +1959,14 @@ if(!window._pbbIsIOSSafari) {
 
     <script>
 if(!window._pbbIsIOSSafari) {
-    document.write('<script src="js/dashboard/pbb-deferred-progressphoto.js?v=11"><\/script>');
+    document.write('<script src="js/dashboard/pbb-deferred-progressphoto.js?v=12-private-share-studio"><\/script>');
 document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=35-balance-theme"><\/script>');
     document.write('<script src="js/dashboard/pbb-social-journey.js?v=45-exact-course-label"><\/script>');
     document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=49-public-todo-next"><\/script>');
     document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=29-accountability-checkout"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
-    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=11');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=12-private-share-studio');
 window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=35-balance-theme');
     window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=45-exact-course-label');
     window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=49-public-todo-next');
@@ -14095,6 +14095,7 @@ if(!window._pbbIsIOSSafari) {
   }
 
   const steps = [
+    { tab:'movement-tab', sel:'#post-workout-share-btn', fallbackSel:'#activity-share-photo-btn,#nutrition-share-photo-btn', title:'Your new photo share studio', fallbackTitle:'Your new photo share studio', body:'After a workout, choose a photo and edit it full screen. Add your own text, drag it into place, then share the finished design to Feed or Instagram Story.', fallbackBody:'Add a photo to a workout, meal, nutrition check-in, activity, or Feed post to open the new full-screen editor.', quick:true, condition:function(){ return !!(window.BalancePrivateShareStudio && window.BalancePrivateShareStudio.isEnabled()); } },
     { tab:'dashboard', sel:'#dm-voice-btn', fallbackSel:'.header-msg-icon', title:'Send a voice message', fallbackTitle:'Voice messages are in your DMs', body:'Tap the microphone, record your message, then tap send. You can cancel before it leaves.', fallbackBody:'Open Messages, choose a friend, then tap the microphone beside the message box.', action: async function(){ try { var coachId=window._coachUserId || (typeof getCoachUserId==='function' ? await getCoachUserId() : null); if(coachId && typeof openDirectMessage==='function') openDirectMessage(coachId,'Coach Shan',''); } catch(e){} await new Promise(function(r){ setTimeout(r,420); }); } },
     { tab:'dashboard', sel:'#weekly-checkin-card', title:'Extra accountability when you need it', body:'Choose Keep me accountable in your Weekly Check-In to see optional extra support, including a mid-week voice check-in or a recurring live PT session.', condition:function(){ var c=document.getElementById('weekly-checkin-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#next-obvious-steps-card .next-steps-head', fallbackSel:'#next-obvious-steps-card .next-step-action,#next-obvious-steps-card', title:'Your app tour starts here', fallbackTitle:'Your app tour starts here', body:'To do next is your simple map. We will return here between each part of your plan, so you always know what comes next.', metaPreview:true, clientActivation:true, action:function(){ try { if(window.pbbNextSteps && typeof window.pbbNextSteps.refresh === 'function') window.pbbNextSteps.refresh(); } catch(e){} } },
@@ -16476,6 +16477,17 @@ window.endFeatureTour = function(skipped){
   // First-run onboarding now uses the guided walkthrough only. Keep legacy
   // feature-drop entries dormant so users do not see duplicate spotlight cards.
   allFeatures = [];
+  allFeatures.push({
+    id: 'private-photo-share-studio-shannon-v1',
+    tab: 'movement-tab',
+    sel: '#post-workout-share-btn',
+    fallbackSel: '#activity-share-photo-btn,#nutrition-share-photo-btn',
+    title: 'Your photo share studio is ready',
+    fallbackTitle: 'Your photo share studio is ready',
+    body: 'Choose a workout photo to open the full-screen editor. Add and move your own text, choose a simple style, then share to Feed or Instagram Story.',
+    fallbackBody: 'Your new full-screen editor works for workout, meal, activity, nutrition, and Feed photos.',
+    condition: function(){ return !!(window.BalancePrivateShareStudio && window.BalancePrivateShareStudio.isEnabled()); }
+  });
   allFeatures.push({
     id: 'dm-voice-messages-v1',
     tab: 'dashboard',
@@ -19792,6 +19804,10 @@ if (window._pbbIsIOSSafari) {
 
 
 <script>
+// Shannon-only full-screen photo share studio pilot. The module includes its own account gate.
+</script>
+<script src="js/dashboard/pbb-private-share-studio.js?v=1-shannon-pilot"></script>
+<script>
 // Script-10 (130KB) - Points widget. On iOS, defer to reduce memory pressure.
 // loadPointsWidget is guarded with typeof in init, so safe to defer.
 if (window._pbbIsIOSSafari) {
@@ -19806,13 +19822,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-        s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=51-imported-activity-todo';
+        s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=52-private-share-studio';
             s.onload = function() { if(window._crumb)window._crumb('script10_deferred_loaded'); };
             document.head.appendChild(s);
         }, 1500);
     }, { once: true });
 } else {
-        document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=51-imported-activity-todo"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=52-private-share-studio"><\/script>');
 }
 </script>
 
@@ -19881,7 +19897,7 @@ if (window._pbbIsIOSSafari) {
             }
 
             var s = document.createElement('script');
-        s.src = 'js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=38-meal-history';
+        s.src = 'js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=39-private-share-studio';
             s.dataset.pbbCalorieTracker = '1';
             s.onload = function() {
                 if (window._crumb) window._crumb('script11_loaded');
@@ -19941,7 +19957,7 @@ if (window._pbbIsIOSSafari) {
             }, window._pbbIsMealShortcutLaunch ? 250 : 2500);
         }, { once: true });
     } else {
-    document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=38-meal-history" data-pbb-calorie-tracker="1"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=39-private-share-studio" data-pbb-calorie-tracker="1"><\/script>');
         document.write('<script src="js/dashboard/dashboard-script-meal-builder.js?v=6-custom-foods-community" data-pbb-meal-builder="1"><\/script>');
     }
 })();

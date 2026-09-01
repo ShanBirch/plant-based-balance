@@ -353,7 +353,8 @@ let progressPhotoCaptureState = null;
         return urls.filter(Boolean);
     }
 
-    async function shareProgressPhotoToInstagram(target) {
+    async function shareProgressPhotoToInstagram(target, options) {
+        options = options || {};
         if (!window.currentUser?.id) {
             alert('Please log in to share your progress photos.');
             return;
@@ -387,6 +388,22 @@ let progressPhotoCaptureState = null;
                 photo_week: photo.photo_week || null,
                 shots: shots
             };
+
+            if (!options.skipPrivateStudio && window.BalancePrivateShareStudio?.isEnabled?.() && photoDataUrls[0]) {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                    btn.textContent = originalText || 'Share to IG Story';
+                }
+                await window.BalancePrivateShareStudio.open({
+                    context: 'progress_photo',
+                    photoDataUrl: photoDataUrls[0],
+                    cardPayload,
+                    previewTarget: target === 'feed' ? 'feed' : 'story',
+                    onInstagram: async () => shareProgressPhotoToInstagram(target, { skipPrivateStudio: true })
+                });
+                return;
+            }
 
             await window.shareBalanceCardToInstagram(cardPayload, target === 'feed' ? 'feed' : 'story', {
                 photoDataUrls,
