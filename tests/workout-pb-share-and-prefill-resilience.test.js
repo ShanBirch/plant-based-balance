@@ -59,14 +59,14 @@ assert.ok(
 );
 
 assert.ok(
-    dashboardSource.includes('script_part_2.js?v=15-meal-reminders-retired') &&
-    dashboardSource.includes('dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=227-meal-primary-tabs') &&
+    dashboardSource.includes('script_part_2.js?v=16-imported-activity-latest') &&
+    dashboardSource.includes('dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=230-remove-volume-popup') &&
         dashboardSource.includes('pbb-deferred-workoutbuilder.js?v=10') &&
         dashboardSource.includes('pbb-deferred-savedworkouts.js?v=7') &&
-        loaderSource.includes('lib/supabase.js?v=16-meal-reminders-retired') &&
-        serviceWorkerSource.includes("const CACHE_NAME = 'pbb-app-v456-imported-activity-todo'") &&
-        serviceWorkerSource.includes('./lib/supabase.js?v=16-meal-reminders-retired') &&
-        serviceWorkerSource.includes('./js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=227-meal-primary-tabs'),
+        loaderSource.includes('lib/supabase.js?v=17-imported-activity-latest') &&
+        serviceWorkerSource.includes("const CACHE_NAME = 'pbb-app-v460-imported-activity-dismissed'") &&
+        serviceWorkerSource.includes('./lib/supabase.js?v=17-imported-activity-latest') &&
+        serviceWorkerSource.includes('./js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=230-remove-volume-popup'),
     'phones must fetch the repaired PB and previous-session code instead of cached versions'
 );
 

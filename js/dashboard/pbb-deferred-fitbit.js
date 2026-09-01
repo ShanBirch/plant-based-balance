@@ -73,19 +73,19 @@
             const importedActivities = typeof activityLogs?.getRecentImportedFromSources === 'function'
                 ? await activityLogs.getRecentImportedFromSources(window.currentUser.id, ['fitbit', 'native_health'], 25)
                 : await activityLogs?.getRecentImported?.(window.currentUser.id, 'fitbit', 25) || [];
-            const activities = importedActivities.filter(activity => !activity.source_metadata?.share_prompt_handled);
-            const newest = activities.find(activity => {
+            const newest = importedActivities.find(activity => {
                 const importedAt = new Date(activity.imported_at || 0).getTime();
                 return importedAt && (Date.now() - importedAt) < 7 * 24 * 60 * 60 * 1000;
             });
             const existing = document.getElementById('fitbit-imported-activity-card');
             if (existing) existing.remove();
-            if (!newest) {
+            if (!newest || newest.shared_to_feed || newest.source_metadata?.share_prompt_handled) {
                 window.pbbPendingImportedActivity = null;
                 window.dispatchEvent(new CustomEvent('pbb:imported-activity-updated'));
                 window.pbbNextSteps?.refresh?.();
                 return;
             }
+            const activities = importedActivities.filter(activity => !activity.shared_to_feed && !activity.source_metadata?.share_prompt_handled);
             const groupedActivities = activities.filter(activity => activity.source === newest.source && activity.activity_date === newest.activity_date && activity.activity_type === newest.activity_type);
             const distance = groupedActivities.reduce((sum, activity) => {
                 const metadata = activity.source_metadata || {};

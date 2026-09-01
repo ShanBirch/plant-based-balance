@@ -180,9 +180,9 @@ test('versioned phone assets advance for the Home fix', () => {
   assert.match(dashboard, /pbb-social-journey\.js\?v=45-exact-course-label/);
   assert.match(dashboard, /pbb-next-obvious-steps\.js\?v=50-hide-shared-diary/);
   assert.match(dashboard, /dashboard-script-3-1_get_user_data\.js\?v=61-remove-primary-test-seed/);
-  assert.match(dashboard, /pbb-deferred-fitbit\.js\?v=2-imported-activity-todo/);
+  assert.match(dashboard, /pbb-deferred-fitbit\.js\?v=3-latest-import-only/);
   assert.match(dashboard, /dashboard-script-1-daily_weighin_card_logic\.js\?v=78-hide-shared-diary-todo/);
-  assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=53-rating-completion-gate/);
-  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v458-themed-workout-rating'/);
-  assert.match(serviceWorker, /dashboard-script-10-points_widget_functions\.js\?v=53-rating-completion-gate/);
+  assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=54-imported-activity-dismissed/);
+  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v460-imported-activity-dismissed'/);
+  assert.match(serviceWorker, /dashboard-script-10-points_widget_functions\.js\?v=54-imported-activity-dismissed/);
 });

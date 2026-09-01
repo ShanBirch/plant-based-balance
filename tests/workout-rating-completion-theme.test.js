@@ -26,8 +26,8 @@ test('the rating page follows the paired Balance light and dark themes', () => {
 });
 
 test('Android receives fresh rating behaviour and styles', () => {
-  assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=228-themed-workout-rating&video_health=2/);
-  assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=53-rating-completion-gate/);
+  assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=230-remove-volume-popup&video_health=2/);
+  assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=54-imported-activity-dismissed/);
   assert.match(dashboard, /pbb-premium-overlays\.css\?v=114-themed-workout-rating/);
-  assert.match(serviceWorker, /pbb-app-v458-themed-workout-rating/);
+  assert.match(serviceWorker, /pbb-app-v460-imported-activity-dismissed/);
 });

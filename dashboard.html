@@ -443,7 +443,7 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
 </script>
 
 <!-- Supabase & Auth Guard -->
-<script src="js/dashboard/script_part_2.js?v=15-meal-reminders-retired"></script>
+<script src="js/dashboard/script_part_2.js?v=16-imported-activity-latest"></script>
 <script>
 // ── Native OAuth warm-start callback (non-iOS) ────────────────────
 // On iOS this is set up inside the deferred chain above (after supabaseClient exists).
@@ -1844,10 +1844,10 @@ window.addEventListener('load', function() {
     <script src="js/dashboard/pbb-app-telemetry.js?v=1"></script>
     <script>
 if(!window._pbbIsIOSSafari) {
-    document.write('<script src="js/dashboard/pbb-deferred-fitbit.js?v=2-imported-activity-todo"><\/script>');
+    document.write('<script src="js/dashboard/pbb-deferred-fitbit.js?v=3-latest-import-only"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
-    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-fitbit.js?v=2-imported-activity-todo');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-fitbit.js?v=3-latest-import-only');
 }
 </script>
 
@@ -19793,13 +19793,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-        s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=53-rating-completion-gate';
+        s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=54-imported-activity-dismissed';
             s.onload = function() { if(window._crumb)window._crumb('script10_deferred_loaded'); };
             document.head.appendChild(s);
         }, 1500);
     }, { once: true });
 } else {
-        document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=53-rating-completion-gate"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=54-imported-activity-dismissed"><\/script>');
 }
 </script>
 

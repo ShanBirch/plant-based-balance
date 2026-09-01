@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v459-focus-cues-page'; // v459: Cleaner Focus Mode header and dedicated form-cues page
+const CACHE_NAME = 'pbb-app-v460-imported-activity-dismissed'; // v460: Focus updates plus handled wearable prompts no longer returning to Home
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -7,7 +7,7 @@ const ASSETS = [
   './xp-guide.html',
   './assets/balance_logo.png',
   './welcome.html',
-  './lib/supabase.js?v=16-meal-reminders-retired',
+  './lib/supabase.js?v=17-imported-activity-latest',
   './lib/auth-guard.js?v=13-account-first-flow',
   './lib/meta-ad-trial.js?v=17-goal-alignment',
   './lib/native-push.js?v=41-meal-reminders-retired',
@@ -15,9 +15,9 @@ const ASSETS = [
   './exercise_videos.js?v=20260813-global-phone-video-v1',
   './workout_library.js',
   './workout_library_extended.js',
-  './js/dashboard/script_part_2.js?v=15-meal-reminders-retired',
+  './js/dashboard/script_part_2.js?v=16-imported-activity-latest',
   './js/dashboard/dashboard-script-3-1_get_user_data.js?v=60-manual-feature-reveals',
-  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=228-themed-workout-rating&video_health=2',
+  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=230-remove-volume-popup&video_health=2',
   './js/dashboard/pbb-settings-navigation.js?v=1-settings-navigation',
   './js/dashboard/pbb-meta-preview-soundtrack.js?v=3-coach-video-ducking',
   './js/dashboard/pbb-app-telemetry.js?v=1',
@@ -25,8 +25,8 @@ const ASSETS = [
   './css/dashboard/pbb-onboarding-comeback.css?v=8',
   './css/dashboard/pbb-onboarding-foundations.css?v=7-single-render',
   './js/dashboard/dashboard-script-7-video_logic.js?v=20260815-exercise-thumbnails',
-  './js/dashboard/dashboard-script-10-points_widget_functions.js?v=53-rating-completion-gate',
-  './js/dashboard/pbb-deferred-fitbit.js?v=2-imported-activity-todo',
+  './js/dashboard/dashboard-script-10-points_widget_functions.js?v=54-imported-activity-dismissed',
+  './js/dashboard/pbb-deferred-fitbit.js?v=3-latest-import-only',
   './js/dashboard/pbb-next-obvious-steps.js?v=50-hide-shared-diary',
   './js/dashboard/pbb-deferred-formcheck.js?v=58-ios-exercise-video-upload&video_health=2',
   './js/dashboard/pbb-deferred-workoutbuilder.js?v=10',

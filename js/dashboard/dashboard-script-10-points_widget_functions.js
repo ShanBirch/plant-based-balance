@@ -6697,6 +6697,9 @@ window.openImportedActivityForSharing = function(activity) {
         photoBase64: null,
         photoMimeType: null,
         sourceMetadata: metadata,
+        source: activity.source || null,
+        isImportedActivity: activity.source === 'fitbit' || activity.source === 'native_health',
+        sharePromptHandled: Boolean(metadata.share_prompt_handled || activity.shared_to_feed),
         routePolyline: metadata.route_polyline || null,
         distanceKm: Number(metadata.distance_km || 0) || null,
         includeRoute: Boolean(metadata.route_polyline),
@@ -6705,6 +6708,34 @@ window.openImportedActivityForSharing = function(activity) {
     };
     showActivitySuccess(savedActivityData);
 };
+
+async function markImportedActivitySharePromptHandled(reason) {
+    if (!savedActivityData?.isImportedActivity || savedActivityData.sharePromptHandled) return false;
+    const activityIds = (savedActivityData.activityIds || [savedActivityData.id]).filter(Boolean);
+    if (!activityIds.length) return false;
+
+    savedActivityData.sharePromptHandled = true;
+    window.pbbPendingImportedActivity = null;
+    window.dispatchEvent(new CustomEvent('pbb:imported-activity-updated'));
+    window.pbbNextSteps?.refresh?.();
+
+    const handledAt = new Date().toISOString();
+    await Promise.all(activityIds.map(id => {
+        const existingMetadata = savedActivityData.activityMetadataById?.[id] || savedActivityData.sourceMetadata || {};
+        return window.dbHelpers?.activityLogs?.update(id, {
+            source_metadata: {
+                ...existingMetadata,
+                share_prompt_handled: reason || 'dismissed',
+                share_prompt_handled_at: handledAt
+            }
+        });
+    }));
+    if (typeof window.refreshImportedActivityHomeCard === 'function') {
+        await window.refreshImportedActivityHomeCard();
+    }
+    return true;
+}
+window.markImportedActivitySharePromptHandled = markImportedActivitySharePromptHandled;
 
 // MET values for calorie estimation (Metabolic Equivalent of Task)
 // Source: Compendium of Physical Activities
@@ -7602,12 +7633,29 @@ async function shareActivityCardToFeed() {
         // Update activity log record
         if (savedActivityData.id) {
             try {
+                const primaryMetadata = savedActivityData.activityMetadataById?.[savedActivityData.id] || savedActivityData.sourceMetadata || {};
                 await window.dbHelpers?.activityLogs?.update(savedActivityData.id, {
                     shared_to_feed: true,
-                    xp_awarded: !!xpResult?.success
+                    xp_awarded: !!xpResult?.success,
+                    source_metadata: {
+                        ...primaryMetadata,
+                        share_prompt_handled: 'balance_feed',
+                        share_prompt_handled_at: new Date().toISOString()
+                    }
                 });
                 const additionalIds = (savedActivityData.activityIds || []).filter(id => id && id !== savedActivityData.id);
-                await Promise.all(additionalIds.map(id => window.dbHelpers?.activityLogs?.update(id, { shared_to_feed: true })));
+                await Promise.all(additionalIds.map(id => {
+                    const existingMetadata = savedActivityData.activityMetadataById?.[id] || savedActivityData.sourceMetadata || {};
+                    return window.dbHelpers?.activityLogs?.update(id, {
+                        shared_to_feed: true,
+                        source_metadata: {
+                            ...existingMetadata,
+                            share_prompt_handled: 'balance_feed',
+                            share_prompt_handled_at: new Date().toISOString()
+                        }
+                    });
+                }));
+                savedActivityData.sharePromptHandled = true;
                 if (typeof window.refreshImportedActivityHomeCard === 'function') {
                     await window.refreshImportedActivityHomeCard();
                 }
@@ -7680,6 +7728,7 @@ async function shareActivityCardToInstagram() {
                 });
             }));
             if (typeof window.refreshImportedActivityHomeCard === 'function') await window.refreshImportedActivityHomeCard();
+            savedActivityData.sharePromptHandled = true;
         }
         // `instagram_feed` is the legacy backend key for the independent Instagram XP lane.
         // The user-facing destination for activity cards is Instagram Story.
@@ -7824,6 +7873,11 @@ function closeActivitySuccess() {
     // Only a genuinely completed activity may open the feedback screen. This
     // prevents Android back/cancel paths from reusing stale activity details.
     if (completedSession) {
+        if (savedActivityData?.isImportedActivity && !savedActivityData.sharePromptHandled) {
+            markImportedActivitySharePromptHandled('dismissed').catch(error => {
+                console.warn('Could not dismiss imported activity share prompt:', error);
+            });
+        }
         openWorkoutRatingModal(activityName, 'activity', activityId);
     }
     savedActivityData = null;
