@@ -13027,7 +13027,7 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=228-themed-workout-rating&video_health=2';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=229-private-workout-complete&video_health=2';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
@@ -13069,7 +13069,7 @@ if (window._pbbIsIOSSafari) {
         var s = document.createElement('script');
         s.async = false;
         s.dataset.metaTrialLoader = String(attempt);
-        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=228-themed-workout-rating&video_health=2&meta_retry=' + attempt;
+        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=229-private-workout-complete&video_health=2&meta_retry=' + attempt;
         s.onload = function() {
             if (window._pbbScript5Complete && window._switchAppTabReady && typeof window._switchAppTabReal === 'function') {
                 sessionStorage.removeItem('pbb_meta_script5_recovery_v1');
@@ -13088,7 +13088,7 @@ if (window._pbbIsIOSSafari) {
         document.head.appendChild(s);
     })(0);
 } else {
-document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=228-themed-workout-rating&video_health=2"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=229-private-workout-complete&video_health=2"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=5"></script>
@@ -14067,6 +14067,7 @@ if(!window._pbbIsIOSSafari) {
   }
 
   const steps = [
+    { tab:'movement-tab', sel:'#pbb-private-workout-complete', fallbackSel:'#post-workout-share-btn', title:'Your workout progress comes first', fallbackTitle:'Your new workout saved page', body:'After you finish a workout, Balance now shows your completed sets, volume, exercises, and new bests in one simple page before you choose whether to share a photo.', fallbackBody:'Finish a workout to see the new progress-first workout saved page.', quick:true, condition:function(){ return !!(window.BalancePrivateShareStudio && window.BalancePrivateShareStudio.isEnabled()); } },
     { tab:'movement-tab', sel:'#post-workout-share-btn', fallbackSel:'#activity-share-photo-btn,#nutrition-share-photo-btn', title:'Your new photo share studio', fallbackTitle:'Your new photo share studio', body:'After a workout, choose a photo and edit it full screen. Add your own text, drag it into place, then share the finished design to Feed or Instagram Story.', fallbackBody:'Add a photo to a workout, meal, nutrition check-in, activity, or Feed post to open the new full-screen editor.', quick:true, condition:function(){ return !!(window.BalancePrivateShareStudio && window.BalancePrivateShareStudio.isEnabled()); } },
     { tab:'dashboard', sel:'#dm-voice-btn', fallbackSel:'.header-msg-icon', title:'Send a voice message', fallbackTitle:'Voice messages are in your DMs', body:'Tap the microphone, record your message, then tap send. You can cancel before it leaves.', fallbackBody:'Open Messages, choose a friend, then tap the microphone beside the message box.', action: async function(){ try { var coachId=window._coachUserId || (typeof getCoachUserId==='function' ? await getCoachUserId() : null); if(coachId && typeof openDirectMessage==='function') openDirectMessage(coachId,'Coach Shan',''); } catch(e){} await new Promise(function(r){ setTimeout(r,420); }); } },
     { tab:'dashboard', sel:'#weekly-checkin-card', title:'Extra accountability when you need it', body:'Choose Keep me accountable in your Weekly Check-In to see optional extra support, including a mid-week voice check-in or a recurring live PT session.', condition:function(){ var c=document.getElementById('weekly-checkin-card'); return c && c.style.display !== 'none'; } },
@@ -16449,6 +16450,17 @@ window.endFeatureTour = function(skipped){
   // First-run onboarding now uses the guided walkthrough only. Keep legacy
   // feature-drop entries dormant so users do not see duplicate spotlight cards.
   allFeatures = [];
+  allFeatures.push({
+    id: 'private-workout-complete-shannon-v1',
+    tab: 'movement-tab',
+    sel: '#pbb-private-workout-complete',
+    fallbackSel: '#post-workout-share-btn',
+    title: 'Your new workout saved page',
+    fallbackTitle: 'Your new workout saved page',
+    body: 'Progress comes first now. See your completed sets, training volume, exercises, and new bests, then choose Done or Share a photo.',
+    fallbackBody: 'Finish your next workout to see the new progress-first workout saved page.',
+    condition: function(){ return !!(window.BalancePrivateShareStudio && window.BalancePrivateShareStudio.isEnabled()); }
+  });
   allFeatures.push({
     id: 'private-photo-share-studio-shannon-v1',
     tab: 'movement-tab',
@@ -19778,7 +19790,7 @@ if (window._pbbIsIOSSafari) {
 <script>
 // Shannon-only full-screen photo share studio pilot. The module includes its own account gate.
 </script>
-<script src="js/dashboard/pbb-private-share-studio.js?v=2-coco-account"></script>
+<script src="js/dashboard/pbb-private-share-studio.js?v=3-workout-complete"></script>
 <script>
 // Script-10 (130KB) - Points widget. On iOS, defer to reduce memory pressure.
 // loadPointsWidget is guarded with typeof in init, so safe to defer.

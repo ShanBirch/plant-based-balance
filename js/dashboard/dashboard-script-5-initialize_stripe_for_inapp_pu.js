@@ -19279,6 +19279,15 @@ async function finishWorkout() {
             };
             hideAllAppViews();
             document.getElementById('view-workout-success').style.display = 'flex';
+            if (window.BalancePrivateShareStudio?.isEnabled?.()
+                && typeof window.BalancePrivateShareStudio.renderWorkoutCompletePage === 'function') {
+                window.BalancePrivateShareStudio.renderWorkoutCompletePage({
+                    duration,
+                    workoutName: completedWorkoutDataForShare.workoutName,
+                    workoutData: [],
+                    newPBs: []
+                });
+            }
             // Push navigation state for Android back button
             pushNavigationState('view-workout-success', () => closeSuccessScreen());
         }
@@ -19316,6 +19325,15 @@ async function finishWorkout() {
             }
             hideAllAppViews();
             document.getElementById('view-workout-success').style.display = 'flex';
+            if (window.BalancePrivateShareStudio?.isEnabled?.()
+                && typeof window.BalancePrivateShareStudio.renderWorkoutCompletePage === 'function') {
+                window.BalancePrivateShareStudio.renderWorkoutCompletePage({
+                    duration,
+                    workoutName: completedWorkoutDataForShare.workoutName,
+                    workoutData: setsToSave,
+                    newPBs: []
+                });
+            }
             pushNavigationState('view-workout-success', () => closeSuccessScreen());
             return;
         }
@@ -20243,6 +20261,16 @@ async function showWorkoutSuccessScreen(duration, improvements, milestones, work
     }
 
     document.getElementById('view-workout-success').style.display = 'flex';
+
+    if (window.BalancePrivateShareStudio?.isEnabled?.()
+        && typeof window.BalancePrivateShareStudio.renderWorkoutCompletePage === 'function') {
+        window.BalancePrivateShareStudio.renderWorkoutCompletePage({
+            duration,
+            workoutName: completedWorkoutDataForShare.workoutName,
+            workoutData: workoutData || [],
+            newPBs: newPBs || []
+        });
+    }
 
     const shareCard = document.getElementById('share-section-combined');
     if (shareCard) shareCard.style.display = 'block';

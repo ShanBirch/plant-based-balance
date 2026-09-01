@@ -14,6 +14,95 @@
     return accountEmail() === PILOT_EMAIL;
   }
 
+  function ensureWorkoutCompleteStyles() {
+    if (document.getElementById('pbb-private-workout-complete-styles')) return;
+    var style = document.createElement('style');
+    style.id = 'pbb-private-workout-complete-styles';
+    style.textContent = `
+      #view-workout-success.pbb-private-complete-active{background:#f5eee1!important;color:#121927!important;-webkit-text-fill-color:currentColor;overflow:hidden!important;padding:0!important}
+      #view-workout-success.pbb-private-complete-active>div:not(#pbb-private-workout-complete){display:none!important}
+      .pbb-private-workout-complete{--pwc-bg:#f5eee1;--pwc-surface:#fffaf2;--pwc-text:#121927;--pwc-muted:#726a5d;--pwc-line:#ded0b6;--pwc-gold:#e4b227;--pwc-gold-ink:#121927;width:100%;height:100%;min-height:100dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--pwc-bg);color:var(--pwc-text);-webkit-text-fill-color:currentColor;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);font-family:Inter,system-ui,sans-serif}
+      body.dark-mode .pbb-private-workout-complete,html[data-theme="dark"] .pbb-private-workout-complete{--pwc-bg:#0c0d0f;--pwc-surface:#151619;--pwc-text:#f8f1e4;--pwc-muted:#b9ae9c;--pwc-line:#363027;--pwc-gold:#f3d87c;--pwc-gold-ink:#16130d}
+      body.dark-mode #view-workout-success.pbb-private-complete-active,html[data-theme="dark"] #view-workout-success.pbb-private-complete-active{background:#0c0d0f!important;color:#f8f1e4!important}
+      .pbb-private-workout-complete *{box-sizing:border-box}.pbb-private-workout-complete button{font:inherit;cursor:pointer}.pwc-shell{width:min(100%,520px);min-height:100%;margin:0 auto;display:flex;flex-direction:column;background:var(--pwc-surface)}
+      .pwc-topbar{min-height:64px;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px}.pwc-close{width:40px;height:40px;display:grid;place-items:center;border:1px solid var(--pwc-line);border-radius:50%;background:transparent;color:var(--pwc-text);-webkit-text-fill-color:var(--pwc-text);font-size:1.35rem;line-height:1}.pwc-kicker,.pwc-label{color:var(--pwc-muted);-webkit-text-fill-color:var(--pwc-muted);font-size:.73rem;font-weight:850;letter-spacing:.09em;text-transform:uppercase}
+      .pwc-main{padding:8px 22px 22px}.pwc-workout-name{display:block;margin-bottom:18px}.pwc-time{margin:0 0 6px;font-size:clamp(4rem,19vw,5.2rem);line-height:.9;font-weight:450;letter-spacing:-.075em;color:var(--pwc-text);-webkit-text-fill-color:var(--pwc-text)}.pwc-time small{color:var(--pwc-muted);-webkit-text-fill-color:var(--pwc-muted);font-size:1.05rem;letter-spacing:0}.pwc-copy{margin:0;color:var(--pwc-muted);-webkit-text-fill-color:var(--pwc-muted);font-size:.9rem}.pwc-progress{height:8px;margin:23px 0 10px;overflow:hidden;border-radius:99px;background:var(--pwc-line)}.pwc-progress span{display:block;height:100%;border-radius:inherit;background:var(--pwc-gold)}.pwc-inline{display:flex;justify-content:space-between;color:var(--pwc-muted);-webkit-text-fill-color:var(--pwc-muted);font-size:.75rem}
+      .pwc-section{padding:18px 22px;border-top:1px solid var(--pwc-line)}.pwc-stats{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:14px}.pwc-stat strong{display:block;color:var(--pwc-text);-webkit-text-fill-color:var(--pwc-text);font-size:1.12rem;font-weight:700}.pwc-stat span,.pwc-pb-copy span{color:var(--pwc-muted);-webkit-text-fill-color:var(--pwc-muted);font-size:.75rem}.pwc-pb-row{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:14px}.pwc-pb-copy{min-width:0}.pwc-pb-copy strong{display:block;color:var(--pwc-text);-webkit-text-fill-color:var(--pwc-text);font-size:.95rem;font-weight:750;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pwc-pb-gain{flex:0 0 auto;color:#8c6811;-webkit-text-fill-color:#8c6811;font-size:.78rem;font-weight:850}body.dark-mode .pwc-pb-gain,html[data-theme="dark"] .pwc-pb-gain{color:var(--pwc-gold);-webkit-text-fill-color:var(--pwc-gold)}
+      .pwc-actions{margin-top:auto;padding:18px 22px calc(22px + env(safe-area-inset-bottom));display:grid;grid-template-columns:1fr 1.6fr;gap:10px;border-top:1px solid var(--pwc-line)}.pwc-primary,.pwc-secondary{min-height:52px;border-radius:15px;padding:0 16px;font-weight:850}.pwc-primary{border:0;background:var(--pwc-gold);color:var(--pwc-gold-ink);-webkit-text-fill-color:var(--pwc-gold-ink)}.pwc-secondary{border:1px solid var(--pwc-line);background:transparent;color:var(--pwc-text);-webkit-text-fill-color:var(--pwc-text)}
+      @media(min-width:521px){.pwc-shell{min-height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));box-shadow:0 0 60px rgba(61,46,19,.12)}}
+    `;
+    document.head.appendChild(style);
+  }
+
+  function formatWorkoutPb(pb) {
+    if (!pb) return { result: '', gain: '' };
+    var result = pb.type === 'weight'
+      ? String(pb.value || 0) + ' kg × ' + String(pb.reps || 0) + ' reps'
+      : String(pb.value || 0) + ' reps @ ' + String(pb.weight || 0) + ' kg';
+    var gain = pb.improvement ? '+' + String(pb.improvement) + (pb.type === 'weight' ? ' kg' : ' reps') : 'New best';
+    return { result: result, gain: gain };
+  }
+
+  function renderWorkoutCompletePage(data) {
+    var view = document.getElementById('view-workout-success');
+    if (!view) return false;
+    if (!isEnabled()) {
+      view.classList.remove('pbb-private-complete-active');
+      var oldPrivatePage = document.getElementById('pbb-private-workout-complete');
+      if (oldPrivatePage) oldPrivatePage.remove();
+      return false;
+    }
+
+    ensureWorkoutCompleteStyles();
+    data = data || {};
+    var rows = Array.isArray(data.workoutData) ? data.workoutData : [];
+    var completedSets = rows.length;
+    var plannedSets = document.querySelectorAll('#workout-exercises-list .workout-set-row').length || completedSets;
+    plannedSets = Math.max(plannedSets, completedSets, 1);
+    var completion = Math.max(0, Math.min(100, Math.round((completedSets / plannedSets) * 100)));
+    var exercises = new Set(rows.map(function (row) { return String(row.exercise || row.exercise_name || '').trim(); }).filter(Boolean));
+    var volume = rows.reduce(function (sum, row) { return sum + ((Number(row.kg) || 0) * (Number(row.reps) || 0)); }, 0);
+    var durationParts = String(data.duration || '0:00').split(':').map(function (value) { return parseInt(value, 10) || 0; });
+    var minutes = durationParts.length >= 3 ? (durationParts[0] * 60) + durationParts[1] : durationParts[0];
+    var pbs = Array.isArray(data.newPBs) ? data.newPBs : [];
+    var firstPb = pbs[0] || null;
+    var pbValue = formatWorkoutPb(firstPb);
+    var page = document.getElementById('pbb-private-workout-complete');
+    if (!page) {
+      page = document.createElement('section');
+      page.id = 'pbb-private-workout-complete';
+      page.className = 'pbb-private-workout-complete';
+      view.prepend(page);
+    }
+    page.innerHTML = `
+      <div class="pwc-shell">
+        <div class="pwc-topbar"><button type="button" class="pwc-close" onclick="closeSuccessScreen()" aria-label="Close workout saved page">×</button><span class="pwc-kicker">Workout saved</span><span style="width:40px" aria-hidden="true"></span></div>
+        <main class="pwc-main">
+          <span class="pwc-kicker pwc-workout-name"></span>
+          <div class="pwc-time"><span data-pwc-minutes></span><small> min</small></div>
+          <p class="pwc-copy" data-pwc-copy></p>
+          <div class="pwc-progress" role="progressbar" aria-label="Planned sets completed" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${completion}"><span style="width:${completion}%"></span></div>
+          <div class="pwc-inline"><span>Workout complete</span><span>${completion}%</span></div>
+        </main>
+        <section class="pwc-section"><span class="pwc-label">Today’s work</span><div class="pwc-stats"><div class="pwc-stat"><strong data-pwc-volume></strong><span>Total volume</span></div><div class="pwc-stat"><strong>${exercises.size || 0} exercise${exercises.size === 1 ? '' : 's'}</strong><span>Completed</span></div></div></section>
+        <section class="pwc-section" data-pwc-pb-section style="display:${firstPb ? 'block' : 'none'}"><span class="pwc-label">${pbs.length === 1 ? 'One new best' : pbs.length + ' new bests'}</span><div class="pwc-pb-row"><div class="pwc-pb-copy"><strong data-pwc-pb-name></strong><span data-pwc-pb-result></span></div><div class="pwc-pb-gain" data-pwc-pb-gain></div></div></section>
+        <div class="pwc-actions"><button type="button" class="pwc-secondary" onclick="closeSuccessScreen()">Done</button><button type="button" class="pwc-primary" onclick="if(typeof beginPostWorkoutCompositeShare==='function'){beginPostWorkoutCompositeShare(buildWorkoutShareCardPayload(),'workout')}else if(typeof captureWorkoutSharePhoto==='function'){captureWorkoutSharePhoto()}">Share a photo</button></div>
+      </div>`;
+    page.querySelector('.pwc-workout-name').textContent = String(data.workoutName || 'Workout');
+    page.querySelector('[data-pwc-minutes]').textContent = String(minutes);
+    page.querySelector('[data-pwc-copy]').textContent = 'You completed ' + completedSets + ' of ' + plannedSets + ' planned sets.';
+    page.querySelector('[data-pwc-volume]').textContent = Math.round(volume).toLocaleString('en-AU') + ' kg';
+    if (firstPb) {
+      page.querySelector('[data-pwc-pb-name]').textContent = String(firstPb.exercise || 'Personal best');
+      page.querySelector('[data-pwc-pb-result]').textContent = pbValue.result;
+      page.querySelector('[data-pwc-pb-gain]').textContent = pbValue.gain;
+    }
+    view.classList.add('pbb-private-complete-active');
+    window.dispatchEvent(new CustomEvent('pbb:private-workout-complete-shown'));
+    if (typeof window._crumb === 'function') window._crumb('private_workout_complete_shown');
+    return true;
+  }
+
   function ensureStyles() {
     if (document.getElementById('pbb-private-share-studio-styles')) return;
     var style = document.createElement('style');
@@ -347,6 +436,7 @@
     isEnabled: isEnabled,
     open: open,
     choosePhoto: choosePhoto,
+    renderWorkoutCompletePage: renderWorkoutCompletePage,
     close: close,
     pilotEmail: PILOT_EMAIL
   };

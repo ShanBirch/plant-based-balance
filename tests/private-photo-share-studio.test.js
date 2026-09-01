@@ -8,6 +8,7 @@ const read = file => fs.readFileSync(path.join(root, file), 'utf8');
 
 const studio = read('js/dashboard/pbb-private-share-studio.js');
 const points = read('js/dashboard/dashboard-script-10-points_widget_functions.js');
+const workoutRuntime = read('js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js');
 const meals = read('js/dashboard/dashboard-script-11-calorie_tracker_functions.js');
 const stories = read('lib/stories.js');
 const progressPhotos = read('js/dashboard/pbb-deferred-progressphoto.js');
@@ -49,10 +50,20 @@ test('custom text is burned into designed share images', () => {
   assert.ok((points.match(/pbbShareDrawStudioCaption\(ctx, width, height, cardType, options\)/g) || []).length >= 5);
 });
 
+test('Shannon receives the progress-first workout completed page', () => {
+  assert.match(studio, /function renderWorkoutCompletePage/);
+  assert.match(studio, /Workout saved/);
+  assert.match(studio, /Today’s work/);
+  assert.match(studio, /Share a photo/);
+  assert.match(studio, /pbb-private-complete-active/);
+  assert.match(workoutRuntime, /BalancePrivateShareStudio\.renderWorkoutCompletePage/);
+  assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=229-private-workout-complete/);
+});
+
 test('private reveal, tour, and cache-busted modules ship together', () => {
   assert.match(dashboard, /private-photo-share-studio-shannon-v1/);
   assert.match(dashboard, /BalancePrivateShareStudio\.isEnabled\(\)/);
-  assert.match(dashboard, /pbb-private-share-studio\.js\?v=2-coco-account/);
+  assert.match(dashboard, /pbb-private-share-studio\.js\?v=3-workout-complete/);
   assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=[^'\"]+/);
   assert.match(dashboard, /dashboard-script-11-calorie_tracker_functions\.js\?v=39-private-share-studio/);
 });
