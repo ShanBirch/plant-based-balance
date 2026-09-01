@@ -67,7 +67,23 @@ test('new and returning members discover snapshots and manual steps', () => {
 });
 
 test('returning phones receive the snapshot release', () => {
-  assert.match(dashboard, /dashboard-style-1\.css\?v=71/);
-  assert.ok((dashboard.match(/dashboard-script-2-activity_insights_view\.js\?v=insights-snapshots-v1/g) || []).length >= 2);
-  assert.match(serviceWorker, /pbb-app-v430-insights-snapshots/);
+  assert.match(dashboard, /dashboard-style-1\.css\?v=72/);
+  assert.ok((dashboard.match(/dashboard-script-2-activity_insights_view\.js\?v=insights-theme-history-v2/g) || []).length >= 2);
+  assert.match(serviceWorker, /pbb-app-v431-insights-theme-history/);
+});
+
+test('body weight detail has one entry point and a live history summary', () => {
+  assert.doesNotMatch(dashboard, /class="insights-add-weight-button"[^>]*>Add weight/);
+  assert.doesNotMatch(insights, /Add your first entry here/);
+  assert.match(insights, /summary\.textContent = total \+ ' weigh-in'/);
+  assert.match(insights, /latest ' \+ latestWeight/);
+});
+
+test('every metric detail uses paired readable font roles', () => {
+  assert.match(css, /font-family: "Inter", -apple-system/);
+  assert.match(css, /\.insights-legacy-graph-card\.is-active \[style\*="color: #94a3b8"\]/);
+  assert.match(css, /\.insights-legacy-graph-card\.is-active \[style\*="color: #3b82f6"\]/);
+  assert.match(css, /#view-insights-metric-detail svg text\[fill="#94a3b8"\]/);
+  assert.match(css, /#view-insights-metric-detail \.cb-tooltip/);
+  assert.match(css, /#view-insights-metric-detail \.multi-week-nav button\.active/);
 });

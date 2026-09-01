@@ -2468,18 +2468,19 @@
     function renderWeighInManager(weighIns, containerId = 'weigh-in-management-container') {
         const container = document.getElementById(containerId);
         if (!container) return;
+        const summary = document.getElementById('weigh-in-management-summary');
 
         const sorted = (weighIns || []).slice().sort(function(a, b) {
             return (b.weigh_in_date || '').localeCompare(a.weigh_in_date || '');
         });
 
         if (!sorted.length) {
+            if (summary) summary.textContent = 'No weigh-ins yet';
             container.innerHTML = `
                 <div style="text-align:center; padding:18px 10px; color:var(--text-muted);">
                     <div style="font-size:2rem; margin-bottom:8px; opacity:0.35;">⚖️</div>
                     <div style="font-size:0.92rem; font-weight:700; color:var(--text-main); margin-bottom:4px;">No weigh-ins yet</div>
-                    <div style="font-size:0.8rem; line-height:1.45; margin-bottom:12px;">Add your first entry here, or use this panel to fix an older one.</div>
-                    <button onclick="openWeighInEditorModal()" style="background:linear-gradient(135deg, #7BA883 0%, #5b8c62 100%); border:none; color:white; padding:11px 14px; border-radius:12px; font-size:0.9rem; font-weight:800; cursor:pointer;">Add weigh-in</button>
+                    <div style="font-size:0.8rem; line-height:1.45;">Add your first weigh-in from the Body Weight card.</div>
                 </div>
             `;
             return;
@@ -2489,6 +2490,9 @@
         const latest = sorted[0];
         const latestWeight = _formatInsightsWeight(latest.weight_kg);
         const latestDate = _formatInsightsDate(latest.weigh_in_date);
+        if (summary) {
+            summary.textContent = total + ' weigh-in' + (total === 1 ? '' : 's') + ' · latest ' + latestWeight;
+        }
 
         let html = `
             <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:12px; padding:12px; border-radius:16px; background:#f8fafc; border:1px solid #e2e8f0;">

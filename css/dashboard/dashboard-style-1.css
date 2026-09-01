@@ -11181,6 +11181,7 @@
     box-sizing: border-box;
     background: var(--pbb-insights-page-bg) !important;
     color: var(--pbb-insights-text);
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: contain;
 }
@@ -11239,6 +11240,64 @@ html[data-pbb-theme="light"] #view-insights-metric-detail {
 
 #view-insights-metric-detail .insights-legacy-graph-card.is-active {
     display: block;
+}
+
+/* Older chart renderers carry fixed light-theme font colours inline. Keep every
+   metric detail readable and Balance-themed without changing its data logic. */
+#view-insights-metric-detail .insights-legacy-graph-card.is-active,
+#view-insights-metric-detail .insights-legacy-graph-card.is-active button,
+#view-insights-metric-detail .insights-legacy-graph-card.is-active select {
+    font-family: inherit;
+}
+
+#view-insights-metric-detail .insights-legacy-graph-card.is-active [style*="color: #94a3b8"],
+#view-insights-metric-detail .insights-legacy-graph-card.is-active [style*="color:#94a3b8"],
+#view-insights-metric-detail .insights-legacy-graph-card.is-active [style*="color: #64748b"],
+#view-insights-metric-detail .insights-legacy-graph-card.is-active [style*="color:#64748b"],
+#view-insights-metric-detail .insights-legacy-graph-card.is-active [style*="color: #475569"],
+#view-insights-metric-detail .insights-legacy-graph-card.is-active [style*="color:#475569"] {
+    color: var(--pbb-insights-muted) !important;
+    -webkit-text-fill-color: var(--pbb-insights-muted) !important;
+}
+
+#view-insights-metric-detail .insights-legacy-graph-card.is-active [style*="color: #3b82f6"],
+#view-insights-metric-detail .insights-legacy-graph-card.is-active [style*="color:#3b82f6"],
+#view-insights-metric-detail .insights-legacy-graph-card.is-active [style*="color: #10b981"],
+#view-insights-metric-detail .insights-legacy-graph-card.is-active [style*="color:#10b981"],
+#view-insights-metric-detail .insights-legacy-graph-card.is-active [style*="color: #6366f1"],
+#view-insights-metric-detail .insights-legacy-graph-card.is-active [style*="color:#6366f1"],
+#view-insights-metric-detail .insights-legacy-graph-card.is-active [style*="color: #312e81"],
+#view-insights-metric-detail .insights-legacy-graph-card.is-active [style*="color:#312e81"],
+#view-insights-metric-detail .insights-legacy-graph-card.is-active [style*="color: #0891b2"],
+#view-insights-metric-detail .insights-legacy-graph-card.is-active [style*="color:#0891b2"],
+#view-insights-metric-detail .insights-legacy-graph-card.is-active [style*="color: #7BA883"],
+#view-insights-metric-detail .insights-legacy-graph-card.is-active [style*="color:#7BA883"] {
+    color: var(--pbb-insights-gold) !important;
+    -webkit-text-fill-color: var(--pbb-insights-gold) !important;
+}
+
+#view-insights-metric-detail svg text[fill="#94a3b8"],
+#view-insights-metric-detail svg text[fill="#64748b"] {
+    fill: var(--pbb-insights-muted) !important;
+}
+
+#view-insights-metric-detail .cb-tooltip {
+    border-color: var(--pbb-insights-border) !important;
+    background: var(--pbb-insights-card-bg) !important;
+    color: var(--pbb-insights-text) !important;
+    -webkit-text-fill-color: var(--pbb-insights-text) !important;
+}
+
+#view-insights-metric-detail .multi-week-nav button {
+    color: var(--pbb-insights-muted) !important;
+    -webkit-text-fill-color: var(--pbb-insights-muted) !important;
+}
+
+#view-insights-metric-detail .multi-week-nav button.active {
+    border-color: var(--pbb-insights-gold-strong) !important;
+    background: var(--pbb-insights-gold-soft) !important;
+    color: var(--pbb-insights-text) !important;
+    -webkit-text-fill-color: var(--pbb-insights-text) !important;
 }
 
 #view-insights-metric-detail .insights-bodyweight-card,

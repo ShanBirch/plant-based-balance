@@ -98,6 +98,6 @@ test('Settings defines complete readable light and dark colour pairs', () => {
 });
 
 test('phone caches receive the redesign', () => {
-  assert.match(dashboard, /pbb-premium-overlays\.css\?v=102-community-games-theme/);
-  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v430-insights-snapshots'/);
+  assert.match(dashboard, /pbb-premium-overlays\.css\?v=103-daily-score-theme/);
+  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v431-insights-theme-history'/);
 });

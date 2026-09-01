@@ -600,7 +600,7 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
 <!-- Early stub definitions to prevent "undefined" errors before main scripts load -->
 <script src="js/dashboard/script_part_4.js?v=theme-toggle-shell-v2"></script>
 
-<link rel="stylesheet" href="css/dashboard/dashboard-style-1.css?v=71">
+<link rel="stylesheet" href="css/dashboard/dashboard-style-1.css?v=72">
 <link rel="stylesheet" href="css/dashboard/pbb-social-journey.css?v=25-captioned-coach-video">
 
 <script>if(window._crumb)window._crumb('head_complete');</script>
@@ -1925,12 +1925,12 @@ if(!window._pbbIsIOSSafari) {
         window.addEventListener('pbbInitComplete', function() {
             setTimeout(function() {
                 var s = document.createElement('script');
-                s.src = 'js/dashboard/dashboard-script-2-activity_insights_view.js?v=insights-snapshots-v1';
+                s.src = 'js/dashboard/dashboard-script-2-activity_insights_view.js?v=insights-theme-history-v2';
                 document.head.appendChild(s);
             }, 4000);
         }, { once: true });
     } else {
-        document.write('<script src="js/dashboard/dashboard-script-2-activity_insights_view.js?v=insights-snapshots-v1"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-2-activity_insights_view.js?v=insights-theme-history-v2"><\/script>');
     }
     </script>
 
@@ -11713,7 +11713,6 @@ if(!window._pbbIsIOSSafari) {
                                 <div style="font-size: 0.76rem; color: var(--text-muted); line-height: 1.35;">Tap the chevron to open history.</div>
                             </div>
                             <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
-                                <button type="button" class="insights-add-weight-button" onclick="event.stopPropagation(); openWeighInEditorModal();">Add weight</button>
                                 <div id="weigh-in-management-chevron" class="insights-weigh-in-chevron">&#8964;</div>
                             </div>
                         </div>
