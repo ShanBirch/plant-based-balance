@@ -7721,6 +7721,11 @@ function showActivitySuccess(data) {
     // Push navigation state for Android back button
     pushNavigationState('view-activity-success', () => closeActivitySuccess());
 
+    if (window.BalancePrivateShareStudio?.renderActivityCompletePage?.(data)) {
+        window.history.pushState({ view: 'activity-success' }, '', '#activity-success');
+        return;
+    }
+
     // Update success screen
     document.getElementById('activity-success-emoji').textContent = data.emoji;
     document.getElementById('activity-success-label').textContent = data.activity_label;
@@ -7826,7 +7831,7 @@ function getActivitySocialShareReferenceId() {
     return savedActivityData.socialShareReferenceId;
 }
 
-async function shareActivityCardToFeed() {
+async function shareActivityCardToFeed(studioShare) {
     if (!savedActivityData) {
         showToast('No activity data to share', 'error');
         return;
@@ -7854,21 +7859,18 @@ async function shareActivityCardToFeed() {
 
         let mediaUrl = '';
         if (savedActivityData.photoBase64 || cardPayload.route_polyline) {
-            const compositeDataUrl = await renderBalanceShareCardImage(cardPayload, {
-                target: 'feed',
-                photoDataUrl: savedActivityData.photoBase64 || null,
-                overlayStyle: getBalanceShareOverlayStyle('activity'),
-                textStyle: getBalanceShareTextStyle('activity')
+            const compositeDataUrl = studioShare?.renderedDataUrl || await renderBalanceShareCardImage(cardPayload, {
+                target: 'feed', photoDataUrl: savedActivityData.photoBase64 || null,
+                overlayStyle: getBalanceShareOverlayStyle('activity'), textStyle: getBalanceShareTextStyle('activity')
             });
             const compositeFile = postWorkoutShareFileFromDataUrl(compositeDataUrl, 'balance-activity-overlay.jpg');
-            const formData = new FormData();
-            formData.append('file', compositeFile);
-            formData.append('userId', window.currentUser.id);
-            formData.append('storyId', crypto.randomUUID ? crypto.randomUUID() : Date.now().toString());
-            formData.append('source', 'activity_share_photo_overlay');
-            const uploadResponse = await fetch('/api/upload-story-media', { method: 'POST', body: formData });
-            if (!uploadResponse.ok) throw new Error('Photo overlay upload failed');
-            const uploadData = await uploadResponse.json();
+            if (typeof uploadStoryMediaToBackblaze !== 'function') throw new Error('Feed uploader is still loading');
+            const uploadData = await uploadStoryMediaToBackblaze(compositeFile, {
+                userId: window.currentUser.id,
+                storyId: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(),
+                source: 'activity_share_photo_overlay', preferDirectUpload: true
+            });
+            if (!uploadData?.url) throw new Error('Photo overlay upload failed');
             mediaUrl = uploadData.url;
             cardPayload.share_style = 'photo_overlay';
         }
@@ -7882,7 +7884,7 @@ async function shareActivityCardToFeed() {
             duration: 5
         };
 
-        await window.dbHelpers?.stories?.create(window.currentUser.id, storyData);
+        const story = await window.dbHelpers?.stories?.create(window.currentUser.id, storyData);
 
         const xpResult = await awardBalanceSocialShareXP(
             'activity',
@@ -7941,6 +7943,7 @@ async function shareActivityCardToFeed() {
         if (typeof window.loadPhotoFeed === 'function') {
             window.loadPhotoFeed();
         }
+        return story;
 
     } catch (error) {
         console.error('Error sharing activity:', error);
@@ -7951,7 +7954,7 @@ async function shareActivityCardToFeed() {
 }
 window.shareActivityCardToFeed = shareActivityCardToFeed;
 
-async function shareActivityCardToInstagram() {
+async function shareActivityCardToInstagram(options = {}) {
     if (!savedActivityData) {
         showToast('No activity data to share', 'error');
         return false;
@@ -7976,7 +7979,9 @@ async function shareActivityCardToInstagram() {
             {
                 photoDataUrl: savedActivityData.photoBase64 || null,
                 overlayStyle: getBalanceShareOverlayStyle('activity'),
-                textStyle: getBalanceShareTextStyle('activity')
+                textStyle: getBalanceShareTextStyle('activity'),
+                preparedDataUrl: options.preparedDataUrl || null,
+                animate: false
             }
         );
         if (!opened) return false;
@@ -8051,18 +8056,7 @@ async function useActivitySharePhotoFile(file) {
             previewWrapId: 'activity-share-style-preview-wrap',
             controlsId: 'activity-share-style-controls'
         });
-        if (window.BalancePrivateShareStudio?.isEnabled?.()) {
-            await window.BalancePrivateShareStudio.open({
-                context: 'activity',
-                photoDataUrl: savedActivityData.photoBase64,
-                cardPayload: buildActivityShareCardPayload(),
-                previewTarget: 'story',
-                overlayStyle: getBalanceShareOverlayStyle('activity'),
-                textStyle: getBalanceShareTextStyle('activity'),
-                onFeed: async () => shareActivityCardToFeed(),
-                onInstagram: async () => shareActivityCardToInstagram()
-            });
-        }
+        if (window.BalancePrivateShareStudio?.isEnabled?.()) await openPrivateActivityShareEditor(savedActivityData.photoBase64);
         const destinationActions = document.getElementById('activity-share-destination-actions');
         if (destinationActions) destinationActions.style.display = 'grid';
     } catch (error) {
@@ -8070,6 +8064,40 @@ async function useActivitySharePhotoFile(file) {
         showToast('Could not use that photo. Please try another one.', 'error');
     }
 }
+
+function normalizeActivityPhotoDataUrl(photo) {
+    const value = String(photo || '');
+    if (!value) return '';
+    return value.startsWith('data:') || value.startsWith('http') || value.startsWith('blob:')
+        ? value
+        : `data:${savedActivityData?.photoMimeType || 'image/jpeg'};base64,${value}`;
+}
+
+async function openPrivateActivityShareEditor(photoDataUrl) {
+    if (!photoDataUrl || !window.BalancePrivateShareStudio?.isEnabled?.()) return false;
+    await window.BalancePrivateShareStudio.open({
+        context: 'activity', photoDataUrl, cardPayload: buildActivityShareCardPayload(), previewTarget: 'story',
+        overlayStyle: getBalanceShareOverlayStyle('activity'), textStyle: getBalanceShareTextStyle('activity'),
+        onFeed: async studioShare => shareActivityCardToFeed(studioShare),
+        onInstagram: async studioShare => shareActivityCardToInstagram({ preparedDataUrl: studioShare.renderedDataUrl })
+    });
+    return true;
+}
+
+function beginPrivateActivityPhotoShare() {
+    if (!savedActivityData || !window.BalancePrivateShareStudio?.choosePhoto) return;
+    const existingPhoto = normalizeActivityPhotoDataUrl(savedActivityData.photoBase64);
+    window.BalancePrivateShareStudio.choosePhoto({
+        existingPhotoLabel: 'Use activity photo',
+        onExisting: existingPhoto ? () => openPrivateActivityShareEditor(existingPhoto) : null,
+        onCamera: () => {
+            if (typeof openWorkoutCamera === 'function') openWorkoutCamera(file => file && useActivitySharePhotoFile(file), 'Take an activity photo');
+            else document.getElementById('activity-share-photo-camera-input')?.click();
+        },
+        onGallery: () => document.getElementById('activity-share-photo-gallery-input')?.click()
+    });
+}
+window.beginPrivateActivityPhotoShare = beginPrivateActivityPhotoShare;
 
 function toggleActivitySharePhotoSourceMenu(event) {
     event?.stopPropagation?.();

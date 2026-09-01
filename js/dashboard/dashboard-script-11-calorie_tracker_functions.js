@@ -2396,7 +2396,7 @@ async function shareMealRecordToFeed(meal, btn, options = {}) {
             throw new Error('Meal share overlay is still loading');
         }
         const photoDataUrl = await window.pbbShareImageUrlToDataUrl(cardPayload.photo_url);
-        const compositeDataUrl = await window.renderBalanceShareCardImage(cardPayload, {
+        const compositeDataUrl = options.preparedDataUrl || await window.renderBalanceShareCardImage(cardPayload, {
             target: 'feed',
             photoDataUrl,
             overlayStyle: cardPayload.share_overlay_style,
@@ -2616,6 +2616,8 @@ async function shareMealRecordToInstagram(meal, btn, target = 'story', options =
             photoDataUrl,
             overlayStyle: cardPayload.share_overlay_style,
             textStyle: cardPayload.share_text_style,
+            preparedDataUrl: options.preparedDataUrl || null,
+            animate: false,
             onSharePrepared: () => {
                 if (typeof queuePendingMealInstagramShare === 'function') {
                     queuePendingMealInstagramShare(mealForShare.id, safeTarget);
@@ -2883,6 +2885,11 @@ function scheduleMealFeedSharePrompt(meal, mealData) {
     if (!meal || !meal.id || !document.body) return;
     if (mealData && mealData.suppressSharePrompt) return;
     if (String((meal && meal.meal_type) || (mealData && mealData.mealType) || '').toLowerCase() === 'water') return;
+    if (window.BalancePrivateShareStudio?.isEnabled?.()) {
+        window._pbbPrivateMealCompleteMeal = meal;
+        window.BalancePrivateShareStudio.renderMealCompletePage?.(meal);
+        return;
+    }
     setTimeout(function() {
         const popup = document.getElementById('mealBreakdownPopup');
         const activeMeal = window._pbbMealBreakdownShareMeal;
@@ -9838,11 +9845,40 @@ async function openPrivateMealShareStudio(meal) {
         previewTarget: 'story',
         overlayStyle: cardPayload.share_overlay_style,
         textStyle: cardPayload.share_text_style,
-        onFeed: async () => shareMealRecordToFeed(freshMeal, document.getElementById('mealDetailShareBtn'), { skipPrivateStudio: true }),
-        onInstagram: async () => shareMealRecordToInstagram(freshMeal, document.getElementById('mealDetailIgStoryBtn'), 'story', { skipPrivateStudio: true })
+        onFeed: async studioShare => shareMealRecordToFeed(freshMeal, document.getElementById('mealDetailShareBtn'), { skipPrivateStudio: true, preparedDataUrl: studioShare.renderedDataUrl }),
+        onInstagram: async studioShare => shareMealRecordToInstagram(freshMeal, document.getElementById('mealDetailIgStoryBtn'), 'story', { skipPrivateStudio: true, preparedDataUrl: studioShare.renderedDataUrl })
     });
     return true;
 }
+
+async function beginPrivateMealPhotoShare() {
+    const meal = window._pbbPrivateMealCompleteMeal;
+    if (!meal || !window.BalancePrivateShareStudio?.choosePhoto) return;
+    let freshMeal = await getFreshMealRecordForFeedShare(meal);
+    const existingPhoto = getMealSharePhotoUrl(freshMeal);
+    const useSelectedPhoto = async file => {
+        if (!file) return;
+        try {
+            showToast('Adding your meal photo...', 'info');
+            freshMeal = await attachPhotoToMealForFeedShare(freshMeal, file);
+            window._pbbPrivateMealCompleteMeal = freshMeal;
+            await openPrivateMealShareStudio(freshMeal);
+        } catch (error) {
+            console.error('Could not attach meal share photo:', error);
+            showToast('Could not use that photo. Please try another one.', 'error');
+        }
+    };
+    window.BalancePrivateShareStudio.choosePhoto({
+        existingPhotoLabel: 'Use meal photo',
+        onExisting: existingPhoto ? () => openPrivateMealShareStudio(freshMeal) : null,
+        onCamera: async () => {
+            if (typeof openWorkoutCamera === 'function') openWorkoutCamera(useSelectedPhoto, 'Take a meal photo');
+            else useSelectedPhoto(await pickMealFeedSharePhotoFile('camera'));
+        },
+        onGallery: async () => useSelectedPhoto(await pickMealFeedSharePhotoFile())
+    });
+}
+window.beginPrivateMealPhotoShare = beginPrivateMealPhotoShare;
 
 async function shareCurrentMealToFeed() {
     if (currentEditingMealIndex === null || !currentMealsList[currentEditingMealIndex]) {
@@ -10354,6 +10390,8 @@ function showMealAnalysisSuccess(data, photoUrl, savedMeal) {
         return;
     }
 
+    const privateMeal = savedMeal || window._pbbPrivateMealCompleteMeal;
+    if (privateMeal && window.BalancePrivateShareStudio?.renderMealCompletePage?.(privateMeal)) return;
     showMealBreakdownPopup(data, photoUrl, savedMeal);
 }
 
@@ -11228,7 +11266,7 @@ async function logBarcodeAsMeal() {
         try { await loadMicronutrientInsights(); } catch(e) {}
         try { if (typeof checkMealBadges === 'function') checkMealBadges(); } catch(e) {}
 
-        showMealAnalysisSuccess({ totals });
+        showMealAnalysisSuccess({ totals }, null, savedMeal && savedMeal[0]);
     } catch (error) {
         console.error('Error logging barcode meal:', error);
         showToast('Failed to log meal. Please try again.', 'error');

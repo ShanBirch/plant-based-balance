@@ -69,15 +69,17 @@
     var style = document.createElement('style');
     style.id = 'pbb-private-workout-complete-styles';
     style.textContent = `
-      #view-workout-success.pbb-private-complete-active{background:#f5eee1!important;color:#121927!important;-webkit-text-fill-color:currentColor;overflow:hidden!important;padding:0!important}
-      #view-workout-success.pbb-private-complete-active>div:not(#pbb-private-workout-complete){display:none!important}
+      #view-workout-success.pbb-private-complete-active,#view-activity-success.pbb-private-complete-active{background:#f5eee1!important;color:#121927!important;-webkit-text-fill-color:currentColor;overflow:hidden!important;padding:0!important}
+      #view-workout-success.pbb-private-complete-active>div:not(#pbb-private-workout-complete),#view-activity-success.pbb-private-complete-active>div:not(#pbb-private-activity-complete){display:none!important}
       .pbb-private-workout-complete{--pwc-bg:#f5eee1;--pwc-surface:#fffaf2;--pwc-surface-raised:#fffdf8;--pwc-text:#121927;--pwc-muted:#726a5d;--pwc-line:#ded0b6;--pwc-gold:#e4b227;--pwc-gold-deep:#8c6811;--pwc-gold-ink:#121927;width:100%;height:100%;min-height:100dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--pwc-bg);color:var(--pwc-text);-webkit-text-fill-color:currentColor;font-family:Inter,system-ui,sans-serif}
+      .pbb-private-meal-complete{position:fixed!important;inset:0!important;z-index:100110!important;width:100%!important;height:100dvh!important}
       body.dark-mode .pbb-private-workout-complete,html[data-theme="dark"] .pbb-private-workout-complete{--pwc-bg:#0c0d0f;--pwc-surface:#151619;--pwc-surface-raised:#1d1e22;--pwc-text:#f8f1e4;--pwc-muted:#b9ae9c;--pwc-line:#363027;--pwc-gold:#f3d87c;--pwc-gold-deep:#f3d87c;--pwc-gold-ink:#16130d}
-      body.dark-mode #view-workout-success.pbb-private-complete-active,html[data-theme="dark"] #view-workout-success.pbb-private-complete-active{background:#0c0d0f!important;color:#f8f1e4!important}
+      body.dark-mode #view-workout-success.pbb-private-complete-active,html[data-theme="dark"] #view-workout-success.pbb-private-complete-active,body.dark-mode #view-activity-success.pbb-private-complete-active,html[data-theme="dark"] #view-activity-success.pbb-private-complete-active{background:#0c0d0f!important;color:#f8f1e4!important}
       .pbb-private-workout-complete *{box-sizing:border-box}.pbb-private-workout-complete button{font:inherit;cursor:pointer}.pwc-shell{position:relative;width:min(100%,560px);min-height:100dvh;margin:0 auto;display:flex;flex-direction:column;overflow:hidden;background:radial-gradient(circle at 82% 8%,color-mix(in srgb,var(--pwc-gold) 20%,transparent),transparent 27%),radial-gradient(circle at 8% 54%,color-mix(in srgb,var(--pwc-gold) 9%,transparent),transparent 31%),var(--pwc-surface)}.pwc-shell::after{content:'';position:absolute;z-index:0;right:-74px;top:24%;width:180px;height:180px;border:1px solid color-mix(in srgb,var(--pwc-gold) 28%,transparent);border-radius:50%;pointer-events:none}.pwc-shell>*{position:relative;z-index:1}
       .pwc-topbar{flex:0 0 auto;min-height:64px;padding:calc(10px + env(safe-area-inset-top)) 20px 10px;display:flex;align-items:center;justify-content:space-between;gap:12px}.pwc-close{width:38px!important;height:38px!important;min-height:38px!important;padding:0!important;display:grid;place-items:center;border:1px solid var(--pwc-line)!important;border-radius:50%!important;background:var(--pwc-surface-raised)!important;color:var(--pwc-text)!important;-webkit-text-fill-color:var(--pwc-text)!important;box-shadow:0 7px 20px rgba(42,31,12,.08)!important;font-size:1.15rem;line-height:1}.pwc-kicker,.pwc-label{color:var(--pwc-muted);-webkit-text-fill-color:var(--pwc-muted);font-size:.7rem;font-weight:850;letter-spacing:.1em;text-transform:uppercase}
       .pwc-main{flex:1 0 auto;min-height:clamp(310px,43dvh,420px);padding:22px 24px 26px;display:flex;flex-direction:column;justify-content:center}.pwc-hero-mark{width:72px;height:72px;margin:0 0 22px;display:grid;place-items:center;border:1px solid color-mix(in srgb,var(--pwc-gold) 62%,var(--pwc-line));border-radius:24px;background:linear-gradient(145deg,color-mix(in srgb,var(--pwc-gold) 24%,var(--pwc-surface-raised)),var(--pwc-surface-raised));color:var(--pwc-gold-deep);-webkit-text-fill-color:var(--pwc-gold-deep);box-shadow:0 18px 48px color-mix(in srgb,var(--pwc-gold) 20%,transparent);font-size:2rem;font-weight:900;transform:rotate(-4deg)}.pwc-celebration{display:block;margin:0 0 8px;color:var(--pwc-gold-deep);-webkit-text-fill-color:var(--pwc-gold-deep)}.pwc-workout-name{display:block;margin-bottom:12px}.pwc-time{margin:0 0 9px;font-size:clamp(3.6rem,17vw,5.3rem);line-height:.88;font-weight:520;letter-spacing:-.07em;color:var(--pwc-text);-webkit-text-fill-color:var(--pwc-text)}.pwc-time small{color:var(--pwc-muted);-webkit-text-fill-color:var(--pwc-muted);font-size:1rem;letter-spacing:0}.pwc-copy{margin:0;color:var(--pwc-muted);-webkit-text-fill-color:var(--pwc-muted);font-size:.88rem;line-height:1.45}.pwc-progress{height:8px;margin:22px 0 9px;overflow:hidden;border-radius:99px;background:var(--pwc-line)}.pwc-progress span{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--pwc-gold-deep),var(--pwc-gold))}.pwc-inline{display:flex;justify-content:space-between;color:var(--pwc-muted);-webkit-text-fill-color:var(--pwc-muted);font-size:.74rem}
       .pwc-section{margin:0 18px 12px;padding:17px;border:1px solid var(--pwc-line);border-radius:20px;background:color-mix(in srgb,var(--pwc-surface-raised) 88%,transparent);box-shadow:0 12px 34px rgba(42,31,12,.06)}.pwc-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.pwc-stat{min-width:0;padding:13px;border-radius:15px;background:var(--pwc-surface-raised)}.pwc-stat strong{display:block;color:var(--pwc-text);-webkit-text-fill-color:var(--pwc-text);font-size:1.08rem;font-weight:800}.pwc-stat span,.pwc-pb-copy span{color:var(--pwc-muted);-webkit-text-fill-color:var(--pwc-muted);font-size:.72rem}.pwc-pb-row{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:12px}.pwc-pb-copy{min-width:0}.pwc-pb-copy strong{display:block;color:var(--pwc-text);-webkit-text-fill-color:var(--pwc-text);font-size:.92rem;font-weight:780;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pwc-pb-gain{flex:0 0 auto;color:var(--pwc-gold-deep);-webkit-text-fill-color:var(--pwc-gold-deep);font-size:.76rem;font-weight:900}
+      .pwc-title{margin:0 0 10px;color:var(--pwc-text);-webkit-text-fill-color:var(--pwc-text);font-size:clamp(2.35rem,12vw,4rem);line-height:.95;letter-spacing:-.055em}.pwc-detail-list{display:grid;gap:8px;margin-top:12px}.pwc-detail{display:flex;justify-content:space-between;gap:18px;padding:10px 2px;border-bottom:1px solid var(--pwc-line);color:var(--pwc-muted);-webkit-text-fill-color:var(--pwc-muted);font-size:.78rem}.pwc-detail strong{max-width:70%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--pwc-text);-webkit-text-fill-color:var(--pwc-text)}
       .pwc-actions{position:sticky;bottom:0;margin-top:auto;padding:14px 18px calc(16px + env(safe-area-inset-bottom));display:grid;grid-template-columns:1fr 1.65fr;gap:10px;border-top:1px solid var(--pwc-line);background:color-mix(in srgb,var(--pwc-surface) 92%,transparent);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}.pwc-primary,.pwc-secondary{min-height:54px;border-radius:16px;padding:0 14px;font-weight:880}.pwc-primary{border:0;background:linear-gradient(110deg,var(--pwc-gold),color-mix(in srgb,var(--pwc-gold) 76%,#fff));color:var(--pwc-gold-ink);-webkit-text-fill-color:var(--pwc-gold-ink);box-shadow:0 12px 30px color-mix(in srgb,var(--pwc-gold) 28%,transparent)}.pwc-secondary{border:1px solid var(--pwc-line);background:var(--pwc-surface-raised);color:var(--pwc-text);-webkit-text-fill-color:var(--pwc-text)}.pwc-primary:focus-visible,.pwc-secondary:focus-visible,.pwc-close:focus-visible{outline:3px solid var(--pwc-gold-deep);outline-offset:3px}.pwc-primary:active,.pwc-secondary:active,.pwc-close:active{transform:translateY(1px)}
       @media(max-height:700px){.pwc-main{min-height:280px;padding-top:12px;padding-bottom:18px}.pwc-hero-mark{width:58px;height:58px;margin-bottom:14px;border-radius:19px;font-size:1.6rem}.pwc-time{font-size:3.7rem}.pwc-progress{margin-top:16px}}
       @media(min-width:561px){.pwc-shell{box-shadow:0 0 70px rgba(61,46,19,.14)}}
@@ -159,6 +161,92 @@
     if (bottomNav) bottomNav.style.display = 'none';
     window.dispatchEvent(new CustomEvent('pbb:private-workout-complete-shown'));
     if (typeof window._crumb === 'function') window._crumb('private_workout_complete_shown');
+    return true;
+  }
+
+  function completePageMarkup(options) {
+    var stats = (options.stats || []).map(function (stat) {
+      return '<div class="pwc-stat"><strong></strong><span></span></div>';
+    }).join('');
+    var details = (options.details || []).map(function () {
+      return '<div class="pwc-detail"><span></span><strong></strong></div>';
+    }).join('');
+    return '<div class="pwc-shell">' +
+      '<div class="pwc-topbar"><button type="button" class="pwc-close" data-complete-done aria-label="Close">×</button><span class="pwc-kicker">' + options.kicker + '</span><span style="width:40px" aria-hidden="true"></span></div>' +
+      '<main class="pwc-main"><div class="pwc-hero-mark" aria-hidden="true"></div><span class="pwc-kicker pwc-celebration">Saved to Balance</span><h1 class="pwc-title"></h1><p class="pwc-copy"></p></main>' +
+      '<section class="pwc-section"><span class="pwc-label">' + options.sectionLabel + '</span><div class="pwc-stats">' + stats + '</div><div class="pwc-detail-list">' + details + '</div></section>' +
+      '<div class="pwc-actions"><button type="button" class="pwc-secondary" data-complete-done>Done</button><button type="button" class="pwc-primary" data-complete-share>Share a photo</button></div></div>';
+  }
+
+  function fillCompletePage(page, options) {
+    page.querySelector('.pwc-hero-mark').textContent = options.emoji || '✓';
+    page.querySelector('.pwc-title').textContent = options.title;
+    page.querySelector('.pwc-copy').textContent = options.copy;
+    page.querySelectorAll('.pwc-stat').forEach(function (node, index) {
+      var stat = options.stats[index];
+      node.querySelector('strong').textContent = stat.value;
+      node.querySelector('span').textContent = stat.label;
+    });
+    page.querySelectorAll('.pwc-detail').forEach(function (node, index) {
+      var detail = options.details[index];
+      node.querySelector('span').textContent = detail.label;
+      node.querySelector('strong').textContent = detail.value;
+    });
+    page.querySelectorAll('[data-complete-done]').forEach(function (button) { button.addEventListener('click', options.onDone); });
+    page.querySelector('[data-complete-share]').addEventListener('click', options.onShare);
+  }
+
+  function renderActivityCompletePage(data) {
+    var view = document.getElementById('view-activity-success');
+    if (!view || !isEnabled()) return false;
+    ensureWorkoutCompleteStyles();
+    data = data || {};
+    var page = document.getElementById('pbb-private-activity-complete');
+    if (!page) { page = document.createElement('section'); page.id = 'pbb-private-activity-complete'; page.className = 'pbb-private-workout-complete'; view.prepend(page); }
+    var stats = [
+      { value: String(Math.round(Number(data.duration) || 0)) + ' min', label: 'Duration' },
+      { value: String(Math.round(Number(data.calories) || 0)) + ' kcal', label: 'Energy' }
+    ];
+    var details = [{ label: 'Intensity', value: String(data.intensity || 'Logged') }];
+    if (Number(data.distanceKm) > 0) details.push({ label: 'Distance', value: Number(data.distanceKm).toFixed(2) + ' km' });
+    var options = { kicker: 'Activity logged', sectionLabel: 'Your activity', emoji: data.emoji || '🏃', title: String(data.activity_label || 'Activity'), copy: 'Your activity is saved. Add a photo if you want to share the moment.', stats: stats, details: details,
+      onDone: function () { if (typeof window.closeActivitySuccess === 'function') window.closeActivitySuccess(); },
+      onShare: function () { if (typeof window.beginPrivateActivityPhotoShare === 'function') window.beginPrivateActivityPhotoShare(); }
+    };
+    page.innerHTML = completePageMarkup(options); fillCompletePage(page, options);
+    view.classList.add('pbb-private-complete-active');
+    window.dispatchEvent(new CustomEvent('pbb:private-activity-complete-shown'));
+    return true;
+  }
+
+  function closeMealCompletePage() {
+    var page = document.getElementById('pbb-private-meal-complete');
+    if (page) page.remove();
+    document.body.style.overflow = '';
+    window._pbbPrivateMealCompleteMeal = null;
+  }
+
+  function renderMealCompletePage(meal) {
+    if (!meal || !isEnabled() || String(meal.meal_type || '').toLowerCase() === 'water') return false;
+    ensureWorkoutCompleteStyles();
+    window._pbbPrivateMealCompleteMeal = meal;
+    var page = document.getElementById('pbb-private-meal-complete');
+    if (!page) {
+      page = document.createElement('section'); page.id = 'pbb-private-meal-complete'; page.className = 'pbb-private-workout-complete pbb-private-meal-complete'; document.body.appendChild(page);
+      if (typeof window.pushNavigationState === 'function') { try { window.pushNavigationState('pbb-private-meal-complete', closeMealCompletePage); } catch (_) {} }
+      if (typeof window.enableSwipeBackNavigation === 'function') { try { window.enableSwipeBackNavigation('pbb-private-meal-complete', closeMealCompletePage); } catch (_) {} }
+    }
+    var foods = Array.isArray(meal.food_items) ? meal.food_items : [];
+    var name = String(meal.notes || meal.meal_description || foods.map(function (item) { return item.name; }).filter(Boolean).slice(0, 3).join(', ') || meal.meal_type || 'Meal');
+    var options = { kicker: 'Meal logged', sectionLabel: 'Nutrition', emoji: '🥗', title: name, copy: 'Your meal is saved. Add a photo if you want to share it.',
+      stats: [{ value: String(Math.round(Number(meal.calories) || 0)), label: 'Calories' }, { value: String(Math.round(Number(meal.protein_g) || 0)) + ' g', label: 'Protein' }],
+      details: [{ label: 'Carbs', value: String(Math.round(Number(meal.carbs_g) || 0)) + ' g' }, { label: 'Fat', value: String(Math.round(Number(meal.fat_g) || 0)) + ' g' }],
+      onDone: closeMealCompletePage,
+      onShare: function () { if (typeof window.beginPrivateMealPhotoShare === 'function') window.beginPrivateMealPhotoShare(); }
+    };
+    page.innerHTML = completePageMarkup(options); fillCompletePage(page, options);
+    document.body.style.overflow = 'hidden';
+    window.dispatchEvent(new CustomEvent('pbb:private-meal-complete-shown'));
     return true;
   }
 
@@ -770,7 +858,7 @@
     state.outputCachePromise = (async function () {
       var output;
       if (state.rawPhoto || !state.cardPayload || typeof window.renderBalanceShareCardImage !== 'function') output = await makeRawOutput(state);
-      else output = { dataUrl: await window.renderBalanceShareCardImage(state.cardPayload, { target: state.previewTarget || 'story', photoDataUrl: state.photoDataUrl, overlayStyle: state.overlayStyle, textStyle: state.textStyle }) };
+      else output = { dataUrl: await window.renderBalanceShareCardImage(Object.assign({}, state.cardPayload, { studio_editor: editorState() }), { target: state.previewTarget || 'story', photoDataUrl: state.photoDataUrl, overlayStyle: state.overlayStyle, textStyle: state.textStyle }) };
       var dataUrl = output.dataUrl;
       var response = await fetch(dataUrl);
       var blob = await response.blob();
@@ -801,7 +889,9 @@
       loading.hidden = !busy;
     }
     el.setAttribute('aria-busy', busy ? 'true' : 'false');
-    el.querySelectorAll('[data-share-feed],[data-share-instagram],[data-share-done],[data-share-download]').forEach(function (button) { button.disabled = !!busy; });
+    el.querySelectorAll('[data-share-feed],[data-share-instagram],[data-share-done],[data-share-download]').forEach(function (button) {
+      button.disabled = !!busy || (!busy && button.matches('[data-share-feed]') && !!(active && active.feedShared));
+    });
   }
 
   function downloadRenderedOutput(output) {
@@ -855,7 +945,7 @@
     if (!active || active.busy) return;
     var fn = kind === 'feed' ? active.onFeed : kind === 'instagram' ? active.onInstagram : active.onDone;
     if (typeof fn !== 'function') {
-      close({ action: kind, customization: customization() });
+      if (typeof window.showToast === 'function') window.showToast('That share option is not ready yet.', 'info');
       return;
     }
     var state = active;
@@ -883,7 +973,14 @@
         file: output.file
       });
       if (result === false || result === null) throw new Error('The share action did not complete');
-      if (active === state) close({ action: kind, customization: window.__balanceShareStudioCustomizations[state.context] });
+      if (active === state) {
+        var button = el.querySelector(kind === 'feed' ? '[data-share-feed]' : '[data-share-instagram]');
+        if (button) {
+          button.textContent = kind === 'feed' ? 'Shared to Feed' : 'IG Story opened';
+          if (kind === 'feed') { state.feedShared = true; button.disabled = true; }
+        }
+        if (typeof window.showToast === 'function') window.showToast(kind === 'feed' ? 'Shared to Feed. You can still share to IG Story.' : 'Instagram opened. Tap Done when you are finished.', 'success');
+      }
     } catch (error) {
       console.error('Private share studio action failed:', error);
       if (typeof window.showToast === 'function') window.showToast('Could not share that photo. Please try again.', 'error');
@@ -1129,6 +1226,8 @@
       el.querySelector('[data-share-text-toggle]').setAttribute('aria-expanded', 'false');
       el.querySelector('[data-share-feed]').style.display = typeof active.onFeed === 'function' ? '' : 'none';
       el.querySelector('[data-share-instagram]').style.display = typeof active.onInstagram === 'function' ? '' : 'none';
+      el.querySelector('[data-share-feed]').textContent = 'Share to Feed';
+      el.querySelector('[data-share-instagram]').textContent = 'Share to IG Story';
       el.querySelector('[data-share-done]').hidden = false;
       el.querySelector('[data-share-actions]').style.display = 'grid';
       el.classList.add('is-open');
@@ -1182,6 +1281,8 @@
       el.querySelectorAll('[data-share-tool]').forEach(function (button) { button.classList.remove('is-active'); });
       el.querySelector('[data-share-feed]').style.display = typeof active.onFeed === 'function' ? '' : 'none';
       el.querySelector('[data-share-instagram]').style.display = typeof active.onInstagram === 'function' ? '' : 'none';
+      el.querySelector('[data-share-feed]').textContent = 'Share to Feed';
+      el.querySelector('[data-share-instagram]').textContent = 'Share to IG Story';
       el.querySelector('[data-share-control-rail]').style.display = context === 'workout' ? 'flex' : 'none';
       el.classList.add('is-open');
       document.body.style.overflow = 'hidden';
@@ -1204,10 +1305,13 @@
     sheet.innerHTML = '<div class="pbb-photo-source__card" role="dialog" aria-modal="true" aria-label="Choose a photo source">' +
       '<div class="pbb-photo-source__title">Share a photo</div>' +
       '<div class="pbb-photo-source__copy">Take one now or choose one you already love.</div>' +
+      (typeof options.onExisting === 'function' ? '<button type="button" class="pbb-photo-source__button pbb-photo-source__button--gold" data-source-existing></button>' : '') +
       '<button type="button" class="pbb-photo-source__button" data-source-camera>Take a photo</button>' +
       '<button type="button" class="pbb-photo-source__button pbb-photo-source__button--gold" data-source-gallery>Choose from photos</button>' +
       '<button type="button" class="pbb-photo-source__button pbb-photo-source__button--cancel" data-source-cancel>Cancel</button></div>';
     function finish(callback) { sheet.remove(); if (typeof callback === 'function') callback(); }
+    var existingButton = sheet.querySelector('[data-source-existing]');
+    if (existingButton) { existingButton.textContent = options.existingPhotoLabel || 'Use saved photo'; existingButton.addEventListener('click', function () { finish(options.onExisting); }); }
     sheet.querySelector('[data-source-camera]').addEventListener('click', function () { finish(options.onCamera); });
     sheet.querySelector('[data-source-gallery]').addEventListener('click', function () { finish(options.onGallery); });
     sheet.querySelector('[data-source-cancel]').addEventListener('click', function () { finish(options.onCancel); });
@@ -1220,6 +1324,9 @@
     open: open,
     choosePhoto: choosePhoto,
     renderWorkoutCompletePage: renderWorkoutCompletePage,
+    renderActivityCompletePage: renderActivityCompletePage,
+    renderMealCompletePage: renderMealCompletePage,
+    closeMealCompletePage: closeMealCompletePage,
     close: close,
     pilotEmail: PILOT_EMAIL
   };

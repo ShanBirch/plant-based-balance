@@ -14055,6 +14055,7 @@ if(!window._pbbIsIOSSafari) {
 
   const steps = [
     { tab:'movement-tab', sel:'#pbb-private-workout-complete', fallbackSel:'#post-workout-share-btn', title:'Your workout progress comes first', fallbackTitle:'Your new workout saved page', body:'After you finish a workout, Balance now shows your completed sets, volume, exercises, and new bests in one simple page before you choose whether to share a photo.', fallbackBody:'Finish a workout to see the new progress-first workout saved page.', quick:true, condition:function(){ return !!(window.BalancePrivateShareStudio && window.BalancePrivateShareStudio.isEnabled()); } },
+    { tab:'movement-tab', sel:'#pbb-private-activity-complete,#pbb-private-meal-complete', fallbackSel:'#log-activity-card,.meal-icon-btn[onclick*="openMealBuilder"],.camera-btn-widget[onclick*="openMealBuilder"]', title:'Activities and meals now match', fallbackTitle:'One simple sharing flow', body:'After logging an activity or meal, review what you saved first. Tap Share a photo to take or choose a photo, edit it full screen, then share to Feed and IG Story without leaving the editor.', fallbackBody:'Log an activity or meal to see its clean saved summary, then add and edit a photo if you want to share it.', quick:true, condition:function(){ return !!(window.BalancePrivateShareStudio && window.BalancePrivateShareStudio.isEnabled()); } },
     { tab:'movement-tab', sel:'#post-workout-share-btn', fallbackSel:'#activity-share-photo-btn,#nutrition-share-photo-btn', title:'Design your workout share', fallbackTitle:'Design your photo share', body:'Pinch or drag the photo, then tap Layout to cycle through ten workout designs and Colour to cycle through the Balance palette. Drag or pinch the workout card itself to place it anywhere.', fallbackBody:'Add a photo, then use Layout and Colour to design the share card before sending it to Instagram.', quick:true, condition:function(){ return !!(window.BalancePrivateShareStudio && window.BalancePrivateShareStudio.isEnabled()); } },
     { tab:'dashboard', sel:'#dm-voice-btn', fallbackSel:'.header-msg-icon', title:'Send a voice message', fallbackTitle:'Voice messages are in your DMs', body:'Tap the microphone, record your message, then tap send. You can cancel before it leaves.', fallbackBody:'Open Messages, choose a friend, then tap the microphone beside the message box.', action: async function(){ try { var coachId=window._coachUserId || (typeof getCoachUserId==='function' ? await getCoachUserId() : null); if(coachId && typeof openDirectMessage==='function') openDirectMessage(coachId,'Coach Shan',''); } catch(e){} await new Promise(function(r){ setTimeout(r,420); }); } },
     { tab:'dashboard', sel:'#weekly-checkin-card', title:'Extra accountability when you need it', body:'Choose Keep me accountable in your Weekly Check-In to see optional extra support, including a mid-week voice check-in or a recurring live PT session.', condition:function(){ var c=document.getElementById('weekly-checkin-card'); return c && c.style.display !== 'none'; } },
@@ -16457,6 +16458,17 @@ window.endFeatureTour = function(skipped){
     fallbackTitle: 'Your new share styles are ready',
     body: 'Tap Layout to cycle through ten designs and Colour to change the workout treatment. Pinch or drag the photo and workout card directly, then send the finished image to Instagram.',
     fallbackBody: 'Use the two simple Layout and Colour controls, with direct pinch and drag gestures on the photo.',
+    condition: function(){ return !!(window.BalancePrivateShareStudio && window.BalancePrivateShareStudio.isEnabled()); }
+  });
+  allFeatures.push({
+    id: 'activity-meal-photo-share-flow-shannon-v1',
+    tab: 'movement-tab',
+    sel: '#pbb-private-activity-complete,#pbb-private-meal-complete',
+    fallbackSel: '#log-activity-card,.meal-icon-btn[onclick*="openMealBuilder"],.camera-btn-widget[onclick*="openMealBuilder"]',
+    title: 'Activities and meals now share the same way',
+    fallbackTitle: 'One clean flow for every share',
+    body: 'Review the activity or meal you logged, then tap Share a photo to take or choose one and edit it full screen. Feed and IG Story stay ready until you tap Done.',
+    fallbackBody: 'Your next activity or meal will show a clean saved summary before you choose whether to add and share a photo.',
     condition: function(){ return !!(window.BalancePrivateShareStudio && window.BalancePrivateShareStudio.isEnabled()); }
   });
   allFeatures.push({
@@ -19777,7 +19789,7 @@ if (window._pbbIsIOSSafari) {
 <script>
 // Shannon-only full-screen photo share studio pilot. The module includes its own account gate.
 </script>
-<script src="js/dashboard/pbb-private-share-studio.js?v=11-two-share-actions"></script>
+<script src="js/dashboard/pbb-private-share-studio.js?v=12-activity-meal-complete"></script>
 <script>
 // Script-10 (130KB) - Points widget. On iOS, defer to reduce memory pressure.
 // loadPointsWidget is guarded with typeof in init, so safe to defer.
@@ -19793,13 +19805,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-        s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=58-reliable-share-actions';
+        s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=59-activity-complete-share';
             s.onload = function() { if(window._crumb)window._crumb('script10_deferred_loaded'); };
             document.head.appendChild(s);
         }, 1500);
     }, { once: true });
 } else {
-        document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=58-reliable-share-actions"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=59-activity-complete-share"><\/script>');
 }
 </script>
 
@@ -19868,7 +19880,7 @@ if (window._pbbIsIOSSafari) {
             }
 
             var s = document.createElement('script');
-        s.src = 'js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=39-private-share-studio';
+        s.src = 'js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=40-meal-complete-share';
             s.dataset.pbbCalorieTracker = '1';
             s.onload = function() {
                 if (window._crumb) window._crumb('script11_loaded');
@@ -19928,7 +19940,7 @@ if (window._pbbIsIOSSafari) {
             }, window._pbbIsMealShortcutLaunch ? 250 : 2500);
         }, { once: true });
     } else {
-    document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=39-private-share-studio" data-pbb-calorie-tracker="1"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=40-meal-complete-share" data-pbb-calorie-tracker="1"><\/script>');
         document.write('<script src="js/dashboard/dashboard-script-meal-builder.js?v=6-custom-foods-community" data-pbb-meal-builder="1"><\/script>');
     }
 })();
