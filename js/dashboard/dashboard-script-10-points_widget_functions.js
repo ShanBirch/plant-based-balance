@@ -3541,6 +3541,7 @@ const PBB_SHARE_TEXT_STYLES = [
     { id: 'simple', label: 'Simple' },
     { id: 'full', label: 'All lifts', contexts: ['workout'] }
 ];
+const PBB_PRIVATE_WORKOUT_TEXT_STYLES = ['stamp', 'split', 'compact', 'outline', 'receipt', 'editorial'];
 const pbbShareOverlaySelections = {
     workout: 'classic',
     pb: 'classic',
@@ -3582,7 +3583,7 @@ function getBalanceShareTextStyle(context) {
 
 function pbbShareNormalizeTextStyle(style) {
     const safeStyle = String(style || '').toLowerCase();
-    return PBB_SHARE_TEXT_STYLES.some(option => option.id === safeStyle) ? safeStyle : 'bold';
+    return PBB_SHARE_TEXT_STYLES.some(option => option.id === safeStyle) || PBB_PRIVATE_WORKOUT_TEXT_STYLES.includes(safeStyle) ? safeStyle : 'bold';
 }
 
 function pbbShareTextStyleOptions(context) {
@@ -4149,6 +4150,207 @@ function pbbShareDrawCompleteWorkout(ctx, cardPayload, width, contentBottom, bra
     });
 }
 
+function pbbShareStudioWorkoutPalette(editor) {
+    const palettes = {
+        gold: { accent: '#D8B25E', surface: 'rgba(17,17,17,0.84)', surfaceText: '#FFFFFF', onPhoto: '#D8B25E' },
+        cream: { accent: '#F8F5EE', surface: 'rgba(248,245,238,0.95)', surfaceText: '#151515', onPhoto: '#F8F5EE' },
+        white: { accent: '#FFFFFF', surface: 'rgba(255,255,255,0.95)', surfaceText: '#151515', onPhoto: '#FFFFFF' },
+        black: { accent: '#111111', surface: 'rgba(17,17,17,0.92)', surfaceText: '#FFFFFF', onPhoto: '#111111' },
+        soft: { accent: '#F4F0E7', surface: 'rgba(244,240,231,0.95)', surfaceText: '#151515', onPhoto: '#F4F0E7' },
+        'gold-light': { accent: '#F5D98A', surface: 'rgba(17,17,17,0.84)', surfaceText: '#FFFFFF', onPhoto: '#F5D98A' }
+    };
+    return palettes[String(editor && editor.workoutColour || 'gold')] || palettes.gold;
+}
+
+function pbbShareDrawStudioMetrics(ctx, metrics, x, y, width, palette, options = {}) {
+    if (!metrics.length) return;
+    const metricW = width / metrics.length;
+    const valueSize = Number(options.valueSize || 46);
+    const labelSize = Number(options.labelSize || 18);
+    const textColour = options.textColour || palette.surfaceText;
+    metrics.forEach((metric, index) => {
+        const metricX = x + (index * metricW);
+        if (index > 0 && options.dividers !== false) {
+            ctx.save();
+            ctx.shadowColor = 'transparent';
+            ctx.fillStyle = options.dividerColour || palette.accent;
+            ctx.globalAlpha = 0.5;
+            ctx.fillRect(metricX - 16, y - valueSize + 3, 2, valueSize + labelSize + 20);
+            ctx.restore();
+        }
+        ctx.fillStyle = textColour;
+        pbbShareSetFittedFont(ctx, metric[1], metricW - 28, valueSize, Math.max(24, valueSize - 16));
+        ctx.fillText(metric[1], metricX, y);
+        ctx.fillStyle = textColour;
+        ctx.globalAlpha = 0.76;
+        ctx.font = `900 ${labelSize}px Arial, sans-serif`;
+        ctx.fillText(metric[0], metricX, y + labelSize + 17);
+        ctx.globalAlpha = 1;
+    });
+}
+
+function pbbShareDrawStudioWorkoutLayout(ctx, cardPayload, width, contentBottom, target, textStyle, editor) {
+    const palette = pbbShareStudioWorkoutPalette(editor);
+    const title = String(cardPayload.workout_name || 'Workout').toUpperCase();
+    const metrics = pbbShareWorkoutMetrics(cardPayload);
+    const x = 64;
+    const w = width - 128;
+    const isFeed = target === 'feed';
+    const kicker = 'WORKOUT COMPLETE';
+
+    if (textStyle === 'simple') {
+        const y = contentBottom - 250;
+        ctx.fillStyle = palette.onPhoto;
+        ctx.font = '900 27px Arial, sans-serif';
+        ctx.fillText(kicker, x, y);
+        pbbShareSetFittedFont(ctx, title, w, 104, 62);
+        ctx.fillText(title, x, y + 112);
+        return;
+    }
+
+    if (textStyle === 'stamp') {
+        const boxW = 650;
+        const boxH = 330;
+        const boxX = (width - boxW) / 2;
+        const boxY = contentBottom - boxH - 40;
+        ctx.save();
+        ctx.shadowColor = 'transparent';
+        ctx.strokeStyle = palette.accent;
+        ctx.lineWidth = 9;
+        pbbShareRoundRect(ctx, boxX, boxY, boxW, boxH, 165);
+        ctx.stroke();
+        ctx.textAlign = 'center';
+        ctx.fillStyle = palette.onPhoto;
+        ctx.font = '900 25px Arial, sans-serif';
+        ctx.fillText(kicker, width / 2, boxY + 76);
+        pbbShareSetFittedFont(ctx, title, boxW - 100, 76, 46);
+        ctx.fillText(title, width / 2, boxY + 170);
+        if (metrics.length) {
+            ctx.font = '900 22px Arial, sans-serif';
+            ctx.fillText(metrics.map(metric => metric[1]).join('  ·  '), width / 2, boxY + 250);
+        }
+        ctx.restore();
+        return;
+    }
+
+    if (textStyle === 'compact') {
+        const boxY = contentBottom - 220;
+        pbbShareFillRoundRect(ctx, 42, boxY, width - 84, 168, 84, palette.surface);
+        ctx.save();
+        ctx.shadowColor = 'transparent';
+        ctx.fillStyle = palette.surfaceText;
+        pbbShareSetFittedFont(ctx, title, 410, 54, 36);
+        ctx.fillText(title, 88, boxY + 93);
+        if (metrics.length) pbbShareDrawStudioMetrics(ctx, metrics, 540, boxY + 74, 460, palette, { valueSize: 29, labelSize: 13, textColour: palette.surfaceText });
+        ctx.restore();
+        return;
+    }
+
+    if (textStyle === 'split') {
+        const boxY = contentBottom - 430;
+        ctx.save();
+        ctx.shadowColor = 'transparent';
+        ctx.fillStyle = palette.accent;
+        ctx.fillRect(x, boxY, 10, 360);
+        ctx.fillStyle = palette.onPhoto;
+        ctx.font = '900 25px Arial, sans-serif';
+        ctx.fillText(kicker, x + 42, boxY + 55);
+        pbbShareSetFittedFont(ctx, title, 480, 72, 48);
+        pbbShareWrapText(ctx, title, x + 42, boxY + 150, 480, 76, 2);
+        if (metrics.length) {
+            const rowX = 650;
+            metrics.forEach((metric, index) => {
+                const rowY = boxY + 28 + (index * 104);
+                ctx.fillStyle = palette.onPhoto;
+                pbbShareSetFittedFont(ctx, metric[1], 320, 42, 28);
+                ctx.fillText(metric[1], rowX, rowY + 40);
+                ctx.font = '900 15px Arial, sans-serif';
+                ctx.globalAlpha = 0.72;
+                ctx.fillText(metric[0], rowX, rowY + 67);
+                ctx.globalAlpha = 1;
+            });
+        }
+        ctx.restore();
+        return;
+    }
+
+    if (textStyle === 'editorial') {
+        const boxY = contentBottom - 480;
+        ctx.save();
+        ctx.shadowColor = 'transparent';
+        ctx.fillStyle = palette.accent;
+        ctx.fillRect(x, boxY, 18, 405);
+        ctx.fillStyle = palette.onPhoto;
+        ctx.font = '900 24px Arial, sans-serif';
+        ctx.fillText(kicker, x + 54, boxY + 44);
+        ctx.font = '700 88px Georgia, serif';
+        pbbShareWrapText(ctx, title, x + 54, boxY + 146, w - 80, 94, 2);
+        if (metrics.length) pbbShareDrawStudioMetrics(ctx, metrics, x + 54, boxY + 338, w - 100, palette, { valueSize: 38, labelSize: 16, textColour: palette.onPhoto, dividerColour: palette.accent });
+        ctx.restore();
+        return;
+    }
+
+    const panelStyle = ['scorecard', 'outline', 'receipt', 'full'].includes(textStyle);
+    const panelH = textStyle === 'full' ? (isFeed ? 650 : 760) : (textStyle === 'receipt' ? 500 : 470);
+    const panelY = contentBottom - panelH + 20;
+    const surface = textStyle === 'outline' ? 'rgba(0,0,0,0.12)' : palette.surface;
+
+    if (panelStyle) {
+        pbbShareFillRoundRect(ctx, 40, panelY, width - 80, panelH, textStyle === 'receipt' ? 12 : 34, surface);
+        ctx.save();
+        ctx.shadowColor = 'transparent';
+        pbbShareRoundRect(ctx, 40, panelY, width - 80, panelH, textStyle === 'receipt' ? 12 : 34);
+        ctx.strokeStyle = palette.accent;
+        ctx.lineWidth = textStyle === 'outline' ? 6 : 3;
+        ctx.stroke();
+        ctx.restore();
+        ctx.fillStyle = textStyle === 'outline' ? palette.onPhoto : palette.surfaceText;
+        ctx.font = '900 25px Arial, sans-serif';
+        ctx.fillText(kicker, x, panelY + 62);
+        pbbShareSetFittedFont(ctx, title, w, textStyle === 'receipt' ? 70 : 82, 50);
+        ctx.fillText(title, x, panelY + 150);
+        ctx.save();
+        ctx.shadowColor = 'transparent';
+        ctx.fillStyle = palette.accent;
+        ctx.fillRect(x, panelY + 190, w, 4);
+        ctx.restore();
+        if (metrics.length) pbbShareDrawStudioMetrics(ctx, metrics, x, panelY + 270, w, palette, { valueSize: 46, labelSize: 18, textColour: textStyle === 'outline' ? palette.onPhoto : palette.surfaceText });
+
+        if (textStyle === 'full') {
+            const exercises = (cardPayload.exercises || []).slice(0, isFeed ? 3 : 4);
+            let rowY = panelY + 350;
+            exercises.forEach(exercise => {
+                const rowH = isFeed ? 68 : 78;
+                pbbShareFillRoundRect(ctx, x, rowY, w, rowH, 14, 'rgba(255,255,255,0.10)');
+                ctx.fillStyle = palette.surfaceText;
+                ctx.font = `800 ${isFeed ? 21 : 24}px Arial, sans-serif`;
+                ctx.fillText(String(exercise.name || 'Exercise'), x + 20, rowY + 31);
+                ctx.textAlign = 'right';
+                ctx.fillStyle = palette.accent;
+                ctx.font = `800 ${isFeed ? 15 : 17}px Arial, sans-serif`;
+                pbbShareSetFittedFont(ctx, pbbShareCompactSetDetails(exercise), w * 0.46, isFeed ? 15 : 17, 12);
+                ctx.fillText(pbbShareCompactSetDetails(exercise), x + w - 20, rowY + 31);
+                ctx.textAlign = 'left';
+                rowY += rowH + 10;
+            });
+        }
+        return;
+    }
+
+    const y = contentBottom - 570;
+    ctx.fillStyle = palette.onPhoto;
+    ctx.font = '900 28px Arial, sans-serif';
+    ctx.fillText(kicker, x, y);
+    pbbShareSetFittedFont(ctx, title, w, 108, 68);
+    const titleBottom = pbbShareWrapText(ctx, title, x, y + 124, w, 112, 2);
+    ctx.save();
+    ctx.shadowColor = 'transparent';
+    ctx.fillStyle = palette.accent;
+    ctx.fillRect(x, titleBottom + 12, w, 5);
+    ctx.restore();
+    if (metrics.length) pbbShareDrawStudioMetrics(ctx, metrics, x, titleBottom + 110, w, palette, { valueSize: 48, labelSize: 20, textColour: palette.onPhoto });
+}
+
 async function pbbShareDrawFullBleedWorkoutCard(ctx, cardPayload, width, height, target) {
     const cardType = cardPayload.card_type === 'pb' ? 'pb' : 'workout';
     const textStyle = pbbShareNormalizeTextStyle(cardPayload.share_text_style);
@@ -4201,6 +4403,12 @@ async function pbbShareDrawFullBleedWorkoutCard(ctx, cardPayload, width, height,
     const title = cardType === 'pb'
         ? (cardPayload.exercise || 'Personal best')
         : (cardPayload.workout_name || 'Workout');
+
+    if (cardType === 'workout' && studioEditor && Number(studioEditor.version) >= 4) {
+        pbbShareDrawStudioWorkoutLayout(ctx, cardPayload, width, contentBottom, target, textStyle, studioEditor);
+        ctx.restore();
+        return;
+    }
 
     if (textStyle === 'full' && cardType === 'workout') {
         pbbShareDrawCompleteWorkout(ctx, cardPayload, width, contentBottom, brandTop, target);

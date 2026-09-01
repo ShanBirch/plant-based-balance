@@ -16,6 +16,26 @@
     { id: 'soft', label: 'Soft', css: 'brightness(1.06) contrast(.92) saturate(.88)' }
   ];
   var EMOJIS = ['🔥', '💪', '🌱', '🏆', '⭐', '✨', '❤️', '🥗', '🏃', '📈', '🙌', '😮‍💨'];
+  var WORKOUT_LAYOUTS = [
+    { id: 'bold', label: 'Bold' },
+    { id: 'scorecard', label: 'Scorecard' },
+    { id: 'simple', label: 'Title only' },
+    { id: 'full', label: 'Full workout' },
+    { id: 'stamp', label: 'Stamp' },
+    { id: 'split', label: 'Split' },
+    { id: 'compact', label: 'Compact' },
+    { id: 'outline', label: 'Outline' },
+    { id: 'receipt', label: 'Receipt' },
+    { id: 'editorial', label: 'Editorial' }
+  ];
+  var WORKOUT_COLOURS = [
+    { id: 'gold', label: 'Gold', value: '#D8B25E' },
+    { id: 'cream', label: 'Cream', value: '#F8F5EE' },
+    { id: 'white', label: 'White', value: '#FFFFFF' },
+    { id: 'black', label: 'Black', value: '#111111' },
+    { id: 'soft', label: 'Soft', value: '#F4F0E7' },
+    { id: 'gold-light', label: 'Light gold', value: '#F5D98A' }
+  ];
 
   function clamp(value, min, max) {
     return Math.max(min, Math.min(max, Number(value) || 0));
@@ -30,7 +50,8 @@
       sticker: '<path d="M12 3a9 9 0 1 0 9 9v-1a8 8 0 0 1-8-8h-1Z"/><path d="M8 11h.01M15 11h.01M8.5 15c2 2 5 2 7 0"/>',
       workout: '<path d="M6 9v6M3 11v2M18 9v6M21 11v2M6 12h12"/>',
       adjust: '<path d="M4 7h10M18 7h2M4 17h2M10 17h10M14 4v6M6 14v6"/>',
-      filter: '<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18c3-2 3-5 0-7s-3-6 0-11Z"/>'
+      filter: '<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18c3-2 3-5 0-7s-3-6 0-11Z"/>',
+      palette: '<path d="M12 3a9 9 0 1 0 0 18h1.2a1.8 1.8 0 0 0 1.3-3l-.2-.2a1.8 1.8 0 0 1 1.3-3H18a3 3 0 0 0 3-3A9 9 0 0 0 12 3Z"/><path d="M7.5 10h.01M9.5 6.8h.01M14 6.5h.01M17 9h.01"/>'
     };
     return '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' + (icons[name] || '') + '</svg>';
   }
@@ -176,8 +197,10 @@
       .pbb-share-studio__shade{position:absolute;inset:42% 0 0;background:linear-gradient(transparent,rgba(0,0,0,.12) 30%,rgba(0,0,0,.72));pointer-events:none}.pbb-share-studio__brand{position:absolute;left:5%;top:15%;display:flex;align-items:center;gap:8px;color:#fff;text-shadow:0 2px 10px #000;pointer-events:none}.pbb-share-studio__brand-mark{width:34px;height:34px;border:2px solid #fff;border-radius:50%;display:grid;place-items:center;font-size:.75rem;font-weight:950}.pbb-share-studio__brand strong{display:block;font-size:.78rem;letter-spacing:.04em}.pbb-share-studio__brand small{display:block;font-size:.43rem;font-weight:800;opacity:.82;letter-spacing:.04em}
       .pbb-share-studio__top{position:absolute;z-index:20;top:0;left:0;right:0;min-height:calc(70px + env(safe-area-inset-top));display:flex;align-items:flex-end;justify-content:space-between;padding:calc(10px + env(safe-area-inset-top)) 14px 10px;background:linear-gradient(rgba(0,0,0,.78),transparent);pointer-events:none}.pbb-share-studio__top-group{display:flex;gap:8px;pointer-events:auto}.pbb-share-studio__top-button{height:44px;min-width:44px;padding:0 12px;border:1px solid rgba(255,255,255,.32);border-radius:999px;background:rgba(8,8,8,.5);color:#fff;-webkit-text-fill-color:#fff;display:flex;align-items:center;justify-content:center;gap:7px;backdrop-filter:blur(14px)}.pbb-share-studio__top-button svg{width:21px;height:21px}.pbb-share-studio__next{background:var(--gold);border-color:var(--gold);color:var(--ink);-webkit-text-fill-color:var(--ink);font-weight:900;padding-inline:18px}
       .pbb-share-studio__rail{position:absolute;z-index:21;right:10px;top:calc(82px + env(safe-area-inset-top));display:flex;flex-direction:column;gap:8px}.pbb-share-studio__tool{width:66px;min-height:62px;padding:7px 4px;border:1px solid rgba(255,255,255,.3);border-radius:17px;background:rgba(10,10,10,.56);color:#fff;-webkit-text-fill-color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;backdrop-filter:blur(14px);font-size:.66rem;font-weight:850}.pbb-share-studio__tool svg{width:22px;height:22px;flex:0 0 auto}.pbb-share-studio__tool span{display:block;line-height:1.05;white-space:nowrap}.pbb-share-studio__tool.is-active{background:var(--gold);border-color:var(--gold);color:var(--ink);-webkit-text-fill-color:var(--ink)}
+      .pbb-share-studio__tool small{display:block;max-width:58px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.48rem;font-weight:800;opacity:.76}.pbb-share-studio__tool i{display:block;width:18px;height:4px;border-radius:99px;background:#d8b25e;box-shadow:0 0 0 1px rgba(255,255,255,.35)}
       .pbb-share-studio__layer{position:absolute;z-index:6;touch-action:none;user-select:none;cursor:grab;transform-origin:center}.pbb-share-studio__layer.is-selected{outline:1px dashed rgba(255,255,255,.8);outline-offset:8px}.pbb-share-studio__workout{left:7%;top:58%;width:78%;color:#fff;text-shadow:0 2px 14px rgba(0,0,0,.9)}.pbb-share-studio__workout-kicker{font-size:.62rem;font-weight:950;letter-spacing:.08em;color:var(--gold);-webkit-text-fill-color:var(--gold)}.pbb-share-studio__workout-title{margin:8px 0 14px;font-size:clamp(1.8rem,10vw,3.4rem);line-height:.9;font-weight:950;letter-spacing:-.05em;text-transform:uppercase}.pbb-share-studio__metrics{display:grid;grid-template-columns:repeat(3,1fr);border-top:2px solid var(--gold);padding-top:12px}.pbb-share-studio__metric{padding:0 10px;border-left:1px solid rgba(255,255,255,.48)}.pbb-share-studio__metric:first-child{padding-left:0;border-left:0}.pbb-share-studio__metric strong{display:block;font-size:clamp(.8rem,4.7vw,1.35rem);white-space:nowrap}.pbb-share-studio__metric small{font-size:.48rem;font-weight:900;letter-spacing:.05em;opacity:.82}.pbb-share-studio__caption{left:50%;top:26%;max-width:78%;padding:7px 11px;border-radius:9px;color:#fff;-webkit-text-fill-color:#fff;text-align:center;font-size:clamp(1.25rem,6vw,2.3rem);line-height:1.06;font-weight:900;white-space:pre-wrap;overflow-wrap:anywhere;text-shadow:0 2px 12px rgba(0,0,0,.9)}.pbb-share-studio__caption:empty{display:none}.pbb-share-studio__caption[data-style=label]{background:rgba(17,17,17,.86);text-shadow:none}.pbb-share-studio__caption[data-style=gold]{background:var(--gold);color:var(--ink);-webkit-text-fill-color:var(--ink);text-shadow:none}.pbb-share-studio__sticker{font-size:clamp(2rem,11vw,4.5rem);line-height:1;filter:drop-shadow(0 3px 8px rgba(0,0,0,.38))}.pbb-share-studio__delete-sticker{position:absolute;right:-19px;top:-19px;width:27px;height:27px;border:1px solid #fff;border-radius:50%;background:#111;color:#fff;-webkit-text-fill-color:#fff;display:none;place-items:center;font-size:.85rem}.pbb-share-studio__sticker.is-selected .pbb-share-studio__delete-sticker{display:grid}
       .pbb-share-studio__workout[data-layout=scorecard]{padding:18px;border:1px solid var(--gold);border-radius:22px;background:rgba(8,8,8,.72);text-shadow:none}.pbb-share-studio__workout[data-layout=scorecard] .pbb-share-studio__workout-title{font-size:clamp(1.55rem,8vw,2.8rem)}.pbb-share-studio__workout[data-layout=simple] .pbb-share-studio__metrics{display:none}.pbb-share-studio__workout[data-layout=simple] .pbb-share-studio__workout-title{font-size:clamp(2.1rem,12vw,4rem)}.pbb-share-studio__workout[data-layout=receipt]{padding:16px 18px;background:rgba(8,8,8,.76);color:#fff;-webkit-text-fill-color:#fff;text-shadow:none;border:1px solid rgba(216,178,94,.72);border-radius:18px;box-shadow:0 10px 35px rgba(0,0,0,.3)}.pbb-share-studio__workout[data-layout=receipt] .pbb-share-studio__workout-title{font-size:clamp(1.45rem,7.6vw,2.5rem)}.pbb-share-studio__lifts{display:none;margin-top:10px}.pbb-share-studio__workout[data-layout=receipt] .pbb-share-studio__lifts{display:grid;gap:5px}.pbb-share-studio__lifts div{display:flex;justify-content:space-between;gap:10px;padding:6px 8px;border-radius:8px;background:rgba(255,255,255,.1);font-size:.55rem}.pbb-share-studio__lifts strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pbb-share-studio__lifts span{flex:0 0 auto;color:var(--gold);-webkit-text-fill-color:var(--gold)}
+      .pbb-share-studio__workout{--workout-accent:#d8b25e;--workout-surface:rgba(8,8,8,.78);--workout-text:#fff;color:var(--workout-text);-webkit-text-fill-color:var(--workout-text)}.pbb-share-studio__workout-kicker{color:var(--workout-accent);-webkit-text-fill-color:var(--workout-accent)}.pbb-share-studio__metrics{border-top-color:var(--workout-accent)}.pbb-share-studio__lifts span{color:var(--workout-accent);-webkit-text-fill-color:var(--workout-accent)}.pbb-share-studio__workout[data-layout=scorecard],.pbb-share-studio__workout[data-layout=outline],.pbb-share-studio__workout[data-layout=receipt],.pbb-share-studio__workout[data-layout=full]{border-color:var(--workout-accent)}.pbb-share-studio__workout[data-layout=scorecard]{background:var(--workout-surface)}.pbb-share-studio__workout[data-layout=stamp]{width:62%;padding:18px;text-align:center;border:3px solid var(--workout-accent);border-radius:50%;background:rgba(8,8,8,.32)}.pbb-share-studio__workout[data-layout=stamp] .pbb-share-studio__workout-title{font-size:clamp(1.4rem,8vw,2.8rem)}.pbb-share-studio__workout[data-layout=stamp] .pbb-share-studio__metrics{display:none}.pbb-share-studio__workout[data-layout=split]{display:grid;grid-template-columns:1.12fr .88fr;gap:14px;align-items:end;padding-left:15px;border-left:6px solid var(--workout-accent)}.pbb-share-studio__workout[data-layout=split] .pbb-share-studio__metrics{grid-column:2;grid-row:1/3;display:flex;flex-direction:column;border-top:0;padding:0}.pbb-share-studio__workout[data-layout=split] .pbb-share-studio__metric{padding:5px 0;border-left:0;border-top:1px solid rgba(255,255,255,.34)}.pbb-share-studio__workout[data-layout=compact]{width:86%;display:flex;align-items:center;gap:12px;padding:12px 15px;border-radius:999px;background:var(--workout-surface);text-shadow:none}.pbb-share-studio__workout[data-layout=compact] .pbb-share-studio__workout-kicker{display:none}.pbb-share-studio__workout[data-layout=compact] .pbb-share-studio__workout-title{flex:1;margin:0;font-size:clamp(1rem,5vw,1.8rem)}.pbb-share-studio__workout[data-layout=compact] .pbb-share-studio__metrics{flex:1.4;border-top:0;padding:0}.pbb-share-studio__workout[data-layout=outline]{padding:18px;border:2px solid var(--workout-accent);border-radius:4px;background:transparent}.pbb-share-studio__workout[data-layout=receipt]{background:var(--workout-surface)}.pbb-share-studio__workout[data-layout=editorial]{padding-left:18px;border-left:10px solid var(--workout-accent)}.pbb-share-studio__workout[data-layout=editorial] .pbb-share-studio__workout-title{font-family:Georgia,serif;font-weight:700;letter-spacing:-.03em;text-transform:none}.pbb-share-studio__workout[data-layout=editorial] .pbb-share-studio__metrics{border-top:0;padding-top:3px}.pbb-share-studio__workout[data-layout=full]{padding:16px 18px;border:1px solid var(--workout-accent);border-radius:18px;background:var(--workout-surface);text-shadow:none}.pbb-share-studio__workout[data-layout=full] .pbb-share-studio__lifts{display:grid;gap:5px}
       .pbb-share-studio__drawer{position:absolute;z-index:22;left:10px;right:10px;bottom:calc(74px + env(safe-area-inset-bottom));min-height:104px;max-height:39dvh;padding:13px;border:1px solid rgba(255,255,255,.25);border-radius:20px;background:rgba(10,10,10,.88);box-shadow:0 18px 60px rgba(0,0,0,.4);backdrop-filter:blur(20px);overflow:auto}.pbb-share-studio__drawer[hidden]{display:none}.pbb-share-studio__drawer-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}.pbb-share-studio__drawer-title{font-size:.72rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.pbb-share-studio__drawer-done{min-height:34px;padding:0 13px;border:0;border-radius:999px;background:var(--gold);color:var(--ink);-webkit-text-fill-color:var(--ink);font-weight:900;font-size:.72rem}.pbb-share-studio__scroll-row{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none}.pbb-share-studio__scroll-row::-webkit-scrollbar{display:none}.pbb-share-studio__filter{flex:0 0 62px;border:0;background:transparent;color:#fff;-webkit-text-fill-color:#fff;padding:0;font-size:.66rem;font-weight:800;text-align:center}.pbb-share-studio__filter-preview{width:52px;height:52px;margin:0 auto 5px;border:2px solid transparent;border-radius:50%;background-position:center;background-size:cover}.pbb-share-studio__filter.is-active .pbb-share-studio__filter-preview{border-color:var(--gold);box-shadow:0 0 0 2px #111,0 0 0 4px var(--gold)}
       .pbb-share-studio__input{width:100%;min-height:54px;resize:none;border:1px solid rgba(255,255,255,.3);border-radius:13px;background:rgba(255,255,255,.09);color:#fff;-webkit-text-fill-color:#fff;padding:12px;font-size:1rem;outline:none}.pbb-share-studio__input:focus{border-color:var(--gold)}.pbb-share-studio__chip-row{display:flex;gap:8px;overflow-x:auto;margin-top:10px;scrollbar-width:none}.pbb-share-studio__chip{flex:0 0 auto;min-height:36px;padding:0 13px;border:1px solid rgba(255,255,255,.28);border-radius:999px;background:transparent;color:#fff;-webkit-text-fill-color:#fff;font-size:.72rem;font-weight:850}.pbb-share-studio__chip.is-active{border-color:var(--gold);color:var(--gold);-webkit-text-fill-color:var(--gold)}.pbb-share-studio__colour{width:36px;height:36px;padding:0;border-radius:50%;border:2px solid rgba(255,255,255,.5);flex:0 0 36px}.pbb-share-studio__colour.is-active{box-shadow:0 0 0 2px #111,0 0 0 4px var(--gold)}.pbb-share-studio__range-row{display:grid;grid-template-columns:58px 1fr 46px;align-items:center;gap:9px;margin-top:12px;font-size:.7rem;font-weight:850}.pbb-share-studio__range{accent-color:var(--gold);width:100%}.pbb-share-studio__emoji{flex:0 0 50px;width:50px;height:50px;border:1px solid rgba(255,255,255,.22);border-radius:14px;background:rgba(255,255,255,.08);font-size:1.65rem}.pbb-share-studio__hint{margin:8px 0 0;color:rgba(255,255,255,.72);font-size:.67rem;line-height:1.35}
       .pbb-share-studio__actions{position:absolute;z-index:24;left:10px;right:10px;bottom:calc(9px + env(safe-area-inset-bottom));height:56px;display:grid;grid-template-columns:1fr 1fr 1.15fr;gap:8px}.pbb-share-studio__action{border:1px solid rgba(255,255,255,.3);border-radius:16px;background:rgba(10,10,10,.74);color:#fff;-webkit-text-fill-color:#fff;font-size:.76rem;font-weight:900;backdrop-filter:blur(14px)}.pbb-share-studio__action--gold{background:var(--gold);border-color:var(--gold);color:var(--ink);-webkit-text-fill-color:var(--ink)}.pbb-share-studio__loading{position:absolute;z-index:30;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.45);font-weight:900}.pbb-share-studio__loading[hidden]{display:none}
@@ -272,9 +295,9 @@
         <div class="pbb-share-studio__top-group"><button type="button" class="pbb-share-studio__top-button" data-share-close aria-label="Close editor">${svgIcon('close')}</button><button type="button" class="pbb-share-studio__top-button" data-share-undo aria-label="Undo changes">${svgIcon('undo')}</button></div>
         <div class="pbb-share-studio__top-group"><button type="button" class="pbb-share-studio__top-button" data-share-download>${svgIcon('save')}<span>Save</span></button><button type="button" class="pbb-share-studio__top-button pbb-share-studio__next" data-share-done>Next</button></div>
       </div>
-      <aside class="pbb-share-studio__rail" aria-label="Editing tools">
-        <button type="button" class="pbb-share-studio__tool" data-share-tool="adjust">${svgIcon('adjust')}<span>Photo</span></button>
-        <button type="button" class="pbb-share-studio__tool" data-share-tool="workout">${svgIcon('workout')}<span data-share-layer-label>Workout</span></button>
+      <aside class="pbb-share-studio__rail" data-share-control-rail aria-label="Workout style controls">
+        <button type="button" class="pbb-share-studio__tool" data-share-cycle-layout>${svgIcon('workout')}<span>Layout</span><small data-share-layout-name>Bold</small></button>
+        <button type="button" class="pbb-share-studio__tool" data-share-cycle-colour>${svgIcon('palette')}<span>Colour</span><small data-share-colour-name>Gold</small><i data-share-colour-swatch></i></button>
       </aside>
       <section class="pbb-share-studio__drawer" data-share-drawer hidden></section>
       <div class="pbb-share-studio__actions" data-share-actions>
@@ -390,7 +413,7 @@
   function editorState() {
     if (!active) return null;
     return {
-      version: 3,
+      version: 4,
       filter: active.filter || 'original',
       photoScale: clamp(active.photoScale || 1, .72, 2.4),
       photoX: clamp(active.photoX || 0, -.45, .45),
@@ -411,6 +434,7 @@
       }),
       overlayStyle: active.overlayStyle || 'gold',
       textStyle: active.textStyle || 'bold',
+      workoutColour: active.workoutColour || 'gold',
       editorPreset: active.editorPreset || 'gold',
       showPB: active.showPB !== false,
       showStats: active.showStats !== false
@@ -463,6 +487,24 @@
     return ['BALANCE', payload.title || 'YOUR UPDATE'];
   }
 
+  function workoutLayout(id) {
+    return WORKOUT_LAYOUTS.find(function (layout) { return layout.id === id; }) || WORKOUT_LAYOUTS[0];
+  }
+
+  function workoutColour(id) {
+    return WORKOUT_COLOURS.find(function (colour) { return colour.id === id; }) || WORKOUT_COLOURS[0];
+  }
+
+  function workoutColourTokens(id) {
+    var colour = workoutColour(id);
+    var lightSurface = ['cream', 'white', 'soft'].includes(colour.id);
+    return {
+      accent: colour.value,
+      surface: lightSurface ? colour.value : (colour.id === 'black' ? 'rgba(17,17,17,.92)' : 'rgba(8,8,8,.78)'),
+      text: lightSurface ? '#151515' : '#FFFFFF'
+    };
+  }
+
   function renderLayers(el) {
     if (!active) return;
     var photo = el.querySelector('[data-share-image]');
@@ -471,7 +513,11 @@
     photo.style.filter = filterById(active.filter).css;
     var titles = titleValues();
     var card = el.querySelector('[data-share-workout-layer]');
-    card.dataset.layout = active.textStyle === 'full' ? 'receipt' : active.textStyle;
+    card.dataset.layout = active.textStyle;
+    var colourTokens = workoutColourTokens(active.workoutColour);
+    card.style.setProperty('--workout-accent', colourTokens.accent);
+    card.style.setProperty('--workout-surface', colourTokens.surface);
+    card.style.setProperty('--workout-text', colourTokens.text);
     card.style.left = Math.round(active.overlayX * 100) + '%';
     card.style.top = Math.round(active.overlayY * 100) + '%';
     card.style.transform = layerTransform(active.overlayX, active.overlayY, active.overlayScale);
@@ -515,6 +561,12 @@
     });
     el.querySelector('[data-share-shade]').style.display = active.rawPhoto && active.context === 'feed' ? 'none' : '';
     el.querySelector('[data-share-brand]').style.display = active.rawPhoto && active.context === 'feed' ? 'none' : '';
+    var layoutName = el.querySelector('[data-share-layout-name]');
+    var colourName = el.querySelector('[data-share-colour-name]');
+    var colourSwatch = el.querySelector('[data-share-colour-swatch]');
+    if (layoutName) layoutName.textContent = workoutLayout(active.textStyle).label;
+    if (colourName) colourName.textContent = workoutColour(active.workoutColour).label;
+    if (colourSwatch) colourSwatch.style.background = workoutColour(active.workoutColour).value;
     saveCustomization();
   }
 
@@ -911,7 +963,18 @@
     el.querySelector('[data-share-feed]').addEventListener('click', function () { runAction('feed', el); });
     el.querySelector('[data-share-instagram]').addEventListener('click', function () { runAction('instagram', el); });
     el.querySelector('[data-share-native]').addEventListener('click', function () { shareCurrentImage(el); });
-    el.querySelectorAll('[data-share-tool]').forEach(function (button) { button.addEventListener('click', function () { openDrawer(button.dataset.shareTool, el); }); });
+    el.querySelector('[data-share-cycle-layout]').addEventListener('click', function () {
+      if (!active) return;
+      var index = Math.max(0, WORKOUT_LAYOUTS.findIndex(function (layout) { return layout.id === active.textStyle; }));
+      active.textStyle = WORKOUT_LAYOUTS[(index + 1) % WORKOUT_LAYOUTS.length].id;
+      renderLayers(el);
+    });
+    el.querySelector('[data-share-cycle-colour]').addEventListener('click', function () {
+      if (!active) return;
+      var index = Math.max(0, WORKOUT_COLOURS.findIndex(function (colour) { return colour.id === active.workoutColour; }));
+      active.workoutColour = WORKOUT_COLOURS[(index + 1) % WORKOUT_COLOURS.length].id;
+      renderLayers(el);
+    });
 
     var stage = el.querySelector('[data-share-stage]');
     var photoPointers = new Map();
@@ -1055,8 +1118,9 @@
         overlayX: previous.overlayX == null ? .5 : previous.overlayX,
         overlayY: previous.overlayY == null ? .68 : previous.overlayY,
         overlayScale: previous.overlayScale || 1,
-        overlayStyle: previous.overlayStyle || options.overlayStyle || 'gold',
+        overlayStyle: 'classic',
         textStyle: previous.textStyle || options.textStyle || 'bold',
+        workoutColour: previous.workoutColour || 'gold',
         editorPreset: previous.editorPreset || 'gold',
         showPB: previous.showPB !== false,
         showStats: previous.showStats !== false,
@@ -1067,10 +1131,9 @@
       active.initial = JSON.parse(JSON.stringify(editorState()));
       el.querySelector('[data-share-drawer]').hidden = true;
       el.querySelectorAll('[data-share-tool]').forEach(function (button) { button.classList.remove('is-active'); });
-      var names = { workout: 'Workout', activity: 'Activity', meal: 'Meal', nutrition: 'Nutrition', progress_photo: 'Progress', feed: 'Photo' };
-      el.querySelector('[data-share-layer-label]').textContent = names[context] || 'Card';
       el.querySelector('[data-share-feed]').style.display = typeof active.onFeed === 'function' ? '' : 'none';
       el.querySelector('[data-share-instagram]').style.display = typeof active.onInstagram === 'function' ? '' : 'none';
+      el.querySelector('[data-share-control-rail]').style.display = context === 'workout' ? 'flex' : 'none';
       el.classList.add('is-open');
       document.body.style.overflow = 'hidden';
       renderLayers(el);

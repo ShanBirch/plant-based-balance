@@ -14055,7 +14055,7 @@ if(!window._pbbIsIOSSafari) {
 
   const steps = [
     { tab:'movement-tab', sel:'#pbb-private-workout-complete', fallbackSel:'#post-workout-share-btn', title:'Your workout progress comes first', fallbackTitle:'Your new workout saved page', body:'After you finish a workout, Balance now shows your completed sets, volume, exercises, and new bests in one simple page before you choose whether to share a photo.', fallbackBody:'Finish a workout to see the new progress-first workout saved page.', quick:true, condition:function(){ return !!(window.BalancePrivateShareStudio && window.BalancePrivateShareStudio.isEnabled()); } },
-    { tab:'movement-tab', sel:'#post-workout-share-btn', fallbackSel:'#activity-share-photo-btn,#nutrition-share-photo-btn', title:'Design your workout share', fallbackTitle:'Design your photo share', body:'Move and resize your photo, then drag the workout card anywhere. Choose Bold, Scorecard, Title only, or Full workout before sending it to Instagram.', fallbackBody:'Add a photo to a workout, meal, nutrition check-in, activity, or Feed post to frame it and design the share card.', quick:true, condition:function(){ return !!(window.BalancePrivateShareStudio && window.BalancePrivateShareStudio.isEnabled()); } },
+    { tab:'movement-tab', sel:'#post-workout-share-btn', fallbackSel:'#activity-share-photo-btn,#nutrition-share-photo-btn', title:'Design your workout share', fallbackTitle:'Design your photo share', body:'Pinch or drag the photo, then tap Layout to cycle through ten workout designs and Colour to cycle through the Balance palette. Drag or pinch the workout card itself to place it anywhere.', fallbackBody:'Add a photo, then use Layout and Colour to design the share card before sending it to Instagram.', quick:true, condition:function(){ return !!(window.BalancePrivateShareStudio && window.BalancePrivateShareStudio.isEnabled()); } },
     { tab:'dashboard', sel:'#dm-voice-btn', fallbackSel:'.header-msg-icon', title:'Send a voice message', fallbackTitle:'Voice messages are in your DMs', body:'Tap the microphone, record your message, then tap send. You can cancel before it leaves.', fallbackBody:'Open Messages, choose a friend, then tap the microphone beside the message box.', action: async function(){ try { var coachId=window._coachUserId || (typeof getCoachUserId==='function' ? await getCoachUserId() : null); if(coachId && typeof openDirectMessage==='function') openDirectMessage(coachId,'Coach Shan',''); } catch(e){} await new Promise(function(r){ setTimeout(r,420); }); } },
     { tab:'dashboard', sel:'#weekly-checkin-card', title:'Extra accountability when you need it', body:'Choose Keep me accountable in your Weekly Check-In to see optional extra support, including a mid-week voice check-in or a recurring live PT session.', condition:function(){ var c=document.getElementById('weekly-checkin-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#next-obvious-steps-card .next-steps-head', fallbackSel:'#next-obvious-steps-card .next-step-action,#next-obvious-steps-card', title:'Your app tour starts here', fallbackTitle:'Your app tour starts here', body:'To do next is your simple map. We will return here between each part of your plan, so you always know what comes next.', metaPreview:true, clientActivation:true, action:function(){ try { if(window.pbbNextSteps && typeof window.pbbNextSteps.refresh === 'function') window.pbbNextSteps.refresh(); } catch(e){} } },
@@ -16449,14 +16449,14 @@ window.endFeatureTour = function(skipped){
     condition: function(){ return !!(window.BalancePrivateShareStudio && window.BalancePrivateShareStudio.isEnabled()); }
   });
   allFeatures.push({
-    id: 'private-photo-share-studio-shannon-v3',
+    id: 'private-photo-share-studio-shannon-v4',
     tab: 'movement-tab',
     sel: '#post-workout-share-btn',
     fallbackSel: '#activity-share-photo-btn,#nutrition-share-photo-btn',
-    title: 'Your movable workout share is ready',
-    fallbackTitle: 'Your movable share card is ready',
-    body: 'Resize and reframe the photo, drag the workout card anywhere, choose its layout and size, then send the finished image to Instagram.',
-    fallbackBody: 'The same focused photo and share-card editor works for workout, meal, activity, nutrition, and Feed photos.',
+    title: 'Ten workout share styles are ready',
+    fallbackTitle: 'Your new share styles are ready',
+    body: 'Tap Layout to cycle through ten designs and Colour to change the workout treatment. Pinch or drag the photo and workout card directly, then send the finished image to Instagram.',
+    fallbackBody: 'Use the two simple Layout and Colour controls, with direct pinch and drag gestures on the photo.',
     condition: function(){ return !!(window.BalancePrivateShareStudio && window.BalancePrivateShareStudio.isEnabled()); }
   });
   allFeatures.push({
@@ -19777,7 +19777,7 @@ if (window._pbbIsIOSSafari) {
 <script>
 // Shannon-only full-screen photo share studio pilot. The module includes its own account gate.
 </script>
-<script src="js/dashboard/pbb-private-share-studio.js?v=8-fullscreen-workout-complete"></script>
+<script src="js/dashboard/pbb-private-share-studio.js?v=9-ten-workout-styles"></script>
 <script>
 // Script-10 (130KB) - Points widget. On iOS, defer to reduce memory pressure.
 // loadPointsWidget is guarded with typeof in init, so safe to defer.
@@ -19793,13 +19793,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-        s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=56-movable-workout-card';
+        s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=57-ten-workout-styles';
             s.onload = function() { if(window._crumb)window._crumb('script10_deferred_loaded'); };
             document.head.appendChild(s);
         }, 1500);
     }, { once: true });
 } else {
-        document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=56-movable-workout-card"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=57-ten-workout-styles"><\/script>');
 }
 </script>
 
