@@ -415,6 +415,235 @@
     window.moveCheckinPhotoLightbox = moveCheckinPhotoLightbox;
     window.closeCheckinPhotoLightbox = closeCheckinPhotoLightbox;
 
+    const INSIGHTS_METRIC_DETAILS = {
+        bodyweight: { title: 'Body Weight', selectors: ['[data-insights-metric="bodyweight"]'] },
+        burn: { title: 'Calorie Burn', selectors: ['[data-insights-metric="burn"]'] },
+        calories: { title: 'Daily Calories', selectors: ['[data-insights-metric="calories"]'] },
+        sleep: { title: 'Sleep', selectors: ['[data-insights-metric="sleep"]'] },
+        volume: { title: 'Strength Volume', selectors: ['[data-insights-metric="volume"]'] },
+        steps: { title: 'Daily Steps', selectors: ['[data-insights-metric="steps"]'] }
+    };
+
+    function _setInsightsSummary(id, value) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+    }
+
+    function _formatInsightsNumber(value) {
+        const number = Number(value || 0);
+        return Number.isFinite(number) ? Math.round(number).toLocaleString() : '0';
+    }
+
+    function _formatInsightsDuration(minutes) {
+        const total = Math.max(0, Math.round(Number(minutes || 0)));
+        if (!total) return 'No sleep yet';
+        return Math.floor(total / 60) + 'h ' + (total % 60) + 'm';
+    }
+
+    function renderInsightsSnapshotCards() {
+        const weighIns = (window._insightsWeighIns || []).slice().sort(function(a, b) {
+            return String(a.weigh_in_date || '').localeCompare(String(b.weigh_in_date || ''));
+        });
+        if (weighIns.length) {
+            const first = weighIns[0];
+            const latest = weighIns[weighIns.length - 1];
+            const changeKg = Number(latest.weight_kg || 0) - Number(first.weight_kg || 0);
+            const preferLbs = localStorage.getItem('weightUnitPreference') === 'lbs';
+            const change = preferLbs ? changeKg * 2.20462 : changeKg;
+            const unit = preferLbs ? 'lbs' : 'kg';
+            const changeLabel = Math.abs(change) < 0.05 ? 'No total change' : (change > 0 ? '+' : '−') + Math.abs(change).toFixed(1) + ' ' + unit + ' total';
+            _setInsightsSummary('insights-bodyweight-summary', _formatInsightsWeight(latest.weight_kg));
+            _setInsightsSummary('insights-bodyweight-meta', changeLabel + ' · ' + weighIns.length + ' weigh-in' + (weighIns.length === 1 ? '' : 's'));
+        } else {
+            _setInsightsSummary('insights-bodyweight-summary', 'No weight yet');
+            _setInsightsSummary('insights-bodyweight-meta', 'Add your first weigh-in to begin your history');
+        }
+
+        const burned = (window._insightsWearable || []).filter(function(row) {
+            return Number(row && row.calories_burned) > 0;
+        }).sort(function(a, b) { return String(a.date || '').localeCompare(String(b.date || '')); });
+        if (burned.length) {
+            const recent = burned.slice(-7);
+            const average = recent.reduce(function(sum, row) { return sum + Number(row.calories_burned || 0); }, 0) / recent.length;
+            _setInsightsSummary('insights-burn-summary', _formatInsightsNumber(burned[burned.length - 1].calories_burned) + ' cal');
+            _setInsightsSummary('insights-burn-meta', _formatInsightsNumber(average) + ' daily average · ' + burned.length + ' tracked day' + (burned.length === 1 ? '' : 's'));
+        } else {
+            _setInsightsSummary('insights-burn-summary', 'No burn data');
+            _setInsightsSummary('insights-burn-meta', 'Connect your watch or keep logging meals and weight');
+        }
+
+        const nutrition = (window._insightsNutrition || []).filter(function(row) {
+            return Number(row && row.total_calories) > 0;
+        }).sort(function(a, b) { return String(a.nutrition_date || '').localeCompare(String(b.nutrition_date || '')); });
+        if (nutrition.length) {
+            const recent = nutrition.slice(-7);
+            const average = recent.reduce(function(sum, row) { return sum + Number(row.total_calories || 0); }, 0) / recent.length;
+            _setInsightsSummary('insights-calories-summary', _formatInsightsNumber(nutrition[nutrition.length - 1].total_calories) + ' cal');
+            _setInsightsSummary('insights-calories-meta', _formatInsightsNumber(average) + ' daily average · ' + nutrition.length + ' logged day' + (nutrition.length === 1 ? '' : 's'));
+        } else {
+            _setInsightsSummary('insights-calories-summary', 'No calories yet');
+            _setInsightsSummary('insights-calories-meta', 'Your daily totals will appear after you log meals');
+        }
+
+        const sleepRecords = window._insightsSleep && Array.isArray(window._insightsSleep.records)
+            ? window._insightsSleep.records.slice().sort(function(a, b) { return String(a.date || '').localeCompare(String(b.date || '')); })
+            : [];
+        if (sleepRecords.length) {
+            const recent = sleepRecords.slice(-7);
+            const latestMinutes = Number(sleepRecords[sleepRecords.length - 1].duration_minutes || sleepRecords[sleepRecords.length - 1].total_sleep_minutes || 0);
+            const average = recent.reduce(function(sum, row) { return sum + Number(row.duration_minutes || row.total_sleep_minutes || 0); }, 0) / recent.length;
+            _setInsightsSummary('insights-sleep-summary', _formatInsightsDuration(latestMinutes));
+            _setInsightsSummary('insights-sleep-meta', _formatInsightsDuration(average) + ' recent average · ' + sleepRecords.length + ' night' + (sleepRecords.length === 1 ? '' : 's'));
+        } else {
+            _setInsightsSummary('insights-sleep-summary', 'No sleep yet');
+            _setInsightsSummary('insights-sleep-meta', 'Connect Health, Fitbit, Oura or WHOOP');
+        }
+
+        const workoutRows = window._insightsExerciseHistory || [];
+        const workoutDates = Array.from(new Set(workoutRows.map(function(row) { return row && row.workout_date; }).filter(Boolean)));
+        const totalVolume = workoutRows.reduce(function(sum, row) {
+            const reps = parseInt(String(row && row.reps || '').match(/\d+/), 10) || 0;
+            return sum + (Number(row && row.weight_kg || 0) * reps);
+        }, 0);
+        if (workoutRows.length) {
+            _setInsightsSummary('insights-volume-summary', _fmtVolume(totalVolume, localStorage.getItem('weightUnitPreference') === 'lbs'));
+            _setInsightsSummary('insights-volume-meta', workoutDates.length + ' training day' + (workoutDates.length === 1 ? '' : 's') + ' · ' + workoutRows.length + ' weighted set' + (workoutRows.length === 1 ? '' : 's'));
+        } else {
+            _setInsightsSummary('insights-volume-summary', 'No volume yet');
+            _setInsightsSummary('insights-volume-meta', 'Weighted workouts will build your strength history');
+        }
+
+        const steps = (window._insightsSteps || []).filter(function(row) { return Number(row && row.steps) > 0; })
+            .sort(function(a, b) { return String(a.date || '').localeCompare(String(b.date || '')); });
+        if (steps.length) {
+            const today = _getInsightsDateKey();
+            const latest = steps.find(function(row) { return row.date === today; }) || steps[steps.length - 1];
+            const recent = steps.slice(-7);
+            const average = recent.reduce(function(sum, row) { return sum + Number(row.steps || 0); }, 0) / recent.length;
+            _setInsightsSummary('insights-steps-summary', _formatInsightsNumber(latest.steps));
+            _setInsightsSummary('insights-steps-meta', (latest.date === today ? 'Today' : _formatInsightsDate(latest.date)) + ' · ' + _formatInsightsNumber(average) + ' recent average');
+        } else {
+            _setInsightsSummary('insights-steps-summary', 'No steps yet');
+            _setInsightsSummary('insights-steps-meta', 'Add your steps or connect a watch');
+        }
+    }
+
+    function openInsightsMetricDetail(metricKey) {
+        const config = INSIGHTS_METRIC_DETAILS[metricKey];
+        const detailView = document.getElementById('view-insights-metric-detail');
+        const content = document.getElementById('insights-metric-detail-content');
+        const title = document.getElementById('insights-metric-detail-title');
+        if (!config || !detailView || !content || !title) return;
+
+        content.querySelectorAll('.insights-legacy-graph-card').forEach(function(card) { card.classList.remove('is-active'); });
+        config.selectors.forEach(function(selector) {
+            document.querySelectorAll(selector).forEach(function(card) {
+                content.appendChild(card);
+                card.classList.add('is-active');
+            });
+        });
+        title.textContent = config.title;
+        const insightsView = document.getElementById('view-insights');
+        if (insightsView) insightsView.style.display = 'none';
+        detailView.style.display = 'block';
+        detailView.setAttribute('aria-hidden', 'false');
+        detailView.scrollTop = 0;
+        if (!detailView.dataset.swipeReady && typeof enableSwipeBackNavigation === 'function') {
+            enableSwipeBackNavigation('view-insights-metric-detail', closeInsightsMetricDetail);
+            detailView.dataset.swipeReady = 'true';
+        }
+        if (typeof pushNavigationState === 'function') pushNavigationState('view-insights-metric-detail', closeInsightsMetricDetail);
+        else history.pushState({ view: 'insights-metric-detail' }, '', '');
+    }
+
+    function closeInsightsMetricDetail() {
+        const detailView = document.getElementById('view-insights-metric-detail');
+        if (detailView) {
+            detailView.style.display = 'none';
+            detailView.setAttribute('aria-hidden', 'true');
+        }
+        const insightsView = document.getElementById('view-insights');
+        if (insightsView) insightsView.style.display = 'block';
+        const nav = document.getElementById('bottom-nav');
+        if (nav) nav.style.display = 'none';
+    }
+
+    function openManualStepsModal() {
+        const modal = document.getElementById('manual-steps-modal');
+        const date = document.getElementById('manual-steps-date');
+        const value = document.getElementById('manual-steps-value');
+        if (!modal || !date || !value) return;
+        date.value = _getInsightsDateKey();
+        value.value = '';
+        modal.style.display = 'flex';
+        setTimeout(function() { value.focus(); }, 80);
+    }
+
+    function closeManualStepsModal() {
+        const modal = document.getElementById('manual-steps-modal');
+        if (modal) modal.style.display = 'none';
+    }
+
+    async function saveManualSteps() {
+        const date = document.getElementById('manual-steps-date');
+        const value = document.getElementById('manual-steps-value');
+        const button = document.getElementById('manual-steps-save');
+        const steps = Math.round(Number(value && value.value));
+        if (!window.currentUser || !date || !date.value || !Number.isFinite(steps) || steps < 1 || steps > 200000) {
+            if (typeof showToast === 'function') showToast('Enter a valid step total.', 'info');
+            return;
+        }
+        if (button) { button.disabled = true; button.textContent = 'Saving...'; }
+        try {
+            const result = await window.supabaseClient.rpc('upsert_native_daily_steps', {
+                p_user_id: window.currentUser.id,
+                p_date: date.value,
+                p_steps: steps
+            });
+            if (result && result.error) throw result.error;
+            closeManualStepsModal();
+            const oneYearAgo = new Date();
+            oneYearAgo.setDate(oneYearAgo.getDate() - 365);
+            window._insightsSteps = await _loadWearableStepsForInsights(window.currentUser.id, _getInsightsDateKey(oneYearAgo));
+            renderInsightsSteps(window._insightsSteps, _getActiveDaysFromNav('insights-steps-timeframe-nav', 7));
+            renderInsightsSnapshotCards();
+            if (date.value === _getInsightsDateKey() && typeof window.checkStepXpReward === 'function') window.checkStepXpReward(steps);
+            if (typeof showToast === 'function') showToast('Steps saved', 'success');
+        } catch (error) {
+            console.warn('[Insights] Manual steps save failed:', error);
+            if (typeof showToast === 'function') showToast('Could not save your steps. Please try again.', 'error');
+        } finally {
+            if (button) { button.disabled = false; button.textContent = 'Save steps'; }
+        }
+    }
+
+    window.renderInsightsSnapshotCards = renderInsightsSnapshotCards;
+    window.openInsightsMetricDetail = openInsightsMetricDetail;
+    window.closeInsightsMetricDetail = closeInsightsMetricDetail;
+    window.openManualStepsModal = openManualStepsModal;
+    window.closeManualStepsModal = closeManualStepsModal;
+    window.saveManualSteps = saveManualSteps;
+
+    async function _loadAllWeighInsForInsights(userId) {
+        const rows = [];
+        const pageSize = 500;
+        let offset = 0;
+        while (true) {
+            const result = await supabaseClient
+                .from('daily_weigh_ins')
+                .select('*')
+                .eq('user_id', userId)
+                .order('weigh_in_date', { ascending: false })
+                .range(offset, offset + pageSize - 1);
+            if (result.error) throw result.error;
+            const page = result.data || [];
+            rows.push.apply(rows, page);
+            if (page.length < pageSize) break;
+            offset += pageSize;
+        }
+        return rows;
+    }
+
     async function initInsightsView() {
         if (!window.currentUser) return;
         const userId = window.currentUser.id;
@@ -441,7 +670,7 @@
                     .eq('user_id', userId)
                     .eq('workout_type', 'history')
                     .order('workout_date', { ascending: true }),
-                db.weighIns.getRecent(userId, 365),
+                _loadAllWeighInsForInsights(userId),
                 _loadWearableSleepForInsights(userId, oneYearAgo),
                 // Nutrition (1 year for 3M/6M/1Y graph timeframes)
                 db.nutrition.getRange(userId, oneYearAgo, todayStr),
@@ -509,6 +738,7 @@
             renderInsightsSleep(sleepData, 14);
             renderVolumeGraph(userId);
             renderInsightsSteps(stepsData, 7);
+            renderInsightsSnapshotCards();
 
             if (loadingEl) loadingEl.style.display = 'none';
             if (contentEl) contentEl.style.display = 'block';
@@ -593,6 +823,7 @@
             const activeBtn = document.querySelector('#insights-steps-timeframe-nav button.active');
             const days = activeBtn ? parseInt(activeBtn.getAttribute('data-days'), 10) || 7 : 7;
             renderInsightsSteps(window._insightsSteps, days);
+            renderInsightsSnapshotCards();
 
             if (typeof renderVitalityScore === 'function') {
                 renderVitalityScore({
@@ -2180,6 +2411,7 @@
         const activeBtn = nav.querySelector('button.active');
         if (!activeBtn) return fallbackDays;
         const explicitDays = parseInt(activeBtn.getAttribute('data-days'), 10);
+        if (activeBtn.getAttribute('data-days') === 'all') return 'all';
         if (Number.isFinite(explicitDays)) return explicitDays;
         const textDays = parseInt(activeBtn.innerText, 10);
         return Number.isFinite(textDays) ? textDays : fallbackDays;
@@ -2303,18 +2535,19 @@
         if (!window.currentUser) return;
 
         try {
-            const weighIns = await db.weighIns.getRecent(window.currentUser.id, 365);
+            const weighIns = await _loadAllWeighInsForInsights(window.currentUser.id);
             window._insightsWeighIns = weighIns;
             window._cachedWeighIns = weighIns;
 
             const bodyDays = _getActiveDaysFromNav('insights-bw-timeframe-nav', 30);
-            const bodyCutoff = _getInsightsDateKey(new Date(Date.now() - (bodyDays * 24 * 60 * 60 * 1000)));
-            const filteredBodyWeighIns = weighIns.filter(function(row) {
+            const bodyCutoff = bodyDays === 'all' ? null : _getInsightsDateKey(new Date(Date.now() - (bodyDays * 24 * 60 * 60 * 1000)));
+            const filteredBodyWeighIns = bodyCutoff ? weighIns.filter(function(row) {
                 return (row.weigh_in_date || '') >= bodyCutoff;
-            });
+            }) : weighIns;
 
             renderBodyWeightGraph(filteredBodyWeighIns, 'insights-bodyweight-container');
             renderWeighInManager(weighIns);
+            renderInsightsSnapshotCards();
 
             const burnDays = _getActiveDaysFromNav('insights-burned-timeframe-nav', 14);
             if (document.getElementById('insights-calories-burned-container')) {
@@ -2479,8 +2712,15 @@
 
     function updateInsightsBodyWeightTimeframe(days) {
         const nav = document.getElementById('insights-bw-timeframe-nav');
-        if (nav) nav.querySelectorAll('button').forEach(b => b.classList.toggle('active', parseInt(b.getAttribute('data-days')) === days));
+        if (nav) nav.querySelectorAll('button').forEach(function(button) {
+            const value = button.getAttribute('data-days');
+            button.classList.toggle('active', days === 'all' ? value === 'all' : parseInt(value, 10) === days);
+        });
         if (!window._insightsWeighIns) return;
+        if (days === 'all') {
+            renderBodyWeightGraph(window._insightsWeighIns, 'insights-bodyweight-container');
+            return;
+        }
         const cutoff = new Date();
         cutoff.setDate(cutoff.getDate() - days);
         const cutoffStr = cutoff.toISOString().split('T')[0];
@@ -2520,9 +2760,11 @@
 
     function renderInsightsSteps(stepsData, days = 7) {
         const container = document.getElementById('insights-steps-container');
+        const history = document.getElementById('insights-steps-history');
         if (!container) return;
 
         if (!stepsData || stepsData.length === 0) {
+            if (history) history.innerHTML = '';
             container.innerHTML = `
                 <div style="text-align: center; padding: 16px 0;">
                     <div style="font-size: 2rem; margin-bottom: 8px; opacity: 0.4;">🦶</div>
@@ -2537,6 +2779,7 @@
         const records = stepsData.filter(r => r.date >= cutoffStr).sort((a, b) => a.date.localeCompare(b.date));
 
         if (records.length === 0) {
+            if (history) history.innerHTML = '';
             container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 0.85rem; opacity: 0.6;">No step data for this period.</div>';
             return;
         }
@@ -2647,6 +2890,11 @@
             + '</div>';
 
         container.innerHTML = svg + statsGrid;
+        if (history) {
+            history.innerHTML = '<h3>Daily totals</h3>' + chartData.slice().reverse().map(function(day) {
+                return '<div class="insights-dated-history-row"><span>' + _formatInsightsDate(day.date) + '</span><strong>' + _formatInsightsNumber(day.steps) + ' steps</strong></div>';
+            }).join('');
+        }
     }
 
     function renderInsightsCaloriesBurned(container, nutritionDays, weighIns, wearableCalories, days = 14) {

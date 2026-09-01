@@ -600,7 +600,7 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
 <!-- Early stub definitions to prevent "undefined" errors before main scripts load -->
 <script src="js/dashboard/script_part_4.js?v=theme-toggle-shell-v2"></script>
 
-<link rel="stylesheet" href="css/dashboard/dashboard-style-1.css?v=70">
+<link rel="stylesheet" href="css/dashboard/dashboard-style-1.css?v=71">
 <link rel="stylesheet" href="css/dashboard/pbb-social-journey.css?v=25-captioned-coach-video">
 
 <script>if(window._crumb)window._crumb('head_complete');</script>
@@ -1925,12 +1925,12 @@ if(!window._pbbIsIOSSafari) {
         window.addEventListener('pbbInitComplete', function() {
             setTimeout(function() {
                 var s = document.createElement('script');
-                s.src = 'js/dashboard/dashboard-script-2-activity_insights_view.js?v=checkin-history-v1';
+                s.src = 'js/dashboard/dashboard-script-2-activity_insights_view.js?v=insights-snapshots-v1';
                 document.head.appendChild(s);
             }, 4000);
         }, { once: true });
     } else {
-        document.write('<script src="js/dashboard/dashboard-script-2-activity_insights_view.js?v=checkin-history-v1"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-2-activity_insights_view.js?v=insights-snapshots-v1"><\/script>');
     }
     </script>
 
@@ -11630,8 +11630,58 @@ if(!window._pbbIsIOSSafari) {
                 </div>
             </section>
 
+            <section class="insights-snapshot-grid" aria-label="Your activity snapshots">
+                <article id="insights-bodyweight-summary-card" class="insights-snapshot-card">
+                    <div class="insights-snapshot-heading"><span class="insights-snapshot-icon" aria-hidden="true">⚖</span><h2>Body weight</h2></div>
+                    <div id="insights-bodyweight-summary" class="insights-snapshot-value">Loading...</div>
+                    <div id="insights-bodyweight-meta" class="insights-snapshot-meta">Checking your weigh-ins</div>
+                    <div class="insights-snapshot-actions">
+                        <button type="button" class="insights-snapshot-primary" onclick="openWeighInEditorModal()">Add your body weight</button>
+                        <button type="button" class="insights-snapshot-link" onclick="openInsightsMetricDetail('bodyweight')">View body weight history</button>
+                    </div>
+                </article>
+
+                <article id="insights-burn-summary-card" class="insights-snapshot-card">
+                    <div class="insights-snapshot-heading"><span class="insights-snapshot-icon" aria-hidden="true">🔥</span><h2>Calorie burn</h2></div>
+                    <div id="insights-burn-summary" class="insights-snapshot-value">Loading...</div>
+                    <div id="insights-burn-meta" class="insights-snapshot-meta">Checking your activity data</div>
+                    <button type="button" class="insights-snapshot-primary" onclick="openInsightsMetricDetail('burn')">View calorie burn</button>
+                </article>
+
+                <article id="insights-calories-summary-card" class="insights-snapshot-card">
+                    <div class="insights-snapshot-heading"><span class="insights-snapshot-icon" aria-hidden="true">🥗</span><h2>Daily calories</h2></div>
+                    <div id="insights-calories-summary" class="insights-snapshot-value">Loading...</div>
+                    <div id="insights-calories-meta" class="insights-snapshot-meta">Checking your logged days</div>
+                    <button type="button" class="insights-snapshot-primary" onclick="openInsightsMetricDetail('calories')">View calorie history</button>
+                </article>
+
+                <article id="insights-sleep-summary-card" class="insights-snapshot-card">
+                    <div class="insights-snapshot-heading"><span class="insights-snapshot-icon" aria-hidden="true">☾</span><h2>Sleep</h2></div>
+                    <div id="insights-sleep-summary" class="insights-snapshot-value">Loading...</div>
+                    <div id="insights-sleep-meta" class="insights-snapshot-meta">Checking your recent nights</div>
+                    <button type="button" class="insights-snapshot-primary" onclick="openInsightsMetricDetail('sleep')">View sleep history</button>
+                </article>
+
+                <article id="insights-volume-summary-card" class="insights-snapshot-card">
+                    <div class="insights-snapshot-heading"><span class="insights-snapshot-icon" aria-hidden="true">🏋</span><h2>Strength volume</h2></div>
+                    <div id="insights-volume-summary" class="insights-snapshot-value">Loading...</div>
+                    <div id="insights-volume-meta" class="insights-snapshot-meta">Checking your training history</div>
+                    <button type="button" class="insights-snapshot-primary" onclick="openInsightsMetricDetail('volume')">View strength history</button>
+                </article>
+
+                <article id="insights-steps-summary-card" class="insights-snapshot-card">
+                    <div class="insights-snapshot-heading"><span class="insights-snapshot-icon" aria-hidden="true">◌</span><h2>Daily steps</h2></div>
+                    <div id="insights-steps-summary" class="insights-snapshot-value">Loading...</div>
+                    <div id="insights-steps-meta" class="insights-snapshot-meta">Checking today’s steps</div>
+                    <div class="insights-snapshot-actions">
+                        <button type="button" class="insights-snapshot-primary" onclick="openManualStepsModal()">Add your steps</button>
+                        <button type="button" class="insights-snapshot-link" onclick="openInsightsMetricDetail('steps')">View step history</button>
+                    </div>
+                </article>
+            </section>
+
             <!-- Body Weight Chart -->
-            <div class="insights-graph-card insights-bodyweight-card" style="background: white; border-radius: 20px; padding: 20px; box-shadow: var(--card-shadow); margin-bottom: 0; border: 1px solid rgba(216, 178, 94, 0.18);">
+            <div id="insights-bodyweight-detail-card" class="insights-graph-card insights-bodyweight-card insights-legacy-graph-card" data-insights-metric="bodyweight" style="background: white; border-radius: 20px; padding: 20px; box-shadow: var(--card-shadow); margin-bottom: 0; border: 1px solid rgba(216, 178, 94, 0.18);">
                 <div style="margin-bottom: 12px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                         <div style="font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted);">Body Weight</div>
@@ -11644,6 +11694,7 @@ if(!window._pbbIsIOSSafari) {
                         <button data-days="90" onclick="updateInsightsBodyWeightTimeframe(90)">3M</button>
                         <button data-days="180" onclick="updateInsightsBodyWeightTimeframe(180)">6M</button>
                         <button data-days="365" onclick="updateInsightsBodyWeightTimeframe(365)">1Y</button>
+                        <button data-days="all" onclick="updateInsightsBodyWeightTimeframe('all')">All</button>
                     </div>
                 </div>
                 <div id="insights-bodyweight-container">
@@ -11652,7 +11703,7 @@ if(!window._pbbIsIOSSafari) {
             </div>
 
             <!-- Weigh-In Manager -->
-            <div id="weigh-in-management-section" class="insights-weigh-in-management-section">
+            <div id="weigh-in-management-section" class="insights-weigh-in-management-section insights-legacy-graph-card" data-insights-metric="bodyweight">
                 <div id="weigh-in-management-card" style="background: var(--surface); overflow: hidden; border: 1px solid rgba(216, 178, 94, 0.18);">
                     <div id="weigh-in-management-toggle" role="button" tabindex="0" onclick="toggleWeighInManagerCard()" onkeydown="if(event.key==='Enter' || event.key===' '){event.preventDefault(); toggleWeighInManagerCard();}" aria-expanded="false" style="width: 100%; padding: 18px; border: none; background: transparent; color: inherit; cursor: pointer; text-align: left;">
                         <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;">
@@ -11676,7 +11727,7 @@ if(!window._pbbIsIOSSafari) {
             </div>
 
             <!-- Calories Burned Chart -->
-            <div style="background: white; border-radius: 20px; padding: 20px; box-shadow: var(--card-shadow); margin-bottom: 14px; border: 1px solid rgba(59, 130, 246, 0.08);">
+            <div class="insights-legacy-graph-card" data-insights-metric="burn" style="background: white; border-radius: 20px; padding: 20px; box-shadow: var(--card-shadow); margin-bottom: 14px; border: 1px solid rgba(59, 130, 246, 0.08);">
                 <div style="margin-bottom: 12px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                         <div style="font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted);">Calories Burned</div>
@@ -11697,7 +11748,7 @@ if(!window._pbbIsIOSSafari) {
             </div>
 
             <!-- Daily Calories Chart -->
-            <div style="background: white; border-radius: 20px; padding: 20px; box-shadow: var(--card-shadow); margin-bottom: 14px; border: 1px solid rgba(99, 102, 241, 0.08);">
+            <div class="insights-legacy-graph-card" data-insights-metric="calories" style="background: white; border-radius: 20px; padding: 20px; box-shadow: var(--card-shadow); margin-bottom: 14px; border: 1px solid rgba(99, 102, 241, 0.08);">
                 <div style="margin-bottom: 12px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                         <div style="font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted);">Daily Calories</div>
@@ -11718,7 +11769,7 @@ if(!window._pbbIsIOSSafari) {
             </div>
 
             <!-- Sleep Chart -->
-            <div style="background: white; border-radius: 20px; padding: 20px; box-shadow: var(--card-shadow); margin-bottom: 14px; border: 1px solid rgba(99, 102, 241, 0.08);">
+            <div class="insights-legacy-graph-card" data-insights-metric="sleep" style="background: white; border-radius: 20px; padding: 20px; box-shadow: var(--card-shadow); margin-bottom: 14px; border: 1px solid rgba(99, 102, 241, 0.08);">
                 <div style="margin-bottom: 12px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                         <div style="font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted);">Sleep</div>
@@ -11739,7 +11790,7 @@ if(!window._pbbIsIOSSafari) {
             </div>
 
             <!-- Total Volume Lifted Chart -->
-            <div style="background: white; border-radius: 20px; padding: 20px; box-shadow: var(--card-shadow); margin-bottom: 14px; border: 1px solid rgba(59, 130, 246, 0.08);">
+            <div class="insights-legacy-graph-card" data-insights-metric="volume" style="background: white; border-radius: 20px; padding: 20px; box-shadow: var(--card-shadow); margin-bottom: 14px; border: 1px solid rgba(59, 130, 246, 0.08);">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px;">
                     <div>
                         <div style="font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 4px;">Total Volume Lifted</div>
@@ -11754,7 +11805,7 @@ if(!window._pbbIsIOSSafari) {
             </div>
 
             <!-- Daily Steps Chart -->
-            <div style="background: white; border-radius: 20px; padding: 20px; box-shadow: var(--card-shadow); margin-bottom: 4px; border: 1px solid rgba(16, 185, 129, 0.08);">
+            <div class="insights-legacy-graph-card" data-insights-metric="steps" style="background: white; border-radius: 20px; padding: 20px; box-shadow: var(--card-shadow); margin-bottom: 4px; border: 1px solid rgba(16, 185, 129, 0.08);">
                 <div style="margin-bottom: 12px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                         <div style="font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted);">Daily Steps</div>
@@ -11772,6 +11823,7 @@ if(!window._pbbIsIOSSafari) {
                 <div id="insights-steps-container">
                     <div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 0.85rem; opacity: 0.6;">Loading...</div>
                 </div>
+                <div id="insights-steps-history" class="insights-dated-history"></div>
             </div>
 
             <section class="insights-more-detail" aria-labelledby="insights-more-detail-title">
@@ -11799,6 +11851,28 @@ if(!window._pbbIsIOSSafari) {
                 </button>
             </section>
 
+        </div>
+    </div>
+
+    <div id="view-insights-metric-detail" class="app-view insights-metric-detail-view" style="display:none; min-height:100vh; height:auto; z-index:100120; position:fixed; inset:0; width:100%; overflow-y:auto; overflow-x:hidden;" aria-hidden="true">
+        <div class="insights-metric-detail-header">
+            <div style="width:30px;"></div>
+            <div id="insights-metric-detail-title">Your history</div>
+            <div style="width:30px;"></div>
+        </div>
+        <main id="insights-metric-detail-content" class="insights-metric-detail-content"></main>
+    </div>
+
+    <div id="manual-steps-modal" class="insights-entry-modal" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="manual-steps-title">
+        <div class="insights-entry-modal-card">
+            <div class="insights-entry-modal-heading">
+                <div><span>Daily steps</span><h2 id="manual-steps-title">Add your steps</h2></div>
+                <button type="button" onclick="closeManualStepsModal()" aria-label="Close">&#x2715;</button>
+            </div>
+            <label>Date<input id="manual-steps-date" type="date"></label>
+            <label>Steps<input id="manual-steps-value" type="number" inputmode="numeric" min="1" max="200000" step="1" placeholder="e.g. 8500"></label>
+            <p>Balance will keep the highest step total saved for that day, including any steps synced from your watch.</p>
+            <button id="manual-steps-save" type="button" class="insights-entry-save" onclick="saveManualSteps()">Save steps</button>
         </div>
     </div>
 
@@ -13911,6 +13985,8 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#insights-checkin-photo-card', fallbackSel:'#fitbit-performance-card', title:'Weekly check-in photos', fallbackTitle:'Weekly check-in photos', body:"Open Activity Insights any day to take this week's photos or open your dated photo history.", fallbackBody:'Open Activity Insights from this Home card to take or review your weekly check-in photos.', action: async function(){ try { if (typeof openInsightsView === 'function') openInsightsView(); } catch(e){} await new Promise(function(resolve){ setTimeout(resolve, 450); }); } },
     { tab:'dashboard', sel:'#checkin-photo-history-list,#checkin-photo-history-empty,#checkin-photo-history-loading', fallbackSel:'#fitbit-performance-card', title:'Your photo timeline', fallbackTitle:'Your photo timeline', body:'See every weekly check-in by date, with the same-day weight or nearest weigh-in shown beside it.', fallbackBody:'Open Activity Insights, then View photo history to see every dated weekly check-in and its linked weight.', action: async function(){ try { if (typeof openCheckinPhotoHistoryView === 'function') openCheckinPhotoHistoryView(); } catch(e){} await new Promise(function(resolve){ setTimeout(resolve, 500); }); } },
     { tab:'dashboard', sel:'#meal-history-list,#meal-history-empty,#meal-history-loading', fallbackSel:'#fitbit-performance-card', title:'Your complete meal history', fallbackTitle:'Your complete meal history', body:'Open Nutrition at the bottom of Activity Insights to see every logged meal with its photo, date and time.', fallbackBody:'Open Activity Insights, then Nutrition to see your complete meal history.', action: async function(){ try { if (typeof openInsightsView === 'function') openInsightsView(); await new Promise(function(resolve){ setTimeout(resolve, 350); }); if (typeof openWeeklyTrendsPage === 'function') openWeeklyTrendsPage('insights'); } catch(e){} await new Promise(function(resolve){ setTimeout(resolve, 500); }); } },
+    { tab:'dashboard', sel:'#insights-bodyweight-summary-card', fallbackSel:'#fitbit-performance-card', title:'Your insights, simplified', fallbackTitle:'Your insights, simplified', body:'Each clean card shows the number that matters now. Tap its button when you want the full graph and dated history.', fallbackBody:'Open Activity Insights from this Home card to see your new snapshot cards.', action: async function(){ try { if (typeof openInsightsView === 'function') openInsightsView(); } catch(e){} await new Promise(function(resolve){ setTimeout(resolve, 500); }); } },
+    { tab:'dashboard', sel:'#insights-steps-summary-card', fallbackSel:'#fitbit-performance-card', title:'Add steps any day', fallbackTitle:'Add steps any day', body:'Tap Add your steps when you do not use a watch, then open step history for the graph and every daily total.', fallbackBody:'Open Activity Insights from this Home card to add or review daily steps.', action: async function(){ try { if (typeof openInsightsView === 'function') openInsightsView(); } catch(e){} await new Promise(function(resolve){ setTimeout(resolve, 500); }); } },
     { tab:'dashboard', sel:'#progress-photo-share-feed-btn,#weekly-progress-photo-done-card', title:'Share progress photos', body:"After your Monday progress photos are saved, share them to Feed for an extra 20 XP.", condition: function(){ var c = document.getElementById('weekly-progress-photo-done-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#weekly-checkin-card', title:'Weekly Review', body:"A shimmering gold review card shows the person's onboarding goal, weekly progress, check-ins, mood signals, and one clear action to set next week goals.", quick: true, condition: function(){ var c = document.getElementById('weekly-checkin-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#mood-checkin-card', title:'Daily mood check-in', body:"Three quick check-ins a day (morning / afternoon / evening) earn you bonus XP and feed your AI coach." },
@@ -15882,6 +15958,28 @@ window.endFeatureTour = function(skipped){
       body: 'Open Nutrition at the bottom of Activity Insights to see every logged meal with its photo, date and time.',
       fallbackBody: 'Open Activity Insights, then Nutrition to see your complete meal history.',
       action: async function(){ try { if (typeof openInsightsView === 'function') openInsightsView(); await new Promise(function(resolve){ setTimeout(resolve, 350); }); if (typeof openWeeklyTrendsPage === 'function') openWeeklyTrendsPage('insights'); } catch(e){} await new Promise(function(resolve){ setTimeout(resolve, 500); }); }
+    },
+    {
+      id: 'activity-insights-clean-snapshots-v1',
+      tab: 'dashboard',
+      sel: '#insights-bodyweight-summary-card',
+      fallbackSel: '#fitbit-performance-card',
+      title: 'Your insights, simplified',
+      fallbackTitle: 'Your insights, simplified',
+      body: 'Each clean card shows the number that matters now. Tap its button when you want the full graph and dated history.',
+      fallbackBody: 'Open Activity Insights from this Home card to see your new snapshot cards.',
+      action: async function(){ try { if (typeof openInsightsView === 'function') openInsightsView(); } catch(e){} await new Promise(function(resolve){ setTimeout(resolve, 500); }); }
+    },
+    {
+      id: 'activity-insights-manual-steps-v1',
+      tab: 'dashboard',
+      sel: '#insights-steps-summary-card',
+      fallbackSel: '#fitbit-performance-card',
+      title: 'Add steps any day',
+      fallbackTitle: 'Add steps any day',
+      body: 'Tap Add your steps when you do not use a watch, then open step history for the graph and every daily total.',
+      fallbackBody: 'Open Activity Insights from this Home card to add or review daily steps.',
+      action: async function(){ try { if (typeof openInsightsView === 'function') openInsightsView(); } catch(e){} await new Promise(function(resolve){ setTimeout(resolve, 500); }); }
     },
     {
       id: 'weekly-progress-photo-feed-share-v1',
