@@ -1935,12 +1935,12 @@ if(!window._pbbIsIOSSafari) {
         window.addEventListener('pbbInitComplete', function() {
             setTimeout(function() {
                 var s = document.createElement('script');
-                s.src = 'js/dashboard/dashboard-script-2-activity_insights_view.js?v=insights-last-night-v9';
+                s.src = 'js/dashboard/dashboard-script-2-activity_insights_view.js?v=insights-loader-guard-v10';
                 document.head.appendChild(s);
             }, 4000);
         }, { once: true });
     } else {
-        document.write('<script src="js/dashboard/dashboard-script-2-activity_insights_view.js?v=insights-last-night-v9"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-2-activity_insights_view.js?v=insights-loader-guard-v10"><\/script>');
     }
     </script>
 
@@ -19715,8 +19715,10 @@ if(!window._pbbIsIOSSafari) {
 if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
+            if (document.querySelector('script[src*="dashboard-script-8-progress_analytics_view.js"]')) return;
             var s = document.createElement('script');
             s.src = 'js/dashboard/dashboard-script-8-progress_analytics_view.js?v=3-daily-calories-detail';
+            s.dataset.pbbProgressAnalytics = '1';
             document.head.appendChild(s);
         }, 1500);
     }, { once: true });

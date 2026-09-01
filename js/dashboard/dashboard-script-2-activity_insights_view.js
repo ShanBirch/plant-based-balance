@@ -730,24 +730,104 @@
                 exerciseHistory
             });
 
-            // Overview charts (in display order)
-            renderBodyWeightGraph(weighIns, 'insights-bodyweight-container');
-            renderWeighInManager(weighIns);
-            renderInsightsCaloriesBurned(document.getElementById('insights-calories-burned-container'), nutritionDays, weighIns, wearableCalories, 14);
-            renderTotalIntakeGraph(nutritionDays, 'insights-daily-calories-container');
-            renderInsightsSleep(sleepData, 14);
-            renderVolumeGraph(userId);
-            renderInsightsSteps(stepsData, 7);
+            // Summary values never depend on the heavier, iOS-deferred graph renderer.
             renderInsightsSnapshotCards();
 
             if (loadingEl) loadingEl.style.display = 'none';
             if (contentEl) contentEl.style.display = 'block';
+
+            // Load the shared analytics renderer immediately when a member opens Insights.
+            // Each visual is isolated so one unavailable graph cannot block the rest of the page.
+            await ensureInsightsAnalyticsRenderers();
+            const bodyWeightDays = _getInsightsSelectedDays('insights-bodyweight-timeframe-nav', 30);
+            const burnDays = _getInsightsSelectedDays('insights-burned-timeframe-nav', 14);
+            const calorieDays = _getInsightsSelectedDays('insights-cal-timeframe-nav', 30);
+            const sleepDays = _getInsightsSelectedDays('insights-sleep-timeframe-nav', 14);
+            const stepsDays = _getInsightsSelectedDays('insights-steps-timeframe-nav', 7);
+            _renderInsightsSafely('body weight', function() {
+                const cutoff = new Date();
+                cutoff.setDate(cutoff.getDate() - bodyWeightDays);
+                const cutoffStr = getLocalDateString(cutoff);
+                if (typeof window.renderBodyWeightGraph === 'function') {
+                    window.renderBodyWeightGraph(weighIns.filter(function(row) { return row.weigh_in_date >= cutoffStr; }), 'insights-bodyweight-container');
+                }
+            });
+            _renderInsightsSafely('weigh-in manager', function() { renderWeighInManager(weighIns); });
+            _renderInsightsSafely('calories burned', function() {
+                renderInsightsCaloriesBurned(document.getElementById('insights-calories-burned-container'), nutritionDays, weighIns, wearableCalories, burnDays);
+            });
+            _renderInsightsSafely('daily calories', function() {
+                const cutoff = new Date();
+                cutoff.setDate(cutoff.getDate() - calorieDays);
+                const cutoffStr = getLocalDateString(cutoff);
+                if (typeof window.renderTotalIntakeGraph === 'function') {
+                    window.renderTotalIntakeGraph(nutritionDays.filter(function(row) { return row.nutrition_date >= cutoffStr; }), 'insights-daily-calories-container');
+                }
+            });
+            _renderInsightsSafely('sleep', function() { renderInsightsSleep(sleepData, sleepDays); });
+            _renderInsightsSafely('strength volume', function() { return renderVolumeGraph(userId); });
+            _renderInsightsSafely('steps', function() { renderInsightsSteps(stepsData, stepsDays); });
             refreshInsightsStepData({ delayMs: 15000 });
         } catch (err) {
             console.warn('Insights load error:', err);
             if (loadingEl) loadingEl.style.display = 'none';
             if (contentEl) contentEl.style.display = 'block';
         }
+    }
+
+    function _getInsightsSelectedDays(navId, fallbackDays) {
+        const nav = document.getElementById(navId);
+        const active = nav && nav.querySelector('button.active[data-days]');
+        const selected = active ? parseInt(active.getAttribute('data-days'), 10) : fallbackDays;
+        return Number.isFinite(selected) && selected > 0 ? selected : fallbackDays;
+    }
+
+    function _renderInsightsSafely(label, render) {
+        try {
+            const result = render();
+            if (result && typeof result.catch === 'function') {
+                result.catch(function(error) { console.warn('[Insights] ' + label + ' render unavailable:', error); });
+            }
+        } catch (error) {
+            console.warn('[Insights] ' + label + ' render unavailable:', error);
+        }
+    }
+
+    function ensureInsightsAnalyticsRenderers() {
+        if (typeof window.renderBodyWeightGraph === 'function' && typeof window.renderTotalIntakeGraph === 'function') {
+            return Promise.resolve(true);
+        }
+        if (window._pbbInsightsAnalyticsRendererPromise) return window._pbbInsightsAnalyticsRendererPromise;
+
+        window._pbbInsightsAnalyticsRendererPromise = new Promise(function(resolve) {
+            let finished = false;
+            function finish() {
+                if (finished) return;
+                finished = true;
+                resolve(typeof window.renderBodyWeightGraph === 'function' && typeof window.renderTotalIntakeGraph === 'function');
+            }
+
+            const existing = Array.from(document.scripts || []).find(function(script) {
+                return String(script.src || '').includes('dashboard-script-8-progress_analytics_view.js');
+            });
+            if (existing) {
+                if (typeof window.renderBodyWeightGraph === 'function') return finish();
+                existing.addEventListener('load', finish, { once: true });
+                existing.addEventListener('error', finish, { once: true });
+                setTimeout(finish, 5000);
+                return;
+            }
+
+            const script = document.createElement('script');
+            script.src = 'js/dashboard/dashboard-script-8-progress_analytics_view.js?v=3-daily-calories-detail';
+            script.dataset.pbbProgressAnalytics = '1';
+            script.onload = finish;
+            script.onerror = finish;
+            document.head.appendChild(script);
+            setTimeout(finish, 5000);
+        });
+
+        return window._pbbInsightsAnalyticsRendererPromise;
     }
 
     function _isInsightsViewOpen() {
