@@ -33,6 +33,12 @@ assert.match(page, /2 months/);
 assert.match(page, /3 months/);
 assert.match(page, /billing resumes automatically/);
 assert.match(page, /any balance already issued remains due/);
+assert.match(page, /id="subscription-settings-back"/);
+assert.match(page, /Back to Settings/);
+assert.match(page, /dashboard\.html\?tab=profile/);
+assert.match(page, /window\.history\.back\(\)/);
+assert.match(page, /enableCancellationSwipeBack/);
+assert.match(page, /platform === 'android' \? deltaX < -90 : deltaX > 90/);
 assert.doesNotMatch(page, /—/);
 
 assert.match(endpoint, /auth\.getUser\(token\)/);
@@ -54,6 +60,7 @@ assert.match(checkout, /AU\$649\.87 minimum total/);
 assert.match(checkout, /AU\$299\.96 minimum total/);
 assert.match(terms, /purchased on or after 1 September 2026/);
 assert.match(dashboard, /settings-cancel-subscription/);
+assert.match(dashboard, /onclick="openCancellationSettings\(\)"/);
 assert.match(coaching, /Direct recurring subscriptions require 30 days' notice/);
 assert.match(checkoutScript, /terms: '2026-09-01'/);
 for (const file of publicLinkFiles) {

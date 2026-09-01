@@ -57,13 +57,13 @@ test('all existing Settings capabilities and identifiers remain available once',
 test('FitGotchi and high-value Settings actions stay directly accessible', () => {
   assert.match(dashboard, /<strong>Show FitGotchi<\/strong>/);
   assert.match(dashboard, /toggleFitGotchiVisibility\(\)/);
-  assert.match(dashboard, /openCharacterCustomizationShortcut\(\)/);
-  assert.match(dashboard, /openCaloriesAndMacroGoals\(\)/);
-  assert.match(dashboard, /openCycleTrackingModal\(\)/);
+  assert.match(dashboard, /openSettingsDestination\('character'\)/);
+  assert.match(dashboard, /openSettingsDestination\('macros'\)/);
+  assert.match(dashboard, /openSettingsDestination\('cycle'\)/);
   assert.match(dashboard, /openAppNotificationSettings\(\)/);
-  assert.match(dashboard, /toggleHealthConnect\(\)/);
+  assert.match(dashboard, /openSettingsDestination\('health'\)/);
   assert.match(dashboard, /toggleSpotifyConnection\(\)/);
-  assert.match(dashboard, /openChangePasswordModal\(\)/);
+  assert.match(dashboard, /openSettingsDestination\('password'\)/);
   assert.match(dashboard, /openBillingPortal\(\)/);
 });
 
@@ -99,5 +99,5 @@ test('Settings defines complete readable light and dark colour pairs', () => {
 
 test('phone caches receive the redesign', () => {
   assert.match(dashboard, /pbb-premium-overlays\.css\?v=102-community-games-theme/);
-  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v428-calendar-home-coins'/);
+  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v429-settings-navigation'/);
 });

@@ -11,7 +11,9 @@
         :root { --cream:#f7f2e8; --paper:#fffdf8; --ink:#1d211c; --muted:#676b63; --gold:#b18a3d; --green:#2f6b3b; --line:#ded5c4; --danger:#9a352f; }
         * { box-sizing:border-box; }
         body { margin:0; min-height:100vh; background:var(--cream); color:var(--ink); font-family:Montserrat,system-ui,sans-serif; -webkit-text-fill-color:var(--ink); }
-        main { width:min(680px,100%); margin:0 auto; padding:calc(34px + env(safe-area-inset-top,0px)) 20px calc(64px + env(safe-area-inset-bottom,0px)); }
+        main { width:min(680px,100%); margin:0 auto; padding:calc(18px + env(safe-area-inset-top,0px)) 20px calc(64px + env(safe-area-inset-bottom,0px)); touch-action:pan-y; }
+        .settings-back { width:auto; min-height:44px; margin:0 0 20px; padding:9px 13px 9px 10px; border:1px solid var(--line); border-radius:999px; background:var(--paper); color:var(--ink); -webkit-text-fill-color:var(--ink); gap:7px; box-shadow:0 4px 18px rgba(64,48,22,.05); }
+        .settings-back span { font-size:1.25rem; line-height:1; }
         .brand { display:flex; align-items:center; gap:12px; margin-bottom:36px; font-weight:800; letter-spacing:.16em; }
         .brand img { width:46px; height:46px; border-radius:50%; border:1px solid var(--gold); }
         .eyebrow { color:var(--green); font-size:.78rem; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
@@ -48,6 +50,7 @@
 </head>
 <body>
 <main>
+    <button id="subscription-settings-back" class="settings-back" type="button" onclick="returnToBalanceSettings()" aria-label="Back to Settings"><span aria-hidden="true">‹</span> Back to Settings</button>
     <div class="brand"><img src="balance_logo.png" alt="Balance"><span>BALANCE</span></div>
     <div class="eyebrow">Subscription settings</div>
     <h1>Cancel your subscription</h1>
@@ -102,6 +105,54 @@
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+function returnToBalanceSettings() {
+    var fallback = '/dashboard.html?tab=profile';
+    var fromSettings = new URLSearchParams(window.location.search).get('from') === 'settings';
+    if (!fromSettings || window.history.length <= 1) {
+        window.location.href = fallback;
+        return;
+    }
+    var fallbackTimer = window.setTimeout(function () {
+        window.location.href = fallback;
+    }, 700);
+    window.addEventListener('pagehide', function () {
+        window.clearTimeout(fallbackTimer);
+    }, { once:true });
+    window.history.back();
+}
+
+(function enableCancellationSwipeBack() {
+    var start = null;
+    function platformName() {
+        try {
+            if (window.Capacitor && typeof window.Capacitor.getPlatform === 'function') {
+                return String(window.Capacitor.getPlatform()).toLowerCase();
+            }
+        } catch (_) {}
+        return /android/i.test(navigator.userAgent || '') ? 'android' : 'ios';
+    }
+    document.addEventListener('touchstart', function (event) {
+        if (!event.touches || event.touches.length !== 1) return;
+        var touch = event.touches[0];
+        var width = window.innerWidth || document.documentElement.clientWidth || 0;
+        var platform = platformName();
+        var fromEdge = platform === 'android' ? touch.clientX >= width - 56 : touch.clientX <= 56;
+        start = fromEdge ? { x:touch.clientX, y:touch.clientY, platform:platform } : null;
+    }, { passive:true });
+    document.addEventListener('touchend', function (event) {
+        if (!start || !event.changedTouches || !event.changedTouches.length) {
+            start = null;
+            return;
+        }
+        var touch = event.changedTouches[0];
+        var deltaX = touch.clientX - start.x;
+        var deltaY = Math.abs(touch.clientY - start.y);
+        var isBack = start.platform === 'android' ? deltaX < -90 : deltaX > 90;
+        start = null;
+        if (isBack && deltaY < 90) returnToBalanceSettings();
+    }, { passive:true });
+})();
+
 (() => {
     const SUPABASE_URL = 'https://hzapaorxqboevxnumxkv.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6YXBhb3J4cWJvZXZ4bnVteGt2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg2NjA3MTYsImV4cCI6MjA4NDIzNjcxNn0.L8ZuxevbB1pNx2nXtIiiQ-6dZSeqfdGuiEvscljOxq0';

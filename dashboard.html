@@ -12353,10 +12353,10 @@ if(!window._pbbIsIOSSafari) {
             <section class="settings-v2-section" aria-labelledby="settings-personal-title">
                 <h3 id="settings-personal-title">Personal setup</h3>
                 <div class="settings-v2-card">
-                    <button class="settings-v2-row" type="button" onclick="openEquipmentPicker()"><span class="settings-v2-icon">🏋️</span><span class="settings-v2-copy"><strong>Training equipment</strong><small id="profile-equipment-display">No Equipment</small></span><span class="settings-v2-chevron">›</span></button>
-                    <button class="settings-v2-row" type="button" onclick="openDietaryPicker()"><span class="settings-v2-icon">🥗</span><span class="settings-v2-copy"><strong>Food preferences</strong><small id="profile-diet-display">Not set</small></span><span class="settings-v2-chevron">›</span></button>
-                    <button class="settings-v2-row" type="button" onclick="openCaloriesAndMacroGoals()"><span class="settings-v2-icon">🎯</span><span class="settings-v2-copy"><strong>Calories &amp; macro goals</strong><small>Review targets and recalculate</small></span><span class="settings-v2-chevron">›</span></button>
-                    <button class="settings-v2-row" type="button" onclick="openCycleTrackingModal()"><span class="settings-v2-icon">🌸</span><span class="settings-v2-copy"><strong>Cycle tracking</strong><small>Cycle dates and preferences</small></span><span class="settings-v2-chevron">›</span></button>
+                    <button class="settings-v2-row" type="button" onclick="openSettingsDestination('equipment')"><span class="settings-v2-icon">🏋️</span><span class="settings-v2-copy"><strong>Training equipment</strong><small id="profile-equipment-display">No Equipment</small></span><span class="settings-v2-chevron">›</span></button>
+                    <button class="settings-v2-row" type="button" onclick="openSettingsDestination('food')"><span class="settings-v2-icon">🥗</span><span class="settings-v2-copy"><strong>Food preferences</strong><small id="profile-diet-display">Not set</small></span><span class="settings-v2-chevron">›</span></button>
+                    <button class="settings-v2-row" type="button" onclick="openSettingsDestination('macros')"><span class="settings-v2-icon">🎯</span><span class="settings-v2-copy"><strong>Calories &amp; macro goals</strong><small>Review targets and recalculate</small></span><span class="settings-v2-chevron">›</span></button>
+                    <button class="settings-v2-row" type="button" onclick="openSettingsDestination('cycle')"><span class="settings-v2-icon">🌸</span><span class="settings-v2-copy"><strong>Cycle tracking</strong><small>Cycle dates and preferences</small></span><span class="settings-v2-chevron">›</span></button>
                 </div>
             </section>
 
@@ -12376,10 +12376,10 @@ if(!window._pbbIsIOSSafari) {
                         </div>
                     </section>
                     <section id="feed-start-battle-card" class="settings-community-actions" aria-label="Start a battle or challenge">
-                        <button id="feed-start-battle-button" class="settings-v2-row" type="button" onclick="window.openFeedBattleChooser ? window.openFeedBattleChooser() : (typeof showToast === 'function' ? showToast('Battles are still loading. Try again in a moment.', 'info') : alert('Battles are still loading. Try again in a moment.'))" aria-haspopup="dialog">
+                        <button id="feed-start-battle-button" class="settings-v2-row" type="button" onclick="openSettingsDestination('battle')" aria-haspopup="dialog">
                             <span class="settings-v2-icon" aria-hidden="true">⚡</span><span class="settings-v2-copy"><strong>Start Battle</strong><small>Quiz, chess, checkers, and more</small></span><span class="settings-v2-chevron" aria-hidden="true">›</span>
                         </button>
-                        <button id="feed-start-challenge-button" class="settings-v2-row" type="button" onclick="openChallengeTypePicker()" aria-haspopup="dialog">
+                        <button id="feed-start-challenge-button" class="settings-v2-row" type="button" onclick="openSettingsDestination('challenge')" aria-haspopup="dialog">
                             <span class="settings-v2-icon" aria-hidden="true">🏆</span><span class="settings-v2-copy"><strong>Start a Challenge</strong><small>Challenge friends, choose a mode, and win drops</small></span><span class="settings-v2-chevron" aria-hidden="true">›</span>
                         </button>
                     </section>
@@ -12395,7 +12395,7 @@ if(!window._pbbIsIOSSafari) {
                         <select id="theme-selector" aria-label="Color theme" tabindex="-1"><option value="dark">Dark Mode</option><option value="light">Light Mode</option></select>
                     </div>
                     <div id="settings-fitgotchi-visibility" class="settings-v2-row settings-v2-row-static"><span class="settings-v2-icon">🐣</span><span class="settings-v2-copy"><strong>Show FitGotchi</strong><small id="fitgotchi-visibility-status">Shown on Home</small></span><button id="fitgotchi-visibility-toggle" class="fitgotchi-visibility-switch" type="button" role="switch" aria-checked="true" aria-label="Hide FitGotchi on Home" onclick="toggleFitGotchiVisibility()"></button></div>
-                    <button id="settings-customize-character-btn" class="settings-v2-row" type="button" onclick="openCharacterCustomizationShortcut()"><span class="settings-v2-icon">✨</span><span class="settings-v2-copy"><strong>Customise character</strong><small>Change your FitGotchi look</small></span><span class="settings-v2-chevron">›</span></button>
+                    <button id="settings-customize-character-btn" class="settings-v2-row" type="button" onclick="openSettingsDestination('character')"><span class="settings-v2-icon">✨</span><span class="settings-v2-copy"><strong>Customise character</strong><small>Change your FitGotchi look</small></span><span class="settings-v2-chevron">›</span></button>
                     <div id="settings-push-notifications" class="settings-v2-row settings-v2-row-static"><span class="settings-v2-icon">🔔</span><span class="settings-v2-copy"><strong>Notifications</strong><small id="push-notif-settings-status">Coach messages and app alerts</small></span><button id="push-notif-settings-btn" class="settings-v2-pill" type="button" onclick="openAppNotificationSettings()">Manage</button></div>
                 </div>
             </section>
@@ -12403,10 +12403,10 @@ if(!window._pbbIsIOSSafari) {
             <section class="settings-v2-section" aria-labelledby="settings-connections-title">
                 <h3 id="settings-connections-title">Connections</h3>
                 <div class="settings-v2-card">
-                    <div id="settings-health-connect" class="settings-v2-row settings-v2-row-static"><span class="settings-v2-icon">❤</span><span class="settings-v2-copy"><strong>Health</strong><small id="health-connect-status-text">Sync steps, activity calories, and sleep</small></span><button id="health-connect-btn" class="settings-v2-pill settings-v2-health" type="button" onclick="toggleHealthConnect()">Connect</button></div>
+                    <div id="settings-health-connect" class="settings-v2-row settings-v2-row-static"><span class="settings-v2-icon">❤</span><span class="settings-v2-copy"><strong>Health</strong><small id="health-connect-status-text">Sync steps, activity calories, and sleep</small></span><button id="health-connect-btn" class="settings-v2-pill settings-v2-health" type="button" onclick="openSettingsDestination('health')">Connect</button></div>
                     <div id="settings-spotify-connect" class="settings-v2-row settings-v2-row-static"><span class="settings-v2-icon">♪</span><span class="settings-v2-copy"><strong>Spotify</strong><small id="spotify-status-text">Sync listening habits &amp; music data</small></span><button id="spotify-connect-btn" class="settings-v2-pill settings-v2-spotify" type="button" onclick="toggleSpotifyConnection()">Connect</button></div>
-                    <button class="settings-v2-row" type="button" onclick="openAddFriendModal()"><span class="settings-v2-icon">👥</span><span class="settings-v2-copy"><strong>Add friend</strong><small>Search and connect with friends</small></span><span class="settings-v2-chevron">›</span></button>
-                    <button class="settings-v2-row" type="button" onclick="openShareReferralModal()"><span class="settings-v2-icon">🎁</span><span class="settings-v2-copy"><strong>Invite a friend</strong><small>You both get 1 week double XP</small></span><span class="settings-v2-chevron">›</span></button>
+                    <button class="settings-v2-row" type="button" onclick="openSettingsDestination('addFriend')"><span class="settings-v2-icon">👥</span><span class="settings-v2-copy"><strong>Add friend</strong><small>Search and connect with friends</small></span><span class="settings-v2-chevron">›</span></button>
+                    <button class="settings-v2-row" type="button" onclick="openSettingsDestination('inviteFriend')"><span class="settings-v2-icon">🎁</span><span class="settings-v2-copy"><strong>Invite a friend</strong><small>You both get 1 week double XP</small></span><span class="settings-v2-chevron">›</span></button>
                     <div id="settings-download-app" class="settings-v2-row settings-v2-row-static"><span class="settings-v2-icon">↓</span><span class="settings-v2-copy"><strong>Download app</strong><small>Install for the best experience</small></span><button class="pwa-install-btn settings-v2-pill" type="button" onclick="installPWA(this)" data-original-text="Install">Install</button></div>
                 </div>
             </section>
@@ -12414,9 +12414,9 @@ if(!window._pbbIsIOSSafari) {
             <section class="settings-v2-section" aria-labelledby="settings-account-title">
                 <h3 id="settings-account-title">Account &amp; help</h3>
                 <div class="settings-v2-card">
-                    <button id="settings-change-password" class="settings-v2-row" type="button" onclick="openChangePasswordModal()"><span class="settings-v2-icon">🔒</span><span class="settings-v2-copy"><strong>Password</strong><small>Add or update a login password</small></span><span class="settings-v2-chevron">›</span></button>
+                    <button id="settings-change-password" class="settings-v2-row" type="button" onclick="openSettingsDestination('password')"><span class="settings-v2-icon">🔒</span><span class="settings-v2-copy"><strong>Password</strong><small>Add or update a login password</small></span><span class="settings-v2-chevron">›</span></button>
                     <div id="settings-payment-method" class="settings-v2-row settings-v2-row-static"><span class="settings-v2-icon">💳</span><span class="settings-v2-copy"><strong>Payments &amp; subscription</strong><small>Managed where you paid for Balance</small></span><button id="settings-payment-method-btn" class="settings-v2-pill" type="button" onclick="openBillingPortal()">Manage</button></div>
-                    <button id="settings-cancel-subscription" class="settings-v2-row" type="button" onclick="window.location.href='/cancellation.html'"><span class="settings-v2-icon">○</span><span class="settings-v2-copy"><strong>Cancel subscription</strong><small>View your end date and stop renewal</small></span><span class="settings-v2-chevron">›</span></button>
+                    <button id="settings-cancel-subscription" class="settings-v2-row" type="button" onclick="openCancellationSettings()"><span class="settings-v2-icon">○</span><span class="settings-v2-copy"><strong>Cancel subscription</strong><small>View your end date and stop renewal</small></span><span class="settings-v2-chevron">›</span></button>
                     <div id="settings-app-suggestions" class="settings-v2-suggestion">
                         <button class="settings-v2-row" type="button" onclick="toggleAppSuggestionBox()"><span class="settings-v2-icon">💬</span><span class="settings-v2-copy"><strong>Suggestions &amp; support</strong><small>Send ideas or fixes straight to Shannon</small></span><span class="settings-v2-open"><span id="app-suggestion-toggle-label">Open</span><span id="app-suggestion-toggle-icon">›</span></span></button>
                         <div id="app-suggestion-panel" style="display:none;"><textarea id="app-suggestion-input" maxlength="1200" rows="3" placeholder="What should we add or improve?"></textarea><div class="settings-v2-suggestion-actions"><button id="app-suggestion-submit-btn" type="button" onclick="submitAppSuggestion()">Send</button><div id="app-suggestion-status" style="display:none;"></div></div></div>
@@ -20574,6 +20574,7 @@ if(!window._pbbIsIOSSafari) {
 </style>
 
 <script src="js/dashboard/pbb-deferred-pickers.js?v=3-food-preferences-direct-load"></script>
+<script src="js/dashboard/pbb-settings-navigation.js?v=1-settings-navigation"></script>
 
 
 <!-- Health Connect Prompt Modal -->

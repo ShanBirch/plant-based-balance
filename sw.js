@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v428-calendar-home-coins'; // v428: preserve meal history while adding shared Calendar labels and Home-only coin balance
+const CACHE_NAME = 'pbb-app-v429-settings-navigation'; // v429: consistent Settings back and edge-swipe navigation after Calendar and meal-history updates
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -18,6 +18,7 @@ const ASSETS = [
   './js/dashboard/script_part_2.js?v=15-meal-reminders-retired',
   './js/dashboard/dashboard-script-3-1_get_user_data.js?v=59-light-launch',
   './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=225-calendar-home-coins',
+  './js/dashboard/pbb-settings-navigation.js?v=1-settings-navigation',
   './js/dashboard/pbb-meta-preview-soundtrack.js?v=3-coach-video-ducking',
   './js/dashboard/pbb-app-telemetry.js?v=1',
   './js/dashboard/pbb-deferred-weeklygoals.js?v=35-balance-theme',
