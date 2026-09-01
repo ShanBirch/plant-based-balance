@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v455-guided-activity-log'; // v455: Guided activity logging with real GPS and post-save photo sharing
+const CACHE_NAME = 'pbb-app-v456-imported-activity-todo'; // v456: Detected walks return to Home as a To do next action for every member
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -25,7 +25,9 @@ const ASSETS = [
   './css/dashboard/pbb-onboarding-comeback.css?v=8',
   './css/dashboard/pbb-onboarding-foundations.css?v=7-single-render',
   './js/dashboard/dashboard-script-7-video_logic.js?v=20260815-exercise-thumbnails',
-  './js/dashboard/dashboard-script-10-points_widget_functions.js?v=50-guided-activity',
+  './js/dashboard/dashboard-script-10-points_widget_functions.js?v=51-imported-activity-todo',
+  './js/dashboard/pbb-deferred-fitbit.js?v=2-imported-activity-todo',
+  './js/dashboard/pbb-next-obvious-steps.js?v=48-imported-activity-todo',
   './js/dashboard/pbb-deferred-formcheck.js?v=58-ios-exercise-video-upload&video_health=2',
   './js/dashboard/pbb-deferred-workoutbuilder.js?v=10',
   './js/dashboard/pbb-deferred-yourworkouts.js',

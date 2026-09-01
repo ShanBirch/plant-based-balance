@@ -7,7 +7,7 @@ const vm = require('node:vm');
 const root = path.resolve(__dirname, '..');
 const read = file => fs.readFileSync(path.join(root, file), 'utf8');
 
-function loadNextStepsAtHour(hour) {
+function loadNextStepsAtHour(hour, pendingImportedActivity) {
   class TestDate extends Date {
     constructor(...args) {
       super(...(args.length ? args : ['2026-09-01T09:00:00Z']));
@@ -40,6 +40,10 @@ function loadNextStepsAtHour(hour) {
     dispatchEvent() {},
     metaAdTrialMode: false
   };
+  if (pendingImportedActivity) {
+    window.pbbPendingImportedActivity = pendingImportedActivity;
+    window.getPendingImportedActivityForHome = () => window.pbbPendingImportedActivity;
+  }
   const context = vm.createContext({
     window,
     document,
@@ -56,12 +60,18 @@ function loadNextStepsAtHour(hour) {
   return { window, localStorage };
 }
 
-test('Home omits imported activity review from the daily to-do plan', () => {
+test('Home adds a detected imported activity to the daily to-do plan', () => {
   const nextSteps = read('js/dashboard/pbb-next-obvious-steps.js');
+  const importedActivity = read('js/dashboard/pbb-deferred-fitbit.js');
 
-  assert.doesNotMatch(nextSteps, /id: 'imported_activity'/);
-  assert.doesNotMatch(nextSteps, /Review your imported activity/);
-  assert.doesNotMatch(nextSteps, /fitbit-imported-activity-card/);
+  assert.match(nextSteps, /id: 'imported_activity'/);
+  assert.match(nextSteps, /Add a photo to your/);
+  assert.match(nextSteps, /window\.openImportedActivityForSharing\(pending\)/);
+  assert.match(nextSteps, /getImportedActivityAction\(\)/);
+  assert.match(importedActivity, /window\.pbbPendingImportedActivity = combinedActivity/);
+  assert.match(importedActivity, /pbb:imported-activity-updated/);
+  assert.doesNotMatch(importedActivity, /if \(!window\.currentUser \|\| !window\.isMoveYourWayPilotUser/);
+  assert.doesNotMatch(importedActivity, /card\.id = 'fitbit-imported-activity-card'/);
 });
 
 test('End-of-day check-in re-evaluates the 6 PM rollover while the app stays open', () => {
@@ -98,8 +108,8 @@ test('Fitness Diary stays hidden until its evening To Do action is clicked', () 
   assert.match(journey, /function isTaskDueToday\(item\)[\s\S]*!taskAvailability\(item\)\.availableNow\) return false/);
   assert.match(nextSteps, /function isFitnessDiaryDue\(\)[\s\S]*new Date\(\)\.getHours\(\) < 18[\s\S]*fitnessDiaryDone_/);
   assert.match(nextSteps, /fitnessDiaryAction && isFitnessDiaryDue\(\)/);
-  assert.match(nextSteps, /publicDiaryOnly[\s\S]*nightlyDiary && isFitnessDiaryDue\(\) \? \[nightlyDiary\] : \[\]/);
-  assert.match(nextSteps, /!isPreviewEligible\(\) && !unified && !isFitnessDiaryDue\(\)/);
+  assert.match(nextSteps, /publicEssentialOnly[\s\S]*addUniqueAction\(publicActions, getImportedActivityAction\(\)\)/);
+  assert.match(nextSteps, /!isPreviewEligible\(\) && !unified && !isFitnessDiaryDue\(\) && !getImportedActivityAction\(\)/);
   assert.match(dailyCards, /localStorage\.setItem\('fitnessDiaryDone_' \+ dateKey, '1'\);[\s\S]*window\.pbbNextSteps\.refresh\(\)/);
 });
 
@@ -112,6 +122,23 @@ test('ordinary members receive only the nightly Fitness Diary To Do action after
 
   const afternoon = loadNextStepsAtHour(17);
   assert.equal(afternoon.window.pbbNextSteps.getSuggestions().length, 0);
+});
+
+test('ordinary members receive a detected walk immediately without losing the nightly diary', () => {
+  const walk = {
+    id: 'walk-1',
+    source: 'native_health',
+    source_label: 'Apple Health',
+    activity_type: 'walking',
+    activity_label: 'Walking',
+    source_metadata: { distance_km: 4.2, distance_unit: 'km' }
+  };
+  const afternoon = loadNextStepsAtHour(17, walk);
+  assert.deepEqual(Array.from(afternoon.window.pbbNextSteps.getSuggestions(), action => action.id), ['imported_activity']);
+  assert.match(afternoon.window.pbbNextSteps.getSuggestions()[0].title, /4\.2 km walk/);
+
+  const evening = loadNextStepsAtHour(19, walk);
+  assert.deepEqual(Array.from(evening.window.pbbNextSteps.getSuggestions(), action => action.id), ['imported_activity', 'fitness_diary']);
 });
 
 test('Home renders 10k steps as automatic daily progress instead of a dead-end link', () => {
@@ -132,9 +159,10 @@ test('versioned phone assets advance for the Home fix', () => {
 
   assert.match(dashboard, /pbb-social-journey\.css\?v=27-direct-course-lesson/);
   assert.match(dashboard, /pbb-social-journey\.js\?v=45-exact-course-label/);
-  assert.match(dashboard, /pbb-next-obvious-steps\.js\?v=47-nightly-diary-todo-next/);
+  assert.match(dashboard, /pbb-next-obvious-steps\.js\?v=48-imported-activity-todo/);
+  assert.match(dashboard, /pbb-deferred-fitbit\.js\?v=2-imported-activity-todo/);
   assert.match(dashboard, /dashboard-script-1-daily_weighin_card_logic\.js\?v=76-nightly-diary-todo-next/);
-  assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=50-guided-activity/);
-assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v455-guided-activity-log'/);
-  assert.match(serviceWorker, /dashboard-script-10-points_widget_functions\.js\?v=50-guided-activity/);
+  assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=51-imported-activity-todo/);
+  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v456-imported-activity-todo'/);
+  assert.match(serviceWorker, /dashboard-script-10-points_widget_functions\.js\?v=51-imported-activity-todo/);
 });

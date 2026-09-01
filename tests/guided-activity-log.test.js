@@ -41,6 +41,6 @@ test('photos happen after save and reveal both sharing destinations', () => {
 test('guided activity surfaces use paired Balance themes and refresh returning phones', () => {
   assert.match(dashboard, /#view-log-activity \{ --activity-accent:#d6ad55/);
   assert.match(dashboard, /html\[data-pbb-theme="light"\] #view-log-activity \{ --activity-accent:#9a6b12/);
-  assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=50-guided-activity/);
-  assert.match(serviceWorker, /pbb-app-v455-guided-activity-log/);
+  assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=51-imported-activity-todo/);
+  assert.match(serviceWorker, /pbb-app-v456-imported-activity-todo/);
 });

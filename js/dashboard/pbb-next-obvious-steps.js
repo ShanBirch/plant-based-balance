@@ -347,6 +347,26 @@
     }
   }
 
+  function getImportedActivityAction() {
+    var pending = typeof window.getPendingImportedActivityForHome === 'function'
+      ? window.getPendingImportedActivityForHome()
+      : window.pbbPendingImportedActivity;
+    if (!pending) return null;
+    var base = ACTIONS.find(function(action){ return action.id === 'imported_activity'; });
+    if (!base) return null;
+    var metadata = pending.source_metadata || {};
+    var distance = Number(metadata.distance != null ? metadata.distance : metadata.distance_km || 0);
+    var unit = metadata.distance_unit || 'km';
+    var distanceText = distance > 0 ? (distance.toFixed(distance < 10 ? 1 : 0) + ' ' + unit + ' ') : '';
+    var rawLabel = String(pending.activity_label || pending.activity_type || 'activity').trim();
+    var label = rawLabel.toLowerCase() === 'walking' ? 'walk' : rawLabel.toLowerCase();
+    var source = String(pending.source_label || metadata.provider || (pending.source === 'fitbit' ? 'Fitbit' : 'your health app'));
+    return Object.assign({}, base, {
+      title: 'Add a photo to your ' + distanceText + label,
+      body: 'Balance detected this from ' + source + '. Add a photo, then share it to Feed or IG Story.'
+    });
+  }
+
   function ensureLearningSystemLoaded() {
     if (typeof window.openCurrentCourseLesson === 'function' && typeof window.getCurrentCourseLessonDestination === 'function') {
       return Promise.resolve(true);
@@ -651,6 +671,7 @@
   function isActionComplete(action) {
     if (!action || !action.id) return false;
     if (action.id === 'balance_journey') return !getBalanceJourneyAction();
+    if (action.id === 'imported_activity') return !getImportedActivityAction();
     if (visibleCompleteFallback(action.id)) return true;
     if (action.id === 'workout') return !!(dailyState.status && dailyState.status.workout && dailyState.status.workout_share);
     if (isOnboardingAction(action.id) || action.id === 'activity_insights_intro') return hasSeenOnboardingStep(action.id);
@@ -662,6 +683,23 @@
   }
 
   var ACTIONS = [
+    {
+      id: 'imported_activity',
+      title: 'Add a photo to your activity',
+      body: 'Your movement was detected automatically. Add a photo, then share it to Feed or IG Story.',
+      cta: 'Add Photo',
+      accent: '#b78a2e',
+      priority: 1100,
+      goalIds: [],
+      action: function(){
+        var pending = typeof window.getPendingImportedActivityForHome === 'function'
+          ? window.getPendingImportedActivityForHome()
+          : window.pbbPendingImportedActivity;
+        if (pending && typeof window.openImportedActivityForSharing === 'function') {
+          window.openImportedActivityForSharing(pending);
+        }
+      }
+    },
     {
       id: 'feed_intro',
       title: 'See the Balance community',
@@ -951,6 +989,7 @@
   function dailyActionSet(selectedGoalIds) {
     var picked = [];
     var journeyAction = getBalanceJourneyAction();
+    addUniqueAction(picked, getImportedActivityAction());
     var onboardingEligible = isOnboardingAccount();
     var hasIncompleteOnboarding = onboardingEligible && ONBOARDING_ACTION_IDS.some(function(id){
       var action = ACTIONS.find(function(item){ return item.id === id; });
@@ -1016,6 +1055,7 @@
   function isActionAvailable(action, selectedGoalIds) {
     if (!action || !action.id) return false;
     if (action.id === 'balance_journey') return !!getBalanceJourneyAction();
+    if (action.id === 'imported_activity') return !!getImportedActivityAction();
     if (isActionComplete(action)) return false;
     if (isOnboardingAction(action.id) && !isOnboardingAccount()) return false;
     if (action.id === 'mood') {
@@ -1056,10 +1096,13 @@
   function pickSuggestions() {
     var selectedGoalIds = getSelectedGoalIds();
     if (isShowAllEnabled()) return ACTIONS.slice();
-    var publicDiaryOnly = !isPreviewEligible() && !isUnifiedPlanActive() && window.metaAdTrialMode !== true;
-    if (publicDiaryOnly) {
+    var publicEssentialOnly = !isPreviewEligible() && !isUnifiedPlanActive() && window.metaAdTrialMode !== true;
+    if (publicEssentialOnly) {
+      var publicActions = [];
+      addUniqueAction(publicActions, getImportedActivityAction());
       var nightlyDiary = ACTIONS.find(function(action){ return action.id === 'fitness_diary'; });
-      return nightlyDiary && isFitnessDiaryDue() ? [nightlyDiary] : [];
+      if (nightlyDiary && isFitnessDiaryDue()) addUniqueAction(publicActions, nightlyDiary);
+      return publicActions;
     }
     if (areDailyActionsComplete(selectedGoalIds)) return [];
 
@@ -1350,7 +1393,7 @@
     if (guidedSetup && document.documentElement) {
       document.documentElement.classList.add('pbb-unified-next-steps');
     }
-    if (!isPreviewEligible() && !unified && !isFitnessDiaryDue()) {
+    if (!isPreviewEligible() && !unified && !isFitnessDiaryDue() && !getImportedActivityAction()) {
       card.style.display = 'none';
       card.innerHTML = '';
       return;
@@ -1477,6 +1520,7 @@
     // working destination even when the card is replaced or another handler
     // stops bubbling.
     document.addEventListener('click', handleClick, true);
+    window.addEventListener('pbb:imported-activity-updated', function(){ refreshSoon(0); });
     document.addEventListener('click', function(event){
       var homeButton = event.target && event.target.closest ? event.target.closest('.bottom-nav .nav-item[onclick*="dashboard"]') : null;
       if (!homeButton) return;

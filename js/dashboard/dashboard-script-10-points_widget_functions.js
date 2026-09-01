@@ -6555,7 +6555,8 @@ window.openImportedActivityForSharing = function(activity) {
         routePolyline: metadata.route_polyline || null,
         distanceKm: Number(metadata.distance_km || 0) || null,
         includeRoute: Boolean(metadata.route_polyline),
-        activityIds: Array.isArray(activity.activityIds) ? activity.activityIds : [activity.id]
+        activityIds: Array.isArray(activity.activityIds) ? activity.activityIds : [activity.id],
+        activityMetadataById: activity.activityMetadataById || {}
     };
     showActivitySuccess(savedActivityData);
 };
@@ -7522,6 +7523,16 @@ async function shareActivityCardToInstagram() {
             'instagram_feed',
             getActivitySocialShareReferenceId()
         );
+        if (savedActivityData.id) {
+            const activityIds = savedActivityData.activityIds || [savedActivityData.id];
+            await Promise.all(activityIds.filter(Boolean).map(id => {
+                const existingMetadata = savedActivityData.activityMetadataById?.[id] || savedActivityData.sourceMetadata || {};
+                return window.dbHelpers?.activityLogs?.update(id, {
+                    source_metadata: { ...existingMetadata, share_prompt_handled: 'instagram_story' }
+                });
+            }));
+            if (typeof window.refreshImportedActivityHomeCard === 'function') await window.refreshImportedActivityHomeCard();
+        }
         // `instagram_feed` is the legacy backend key for the independent Instagram XP lane.
         // The user-facing destination for activity cards is Instagram Story.
         if (label) label.textContent = xpResult?.success ? 'IG Story shared (+15 XP)' : 'IG Story opened';

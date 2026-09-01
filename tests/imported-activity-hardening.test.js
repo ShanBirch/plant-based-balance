@@ -102,6 +102,8 @@ const supabase = { from: (table) => {
   assert.match(fitbitCardSource, /getRecentImportedFromSources/, 'the home card must read both Fitbit and native imports');
   assert.match(fitbitCardSource, /maybeSyncFitbitImportedActivity\(\)/, 'the dashboard should sync Fitbit without a manual tap');
   assert.match(fitbitCardSource, /visibilitychange/, 'returning to the app should refresh the card');
+  assert.match(fitbitCardSource, /pbbPendingImportedActivity/, 'the detected workout should feed the Home To do next plan');
+  assert.doesNotMatch(fitbitCardSource, /if \(!window\.currentUser \|\| !window\.isMoveYourWayPilotUser/, 'the detected-workout hand-off must be available to every member');
   assert.match(fitbitSyncSource, /existingRow\.source === "native_health" && isSameImportedMovement/, 'late Fitbit syncs must not duplicate native sessions');
 
   console.log('Imported activity hardening tests passed');

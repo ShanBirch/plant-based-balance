@@ -6,6 +6,11 @@
     async function initFitbitDashboard() {
         if (!window.currentUser) return;
 
+        // Imported workouts can come from Fitbit or the phone's native health
+        // store, so refresh the Home hand-off for every member regardless of
+        // whether Fitbit itself is connected.
+        renderFitbitImportedActivityHomeCard();
+
         try {
             const response = await fetch(`/api/fitbit/data?user_id=${window.currentUser.id}`);
             const data = await response.json();
@@ -19,7 +24,6 @@
                     btn.style.background = '#ef4444';
                 }
                 if (statusText) statusText.textContent = 'Connected and syncing';
-                renderFitbitImportedActivityHomeCard();
                 maybeSyncFitbitImportedActivity();
             } else {
                 // Reset settings button
@@ -62,20 +66,24 @@
     }
 
     async function renderFitbitImportedActivityHomeCard() {
-        if (!window.currentUser || !window.isMoveYourWayPilotUser?.()) return;
+        if (!window.currentUser) return;
         try {
             await syncNativeWorkoutsForImportedCard();
             const activityLogs = window.dbHelpers?.activityLogs;
-            const activities = typeof activityLogs?.getRecentImportedFromSources === 'function'
+            const importedActivities = typeof activityLogs?.getRecentImportedFromSources === 'function'
                 ? await activityLogs.getRecentImportedFromSources(window.currentUser.id, ['fitbit', 'native_health'], 25)
                 : await activityLogs?.getRecentImported?.(window.currentUser.id, 'fitbit', 25) || [];
+            const activities = importedActivities.filter(activity => !activity.source_metadata?.share_prompt_handled);
             const newest = activities.find(activity => {
                 const importedAt = new Date(activity.imported_at || 0).getTime();
                 return importedAt && (Date.now() - importedAt) < 7 * 24 * 60 * 60 * 1000;
             });
             const existing = document.getElementById('fitbit-imported-activity-card');
+            if (existing) existing.remove();
             if (!newest) {
-                if (existing) existing.remove();
+                window.pbbPendingImportedActivity = null;
+                window.dispatchEvent(new CustomEvent('pbb:imported-activity-updated'));
+                window.pbbNextSteps?.refresh?.();
                 return;
             }
             const groupedActivities = activities.filter(activity => activity.source === newest.source && activity.activity_date === newest.activity_date && activity.activity_type === newest.activity_type);
@@ -88,22 +96,17 @@
             const totalDuration = groupedActivities.reduce((sum, activity) => sum + Number(activity.duration_minutes || 0), 0);
             const label = groupedActivities.length > 1 && newest.activity_type === 'walking' ? 'Walk' : String(newest.activity_label || newest.activity_type || 'activity');
             const sourceLabel = importedActivitySourceLabel(newest);
-            const combinedActivity = { ...newest, duration_minutes: totalDuration, estimated_calories: groupedActivities.reduce((sum, activity) => sum + Number(activity.estimated_calories || 0), 0), activity_label: label, source_metadata: { ...(newest.source_metadata || {}), distance, distance_unit: distanceUnit }, activityIds: groupedActivities.map(activity => activity.id) };
-            const card = existing || document.createElement('div');
-            card.id = 'fitbit-imported-activity-card';
-            card.style.cssText = 'margin:0 25px 14px; padding:18px; border-radius:18px; background:linear-gradient(135deg,#0f766e,#0e7490); color:#fff; box-shadow:0 8px 22px rgba(14,116,144,.2);';
-            card.innerHTML = `<div style="display:flex; gap:12px; align-items:flex-start;"><div style="font-size:2rem; line-height:1;">${newest.activity_type === 'walking' ? '🚶' : newest.activity_type === 'running' ? '🏃' : newest.activity_type === 'cycling' ? '🚴' : '✨'}</div><div style="min-width:0; flex:1;"><div style="font-size:.74rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; opacity:.9;">Imported from ${sourceLabel}</div><div style="font-size:1.08rem; font-weight:800; line-height:1.25; margin-top:4px;">${distanceText}${label}</div><div style="font-size:.85rem; margin-top:4px; opacity:.92;">${totalDuration || 0} min. Share your movement with the Feed.</div></div></div><button id="fitbit-imported-activity-share" style="margin-top:14px; width:100%; padding:12px; border:0; border-radius:12px; background:var(--card-bg); color:var(--text-main); font:inherit; font-weight:800; cursor:pointer;">Share to Feed</button>`;
-            const anchor = document.getElementById('weekly-goals-card') || document.getElementById('ai-assistant-card');
-            if (!existing && anchor?.parentNode) anchor.parentNode.insertBefore(card, anchor.nextSibling);
-            const shareButton = card.querySelector('#fitbit-imported-activity-share');
-            if (shareButton) shareButton.onclick = () => window.openImportedActivityForSharing?.(combinedActivity);
+            const combinedActivity = { ...newest, duration_minutes: totalDuration, estimated_calories: groupedActivities.reduce((sum, activity) => sum + Number(activity.estimated_calories || 0), 0), activity_label: label, source_label: sourceLabel, source_metadata: { ...(newest.source_metadata || {}), distance, distance_unit: distanceUnit }, activityIds: groupedActivities.map(activity => activity.id), activityMetadataById: Object.fromEntries(groupedActivities.map(activity => [activity.id, activity.source_metadata || {}])) };
+            window.pbbPendingImportedActivity = combinedActivity;
+            window.dispatchEvent(new CustomEvent('pbb:imported-activity-updated', { detail: combinedActivity }));
+            window.pbbNextSteps?.refresh?.();
         } catch (error) {
             console.warn('Could not render Fitbit imported-activity home card:', error);
         }
     }
 
     async function maybeSyncFitbitImportedActivity(force = false) {
-        if (!window.currentUser || !window.isMoveYourWayPilotUser?.()) return 0;
+        if (!window.currentUser) return 0;
         if (fitbitImportedActivitySyncInFlight) return fitbitImportedActivitySyncInFlight;
 
         const storageKey = `pbb_fitbit_activity_sync_at:${window.currentUser.id}`;
@@ -340,6 +343,7 @@
     window.renderFitbitImportedActivityHomeCard = renderFitbitImportedActivityHomeCard;
     window.refreshImportedActivityHomeCard = renderFitbitImportedActivityHomeCard;
     window.maybeSyncFitbitImportedActivity = maybeSyncFitbitImportedActivity;
+    window.getPendingImportedActivityForHome = () => window.pbbPendingImportedActivity || null;
     bindImportedActivityRefresh();
 
     // Check OAuth result on page load
