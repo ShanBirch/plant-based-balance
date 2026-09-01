@@ -18236,7 +18236,7 @@ if (window._pbbIsIOSSafari) {
 }
 </script>
 
-<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=112-activity-success-theme">
+<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=113-custom-foods-community">
 <link rel="stylesheet" href="css/dashboard/pbb-onboarding-comeback.css?v=8">
 <link rel="stylesheet" href="css/dashboard/pbb-onboarding-foundations.css?v=10-preference-contrast">
 
@@ -19417,9 +19417,13 @@ if(!window._pbbIsIOSSafari) {
                 <button type="button" onclick="addBuilderItemViaPhoto()">
                     <span aria-hidden="true">⌕</span> Use a photo
                 </button>
+                <button type="button" onclick="openBuilderMyFoods()">
+                    <span aria-hidden="true">♡</span> My Foods
+                </button>
             </div>
             <div class="meal-builder-search-status" id="meal-builder-search-status" aria-live="polite">Type at least two letters to search foods.</div>
             <div class="meal-builder-search-results" id="meal-builder-search-results"></div>
+            <button type="button" class="meal-builder-custom-food-link" onclick="openBuilderCustomFood()">Can’t find it? Add custom food</button>
 
             <div class="meal-builder-current-heading">Your meal</div>
             <!-- Items list -->
@@ -19477,6 +19481,73 @@ if(!window._pbbIsIOSSafari) {
         </div>
         <div class="meal-builder-serving-preview" id="meal-builder-serving-preview">0 calories</div>
         <button class="meal-builder-text-submit" id="meal-builder-serving-add" onclick="addSelectedBuilderFood()">Add to meal</button>
+    </div>
+</div>
+
+<!-- Meal Builder Custom Food -->
+<div id="meal-builder-custom-food-modal" class="meal-builder-text-modal" onclick="if(event.target===this)closeBuilderCustomFood()">
+    <div class="meal-builder-text-container meal-builder-custom-food-container">
+        <div class="meal-builder-text-header">
+            <div>
+                <div class="meal-builder-serving-kicker">My Foods</div>
+                <h4>Add custom food</h4>
+            </div>
+            <button class="meal-builder-text-close" onclick="closeBuilderCustomFood()" aria-label="Close custom food">&times;</button>
+        </div>
+        <p class="meal-builder-custom-food-help">Enter the nutrition shown for one serving. You can reuse it from My Foods next time.</p>
+        <label class="meal-builder-field-label" for="meal-builder-custom-name">Food name</label>
+        <input id="meal-builder-custom-name" class="meal-builder-custom-input" type="text" maxlength="80" placeholder="e.g. Homemade protein slice" autocomplete="off">
+        <div class="meal-builder-custom-grid meal-builder-custom-grid-serving">
+            <div>
+                <label class="meal-builder-field-label" for="meal-builder-custom-serving-label">Serving</label>
+                <input id="meal-builder-custom-serving-label" class="meal-builder-custom-input" type="text" maxlength="80" value="1 serving" placeholder="e.g. 1 slice">
+            </div>
+            <div>
+                <label class="meal-builder-field-label" for="meal-builder-custom-weight">Weight (g)</label>
+                <input id="meal-builder-custom-weight" class="meal-builder-custom-input" type="number" inputmode="decimal" min="1" max="5000" step="1" placeholder="100">
+            </div>
+        </div>
+        <div class="meal-builder-custom-grid meal-builder-custom-grid-macros">
+            <div>
+                <label class="meal-builder-field-label" for="meal-builder-custom-calories">Calories</label>
+                <input id="meal-builder-custom-calories" class="meal-builder-custom-input" type="number" inputmode="decimal" min="0" max="100000" step="1" placeholder="0">
+            </div>
+            <div>
+                <label class="meal-builder-field-label" for="meal-builder-custom-protein">Protein (g)</label>
+                <input id="meal-builder-custom-protein" class="meal-builder-custom-input" type="number" inputmode="decimal" min="0" max="5000" step="0.1" placeholder="0">
+            </div>
+            <div>
+                <label class="meal-builder-field-label" for="meal-builder-custom-carbs">Carbs (g)</label>
+                <input id="meal-builder-custom-carbs" class="meal-builder-custom-input" type="number" inputmode="decimal" min="0" max="5000" step="0.1" placeholder="0">
+            </div>
+            <div>
+                <label class="meal-builder-field-label" for="meal-builder-custom-fat">Fat (g)</label>
+                <input id="meal-builder-custom-fat" class="meal-builder-custom-input" type="number" inputmode="decimal" min="0" max="5000" step="0.1" placeholder="0">
+            </div>
+        </div>
+        <label class="meal-builder-field-label" for="meal-builder-custom-fiber">Fibre (g) <span class="meal-builder-optional">optional</span></label>
+        <input id="meal-builder-custom-fiber" class="meal-builder-custom-input" type="number" inputmode="decimal" min="0" max="5000" step="0.1" placeholder="0">
+        <label class="meal-builder-custom-share" for="meal-builder-custom-shared">
+            <input id="meal-builder-custom-shared" type="checkbox" checked>
+            <span><strong>Share with Balance community</strong><small>Other members can find this food. Your name is never shown.</small></span>
+        </label>
+        <div id="meal-builder-custom-status" class="meal-builder-custom-status" aria-live="polite"></div>
+        <button class="meal-builder-text-submit" id="meal-builder-custom-save" onclick="saveBuilderCustomFood()">Save &amp; add</button>
+    </div>
+</div>
+
+<!-- Meal Builder My Foods -->
+<div id="meal-builder-my-foods-modal" class="meal-builder-text-modal" onclick="if(event.target===this)closeBuilderMyFoods()">
+    <div class="meal-builder-text-container meal-builder-my-foods-container">
+        <div class="meal-builder-text-header">
+            <div>
+                <div class="meal-builder-serving-kicker">Saved ingredients</div>
+                <h4>My Foods</h4>
+            </div>
+            <button class="meal-builder-text-close" onclick="closeBuilderMyFoods()" aria-label="Close My Foods">&times;</button>
+        </div>
+        <button type="button" class="meal-builder-my-foods-create" onclick="closeBuilderMyFoods();openBuilderCustomFood()">+ Add custom food</button>
+        <div id="meal-builder-my-foods-list" class="meal-builder-my-foods-list" aria-live="polite"></div>
     </div>
 </div>
 
@@ -19768,7 +19839,7 @@ if (window._pbbIsIOSSafari) {
             }
 
             var mb = document.createElement('script');
-            mb.src = 'js/dashboard/dashboard-script-meal-builder.js?v=5-food-search-grams';
+            mb.src = 'js/dashboard/dashboard-script-meal-builder.js?v=6-custom-foods-community';
             mb.dataset.pbbMealBuilder = '1';
             mb.onload = function() {
                 if (window._crumb) window._crumb('meal_builder_loaded');
@@ -19858,7 +19929,7 @@ if (window._pbbIsIOSSafari) {
         }, { once: true });
     } else {
     document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=38-meal-history" data-pbb-calorie-tracker="1"><\/script>');
-        document.write('<script src="js/dashboard/dashboard-script-meal-builder.js?v=5-food-search-grams" data-pbb-meal-builder="1"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-meal-builder.js?v=6-custom-foods-community" data-pbb-meal-builder="1"><\/script>');
     }
 })();
 </script>

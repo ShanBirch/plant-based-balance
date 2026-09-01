@@ -1382,7 +1382,7 @@ html[data-pbb-theme="light"] #view-meals #meals-nav-pills .meals-primary-tab[ari
 .meal-builder-search-spinner { display: none; position: absolute; right: 15px; top: 17px; width: 16px; height: 16px; border: 2px solid rgba(216,178,94,.28); border-top-color: #d8b25e; border-radius: 50%; animation: spin .75s linear infinite; }
 .meal-builder-search-spinner.active { display: block; }
 
-.meal-builder-search-shortcuts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 7px 0 10px; }
+.meal-builder-search-shortcuts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 7px 0 10px; }
 .meal-builder-search-shortcuts button {
     border: 0; background: transparent; color: rgba(248,247,242,.72); -webkit-text-fill-color: rgba(248,247,242,.72);
     min-height: 34px; font-size: 0.73rem; font-weight: 750; cursor: pointer;
@@ -1399,6 +1399,52 @@ html[data-pbb-theme="light"] #view-meals #meals-nav-pills .meals-primary-tab[ari
 .meal-builder-result-copy strong { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: #f8f7f2 !important; -webkit-text-fill-color: #f8f7f2 !important; font-size: 0.82rem; }
 .meal-builder-result-copy small { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; margin-top: 3px; color: rgba(248,247,242,.62) !important; -webkit-text-fill-color: rgba(248,247,242,.62) !important; font-size: 0.68rem; }
 .meal-builder-result-add { width: 34px; height: 34px; flex: 0 0 34px; display: grid; place-items: center; border: 1px solid #d8b25e; border-radius: 50%; background: rgba(216,178,94,.1); color: #d8b25e; -webkit-text-fill-color: #d8b25e; font-size: 1.2rem; }
+.meal-builder-custom-food-link {
+    width: 100%; margin: 5px 0 2px; padding: 9px 12px; border: 1px dashed rgba(216,178,94,.34); border-radius: 11px;
+    background: rgba(216,178,94,.06); color: #d8b25e !important; -webkit-text-fill-color: #d8b25e !important;
+    font-size: .75rem; font-weight: 780; cursor: pointer;
+}
+.meal-builder-custom-food-container { max-width: 410px; max-height: min(88vh, 720px); overflow-y: auto; }
+.meal-builder-custom-food-help { margin: 0 0 15px; color: rgba(248,247,242,.66) !important; -webkit-text-fill-color: rgba(248,247,242,.66) !important; font-size: .74rem; line-height: 1.45; }
+.meal-builder-custom-grid { display: grid; gap: 10px; }
+.meal-builder-custom-grid-serving { grid-template-columns: 1.35fr .65fr; }
+.meal-builder-custom-grid-macros { grid-template-columns: 1fr 1fr; }
+.meal-builder-custom-grid .meal-builder-field-label { margin-top: 0; }
+.meal-builder-custom-input {
+    width: 100%; min-height: 44px; box-sizing: border-box; margin: 0 0 12px; padding: 11px 12px;
+    border: 1px solid rgba(216,178,94,.28); border-radius: 11px; outline: none; background: #171717;
+    color: #f8f7f2 !important; -webkit-text-fill-color: #f8f7f2 !important; caret-color: #d8b25e; font: inherit;
+}
+.meal-builder-custom-input::placeholder { color: rgba(248,247,242,.4); -webkit-text-fill-color: rgba(248,247,242,.4); }
+.meal-builder-custom-input:focus { border-color: #d8b25e; box-shadow: 0 0 0 3px rgba(216,178,94,.12); }
+.meal-builder-optional { color: rgba(248,247,242,.48) !important; -webkit-text-fill-color: rgba(248,247,242,.48) !important; font-weight: 600; }
+.meal-builder-custom-share {
+    display: flex; align-items: flex-start; gap: 10px; margin: 2px 0 8px; padding: 12px; border: 1px solid rgba(216,178,94,.22);
+    border-radius: 12px; background: rgba(216,178,94,.08); cursor: pointer;
+}
+.meal-builder-custom-share input { width: 18px; height: 18px; margin: 1px 0 0; flex: 0 0 18px; accent-color: #d8b25e; }
+.meal-builder-custom-share strong { display: block; color: #f8f7f2 !important; -webkit-text-fill-color: #f8f7f2 !important; font-size: .78rem; }
+.meal-builder-custom-share small { display: block; margin-top: 3px; color: rgba(248,247,242,.58) !important; -webkit-text-fill-color: rgba(248,247,242,.58) !important; font-size: .67rem; line-height: 1.35; }
+.meal-builder-custom-status { min-height: 18px; color: rgba(248,247,242,.66) !important; -webkit-text-fill-color: rgba(248,247,242,.66) !important; font-size: .7rem; }
+.meal-builder-custom-status.error { color: #ffaaa3 !important; -webkit-text-fill-color: #ffaaa3 !important; }
+.meal-builder-my-foods-container { max-width: 410px; }
+.meal-builder-my-foods-create {
+    width: 100%; min-height: 42px; margin: 0 0 8px; border: 1px solid rgba(216,178,94,.36); border-radius: 11px;
+    background: rgba(216,178,94,.1); color: #d8b25e !important; -webkit-text-fill-color: #d8b25e !important; font-weight: 800; cursor: pointer;
+}
+.meal-builder-my-foods-list { max-height: 390px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.meal-builder-my-food-item {
+    display: flex; align-items: center; gap: 10px; width: 100%; min-height: 58px; padding: 10px 4px; border: 0;
+    border-bottom: 1px solid rgba(216,178,94,.13); background: transparent; color: #f8f7f2; text-align: left; cursor: pointer;
+}
+.meal-builder-my-food-item > span:first-child { width: 38px; height: 38px; flex: 0 0 38px; display: grid; place-items: center; border-radius: 11px; background: rgba(216,178,94,.12); color: #d8b25e; }
+.meal-builder-my-food-item > span:nth-child(2) { min-width: 0; flex: 1; }
+.meal-builder-my-food-item strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #f8f7f2 !important; -webkit-text-fill-color: #f8f7f2 !important; font-size: .8rem; }
+.meal-builder-my-food-item small { display: block; margin-top: 3px; color: rgba(248,247,242,.58) !important; -webkit-text-fill-color: rgba(248,247,242,.58) !important; font-size: .67rem; }
+.meal-builder-my-food-item > span:last-child { color: #d8b25e; -webkit-text-fill-color: #d8b25e; font-size: 1.2rem; }
+.meal-builder-my-foods-empty { padding: 24px 10px; color: rgba(248,247,242,.62) !important; -webkit-text-fill-color: rgba(248,247,242,.62) !important; font-size: .76rem; line-height: 1.45; text-align: center; }
+.meal-builder-my-foods-empty strong,
+.meal-builder-my-foods-empty span { display: block; }
 
 .meal-builder-items { margin-top: 7px !important; }
 .meal-builder-empty { padding: 12px 13px !important; border: 1px dashed rgba(216,178,94,.2); border-radius: 13px; text-align: left !important; }
@@ -1435,6 +1481,21 @@ html[data-pbb-theme="light"] .meal-builder-empty p strong { color: #151515 !impo
 html[data-pbb-theme="light"] .meal-builder-empty { border-color: rgba(184,137,43,.22); background: #fffdf8 !important; }
 html[data-pbb-theme="light"] .meal-builder-empty p span { color: #6a655c !important; -webkit-text-fill-color: #6a655c !important; }
 html[data-pbb-theme="light"] .meal-builder-serving-preview { background: #f5ead0; color: #151515; -webkit-text-fill-color: #151515; }
+html[data-pbb-theme="light"] .meal-builder-custom-food-link,
+html[data-pbb-theme="light"] .meal-builder-my-foods-create { background: #fff9ec; border-color: rgba(184,137,43,.38); color: #7a5712 !important; -webkit-text-fill-color: #7a5712 !important; }
+html[data-pbb-theme="light"] .meal-builder-custom-food-help,
+html[data-pbb-theme="light"] .meal-builder-custom-status,
+html[data-pbb-theme="light"] .meal-builder-my-foods-empty { color: #6a655c !important; -webkit-text-fill-color: #6a655c !important; }
+html[data-pbb-theme="light"] .meal-builder-custom-input { background: #fff; border-color: rgba(184,137,43,.28); color: #151515 !important; -webkit-text-fill-color: #151515 !important; }
+html[data-pbb-theme="light"] .meal-builder-custom-input::placeholder { color: #8b857c; -webkit-text-fill-color: #8b857c; }
+html[data-pbb-theme="light"] .meal-builder-optional { color: #777168 !important; -webkit-text-fill-color: #777168 !important; }
+html[data-pbb-theme="light"] .meal-builder-custom-share { background: #fff9ec; border-color: rgba(184,137,43,.25); }
+html[data-pbb-theme="light"] .meal-builder-custom-share strong,
+html[data-pbb-theme="light"] .meal-builder-my-food-item strong { color: #151515 !important; -webkit-text-fill-color: #151515 !important; }
+html[data-pbb-theme="light"] .meal-builder-custom-share small,
+html[data-pbb-theme="light"] .meal-builder-my-food-item small { color: #6a655c !important; -webkit-text-fill-color: #6a655c !important; }
+html[data-pbb-theme="light"] .meal-builder-my-food-item { border-bottom-color: rgba(184,137,43,.15); color: #151515; }
+html[data-pbb-theme="light"] .meal-builder-my-food-item > span:first-child { background: #f8efd9; color: #7a5712; }
 
 .feed-post-card [style*="border-top:1px solid #f1f5f9"],
 .feed-post-card [style*="border-top: 1px solid #f1f5f9"] {

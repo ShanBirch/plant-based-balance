@@ -35,7 +35,7 @@ test('the live builder is search first and supports serving selection', () => {
   assert.match(builder, /Weight in grams/);
   assert.doesNotMatch(dashboard, /data-builder-barcode-type="1"/);
   assert.match(builder, /searchBuilderFoods\(query\)/);
-  assert.match(builder, /source: 'usda-food-search'/);
+  assert.match(builder, /source: selectedBuilderFood\.source \|\| 'usda-food-search'/);
 });
 
 test('search, results, serving controls, and focus states have paired theme rules', () => {

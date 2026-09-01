@@ -100,8 +100,8 @@ assert.ok(
 
 assert.ok(
     dashboardSource.includes('dashboard-style-1.css?v=83') &&
-        dashboardSource.includes('pbb-premium-overlays.css?v=112-activity-success-theme') &&
-        dashboardSource.includes('dashboard-script-meal-builder.js?v=5-food-search-grams') &&
+        dashboardSource.includes('pbb-premium-overlays.css?v=113-custom-foods-community') &&
+        dashboardSource.includes('dashboard-script-meal-builder.js?v=6-custom-foods-community') &&
         dashboardSource.includes('dashboard-script-11-calorie_tracker_functions.js?v=38-meal-history') &&
 serviceWorkerSource.includes("const CACHE_NAME = 'pbb-app-v456-imported-activity-todo'"),
     'phones must fetch the new meal-builder UI, behavior, and styles'

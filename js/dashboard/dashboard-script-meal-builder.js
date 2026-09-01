@@ -31,6 +31,7 @@
     var builderFoodSearchController = null;
     var builderFoodSearchResults = [];
     var selectedBuilderFood = null;
+    var builderMyFoods = [];
 
     // ─────────────────────────────────────────────
     // Modal open / close
@@ -66,6 +67,8 @@
         closeBuilderTextInput();
         closeBuilderBarcodeInput();
         closeBuilderServingPicker();
+        closeBuilderCustomFood();
+        closeBuilderMyFoods();
         cancelBuilderPortionPrompt();
     };
 
@@ -109,6 +112,7 @@
         setBuilderSearchStatus('Type at least two letters to search foods.');
         builderFoodSearchResults = [];
         selectedBuilderFood = null;
+        builderMyFoods = [];
         renderBuilder();
     }
 
@@ -254,6 +258,65 @@
         if (spinner) spinner.classList.toggle('active', !!loading);
     }
 
+    async function getBuilderUserId() {
+        var userId = window.currentUser && window.currentUser.id;
+        if (!userId && window.supabaseClient) {
+            try {
+                var sessionResult = await window.supabaseClient.auth.getSession();
+                userId = sessionResult && sessionResult.data && sessionResult.data.session && sessionResult.data.session.user && sessionResult.data.session.user.id;
+                if (userId) window.currentUser = sessionResult.data.session.user;
+            } catch (error) {
+                console.warn('Meal Builder session lookup failed:', error);
+            }
+        }
+        return userId || '';
+    }
+
+    function customFoodRowToSearchFood(row, source) {
+        var grams = Math.max(1, parseFloat(row.serving_weight_g) || 100);
+        var scaleTo100g = 100 / grams;
+        return {
+            id: String(row.id || ''),
+            name: row.name || 'Custom food',
+            brand: source === 'balance-community-food' ? 'Balance community' : 'My Foods',
+            per100g: {
+                calories: (parseFloat(row.calories) || 0) * scaleTo100g,
+                protein_g: (parseFloat(row.protein_g) || 0) * scaleTo100g,
+                carbs_g: (parseFloat(row.carbs_g) || 0) * scaleTo100g,
+                fat_g: (parseFloat(row.fat_g) || 0) * scaleTo100g,
+                fiber_g: (parseFloat(row.fiber_g) || 0) * scaleTo100g
+            },
+            micronutrientsPer100g: {},
+            measures: [{
+                label: (row.serving_label || '1 serving') + ' (' + Math.round(grams * 10) / 10 + ' g)',
+                grams: grams
+            }],
+            source: source || 'custom-food',
+            source_id: String(row.id || '')
+        };
+    }
+
+    async function searchSharedBuilderFoods(query) {
+        if (!window.supabaseClient || query.length < 2) return [];
+        try {
+            var response = await window.supabaseClient
+                .from('user_custom_foods')
+                .select('id, name, serving_label, serving_weight_g, calories, protein_g, carbs_g, fat_g, fiber_g, times_used, updated_at')
+                .eq('is_shared', true)
+                .ilike('name', '%' + query + '%')
+                .order('times_used', { ascending: false })
+                .order('updated_at', { ascending: false })
+                .limit(6);
+            if (response.error) throw response.error;
+            return (response.data || []).map(function (row) {
+                return customFoodRowToSearchFood(row, 'balance-community-food');
+            });
+        } catch (error) {
+            console.warn('Shared custom-food search unavailable:', error);
+            return [];
+        }
+    }
+
     async function searchBuilderFoods(query) {
         query = String(query || '').trim();
         var resultsEl = document.getElementById('meal-builder-search-results');
@@ -271,12 +334,17 @@
         setBuilderSearchStatus('Searching foods...');
 
         try {
-            var response = await fetch('/.netlify/functions/food-search?q=' + encodeURIComponent(query), {
-                signal: builderFoodSearchController ? builderFoodSearchController.signal : undefined
-            });
+            var searchResponses = await Promise.all([
+                fetch('/.netlify/functions/food-search?q=' + encodeURIComponent(query), {
+                    signal: builderFoodSearchController ? builderFoodSearchController.signal : undefined
+                }),
+                searchSharedBuilderFoods(query)
+            ]);
+            var response = searchResponses[0];
+            var sharedFoods = searchResponses[1] || [];
             var payload = await response.json().catch(function () { return {}; });
             if (!response.ok || !payload.success) throw new Error(payload.error || 'Search failed');
-            builderFoodSearchResults = Array.isArray(payload.results) ? payload.results : [];
+            builderFoodSearchResults = sharedFoods.concat(Array.isArray(payload.results) ? payload.results : []);
             renderBuilderFoodResults();
             setBuilderSearchStatus(builderFoodSearchResults.length
                 ? builderFoodSearchResults.length + ' matches. Tap + to choose the amount.'
@@ -302,7 +370,7 @@
             var calories = Math.round(((food.per100g && food.per100g.calories) || 0) * (measure.grams || 100) / 100);
             var detail = (food.brand ? escapeHtml(food.brand) + ' · ' : '') + escapeHtml(measure.label || '100 g') + ' · ' + calories + ' calories';
             html += '<button type="button" class="meal-builder-search-result" onclick="openBuilderServingPicker(' + i + ')">' +
-                '<span class="meal-builder-result-icon" aria-hidden="true">&#127869;</span>' +
+                '<span class="meal-builder-result-icon" aria-hidden="true">' + (food.source === 'balance-community-food' ? '&#9825;' : '&#127869;') + '</span>' +
                 '<span class="meal-builder-result-copy"><strong>' + escapeHtml(food.name || 'Food') + '</strong><small>' + detail + '</small></span>' +
                 '<span class="meal-builder-result-add" aria-label="Choose serving">+</span>' +
                 '</button>';
@@ -311,7 +379,11 @@
     }
 
     window.openBuilderServingPicker = function (index) {
-        selectedBuilderFood = builderFoodSearchResults[index] || null;
+        showBuilderServingPicker(builderFoodSearchResults[index] || null);
+    };
+
+    function showBuilderServingPicker(food) {
+        selectedBuilderFood = food;
         if (!selectedBuilderFood) return;
         var modal = document.getElementById('meal-builder-serving-modal');
         var nameEl = document.getElementById('meal-builder-serving-name');
@@ -333,7 +405,7 @@
         updateBuilderServingCountLabel(false);
         updateBuilderServingPreview();
         if (modal) modal.classList.add('visible');
-    };
+    }
 
     window.closeBuilderServingPicker = function () {
         var modal = document.getElementById('meal-builder-serving-modal');
@@ -418,13 +490,219 @@
             fat_g: (per100g.fat_g || 0) * values.scale,
             fiber_g: (per100g.fiber_g || 0) * values.scale,
             micronutrients: scaledMicros,
-            source: 'usda-food-search',
-            source_id: selectedBuilderFood.id || ''
+            source: selectedBuilderFood.source || 'usda-food-search',
+            source_id: selectedBuilderFood.source_id || selectedBuilderFood.id || ''
         });
         recalcTotals();
         renderBuilder();
         closeBuilderServingPicker();
         showBuilderToast('Ingredient added!', 'success');
+    };
+
+    // ─────────────────────────────────────────────
+    // Custom foods — account-level My Foods plus optional community sharing
+    // ─────────────────────────────────────────────
+
+    function customFoodNumber(id) {
+        var input = document.getElementById(id);
+        var value = parseFloat(input && input.value);
+        return isFinite(value) && value >= 0 ? value : 0;
+    }
+
+    function setCustomFoodStatus(message, isError) {
+        var status = document.getElementById('meal-builder-custom-status');
+        if (!status) return;
+        status.textContent = message || '';
+        status.classList.toggle('error', !!isError);
+    }
+
+    window.openBuilderCustomFood = function () {
+        closeBuilderMyFoods();
+        var modal = document.getElementById('meal-builder-custom-food-modal');
+        var nameInput = document.getElementById('meal-builder-custom-name');
+        var searchInput = document.getElementById('meal-builder-food-search');
+        if (nameInput && !nameInput.value.trim() && searchInput && searchInput.value.trim()) {
+            nameInput.value = searchInput.value.trim().substring(0, 80);
+        }
+        setCustomFoodStatus('', false);
+        if (modal) modal.classList.add('visible');
+        setTimeout(function () { if (nameInput) nameInput.focus(); }, 120);
+    };
+
+    window.closeBuilderCustomFood = function () {
+        var modal = document.getElementById('meal-builder-custom-food-modal');
+        if (modal) modal.classList.remove('visible');
+        setCustomFoodStatus('', false);
+    };
+
+    function resetBuilderCustomFoodForm() {
+        var defaults = {
+            'meal-builder-custom-name': '',
+            'meal-builder-custom-serving-label': '1 serving',
+            'meal-builder-custom-weight': '',
+            'meal-builder-custom-calories': '',
+            'meal-builder-custom-protein': '',
+            'meal-builder-custom-carbs': '',
+            'meal-builder-custom-fat': '',
+            'meal-builder-custom-fiber': ''
+        };
+        for (var id in defaults) {
+            if (!Object.prototype.hasOwnProperty.call(defaults, id)) continue;
+            var input = document.getElementById(id);
+            if (input) input.value = defaults[id];
+        }
+        var shared = document.getElementById('meal-builder-custom-shared');
+        if (shared) shared.checked = true;
+    }
+
+    function addCustomFoodRowToBuilder(row) {
+        var grams = Math.max(1, parseFloat(row.serving_weight_g) || 100);
+        builderState.items.push({
+            name: row.name || 'Custom food',
+            portion: (row.serving_label || '1 serving') + ' · ' + Math.round(grams * 10) / 10 + ' g',
+            portion_weight_g: grams,
+            calories: parseFloat(row.calories) || 0,
+            protein_g: parseFloat(row.protein_g) || 0,
+            carbs_g: parseFloat(row.carbs_g) || 0,
+            fat_g: parseFloat(row.fat_g) || 0,
+            fiber_g: parseFloat(row.fiber_g) || 0,
+            micronutrients: {},
+            source: row.is_shared ? 'balance-community-food' : 'custom-food',
+            source_id: String(row.id || '')
+        });
+        recalcTotals();
+        renderBuilder();
+    }
+
+    window.saveBuilderCustomFood = async function () {
+        var nameInput = document.getElementById('meal-builder-custom-name');
+        var servingInput = document.getElementById('meal-builder-custom-serving-label');
+        var weight = customFoodNumber('meal-builder-custom-weight');
+        var protein = customFoodNumber('meal-builder-custom-protein');
+        var carbs = customFoodNumber('meal-builder-custom-carbs');
+        var fat = customFoodNumber('meal-builder-custom-fat');
+        var fiber = customFoodNumber('meal-builder-custom-fiber');
+        var caloriesInput = document.getElementById('meal-builder-custom-calories');
+        var calories = customFoodNumber('meal-builder-custom-calories');
+        if (caloriesInput && !caloriesInput.value.trim()) calories = (protein * 4) + (carbs * 4) + (fat * 9);
+        var name = nameInput ? nameInput.value.trim() : '';
+        var servingLabel = servingInput ? servingInput.value.trim() : '';
+        var sharedInput = document.getElementById('meal-builder-custom-shared');
+        var isShared = !!(sharedInput && sharedInput.checked);
+
+        if (!name) return setCustomFoodStatus('Enter a food name.', true);
+        if (!servingLabel) return setCustomFoodStatus('Enter a serving name, such as 1 slice.', true);
+        if (weight <= 0 || weight > 5000) return setCustomFoodStatus('Enter a serving weight between 1 and 5,000 grams.', true);
+        if (calories <= 0 && protein <= 0 && carbs <= 0 && fat <= 0) return setCustomFoodStatus('Enter calories or at least one macro.', true);
+
+        var userId = await getBuilderUserId();
+        if (!userId || !window.supabaseClient) return setCustomFoodStatus('Please sign in again to save this food.', true);
+
+        var saveButton = document.getElementById('meal-builder-custom-save');
+        if (saveButton) {
+            saveButton.disabled = true;
+            saveButton.textContent = 'Saving...';
+        }
+        setCustomFoodStatus('', false);
+
+        try {
+            var row = {
+                user_id: userId,
+                name: name.substring(0, 80),
+                serving_label: servingLabel.substring(0, 80),
+                serving_weight_g: weight,
+                calories: calories,
+                protein_g: protein,
+                carbs_g: carbs,
+                fat_g: fat,
+                fiber_g: fiber,
+                is_shared: isShared,
+                shared_at: isShared ? new Date().toISOString() : null
+            };
+            var response = await window.supabaseClient
+                .from('user_custom_foods')
+                .insert(row)
+                .select('id, name, serving_label, serving_weight_g, calories, protein_g, carbs_g, fat_g, fiber_g, is_shared, created_at');
+            if (response.error) throw response.error;
+            var saved = response.data && response.data[0];
+            if (!saved) throw new Error('Saved food was not returned');
+
+            addCustomFoodRowToBuilder(saved);
+            resetBuilderCustomFoodForm();
+            closeBuilderCustomFood();
+            showBuilderToast(isShared ? 'Food saved, added, and shared with Balance!' : 'Food saved and added!', 'success');
+        } catch (error) {
+            console.error('Could not save custom food:', error);
+            setCustomFoodStatus('Could not save this food. Please try again.', true);
+        } finally {
+            if (saveButton) {
+                saveButton.disabled = false;
+                saveButton.textContent = 'Save & add';
+            }
+        }
+    };
+
+    window.openBuilderMyFoods = async function () {
+        closeBuilderCustomFood();
+        var modal = document.getElementById('meal-builder-my-foods-modal');
+        var list = document.getElementById('meal-builder-my-foods-list');
+        if (modal) modal.classList.add('visible');
+        if (list) list.innerHTML = '<div class="meal-builder-my-foods-empty">Loading My Foods...</div>';
+
+        var userId = await getBuilderUserId();
+        if (!userId || !window.supabaseClient) {
+            if (list) list.innerHTML = '<div class="meal-builder-my-foods-empty">Please sign in again to load My Foods.</div>';
+            return;
+        }
+
+        try {
+            var response = await window.supabaseClient
+                .from('user_custom_foods')
+                .select('id, name, serving_label, serving_weight_g, calories, protein_g, carbs_g, fat_g, fiber_g, is_shared, times_used, last_used_at, updated_at')
+                .eq('user_id', userId)
+                .order('last_used_at', { ascending: false, nullsFirst: false })
+                .order('updated_at', { ascending: false })
+                .limit(100);
+            if (response.error) throw response.error;
+            builderMyFoods = response.data || [];
+            renderBuilderMyFoods();
+        } catch (error) {
+            console.error('Could not load My Foods:', error);
+            if (list) list.innerHTML = '<div class="meal-builder-my-foods-empty">Could not load My Foods. Please try again.</div>';
+        }
+    };
+
+    window.closeBuilderMyFoods = function () {
+        var modal = document.getElementById('meal-builder-my-foods-modal');
+        if (modal) modal.classList.remove('visible');
+    };
+
+    function renderBuilderMyFoods() {
+        var list = document.getElementById('meal-builder-my-foods-list');
+        if (!list) return;
+        if (!builderMyFoods.length) {
+            list.innerHTML = '<div class="meal-builder-my-foods-empty"><strong>No custom foods yet</strong><span>Create one once, then reuse it here.</span></div>';
+            return;
+        }
+        var html = '';
+        for (var i = 0; i < builderMyFoods.length; i++) {
+            var food = builderMyFoods[i];
+            html += '<button type="button" class="meal-builder-my-food-item" onclick="chooseBuilderMyFood(' + i + ')">' +
+                '<span class="meal-builder-result-icon" aria-hidden="true">&#9825;</span>' +
+                '<span class="meal-builder-result-copy"><strong>' + escapeHtml(food.name || 'Custom food') + '</strong><small>' +
+                escapeHtml(food.serving_label || '1 serving') + ' · ' + Math.round(parseFloat(food.calories) || 0) + ' calories' +
+                (food.is_shared ? ' · Shared' : ' · Private') + '</small></span>' +
+                '<span class="meal-builder-result-add" aria-label="Choose amount">+</span>' +
+                '</button>';
+        }
+        list.innerHTML = html;
+    }
+
+    window.chooseBuilderMyFood = function (index) {
+        var row = builderMyFoods[index];
+        if (!row) return;
+        closeBuilderMyFoods();
+        showBuilderServingPicker(customFoodRowToSearchFood(row, row.is_shared ? 'balance-community-food' : 'custom-food'));
     };
 
     // ─────────────────────────────────────────────
