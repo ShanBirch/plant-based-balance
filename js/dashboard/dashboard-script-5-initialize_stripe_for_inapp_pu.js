@@ -17325,31 +17325,17 @@ function updateTotalWorkoutVolume() {
     }
 }
 
-// Show the "last workout volume" popup
+// Refresh the total-volume comparison when a workout opens.
 function showLastVolumePopup() {
-    // Small delay to let DOM render first
+    // Keep the legacy function name because deferred workout modules call it.
     setTimeout(() => {
         const lastTotal = calculateLastWorkoutTotalVolume();
         window._lastWorkoutTotalVolume = lastTotal;
-
-        // Always show the total volume bar
         updateTotalWorkoutVolume();
-
-        // Only show popup if there was a previous workout with volume
-        if (lastTotal > 0) {
-            const popup = document.getElementById('last-volume-popup');
-            const volumeEl = document.getElementById('popup-last-volume');
-            if (popup && volumeEl) {
-                volumeEl.textContent = lastTotal.toLocaleString() + ' kg';
-                popup.style.display = 'flex';
-                // Auto-dismiss after 4 seconds
-                window._volumePopupTimer = setTimeout(dismissVolumePopup, 4000);
-            }
-        }
     }, 300);
 }
 
-// Dismiss the popup
+// Retained for older cached pages that may still include the former popup markup.
 function dismissVolumePopup() {
     const popup = document.getElementById('last-volume-popup');
     if (popup) popup.style.display = 'none';

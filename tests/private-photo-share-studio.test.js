@@ -59,7 +59,7 @@ test('Shannon receives the progress-first workout completed page', () => {
   assert.match(studio, /bottomNav\.style\.display = 'none'/);
   assert.match(studio, /durationUnit/);
   assert.match(workoutRuntime, /BalancePrivateShareStudio\.renderWorkoutCompletePage/);
-  assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=229-private-workout-complete/);
+  assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=230-remove-volume-popup/);
 });
 
 test('private reveal, tour, and cache-busted modules ship together', () => {

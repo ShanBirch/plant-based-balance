@@ -7857,19 +7857,6 @@ if(!window._pbbIsIOSSafari) {
         </div>
     </div>
 
-    <!-- Last Volume Popup Overlay -->
-    <div id="last-volume-popup" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:600; background:rgba(0,0,0,0.6); align-items:center; justify-content:center;" onclick="dismissVolumePopup()">
-        <div style="background:white; border-radius:20px; padding:30px 25px; max-width:320px; width:85%; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,0.3); animation:slideInUp 0.3s ease;" onclick="event.stopPropagation()">
-            <div style="font-size:2.5rem; margin-bottom:10px;">&#x1F4AA;</div>
-            <h3 style="margin:0 0 8px 0; font-size:1.1rem; font-weight:800; color:#1e293b;">Last Workout Volume</h3>
-            <div id="popup-last-volume" style="font-size:2rem; font-weight:900; color:var(--primary); margin:10px 0;"></div>
-            <p style="font-size:0.85rem; color:#64748b; margin:0 0 20px 0; line-height:1.4;">Can you beat it today? Every rep counts!</p>
-            <button onclick="dismissVolumePopup()" style="background:var(--primary); color:white; border:none; padding:12px 30px; border-radius:12px; font-weight:700; font-size:0.9rem; cursor:pointer; width:100%;">Let's Go!</button>
-        </div>
-    </div>
-
-
-
     <div id="workout-content-wrapper" style="padding: 15px; padding-bottom: 120px;">
         <h1 id="workout-player-title" style="margin: 0 0 5px 0; font-size: 1.3rem; line-height: 1.2;">Workout Title</h1>
         <p id="workout-player-goal" style="font-size: 0.85rem; color: var(--text-muted); margin: 0 0 20px 0; line-height: 1.4;"></p>
@@ -13027,7 +13014,7 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=229-private-workout-complete&video_health=2';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=230-remove-volume-popup&video_health=2';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
@@ -13069,7 +13056,7 @@ if (window._pbbIsIOSSafari) {
         var s = document.createElement('script');
         s.async = false;
         s.dataset.metaTrialLoader = String(attempt);
-        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=229-private-workout-complete&video_health=2&meta_retry=' + attempt;
+        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=230-remove-volume-popup&video_health=2&meta_retry=' + attempt;
         s.onload = function() {
             if (window._pbbScript5Complete && window._switchAppTabReady && typeof window._switchAppTabReal === 'function') {
                 sessionStorage.removeItem('pbb_meta_script5_recovery_v1');
@@ -13088,7 +13075,7 @@ if (window._pbbIsIOSSafari) {
         document.head.appendChild(s);
     })(0);
 } else {
-document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=229-private-workout-complete&video_health=2"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=230-remove-volume-popup&video_health=2"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=5"></script>
