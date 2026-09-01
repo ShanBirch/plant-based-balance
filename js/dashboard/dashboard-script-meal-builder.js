@@ -27,6 +27,10 @@
     // the camera. Tracked so we can slide it back up on any camera-close
     // path (successful capture, barcode scan, cancel, native finish).
     var _builderHiddenForCamera = false;
+    var builderFoodSearchTimer = null;
+    var builderFoodSearchController = null;
+    var builderFoodSearchResults = [];
+    var selectedBuilderFood = null;
 
     // ─────────────────────────────────────────────
     // Modal open / close
@@ -40,10 +44,10 @@
             modal.classList.remove('hidden-for-camera');
         }
         _builderHiddenForCamera = false;
-        // Focus the name input on next tick so the keyboard (on mobile) can pop
+        // Search is the primary action in the simplified builder.
         setTimeout(function () {
-            var nameEl = document.getElementById('meal-builder-name');
-            if (nameEl) nameEl.focus();
+            var searchEl = document.getElementById('meal-builder-food-search');
+            if (searchEl) searchEl.focus();
         }, 250);
     };
 
@@ -61,6 +65,7 @@
         window._builderInterceptNextQuickMeal = false;
         closeBuilderTextInput();
         closeBuilderBarcodeInput();
+        closeBuilderServingPicker();
         cancelBuilderPortionPrompt();
     };
 
@@ -97,6 +102,13 @@
         builderState.isAdding = false;
         var nameEl = document.getElementById('meal-builder-name');
         if (nameEl) nameEl.value = '';
+        var searchEl = document.getElementById('meal-builder-food-search');
+        var resultsEl = document.getElementById('meal-builder-search-results');
+        if (searchEl) searchEl.value = '';
+        if (resultsEl) resultsEl.innerHTML = '';
+        setBuilderSearchStatus('Type at least two letters to search foods.');
+        builderFoodSearchResults = [];
+        selectedBuilderFood = null;
         renderBuilder();
     }
 
@@ -117,12 +129,7 @@
         if (builderState.items.length === 0) {
             list.innerHTML =
                 '<div class="meal-builder-empty" id="meal-builder-empty">' +
-                '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' +
-                '<circle cx="12" cy="12" r="10"></circle>' +
-                '<line x1="12" y1="8" x2="12" y2="16"></line>' +
-                '<line x1="8" y1="12" x2="16" y2="12"></line>' +
-                '</svg>' +
-                '<p>No items yet.<br><span style="font-size:0.8rem;">Scan or add each ingredient separately. Nothing is logged until the full meal is ready.</span></p>' +
+                '<p><strong>Your meal is empty</strong><br><span>Add an ingredient above. Nothing is logged until you finish the meal.</span></p>' +
                 '</div>';
             return;
         }
@@ -231,6 +238,159 @@
         builderState.items.splice(index, 1);
         recalcTotals();
         renderBuilder();
+    };
+
+    // ─────────────────────────────────────────────
+    // Search and add foods
+    // ─────────────────────────────────────────────
+
+    function setBuilderSearchStatus(message) {
+        var status = document.getElementById('meal-builder-search-status');
+        if (status) status.textContent = message || '';
+    }
+
+    function setBuilderSearchLoading(loading) {
+        var spinner = document.getElementById('meal-builder-search-spinner');
+        if (spinner) spinner.classList.toggle('active', !!loading);
+    }
+
+    async function searchBuilderFoods(query) {
+        query = String(query || '').trim();
+        var resultsEl = document.getElementById('meal-builder-search-results');
+        if (query.length < 2) {
+            builderFoodSearchResults = [];
+            if (resultsEl) resultsEl.innerHTML = '';
+            setBuilderSearchLoading(false);
+            setBuilderSearchStatus('Type at least two letters to search foods.');
+            return;
+        }
+
+        if (builderFoodSearchController) builderFoodSearchController.abort();
+        builderFoodSearchController = typeof AbortController !== 'undefined' ? new AbortController() : null;
+        setBuilderSearchLoading(true);
+        setBuilderSearchStatus('Searching foods...');
+
+        try {
+            var response = await fetch('/.netlify/functions/food-search?q=' + encodeURIComponent(query), {
+                signal: builderFoodSearchController ? builderFoodSearchController.signal : undefined
+            });
+            var payload = await response.json().catch(function () { return {}; });
+            if (!response.ok || !payload.success) throw new Error(payload.error || 'Search failed');
+            builderFoodSearchResults = Array.isArray(payload.results) ? payload.results : [];
+            renderBuilderFoodResults();
+            setBuilderSearchStatus(builderFoodSearchResults.length
+                ? builderFoodSearchResults.length + ' matches. Tap + to choose the amount.'
+                : 'No matches found. Try a simpler food name.');
+        } catch (error) {
+            if (error && error.name === 'AbortError') return;
+            console.error('Builder food search failed:', error);
+            builderFoodSearchResults = [];
+            if (resultsEl) resultsEl.innerHTML = '';
+            setBuilderSearchStatus('Food search could not load. Please try again.');
+        } finally {
+            setBuilderSearchLoading(false);
+        }
+    }
+
+    function renderBuilderFoodResults() {
+        var container = document.getElementById('meal-builder-search-results');
+        if (!container) return;
+        var html = '';
+        for (var i = 0; i < builderFoodSearchResults.length; i++) {
+            var food = builderFoodSearchResults[i];
+            var measure = food.measures && food.measures[0] ? food.measures[0] : { label: '100 g', grams: 100 };
+            var calories = Math.round(((food.per100g && food.per100g.calories) || 0) * (measure.grams || 100) / 100);
+            var detail = (food.brand ? escapeHtml(food.brand) + ' · ' : '') + escapeHtml(measure.label || '100 g') + ' · ' + calories + ' calories';
+            html += '<button type="button" class="meal-builder-search-result" onclick="openBuilderServingPicker(' + i + ')">' +
+                '<span class="meal-builder-result-icon" aria-hidden="true">&#127869;</span>' +
+                '<span class="meal-builder-result-copy"><strong>' + escapeHtml(food.name || 'Food') + '</strong><small>' + detail + '</small></span>' +
+                '<span class="meal-builder-result-add" aria-label="Choose serving">+</span>' +
+                '</button>';
+        }
+        container.innerHTML = html;
+    }
+
+    window.openBuilderServingPicker = function (index) {
+        selectedBuilderFood = builderFoodSearchResults[index] || null;
+        if (!selectedBuilderFood) return;
+        var modal = document.getElementById('meal-builder-serving-modal');
+        var nameEl = document.getElementById('meal-builder-serving-name');
+        var select = document.getElementById('meal-builder-serving-measure');
+        var count = document.getElementById('meal-builder-serving-count');
+        if (nameEl) nameEl.textContent = selectedBuilderFood.name || 'Food';
+        if (select) {
+            select.innerHTML = (selectedBuilderFood.measures || [{ label: '100 g', grams: 100 }]).map(function (measure, measureIndex) {
+                return '<option value="' + measureIndex + '">' + escapeHtml(measure.label || '100 g') + '</option>';
+            }).join('');
+            select.value = '0';
+        }
+        if (count) count.value = '1';
+        updateBuilderServingPreview();
+        if (modal) modal.classList.add('visible');
+    };
+
+    window.closeBuilderServingPicker = function () {
+        var modal = document.getElementById('meal-builder-serving-modal');
+        if (modal) modal.classList.remove('visible');
+        selectedBuilderFood = null;
+    };
+
+    window.adjustBuilderServingCount = function (delta) {
+        var input = document.getElementById('meal-builder-serving-count');
+        if (!input) return;
+        var next = Math.min(50, Math.max(0.25, (parseFloat(input.value) || 1) + delta));
+        input.value = String(Math.round(next * 100) / 100);
+        updateBuilderServingPreview();
+    };
+
+    function selectedServingValues() {
+        if (!selectedBuilderFood) return null;
+        var select = document.getElementById('meal-builder-serving-measure');
+        var countEl = document.getElementById('meal-builder-serving-count');
+        var measures = selectedBuilderFood.measures || [{ label: '100 g', grams: 100 }];
+        var measure = measures[Math.max(0, parseInt(select && select.value, 10) || 0)] || measures[0];
+        var count = Math.min(50, Math.max(0.25, parseFloat(countEl && countEl.value) || 1));
+        var grams = (parseFloat(measure.grams) || 100) * count;
+        return { measure: measure, count: count, grams: grams, scale: grams / 100 };
+    }
+
+    function updateBuilderServingPreview() {
+        var values = selectedServingValues();
+        var preview = document.getElementById('meal-builder-serving-preview');
+        if (!values || !preview) return;
+        var per100g = selectedBuilderFood.per100g || {};
+        preview.textContent = Math.round((per100g.calories || 0) * values.scale) + ' calories · P ' +
+            Math.round((per100g.protein_g || 0) * values.scale) + 'g · C ' +
+            Math.round((per100g.carbs_g || 0) * values.scale) + 'g · F ' +
+            Math.round((per100g.fat_g || 0) * values.scale) + 'g';
+    }
+
+    window.addSelectedBuilderFood = function () {
+        var values = selectedServingValues();
+        if (!values || !selectedBuilderFood) return;
+        var per100g = selectedBuilderFood.per100g || {};
+        var micros = selectedBuilderFood.micronutrientsPer100g || {};
+        var scaledMicros = {};
+        for (var key in micros) {
+            if (Object.prototype.hasOwnProperty.call(micros, key)) scaledMicros[key] = (parseFloat(micros[key]) || 0) * values.scale;
+        }
+        builderState.items.push({
+            name: selectedBuilderFood.name || 'Food',
+            portion: (values.count === 1 ? '' : values.count + ' × ') + (values.measure.label || Math.round(values.grams) + ' g'),
+            portion_weight_g: values.grams,
+            calories: (per100g.calories || 0) * values.scale,
+            protein_g: (per100g.protein_g || 0) * values.scale,
+            carbs_g: (per100g.carbs_g || 0) * values.scale,
+            fat_g: (per100g.fat_g || 0) * values.scale,
+            fiber_g: (per100g.fiber_g || 0) * values.scale,
+            micronutrients: scaledMicros,
+            source: 'usda-food-search',
+            source_id: selectedBuilderFood.id || ''
+        });
+        recalcTotals();
+        renderBuilder();
+        closeBuilderServingPicker();
+        showBuilderToast('Ingredient added!', 'success');
     };
 
     // ─────────────────────────────────────────────
@@ -906,6 +1066,27 @@
 
     // Enable text-input submit button as the user types
     document.addEventListener('DOMContentLoaded', function () {
+        var foodSearchInput = document.getElementById('meal-builder-food-search');
+        if (foodSearchInput) {
+            foodSearchInput.addEventListener('input', function () {
+                clearTimeout(builderFoodSearchTimer);
+                var query = foodSearchInput.value;
+                builderFoodSearchTimer = setTimeout(function () { searchBuilderFoods(query); }, 350);
+            });
+            foodSearchInput.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    clearTimeout(builderFoodSearchTimer);
+                    searchBuilderFoods(foodSearchInput.value);
+                }
+            });
+        }
+
+        var servingMeasure = document.getElementById('meal-builder-serving-measure');
+        var servingCount = document.getElementById('meal-builder-serving-count');
+        if (servingMeasure) servingMeasure.addEventListener('change', updateBuilderServingPreview);
+        if (servingCount) servingCount.addEventListener('input', updateBuilderServingPreview);
+
         var input = document.getElementById('meal-builder-text-input');
         var submit = document.getElementById('meal-builder-text-submit');
         if (input && submit) {
@@ -1068,7 +1249,7 @@
             showBuilderToast(logNow ? 'Could not log meal. Please try again.' : 'Could not save meal. Please try again.', 'error');
             updateSaveButtonState();
         } finally {
-            if (logBtn) logBtn.textContent = 'Log meal & choose share';
+            if (logBtn) logBtn.textContent = 'Log meal';
             if (saveOnlyBtn) saveOnlyBtn.textContent = 'Save for later';
         }
     };

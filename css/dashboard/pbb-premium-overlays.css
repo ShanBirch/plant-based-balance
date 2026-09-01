@@ -1350,6 +1350,92 @@ html[data-pbb-theme="light"] #view-meals #meals-nav-pills .meals-primary-tab[ari
     -webkit-text-fill-color: #ffffff !important;
 }
 
+/* Search-first Meal Builder. Food search is the primary action; camera and barcode stay secondary. */
+.meal-builder-field-label,
+.meal-builder-search-heading,
+.meal-builder-current-heading {
+    display: block;
+    color: var(--text-main) !important;
+    -webkit-text-fill-color: var(--text-main) !important;
+    font-size: 0.76rem;
+    font-weight: 800;
+}
+
+.meal-builder-field-label { margin: 0 0 7px; }
+.meal-builder-field-label + .meal-builder-serving-select { margin-bottom: 14px; }
+.meal-builder-search-heading { margin-top: 18px; font-size: 0.9rem; }
+.meal-builder-current-heading { margin-top: 18px; font-size: 0.88rem; }
+.meal-builder-search-help { margin: 4px 0 9px; color: var(--text-muted) !important; -webkit-text-fill-color: var(--text-muted) !important; font-size: 0.76rem; line-height: 1.4; }
+
+.meal-builder-search-wrap { position: relative; }
+.meal-builder-search-wrap > svg {
+    position: absolute; left: 14px; top: 50%; width: 18px; height: 18px; transform: translateY(-50%);
+    fill: none; stroke: var(--pbb-luxe-gold, #d8b25e); stroke-width: 2; stroke-linecap: round; pointer-events: none;
+}
+#meal-builder-food-search {
+    width: 100%; min-height: 50px; padding: 12px 43px 12px 42px; border: 1px solid rgba(216,178,94,.42);
+    border-radius: 14px; background: rgba(255,255,255,.07); color: #f8f7f2; -webkit-text-fill-color: #f8f7f2;
+    font-size: 0.95rem; outline: none; appearance: none;
+}
+#meal-builder-food-search::placeholder { color: rgba(248,247,242,.62); -webkit-text-fill-color: rgba(248,247,242,.62); }
+#meal-builder-food-search:focus { border-color: #d8b25e; box-shadow: 0 0 0 3px rgba(216,178,94,.17); }
+.meal-builder-search-spinner { display: none; position: absolute; right: 15px; top: 17px; width: 16px; height: 16px; border: 2px solid rgba(216,178,94,.28); border-top-color: #d8b25e; border-radius: 50%; animation: spin .75s linear infinite; }
+.meal-builder-search-spinner.active { display: block; }
+
+.meal-builder-search-shortcuts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 7px 0 10px; }
+.meal-builder-search-shortcuts button {
+    border: 0; background: transparent; color: rgba(248,247,242,.72); -webkit-text-fill-color: rgba(248,247,242,.72);
+    min-height: 34px; font-size: 0.73rem; font-weight: 750; cursor: pointer;
+}
+.meal-builder-search-shortcuts button span { color: #d8b25e; -webkit-text-fill-color: #d8b25e; margin-right: 4px; }
+.meal-builder-search-status { min-height: 18px; color: rgba(248,247,242,.62) !important; -webkit-text-fill-color: rgba(248,247,242,.62) !important; font-size: 0.7rem; }
+.meal-builder-search-results { max-height: 250px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.meal-builder-search-result {
+    width: 100%; display: flex; align-items: center; gap: 10px; padding: 11px 2px; border: 0; border-bottom: 1px solid rgba(216,178,94,.14);
+    background: transparent; color: #f8f7f2; text-align: left; cursor: pointer;
+}
+.meal-builder-result-icon { width: 38px; height: 38px; flex: 0 0 38px; display: grid; place-items: center; border-radius: 11px; background: rgba(216,178,94,.12); }
+.meal-builder-result-copy { min-width: 0; flex: 1; }
+.meal-builder-result-copy strong { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: #f8f7f2 !important; -webkit-text-fill-color: #f8f7f2 !important; font-size: 0.82rem; }
+.meal-builder-result-copy small { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; margin-top: 3px; color: rgba(248,247,242,.62) !important; -webkit-text-fill-color: rgba(248,247,242,.62) !important; font-size: 0.68rem; }
+.meal-builder-result-add { width: 34px; height: 34px; flex: 0 0 34px; display: grid; place-items: center; border: 1px solid #d8b25e; border-radius: 50%; background: rgba(216,178,94,.1); color: #d8b25e; -webkit-text-fill-color: #d8b25e; font-size: 1.2rem; }
+
+.meal-builder-items { margin-top: 7px !important; }
+.meal-builder-empty { padding: 12px 13px !important; border: 1px dashed rgba(216,178,94,.2); border-radius: 13px; text-align: left !important; }
+.meal-builder-empty p { font-size: 0.78rem !important; }
+.meal-builder-empty p strong { color: #f8f7f2 !important; -webkit-text-fill-color: #f8f7f2 !important; }
+.meal-builder-empty p span { color: rgba(248,247,242,.62) !important; -webkit-text-fill-color: rgba(248,247,242,.62) !important; font-size: 0.7rem !important; }
+.meal-builder-totals { margin-top: 9px !important; }
+
+.meal-builder-serving-container { max-width: 390px; }
+.meal-builder-serving-kicker { color: #d8b25e; -webkit-text-fill-color: #d8b25e; font-size: 0.65rem; font-weight: 850; letter-spacing: .09em; text-transform: uppercase; margin-bottom: 3px; }
+.meal-builder-serving-select {
+    width: 100%; min-height: 46px; padding: 10px 38px 10px 12px; border: 1px solid rgba(216,178,94,.3); border-radius: 12px;
+    background: #171717; color: #f8f7f2; -webkit-text-fill-color: #f8f7f2; font-size: .88rem;
+}
+.meal-builder-serving-stepper { display: grid; grid-template-columns: 44px 1fr 44px; gap: 8px; margin-bottom: 12px; }
+.meal-builder-serving-stepper button,
+.meal-builder-serving-stepper input { min-height: 44px; border: 1px solid rgba(216,178,94,.28); border-radius: 11px; background: #171717; color: #f8f7f2; -webkit-text-fill-color: #f8f7f2; text-align: center; font-weight: 750; }
+.meal-builder-serving-stepper button { color: #d8b25e; -webkit-text-fill-color: #d8b25e; font-size: 1.15rem; cursor: pointer; }
+.meal-builder-serving-preview { margin-bottom: 13px; padding: 11px 12px; border-radius: 11px; background: rgba(216,178,94,.1); color: #f8f7f2; -webkit-text-fill-color: #f8f7f2; font-size: .78rem; text-align: center; }
+
+html[data-pbb-theme="light"] #meal-builder-food-search,
+html[data-pbb-theme="light"] .meal-builder-serving-select,
+html[data-pbb-theme="light"] .meal-builder-serving-stepper button,
+html[data-pbb-theme="light"] .meal-builder-serving-stepper input {
+    background: #ffffff; color: #151515; -webkit-text-fill-color: #151515; border-color: rgba(184,137,43,.3);
+}
+html[data-pbb-theme="light"] #meal-builder-food-search::placeholder { color: #716b61; -webkit-text-fill-color: #716b61; }
+html[data-pbb-theme="light"] .meal-builder-search-shortcuts button { color: #5f5a52; -webkit-text-fill-color: #5f5a52; }
+html[data-pbb-theme="light"] .meal-builder-search-status,
+html[data-pbb-theme="light"] .meal-builder-result-copy small { color: #6a655c !important; -webkit-text-fill-color: #6a655c !important; }
+html[data-pbb-theme="light"] .meal-builder-search-result { color: #151515; border-bottom-color: rgba(184,137,43,.15); }
+html[data-pbb-theme="light"] .meal-builder-result-copy strong,
+html[data-pbb-theme="light"] .meal-builder-empty p strong { color: #151515 !important; -webkit-text-fill-color: #151515 !important; }
+html[data-pbb-theme="light"] .meal-builder-empty { border-color: rgba(184,137,43,.22); background: #fffdf8 !important; }
+html[data-pbb-theme="light"] .meal-builder-empty p span { color: #6a655c !important; -webkit-text-fill-color: #6a655c !important; }
+html[data-pbb-theme="light"] .meal-builder-serving-preview { background: #f5ead0; color: #151515; -webkit-text-fill-color: #151515; }
+
 .feed-post-card [style*="border-top:1px solid #f1f5f9"],
 .feed-post-card [style*="border-top: 1px solid #f1f5f9"] {
     border-color: rgba(245, 217, 138, 0.12) !important;

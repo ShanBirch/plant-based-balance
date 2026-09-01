@@ -14115,8 +14115,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'meals', sel:'[title="Scan barcode"]', title:'Barcode scanner', body:"Scan any food packaging barcode to instantly pull up its nutrition info and log it." },
     { tab:'meals', sel:'.meal-icon-btn[onclick*="openMealTextInput"],[title="Type your meal"]', title:'Type your meal', body:"Prefer to type? Describe your meal in words and the AI will log the calories and macros for you." },
     { tab:'meals', sel:'.meal-icon-btn[onclick*="openQuickManualEntry"],.camera-btn-widget[onclick*="openQuickManualEntry"],[title="Quick log calories & macros"]', title:'Quick log calories & macros', body:"Already know the numbers? Tap Quick Log to enter calories and macros directly. It is the fastest way to track something when you do not need AI, a photo, or a barcode." },
-    { tab:'meals', sel:'.meal-icon-btn[onclick*="openMealBuilder"],.camera-btn-widget[onclick*="openMealBuilder"],[title="Build a meal"]', title:'Build and share a full meal', body:"When a meal has separate parts, tap Build-a-Meal. Add each barcode, photo or typed food, log the complete meal, then choose Feed or Instagram. Instagram places the meal details over your food photo." },
-    { tab:'meals', sel:'.meal-icon-btn[onclick*="openMealBuilder"],.camera-btn-widget[onclick*="openMealBuilder"],[title="Build a meal"]', title:'Type saved barcodes into a meal', body:"Open Build-a-Meal and tap Type code to paste a barcode you saved earlier. Balance looks up the product and adds it to the combined meal without needing the packaging or camera." },
+    { tab:'meals', sel:'.meal-icon-btn[onclick*="openMealBuilder"],.camera-btn-widget[onclick*="openMealBuilder"],[title="Build a meal"]', title:'Build and share a full meal', body:"When a meal has separate parts, tap Build-a-Meal. Search for each ingredient, choose the amount, and add it to the meal. You can also use a photo or scan a barcode." },
     { tab:'meals', sel:'.meal-icon-btn[onclick*="openRecentMealsModal"],.camera-btn-widget[onclick*="openRecentMealsModal"],[title="Recent & saved meals"]', title:'Recent & saved meals', body:"Use Recent & saved meals to re-log food you have already tracked. Tap the clock, pick the meal, and it drops back into today." },
     { tab:'meals', sel:'#meals-log-list,.meal-log-card', title:'Share meals to Feed', body:"Share any logged meal to Feed. The first meal share each day earns +15 XP, and later shares still post without extra XP.", quick: true },
     { tab:'meals', sel:'#meal-feed-share-prompt', fallbackSel:'#meals-log-list,.meal-log-card', title:'Share meals to both', fallbackTitle:'Share meals to both', body:"After tracking food, share it to Balance Feed and Instagram Story. The share tray stays open after the first one so you can tap the other.", fallbackBody:"Track a meal, then use the share tray to post it to Balance Feed and Instagram Story. Sharing to one keeps the other option ready.", quick: true },
@@ -16335,12 +16334,12 @@ window.endFeatureTour = function(skipped){
       body: "Use the Build-a-Meal icon for meals with separate ingredients. Add each item, log the complete meal, then choose Feed or Instagram. For Instagram, choose your meal photo and Balance adds the designed nutrition layout over it."
     },
     {
-      id: 'meal-builder-typed-barcode-v1',
+      id: 'meal-builder-food-search-v1',
       tab: 'meals',
       subtab: 'calorie-tracker',
       sel: '.meal-icon-btn[onclick*="openMealBuilder"]',
-      title: 'Add a saved barcode',
-      body: "Building a meal ahead of time? Open Build-a-Meal, tap Type code, then paste a barcode from your notes. Balance adds the product without needing the packaging or camera."
+      title: 'Search and add ingredients',
+      body: "Open Build-a-Meal, type an ingredient, tap the matching food, then choose the amount. Balance totals the complete meal as you build it."
     },
     {
       id: 'feed-composer-text-media-v1',
@@ -18189,7 +18188,7 @@ if (window._pbbIsIOSSafari) {
 }
 </script>
 
-<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=110-meals-header-no-divider">
+<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=111-meal-builder-search">
 <link rel="stylesheet" href="css/dashboard/pbb-onboarding-comeback.css?v=8">
 <link rel="stylesheet" href="css/dashboard/pbb-onboarding-foundations.css?v=10-preference-contrast">
 
@@ -19347,21 +19346,41 @@ if(!window._pbbIsIOSSafari) {
         </div>
 
         <div class="meal-builder-body">
-            <div class="meal-builder-explainer">
-                <strong>Add every part of the meal below.</strong>
-                Balance combines the calories and macros, logs one complete meal, then lets you choose where to share it.
-            </div>
-
-            <!-- Meal name -->
+            <label class="meal-builder-field-label" for="meal-builder-name">Meal name</label>
             <input
                 type="text"
                 id="meal-builder-name"
                 class="meal-builder-name-input"
-                placeholder="Name your meal (e.g. Protein Oat Bowl)"
+                placeholder="e.g. Protein oat bowl"
                 maxlength="60"
             />
 
-            <!-- Live totals card -->
+            <div class="meal-builder-search-heading">Add ingredients</div>
+            <p class="meal-builder-search-help">Search for each food, then tap + to choose the amount.</p>
+            <div class="meal-builder-search-wrap">
+                <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>
+                <input id="meal-builder-food-search" type="search" autocomplete="off" enterkeyhint="search" placeholder="Search an ingredient" aria-label="Search ingredients">
+                <span id="meal-builder-search-spinner" class="meal-builder-search-spinner" aria-hidden="true"></span>
+            </div>
+            <div class="meal-builder-search-shortcuts">
+                <button type="button" onclick="addBuilderItemViaBarcode()">
+                    <span aria-hidden="true">▥</span> Scan barcode
+                </button>
+                <button type="button" onclick="addBuilderItemViaPhoto()">
+                    <span aria-hidden="true">⌕</span> Use a photo
+                </button>
+            </div>
+            <div class="meal-builder-search-status" id="meal-builder-search-status" aria-live="polite">Type at least two letters to search foods.</div>
+            <div class="meal-builder-search-results" id="meal-builder-search-results"></div>
+
+            <div class="meal-builder-current-heading">Your meal</div>
+            <!-- Items list -->
+            <div class="meal-builder-items" id="meal-builder-items">
+                <div class="meal-builder-empty" id="meal-builder-empty">
+                    <p><strong>Your meal is empty</strong><br><span>Add an ingredient above. Nothing is logged until you finish the meal.</span></p>
+                </div>
+            </div>
+
             <div class="meal-builder-totals" id="meal-builder-totals">
                 <div class="meal-builder-total-main">
                     <span class="meal-builder-total-cal" id="meal-builder-total-cal">0</span>
@@ -19373,68 +19392,6 @@ if(!window._pbbIsIOSSafari) {
                     <div class="meal-builder-macro"><span class="dot" style="background:#ef4444;"></span>F <strong id="meal-builder-total-f">0</strong>g</div>
                 </div>
             </div>
-
-            <!-- Items list -->
-            <div class="meal-builder-items" id="meal-builder-items">
-                <div class="meal-builder-empty" id="meal-builder-empty">
-                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="12" y1="8" x2="12" y2="16"></line>
-                        <line x1="8" y1="12" x2="16" y2="12"></line>
-                    </svg>
-                    <p>No items yet.<br><span style="font-size:0.8rem;">Scan or add each ingredient separately. Nothing is logged until the full meal is ready.</span></p>
-                </div>
-            </div>
-
-            <!-- Add item buttons -->
-            <div class="meal-builder-add-row">
-                <div class="meal-builder-add-label">Add item</div>
-                <div class="meal-builder-add-btns">
-                    <button class="meal-builder-add-btn" onclick="addBuilderItemViaPhoto()">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-                            <circle cx="12" cy="13" r="4"></circle>
-                        </svg>
-                        <span>Photo</span>
-                    </button>
-                    <button class="meal-builder-add-btn" onclick="addBuilderItemViaBarcode()">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M3 5v-2h4"></path>
-                            <path d="M17 3h4v2"></path>
-                            <path d="M21 19v2h-4"></path>
-                            <path d="M7 21h-4v-2"></path>
-                            <line x1="7" y1="8" x2="7" y2="16"></line>
-                            <line x1="11" y1="8" x2="11" y2="16"></line>
-                            <line x1="15" y1="8" x2="15" y2="16"></line>
-                            <line x1="9" y1="8" x2="9" y2="16" stroke-width="1"></line>
-                            <line x1="13" y1="8" x2="13" y2="16" stroke-width="1"></line>
-                            <line x1="17" y1="8" x2="17" y2="16"></line>
-                        </svg>
-                        <span>Scan</span>
-                    </button>
-                    <button class="meal-builder-add-btn" data-builder-barcode-type="1" onclick="addBuilderItemViaTypedBarcode()">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="3" y="4" width="18" height="16" rx="2"></rect>
-                            <line x1="7" y1="8" x2="7" y2="8"></line>
-                            <line x1="11" y1="8" x2="11" y2="8"></line>
-                            <line x1="15" y1="8" x2="15" y2="8"></line>
-                            <line x1="7" y1="12" x2="7" y2="12"></line>
-                            <line x1="11" y1="12" x2="11" y2="12"></line>
-                            <line x1="15" y1="12" x2="15" y2="12"></line>
-                            <line x1="7" y1="16" x2="15" y2="16"></line>
-                        </svg>
-                        <span>Type code</span>
-                    </button>
-                    <button class="meal-builder-add-btn" onclick="addBuilderItemViaText()">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
-                            <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
-                            <circle cx="11" cy="11" r="2"></circle>
-                        </svg>
-                        <span>Text</span>
-                    </button>
-                </div>
-            </div>
         </div>
 
         <!-- Sticky footer -->
@@ -19444,11 +19401,34 @@ if(!window._pbbIsIOSSafari) {
                     Save for later
                 </button>
                 <button class="meal-builder-save-btn" id="meal-builder-save-btn" onclick="saveBuiltMeal({ logNow: true })" disabled>
-                    Log meal &amp; choose share
+                    Log meal
                 </button>
             </div>
-            <p class="meal-builder-footer-note">Logs one combined meal, so your daily totals stay accurate.</p>
+            <p class="meal-builder-footer-note">Everything is logged as one complete meal.</p>
         </div>
+    </div>
+</div>
+
+<!-- Meal Builder Serving Picker -->
+<div id="meal-builder-serving-modal" class="meal-builder-text-modal" onclick="if(event.target===this)closeBuilderServingPicker()">
+    <div class="meal-builder-text-container meal-builder-serving-container">
+        <div class="meal-builder-text-header">
+            <div>
+                <div class="meal-builder-serving-kicker">Add ingredient</div>
+                <h4 id="meal-builder-serving-name">Food</h4>
+            </div>
+            <button class="meal-builder-text-close" onclick="closeBuilderServingPicker()" aria-label="Close serving picker">&times;</button>
+        </div>
+        <label class="meal-builder-field-label" for="meal-builder-serving-measure">Serving size</label>
+        <select id="meal-builder-serving-measure" class="meal-builder-serving-select"></select>
+        <label class="meal-builder-field-label" for="meal-builder-serving-count">Number of servings</label>
+        <div class="meal-builder-serving-stepper">
+            <button type="button" onclick="adjustBuilderServingCount(-0.5)" aria-label="Decrease servings">−</button>
+            <input id="meal-builder-serving-count" type="number" inputmode="decimal" min="0.25" max="50" step="0.25" value="1">
+            <button type="button" onclick="adjustBuilderServingCount(0.5)" aria-label="Increase servings">+</button>
+        </div>
+        <div class="meal-builder-serving-preview" id="meal-builder-serving-preview">0 calories</div>
+        <button class="meal-builder-text-submit" id="meal-builder-serving-add" onclick="addSelectedBuilderFood()">Add to meal</button>
     </div>
 </div>
 
@@ -19740,7 +19720,7 @@ if (window._pbbIsIOSSafari) {
             }
 
             var mb = document.createElement('script');
-            mb.src = 'js/dashboard/dashboard-script-meal-builder.js?v=3';
+            mb.src = 'js/dashboard/dashboard-script-meal-builder.js?v=4-food-search';
             mb.dataset.pbbMealBuilder = '1';
             mb.onload = function() {
                 if (window._crumb) window._crumb('meal_builder_loaded');
@@ -19830,7 +19810,7 @@ if (window._pbbIsIOSSafari) {
         }, { once: true });
     } else {
     document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=38-meal-history" data-pbb-calorie-tracker="1"><\/script>');
-        document.write('<script src="js/dashboard/dashboard-script-meal-builder.js?v=3" data-pbb-meal-builder="1"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-meal-builder.js?v=4-food-search" data-pbb-meal-builder="1"><\/script>');
     }
 })();
 </script>

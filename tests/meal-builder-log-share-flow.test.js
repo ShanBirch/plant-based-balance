@@ -37,7 +37,7 @@ assert.ok(
     dashboardSource.includes('saveBuiltMeal({ logNow: false })') &&
         dashboardSource.includes('Save for later') &&
         dashboardSource.includes('saveBuiltMeal({ logNow: true })') &&
-        dashboardSource.includes('Log meal &amp; choose share'),
+        dashboardSource.includes('Log meal'),
     'the builder must clearly separate reusable saving from logging and sharing the completed meal'
 );
 
@@ -62,7 +62,7 @@ assert.ok(
 
 assert.ok(
     dashboardSource.includes("id: 'build-meal-icon-ig-layout-v1'") &&
-        dashboardSource.includes("id: 'meal-builder-typed-barcode-v1'") &&
+        dashboardSource.includes("id: 'meal-builder-food-search-v1'") &&
         dashboardSource.includes("sel: '.meal-icon-btn[onclick*=\"openMealBuilder\"]'") &&
         dashboardSource.includes("title:'Build and share a full meal'") &&
         dashboardSource.includes("sel:'.meal-icon-btn[onclick*=\"openMealBuilder\"]"),
@@ -70,13 +70,14 @@ assert.ok(
 );
 
 assert.ok(
-    dashboardSource.includes('data-builder-barcode-type="1"') &&
-        dashboardSource.includes('id="meal-builder-barcode-input"') &&
-        dashboardSource.includes('onclick="submitBuilderBarcodeItem()"') &&
-        builderSource.includes("fetch('/.netlify/functions/barcode-lookup?code='") &&
-        builderSource.includes("handleBuilderBarcodeProduct(result.product, 1, 'servings', 0)") &&
-        builderSource.includes('window.addBuilderItemViaTypedBarcode'),
-    'Build-a-Meal must let users paste or type a saved barcode without opening the camera'
+    dashboardSource.includes('id="meal-builder-food-search"') &&
+        dashboardSource.includes('id="meal-builder-serving-modal"') &&
+        dashboardSource.includes('onclick="addSelectedBuilderFood()"') &&
+        !dashboardSource.includes('data-builder-barcode-type="1"') &&
+        builderSource.includes("fetch('/.netlify/functions/food-search?q='") &&
+        builderSource.includes('window.openBuilderServingPicker') &&
+        builderSource.includes('window.addSelectedBuilderFood'),
+    'Build-a-Meal must search foods, choose a serving, and keep Type code out of the visible builder'
 );
 
 assert.ok(
@@ -92,16 +93,17 @@ assert.ok(
         calorieTrackerSource.includes('mealForShare = await attachPhotoToMealForFeedShare(mealForShare, selectedPhoto);') &&
         calorieTrackerSource.includes("if (!photoDataUrl) throw new Error('Meal photo was not available for the Instagram layout');") &&
         shareRendererSource.includes("if (cardType === 'meal' && primaryPhotoDataUrl)") &&
-        shareRendererSource.includes('await pbbShareDrawFullBleedMealCard(ctx, cardPayload, width, height, target);'),
+        shareRendererSource.includes('await pbbShareDrawFullBleedMealCard(') &&
+        shareRendererSource.includes('Object.assign({}, cardPayload, { share_text_style: textStyle })'),
     'Instagram sharing must attach a meal photo and render the designed full-bleed nutrition layout over it'
 );
 
 assert.ok(
-    dashboardSource.includes('dashboard-style-1.css?v=67') &&
-        dashboardSource.includes('pbb-premium-overlays.css?v=93') &&
-        dashboardSource.includes('dashboard-script-meal-builder.js?v=3') &&
-        dashboardSource.includes('dashboard-script-11-calorie_tracker_functions.js?v=31') &&
-  serviceWorkerSource.includes("const CACHE_NAME = 'pbb-app-v280'"),
+    dashboardSource.includes('dashboard-style-1.css?v=83') &&
+        dashboardSource.includes('pbb-premium-overlays.css?v=111-meal-builder-search') &&
+        dashboardSource.includes('dashboard-script-meal-builder.js?v=4-food-search') &&
+        dashboardSource.includes('dashboard-script-11-calorie_tracker_functions.js?v=38-meal-history') &&
+  serviceWorkerSource.includes("const CACHE_NAME = 'pbb-app-v453-meal-builder-search'"),
     'phones must fetch the new meal-builder UI, behavior, and styles'
 );
 

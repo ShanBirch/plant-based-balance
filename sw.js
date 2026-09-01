@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v452-movement-studio-cleanup'; // v452: remove the duplicate Movement heading and redundant pre-workout action cards
+const CACHE_NAME = 'pbb-app-v453-meal-builder-search'; // v453: Search-first Meal Builder on top of the Movement cleanup release
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
