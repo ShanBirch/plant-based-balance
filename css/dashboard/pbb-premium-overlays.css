@@ -1270,7 +1270,7 @@ html[data-pbb-theme="dark"] #ai-plan-meals-list .card-body [style*="background:#
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     width: 100%;
-    border-top: 1px solid rgba(216, 178, 94, 0.2);
+    border-top: 0;
     border-bottom: 1px solid rgba(216, 178, 94, 0.2);
     background: rgba(13, 13, 13, 0.94);
 }

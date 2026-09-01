@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v449-meal-primary-tabs'; // v449: Calorie Tracker and Your Meal Plan use a full-width 50/50 tab bar
+const CACHE_NAME = 'pbb-app-v450-meal-tabs-no-top-divider'; // v450: Remove the stray divider above the Nutrition tabs
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

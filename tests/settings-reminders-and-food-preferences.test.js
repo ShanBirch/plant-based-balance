@@ -49,11 +49,11 @@ test('Food Preferences uses readable semantic styles in both themes', () => {
 });
 
 test('returning phones receive the picker and retirement updates', () => {
-  assert.match(dashboard, /pbb-premium-overlays\.css\?v=108-meal-primary-tabs/);
+  assert.match(dashboard, /pbb-premium-overlays\.css\?v=109-meal-tabs-no-top-divider/);
   assert.match(dashboard, /pbb-deferred-pickers\.js\?v=3-food-preferences-direct-load/);
   assert.match(dashboard, /<script src="js\/dashboard\/pbb-deferred-pickers\.js\?v=3-food-preferences-direct-load"><\/script>/);
   assert.doesNotMatch(dashboard, /_pbbDeferredQueue\.push\('js\/dashboard\/pbb-deferred-pickers/);
   assert.match(dashboard, /dashboard-script-11-calorie_tracker_functions\.js\?v=38-meal-history/);
   assert.match(dashboard, /native-push\.js\?v=41-meal-reminders-retired/);
-  assert.match(read('sw.js'), /pbb-app-v449-meal-primary-tabs/);
+  assert.match(read('sw.js'), /pbb-app-v450-meal-tabs-no-top-divider/);
 });

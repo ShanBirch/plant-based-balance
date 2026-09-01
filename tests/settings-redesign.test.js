@@ -98,6 +98,6 @@ test('Settings defines complete readable light and dark colour pairs', () => {
 });
 
 test('phone caches receive the redesign', () => {
-  assert.match(dashboard, /pbb-premium-overlays\.css\?v=108-meal-primary-tabs/);
-  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v449-meal-primary-tabs'/);
+  assert.match(dashboard, /pbb-premium-overlays\.css\?v=109-meal-tabs-no-top-divider/);
+  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v450-meal-tabs-no-top-divider'/);
 });
