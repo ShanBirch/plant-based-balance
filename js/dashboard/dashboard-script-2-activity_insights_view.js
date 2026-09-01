@@ -1452,16 +1452,25 @@
         const cutoffStr = cutoff.toISOString().split('T')[0];
         const rawRecords = sleepData.records.filter(r => r.date >= cutoffStr).sort((a, b) => a.date.localeCompare(b.date));
 
+        if (rawRecords.length === 0) {
+            container.innerHTML = '<div style="text-align:center;padding:28px 16px;color:var(--text-muted);font-size:0.85rem;">No sleep records in this period yet. Try a longer timeframe.</div>';
+            return;
+        }
+
         const chartData = rawRecords.map(r => {
             const totalMins = r.duration_minutes || r.total_sleep_minutes || 0;
             let dayLabel = '';
+            let dateLabel = '';
             if (r.date) {
                 const d = new Date(r.date + 'T12:00:00');
                 d.setDate(d.getDate() - 1);
                 dayLabel = d.toLocaleDateString('en-US', { weekday: 'short' });
+                dateLabel = d.toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
             }
             return {
+                date: r.date,
                 dayLabel,
+                dateLabel,
                 totalHrs: totalMins / 60,
                 deepHrs: (r.deep_minutes || 0) / 60,
                 remHrs: (r.rem_minutes || 0) / 60,
@@ -1470,14 +1479,14 @@
 
         const hasStages = chartData.some(d => d.deepHrs > 0 || d.remHrs > 0);
 
-        const svgW = 400, svgH = 270;
+        const svgW = 400, svgH = 310;
         const pad = { top: 28, right: 20, bottom: 36, left: 40 };
         const cW = svgW - pad.left - pad.right;
         const cH = svgH - pad.top - pad.bottom;
         const n = chartData.length;
         const xStep = n > 1 ? cW / (n - 1) : 0;
 
-        const maxTotal = Math.max(...chartData.map(d => d.totalHrs), 6);
+        const maxTotal = Math.max(...chartData.map(d => d.totalHrs), 9);
         const yMax = Math.ceil(maxTotal / 2) * 2;
 
         const toX = i => pad.left + xStep * i;
@@ -1496,8 +1505,8 @@
 
         let svg = '<svg viewBox="0 0 ' + svgW + ' ' + svgH + '" style="width: 100%; display: block; overflow: visible;">';
         svg += '<defs><linearGradient id="insSlpGrad" x1="0" y1="0" x2="0" y2="1">'
-            + '<stop offset="0%" stop-color="#6366f1" stop-opacity="0.22"/>'
-            + '<stop offset="100%" stop-color="#6366f1" stop-opacity="0.02"/>'
+            + '<stop offset="0%" stop-color="var(--pbb-sleep-total)" stop-opacity="0.22"/>'
+            + '<stop offset="100%" stop-color="var(--pbb-sleep-total)" stop-opacity="0.02"/>'
             + '</linearGradient></defs>';
 
         for (let h = 0; h <= yMax; h += 2) {
@@ -1507,15 +1516,15 @@
         }
         if (yMax >= 8) {
             const y8 = toY(8);
-            svg += '<line x1="' + pad.left + '" y1="' + y8 + '" x2="' + (svgW - pad.right) + '" y2="' + y8 + '" stroke="#10b981" stroke-width="1.2" stroke-dasharray="5,4" opacity="0.55"/>';
-            svg += '<text x="' + (svgW - pad.right + 3) + '" y="' + (y8 + 4) + '" text-anchor="start" font-size="9" fill="#10b981" opacity="0.75">goal</text>';
+            svg += '<line class="insights-sleep-series insights-sleep-series--goal" x1="' + pad.left + '" y1="' + y8 + '" x2="' + (svgW - pad.right) + '" y2="' + y8 + '" stroke="var(--pbb-sleep-goal)" stroke-width="1.6" stroke-dasharray="5,4"/>';
+            svg += '<text x="' + (svgW - pad.right + 3) + '" y="' + (y8 + 4) + '" text-anchor="start" font-size="9" fill="var(--pbb-sleep-goal)">goal</text>';
         }
 
         svg += '<path d="' + areaPath(totalVals) + '" fill="url(#insSlpGrad)"/>';
-        svg += '<path d="' + linePath(totalVals) + '" fill="none" stroke="#6366f1" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+        svg += '<path class="insights-sleep-series insights-sleep-series--total" d="' + linePath(totalVals) + '" fill="none" stroke="var(--pbb-sleep-total)" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>';
         if (hasStages) {
-            svg += '<path d="' + linePath(deepVals) + '" fill="none" stroke="#312e81" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/>';
-            svg += '<path d="' + linePath(remVals)  + '" fill="none" stroke="#06b6d4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/>';
+            svg += '<path class="insights-sleep-series insights-sleep-series--deep" d="' + linePath(deepVals) + '" fill="none" stroke="var(--pbb-sleep-deep)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>';
+            svg += '<path class="insights-sleep-series insights-sleep-series--rem" d="' + linePath(remVals)  + '" fill="none" stroke="var(--pbb-sleep-rem)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>';
         }
 
         const sleepTargetTicks = n <= 7 ? n : 7;
@@ -1527,12 +1536,12 @@
 
         chartData.forEach((d, i) => {
             const x = toX(i), yT = toY(d.totalHrs), isLast = i === n - 1;
-            svg += '<circle cx="' + x + '" cy="' + yT + '" r="' + (isLast ? 5 : 3.5) + '" fill="' + (isLast ? '#6366f1' : 'white') + '" stroke="#6366f1" stroke-width="2"/>';
+            svg += '<circle cx="' + x + '" cy="' + yT + '" r="' + (isLast ? 5 : 3.5) + '" fill="var(--pbb-insights-card-bg)" stroke="var(--pbb-sleep-total)" stroke-width="2"/>';
             if (sleepTickIndices.has(i))
-                svg += '<text x="' + x + '" y="' + (yT - 9) + '" text-anchor="middle" font-size="9.5" font-weight="700" fill="#6366f1">' + d.totalHrs.toFixed(1) + 'h</text>';
+                svg += '<text x="' + x + '" y="' + (yT - 9) + '" text-anchor="middle" font-size="9.5" font-weight="700" fill="var(--pbb-sleep-total)">' + d.totalHrs.toFixed(1) + 'h</text>';
             if (hasStages) {
-                svg += '<circle cx="' + x + '" cy="' + toY(d.deepHrs) + '" r="2.5" fill="#312e81" opacity="0.85"/>';
-                svg += '<circle cx="' + x + '" cy="' + toY(d.remHrs)  + '" r="2.5" fill="#06b6d4" opacity="0.85"/>';
+                svg += '<circle cx="' + x + '" cy="' + toY(d.deepHrs) + '" r="2.8" fill="var(--pbb-sleep-deep)"/>';
+                svg += '<circle cx="' + x + '" cy="' + toY(d.remHrs)  + '" r="2.8" fill="var(--pbb-sleep-rem)"/>';
             }
         });
 
@@ -1544,12 +1553,12 @@
         svg += '</svg>';
 
         let legend = '<div style="display: flex; gap: 14px; font-size: 0.68rem; color: var(--text-muted); font-weight: 600; margin-bottom: 12px; flex-wrap: wrap;">'
-            + '<div style="display: flex; align-items: center; gap: 5px;"><div style="width: 14px; height: 3px; border-radius: 2px; background: #6366f1;"></div> Total</div>';
+            + '<div style="display: flex; align-items: center; gap: 5px;"><div style="width: 14px; height: 3px; border-radius: 2px; background: var(--pbb-sleep-total);"></div> Total</div>';
         if (hasStages) {
-            legend += '<div style="display: flex; align-items: center; gap: 5px;"><div style="width: 14px; height: 3px; border-radius: 2px; background: #312e81;"></div> Deep</div>'
-                + '<div style="display: flex; align-items: center; gap: 5px;"><div style="width: 14px; height: 3px; border-radius: 2px; background: #06b6d4;"></div> REM</div>';
+            legend += '<div style="display: flex; align-items: center; gap: 5px;"><div style="width: 14px; height: 3px; border-radius: 2px; background: var(--pbb-sleep-deep);"></div> Deep</div>'
+                + '<div style="display: flex; align-items: center; gap: 5px;"><div style="width: 14px; height: 3px; border-radius: 2px; background: var(--pbb-sleep-rem);"></div> REM</div>';
         }
-        legend += '<div style="display: flex; align-items: center; gap: 5px;"><div style="width: 14px; height: 2px; border-radius: 1px; background: #10b981; opacity: 0.6;"></div> 8h goal</div></div>';
+        legend += '<div style="display: flex; align-items: center; gap: 5px;"><div style="width: 14px; height: 2px; border-radius: 1px; background: var(--pbb-sleep-goal);"></div> 8h goal</div></div>';
 
         const fmt = hrs => Math.floor(hrs) + 'h ' + Math.round((hrs % 1) * 60) + 'm';
         const avgTotal = totalVals.reduce((s, v) => s + v, 0) / totalVals.length;
@@ -1558,14 +1567,14 @@
             const avgDeep = deepVals.reduce((s, v) => s + v, 0) / deepVals.length;
             const avgRem  = remVals.reduce((s, v) => s + v, 0) / remVals.length;
             statsGrid = '<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 16px;">'
-                + '<div style="background: #eef2ff; padding: 12px 8px; border-radius: 12px; text-align: center;"><div style="font-size: 1.05rem; font-weight: 800; color: #6366f1;">' + fmt(avgTotal) + '</div><div style="font-size: 0.62rem; color: var(--text-muted); margin-top: 3px; font-weight: 700; letter-spacing: 0.5px;">AVG TOTAL</div></div>'
-                + '<div style="background: #ede9fe; padding: 12px 8px; border-radius: 12px; text-align: center;"><div style="font-size: 1.05rem; font-weight: 800; color: #312e81;">' + fmt(avgDeep) + '</div><div style="font-size: 0.62rem; color: var(--text-muted); margin-top: 3px; font-weight: 700; letter-spacing: 0.5px;">AVG DEEP</div></div>'
-                + '<div style="background: #e0f7fa; padding: 12px 8px; border-radius: 12px; text-align: center;"><div style="font-size: 1.05rem; font-weight: 800; color: #0891b2;">' + fmt(avgRem) + '</div><div style="font-size: 0.62rem; color: var(--text-muted); margin-top: 3px; font-weight: 700; letter-spacing: 0.5px;">AVG REM</div></div>'
+                + '<div style="background: var(--pbb-insights-soft-bg); padding: 12px 8px; border-radius: 12px; text-align: center;"><div style="font-size: 1.05rem; font-weight: 800; color: var(--pbb-sleep-total);">' + fmt(avgTotal) + '</div><div style="font-size: 0.62rem; color: var(--text-muted); margin-top: 3px; font-weight: 700; letter-spacing: 0.5px;">AVG TOTAL</div></div>'
+                + '<div style="background: var(--pbb-insights-soft-bg); padding: 12px 8px; border-radius: 12px; text-align: center;"><div style="font-size: 1.05rem; font-weight: 800; color: var(--pbb-sleep-deep);">' + fmt(avgDeep) + '</div><div style="font-size: 0.62rem; color: var(--text-muted); margin-top: 3px; font-weight: 700; letter-spacing: 0.5px;">AVG DEEP</div></div>'
+                + '<div style="background: var(--pbb-insights-soft-bg); padding: 12px 8px; border-radius: 12px; text-align: center;"><div style="font-size: 1.05rem; font-weight: 800; color: var(--pbb-sleep-rem);">' + fmt(avgRem) + '</div><div style="font-size: 0.62rem; color: var(--text-muted); margin-top: 3px; font-weight: 700; letter-spacing: 0.5px;">AVG REM</div></div>'
                 + '</div>';
         } else {
             statsGrid = '<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 16px;">'
-                + '<div style="background: #eef2ff; padding: 12px 8px; border-radius: 12px; text-align: center;"><div style="font-size: 1.05rem; font-weight: 800; color: #6366f1;">' + fmt(avgTotal) + '</div><div style="font-size: 0.62rem; color: var(--text-muted); margin-top: 3px; font-weight: 700; letter-spacing: 0.5px;">AVG (THIS PERIOD)</div></div>'
-                + '<div style="background: #eef2ff; padding: 12px 8px; border-radius: 12px; text-align: center;"><div style="font-size: 1.05rem; font-weight: 800; color: #6366f1;">' + avgHrs30 + 'h ' + avgMinsRem30 + 'm</div><div style="font-size: 0.62rem; color: var(--text-muted); margin-top: 3px; font-weight: 700; letter-spacing: 0.5px;">30-DAY AVG</div></div>'
+                + '<div style="background: var(--pbb-insights-soft-bg); padding: 12px 8px; border-radius: 12px; text-align: center;"><div style="font-size: 1.05rem; font-weight: 800; color: var(--pbb-sleep-total);">' + fmt(avgTotal) + '</div><div style="font-size: 0.62rem; color: var(--text-muted); margin-top: 3px; font-weight: 700; letter-spacing: 0.5px;">AVG (THIS PERIOD)</div></div>'
+                + '<div style="background: var(--pbb-insights-soft-bg); padding: 12px 8px; border-radius: 12px; text-align: center;"><div style="font-size: 1.05rem; font-weight: 800; color: var(--pbb-sleep-total);">' + avgHrs30 + 'h ' + avgMinsRem30 + 'm</div><div style="font-size: 0.62rem; color: var(--text-muted); margin-top: 3px; font-weight: 700; letter-spacing: 0.5px;">30-DAY AVG</div></div>'
                 + '</div>';
         }
 
@@ -1574,8 +1583,30 @@
             + (last30.length > 0 ? '<div style="font-size: 0.65rem; color: var(--text-main); font-weight: 700; background: #f1f5f9; padding: 3px 8px; border-radius: 12px;">30-Day Avg: ' + avgHrs30 + 'h ' + avgMinsRem30 + 'm</div>' : '')
             + '</div>';
 
-        container.innerHTML = header + legend + svg + statsGrid;
+        const historyRows = chartData.slice().reverse().map(function(night) {
+            const stages = hasStages
+                ? '<span>Deep ' + fmt(night.deepHrs) + ' · REM ' + fmt(night.remHrs) + '</span>'
+                : '<span>Sleep stages unavailable</span>';
+            return '<li><div><strong>' + night.dateLabel + '</strong>' + stages + '</div><b>' + fmt(night.totalHrs) + '</b></li>';
+        }).join('');
+        const history = '<section class="insights-sleep-history">'
+            + '<button type="button" class="insights-sleep-history-toggle" aria-expanded="false" onclick="toggleInsightsSleepHistory(this)">'
+            + '<span><strong>Night-by-night history</strong><small>See the hours recorded for every night</small></span>'
+            + '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>'
+            + '<ol class="insights-sleep-history-list" hidden>' + historyRows + '</ol></section>';
+
+        container.innerHTML = header + legend + svg + statsGrid + history;
     }
+
+    function toggleInsightsSleepHistory(button) {
+        if (!button) return;
+        const list = button.parentElement && button.parentElement.querySelector('.insights-sleep-history-list');
+        if (!list) return;
+        const willOpen = list.hidden;
+        list.hidden = !willOpen;
+        button.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+    }
+    window.toggleInsightsSleepHistory = toggleInsightsSleepHistory;
 
     // --- Volume graph helpers ---
 

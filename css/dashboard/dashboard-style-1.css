@@ -11233,6 +11233,10 @@ html[data-pbb-theme="light"] .insights-snapshot-card {
     --pbb-insights-gold: #f5d98a;
     --pbb-insights-gold-strong: #d8b25e;
     --pbb-insights-gold-soft: rgba(245, 217, 138, 0.12);
+    --pbb-sleep-total: #a5b4fc;
+    --pbb-sleep-deep: #c4b5fd;
+    --pbb-sleep-rem: #67e8f9;
+    --pbb-sleep-goal: #6ee7b7;
     --text-main: var(--pbb-insights-text);
     --text-muted: var(--pbb-insights-muted);
     --surface: var(--pbb-insights-card-bg);
@@ -11256,6 +11260,10 @@ html[data-pbb-theme="light"] #view-insights-metric-detail {
     --pbb-insights-gold: #7a5918;
     --pbb-insights-gold-strong: #8a681f;
     --pbb-insights-gold-soft: rgba(181, 138, 52, 0.11);
+    --pbb-sleep-total: #4338ca;
+    --pbb-sleep-deep: #7e22ce;
+    --pbb-sleep-rem: #0e7490;
+    --pbb-sleep-goal: #047857;
     --card-shadow: 0 12px 34px rgba(31, 26, 16, 0.08);
 }
 
@@ -11329,6 +11337,129 @@ html[data-pbb-theme="light"] #view-insights-metric-detail {
     min-height: calc(100dvh - 40px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
     margin-bottom: 0 !important;
     padding: clamp(20px, 5vw, 28px) !important;
+}
+
+#view-insights-metric-detail .insights-sleep-detail-card.is-active {
+    min-height: calc(100dvh - 40px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    margin-bottom: 0 !important;
+    padding: clamp(20px, 5vw, 28px) !important;
+}
+
+#view-insights-metric-detail .insights-sleep-series--total { stroke: var(--pbb-sleep-total) !important; }
+#view-insights-metric-detail .insights-sleep-series--deep { stroke: var(--pbb-sleep-deep) !important; }
+#view-insights-metric-detail .insights-sleep-series--rem { stroke: var(--pbb-sleep-rem) !important; }
+#view-insights-metric-detail .insights-sleep-series--goal { stroke: var(--pbb-sleep-goal) !important; }
+
+.insights-sleep-history {
+    margin-top: 18px;
+    border-top: 1px solid var(--pbb-insights-border);
+    padding-top: 16px;
+}
+
+.insights-sleep-history-toggle {
+    display: flex;
+    width: 100%;
+    min-height: 58px;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--pbb-insights-border);
+    border-radius: 14px;
+    background: var(--pbb-insights-soft-bg);
+    color: var(--pbb-insights-text);
+    -webkit-text-fill-color: var(--pbb-insights-text);
+    text-align: left;
+    cursor: pointer;
+}
+
+.insights-sleep-history-toggle > span {
+    min-width: 0;
+    flex: 1;
+}
+
+.insights-sleep-history-toggle strong,
+.insights-sleep-history-toggle small {
+    display: block;
+    color: inherit;
+    -webkit-text-fill-color: inherit;
+}
+
+.insights-sleep-history-toggle strong {
+    font-size: 0.84rem;
+    font-weight: 850;
+}
+
+.insights-sleep-history-toggle small {
+    margin-top: 3px;
+    color: var(--pbb-insights-muted);
+    -webkit-text-fill-color: var(--pbb-insights-muted);
+    font-size: 0.68rem;
+}
+
+.insights-sleep-history-toggle svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: var(--pbb-insights-gold);
+    stroke-width: 2;
+    transition: transform 160ms ease;
+}
+
+.insights-sleep-history-toggle[aria-expanded="true"] svg {
+    transform: rotate(180deg);
+}
+
+.insights-sleep-history-toggle:focus-visible {
+    outline: 3px solid var(--pbb-insights-gold);
+    outline-offset: 3px;
+}
+
+.insights-sleep-history-list {
+    display: grid;
+    gap: 0;
+    margin: 10px 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.insights-sleep-history-list[hidden] {
+    display: none;
+}
+
+.insights-sleep-history-list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 13px 2px;
+    border-bottom: 1px solid var(--pbb-insights-border);
+}
+
+.insights-sleep-history-list strong,
+.insights-sleep-history-list span,
+.insights-sleep-history-list b {
+    display: block;
+}
+
+.insights-sleep-history-list strong,
+.insights-sleep-history-list b {
+    color: var(--pbb-insights-text);
+    -webkit-text-fill-color: var(--pbb-insights-text);
+    font-size: 0.78rem;
+}
+
+.insights-sleep-history-list span {
+    margin-top: 4px;
+    color: var(--pbb-insights-muted);
+    -webkit-text-fill-color: var(--pbb-insights-muted);
+    font-size: 0.68rem;
+}
+
+.insights-sleep-history-list b {
+    flex-shrink: 0;
+    color: var(--pbb-sleep-total);
+    -webkit-text-fill-color: var(--pbb-sleep-total);
+    font-size: 0.88rem;
 }
 
 .insights-calories-period {
