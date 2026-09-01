@@ -35,6 +35,7 @@ assert.match(formCheck, /window\.getBalanceVideoUploadAttemptContext/);
 assert.match(customExercise, /getBalanceVideoUploadAttemptContext/);
 assert.match(customExercise, /custom_exercise_native_upload_complete/);
 assert.match(customExercise, /custom_exercise_native_upload_failed/);
+assert.match(customExercise, /video upload failed\.\$\{supportCode \? ` Code \$\{supportCode\}\.\` : ''\}/i);
 
 assert.match(iosPlugin, /maxInlineVideoBytes: Int64 = 24 \* 1024 \* 1024/);
 assert.match(iosPlugin, /deliveryMode"\] = "native_file"/);

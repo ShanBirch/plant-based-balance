@@ -24966,6 +24966,9 @@ async function uploadCustomExerciseVideoInBackground(user, savedExercise, videoF
         return true;
     } catch (uploadErr) {
         console.error('Background exercise video upload failed:', uploadErr);
+        const supportCode = typeof window.getBalanceVideoUploadSupportCode === 'function'
+            ? window.getBalanceVideoUploadSupportCode(uploadAttemptId)
+            : '';
         logCustomExerciseVideoDiagnostic('custom_exercise_upload_failed', {
             exerciseId: savedExercise.id,
             exerciseName,
@@ -24974,13 +24977,13 @@ async function uploadCustomExerciseVideoInBackground(user, savedExercise, videoF
             ...getCustomExerciseVideoDiagnostic(videoFile)
         });
         setCustomExerciseVideoUploadState(savedExercise.id, exerciseName, 'failed', {
-            error: uploadErr?.message || 'Video upload failed',
+            error: `${uploadErr?.message || 'Video upload failed'}${supportCode ? ` Code ${supportCode}.` : ''}`,
             failedAt: Date.now()
         });
         renderCustomExerciseVideoUploadFailed(exerciseName);
         loadMyCustomExercises();
         if (typeof showToast === 'function') {
-            showToast(`"${exerciseName}" was saved, but the video upload failed.`, 'error');
+            showToast(`"${exerciseName}" was saved, but the video upload failed.${supportCode ? ` Code ${supportCode}.` : ''}`, 'error');
         }
         return false;
     }
@@ -25029,6 +25032,9 @@ function watchNativeCustomExerciseVideoUpload(exerciseId, exerciseName, attemptI
             return true;
         }
         if (result.status === 'failed') {
+            const supportCode = typeof window.getBalanceVideoUploadSupportCode === 'function'
+                ? window.getBalanceVideoUploadSupportCode(attemptId)
+                : '';
             logCustomExerciseVideoDiagnostic('custom_exercise_native_upload_failed', {
                 attemptId,
                 exerciseId,
@@ -25036,9 +25042,11 @@ function watchNativeCustomExerciseVideoUpload(exerciseId, exerciseName, attemptI
                 progress,
                 errorMessage: result.error || 'Video upload failed'
             });
-            setCustomExerciseVideoUploadState(exerciseId, exerciseName, 'failed', { error: result.error || 'Video upload failed' });
+            const failureMessage = `${result.error || 'Video upload failed'}${supportCode ? ` Code ${supportCode}.` : ''}`;
+            setCustomExerciseVideoUploadState(exerciseId, exerciseName, 'failed', { error: failureMessage });
             renderCustomExerciseVideoUploadFailed(exerciseName);
-            updateCustomExerciseUploadStatus(result.error || 'Video upload failed.', true);
+            updateCustomExerciseUploadStatus(failureMessage, true);
+            if (typeof showToast === 'function') showToast(failureMessage, 'error');
             loadMyCustomExercises();
             return true;
         }
