@@ -11048,9 +11048,15 @@
     padding: 20px;
     border: 1px solid var(--pbb-insights-border);
     border-radius: 24px;
-    background: var(--pbb-insights-card-bg);
+    background: linear-gradient(145deg, #1d1a13 0%, #11100d 100%);
     color: var(--pbb-insights-text);
     box-shadow: var(--card-shadow);
+}
+
+html[data-pbb-theme="light"] .insights-snapshot-card {
+    border-color: rgba(181, 138, 52, 0.4);
+    background: linear-gradient(145deg, #fffdf8 0%, #f7efd9 100%);
+    box-shadow: 0 16px 38px rgba(55, 42, 16, 0.13), inset 0 1px 0 #ffffff;
 }
 
 .insights-snapshot-card::after {
@@ -11271,9 +11277,34 @@ html[data-pbb-theme="light"] #view-insights-metric-detail {
 #view-insights-metric-detail .insights-legacy-graph-card.is-active [style*="color: #0891b2"],
 #view-insights-metric-detail .insights-legacy-graph-card.is-active [style*="color:#0891b2"],
 #view-insights-metric-detail .insights-legacy-graph-card.is-active [style*="color: #7BA883"],
-#view-insights-metric-detail .insights-legacy-graph-card.is-active [style*="color:#7BA883"] {
+#view-insights-metric-detail .insights-legacy-graph-card.is-active [style*="color:#7BA883"],
+#view-insights-metric-detail .insights-legacy-graph-card.is-active [style*="color: #f97316"],
+#view-insights-metric-detail .insights-legacy-graph-card.is-active [style*="color:#f97316"],
+#view-insights-metric-detail .insights-legacy-graph-card.is-active [style*="color: #f59e0b"],
+#view-insights-metric-detail .insights-legacy-graph-card.is-active [style*="color:#f59e0b"] {
     color: var(--pbb-insights-gold) !important;
     -webkit-text-fill-color: var(--pbb-insights-gold) !important;
+}
+
+#view-insights-metric-detail .insights-legacy-graph-card.is-active [style*="color: white"],
+#view-insights-metric-detail .insights-legacy-graph-card.is-active [style*="color:white"],
+#view-insights-metric-detail .insights-legacy-graph-card.is-active [style*="color: #fff"],
+#view-insights-metric-detail .insights-legacy-graph-card.is-active [style*="color:#fff"] {
+    color: var(--pbb-insights-text) !important;
+    -webkit-text-fill-color: var(--pbb-insights-text) !important;
+}
+
+#view-insights-metric-detail [style*="linear-gradient(135deg, #10b981"],
+#view-insights-metric-detail [style*="linear-gradient(135deg, #f59e0b"] {
+    background: linear-gradient(135deg, var(--pbb-insights-button-gold-light), var(--pbb-insights-button-gold)) !important;
+    color: var(--pbb-insights-on-gold) !important;
+    -webkit-text-fill-color: var(--pbb-insights-on-gold) !important;
+}
+
+#view-insights-metric-detail [style*="linear-gradient(135deg, #10b981"] *,
+#view-insights-metric-detail [style*="linear-gradient(135deg, #f59e0b"] * {
+    color: var(--pbb-insights-on-gold) !important;
+    -webkit-text-fill-color: var(--pbb-insights-on-gold) !important;
 }
 
 #view-insights-metric-detail svg text[fill="#94a3b8"],
@@ -11329,8 +11360,25 @@ html[data-pbb-theme="light"] #view-insights-metric-detail {
 #view-insights-metric-detail [style*="background: #eff6ff"],
 #view-insights-metric-detail [style*="background:#eff6ff"],
 #view-insights-metric-detail [style*="background: #fafafa"],
-#view-insights-metric-detail [style*="background:#fafafa"] {
+#view-insights-metric-detail [style*="background:#fafafa"],
+#view-insights-metric-detail [style*="background: #f1f5f9"],
+#view-insights-metric-detail [style*="background:#f1f5f9"],
+#view-insights-metric-detail [style*="background: #ede9fe"],
+#view-insights-metric-detail [style*="background:#ede9fe"],
+#view-insights-metric-detail [style*="background: #e0f7fa"],
+#view-insights-metric-detail [style*="background:#e0f7fa"],
+#view-insights-metric-detail [style*="background: #fff7ed"],
+#view-insights-metric-detail [style*="background:#fff7ed"],
+#view-insights-metric-detail [style*="background: #fffbeb"],
+#view-insights-metric-detail [style*="background:#fffbeb"],
+#view-insights-metric-detail [style*="background: #fef2f2"],
+#view-insights-metric-detail [style*="background:#fef2f2"],
+#view-insights-metric-detail [style*="background: #f5f3ff"],
+#view-insights-metric-detail [style*="background:#f5f3ff"],
+#view-insights-metric-detail [style*="background: #f0f9ff"],
+#view-insights-metric-detail [style*="background:#f0f9ff"] {
     background: var(--pbb-insights-soft-bg) !important;
+    border-color: var(--pbb-insights-border) !important;
 }
 
 #view-insights-metric-detail svg [stroke="#10b981"],

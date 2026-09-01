@@ -52,7 +52,7 @@ test('members can add steps and review dated totals', () => {
 });
 
 test('snapshot cards and entry screens use paired Balance themes', () => {
-  assert.match(css, /\.insights-snapshot-card\s*\{[^}]*background: var\(--pbb-insights-card-bg\)/s);
+  assert.match(css, /\.insights-snapshot-card\s*\{[^}]*linear-gradient\(145deg, #1d1a13 0%, #11100d 100%\)/s);
   assert.match(css, /#view-insights-metric-detail\s*\{[^}]*--pbb-insights-page-bg: #050505/s);
   assert.match(css, /html\[data-pbb-theme="light"\] #view-insights-metric-detail\s*\{[^}]*--pbb-insights-page-bg: #f8f5ee/s);
   assert.match(css, /\.insights-entry-save\s*\{[^}]*#f5d98a[^}]*#d8b25e/s);
@@ -67,9 +67,9 @@ test('new and returning members discover snapshots and manual steps', () => {
 });
 
 test('returning phones receive the snapshot release', () => {
-  assert.match(dashboard, /dashboard-style-1\.css\?v=73/);
+  assert.match(dashboard, /dashboard-style-1\.css\?v=74/);
   assert.ok((dashboard.match(/dashboard-script-2-activity_insights_view\.js\?v=insights-history-toggle-v4/g) || []).length >= 2);
-  assert.match(serviceWorker, /pbb-app-v433-insights-history-toggle/);
+  assert.match(serviceWorker, /pbb-app-v434-insights-light-contrast/);
 });
 
 test('body weight detail has one entry point and a live history summary', () => {
@@ -93,4 +93,7 @@ test('every metric detail uses paired readable font roles', () => {
   assert.match(css, /#view-insights-metric-detail \.multi-week-nav button\.active/);
   assert.match(css, /\.multi-week-nav button\s*\{[^}]*background: var\(--pbb-insights-soft-bg\) !important/s);
   assert.match(css, /background: rgba\(59, 130, 246/);
+  assert.match(css, /html\[data-pbb-theme="light"\] \.insights-snapshot-card\s*\{[^}]*linear-gradient\(145deg, #fffdf8 0%, #f7efd9 100%\)/s);
+  assert.match(css, /\.insights-legacy-graph-card\.is-active \[style\*="color: white"\]/);
+  assert.match(css, /#view-insights-metric-detail \[style\*="background: #fff7ed"\]/);
 });
