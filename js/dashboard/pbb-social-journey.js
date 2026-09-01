@@ -288,11 +288,11 @@
       };
     }
     if (item && (item.type === 'foundations_diary_feed' || item.type === 'identity_diary_feed')) {
-      const availableNow = clock.hour >= 17;
+      const availableNow = clock.hour >= 18;
       return {
         availableNow,
-        availabilityLabel: availableNow ? 'Available now · daily after 5 pm' : 'Available from 5 pm today',
-        availabilityButtonLabel: availableNow ? 'Open' : '5 pm'
+        availabilityLabel: availableNow ? 'Available now · daily after 6 pm' : 'Available from 6 pm today',
+        availabilityButtonLabel: availableNow ? 'Open' : '6 pm'
       };
     }
     return { availableNow: true, availabilityLabel: '', availabilityButtonLabel: 'Open' };

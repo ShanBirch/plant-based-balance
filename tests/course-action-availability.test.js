@@ -13,12 +13,12 @@ test('course steps explain and enforce their real Brisbane availability windows'
   assert.match(journey, /function taskAvailability\(item, date\)/);
   assert.match(journey, /\['Fri', 'Sat', 'Sun'\]\.includes\(clock\.weekday\)/);
   assert.match(journey, /Available Friday–Sunday/);
-  assert.match(journey, /clock\.hour >= 17/);
-  assert.match(journey, /Available from 5 pm today/);
+  assert.match(journey, /clock\.hour >= 18/);
+  assert.match(journey, /Available from 6 pm today/);
   assert.match(learning, /action\.availableNow === false/);
   assert.match(learning, /course-week-action-timing/);
   assert.match(diary, /function getBrisbaneHour\(date\)/);
-  assert.match(diary, /getBrisbaneHour\(\) < 17/);
+  assert.match(diary, /getBrisbaneHour\(\) < 18/);
   assert.match(checkin, /function isWeeklyCheckinWindowOpen\(date\)/);
   assert.match(checkin, /weekly check-in opens Friday and stays available through Sunday/);
 });

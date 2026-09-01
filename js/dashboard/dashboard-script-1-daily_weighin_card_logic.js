@@ -940,7 +940,7 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
     window.dismissFridayWeighInShare = dismissFridayWeighInShare;
     window.postFridayWeighInShare = postFridayWeighInShare;
 
-    // ===== FITNESS DIARY CARD (Daily from 5 PM) =====
+    // ===== FITNESS DIARY CARD (Daily from 6 PM) =====
 
     window._fitnessDiaryData = { day_rating: null, energy_level: null };
 
@@ -973,8 +973,8 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
         var doneCard = document.getElementById('fitness-diary-done-card');
         if (!card) return;
 
-        // Only show from 5 PM onwards
-        if (getBrisbaneHour() < 17) {
+        // Only show from 6 PM onwards
+        if (getBrisbaneHour() < 18) {
             card.style.display = 'none';
             if (doneCard) doneCard.style.display = 'none';
             return;
@@ -1754,7 +1754,7 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
 
     refreshDailyCardsAfterDeferredLoad();
 
-    // Keep the 5 PM rollover reliable when Balance stays open in the foreground.
+    // Keep the 6 PM rollover reliable when Balance stays open in the foreground.
     // Previously the card was only re-checked on load or after returning to the app.
     var _lastFitnessDiaryHour = new Date().getHours();
     setInterval(function() {
