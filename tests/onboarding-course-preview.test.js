@@ -60,7 +60,7 @@ test('the tour opens each real course week without starting or completing it', (
 test('the first quiz starts directly after the Week 6 preview', () => {
   assert.match(dashboard, /title:'Week 6: Build your sustainable way forward'[^\n]*nextLabel:'Start Week 1'/);
   assert.match(dashboard, /Object\.assign\(foundationsTourStep, \{[\s\S]*?tab:'learning'[\s\S]*?promptBeforeAction:false[\s\S]*?openMetaPreviewFirstFoundationsLesson\(\)/);
-  assert.match(dashboard, /learning-inline\.js\?v=35-exact-course-label/g);
+  assert.match(dashboard, /learning-inline\.js\?v=37-completion-aware-course/g);
 });
 
 test('posting the introduction returns Home before the course To do prompt', () => {

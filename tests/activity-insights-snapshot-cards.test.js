@@ -69,7 +69,7 @@ test('new and returning members discover snapshots and manual steps', () => {
 test('returning phones receive the snapshot release', () => {
   assert.match(dashboard, /dashboard-style-1\.css\?v=80/);
   assert.ok((dashboard.match(/dashboard-script-2-activity_insights_view\.js\?v=insights-sleep-history-v8/g) || []).length >= 2);
-  assert.match(serviceWorker, /pbb-app-v446-exact-quiz-label/);
+  assert.match(serviceWorker, /pbb-app-v448-completion-aware-course/);
 });
 
 test('metric detail screens show only the heading inside the content card', () => {

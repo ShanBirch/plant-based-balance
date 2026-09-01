@@ -28,6 +28,7 @@
     'shannonrhysbirch@gmail.com'
   ];
   var renderTimer = null;
+  var learningSystemLoadPromise = null;
   var dailyState = {
     date: null,
     loaded: false,
@@ -315,11 +316,69 @@
       if (!window.socialJourney || typeof window.socialJourney.getUnifiedAction !== 'function') return null;
       var journeyAction = window.socialJourney.getUnifiedAction();
       if (!journeyAction) return null;
+      if (journeyAction.kind === 'course_lesson') {
+        if (typeof window.getCurrentCourseLessonDestination !== 'function') {
+          ensureLearningSystemLoaded();
+          return null;
+        }
+        var exactDestination = window.getCurrentCourseLessonDestination(journeyAction.courseId);
+        if (!exactDestination || !exactDestination.itemId) return null;
+        journeyAction = Object.assign({}, journeyAction, {
+          courseId: exactDestination.courseId,
+          itemId: exactDestination.itemId,
+          title: exactDestination.title,
+          body: exactDestination.body,
+          cta: exactDestination.cta
+        });
+      }
       var base = ACTIONS.find(function(action){ return action.id === 'balance_journey'; });
       return base ? Object.assign({}, base, journeyAction) : null;
     } catch (_) {
       return null;
     }
+  }
+
+  function ensureLearningSystemLoaded() {
+    if (typeof window.openCurrentCourseLesson === 'function' && typeof window.getCurrentCourseLessonDestination === 'function') {
+      return Promise.resolve(true);
+    }
+    if (learningSystemLoadPromise) return learningSystemLoadPromise;
+    learningSystemLoadPromise = new Promise(function(resolve){
+      var settled = false;
+      var attempts = 0;
+      var script = Array.prototype.find.call(document.scripts || [], function(item){
+        return item.src && item.src.indexOf('learning-inline.js') !== -1;
+      });
+      function finish(loaded) {
+        if (settled) return;
+        settled = true;
+        resolve(loaded);
+      }
+      function checkReady() {
+        if (typeof window.openCurrentCourseLesson === 'function' && typeof window.getCurrentCourseLessonDestination === 'function') {
+          finish(true);
+          return;
+        }
+        if (attempts++ < 150) {
+          setTimeout(checkReady, 100);
+          return;
+        }
+        finish(false);
+      }
+      if (!script) {
+        script = document.createElement('script');
+        script.src = 'lib/learning-inline.js?v=37-completion-aware-course';
+        script.addEventListener('error', function(){ finish(false); }, { once: true });
+        document.head.appendChild(script);
+      }
+      checkReady();
+    });
+    learningSystemLoadPromise.then(async function(loaded){
+      if (!loaded) return;
+      if (typeof window._ensureLearningProgressLoaded === 'function') await window._ensureLearningProgressLoaded();
+      refreshSoon(0);
+    });
+    return learningSystemLoadPromise;
   }
 
   function isFirstProgramWeek() {
@@ -510,21 +569,18 @@
     return 'balance-foundations';
   }
 
-  function openNextCourseTarget(courseId) {
+  async function openNextCourseTarget(courseId) {
     var resolvedCourseId = courseId || getNextCourseId();
+    var loaded = await ensureLearningSystemLoaded();
+    if (!loaded) {
+      if (typeof window.showToast === 'function') window.showToast('Your exact lesson is still loading. Tap the card again in a moment.', 'info');
+      return;
+    }
+    if (typeof window._ensureLearningProgressLoaded === 'function') await window._ensureLearningProgressLoaded();
     switchTab('learning');
     afterTab(function(){
       if (typeof window.renderLearningHome === 'function') window.renderLearningHome();
-      var attempts = 0;
-      function openExactLesson() {
-        if (typeof window.openCurrentCourseLesson === 'function' && window.openCurrentCourseLesson(resolvedCourseId)) return;
-        if (attempts++ < 12) {
-          setTimeout(openExactLesson, 150);
-          return;
-        }
-        if (typeof window.openCoursePage === 'function') window.openCoursePage(resolvedCourseId);
-      }
-      openExactLesson();
+      if (typeof window.openCurrentCourseLesson === 'function') window.openCurrentCourseLesson(resolvedCourseId);
     }, 360);
   }
 
@@ -532,9 +588,12 @@
     var base = ACTIONS.find(function(action){ return action.id === 'quiz'; });
     if (!base) return null;
     try {
-      if (typeof window.getCurrentCourseLessonDestination !== 'function') return base;
+      if (typeof window.getCurrentCourseLessonDestination !== 'function') {
+        ensureLearningSystemLoaded();
+        return null;
+      }
       var destination = window.getCurrentCourseLessonDestination(getNextCourseId());
-      if (!destination) return base;
+      if (!destination || !destination.itemId) return null;
       return Object.assign({}, base, {
         kind: 'course_lesson',
         courseId: destination.courseId,
@@ -543,7 +602,7 @@
         cta: destination.cta
       });
     } catch (_) {
-      return base;
+      return null;
     }
   }
 
@@ -911,6 +970,10 @@
     }
     goalMatchedActions(selectedGoalIds).forEach(function(action){
       if (hasIncompleteOnboarding && action.id === 'nutrition') return;
+      if (action.id === 'quiz') {
+        addUniqueAction(picked, getExactQuizAction());
+        return;
+      }
       if (isActionTargetable(action, selectedGoalIds)) addUniqueAction(picked, action);
     });
     ['daily_checkin', 'weighin'].forEach(function(id){
