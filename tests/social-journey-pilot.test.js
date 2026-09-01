@@ -85,7 +85,7 @@ test('Home plan cards stay below the complete FitGotchi stats block', () => {
     assert.match(source, /characterBlockTail\.parentNode\.insertBefore\(card, characterBlockTail\.nextSibling\)/);
     assert.doesNotMatch(source, /levelStrip\.parentNode\.insertBefore\((weeklyGoals|card), levelStrip\.nextSibling\)/);
     assert.match(html, /pbb-social-journey\.js\?v=45-exact-course-label/);
-    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v445-exact-course-label'/);
+    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v446-exact-quiz-label'/);
 });
 
 test('Home course actions bypass legacy journey pages and open the exact current lesson', () => {
@@ -102,6 +102,9 @@ test('Home course actions bypass legacy journey pages and open the exact current
     assert.match(nextStepsSource, /window\.renderLearningHome\(\)/);
     assert.match(nextStepsSource, /window\.openCurrentCourseLesson\(resolvedCourseId\)/);
     assert.match(nextStepsSource, /window\.pbbOpenCurrentCourseLesson = openNextCourseTarget/);
+    assert.match(nextStepsSource, /function getExactQuizAction\(\)/);
+    assert.match(nextStepsSource, /destination\.title/);
+    assert.match(nextStepsSource, /addUniqueAction\(picked, getExactQuizAction\(\)\)/);
     assert.match(learningSource, /window\.openCurrentCourseLesson = function\(courseId\)/);
     assert.match(learningSource, /window\.getCurrentCourseLessonDestination = function\(courseId\)/);
     assert.match(learningSource, /title: `\$\{course\.title\}: \$\{quizTitle\}`/);
@@ -115,7 +118,7 @@ test('Home course actions bypass legacy journey pages and open the exact current
     assert.doesNotMatch(nextStepsSource, /is-next-course-target|is-course-guidance-home|applyActiveCourseGuidance/);
     assert.doesNotMatch(learningSource, /is-next-course-lesson-target|guideToCurrentCourseLesson/);
     assert.doesNotMatch(premiumCss, /pbb-next-course-pulse|is-next-course-target|is-next-course-lesson-target/);
-    assert.match(html, /pbb-next-obvious-steps\.js\?v=43-direct-course-lesson/);
+    assert.match(html, /pbb-next-obvious-steps\.js\?v=44-exact-quiz-label/);
     assert.match(html, /pbb-social-journey\.css\?v=27-direct-course-lesson/);
     assert.match(html, /pbb-premium-overlays\.css\?v=107-direct-course-lesson/);
     assert.match(html, /learning-inline\.js\?v=35-exact-course-label/);

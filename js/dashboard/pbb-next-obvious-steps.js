@@ -528,6 +528,25 @@
     }, 360);
   }
 
+  function getExactQuizAction() {
+    var base = ACTIONS.find(function(action){ return action.id === 'quiz'; });
+    if (!base) return null;
+    try {
+      if (typeof window.getCurrentCourseLessonDestination !== 'function') return base;
+      var destination = window.getCurrentCourseLessonDestination(getNextCourseId());
+      if (!destination) return base;
+      return Object.assign({}, base, {
+        kind: 'course_lesson',
+        courseId: destination.courseId,
+        title: destination.title,
+        body: destination.body,
+        cta: destination.cta
+      });
+    } catch (_) {
+      return base;
+    }
+  }
+
   function openQuizTarget() {
     if (isVisibleSelector('#daily-quiz-card')) {
       openDashboardTarget('#daily-quiz-card', { block: 'center' });
@@ -888,7 +907,7 @@
     // Keep the separate daily quiz and its Weekly Goal credit available after
     // the weekly lesson has been opened, rather than showing two Course CTAs.
     if (!journeyAction || journeyAction.kind !== 'course_lesson') {
-      addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'quiz'; }));
+      addUniqueAction(picked, getExactQuizAction());
     }
     goalMatchedActions(selectedGoalIds).forEach(function(action){
       if (hasIncompleteOnboarding && action.id === 'nutrition') return;

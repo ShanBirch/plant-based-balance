@@ -99,5 +99,5 @@ test('Settings defines complete readable light and dark colour pairs', () => {
 
 test('phone caches receive the redesign', () => {
   assert.match(dashboard, /pbb-premium-overlays\.css\?v=107-direct-course-lesson/);
-  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v445-exact-course-label'/);
+  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v446-exact-quiz-label'/);
 });
