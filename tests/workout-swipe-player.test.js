@@ -49,9 +49,9 @@ test('exercise page index stays inside available cards', () => {
 test('dashboard loads the player once and cache-busts both main loader paths', () => {
     const html = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
     const serviceWorker = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
-    assert.equal((html.match(/pbb-workout-swipe-player\.js\?v=4/g) || []).length, 1);
+    assert.equal((html.match(/pbb-workout-swipe-player\.js\?v=5/g) || []).length, 1);
     assert.equal((html.match(/dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=228-themed-workout-rating/g) || []).length, 3);
-    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v458-themed-workout-rating'/);
+    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v459-focus-cues-page'/);
     assert.match(html, /id="workout-add-existing-wrap"/);
     assert.match(html, /id="workout-add-existing-exercise-btn"/);
 });
@@ -70,11 +70,25 @@ test('focus menu and set controls call the live workout functions', () => {
     assert.match(source, /Film Form Check[\s\S]*openFormCheck/);
     assert.match(source, /Share a Set[\s\S]*openWorkoutFeedShare/);
     assert.match(source, /Add Exercise[\s\S]*openAddExerciseModal/);
-    assert.match(source, /Workout Notes[\s\S]*openActiveExerciseNote/);
+    assert.match(source, /Science & Form Cues[\s\S]*openScienceCues/);
+    assert.doesNotMatch(source, /Workout Notes|openActiveExerciseNote/);
     assert.match(source, /Finish & Save Workout[\s\S]*finishWorkout/);
     assert.match(source, /Complete set & start rest/);
     assert.match(source, /root\.startRestTimer\(true\)/);
     assert.match(source, /pbb-theme-dark #view-active-workout\.workout-focus-pilot/);
+    assert.match(source, /workout-focus-cues-page/);
+    assert.match(source, /workout-focus-pilot \.workout-swipe-prescription,[\s\S]*exercise-note-section \{ display: none !important; \}/);
+    assert.match(source, /width: 38px;[\s\S]*height: 34px;/);
+    assert.match(source, /button\.textContent = '⋯'/);
+});
+
+test('simplified focus header keeps personal best and delete actions', () => {
+    const renderer = fs.readFileSync(
+        path.join(root, 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js'),
+        'utf8'
+    );
+    assert.match(renderer, /\$\{previousSummaryHtml\}/);
+    assert.match(renderer, /deleteExerciseFromWorkout\('\$\{escapedName\}', \$\{isUserAdded\}\)/);
 });
 
 test('private focus mode has gated feature-drop and guided-tour entries', () => {

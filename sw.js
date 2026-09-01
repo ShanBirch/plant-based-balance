@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v458-themed-workout-rating'; // v458: Focus Mode plus completed-only, theme-aware workout feedback
+const CACHE_NAME = 'pbb-app-v459-focus-cues-page'; // v459: Cleaner Focus Mode header and dedicated form-cues page
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
