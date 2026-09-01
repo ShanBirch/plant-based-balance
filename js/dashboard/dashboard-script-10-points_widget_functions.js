@@ -7413,6 +7413,9 @@ async function saveActivity() {
 window.saveActivity = saveActivity;
 
 function showActivitySuccess(data) {
+    if (!data) return;
+    data.ratingEligible = true;
+    savedActivityData = data;
     hideAllAppViews();
     document.getElementById('view-activity-success').style.display = 'block';
     document.querySelector('.bottom-nav').style.display = 'none';
@@ -7797,21 +7800,33 @@ document.addEventListener('click', function(event) {
 
 function closeLogActivity() {
     if (balanceRouteTracker.active) stopBalanceRouteTracking({ silent: true });
+    savedActivityData = null;
     document.getElementById('view-log-activity').style.display = 'none';
     switchAppTab('movement-tab');
 }
 window.closeLogActivity = closeLogActivity;
 
 function closeActivitySuccess() {
+    const successView = document.getElementById('view-activity-success');
+    const completedSession = !!(
+        successView
+        && successView.style.display !== 'none'
+        && savedActivityData
+        && savedActivityData.ratingEligible === true
+    );
     // Grab activity info for rating before clearing
     const activityName = savedActivityData?.activity_label || savedActivityData?.activity_type || 'Activity';
     const activityId = savedActivityData?.id || null;
 
-    document.getElementById('view-activity-success').style.display = 'none';
+    if (successView) successView.style.display = 'none';
     switchAppTab('movement-tab');
 
-    // Show post-workout rating modal for activity
-    openWorkoutRatingModal(activityName, 'activity', activityId);
+    // Only a genuinely completed activity may open the feedback screen. This
+    // prevents Android back/cancel paths from reusing stale activity details.
+    if (completedSession) {
+        openWorkoutRatingModal(activityName, 'activity', activityId);
+    }
+    savedActivityData = null;
 }
 window.closeActivitySuccess = closeActivitySuccess;
 

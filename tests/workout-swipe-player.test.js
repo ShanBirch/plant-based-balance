@@ -50,8 +50,8 @@ test('dashboard loads the player once and cache-busts both main loader paths', (
     const html = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
     const serviceWorker = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
     assert.equal((html.match(/pbb-workout-swipe-player\.js\?v=4/g) || []).length, 1);
-    assert.equal((html.match(/dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=227-meal-primary-tabs/g) || []).length, 3);
-    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v457-shannon-workout-focus'/);
+    assert.equal((html.match(/dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=228-themed-workout-rating/g) || []).length, 3);
+    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v458-themed-workout-rating'/);
     assert.match(html, /id="workout-add-existing-wrap"/);
     assert.match(html, /id="workout-add-existing-exercise-btn"/);
 });

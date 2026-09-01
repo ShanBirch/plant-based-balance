@@ -178,11 +178,11 @@ test('versioned phone assets advance for the Home fix', () => {
 
   assert.match(dashboard, /pbb-social-journey\.css\?v=27-direct-course-lesson/);
   assert.match(dashboard, /pbb-social-journey\.js\?v=45-exact-course-label/);
-  assert.match(dashboard, /pbb-next-obvious-steps\.js\?v=49-public-todo-next/);
+  assert.match(dashboard, /pbb-next-obvious-steps\.js\?v=50-hide-shared-diary/);
   assert.match(dashboard, /dashboard-script-3-1_get_user_data\.js\?v=61-remove-primary-test-seed/);
   assert.match(dashboard, /pbb-deferred-fitbit\.js\?v=2-imported-activity-todo/);
-  assert.match(dashboard, /dashboard-script-1-daily_weighin_card_logic\.js\?v=77-nightly-diary-hide-shared/);
-  assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=51-imported-activity-todo/);
-  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v456-imported-activity-todo'/);
-  assert.match(serviceWorker, /dashboard-script-10-points_widget_functions\.js\?v=51-imported-activity-todo/);
+  assert.match(dashboard, /dashboard-script-1-daily_weighin_card_logic\.js\?v=78-hide-shared-diary-todo/);
+  assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=53-rating-completion-gate/);
+  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v458-themed-workout-rating'/);
+  assert.match(serviceWorker, /dashboard-script-10-points_widget_functions\.js\?v=53-rating-completion-gate/);
 });

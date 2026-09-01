@@ -1831,12 +1831,12 @@ window.addEventListener('load', function() {
         window.addEventListener('pbbInitComplete', function() {
             setTimeout(function() {
                 var s = document.createElement('script');
-                s.src = 'js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=77-nightly-diary-hide-shared';
+                s.src = 'js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=78-hide-shared-diary-todo';
                 document.head.appendChild(s);
             }, 3000);
         }, { once: true });
     } else {
-        document.write('<script src="js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=77-nightly-diary-hide-shared"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=78-hide-shared-diary-todo"><\/script>');
     }
     </script>
 
@@ -1962,14 +1962,14 @@ if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-progressphoto.js?v=12-private-share-studio"><\/script>');
 document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=35-balance-theme"><\/script>');
     document.write('<script src="js/dashboard/pbb-social-journey.js?v=45-exact-course-label"><\/script>');
-    document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=49-public-todo-next"><\/script>');
+    document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=50-hide-shared-diary"><\/script>');
     document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=29-accountability-checkout"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
     window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=12-private-share-studio');
 window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=35-balance-theme');
     window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=45-exact-course-label');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=49-public-todo-next');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=50-hide-shared-diary');
     window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=29-accountability-checkout');
 }
 </script>
@@ -8490,41 +8490,42 @@ if(!window._pbbIsIOSSafari) {
 </div>
 
 <!-- POST-WORKOUT RATING MODAL (Simplified) -->
-<div id="workout-rating-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:600; overflow-y:auto; padding:20px 10px;">
-    <div style="background:white; width:100%; max-width:420px; margin:60px auto 20px; border-radius:24px; overflow:hidden; box-shadow:0 25px 50px rgba(0,0,0,0.3);">
+<div id="workout-rating-modal" class="workout-rating-overlay" style="display:none;">
+    <div class="workout-rating-card">
         <!-- Header -->
-        <div style="padding:24px 20px 16px; text-align:center; background:linear-gradient(135deg, var(--primary), #4ade80); color:white;">
-            <h2 style="margin:0; font-family:'Playfair Display',serif; font-size:1.5rem;">How Was That?</h2>
-            <p id="rating-workout-name" style="margin:5px 0 0; opacity:0.9; font-size:0.9rem;">Rate your workout</p>
+        <div class="workout-rating-header">
+            <span class="workout-rating-kicker">SESSION COMPLETE</span>
+            <h2>How was that?</h2>
+            <p id="rating-workout-name">Rate your workout</p>
         </div>
 
-        <div style="padding:28px 24px;">
+        <div class="workout-rating-body">
             <!-- Difficulty Slider -->
-            <div style="margin-bottom:28px;">
-                <div style="font-weight:700; font-size:0.85rem; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); margin-bottom:14px;">How was your workout?</div>
-                <input type="range" id="rating-difficulty-slider" min="1" max="5" value="3" step="1" style="width:100%; height:8px; -webkit-appearance:none; appearance:none; background:linear-gradient(to right, #60a5fa, #f97316); border-radius:4px; outline:none; cursor:pointer;" oninput="updateSliderLabel('difficulty')">
-                <div style="display:flex; justify-content:space-between; margin-top:8px; font-size:0.8rem; font-weight:600;">
-                    <span style="color:#60a5fa;">Easy</span>
-                    <span style="color:#f97316;">Hard</span>
+            <div class="workout-rating-question">
+                <div class="workout-rating-label">How hard was your workout?</div>
+                <input class="workout-rating-range" type="range" id="rating-difficulty-slider" min="1" max="5" value="3" step="1" oninput="updateSliderLabel('difficulty')">
+                <div class="workout-rating-scale">
+                    <span>Easy</span>
+                    <span>Hard</span>
                 </div>
             </div>
 
             <!-- Energy Slider -->
-            <div style="margin-bottom:28px;">
-                <div style="font-weight:700; font-size:0.85rem; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); margin-bottom:14px;">How are you feeling?</div>
-                <input type="range" id="rating-energy-slider" min="1" max="5" value="3" step="1" style="width:100%; height:8px; -webkit-appearance:none; appearance:none; background:linear-gradient(to right, #94a3b8, #22c55e); border-radius:4px; outline:none; cursor:pointer;" oninput="updateSliderLabel('energy')">
-                <div style="display:flex; justify-content:space-between; margin-top:8px; font-size:0.8rem; font-weight:600;">
-                    <span style="color:#94a3b8;">Tired</span>
-                    <span style="color:#22c55e;">Full of Energy</span>
+            <div class="workout-rating-question">
+                <div class="workout-rating-label">How are you feeling now?</div>
+                <input class="workout-rating-range" type="range" id="rating-energy-slider" min="1" max="5" value="3" step="1" oninput="updateSliderLabel('energy')">
+                <div class="workout-rating-scale">
+                    <span>Tired</span>
+                    <span>Full of energy</span>
                 </div>
             </div>
 
             <!-- Buttons -->
-            <div style="display:flex; gap:10px;">
-                <button onclick="skipWorkoutRating()" style="flex:1; padding:14px; border-radius:14px; border:2px solid #e2e8f0; background:white; color:var(--text-muted); font-weight:600; font-size:0.95rem; cursor:pointer;">
+            <div class="workout-rating-actions">
+                <button class="workout-rating-skip" onclick="skipWorkoutRating()">
                     Skip
                 </button>
-                <button id="save-rating-btn" onclick="saveWorkoutRating()" style="flex:2; padding:14px; border-radius:14px; border:none; background:var(--primary); color:white; font-weight:700; font-size:0.95rem; cursor:pointer;">
+                <button class="workout-rating-save" id="save-rating-btn" onclick="saveWorkoutRating()">
                     Save
                 </button>
             </div>
@@ -8533,36 +8534,7 @@ if(!window._pbbIsIOSSafari) {
 </div>
 
 <style>
-    /* Slider thumb styling */
-    #workout-rating-modal input[type="range"]::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        appearance: none;
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        background: white;
-        border: 3px solid var(--primary);
-        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-        cursor: pointer;
-        margin-top: -10px;
-    }
-    #workout-rating-modal input[type="range"]::-moz-range-thumb {
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        background: white;
-        border: 3px solid var(--primary);
-        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-        cursor: pointer;
-    }
-    #workout-rating-modal input[type="range"]::-webkit-slider-runnable-track {
-        height: 8px;
-        border-radius: 4px;
-    }
-    #workout-rating-modal input[type="range"]::-moz-range-track {
-        height: 8px;
-        border-radius: 4px;
-    }
+    /* Kept in the themed dashboard stylesheet. */
 </style>
 
 <!-- STORE REVIEW PROMPT MODAL -->
@@ -13055,7 +13027,7 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=227-meal-primary-tabs&video_health=2';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=228-themed-workout-rating&video_health=2';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
@@ -13097,7 +13069,7 @@ if (window._pbbIsIOSSafari) {
         var s = document.createElement('script');
         s.async = false;
         s.dataset.metaTrialLoader = String(attempt);
-        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=227-meal-primary-tabs&video_health=2&meta_retry=' + attempt;
+        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=228-themed-workout-rating&video_health=2&meta_retry=' + attempt;
         s.onload = function() {
             if (window._pbbScript5Complete && window._switchAppTabReady && typeof window._switchAppTabReal === 'function') {
                 sessionStorage.removeItem('pbb_meta_script5_recovery_v1');
@@ -13116,7 +13088,7 @@ if (window._pbbIsIOSSafari) {
         document.head.appendChild(s);
     })(0);
 } else {
-document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=227-meal-primary-tabs&video_health=2"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=228-themed-workout-rating&video_health=2"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=4"></script>
@@ -18261,7 +18233,7 @@ if (window._pbbIsIOSSafari) {
 }
 </script>
 
-<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=113-custom-foods-community">
+<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=114-themed-workout-rating">
 <link rel="stylesheet" href="css/dashboard/pbb-onboarding-comeback.css?v=8">
 <link rel="stylesheet" href="css/dashboard/pbb-onboarding-foundations.css?v=10-preference-contrast">
 
@@ -19822,13 +19794,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-        s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=52-private-share-studio';
+        s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=53-rating-completion-gate';
             s.onload = function() { if(window._crumb)window._crumb('script10_deferred_loaded'); };
             document.head.appendChild(s);
         }, 1500);
     }, { once: true });
 } else {
-        document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=52-private-share-studio"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=53-rating-completion-gate"><\/script>');
 }
 </script>
 

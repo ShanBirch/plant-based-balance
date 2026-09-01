@@ -19433,7 +19433,7 @@ function openWorkoutRatingModal(workoutName, sourceType, sourceId) {
     const nameEl = document.getElementById('rating-workout-name');
     if (nameEl) nameEl.textContent = workoutName || 'Rate your workout';
 
-    document.getElementById('workout-rating-modal').style.display = 'block';
+    document.getElementById('workout-rating-modal').style.display = 'flex';
 }
 
 async function saveWorkoutRating() {
@@ -20277,6 +20277,7 @@ function quitWorkout() {
 }
 
 function closeSuccessScreen(skipRating) {
+    const completedSession = !!completedWorkoutDataForShare;
     // Grab workout name before clearing data
     const workoutName = completedWorkoutDataForShare?.workoutName || window.currentWorkoutName || 'Workout';
 
@@ -20310,7 +20311,7 @@ function closeSuccessScreen(skipRating) {
     }
 
     // Show post-workout rating modal (unless explicitly skipped)
-    if (!skipRating) {
+    if (!skipRating && completedSession) {
         openWorkoutRatingModal(workoutName, 'workout', null);
     }
 }

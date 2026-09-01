@@ -1259,6 +1259,197 @@ html[data-pbb-theme="dark"] #ai-plan-meals-list .card-body [style*="background:#
     }
 }
 
+/* Post-session feedback: cream/white/gold in light mode, black/white/gold in dark mode. */
+#workout-rating-modal.workout-rating-overlay {
+    --rating-page: #090909;
+    --rating-surface: #121212;
+    --rating-soft: #1c1a16;
+    --rating-text: #f8f7f2;
+    --rating-muted: #b9b3a8;
+    --rating-border: rgba(245, 217, 138, 0.22);
+    --rating-gold: #d8ad4e;
+    --rating-gold-bright: #f4d780;
+    --rating-on-gold: #17130b;
+    align-items: center;
+    background: radial-gradient(circle at 50% 14%, rgba(216, 173, 78, 0.14), transparent 34%), var(--rating-page) !important;
+    box-sizing: border-box;
+    color: var(--rating-text) !important;
+    height: 100%;
+    inset: 0;
+    justify-content: center;
+    overflow-y: auto;
+    padding: calc(22px + env(safe-area-inset-top, 0px)) 16px calc(22px + env(safe-area-inset-bottom, 0px));
+    position: fixed;
+    width: 100%;
+    z-index: 600;
+}
+
+html[data-pbb-theme="light"] #workout-rating-modal.workout-rating-overlay {
+    --rating-page: #f7f3eb;
+    --rating-surface: #ffffff;
+    --rating-soft: #f5efe3;
+    --rating-text: #171512;
+    --rating-muted: #6c665c;
+    --rating-border: rgba(181, 138, 52, 0.26);
+    --rating-gold: #8b651d;
+    --rating-gold-bright: #dfbd65;
+    --rating-on-gold: #17130b;
+    background: radial-gradient(circle at 50% 12%, rgba(223, 189, 101, 0.24), transparent 34%), var(--rating-page) !important;
+}
+
+#workout-rating-modal.workout-rating-overlay .workout-rating-card {
+    background: var(--rating-surface) !important;
+    border: 1px solid var(--rating-border) !important;
+    border-radius: 28px;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.18) !important;
+    color: var(--rating-text) !important;
+    margin: auto;
+    max-width: 430px;
+    overflow: hidden;
+    width: 100%;
+}
+
+#workout-rating-modal.workout-rating-overlay .workout-rating-header {
+    background: linear-gradient(145deg, var(--rating-soft), var(--rating-surface)) !important;
+    border-bottom: 1px solid var(--rating-border) !important;
+    color: var(--rating-text) !important;
+    padding: 30px 24px 24px;
+    text-align: center;
+}
+
+#workout-rating-modal .workout-rating-kicker {
+    color: var(--rating-gold) !important;
+    -webkit-text-fill-color: var(--rating-gold) !important;
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 850;
+    letter-spacing: 0.16em;
+    margin-bottom: 8px;
+}
+
+#workout-rating-modal .workout-rating-header h2 {
+    color: var(--rating-text) !important;
+    -webkit-text-fill-color: var(--rating-text) !important;
+    font-family: 'Playfair Display', serif;
+    font-size: 1.65rem;
+    margin: 0;
+}
+
+#workout-rating-modal #rating-workout-name {
+    color: var(--rating-muted) !important;
+    -webkit-text-fill-color: var(--rating-muted) !important;
+    font-size: 0.9rem;
+    margin: 6px 0 0;
+}
+
+#workout-rating-modal .workout-rating-body {
+    background: var(--rating-surface) !important;
+    padding: 26px 24px 24px;
+}
+
+#workout-rating-modal .workout-rating-question {
+    background: var(--rating-soft);
+    border: 1px solid var(--rating-border);
+    border-radius: 18px;
+    margin-bottom: 14px;
+    padding: 18px 16px 15px;
+}
+
+#workout-rating-modal .workout-rating-label {
+    color: var(--rating-text) !important;
+    -webkit-text-fill-color: var(--rating-text) !important;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.07em;
+    margin-bottom: 18px;
+    text-transform: uppercase;
+}
+
+#workout-rating-modal .workout-rating-range {
+    -webkit-appearance: none;
+    appearance: none;
+    background: linear-gradient(90deg, var(--rating-gold), var(--rating-gold-bright)) !important;
+    border-radius: 999px;
+    cursor: pointer;
+    height: 7px;
+    outline: none;
+    width: 100%;
+}
+
+#workout-rating-modal .workout-rating-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--rating-surface) !important;
+    border: 3px solid var(--rating-gold) !important;
+    border-radius: 50%;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    height: 28px;
+    width: 28px;
+}
+
+#workout-rating-modal .workout-rating-range::-moz-range-thumb {
+    background: var(--rating-surface) !important;
+    border: 3px solid var(--rating-gold) !important;
+    border-radius: 50%;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    height: 22px;
+    width: 22px;
+}
+
+#workout-rating-modal .workout-rating-scale {
+    color: var(--rating-muted) !important;
+    -webkit-text-fill-color: var(--rating-muted) !important;
+    display: flex;
+    font-size: 0.76rem;
+    font-weight: 700;
+    justify-content: space-between;
+    margin-top: 11px;
+}
+
+#workout-rating-modal .workout-rating-actions {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.6fr);
+    margin-top: 20px;
+}
+
+#workout-rating-modal .workout-rating-actions button {
+    border-radius: 15px;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.92rem;
+    font-weight: 800;
+    min-height: 52px;
+    padding: 13px;
+}
+
+#workout-rating-modal .workout-rating-skip {
+    background: var(--rating-soft) !important;
+    border: 1px solid var(--rating-border) !important;
+    color: var(--rating-muted) !important;
+    -webkit-text-fill-color: var(--rating-muted) !important;
+}
+
+#workout-rating-modal .workout-rating-save {
+    background: linear-gradient(135deg, var(--rating-gold-bright), var(--rating-gold)) !important;
+    border: 0 !important;
+    color: var(--rating-on-gold) !important;
+    -webkit-text-fill-color: var(--rating-on-gold) !important;
+    box-shadow: 0 10px 24px rgba(170, 125, 37, 0.2);
+}
+
+@media (max-width: 380px) {
+    #workout-rating-modal .workout-rating-header {
+        padding: 24px 18px 19px;
+    }
+
+    #workout-rating-modal .workout-rating-body {
+        padding: 20px 16px 18px;
+    }
+}
+
 /* Nutrition's two primary destinations read as one full-width tab bar. */
 #view-meals > .app-header {
     border-bottom: 0 !important;

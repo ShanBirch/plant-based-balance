@@ -1283,6 +1283,9 @@ const FRIDAY_WEIGH_SHARE_POINTS = 5;
             markFitnessDiaryShared(dateKey);
             closeFitnessDiaryFeedSharePrompt();
             hideFitnessDiaryShareCards(dateKey);
+            if (window.pbbNextSteps && typeof window.pbbNextSteps.refresh === 'function') {
+                window.pbbNextSteps.refresh();
+            }
             if (typeof loadPhotoFeed === 'function') {
                 loadPhotoFeed('friends-photo-feed', 'friends-feed-empty');
             }

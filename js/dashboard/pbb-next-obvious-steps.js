@@ -220,7 +220,9 @@
   function isFitnessDiaryDue() {
     if (new Date().getHours() < 18) return false;
     try {
-      return localStorage.getItem('fitnessDiaryDone_' + todayKey()) !== '1';
+      var dateKey = todayKey();
+      return localStorage.getItem('fitnessDiaryDone_' + dateKey) !== '1'
+        && localStorage.getItem('pbbFitnessDiarySharedToFeed_' + dateKey) !== '1';
     } catch (_) {
       return true;
     }

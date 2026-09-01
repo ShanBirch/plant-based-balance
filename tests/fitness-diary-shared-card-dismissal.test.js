@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 
 const diary = fs.readFileSync('js/dashboard/dashboard-script-1-daily_weighin_card_logic.js', 'utf8');
+const nextSteps = fs.readFileSync('js/dashboard/pbb-next-obvious-steps.js', 'utf8');
 const dashboard = fs.readFileSync('dashboard.html', 'utf8');
 
 test('a successful Fitness Diary Feed share removes every diary share card', () => {
@@ -19,5 +20,11 @@ test('the persisted share state wins over initial load and delayed completion ti
 });
 
 test('returning Android phones receive the diary dismissal release', () => {
-  assert.ok((dashboard.match(/dashboard-script-1-daily_weighin_card_logic\.js\?v=77-nightly-diary-hide-shared/g) || []).length >= 2);
+  assert.ok((dashboard.match(/dashboard-script-1-daily_weighin_card_logic\.js\?v=78-hide-shared-diary-todo/g) || []).length >= 2);
+  assert.match(dashboard, /pbb-next-obvious-steps\.js\?v=50-hide-shared-diary/);
+});
+
+test('sharing the diary also removes its stale To do next suggestion', () => {
+  assert.match(diary, /hideFitnessDiaryShareCards\(dateKey\);[\s\S]*?window\.pbbNextSteps\.refresh\(\)/);
+  assert.match(nextSteps, /pbbFitnessDiarySharedToFeed_/);
 });
