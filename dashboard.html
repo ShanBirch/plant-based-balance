@@ -8933,124 +8933,51 @@ html[data-pbb-theme="light"] #view-activity-success { --activity-success-accent:
 
         <!-- Setup Section (shown before timer starts) -->
         <div id="interval-timer-setup">
-            <div class="movement-tool-kicker">Set your intervals</div>
-            <h3 class="movement-tool-question">How do you want to work?</h3>
-            <p class="movement-tool-helper">Choose a quick timer below or describe your own work, rest and rounds.</p>
-            <!-- Natural Language Input -->
-            <div class="movement-tool-card movement-stopwatch-input-card" style="margin-bottom: 24px;">
-                <div class="movement-tool-label">Describe your timer</div>
-                <input id="interval-timer-input" type="text" placeholder='e.g. "40/20 x6" or "30 on 10 off 8 rounds"'
-                    style="width: 100%; padding: 16px 18px; border-radius: 16px; border: 2px solid var(--border); background: var(--card-bg); color: var(--text-main); font-size: 1.1rem; box-sizing: border-box; outline: none; font-weight: 600;"
-                    onfocus="this.style.borderColor='#f59e0b'" onblur="this.style.borderColor='var(--border)'"
-                    onkeydown="if(event.key==='Enter') parseAndPreviewTimer()">
-                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 8px; line-height: 1.5;">
-                    Try: <span onclick="document.getElementById('interval-timer-input').value='40/20 x6'; parseAndPreviewTimer();" style="color:#f59e0b; cursor:pointer; font-weight:600;">40/20 x6</span> &middot;
-                    <span onclick="document.getElementById('interval-timer-input').value='30 on 15 off 10 rounds'; parseAndPreviewTimer();" style="color:#f59e0b; cursor:pointer; font-weight:600;">30 on 15 off 10 rounds</span> &middot;
-                    <span onclick="document.getElementById('interval-timer-input').value='tabata'; parseAndPreviewTimer();" style="color:#f59e0b; cursor:pointer; font-weight:600;">tabata</span> &middot;
-                    <span onclick="document.getElementById('interval-timer-input').value='EMOM 10 min'; parseAndPreviewTimer();" style="color:#f59e0b; cursor:pointer; font-weight:600;">EMOM 10 min</span>
-                </div>
-            </div>
+            <div class="movement-tool-kicker">Interval timer</div>
+            <h3 class="movement-tool-question">Set your timer</h3>
+            <p class="movement-tool-helper">Choose your work, rest and rounds. Then start.</p>
 
-            <!-- Preview Card (hidden until parsed) -->
-            <div id="interval-timer-preview" style="display:none; margin-bottom: 24px;">
-                <div style="background: linear-gradient(135deg, #451a03, #78350f); border-radius: 20px; padding: 24px; color: white;">
-                    <div style="text-align: center; margin-bottom: 16px;">
-                        <div id="interval-preview-title" style="font-size: 1.3rem; font-weight: 800; margin-bottom: 4px;">40s Work / 20s Rest</div>
-                        <div id="interval-preview-subtitle" style="font-size: 0.85rem; opacity: 0.8;">6 rounds &middot; 6:00 total</div>
+            <div class="movement-tool-card interval-setup-card">
+                <div class="interval-setup-row">
+                    <div><strong>Work</strong><span>Seconds moving</span></div>
+                    <div class="interval-stepper" aria-label="Work duration">
+                        <button type="button" aria-label="Reduce work time" onclick="adjustIntervalValue('work', -5)">&minus;</button>
+                        <label><span class="sr-only">Work seconds</span><input id="interval-work-input" type="number" value="30" min="5" max="300" inputmode="numeric" onchange="updateIntervalPreview()"><small>sec</small></label>
+                        <button type="button" aria-label="Increase work time" onclick="adjustIntervalValue('work', 5)">+</button>
                     </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 16px;">
-                        <div style="background: rgba(255,255,255,0.15); border-radius: 12px; padding: 12px; text-align: center;">
-                            <div id="interval-preview-work" style="font-size: 1.6rem; font-weight: 800;">40s</div>
-                            <div style="font-size: 0.7rem; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.5px;">Work</div>
-                        </div>
-                        <div style="background: rgba(255,255,255,0.15); border-radius: 12px; padding: 12px; text-align: center;">
-                            <div id="interval-preview-rest" style="font-size: 1.6rem; font-weight: 800;">20s</div>
-                            <div style="font-size: 0.7rem; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.5px;">Rest</div>
-                        </div>
-                        <div style="background: rgba(255,255,255,0.15); border-radius: 12px; padding: 12px; text-align: center;">
-                            <div id="interval-preview-rounds" style="font-size: 1.6rem; font-weight: 800;">6</div>
-                            <div style="font-size: 0.7rem; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.5px;">Rounds</div>
-                        </div>
+                </div>
+                <div class="interval-setup-row">
+                    <div><strong>Rest</strong><span>Seconds recovering</span></div>
+                    <div class="interval-stepper" aria-label="Rest duration">
+                        <button type="button" aria-label="Reduce rest time" onclick="adjustIntervalValue('rest', -5)">&minus;</button>
+                        <label><span class="sr-only">Rest seconds</span><input id="interval-rest-input" type="number" value="30" min="0" max="300" inputmode="numeric" onchange="updateIntervalPreview()"><small>sec</small></label>
+                        <button type="button" aria-label="Increase rest time" onclick="adjustIntervalValue('rest', 5)">+</button>
+                    </div>
+                </div>
+                <div class="interval-setup-row">
+                    <div><strong>Rounds</strong><span>Times through</span></div>
+                    <div class="interval-stepper" aria-label="Number of rounds">
+                        <button type="button" aria-label="Reduce rounds" onclick="adjustIntervalValue('rounds', -1)">&minus;</button>
+                        <label><span class="sr-only">Rounds</span><input id="interval-rounds-input" type="number" value="8" min="1" max="100" inputmode="numeric" onchange="updateIntervalPreview()"></label>
+                        <button type="button" aria-label="Increase rounds" onclick="adjustIntervalValue('rounds', 1)">+</button>
                     </div>
                 </div>
             </div>
 
-            <!-- Manual Adjust Section -->
-            <div id="interval-timer-manual" style="display:none; margin-bottom: 24px;">
-                <div style="font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 12px;">Adjust</div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
-                    <!-- Work time -->
-                    <div style="text-align: center;">
-                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 8px; font-weight: 600;">Work (s)</div>
-                        <div style="display: flex; align-items: center; gap: 4px;">
-                            <button onclick="adjustIntervalValue('work', -5)" style="width: 32px; height: 32px; border-radius: 50%; background: var(--border); border: none; font-size: 1rem; cursor: pointer; color: var(--text-main); font-weight: 700;">-</button>
-                            <input id="interval-work-input" type="number" value="40" min="5" max="300" style="width: 100%; text-align: center; padding: 8px 2px; border-radius: 10px; border: 2px solid var(--border); background: var(--card-bg); color: var(--text-main); font-size: 1.1rem; font-weight: 700; box-sizing: border-box; outline: none;" onchange="updateIntervalPreview()">
-                            <button onclick="adjustIntervalValue('work', 5)" style="width: 32px; height: 32px; border-radius: 50%; background: var(--border); border: none; font-size: 1rem; cursor: pointer; color: var(--text-main); font-weight: 700;">+</button>
-                        </div>
-                    </div>
-                    <!-- Rest time -->
-                    <div style="text-align: center;">
-                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 8px; font-weight: 600;">Rest (s)</div>
-                        <div style="display: flex; align-items: center; gap: 4px;">
-                            <button onclick="adjustIntervalValue('rest', -5)" style="width: 32px; height: 32px; border-radius: 50%; background: var(--border); border: none; font-size: 1rem; cursor: pointer; color: var(--text-main); font-weight: 700;">-</button>
-                            <input id="interval-rest-input" type="number" value="20" min="0" max="300" style="width: 100%; text-align: center; padding: 8px 2px; border-radius: 10px; border: 2px solid var(--border); background: var(--card-bg); color: var(--text-main); font-size: 1.1rem; font-weight: 700; box-sizing: border-box; outline: none;" onchange="updateIntervalPreview()">
-                            <button onclick="adjustIntervalValue('rest', 5)" style="width: 32px; height: 32px; border-radius: 50%; background: var(--border); border: none; font-size: 1rem; cursor: pointer; color: var(--text-main); font-weight: 700;">+</button>
-                        </div>
-                    </div>
-                    <!-- Rounds -->
-                    <div style="text-align: center;">
-                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 8px; font-weight: 600;">Rounds</div>
-                        <div style="display: flex; align-items: center; gap: 4px;">
-                            <button onclick="adjustIntervalValue('rounds', -1)" style="width: 32px; height: 32px; border-radius: 50%; background: var(--border); border: none; font-size: 1rem; cursor: pointer; color: var(--text-main); font-weight: 700;">-</button>
-                            <input id="interval-rounds-input" type="number" value="6" min="1" max="100" style="width: 100%; text-align: center; padding: 8px 2px; border-radius: 10px; border: 2px solid var(--border); background: var(--card-bg); color: var(--text-main); font-size: 1.1rem; font-weight: 700; box-sizing: border-box; outline: none;" onchange="updateIntervalPreview()">
-                            <button onclick="adjustIntervalValue('rounds', 1)" style="width: 32px; height: 32px; border-radius: 50%; background: var(--border); border: none; font-size: 1rem; cursor: pointer; color: var(--text-main); font-weight: 700;">+</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <p id="interval-total-summary" class="interval-total-summary">8:00 total</p>
 
             <!-- Start Button -->
-            <button id="interval-start-btn" onclick="startIntervalTimer()" style="display:none; width: 100%; padding: 18px; border-radius: 16px; background: linear-gradient(135deg, #f59e0b, #ef4444); color: white; border: none; font-size: 1.2rem; font-weight: 800; cursor: pointer; box-shadow: 0 8px 20px rgba(245,158,11,0.3); letter-spacing: 0.5px;">
-                Start Timer
+            <button id="interval-start-btn" type="button" onclick="startIntervalTimer()">
+                Start timer
             </button>
-
-            <!-- Recent Presets -->
-            <div id="interval-recent-presets" style="margin-top: 30px;">
-                <div style="font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 12px;">Quick Presets</div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <div onclick="loadIntervalPreset(20, 10, 8, 'Tabata')" style="cursor: pointer; background: var(--card-bg); border: 2px solid var(--border); border-radius: 14px; padding: 14px; text-align: center; transition: all 0.2s;">
-                        <div style="font-weight: 800; color: var(--text-main); font-size: 1rem;">Tabata</div>
-                        <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;">20/10 x 8</div>
-                    </div>
-                    <div onclick="loadIntervalPreset(40, 20, 6, '40/20')" style="cursor: pointer; background: var(--card-bg); border: 2px solid var(--border); border-radius: 14px; padding: 14px; text-align: center; transition: all 0.2s;">
-                        <div style="font-weight: 800; color: var(--text-main); font-size: 1rem;">40/20</div>
-                        <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;">40/20 x 6</div>
-                    </div>
-                    <div onclick="loadIntervalPreset(30, 30, 10, '30/30')" style="cursor: pointer; background: var(--card-bg); border: 2px solid var(--border); border-radius: 14px; padding: 14px; text-align: center; transition: all 0.2s;">
-                        <div style="font-weight: 800; color: var(--text-main); font-size: 1rem;">30/30</div>
-                        <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;">30/30 x 10</div>
-                    </div>
-                    <div onclick="loadIntervalPreset(45, 15, 8, '45/15')" style="cursor: pointer; background: var(--card-bg); border: 2px solid var(--border); border-radius: 14px; padding: 14px; text-align: center; transition: all 0.2s;">
-                        <div style="font-weight: 800; color: var(--text-main); font-size: 1rem;">45/15</div>
-                        <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;">45/15 x 8</div>
-                    </div>
-                    <div onclick="loadIntervalPreset(60, 0, 10, 'EMOM')" style="cursor: pointer; background: var(--card-bg); border: 2px solid var(--border); border-radius: 14px; padding: 14px; text-align: center; transition: all 0.2s;">
-                        <div style="font-weight: 800; color: var(--text-main); font-size: 1rem;">EMOM</div>
-                        <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;">60s x 10 min</div>
-                    </div>
-                    <div onclick="loadIntervalPreset(50, 10, 5, '50/10')" style="cursor: pointer; background: var(--card-bg); border: 2px solid var(--border); border-radius: 14px; padding: 14px; text-align: center; transition: all 0.2s;">
-                        <div style="font-weight: 800; color: var(--text-main); font-size: 1rem;">50/10</div>
-                        <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;">50/10 x 5</div>
-                    </div>
-                </div>
-            </div>
         </div>
 
         <!-- Active Timer Section (hidden until timer starts) -->
         <div id="interval-timer-active" style="display:none;">
+            <div class="movement-tool-kicker interval-running-kicker">Running</div>
             <!-- Timer Ring -->
-            <div style="display: flex; justify-content: center; margin: 20px 0 30px;">
-                <div style="position: relative; width: 260px; height: 260px;">
+            <div class="interval-gold-dial-wrap">
+                <div class="interval-gold-dial">
                     <svg viewBox="0 0 260 260" style="width: 100%; height: 100%; transform: rotate(-90deg);">
                         <circle cx="130" cy="130" r="115" fill="none" stroke="#e2e8f0" stroke-width="12"/>
                         <circle id="interval-timer-ring" cx="130" cy="130" r="115" fill="none"
@@ -9060,33 +8987,24 @@ html[data-pbb-theme="light"] #view-activity-success { --activity-success-accent:
                             stroke-dashoffset="0"
                             style="transition: stroke-dashoffset 0.3s linear, stroke 0.3s ease;"/>
                     </svg>
-                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
-                        <div id="interval-timer-phase" style="font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-muted); margin-bottom: 4px;">WORK</div>
-                        <div id="interval-timer-display" style="font-size: 4rem; font-weight: 800; color: var(--text-main); font-family: monospace; line-height: 1;">00:40</div>
-                        <div id="interval-timer-round" style="font-size: 0.9rem; color: var(--text-muted); margin-top: 6px; font-weight: 600;">Round 1 / 6</div>
+                    <div class="interval-gold-dial-content">
+                        <div id="interval-timer-phase">WORK</div>
+                        <div id="interval-timer-display">30</div>
+                        <div id="interval-timer-round">1 of 8</div>
                     </div>
                 </div>
             </div>
 
             <!-- Phase indicator dots -->
-            <div id="interval-round-dots" style="display: flex; justify-content: center; gap: 8px; margin-bottom: 30px; flex-wrap: wrap; max-width: 300px; margin-left: auto; margin-right: auto;"></div>
+            <div id="interval-round-dots" class="interval-round-dots" aria-label="Round progress"></div>
 
             <!-- Controls -->
-            <div style="display: flex; gap: 12px; justify-content: center; margin-bottom: 20px;">
-                <button id="interval-pause-btn" onclick="togglePauseIntervalTimer()" style="flex: 1; max-width: 180px; padding: 16px; border-radius: 16px; background: #f59e0b; color: white; border: none; font-size: 1.1rem; font-weight: 800; cursor: pointer;">
+            <div class="interval-running-actions">
+                <button id="interval-pause-btn" type="button" onclick="togglePauseIntervalTimer()">
                     Pause
                 </button>
-                <button onclick="resetIntervalTimer()" style="flex: 1; max-width: 180px; padding: 16px; border-radius: 16px; background: var(--border); color: var(--text-main); border: none; font-size: 1.1rem; font-weight: 800; cursor: pointer;">
-                    Reset
-                </button>
             </div>
-
-            <!-- Skip round -->
-            <div style="text-align: center;">
-                <button onclick="skipIntervalPhase()" style="padding: 10px 24px; border-radius: 12px; background: transparent; color: var(--text-muted); border: 1px solid var(--border); font-size: 0.85rem; font-weight: 600; cursor: pointer;">
-                    Skip &raquo;
-                </button>
-            </div>
+            <button id="interval-end-btn" type="button" onclick="resetIntervalTimer()">End timer</button>
         </div>
 
         <!-- Completed Section (hidden until done) -->
@@ -18209,7 +18127,7 @@ if (window._pbbIsIOSSafari) {
 }
 </script>
 
-<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=116-movement-style">
+<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=117-stopwatch-simple">
 <link rel="stylesheet" href="css/dashboard/pbb-onboarding-comeback.css?v=8">
 <link rel="stylesheet" href="css/dashboard/pbb-onboarding-foundations.css?v=10-preference-contrast">
 
@@ -18350,7 +18268,7 @@ if (typeof WORKOUT_LIBRARY !== 'undefined' && typeof WORKOUT_LIBRARY_EXTENDED !=
 </script>
 <script>
 // Script-7 (29KB) - video logic. Defer on iOS to reduce memory pressure.
-var pbbVideoLogicSrc = 'js/dashboard/dashboard-script-7-video_logic.js?v=20260902-movement-style';
+var pbbVideoLogicSrc = 'js/dashboard/dashboard-script-7-video_logic.js?v=20260902-stopwatch-simple';
 if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {

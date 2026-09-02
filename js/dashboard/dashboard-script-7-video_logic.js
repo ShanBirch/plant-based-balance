@@ -552,14 +552,13 @@ function openIntervalTimer() {
     const view = document.getElementById('view-interval-timer');
     if (view) {
         view.style.display = 'block';
+        view.dataset.timerScreen = 'setup';
+        view.scrollTop = 0;
         pushNavigationState('view-interval-timer', closeIntervalTimer);
         document.getElementById('interval-timer-setup').style.display = 'block';
         document.getElementById('interval-timer-active').style.display = 'none';
         document.getElementById('interval-timer-done').style.display = 'none';
-        document.getElementById('interval-timer-input').value = '';
-        document.getElementById('interval-timer-preview').style.display = 'none';
-        document.getElementById('interval-timer-manual').style.display = 'none';
-        document.getElementById('interval-start-btn').style.display = 'none';
+        updateIntervalPreview();
     }
 }
 
@@ -574,92 +573,6 @@ function closeIntervalTimer() {
 
     const view = document.getElementById('view-interval-timer');
     if (view) view.style.display = 'none';
-}
-
-// Parse natural language timer input
-function parseTimerInput(input) {
-    const text = input.trim().toLowerCase();
-    let work = null, rest = null, rounds = null;
-
-    // Presets
-    if (text === 'tabata') return { work: 20, rest: 10, rounds: 8 };
-    if (/^emom\s*(\d+)\s*(min|minutes?)?$/i.test(text)) {
-        const m = text.match(/^emom\s*(\d+)/i);
-        return { work: 60, rest: 0, rounds: parseInt(m[1]) };
-    }
-
-    // Pattern: "40/20 x6", "40/20 6 rounds", "40/20 6"
-    const slashPattern = /(\d+)\s*\/\s*(\d+)\s*(?:x|×)?\s*(\d+)?(?:\s*rounds?)?/i;
-    const slashMatch = text.match(slashPattern);
-    if (slashMatch) {
-        work = parseInt(slashMatch[1]);
-        rest = parseInt(slashMatch[2]);
-        rounds = slashMatch[3] ? parseInt(slashMatch[3]) : 6;
-        return { work, rest, rounds };
-    }
-
-    // Pattern: "30 on 10 off 8 rounds"
-    const onOffPattern = /(\d+)\s*(?:sec(?:onds?)?\s+)?on\s+(\d+)\s*(?:sec(?:onds?)?\s+)?off\s+(\d+)\s*(?:rounds?|sets?|x|times?)?/i;
-    const onOffMatch = text.match(onOffPattern);
-    if (onOffMatch) {
-        return { work: parseInt(onOffMatch[1]), rest: parseInt(onOffMatch[2]), rounds: parseInt(onOffMatch[3]) };
-    }
-
-    // Pattern: "30 on 10 off" (no rounds)
-    const onOffNoRounds = /(\d+)\s*(?:sec(?:onds?)?\s+)?on\s+(\d+)\s*(?:sec(?:onds?)?\s+)?off/i;
-    const onOffNR = text.match(onOffNoRounds);
-    if (onOffNR) {
-        return { work: parseInt(onOffNR[1]), rest: parseInt(onOffNR[2]), rounds: 6 };
-    }
-
-    // Pattern: "30 work 10 rest 8 rounds"
-    const workRestPattern = /(\d+)\s*(?:sec(?:onds?)?\s+)?(?:work|go|on)\s+(\d+)\s*(?:sec(?:onds?)?\s+)?(?:rest|off|break)\s+(\d+)\s*(?:rounds?|sets?|x|times?)?/i;
-    const workRestMatch = text.match(workRestPattern);
-    if (workRestMatch) {
-        return { work: parseInt(workRestMatch[1]), rest: parseInt(workRestMatch[2]), rounds: parseInt(workRestMatch[3]) };
-    }
-
-    // Pattern: just "X rounds" with numbers already set
-    const justRounds = /^(\d+)\s*(?:rounds?|sets?)$/i;
-    const justRoundsMatch = text.match(justRounds);
-    if (justRoundsMatch) {
-        return { work: 40, rest: 20, rounds: parseInt(justRoundsMatch[1]) };
-    }
-
-    // Pattern: two numbers like "40 20" (work rest)
-    const twoNums = /^(\d+)\s+(\d+)$/;
-    const twoMatch = text.match(twoNums);
-    if (twoMatch) {
-        return { work: parseInt(twoMatch[1]), rest: parseInt(twoMatch[2]), rounds: 6 };
-    }
-
-    // Pattern: three numbers like "40 20 6"
-    const threeNums = /^(\d+)\s+(\d+)\s+(\d+)$/;
-    const threeMatch = text.match(threeNums);
-    if (threeMatch) {
-        return { work: parseInt(threeMatch[1]), rest: parseInt(threeMatch[2]), rounds: parseInt(threeMatch[3]) };
-    }
-
-    return null;
-}
-
-function parseAndPreviewTimer() {
-    const input = document.getElementById('interval-timer-input').value;
-    const parsed = parseTimerInput(input);
-    if (!parsed) return;
-
-    document.getElementById('interval-work-input').value = parsed.work;
-    document.getElementById('interval-rest-input').value = parsed.rest;
-    document.getElementById('interval-rounds-input').value = parsed.rounds;
-    updateIntervalPreview();
-}
-
-function loadIntervalPreset(work, rest, rounds, name) {
-    document.getElementById('interval-timer-input').value = name;
-    document.getElementById('interval-work-input').value = work;
-    document.getElementById('interval-rest-input').value = rest;
-    document.getElementById('interval-rounds-input').value = rounds;
-    updateIntervalPreview();
 }
 
 function adjustIntervalValue(type, delta) {
@@ -683,16 +596,8 @@ function updateIntervalPreview() {
     const totalRemSec = totalSec % 60;
     const totalStr = totalRemSec > 0 ? `${totalMin}:${String(totalRemSec).padStart(2, '0')}` : `${totalMin}:00`;
 
-    const restLabel = rest > 0 ? ` / ${rest}s Rest` : ' (no rest)';
-    document.getElementById('interval-preview-title').textContent = `${work}s Work${restLabel}`;
-    document.getElementById('interval-preview-subtitle').textContent = `${rounds} round${rounds > 1 ? 's' : ''} \u00b7 ${totalStr} total`;
-    document.getElementById('interval-preview-work').textContent = `${work}s`;
-    document.getElementById('interval-preview-rest').textContent = `${rest}s`;
-    document.getElementById('interval-preview-rounds').textContent = rounds;
-
-    document.getElementById('interval-timer-preview').style.display = 'block';
-    document.getElementById('interval-timer-manual').style.display = 'block';
-    document.getElementById('interval-start-btn').style.display = 'block';
+    const summary = document.getElementById('interval-total-summary');
+    if (summary) summary.textContent = `${totalStr} total`;
 }
 
 function formatTimerSeconds(s) {
@@ -770,6 +675,14 @@ function renderRoundDots() {
     const st = window.intervalTimerState;
     const container = document.getElementById('interval-round-dots');
     if (!container) return;
+    container.setAttribute('aria-label', `Round ${st.currentRound} of ${st.totalRounds}`);
+
+    if (st.totalRounds > 12) {
+        const progress = Math.max(0, Math.min(100, (st.currentRound / st.totalRounds) * 100));
+        container.innerHTML = `<div class="interval-round-progress-track"><span style="width:${progress}%"></span></div>`;
+        return;
+    }
+
     let html = '';
     for (let i = 1; i <= st.totalRounds; i++) {
         const isActive = i === st.currentRound;
@@ -797,10 +710,14 @@ function updateTimerRing() {
 
 function startIntervalTimer() {
     const st = window.intervalTimerState;
+    const view = document.getElementById('view-interval-timer');
 
-    st.workSeconds = parseInt(document.getElementById('interval-work-input').value) || 40;
-    st.restSeconds = parseInt(document.getElementById('interval-rest-input').value) || 0;
-    st.totalRounds = parseInt(document.getElementById('interval-rounds-input').value) || 6;
+    st.workSeconds = Math.max(5, Math.min(300, parseInt(document.getElementById('interval-work-input').value) || 30));
+    st.restSeconds = Math.max(0, Math.min(300, parseInt(document.getElementById('interval-rest-input').value) || 0));
+    st.totalRounds = Math.max(1, Math.min(100, parseInt(document.getElementById('interval-rounds-input').value) || 8));
+    document.getElementById('interval-work-input').value = st.workSeconds;
+    document.getElementById('interval-rest-input').value = st.restSeconds;
+    document.getElementById('interval-rounds-input').value = st.totalRounds;
     st.currentRound = 1;
     st.currentPhase = 'work';
     st.secondsLeft = st.workSeconds;
@@ -811,12 +728,16 @@ function startIntervalTimer() {
     document.getElementById('interval-timer-setup').style.display = 'none';
     document.getElementById('interval-timer-active').style.display = 'block';
     document.getElementById('interval-timer-done').style.display = 'none';
+    if (view) {
+        view.dataset.timerScreen = 'running';
+        view.scrollTop = 0;
+    }
 
     // Init display
     document.getElementById('interval-timer-phase').textContent = 'WORK';
     document.getElementById('interval-timer-phase').style.color = '#8a6112';
     document.getElementById('interval-timer-display').textContent = formatTimerSeconds(st.secondsLeft);
-    document.getElementById('interval-timer-round').textContent = `Round ${st.currentRound} / ${st.totalRounds}`;
+    document.getElementById('interval-timer-round').textContent = `${st.currentRound} of ${st.totalRounds}`;
     document.getElementById('interval-pause-btn').textContent = 'Pause';
     renderRoundDots();
     updateTimerRing();
@@ -881,7 +802,7 @@ function advanceIntervalRound() {
 
     document.getElementById('interval-timer-phase').textContent = 'WORK';
     document.getElementById('interval-timer-phase').style.color = '#8a6112';
-    document.getElementById('interval-timer-round').textContent = `Round ${st.currentRound} / ${st.totalRounds}`;
+    document.getElementById('interval-timer-round').textContent = `${st.currentRound} of ${st.totalRounds}`;
     document.getElementById('interval-timer-display').textContent = formatTimerSeconds(st.secondsLeft);
     updateTimerRing();
     renderRoundDots();
@@ -890,6 +811,7 @@ function advanceIntervalRound() {
 
 function completeIntervalTimer() {
     const st = window.intervalTimerState;
+    const view = document.getElementById('view-interval-timer');
 
     clearInterval(st.interval);
     st.interval = null;
@@ -905,7 +827,11 @@ function completeIntervalTimer() {
 
     document.getElementById('interval-timer-active').style.display = 'none';
     document.getElementById('interval-timer-done').style.display = 'block';
-    document.getElementById('interval-done-summary').textContent = `${st.totalRounds} rounds completed \u00b7 ${totalStr}`;
+    document.getElementById('interval-done-summary').textContent = `${st.totalRounds} round${st.totalRounds === 1 ? '' : 's'} completed \u00b7 ${totalStr}`;
+    if (view) {
+        view.dataset.timerScreen = 'done';
+        view.scrollTop = 0;
+    }
 }
 
 function togglePauseIntervalTimer() {
@@ -917,6 +843,7 @@ function togglePauseIntervalTimer() {
 
 function resetIntervalTimer() {
     const st = window.intervalTimerState;
+    const view = document.getElementById('view-interval-timer');
     if (st.interval) {
         clearInterval(st.interval);
         st.interval = null;
@@ -927,15 +854,11 @@ function resetIntervalTimer() {
     document.getElementById('interval-timer-setup').style.display = 'block';
     document.getElementById('interval-timer-active').style.display = 'none';
     document.getElementById('interval-timer-done').style.display = 'none';
-}
-
-function skipIntervalPhase() {
-    const st = window.intervalTimerState;
-    if (!st.isRunning) return;
-
-    st.secondsLeft = 0;
-    // Manually trigger the tick logic
-    tickIntervalTimer();
+    updateIntervalPreview();
+    if (view) {
+        view.dataset.timerScreen = 'setup';
+        view.scrollTop = 0;
+    }
 }
 
 // ==========================================

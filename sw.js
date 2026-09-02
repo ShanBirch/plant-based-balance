@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v474-unified-movement-style'; // v474: unify Movement tools with the guided Balance style
+const CACHE_NAME = 'pbb-app-v475-stopwatch-simple'; // v475: simplified Balance Stopwatch setup and running dial
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -24,7 +24,7 @@ const ASSETS = [
   './js/dashboard/pbb-deferred-weeklygoals.js?v=35-balance-theme',
   './css/dashboard/pbb-onboarding-comeback.css?v=8',
   './css/dashboard/pbb-onboarding-foundations.css?v=7-single-render',
-  './js/dashboard/dashboard-script-7-video_logic.js?v=20260902-movement-style',
+  './js/dashboard/dashboard-script-7-video_logic.js?v=20260902-stopwatch-simple',
   './js/dashboard/dashboard-script-10-points_widget_functions.js?v=61-exact-activity-share',
   './js/dashboard/pbb-deferred-fitbit.js?v=3-latest-import-only',
   './js/dashboard/pbb-next-obvious-steps.js?v=51-coach-checkin-tour',

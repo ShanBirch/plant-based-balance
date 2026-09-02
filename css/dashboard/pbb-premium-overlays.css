@@ -12032,52 +12032,136 @@ html[data-pbb-theme="light"] .movement-tool-view {
 }
 
 /* Stopwatch */
-.movement-stopwatch-input-card .movement-tool-label { margin-bottom: 9px; }
+.movement-stopwatch-view .movement-tool-shell {
+    min-height: 100dvh;
+    padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px)) !important;
+}
 
-#view-interval-timer #interval-timer-input,
+#interval-timer-setup,
+#interval-timer-active {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.movement-stopwatch-view[data-timer-screen="running"] .movement-tool-header,
+.movement-stopwatch-view[data-timer-screen="done"] .movement-tool-header {
+    display: none;
+}
+
+.movement-stopwatch-view[data-timer-screen="running"] #interval-timer-active,
+.movement-stopwatch-view[data-timer-screen="done"] #interval-timer-done {
+    padding-top: calc(18px + env(safe-area-inset-top, 0px));
+}
+
+.interval-setup-card {
+    padding: 0 !important;
+    overflow: hidden;
+}
+
+.interval-setup-row {
+    display: flex;
+    min-height: 82px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 13px 15px;
+    box-sizing: border-box;
+}
+
+.interval-setup-row + .interval-setup-row { border-top: 1px solid var(--border); }
+
+.interval-setup-row > div:first-child {
+    min-width: 0;
+    display: grid;
+    gap: 3px;
+}
+
+.interval-setup-row strong {
+    color: var(--text-main) !important;
+    -webkit-text-fill-color: var(--text-main) !important;
+    font-size: 1rem;
+    line-height: 1.2;
+}
+
+.interval-setup-row > div:first-child span {
+    color: var(--text-muted) !important;
+    -webkit-text-fill-color: var(--text-muted) !important;
+    font-size: 0.78rem;
+    line-height: 1.25;
+}
+
+.interval-stepper {
+    display: grid;
+    grid-template-columns: 40px minmax(60px, auto) 40px;
+    align-items: center;
+    gap: 6px;
+    flex: 0 0 auto;
+}
+
+.interval-stepper button {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: var(--bg);
+    color: var(--text-main) !important;
+    -webkit-text-fill-color: var(--text-main) !important;
+    font: inherit;
+    font-size: 1.15rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.interval-stepper button:focus-visible {
+    outline: 3px solid var(--movement-accent-soft);
+    border-color: var(--movement-accent);
+}
+
+.interval-stepper label {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 3px;
+    white-space: nowrap;
+}
+
 #view-interval-timer :is(#interval-work-input, #interval-rest-input, #interval-rounds-input) {
-    border: 1px solid var(--border) !important;
-    background: var(--bg) !important;
+    width: 38px;
+    padding: 0;
+    border: 0 !important;
+    outline: 0 !important;
+    background: transparent !important;
     color: var(--text-main) !important;
     -webkit-text-fill-color: var(--text-main) !important;
-    caret-color: var(--movement-accent) !important;
+    font: inherit;
+    font-size: 1.05rem;
+    font-weight: 800;
+    line-height: 1.2;
+    text-align: right;
+    appearance: textfield;
 }
 
-#view-interval-timer #interval-timer-input:focus,
-#view-interval-timer :is(#interval-work-input, #interval-rest-input, #interval-rounds-input):focus {
-    border: 2px solid var(--movement-accent) !important;
-    outline: none !important;
-    box-shadow: 0 0 0 3px var(--movement-accent-soft) !important;
+#view-interval-timer :is(#interval-work-input, #interval-rest-input, #interval-rounds-input)::-webkit-inner-spin-button,
+#view-interval-timer :is(#interval-work-input, #interval-rest-input, #interval-rounds-input)::-webkit-outer-spin-button {
+    margin: 0;
+    appearance: none;
 }
 
-#view-interval-timer .movement-stopwatch-input-card span[onclick] {
-    color: var(--movement-accent) !important;
-    -webkit-text-fill-color: var(--movement-accent) !important;
+.interval-stepper small {
+    color: var(--text-muted) !important;
+    -webkit-text-fill-color: var(--text-muted) !important;
+    font-size: 0.72rem;
+    font-weight: 700;
 }
 
-#view-interval-timer #interval-timer-preview > div,
-#view-interval-timer #interval-timer-manual {
-    padding: 18px !important;
-    border: 1px solid var(--border) !important;
-    border-radius: 19px !important;
-    background: linear-gradient(145deg, var(--card-bg), var(--movement-accent-soft)) !important;
-    color: var(--text-main) !important;
-    -webkit-text-fill-color: var(--text-main) !important;
-}
-
-#view-interval-timer #interval-timer-preview [style*="rgba(255,255,255,0.15)"] {
-    border: 1px solid var(--border) !important;
-    background: var(--card-bg) !important;
-    color: var(--text-main) !important;
-    -webkit-text-fill-color: var(--text-main) !important;
-}
-
-#view-interval-timer #interval-timer-manual button,
-#view-interval-timer #interval-recent-presets > div:last-child > div {
-    border: 1px solid var(--border) !important;
-    background: var(--card-bg) !important;
-    color: var(--text-main) !important;
-    -webkit-text-fill-color: var(--text-main) !important;
+.interval-total-summary {
+    margin: 13px 0 18px !important;
+    color: var(--text-muted) !important;
+    -webkit-text-fill-color: var(--text-muted) !important;
+    font-size: 0.84rem;
+    font-weight: 700;
+    text-align: center;
 }
 
 #view-interval-timer #interval-start-btn,
@@ -12090,6 +12174,125 @@ html[data-pbb-theme="light"] .movement-tool-view {
     box-shadow: 0 10px 24px rgba(147, 105, 21, 0.2) !important;
 }
 
+#view-interval-timer #interval-start-btn {
+    display: block;
+    width: 100%;
+    min-height: 54px;
+    padding: 15px 18px;
+    border-radius: 16px;
+    font: inherit;
+    font-size: 1.02rem;
+    font-weight: 850;
+}
+
+.interval-running-kicker { text-align: center; }
+
+.interval-gold-dial-wrap {
+    display: flex;
+    justify-content: center;
+    margin: clamp(10px, 4vh, 28px) 0 clamp(18px, 4vh, 30px);
+}
+
+.interval-gold-dial {
+    position: relative;
+    width: min(68vw, 286px);
+    height: min(68vw, 286px);
+    max-width: calc(100dvh - 330px);
+    max-height: calc(100dvh - 330px);
+    min-width: 210px;
+    min-height: 210px;
+}
+
+.interval-gold-dial-content {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    box-sizing: border-box;
+    text-align: center;
+}
+
+#interval-timer-phase {
+    margin-bottom: 5px;
+    color: var(--movement-accent) !important;
+    -webkit-text-fill-color: var(--movement-accent) !important;
+    font-size: 0.75rem;
+    font-weight: 900;
+    letter-spacing: 0.16em;
+}
+
+#interval-timer-display {
+    max-width: 100%;
+    font-family: 'Playfair Display', Georgia, serif !important;
+    font-size: clamp(3.4rem, 18vw, 5.4rem);
+    font-weight: 700 !important;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.055em;
+    line-height: 0.95;
+    white-space: nowrap;
+}
+
+#interval-timer-round {
+    margin-top: 10px;
+    color: var(--text-muted) !important;
+    -webkit-text-fill-color: var(--text-muted) !important;
+    font-size: 0.88rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.interval-round-dots {
+    display: flex;
+    min-height: 14px;
+    max-width: min(310px, 86vw);
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin: 0 auto clamp(20px, 4vh, 30px);
+}
+
+.interval-round-progress-track {
+    width: min(240px, 70vw);
+    height: 7px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--border);
+}
+
+.interval-round-progress-track span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--movement-accent-strong);
+    transition: width 0.3s ease;
+}
+
+.interval-running-actions { width: 100%; }
+
+#view-interval-timer #interval-pause-btn,
+#view-interval-timer #interval-end-btn {
+    width: 100%;
+    min-height: 52px;
+    padding: 14px 18px;
+    border-radius: 16px;
+    font: inherit;
+    font-size: 1rem;
+    font-weight: 850;
+}
+
+#view-interval-timer #interval-end-btn {
+    margin-top: 9px;
+    border: 0;
+    background: transparent;
+    color: var(--text-muted) !important;
+    -webkit-text-fill-color: var(--text-muted) !important;
+    box-shadow: none;
+}
+
 #view-interval-timer #interval-timer-active svg circle:first-child {
     stroke: var(--border) !important;
 }
@@ -12097,6 +12300,22 @@ html[data-pbb-theme="light"] .movement-tool-view {
 #view-interval-timer #interval-timer-display {
     color: var(--text-main) !important;
     -webkit-text-fill-color: var(--text-main) !important;
+}
+
+@media (max-height: 690px) {
+    .movement-stopwatch-view .movement-tool-header { min-height: 62px; margin-bottom: 14px; }
+    .movement-stopwatch-view .movement-tool-question { font-size: 1.7rem; }
+    .movement-stopwatch-view .movement-tool-helper { margin-bottom: 14px !important; }
+    .interval-setup-row { min-height: 68px; padding-top: 9px; padding-bottom: 9px; }
+    .interval-gold-dial-wrap { margin-top: 4px; margin-bottom: 14px; }
+    .interval-round-dots { margin-bottom: 15px; }
+}
+
+@media (max-width: 360px) {
+    .interval-setup-row { gap: 9px; padding-right: 12px; padding-left: 12px; }
+    .interval-stepper { grid-template-columns: 36px minmax(54px, auto) 36px; gap: 4px; }
+    .interval-stepper button { width: 36px; height: 36px; }
+    .interval-gold-dial { min-width: 196px; min-height: 196px; }
 }
 
 /* Coach's Workouts */
@@ -13706,4 +13925,14 @@ html[data-pbb-theme] :where(.settings-picker-close, .settings-picker-option, .di
 
 .movement-tool-view .coach-workout-exercise-card [style*="border-top:1px solid #f1f5f9"] {
     border-color: var(--border) !important;
+}
+
+/* The Stopwatch end action stays quiet in both themes. */
+html #view-interval-timer #interval-end-btn,
+html:not([data-pbb-theme="light"]) #view-interval-timer #interval-end-btn {
+    border: 0 !important;
+    background: transparent !important;
+    color: var(--text-muted) !important;
+    -webkit-text-fill-color: var(--text-muted) !important;
+    box-shadow: none !important;
 }
