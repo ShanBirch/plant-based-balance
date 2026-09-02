@@ -139,8 +139,16 @@ function closeDietaryPicker() {
 }
 
 function toggleDietaryPickerChip(value) {
-    if (_dietPickerSelected.has(value)) _dietPickerSelected.delete(value);
-    else _dietPickerSelected.add(value);
+    if (_dietPickerSelected.has(value)) {
+        _dietPickerSelected.delete(value);
+    } else {
+        // Eating styles are mutually exclusive. Selecting Omnivore must clear
+        // an older Vegan selection so the saved plan matches what was tapped.
+        if (_dietEatingStyles.some(option => option.value === value)) {
+            _dietEatingStyles.forEach(option => _dietPickerSelected.delete(option.value));
+        }
+        _dietPickerSelected.add(value);
+    }
     _renderDietaryPickerChips();
 }
 window.toggleDietaryPickerChip = toggleDietaryPickerChip;
@@ -213,18 +221,23 @@ async function saveDietaryPreferences() {
 
         if (window.currentUser && window.supabaseClient) {
             // Update legacy column on quiz_results for any consumer reading it directly.
-            window.supabaseClient.from('quiz_results')
+            const quizWrite = window.supabaseClient.from('quiz_results')
                 .update({ dietary_preference: dietType })
-                .eq('user_id', window.currentUser.id)
-                .then(() => {});
+                .eq('user_id', window.currentUser.id);
             // Upsert the full preference row so the meal-plan generator sees the new tags.
-            window.supabaseClient.from('user_food_preferences')
-                .upsert({ user_id: window.currentUser.id, ...foodPrefs }, { onConflict: 'user_id' })
-                .then(({ error }) => { if (error) console.warn('user_food_preferences upsert failed:', error); });
+            const prefsWrite = window.supabaseClient.from('user_food_preferences')
+                .upsert({ user_id: window.currentUser.id, ...foodPrefs }, { onConflict: 'user_id' });
+            const [quizResult, prefsResult] = await Promise.all([quizWrite, prefsWrite]);
+            if (quizResult.error) throw quizResult.error;
+            if (prefsResult.error) throw prefsResult.error;
         }
 
-        // Refresh nutrition view if function available
-        if (typeof refreshMealPlanForDiet === 'function') setTimeout(() => refreshMealPlanForDiet(dietType), 100);
+        // Replace the active plan immediately, using the exact preferences just
+        // saved instead of waiting for a later database read to catch up.
+        if (typeof window.generateAiMealPlan === 'function') {
+            if (typeof showToast === 'function') showToast('Updating your meal plan…', 'info');
+            await window.generateAiMealPlan(foodPrefs);
+        }
     } catch(e) { console.error('Failed to save dietary requirements:', e); }
 }
 window.saveDietaryPreferences = saveDietaryPreferences;

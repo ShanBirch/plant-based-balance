@@ -520,7 +520,7 @@ if (window._pbbIsIOSSafari) {
             'lib/nutrition-calculator.js',
             'lib/weekly-meal-evolution.js?v=1',
             'data/vegan-challenge-meal-plan.js',
-            'data/prepared-meal-plan-library.js?v=1',
+            'data/prepared-meal-plan-library.js?v=2-omnivore-meat',
             'lib/meal-plan-photo-resolver.js?v=1',
             'lib/meal-plan-populator.js?v=3-personalised-preview',
             'lib/weekly-wrapped.js?v=monthly-wrapped-layout-v3'
@@ -543,7 +543,7 @@ if (window._pbbIsIOSSafari) {
     document.write('<script src="lib/nutrition-calculator.js"><\/script>');
     document.write('<script src="lib/weekly-meal-evolution.js?v=1"><\/script>');
     document.write('<script src="data/vegan-challenge-meal-plan.js"><\/script>');
-    document.write('<script src="data/prepared-meal-plan-library.js?v=1"><\/script>');
+    document.write('<script src="data/prepared-meal-plan-library.js?v=2-omnivore-meat"><\/script>');
     document.write('<script src="lib/meal-plan-photo-resolver.js?v=1"><\/script>');
     document.write('<script src="lib/meal-plan-populator.js?v=3-personalised-preview"><\/script>');
     document.write('<script src="lib/weekly-wrapped.js?v=monthly-wrapped-layout-v3"><\/script>');
@@ -12873,7 +12873,7 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=233-locked-preview-tour&video_health=2';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=234-omnivore-meal-plan&video_health=2';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
@@ -12915,7 +12915,7 @@ if (window._pbbIsIOSSafari) {
         var s = document.createElement('script');
         s.async = false;
         s.dataset.metaTrialLoader = String(attempt);
-        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=233-locked-preview-tour&video_health=2&meta_retry=' + attempt;
+        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=234-omnivore-meal-plan&video_health=2&meta_retry=' + attempt;
         s.onload = function() {
             if (window._pbbScript5Complete && window._switchAppTabReady && typeof window._switchAppTabReal === 'function') {
                 sessionStorage.removeItem('pbb_meta_script5_recovery_v1');
@@ -12934,7 +12934,7 @@ if (window._pbbIsIOSSafari) {
         document.head.appendChild(s);
     })(0);
 } else {
-document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=233-locked-preview-tour&video_health=2"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=234-omnivore-meal-plan&video_health=2"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=5"></script>
@@ -20800,7 +20800,7 @@ if(!window._pbbIsIOSSafari) {
 }
 </style>
 
-<script src="js/dashboard/pbb-deferred-pickers.js?v=3-food-preferences-direct-load"></script>
+<script src="js/dashboard/pbb-deferred-pickers.js?v=4-regenerate-diet-plan"></script>
 <script src="js/dashboard/pbb-settings-navigation.js?v=1-settings-navigation"></script>
 
 

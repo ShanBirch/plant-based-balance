@@ -5,6 +5,7 @@ const path = require('node:path');
 
 const library = require('../data/prepared-meal-plan-library.js');
 const onboardingSource = fs.readFileSync(path.join(__dirname, '../js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js'), 'utf8');
+const pickerSource = fs.readFileSync(path.join(__dirname, '../js/dashboard/pbb-deferred-pickers.js'), 'utf8');
 
 const forbidden = /\b(?:wheat|barley|rye|cow'?s milk|dairy butter|cheese|almond|cashew|walnut|peanut|tofu|tempeh|edamame|soy|onion|garlic cloves?|apple|pear|honey|sugar alcohol)\b/i;
 
@@ -42,11 +43,17 @@ test('templates contain 240 daily menus and 1,200 meal placements with requested
   }
 });
 
-test('every bank recipe carries every supported safety tag and has an exact local photo', () => {
-  assert.equal(Object.keys(library.RECIPES).length, 15);
+test('every bank recipe respects supported restrictions and has an exact local photo', () => {
+  assert.equal(Object.keys(library.RECIPES).length, 21);
   for (const recipe of Object.values(library.RECIPES)) {
-    for (const tag of ['vegan', 'gluten_free', 'dairy_free', 'nut_free', 'soy_free', 'low_fodmap']) {
+    for (const tag of ['gluten_free', 'dairy_free', 'nut_free', 'soy_free', 'low_fodmap']) {
       assert.ok(recipe.compatibility.includes(tag), `${recipe.id} missing ${tag}`);
+    }
+    if (recipe.id.startsWith('o')) {
+      assert.ok(recipe.compatibility.includes('omnivore'), `${recipe.id} is not omnivore compatible`);
+      assert.ok(!recipe.compatibility.includes('vegan'), `${recipe.id} must not be offered to vegans`);
+    } else {
+      assert.ok(recipe.compatibility.includes('vegan'), `${recipe.id} is not vegan compatible`);
     }
     const ingredientText = recipe.ingredients.map(item => item.name).join(' ');
     assert.doesNotMatch(ingredientText, forbidden, `${recipe.id} contains a forbidden ingredient`);
@@ -60,8 +67,30 @@ test('highly restrictive selections resolve synchronously without a generated as
     const template = library.selectTemplate({ dietary_requirements: requirements });
     const placements = library.expandTemplate(template).flatMap(day => day.meals);
     assert.equal(placements.length, 35);
-    assert.ok(placements.every(item => library.RECIPES[item.recipe_id].image.startsWith('images/meals/prepared-v1/')));
+    assert.ok(placements.every(item => library.RECIPES[item.recipe_id].image.startsWith('images/meals/prepared-v')));
   }
+});
+
+test('omnivore weeks contain meat at every lunch and dinner while plant-based plans do not', () => {
+  const meat = /\b(?:chicken|salmon|turkey|beef|pork)\b/i;
+  for (const requirements of [
+    ['omnivore'],
+    ['omnivore', ...library.RESTRICTIONS]
+  ]) {
+    const meals = library.expandTemplate(library.selectTemplate({ dietary_requirements: requirements }))
+      .flatMap(day => day.meals)
+      .filter(meal => meal.meal_slot === 'lunch' || meal.meal_slot === 'dinner')
+      .map(meal => library.RECIPES[meal.recipe_id]);
+    assert.equal(meals.length, 14);
+    assert.ok(meals.every(recipe => meat.test(`${recipe.name} ${recipe.ingredients.map(i => i.name).join(' ')}`)));
+  }
+  for (const style of ['vegan', 'vegetarian']) {
+    const meals = library.expandTemplate(library.selectTemplate({ dietary_requirements: [style] }))
+      .flatMap(day => day.meals)
+      .map(meal => library.RECIPES[meal.recipe_id]);
+    assert.ok(meals.every(recipe => !recipe.id.startsWith('o')));
+  }
+  assert.equal(library.selectTemplate({ dietary_requirements: ['pescatarian'] }).style, 'vegetarian');
 });
 
 test('the customer onboarding path selects and persists the prepared plan without AI meals or images', () => {
@@ -72,4 +101,12 @@ test('the customer onboarding path selects and persists the prepared plan withou
   assert.match(preparedPath, /populatePreparedMealPlan/);
   assert.match(preparedPath, /localStorage\.setItem\('ai_meal_plan'/);
   assert.doesNotMatch(preparedPath, /fetchMealPlanDay|generateExactMealPhoto|ensureExactMealPlanPhotos/);
+});
+
+test('saving dietary preferences regenerates from the exact newly saved selection', () => {
+  assert.match(onboardingSource, /async function generateAiMealPlan\(foodPreferencesOverride\)/);
+  assert.match(onboardingSource, /foodPreferencesOverride\s*\?\s*Promise\.resolve\(foodPreferencesOverride\)/);
+  assert.match(pickerSource, /await Promise\.all\(\[quizWrite, prefsWrite\]\)/);
+  assert.match(pickerSource, /await window\.generateAiMealPlan\(foodPrefs\)/);
+  assert.match(pickerSource, /_dietEatingStyles\.forEach\(option => _dietPickerSelected\.delete\(option\.value\)\)/);
 });

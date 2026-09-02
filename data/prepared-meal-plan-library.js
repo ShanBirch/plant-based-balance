@@ -1,15 +1,12 @@
 /**
- * Balance prepared meal-plan library v1.
+ * Balance prepared meal-plan library v2.
  *
  * 96 UI selections normalize to 80 templates because dairy-free is implicit
  * for vegan plans. Every template contains three daily menus: Mon-Wed,
  * Thu-Fri and Sat-Sun. Recipes are shared rather than copied into templates.
  *
- * The launch bank deliberately uses a conservative common-denominator set:
- * every recipe is vegan, gluten-free, dairy-free, nut-free, soy-free and
- * low-FODMAP. This makes it safe for every supported eating-style selection;
- * vegetarian and omnivore describe what a member may eat, not an obligation
- * to put dairy, eggs or meat into every prepared week.
+ * Vegan and vegetarian plans use the plant-based bank. Omnivore plans use
+ * meat-based lunches and dinners while retaining the selected restrictions.
  */
 (function (root, factory) {
   const library = factory();
@@ -32,6 +29,13 @@
     tags: ['prepared-library', 'gluten-free', 'dairy-free', 'nut-free', 'soy-free', 'low-FODMAP'],
     description: 'A pre-reviewed Balance meal with measured low-FODMAP ingredients and no gluten, dairy, nuts or soy.'
   });
+  const omnivoreRecipe = (...args) => {
+    const result = recipe(...args);
+    result.compatibility = ['omnivore', ...RESTRICTIONS];
+    result.tags = ['prepared-library', 'omnivore', 'gluten-free', 'dairy-free', 'nut-free', 'soy-free', 'low-FODMAP'];
+    result.description = 'A pre-reviewed Balance omnivore meal with lean animal protein and measured ingredients.';
+    return result;
+  };
 
   // `scalable:false` protects ingredients with recognised low-FODMAP serving
   // limits. Calories are adjusted with rice, quinoa, potato, oil and rice
@@ -51,7 +55,13 @@
     s6: recipe('s6','pm_snack','Paprika Pepitas, Grapes & Rice Crackers','images/meals/roasted_chickpeas_snack.png',200,9,26,8,[ingredient('pumpkin seeds','25 g',false),ingredient('green grapes','75 g',false),ingredient('plain certified gluten-free rice crackers','3'),ingredient('garlic-infused olive oil','1/2 tsp'),ingredient('smoked paprika','1/4 tsp',false),ingredient('iodised salt','1 pinch',false)],'1. Toss pumpkin seeds with infused oil, paprika and salt, then toast in a dry pan for 2 minutes. 2. Cool and serve with the measured grapes and rice crackers.','Modern Australian'),
     d1: recipe('d1','dinner','Herbed Potato Quinoa Tray Bake','images/meals/crispy_tofu_sheet_pan.png',550,29,76,16,[ingredient('baby potatoes, halved','240 g'),ingredient('cooked quinoa','150 g'),ingredient('rice protein isolate, unflavoured','25 g'),ingredient('zucchini, chopped','65 g',false),ingredient('red capsicum, chopped','75 g',false),ingredient('carrot, chopped','70 g',false),ingredient('garlic-infused olive oil','1 tbsp'),ingredient('lemon juice','1 tbsp',false),ingredient('dried rosemary','1/2 tsp',false),ingredient('baby spinach','40 g',false)],'1. Roast potato, zucchini, capsicum and carrot with infused oil and rosemary at 210°C for 24 minutes. 2. Whisk rice protein with lemon and 3 tablespoons water. 3. Fold hot vegetables through quinoa and spinach, then spoon over the savoury lemon dressing.','Mediterranean'),
     d2: recipe('d2','dinner','Smoky Quinoa Stuffed Capsicum','images/meals/sweet_potato_black_bean_tacos.png',550,30,75,15,[ingredient('red capsicum, halved and deseeded','1 medium',false),ingredient('cooked quinoa','220 g'),ingredient('rice protein isolate, unflavoured','25 g'),ingredient('chopped tomatoes, no onion or garlic','75 g',false),ingredient('baby spinach, chopped','40 g',false),ingredient('garlic-infused olive oil','1 tbsp'),ingredient('pumpkin seeds','15 g',false),ingredient('smoked paprika','1 tsp',false),ingredient('ground cumin','1/2 tsp',false),ingredient('lime juice','1 tbsp',false)],'1. Roast capsicum halves cut-side up at 200°C for 12 minutes. 2. Mix quinoa, rice protein, tomatoes, spinach, oil, spices and 3 tablespoons water; fill the capsicum. 3. Bake 12 minutes more, then finish with lime and pumpkin seeds.','Mexican inspired'),
-    d3: recipe('d3','dinner','Golden Ginger Rice & Vegetable Bowl','images/meals/thai_green_curry_tofu.png',550,27,83,12,[ingredient('cooked basmati rice','260 g'),ingredient('rice protein isolate, unflavoured','25 g'),ingredient('carrot, sliced','70 g',false),ingredient('zucchini, sliced','65 g',false),ingredient('red capsicum, sliced','75 g',false),ingredient('baby spinach','40 g',false),ingredient('garlic-infused olive oil','2 tsp'),ingredient('fresh ginger, grated','1 tsp',false),ingredient('ground turmeric','1/2 tsp',false),ingredient('lime juice','1 tbsp',false)],'1. Stir-fry carrot, zucchini and capsicum in infused oil over medium-high heat for 6 minutes. 2. Whisk rice protein with ginger, turmeric, lime and 4 tablespoons water; add and simmer for 2 minutes. 3. Fold through spinach and serve over hot basmati rice.','Asian inspired')
+    d3: recipe('d3','dinner','Golden Ginger Rice & Vegetable Bowl','images/meals/thai_green_curry_tofu.png',550,27,83,12,[ingredient('cooked basmati rice','260 g'),ingredient('rice protein isolate, unflavoured','25 g'),ingredient('carrot, sliced','70 g',false),ingredient('zucchini, sliced','65 g',false),ingredient('red capsicum, sliced','75 g',false),ingredient('baby spinach','40 g',false),ingredient('garlic-infused olive oil','2 tsp'),ingredient('fresh ginger, grated','1 tsp',false),ingredient('ground turmeric','1/2 tsp',false),ingredient('lime juice','1 tbsp',false)],'1. Stir-fry carrot, zucchini and capsicum in infused oil over medium-high heat for 6 minutes. 2. Whisk rice protein with ginger, turmeric, lime and 4 tablespoons water; add and simmer for 2 minutes. 3. Fold through spinach and serve over hot basmati rice.','Asian inspired'),
+    ol1: omnivoreRecipe('ol1','lunch','Lemon Herb Chicken Quinoa Bowl','images/meals/prepared-v2/omnivore-chicken-quinoa.jpg',550,43,60,15,[ingredient('skinless chicken breast','170 g'),ingredient('cooked quinoa','180 g'),ingredient('red capsicum, diced','75 g',false),ingredient('zucchini, diced','65 g',false),ingredient('carrot, diced','70 g',false),ingredient('baby spinach','40 g',false),ingredient('garlic-infused olive oil','2 tsp'),ingredient('lemon juice','1 tbsp',false),ingredient('dried oregano','1/2 tsp',false)],'1. Season and pan-sear the chicken until cooked through, then rest and slice. 2. Roast the capsicum, zucchini and carrot with half the oil. 3. Toss with quinoa, spinach, lemon and remaining oil, then top with chicken.','Mediterranean'),
+    ol2: omnivoreRecipe('ol2','lunch','Baked Salmon & Crispy Potato Salad','images/meals/prepared-v2/omnivore-salmon-potato.jpg',550,39,52,21,[ingredient('skin-on salmon fillet','170 g'),ingredient('baby potatoes, quartered','260 g'),ingredient('cucumber, sliced','75 g',false),ingredient('cherry tomatoes','75 g',false),ingredient('baby spinach','50 g',false),ingredient('garlic-infused olive oil','2 tsp'),ingredient('lemon juice','1 tbsp',false),ingredient('fresh dill','1 tbsp',false)],'1. Roast the potatoes with half the oil at 210°C until crisp. 2. Bake the salmon beside them until just cooked. 3. Toss spinach, cucumber and tomato with lemon and remaining oil, then serve with salmon and potatoes.','Modern Australian'),
+    ol3: omnivoreRecipe('ol3','lunch','Ginger Turkey Rice Noodle Bowl','images/meals/prepared-v2/omnivore-turkey-noodles.jpg',550,42,65,13,[ingredient('lean turkey mince','170 g'),ingredient('dry rice noodles','75 g'),ingredient('carrot, julienned','70 g',false),ingredient('cucumber, julienned','75 g',false),ingredient('red capsicum, sliced','75 g',false),ingredient('baby spinach','40 g',false),ingredient('garlic-infused sesame oil','2 tsp'),ingredient('fresh ginger, grated','1 tsp',false),ingredient('lime juice','1 tbsp',false)],'1. Cook and drain the rice noodles. 2. Brown the turkey in infused oil with ginger until cooked through. 3. Toss with noodles, vegetables and lime juice.','Asian inspired'),
+    od1: omnivoreRecipe('od1','dinner','Lean Beef, Quinoa & Roast Vegetable Plate','images/meals/prepared-v2/omnivore-beef-roast.jpg',550,43,55,17,[ingredient('lean beef strips','170 g'),ingredient('cooked quinoa','140 g'),ingredient('baby potatoes, halved','160 g'),ingredient('zucchini, chopped','65 g',false),ingredient('red capsicum, chopped','75 g',false),ingredient('carrot, chopped','70 g',false),ingredient('garlic-infused olive oil','2 tsp'),ingredient('dried rosemary','1/2 tsp',false)],'1. Roast the potato and vegetables with half the oil and rosemary. 2. Sear the beef in the remaining oil until cooked to your liking. 3. Serve the sliced beef with quinoa and roasted vegetables.','Modern Australian'),
+    od2: omnivoreRecipe('od2','dinner','Ginger Pork Rice Bowl','images/meals/prepared-v2/omnivore-pork-rice.jpg',550,42,68,12,[ingredient('pork tenderloin, sliced','170 g'),ingredient('cooked basmati rice','220 g'),ingredient('carrot, sliced','70 g',false),ingredient('zucchini, sliced','65 g',false),ingredient('red capsicum, sliced','75 g',false),ingredient('baby spinach','40 g',false),ingredient('garlic-infused olive oil','2 tsp'),ingredient('fresh ginger, grated','1 tsp',false),ingredient('lime juice','1 tbsp',false)],'1. Sear the pork in infused oil with ginger until cooked through. 2. Stir-fry the carrot, zucchini and capsicum until tender-crisp. 3. Fold through spinach and lime, then serve over rice.','Asian inspired'),
+    od3: omnivoreRecipe('od3','dinner','Golden Paprika Chicken & Rice Bowl','images/meals/prepared-v2/omnivore-chicken-rice.jpg',550,44,67,12,[ingredient('skinless chicken breast','180 g'),ingredient('cooked basmati rice','220 g'),ingredient('carrot, sliced','70 g',false),ingredient('zucchini, sliced','65 g',false),ingredient('red capsicum, sliced','75 g',false),ingredient('baby spinach','40 g',false),ingredient('garlic-infused olive oil','2 tsp'),ingredient('smoked paprika','1 tsp',false),ingredient('lemon juice','1 tbsp',false)],'1. Coat the chicken with paprika and half the oil, then pan-sear until cooked through. 2. Sauté the vegetables in the remaining oil and fold through spinach. 3. Serve the sliced chicken and vegetables over rice with lemon.','Modern Australian')
   };
 
   Object.entries({
@@ -66,11 +76,18 @@
     breakfast: ['b1','b2','b3'], am_snack: ['s1','s2','s3'],
     lunch: ['l1','l2','l3'], pm_snack: ['s4','s5','s6'], dinner: ['d1','d2','d3']
   };
+  const OMNIVORE_SLOT_POOLS = {
+    lunch: ['ol1','ol2','ol3'], dinner: ['od1','od2','od3']
+  };
 
   function normalizeSelection(input) {
     const values = Array.isArray(input) ? input : input?.dietary_requirements || [];
     const set = new Set(values.map(v => String(v || '').toLowerCase()));
-    let style = STYLES.find(value => set.has(value)) || String(input?.diet_type || '').toLowerCase();
+    let style = STYLES.find(value => set.has(value))
+      || (set.has('pescatarian') ? 'pescatarian' : String(input?.diet_type || '').toLowerCase());
+    // Pescatarians can safely use the vegetarian bank until a dedicated fish
+    // bank is available. Never silently give them chicken, beef or pork.
+    if (style === 'pescatarian') style = 'vegetarian';
     if (!STYLES.includes(style)) style = 'omnivore';
     const restrictions = RESTRICTIONS.filter(value => set.has(value));
     if (style === 'vegan') {
@@ -91,7 +108,10 @@
         const menus = [0, 1, 2].map(menuIndex => {
           const slots = {};
           Object.entries(SLOT_POOLS).forEach(([slot, ids], slotIndex) => {
-            slots[slot] = ids[(seed + menuIndex + slotIndex) % ids.length];
+            const styleIds = style === 'omnivore' && OMNIVORE_SLOT_POOLS[slot]
+              ? OMNIVORE_SLOT_POOLS[slot]
+              : ids;
+            slots[slot] = styleIds[(seed + menuIndex + slotIndex) % styleIds.length];
           });
           return slots;
         });
@@ -116,7 +136,7 @@
   }
 
   return {
-    VERSION: 1, STYLES, RESTRICTIONS, RECIPES, TEMPLATES,
+    VERSION: 2, STYLES, RESTRICTIONS, RECIPES, TEMPLATES,
     RAW_SELECTION_COUNT: 96, NORMALIZED_TEMPLATE_COUNT: 80,
     DAILY_MENU_COUNT: 240, MEAL_PLACEMENT_COUNT: 1200,
     normalizeSelection, selectTemplate, expandTemplate

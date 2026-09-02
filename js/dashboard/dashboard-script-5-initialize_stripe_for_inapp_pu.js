@@ -6132,12 +6132,11 @@ async function regenerateAiMealPlan() {
 }
 
 /**
- * Core meal plan generation — populates a curated 4-week plant-based plan
- * scaled to the user's calorie/macro targets. Photos and recipes come from
- * data/vegan-challenge-meal-plan.js; the populator lives in
- * lib/meal-plan-populator.js.
+ * Core meal plan generation — populates a prepared plan matched to the
+ * user's eating style and restrictions, scaled to their nutrition targets.
+ * A freshly saved preference object can be supplied to avoid a stale read.
  */
-async function generateAiMealPlan() {
+async function generateAiMealPlan(foodPreferencesOverride) {
     const statusEl = document.getElementById('ai-plan-gen-status');
     const progressEl = document.getElementById('ai-plan-gen-progress');
     const user = window.currentUser || await waitForCurrentUser();
@@ -6166,10 +6165,13 @@ async function generateAiMealPlan() {
         if (statusEl) statusEl.textContent = 'Pulling your nutrition targets...';
         if (progressEl) progressEl.style.width = '15%';
 
-        const [targets, foodPreferences] = await Promise.all([
+        const [targets, loadedFoodPreferences] = await Promise.all([
             window.getUserNutritionTargets(window.supabaseClient, user.id),
-            loadWeeklyEvolutionPreferences(user.id)
+            foodPreferencesOverride
+                ? Promise.resolve(foodPreferencesOverride)
+                : loadWeeklyEvolutionPreferences(user.id)
         ]);
+        const foodPreferences = foodPreferencesOverride || loadedFoodPreferences;
 
         if (mealPlanNeedsPreferenceReview(foodPreferences)) {
             window._onboardingMealPlanReviewRequired = true;
