@@ -43,6 +43,7 @@ const {
 const {
     maySendDraftImageAttachment,
     maySendDraftVideoAttachment,
+    requiredPaidMetaProofImageUrl,
     stripPaidMetaProofMediaUrls,
 } = require('./_lib/paid-meta-proof-media');
 const { measureDmLanguageShape } = require('./_lib/dm-language-contract');
@@ -1780,6 +1781,17 @@ function requiresNativeProofVideoAttachment({ replyText = '', alertData = {} } =
     return explicitVideoClaim || retryClaim;
 }
 
+function requiresNativeProofImageAttachment({ replyText = '', alertData = {} } = {}) {
+    const paidMeta = alertData.meta_ad_fast_lane === true
+        || alertData.meta_ad_conversation_fast_lane === true
+        || String(alertData.acquisition_mode || '').toLowerCase() === 'paid_meta';
+    if (!paidMeta) return false;
+    const requiredImageUrl = requiredPaidMetaProofImageUrl(replyText);
+    if (!requiredImageUrl) return false;
+    const attachedImageUrl = String(alertData.draft_image_attachment_url || '').trim();
+    return attachedImageUrl.toLowerCase() !== requiredImageUrl.toLowerCase();
+}
+
 async function postInstagramGraphButton({ recipientId, accountId, text, url, title, imageUrl, cardTitle, tag }) {
     const accessToken = await getInstagramGraphAccessToken(accountId);
     if (!accessToken) throw new Error('INSTAGRAM_GRAPH_ACCESS_TOKEN not configured');
@@ -2621,6 +2633,18 @@ exports.handler = async (event) => {
         imageUrl: draftImageAttachmentUrl,
         replyText: messagesToSend.join('\n\n'),
     });
+    if (requiresNativeProofImageAttachment({
+        replyText: messagesToSend.join('\n\n'),
+        alertData,
+    })) {
+        return {
+            statusCode: 409,
+            body: JSON.stringify({
+                error: 'The reply introduces a client proof photo, but the matching native image attachment is missing.',
+                code: 'native_proof_image_attachment_required',
+            }),
+        };
+    }
     if (requiresNativeProofVideoAttachment({ replyText: messagesToSend.join('\n\n'), alertData }) && !hasDraftVideoAttachment) {
         return {
             statusCode: 409,
@@ -3390,6 +3414,7 @@ exports._test = {
     buildInstagramGraphOutboundItems,
     resolveApprovedInstagramLinkButton,
     requiresNativeProofVideoAttachment,
+    requiresNativeProofImageAttachment,
     isInstagramAudioUnsupportedError,
     isCocosAlertData,
     isChallengeOfferSend,

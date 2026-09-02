@@ -36,7 +36,10 @@ const {
     collectAlertInboundText,
     classifyPersonalDmBoundary,
 } = require('./_lib/personal-dm-boundary');
-const { maySendDraftImageAttachment } = require('./_lib/paid-meta-proof-media');
+const {
+    maySendDraftImageAttachment,
+    requiredPaidMetaProofImageUrl,
+} = require('./_lib/paid-meta-proof-media');
 
 const MANAGER_SOURCE = 'balance-lead-client-manager';
 const MAX_PER_RUN = 80;
@@ -950,8 +953,17 @@ ${originalDraft}`;
         context_review: reviewResult?.contextReview?.required ? reviewResult.contextReview : null,
         cloud_draft_repair: repairMeta,
     };
-    if (data.draft_image_attachment_url && !maySendDraftImageAttachment({
-        imageUrl: data.draft_image_attachment_url,
+    const paidMetaProofLane = data.meta_ad_fast_lane === true
+        || data.meta_ad_conversation_fast_lane === true
+        || String(data.acquisition_mode || '').toLowerCase() === 'paid_meta';
+    const requiredProofImageUrl = paidMetaProofLane
+        ? requiredPaidMetaProofImageUrl(parsed.joined)
+        : null;
+    if (requiredProofImageUrl) {
+        nextData.draft_image_attachment_url = requiredProofImageUrl;
+    }
+    if (nextData.draft_image_attachment_url && !maySendDraftImageAttachment({
+        imageUrl: nextData.draft_image_attachment_url,
         replyText: parsed.joined,
     })) {
         delete nextData.draft_image_attachment_url;

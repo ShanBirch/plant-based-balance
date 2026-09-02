@@ -81,6 +81,17 @@ function maySendDraftImageAttachment({ imageUrl = '', replyText = '' } = {}) {
     return knownProof.introductionRe.test(String(replyText || ''));
 }
 
+function requiredPaidMetaProofImageUrl(replyText = '') {
+    const text = String(replyText || '');
+    const requiredIntroductions = [
+        { re: /\b(?:this is ally|here(?:'s| is) ally)\b/i, imageUrl: ALLY_WEIGHT_LOSS_PROOF_URL },
+        { re: /\b(?:this is gen|here(?:'s| is) gen)\b/i, imageUrl: GEN_STRENGTH_CONFIDENCE_PROOF_URL },
+        { re: /\b(?:this is bec and kirsty|these are bec and kirsty|here(?:'s| are) bec and kirsty)\b/i, imageUrl: BEC_KIRSTY_SHARED_MOMENTUM_PROOF_URL },
+        { re: /\b(?:this is dani|here(?:'s| is) dani)\b/i, imageUrl: DANI_RECOMPOSITION_PROOF_URL },
+    ];
+    return requiredIntroductions.find(item => item.re.test(text))?.imageUrl || null;
+}
+
 function maySendDraftVideoAttachment({ videoUrl = '', replyText = '' } = {}) {
     const normalizedUrl = String(videoUrl || '').trim().toLowerCase();
     if (!isBalanceFoundationsAppProofVideoUrl(normalizedUrl)) return true;
@@ -126,6 +137,7 @@ module.exports = {
     hasAllyProofIntroduction,
     isAllyWeightLossProofUrl,
     maySendDraftImageAttachment,
+    requiredPaidMetaProofImageUrl,
     maySendDraftVideoAttachment,
     isBalanceFoundationsAppProofVideoUrl,
     resolveBalanceFoundationsAppProofVideoUrl,

@@ -2170,7 +2170,7 @@ function buildDeterministicPaidMetaConversationReply({
             maxChunks: MAX_CHUNKS,
             error: null,
             flowVariant,
-            imageAttachmentUrl: broadFlow ? null : (transformationProof?.imageUrl || null),
+            imageAttachmentUrl: transformationProof?.imageUrl || null,
         };
     }
     if (historyHasGoal
@@ -2481,7 +2481,6 @@ function buildDeterministicPaidMetaConversationReply({
         && (!hasBlocker || hasRecentPaidMetaGoalQuestion(history))) {
         const proofReply = buildMetaAdGoalProofReply(message, { flowVariant });
         if (!allowVideoAttachment || broadFlow) proofReply.videoAttachmentUrl = null;
-        if (!allowVideoAttachment) proofReply.imageAttachmentUrl = null;
         return proofReply;
     }
 
@@ -3028,9 +3027,7 @@ function buildMetaAdGoalProofReply(currentMessage = '', { flowVariant = 'plant_b
     const text = rawMessage.toLowerCase();
     const broadFlow = flowVariant === 'broad_pain';
     const weightLossGoal = /weight|fat|lose|losing|lean|tone|confiden|body/.test(text);
-    const transformationProof = broadFlow
-        ? null
-        : resolvePaidMetaTransformationProof({ goalText: rawMessage });
+    const transformationProof = resolvePaidMetaTransformationProof({ goalText: rawMessage });
     const courseProof = `Inside Balance, the six-week course turns that into a clear week to follow, with your learning, weekly goals and coaching review in one place.`;
     let bridge;
     if (/accountab|consisten|motivat|routine|habit|stick|on track|fall off|keep going/.test(text)) {
@@ -4954,8 +4951,21 @@ function attachPaidMetaWriterSelectedMedia(draft = {}, {
     if (!allowAttachments) return draft;
     const replyText = draftTextFromDraft(draft);
     if (!replyText) return draft;
+    const proofCandidates = [
+        { name: /\bally\b/i, imageUrl: ALLY_WEIGHT_LOSS_PROOF_URL },
+        { name: /\bgen\b/i, imageUrl: GEN_STRENGTH_CONFIDENCE_PROOF_URL },
+        { name: /\bbec\b[^.!?\n]{0,30}\bkirsty\b|\bkirsty\b[^.!?\n]{0,30}\bbec\b/i, imageUrl: BEC_KIRSTY_SHARED_MOMENTUM_PROOF_URL },
+        { name: /\bdani\b/i, imageUrl: DANI_RECOMPOSITION_PROOF_URL },
+    ];
+    const selectedProof = proofCandidates.find(candidate => candidate.name.test(replyText)
+        && maySendDraftImageAttachment({ imageUrl: candidate.imageUrl, replyText }));
     if (flowVariant === 'broad_pain') {
-        if (!hasCompletePaidMetaOfferText(replyText) || hasRecentPaidMetaProofVideo(history)) return draft;
+        if (!hasCompletePaidMetaOfferText(replyText) || hasRecentPaidMetaProofVideo(history)) {
+            return {
+                ...draft,
+                imageAttachmentUrl: draft.imageAttachmentUrl || selectedProof?.imageUrl || null,
+            };
+        }
         const chunks = (Array.isArray(draft?.chunks) ? draft.chunks : [])
             .map(value => String(value || '').trim())
             .filter(Boolean);
@@ -4969,17 +4979,10 @@ function attachPaidMetaWriterSelectedMedia(draft = {}, {
             ...draft,
             chunks,
             joined: chunks.join('\n\n'),
+            imageAttachmentUrl: draft.imageAttachmentUrl || selectedProof?.imageUrl || null,
             videoAttachmentUrl: draft.videoAttachmentUrl || videoUrl,
         };
     }
-    const proofCandidates = [
-        { name: /\bally\b/i, imageUrl: ALLY_WEIGHT_LOSS_PROOF_URL },
-        { name: /\bgen\b/i, imageUrl: GEN_STRENGTH_CONFIDENCE_PROOF_URL },
-        { name: /\bbec\b[^.!?\n]{0,30}\bkirsty\b|\bkirsty\b[^.!?\n]{0,30}\bbec\b/i, imageUrl: BEC_KIRSTY_SHARED_MOMENTUM_PROOF_URL },
-        { name: /\bdani\b/i, imageUrl: DANI_RECOMPOSITION_PROOF_URL },
-    ];
-    const selectedProof = proofCandidates.find(candidate => candidate.name.test(replyText)
-        && maySendDraftImageAttachment({ imageUrl: candidate.imageUrl, replyText }));
     return {
         ...draft,
         imageAttachmentUrl: draft.imageAttachmentUrl || selectedProof?.imageUrl || null,

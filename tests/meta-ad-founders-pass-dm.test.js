@@ -319,6 +319,7 @@ const {
     resolveApprovedInstagramLinkButton,
     ensurePaidMetaAppPreviewHandoffText,
     requiresNativeProofVideoAttachment,
+    requiresNativeProofImageAttachment,
     maySendDraftImageAttachment,
     maySendDraftVideoAttachment,
     splitTerminalQuestionForProofMedia,
@@ -332,6 +333,7 @@ const {
     BALANCE_FOUNDATIONS_THIS_WEEK_VIDEO_URL,
     resolveBalanceFoundationsAppProofVideoUrl,
     resolvePaidMetaTransformationProof,
+    requiredPaidMetaProofImageUrl,
 } = require('../netlify/functions/_lib/paid-meta-proof-media');
 
 test('time-limited Foundations proof resolves in Brisbane campaign time and expires to evergreen', () => {
@@ -2604,6 +2606,11 @@ test('AI writer attaches the approved app explainer only to a complete broad pai
         joined: "This is Ally, one of my clients. I'll show you her photo because her weight-loss goal is close to yours.",
     }, { allowAttachments: true });
     assert.match(ally.imageAttachmentUrl, /ally-cocos\.png$/);
+    const broadAlly = attachPaidMetaWriterSelectedMedia({
+        joined: 'This is Ally. She lost 12kg in 16 weeks while working full time and raising a family.',
+    }, { allowAttachments: true, flowVariant: 'broad_pain' });
+    assert.match(broadAlly.imageAttachmentUrl, /ally-cocos\.png$/,
+        'the neutral broad ad route still sends a relevant client proof photo');
 
     const video = attachPaidMetaWriterSelectedMedia({
         joined: "Here's a quick app video so you can see how it works.",
@@ -2806,6 +2813,22 @@ test('the reply after the goal is tailored and carries the right native proof me
         imageUrl: weightGoal.imageAttachmentUrl,
         replyText: 'This is Ally, one of my clients. She lost 12kg in 16 weeks.',
     }), true, 'the final sender may keep Ally\'s photo when the reviewed text introduces her');
+    assert.match(requiredPaidMetaProofImageUrl('This is Ally. She lost 12kg in 16 weeks.'), /ally-cocos\.png$/);
+    assert.equal(requiresNativeProofImageAttachment({
+        replyText: 'This is Ally. She lost 12kg in 16 weeks.',
+        alertData: { acquisition_mode: 'paid_meta' },
+    }), true, 'the sender blocks client-proof copy when its matching native image is absent');
+    assert.equal(requiresNativeProofImageAttachment({
+        replyText: 'This is Ally. She lost 12kg in 16 weeks.',
+        alertData: {
+            acquisition_mode: 'paid_meta',
+            draft_image_attachment_url: weightGoal.imageAttachmentUrl,
+        },
+    }), false, 'the sender accepts the exact matching client-proof image');
+    assert.equal(requiresNativeProofImageAttachment({
+        replyText: 'This is Ally. She lost 12kg in 16 weeks.',
+        alertData: { acquisition_mode: 'organic_inbound' },
+    }), false, 'the paid-ad atomicity gate does not alter organic Instagram conversations');
     const guardedWeightGoal = ensureMetaAdSalesProgressionQuestion({
         draft: weightGoal,
         currentMessage: 'I need to lose weight, probably 15kgs',
@@ -3481,6 +3504,9 @@ test('verified broad route completes goal, blocker, neutral offer and signed pre
         appPreviewUrl: previewUrl,
     });
     assert.match(goalReply.joined, /losing the weight and feeling fitter/i);
+    assert.match(goalReply.joined, /This is Ally/i);
+    assert.match(goalReply.imageAttachmentUrl, /ally-cocos\.png$/,
+        'the single neutral paid-ad route keeps matched client proof media');
     assert.match(goalReply.joined, /what usually gets in the way/i);
     assert.equal((goalReply.joined.match(/\?/g) || []).length, 1);
 
