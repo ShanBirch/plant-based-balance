@@ -152,9 +152,9 @@ test('unfinished onboarding cannot escape through app navigation or the close co
     assert.match(onboardingSource, /function isOnboardingNavigationLocked\(\)/);
     assert.match(onboardingSource, /if \(isOnboardingNavigationLocked\(\)\) \{[\s\S]*?return false;/);
     assert.match(onboardingSource, /bottomNav\.inert = locked/);
-    assert.match(onboardingSource, /if \(!closingMetaAdTrial && localStorage\.getItem\('onboardingComplete'\) !== 'true'\) \{[\s\S]*?return false;/);
+    assert.match(onboardingSource, /if \(localStorage\.getItem\('onboardingComplete'\) !== 'true'\) \{[\s\S]*?return false;/);
     assert.match(onboardingSource, /async function finishOnboarding\(\)[\s\S]*?setOnboardingNavigationGate\(false\)/);
-    assert.match(dashboardSource, /id="onboarding-wizard-close"/);
+    assert.doesNotMatch(dashboardSource, /id="onboarding-wizard-close"/);
 });
 
 test('the dedicated phone-test account clears stale local completion after a remote reset', () => {

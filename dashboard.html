@@ -12873,7 +12873,7 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=232-movement-style&video_health=2';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=233-locked-preview-tour&video_health=2';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
@@ -12915,7 +12915,7 @@ if (window._pbbIsIOSSafari) {
         var s = document.createElement('script');
         s.async = false;
         s.dataset.metaTrialLoader = String(attempt);
-        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=232-movement-style&video_health=2&meta_retry=' + attempt;
+        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=233-locked-preview-tour&video_health=2&meta_retry=' + attempt;
         s.onload = function() {
             if (window._pbbScript5Complete && window._switchAppTabReady && typeof window._switchAppTabReal === 'function') {
                 sessionStorage.removeItem('pbb_meta_script5_recovery_v1');
@@ -12934,7 +12934,7 @@ if (window._pbbIsIOSSafari) {
         document.head.appendChild(s);
     })(0);
 } else {
-document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=232-movement-style&video_health=2"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=233-locked-preview-tour&video_health=2"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=5"></script>
@@ -17492,7 +17492,6 @@ window.endFeatureTour = function(skipped){
 
         <!-- HEADER -->
         <div class="wizard-header" style="padding: 25px 25px 0 25px; text-align: center; position:relative; flex-shrink: 0;">
-            <button id="onboarding-wizard-close" type="button" aria-label="Close onboarding" onclick="closeWizardManually()" style="position:absolute; top:15px; right:15px; width:30px; height:30px; line-height:30px; padding:0; border:0; background:#f1f5f9; border-radius:50%; cursor:pointer; font-size:1.2rem; color:#64748b; font-weight:bold;">&times;</button>
             <div class="wizard-brand-lockup">
                 <span class="wizard-brand-mark"><img src="balance_logo.png" alt="Balance"></span>
                 <span class="wizard-brand-copy"><strong>BALANCE</strong><small>FOUNDATIONS</small></span>

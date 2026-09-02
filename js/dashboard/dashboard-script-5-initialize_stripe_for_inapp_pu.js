@@ -1333,13 +1333,6 @@ function setOnboardingNavigationGate(locked) {
         bottomNav.setAttribute('aria-hidden', locked ? 'true' : 'false');
     }
 
-    const closeButton = document.getElementById('onboarding-wizard-close');
-    if (closeButton) {
-        const canExitPreview = window.metaAdTrialMode === true;
-        closeButton.style.display = locked && !canExitPreview ? 'none' : '';
-        closeButton.disabled = locked && !canExitPreview;
-        closeButton.setAttribute('aria-hidden', locked && !canExitPreview ? 'true' : 'false');
-    }
 }
 
 // Real switchAppTab implementation - replaces the early stub
@@ -14593,7 +14586,7 @@ async function closeWizardManually() {
      const closingMetaAdTrial = window.metaAdTrialMode === true
          && window.BalanceMetaAdTrial
          && typeof window.BalanceMetaAdTrial.showExitChoice === 'function';
-     if (!closingMetaAdTrial && localStorage.getItem('onboardingComplete') !== 'true') {
+     if (localStorage.getItem('onboardingComplete') !== 'true') {
          setOnboardingNavigationGate(true);
          return false;
      }
@@ -14609,8 +14602,8 @@ async function closeWizardManually() {
      setOnboardingScrollLock(false);
 
      // Restore tamagotchi model on iOS Safari (was paused when the wizard opened).
-     // finishOnboarding() handles this for normal completion; we must do it here too
-     // for the case where the user exits early via the × button.
+     // finishOnboarding() handles this for normal completion; retain this cleanup
+     // for any completed-flow callers that close the wizard programmatically.
      if (window._pbbIsIOSSafari && window._pausedTamagotchiSrc) {
          if (typeof window.iosHotSwapModel === 'function') {
              window.iosHotSwapModel(window._pausedTamagotchiSrc);
