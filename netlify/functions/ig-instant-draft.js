@@ -6940,6 +6940,11 @@ Rules:
                 if (Array.isArray(timeoutFallback?.chunks) && timeoutFallback.chunks.length) {
                     rawText = JSON.stringify({ messages: timeoutFallback.chunks });
                     model = 'deterministic_paid_meta_timeout_v1';
+                    // The local paid-Meta writer is a complete, reviewed draft,
+                    // not an unavailable AI draft. Keeping the upstream timeout
+                    // in `error` makes getAutoDmHoldReason() suppress this safe
+                    // fallback even after it passes the paid conversation review.
+                    lastError = null;
                     console.warn(`[ig-draft] paid Meta OpenAI timed out; used local sales fallback: ${err.message}`);
                 } else {
                     return { chunks: [], joined: '', model: 'none', error: lastError, imageCount: imageParts.length, audioCount: audioParts.length, videoCount: videoParts.length, reelContextCount, reelThumbnailCount, mediaDecode, timeline: totalConversationText, conversationEpisode, currentTurnAnchorBlock, storyReplyPromptContextBlock, mediaContextPromptBlock, learningReelContextBlock, learningReelReplyAnchorBlock, learningReelEvidenceBlock };
