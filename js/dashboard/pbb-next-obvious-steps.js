@@ -675,7 +675,20 @@
 
   function openFoundationsTarget() {
     markOnboardingStepSeen('foundations_intro');
-    openNextCourseTarget('balance-foundations');
+    openFoundationsCourseOverview();
+  }
+
+  async function openFoundationsCourseOverview() {
+    var loaded = await ensureLearningSystemLoaded();
+    if (!loaded) {
+      if (typeof window.showToast === 'function') window.showToast('Your course is still loading. Tap the card again in a moment.', 'info');
+      return;
+    }
+    if (typeof window._ensureLearningProgressLoaded === 'function') await window._ensureLearningProgressLoaded();
+    switchTab('learning');
+    afterTab(function(){
+      if (typeof window.openCoursePage === 'function') window.openCoursePage('balance-foundations');
+    }, 360);
   }
 
   function getNextCourseId() {
@@ -885,9 +898,9 @@
     },
     {
       id: 'foundations_intro',
-      title: 'Start Balance Foundations',
-      body: 'Open your first lesson and see how the course helps change work in real life.',
-      cta: 'Start Course',
+      title: 'Take your first lesson',
+      body: 'Start Balance Foundations, then complete your first short lesson and quiz.',
+      cta: 'Take Lesson 1',
       accent: '#0f766e',
       priority: 955,
       goalIds: [],

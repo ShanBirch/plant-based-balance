@@ -57,10 +57,39 @@ test('the tour opens each real course week without starting or completing it', (
   assert.doesNotMatch(previewFunction, /startFoundationsLesson|lessons_completed\.push/);
 });
 
-test('the first quiz starts directly after the Week 6 preview', () => {
-  assert.match(dashboard, /title:'Week 6: Build your sustainable way forward'[^\n]*nextLabel:'Start Week 1'/);
-  assert.match(dashboard, /Object\.assign\(foundationsTourStep, \{[\s\S]*?tab:'learning'[\s\S]*?promptBeforeAction:false[\s\S]*?openMetaPreviewFirstFoundationsLesson\(\)/);
-  assert.match(dashboard, /learning-inline\.js\?v=37-completion-aware-course/g);
+test('the tour guides the real course start flow before the first quiz', () => {
+  const required = dashboard.match(/const REQUIRED_ONBOARDING_TOUR_TITLES = \[[\s\S]*?\n  \];/)?.[0] || '';
+  const orderedTitles = [
+    'Week 6: Build your sustainable way forward',
+    'Start your course',
+    'Start Week 1',
+    'Take your first lesson',
+    'Read, then take the quiz'
+  ];
+  let previousIndex = -1;
+  orderedTitles.forEach((title) => {
+    const index = required.indexOf(title);
+    assert.ok(index > previousIndex, `${title} should follow the previous course step`);
+    previousIndex = index;
+  });
+  assert.match(dashboard, /sel:'#balance-foundations-course-start'[^\n]*title:'Start your course'[^\n]*requiresHighlightedClick:true/);
+  assert.match(dashboard, /title:'Start Week 1'[^\n]*requiresHighlightedClick:true/);
+  assert.match(dashboard, /title:'Take your first lesson'[^\n]*requiresHighlightedClick:true/);
+  assert.match(learning, /id="balance-foundations-course-start"/);
+  assert.match(learning, /id="balance-foundations-welcome-start"/);
+  assert.match(learning, /id="balance-foundations-first-lesson"/);
+  assert.match(learning, /window\.prepareBalanceFoundationsStartForTour = function\(\)[\s\S]*?course\.progress\?\.completed[\s\S]*?localStorage\.removeItem\(getCourseStartedKey\(course\.id\)\)/);
+  assert.match(dashboard, /learning-inline\.js\?v=38-guided-course-start/g);
+});
+
+test('the Home course task stays singular and opens the course overview', () => {
+  const nextSteps = fs.readFileSync(path.join(root, 'js/dashboard/pbb-next-obvious-steps.js'), 'utf8');
+  assert.equal((nextSteps.match(/id: 'foundations_intro'/g) || []).length, 1);
+  assert.match(nextSteps, /id: 'foundations_intro'[\s\S]*?title: 'Take your first lesson'[\s\S]*?cta: 'Take Lesson 1'/);
+  assert.match(nextSteps, /function openFoundationsTarget\(\)[\s\S]*?openFoundationsCourseOverview\(\)/);
+  const overview = nextSteps.match(/async function openFoundationsCourseOverview\(\)[\s\S]*?\n  }/)?.[0] || '';
+  assert.match(overview, /openCoursePage\('balance-foundations'\)/);
+  assert.doesNotMatch(overview, /openCurrentCourseLesson/);
 });
 
 test('posting the introduction returns Home before the course To do prompt', () => {
