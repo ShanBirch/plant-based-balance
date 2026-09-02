@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v481-current-onboarding-surfaces'; // v481: tour uses current workout/course surfaces and locks each required action
+const CACHE_NAME = 'pbb-app-v482-tour-page-controls'; // v482: only off-sequence To do cards are locked; opened page controls stay interactive
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

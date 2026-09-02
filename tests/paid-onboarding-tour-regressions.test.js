@@ -6,11 +6,39 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const dashboard = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
 
-test('guided onboarding blocks taps outside the current required action', () => {
+test('guided onboarding blocks only off-sequence To Do cards', () => {
   assert.match(dashboard, /function tourAllowsInteraction\(target\)/);
+  assert.match(dashboard, /const todoAction = target\.closest\('#next-obvious-steps-card \[data-next-step-id\]'\);/);
+  assert.match(dashboard, /if \(!todoAction\) return true;/);
   assert.match(dashboard, /if \(prompted\) return !!\(step\.preActionSel && target\.closest\(step\.preActionSel\)\)/);
-  assert.match(dashboard, /const liveTarget = resolveStepTarget\(step\)\.target;[\s\S]*liveTarget\.contains\(target\)/);
+  assert.match(dashboard, /return !!\(step\.sel && target\.closest\(step\.sel\)\);/);
   assert.match(dashboard, /event\.preventDefault\(\);\s*event\.stopImmediatePropagation\(\);/);
+});
+
+test('tour leaves recipe and page controls usable while rejecting the wrong To Do card', () => {
+  const start = dashboard.indexOf('function tourAllowsInteraction(target)');
+  const end = dashboard.indexOf('\n  }\n\n  // Keep To do next sequential', start) + 4;
+  const source = dashboard.slice(start, end);
+  const makeGuard = new Function(
+    'window', 'activeSteps', 'idx', 'metaPreviewTour', 'clientActivationTour', 'completedPromptedActions',
+    `${source}; return tourAllowsInteraction;`
+  );
+  const guard = makeGuard(
+    { __balanceGuidedTourActive: true },
+    [{ promptBeforeAction: true, action() {}, preActionSel: '[data-next-step-id="meal_plan_intro"]' }],
+    0,
+    true,
+    false,
+    new Set()
+  );
+  const target = (matches = {}) => ({ closest: selector => matches[selector] ? {} : null });
+
+  assert.equal(guard(target()), true, 'normal recipe and meal-plan controls remain usable');
+  assert.equal(guard(target({ '#next-obvious-steps-card [data-next-step-id]': true })), false, 'a different To Do card is blocked');
+  assert.equal(guard(target({
+    '#next-obvious-steps-card [data-next-step-id]': true,
+    '[data-next-step-id="meal_plan_intro"]': true
+  })), true, 'the highlighted To Do card remains usable');
 });
 const onboarding = fs.readFileSync(path.join(root, 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js'), 'utf8');
 const calorieTracker = fs.readFileSync(path.join(root, 'js/dashboard/dashboard-script-11-calorie_tracker_functions.js'), 'utf8');

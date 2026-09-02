@@ -14261,6 +14261,10 @@ if(!window._pbbIsIOSSafari) {
   function tourAllowsInteraction(target){
     if (!window.__balanceGuidedTourActive || !target || !target.closest) return true;
     if (target.closest('#guided-tour-bubble,#meta-tour-welcome')) return true;
+    const todoAction = target.closest('#next-obvious-steps-card [data-next-step-id]');
+    // The tour owns the order of To do next, but the page it has opened remains
+    // fully usable so members can inspect recipes, meals and other real controls.
+    if (!todoAction) return true;
     const step = activeSteps[idx];
     if (!step) return false;
     const prompted = (metaPreviewTour || clientActivationTour)
@@ -14268,20 +14272,10 @@ if(!window._pbbIsIOSSafari) {
       && typeof step.action === 'function'
       && !completedPromptedActions.has(idx);
     if (prompted) return !!(step.preActionSel && target.closest(step.preActionSel));
-    if (step.requiresHighlightedClick || step.allowTargetInteraction) {
-      const liveTarget = resolveStepTarget(step).target;
-      return !!(liveTarget && (liveTarget === target || liveTarget.contains(target)));
-    }
-    if (step.requiresFoundationsLesson) return !!target.closest('#learning-content');
-    if (step.requiresWeeklyGoals) return !!target.closest('#weekly-goals-modal,.weekly-goal-onboarding-guide');
-    if (step.requiresFeedPost) return !!target.closest('#feed-composer-card');
-    if (step.requiresWelcomeVideo) return !!target.closest('#meta-ad-trial-welcome-video,#meta-ad-trial-welcome-continue');
-    if (step.checkinExplainerGuide) return !!target.closest('#coach-checkin-explainer');
-    return false;
+    return !!(step.sel && target.closest(step.sel));
   }
 
-  // Keep onboarding sequential: taps outside the current highlighted action
-  // must never open a different To do card, tab or page underneath the guide.
+  // Keep To do next sequential without freezing the real page under the guide.
   document.addEventListener('click', function(event){
     if (tourAllowsInteraction(event.target)) return;
     event.preventDefault();
