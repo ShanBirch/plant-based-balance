@@ -555,7 +555,7 @@ function openIntervalTimer() {
         view.dataset.timerScreen = 'setup';
         view.scrollTop = 0;
         pushNavigationState('view-interval-timer', closeIntervalTimer);
-        document.getElementById('interval-timer-setup').style.display = 'block';
+        document.getElementById('interval-timer-setup').style.display = 'flex';
         document.getElementById('interval-timer-active').style.display = 'none';
         document.getElementById('interval-timer-done').style.display = 'none';
         updateIntervalPreview();
@@ -851,7 +851,7 @@ function resetIntervalTimer() {
     st.isRunning = false;
     st.isPaused = false;
 
-    document.getElementById('interval-timer-setup').style.display = 'block';
+    document.getElementById('interval-timer-setup').style.display = 'flex';
     document.getElementById('interval-timer-active').style.display = 'none';
     document.getElementById('interval-timer-done').style.display = 'none';
     updateIntervalPreview();

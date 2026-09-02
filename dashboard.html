@@ -8937,25 +8937,25 @@ html[data-pbb-theme="light"] #view-activity-success { --activity-success-accent:
             <h3 class="movement-tool-question">Set your timer</h3>
             <p class="movement-tool-helper">Choose your work, rest and rounds. Then start.</p>
 
-            <div class="movement-tool-card interval-setup-card">
-                <div class="interval-setup-row">
-                    <div><strong>Work</strong><span>Seconds moving</span></div>
+            <div class="interval-setup-grid">
+                <div class="interval-setup-card">
+                    <div><strong>Work</strong><span>Move</span></div>
                     <div class="interval-stepper" aria-label="Work duration">
                         <button type="button" aria-label="Reduce work time" onclick="adjustIntervalValue('work', -5)">&minus;</button>
                         <label><span class="sr-only">Work seconds</span><input id="interval-work-input" type="number" value="30" min="5" max="300" inputmode="numeric" onchange="updateIntervalPreview()"><small>sec</small></label>
                         <button type="button" aria-label="Increase work time" onclick="adjustIntervalValue('work', 5)">+</button>
                     </div>
                 </div>
-                <div class="interval-setup-row">
-                    <div><strong>Rest</strong><span>Seconds recovering</span></div>
+                <div class="interval-setup-card">
+                    <div><strong>Rest</strong><span>Recover</span></div>
                     <div class="interval-stepper" aria-label="Rest duration">
                         <button type="button" aria-label="Reduce rest time" onclick="adjustIntervalValue('rest', -5)">&minus;</button>
                         <label><span class="sr-only">Rest seconds</span><input id="interval-rest-input" type="number" value="30" min="0" max="300" inputmode="numeric" onchange="updateIntervalPreview()"><small>sec</small></label>
                         <button type="button" aria-label="Increase rest time" onclick="adjustIntervalValue('rest', 5)">+</button>
                     </div>
                 </div>
-                <div class="interval-setup-row">
-                    <div><strong>Rounds</strong><span>Times through</span></div>
+                <div class="interval-setup-card">
+                    <div><strong>Rounds</strong><span>Repeat</span></div>
                     <div class="interval-stepper" aria-label="Number of rounds">
                         <button type="button" aria-label="Reduce rounds" onclick="adjustIntervalValue('rounds', -1)">&minus;</button>
                         <label><span class="sr-only">Rounds</span><input id="interval-rounds-input" type="number" value="8" min="1" max="100" inputmode="numeric" onchange="updateIntervalPreview()"></label>
@@ -18127,7 +18127,7 @@ if (window._pbbIsIOSSafari) {
 }
 </script>
 
-<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=117-stopwatch-simple">
+<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=118-stopwatch-centred">
 <link rel="stylesheet" href="css/dashboard/pbb-onboarding-comeback.css?v=8">
 <link rel="stylesheet" href="css/dashboard/pbb-onboarding-foundations.css?v=10-preference-contrast">
 
@@ -18268,7 +18268,7 @@ if (typeof WORKOUT_LIBRARY !== 'undefined' && typeof WORKOUT_LIBRARY_EXTENDED !=
 </script>
 <script>
 // Script-7 (29KB) - video logic. Defer on iOS to reduce memory pressure.
-var pbbVideoLogicSrc = 'js/dashboard/dashboard-script-7-video_logic.js?v=20260902-stopwatch-simple';
+var pbbVideoLogicSrc = 'js/dashboard/dashboard-script-7-video_logic.js?v=20260902-stopwatch-centred';
 if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {

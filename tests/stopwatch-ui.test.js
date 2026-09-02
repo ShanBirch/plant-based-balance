@@ -8,8 +8,10 @@ const dashboard = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
 const timerJs = fs.readFileSync(path.join(root, 'js/dashboard/dashboard-script-7-video_logic.js'), 'utf8');
 const premiumCss = fs.readFileSync(path.join(root, 'css/dashboard/pbb-premium-overlays.css'), 'utf8');
 
-test('Stopwatch uses the simple three-row setup', () => {
+test('Stopwatch uses the simple three-column setup', () => {
   assert.match(dashboard, /<h3 class="movement-tool-question">Set your timer<\/h3>/);
+  assert.match(dashboard, /class="interval-setup-grid"/);
+  assert.equal((dashboard.match(/class="interval-setup-card"/g) || []).length, 3);
   assert.match(dashboard, /id="interval-work-input"[^>]*value="30"/);
   assert.match(dashboard, /id="interval-rest-input"[^>]*value="30"/);
   assert.match(dashboard, /id="interval-rounds-input"[^>]*value="8"/);
@@ -33,4 +35,3 @@ test('Stopwatch adapts safely to small screens and high round counts', () => {
   assert.match(timerJs, /interval-round-progress-track/);
   assert.match(timerJs, /Math\.max\(1, Math\.min\(100,/);
 });
-
