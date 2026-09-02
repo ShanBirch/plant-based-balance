@@ -774,7 +774,7 @@ function renderRoundDots() {
     for (let i = 1; i <= st.totalRounds; i++) {
         const isActive = i === st.currentRound;
         const isComplete = i < st.currentRound;
-        const bg = isComplete ? '#22c55e' : (isActive ? (st.currentPhase === 'work' ? '#f59e0b' : '#3b82f6') : '#e2e8f0');
+        const bg = isComplete ? '#d6ad55' : (isActive ? (st.currentPhase === 'work' ? '#d6ad55' : '#a98538') : 'var(--border)');
         const size = isActive ? '14px' : '10px';
         html += `<div style="width:${size}; height:${size}; border-radius:50%; background:${bg}; transition: all 0.3s;"></div>`;
     }
@@ -791,8 +791,8 @@ function updateTimerRing() {
     const circumference = 2 * Math.PI * 115; // r=115
     ring.setAttribute('stroke-dashoffset', (fraction * circumference).toFixed(2));
 
-    // Color: amber for work, blue for rest
-    ring.setAttribute('stroke', st.currentPhase === 'work' ? '#f59e0b' : '#3b82f6');
+    // Balance gold for work, with a quieter antique-gold rest state.
+    ring.setAttribute('stroke', st.currentPhase === 'work' ? '#d6ad55' : '#a98538');
 }
 
 function startIntervalTimer() {
@@ -814,7 +814,7 @@ function startIntervalTimer() {
 
     // Init display
     document.getElementById('interval-timer-phase').textContent = 'WORK';
-    document.getElementById('interval-timer-phase').style.color = '#f59e0b';
+    document.getElementById('interval-timer-phase').style.color = '#8a6112';
     document.getElementById('interval-timer-display').textContent = formatTimerSeconds(st.secondsLeft);
     document.getElementById('interval-timer-round').textContent = `Round ${st.currentRound} / ${st.totalRounds}`;
     document.getElementById('interval-pause-btn').textContent = 'Pause';
@@ -847,7 +847,7 @@ function tickIntervalTimer() {
                 st.currentPhase = 'rest';
                 st.secondsLeft = st.restSeconds;
                 document.getElementById('interval-timer-phase').textContent = 'REST';
-                document.getElementById('interval-timer-phase').style.color = '#3b82f6';
+                document.getElementById('interval-timer-phase').style.color = '#8a6a2d';
                 playTimerBeep('rest');
             } else {
                 // No rest - advance round
@@ -880,7 +880,7 @@ function advanceIntervalRound() {
     st.secondsLeft = st.workSeconds;
 
     document.getElementById('interval-timer-phase').textContent = 'WORK';
-    document.getElementById('interval-timer-phase').style.color = '#f59e0b';
+    document.getElementById('interval-timer-phase').style.color = '#8a6112';
     document.getElementById('interval-timer-round').textContent = `Round ${st.currentRound} / ${st.totalRounds}`;
     document.getElementById('interval-timer-display').textContent = formatTimerSeconds(st.secondsLeft);
     updateTimerRing();
@@ -912,7 +912,7 @@ function togglePauseIntervalTimer() {
     const st = window.intervalTimerState;
     st.isPaused = !st.isPaused;
     document.getElementById('interval-pause-btn').textContent = st.isPaused ? 'Resume' : 'Pause';
-    document.getElementById('interval-pause-btn').style.background = st.isPaused ? '#22c55e' : '#f59e0b';
+    document.getElementById('interval-pause-btn').style.background = st.isPaused ? '#f0d27a' : '#d6ad55';
 }
 
 function resetIntervalTimer() {

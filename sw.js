@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v473-full-workout-history'; // v473: load every completed workout and remove the Movement-card logo
+const CACHE_NAME = 'pbb-app-v474-unified-movement-style'; // v474: unify Movement tools with the guided Balance style
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -17,14 +17,14 @@ const ASSETS = [
   './workout_library_extended.js',
   './js/dashboard/script_part_2.js?v=16-imported-activity-latest',
   './js/dashboard/dashboard-script-3-1_get_user_data.js?v=60-manual-feature-reveals',
-  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=231-workout-history&video_health=2',
+  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=232-movement-style&video_health=2',
   './js/dashboard/pbb-settings-navigation.js?v=1-settings-navigation',
   './js/dashboard/pbb-meta-preview-soundtrack.js?v=3-coach-video-ducking',
   './js/dashboard/pbb-app-telemetry.js?v=1',
   './js/dashboard/pbb-deferred-weeklygoals.js?v=35-balance-theme',
   './css/dashboard/pbb-onboarding-comeback.css?v=8',
   './css/dashboard/pbb-onboarding-foundations.css?v=7-single-render',
-  './js/dashboard/dashboard-script-7-video_logic.js?v=20260815-exercise-thumbnails',
+  './js/dashboard/dashboard-script-7-video_logic.js?v=20260902-movement-style',
   './js/dashboard/dashboard-script-10-points_widget_functions.js?v=61-exact-activity-share',
   './js/dashboard/pbb-deferred-fitbit.js?v=3-latest-import-only',
   './js/dashboard/pbb-next-obvious-steps.js?v=51-coach-checkin-tour',

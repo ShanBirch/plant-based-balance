@@ -7692,20 +7692,14 @@ if(!window._pbbIsIOSSafari) {
 
 <script>if(window._crumb)window._crumb('body_s_workouts');</script>
 <!-- YOUR WORKOUTS VIEW -->
-<div id="view-your-workouts" class="app-view balance-workout-history-view" style="display:none; min-height:100vh; height:auto; z-index:100000; position:fixed; inset:0; width:100%; overflow-y:auto; overflow-x:hidden;">
-    <div class="balance-workout-history-header">
-        <img src="balance_logo.png" alt="Balance" class="balance-workout-history-logo">
-        <div>
-            <div class="balance-workout-history-kicker">Movement</div>
-            <div class="balance-workout-history-title">Previous workouts</div>
-        </div>
-    </div>
-
-    <div class="balance-workout-history-content">
-        <p class="balance-workout-history-intro">A simple record of the sessions you have completed.</p>
+<div id="view-your-workouts" class="app-view balance-workout-history-view movement-tool-view" style="display:none; min-height:100vh; height:auto; z-index:100000; position:fixed; inset:0; width:100%; overflow-y:auto; overflow-x:hidden;">
+    <div class="movement-tool-shell balance-workout-history-content">
+        <div class="movement-tool-header"><h2>Previous Workouts</h2></div>
+        <div class="movement-tool-kicker">Your training history</div>
+        <h3 class="movement-tool-question">What have you completed?</h3>
+        <p class="movement-tool-helper balance-workout-history-intro">Every finished workout is kept here, with the exercises and sets ready to review.</p>
         <div id="your-workouts-list" class="balance-workout-history-list" aria-live="polite"></div>
         <div id="your-workouts-empty" class="balance-workout-history-empty" style="display:none;">
-            <img src="balance_logo.png" alt="" aria-hidden="true">
             <strong>Your completed workouts will appear here.</strong>
             <span>Finish a workout and Balance will keep the details for you.</span>
         </div>
@@ -7723,23 +7717,27 @@ if(!window._pbbIsIOSSafari) {
 
 
 <!-- THIS WEEK'S WORKOUTS LIST -->
-<div id="view-week-workouts" class="app-view" style="display:none; height: 100vh; background: #f8fafc; z-index: 500; position: fixed; top: 0; left: 0; width: 100%; overflow-y: auto;">
-    <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; padding-top: calc(15px + env(safe-area-inset-top, 0px)); display: flex; align-items: center; justify-content: center; border-bottom: 1px solid #e2e8f0;">
-        <div onclick="closeWeekWorkoutsView()" style="position: absolute; left: 15px; top: calc(50% + env(safe-area-inset-top, 0px) / 2); transform: translateY(-50%); width: 36px; height: 36px; border-radius: 50%; background: #f1f5f9; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.4rem; color: #64748b; font-weight: 700; line-height: 1;">×</div>
-        <div id="week-workouts-title" style="font-weight: 800; color: var(--text-main); font-size: 1.05rem;">Coach's Workouts This Week</div>
+<div id="view-week-workouts" class="app-view movement-tool-view coach-workouts-view" style="display:none; height: 100vh; z-index: 500; position: fixed; top: 0; left: 0; width: 100%; overflow-y: auto;">
+    <div class="movement-tool-shell">
+        <div class="movement-tool-header"><h2 id="week-workouts-title">Coach's Workouts</h2></div>
+        <div class="movement-tool-kicker">Train with Coach Shan</div>
+        <h3 class="movement-tool-question">This week's sessions</h3>
+        <p class="movement-tool-helper">Open a workout to see Shannon's exercises, sets and target reps.</p>
+        <div id="week-workouts-list" style="display: flex; flex-direction: column; gap: 12px;"></div>
     </div>
-    <div id="week-workouts-list" style="padding: 16px; display: flex; flex-direction: column; gap: 12px;"></div>
 </div>
 
 <!-- WEEK WORKOUT SESSION DETAIL -->
-<div id="view-week-session" class="app-view" style="display:none; height: 100vh; background: #f8fafc; z-index: 500; position: fixed; top: 0; left: 0; width: 100%; overflow-y: auto;">
-    <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; padding-top: calc(15px + env(safe-area-inset-top, 0px)); display: flex; align-items: center; justify-content: center; border-bottom: 1px solid #e2e8f0;">
-        <div onclick="openWeekWorkoutsView()" style="position: absolute; left: 15px; top: calc(50% + env(safe-area-inset-top, 0px) / 2); transform: translateY(-50%); width: 36px; height: 36px; border-radius: 50%; background: #f1f5f9; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.4rem; color: #64748b; font-weight: 700; line-height: 1;">‹</div>
-        <div id="week-session-title" style="font-weight: 800; color: var(--text-main); font-size: 1.05rem;">Workout Details</div>
+<div id="view-week-session" class="app-view movement-tool-view coach-workout-session-view" style="display:none; height: 100vh; z-index: 500; position: fixed; top: 0; left: 0; width: 100%; overflow-y: auto;">
+    <div class="movement-tool-shell">
+        <div class="movement-tool-header"><h2 id="week-session-title">Workout Details</h2></div>
+        <div class="movement-tool-kicker">Coach's workout</div>
+        <h3 class="movement-tool-question">Your session plan</h3>
+        <p class="movement-tool-helper">Review the full workout, then start when you are ready.</p>
+        <div id="week-session-body"></div>
     </div>
-    <div id="week-session-body" style="padding: 16px 16px 120px 16px;"></div>
-    <div style="position: fixed; bottom: 0; left: 0; right: 0; padding: 16px; padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); background: linear-gradient(to top, white 60%, rgba(255,255,255,0));">
-        <button id="week-session-repeat-btn" style="width: 100%; padding: 16px; border: none; border-radius: 16px; background: linear-gradient(135deg, var(--primary) 0%, #22c55e 100%); color: white; font-weight: 800; font-size: 1rem; box-shadow: 0 8px 20px rgba(34,197,94,0.3); cursor: pointer;">Start This Workout</button>
+    <div class="coach-workout-action-bar">
+        <button id="week-session-repeat-btn">Start This Workout</button>
     </div>
 </div>
 
@@ -8927,19 +8925,20 @@ html[data-pbb-theme="light"] #view-activity-success { --activity-success-accent:
 </style>
 
 <!-- INTERVAL TIMER / STOPWATCH VIEW -->
-<div id="view-interval-timer" class="app-view" style="display:none; height: 100vh; position: fixed; top: 0; left: 0; width: 100%; z-index: 500; background: var(--bg); overflow-y: auto;">
-    <div style="padding: 0 20px 120px 20px; max-width: 500px; margin: 0 auto;">
+<div id="view-interval-timer" class="app-view movement-tool-view movement-stopwatch-view" style="display:none; height: 100vh; position: fixed; top: 0; left: 0; width: 100%; z-index: 500; background: var(--bg); overflow-y: auto;">
+    <div class="movement-tool-shell" style="padding: 0 20px 120px 20px; max-width: 500px; margin: 0 auto;">
 
         <!-- Header -->
-        <div style="display: flex; align-items: center; justify-content: center; padding: calc(16px + env(safe-area-inset-top, 0px)) 0 16px 0; position: sticky; top: 0; background: var(--bg); z-index: 10;">
-            <h2 style="font-family: 'Playfair Display', serif; font-size: 1.5rem; margin: 0; text-align: center;">Interval Timer</h2>
-        </div>
+        <div class="movement-tool-header"><h2>Stopwatch</h2></div>
 
         <!-- Setup Section (shown before timer starts) -->
         <div id="interval-timer-setup">
+            <div class="movement-tool-kicker">Set your intervals</div>
+            <h3 class="movement-tool-question">How do you want to work?</h3>
+            <p class="movement-tool-helper">Choose a quick timer below or describe your own work, rest and rounds.</p>
             <!-- Natural Language Input -->
-            <div style="margin-bottom: 24px;">
-                <div style="font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 8px;">Describe your timer</div>
+            <div class="movement-tool-card movement-stopwatch-input-card" style="margin-bottom: 24px;">
+                <div class="movement-tool-label">Describe your timer</div>
                 <input id="interval-timer-input" type="text" placeholder='e.g. "40/20 x6" or "30 on 10 off 8 rounds"'
                     style="width: 100%; padding: 16px 18px; border-radius: 16px; border: 2px solid var(--border); background: var(--card-bg); color: var(--text-main); font-size: 1.1rem; box-sizing: border-box; outline: none; font-weight: 600;"
                     onfocus="this.style.borderColor='#f59e0b'" onblur="this.style.borderColor='var(--border)'"
@@ -9107,39 +9106,17 @@ html[data-pbb-theme="light"] #view-activity-success { --activity-success-accent:
 </div>
 
 <!-- WORKOUT LIBRARY CATEGORIES VIEW -->
-<div id="view-workout-library" class="app-view" style="display:none; height: 100vh; background: white; z-index: 500; position: fixed; top: 0; left: 0; width: 100%; overflow-y: auto;">
-    <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f1f5f9; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-        <div style="width: 40px;"></div>
-        <div style="font-weight: 700; color: var(--text-main); font-size: 1.1rem;">Workout Library</div>
-        <div style="width: 40px;"></div>
-    </div>
-
-    <div style="padding: 25px; padding-bottom: 100px;">
-        <p style="color: var(--text-muted); margin-bottom: 30px; line-height: 1.6;">
-            Choose your workout style and browse our complete library of professionally designed workouts.
-        </p>
+<div id="view-workout-library" class="app-view movement-tool-view" style="display:none; height: 100vh; z-index: 500; position: fixed; top: 0; left: 0; width: 100%; overflow-y: auto;">
+    <div class="movement-tool-shell">
+        <div class="movement-tool-header"><h2>Workout Library</h2></div>
+        <div class="movement-tool-kicker">Choose a workout</div>
+        <h3 class="movement-tool-question">What do you want to train?</h3>
+        <p class="movement-tool-helper">Pick a style, then choose the session that fits your day.</p>
 
         <div id="library-categories-grid" style="display: grid; gap: 15px;">
             <!-- Categories will be dynamically inserted here -->
         </div>
 
-        <!-- Create Custom Exercise Section -->
-        <div style="margin-top: 30px; padding-top: 25px; border-top: 2px solid #f1f5f9;">
-            <div onclick="openCreateCustomExerciseModal('library')" style="background: linear-gradient(135deg, #f0fdf4, #dcfce7); border: 2px solid #bbf7d0; border-radius: 16px; padding: 20px; cursor: pointer; display: flex; align-items: center; gap: 15px;">
-                <div style="width: 50px; height: 50px; background: linear-gradient(135deg, var(--primary), #4ade80); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                    <svg viewBox="0 0 24 24" style="width: 26px; height: 26px; fill: white;">
-                        <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
-                    </svg>
-                </div>
-                <div style="flex: 1;">
-                    <div style="font-weight: 700; color: var(--text-main); font-size: 1.05rem; margin-bottom: 4px;">Create Custom Exercise</div>
-                    <div style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.4;">Record your own exercise with video and add it to your personal library</div>
-                </div>
-                <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: var(--primary);">
-                    <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
-                </svg>
-            </div>
-        </div>
     </div>
 </div>
 
@@ -9163,15 +9140,12 @@ html[data-pbb-theme="light"] #view-activity-success { --activity-success-accent:
 </div>
 
 <!-- WORKOUT LIBRARY SUBCATEGORIES VIEW -->
-<div id="view-workout-subcategories" class="app-view" style="display:none; height: 100vh; background: white; z-index: 501; position: fixed; top: 0; left: 0; width: 100%; overflow-y: auto;">
-    <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f1f5f9; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-        <div style="width: 40px;"></div>
-        <div id="subcategory-header-title" style="font-weight: 700; color: var(--text-main); font-size: 1.1rem;">Category</div>
-        <div style="width: 40px;"></div>
-    </div>
-
-    <div style="padding: 25px; padding-bottom: 100px;">
-        <p id="subcategory-description" style="color: var(--text-muted); margin-bottom: 30px; line-height: 1.6;"></p>
+<div id="view-workout-subcategories" class="app-view movement-tool-view" style="display:none; height: 100vh; z-index: 501; position: fixed; top: 0; left: 0; width: 100%; overflow-y: auto;">
+    <div class="movement-tool-shell">
+        <div class="movement-tool-header"><h2 id="subcategory-header-title">Category</h2></div>
+        <div class="movement-tool-kicker">Choose a focus</div>
+        <h3 class="movement-tool-question">Find your session</h3>
+        <p id="subcategory-description" class="movement-tool-helper"></p>
 
         <div id="subcategories-grid" style="display: grid; gap: 15px;">
             <!-- Subcategories will be dynamically inserted here -->
@@ -9180,15 +9154,12 @@ html[data-pbb-theme="light"] #view-activity-success { --activity-success-accent:
 </div>
 
 <!-- WORKOUT LIBRARY WORKOUTS LIST VIEW -->
-<div id="view-workout-list" class="app-view" style="display:none; height: 100vh; background: white; z-index: 502; position: fixed; top: 0; left: 0; width: 100%; overflow-y: auto;">
-    <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f1f5f9; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-        <div style="width: 40px;"></div>
-        <div id="workout-list-header-title" style="font-weight: 700; color: var(--text-main); font-size: 1.1rem;">Workouts</div>
-        <div style="width: 40px;"></div>
-    </div>
-
-    <div style="padding: 25px; padding-bottom: 100px;">
-        <p id="workout-list-description" style="color: var(--text-muted); margin-bottom: 30px; line-height: 1.6;"></p>
+<div id="view-workout-list" class="app-view movement-tool-view" style="display:none; height: 100vh; z-index: 502; position: fixed; top: 0; left: 0; width: 100%; overflow-y: auto;">
+    <div class="movement-tool-shell">
+        <div class="movement-tool-header"><h2 id="workout-list-header-title">Workouts</h2></div>
+        <div class="movement-tool-kicker">Choose a workout</div>
+        <h3 class="movement-tool-question">Ready when you are</h3>
+        <p id="workout-list-description" class="movement-tool-helper"></p>
 
         <div id="workouts-list" style="display: flex; flex-direction: column; gap: 15px;">
             <!-- Workouts will be dynamically inserted here -->
@@ -12984,7 +12955,7 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=231-workout-history&video_health=2';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=232-movement-style&video_health=2';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
@@ -13026,7 +12997,7 @@ if (window._pbbIsIOSSafari) {
         var s = document.createElement('script');
         s.async = false;
         s.dataset.metaTrialLoader = String(attempt);
-        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=231-workout-history&video_health=2&meta_retry=' + attempt;
+        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=232-movement-style&video_health=2&meta_retry=' + attempt;
         s.onload = function() {
             if (window._pbbScript5Complete && window._switchAppTabReady && typeof window._switchAppTabReal === 'function') {
                 sessionStorage.removeItem('pbb_meta_script5_recovery_v1');
@@ -13045,7 +13016,7 @@ if (window._pbbIsIOSSafari) {
         document.head.appendChild(s);
     })(0);
 } else {
-document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=231-workout-history&video_health=2"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=232-movement-style&video_health=2"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=5"></script>
@@ -18238,7 +18209,7 @@ if (window._pbbIsIOSSafari) {
 }
 </script>
 
-<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=115-workout-history">
+<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=116-movement-style">
 <link rel="stylesheet" href="css/dashboard/pbb-onboarding-comeback.css?v=8">
 <link rel="stylesheet" href="css/dashboard/pbb-onboarding-foundations.css?v=10-preference-contrast">
 
@@ -18379,7 +18350,7 @@ if (typeof WORKOUT_LIBRARY !== 'undefined' && typeof WORKOUT_LIBRARY_EXTENDED !=
 </script>
 <script>
 // Script-7 (29KB) - video logic. Defer on iOS to reduce memory pressure.
-var pbbVideoLogicSrc = 'js/dashboard/dashboard-script-7-video_logic.js?v=20260815-exercise-thumbnails';
+var pbbVideoLogicSrc = 'js/dashboard/dashboard-script-7-video_logic.js?v=20260902-movement-style';
 if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {

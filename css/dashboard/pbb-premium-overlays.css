@@ -11841,6 +11841,327 @@ html:not([data-pbb-theme="light"]) #view-meals .reflection-card button[onclick*=
     -webkit-text-fill-color: #171717;
 }
 
+/* Unified Movement tools
+   Mirrors the guided Log Activity rhythm across history, library, stopwatch,
+   and Coach's Workouts without carrying forward the legacy green UI. */
+.movement-tool-view {
+    --movement-accent: #f5d98a;
+    --movement-accent-strong: #d8b25e;
+    --movement-accent-soft: rgba(245, 217, 138, 0.12);
+    --movement-ink-on-gold: #17130d;
+    background: radial-gradient(circle at 86% 2%, var(--movement-accent-soft), transparent 28%), var(--bg) !important;
+    color: var(--text-main) !important;
+    -webkit-text-fill-color: var(--text-main) !important;
+}
+
+html[data-pbb-theme="light"] .movement-tool-view {
+    --movement-accent: #8a6112;
+    --movement-accent-strong: #d6ad55;
+    --movement-accent-soft: rgba(184, 137, 43, 0.11);
+}
+
+.movement-tool-shell {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 500px !important;
+    min-height: 100%;
+    margin: 0 auto !important;
+    padding: 0 20px calc(36px + env(safe-area-inset-bottom, 0px)) !important;
+}
+
+.movement-tool-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 72px;
+    margin-bottom: 20px;
+    padding-top: env(safe-area-inset-top, 0px);
+    border-bottom: 1px solid var(--border);
+    background: color-mix(in srgb, var(--bg) 94%, transparent);
+    backdrop-filter: blur(14px);
+}
+
+.movement-tool-header h2 {
+    margin: 0 !important;
+    color: var(--text-main) !important;
+    -webkit-text-fill-color: var(--text-main) !important;
+    font-family: 'Playfair Display', Georgia, serif !important;
+    font-size: 1.55rem !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.025em;
+    line-height: 1.1;
+    text-align: center;
+}
+
+.movement-tool-kicker,
+.movement-tool-label {
+    margin: 0 0 7px;
+    color: var(--movement-accent) !important;
+    -webkit-text-fill-color: var(--movement-accent) !important;
+    font-size: 0.7rem;
+    font-weight: 900;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.movement-tool-question {
+    margin: 0 0 8px;
+    color: var(--text-main) !important;
+    -webkit-text-fill-color: var(--text-main) !important;
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 1.9rem;
+    line-height: 1.08;
+}
+
+.movement-tool-helper {
+    margin: 0 0 20px !important;
+    color: var(--text-muted) !important;
+    -webkit-text-fill-color: var(--text-muted) !important;
+    font-size: 0.88rem !important;
+    line-height: 1.48 !important;
+}
+
+.movement-tool-card {
+    padding: 17px;
+    border: 1px solid var(--border);
+    border-radius: 19px;
+    background: var(--card-bg);
+}
+
+/* Previous Workouts */
+.balance-workout-history-view,
+.balance-workout-history-view .balance-workout-history-content {
+    background-color: transparent !important;
+    color: var(--text-main) !important;
+    -webkit-text-fill-color: var(--text-main) !important;
+}
+
+.balance-workout-history-view .balance-workout-history-intro {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+
+.balance-workout-history-item,
+.balance-workout-history-empty {
+    border-color: var(--border) !important;
+    background: var(--card-bg) !important;
+    color: var(--text-main) !important;
+    -webkit-text-fill-color: var(--text-main) !important;
+    box-shadow: none !important;
+}
+
+.balance-workout-history-date {
+    border-color: color-mix(in srgb, var(--movement-accent) 45%, transparent) !important;
+    background: var(--movement-accent-soft) !important;
+    color: var(--movement-accent) !important;
+    -webkit-text-fill-color: var(--movement-accent) !important;
+}
+
+.balance-workout-history-name,
+.balance-workout-history-empty strong {
+    color: var(--text-main) !important;
+    -webkit-text-fill-color: var(--text-main) !important;
+}
+
+.balance-workout-history-meta,
+.balance-workout-history-exercises,
+.balance-workout-history-empty span {
+    color: var(--text-muted) !important;
+    -webkit-text-fill-color: var(--text-muted) !important;
+}
+
+.balance-workout-history-chevron {
+    color: var(--movement-accent) !important;
+    -webkit-text-fill-color: var(--movement-accent) !important;
+}
+
+/* Workout Library */
+#view-workout-library #library-categories-grid,
+#view-workout-subcategories #subcategories-grid,
+#view-workout-list #workouts-list {
+    gap: 10px !important;
+}
+
+.movement-tool-view .library-category-card,
+.movement-tool-view .workout-card {
+    min-height: 66px;
+    box-sizing: border-box;
+    padding: 14px 15px !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 17px !important;
+    background: var(--card-bg) !important;
+    color: var(--text-main) !important;
+    -webkit-text-fill-color: var(--text-main) !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+.movement-tool-view .library-category-card:active,
+.movement-tool-view .workout-card:active {
+    border-color: var(--movement-accent) !important;
+    background: var(--movement-accent-soft) !important;
+    transform: scale(0.99) !important;
+}
+
+.movement-tool-view .library-category-icon {
+    width: 44px;
+    height: 44px;
+    border: 1px solid color-mix(in srgb, var(--movement-accent) 32%, transparent);
+    border-radius: 50%;
+    background: var(--movement-accent-soft) !important;
+    font-size: 1.55rem;
+}
+
+.movement-tool-view .library-category-card svg {
+    fill: var(--movement-accent) !important;
+}
+
+.movement-tool-view .library-category-card div[style*="color: var(--primary)"] {
+    color: var(--movement-accent) !important;
+    -webkit-text-fill-color: var(--movement-accent) !important;
+}
+
+.movement-tool-view .workout-difficulty-badge {
+    border: 1px solid color-mix(in srgb, var(--movement-accent) 34%, transparent);
+    background: var(--movement-accent-soft) !important;
+    color: var(--movement-accent) !important;
+    -webkit-text-fill-color: var(--movement-accent) !important;
+}
+
+/* Stopwatch */
+.movement-stopwatch-input-card .movement-tool-label { margin-bottom: 9px; }
+
+#view-interval-timer #interval-timer-input,
+#view-interval-timer :is(#interval-work-input, #interval-rest-input, #interval-rounds-input) {
+    border: 1px solid var(--border) !important;
+    background: var(--bg) !important;
+    color: var(--text-main) !important;
+    -webkit-text-fill-color: var(--text-main) !important;
+    caret-color: var(--movement-accent) !important;
+}
+
+#view-interval-timer #interval-timer-input:focus,
+#view-interval-timer :is(#interval-work-input, #interval-rest-input, #interval-rounds-input):focus {
+    border: 2px solid var(--movement-accent) !important;
+    outline: none !important;
+    box-shadow: 0 0 0 3px var(--movement-accent-soft) !important;
+}
+
+#view-interval-timer .movement-stopwatch-input-card span[onclick] {
+    color: var(--movement-accent) !important;
+    -webkit-text-fill-color: var(--movement-accent) !important;
+}
+
+#view-interval-timer #interval-timer-preview > div,
+#view-interval-timer #interval-timer-manual {
+    padding: 18px !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 19px !important;
+    background: linear-gradient(145deg, var(--card-bg), var(--movement-accent-soft)) !important;
+    color: var(--text-main) !important;
+    -webkit-text-fill-color: var(--text-main) !important;
+}
+
+#view-interval-timer #interval-timer-preview [style*="rgba(255,255,255,0.15)"] {
+    border: 1px solid var(--border) !important;
+    background: var(--card-bg) !important;
+    color: var(--text-main) !important;
+    -webkit-text-fill-color: var(--text-main) !important;
+}
+
+#view-interval-timer #interval-timer-manual button,
+#view-interval-timer #interval-recent-presets > div:last-child > div {
+    border: 1px solid var(--border) !important;
+    background: var(--card-bg) !important;
+    color: var(--text-main) !important;
+    -webkit-text-fill-color: var(--text-main) !important;
+}
+
+#view-interval-timer #interval-start-btn,
+#view-interval-timer #interval-pause-btn,
+#view-interval-timer #interval-timer-done button:first-of-type {
+    border: 0 !important;
+    background: linear-gradient(100deg, var(--movement-accent-strong), #f0d27a) !important;
+    color: var(--movement-ink-on-gold) !important;
+    -webkit-text-fill-color: var(--movement-ink-on-gold) !important;
+    box-shadow: 0 10px 24px rgba(147, 105, 21, 0.2) !important;
+}
+
+#view-interval-timer #interval-timer-active svg circle:first-child {
+    stroke: var(--border) !important;
+}
+
+#view-interval-timer #interval-timer-display {
+    color: var(--text-main) !important;
+    -webkit-text-fill-color: var(--text-main) !important;
+}
+
+/* Coach's Workouts */
+#view-week-workouts #week-workouts-list,
+#view-week-session #week-session-body {
+    padding-bottom: calc(116px + env(safe-area-inset-bottom, 0px));
+}
+
+.coach-workout-list-card,
+.coach-workout-exercise-card {
+    border-color: var(--border) !important;
+    background: var(--card-bg) !important;
+    color: var(--text-main) !important;
+    -webkit-text-fill-color: var(--text-main) !important;
+    box-shadow: none !important;
+}
+
+.coach-workout-date {
+    border: 1px solid color-mix(in srgb, var(--movement-accent) 38%, transparent);
+    background: var(--movement-accent-soft) !important;
+    color: var(--movement-accent) !important;
+    -webkit-text-fill-color: var(--movement-accent) !important;
+}
+
+.coach-workout-summary {
+    border: 1px solid color-mix(in srgb, var(--movement-accent) 34%, transparent);
+    background: linear-gradient(145deg, var(--card-bg), var(--movement-accent-soft)) !important;
+    color: var(--text-main) !important;
+    -webkit-text-fill-color: var(--text-main) !important;
+    box-shadow: none !important;
+}
+
+.coach-workout-action-bar {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 510;
+    padding: 16px 20px calc(16px + env(safe-area-inset-bottom, 0px));
+    background: linear-gradient(transparent, var(--bg) 20%, var(--bg));
+}
+
+.coach-workout-action-bar button {
+    display: block;
+    width: min(100%, 460px);
+    min-height: 56px;
+    margin: 0 auto;
+    border: 0;
+    border-radius: 17px;
+    background: linear-gradient(100deg, var(--movement-accent-strong), #f0d27a);
+    color: var(--movement-ink-on-gold);
+    -webkit-text-fill-color: var(--movement-ink-on-gold);
+    font: inherit;
+    font-size: 1rem;
+    font-weight: 900;
+    box-shadow: 0 10px 24px rgba(147, 105, 21, 0.2);
+    cursor: pointer;
+}
+
+@media (max-width: 360px) {
+    .movement-tool-shell { padding-right: 16px !important; padding-left: 16px !important; }
+    .movement-tool-question { font-size: 1.68rem; }
+    .movement-tool-view .library-category-card { gap: 12px; }
+}
+
 .balance-workout-history-header {
     position: sticky;
     top: 0;
@@ -13358,4 +13679,31 @@ html[data-pbb-theme] :where(.settings-picker-close, .settings-picker-option, .di
     #view-profile .settings-v2-copy strong {
         font-size: 0.82rem;
     }
+}
+
+/* Final Movement contrast guard: these selectors intentionally sit after the
+   legacy light-only workout rules. */
+.movement-tool-view .balance-workout-history-name,
+.movement-tool-view .balance-workout-history-empty strong {
+    color: var(--text-main) !important;
+    -webkit-text-fill-color: var(--text-main) !important;
+}
+
+.movement-tool-view .balance-workout-history-date,
+.movement-tool-view .balance-workout-history-chevron {
+    color: var(--movement-accent) !important;
+    -webkit-text-fill-color: var(--movement-accent) !important;
+}
+
+.movement-tool-view .balance-workout-history-meta,
+.movement-tool-view .balance-workout-history-exercises,
+.movement-tool-view .balance-workout-history-empty span,
+.movement-tool-view :is(.coach-workout-list-card, .coach-workout-exercise-card) [style*="color:#64748b"],
+.movement-tool-view :is(.coach-workout-list-card, .coach-workout-exercise-card) [style*="color:#94a3b8"] {
+    color: var(--text-muted) !important;
+    -webkit-text-fill-color: var(--text-muted) !important;
+}
+
+.movement-tool-view .coach-workout-exercise-card [style*="border-top:1px solid #f1f5f9"] {
+    border-color: var(--border) !important;
 }

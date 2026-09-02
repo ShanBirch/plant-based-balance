@@ -25666,9 +25666,9 @@ async function openWeekWorkoutsView() {
             const title = (e.workoutName && String(e.workoutName).trim()) || day;
             const exNames = e.exercises.slice(0, 3).map(x => x.name).join(', ') + (e.exercises.length > 3 ? '…' : '');
             return `
-                <div onclick="openWeekSessionDetail(${idx})" style="cursor:pointer; background:white; border-radius:16px; padding:16px; box-shadow:0 4px 12px rgba(0,0,0,0.04); border:1px solid #f1f5f9;">
+                <div class="coach-workout-list-card" onclick="openWeekSessionDetail(${idx})" style="cursor:pointer; background:white; border-radius:16px; padding:16px; box-shadow:0 4px 12px rgba(0,0,0,0.04); border:1px solid #f1f5f9;">
                     <div style="display:flex; gap:14px; align-items:center;">
-                        <div style="background: linear-gradient(135deg, var(--primary), #22c55e); color:white; width:52px; height:52px; border-radius:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0;">
+                        <div class="coach-workout-date" style="background: linear-gradient(135deg, var(--primary), #22c55e); color:white; width:52px; height:52px; border-radius:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0;">
                             <div style="font-size:0.62rem; font-weight:700; text-transform:uppercase; opacity:0.9;">${month}</div>
                             <div style="font-size:1.2rem; font-weight:800; line-height:1;">${dayNum}</div>
                         </div>
@@ -25683,7 +25683,7 @@ async function openWeekWorkoutsView() {
         }).join('');
     } catch(renderErr) {
         console.error('Week workouts render error:', renderErr);
-        list.innerHTML = '<div style="text-align:center; color:#ef4444; padding:40px 20px;">Couldn\'t render workouts. Tap × to go back.</div>';
+        list.innerHTML = '<div style="text-align:center; color:#ef4444; padding:40px 20px;">Couldn\'t render workouts. Swipe back and try again.</div>';
     }
 }
 
@@ -25748,7 +25748,7 @@ async function openWeekSessionDetail(idx) {
     const body = document.getElementById('week-session-body');
     const renderBody = (historyReady) => {
         let html = `
-            <div style="background:linear-gradient(135deg, var(--primary), #22c55e); color:white; border-radius:18px; padding:18px; margin-bottom:16px; box-shadow:0 8px 20px rgba(34,197,94,0.2);">
+            <div class="coach-workout-summary" style="background:linear-gradient(135deg, var(--primary), #22c55e); color:white; border-radius:18px; padding:18px; margin-bottom:16px; box-shadow:0 8px 20px rgba(34,197,94,0.2);">
                 <div style="font-size:0.7rem; font-weight:800; opacity:0.85; text-transform:uppercase; letter-spacing:0.5px;">Coach Shan lifted</div>
                 <div style="font-size:2rem; font-weight:800; line-height:1.1; margin-top:4px;">${Math.round(entry.totalVolume).toLocaleString()} kg</div>
                 <div style="display:flex; gap:14px; font-size:0.78rem; opacity:0.92; margin-top:6px; flex-wrap:wrap;">
@@ -25792,7 +25792,7 @@ async function openWeekSessionDetail(idx) {
             }).join('');
 
             html += `
-                <div style="background:white; border-radius:16px; padding:16px; margin-bottom:12px; box-shadow:0 4px 12px rgba(0,0,0,0.04); border:1px solid #f1f5f9;">
+                <div class="coach-workout-exercise-card" style="background:white; border-radius:16px; padding:16px; margin-bottom:12px; box-shadow:0 4px 12px rgba(0,0,0,0.04); border:1px solid #f1f5f9;">
                     <div style="font-weight:800; color:var(--text-main); font-size:1rem;">${ex.name}</div>
                     <div style="display:flex; gap:10px; flex-wrap:wrap; font-size:0.75rem; color:var(--text-muted); margin-top:3px;">
                         <span>${ex.sets.length} sets</span>
