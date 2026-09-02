@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v471-coach-checkin-tour'; // v471: weekly review explainer in the required onboarding tour
+const CACHE_NAME = 'pbb-app-v472-balance-workout-history'; // v472: refreshed previous-workouts history view
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -30,7 +30,7 @@ const ASSETS = [
   './js/dashboard/pbb-next-obvious-steps.js?v=51-coach-checkin-tour',
   './js/dashboard/pbb-deferred-formcheck.js?v=58-ios-exercise-video-upload&video_health=2',
   './js/dashboard/pbb-deferred-workoutbuilder.js?v=10',
-  './js/dashboard/pbb-deferred-yourworkouts.js',
+  './js/dashboard/pbb-deferred-yourworkouts.js?v=2',
   './js/dashboard/pbb-deferred-savedworkouts.js?v=7',
   './js/dashboard/dashboard-script-12-program_builder_state.js?v=4'
 ];

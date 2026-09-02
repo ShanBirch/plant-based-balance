@@ -7692,62 +7692,32 @@ if(!window._pbbIsIOSSafari) {
 
 <script>if(window._crumb)window._crumb('body_s_workouts');</script>
 <!-- YOUR WORKOUTS VIEW -->
-<div id="view-your-workouts" class="app-view" style="display:none; min-height: 100vh; height: auto; background: #f8fafc; z-index: 100000; position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100%; overflow-y: auto; overflow-x: hidden;">
-    <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; padding-top: calc(15px + env(safe-area-inset-top, 0px)); display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
-        <div style="width: 40px;"></div>
-        <div style="font-weight: 700; color: var(--text-main); font-size: 1.1rem;">Your Workouts</div>
-        <div style="width: 40px;"></div>
+<div id="view-your-workouts" class="app-view balance-workout-history-view" style="display:none; min-height:100vh; height:auto; z-index:100000; position:fixed; inset:0; width:100%; overflow-y:auto; overflow-x:hidden;">
+    <div class="balance-workout-history-header">
+        <img src="balance_logo.png" alt="Balance" class="balance-workout-history-logo">
+        <div>
+            <div class="balance-workout-history-kicker">Movement</div>
+            <div class="balance-workout-history-title">Previous workouts</div>
+        </div>
     </div>
 
-    <div style="padding: 20px;">
-        <!-- My Programs Section -->
-        <div id="your-programs-section" style="margin-bottom: 25px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <h3 style="margin: 0; font-size: 1rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
-                    <span style="font-size: 1.2rem;">📅</span> My Programs
-                </h3>
-                <button onclick="closeYourWorkouts(); openProgramBuilder();" style="background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 50px; font-weight: 600; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 6px;">
-                    <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: white;"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-                    Build Program
-                </button>
-            </div>
-            <div id="your-programs-list" style="display: flex; flex-direction: column; gap: 12px;">
-                <!-- Saved programs will be rendered here -->
-            </div>
-            <div id="your-programs-empty" style="display: none; text-align: center; padding: 25px 20px; color: var(--text-muted); background: white; border-radius: 16px; border: 2px dashed #e2e8f0;">
-                <p style="margin: 0 0 12px 0; font-size: 0.9rem;">Create your own workout program</p>
-                <p style="margin: 0 0 15px 0; font-size: 0.8rem; color: #94a3b8;">Choose workouts for each day, set your duration (4, 6, or 8 weeks), and follow your personalized plan!</p>
-            </div>
+    <div class="balance-workout-history-content">
+        <p class="balance-workout-history-intro">A simple record of the sessions you have completed.</p>
+        <div id="your-workouts-list" class="balance-workout-history-list" aria-live="polite"></div>
+        <div id="your-workouts-empty" class="balance-workout-history-empty" style="display:none;">
+            <img src="balance_logo.png" alt="" aria-hidden="true">
+            <strong>Your completed workouts will appear here.</strong>
+            <span>Finish a workout and Balance will keep the details for you.</span>
         </div>
-
-        <!-- Custom Workouts Section -->
-        <div id="your-workouts-custom-section" style="margin-bottom: 25px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <h3 style="margin: 0; font-size: 1rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
-                    <span style="font-size: 1.2rem;">🛠️</span> Custom Workouts
-                </h3>
-                <button onclick="closeYourWorkouts(); openWorkoutBuilder();" style="background: #f1f5f9; color: var(--text-main); border: none; padding: 8px 16px; border-radius: 50px; font-weight: 600; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 6px;">
-                    <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--text-main);"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-                    New
-                </button>
-            </div>
-            <div id="your-workouts-list" style="display: flex; flex-direction: column; gap: 12px;">
-                <!-- Saved workouts will be rendered here -->
-            </div>
-            <div id="your-workouts-empty" style="display: none; text-align: center; padding: 25px 20px; color: var(--text-muted); background: white; border-radius: 16px; border: 2px dashed #e2e8f0;">
-                <p style="margin: 0; font-size: 0.85rem;">Build single workouts from 1800+ exercises</p>
-            </div>
-        </div>
-
     </div>
 </div>
 
 <script>
 if(!window._pbbIsIOSSafari) {
-    document.write('<script src="js/dashboard/pbb-deferred-yourworkouts.js"><\/script>');
+    document.write('<script src="js/dashboard/pbb-deferred-yourworkouts.js?v=2"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
-    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-yourworkouts.js');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-yourworkouts.js?v=2');
 }
 </script>
 
@@ -18268,7 +18238,7 @@ if (window._pbbIsIOSSafari) {
 }
 </script>
 
-<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=114-themed-workout-rating">
+<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=115-workout-history">
 <link rel="stylesheet" href="css/dashboard/pbb-onboarding-comeback.css?v=8">
 <link rel="stylesheet" href="css/dashboard/pbb-onboarding-foundations.css?v=10-preference-contrast">
 

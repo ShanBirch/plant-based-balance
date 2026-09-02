@@ -11832,6 +11832,186 @@ html:not([data-pbb-theme="light"]) #view-meals .reflection-card button[onclick*=
 }
 
 /* Movement Studio tracker and library */
+
+/* Previous workouts: replace the old program-builder collection with one calm,
+   readable record of completed sessions. */
+.balance-workout-history-view {
+    background: #f8f5ee !important;
+    color: #171717;
+    -webkit-text-fill-color: #171717;
+}
+
+.balance-workout-history-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: calc(12px + env(safe-area-inset-top, 0px)) 20px 12px;
+    background: rgba(255, 253, 248, 0.96);
+    border-bottom: 1px solid rgba(99, 82, 53, 0.14);
+    box-shadow: 0 4px 18px rgba(48, 39, 25, 0.06);
+    backdrop-filter: blur(14px);
+}
+
+.balance-workout-history-logo {
+    width: 34px;
+    height: 34px;
+    object-fit: contain;
+    flex: 0 0 auto;
+}
+
+.balance-workout-history-kicker {
+    color: #8a6112 !important;
+    -webkit-text-fill-color: #8a6112 !important;
+    font-size: 0.62rem;
+    font-weight: 900;
+    letter-spacing: 0.13em;
+    line-height: 1;
+    text-transform: uppercase;
+}
+
+.balance-workout-history-title {
+    margin-top: 3px;
+    color: #171717 !important;
+    -webkit-text-fill-color: #171717 !important;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.balance-workout-history-content {
+    max-width: 620px;
+    margin: 0 auto;
+    padding: 18px 16px calc(28px + env(safe-area-inset-bottom, 0px));
+}
+
+.balance-workout-history-intro {
+    margin: 0 4px 14px;
+    color: #6f6a61 !important;
+    -webkit-text-fill-color: #6f6a61 !important;
+    font-size: 0.83rem;
+    line-height: 1.4;
+}
+
+.balance-workout-history-list {
+    display: grid;
+    gap: 10px;
+}
+
+.balance-workout-history-item {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr) 18px;
+    align-items: center;
+    gap: 12px;
+    padding: 13px;
+    border: 1px solid rgba(99, 82, 53, 0.15);
+    border-radius: 17px;
+    background: #ffffff;
+    color: #171717;
+    font: inherit;
+    text-align: left;
+    box-shadow: 0 6px 16px rgba(48, 39, 25, 0.055);
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+.balance-workout-history-item:active { transform: scale(0.99); }
+
+.balance-workout-history-date {
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    border: 1px solid rgba(184, 137, 43, 0.32);
+    border-radius: 50%;
+    background: #f5ead0;
+    color: #5b420f !important;
+    -webkit-text-fill-color: #5b420f !important;
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.03em;
+    text-align: center;
+}
+
+.balance-workout-history-copy { min-width: 0; }
+
+.balance-workout-history-name,
+.balance-workout-history-meta,
+.balance-workout-history-exercises,
+.balance-workout-history-chevron {
+    display: block;
+}
+
+.balance-workout-history-name {
+    overflow: hidden;
+    color: #171717 !important;
+    -webkit-text-fill-color: #171717 !important;
+    font-size: 0.94rem;
+    font-weight: 850;
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.balance-workout-history-meta,
+.balance-workout-history-exercises {
+    overflow: hidden;
+    color: #6f6a61 !important;
+    -webkit-text-fill-color: #6f6a61 !important;
+    font-size: 0.74rem;
+    line-height: 1.35;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.balance-workout-history-meta { margin-top: 3px; }
+.balance-workout-history-exercises { margin-top: 1px; }
+
+.balance-workout-history-chevron {
+    color: #8a6112 !important;
+    -webkit-text-fill-color: #8a6112 !important;
+    font-size: 1.35rem;
+    font-weight: 500;
+    line-height: 1;
+}
+
+.balance-workout-history-empty {
+    align-items: center;
+    flex-direction: column;
+    gap: 8px;
+    padding: 44px 24px;
+    border: 1px solid rgba(99, 82, 53, 0.15);
+    border-radius: 18px;
+    background: #ffffff;
+    color: #6f6a61 !important;
+    -webkit-text-fill-color: #6f6a61 !important;
+    text-align: center;
+}
+
+.balance-workout-history-empty img {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    opacity: 0.88;
+}
+
+.balance-workout-history-empty strong {
+    color: #171717 !important;
+    -webkit-text-fill-color: #171717 !important;
+    font-size: 0.92rem;
+}
+
+.balance-workout-history-empty span {
+    max-width: 270px;
+    color: #6f6a61 !important;
+    -webkit-text-fill-color: #6f6a61 !important;
+    font-size: 0.8rem;
+    line-height: 1.45;
+}
 html:not([data-pbb-theme="light"]) #movement-archive .hero-card > div:first-child,
 html:not([data-pbb-theme="light"]) #movement-archive .hero-card p {
     color: #e0fffb !important;

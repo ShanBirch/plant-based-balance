@@ -34,25 +34,9 @@ function openYourWorkouts() {
             el.classList.remove('active');
         });
 
-        // Render library immediately (doesn't need database)
-        const libraryContainer = document.getElementById('your-workouts-library-list');
-        if (libraryContainer) {
-            try {
-                renderYourWorkoutsLibrary(libraryContainer);
-                console.log('openYourWorkouts: Library rendered');
-            } catch(libErr) {
-                console.error('openYourWorkouts: Failed to render library', libErr);
-                libraryContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-muted);">Could not load workout library</div>';
-            }
-        }
-
-        // Then load async data (custom workouts and programs)
+        // This page is deliberately only a history of completed sessions.
         renderYourWorkoutsList().catch(err => {
             console.error('openYourWorkouts: Failed to render workouts list', err);
-        });
-
-        renderYourProgramsList().catch(err => {
-            console.error('openYourWorkouts: Failed to render programs list', err);
         });
 
         // Push navigation state
@@ -134,57 +118,91 @@ async function renderYourWorkoutsList() {
         const user = window.currentUser;
         if (!user) {
             console.log('renderYourWorkoutsList: No user logged in');
-            // Show empty state when not logged in
             if (listContainer) listContainer.style.display = 'none';
-            if (emptyState) emptyState.style.display = 'block';
+            if (emptyState) emptyState.style.display = 'flex';
             return;
         }
 
-        // Try to use cached workouts first, then fetch if needed
-        let savedWorkouts = window.savedWorkoutsCache;
-
-        if (!savedWorkouts && typeof dbHelpers !== 'undefined' && dbHelpers.workouts) {
-            console.log('renderYourWorkoutsList: Fetching from database...');
-            savedWorkouts = await dbHelpers.workouts.getCustomWorkouts(user.id);
-            window.savedWorkoutsCache = savedWorkouts;
+        if (typeof dbHelpers === 'undefined' || !dbHelpers.workouts || typeof dbHelpers.workouts.getHistory !== 'function') {
+            throw new Error('Workout history is unavailable');
         }
 
-        console.log('renderYourWorkoutsList: Found', savedWorkouts?.length || 0, 'workouts');
+        const history = await dbHelpers.workouts.getHistory(user.id);
+        const sessions = buildWorkoutHistorySessions(history || []);
+        console.log('renderYourWorkoutsList: Found', sessions.length, 'completed sessions');
 
-        // Render Custom Workouts
-        if (!savedWorkouts || savedWorkouts.length === 0) {
+        if (sessions.length === 0) {
             if (listContainer) listContainer.style.display = 'none';
-            if (emptyState) emptyState.style.display = 'block';
+            if (emptyState) emptyState.style.display = 'flex';
         } else {
-            if (listContainer) listContainer.style.display = 'flex';
+            if (listContainer) listContainer.style.display = 'grid';
             if (emptyState) emptyState.style.display = 'none';
-
-            listContainer.innerHTML = savedWorkouts.map(w => {
-                const name = w.template_name || 'Untitled Workout';
-                const exercises = w.template_data?.exercises || [];
-                const date = new Date(w.created_at || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-
-                return `
-                <div onclick="startSavedWorkout('${w.id}')" style="background: white; border-radius: 16px; padding: 16px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #f1f5f9; display: flex; align-items: center; gap: 12px;">
-                    <div style="width: 48px; height: 48px; background: linear-gradient(135deg, var(--primary), #22c55e); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 1.2rem; flex-shrink: 0;">
-                        ${name.charAt(0).toUpperCase()}
-                    </div>
-                    <div style="flex: 1; min-width: 0;">
-                        <div style="font-weight: 700; color: var(--text-main); font-size: 0.95rem; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${name}</div>
-                        <div style="font-size: 0.8rem; color: var(--text-muted);">${exercises.length} exercises • Saved ${date}</div>
-                    </div>
-                    <div style="color: var(--primary); font-weight: 600; font-size: 0.8rem;">Start →</div>
-                </div>
-                `;
-            }).join('');
-            console.log('renderYourWorkoutsList: Rendered', savedWorkouts.length, 'workout cards');
+            window._journalWorkoutSessions = sessions;
+            listContainer.innerHTML = sessions.map((session, index) => renderWorkoutHistoryItem(session, index)).join('');
+            console.log('renderYourWorkoutsList: Rendered', sessions.length, 'history cards');
         }
 
     } catch(err) {
         console.error('renderYourWorkoutsList: Error loading workouts:', err);
         if (listContainer) listContainer.style.display = 'none';
-        if (emptyState) emptyState.style.display = 'block';
+        if (emptyState) emptyState.style.display = 'flex';
     }
+}
+
+function escapeWorkoutHistoryHtml(value) {
+    return String(value || '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]);
+}
+
+function buildWorkoutHistorySessions(rows) {
+    const byDate = new Map();
+    rows.forEach(row => {
+        const date = row && row.workout_date;
+        if (!date) return;
+        if (!byDate.has(date)) byDate.set(date, []);
+        byDate.get(date).push(row);
+    });
+
+    return Array.from(byDate.entries()).map(([date, sets]) => {
+        const exercisesByName = new Map();
+        sets.forEach(set => {
+            const name = String(set.exercise_name || 'Exercise').trim();
+            if (!exercisesByName.has(name)) exercisesByName.set(name, { name, sets: 0, bestWeight: 0, bestReps: 0, setList: [] });
+            const exercise = exercisesByName.get(name);
+            const weight = Number(set.weight_kg) || 0;
+            const reps = Number(set.reps) || 0;
+            exercise.sets += 1;
+            exercise.bestWeight = Math.max(exercise.bestWeight, weight);
+            exercise.bestReps = Math.max(exercise.bestReps, reps);
+            exercise.setList.push({ set_number: set.set_number, reps, weight_kg: weight, created_at: set.created_at });
+        });
+        const exercises = Array.from(exercisesByName.values());
+        return {
+            date,
+            created_at: sets.reduce((latest, row) => !latest || String(row.created_at || '') > String(latest) ? row.created_at : latest, null),
+            sets,
+            exercises,
+            activities: [],
+            workoutName: sets.find(row => row.template_name)?.template_name || ''
+        };
+    }).sort((a, b) => new Date(b.date + 'T12:00:00') - new Date(a.date + 'T12:00:00'));
+}
+
+function renderWorkoutHistoryItem(session, index) {
+    const date = new Date(session.date + 'T12:00:00');
+    const dateLabel = date.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
+    const title = session.workoutName || 'Workout';
+    const setCount = session.exercises.reduce((total, exercise) => total + exercise.sets, 0);
+    const exerciseNames = session.exercises.slice(0, 3).map(exercise => escapeWorkoutHistoryHtml(exercise.name)).join(', ')
+        + (session.exercises.length > 3 ? ' +' + (session.exercises.length - 3) : '');
+    return `<button type="button" class="balance-workout-history-item" onclick="openWorkoutJournalDetail(${index})">
+        <span class="balance-workout-history-date">${escapeWorkoutHistoryHtml(dateLabel)}</span>
+        <span class="balance-workout-history-copy">
+            <span class="balance-workout-history-name">${escapeWorkoutHistoryHtml(title)}</span>
+            <span class="balance-workout-history-meta">${session.exercises.length} exercise${session.exercises.length === 1 ? '' : 's'} · ${setCount} set${setCount === 1 ? '' : 's'}</span>
+            <span class="balance-workout-history-exercises">${exerciseNames}</span>
+        </span>
+        <span class="balance-workout-history-chevron" aria-hidden="true">›</span>
+    </button>`;
 }
 
 async function renderYourProgramsList() {
