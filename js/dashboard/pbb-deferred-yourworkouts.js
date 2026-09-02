@@ -123,11 +123,7 @@ async function renderYourWorkoutsList() {
             return;
         }
 
-        if (typeof dbHelpers === 'undefined' || !dbHelpers.workouts || typeof dbHelpers.workouts.getHistory !== 'function') {
-            throw new Error('Workout history is unavailable');
-        }
-
-        const history = await dbHelpers.workouts.getHistory(user.id);
+        const history = await loadAllCompletedWorkoutHistory(user.id);
         const sessions = buildWorkoutHistorySessions(history || []);
         console.log('renderYourWorkoutsList: Found', sessions.length, 'completed sessions');
 
@@ -147,6 +143,34 @@ async function renderYourWorkoutsList() {
         if (listContainer) listContainer.style.display = 'none';
         if (emptyState) emptyState.style.display = 'flex';
     }
+}
+
+async function loadAllCompletedWorkoutHistory(userId) {
+    if (!window.supabaseClient || typeof window.supabaseClient.from !== 'function') {
+        throw new Error('Workout history is unavailable');
+    }
+
+    const pageSize = 1000;
+    const history = [];
+
+    for (let from = 0; ; from += pageSize) {
+        const { data, error } = await window.supabaseClient
+            .from('workouts')
+            .select('workout_date,exercise_name,set_number,reps,weight_kg,time_duration,template_name,created_at')
+            .eq('user_id', userId)
+            .eq('workout_type', 'history')
+            .order('workout_date', { ascending: false })
+            .order('created_at', { ascending: false })
+            .range(from, from + pageSize - 1);
+
+        if (error) throw error;
+
+        const page = Array.isArray(data) ? data : [];
+        history.push(...page);
+        if (page.length < pageSize) break;
+    }
+
+    return history;
 }
 
 function escapeWorkoutHistoryHtml(value) {

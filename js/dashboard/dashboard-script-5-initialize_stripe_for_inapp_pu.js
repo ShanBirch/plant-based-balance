@@ -16635,7 +16635,6 @@ async function renderMovementView() {
     yourWorkoutsDiv.style.cssText = "cursor:pointer; position:relative; height:180px; border-radius:24px; overflow:hidden; box-shadow:0 8px 25px rgba(48,39,25,0.12); background:linear-gradient(145deg,#fffdf8 0%,#f2e4bf 100%); border:1px solid rgba(184,137,43,0.35);";
     yourWorkoutsDiv.innerHTML = `
         <div style="position:absolute; inset:0; background:radial-gradient(circle at 92% 8%,rgba(216,178,94,0.32),transparent 32%);"></div>
-        <img src="balance_logo.png" alt="" aria-hidden="true" style="position:absolute; top:14px; right:14px; width:48px; height:48px; object-fit:contain; opacity:0.9;">
         <div style="position: absolute; bottom: 16px; left: 16px; color:#171717; z-index: 1;">
             <div style="font-size:0.66rem; font-weight:900; color:#8a6112; letter-spacing:0.12em; text-transform:uppercase; margin-bottom:6px;">Movement record</div>
             <div style="font-family:Georgia,'Times New Roman',serif; font-size:1.35rem; font-weight:700; line-height:1.05; margin-bottom:7px;">Previous Workouts</div>
