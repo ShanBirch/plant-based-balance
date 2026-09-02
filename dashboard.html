@@ -8942,7 +8942,7 @@ html[data-pbb-theme="light"] #view-activity-success { --activity-success-accent:
                     <div><strong>Work</strong><span>Move</span></div>
                     <div class="interval-stepper" aria-label="Work duration">
                         <button type="button" aria-label="Reduce work time" onclick="adjustIntervalValue('work', -5)">&minus;</button>
-                        <label><span class="sr-only">Work seconds</span><input id="interval-work-input" type="number" value="30" min="5" max="300" inputmode="numeric" onchange="updateIntervalPreview()"><small>sec</small></label>
+                        <label><input id="interval-work-input" type="number" value="30" min="5" max="300" inputmode="numeric" aria-label="Work seconds" onchange="updateIntervalPreview()"><small>sec</small></label>
                         <button type="button" aria-label="Increase work time" onclick="adjustIntervalValue('work', 5)">+</button>
                     </div>
                 </div>
@@ -8950,7 +8950,7 @@ html[data-pbb-theme="light"] #view-activity-success { --activity-success-accent:
                     <div><strong>Rest</strong><span>Recover</span></div>
                     <div class="interval-stepper" aria-label="Rest duration">
                         <button type="button" aria-label="Reduce rest time" onclick="adjustIntervalValue('rest', -5)">&minus;</button>
-                        <label><span class="sr-only">Rest seconds</span><input id="interval-rest-input" type="number" value="30" min="0" max="300" inputmode="numeric" onchange="updateIntervalPreview()"><small>sec</small></label>
+                        <label><input id="interval-rest-input" type="number" value="30" min="0" max="300" inputmode="numeric" aria-label="Rest seconds" onchange="updateIntervalPreview()"><small>sec</small></label>
                         <button type="button" aria-label="Increase rest time" onclick="adjustIntervalValue('rest', 5)">+</button>
                     </div>
                 </div>
@@ -8958,7 +8958,7 @@ html[data-pbb-theme="light"] #view-activity-success { --activity-success-accent:
                     <div><strong>Rounds</strong><span>Repeat</span></div>
                     <div class="interval-stepper" aria-label="Number of rounds">
                         <button type="button" aria-label="Reduce rounds" onclick="adjustIntervalValue('rounds', -1)">&minus;</button>
-                        <label><span class="sr-only">Rounds</span><input id="interval-rounds-input" type="number" value="8" min="1" max="100" inputmode="numeric" onchange="updateIntervalPreview()"></label>
+                        <label><input id="interval-rounds-input" type="number" value="8" min="1" max="100" inputmode="numeric" aria-label="Rounds" onchange="updateIntervalPreview()"></label>
                         <button type="button" aria-label="Increase rounds" onclick="adjustIntervalValue('rounds', 1)">+</button>
                     </div>
                 </div>

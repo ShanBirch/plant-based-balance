@@ -15,6 +15,10 @@ test('Stopwatch uses the simple three-column setup', () => {
   assert.match(dashboard, /id="interval-work-input"[^>]*value="30"/);
   assert.match(dashboard, /id="interval-rest-input"[^>]*value="30"/);
   assert.match(dashboard, /id="interval-rounds-input"[^>]*value="8"/);
+  assert.match(dashboard, /id="interval-work-input"[^>]*aria-label="Work seconds"/);
+  assert.match(dashboard, /id="interval-rest-input"[^>]*aria-label="Rest seconds"/);
+  assert.match(dashboard, /id="interval-rounds-input"[^>]*aria-label="Rounds"/);
+  assert.doesNotMatch(dashboard, /class="sr-only">(?:Work seconds|Rest seconds|Rounds)<\/span>/);
   assert.doesNotMatch(dashboard, /id="interval-timer-input"/);
   assert.doesNotMatch(dashboard, /id="interval-recent-presets"/);
 });
