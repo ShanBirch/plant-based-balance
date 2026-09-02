@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v483-course-welcome-tour'; // v483: course tour goes straight from start to the celebration and first lesson
+const CACHE_NAME = 'pbb-app-v484-tour-quiz-continue'; // v484: keep quiz feedback and Continue above the guided-tour layer
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -27,7 +27,7 @@ const ASSETS = [
   './js/dashboard/dashboard-script-7-video_logic.js?v=20260902-stopwatch-centred',
   './js/dashboard/dashboard-script-10-points_widget_functions.js?v=61-exact-activity-share',
   './js/dashboard/pbb-deferred-fitbit.js?v=3-latest-import-only',
-  './js/dashboard/pbb-next-obvious-steps.js?v=53-current-tour-routing',
+  './js/dashboard/pbb-next-obvious-steps.js?v=54-tour-quiz-continue',
   './js/dashboard/pbb-deferred-formcheck.js?v=58-ios-exercise-video-upload&video_health=2',
   './js/dashboard/pbb-deferred-workoutbuilder.js?v=10',
   './js/dashboard/pbb-deferred-yourworkouts.js?v=3',

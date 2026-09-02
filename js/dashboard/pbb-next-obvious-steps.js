@@ -404,7 +404,7 @@
       }
       if (!script) {
         script = document.createElement('script');
-        script.src = 'lib/learning-inline.js?v=39-current-course-tour';
+        script.src = 'lib/learning-inline.js?v=40-tour-quiz-continue';
         script.addEventListener('error', function(){ finish(false); }, { once: true });
         document.head.appendChild(script);
       }

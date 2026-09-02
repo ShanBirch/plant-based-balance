@@ -57,8 +57,8 @@ test('the tour guides the real course start flow before the first quiz', () => {
   assert.match(dashboard, /title:'Take your first lesson'[^\n]*requiresHighlightedClick:true/);
   assert.match(dashboard, /title:'Read, then take the quiz'[^\n]*preserveSurface:true/);
   assert.doesNotMatch(dashboard, /title:'Read, then take the quiz'[^\n]*promptBeforeAction:true/);
-  assert.match(dashboard, /learning-inline\.js\?v=39-current-course-tour/);
-  assert.match(nextSteps, /learning-inline\.js\?v=39-current-course-tour/);
+  assert.match(dashboard, /learning-inline\.js\?v=40-tour-quiz-continue/);
+  assert.match(nextSteps, /learning-inline\.js\?v=40-tour-quiz-continue/);
   assert.match(learning, /id="balance-foundations-course-start"/);
   assert.match(learning, /id="balance-foundations-welcome-start"/);
   assert.match(learning, /id="course-welcome" class="course-welcome"/);
@@ -67,7 +67,14 @@ test('the tour guides the real course start flow before the first quiz', () => {
   assert.match(learning, /if \(!isCourseStarted\(course\)\)[\s\S]*renderCourseWelcome\(course\)[\s\S]*course_welcome_opened/);
   assert.match(learning, /id="balance-foundations-first-lesson"/);
   assert.match(learning, /window\.prepareBalanceFoundationsStartForTour = function\(\)[\s\S]*?course\.progress\?\.completed[\s\S]*?localStorage\.removeItem\(getCourseStartedKey\(course\.id\)\)/);
-  assert.match(dashboard, /learning-inline\.js\?v=39-current-course-tour/g);
+  assert.match(dashboard, /learning-inline\.js\?v=40-tour-quiz-continue/g);
+});
+
+test('quiz feedback stays tappable above the guided tour', () => {
+  assert.match(learning, /overlay\.id = 'game-feedback-overlay'[\s\S]*?z-index: 400200;[\s\S]*?pointer-events: auto; isolation: isolate/);
+  assert.match(learning, /continueBtn\.style\.cssText = `[\s\S]*?pointer-events: auto; touch-action: manipulation/);
+  assert.match(learning, /continueBtn\.addEventListener\('click',[\s\S]*?window\.continueAfterFeedback\(\)/);
+  assert.match(learning, /window\.continueAfterFeedback = function\(\)[\s\S]*?learningState\.currentGameIndex\+\+[\s\S]*?renderCurrentGame\(\)/);
 });
 
 test('the Home course task stays singular and opens the course overview', () => {
