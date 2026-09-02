@@ -15,7 +15,7 @@ test('workout player stays available to every signed-in user', () => {
     assert.equal(player.isEligibleUser(null), false);
 });
 
-test('focus mode pilot is fail-closed to Shannon primary account', () => {
+test('focus mode is available to every signed-in user', () => {
     assert.equal(player.isFocusPilotUser({
         id: '00a6605e-8edb-4917-85ba-24a23f179059',
         email: 'shannonbirch@cocospersonaltraining.com'
@@ -23,11 +23,11 @@ test('focus mode pilot is fail-closed to Shannon primary account', () => {
     assert.equal(player.isFocusPilotUser({
         id: '00a6605e-8edb-4917-85ba-24a23f179059',
         email: 'member@example.com'
-    }), false);
+    }), true);
     assert.equal(player.isFocusPilotUser({
         id: 'another-user',
         email: 'shannonbirch@cocospersonaltraining.com'
-    }), false);
+    }), true);
     assert.equal(player.isFocusPilotUser(null), false);
 });
 
@@ -49,18 +49,18 @@ test('exercise page index stays inside available cards', () => {
 test('dashboard loads the player once and cache-busts both main loader paths', () => {
     const html = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
     const serviceWorker = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
-    assert.equal((html.match(/pbb-workout-swipe-player\.js\?v=5/g) || []).length, 1);
-    assert.equal((html.match(/dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=230-remove-volume-popup/g) || []).length, 3);
-    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v460-imported-activity-dismissed'/);
+    assert.equal((html.match(/pbb-workout-swipe-player\.js\?v=6-focus-all-users/g) || []).length, 1);
+    assert.equal((html.match(/dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=234-omnivore-meal-plan/g) || []).length, 3);
+    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v481-current-onboarding-surfaces'/);
     assert.match(html, /id="workout-add-existing-wrap"/);
     assert.match(html, /id="workout-add-existing-exercise-btn"/);
 });
 
-test('existing workout views remain available while focus mode is private', () => {
+test('existing workout internals remain available beneath focus mode', () => {
     const source = fs.readFileSync(path.join(root, 'js/dashboard/pbb-workout-swipe-player.js'), 'utf8');
     assert.match(source, /workout-player-enabled #workout-swipe-actions/);
     assert.match(source, /workout-player-enabled #workout-form-check-top-btn/);
-    assert.match(source, /SHANNON_PRIMARY_USER_ID/);
+    assert.match(source, /return isEligibleUser\(user\)/);
     assert.match(source, /view\.classList\.toggle\('workout-focus-pilot', focusPilot\)/);
     assert.doesNotMatch(source, /workout-swipe-mode #workout-swipe-actions\s*\{/);
 });
@@ -91,12 +91,11 @@ test('simplified focus header keeps personal best and delete actions', () => {
     assert.match(renderer, /deleteExerciseFromWorkout\('\$\{escapedName\}', \$\{isUserAdded\}\)/);
 });
 
-test('private focus mode has gated feature-drop and guided-tour entries', () => {
+test('public focus mode has feature-drop and guided-tour entries', () => {
     const html = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
-    assert.match(html, /id: 'shannon-workout-focus-mode-v1'/);
-    assert.match(html, /title:'Your private Focus Mode'/);
-    assert.ok((html.match(/00a6605e-8edb-4917-85ba-24a23f179059/g) || []).length >= 4);
-    assert.ok((html.match(/shannonbirch@cocospersonaltraining\.com/g) || []).length >= 2);
+    assert.match(html, /id: 'workout-focus-mode-all-users-v1'/);
+    assert.ok((html.match(/Your workout, one exercise at a time/g) || []).length >= 4);
+    assert.doesNotMatch(html, /Your private Focus Mode|Private Focus Mode/);
 });
 
 test('workout renderers synchronize the alternate player', () => {

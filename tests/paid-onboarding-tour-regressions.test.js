@@ -5,6 +5,13 @@ const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
 const dashboard = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
+
+test('guided onboarding blocks taps outside the current required action', () => {
+  assert.match(dashboard, /function tourAllowsInteraction\(target\)/);
+  assert.match(dashboard, /if \(prompted\) return !!\(step\.preActionSel && target\.closest\(step\.preActionSel\)\)/);
+  assert.match(dashboard, /const liveTarget = resolveStepTarget\(step\)\.target;[\s\S]*liveTarget\.contains\(target\)/);
+  assert.match(dashboard, /event\.preventDefault\(\);\s*event\.stopImmediatePropagation\(\);/);
+});
 const onboarding = fs.readFileSync(path.join(root, 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js'), 'utf8');
 const calorieTracker = fs.readFileSync(path.join(root, 'js/dashboard/dashboard-script-11-calorie_tracker_functions.js'), 'utf8');
 const metaTrial = fs.readFileSync(path.join(root, 'lib/meta-ad-trial.js'), 'utf8');
@@ -42,7 +49,7 @@ test('shopping list restores the prepared preview plan before opening', () => {
   assert.match(dashboard, /title:'One shopping list for the week'[^\n]*promptRequiresTargetClick:true[^\n]*openMetaPreviewShoppingListSurface/);
   assert.match(onboarding, /if \(!_aiMealPlanCache && window\.metaAdTrialMode === true\)[\s\S]*localStorage\.getItem\('ai_meal_plan'\)[\s\S]*Array\.isArray\(previewPlan\.weeks\)/);
   assert.match(onboarding, /async function openAiMealPlanShoppingList\(btn, options = \{\}\)[\s\S]*options\.resetChecked === true[\s\S]*localStorage\.removeItem\(getAiPlanShoppingStorageKey\(\)\)/);
-  assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=222-add-exercise-contrast/);
+  assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=234-omnivore-meal-plan/);
 });
 
 test('paid tour returns Home between sections and requires the real To Do cards', () => {
@@ -60,9 +67,9 @@ test('paid tour returns Home between sections and requires the real To Do cards'
 test('exercise guidance preserves the open workout player', () => {
   assert.match(dashboard, /title:'Follow the exercise card'[^\n]*preserveSurface:true/);
   assert.match(dashboard, /title:'Check your workout week'[^\n]*Click Next to open the program/);
-  assert.match(dashboard, /title:'Follow the exercise card'[^\n]*Click Next to continue to your next task/);
-  assert.doesNotMatch(dashboard, /title:'Follow the exercise card'[^\n]*Use Swipe/);
-  assert.match(dashboard, /if \(!step\.preserveSurface\) await ensureTab\(step\.tab\)/);
+  assert.match(dashboard, /title:'Follow the exercise card'[^\n]*tap the round tick to complete it and start your rest/);
+  assert.match(dashboard, /title:'Follow the exercise card'[^\n]*Swipe for the next exercise/);
+  assert.match(dashboard, /if \(!step\.preserveSurface\) await ensureTab\(promptTab\)/);
 });
 
 test('paid tour highlights the real in-section control before continuing', () => {

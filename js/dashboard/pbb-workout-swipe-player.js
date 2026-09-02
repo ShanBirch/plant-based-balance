@@ -2,9 +2,6 @@
     'use strict';
 
     const STORAGE_KEY = 'pbb_workout_player_view_v1';
-    const SHANNON_PRIMARY_USER_ID = '00a6605e-8edb-4917-85ba-24a23f179059';
-    const SHANNON_PRIMARY_EMAIL = 'shannonbirch@cocospersonaltraining.com';
-
     function normalizeMode(value) {
         return value === 'list' ? 'list' : 'swipe';
     }
@@ -14,10 +11,7 @@
     }
 
     function isFocusPilotUser(user) {
-        if (!user) return false;
-        const id = String(user.id || '').trim();
-        const email = String(user.email || '').trim().toLowerCase();
-        return id === SHANNON_PRIMARY_USER_ID && email === SHANNON_PRIMARY_EMAIL;
+        return isEligibleUser(user);
     }
 
     function clampIndex(index, count) {

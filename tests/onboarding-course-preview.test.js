@@ -6,6 +6,7 @@ const assert = require('node:assert/strict');
 const root = path.resolve(__dirname, '..');
 const dashboard = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
 const learning = fs.readFileSync(path.join(root, 'lib/learning-inline.js'), 'utf8');
+const nextSteps = fs.readFileSync(path.join(root, 'js/dashboard/pbb-next-obvious-steps.js'), 'utf8');
 
 test('paid onboarding previews all six Foundations weeks before the first quiz', () => {
   const required = dashboard.match(/const REQUIRED_ONBOARDING_TOUR_TITLES = \[[\s\S]*?\n  \];/)?.[0] || '';
@@ -75,11 +76,15 @@ test('the tour guides the real course start flow before the first quiz', () => {
   assert.match(dashboard, /sel:'#balance-foundations-course-start'[^\n]*title:'Start your course'[^\n]*requiresHighlightedClick:true/);
   assert.match(dashboard, /title:'Start Week 1'[^\n]*requiresHighlightedClick:true/);
   assert.match(dashboard, /title:'Take your first lesson'[^\n]*requiresHighlightedClick:true/);
+  assert.match(dashboard, /title:'Read, then take the quiz'[^\n]*preserveSurface:true/);
+  assert.doesNotMatch(dashboard, /title:'Read, then take the quiz'[^\n]*promptBeforeAction:true/);
+  assert.match(dashboard, /learning-inline\.js\?v=39-current-course-tour/);
+  assert.match(nextSteps, /learning-inline\.js\?v=39-current-course-tour/);
   assert.match(learning, /id="balance-foundations-course-start"/);
   assert.match(learning, /id="balance-foundations-welcome-start"/);
   assert.match(learning, /id="balance-foundations-first-lesson"/);
   assert.match(learning, /window\.prepareBalanceFoundationsStartForTour = function\(\)[\s\S]*?course\.progress\?\.completed[\s\S]*?localStorage\.removeItem\(getCourseStartedKey\(course\.id\)\)/);
-  assert.match(dashboard, /learning-inline\.js\?v=38-guided-course-start/g);
+  assert.match(dashboard, /learning-inline\.js\?v=39-current-course-tour/g);
 });
 
 test('the Home course task stays singular and opens the course overview', () => {

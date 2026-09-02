@@ -100,7 +100,7 @@ test('Home course actions bypass legacy journey pages and open the exact current
     assert.doesNotMatch(socialSource, /if \(!isCurrentLessonSeen\(\)\) \{\s*openJourney\('lesson'\)/);
     assert.match(nextStepsSource, /async function openNextCourseTarget\(courseId\)/);
     assert.match(nextStepsSource, /function ensureLearningSystemLoaded\(\)/);
-    assert.match(nextStepsSource, /learning-inline\.js\?v=37-completion-aware-course/);
+    assert.match(nextStepsSource, /learning-inline\.js\?v=39-current-course-tour/);
     assert.match(nextStepsSource, /var loaded = await ensureLearningSystemLoaded\(\)/);
     assert.match(nextStepsSource, /await window\._ensureLearningProgressLoaded\(\)/);
     assert.match(nextStepsSource, /window\.renderLearningHome\(\)/);
@@ -133,7 +133,7 @@ test('Home course actions bypass legacy journey pages and open the exact current
     assert.match(html, /pbb-next-obvious-steps\.js\?v=49-public-todo-next/);
     assert.match(html, /pbb-social-journey\.css\?v=27-direct-course-lesson/);
     assert.match(html, /pbb-premium-overlays\.css\?v=112-activity-success-theme/);
-    assert.match(html, /learning-inline\.js\?v=37-completion-aware-course/);
+    assert.match(html, /learning-inline\.js\?v=39-current-course-tour/);
 });
 
 test('Home goals and plan cards follow light and dark mode', () => {

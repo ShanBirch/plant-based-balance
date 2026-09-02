@@ -1962,14 +1962,14 @@ if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-progressphoto.js?v=12-private-share-studio"><\/script>');
 document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=35-balance-theme"><\/script>');
     document.write('<script src="js/dashboard/pbb-social-journey.js?v=45-exact-course-label"><\/script>');
-    document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=52-guided-course-start"><\/script>');
+    document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=53-current-tour-routing"><\/script>');
     document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=29-accountability-checkout"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
     window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=12-private-share-studio');
 window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=35-balance-theme');
     window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=45-exact-course-label');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=52-guided-course-start');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=53-current-tour-routing');
     window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=29-accountability-checkout');
 }
 </script>
@@ -12937,7 +12937,7 @@ if (window._pbbIsIOSSafari) {
 document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=234-omnivore-meal-plan&video_health=2"><\/script>');
 }
 </script>
-<script src="js/dashboard/pbb-workout-swipe-player.js?v=5"></script>
+<script src="js/dashboard/pbb-workout-swipe-player.js?v=6-focus-all-users"></script>
 <script src="js/dashboard/pbb-onboarding-test-navigator.js?v=7-hidden-phone-safe"></script>
 
 <!-- Image Modal HTML -->
@@ -13779,6 +13779,9 @@ if(!window._pbbIsIOSSafari) {
       var player = document.getElementById('view-active-workout');
       var firstCard = document.querySelector('#workout-exercises-list .exercise-logger-card');
       if (isTourElementVisible(player) && firstCard) {
+        if (window.PBBWorkoutSwipePlayer && typeof window.PBBWorkoutSwipePlayer.sync === 'function') {
+          window.PBBWorkoutSwipePlayer.sync();
+        }
         if (!options.requireThumbnail) return firstCard;
         var media = firstCard.querySelector('[data-video-container]');
         if (media && media.dataset.thumbnailState === 'ready' && isTourElementVisible(media)) return media;
@@ -13882,6 +13885,8 @@ if(!window._pbbIsIOSSafari) {
   }
 
   async function openMetaPreviewFirstFoundationsLesson(){
+    var lessonProofSelector = '#story-next-btn,#story-quiz-btn button,.learning-game-stage button,.learning-game-stage .match-item,.learning-game-stage .order-item';
+    if (q(lessonProofSelector)) return true;
     var timeoutAt = Date.now() + 9000;
     while (Date.now() < timeoutAt) {
       if (typeof window.startFoundationsLesson === 'function') {
@@ -13891,7 +13896,11 @@ if(!window._pbbIsIOSSafari) {
           }
           try { sessionStorage.setItem('pbb_activation_first_lesson', 'true'); } catch(_) {}
           window.startFoundationsLesson('mind-1-1');
-          return true;
+          var proofTimeout = Date.now() + 4500;
+          while (Date.now() < proofTimeout) {
+            if (q(lessonProofSelector)) return true;
+            await new Promise(function(resolve){ setTimeout(resolve, 120); });
+          }
         } catch(e) {}
       }
       await new Promise(function(resolve){ setTimeout(resolve, 150); });
@@ -13947,8 +13956,8 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#ai-plan-shopping-list .ai-plan-shopping__item', fallbackSel:'#ai-plan-shopping-toggle,#ai-plan-shopping-card,#meal-plan-store', title:'One shopping list for the week', fallbackTitle:'Your shopping list needs another moment', body:'Balance combines the ingredients from your meal plan into one list. Tap the highlighted ingredient to tick off what you already have.', fallbackBody:'The list did not finish opening. Return Home and tap the shopping-list task again.', pageView:true, tourScrollContextSel:'#ai-plan-shopping-card', metaPreview:true, promptBeforeAction:true, promptRequiresTargetClick:true, requiresHighlightedClick:true, highlightedClickPrompt:'Tap the highlighted ingredient to check it off your shopping list.', highlightedClickComplete:'That is how the list works. Keep ticking items, or continue to your next task.', returnHomeAfter:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="shopping_list_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: open your shopping list', preActionBody:'Back on Home, tap the highlighted shopping-list card. It is built from the meal plan you just saw.', preActionButton:'Tap the shopping list card', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('shopping_list_intro'); await new Promise(function(r){ setTimeout(r,650); }); return await openMetaPreviewShoppingListSurface(); } catch(e){ return false; } } },
     { tab:'dashboard', sel:'.meal-icon-btn[title="Take a photo"],.camera-btn-widget,.meal-icon-btn', title:'Log what you eat', body:'The highlighted photo button is one option. You can also use a barcode, type the meal or quick-log it. You only need to record what you actually eat.', pageView:true, metaPreview:true, promptBeforeAction:true, promptRequiresTargetClick:true, returnHomeAfter:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="nutrition_tracker_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: see your nutrition tracker', preActionBody:'Tap the highlighted To Do card to see the quick ways you can log a normal meal.', preActionButton:'Tap the tracker card', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('nutrition_tracker_intro'); await new Promise(function(r){ setTimeout(r,950); }); var pill=document.querySelector('#view-meals .pill-btn[onclick*="calorie-tracker"]'); if(typeof switchWeek==='function') switchWeek('calorie-tracker', pill); await new Promise(function(r){ setTimeout(r,320); }); return !!q('.camera-btn-widget,.meal-icon-btn'); } catch(e){ return false; } } },
     { tab:'dashboard', sel:'#weekly-calendar', fallbackSel:'#view-calendar,#view-cycle', title:'Check your workout week', fallbackTitle:'Check your workout week', body:'This calendar shows the workouts planned for your week. Click Next to open the program and see your first session.', pageView:true, metaPreview:true, promptBeforeAction:true, promptRequiresTargetClick:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="workout_week_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: see your workout program', preActionBody:'Back on Home, tap the highlighted workout card to see exactly how your training week fits together.', preActionButton:'Tap the workout card', nextLabel:'Open the program', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('workout_week_intro'); await new Promise(function(r){ setTimeout(r,800); }); if(typeof switchCalendarView === 'function') switchCalendarView('weekly'); return true; } catch(e){ return false; } } },
-    { tab:'movement-tab', sel:'#workout-player-title', fallbackSel:'#workout-exercises-list,#today-workout-card', title:'Open your first workout', fallbackTitle:'Your first workout needs another moment', body:'This is the actual session from your plan. There is nothing you need to change here—use Next to see the exercise cards, sets and target reps.', fallbackBody:'The workout did not finish opening. Tap Back, then try the workout section again.', pageView:true, metaPreview:true, nextLabel:'See exercise card', action:async function(){ try { return !!(await openMetaPreviewStrengthWorkout()); } catch(e){ return false; } } },
-    { tab:'movement-tab', sel:'#workout-exercises-list .exercise-logger-card [data-video-container][data-thumbnail-state="ready"]', fallbackSel:'#workout-exercises-list .exercise-logger-card,#workout-exercises-list', title:'Follow the exercise card', fallbackTitle:'Follow the exercise card', body:'The highlighted card contains the demonstration, sets and target reps. Click Next to continue to your next task.', fallbackBody:'Each exercise card shows the demonstration, sets and target reps. Click Next to continue to your next task.', pageView:true, allowTargetInteraction:true, metaPreview:true, preserveSurface:true, returnHomeAfter:true, action:async function(){ try { await waitForMetaPreviewWorkoutProof({ requireThumbnail:true, timeoutMs:8000 }); return true; } catch(e){ return false; } } },
+    { tab:'movement-tab', sel:'#workout-focus-title,#workout-player-title', fallbackSel:'#workout-exercises-list .workout-swipe-active,#today-workout-card', title:'Open your first workout', fallbackTitle:'Your first workout', body:'Your workout now opens one exercise at a time. The progress line, timer and options stay at the top while you work through the session.', fallbackBody:'Tap your planned workout to open the new one-exercise-at-a-time workout screen.', pageView:true, metaPreview:true, nextLabel:'See exercise card', action:async function(){ try { return !!(await openMetaPreviewStrengthWorkout()); } catch(e){ return false; } } },
+    { tab:'movement-tab', sel:'#workout-exercises-list .exercise-logger-card.workout-swipe-active [data-video-container][data-thumbnail-state="ready"]', fallbackSel:'#workout-exercises-list .exercise-logger-card.workout-swipe-active,#workout-exercises-list', title:'Follow the exercise card', fallbackTitle:'Follow the exercise card', body:'See the demonstration, enter each set, then tap the round tick to complete it and start your rest. Swipe for the next exercise.', fallbackBody:'Each exercise opens as one clear card with its demonstration, sets, reps and rest control.', pageView:true, allowTargetInteraction:true, metaPreview:true, preserveSurface:true, returnHomeAfter:true, action:async function(){ try { await waitForMetaPreviewWorkoutProof({ requireThumbnail:true, timeoutMs:8000 }); return true; } catch(e){ return false; } } },
     { tab:'dashboard', sel:'#friends-photo-feed .meta-preview-feed-post', fallbackSel:'#feed-composer-card', title:'The Balance community', fallbackTitle:'The Balance community', body:'The highlighted Feed post shows where Shannon and members share normal meals, workouts, questions and wins.', fallbackBody:'This is where Shannon posts and members share meals, workouts and wins.', pageView:true, metaPreview:true, promptBeforeAction:true, promptRequiresTargetClick:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="feed_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: meet the community', preActionBody:'Back on Home, tap the highlighted community card to see where everyone shares their real week.', preActionButton:'Tap the community card', nextLabel:'See how to post', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('feed_intro'); if(window.BalanceMetaAdTrial && typeof window.BalanceMetaAdTrial.loadPreviewFeed === 'function') await window.BalanceMetaAdTrial.loadPreviewFeed(); } catch(e){} await new Promise(function(r){ setTimeout(r,500); }); return true; } },
     { tab:'friends', sel:'#feed-composer-card', title:'Post when you need support', body:'The highlighted composer is where you share a meal, workout, question or win. There is nothing to post during the tour—use Next to return Home.', pageView:true, metaPreview:true, preserveSurface:true, returnHomeAfter:true },
     { tab:'friends', sel:'#feed-composer-card', title:'Share from one place', body:'Use What’s happening for a post, or tap From Balance to share a set, meal, workout, PB or song. Your saved profile photo stays with your Feed posts.' },
@@ -13963,7 +13972,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'learning', sel:'#balance-foundations-course-start', fallbackSel:'.course-detail-primary', title:'Start your course', body:'Tap the highlighted Start course button. This opens your short course welcome before Week 1 begins.', pageView:true, metaPreview:true, preserveSurface:true, requiresHighlightedClick:true, highlightedClickPrompt:'Tap Start course to open your course welcome.', highlightedClickComplete:'Your course welcome is ready. Tap Next to keep going.', nextLabel:'See your course welcome', action:function(){ return openMetaPreviewFoundationsCourseStart(); } },
     { tab:'learning', sel:'#balance-foundations-welcome-start', fallbackSel:'.course-welcome-start', title:'Start Week 1', body:'This is the rhythm you will follow each week: learn the idea, take the action and track the evidence. Tap Start Week 1.', pageView:true, metaPreview:true, preserveSurface:true, requiresHighlightedClick:true, highlightedClickPrompt:'Tap Start Week 1 to open your first week.', highlightedClickComplete:'Week 1 is open. Tap Next to find your first lesson.', nextLabel:'Find Lesson 1' },
     { tab:'learning', sel:'#balance-foundations-first-lesson', fallbackSel:'.course-week-lesson-row', title:'Take your first lesson', body:'Your lessons and weekly actions now live together here. Tap the highlighted first lesson to begin.', pageView:true, metaPreview:true, preserveSurface:true, requiresHighlightedClick:true, highlightedClickPrompt:'Tap the highlighted first lesson to begin.', highlightedClickComplete:'Lesson 1 is open. Tap Next and complete the short lesson and quiz.', nextLabel:'Take the lesson' },
-    { tab:'dashboard', sel:'#story-next-btn,#story-quiz-btn button,.learning-game-stage button,.learning-game-stage .match-item,.learning-game-stage .order-item,#learning-content', title:'Read, then take the quiz', body:'Read all four researcher cards, continue to the key insight, then complete the short quiz. This is how Foundations teaches you to make change work, one lesson at a time.', pageView:true, interactivePage:true, edgePrompt:true, embeddedGuide:true, metaPreview:true, metaPreviewSignoff:true, requiresFoundationsLesson:'mind-1-1', promptBeforeAction:true, promptRequiresTargetClick:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="foundations_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: start Balance Foundations', preActionBody:'Tap the highlighted Course card. Complete the first short lesson and quiz, then we will return Home to show how Shannon reviews your week.', preActionButton:'Tap the Course card', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('foundations_intro'); await new Promise(function(r){ setTimeout(r,480); }); } catch(e){} var opened = await openMetaPreviewFirstFoundationsLesson(); if(!opened && typeof showToast === 'function') showToast('Your first course lesson is still loading.', 'info'); return !!opened; } },
+    { tab:'learning', sel:'#story-next-btn,#story-quiz-btn button,.learning-game-stage button,.learning-game-stage .match-item,.learning-game-stage .order-item', fallbackSel:'#learning-content', title:'Read, then take the quiz', body:'Read all four researcher cards, continue to the key insight, then complete the short quiz. This is how Foundations teaches you to make change work, one lesson at a time.', pageView:true, interactivePage:true, edgePrompt:true, embeddedGuide:true, metaPreview:true, metaPreviewSignoff:true, requiresFoundationsLesson:'mind-1-1', preserveSurface:true, action:async function(){ var opened = await openMetaPreviewFirstFoundationsLesson(); if(!opened && typeof showToast === 'function') showToast('Your first course lesson is still loading.', 'info'); return !!opened; } },
     { tab:'dashboard', sel:'#coach-checkin-explainer .coach-checkin-explainer__panel', fallbackSel:'#next-obvious-steps-card', title:'What Shannon checks each week', body:'See how your goals, meals, course, workouts, check-in, progress photos, sleep, steps and recovery help Shannon adjust the next week.', metaPreview:true, checkinExplainerGuide:true, promptBeforeAction:true, promptRequiresTargetClick:true, returnHomeAfter:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="coach_checkin_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: see how check-ins work', preActionBody:'Tap the highlighted check-in card to see exactly what Shannon reviews and what to keep updated during the week.', preActionButton:'Tap the check-in card', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('coach_checkin_intro'); await new Promise(function(r){ setTimeout(r,180); }); return !!document.querySelector('#coach-checkin-explainer.is-open .coach-checkin-explainer__panel'); } catch(e){ return false; } } },
     { tab:'dashboard', sel:'#tamagotchi-stats-bar', fallbackSel:'#balance-level-bar', title:'Levels keep going', fallbackTitle:'Levels keep going', body:'Level 99 is no longer the finish line. Keep earning XP to climb higher and unlock a new character every 5 levels.', fallbackBody:'Level 99 is no longer the finish line. Keep earning XP to climb higher and unlock a new character every 5 levels.' },
     { tab:'movement-tab', sel:'#activity-share-section', title:'Share your activity twice', body:'The first activity share each day earns +15 XP in Balance Feed and another +15 XP in Instagram Story. Later activity shares still work without extra XP.', condition: function(){ return !!document.getElementById('activity-share-section'); } },
@@ -14028,7 +14037,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'movement-tab', sel:'#mvmt-week-workouts-card', title:"Train with Coach Shan!", body:"Shannon updates his workouts daily — tap this gold card to see what he's doing in the gym this week and follow along with his exact sessions." },
     { tab:'movement-tab', sel:'#today-workout-card', title:"Your workout for the day", body:"Here's your workout for today. Tap to start it.", quick: true, xpReward:'movement' },
     { tab:'movement-tab', sel:'#workout-player-experiment-controls', fallbackSel:'#today-workout-card', title:'Swipe through your workout', fallbackTitle:'Swipe through your workout', body:'Use Swipe to focus on one exercise at a time, then swipe left or right to move between exercises. Switch back to List any time.', fallbackBody:"Start today's workout, then choose Swipe to focus on one exercise at a time. Swipe left or right to move through the session, or switch back to List any time.", quick:true, condition:function(){ var p=window.PBBWorkoutSwipePlayer; if(p && p.isFocusPilotUser && p.isFocusPilotUser(window.currentUser)) return false; return !!document.getElementById('workout-player-experiment-controls') || !!document.getElementById('today-workout-card'); } },
-    { tab:'movement-tab', sel:'#workout-focus-menu-button', fallbackSel:'#today-workout-card', title:'Your private Focus Mode', fallbackTitle:'Your private Focus Mode', body:'The small options button opens form check, sharing, Science & Form Cues, adding an exercise, and Finish & Save. Tick off sets and start rest without leaving the exercise.', fallbackBody:'Start a workout to open your new one-exercise-at-a-time Focus Mode. It is switched on only for your account while you test it.', quick:true, condition:function(){ var u=window.currentUser||{}; return String(u.id||'')==='00a6605e-8edb-4917-85ba-24a23f179059' && String(u.email||'').toLowerCase()==='shannonbirch@cocospersonaltraining.com'; } },
+    { tab:'movement-tab', sel:'#workout-focus-menu-button', fallbackSel:'#today-workout-card', title:'Your workout, one exercise at a time', fallbackTitle:'Your workout, one exercise at a time', body:'Tick off each set, start your rest, then swipe to the next exercise. The options button holds form check, sharing, cues, adding an exercise, and Finish & Save.', fallbackBody:'Start a workout to open the new Focus workout screen, with one exercise at a time and the controls you need close by.', quick:true, condition:function(){ var p=window.PBBWorkoutSwipePlayer; return !!(p && p.isFocusPilotUser && p.isFocusPilotUser(window.currentUser)); } },
     { tab:'movement-tab', sel:'#move-your-way-pilot-card', title:'Move your way', body:'Classes, runs, walks and rides all count. Log the movement, then add a photo or caption if you want to share it.', quick:true, condition:function(){ return !!(window.isMoveYourWayPilotUser && window.isMoveYourWayPilotUser()); } },
       { tab:'movement-tab', sel:'#workout-share-set-btn', fallbackSel:'#today-workout-card', title:'Share a Set', fallbackTitle:'Open a workout to Share a Set', body:"Tap Share a Set under Film Form Check, then choose Camera to film in-app or Photos to choose an existing clip. Balance compresses the clip and shares it to Feed while you stay in workout mode. First share each day earns +15 XP. If reception drops, the clip is saved at the top of Feed so you can post it later.", fallbackBody:"Start today's workout and you will see Share a Set under Film Form Check. First share each day earns +15 XP. If reception drops, the clip is saved at the top of Feed so you can post it later.", quick: true, condition: function(){ return !!document.getElementById('workout-share-set-btn') || !!document.getElementById('today-workout-card'); } },
     { tab:'movement-tab', sel:'#today-workout-card', title:'Post-workout Share', body:"Finish a workout, then tap the single Share button to post the workout, a PB, or a photo to Feed." },
@@ -14248,6 +14257,36 @@ if(!window._pbbIsIOSSafari) {
   let activeTourFallbackTarget = null;
   const completedTourGates = new Set();
   const completedPromptedActions = new Set();
+
+  function tourAllowsInteraction(target){
+    if (!window.__balanceGuidedTourActive || !target || !target.closest) return true;
+    if (target.closest('#guided-tour-bubble,#meta-tour-welcome')) return true;
+    const step = activeSteps[idx];
+    if (!step) return false;
+    const prompted = (metaPreviewTour || clientActivationTour)
+      && step.promptBeforeAction
+      && typeof step.action === 'function'
+      && !completedPromptedActions.has(idx);
+    if (prompted) return !!(step.preActionSel && target.closest(step.preActionSel));
+    if (step.requiresHighlightedClick || step.allowTargetInteraction) {
+      const liveTarget = resolveStepTarget(step).target;
+      return !!(liveTarget && (liveTarget === target || liveTarget.contains(target)));
+    }
+    if (step.requiresFoundationsLesson) return !!target.closest('#learning-content');
+    if (step.requiresWeeklyGoals) return !!target.closest('#weekly-goals-modal,.weekly-goal-onboarding-guide');
+    if (step.requiresFeedPost) return !!target.closest('#feed-composer-card');
+    if (step.requiresWelcomeVideo) return !!target.closest('#meta-ad-trial-welcome-video,#meta-ad-trial-welcome-continue');
+    if (step.checkinExplainerGuide) return !!target.closest('#coach-checkin-explainer');
+    return false;
+  }
+
+  // Keep onboarding sequential: taps outside the current highlighted action
+  // must never open a different To do card, tab or page underneath the guide.
+  document.addEventListener('click', function(event){
+    if (tourAllowsInteraction(event.target)) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }, true);
 
   function cancelScheduledTourPosition(){
     if (tourPositionFrame) cancelAnimationFrame(tourPositionFrame);
@@ -16678,15 +16717,15 @@ window.endFeatureTour = function(skipped){
     condition: function(){ var p=window.PBBWorkoutSwipePlayer; if(p && p.isFocusPilotUser && p.isFocusPilotUser(window.currentUser)) return false; return !!document.getElementById('workout-player-experiment-controls') || !!document.getElementById('today-workout-card'); }
   });
   allFeatures.push({
-    id: 'shannon-workout-focus-mode-v1',
+    id: 'workout-focus-mode-all-users-v1',
     tab: 'movement-tab',
     sel: '#workout-focus-menu-button',
     fallbackSel: '#today-workout-card',
-    title: 'Private Focus Mode',
-    fallbackTitle: 'Private Focus Mode',
-    body: 'Use the options button for form check, sharing, Science & Form Cues, adding exercises, and Finish & Save. Complete sets and start the rest timer from the main exercise card.',
-    fallbackBody: 'Start a workout to try your new one-exercise-at-a-time Focus Mode. It is live only for your account while you test it.',
-    condition: function(){ var u=window.currentUser||{}; return String(u.id||'')==='00a6605e-8edb-4917-85ba-24a23f179059' && String(u.email||'').toLowerCase()==='shannonbirch@cocospersonaltraining.com'; }
+    title: 'Your workout, one exercise at a time',
+    fallbackTitle: 'Your workout, one exercise at a time',
+    body: 'Tick off each set, start your rest, then swipe to the next exercise. The options button holds form check, sharing, cues, adding an exercise, and Finish & Save.',
+    fallbackBody: 'Start a workout to open the new Focus workout screen, with one exercise at a time and the controls you need close by.',
+    condition: function(){ var p=window.PBBWorkoutSwipePlayer; return !!(p && p.isFocusPilotUser && p.isFocusPilotUser(window.currentUser)); }
   });
   allFeatures.push({
     id: 'feed-post-actions-menu-v1',
@@ -20401,11 +20440,11 @@ if (window._pbbIsIOSSafari) {
             });
             if (window.showQuizBattleInviteModal || learningAlreadyRequested) return;
             var s = document.createElement('script');
-      s.src = 'lib/learning-inline.js?v=38-guided-course-start';
+      s.src = 'lib/learning-inline.js?v=39-current-course-tour';
             document.head.appendChild(s);
         }, { once: true });
     } else {
-    document.write('<script src="lib/learning-inline.js?v=38-guided-course-start"><\/script>');
+    document.write('<script src="lib/learning-inline.js?v=39-current-course-tour"><\/script>');
     }
     </script>
     <!-- Battle System & Logic Overrides (130 lines — deferred on iOS) -->
