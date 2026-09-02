@@ -1609,8 +1609,8 @@ function buildPaidMetaTailoredOfferChunks(blockerText = '', goalText = '', flowV
                 : `Yep, the food side can fit your dietary preferences. ${compactAcknowledgement}`;
         }
         return [
-            `${compactAcknowledgement} You get a six-week workout program, a meal plan fitted to your dietary preferences, and a weekly check-in.`,
-            "You get six weeks in the app and community. It's one AUD $149 payment for the full six weeks, with no subscription or auto-renewal.",
+            `${compactAcknowledgement} Balance Foundations is a six-week course, with one focus each week and six weeks in the app and community.`,
+            "Your workout program, meal plan fitted to your dietary preferences, and weekly check-in are included. It's one AUD $149 payment for the full six weeks, with no subscription or auto-renewal.",
             'Want me to open your free personalised preview before you pay?',
         ];
     }
@@ -1621,23 +1621,26 @@ function buildPaidMetaTailoredOfferChunks(blockerText = '', goalText = '', flowV
     ];
 }
 
-function addPaidMetaProofVideoToOfferChunks(chunks = [], history = []) {
+function addPaidMetaProofVideoToOfferChunks(chunks = [], history = [], flowVariant = 'plant_based_control') {
     const offerChunks = (Array.isArray(chunks) ? chunks : []).map(chunk => String(chunk || '').trim());
     if (!offerChunks.length || hasRecentPaidMetaProofVideo(history)) {
         return { chunks: offerChunks, videoAttachmentUrl: null };
     }
     const finalIndex = offerChunks.length - 1;
     const terminalPreviewQuestion = /^Want me to open your free personalised preview[^?]*\?$/i.test(offerChunks[finalIndex]);
+    const videoIntroduction = flowVariant === 'broad_pain'
+        ? "Here's a quick course video."
+        : "Here's a quick video showing the course and what's inside Balance.";
     if (terminalPreviewQuestion && finalIndex > 0) {
         // Keep this as four native items: tailored offer, terms + video
         // introduction, video, then the purposeful preview question. Longer
         // rich-detail replies used to split into an extra pre-video bubble and
         // could outlive the synchronous Graph sender before the CTA was sent.
-        offerChunks[finalIndex - 1] = `${offerChunks[finalIndex - 1]} Here's a quick video showing the course and what's inside Balance.`;
+        offerChunks[finalIndex - 1] = `${offerChunks[finalIndex - 1]} ${videoIntroduction}`;
     } else {
         offerChunks[finalIndex] = offerChunks[finalIndex].replace(
             /Want me to open your free personalised preview[^?]*\?$/i,
-            "Here's a quick video showing the course and what's inside Balance. Want me to open your free personalised preview before you pay?"
+            `${videoIntroduction} Want me to open your free personalised preview before you pay?`
         );
     }
     return {
@@ -1661,7 +1664,10 @@ function buildPaidMetaGoalToBlockerText(goalText = '', transformationProof = nul
         acknowledgement = 'Yeah, having more energy and feeling fitter is a solid goal.';
     }
     const proofLine = String(transformationProof?.introduction || '').trim();
-    return `${acknowledgement}${proofLine ? ` ${proofLine}` : ''} What usually gets in the way of making that happen consistently?`;
+    const courseBridge = proofLine
+        ? 'That is the kind of progress the six-week Balance Foundations course helps you build around your real week.'
+        : 'The six-week Balance Foundations course helps you turn that goal into a clear week you can actually follow.';
+    return `${acknowledgement}${proofLine ? ` ${proofLine}` : ''} ${courseBridge} What usually gets in the way of making that happen consistently?`;
 }
 
 function paidMetaHistoryHasConcreteBlocker(history = []) {
@@ -1943,7 +1949,8 @@ function buildPaidMetaIdentityReply({
     if (flowVariant === 'broad_pain' && currentHasGoal && currentHasBlocker) {
         const offer = addPaidMetaProofVideoToOfferChunks(
             buildPaidMetaTailoredOfferChunks(topicMessage, topicMessage, flowVariant),
-            history
+            history,
+            flowVariant
         );
         fallback = {
             chunks: offer.chunks,
@@ -1983,7 +1990,8 @@ function buildPaidMetaIdentityReply({
             const goalText = facts.motivation || facts.current_state || paidMetaLatestFitnessGoalText(history);
             const offer = addPaidMetaProofVideoToOfferChunks(
                 buildPaidMetaTailoredOfferChunks(blockerText, goalText, flowVariant),
-                history
+                history,
+                flowVariant
             );
             fallback = {
                 chunks: offer.chunks,
@@ -2179,7 +2187,7 @@ function buildDeterministicPaidMetaConversationReply({
             message,
             facts.motivation || facts.current_state || paidMetaLatestFitnessGoalText(history),
             flowVariant
-        ), history);
+        ), history, flowVariant);
         const chunks = offer.chunks;
         const joined = chunks.join('\n\n');
         return {
@@ -2202,7 +2210,7 @@ function buildDeterministicPaidMetaConversationReply({
             blockerText,
             facts.motivation || facts.current_state || paidMetaLatestFitnessGoalText(history),
             flowVariant
-        ), history);
+        ), history, flowVariant);
         const chunks = offer.chunks;
         return {
             chunks,
@@ -2261,7 +2269,7 @@ function buildDeterministicPaidMetaConversationReply({
         const appContents = broadFlow
             ? 'workouts with video demos, meal planning and daily targets, weekly goals, progress tracking, and the community'
             : 'workouts with video demos, plant-based meal plans and daily targets, weekly goals, progress tracking, and the plant-based community';
-        const supportOffer = broadFlow ? 'The six-week Balance kickstart' : 'The Balance Foundations program';
+        const supportOffer = broadFlow ? 'The six-week Balance Foundations course' : 'The Balance Foundations program';
         const nextAsk = muscleGoal
             ? 'Want me to show you what the muscle-building side would look like for you?'
             : 'Want me to show you what a first week could look like for your goal?';
@@ -2280,7 +2288,7 @@ function buildDeterministicPaidMetaConversationReply({
     if (PAID_META_PROGRAM_WORKS_RE.test(message)) {
         const goalText = voiceGoalPhrase ? ` around ${voiceGoalPhrase}` : '';
         const communityCopy = broadFlow ? 'the Balance app and community' : 'the Balance app and plant-based community';
-        const offerName = broadFlow ? 'The six-week Balance kickstart' : 'Balance Foundations';
+        const offerName = broadFlow ? 'The six-week Balance Foundations course' : 'Balance Foundations';
         const joined = `${offerName} gives you a clear six-week curriculum${goalText} inside the app, with workouts and video demos, meal planning, progress tracking and six weeks of ${communityCopy}. You also get one weekly check-in where I review and adjust your training and food. It finishes after six weeks and doesn't renew automatically.\n\nAre you keen to have a quick look inside the app?`;
         return {
             chunks: [joined],
@@ -2295,7 +2303,7 @@ function buildDeterministicPaidMetaConversationReply({
 
     if (PAID_META_OFFER_INFO_RE.test(message)) {
         const communityCopy = broadFlow ? 'the Balance app and community' : 'the Balance app and plant-based community';
-        const offerName = broadFlow ? 'The six-week Balance kickstart' : 'Balance Foundations';
+        const offerName = broadFlow ? 'The six-week Balance Foundations course' : 'Balance Foundations';
         const selectedFixedStart = /\b(?:founders pass|balance foundations|fixed (?:six|6)[ -]?week)\b/i.test(message);
         const nextAsk = selectedFixedStart
             ? 'Would you like me to send you the checkout link?'
@@ -2340,7 +2348,7 @@ function buildDeterministicPaidMetaConversationReply({
     }
 
     if (PAID_META_NEXT_STEP_RE.test(message) && hasGoal && hasBlocker) {
-        const offerName = broadFlow ? 'the six-week Balance kickstart' : 'Balance Foundations';
+        const offerName = broadFlow ? 'the six-week Balance Foundations course' : 'Balance Foundations';
         if (!broadFlow) {
             const joined = `${offerName} is one $149 payment for the complete six-week curriculum, with one weekly check-in and plan review from me.\n\nIf you're keen, I can give you access to the app so you can check it out before any payment. Are you keen to have a look?`;
             return {
@@ -2383,7 +2391,7 @@ function buildDeterministicPaidMetaConversationReply({
                 flowVariant,
             };
         }
-        const offerName = broadFlow ? 'the six-week Balance kickstart' : 'Balance Foundations';
+        const offerName = broadFlow ? 'the six-week Balance Foundations course' : 'Balance Foundations';
         const canSendProofVideo = Boolean(FOUNDERS_PASS_APP_PREVIEW_URL) && allowVideoAttachment && !broadFlow && !recentProofVideo;
         const nextAsk = recentProofVideo
             ? 'Want me to send you the full breakdown?'
@@ -2956,13 +2964,13 @@ function buildMetaAdFoundersPassFirstReply(currentMessage = '', { customData = {
     } else if (broadFlow && intent === 'accountability') {
         answer = `You check in inside Balance and I can see what the week actually looked like, then I give you the next bit of direction and adjust your training or food where needed. What's the main change you'd like to make over the next six weeks?`;
     } else if (broadFlow && intent === 'personalised_coaching') {
-        answer = `Yeah, I do. Balance Foundations is a six-week program inside the app with a workout program, food support and one weekly check-in with me. What's the main change you'd like to make over the next six weeks?`;
+        answer = `Yeah, I do. Balance Foundations is a six-week course inside the app, with weekly lessons and practical goals alongside your workout program, food support and one weekly check-in with me. What's the main change you'd like to make over the next six weeks?`;
     } else if (broadFlow && intent === 'curriculum') {
         answer = `Yeah. Week 1 is why change feels hard, week 2 is working with your energy, week 3 is building a rhythm that sticks, week 4 takes the fight out of food, week 5 makes progress easier to repeat, and week 6 builds your sustainable way forward. You apply it through your Weekly Goals, workout program and nutrition setup, with me reviewing your training and food each week. What's the main change you'd like to make over the next six weeks?`;
     } else if (broadFlow) {
         const directAnswer = intent === 'inclusions'
             ? 'Yep. Inside Balance, you get the six-week course, a workout program built around your week, food support fitted to your preferences, Weekly Goals, the community, and one weekly check-in where I review your training and food.'
-            : 'Hey, how are you? 😊 Balance Foundations runs for six weeks in the app. You get the course, workouts, food support and a weekly check-in with me, all built around your week.';
+            : 'Hey, how are you? 😊 Balance Foundations is a six-week course in the app. You get one practical focus each week, plus workouts, food support and a weekly check-in with me.';
         answer = `${directAnswer} What's the main change you'd like to make over the next six weeks?`;
     } else if (intent === 'fit' || intent === 'overview') {
         answer = `Hey, yeah of course. The Founders Pass is for our six-week plant-based fitness program inside Balance. ${plantBasedOpeningQuestion}`;
@@ -4865,7 +4873,7 @@ ${knownFactRule}
 
 Client proof should normally be used once when it genuinely matches: Ally for weight loss, Gen for strength/confidence, Dani for body recomposition, Bec and Kirsty for shared accountability. Use no transformation when identity, safety or fit is uncertain. If using proof, name the approved person and say you are showing their photo. The deterministic transport may add the approved quick app video after both goal and blocker are known; do not invent URLs, visible media placeholders such as [course video], or repeat it.
 
-Reliable offer facts: Balance Foundations is a six-week program inside Balance with a personalised workout program, meal-plan support fitted to recorded dietary needs, and one weekly training/food review and adjustment. It is one AUD $149 payment for the full six weeks, with no subscription or auto-renewal. The personalised app preview comes before payment.
+Reliable offer facts: Balance Foundations is a six-week course inside Balance. Each week gives the person one practical learning focus, supported by Weekly Goals, alongside a personalised workout program, meal-plan support fitted to recorded dietary needs, and one weekly training/food review and adjustment. It is one AUD $149 payment for the full six weeks, with no subscription or auto-renewal. The personalised app preview comes before payment.
 
 Verified course curriculum, for direct course, lesson or week-by-week questions: week 1, Why change feels hard; week 2, Work with your energy; week 3, Build a rhythm that sticks; week 4, Take the fight out of food; week 5, Make progress easier to repeat; week 6, Build your sustainable way forward. The course uses lessons, practical actions and Weekly Goals alongside the person's workout and nutrition setup. Do not dump all six weeks into an ordinary pitch. Give the full outline only when they ask for curriculum detail; otherwise use only the one or two themes relevant to their words.
 
@@ -5383,7 +5391,7 @@ function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = 
         }
     }
     if (repairsEarnedOffer && flowVariant === 'broad_pain') {
-        const offerWithVideo = addPaidMetaProofVideoToOfferChunks(chunks, history);
+        const offerWithVideo = addPaidMetaProofVideoToOfferChunks(chunks, history, flowVariant);
         chunks = offerWithVideo.chunks;
         videoAttachmentUrl = offerWithVideo.videoAttachmentUrl;
     }

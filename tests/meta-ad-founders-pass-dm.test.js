@@ -505,7 +505,7 @@ test('Cocos paid-ad Founders Pass opener bypasses the false signup hold and mode
 
     assert.equal(draft.firstReplyIntent, 'overview');
     assert.match(draft.joined, /^Hey,/i);
-    assert.match(draft.joined, /Balance Foundations runs for six weeks in the app/i);
+    assert.match(draft.joined, /Balance Foundations is a six-week course in the app/i);
     assert.doesNotMatch(draft.joined, /yeah,? of course|plant[ -]?based|vegan/i);
     assert.match(draft.joined, /main change.*next six weeks\?/i);
     assert.doesNotMatch(draft.joined, /plant[ -]?based|vegan|vegetarian/i);
@@ -1459,7 +1459,8 @@ test('broad paid Meta answers a rapid blocker plus dietary-fit question in the c
 
     assert.match(reply.joined, /gluten-free works/i);
     assert.match(reply.joined, /changing roster/i);
-    assert.match(reply.joined, /six-week workout program/i);
+    assert.match(reply.joined, /six-week course/i);
+    assert.match(reply.joined, /workout program/i);
     assert.match(reply.joined, /dietary preferences/i);
     assert.match(reply.joined, /six weeks in the app and community/i);
     assert.match(reply.joined, /weekly check-in/i);
@@ -2489,7 +2490,7 @@ test('personalised coaching FAQ answers from the advertised six-week program wit
             linkedUserId: null,
         });
 
-        assert.equal(reply.joined, "Yeah, I do. Balance Foundations is a six-week program inside the app with a workout program, food support and one weekly check-in with me. What's the main change you'd like to make over the next six weeks?");
+        assert.equal(reply.joined, "Yeah, I do. Balance Foundations is a six-week course inside the app, with weekly lessons and practical goals alongside your workout program, food support and one weekly check-in with me. What's the main change you'd like to make over the next six weeks?");
         assert.doesNotMatch(reply.joined, /Starter Coaching|\$29\.99/i);
         assert.equal(reply.checkoutUrl, null);
         assert.equal(reply.videoAttachmentUrl, undefined);
@@ -3487,7 +3488,7 @@ test('verified broad route completes goal, blocker, neutral offer and signed pre
 
     const opener = buildMetaAdFoundersPassFirstReply('BALANCE', { flowVariant: 'broad_pain' });
     assert.match(opener.joined, /^Hey, how are you\? 😊/);
-    assert.match(opener.joined, /Balance Foundations runs for six weeks in the app/i);
+    assert.match(opener.joined, /Balance Foundations is a six-week course in the app/i);
     assert.doesNotMatch(opener.joined, /yeah,? of course|plant[ -]?based|vegan/i);
     assert.match(opener.joined, /main change.*next six weeks\?/i);
     assert.equal((opener.joined.match(/\?/g) || []).length, 2,
@@ -3764,7 +3765,7 @@ test('broad writer contract repairs missing terms, adds the native explainer, an
     assert.match(repairedOffer.joined, /no subscription or auto-renewal/i);
     assert.match(repairedOffer.joined, /personalised preview/i);
     assert.equal(repairedOffer.videoAttachmentUrl, BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL);
-    assert.match(repairedOffer.joined, /quick video showing the course and what's inside Balance/i);
+    assert.match(repairedOffer.joined, /quick course video/i);
 
     const multiBubbleOffer = buildPaidMetaGuaranteedContractFallback({
         draft: incompleteOffer,
