@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v482-tour-page-controls'; // v482: only off-sequence To do cards are locked; opened page controls stay interactive
+const CACHE_NAME = 'pbb-app-v483-course-welcome-tour'; // v483: course tour goes straight from start to the celebration and first lesson
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

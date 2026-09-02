@@ -51,7 +51,7 @@ test('dashboard loads the player once and cache-busts both main loader paths', (
     const serviceWorker = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
     assert.equal((html.match(/pbb-workout-swipe-player\.js\?v=6-focus-all-users/g) || []).length, 1);
     assert.equal((html.match(/dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=234-omnivore-meal-plan/g) || []).length, 3);
-    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v482-tour-page-controls'/);
+    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v483-course-welcome-tour'/);
     assert.match(html, /id="workout-add-existing-wrap"/);
     assert.match(html, /id="workout-add-existing-exercise-btn"/);
 });

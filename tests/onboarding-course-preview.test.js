@@ -8,7 +8,7 @@ const dashboard = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
 const learning = fs.readFileSync(path.join(root, 'lib/learning-inline.js'), 'utf8');
 const nextSteps = fs.readFileSync(path.join(root, 'js/dashboard/pbb-next-obvious-steps.js'), 'utf8');
 
-test('paid onboarding previews all six Foundations weeks before the first quiz', () => {
+test('paid onboarding skips the six-week preview and starts the real course', () => {
   const required = dashboard.match(/const REQUIRED_ONBOARDING_TOUR_TITLES = \[[\s\S]*?\n  \];/)?.[0] || '';
   const weekTitles = [
     'Week 1: Why change feels hard',
@@ -19,25 +19,15 @@ test('paid onboarding previews all six Foundations weeks before the first quiz',
     'Week 6: Build your sustainable way forward'
   ];
 
-  let previousIndex = required.indexOf('Introduce yourself');
   weekTitles.forEach((title) => {
-    const index = required.indexOf(title);
-    assert.ok(index > previousIndex, `${title} should follow the previous preview step`);
-    previousIndex = index;
+    assert.equal(required.indexOf(title), -1, `${title} should not be a required tour stop`);
+    assert.doesNotMatch(dashboard, new RegExp(`title:'${title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}'`));
   });
-  assert.ok(required.indexOf('Read, then take the quiz') > previousIndex);
+  assert.ok(required.indexOf('Start your course') > required.indexOf('Introduce yourself'));
+  assert.ok(required.indexOf('Read, then take the quiz') > required.indexOf('Start your course'));
 });
 
-test('each course-preview card explains the weekly actions and To do next handoff', () => {
-  assert.match(dashboard, /Week 1: Why change feels hard[^\n]*five short quizzes[^\n]*introduce yourself[^\n]*complete your check-in[^\n]*To do next/);
-  assert.match(dashboard, /Week 2: Work with your energy[^\n]*comment on a Feed post[^\n]*weekly check-in/);
-  assert.match(dashboard, /Week 3: Build a rhythm that sticks[^\n]*share a completed workout[^\n]*weekly check-in/);
-  assert.match(dashboard, /Week 4: Take the fight out of food[^\n]*share a logged meal[^\n]*Fitness Diary[^\n]*check-in/);
-  assert.match(dashboard, /Week 5: Make progress easier to repeat[^\n]*exercise PB[^\n]*check-in/);
-  assert.match(dashboard, /Week 6: Build your sustainable way forward[^\n]*course reflection[^\n]*final check-in[^\n]*To do next/);
-});
-
-test('the visible Course roadmap uses the same six approved week names as the tour', () => {
+test('the visible Course roadmap still shows the six approved week names', () => {
   [
     'Why change feels hard',
     'Work with your energy',
@@ -48,22 +38,11 @@ test('the visible Course roadmap uses the same six approved week names as the to
   ].forEach((title) => assert.match(learning, new RegExp(`title: '${title}'`)));
 });
 
-test('the tour opens each real course week without starting or completing it', () => {
-  assert.match(dashboard, /function openMetaPreviewFoundationsWeek\(weekNumber\)/);
-  assert.match(dashboard, /previewBalanceFoundationsWeekForTour\(weekNumber\)/);
-  assert.match(learning, /window\.previewBalanceFoundationsWeekForTour = function\(weekNumber\)/);
-  assert.match(learning, /learningState\.expandedCourseId = BALANCE_FOUNDATIONS\.id/);
-  assert.match(learning, /learningState\.expandedFoundationsWeekNumber = number/);
-  const previewFunction = learning.match(/window\.previewBalanceFoundationsWeekForTour = function\(weekNumber\)[\s\S]*?\n    };/)?.[0] || '';
-  assert.doesNotMatch(previewFunction, /startFoundationsLesson|lessons_completed\.push/);
-});
-
 test('the tour guides the real course start flow before the first quiz', () => {
   const required = dashboard.match(/const REQUIRED_ONBOARDING_TOUR_TITLES = \[[\s\S]*?\n  \];/)?.[0] || '';
   const orderedTitles = [
-    'Week 6: Build your sustainable way forward',
     'Start your course',
-    'Start Week 1',
+    'Welcome to Balance Foundations',
     'Take your first lesson',
     'Read, then take the quiz'
   ];
@@ -73,8 +52,8 @@ test('the tour guides the real course start flow before the first quiz', () => {
     assert.ok(index > previousIndex, `${title} should follow the previous course step`);
     previousIndex = index;
   });
-  assert.match(dashboard, /sel:'#balance-foundations-course-start'[^\n]*title:'Start your course'[^\n]*requiresHighlightedClick:true/);
-  assert.match(dashboard, /title:'Start Week 1'[^\n]*requiresHighlightedClick:true/);
+  assert.match(dashboard, /sel:'#balance-foundations-course-start'[^\n]*title:'Start your course'[^\n]*promptBeforeAction:true[^\n]*data-next-step-id="foundations_intro"[^\n]*requiresHighlightedClick:true/);
+  assert.match(dashboard, /sel:'#balance-foundations-welcome-start'[^\n]*fallbackSel:'#course-welcome'[^\n]*title:'Welcome to Balance Foundations'[^\n]*requiresHighlightedClick:true/);
   assert.match(dashboard, /title:'Take your first lesson'[^\n]*requiresHighlightedClick:true/);
   assert.match(dashboard, /title:'Read, then take the quiz'[^\n]*preserveSurface:true/);
   assert.doesNotMatch(dashboard, /title:'Read, then take the quiz'[^\n]*promptBeforeAction:true/);
@@ -82,6 +61,10 @@ test('the tour guides the real course start flow before the first quiz', () => {
   assert.match(nextSteps, /learning-inline\.js\?v=39-current-course-tour/);
   assert.match(learning, /id="balance-foundations-course-start"/);
   assert.match(learning, /id="balance-foundations-welcome-start"/);
+  assert.match(learning, /id="course-welcome" class="course-welcome"/);
+  assert.match(learning, /course-welcome-glow/);
+  assert.match(learning, /course-welcome-logo/);
+  assert.match(learning, /if \(!isCourseStarted\(course\)\)[\s\S]*renderCourseWelcome\(course\)[\s\S]*course_welcome_opened/);
   assert.match(learning, /id="balance-foundations-first-lesson"/);
   assert.match(learning, /window\.prepareBalanceFoundationsStartForTour = function\(\)[\s\S]*?course\.progress\?\.completed[\s\S]*?localStorage\.removeItem\(getCourseStartedKey\(course\.id\)\)/);
   assert.match(dashboard, /learning-inline\.js\?v=39-current-course-tour/g);
