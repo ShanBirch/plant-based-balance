@@ -3619,6 +3619,13 @@ test('verified broad route completes goal, blocker, neutral offer and signed pre
     assert.match(liveHecticWorkReply.joined, /no subscription or auto-renewal/i);
     assert.match(liveHecticWorkReply.joined, /personalised preview/i);
     assert.equal(liveHecticWorkReply.videoAttachmentUrl, resolveBalanceFoundationsAppProofVideoUrl());
+    const liveHecticMediaReady = attachPaidMetaWriterSelectedMedia(liveHecticWorkReply, {
+        allowAttachments: true,
+        flowVariant: 'broad_pain',
+        history: historyThroughGoal,
+    });
+    assert.equal((liveHecticMediaReady.joined.match(/course video/gi) || []).length, 1,
+        'the deterministic offer and media selector must not introduce the course video twice');
 
     const conciseLiveRetry = buildDeterministicPaidMetaConversationReply({
         currentMessage: 'Yeah, the main thing is hectic work days. That is when both food and training fall apart.',
@@ -3859,7 +3866,7 @@ test('broad writer contract repairs missing terms, adds the native explainer, an
     assert.match(repairedOffer.joined, /no subscription or auto-renewal/i);
     assert.match(repairedOffer.joined, /personalised preview/i);
     assert.equal(repairedOffer.videoAttachmentUrl, BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL);
-    assert.match(repairedOffer.joined, /quick course video/i);
+    assert.match(repairedOffer.joined, /course video/i);
 
     const multiBubbleOffer = buildPaidMetaGuaranteedContractFallback({
         draft: incompleteOffer,

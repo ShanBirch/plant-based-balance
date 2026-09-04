@@ -1630,7 +1630,7 @@ function addPaidMetaProofVideoToOfferChunks(chunks = [], history = [], flowVaria
     const finalIndex = offerChunks.length - 1;
     const terminalPreviewQuestion = /^Want me to open your free personalised preview[^?]*\?$/i.test(offerChunks[finalIndex]);
     const videoIntroduction = flowVariant === 'broad_pain'
-        ? "Here's a quick course video."
+        ? "Here's the course video."
         : "Here's a quick video showing the course and what's inside Balance.";
     if (terminalPreviewQuestion && finalIndex > 0) {
         // Keep this as four native items: tailored offer, terms + video
