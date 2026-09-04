@@ -57,8 +57,8 @@ test('the tour guides the real course start flow before the first quiz', () => {
   assert.match(dashboard, /title:'Take your first lesson'[^\n]*requiresHighlightedClick:true/);
   assert.match(dashboard, /title:'Read, then take the quiz'[^\n]*preserveSurface:true/);
   assert.doesNotMatch(dashboard, /title:'Read, then take the quiz'[^\n]*promptBeforeAction:true/);
-  assert.match(dashboard, /learning-inline\.js\?v=41-required-course-welcome/);
-  assert.match(nextSteps, /learning-inline\.js\?v=41-required-course-welcome/);
+  assert.match(dashboard, /learning-inline\.js\?v=42-required-course-welcome/);
+  assert.match(nextSteps, /learning-inline\.js\?v=42-required-course-welcome/);
   assert.match(learning, /id="balance-foundations-course-start"/);
   assert.match(learning, /id="balance-foundations-welcome-start"/);
   assert.match(learning, /id="course-welcome" class="course-welcome"/);
@@ -66,11 +66,11 @@ test('the tour guides the real course start flow before the first quiz', () => {
   assert.match(learning, /course-welcome-logo/);
   assert.match(learning, /const welcomeRequired = consumeCourseWelcomeRequirement\(course\.id\);[\s\S]*if \(welcomeRequired \|\| !isCourseStarted\(course\)\)[\s\S]*renderCourseWelcome\(course\)[\s\S]*course_welcome_opened/);
   assert.match(learning, /id="balance-foundations-first-lesson"/);
-  assert.match(learning, /window\.prepareBalanceFoundationsStartForTour = function\(\)[\s\S]*?course\.progress\?\.completed[\s\S]*?localStorage\.removeItem\(getCourseStartedKey\(course\.id\)\)[\s\S]*?requireCourseWelcome\(course\.id\)/);
+  assert.match(learning, /window\.prepareBalanceFoundationsStartForTour = function\(\)[\s\S]*?course\.progress\?\.completed[\s\S]*?localStorage\.removeItem\(getCourseStartedKey\(course\.id\)\)[\s\S]*?requireCourseWelcome\(course\.id\)[\s\S]*?window\.openCoursePage\(course\.id\)/);
   assert.match(learning, /function consumeCourseWelcomeRequirement\(courseId\)[\s\S]*?sessionStorage\.removeItem\(key\)/);
   assert.match(learning, /if \(document\.getElementById\('course-welcome'\)\) return;/);
   assert.match(learning, /window\.startCourseFromWelcome = function\(courseId\)[\s\S]*?consumeCourseWelcomeRequirement\(course\.id\)[\s\S]*?markCourseStarted\(course\.id\)/);
-  assert.match(dashboard, /learning-inline\.js\?v=41-required-course-welcome/g);
+  assert.match(dashboard, /learning-inline\.js\?v=42-required-course-welcome/g);
 });
 
 test('quiz feedback stays tappable above the guided tour', () => {

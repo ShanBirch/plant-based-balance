@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v486-share-aspect-safe'; // v486: preserve photo proportions in editor exports sent to Instagram
+const CACHE_NAME = 'pbb-app-v487-required-course-welcome'; // v487: keep share proportions safe and guarantee the onboarding course welcome after an interrupted start
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
