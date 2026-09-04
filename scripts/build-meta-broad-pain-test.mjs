@@ -149,6 +149,14 @@ const plan = {
     paidMeta: 'https://future-balance.netlify.app/fitness-coaching.html?utm_source=instagram&utm_medium=paid_social&utm_campaign=balance_foundations_general_20260828&utm_content={{ad.name}}&campaign_id={{campaign.id}}&adset_id={{adset.id}}&ad_id={{ad.id}}&placement={{placement}}',
     dmRule: 'Every verified paid-Meta lead uses the one neutral general-fitness flow. Preserve attribution parameters on the canonical thread and use the clean public URL in DMs.',
   },
+  dmWelcome: {
+    quickReplies: [
+      'I keep starting over',
+      'I struggle to stay consistent',
+      'How does Balance work?',
+    ],
+    rule: 'Use these only as the three Meta entry prompts. Once one is tapped, continue as a natural free-text conversation: desired six-week change, matched client proof when relevant, real-life blocker, tailored offer with the native app video, personalised preview, then checkout only after explicit joining intent.',
+  },
   fate: {
     focus: 'Adults who keep restarting, struggle to follow through, or cannot fit rigid plans around real life.',
     authority: 'Shannon as the coach, supported by real Balance app and training imagery.',

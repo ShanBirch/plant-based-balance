@@ -2453,6 +2453,40 @@ test('inclusions quick reply answers the direct ask without a raw preview URL', 
     assert.doesNotMatch(reply.joined, /https?:\/\//);
 });
 
+test('current neuroscience quick replies open the neutral paid flow without premature proof or checkout', () => {
+    const cases = [
+        {
+            message: 'I keep starting over',
+            intent: 'restart_loop',
+            expected: /stop-start loop/i,
+        },
+        {
+            message: 'I struggle to stay consistent',
+            intent: 'consistency',
+            expected: /isn't a knowledge problem/i,
+        },
+        {
+            message: 'How does Balance work?',
+            intent: 'how_balance_works',
+            expected: /six-week course inside the app/i,
+        },
+    ];
+
+    for (const testCase of cases) {
+        const reply = buildMetaAdFoundersPassFirstReply(testCase.message);
+        assert.equal(reply.firstReplyIntent, testCase.intent);
+        assert.match(reply.joined, testCase.expected);
+        assert.match(reply.joined, /neuroscience and (?:the )?psychology/i);
+        assert.match(reply.joined, /main change.*next six weeks\?/i);
+        assert.equal(reply.chunks.length, 2);
+        assert.equal(reply.checkoutUrl, null);
+        assert.equal(reply.imageAttachmentUrl, undefined);
+        assert.equal(reply.videoAttachmentUrl, undefined);
+        assert.equal(shouldUseDeterministicMetaAdFirstReply(testCase.message), true);
+        assert.doesNotMatch(reply.joined, /plant[ -]?based|vegan|vegetarian|https?:\/\//i);
+    }
+});
+
 test('direct curriculum question receives the verified six-week course outline without a checkout pitch', () => {
     const message = 'What do I actually learn over the six weeks?';
     assert.equal(resolveMetaAdFirstReplyIntent(message), 'curriculum');
