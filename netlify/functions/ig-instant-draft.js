@@ -6983,27 +6983,51 @@ Rules:
         } catch (err) {
             lastError = `${lastError ? lastError + ' | ' : ''}${paidMetaSingleWriter ? 'openai-paid-meta' : 'vertex'}: ${err.message.slice(0, 200)}`;
             if (paidMetaSingleWriter) {
-                const timeoutFallback = buildDeterministicPaidMetaConversationReply({
-                    currentMessage: unansweredBatch.map(message => message.text).join('\n'),
-                    qualifier,
-                    history,
-                    flowVariant: adFlowVariant,
-                    checkoutUrl,
-                    appPreviewUrl: buildMetaAppPreviewUrl(igThreadId, { flowVariant: adFlowVariant }),
-                    personalVoiceNoteMode: false,
-                    allowVideoAttachment: false,
-                });
-                if (Array.isArray(timeoutFallback?.chunks) && timeoutFallback.chunks.length) {
-                    rawText = JSON.stringify({ messages: timeoutFallback.chunks });
-                    model = 'deterministic_paid_meta_timeout_v1';
-                    // The local paid-Meta writer is a complete, reviewed draft,
-                    // not an unavailable AI draft. Keeping the upstream timeout
-                    // in `error` makes getAutoDmHoldReason() suppress this safe
-                    // fallback even after it passes the paid conversation review.
+                try {
+                    rawText = requireNonEmptyDraftText(
+                        await withTimeout(callVertexAIModel(textContents, generationConfig), 10000, 'paid Meta Vertex fallback'),
+                        'Vertex paid Meta fallback'
+                    );
+                    model = 'vertex-v7-paid-meta-fallback';
                     lastError = null;
-                    console.warn(`[ig-draft] paid Meta OpenAI timed out; used local sales fallback: ${err.message}`);
-                } else {
-                    return { chunks: [], joined: '', model: 'none', error: lastError, imageCount: imageParts.length, audioCount: audioParts.length, videoCount: videoParts.length, reelContextCount, reelThumbnailCount, mediaDecode, timeline: totalConversationText, conversationEpisode, currentTurnAnchorBlock, storyReplyPromptContextBlock, mediaContextPromptBlock, learningReelContextBlock, learningReelReplyAnchorBlock, learningReelEvidenceBlock };
+                    console.warn(`[ig-draft] paid Meta OpenAI failed; recovered with Vertex: ${err.message}`);
+                } catch (vertexErr) {
+                    lastError = `${lastError} | vertex-paid-meta: ${vertexErr.message.slice(0, 200)}`;
+                    try {
+                        rawText = requireNonEmptyDraftText(
+                            await withTimeout(callGeminiFallback(textContents, generationConfig), 10000, 'paid Meta Gemini fallback'),
+                            'Gemini paid Meta fallback'
+                        );
+                        model = 'gemini-2.0-paid-meta-fallback';
+                        lastError = null;
+                        console.warn(`[ig-draft] paid Meta OpenAI and Vertex failed; recovered with Gemini: ${vertexErr.message}`);
+                    } catch (geminiErr) {
+                        lastError = `${lastError} | gemini-paid-meta: ${geminiErr.message.slice(0, 200)}`;
+                    }
+                }
+                if (!rawText) {
+                    const timeoutFallback = buildDeterministicPaidMetaConversationReply({
+                        currentMessage: unansweredBatch.map(message => message.text).join('\n'),
+                        qualifier,
+                        history,
+                        flowVariant: adFlowVariant,
+                        checkoutUrl,
+                        appPreviewUrl: buildMetaAppPreviewUrl(igThreadId, { flowVariant: adFlowVariant }),
+                        personalVoiceNoteMode: false,
+                        allowVideoAttachment: false,
+                    });
+                    if (Array.isArray(timeoutFallback?.chunks) && timeoutFallback.chunks.length) {
+                        rawText = JSON.stringify({ messages: timeoutFallback.chunks });
+                        model = 'deterministic_paid_meta_timeout_v1';
+                        // The local paid-Meta writer is a complete, reviewed draft,
+                        // not an unavailable AI draft. Keeping the upstream timeout
+                        // in `error` makes getAutoDmHoldReason() suppress this safe
+                        // fallback even after it passes the paid conversation review.
+                        lastError = null;
+                        console.warn(`[ig-draft] paid Meta model chain failed; used local sales fallback: ${err.message}`);
+                    } else {
+                        return { chunks: [], joined: '', model: 'none', error: lastError, imageCount: imageParts.length, audioCount: audioParts.length, videoCount: videoParts.length, reelContextCount, reelThumbnailCount, mediaDecode, timeline: totalConversationText, conversationEpisode, currentTurnAnchorBlock, storyReplyPromptContextBlock, mediaContextPromptBlock, learningReelContextBlock, learningReelReplyAnchorBlock, learningReelEvidenceBlock };
+                    }
                 }
             } else try {
                 console.warn(`[ig-draft] Vertex failed, falling back to Gemini: ${err.message}`);
