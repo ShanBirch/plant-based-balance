@@ -105,6 +105,12 @@ test('activity exports move only the card and reuse the editor layout', () => {
   assert.match(points, /const isActivity = cardPayload\.card_type === 'activity'/);
   assert.match(points, /isActivity \? 'ACTIVITY COMPLETE' : 'WORKOUT COMPLETE'/);
   assert.match(activityRenderer, /SHOW UP\. KEEP THE RECEIPTS\./);
+  assert.match(points, /const panelW = width \* 0\.78/);
+  assert.match(points, /const panelY = \(canvasHeight \* 0\.68\) - \(panelH \/ 2\)/);
+  assert.match(points, /textStyle === 'outline' \? 4/);
+  assert.match(points, /gold: \{ accent: '#D8B25E',[^\n]+onPhoto: '#FFFFFF'/);
+  assert.match(activityRenderer, /const editorPreview = studioEditor && Number\(studioEditor\.version\) >= 4/);
+  assert.match(activityRenderer, /editorPreview \? 0\.42/);
   assert.doesNotMatch(activityDispatch, /pbbShareWithStudioOverlayTransform/);
 });
 
@@ -164,8 +170,8 @@ test('private reveal, tour, and cache-busted modules ship together', () => {
   assert.match(dashboard, /photo-share-studio-all-members-v1/);
   assert.match(dashboard, /BalancePrivateShareStudio\.isEnabled\(\)/);
   assert.match(dashboard, /pbb-private-share-studio\.js\?v=18-locked-photo-text-tools/);
-  assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=63-preview-matched-activity/);
+  assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=64-wysiwyg-activity-card/);
   assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=[^'\"]+/);
   assert.match(dashboard, /dashboard-script-11-calorie_tracker_functions\.js\?v=41-share-done-flow/);
-  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v491-preview-matched-activity'/);
+  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v492-wysiwyg-activity-card'/);
 });

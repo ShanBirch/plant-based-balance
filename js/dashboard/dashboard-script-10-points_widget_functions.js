@@ -4153,12 +4153,12 @@ function pbbShareDrawCompleteWorkout(ctx, cardPayload, width, contentBottom, bra
 
 function pbbShareStudioWorkoutPalette(editor) {
     const palettes = {
-        gold: { accent: '#D8B25E', surface: 'rgba(17,17,17,0.84)', surfaceText: '#FFFFFF', onPhoto: '#D8B25E' },
-        cream: { accent: '#F8F5EE', surface: 'rgba(248,245,238,0.95)', surfaceText: '#151515', onPhoto: '#F8F5EE' },
-        white: { accent: '#FFFFFF', surface: 'rgba(255,255,255,0.95)', surfaceText: '#151515', onPhoto: '#FFFFFF' },
-        black: { accent: '#111111', surface: 'rgba(17,17,17,0.92)', surfaceText: '#FFFFFF', onPhoto: '#111111' },
-        soft: { accent: '#F4F0E7', surface: 'rgba(244,240,231,0.95)', surfaceText: '#151515', onPhoto: '#F4F0E7' },
-        'gold-light': { accent: '#F5D98A', surface: 'rgba(17,17,17,0.84)', surfaceText: '#FFFFFF', onPhoto: '#F5D98A' }
+        gold: { accent: '#D8B25E', surface: 'rgba(17,17,17,0.84)', surfaceText: '#FFFFFF', onPhoto: '#FFFFFF' },
+        cream: { accent: '#F8F5EE', surface: 'rgba(248,245,238,0.95)', surfaceText: '#151515', onPhoto: '#151515' },
+        white: { accent: '#FFFFFF', surface: 'rgba(255,255,255,0.95)', surfaceText: '#151515', onPhoto: '#151515' },
+        black: { accent: '#111111', surface: 'rgba(17,17,17,0.92)', surfaceText: '#FFFFFF', onPhoto: '#FFFFFF' },
+        soft: { accent: '#F4F0E7', surface: 'rgba(244,240,231,0.95)', surfaceText: '#151515', onPhoto: '#151515' },
+        'gold-light': { accent: '#F5D98A', surface: 'rgba(17,17,17,0.84)', surfaceText: '#FFFFFF', onPhoto: '#FFFFFF' }
     };
     return palettes[String(editor && editor.workoutColour || 'gold')] || palettes.gold;
 }
@@ -4300,44 +4300,52 @@ function pbbShareDrawStudioWorkoutLayout(ctx, cardPayload, width, contentBottom,
 
     const panelStyle = ['scorecard', 'outline', 'receipt', 'full'].includes(textStyle);
     const panelH = textStyle === 'full' ? (isFeed ? 650 : 760) : (textStyle === 'receipt' ? 500 : 470);
-    const panelY = contentBottom - panelH + 20;
-    const surface = textStyle === 'outline' ? 'rgba(0,0,0,0.12)' : palette.surface;
+    const canvasHeight = isFeed ? 1350 : 1920;
+    const panelW = width * 0.78;
+    const panelX = (width - panelW) / 2;
+    const panelPadding = width * 0.05;
+    const panelContentX = panelX + panelPadding;
+    const panelContentW = panelW - (panelPadding * 2);
+    const panelY = (canvasHeight * 0.68) - (panelH / 2);
+    const surface = textStyle === 'outline' ? 'rgba(0,0,0,0)' : palette.surface;
 
     if (panelStyle) {
-        pbbShareFillRoundRect(ctx, 40, panelY, width - 80, panelH, textStyle === 'receipt' ? 12 : 34, surface);
+        const panelRadius = textStyle === 'outline' ? 4 : (textStyle === 'receipt' ? 12 : 34);
+        pbbShareFillRoundRect(ctx, panelX, panelY, panelW, panelH, panelRadius, surface);
         ctx.save();
         ctx.shadowColor = 'transparent';
-        pbbShareRoundRect(ctx, 40, panelY, width - 80, panelH, textStyle === 'receipt' ? 12 : 34);
+        pbbShareRoundRect(ctx, panelX, panelY, panelW, panelH, panelRadius);
         ctx.strokeStyle = palette.accent;
         ctx.lineWidth = textStyle === 'outline' ? 6 : 3;
         ctx.stroke();
         ctx.restore();
-        ctx.fillStyle = textStyle === 'outline' ? palette.onPhoto : palette.surfaceText;
+        ctx.fillStyle = textStyle === 'outline' ? palette.accent : palette.surfaceText;
         ctx.font = '900 25px Arial, sans-serif';
-        ctx.fillText(kicker, x, panelY + 62);
-        pbbShareSetFittedFont(ctx, title, w, textStyle === 'receipt' ? 70 : 82, 50);
-        ctx.fillText(title, x, panelY + 150);
+        ctx.fillText(kicker, panelContentX, panelY + 62);
+        ctx.fillStyle = textStyle === 'outline' ? palette.onPhoto : palette.surfaceText;
+        pbbShareSetFittedFont(ctx, title, panelContentW, textStyle === 'receipt' ? 70 : (textStyle === 'outline' ? 104 : 82), 50);
+        ctx.fillText(title, panelContentX, panelY + 150);
         ctx.save();
         ctx.shadowColor = 'transparent';
         ctx.fillStyle = palette.accent;
-        ctx.fillRect(x, panelY + 190, w, 4);
+        ctx.fillRect(panelContentX, panelY + 190, panelContentW, 4);
         ctx.restore();
-        if (metrics.length) pbbShareDrawStudioMetrics(ctx, metrics, x, panelY + 270, w, palette, { valueSize: 46, labelSize: 18, textColour: textStyle === 'outline' ? palette.onPhoto : palette.surfaceText });
+        if (metrics.length) pbbShareDrawStudioMetrics(ctx, metrics, panelContentX, panelY + 270, panelContentW, palette, { valueSize: textStyle === 'outline' ? 52 : 46, labelSize: 18, textColour: textStyle === 'outline' ? palette.onPhoto : palette.surfaceText });
 
         if (textStyle === 'full') {
             const exercises = (cardPayload.exercises || []).slice(0, isFeed ? 3 : 4);
             let rowY = panelY + 350;
             exercises.forEach(exercise => {
                 const rowH = isFeed ? 68 : 78;
-                pbbShareFillRoundRect(ctx, x, rowY, w, rowH, 14, 'rgba(255,255,255,0.10)');
+                pbbShareFillRoundRect(ctx, panelContentX, rowY, panelContentW, rowH, 14, 'rgba(255,255,255,0.10)');
                 ctx.fillStyle = palette.surfaceText;
                 ctx.font = `800 ${isFeed ? 21 : 24}px Arial, sans-serif`;
-                ctx.fillText(String(exercise.name || 'Exercise'), x + 20, rowY + 31);
+                ctx.fillText(String(exercise.name || 'Exercise'), panelContentX + 20, rowY + 31);
                 ctx.textAlign = 'right';
                 ctx.fillStyle = palette.accent;
                 ctx.font = `800 ${isFeed ? 15 : 17}px Arial, sans-serif`;
-                pbbShareSetFittedFont(ctx, pbbShareCompactSetDetails(exercise), w * 0.46, isFeed ? 15 : 17, 12);
-                ctx.fillText(pbbShareCompactSetDetails(exercise), x + w - 20, rowY + 31);
+                pbbShareSetFittedFont(ctx, pbbShareCompactSetDetails(exercise), panelContentW * 0.46, isFeed ? 15 : 17, 12);
+                ctx.fillText(pbbShareCompactSetDetails(exercise), panelContentX + panelContentW - 20, rowY + 31);
                 ctx.textAlign = 'left';
                 rowY += rowH + 10;
             });
@@ -4681,6 +4689,7 @@ function pbbShareDrawActivityRoute(ctx, cardPayload, x, y, w, h) {
 
 async function pbbShareDrawFullBleedActivityCard(ctx, cardPayload, width, height, target) {
     const textStyle = pbbShareNormalizeTextStyle(cardPayload.share_text_style);
+    const studioEditor = cardPayload.studio_editor;
     const contentBottom = target === 'feed' ? height - 72 : height - 132;
     const brandTop = target === 'feed' ? 48 : 228;
     const x = 64;
@@ -4692,11 +4701,12 @@ async function pbbShareDrawFullBleedActivityCard(ctx, cardPayload, width, height
         ['INTENSITY', String(cardPayload.intensity || 'moderate').toUpperCase()]
     ];
 
-    const fadeStart = textStyle === 'simple' ? 0.60 : 0.45;
+    const editorPreview = studioEditor && Number(studioEditor.version) >= 4;
+    const fadeStart = editorPreview ? 0.42 : (textStyle === 'simple' ? 0.60 : 0.45);
     const gradient = ctx.createLinearGradient(0, height * fadeStart, 0, height);
     gradient.addColorStop(0, 'rgba(3, 7, 18, 0)');
-    gradient.addColorStop(0.56, textStyle === 'simple' ? 'rgba(3, 7, 18, 0.12)' : 'rgba(3, 7, 18, 0.24)');
-    gradient.addColorStop(1, textStyle === 'simple' ? 'rgba(3, 7, 18, 0.64)' : 'rgba(3, 7, 18, 0.82)');
+    gradient.addColorStop(editorPreview ? 0.30 : 0.56, editorPreview ? 'rgba(0,0,0,0.12)' : (textStyle === 'simple' ? 'rgba(3, 7, 18, 0.12)' : 'rgba(3, 7, 18, 0.24)'));
+    gradient.addColorStop(1, editorPreview ? 'rgba(0,0,0,0.72)' : (textStyle === 'simple' ? 'rgba(3, 7, 18, 0.64)' : 'rgba(3, 7, 18, 0.82)'));
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, width, height);
     await pbbShareDrawBalanceBrandMark(ctx, x, brandTop, 72);
@@ -4713,7 +4723,6 @@ async function pbbShareDrawFullBleedActivityCard(ctx, cardPayload, width, height
         pbbShareDrawActivityRoute(ctx, cardPayload, x, routeY, w, routeH);
     }
 
-    const studioEditor = cardPayload.studio_editor;
     if (studioEditor && Number(studioEditor.version) >= 4) {
         await pbbShareWithStudioOverlayTransform(ctx, width, height, studioEditor, () => {
             ctx.shadowColor = 'rgba(0,0,0,0.72)';
