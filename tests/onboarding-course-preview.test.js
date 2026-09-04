@@ -57,8 +57,8 @@ test('the tour guides the real course start flow before the first quiz', () => {
   assert.match(dashboard, /title:'Take your first lesson'[^\n]*requiresHighlightedClick:true/);
   assert.match(dashboard, /title:'Read, then take the quiz'[^\n]*preserveSurface:true/);
   assert.doesNotMatch(dashboard, /title:'Read, then take the quiz'[^\n]*promptBeforeAction:true/);
-  assert.match(dashboard, /learning-inline\.js\?v=43-balance-path-welcome/);
-  assert.match(nextSteps, /learning-inline\.js\?v=43-balance-path-welcome/);
+  assert.match(dashboard, /learning-inline\.js\?v=44-specialist-heading/);
+  assert.match(nextSteps, /learning-inline\.js\?v=44-specialist-heading/);
   assert.match(learning, /id="balance-foundations-course-start"/);
   assert.match(learning, /id="balance-foundations-welcome-start"/);
   assert.match(learning, /id="course-welcome" class="course-welcome"/);
@@ -70,7 +70,7 @@ test('the tour guides the real course start flow before the first quiz', () => {
   assert.match(learning, /function consumeCourseWelcomeRequirement\(courseId\)[\s\S]*?sessionStorage\.removeItem\(key\)/);
   assert.match(learning, /if \(document\.getElementById\('course-welcome'\)\) return;/);
   assert.match(learning, /window\.startCourseFromWelcome = function\(courseId\)[\s\S]*?consumeCourseWelcomeRequirement\(course\.id\)[\s\S]*?markCourseStarted\(course\.id\)/);
-  assert.match(dashboard, /learning-inline\.js\?v=43-balance-path-welcome/g);
+  assert.match(dashboard, /learning-inline\.js\?v=44-specialist-heading/g);
 });
 
 test('quiz feedback stays tappable above the guided tour', () => {

@@ -85,7 +85,7 @@ test('Home plan cards stay below the complete FitGotchi stats block', () => {
     assert.match(source, /characterBlockTail\.parentNode\.insertBefore\(card, characterBlockTail\.nextSibling\)/);
     assert.doesNotMatch(source, /levelStrip\.parentNode\.insertBefore\((weeklyGoals|card), levelStrip\.nextSibling\)/);
     assert.match(html, /pbb-social-journey\.js\?v=46-balance-path/);
-    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v488-balance-path'/);
+    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v489-specialist-heading'/);
 });
 
 test('Home course actions bypass legacy journey pages and open the exact current lesson', () => {
@@ -100,7 +100,7 @@ test('Home course actions bypass legacy journey pages and open the exact current
     assert.doesNotMatch(socialSource, /if \(!isCurrentLessonSeen\(\)\) \{\s*openJourney\('lesson'\)/);
     assert.match(nextStepsSource, /async function openNextCourseTarget\(courseId\)/);
     assert.match(nextStepsSource, /function ensureLearningSystemLoaded\(\)/);
-    assert.match(nextStepsSource, /learning-inline\.js\?v=43-balance-path-welcome/);
+    assert.match(nextStepsSource, /learning-inline\.js\?v=44-specialist-heading/);
     assert.match(nextStepsSource, /var loaded = await ensureLearningSystemLoaded\(\)/);
     assert.match(nextStepsSource, /await window\._ensureLearningProgressLoaded\(\)/);
     assert.match(nextStepsSource, /window\.renderLearningHome\(\)/);
@@ -132,8 +132,8 @@ test('Home course actions bypass legacy journey pages and open the exact current
     assert.doesNotMatch(premiumCss, /pbb-next-course-pulse|is-next-course-target|is-next-course-lesson-target/);
     assert.match(html, /pbb-next-obvious-steps\.js\?v=54-tour-quiz-continue/);
     assert.match(html, /pbb-social-journey\.css\?v=27-direct-course-lesson/);
-    assert.match(html, /pbb-premium-overlays\.css\?v=118-stopwatch-centred/);
-    assert.match(html, /learning-inline\.js\?v=43-balance-path-welcome/);
+    assert.match(html, /pbb-premium-overlays\.css\?v=119-specialist-heading/);
+    assert.match(html, /learning-inline\.js\?v=44-specialist-heading/);
 });
 
 test('Home goals and plan cards follow light and dark mode', () => {

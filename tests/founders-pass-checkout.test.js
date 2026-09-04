@@ -134,7 +134,7 @@ test('Balance Learn is a six-week course that preserves the existing lesson libr
     assert.match(dashboard, /id: 'course-preview-locks-v1'/);
     assert.match(dashboard, /sel: '\.course-library-intro'/);
     assert.match(dashboard, /fallbackSel: '#learning-content'/);
-    assert.match(dashboard, /learning-inline\.js\?v=43-balance-path-welcome/);
+    assert.match(dashboard, /learning-inline\.js\?v=44-specialist-heading/);
     assert.match(dashboard, /balance-identity-course-v1/);
 });
 
@@ -163,7 +163,7 @@ test('the Balance Path presents Learn, Become, Master and Lead without changing 
     assert.match(socialJourney, /WEEK_DEFINITIONS\.slice\(6\)/);
     assert.match(socialJourney, /function openIdentityCourseWeek\(weekNumber\)/);
     assert.match(socialJourney, /viewStage = 'course-lesson'/);
-    assert.match(dashboard, /learning-inline\.js\?v=43-balance-path-welcome/);
+    assert.match(dashboard, /learning-inline\.js\?v=44-specialist-heading/);
     assert.match(dashboard, /id: 'balance-path-four-stages-v1'/);
     assert.match(dashboard, /sel: '#balance-path'/);
 });

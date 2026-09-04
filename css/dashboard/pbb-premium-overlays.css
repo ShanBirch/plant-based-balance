@@ -10527,6 +10527,27 @@ html[data-pbb-theme="light"] .course-topic-row {
     font-size: 0.82rem;
 }
 
+#course-learning-home:not(.course-detail-page) .course-library-intro--specialist {
+    max-width: 640px;
+    margin: 26px 20px 14px;
+    padding-top: 17px;
+    border-top: 1px solid var(--course-border);
+}
+
+#course-learning-home:not(.course-detail-page) .course-library-intro--specialist .course-library-title {
+    max-width: none;
+    margin-top: 4px;
+    font-size: clamp(1.42rem, 6vw, 1.68rem);
+    line-height: 1.08;
+}
+
+#course-learning-home:not(.course-detail-page) .course-library-intro--specialist p {
+    max-width: none;
+    margin-top: 6px;
+    font-size: 0.78rem;
+    line-height: 1.42;
+}
+
 .course-path-cards {
     display: grid;
     grid-template-columns: minmax(0, 1fr);

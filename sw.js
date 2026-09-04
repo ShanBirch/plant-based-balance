@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v488-balance-path'; // v488: keep the required course welcome and add the four-stage Balance Path
+const CACHE_NAME = 'pbb-app-v489-specialist-heading'; // v489: compact the specialist-course section heading on phones
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

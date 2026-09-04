@@ -404,7 +404,7 @@
       }
       if (!script) {
         script = document.createElement('script');
-        script.src = 'lib/learning-inline.js?v=43-balance-path-welcome';
+        script.src = 'lib/learning-inline.js?v=44-specialist-heading';
         script.addEventListener('error', function(){ finish(false); }, { once: true });
         document.head.appendChild(script);
       }

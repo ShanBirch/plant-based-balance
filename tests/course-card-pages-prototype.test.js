@@ -57,6 +57,10 @@ assert.match(css, /html\[data-pbb-theme="light"\] #course-learning-home[\s\S]*--
 assert.doesNotMatch(css.slice(css.indexOf('/* Course tab: sequential'), css.indexOf('/* Personalized meal-plan shopping list */')), /#14271e|#0d1712|#09110d|#0f8b65|rgba\(16,\s*185,\s*129/);
 assert.match(css, /\.course-path-list\s*\{[\s\S]*max-width:\s*680px/);
 assert.match(css, /\.course-path-cards\s*\{[\s\S]*grid-template-columns:\s*minmax\(0, 1fr\)/);
+assert.match(learning, /course-library-intro course-library-intro--specialist[\s\S]*?Go deeper[\s\S]*?Specialist courses[\s\S]*?Choose a focus: movement, nutrition, strength, hormones or recovery\./);
+assert.match(css, /course-library-intro--specialist\s*\{[\s\S]*?border-top: 1px solid var\(--course-border\)/);
+assert.match(css, /course-library-intro--specialist \.course-library-title\s*\{[\s\S]*?font-size: clamp\(1\.42rem, 6vw, 1\.68rem\)/);
+assert.match(css, /course-library-intro--specialist p\s*\{[\s\S]*?font-size: 0\.78rem;[\s\S]*?line-height: 1\.42/);
 assert.match(css, /html\[data-pbb-theme="light"\] #course-learning-home/);
 assert.match(css, /@media \(max-width: 360px\)/);
 assert.match(dashboard, /id: 'course-your-week-v1'/);
