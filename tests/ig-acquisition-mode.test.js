@@ -31,11 +31,15 @@ const organicPolicy = buildAcquisitionModePromptBlock(ACQUISITION_MODES.ORGANIC_
 assert.match(organicPolicy, /may not expect a sales conversation yet/);
 assert.match(organicPolicy, /statement they can confirm, correct or expand/);
 assert.match(organicPolicy, /Never place an organic lead into the paid-Meta route/);
+assert.match(organicPolicy, /neuroscience and psychology of lasting change/);
+assert.match(organicPolicy, /not the paid-ad quick-reply flow or its fixed two-question sequence/);
+assert.match(organicPolicy, /Plant-based eating is not the default positioning or a qualification gate/);
 
 const paidPolicy = buildAcquisitionModePromptBlock(ACQUISITION_MODES.PAID_META);
 assert.match(paidPolicy, /knowingly entered from a verified Meta ad/);
 assert.match(paidPolicy, /answer offer, price, inclusions, fit and starting questions plainly and early/);
 assert.match(paidPolicy, /preserve this paid context for the full thread/);
+assert.doesNotMatch(paidPolicy, /ORGANIC RELATIONSHIP CONVERSATION MODE/);
 
 const broadMessage = 'Work and the kids have made it hard to get consistent. I need to start again.';
 assert.equal(instantDraft.resolveMetaAdFlowVariant({

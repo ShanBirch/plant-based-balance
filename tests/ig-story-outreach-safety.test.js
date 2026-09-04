@@ -221,7 +221,9 @@ const starterSalesMemory = buildStoryOutreachMemory({
 });
 assert.strictEqual(starterSalesMemory.lead_origin, 'native_story_outreach');
 assert.strictEqual(starterSalesMemory.offer_path, 'balance_vegan_founders_pass');
-assert.match(starterSalesMemory.sales_context.dm_rule, /Plant-Based Fitness Founders Pass/);
+assert.match(starterSalesMemory.sales_context.dm_rule, /normal organic conversation/);
+assert.match(starterSalesMemory.sales_context.dm_rule, /neuroscience or psychology idea/);
+assert.match(starterSalesMemory.sales_context.dm_rule, /plant-based identity is not the default offer frame/);
 
 const mirrorSelfieSafety = assessStoryCommentSafety({
     storyOwner: 'mirror.selfie',

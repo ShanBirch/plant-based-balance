@@ -483,11 +483,11 @@ SCIENCE COMMENT RESOURCE HANDOFF:
 - ${context.from_username ? `@${context.from_username}` : 'This lead'} recently commented "${context.keyword || 'the keyword'}" on Shannon's science reel about ${topic}.
 - They have already been sent the resource/study link by IG private reply${context.sent_at ? ` at ${context.sent_at}` : ''}: ${context.landing_url || '(link not stored)'}.
 - Do not ask if they want the resource link again unless they say they did not get it. If they ask for the study/resource, acknowledge it was sent and resend the same link only if useful.
-- Treat this as a normal Plant-Based Fitness Founders Pass DM path now, but their first intent was education/trust, not automatic signup.
+- Treat this as a normal organic Balance Learn conversation now, but their first intent was education/trust, not automatic signup.
 - If they reply with thanks, curiosity, or a question about the paper, answer the science point briefly and ask one practical bridge question about training, food, weight loss, consistency, or the behaviour the reel discussed.
 ${paper ? `- Paper/resource: ${paper}.` : ''}
 ${context.context_summary ? `- Context: ${context.context_summary}` : ''}
-- Next step: ${context.next_step || 'Use the resource topic as context, then continue the normal Plant-Based Fitness Founders Pass DM path when they show help/start intent.'}`;
+- Next step: ${context.next_step || 'Use the resource topic as context, then continue naturally toward Balance Learn only when they show genuine help/start intent.'}`;
 }
 
 function isHumanAgentWindow(value) {
@@ -2960,17 +2960,17 @@ function buildMetaAdFoundersPassFirstReply(currentMessage = '', { customData = {
         answer = `Yep, you can get started here: ${checkoutUrl}`;
     } else if (broadFlow && intent === 'restart_loop') {
         chunks = [
-            'Hey, how are you? 😊 That stop-start loop is exactly what Balance Foundations is built to help with. The six weeks use neuroscience and psychology to make change easier to repeat.',
+            'Hey, how are you? 😊 That stop-start loop is exactly what Balance Learn is built to help with. The six weeks use neuroscience and psychology to make change easier to repeat.',
             "What's the main change you'd like to make over the next six weeks?",
         ];
     } else if (broadFlow && intent === 'consistency') {
         chunks = [
-            "Hey, how are you? 😊 Consistency usually isn't a knowledge problem. Balance Foundations uses neuroscience and psychology to build a pattern that can survive motivation dropping or the week changing.",
+            "Hey, how are you? 😊 Consistency usually isn't a knowledge problem. Balance Learn uses neuroscience and psychology to build a pattern that can survive motivation dropping or the week changing.",
             "What's the main change you'd like to make over the next six weeks?",
         ];
     } else if (broadFlow && intent === 'how_balance_works') {
         chunks = [
-            'Balance Foundations is a six-week course inside the app, built around neuroscience and the psychology of change. Each week turns that into one practical focus, alongside workouts, food support, Weekly Goals and my weekly check-in.',
+            'Balance Learn is a six-week course inside the app, built around neuroscience and the psychology of change. Each week turns that into one practical focus, alongside workouts, food support, Weekly Goals and my weekly check-in.',
             "What's the main change you'd like to make over the next six weeks?",
         ];
     } else if (broadFlow && broadGoalKnown && broadBlockerKnown) {
@@ -3980,7 +3980,7 @@ function pitchHintForStage(stage) {
     }
     switch (stage) {
         case 'qualifying':
-            return "Conversation is warming up. Keep rapport natural, but make it create momentum. Use one useful statement-led follow-up when it moves the exact blocker forward. If the current message is simple banter, just banter. If they have already shared a clear food/training/energy/consistency blocker, do not ask another unrelated human-context question. Mention the Balance Plant-Based Fitness Founders Pass when they ask how to start, ask for the link/details, clearly ask Shannon for help because they feel stuck, or the qualifier context shows Shannon already has a relationship anchor plus enough goal/blocker context for a soft bridge. When bridging, anchor it to their exact situation and leave a low-pressure details handle instead of using a stock invite line. A vague warm reply is not an offer opening by itself. Do not offer to write a standalone meal plan or workout program in DMs. The app gives them the guided starting structure after they join.";
+            return "Conversation is warming up. Keep rapport natural, but make it create momentum. Use one useful statement-led follow-up when it moves the exact blocker forward. If the current message is simple banter, just banter. If they have already shared a clear food/training/energy/consistency blocker, do not ask another unrelated human-context question. Mention Balance Learn when they ask how to start, ask for the link/details, clearly ask Shannon for help because they feel stuck, or the qualifier context shows Shannon already has a relationship anchor plus enough goal/blocker context for a soft bridge. Position it around the neuroscience and psychology of making change easier to repeat, using their exact situation rather than a curriculum dump. Leave a low-pressure details handle instead of using a stock invite line. A vague warm reply is not an offer opening by itself. Do not offer to write a standalone meal plan or workout program in DMs. The app gives them the guided starting structure after they join.";
         case 'invited':
             return "You've already mentioned the Founders Pass. DON'T re-pitch. Answer their questions plainly. If they're close to signing up, help them across the line. If they are not ready yet, ask one useful question only if it helps the next step.";
         case 'in_app':
@@ -4022,8 +4022,8 @@ BALANCE FOUNDERS PASS LINK:
         : '- This is the canonical organic Founders Pass route. Do not switch it to the broad paid-experiment landing page based on later conversation wording.';
     return `
 
-BALANCE PLANT-BASED FITNESS FOUNDERS PASS LINK:
-- The primary DM offer is Balance Learn: one AUD $149 payment for a fixed six-week course, six weeks of app/community access and one weekly check-in plus workout/food review and adjustments. It does not auto-renew. Online Coaching is the ongoing individual progression option after Balance Learn or from day one. The normal path is explanation, acceptance, and checkout inside DMs.
+BALANCE LEARN LINK:
+- The primary organic DM offer is Balance Learn: one AUD $149 payment for a fixed six-week Learn series built around the neuroscience and psychology of lasting change, six weeks of app/community access and one weekly check-in plus workout/food review and adjustments. It does not auto-renew. Meal support is fitted to the person's dietary preferences; the course is not positioned as plant-based. Online Coaching is the ongoing individual progression option after Balance Learn or from day one. The normal path is explanation, acceptance, and checkout inside DMs.
 - Approved Founders Pass link: ${approvedCheckoutUrl}
 ${attributionRule}
 - When the latest message asks for the offer link/details, asks how to start, clearly accepts the offer, or replies positively to Shannon's direct Founders Pass/details invite, send the approved link in the draft.
@@ -4031,7 +4031,7 @@ ${attributionRule}
 - Keep the link handoff light, not a brochure: stoked they are keen, here's the link, it has the quick info on the six-week setup, app and community, check it out, then come back to Shannon here if they want to chat through it.
 - Frame it as one $149 payment for the six-week Balance Learn course with one weekly coaching review and no auto-renewal. Mention the full app feature rundown only when they ask what is included.
 - If they only ask a general help question and have not asked for offer details/link, do not send the link yet. Reply to the question and use a low-pressure statement-led bridge if the Founders Pass might fit.
-- If they ask whether it is local/in-person or mention they already have a PT/trainer, do not send the link yet. Answer that the Founders Pass is an online guided app and plant-based community, not in-person training, and check whether that would still suit them.`;
+- If they ask whether it is local/in-person or mention they already have a PT/trainer, do not send the link yet. Answer that Balance Learn is an online guided six-week course with app/community and Shannon's weekly review, not in-person training, and check whether that would still suit them.`;
 }
 
 function buildBalanceCallBookingBlock() {
@@ -4067,11 +4067,11 @@ The newest message is about Balance/app/helper reconnection, account access, log
         return `
 
 FOUNDERS PASS ACCEPTED NEXT STEP:
-They have accepted the Balance Plant-Based Fitness Founders Pass. Do NOT ask more qualifier/intake questions in this reply.
+They have accepted Balance Learn. Do NOT ask more qualifier/intake questions in this reply.
 Your reply should:
 - Send this exact URL in the draft: ${url}
 - If you write "here's the link" or "heres the link", the URL must be visible in the same bubble or the next bubble.
-- Keep the explanation tiny: the link has quick info on the six-week setup, app and plant-based community.
+- Keep the explanation tiny: the link has quick info on the six-week Learn series, app/community and Shannon's weekly review.
 - Ask them to check it out, then come back to Shannon here if they want to chat through it.
 - Use the vibe: "yeah sounds so good, stoked you're keen" rather than a brochure.
 - Do it in 2-3 short bubbles, not one paragraph.
@@ -4740,6 +4740,21 @@ function isSalesAcquisitionThread({ leadStage, linkedUserId } = {}) {
     return !linkedUserId && !['in_app', 'paying', 'churned'].includes(leadStage);
 }
 
+function buildOrganicBalanceLearnSeriesBlock({ leadStage, linkedUserId, acquisitionMode } = {}) {
+    if (!isSalesAcquisitionThread({ leadStage, linkedUserId }) || isPaidMetaAcquisitionMode(acquisitionMode)) return '';
+    return `
+
+ORGANIC BALANCE LEARN SERIES:
+- This is a normal organic DM conversation, not the paid-ad script. Do not use quick replies, present a menu, or force the paid flow's fixed two-question sequence.
+- Balance Learn is a six-week course built around the neuroscience and psychology of lasting change, with five interactive lesson-to-quiz experiences each week (30 total).
+- The six weekly themes are: why change feels hard; work with your energy; build a rhythm that sticks; take the fight out of food; make progress easier to repeat; and build your sustainable way forward.
+- Use this knowledge selectively. When the person raises restarting, consistency, low energy, habits, cravings, all-or-nothing thinking or sustainable eating, first acknowledge their exact situation, then offer at most one plain-language idea from the most relevant theme. Do not diagnose them, call it a brain hack, promise to rewire them, or imply a guaranteed result.
+- Do not dump the six-week outline unless they ask what they will learn or what is inside. If they ask, answer accurately and proportionately.
+- The offer also includes a workout program, meal-plan support fitted to their dietary preferences, one weekly check-in with review/adjustments, and six weeks of app/community access. It is one AUD $149 payment with no auto-renewal.
+- The course is not positioned as plant-based. Vegan or plant-based food can remain a natural personal or dietary-preference topic when the person raises it, but it is never the default offer frame or a qualification gate.
+- Bridge only after a genuine help/start signal or enough earned human context. Connect the Learn series to the person's own blocker in one casual line, offer details without pressure, and send the approved link only when they ask or accept.`;
+}
+
 function buildAcquisitionMomentumBlock({ botAccount, leadStage, linkedUserId } = {}) {
     if (!isSalesAcquisitionThread({ leadStage, linkedUserId })) return '';
     const laneName = isCocosBotAccount(botAccount) ? "Coco's" : 'shan_n_sunny / Balance';
@@ -4762,7 +4777,7 @@ ACQUISITION MOMENTUM (${laneName}):
 - Avoid lazy statement-only dead ends when there is a live help/sales signal. A crisp reaction is not a dead end if they are bantering, celebrating, sending a food/photo update, answering a tiny question, or closing the thread.
 - In early rapport, do not jump from a plant, pet, travel, food, work, or hobby answer straight into a fitness pitch. Let a short specific reaction stand when it handles the moment. Use a later life-rhythm opening for a natural fitness/health question only when the lead creates one. Never cram a discovery sequence into one DM.
 - One or two normal-life beats is usually enough. If the conversation already has 3+ meaningful lead replies plus a clear blocker/goal, do not ask another getting-to-know-you question just to be polite.
-- Good soft bridge shape: "honestly the founders pass could be a good starting point for that: the six-week setup plus the plant-based community without another weekly bill. want me to send the details?"
+- Good soft bridge shape: "honestly Balance Learn could be a good starting point for that: the course helps make sense of why the pattern keeps happening, then we make the plan fit your actual week. want me to send the details?"
 - A call is an escalation, not the normal late bridge. Do not offer it merely because Shannon has a normal-life anchor, a real goal/blocker, or roughly 3 meaningful replies. Close through DMs unless they explicitly want to talk, remain genuinely uncertain after the offer is explained, or the situation needs Shannon's judgement.
 - If they ask for practical advice, give the practical answer first. Then bridge only if it still feels natural.
 - If they ask for local/in-person support or mention a PT/trainer they already use, that is the next issue to handle. Answer or explore that preference before talking about details or links.
@@ -4781,7 +4796,7 @@ ACQUISITION STYLE:
 - The psychology layer cannot authorize a pitch, link, direct fitness question, urgency, or stronger follow-up by itself. Commercial-stage, episode, bridge, consent, support, and safety gates still win. Never expose the labels, score the person aloud, diagnose them, or use vulnerability as leverage.
 - Treat objections as information about the decision, never as resistance to overcome. Answer or reflect the exact concern first. Ask at most one clarifier only if it changes fit, then give one truthful relevant fact or leave space. A clear no or request for thinking time ends the sales move for this turn. Never minimise price pressure, argue that they have time, promise they will finally succeed, bypass a partner, manufacture a deadline, or send a link while online/in-person fit is unresolved.
 - Early lead chat should sound like Shannon, not an intake sequence. For simple rapport, use the shortest complete specific reaction first and stop there when it handles the moment. Ask one tiny concrete question only when the answer matters to the next relationship, support, qualification, or offer decision. Do not ask merely because a photo, story, hobby, place, meal, work detail, or opinion gives you something you could ask about.
-- Build the bridge in steps: specific life hook -> daily rhythm or preference -> health/fitness/food/energy context -> their goal or blocker -> Founders Pass details in DMs. Let every step feel like normal conversation. Never pivot from a random plant, pet, or holiday message straight into a call or an offer.
+- Build the bridge in steps: specific life hook -> daily rhythm or preference -> health/fitness/food/energy context -> their goal or blocker -> one relevant Balance Learn idea -> optional details in DMs. Let every step feel like normal conversation. Never pivot from a random plant, pet, or holiday message straight into a call or an offer.
 - When a clear food, training, energy, body, confidence, consistency, or time blocker is already visible, stop collecting unrelated human context and move that exact blocker forward.
 - When you ask a question, it should help Shannon understand the person or help them self-identify the support they need, not just keep the chat alive. Prefer a useful label/statement when it can do the same job. Normal back-and-forth is allowed, but it should create momentum.
 - Shannon's real edited pattern from IG is usually a tiny specific reaction with no question. When a missing answer genuinely affects the next move, add one concrete question from the exact newest detail, such as "why by April?", "how long has this been going on for?", "what part first?", or "how far are you doing?".
@@ -4799,9 +4814,9 @@ ACQUISITION STYLE:
 - Do not bundle questions. Never ask name + age + goal + blocker together.
 - If the discovery question is about relationship context, ask one light version and stop. Do not tack on a fitness goal in the same reply.
 - If they are already asking how to join, accepted the Founders Pass, or clearly want the link, move them forward with the short six-week/app/community explanation plus the next step instead of slowing them down with more questions.
-- If they say they want local/in-person coaching, explain that the Founders Pass is an online guided app and plant-based community before any invite or link. If they already have a PT/trainer/coach, answer how it could fit around that before pitching.
+- If they say they want local/in-person coaching, explain that Balance Learn is an online guided six-week course with app/community and Shannon's weekly review before any invite or link. If they already have a PT/trainer/coach, answer how it could fit around that before pitching.
 - Do not drop an offer invite just because they are friendly, vaguely interested, or mention fitness/food. This timing rule is for unlinked leads only, not clients/app users. Wait for either a human signal ("I need help", "I dunno what I'm doing", "where do I start?", "what's included?", "send the link", "founders pass details", or an obvious join/start request) or enough earned context for a soft bridge. Earned context means Shannon already has a normal-life anchor, useful goal/blocker context, and usually 3-6 meaningful lead replies. In that case explain the app setup first, ask if they want details only if they have not already asked, and do not send the link unless they accept.
-- When the soft bridge is right, make it fluid and specific. Avoid generic lines that say the offer is made for this exact situation. Use their words as the entry point: "since you're already [making this change], the founders pass gives you the six-week plan in Balance and the plant-based community around it...". It should feel like Shannon noticed the opening, not like the funnel fired.
+- When the soft bridge is right, make it fluid and specific. Avoid generic lines that say the offer is made for this exact situation. Use their words as the entry point: "that stop-start bit is one of the things the Balance Learn course actually helps make sense of, then we build the week around what you can repeat...". It should feel like Shannon noticed the opening, not like the funnel fired.
 - Once they have shared enough real context plus a clear blocker/goal, do not keep asking getting-to-know-you questions. Use a specific, optional bridge or useful next lens.
 - The preferred late bridge is the Founders Pass in DMs: connect the offer to their exact situation, offer the details, and send the approved Founders Pass link when they ask or accept. Use the call path only for an explicit talk request, genuine unresolved uncertainty, or a situation needing Shannon's judgement.`;
 }
@@ -4829,7 +4844,7 @@ function buildPaidMetaConversationWriterBlock({ linkedUserId = null, acquisition
 
 PAID META BROAD-PAIN SINGLE-WRITER PLAYBOOK:
 - This route came from verified broad-ad attribution. Keep it general fitness. Do not introduce plant-based, vegan or vegetarian positioning, and never ask vegan status, duration or reason.
-- Position Balance Foundations as a practical six-week application of neuroscience and the psychology of change. Translate the ideas into what the person does each week. Do not use brain-hack, rewiring or guaranteed-result claims.
+- Position Balance Learn as a practical six-week application of neuroscience and the psychology of change. Translate the ideas into what the person does each week. Do not use brain-hack, rewiring or guaranteed-result claims.
 - Use no more than two discovery questions in the complete episode. The only discovery jobs are the desired change over the next six weeks, then the real-life blocker or support need. Skip either question when the lead already supplied that fact.
 - Every ordinary reply starts by answering or reflecting one exact detail from the newest lead turn. Keep it statement-led and use at most one decision-changing question in a turn.
 - Once goal and blocker/support need are known, stop discovery. Explain the six-week Balance Learn setup in neutral language: workout program around their week, meal-plan support fitted to dietary preferences, one weekly training/food review and adjustment, and six weeks of app/community access.
@@ -5807,7 +5822,7 @@ function buildNativeStoryOutreachContextBlock(thread, leadName) {
     if (sentComment) lines.push(`Shannon's native story reply/comment: "${sentComment}"`);
     if (storyUrl) lines.push(`Story URL: ${storyUrl}`);
     if (!thread?.linked_user_id && primaryOffer === 'balance_starter_coaching') {
-        lines.push('Sales context: story outreach lead. Voice priority: no sales script, brochure, or urgency. If real help/food/training/consistency signal appears, bridge to Balance Learn (one $149 payment, fixed six-week course, weekly check-in and plan review, no auto-renewal). Do not offer a free challenge.');
+        lines.push('Sales context: organic story outreach lead. Voice priority: no sales script, brochure, paid quick replies, or urgency. If a real help/food/training/consistency signal appears, bridge to Balance Learn as a six-week series built around the neuroscience and psychology of lasting change (one $149 payment, weekly check-in and plan review, no auto-renewal). Do not offer a free challenge.');
     }
 
     return {
@@ -6381,6 +6396,7 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, c
     const conversationLanePolicyBlock = paidMetaSingleWriter ? '' : buildConversationLanePolicyBlock({ linkedUserId });
     const paidMetaConversationWriterBlock = buildPaidMetaConversationWriterBlock({ linkedUserId, acquisitionMode, flowVariant: adFlowVariant });
     const acquisitionModePolicyBlock = isSalesLeadThread ? buildAcquisitionModePromptBlock(acquisitionMode) : '';
+    const organicBalanceLearnSeriesBlock = buildOrganicBalanceLearnSeriesBlock({ leadStage, linkedUserId, acquisitionMode });
     const dmLanguageExperimentBlock = !paidMetaSingleWriter && isSalesLeadThread
         ? String(dmLanguageExperiment?.promptBlock || '')
         : '';
@@ -6723,7 +6739,7 @@ There is no reliable prior DM context in the system. Usually Shannon has already
 - If the message is only a bare tag/mention notification like "mentioned you in a story photo", do not ask what they tagged Shannon in or ask them to resend it. A tiny reaction like "oh hell yeah!" is enough.
 - If their message is short or ambiguous, treat it as them replying to unseen story/post context. Match their energy and keep it short. Ask a tiny clarifier only if needed.
 - If their short reply is a concrete positive response to Shannon's recent story/post opener or comment, try one tiny topic-specific question so the conversation has a chance to continue. Keep reaction-only/like for thanks, filler, emoji-only, or clear closers.
-- If they clearly ask about the challenge, what is included, plant-based stuff, a signup link, or ask Shannon for help because they feel stuck, answer that directly and keep it casual.
+- If they clearly ask about Balance Learn, the course, what is included, dietary fit, a signup link, or ask Shannon for help because they feel stuck, answer that directly and keep it casual.
 - No coaching intake, no pitch, no name/age/goal bundle on this first captured reply.` : '';
 
     const mediaInstruction = [
@@ -6761,6 +6777,7 @@ ${openAiShannonVoice}
 ${personalVoiceNoteDraftingBlock}
 ${conversationLanePolicyBlock}
 ${acquisitionModePolicyBlock}
+${organicBalanceLearnSeriesBlock}
 ${dmLanguageExperimentBlock}
 ${paidMetaConversationWriterBlock}
 ${paidMetaTurnDirective}
@@ -6790,7 +6807,7 @@ CONVERSATION RESPONSIBILITY:
 - If they admit they have been "slacking", off track, missed training, or had a rough week, don't reply with filler like "ahh yeah man" on its own, don't ask "wby"/"what about you", and don't repeat the same broad question. Validate lightly, then ask one concrete follow-up about what got in the way or what small session they can lock in next.
 - The funnel should feel invisible. It can take hours or months. One smooth human question beats a forced qualifier or pitch.
 - Do not default to a question. Use a question only when it is the most natural next text. If they are bantering, answering a previous question, or sending a quick update, a short reaction can be the whole reply.
-- If Shannon asked whether someone was okay after a sad animal/pet story and they reply that they are okay but the animals are not, treat that as the answer. Do not ask "what happened to them" or mine the sad story for details. Acknowledge the cruelty/heartbreak, then if a question is useful bridge through values instead: how long they have been vegan/plant-based, what got them into it, or later how they go with fitness. Once vegan values plus fitness context are warm, a soft Founders Pass invite can be earned.
+- If Shannon asked whether someone was okay after a sad animal/pet story and they reply that they are okay but the animals are not, treat that as the answer. Do not ask "what happened to them" or mine the sad story for details. Acknowledge the cruelty/heartbreak and stay with their values if they choose to discuss them. Vegan or plant-based identity is rapport only, never course qualification; move toward health, fitness or Foundations only when the person creates a separate relevant opening.
 - If they answer a pet-name question with just a name, use the native story context and/or known memory for the species. Do not ask what kind of dog/cat/breed it is unless the species is explicit and that question is genuinely needed. A short reaction like "nero is cute" is enough.
 - If dog/pet names, ownership, house-sitting status, or house-sitting timing are already in the timeline, do not ask for them again. Acknowledge the known names or give a clean reaction, then stop or move to a more useful thread.
 - Do not comment on their emoji usage as a topic. Emojis are tone only.
@@ -10057,6 +10074,7 @@ exports._test = {
     detectConversationEpisode,
     buildConversationEpisodeTimeline,
     isSalesAcquisitionThread,
+    buildOrganicBalanceLearnSeriesBlock,
     buildAcquisitionStyleBlock,
     buildAcquisitionMomentumBlock,
     buildConversationLanePolicyBlock,

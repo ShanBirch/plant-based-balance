@@ -3,6 +3,7 @@ const assert = require('assert');
 const {
     buildNativeStoryOutreachContextBlock,
     isSalesAcquisitionThread,
+    buildOrganicBalanceLearnSeriesBlock,
     buildAcquisitionStyleBlock,
     buildAcquisitionMomentumBlock,
     suppressPetSpeciesGuessingInDraftChunks,
@@ -59,6 +60,28 @@ assert.strictEqual(
     ''
 );
 
+const organicLearnSeries = buildOrganicBalanceLearnSeriesBlock({
+    leadStage: 'qualifying',
+    linkedUserId: null,
+    acquisitionMode: 'organic_inbound',
+});
+assert.match(organicLearnSeries, /normal organic DM conversation, not the paid-ad script/);
+assert.match(organicLearnSeries, /neuroscience and psychology of lasting change/);
+assert.match(organicLearnSeries, /30 total/);
+assert.match(organicLearnSeries, /why change feels hard/);
+assert.match(organicLearnSeries, /build your sustainable way forward/);
+assert.match(organicLearnSeries, /course is not positioned as plant-based/);
+assert.strictEqual(buildOrganicBalanceLearnSeriesBlock({
+    leadStage: 'qualifying',
+    linkedUserId: null,
+    acquisitionMode: 'paid_meta',
+}), '');
+assert.strictEqual(buildOrganicBalanceLearnSeriesBlock({
+    leadStage: 'in_app',
+    linkedUserId: 'client-123',
+    acquisitionMode: 'existing_client',
+}), '');
+
 const nativeContext = buildNativeStoryOutreachContextBlock({
     ig_username: 'pole_bexi',
     custom_data: {
@@ -113,7 +136,8 @@ const salesNativeContext = buildNativeStoryOutreachContextBlock({
 
 assert.strictEqual(salesNativeContext.summary.lead_origin, 'native_story_outreach');
 assert.strictEqual(salesNativeContext.summary.offer_path, 'balance_starter_coaching');
-assert.match(salesNativeContext.block, /paid Balance Plant-Based Fitness Founders Pass/);
+assert.match(salesNativeContext.block, /organic story outreach lead/);
+assert.match(salesNativeContext.block, /neuroscience and psychology of lasting change/);
 assert.match(salesNativeContext.block, /do not offer a free challenge/i);
 assert.match(salesNativeContext.block, /Voice priority/);
 assert.match(salesNativeContext.block, /no sales script/);
