@@ -3979,6 +3979,53 @@ function pbbShareSetFittedFont(ctx, text, maxWidth, startSize, minimumSize, fami
     return size;
 }
 
+function pbbShareStudioTitleLines(ctx, text, maxWidth) {
+    const words = String(text || '').split(/\s+/).filter(Boolean);
+    const lines = [];
+    let line = '';
+    words.forEach(word => {
+        const test = line ? `${line} ${word}` : word;
+        if (line && ctx.measureText(test).width > maxWidth) {
+            lines.push(line);
+            line = word;
+        } else {
+            line = test;
+        }
+    });
+    if (line) lines.push(line);
+    return lines.length ? lines : [''];
+}
+
+function pbbShareDrawFittedStudioTitle(ctx, text, x, y, maxWidth, options = {}) {
+    const startSize = Number(options.startSize || 108);
+    const minimumSize = Number(options.minimumSize || 38);
+    const maxLines = Math.max(1, Number(options.maxLines || 2));
+    const family = options.family || 'Inter, system-ui, Arial, sans-serif';
+    const weight = Number(options.weight || 900);
+    let size = startSize;
+    let lines = [];
+    do {
+        ctx.font = `${weight} ${size}px ${family}`;
+        lines = pbbShareStudioTitleLines(ctx, text, maxWidth);
+        if (lines.length <= maxLines && lines.every(line => ctx.measureText(line).width <= maxWidth)) break;
+        size -= 2;
+    } while (size > minimumSize);
+    size = Math.max(size, minimumSize);
+    ctx.font = `${weight} ${size}px ${family}`;
+    lines = pbbShareStudioTitleLines(ctx, text, maxWidth);
+    const omittedLines = lines.length > maxLines;
+    lines = lines.slice(0, maxLines).map((line, index) => {
+        const needsEllipsis = ctx.measureText(line).width > maxWidth || (omittedLines && index === maxLines - 1);
+        if (!needsEllipsis) return line;
+        let fitted = line;
+        while (fitted.length > 1 && ctx.measureText(`${fitted}…`).width > maxWidth) fitted = fitted.slice(0, -1);
+        return `${fitted.trim()}…`;
+    });
+    const lineHeight = size * Number(options.lineHeight || 1.02);
+    lines.forEach((line, index) => ctx.fillText(line, x, y + (index * lineHeight)));
+    return { bottom: y + (lines.length * lineHeight), lines: lines.length, size };
+}
+
 function pbbShareWorkoutMetrics(cardPayload) {
     if (cardPayload && cardPayload.studio_hide_stats) return [];
     return [
@@ -4153,12 +4200,12 @@ function pbbShareDrawCompleteWorkout(ctx, cardPayload, width, contentBottom, bra
 
 function pbbShareStudioWorkoutPalette(editor) {
     const palettes = {
-        gold: { accent: '#D8B25E', surface: 'rgba(17,17,17,0.84)', surfaceText: '#FFFFFF', onPhoto: '#FFFFFF' },
+        gold: { accent: '#D8B25E', surface: 'rgba(8,8,8,0.78)', surfaceText: '#FFFFFF', onPhoto: '#FFFFFF' },
         cream: { accent: '#F8F5EE', surface: 'rgba(248,245,238,0.95)', surfaceText: '#151515', onPhoto: '#151515' },
         white: { accent: '#FFFFFF', surface: 'rgba(255,255,255,0.95)', surfaceText: '#151515', onPhoto: '#151515' },
         black: { accent: '#111111', surface: 'rgba(17,17,17,0.92)', surfaceText: '#FFFFFF', onPhoto: '#FFFFFF' },
         soft: { accent: '#F4F0E7', surface: 'rgba(244,240,231,0.95)', surfaceText: '#151515', onPhoto: '#151515' },
-        'gold-light': { accent: '#F5D98A', surface: 'rgba(17,17,17,0.84)', surfaceText: '#FFFFFF', onPhoto: '#FFFFFF' }
+        'gold-light': { accent: '#F5D98A', surface: 'rgba(8,8,8,0.78)', surfaceText: '#FFFFFF', onPhoto: '#FFFFFF' }
     };
     return palettes[String(editor && editor.workoutColour || 'gold')] || palettes.gold;
 }
@@ -4194,87 +4241,125 @@ function pbbShareDrawStudioWorkoutLayout(ctx, cardPayload, width, contentBottom,
     const palette = pbbShareStudioWorkoutPalette(editor);
     const isActivity = cardPayload.card_type === 'activity';
     const title = String(isActivity ? (cardPayload.activity_label || 'Activity') : (cardPayload.workout_name || 'Workout')).toUpperCase();
-    const metrics = isActivity
+    const metrics = cardPayload.studio_hide_stats ? [] : (isActivity
         ? [
             ['DURATION', String(cardPayload.duration || '-')],
             ['KCAL', String(cardPayload.calories || '-')],
             ['INTENSITY', String(cardPayload.intensity || 'moderate').toUpperCase()]
         ]
-        : pbbShareWorkoutMetrics(cardPayload);
-    const x = 64;
-    const w = width - 128;
+        : pbbShareWorkoutMetrics(cardPayload));
     const isFeed = target === 'feed';
     const kicker = isActivity ? 'ACTIVITY COMPLETE' : 'WORKOUT COMPLETE';
+    const canvasHeight = isFeed ? 1350 : 1920;
+    const anchorY = canvasHeight * 0.68;
+    const widthRatio = textStyle === 'compact' ? 0.86 : (textStyle === 'stamp' ? 0.62 : 0.78);
+    const cardW = width * widthRatio;
+    const cardX = (width - cardW) / 2;
+    const padX = width * 0.046;
+    const contentX = cardX + padX;
+    const contentW = cardW - (padX * 2);
+    const exercises = textStyle === 'full' ? (cardPayload.exercises || []).slice(0, 3) : [];
+    const titleSizes = { simple: 130, stamp: 86, compact: 54, split: 108, editorial: 108, scorecard: 86, receipt: 82 };
+    const titleSize = titleSizes[textStyle] || 108;
+    const titleMaxWidth = textStyle === 'compact'
+        ? contentW * 0.40
+        : (textStyle === 'stamp' ? cardW - 160
+            : (textStyle === 'split' ? ((cardW - 81) * 0.56)
+                : (textStyle === 'editorial' ? cardW - 105 : (['scorecard', 'outline', 'receipt', 'full'].includes(textStyle) ? contentW : cardW))));
+    const titleFamily = textStyle === 'editorial' ? 'Georgia, serif' : 'Inter, system-ui, Arial, sans-serif';
+    const titleWeight = textStyle === 'editorial' ? 700 : 900;
+    ctx.save();
+    ctx.font = `${titleWeight} ${titleSize}px ${titleFamily}`;
+    const naturalTitleLines = Math.min(['stamp', 'compact', 'editorial'].includes(textStyle) ? 4 : 3, pbbShareStudioTitleLines(ctx, title, titleMaxWidth).length);
+    ctx.restore();
+    const extraTitleLines = Math.max(0, naturalTitleLines - 1);
+    const heights = {
+        bold: 360,
+        scorecard: 470,
+        simple: 220,
+        stamp: 290,
+        split: 360,
+        compact: 168,
+        outline: 470,
+        receipt: 430,
+        editorial: 405
+    };
+    const lineGrowth = textStyle === 'split'
+        ? Math.max(0, naturalTitleLines - 2) * 104
+        : (textStyle === 'compact' ? extraTitleLines * 40 : extraTitleLines * titleSize * 0.96);
+    const cardH = (textStyle === 'full'
+        ? 440 + (exercises.length * (isFeed ? 68 : 78)) + (Math.max(0, exercises.length - 1) * 10)
+        : (heights[textStyle] || heights.bold)) + lineGrowth;
+    const cardY = anchorY - (cardH / 2);
 
     if (textStyle === 'simple') {
-        const y = contentBottom - 250;
-        ctx.fillStyle = palette.onPhoto;
+        ctx.fillStyle = palette.accent;
         ctx.font = '900 27px Arial, sans-serif';
-        ctx.fillText(kicker, x, y);
-        pbbShareSetFittedFont(ctx, title, w, 104, 62);
-        ctx.fillText(title, x, y + 112);
+        ctx.fillText(kicker, cardX, cardY + 32);
+        ctx.fillStyle = palette.onPhoto;
+        pbbShareDrawFittedStudioTitle(ctx, title, cardX, cardY + 158, cardW, { startSize: 130, minimumSize: 48, maxLines: 3, lineHeight: 0.94 });
         return;
     }
 
     if (textStyle === 'stamp') {
-        const boxW = 650;
-        const boxH = 330;
-        const boxX = (width - boxW) / 2;
-        const boxY = contentBottom - boxH - 40;
         ctx.save();
         ctx.shadowColor = 'transparent';
+        pbbShareFillRoundRect(ctx, cardX, cardY, cardW, cardH, cardH / 2, 'rgba(8,8,8,0.32)');
         ctx.strokeStyle = palette.accent;
-        ctx.lineWidth = 9;
-        pbbShareRoundRect(ctx, boxX, boxY, boxW, boxH, 165);
+        ctx.lineWidth = 8;
+        pbbShareRoundRect(ctx, cardX, cardY, cardW, cardH, cardH / 2);
         ctx.stroke();
         ctx.textAlign = 'center';
-        ctx.fillStyle = palette.onPhoto;
+        ctx.fillStyle = palette.accent;
         ctx.font = '900 25px Arial, sans-serif';
-        ctx.fillText(kicker, width / 2, boxY + 76);
-        pbbShareSetFittedFont(ctx, title, boxW - 100, 76, 46);
-        ctx.fillText(title, width / 2, boxY + 170);
-        if (metrics.length) {
-            ctx.font = '900 22px Arial, sans-serif';
-            ctx.fillText(metrics.map(metric => metric[1]).join('  ·  '), width / 2, boxY + 250);
-        }
+        ctx.fillText(kicker, width / 2, cardY + 105);
+        ctx.fillStyle = palette.onPhoto;
+        pbbShareDrawFittedStudioTitle(ctx, title, width / 2, cardY + 195, cardW - 160, { startSize: 86, minimumSize: 40, maxLines: 4, lineHeight: 0.92 });
         ctx.restore();
         return;
     }
 
     if (textStyle === 'compact') {
-        const boxY = contentBottom - 220;
-        pbbShareFillRoundRect(ctx, 42, boxY, width - 84, 168, 84, palette.surface);
+        pbbShareFillRoundRect(ctx, cardX, cardY, cardW, cardH, cardH / 2, palette.surface);
         ctx.save();
         ctx.shadowColor = 'transparent';
         ctx.fillStyle = palette.surfaceText;
-        pbbShareSetFittedFont(ctx, title, 410, 54, 36);
-        ctx.fillText(title, 88, boxY + 93);
-        if (metrics.length) pbbShareDrawStudioMetrics(ctx, metrics, 540, boxY + 74, 460, palette, { valueSize: 29, labelSize: 13, textColour: palette.surfaceText });
+        const titleW = contentW * 0.40;
+        pbbShareDrawFittedStudioTitle(ctx, title, contentX, cardY + 68, titleW, { startSize: 54, minimumSize: 24, maxLines: 4, lineHeight: 0.96 });
+        if (metrics.length) pbbShareDrawStudioMetrics(ctx, metrics, contentX + titleW + 22, cardY + 76, contentW - titleW - 22, palette, { valueSize: 29, labelSize: 13, textColour: palette.surfaceText });
         ctx.restore();
         return;
     }
 
     if (textStyle === 'split') {
-        const boxY = contentBottom - 430;
         ctx.save();
         ctx.shadowColor = 'transparent';
         ctx.fillStyle = palette.accent;
-        ctx.fillRect(x, boxY, 10, 360);
-        ctx.fillStyle = palette.onPhoto;
+        ctx.fillRect(cardX, cardY, 17, cardH);
+        const splitX = cardX + 42;
+        const splitW = cardW - 42;
+        const splitGap = 39;
+        const leftW = (splitW - splitGap) * 0.56;
+        const rightX = splitX + leftW + splitGap;
+        ctx.fillStyle = palette.accent;
         ctx.font = '900 25px Arial, sans-serif';
-        ctx.fillText(kicker, x + 42, boxY + 55);
-        pbbShareSetFittedFont(ctx, title, 480, 72, 48);
-        pbbShareWrapText(ctx, title, x + 42, boxY + 150, 480, 76, 2);
+        ctx.fillText(kicker, splitX, cardY + 62);
+        ctx.fillStyle = palette.onPhoto;
+        pbbShareDrawFittedStudioTitle(ctx, title, splitX, cardY + 178, leftW, { startSize: 108, minimumSize: 38, maxLines: 3, lineHeight: 0.96 });
         if (metrics.length) {
-            const rowX = 650;
             metrics.forEach((metric, index) => {
-                const rowY = boxY + 28 + (index * 104);
+                const rowY = cardY + 18 + (index * 108);
+                if (index > 0) {
+                    ctx.globalAlpha = 0.34;
+                    ctx.fillRect(rightX, rowY - 8, cardW - (rightX - cardX), 2);
+                    ctx.globalAlpha = 1;
+                }
                 ctx.fillStyle = palette.onPhoto;
-                pbbShareSetFittedFont(ctx, metric[1], 320, 42, 28);
-                ctx.fillText(metric[1], rowX, rowY + 40);
-                ctx.font = '900 15px Arial, sans-serif';
+                pbbShareSetFittedFont(ctx, metric[1], cardW - (rightX - cardX), 51, 28);
+                ctx.fillText(metric[1], rightX, rowY + 42);
+                ctx.font = '900 18px Arial, sans-serif';
                 ctx.globalAlpha = 0.72;
-                ctx.fillText(metric[0], rowX, rowY + 67);
+                ctx.fillText(metric[0], rightX, rowY + 72);
                 ctx.globalAlpha = 1;
             });
         }
@@ -4283,69 +4368,63 @@ function pbbShareDrawStudioWorkoutLayout(ctx, cardPayload, width, contentBottom,
     }
 
     if (textStyle === 'editorial') {
-        const boxY = contentBottom - 480;
         ctx.save();
         ctx.shadowColor = 'transparent';
         ctx.fillStyle = palette.accent;
-        ctx.fillRect(x, boxY, 18, 405);
-        ctx.fillStyle = palette.onPhoto;
+        ctx.fillRect(cardX, cardY, 28, cardH);
+        const editorialX = cardX + 78;
+        ctx.fillStyle = palette.accent;
         ctx.font = '900 24px Arial, sans-serif';
-        ctx.fillText(kicker, x + 54, boxY + 44);
-        ctx.font = '700 88px Georgia, serif';
-        pbbShareWrapText(ctx, title, x + 54, boxY + 146, w - 80, 94, 2);
-        if (metrics.length) pbbShareDrawStudioMetrics(ctx, metrics, x + 54, boxY + 338, w - 100, palette, { valueSize: 38, labelSize: 16, textColour: palette.onPhoto, dividerColour: palette.accent });
+        ctx.fillText(kicker, editorialX, cardY + 46);
+        ctx.fillStyle = palette.onPhoto;
+        const editorialTitle = pbbShareDrawFittedStudioTitle(ctx, title, editorialX, cardY + 158, cardW - 105, { startSize: 108, minimumSize: 42, maxLines: 4, lineHeight: 0.96, family: 'Georgia, serif', weight: 700 });
+        if (metrics.length) pbbShareDrawStudioMetrics(ctx, metrics, editorialX, Math.min(cardY + cardH - 78, editorialTitle.bottom + 46), cardW - 105, palette, { valueSize: 51, labelSize: 21, textColour: palette.onPhoto, dividerColour: palette.accent });
         ctx.restore();
         return;
     }
 
     const panelStyle = ['scorecard', 'outline', 'receipt', 'full'].includes(textStyle);
-    const panelH = textStyle === 'full' ? (isFeed ? 650 : 760) : (textStyle === 'receipt' ? 500 : 470);
-    const canvasHeight = isFeed ? 1350 : 1920;
-    const panelW = width * 0.78;
-    const panelX = (width - panelW) / 2;
-    const panelPadding = width * 0.05;
-    const panelContentX = panelX + panelPadding;
-    const panelContentW = panelW - (panelPadding * 2);
-    const panelY = (canvasHeight * 0.68) - (panelH / 2);
     const surface = textStyle === 'outline' ? 'rgba(0,0,0,0)' : palette.surface;
 
     if (panelStyle) {
-        const panelRadius = textStyle === 'outline' ? 4 : (textStyle === 'receipt' ? 12 : 34);
-        pbbShareFillRoundRect(ctx, panelX, panelY, panelW, panelH, panelRadius, surface);
+        const panelRadius = textStyle === 'outline' ? 11 : (textStyle === 'scorecard' ? 61 : 50);
+        pbbShareFillRoundRect(ctx, cardX, cardY, cardW, cardH, panelRadius, surface);
         ctx.save();
         ctx.shadowColor = 'transparent';
-        pbbShareRoundRect(ctx, panelX, panelY, panelW, panelH, panelRadius);
+        pbbShareRoundRect(ctx, cardX, cardY, cardW, cardH, panelRadius);
         ctx.strokeStyle = palette.accent;
         ctx.lineWidth = textStyle === 'outline' ? 6 : 3;
         ctx.stroke();
         ctx.restore();
-        ctx.fillStyle = textStyle === 'outline' ? palette.accent : palette.surfaceText;
+        if (textStyle !== 'outline') ctx.shadowColor = 'transparent';
+        ctx.fillStyle = palette.accent;
         ctx.font = '900 25px Arial, sans-serif';
-        ctx.fillText(kicker, panelContentX, panelY + 62);
+        ctx.fillText(kicker, contentX, cardY + 62);
         ctx.fillStyle = textStyle === 'outline' ? palette.onPhoto : palette.surfaceText;
-        pbbShareSetFittedFont(ctx, title, panelContentW, textStyle === 'receipt' ? 70 : (textStyle === 'outline' ? 104 : 82), 50);
-        ctx.fillText(title, panelContentX, panelY + 150);
+        const panelTitleSize = textStyle === 'receipt' ? 82 : (textStyle === 'scorecard' ? 86 : 108);
+        const panelTitle = pbbShareDrawFittedStudioTitle(ctx, title, contentX, cardY + 150, contentW, { startSize: panelTitleSize, minimumSize: 38, maxLines: 3, lineHeight: 0.96 });
+        const dividerY = cardY + 190 + ((panelTitle.lines - 1) * panelTitle.size * 0.96);
         ctx.save();
         ctx.shadowColor = 'transparent';
         ctx.fillStyle = palette.accent;
-        ctx.fillRect(panelContentX, panelY + 190, panelContentW, 4);
+        ctx.fillRect(contentX, dividerY, contentW, 4);
         ctx.restore();
-        if (metrics.length) pbbShareDrawStudioMetrics(ctx, metrics, panelContentX, panelY + 270, panelContentW, palette, { valueSize: textStyle === 'outline' ? 52 : 46, labelSize: 18, textColour: textStyle === 'outline' ? palette.onPhoto : palette.surfaceText });
+        const metricsY = Math.max(cardY + 270, dividerY + 80);
+        if (metrics.length) pbbShareDrawStudioMetrics(ctx, metrics, contentX, metricsY, contentW, palette, { valueSize: 51, labelSize: 21, textColour: textStyle === 'outline' ? palette.onPhoto : palette.surfaceText });
 
         if (textStyle === 'full') {
-            const exercises = (cardPayload.exercises || []).slice(0, isFeed ? 3 : 4);
-            let rowY = panelY + 350;
+            let rowY = cardY + 350;
             exercises.forEach(exercise => {
                 const rowH = isFeed ? 68 : 78;
-                pbbShareFillRoundRect(ctx, panelContentX, rowY, panelContentW, rowH, 14, 'rgba(255,255,255,0.10)');
+                pbbShareFillRoundRect(ctx, contentX, rowY, contentW, rowH, 22, 'rgba(255,255,255,0.10)');
                 ctx.fillStyle = palette.surfaceText;
                 ctx.font = `800 ${isFeed ? 21 : 24}px Arial, sans-serif`;
-                ctx.fillText(String(exercise.name || 'Exercise'), panelContentX + 20, rowY + 31);
+                ctx.fillText(String(exercise.name || 'Exercise'), contentX + 22, rowY + 31);
                 ctx.textAlign = 'right';
                 ctx.fillStyle = palette.accent;
                 ctx.font = `800 ${isFeed ? 15 : 17}px Arial, sans-serif`;
-                pbbShareSetFittedFont(ctx, pbbShareCompactSetDetails(exercise), panelContentW * 0.46, isFeed ? 15 : 17, 12);
-                ctx.fillText(pbbShareCompactSetDetails(exercise), panelContentX + panelContentW - 20, rowY + 31);
+                pbbShareSetFittedFont(ctx, pbbShareCompactSetDetails(exercise), contentW * 0.46, isFeed ? 15 : 17, 12);
+                ctx.fillText(pbbShareCompactSetDetails(exercise), contentX + contentW - 22, rowY + 31);
                 ctx.textAlign = 'left';
                 rowY += rowH + 10;
             });
@@ -4353,18 +4432,18 @@ function pbbShareDrawStudioWorkoutLayout(ctx, cardPayload, width, contentBottom,
         return;
     }
 
-    const y = contentBottom - 570;
-    ctx.fillStyle = palette.onPhoto;
+    ctx.fillStyle = palette.accent;
     ctx.font = '900 28px Arial, sans-serif';
-    ctx.fillText(kicker, x, y);
-    pbbShareSetFittedFont(ctx, title, w, 108, 68);
-    const titleBottom = pbbShareWrapText(ctx, title, x, y + 124, w, 112, 2);
+    ctx.fillText(kicker, cardX, cardY + 30);
+    ctx.fillStyle = palette.onPhoto;
+    const titleResult = pbbShareDrawFittedStudioTitle(ctx, title, cardX, cardY + 142, cardW, { startSize: 108, minimumSize: 42, maxLines: 3, lineHeight: 1 });
+    const titleBottom = titleResult.bottom;
     ctx.save();
     ctx.shadowColor = 'transparent';
     ctx.fillStyle = palette.accent;
-    ctx.fillRect(x, titleBottom + 12, w, 5);
+    ctx.fillRect(cardX, titleBottom + 12, cardW, 5);
     ctx.restore();
-    if (metrics.length) pbbShareDrawStudioMetrics(ctx, metrics, x, titleBottom + 110, w, palette, { valueSize: 48, labelSize: 20, textColour: palette.onPhoto });
+    if (metrics.length) pbbShareDrawStudioMetrics(ctx, metrics, cardX, titleBottom + 110, cardW, palette, { valueSize: 51, labelSize: 21, textColour: palette.onPhoto });
 }
 
 async function pbbShareDrawFullBleedWorkoutCard(ctx, cardPayload, width, height, target) {

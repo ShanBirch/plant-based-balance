@@ -105,9 +105,16 @@ test('activity exports move only the card and reuse the editor layout', () => {
   assert.match(points, /const isActivity = cardPayload\.card_type === 'activity'/);
   assert.match(points, /isActivity \? 'ACTIVITY COMPLETE' : 'WORKOUT COMPLETE'/);
   assert.match(activityRenderer, /SHOW UP\. KEEP THE RECEIPTS\./);
-  assert.match(points, /const panelW = width \* 0\.78/);
-  assert.match(points, /const panelY = \(canvasHeight \* 0\.68\) - \(panelH \/ 2\)/);
-  assert.match(points, /textStyle === 'outline' \? 4/);
+  assert.match(points, /const widthRatio = textStyle === 'compact' \? 0\.86 : \(textStyle === 'stamp' \? 0\.62 : 0\.78\)/);
+  assert.match(points, /const anchorY = canvasHeight \* 0\.68/);
+  assert.match(points, /textStyle === 'outline' \? 11/);
+  assert.match(points, /pbbShareDrawFittedStudioTitle/);
+  ['bold', 'scorecard', 'simple', 'full', 'stamp', 'split', 'compact', 'outline', 'receipt', 'editorial'].forEach(style => {
+    assert.match(studio, new RegExp("id: '" + style + "'"), style + ' must remain available in the editor');
+    assert.match(points, new RegExp("(?:textStyle === '" + style + "'|" + style + ":)"), style + ' must have an export layout');
+  });
+  assert.match(points, /ctx\.measureText\(`\$\{fitted\}…`\)\.width > maxWidth/);
+  assert.match(points, /minimumSize: 24, maxLines: 4/);
   assert.match(points, /gold: \{ accent: '#D8B25E',[^\n]+onPhoto: '#FFFFFF'/);
   assert.match(activityRenderer, /const editorPreview = studioEditor && Number\(studioEditor\.version\) >= 4/);
   assert.match(activityRenderer, /editorPreview \? 0\.42/);
@@ -170,8 +177,8 @@ test('private reveal, tour, and cache-busted modules ship together', () => {
   assert.match(dashboard, /photo-share-studio-all-members-v1/);
   assert.match(dashboard, /BalancePrivateShareStudio\.isEnabled\(\)/);
   assert.match(dashboard, /pbb-private-share-studio\.js\?v=18-locked-photo-text-tools/);
-  assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=64-wysiwyg-activity-card/);
+  assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=65-all-styles-wysiwyg/);
   assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=[^'\"]+/);
   assert.match(dashboard, /dashboard-script-11-calorie_tracker_functions\.js\?v=41-share-done-flow/);
-  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v492-wysiwyg-activity-card'/);
+  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v493-all-styles-wysiwyg'/);
 });
