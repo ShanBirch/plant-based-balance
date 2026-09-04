@@ -89,7 +89,7 @@ test('Founders Pass experiment has two honest measured landing experiences', () 
     assert.match(eventLogger, /onboarding_completed/);
 });
 
-test('Balance Foundations is a six-week course that preserves the existing lesson library', () => {
+test('Balance Learn is a six-week course that preserves the existing lesson library', () => {
     const learning = read('lib/learning-inline.js');
     const dashboard = read('dashboard.html');
     const socialJourney = read('js/dashboard/pbb-social-journey.js');
@@ -134,19 +134,26 @@ test('Balance Foundations is a six-week course that preserves the existing lesso
     assert.match(dashboard, /id: 'course-preview-locks-v1'/);
     assert.match(dashboard, /sel: '\.course-library-intro'/);
     assert.match(dashboard, /fallbackSel: '#learning-content'/);
-    assert.match(dashboard, /learning-inline\.js\?v=42-required-course-welcome/);
+    assert.match(dashboard, /learning-inline\.js\?v=43-balance-path-welcome/);
     assert.match(dashboard, /balance-identity-course-v1/);
 });
 
-test('Balance Identity follows Foundations and shares the Week 7 to 12 journey progress', () => {
+test('the Balance Path presents Learn, Become, Master and Lead without changing durable course ids', () => {
     const learning = read('lib/learning-inline.js');
     const dashboard = read('dashboard.html');
     const socialJourney = read('js/dashboard/pbb-social-journey.js');
     const identitySource = learning.match(/const BALANCE_IDENTITY = Object\.freeze\(\{[\s\S]*?\n    \}\);/)?.[0] || '';
 
-    assert.match(identitySource, /title: 'Balance Identity'/);
+    assert.match(identitySource, /title: 'Balance Lead'/);
     assert.equal((identitySource.match(/journeyWeek:\s*(?:7|8|9|10|11|12),/g) || []).length, 6);
-    assert.match(learning, /type: 'foundations'[\s\S]*type: 'identity'[\s\S]*\.\.\.getModulesSorted\(\)/);
+    assert.match(learning, /id: 'balance-foundations'[\s\S]*title: 'Balance Learn'/);
+    assert.match(learning, /id: 'balance-become'[\s\S]*title: 'Balance Become'/);
+    assert.match(learning, /id: 'balance-master'[\s\S]*title: 'Balance Master'/);
+    assert.match(learning, /id: 'balance-identity'[\s\S]*title: 'Balance Lead'/);
+    assert.match(learning, /const pathCourses = \[[\s\S]*type: 'foundations'[\s\S]*type: 'upcoming'[\s\S]*type: 'upcoming'[\s\S]*type: 'identity'/);
+    assert.match(learning, /const specialistCourses = getModulesSorted\(\)/);
+    assert.match(learning, /id="balance-path"/);
+    assert.match(learning, /Specialist Library/);
     assert.match(learning, /window\.socialJourney\.getIdentityCourseProgress\(\)/);
     assert.match(learning, /id="balance-identity-course-card"|balance-identity-course-card/);
     assert.match(learning, /window\.startBalanceIdentityWeek/);
@@ -156,7 +163,9 @@ test('Balance Identity follows Foundations and shares the Week 7 to 12 journey p
     assert.match(socialJourney, /WEEK_DEFINITIONS\.slice\(6\)/);
     assert.match(socialJourney, /function openIdentityCourseWeek\(weekNumber\)/);
     assert.match(socialJourney, /viewStage = 'course-lesson'/);
-    assert.match(dashboard, /learning-inline\.js\?v=42-required-course-welcome/);
+    assert.match(dashboard, /learning-inline\.js\?v=43-balance-path-welcome/);
+    assert.match(dashboard, /id: 'balance-path-four-stages-v1'/);
+    assert.match(dashboard, /sel: '#balance-path'/);
 });
 
 test('Founders Pass onboarding captures the real-world blocker behind consistency', () => {
@@ -167,7 +176,7 @@ test('Founders Pass onboarding captures the real-world blocker behind consistenc
     assert.match(onboarding, /setWizardFieldValue\('wizard-main-blocker', answers\.main_blocker\)/);
     assert.doesNotMatch(stepsBlock, /key: 'competing_priorities'/);
     assert.match(stepsBlock, /key: 'weekly_capacity'[\s\S]*?how many strength days do you actually want in your plan/);
-    assert.match(stepsBlock, /key: 'routine_window'[\s\S]*?When are you most likely to do your workouts/);
+    assert.doesNotMatch(stepsBlock, /key: 'routine_window'/);
     assert.doesNotMatch(stepsBlock, /key: 'starter_session_minutes'/);
     assert.match(onboarding, /function inferWizardStarterPlan\(answers = \{\}\)/);
     assert.match(onboarding, /setWizardFieldValue\('wizard-starter-session-minutes', inferredPlan\.starterSessionMinutes\)/);

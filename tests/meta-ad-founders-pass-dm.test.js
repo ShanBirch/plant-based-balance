@@ -505,7 +505,7 @@ test('Cocos paid-ad Founders Pass opener bypasses the false signup hold and mode
 
     assert.equal(draft.firstReplyIntent, 'overview');
     assert.match(draft.joined, /^Hey,/i);
-    assert.match(draft.joined, /Balance Foundations is a six-week course in the app/i);
+    assert.match(draft.joined, /Balance Learn is a six-week course in the app/i);
     assert.doesNotMatch(draft.joined, /yeah,? of course|plant[ -]?based|vegan/i);
     assert.match(draft.joined, /main change.*next six weeks\?/i);
     assert.doesNotMatch(draft.joined, /plant[ -]?based|vegan|vegetarian/i);
@@ -626,7 +626,7 @@ test.skip('legacy deterministic blocker copy retired in favour of the live write
 
     assert.match(blockerReply.joined, /work and the kids can wreck the best intentions/i);
     assert.match(blockerReply.joined, /one (?:AUD )?\$149 payment for the full six weeks/i);
-    assert.match(blockerReply.joined, /six-week Foundations course/i);
+    assert.match(blockerReply.joined, /six-week Balance Learn course/i);
     assert.match(blockerReply.joined, /workout program built around your week/i);
     assert.match(blockerReply.joined, /plant-based meal plan/i);
     assert.match(blockerReply.joined, /one weekly check-in with me/i);
@@ -957,7 +957,7 @@ test('paid Meta writer contract preserves rapid-turn details without forcing an 
 
     const completeOfferIssues = collectPaidMetaWriterContractIssues({
         draft: {
-            joined: "Changing shifts make a rigid routine hard. Balance Foundations gives you a six-week workout program around your week, a plant-based meal plan, and one weekly check-in where I review your training and food and adjust both. It's one $149 payment for the full six weeks, with no subscription or auto-renewal. You can set yourself up and look through the app before paying. Want me to send you access?",
+            joined: "Changing shifts make a rigid routine hard. Balance Learn gives you a six-week workout program around your week, a plant-based meal plan, and one weekly check-in where I review your training and food and adjust both. It's one $149 payment for the full six weeks, with no subscription or auto-renewal. You can set yourself up and look through the app before paying. Want me to send you access?",
         },
         currentMessage: 'My shifts change every week so I can never keep a routine.',
         qualifier,
@@ -1053,7 +1053,7 @@ test('paid Meta guaranteed fallback uses food and accountability to ask for the 
         text: 'What would you mainly like help with fitness-wise?',
     }];
     const fallback = buildPaidMetaGuaranteedContractFallback({
-        draft: { joined: 'Foundations gives you the meal plan and weekly check-in.', maxChunks: 3 },
+        draft: { joined: 'Balance Learn gives you the meal plan and weekly check-in.', maxChunks: 3 },
         currentMessage,
         issues: ['The reply pitched before a concrete fitness goal and real blocker were both known.'],
         qualifier: { facts: { current_state: 'Looking to adopt plant-based' } },
@@ -1080,7 +1080,7 @@ test('paid Meta guaranteed earned offer is not held behind the ten-minute fallba
     };
     const fallback = buildPaidMetaGuaranteedContractFallback({
         draft: {
-            joined: 'Balance Foundations gives you workouts and a meal plan. Want the details?',
+            joined: 'Balance Learn gives you workouts and a meal plan. Want the details?',
             model: 'openai-gpt-5.4-mini-paid-meta',
             replyMode: 'standard',
             maxChunks: 3,
@@ -1166,7 +1166,7 @@ test('a repaired paid Meta goal question drops the stale offer warning from the 
 
     const actualOffer = {
         ...repairedGoalQuestion,
-        joined: 'Balance Foundations gives you a six-week coaching plan. Want me to send the details?',
+        joined: 'Balance Learn gives you a six-week coaching plan. Want me to send the details?',
         paidMetaGuaranteedContract: false,
     };
     assert.equal(getAutoDmHoldReason({ ...common, draft: actualOffer })?.code, 'challenge_offer');
@@ -1201,7 +1201,7 @@ test('the verified guided-sales offer is not blocked as premature after goal and
         history: [
             {
                 direction: 'out',
-                text: 'Balance Foundations is a six-week course with your workout program built around your week and a plant-based meal plan.',
+                text: 'Balance Learn is a six-week course with your workout program built around your week and a plant-based meal plan.',
             },
             {
                 direction: 'out',
@@ -1492,7 +1492,7 @@ test('a long broad burst repairs the direct gluten-free answer without repeating
         { direction: 'in', text: 'Rotating shifts, two kids and no meal-prep time keep getting in the way.' },
     ];
     const draft = {
-        joined: "That makes sense, and I’ll keep it simple. Balance Foundations is $149 AUD for the full 6 weeks, with no subscription or auto-renewal. It’s set up around your rotating shifts, two kids, gluten-free eating, and sore-knee-friendly training, so the plan fits your week rather than adding more stress. If you want, I can send your free personalised app preview next.\nIt’ll show you how the workouts and food support would look for you before you decide anything.",
+        joined: "That makes sense, and I’ll keep it simple. Balance Learn is $149 AUD for the full 6 weeks, with no subscription or auto-renewal. It’s set up around your rotating shifts, two kids, gluten-free eating, and sore-knee-friendly training, so the plan fits your week rather than adding more stress. If you want, I can send your free personalised app preview next.\nIt’ll show you how the workouts and food support would look for you before you decide anything.",
         maxChunks: 3,
         videoAttachmentUrl: resolveBalanceFoundationsAppProofVideoUrl(),
     };
@@ -1532,7 +1532,7 @@ test('broad paid Meta treats a price objection and no-link request as a pause, n
         history: [
             { direction: 'in', text: 'I want to get stronger.' },
             { direction: 'in', text: 'My roster changes every week.' },
-            { direction: 'out', text: 'Balance Foundations is a six-week course with a workout program and meal plan.' },
+            { direction: 'out', text: 'Balance Learn is a six-week course with a workout program and meal plan.' },
             { direction: 'out', text: 'It is one AUD $149 payment with no subscription. Want me to open your preview before you pay?' },
         ],
         qualifier: {
@@ -1896,7 +1896,7 @@ test.skip('legacy deterministic price copy retired in favour of the live writer'
         },
     };
     const draft = buildDeterministicPaidMetaConversationReply({
-        currentMessage: 'Thanks. How much is Balance Foundations?',
+        currentMessage: 'Thanks. How much is Balance Learn?',
         qualifier,
         flowVariant: 'plant_based_control',
     });
@@ -1911,7 +1911,7 @@ test.skip('legacy deterministic price copy retired in favour of the live writer'
             context_loss_suspected: false,
             reviewer_model: 'deterministic-paid-meta-conversation-approval',
         },
-        currentMessage: 'Thanks. How much is Balance Foundations?',
+        currentMessage: 'Thanks. How much is Balance Learn?',
         qualifier,
         leadStage: 'qualifying',
         linkedUserId: null,
@@ -1932,7 +1932,7 @@ test.skip('legacy deterministic price copy retired in favour of the live writer'
             reviewer_model: 'deterministic-paid-meta-conversation-approval',
         },
         challengeOfferWarning: { required: false, code: 'approved_meta_ad_sales_progression' },
-        currentMessage: 'Thanks. How much is Balance Foundations?',
+        currentMessage: 'Thanks. How much is Balance Learn?',
         qualifier,
         leadStage: 'qualifying',
         linkedUserId: null,
@@ -2533,7 +2533,7 @@ test('personalised coaching FAQ answers from the advertised six-week program wit
             linkedUserId: null,
         });
 
-        assert.equal(reply.joined, "Yeah, I do. Balance Foundations is a six-week course inside the app, with weekly lessons and practical goals alongside your workout program, food support and one weekly check-in with me. What's the main change you'd like to make over the next six weeks?");
+        assert.equal(reply.joined, "Yeah, I do. Balance Learn is a six-week course inside the app, with weekly lessons and practical goals alongside your workout program, food support and one weekly check-in with me. What's the main change you'd like to make over the next six weeks?");
         assert.doesNotMatch(reply.joined, /Starter Coaching|\$29\.99/i);
         assert.equal(reply.checkoutUrl, null);
         assert.equal(reply.videoAttachmentUrl, undefined);
@@ -2670,10 +2670,10 @@ test('AI writer attaches the approved app explainer only to a complete broad pai
     const completeBroadOffer = attachPaidMetaWriterSelectedMedia({
         chunks: [
             'Busy weeks are the part that keeps breaking the rhythm.',
-            'Balance Foundations is a six-week course with your workout program, a meal plan fitted to your dietary preferences, and a weekly review.',
+            'Balance Learn is a six-week course with your workout program, a meal plan fitted to your dietary preferences, and a weekly review.',
             "It's one AUD $149 payment for the full six weeks, with no subscription or auto-renewal. Want me to open your personalised preview before you pay?",
         ],
-        joined: "Busy weeks are the part that keeps breaking the rhythm. Balance Foundations is a six-week course with your workout program, a meal plan fitted to your dietary preferences, and a weekly review. It's one AUD $149 payment for the full six weeks, with no subscription or auto-renewal. Want me to open your personalised preview before you pay?",
+        joined: "Busy weeks are the part that keeps breaking the rhythm. Balance Learn is a six-week course with your workout program, a meal plan fitted to your dietary preferences, and a weekly review. It's one AUD $149 payment for the full six weeks, with no subscription or auto-renewal. Want me to open your personalised preview before you pay?",
     }, { allowAttachments: true, flowVariant: 'broad_pain', history: [] });
     assert.equal(completeBroadOffer.videoAttachmentUrl, BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL);
     assert.match(completeBroadOffer.joined, /quick video showing the course and what's inside Balance/i);
@@ -2684,11 +2684,11 @@ test('AI writer attaches the approved app explainer only to a complete broad pai
 
     const liveWriterWording = attachPaidMetaWriterSelectedMedia({
         chunks: [
-            'Balance Foundations is $149 AUD for the full 6 weeks, with no subscription or auto-renewal.',
+            'Balance Learn is $149 AUD for the full 6 weeks, with no subscription or auto-renewal.',
             'I can also show you a free personalised app preview first so you can see exactly how it would be set up for your week. The workout and meal plan are fitted to your recorded preferences before you decide anything.',
             'If you want, I’ll send the personalised preview next.',
         ],
-        joined: 'Balance Foundations is $149 AUD for the full 6 weeks, with no subscription or auto-renewal. I can also show you a free personalised app preview first so you can see exactly how it would be set up for your week. The workout and meal plan are fitted to your recorded preferences before you decide anything. If you want, I’ll send the personalised preview next.',
+        joined: 'Balance Learn is $149 AUD for the full 6 weeks, with no subscription or auto-renewal. I can also show you a free personalised app preview first so you can see exactly how it would be set up for your week. The workout and meal plan are fitted to your recorded preferences before you decide anything. If you want, I’ll send the personalised preview next.',
         maxChunks: 3,
     }, { allowAttachments: true, flowVariant: 'broad_pain', history: [] });
     assert.equal(liveWriterWording.videoAttachmentUrl, BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL);
@@ -2961,7 +2961,7 @@ test.skip('legacy deterministic conversational stages retired in favour of the l
         flowVariant: 'plant_based_control',
         personalVoiceNoteMode: true,
     });
-    assert.match(personalisedVoiceReply.joined, /Balance Foundations gives you a clear six-week starting plan inside the app/i);
+    assert.match(personalisedVoiceReply.joined, /Balance Learn gives you a clear six-week starting plan inside the app/i);
     assert.match(personalisedVoiceReply.joined, /once a week to review how training and food are actually going/i);
     assert.doesNotMatch(personalisedVoiceReply.joined, /Starter Coaching|\$29\.99/i);
     assert.equal((personalisedVoiceReply.joined.match(/\?/g) || []).length, 1);
@@ -3106,7 +3106,7 @@ test.skip('legacy deterministic conversational stages retired in favour of the l
         flowVariant: 'plant_based_control',
     });
     assert.ok(emotionalEatingBlocker, 'emotional eating and food availability are concrete blockers');
-    assert.match(emotionalEatingBlocker.joined, /six-week Foundations course/i);
+    assert.match(emotionalEatingBlocker.joined, /six-week Balance Learn course/i);
     assert.match(emotionalEatingBlocker.joined, /plant-based meal plan/i);
     assert.equal((emotionalEatingBlocker.joined.match(/\?/g) || []).length, 1,
         'the blocker turn must progress with one consent question rather than a statement-only stall');
@@ -3146,7 +3146,7 @@ test.skip('legacy deterministic conversational stages retired in favour of the l
         history: [],
         flowVariant: 'plant_based_control',
     });
-    assert.match(nextStep.joined, /Balance Foundations is one \$149 payment/i);
+    assert.match(nextStep.joined, /Balance Learn is one \$149 payment/i);
     assert.match(nextStep.joined, /one \$149 payment for the complete six-week curriculum/i);
     assert.doesNotMatch(nextStep.joined, /ongoing weekly coaching|Starter Coaching/i);
     assert.match(nextStep.joined, /access to the app so you can check it out before any payment/i);
@@ -3271,7 +3271,7 @@ test.skip('legacy deterministic conversational stages retired in favour of the l
         ],
         flowVariant: 'plant_based_control',
     });
-    assert.match(programInclusionsAfterAcceptedSupport.joined, /Balance Foundations gives you a clear six-week curriculum/i);
+    assert.match(programInclusionsAfterAcceptedSupport.joined, /Balance Learn gives you a clear six-week curriculum/i);
     assert.match(programInclusionsAfterAcceptedSupport.joined, /Balance app and plant-based community/i);
     assert.match(programInclusionsAfterAcceptedSupport.joined, /weekly check-in/i);
     assert.match(programInclusionsAfterAcceptedSupport.joined, /doesn't renew automatically/i);
@@ -3296,7 +3296,7 @@ test.skip('legacy deterministic conversational stages retired in favour of the l
     assert.equal((selectedFoundersPrice.joined.match(/\?/g) || []).length, 1);
 
     const naturalFoundationsPrice = buildDeterministicPaidMetaConversationReply({
-        currentMessage: 'Thanks. How much is Balance Foundations?',
+        currentMessage: 'Thanks. How much is Balance Learn?',
         qualifier: blockerQualifier,
         flowVariant: 'plant_based_control',
     });
@@ -3307,7 +3307,7 @@ test.skip('legacy deterministic conversational stages retired in favour of the l
     assert.equal((naturalFoundationsPrice.joined.match(/\?/g) || []).length, 1);
 
     const confirmFoundationsPrice = buildDeterministicPaidMetaConversationReply({
-        currentMessage: 'Just to confirm, how much is Balance Foundations in total?',
+        currentMessage: 'Just to confirm, how much is Balance Learn in total?',
         qualifier: blockerQualifier,
         flowVariant: 'plant_based_control',
         checkoutUrl,
@@ -3349,7 +3349,7 @@ test.skip('legacy deterministic conversational stages retired in favour of the l
         qualifier: { commercial_stage: 'buyer_intent' },
         history: [{
             direction: 'out',
-            text: "The Founders Pass is $149 once. You get the six-week Foundations course and it doesn't renew automatically.",
+            text: "The Founders Pass is $149 once. You get the six-week Balance Learn course and it doesn't renew automatically.",
         }],
     }), true);
     assert.match(buildContextualMetaAdOfferLinkReply({
@@ -3381,7 +3381,7 @@ test.skip('legacy deterministic conversational stages retired in favour of the l
     assert.doesNotMatch(fixedSixWeekSelectionReply.joined, /https?:\/\//);
     assert.equal((fixedSixWeekSelectionReply.joined.match(/\?/g) || []).length, 1);
     const naturalSelectionReply = buildDeterministicPaidMetaConversationReply({
-        currentMessage: 'I think Balance Foundations is the right option for me.',
+        currentMessage: 'I think Balance Learn is the right option for me.',
         qualifier: { ...blockerQualifier, commercial_stage: 'buyer_intent' },
         flowVariant: 'plant_based_control',
         checkoutUrl,
@@ -3416,7 +3416,7 @@ test('Instagram split offer bubbles still turn a short Yes into the promised app
         history: [
             {
                 direction: 'out',
-                text: 'Balance Foundations is a six-week course with your workout program built around your week and a plant-based meal plan.',
+                text: 'Balance Learn is a six-week course with your workout program built around your week and a plant-based meal plan.',
             },
             {
                 direction: 'out',
@@ -3531,7 +3531,7 @@ test('verified broad route completes goal, blocker, neutral offer and signed pre
 
     const opener = buildMetaAdFoundersPassFirstReply('BALANCE', { flowVariant: 'broad_pain' });
     assert.match(opener.joined, /^Hey, how are you\? 😊/);
-    assert.match(opener.joined, /Balance Foundations is a six-week course in the app/i);
+    assert.match(opener.joined, /Balance Learn is a six-week course in the app/i);
     assert.doesNotMatch(opener.joined, /yeah,? of course|plant[ -]?based|vegan/i);
     assert.match(opener.joined, /main change.*next six weeks\?/i);
     assert.equal((opener.joined.match(/\?/g) || []).length, 2,
@@ -3781,9 +3781,9 @@ test('broad writer contract repairs missing terms, adds the native explainer, an
     const incompleteOffer = {
         chunks: [
             'Busy work weeks are usually what break the rhythm.',
-            'Balance Foundations gives you a workout program and meal support fitted to your dietary preferences. If you want, I can send a preview.',
+            'Balance Learn gives you a workout program and meal support fitted to your dietary preferences. If you want, I can send a preview.',
         ],
-        joined: 'Busy work weeks are usually what break the rhythm. Balance Foundations gives you a workout program and meal support fitted to your dietary preferences. If you want, I can send a preview.',
+        joined: 'Busy work weeks are usually what break the rhythm. Balance Learn gives you a workout program and meal support fitted to your dietary preferences. If you want, I can send a preview.',
         model: 'openai-gpt-5.4-mini-paid-meta',
         replyMode: 'campaign_sales_progression',
         maxChunks: 3,

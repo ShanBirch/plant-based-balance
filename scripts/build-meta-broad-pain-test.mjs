@@ -24,7 +24,7 @@ const ads = [
     eyebrow: 'IF YOU KEEP HAVING TO START AGAIN',
     title: ['YOU DO NOT NEED', 'A HARDER PLAN.'],
     body: ['You need one that still works', 'when real life shows up.'],
-    primaryText: "If your routine only works when life is quiet, it is not the right routine yet. Balance helps you build training around the week you actually have, with clear steps and Shannon in your corner. Balance Foundations is one AUD $149 payment for the full six weeks and does not auto-renew. Message 'BALANCE' and I will show you what is included.",
+    primaryText: "If your routine only works when life is quiet, it is not the right routine yet. Balance helps you build training around the week you actually have, with clear steps and Shannon in your corner. Balance Learn is one AUD $149 payment for the full six weeks and does not auto-renew. Message 'BALANCE' and I will show you what is included.",
     headline: 'Stop starting over',
     description: 'A fitness plan built for real life',
   },
@@ -36,7 +36,7 @@ const ads = [
     eyebrow: 'KNOWING WHAT TO DO IS NOT THE PROBLEM',
     title: ['THE HARD PART IS', 'FOLLOWING', 'THROUGH.'],
     body: ['Clear next steps.', 'A coach in your corner.'],
-    primaryText: "You probably do not need another list of exercises or another perfect meal plan. You need a clear next step, support when the week changes, and a way back without guilt. That is what we build inside Balance Foundations. It includes training, nutrition tools and six weeks with Shannon for one AUD $149 payment for the full six weeks, with no auto-renewal. Message 'BALANCE' for the details.",
+    primaryText: "You probably do not need another list of exercises or another perfect meal plan. You need a clear next step, support when the week changes, and a way back without guilt. That is what we build inside Balance Learn. It includes training, nutrition tools and six weeks with Shannon for one AUD $149 payment for the full six weeks, with no auto-renewal. Message 'BALANCE' for the details.",
     headline: 'Turn knowing into doing',
     description: 'Clear steps and personal support',
   },
@@ -49,7 +49,7 @@ const ads = [
     eyebrow: 'WORK. KIDS. SHIFTS. LIFE.',
     title: ['YOUR PLAN SHOULD FIT', 'THE WEEK YOU HAVE.'],
     body: ['Choose the rhythm.', 'Keep control of the decision.'],
-    primaryText: "Work, kids, shifts and low-energy days are not failures. They are part of the plan. Balance Foundations gives you a realistic six-week training rhythm plus one weekly check-in and plan review with Shannon for one AUD $149 payment for the full six weeks, with no auto-renewal. Message 'BALANCE' to take a look.",
+    primaryText: "Work, kids, shifts and low-energy days are not failures. They are part of the plan. Balance Learn gives you a realistic six-week training rhythm plus one weekly check-in and plan review with Shannon for one AUD $149 payment for the full six weeks, with no auto-renewal. Message 'BALANCE' to take a look.",
     headline: 'Built around your actual week',
     description: 'Fitness support that adapts with you',
   },
@@ -135,10 +135,10 @@ for (const ad of ads) {
 }
 
 const plan = {
-  name: 'BAL | Balance Foundations | General Fitness | IG DM | AU | 2026-08-28',
+  name: 'BAL | Balance Learn | General Fitness | IG DM | AU | 2026-08-28',
   status: 'PAUSED_FOR_REVIEW',
   objective: 'Instagram Direct conversations',
-  offer: 'Balance Foundations, one AUD $149 payment for the full six weeks, no auto-renewal',
+  offer: 'Balance Learn, one AUD $149 payment for the full six weeks, no auto-renewal',
   budget: { dailyAud: 20, instruction: 'Do not increase total budget for this test.' },
   structure: {
     campaign: 'Use the existing Instagram Direct conversations campaign.',

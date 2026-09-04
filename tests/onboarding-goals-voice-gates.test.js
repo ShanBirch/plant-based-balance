@@ -65,12 +65,12 @@ test('preview walkthrough only unlocks Next after the full coach video plays', (
   assert.match(dashboard, /Watch the full coach note to unlock Next/);
 });
 
-test('paid preview opens and requires the real first Foundations lesson', () => {
+test('paid preview opens and requires the real first Balance Learn lesson', () => {
   assert.match(dashboard, /title:'Read, then take the quiz'[\s\S]*?embeddedGuide:true[\s\S]*?requiresFoundationsLesson:'mind-1-1'/);
   assert.match(dashboard, /window\.startFoundationsLesson\('mind-1-1'\)/);
   assert.match(dashboard, /window\.addEventListener\('pbbLearningLessonFinished', completed\)/);
   assert.match(dashboard, /detail\.completed !== true/);
-  assert.match(dashboard, /Finish the first Foundations lesson with a perfect score to unlock Next/);
+  assert.match(dashboard, /Finish the first Balance Learn lesson with a perfect score to unlock Next/);
   assert.match(dashboard, /tour-embedded-guide:not\(\.tour-gate-complete\)[\s\S]*?#guided-tour-bubble/);
   assert.match(dashboard, /sessionStorage\.setItem\('pbb_activation_first_lesson', 'true'\)/);
   assert.match(dashboard, /sessionStorage\.removeItem\('pbb_activation_first_lesson'\)/);

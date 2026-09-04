@@ -53,7 +53,7 @@ test('DM drafting knowledge knows all active packages and routes personalised co
     assert.match(guide, /personalised, individual, one-to-one or weekly plan adjustment usually fits Online Coaching/i);
     assert.match(guide, /regular calls, deeper live support.+fits Coaching \+ Calls/i);
     assert.match(guide, /coaching\.html/);
-    assert.match(guide, /Balance Foundations, one AU\$149 payment.+fixed six-week course/i);
+    assert.match(guide, /Balance Learn, one AU\$149 payment.+fixed six-week course/i);
     assert.match(guide, /does not auto-renew/i);
     assert.match(guide, /Do not dump every package/i);
 });

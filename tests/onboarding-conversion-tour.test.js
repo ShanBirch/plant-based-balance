@@ -42,7 +42,7 @@ test('the guided preview completes Foundations before coach support and Weekly G
   assert.match(dashboard, /title:'Read, then take the quiz'[^\n]*requiresFoundationsLesson:'mind-1-1'/);
   assert.match(dashboard, /title:'Watch Shannon’s coach note'[^\n]*requiresWelcomeVideo:true/);
   assert.match(dashboard, /title:'Start your course'[^\n]*preActionTitle:'Next: start your course'/);
-  assert.match(dashboard, /title:'Welcome to Balance Foundations'[^\n]*Tap Start Week 1 when you are ready/);
+  assert.match(dashboard, /title:'Welcome to Balance Learn'[^\n]*Tap Start Week 1 when you are ready/);
 });
 
 test('the spotlight never draws a box around a missing or zero-size target', () => {

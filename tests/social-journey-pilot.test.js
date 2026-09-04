@@ -70,7 +70,7 @@ test('dashboard ships both discovery systems and a visible pilot card target', (
     assert.match(html, /social-journey-your-next-step-v1/);
     assert.match(html, /allFeatures = \[\];[\s\S]*?allFeatures\.push\(\{[\s\S]*?id: 'social-journey-your-next-step-v1'/);
     assert.match(html, /sel:'#next-obvious-steps-card', fallbackSel:'#social-journey-card', title:'Your Next Step'/);
-    assert.match(html, /finish this App Tour and your first Balance Foundations lesson/);
+    assert.match(html, /finish this App Tour and your first Balance Learn lesson/);
     assert.match(html, /pbb-social-journey\.js\?v=\d+/);
     assert.match(html, /pbb-social-journey\.css\?v=\d+/);
 });
@@ -84,8 +84,8 @@ test('Home plan cards stay below the complete FitGotchi stats block', () => {
     assert.match(source, /characterBlockTail\.parentNode\.insertBefore\(weeklyGoals, characterBlockTail\.nextSibling\)/);
     assert.match(source, /characterBlockTail\.parentNode\.insertBefore\(card, characterBlockTail\.nextSibling\)/);
     assert.doesNotMatch(source, /levelStrip\.parentNode\.insertBefore\((weeklyGoals|card), levelStrip\.nextSibling\)/);
-    assert.match(html, /pbb-social-journey\.js\?v=45-exact-course-label/);
-assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v456-imported-activity-todo'/);
+    assert.match(html, /pbb-social-journey\.js\?v=46-balance-path/);
+    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v488-balance-path'/);
 });
 
 test('Home course actions bypass legacy journey pages and open the exact current lesson', () => {
@@ -100,7 +100,7 @@ test('Home course actions bypass legacy journey pages and open the exact current
     assert.doesNotMatch(socialSource, /if \(!isCurrentLessonSeen\(\)\) \{\s*openJourney\('lesson'\)/);
     assert.match(nextStepsSource, /async function openNextCourseTarget\(courseId\)/);
     assert.match(nextStepsSource, /function ensureLearningSystemLoaded\(\)/);
-    assert.match(nextStepsSource, /learning-inline\.js\?v=42-required-course-welcome/);
+    assert.match(nextStepsSource, /learning-inline\.js\?v=43-balance-path-welcome/);
     assert.match(nextStepsSource, /var loaded = await ensureLearningSystemLoaded\(\)/);
     assert.match(nextStepsSource, /await window\._ensureLearningProgressLoaded\(\)/);
     assert.match(nextStepsSource, /window\.renderLearningHome\(\)/);
@@ -132,8 +132,8 @@ test('Home course actions bypass legacy journey pages and open the exact current
     assert.doesNotMatch(premiumCss, /pbb-next-course-pulse|is-next-course-target|is-next-course-lesson-target/);
     assert.match(html, /pbb-next-obvious-steps\.js\?v=54-tour-quiz-continue/);
     assert.match(html, /pbb-social-journey\.css\?v=27-direct-course-lesson/);
-    assert.match(html, /pbb-premium-overlays\.css\?v=112-activity-success-theme/);
-    assert.match(html, /learning-inline\.js\?v=42-required-course-welcome/);
+    assert.match(html, /pbb-premium-overlays\.css\?v=118-stopwatch-centred/);
+    assert.match(html, /learning-inline\.js\?v=43-balance-path-welcome/);
 });
 
 test('Home goals and plan cards follow light and dark mode', () => {
@@ -178,7 +178,7 @@ test('journey UI is lesson-led, card-triggered and preserves account data on res
     assert.doesNotMatch(source, /from\(['"]users['"]\).*delete/i);
 });
 
-test('Balance Identity teaches the input-output loop before the Instagram plan', () => {
+test('Balance Lead teaches the input-output loop before the Instagram plan', () => {
     const source = fs.readFileSync(path.join(root, 'js/dashboard/pbb-social-journey.js'), 'utf8');
     const html = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
 
@@ -190,7 +190,7 @@ test('Balance Identity teaches the input-output loop before the Instagram plan',
     assert.match(html, /title:'Build Your Fitness Instagram'|title: 'Build Your Fitness Instagram'/);
 });
 
-test('Balance Identity is available from the unified Home plan', () => {
+test('Balance Lead is available from the unified Home plan', () => {
     const source = fs.readFileSync(path.join(root, 'js/dashboard/pbb-social-journey.js'), 'utf8');
     const nextSteps = fs.readFileSync(path.join(root, 'js/dashboard/pbb-next-obvious-steps.js'), 'utf8');
     const html = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');

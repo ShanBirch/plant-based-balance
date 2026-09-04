@@ -72,8 +72,8 @@ export function assertStarterCoachingPlan(priceId) {
 
 const BALANCE_FOUNDATIONS_SIX_WEEK_OFFER = Object.freeze({
     token: "balance_vegan_founders_pass",
-    productName: "Balance Foundations",
-    productDescription: "Six-week Balance Foundations course with one weekly check-in, plan review, app access, and support from Shannon",
+    productName: "Balance Learn",
+    productDescription: "Six-week Balance Learn course with one weekly check-in, plan review, app access, and support from Shannon",
     unitAmount: 14900,
     currency: "AUD",
     interval: null,

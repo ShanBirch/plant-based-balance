@@ -133,11 +133,11 @@ test('clean Founders Pass route and cream-gold social preview stay wired', () =>
     assert.ok(fs.existsSync(path.join(root, 'assets', 'balance-founders-og-cream-gold.png')));
 });
 
-test('Balance Foundations page sells the six-week program through guarded hosted checkout', () => {
-    assert.match(founders, /Balance Foundations \| Six-Week Program/);
+test('Balance Learn page sells the six-week program through guarded hosted checkout', () => {
+    assert.match(founders, /Balance Learn \| Six-Week Program/);
     assert.doesNotMatch(founders, /Starter Coaching/);
     assert.match(founders, /AU\$89\.99/);
-    assert.match(founders, /complete six-week Balance Foundations course|complete six-week curriculum/i);
+    assert.match(founders, /complete six-week Balance Learn course|complete six-week curriculum/i);
     assert.match(founders, /One payment\. Six weeks\. No auto-renewal/i);
     assert.match(founders, /weekly workout and food review with adjustments/i);
     assert.match(founders, /id="terms-checkbox"/);

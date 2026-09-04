@@ -26,12 +26,12 @@ const corePages = [
     'refund-policy.html'
 ];
 
-test('public journey consistently routes the primary action to Balance Foundations', () => {
+test('public journey consistently routes the primary action to Balance Learn', () => {
     assert.match(read('bio.html'), /class="hub-button primary" href="\/founders"/);
     assert.match(read('clients.html'), /class="nav-button primary" href="\/founders">See your Balance preview/);
     assert.match(read('journey.html'), /class="nav-button primary" href="\/founders">See your Balance preview/);
     assert.match(read('balance.html'), /class="btn primary" href="\/founders">See your personalised Balance preview/);
-    assert.match(visibleText('book.html'), /You do not need a call to start Balance Foundations/);
+    assert.match(visibleText('book.html'), /You do not need a call to start Balance Learn/);
 });
 
 test('independent public resources use the Balance brand and Foundations-first action', () => {
@@ -53,7 +53,7 @@ test('independent public resources use the Balance brand and Foundations-first a
     }
 
     assert.match(visibleText('balance.html'), /One AUD \$149 payment for the full six weeks\. No subscription or automatic renewal\./);
-    assert.match(visibleText('learning.html'), /Foundations gives every member the same practical six-week starting path/);
+    assert.match(visibleText('learning.html'), /Balance Learn gives every member the same practical six-week starting path/);
     assert.match(read('netlify.toml'), /from = "\/welcome\.html"[\s\S]*?to = "\/balance\.html"[\s\S]*?status = 301/);
     assert.match(read('robots.txt'), /Sitemap: https:\/\/plantbased-balance\.org\/sitemap\.xml/);
     assert.match(read('sitemap.xml'), /https:\/\/plantbased-balance\.org\/founders/);
@@ -82,9 +82,9 @@ test('offer facts agree across marketing and legal pages', () => {
     assert.match(coaching, /Month-to-Month Coaching.*\$74\.99 \/week/s);
     assert.match(terms, /26 weekly payments at AU\$29\.99/);
     assert.match(refunds, /26-week, 13-week or four-week initial minimum/);
-    assert.match(terms, /Balance Foundations is one AUD \$149 payment for the full six weeks/i);
-    assert.match(refunds, /Balance Foundations is one AUD \$149 payment for the full six weeks/i);
-    assert.match(founders, /Balance Foundations turns behaviour-change and neuroscience principles into one guided weekly rhythm/i);
+    assert.match(terms, /Balance Learn is one AUD \$149 payment for the full six weeks/i);
+    assert.match(refunds, /Balance Learn is one AUD \$149 payment for the full six weeks/i);
+    assert.match(founders, /Balance Learn helps you understand change, build better habits, and create a way of eating you can maintain/i);
     assert.match(founders, /One AUD \$149 payment Full six weeks, no automatic renewal/i);
     assert.doesNotMatch(founders, /Starter Coaching/);
 });

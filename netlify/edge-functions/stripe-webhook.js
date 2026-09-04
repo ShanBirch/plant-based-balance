@@ -8,13 +8,13 @@ const SITE_URL = Deno.env.get("URL") || "https://plantbased-balance.org";
 const ONLINE_COACHING_PRODUCT = "Balance Online Coaching";
 const APP_COMMUNITY_PRODUCT = "Balance App + Community";
 const COACHING_CALLS_PRODUCT = "Balance Coaching + Calls";
-const FOUNDERS_PASS_PRODUCT = "Balance Foundations Founders Pass";
+const FOUNDERS_PASS_PRODUCT = "Balance Learn Founders Pass";
 const FOUNDERS_PASS_PRODUCT_TYPE = "balance_vegan_founders_pass";
 const FOUNDERS_PASS_PLAN = "balance_foundations_six_week";
 const LEGACY_FOUNDERS_PASS_PLAN = "founders_pass_lifetime";
 const FOUNDATIONS_ACCESS_DAYS = 42;
 const ACCOUNTABILITY_ADDON_PRODUCT = "balance_accountability_addon";
-const META_PREVIEW_PURCHASE_MESSAGE = "You're in 🙌 Your Balance Foundations pass is sorted. Finish signing in to the app and everything you set up will be there.";
+const META_PREVIEW_PURCHASE_MESSAGE = "You're in 🙌 Your Balance Learn pass is sorted. Finish signing in to the app and everything you set up will be there.";
 const META_PREVIEW_PURCHASE_DELAY_MS = 60 * 1000;
 
 function subscriptionOfferDetails(plan) {
@@ -853,8 +853,8 @@ async function recordMetaPreviewPurchaseAndQueue({ session, stripeEvent, email, 
         coach_id: thread.coach_id,
         alert_type: "follow_up_review",
         priority: "urgent",
-        title: `${thread.profile_name || thread.ig_username || "Instagram lead"} bought Balance Foundations`,
-        description: `Stripe confirmed the $${purchaseAmount} Foundations purchase. A short welcome is queued.`,
+        title: `${thread.profile_name || thread.ig_username || "Instagram lead"} bought Balance Learn`,
+        description: `Stripe confirmed the $${purchaseAmount} Balance Learn purchase. A short welcome is queued.`,
         suggested_message: META_PREVIEW_PURCHASE_MESSAGE,
         scheduled_reply_text: META_PREVIEW_PURCHASE_MESSAGE,
         status: "scheduled",
@@ -884,7 +884,7 @@ async function recordMetaPreviewPurchaseAndQueue({ session, stripeEvent, email, 
             draft_review: {
                 verdict: "pass",
                 confidence: 1,
-                summary: "Stripe-confirmed Foundations purchase welcome.",
+                summary: "Stripe-confirmed Balance Learn purchase welcome.",
                 issues: [],
                 reviewed_at: createdAt,
                 reviewer_model: "deterministic_stripe_purchase_v1",

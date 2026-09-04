@@ -10,7 +10,7 @@ const thirdLessonStart = learning.indexOf("id: 'mind-1-3'", secondLessonStart);
 const firstLesson = learning.slice(firstLessonStart, secondLessonStart);
 const secondLesson = learning.slice(secondLessonStart, thirdLessonStart);
 
-test('the first Foundations lesson introduces the researchers before teaching theory', () => {
+test('the first Balance Learn lesson introduces the researchers before teaching theory', () => {
   assert.match(learning, /'mind-1-1': 'Meet the Researchers'/);
   assert.match(learning, /'mind-1-2': 'Your Brain Guesses First'/);
   assert.match(firstLesson, /statistical parametric mapping and dynamic causal modelling/);

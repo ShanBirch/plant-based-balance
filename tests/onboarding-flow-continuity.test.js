@@ -80,7 +80,7 @@ test('onboarding ships a cache-busted authoritative cream-and-gold skin', () => 
     assert.match(dashboardSource, /pbb-onboarding-foundations\.css\?v=10-preference-contrast/);
 });
 
-test('Foundations gives each real setup section a compact branded transition', () => {
+test('Balance Learn gives each real setup section a compact branded transition', () => {
     assert.equal((dashboardSource.match(/id="wizard-section-transition"/g) || []).length, 1);
     assert.match(dashboardSource, /id="onboarding-wizard"[\s\S]*?id="wizard-section-transition"[\s\S]*?aria-live="polite"/);
     assert.match(dashboardSource, /data-transition-stage="profile"/);

@@ -79,7 +79,7 @@ assert(
     checkout.includes("'coaching-3-month': { amount: 4999, label: 'Balance Online Coaching, 3 Month', successPlan: 'online_coaching_3_month' }") &&
     checkout.includes("'coaching-month-to-month': { amount: 7499, label: 'Balance Online Coaching, Month-to-Month', successPlan: 'online_coaching_month_to_month' }") &&
     checkout.includes("'coaching-calls': { amount: 9999, label: 'Balance Coaching + Calls', successPlan: 'coaching_calls_weekly' }") &&
-    checkout.includes("'founders-pass': { amount: 14900, label: 'Balance Foundations', successPlan: 'balance_foundations_six_week' }") &&
+    checkout.includes("'founders-pass': { amount: 14900, label: 'Balance Learn', successPlan: 'balance_foundations_six_week' }") &&
     checkout.includes("walletAvailable && btn.dataset.hostedCheckoutOnly !== 'true' && !isBumpChecked") &&
     checkout.includes('plan=${encodeURIComponent(successPlan)}'),
     'wallet checkout should preserve the selected plan and route order bumps through hosted Checkout'

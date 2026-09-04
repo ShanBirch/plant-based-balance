@@ -196,7 +196,7 @@ test('Stripe purchase completion records the linked buyer and queues a welcome',
     assert.match(webhook, /verifyMetaPreviewRef/);
     assert.match(webhook, /meta_app_preview_purchase_completed/);
     assert.match(webhook, /meta_app_preview_purchase_followup:/);
-    assert.match(webhook, /Your Balance Foundations pass is sorted/);
+    assert.match(webhook, /Your Balance Learn pass is sorted/);
     assert.match(webhook, /cancel_reason: "meta_app_preview_purchase_completed"/);
 });
 

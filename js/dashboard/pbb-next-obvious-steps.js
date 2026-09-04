@@ -404,7 +404,7 @@
       }
       if (!script) {
         script = document.createElement('script');
-        script.src = 'lib/learning-inline.js?v=42-required-course-welcome';
+        script.src = 'lib/learning-inline.js?v=43-balance-path-welcome';
         script.addEventListener('error', function(){ finish(false); }, { once: true });
         document.head.appendChild(script);
       }
@@ -617,7 +617,7 @@
         '<div class="coach-checkin-explainer__grid">',
           '<div class="coach-checkin-explainer__item"><strong>Weekly Goals</strong><span>What felt realistic, what you completed and what got in the way.</span></div>',
           '<div class="coach-checkin-explainer__item"><strong>Meals and photos</strong><span>Log your meals and add photos so Shannon can see what the week actually looked like.</span></div>',
-          '<div class="coach-checkin-explainer__item"><strong>Course progress</strong><span>What you learned, completed or found difficult in Balance Foundations.</span></div>',
+          '<div class="coach-checkin-explainer__item"><strong>Course progress</strong><span>What you learned, completed or found difficult in Balance Learn.</span></div>',
           '<div class="coach-checkin-explainer__item"><strong>Workouts</strong><span>Your completed sessions, logged sets and any workouts you had to move or miss.</span></div>',
           '<div class="coach-checkin-explainer__item"><strong>Check-in form</strong><span>Your honest recap of what worked, what did not and what support you need.</span></div>',
           '<div class="coach-checkin-explainer__item"><strong>Progress photos</strong><span>Your private visual record, used to look for changes beyond one number.</span></div>',
@@ -899,7 +899,7 @@
     {
       id: 'foundations_intro',
       title: 'Take your first lesson',
-      body: 'Start Balance Foundations, then complete your first short lesson and quiz.',
+      body: 'Start Balance Learn, then complete your first short lesson and quiz.',
       cta: 'Take Lesson 1',
       accent: '#0f766e',
       priority: 955,

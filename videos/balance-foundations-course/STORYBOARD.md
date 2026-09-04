@@ -1,8 +1,8 @@
 ---
 format: 1080x1920
 duration: 98.5s
-message: "Balance Foundations teaches why change feels hard, then helps people build habits and a way of eating they can actually keep"
-audience: "Plant-based adults considering Balance Foundations"
+message: "Balance Learn teaches why change feels hard, then helps people build habits and a way of eating they can actually keep"
+audience: "Plant-based adults considering Balance Learn"
 mode: autonomous
 music: "Curiosity by Diego Nava - warm, relaxed, positive instrumental bed"
 rhythm: course identity-HOLD / hook-HOLD / week title-HOLD / detailed chapter, repeated six times / reaction-card impacts / evergreen brand close
@@ -193,7 +193,7 @@ beneath the next, and no card carries a reaction number, name, handle or rating.
 - focal: Balance lockup and `UNDERSTAND CHANGE. BUILD WHAT LASTS.`
 - transition_out: terminal hold
 
-The six chapter labels compress into one clean Balance Foundations card. The
+The six chapter labels compress into one clean Balance Learn card. The
 evergreen line resolves in two beats: `UNDERSTAND CHANGE.` then the gold
 `BUILD WHAT LASTS.` A quiet supporting line connects the curriculum to fitness,
 food and habits that fit real life. The official logo receives one diagonal gold

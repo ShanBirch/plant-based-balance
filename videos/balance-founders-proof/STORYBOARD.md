@@ -1,7 +1,7 @@
 ---
 format: 1080x1920
 duration: 72.3s
-message: "Your six-week Balance Foundations Founders Pass, how each part works, and what the full six weeks costs"
+message: "Your six-week Balance Learn Founders Pass, how each part works, and what the full six weeks costs"
 arc: Offer clarity -> Workout -> Meal plan -> Community -> Learn and quiz -> Weekly Goals -> Shannon review -> Price
 audience: Plant-based adults who want structure, education and accountability
 mode: autonomous

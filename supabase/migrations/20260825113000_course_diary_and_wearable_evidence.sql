@@ -1,5 +1,5 @@
 -- Add specific diary-to-Feed evidence for Foundations Week 4 and every
--- Balance Identity week. Existing story rows and journey snapshots stay intact.
+-- Balance Lead week. Existing story rows and journey snapshots stay intact.
 
 ALTER TABLE public.stories
   DROP CONSTRAINT IF EXISTS stories_course_action_id_check;

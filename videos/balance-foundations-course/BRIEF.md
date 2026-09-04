@@ -2,11 +2,11 @@
 workflow: general-video
 flow: automation
 storyboard: no
-message: "Balance Foundations teaches why change feels hard, then helps people build habits and a way of eating they can actually keep"
+message: "Balance Learn teaches why change feels hard, then helps people build habits and a way of eating they can actually keep"
 destination: instagram-feed-pinned
 aspect: 1080x1920
 language: en
-audience: "Plant-based adults considering Balance Foundations who want to understand exactly what the six-week course teaches"
+audience: "Plant-based adults considering Balance Learn who want to understand exactly what the six-week course teaches"
 length: 98.5s
 angle: "A premium week-by-week curriculum reveal that makes all 30 lessons feel practical, connected and useful in real life"
 narration: no
@@ -15,7 +15,7 @@ narration: no
 ## Intent
 
 Create an evergreen vertical Instagram Reel that Shannon can pin to his profile
-and send to leads. Explain the real six-week Balance Foundations curriculum in
+and send to leads. Explain the real six-week Balance Learn curriculum in
 enough depth that a cold viewer understands what they will learn, why the weeks
 are sequenced that way, and how the course helps them move from self-blame and
 all-or-nothing thinking toward repeatable habits and a sustainable way of eating.
@@ -24,7 +24,7 @@ all-or-nothing thinking toward repeatable habits and a sustainable way of eating
 
 - `../balance-founders-proof/assets/balance-logo.png` - official Balance mark for the opening and close.
 - `../balance-founders-proof` - the current pinned/proof video and its cream, charcoal and restrained-gold visual system are the style reference.
-- `../../lib/learning-inline.js` - current live Balance Foundations week titles, descriptions and all 30 public-facing lesson titles.
+- `../../lib/learning-inline.js` - current live Balance Learn week titles, descriptions and all 30 public-facing lesson titles.
 - `.media/audio/bgm/bgm_001.mp3` - Mixkit `Curiosity` by Diego Nava, reused from Shannon's licensed reel library as the warm, relaxed, positive instrumental bed.
 - `.media/audio/sfx/sfx_001.mp3` and `sfx_002.mp3` - bundled HyperFrames whoosh and click accents for the hook, week reveals and CTA.
 

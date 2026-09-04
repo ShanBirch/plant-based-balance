@@ -2,7 +2,7 @@
 workflow: product-launch-video
 flow: automation
 storyboard: yes
-message: "Balance Foundations gives you a workout program, plant-based meal plan, community, a guided six-week course, Weekly Goals, and one weekly Shannon check-in with plan review"
+message: "Balance Learn gives you a workout program, plant-based meal plan, community, a guided six-week course, Weekly Goals, and one weekly Shannon check-in with plan review"
 destination: instagram-dm
 aspect: 1080x1920
 language: en
@@ -23,7 +23,7 @@ The story order is: workout program, plant-based meal plan, community Feed, guid
 
 ## Product truth
 
-- Balance Foundations is one fixed six-week experience.
+- Balance Learn is one fixed six-week experience.
 - Members receive a personal workout program and plant-based meal plan.
 - The Feed contains coach and member meals, workouts and wins.
 - The guided course runs for six weeks with five quizzes each week. A quiz begins with learning cards and then moves into “Test Your Understanding”.

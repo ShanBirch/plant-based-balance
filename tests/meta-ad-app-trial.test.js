@@ -66,7 +66,7 @@ function runTrial(search) {
         crypto: { randomUUID: () => 'fixed-id' },
         fetch: async (url, options) => {
             if (url.startsWith('/.netlify/functions/get-checkout-offer')) {
-                return { ok: true, json: async () => ({ offer: { token: 'balance_vegan_founders_pass', name: 'Balance Foundations', unitAmount: 14900, currency: 'AUD', plan: 'balance_foundations_six_week', accessDays: 42, renewal: 'none' } }) };
+                return { ok: true, json: async () => ({ offer: { token: 'balance_vegan_founders_pass', name: 'Balance Learn', unitAmount: 14900, currency: 'AUD', plan: 'balance_foundations_six_week', accessDays: 42, renewal: 'none' } }) };
             }
             const body = JSON.parse(options.body);
             if (url === '/.netlify/functions/log-lp-event') events.push(body);
@@ -75,7 +75,7 @@ function runTrial(search) {
                 return { ok: true, json: async () => ({
                     sessionId: 'cs_live_preview',
                     url: 'https://checkout.stripe.com/test-preview',
-                    offer: { token: 'balance_vegan_founders_pass', name: 'Balance Foundations', unitAmount: 14900, currency: 'AUD', plan: 'balance_foundations_six_week', accessDays: 42, renewal: 'none' }
+                    offer: { token: 'balance_vegan_founders_pass', name: 'Balance Learn', unitAmount: 14900, currency: 'AUD', plan: 'balance_foundations_six_week', accessDays: 42, renewal: 'none' }
                 }) };
             }
             return { ok: true, json: async () => ({ recorded: true }) };
@@ -173,7 +173,7 @@ test('finishing the guided tour opens the fixed six-week Stripe gate', async () 
     assert.equal(trial.window.location.href, 'https://checkout.stripe.com/test-preview');
 });
 
-test('the walkthrough cannot open payment before the first Foundations lesson is complete', () => {
+test('the walkthrough cannot open payment before the first Balance Learn lesson is complete', () => {
     const trial = runTrial('?guest=true&meta_trial=facebook_5m_foundations_v3&utm_source=facebook&utm_medium=paid_social');
     const api = trial.window.BalanceMetaAdTrial;
     api.onOnboardingStarted();

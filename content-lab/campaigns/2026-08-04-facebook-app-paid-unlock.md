@@ -2,7 +2,7 @@
 
 - Launch date: 2026-08-04
 - Variant: `facebook_5m_paid_v2`
-- Status: superseded on 2026-08-05 by `facebook_5m_foundations_v3` after the paid Meta offer was corrected to Balance Foundations.
+- Status: superseded on 2026-08-05 by `facebook_5m_foundations_v3` after the paid Meta offer was corrected to Balance Learn.
 - Destination: `https://plantbased-balance.org/meta-app-preview.html`
 - Eligible traffic: attributed Facebook paid-social visitors only
 - Offer: Balance App + Community at AU$19.99/month, charged immediately and monthly until cancelled

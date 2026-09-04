@@ -14,7 +14,7 @@
   const WEEK_DEFINITIONS = [
     {
       week: 1,
-      phase: 'FOUNDATIONS · BUILD THE EVIDENCE',
+      phase: 'BALANCE LEARN · BUILD THE EVIDENCE',
       title: 'Make the first reps visible.',
       body: 'Do one real action, then record it. Feed is not a performance; it is a supportive environment that helps the new pattern feel normal.',
       tasks: [
@@ -25,7 +25,7 @@
     },
     {
       week: 2,
-      phase: 'FOUNDATIONS · TRAIN FOR PROGRESS',
+      phase: 'BALANCE LEARN · TRAIN FOR PROGRESS',
       title: 'Training becomes evidence.',
       body: 'Make the minimum visible. A normal session counts, and sharing it helps the repetition feel real.',
       tasks: [
@@ -35,7 +35,7 @@
     },
     {
       week: 3,
-      phase: 'FOUNDATIONS · FUEL THE WORK',
+      phase: 'BALANCE LEARN · FUEL THE WORK',
       title: 'Let normal meals count.',
       body: 'Document what you already eat. The goal is awareness and useful repetition, not performance.',
       tasks: [
@@ -45,7 +45,7 @@
     },
     {
       week: 4,
-      phase: 'FOUNDATIONS · WORK WITH REAL LIFE',
+      phase: 'BALANCE LEARN · WORK WITH REAL LIFE',
       title: 'Make a normal meal visible.',
       body: 'Share food you actually logged in Balance. The useful meal counts without needing to look perfect.',
       tasks: [
@@ -56,7 +56,7 @@
     },
     {
       week: 5,
-      phase: 'FOUNDATIONS · MAKE THE PLAN FIT THE GOAL',
+      phase: 'BALANCE LEARN · MAKE THE PLAN FIT THE GOAL',
       title: 'Make progress visible.',
       body: 'A personal best is evidence that the work is moving. Share the result from your Balance workout history.',
       tasks: [
@@ -66,9 +66,9 @@
     },
     {
       week: 6,
-      phase: 'FOUNDATIONS · KEEP BECOMING THE PERSON WHO DOES IT',
+      phase: 'BALANCE LEARN · KEEP BECOMING THE PERSON WHO DOES IT',
       title: 'Show the process, not a performance.',
-      body: 'Finish Foundations with a light routine that can survive an ordinary messy week.',
+      body: 'Finish Balance Learn with a light routine that can survive an ordinary messy week.',
       tasks: [
         task('w6_feed_reflection', 'Share your course reflections in Feed', 'Write what changed, what helped and what you want to keep doing.', 'foundations_feed_reflection', 1, '📝', 'feed'),
         task('w6_weekly_checkin', 'Complete your weekly check-in', 'Tell Shannon what worked, what got in the way and what you need next.', 'weekly_checkin', 1, '✓', 'checkin')
@@ -76,7 +76,7 @@
     },
     {
       week: 7,
-      phase: 'BALANCE IDENTITY · TRAIN THE INPUTS',
+      phase: 'BALANCE LEAD · TRAIN THE INPUTS',
       title: 'Choose the inputs. Then choose the account.',
       body: 'Your attention trains your feed, and your feed influences what feels normal. Reset the loop, plan a clear fitness account and start participating on purpose.',
       instagramAction: true,
@@ -91,7 +91,7 @@
     },
     {
       week: 8,
-      phase: 'BALANCE IDENTITY · PUBLISH THE EVIDENCE',
+      phase: 'BALANCE LEAD · PUBLISH THE EVIDENCE',
       title: 'Build your first content rhythm.',
       body: 'Publish from work you already did, then use deliberate conversations to become part of the fitness community.',
       tasks: [
@@ -104,7 +104,7 @@
     },
     {
       week: 9,
-      phase: 'BALANCE IDENTITY · AUDIT THE LOOP',
+      phase: 'BALANCE LEAD · AUDIT THE LOOP',
       title: 'Notice what your feed is teaching you.',
       body: 'Review the algorithm again and keep only the signals that help the pattern you want.',
       instagramAction: true,
@@ -118,7 +118,7 @@
     },
     {
       week: 10,
-      phase: 'BALANCE IDENTITY · YOUR WEEKLY RHYTHM',
+      phase: 'BALANCE LEAD · YOUR WEEKLY RHYTHM',
       title: 'Do the work, then document it.',
       body: 'The public routine stays downstream of training, food and real life.',
       tasks: [
@@ -131,7 +131,7 @@
     },
     {
       week: 11,
-      phase: 'BALANCE IDENTITY · TELL ONE USEFUL STORY',
+      phase: 'BALANCE LEAD · TELL ONE USEFUL STORY',
       title: 'Give the evidence some meaning.',
       body: 'Move beyond posting a receipt and explain one small thing you learned from it.',
       tasks: [
@@ -144,7 +144,7 @@
     },
     {
       week: 12,
-      phase: 'BALANCE IDENTITY · KEEP THE PATTERN',
+      phase: 'BALANCE LEAD · KEEP THE PATTERN',
       title: 'Choose what you will keep doing.',
       body: 'Finish with a sustainable rhythm and a clear reason for documenting the journey.',
       tasks: [
@@ -712,7 +712,7 @@
       ? 'Your Next Step'
       : (weekComplete ? 'This week is complete.' : (nextAction ? nextAction.title : 'Your next steps are ready.'));
     const cardCopy = !lessonSeen
-      ? 'Finish the App Tour and your first Foundations lesson, then come back here to see exactly what to do next.'
+      ? 'Finish the App Tour and your first Balance Learn lesson, then come back here to see exactly what to do next.'
       : (weekComplete ? 'You built the evidence. Open this week whenever you want to review it.' : (nextAction ? nextAction.body : definition.body));
     const cardCta = !lessonSeen
       ? 'Open my first check-in'
@@ -720,7 +720,7 @@
     card.style.display = 'block';
     card.innerHTML = '<div class="social-journey-card__inner">'
       + '<div class="social-journey-card__week-art"><span>WEEK</span><strong>' + String(definition.week).padStart(2, '0') + '</strong></div>'
-      + '<div class="social-journey-card__eyebrow">' + (!lessonSeen ? 'A message from Coach Shannon' : (definition.week >= 7 ? 'Balance Identity' : 'Balance Foundations') + ' &middot; Week ' + definition.week) + '</div>'
+      + '<div class="social-journey-card__eyebrow">' + (!lessonSeen ? 'A message from Coach Shannon' : (definition.week >= 7 ? 'Balance Lead' : 'Balance Learn') + ' &middot; Week ' + definition.week) + '</div>'
       + '<div class="social-journey-card__title">' + escapeHtml(cardTitle) + '</div>'
       + '<div class="social-journey-card__copy">' + escapeHtml(cardCopy) + '</div>'
       + '<div class="social-journey-card__row"><div class="social-journey-card__progress"><span style="width:' + percent + '%"></span></div><div class="social-journey-card__count">' + completed + ' / ' + total + '</div></div>'
@@ -775,8 +775,8 @@
         kind: 'course_lesson',
         courseId,
         title: exactDestination?.title || (definition.week >= 7
-          ? 'Start Balance Identity: Week ' + definition.week
-          : 'Complete this week\'s Balance Foundations lesson'),
+          ? 'Start Balance Lead: Week ' + definition.week
+          : 'Complete this week\'s Balance Learn lesson'),
         body: exactDestination?.body || (lesson ? lesson.title : definition.title),
         cta: exactDestination?.cta || 'Open lesson',
         accent: '#b78a2e'
@@ -785,7 +785,7 @@
     const nextTask = getNextJourneyTask();
     if (!nextTask) return null;
     return {
-      title: (definition.week >= 7 ? 'Balance Identity: ' : 'Foundations: ') + nextTask.label,
+      title: (definition.week >= 7 ? 'Balance Lead: ' : 'Balance Learn: ') + nextTask.label,
       body: nextTask.hint || definition.body,
       cta: taskActionLabel(nextTask),
       accent: definition.week >= 7 ? '#b78a2e' : '#0f766e'
@@ -843,7 +843,7 @@
     const setup = safeObject(safeObject(state && state.settings).foundations_wearable_setup);
     const sheet = document.getElementById('social-journey-onboarding-sheet');
     if (!sheet) return;
-    sheet.innerHTML = '<div class="social-journey-onboarding__visual"><div class="social-journey-onboarding__step">Foundations Week 1</div><h2>Do you use a fitness watch?</h2><p>If you have a compatible watch, connect it so Balance can verify the setup. If you do not use one, say so honestly. Both choices receive the same course credit.</p></div>'
+    sheet.innerHTML = '<div class="social-journey-onboarding__visual"><div class="social-journey-onboarding__step">Balance Learn · Week 1</div><h2>Do you use a fitness watch?</h2><p>If you have a compatible watch, connect it so Balance can verify the setup. If you do not use one, say so honestly. Both choices receive the same course credit.</p></div>'
       + (setup.status ? '<div class="social-journey-callout"><strong>Current choice</strong><p>' + escapeHtml(setup.status === 'verified_connection' ? 'Verified watch connection: ' + String(setup.source || 'connected wearable') : 'No compatible fitness watch') + '</p></div>' : '')
       + '<button type="button" class="social-journey-button" onclick="socialJourney.verifyWearableSetup()">Connect or verify my watch</button>'
       + '<button type="button" class="social-journey-button secondary" onclick="socialJourney.recordNoWatch()">I do not use a compatible fitness watch</button>'
@@ -982,8 +982,8 @@
       + renderDailyPlan()
       + renderWeeklyGoalFocus()
       + renderInstagramPlanSummary()
-      + '<section class="social-journey-section"><h3 class="social-journey-section__heading">' + (definition.week >= 7 ? 'Balance Identity this week' : 'Foundations this week') + '</h3>' + renderTasks() + '</section>'
-      + (definition.week === 6 ? '<div class="social-journey-callout"><strong>Next: Balance Identity.</strong><p>Before planning an account, you will learn how your data inputs train your feed and how repeated exposure can shape what feels normal.</p></div>' : '')
+      + '<section class="social-journey-section"><h3 class="social-journey-section__heading">' + (definition.week >= 7 ? 'Balance Lead this week' : 'Balance Learn this week') + '</h3>' + renderTasks() + '</section>'
+      + (definition.week === 6 ? '<div class="social-journey-callout"><strong>Next: Balance Lead.</strong><p>Before planning an account, you will learn how your data inputs train your feed and how repeated exposure can shape what feels normal.</p></div>' : '')
       + (complete ? '<div class="social-journey-callout"><strong>This week is complete.</strong><p>Your next lesson will arrive with the next week. For now, keep the actions small and repeatable.</p></div>' : '')
       + '<section class="social-journey-section"><h3 class="social-journey-section__heading">Reminder route</h3><div class="social-journey-callout"><strong>' + (connectedHandle ? connectedHandle : 'In-app first') + '</strong><p>' + escapeHtml(reminderText) + '</p></div>'
       + '<button type="button" class="social-journey-button secondary" onclick="socialJourney.openReminderSetup()">' + (connectedHandle ? 'Review Instagram reminder' : 'Connect Instagram reminder') + '</button>' + instagramButton + '</section>'
@@ -1007,12 +1007,12 @@
     const definition = getWeekDefinition();
     const lessonCopy = WEEK_LESSONS[definition.week - 1];
     const isFirstLesson = definition.week === 1;
-    document.querySelector('.social-journey-header__title').textContent = isFirstLesson ? 'Your first lesson' : (definition.week >= 7 ? 'Balance Identity' : 'Week ' + definition.week + ' lesson');
+    document.querySelector('.social-journey-header__title').textContent = isFirstLesson ? 'Your first lesson' : (definition.week >= 7 ? 'Balance Lead' : 'Week ' + definition.week + ' lesson');
     document.querySelector('.social-journey-header__week').textContent = 'Week ' + definition.week + ' of 12';
     container.innerHTML = '<section class="social-journey-lesson">'
       + '<div class="social-journey-lesson__number"><span>WEEK</span><strong>' + String(definition.week).padStart(2, '0') + '</strong></div>'
       + '<div class="social-journey-lesson__eyebrow">' + escapeHtml(definition.phase) + '</div>'
-      + '<h2>' + escapeHtml(lessonCopy.title) + '</h2><p>' + escapeHtml(isFirstLesson ? 'Your first Balance Foundations lesson is interactive. Read each part, then choose the answer that makes the most sense to you.' : lessonCopy.body) + '</p></section>'
+      + '<h2>' + escapeHtml(lessonCopy.title) + '</h2><p>' + escapeHtml(isFirstLesson ? 'Your first Balance Learn lesson is interactive. Read each part, then choose the answer that makes the most sense to you.' : lessonCopy.body) + '</p></section>'
       + '<section class="social-journey-learn-card"><div class="social-journey-section__heading">' + (isFirstLesson ? 'How to answer' : 'Put it into practice') + '</div>'
       + '<div class="social-journey-learn-points">' + (isFirstLesson
         ? '<div><span>01</span><p>Answer honestly rather than trying to guess the perfect response.</p></div><div><span>02</span><p>If you miss one, keep going. The explanation is part of the lesson.</p></div><div><span>03</span><p>When you finish, Balance will bring you back to your next steps.</p></div>'
@@ -1028,17 +1028,17 @@
     const lessonCopy = WEEK_LESSONS[week - 1];
     if (!container || !definition || !lessonCopy) return;
     const isCurrentWeek = Number(state && state.current_week) === week;
-    document.querySelector('.social-journey-header__title').textContent = 'Balance Identity';
+    document.querySelector('.social-journey-header__title').textContent = 'Balance Lead';
     document.querySelector('.social-journey-header__week').textContent = 'Week ' + (week - 6) + ' of 6';
     container.innerHTML = '<section class="social-journey-lesson">'
-      + '<div class="social-journey-lesson__number"><span>IDENTITY</span><strong>' + String(week - 6).padStart(2, '0') + '</strong></div>'
+      + '<div class="social-journey-lesson__number"><span>LEAD</span><strong>' + String(week - 6).padStart(2, '0') + '</strong></div>'
       + '<div class="social-journey-lesson__eyebrow">' + escapeHtml(definition.phase) + '</div>'
       + '<h2>' + escapeHtml(lessonCopy.title) + '</h2><p>' + escapeHtml(lessonCopy.body) + '</p></section>'
       + '<section class="social-journey-learn-card"><div class="social-journey-section__heading">Put it into practice</div>'
       + '<div class="social-journey-learn-points">' + lessonCopy.points.map(function(point, index){ return '<div><span>' + String(index + 1).padStart(2, '0') + '</span><p>' + escapeHtml(point) + '</p></div>'; }).join('') + '</div></section>'
       + '<div class="social-journey-lesson-action">'
       + (isCurrentWeek ? '<button type="button" class="social-journey-button" onclick="socialJourney.showGoals()">' + (week === 7 ? 'I understand the loop - build my plan' : 'Use this lesson') + '</button>' : '')
-      + '<button type="button" class="social-journey-button secondary" onclick="socialJourney.returnToCourse()">Back to Balance Identity</button></div>';
+      + '<button type="button" class="social-journey-button secondary" onclick="socialJourney.returnToCourse()">Back to Balance Lead</button></div>';
   }
 
   function getIdentityCourseProgress() {
@@ -1120,7 +1120,7 @@
     if (!isJourneyEligible() || !state) return;
     const week = Math.max(7, Math.min(12, Number(weekNumber) || 7));
     if (week > Number(state.current_week)) {
-      showToast('That Balance Identity week will unlock when you reach it.', 'info');
+      showToast('That Balance Lead week will unlock when you reach it.', 'info');
       return;
     }
     coursePreviewWeek = week;
@@ -1152,7 +1152,7 @@
     container.innerHTML = '<section class="social-journey-welcome">'
       + '<div class="social-journey-welcome__eyebrow">YOUR COACH NOTE &middot; PRESS PLAY</div>'
       + '<h2>Start here.</h2>'
-      + '<p>Watch Shannon’s coach note, then complete your first Balance Foundations lesson. After that, Your Next Step will show you exactly what to do next.</p>'
+      + '<p>Watch Shannon’s coach note, then complete your first Balance Learn lesson. After that, Your Next Step will show you exactly what to do next.</p>'
       + '<video id="social-journey-welcome-video" class="social-journey-welcome__video" poster="/assets/balance-onboarding-coach-note-poster.jpg" controls playsinline preload="metadata" controlslist="nodownload noplaybackrate" disablepictureinpicture onloadedmetadata="socialJourney.guardWelcomeVideo(this)" onerror="socialJourney.welcomeVideoError(this)"><source src="' + escapeHtml(WELCOME_VIDEO_URL) + '" type="video/mp4"></video>'
       + '<div class="social-journey-welcome__transcript"><strong>The short version</strong><p>Use the app as evidence, not judgment. Log the meal you actually ate, complete the workout that fits today, and share the ordinary reps. That is how we build something that lasts.</p></div>'
       + '</section><div class="social-journey-lesson-action"><div id="social-journey-welcome-status" role="status" aria-live="polite" style="font-size:.78rem;font-weight:800;color:#765315;margin-bottom:8px;">' + (welcomeReady ? 'Coach note complete. Your first lesson is ready.' : 'Watch the full coach note to unlock your first lesson.') + '</div><button id="social-journey-welcome-continue" type="button" class="social-journey-button" onclick="socialJourney.reviewLesson()" ' + (welcomeReady ? '' : 'disabled') + ' style="opacity:' + (welcomeReady ? '1' : '.55') + ';cursor:' + (welcomeReady ? 'pointer' : 'not-allowed') + ';">' + (welcomeReady ? 'Open my first lesson' : 'Watch first') + '</button><button type="button" class="social-journey-text-button" onclick="socialJourney.close()">Not now</button></div>';
@@ -1173,7 +1173,7 @@
       }
       attempts += 1;
       if (attempts < 40) setTimeout(openLesson, 150);
-      else showToast('Your course is still loading. Open Course to start Balance Foundations.', 'info');
+      else showToast('Your course is still loading. Open Course to start Balance Learn.', 'info');
     };
     setTimeout(openLesson, 100);
   }
@@ -1560,7 +1560,7 @@
     ensureUi();
     const sheet = document.getElementById('social-journey-onboarding-sheet');
     const plan = instagramPlan();
-    sheet.innerHTML = '<div class="social-journey-onboarding__visual"><div class="social-journey-onboarding__step">Balance Identity</div><h2>Plan your fitness Instagram.</h2><p>Make the decisions once, so posting becomes evidence instead of a daily identity crisis.</p></div>'
+    sheet.innerHTML = '<div class="social-journey-onboarding__visual"><div class="social-journey-onboarding__step">Balance Lead</div><h2>Plan your fitness Instagram.</h2><p>Make the decisions once, so posting becomes evidence instead of a daily identity crisis.</p></div>'
       + '<form class="social-journey-onboarding__body social-journey-planner" onsubmit="event.preventDefault();socialJourney.saveInstagramPlan()">'
       + plannerField('sj-plan-purpose', 'Purpose', 'Why does this account exist?', plan.purpose, true)
       + plannerField('sj-plan-niche', 'Niche', 'Be specific: topic, angle and stage of the journey.', plan.niche, false)
