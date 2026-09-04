@@ -2484,6 +2484,15 @@ test('current neuroscience quick replies open the neutral paid flow without prem
         assert.equal(reply.videoAttachmentUrl, undefined);
         assert.equal(shouldUseDeterministicMetaAdFirstReply(testCase.message), true);
         assert.doesNotMatch(reply.joined, /plant[ -]?based|vegan|vegetarian|https?:\/\//i);
+        assert.ok(buildInternalMetaAdTestResetCustomData({
+            customData: {
+                bot_account: 'shan_n_sunny',
+                internal_test_auto_reply_enabled: true,
+                internal_test_meta_ad_flow: 'broad_pain',
+            },
+            currentMessage: testCase.message,
+            resetAt: '2026-09-04T00:00:00.000Z',
+        }), 'each live Gold Coast AI entry reply must reset the existing test episode');
     }
 });
 

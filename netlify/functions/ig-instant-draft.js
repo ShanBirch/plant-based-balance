@@ -4416,7 +4416,7 @@ function isInternalMetaAdConversationOpeningTurn({
 
 function isRepeatableInternalMetaAdTestOpener(value = '') {
     const message = String(value || '').replace(/\s+/g, ' ').trim();
-    return /^(?:balance|what is (?:the )?founders pass)\??$/i.test(message);
+    return /^(?:balance|what is (?:the )?founders pass|i keep starting over|i struggle to stay consistent|how does balance work)[.!?\s]*$/i.test(message);
 }
 
 function buildInternalMetaAdTestResetCustomData({
