@@ -34,12 +34,12 @@ Primary CTA keyword: `BALANCE`. Keep this keyword because the existing conversat
 
 ## Fourteen-day feed campaign
 
-### Day 1: The name and promise
+### Day 1: The promise
 
 - Format: 6-slide photo-first carousel.
 - Cover: `YOU DON'T NEED ANOTHER RESTART.`
-- Story arc: recognise the restart loop; remove blame; reveal Balance Foundations is now Balance Learn; state the six-week promise; introduce Learn as the first step; close with `Follow the next 14 days.`
-- Visuals: real Shannon portrait, current Balance Learn app screen, cream editorial cards, Balance Path graphic.
+- Story arc: recognise the restart loop; remove blame; introduce Balance Learn and its six-week promise; show Learn as the first step in a bigger path; close with `Follow the next 14 days.`
+- Visuals: photo-free Balance editorial cards in warm cream, black and gold with the large watermark treatment.
 - Caption lead: `I kept coming back to the same problem. Most people don't need more information. They need to understand why change falls apart when life gets messy, then practise a way back in.`
 - CTA: Follow and save.
 
