@@ -3250,6 +3250,16 @@ test.skip('legacy deterministic conversational stages retired in favour of the l
         currentMessage: 'Send me the link',
     }).code, 'approved_meta_ad_conversation_buyer_handoff');
 
+    const naturalBuyer = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'Looks good. Can you send me the checkout link so I can join?',
+        qualifier: { ...blockerQualifier, commercial_stage: 'buyer_intent' },
+        flowVariant: 'broad_pain',
+        checkoutUrl: 'https://future-balance.netlify.app/fitness',
+    });
+    assert.ok(naturalBuyer, 'a natural checkout request with its joining reason must not depend on the AI writer');
+    assert.equal(naturalBuyer.replyMode, 'campaign_buyer_handoff');
+    assert.match(naturalBuyer.joined, /future-balance\.netlify\.app\/fitness/);
+
     const appInclusions = buildDeterministicPaidMetaConversationReply({
         currentMessage: "What's included in Balance app?",
         qualifier: {
