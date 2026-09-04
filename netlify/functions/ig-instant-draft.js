@@ -1389,10 +1389,10 @@ function resolveMetaAdEarlyTypingDelayMs({ lastInboundAt = '', seed = '', nowMs 
 }
 
 const PAID_META_GOAL_SIGNAL_RE = /\b(?:lose|drop|reduce|gain|build|improve|get|feel|become|want|need|goal|stronger|fitter|leaner|healthier|weight|fat|muscle|strength|fitness|energy|confidence)\b/i;
-const PAID_META_BLOCKER_SIGNAL_RE = /\b(?:stop(?:ping)? and start(?:ing)?|stop[- ]start|keep stopping|keep restarting|always restart|fall(?:ing)? off|drop(?:ping)? off|never stick|can(?:'t| not) stick|inconsisten|discourag\w*|lose motivation|no motivation|no time|too busy|overwhelm|cravings?|weekends?|chocolate|emotional(?:ly)? eat\w*|having (?:it|chocolate|snacks?) around|accountab|stay on track|follow through|miss(?:ed|ing) (?:a )?(?:workout|session)|shifts? change|changing shifts?|family stuff|things? (?:just )?get(?:s)? in the way|work (?:and|&) (?:the )?kids|kids (?:and|&) work|busy with (?:work|kids|family))\b/i;
+const PAID_META_BLOCKER_SIGNAL_RE = /\b(?:stop(?:ping)? and start(?:ing)?|stop[- ]start|keep stopping|keep restarting|always restart|fall(?:ing)? off|drop(?:ping)? off|never stick|can(?:'t| not) stick|inconsisten|discourag\w*|lose motivation|no motivation|no time|too busy|overwhelm|cravings?|weekends?|chocolate|emotional(?:ly)? eat\w*|having (?:it|chocolate|snacks?) around|accountab|stay on track|follow through|miss(?:ed|ing) (?:a )?(?:workout|session)|skip(?:ped|ping)? (?:a )?(?:training|workout|session)|shifts? change|changing shifts?|hectic work(?:days?| weeks?)?|work (?:gets?|is|becomes?) hectic|family stuff|things? (?:just )?get(?:s)? in the way|work (?:and|&) (?:the )?kids|kids (?:and|&) work|busy with (?:work|kids|family))\b/i;
 const PAID_META_FITNESS_GOAL_RE = /\b(?:lose|losing|weight|body fat|fat loss|fit|fitter|fitness|strong|stronger|strength|muscle|energy|health|healthier|tone|toned|confidence|run|running|training|workout)\b/i;
-const PAID_META_CONCRETE_BLOCKER_RE = /\b(?:no time|not enough time|run out of time|too busy|work gets busy|prep|prepar\w*|routine|shifts?|roster|schedule|craving|weekend|chocolate|emotional(?:ly)? eat\w*|having (?:it|chocolate|snacks?) around|motivat\w*|inconsisten\w*|consisten\w*|stick|fall(?:ing)? off|drop(?:ping)?|stop(?:ping)?|restart|follow[ -]?through|accountab\w*|miss(?:ed|ing)? (?:a )?(?:workout|session)|random(?:ly)?|never know|no (?:proper )?(?:workout )?(?:plan|program)|don['\u2019]?t (?:have|know) (?:a |what )?(?:proper )?(?:workout )?(?:plan|program|to do)|overwhelm\w*|too much information|pain|injur\w*|cost|money|confidence)\b/i;
-const PAID_META_STRONG_BLOCKER_RE = /\b(?:no time|not enough time|run out of time|too busy|work gets busy|prep|prepar\w*|routine|shifts?|roster|schedule|craving|weekend|chocolate|emotional(?:ly)? eat\w*|having (?:it|chocolate|snacks?) around|lose motivation|no motivation|inconsisten\w*|can['\u2019]?t stick|fall(?:ing)? off|drop(?:ping)? off|stop(?:ping)?|restart|follow[ -]?through|miss(?:ed|ing)? (?:a )?(?:workout|session)|random(?:ly)?|never know|no (?:proper )?(?:workout )?(?:plan|program)|don['\u2019]?t (?:have|know) (?:a |what )?(?:proper )?(?:workout )?(?:plan|program|to do)|overwhelm\w*|too much information|pain|injur\w*|cost|money)\b/i;
+const PAID_META_CONCRETE_BLOCKER_RE = /\b(?:no time|not enough time|run out of time|too busy|work gets busy|hectic work(?:days?| weeks?)?|work (?:gets?|is|becomes?) hectic|prep|prepar\w*|routine|shifts?|roster|schedule|craving|weekend|chocolate|emotional(?:ly)? eat\w*|having (?:it|chocolate|snacks?) around|motivat\w*|inconsisten\w*|consisten\w*|stick|fall(?:ing)? off|drop(?:ping)?|stop(?:ping)?|restart|follow[ -]?through|accountab\w*|miss(?:ed|ing)? (?:a )?(?:workout|session)|skip(?:ped|ping)? (?:a )?(?:training|workout|session)|random(?:ly)?|never know|no (?:proper )?(?:workout )?(?:plan|program)|don['\u2019]?t (?:have|know) (?:a |what )?(?:proper )?(?:workout )?(?:plan|program|to do)|overwhelm\w*|too much information|pain|injur\w*|cost|money|confidence)\b/i;
+const PAID_META_STRONG_BLOCKER_RE = /\b(?:no time|not enough time|run out of time|too busy|work gets busy|hectic work(?:days?| weeks?)?|work (?:gets?|is|becomes?) hectic|prep|prepar\w*|routine|shifts?|roster|schedule|craving|weekend|chocolate|emotional(?:ly)? eat\w*|having (?:it|chocolate|snacks?) around|lose motivation|no motivation|inconsisten\w*|can['\u2019]?t stick|fall(?:ing)? off|drop(?:ping)? off|stop(?:ping)?|restart|follow[ -]?through|miss(?:ed|ing)? (?:a )?(?:workout|session)|skip(?:ped|ping)? (?:a )?(?:training|workout|session)|random(?:ly)?|never know|no (?:proper )?(?:workout )?(?:plan|program)|don['\u2019]?t (?:have|know) (?:a |what )?(?:proper )?(?:workout )?(?:plan|program|to do)|overwhelm\w*|too much information|pain|injur\w*|cost|money)\b/i;
 const PAID_META_FOOD_CONFUSION_RE = /\b(?:(?:i\s+)?(?:don['\u2019]?t|do not|dont)\s+know|(?:i\s+)?(?:dunno|dunn)|not sure|unsure|confused)\b[^.!?\n]{0,48}\b(?:what|how)\b[^.!?\n]{0,32}\b(?:eat|eating|meal|meals|food|protein)\b|\b(?:what|how)\b[^.!?\n]{0,32}\b(?:eat|eating|meal|meals|food|protein)\b[^.!?\n]{0,48}\b(?:confus|unsure|not sure)\w*/i;
 const PAID_META_BROAD_BLOCKER_RE = /^(?:i\s+)?(?:dunno\s+)?(?:i\s+)?just\s+can['\u2019]?t\s+do\s+it[.!\s]*$|^(?:all|every)(?:\s+of)?\s+(?:it|that)[.!\s]*$|^everything[.!\s]*$/i;
 const PAID_META_NEXT_STEP_RE = /^(?:okay[, ]*)?(?:so[, ]*)?(?:what (?:do i do|should i do|now)|what(?:'s| is) next|where (?:do i|should i) start|how (?:do i|should i) start)(?: now)?[.!?\s]*$/i;
@@ -1654,6 +1654,9 @@ function buildPaidMetaGoalToBlockerText(goalText = '', transformationProof = nul
     let acknowledgement = 'Yeah, that’s a clear goal.';
     if (/\b(?:8\s*kg|lose.+(?:kg|weight|fat)|body fat)\b/i.test(turn) && /\b(?:fit|fitter|energy)\b/i.test(turn)) {
         acknowledgement = 'Yeah, losing the weight and feeling fitter is a really clear goal.';
+    } else if (/\b(?:lose|losing)\s+(?:(?:around|about|roughly)\s+)?\d+(?:\.\d+)?\s*(?:kg|kgs|kilos?)\b/i.test(turn)
+        && /\b(?:confiden\w*|clothes|comfortable)\b/i.test(turn)) {
+        acknowledgement = 'Yeah, feeling confident in your clothes again is a really clear outcome to work towards.';
     } else if (/\b(?:muscle|strong|strength)\b/i.test(turn)) {
         acknowledgement = 'Yeah, building muscle and getting stronger is a solid goal.';
     } else if (/\b(?:5\s*km|run|running)\b/i.test(turn)) {
@@ -6933,6 +6936,7 @@ Rules:
     let rawText = '';
     let model = 'none';
     let lastError = null;
+    let deterministicPaidMetaFallback = null;
 
     if (hasInlineMedia) {
         // Vision path: try the public Gemini API first (works fine on a paid
@@ -7017,6 +7021,7 @@ Rules:
                         allowVideoAttachment: false,
                     });
                     if (Array.isArray(timeoutFallback?.chunks) && timeoutFallback.chunks.length) {
+                        deterministicPaidMetaFallback = timeoutFallback;
                         rawText = JSON.stringify({ messages: timeoutFallback.chunks });
                         model = 'deterministic_paid_meta_timeout_v1';
                         // The local paid-Meta writer is a complete, reviewed draft,
@@ -7222,6 +7227,11 @@ Rules:
         learningReelEvidenceBlock,
         emptyDraftRecovery,
         dmLanguageExperiment,
+        imageAttachmentUrl: deterministicPaidMetaFallback?.imageAttachmentUrl || null,
+        videoAttachmentUrl: deterministicPaidMetaFallback?.videoAttachmentUrl || null,
+        appPreviewHandoff: deterministicPaidMetaFallback?.appPreviewHandoff || undefined,
+        appPreviewUrl: deterministicPaidMetaFallback?.appPreviewUrl || undefined,
+        checkoutUrl: deterministicPaidMetaFallback?.checkoutUrl || undefined,
     };
 }
 

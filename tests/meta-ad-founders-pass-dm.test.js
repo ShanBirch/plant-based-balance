@@ -3558,6 +3558,16 @@ test('verified broad route completes goal, blocker, neutral offer and signed pre
     assert.match(goalReply.joined, /what usually gets in the way/i);
     assert.equal((goalReply.joined.match(/\?/g) || []).length, 1);
 
+    const confidenceGoalReply = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'I want to lose around 6kg and feel confident in my clothes again.',
+        qualifier: { commercial_stage: 'engaged', facts: {} },
+        history: [{ direction: 'out', text: opener.joined }],
+        flowVariant: 'broad_pain',
+    });
+    assert.match(confidenceGoalReply.joined, /feeling confident in your clothes again is a really clear outcome/i);
+    assert.equal((confidenceGoalReply.joined.match(/(?:clear|solid) goal/gi) || []).length, 1,
+        'the matched proof must not repeat clear-goal and solid-goal praise back to back');
+
     const blocker = 'Changing shifts make it hard to stay consistent';
     const historyThroughGoal = [
         { direction: 'out', text: opener.joined },
@@ -3583,6 +3593,33 @@ test('verified broad route completes goal, blocker, neutral offer and signed pre
     assert.match(offerReply.joined, /personalised preview/i);
     assert.equal((offerReply.joined.match(/\?/g) || []).length, 1,
         'the offer asks for preview consent, not another discovery fact');
+
+    const liveHecticWorkReply = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'I do well for a few days, then work gets hectic and I end up eating whatever is easiest and skipping training.',
+        qualifier: { commercial_stage: 'engaged', facts: {} },
+        history: historyThroughGoal,
+        flowVariant: 'broad_pain',
+        checkoutUrl: 'https://future-balance.netlify.app/fitness',
+        appPreviewUrl: previewUrl,
+        allowVideoAttachment: true,
+    });
+    assert.ok(liveHecticWorkReply, 'hectic work days and skipped training must survive an unavailable AI writer');
+    assert.match(liveHecticWorkReply.joined, /six-week course on neuroscience and psychology/i);
+    assert.match(liveHecticWorkReply.joined, /one (?:AUD )?\$149 payment for the full six weeks/i);
+    assert.match(liveHecticWorkReply.joined, /no subscription or auto-renewal/i);
+    assert.match(liveHecticWorkReply.joined, /personalised preview/i);
+    assert.equal(liveHecticWorkReply.videoAttachmentUrl, resolveBalanceFoundationsAppProofVideoUrl());
+
+    const conciseLiveRetry = buildDeterministicPaidMetaConversationReply({
+        currentMessage: 'Yeah, the main thing is hectic work days. That is when both food and training fall apart.',
+        qualifier: { commercial_stage: 'engaged', facts: {} },
+        history: historyThroughGoal,
+        flowVariant: 'broad_pain',
+        allowVideoAttachment: true,
+    });
+    assert.ok(conciseLiveRetry, 'the exact live retry wording must produce the complete local offer');
+    assert.equal((conciseLiveRetry.joined.match(/\?/g) || []).length, 1);
+    assert.equal(conciseLiveRetry.videoAttachmentUrl, resolveBalanceFoundationsAppProofVideoUrl());
 
     const pluralNightShiftOffer = buildDeterministicPaidMetaConversationReply({
         currentMessage: 'Night shifts and low energy usually knock me off track.',
