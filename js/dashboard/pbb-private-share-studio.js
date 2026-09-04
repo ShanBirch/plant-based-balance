@@ -883,47 +883,6 @@
     return { dataUrl: dataUrl, file: new File([blob], 'balance-share-' + Date.now() + '.jpg', { type: 'image/jpeg' }) };
   }
 
-  var html2CanvasLoader = null;
-  function ensureHtml2Canvas() {
-    if (typeof window.html2canvas === 'function') return Promise.resolve(window.html2canvas);
-    if (html2CanvasLoader) return html2CanvasLoader;
-    html2CanvasLoader = new Promise(function (resolve, reject) {
-      var script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
-      script.onload = function () { typeof window.html2canvas === 'function' ? resolve(window.html2canvas) : reject(new Error('Photo capture did not load')); };
-      script.onerror = function () { reject(new Error('Photo capture did not load')); };
-      document.head.appendChild(script);
-    });
-    return html2CanvasLoader;
-  }
-
-  async function captureExactEditorStage(el) {
-    var stage = el.querySelector('[data-share-stage]');
-    if (!stage) throw new Error('Share editor stage is missing');
-    var capture = await ensureHtml2Canvas();
-    var bounds = stage.getBoundingClientRect();
-    var scale = clamp(1080 / Math.max(1, bounds.width), 1, 3);
-    stage.classList.add('is-exporting');
-    try {
-      var captured = await capture(stage, { backgroundColor: '#111111', scale: scale, useCORS: true, allowTaint: false, logging: false, width: Math.round(bounds.width), height: Math.round(bounds.height), scrollX: 0, scrollY: 0 });
-      var canvas = document.createElement('canvas');
-      canvas.width = 1080; canvas.height = 1920;
-      var ctx = canvas.getContext('2d');
-      var coverScale = Math.max(canvas.width / captured.width, canvas.height / captured.height);
-      var coverW = captured.width * coverScale, coverH = captured.height * coverScale;
-      ctx.save(); ctx.filter = 'blur(34px) brightness(.56)'; ctx.drawImage(captured, (canvas.width - coverW) / 2, (canvas.height - coverH) / 2, coverW, coverH); ctx.restore();
-      ctx.fillStyle = 'rgba(0,0,0,.14)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-      var containScale = Math.min(canvas.width / captured.width, canvas.height / captured.height);
-      var drawW = captured.width * containScale, drawH = captured.height * containScale;
-      ctx.drawImage(captured, (canvas.width - drawW) / 2, (canvas.height - drawH) / 2, drawW, drawH);
-      var dataUrl = canvas.toDataURL('image/jpeg', .92);
-      var blob = await (await fetch(dataUrl)).blob();
-      return { dataUrl: dataUrl, file: new File([blob], 'balance-share-' + Date.now() + '.jpg', { type: 'image/jpeg' }) };
-    } finally {
-      stage.classList.remove('is-exporting');
-    }
-  }
-
   async function currentRenderedFile(el) {
     if (!active) throw new Error('Share editor is closed');
     var state = active;
@@ -933,12 +892,23 @@
     state.outputCacheKey = cacheKey;
     state.outputCachePromise = (async function () {
       var output;
-      try {
-        output = await captureExactEditorStage(el);
-      } catch (captureError) {
-        console.warn('Exact editor capture unavailable, using canvas renderer:', captureError);
-        if (state.rawPhoto || !state.cardPayload || typeof window.renderBalanceShareCardImage !== 'function') output = await makeRawOutput(state);
-        else output = { dataUrl: await window.renderBalanceShareCardImage(Object.assign({}, state.cardPayload, { studio_editor: editorState() }), { target: state.previewTarget || 'story', photoDataUrl: state.photoDataUrl, overlayStyle: state.overlayStyle, textStyle: state.textStyle }) };
+      // Export from the source image with a uniform canvas scale. Capturing the
+      // transformed full-screen <img> can flatten object-fit:cover in WebKit,
+      // turning people and circles into a wide, stretched Instagram image.
+      if (state.rawPhoto || !state.cardPayload || typeof window.renderBalanceShareCardImage !== 'function') {
+        output = await makeRawOutput(state);
+      } else {
+        output = {
+          dataUrl: await window.renderBalanceShareCardImage(
+            Object.assign({}, state.cardPayload, { studio_editor: editorState() }),
+            {
+              target: state.previewTarget || 'story',
+              photoDataUrl: state.photoDataUrl,
+              overlayStyle: state.overlayStyle,
+              textStyle: state.textStyle
+            }
+          )
+        };
       }
       var dataUrl = output.dataUrl;
       var response = await fetch(dataUrl);

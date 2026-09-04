@@ -30,11 +30,10 @@ test('finished editor image is used for both destinations', () => {
   assert.match(activity, /preparedDataUrl: studioShare\.renderedDataUrl/);
   assert.match(meals, /preparedDataUrl: studioShare\.renderedDataUrl/g);
   assert.match(studio, /studio_editor: editorState\(\)/);
-  assert.match(studio, /async function captureExactEditorStage\(el\)/);
-  assert.match(studio, /output = await captureExactEditorStage\(el\)/);
-  assert.match(studio, /html2canvas@1\.4\.1/);
-  assert.match(studio, /canvas\.width = 1080; canvas\.height = 1920/);
-  assert.match(studio, /containScale = Math\.min/);
+  assert.match(studio, /output = await makeRawOutput\(state\)/);
+  assert.match(studio, /dataUrl: await window\.renderBalanceShareCardImage/);
+  assert.match(studio, /turning people and circles into a wide, stretched Instagram image/);
+  assert.doesNotMatch(studio, /html2canvas@1\.4\.1|captureExactEditorStage/);
   assert.match(studio, /function scheduleInteractiveRender\(el\)/);
   assert.match(studio, /requestAnimationFrame\(function \(\)/);
   assert.match(studio, /active\.gestureActive/);

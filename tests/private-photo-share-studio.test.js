@@ -128,15 +128,15 @@ test('members receive the progress-first workout completed page', () => {
   assert.match(studio, /Session complete/);
   assert.match(studio, /position:sticky;bottom:0/);
   assert.match(workoutRuntime, /BalancePrivateShareStudio\.renderWorkoutCompletePage/);
-  assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=230-remove-volume-popup/);
+  assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=234-omnivore-meal-plan/);
 });
 
 test('private reveal, tour, and cache-busted modules ship together', () => {
   assert.match(dashboard, /photo-share-studio-all-members-v1/);
   assert.match(dashboard, /BalancePrivateShareStudio\.isEnabled\(\)/);
-  assert.match(dashboard, /pbb-private-share-studio\.js\?v=16-all-members-rollout/);
+  assert.match(dashboard, /pbb-private-share-studio\.js\?v=17-aspect-safe-export/);
   assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=61-exact-activity-share/);
   assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=[^'\"]+/);
   assert.match(dashboard, /dashboard-script-11-calorie_tracker_functions\.js\?v=41-share-done-flow/);
-  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v471-coach-checkin-tour'/);
+  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v486-share-aspect-safe'/);
 });
