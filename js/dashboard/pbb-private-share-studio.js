@@ -278,7 +278,7 @@
     style.textContent = `
       .pbb-share-studio{--gold:#d8b25e;--cream:#f8f5ee;--ink:#111;position:fixed;inset:0;z-index:100120;display:none;overflow:hidden;background:#090909;color:#fff;-webkit-text-fill-color:currentColor;font-family:Inter,system-ui,sans-serif}
       .pbb-share-studio.is-open{display:block}.pbb-share-studio *{box-sizing:border-box}.pbb-share-studio button,.pbb-share-studio textarea,.pbb-share-studio input{font:inherit}.pbb-share-studio button{cursor:pointer}
-      .pbb-share-studio__stage{position:absolute;inset:0;overflow:hidden;background:#090909;touch-action:none}.pbb-share-studio__photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform-origin:50% 50%;will-change:transform,filter;pointer-events:none;user-select:none}
+      .pbb-share-studio__stage{position:absolute;inset:0;overflow:hidden;background:#090909;touch-action:none}.pbb-share-studio__photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;will-change:filter;pointer-events:none;user-select:none}
       .pbb-share-studio__shade{position:absolute;inset:42% 0 0;background:linear-gradient(transparent,rgba(0,0,0,.12) 30%,rgba(0,0,0,.72));pointer-events:none}.pbb-share-studio__brand{position:absolute;left:5%;top:15%;display:flex;align-items:center;gap:8px;color:#fff;text-shadow:0 2px 10px #000;pointer-events:none}.pbb-share-studio__brand-mark{width:34px;height:34px;border:2px solid #fff;border-radius:50%;display:grid;place-items:center;font-size:.75rem;font-weight:950}.pbb-share-studio__brand strong{display:block;font-size:.78rem;letter-spacing:.04em}.pbb-share-studio__brand small{display:block;font-size:.43rem;font-weight:800;opacity:.82;letter-spacing:.04em}
       .pbb-share-studio__top{position:absolute;z-index:20;top:0;left:0;right:0;min-height:calc(70px + env(safe-area-inset-top));display:flex;align-items:flex-end;justify-content:space-between;padding:calc(10px + env(safe-area-inset-top)) 14px 10px;background:linear-gradient(rgba(0,0,0,.78),transparent);pointer-events:none}.pbb-share-studio__top-group{display:flex;gap:8px;pointer-events:auto}.pbb-share-studio__top-button{height:44px;min-width:44px;padding:0 12px;border:1px solid rgba(255,255,255,.32);border-radius:999px;background:rgba(8,8,8,.5);color:#fff;-webkit-text-fill-color:#fff;display:flex;align-items:center;justify-content:center;gap:7px;backdrop-filter:blur(14px)}.pbb-share-studio__top-button svg{width:21px;height:21px}.pbb-share-studio__next{background:var(--gold);border-color:var(--gold);color:var(--ink);-webkit-text-fill-color:var(--ink);font-weight:900;padding-inline:18px}
       .pbb-share-studio__rail{position:absolute;z-index:21;right:10px;top:calc(82px + env(safe-area-inset-top));display:flex;flex-direction:column;gap:8px}.pbb-share-studio__tool{width:66px;min-height:62px;padding:7px 4px;border:1px solid rgba(255,255,255,.3);border-radius:17px;background:rgba(10,10,10,.56);color:#fff;-webkit-text-fill-color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;backdrop-filter:blur(14px);font-size:.66rem;font-weight:850}.pbb-share-studio__tool svg{width:22px;height:22px;flex:0 0 auto}.pbb-share-studio__tool span{display:block;line-height:1.05;white-space:nowrap}.pbb-share-studio__tool.is-active{background:var(--gold);border-color:var(--gold);color:var(--ink);-webkit-text-fill-color:var(--ink)}
@@ -382,9 +382,12 @@
         <div class="pbb-share-studio__top-group"><button type="button" class="pbb-share-studio__top-button" data-share-close aria-label="Close editor">${svgIcon('close')}</button><button type="button" class="pbb-share-studio__top-button" data-share-undo aria-label="Undo changes">${svgIcon('undo')}</button></div>
         <div class="pbb-share-studio__top-group"><button type="button" class="pbb-share-studio__top-button" data-share-download>${svgIcon('save')}<span>Save</span></button><button type="button" class="pbb-share-studio__top-button" data-share-done>Done</button></div>
       </div>
-      <aside class="pbb-share-studio__rail" data-share-control-rail aria-label="Workout style controls">
-        <button type="button" class="pbb-share-studio__tool" data-share-cycle-layout>${svgIcon('workout')}<span>Layout</span><small data-share-layout-name>Bold</small></button>
-        <button type="button" class="pbb-share-studio__tool" data-share-cycle-colour>${svgIcon('palette')}<span>Colour</span><small data-share-colour-name>Gold</small><i data-share-colour-swatch></i></button>
+      <aside class="pbb-share-studio__rail" data-share-control-rail aria-label="Share editing controls">
+        <button type="button" class="pbb-share-studio__tool" data-share-tool="text">${svgIcon('text')}<span>Text</span><small>Style & size</small></button>
+        <button type="button" class="pbb-share-studio__tool" data-share-tool="stickers">${svgIcon('sticker')}<span>Stickers</span></button>
+        <button type="button" class="pbb-share-studio__tool" data-share-tool="workout" data-share-card-only>${svgIcon('workout')}<span>Details</span><small>Show & hide</small></button>
+        <button type="button" class="pbb-share-studio__tool" data-share-cycle-layout data-share-card-only>${svgIcon('workout')}<span>Layout</span><small data-share-layout-name>Bold</small></button>
+        <button type="button" class="pbb-share-studio__tool" data-share-cycle-colour data-share-card-only>${svgIcon('palette')}<span>Colour</span><small data-share-colour-name>Gold</small><i data-share-colour-swatch></i></button>
       </aside>
       <section class="pbb-share-studio__drawer" data-share-drawer hidden></section>
       <div class="pbb-share-studio__actions" data-share-actions>
@@ -501,9 +504,11 @@
     return {
       version: 4,
       filter: active.filter || 'original',
-      photoScale: clamp(active.photoScale || 1, .72, 2.4),
-      photoX: clamp(active.photoX || 0, -.45, .45),
-      photoY: clamp(active.photoY || 0, -.45, .45),
+      // The background is intentionally locked. Keep these compatibility values
+      // fixed so older renderers and saved payloads cannot reframe the photo.
+      photoScale: 1,
+      photoX: 0,
+      photoY: 0,
       overlayX: clamp(active.overlayX == null ? .5 : active.overlayX, .08, .92),
       overlayY: clamp(active.overlayY == null ? .68 : active.overlayY, .16, .88),
       overlayScale: clamp(active.overlayScale || 1, .5, 1.55),
@@ -512,7 +517,7 @@
       captionFont: active.captionFont || 'strong',
       captionColour: active.captionColour || '#ffffff',
       captionAlign: active.captionAlign || 'center',
-      captionSize: clamp(active.captionSize || 1, .65, 1.65),
+      captionSize: clamp(active.captionSize || 1, .45, 1.65),
       captionX: clamp(active.captionX == null ? .5 : active.captionX, .08, .92),
       captionY: clamp(active.captionY == null ? .26 : active.captionY, .1, .9),
       stickers: (active.stickers || []).map(function (sticker) {
@@ -540,20 +545,14 @@
     return FILTERS.find(function (filter) { return filter.id === id; }) || FILTERS[0];
   }
 
-  function photoTransform() {
-    return 'translate3d(' + Math.round(active.photoX * 100) + '%, ' + Math.round(active.photoY * 100) + '%, 0) scale(' + active.photoScale + ')';
-  }
-
   function layerTransform(x, y, scale) {
     return 'translate3d(-50%,-50%,0) scale(' + scale + ')';
   }
 
   function renderInteractiveTransforms(el) {
     if (!active) return;
-    var photo = el.querySelector('[data-share-image]');
     var card = el.querySelector('[data-share-workout-layer]');
     var caption = el.querySelector('[data-share-caption]');
-    photo.style.transform = photoTransform();
     card.style.left = Math.round(active.overlayX * 100) + '%';
     card.style.top = Math.round(active.overlayY * 100) + '%';
     card.style.transform = layerTransform(active.overlayX, active.overlayY, active.overlayScale);
@@ -630,7 +629,7 @@
     if (!active) return;
     var photo = el.querySelector('[data-share-image]');
     photo.src = active.photoDataUrl;
-    photo.style.transform = photoTransform();
+    photo.style.transform = 'none';
     photo.style.filter = filterById(active.filter).css;
     var titles = titleValues();
     var card = el.querySelector('[data-share-workout-layer]');
@@ -713,26 +712,22 @@
       '<textarea class="pbb-share-studio__input" data-share-input maxlength="140" placeholder="Type something…"></textarea>' +
       '<div class="pbb-share-studio__chip-row"><button class="pbb-share-studio__chip" data-text-style="plain">Plain</button><button class="pbb-share-studio__chip" data-text-style="label">Label</button><button class="pbb-share-studio__chip" data-text-style="gold">Gold</button><button class="pbb-share-studio__chip" data-text-font="strong">Strong</button><button class="pbb-share-studio__chip" data-text-font="modern">Modern</button><button class="pbb-share-studio__chip" data-text-font="serif">Serif</button><button class="pbb-share-studio__chip" data-text-font="mono">Mono</button></div>' +
       '<div class="pbb-share-studio__chip-row"><button class="pbb-share-studio__colour" style="background:#fff" data-text-colour="#ffffff" aria-label="White text"></button><button class="pbb-share-studio__colour" style="background:#111" data-text-colour="#111111" aria-label="Black text"></button><button class="pbb-share-studio__colour" style="background:#d8b25e" data-text-colour="#d8b25e" aria-label="Gold text"></button><button class="pbb-share-studio__colour" style="background:#f8f5ee" data-text-colour="#f8f5ee" aria-label="Cream text"></button><button class="pbb-share-studio__chip" data-text-align="left">Left</button><button class="pbb-share-studio__chip" data-text-align="center">Centre</button><button class="pbb-share-studio__chip" data-text-align="right">Right</button></div>' +
-      '<label class="pbb-share-studio__range-row"><span>Size</span><input class="pbb-share-studio__range" data-text-size type="range" min="65" max="165" value="' + Math.round(active.captionSize * 100) + '"><output>' + Math.round(active.captionSize * 100) + '%</output></label><p class="pbb-share-studio__hint">Drag the text anywhere on the photo. Pinch it with two fingers to resize.</p>';
+      '<label class="pbb-share-studio__range-row"><span>Size</span><input class="pbb-share-studio__range" data-text-size type="range" min="45" max="165" value="' + Math.round(active.captionSize * 100) + '"><output>' + Math.round(active.captionSize * 100) + '%</output></label><p class="pbb-share-studio__hint">Drag the text anywhere on the photo, or use Size to make it smaller or larger.</p>';
   }
 
   function stickerDrawer() {
     return '<div class="pbb-share-studio__drawer-head"><span class="pbb-share-studio__drawer-title">Stickers and emoji</span><button class="pbb-share-studio__drawer-done" data-drawer-close>Done</button></div><div class="pbb-share-studio__scroll-row">' + EMOJIS.map(function (emoji) { return '<button type="button" class="pbb-share-studio__emoji" data-add-emoji="' + emoji + '">' + emoji + '</button>'; }).join('') + '</div><p class="pbb-share-studio__hint">Tap to add one, then drag it anywhere. Pinch to resize. Tap × to remove it.</p>';
   }
 
-  function adjustDrawer() {
-    return '<div class="pbb-share-studio__drawer-head"><span class="pbb-share-studio__drawer-title">Move and resize photo</span><button class="pbb-share-studio__drawer-done" data-drawer-close>Done</button></div><label class="pbb-share-studio__range-row"><span>Zoom</span><input class="pbb-share-studio__range" data-photo-scale type="range" min="72" max="240" value="' + Math.round(active.photoScale * 100) + '"><output>' + Math.round(active.photoScale * 100) + '%</output></label><div class="pbb-share-studio__chip-row"><button class="pbb-share-studio__chip" data-photo-reset>Reset photo</button><button class="pbb-share-studio__chip" data-photo-fit>Fit smaller</button></div><p class="pbb-share-studio__hint">Drag the photo to reframe it. Pinch with two fingers to zoom in or out.</p>';
-  }
-
   function workoutDrawer() {
-    return '<div class="pbb-share-studio__drawer-head"><span class="pbb-share-studio__drawer-title">Design your ' + (active.context === 'workout' ? 'workout' : 'share card') + '</span><button class="pbb-share-studio__drawer-done" data-drawer-close>Done</button></div><div class="pbb-share-studio__chip-row"><button class="pbb-share-studio__chip" data-card-layout="bold">Bold</button><button class="pbb-share-studio__chip" data-card-layout="scorecard">Scorecard</button><button class="pbb-share-studio__chip" data-card-layout="simple">Title only</button><button class="pbb-share-studio__chip" data-card-layout="full">Full workout</button></div><label class="pbb-share-studio__range-row"><span>Size</span><input class="pbb-share-studio__range" data-overlay-scale type="range" min="50" max="155" value="' + Math.round(active.overlayScale * 100) + '"><output>' + Math.round(active.overlayScale * 100) + '%</output></label><div class="pbb-share-studio__chip-row"><button class="pbb-share-studio__chip" data-toggle-stats>' + (active.showStats === false ? 'Show stats' : 'Hide stats') + '</button>' + (active.context === 'workout' ? '<button class="pbb-share-studio__chip" data-toggle-pb>' + (active.showPB === false ? 'Show PBs' : 'Hide PBs') + '</button>' : '') + '<button class="pbb-share-studio__chip" data-card-theme="gold">Gold</button><button class="pbb-share-studio__chip" data-card-theme="cream">Cream</button><button class="pbb-share-studio__chip" data-card-theme="minimal">Minimal</button></div><p class="pbb-share-studio__hint">Drag the whole workout card anywhere on the photo. Pinch it with two fingers to resize.</p>';
+    return '<div class="pbb-share-studio__drawer-head"><span class="pbb-share-studio__drawer-title">Design your ' + (active.context === 'workout' ? 'workout' : 'share card') + '</span><button class="pbb-share-studio__drawer-done" data-drawer-close>Done</button></div><div class="pbb-share-studio__chip-row"><button class="pbb-share-studio__chip" data-card-layout="bold">Bold</button><button class="pbb-share-studio__chip" data-card-layout="scorecard">Scorecard</button><button class="pbb-share-studio__chip" data-card-layout="simple">Title only</button><button class="pbb-share-studio__chip" data-card-layout="full">Full workout</button></div><label class="pbb-share-studio__range-row"><span>Size</span><input class="pbb-share-studio__range" data-overlay-scale type="range" min="50" max="155" value="' + Math.round(active.overlayScale * 100) + '"><output>' + Math.round(active.overlayScale * 100) + '%</output></label><div class="pbb-share-studio__chip-row"><button class="pbb-share-studio__chip" data-toggle-stats>' + (active.showStats === false ? 'Show stats' : 'Hide stats') + '</button>' + (active.context === 'workout' ? '<button class="pbb-share-studio__chip" data-toggle-pb>' + (active.showPB === false ? 'Show PBs' : 'Hide PBs') + '</button>' : '') + '<button class="pbb-share-studio__chip" data-card-theme="gold">Gold</button><button class="pbb-share-studio__chip" data-card-theme="cream">Cream</button><button class="pbb-share-studio__chip" data-card-theme="minimal">Minimal</button></div><p class="pbb-share-studio__hint">Drag the share card anywhere on the photo. Pinch it with two fingers to resize.</p>';
   }
 
   function openDrawer(tool, el) {
     if (!active) return;
     active.activeTool = tool;
     var drawer = el.querySelector('[data-share-drawer]');
-    var makers = { filters: filterDrawer, text: textDrawer, stickers: stickerDrawer, adjust: adjustDrawer, workout: workoutDrawer };
+    var makers = { filters: filterDrawer, text: textDrawer, stickers: stickerDrawer, workout: workoutDrawer };
     drawer.innerHTML = makers[tool] ? makers[tool](el) : '';
     drawer.hidden = !makers[tool];
     el.querySelectorAll('[data-share-tool]').forEach(function (button) { button.classList.toggle('is-active', button.dataset.shareTool === tool); });
@@ -758,9 +753,7 @@
     drawer.querySelectorAll('[data-text-colour]').forEach(function (button) { button.classList.toggle('is-active', button.dataset.textColour === active.captionColour); button.addEventListener('click', function () { active.captionColour = button.dataset.textColour; renderLayers(el); }); });
     drawer.querySelectorAll('[data-text-align]').forEach(function (button) { button.classList.toggle('is-active', button.dataset.textAlign === active.captionAlign); button.addEventListener('click', function () { active.captionAlign = button.dataset.textAlign; renderLayers(el); }); });
     function range(selector, key, divisor) { var control = drawer.querySelector(selector); if (!control) return; control.addEventListener('input', function () { active[key] = Number(control.value) / divisor; control.nextElementSibling.value = Math.round(active[key] * divisor) + '%'; renderLayers(el); }); }
-    range('[data-text-size]', 'captionSize', 100); range('[data-photo-scale]', 'photoScale', 100); range('[data-overlay-scale]', 'overlayScale', 100);
-    var reset = drawer.querySelector('[data-photo-reset]'); if (reset) reset.addEventListener('click', function () { active.photoScale = 1; active.photoX = 0; active.photoY = 0; openDrawer('adjust', el); renderLayers(el); });
-    var fit = drawer.querySelector('[data-photo-fit]'); if (fit) fit.addEventListener('click', function () { active.photoScale = .78; active.photoX = 0; active.photoY = 0; openDrawer('adjust', el); renderLayers(el); });
+    range('[data-text-size]', 'captionSize', 100); range('[data-overlay-scale]', 'overlayScale', 100);
     var stats = drawer.querySelector('[data-toggle-stats]'); if (stats) stats.addEventListener('click', function () { active.showStats = active.showStats === false; openDrawer('workout', el); renderLayers(el); });
     var pb = drawer.querySelector('[data-toggle-pb]'); if (pb) pb.addEventListener('click', function () { active.showPB = active.showPB === false; openDrawer('workout', el); renderLayers(el); });
     drawer.querySelectorAll('[data-card-layout]').forEach(function (button) { button.classList.toggle('is-active', button.dataset.cardLayout === active.textStyle); button.addEventListener('click', function () { active.textStyle = button.dataset.cardLayout; openDrawer('workout', el); renderLayers(el); }); });
@@ -831,13 +824,12 @@
     return { dataUrl: dataUrl, file: new File([blob], 'balance-share-' + Date.now() + '.jpg', { type: 'image/jpeg' }) };
   }
 
-  function drawCoverTransformed(ctx, image, width, height, state) {
+  function drawCoverFixed(ctx, image, width, height, state) {
     var base = Math.max(width / image.width, height / image.height);
-    var scale = base * clamp(state.photoScale || 1, .72, 2.4);
-    var drawW = image.width * scale;
-    var drawH = image.height * scale;
-    var x = (width - drawW) / 2 + (state.photoX || 0) * width;
-    var y = (height - drawH) / 2 + (state.photoY || 0) * height;
+    var drawW = image.width * base;
+    var drawH = image.height * base;
+    var x = (width - drawW) / 2;
+    var y = (height - drawH) / 2;
     ctx.save();
     ctx.filter = filterById(state.filter).css;
     ctx.drawImage(image, x, y, drawW, drawH);
@@ -875,7 +867,7 @@
     canvas.height = portrait ? 1920 : 1080;
     var ctx = canvas.getContext('2d');
     ctx.fillStyle = '#090909'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-    drawCoverTransformed(ctx, image, canvas.width, canvas.height, state);
+    drawCoverFixed(ctx, image, canvas.width, canvas.height, state);
     drawRawCaption(ctx, canvas.width, canvas.height, state);
     drawRawStickers(ctx, canvas.width, canvas.height, state);
     var dataUrl = canvas.toDataURL('image/jpeg', .92);
@@ -1171,6 +1163,13 @@
     });
     el.querySelector('[data-share-feed]').addEventListener('click', function () { runAction('feed', el); });
     el.querySelector('[data-share-instagram]').addEventListener('click', function () { runAction('instagram', el); });
+    el.querySelectorAll('[data-share-tool]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        if (!active) return;
+        if (active.activeTool === button.dataset.shareTool) closeDrawer(el);
+        else openDrawer(button.dataset.shareTool, el);
+      });
+    });
     el.querySelector('[data-share-cycle-layout]').addEventListener('click', function () {
       if (!active) return;
       var index = Math.max(0, WORKOUT_LAYOUTS.findIndex(function (layout) { return layout.id === active.textStyle; }));
@@ -1185,38 +1184,7 @@
     });
 
     var stage = el.querySelector('[data-share-stage]');
-    var photoPointers = new Map();
-    var photoStart = null;
     function distance(a, b) { return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY); }
-    stage.addEventListener('pointerdown', function (event) {
-      if (!active || event.target.closest('.pbb-share-studio__layer') || event.target.closest('button')) return;
-      active.gestureActive = true;
-      clearTimeout(active.outputWarmTimer);
-      stage.setPointerCapture(event.pointerId);
-      photoPointers.set(event.pointerId, event);
-      if (photoPointers.size === 1) photoStart = { x: event.clientX, y: event.clientY, photoX: active.photoX, photoY: active.photoY, time: Date.now() };
-      if (photoPointers.size === 2) { var pair = Array.from(photoPointers.values()); photoStart = { distance: distance(pair[0], pair[1]), scale: active.photoScale, photoX: active.photoX, photoY: active.photoY }; }
-      event.preventDefault();
-    });
-    stage.addEventListener('pointermove', function (event) {
-      if (!active || !photoPointers.has(event.pointerId)) return;
-      photoPointers.set(event.pointerId, event);
-      var bounds = stage.getBoundingClientRect();
-      if (photoPointers.size >= 2) { var pair = Array.from(photoPointers.values()); active.photoScale = clamp(photoStart.scale * distance(pair[0], pair[1]) / Math.max(20, photoStart.distance), .72, 2.4); }
-      else if (photoStart && photoStart.x != null) { active.photoX = clamp(photoStart.photoX + (event.clientX - photoStart.x) / bounds.width, -.45, .45); active.photoY = clamp(photoStart.photoY + (event.clientY - photoStart.y) / bounds.height, -.45, .45); }
-      scheduleInteractiveRender(el); event.preventDefault();
-    });
-    function endPhoto(event) { if (!photoPointers.has(event.pointerId)) return; photoPointers.delete(event.pointerId); if (!photoPointers.size) { photoStart = null; finishInteractiveRender(el); } }
-    stage.addEventListener('pointerup', endPhoto); stage.addEventListener('pointercancel', endPhoto);
-    var wheelFinishTimer = 0;
-    stage.addEventListener('wheel', function (event) {
-      if (!active) return;
-      active.gestureActive = true; clearTimeout(active.outputWarmTimer); clearTimeout(wheelFinishTimer);
-      active.photoScale = clamp(active.photoScale - event.deltaY * .001, .72, 2.4);
-      scheduleInteractiveRender(el);
-      wheelFinishTimer = setTimeout(function () { finishInteractiveRender(el); }, 140);
-      event.preventDefault();
-    }, { passive: false });
 
     var layerPointers = new Map();
     var layerGesture = null;
@@ -1333,9 +1301,6 @@
         cardPayload: options.cardPayload || null,
         rawPhoto: !!options.rawPhoto,
         previewTarget: options.previewTarget || 'story',
-        photoScale: 1,
-        photoX: 0,
-        photoY: 0,
         filter: 'original',
         overlayX: previous.overlayX == null ? .5 : previous.overlayX,
         overlayY: previous.overlayY == null ? .68 : previous.overlayY,
@@ -1357,7 +1322,9 @@
       el.querySelector('[data-share-instagram]').style.display = typeof active.onInstagram === 'function' ? '' : 'none';
       el.querySelector('[data-share-feed]').textContent = 'Share to Feed';
       el.querySelector('[data-share-instagram]').textContent = 'Share to IG Story';
-      el.querySelector('[data-share-control-rail]').style.display = context === 'workout' ? 'flex' : 'none';
+      setActionBusy(el, false);
+      el.querySelector('[data-share-control-rail]').style.display = 'flex';
+      el.querySelectorAll('[data-share-card-only]').forEach(function (button) { button.style.display = active.cardPayload && !active.rawPhoto ? '' : 'none'; });
       el.classList.add('is-open');
       document.body.style.overflow = 'hidden';
       renderLayers(el);

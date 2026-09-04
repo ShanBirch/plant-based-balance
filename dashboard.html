@@ -19708,7 +19708,7 @@ if (window._pbbIsIOSSafari) {
 <script>
 // Full-screen Balance photo share studio for signed-in members.
 </script>
-<script src="js/dashboard/pbb-private-share-studio.js?v=17-aspect-safe-export"></script>
+<script src="js/dashboard/pbb-private-share-studio.js?v=18-locked-photo-text-tools"></script>
 <script>
 // Script-10 (130KB) - Points widget. On iOS, defer to reduce memory pressure.
 // loadPointsWidget is guarded with typeof in init, so safe to defer.
@@ -19724,13 +19724,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-        s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=61-exact-activity-share';
+            s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=62-locked-photo-text-tools';
             s.onload = function() { if(window._crumb)window._crumb('script10_deferred_loaded'); };
             document.head.appendChild(s);
         }, 1500);
     }, { once: true });
 } else {
-        document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=61-exact-activity-share"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=62-locked-photo-text-tools"><\/script>');
 }
 </script>
 

@@ -3794,15 +3794,12 @@ function pbbShareStudioPhotoFilter(filter) {
 }
 
 function pbbShareDrawStudioPhoto(ctx, img, x, y, w, h, editor) {
-    const zoom = Math.max(0.72, Math.min(2.4, Number(editor && editor.photoScale) || 1));
-    const offsetX = Math.max(-0.45, Math.min(0.45, Number(editor && editor.photoX) || 0));
-    const offsetY = Math.max(-0.45, Math.min(0.45, Number(editor && editor.photoY) || 0));
-    const scale = Math.max(w / img.width, h / img.height) * zoom;
+    const scale = Math.max(w / img.width, h / img.height);
     const drawW = img.width * scale;
     const drawH = img.height * scale;
     ctx.save();
     ctx.filter = pbbShareStudioPhotoFilter(editor && editor.filter);
-    ctx.drawImage(img, x + ((w - drawW) / 2) + (offsetX * w), y + ((h - drawH) / 2) + (offsetY * h), drawW, drawH);
+    ctx.drawImage(img, x + ((w - drawW) / 2), y + ((h - drawH) / 2), drawW, drawH);
     ctx.restore();
 }
 
@@ -5080,15 +5077,18 @@ function pbbShareDrawStudioCaption(ctx, width, height, cardType, options) {
     const xRatio = Math.max(0.1, Math.min(0.9, Number(custom.captionX) || 0.5));
     const yRatio = Math.max(0.1, Math.min(0.9, Number(custom.captionY) || 0.22));
     const style = ['plain', 'label', 'gold'].includes(custom.captionStyle) ? custom.captionStyle : 'plain';
-    const fontSize = Math.round(width * 0.058);
+    const size = Math.max(0.45, Math.min(1.65, Number(custom.captionSize) || 1));
+    const fontSize = Math.round(width * 0.058 * size);
     const lineHeight = Math.round(fontSize * 1.12);
     const maxWidth = width * 0.78;
+    const family = custom.captionFont === 'serif' ? 'Georgia, serif' : custom.captionFont === 'mono' ? 'monospace' : 'Arial, sans-serif';
+    const weight = custom.captionFont === 'modern' ? 650 : 900;
     const words = text.split(/\s+/).filter(Boolean);
     const lines = [];
     let line = '';
 
     ctx.save();
-    ctx.font = `900 ${fontSize}px Arial, sans-serif`;
+    ctx.font = `${weight} ${fontSize}px ${family}`;
     words.forEach(word => {
         const candidate = line ? `${line} ${word}` : word;
         if (line && ctx.measureText(candidate).width > maxWidth) {
@@ -5119,9 +5119,9 @@ function pbbShareDrawStudioCaption(ctx, width, height, cardType, options) {
         );
     }
 
-    ctx.textAlign = 'center';
+    ctx.textAlign = ['left', 'right'].includes(custom.captionAlign) ? custom.captionAlign : 'center';
     ctx.textBaseline = 'top';
-    ctx.fillStyle = style === 'gold' ? '#241d10' : '#ffffff';
+    ctx.fillStyle = style === 'gold' ? '#241d10' : (custom.captionColour || '#ffffff');
     if (style === 'plain') {
         ctx.shadowColor = 'rgba(0,0,0,0.82)';
         ctx.shadowBlur = 16;

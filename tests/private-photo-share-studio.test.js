@@ -58,17 +58,25 @@ test('studio is full-screen, safe-area aware, and interactive', () => {
   assert.match(studio, /data-theme=\"light\"/);
 });
 
-test('focused editor can reframe the photo and move the workout card', () => {
-  assert.match(studio, /photoScale = clamp/);
-  assert.match(studio, /photoPointers/);
+test('focused editor locks the photo while text and share-card layers remain editable', () => {
+  assert.match(studio, /photoScale: 1/);
+  assert.match(studio, /photoX: 0/);
+  assert.match(studio, /photoY: 0/);
+  assert.doesNotMatch(studio, /photoPointers|data-photo-scale|data-photo-reset|Move and resize photo/);
+  assert.doesNotMatch(studio, /stage\.addEventListener\('wheel'/);
+  assert.doesNotMatch(points, /editor && editor\.photoScale|editor && editor\.photoX|editor && editor\.photoY/);
   assert.match(studio, /data-share-workout-layer/);
   assert.match(studio, /overlayX/);
   assert.match(studio, /overlayY/);
   assert.match(studio, /overlayScale/);
+  assert.match(studio, /data-share-tool="text"/);
+  assert.match(studio, /data-share-tool="stickers"/);
+  assert.match(studio, /data-share-tool="workout"/);
+  assert.match(studio, /data-text-size type="range" min="45" max="165"/);
+  assert.match(studio, /captionSize: clamp\(active\.captionSize \|\| 1, \.45, 1\.65\)/);
   assert.match(studio, /data-share-cycle-layout/);
   assert.match(studio, /data-share-cycle-colour/);
   assert.doesNotMatch(studio, /data-share-tool="adjust"/);
-  assert.doesNotMatch(studio, /data-share-tool="workout"/);
   for (const layout of ['bold', 'scorecard', 'simple', 'full', 'stamp', 'split', 'compact', 'outline', 'receipt', 'editorial']) {
     assert.match(studio, new RegExp("id: '" + layout + "'"));
   }
@@ -105,6 +113,10 @@ test('studio connects to every requested photo-sharing surface', () => {
 
 test('custom text is burned into designed share images', () => {
   assert.match(points, /function pbbShareDrawStudioCaption/);
+  assert.match(points, /custom\.captionSize/);
+  assert.match(points, /custom\.captionFont/);
+  assert.match(points, /custom\.captionColour/);
+  assert.match(points, /custom\.captionAlign/);
   assert.ok((points.match(/pbbShareDrawStudioCaption\(ctx, width, height, cardType, options\)/g) || []).length >= 5);
   assert.match(studio, /cardPayload\.studio_hide_pb = state\.showPB === false/);
   assert.match(studio, /cardPayload\.studio_hide_stats = state\.showStats === false/);
@@ -134,9 +146,9 @@ test('members receive the progress-first workout completed page', () => {
 test('private reveal, tour, and cache-busted modules ship together', () => {
   assert.match(dashboard, /photo-share-studio-all-members-v1/);
   assert.match(dashboard, /BalancePrivateShareStudio\.isEnabled\(\)/);
-  assert.match(dashboard, /pbb-private-share-studio\.js\?v=17-aspect-safe-export/);
-  assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=61-exact-activity-share/);
+  assert.match(dashboard, /pbb-private-share-studio\.js\?v=18-locked-photo-text-tools/);
+  assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=62-locked-photo-text-tools/);
   assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=[^'\"]+/);
   assert.match(dashboard, /dashboard-script-11-calorie_tracker_functions\.js\?v=41-share-done-flow/);
-  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v486-share-aspect-safe'/);
+  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v490-locked-share-photo'/);
 });
