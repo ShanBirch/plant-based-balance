@@ -91,6 +91,23 @@ test('focused editor locks the photo while text and share-card layers remain edi
   assert.match(points, /cardPayload\.studio_editor/);
 });
 
+test('activity exports move only the card and reuse the editor layout', () => {
+  const activityRenderer = points.slice(
+    points.indexOf('async function pbbShareDrawFullBleedActivityCard'),
+    points.indexOf('async function pbbShareDrawFullBleedMealCard')
+  );
+  const activityDispatch = points.slice(
+    points.indexOf("if (cardType === 'activity')"),
+    points.indexOf("ctx.fillStyle = 'rgba(255,255,255,0.12)'")
+  );
+  assert.match(activityRenderer, /const studioEditor = cardPayload\.studio_editor/);
+  assert.match(activityRenderer, /pbbShareWithStudioOverlayTransform[\s\S]*pbbShareDrawStudioWorkoutLayout/);
+  assert.match(points, /const isActivity = cardPayload\.card_type === 'activity'/);
+  assert.match(points, /isActivity \? 'ACTIVITY COMPLETE' : 'WORKOUT COMPLETE'/);
+  assert.match(activityRenderer, /SHOW UP\. KEEP THE RECEIPTS\./);
+  assert.doesNotMatch(activityDispatch, /pbbShareWithStudioOverlayTransform/);
+});
+
 test('share actions reuse the finished still and report their progress', () => {
   assert.match(studio, /var result = await fn\(\{/);
   assert.match(studio, /renderedDataUrl: output\.dataUrl/);
@@ -147,8 +164,8 @@ test('private reveal, tour, and cache-busted modules ship together', () => {
   assert.match(dashboard, /photo-share-studio-all-members-v1/);
   assert.match(dashboard, /BalancePrivateShareStudio\.isEnabled\(\)/);
   assert.match(dashboard, /pbb-private-share-studio\.js\?v=18-locked-photo-text-tools/);
-  assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=62-locked-photo-text-tools/);
+  assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=63-preview-matched-activity/);
   assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=[^'\"]+/);
   assert.match(dashboard, /dashboard-script-11-calorie_tracker_functions\.js\?v=41-share-done-flow/);
-  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v490-locked-share-photo'/);
+  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v491-preview-matched-activity'/);
 });

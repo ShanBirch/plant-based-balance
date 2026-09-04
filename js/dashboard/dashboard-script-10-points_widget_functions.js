@@ -4192,12 +4192,19 @@ function pbbShareDrawStudioMetrics(ctx, metrics, x, y, width, palette, options =
 
 function pbbShareDrawStudioWorkoutLayout(ctx, cardPayload, width, contentBottom, target, textStyle, editor) {
     const palette = pbbShareStudioWorkoutPalette(editor);
-    const title = String(cardPayload.workout_name || 'Workout').toUpperCase();
-    const metrics = pbbShareWorkoutMetrics(cardPayload);
+    const isActivity = cardPayload.card_type === 'activity';
+    const title = String(isActivity ? (cardPayload.activity_label || 'Activity') : (cardPayload.workout_name || 'Workout')).toUpperCase();
+    const metrics = isActivity
+        ? [
+            ['DURATION', String(cardPayload.duration || '-')],
+            ['KCAL', String(cardPayload.calories || '-')],
+            ['INTENSITY', String(cardPayload.intensity || 'moderate').toUpperCase()]
+        ]
+        : pbbShareWorkoutMetrics(cardPayload);
     const x = 64;
     const w = width - 128;
     const isFeed = target === 'feed';
-    const kicker = 'WORKOUT COMPLETE';
+    const kicker = isActivity ? 'ACTIVITY COMPLETE' : 'WORKOUT COMPLETE';
 
     if (textStyle === 'simple') {
         const y = contentBottom - 250;
@@ -4698,12 +4705,23 @@ async function pbbShareDrawFullBleedActivityCard(ctx, cardPayload, width, height
     ctx.fillText('BALANCE', x + 92, brandTop + 38);
     ctx.fillStyle = 'rgba(255,255,255,0.78)';
     ctx.font = '750 20px Arial, sans-serif';
-    ctx.fillText('MOVE. TRACK. FEEL GOOD.', x + 92, brandTop + 68);
+    ctx.fillText('SHOW UP. KEEP THE RECEIPTS.', x + 92, brandTop + 68);
 
     if (cardPayload.route_polyline) {
         const routeY = brandTop + 128;
         const routeH = target === 'feed' ? 280 : 360;
         pbbShareDrawActivityRoute(ctx, cardPayload, x, routeY, w, routeH);
+    }
+
+    const studioEditor = cardPayload.studio_editor;
+    if (studioEditor && Number(studioEditor.version) >= 4) {
+        await pbbShareWithStudioOverlayTransform(ctx, width, height, studioEditor, () => {
+            ctx.shadowColor = 'rgba(0,0,0,0.72)';
+            ctx.shadowBlur = 20;
+            ctx.shadowOffsetY = 5;
+            pbbShareDrawStudioWorkoutLayout(ctx, cardPayload, width, contentBottom, target, textStyle, studioEditor);
+        });
+        return;
     }
 
     ctx.save();
@@ -5222,9 +5240,13 @@ async function renderBalanceShareCardImage(cardPayload, options = {}) {
     }
 
     if (cardType === 'activity') {
-        const drawActivity = () => pbbShareDrawFullBleedActivityCard(ctx, Object.assign({}, cardPayload, { share_text_style: textStyle }), width, height, target);
-        if (studioEditor) await pbbShareWithStudioOverlayTransform(ctx, width, height, studioEditor, drawActivity);
-        else await drawActivity();
+        await pbbShareDrawFullBleedActivityCard(
+            ctx,
+            Object.assign({}, cardPayload, { share_text_style: textStyle, studio_editor: studioEditor }),
+            width,
+            height,
+            target
+        );
         pbbShareDrawStudioCaption(ctx, width, height, cardType, options);
         return canvas.toDataURL('image/jpeg', 0.92);
     }
