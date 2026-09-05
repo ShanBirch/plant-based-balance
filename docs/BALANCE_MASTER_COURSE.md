@@ -53,3 +53,14 @@ Decision date: 2026-09-20. No baseline or conversion uplift is claimed at launch
 - Existing course-card, course-action, quiz retry and guided-tour checks pass.
 - Live database transaction verified owner insert/update/readback, denied cross-user insert/reassignment, zero cross-user select/update and no anonymous select; all test writes rolled back.
 - A 360px local browser fixture verified light/dark layouts, draft reopening, incomplete-project blocking, workout linking/prescriptions, meal-day copying and all-six-stage completion. The fixture uses a test persistence adapter, separately from the live database-policy checks.
+
+
+## Compound-lift video assignment (2026-09-06)
+
+Stage 2 now requires one submitted clip for each of squat, hinge, push and pull, alongside its existing knowledge check and reflection. Members choose suitable variations and use the existing Form Check capture/upload flow. The course supplies a movement label in the workout context; members enter the actual exercise and notes. Shannon receives the existing Needs You review card, with the video and editable draft. Feedback remains in the coach conversation.
+
+The authenticated master-form-check-status endpoint derives the member ID from their access token and returns only submission IDs and dates for that member. It checks successful coach-alert receipts and the existing direct-message fallback. It never returns coach drafts or video URLs. Opening capture, cancelling, queued uploads and failed sends cannot satisfy the requirement. A failed status check leaves the course accessible, blocks that stage's completion and offers a retry. Existing completed courses must satisfy the new video requirement. Submission is explicitly distinct from coach approval; there is no automatic technique approval or promised review turnaround.
+
+Variant: master_compound_video_v1. Hypothesis: four practical video submissions improve application of the compound-lift lessons. Primary KPI: percentage of stage-2 starters with all four submissions within 14 days. Diagnostics: master_form_check_opened by movement, existing form_check_submit_success/failure and master_stage_completed (stage 2). Guardrails: upload failure rate and pending form-check review age. Decision date: 2026-09-20. Existing events and review queue provide the measurement sources; course text and videos are excluded from analytics.
+
+Validation: completion-gate tests cover missing and partial submissions, successful receipts, failed status checks and account changes. Endpoint tests cover authenticated identity scoping, privacy of returned fields and auth/database failures. Phone-sized fixture checks cover missing-video blocking and the existing Form Check handoff. No real member video or coach message was created during verification.

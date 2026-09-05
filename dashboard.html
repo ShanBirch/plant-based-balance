@@ -13928,7 +13928,7 @@ if(!window._pbbIsIOSSafari) {
   }
 
   const steps = [
-    { tab:'learning', sel:'#course-card-balance-master', fallbackSel:'#balance-path', title:'Build your own plans', body:'Balance Master teaches muscles, compound lifts and meal planning. Complete Balance Learn, then build a workout program and save your own seven-day meal plan.', action:function(){ if(typeof window.renderLearningHome === 'function') window.renderLearningHome(); } },
+    { tab:'learning', sel:'#course-card-balance-master', fallbackSel:'#balance-path', title:'Build your own plans', body:'Complete Balance Learn, then open Balance Master. Film a squat, hinge, push and pull for Shannon to review, build your workout program and save seven days of meals.', action:function(){ if(typeof window.renderLearningHome === 'function') window.renderLearningHome(); } },
     { tab:'movement-tab', sel:'#pbb-private-workout-complete', fallbackSel:'#post-workout-share-btn', title:'Your workout progress comes first', fallbackTitle:'Your new workout saved page', body:'After you finish a workout, Balance shows your completed sets, volume, exercises, and new bests before you choose whether to share a photo.', fallbackBody:'Finish a workout to see the new progress-first workout saved page.', quick:true, condition:function(){ return !!(window.BalancePrivateShareStudio && window.BalancePrivateShareStudio.isEnabled()); } },
     { tab:'movement-tab', sel:'#pbb-private-activity-complete,#pbb-private-meal-complete', fallbackSel:'#log-activity-card,.meal-icon-btn[onclick*="openMealBuilder"],.camera-btn-widget[onclick*="openMealBuilder"]', title:'Activities and meals now match', fallbackTitle:'One simple sharing flow', body:'After logging an activity or meal, review what you saved first. Tap Share a photo to take or choose one, edit it full screen, then share to Feed and IG Story.', fallbackBody:'Log an activity or meal to see its saved summary, then add and edit a photo if you want to share it.', quick:true, condition:function(){ return !!(window.BalancePrivateShareStudio && window.BalancePrivateShareStudio.isEnabled()); } },
     { tab:'movement-tab', sel:'#post-workout-share-btn', fallbackSel:'#activity-share-photo-btn,#nutrition-share-photo-btn', title:'Design your photo share', fallbackTitle:'Design your photo share', body:'Pinch or drag the photo, move the workout details, add text or stickers, and choose a layout and colour. Feed and IG Story stay ready until you tap Done.', fallbackBody:'Add a photo after a workout, activity, or meal to open the full-screen editor before sharing.', quick:true, condition:function(){ return !!(window.BalancePrivateShareStudio && window.BalancePrivateShareStudio.isEnabled()); } },
@@ -15830,7 +15830,7 @@ window.endFeatureTour = function(skipped){
   // -------------------------------------------------------
 
   var allFeatures = [
-    { id:'balance-master-course-v1', tab:'learning', sel:'#course-card-balance-master', fallbackSel:'#balance-path', title:'Build your own plans', body:'Balance Master teaches muscles, compound lifts and meal planning. Complete Balance Learn, then build a workout program and save your own seven-day meal plan.', action:function(){ if(typeof window.renderLearningHome === 'function') window.renderLearningHome(); } },
+    { id:'balance-master-form-checks-v1', tab:'learning', sel:'#course-card-balance-master', fallbackSel:'#balance-path', title:'Build your own plans', body:'Complete Balance Learn, then open Balance Master. Film a squat, hinge, push and pull for Shannon to review, build your workout program and save seven days of meals.', action:function(){ if(typeof window.renderLearningHome === 'function') window.renderLearningHome(); } },
     {
       id: 'meal-plan-shopping-list-v1',
       tab: 'meals',
@@ -20408,7 +20408,7 @@ if (window._pbbIsIOSSafari) {
 
     <!-- Learning System Script -->
     <link rel="stylesheet" href="css/balance-master-course.css?v=1">
-    <script src="lib/balance-master-course.js?v=1"></script>
+    <script src="lib/balance-master-course.js?v=2-form-checks"></script>
     <script>
     // On iOS Safari, defer learning-inline.js (888KB) to reduce memory pressure.
     // It's not needed until the user opens the Learn tab.

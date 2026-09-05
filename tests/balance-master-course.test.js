@@ -52,3 +52,18 @@ test('account changes clear cached progress and failed loads remain retryable', 
     fail=true;await assert.rejects(c.load(),/Could not load/);
     fail=false;await c.load();assert.equal(c.progress().completed,1);
 });
+
+test('compound stage requires four confirmed receipts and clears them on account switch or failed check', async () => {
+    let submissions={}, fail=false;
+    const data={completedStages:{1:true},answers:{'1-0':2,'1-1':0},reflections:{1:'Keep a controlled position'}};
+    const win={currentUser:{id:'member'},fetch:async()=>({ok:!fail,json:async()=>({submissions,error:'offline'})}),supabaseClient:{auth:{getSession:async()=>({data:{session:{access_token:'token'}}})},from(table){const q={select(){return q},eq(){return q},order:async()=>({data:[]}),maybeSingle:async()=>({data:{data}})};return q;}}};
+    const c=runtime(win);
+    data.answers['1-1']=c.stages[1].questions[1][2];
+    await c.load(); assert.equal(c.stageDone(1,data),false);
+    submissions={squat:{id:'1'},hinge:{id:'2'},push:{id:'3'}};
+    await c.load(true); assert.equal(c.stageDone(1,data),false);
+    submissions.pull={id:'4'};await c.load(true);assert.equal(c.stageDone(1,data),true);
+    fail=true;await c.load(true);assert.equal(c.stageDone(1,data),false);
+    fail=false;await c.load(true);assert.equal(c.stageDone(1,data),true);
+    win.currentUser.id='another';c.progress();assert.equal(c.stageDone(1,data),false);
+});
