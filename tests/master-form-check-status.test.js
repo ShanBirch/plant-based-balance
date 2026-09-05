@@ -3,6 +3,11 @@ const assert = require('node:assert/strict');
 const vm = require('node:vm');
 const fs = require('node:fs');
 const source = fs.readFileSync(require('node:path').join(__dirname, '../netlify/functions/master-form-check-status.js'), 'utf8');
+test('status endpoint is registered in the production functions directory', () => {
+    const wrapper = fs.readFileSync(require('node:path').join(__dirname, '../netlify/modern-functions/master-form-check-status.mts'), 'utf8');
+    assert.ok(wrapper.includes("../functions/master-form-check-status.js"));
+    assert.ok(wrapper.includes('withLambda(legacy.handler)'));
+});
 function runtime({ valid = true, fail = false } = {}) {
     const paths = [], exports = {};
     vm.runInNewContext(source, { exports, console: { error() {} }, fetch: async () => ({ ok: valid, json: async () => ({ id: 'member-a' }) }), require: () => ({ SUPABASE_URL: 'https://example.test', SUPABASE_SERVICE_KEY: 'test', supabaseQuery: async path => {
