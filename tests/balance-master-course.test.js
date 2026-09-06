@@ -5,7 +5,7 @@ const vm = require('node:vm');
 const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const source = fs.readFileSync(path.join(root, 'lib/balance-master-course.js'), 'utf8');
-function runtime(window = {}) { window.BalanceCourseWeeks ||= {read:async()=>null,available:()=>0}; vm.runInNewContext(source, { window }); return window.BalanceMaster; }
+function runtime(window = {}) { for (const file of ['balance-curriculum','balance-course-layout']) vm.runInNewContext(fs.readFileSync(path.join(root,'lib/'+file+'.js'),'utf8'),{window}); window.getCourseLessonCompletions ||= ()=>window.BalanceCurriculum.forCourse('master').map(l=>l.id); window.BalanceCourseWeeks ||= {read:async()=>null,available:()=>0}; vm.runInNewContext(source, { window }); return window.BalanceMaster; }
 test('all course stages have teaching, applied checks, and real existing lesson references', () => {
     const course = runtime();
     const learning = fs.readFileSync(path.join(root, 'lib/learning-inline.js'), 'utf8');

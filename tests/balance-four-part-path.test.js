@@ -37,7 +37,10 @@ test('six-stage Master drafts migrate without losing workouts, meals or completi
     assert.equal(c.migrate(result),result);
 });
 test('Lead completion requires its own answer and practical reflection', () => {
-    const c=load('lib/balance-lead-course.js').BalanceLead;
+    const win=load('lib/balance-curriculum.js');
+    win.getCourseLessonCompletions=()=>win.BalanceCurriculum.forCourse('lead').map(l=>l.id);
+    load('lib/balance-course-layout.js',win);
+    const c=load('lib/balance-lead-course.js',win).BalanceLead;
     assert.equal(c.weeks.length,6);
     assert.equal(c.done(0,{weeks:{0:{complete:true,answer:0,reflection:'I will follow through on an agreed walk.'}}}),false);
     assert.equal(c.done(0,{weeks:{0:{complete:true,answer:1,reflection:'Done'}}}),false);

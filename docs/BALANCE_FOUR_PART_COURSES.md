@@ -4,7 +4,7 @@ Published structure: Learn stays six weeks; Become uses the existing six-week pr
 
 ## Keep each course focused
 
-Only selected lessons move. Learn keeps its original 30 quizzes. Become receives five identity lessons. Master receives 36 anatomy, technique, programming and nutrition lessons as optional deeper learning beside its ten applied weeks. Lead receives Connection and Purpose beside six new support lessons. The remaining 131 lessons stay in seven specialist courses. All 203 existing IDs remain unchanged, so saved lesson completions and historical XP remain intact. A moved lesson is excluded from specialist topic counts and lists, but is still resolvable by its original ID.
+Only selected lessons move. Learn keeps its original 30 quizzes. Become receives five identity lessons. Master receives 36 anatomy, technique, programming and nutrition lessons as required lesson quizzes within its ten applied weeks. Lead receives Connection and Purpose within week one of its six support weeks. Become and Lead also require the quizzes assigned to a week before that week counts as complete. The remaining 131 lessons stay in seven specialist courses. Each core course uses the established week-card overview, with included lessons inside the relevant week. All 203 existing IDs remain unchanged, so saved lesson completions and historical XP remain intact. A moved lesson is excluded from specialist topic counts and lists, but is still resolvable by its original ID.
 
 ## Become
 

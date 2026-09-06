@@ -1031,7 +1031,7 @@
     document.querySelector('.social-journey-header__title').textContent = 'Balance Become';
     document.querySelector('.social-journey-header__week').textContent = 'Week ' + (week - 6) + ' of 6';
     container.innerHTML = '<section class="social-journey-lesson">'
-      + '<div class="social-journey-lesson__number"><span>LEAD</span><strong>' + String(week - 6).padStart(2, '0') + '</strong></div>'
+      + '<div class="social-journey-lesson__number"><span>BECOME</span><strong>' + String(week - 6).padStart(2, '0') + '</strong></div>'
       + '<div class="social-journey-lesson__eyebrow">' + escapeHtml(definition.phase) + '</div>'
       + '<h2>' + escapeHtml(lessonCopy.title) + '</h2><p>' + escapeHtml(lessonCopy.body) + '</p></section>'
       + '<section class="social-journey-learn-card"><div class="social-journey-section__heading">Put it into practice</div>'
@@ -1052,7 +1052,8 @@
         journeyWeek,
         title: lessonCopy.title,
         description: definition.body,
-        isComplete: seenWeeks.has(journeyWeek),
+        introComplete: seenWeeks.has(journeyWeek),
+        isComplete: seenWeeks.has(journeyWeek) && (window.BalanceCourseLayout?.requirements('become',index+1).complete ?? false),
         isLocked: currentJourneyWeek < journeyWeek
       };
     });
