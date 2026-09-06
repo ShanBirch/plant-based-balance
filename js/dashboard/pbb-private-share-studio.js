@@ -81,6 +81,26 @@
       @media(max-height:700px){.pwc-main{min-height:280px;padding-top:12px;padding-bottom:18px}.pwc-hero-mark{width:58px;height:58px;margin-bottom:14px;border-radius:19px;font-size:1.6rem}.pwc-time{font-size:3.7rem}.pwc-progress{margin-top:16px}}
       @media(min-width:561px){.pwc-shell{box-shadow:0 0 70px rgba(61,46,19,.14)}}
     `;
+    style.textContent += `
+      /* Meal confirmations stay compact; workout and activity pages retain their layout. */
+      #pbb-private-meal-complete{box-sizing:border-box;display:flex;align-items:center;justify-content:center;min-height:0!important;padding:calc(20px + env(safe-area-inset-top,0px)) calc(20px + env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) calc(20px + env(safe-area-inset-left,0px));background:rgba(20,25,20,.42)!important;overflow:hidden!important;backdrop-filter:blur(5px)}
+      #pbb-private-meal-complete .pwc-shell{width:100%;max-width:390px;min-height:0;max-height:100%;border:1px solid var(--pwc-line);border-radius:24px;background:var(--pwc-surface);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;box-shadow:0 18px 60px rgba(0,0,0,.2)}
+      #pbb-private-meal-complete .pwc-shell::after{display:none}
+      #pbb-private-meal-complete .pwc-topbar{padding:12px 20px 0;min-height:44px;flex-direction:row-reverse}
+      #pbb-private-meal-complete .pwc-topbar>span:last-child{display:none}
+      #pbb-private-meal-complete .pwc-close{width:44px!important;height:44px!important;border:0!important;box-shadow:none!important;background:transparent!important}
+      #pbb-private-meal-complete .pwc-main{flex:0 0 auto;min-height:0;padding:6px 22px 14px}
+      #pbb-private-meal-complete .pwc-title{font-family:Georgia,serif;font-size:28px;line-height:1.15;letter-spacing:-.025em;font-weight:500;overflow-wrap:anywhere;margin:0 0 20px}
+      #pbb-private-meal-complete .pwc-copy{font-size:15px;line-height:1.55;overflow-wrap:anywhere;white-space:pre-line}
+      #pbb-private-meal-complete .pwc-celebration{font-size:11px;line-height:1.4;letter-spacing:.08em;margin-bottom:7px}
+      #pbb-private-meal-complete .pwc-meal-details{padding:0 22px 12px;color:var(--pwc-text);-webkit-text-fill-color:var(--pwc-text);font-size:14px}
+      #pbb-private-meal-complete summary{min-height:44px;padding:12px 0;cursor:pointer}
+      #pbb-private-meal-complete .pwc-section{margin:0;padding:12px;box-shadow:none;border-radius:14px}
+      #pbb-private-meal-complete .pwc-actions{grid-template-columns:1fr 1fr;padding:14px 22px 20px;background:var(--pwc-surface);position:sticky;bottom:0;flex-shrink:0}
+      #pbb-private-meal-complete .pwc-primary,#pbb-private-meal-complete .pwc-secondary{min-height:46px;border-radius:12px;font-size:14px;font-weight:600;box-shadow:none}
+      #pbb-private-meal-complete .pwc-primary{background:#293d32;color:#fff;-webkit-text-fill-color:#fff}
+      html[data-pbb-theme="dark"] #pbb-private-meal-complete{--pwc-surface:#181b19;--pwc-surface-raised:#222723;--pwc-text:#f8f1e4;--pwc-muted:#c5bfb3;--pwc-line:#44483e;--pwc-gold-deep:#e3cc87}
+    `;
     document.head.appendChild(style);
   }
 
@@ -234,15 +254,40 @@
       if (typeof window.enableSwipeBackNavigation === 'function') { try { window.enableSwipeBackNavigation('pbb-private-meal-complete', closeMealCompletePage); } catch (_) {} }
     }
     var foods = Array.isArray(meal.food_items) ? meal.food_items : [];
-    var name = String(meal.notes || meal.meal_description || foods.map(function (item) { return item.name; }).filter(Boolean).slice(0, 3).join(', ') || meal.meal_type || 'Meal');
-    var options = { kicker: 'Meal logged', sectionLabel: 'Nutrition', emoji: '🥗', title: name, copy: 'Your meal is saved. Add a photo if you want to share it.',
+    var name = String(foods.map(function (item) { return item.name; }).filter(Boolean).slice(0, 3).join(', ') || meal.meal_type || 'Meal');
+    var estimate = String(meal.notes || meal.meal_description || '').trim();
+    var options = { kicker: 'Meal logged', sectionLabel: 'Nutrition', emoji: '🥗', title: name, copy: estimate || 'Your meal is saved.',
       stats: [{ value: String(Math.round(Number(meal.calories) || 0)), label: 'Calories' }, { value: String(Math.round(Number(meal.protein_g) || 0)) + ' g', label: 'Protein' }],
       details: [{ label: 'Carbs', value: String(Math.round(Number(meal.carbs_g) || 0)) + ' g' }, { label: 'Fat', value: String(Math.round(Number(meal.fat_g) || 0)) + ' g' }],
       onDone: closeMealCompletePage,
       onShare: function () { if (typeof window.beginPrivateMealPhotoShare === 'function') window.beginPrivateMealPhotoShare(); }
     };
     page.innerHTML = completePageMarkup(options); fillCompletePage(page, options);
+    page.setAttribute('role', 'dialog');
+    page.setAttribute('aria-modal', 'true');
+    page.querySelector('.pwc-title').id = 'pbb-meal-confirmation-title';
+    page.setAttribute('aria-labelledby', 'pbb-meal-confirmation-title');
+    page.querySelector('.pwc-celebration').textContent = estimate ? 'About this estimate' : 'Saved to Balance';
+    var main = page.querySelector('.pwc-main');
+    main.insertBefore(page.querySelector('.pwc-title'), main.firstChild);
+    page.querySelector('.pwc-hero-mark').remove();
+    var nutrition = page.querySelector('.pwc-section');
+    var disclosure = document.createElement('details');
+    disclosure.className = 'pwc-meal-details';
+    var summary = document.createElement('summary');
+    summary.textContent = 'Nutrition details';
+    nutrition.before(disclosure);
+    disclosure.append(summary, nutrition);
+    var actions = page.querySelector('.pwc-actions');
+    var done = actions.querySelector('[data-complete-done]');
+    var share = actions.querySelector('[data-complete-share]');
+    done.className = 'pwc-primary';
+    share.className = 'pwc-secondary';
+    actions.appendChild(done);
+    page.onclick = function (event) { if (event.target === page) closeMealCompletePage(); };
+    page.onkeydown = function (event) { if (event.key === 'Escape') closeMealCompletePage(); };
     document.body.style.overflow = 'hidden';
+    done.focus({ preventScroll: true });
     window.dispatchEvent(new CustomEvent('pbb:private-meal-complete-shown'));
     return true;
   }
