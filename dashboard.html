@@ -13928,6 +13928,7 @@ if(!window._pbbIsIOSSafari) {
   }
 
   const steps = [
+    { tab:'learning', sel:'#learning-content', title:'Make your learning stick', body:'After a perfect quiz, save one thing you learned and how you could use it. Your optional reflection stays with the lesson for you and your coach.' },
     { tab:'learning', sel:'#course-card-balance-master', fallbackSel:'#balance-path', title:'Your four-part Balance path', body:'Learn the ideas, Become through practical actions, Master your plans over ten weekly releases, then Lead by supporting someone else. Relevant lessons now sit in these courses; the rest stay in the specialist library.', action:function(){ if(typeof window.renderLearningHome === 'function') window.renderLearningHome(); } },
     { tab:'movement-tab', sel:'#pbb-private-workout-complete', fallbackSel:'#post-workout-share-btn', title:'Your workout progress comes first', fallbackTitle:'Your new workout saved page', body:'After you finish a workout, Balance shows your completed sets, volume, exercises, and new bests before you choose whether to share a photo.', fallbackBody:'Finish a workout to see the new progress-first workout saved page.', quick:true, condition:function(){ return !!(window.BalancePrivateShareStudio && window.BalancePrivateShareStudio.isEnabled()); } },
     { tab:'movement-tab', sel:'#pbb-private-activity-complete,#pbb-private-meal-complete', fallbackSel:'#log-activity-card,.meal-icon-btn[onclick*="openMealBuilder"],.camera-btn-widget[onclick*="openMealBuilder"]', title:'Activities and meals now match', fallbackTitle:'One simple sharing flow', body:'After logging an activity or meal, review what you saved first. Tap Share a photo to take or choose one, edit it full screen, then share to Feed and IG Story.', fallbackBody:'Log an activity or meal to see its saved summary, then add and edit a photo if you want to share it.', quick:true, condition:function(){ return !!(window.BalancePrivateShareStudio && window.BalancePrivateShareStudio.isEnabled()); } },
@@ -15830,6 +15831,7 @@ window.endFeatureTour = function(skipped){
   // -------------------------------------------------------
 
   var allFeatures = [
+    { id:'lesson-reflections-v1', tab:'learning', sel:'#learning-content', title:'Make your learning stick', body:'After a perfect quiz, save one thing you learned and how you could use it. Your optional reflection stays with the lesson for you and your coach.' },
     { id:'balance-four-part-path-v1', tab:'learning', sel:'#course-card-balance-master', fallbackSel:'#balance-path', title:'Your four-part Balance path', body:'Learn the ideas, Become through practical actions, Master your plans over ten weekly releases, then Lead by supporting someone else. Relevant lessons now sit in these courses; the rest stay in the specialist library.', action:function(){ if(typeof window.renderLearningHome === 'function') window.renderLearningHome(); } },
     {
       id: 'meal-plan-shopping-list-v1',
@@ -19711,6 +19713,7 @@ if (window._pbbIsIOSSafari) {
 // Full-screen Balance photo share studio for signed-in members.
 </script>
 <script src="js/dashboard/pbb-private-share-studio.js?v=19-compact-meal-confirmation"></script>
+<script src="lib/lesson-reflections.js?v=1"></script>
 <script>
 // Script-10 (130KB) - Points widget. On iOS, defer to reduce memory pressure.
 // loadPointsWidget is guarded with typeof in init, so safe to defer.
@@ -20422,11 +20425,11 @@ if (window._pbbIsIOSSafari) {
             });
             if (window.showQuizBattleInviteModal || learningAlreadyRequested) return;
             var s = document.createElement('script');
-      s.src = 'lib/learning-inline.js?v=46-four-part-path';
+      s.src = 'lib/learning-inline.js?v=47-lesson-reflections';
             document.head.appendChild(s);
         }, { once: true });
     } else {
-    document.write('<script src="lib/learning-inline.js?v=46-four-part-path"><\/script>');
+    document.write('<script src="lib/learning-inline.js?v=47-lesson-reflections"><\/script>');
     }
     </script>
     <!-- Battle System & Logic Overrides (130 lines — deferred on iOS) -->
