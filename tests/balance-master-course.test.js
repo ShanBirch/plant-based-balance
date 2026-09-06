@@ -5,11 +5,11 @@ const vm = require('node:vm');
 const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const source = fs.readFileSync(path.join(root, 'lib/balance-master-course.js'), 'utf8');
-function runtime(window = {}) { vm.runInNewContext(source, { window }); return window.BalanceMaster; }
+function runtime(window = {}) { window.BalanceCourseWeeks ||= {read:async()=>null,available:()=>0}; vm.runInNewContext(source, { window }); return window.BalanceMaster; }
 test('all course stages have teaching, applied checks, and real existing lesson references', () => {
     const course = runtime();
     const learning = fs.readFileSync(path.join(root, 'lib/learning-inline.js'), 'utf8');
-    assert.equal(course.stages.length, 6);
+    assert.equal(course.stages.length, 10);
     for (const stage of course.stages) {
         assert.equal(stage.lessons.length, 3);
         assert.equal(stage.questions.length, 2);

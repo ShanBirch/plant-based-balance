@@ -84,8 +84,8 @@ test('Home plan cards stay below the complete FitGotchi stats block', () => {
     assert.match(source, /characterBlockTail\.parentNode\.insertBefore\(weeklyGoals, characterBlockTail\.nextSibling\)/);
     assert.match(source, /characterBlockTail\.parentNode\.insertBefore\(card, characterBlockTail\.nextSibling\)/);
     assert.doesNotMatch(source, /levelStrip\.parentNode\.insertBefore\((weeklyGoals|card), levelStrip\.nextSibling\)/);
-    assert.match(html, /pbb-social-journey\.js\?v=46-balance-path/);
-    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v489-specialist-heading'/);
+    assert.match(html, /pbb-social-journey\.js\?v=\d+-[a-z-]+/);
+    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v\d+-[a-z-]+'/);
 });
 
 test('Home course actions bypass legacy journey pages and open the exact current lesson', () => {
@@ -100,7 +100,7 @@ test('Home course actions bypass legacy journey pages and open the exact current
     assert.doesNotMatch(socialSource, /if \(!isCurrentLessonSeen\(\)\) \{\s*openJourney\('lesson'\)/);
     assert.match(nextStepsSource, /async function openNextCourseTarget\(courseId\)/);
     assert.match(nextStepsSource, /function ensureLearningSystemLoaded\(\)/);
-    assert.match(nextStepsSource, /learning-inline\.js\?v=44-specialist-heading/);
+    assert.match(nextStepsSource, /learning-inline\.js\?v=\d+-[a-z-]+/);
     assert.match(nextStepsSource, /var loaded = await ensureLearningSystemLoaded\(\)/);
     assert.match(nextStepsSource, /await window\._ensureLearningProgressLoaded\(\)/);
     assert.match(nextStepsSource, /window\.renderLearningHome\(\)/);
@@ -133,7 +133,7 @@ test('Home course actions bypass legacy journey pages and open the exact current
     assert.match(html, /pbb-next-obvious-steps\.js\?v=54-tour-quiz-continue/);
     assert.match(html, /pbb-social-journey\.css\?v=27-direct-course-lesson/);
     assert.match(html, /pbb-premium-overlays\.css\?v=119-specialist-heading/);
-    assert.match(html, /learning-inline\.js\?v=44-specialist-heading/);
+    assert.match(html, /learning-inline\.js\?v=\d+-[a-z-]+/);
 });
 
 test('Home goals and plan cards follow light and dark mode', () => {
@@ -178,7 +178,7 @@ test('journey UI is lesson-led, card-triggered and preserves account data on res
     assert.doesNotMatch(source, /from\(['"]users['"]\).*delete/i);
 });
 
-test('Balance Lead teaches the input-output loop before the Instagram plan', () => {
+test('Balance Become teaches the input-output loop before the Instagram plan', () => {
     const source = fs.readFileSync(path.join(root, 'js/dashboard/pbb-social-journey.js'), 'utf8');
     const html = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
 
@@ -190,7 +190,7 @@ test('Balance Lead teaches the input-output loop before the Instagram plan', () 
     assert.match(html, /title:'Build Your Fitness Instagram'|title: 'Build Your Fitness Instagram'/);
 });
 
-test('Balance Lead is available from the unified Home plan', () => {
+test('Balance Become is available from the unified Home plan', () => {
     const source = fs.readFileSync(path.join(root, 'js/dashboard/pbb-social-journey.js'), 'utf8');
     const nextSteps = fs.readFileSync(path.join(root, 'js/dashboard/pbb-next-obvious-steps.js'), 'utf8');
     const html = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');

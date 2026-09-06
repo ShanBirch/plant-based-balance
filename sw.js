@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v495-master-form-checks'; // v494: publish Balance Master course and private planning projects
+const CACHE_NAME = 'pbb-app-v496-four-part-path'; // v496: focused four-part courses and ten weekly Master releases
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

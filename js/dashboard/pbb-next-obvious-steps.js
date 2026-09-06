@@ -404,7 +404,7 @@
       }
       if (!script) {
         script = document.createElement('script');
-        script.src = 'lib/learning-inline.js?v=45-master-course';
+        script.src = 'lib/learning-inline.js?v=46-four-part-path';
         script.addEventListener('error', function(){ finish(false); }, { once: true });
         document.head.appendChild(script);
       }

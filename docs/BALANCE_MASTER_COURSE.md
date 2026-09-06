@@ -1,5 +1,7 @@
 # Balance Master
 
+Current structure: ten weekly releases. See BALANCE_FOUR_PART_COURSES.md for the current curriculum, selected specialist lessons and migration. The notes below record the original six-stage release.
+
 Published implementation: six self-paced stages, 18 short teaching sections, 12 knowledge-check questions, four written applications and two saved projects. Entry is through Course > Balance Master after Balance Learn completion. Before completion of Learn, members can preview the six outcomes.
 
 ## Existing content audit
