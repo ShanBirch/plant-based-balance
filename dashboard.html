@@ -14263,6 +14263,8 @@ if(!window._pbbIsIOSSafari) {
   }
 
   function currentTourPositionTarget(step){
+    // A course welcome covers the overview without removing its old button.
+    if (step && step.sel === '#balance-foundations-course-start' && q('#balance-foundations-welcome-start')) return null;
     const liveTarget = resolveStepTarget(step).target;
     if (liveTarget) return liveTarget;
     return activeTourFallbackTarget && activeTourFallbackTarget.isConnected
@@ -14528,6 +14530,10 @@ if(!window._pbbIsIOSSafari) {
 
     if (step && step.requiresHighlightedClick) {
       const key = 'highlighted-click:' + idx;
+      if (step.sel === '#balance-foundations-course-start' && q('#balance-foundations-welcome-start')) {
+        showStep(idx + 1);
+        return;
+      }
       const targetNow = q(step.sel);
       if (!targetNow) {
         setTourGateUi(true, 'That control is not available on this screen. Use Next to continue.', finalLabel);
@@ -14615,6 +14621,18 @@ if(!window._pbbIsIOSSafari) {
       };
       activeTourGate.followTimer = setInterval(function(){
         if (!activeTourGate || activeTourGate.key !== key) return;
+        const courseDestination = step.sel === '#balance-foundations-course-start'
+          ? '#balance-foundations-welcome-start'
+          : step.sel === '#balance-foundations-welcome-start'
+            ? '#balance-foundations-first-lesson' : null;
+        // Follow the actual rendered destination, including a welcome reopened
+        // from an interrupted tour, instead of spotlighting the covered page.
+        if (courseDestination && q(courseDestination) &&
+            (step.sel === '#balance-foundations-course-start' || !q('#balance-foundations-welcome-start'))) {
+          completedTourGates.add(key);
+          showStep(idx + 1);
+          return;
+        }
         const currentTarget = q(step.sel);
         if (currentTarget) {
           activeTourFallbackTarget = currentTarget;
@@ -15008,6 +15026,8 @@ if(!window._pbbIsIOSSafari) {
     if (overlay) overlay.classList.toggle('tour-control-prompt', !!(step && step.requiresHighlightedClick));
     if (overlay) overlay.classList.toggle('tour-target-interactive', !!(step && step.allowTargetInteraction));
     bubble.style.bottom = '';
+    bubble.style.maxHeight = '';
+    bubble.style.overflowY = '';
 
     if (step && step.featureView) {
       spot.style.opacity = '0';
@@ -15119,11 +15139,29 @@ if(!window._pbbIsIOSSafari) {
       return;
     }
     if (pageView) {
-      const pageBubbleTop = step && step.controlPromptPosition === 'top'
+      let pageBubbleTop = step && step.controlPromptPosition === 'top'
         ? safeTop
         : step && step.interactivePage
         ? safeTop
         : Math.max(safeTop, vh - bubbleH - Math.max(bottomReserve, 82));
+      if (step && step.requiresHighlightedClick) {
+        const gap = 18;
+        if (pageBubbleTop < r.bottom + gap && pageBubbleTop + bubbleH > r.top - gap) {
+          const above = r.top - gap - bubbleH;
+          const below = r.bottom + gap;
+          if (above >= safeTop) pageBubbleTop = above;
+          else if (below + bubbleH <= vh - bottomReserve) pageBubbleTop = below;
+          else {
+            // Short screens: bound and scroll the prompt in the larger free
+            // region so the action itself remains available.
+            const aboveSpace = Math.max(0, r.top - gap - safeTop);
+            const belowSpace = Math.max(0, vh - bottomReserve - r.bottom - gap);
+            bubble.style.maxHeight = Math.max(0, Math.max(aboveSpace, belowSpace)) + 'px';
+            bubble.style.overflowY = 'auto';
+            pageBubbleTop = aboveSpace >= belowSpace ? safeTop : below;
+          }
+        }
+      }
       bubble.style.top = pageBubbleTop + 'px';
       const pageBubbleW = bubble.offsetWidth || 320;
       bubble.style.left = Math.max(8, (vw - pageBubbleW) / 2) + 'px';
