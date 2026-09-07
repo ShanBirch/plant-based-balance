@@ -15798,8 +15798,8 @@ window.endFeatureTour = function(skipped){
     if (document.getElementById('tour-qa-replay')) return;
     const auth = await window.supabaseClient.auth.getUser();
     if (auth.error || !auth.data || auth.data.user?.id !== testId) return;
-    const profile = await window.supabaseClient.from('users').select('is_test_account,subscription_status').eq('id',testId).single();
-    if (profile.error || !profile.data?.is_test_account || ['active','trialing'].includes(profile.data.subscription_status)) return;
+    const profile = await window.supabaseClient.from('users').select('is_test_account,onboarding_complete,subscription_status').eq('id',testId).single();
+    if (profile.error || !profile.data?.is_test_account || !profile.data.onboarding_complete || ['active','trialing'].includes(profile.data.subscription_status)) return;
     const button = document.createElement('button');
     button.id = 'tour-qa-replay';
     button.textContent = 'Replay guided tour (test account)';
@@ -15810,6 +15810,12 @@ window.endFeatureTour = function(skipped){
         localStorage.removeItem('pbb_onboarding_step_seen:' + testId + ':' + id);
       });
       ['meta-ad-trial-gate','meta-ad-trial-exit-choice'].forEach(function(id){ const el=document.getElementById(id); if(el) el.style.display='none'; });
+      // The server-confirmed setup is already complete. Dismiss only a stale
+      // setup surface on this explicit replay, without writing setup answers.
+      const wizard = document.getElementById('onboarding-wizard');
+      if (wizard) { wizard.classList.remove('active'); wizard.style.display='none'; }
+      window._onboardingWizardPending = false;
+      if (typeof setOnboardingNavigationGate === 'function') setOnboardingNavigationGate(false);
       window.metaAdTrialMode = true;
       button.remove();
       window.startFeatureTour('full',{metaPreview:true,restart:true});
