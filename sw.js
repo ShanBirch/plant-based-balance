@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v499-tour-text-contrast'; // v499: readable preview posts and Weekly Goals opening
+const CACHE_NAME = 'pbb-app-v500-calendar-no-hero'; // v500: calendar starts directly with the schedule, without the legacy cycle banner
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

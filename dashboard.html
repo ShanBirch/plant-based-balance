@@ -12076,8 +12076,9 @@ html[data-pbb-theme="light"] #view-activity-success { --activity-success-accent:
             </div>
         </div>
 
-        <!-- Cycle Wheel / Hero Card -->
-        <div style="padding: 25px;">
+        <!-- Legacy phase display stays non-rendered for existing cycle data updaters.
+             The calendar no longer shows a large cycle/performance banner. -->
+        <div id="calendar-legacy-phase-display" hidden aria-hidden="true" style="display: none !important;">
             <div id="cycle-hero-card" class="card" style="background: linear-gradient(135deg, var(--bg) 0%, var(--accent-green) 100%); border: 1px solid var(--secondary); box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.1); overflow: visible;">
                 <div class="card-body active" style="opacity:1; max-height:none; padding: 30px 25px; text-align: center;">
 
@@ -12104,7 +12105,7 @@ html[data-pbb-theme="light"] #view-activity-success { --activity-success-accent:
         </div>
 
         <!-- Weekly/Monthly Calendar -->
-        <div style="padding: 0 25px 25px 25px;">
+        <div style="padding: 25px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                 <h3 id="calendar-period-heading" style="color: var(--primary); margin: 0; font-size: 1.1rem;">Your Predictions</h3>
                 <div style="display: flex; align-items: center; gap: 10px;">
@@ -14033,7 +14034,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'learning', sel:'#balance-path', fallbackSel:'.course-library-intro,#learning-content', title:'Your Balance Path', fallbackTitle:'Learn. Become. Master. Lead.', body:'Balance Learn is where your path begins. Become and Master are coming next, while Lead turns lived experience into useful public influence.', fallbackBody:'Your four-stage Balance Path begins with the six-week Balance Learn course.' },
     { tab:'learning', sel:'.course-library-intro', fallbackSel:'#learning-content', title:'Preview every course', fallbackTitle:'Your course path lives here', body:"Complete Balance Learn to unlock every course. You can open any card now to preview its topics, even while it is locked.", fallbackBody:"Open Course to preview the full curriculum. Complete Balance Learn to start the other courses." },
 
-    { tab:'cycle', sel:'#cycle-hero-card,#view-cycle', title:'Cycle Syncing', body:"Log your period and get workouts synced to your hormonal phases.", condition: function(){ try { return (window.currentUser && (window.currentUser.gender === 'female' || window.currentUser.gender === 'Female')); } catch(e){ return false; } } },
+    { tab:'cycle', sel:'#calendar-view-toggle', fallbackSel:'#weekly-calendar', title:'Your Calendar', body:"See your planned workouts by week or month. Use Edit Dates to update your cycle details.", condition: function(){ try { return (window.currentUser && (window.currentUser.gender === 'female' || window.currentUser.gender === 'Female')); } catch(e){ return false; } } },
     { tab:'cycle', sel:'#weekly-calendar', title:'Plan your week', body:"Use the weekly calendar to drag workout days around, tap a day, and add walks, classes, Pilates, yoga, or another activity.", action: function(){ try { if (typeof switchCalendarView === 'function') switchCalendarView('weekly'); } catch(e){} } },
 
     { tab:'friends', sel:'#feed-composer-card', title:'Post to Feed', body:"Share a thought or encouragement once a day for +2 XP. Add a photo or video if you want." },
