@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const html = fs.readFileSync(path.join(__dirname, '..', 'dashboard.html'), 'utf8');
+const styles = fs.readFileSync(path.join(__dirname, '..', 'css/dashboard/pbb-premium-overlays.css'), 'utf8');
 const start = html.indexOf('    if (pageView) {', html.indexOf('function positionBubbleAndSpotlight'));
 const end = html.indexOf('    const spaceBelow', start);
 const place = new Function('step', 'r', 'bubble', 'vh', 'bubbleH', `
@@ -41,4 +42,13 @@ test('tour and feature reveal scripts parse', () => {
     const begin = html.indexOf('<script>', html.indexOf(`<!-- ========== ${marker}`)) + 8;
     assert.doesNotThrow(() => new Function(html.slice(begin, html.indexOf('</script>', begin))));
   }
+});
+
+test('preview feed copy pairs theme ink with WebKit text fill', () => {
+  assert.match(styles, /html \.meta-preview-feed-post p,[\s\S]*?color: var\(--text-main\) !important;\s*-webkit-text-fill-color: var\(--text-main\) !important;/);
+  assert.match(styles, /html \.meta-preview-feed-post span \{\s*color: var\(--text-muted\) !important;\s*-webkit-text-fill-color: var\(--text-muted\) !important;/);
+});
+
+test('weekly goal hero keeps its cream surface and dark ink together in both themes', () => {
+  assert.match(styles, /html\[data-pbb-theme\] #weekly-goals-modal \.weekly-goal-hero \{\s*background: linear-gradient\(135deg, #fffdf8 0%, #f4e6c8 100%\) !important;\s*color: #181713 !important;\s*-webkit-text-fill-color: #181713 !important;/);
 });

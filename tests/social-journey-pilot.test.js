@@ -132,7 +132,7 @@ test('Home course actions bypass legacy journey pages and open the exact current
     assert.doesNotMatch(premiumCss, /pbb-next-course-pulse|is-next-course-target|is-next-course-lesson-target/);
     assert.match(html, /pbb-next-obvious-steps\.js\?v=54-tour-quiz-continue/);
     assert.match(html, /pbb-social-journey\.css\?v=27-direct-course-lesson/);
-    assert.match(html, /pbb-premium-overlays\.css\?v=119-specialist-heading/);
+    assert.match(html, /pbb-premium-overlays\.css\?v=120-tour-text-contrast/);
     assert.match(html, /learning-inline\.js\?v=\d+-[a-z-]+/);
 });
 

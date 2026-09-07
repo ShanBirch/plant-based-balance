@@ -14006,3 +14006,33 @@ html:not([data-pbb-theme="light"]) #view-interval-timer #interval-end-btn {
     -webkit-text-fill-color: var(--text-muted) !important;
     box-shadow: none !important;
 }
+
+/* Guided-tour preview posts use the same readable ink as the surrounding feed. */
+html .meta-preview-feed-post p,
+html .meta-preview-feed-post strong {
+    color: var(--text-main) !important;
+    -webkit-text-fill-color: var(--text-main) !important;
+}
+html .meta-preview-feed-post span {
+    color: var(--text-muted) !important;
+    -webkit-text-fill-color: var(--text-muted) !important;
+}
+
+/* Keep the Weekly Goals opening cream in both themes. Its local ink rules
+   must not be paired with the legacy dark hero background. */
+html[data-pbb-theme] #weekly-goals-modal .weekly-goal-hero {
+    background: linear-gradient(135deg, #fffdf8 0%, #f4e6c8 100%) !important;
+    color: #181713 !important;
+    -webkit-text-fill-color: #181713 !important;
+}
+html[data-pbb-theme] #weekly-goals-modal .weekly-goal-hero [style*="color:white"] {
+    color: #181713 !important;
+    -webkit-text-fill-color: #181713 !important;
+}
+html[data-pbb-theme] #weekly-goals-modal .weekly-goal-hero [style*="#fde68a"] {
+    color: #765410 !important;
+    -webkit-text-fill-color: #765410 !important;
+}
+html #weekly-goals-modal .weekly-goal-hero > div {
+    z-index: 1;
+}
