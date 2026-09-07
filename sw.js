@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v504-workout-tour'; // v504: explain set fields and visit every workout exercise
+const CACHE_NAME = 'pbb-app-v505-workout-tour-sequence'; // v505: include exercise field guidance in the required sequence
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

@@ -4,6 +4,12 @@ const fs = require('node:fs');
 const progress = require('../js/dashboard/pbb-workout-tour-progress');
 const html = fs.readFileSync(require('node:path').join(__dirname,'../dashboard.html'),'utf8');
 
+test('required onboarding actually includes field guidance between exercise card and Feed', () => {
+  const start=html.indexOf('const REQUIRED_ONBOARDING_TOUR_TITLES');
+  const sequence=html.slice(start,html.indexOf('];',start));
+  assert.match(sequence, /'Follow the exercise card',\s*'Know your set-entry boxes',\s*'The Balance community'/);
+});
+
 test('every exercise must be acknowledged, with variable counts and one-exercise sessions', () => {
   for (const count of [1,2,4,7,12]) {
     const p = progress.create(), ids = Array.from({length:count},(_,i)=>'exercise-'+i);
