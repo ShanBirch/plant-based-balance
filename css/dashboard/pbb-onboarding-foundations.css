@@ -998,6 +998,31 @@ html[data-pbb-theme="dark"] #onboarding-wizard .onboarding-modal.wizard-containe
 #onboarding-wizard .wizard-personalising-screen.is-error .wizard-personalising-stage.is-active span { animation:none; border-color:#b42318; color:#b42318; -webkit-text-fill-color:#b42318; }
 
 @keyframes wizardPersonalisingSpin { to { transform:rotate(360deg); } }
+
+/* Typed answers have no choice list: keep the question next to its input,
+   rather than reserving a screenful of empty choices beneath the age prompt.
+   The same grid follows the visual viewport when the phone keyboard opens. */
+#onboarding-wizard.wizard-chat-mode.wizard-chat-typed-only .wizard-chat-intake {
+    grid-template-rows: auto auto minmax(0, 1fr) auto auto !important;
+}
+#onboarding-wizard.wizard-chat-mode.wizard-chat-typed-only .wizard-chat-choices {
+    display: none !important;
+}
+#onboarding-wizard.wizard-chat-mode.wizard-chat-typed-only:not(.wizard-chat-intro):not(.wizard-chat-complete) .wizard-chat-messages {
+    grid-row: 3;
+    align-self: end;
+    min-height: 0 !important;
+    max-height: 100% !important;
+    overflow-y: auto !important;
+    padding: 2px 0 4px !important;
+    -webkit-overflow-scrolling: touch;
+}
+#onboarding-wizard.wizard-chat-mode.wizard-chat-typed-only .wizard-chat-input-row {
+    grid-row: 4;
+}
+#onboarding-wizard.wizard-chat-mode.wizard-chat-typed-only .wizard-chat-helper {
+    grid-row: 5;
+}
 @keyframes wizardPersonalisingGlow { 50% { transform:scale(1.12); opacity:.62; } }
 @media (prefers-reduced-motion: reduce) {
     #onboarding-wizard .wizard-personalising-glow,

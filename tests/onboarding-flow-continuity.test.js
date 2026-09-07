@@ -77,7 +77,7 @@ test('onboarding ships a cache-busted authoritative cream-and-gold skin', () => 
     assert.match(foundationsCss, /#onboarding-wizard \.wizard-chat-bubble\.coach:last-child[\s\S]*?-webkit-text-fill-color: var\(--foundations-ink\) !important;/);
     assert.match(foundationsCss, /@media \(prefers-reduced-motion: reduce\)/);
     assert.match(dashboardSource, /pbb-onboarding-comeback\.css\?v=8/);
-    assert.match(dashboardSource, /pbb-onboarding-foundations\.css\?v=10-preference-contrast/);
+    assert.match(dashboardSource, /pbb-onboarding-foundations\.css\?v=11-typed-question-layout/);
 });
 
 test('Balance Learn gives each real setup section a compact branded transition', () => {
@@ -169,6 +169,15 @@ test('a remote reset clears the phone-cached plan and weekly goals for the dedic
     assert.match(onboardingSource, /'pbb_auto_weekly_goals_pending_v1'/);
     assert.match(onboardingSource, /'ai_meal_plan'/);
     assert.match(onboardingSource, /'workoutCalendar'/);
+});
+
+test('typed-only prompts sit beside their input without an empty choices spacer', () => {
+    assert.match(onboardingSource, /setWizardChatLayoutMode\(\{ noTextbox: false, intro: false, typedOnly: true \}\)/);
+    assert.match(onboardingSource, /typedOnly = false/);
+    assert.match(onboardingSource, /classList\.toggle\('wizard-chat-typed-only', !!typedOnly\)/);
+    assert.match(foundationsCss, /wizard-chat-typed-only \.wizard-chat-choices\s*\{\s*display: none !important/);
+    assert.match(foundationsCss, /wizard-chat-typed-only \.wizard-chat-input-row\s*\{\s*grid-row: 4/);
+    assert.match(foundationsCss, /wizard-chat-typed-only[^{}]+\.wizard-chat-messages\s*\{[^}]*align-self: end;[^}]*max-height: 100% !important;[^}]*overflow-y: auto !important/);
 });
 
 test('remote test reset opens setup before saved quiz answers can complete it again', () => {

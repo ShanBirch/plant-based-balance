@@ -9090,11 +9090,12 @@ function refocusWizardChatInputAfterSubmit() {
     setTimeout(focusWizardChatInput, 40);
 }
 
-function setWizardChatLayoutMode({ noTextbox = false, intro = false } = {}) {
+function setWizardChatLayoutMode({ noTextbox = false, intro = false, typedOnly = false } = {}) {
     const wizard = document.getElementById('onboarding-wizard');
     if (!wizard) return;
     wizard.classList.toggle('wizard-chat-no-textbox', !!noTextbox);
     wizard.classList.toggle('wizard-chat-intro', !!intro);
+    wizard.classList.toggle('wizard-chat-typed-only', !!typedOnly);
     wizard.classList.toggle('wizard-chat-complete', !!wizardChatComplete);
 }
 
@@ -9332,7 +9333,7 @@ function renderWizardChatControls() {
         return;
     }
 
-    setWizardChatLayoutMode({ noTextbox: false, intro: false });
+    setWizardChatLayoutMode({ noTextbox: false, intro: false, typedOnly: true });
     inputRow.style.display = 'flex';
     input.type = step.type === 'number' ? 'number' : 'text';
     input.inputMode = step.type === 'number' ? 'decimal' : 'text';
