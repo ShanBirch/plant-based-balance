@@ -37,6 +37,20 @@ test('large reading targets do not collapse their explanation to zero height', (
   assert.equal(bubble.style.maxHeight, undefined);
 });
 
+test('workout inputs and navigation targets remain separate from the tour card', () => {
+  for (const vh of [400,568,667,844,915]) {
+    for (const y of [80,150,vh-160]) {
+      const bubble={style:{},offsetWidth:320};
+      const r={top:y,bottom:y+52};
+      place({pageView:true,requiresWorkoutExplore:true},r,bubble,vh,210);
+      const top=parseFloat(bubble.style.top);
+      const height=bubble.style.maxHeight ? parseFloat(bubble.style.maxHeight) : 210;
+      assert.ok(top+height<=r.top-18 || top>=r.bottom+18, `${vh}/${y}`);
+      assert.ok(top>=40 && top+height<=vh-90);
+    }
+  }
+});
+
 test('tour and feature reveal scripts parse', () => {
   for (const marker of ['GUIDED FEATURE TOUR', 'NEW FEATURE REVEAL']) {
     const begin = html.indexOf('<script>', html.indexOf(`<!-- ========== ${marker}`)) + 8;
