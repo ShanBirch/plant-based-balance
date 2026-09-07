@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v497-tour-target-placement'; // v497: follow course destinations and keep tour prompts clear of controls
+const CACHE_NAME = 'pbb-app-v498-tour-reading-placement'; // v498: keep reading prompts clear of highlighted page content too
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

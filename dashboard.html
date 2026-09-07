@@ -15144,14 +15144,16 @@ if(!window._pbbIsIOSSafari) {
         : step && step.interactivePage
         ? safeTop
         : Math.max(safeTop, vh - bubbleH - Math.max(bottomReserve, 82));
-      if (step && step.requiresHighlightedClick) {
+      // Reading stops need the same clear view as tappable controls: do not
+      // cover the calendar or card the explanation is asking people to see.
+      {
         const gap = 18;
         if (pageBubbleTop < r.bottom + gap && pageBubbleTop + bubbleH > r.top - gap) {
           const above = r.top - gap - bubbleH;
           const below = r.bottom + gap;
           if (above >= safeTop) pageBubbleTop = above;
           else if (below + bubbleH <= vh - bottomReserve) pageBubbleTop = below;
-          else {
+          else if (step && step.requiresHighlightedClick) {
             // Short screens: bound and scroll the prompt in the larger free
             // region so the action itself remains available.
             const aboveSpace = Math.max(0, r.top - gap - safeTop);
