@@ -181,7 +181,7 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
 <!-- CRITICAL: Admin view-as localStorage isolation — runs BEFORE any other localStorage reads -->
 <script src="js/dashboard/script_part_1.js"></script>
 <!-- Paid-Facebook preview attribution must be available before auth-guard decides guest vs member mode. -->
-<script src="lib/meta-ad-trial.js?v=17-goal-alignment"></script>
+<script src="lib/meta-ad-trial.js?v=18-phone-tour-replay"></script>
 
 <!-- CRITICAL: Hide loading overlay for returning users and restore cached FitGotchi state -->
 <script>
@@ -2965,7 +2965,7 @@ if (window._pbbIsIOSSafari) {
     function _doLoadScript3() {
         if(window._crumb)window._crumb('script3_loading');
         var s = document.createElement('script');
-    s.src = 'js/dashboard/dashboard-script-3-1_get_user_data.js?v=61-remove-primary-test-seed';
+    s.src = 'js/dashboard/dashboard-script-3-1_get_user_data.js?v=62-phone-tour-replay';
         document.head.appendChild(s);
     }
     if (window._pbbAuthIsReady) {
@@ -2976,7 +2976,7 @@ if (window._pbbIsIOSSafari) {
         }, { once: true });
     }
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-3-1_get_user_data.js?v=61-remove-primary-test-seed"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-3-1_get_user_data.js?v=62-phone-tour-replay"><\/script>');
 }
 </script>
 

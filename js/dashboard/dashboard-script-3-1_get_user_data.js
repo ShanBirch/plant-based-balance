@@ -455,6 +455,7 @@
             }
 
             var fastStartupEligible = !window._pbbIsIOSSafari &&
+                !window.BalanceMetaAdTrial?.hasPendingPhoneReplay?.(window.currentUser) &&
                 !window.isAdminViewing &&
                 localStorage.getItem('dashboardInitialized') === 'true' &&
                 localStorage.getItem('pbb_last_user_id') === startupUserId &&
@@ -591,6 +592,10 @@
                 }
             }
             _crumb('init_complete');
+            if (window.BalanceMetaAdTrial?.hasPendingPhoneReplay?.(window.currentUser)) {
+                try { await window.BalanceMetaAdTrial.replayPhoneTestTour(); }
+                catch (error) { console.warn('[phone-tour-replay] Will retry on next open.', error); }
+            }
             // Reset crash counter — we made it through init without crashing.
             // IMPORTANT: also reset the in-memory value so the pbbInitComplete
             // handler in script_part_3.js sees 0, not the stale page-load value.
