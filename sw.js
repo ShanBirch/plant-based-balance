@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v501-phone-tour-replay'; // v501: one-time navigation-only replay for the confirmed phone test account
+const CACHE_NAME = 'pbb-app-v502-server-test-reset'; // v502: explicit server test reset wins over saved quiz answers
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -9,7 +9,7 @@ const ASSETS = [
   './welcome.html',
   './lib/supabase.js?v=17-imported-activity-latest',
   './lib/auth-guard.js?v=13-account-first-flow',
-  './lib/meta-ad-trial.js?v=18-phone-tour-replay',
+  './lib/meta-ad-trial.js?v=19-server-test-reset',
   './lib/native-push.js?v=41-meal-reminders-retired',
   './login.html',
   './exercise_videos.js?v=20260813-global-phone-video-v1',
@@ -17,7 +17,7 @@ const ASSETS = [
   './workout_library_extended.js',
   './js/dashboard/script_part_2.js?v=16-imported-activity-latest',
   './js/dashboard/dashboard-script-3-1_get_user_data.js?v=62-phone-tour-replay',
-  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=234-omnivore-meal-plan&video_health=2',
+  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=235-server-test-reset&video_health=2',
   './js/dashboard/pbb-settings-navigation.js?v=1-settings-navigation',
   './js/dashboard/pbb-meta-preview-soundtrack.js?v=3-coach-video-ducking',
   './js/dashboard/pbb-app-telemetry.js?v=1',

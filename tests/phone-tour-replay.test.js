@@ -25,15 +25,12 @@ function setup(options = {}) {
   vm.runInNewContext(source,{window,URLSearchParams,URL,console,setTimeout,clearTimeout});
   return {window,api:window.BalanceMetaAdTrial,localStorage,sessionStorage,starts:()=>starts};
 }
-test('resets navigation once and preserves setup, XP and unrelated state',async()=>{
-  const x=setup(); assert.equal(await x.api.replayPhoneTestTour(),true);
-  for (const key of ['onboardingComplete','quizProgress','userProfile','pbb_walkthrough_xp_awarded_v2']) assert.ok(x.localStorage.getItem(key));
-  assert.equal(x.localStorage.getItem('featureTourComplete'),null);
-  assert.equal(x.localStorage.getItem('pbb_onboarding_step_seen:'+id+':meal_plan_intro'),null);
-  const state=JSON.parse(x.localStorage.getItem('pbb_meta_ad_trial_state_v1'));
-  assert.equal(state.onboardingCompletedAt,100); assert.deepEqual(state.attribution,{source:'saved'});
-  assert.equal(state.walkthroughCompletedAt,null);
-  assert.equal(await x.api.replayPhoneTestTour(),false); assert.equal(x.starts(),1);
+test('retired local replay cannot skip setup or reopen a completed run',async()=>{
+  const x=setup(); const before=[...x.localStorage.map];
+  assert.equal(x.api.hasPendingPhoneReplay(x.window.currentUser),false);
+  assert.equal(await x.api.replayPhoneTestTour(),false);
+  assert.deepEqual([...x.localStorage.map],before);
+  assert.equal(x.starts(),0);
 });
 test('other accounts, impersonated sessions and non-test profiles are untouched',async()=>{
   for (const options of [{userId:'other'},{authId:'other'},{testAccount:false}]) {

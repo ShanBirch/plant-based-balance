@@ -171,6 +171,28 @@ test('a remote reset clears the phone-cached plan and weekly goals for the dedic
     assert.match(onboardingSource, /'workoutCalendar'/);
 });
 
+test('remote test reset opens setup before saved quiz answers can complete it again', () => {
+    const vm = require('node:vm');
+    const start = onboardingSource.indexOf('if (userData && userData.is_test_account && !userData.onboarding_complete)');
+    const end = onboardingSource.indexOf('if (userData && userData.is_transferred_client', start);
+    const branch = onboardingSource.slice(start, end);
+    for (const [isTest, complete, expected] of [[true,false,1],[true,true,0],[false,false,0]]) {
+        let opened = 0;
+        let fallbackReads = 0;
+        const context = {
+            userData: {is_test_account:isTest,onboarding_complete:complete},
+            localStorage: {removeItem() {}}, sessionStorage: {removeItem() {}},
+            window: {}, isReturningMember: true,
+            initOnboardingWizard() { opened++; },
+            readSavedQuiz() { fallbackReads++; return {age:34,weight:80,height:180}; }
+        };
+        vm.runInNewContext('(function(){' + branch + 'readSavedQuiz();})()', context);
+        assert.equal(opened, expected);
+        assert.equal(fallbackReads, expected ? 0 : 1);
+        if (expected) assert.equal(context.window._onboardingWizardPending, true);
+    }
+});
+
 test('every onboarding screen tells the member what to do next', () => {
     assert.match(dashboardSource, /id="wizard-action-guidance"/);
     assert.match(onboardingSource, /Read Shannon's message and choose the answer that fits you/);

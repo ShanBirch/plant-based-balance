@@ -10168,6 +10168,11 @@ async function checkAndTriggerOnboarding() {
                 });
                 try { sessionStorage.removeItem('userProfile'); } catch (_) {}
                 isReturningMember = false;
+                // A deliberate test reset must win over saved quiz answers below.
+                // Keep those records intact; they are not proof this new run finished.
+                window._onboardingWizardPending = true;
+                initOnboardingWizard();
+                return;
             }
             if (userData && userData.is_transferred_client && userData.onboarding_complete) {
                 isReturningMember = true;
