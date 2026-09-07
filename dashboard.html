@@ -15813,7 +15813,7 @@ window.endFeatureTour = function(skipped){
       // The server-confirmed setup is already complete. Dismiss only a stale
       // setup surface on this explicit replay, without writing setup answers.
       const wizard = document.getElementById('onboarding-wizard');
-      if (wizard) { wizard.classList.remove('active'); wizard.style.display='none'; }
+      if (wizard) { wizard.classList.remove('active'); wizard.style.display='none'; delete wizard.dataset.launchState; }
       window._onboardingWizardPending = false;
       if (typeof setOnboardingNavigationGate === 'function') setOnboardingNavigationGate(false);
       window.metaAdTrialMode = true;
