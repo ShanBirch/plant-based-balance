@@ -110,3 +110,21 @@ test('saving dietary preferences regenerates from the exact newly saved selectio
   assert.match(pickerSource, /await window\.generateAiMealPlan\(foodPrefs\)/);
   assert.match(pickerSource, /_dietEatingStyles\.forEach\(option => _dietPickerSelected\.delete\(option\.value\)\)/);
 });
+
+const vm = require('node:vm');
+test('prepared recipe labels describe the selected diet, not every compatible restriction', () => {
+  const window = { BALANCE_PREPARED_MEAL_LIBRARY: library };
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../lib/meal-plan-populator.js'), 'utf8'), {window, console});
+  for (const restricted of [false, true]) {
+    const requirements = restricted ? ['vegan', 'low_fodmap'] : ['vegan'];
+    const plan = window.buildPreparedMealPlan({calorie_goal: 2000}, {diet_type:'vegan', dietary_requirements:requirements});
+    assert.equal(plan.plan_name, 'Your Vegan Balance Week');
+    const meals = plan.weeks.flatMap(week => week.days.flatMap(day => day.meals));
+    assert.equal(meals.length, 35);
+    for (const meal of meals) {
+      assert.equal(meal.description.includes('low-FODMAP'), restricted);
+      assert.equal(meal.tags.includes('low-FODMAP'), restricted);
+      assert.ok(meal.tags.includes('vegan'));
+    }
+  }
+});

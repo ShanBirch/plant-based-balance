@@ -10171,6 +10171,9 @@ async function checkAndTriggerOnboarding() {
                     // the previous test run even though the account is clean.
                     'userProfile',
                     'user_food_preferences',
+                    'dietaryPreference',
+                    'pbb_meta_preview_meal_signature',
+                    'pbb_meta_preview_plan_id_' + window.currentUser.id,
                     'ai_meal_plan',
                     'workoutCalendar',
                     'workoutCalendarTimes',
@@ -10186,6 +10189,9 @@ async function checkAndTriggerOnboarding() {
                     try { localStorage.removeItem(key); } catch (_) {}
                 });
                 try { sessionStorage.removeItem('userProfile'); } catch (_) {}
+                wizardFoodAllergies.clear();
+                wizardDietaryRequirements.clear();
+                _aiMealPlanCache = null;
                 isReturningMember = false;
                 // A deliberate test reset must win over saved quiz answers below.
                 // Keep those records intact; they are not proof this new run finished.
