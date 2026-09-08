@@ -58,7 +58,7 @@
 
     <section class="card notice">
         <h2>How cancellation works</h2>
-        <p>Balance Learn subscriptions can be cancelled before the next payment, with access through the paid period and no notice period. Other direct recurring subscriptions purchased from Balance on or after 1 September 2026 require 30 days' notice. Billing and access continue during that period. If your coaching plan still has an initial minimum, the later date applies.</p>
+        <p>New Balance Learn subscriptions have a six-week minimum, then you can cancel any time before the next weekly payment. An earlier request takes effect at the end of the six-week minimum. Access continues through the paid period, with no additional notice period. Existing subscriptions keep their accepted terms. Other direct recurring subscriptions purchased from Balance on or after 1 September 2026 require 30 days' notice. Billing and access continue during that period. If your coaching plan still has an initial minimum, the later date applies.</p>
         <p>Subscriptions purchased earlier keep the terms accepted at purchase. Apple and Google subscriptions use the store's cancellation timing.</p>
     </section>
 
@@ -168,7 +168,7 @@ function returnToBalanceSettings() {
             const timing = item.cancellationScheduledAt
                 ? `Cancellation already scheduled for ${formatDate(item.cancellationScheduledAt)}`
                 : `If requested today, access and billing end on ${formatDate(item.estimatedCancellationAt)}`;
-            const rule = item.noticeDays === 30 ? '30-day notice applies' : item.plan === 'balance_learn_weekly' ? 'Cancel at the end of your paid period; no notice period' : 'Original purchase terms apply';
+            const rule = item.noticeDays === 30 ? '30-day notice applies' : item.plan === 'balance_learn_weekly' ? (item.commitmentWeeks === 6 ? 'Six-week minimum, then cancel any time; no additional notice period' : 'Cancel at the end of your paid period; no notice period') : 'Original purchase terms apply';
             return `<div class="subscription"><strong>${label}</strong><span>${timing}</span><span>${rule}</span></div>`;
         }).join('');
 

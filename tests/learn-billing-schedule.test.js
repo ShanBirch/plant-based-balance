@@ -73,7 +73,7 @@ test('hosted Checkout uses the weekly amount while the upfront price remains unc
         }
         assert.equal(requests[0].get('mode'), 'subscription');
         assert.equal(requests[0].get('line_items[0][price_data][unit_amount]'), '2483');
-        assert.match(requests[0].get('custom_text[submit][message]'), /99.32 every 4 weeks/);
+        assert.match(requests[0].get('custom_text[submit][message]'), /six-week minimum/);
         assert.equal(requests[1].get('mode'), 'payment');
         assert.equal(requests[1].get('line_items[0][price_data][unit_amount]'), '14900');
     } finally { global.fetch = originalFetch; }
@@ -108,4 +108,32 @@ test('Learn cancellation releases future phases and stops at the paid period end
         assert.equal(writes[1].params.get('cancel_at_period_end'), 'true');
         assert.equal(writes[1].params.has('cancel_at'), false);
     } finally { global.fetch = originalFetch; global.Netlify = originalNetlify; delete global.__learnTestClient; }
+});
+
+
+test('new Learn purchases remain weekly without creating a four-week schedule', async () => {
+    const { getBalanceCheckoutPlan } = await import(guardUrl);
+    const offer = getBalanceCheckoutPlan('balance_learn_weekly');
+    assert.equal(offer.unitAmount, 2483);
+    assert.equal(offer.interval, 'week');
+    assert.equal(offer.commitmentWeeks, 6);
+    assert.equal(offer.renewalUnitAmount, undefined);
+    const { ensureLearnBillingSchedule } = await load('lib/learn-billing-schedule.js');
+    const { stripe, subscription, calls } = mockStripe();
+    subscription.metadata.renewal_terms = offer.renewalTerms;
+    await ensureLearnBillingSchedule(stripe, subscription);
+    assert.equal(calls.length, 0);
+});
+
+test('new Learn cancellation respects six weeks, then the current paid boundary', async () => {
+    const source = fs.readFileSync(path.join(root, 'cancel-subscription.js'), 'utf8')
+        .replace('import { createClient } from "@supabase/supabase-js";', 'const createClient = () => {};');
+    const { _test } = await import(url(source));
+    const week = 7 * 86400;
+    const start = 1800000000;
+    const sub = { start_date: start, created: start - 60, metadata: { balance_plan: 'balance_learn_weekly', commitment_weeks: '6' }, items: { data: [{ current_period_end: start + week }] } };
+    assert.equal(_test.cancellationTiming(sub, start + 3600).effectiveAt, start + 6 * week);
+    sub.items.data[0].current_period_end = start + 8 * week;
+    assert.equal(_test.cancellationTiming(sub, start + 7 * week + 3600).effectiveAt, start + 8 * week);
+    assert.equal(_test.cancellationTiming(sub, start + 3600).noticeDays, 0);
 });

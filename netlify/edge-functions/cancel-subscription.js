@@ -46,7 +46,7 @@ function cancellationTiming(subscription, nowSeconds) {
     const metadata = subscription.metadata || {};
     const commitmentWeeks = cleanInteger(metadata.commitment_weeks);
     const commitmentEnd = commitmentWeeks
-        ? cleanInteger(subscription.created) + (commitmentWeeks * 7 * DAY_SECONDS)
+        ? cleanInteger(subscription.start_date || subscription.created) + (commitmentWeeks * 7 * DAY_SECONDS)
         : 0;
     const hasNoticePolicy = cleanInteger(metadata.cancellation_notice_days) === NOTICE_DAYS;
     const policyEnd = hasNoticePolicy
@@ -167,7 +167,12 @@ export default async (request) => {
                     const scheduleId = typeof subscription.schedule === "string" ? subscription.schedule : subscription.schedule.id;
                     await stripeRequest(stripeKey, "POST", `/v1/subscription_schedules/${encodeURIComponent(scheduleId)}/release`, new URLSearchParams({ preserve_cancel_date: "true" }));
                 }
-                params.set("cancel_at_period_end", "true");
+                const periodEnd = cleanInteger(subscription.current_period_end || subscription.items?.data?.[0]?.current_period_end);
+                if (timing.commitmentWeeks && timing.effectiveAt > periodEnd) {
+                    params.set("cancel_at", String(timing.effectiveAt));
+                } else {
+                    params.set("cancel_at_period_end", "true");
+                }
             } else {
                 params.set("cancel_at", String(timing.effectiveAt));
             }

@@ -1,4 +1,3 @@
-import { getBalanceCheckoutPlan } from './checkout-guard.js';
 
 export const LEARN_PLAN = 'balance_learn_weekly';
 const WEEK = 7 * 86400;
@@ -8,13 +7,15 @@ const idOf = value => typeof value === 'string' ? value : value?.id;
 // payment and the six-week transition; no application timer charges cards.
 export async function ensureLearnBillingSchedule(stripe, subscription) {
     if (subscription?.metadata?.balance_plan !== LEARN_PLAN) return subscription;
+    // New sales stay weekly. Keep the accepted schedule for earlier purchases.
+    if (subscription.metadata.renewal_terms === 'continues_weekly_after_six_week_minimum') return subscription;
     try {
         const current = await stripe.subscriptions.retrieve(subscription.id);
         if (current.metadata?.learn_schedule_configured === 'v1'
             || current.metadata?.cancellation_requested_at
             || current.cancel_at || current.cancel_at_period_end
             || !['active', 'trialing'].includes(current.status)) return current;
-        const offer = getBalanceCheckoutPlan(LEARN_PLAN);
+        const offer = { unitAmount: 2483, introductoryWeeks: 6, renewalUnitAmount: 9932, renewalIntervalCount: 4 };
         const item = current.items?.data?.[0];
         const price = item?.price;
         if (current.items?.data?.length !== 1 || price?.unit_amount !== offer.unitAmount
