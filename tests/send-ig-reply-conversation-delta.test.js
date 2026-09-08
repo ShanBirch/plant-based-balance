@@ -203,3 +203,17 @@ test('the sender restores its full receipt when its own Graph echo wins the stat
     assert.match(source, /status=eq\.sent&data->>send_claim_id=eq\.\$\{encodeURIComponent\(sendClaimId\)\}&data->>sent_via=eq\.instagram_graph_echo/);
     assert.match(source, /body: \{ actioned_at: sentAtIso, data: mergedData \}/);
 });
+
+test('paid Meta text pauses scale with length while a media-rich turn stays bounded', () => {
+    const gap = (items, index) => sendIg.resolveOutboundItemGapMs({index, outboundItems: items, paidMetaFastLane: true});
+    const short = [{kind: 'text', text: 'Hello'}, {kind: 'text', text: 'What would help?'}];
+    const long = [{kind: 'text', text: 'Hello'}, {kind: 'text', text: 'x'.repeat(210)}];
+    assert.equal(gap(short, 1), 3500);
+    assert.equal(gap(long, 1), 6500);
+    const mediaTurn = [...long, {kind: 'video'}, ...long];
+    const total = mediaTurn.slice(1).reduce((sum, _, i) => sum + gap(mediaTurn, i + 1), 0);
+    assert.ok(total <= 20000);
+    assert.ok(gap(mediaTurn, 2) <= 1800);
+    const many = Array.from({length: 12}, () => ({kind: 'text', text: 'x'.repeat(210)}));
+    assert.ok(many.slice(1).reduce((sum, _, i) => sum + gap(many, i + 1), 0) <= 20005);
+});

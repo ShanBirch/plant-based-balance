@@ -753,12 +753,18 @@ async function dispatchScheduledMetaAdReplyNow({ alertId, scheduledFor, replyTex
             replyTextUtf8Base64: Buffer.from(replyText, 'utf8').toString('base64'),
             draftTextUtf8Base64: Buffer.from(replyText, 'utf8').toString('base64'),
             source: 'scheduled_worker',
+            forceText: true,
         }),
     });
     const responseText = await response.text();
     if (!response.ok) {
         console.error(`[ig-draft] immediate Meta ad dispatch ${response.status} for ${alertId}: ${responseText.slice(0, 240)}`);
-        return { attempted: true, ok: false, status: response.status };
+        let failure;
+        try { failure = JSON.parse(responseText); } catch { failure = {}; }
+        return { attempted: true, ok: false, status: response.status,
+            code: String(failure.code || 'immediate_dispatch_failed').slice(0, 120),
+            error: String(failure.error || responseText).slice(0, 1200),
+        };
     }
     return { attempted: true, ok: true, status: response.status };
 }
@@ -2749,6 +2755,7 @@ async function stampIgAutoSendHoldForReview({ thread, alertId, alertData, reason
         auto_send_review_hold: {
             code: reason.code,
             label: reason.label,
+            ...(reason.dispatch ? { dispatch: reason.dispatch } : {}),
             held_at: heldAt,
         },
     };
@@ -9941,6 +9948,7 @@ exports.handler = async (event) => {
                 autoHoldReason = {
                     code: 'immediate_dispatch_failed',
                     label: 'immediate Meta reply failed to send',
+                    dispatch: scheduleResult.immediateDispatch,
                 };
                 currentAlertData = await stampIgAutoSendHoldForReview({
                     thread,

@@ -206,6 +206,9 @@ const FIRST_ITEM_TYPING_MIN_MS = 1800;
 const FIRST_ITEM_TYPING_MAX_MS = 4200;
 const VOICE_COMPANION_GAP_MS = 1800;
 const PAID_META_OUTBOUND_ITEM_GAP_MAX_MS = 1800;
+const PAID_META_TEXT_GAP_MIN_MS = 3500;
+const PAID_META_TEXT_GAP_MAX_MS = 6500;
+const PAID_META_TOTAL_GAP_BUDGET_MS = 20000;
 const SEND_CLAIM_STALE_MS = 10 * 60 * 1000;
 const INSTAGRAM_GRAPH_DM_BUBBLE_TARGET_CHARS = 210;
 const INSTAGRAM_GRAPH_DM_BUBBLE_HARD_MAX_CHARS = 240;
@@ -1286,9 +1289,14 @@ function resolveOutboundItemGapMs({
     // normal human-long pacing can otherwise outlive the synchronous Netlify
     // function after Graph has delivered only the first items. Keep the typing
     // presence, but finish the complete reply comfortably inside one request.
-    return paidMetaFastLane
-        ? Math.min(plannedGapMs, PAID_META_OUTBOUND_ITEM_GAP_MAX_MS)
-        : plannedGapMs;
+    if (!paidMetaFastLane) return plannedGapMs;
+    if (outboundItems[index]?.kind !== 'text') {
+        return Math.min(plannedGapMs, PAID_META_OUTBOUND_ITEM_GAP_MAX_MS);
+    }
+    const nextLength = String(outboundItems[index]?.text || '').trim().length;
+    const typingGap = clampNumber(2500 + nextLength * 20, PAID_META_TEXT_GAP_MIN_MS, PAID_META_TEXT_GAP_MAX_MS);
+    const perItemBudget = PAID_META_TOTAL_GAP_BUDGET_MS / Math.max(1, outboundItems.length - 1);
+    return Math.round(Math.min(typingGap, perItemBudget));
 }
 
 function resolveVoiceSourceMessages(alertData = {}, messagesToSend = []) {
