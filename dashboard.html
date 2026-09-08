@@ -15832,6 +15832,33 @@ window.endFeatureTour = function(skipped){
 })();
 </script>
 <!-- ========== END GUIDED FEATURE TOUR ========== -->
+<script>
+// A QA navigation can finish rendering before the tour initializer has run.
+// Recover only the already-delivered initializer, once, before offering replay.
+(function(){
+  if (new URLSearchParams(location.search).get('guidedTourQa') !== '1') return;
+  var recoveryScript = document.currentScript;
+  function recoverQaTourStartup(){
+    var overlay = document.getElementById('guided-tour-overlay');
+    if (!overlay) return;
+    if (typeof window.startFeatureTour === 'function') {
+      overlay.dataset.qaStartup = 'available';
+      return;
+    }
+    if (document.getElementById('tour-qa-startup-recovery')) return;
+    var initializer = recoveryScript.previousElementSibling;
+    if (!initializer || initializer.tagName !== 'SCRIPT') return;
+    overlay.dataset.qaStartup = 'recovering';
+    var retry = document.createElement('script');
+    retry.id = 'tour-qa-startup-recovery';
+    retry.textContent = initializer.textContent;
+    document.body.appendChild(retry);
+    overlay.dataset.qaStartup = typeof window.startFeatureTour === 'function' ? 'recovered' : 'failed';
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', recoverQaTourStartup, { once:true });
+  else recoverQaTourStartup();
+})();
+</script>
 
 <!-- ========== NEW FEATURE REVEAL ========== -->
 <style>
