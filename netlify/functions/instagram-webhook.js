@@ -2639,14 +2639,7 @@ async function shouldRecoverMissingDraftForDedupedInbound({
 }
 
 function alertNeedsDraftRecovery(alert = {}) {
-    const data = safeObject(alert.data);
-    const hasDraft = !!String(
-        alert.suggested_message
-        || alert.scheduled_reply_text
-        || data.draft_text
-        || ''
-    ).trim();
-    return alert.status === 'pending' && !hasDraft;
+    return require('./_lib/ig-draft-recovery').recoveryAllowed(alert);
 }
 
 function relatedThreadIdsForGraphEcho({ thread, threadId }) {

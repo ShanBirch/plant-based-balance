@@ -20,6 +20,8 @@
  * message and upserted the thread.
  */
 
+const { claimDraftRecovery } = require('./_lib/ig-draft-recovery');
+
 const {
     supabaseQuery,
     insertCoachAlert,
@@ -7746,7 +7748,15 @@ exports.handler = async (event) => {
                     || existingData.approved_link_auto_sendable === true
                     || existingData.meta_ad_fast_lane === true);
             if (existingAlert.status === 'pending' && !existingReplyText) {
-                regenerateExistingBlankAlert = existingAlert;
+                try {
+                    regenerateExistingBlankAlert = await claimDraftRecovery(existingAlert, supabaseQuery);
+                } catch (error) {
+                    console.warn('[ig-draft] recovery claim failed:', error.message);
+                    return { statusCode: 503, body: JSON.stringify({ error: 'draft_recovery_claim_failed' }) };
+                }
+                if (!regenerateExistingBlankAlert) {
+                    return { statusCode: 200, body: JSON.stringify({ skipped: 'draft_recovery_deferred', alert_id: existingAlert.id }) };
+                }
                 console.warn(`[ig-draft] duplicate alert ${existingAlert.id} has an empty draft, regenerating`);
             } else {
                 if (canResumeAutoSchedule && existingReplyText) {
@@ -8831,14 +8841,14 @@ exports.handler = async (event) => {
     // same ManyChat burst" failure when the webhook, draft worker, and
     // reconcile backstop land a few seconds apart.
     const coalesceCutoffIso = new Date(Date.now() - PENDING_THREAD_COALESCE_LOOKBACK_HOURS * 60 * 60 * 1000).toISOString();
-    let existingPending = metaAdFastLane && regenerateExistingBlankAlert
-        ? regenerateExistingBlankAlert
-        : null;
+    // Always save a regenerated draft to its exact shell, including old organic
+    // alerts outside the coalescing window. A duplicate insert loses the draft.
+    let existingPending = regenerateExistingBlankAlert || null;
     // Paid-Meta bursts keep one exact alert shell per inbound revision.
     // Older workers can then be canceled safely when a newer webhook
     // arrives, while the final worker owns the complete settled batch.
     // Non-paid lanes retain their review-card coalescing behaviour.
-    if (!metaAdFastLane) {
+    if (!metaAdFastLane && !existingPending) {
         try {
             const rows = await supabaseQuery(
                 `coach_alerts?select=id,client_id,data&data->>ig_thread_id=eq.${thread.id}&status=eq.pending&created_at=gte.${encodeURIComponent(coalesceCutoffIso)}&alert_type=in.(ig_incoming_dm,fb_incoming_dm)&order=created_at.desc&limit=1`
