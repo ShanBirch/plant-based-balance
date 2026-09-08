@@ -15789,6 +15789,24 @@ window.endFeatureTour = function(skipped){
   }
   window.addEventListener('appCriticalContentReady', function(){ offerWorkoutTourQaReplay().catch(console.warn); });
   if (window._appCriticalContentReady) offerWorkoutTourQaReplay().catch(console.warn);
+  // Cached startup can finish the loading shell before auth/profile readiness.
+  // Retry only this explicit QA entry; every attempt retains server validation.
+  if (new URLSearchParams(location.search).get('guidedTourQa') === '1') {
+    let qaReplayAttempts = 0;
+    let qaReplayChecking = false;
+    const qaReplayTimer = setInterval(async function(){
+      if (document.getElementById('tour-qa-replay') || window.__balanceGuidedTourActive || qaReplayAttempts >= 30) {
+        clearInterval(qaReplayTimer);
+        return;
+      }
+      if (qaReplayChecking) return;
+      qaReplayChecking = true;
+      qaReplayAttempts += 1;
+      try { await offerWorkoutTourQaReplay(); }
+      catch(e) { console.warn('[tour] QA replay validation failed', e); }
+      finally { qaReplayChecking = false; }
+    }, 1000);
+  }
 
   document.addEventListener('DOMContentLoaded', function(){
     window.updateWalkthroughTestResetVisibility();
