@@ -15759,12 +15759,21 @@ window.endFeatureTour = function(skipped){
   async function offerWorkoutTourQaReplay(){
     if (new URLSearchParams(location.search).get('guidedTourQa') !== '1') return;
     const testId = '755120c2-b0f9-44ed-8493-0cc14cbc7901';
-    if (!window.currentUser || window.currentUser.id !== testId || !window.supabaseClient) return;
+    if (!window.currentUser || window.currentUser.id !== testId || !window.supabaseClient) {
+      console.info('[tour] QA replay waiting for matching account and client');
+      return;
+    }
     if (document.getElementById('tour-qa-replay')) return;
     const auth = await window.supabaseClient.auth.getUser();
-    if (auth.error || !auth.data || auth.data.user?.id !== testId) return;
+    if (auth.error || !auth.data || auth.data.user?.id !== testId) {
+      console.info('[tour] QA replay authenticated account validation failed', auth.error?.message || 'account mismatch');
+      return;
+    }
     const profile = await window.supabaseClient.from('users').select('is_test_account,onboarding_complete,subscription_status').eq('id',testId).single();
-    if (profile.error || !profile.data?.is_test_account || !profile.data.onboarding_complete || ['active','trialing'].includes(profile.data.subscription_status)) return;
+    if (profile.error || !profile.data?.is_test_account || !profile.data.onboarding_complete || ['active','trialing'].includes(profile.data.subscription_status)) {
+      console.info('[tour] QA replay eligibility validation failed', profile.error?.message || 'ineligible profile');
+      return;
+    }
     const button = document.createElement('button');
     button.id = 'tour-qa-replay';
     button.textContent = 'Replay guided tour (test account)';
