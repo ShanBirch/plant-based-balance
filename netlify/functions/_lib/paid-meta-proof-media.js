@@ -95,7 +95,9 @@ function requiredPaidMetaProofImageUrl(replyText = '') {
 function maySendDraftVideoAttachment({ videoUrl = '', replyText = '' } = {}) {
     const normalizedUrl = String(videoUrl || '').trim().toLowerCase();
     if (!isBalanceFoundationsAppProofVideoUrl(normalizedUrl)) return true;
-    return BALANCE_APP_VIDEO_INTRO_RE.test(String(replyText || ''));
+    const text = String(replyText || '').replace(/[\u2018\u2019]/g, "'");
+    return BALANCE_APP_VIDEO_INTRO_RE.test(text)
+        || /\bhere(?:'s| is) (?:the |a )?(?:(?:course|app) )?video\b/i.test(text);
 }
 
 function isBalanceFoundationsAppProofVideoUrl(value = '') {

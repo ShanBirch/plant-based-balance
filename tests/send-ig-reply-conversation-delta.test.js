@@ -217,3 +217,11 @@ test('paid Meta text pauses scale with length while a media-rich turn stays boun
     const many = Array.from({length: 12}, () => ({kind: 'text', text: 'x'.repeat(210)}));
     assert.ok(many.slice(1).reduce((sum, _, i) => sum + gap(many, i + 1), 0) <= 20005);
 });
+
+test('first-send course-video wording introduces the attached video without requiring again', () => {
+    const videoUrl = 'https://plantbased-balance.org/assets/balance-foundations-course-first-v8.mp4';
+    for (const replyText of ["Here's the course video.", 'Here is the course video.', 'Here\u2019s the course video.']) {
+        assert.equal(sendIg.maySendDraftVideoAttachment({videoUrl, replyText}), true);
+    }
+    assert.equal(sendIg.maySendDraftVideoAttachment({videoUrl, replyText: 'Your workout program is included.'}), false);
+});
