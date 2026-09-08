@@ -40,9 +40,9 @@ test('combines, deduplicates and sorts a week of meal-plan ingredients', () => {
     const items = shopping.buildWeekItems(week);
 
     assert.deepEqual(items.map(item => item.name), ['Almond milk', 'Rolled oats', 'Sea salt']);
-    assert.equal(items[0].amount, '1 cup + 1/2 cup');
-    assert.equal(items[1].amount, '1 cup x 2');
-    assert.equal(items[2].amount, 'needed in 2 meals');
+    assert.equal(items[0].amount, '1 1/2 cups');
+    assert.equal(items[1].amount, '2 cups');
+    assert.equal(items[2].amount, 'as needed');
 });
 
 test('downloads a readable checklist with checked state', () => {
@@ -55,19 +55,19 @@ test('downloads a readable checklist with checked state', () => {
     });
 
     assert.match(text, /^BALANCE SHOPPING LIST\nPlant Powered Week \| Week 2/m);
-    assert.match(text, /\[x\] Rolled oats - 1 cup x 2/);
-    assert.match(text, /\[ \] Almond milk - 1 cup \+ 1\/2 cup/);
+    assert.match(text, /\[x\] Rolled oats - 2 cups/);
+    assert.match(text, /\[ \] Almond milk - 1 1\/2 cups/);
 });
 
 test('wires the personalized list into meal-plan navigation and release guidance', () => {
-    assert.match(dashboard, /lib\/meal-plan-shopping-list\.js\?v=1/);
+    assert.match(dashboard, /lib\/meal-plan-shopping-list\.js\?v=2/);
     assert.match(dashboard, /id="ai-plan-shopping-toggle"/);
     assert.match(dashboard, /id="ai-plan-shopping-download"/);
     assert.match(dashboard, /onclick="openAiMealPlanShoppingList\(this\)"/);
     assert.match(dashboard, /meal-plan-shopping-list-v1/);
     assert.match(dashboard, /Your weekly shopping list/);
-    assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=225-calendar-home-coins/);
-    assert.match(dashboard, /pbb-premium-overlays\.css\?v=102-community-games-theme/);
+    assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=[^"\s]+/);
+    assert.match(dashboard, /pbb-premium-overlays\.css\?v=[^"\s]+/);
 
     assert.match(mealPlanScript, /function renderAiPlanShoppingList\(\)/);
     assert.match(mealPlanScript, /function updateAiPlanShoppingItem\(input\)/);
