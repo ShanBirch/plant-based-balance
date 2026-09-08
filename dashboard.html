@@ -15813,6 +15813,7 @@ window.endFeatureTour = function(skipped){
       console.info('[tour] QA replay eligibility validation failed', profile.error?.message || 'ineligible profile');
       return;
     }
+    if (document.getElementById('tour-qa-replay')) return;
     const button = document.createElement('button');
     button.id = 'tour-qa-replay';
     button.textContent = 'Replay guided tour (test account)';
@@ -15831,9 +15832,22 @@ window.endFeatureTour = function(skipped){
       if (typeof setOnboardingNavigationGate === 'function') setOnboardingNavigationGate(false);
       window.metaAdTrialMode = true;
       button.remove();
+      document.getElementById('tour-qa-checkin')?.remove();
       window.startFeatureTour('full',{metaPreview:true,restart:true});
     };
     document.body.appendChild(button);
+    const checkinButton = document.createElement('button');
+    checkinButton.id = 'tour-qa-checkin';
+    checkinButton.textContent = 'Review check-in step (test account)';
+    checkinButton.style.cssText = button.style.cssText + 'top:calc(66px + env(safe-area-inset-top,0px));';
+    checkinButton.onclick = function(){
+      if (window.currentUser?.id !== testId) return;
+      button.onclick();
+      document.getElementById('guided-tour-overlay')?.classList.remove('meta-tour-welcome-active');
+      const checkinIndex = activeSteps.findIndex(function(step){ return step.checkinExplainerGuide === true; });
+      if (checkinIndex >= 0) showStep(checkinIndex);
+    };
+    document.body.appendChild(checkinButton);
   }
   window.addEventListener('appCriticalContentReady', function(){ offerWorkoutTourQaReplay().catch(console.warn); });
   if (window._appCriticalContentReady) offerWorkoutTourQaReplay().catch(console.warn);
