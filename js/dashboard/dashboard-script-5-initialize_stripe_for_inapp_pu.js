@@ -10081,6 +10081,63 @@ async function saveWizardFoodPreferences() {
     return prefs;
 }
 
+function resetFreshOnboardingPreferences() {
+    [
+        'onboardingComplete',
+        'plantbased_onboarding_complete',
+        'featureTourComplete',
+        'pbb_seen_features',
+        'pbb_onboarding_owner_user_id',
+        'onboardingCompletedAt',
+        // A reset must also clear the locally prepared plan and goals.
+        // Otherwise a phone can look as if it is still mid-way through
+        // the previous test run even though the account is clean.
+        'userProfile',
+        'user_food_preferences',
+        'dietaryPreference',
+        'exercise_preferences',
+        'plant_based_learning_progress',
+        'dailyQuizCompletedDate',
+        'pbb_meta_preview_meal_signature',
+        'pbb_meta_preview_plan_id_' + (window.currentUser?.id || 'guest'),
+        'ai_meal_plan',
+        'workoutCalendar',
+        'workoutCalendarTimes',
+        'onboardingGoalIntentIds',
+        'onboardingGoalIntents',
+        'onboardingWeeklyGoalFocusIds',
+        'onboardingWeeklyGoalFocus',
+        'onboardingLearningInterestIds',
+        'onboardingLearningInterests',
+        'pbb_auto_weekly_goals_pending_v1',
+        'pbb_weekly_goals_selection_required_v1'
+    ].forEach(function (key) {
+        try { localStorage.removeItem(key); } catch (_) {}
+    });
+    try { sessionStorage.removeItem('userProfile'); } catch (_) {}
+    wizardFoodAllergies.clear();
+    wizardDietaryRequirements.clear();
+    _aiMealPlanCache = null;
+
+    [wizardCuisinePreferences, wizardFavoriteFoods, wizardLearningInterests,
+     wizardLikedExercises, wizardAvoidedExercises, wizardSelectedDays].forEach(set => set.clear());
+    wizardTrainingFrequency = 0;
+    wizardSplitPreference = '';
+    wizardWorkoutCalendar = {};
+    wizardWorkoutTimes = {};
+    wizardChatAnswers = {};
+    selectedGender = null;
+    const identity = window.currentUser ? {id:window.currentUser.id, name:window.currentUser.user_metadata?.name || ''} : {};
+    window.currentUserProfile = {...identity};
+    window.userProfile = {...identity};
+    window.profileData = {...identity};
+    for (const storage of [localStorage, sessionStorage]) {
+        const prefixes = ['pbb_course_started_v2_', 'pbb_course_welcome_required_v1_'];
+        Object.keys(storage).filter(key => prefixes.some(prefix => key.startsWith(prefix + (window.currentUser?.id || 'guest') + '_')))
+            .forEach(key => storage.removeItem(key));
+    }
+}
+
 async function checkAndTriggerOnboarding() {
     let isReturningMember = localStorage.getItem('onboardingComplete') === 'true';
     let databaseOnboardingStatusChecked = false;
@@ -10098,6 +10155,7 @@ async function checkAndTriggerOnboarding() {
     // The dedicated authenticated test account is deliberately repeatable.
     // Never let its completed database profile skip the paid onboarding run.
     if (forcePaidOnboardingTest) {
+        resetFreshOnboardingPreferences();
         localStorage.removeItem('onboardingComplete');
         localStorage.removeItem('plantbased_onboarding_complete');
         localStorage.setItem('pbb_fitgotchi_visibility', 'hidden');
@@ -10159,39 +10217,7 @@ async function checkAndTriggerOnboarding() {
             // Its database flag is the source of truth, so a stale local completion
             // flag must never make the next phone launch skip the fresh onboarding.
             if (userData && userData.is_test_account && !userData.onboarding_complete) {
-                [
-                    'onboardingComplete',
-                    'plantbased_onboarding_complete',
-                    'featureTourComplete',
-                    'pbb_seen_features',
-                    'pbb_onboarding_owner_user_id',
-                    'onboardingCompletedAt',
-                    // A reset must also clear the locally prepared plan and goals.
-                    // Otherwise a phone can look as if it is still mid-way through
-                    // the previous test run even though the account is clean.
-                    'userProfile',
-                    'user_food_preferences',
-                    'dietaryPreference',
-                    'pbb_meta_preview_meal_signature',
-                    'pbb_meta_preview_plan_id_' + window.currentUser.id,
-                    'ai_meal_plan',
-                    'workoutCalendar',
-                    'workoutCalendarTimes',
-                    'onboardingGoalIntentIds',
-                    'onboardingGoalIntents',
-                    'onboardingWeeklyGoalFocusIds',
-                    'onboardingWeeklyGoalFocus',
-                    'onboardingLearningInterestIds',
-                    'onboardingLearningInterests',
-                    'pbb_auto_weekly_goals_pending_v1',
-                    'pbb_weekly_goals_selection_required_v1'
-                ].forEach(function (key) {
-                    try { localStorage.removeItem(key); } catch (_) {}
-                });
-                try { sessionStorage.removeItem('userProfile'); } catch (_) {}
-                wizardFoodAllergies.clear();
-                wizardDietaryRequirements.clear();
-                _aiMealPlanCache = null;
+                resetFreshOnboardingPreferences();
                 isReturningMember = false;
                 // A deliberate test reset must win over saved quiz answers below.
                 // Keep those records intact; they are not proof this new run finished.
