@@ -35,7 +35,7 @@ test('walkthrough keeps surrounding page context readable', () => {
   assert.match(source, /tour-control-prompt:not\(\.tour-gate-complete\) #guided-tour-bubble[\s\S]*?pointer-events: none/);
   assert.match(source, /#guided-tour-overlay\.tour-control-prompt \{ pointer-events: none; \}/);
   assert.match(source, /tour-control-prompt\.tour-gate-complete #guided-tour-bubble \{ pointer-events: auto; \}/);
-  assert.match(source, /classList\.toggle\('tour-control-prompt', !!\(step && step\.requiresHighlightedClick\)\)/);
+  assert.match(source, /classList\.toggle\('tour-control-prompt', !!\(step && \(step\.requiresHighlightedClick \|\| step\.spotlightExplanation\)\)\)/);
 });
 
 test('guided-tour tab handoffs verify Home is actually visible after delayed feature work', () => {

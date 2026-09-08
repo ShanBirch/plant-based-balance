@@ -13374,7 +13374,6 @@ if(!window._pbbIsIOSSafari) {
 </div>
 
 <!-- ========== GUIDED FEATURE TOUR ========== -->
-<script src="js/dashboard/pbb-workout-tour-progress.js?v=1"></script>
 <style>
   #guided-tour-overlay { position: fixed; inset: 0; z-index: 400000; pointer-events: auto; display: none; }
   #guided-tour-overlay.active { display: block; }
@@ -13739,9 +13738,8 @@ if(!window._pbbIsIOSSafari) {
     if (!calendar) return null;
 
     var dayKeys = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
-    var todayFromMonday = (new Date().getDay() + 6) % 7;
-    for (var offset = 0; offset < dayKeys.length; offset += 1) {
-      var dayIndex = (todayFromMonday + offset) % dayKeys.length;
+    // Preview the first planned session in calendar order, even on a rest day.
+    for (var dayIndex = 0; dayIndex < dayKeys.length; dayIndex += 1) {
       var workoutId = String(calendar[dayKeys[dayIndex]] || '').toLowerCase();
       if (workoutId && workoutId !== 'rest' && !workoutId.startsWith('yoga-') && !workoutId.startsWith('recovery-')) {
         return dayIndex;
@@ -13943,8 +13941,9 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'.meal-icon-btn[title="Take a photo"],.camera-btn-widget,.meal-icon-btn', title:'Log what you eat', body:'The highlighted photo button is one option. You can also use a barcode, type the meal or quick-log it. You only need to record what you actually eat.', pageView:true, metaPreview:true, promptBeforeAction:true, promptRequiresTargetClick:true, returnHomeAfter:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="nutrition_tracker_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: see your nutrition tracker', preActionBody:'Tap the highlighted To Do card to see the quick ways you can log a normal meal.', preActionButton:'Tap the tracker card', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('nutrition_tracker_intro'); await new Promise(function(r){ setTimeout(r,950); }); var pill=document.querySelector('#view-meals .pill-btn[onclick*="calorie-tracker"]'); if(typeof switchWeek==='function') switchWeek('calorie-tracker', pill); await new Promise(function(r){ setTimeout(r,320); }); return !!q('.camera-btn-widget,.meal-icon-btn'); } catch(e){ return false; } } },
     { tab:'dashboard', sel:'#weekly-calendar', fallbackSel:'#view-calendar,#view-cycle', title:'Check your workout week', fallbackTitle:'Check your workout week', body:'This calendar shows the workouts planned for your week. Click Next to open the program and see your first session.', pageView:true, metaPreview:true, promptBeforeAction:true, promptRequiresTargetClick:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="workout_week_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: see your workout program', preActionBody:'Back on Home, tap the highlighted workout card to see exactly how your training week fits together.', preActionButton:'Tap the workout card', nextLabel:'Open the program', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('workout_week_intro'); await new Promise(function(r){ setTimeout(r,800); }); if(typeof switchCalendarView === 'function') switchCalendarView('weekly'); return true; } catch(e){ return false; } } },
     { tab:'movement-tab', sel:'#workout-focus-title,#workout-player-title', fallbackSel:'#workout-exercises-list .workout-swipe-active,#today-workout-card', title:'Open your first workout', fallbackTitle:'Your first workout', body:'Your workout now opens one exercise at a time. The progress line, timer and options stay at the top while you work through the session.', fallbackBody:'Tap your planned workout to open the new one-exercise-at-a-time workout screen.', pageView:true, metaPreview:true, nextLabel:'See exercise card', action:async function(){ try { return !!(await openMetaPreviewStrengthWorkout()); } catch(e){ return false; } } },
-    { tab:'movement-tab', sel:'#workout-exercises-list .exercise-logger-card.workout-swipe-active [data-video-container][data-thumbnail-state="ready"]', fallbackSel:'#workout-exercises-list .exercise-logger-card.workout-swipe-active,#workout-exercises-list', title:'Follow the exercise card', fallbackTitle:'Follow the exercise card', body:'See the demonstration and the planned sets and reps. This is a preview: you do not need to perform or log any sets. Next we will look at the entry boxes for every exercise.', fallbackBody:'Each exercise opens as one card. Next we will look at its set-entry boxes without recording a workout.', pageView:true, allowTargetInteraction:true, metaPreview:true, preserveSurface:true, nextLabel:'Show sets and reps', workoutEducation:true, action:async function(){ try { await waitForMetaPreviewWorkoutProof({ requireThumbnail:true, timeoutMs:8000 }); return true; } catch(e){ return false; } } },
-    { tab:'movement-tab', sel:'#workout-exercises-list .workout-swipe-active .workout-set-row', title:'Know your set-entry boxes', body:'Each row is one set. Reps is the number of repetitions; kg is the weight. Time records exercise duration, not rest. There is no need to type or tick anything during this preview.', pageView:true, allowTargetInteraction:true, hideGuideWhileTyping:true, requiresWorkoutExplore:true, workoutEducation:true, metaPreview:true, preserveSurface:true, returnHomeAfter:true, action:async function(){ return !!(await openMetaPreviewStrengthWorkout()); } },
+    { tab:'movement-tab', sel:'#workout-exercises-list .exercise-logger-card.workout-swipe-active [data-video-container][data-thumbnail-state="ready"]', fallbackSel:'#workout-exercises-list .exercise-logger-card.workout-swipe-active,#workout-exercises-list', title:'Follow the exercise card', fallbackTitle:'Follow the exercise card', body:'See the demonstration and the planned sets and reps. This is a preview: you do not need to perform or log any sets. Next we will explain sets, then reps. You can browse the exercises with the arrows.', fallbackBody:'Each exercise opens as one card. Next we will look at its set-entry boxes without recording a workout.', pageView:true, allowTargetInteraction:true, metaPreview:true, preserveSurface:true, nextLabel:'Show sets and reps', workoutEducation:true, action:async function(){ try { await waitForMetaPreviewWorkoutProof({ requireThumbnail:true, timeoutMs:8000 }); return true; } catch(e){ return false; } } },
+    { tab:'movement-tab', sel:'#workout-exercises-list .workout-swipe-active .workout-set-row', title:'Each row is one set', body:'This row is one set of the exercise. Use + Add Set below the rows when you need another set. For now, just tap Next.', pageView:true, spotlightExplanation:true, workoutEducation:true, metaPreview:true, preserveSurface:true, nextLabel:'Next: reps', action:async function(){ return !!(await openMetaPreviewStrengthWorkout()); } },
+    { tab:'movement-tab', sel:'#workout-exercises-list .workout-swipe-active .workout-set-row .input-reps', title:'Your reps go here', body:'Reps means repetitions. Enter how many repetitions you completed in this box. You do not need to enter anything during the tour. Tap Next to continue.', pageView:true, spotlightExplanation:true, workoutEducation:true, metaPreview:true, preserveSurface:true, returnHomeAfter:true },
     { tab:'dashboard', sel:'#friends-photo-feed .meta-preview-feed-post', fallbackSel:'#feed-composer-card', title:'The Balance community', fallbackTitle:'The Balance community', body:'The highlighted Feed post shows where Shannon and members share normal meals, workouts, questions and wins.', fallbackBody:'This is where Shannon posts and members share meals, workouts and wins.', pageView:true, metaPreview:true, promptBeforeAction:true, promptRequiresTargetClick:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="feed_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: meet the community', preActionBody:'Back on Home, tap the highlighted community card to see where everyone shares their real week.', preActionButton:'Tap the community card', nextLabel:'See how to post', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('feed_intro'); if(window.BalanceMetaAdTrial && typeof window.BalanceMetaAdTrial.loadPreviewFeed === 'function') await window.BalanceMetaAdTrial.loadPreviewFeed(); } catch(e){} await new Promise(function(r){ setTimeout(r,500); }); return true; } },
     { tab:'friends', sel:'#feed-composer-card', title:'Post when you need support', body:'The highlighted composer is where you share a meal, workout, question or win. There is nothing to post during the tour—use Next to return Home.', pageView:true, metaPreview:true, preserveSurface:true, returnHomeAfter:true },
     { tab:'friends', sel:'#feed-composer-card', title:'Share from one place', body:'Use What’s happening for a post, or tap From Balance to share a set, meal, workout, PB or song. Your saved profile photo stays with your Feed posts.' },
@@ -14086,7 +14085,8 @@ if(!window._pbbIsIOSSafari) {
     'Check your workout week',
     'Open your first workout',
     'Follow the exercise card',
-    'Know your set-entry boxes',
+    'Each row is one set',
+    'Your reps go here',
     'The Balance community',
     'Introduce yourself',
     'Start your course',
@@ -14234,7 +14234,6 @@ if(!window._pbbIsIOSSafari) {
   let activeTourFallbackTarget = null;
   const completedTourGates = new Set();
   const completedPromptedActions = new Set();
-  let workoutTourProgress = null;
 
   function tourAllowsInteraction(target){
     if (!window.__balanceGuidedTourActive || !target || !target.closest) return true;
@@ -14273,7 +14272,6 @@ if(!window._pbbIsIOSSafari) {
   }
 
   function currentTourPositionTarget(step){
-    if (step && step.requiresWorkoutExplore) return activeTourGate && activeTourGate.getTarget ? activeTourGate.getTarget() : null;
     // A course welcome covers the overview without removing its old button.
     if (step && step.sel === '#balance-foundations-course-start' && q('#balance-foundations-welcome-start')) return null;
     const liveTarget = resolveStepTarget(step).target;
@@ -14473,72 +14471,12 @@ if(!window._pbbIsIOSSafari) {
     return true;
   }
 
-  function armWorkoutExploreGate(step){
-    if (!workoutTourProgress) workoutTourProgress = window.PBBWorkoutTourProgress.create();
-    let target = null;
-    let lastPaint = '';
-    let disposed = false;
-    const gate = { complete:false, getTarget:function(){ return target && isVisible(target) ? target : null; } };
-    function refresh(){
-      if (disposed) return;
-      const cards = Array.from(document.querySelectorAll('#workout-exercises-list > .exercise-logger-card'));
-      const card = q('#workout-exercises-list > .exercise-logger-card.workout-swipe-active');
-      const index = cards.indexOf(card);
-      const state = workoutTourProgress.sync(window.currentWorkoutKey || window.currentWorkoutName || '', cards.map(function(c,i){ return i + ':' + (c.dataset.exerciseName || c.id); }), index);
-      const row = card && Array.from(card.querySelectorAll('.workout-set-row')).find(function(el){ return isVisible(el) && el.querySelector('.input-reps,.input-time'); });
-      target = state.phase === 'fields' ? row : (state.complete ? row : q('#workout-swipe-' + state.direction));
-      if (target && target.disabled) target = null;
-      gate.complete = state.complete && state.phase === 'navigate' && !!row;
-      const key = [state.active,state.count,state.seen,state.phase,!!target].join(':');
-      if (key === lastPaint) return;
-      lastPaint = key;
-      const name = card && card.dataset.exerciseName || 'Exercise';
-      document.getElementById('tour-title').textContent = index >= 0 ? name + ' · ' + (index + 1) + ' of ' + state.count : 'Reopen your workout preview';
-      document.getElementById('tour-body').textContent = state.phase === 'fields'
-        ? step.body
-        : state.complete ? 'You have looked through every exercise. Return to the tour without saving or completing this workout.'
-        : 'Tap the highlighted ' + (state.direction === 'prev' ? 'previous' : 'next') + ' exercise arrow. You can also swipe. We will show the entry boxes on the exercise you open.';
-      setTourGateUi(!!target && (state.phase === 'fields' || gate.complete),
-        state.seen + ' of ' + state.count + ' exercises explained. No sets need to be logged.',
-        gate.complete ? 'Return to the tour' : state.phase === 'fields' ? 'Got it — continue' : 'View the next exercise');
-      if (!row) setTourGateUi(true, 'The workout is not visible. Reopen it to continue; your preview progress is kept.', 'Reopen workout');
-      if (target) {
-        try { target.scrollIntoView({block:'center', behavior:'auto'}); } catch(e) {}
-      }
-      activeTourFallbackTarget = null;
-      scheduleTourPosition(step, {settle:true, settleDelay:350});
-    }
-    gate.handleNext = async function(){
-      refresh();
-      if (!q('#workout-exercises-list > .exercise-logger-card.workout-swipe-active .workout-set-row')) {
-        await openMetaPreviewStrengthWorkout();
-        if (!disposed) { lastPaint = ''; refresh(); }
-        return true;
-      }
-      if (gate.complete) return false;
-      if (workoutTourProgress.view().phase === 'fields' && gate.getTarget()) {
-        workoutTourProgress.acknowledge();
-        refresh();
-      }
-      return true;
-    };
-    const interval = setInterval(refresh, 180);
-    gate.cleanup = function(){ disposed = true; target = null; clearInterval(interval); };
-    activeTourGate = gate;
-    refresh();
-  }
-
   function armTourGate(step){
     clearActiveTourGate();
     const finalLabel = idx === activeSteps.length - 1 ? 'Finish' : (step && step.returnHomeAfter ? 'Next: back to Home' : (step && step.nextLabel ? step.nextLabel : 'Next'));
     setTourGateUi(true, '', finalLabel);
 
-    if (step && step.requiresWorkoutExplore) {
-      armWorkoutExploreGate(step);
-      return;
-    }
-
-    if (step && step.requiresFeedPost) {
+if (step && step.requiresFeedPost) {
       const key = 'first-feed-post';
       const composer = document.getElementById('feed-composer-card');
       const textInput = document.getElementById('feed-composer-text');
@@ -15084,6 +15022,18 @@ if(!window._pbbIsIOSSafari) {
     return typeof awardPointsForWalkthroughStep === 'function' ? awardPointsForWalkthroughStep : null;
   }
 
+  function scrollTourTargetBy(target, delta){
+    // Home and the workout player scroll inside their own viewport containers.
+    for (let parent = target && target.parentElement; parent; parent = parent.parentElement) {
+      const overflow = window.getComputedStyle(parent).overflowY;
+      if (/(auto|scroll)/.test(overflow) && parent.scrollHeight > parent.clientHeight) {
+        parent.scrollBy({ top:delta, behavior:'auto' });
+        return;
+      }
+    }
+    window.scrollBy({ top:delta, behavior:'auto' });
+  }
+
   function positionBubbleAndSpotlight(target, step){
     const overlay = document.getElementById('guided-tour-overlay');
     const spot = document.getElementById('guided-tour-spotlight');
@@ -15094,7 +15044,7 @@ if(!window._pbbIsIOSSafari) {
     if (overlay) overlay.classList.toggle('tour-page-view', pageView);
     if (overlay) overlay.classList.toggle('tour-edge-prompt', !!(step && step.edgePrompt));
     if (overlay) overlay.classList.toggle('tour-feature-view', !!(step && step.featureView));
-    if (overlay) overlay.classList.toggle('tour-control-prompt', !!(step && (step.requiresHighlightedClick || step.requiresWorkoutExplore)));
+    if (overlay) overlay.classList.toggle('tour-control-prompt', !!(step && (step.requiresHighlightedClick || step.spotlightExplanation)));
     if (overlay) overlay.classList.toggle('tour-target-interactive', !!(step && step.allowTargetInteraction));
     bubble.style.bottom = '';
     bubble.style.maxHeight = '';
@@ -15115,6 +15065,11 @@ if(!window._pbbIsIOSSafari) {
       return;
     }
 
+    if (step && step.tapTargetPrompt && target) {
+      const rect = target.getBoundingClientRect();
+      const bottomLimit = (window.innerHeight || 640) - 118;
+      if (rect.bottom > bottomLimit) scrollTourTargetBy(target, rect.bottom - bottomLimit);
+    }
     const targetRect = target && target.isConnected && target.getClientRects().length
       ? target.getBoundingClientRect()
       : null;
@@ -15186,8 +15141,10 @@ if(!window._pbbIsIOSSafari) {
         );
         const scrollDelta = r.top - desiredTargetTop;
         if (Math.abs(scrollDelta) > 3) {
-          window.scrollBy({ top:scrollDelta, behavior:'auto' });
+          scrollTourTargetBy(target, scrollDelta);
           r = target.getBoundingClientRect();
+          spot.style.top = Math.max(r.top - pad, 8) + 'px';
+          spot.style.height = Math.max(24, Math.min(r.height + pad*2, vh - Math.max(r.top - pad, 8) - bottomReserve)) + 'px';
           canUseTop = r.top >= topBubbleBottom + tapGap;
           canUseBottom = r.bottom + tapGap <= bottomBubbleTop;
         }
@@ -15224,7 +15181,7 @@ if(!window._pbbIsIOSSafari) {
           const below = r.bottom + gap;
           if (above >= safeTop) pageBubbleTop = above;
           else if (below + bubbleH <= vh - bottomReserve) pageBubbleTop = below;
-          else if (step && (step.requiresHighlightedClick || step.requiresWorkoutExplore)) {
+          else if (step && (step.requiresHighlightedClick || step.spotlightExplanation)) {
             // Short screens: bound and scroll the prompt in the larger free
             // region so the action itself remains available.
             const aboveSpace = Math.max(0, r.top - gap - safeTop);
@@ -15355,7 +15312,7 @@ async function showStep(i, options){
           const targetRect = target.getBoundingClientRect();
           const targetBottomLimit = Math.max(220, (window.innerHeight || 640) - 118);
           if (targetRect.bottom > targetBottomLimit) {
-            window.scrollBy({ top: targetRect.bottom - targetBottomLimit, behavior:'auto' });
+            scrollTourTargetBy(target, targetRect.bottom - targetBottomLimit);
             await new Promise(function(r){ setTimeout(r, 80); });
           }
         } catch(e) {}
@@ -15370,7 +15327,7 @@ async function showStep(i, options){
     const defaultNextLabel = (i === activeSteps.length - 1) ? 'Finish' : (step.returnHomeAfter ? 'Next: back to Home' : (step.nextLabel || 'Next'));
     document.getElementById('tour-next-btn').textContent = isPromptBeforeAction ? (step.preActionButton || 'Open') : defaultNextLabel;
     if (overlay) {
-      overlay.classList.toggle('tour-action-required', !!(displayStep.requiresWelcomeVideo || displayStep.requiresFeedPost || displayStep.requiresFoundationsLesson || displayStep.requiresWeeklyGoals || displayStep.requiresHighlightedClick || displayStep.requiresWorkoutExplore));
+      overlay.classList.toggle('tour-action-required', !!(displayStep.requiresWelcomeVideo || displayStep.requiresFeedPost || displayStep.requiresFoundationsLesson || displayStep.requiresWeeklyGoals || displayStep.requiresHighlightedClick));
       overlay.classList.toggle('tour-edge-prompt', !!displayStep.edgePrompt);
       overlay.classList.toggle('tour-embedded-guide', !!displayStep.embeddedGuide);
       overlay.classList.toggle('tour-coach-note', !!displayStep.coachNoteGuide);
@@ -15385,7 +15342,16 @@ async function showStep(i, options){
       setTourGateUi(false, 'Tap the highlighted To Do card to open this part of the app.', step.preActionButton || 'Tap highlighted card');
       armPromptTarget(step, target, i);
     } else if (isPromptBeforeAction) setTourGateUi(true, '', step.preActionButton || 'Open');
-    else armTourGate(step);
+    else {
+      try { armTourGate(step); }
+      catch(e) {
+        console.error('[tour] step could not start', e);
+        clearActiveTourGate();
+        // Keep the guide visible and offer a retry without marking the step done.
+        activeTourGate = { complete:false, handleNext:async function(){ await showStep(i, options); return true; } };
+        setTourGateUi(true, 'This step could not open. Tap Try again to reload this step.', 'Try again');
+      }
+    }
 
     activeTourDisplayStep = displayStep;
     activeTourFallbackTarget = target;
@@ -15602,7 +15568,6 @@ window.endFeatureTour = function(skipped){
     if (window.__balanceGuidedTourActive === true && options.restart !== true) return true;
     try { if (!force && localStorage.getItem('featureTourComplete') === '1') return; } catch(e){}
     completedTourGates.clear();
-    workoutTourProgress = null;
     completedPromptedActions.clear();
     pendingPromptedAction = null;
     tourNextBlockedUntil = 0;
@@ -16856,14 +16821,14 @@ window.endFeatureTour = function(skipped){
     condition: function(){ var p=window.PBBWorkoutSwipePlayer; return !!(p && p.isFocusPilotUser && p.isFocusPilotUser(window.currentUser)); }
   });
   allFeatures.push({
-    id: 'workout-set-entry-tour-v1',
+    id: 'workout-set-entry-tour-v2',
     tab: 'movement-tab',
     sel: '#workout-exercises-list .workout-swipe-active .workout-set-row',
     fallbackSel: '#today-workout-card',
     title: 'Know your set-entry boxes',
     fallbackTitle: 'A clearer workout walkthrough',
-    body: 'Each row is one set: reps, weight and exercise duration. The guided tour now explains these boxes and takes you through every exercise without logging a workout.',
-    fallbackBody: 'The guided tour now explains the set-entry boxes and takes you through each exercise. You do not need to perform or log a workout during the preview.'
+    body: 'Each row is one set: reps, weight and exercise duration. The guided tour highlights sets, then reps, with a Next button on each explanation. No workout needs to be logged.',
+    fallbackBody: 'The guided tour highlights sets, then reps. Tap Next on each card without entering values or logging a workout.'
   });
   allFeatures.push({
     id: 'feed-post-actions-menu-v1',

@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
-const dashboard = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
+const dashboard = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8').replace(/\r\n/g, '\n');
 
 test('guided onboarding blocks only off-sequence To Do cards', () => {
   assert.match(dashboard, /function tourAllowsInteraction\(target\)/);
@@ -77,7 +77,7 @@ test('shopping list restores the prepared preview plan before opening', () => {
   assert.match(dashboard, /title:'One shopping list for the week'[^\n]*promptRequiresTargetClick:true[^\n]*openMetaPreviewShoppingListSurface/);
   assert.match(onboarding, /if \(!_aiMealPlanCache && window\.metaAdTrialMode === true\)[\s\S]*localStorage\.getItem\('ai_meal_plan'\)[\s\S]*Array\.isArray\(previewPlan\.weeks\)/);
   assert.match(onboarding, /async function openAiMealPlanShoppingList\(btn, options = \{\}\)[\s\S]*options\.resetChecked === true[\s\S]*localStorage\.removeItem\(getAiPlanShoppingStorageKey\(\)\)/);
-  assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=234-omnivore-meal-plan/);
+  assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=236-typed-question-layout/);
 });
 
 test('paid tour returns Home between sections and requires the real To Do cards', () => {
@@ -95,8 +95,8 @@ test('paid tour returns Home between sections and requires the real To Do cards'
 test('exercise guidance preserves the open workout player', () => {
   assert.match(dashboard, /title:'Follow the exercise card'[^\n]*preserveSurface:true/);
   assert.match(dashboard, /title:'Check your workout week'[^\n]*Click Next to open the program/);
-  assert.match(dashboard, /title:'Follow the exercise card'[^\n]*tap the round tick to complete it and start your rest/);
-  assert.match(dashboard, /title:'Follow the exercise card'[^\n]*Swipe for the next exercise/);
+  assert.match(dashboard, /title:'Follow the exercise card'[^\n]*do not need to perform or log any sets/);
+  assert.match(dashboard, /title:'Your reps go here'[^\n]*spotlightExplanation:true/);
   assert.match(dashboard, /if \(!step\.preserveSurface\) await ensureTab\(promptTab\)/);
 });
 

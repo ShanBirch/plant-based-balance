@@ -7,7 +7,7 @@ const html = fs.readFileSync(require('node:path').join(__dirname,'../dashboard.h
 test('required onboarding actually includes field guidance between exercise card and Feed', () => {
   const start=html.indexOf('const REQUIRED_ONBOARDING_TOUR_TITLES');
   const sequence=html.slice(start,html.indexOf('];',start));
-  assert.match(sequence, /'Follow the exercise card',\s*'Know your set-entry boxes',\s*'The Balance community'/);
+  assert.match(sequence, /'Follow the exercise card',\s*'Each row is one set',\s*'Your reps go here',\s*'The Balance community'/);
 });
 
 test('every exercise must be acknowledged, with variable counts and one-exercise sessions', () => {
@@ -45,61 +45,38 @@ test('no cards, changed day, added exercise and duplicate names cannot falsely f
   p.acknowledge();
   assert.equal(p.sync('new-day',['0:squat','1:squat','2:row'],0).seen,0);
 });
-test('tour integration tracks live card, cleans polling, blocks logging and follows keyboard', () => {
-  const body=html.slice(html.indexOf('function armWorkoutExploreGate'),html.indexOf('function armTourGate'));
-  assert.match(body,/workout-swipe-active/);
-  assert.match(body,/card\.querySelectorAll\('\.workout-set-row'\)/);
-  assert.match(body,/target && target\.disabled/);
-  assert.match(body,/clearInterval\(interval\)/);
-  assert.match(body,/isVisible\(target\)/);
-  assert.doesNotMatch(body,/startRestTimer|finishWorkout\(|toggleSetDone|\.value\s*=/);
-  assert.match(html,/workoutEducation && target\.closest\('#view-active-workout'\)/);
-  assert.match(html,/hideGuideWhileTyping:true, requiresWorkoutExplore:true/);
-  assert.match(html,/typeof activeTourGate\.handleNext === 'function' && await activeTourGate\.handleNext\(\)/);
+
+test('sets and reps are separate Next-only explanations without the external progress gate', () => {
+  const steps = ['Each row is one set','Your reps go here'].map(title => {
+    const line = html.split('\n').find(line=>line.includes("title:'"+title+"'"));
+    return new Function('return ('+line.trim().replace(/,$/,'')+')')();
+  });
+  assert.match(steps[0].sel, /workout-set-row$/);
+  assert.match(steps[1].sel, /\.input-reps$/);
+  for (const step of steps) {
+    assert.equal(step.requiresWorkoutExplore, undefined);
+    assert.equal(step.requiresHighlightedClick, undefined);
+    assert.equal(step.hideGuideWhileTyping, undefined);
+    assert.equal(step.spotlightExplanation, true);
+    assert.equal(step.preserveSurface, true);
+  }
+  assert.equal(steps[0].nextLabel, 'Next: reps');
+  assert.equal(steps[1].returnHomeAfter, true);
+  assert.doesNotMatch(html, /PBBWorkoutTourProgress|armWorkoutExploreGate|requiresWorkoutExplore/);
 });
 
-test('actual tour gate follows visible fields/arrows, resumes after re-entry and cleans up', async () => {
-  const vm=require('node:vm');
-  const source=html.slice(html.indexOf('function armWorkoutExploreGate'),html.indexOf('function armTourGate'));
-  let active=0, open=true, poll, stopped=false, ui;
-  const cards=Array.from({length:3},(_,i)=>{
-    const row={visible:true,querySelector:()=>({}),scrollIntoView(){},id:'row-'+i};
-    return {dataset:{exerciseName:'Exercise '+i},querySelectorAll:()=>[row],row};
-  });
-  const arrows={prev:{id:'prev',visible:true,scrollIntoView(){}},next:{id:'next',visible:true,scrollIntoView(){}}};
-  const labels={};
-  const ctx={
-    window:{PBBWorkoutTourProgress:progress,currentWorkoutName:'Day'},
-    workoutTourProgress:null,activeTourGate:null,activeTourFallbackTarget:null,
-    document:{querySelectorAll:()=>cards,getElementById:id=>(labels[id] ||= {})},
-    isVisible:el=>el.visible,
-    q:sel=>sel.startsWith('#workout-swipe-') ? arrows[sel.slice('#workout-swipe-'.length)] : !open ? null : sel.endsWith('.workout-set-row') ? cards[active].row : cards[active],
-    setTourGateUi:(enabled,message,label)=>{ui={enabled,message,label};},
-    scheduleTourPosition(){},setInterval:fn=>{poll=fn;return 1;},clearInterval:()=>{stopped=true;},
-    openMetaPreviewStrengthWorkout:async()=>{open=true;return true;}
-  };
-  vm.runInNewContext(source+';armWorkoutExploreGate({body:"Reps, kg and duration"});',ctx);
-  const gate=ctx.activeTourGate;
-  assert.equal(gate.getTarget(),cards[0].row);
-  await gate.handleNext();
-  assert.equal(gate.getTarget(),arrows.next);
-  assert.equal(ui.enabled,false);
-  active=2;poll();
-  assert.equal(gate.getTarget(),cards[2].row);
-  await gate.handleNext();
-  assert.equal(gate.getTarget(),arrows.prev);
-  open=false;poll();
-  assert.equal(gate.getTarget(),null);
-  assert.equal(ui.label,'Reopen workout');
-  await gate.handleNext();
-  assert.equal(gate.getTarget(),cards[2].row);
-  active=1;poll();
-  assert.equal(gate.getTarget(),cards[1].row);
-  await gate.handleNext();
-  assert.equal(ui.label,'Return to the tour');
-  assert.equal(gate.complete,true);
-  assert.equal(await gate.handleNext(),false);
-  gate.cleanup();
-  assert.equal(stopped,true);
-  assert.equal(gate.getTarget(),null);
+test('preview picks the first strength session even when today is later in the week', () => {
+  const source=html.slice(html.indexOf('function getMetaPreviewStrengthDayIndex'),html.indexOf('function isTourElementVisible'));
+  const select=new Function('window','getStoredOnboardingWorkoutCalendar',source+';return getMetaPreviewStrengthDayIndex();');
+  assert.equal(select({userProfile:{}},()=>({monday:'strength-1',tuesday:'rest',wednesday:'strength-2'})),0);
+  assert.equal(select({userProfile:{}},()=>({monday:'yoga-1',tuesday:'recovery-1',friday:'strength-3'})),4);
+});
+
+test('scroll correction uses the actual nested scroll container', () => {
+  const source=html.slice(html.indexOf('function scrollTourTargetBy'),html.indexOf('function positionBubbleAndSpotlight'));
+  let actual;
+  const parent={scrollHeight:1200,clientHeight:700,scrollBy:options=>{actual=options.top;}};
+  const scroll=new Function('window',source+';return scrollTourTargetBy;')({getComputedStyle:()=>({overflowY:'auto'}),scrollBy(){throw Error('must scroll nested view');}});
+  scroll({parentElement:parent},95);
+  assert.equal(actual,95);
 });

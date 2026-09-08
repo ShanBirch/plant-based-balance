@@ -42,7 +42,7 @@ test('workout inputs and navigation targets remain separate from the tour card',
     for (const y of [80,150,vh-160]) {
       const bubble={style:{},offsetWidth:320};
       const r={top:y,bottom:y+52};
-      place({pageView:true,requiresWorkoutExplore:true},r,bubble,vh,210);
+      place({pageView:true,spotlightExplanation:true},r,bubble,vh,210);
       const top=parseFloat(bubble.style.top);
       const height=bubble.style.maxHeight ? parseFloat(bubble.style.maxHeight) : 210;
       assert.ok(top+height<=r.top-18 || top>=r.bottom+18, `${vh}/${y}`);
