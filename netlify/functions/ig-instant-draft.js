@@ -1453,12 +1453,16 @@ function buildPaidMetaBlockerReflection(message = '') {
 
 function hasDirectPaidMetaCheckoutIntent(value = '') {
     const message = String(value || '').replace(/\s+/g, ' ').trim();
+    if (/\b(?:not ready|don['’]?t|do not|not yet|before I)\b/i.test(message)) return false;
+    if (/\b(?:send|give)\s+(?:me\s+)?(?:the\s+)?(?:signup|sign-up|checkout|payment)\s+link\b/i.test(message)) return true;
     const optionalJoiningPurpose = '(?:\\s+so i can (?:join|sign up|start|get started))?';
     return new RegExp(`^(?:please )?(?:send (?:me )?(?:the )?link|can you send (?:me )?(?:the )?link|how do i (?:join|sign up|start|get started)|where do i (?:join|sign up|start|get started)|where can i (?:join|sign up|start|get started)|i(?:'m| am) ready to (?:join|sign up|start|get started)|i want to (?:join|sign up|start|get started)|i(?:'m| am) in,? send (?:me )?(?:the )?link)${optionalJoiningPurpose}[.!?\\s]*$`, 'i').test(message)
         || new RegExp(`(?:^|[.!?]\\s+)(?:please\\s+)?(?:send (?:me )?(?:the )?(?:checkout )?link|can you send (?:me )?(?:the )?(?:checkout )?link|i(?:'m| am) ready to (?:join|sign up|start|get started)|i want to (?:join|sign up|start|get started))${optionalJoiningPurpose}[.!?\\s]*$`, 'i').test(message);
 }
 
 function hasRecentPaidMetaSupportQuestion(history = []) {
+    const lastOutbound = (Array.isArray(history) ? history : []).filter(item => item?.direction === 'out').slice(-2);
+    if (lastOutbound.some(item => /\b(?:want|like|keen|shall|should|can I)\b[^?]{0,150}\bpreview\b[^?]*\?/i.test(String(item.text || '')))) return true;
     return (Array.isArray(history) ? history : [])
         .filter(item => String(item?.direction || '').toLowerCase() === 'out')
         .slice(-4)
@@ -1679,7 +1683,7 @@ function buildPaidMetaGoalToBlockerText(goalText = '', transformationProof = nul
     const courseBridge = proofLine
         ? 'That is the kind of progress the six-week Balance Learn course helps you build around your real week.'
         : 'The six-week Balance Learn course helps you turn that goal into a clear week you can actually follow.';
-    return `${acknowledgement}${proofLine ? ` ${proofLine}` : ''} ${courseBridge} What usually gets in the way of making that happen consistently?`;
+    return `${acknowledgement}${proofLine ? ` ${proofLine}` : ''} What usually gets in the way of making that happen consistently?`;
 }
 
 function paidMetaHistoryHasConcreteBlocker(history = []) {
@@ -2059,7 +2063,7 @@ function buildDeterministicPaidMetaConversationReply({
     allowVideoAttachment = false,
     skipIdentityDisclosure = false,
 } = {}) {
-    const message = String(currentMessage || '').replace(/\s+/g, ' ').trim();
+    const message = String(currentMessage || '').replace(/\s+/g, ' ').replace(/\bloose wie?ght\b|\bloose weight\b/gi, 'lose weight').trim();
     if (!message
         || META_AD_FIRST_REPLY_OPT_OUT_RE.test(message)
         || META_AD_FIRST_REPLY_REVIEW_REQUIRED_RE.test(message)) return null;
@@ -2116,6 +2120,32 @@ function buildDeterministicPaidMetaConversationReply({
     const historyHasGoal = hasGoal || priorHistoryHasGoal;
     const historyHasBlocker = hasBlocker || paidMetaHistoryHasConcreteBlocker(history);
 
+    const guidedReply = (chunks, attachments = {}) => ({
+        chunks, joined: chunks.join('\n\n'), model: 'deterministic_paid_meta_guided_sales_v1',
+        replyMode: 'campaign_sales_progression', maxChunks: Math.max(MAX_CHUNKS, chunks.length), error: null, flowVariant, ...attachments,
+    });
+    if (broadFlow && /\b(?:leave it with me|time to think|not right now)\b/i.test(message)) {
+        return guidedReply(["Of course, I'll leave it with you."]);
+    }
+    if (broadFlow && /\b(?:pay weekly|weekly payments?|pay.*week)\b/i.test(message)) {
+        return guidedReply([
+            'Yes. Learn has a weekly option: AUD $24.83 a week, with a six-week minimum (AUD $148.98 total). It continues weekly after that until you cancel.',
+            'The upfront option is one AUD $149 payment for the full six weeks, with no auto-renewal. Want to see the app preview first?',
+        ]);
+    }
+    if (broadFlow && /\b(?:certificate|how many lessons|each.*six weeks|week.by.week|curriculum)\b/i.test(message)) {
+        return guidedReply([
+            'There are 31 lessons: an introductory lesson, then 30 across six weeks. You earn a Certificate of Completion by finishing the required lessons and practical actions.',
+            'Week 1: why change feels hard. Week 2: work with your energy. Week 3: build a rhythm that sticks.',
+            'Week 4: take the fight out of food. Week 5: make progress easier to repeat. Week 6: build your sustainable way forward.',
+            'Want to see the app preview?',
+        ]);
+    }
+    if (broadFlow && /\b(?:photo|picture|image)\b/i.test(message) && /\b(?:send|show|come through|arrive)\b/i.test(message)) {
+        const proof = resolvePaidMetaTransformationProof({ goalText: /\bally\b/i.test(message) ? 'lose weight' : /\bgen\b/i.test(message) ? 'strength' : paidMetaLatestFitnessGoalText(history) });
+        if (proof) return guidedReply([proof.introduction], { imageAttachmentUrl: proof.imageUrl });
+    }
+
     if (broadFlow && hasPaidMetaPreviewOrPriceDecline(message)) {
         const joined = /\b(?:too (?:much|expensive)|can['\u2019]?t afford|cannot afford|not (?:in|within) (?:my )?budget)\b/i.test(message)
             ? 'That’s completely fair. If $149 is too much right now, no stress. I won’t send the link.'
@@ -2164,7 +2194,7 @@ function buildDeterministicPaidMetaConversationReply({
         && appPreviewUrl
         && (directPreviewRequest || acceptedExplicitPreviewInvitation || genericReadyAfterQualifiedOffer || (historyHasGoal && historyHasBlocker))) {
         const mealPlanCopy = broadFlow ? 'meal plan fitted to your dietary preferences' : 'plant-based meal plan';
-        const joined = `Yep, here you go. You can look through your workout program and ${mealPlanCopy} in the app before you pay: ${appPreviewUrl}`;
+        const joined = `Yep, here you go. This opens the app download and setup steps, then you can explore your preview before you pay: ${appPreviewUrl}`;
         return {
             chunks: [joined],
             joined,
@@ -2176,6 +2206,14 @@ function buildDeterministicPaidMetaConversationReply({
             error: null,
             flowVariant,
         };
+    }
+    if (broadFlow && PAID_META_FITNESS_GOAL_RE.test(message) && isPaidMetaStrongBlocker(message)) {
+        const proof = resolvePaidMetaTransformationProof({ goalText: message });
+        const offer = addPaidMetaProofVideoToOfferChunks(buildPaidMetaTailoredOfferChunks(message, message, flowVariant), history, flowVariant);
+        return guidedReply([...(proof && !priorHistoryHasGoal ? [proof.introduction] : []), ...offer.chunks], {
+            imageAttachmentUrl: proof && !priorHistoryHasGoal ? proof.imageUrl : null,
+            videoAttachmentUrl: allowVideoAttachment ? offer.videoAttachmentUrl : null,
+        });
     }
     if (!priorHistoryHasGoal
         && PAID_META_FITNESS_GOAL_RE.test(message)
@@ -2530,6 +2568,7 @@ function shouldApplyDeterministicPaidMetaReplyOverride(draft = null) {
     return draft.replyMode === 'campaign_buyer_handoff'
         || draft.replyMode === 'campaign_app_preview_handoff'
         || /^deterministic_paid_meta_identity_v\d+$/i.test(String(draft.model || ''))
+        || (draft.flowVariant === 'broad_pain' && /^deterministic_paid_meta_guided_sales_v\d+$/i.test(String(draft.model || '')))
         || (draft.replyMode === 'campaign_sales_progression'
             && /^deterministic_paid_meta_autonomy_v\d+$/i.test(String(draft.model || '')));
 }
@@ -4863,6 +4902,7 @@ PAID META BROAD-PAIN SINGLE-WRITER PLAYBOOK:
 - Once goal and blocker/support need are known, stop discovery. Explain the six-week Balance Learn setup in neutral language: workout program around their week, meal-plan support fitted to dietary preferences, one weekly training/food review and adjustment, and six weeks of app/community access.
 - State the terms exactly when the offer is explained: one AUD $149 payment for the full six weeks, with no subscription or auto-renewal. Offer the free personalised app preview before payment.
 - Know the fixed course curriculum so you can answer accurately when asked: week 1, Why change feels hard; week 2, Work with your energy; week 3, Build a rhythm that sticks; week 4, Take the fight out of food; week 5, Make progress easier to repeat; week 6, Build your sustainable way forward. The course uses lessons, practical actions and Weekly Goals alongside their workout and nutrition setup. Do not recite all six weeks in an ordinary pitch. Give the full outline only when they ask about the curriculum or week-by-week course, otherwise mention only the one or two themes relevant to their goal or blocker.
+- Completion facts: 31 lessons total (one introduction plus 30 weekly lessons). A Certificate of Completion follows the required lessons and practical actions; never deny it or claim accreditation. If asked, Learn also offers AUD $24.83/week with a six-week minimum (AUD $148.98 total), continuing weekly until cancelled. The upfront AUD $149 option has no auto-renewal; keep those terms distinct.
 - Keep the fixed curriculum distinct from the personalised parts. The workout program, nutrition setup and Shannon's review can fit the person; do not claim the six course themes themselves are individually rewritten for every lead.
 - When they ask to see the preview or accept it, the signed preview must be sent immediately without reconfirming or collecting contact details. A generic "I'm ready" stays on the promised preview path. Checkout is only for an explicit request to join, pay, sign up or receive the checkout link.
 - Keep replies concise, specific, warm and low-pressure. No intake bundles, option menus, brochure copy, or invented personal context.`;
@@ -7626,6 +7666,9 @@ exports.handler = async (event) => {
                 history,
                 currentRevisionId: manychatMessageId,
             });
+            // Webhook recovery may add messages from before a test reset.
+            // Apply the episode boundary after merging as well as before it.
+            history = filterInternalTestHistoryAfterReset({ history, linkedUserId: thread.linked_user_id, customData: thread.custom_data });
         } catch (error) {
             console.warn('[ig-draft] paid Meta rapid-message history recovery failed; using canonical history:', error.message);
         }

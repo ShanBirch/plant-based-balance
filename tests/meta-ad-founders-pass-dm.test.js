@@ -1751,7 +1751,7 @@ test('paid Meta guided sales stages move goal to blocker to complete offer to pr
     const sentUrl = linkReply.joined.match(/https?:\/\/\S+/)?.[0] || '';
     assert.equal(linkReply.replyMode, 'campaign_app_preview_handoff');
     assert.match(linkReply.joined, /Yep, here you go/i);
-    assert.match(linkReply.joined, /workout program and plant-based meal plan in the app before you pay/i);
+    assert.match(linkReply.joined, /app download and setup steps/i);
     assert.equal(isMetaAppPreviewUrl(sentUrl), true);
 });
 
@@ -2360,7 +2360,7 @@ test('rapid paid-ad coalescing cannot schedule an older draft revision', () => {
     assert.match(source, /supersededByNewerInbound:\s*reason === 'newer_canonical_inbound'/);
     assert.match(source, /isDifferentInboundWebhookRevision\(\{ latestRevisionId: latestInboundRevisionId, requestedRevisionId \}\)/);
     assert.match(source, /cancel_reason:\s*'superseded_by_new_message'/);
-    assert.match(source, /if \(!metaAdFastLane\)/, 'paid Meta revisions keep exact alert ownership instead of cross-coalescing');
+    assert.match(source, /if \(!metaAdFastLane && !existingPending\)/, 'paid Meta revisions keep exact alert ownership instead of cross-coalescing');
     assert.match(source, /draft_revision_id:\s*manychatMessageId \|\| idempotencyKey/);
     assert.match(source, /coach_alerts\?id=eq\.\$\{existingPending\.id\}&status=eq\.pending/);
 });
@@ -3668,7 +3668,7 @@ test('verified broad route completes goal, blocker, neutral offer and signed pre
     });
     assert.equal(previewReply.replyMode, 'campaign_app_preview_handoff');
     assert.equal(previewReply.appPreviewHandoff, true);
-    assert.match(previewReply.joined, /meal plan fitted to your dietary preferences/i);
+    assert.match(previewReply.joined, /app download and setup steps/i);
     assert.match(previewReply.joined, new RegExp(previewUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
     assert.equal((previewReply.joined.match(/\?/g) || []).length, 0);
 
