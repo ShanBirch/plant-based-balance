@@ -580,58 +580,115 @@
     }, 260);
   }
 
+  var coachCheckinPage = 0;
+  var coachCheckinPages = [
+    {title:'The full picture', body:'This is not about having a perfect week. Shannon looks at the full picture so your next week can be adjusted around real life.', visual:'Your week, understood', icon:'<circle cx="48" cy="48" r="28"/><path d="M48 20v28l19 12M18 24l-6 12M78 24l6 12"/>'},
+    {title:'Weekly goals', body:'What felt realistic, what you completed and what got in the way.', visual:'Small steps. A clearer direction.', icon:'<rect x="24" y="16" width="48" height="64" rx="8"/><path d="m33 36 4 4 8-9m4 6h13M33 53h7m9 0h13M33 68h7m9 0h13"/>'},
+    {title:'Meals and photos', body:'Log your meals and add photos so Shannon can see what the week actually looked like.', visual:'Show the everyday meals', icon:'<circle cx="48" cy="48" r="25"/><circle cx="48" cy="48" r="15"/><path d="M12 22v20m8-20v20m-4-20v52M80 22v52M80 22q-14 16 0 26"/>'},
+    {title:'Course progress', body:'What you learned, completed or found difficult in Balance Learn.', visual:'Turn learning into real life', icon:'<path d="M48 27Q29 14 14 23v49q18-9 34 3 16-12 34-3V23Q67 14 48 27v48M24 34l14 4m-14 8 14 4m20-12 14-4m-14 16 14-4"/>'},
+    {title:'Workouts', body:'Your completed sessions, logged sets and any workouts you had to move or miss.', visual:'Every session adds context', icon:'<path d="M32 48h32M15 36v24m10-32v40m46-40v40m10-32v24M15 48h10m46 0h10"/>'},
+    {title:'Check-in form', body:'Your honest recap of what worked, what did not and what support you need.', visual:'An honest recap helps most', icon:'<path d="M18 22h60v43H43L26 79V65h-8zM30 36h36M30 47h26"/>'},
+    {title:'Progress photos', body:'Your private visual record, used to look for changes beyond one number.', visual:'Progress beyond the scales', icon:'<rect x="16" y="27" width="64" height="48" rx="8"/><circle cx="48" cy="51" r="14"/><path d="m30 27 6-10h24l6 10M68 38h1"/>'},
+    {title:'Sleep and steps', body:'Your recovery and daily movement, whether entered or brought in from your watch.', visual:'Movement and rest both count', icon:'<path d="M42 17a25 25 0 1 0 27 35 24 24 0 0 1-27-35M65 18v12m-6-6h12M67 70l5-8 8 5-5 8z"/>'},
+    {title:'Mood, energy and stress', body:'The context that helps explain why the rest of your week went the way it did.', visual:'Make space for how you feel', icon:'<path d="M48 76 20 49C1 28 31 9 48 31 65 9 95 28 76 49zM23 48h15l6-12 9 23 7-11h13"/>'}
+  ];
+
+  function renderCoachCheckinPage(overlay) {
+    var page = coachCheckinPages[coachCheckinPage];
+    overlay.querySelector('[data-coach-page-title]').textContent = page.title;
+    overlay.querySelector('[data-coach-page-body]').textContent = page.body;
+    overlay.querySelector('[data-coach-page-visual]').innerHTML = '<svg viewBox="0 0 96 96" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + page.icon + '</svg><span>' + page.visual + '</span>';
+    overlay.querySelector('[data-coach-page-count]').textContent = (coachCheckinPage + 1) + ' / ' + coachCheckinPages.length;
+    var back = overlay.querySelector('[data-coach-page-back]');
+    var next = overlay.querySelector('[data-coach-page-next]');
+    var complete = overlay.querySelector('[data-coach-checkin-complete]');
+    var focused = document.activeElement;
+    back.disabled = coachCheckinPage === 0;
+    next.hidden = coachCheckinPage === coachCheckinPages.length - 1;
+    complete.hidden = !next.hidden;
+    overlay.querySelector('[data-coach-page-hint]').textContent = next.hidden ? 'That is the full picture. Ready for the next step?' : 'Tap the right arrow to keep going';
+    overlay.querySelector('.coach-checkin-explainer__content').scrollTop = 0;
+    if (focused === next && next.hidden) complete.focus({preventScroll:true});
+    if (focused === back && back.disabled) next.focus({preventScroll:true});
+  }
+
   function ensureCoachCheckinExplainer() {
     var existing = document.getElementById('coach-checkin-explainer');
     if (existing) return existing;
-
     var style = document.createElement('style');
     style.id = 'coach-checkin-explainer-style';
-    style.textContent = [
-      '#coach-checkin-explainer{position:fixed;inset:0;z-index:399990;display:none;align-items:center;justify-content:center;padding:calc(18px + env(safe-area-inset-top,0px)) 16px calc(18px + env(safe-area-inset-bottom,0px));box-sizing:border-box;background:rgba(17,15,10,.72);backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);}',
-      '#coach-checkin-explainer.is-open{display:flex;}',
-      '.coach-checkin-explainer__panel{position:relative;width:min(100%,430px);max-height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;border:1px solid rgba(183,138,46,.42);border-radius:26px;padding:22px 18px 18px;box-sizing:border-box;background:linear-gradient(155deg,#fffdf7 0%,#fffaf0 60%,#f7edda 100%);box-shadow:0 28px 80px rgba(0,0,0,.34);color:#17130d;-webkit-text-fill-color:#17130d;font-family:inherit;}',
-      '.coach-checkin-explainer__eyebrow{margin:0 0 7px;color:#8a651c;-webkit-text-fill-color:#8a651c;font-size:.68rem;font-weight:950;letter-spacing:.12em;text-transform:uppercase;}',
-      '.coach-checkin-explainer__title{margin:0 0 8px;color:#17130d;-webkit-text-fill-color:#17130d;font-size:1.58rem;line-height:1.05;font-weight:950;}',
-      '.coach-checkin-explainer__intro{margin:0 0 15px;color:#554a3b;-webkit-text-fill-color:#554a3b;font-size:.88rem;line-height:1.48;font-weight:700;}',
-      '.coach-checkin-explainer__grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 14px;}',
-      '.coach-checkin-explainer__item{min-width:0;padding:10px;border:1px solid rgba(183,138,46,.2);border-radius:14px;background:rgba(255,255,255,.72);}',
-      '.coach-checkin-explainer__item strong{display:block;margin-bottom:3px;color:#2a2117;-webkit-text-fill-color:#2a2117;font-size:.78rem;line-height:1.2;}',
-      '.coach-checkin-explainer__item span{display:block;color:#665a49;-webkit-text-fill-color:#665a49;font-size:.68rem;line-height:1.32;font-weight:650;}',
-      '.coach-checkin-explainer__outcome{margin:0 0 14px;padding:12px 13px;border-radius:15px;background:#17130d;color:#fffaf0;-webkit-text-fill-color:#fffaf0;font-size:.78rem;line-height:1.42;font-weight:760;}',
-      '.coach-checkin-explainer__button{width:100%;min-height:48px;border:0;border-radius:14px;background:#d6ad52;color:#17130d;-webkit-text-fill-color:#17130d;font:900 .84rem/1 inherit;letter-spacing:.01em;cursor:pointer;box-shadow:0 10px 24px rgba(138,101,28,.22);}',
-      '.coach-checkin-explainer__button:active{transform:scale(.99);}',
-      '@media(max-width:360px){.coach-checkin-explainer__panel{padding:18px 14px 14px}.coach-checkin-explainer__title{font-size:1.35rem}.coach-checkin-explainer__grid{grid-template-columns:1fr}.coach-checkin-explainer__item{padding:8px 10px}}'
-    ].join('');
+    style.textContent = `
+      #coach-checkin-explainer{position:fixed;inset:0;z-index:399990;display:none;align-items:center;justify-content:center;padding:calc(18px + env(safe-area-inset-top,0px)) 16px calc(18px + env(safe-area-inset-bottom,0px));box-sizing:border-box;background:rgba(17,15,10,.72);backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px)}
+      #coach-checkin-explainer.is-open{display:flex}
+      .coach-checkin-explainer__panel{width:min(100%,480px);height:min(720px,100%);max-height:100%;display:flex;flex-direction:column;overflow:hidden;border:1px solid #c5a468;border-radius:28px;box-sizing:border-box;background:linear-gradient(155deg,#fffdf7,#f7edda);box-shadow:0 28px 80px #0005;color:#17130d;-webkit-text-fill-color:#17130d;font-family:inherit}
+      .coach-checkin-explainer__header{padding:22px 24px 12px;flex:none}
+      .coach-checkin-explainer__eyebrow{margin:0 0 8px;color:#795617;-webkit-text-fill-color:#795617;font-size:.68rem;font-weight:850;letter-spacing:.12em;text-transform:uppercase}
+      .coach-checkin-explainer__title{font-size:1.12rem;line-height:1.3;margin:0;color:#17130d;-webkit-text-fill-color:#17130d}
+      .coach-checkin-explainer__content{padding:8px 24px 20px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;flex:1;min-height:0}
+      .coach-checkin-explainer__visual{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;min-height:170px;margin:6px 0 24px;padding:18px;box-sizing:border-box;border-radius:24px;background:radial-gradient(circle at 50% 40%,#fff8df,#ebd8a4);color:#795617;-webkit-text-fill-color:#795617}
+      .coach-checkin-explainer__visual svg{width:100px;height:100px}
+      .coach-checkin-explainer__visual span{font-size:.76rem;font-weight:750;text-align:center}
+      .coach-checkin-explainer__page-title{margin:0 0 14px;font-family:Georgia,serif;font-size:2rem;line-height:1.12;color:#17130d;-webkit-text-fill-color:#17130d}
+      .coach-checkin-explainer__intro{margin:0;font-size:1.02rem;line-height:1.6;color:#554a3b;-webkit-text-fill-color:#554a3b}
+      .coach-checkin-explainer__footer{flex:none;padding:16px 24px 22px;border-top:1px solid #d8c8a7;background:#fbf4e4}
+      .coach-checkin-explainer__nav{display:flex;align-items:center;justify-content:space-between;gap:18px}
+      .coach-checkin-explainer__arrow{display:grid;place-items:center;width:54px;height:54px;flex:none;border:1px solid #b89753;border-radius:50%;background:#fffaf0;color:#17130d;-webkit-text-fill-color:#17130d;font-family:inherit;font-size:1.6rem;font-weight:700;line-height:1;cursor:pointer}
+      .coach-checkin-explainer__arrow:disabled{opacity:.3;cursor:default}
+      .coach-checkin-explainer__arrow--next{background:#efcd78;outline:3px solid #b38323;outline-offset:4px;box-shadow:0 0 0 9px #d8ad4933}
+      .coach-checkin-explainer__count{font-size:.82rem;font-weight:800;color:#554a3b;-webkit-text-fill-color:#554a3b}
+      .coach-checkin-explainer__hint{font-size:.74rem;line-height:1.4;text-align:center;margin:15px 0 0;color:#665330;-webkit-text-fill-color:#665330}
+      .coach-checkin-explainer__button{min-height:54px;padding:12px 18px;border:0;border-radius:14px;background:#d6ad52;color:#17130d;-webkit-text-fill-color:#17130d;font-family:inherit;font-weight:850;cursor:pointer}
+      #coach-checkin-explainer [hidden]{display:none!important}
+      #coach-checkin-explainer button:focus-visible{outline:3px solid #17130d;outline-offset:4px}
+      @media(max-height:650px){.coach-checkin-explainer__visual{min-height:120px;margin-bottom:16px}.coach-checkin-explainer__visual svg{width:70px;height:70px}.coach-checkin-explainer__header{padding-top:16px}.coach-checkin-explainer__footer{padding-top:12px;padding-bottom:16px}}
+    `;
     document.head.appendChild(style);
-
     var overlay = document.createElement('section');
     overlay.id = 'coach-checkin-explainer';
-    overlay.setAttribute('role', 'dialog');
-    overlay.setAttribute('aria-modal', 'true');
-    overlay.setAttribute('aria-labelledby', 'coach-checkin-explainer-title');
-    overlay.innerHTML = [
-      '<div class="coach-checkin-explainer__panel">',
-        '<p class="coach-checkin-explainer__eyebrow">Your weekly review</p>',
-        '<h2 class="coach-checkin-explainer__title" id="coach-checkin-explainer-title">What Shannon checks each week</h2>',
-        '<p class="coach-checkin-explainer__intro">This is not about having a perfect week. Shannon looks at the full picture so your next week can be adjusted around real life.</p>',
-        '<div class="coach-checkin-explainer__grid">',
-          '<div class="coach-checkin-explainer__item"><strong>Weekly Goals</strong><span>What felt realistic, what you completed and what got in the way.</span></div>',
-          '<div class="coach-checkin-explainer__item"><strong>Meals and photos</strong><span>Log your meals and add photos so Shannon can see what the week actually looked like.</span></div>',
-          '<div class="coach-checkin-explainer__item"><strong>Course progress</strong><span>What you learned, completed or found difficult in Balance Learn.</span></div>',
-          '<div class="coach-checkin-explainer__item"><strong>Workouts</strong><span>Your completed sessions, logged sets and any workouts you had to move or miss.</span></div>',
-          '<div class="coach-checkin-explainer__item"><strong>Check-in form</strong><span>Your honest recap of what worked, what did not and what support you need.</span></div>',
-          '<div class="coach-checkin-explainer__item"><strong>Progress photos</strong><span>Your private visual record, used to look for changes beyond one number.</span></div>',
-          '<div class="coach-checkin-explainer__item"><strong>Sleep and steps</strong><span>Your recovery and daily movement, whether entered or brought in from your watch.</span></div>',
-          '<div class="coach-checkin-explainer__item"><strong>Mood, energy and stress</strong><span>The context that helps explain why the rest of your week went the way it did.</span></div>',
-        '</div>',
-        '<p class="coach-checkin-explainer__outcome">Shannon uses all of this to review your food and training, then help make the next week clearer and more achievable.</p>',
-        '<button type="button" class="coach-checkin-explainer__button" data-coach-checkin-complete>Got it, back to Home</button>',
-      '</div>'
-    ].join('');
-    overlay.querySelector('[data-coach-checkin-complete]').addEventListener('click', function(){
+    overlay.setAttribute('role','dialog');
+    overlay.setAttribute('aria-modal','true');
+    overlay.setAttribute('aria-labelledby','coach-checkin-explainer-title');
+    overlay.innerHTML = `
+      <div class="coach-checkin-explainer__panel">
+        <header class="coach-checkin-explainer__header"><p class="coach-checkin-explainer__eyebrow">Your weekly review</p><h2 class="coach-checkin-explainer__title" id="coach-checkin-explainer-title">What Shannon checks each week</h2></header>
+        <div class="coach-checkin-explainer__content" aria-live="polite" aria-atomic="true">
+          <div class="coach-checkin-explainer__visual" data-coach-page-visual></div>
+          <h3 class="coach-checkin-explainer__page-title" data-coach-page-title></h3>
+          <p class="coach-checkin-explainer__intro" data-coach-page-body></p>
+        </div>
+        <footer class="coach-checkin-explainer__footer"><nav class="coach-checkin-explainer__nav" aria-label="Weekly review pages">
+          <button class="coach-checkin-explainer__arrow" type="button" data-coach-page-back aria-label="Previous page">&#8592;</button>
+          <span class="coach-checkin-explainer__count" data-coach-page-count aria-live="polite"></span>
+          <button class="coach-checkin-explainer__arrow coach-checkin-explainer__arrow--next" type="button" data-coach-page-next aria-label="Next page">&#8594;</button>
+          <button class="coach-checkin-explainer__button" type="button" data-coach-checkin-complete hidden>Got it</button>
+        </nav><p class="coach-checkin-explainer__hint" data-coach-page-hint></p></footer>
+      </div>`;
+    overlay.querySelector('[data-coach-page-back]').addEventListener('click',function(){
+      coachCheckinPage = Math.max(0,coachCheckinPage - 1);
+      renderCoachCheckinPage(overlay);
+    });
+    overlay.querySelector('[data-coach-page-next]').addEventListener('click',function(){
+      coachCheckinPage = Math.min(coachCheckinPages.length - 1,coachCheckinPage + 1);
+      renderCoachCheckinPage(overlay);
+    });
+    overlay.querySelector('[data-coach-checkin-complete]').addEventListener('click',function(){
+      if (coachCheckinPage !== coachCheckinPages.length - 1) return;
       closeCoachCheckinExplainer(true);
       if (window.__balanceGuidedTourActive === true && typeof window.tourNext === 'function') {
-        setTimeout(function(){ window.tourNext(); }, 80);
+        setTimeout(function(){window.tourNext();},80);
+      }
+    });
+    overlay.addEventListener('keydown',function(event){
+      if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+        event.preventDefault();
+        var button = overlay.querySelector(event.key === 'ArrowRight' ? '[data-coach-page-next]' : '[data-coach-page-back]');
+        if (!button.hidden && !button.disabled) button.click();
+      }
+      if (event.key === 'Tab') {
+        var buttons = Array.from(overlay.querySelectorAll('button')).filter(function(button){return !button.hidden && !button.disabled;});
+        var first = buttons[0], last = buttons[buttons.length - 1];
+        if (event.shiftKey && document.activeElement === first) {event.preventDefault();last.focus();}
+        else if (!event.shiftKey && document.activeElement === last) {event.preventDefault();first.focus();}
       }
     });
     document.body.appendChild(overlay);
@@ -641,12 +698,11 @@
   function openCoachCheckinExplainer() {
     switchTab('dashboard');
     var overlay = ensureCoachCheckinExplainer();
+    coachCheckinPage = 0;
+    renderCoachCheckinPage(overlay);
     overlay.classList.add('is-open');
-    overlay.setAttribute('aria-hidden', 'false');
-    setTimeout(function(){
-      var button = overlay.querySelector('[data-coach-checkin-complete]');
-      if (button && typeof button.focus === 'function') button.focus({ preventScroll:true });
-    }, 80);
+    overlay.setAttribute('aria-hidden','false');
+    setTimeout(function(){overlay.querySelector('[data-coach-page-next]').focus({preventScroll:true});},80);
     return true;
   }
 
