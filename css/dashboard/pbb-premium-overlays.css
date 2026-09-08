@@ -11271,7 +11271,12 @@ html[data-pbb-theme="light"] .course-card-art {
 }
 
 .course-welcome.is-visible { opacity: 1; transform: translateY(0); }
-.course-welcome-close { position: absolute; top: 18px; right: 18px; width: 36px; height: 36px; border: 1px solid var(--course-border); border-radius: 50%; background: var(--course-subtle); color: var(--course-hero-copy); font-size: .75rem; }
+.course-welcome-close { position: absolute; z-index: 2; top: calc(12px + env(safe-area-inset-top, 0px)); right: calc(18px + env(safe-area-inset-right, 0px)); width: 44px; height: 44px; border: 1px solid var(--course-border); border-radius: 50%; background: var(--course-subtle); color: var(--course-hero-copy); font-size: .75rem; }
+/* The tour music control shares this safe top row with the welcome close button. */
+body:has(.course-welcome) #meta-preview-music-control {
+    left: calc(18px + env(safe-area-inset-left, 0px));
+    right: auto;
+}
 .course-welcome-glow { position: absolute; width: 240px; height: 240px; top: 70px; border: 1.5px solid color-mix(in srgb, var(--course-gold-strong) 72%, transparent); border-radius: 50%; box-shadow: 0 0 0 28px color-mix(in srgb, var(--course-gold-strong) 9%, transparent), 0 0 0 64px color-mix(in srgb, var(--course-gold-strong) 5%, transparent); animation: courseWelcomePulse 2.8s ease-in-out infinite; }
 .course-welcome-logo { position: relative; z-index: 1; width: 90px; height: 90px; filter: drop-shadow(0 8px 22px rgba(212,173,84,.22)); animation: courseWelcomeLogo 700ms cubic-bezier(.2,.8,.2,1) both; }
 .course-welcome-kicker { position: relative; z-index: 1; margin-top: 28px; color: var(--course-gold-strong) !important; -webkit-text-fill-color: var(--course-gold-strong) !important; font-size: .6rem; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; }
