@@ -1,3 +1,4 @@
+import { ensureLearnBillingSchedule } from "./lib/learn-billing-schedule.js";
 import Stripe from "stripe";
 import { sendCAPIEvent } from "./lib/capi-utils.js";
 
@@ -18,6 +19,7 @@ const META_PREVIEW_PURCHASE_MESSAGE = "You're in 🙌 Your Balance Learn pass is
 const META_PREVIEW_PURCHASE_DELAY_MS = 60 * 1000;
 
 function subscriptionOfferDetails(plan) {
+    if (plan === "balance_learn_weekly") return { productName: "Balance Learn membership", subtype: "balance_learn_sale", recurringInterval: "week", checkinsPerWeek: "1", callsPerWeek: "0", needsYouReason: "balance_learn_sale" };
     if (plan === "zoom_pt_1_weekly") {
         return {
             productName: "Balance Zoom PT 1",
@@ -462,6 +464,7 @@ async function recordStripeGrowthOutcome({ payload, mirrorRow, userIds, stripeEv
 
 async function syncStripeSubscriptionToBalance(stripe, stripeEvent, { subscription, invoice, session } = {}) {
     if (!subscription) return null;
+    subscription = await ensureLearnBillingSchedule(stripe, subscription);
 
     const customerId = normalizeStripeId(subscription.customer || invoice?.customer || session?.customer);
     const customer = await retrieveCustomer(stripe, customerId);
@@ -492,7 +495,7 @@ async function syncStripeSubscriptionToBalance(stripe, stripeEvent, { subscripti
         stripe_price_id: priceId || null,
         subscription_status: status,
         subscription_plan: inferSubscriptionPlan(metadata, priceId),
-        current_period_end: isoFromStripeTimestamp(subscription.current_period_end),
+        current_period_end: isoFromStripeTimestamp(subscription.current_period_end || subscription.items?.data?.[0]?.current_period_end),
         cancel_at_period_end: Boolean(subscription.cancel_at_period_end),
         latest_invoice_id: normalizeStripeId(invoice?.id || subscription.latest_invoice),
         latest_payment_intent_id: normalizeStripeId(invoice?.payment_intent || session?.payment_intent),
@@ -1409,6 +1412,7 @@ export default async (request, context) => {
         }
     } catch (logicErr) {
         console.error("Webhook Logic Error:", logicErr);
+        if (logicErr.balanceScheduleFailure) return new Response("Billing schedule setup needs retry", { status: 500 });
         // Do not fail the webhook request if logic fails, to avoid retries
     }
 

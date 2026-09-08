@@ -88,6 +88,19 @@ const BALANCE_FOUNDATIONS_SIX_WEEK_OFFER = Object.freeze({
 });
 
 const BALANCE_CHECKOUT_PLANS = Object.freeze({
+    balance_learn_weekly: Object.freeze({
+        token: "balance_learn_weekly",
+        productName: "Balance Learn membership",
+        productDescription: "Weekly check-in, workout and food review, app and community access",
+        unitAmount: 2483, currency: "AUD", interval: "week",
+        balanceProduct: "balance_learn_membership", balancePlan: "balance_learn_weekly",
+        introductoryWeeks: 6, renewalUnitAmount: 9932, renewalIntervalCount: 4,
+        renewalTerms: "six_weekly_payments_then_every_four_weeks",
+        cancellationNoticeDays: 0,
+        checkoutDisclosure: "AUD $24.83 today and weekly for the first 6 weeks ($148.98 total if all six payments are made), then AUD $99.32 every 4 weeks until cancelled. Cancel before your next payment; access continues until the end of your paid period. Same weekly coaching support throughout.",
+        checkinsPerWeek: "1", callsPerWeek: "0", allowBump: false,
+        mode: "subscription", hostedCheckoutOnly: true,
+    }),
     balance_online_coaching_6_month_weekly: Object.freeze({
         token: "balance_online_coaching_6_month_weekly",
         productName: "Balance Online Coaching, 6 Month",
@@ -195,6 +208,10 @@ export function getPublicCheckoutOffer(priceId) {
         plan: plan.balancePlan,
         accessDays: plan.accessDays || null,
         renewal: plan.renewal || (plan.mode === "payment" ? "none" : "recurring"),
+        disclosure: plan.checkoutDisclosure || null,
+        introductoryWeeks: plan.introductoryWeeks || null,
+        renewalUnitAmount: plan.renewalUnitAmount || null,
+        renewalIntervalCount: plan.renewalIntervalCount || null,
     });
 }
 

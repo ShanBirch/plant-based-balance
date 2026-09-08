@@ -82,8 +82,8 @@ export default async (request) => {
         const isExpectedCheckout = session?.mode === "subscription"
             && session?.status === "complete"
             && session?.payment_status === "paid"
-            && session?.metadata?.balance_product === META_TRIAL_PRODUCT
-            && session?.metadata?.balance_plan === META_TRIAL_PLAN
+            && ((session?.metadata?.balance_product === META_TRIAL_PRODUCT && session?.metadata?.balance_plan === META_TRIAL_PLAN)
+                || (session?.metadata?.balance_product === "balance_learn_membership" && session?.metadata?.balance_plan === "balance_learn_weekly"))
             && session?.metadata?.checkout_source === "meta_ad_trial";
         if (!isExpectedCheckout || !checkoutEmail || checkoutEmail !== userEmail || !subscriptionId || !customerId) {
             return json({ error: "This payment does not match the signed-in Balance account." }, 403);
@@ -100,7 +100,7 @@ export default async (request) => {
             body: {
                 stripe_customer_id: customerId,
                 subscription_status: status,
-                subscription_plan: META_TRIAL_PLAN,
+                subscription_plan: session.metadata.balance_plan,
             },
         });
         if (!Array.isArray(updatedUsers) || !updatedUsers[0]?.id) {
@@ -113,7 +113,7 @@ export default async (request) => {
             { method: "PATCH", prefer: "return=minimal", body: { user_id: user.id } }
         );
 
-        return json({ claimed: true, plan: META_TRIAL_PLAN, status });
+        return json({ claimed: true, plan: session.metadata.balance_plan, status });
     } catch (error) {
         console.error("Meta trial subscription claim error:", error.message);
         return json({ error: "We could not connect the payment yet. Please try again shortly." }, 400);

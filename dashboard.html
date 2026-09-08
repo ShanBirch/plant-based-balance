@@ -181,7 +181,7 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
 <!-- CRITICAL: Admin view-as localStorage isolation — runs BEFORE any other localStorage reads -->
 <script src="js/dashboard/script_part_1.js"></script>
 <!-- Paid-Facebook preview attribution must be available before auth-guard decides guest vs member mode. -->
-<script src="lib/meta-ad-trial.js?v=19-server-test-reset"></script>
+<script src="lib/meta-ad-trial.js?v=20-weekly-choice"></script>
 
 <!-- CRITICAL: Hide loading overlay for returning users and restore cached FitGotchi state -->
 <script>
@@ -748,6 +748,11 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
         <img src="balance_logo.png" alt="Balance" style="width:64px; height:64px; object-fit:contain; margin:0 auto 16px; display:block;">
         <h3 id="meta-ad-trial-gate-title" style="margin:0 0 10px; font-size:1.35rem; line-height:1.2; color:#151515; -webkit-text-fill-color:#151515; font-family:'Montserrat',sans-serif;">Start your personalised six weeks</h3>
         <p style="color:#5f5a50; -webkit-text-fill-color:#5f5a50; font-size:0.95rem; margin:0 0 12px; line-height:1.5;">You have seen how your first week works. Start Balance Learn to keep your setup and have Shannon help adjust it around real life.</p>
+        <div role="group" aria-label="Choose how to pay" style="display:flex; gap:6px; padding:5px; border:1px solid #cfc8ba; border-radius:14px; margin:0 0 14px;">
+            <button type="button" data-learn-payment="balance_meta_foundations_pass" aria-pressed="true" onclick="window.BalanceMetaAdTrial.selectPaymentOption('balance_meta_foundations_pass')" style="flex:1; min-height:56px; border:0; border-radius:10px; background:#171923; color:#fff; -webkit-text-fill-color:#fff; font-weight:800; cursor:pointer;">Pay upfront<br><span style="font-size:.85rem;">$149 once</span></button>
+            <button type="button" data-learn-payment="balance_learn_weekly" aria-pressed="false" onclick="window.BalanceMetaAdTrial.selectPaymentOption('balance_learn_weekly')" style="flex:1; min-height:56px; border:0; border-radius:10px; background:#fffdf8; color:#171923; -webkit-text-fill-color:#171923; font-weight:800; cursor:pointer;">Subscribe weekly<br><span style="font-size:.85rem;">$24.83 / week</span></button>
+        </div>
+        <p id="meta-ad-trial-price-copy" style="color:#151515; -webkit-text-fill-color:#151515; font-size:1.05rem; margin:0 0 18px; font-weight:800;">One AUD $149 payment for the full six weeks. No subscription or automatic renewal.</p>
         <div id="meta-ad-trial-personal-summary" style="display:grid; gap:7px; margin:0 0 14px; text-align:left;" aria-label="Your Balance setup">
             <div style="padding:10px 12px; border-radius:11px; background:#faf6ec; border:1px solid #eadfc8; color:#37332d; -webkit-text-fill-color:#37332d; font-size:.8rem; line-height:1.35;"><strong>Your goal:</strong> <span data-summary="goal">a repeatable first six weeks</span></div>
             <div style="padding:10px 12px; border-radius:11px; background:#faf6ec; border:1px solid #eadfc8; color:#37332d; -webkit-text-fill-color:#37332d; font-size:.8rem; line-height:1.35;"><strong>Your training:</strong> <span data-summary="training">a realistic weekly workout plan</span></div>
@@ -764,7 +769,7 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
                 <span>✓ Weekly workout and food review and adjustments</span>
             </div>
         </div>
-        <p id="meta-ad-trial-price-copy" style="color:#151515; -webkit-text-fill-color:#151515; font-size:1.05rem; margin:0 0 18px; font-weight:800;">One AUD $149 payment for the full six weeks. No subscription or automatic renewal.</p>
+
         <label for="meta-ad-trial-email" style="display:block; text-align:left; color:#37332d; -webkit-text-fill-color:#37332d; font-size:0.78rem; font-weight:700; margin:0 0 6px;">Your email</label>
         <input id="meta-ad-trial-email" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" style="width:100%; box-sizing:border-box; border:1px solid #cfc8ba; background:#ffffff; color:#151515; -webkit-text-fill-color:#151515; padding:13px 12px; border-radius:11px; font-size:1rem; margin:0 0 14px;">
         <label style="display:flex; align-items:flex-start; gap:9px; text-align:left; color:#5f5a50; -webkit-text-fill-color:#5f5a50; font-size:0.72rem; line-height:1.4; margin:0 0 14px;">
@@ -784,8 +789,8 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
         <h3 id="meta-ad-trial-exit-title" style="margin:0 0 9px; font:800 1.35rem/1.2 'Montserrat',sans-serif; color:#171923; -webkit-text-fill-color:#171923;">Keep setting up?</h3>
         <p id="meta-ad-trial-exit-body" style="margin:0 0 20px; color:#4f4a43; -webkit-text-fill-color:#4f4a43; font-size:.92rem; line-height:1.5;">Continue where you left off, or unlock the complete six-week program now.</p>
         <button id="meta-ad-trial-resume-btn" type="button" onclick="window.BalanceMetaAdTrial.resumeInterruptedFlow()" style="width:100%; background:linear-gradient(135deg,#d4ad52,#f0cf76); color:#171923; -webkit-text-fill-color:#171923; border:1px solid #b78a2e; padding:14px; border-radius:12px; font:800 .92rem 'Montserrat',sans-serif; cursor:pointer; margin-bottom:10px;">CONTINUE SETUP</button>
-        <button id="meta-ad-trial-exit-pay" type="button" onclick="window.BalanceMetaAdTrial.openCheckoutGate()" style="width:100%; background:#111; color:#fffaf0; -webkit-text-fill-color:#fffaf0; border:none; padding:14px; border-radius:12px; font:800 .92rem 'Montserrat',sans-serif; cursor:pointer;">PAY AUD $149 NOW</button>
-        <p style="margin:11px 0 0; color:#625c52; -webkit-text-fill-color:#625c52; font-size:.7rem; line-height:1.4;">One payment for the full six weeks. No subscription or automatic renewal.</p>
+        <button id="meta-ad-trial-exit-pay" type="button" onclick="window.BalanceMetaAdTrial.openCheckoutGate()" style="width:100%; background:#111; color:#fffaf0; -webkit-text-fill-color:#fffaf0; border:none; padding:14px; border-radius:12px; font:800 .92rem 'Montserrat',sans-serif; cursor:pointer;">CHOOSE MY PAYMENT OPTION</button>
+        <p style="margin:11px 0 0; color:#625c52; -webkit-text-fill-color:#625c52; font-size:.7rem; line-height:1.4;">Choose a one-time payment or a weekly subscription.</p>
     </div>
 </div>
 
@@ -12835,7 +12840,7 @@ html[data-pbb-theme="light"] #view-activity-success { --activity-success-accent:
 <!-- Loaded for every account so a late auth decision cannot skip it. The
      soundtrack remains inert unless this is the explicit paid onboarding. -->
 <script src="js/dashboard/pbb-meta-preview-soundtrack.js?v=3-coach-video-ducking"></script>
-<script src="js/dashboard/pbb-onboarding-workout-plans.js?v=2-library-display-names"></script>
+<script src="js/dashboard/pbb-onboarding-workout-plans.js?v=3-duration-budget"></script>
 <script>
 // Script-5 (678KB) - Stripe/IAP, switchAppTab, initProgramDate, checkAndTriggerOnboarding.
 // On iOS Safari, defer to reduce memory pressure during page parsing.
@@ -12874,7 +12879,7 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=236-typed-question-layout&video_health=2';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=237-duration-budget&video_health=2';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
@@ -12916,7 +12921,7 @@ if (window._pbbIsIOSSafari) {
         var s = document.createElement('script');
         s.async = false;
         s.dataset.metaTrialLoader = String(attempt);
-        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=236-typed-question-layout&video_health=2&meta_retry=' + attempt;
+        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=237-duration-budget&video_health=2&meta_retry=' + attempt;
         s.onload = function() {
             if (window._pbbScript5Complete && window._switchAppTabReady && typeof window._switchAppTabReal === 'function') {
                 sessionStorage.removeItem('pbb_meta_script5_recovery_v1');
@@ -12935,7 +12940,7 @@ if (window._pbbIsIOSSafari) {
         document.head.appendChild(s);
     })(0);
 } else {
-document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=236-typed-question-layout&video_health=2"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=237-duration-budget&video_health=2"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=6-focus-all-users"></script>

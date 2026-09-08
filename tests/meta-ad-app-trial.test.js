@@ -43,6 +43,7 @@ function runTrial(search) {
         static now() { return now; }
     }
     const document = {
+        querySelectorAll: () => [],
         readyState: 'complete',
         referrer: 'https://facebook.com/',
         cookie: '_fbc=test-fbc; _fbp=test-fbp',
@@ -341,7 +342,7 @@ test('dashboard, signup, native handoffs, measurement, and both discovery system
     const ios = fs.readFileSync(path.join(root, 'ios/App/App/BalanceShortcutHandoff.swift'), 'utf8');
 
     assert.match(dashboard, /paid-facebook-stripe-unlock-v1/);
-    assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=234-omnivore-meal-plan/);
+    assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=237-duration-budget/);
     assert.match(dashboard, /title:'Your app tour starts here'.*metaPreview:true/);
     assert.match(dashboard, /title:'Check your workout week'.*metaPreview:true/);
     assert.match(dashboard, /title:'Open your first workout'.*metaPreview:true/);
@@ -435,4 +436,19 @@ test('dashboard, signup, native handoffs, measurement, and both discovery system
     assert.match(login, /function applyAccountFirstPreviewCopy\(urlParams\)/);
     assert.match(login, /Create your free account first\. Then we’ll build your workout plan and meal plan inside the app\./);
     assert.match(ios, /enum BalanceMetaTrialHandoff/);
+});
+
+
+test('weekly option resets consent and sends the recurring plan through Checkout', async () => {
+    const app = runTrial('?meta_app_trial=facebook_5m_foundations_v3&utm_source=facebook&utm_medium=paid_social');
+    app.elements['meta-ad-trial-terms'].checked = true;
+    app.window.BalanceMetaAdTrial.selectPaymentOption('balance_learn_weekly');
+    assert.equal(app.elements['meta-ad-trial-terms'].checked, false);
+    app.elements['meta-ad-trial-email'].value = 'qa@example.com';
+    assert.equal(await app.window.BalanceMetaAdTrial.beginCheckout(), false);
+    app.elements['meta-ad-trial-terms'].checked = true;
+    await app.window.BalanceMetaAdTrial.beginCheckout();
+    const request = app.events.find(event => event.event_type === 'checkout_request');
+    assert.equal(request.body.priceId, 'balance_learn_weekly');
+    assert.equal(request.body.compliance.plan_key, 'balance_learn_weekly');
 });

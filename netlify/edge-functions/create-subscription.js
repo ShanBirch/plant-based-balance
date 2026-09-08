@@ -22,6 +22,7 @@ export default async (request, context) => {
         assertSameSiteCheckoutRequest(request);
         const plan = getBalanceCheckoutPlan(priceId);
         assertRecurringCheckoutPlan(plan);
+        if (plan.hostedCheckoutOnly) return new Response(JSON.stringify({ error: "Please use the secure hosted checkout for this plan." }), { status: 400, headers: { "Content-Type": "application/json" } });
         assertAcceptedCheckoutTerms(compliance);
         assertStripePaymentMethodId(paymentMethodId);
         const checkoutEmail = cleanCheckoutEmail(email, { required: true });

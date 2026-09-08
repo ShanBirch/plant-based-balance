@@ -6,7 +6,7 @@ import {
     getBalanceCheckoutPlan,
 } from "./lib/checkout-guard.js";
 
-const STRIPE_API_VERSION = "2026-07-29.dahlia";
+export const STRIPE_API_VERSION = "2026-07-29.dahlia";
 
 function buildIntegrationIdentifier() {
     const bytes = new Uint8Array(8);
@@ -30,7 +30,7 @@ function appendMetadata(params, prefix, metadata) {
     });
 }
 
-async function createStripeCheckoutSession(secretKey, checkout) {
+export async function createStripeCheckoutSession(secretKey, checkout) {
     const params = new URLSearchParams();
     params.set("mode", checkout.plan.mode);
     params.set("integration_identifier", buildIntegrationIdentifier());
@@ -113,6 +113,7 @@ export default async (request, context) => {
                 checkout_email: checkoutEmail,
                 balance_product: plan.balanceProduct,
                 balance_plan: plan.balancePlan,
+                introductory_weeks: String(plan.introductoryWeeks || ""),
                 commitment_weeks: String(plan.commitmentWeeks || ""),
                 commitment_label: plan.commitmentLabel || "",
                 renewal_terms: plan.renewalTerms || "",
@@ -143,6 +144,7 @@ export default async (request, context) => {
                 checkout_email: checkoutEmail,
                 balance_product: plan.balanceProduct,
                 balance_plan: plan.balancePlan,
+                introductory_weeks: String(plan.introductoryWeeks || ""),
                 commitment_weeks: String(plan.commitmentWeeks || ""),
                 commitment_label: plan.commitmentLabel || "",
                 renewal_terms: plan.renewalTerms || "",

@@ -2758,7 +2758,8 @@ function buildOnboardingWeeklySchedule(profile = {}, isMale = false) {
             ...def,
             day: PBB_ONBOARDING_DAY_LABELS[idx],
             dayIndex: idx,
-            onboardingWorkoutId: workoutId
+            onboardingWorkoutId: workoutId,
+            targetMinutes: Number(profile.starter_session_minutes || profile.goal_catcher?.starter_session_minutes)
         };
     });
 
@@ -2767,10 +2768,27 @@ function buildOnboardingWeeklySchedule(profile = {}, isMale = false) {
 
 function getScheduledLibraryWorkout(scheduleItem, workouts, storageKey, referenceDate = new Date()) {
     if (!Array.isArray(workouts) || workouts.length === 0) return null;
-    if (Number.isInteger(scheduleItem?.libraryWorkoutIndex)) {
-        return workouts[scheduleItem.libraryWorkoutIndex] || workouts[0];
-    }
-    return getWorkoutRotationSelection(workouts, storageKey, referenceDate);
+    const workout = Number.isInteger(scheduleItem?.libraryWorkoutIndex)
+        ? workouts[scheduleItem.libraryWorkoutIndex] || workouts[0]
+        : getWorkoutRotationSelection(workouts, storageKey, referenceDate);
+    return scheduleItem?.onboardingWorkoutId && !scheduleItem.isRest && !/^yoga|recovery/.test(scheduleItem.program)
+        ? window.PBBOnboardingWorkoutPlans?.fitWorkoutToMinutes(workout, scheduleItem.targetMinutes) || workout
+        : workout;
+}
+
+function getPersonalisedLibraryWorkout(categoryKey, subcategoryKey, workout) {
+    if (!workout || window.activeCustomProgramCache) return workout;
+    let profile = {};
+    try { profile = JSON.parse(localStorage.getItem('userProfile') || sessionStorage.getItem('userProfile') || '{}'); } catch (_) {}
+    const calendar = getStoredOnboardingWorkoutCalendar(profile);
+    const plans = window.PBBOnboardingWorkoutPlans;
+    const matches = calendar && Object.values(calendar).some(id => {
+        const def = plans?.definitions[id];
+        return def && (def.program === 'gym' ? 'gym' : def.program) === categoryKey
+            && (def.muscleGroup || def.subcategory) === subcategoryKey
+            && plans.getLibraryWorkout(id, WORKOUT_LIBRARY)?.id === workout.id;
+    });
+    return matches ? plans.fitWorkoutToMinutes(workout, profile.starter_session_minutes || profile.goal_catcher?.starter_session_minutes) : workout;
 }
 
 function escapeCalendarHtml(value) {
@@ -13695,19 +13713,20 @@ function renderWizardCalendarPreview() {
     starterMinimum.style.cssText = 'margin:0 0 12px; padding:10px 12px; border-radius:10px; background:#f7edcf; border:1px solid #d5b55f; color:#29261f; -webkit-text-fill-color:#29261f; font-size:12px; line-height:1.45;';
     starterMinimum.innerHTML = wizardAssignedProgram
         ? '<strong style="color:#7b5716; -webkit-text-fill-color:#7b5716;">Your coached sessions:</strong> 10-12 minute minimums, with 25-30 minute full versions. The three strength sessions stay in your plan, even when you move their days.'
-        : '<strong style="color:#7b5716; -webkit-text-fill-color:#7b5716;">Your ' + starterMinutes + '-minute minimum:</strong> on a busy day, do the first ' + starterMinutes + ' minutes. The full session is there when you have more.';
+        : '<strong style="color:#7b5716; -webkit-text-fill-color:#7b5716;">Your ' + starterMinutes + '-minute sessions:</strong> we adjust the exercises and sets to fit, including warm-up and rest. Take longer when you need it.';
     frag.appendChild(starterMinimum);
 
     // Create day rows
     allDays.forEach((day, idx) => {
         const workout = wizardWorkoutCalendar[day] || 'rest';
         const prebuilt = window.PBBOnboardingWorkoutPlans?.definitions?.[workout];
-        const libraryWorkout = window.PBBOnboardingWorkoutPlans?.getLibraryWorkout(workout, window.WORKOUT_LIBRARY);
+        const sourceWorkout = window.PBBOnboardingWorkoutPlans?.getLibraryWorkout(workout, window.WORKOUT_LIBRARY);
+        const libraryWorkout = window.PBBOnboardingWorkoutPlans?.fitWorkoutToMinutes(sourceWorkout, starterMinutes);
         const info = getWizardAssignedWorkoutInfo(workout) || (prebuilt ? {
             icon: prebuilt.icon,
             name: libraryWorkout?.name || prebuilt.label,
             desc: libraryWorkout?.exercises?.length
-                ? libraryWorkout.exercises.length + ' exercises'
+                ? libraryWorkout.exercises.length + ' exercises · ' + libraryWorkout.exercises.reduce((sum, ex) => sum + Number(ex.sets || 1), 0) + ' sets · ' + libraryWorkout.duration
                 : (prebuilt.description || 'Your strength session')
         } : null) || workoutInfo[workout] || { icon: '?', name: 'Unknown', desc: '' };
 
@@ -22410,7 +22429,7 @@ function showProgramInfoModal(programKey) {
 function openLibraryWorkoutOverview(categoryKey, subcategoryKey, workoutId) {
     const category = WORKOUT_LIBRARY[categoryKey];
     const subcategory = category.subcategories[subcategoryKey];
-    const workout = subcategory.workouts.find(w => w.id === workoutId);
+    const workout = getPersonalisedLibraryWorkout(categoryKey, subcategoryKey, subcategory.workouts.find(w => w.id === workoutId));
 
     if (!workout) {
         console.error('Workout not found:', workoutId);
@@ -22501,7 +22520,7 @@ function queueWorkoutExerciseVideosForOffline(exercises) {
 async function startLibraryWorkout(categoryKey, subcategoryKey, workoutId) {
     const category = WORKOUT_LIBRARY[categoryKey];
     const subcategory = category.subcategories[subcategoryKey];
-    const workout = subcategory.workouts.find(w => w.id === workoutId);
+    const workout = getPersonalisedLibraryWorkout(categoryKey, subcategoryKey, subcategory.workouts.find(w => w.id === workoutId));
 
     if (!workout) {
         console.error('Workout not found:', workoutId);
@@ -22560,7 +22579,7 @@ async function startLibraryWorkout(categoryKey, subcategoryKey, workoutId) {
     document.getElementById('workout-player-title').textContent = workout.name;
     window.currentWorkoutName = workout.name;
     const exerciseCount = exercises.length;
-    document.getElementById('workout-player-goal').textContent = `${workout.difficulty} · ${workout.duration} · ${exerciseCount} Exercise${exerciseCount !== 1 ? 's' : ''}`;
+    document.getElementById('workout-player-goal').textContent = `${workout.difficulty} · ${workout.duration} · ${exerciseCount} Exercise${exerciseCount !== 1 ? 's' : ''}${workout.timingNote ? ' · Includes 3-min warm-up and 90-sec rests' : ''}`;
 
     // Start timer
     window.workoutStartTime = Date.now();
@@ -22684,7 +22703,7 @@ function renderWorkoutExercises(exercises) {
         card.dataset.prescribedSets = String(prescribedSets || '');
         card.dataset.prescribedReps = String(ex.reps || ex.time || '');
         const hasWeekSpecificPlan = !!getCurrentWeeklyPlanItem(ex);
-        const numSets = hasWeekSpecificPlan ? prescribedSets : (previousSummary && previousSummary.setCount > 0 ? previousSummary.setCount : prescribedSets);
+        const numSets = (ex.durationBudgeted || hasWeekSpecificPlan) ? prescribedSets : (previousSummary && previousSummary.setCount > 0 ? previousSummary.setCount : prescribedSets);
         const isTimeBased = isTimeBasedExercise(ex);
         const prescribedSet = getPrescribedSetPrefill(ex, isTimeBased);
         const setsHtml = Array.from({length: numSets}, (_, setIdx) => {

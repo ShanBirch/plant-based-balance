@@ -51,7 +51,7 @@ function cancellationTiming(subscription, nowSeconds) {
     const hasNoticePolicy = cleanInteger(metadata.cancellation_notice_days) === NOTICE_DAYS;
     const policyEnd = hasNoticePolicy
         ? nowSeconds + (NOTICE_DAYS * DAY_SECONDS)
-        : cleanInteger(subscription.current_period_end) || nowSeconds;
+        : cleanInteger(subscription.current_period_end || subscription.items?.data?.[0]?.current_period_end) || nowSeconds;
     return {
         noticeDays: hasNoticePolicy ? NOTICE_DAYS : 0,
         commitmentWeeks,
@@ -62,7 +62,7 @@ function cancellationTiming(subscription, nowSeconds) {
 function subscriptionSummary(subscription, nowSeconds = Math.floor(Date.now() / 1000)) {
     const timing = cancellationTiming(subscription, nowSeconds);
     const scheduledAt = cleanInteger(subscription.cancel_at)
-        || (subscription.cancel_at_period_end ? cleanInteger(subscription.current_period_end) : 0);
+        || (subscription.cancel_at_period_end ? cleanInteger(subscription.current_period_end || subscription.items?.data?.[0]?.current_period_end) : 0);
     const pauseUntil = cleanInteger(subscription.pause_collection?.resumes_at);
     const pauseUsedAt = subscription.metadata?.retention_pause_used_at || null;
     return {
@@ -71,12 +71,12 @@ function subscriptionSummary(subscription, nowSeconds = Math.floor(Date.now() / 
         plan: subscription.metadata?.balance_plan || subscription.metadata?.balance_product || "Balance subscription",
         noticeDays: timing.noticeDays,
         commitmentWeeks: timing.commitmentWeeks,
-        currentPeriodEnd: cleanInteger(subscription.current_period_end) || null,
+        currentPeriodEnd: cleanInteger(subscription.current_period_end || subscription.items?.data?.[0]?.current_period_end) || null,
         cancellationScheduledAt: scheduledAt || null,
         estimatedCancellationAt: scheduledAt || timing.effectiveAt,
         pauseUntil: pauseUntil > nowSeconds ? pauseUntil : null,
         pauseUsedAt,
-        pauseAvailable: !pauseUsedAt && !scheduledAt && !(pauseUntil > nowSeconds),
+        pauseAvailable: subscription.metadata?.balance_plan !== "balance_learn_weekly" && !pauseUsedAt && !scheduledAt && !(pauseUntil > nowSeconds),
     };
 }
 
@@ -161,7 +161,16 @@ export default async (request) => {
 
             const timing = cancellationTiming(subscription, nowSeconds);
             const params = new URLSearchParams();
-            params.set("cancel_at", String(timing.effectiveAt));
+            if (subscription.metadata?.balance_plan === "balance_learn_weekly") {
+                // Remove future phase changes before cancelling at the paid boundary.
+                if (subscription.schedule) {
+                    const scheduleId = typeof subscription.schedule === "string" ? subscription.schedule : subscription.schedule.id;
+                    await stripeRequest(stripeKey, "POST", `/v1/subscription_schedules/${encodeURIComponent(scheduleId)}/release`, new URLSearchParams({ preserve_cancel_date: "true" }));
+                }
+                params.set("cancel_at_period_end", "true");
+            } else {
+                params.set("cancel_at", String(timing.effectiveAt));
+            }
             params.set("proration_behavior", "create_prorations");
             params.set("metadata[cancellation_requested_at]", requestedAt);
             params.set("metadata[cancellation_request_source]", "balance_self_service");

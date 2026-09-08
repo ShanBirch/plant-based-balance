@@ -197,5 +197,50 @@
         }));
     }
 
-    return { definitions, strengthMatrix, normalizeEquipment, getPlan, buildCalendar, getDefinition, getLibraryWorkout, getEquipmentOptions };
+    // Planning estimate, not a countdown: retain prescribed reps and rest, and
+    // reduce volume instead. Allow three minutes to warm up and a minute to
+    // change exercises. Timed and unilateral sets need their full working time.
+    function setSeconds(exercise) {
+        const reps = String(exercise.reps || '12');
+        const numbers = reps.match(/\d+(?:\.\d+)?/g) || ['12'];
+        const count = Math.max(...numbers.map(Number));
+        const sides = /side|each|leg|arm/i.test(reps) ? 2 : 1;
+        return (/min/i.test(reps) ? count * 60 : /sec/i.test(reps) ? count : count * 3) * sides;
+    }
+
+    function estimateSeconds(exercises) {
+        return 180 + Math.max(0, exercises.length - 1) * 60 + exercises.reduce((total, ex) => {
+            const sets = Math.max(1, Number(ex.sets) || 1);
+            const rest = Math.max(90, Number(ex.restSeconds) || Number(ex.rest) || 0);
+            return total + sets * setSeconds(ex) + (sets - 1) * rest;
+        }, 0);
+    }
+
+    function fitWorkoutToMinutes(workout, minutes) {
+        const target = Number(minutes);
+        if (!workout || !Array.isArray(workout.exercises) || !Number.isFinite(target) || target < 10 || target > 60) return workout;
+        const originals = workout.exercises;
+        // Keep the library's movement order, initially two sets per exercise.
+        // Drop the last accessory first when the whole selection cannot fit.
+        let exercises = originals.map(ex => ({ ...ex, durationBudgeted: true, sets: Math.min(2, Math.max(1, Number(ex.sets) || 1)) }));
+        while (exercises.length > 1 && estimateSeconds(exercises) > target * 60) exercises.pop();
+        if (estimateSeconds(exercises) > target * 60 && exercises[0]?.sets > 1) exercises[0].sets = 1;
+        // Add sets evenly up to the original prescription only when they fit.
+        let added = true;
+        while (added) {
+            added = false;
+            exercises.forEach((ex, index) => {
+                if (ex.sets >= (Number(originals[index].sets) || 1)) return;
+                ex.sets++;
+                if (estimateSeconds(exercises) <= target * 60) added = true;
+                else ex.sets--;
+            });
+        }
+        return { ...workout, exercises, targetMinutes: target,
+            estimatedMinutes: Math.ceil(estimateSeconds(exercises) / 60),
+            duration: 'About ' + Math.ceil(estimateSeconds(exercises) / 60) + ' min',
+            timingNote: 'Includes a 3-minute warm-up, 90-second rests and time to change exercises. Take longer rests when you need them.' };
+    }
+
+    return { definitions, strengthMatrix, normalizeEquipment, getPlan, buildCalendar, getDefinition, getLibraryWorkout, getEquipmentOptions, fitWorkoutToMinutes, estimateSeconds };
 });

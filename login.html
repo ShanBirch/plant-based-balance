@@ -971,7 +971,7 @@
                 : 'balance_foundations_six_week';
             const accessToken = session?.access_token;
             if (!sessionId || !accessToken) return null;
-            const isLegacyAppMembership = planKey === 'app_community_monthly';
+            const isLegacyAppMembership = planKey === 'app_community_monthly' || planKey === 'balance_learn_weekly';
             const claimEndpoint = isLegacyAppMembership
                 ? '/.netlify/functions/claim-meta-trial-subscription'
                 : '/.netlify/functions/claim-founders-pass';
