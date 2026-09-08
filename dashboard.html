@@ -15758,6 +15758,7 @@ window.endFeatureTour = function(skipped){
   // Unlike the old reset endpoint, this never deletes points or saved progress.
   async function offerWorkoutTourQaReplay(){
     if (new URLSearchParams(location.search).get('guidedTourQa') !== '1') return;
+    document.getElementById('guided-tour-overlay').dataset.qaReplay = 'validating';
     const testId = '755120c2-b0f9-44ed-8493-0cc14cbc7901';
     if (!window.currentUser || window.currentUser.id !== testId || !window.supabaseClient) {
       console.info('[tour] QA replay waiting for matching account and client');
@@ -15801,10 +15802,12 @@ window.endFeatureTour = function(skipped){
   // Cached startup can finish the loading shell before auth/profile readiness.
   // Retry only this explicit QA entry; every attempt retains server validation.
   if (new URLSearchParams(location.search).get('guidedTourQa') === '1') {
+    document.getElementById('guided-tour-overlay').dataset.qaReplay = 'ready';
     let qaReplayAttempts = 0;
     let qaReplayChecking = false;
     const qaReplayTimer = setInterval(async function(){
       if (document.getElementById('tour-qa-replay') || window.__balanceGuidedTourActive || qaReplayAttempts >= 30) {
+        document.getElementById('guided-tour-overlay').dataset.qaReplay = 'stopped:' + (document.getElementById('tour-qa-replay') ? 'button' : window.__balanceGuidedTourActive ? 'active' : 'timeout');
         clearInterval(qaReplayTimer);
         return;
       }
