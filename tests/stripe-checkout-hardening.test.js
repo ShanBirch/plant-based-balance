@@ -74,7 +74,7 @@ assert(
 );
 
 assert(
-    checkout.includes("'app-monthly': { amount: 1999, label: 'Balance App + Community', successPlan: 'app_community_monthly' }") &&
+    checkout.includes("'app-monthly': { amount: 1999, label: 'Balance App Access', successPlan: 'app_community_monthly' }") &&
     checkout.includes("'coaching-6-month': { amount: 2999, label: 'Balance Online Coaching, 6 Month', successPlan: 'online_coaching_6_month' }") &&
     checkout.includes("'coaching-3-month': { amount: 4999, label: 'Balance Online Coaching, 3 Month', successPlan: 'online_coaching_3_month' }") &&
     checkout.includes("'coaching-month-to-month': { amount: 7499, label: 'Balance Online Coaching, Month-to-Month', successPlan: 'online_coaching_month_to_month' }") &&

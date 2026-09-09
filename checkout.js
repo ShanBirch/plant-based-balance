@@ -147,7 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
         'coaching-6-month': { amount: 2999, label: 'Balance Online Coaching, 6 Month', successPlan: 'online_coaching_6_month' },
         'coaching-3-month': { amount: 4999, label: 'Balance Online Coaching, 3 Month', successPlan: 'online_coaching_3_month' },
         'coaching-month-to-month': { amount: 7499, label: 'Balance Online Coaching, Month-to-Month', successPlan: 'online_coaching_month_to_month' },
-        'app-monthly': { amount: 1999, label: 'Balance App + Community', successPlan: 'app_community_monthly' },
+        'app-monthly': { amount: 1999, label: 'Balance App Access', successPlan: 'app_community_monthly' },
         'coaching-calls': { amount: 9999, label: 'Balance Coaching + Calls', successPlan: 'coaching_calls_weekly' },
         'founders-pass': { amount: 14900, label: 'Balance Learn', successPlan: 'balance_foundations_six_week' }
     };

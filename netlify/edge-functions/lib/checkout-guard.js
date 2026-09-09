@@ -157,7 +157,7 @@ const BALANCE_CHECKOUT_PLANS = Object.freeze({
     }),
     balance_app_community_monthly: Object.freeze({
         token: "balance_app_community_monthly",
-        productName: "Balance App + Community",
+        productName: "Balance App Access",
         productDescription: "Balance app access and community membership",
         unitAmount: 1999,
         interval: "month",

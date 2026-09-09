@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>What I Offer | Shannon Birch</title>
-    <meta name="description" content="Compare Balance Learn, App + Community and online coaching from AU$29.99 per week. Choose a six-month, three-month or month-to-month coaching term.">
+    <meta name="description" content="Compare Balance Learn, App Access and online coaching from AU$29.99 per week. Choose a six-month, three-month or month-to-month coaching term.">
     <meta property="og:title" content="What I Offer | Shannon Birch">
     <meta property="og:description" content="Online coaching from AU$29.99 per week, with six-month, three-month and month-to-month options.">
     <meta property="og:image" content="https://plantbased-balance.org/balance_logo_transparent.png">
@@ -237,7 +237,7 @@
         }
 
         .zoom-pt-section {
-            scroll-margin-top: 24px;
+            scroll-margin-top: 100px;
         }
 
         .zoom-pt-grid {
@@ -368,6 +368,32 @@
                 left: 18px;
             }
         }
+
+        .offers-section { max-width: 1040px; margin-inline: auto; scroll-margin-top: 100px; }
+        .support-group { margin: 14px 0; border: 1px solid #d9d4c9; border-radius: 22px; background: #fffdf8; color: #243124; -webkit-text-fill-color: #243124; scroll-margin-top: 100px; overflow: hidden; }
+        .support-group[open] { border-color: #aa8138; }
+        .support-group summary { display: flex; align-items: center; gap: 24px; padding: 25px 28px; cursor: pointer; list-style: none; }
+        .support-group summary::-webkit-details-marker { display: none; }
+        .support-group summary::after { content: '+'; font-size: 26px; width: 24px; flex-shrink: 0; text-align: center; }
+        .support-group[open] summary::after { content: '−'; }
+        .support-group summary > span:first-child { flex: 1; }
+        .support-group summary strong { display: block; font-family: Outfit, sans-serif; font-size: clamp(1.3rem, 2.5vw, 1.65rem); }
+        .support-description { display: block; margin-top: 5px; color: #586151; -webkit-text-fill-color: #586151; font-size: .9rem; line-height: 1.5; }
+        .support-price { font-weight: 800; font-size: 1rem; white-space: nowrap; }
+        .support-body { padding: 0 28px 28px; line-height: 1.65; }
+        .support-body > p { max-width: 760px; }
+        .support-body > .checkout-plan-option { max-width: 620px; }
+        .support-body .checkout-plan-grid { margin-bottom: 0; }
+        .support-group summary:focus-visible { outline: 3px solid #8b672c; outline-offset: -5px; }
+        .purchase-terms { margin-top: 28px; padding: 22px; border-radius: 20px; background: #f1eee7; }
+        @media (max-width: 720px) {
+            .support-group summary { padding: 20px; gap: 12px; flex-wrap: wrap; }
+            .support-group summary > span:first-child { flex-basis: calc(100% - 40px); order: 0; }
+            .support-group summary::after { order: 1; }
+            .support-price { order: 2; font-size: .95rem; }
+            .support-body { padding: 0 20px 22px; }
+            .support-body .checkout-plan-grid, .support-body .zoom-pt-grid { grid-template-columns: 1fr; }
+        }
     </style>
     <script src="bio-animations.js" defer></script>
 </head>
@@ -379,7 +405,7 @@
                 <span>Balance</span>
             </a>
             <div class="nav-actions">
-                <a class="nav-button primary" href="plant-based-fitness.html#join">Founders Pass</a>
+                <a class="nav-button primary" href="/founders">Balance Learn</a>
             </div>
         </header>
 
@@ -389,15 +415,9 @@
                     <span class="eyebrow">support options</span>
                     <h1>What I Offer.</h1>
                     <p class="lead">
-                        Start with Balance Learn: a fixed six-week course with one weekly check-in, workout and food review, and adjustment from Shannon for one AUD $149 payment.
+                        Practical training, food support and accountability, with a level of support that fits your life.
                     </p>
-                    <div class="button-row">
-                        <a class="btn primary" href="plant-based-fitness.html#join">Get the Founders Pass</a>
-                        <a class="btn secondary" href="#zoom-pt">See 1:1 Zoom PT</a>
-                        <a class="btn secondary" href="book.html">Book a call with Shannon</a>
-                        <a class="btn secondary" href="dashboard.html">Open the app</a>
-                        <a class="btn secondary" href="clients.html">See results</a>
-                    </div>
+                    <div class="button-row"><a class="btn primary" href="#plan-checkout">Explore the options</a><a class="btn secondary" href="book.html">Talk it through with Shannon</a><a class="btn secondary" href="clients.html">See results</a></div>
                 </div>
 
                 <aside class="surface hero-media reveal">
@@ -407,7 +427,7 @@
                     <div class="mini-grid">
                         <div class="mini-card">
                             <strong>Best first move</strong>
-                            <p>Start with the Founders Pass for a guided six-week course at about half the cost of six weeks at the lowest Online Coaching rate.</p>
+                            <p>Balance Learn gives you a guided six-week starting point, with weekly review from Shannon for one AUD $149 payment.</p>
                         </div>
                         <div class="mini-card">
                             <strong>Shannon in your corner</strong>
@@ -417,69 +437,103 @@
                 </aside>
             </section>
 
-            <section class="section">
-                <div class="section-header">
-                    <div>
-                        <span class="section-kicker">support levels</span>
-                        <h2 class="section-title">Start once, then add more support only if you need it.</h2>
+            <section class="section offers-section" id="plan-checkout"><div class="section-header"><div><span class="section-kicker">find your fit</span><h2 class="section-title">Choose your level of support.</h2></div><p class="section-text">Start with a six-week course, choose ongoing support, or train live with Shannon. Open an option to see what is included. All prices are in AUD.</p></div>
+<details class="support-group" id="balance-learn" open><summary><span><strong>Balance Learn</strong><span class="support-description">A guided course with weekly review from Shannon.</span></span><span class="support-price"> $149 upfront or $24.83 / week</span></summary><div class="support-body"><p>A practical six-week course to understand behaviour change and apply it to your training, food and weekly goals.</p><ul class="offer-list"><li>Full Balance Learn course and six weeks of app and community access</li><li>Personalised workout plan and food support</li><li>One weekly check-in, workout and food review, and adjustments from Shannon</li></ul><p><strong>Choose how you pay.</strong> Pay AUD $149 upfront for six weeks with no automatic renewal, or AUD $24.83 per week with a six-week minimum (six payments, AUD $148.98 minimum total). The weekly option continues at AUD $24.83 per week with the same weekly check-in, workout and food review, app and community access. After six weeks, cancel before your next weekly payment with no additional notice period.</p><a class="btn primary" href="/founders">Explore Balance Learn</a><p class="checkout-note">See your personalised setup and app tour before payment.</p></div></details>
+<details class="support-group" id="starter-coaching"><summary><span><strong>Online Coaching</strong><span class="support-description">Ongoing plans, weekly check-ins and individual adjustments.</span></span><span class="support-price">From $29.99 / week</span></summary><div class="support-body"><p>App access, one weekly check-in with Shannon, individual workout and food adjustments, and accountability inside Balance. Choose a longer initial term for a lower weekly rate.</p><div class="checkout-plan-grid"><div class="checkout-plan-option featured-option">
+                            <span class="plan-kicker">Best weekly rate</span>
+                            <h3>6-Month Coaching</h3>
+                            <div class="offer-price">$29.99<span>/week</span></div>
+                            <p class="offer-copy">Online coaching with a 26-week initial minimum. Billed weekly and continues at the same rate after the initial term. Cancellation requires 30 days' notice.</p>
+                            <p class="plan-term">AU$29.99 due today, then weekly.</p>
+                            <button class="btn primary checkout-btn" data-plan="coaching-6-month" data-hosted-checkout-only="true" type="button">Choose 6 months</button>
+</div>
+<div class="checkout-plan-option">
+                            <span class="plan-kicker">Balanced commitment</span>
+                            <h3>3-Month Coaching</h3>
+                            <div class="offer-price">$49.99<span>/week</span></div>
+                            <p class="offer-copy">Online coaching with a 13-week initial minimum. Billed weekly and continues at the same rate after the initial term. Cancellation requires 30 days' notice.</p>
+                            <p class="plan-term">AU$49.99 due today, then weekly.</p>
+                            <button class="btn secondary checkout-btn" data-plan="coaching-3-month" data-hosted-checkout-only="true" type="button">Choose 3 months</button>
+</div>
+<div class="checkout-plan-option">
+                            <span class="plan-kicker">Most flexible</span>
+                            <h3>Month-to-Month Coaching</h3>
+                            <div class="offer-price">$74.99<span>/week</span></div>
+                            <p class="offer-copy">Online coaching with a four-week initial minimum. Billed weekly and continues until cancelled with 30 days' notice.</p>
+                            <p class="plan-term">AU$74.99 due today, then weekly.</p>
+                            <button class="btn secondary checkout-btn" data-plan="coaching-month-to-month" data-hosted-checkout-only="true" type="button">Choose month-to-month</button>
+</div></div></div></details>
+<details class="support-group" id="coaching-calls"><summary><span><strong>Coaching + Calls</strong><span class="support-description">Online coaching plus one live call each week.</span></span><span class="support-price">$99.99 / week</span></summary><div class="support-body"><p>Ongoing online coaching with a weekly live conversation and deeper review of your training, food and obstacles.</p><div class="checkout-plan-option">
+                            <h3>Coaching + Calls</h3>
+                            <div class="offer-price">$99.99<span>/week</span></div>
+                            <p class="offer-copy">Everything in Online Coaching, plus one weekly call with Shannon and a deeper review of your plan.</p>
+                            <button class="btn primary checkout-btn" data-plan="coaching-calls" data-hosted-checkout-only="true" type="button">Start coaching + calls</button>
+</div></div></details>
+<details class="support-group" id="zoom-pt"><summary><span><strong>1:1 Zoom PT</strong><span class="support-description">Live 30-minute training sessions with Shannon.</span></span><span class="support-price">From $125 / week</span></summary><div class="support-body"><p>Real-time form feedback and hands-on coaching. We confirm health fit and recurring availability before payment.</p><div class="zoom-pt-grid">
+                    <article class="surface offer-card zoom-pt-card">
+                        <span class="label">once weekly</span>
+                        <h3>Zoom PT 1</h3>
+                        <div class="offer-price">$125<span>/week</span></div>
+                        <p class="offer-copy">One live 30-minute 1:1 Zoom PT session each week.</p>
+                        <ul class="offer-list">
+                            <li>Personalised training structure</li>
+                            <li>General vegetarian or plant-based food guidance</li>
+                            <li>Balance app access and accountability</li>
+                            <li>Weekly programming and progress adjustments</li>
+                        </ul>
+                        <a class="btn secondary offer-cta" href="book.html?source=zoom_pt&amp;pt_sessions=1">Check availability</a>
+                    </article>
+
+                    <article class="surface offer-card zoom-pt-card">
+                        <span class="label">three times weekly</span>
+                        <h3>Zoom PT 3</h3>
+                        <div class="offer-price">$275<span>/week</span></div>
+                        <p class="offer-copy">Three live 30-minute 1:1 Zoom PT sessions each week.</p>
+                        <ul class="offer-list">
+                            <li>Everything in Zoom PT 1</li>
+                            <li>More live coaching and form feedback</li>
+                            <li>Training progression managed across the week</li>
+                            <li>Higher-touch accountability inside Balance</li>
+                        </ul>
+                        <a class="btn secondary offer-cta" href="book.html?source=zoom_pt&amp;pt_sessions=3">Check availability</a>
+                    </article>
+
+                    <article class="surface offer-card zoom-pt-card featured">
+                        <span class="label">highest support</span>
+                        <h3>Zoom PT 5</h3>
+                        <div class="offer-price">$425<span>/week</span></div>
+                        <p class="offer-copy">Five live 30-minute 1:1 Zoom PT sessions each week.</p>
+                        <ul class="offer-list">
+                            <li>Everything in Zoom PT 3</li>
+                            <li>Maximum live accountability across the week</li>
+                            <li>Careful progression around current capacity</li>
+                            <li>Limited places due to calendar demand</li>
+                        </ul>
+                        <a class="btn primary offer-cta" href="book.html?source=zoom_pt&amp;pt_sessions=5">Check availability</a>
+                    </article>
+                </div>
+                <p class="zoom-pt-note">Zoom PT begins with a six-week coaching block. Sessions are billed weekly in advance after Shannon confirms fit and recurring availability. Health screening may be required before training begins.</p>
+            </div></details>
+<details class="support-group" id="app-access"><summary><span><strong>App Access</strong><span class="support-description">Self-directed training tools and the Balance community.</span></span><span class="support-price">$19.99 / month</span></summary><div class="support-body"><ul class="offer-list"><li>Balance app and community access</li><li>Tailored workout program refreshed every six weeks</li><li>Weekly goal setting, progress tracking, XP and character levels</li></ul><div class="checkout-plan-option">
+                            <h3>App Access</h3>
+                            <div class="offer-price">$19.99<span>/month</span></div>
+                            <p class="offer-copy">App membership, tailored workout structure, progress tools, and the Balance community. No weekly 1:1 check-in.</p>
+                            <button class="btn secondary checkout-btn" data-plan="app-monthly" data-hosted-checkout-only="true" type="button">Start App Access</button>
+</div></div></details>
+<div class="purchase-terms"><h3>Before starting an ongoing plan</h3><div id="checkout-terms-container">
+                        <label>
+                            <input type="checkbox" id="terms-checkbox">
+                            <span>
+                                I agree to the <a href="terms.html" target="_blank" rel="noopener">Terms &amp; Conditions</a>,
+                                <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>,
+                                <a href="client-agreement.html" target="_blank" rel="noopener">Client Agreement</a>, and
+                                <a href="refund-policy.html" target="_blank" rel="noopener">Refund Policy</a>.
+                            </span>
+                        </label>
                     </div>
-                    <p class="section-text">Balance Learn is one AUD $149 payment for the full six weeks. It is not a subscription and does not renew automatically. Ongoing online coaching starts at AU$29.99 per week, with a lower weekly rate when you choose a longer initial term.</p>
-                </div>
 
-                <div class="surface offer-card trial-card reveal">
-                    <span class="label">main offer</span>
-                    <h3>Balance Learn Founders Pass</h3>
-                    <div class="offer-price">$149<span> one payment</span></div>
-                    <p class="offer-copy">A structured six-week course, six weeks of app access, and one weekly check-in, workout and food review, and adjustment from Shannon. No auto-renewal.</p>
-                    <a class="btn primary offer-cta" href="plant-based-fitness.html#join">See the Founders Pass</a>
-                </div>
-
-                <div class="offer-grid">
-                    <article class="surface offer-card reveal">
-                        <span class="label">ongoing membership</span>
-                        <h3>App Access</h3>
-                        <div class="offer-price">$19.99<span>/month</span></div>
-                        <p class="offer-copy">For people who want the structure without full coaching.</p>
-                        <ul class="offer-list">
-                            <li>Balance app access</li>
-                            <li>Tailored workout program refreshed every 6 weeks</li>
-                            <li>Weekly goal setting</li>
-                            <li>XP, streaks, character levels, and progress tracking</li>
-                        </ul>
-                        <a class="btn secondary offer-cta" href="#plan-checkout">Get App + Community</a>
-                    </article>
-
-                    <article class="surface offer-card featured reveal" id="starter-coaching">
-                        <div class="label">ongoing coaching</div>
-                        <h3>Online Coaching</h3>
-                        <div class="offer-price">From $29.99<span>/week</span></div>
-                        <p class="offer-copy">Start directly or continue after Balance Learn. The coaching is the same at every tier; a longer initial term gives you a lower weekly rate.</p>
-                        <ul class="offer-list">
-                            <li>Everything in App + Community</li>
-                            <li>One weekly check-in with Shannon</li>
-                            <li>Workout and food adjustments as your week changes</li>
-                            <li>Accountability, support, and course correction inside Balance</li>
-                        </ul>
-                        <a class="btn secondary offer-cta" href="#plan-checkout">Compare coaching terms</a>
-                    </article>
-
-                    <article class="surface offer-card reveal">
-                        <span class="label">deeper support</span>
-                        <h3>Coaching + Calls</h3>
-                        <div class="offer-price">$99.99<span>/week</span></div>
-                        <p class="offer-copy">For people who want deeper support and a weekly call.</p>
-                        <ul class="offer-list">
-                            <li>Everything in Online Coaching</li>
-                            <li>Weekly call with Shannon</li>
-                            <li>More detailed review of training, food, and obstacles</li>
-                            <li>Best for extra accountability or a more complex goal</li>
-                        </ul>
-                        <a class="btn primary offer-cta" href="#plan-checkout">Start coaching + calls</a>
-                    </article>
-                </div>
-            </section>
-
-            <section class="section coaching-photo-break" aria-label="Shannon's coaching experience">
+                    <p class="checkout-note">Online Coaching has an initial minimum of 26, 13 or 4 weekly payments for the six-month, three-month or month-to-month option. App Access, Online Coaching and Coaching + Calls require 30 days' notice to cancel. For Online Coaching, billing continues until the later of the initial minimum end date or notice end date. Balance Learn upfront ends after six weeks without automatic renewal. Balance Learn weekly has its separate six-week minimum, then can be cancelled before the next weekly payment without an additional notice period.</p><p class="checkout-note">Already a member? <a href="cancellation.html">Manage, pause or cancel your subscription</a>.</p></div></section>
+<section class="section coaching-photo-break" aria-label="Shannon's coaching experience">
                 <figure class="coaching-photo group-photo reveal">
                     <img src="photos/journey/melbourne-gym-group.png" alt="Shannon with members of his Melbourne personal training studio" width="1043" height="1391" loading="lazy" decoding="async">
                     <figcaption>
@@ -497,60 +551,7 @@
                 </figure>
             </section>
 
-            <section class="section zoom-pt-section" id="zoom-pt">
-                <div class="section-header">
-                    <div>
-                        <span class="section-kicker">limited 1:1 availability</span>
-                        <h2 class="section-title">Train live with me over Zoom.</h2>
-                    </div>
-                    <p class="section-text">Dedicated 30-minute personal training sessions for people who want hands-on coaching, real-time form feedback and stronger accountability. We confirm health fit and recurring times before payment.</p>
-                </div>
 
-                <div class="zoom-pt-grid">
-                    <article class="surface offer-card zoom-pt-card reveal">
-                        <span class="label">once weekly</span>
-                        <h3>Zoom PT 1</h3>
-                        <div class="offer-price">$125<span>/week</span></div>
-                        <p class="offer-copy">One live 30-minute 1:1 Zoom PT session each week.</p>
-                        <ul class="offer-list">
-                            <li>Personalised training structure</li>
-                            <li>General vegetarian or plant-based food guidance</li>
-                            <li>Balance app access and accountability</li>
-                            <li>Weekly programming and progress adjustments</li>
-                        </ul>
-                        <a class="btn secondary offer-cta" href="book.html?source=zoom_pt&amp;pt_sessions=1">Check availability</a>
-                    </article>
-
-                    <article class="surface offer-card zoom-pt-card reveal">
-                        <span class="label">three times weekly</span>
-                        <h3>Zoom PT 3</h3>
-                        <div class="offer-price">$275<span>/week</span></div>
-                        <p class="offer-copy">Three live 30-minute 1:1 Zoom PT sessions each week.</p>
-                        <ul class="offer-list">
-                            <li>Everything in Zoom PT 1</li>
-                            <li>More live coaching and form feedback</li>
-                            <li>Training progression managed across the week</li>
-                            <li>Higher-touch accountability inside Balance</li>
-                        </ul>
-                        <a class="btn secondary offer-cta" href="book.html?source=zoom_pt&amp;pt_sessions=3">Check availability</a>
-                    </article>
-
-                    <article class="surface offer-card zoom-pt-card featured reveal">
-                        <span class="label">highest support</span>
-                        <h3>Zoom PT 5</h3>
-                        <div class="offer-price">$425<span>/week</span></div>
-                        <p class="offer-copy">Five live 30-minute 1:1 Zoom PT sessions each week.</p>
-                        <ul class="offer-list">
-                            <li>Everything in Zoom PT 3</li>
-                            <li>Maximum live accountability across the week</li>
-                            <li>Careful progression around current capacity</li>
-                            <li>Limited places due to calendar demand</li>
-                        </ul>
-                        <a class="btn primary offer-cta" href="book.html?source=zoom_pt&amp;pt_sessions=5">Check availability</a>
-                    </article>
-                </div>
-                <p class="zoom-pt-note">Zoom PT begins with a six-week coaching block. Sessions are billed weekly in advance after Shannon confirms fit and recurring availability. Health screening may be required before training begins.</p>
-            </section>
 
             <section class="section story-grid" style="margin-top: 14px;">
                 <div class="surface quote-card reveal">
@@ -574,79 +575,7 @@
                 </div>
             </section>
 
-            <section class="section" id="plan-checkout">
-                <div class="surface offer-card featured starter-checkout reveal">
-                    <span class="label">choose your plan</span>
-                    <h2 class="section-title">Choose the support you want.</h2>
-                    <p class="offer-copy">Choose the six-week Balance Learn course or start an ongoing plan directly. Online Coaching is billed weekly, and the longer initial term gives you the lower rate.</p>
 
-                    <div id="checkout-terms-container">
-                        <label>
-                            <input type="checkbox" id="terms-checkbox">
-                            <span>
-                                I agree to the <a href="terms.html" target="_blank" rel="noopener">Terms &amp; Conditions</a>,
-                                <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>,
-                                <a href="client-agreement.html" target="_blank" rel="noopener">Client Agreement</a>, and
-                                <a href="refund-policy.html" target="_blank" rel="noopener">Refund Policy</a>.
-                            </span>
-                        </label>
-                    </div>
-
-                    <div class="checkout-plan-grid">
-                        <div class="checkout-plan-option founders-option">
-                            <div>
-                                <span class="plan-kicker">Best place to start</span>
-                                <h3>Balance Learn Founders Pass</h3>
-                                <div class="offer-price">AU$149<span>one payment</span></div>
-                                <p class="offer-copy">A fixed six-week course with app access and one weekly check-in, plan review and adjustment. About 50% off six weeks at the six-month coaching rate, with no auto-renewal.</p>
-                            </div>
-                            <button class="btn primary checkout-btn" data-plan="founders-pass" data-hosted-checkout-only="true" type="button">Get Founders Pass</button>
-                        </div>
-                        <div class="checkout-group-heading">
-                            <h3>Online Coaching</h3>
-                            <p>Same app access, weekly check-in, and individual workout and food adjustments. Choose the commitment that suits you.</p>
-                        </div>
-                        <div class="checkout-plan-option featured-option">
-                            <span class="plan-kicker">Best weekly rate</span>
-                            <h3>6-Month Coaching</h3>
-                            <div class="offer-price">$29.99<span>/week</span></div>
-                            <p class="offer-copy">Online coaching with a 26-week initial minimum. Billed weekly and continues at the same rate after the initial term. Cancellation requires 30 days' notice.</p>
-                            <p class="plan-term">AU$29.99 due today, then weekly.</p>
-                            <button class="btn primary checkout-btn" data-plan="coaching-6-month" data-hosted-checkout-only="true" type="button">Choose 6 months</button>
-                        </div>
-                        <div class="checkout-plan-option">
-                            <span class="plan-kicker">Balanced commitment</span>
-                            <h3>3-Month Coaching</h3>
-                            <div class="offer-price">$49.99<span>/week</span></div>
-                            <p class="offer-copy">Online coaching with a 13-week initial minimum. Billed weekly and continues at the same rate after the initial term. Cancellation requires 30 days' notice.</p>
-                            <p class="plan-term">AU$49.99 due today, then weekly.</p>
-                            <button class="btn secondary checkout-btn" data-plan="coaching-3-month" data-hosted-checkout-only="true" type="button">Choose 3 months</button>
-                        </div>
-                        <div class="checkout-plan-option">
-                            <span class="plan-kicker">Most flexible</span>
-                            <h3>Month-to-Month Coaching</h3>
-                            <div class="offer-price">$74.99<span>/week</span></div>
-                            <p class="offer-copy">Online coaching with a four-week initial minimum. Billed weekly and continues until cancelled with 30 days' notice.</p>
-                            <p class="plan-term">AU$74.99 due today, then weekly.</p>
-                            <button class="btn secondary checkout-btn" data-plan="coaching-month-to-month" data-hosted-checkout-only="true" type="button">Choose month-to-month</button>
-                        </div>
-                        <div class="checkout-plan-option">
-                            <h3>App + Community</h3>
-                            <div class="offer-price">$19.99<span>/month</span></div>
-                            <p class="offer-copy">App membership, tailored workout structure, progress tools, and the Balance community. No weekly 1:1 check-in.</p>
-                            <button class="btn secondary checkout-btn" data-plan="app-monthly" data-hosted-checkout-only="true" type="button">Start App + Community</button>
-                        </div>
-                        <div class="checkout-plan-option">
-                            <h3>Coaching + Calls</h3>
-                            <div class="offer-price">$99.99<span>/week</span></div>
-                            <p class="offer-copy">Everything in Online Coaching, plus one weekly call with Shannon and a deeper review of your plan.</p>
-                            <button class="btn primary checkout-btn" data-plan="coaching-calls" data-hosted-checkout-only="true" type="button">Start coaching + calls</button>
-                        </div>
-                    </div>
-                    <p class="checkout-note">Secure Stripe checkout. The 6-month, 3-month and month-to-month coaching options have initial minimums of 26, 13 and 4 weekly payments. Direct recurring subscriptions require 30 days' notice to cancel, with billing and access continuing during the notice period. For Online Coaching, the later of the initial minimum end date or notice end date applies.</p>
-                    <p class="checkout-note">Already a member? <a href="cancellation.html">Manage, pause or cancel your subscription</a>.</p>
-                </div>
-            </section>
         </main>
 
         <footer class="footer">
@@ -658,6 +587,6 @@
             </div>
         </footer>
     </div>
-    <script src="checkout.js"></script>
+    <script src="checkout.js?v=offers-20260909"></script><script src="coaching-offers.js" defer></script>
 </body>
 </html>

@@ -14,6 +14,10 @@ This file is the durable handoff context for Codex sessions. Read it at the star
 - Default session mode: give a short morning briefing with 2-4 prioritized items from the business plan and recent repo activity. Do not start with "what would you like to do?"
 - Shannon explicitly wants help building a business that makes money, and eventually wants the AI/system to run the business while he supervises.
 
+## Current public offer naming (9 September 2026)
+
+Shannon retired the public Founders Pass name. Use **Balance Learn** for the AUD $149 six-week course and **App Access** for the AUD $19.99/month membership. Balance Learn also offers AUD $24.83/week with a six-week minimum (AUD $148.98 minimum total), continuing weekly thereafter with the same support and cancellation before the next payment without additional notice after the minimum. Other prices, inclusions, initial coaching terms and existing lifetime entitlements are unchanged. `/founders` remains a compatible public entry URL and internal Stripe/plan IDs remain unchanged. The offer comparison page groups Learn, Online Coaching, Coaching + Calls, Zoom PT and App Access into expandable sections. Historical references below describe the same course; do not reintroduce the retired name into public copy.
+
 ## Product And Business
 
 - App name: Balance.

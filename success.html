@@ -170,14 +170,14 @@
             if (planKey === 'balance_foundations_six_week') {
                 const planName = document.getElementById('success-plan-name');
                 const readyCopy = document.getElementById('success-ready-copy');
-                if (planName) planName.textContent = 'Balance Learn Founders Pass';
+                if (planName) planName.textContent = 'Balance Learn';
                 if (readyCopy) readyCopy.textContent = 'Once your setup is complete, your six-week course, app access and weekly coaching review are ready in Balance.';
             }
 
             if (isAppCommunityPlan) {
                 const planName = document.getElementById('success-plan-name');
                 const readyCopy = document.getElementById('success-ready-copy');
-                if (planName) planName.textContent = planKey === 'balance_learn_weekly' ? 'Balance Learn membership' : 'Balance App + Community';
+                if (planName) planName.textContent = planKey === 'balance_learn_weekly' ? 'Balance Learn membership' : 'Balance App Access';
                 if (readyCopy) readyCopy.textContent = 'Once your setup is complete, your app membership and Balance community access are ready.';
             }
             if (onlineCoachingPlan) {
@@ -232,7 +232,7 @@
                 const signupLink = document.getElementById('success-signup-link');
                 const loginLink = document.getElementById('success-login-link');
                 const sessionId = urlParams.get('session_id') || '';
-                if (planName) planName.textContent = 'Balance Plant-Based Fitness Founders Pass';
+                if (planName) planName.textContent = 'Balance Learn';
                 if (readyCopy) readyCopy.textContent = 'Once your setup is complete, your six-week kickstart, core Balance app, and plant-based community access are ready.';
                 if (nextCopy) nextCopy.textContent = 'Now connect your lifetime membership to your Balance account.';
                 if (sessionId) {
@@ -368,7 +368,7 @@
 
                 let workout = workoutLabels[fullProfile.equipment] || 'Bodyweight Strength';
 
-                const packagePlan = isFoundersPass ? 'Plant-Based Fitness Founders Pass' : isAppCommunityPlan ? 'App + Community Monthly' : isCoachingCallsPlan ? 'Coaching + Calls Weekly' : onlineCoachingPlan?.name || 'Online Coaching';
+                const packagePlan = isFoundersPass ? 'Balance Learn' : isAppCommunityPlan ? 'App Access Monthly' : isCoachingCallsPlan ? 'Coaching + Calls Weekly' : onlineCoachingPlan?.name || 'Online Coaching';
 
                 const payload = {
                     emailValue: email, // Named for Zapier consistency

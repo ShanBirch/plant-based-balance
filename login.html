@@ -851,7 +851,7 @@
             const referralGroup = document.getElementById('signup-referral-group');
             const signupButton = document.getElementById('signup-btn');
             if (heading) heading.textContent = 'Set up your Balance account';
-            if (intro) intro.textContent = 'Use the same email you used at checkout so we can connect your Founders Pass and open the app.';
+            if (intro) intro.textContent = 'Use the same email you used at checkout so we can connect your Balance Learn and open the app.';
             if (referralGroup) referralGroup.style.display = 'none';
             if (signupButton) signupButton.textContent = 'OPEN MY FOUNDERS PASS';
         }
@@ -951,14 +951,14 @@
                     })
                 });
                 const result = await response.json().catch(() => ({}));
-                if (!response.ok || result.error) throw new Error(result.error || 'Founders Pass activation is still processing.');
+                if (!response.ok || result.error) throw new Error(result.error || 'Balance Learn activation is still processing.');
                 if (result.claimed) {
                     sessionStorage.removeItem('balance_founders_pass_pending');
                     sessionStorage.removeItem('balance_founders_pass_session_id');
                 }
                 return result;
             } catch (error) {
-                console.warn('Founders Pass activation will retry after the next login:', error.message);
+                console.warn('Balance Learn activation will retry after the next login:', error.message);
                 return null;
             }
         }
