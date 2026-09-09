@@ -77,3 +77,11 @@ test('a native echo is reconciled to its exact transport receipt without a secon
  assert.match(calls[0].path,/manychat_message_id=eq.ig_graph%3Aexact/);
  assert.equal(calls[0].options.body.alert_id,'alert');
 });
+
+test('finishing an older reply leaves newer inbound alerts queued', async () => {
+ const {clearManyChatHomeNotifications}=require('../netlify/functions/send-ig-reply')._test;
+ const calls=[];
+ await clearManyChatHomeNotifications({alertId:'old',igThreadId:'thread',sentAt:'2026-09-09T00:56:00Z',answeredThrough:'2026-09-09T00:55:02Z',source:'auto',query:async p=>{calls.push(p);return [];}});
+ assert.match(calls[0],/created_at=lte.2026-09-09T00%3A55%3A02Z/);
+ assert.doesNotMatch(calls[0],/00%3A56/);
+});

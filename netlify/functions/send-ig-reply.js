@@ -1546,12 +1546,13 @@ function normalizeTimingSuggestion(value) {
 
 const MANYCHAT_DM_ALERT_TYPES = ['ig_incoming_dm', 'fb_incoming_dm', 'follow_up_review'];
 
-async function clearManyChatHomeNotifications({ alertId, igThreadId, sentAt, source }) {
+async function clearManyChatHomeNotifications({ alertId, igThreadId, sentAt, source, answeredThrough, query = supabase }) {
     if (!igThreadId) return { siblingAlertsCleared: 0 };
     let siblingAlertsCleared = 0;
+    const cleanupThrough = answeredThrough || sentAt;
     try {
-        const siblingRows = await supabase(
-            `coach_alerts?select=id,data&data->>ig_thread_id=eq.${encodeURIComponent(igThreadId)}&status=eq.pending&id=neq.${encodeURIComponent(alertId)}&alert_type=in.(${MANYCHAT_DM_ALERT_TYPES.join(',')})&created_at=lte.${encodeURIComponent(sentAt)}&limit=25`
+        const siblingRows = await query(
+            `coach_alerts?select=id,data&data->>ig_thread_id=eq.${encodeURIComponent(igThreadId)}&status=eq.pending&id=neq.${encodeURIComponent(alertId)}&alert_type=in.(${MANYCHAT_DM_ALERT_TYPES.join(',')})&created_at=lte.${encodeURIComponent(cleanupThrough)}&limit=25`
         );
         for (const sibling of siblingRows) {
             const mergedData = {
@@ -1561,7 +1562,7 @@ async function clearManyChatHomeNotifications({ alertId, igThreadId, sentAt, sou
                 cleared_by_outbound_reply_source: source,
                 cleared_by_primary_alert_id: alertId,
             };
-            await supabase(`coach_alerts?id=eq.${encodeURIComponent(sibling.id)}`, {
+            await query(`coach_alerts?id=eq.${encodeURIComponent(sibling.id)}`, {
                 method: 'PATCH',
                 body: {
                     status: 'canceled',
@@ -3358,6 +3359,7 @@ exports.handler = async (event) => {
         alertId,
         igThreadId,
         sentAt: sentAtIso,
+        answeredThrough: alertData.meta_ad_fast_lane ? resolveAutomatedConversationAnchorAt(alert) : null,
         source,
     });
     if (requestedIgThreadId && requestedIgThreadId !== igThreadId) {
@@ -3365,6 +3367,7 @@ exports.handler = async (event) => {
             alertId,
             igThreadId: requestedIgThreadId,
             sentAt: sentAtIso,
+            answeredThrough: alertData.meta_ad_fast_lane ? resolveAutomatedConversationAnchorAt(alert) : null,
             source,
         });
         cleanup.requestedThreadSiblingAlertsCleared = requestedCleanup.siblingAlertsCleared || 0;
@@ -3413,6 +3416,7 @@ exports.handler = async (event) => {
 };
 
 exports._test = {
+    clearManyChatHomeNotifications,
     shouldForceTextDelivery,
     enrichAlertDataWithThreadGraph,
     isHumanAgentApprovalError,
