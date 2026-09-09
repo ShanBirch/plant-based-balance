@@ -7,7 +7,7 @@ const html = fs.readFileSync(require('node:path').join(__dirname,'../dashboard.h
 test('required onboarding actually includes field guidance between exercise card and Feed', () => {
   const start=html.indexOf('const REQUIRED_ONBOARDING_TOUR_TITLES');
   const sequence=html.slice(start,html.indexOf('];',start));
-  assert.match(sequence, /'Follow the exercise card',\s*'Each row is one set',\s*'Your reps go here',\s*'The Balance community'/);
+  assert.match(sequence, /'Follow the exercise card',\s*'Each row is one set',\s*'Your reps go here',\s*'Look through your whole workout',\s*'The Balance community'/);
 });
 
 test('every exercise must be acknowledged, with variable counts and one-exercise sessions', () => {
@@ -61,7 +61,7 @@ test('sets and reps are separate Next-only explanations without the external pro
     assert.equal(step.preserveSurface, true);
   }
   assert.equal(steps[0].nextLabel, 'Next: reps');
-  assert.equal(steps[1].returnHomeAfter, true);
+  assert.equal(steps[1].returnHomeAfter, undefined);
   assert.doesNotMatch(html, /PBBWorkoutTourProgress|armWorkoutExploreGate|requiresWorkoutExplore/);
 });
 
