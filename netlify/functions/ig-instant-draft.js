@@ -1491,7 +1491,7 @@ function isExplicitPaidMetaPreviewAcceptance(value = '') {
 
 function hasPaidMetaPreviewOrPriceDecline(value = '') {
     const message = String(value || '').replace(/\s+/g, ' ').trim();
-    return /\b(?:don['\u2019]?t|do not)\s+send\s+(?:me\s+)?(?:a|the|that)?\s*(?:preview|link)\b/i.test(message)
+    return /\b(?:don['\u2019]?t|do not)\s+send\s+(?:me\s+)?(?:a|the|that)?\s*(?:(?:free )?(?:personalised |personalized )?(?:app )?preview|link)\b/i.test(message)
         || /\b(?:not now|no thanks|not interested)\b/i.test(message)
         || /\b(?:\$?\s*149|price|cost|it|that)\b[\s\S]{0,45}\b(?:too (?:much|expensive)|can['\u2019]?t afford|cannot afford|not (?:in|within) (?:my )?budget)\b/i.test(message);
 }
@@ -1500,8 +1500,8 @@ function isExplicitPaidMetaPreviewRequest(value = '') {
     const message = String(value || '').replace(/\s+/g, ' ').trim();
     if (!message || hasPaidMetaPreviewOrPriceDecline(message)) return false;
     return /\b(?:can|could|may) i (?:just )?(?:see|view|open|try|look at) (?:it|the app|the preview|my preview|the program|the setup)\b/i.test(message)
-        || /\b(?:show|send|give) me (?:the |my )?(?:app )?preview\b/i.test(message)
-        || /\bopen (?:me )?(?:the |my )?(?:app )?preview\b/i.test(message)
+        || /\b(?:show|send|give) me (?:the |my |a )?(?:free )?(?:personalised |personalized )?(?:app )?preview\b/i.test(message)
+        || /\bopen (?:me )?(?:the |my |a )?(?:free )?(?:personalised |personalized )?(?:app )?preview\b/i.test(message)
         || /\bi (?:just )?(?:want|would like|'d like) to (?:see|view|open|try|look at) (?:it|the app|the preview|the program|the setup)\b/i.test(message);
 }
 
@@ -10409,4 +10409,5 @@ exports._test = {
     buildPersonalVoiceNoteDraftingBlock,
     hasInboundVoiceNoteInUnansweredBatch,
 };
+
 
