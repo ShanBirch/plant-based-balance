@@ -16,7 +16,7 @@ This file is the durable handoff context for Codex sessions. Read it at the star
 
 ## Balance Learn introductory pricing (9 September 2026)
 
-Latest confirmed decision: the complete six-week Learn package, including weekly check-ins and plan review, is AUD $150 upfront through 8 October 2026 Brisbane time. New upfront purchases become AUD $450 at midnight on 9 October 2026. This is a month-long launch sales window, not a one-month course or a recurring charge. The earlier $749 planned price and 80% comparison are retired. Existing purchases keep their entitlements. The separate $24.83 weekly Learn membership and Zoom PT prices are unchanged. The shared lib/learn-course-pricing.js schedule controls the server price. Public pages use the live offer endpoint to display the current amount.
+Latest confirmed decision: the complete six-week Learn package, including weekly check-ins and plan review, is AUD $150 upfront through 20 September 2026 Brisbane time. New upfront purchases become AUD $450 at midnight on 21 September 2026. This is the pre-launch sales window, not a one-month course or a recurring charge. The earlier $749 planned price and 80% comparison are retired. Existing purchases keep their entitlements. The separate $24.83 weekly Learn membership and Zoom PT prices are unchanged. The shared lib/learn-course-pricing.js schedule controls the server price. Public pages use the live offer endpoint to display the current amount.
 
 Shannon confirmed all coaching packages also include Balance Learn course access, including Online Coaching and Zoom PT.
 
