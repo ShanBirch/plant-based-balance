@@ -2,6 +2,13 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { buildDeterministicPaidMetaConversationReply: build, shouldApplyDeterministicPaidMetaReplyOverride: selected, buildPaidMetaConversationApproval: approve } = require('../netlify/functions/ig-instant-draft')._test;
 const base = { flowVariant: 'broad_pain', checkoutUrl: 'https://future-balance.netlify.app/fitness', appPreviewUrl: 'https://future-balance.netlify.app/p/Test_123-xyz9876543210', allowVideoAttachment: true };
+test('focused course questions answer only requested facts', () => {
+ const draft=build({...base,currentMessage:'How many lessons are there and what is week 4 about?'});
+ assert.match(draft.joined,/31 lessons/);
+ assert.match(draft.joined,/Week 4: take the fight out of food/);
+ assert.doesNotMatch(draft.joined,/Week [12356]:|Certificate/);
+ assert.match(build({...base,currentMessage:'What is the week-by-week curriculum?'}).joined,/Week 6:/);
+});
 test('short acceptance delivers the offered preview across natural invitation wording', () => {
   for (const text of ['Want to see the preview?', 'Would you like a free app preview first?', 'Want me to send you the preview?']) {
     for (const currentMessage of ['yep', 'Yes please']) {

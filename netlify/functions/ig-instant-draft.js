@@ -2147,7 +2147,17 @@ function buildDeterministicPaidMetaConversationReply({
             'The upfront option is one AUD $149 payment for the full six weeks, with no auto-renewal. Want to see the app preview first?',
         ]);
     }
-    if (broadFlow && /\b(?:certificate|how many lessons|each.*six weeks|week.by.week|curriculum)\b/i.test(message)) {
+    if (broadFlow && /\b(?:certificate|how many lessons|each.*six weeks|week.by.week|curriculum|week [1-6])\b/i.test(message)) {
+        const weeks = ['why change feels hard', 'work with your energy', 'build a rhythm that sticks', 'take the fight out of food', 'make progress easier to repeat', 'build your sustainable way forward'];
+        const requestedWeeks = [...message.matchAll(/\bweek ([1-6])\b/gi)].map(match => Number(match[1]));
+        const fullCurriculum = /\b(?:each.*six weeks|week.by.week|curriculum)\b/i.test(message);
+        if (!fullCurriculum) {
+            const answers = [];
+            if (/\bhow many lessons\b/i.test(message)) answers.push('There are 31 lessons: an introductory lesson, then 30 across six weeks.');
+            if (/\bcertificate\b/i.test(message)) answers.push('You earn a Certificate of Completion by finishing the required lessons and practical actions.');
+            for (const week of new Set(requestedWeeks)) answers.push(`Week ${week}: ${weeks[week - 1]}.`);
+            return guidedReply([answers.join(' '), historyHasGoal ? 'Want to see the app preview?' : "What's the main change you'd like to make over the next six weeks?"]);
+        }
         return guidedReply([
             'There are 31 lessons: an introductory lesson, then 30 across six weeks. You earn a Certificate of Completion by finishing the required lessons and practical actions.',
             'Week 1: why change feels hard. Week 2: work with your energy. Week 3: build a rhythm that sticks.',
