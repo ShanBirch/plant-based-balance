@@ -7540,6 +7540,19 @@ exports.handler = async (event) => {
     if (!thread) {
         return { statusCode: 404, body: JSON.stringify({ error: 'Thread not found' }) };
     }
+    // Finish an already claimed paid reply before drafting its successor.
+    // Otherwise a new question can start a second offer/video while the first
+    // attachment is still uploading. Freshness is checked again after waiting.
+    if (isMetaAdConversationFastLaneEligible({linkedUserId:thread.linked_user_id,customData:thread.custom_data})) {
+        const waitDeadline = Date.now() + 90000;
+        while (Date.now() < waitDeadline) {
+            const activeSends = await supabaseQuery('coach_alerts?select=id,data&data->>ig_thread_id=eq.' + encodeURIComponent(thread.id)
+                + '&status=eq.pending&data->>send_claim_id=not.is.null&limit=4');
+            if (!activeSends.some(row => row.data?.draft_revision_id !== manychatMessageId)) break;
+            await new Promise(resolve => setTimeout(resolve, 1500));
+        }
+    }
+
     const idempotencyKey = manychatMessageId
         ? `ig_incoming_dm:${manychatMessageId}`
         : `ig_incoming_dm:${threadId}:${Date.now()}`;
