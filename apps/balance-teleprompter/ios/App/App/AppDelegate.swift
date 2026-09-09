@@ -47,3 +47,48 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
 }
+
+
+import Photos
+
+@objc(RecordingLibraryPlugin)
+public class RecordingLibraryPlugin: CAPPlugin, CAPBridgedPlugin {
+    public let identifier = "RecordingLibraryPlugin"
+    public let jsName = "RecordingLibrary"
+    public let pluginMethods: [CAPPluginMethod] = [CAPPluginMethod(name: "saveVideo", returnType: CAPPluginReturnPromise)]
+
+    @objc func saveVideo(_ call: CAPPluginCall) {
+        guard let path = call.getString("uri"), let url = URL(string: path), url.isFileURL,
+              let cache = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first else {
+            call.reject("The recording could not be found.")
+            return
+        }
+        let source = url.resolvingSymlinksInPath().standardizedFileURL
+        let root = cache.appendingPathComponent("recordings").resolvingSymlinksInPath().standardizedFileURL.path + "/"
+        guard source.path.hasPrefix(root), FileManager.default.fileExists(atPath: source.path),
+              UIVideoAtPathIsCompatibleWithSavedPhotosAlbum(source.path) else {
+            call.reject("This recording cannot be added to Photos. Use Share video to keep a copy in Files.")
+            return
+        }
+        PHPhotoLibrary.requestAuthorization(for: .addOnly) { status in
+            guard status == .authorized || status == .limited else {
+                call.reject("Allow Photos access in Settings to save your recording.", "PERMISSION_DENIED")
+                return
+            }
+            var assetID: String?
+            PHPhotoLibrary.shared().performChanges({
+                let request = PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: source)
+                assetID = request?.placeholderForCreatedAsset?.localIdentifier
+            }) { success, error in
+                if success, let identifier = assetID { call.resolve(["uri": identifier]) }
+                else { call.reject("Could not save to Photos. Your recording is still available to share.", "SAVE_FAILED", error) }
+            }
+        }
+    }
+}
+
+class TeleprompterViewController: CAPBridgeViewController {
+    override func capacitorDidLoad() {
+        bridge?.registerPluginInstance(RecordingLibraryPlugin())
+    }
+}

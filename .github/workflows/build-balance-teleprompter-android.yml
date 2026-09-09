@@ -6,6 +6,7 @@ on:
     paths:
       - "apps/balance-teleprompter/**"
       - ".github/workflows/build-balance-teleprompter-android.yml"
+      - "scripts/release-balance-teleprompter-android.mjs"
   workflow_dispatch:
 
 jobs:
@@ -18,8 +19,8 @@ jobs:
       ANDROID_VERSION_CODE: ${{ github.run_number }}
       ANDROID_VERSION_NAME: 1.0.${{ github.run_number }}
       BALANCE_KEY_ALIAS: balance
-      BALANCE_KEYSTORE_PASSWORD: Cyywp7nyk3
-      BALANCE_KEY_PASSWORD: Cyywp7nyk3
+      BALANCE_KEYSTORE_PASSWORD: ${{ secrets.TELEPROMPTER_KEYSTORE_PASSWORD }}
+      BALANCE_KEY_PASSWORD: ${{ secrets.TELEPROMPTER_KEYSTORE_PASSWORD }}
 
     steps:
       - name: Checkout code
@@ -63,7 +64,7 @@ jobs:
 
       - name: Build signed Android App Bundle
         working-directory: apps/balance-teleprompter/android
-        run: chmod +x gradlew && ./gradlew bundleRelease
+        run: chmod +x gradlew && ./gradlew testDebugUnitTest bundleRelease
 
       - name: Keep a downloadable build artifact
         uses: actions/upload-artifact@v4
@@ -80,3 +81,9 @@ jobs:
           releaseFiles: apps/balance-teleprompter/android/app/build/outputs/bundle/release/app-release.aab
           track: internal
           status: draft
+
+      - name: Update existing production release or report first-release requirements
+        working-directory: .
+        env:
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        run: node scripts/release-balance-teleprompter-android.mjs

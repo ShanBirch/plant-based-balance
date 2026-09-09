@@ -6,9 +6,9 @@ android {
     signingConfigs {
         release {
             storeFile file("balance-release.jks")
-            storePassword System.getenv("BALANCE_KEYSTORE_PASSWORD") ?: "Cyywp7nyk3"
+            storePassword System.getenv("BALANCE_KEYSTORE_PASSWORD")
             keyAlias System.getenv("BALANCE_KEY_ALIAS") ?: "balance"
-            keyPassword System.getenv("BALANCE_KEY_PASSWORD") ?: "Cyywp7nyk3"
+            keyPassword System.getenv("BALANCE_KEY_PASSWORD")
         }
     }
     defaultConfig {

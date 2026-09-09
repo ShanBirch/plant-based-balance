@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { Directory, Filesystem } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
+import { RecordingLibrary } from '../lib/recording-library';
 import type { ImageSegmenter } from '@mediapipe/tasks-vision';
 import { initialisePurchases, purchaseLifetimeAccess, restoreLifetimeAccess } from '../lib/purchases';
 
@@ -79,6 +80,9 @@ export default function Home() {
   const recorderRef = useRef<MediaRecorder | null>(null);
   const processedRecordingTrackRef = useRef<MediaStreamTrack | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const nativeWriteErrorRef = useRef<unknown>(null);
+  const recordingPanelRef = useRef<HTMLDivElement>(null);
+  const saveBusyRef = useRef(false);
   const nativeWriteQueueRef = useRef<Promise<void>>(Promise.resolve());
   const cameraWantedRef = useRef(false);
   const cameraRequestRef = useRef(0);
@@ -110,6 +114,13 @@ export default function Home() {
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [recordingUrl, setRecordingUrl] = useState('');
   const [nativeRecordingUri, setNativeRecordingUri] = useState('');
+  const [saveBusy, setSaveBusy] = useState(false);
+  const [savedToLibrary, setSavedToLibrary] = useState(false);
+  const [recordingFinalizing, setRecordingFinalizing] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('');
+  useEffect(() => {
+    if (nativeRecordingUri || recordingUrl || saveMessage) recordingPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [nativeRecordingUri, recordingUrl, saveMessage]);
   const [recordingExtension, setRecordingExtension] = useState('webm');
   const [recordingFilename, setRecordingFilename] = useState('');
   const [mirrorText, setMirrorText] = useState(false);
@@ -289,7 +300,7 @@ export default function Home() {
     } catch (error) {
       window.clearTimeout(startTimeout);
       if (!cameraWantedRef.current || requestId !== cameraRequestRef.current) return;
-      pendingStream?.getTracks().forEach((track) => track.stop());
+      (pendingStream as MediaStream | null)?.getTracks().forEach((track) => track.stop());
       if (streamRef.current === pendingStream) streamRef.current = null;
       if (videoRef.current?.srcObject === pendingStream) videoRef.current.srcObject = null;
 
@@ -614,6 +625,9 @@ export default function Home() {
       setRecordingUrl('');
     }
     setNativeRecordingUri('');
+    setSavedToLibrary(false);
+    setSaveMessage('');
+    nativeWriteErrorRef.current = null;
     const mimeType = ['video/mp4;codecs=h264,aac', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm']
       .find((type) => MediaRecorder.isTypeSupported(type));
     let recordingStream = stream;
@@ -641,38 +655,48 @@ export default function Home() {
         data: '',
         directory: Directory.Cache,
         recursive: true,
-      }).then(() => undefined);
+      }).then(() => undefined).catch((error) => { nativeWriteErrorRef.current = error; });
     }
     recorder.ondataavailable = (event) => {
       if (!event.data.size) return;
       if (nativeRecording) {
         nativeWriteQueueRef.current = nativeWriteQueueRef.current.then(async () => {
+          if (nativeWriteErrorRef.current) return;
           const data = await blobToBase64(event.data);
           await Filesystem.appendFile({ path: nativePath, data, directory: Directory.Cache });
-        });
+        }).catch((error) => { nativeWriteErrorRef.current = error; });
       } else {
         chunksRef.current.push(event.data);
       }
     };
     recorder.onstop = async () => {
-      processedRecordingTrackRef.current?.stop();
-      processedRecordingTrackRef.current = null;
-      setRecordingExtension(extension);
-      setRecordingFilename(filename);
-      if (nativeRecording) {
-        await nativeWriteQueueRef.current;
-        const { uri } = await Filesystem.getUri({ path: nativePath, directory: Directory.Cache });
-        setNativeRecordingUri(uri);
-      } else {
-        const blob = new Blob(chunksRef.current, { type: recorder.mimeType || 'video/webm' });
-        setRecordingUrl(URL.createObjectURL(blob));
-      }
-      if (isNativeStore && !lifetimeUnlocked) {
-        setUsedRecordings((current) => {
-          const next = Math.min(3, current + 1);
-          window.localStorage.setItem('balance-teleprompter-recordings', String(next));
-          return next;
-        });
+      setRecordingFinalizing(true);
+      setIsAppFullscreen(false);
+      try {
+        processedRecordingTrackRef.current?.stop();
+        processedRecordingTrackRef.current = null;
+        setRecordingExtension(extension);
+        setRecordingFilename(filename);
+        if (nativeRecording) {
+          await nativeWriteQueueRef.current;
+          if (nativeWriteErrorRef.current) throw nativeWriteErrorRef.current;
+          const { uri } = await Filesystem.getUri({ path: nativePath, directory: Directory.Cache });
+          setNativeRecordingUri(uri);
+        } else {
+          const blob = new Blob(chunksRef.current, { type: recorder.mimeType || 'video/webm' });
+          setRecordingUrl(URL.createObjectURL(blob));
+        }
+        if (isNativeStore && !lifetimeUnlocked) {
+          setUsedRecordings((current) => {
+            const next = Math.min(3, current + 1);
+            window.localStorage.setItem('balance-teleprompter-recordings', String(next));
+            return next;
+          });
+        }
+      } catch {
+        setSaveMessage('Could not finish the recording. Check free storage before trying again.');
+      } finally {
+        setRecordingFinalizing(false);
       }
     };
     recorder.start(1000);
@@ -686,6 +710,7 @@ export default function Home() {
   }, [isNativeStore, isPrompting, lifetimeUnlocked, portraitState, recordingUrl, videoQuality]);
 
   const startCountdown = async () => {
+    if (recordingFinalizing || saveBusyRef.current) return;
     if (isNativeStore && !lifetimeUnlocked && freeRecordingsLeft <= 0) {
       setShowPaywall(true);
       return;
@@ -745,14 +770,39 @@ export default function Home() {
     }
   };
 
+  const saveNativeRecording = async () => {
+    if (!nativeRecordingUri || saveBusyRef.current || savedToLibrary) return;
+    saveBusyRef.current = true;
+    setSaveBusy(true);
+    setSaveMessage('');
+    try {
+      await RecordingLibrary.saveVideo({ uri: nativeRecordingUri });
+      setSavedToLibrary(true);
+      setSaveMessage(Capacitor.getPlatform() === 'android'
+        ? 'Saved to your gallery in DCIM / Balance Teleprompter. In Google Photos, look under Collections → On this device.'
+        : 'Saved to Photos.');
+    } catch (error) {
+      setSaveMessage(error instanceof Error ? error.message : 'Could not save the video. Your recording is still available to share.');
+    } finally {
+      saveBusyRef.current = false;
+      setSaveBusy(false);
+    }
+  };
+
   const shareNativeRecording = async () => {
-    if (!nativeRecordingUri) return;
-    await Share.share({
-      title: 'Balance Teleprompter recording',
-      text: 'Recorded with Balance Teleprompter',
-      url: nativeRecordingUri,
-      dialogTitle: 'Save or share your recording',
-    });
+    if (!nativeRecordingUri || saveBusyRef.current) return;
+    saveBusyRef.current = true;
+    setSaveBusy(true);
+    try {
+      await Share.share({ files: [nativeRecordingUri], dialogTitle: 'Share video' });
+    } catch (error) {
+      if (!(error instanceof Error && (error.name === 'AbortError' || /cancel/i.test(error.message)))) {
+        setSaveMessage('Could not open sharing. Your recording is still here; try saving to your photo library.');
+      }
+    } finally {
+      saveBusyRef.current = false;
+      setSaveBusy(false);
+    }
   };
 
   const flipCamera = async () => {
@@ -810,7 +860,7 @@ export default function Home() {
   }, [isAppFullscreen, isRecording, stopRecording, togglePrompt]);
 
   return (
-    <main className="min-h-screen bg-[#F8F5EE] text-[#151515]">
+    <main className="app-safe-area min-h-screen bg-[#F8F5EE] text-[#151515]">
       <header className={`${isAppFullscreen ? 'hidden' : 'flex'} mx-auto max-w-[1600px] items-center justify-between px-4 py-3 sm:px-7 sm:py-4`}>
         <div className="flex items-center gap-3">
           <img src="/balance-logo.png" alt="Balance" className="h-10 w-10 rounded-full border border-[#DED7C9] object-cover" />
@@ -829,7 +879,7 @@ export default function Home() {
       </header>
 
       <section className={`${isAppFullscreen ? 'block p-0' : 'mx-auto grid max-w-[1600px] gap-4 px-3 pb-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:px-5'}`}>
-        <div className={`${isAppFullscreen ? 'fixed inset-0 z-40 min-h-screen rounded-none border-0' : 'relative min-h-[68vh] rounded-[28px] border border-[#111111]/15 lg:min-h-[calc(100vh-92px)]'} overflow-hidden bg-[#111111] text-white shadow-[0_24px_70px_rgba(21,21,21,.18)]`}>
+        <div className={`${isAppFullscreen ? 'camera-fullscreen fixed z-40 rounded-none border-0' : 'relative min-h-[68vh] rounded-[28px] border border-[#111111]/15 lg:min-h-[calc(100vh-92px)]'} overflow-hidden bg-[#111111] text-white shadow-[0_24px_70px_rgba(21,21,21,.18)]`}>
           <video
             ref={videoRef}
             muted
@@ -853,13 +903,13 @@ export default function Home() {
             <button
               onClick={toggleFullscreen}
               aria-label="Exit full screen"
-              className="absolute left-4 top-[calc(env(safe-area-inset-top)+1rem)] z-30 rounded-full border border-white/20 bg-black/65 px-4 py-3 text-sm font-semibold text-white shadow-lg backdrop-blur-xl hover:border-[#D8B25E]"
+              className="absolute left-4 top-4 z-30 rounded-full border border-white/20 bg-black/65 px-4 py-3 text-sm font-semibold text-white shadow-lg backdrop-blur-xl hover:border-[#D8B25E]"
             >
               ← Exit full screen
             </button>
           )}
 
-          <div className={`absolute left-4 flex items-center gap-2 sm:left-5 ${isAppFullscreen ? 'top-[calc(env(safe-area-inset-top)+4.75rem)]' : 'top-4 sm:top-5'}`}>
+          <div className={`absolute left-4 flex items-center gap-2 sm:left-5 ${isAppFullscreen ? 'top-[4.75rem]' : 'top-4 sm:top-5'}`}>
             <span className="rounded-full border border-white/10 bg-black/35 px-3 py-1.5 text-[11px] font-medium text-white/65 backdrop-blur-xl">
               {cameraState === 'ready' ? '● Camera ready' : cameraState === 'starting' ? 'Starting camera…' : 'Camera preview'}
             </span>
@@ -935,7 +985,7 @@ export default function Home() {
 
           {countdown !== null && <div className="absolute inset-0 grid place-items-center bg-black/45 text-[9rem] font-black text-[#F5D98A] backdrop-blur-sm">{countdown}</div>}
 
-          <div className={`absolute inset-x-0 bottom-0 z-20 flex items-end justify-between gap-3 border-t border-white/5 bg-black/55 px-4 pt-4 backdrop-blur-sm sm:px-6 sm:pt-5 ${isAppFullscreen ? 'pb-[calc(env(safe-area-inset-bottom)+1rem)]' : 'pb-4 sm:pb-6'}`}>
+          <div className={`absolute inset-x-0 bottom-0 z-20 flex items-end justify-between gap-3 border-t border-white/5 bg-black/55 px-4 pt-4 backdrop-blur-sm sm:px-6 sm:pt-5 ${isAppFullscreen ? 'pb-4' : 'pb-4 sm:pb-6'}`}>
             <div className="flex gap-2">
               <button onClick={flipCamera} disabled={isRecording} className="control-button" aria-label="Flip camera">Flip</button>
               {!isAppFullscreen && <button onClick={toggleFullscreen} className="control-button" aria-label="Enter full screen">Full screen</button>}
@@ -946,7 +996,7 @@ export default function Home() {
                 onClick={isRecording ? stopRecording : startCountdown}
                 disabled={portraitState === 'loading'}
                 aria-label={isRecording ? 'Stop recording' : 'Start recording'}
-                className={`grid h-16 w-16 shrink-0 place-items-center rounded-full border-[3px] transition disabled:cursor-wait disabled:opacity-45 sm:h-[72px] sm:w-[72px] ${isAppFullscreen ? 'fixed bottom-[calc(env(safe-area-inset-bottom)+1rem)] left-1/2 z-50 -translate-x-1/2 shadow-2xl' : ''} ${isRecording ? 'border-red-400 bg-red-500' : 'border-white bg-white/10 hover:scale-105'}`}
+                className={`grid h-16 w-16 shrink-0 place-items-center rounded-full border-[3px] transition disabled:cursor-wait disabled:opacity-45 sm:h-[72px] sm:w-[72px] ${isAppFullscreen ? 'absolute bottom-4 left-1/2 z-50 -translate-x-1/2 shadow-2xl' : ''} ${isRecording ? 'border-red-400 bg-red-500' : 'border-white bg-white/10 hover:scale-105'}`}
               >
                 <span className={`${isRecording ? 'h-6 w-6 rounded-md bg-white' : 'h-12 w-12 rounded-full bg-red-500 sm:h-14 sm:w-14'}`} />
               </button>
@@ -1007,22 +1057,27 @@ export default function Home() {
             <button onClick={resetPrompt} className="rounded-2xl border border-[#DED7C9] px-4 text-sm text-[#6F6A61] transition hover:border-[#D8B25E] hover:text-[#151515]">Reset</button>
           </div>
 
-          {nativeRecordingUri ? (
-            <button onClick={shareNativeRecording} className="mt-3 w-full rounded-2xl border border-[#D8B25E] bg-[#F8F5EE] px-4 py-3 text-center text-sm font-semibold text-[#151515] transition hover:bg-[#F4F0E7]">
-              Save or share your recording
-            </button>
-          ) : recordingUrl ? (
-            <a href={recordingUrl} download={recordingFilename || createRecordingFilename(recordingExtension)} className="mt-3 block rounded-2xl border border-[#D8B25E] bg-[#F8F5EE] px-4 py-3 text-center text-sm font-semibold text-[#151515] transition hover:bg-[#F4F0E7]">
-              Download your recording
-            </a>
-          ) : (
-            <p className="mt-4 text-center text-[11px] leading-5 text-[#6F6A61]">Space pauses the prompt · Esc stops recording<br />Your script and video stay on this device.</p>
-          )}
+          <div ref={recordingPanelRef} aria-live="polite">
+            {recordingFinalizing && <p className="mt-4 text-sm text-[#6F6A61]">Preparing your video…</p>}
+            {nativeRecordingUri ? (
+              <div className="mt-4 rounded-2xl border border-[#DED7C9] p-4">
+                <p className="font-semibold">Your recording is ready</p>
+                <video src={Capacitor.convertFileSrc(nativeRecordingUri)} controls playsInline preload="metadata" className="mt-3 max-h-64 w-full rounded-xl bg-black" />
+                <button onClick={saveNativeRecording} disabled={saveBusy || savedToLibrary} className="mt-3 w-full rounded-2xl bg-[#D8B25E] px-4 py-3 text-sm font-semibold text-[#151515] disabled:opacity-50">
+                  {saveBusy ? 'Please wait…' : savedToLibrary ? 'Saved' : Capacitor.getPlatform() === 'ios' ? 'Save to Photos' : 'Save to gallery'}
+                </button>
+                <button onClick={shareNativeRecording} disabled={saveBusy} className="mt-3 w-full rounded-2xl border border-[#D8B25E] px-4 py-3 text-sm font-semibold text-[#151515] disabled:opacity-50">Share video</button>
+              </div>
+            ) : recordingUrl ? (
+              <a href={recordingUrl} download={recordingFilename || createRecordingFilename(recordingExtension)} className="mt-3 block rounded-2xl border border-[#D8B25E] px-4 py-3 text-center text-sm font-semibold text-[#151515]">Download your recording</a>
+            ) : !recordingFinalizing && <p className="mt-4 text-center text-[11px] leading-5 text-[#6F6A61]">Space pauses the prompt · Esc stops recording<br />Your script and video stay on this device.</p>}
+            {saveMessage && <p role="status" className="mt-3 text-sm text-[#6F6A61]">{saveMessage}</p>}
+          </div>
         </aside>
       </section>
 
       {showGuide && (
-        <div role="dialog" aria-modal="true" aria-label="How Balance Teleprompter works" className="fixed inset-0 z-50 grid place-items-center bg-black/75 p-4 backdrop-blur-sm" onMouseDown={(event) => { if (event.currentTarget === event.target) setShowGuide(false); }}>
+        <div role="dialog" aria-modal="true" aria-label="How Balance Teleprompter works" className="safe-dialog fixed inset-0 z-50 grid place-items-center bg-black/75 p-4 backdrop-blur-sm" onMouseDown={(event) => { if (event.currentTarget === event.target) setShowGuide(false); }}>
           <div className="w-full max-w-md rounded-[28px] border border-[#DED7C9] bg-[#F8F5EE] p-6 text-[#151515] shadow-2xl">
             <div className="flex items-start justify-between gap-4">
               <div><p className="inline-flex bg-[#D8B25E] px-2 py-1 text-[10px] font-semibold uppercase tracking-[.18em] text-[#111111]">Quick start</p><h2 className="mt-2 text-2xl font-semibold tracking-tight">Three steps. That’s it.</h2></div>
@@ -1047,7 +1102,7 @@ export default function Home() {
       )}
 
       {showPaywall && (
-        <div role="dialog" aria-modal="true" aria-label="Lifetime access" className="fixed inset-0 z-[60] grid place-items-center bg-black/75 p-4 backdrop-blur-sm" onMouseDown={(event) => { if (event.currentTarget === event.target) setShowPaywall(false); }}>
+        <div role="dialog" aria-modal="true" aria-label="Lifetime access" className="safe-dialog fixed inset-0 z-[60] grid place-items-center bg-black/75 p-4 backdrop-blur-sm" onMouseDown={(event) => { if (event.currentTarget === event.target) setShowPaywall(false); }}>
           <div className="w-full max-w-md rounded-[28px] border border-[#DED7C9] bg-[#F8F5EE] p-6 text-[#151515] shadow-2xl">
             <div className="flex items-start justify-between gap-4">
               <img src="/balance-logo.png" alt="Balance" className="h-14 w-14 rounded-full border border-[#DED7C9] object-cover" />

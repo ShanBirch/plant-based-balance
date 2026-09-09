@@ -6,7 +6,7 @@ const FALLBACK_PRICE = '$9.99 AUD';
 const OWNERSHIP_KEY = 'balance-teleprompter-lifetime';
 
 let configured = false;
-let platform: Platform | undefined;
+let platform: (typeof Platform)[keyof typeof Platform] | undefined;
 let initialisePromise: Promise<void> | undefined;
 let purchaseWaiters: Array<(unlocked: boolean) => void> = [];
 

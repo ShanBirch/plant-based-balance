@@ -26,6 +26,8 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Save your recorded videos to your Photos library.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Balance Teleprompter uses your camera so you can frame and record your presentation.</string>
 	<key>NSMicrophoneUsageDescription</key>
