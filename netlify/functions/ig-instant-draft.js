@@ -1753,7 +1753,9 @@ function buildPaidMetaProofVideoRetryReply(currentMessage = '') {
     const failedDelivery = /\b(?:can(?:not|'t)|couldn(?:'t)?|didn(?:'t)?)\s+(?:see|watch|open|load)\s+(?:it|the\s+(?:vid|video))\b/i.test(String(currentMessage || ''));
     const joined = failedDelivery
         ? `Ah sorry, it didn't come through properly. I've sent the course video again.`
-        : `Yep, here is the course video again.`;
+        : /\b(?:again|resend)\b/i.test(String(currentMessage || ''))
+            ? `Yep, here is the course video again.`
+            : `Yep, here is the course video.`;
     return {
         chunks: [joined],
         joined,
