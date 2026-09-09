@@ -699,21 +699,43 @@ async function attachBuild(version, build) {
 
 async function submitForReview(app, version, iapVersion) {
   if (!/^(1|true|yes)$/i.test(process.env.SUBMIT_FOR_REVIEW || 'false')) return;
-  const created = await asc('/v1/reviewSubmissions', {
-    method: 'POST',
-    body: JSON.stringify({
-      data: {
-        type: 'reviewSubmissions',
-        attributes: { platform: 'IOS' },
-        relationships: { app: { data: { type: 'apps', id: app.id } } },
-      },
-    }),
-  });
-  const submissionId = created.body.data.id;
+  let submission;
+  let existingItems = [];
+  let next = `/v1/apps/${app.id}/reviewSubmissions?limit=200`;
+  while (next && !submission) {
+    const page = await asc(next);
+    for (const candidate of page.body.data || []) {
+      const items = await asc(`/v1/reviewSubmissions/${candidate.id}/items?limit=200`);
+      if ((items.body.data || []).some(item => item.relationships?.appStoreVersion?.data?.id === version.id)) {
+        submission = candidate;
+        existingItems = items.body.data;
+        break;
+      }
+    }
+    next = page.body.links?.next ? page.body.links.next.replace(apiRoot, '') : null;
+  }
+  if (submission && ['WAITING_FOR_REVIEW', 'IN_REVIEW'].includes(submission.attributes?.state)) {
+    console.log(`App Store version ${versionString} is already ${submission.attributes.state}.`);
+    return;
+  }
+  if (!submission) {
+    const created = await asc('/v1/reviewSubmissions', {
+      method: 'POST',
+      body: JSON.stringify({data: {
+        type: 'reviewSubmissions', attributes: {platform: 'IOS'},
+        relationships: {app: {data: {type: 'apps', id: app.id}}},
+      }}),
+    });
+    submission = created.body.data;
+  }
+  const submissionId = submission.id;
+  console.log(`Using review submission ${submissionId} (${submission.attributes?.state || 'draft'}).`);
   for (const relationship of [
     { appStoreVersion: { data: { type: 'appStoreVersions', id: version.id } } },
     { inAppPurchaseVersion: { data: { type: 'inAppPurchaseVersions', id: iapVersion.id } } },
   ]) {
+    const [relationshipName, target] = Object.entries(relationship)[0];
+    if (existingItems.some(item => item.relationships?.[relationshipName]?.data?.id === target.data.id)) continue;
     await asc('/v1/reviewSubmissionItems', {
       method: 'POST',
       body: JSON.stringify({
@@ -733,7 +755,8 @@ async function submitForReview(app, version, iapVersion) {
       data: { type: 'reviewSubmissions', id: submissionId, attributes: { submitted: true } },
     }),
   });
-  console.log(`Submitted App Store version ${versionString} and the lifetime purchase for review.`);
+  const confirmed = await asc(`/v1/reviewSubmissions/${submissionId}`);
+  console.log(`Submitted App Store version ${versionString} and the lifetime purchase for review. State: ${confirmed.body.data.attributes?.state}.`);
 }
 
 const app = await getApp();
