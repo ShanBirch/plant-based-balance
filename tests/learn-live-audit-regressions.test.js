@@ -119,3 +119,9 @@ test('curriculum facts survive the writer contract and fallback', () => {
  assert.match(fallback.joined,/31 lessons/);
  assert.match(fallback.joined,/Certificate of Completion/);
 });
+test('night work and disrupted food are already supplied blockers despite goal typos', () => {
+  const draft = build({...base,currentMessage:'wanna loose wieght\ni work nights so food is all over the place\nand im vegetarian'});
+  assert.doesNotMatch(draft.joined,/what.*gets in the way/i);
+  assert.match(draft.joined,/food|meal/i);
+  assert.ok(draft.videoAttachmentUrl);
+});

@@ -1413,11 +1413,13 @@ const PAID_META_PROGRAM_WORKS_RE = /\bhow does (?:the |your )?(?:program|founder
 
 function isPaidMetaConcreteBlocker(value = '') {
     const text = String(value || '');
+    if (/\b(?:work(?:ing)? nights|night shifts?|food is all over the place)\b/i.test(text)) return true;
     return PAID_META_CONCRETE_BLOCKER_RE.test(text) || PAID_META_FOOD_CONFUSION_RE.test(text) || /\bonly (?:have |manage )?(?:one|two|three|[1-3]) (?:days|evenings|sessions).*week\b/i.test(text);
 }
 
 function isPaidMetaStrongBlocker(value = '') {
     const text = String(value || '');
+    if (/\b(?:work(?:ing)? nights|night shifts?|food is all over the place)\b/i.test(text)) return true;
     return PAID_META_STRONG_BLOCKER_RE.test(text) || PAID_META_FOOD_CONFUSION_RE.test(text) || /\bonly (?:have |manage )?(?:one|two|three|[1-3]) (?:days|evenings|sessions).*week\b/i.test(text);
 }
 
@@ -1446,7 +1448,7 @@ function buildPaidMetaBlockerReflection(message = '') {
     if (/\b(?:energy|fatigue\w*|exhaust\w*|sleep|stress\w*|motivat\w*|overwhelm\w*)\b/i.test(text)) {
         return 'When your energy or headspace keeps changing, expecting every week to look the same just sets you up to feel behind.';
     }
-    if (/\b(?:shift work|rotating shifts?|shifts? change|changing shifts?|schedule|no time|too busy|caregiv\w*|kids?|children|family commitments?|family stuff|travel)\b/i.test(text)) {
+    if (/\b(?:work(?:ing)? nights|night shifts?|shift work|rotating shifts?|shifts? change|changing shifts?|schedule|no time|too busy|caregiv\w*|kids?|children|family commitments?|family stuff|travel)\b/i.test(text)) {
         return 'When life keeps crowding the week, training and food are usually the first things to get pushed around.';
     }
     if (/\b(?:don['’]?t know (?:what|how|where)|not sure (?:what|how|where)|stuck)\b/i.test(text)) {
