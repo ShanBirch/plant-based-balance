@@ -3,6 +3,15 @@ const assert = require('node:assert/strict');
 const {buildMediaReviewInfo} = require('../netlify/functions/_lib/client-context');
 const {_test} = require('../netlify/functions/ig-instant-draft');
 
+test('decoded video speech and a typed follow-up can each authorize preview delivery', () => {
+  const options={flowVariant:'broad_pain',appPreviewUrl:'https://future-balance.netlify.app/p/Test_123-xyz9876543210'};
+  for (const [transcript,currentMessage] of [['Please send me the app preview.','[video]'],['','Please send me the app preview.']]) {
+    const result=_test.applyDecodedPaidMetaAudioHandoff({mediaDecode:{analysis_complete:true,video_processing:[{transcript}]}},{...options,currentMessage});
+    assert.equal(result.appPreviewHandoff,true);
+    assert.equal(_test.buildPaidMetaConversationApproval({metaAdConversationFastLane:true,draft:result,currentMessage})?.required,false);
+  }
+});
+
 test('decoded voice preview consent sends the signed link and preserves analysis evidence', () => {
   const mediaDecode = {analysis_complete:true,analysis_succeeded:true,audio_transcripts:[{text:'Yes please, I would like to see the app preview before I pay.'}]};
   const result = _test.applyDecodedPaidMetaAudioHandoff({chunks:['What is your goal?'],mediaDecode}, {currentMessage:'[voice note]',flowVariant:'broad_pain',appPreviewUrl:'https://future-balance.netlify.app/p/Test_123-xyz9876543210'});
