@@ -20,6 +20,10 @@ Latest confirmed decision: the complete six-week Learn package, including weekly
 
 Shannon confirmed all coaching packages also include Balance Learn course access, including Online Coaching and Zoom PT.
 
+## Public four-part journey (10 September 2026)
+
+Shannon confirmed the public journey order: Learn → Master → Become → Lead. The website describes each stage and identifies the six-week Learn offer as part one, rather than implying it includes all four courses. This website presentation does not alter existing app progression, saved progress or entitlements.
+
 ## Website Learn onboarding (9 September 2026)
 
 The public Learn page now starts the same account-first setup and guided preview as the Meta route before offering payment. Ordinary website entry carries `learn_entry=website` and retains genuine attribution rather than pretending to be a paid ad. Desktop opens signup with the preview query; mobile uses the existing app-store/native handoff. Website iPhone visitors return to the Learn page after installation and tap Open my personalised preview. Signed Instagram recovery and existing member protection remain intact.

@@ -1,0 +1,13 @@
+.balance-journey { max-width: 1140px; margin: 48px auto; padding: 32px 24px; box-sizing: border-box; background: #faf7ef; color: #243124; -webkit-text-fill-color: #243124; border-radius: 20px; }
+.balance-journey .journey-eyebrow { margin: 0 0 12px; color: #775b25; -webkit-text-fill-color: #775b25; font: 700 12px/1.5 Inter, sans-serif; letter-spacing: .1em; text-transform: uppercase; }
+.balance-journey h2 { margin: 0 0 16px; font-size: clamp(28px, 4vw, 42px); line-height: 1.15; color: #243124; -webkit-text-fill-color: #243124; }
+.balance-journey .journey-intro { max-width: 760px; margin: 0 0 28px; line-height: 1.7; }
+.balance-journey .journey-stages { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 36px; list-style: none; padding: 0; margin: 0; }
+.balance-journey .journey-stages li { padding: 20px 0 0; border-top: 1px solid #c7b78e; }
+.balance-journey .journey-number { color: #775b25; -webkit-text-fill-color: #775b25; font: 700 13px/1.5 Inter, sans-serif; }
+.balance-journey h3 { margin: 8px 0 10px; font-size: 27px; color: #243124; -webkit-text-fill-color: #243124; }
+.balance-journey strong, .balance-journey p { color: #243124; -webkit-text-fill-color: #243124; font-size: 16px; line-height: 1.65; }
+.balance-journey .journey-stages p { margin: 10px 0 0; }
+.balance-journey .journey-note { margin: 28px 0 0; padding-top: 20px; border-top: 1px solid #c7b78e; }
+@media (max-width: 600px) { .balance-journey { padding: 28px 20px; margin: 32px auto; } .balance-journey .journey-stages { grid-template-columns: 1fr; gap: 24px; } }
+.balance-journey { scroll-margin-top: 90px; }
