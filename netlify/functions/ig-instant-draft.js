@@ -7401,6 +7401,13 @@ function applyDecodedPaidMetaAudioHandoff(draft = {}, options = {}) {
     const handoff = buildDeterministicPaidMetaConversationReply({...options, currentMessage});
     if (!['campaign_app_preview_handoff', 'campaign_buyer_handoff'].includes(handoff?.replyMode)) {
         const mediaFacts = [decode.media_summary || '', ...transcripts].join('\n');
+        if (options.flowVariant === 'broad_pain'
+            && !hasPaidMetaPreviewOrPriceDecline(currentMessage)
+            && /\b(?:questions?|asks?|whether|how many|what happens)\b/i.test(mediaFacts)
+            && /\b(?:how many lessons|certificate|week [1-6])\b/i.test(mediaFacts)) {
+            const factsReply = buildDeterministicPaidMetaConversationReply({...options,currentMessage:mediaFacts});
+            if (factsReply?.replyMode === 'campaign_sales_progression') return {...draft,...factsReply};
+        }
         // Decoded facts count as answers too. Repair only an actual repeated
         // blocker question; never infer preview consent from a visual summary.
         if (options.flowVariant === 'broad_pain'

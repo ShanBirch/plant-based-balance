@@ -2,6 +2,15 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {buildMediaReviewInfo} = require('../netlify/functions/_lib/client-context');
 const {_test} = require('../netlify/functions/ig-instant-draft');
+test('verified course questions in decoded video receive their requested answers', () => {
+ const mediaDecode={analysis_complete:true,analysis_succeeded:true,media_summary:'A slide with three questions: how many lessons are included, whether there is a completion certificate, and what happens in week 4.'};
+ const result=_test.applyDecodedPaidMetaAudioHandoff({joined:'Balance is a six-week course.',mediaDecode},{flowVariant:'broad_pain',currentMessage:'[VIDEO attachment]'});
+ assert.match(result.joined,/31 lessons/);
+ assert.match(result.joined,/Certificate of Completion/);
+ assert.match(result.joined,/Week 4: take the fight out of food/);
+ assert.doesNotMatch(result.joined,/slide|three questions|Week 1:/);
+ assert.equal(result.mediaDecode,mediaDecode);
+});
 test('decoded goal and shift constraints replace a repeated blocker question with the offer', () => {
  const draft={joined:"Before I line up your week, what's your blocker right now?",mediaDecode:{analysis_complete:true,analysis_succeeded:true,media_summary:"Goal: build strength. Available Tuesday and Saturday. Work shifts change each week. Dumbbells at home."}};
  const result=_test.applyDecodedPaidMetaAudioHandoff(draft,{flowVariant:'broad_pain',currentMessage:'Could this work for me?'});
