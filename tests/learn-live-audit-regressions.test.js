@@ -108,3 +108,14 @@ test('a typo goal remains known when the next message is a vague blocker', () =>
  assert.match(draft.joined,/149/);
  assert.doesNotMatch(draft.joined,/what.*gets in the way/i);
 });
+
+test('curriculum facts survive the writer contract and fallback', () => {
+ const {collectPaidMetaWriterContractIssues,buildPaidMetaGuaranteedContractFallback}=require('../netlify/functions/ig-instant-draft')._test;
+ const currentMessage='What do you actually teach in each of the six weeks? How many lessons are there, and is there a certificate?';
+ const history=[{direction:'out',text:"What's the main change you'd like to make over the next six weeks?"}];
+ const draft=build({...base,currentMessage,history});
+ assert.deepEqual(collectPaidMetaWriterContractIssues({draft,currentMessage,history,flowVariant:'broad_pain'}),[]);
+ const fallback=buildPaidMetaGuaranteedContractFallback({draft,currentMessage,history,flowVariant:'broad_pain',issues:['The course answer must return to the still-missing six-week goal.']});
+ assert.match(fallback.joined,/31 lessons/);
+ assert.match(fallback.joined,/Certificate of Completion/);
+});

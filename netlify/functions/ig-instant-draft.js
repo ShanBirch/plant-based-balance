@@ -2146,7 +2146,7 @@ function buildDeterministicPaidMetaConversationReply({
             'There are 31 lessons: an introductory lesson, then 30 across six weeks. You earn a Certificate of Completion by finishing the required lessons and practical actions.',
             'Week 1: why change feels hard. Week 2: work with your energy. Week 3: build a rhythm that sticks.',
             'Week 4: take the fight out of food. Week 5: make progress easier to repeat. Week 6: build your sustainable way forward.',
-            'Want to see the app preview?',
+            historyHasGoal ? 'Want to see the app preview?' : "What's the main change you'd like to make over the next six weeks?",
         ]);
     }
     if (broadFlow && /\b(?:photo|picture|image)\b/i.test(message) && /\b(?:send|show|come through|arrive)\b/i.test(message)) {
@@ -5375,7 +5375,7 @@ function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = 
     let fixedChunks = null;
     if (/full six-week course outline|course answer must return/i.test(issueText)) {
         fixedChunks = [
-            'Yep, the course gives you one practical focus each week:',
+            'There are 31 lessons: an introductory lesson, then 30 across six weeks. You earn a Certificate of Completion by finishing the required lessons and practical actions.',
             'Week 1, Why change feels hard. Week 2, Work with your energy. Week 3, Build a rhythm that sticks.',
             'Week 4, Take the fight out of food. Week 5, Make progress easier to repeat. Week 6, Build your sustainable way forward.',
             'The lessons, practical actions and Weekly Goals sit alongside your workout and nutrition setup. The six themes stay consistent, while your workout and meal support are fitted to you.',
