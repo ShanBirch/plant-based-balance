@@ -1,5 +1,9 @@
 const assert = require('assert');
 
+// All transport is mocked below; exercise transcription without real credentials.
+process.env.OPENAI_API_KEY = 'unit-test-only';
+process.env.GEMINI_API_KEY = 'unit-test-only';
+
 const {
     buildContextReviewInfo,
     buildMediaReviewInfo,

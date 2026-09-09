@@ -2582,7 +2582,8 @@ function shouldApplyDeterministicPaidMetaReplyOverride(draft = null) {
             && /^deterministic_paid_meta_autonomy_v\d+$/i.test(String(draft.model || '')));
 }
 
-function selectFastDeterministicPaidMetaProgression({ metaAdOpeningTurn = false, draft = null } = {}) {
+function selectFastDeterministicPaidMetaProgression({ metaAdOpeningTurn = false, draft = null, requiresMediaAnalysis = false } = {}) {
+    if (requiresMediaAnalysis) return null;
     // A fresh verified ad referral or repeatable internal BALANCE opener is a
     // hard episode boundary. A still-coalescing "yes" from the prior episode
     // must never outrank the new opener and resend its preview/checkout handoff.
@@ -8242,7 +8243,12 @@ exports.handler = async (event) => {
             && String(exactPaidMetaHandoff?.replyMode || '') === 'campaign_sales_progression'))
         ? exactPaidMetaHandoff
         : null;
+    const requiresInboundMediaAnalysis = buildMediaReviewInfo({
+        message_preview: messageText,
+        recent_inbound_messages: recentInboundMessages,
+    }).required;
     const fastDeterministicProgression = selectFastDeterministicPaidMetaProgression({
+        requiresMediaAnalysis: requiresInboundMediaAnalysis,
         metaAdOpeningTurn,
         draft: earlyDeterministicProgression,
     });
@@ -8363,7 +8369,7 @@ exports.handler = async (event) => {
     });
     let draft;
     try {
-        draft = fastDeterministicProgression || (metaAdOpeningTurn
+        draft = fastDeterministicProgression || (!requiresInboundMediaAnalysis && metaAdOpeningTurn
             && (metaAdFlowVariant === 'broad_pain' || shouldUseDeterministicMetaAdFirstReply(messageText)) ? buildMetaAdFoundersPassFirstReply(messageText, {
             customData: thread.custom_data,
             flowVariant: metaAdFlowVariant,
@@ -9903,6 +9909,7 @@ exports.handler = async (event) => {
         };
     }
     if (!autoHoldReason && autoSendEnabled
+        && !metaAdConversationFastLane
         && personalVoicePlan.manualNativeVoiceReason === 'inbound_voice_requires_manual_route') {
         autoHoldReason = {
             code: 'voice_reply_route_unavailable',
