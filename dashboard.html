@@ -181,7 +181,7 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
 <!-- CRITICAL: Admin view-as localStorage isolation — runs BEFORE any other localStorage reads -->
 <script src="js/dashboard/script_part_1.js"></script>
 <!-- Paid-Facebook preview attribution must be available before auth-guard decides guest vs member mode. -->
-<script src="lib/meta-ad-trial.js?v=21-weekly-six-week-minimum"></script>
+<script src="lib/meta-ad-trial.js?v=22-learn-launch-pricing"></script>
 
 <!-- CRITICAL: Hide loading overlay for returning users and restore cached FitGotchi state -->
 <script>
@@ -749,10 +749,10 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
         <h3 id="meta-ad-trial-gate-title" style="margin:0 0 10px; font-size:1.35rem; line-height:1.2; color:#151515; -webkit-text-fill-color:#151515; font-family:'Montserrat',sans-serif;">Start your personalised six weeks</h3>
         <p style="color:#5f5a50; -webkit-text-fill-color:#5f5a50; font-size:0.95rem; margin:0 0 12px; line-height:1.5;">You have seen how your first week works. Start Balance Learn to keep your setup and have Shannon help adjust it around real life.</p>
         <div role="group" aria-label="Choose how to pay" style="display:flex; gap:6px; padding:5px; border:1px solid #cfc8ba; border-radius:14px; margin:0 0 14px;">
-            <button type="button" data-learn-payment="balance_meta_foundations_pass" aria-pressed="true" onclick="window.BalanceMetaAdTrial.selectPaymentOption('balance_meta_foundations_pass')" style="flex:1; min-height:56px; border:0; border-radius:10px; background:#171923; color:#fff; -webkit-text-fill-color:#fff; font-weight:800; cursor:pointer;">Pay upfront<br><span style="font-size:.85rem;">$149 once</span></button>
+            <button type="button" data-learn-payment="balance_meta_foundations_pass" aria-pressed="true" onclick="window.BalanceMetaAdTrial.selectPaymentOption('balance_meta_foundations_pass')" style="flex:1; min-height:56px; border:0; border-radius:10px; background:#171923; color:#fff; -webkit-text-fill-color:#fff; font-weight:800; cursor:pointer;">Pay upfront<br><span id="learn-upfront-price-label" style="font-size:.85rem;">See current price</span></button>
             <button type="button" data-learn-payment="balance_learn_weekly" aria-pressed="false" onclick="window.BalanceMetaAdTrial.selectPaymentOption('balance_learn_weekly')" style="flex:1; min-height:56px; border:0; border-radius:10px; background:#fffdf8; color:#171923; -webkit-text-fill-color:#171923; font-weight:800; cursor:pointer;">Subscribe weekly<br><span style="font-size:.85rem;">$24.83 / week</span></button>
         </div>
-        <p id="meta-ad-trial-price-copy" style="color:#151515; -webkit-text-fill-color:#151515; font-size:1.05rem; margin:0 0 18px; font-weight:800;">One AUD $149 payment for the full six weeks. No subscription or automatic renewal.</p>
+        <p id="meta-ad-trial-price-copy" style="color:#151515; -webkit-text-fill-color:#151515; font-size:1.05rem; margin:0 0 18px; font-weight:800;">One upfront payment for the full six weeks. No subscription or automatic renewal.</p>
         <div id="meta-ad-trial-personal-summary" style="display:grid; gap:7px; margin:0 0 14px; text-align:left;" aria-label="Your Balance setup">
             <div style="padding:10px 12px; border-radius:11px; background:#faf6ec; border:1px solid #eadfc8; color:#37332d; -webkit-text-fill-color:#37332d; font-size:.8rem; line-height:1.35;"><strong>Your goal:</strong> <span data-summary="goal">a repeatable first six weeks</span></div>
             <div style="padding:10px 12px; border-radius:11px; background:#faf6ec; border:1px solid #eadfc8; color:#37332d; -webkit-text-fill-color:#37332d; font-size:.8rem; line-height:1.35;"><strong>Your training:</strong> <span data-summary="training">a realistic weekly workout plan</span></div>
@@ -774,7 +774,7 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
         <input id="meta-ad-trial-email" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" style="width:100%; box-sizing:border-box; border:1px solid #cfc8ba; background:#ffffff; color:#151515; -webkit-text-fill-color:#151515; padding:13px 12px; border-radius:11px; font-size:1rem; margin:0 0 14px;">
         <label style="display:flex; align-items:flex-start; gap:9px; text-align:left; color:#5f5a50; -webkit-text-fill-color:#5f5a50; font-size:0.72rem; line-height:1.4; margin:0 0 14px;">
             <input id="meta-ad-trial-terms" type="checkbox" style="margin:2px 0 0; width:17px; height:17px; flex:0 0 auto; accent-color:#111111;">
-            <span>I agree to the <a href="terms.html" target="_blank" rel="noopener" style="color:#166534; -webkit-text-fill-color:#166534;">Terms</a>, <a href="privacy.html" target="_blank" rel="noopener" style="color:#166534; -webkit-text-fill-color:#166534;">Privacy Policy</a>, <a href="client-agreement.html" target="_blank" rel="noopener" style="color:#166534; -webkit-text-fill-color:#166534;">Client Agreement</a> and <a href="refund-policy.html" target="_blank" rel="noopener" style="color:#166534; -webkit-text-fill-color:#166534;">Refund Policy</a>. <span id="meta-ad-trial-terms-price">One AUD $149 payment covers the full six weeks and does not renew automatically.</span></span>
+            <span>I agree to the <a href="terms.html" target="_blank" rel="noopener" style="color:#166534; -webkit-text-fill-color:#166534;">Terms</a>, <a href="privacy.html" target="_blank" rel="noopener" style="color:#166534; -webkit-text-fill-color:#166534;">Privacy Policy</a>, <a href="client-agreement.html" target="_blank" rel="noopener" style="color:#166534; -webkit-text-fill-color:#166534;">Client Agreement</a> and <a href="refund-policy.html" target="_blank" rel="noopener" style="color:#166534; -webkit-text-fill-color:#166534;">Refund Policy</a>. <span id="meta-ad-trial-terms-price">One upfront payment covers the full six weeks and does not renew automatically.</span></span>
         </label>
         <div id="meta-ad-trial-error" role="alert" style="display:none; color:#b42318; -webkit-text-fill-color:#b42318; background:#fef3f2; border:1px solid #fecdca; border-radius:9px; padding:9px; font-size:0.76rem; line-height:1.35; margin:0 0 12px;"></div>
         <button id="meta-ad-trial-checkout-btn" type="button" onclick="window.BalanceMetaAdTrial.beginCheckout()" style="width:100%; background:#111111; color:#ffffff; -webkit-text-fill-color:#ffffff; border:none; padding:15px; border-radius:12px; font-size:1rem; font-weight:800; cursor:pointer; font-family:'Montserrat',sans-serif;">START MY SIX WEEKS</button>
@@ -16753,7 +16753,7 @@ window.endFeatureTour = function(skipped){
     tab: 'dashboard',
     sel: '#guest-mode-banner',
     title: 'Five minutes to explore',
-    body: 'Your preview clock starts after onboarding. Explore Balance, then choose whether to start the full six-week course with one AUD $149 payment.',
+    body: 'Your preview clock starts after onboarding. Explore Balance, then choose whether to start the full six-week course with one upfront payment.',
     condition: function(){ return window.metaAdTrialMode === true; }
   });
   allFeatures.push({

@@ -1,3 +1,4 @@
+import { getLearnCoursePricing } from "../../../lib/learn-course-pricing.js";
 const DEFAULT_SITE_ORIGIN = "https://plantbased-balance.org";
 const NETLIFY_HOST_SUFFIX = ".netlify.app";
 const ALLOWED_HOSTS = new Set([
@@ -74,7 +75,7 @@ const BALANCE_FOUNDATIONS_SIX_WEEK_OFFER = Object.freeze({
     token: "balance_vegan_founders_pass",
     productName: "Balance Learn",
     productDescription: "Six-week Balance Learn course with one weekly check-in, plan review, app access, and support from Shannon",
-    unitAmount: 14900,
+    unitAmount: 15000,
     currency: "AUD",
     interval: null,
     balanceProduct: "balance_vegan_founders_pass",
@@ -191,9 +192,14 @@ const BALANCE_CHECKOUT_PLANS = Object.freeze({
     balance_meta_foundations_pass: BALANCE_FOUNDATIONS_SIX_WEEK_OFFER,
 });
 
-export function getBalanceCheckoutPlan(priceId) {
+export function getBalanceCheckoutPlan(priceId, now = new Date()) {
     const plan = BALANCE_CHECKOUT_PLANS[String(priceId || "")];
     if (!plan) throw new CheckoutGuardError("Invalid checkout plan.", 400);
+    if (plan === BALANCE_FOUNDATIONS_SIX_WEEK_OFFER) {
+        const pricing = getLearnCoursePricing(now);
+        return Object.freeze({ ...plan, ...pricing,
+            checkoutDisclosure: `One AUD $${pricing.unitAmount / 100} payment for the full six-week Balance Learn course, app access and weekly check-ins. No automatic renewal.` });
+    }
     return plan;
 }
 

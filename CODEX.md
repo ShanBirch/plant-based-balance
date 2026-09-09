@@ -16,13 +16,13 @@ This file is the durable handoff context for Codex sessions. Read it at the star
 
 ## Balance Learn introductory pricing (9 September 2026)
 
-Shannon set the planned standard upfront six-week Learn course price to AUD $749. Current AUD $149 is the introductory upfront price (approximately 80% below the planned standard price). Describe $749 as planned, not a previously charged price. No launch deadline or price-rise date has been set. Checkout remains $149 upfront; weekly membership remains $24.83 with existing terms.
+Latest confirmed decision: the complete six-week Learn package, including weekly check-ins and plan review, is AUD $150 upfront through 8 October 2026 Brisbane time. New upfront purchases become AUD $450 at midnight on 9 October 2026. This is a month-long launch sales window, not a one-month course or a recurring charge. The earlier $749 planned price and 80% comparison are retired. Existing purchases keep their entitlements. The separate $24.83 weekly Learn membership and Zoom PT prices are unchanged. The shared lib/learn-course-pricing.js schedule controls the server price. Public pages use the live offer endpoint to display the current amount.
 
-Shannon confirmed that all coaching packages also include Balance Learn course access. Do not describe the course as exclusive to the six-week Learn offer. This includes Online Coaching and Zoom PT; it does not add coaching inclusions to self-directed App Access.
+Shannon confirmed all coaching packages also include Balance Learn course access, including Online Coaching and Zoom PT.
 
 ## Current public offer naming (9 September 2026)
 
-Shannon retired the public Founders Pass name. Use **Balance Learn** for the AUD $149 six-week course and **App Access** for the AUD $19.99/month membership. Balance Learn also offers AUD $24.83/week with a six-week minimum (AUD $148.98 minimum total), continuing weekly thereafter with the same support and cancellation before the next payment without additional notice after the minimum. Other prices, inclusions, initial coaching terms and existing lifetime entitlements are unchanged. `/founders` remains a compatible public entry URL and internal Stripe/plan IDs remain unchanged. The offer comparison page groups Learn, Online Coaching, Zoom PT and App Access into expandable sections. Historical references below describe the same course; do not reintroduce the retired name into public copy.
+Shannon retired the public Founders Pass name. Use **Balance Learn** for the AUD $150 introductory six-week course and **App Access** for the AUD $19.99/month membership. Balance Learn also offers AUD $24.83/week with a six-week minimum (AUD $148.98 minimum total), continuing weekly thereafter with the same support and cancellation before the next payment without additional notice after the minimum. Other prices, inclusions, initial coaching terms and existing lifetime entitlements are unchanged. `/founders` remains a compatible public entry URL and internal Stripe/plan IDs remain unchanged. The offer comparison page groups Learn, Online Coaching, Zoom PT and App Access into expandable sections. Historical references below describe the same course; do not reintroduce the retired name into public copy.
 
 ## Product And Business
 

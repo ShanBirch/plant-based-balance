@@ -1,3 +1,4 @@
 .learn-intro-price { display: flex; flex-wrap: wrap; align-items: center; gap: 7px 12px; max-width: 680px; margin: 14px 0 20px; padding: 14px 16px; border: 1px solid #d5bc83; border-radius: 14px; background: #fff7e4; color: #463616; -webkit-text-fill-color: #463616; font: 600 14px/1.5 Inter, sans-serif; text-align: left; }
 .learn-intro-price strong { font-weight: 800; color: #463616; -webkit-text-fill-color: #463616; }
 .learn-intro-price .intro-saving { display: block; flex-basis: 100%; font-size: 13px; }
+[data-learn-upfront] { font: inherit !important; letter-spacing: inherit !important; color: inherit !important; -webkit-text-fill-color: inherit !important; }
