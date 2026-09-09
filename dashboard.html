@@ -13381,6 +13381,8 @@ if(!window._pbbIsIOSSafari) {
 <!-- ========== GUIDED FEATURE TOUR ========== -->
 <style>
   #guided-tour-overlay { position: fixed; inset: 0; z-index: 400000; pointer-events: auto; display: none; }
+  #view-active-workout.tour-workout-docked { height:calc(100dvh - var(--tour-workout-dock)) !important; max-height:calc(100vh - var(--tour-workout-dock)) !important; overflow-y:auto !important; }
+  #guided-tour-overlay.tour-workout-dock #guided-tour-bubble { width:min(420px,calc(100% - 24px)); max-width:420px; box-sizing:border-box; }
   #guided-tour-overlay.active { display: block; }
   #guided-tour-overlay.tour-tap-target,
   #guided-tour-overlay.tour-action-required:not(.tour-gate-complete) { pointer-events: none; }
@@ -14938,6 +14940,8 @@ if (step && step.requiresFeedPost) {
   }
 
   function resetTourTemporaryTargets(){
+    document.getElementById('view-active-workout')?.classList.remove('tour-workout-docked');
+    document.getElementById('guided-tour-overlay')?.classList.remove('tour-workout-dock');
     document.getElementById('guided-tour-below-space')?.remove();
     var ptr = document.getElementById('ptr-indicator');
     if (ptr && ptr.dataset.tourPreview === '1') {
@@ -15091,6 +15095,37 @@ if (step && step.requiresFeedPost) {
     bubble.style.bottom = '';
     bubble.style.maxHeight = '';
     bubble.style.overflowY = '';
+
+    // Reserve a separate lower region: guidance must never cover the video,
+    // exercise arrows or set inputs, even when the viewport is short.
+    const workoutView = document.getElementById('view-active-workout');
+    const workoutDock = !!(step && step.workoutEducation && workoutView && target && target.closest('#view-active-workout'));
+    if (overlay) overlay.classList.toggle('tour-workout-dock', workoutDock);
+    if (workoutView) workoutView.classList.toggle('tour-workout-docked', workoutDock);
+    if (workoutDock) {
+      spot.style.opacity = '1';
+      bubble.style.opacity = '';
+      const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      bubble.style.maxHeight = Math.floor(vh * .34) + 'px';
+      bubble.style.overflowY = 'auto';
+      bubble.style.top = 'auto';
+      bubble.style.bottom = 'calc(12px + env(safe-area-inset-bottom, 0px))';
+      bubble.style.left = '50%';
+      bubble.style.transform = 'translateX(-50%)';
+      const dockTop = bubble.getBoundingClientRect().top;
+      workoutView.style.setProperty('--tour-workout-dock', Math.ceil(window.innerHeight - dockTop + 12) + 'px');
+      const bounds = workoutView.getBoundingClientRect();
+      let rect = target.getBoundingClientRect();
+      if (rect.bottom > bounds.bottom - 10 || rect.top < bounds.top + 72) {
+        scrollTourTargetBy(target, rect.top - bounds.top - 90);
+        rect = target.getBoundingClientRect();
+      }
+      spot.style.top = Math.max(bounds.top,rect.top - 6) + 'px';
+      spot.style.left = Math.max(8,rect.left - 6) + 'px';
+      spot.style.width = Math.min(rect.width + 12,window.innerWidth - 16) + 'px';
+      spot.style.height = Math.max(0,Math.min(rect.height + 12,bounds.bottom - Math.max(bounds.top,rect.top - 6))) + 'px';
+      return;
+    }
 
     if (step && step.featureView) {
       spot.style.opacity = '0';
