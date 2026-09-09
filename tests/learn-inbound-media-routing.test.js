@@ -9,6 +9,10 @@ test('decoded voice preview consent sends the signed link and preserves analysis
   assert.equal(result.appPreviewHandoff,true);
   assert.equal(result.mediaDecode,mediaDecode);
   assert.doesNotMatch(result.joined,/your goal/);
+  const approval = _test.buildPaidMetaConversationApproval({metaAdConversationFastLane:true,draft:result,currentMessage:'[voice note]'});
+  assert.equal(approval?.required,false);
+  assert.equal(approval?.code,'approved_meta_ad_sales_progression');
+  assert.equal(_test.buildPaidMetaConversationApproval({metaAdConversationFastLane:true,draft:result,currentMessage:'Do not send me the preview.'}),null);
 });
 
 test('incomplete audio analysis and typed declines cannot trigger voice handoffs', () => {

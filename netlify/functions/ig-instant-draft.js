@@ -3219,7 +3219,11 @@ function buildPaidMetaConversationApproval({
     qualifier = {},
     history = [],
 } = {}) {
-    const message = String(currentMessage || '').trim();
+    const decodedAudio = draft?.mediaDecode?.analysis_complete === true
+        && draft?.mediaDecode?.analysis_succeeded !== false
+        ? (draft.mediaDecode.audio_transcripts || []).map(item => String(item?.text || '').trim()).filter(Boolean)
+        : [];
+    const message = [String(currentMessage || '').trim(), ...new Set(decodedAudio)].filter(Boolean).join('\n');
     const verifiedExplicitPreviewHandoff = draft?.replyMode === 'campaign_app_preview_handoff'
         && draft?.appPreviewHandoff === true
         && isMetaAppPreviewUrl(draft?.appPreviewUrl)
