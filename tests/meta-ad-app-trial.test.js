@@ -416,14 +416,14 @@ test('dashboard, signup, native handoffs, measurement, and both discovery system
     assert.match(foundersLanding, /Download Balance for Android/);
     assert.match(foundersLanding, /Already installed\? Open my personalised preview/);
     assert.match(foundersLanding, /com\.fitgotchi\.app:\/\/meta-trial\?/);
-    assert.match(foundersLanding, /Download Balance, create your free account, then complete your personalised setup and guided tour without leaving the app/);
+    assert.match(foundersLanding, /Create your free account, set up your training and food preferences, then take the guided preview before deciding whether to pay/);
     assert.match(foundersLanding, /pbb_meta_trial=/);
     assert.match(foundersLanding, /referrer=/);
     assert.doesNotMatch(foundersLanding, /return to this website page/);
     assert.doesNotMatch(foundersLanding, /var appUrl = '\/dashboard\.html\?/);
     assert.match(foundersLanding, /data-plan="founders-pass"/);
     assert.doesNotMatch(foundersLanding, /AU\$89\.99/);
-    assert.match(dashboard, /One AUD \$149 payment for the full six weeks\. No subscription or automatic renewal\./);
+    assert.match(dashboard, /One upfront payment for the full six weeks\. No subscription or automatic renewal\./);
     assert.match(source, /get-checkout-offer\?priceId=/);
     assert.match(foundersClaim, /FOUNDERS_PLAN = "balance_foundations_six_week"/);
     assert.match(logger, /'trial_gate_shown'/);
@@ -451,4 +451,15 @@ test('weekly option resets consent and sends the recurring plan through Checkout
     const request = app.events.find(event => event.event_type === 'checkout_request');
     assert.equal(request.body.priceId, 'balance_learn_weekly');
     assert.equal(request.body.compliance.plan_key, 'balance_learn_weekly');
+});
+
+test('website Learn starts the account-first preview and keeps website attribution', () => {
+    const website = runTrial('?account_first=1&meta_trial=facebook_5m_foundations_v3&learn_entry=website&utm_source=website&utm_medium=organic');
+    assert.equal(website.window.metaAdTrialMode, true);
+    assert.notEqual(website.sessionStorage.getItem('guestMode'), 'true');
+    assert.equal(website.window.BalanceMetaAdTrial.isActive(), true);
+    const handoff = require('../lib/ios-meta-preview-handoff.js');
+    const query = 'account_first=1&meta_trial=facebook_5m_foundations_v3&learn_entry=website&utm_source=website&utm_medium=organic';
+    assert.match(handoff.buildNativePreviewUrl(query), /^com\.fitgotchi\.app:\/\/meta-trial\?/);
+    assert.equal(handoff.buildNativePreviewUrl('account_first=1&meta_trial=facebook_5m_foundations_v3&utm_source=website'), '');
 });

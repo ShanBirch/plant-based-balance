@@ -20,6 +20,10 @@ Latest confirmed decision: the complete six-week Learn package, including weekly
 
 Shannon confirmed all coaching packages also include Balance Learn course access, including Online Coaching and Zoom PT.
 
+## Website Learn onboarding (9 September 2026)
+
+The public Learn page now starts the same account-first setup and guided preview as the Meta route before offering payment. Ordinary website entry carries `learn_entry=website` and retains genuine attribution rather than pretending to be a paid ad. Desktop opens signup with the preview query; mobile uses the existing app-store/native handoff. Website iPhone visitors return to the Learn page after installation and tap Open my personalised preview. Signed Instagram recovery and existing member protection remain intact.
+
 ## Current public offer naming (9 September 2026)
 
 Shannon retired the public Founders Pass name. Use **Balance Learn** for the AUD $150 introductory six-week course and **App Access** for the AUD $19.99/month membership. Balance Learn also offers AUD $24.83/week with a six-week minimum (AUD $148.98 minimum total), continuing weekly thereafter with the same support and cancellation before the next payment without additional notice after the minimum. Other prices, inclusions, initial coaching terms and existing lifetime entitlements are unchanged. `/founders` remains a compatible public entry URL and internal Stripe/plan IDs remain unchanged. The offer comparison page groups Learn, Online Coaching, Zoom PT and App Access into expandable sections. Historical references below describe the same course; do not reintroduce the retired name into public copy.

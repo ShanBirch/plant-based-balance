@@ -413,9 +413,9 @@
                 <p class="hero-copy"><strong>Balance Learn helps you understand change, build better habits, and create a way of eating you can maintain.</strong> Each week turns practical behaviour-change and neuroscience principles into actions you can use through training, food and real-life review with Shannon.</p>
                 <div class="learn-intro-price"><strong>Introductory package: AUD <span data-learn-upfront>$150</span> for six weeks</strong><span>AUD $450 from 9 October 2026</span><span class="intro-saving">Launch price available through 8 October 2026, Brisbane time. Includes Balance Learn, weekly check-ins, plan review and six weeks of app access.</span></div><div class="price-line"><div class="price">AU<span data-learn-upfront>$150</span></div><div class="price-note">one payment for the complete six weeks</div></div>
                 <a class="cta" id="foundations-hero-action" href="/founders#join" data-track="cta_click">Start Balance Learn</a>
-                <p class="micro" id="foundations-hero-microcopy">Six weeks with Shannon in your corner. One payment. No automatic renewal with upfront payment.</p>
-                <div class="paid-preview-route" id="paid-preview-route" aria-label="Balance preview steps"><span>Download Balance</span><span>Create your account</span><span>Set up your plan</span><span>Take the guided tour</span></div>
-                <div class="paid-preview-downloads" id="paid-preview-downloads">
+                <p class="micro" id="foundations-hero-microcopy">Set up your plan and explore the guided preview before paying. Start here on the website; no Instagram link needed.</p>
+                <div class="paid-preview-route" id="paid-preview-route" aria-label="Balance preview steps"><span>Download Balance</span><span>Create your account</span><span>Set up your plan</span><span>Preview before paying</span></div>
+                <div class="paid-preview-downloads" id="paid-preview-downloads"><p><strong>Try the setup and guided preview before paying.</strong> You can start directly from this website. Create your free account, personalise your plan and explore Balance, then choose whether to join the six-week course.</p>
                     <p id="paid-preview-instructions">Download Balance and create your free account. On Android, your secure preview can continue through installation. If you are installing on iPhone for the first time, use the return step below so your personalised preview stays connected.</p>
                     <div class="paid-preview-store-row">
                         <a class="paid-preview-store" id="paid-preview-ios" href="https://apps.apple.com/us/app/balance-fitness-gamified/id6761238161" data-track="cta_click">Download for iPhone</a>
@@ -597,7 +597,7 @@
     </footer>
     <script src="analytics.js"></script>
     <script src="checkout.js?v=learn-launch-20260909"></script>
-    <script src="lib/ios-meta-preview-handoff.js?v=1"></script>
+    <script src="lib/ios-meta-preview-handoff.js?v=2-website"></script>
     <script>
         (function () {
             var params = new URLSearchParams(window.location.search);
@@ -616,7 +616,12 @@
             var medium = (params.get('utm_medium') || '').trim().toLowerCase();
             var paidMetaSources = ['facebook', 'fb', 'instagram', 'ig', 'meta'];
             var paidMetaMedia = ['paid_social', 'paid', 'cpc'];
-            if (paidMetaSources.indexOf(source) === -1 || paidMetaMedia.indexOf(medium) === -1) return;
+            var isPaidMeta = paidMetaSources.indexOf(source) !== -1 && paidMetaMedia.indexOf(medium) !== -1;
+            if (!isPaidMeta) {
+                params.set('learn_entry', 'website');
+                if (!source) params.set('utm_source', 'website');
+                if (!medium) params.set('utm_medium', 'organic');
+            }
 
             params.delete('guest');
             params.set('account_first', '1');
@@ -627,8 +632,9 @@
             var playReferrer = 'pbb_meta_trial=' + encodeURIComponent(params.toString());
             var playStoreUrl = playStoreBaseUrl + '&referrer=' + encodeURIComponent(playReferrer);
             var isAndroidDevice = /Android/i.test(navigator.userAgent || '');
-            var primaryStoreUrl = isAppleDevice ? appStoreUrl : (isAndroidDevice ? playStoreUrl : '#paid-preview-downloads');
-            var primaryStoreLabel = isAppleDevice ? 'Download Balance for iPhone' : (isAndroidDevice ? 'Download Balance for Android' : 'Choose your app store');
+            var webPreviewUrl = '/login.html?action=signup&' + params.toString();
+            var primaryStoreUrl = isAppleDevice ? appStoreUrl : (isAndroidDevice ? playStoreUrl : webPreviewUrl);
+            var primaryStoreLabel = isAppleDevice ? 'Download Balance for iPhone' : (isAndroidDevice ? 'Download Balance for Android' : 'Set up my plan & preview Balance');
             var nativePreviewUrl = isAppleDevice && iosHandoff
                 ? iosHandoff.buildNativePreviewUrl(params)
                 : 'com.fitgotchi.app://meta-trial?' + params.toString();
@@ -687,9 +693,11 @@
             if (microcopy) {
                 microcopy.textContent = isAppleDevice
                     ? 'Install Balance, return here once, then open your secure personalised preview for setup and the guided tour.'
-                    : 'Download Balance, create your free account, then complete your personalised setup and guided tour without leaving the app.';
+                    : 'Create your free account, set up your training and food preferences, then take the guided preview before deciding whether to pay.';
             }
             if (checkoutTerms) checkoutTerms.style.display = 'none';
+            var secureNote = document.querySelector('.secure-note');
+            if (secureNote) secureNote.textContent = 'Create your free account, complete your personalised setup and guided preview, then decide whether to join Balance Learn. Payment comes after the preview.';
             if (checkoutButton) {
                 checkoutButton.textContent = primaryStoreLabel;
                 checkoutButton.addEventListener('click', function (event) {
