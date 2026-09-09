@@ -7,6 +7,8 @@ test('focused course questions answer only requested facts', () => {
  assert.match(draft.joined,/31 lessons/);
  assert.match(draft.joined,/Week 4: take the fight out of food/);
  assert.doesNotMatch(draft.joined,/Week [12356]:|Certificate/);
+ const review=require('../netlify/functions/ig-instant-draft')._test;
+ assert.deepEqual(review.collectPaidMetaWriterContractIssues({draft,currentMessage:'How many lessons are there and what is week 4 about?',flowVariant:'broad_pain'}).filter(review.isBlockingPaidMetaWriterContractIssue),[]);
  assert.match(build({...base,currentMessage:'What is the week-by-week curriculum?'}).joined,/Week 6:/);
 });
 test('short acceptance delivers the offered preview across natural invitation wording', () => {

@@ -5175,8 +5175,10 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
     if (/\b(?:six|6)\s+lessons\b/i.test(reply)) issues.push('Incorrect Learn lesson count: there are 31 lessons, not six; six is the number of weeks.');
     const broadFlow = flowVariant === 'broad_pain';
     const autonomyPause = broadFlow && hasPaidMetaPreviewOrPriceDecline(turn);
-    const asksForCurriculumOutline = META_AD_CURRICULUM_QUESTION_RE.test(turn)
-        || /\b(?:what do i (?:actually )?learn|what (?:will|do) (?:i|you) learn|what does (?:the )?course teach|week[ -]?by[ -]?week|curriculum|six[- ]week (?:course|outline)|course (?:content|lessons?))\b/i.test(turn);
+    const focusedCourseFact = /\b(?:how many lessons|certificate|week [1-6])\b/i.test(turn)
+        && !/\b(?:curriculum|week[ -]?by[ -]?week|each.*six weeks|all (?:the )?weeks|full.*outline|what (?:will|do) i learn)\b/i.test(turn);
+    const asksForCurriculumOutline = !focusedCourseFact && (META_AD_CURRICULUM_QUESTION_RE.test(turn)
+        || /\b(?:what do i (?:actually )?learn|what (?:will|do) (?:i|you) learn|what does (?:the )?course teach|week[ -]?by[ -]?week|curriculum|six[- ]week (?:course|outline)|course (?:content|lessons?))\b/i.test(turn));
     const asksOfferInfo = /\b(?:how much|price|cost|renew|what(?:'s| is) included|what do i get|do i (?:actually )?get|workouts?|meal plan|check[ -]?in|details|how (?:does|do) (?:it|the program) work)\b/i.test(turn);
     const asksMealPlanQuestion = /\bdo you (?:offer|have|provide|include) (?:a |any )?(?:plant[ -]?based )?meal plans?\b|\bis (?:a |the )?meal plan included\b/i.test(turn);
     const asksGlutenFreeSupport = /\bgluten[ -]?free\b/i.test(turn)
