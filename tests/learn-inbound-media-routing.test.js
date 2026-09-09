@@ -6,7 +6,7 @@ const {_test} = require('../netlify/functions/ig-instant-draft');
 test('free personalised preview requests send the card and explicit declines do not', () => {
   const options={flowVariant:'broad_pain',appPreviewUrl:'https://future-balance.netlify.app/p/Test_123-xyz9876543210'};
   const mediaDecode={analysis_complete:true};
-  for(const currentMessage of ['Can you just send me the free app preview first? I want to look before deciding.','Please show me my free personalised app preview.']) {
+  for(const currentMessage of ['Can you just send me the free app preview first? I want to look before deciding.','Please show me my free personalised app preview.','Actually, I would like the app preview now. Please send it.']) {
     assert.equal(_test.applyDecodedPaidMetaAudioHandoff({mediaDecode},{...options,currentMessage}).appPreviewHandoff,true);
   }
   assert.ok(!_test.applyDecodedPaidMetaAudioHandoff({mediaDecode},{...options,currentMessage:"Do not send me the free app preview."}).appPreviewHandoff);
