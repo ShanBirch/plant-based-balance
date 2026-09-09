@@ -100,3 +100,11 @@ test('an already delivered offer survives media and preview bubbles in history',
  const draft=build({...base,currentMessage:'I keep starting and stopping',history});
  assert.notEqual(draft?.model,'deterministic_paid_meta_guided_sales_v1');
 });
+
+test('a typo goal remains known when the next message is a vague blocker', () => {
+ const history=[{direction:'in',text:'loose wieght'},{direction:'out',text:'This is Ally.'},{direction:'out',text:'[IMAGE:approved]'},{direction:'out',text:'What usually gets in the way of making that happen consistently?'}];
+ const draft=build({...base,currentMessage:'dunno. all of it tbh',history});
+ assert.ok(draft.videoAttachmentUrl);
+ assert.match(draft.joined,/149/);
+ assert.doesNotMatch(draft.joined,/what.*gets in the way/i);
+});
