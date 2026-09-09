@@ -5158,6 +5158,7 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
         return [];
     }
     const issues = [];
+    if (/\b(?:six|6)\s+lessons\b/i.test(reply)) issues.push('Incorrect Learn lesson count: there are 31 lessons, not six; six is the number of weeks.');
     const broadFlow = flowVariant === 'broad_pain';
     const autonomyPause = broadFlow && hasPaidMetaPreviewOrPriceDecline(turn);
     const asksForCurriculumOutline = META_AD_CURRICULUM_QUESTION_RE.test(turn)
@@ -5343,7 +5344,7 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
 }
 
 function isBlockingPaidMetaWriterContractIssue(issue = '') {
-    return /repeated a question|directly asked whether|answer why Shannon went vegan|meal-plan question directly|gluten-free question directly|sales suspicion|answer the sales question|answer the price exactly|do not ask for an email|offered checkout without explicit transactional intent|ignored the supplied plant-based duration|broad paid-ad reply|answered the goal question|full six-week course outline|course answer must return|earned paid-Meta offer is missing/i.test(String(issue || ''));
+    return /Incorrect Learn lesson count|repeated a question|directly asked whether|answer why Shannon went vegan|meal-plan question directly|gluten-free question directly|sales suspicion|answer the sales question|answer the price exactly|do not ask for an email|offered checkout without explicit transactional intent|ignored the supplied plant-based duration|broad paid-ad reply|answered the goal question|full six-week course outline|course answer must return|earned paid-Meta offer is missing/i.test(String(issue || ''));
 }
 
 function filterVerifiedPreviewHandoffContractIssues({
@@ -5384,7 +5385,7 @@ function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = 
             && isPaidMetaConcreteBlocker(turn));
     let joined = '';
     let fixedChunks = null;
-    if (/full six-week course outline|course answer must return/i.test(issueText)) {
+    if (/Incorrect Learn lesson count|full six-week course outline|course answer must return/i.test(issueText)) {
         fixedChunks = [
             'There are 31 lessons: an introductory lesson, then 30 across six weeks. You earn a Certificate of Completion by finishing the required lessons and practical actions.',
             'Week 1, Why change feels hard. Week 2, Work with your energy. Week 3, Build a rhythm that sticks.',
@@ -9364,7 +9365,8 @@ exports.handler = async (event) => {
         const learningReelReviewContext = learningReelReviewText
             ? `\nRecent sent learning reel context:\n${truncate(learningReelReviewText, 1800)}`
             : '';
-        const reviewContextBlocks = `LATEST just-arrived ${channelLabel} message from ${leadName} (this is the message the draft must answer): "${reviewLatestForPrompt}"${mediaSummaryReviewContext}${audioTranscriptReviewContext}${priorText}${timelineText}${workoutText}${memoryText}${crossChannelText}${learningReelReviewContext}`;
+        const verifiedOfferContext = metaAdConversationFastLane ? '\nVERIFIED LEARN FACTS FOR REVIEW AND REPAIR: 31 lessons total: one introductory lesson plus 30 across six weeks. Certificate of Completion requires finishing the required lessons and practical actions; no accreditation claim. Week 1: Why change feels hard. Week 2: Work with your energy. Week 3: Build a rhythm that sticks. Week 4: Take the fight out of food. Week 5: Make progress easier to repeat. Week 6: Build your sustainable way forward. AUD $149 upfront for six weeks, no auto-renewal; alternatively AUD $24.83/week, six-week minimum AUD $148.98, continuing until cancelled. Preserve these facts when editing; answer only the facts asked for, without reciting the questions or adding a goal question already asked.' : '';
+        const reviewContextBlocks = `LATEST just-arrived ${channelLabel} message from ${leadName} (this is the message the draft must answer): "${reviewLatestForPrompt}"${mediaSummaryReviewContext}${audioTranscriptReviewContext}${priorText}${timelineText}${workoutText}${memoryText}${crossChannelText}${learningReelReviewContext}${verifiedOfferContext}`;
         const reviewTimeoutMs = cocosAutoSendLane ? COCOS_DRAFT_REVIEW_TIMEOUT_MS : IG_DRAFT_REVIEW_TIMEOUT_MS;
         const approvedDeterministicReview = buildApprovedDeterministicMetaAdFirstReplyReview({
             metaAdFirstInbound: metaAdOpeningTurn,

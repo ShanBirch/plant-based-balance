@@ -3,6 +3,12 @@ const assert = require('node:assert/strict');
 const {buildMediaReviewInfo} = require('../netlify/functions/_lib/client-context');
 const {_test} = require('../netlify/functions/ig-instant-draft');
 
+test('a media reply cannot silently change the course into six lessons', () => {
+  const issues=_test.collectPaidMetaWriterContractIssues({draft:{joined:'Balance Learn has 6 lessons, one for each week.'},currentMessage:'[video]',flowVariant:'broad_pain'});
+  assert.ok(issues.some(issue=>/Incorrect Learn lesson count/.test(issue)));
+  assert.ok(issues.some(_test.isBlockingPaidMetaWriterContractIssue));
+});
+
 test('decoded video speech and a typed follow-up can each authorize preview delivery', () => {
   const options={flowVariant:'broad_pain',appPreviewUrl:'https://future-balance.netlify.app/p/Test_123-xyz9876543210'};
   for (const [transcript,currentMessage] of [['Please send me the app preview.','[video]'],['','Please send me the app preview.']]) {
