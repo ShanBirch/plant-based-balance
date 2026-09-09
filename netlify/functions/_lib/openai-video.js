@@ -10,6 +10,7 @@ async function decodeVideo(inline, {binary, transcribe} = {}) {
     const bytes = Buffer.from(inline?.data || '', 'base64');
     if (!bytes.length || bytes.length > 25 * 1024 * 1024) throw new Error('Video is empty or exceeds the 25 MB analysis limit');
     const ffmpeg = binary || require('ffmpeg-static');
+    await fs.access(ffmpeg);
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'balance-video-'));
     const input = path.join(root, 'input.mp4');
     const options = {windowsHide:true, timeout:20000, maxBuffer:1024*1024};
@@ -18,10 +19,10 @@ async function decodeVideo(inline, {binary, transcribe} = {}) {
         await fs.writeFile(input, bytes);
         let probe = '';
         try { probe = (await run(ffmpeg, inputArgs, options)).stderr; }
-        catch (error) { probe = String(error.stderr || ''); }
+        catch (error) { probe = String(error.stderr || ''); if (!probe) throw new Error(`Video probe failed: ${error.code || error.message}`); }
         const time = probe.match(/Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)/);
         const duration = time ? Number(time[1])*3600+Number(time[2])*60+Number(time[3]) : 0;
-        if (!duration || duration > 120 || !/Video:/i.test(probe)) throw new Error('Video duration unavailable, no video stream, or clip exceeds two minutes');
+        if (!duration || duration > 120 || !/Video:/i.test(probe)) throw new Error(`Video duration unavailable, no video stream, or clip exceeds two minutes: ${probe.slice(-250)}`);
         const hasAudio = /Audio:/i.test(probe);
         const fps = Math.min(1, 24 / duration);
         await run(ffmpeg,[...inputArgs,'-an','-vf',`fps=${fps},scale=768:768:force_original_aspect_ratio=decrease`,'-frames:v','24','-q:v','4','-threads','1',path.join(root,'frame-%03d.jpg')],options);

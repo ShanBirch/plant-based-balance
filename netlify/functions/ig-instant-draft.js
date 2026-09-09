@@ -7028,6 +7028,7 @@ Rules:
             mediaDecode.video_processing = videoInput.videos;
         } catch (error) {
             lastError = `openai-video: ${String(error.message).slice(0,200)}`;
+            mediaDecode.video_processing_error = lastError;
             console.warn(`[ig-draft] ${lastError}; trying video-capable fallback`);
         }
     }
