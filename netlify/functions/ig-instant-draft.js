@@ -1410,16 +1410,17 @@ const PAID_META_PROGRAM_WORKS_RE = /\bhow does (?:the |your )?(?:program|founder
 
 function isPaidMetaConcreteBlocker(value = '') {
     const text = String(value || '');
-    return PAID_META_CONCRETE_BLOCKER_RE.test(text) || PAID_META_FOOD_CONFUSION_RE.test(text);
+    return PAID_META_CONCRETE_BLOCKER_RE.test(text) || PAID_META_FOOD_CONFUSION_RE.test(text) || /\bonly (?:have |manage )?(?:one|two|three|[1-3]) (?:days|evenings|sessions).*week\b/i.test(text);
 }
 
 function isPaidMetaStrongBlocker(value = '') {
     const text = String(value || '');
-    return PAID_META_STRONG_BLOCKER_RE.test(text) || PAID_META_FOOD_CONFUSION_RE.test(text);
+    return PAID_META_STRONG_BLOCKER_RE.test(text) || PAID_META_FOOD_CONFUSION_RE.test(text) || /\bonly (?:have |manage )?(?:one|two|three|[1-3]) (?:days|evenings|sessions).*week\b/i.test(text);
 }
 
 function isPaidMetaBroadBlockerAnswer(value = '', history = []) {
-    if (!PAID_META_BROAD_BLOCKER_RE.test(String(value || '').trim())) return false;
+    const answer = String(value || '').trim().replace(/^(?:dunno|not sure|I don['’]?t know)[.,!\s]*/i, '').replace(/\s+tbh[.!\s]*$/i, '');
+    if (!PAID_META_BROAD_BLOCKER_RE.test(answer)) return false;
     return (Array.isArray(history) ? history : [])
         .filter(message => String(message?.direction || '').toLowerCase() === 'out')
         .slice(-4)
@@ -1575,7 +1576,9 @@ function buildPaidMetaTailoredOfferChunks(blockerText = '', goalText = '', flowV
         : 'a plant-based meal plan';
     if (flowVariant === 'broad_pain') {
         let compactAcknowledgement = 'That makes sense.';
-        if (daysPerWeek && asksCanWork && wantsFatLossAndMuscle) {
+        if (/\b(?:can|could|do)\b[^.!?]{0,100}\b(?:home|dumbbells?)\b/i.test(turn)) {
+            compactAcknowledgement = 'Yep, your workouts can fit home training and the equipment you have, with a schedule you can repeat.';
+        } else if (daysPerWeek && asksCanWork && wantsFatLossAndMuscle) {
             compactAcknowledgement = `Yeah, ${daysPerWeek} days a week can work for losing fat and building muscle. Because big plans overwhelm you, keep those sessions focused.`;
         } else if (daysPerWeek && asksCanWork) {
             compactAcknowledgement = `Yeah, ${daysPerWeek} days a week can work. The plan needs to make those sessions focused and realistic.`;
@@ -1605,7 +1608,7 @@ function buildPaidMetaTailoredOfferChunks(blockerText = '', goalText = '', flowV
             compactAcknowledgement = 'If gym anxiety and random workouts make you stop, each session needs to feel clear and manageable.';
         } else if (/\b(?:gym anxiety|anxious|self-conscious|confidence)\b/i.test(turn)) {
             compactAcknowledgement = 'If gym anxiety is getting in the way, the plan needs to make each session feel clear and manageable.';
-        } else if (/\b(?:accountab|follow[ -]?through|fall off|stop|restart|consisten)\b/i.test(turn)) {
+        } else if (/\b(?:accountab\w*|follow[ -]?through|fall off|stop|restart|consisten\w*)\b/i.test(turn)) {
             compactAcknowledgement = 'If follow-through is the hard part, a clear plan and a weekly check-in matter.';
         } else if (/\b(?:overwhelm|too much information)\b/i.test(turn)) {
             compactAcknowledgement = 'If too much information leaves you stuck, the next step needs to be obvious.';
@@ -2119,6 +2122,7 @@ function buildDeterministicPaidMetaConversationReply({
     const priorHistoryHasGoal = paidMetaHistoryHasFitnessGoal(history);
     const historyHasGoal = hasGoal || priorHistoryHasGoal;
     const historyHasBlocker = hasBlocker || paidMetaHistoryHasConcreteBlocker(history);
+    const hasDeliveredProofPhoto = history.some(item => item?.direction === 'out' && /\[IMAGE:https:\/\//i.test(String(item.text || '')));
 
     const guidedReply = (chunks, attachments = {}) => ({
         chunks, joined: chunks.join('\n\n'), model: 'deterministic_paid_meta_guided_sales_v1',
@@ -2210,8 +2214,8 @@ function buildDeterministicPaidMetaConversationReply({
     if (broadFlow && PAID_META_FITNESS_GOAL_RE.test(message) && isPaidMetaStrongBlocker(message)) {
         const proof = resolvePaidMetaTransformationProof({ goalText: message });
         const offer = addPaidMetaProofVideoToOfferChunks(buildPaidMetaTailoredOfferChunks(message, message, flowVariant), history, flowVariant);
-        return guidedReply([...(proof && !priorHistoryHasGoal ? [proof.introduction] : []), ...offer.chunks], {
-            imageAttachmentUrl: proof && !priorHistoryHasGoal ? proof.imageUrl : null,
+        return guidedReply([...(proof && !hasDeliveredProofPhoto ? [proof.introduction] : []), ...offer.chunks], {
+            imageAttachmentUrl: proof && !hasDeliveredProofPhoto ? proof.imageUrl : null,
             videoAttachmentUrl: allowVideoAttachment ? offer.videoAttachmentUrl : null,
         });
     }

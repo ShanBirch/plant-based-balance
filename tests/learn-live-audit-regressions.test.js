@@ -50,3 +50,8 @@ test('a combined proof handoff delivers both image and video in introduction ord
   ],{imageUrl,videoUrl});
   assert.deepEqual(items.map(x=>x.kind),['text','image','text','video','text']);
 });
+
+test('rapid goal before the answer does not count as a delivered photo', () => {
+ const draft=build({...base,currentMessage:'I want to get stronger, but I only have two evenings a week. Can I train at home?',history:[{direction:'in',text:'I want to get stronger, but I only have two evenings a week.'}]});
+ assert.ok(draft.imageAttachmentUrl);
+});
