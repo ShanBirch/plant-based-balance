@@ -701,12 +701,13 @@ async function submitForReview(app, version, iapVersion) {
   if (!/^(1|true|yes)$/i.test(process.env.SUBMIT_FOR_REVIEW || 'false')) return;
   let submission;
   let existingItems = [];
-  let next = `/v1/apps/${app.id}/reviewSubmissions?limit=200`;
+  let next = `/v1/apps/${app.id}/reviewSubmissions?include=appStoreVersionForReview&limit=200`;
   while (next && !submission) {
     const page = await asc(next);
     for (const candidate of page.body.data || []) {
-      const items = await asc(`/v1/reviewSubmissions/${candidate.id}/items?limit=200`);
-      if ((items.body.data || []).some(item => item.relationships?.appStoreVersion?.data?.id === version.id)) {
+      const items = await asc(`/v1/reviewSubmissions/${candidate.id}/items?include=appStoreVersion,inAppPurchaseVersion&limit=200`);
+      console.log('Review submission contents:', JSON.stringify({id:candidate.id, state:candidate.attributes?.state, version:candidate.relationships?.appStoreVersionForReview?.data, items:items.body.data}));
+      if (candidate.relationships?.appStoreVersionForReview?.data?.id === version.id || (items.body.data || []).some(item => item.relationships?.appStoreVersion?.data?.id === version.id)) {
         submission = candidate;
         existingItems = items.body.data;
         break;
