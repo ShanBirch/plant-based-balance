@@ -72,7 +72,7 @@ function makeToken() {
 
 function formatErrors(body) {
   return (body?.errors || [])
-    .map((error) => [error.status, error.code, error.title, error.detail].filter(Boolean).join(' - '))
+    .map((error) => [error.status, error.code, error.title, error.detail, error.meta ? JSON.stringify(error.meta) : null].filter(Boolean).join(' - '))
     .join('\n');
 }
 
@@ -740,6 +740,7 @@ const app = await getApp();
 console.log(`Preparing ${app.attributes?.name || bundleId} (${app.id}).`);
 await updateAppDeclaration(app);
 const version = await getOrCreateVersion(app);
+console.log(`App Store version ${version.attributes?.versionString}: ${version.attributes?.appStoreState || version.attributes?.appVersionState || 'unknown'}.`);
 await updateVersion(version);
 await configureAppInfo(app);
 const localization = await getOrCreateVersionLocalization(version);
