@@ -13601,7 +13601,8 @@ if(!window._pbbIsIOSSafari) {
   #guided-tour-bubble .tour-back { background: #f1f5f9; color: #0f172a; }
   #guided-tour-bubble .tour-next { background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; }
   #guided-tour-bubble .tour-right { display: flex; gap: 8px; }
-  #guided-tour-overlay.tour-action-required:not(.tour-gate-complete) #guided-tour-bubble .tour-actions { display: none; }
+  #guided-tour-overlay.tour-action-required:not(.tour-gate-complete) #guided-tour-bubble .tour-next { display: none; }
+  #guided-tour-overlay #guided-tour-bubble .tour-actions { pointer-events: auto; }
   #guided-tour-overlay.tour-action-required:not(.tour-gate-complete) #guided-tour-bubble { padding-bottom: 16px; }
   #guided-tour-overlay.tour-action-required:not(.tour-gate-complete) #tour-gate-note { margin-bottom: 0; }
   /* In-section controls must remain the real tap target. On small phones the
@@ -14241,6 +14242,7 @@ if(!window._pbbIsIOSSafari) {
   let tourNextBlockedUntil = 0;
   let activePromptTargetCleanup = null;
   let tourRenderToken = 0;
+  let tourNavigationBusy = false;
   let tourPositionFrame = 0;
   let tourSettleTimer = 0;
   let activeTourDisplayStep = null;
@@ -14372,11 +14374,13 @@ if(!window._pbbIsIOSSafari) {
 
   function armPromptTarget(step, target, stepIndex){
     if (!step || !target) return false;
+    const promptToken = tourRenderToken;
     var busy = false;
     var expectedActionId = promptedActionId(step);
     var beginPromptedAction = function(actionAlreadyStarted){
-      if (busy) return;
+      if (busy || tourNavigationBusy || promptToken !== tourRenderToken) return;
       busy = true;
+      tourNavigationBusy = true;
       completedPromptedActions.add(stepIndex);
       pendingPromptedAction = null;
       if (typeof activePromptTargetCleanup === 'function') activePromptTargetCleanup();
@@ -14385,6 +14389,7 @@ if(!window._pbbIsIOSSafari) {
       if (overlay) overlay.classList.add('tour-transitioning');
       setTourGateUi(false, 'Opening now...', step.preActionButton || 'Opening');
       setTimeout(async function(){
+        try {
         var result = true;
         try {
           if (expectedActionId && window.pbbNextSteps && typeof window.pbbNextSteps.runAction === 'function') {
@@ -14398,6 +14403,7 @@ if(!window._pbbIsIOSSafari) {
           }
         }
         catch(e) { result = false; console.warn('[tour] highlighted card action failed', e); }
+        if (promptToken !== tourRenderToken || !window.__balanceGuidedTourActive) return;
         if (result === false) {
           completedPromptedActions.delete(stepIndex);
           var actionId = promptedActionId(step);
@@ -14409,6 +14415,7 @@ if(!window._pbbIsIOSSafari) {
           return;
         }
         await showStep(stepIndex, { afterPromptedAction:true });
+        } finally { tourNavigationBusy = false; }
       }, 180);
     };
     var handleTargetClick = function(event){
@@ -14486,6 +14493,8 @@ if(!window._pbbIsIOSSafari) {
 
   function armTourGate(step){
     clearActiveTourGate();
+    const gateToken = tourRenderToken;
+    const gateIsCurrent = function(){ return gateToken === tourRenderToken && window.__balanceGuidedTourActive; };
     const finalLabel = idx === activeSteps.length - 1 ? 'Finish' : (step && step.returnHomeAfter ? 'Next: back to Home' : (step && step.nextLabel ? step.nextLabel : 'Next'));
     setTourGateUi(true, '', finalLabel);
 
@@ -14506,13 +14515,13 @@ if (step && step.requiresFeedPost) {
           setTourGateUi(true, 'Your introduction is posted. Welcome to the community.', finalLabel);
           const completedStepIndex = idx;
           setTimeout(async function(){
-            if (idx !== completedStepIndex) return;
+            if (!gateIsCurrent() || idx !== completedStepIndex) return;
             // The introduction step finishes on Feed, but the next required
             // action is a Home To do next card. Return Home before rendering
             // that prompt so the guide never highlights a missing card on the
             // Course or Feed surface.
             if (step.returnHomeAfter) await ensureTab('dashboard');
-            if (idx === completedStepIndex) showStep(completedStepIndex + 1);
+            if (gateIsCurrent() && idx === completedStepIndex) showStep(completedStepIndex + 1);
           }, 650);
         }
       };
@@ -14559,9 +14568,10 @@ if (step && step.requiresFeedPost) {
         const current = cards.findIndex(function(card){ return card.classList.contains('workout-swipe-active'); });
         if (current >= 0) seen.add(cards[current]);
         const remaining = cards.filter(function(card){ return !seen.has(card); });
-        const complete = cards.length > 0 && remaining.length === 0;
+        const complete = cards.length > 0 && (completedTourGates.has(key) || remaining.length === 0);
         activeTourGate.complete = complete;
         if (complete) {
+          completedTourGates.add(key);
           setTourGateUi(true, 'You have seen all ' + cards.length + ' exercises. You can continue without logging a workout.', finalLabel);
         } else {
           const unseenAhead = cards.some(function(card,index){ return index > current && !seen.has(card); });
@@ -14608,6 +14618,7 @@ if (step && step.requiresFeedPost) {
             : 'Keep using the highlighted control to continue.';
           setTourGateUi(false, progressMessage, 'Keep looking');
           setTimeout(function(){
+            if (!gateIsCurrent()) return;
             const refreshedTarget = q(step.sel) || currentTarget;
             activeTourFallbackTarget = refreshedTarget;
             scheduleTourPosition(step);
@@ -14619,6 +14630,7 @@ if (step && step.requiresFeedPost) {
           activeTourGate.complete = true;
           setTourGateUi(true, step.highlightedClickComplete || 'Done. You can keep going.', finalLabel);
           setTimeout(function(){
+            if (!gateIsCurrent()) return;
             const refreshedTarget = q(step.sel) || currentTarget;
             activeTourFallbackTarget = refreshedTarget;
             scheduleTourPosition(step);
@@ -14671,7 +14683,7 @@ if (step && step.requiresFeedPost) {
         }
       };
       activeTourGate.followTimer = setInterval(function(){
-        if (!activeTourGate || activeTourGate.key !== key) return;
+        if (!gateIsCurrent() || !activeTourGate || activeTourGate.key !== key) return;
         const courseDestination = step.sel === '#balance-foundations-course-start'
           ? '#balance-foundations-welcome-start'
           : step.sel === '#balance-foundations-welcome-start'
@@ -14801,7 +14813,7 @@ if (step && step.requiresFeedPost) {
           setTourGateUi(true, 'First lesson complete. You can keep going.', finalLabel);
           const completedStepIndex = idx;
           setTimeout(function(){
-            if (idx === completedStepIndex) showStep(completedStepIndex + 1);
+            if (gateIsCurrent() && idx === completedStepIndex) showStep(completedStepIndex + 1);
           }, 650);
         }
       };
@@ -14847,7 +14859,7 @@ if (step && step.requiresFeedPost) {
           setTourGateUi(true, 'Weekly Goals saved. You can keep going.', finalLabel);
           const completedStepIndex = idx;
           setTimeout(function(){
-            if (idx === completedStepIndex) showStep(completedStepIndex + 1);
+            if (gateIsCurrent() && idx === completedStepIndex) showStep(completedStepIndex + 1);
           }, 650);
         }
       };
@@ -15301,7 +15313,55 @@ if (step && step.requiresFeedPost) {
     bubble.style.left = bubbleLeft + 'px';
   }
 
-async function showStep(i, options){
+  async function ensureWorkoutTourSurface(step){
+    if (!step || !step.workoutEducation) return true;
+    if (q('#view-active-workout .exercise-logger-card.workout-swipe-active')) return true;
+    try {
+      await ensureTab('movement-tab');
+      return !!(await openMetaPreviewStrengthWorkout());
+    } catch(e) {
+      console.warn('[tour] could not restore workout preview', e);
+      return false;
+    }
+  }
+
+  async function ensurePreservedTourSurface(step){
+    if (!step || !step.preserveSurface || step.workoutEducation) return;
+    await ensureTab(step.tab);
+    const courseSurface = step.sel === '#balance-foundations-welcome-start' ? 'welcome'
+      : step.sel === '#balance-foundations-first-lesson' ? 'week' : null;
+    if (courseSurface && !q(step.sel)) {
+      if (typeof window.restoreBalanceFoundationsTourSurface !== 'function' ||
+          !window.restoreBalanceFoundationsTourSurface(courseSurface)) {
+        throw new Error('Course tour page could not be restored');
+      }
+    }
+  }
+
+  async function showStep(i, options){
+    const expectedToken = tourRenderToken + 1;
+    try { await renderTourStep(i, options); }
+    catch(error) {
+      if (tourRenderToken !== expectedToken || !window.__balanceGuidedTourActive) return;
+      console.error('[tour] navigation failed', error);
+      clearActiveTourGate();
+      resetTourTemporaryTargets();
+      const overlay = document.getElementById('guided-tour-overlay');
+      overlay.classList.remove('tour-transitioning', 'tour-embedded-guide', 'tour-coach-note', 'tour-checkin-explainer', 'tour-typing', 'tour-tap-target', 'tour-action-required');
+      overlay.classList.add('active');
+      document.getElementById('tour-counter').textContent = 'Step ' + (i + 1) + ' / ' + activeSteps.length;
+      document.getElementById('tour-title').textContent = activeSteps[i].title;
+      document.getElementById('tour-body').textContent = 'This page could not finish opening. Retry this step, or use Back to return to the previous one.';
+      document.getElementById('tour-back-btn').style.visibility = i > 0 ? 'visible' : 'hidden';
+      activeTourDisplayStep = {};
+      activeTourFallbackTarget = null;
+      activeTourGate = { complete:false, handleNext:async function(){ await showStep(i, options); return true; } };
+      setTourGateUi(true, '', 'Try again');
+      positionBubbleAndSpotlight(null, {});
+    }
+  }
+
+  async function renderTourStep(i, options){
     options = options || {};
     const renderToken = ++tourRenderToken;
     cancelScheduledTourPosition();
@@ -15317,7 +15377,7 @@ async function showStep(i, options){
         tab: trackedStep && trackedStep.tab || ''
       }, { dedupeKey: String(i), dedupeMs:500 });
     } catch(e){}
-    if (i < 0 || i >= activeSteps.length) { endFeatureTour(false); return; }
+    if (i < 0 || i >= activeSteps.length) return;
     idx = i;
     showingXpIntro = false;
     window.__balanceGuidedTourShowingIntro = false;
@@ -15327,7 +15387,7 @@ async function showStep(i, options){
     // Keep the previous prompt hidden while Home changes tabs or rebuilds its
     // To Do cards. The new prompt becomes visible only after its tap handler
     // is attached, so a card can never look ready while the tour is not.
-    if (overlay) overlay.classList.add('tour-transitioning');
+    if (overlay) overlay.classList.add('active', 'tour-transitioning');
     const isPromptBeforeAction = !!((metaPreviewTour || clientActivationTour) && step.promptBeforeAction && typeof step.action === 'function' && !completedPromptedActions.has(i) && !options.afterPromptedAction);
     const displayStep = isPromptBeforeAction ? Object.assign({}, step, {
       sel: step.preActionSel || step.fallbackSel || step.sel,
@@ -15364,15 +15424,19 @@ async function showStep(i, options){
       // left the spotlight attached to a card that was no longer visible.
       const promptTab = isPromptBeforeAction ? (step.preActionTab || 'dashboard') : step.tab;
       if (!step.preserveSurface) await ensureTab(promptTab);
+      else await ensurePreservedTourSurface(step);
       if (renderToken !== tourRenderToken) return;
     }
     if (step.sel === '#ptr-indicator') showTourPullToRefreshHint();
     if (step.title === 'Tap a workout to see every set') {
       await showTourMovementTrends();
     }
-    if (!isPromptBeforeAction && !options.afterPromptedAction && typeof step.action === 'function') {
-      try { await step.action(); } catch(e){ console.warn('[tour] step action failed', e); }
+    const workoutSurfaceReady = await ensureWorkoutTourSurface(step);
+    if (renderToken !== tourRenderToken) return;
+    if (workoutSurfaceReady && !isPromptBeforeAction && !options.afterPromptedAction && typeof step.action === 'function') {
+      const opened = await step.action();
       if (renderToken !== tourRenderToken) return;
+      if (opened === false) throw new Error('Tour destination did not open');
     }
 
     let resolved = resolveStepTarget(displayStep);
@@ -15427,7 +15491,10 @@ async function showStep(i, options){
       armPromptTarget(step, target, i);
     } else if (isPromptBeforeAction) setTourGateUi(true, '', step.preActionButton || 'Open');
     else {
-      try { armTourGate(step); }
+      try {
+        if (!workoutSurfaceReady) throw new Error('Workout preview is not visible');
+        armTourGate(step);
+      }
       catch(e) {
         console.error('[tour] step could not start', e);
         clearActiveTourGate();
@@ -15463,6 +15530,9 @@ async function showStep(i, options){
   }
 
   window.tourNext = async function(){
+    if (tourNavigationBusy || !window.__balanceGuidedTourActive) return;
+    tourNavigationBusy = true;
+    try {
     if (Date.now() < tourNextBlockedUntil) return;
     if (showingXpIntro) {
       showingXpIntro = false;
@@ -15496,13 +15566,18 @@ async function showStep(i, options){
     }
     if (idx >= activeSteps.length - 1) { endFeatureTour(false); return; }
     await showStep(idx + 1);
+    } finally { tourNavigationBusy = false; }
   };
   window.tourBack = async function(){
+    if (tourNavigationBusy || !window.__balanceGuidedTourActive) return;
+    tourNavigationBusy = true;
+    try {
     if (idx > 0) {
       await showStep(idx - 1);
     } else if (idx === 0 && !metaPreviewTour) {
       await showTourXpIntro();
     }
+    } finally { tourNavigationBusy = false; }
   };
 
   async function showTourXpIntro(){
@@ -15698,6 +15773,9 @@ window.endFeatureTour = function(skipped){
     }
     overlay.classList.add('active');
     const skipButton = overlay.querySelector('.tour-skip');
+    // The returning-user reveal shares these buttons. Reclaim their handlers.
+    document.getElementById('tour-back-btn').onclick = function(){ window.tourBack(); };
+    document.getElementById('tour-next-btn').onclick = function(){ window.tourNext(); };
     if (skipButton) skipButton.hidden = metaPreviewTour || clientActivationTour;
     try { window.trackBalanceActivity('guided_tour_started', { mode: clientActivationTour ? 'client_activation' : (metaPreviewTour ? 'meta_preview' : 'standard'), step_count: activeSteps.length }, { immediate:true }); } catch(e){}
     if (typeof pushNavigationState === 'function') {
@@ -17415,6 +17493,7 @@ window.endFeatureTour = function(skipped){
   }
 
   async function showRevealStep(i) {
+    if (window.__balanceGuidedTourActive) return;
     if (i < 0 || i >= revealSteps.length) { endFeatureReveal(false); return; }
     revealIdx = i;
     var step = revealSteps[i];
@@ -17424,6 +17503,7 @@ window.endFeatureTour = function(skipped){
       }
     } catch(e) {}
     await ensureTab(step.tab, step.subtab);
+    if (window.__balanceGuidedTourActive) return;
     if (typeof step.action === 'function') {
       try { await step.action(); } catch(e){ console.warn('[feature-reveal] step action failed', e); }
     }
@@ -17441,6 +17521,7 @@ window.endFeatureTour = function(skipped){
       await new Promise(function(r){ setTimeout(r, 350); });
     }
 
+    if (window.__balanceGuidedTourActive) return;
     document.getElementById('tour-counter').textContent = 'Feature Drop - ' + (i+1) + ' / ' + revealSteps.length;
     document.getElementById('tour-title').textContent = (resolved.usedFallback && step.fallbackTitle) ? step.fallbackTitle : step.title;
     document.getElementById('tour-body').textContent = (resolved.usedFallback && step.fallbackBody) ? step.fallbackBody : step.body;
@@ -17453,6 +17534,7 @@ window.endFeatureTour = function(skipped){
   }
 
   function startSpotlightWalkthrough() {
+    if (window.__balanceGuidedTourActive) return;
     var overlay = document.getElementById('guided-tour-overlay');
     if (!overlay) return;
     overlay.classList.add('active');
@@ -17476,6 +17558,7 @@ window.endFeatureTour = function(skipped){
     }
 
     revealResizeHandler = function(){
+      if (window.__balanceGuidedTourActive) return;
       var step = revealSteps[revealIdx];
       if (!step) return;
       positionReveal(resolveRevealTarget(step).target, step);
@@ -17486,6 +17569,8 @@ window.endFeatureTour = function(skipped){
   }
 
   window.endFeatureReveal = function(skipped) {
+    // A stale reveal callback must never dismiss an active onboarding guide.
+    if (window.__balanceGuidedTourActive) return;
     var overlay = document.getElementById('guided-tour-overlay');
     if (overlay) overlay.classList.remove('active');
     try {
@@ -20706,11 +20791,11 @@ if (window._pbbIsIOSSafari) {
             });
             if (window.showQuizBattleInviteModal || learningAlreadyRequested) return;
             var s = document.createElement('script');
-      s.src = 'lib/learning-inline.js?v=49-course-start-label';
+      s.src = 'lib/learning-inline.js?v=50-tour-backflow';
             document.head.appendChild(s);
         }, { once: true });
     } else {
-    document.write('<script src="lib/learning-inline.js?v=49-course-start-label"><\/script>');
+    document.write('<script src="lib/learning-inline.js?v=50-tour-backflow"><\/script>');
     }
     </script>
     <!-- Battle System & Logic Overrides (130 lines — deferred on iOS) -->

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v507-onboarding-keyboard-safe-area'; // v507: keep onboarding below the status bar with keyboard open
+const CACHE_NAME = 'pbb-app-v508-tour-backflow'; // v508: restore tour destinations and guard back/forward transitions
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

@@ -7,7 +7,7 @@ const gate = html.slice(start,html.indexOf('    if (step && step.requiresHighlig
 function setup(count,index=0){
  let current=index, update, disconnected=false;
  const cards=Array.from({length:count},(_,i)=>({classList:{contains:()=>i===current}}));
- const ctx={step:{requiresWorkoutBrowse:true},idx:4,finalLabel:'Next',activeTourGate:null,Set,Array,document:{getElementById:()=>({querySelectorAll:()=>cards})},q:()=>({}),scheduleTourPosition:()=>{},setTourGateUi:(complete,message)=>{ctx.result={complete,message}},MutationObserver:class{constructor(fn){update=fn}observe(){}disconnect(){disconnected=true}}};
+ const ctx={step:{requiresWorkoutBrowse:true},idx:4,finalLabel:'Next',activeTourGate:null,completedTourGates:new Set(),Set,Array,document:{getElementById:()=>({querySelectorAll:()=>cards})},q:()=>({}),scheduleTourPosition:()=>{},setTourGateUi:(complete,message)=>{ctx.result={complete,message}},MutationObserver:class{constructor(fn){update=fn}observe(){}disconnect(){disconnected=true}}};
  vm.runInNewContext('(function(){'+gate+'})()',ctx);
  return {ctx,visit(i){current=i;update()},cleanup(){ctx.activeTourGate.cleanup();return disconnected}};
 }
@@ -22,4 +22,12 @@ test('workout browse handles one exercise, missing data, and starting in the mid
  assert.equal(setup(1).ctx.result.complete,true);
  assert.equal(setup(0,-1).ctx.result.complete,false);
  const p=setup(3,1);p.visit(2);assert.equal(p.ctx.result.complete,false);p.visit(0);assert.equal(p.ctx.result.complete,true);
+});
+
+test('returning to a completed workout browse preserves completion',()=>{
+ const p=setup(3);p.visit(1);p.visit(2);
+ assert.ok(p.ctx.completedTourGates.has('workout-browse:4'));
+ p.cleanup();
+ vm.runInNewContext('(function(){'+gate+'})()',p.ctx);
+ assert.equal(p.ctx.result.complete,true);
 });
