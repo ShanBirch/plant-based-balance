@@ -1,18 +1,19 @@
-.balance-navigation { flex: 0 0 100%; width: 100%; box-sizing: border-box; font-family: Inter, sans-serif; }
-.balance-desktop-nav { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px; }
-.balance-navigation a { display: block; padding: 10px 14px; border-radius: 999px; font-size: 14px; font-weight: 700; line-height: 1.4; text-decoration: none; color: #243124; -webkit-text-fill-color: #243124; }
-.balance-navigation a:hover, .balance-navigation a[aria-current="page"] { background: #e9dfc8; color: #243124; -webkit-text-fill-color: #243124; }
-.balance-navigation a:focus-visible, .balance-mobile-nav summary:focus-visible { outline: 3px solid #876422; outline-offset: 2px; }
-.balance-mobile-nav { display: none; }
-body .site-header:has(.balance-navigation), body .topbar:has(.balance-navigation), body header:has(> .balance-navigation) { flex-wrap: wrap; gap: 12px; background: #faf7ef; color: #243124; -webkit-text-fill-color: #243124; }
-body header:has(> .balance-navigation) > .brand { color: #243124; -webkit-text-fill-color: #243124; }
-@media (max-width: 760px) {
-    .balance-desktop-nav { display: none; }
-    .balance-mobile-nav { display: block; border-top: 1px solid #d9d1bf; }
-    .balance-mobile-nav summary { display: flex; align-items: center; justify-content: space-between; padding: 12px 2px 4px; cursor: pointer; list-style: none; font-size: 15px; font-weight: 800; color: #243124; -webkit-text-fill-color: #243124; }
-    .balance-mobile-nav summary::-webkit-details-marker { display: none; }
-    .balance-mobile-nav summary::after { content: '+'; font-size: 22px; }
-    .balance-mobile-nav[open] summary::after { content: '−'; }
-    .balance-mobile-nav nav { padding: 10px 0; max-height: 60vh; overflow-y: auto; overscroll-behavior: contain; }
-    .balance-mobile-nav a { padding: 11px 14px; }
-}
+.balance-navigation { grid-area: 1 / 1; justify-self: start; font-family: Inter, sans-serif; }
+body .site-header:has(.balance-navigation), body .topbar:has(.balance-navigation) { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; padding-top: calc(8px + env(safe-area-inset-top, 0px)); padding-bottom: 8px; background: #faf7ef; color: #243124; -webkit-text-fill-color: #243124; }
+body header:has(> .balance-navigation) > .brand { grid-area: 1 / 2; justify-self: center; margin: 0; color: #243124; -webkit-text-fill-color: #243124; }
+body header:has(> .balance-navigation) > .nav-actions, body header:has(> .balance-navigation) > .top-cta { display: none; }
+.balance-menu-toggle, .balance-menu-close { appearance: none; border: 0; background: transparent; color: #243124; -webkit-text-fill-color: #243124; cursor: pointer; width: 44px; height: 44px; padding: 11px; border-radius: 8px; }
+.balance-menu-toggle { display: flex; flex-direction: column; justify-content: center; gap: 5px; }
+.balance-menu-toggle span { display: block; width: 22px; height: 2px; background: #243124; border-radius: 2px; }
+.balance-menu-toggle:hover, .balance-menu-close:hover { background: #2431240a; }
+.balance-navigation :focus-visible { outline: 2px solid #876422; outline-offset: 3px; }
+.balance-menu-drawer { position: fixed; inset: 0 auto 0 0; margin: 0; width: min(320px, 85vw); max-width: none; height: 100dvh; max-height: none; box-sizing: border-box; padding: calc(14px + env(safe-area-inset-top, 0px)) 24px calc(24px + env(safe-area-inset-bottom, 0px)); border: 0; background: #faf7ef; color: #243124; -webkit-text-fill-color: #243124; overflow-y: auto; overscroll-behavior: contain; }
+.balance-menu-drawer[open] { animation: balance-menu-enter 180ms ease-out; }
+.balance-menu-drawer::backdrop { background: #17221c66; }
+.balance-menu-close { display: block; margin: 0 0 28px -8px; font: 30px/1 Inter, sans-serif; }
+.balance-menu-drawer nav { display: grid; gap: 4px; }
+.balance-menu-drawer a { display: block; padding: 14px 0; font: 500 16px/1.5 Inter, sans-serif; text-decoration: none; color: #4b5146; -webkit-text-fill-color: #4b5146; }
+.balance-menu-drawer a:hover, .balance-menu-drawer a[aria-current="page"] { color: #6d501b; -webkit-text-fill-color: #6d501b; text-decoration: underline; text-underline-offset: 5px; }
+html:has(.balance-menu-drawer[open]) { overflow: hidden; }
+@keyframes balance-menu-enter { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+@media (prefers-reduced-motion: reduce) { .balance-menu-drawer[open] { animation: none; } }

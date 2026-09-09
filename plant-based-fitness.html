@@ -394,14 +394,14 @@
         @keyframes noteTwoFloat { 0%, 100% { transform: rotate(4deg) translateY(0); } 50% { transform: rotate(2deg) translateY(7px); } }
         @keyframes progressIn { from { transform: scaleX(0); } to { transform: scaleX(1); } }
     </style>
-<link rel="stylesheet" href="/site-navigation.css?v=20260909">
+<link rel="stylesheet" href="/site-navigation.css?v=20260909-drawer">
 <link rel="stylesheet" href="/learn-intro-price.css?v=20260909">
 </head>
 <body data-landing-page="plant-based-founders-pass" data-landing-variant="plant_based_control">
     <header class="topbar">
         <a class="brand" href="/bio"><span class="brand-icon"><img src="balance_logo.png" alt="Balance"></span><span>Balance</span></a>
             <div class="nav-actions"><a class="nav-link" href="balance.html">Explore Balance</a><a class="top-link" id="foundations-top-action" href="/founders#join">Start Balance Learn</a></div>
-    <div class="balance-navigation"><nav class="balance-desktop-nav" aria-label="Main navigation"><a href="/bio">Home</a><a href="/">Balance App</a><a href="/founders" aria-current="page">Balance Learn</a><a href="/coaching">What I Offer</a><a href="/clients">Results</a><a href="/journey">My Story</a><a href="/book">Book a Call</a></nav><details class="balance-mobile-nav"><summary>Menu</summary><nav aria-label="Mobile navigation"><a href="/bio">Home</a><a href="/">Balance App</a><a href="/founders" aria-current="page">Balance Learn</a><a href="/coaching">What I Offer</a><a href="/clients">Results</a><a href="/journey">My Story</a><a href="/book">Book a Call</a></nav></details></div>
+    <div class="balance-navigation"><button class="balance-menu-toggle" type="button" aria-label="Open menu" aria-controls="balance-menu" aria-expanded="false"><span></span><span></span><span></span></button><dialog id="balance-menu" class="balance-menu-drawer" aria-label="Main menu"><button class="balance-menu-close" type="button" aria-label="Close menu">&times;</button><nav aria-label="Main navigation"><a href="/bio">Home</a><a href="/">Balance App</a><a href="/founders" aria-current="page">Balance Learn</a><a href="/coaching">What I Offer</a><a href="/clients">Results</a><a href="/journey">My Story</a><a href="/book">Book a Call</a></nav></dialog></div>
 </header>
 
     <main>
@@ -719,5 +719,6 @@
         })();
     </script>
 <script type="module" src="/learn-course-pricing-ui.js?v=20260909-launch"></script>
+<script src="/site-navigation.js?v=20260909-drawer" defer></script>
 </body>
 </html>
