@@ -13381,15 +13381,6 @@ if(!window._pbbIsIOSSafari) {
 <!-- ========== GUIDED FEATURE TOUR ========== -->
 <style>
   #guided-tour-overlay { position: fixed; inset: 0; z-index: 400000; pointer-events: auto; display: none; }
-  #view-active-workout.tour-workout-docked { height:calc(100dvh - var(--tour-workout-dock)) !important; max-height:calc(100vh - var(--tour-workout-dock)) !important; overflow-y:auto !important; }
-  #guided-tour-overlay.tour-workout-dock #guided-tour-bubble { width:min(420px,calc(100% - 24px)); max-width:420px; box-sizing:border-box; }
-  #guided-tour-overlay.tour-workout-browse { pointer-events:none; }
-  #guided-tour-overlay.tour-workout-browse #guided-tour-bubble,
-  #guided-tour-overlay.tour-workout-browse #guided-tour-spotlight { display:none !important; }
-  #tour-workout-browse-guide { margin:12px 0; padding:14px 16px; border:1px solid var(--border-color, #c9aa67); border-radius:16px; background:var(--card-bg, #fffaf0); color:var(--text-main, #1a202c); -webkit-text-fill-color:var(--text-main, #1a202c); }
-  #tour-workout-browse-guide p { margin:0 0 8px; font-size:.88rem; line-height:1.4; color:inherit; -webkit-text-fill-color:inherit; }
-  #tour-workout-browse-guide button { min-height:44px; padding:10px 16px; border:1px solid var(--border-color, #c9aa67); border-radius:12px; background:var(--card-bg, #fffaf0); color:var(--text-main, #1a202c); -webkit-text-fill-color:var(--text-main, #1a202c); font:inherit; cursor:pointer; }
-  #tour-workout-browse-guide button:focus-visible { outline:3px solid #c49b42; outline-offset:3px; }
   #view-active-workout .tour-workout-arrow { outline:2px solid #c49b42; outline-offset:4px; box-shadow:0 0 0 7px rgba(196,155,66,.18),0 0 18px rgba(196,155,66,.5); }
   #guided-tour-overlay.active { display: block; }
   #guided-tour-overlay.tour-tap-target,
@@ -15107,56 +15098,13 @@ if (step && step.requiresFeedPost) {
     bubble.style.maxHeight = '';
     bubble.style.overflowY = '';
 
-    // Reserve a separate lower region: guidance must never cover the video,
-    // exercise arrows or set inputs, even when the viewport is short.
+    // Use the original floating card without shrinking the workout viewport.
     const workoutView = document.getElementById('view-active-workout');
-    const workoutBrowse = !!(step && step.requiresWorkoutBrowse && workoutView);
-    if (overlay) overlay.classList.toggle('tour-workout-browse', workoutBrowse);
-    const workoutDock = !!(!workoutBrowse && step && step.workoutEducation && workoutView && target && target.closest('#view-active-workout'));
-    if (overlay) overlay.classList.toggle('tour-workout-dock', workoutDock);
-    if (workoutView) workoutView.classList.toggle('tour-workout-docked', workoutDock);
-    if (workoutBrowse) {
-      // Instructions scroll with the workout, never cover it or resize its viewport.
-      const pager = document.getElementById('workout-swipe-pager');
-      let guide = document.getElementById('tour-workout-browse-guide');
-      if (!guide && pager) {
-        guide = document.createElement('section');
-        guide.id = 'tour-workout-browse-guide';
-        guide.setAttribute('aria-label', 'Workout tour');
-        guide.innerHTML = '<p>Scroll to explore each exercise. Use the glowing arrow to see the next one. No sets need to be logged.</p><p data-tour-browse-status role="status"></p><button type="button" hidden>Continue tour</button>';
-        guide.querySelector('button').addEventListener('click', function(){ window.tourNext(); });
-        pager.before(guide);
-      }
-      if (guide) {
-        const status = document.getElementById('tour-gate-note')?.textContent || '';
-        const label = guide.querySelector('[data-tour-browse-status]');
-        if (label.textContent !== status) label.textContent = status;
-        guide.querySelector('button').hidden = !(activeTourGate && activeTourGate.complete);
-      }
+    if (overlay) overlay.classList.remove('tour-workout-dock', 'tour-workout-browse');
+    if (workoutView) workoutView.classList.remove('tour-workout-docked');
+    if (step && step.workoutEducation) {
       document.querySelectorAll('.tour-workout-arrow').forEach(function(el){ if (el !== target) el.classList.remove('tour-workout-arrow'); });
       if (target) target.classList.add('tour-workout-arrow');
-      return;
-    }
-    if (workoutDock) {
-      spot.style.opacity = '1';
-      bubble.style.opacity = '';
-      const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-      bubble.style.maxHeight = Math.floor(vh * .34) + 'px';
-      bubble.style.overflowY = 'auto';
-      bubble.style.top = 'auto';
-      bubble.style.bottom = 'calc(12px + env(safe-area-inset-bottom, 0px))';
-      bubble.style.left = '50%';
-      bubble.style.transform = 'translateX(-50%)';
-      const dockTop = bubble.getBoundingClientRect().top;
-      workoutView.style.setProperty('--tour-workout-dock', Math.ceil(window.innerHeight - dockTop + 12) + 'px');
-      const bounds = workoutView.getBoundingClientRect();
-      let rect = target.getBoundingClientRect();
-      // Position only. Step entry handles initial scrolling; user scroll must win.
-      spot.style.top = Math.max(bounds.top,rect.top - 6) + 'px';
-      spot.style.left = Math.max(8,rect.left - 6) + 'px';
-      spot.style.width = Math.min(rect.width + 12,window.innerWidth - 16) + 'px';
-      spot.style.height = Math.max(0,Math.min(rect.height + 12,bounds.bottom - Math.max(bounds.top,rect.top - 6))) + 'px';
-      return;
     }
 
     if (step && step.featureView) {
