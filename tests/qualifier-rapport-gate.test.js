@@ -1,4 +1,5 @@
 const assert = require('assert');
+const test = require('node:test');
 const fs = require('fs');
 const path = require('path');
 
@@ -998,3 +999,9 @@ assert.match(currentIgDraftSource, /isUnrequestedOfferInjection\(\{/);
 assert.doesNotMatch(currentIgDraftSource, /doesn['’]?t include weekly 1:1 coaching/i);
 
 console.log('qualifier rapport gate tests passed');
+test('decline acknowledgements do not trigger premature invite holds', () => {
+  for (const draftText of ['No worries. I won’t send the preview or link.', 'That’s completely fair. If $149 is too much right now, no stress. I won’t send the link.']) {
+    assert.equal(isPrematureChallengeInvite({draftText, currentMessage:'Not now, do not send me the preview.'}), false);
+  }
+  assert.equal(isPrematureChallengeInvite({draftText:'I won’t send the link. Join the program now.',currentMessage:'Not now.'}), true);
+});

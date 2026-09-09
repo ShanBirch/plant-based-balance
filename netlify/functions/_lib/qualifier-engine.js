@@ -559,7 +559,9 @@ function isOneOnOneCoachingLinkContext(text) {
 }
 
 function isChallengeInviteText(text) {
-    const s = String(text || '').toLowerCase();
+    // Acknowledging a declined link is not an invitation. Remove only the
+    // complete acknowledgement, so any separate invitation remains checked.
+    const s = String(text || '').toLowerCase().replace(/\bi\s+(?:won['’]t|will not)\s+send\s+(?:you\s+)?(?:the\s+)?(?:preview\s+or\s+)?link\s*(?=[.!?]|$)/gi, '');
     if (!s) return false;
     if (isAccountSupportLinkContext(s)) return false;
     const mentionsOffer = /\b(30\s*day|30-day|challenge|app|program|signup|sign up|link|founders?\s+pass|starter\s+coaching|online\s+coaching|personal\s+coaching)\b/i.test(s)
