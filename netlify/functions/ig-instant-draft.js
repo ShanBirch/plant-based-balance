@@ -2923,7 +2923,7 @@ function foundersPassCheckoutUrlForMessage(message = '', customData = {}, flowVa
     return buildMetaAdCheckoutUrl({ customData, flowVariant, currentMessage: message, acquisitionMode });
 }
 
-const META_AD_CURRICULUM_QUESTION_RE = /\b(?:what|which|how|can|could|do|does).{0,40}\b(?:learn|teach|cover|curriculum|lessons?|week[ -]?by[ -]?week|happens? (?:each|every) week|the six weeks)\b|\btell me\b.{0,30}\b(?:course|curriculum|lessons?|six weeks)\b|\b(?:course|curriculum|lessons?)\b.{0,30}\b(?:include|inside|cover|work)\b/i;
+const META_AD_CURRICULUM_QUESTION_RE = /\bwhat\s+(?:(?:will|do|can|would)\s+(?:i|we|you)\s+|am\s+i\s+(?:going\s+to\s+)?)(?:actually\s+)?learn\b|\b(?:what|which|how|can|could|do|does).{0,40}\b(?:teach|cover|curriculum|lessons?|week[ -]?by[ -]?week|happens? (?:each|every) week|the six weeks)\b|\btell me\b.{0,30}\b(?:course|curriculum|lessons?|six weeks)\b|\b(?:course|curriculum|lessons?)\b.{0,30}\b(?:include|inside|cover|work)\b/i;
 
 function resolveMetaAdFirstReplyIntent(currentMessage = '') {
     const text = String(currentMessage || '').toLowerCase().replace(/[’]/g, "'");
@@ -10409,3 +10409,4 @@ exports._test = {
     buildPersonalVoiceNoteDraftingBlock,
     hasInboundVoiceNoteInUnansweredBatch,
 };
+

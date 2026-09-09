@@ -8,6 +8,7 @@ test('weekly pricing answers can pass without the upfront-price exact phrase', (
   const review=joined=>_test.collectPaidMetaWriterContractIssues({draft:{joined},currentMessage,flowVariant:'broad_pain'});
   const valid='It is AUD $149 upfront for the full six weeks. There is also AUD $24.83/week with a six-week minimum, and that one continues weekly until cancelled.';
   assert.ok(!review(valid).some(issue=>/Answer the price exactly/.test(issue)));
+  assert.deepEqual(review(valid).filter(_test.isBlockingPaidMetaWriterContractIssue), []);
   for(const wrong of [valid.replace('$24.83','$9.99'),valid.replace('six-week minimum','no minimum'),valid.replace('continues weekly until cancelled','stops automatically')]) {
     assert.ok(review(wrong).some(issue=>/Answer the price exactly/.test(issue)));
   }
