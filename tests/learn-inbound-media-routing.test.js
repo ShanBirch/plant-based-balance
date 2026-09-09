@@ -3,6 +3,21 @@ const assert = require('node:assert/strict');
 const {buildMediaReviewInfo} = require('../netlify/functions/_lib/client-context');
 const {_test} = require('../netlify/functions/ig-instant-draft');
 
+test('decoded voice preview consent sends the signed link and preserves analysis evidence', () => {
+  const mediaDecode = {analysis_complete:true,analysis_succeeded:true,audio_transcripts:[{text:'Yes please, I would like to see the app preview before I pay.'}]};
+  const result = _test.applyDecodedPaidMetaAudioHandoff({chunks:['What is your goal?'],mediaDecode}, {currentMessage:'[voice note]',flowVariant:'broad_pain',appPreviewUrl:'https://future-balance.netlify.app/p/Test_123-xyz9876543210'});
+  assert.equal(result.appPreviewHandoff,true);
+  assert.equal(result.mediaDecode,mediaDecode);
+  assert.doesNotMatch(result.joined,/your goal/);
+});
+
+test('incomplete audio analysis and typed declines cannot trigger voice handoffs', () => {
+  const draft = {chunks:[],mediaDecode:{analysis_complete:false,audio_transcripts:[{text:'Send the preview'}]}};
+  assert.equal(_test.applyDecodedPaidMetaAudioHandoff(draft,{flowVariant:'broad_pain'}),draft);
+  const decoded = {...draft,mediaDecode:{...draft.mediaDecode,analysis_complete:true}};
+  assert.equal(_test.applyDecodedPaidMetaAudioHandoff(decoded,{flowVariant:'broad_pain',currentMessage:'Actually no, do not send me the preview.'}),decoded);
+});
+
 test('paid media writer requires the private summary used by the delivery gate', () => {
   const prompt = _test.buildPaidMetaAgentPrompt({flowVariant:'broad_pain',hasMedia:true});
   assert.match(prompt, /"media_summary":"brief factual media description"/);

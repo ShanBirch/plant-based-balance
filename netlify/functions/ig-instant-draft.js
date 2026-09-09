@@ -1500,7 +1500,7 @@ function isExplicitPaidMetaPreviewRequest(value = '') {
     return /\b(?:can|could|may) i (?:just )?(?:see|view|open|try|look at) (?:it|the app|the preview|my preview|the program|the setup)\b/i.test(message)
         || /\b(?:show|send|give) me (?:the |my )?(?:app )?preview\b/i.test(message)
         || /\bopen (?:me )?(?:the |my )?(?:app )?preview\b/i.test(message)
-        || /\bi (?:just )?want to (?:see|view|open|try|look at) (?:it|the app|the preview|the program|the setup)\b/i.test(message);
+        || /\bi (?:just )?(?:want|would like|'d like) to (?:see|view|open|try|look at) (?:it|the app|the preview|the program|the setup)\b/i.test(message);
 }
 
 function hasRecentCompletePaidMetaOffer(history = []) {
@@ -7347,6 +7347,18 @@ function _notifyQualifierAdvance({ priorStage, priorFacts, nextQualifier, leadNa
     }).catch(e => console.warn('[ig-draft] qualifier advance push failed:', e.message));
 }
 
+function applyDecodedPaidMetaAudioHandoff(draft = {}, options = {}) {
+    const decode = draft.mediaDecode || {};
+    if (decode.analysis_complete !== true || decode.analysis_succeeded === false) return draft;
+    const transcripts = [...new Set((decode.audio_transcripts || [])
+        .map(item => String(item?.text || '').trim()).filter(Boolean))];
+    if (!transcripts.length) return draft;
+    const currentMessage = [options.currentMessage || '', ...transcripts].join('\n');
+    const handoff = buildDeterministicPaidMetaConversationReply({...options, currentMessage});
+    if (!['campaign_app_preview_handoff', 'campaign_buyer_handoff'].includes(handoff?.replyMode)) return draft;
+    return {...draft, ...handoff};
+}
+
 function buildAudioTranscriptReviewContext(mediaDecode = {}, leadName = 'Lead') {
     if (mediaDecode?.analysis_succeeded === false) return '';
     const transcripts = Array.isArray(mediaDecode?.audio_transcripts)
@@ -8432,6 +8444,16 @@ exports.handler = async (event) => {
         };
     }
 
+    if (metaAdConversationFastLane && requiresInboundMediaAnalysis) {
+        draft = applyDecodedPaidMetaAudioHandoff(draft, {
+            currentMessage: currentInboundTurnMessage,
+            qualifier,
+            history,
+            flowVariant: metaAdFlowVariant,
+            checkoutUrl: metaAdCheckoutUrl,
+            appPreviewUrl: buildMetaAppPreviewUrl(thread.id, { flowVariant: metaAdFlowVariant }),
+        });
+    }
     if (metaAdConversationFastLane && isContextualMetaAdOfferLinkRequest({
         currentMessage: messageText,
         qualifier,
@@ -10222,6 +10244,7 @@ exports.handler = async (event) => {
 };
 
 exports._test = {
+    applyDecodedPaidMetaAudioHandoff,
     generateDraft,
     isIgStoryReplyContextText,
     sanitizeIgStoryReplyContextText,
