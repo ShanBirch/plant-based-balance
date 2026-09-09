@@ -5281,7 +5281,11 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
     if (broadGoalNeedsBlockerQuestion && !paidMetaOutboundAskedForBlocker(reply)) {
         issues.push('The lead answered the goal question, but the reply stopped after acknowledging it. Ask the one real-life blocker question so the conversation can progress.');
     }
-    const earnedBroadOfferNow = knownBroadGoal
+    const exactAcceptedPreview = draft?.appPreviewHandoff === true
+        && draft?.replyMode === 'campaign_app_preview_handoff'
+        && isMetaAppPreviewUrl(draft?.appPreviewUrl)
+        && (isExplicitPaidMetaPreviewRequest(turn) || isExplicitPaidMetaPreviewAcceptance(turn));
+    const earnedBroadOfferNow = !exactAcceptedPreview && knownBroadGoal
         && knownBroadBlocker
         && !autonomyPause
         && !asksForCurriculumOutline

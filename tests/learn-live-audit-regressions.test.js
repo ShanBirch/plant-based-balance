@@ -85,3 +85,12 @@ test('finishing an older reply leaves newer inbound alerts queued', async () => 
  assert.match(calls[0],/created_at=lte.2026-09-09T00%3A55%3A02Z/);
  assert.doesNotMatch(calls[0],/00%3A56/);
 });
+
+test('accepted signed preview does not restart the offer after an intervening FAQ', () => {
+ const {collectPaidMetaWriterContractIssues}=require('../netlify/functions/ig-instant-draft')._test;
+ const history=[{direction:'in',text:'I want to get stronger but only have two evenings a week.'},{direction:'out',text:'Want me to open your free personalised preview before you pay?'},{direction:'in',text:'Can I train at home?'},{direction:'out',text:'Yes, home workouts can fit your dumbbells.'}];
+ const draft=build({...base,currentMessage:'Yes please',history});
+ assert.equal(draft.appPreviewHandoff,true);
+ const issues=collectPaidMetaWriterContractIssues({draft,currentMessage:'Yes please',history,flowVariant:'broad_pain'});
+ assert.equal(issues.some(x=>/earned paid-Meta offer/.test(x)),false);
+});
