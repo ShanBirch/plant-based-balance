@@ -65,3 +65,15 @@ test('late automated bubbles are distinguished from answers to the current inbou
  }
  assert.equal(await outboundAnswersOlderInbound({...base,outbound:{direction:'out',text:'A manual response'},query:async()=>[]}),false);
 });
+
+test('a native echo is reconciled to its exact transport receipt without a second insert', async () => {
+ const {recordDeliveredChunk}=require('../netlify/functions/_lib/ig-reply-source');
+ const calls=[];
+ const query=async(path,options)=>{calls.push({path,options}); return [{id:'native-echo',created_at:'2026-09-09T00:00:00Z'}];};
+ const result=await recordDeliveredChunk({query,message:{thread_id:'thread',manychat_message_id:'ig_graph:exact',alert_id:'alert',text:'[VIDEO:approved]',source:'instagram_graph_send'}});
+ assert.equal(result[0].id,'native-echo');
+ assert.equal(calls.length,1);
+ assert.equal(calls[0].options.method,'PATCH');
+ assert.match(calls[0].path,/manychat_message_id=eq.ig_graph%3Aexact/);
+ assert.equal(calls[0].options.body.alert_id,'alert');
+});

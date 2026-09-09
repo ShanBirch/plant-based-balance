@@ -3894,7 +3894,7 @@ async function loadThread(threadId) {
 
 async function loadIgHistory(threadId, currentText) {
     const rows = await supabaseQuery(
-        `ig_messages?select=direction,text,created_at&thread_id=eq.${threadId}&order=created_at.desc&limit=${HISTORY_LIMIT}`
+        `ig_messages?select=id,direction,text,created_at,alert_id&thread_id=eq.${threadId}&order=created_at.desc&limit=${HISTORY_LIMIT}`
     );
     // Drop the just-inserted current message and reverse to chronological order.
     const prior = rows
@@ -8041,8 +8041,19 @@ exports.handler = async (event) => {
     // notification + admin dashboard so the coach can see every message
     // the draft was generated against (especially after IG coalescing,
     // where multiple inbounds roll into one alert).
+    let unansweredHistory = history;
+    if (metaAdConversationFastLane) {
+        const lastReply = [...history].reverse().find(item => item.direction === 'out');
+        if (lastReply?.alert_id) {
+            const parents = await supabaseQuery('coach_alerts?select=data&id=eq.' + encodeURIComponent(lastReply.alert_id));
+            const answeredThrough = Date.parse(parents?.[0]?.data?.source_inbound_created_at || parents?.[0]?.data?.ig_last_inbound_at || '');
+            if (Number.isFinite(answeredThrough)) {
+                unansweredHistory = history.filter(item => item.direction === 'in' && Date.parse(item.created_at) > answeredThrough);
+            }
+        }
+    }
     const recentInboundMessages = selectRecentInboundSinceLastReplyIg({
-        history,
+        history: unansweredHistory,
         currentCreatedAt: new Date().toISOString(),
     });
 

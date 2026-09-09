@@ -22,4 +22,21 @@ async function outboundAnswersOlderInbound({query, threadId, outbound, sourceAt}
     const answeredAt = Date.parse(sources?.[0]?.created_at || '');
     return Number.isFinite(answeredAt) && answeredAt < Date.parse(sourceAt);
 }
-module.exports = {outboundAnswersOlderInbound};
+async function recordDeliveredChunk({query, message}) {
+    const key = message.manychat_message_id;
+    const match = key ? 'ig_messages?thread_id=eq.' + encodeURIComponent(message.thread_id)
+        + '&manychat_message_id=eq.' + encodeURIComponent(key) : '';
+    const patch = () => query(match, {method:'PATCH',body:{text:message.text,source:message.source,alert_id:message.alert_id},prefer:'return=representation'});
+    if (match) {
+        const existing = await patch();
+        if (existing?.length) return existing;
+    }
+    try { return await query('ig_messages',{method:'POST',body:[message],prefer:'return=representation'}); }
+    catch (error) {
+        // An echo may insert between our lookup and insert. Reconcile that
+        // exact transport ID; never send the message again to fix a receipt.
+        if (match) { const raced = await patch(); if (raced?.length) return raced; }
+        throw error;
+    }
+}
+module.exports = {outboundAnswersOlderInbound, recordDeliveredChunk};

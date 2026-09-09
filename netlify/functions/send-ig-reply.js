@@ -1,4 +1,4 @@
-const { outboundAnswersOlderInbound } = require('./_lib/ig-reply-source');
+const { outboundAnswersOlderInbound, recordDeliveredChunk } = require('./_lib/ig-reply-source');
 /**
  * send-ig-reply — outbound for the Instagram channel via ManyChat.
  *
@@ -2995,6 +2995,15 @@ exports.handler = async (event) => {
                     : await postToManyChat({ subscriberId, text: chunkText, channel });
                 sendResults.push({ ok: true, response: r, text: chunkText, transport: deliveryTransport, kind: 'text' });
             }
+            const delivered = sendResults[sendResults.length - 1];
+            const deliveredGraphId = shouldUseGraph ? (delivered.response?.message_id || delivered.response?.id || null) : null;
+            try {
+                delivered.canonicalMessages = await recordDeliveredChunk({query:supabase,message:{
+                    thread_id:igThreadId,direction:'out',text:delivered.text,
+                    source:delivered.kind === 'audio' ? 'instagram_graph_voice_send' : (shouldUseGraph ? 'instagram_graph_send' : source),
+                    alert_id:alertId,manychat_message_id:deliveredGraphId ? GRAPH_SUBSCRIBER_PREFIX + deliveredGraphId : null,
+                }});
+            } catch (receiptError) { console.warn('[send-ig-reply] incremental receipt deferred:', receiptError.message); }
         } catch (err) {
             console.error(`[send-ig-reply] chunk ${i + 1}/${outboundItems.length} failed:`, err.message);
             if (shouldUseGraph && typingStartedForChunk) {
@@ -3055,20 +3064,11 @@ exports.handler = async (event) => {
             ? (result.response?.message_id || result.response?.id || null)
             : null;
         try {
-            const insertedMessages = await supabase('ig_messages', {
-                method: 'POST',
-                body: [{
-                    thread_id: igThreadId,
-                    direction: 'out',
-                    text: result.text,
-                    source: result.kind === 'audio'
-                        ? 'instagram_graph_voice_send'
-                        : (shouldUseGraph ? 'instagram_graph_send' : source),
-                    alert_id: alertId,
-                    manychat_message_id: graphMessageId ? `${GRAPH_SUBSCRIBER_PREFIX}${graphMessageId}` : null,
-                }],
-                prefer: 'return=representation',
-            });
+            const insertedMessages = result.canonicalMessages || await recordDeliveredChunk({query:supabase,message:{
+                thread_id:igThreadId,direction:'out',text:result.text,
+                source:result.kind === 'audio' ? 'instagram_graph_voice_send' : (shouldUseGraph ? 'instagram_graph_send' : source),
+                alert_id:alertId,manychat_message_id:graphMessageId ? GRAPH_SUBSCRIBER_PREFIX + graphMessageId : null,
+            }});
             if (insertedMessages?.[0]?.id) {
                 loggedOutboundMessageIds.push(insertedMessages[0].id);
                 loggedOutboundReceipts.push({
