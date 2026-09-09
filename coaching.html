@@ -24,6 +24,11 @@
     </script>
     <link rel="stylesheet" href="bio.css">
     <style>
+        .training-options-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 32px; margin: 24px 0 0; padding: 0; list-style: none; }
+        .training-options-list li { padding: 20px 0; border-top: 1px solid #b8a77b66; }
+        .training-options-list h3 { margin: 0 0 8px; font-size: 20px; }
+        .training-options-list p { margin: 0; line-height: 1.6; }
+        @media (max-width: 600px) { .training-options-list { grid-template-columns: 1fr; } }
         .starter-checkout {
             max-width: 960px;
             margin: 0 auto;
@@ -438,6 +443,18 @@
                         </div>
                     </div>
                 </aside>
+            </section>
+
+            <section class="section training-options" id="training-programs" aria-labelledby="training-programs-title">
+                <div class="section-header"><div><span class="section-kicker">train your way</span><h2 class="section-title" id="training-programs-title">Programs for where you train.</h2></div><p class="section-text">Choose training that fits your equipment and routine. These are workout options within Balance; choose your level of coaching support below.</p></div>
+                <ul class="training-options-list">
+                    <li><h3>Full gym</h3><p>Strength training with barbells, dumbbells and machines, including full-body and split programs.</p></li>
+                    <li><h3>At home with weights</h3><p>Dumbbell workouts for your home setup, with an optional bench.</p></li>
+                    <li><h3>At home, no equipment</h3><p>Bodyweight workouts you can do at home or while travelling.</p></li>
+                    <li><h3>Resistance bands</h3><p>Full-body training using resistance bands.</p></li>
+                    <li><h3>Yoga &amp; mindful movement</h3><p>Restorative, power, yin and vinyasa flows.</p></li>
+                    <li><h3>Recovery &amp; mobility</h3><p>Stretching, mobility work and active recovery sessions.</p></li>
+                </ul>
             </section>
 
             <section class="section offers-section" id="plan-checkout"><div class="section-header"><div><span class="section-kicker">find your fit</span><h2 class="section-title">Choose your level of support.</h2></div><p class="section-text">Start with a six-week course, choose ongoing support, or train live with Shannon. Open an option to see what is included. All prices are in AUD.</p></div>
