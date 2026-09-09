@@ -2282,8 +2282,15 @@ async function callOpenAITextModel(contents, generationConfig = {}, { profile = 
     return extractCandidateText(data, model);
 }
 
+function containsVideoInput(contents = []) {
+    return contents.some(content => (content.parts || []).some(part =>
+        /^video\//i.test(String(part.inlineData?.mimeType || part.fileData?.mimeType || ''))));
+}
+
 async function callGeminiFallback(contents, generationConfig = {}) {
-    const useOpenAIPrimary = shouldUseOpenAIPrimary() || !GEMINI_API_KEY;
+    const requiresVideoModel = containsVideoInput(contents);
+    if (requiresVideoModel && !GEMINI_API_KEY) throw new Error('Video analysis requires Gemini; public key unavailable');
+    const useOpenAIPrimary = !requiresVideoModel && (shouldUseOpenAIPrimary() || !GEMINI_API_KEY);
     if (useOpenAIPrimary) {
         return callOpenAITextModel(contents, generationConfig, {
             profile: 'coach_fallback',
@@ -2317,7 +2324,7 @@ async function callGeminiFallback(contents, generationConfig = {}) {
             break;
         }
     }
-    if (OPENAI_API_KEY) {
+    if (OPENAI_API_KEY && !requiresVideoModel) {
         console.warn(`[coach-fallback] Gemini failed, falling back to OpenAI: ${lastGeminiError?.message || 'unknown error'}`);
         return callOpenAITextModel(contents, generationConfig, {
             profile: 'coach_fallback',
@@ -2339,7 +2346,8 @@ async function callGeminiFallback(contents, generationConfig = {}) {
  * a minute.
  */
 async function callVertexGeminiMultimodal(contents, generationConfig = {}) {
-    if (shouldUseOpenAIPrimary()) {
+    const requiresVideoModel = containsVideoInput(contents);
+    if (shouldUseOpenAIPrimary() && !requiresVideoModel) {
         return callOpenAITextModel(contents, generationConfig, {
             profile: 'coach_fallback',
             label: 'openai-multimodal-primary',
@@ -2365,7 +2373,7 @@ async function callVertexGeminiMultimodal(contents, generationConfig = {}) {
         if (!response.ok) {
             const errText = await response.text();
             const err = new Error(`Vertex Gemini multimodal call failed: ${response.status} ${errText.slice(0, 500)}`);
-            if (OPENAI_API_KEY) {
+            if (OPENAI_API_KEY && !requiresVideoModel) {
                 console.warn(`[vertex-gemini] failed, falling back to OpenAI: ${err.message}`);
                 return callOpenAITextModel(contents, generationConfig, {
                     profile: 'coach_fallback',

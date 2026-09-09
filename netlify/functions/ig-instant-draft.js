@@ -7136,9 +7136,10 @@ Rules:
         ? extractMediaSummaryFromDraftRawText(rawText)
         : '';
     const analyzedKinds = [];
-    if (imageParts.length > 0 && mediaGenerationSucceeded && mediaSummary) analyzedKinds.push('photo');
+    const usableMediaSummary = !!mediaSummary && !/\b(?:not (?:decoded|inspectable)|could not (?:decode|inspect|view)|cannot (?:confirm|see|view)|unable to (?:decode|inspect|view))\b/i.test(mediaSummary);
+    if (imageParts.length > 0 && mediaGenerationSucceeded && usableMediaSummary) analyzedKinds.push('photo');
     if (audioTranscriptCount > 0 || (audioParts.length > 0 && mediaGenerationSucceeded)) analyzedKinds.push('audio');
-    if (((videoParts.length > 0 || videoFileCount > 0) && mediaGenerationSucceeded) || reelContextCount > 0) analyzedKinds.push('video');
+    if (((videoParts.length > 0 || videoFileCount > 0) && mediaGenerationSucceeded && usableMediaSummary) || reelContextCount > 0) analyzedKinds.push('video');
     mediaDecode.analyzed_kinds = analyzedKinds;
     mediaDecode.analysis_succeeded = analyzedKinds.length > 0;
     mediaDecode.audio_batch_complete = !hadAudioUrls
