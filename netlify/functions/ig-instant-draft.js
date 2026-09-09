@@ -1468,6 +1468,7 @@ function hasDirectPaidMetaCheckoutIntent(value = '') {
 
 function hasRecentPaidMetaSupportQuestion(history = []) {
     const lastOutbound = (Array.isArray(history) ? history : []).filter(item => item?.direction === 'out').slice(-2);
+    if (lastOutbound.some(item => /\bi can (?:share|send|open|show you)\b[^.!?]{0,100}\bpreview\b/i.test(String(item.text || '')))) return true;
     if (lastOutbound.some(item => /\b(?:want|like|keen|shall|should|can I)\b[^?]{0,150}\bpreview\b[^?]*\?/i.test(String(item.text || '')))) return true;
     return (Array.isArray(history) ? history : [])
         .filter(item => String(item?.direction || '').toLowerCase() === 'out')

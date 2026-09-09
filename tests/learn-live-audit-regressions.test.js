@@ -12,7 +12,7 @@ test('focused course questions answer only requested facts', () => {
  assert.match(build({...base,currentMessage:'What is the week-by-week curriculum?'}).joined,/Week 6:/);
 });
 test('short acceptance delivers the offered preview across natural invitation wording', () => {
-  for (const text of ['Want to see the preview?', 'Would you like a free app preview first?', 'Want me to send you the preview?']) {
+  for (const text of ['Want to see the preview?', 'Would you like a free app preview first?', 'Want me to send you the preview?', 'If you want, I can share a free personalised app preview before you decide on payment.']) {
     for (const currentMessage of ['yep', 'Yes please']) {
       const draft = build({...base, currentMessage, history:[{direction:'out',text}]});
       assert.equal(draft.appPreviewHandoff, true);
