@@ -1506,7 +1506,8 @@ function isExplicitPaidMetaPreviewRequest(value = '') {
 function hasRecentCompletePaidMetaOffer(history = []) {
     const recentOutbound = (Array.isArray(history) ? history : [])
         .filter(item => String(item?.direction || '').toLowerCase() === 'out')
-        .slice(-4);
+        .filter(item => !/^\[(?:IMAGE|VIDEO):/i.test(String(item.text || '')))
+        .slice(-12);
     // Instagram can split one Graph API send into multiple native bubbles.
     // Treat the recent outbound run as one offer so a short "Yes" still
     // reaches the promised app preview instead of falling back to the writer.
@@ -2214,7 +2215,7 @@ function buildDeterministicPaidMetaConversationReply({
             flowVariant,
         };
     }
-    if (broadFlow && PAID_META_FITNESS_GOAL_RE.test(message) && isPaidMetaStrongBlocker(message)) {
+    if (broadFlow && !hasRecentCompletePaidMetaOffer(history) && PAID_META_FITNESS_GOAL_RE.test(message) && isPaidMetaStrongBlocker(message)) {
         const proof = resolvePaidMetaTransformationProof({ goalText: message });
         const offer = addPaidMetaProofVideoToOfferChunks(buildPaidMetaTailoredOfferChunks(message, message, flowVariant), history, flowVariant);
         return guidedReply([...(proof && !hasDeliveredProofPhoto ? [proof.introduction] : []), ...offer.chunks], {
@@ -2239,6 +2240,7 @@ function buildDeterministicPaidMetaConversationReply({
         };
     }
     if (historyHasGoal
+        && !hasRecentCompletePaidMetaOffer(history)
         && (isPaidMetaConcreteBlocker(message) || isPaidMetaBroadBlockerAnswer(message, history))) {
         const offer = addPaidMetaProofVideoToOfferChunks(buildPaidMetaTailoredOfferChunks(
             message,

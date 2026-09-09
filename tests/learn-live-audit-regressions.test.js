@@ -94,3 +94,9 @@ test('accepted signed preview does not restart the offer after an intervening FA
  const issues=collectPaidMetaWriterContractIssues({draft,currentMessage:'Yes please',history,flowVariant:'broad_pain'});
  assert.equal(issues.some(x=>/earned paid-Meta offer/.test(x)),false);
 });
+
+test('an already delivered offer survives media and preview bubbles in history', () => {
+ const history=[{direction:'in',text:'I want to get stronger but only have two evenings a week.'},{direction:'out',text:'Balance Learn is a six-week course. Your workout program and meal plan are included for $149, no subscription. Want the preview before you pay?'},...Array.from({length:5},()=>({direction:'out',text:'[VIDEO:approved]'})),{direction:'out',text:'Your preview is ready'}];
+ const draft=build({...base,currentMessage:'I keep starting and stopping',history});
+ assert.notEqual(draft?.model,'deterministic_paid_meta_guided_sales_v1');
+});
