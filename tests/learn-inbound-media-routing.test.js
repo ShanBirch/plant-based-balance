@@ -3,6 +3,14 @@ const assert = require('node:assert/strict');
 const {buildMediaReviewInfo} = require('../netlify/functions/_lib/client-context');
 const {_test} = require('../netlify/functions/ig-instant-draft');
 
+test('paid media writer requires the private summary used by the delivery gate', () => {
+  const prompt = _test.buildPaidMetaAgentPrompt({flowVariant:'broad_pain',hasMedia:true});
+  assert.match(prompt, /"media_summary":"brief factual media description"/);
+  assert.match(prompt, /31 lessons/);
+  assert.match(prompt, /24\.83\/week/);
+  assert.doesNotMatch(_test.buildPaidMetaAgentPrompt({flowVariant:'broad_pain'}), /media_summary/);
+});
+
 const draft = _test.buildDeterministicPaidMetaConversationReply({
   flowVariant: 'broad_pain', currentMessage: 'Can I see the preview?',
   appPreviewUrl: 'https://future-balance.netlify.app/p/Test_123-xyz9876543210',
