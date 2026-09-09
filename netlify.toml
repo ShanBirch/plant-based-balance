@@ -5,7 +5,7 @@
 [functions]
   node_bundler = "esbuild"
 
-[functions."ig-instant-draft"]
+[functions."ig-instant-draft*"]
   external_node_modules = ["ffmpeg-static"]
   included_files = ["node_modules/ffmpeg-static/ffmpeg"]
 
