@@ -1,3 +1,4 @@
+const { outboundAnswersOlderInbound } = require('./_lib/ig-reply-source');
 /**
  * send-ig-reply — outbound for the Instagram channel via ManyChat.
  *
@@ -2070,6 +2071,7 @@ async function loadThreadLastInboundAt(threadId) {
 }
 
 function resolveAutomatedConversationAnchorAt(alert = {}) {
+    if (Number.isFinite(Date.parse(alert.data?.source_inbound_created_at || ''))) return new Date(alert.data.source_inbound_created_at).toISOString();
     const data = alert.data || {};
     const inboundCandidates = [
         data.source_inbound_created_at,
@@ -2093,9 +2095,13 @@ async function getAutomatedInstagramConversationDelta({ alert = {}, alertData = 
     const anchorAt = resolveAutomatedConversationAnchorAt({ ...alert, data: alertData });
     if (!threadId || !anchorAt) return null;
     const rows = await supabase(
-        `ig_messages?select=id,direction,text,created_at,alert_id&thread_id=eq.${encodeURIComponent(threadId)}&created_at=gt.${encodeURIComponent(anchorAt)}&order=created_at.desc&limit=1`
+        `ig_messages?select=id,direction,text,created_at,alert_id,source&thread_id=eq.${encodeURIComponent(threadId)}&created_at=gt.${encodeURIComponent(anchorAt)}&order=created_at.desc&limit=20`
     );
-    return rows?.[0] || null;
+    for (const row of rows || []) {
+        if (await outboundAnswersOlderInbound({query:supabase,threadId,outbound:row,sourceAt:anchorAt})) continue;
+        return row;
+    }
+    return null;
 }
 
 async function cancelAutomatedConversationDeltaSend({ alertId, alertData = {}, delta = {} } = {}) {

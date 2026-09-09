@@ -55,3 +55,13 @@ test('rapid goal before the answer does not count as a delivered photo', () => {
  const draft=build({...base,currentMessage:'I want to get stronger, but I only have two evenings a week. Can I train at home?',history:[{direction:'in',text:'I want to get stronger, but I only have two evenings a week.'}]});
  assert.ok(draft.imageAttachmentUrl);
 });
+
+test('late automated bubbles are distinguished from answers to the current inbound', async () => {
+ const {outboundAnswersOlderInbound} = require('../netlify/functions/_lib/ig-reply-source');
+ const base={threadId:'test',outbound:{direction:'out',alert_id:'older-alert'},sourceAt:'2026-09-09T00:31:20Z'};
+ for(const [answeredAt,expected] of [['2026-09-09T00:30:41Z',true],['2026-09-09T00:31:20Z',false],['2026-09-09T00:32:00Z',false]]) {
+  const query=async path => path.startsWith('coach_alerts')?[{data:{draft_revision_id:'revision'}}]:[{created_at:answeredAt}];
+  assert.equal(await outboundAnswersOlderInbound({...base,query}),expected);
+ }
+ assert.equal(await outboundAnswersOlderInbound({...base,outbound:{direction:'out',text:'A manual response'},query:async()=>[]}),false);
+});

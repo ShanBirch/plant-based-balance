@@ -1,3 +1,4 @@
+const { outboundAnswersOlderInbound } = require('./_lib/ig-reply-source');
 /**
  * ig-instant-draft — produces an AI draft reply for an inbound Instagram DM
  * captured by the manychat-inbound webhook.
@@ -1537,7 +1538,7 @@ function buildPaidMetaTailoredOfferChunks(blockerText = '', goalText = '', flowV
     const wantsFatLossAndMuscle = /\b(?:lose|fat|weight)\b/i.test(goal)
         && /\b(?:build|muscle|strong|strength)\b/i.test(goal);
     const asksForMealPlan = /\bdo you (?:offer|have|provide|include) (?:a |any )?(?:plant[ -]?based )?meal plans?\b|\bis (?:a |the )?meal plan included\b/i.test(turn);
-    const asksWhetherDietaryFitWorks = /\b(?:gluten[ -]?free|dietary (?:need|needs|preference|preferences|restriction|restrictions)|food side)\b[\s\S]{0,80}\b(?:work|fit|suit|okay|ok|possible|do you do that)\b/i.test(turn)
+    const asksWhetherDietaryFitWorks = /\b(?:vegetarian|vegan)\b/i.test(turn) || /\b(?:gluten[ -]?free|dietary (?:need|needs|preference|preferences|restriction|restrictions)|food side)\b[\s\S]{0,80}\b(?:work|fit|suit|okay|ok|possible|do you do that)\b/i.test(turn)
         || /\b(?:would|will|can|does)\b[\s\S]{0,60}\b(?:food side|meal plan|nutrition)\b[\s\S]{0,50}\b(?:work|fit|suit)\b/i.test(turn);
     let acknowledgement = 'Yeah, that makes sense.';
     if (PAID_META_BROAD_BLOCKER_RE.test(turn)) {
@@ -4652,6 +4653,7 @@ function classifySourceMessageFreshness({
     if (String(latestMessage.id) === String(sourceMessage.id)) {
         return { state: 'current', reason: 'source_is_latest_canonical_message' };
     }
+    if (latestMessage.replies_to_older_inbound === true) return {state:'current', reason:'late_outbound_answers_older_inbound'};
     return {
         state: 'stale',
         reason: String(latestMessage.direction || '').toLowerCase() === 'out'
@@ -4669,15 +4671,21 @@ async function inspectSourceMessageFreshness({
         return { state: 'unknown', reason: 'source_identity_missing' };
     }
     const sourceRows = await supabaseQuery(
-        `ig_messages?select=id,direction,created_at,manychat_message_id&thread_id=eq.${encodeURIComponent(threadId)}`
+        `ig_messages?select=id,direction,text,source,alert_id,created_at,manychat_message_id&thread_id=eq.${encodeURIComponent(threadId)}`
         + `&manychat_message_id=eq.${encodeURIComponent(manychatMessageId)}&limit=1`
     );
     const latestRows = await supabaseQuery(
-        `ig_messages?select=id,direction,created_at,manychat_message_id&thread_id=eq.${encodeURIComponent(threadId)}`
+        `ig_messages?select=id,direction,text,source,alert_id,created_at,manychat_message_id&thread_id=eq.${encodeURIComponent(threadId)}`
         + '&order=created_at.desc,id.desc&limit=1'
     );
     const sourceMessage = sourceRows?.[0] || null;
     const latestMessage = latestRows?.[0] || null;
+    if (latestMessage?.direction === 'out' && sourceMessage) {
+        const newestInbound = await supabaseQuery('ig_messages?select=id&thread_id=eq.' + encodeURIComponent(threadId) + '&direction=eq.in&order=created_at.desc,id.desc&limit=1');
+        if (newestInbound?.[0]?.id === sourceMessage.id) {
+            latestMessage.replies_to_older_inbound = await outboundAnswersOlderInbound({query:supabaseQuery,threadId,outbound:latestMessage,sourceAt:sourceMessage.created_at});
+        }
+    }
     return {
         ...classifySourceMessageFreshness({
             sourceMessage,
@@ -7535,6 +7543,7 @@ exports.handler = async (event) => {
     const idempotencyKey = manychatMessageId
         ? `ig_incoming_dm:${manychatMessageId}`
         : `ig_incoming_dm:${threadId}:${Date.now()}`;
+    let sourceInboundCreatedAt = '';
     if (manychatMessageId) {
         try {
             const freshness = await inspectSourceMessageFreshness({
@@ -7542,6 +7551,7 @@ exports.handler = async (event) => {
                 manychatMessageId,
                 resetAt: thread.custom_data?.internal_test_conversation_reset_at || '',
             });
+            sourceInboundCreatedAt = freshness.sourceMessage?.created_at || '';
             if (freshness.state === 'stale') {
                 const alert = await cancelStaleReplayAlert({ idempotencyKey, freshness });
                 console.warn(`[ig-draft] skipped stale replay ${manychatMessageId} for thread ${threadId}: ${freshness.reason}`);
@@ -8795,6 +8805,7 @@ exports.handler = async (event) => {
             manual_native_voice_note_script: personalVoicePlan.manualNativeVoiceScript || undefined,
             manychat_message_id: manychatMessageId || null,
             draft_revision_id: manychatMessageId || idempotencyKey,
+            source_inbound_created_at: sourceInboundCreatedAt || undefined,
             message_preview: truncate(displaySourceMessage, 400),
             last_outbound_message: lastOutboundMessage,
             learning_reels: learningReelHistory.length ? {
@@ -8998,6 +9009,7 @@ exports.handler = async (event) => {
             proposed_actions: mergeProposedActions(existingPending.data?.proposed_actions, proposedActions),
             manychat_message_id: manychatMessageId || (existingPending.data && existingPending.data.manychat_message_id) || null,
             draft_revision_id: manychatMessageId || idempotencyKey,
+            source_inbound_created_at: sourceInboundCreatedAt || undefined,
             lead_stage: effectiveLeadStage || thread.lead_stage || existingPending.data?.lead_stage || 'new',
             acquisition_mode: acquisitionMode,
             offer_flow_variant: metaAdFlowVariant,
