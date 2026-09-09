@@ -9,7 +9,7 @@ const run = promisify(execFile);
 async function decodeVideo(inline, {binary, transcribe} = {}) {
     const bytes = Buffer.from(inline?.data || '', 'base64');
     if (!bytes.length || bytes.length > 25 * 1024 * 1024) throw new Error('Video is empty or exceeds the 25 MB analysis limit');
-    const ffmpeg = binary || require('ffmpeg-static');
+    const ffmpeg = binary || path.join(process.env.LAMBDA_TASK_ROOT || process.cwd(), '.netlify/video-runtime/ffmpeg');
     await fs.access(ffmpeg);
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'balance-video-'));
     const input = path.join(root, 'input.mp4');

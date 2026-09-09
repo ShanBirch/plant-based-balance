@@ -1,4 +1,5 @@
 [build]
+  command = "node scripts/prepare-video-runtime.cjs"
   publish = "."
   functions = "netlify/modern-functions"
 
@@ -6,8 +7,7 @@
   node_bundler = "esbuild"
 
 [functions."ig-instant-draft*"]
-  external_node_modules = ["ffmpeg-static"]
-  included_files = ["node_modules/ffmpeg-static/ffmpeg"]
+  included_files = [".netlify/video-runtime/ffmpeg"]
 
 [functions."admin-reset-user-password"]
   node_bundler = "esbuild"

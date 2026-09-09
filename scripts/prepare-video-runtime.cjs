@@ -1,0 +1,11 @@
+const fs = require('node:fs');
+const path = require('node:path');
+const {execFileSync} = require('node:child_process');
+const binary = require('ffmpeg-static');
+if (!binary || !fs.existsSync(binary)) throw new Error('ffmpeg-static binary was not installed; video deployment cannot proceed');
+execFileSync(binary,['-version'],{stdio:'ignore',windowsHide:true,timeout:10000});
+const target=path.resolve('.netlify/video-runtime/ffmpeg');
+fs.mkdirSync(path.dirname(target),{recursive:true});
+fs.copyFileSync(binary,target);
+fs.chmodSync(target,0o755);
+console.log('Verified video decoder prepared for Instagram responders.');
