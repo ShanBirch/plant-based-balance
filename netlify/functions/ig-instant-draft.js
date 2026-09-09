@@ -7398,7 +7398,20 @@ function applyDecodedPaidMetaAudioHandoff(draft = {}, options = {}) {
     ].map(text => String(text || '').trim()).filter(Boolean))];
     const currentMessage = [options.currentMessage || '', ...transcripts].join('\n');
     const handoff = buildDeterministicPaidMetaConversationReply({...options, currentMessage});
-    if (!['campaign_app_preview_handoff', 'campaign_buyer_handoff'].includes(handoff?.replyMode)) return draft;
+    if (!['campaign_app_preview_handoff', 'campaign_buyer_handoff'].includes(handoff?.replyMode)) {
+        const mediaFacts = [decode.media_summary || '', ...transcripts].join('\n');
+        // Decoded facts count as answers too. Repair only an actual repeated
+        // blocker question; never infer preview consent from a visual summary.
+        if (options.flowVariant === 'broad_pain'
+            && !hasPaidMetaPreviewOrPriceDecline(currentMessage)
+            && PAID_META_FITNESS_GOAL_RE.test(mediaFacts)
+            && isPaidMetaConcreteBlocker(mediaFacts)
+            && (paidMetaOutboundAskedForBlocker(draft.joined) || /\bwhat(?:'s| is) your blocker\b/i.test(draft.joined || ''))) {
+            const chunks = buildPaidMetaTailoredOfferChunks(mediaFacts, mediaFacts, 'broad_pain');
+            return {...draft, chunks, joined:chunks.join('\n\n'), replyMode:'campaign_sales_progression', model:'deterministic_paid_meta_guided_sales_v1', maxChunks:chunks.length};
+        }
+        return draft;
+    }
     return {...draft, ...handoff};
 }
 

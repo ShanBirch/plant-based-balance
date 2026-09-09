@@ -2,6 +2,15 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {buildMediaReviewInfo} = require('../netlify/functions/_lib/client-context');
 const {_test} = require('../netlify/functions/ig-instant-draft');
+test('decoded goal and shift constraints replace a repeated blocker question with the offer', () => {
+ const draft={joined:"Before I line up your week, what's your blocker right now?",mediaDecode:{analysis_complete:true,analysis_succeeded:true,media_summary:"Goal: build strength. Available Tuesday and Saturday. Work shifts change each week. Dumbbells at home."}};
+ const result=_test.applyDecodedPaidMetaAudioHandoff(draft,{flowVariant:'broad_pain',currentMessage:'Could this work for me?'});
+ assert.doesNotMatch(result.joined,/your blocker|gets in the way/i);
+ assert.match(result.joined,/preview/i);
+ assert.equal(result.mediaDecode,draft.mediaDecode);
+ assert.notEqual(result.appPreviewHandoff,true);
+ assert.equal(_test.applyDecodedPaidMetaAudioHandoff({...draft,mediaDecode:{...draft.mediaDecode,analysis_complete:false}},{flowVariant:'broad_pain'}).joined,draft.joined);
+});
 
 test('free personalised preview requests send the card and explicit declines do not', () => {
   const options={flowVariant:'broad_pain',appPreviewUrl:'https://future-balance.netlify.app/p/Test_123-xyz9876543210'};
