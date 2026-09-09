@@ -5,6 +5,10 @@
 [functions]
   node_bundler = "esbuild"
 
+[functions."ig-instant-draft"]
+  external_node_modules = ["ffmpeg-static"]
+  included_files = ["node_modules/ffmpeg-static/ffmpeg"]
+
 [functions."admin-reset-user-password"]
   node_bundler = "esbuild"
 

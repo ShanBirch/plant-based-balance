@@ -22,6 +22,7 @@ const { outboundAnswersOlderInbound } = require('./_lib/ig-reply-source');
  */
 
 const { claimDraftRecovery } = require('./_lib/ig-draft-recovery');
+const {prepareVideoForOpenAI} = require('./_lib/openai-video');
 
 const {
     supabaseQuery,
@@ -82,6 +83,7 @@ const {
     formatCoachLocalTimestamp,
     formatTimedConversationLine,
     buildMessageMediaBatchParts,
+    transcribeAudioInlineData,
     normalizeImplicitMediaMarkers,
     replacePhotoMarkers,
     replaceAudioMarkers,
@@ -7018,7 +7020,19 @@ Rules:
     let lastError = null;
     let deterministicPaidMetaFallback = null;
 
-    if (hasInlineMedia) {
+    if (hasInlineMedia && videoParts.length > 0 && process.env.OPENAI_API_KEY) {
+        try {
+            const videoInput = await prepareVideoForOpenAI(mediaContents, {transcribe:inline => transcribeAudioInlineData(inline,0,{maxChars:6000})});
+            rawText = requireNonEmptyDraftText(await callOpenAITextModel(videoInput.contents, generationConfig), 'OpenAI video frames and transcript');
+            model = 'openai-video-frames-transcript';
+            mediaDecode.video_processing = videoInput.videos;
+        } catch (error) {
+            lastError = `openai-video: ${String(error.message).slice(0,200)}`;
+            console.warn(`[ig-draft] ${lastError}; trying video-capable fallback`);
+        }
+    }
+
+    if (hasInlineMedia && !rawText) {
         // Vision path: try the public Gemini API first (works fine on a paid
         // tier key, which is what Shannon has now), and fall back to Vertex
         // AI's hosted Gemini if the public API has a hiccup. v7 is text-only

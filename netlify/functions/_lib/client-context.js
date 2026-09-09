@@ -4288,7 +4288,7 @@ function cleanAudioTranscriptText(value, max = 1200) {
         .slice(0, max);
 }
 
-async function transcribeAudioInlineData(inlineData, index = 0) {
+async function transcribeAudioInlineData(inlineData, index = 0, {maxChars = 1200} = {}) {
     if (!inlineData?.data) {
         return { text: '', error: 'missing audio inline data' };
     }
@@ -4315,7 +4315,7 @@ async function transcribeAudioInlineData(inlineData, index = 0) {
             let data = {};
             try { data = bodyText ? JSON.parse(bodyText) : {}; } catch { data = { text: bodyText }; }
             if (res.ok) {
-                const text = cleanAudioTranscriptText(data.text);
+                const text = cleanAudioTranscriptText(data.text, maxChars);
                 if (text) {
                     console.log(`[audio-transcript] ok chars=${text.length} model=${OPENAI_TRANSCRIPTION_MODEL}`);
                     return { text, error: '', model: OPENAI_TRANSCRIPTION_MODEL };
@@ -4351,7 +4351,7 @@ async function transcribeAudioInlineData(inlineData, index = 0) {
                 generationConfig: { maxOutputTokens: 1536, temperature: 0 },
             },
         });
-        const text = cleanAudioTranscriptText(extractCandidateText(data, model));
+        const text = cleanAudioTranscriptText(extractCandidateText(data, model), maxChars);
         if (!text) throw new Error('transcription returned empty text');
         console.log(`[audio-transcript] fallback ok chars=${text.length} model=${model}`);
         return { text, error: '', model };
