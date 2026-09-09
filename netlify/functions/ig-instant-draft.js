@@ -1552,7 +1552,7 @@ function buildPaidMetaTailoredOfferChunks(blockerText = '', goalText = '', flowV
         acknowledgement = 'Yeah, with your week changing all the time, the plan needs to flex around your schedule.';
     } else if (/\b(?:food|prep|prepar|run out of time)\b/i.test(turn)) {
         acknowledgement = 'Yeah, if time and food prep are where it falls apart, the food side needs to stay simple on busy days.';
-    } else if (/\b(?:accountab|follow[ -]?through|fall off|stop|restart|consisten)\b/i.test(turn)) {
+    } else if (/\b(?:accountab\w*|follow[ -]?through|fall off|stop|restart|consisten\w*)\b/i.test(turn)) {
         acknowledgement = 'Yeah, if follow-through is the hard part, a clear plan and someone checking in can make a big difference.';
     } else if (/\b(?:overwhelm|too much information)\b/i.test(turn)) {
         acknowledgement = 'Yeah, if too much information leaves you doing nothing, the next step needs to be obvious and simple.';
