@@ -38,3 +38,15 @@ test('course facts and weekly terms answer the actual question', () => {
   assert.match(weekly.joined,/continues weekly.*cancel/);
   assert.match(weekly.joined,/148\.98/);
 });
+
+test('a combined proof handoff delivers both image and video in introduction order', () => {
+  const {appendPaidMetaProofMedia} = require('../netlify/functions/send-ig-reply')._test;
+  const imageUrl='https://plantbased-balance.org/photos/client-success/gen-cocos.jpg';
+  const videoUrl='https://plantbased-balance.org/assets/balance-foundations-course-first-v8.mp4';
+  const items=appendPaidMetaProofMedia([
+    {kind:'text',text:'This is Gen. She built strength.'},
+    {kind:'text',text:'Here is the course video.'},
+    {kind:'text',text:'Want to see the preview?'},
+  ],{imageUrl,videoUrl});
+  assert.deepEqual(items.map(x=>x.kind),['text','image','text','video','text']);
+});

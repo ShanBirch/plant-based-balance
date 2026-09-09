@@ -77,6 +77,14 @@ function splitTerminalQuestionForProofMedia(messages = []) {
 function insertProofMediaBeforeFinalQuestion(outboundItems = [], mediaItem) {
     const items = Array.isArray(outboundItems) ? [...outboundItems] : [];
     if (!mediaItem) return items;
+    if (mediaItem.kind === 'image') {
+        const introductionIndex = items.findIndex(item => item.kind === 'text'
+            && requiredPaidMetaProofImageUrl(item.text) === mediaItem.imageUrl);
+        if (introductionIndex >= 0) {
+            items.splice(introductionIndex + 1, 0, mediaItem);
+            return items;
+        }
+    }
     let insertAt = items.length;
     for (let index = items.length - 1; index >= 0; index -= 1) {
         if (items[index]?.kind === 'text' && /\?\s*$/.test(String(items[index]?.text || ''))) {
@@ -86,6 +94,13 @@ function insertProofMediaBeforeFinalQuestion(outboundItems = [], mediaItem) {
     }
     items.splice(insertAt, 0, mediaItem);
     return items;
+}
+
+function appendPaidMetaProofMedia(items, { videoUrl = '', imageUrl = '' } = {}) {
+    let result = items;
+    if (videoUrl) result = insertProofMediaBeforeFinalQuestion(result, {kind:'video', text: '[VIDEO:' + videoUrl + ']', videoUrl});
+    if (imageUrl) result = insertProofMediaBeforeFinalQuestion(result, {kind:'image', text: '[IMAGE:' + imageUrl + ']', imageUrl});
+    return result;
 }
 
 function isBlockedDraftReview(review) {
@@ -2784,17 +2799,10 @@ exports.handler = async (event) => {
     if (approvedVoiceCompanion) {
         outboundItems.push({ kind: 'text', text: voiceCompanionText });
     }
-    if (hasDraftVideoAttachment && !voiceMessageConfig.enabled) {
-        outboundItems = insertProofMediaBeforeFinalQuestion(outboundItems, {
-            kind: 'video',
-            text: `[VIDEO:${draftVideoAttachmentUrl}]`,
-            videoUrl: draftVideoAttachmentUrl,
-        });
-    } else if (hasDraftImageAttachment && !voiceMessageConfig.enabled) {
-        outboundItems = insertProofMediaBeforeFinalQuestion(outboundItems, {
-            kind: 'image',
-            text: `[IMAGE:${draftImageAttachmentUrl}]`,
-            imageUrl: draftImageAttachmentUrl,
+    if (!voiceMessageConfig.enabled) {
+        outboundItems = appendPaidMetaProofMedia(outboundItems, {
+            videoUrl: hasDraftVideoAttachment ? draftVideoAttachmentUrl : '',
+            imageUrl: hasDraftImageAttachment ? draftImageAttachmentUrl : '',
         });
     }
 
@@ -3455,6 +3463,7 @@ exports._test = {
     maySendDraftVideoAttachment,
     splitTerminalQuestionForProofMedia,
     insertProofMediaBeforeFinalQuestion,
+    appendPaidMetaProofMedia,
     stripPaidMetaProofMediaUrls,
     shouldResetGoldCoastAiTestConversationAfterPreview,
 };
