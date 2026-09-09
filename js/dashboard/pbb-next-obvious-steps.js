@@ -582,21 +582,28 @@
 
   var coachCheckinPage = 0;
   var coachCheckinPages = [
-    {title:'The full picture', body:'This is not about having a perfect week. Shannon looks at the full picture so your next week can be adjusted around real life.', visual:'Your week, understood', icon:'<circle cx="48" cy="48" r="28"/><path d="M48 20v28l19 12M18 24l-6 12M78 24l6 12"/>'},
-    {title:'Weekly goals', body:'What felt realistic, what you completed and what got in the way.', visual:'Small steps. A clearer direction.', icon:'<rect x="24" y="16" width="48" height="64" rx="8"/><path d="m33 36 4 4 8-9m4 6h13M33 53h7m9 0h13M33 68h7m9 0h13"/>'},
-    {title:'Meals and photos', body:'Log your meals and add photos so Shannon can see what the week actually looked like.', visual:'Show the everyday meals', icon:'<circle cx="48" cy="48" r="25"/><circle cx="48" cy="48" r="15"/><path d="M12 22v20m8-20v20m-4-20v52M80 22v52M80 22q-14 16 0 26"/>'},
-    {title:'Course progress', body:'What you learned, completed or found difficult in Balance Learn.', visual:'Turn learning into real life', icon:'<path d="M48 27Q29 14 14 23v49q18-9 34 3 16-12 34-3V23Q67 14 48 27v48M24 34l14 4m-14 8 14 4m20-12 14-4m-14 16 14-4"/>'},
-    {title:'Workouts', body:'Your completed sessions, logged sets and any workouts you had to move or miss.', visual:'Every session adds context', icon:'<path d="M32 48h32M15 36v24m10-32v40m46-40v40m10-32v24M15 48h10m46 0h10"/>'},
-    {title:'Check-in form', body:'Your honest recap of what worked, what did not and what support you need.', visual:'An honest recap helps most', icon:'<path d="M18 22h60v43H43L26 79V65h-8zM30 36h36M30 47h26"/>'},
-    {title:'Progress photos', body:'Your private visual record, used to look for changes beyond one number.', visual:'Progress beyond the scales', icon:'<rect x="16" y="27" width="64" height="48" rx="8"/><circle cx="48" cy="51" r="14"/><path d="m30 27 6-10h24l6 10M68 38h1"/>'},
-    {title:'Sleep and steps', body:'Your recovery and daily movement, whether entered or brought in from your watch.', visual:'Movement and rest both count', icon:'<path d="M42 17a25 25 0 1 0 27 35 24 24 0 0 1-27-35M65 18v12m-6-6h12M67 70l5-8 8 5-5 8z"/>'},
-    {title:'Mood, energy and stress', body:'The context that helps explain why the rest of your week went the way it did.', visual:'Make space for how you feel', icon:'<path d="M48 76 20 49C1 28 31 9 48 31 65 9 95 28 76 49zM23 48h15l6-12 9 23 7-11h13"/>'}
+    {title:'The full picture', steps:["Notice what went well.", "Keep track as you go.", "Share what got in the way."], body:'This is not about having a perfect week. Shannon looks at the full picture so your next week can be adjusted around real life.', visual:'Your week, understood', icon:'<circle cx="48" cy="48" r="28"/><path d="M48 20v28l19 12M18 24l-6 12M78 24l6 12"/>'},
+    {title:'Weekly goals', steps:["Pick a few realistic goals.", "Tick them off as you go.", "Tell Shannon what got in the way."], body:'What felt realistic, what you completed and what got in the way.', visual:'Small steps. A clearer direction.', icon:'<rect x="24" y="16" width="48" height="64" rx="8"/><path d="m33 36 4 4 8-9m4 6h13M33 53h7m9 0h13M33 68h7m9 0h13"/>'},
+    {title:'Meals and photos', steps:["Log your everyday meals.", "Add a photo when you can.", "Mention meals you found hard to plan."], body:'Log your meals and add photos so Shannon can see what the week actually looked like.', visual:'Show the everyday meals', icon:'<circle cx="48" cy="48" r="25"/><circle cx="48" cy="48" r="15"/><path d="M12 22v20m8-20v20m-4-20v52M80 22v52M80 22q-14 16 0 26"/>'},
+    {title:'Course progress', steps:["Work through your current week.", "Try the action in everyday life.", "Share anything that felt unclear."], body:'What you learned, completed or found difficult in Balance Learn.', visual:'Turn learning into real life', icon:'<path d="M48 27Q29 14 14 23v49q18-9 34 3 16-12 34-3V23Q67 14 48 27v48M24 34l14 4m-14 8 14 4m20-12 14-4m-14 16 14-4"/>'},
+    {title:'Workouts', steps:["Log the sets and reps you complete.", "Note sessions you moved or missed.", "Share what felt too easy or too hard."], body:'Your completed sessions, logged sets and any workouts you had to move or miss.', visual:'Every session adds context', icon:'<path d="M32 48h32M15 36v24m10-32v40m46-40v40m10-32v24M15 48h10m46 0h10"/>'},
+    {title:'Check-in form', steps:["Share a win from your week.", "Explain what made things harder.", "Tell Shannon where you need support."], body:'Your honest recap of what worked, what did not and what support you need.', visual:'An honest recap helps most', icon:'<path d="M18 22h60v43H43L26 79V65h-8zM30 36h36M30 47h26"/>'},
+    {title:'Progress photos', steps:["Take photos if you feel comfortable.", "Use similar lighting and angles.", "Look for changes over time."], body:'Your private visual record, used to look for changes beyond one number.', visual:'Progress beyond the scales', icon:'<rect x="16" y="27" width="64" height="48" rx="8"/><circle cx="48" cy="51" r="14"/><path d="m30 27 6-10h24l6 10M68 38h1"/>'},
+    {title:'Sleep and steps', steps:["Log your sleep and daily steps.", "Check any synced watch entries.", "Mention changes to your routine."], body:'Your recovery and daily movement, whether entered or brought in from your watch.', visual:'Movement and rest both count', icon:'<path d="M42 17a25 25 0 1 0 27 35 24 24 0 0 1-27-35M65 18v12m-6-6h12M67 70l5-8 8 5-5 8z"/>'},
+    {title:'Mood, energy and stress', steps:["Notice your mood and energy.", "Record the stress you felt.", "Share what affected your week."], body:'The context that helps explain why the rest of your week went the way it did.', visual:'Make space for how you feel', icon:'<path d="M48 76 20 49C1 28 31 9 48 31 65 9 95 28 76 49zM23 48h15l6-12 9 23 7-11h13"/>'}
   ];
 
   function renderCoachCheckinPage(overlay) {
     var page = coachCheckinPages[coachCheckinPage];
     overlay.querySelector('[data-coach-page-title]').textContent = page.title;
     overlay.querySelector('[data-coach-page-body]').textContent = page.body;
+    var stepList = overlay.querySelector('[data-coach-page-steps]');
+    stepList.replaceChildren();
+    page.steps.forEach(function(text){
+      var item = document.createElement('li');
+      item.textContent = text;
+      stepList.appendChild(item);
+    });
     overlay.querySelector('[data-coach-page-visual]').innerHTML = '<svg viewBox="0 0 96 96" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + page.icon + '</svg><span>' + page.visual + '</span>';
     overlay.querySelector('[data-coach-page-count]').textContent = (coachCheckinPage + 1) + ' / ' + coachCheckinPages.length;
     var back = overlay.querySelector('[data-coach-page-back]');
@@ -620,16 +627,21 @@
     style.textContent = `
       #coach-checkin-explainer{position:fixed;inset:0;z-index:399990;display:none;align-items:center;justify-content:center;padding:calc(18px + env(safe-area-inset-top,0px)) 16px calc(18px + env(safe-area-inset-bottom,0px));box-sizing:border-box;background:rgba(17,15,10,.72);backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px)}
       #coach-checkin-explainer.is-open{display:flex}
-      .coach-checkin-explainer__panel{width:min(100%,480px);height:min(720px,100%);max-height:100%;display:flex;flex-direction:column;overflow:hidden;border:1px solid #c5a468;border-radius:28px;box-sizing:border-box;background:linear-gradient(155deg,#fffdf7,#f7edda);box-shadow:0 28px 80px #0005;color:#17130d;-webkit-text-fill-color:#17130d;font-family:inherit}
+      .coach-checkin-explainer__panel{width:min(100%,480px);height:min(760px,100%);max-height:100%;display:flex;flex-direction:column;overflow:hidden;border:1px solid #c5a468;border-radius:28px;box-sizing:border-box;background:linear-gradient(155deg,#fffdf7,#f7edda);box-shadow:0 28px 80px #0005;color:#17130d;-webkit-text-fill-color:#17130d;font-family:inherit}
       .coach-checkin-explainer__header{padding:22px 24px 12px;flex:none}
       .coach-checkin-explainer__eyebrow{margin:0 0 8px;color:#795617;-webkit-text-fill-color:#795617;font-size:.68rem;font-weight:850;letter-spacing:.12em;text-transform:uppercase}
       .coach-checkin-explainer__title{font-size:1.12rem;line-height:1.3;margin:0;color:#17130d;-webkit-text-fill-color:#17130d}
       .coach-checkin-explainer__content{padding:8px 24px 20px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;flex:1;min-height:0}
-      .coach-checkin-explainer__visual{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;min-height:170px;margin:6px 0 24px;padding:18px;box-sizing:border-box;border-radius:24px;background:radial-gradient(circle at 50% 40%,#fff8df,#ebd8a4);color:#795617;-webkit-text-fill-color:#795617}
-      .coach-checkin-explainer__visual svg{width:100px;height:100px}
+      .coach-checkin-explainer__visual{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;min-height:130px;margin:6px 0 20px;padding:18px;box-sizing:border-box;border-radius:24px;background:radial-gradient(circle at 50% 40%,#fff8df,#ebd8a4);color:#795617;-webkit-text-fill-color:#795617}
+      .coach-checkin-explainer__visual svg{width:76px;height:76px}
       .coach-checkin-explainer__visual span{font-size:.76rem;font-weight:750;text-align:center}
       .coach-checkin-explainer__page-title{margin:0 0 14px;font-family:Georgia,serif;font-size:2rem;line-height:1.12;color:#17130d;-webkit-text-fill-color:#17130d}
       .coach-checkin-explainer__intro{margin:0;font-size:1.02rem;line-height:1.6;color:#554a3b;-webkit-text-fill-color:#554a3b}
+      .coach-checkin-explainer__steps{margin-top:20px;padding:18px;border:1px solid #e6d7ae;border-radius:20px;background:#f0e5c7;color:#302818;-webkit-text-fill-color:#302818}
+      .coach-checkin-explainer__steps h4{margin:0 0 12px;font-size:.68rem;line-height:1.4;font-weight:850;letter-spacing:.09em;text-transform:uppercase;color:#745519;-webkit-text-fill-color:#745519}
+      .coach-checkin-explainer__steps ul{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+      .coach-checkin-explainer__steps li{display:flex;align-items:flex-start;gap:10px;font-size:.88rem;line-height:1.45;color:#302818;-webkit-text-fill-color:#302818}
+      .coach-checkin-explainer__steps li::before{content:'\\2713';display:grid;place-items:center;flex:0 0 22px;height:22px;border-radius:50%;background:#fffaf0;color:#795617;-webkit-text-fill-color:#795617;font-size:.8rem}
       .coach-checkin-explainer__footer{flex:none;padding:16px 24px 22px;border-top:1px solid #d8c8a7;background:#fbf4e4}
       .coach-checkin-explainer__nav{display:flex;align-items:center;justify-content:space-between;gap:18px}
       .coach-checkin-explainer__arrow{display:grid;place-items:center;width:54px;height:54px;flex:none;border:1px solid #b89753;border-radius:50%;background:#fffaf0;color:#17130d;-webkit-text-fill-color:#17130d;font-family:inherit;font-size:1.6rem;font-weight:700;line-height:1;cursor:pointer}
@@ -655,6 +667,7 @@
           <div class="coach-checkin-explainer__visual" data-coach-page-visual></div>
           <h3 class="coach-checkin-explainer__page-title" data-coach-page-title></h3>
           <p class="coach-checkin-explainer__intro" data-coach-page-body></p>
+          <section class="coach-checkin-explainer__steps" aria-label="Your part this week"><h4>Your part this week</h4><ul data-coach-page-steps></ul></section>
         </div>
         <footer class="coach-checkin-explainer__footer"><nav class="coach-checkin-explainer__nav" aria-label="Weekly review pages">
           <button class="coach-checkin-explainer__arrow" type="button" data-coach-page-back aria-label="Previous page">&#8592;</button>

@@ -120,15 +120,15 @@ test('the Shannon check-in explainer sits before the welcome video and covers th
 
   assert.ok(foundationsIndex >= 0 && checkinIndex > foundationsIndex && coachIndex > checkinIndex);
   assert.match(source, /title: 'Check how Shannon does check-ins'/);
-  assert.match(source, /<strong>Weekly Goals<\/strong>/);
-  assert.match(source, /<strong>Meals and photos<\/strong>/);
-  assert.match(source, /<strong>Course progress<\/strong>/);
-  assert.match(source, /<strong>Workouts<\/strong>/);
-  assert.match(source, /<strong>Check-in form<\/strong>/);
-  assert.match(source, /<strong>Progress photos<\/strong>/);
-  assert.match(source, /<strong>Sleep and steps<\/strong>/);
-  assert.match(source, /<strong>Mood, energy and stress<\/strong>/);
-  assert.match(source, /max-height:100%;overflow-y:auto/);
+  assert.match(source, /title:'Weekly goals'/);
+  assert.match(source, /title:'Meals and photos'/);
+  assert.match(source, /title:'Course progress'/);
+  assert.match(source, /title:'Workouts'/);
+  assert.match(source, /title:'Check-in form'/);
+  assert.match(source, /title:'Progress photos'/);
+  assert.match(source, /title:'Sleep and steps'/);
+  assert.match(source, /title:'Mood, energy and stress'/);
+  assert.match(source, /overflow-y:auto;overscroll-behavior:contain/);
   assert.match(source, /env\(safe-area-inset-top,0px\)/);
   assert.match(source, /-webkit-text-fill-color:#17130d/);
 });
