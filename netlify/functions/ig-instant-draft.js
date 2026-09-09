@@ -2137,7 +2137,8 @@ function buildDeterministicPaidMetaConversationReply({
     if (broadFlow && /\b(?:leave it with me|time to think|not right now)\b/i.test(message)) {
         return guidedReply(["Of course, I'll leave it with you."]);
     }
-    if (broadFlow && /\b(?:pay weekly|weekly payments?|pay.*week)\b/i.test(message)) {
+    if (broadFlow && (/\b(?:pay weekly|weekly payments?|pay.*week)\b/i.test(message)
+        || (/\bweekly\b/i.test(message) && /\b(?:how much|price|cost|charg\w*)\b/i.test(message)))) {
         return guidedReply([
             'Yes. Learn has a weekly option: AUD $24.83 a week, with a six-week minimum (AUD $148.98 total). It continues weekly after that until you cancel.',
             'The upfront option is one AUD $149 payment for the full six weeks, with no auto-renewal. Want to see the app preview first?',
@@ -5230,7 +5231,12 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
             ? 'Answer the gluten-free question directly before progressing: yes, the meal plan can be fitted to gluten-free dietary preferences.'
             : 'Answer the gluten-free question directly before progressing: yes, Shannon can make their plant-based meal plan gluten-free.');
     }
+    const correctWeeklyPriceAnswer = /\bweekly\b/i.test(turn)
+        && /\$24\.83\s*(?:\/\s*week|(?:a|per)\s+week)/i.test(reply)
+        && /\bsix[ -]week minimum\b/i.test(reply)
+        && /\bcontinues?\b[^.!?\n]{0,80}\buntil\b[^.!?\n]{0,30}\bcancel\w*/i.test(reply);
     if (/\b(?:how much|price|cost)\b/i.test(turn)
+        && !correctWeeklyPriceAnswer
         && !/\bone\s+(?:(?:aud|au\$)\s+)?\$149\s+payment\s+for\s+the\s+full\s+six\s+weeks\b/i.test(reply)) {
         issues.push('Answer the price exactly as one $149 payment for the full six weeks.');
     }

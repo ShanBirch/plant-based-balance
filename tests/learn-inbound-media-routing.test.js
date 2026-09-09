@@ -3,6 +3,16 @@ const assert = require('node:assert/strict');
 const {buildMediaReviewInfo} = require('../netlify/functions/_lib/client-context');
 const {_test} = require('../netlify/functions/ig-instant-draft');
 
+test('weekly pricing answers can pass without the upfront-price exact phrase', () => {
+  const currentMessage='Before goals, how much is Learn weekly and does it stop charging after six weeks?';
+  const review=joined=>_test.collectPaidMetaWriterContractIssues({draft:{joined},currentMessage,flowVariant:'broad_pain'});
+  const valid='It is AUD $149 upfront for the full six weeks. There is also AUD $24.83/week with a six-week minimum, and that one continues weekly until cancelled.';
+  assert.ok(!review(valid).some(issue=>/Answer the price exactly/.test(issue)));
+  for(const wrong of [valid.replace('$24.83','$9.99'),valid.replace('six-week minimum','no minimum'),valid.replace('continues weekly until cancelled','stops automatically')]) {
+    assert.ok(review(wrong).some(issue=>/Answer the price exactly/.test(issue)));
+  }
+});
+
 test('a media reply cannot silently change the course into six lessons', () => {
   const issues=_test.collectPaidMetaWriterContractIssues({draft:{joined:'Balance Learn has 6 lessons, one for each week.'},currentMessage:'[video]',flowVariant:'broad_pain'});
   assert.ok(issues.some(issue=>/Incorrect Learn lesson count/.test(issue)));
