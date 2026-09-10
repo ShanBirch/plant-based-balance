@@ -19,6 +19,11 @@ test('decoded goal and shift constraints replace a repeated blocker question wit
  assert.equal(result.mediaDecode,draft.mediaDecode);
  assert.notEqual(result.appPreviewHandoff,true);
  assert.equal(_test.applyDecodedPaidMetaAudioHandoff({...draft,mediaDecode:{...draft.mediaDecode,analysis_complete:false}},{flowVariant:'broad_pain'}).joined,draft.joined);
+ for (const joined of ['Quick check so I tailor your plan properly: what’s the main real-life thing that usually makes consistency tricky with this schedule?', 'What makes it difficult to stay consistent?', 'Which part of your routine is hardest?']) {
+  const repaired=_test.applyDecodedPaidMetaAudioHandoff({...draft,joined},{flowVariant:'broad_pain',currentMessage:'Could this work for me?'});
+  assert.notEqual(repaired.joined,joined);
+  assert.match(repaired.joined,/preview/i);
+ }
 });
 
 test('free personalised preview requests send the card and explicit declines do not', () => {

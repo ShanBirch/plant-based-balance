@@ -5063,6 +5063,8 @@ function paidMetaOutboundAskedForGoal(text = '') {
 
 function paidMetaOutboundAskedForBlocker(text = '') {
     const value = String(text || '');
+    if (/\b(?:what|which)\b[^?\n]{0,160}\b(?:consisten\w*|routine|schedule)\b[^?\n]{0,80}\b(?:tricky|hard(?:er|est)?|difficult|challeng\w*)\b[^?\n]*\?/i.test(value)
+        || /\b(?:what|which)\b[^?\n]{0,160}\b(?:tricky|hard(?:er|est)?|difficult|challeng\w*)\b[^?\n]{0,80}\b(?:consisten\w*|routine|schedule)\b[^?\n]*\?/i.test(value)) return true;
     return /\bwhat\b[^?\n]{0,100}\b(?:gets? in the way|getting in the way|makes? (?:that|it) hard|hardest|throws? you off|knocks? you off|stops? you|breaks? the follow[ -]?through|makes? (?:it|that) difficult|keep(?:ing)? (?:it|that) consistent|stay consistent|stick to|stay on track)\b[^?\n]*\?/i.test(value)
         || /\bwhat(?:'s| is) (?:been )?the (?:main |biggest )?(?:thing|bit|barrier|obstacle)\b[^?\n]{0,80}\b(?:hard|way|stop|consistent|track|routine)\b[^?\n]*\?/i.test(value);
 }
