@@ -76,7 +76,7 @@ test('onboarding ships a cache-busted authoritative cream-and-gold skin', () => 
     assert.match(foundationsCss, /html\[data-pbb-theme="dark"\] #onboarding-wizard \.onboarding-modal\.wizard-container/);
     assert.match(foundationsCss, /#onboarding-wizard \.wizard-chat-bubble\.coach:last-child[\s\S]*?-webkit-text-fill-color: var\(--foundations-ink\) !important;/);
     assert.match(foundationsCss, /@media \(prefers-reduced-motion: reduce\)/);
-    assert.match(dashboardSource, /pbb-onboarding-comeback\.css\?v=8/);
+    assert.match(dashboardSource, /pbb-onboarding-comeback\.css\?v=9-learn-welcome/);
     assert.match(dashboardSource, /pbb-onboarding-foundations\.css\?v=12-keyboard-safe-area/);
 });
 
