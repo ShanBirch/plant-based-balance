@@ -5,6 +5,22 @@ const vm = require('node:vm');
 const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 function load(file, window = {}) { vm.runInNewContext(fs.readFileSync(path.join(root, file), 'utf8'), { window }); return window; }
+test('the displayed path follows Learn, Master, Become, Lead and preserves course access', () => {
+    const source = fs.readFileSync(path.join(root, 'lib/learning-inline.js'), 'utf8');
+    const start = source.indexOf('    function getCoursePath(progress) {');
+    const end = source.indexOf('\n    window.getCourseLessonCompletions', start);
+    assert.ok(start >= 0 && end > start);
+    const context = { window: {}, BALANCE_FOUNDATIONS: { id: 'balance-foundations', title: 'Balance Learn' },
+        getFoundationsProgress: () => ({isComplete: false}), getIdentityCourseProgress: () => ({isUnlocked: false}),
+        getModulesSorted: () => [] };
+    vm.runInNewContext(source.slice(start, end) + '\nresult = getCoursePath({});', context);
+    assert.deepEqual(Array.from(context.result, c => c.id), ['balance-foundations','balance-master','balance-become','balance-lead']);
+    assert.deepEqual(Array.from(context.result, c => c.number), [1,2,3,4]);
+    assert.deepEqual(Array.from(context.result, c => c.isUnlocked), [true,false,false,false]);
+    context.getFoundationsProgress = () => ({isComplete: true});
+    vm.runInNewContext('result = getCoursePath({});', context);
+    assert.deepEqual(Array.from(context.result, c => c.isUnlocked), [true,true,false,true]);
+});
 test('only selected lessons move and every original lesson retains one home', () => {
     const catalog = load('lib/balance-curriculum.js').BalanceCurriculum;
     assert.equal(catalog.lessons.length, 203);
@@ -62,7 +78,7 @@ test('course library retains seven specialist courses and moved lessons still re
         this.courses=getCoursePath({lessons_completed:[]});
         this.everyMovedLessonResolves=window.BalanceCurriculum.lessons.filter(l=>l.course!=='specialist').every(l=>!!getLessonById(l.id));
     `,box);
-    assert.deepEqual(Array.from(box.courses.slice(0,4),c=>c.title),['Balance Learn','Balance Become','Balance Master','Balance Lead']);
+    assert.deepEqual(Array.from(box.courses.slice(0,4),c=>c.title),['Balance Learn','Balance Master','Balance Become','Balance Lead']);
     assert.equal(box.courses.filter(c=>c.type==='module').length,7);
     assert.equal(box.courses.filter(c=>c.type==='module').reduce((n,c)=>n+c.progress.total,0),131);
     assert.equal(box.everyMovedLessonResolves,true);

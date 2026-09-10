@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v520-consistent-gold-tour'; // v520: shared cream/gold styling for every guided tour step
+const CACHE_NAME = 'pbb-app-v521-four-stage-coach-note'; // v521: corrected four-stage coach video and course order
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

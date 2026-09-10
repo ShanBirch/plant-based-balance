@@ -810,7 +810,7 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
             <div style="max-width:92%; background:#fffaf0; border:1px solid rgba(183,138,46,.3); border-radius:18px 18px 18px 5px; padding:9px 11px; color:#3d3427; font-size:.78rem; line-height:1.42; box-shadow:0 5px 15px rgba(74,55,18,.07);">I’ve left you a coach note about your first week and how we’ll use Balance together.</div>
             <div style="width:100%; margin-top:8px; background:linear-gradient(135deg,#f4df9f,#e2ba58); border:1px solid rgba(146,103,29,.32); border-radius:18px 18px 18px 5px; padding:8px; box-sizing:border-box; box-shadow:0 7px 20px rgba(112,77,16,.13);">
                 <div style="font-size:.64rem; font-weight:900; letter-spacing:.06em; color:#68480f; margin:0 3px 6px;">● VIDEO COACH NOTE FROM SHANNON</div>
-                <video id="meta-ad-trial-welcome-video" poster="/assets/balance-onboarding-coach-note-poster.jpg" controls playsinline preload="metadata" controlslist="nodownload noplaybackrate" disablepictureinpicture src="/assets/balance-onboarding-coach-note-captioned.mp4" style="display:block; width:100%; max-height:min(67dvh,650px); aspect-ratio:9/16; object-fit:contain; background:#171923; border-radius:12px; pointer-events:auto;"></video>
+                <video id="meta-ad-trial-welcome-video" poster="/assets/balance-onboarding-coach-note-poster.jpg" controls playsinline preload="metadata" controlslist="nodownload noplaybackrate" disablepictureinpicture src="/assets/balance-onboarding-coach-note-captioned.mp4?v=20260910-four-stages" style="display:block; width:100%; max-height:min(67dvh,650px); aspect-ratio:9/16; object-fit:contain; background:#171923; border-radius:12px; pointer-events:auto;"></video>
                 <div id="meta-ad-trial-welcome-status" role="status" aria-live="polite" style="margin:7px 3px 0; color:#68480f; font-size:.69rem; line-height:1.35; font-weight:800;">Watch the full coach note to unlock Next.</div>
                 <button id="meta-ad-trial-welcome-continue" type="button" onclick="tourNext()" style="display:none; width:100%; margin-top:8px; border:1px solid rgba(104,72,15,.4); border-radius:12px; padding:12px 14px; background:#171923; color:#fffaf0; -webkit-text-fill-color:#fffaf0; font:850 .78rem/1 'Montserrat',sans-serif; letter-spacing:.045em; text-transform:uppercase; cursor:pointer; pointer-events:auto;">Next: choose Weekly Goals</button>
             </div>
@@ -1971,14 +1971,14 @@ if(!window._pbbIsIOSSafari) {
 if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-progressphoto.js?v=12-private-share-studio"><\/script>');
 document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=35-balance-theme"><\/script>');
-    document.write('<script src="js/dashboard/pbb-social-journey.js?v=48-required-lessons"><\/script>');
+    document.write('<script src="js/dashboard/pbb-social-journey.js?v=49-four-stage-coach-note"><\/script>');
     document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=56-checkin-practical-steps"><\/script>');
     document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=29-accountability-checkout"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
     window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=12-private-share-studio');
 window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=35-balance-theme');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=48-required-lessons');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=49-four-stage-coach-note');
     window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=56-checkin-practical-steps');
     window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=29-accountability-checkout');
 }
@@ -13974,7 +13974,7 @@ if(!window._pbbIsIOSSafari) {
   const steps = [
     { tab:'meals', sel:'#browse-plans-pill', title:'Meals that match your eating style', body:'Choose your eating style and food restrictions in Profile. Your weekly recipes include measured portions, matching photos and a shopping list built from those portions.' },
     { tab:'learning', sel:'#learning-content', title:'Make your learning stick', body:'After a perfect quiz, save one thing you learned and how you could use it. Your optional reflection stays with the lesson for you and your coach.' },
-    { tab:'learning', sel:'#course-card-balance-master', fallbackSel:'#balance-path', title:'Your four-part Balance path', body:'Learn the ideas, Become through practical actions, Master your plans over ten weekly releases, then Lead by supporting someone else. Open a week card for its lessons and practical work. Complete the included quizzes as part of that week; your saved lesson progress carries over.', action:function(){ if(typeof window.renderLearningHome === 'function') window.renderLearningHome(); } },
+    { tab:'learning', sel:'#course-card-balance-master', fallbackSel:'#balance-path', title:'Your four-part Balance path', body:'Learn the ideas, Master your plans over ten weekly releases, Become through practical actions, then Lead by supporting someone else. Open a week card for its lessons and practical work. Complete the included quizzes as part of that week; your saved lesson progress carries over.', action:function(){ if(typeof window.renderLearningHome === 'function') window.renderLearningHome(); } },
     { tab:'movement-tab', sel:'#pbb-private-workout-complete', fallbackSel:'#post-workout-share-btn', title:'Your workout progress comes first', fallbackTitle:'Your new workout saved page', body:'After you finish a workout, Balance shows your completed sets, volume, exercises, and new bests before you choose whether to share a photo.', fallbackBody:'Finish a workout to see the new progress-first workout saved page.', quick:true, condition:function(){ return !!(window.BalancePrivateShareStudio && window.BalancePrivateShareStudio.isEnabled()); } },
     { tab:'movement-tab', sel:'#pbb-private-activity-complete,#pbb-private-meal-complete', fallbackSel:'#log-activity-card,.meal-icon-btn[onclick*="openMealBuilder"],.camera-btn-widget[onclick*="openMealBuilder"]', title:'Activities and meals now match', fallbackTitle:'One simple sharing flow', body:'After logging an activity or meal, review what you saved first. Tap Share a photo to take or choose one, edit it full screen, then share to Feed and IG Story.', fallbackBody:'Log an activity or meal to see its saved summary, then add and edit a photo if you want to share it.', quick:true, condition:function(){ return !!(window.BalancePrivateShareStudio && window.BalancePrivateShareStudio.isEnabled()); } },
     { tab:'movement-tab', sel:'#post-workout-share-btn', fallbackSel:'#activity-share-photo-btn,#nutrition-share-photo-btn', title:'Design your photo share', fallbackTitle:'Design your photo share', body:'Pinch or drag the photo, move the workout details, add text or stickers, and choose a layout and colour. Feed and IG Story stay ready until you tap Done.', fallbackBody:'Add a photo after a workout, activity, or meal to open the full-screen editor before sharing.', quick:true, condition:function(){ return !!(window.BalancePrivateShareStudio && window.BalancePrivateShareStudio.isEnabled()); } },
@@ -14078,7 +14078,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'movement-tab', sel:'#workout-library-card,[onclick*="openWorkoutLibrary"]', title:'Program Library', body:"Prebuilt 48-week programs — pick one and follow along." },
 
     { tab:'learning', sel:'#balance-foundations-course-card', fallbackSel:'.course-library-intro,#learning-content', title:'Your week at a glance', fallbackTitle:'Your week at a glance', body:'Open Balance Learn, then tap Continue course to see your current lessons, actions, progress, and next step on one simple screen.', fallbackBody:'Continue Balance Learn to open a simple view of your current week.' },
-    { tab:'learning', sel:'#balance-path', fallbackSel:'.course-library-intro,#learning-content', title:'Your Balance Path', fallbackTitle:'Learn. Become. Master. Lead.', body:'Balance Learn is where your path begins. Become and Master are coming next, while Lead turns lived experience into useful public influence.', fallbackBody:'Your four-stage Balance Path begins with the six-week Balance Learn course.' },
+    { tab:'learning', sel:'#balance-path', fallbackSel:'.course-library-intro,#learning-content', title:'Your Balance Path', fallbackTitle:'Learn. Master. Become. Lead.', body:'Balance Learn is where your path begins. Master and Become follow, while Lead turns lived experience into useful public influence.', fallbackBody:'Your four-stage Balance Path begins with the six-week Balance Learn course.' },
     { tab:'learning', sel:'.course-library-intro', fallbackSel:'#learning-content', title:'Preview every course', fallbackTitle:'Your course path lives here', body:"Complete Balance Learn to unlock every course. You can open any card now to preview its topics, even while it is locked.", fallbackBody:"Open Course to preview the full curriculum. Complete Balance Learn to start the other courses." },
 
     { tab:'cycle', sel:'#calendar-view-toggle', fallbackSel:'#weekly-calendar', title:'Your Calendar', body:"See your planned workouts by week or month. Use Edit Dates to update your cycle details.", condition: function(){ try { return (window.currentUser && (window.currentUser.gender === 'female' || window.currentUser.gender === 'Female')); } catch(e){ return false; } } },
@@ -16331,8 +16331,8 @@ window.endFeatureTour = function(skipped){
       sel: '#balance-path',
       fallbackSel: '.course-library-intro,#learning-content',
       title: 'Your Balance Path',
-      fallbackTitle: 'Learn. Become. Master. Lead.',
-      body: 'Balance Learn is the six-week starting course. Become and Master are coming next, and Lead helps you turn lived experience into useful influence.',
+      fallbackTitle: 'Learn. Master. Become. Lead.',
+      body: 'Balance Learn is the six-week starting course. Master and Become follow, and Lead helps you turn lived experience into useful influence.',
       fallbackBody: 'Your four-stage Balance Path begins with Balance Learn.'
     },
     {
@@ -18672,13 +18672,13 @@ if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=50-community-games-theme';
+            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=51-four-stage-coach-note';
             s.onload = function() { if(window._crumb)window._crumb('script6_deferred_loaded'); };
             document.head.appendChild(s);
         }, 2000);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=50-community-games-theme"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=51-four-stage-coach-note"><\/script>');
 }
 </script>
 
@@ -20897,11 +20897,11 @@ if (window._pbbIsIOSSafari) {
             });
             if (window.showQuizBattleInviteModal || learningAlreadyRequested) return;
             var s = document.createElement('script');
-      s.src = 'lib/learning-inline.js?v=51-tour-question-position';
+      s.src = 'lib/learning-inline.js?v=52-four-stage-order';
             document.head.appendChild(s);
         }, { once: true });
     } else {
-    document.write('<script src="lib/learning-inline.js?v=51-tour-question-position"><\/script>');
+    document.write('<script src="lib/learning-inline.js?v=52-four-stage-order"><\/script>');
     }
     </script>
     <!-- Battle System & Logic Overrides (130 lines — deferred on iOS) -->
