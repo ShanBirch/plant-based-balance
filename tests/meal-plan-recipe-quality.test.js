@@ -9,15 +9,16 @@ const renderer = fs.readFileSync(path.join(root, 'js/dashboard/dashboard-script-
 const dashboard = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
 
 test('future generated recipes require complete ingredients and numbered methods', () => {
-    assert.match(generator, /Every breakfast, lunch and dinner must list at least 8 separate ingredients/);
-    assert.match(generator, /Every snack must list at least 5/);
-    assert.match(generator, /Recipe quality check failed/);
-    assert.match(generator, /const minIngredients = isSnack \? 5 : 8/);
-    assert.match(generator, /const minSteps = isSnack \? 2 : 3/);
+    assert.match(generator, /prepared-diet-engine/);
+    const engine = require('../lib/prepared-diet-engine.js');
+    for (const recipe of Object.values(engine.RECIPES)) {
+        assert.ok(recipe.ingredients.every(i => engine.FOODS[i.food_id] && i.grams > 0), recipe.name);
+        assert.match(recipe.preparation, /1\..+2\./);
+    }
 });
 
 test('the meal card renders numbered preparation steps', () => {
     assert.match(renderer, /function formatAiPlanPreparation\(value\)/);
     assert.match(renderer, /<ol>\$\{steps\.map/);
-    assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=202-personalising-screen/);
+    assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=240-all-diet-plans/);
 });

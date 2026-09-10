@@ -77,12 +77,12 @@ const _dietRestrictions = [
     { value: 'shellfish_free', label: 'Shellfish-Free', icon: '🦐' },
     { value: 'low_fodmap',     label: 'Low FODMAP',     icon: '🍎' },
     { value: 'low_sodium',     label: 'Low Sodium',     icon: '🧂' },
-    { value: 'low_sugar',      label: 'Low Sugar',      icon: '🍬' },
+    { value: 'low_sugar',      label: 'Lower added sugar', icon: '🍬' },
     { value: 'halal',          label: 'Halal',          icon: '☪️' },
     { value: 'kosher',         label: 'Kosher',         icon: '✡️' }
 ];
 
-const _DIET_EATING_STYLE_PRIORITY = ['vegan', 'vegetarian', 'pescatarian', 'flexitarian', 'omnivore'];
+const _DIET_EATING_STYLE_PRIORITY = ['vegan', 'vegetarian', 'pescatarian', 'flexitarian', 'omnivore', 'mediterranean', 'keto', 'paleo', 'whole30'];
 const _DIET_RESTRICTION_TO_ALLERGY = {
     gluten_free:    'gluten',
     dairy_free:     'dairy',

@@ -520,14 +520,17 @@ if (window._pbbIsIOSSafari) {
             'lib/nutrition-calculator.js',
             'lib/weekly-meal-evolution.js?v=1',
             'data/vegan-challenge-meal-plan.js',
-            'data/prepared-meal-plan-library.js?v=2-omnivore-meat',
+            'data/meal-ingredient-nutrients.js?v=3',
+            'data/balance-diet-recipes.js?v=3',
+            'lib/prepared-diet-engine.js?v=3',
             'lib/meal-plan-photo-resolver.js?v=1',
-            'lib/meal-plan-populator.js?v=4-selected-diet-labels',
+            'lib/meal-plan-populator.js?v=5-ingredient-portions',
             'lib/weekly-wrapped.js?v=monthly-wrapped-layout-v3'
         ];
         deferredLibs.forEach(function(src, i) {
             setTimeout(function() {
                 var s = document.createElement('script');
+                s.async = false;
                 s.src = src;
                 document.head.appendChild(s);
             }, (i + 1) * 500);
@@ -543,14 +546,16 @@ if (window._pbbIsIOSSafari) {
     document.write('<script src="lib/nutrition-calculator.js"><\/script>');
     document.write('<script src="lib/weekly-meal-evolution.js?v=1"><\/script>');
     document.write('<script src="data/vegan-challenge-meal-plan.js"><\/script>');
-    document.write('<script src="data/prepared-meal-plan-library.js?v=2-omnivore-meat"><\/script>');
+    document.write('<script src="data/meal-ingredient-nutrients.js?v=3"><\/script>');
+    document.write('<script src="data/balance-diet-recipes.js?v=3"><\/script>');
+    document.write('<script src="lib/prepared-diet-engine.js?v=3"><\/script>');
     document.write('<script src="lib/meal-plan-photo-resolver.js?v=1"><\/script>');
-    document.write('<script src="lib/meal-plan-populator.js?v=4-selected-diet-labels"><\/script>');
+    document.write('<script src="lib/meal-plan-populator.js?v=5-ingredient-portions"><\/script>');
     document.write('<script src="lib/weekly-wrapped.js?v=monthly-wrapped-layout-v3"><\/script>');
 }
 </script>
 <script src="lib/challenge-display-window.js?v=1"></script>
-<script src="lib/meal-plan-shopping-list.js?v=2"></script>
+<script src="lib/meal-plan-shopping-list.js?v=2&diet_library=3"></script>
 <script>
 // platform.js is tiny (1KB) and needed for platform detection during init
 </script>
@@ -12879,7 +12884,7 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=239-complete-preference-reset&video_health=2';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=240-all-diet-plans&video_health=2';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
@@ -12921,7 +12926,7 @@ if (window._pbbIsIOSSafari) {
         var s = document.createElement('script');
         s.async = false;
         s.dataset.metaTrialLoader = String(attempt);
-        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=239-complete-preference-reset&video_health=2&meta_retry=' + attempt;
+        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=240-all-diet-plans&video_health=2&meta_retry=' + attempt;
         s.onload = function() {
             if (window._pbbScript5Complete && window._switchAppTabReady && typeof window._switchAppTabReal === 'function') {
                 sessionStorage.removeItem('pbb_meta_script5_recovery_v1');
@@ -12940,7 +12945,7 @@ if (window._pbbIsIOSSafari) {
         document.head.appendChild(s);
     })(0);
 } else {
-document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=239-complete-preference-reset&video_health=2"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=240-all-diet-plans&video_health=2"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=6-focus-all-users"></script>
@@ -13959,6 +13964,7 @@ if(!window._pbbIsIOSSafari) {
   }
 
   const steps = [
+    { tab:'meals', sel:'#browse-plans-pill', title:'Meals that match your eating style', body:'Choose your eating style and food restrictions in Profile. Your weekly recipes include measured portions, matching photos and a shopping list built from those portions.' },
     { tab:'learning', sel:'#learning-content', title:'Make your learning stick', body:'After a perfect quiz, save one thing you learned and how you could use it. Your optional reflection stays with the lesson for you and your coach.' },
     { tab:'learning', sel:'#course-card-balance-master', fallbackSel:'#balance-path', title:'Your four-part Balance path', body:'Learn the ideas, Become through practical actions, Master your plans over ten weekly releases, then Lead by supporting someone else. Open a week card for its lessons and practical work. Complete the included quizzes as part of that week; your saved lesson progress carries over.', action:function(){ if(typeof window.renderLearningHome === 'function') window.renderLearningHome(); } },
     { tab:'movement-tab', sel:'#pbb-private-workout-complete', fallbackSel:'#post-workout-share-btn', title:'Your workout progress comes first', fallbackTitle:'Your new workout saved page', body:'After you finish a workout, Balance shows your completed sets, volume, exercises, and new bests before you choose whether to share a photo.', fallbackBody:'Finish a workout to see the new progress-first workout saved page.', quick:true, condition:function(){ return !!(window.BalancePrivateShareStudio && window.BalancePrivateShareStudio.isEnabled()); } },
@@ -16215,6 +16221,7 @@ window.endFeatureTour = function(skipped){
   // -------------------------------------------------------
 
   var allFeatures = [
+    { id:'all-diet-meal-plans-v3', tab:'meals', sel:'#browse-plans-pill', title:'Meals that match your eating style', body:'Choose your eating style and food restrictions in Profile. Your weekly recipes include measured portions, matching photos and a shopping list built from those portions.' },
     { id:'lesson-reflections-v1', tab:'learning', sel:'#learning-content', title:'Make your learning stick', body:'After a perfect quiz, save one thing you learned and how you could use it. Your optional reflection stays with the lesson for you and your coach.' },
     { id:'balance-weekly-course-cards-v2', tab:'learning', sel:'#course-card-balance-master', fallbackSel:'#balance-path', title:'Your four-part Balance path', body:'Learn the ideas, Become through practical actions, Master your plans over ten weekly releases, then Lead by supporting someone else. Open a week card for its lessons and practical work. Complete the included quizzes as part of that week; your saved lesson progress carries over.', action:function(){ if(typeof window.renderLearningHome === 'function') window.renderLearningHome(); } },
     {
@@ -18163,7 +18170,7 @@ window.endFeatureTour = function(skipped){
                         <div class="pref-checkbox" data-value="shellfish_free" onclick="toggleWizardChip(this, 'dietary_requirements')">🦐 Shellfish-Free</div>
                         <div class="pref-checkbox" data-value="low_fodmap" onclick="toggleWizardChip(this, 'dietary_requirements')">🍎 Low FODMAP</div>
                         <div class="pref-checkbox" data-value="low_sodium" onclick="toggleWizardChip(this, 'dietary_requirements')">🧂 Low Sodium</div>
-                        <div class="pref-checkbox" data-value="low_sugar" onclick="toggleWizardChip(this, 'dietary_requirements')">🍬 Low Sugar</div>
+                        <div class="pref-checkbox" data-value="low_sugar" onclick="toggleWizardChip(this, 'dietary_requirements')">🍬 Lower added sugar</div>
                         <div class="pref-checkbox" data-value="halal" onclick="toggleWizardChip(this, 'dietary_requirements')">☪️ Halal</div>
                         <div class="pref-checkbox" data-value="kosher" onclick="toggleWizardChip(this, 'dietary_requirements')">✡️ Kosher</div>
                     </div>
@@ -18681,6 +18688,7 @@ if (window._pbbIsIOSSafari) {
             var loaded = 0;
             scripts.forEach(function(src) {
                 var s = document.createElement('script');
+                s.async = false;
                 s.src = src;
                 s.onload = function() {
                     loaded++;
@@ -21227,7 +21235,7 @@ if(!window._pbbIsIOSSafari) {
 }
 </style>
 
-<script src="js/dashboard/pbb-deferred-pickers.js?v=4-regenerate-diet-plan"></script>
+<script src="js/dashboard/pbb-deferred-pickers.js?diet_library=3&v=4-regenerate-diet-plan"></script>
 <script src="js/dashboard/pbb-settings-navigation.js?v=1-settings-navigation"></script>
 
 
