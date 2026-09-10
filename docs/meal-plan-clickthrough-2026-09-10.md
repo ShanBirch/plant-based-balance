@@ -17,6 +17,7 @@
 - Added scoped paired meal-plan colors using Balance’s cream, ink and gold palette, correcting header, nutrition summary, recipe, ingredient and selected-control contrast.
 - Capped the plan column at 760px and desktop hero photos at 360px; four desktop previews fit together.
 - Made day controls at least 44px tall; allowed nutrition summaries, long titles and ingredient text to wrap on small phones.
+- Live verification also identified an anchor scrolling beneath the sticky Meals header. Added safe-area-aware scroll margins for the plan and focused recipe.
 - Recipe controls now expose their expanded state to assistive technology.
 - Versioned the changed dashboard script and service-worker cache; included the new stylesheet in the offline asset list.
 

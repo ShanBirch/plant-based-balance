@@ -1,4 +1,9 @@
 /* The focused plan shares one paired palette across its header, recipes and list. */
+#meal-plan-store,
+#ai-plan-meals-list .ai-plan-hero {
+    /* Leave room for the sticky Meals header when navigation scrolls here. */
+    scroll-margin-top: calc(90px + env(safe-area-inset-top, 0px));
+}
 html #ai-plan-loaded.ai-plan-focus-layout {
     --meal-plan-ink: #171613;
     --meal-plan-muted: #625e56;

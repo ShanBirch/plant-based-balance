@@ -1,9 +1,9 @@
-const CACHE_NAME = 'pbb-app-v515-meal-plan-review'; // v515: readable meal plans; retains setup Back review fixes
+const CACHE_NAME = 'pbb-app-v516-meal-plan-scroll'; // v516: keep the meal-plan heading clear of the sticky header
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
   './dashboard.html',
-  './css/dashboard/pbb-meal-plan.css?v=1',
+  './css/dashboard/pbb-meal-plan.css?v=2',
   './js/dashboard/pbb-workout-tour-progress.js?v=1',
   './balance_logo_transparent.svg',
   './xp-guide.html',
