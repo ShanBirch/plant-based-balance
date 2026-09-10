@@ -1537,11 +1537,32 @@ function buildPaidMetaTailoredOfferText(blockerText = '', goalText = '', flowVar
     return buildPaidMetaTailoredOfferChunks(blockerText, goalText, flowVariant).join('\n\n');
 }
 
+function buildPaidMetaFoodAndFamilyAcknowledgement(turn = '') {
+    // This is an outage/contract-repair fallback, not the primary writer.
+    // Mention only supplied facts, independently: chocolate says nothing
+    // about cravings, weekends, emotional eating or parental time pressure.
+    const details = [];
+    if (/\b(?:kids?|children)\b/i.test(turn)) details.push('life with the kids');
+    if (/\bchocolates?\b/i.test(turn)) details.push('chocolate');
+    if (/\bcravings?\b/i.test(turn)) details.push('cravings');
+    if (/\bweekends?\b/i.test(turn)) details.push('weekends');
+    if (/\btime\b/i.test(turn)) details.push('the time you have');
+    if (/\bprep\w*\b/i.test(turn)) details.push('food prep');
+    if (/\b(?:not|never|isn['’]t|aren['’]t|is not|are not)\b/i.test(turn)) {
+        // Do not guess the scope of a negation in the fallback. The writer
+        // handles that distinction; a neutral backup cannot invert it.
+        return 'We can work around what actually gets in your way and keep the parts that already work for you.';
+    }
+    if (!details.length) return 'The plan needs to fit what you have described.';
+    const list = details.length > 1 ? `${details.slice(0, -1).join(', ')} and ${details.at(-1)}` : details[0];
+    return `We can account for ${list} without making the plan more complicated.`;
+}
+
 function buildPaidMetaTailoredOfferChunks(blockerText = '', goalText = '', flowVariant = 'plant_based_control') {
     const turn = String(blockerText || '');
     const goal = String(goalText || '');
     const daysPerWeek = turn.match(/\b(\d+|one|two|three|four|five|six|seven)\s+days?\s+(?:a|per)\s+week\b/i)?.[1] || '';
-    const asksCanWork = /\bcan (?:you|this|that|it)\b[\s\S]{0,45}\bwork\b|\bcan you (?:actually )?make (?:that|this|it) work\b/i.test(turn);
+    const asksCanWork = /\bcan\b[^.!?]{0,90}\bwork\b/i.test(turn);
     const wantsFatLossAndMuscle = /\b(?:lose|fat|weight)\b/i.test(goal)
         && /\b(?:build|muscle|strong|strength)\b/i.test(goal);
     const asksForMealPlan = /\bdo you (?:offer|have|provide|include) (?:a |any )?(?:plant[ -]?based )?meal plans?\b|\bis (?:a |the )?meal plan included\b/i.test(turn);
@@ -1558,18 +1579,19 @@ function buildPaidMetaTailoredOfferChunks(blockerText = '', goalText = '', flowV
                 ? `Yeah, if you want to ${weightTarget ? `lose ${weightTarget} kilos` : 'lose weight'} but don't know what to eat, the food side needs to make meals simple instead of leaving you guessing.`
             : 'Yeah, if you don\'t know what to eat, the food side needs to make each meal simple instead of leaving you guessing.';
     } else if (/\b(?:shifts?|roster|schedule)\b/i.test(turn)) {
-        acknowledgement = 'Yeah, with your week changing all the time, the plan needs to flex around your schedule.';
+        acknowledgement = 'The plan needs to fit your schedule.';
     } else if (/\b(?:food|prep|prepar|run out of time)\b/i.test(turn)) {
-        acknowledgement = 'Yeah, if time and food prep are where it falls apart, the food side needs to stay simple on busy days.';
+        acknowledgement = /\bprep\w*\b/i.test(turn) ? 'Food prep needs to work for you.' : 'The food side needs to work for you.';
     } else if (/\b(?:accountab\w*|follow[ -]?through|fall off|stop|restart|consisten\w*)\b/i.test(turn)) {
         acknowledgement = 'Yeah, if follow-through is the hard part, a clear plan and someone checking in can make a big difference.';
     } else if (/\b(?:overwhelm|too much information)\b/i.test(turn)) {
         acknowledgement = 'Yeah, if too much information leaves you doing nothing, the next step needs to be obvious and simple.';
     } else if (/\b(?:random|workout|program|what to do next)\b/i.test(turn)) {
-        acknowledgement = 'Yeah, if you never know which workout comes next, a clear program would take the guesswork out.';
+        acknowledgement = 'Your workouts need a plan that fits you.';
     } else if (/\b(?:craving|weekend|chocolate|emotional(?:ly)? eat\w*|having (?:it|chocolate|snacks?) around)\b/i.test(turn)) {
-        acknowledgement = 'Yeah, if cravings and weekends are where it slips, the food plan needs to be flexible enough for real life.';
+        acknowledgement = buildPaidMetaFoodAndFamilyAcknowledgement(turn);
     }
+    if (/\b(?:kids?|children|chocolates?|cravings?|weekends?)\b/i.test(turn)) acknowledgement = buildPaidMetaFoodAndFamilyAcknowledgement(turn);
     if (asksForMealPlan) {
         const directAnswerDetail = acknowledgement.replace(/^Yeah,\s*/i, '');
         acknowledgement = `Yeah, I do. ${directAnswerDetail.charAt(0).toUpperCase()}${directAnswerDetail.slice(1)}`;
@@ -1587,14 +1609,14 @@ function buildPaidMetaTailoredOfferChunks(blockerText = '', goalText = '', flowV
         if (/\b(?:can|could|do)\b[^.!?]{0,100}\b(?:home|dumbbells?)\b/i.test(turn)) {
             compactAcknowledgement = 'Yep, your workouts can fit home training and the equipment you have, with a schedule you can repeat.';
         } else if (daysPerWeek && asksCanWork && wantsFatLossAndMuscle) {
-            compactAcknowledgement = `Yeah, ${daysPerWeek} days a week can work for losing fat and building muscle. Because big plans overwhelm you, keep those sessions focused.`;
+            compactAcknowledgement = `Yeah, ${daysPerWeek} days a week can work for losing fat and building muscle. ${/\b(?:overwhelm\w*|too much)\b/i.test(turn) ? 'Because big plans overwhelm you, keep those sessions focused.' : 'Keep those sessions focused and realistic.'}`;
         } else if (daysPerWeek && asksCanWork) {
             compactAcknowledgement = `Yeah, ${daysPerWeek} days a week can work. The plan needs to make those sessions focused and realistic.`;
         } else if (/\b(?:postpartum|after (?:having )?(?:a )?baby)\b/i.test(goal)
             && /\bphysio\b/i.test(turn)) {
             compactAcknowledgement = `Getting strong again after having a baby can stay the goal, with training gentle and adaptable around your physio's guidance.`;
         } else if (/\bphysio\b/i.test(turn)) {
-            compactAcknowledgement = `With the pain and your physio's guidance in mind, training needs to stay gentle and adaptable.`;
+            compactAcknowledgement = `Your physio's guidance needs to shape the training plan.`;
         } else if (PAID_META_BROAD_BLOCKER_RE.test(turn)) {
             compactAcknowledgement = 'If it all feels hard at once, it needs to be one simple plan.';
         } else if (PAID_META_FOOD_CONFUSION_RE.test(turn)) {
@@ -1605,25 +1627,28 @@ function buildPaidMetaTailoredOfferChunks(blockerText = '', goalText = '', flowV
             compactAcknowledgement = 'If lack of time keeps breaking the routine, the plan needs to fit into small, realistic pockets.';
         } else if (/\b(?:shifts?|roster|schedule)\b/i.test(turn)) {
             compactAcknowledgement = asksWhetherDietaryFitWorks && /\bgluten[ -]?free\b/i.test(turn)
-                ? 'Yep, gluten-free works. Changing rosters need a flexible plan.'
-                : 'Changing rosters need a flexible plan.';
+                ? 'Yep, gluten-free works. The plan needs to fit your schedule.'
+                : 'The plan needs to fit your schedule.';
         } else if (/\b(?:food|prep|prepar|run out of time)\b/i.test(turn)) {
-            compactAcknowledgement = 'If food prep is where it falls apart, that part needs to stay simple.';
+            compactAcknowledgement = /\bprep\w*\b/i.test(turn) ? 'Food prep needs to work for you.' : 'The food side needs to work for you.';
         } else if (/\b(?:pain|injur\w*|sore)\b/i.test(turn)) {
             compactAcknowledgement = 'Because you mentioned pain, the plan needs to stay gentle and adaptable rather than forcing anything.';
         } else if (/\b(?:gym anxiety|anxious|self-conscious|confidence)\b/i.test(turn)
             && /\b(?:random|workouts?|what to do)\b/i.test(turn)) {
             compactAcknowledgement = 'If gym anxiety and random workouts make you stop, each session needs to feel clear and manageable.';
         } else if (/\b(?:gym anxiety|anxious|self-conscious|confidence)\b/i.test(turn)) {
-            compactAcknowledgement = 'If gym anxiety is getting in the way, the plan needs to make each session feel clear and manageable.';
+            compactAcknowledgement = 'Each session needs to feel clear and manageable for you.';
         } else if (/\b(?:accountab\w*|follow[ -]?through|fall off|stop|restart|consisten\w*)\b/i.test(turn)) {
             compactAcknowledgement = 'If follow-through is the hard part, a clear plan and a weekly check-in matter.';
         } else if (/\b(?:overwhelm|too much information)\b/i.test(turn)) {
             compactAcknowledgement = 'If too much information leaves you stuck, the next step needs to be obvious.';
         } else if (/\b(?:random|workout|program|what to do next)\b/i.test(turn)) {
-            compactAcknowledgement = 'Not knowing which workout comes next is the part a clear program fixes.';
+            compactAcknowledgement = 'Your workouts need a plan that fits you.';
         } else if (/\b(?:craving|weekend|chocolate|emotional(?:ly)? eat\w*|having (?:it|chocolate|snacks?) around)\b/i.test(turn)) {
-            compactAcknowledgement = 'If cravings and weekends are where it slips, the food plan needs to fit real life.';
+            compactAcknowledgement = buildPaidMetaFoodAndFamilyAcknowledgement(turn);
+        }
+        if (/\b(?:kids?|children|chocolates?|cravings?|weekends?)\b/i.test(turn)) {
+            compactAcknowledgement = buildPaidMetaFoodAndFamilyAcknowledgement(turn);
         }
         if (asksForMealPlan) {
             compactAcknowledgement = `Yeah, I do. ${compactAcknowledgement}`;
@@ -2601,6 +2626,11 @@ function shouldApplyDeterministicPaidMetaReplyOverride(draft = null) {
 
 function selectFastDeterministicPaidMetaProgression({ metaAdOpeningTurn = false, draft = null, requiresMediaAnalysis = false } = {}) {
     if (requiresMediaAnalysis) return null;
+    // Personal circumstances need the writer's full-turn interpretation. Keep
+    // exact link handoffs and opening facts fast, but never let a keyword-based
+    // offer pre-empt the writer (e.g. chocolate becoming "weekends").
+    if (draft?.replyMode === 'campaign_sales_progression'
+        && /\bBalance Learn is a six-week course\b/i.test(draftTextFromDraft(draft))) return null;
     // A fresh verified ad referral or repeatable internal BALANCE opener is a
     // hard episode boundary. A still-coalescing "yes" from the prior episode
     // must never outrank the new opener and resend its preview/checkout handoff.
@@ -5087,6 +5117,7 @@ function buildPaidMetaTurnDirective({ qualifier = {}, inboundMessages = [], hist
 CURRENT PAID-META TURN CONTEXT (use judgement; never recite labels):
 - Exact unanswered lead details: ${exactDetails}
 - Respond to every meaningful detail in this batch and ground the reply in their actual words rather than a generic script.
+- Personal circumstances are not keyword categories. If they say kids and chocolate, reflect both without inventing weekends, cravings, emotional eating, time pressure or a particular parenting routine. Apply this grounding rule to every situation, including unfamiliar ones. Preserve uncertainty and negations; never turn "I guess" into a diagnosis or "not weekends" into a weekend problem. One concise, natural acknowledgement is enough before the next step.
 ${directQuestions.length ? `- Direct questions that must be answered before choosing the next natural move: ${directQuestions.join(' | ')}` : '- No unresolved direct question detected in this inbound batch.'}
 - Consult the complete episode to decide what they already told Shannon. Choose the most natural adjacent move from connection, goal, difficulty, relevant proof, app demonstration, or free personalised preview; do not repeat a question or force a stage.`;
 }
@@ -5175,6 +5206,28 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
         return [];
     }
     const issues = [];
+    if (/\bBalance Learn\b/i.test(reply) && /\$\s*149\b/i.test(reply)) {
+        const inboundContext = paidMetaCurrentInboundRunText(history, turn);
+        const supplied = [
+            ['kids', /\b(?:kids?|children)\b/i],
+            ['chocolate', /\bchocolates?\b/i],
+        ];
+        for (const [label, signal] of supplied) {
+            if (signal.test(inboundContext) && !signal.test(reply)) {
+                issues.push(`The earned paid-Meta offer is missing a grounded acknowledgement of ${label}, supplied in the current inbound batch.`);
+            }
+        }
+        const leadEvidence = [inboundContext, ...history.filter(item => item?.direction === 'in').map(item => item.text || '')].join(' ');
+        for (const [label, signal] of [
+            ['weekends', /\bweekends?\b/i],
+            ['cravings', /\bcravings?\b/i],
+            ['emotional eating', /\bemotional(?:ly)? eat\w*\b/i],
+        ]) {
+            if (signal.test(reply) && !signal.test(leadEvidence)) {
+                issues.push(`The earned paid-Meta offer is missing a grounded acknowledgement: ${label} was invented, not supplied by the lead.`);
+            }
+        }
+    }
     if (/\b(?:six|6)\s+lessons\b/i.test(reply)) issues.push('Incorrect Learn lesson count: there are 31 lessons, not six; six is the number of weeks.');
     const broadFlow = flowVariant === 'broad_pain';
     const autonomyPause = broadFlow && hasPaidMetaPreviewOrPriceDecline(turn);

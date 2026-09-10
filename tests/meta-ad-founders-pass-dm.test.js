@@ -280,7 +280,8 @@ test('a broad offer reflects the supplied kids and time blocker instead of using
         'I want more energy and to train at home.',
         'broad_pain',
     );
-    assert.match(chunks.join(' '), /kids and lack of time keep breaking the routine/i);
+    assert.match(chunks.join(' '), /kids/i);
+    assert.match(chunks.join(' '), /time you have/i);
     assert.doesNotMatch(chunks[0], /^That makes sense\./i);
 });
 
@@ -1462,7 +1463,7 @@ test('broad paid Meta answers a rapid blocker plus dietary-fit question in the c
     });
 
     assert.match(reply.joined, /gluten-free works/i);
-    assert.match(reply.joined, /changing roster/i);
+    assert.match(reply.joined, /schedule/i);
     assert.match(reply.joined, /six-week course/i);
     assert.match(reply.joined, /workout program/i);
     assert.match(reply.joined, /dietary preferences/i);
@@ -1516,7 +1517,9 @@ test('a long broad burst repairs the direct gluten-free answer without repeating
         flowVariant: 'broad_pain',
     });
     assert.match(repaired.joined, /^Yep, the meal plan can absolutely be fitted to your gluten-free dietary preferences\./i);
-    assert.match(repaired.joined, /kids and lack of time/i);
+    assert.match(repaired.joined, /kids/i);
+    assert.match(repaired.joined, /time you have/i);
+    assert.match(repaired.joined, /food prep/i);
     assert.match(repaired.joined, /no subscription or auto-renewal/i);
     assert.match(repaired.joined, /personalised (?:app )?preview/i);
     assert.doesNotMatch(repaired.joined, /what usually gets in the way/i);
