@@ -2695,8 +2695,10 @@ function splitOutboundDmParagraph(paragraph, options = {}) {
     let rest = cleanOutboundDmBubbleText(paragraph);
 
     while (rest.length > hardMaxChars) {
-        let breakAt = -1;
-        breakAt = findOutboundDmBreak(rest, hardMaxChars, minHardBreak, {
+        // A short complete sentence is a better boundary than a longer
+        // fragment. Keep the remaining sentence intact when it fits.
+        let breakAt = findOutboundDmBreak(rest, hardMaxChars, 1);
+        if (breakAt === -1) breakAt = findOutboundDmBreak(rest, hardMaxChars, minHardBreak, {
             allowClauses: true,
             allowWords: true,
         });

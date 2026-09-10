@@ -81,6 +81,13 @@ test('Instagram Graph replies split below the native 250-character visible cutof
     }), {});
 });
 
+test('a short opening sentence is kept separate instead of splitting the following sentence at a comma', () => {
+    const first='Yes, you can absolutely learn how to fit Balance around that schedule.';
+    const second='With your goal (build strength), Tuesday and Saturday availability, and home dumbbells, Balance Learn sets you up with a personalised workout program plus meal-plan support and Weekly Goals that match your recorded dietary needs.';
+    const options=sendIg.resolveOutboundDmBubbleOptions({shouldUseGraph:true,channel:'instagram'});
+    assert.deepEqual(splitCoachDraftIntoDmBubbles([first+'\n'+second],options),[first,second]);
+});
+
 test('voice companion text is restricted to the approved paid Meta app preview', () => {
     const previewUrl = 'https://plantbased-balance.org/meta-app-preview.html';
     const data = {
