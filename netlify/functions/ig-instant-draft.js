@@ -1496,6 +1496,7 @@ function hasPaidMetaPreviewOrPriceDecline(value = '') {
     const message = String(value || '').replace(/\s+/g, ' ').trim();
     return /\b(?:don['\u2019]?t|do not)\s+send\s+(?:me\s+)?(?:a|the|that)?\s*(?:(?:free )?(?:personalised |personalized )?(?:app )?preview|link)\b/i.test(message)
         || /\b(?:not now|no thanks|not interested)\b/i.test(message)
+        || /\b(?:i|we)\s+(?:can['\u2019]?t|cannot|can not)\s+afford\s+(?:it|that|(?:this|the)\s+(?:course|program|programme)|balance learn)\b/i.test(message)
         || /\b(?:\$?\s*(?:149|450)|price|cost|it|that)\b[\s\S]{0,45}\b(?:too (?:much|expensive)|can['\u2019]?t afford|cannot afford|not (?:in|within) (?:my )?budget)\b/i.test(message);
 }
 
@@ -2200,7 +2201,7 @@ function buildDeterministicPaidMetaConversationReply({
 
     if (broadFlow && hasPaidMetaPreviewOrPriceDecline(message)) {
         const joined = /\b(?:too (?:much|expensive)|can['\u2019]?t afford|cannot afford|not (?:in|within) (?:my )?budget)\b/i.test(message)
-            ? ('That’s completely fair. If $149 is too much right now, no stress. I won’t send the link.'.replaceAll('$149', resolveBalanceLearnCoursePriceLabel()))
+            ? 'That’s completely fair. No stress, I won’t send the link.'
             : 'No worries. I won’t send the preview or link.';
         return {
             chunks: [joined],
@@ -5128,7 +5129,8 @@ Interpret the lead's meaning before choosing a step. A named difficulty, constra
 
 Client proof should normally be used once when it genuinely matches: Ally for weight loss, Gen for strength/confidence, Dani for body recomposition, Bec and Kirsty for shared accountability. Use no transformation when identity, safety or fit is uncertain. If using proof, name the approved person and say you are showing their photo. The deterministic transport may add the approved quick app video after both goal and blocker are known; do not invent URLs, visible media placeholders such as [course video], or repeat it.
 
-Reliable offer facts: Balance Learn is a six-week course inside Balance, built around neuroscience and the psychology of lasting change. Each week gives the person one practical learning focus, supported by Weekly Goals, alongside a personalised workout program, meal-plan support fitted to recorded dietary needs, and one weekly training/food review and adjustment. It is one AUD ${resolveBalanceLearnCoursePriceLabel()} payment for the full six weeks, with no subscription or auto-renewal. The personalised app preview comes before payment.
+Reliable offer facts: Balance Learn is a six-week course inside Balance, built around neuroscience and the psychology of lasting change. Each week gives the person one practical learning focus, supported by Weekly Goals, alongside a personalised workout program, meal-plan support fitted to recorded dietary needs, and one weekly check-in where Shannon reviews their training and food and adjusts the plan. It is one AUD ${resolveBalanceLearnCoursePriceLabel()} payment for the full six weeks, with no subscription or auto-renewal. The personalised app preview comes before payment.
+Keep three separate facts clear: the course has a fixed weekly LEARNING theme; the workout schedule fits the person's availability and needs; Shannon reviews training and food in one weekly CHECK-IN. Never shorten this to "one weekly training" or imply the package limits them to one workout a week. If they ask whether it means one workout weekly, directly explain that weekly refers to the review, not the number of workouts. Do not promise a different workout every week merely because they dislike repetition. For lessons-only interest or an existing coach, explain that the curriculum stays fixed; personalisation applies to the workout/nutrition setup and review, not individually rewritten lessons.
 
 Verified course curriculum, for direct course, lesson or week-by-week questions: week 1, Why change feels hard; week 2, Work with your energy; week 3, Build a rhythm that sticks; week 4, Take the fight out of food; week 5, Make progress easier to repeat; week 6, Build your sustainable way forward. The course uses lessons, practical actions and Weekly Goals alongside the person's workout and nutrition setup. Do not dump all six weeks into an ordinary pitch. Give the full outline only when they ask for curriculum detail; otherwise use only the one or two themes relevant to their words.
 
