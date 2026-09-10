@@ -96,7 +96,7 @@ test('scrolling cannot pin a fake highlight to the header or force the welcome b
 });
 
 test('compact Back reserves header space instead of covering page navigation',()=>{
- assert.match(html,/coach-checkin-explainer__header \{ padding-top: 68px/);
+ assert.match(html,/coach-checkin-explainer__header \{ padding-top: 100px/);
  assert.match(html,/tour-navigation-only\.tour-embedded-guide\) #learning-content \{ padding-top: 80px !important/);
  assert.match(html,/Math\.max\(40, hostRect \? hostRect\.top \+ 10 : 40\)/);
  assert.match(html,/tourScrollContextSel:'#view-learning'/);
@@ -114,7 +114,7 @@ test('replayed tours release a dismissed wizard scroll lock',()=>{
 
 test('goals sheet keeps Back above the modal and closes when navigating away',()=>{
  assert.match(html,/tour-goals-navigation \{ z-index: 400110/);
- assert.match(html,/weekly-goal-hero \{ padding-top: 68px/);
+ assert.match(html,/weekly-goal-hero \{ padding-top: 100px/);
  assert.match(section('  function closeTourBlockingSurfaces','  function resetTourTemporaryTargets'),/window\.closeWeeklyGoalsModal\(\)/);
  const gate=section('    if (step && step.requiresWeeklyGoals)', '  function isVisible');
  assert.match(gate,/if \(gateIsCurrent\(\) && idx === completedStepIndex\) window\.tourNext\(\)/);
