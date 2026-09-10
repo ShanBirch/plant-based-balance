@@ -25,3 +25,7 @@ test('normal forward entry still auto-fills known profile answers',()=>{
  assert.match(source,/askWizardChatQuestion\(\{ instant: true, revisit: true \}\)/);
  assert.doesNotThrow(()=>new Function(source));
 });
+test('Back does not blur the input and move before the click lands',()=>{
+ const html=fs.readFileSync(path.join(__dirname,'../dashboard.html'),'utf8');
+ assert.match(html,/id="wizard-chat-back"[^>]*onpointerdown="event.preventDefault\(\)"[^>]*onclick="goBackWizardChatQuestion\(\)"/);
+});

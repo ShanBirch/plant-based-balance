@@ -17965,7 +17965,7 @@ window.endFeatureTour = function(skipped){
             <div class="wizard-slide slide-active" id="slide-1">
                 <div class="wizard-chat-intake">
                     <div class="wizard-chat-progress-row">
-                        <button type="button" id="wizard-chat-back" class="wizard-chat-back" onclick="goBackWizardChatQuestion()" aria-label="Back">Back</button>
+                        <button type="button" id="wizard-chat-back" class="wizard-chat-back" onpointerdown="event.preventDefault()" onclick="goBackWizardChatQuestion()" aria-label="Back">Back</button>
                         <span id="wizard-chat-progress-label">Question 1</span>
                         <div class="wizard-chat-progress-track"><div id="wizard-chat-progress-fill"></div></div>
                     </div>
