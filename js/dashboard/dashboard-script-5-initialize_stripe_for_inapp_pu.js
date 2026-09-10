@@ -9304,7 +9304,9 @@ function skipWizardChatKnownProfileSteps() {
 
 function askWizardChatQuestion(options = {}) {
     wizardChatAskToken += 1;
-    skipWizardChatKnownProfileSteps();
+    // Back is an explicit request to review an answer, including a known
+    // profile value. Auto-skipping here would bounce straight forward again.
+    if (!options.revisit) skipWizardChatKnownProfileSteps();
     const step = getWizardChatStep();
     if (!step) {
         wizardChatComplete = true;
@@ -9370,7 +9372,7 @@ function goBackWizardChatQuestion() {
     wizardChatStepIndex = targetIndex;
     wizardChatComplete = false;
     rebuildWizardChatMessagesUntil(targetIndex);
-    askWizardChatQuestion({ instant: true });
+    askWizardChatQuestion({ instant: true, revisit: true });
 }
 
 function selectWizardChatChoice(value) {
