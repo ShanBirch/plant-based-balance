@@ -3118,7 +3118,7 @@ function buildMetaAdFoundersPassFirstReply(currentMessage = '', { customData = {
         ];
     } else if (broadFlow && intent === 'how_balance_works') {
         chunks = [
-            'Balance Learn is a six-week course inside the app, built around neuroscience and the psychology of change. Each week turns that into one practical focus, alongside workouts, food support, Weekly Goals and my weekly check-in.',
+            'Hey! Balance Learn is a six-week course inside the app, built around neuroscience and the psychology of change. Each week turns that into one practical focus, alongside workouts, food support, Weekly Goals and my weekly check-in.',
             "What's the main change you'd like to make over the next six weeks?",
         ];
     } else if (broadFlow && broadGoalKnown && broadBlockerKnown) {
