@@ -61,7 +61,7 @@ test('final personal acknowledgement sees the full batch and preserves the offer
     const result = await personalisePaidMetaOffer({draft,currentMessage:'Chocolate',history:[{direction:'out',text:'What gets in the way?'},{direction:'in',text:'I guess kids'},{direction:'in',text:'Chocolate'}],writer:async contents=>{
         const prompt = contents[0].parts[0].text;
         assert.match(prompt,/CURRENT INBOUND BATCH[^]*I guess kids Chocolate/);
-        return JSON.stringify({acknowledgement:'Sounds like the kids and chocolate might be the bits to work around.',evidence:['"I guess kids"','“Chocolate”']});
+        return JSON.stringify({acknowledgement:'Sounds like the kids and chocolate might be the bits to work around.',evidence:['"I guess kids",','“Chocolate”']});
     }});
     assert.notEqual(result,draft);
     assert.equal(result.chunks[0],draft.chunks[0]);

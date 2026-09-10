@@ -2674,7 +2674,7 @@ DECODED MEDIA, if present:\n${mediaContext}`;
         const acknowledgement = String(parsed.acknowledgement || '').replace(/\s*[—–]\s*/g, ', ').trim();
         const quotes = Array.isArray(parsed.evidence) ? parsed.evidence : [];
         draft.personalAcknowledgementCandidate = {text:acknowledgement,evidence:quotes};
-        const normalize = value => String(value).toLowerCase().replace(/[’‘]/g,"'").replace(/["“”]/g,'').replace(/\s+/g,' ').trim();
+        const normalize = value => String(value).toLowerCase().replace(/[’‘]/g,"'").replace(/["“”]/g,'').replace(/\s+/g,' ').trim().replace(/^[,;:]+|[,;:]+$/g,'').trim();
         if (!acknowledgement) return fail('empty_acknowledgement');
         if (acknowledgement.length > 200) return fail('acknowledgement_too_long');
         if (/\?|https?:|\$|\bBalance Learn\b/i.test(acknowledgement)) return fail('question_or_offer_in_acknowledgement');
