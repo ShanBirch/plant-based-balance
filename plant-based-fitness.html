@@ -396,6 +396,16 @@
         @keyframes noteOneFloat { 0%, 100% { transform: rotate(-4deg) translateY(0); } 50% { transform: rotate(-2deg) translateY(-7px); } }
         @keyframes noteTwoFloat { 0%, 100% { transform: rotate(4deg) translateY(0); } 50% { transform: rotate(2deg) translateY(7px); } }
         @keyframes progressIn { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+        .course-week-list { display: grid; gap: 12px; }
+        .course-week { padding: 0; border: 1px solid var(--line); border-radius: 16px; background: var(--paper); color: var(--ink); -webkit-text-fill-color: var(--ink); }
+        .course-week summary { display: grid; grid-template-columns: auto 1fr auto; gap: 16px; align-items: center; padding: 18px 22px; list-style: none; }
+        .course-week summary::-webkit-details-marker { display: none; }
+        .course-week-title { font: 700 1.15rem/1.35 'Outfit', sans-serif; }
+        .course-week-arrow { font-size: 1.5rem; line-height: 1; }
+        .course-week[open] .course-week-arrow { transform: rotate(180deg); }
+        .course-week p { max-width: none; margin: 0; padding: 0 22px 22px; color: var(--muted); -webkit-text-fill-color: var(--muted); }
+        @media (max-width: 600px) { .course-week summary { gap: 12px; padding: 16px; } .course-week p { padding: 0 16px 18px; } .course-week-title { font-size: 1.05rem; } }
     </style>
 <link rel="stylesheet" href="/site-navigation.css?v=20260911-page-theme">
 <link rel="stylesheet" href="/learn-intro-price.css?v=20260911-red-gold">
@@ -448,14 +458,14 @@
         <section id="how-foundations-works">
             <div class="wrap">
                 <div class="section-head reveal"><div class="eyebrow">Your complete six-week path</div><h2>Learn it, use it, review it, then make it fit real life.</h2><p>Balance Learn is a guided starting course, not a pile of information. Each week gives you a clear lesson theme, practical actions inside Balance, and one review point with Shannon.</p></div>
-                <div class="card-grid">
+                <div class="course-week-list">
                     <article class="feature-card foundations-prelude"><div class="feature-number">START HERE</div><div><h3>What Balance Is Built On</h3><p>Begin with the practical working model used throughout the course: notice the signal, check your body, context and environment, choose one workable adjustment, then repeat and learn. The lesson also explains the limits of the science and what the course does not claim.</p></div></article>
-                    <article class="feature-card"><div class="feature-number">WEEK 1</div><h3>Why change feels hard</h3><p>Understand how your brain uses past experience, set your first Weekly Goals, and begin with a workout and meal-plan starting point you can actually use.</p></article>
-                    <article class="feature-card"><div class="feature-number">WEEK 2</div><h3>Work with your energy</h3><p>Notice how sleep, stress and low-energy days change your choices. Use the app to keep the next action visible when the week is not ideal.</p></article>
-                    <article class="feature-card"><div class="feature-number">WEEK 3</div><h3>Build a rhythm that sticks</h3><p>Use repetition, smaller actions and your surroundings to make training and food habits easier to return to.</p></article>
-                    <article class="feature-card"><div class="feature-number">WEEK 4</div><h3>Take the fight out of food</h3><p>Learn what cravings and emotional eating may be trying to solve, then use meal support and food tracking without turning the week into a test.</p></article>
-                    <article class="feature-card"><div class="feature-number">WEEK 5</div><h3>Make progress easier to repeat</h3><p>Shape the choices around you, follow your workout plan, and use your real training evidence to see what is working.</p></article>
-                    <article class="feature-card"><div class="feature-number">WEEK 6</div><h3>Build your sustainable way forward</h3><p>Bring your training, food and comeback plan together. Finish the course, complete your reflection, and receive your verified Certificate of Completion.</p></article>
+                    <details class="course-week"><summary><span class="feature-number">WEEK 1</span><span class="course-week-title">Why change feels hard</span><span class="course-week-arrow" aria-hidden="true">⌄</span></summary><p>Understand how your brain uses past experience, set your first Weekly Goals, and begin with a workout and meal-plan starting point you can actually use.</p></details>
+                    <details class="course-week"><summary><span class="feature-number">WEEK 2</span><span class="course-week-title">Work with your energy</span><span class="course-week-arrow" aria-hidden="true">⌄</span></summary><p>Notice how sleep, stress and low-energy days change your choices. Use the app to keep the next action visible when the week is not ideal.</p></details>
+                    <details class="course-week"><summary><span class="feature-number">WEEK 3</span><span class="course-week-title">Build a rhythm that sticks</span><span class="course-week-arrow" aria-hidden="true">⌄</span></summary><p>Use repetition, smaller actions and your surroundings to make training and food habits easier to return to.</p></details>
+                    <details class="course-week"><summary><span class="feature-number">WEEK 4</span><span class="course-week-title">Take the fight out of food</span><span class="course-week-arrow" aria-hidden="true">⌄</span></summary><p>Learn what cravings and emotional eating may be trying to solve, then use meal support and food tracking without turning the week into a test.</p></details>
+                    <details class="course-week"><summary><span class="feature-number">WEEK 5</span><span class="course-week-title">Make progress easier to repeat</span><span class="course-week-arrow" aria-hidden="true">⌄</span></summary><p>Shape the choices around you, follow your workout plan, and use your real training evidence to see what is working.</p></details>
+                    <details class="course-week"><summary><span class="feature-number">WEEK 6</span><span class="course-week-title">Build your sustainable way forward</span><span class="course-week-arrow" aria-hidden="true">⌄</span></summary><p>Bring your training, food and comeback plan together. Finish the course, complete your reflection, and receive your verified Certificate of Completion.</p></details>
                 </div>
             </div>
         </section>
