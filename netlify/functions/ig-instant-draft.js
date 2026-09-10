@@ -2645,6 +2645,7 @@ async function personalisePaidMetaOffer({ draft, currentMessage = '', history = 
     const leadContext = history.filter(item => item?.direction === 'in').slice(-10).map(item => item.text || '').join('\n');
     const mediaContext = String(draft?.mediaSummary || draft?.mediaDecode?.summary || '');
     const evidence = `${leadContext}\n${inbound}\n${mediaContext}`;
+    const fail = reason => { draft.personalAcknowledgementFailure = reason; return draft; };
     const prompt = `Write only the brief personal acknowledgement that goes BEFORE an already verified Balance Learn offer. The offer, price, video and preview invitation are handled separately.
 Return JSON: {"acknowledgement":"one or two short sentences, at most 200 characters","evidence":["exact short quote from the lead for each personal detail you used"]}.
 Use warm, ordinary Australian English. Interpret the entire current inbound batch together. Reflect the individual's actual circumstances, including multiple relevant details. Do not just list keywords or repeat their whole message. Do not ask a question, diagnose, invent a cause, prescribe treatment, promise a result, or give product/price details.
@@ -2656,25 +2657,25 @@ DECODED MEDIA, if present:\n${mediaContext}`;
     try {
         const raw = await withTimeout(writer([{role:'user',parts:[{text:prompt}]}], {maxOutputTokens:300,temperature:0.3}, {
             profile:'coach_fallback',label:'openai-paid-meta-personal-acknowledgement',models:['gpt-5.4-mini'],
-        }), 8000, 'paid Meta personal acknowledgement');
+        }), 15000, 'paid Meta personal acknowledgement');
         const parsed = JSON.parse(String(raw).replace(/^```(?:json)?\s*|\s*```$/g, '').trim());
         const acknowledgement = String(parsed.acknowledgement || '').trim();
         const quotes = Array.isArray(parsed.evidence) ? parsed.evidence : [];
         const normalize = value => String(value).toLowerCase().replace(/[’‘]/g,"'").replace(/\s+/g,' ').trim();
         if (!acknowledgement || acknowledgement.length > 200 || /\?|https?:|\$|\bBalance Learn\b|[—–]/i.test(acknowledgement)
-            || !quotes.length || !quotes.every(quote => normalize(quote).length >= 3 && normalize(evidence).includes(normalize(quote)))) return draft;
+            || !quotes.length || !quotes.every(quote => normalize(quote).length >= 3 && normalize(evidence).includes(normalize(quote)))) return fail('invalid_text_or_evidence');
         // Keep proof introductions and every factual offer/media/CTA byte.
         const chunks = [...(draft.chunks || [joined])];
         const index = chunks.findIndex(chunk => String(chunk).includes(marker));
-        if (index < 0) return draft;
+        if (index < 0) return fail('missing_offer_marker');
         chunks[index] = `${acknowledgement} ${chunks[index].slice(chunks[index].indexOf(marker))}`;
         const updated = {...draft,chunks,joined:chunks.join('\n\n'),model:`${draft.model}+personal-ack`,personalAcknowledgement:{text:acknowledgement,evidence:quotes}};
         const issues = collectPaidMetaWriterContractIssues({draft:updated,currentMessage:inbound,history,flowVariant:draft.flowVariant || 'broad_pain'});
-        if (issues.some(issue => /grounded acknowledgement/.test(issue))) return draft;
+        if (issues.some(issue => /grounded acknowledgement/.test(issue))) return fail('grounding_contract');
         return updated;
     } catch (error) {
         console.warn(`[ig-draft] personal acknowledgement kept safe fallback: ${String(error.message).slice(0,120)}`);
-        return draft;
+        return fail(/timeout/i.test(error.message) ? 'timeout' : error.name || 'writer_error');
     }
 }
 
@@ -9975,6 +9976,12 @@ exports.handler = async (event) => {
                     alertId, currentAlertData, draft, challengeOfferWarning,
                     repairField: 'paid_meta_personal_acknowledgement',
                     repairMeta: {status:'accepted',repaired_at:new Date().toISOString(),...draft.personalAcknowledgement},
+                });
+            } else if (draft.personalAcknowledgementFailure) {
+                currentAlertData = await persistCocosDraftRepair({
+                    alertId,currentAlertData,draft,challengeOfferWarning,
+                    repairField:'paid_meta_personal_acknowledgement',
+                    repairMeta:{status:'fallback',reason:draft.personalAcknowledgementFailure,attempted_at:new Date().toISOString()},
                 });
             }
         }
