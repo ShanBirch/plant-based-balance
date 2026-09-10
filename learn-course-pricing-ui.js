@@ -10,6 +10,11 @@ async function updateLearnPrice() {
     } catch (_) { /* The dated published pricing remains available offline. */ }
     document.querySelectorAll('[data-learn-upfront]').forEach(el => { el.textContent = '$' + amount / 100; });
     document.querySelectorAll('.learn-intro-price').forEach(el => {
+        if (el.dataset?.learnCompact === 'true') {
+            el.hidden = amount !== 14900;
+            el.innerHTML = amount === 14900 ? '<span>Introductory price ends 20 October 2026, Brisbane time. AUD $450 from 21 October.</span>' : '';
+            return;
+        }
         el.innerHTML = amount === 14900
             ? '<strong>Introductory package: AUD $149 for six weeks</strong><span>AUD $450 from 21 October 2026</span><span class="intro-saving">Launch price available through 20 October 2026, Brisbane time. Includes Balance Learn, weekly check-ins, plan review and six weeks of app access.</span>'
             : '<strong>Complete six-week package: AUD $450</strong><span class="intro-saving">Includes Balance Learn, weekly check-ins, plan review and six weeks of app access. One payment, no automatic renewal.</span>';

@@ -8,6 +8,13 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 
 ## Active production rules
 
+### Public offer pages must be easy to scan
+
+- Shannon's 11 September direction: the Learn page's technicalities and payment explanations drag on; visitors do not want to absorb a wall of information. Understand the actual product before simplifying it.
+- Lead with what it is, who it helps, what is included, price and the next action. Explain each inclusion once. Keep curriculum, installation help and detailed questions expandable.
+- Keep total minimum payments, renewal and cancellation terms clear when someone chooses a payment option. Simplification must not change the product or hide material purchase conditions.
+- Apply this to website offer copy; the durable website contract is recorded in CODEX.md under Public Learn page clarity.
+
 ### Paid offer videos must explain the delivery path
 
 - A sales video can look polished and still fail if the viewer cannot tell what they receive or how the coaching works.

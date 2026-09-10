@@ -15,3 +15,24 @@ test('public Learn offer shows the server-approved price and October launch dead
         else {assert.match(card.innerHTML,/package: AUD \$450/);assert.doesNotMatch(card.innerHTML,/\$149/);}
     }
 });
+
+test('compact Learn deadline disappears at standard pricing without changing other offer cards', async () => {
+    for (const amount of [14900, 45000]) {
+        const price = { textContent: '' };
+        const compact = { dataset: { learnCompact: 'true' }, innerHTML: '', hidden: false };
+        const full = { innerHTML: '' };
+        const context = {
+            getLearnCoursePricing: () => ({ unitAmount: amount }),
+            fetch: async () => ({ ok: true, json: async () => ({ offer: { unitAmount: amount } }) }),
+            document: { querySelectorAll: selector => selector === '[data-learn-upfront]' ? [price] : [compact, full], addEventListener() {} },
+            window: { addEventListener() {} }
+        };
+        vm.runInNewContext(source, context);
+        await context.priceUpdated;
+        assert.equal(price.textContent, `$${amount / 100}`);
+        assert.equal(compact.hidden, amount === 45000);
+        if (amount === 14900) assert.match(compact.innerHTML, /20 October 2026, Brisbane time/);
+        else assert.equal(compact.innerHTML, '');
+        assert.match(full.innerHTML, /Includes Balance Learn/);
+    }
+});
