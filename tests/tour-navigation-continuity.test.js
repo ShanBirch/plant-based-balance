@@ -77,7 +77,8 @@ test('course restoration does not award completion or mark a course started',()=
 });
 
 test('full-page lesson, coach and check-in keep the existing Back control',()=>{
- assert.match(html,/const navigationOnly = !!\(step && \(step\.coachNoteGuide \|\| step\.checkinExplainerGuide/);
+ assert.match(html,/step\.coachNoteGuide && isVisible\(q\('#meta-ad-trial-inbox-preview-card'\)\)/);
+ assert.match(html,/step\.checkinExplainerGuide && isVisible\(q\('#coach-checkin-explainer'\)\)/);
  assert.match(html,/tour-navigation-only #guided-tour-bubble \{\s*display: block !important/);
  assert.match(html,/tour-navigation-only #guided-tour-bubble > :not\(\.tour-actions\)/);
  assert.match(html,/return await openMetaPreviewFirstFoundationsLesson\(\)/);
@@ -96,7 +97,7 @@ test('scrolling cannot pin a fake highlight to the header or force the welcome b
 
 test('compact Back reserves header space instead of covering page navigation',()=>{
  assert.match(html,/coach-checkin-explainer__header \{ padding-top: 68px/);
- assert.match(html,/guided-tour-course-locked #learning-content \{ padding-top: 64px/);
+ assert.match(html,/tour-navigation-only\.tour-embedded-guide\) #learning-content \{ padding-top: 80px !important/);
  assert.match(html,/Math\.max\(40, hostRect \? hostRect\.top \+ 10 : 40\)/);
  assert.match(html,/tourScrollContextSel:'#view-learning'/);
 });

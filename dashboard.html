@@ -13409,7 +13409,7 @@ if(!window._pbbIsIOSSafari) {
   #guided-tour-overlay.tour-navigation-only #guided-tour-bubble .tour-actions { display: flex !important; }
   body:has(#guided-tour-overlay.tour-navigation-only) .coach-checkin-explainer__header { padding-top: 68px; }
   body:has(#guided-tour-overlay.tour-navigation-only.tour-coach-note) #meta-ad-trial-inbox-preview-card > div:first-child { padding-top: 64px !important; }
-  body.guided-tour-course-locked #learning-content { padding-top: 64px; box-sizing: border-box; }
+  body:has(#guided-tour-overlay.tour-navigation-only.tour-embedded-guide) #learning-content { padding-top: 80px !important; box-sizing: border-box; }
   #guided-tour-overlay.tour-tap-target,
   #guided-tour-overlay.tour-action-required:not(.tour-gate-complete) { pointer-events: none; }
   /* The coach note carries its own visible Continue button. Keep the clear
@@ -15144,7 +15144,7 @@ if (step && step.requiresFeedPost) {
     bubble.style.overflowY = '';
     const goalsNavigation = !!(step && step.requiresWeeklyGoals && isVisible(q('#weekly-goals-modal')));
     if (overlay) overlay.classList.toggle('tour-goals-navigation', goalsNavigation);
-    const navigationOnly = !!(step && (step.coachNoteGuide || step.checkinExplainerGuide || goalsNavigation ||
+    const navigationOnly = !!(step && ((step.coachNoteGuide && isVisible(q('#meta-ad-trial-inbox-preview-card'))) || (step.checkinExplainerGuide && isVisible(q('#coach-checkin-explainer'))) || goalsNavigation ||
       (step.embeddedGuide && overlay && !overlay.classList.contains('tour-gate-complete'))));
     if (overlay) overlay.classList.toggle('tour-navigation-only', navigationOnly);
     if (navigationOnly) {
