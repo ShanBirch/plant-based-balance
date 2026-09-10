@@ -4551,7 +4551,7 @@ function isCurrentMetaAdInbound({ customData = {}, manychatMessageId = '' } = {}
     const routing = customData && typeof customData.current_inbound_routing === 'object'
         ? customData.current_inbound_routing
         : {};
-    if (String(routing.source || '').toLowerCase() !== 'meta_ads') return false;
+    if (!['meta_ads', 'learn_keyword'].includes(String(routing.source || '').toLowerCase())) return false;
     const routedMessageId = String(routing.message_id || '').trim();
     const inboundMessageId = String(manychatMessageId || '').replace(/^ig_graph:/i, '').trim();
     if (routedMessageId && inboundMessageId) {
@@ -4572,9 +4572,21 @@ function isMetaAdConversationFastLaneEligible({ linkedUserId = null, customData 
         ? customData.meta_ad_attribution
         : {};
     return String(attribution.source || '').toLowerCase() === 'meta_ads'
+        || customData?.learn_keyword_flow?.keyword === 'balance'
         || String(customData?.latest_paid_acquisition || '').toLowerCase() === 'meta_ads'
         || String(customData?.acquisition_source || '').toLowerCase() === 'meta_ads'
         || isInternalMetaAdConversationTestLane({ customData });
+}
+
+function buildLearnKeywordFlowCustomData({currentMessage = '', linkedUserId = null, customData = {}, manychatMessageId = '', nowIso = new Date().toISOString()} = {}) {
+    const account = normalizeBotAccount(customData.bot_account || customData.instagram_graph?.bot_account);
+    if (linkedUserId || account !== 'shan_n_sunny' || !/^balance[.!?\s]*$/i.test(String(currentMessage).trim())) return null;
+    return {
+        ...customData,
+        learn_keyword_flow: {keyword:'balance', started_at:nowIso, message_id:manychatMessageId},
+        offer_flow_variant:'broad_pain',
+        current_inbound_routing: {source:'learn_keyword',message_id:manychatMessageId,received_at:nowIso},
+    };
 }
 
 function isInternalMetaAdConversationTestLane({ linkedUserId = null, customData = {} } = {}) {
@@ -7855,6 +7867,16 @@ exports.handler = async (event) => {
     const clientManagerBrowserDispatchEnabled = clientManagerAutoReplyEnabled
         && isClientManagerBrowserDispatchEnabled(thread);
     const linkedClientNeedsYou = !!thread.linked_user_id && !clientManagerAutoReplyEnabled;
+    const keywordFlowData = buildLearnKeywordFlowCustomData({
+        currentMessage:messageText, linkedUserId:thread.linked_user_id,
+        customData:thread.custom_data, manychatMessageId,
+    });
+    if (keywordFlowData) {
+        await supabaseQuery(`ig_threads?id=eq.${thread.id}`, {
+            method:'PATCH', body:{custom_data:keywordFlowData}, prefer:'return=minimal',
+        });
+        thread.custom_data = keywordFlowData;
+    }
     const acquisitionMode = resolveIgAcquisitionMode({
         customData: thread.custom_data,
         linkedUserId: thread.linked_user_id,
@@ -10535,6 +10557,7 @@ exports._test = {
     classifySourceMessageFreshness,
     isCurrentMetaAdInbound,
     isMetaAdFastLaneEligible,
+    buildLearnKeywordFlowCustomData,
     isMetaAdConversationFastLaneEligible,
     isInternalMetaAdConversationTestLane,
     isInternalMetaAdConversationOpeningTurn,

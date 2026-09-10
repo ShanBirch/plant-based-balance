@@ -1,6 +1,7 @@
 const ACQUISITION_MODES = Object.freeze({
     EXISTING_CLIENT: 'existing_client',
     PAID_META: 'paid_meta',
+    LEARN_KEYWORD: 'learn_keyword',
     ORGANIC_FOLLOWER: 'organic_follower',
     ORGANIC_OUTREACH: 'organic_outreach',
     ORGANIC_INBOUND: 'organic_inbound',
@@ -49,6 +50,7 @@ function hasVerifiedMetaAttribution(customData = {}) {
 function resolveIgAcquisitionMode({ customData = {}, linkedUserId = null } = {}) {
     if (linkedUserId) return ACQUISITION_MODES.EXISTING_CLIENT;
     if (hasVerifiedMetaAttribution(customData)) return ACQUISITION_MODES.PAID_META;
+    if (customData?.learn_keyword_flow?.keyword === 'balance') return ACQUISITION_MODES.LEARN_KEYWORD;
 
     const stored = normalized(customData?.acquisition_mode);
     if ([ACQUISITION_MODES.ORGANIC_FOLLOWER, ACQUISITION_MODES.ORGANIC_OUTREACH].includes(stored)) {
@@ -68,11 +70,18 @@ function resolveIgAcquisitionMode({ customData = {}, linkedUserId = null } = {})
 }
 
 function isPaidMetaAcquisitionMode(mode) {
-    return normalized(mode) === ACQUISITION_MODES.PAID_META;
+    return [ACQUISITION_MODES.PAID_META, ACQUISITION_MODES.LEARN_KEYWORD].includes(normalized(mode));
 }
 
 function buildAcquisitionModePromptBlock(mode) {
     const normalizedMode = normalized(mode);
+    if (normalizedMode === ACQUISITION_MODES.LEARN_KEYWORD) {
+        return buildAcquisitionModePromptBlock(ACQUISITION_MODES.PAID_META)
+            .replace('PAID META CONVERSATION MODE:', 'BALANCE KEYWORD COURSE CONVERSATION MODE:')
+            .replace('This person knowingly entered from a verified Meta ad.', 'This person explicitly messaged BALANCE to ask about Learn. Ad attribution is not known.')
+            .replace('preserve this paid context', 'preserve this explicit course-interest context')
+            .replace('verified paid offer-flow variant and attributed checkout URL', 'Learn offer-flow variant and available checkout URL');
+    }
     if (normalizedMode === ACQUISITION_MODES.PAID_META) {
         return `
 
