@@ -2624,8 +2624,20 @@ function shouldApplyDeterministicPaidMetaReplyOverride(draft = null) {
             && /^deterministic_paid_meta_autonomy_v\d+$/i.test(String(draft.model || '')));
 }
 
-function selectFastDeterministicPaidMetaProgression({ metaAdOpeningTurn = false, draft = null, requiresMediaAnalysis = false } = {}) {
+function isPaidMetaBareGoalMessage(message = '') {
+    // A narrow optimisation, never a classifier for arbitrary life context.
+    // Anything more complex must reach the writer, even if no blocker keyword
+    // recognises the person's particular caring/work/access circumstances.
+    const goals = String(message || '').trim().split(/\s+and\s+/i);
+    if (goals.length > 1) return goals.every(isPaidMetaBareGoalMessage);
+    return /^(?:(?:i|we)\s+)?(?:(?:want|need|would like|hope)(?:\s+to)?\s+)?(?:lose (?:some |a bit of |around |about )?(?:weight|fat|body fat|\d+(?:\.\d+)?\s*kg)|build (?:muscle|strength)|get (?:fit|fitter|strong|stronger)|feel (?:fit|fitter|strong|stronger|confident)|(?:have )?more energy|tone up)[.!\s]*$/i.test(String(message || '').trim());
+}
+
+function selectFastDeterministicPaidMetaProgression({ metaAdOpeningTurn = false, draft = null, requiresMediaAnalysis = false, currentMessage = '' } = {}) {
     if (requiresMediaAnalysis) return null;
+    if (currentMessage && draft?.replyMode === 'campaign_sales_progression'
+        && (/\?/.test(currentMessage)
+            || (paidMetaOutboundAskedForBlocker(draftTextFromDraft(draft)) && !isPaidMetaBareGoalMessage(currentMessage)))) return null;
     // Offers provide the factual scaffold only. personalisePaidMetaOffer runs
     // after contract repairs, so no later template can erase its human detail.
     // A fresh verified ad referral or repeatable internal BALANCE opener is a
@@ -5408,6 +5420,7 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
     );
     const broadGoalNeedsBlockerQuestion = broadFlow
         && PAID_META_FITNESS_GOAL_RE.test(turn)
+        && isPaidMetaBareGoalMessage(turn)
         && !knownBroadBlocker
         && !autonomyPause
         && !asksForCurriculumOutline
@@ -8432,6 +8445,7 @@ exports.handler = async (event) => {
         requiresMediaAnalysis: requiresInboundMediaAnalysis,
         metaAdOpeningTurn,
         draft: earlyDeterministicProgression,
+        currentMessage: currentInboundTurnMessage,
     });
     const qualifierEligible = !metaAdConversationFastLane && !fastDeterministicProgression && isQualifierEligible({
         leadStage: effectiveLeadStage,
@@ -10472,6 +10486,7 @@ exports._test = {
     shouldApplyDeterministicPaidMetaReplyOverride,
     selectFastDeterministicPaidMetaProgression,
     personalisePaidMetaOffer,
+    isPaidMetaBareGoalMessage,
     shouldUseOutboundSyntheticVoice,
     restoreCoalescedPaidMetaVoiceDraft,
     removePaidMetaBlockerVoiceGreeting,

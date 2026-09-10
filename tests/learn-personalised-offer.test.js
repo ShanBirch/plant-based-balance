@@ -7,6 +7,7 @@ const {
     isBlockingPaidMetaWriterContractIssue,
     buildPaidMetaGuaranteedContractFallback,
     personalisePaidMetaOffer,
+    isPaidMetaBareGoalMessage,
 } = require('../netlify/functions/ig-instant-draft')._test;
 
 const cases = [
@@ -88,4 +89,16 @@ test('a corrected blocker does not force the writer to repeat the superseded det
     const draft = {joined:"It's the petrol-station chocolate habit you want to change. Balance Learn is a six-week course with your workout program, meal plan and weekly check-in. It's one AUD $149 payment, no auto-renewal. Want a free personalised preview before you pay?"};
     const issues = collectPaidMetaWriterContractIssues({draft,currentMessage,flowVariant:'broad_pain',history:[{direction:'in',text:'Kids and chocolate, mostly.'}]});
     assert.ok(!issues.some(issue=>/grounded acknowledgement of kids/.test(issue)));
+});
+
+test('unfamiliar personal context and direct questions cannot become a generic blocker question', () => {
+    const currentMessage='I want more energy. I look after my dad and some days have to cancel everything. I can manage ten minutes at home. Is that pointless?';
+    const shortcut={model:'deterministic_paid_meta_guided_sales_v1',flowVariant:'broad_pain',replyMode:'campaign_sales_progression',joined:'More energy is a solid goal. What usually gets in the way of making that happen consistently?'};
+    assert.equal(isPaidMetaBareGoalMessage('I want to lose weight'),true);
+    for (const message of [currentMessage,'I want to build strength because I carry my mum upstairs.','I want more energy for rehearsals.','I want strength, not weight loss.']) {
+        assert.equal(isPaidMetaBareGoalMessage(message),false);
+        assert.equal(selectFastDeterministicPaidMetaProgression({draft:shortcut,currentMessage:message}),null);
+    }
+    const issues=collectPaidMetaWriterContractIssues({currentMessage,flowVariant:'broad_pain',draft:{joined:"Ten minutes isn't pointless. Short home sessions can fit around caring for your dad, including days when plans change."}});
+    assert.ok(!issues.some(issue=>/answered the goal question/.test(issue)),'do not force a blocker question after the writer answers their actual question');
 });
