@@ -20,24 +20,3 @@ for (const device of ['Desktop', 'iPhone', 'Android']) {
         assert.match(node('.secure-note').textContent,/Payment comes after the preview/);
     });
 }
-
-test('iPhone install opens the return instructions while preserving paid attribution', () => {
-    const nodes = new Map();
-    const node = id => {
-        if (!nodes.has(id)) nodes.set(id, { style: {}, dataset: {}, handlers: {}, addEventListener(type, handler) { this.handlers[type] = handler; }, setAttribute() {} });
-        return nodes.get(id);
-    };
-    const window = {
-        location: { search: '?utm_source=instagram&utm_medium=paid_social&utm_campaign=learn_test', pathname: '/founders', hash: '' },
-        localStorage: { getItem() { return null; } },
-        BalanceIOSMetaPreviewHandoff: require('../lib/ios-meta-preview-handoff.js')
-    };
-    const document = { getElementById: node, querySelector: node, querySelectorAll: () => [], body: { classList: { add() {} }, dataset: {} } };
-    vm.runInNewContext(script, { window, document, navigator: { userAgent: 'iPhone' }, URLSearchParams });
-    assert.equal(node('learn-install-help').open, undefined);
-    node('foundations-hero-action').handlers.click();
-    assert.equal(node('learn-install-help').open, true);
-    assert.match(node('paid-preview-open-installed').href, /utm_campaign=learn_test/);
-    assert.doesNotMatch(node('paid-preview-open-installed').href, /learn_entry=website/);
-    assert.equal(document.body.dataset.landingVariant, 'learn_simple_v1');
-});

@@ -14,10 +14,6 @@ This file is the durable handoff context for Codex sessions. Read it at the star
 - Default session mode: give a short morning briefing with 2-4 prioritized items from the business plan and recent repo activity. Do not start with "what would you like to do?"
 - Shannon explicitly wants help building a business that makes money, and eventually wants the AI/system to run the business while he supervises.
 
-## Public Learn page clarity (11 September 2026)
-
-Shannon wants the public Learn page to be easy to scan for distracted visitors. Verify the product first, then lead with the promise, inclusions, weekly rhythm, price and preview action. Keep detailed curriculum, payment alternatives, support limits and installation help in expandable sections. Do not repeat the offer across several feature lists or expose technical handoff explanations in the main pitch. Preserve explicit minimum-payment and renewal terms before choosing a weekly purchase. The implementation and measurement record is docs/LEARN_PAGE_SIMPLIFICATION_2026_09_11.md.
-
 ## Balance Learn introductory pricing (10 September 2026)
 
 Latest confirmed decision: the complete six-week Learn package, including weekly check-ins and plan review, is AUD $149 upfront. Launch is 21 September 2026; the launch offer runs through 20 October 2026 Brisbane time. New upfront purchases become AUD $450 at midnight on 21 October 2026. This is one payment for the full six-week course, not a one-month course or a recurring charge. The earlier $150 price and 21 September increase are retired. Existing purchases keep their entitlements. The separate $24.83 weekly Learn membership and Zoom PT prices are unchanged. The shared lib/learn-course-pricing.js schedule controls the server price. Public pages use the live offer endpoint to display the current amount.
