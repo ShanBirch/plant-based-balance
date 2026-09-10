@@ -8218,7 +8218,7 @@ async function loadDirectMessages(recipientId) {
             && window.socialJourney.shouldShowWelcomeMessage(recipientId));
         const balanceWelcomeVideo = showBalanceWelcome && typeof window.socialJourney.getWelcomeVideoUrl === 'function'
             ? window.socialJourney.getWelcomeVideoUrl()
-            : '/assets/balance-onboarding-coach-note-captioned.mp4?v=20260910-four-stages';
+            : '/assets/balance-onboarding-coach-note-captioned.mp4?v=20260910-word-reveal';
         const balanceWelcomeVideoComplete = !!(showBalanceWelcome
             && window.socialJourney
             && typeof window.socialJourney.isWelcomeVideoComplete === 'function'

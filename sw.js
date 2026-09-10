@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v521-four-stage-coach-note'; // v521: corrected four-stage coach video and course order
+const CACHE_NAME = 'pbb-app-v522-word-reveal-coach-note'; // v522: user-supplied narration and spoken-word stage reveals
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

@@ -9,7 +9,7 @@
   const TABLE = 'social_journey_progress';
   const VERSION = 'social_identity_v1';
   const BRISBANE_TIMEZONE = 'Australia/Brisbane';
-  const WELCOME_VIDEO_URL = window.PBB_BALANCE_WELCOME_VIDEO_URL || '/assets/balance-onboarding-coach-note-captioned.mp4?v=20260910-four-stages';
+  const WELCOME_VIDEO_URL = window.PBB_BALANCE_WELCOME_VIDEO_URL || '/assets/balance-onboarding-coach-note-captioned.mp4?v=20260910-word-reveal';
 
   const WEEK_DEFINITIONS = [
     {
