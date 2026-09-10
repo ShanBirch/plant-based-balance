@@ -13398,7 +13398,7 @@ if(!window._pbbIsIOSSafari) {
      check-ins and video, without covering them with the explanation card. */
   #guided-tour-overlay.tour-navigation-only { pointer-events: none; }
   #guided-tour-overlay.tour-goals-navigation { z-index: 400110; }
-  body:has(#guided-tour-overlay.tour-goals-navigation) #weekly-goals-modal .weekly-goal-hero { padding-top: 100px; }
+  body:has(#guided-tour-overlay.tour-goals-navigation:not(.tour-forward-only)) #weekly-goals-modal .weekly-goal-hero { padding-top: 100px; }
   #guided-tour-overlay.tour-navigation-only #guided-tour-bubble {
     display: block !important; width: auto !important; max-width: 160px !important;
     padding: 6px !important; border-radius: 14px !important; pointer-events: auto;
@@ -13407,9 +13407,12 @@ if(!window._pbbIsIOSSafari) {
   #guided-tour-overlay.tour-navigation-only .tour-next,
   #guided-tour-overlay.tour-navigation-only .tour-skip { display: none !important; }
   #guided-tour-overlay.tour-navigation-only #guided-tour-bubble .tour-actions { display: flex !important; }
-  body:has(#guided-tour-overlay.tour-navigation-only) .coach-checkin-explainer__header { padding-top: 100px; }
-  body:has(#guided-tour-overlay.tour-navigation-only.tour-coach-note) #meta-ad-trial-inbox-preview-card > div:first-child { padding-top: 100px !important; }
-  body:has(#guided-tour-overlay.tour-navigation-only.tour-embedded-guide) #learning-content { padding-top: 80px !important; box-sizing: border-box; }
+  body:has(#guided-tour-overlay.tour-navigation-only:not(.tour-forward-only)) .coach-checkin-explainer__header { padding-top: 100px; }
+  body:has(#guided-tour-overlay.tour-navigation-only.tour-coach-note:not(.tour-forward-only)) #meta-ad-trial-inbox-preview-card > div:first-child { padding-top: 100px !important; }
+  body:has(#guided-tour-overlay.tour-navigation-only.tour-embedded-guide:not(.tour-forward-only)) #learning-content { padding-top: 80px !important; box-sizing: border-box; }
+  /* Once onboarding reaches the course, keep only the forward lesson/page controls. */
+  #guided-tour-overlay.tour-forward-only .tour-back,
+  #guided-tour-overlay.tour-forward-only.tour-navigation-only #guided-tour-bubble { display: none !important; }
   #guided-tour-overlay.tour-tap-target,
   #guided-tour-overlay.tour-action-required:not(.tour-gate-complete) { pointer-events: none; }
   /* The coach note carries its own visible Continue button. Keep the clear
@@ -15423,6 +15426,18 @@ if (step && step.requiresFeedPost) {
     }
   }
 
+  function isTourForwardOnly(i){
+    if (!metaPreviewTour && !clientActivationTour) return false;
+    const courseIndex = activeSteps.findIndex(function(step){ return step.sel === '#balance-foundations-course-start'; });
+    return courseIndex >= 0 && i >= courseIndex;
+  }
+
+  function updateTourBackControl(i){
+    const forwardOnly = isTourForwardOnly(i);
+    document.getElementById('guided-tour-overlay').classList.toggle('tour-forward-only', forwardOnly);
+    document.getElementById('tour-back-btn').style.visibility = i > 0 && !forwardOnly ? 'visible' : 'hidden';
+  }
+
   async function showStep(i, options){
     const expectedToken = tourRenderToken + 1;
     try { await renderTourStep(i, options); }
@@ -15436,8 +15451,8 @@ if (step && step.requiresFeedPost) {
       overlay.classList.add('active');
       document.getElementById('tour-counter').textContent = 'Step ' + (i + 1) + ' / ' + activeSteps.length;
       document.getElementById('tour-title').textContent = activeSteps[i].title;
-      document.getElementById('tour-body').textContent = 'This page could not finish opening. Retry this step, or use Back to return to the previous one.';
-      document.getElementById('tour-back-btn').style.visibility = i > 0 ? 'visible' : 'hidden';
+      document.getElementById('tour-body').textContent = isTourForwardOnly(i) ? 'This page could not finish opening. Tap Try again to reopen this step.' : 'This page could not finish opening. Retry this step, or use Back to return to the previous one.';
+      updateTourBackControl(i);
       activeTourDisplayStep = {};
       activeTourFallbackTarget = null;
       activeTourGate = { complete:false, handleNext:async function(){ await showStep(i, options); return true; } };
@@ -15556,7 +15571,7 @@ if (step && step.requiresFeedPost) {
     document.getElementById('tour-title').textContent = (resolved.usedFallback && displayStep.fallbackTitle) ? displayStep.fallbackTitle : displayStep.title;
     document.getElementById('tour-body').textContent = (resolved.usedFallback && displayStep.fallbackBody) ? displayStep.fallbackBody : displayStep.body;
     setTourXpNote(false);
-    document.getElementById('tour-back-btn').style.visibility = i === 0 ? 'hidden' : 'visible';
+    updateTourBackControl(i);
     const defaultNextLabel = (i === activeSteps.length - 1) ? 'Finish' : (step.returnHomeAfter ? 'Next: back to Home' : (step.nextLabel || 'Next'));
     document.getElementById('tour-next-btn').textContent = isPromptBeforeAction ? (step.preActionButton || 'Open') : defaultNextLabel;
     if (overlay) {
@@ -15654,7 +15669,7 @@ if (step && step.requiresFeedPost) {
     } finally { tourNavigationBusy = false; }
   };
   window.tourBack = async function(){
-    if (tourNavigationBusy || !window.__balanceGuidedTourActive) return;
+    if (tourNavigationBusy || !window.__balanceGuidedTourActive || isTourForwardOnly(idx)) return;
     tourNavigationBusy = true;
     try {
     if (idx > 0) {
@@ -15746,7 +15761,7 @@ window.endFeatureTour = function(skipped){
     resetTourTemporaryTargets();
     const overlay = document.getElementById('guided-tour-overlay');
     if (overlay) overlay.classList.remove('active');
-    if (overlay) overlay.classList.remove('tour-navigation-only');
+    if (overlay) overlay.classList.remove('tour-navigation-only', 'tour-forward-only');
     if (overlay) overlay.classList.remove('tour-action-required', 'tour-gate-complete', 'tour-page-view', 'tour-feature-view', 'tour-tap-target', 'tour-edge-prompt', 'tour-control-prompt', 'tour-target-interactive', 'tour-embedded-guide', 'tour-coach-note', 'tour-checkin-explainer', 'tour-typing', 'tour-transitioning', 'meta-tour-welcome-active');
     window.__balanceGuidedTourActive = false;
     window.__balanceGuidedTourShowingIntro = false;

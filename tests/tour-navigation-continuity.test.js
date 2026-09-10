@@ -8,13 +8,14 @@ function section(begin,end){const i=html.indexOf(begin);assert.ok(i>=0);return h
 function navigation(){
  const ctx={window:{__balanceGuidedTourActive:true},tourNavigationBusy:false,tourNextBlockedUntil:0,
  showingXpIntro:false,idx:0,activeSteps:Array.from({length:19},()=>({})),activeTourGate:null,
- pendingPromptedAction:null,metaPreviewTour:true,Date,ended:0,visits:[]};
+ pendingPromptedAction:null,metaPreviewTour:true,clientActivationTour:false,Date,ended:0,visits:[]};
+ vm.runInNewContext(section('  function isTourForwardOnly','  function updateTourBackControl'),ctx);
  ctx.showStep=async i=>{ctx.idx=i;ctx.visits.push(i)};
  ctx.endFeatureTour=()=>ctx.ended++;
  vm.runInNewContext(section('  window.tourNext = async function(){','  async function showTourXpIntro'),ctx);
  return ctx;
 }
-test('all 19 stops support forward/back round trips without ending the tour',async()=>{
+test('steps before the course support forward/back round trips without ending the tour',async()=>{
  const c=navigation();
  for(let i=1;i<19;i++){
   await c.window.tourNext();assert.equal(c.idx,i);
@@ -43,7 +44,7 @@ test('failed page opening restores the floating guide with Back and Retry',async
  const classes=new Set(['tour-transitioning','tour-embedded-guide']);
  const nodes={};const node=id=>nodes[id]||(nodes[id]={style:{},classList:{add:(...xs)=>xs.forEach(x=>classes.add(x)),remove:(...xs)=>xs.forEach(x=>classes.delete(x))}});
  const c={window:{__balanceGuidedTourActive:true},tourRenderToken:3,activeSteps:[{title:'Home'},{title:'Course'}],
- document:{getElementById:node},console:{error(){}},clearActiveTourGate(){},resetTourTemporaryTargets(){},
+ document:{getElementById:node},isTourForwardOnly:()=>false,updateTourBackControl:i=>{node('tour-back-btn').style.visibility=i>0?'visible':'hidden'},console:{error(){}},clearActiveTourGate(){},resetTourTemporaryTargets(){},
  setTourGateUi:(enabled,note,label)=>{c.label=label},positionBubbleAndSpotlight(){c.positioned=true}};
  c.renderTourStep=async()=>{c.tourRenderToken++;throw new Error('offline')};
  vm.runInNewContext(section('  async function showStep(i, options){','  async function renderTourStep'),c);
@@ -97,7 +98,7 @@ test('scrolling cannot pin a fake highlight to the header or force the welcome b
 
 test('compact Back reserves header space instead of covering page navigation',()=>{
  assert.match(html,/coach-checkin-explainer__header \{ padding-top: 100px/);
- assert.match(html,/tour-navigation-only\.tour-embedded-guide\) #learning-content \{ padding-top: 80px !important/);
+ assert.match(html,/tour-navigation-only\.tour-embedded-guide:not\(\.tour-forward-only\)\) #learning-content \{ padding-top: 80px !important/);
  assert.match(html,/Math\.max\(40, hostRect \? hostRect\.top \+ 10 : 40\)/);
  assert.match(html,/tourScrollContextSel:'#view-learning'/);
 });
@@ -118,6 +119,30 @@ test('goals sheet keeps Back above the modal and closes when navigating away',()
  assert.match(section('  function closeTourBlockingSurfaces','  function resetTourTemporaryTargets'),/window\.closeWeeklyGoalsModal\(\)/);
  const gate=section('    if (step && step.requiresWeeklyGoals)', '  function isVisible');
  assert.match(gate,/if \(gateIsCurrent\(\) && idx === completedStepIndex\) window\.tourNext\(\)/);
+});
+test('onboarding keeps Back before the course and removes it for every remaining stop',async()=>{
+ for(const activation of [false,true]){
+  const c=navigation();c.metaPreviewTour=!activation;c.clientActivationTour=activation;
+  c.activeSteps[12]={sel:'#balance-foundations-course-start'};
+  c.idx=11;await c.window.tourBack();assert.equal(c.idx,10);
+  c.idx=11;await c.window.tourNext();assert.equal(c.idx,12);
+  for(let i=12;i<19;i++){
+   assert.equal(c.isTourForwardOnly(i),true);
+   await c.window.tourBack();assert.equal(c.idx,i);
+   await c.window.tourNext();
+  }
+  assert.equal(c.ended,1);
+ }
+ const c=navigation();c.activeSteps[2]={sel:'#balance-foundations-course-start'};
+ c.metaPreviewTour=false;c.idx=3;await c.window.tourBack();assert.equal(c.idx,2);
+});
+test('forward-only pages remove the floating Back strip and its reserved space',()=>{
+ assert.match(html,/tour-forward-only\.tour-navigation-only #guided-tour-bubble \{ display: none !important/);
+ for(const line of html.split('\n').filter(line=>line.includes('body:has(#guided-tour-overlay')&&/padding-top: (80|100)px/.test(line))){
+  assert.ok(line.includes(':not(.tour-forward-only)'),line);
+ }
+ assert.match(html,/isTourForwardOnly\(i\) \? 'This page could not finish opening\. Tap Try again/);
+ assert.match(html,/classList\.remove\('tour-navigation-only', 'tour-forward-only'\)/);
 });
 
 test('short-phone prompts fit into a free region without covering the target',()=>{
