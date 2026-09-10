@@ -10,6 +10,12 @@ async function updateLearnPrice() {
     } catch (_) { /* The dated published pricing remains available offline. */ }
     document.querySelectorAll('[data-learn-upfront]').forEach(el => { el.textContent = '$' + amount / 100; });
     document.querySelectorAll('.learn-intro-price').forEach(el => {
+        if (el.dataset?.learnPresentation === 'hero') {
+            el.innerHTML = amount === 14900
+                ? '<div class="learn-offer-line"><s class="learn-standard-price" aria-label="Standard price: AUD 450">$450</s><strong class="learn-offer-price" aria-label="AUD 149">$149</strong><span class="learn-offer-label">introductory offer</span></div><small>Offer lasts until October 20th.</small>'
+                : '<div class="learn-offer-line"><strong class="learn-offer-price" aria-label="AUD 450">$450</strong><span class="learn-offer-label">complete six-week package</span></div>';
+            return;
+        }
         el.innerHTML = amount === 14900
             ? '<strong>Introductory package: AUD $149 for six weeks</strong><span>AUD $450 from 21 October 2026</span><span class="intro-saving">Launch price available through 20 October 2026, Brisbane time. Includes Balance Learn, weekly check-ins, plan review and six weeks of app access.</span>'
             : '<strong>Complete six-week package: AUD $450</strong><span class="intro-saving">Includes Balance Learn, weekly check-ins, plan review and six weeks of app access. One payment, no automatic renewal.</span>';

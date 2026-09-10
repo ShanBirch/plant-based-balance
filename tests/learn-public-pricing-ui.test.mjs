@@ -15,3 +15,22 @@ test('public Learn offer shows the server-approved price and October launch dead
         else {assert.match(card.innerHTML,/package: AUD \$450/);assert.doesNotMatch(card.innerHTML,/\$149/);}
     }
 });
+
+test('hero offer shows crossed-out standard price only during the introductory period', async () => {
+    for (const amount of [14900, 45000]) {
+        const hero = { dataset: { learnPresentation: 'hero' }, innerHTML: '' };
+        const context = { getLearnCoursePricing: () => ({ unitAmount: amount }), fetch: async () => ({ ok: true, json: async () => ({ offer: { unitAmount: amount } }) }),
+            document: { querySelectorAll: selector => selector === '.learn-intro-price' ? [hero] : [], addEventListener() {} }, window: { addEventListener() {} } };
+        vm.runInNewContext(source, context);
+        await context.priceUpdated;
+        if (amount === 14900) {
+            assert.match(hero.innerHTML, /<s[^>]+>\$450<\/s>/);
+            assert.match(hero.innerHTML, /\$149/);
+            assert.match(hero.innerHTML, /introductory offer/);
+            assert.match(hero.innerHTML, /Offer lasts until October 20th/);
+        } else {
+            assert.match(hero.innerHTML, /\$450/);
+            assert.doesNotMatch(hero.innerHTML, /<s\s|\$149|introductory offer|October 20th/);
+        }
+    }
+});
