@@ -13972,7 +13972,7 @@ if(!window._pbbIsIOSSafari) {
   }
 
   const steps = [
-    { tab:'learning', sel:'#course-card-balance-master', fallbackSel:'#balance-path', title:'Build and explain your training week', body:'Master is now your second course. Build your muscle split, explain every day and save a reflection after each quiz. Submit each practical week to record it for you and your coach.' },
+    { tab:'learning', sel:'#course-card-balance-master', fallbackSel:'#balance-path', title:'Your weekly Master actions', body:'Master has three or four required actions each week. Save your answers and plans, submit your lift videos, and see each completed action recorded for you and Shannon. Quizzes and reflections complete your week.' },
     { tab:'meals', sel:'#browse-plans-pill', title:'Meals that match your eating style', body:'Choose your eating style and food restrictions in Profile. Your weekly recipes include measured portions, matching photos and a shopping list built from those portions.' },
     { tab:'learning', sel:'#learning-content', title:'Make your learning stick', body:'After a perfect quiz, save one thing you learned and how you could use it. Your required reflection stays with the lesson for you and your coach.' },
     { tab:'learning', sel:'#course-card-balance-master', fallbackSel:'#balance-path', title:'Your four-part Balance path', body:'Learn the ideas, Master your plans over ten weekly releases, Become through practical actions, then Lead by supporting someone else. Open a week card for its lessons and practical work. Complete the included quizzes as part of that week; your saved lesson progress carries over.', action:function(){ if(typeof window.renderLearningHome === 'function') window.renderLearningHome(); } },
@@ -16282,7 +16282,7 @@ window.endFeatureTour = function(skipped){
   // -------------------------------------------------------
 
   var allFeatures = [
-    { id:'master-assessments-v3', tab:'learning', sel:'#course-card-balance-master', fallbackSel:'#balance-path', title:'Build and explain your training week', body:'Master is now your second course. Build your muscle split, explain every day and save a reflection after each quiz. Submit each practical week to record it for you and your coach.' },
+    { id:'master-actions-v4', tab:'learning', sel:'#course-card-balance-master', fallbackSel:'#balance-path', title:'Your weekly Master actions', body:'Master has three or four required actions each week. Save your answers and plans, submit your lift videos, and see each completed action recorded for you and Shannon. Quizzes and reflections complete your week.' },
     { id:'all-diet-meal-plans-v3', tab:'meals', sel:'#browse-plans-pill', title:'Meals that match your eating style', body:'Choose your eating style and food restrictions in Profile. Your weekly recipes include measured portions, matching photos and a shopping list built from those portions.' },
     { id:'lesson-reflections-v1', tab:'learning', sel:'#learning-content', title:'Make your learning stick', body:'After a perfect quiz, save one thing you learned and how you could use it. Your required reflection stays with the lesson for you and your coach.' },
     { id:'balance-weekly-course-cards-v2', tab:'learning', sel:'#course-card-balance-master', fallbackSel:'#balance-path', title:'Your four-part Balance path', body:'Learn the ideas, Master your plans over ten weekly releases, Become through practical actions, then Lead by supporting someone else. Open a week card for its lessons and practical work. Complete the included quizzes as part of that week; your saved lesson progress carries over.', action:function(){ if(typeof window.renderLearningHome === 'function') window.renderLearningHome(); } },
@@ -18644,7 +18644,7 @@ if (window._pbbIsIOSSafari) {
 
 
 <script src="js/dashboard/script_part_24.js?v=3-coach-lookup"></script>
-<script src="js/dashboard/pbb-deferred-formcheck.js?v=58-ios-exercise-video-upload&video_health=2"></script>
+<script src="js/dashboard/pbb-deferred-formcheck.js?v=59-master-actions&video_health=2"></script>
 
 
 <script>
@@ -20891,10 +20891,11 @@ if (window._pbbIsIOSSafari) {
     <link rel="stylesheet" href="css/balance-master-course.css?v=1">
     <script src="lib/balance-curriculum.js?v=2-required-weeks"></script>
     <link rel="stylesheet" href="css/balance-course-layout.css?v=1">
-    <script src="lib/balance-course-layout.js?v=2-reflections"></script>
+    <script src="lib/balance-course-layout.js?v=3-weekly-actions"></script>
     <script src="lib/balance-course-weeks.js?v=1"></script>
     <script src="lib/balance-lead-course.js?v=2-week-cards"></script>
-    <script src="lib/balance-master-course.js?v=5-assessments"></script>
+    <script src="lib/balance-master-actions.js?v=1"></script>
+    <script src="lib/balance-master-course.js?v=6-weekly-actions"></script>
     <script>
     // On iOS Safari, defer learning-inline.js (888KB) to reduce memory pressure.
     // It's not needed until the user opens the Learn tab.

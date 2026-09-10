@@ -1,5 +1,16 @@
 # Balance Growth Measurement Standard
 
+## Master weekly actions, 10 September 2026
+
+- Variant: `master_actions_v4`. Extends the same ten-week Master curriculum with 33 separately recorded practical actions, three or four per week. Quizzes and reflections remain separate requirements.
+- Hypothesis: visible weekly actions and saved evidence help members complete practical work and help coaches identify unfinished work sooner.
+- Primary KPI: eligible Master members completing every required action in an opened week, followed by verified whole-week completion.
+- Source of truth: `balance_master_action_submissions` by member, week and action key. Count only `is_current=true`; preserve first and latest evidence dates. `balance_master_submissions` retains whole-week submissions. Exclude `users.is_test_account=true`.
+- Baseline: zero real member Master projects at launch. Existing test projects are not outcomes. Do not claim a conversion improvement without an eligible cohort.
+- Diagnostics: action counts per opened week; time from first saved action to week completion; most commonly unfinished actions; video submissions and saved workout/meal evidence. Frontend events use assessment version `master_actions_v4`.
+- Guardrails: drafts cannot forge completion; required quiz reflections stay required; private action evidence is visible only to its owner, active assigned coach and super admin. Saved work and video submissions do not imply coach approval.
+- Review date: 2026-09-24, comparing eligible opened weeks and completion latency after enough members enroll.
+
 ## Master required assessments — 10 September 2026
 
 - Variant: `master_assessments_v3`. Course order: Learn, Master, Become, Lead.

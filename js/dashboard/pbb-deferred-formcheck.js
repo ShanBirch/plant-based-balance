@@ -680,6 +680,10 @@
                 requestId: job.requestId
             });
             if (typeof showToast === 'function') showToast('Form check sent to Shannon', 'success');
+            if (/^Balance Master: (squat|hinge|push|pull)$/.test(job.workoutName || '')) {
+                // The course verifies the saved upload itself; a successful local upload alone is insufficient.
+                await window.BalanceMaster?.recordVideoSubmission?.(job.userId);
+            }
         } catch (error) {
             console.error('[FormCheck] background submit failed', error);
             const supportCode = typeof window.getBalanceVideoUploadSupportCode === 'function'

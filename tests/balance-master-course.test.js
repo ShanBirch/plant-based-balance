@@ -4,8 +4,10 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const path = require('node:path');
 const root = path.resolve(__dirname, '..');
+const actionsWindow={}; vm.runInNewContext(fs.readFileSync(path.join(root,'lib/balance-master-actions.js'),'utf8'),{window:actionsWindow});
+const receipts = week => Object.fromEntries(actionsWindow.BalanceMasterActions.weeks[week-1].map(a=>[week+':'+a.key,{isCurrent:true,submittedAt:'2026-09-01T00:00:00Z',updatedAt:'2026-09-01T00:00:00Z'}]));
 const source = fs.readFileSync(path.join(root, 'lib/balance-master-course.js'), 'utf8');
-function runtime(window = {}) { window.BalanceLessonReflections ||= {has:()=>true,load:async()=>{}}; for (const file of ['balance-curriculum','balance-course-layout']) vm.runInNewContext(fs.readFileSync(path.join(root,'lib/'+file+'.js'),'utf8'),{window}); window.getCourseLessonCompletions ||= ()=>window.BalanceCurriculum.forCourse('master').map(l=>l.id); window.BalanceCourseWeeks ||= {read:async()=>null,available:()=>0}; vm.runInNewContext(source, { window }); return window.BalanceMaster; }
+function runtime(window = {}) { window.BalanceLessonReflections ||= {has:()=>true,load:async()=>{}}; for (const file of ['balance-curriculum','balance-course-layout','balance-master-actions']) vm.runInNewContext(fs.readFileSync(path.join(root,'lib/'+file+'.js'),'utf8'),{window}); window.getCourseLessonCompletions ||= ()=>window.BalanceCurriculum.forCourse('master').map(l=>l.id); window.BalanceCourseWeeks ||= {read:async()=>null,available:()=>0}; vm.runInNewContext(source, { window }); return window.BalanceMaster; }
 test('all course stages have teaching, applied checks, and real existing lesson references', () => {
     const course = runtime();
     const learning = fs.readFileSync(path.join(root, 'lib/learning-inline.js'), 'utf8');
@@ -55,11 +57,11 @@ test('reading or saving an incomplete draft does not complete a stage', () => {
     assert.equal(c.stageDone(0,{answers:{},reflections:{0:'Biceps bend the elbow'}}),false);
     assert.equal(c.stageDone(0,{answers:{'0-0':0,'0-1':1},reflections:{0:''}}),false);
     assert.equal(c.stageDone(0,{answers:{'0-0':0,'0-1':1},reflections:{0:'Biceps bend the elbow'}}),false);
-    assert.equal(c.stageDone(0,{completedStages:{0:true},quizReflections:{0:'I learned to match muscles to movements.'},answers:{'0-0':0,'0-1':1},reflections:{0:'Biceps bend the elbow'}}),true);
+    assert.equal(c.stageDone(0,{actionReceipts:receipts(1),completedStages:{0:true},quizReflections:{0:'I learned to match muscles to movements.'},answers:{'0-0':0,'0-1':1},reflections:{0:'Biceps bend the elbow'}}),true);
 });
 test('account changes clear cached progress and failed loads remain retryable', async () => {
     let fail=false;
-    const win={currentUser:{id:'first'},supabaseClient:{from(table){const result={data:table==='workouts'?[]:{data:{completedStages:{0:true},quizReflections:{0:'I learned to match muscles to movements.'},answers:{'0-0':0,'0-1':1},reflections:{0:'Biceps bend the elbow'}}},error:fail?{}:null}; const q={select(){return q},eq(){return q},maybeSingle:async()=>result,order:async()=>result};return q;}}};
+    const win={currentUser:{id:'first'},supabaseClient:{auth:{getSession:async()=>({data:{}})},from(table){const result={data:table==='workouts'?[]:{data:{actionReceipts:receipts(1),completedStages:{0:true},quizReflections:{0:'I learned to match muscles to movements.'},answers:{'0-0':0,'0-1':1},reflections:{0:'Biceps bend the elbow'}}},error:fail?{}:null}; const q={select(){return q},eq(){return q},maybeSingle:async()=>result,order:async()=>result};return q;}}};
     const c=runtime(win); await c.load();assert.equal(c.progress().completed,1);
     win.currentUser={id:'second'};assert.equal(c.progress().completed,0);
     fail=true;await assert.rejects(c.load(),/Could not load/);
@@ -68,7 +70,7 @@ test('account changes clear cached progress and failed loads remain retryable', 
 
 test('compound stage requires four confirmed receipts and clears them on account switch or failed check', async () => {
     let submissions={}, fail=false;
-    const data={completedStages:{1:true},quizReflections:{1:'I learned to practise controlled compound movements.'},answers:{'1-0':2,'1-1':0},reflections:{1:'Keep a controlled position'}};
+    const data={actionReceipts:receipts(2),completedStages:{1:true},quizReflections:{1:'I learned to practise controlled compound movements.'},answers:{'1-0':2,'1-1':0},reflections:{1:'Keep a controlled position'}};
     const win={currentUser:{id:'member'},fetch:async()=>({ok:!fail,json:async()=>({submissions,error:'offline'})}),supabaseClient:{auth:{getSession:async()=>({data:{session:{access_token:'token'}}})},from(table){const q={select(){return q},eq(){return q},order:async()=>({data:[]}),maybeSingle:async()=>({data:{data}})};return q;}}};
     const c=runtime(win);
     data.answers['1-1']=c.stages[1].questions[1][2];
@@ -79,4 +81,21 @@ test('compound stage requires four confirmed receipts and clears them on account
     fail=true;await c.load(true);assert.equal(c.stageDone(1,data),false);
     fail=false;await c.load(true);assert.equal(c.stageDone(1,data),true);
     win.currentUser.id='another';c.progress();assert.equal(c.stageDone(1,data),false);
+});
+
+test('every week has three or four separately required actions and receipt-only progress',()=>{
+ const course=runtime(),plan=actionsWindow.BalanceMasterActions;
+ assert.deepEqual(Array.from(plan.weeks,w=>w.length),[3,4,3,3,4,3,3,3,4,3]);
+ assert.equal(plan.weeks.flat().length,33);
+ const data={actionReceipts:receipts(1),actionAnswers:{1:{muscles:'A long answer without a receipt'}}};
+ assert.equal(course.actionProgress(1,data).complete,true);
+ data.actionReceipts['1:movements'].isCurrent=false;
+ assert.equal(course.actionProgress(1,data).completed,2);
+ assert.equal(course.actionProgress(1,data).complete,false);
+ assert.equal(course.actionProgress(1,{actionAnswers:data.actionAnswers}).completed,0);
+});
+test('server action definitions agree with the member and coach checklist',()=>{
+ const sql=fs.readFileSync(path.join(root,'supabase/migrations/20260910061328_balance_master_weekly_actions.sql'),'utf8');
+ const defs=JSON.parse(sql.match(/v_definitions jsonb := '(.+?)'::jsonb;/s)[1].replaceAll("''","'"));
+ assert.deepEqual(defs,JSON.parse(JSON.stringify(actionsWindow.BalanceMasterActions.weeks)));
 });

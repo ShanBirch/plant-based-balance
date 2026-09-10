@@ -5,7 +5,7 @@ const vm = require('node:vm');
 const path = require('node:path');
 function runtime() {
     const window = {BalanceLessonReflections:{has:()=>true}};
-    for (const file of ['balance-curriculum','balance-course-layout','balance-master-course','balance-lead-course']) {
+    for (const file of ['balance-curriculum','balance-course-layout','balance-master-actions','balance-master-course','balance-lead-course']) {
         vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../lib/'+file+'.js'),'utf8'),{window});
     }
     return window;
@@ -18,6 +18,7 @@ test('all selected core lessons are required, while specialist lessons keep thei
 test('previously completed Master practice waits for the assigned lesson quizzes', () => {
     const w=runtime(), c=w.BalanceMaster;
     const draft={completedStages:{0:true},quizReflections:{0:'I learned to match muscles to movements.'},answers:{'0-0':0,'0-1':1},reflections:{0:'Quadriceps straighten the knee during a squat.'}};
+    draft.actionReceipts=Object.fromEntries(w.BalanceMasterActions.weeks[0].map(a=>['1:'+a.key,{isCurrent:true}]));
     const ids=w.BalanceCurriculum.forCourse('master',1).map(l=>l.id);
     w.getCourseLessonCompletions=()=>[];
     assert.equal(c.stageDone(0,draft),false);
