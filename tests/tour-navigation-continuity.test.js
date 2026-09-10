@@ -119,3 +119,18 @@ test('goals sheet keeps Back above the modal and closes when navigating away',()
  const gate=section('    if (step && step.requiresWeeklyGoals)', '  function isVisible');
  assert.match(gate,/if \(gateIsCurrent\(\) && idx === completedStepIndex\) window\.tourNext\(\)/);
 });
+
+test('short-phone prompts fit into a free region without covering the target',()=>{
+ const c={};vm.runInNewContext(section('  function getTourPromptGap','  function positionBubbleAndSpotlight'),c);
+ for (const height of [568,640,844]) {
+  for (const top of [80,180,262,360]) {
+   const rect={top,bottom:top+116};
+   if(rect.bottom>height-90) continue;
+   const region=c.getTourPromptGap(rect,height,90,40,18);
+   assert.ok(region.maxHeight>0);
+   assert.ok(region.top+region.maxHeight<=rect.top-18 || region.top>=rect.bottom+18);
+   assert.ok(region.top+region.maxHeight<=height-90);
+  }
+ }
+ assert.match(html,/bubble\.style\.maxHeight = region\.maxHeight \+ 'px'/);
+});

@@ -15126,6 +15126,13 @@ if (step && step.requiresFeedPost) {
     window.scrollBy({ top:delta, behavior:'auto' });
   }
 
+  function getTourPromptGap(rect, viewportHeight, bottomReserve, safeTop, gap){
+    const above = Math.max(0, rect.top - gap - safeTop);
+    const below = Math.max(0, viewportHeight - bottomReserve - rect.bottom - gap);
+    return above >= below ? { top:safeTop, maxHeight:above }
+      : { top:rect.bottom + gap, maxHeight:below };
+  }
+
   function positionBubbleAndSpotlight(target, step, options){
     const allowScroll = !!(options && options.initialPlacement);
     const overlay = document.getElementById('guided-tour-overlay');
@@ -15289,7 +15296,14 @@ if (step && step.requiresFeedPost) {
           canUseBottom = r.bottom + tapGap <= bottomBubbleTop;
         }
       }
-      const tapBubbleTop = canUseTop || !canUseBottom ? safeTop : bottomBubbleTop;
+      let tapBubbleTop = canUseTop || !canUseBottom ? safeTop : bottomBubbleTop;
+      if (!canUseTop && !canUseBottom) {
+        const region = getTourPromptGap(r, vh, bottomReserve, safeTop, tapGap);
+        bubble.style.boxSizing = 'border-box';
+        bubble.style.maxHeight = region.maxHeight + 'px';
+        bubble.style.overflowY = 'auto';
+        tapBubbleTop = region.top;
+      }
       bubble.style.top = tapBubbleTop + 'px';
       const tapBubbleW = bubble.offsetWidth || 320;
       bubble.style.left = Math.max(8, (vw - tapBubbleW) / 2) + 'px';
