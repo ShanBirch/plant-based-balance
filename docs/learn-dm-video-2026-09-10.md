@@ -4,8 +4,8 @@ The ad message flow must send the dedicated **price-ending DM video**. The old `
 
 Approved delivery files:
 
-- `assets/balance-learn-dm-149-v10.mp4`: AUD $149 for the full six weeks, used through 20 October 2026 Brisbane time.
-- `assets/balance-learn-dm-450-v10.mp4`: AUD $450 for the full six weeks, used from midnight 21 October 2026 Brisbane time.
+- `assets/balance-learn-dm-149-v11.mp4`: AUD $149 for the full six weeks, used through 20 October 2026 Brisbane time.
+- `assets/balance-learn-dm-450-v11.mp4`: AUD $450 for the full six weeks, used from midnight 21 October 2026 Brisbane time.
 
 Launch is 21 September. The introductory window lasts one month after launch; the $450 change is in October. Upfront checkout and public offer copy follow the same dates. Weekly membership pricing is unchanged.
 
@@ -18,3 +18,7 @@ Editable project: `C:/Users/shann/Documents/Codex/2026-09-10/when-someone-sends-
 ## v10 discount and sound revision
 
 The launch ending shows standard AUD $450 crossed out, AUD $149 launch price and $301 saving. Reuses the same music; louder short effects and 27 additional synchronized cues include quiz selection at 57.52s, correct-answer confirmation at 58.78s, goal selections and Save goals. Standard-price ending remains undiscounted. All queued v9 links normalize to v10 at send time.
+
+## v11 music balance
+
+Music gain and every point in both music volume envelopes are 80% of v10 (20% quieter). Effects, voice, visuals and timing are unchanged. Both date-based delivery versions use this mix; queued v9/v10 attachments resolve to v11.

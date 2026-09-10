@@ -51,7 +51,7 @@ test('course facts and weekly terms answer the actual question', () => {
 test('a combined proof handoff delivers both image and video in introduction order', () => {
   const {appendPaidMetaProofMedia} = require('../netlify/functions/send-ig-reply')._test;
   const imageUrl='https://plantbased-balance.org/photos/client-success/gen-cocos.jpg';
-  const videoUrl='https://plantbased-balance.org/assets/balance-learn-dm-149-v10.mp4';
+  const videoUrl='https://plantbased-balance.org/assets/balance-learn-dm-149-v11.mp4';
   const items=appendPaidMetaProofMedia([
     {kind:'text',text:'This is Gen. She built strength.'},
     {kind:'text',text:'Here is the course video.'},

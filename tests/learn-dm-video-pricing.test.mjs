@@ -15,8 +15,8 @@ test('DM video and checkout change at the same Brisbane launch-offer boundary',(
     }
     assert.equal(getLearnCoursePricing(LEARN_INTRO_END).unitAmount,45000);
     assert.equal(resolveVideo(Date.parse(LEARN_INTRO_END)),standardVideo);
-    assert.match(launchVideo,/balance-learn-dm-149-v10\.mp4$/);
-    assert.match(standardVideo,/balance-learn-dm-450-v10\.mp4$/);
+    assert.match(launchVideo,/balance-learn-dm-149-v11\.mp4$/);
+    assert.match(standardVideo,/balance-learn-dm-450-v11\.mp4$/);
 });
 test('queued old social and expired-price drafts resolve to the correct current DM video',()=>{
     const legacy='https://plantbased-balance.org/assets/balance-foundations-course-first-v8.mp4';
@@ -37,6 +37,15 @@ test('the spoken DM offer uses the same $450 price after launch month',t=>{
 test('queued v9 video is upgraded and removed from duplicate text',()=>{
  for(const price of [149,450]) {
  const old='https://plantbased-balance.org/assets/balance-learn-dm-'+price+'-v9.mp4';
+ assert.equal(resolveAttachment(old,Date.parse('2026-09-21')),launchVideo);
+ assert.equal(resolveAttachment(old,Date.parse(LEARN_INTRO_END)),standardVideo);
+ assert.equal(stripPaidMetaProofMediaUrls('Video: '+old),'Video:');
+ }
+});
+
+test('queued v10 attachments upgrade to the quieter-music revision',()=>{
+ for(const price of [149,450]) {
+ const old='https://plantbased-balance.org/assets/balance-learn-dm-'+price+'-v10.mp4';
  assert.equal(resolveAttachment(old,Date.parse('2026-09-21')),launchVideo);
  assert.equal(resolveAttachment(old,Date.parse(LEARN_INTRO_END)),standardVideo);
  assert.equal(stripPaidMetaProofMediaUrls('Video: '+old),'Video:');
