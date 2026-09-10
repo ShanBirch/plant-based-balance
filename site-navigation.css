@@ -1,23 +1,33 @@
+/* Resolve on the body so each page's light/dark/gold tokens stay in sync. */
+body {
+    --navigation-surface: var(--bg, var(--cream, #faf7ef));
+    --navigation-ink: var(--text-main, var(--ink, #243124));
+    --navigation-muted: var(--text-muted, var(--muted, var(--brown, #4b5146)));
+    --navigation-accent: var(--secondary, var(--leaf, var(--deep, #6d501b)));
+    --navigation-hover: var(--button-hover, rgba(0, 0, 0, .05));
+}
+/* Keep sticky headers readable over page content using the page background. */
+html body.bio-page .site-header:has(.balance-navigation), html[data-bio-theme] body.bio-page .site-header:has(.balance-navigation), body .topbar:has(.balance-navigation) { background: var(--navigation-surface); }
 .balance-navigation { grid-area: 1 / 1; justify-self: start; font-family: Inter, sans-serif; }
-body .site-header:has(.balance-navigation), body .topbar:has(.balance-navigation) { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; padding-top: calc(8px + env(safe-area-inset-top, 0px)); padding-bottom: 8px; background: #faf7ef; color: #243124; -webkit-text-fill-color: #243124; }
-body header:has(> .balance-navigation) > .brand { grid-area: 1 / 2; justify-self: center; margin: 0; color: #243124; -webkit-text-fill-color: #243124; }
+body .site-header:has(.balance-navigation), body .topbar:has(.balance-navigation) { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; padding-top: calc(8px + env(safe-area-inset-top, 0px)); padding-bottom: 8px; color: var(--navigation-ink); -webkit-text-fill-color: var(--navigation-ink); }
+body header:has(> .balance-navigation) > .brand { grid-area: 1 / 2; justify-self: center; margin: 0; color: var(--navigation-ink); -webkit-text-fill-color: var(--navigation-ink); }
 body header:has(> .balance-navigation) > .nav-actions, body header:has(> .balance-navigation) > .top-cta { display: none; }
-.balance-menu-toggle, .balance-menu-close { appearance: none; border: 0; background: transparent; color: #243124; -webkit-text-fill-color: #243124; cursor: pointer; width: 44px; height: 44px; padding: 11px; border-radius: 8px; }
+.balance-menu-toggle, .balance-menu-close { appearance: none; border: 0; background: transparent; color: var(--navigation-ink); -webkit-text-fill-color: var(--navigation-ink); cursor: pointer; width: 44px; height: 44px; padding: 11px; border-radius: 8px; }
 .balance-menu-toggle { display: flex; flex-direction: column; justify-content: center; gap: 5px; }
-.balance-menu-toggle span { display: block; width: 22px; height: 2px; background: #243124; border-radius: 2px; }
-.balance-menu-toggle:hover, .balance-menu-close:hover { background: #2431240a; }
-.balance-navigation :focus-visible { outline: 2px solid #876422; outline-offset: 3px; }
-.balance-menu-drawer { position: fixed; inset: 0 auto 0 0; margin: 0; width: min(320px, 85vw); max-width: none; height: 100dvh; max-height: none; box-sizing: border-box; padding: calc(14px + env(safe-area-inset-top, 0px)) 24px calc(24px + env(safe-area-inset-bottom, 0px)); border: 0; background: #faf7ef; color: #243124; -webkit-text-fill-color: #243124; overflow-y: auto; overscroll-behavior: contain; }
+.balance-menu-toggle span { display: block; width: 22px; height: 2px; background: var(--navigation-ink); border-radius: 2px; }
+.balance-menu-toggle:hover, .balance-menu-close:hover { background: var(--navigation-hover); }
+.balance-navigation :focus-visible { outline: 2px solid var(--navigation-accent); outline-offset: 3px; }
+.balance-menu-drawer { position: fixed; inset: 0 auto 0 0; margin: 0; width: min(320px, 85vw); max-width: none; height: 100dvh; max-height: none; box-sizing: border-box; padding: calc(14px + env(safe-area-inset-top, 0px)) 24px calc(24px + env(safe-area-inset-bottom, 0px)); border: 0; background: var(--navigation-surface); color: var(--navigation-ink); -webkit-text-fill-color: var(--navigation-ink); overflow-y: auto; overscroll-behavior: contain; }
 .balance-menu-drawer[open] { animation: balance-menu-enter 180ms ease-out; }
 .balance-menu-drawer::backdrop { background: #17221c66; }
 .balance-menu-close { display: block; margin: 0 0 28px -8px; font: 30px/1 Inter, sans-serif; }
 .balance-menu-drawer nav { display: grid; gap: 4px; }
-.balance-menu-drawer a { display: block; padding: 14px 0; font: 500 16px/1.5 Inter, sans-serif; text-decoration: none; color: #4b5146; -webkit-text-fill-color: #4b5146; }
-.balance-menu-drawer a:hover, .balance-menu-drawer a[aria-current="page"] { color: #6d501b; -webkit-text-fill-color: #6d501b; text-decoration: underline; text-underline-offset: 5px; }
+.balance-menu-drawer a { display: block; padding: 14px 0; font: 500 16px/1.5 Inter, sans-serif; text-decoration: none; color: var(--navigation-muted); -webkit-text-fill-color: var(--navigation-muted); }
+.balance-menu-drawer a:hover, .balance-menu-drawer a[aria-current="page"] { color: var(--navigation-ink); -webkit-text-fill-color: var(--navigation-ink); text-decoration: underline; text-underline-offset: 5px; }
 html:has(.balance-menu-drawer[open]) { overflow: hidden; }
 @keyframes balance-menu-enter { from { transform: translateX(-100%); } to { transform: translateX(0); } }
 @media (prefers-reduced-motion: reduce) { .balance-menu-drawer[open] { animation: none; } }
 
 /* Full website identity, compact enough for phone headers. */
 body header .brand .balance-brand-name { display: flex; flex-direction: column; align-items: center; line-height: 1.15; }
-body header .brand .balance-brand-name small { display: block; margin-top: 4px; font: 500 clamp(9px, 2.4vw, 12px)/1.2 Inter, sans-serif; letter-spacing: .04em; white-space: nowrap; color: #4b5146; -webkit-text-fill-color: #4b5146; }
+body header .brand .balance-brand-name small { display: block; margin-top: 4px; font: 500 clamp(9px, 2.4vw, 12px)/1.2 Inter, sans-serif; letter-spacing: .04em; white-space: nowrap; color: var(--navigation-muted); -webkit-text-fill-color: var(--navigation-muted); }
