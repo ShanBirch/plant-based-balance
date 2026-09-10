@@ -6,6 +6,7 @@ const {
     collectPaidMetaWriterContractIssues,
     isBlockingPaidMetaWriterContractIssue,
     buildPaidMetaGuaranteedContractFallback,
+    personalisePaidMetaOffer,
 } = require('../netlify/functions/ig-instant-draft')._test;
 
 const cases = [
@@ -21,14 +22,15 @@ const cases = [
     {text: 'Not weekends or cravings. It is chocolate after school pickup.', needs: [], absent: [/cravings and weekends/i, /account for.*weekends/i]},
 ];
 for (const scenario of cases) {
-    test(`personal circumstances reach the writer; backup stays grounded: ${scenario.text}`, () => {
+    test(`the offer backup stays grounded: ${scenario.text}`, () => {
         const chunks = buildPaidMetaTailoredOfferChunks(scenario.text, 'Lose fat and build muscle', 'broad_pain');
         const joined = chunks.join('\n\n');
         for (const pattern of scenario.needs) assert.match(joined, pattern);
         for (const pattern of scenario.absent) assert.doesNotMatch(joined, pattern);
-        assert.equal(selectFastDeterministicPaidMetaProgression({draft: {
+        const scaffold = {
             model: 'deterministic_paid_meta_guided_sales_v1', replyMode: 'campaign_sales_progression', flowVariant: 'broad_pain', chunks, joined,
-        }}), null, 'the writer must interpret arbitrary personal answers before a fallback is used');
+        };
+        assert.equal(selectFastDeterministicPaidMetaProgression({draft:scaffold}), scaffold);
     });
 }
 
@@ -49,6 +51,36 @@ test('the screenshot reply fails grounding and repairs the entire rapid inbound 
     assert.match(repaired.joined,/kids/i);
     assert.match(repaired.joined,/chocolate/i);
     assert.doesNotMatch(repaired.joined,/weekends?|cravings?|emotional eating/i);
+});
+
+test('final personal acknowledgement sees the full batch and preserves the offer, proof, video and CTA', async () => {
+    const chunks = buildPaidMetaTailoredOfferChunks('Chocolate','Lose weight','broad_pain');
+    chunks.unshift('This is Ally. She lost 12kg in 16 weeks.');
+    const draft = {chunks,joined:chunks.join('\n'),replyMode:'campaign_sales_progression',model:'deterministic_paid_meta_guided_sales_v1',flowVariant:'broad_pain',videoAttachmentUrl:'course.mp4',imageAttachmentUrl:'ally.jpg'};
+    const result = await personalisePaidMetaOffer({draft,currentMessage:'Chocolate',history:[{direction:'out',text:'What gets in the way?'},{direction:'in',text:'I guess kids'},{direction:'in',text:'Chocolate'}],writer:async contents=>{
+        const prompt = contents[0].parts[0].text;
+        assert.match(prompt,/CURRENT INBOUND BATCH[^]*I guess kids Chocolate/);
+        return JSON.stringify({acknowledgement:'Sounds like the kids and chocolate might be the bits to work around.',evidence:['I guess kids','Chocolate']});
+    }});
+    assert.notEqual(result,draft);
+    assert.equal(result.chunks[0],draft.chunks[0]);
+    assert.match(result.chunks[1],/^Sounds like the kids and chocolate might/);
+    assert.equal(result.chunks[1].slice(result.chunks[1].indexOf('Balance Learn')),draft.chunks[1].slice(draft.chunks[1].indexOf('Balance Learn')));
+    assert.deepEqual(result.chunks.slice(2),draft.chunks.slice(2));
+    assert.equal(result.videoAttachmentUrl,draft.videoAttachmentUrl);
+    assert.equal(result.imageAttachmentUrl,draft.imageAttachmentUrl);
+});
+
+test('invalid personalisation or a failed writer preserves a sendable fallback', async () => {
+    const chunks=buildPaidMetaTailoredOfferChunks('Chocolate','Lose weight','broad_pain');
+    const draft={chunks,joined:chunks.join('\n'),replyMode:'campaign_sales_progression',model:'test',flowVariant:'broad_pain'};
+    for (const payload of [
+        {acknowledgement:'Weekends and cravings are your problem.',evidence:['Chocolate']},
+        {acknowledgement:'Kids make it hard.',evidence:['Kids']},
+        {acknowledgement:'Chocolate is the issue?',evidence:['Chocolate']},
+        {acknowledgement:'x'.repeat(201),evidence:['Chocolate']},
+    ]) assert.equal(await personalisePaidMetaOffer({draft,currentMessage:'Chocolate',writer:async()=>JSON.stringify(payload)}),draft);
+    assert.equal(await personalisePaidMetaOffer({draft,currentMessage:'Chocolate',writer:async()=>{throw Error('offline');}}),draft);
 });
 
 test('a corrected blocker does not force the writer to repeat the superseded detail', () => {
