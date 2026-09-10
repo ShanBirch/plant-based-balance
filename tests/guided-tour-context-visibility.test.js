@@ -140,7 +140,7 @@ test('Meta preview waits for the rendered meal photo and includes the guided com
 test('guided tours and returning-user reveals both reset and apply page-view mode', () => {
   const source = featureTourSource();
 
-  assert.match(source, /function positionBubbleAndSpotlight\(target, step\)[\s\S]*?classList\.toggle\('tour-page-view', pageView\)/);
+  assert.match(source, /function positionBubbleAndSpotlight\(target, step, options\)[\s\S]*?classList\.toggle\('tour-page-view', pageView\)/);
   assert.match(source, /function positionReveal\(target, step\)[\s\S]*?classList\.toggle\('tour-page-view', pageView\)/);
   assert.ok((source.match(/if \(pageView\) \{/g) || []).length >= 2);
 });

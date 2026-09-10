@@ -75,3 +75,21 @@ test('course restoration does not award completion or mark a course started',()=
  assert.doesNotMatch(restore,/markCourseStarted|completeLesson|localStorage|supabase/);
  assert.doesNotThrow(()=>new Function(learning));
 });
+
+test('full-page lesson, coach and check-in keep the existing Back control',()=>{
+ assert.match(html,/const navigationOnly = !!\(step && \(step\.coachNoteGuide \|\| step\.checkinExplainerGuide/);
+ assert.match(html,/tour-navigation-only #guided-tour-bubble \{\s*display: block !important/);
+ assert.match(html,/tour-navigation-only #guided-tour-bubble > :not\(\.tour-actions\)/);
+ assert.match(html,/return await openMetaPreviewFirstFoundationsLesson\(\)/);
+ assert.match(html,/courseSurface === 'week' \|\| step\.requiresFoundationsLesson/);
+});
+
+test('scrolling cannot pin a fake highlight to the header or force the welcome back up',()=>{
+ const positioning=section('  function positionBubbleAndSpotlight','  async function ensureWorkoutTourSurface');
+ assert.match(positioning,/const targetOnScreen = r\.bottom > 40 && r\.top < vh - bottomReserve/);
+ assert.match(positioning,/spot\.style\.opacity = targetOnScreen \? '1' : '0'/);
+ assert.equal((positioning.match(/if \(allowScroll && rect.bottom > bottomLimit\)/g)||[]).length,2);
+ assert.match(positioning,/if \(allowScroll && Math\.abs\(scrollDelta\) > 3\)/);
+ assert.match(html,/displayStep, \{ initialPlacement:true \}/);
+ assert.match(html,/tour-transitioning::after/);
+});

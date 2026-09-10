@@ -13383,6 +13383,23 @@ if(!window._pbbIsIOSSafari) {
   #guided-tour-overlay { position: fixed; inset: 0; z-index: 400000; pointer-events: auto; display: none; }
   #view-active-workout .tour-workout-arrow { outline:2px solid #c49b42; outline-offset:4px; box-shadow:0 0 0 7px rgba(196,155,66,.18),0 0 18px rgba(196,155,66,.5); }
   #guided-tour-overlay.active { display: block; }
+  #guided-tour-overlay.tour-transitioning::after {
+    content: 'Opening your next page…'; position: fixed; left: 50%; top: 50%;
+    transform: translate(-50%,-50%); padding: 14px 20px; border-radius: 16px;
+    background: #fffaf0; color: #302719; -webkit-text-fill-color: #302719;
+    border: 1px solid #c49b42; font: 600 14px/1.4 sans-serif; pointer-events: none;
+  }
+  /* Keep the SAME guide's Back control available during full-page lessons,
+     check-ins and video, without covering them with the explanation card. */
+  #guided-tour-overlay.tour-navigation-only { pointer-events: none; }
+  #guided-tour-overlay.tour-navigation-only #guided-tour-bubble {
+    display: block !important; width: auto !important; max-width: 160px !important;
+    padding: 6px !important; border-radius: 14px !important; pointer-events: auto;
+  }
+  #guided-tour-overlay.tour-navigation-only #guided-tour-bubble > :not(.tour-actions),
+  #guided-tour-overlay.tour-navigation-only .tour-next,
+  #guided-tour-overlay.tour-navigation-only .tour-skip { display: none !important; }
+  #guided-tour-overlay.tour-navigation-only #guided-tour-bubble .tour-actions { display: flex !important; }
   #guided-tour-overlay.tour-tap-target,
   #guided-tour-overlay.tour-action-required:not(.tour-gate-complete) { pointer-events: none; }
   /* The coach note carries its own visible Continue button. Keep the clear
@@ -13584,6 +13601,8 @@ if(!window._pbbIsIOSSafari) {
     opacity: 0;
     transition: opacity .1s ease;
   }
+  #guided-tour-overlay.tour-transitioning #guided-tour-bubble,
+  #guided-tour-overlay.tour-transitioning #guided-tour-bubble * { pointer-events: none !important; }
   #guided-tour-overlay.tour-tap-target #guided-tour-bubble .tour-next { display: none; }
   #guided-tour-overlay.tour-feature-view #guided-tour-spotlight { display: none; }
   #guided-tour-overlay.tour-feature-view #guided-tour-bubble {
@@ -14194,8 +14213,9 @@ if(!window._pbbIsIOSSafari) {
     promptBeforeAction:false,
     promptRequiresTargetClick:false,
     returnHomeAfter:true,
+    tourScrollContextSel:'#learning-content',
     action:async function(){
-      return !!q('#story-next-btn,#story-quiz-btn button,.learning-game-stage button,.learning-game-stage .match-item,.learning-game-stage .order-item,#learning-content');
+      return await openMetaPreviewFirstFoundationsLesson();
     }
   });
 
@@ -15094,7 +15114,8 @@ if (step && step.requiresFeedPost) {
     window.scrollBy({ top:delta, behavior:'auto' });
   }
 
-  function positionBubbleAndSpotlight(target, step){
+  function positionBubbleAndSpotlight(target, step, options){
+    const allowScroll = !!(options && options.initialPlacement);
     const overlay = document.getElementById('guided-tour-overlay');
     const spot = document.getElementById('guided-tour-spotlight');
     const bubble = document.getElementById('guided-tour-bubble');
@@ -15109,6 +15130,15 @@ if (step && step.requiresFeedPost) {
     bubble.style.bottom = '';
     bubble.style.maxHeight = '';
     bubble.style.overflowY = '';
+    const navigationOnly = !!(step && (step.coachNoteGuide || step.checkinExplainerGuide ||
+      (step.embeddedGuide && overlay && !overlay.classList.contains('tour-gate-complete'))));
+    if (overlay) overlay.classList.toggle('tour-navigation-only', navigationOnly);
+    if (navigationOnly) {
+      spot.style.opacity = '0'; spot.style.width = '0px'; spot.style.height = '0px';
+      bubble.style.top = Math.max(40, (window.innerHeight || 640) - (bubble.offsetHeight || 48) - 90) + 'px';
+      bubble.style.left = '16px'; bubble.style.transform = '';
+      return;
+    }
 
     // Use the original floating card without shrinking the workout viewport.
     const workoutView = document.getElementById('view-active-workout');
@@ -15149,7 +15179,7 @@ if (step && step.requiresFeedPost) {
       bubble.style.overflowY = 'auto';
       const bottomLimit = window.innerHeight - height - (step.tourBottomReserve || 24) - 18;
       const rect = target.getBoundingClientRect();
-      if (rect.bottom > bottomLimit) scrollTourTargetBy(target, rect.bottom - bottomLimit);
+      if (allowScroll && rect.bottom > bottomLimit) scrollTourTargetBy(target, rect.bottom - bottomLimit);
     } else if (belowSpace) {
       belowSpace.remove();
     }
@@ -15157,7 +15187,7 @@ if (step && step.requiresFeedPost) {
     if (step && step.tapTargetPrompt && target) {
       const rect = target.getBoundingClientRect();
       const bottomLimit = (window.innerHeight || 640) - 118;
-      if (rect.bottom > bottomLimit) scrollTourTargetBy(target, rect.bottom - bottomLimit);
+      if (allowScroll && rect.bottom > bottomLimit) scrollTourTargetBy(target, rect.bottom - bottomLimit);
     }
     const targetRect = target && target.isConnected && target.getClientRects().length
       ? target.getBoundingClientRect()
@@ -15203,6 +15233,9 @@ if (step && step.requiresFeedPost) {
     const vw = Math.max(window.innerWidth || 360, 240);
     const vh = Math.max(window.innerHeight || 640, 320);
     const bottomReserve = step && typeof step.tourBottomReserve === 'number' ? step.tourBottomReserve : 90;
+    // Never pin a scrolled-away control's glow over an unrelated header icon.
+    const targetOnScreen = r.bottom > 40 && r.top < vh - bottomReserve && r.right > 0 && r.left < vw;
+    spot.style.opacity = targetOnScreen ? '1' : '0';
     const top = Math.max(r.top - pad, 8);
     const left = Math.max(r.left - pad, 8);
     const width = Math.max(24, Math.min(r.width + pad*2, vw - left - 8));
@@ -15229,7 +15262,7 @@ if (step && step.requiresFeedPost) {
           topBubbleBottom + tapGap
         );
         const scrollDelta = r.top - desiredTargetTop;
-        if (Math.abs(scrollDelta) > 3) {
+        if (allowScroll && Math.abs(scrollDelta) > 3) {
           scrollTourTargetBy(target, scrollDelta);
           r = target.getBoundingClientRect();
           spot.style.top = Math.max(r.top - pad, 8) + 'px';
@@ -15330,6 +15363,9 @@ if (step && step.requiresFeedPost) {
     await ensureTab(step.tab);
     const courseSurface = step.sel === '#balance-foundations-welcome-start' ? 'welcome'
       : step.sel === '#balance-foundations-first-lesson' ? 'week' : null;
+    if (courseSurface === 'week' || step.requiresFoundationsLesson) {
+      try { sessionStorage.setItem('pbb_activation_first_lesson', 'true'); } catch(_) {}
+    }
     if (courseSurface && !q(step.sel)) {
       if (typeof window.restoreBalanceFoundationsTourSurface !== 'function' ||
           !window.restoreBalanceFoundationsTourSurface(courseSurface)) {
@@ -15508,7 +15544,7 @@ if (step && step.requiresFeedPost) {
     activeTourFallbackTarget = target;
     await new Promise(function(resolve){ requestAnimationFrame(resolve); });
     if (renderToken !== tourRenderToken) return;
-    positionBubbleAndSpotlight(currentTourPositionTarget(displayStep), displayStep);
+    positionBubbleAndSpotlight(currentTourPositionTarget(displayStep), displayStep, { initialPlacement:true });
     if (overlay) overlay.classList.remove('tour-transitioning');
     // One quiet settle pass catches late image/font layout without making the
     // card chase the page for the next two seconds.
@@ -15661,6 +15697,7 @@ window.endFeatureTour = function(skipped){
     resetTourTemporaryTargets();
     const overlay = document.getElementById('guided-tour-overlay');
     if (overlay) overlay.classList.remove('active');
+    if (overlay) overlay.classList.remove('tour-navigation-only');
     if (overlay) overlay.classList.remove('tour-action-required', 'tour-gate-complete', 'tour-page-view', 'tour-feature-view', 'tour-tap-target', 'tour-edge-prompt', 'tour-control-prompt', 'tour-target-interactive', 'tour-embedded-guide', 'tour-coach-note', 'tour-checkin-explainer', 'tour-typing', 'tour-transitioning', 'meta-tour-welcome-active');
     window.__balanceGuidedTourActive = false;
     window.__balanceGuidedTourShowingIntro = false;
