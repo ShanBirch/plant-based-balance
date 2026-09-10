@@ -93,3 +93,20 @@ test('scrolling cannot pin a fake highlight to the header or force the welcome b
  assert.match(html,/displayStep, \{ initialPlacement:true \}/);
  assert.match(html,/tour-transitioning::after/);
 });
+
+test('compact Back reserves header space instead of covering page navigation',()=>{
+ assert.match(html,/coach-checkin-explainer__header \{ padding-top: 68px/);
+ assert.match(html,/guided-tour-course-locked #learning-content \{ padding-top: 64px/);
+ assert.match(html,/Math\.max\(40, hostRect \? hostRect\.top \+ 10 : 40\)/);
+ assert.match(html,/tourScrollContextSel:'#view-learning'/);
+});
+
+test('each quiz question resets the previous reading scroll',()=>{
+ const learning=fs.readFileSync(path.join(__dirname,'../lib/learning-inline.js'),'utf8');
+ assert.match(learning,/matchState = \{ selectedLeft: null, selectedRight: null, matched: \[\] \};[\s\S]{0,250}window\.scrollTo\(\{ top: 0, behavior: 'auto' \}\)/);
+});
+
+test('replayed tours release a dismissed wizard scroll lock',()=>{
+ assert.match(html,/if \(!q\('#onboarding-wizard\.active'\) && typeof setOnboardingScrollLock === 'function'\) setOnboardingScrollLock\(false\)/);
+ assert.match(html,/window\._onboardingWizardPending = false;\s*if \(typeof setOnboardingScrollLock === 'function'\) setOnboardingScrollLock\(false\)/);
+});

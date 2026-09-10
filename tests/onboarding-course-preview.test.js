@@ -57,7 +57,7 @@ test('the tour guides the real course start flow before the first quiz', () => {
   assert.match(dashboard, /title:'Take your first lesson'[^\n]*requiresHighlightedClick:true/);
   assert.match(dashboard, /title:'Read, then take the quiz'[^\n]*preserveSurface:true/);
   assert.doesNotMatch(dashboard, /title:'Read, then take the quiz'[^\n]*promptBeforeAction:true/);
-  assert.match(dashboard, /learning-inline\.js\?v=50-tour-backflow/);
+  assert.match(dashboard, /learning-inline\.js\?v=51-tour-question-position/);
   assert.match(nextSteps, /learning-inline\.js\?v=\d+-[a-z-]+/);
   assert.match(learning, /id="balance-foundations-course-start"/);
   assert.match(learning, /id="balance-foundations-welcome-start"/);
@@ -70,7 +70,7 @@ test('the tour guides the real course start flow before the first quiz', () => {
   assert.match(learning, /function consumeCourseWelcomeRequirement\(courseId\)[\s\S]*?sessionStorage\.removeItem\(key\)/);
   assert.match(learning, /if \(document\.getElementById\('course-welcome'\)\) return;/);
   assert.match(learning, /window\.startCourseFromWelcome = function\(courseId\)[\s\S]*?consumeCourseWelcomeRequirement\(course\.id\)[\s\S]*?markCourseStarted\(course\.id\)/);
-  assert.match(dashboard, /learning-inline\.js\?v=50-tour-backflow/g);
+  assert.match(dashboard, /learning-inline\.js\?v=51-tour-question-position/g);
 });
 
 test('quiz feedback stays tappable above the guided tour', () => {

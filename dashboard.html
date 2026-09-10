@@ -13405,6 +13405,9 @@ if(!window._pbbIsIOSSafari) {
   #guided-tour-overlay.tour-navigation-only .tour-next,
   #guided-tour-overlay.tour-navigation-only .tour-skip { display: none !important; }
   #guided-tour-overlay.tour-navigation-only #guided-tour-bubble .tour-actions { display: flex !important; }
+  body:has(#guided-tour-overlay.tour-navigation-only) .coach-checkin-explainer__header { padding-top: 68px; }
+  body:has(#guided-tour-overlay.tour-navigation-only.tour-coach-note) #meta-ad-trial-inbox-preview-card > div:first-child { padding-top: 64px !important; }
+  body.guided-tour-course-locked #learning-content { padding-top: 64px; box-sizing: border-box; }
   #guided-tour-overlay.tour-tap-target,
   #guided-tour-overlay.tour-action-required:not(.tour-gate-complete) { pointer-events: none; }
   /* The coach note carries its own visible Continue button. Keep the clear
@@ -14219,7 +14222,7 @@ if(!window._pbbIsIOSSafari) {
     promptBeforeAction:false,
     promptRequiresTargetClick:false,
     returnHomeAfter:true,
-    tourScrollContextSel:'#learning-content',
+    tourScrollContextSel:'#view-learning',
     action:async function(){
       return await openMetaPreviewFirstFoundationsLesson();
     }
@@ -15141,8 +15144,12 @@ if (step && step.requiresFeedPost) {
     if (overlay) overlay.classList.toggle('tour-navigation-only', navigationOnly);
     if (navigationOnly) {
       spot.style.opacity = '0'; spot.style.width = '0px'; spot.style.height = '0px';
-      bubble.style.top = Math.max(40, (window.innerHeight || 640) - (bubble.offsetHeight || 48) - 90) + 'px';
-      bubble.style.left = '16px'; bubble.style.transform = '';
+      const host = step.checkinExplainerGuide ? q('.coach-checkin-explainer__panel')
+        : step.coachNoteGuide ? q('#meta-ad-trial-inbox-preview-card') : q('#learning-content');
+      const hostRect = host && host.getBoundingClientRect();
+      bubble.style.top = Math.max(40, hostRect ? hostRect.top + 10 : 40) + 'px';
+      bubble.style.left = (hostRect ? Math.max(16, hostRect.left + 16) : 16) + 'px';
+      bubble.style.transform = '';
       return;
     }
 
@@ -15806,6 +15813,7 @@ window.endFeatureTour = function(skipped){
     showingXpIntro = false;
     window.__balanceGuidedTourActive = true;
     window.__balanceGuidedTourShowingIntro = true;
+    if (!q('#onboarding-wizard.active') && typeof setOnboardingScrollLock === 'function') setOnboardingScrollLock(false);
     closeTourBlockingSurfaces();
     const overlay = document.getElementById('guided-tour-overlay');
     if (!overlay) {
@@ -15996,6 +16004,7 @@ window.endFeatureTour = function(skipped){
       const wizard = document.getElementById('onboarding-wizard');
       if (wizard) { wizard.classList.remove('active'); wizard.style.display='none'; delete wizard.dataset.launchState; }
       window._onboardingWizardPending = false;
+      if (typeof setOnboardingScrollLock === 'function') setOnboardingScrollLock(false);
       if (typeof setOnboardingNavigationGate === 'function') setOnboardingNavigationGate(false);
       window.metaAdTrialMode = true;
       button.remove();
@@ -20836,11 +20845,11 @@ if (window._pbbIsIOSSafari) {
             });
             if (window.showQuizBattleInviteModal || learningAlreadyRequested) return;
             var s = document.createElement('script');
-      s.src = 'lib/learning-inline.js?v=50-tour-backflow';
+      s.src = 'lib/learning-inline.js?v=51-tour-question-position';
             document.head.appendChild(s);
         }, { once: true });
     } else {
-    document.write('<script src="lib/learning-inline.js?v=50-tour-backflow"><\/script>');
+    document.write('<script src="lib/learning-inline.js?v=51-tour-question-position"><\/script>');
     }
     </script>
     <!-- Battle System & Logic Overrides (130 lines — deferred on iOS) -->
