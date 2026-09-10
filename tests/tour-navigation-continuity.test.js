@@ -110,3 +110,11 @@ test('replayed tours release a dismissed wizard scroll lock',()=>{
  assert.match(html,/if \(!q\('#onboarding-wizard\.active'\) && typeof setOnboardingScrollLock === 'function'\) setOnboardingScrollLock\(false\)/);
  assert.match(html,/window\._onboardingWizardPending = false;\s*if \(typeof setOnboardingScrollLock === 'function'\) setOnboardingScrollLock\(false\)/);
 });
+
+test('goals sheet keeps Back above the modal and closes when navigating away',()=>{
+ assert.match(html,/tour-goals-navigation \{ z-index: 400110/);
+ assert.match(html,/weekly-goal-hero \{ padding-top: 68px/);
+ assert.match(section('  function closeTourBlockingSurfaces','  function resetTourTemporaryTargets'),/window\.closeWeeklyGoalsModal\(\)/);
+ const gate=section('    if (step && step.requiresWeeklyGoals)', '  function isVisible');
+ assert.match(gate,/if \(gateIsCurrent\(\) && idx === completedStepIndex\) window\.tourNext\(\)/);
+});

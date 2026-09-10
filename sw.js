@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v512-tour-control-spacing'; // v512: clear reading navigation and quiz headings; retains saved eating-style choices
+const CACHE_NAME = 'pbb-app-v513-tour-goals-back'; // v513: keep tour Back accessible above the weekly goals sheet
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

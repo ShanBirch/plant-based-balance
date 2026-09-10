@@ -13397,6 +13397,8 @@ if(!window._pbbIsIOSSafari) {
   /* Keep the SAME guide's Back control available during full-page lessons,
      check-ins and video, without covering them with the explanation card. */
   #guided-tour-overlay.tour-navigation-only { pointer-events: none; }
+  #guided-tour-overlay.tour-goals-navigation { z-index: 400110; }
+  body:has(#guided-tour-overlay.tour-goals-navigation) #weekly-goals-modal .weekly-goal-hero { padding-top: 68px; }
   #guided-tour-overlay.tour-navigation-only #guided-tour-bubble {
     display: block !important; width: auto !important; max-width: 160px !important;
     padding: 6px !important; border-radius: 14px !important; pointer-events: auto;
@@ -14888,7 +14890,7 @@ if (step && step.requiresFeedPost) {
           setTourGateUi(true, 'Weekly Goals saved. You can keep going.', finalLabel);
           const completedStepIndex = idx;
           setTimeout(function(){
-            if (gateIsCurrent() && idx === completedStepIndex) showStep(completedStepIndex + 1);
+            if (gateIsCurrent() && idx === completedStepIndex) window.tourNext();
           }, 650);
         }
       };
@@ -14946,6 +14948,7 @@ if (step && step.requiresFeedPost) {
   }
 
   function closeTourBlockingSurfaces(){
+    try { if (typeof window.closeWeeklyGoalsModal === 'function') window.closeWeeklyGoalsModal(); } catch(e) {}
     try {
       if (window.pbbNextSteps && typeof window.pbbNextSteps.closeCoachCheckinExplainer === 'function') {
         window.pbbNextSteps.closeCoachCheckinExplainer(false);
@@ -15139,12 +15142,14 @@ if (step && step.requiresFeedPost) {
     bubble.style.bottom = '';
     bubble.style.maxHeight = '';
     bubble.style.overflowY = '';
-    const navigationOnly = !!(step && (step.coachNoteGuide || step.checkinExplainerGuide ||
+    const goalsNavigation = !!(step && step.requiresWeeklyGoals && isVisible(q('#weekly-goals-modal')));
+    if (overlay) overlay.classList.toggle('tour-goals-navigation', goalsNavigation);
+    const navigationOnly = !!(step && (step.coachNoteGuide || step.checkinExplainerGuide || goalsNavigation ||
       (step.embeddedGuide && overlay && !overlay.classList.contains('tour-gate-complete'))));
     if (overlay) overlay.classList.toggle('tour-navigation-only', navigationOnly);
     if (navigationOnly) {
       spot.style.opacity = '0'; spot.style.width = '0px'; spot.style.height = '0px';
-      const host = step.checkinExplainerGuide ? q('.coach-checkin-explainer__panel')
+      const host = goalsNavigation ? q('#weekly-goals-modal .weekly-goal-sheet') : step.checkinExplainerGuide ? q('.coach-checkin-explainer__panel')
         : step.coachNoteGuide ? q('#meta-ad-trial-inbox-preview-card') : q('#learning-content');
       const hostRect = host && host.getBoundingClientRect();
       bubble.style.top = Math.max(40, hostRect ? hostRect.top + 10 : 40) + 'px';

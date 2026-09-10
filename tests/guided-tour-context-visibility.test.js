@@ -201,5 +201,5 @@ test('completed required actions leave their old instruction card automatically'
   const source = featureTourSource();
   assert.match(source, /requiresFeedPost[\s\S]*?Your introduction is posted[\s\S]*?showStep\(completedStepIndex \+ 1\)/);
   assert.match(source, /requiresFoundationsLesson[\s\S]*?First lesson complete[\s\S]*?showStep\(completedStepIndex \+ 1\)/);
-  assert.match(source, /requiresWeeklyGoals[\s\S]*?Weekly Goals saved[\s\S]*?showStep\(completedStepIndex \+ 1\)/);
+  assert.match(source, /requiresWeeklyGoals[\s\S]*?Weekly Goals saved[\s\S]*?window\.tourNext\(\)/);
 });
