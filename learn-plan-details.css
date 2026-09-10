@@ -1,0 +1,28 @@
+.learn-plans { padding-top:36px; padding-bottom:36px; }
+.learn-plan { margin-bottom:12px; border:1px solid #dfd0ad; border-radius:20px; background:#fffdf8; color:#253026; -webkit-text-fill-color:#253026; overflow:hidden; }
+.learn-plan summary { list-style:none; display:flex; align-items:center; gap:18px; padding:22px 24px; cursor:pointer; }
+.learn-plan summary::-webkit-details-marker { display:none; }
+.learn-plan svg { width:36px; height:36px; flex-shrink:0; color:#927027; }
+.learn-plan summary strong { display:block; font:700 23px/1.25 Outfit,sans-serif; }
+.learn-plan summary small { display:block; margin-top:5px; font-size:14px; color:#666454; -webkit-text-fill-color:#666454; }
+.plan-toggle { margin-left:auto; font-size:28px; color:#927027; -webkit-text-fill-color:#927027; }
+.learn-plan[open] .plan-toggle { transform:rotate(45deg); }
+.learn-plan summary:focus-visible { outline:3px solid #927027; outline-offset:-4px; }
+.learn-plan-body { border-top:1px solid #e9e0cd; padding:28px; }
+.learn-plan .plan-intro { font:700 25px/1.3 Outfit,sans-serif; margin:0 0 24px; }
+.plan-options,.plan-diets { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+.plan-options > div,.plan-diets > div,.plan-support-grid > div { padding:18px; background:#f6f1e5; border-radius:14px; }
+.learn-plan h3 { font:700 17px/1.3 Outfit,sans-serif; margin:10px 0 6px; color:#253026; -webkit-text-fill-color:#253026; }
+.learn-plan p { font-size:14px; line-height:1.55; margin:0; color:#53564b; -webkit-text-fill-color:#53564b; }
+.plan-flow { display:flex; align-items:center; gap:16px; margin:26px 0; padding:22px; background:#ede0bf; border-radius:16px; }
+.plan-flow > span:not(.plan-arrow) { flex:1; text-align:center; font-size:15px; font-weight:600; }
+.plan-flow b { display:block; margin-bottom:8px; color:#805f1e; -webkit-text-fill-color:#805f1e; font-size:12px; letter-spacing:.1em; }
+.plan-arrow { color:#805f1e; -webkit-text-fill-color:#805f1e; font-size:24px; }
+.plan-meal-photos { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+.plan-meal-photos figure { margin:0; }
+.plan-meal-photos img { display:block; width:100%; height:auto; aspect-ratio:1; object-fit:cover; border-radius:14px; }
+.plan-meal-photos figcaption { font-size:13px; margin-top:8px; }
+.learn-plan .plan-note { margin:18px 0; font-size:13px; }
+.plan-support-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+.plan-support-grid > div:last-child { grid-column:1/-1; }
+@media(max-width:600px) { .learn-plan summary { padding:18px 16px; gap:12px; } .learn-plan summary strong { font-size:20px; } .learn-plan summary small { font-size:12px; } .learn-plan summary svg { width:28px; height:28px; } .learn-plan-body { padding:20px 14px; } .learn-plan .plan-intro { font-size:22px; } .plan-options,.plan-diets { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; } .plan-options > div,.plan-diets > div,.plan-support-grid > div { padding:13px; } .learn-plan h3 { font-size:15px; } .learn-plan p { font-size:13px; } .plan-flow { gap:8px; padding:16px 10px; } .plan-flow > span:not(.plan-arrow) { font-size:12px; } .plan-arrow { font-size:18px; } .plan-meal-photos { gap:8px; } .plan-meal-photos figcaption { font-size:11px; } .plan-support-grid { grid-template-columns:1fr; } }
