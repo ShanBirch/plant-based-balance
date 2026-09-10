@@ -727,7 +727,9 @@ export default function Home() {
 
   const unlockLifetime = async () => {
     if (!isNativeStore || !storeConfigured) {
-      setPurchaseMessage('Lifetime access will be available inside the App Store and Google Play version.');
+      setPurchaseMessage(isNativeStore
+        ? 'The store is temporarily unavailable. Please reopen the app and try again.'
+        : 'Lifetime access is available in the installed app.');
       return;
     }
     setPurchaseBusy(true);
@@ -958,7 +960,7 @@ export default function Home() {
                 <h1 className="text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">Stay on script.<br /><span className="text-[#F5D98A]">Stay on camera.</span></h1>
                 <p className="mx-auto mt-4 max-w-sm text-sm leading-6 text-white/48">Your script sits close to the lens, so you sound natural and keep eye contact.</p>
                 <button onClick={() => startCamera()} disabled={cameraState === 'starting'} className="mt-7 rounded-full bg-[#D8B25E] px-6 py-3.5 font-semibold text-[#111111] transition hover:bg-[#F5D98A] disabled:opacity-50">
-                  {cameraState === 'starting' ? 'Starting…' : cameraState === 'error' ? 'Try camera again' : 'Enable camera & mic'}
+                  {cameraState === 'starting' ? 'Starting…' : cameraState === 'error' ? 'Try again' : 'Continue'}
                 </button>
                 {cameraError && <p role="alert" className="mt-4 text-sm text-amber-200">{cameraError}</p>}
               </div>
