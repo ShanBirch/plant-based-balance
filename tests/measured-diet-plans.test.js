@@ -85,7 +85,7 @@ test('each recipe has its own photo and complete nutrient provenance', () => {
   }
 });
 
-function fakeDatabase(failTable) {
+function fakeDatabase(failTable, preferences) {
   const events=[];
   return {events, from(table) {
     let operation, payload;
@@ -93,11 +93,11 @@ function fakeDatabase(failTable) {
       insert(value) { operation='insert'; payload=value; return chain; },
       update(value) { operation='update'; payload=value; return chain; },
       delete() { operation='delete'; return chain; },
-      select() { return chain; }, single() { return chain; }, eq() { return chain; }, neq() { return chain; },
+      select() { return chain; }, single() { return chain; }, maybeSingle() { return chain; }, eq() { return chain; }, neq() { return chain; },
       then(resolve, reject) {
         events.push({table, operation, payload});
         if (table===failTable && operation==='insert') return Promise.resolve({error:new Error('Simulated failed save')}).then(resolve,reject);
-        const data = table==='ai_generated_meal_plans' ? {id:'new-plan'} : Array.isArray(payload) ? payload.map((row,i)=>({...row,id:'meal-'+i})) : [];
+        const data = table==='user_food_preferences' ? preferences : table==='ai_generated_meal_plans' ? {id:'new-plan'} : Array.isArray(payload) ? payload.map((row,i)=>({...row,id:'meal-'+i})) : [];
         return Promise.resolve({data,error:null}).then(resolve,reject);
       }
     }; return chain;
@@ -138,5 +138,29 @@ test('next week persists all weeks before replacing the cache and preserves orig
     assert.equal(context._aiMealPlanGenerationInProgress,false);
     if(fail){assert.equal(context._aiMealPlanCache,previous);assert.ok(!db.events.some(e=>e.payload?.status==='archived'));}
     else{assert.equal(context._aiMealPlanCache.weeks.length,2);assert.equal(context._aiMealPlanCache.total_meals,70);assert.equal(context._aiMealPlanCurrentWeek,2);}
+  }
+});
+
+test('changing eating style preserves separately saved allergies but removes explicitly unticked derived restrictions',async()=>{
+  for(const previousRequirements of [[],['gluten_free']]){
+    const stored=new Map([['user_food_preferences',JSON.stringify({allergies:['nuts','gluten'],dietary_requirements:previousRequirements})]]);
+    const storage={getItem:key=>stored.get(key)||null,setItem:(key,value)=>stored.set(key,value)};
+    const context={window:{generateAiMealPlan:async prefs=>{context.saved=prefs;}},localStorage:storage,sessionStorage:storage,console,document:{getElementById:()=>({style:{},dataset:{}})}};
+    vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../js/dashboard/pbb-deferred-pickers.js'),'utf8'),context);
+    context.toggleDietaryPickerChip('pescatarian');await context.saveDietaryPreferences();
+    assert.equal(context.saved.diet_type,'pescatarian');
+    assert.ok(context.saved.allergies.includes('nuts'));
+    assert.equal(context.saved.allergies.includes('gluten'),previousRequirements.length===0);
+  }
+});
+
+test('challenge auto-plans honour saved style and use measured recipes even with no preferences yet',async()=>{
+  for(const preferences of [undefined,{diet_type:'pescatarian',allergies:['eggs']},{dietary_requirements:['whole30','dairy_free']}]){
+    const context={window:{BALANCE_PREPARED_MEAL_LIBRARY:engine},console};
+    vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../lib/meal-plan-populator.js'),'utf8'),context);
+    const result=await context.window.populateVeganChallengeMealPlan(fakeDatabase(undefined,preferences),'test-user',{calorie_goal:2000});
+    assert.equal(result.plan.diet_type,preferences?.dietary_requirements?.[0]||preferences?.diet_type||'vegan');
+    assert.equal(result.plan.library_version,3);
+    if(preferences?.allergies)assert.ok(result.plan.weeks[0].days.flatMap(d=>d.meals.flatMap(m=>m.ingredients)).every(i=>!engine.FOODS[i.food_id].tags.includes('egg')));
   }
 });

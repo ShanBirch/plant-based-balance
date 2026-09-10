@@ -5500,7 +5500,7 @@ async function loadExistingAiMealPlanInner() {
             try {
                 if (isChallenge && areMealPlanDependenciesReady()) {
                     showAiPlanGenerating();
-                    updateAiPlanGeneratingStatus('Plating up your 4-week plan...', '60%');
+                    updateAiPlanGeneratingStatus('Preparing your selected weekly meals...', '60%');
 
                     const targets = await window.getUserNutritionTargets(window.supabaseClient, user.id);
                     const result = await window.populateVeganChallengeMealPlan(

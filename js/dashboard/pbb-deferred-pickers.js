@@ -212,7 +212,11 @@ async function saveDietaryPreferences() {
         const existingAllergies = new Set(Array.isArray(foodPrefs.allergies) ? foodPrefs.allergies : []);
         // Drop any previously-derived restriction allergies before adding the new set, so
         // unticking "Gluten-Free" actually removes "gluten" from the list.
-        for (const k of Object.values(_DIET_RESTRICTION_TO_ALLERGY)) existingAllergies.delete(k);
+        const previousRequirements = Array.isArray(foodPrefs.dietary_requirements) ? foodPrefs.dietary_requirements : [];
+        for (const tag of previousRequirements) {
+            const derivedKey = _DIET_RESTRICTION_TO_ALLERGY[tag];
+            if (derivedKey) existingAllergies.delete(derivedKey);
+        }
         for (const k of allergyKeys) existingAllergies.add(k);
         foodPrefs.diet_type = dietType;
         foodPrefs.dietary_requirements = requirements;
