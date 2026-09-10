@@ -123,3 +123,13 @@ test('an indirect blocker request without a question mark cannot ignore a substa
     const legitimate=collectPaidMetaWriterContractIssues({draft:{joined:'What usually gets in the way of making that happen consistently?'},currentMessage:'I want to lose weight',flowVariant:'broad_pain'});
     assert.ok(!legitimate.some(issue=>/generic blocker again/.test(issue)));
 });
+
+test('uncertainty does not erase an already supplied fitness goal', () => {
+    const currentMessage="I want to get fit again. Honestly not sure what stops me. I've done it before but I can't put my finger on it.";
+    const draft={joined:"That makes sense, you've done it before. For the next six weeks, what would you most want to change: fitness, body shape, energy, or consistency?"};
+    const issues=collectPaidMetaWriterContractIssues({draft,currentMessage,flowVariant:'broad_pain'});
+    assert.ok(issues.some(issue=>/goal again/.test(issue) && isBlockingPaidMetaWriterContractIssue(issue)));
+    const repaired=buildPaidMetaGuaranteedContractFallback({draft,currentMessage,flowVariant:'broad_pain',issues});
+    assert.match(repaired.joined,/Balance Learn/);
+    assert.doesNotMatch(repaired.joined,/what would you most want to change/i);
+});

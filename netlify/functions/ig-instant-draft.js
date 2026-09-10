@@ -5149,7 +5149,8 @@ function paidMetaOutboundAskedForGoal(text = '') {
     const value = String(text || '');
     return /\b(?:main|biggest|primary)\b[^?\n]{0,80}\b(?:health|fitness|fit|goal|result|change|achieve|working towards)\b[^?\n]{0,80}\?/i.test(value)
         || /\bwhat(?:'s| is) your (?:health or fitness |fitness |main )?goal\b[^?\n]*\?/i.test(value)
-        || /\bwhat result (?:are you|would you be)\b[^?\n]*\?/i.test(value);
+        || /\bwhat result (?:are you|would you be)\b[^?\n]*\?/i.test(value)
+        || /\bwhat (?:would|do) you (?:most )?(?:want|like|hope) to (?:change|achieve|improve)\b[^?\n]*\?/i.test(value);
 }
 
 function paidMetaOutboundAskedForBlocker(text = '') {
@@ -5426,6 +5427,9 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
     );
     const suppliedContextBeyondBareGoal = !isPaidMetaBareGoalMessage(turn)
         && (turn.split(/\s+/).length >= 12 || history.some(item => item?.direction === 'out' && paidMetaOutboundAskedForBlocker(item.text)));
+    if (knownBroadGoal && suppliedContextBeyondBareGoal && paidMetaOutboundAskedForGoal(reply)) {
+        issues.push('The earned paid-Meta offer is missing: the lead already supplied their goal and context or uncertainty, but the reply asks for their goal again. Keep their stated goal and move forward without another goal question.');
+    }
     if (knownBroadGoal && suppliedContextBeyondBareGoal && paidMetaOutboundAskedForBlocker(reply)) {
         issues.push('The earned paid-Meta offer is missing: the lead already supplied context or uncertainty, but the reply asks for a generic blocker again. Use the actual answer and move forward without another blocker question.');
     }
