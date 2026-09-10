@@ -8,6 +8,7 @@ const {
     buildPaidMetaGuaranteedContractFallback,
     personalisePaidMetaOffer,
     isPaidMetaBareGoalMessage,
+    getAutoDmHoldReason,
 } = require('../netlify/functions/ig-instant-draft')._test;
 
 const cases = [
@@ -132,4 +133,17 @@ test('uncertainty does not erase an already supplied fitness goal', () => {
     const repaired=buildPaidMetaGuaranteedContractFallback({draft,currentMessage,flowVariant:'broad_pain',issues});
     assert.match(repaired.joined,/Balance Learn/);
     assert.doesNotMatch(repaired.joined,/what would you most want to change/i);
+});
+
+test('a reviewed paid-ad preview invitation cannot be stranded by organic pitch timing', () => {
+    const args={
+        currentMessage:"I want more strength and energy. I'm not trying to lose weight. I can train twice a week but tracking every calorie puts me off.",
+        draft:{model:'openai-gpt-5.4-mini-paid-meta',joined:'That fits Balance Learn nicely - strength and energy without pushing weight loss, and you wouldn’t need to track every calorie.\nI can set the meal plan to your preferences and build the workouts around two training sessions a week. If you want, I can show you a free personalised app preview first so you can see exactly how it would look for you.'},
+        draftReview:{verdict:'pass',confidence:1,issues:[],notification_required:false,context_loss_suspected:false},qualifier:{facts:{}},leadStage:'qualifying',linkedUserId:null,meaningfulLeadReplyCount:2,
+        alertData:{meta_ad_conversation_fast_lane:true,offer_flow_variant:'broad_pain'},
+    };
+    assert.equal(getAutoDmHoldReason(args),null);
+    assert.equal(getAutoDmHoldReason({...args,alertData:{},currentMessage:'I can train twice a week but tracking every calorie puts me off.'})?.code,'premature_challenge_invite');
+    assert.equal(getAutoDmHoldReason({...args,contextReview:{required:true}})?.code,'context_review');
+    assert.ok(getAutoDmHoldReason({...args,draftReview:{verdict:'warn',issues:['unverified claim']}}));
 });

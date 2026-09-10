@@ -2785,6 +2785,20 @@ function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draf
         && ['campaign_sales_progression', 'campaign_buyer_handoff', 'campaign_app_preview_handoff'].includes(String(draft?.replyMode || ''));
     const verifiedGuaranteedPaidMetaOffer = draft?.paidMetaGuaranteedContract === true
         && draft?.replyMode === 'campaign_sales_progression';
+    // A reviewed invitation to see a free preview is an ordinary next step for
+    // an ad lead who has supplied a goal and context. Do not apply the organic
+    // coaching-pitch timing rule just because this reply used the AI writer.
+    const verifiedPaidMetaPreviewInvitation = alertData?.meta_ad_conversation_fast_lane === true
+        && !linkedUserId
+        && /^openai-.*paid-meta/.test(String(draft?.model || ''))
+        && draftReview?.verdict === 'pass'
+        && !(draftReview?.issues || []).length
+        && PAID_META_FITNESS_GOAL_RE.test(String(currentMessage || ''))
+        && String(currentMessage || '').split(/\s+/).length >= 12
+        && !META_AD_FIRST_REPLY_OPT_OUT_RE.test(String(currentMessage || ''))
+        && !META_AD_FIRST_REPLY_REVIEW_REQUIRED_RE.test(String(currentMessage || ''))
+        && /\bfree personali[sz]ed (?:app )?preview\b/i.test(String(draft?.joined || ''))
+        && !/https?:\/\/|\b(?:checkout|pay now|payment link)\b/i.test(String(draft?.joined || ''));
     const metaAdSensitiveHold = getMetaAdSensitiveHoldReason({ alertData, currentMessage });
     if (metaAdSensitiveHold) return metaAdSensitiveHold;
     const appProblemHold = getAppProblemAutoSendHoldReason({
@@ -2848,6 +2862,7 @@ function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draf
     }
     if (!verifiedPaidMetaProgression
         && !verifiedGuaranteedPaidMetaOffer
+        && !verifiedPaidMetaPreviewInvitation
         && draft?.appPreviewHandoff !== true
         && isPrematureChallengeInvite({ draftText: draft.joined, currentMessage, qualifier, leadStage, linkedUserId, leadReplyCount: meaningfulLeadReplyCount })) {
         return {
@@ -9654,7 +9669,7 @@ exports.handler = async (event) => {
             draft,
             draftReview,
             challengeOfferWarning,
-            currentMessage: displayMessage,
+            currentMessage: metaAdConversationFastLane ? currentInboundTurnMessage : displayMessage,
             qualifier,
             leadStage: effectiveLeadStage,
             linkedUserId: thread.linked_user_id,
@@ -10115,7 +10130,7 @@ exports.handler = async (event) => {
             draft,
             draftReview,
             challengeOfferWarning,
-            currentMessage: displayMessage,
+            currentMessage: metaAdConversationFastLane ? currentInboundTurnMessage : displayMessage,
             qualifier,
             leadStage: effectiveLeadStage,
             linkedUserId: thread.linked_user_id,
