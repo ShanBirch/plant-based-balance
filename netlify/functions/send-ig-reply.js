@@ -46,6 +46,7 @@ const {
     maySendDraftVideoAttachment,
     requiredPaidMetaProofImageUrl,
     stripPaidMetaProofMediaUrls,
+    resolvePaidMetaProofVideoAttachmentUrl,
 } = require('./_lib/paid-meta-proof-media');
 const { measureDmLanguageShape } = require('./_lib/dm-language-contract');
 function normalizeGraphApiVersion(value) {
@@ -2651,7 +2652,7 @@ exports.handler = async (event) => {
         messagesToSend = [replyText];
         wasEdited = !!draftText && replyText !== draftText;
     }
-    const draftVideoAttachmentUrl = String(alertData.draft_video_attachment_url || '').trim();
+    const draftVideoAttachmentUrl = resolvePaidMetaProofVideoAttachmentUrl(alertData.draft_video_attachment_url);
     const hasValidDraftVideoAttachment = /^https:\/\/[^\s]+\.mp4(?:[?#][^\s]*)?$/i.test(draftVideoAttachmentUrl);
     const hasDraftVideoAttachment = hasValidDraftVideoAttachment && maySendDraftVideoAttachment({
         videoUrl: draftVideoAttachmentUrl,

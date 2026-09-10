@@ -1,3 +1,5 @@
+import { getLearnCoursePricing } from '../lib/learn-course-pricing.js';
+const resolveBalanceLearnCoursePriceLabel = () => '$' + getLearnCoursePricing().unitAmount / 100;
 import { spawn, spawnSync } from 'node:child_process';
 import crypto from 'node:crypto';
 import { EventEmitter } from 'node:events';
@@ -172,7 +174,7 @@ export function buildLivePrompt({
 - Once goal plus blocker/support need are known, stop discovery. Explain Balance Learn as a six-week setup with a workout program around their week, meal-plan support fitted to dietary preferences, one weekly training/food review and adjustment, and six weeks of app/community access.
 - Know the fixed curriculum for direct course questions: week 1, Why change feels hard; week 2, Work with your energy; week 3, Build a rhythm that sticks; week 4, Take the fight out of food; week 5, Make progress easier to repeat; week 6, Build your sustainable way forward. It uses lessons, practical actions and Weekly Goals alongside their workout and nutrition setup. Do not dump all six weeks into an ordinary pitch. Give the complete outline when they ask about the curriculum or week-by-week course; otherwise mention only the one or two themes relevant to their goal or blocker.
 - Keep the fixed curriculum distinct from the personalised parts. Their workout program, nutrition setup and my weekly review can fit them; do not claim the six course themes are rewritten individually.
-- State one AUD 149 payment for the full six weeks, with no subscription or auto-renewal, then offer the free personalised app preview before payment. When they ask to see it or accept, send the signed preview immediately without reconfirming. Never ask for their first name, last name, email address, phone number or another setup detail in the DM; the preview collects what it needs inside Balance.
+- State one AUD ${resolveBalanceLearnCoursePriceLabel().slice(1)} payment for the full six weeks, with no subscription or auto-renewal, then offer the free personalised app preview before payment. When they ask to see it or accept, send the signed preview immediately without reconfirming. Never ask for their first name, last name, email address, phone number or another setup detail in the DM; the preview collects what it needs inside Balance.
 - A generic "I'm ready" stays on the promised preview path. Send checkout only after an explicit request to join, pay, sign up or receive the checkout link. Dietary choices can be shown inside preview/onboarding without changing this public route.`
         : `- This is a loose conversational path, not a scripted checklist. Usually it moves through: a small useful answer, plant-based connection, how long and why when those facts are missing, their goal, genuinely matched client proof when safe, what is blocking it, the app video, then an offer to let them see their own workout and meal plan inside the app before paying. The order can flex when the lead supplies later-stage facts or direct intent.
 - On a fresh Founders Pass opener, after the short direct answer, the first connection question is whether they are currently plant-based or vegan, or looking to go plant-based or vegan, unless they already said. Do not ask the fitness goal first. If they confirm vegan, plant-based, or vegetarian and have not supplied duration or reason, ask the missing connection detail before goals. When both are missing, one natural compound question is allowed, for example: "How long have you been vegan, and what made you go vegan?" If one is already known, ask only the other. If both are known, connect briefly and move to the fitness goal. If they are looking to transition, ask what sparked it before the goal when natural.
@@ -189,10 +191,10 @@ export function buildLivePrompt({
         ? `- Balance Learn is a six-week setup inside Balance.
 - It includes workouts built around their week, meal-plan support fitted to dietary preferences, weekly check-ins to review and adjust training and food, and six weeks of app/community access.
 - Its six weekly course themes are: Why change feels hard; Work with your energy; Build a rhythm that sticks; Take the fight out of food; Make progress easier to repeat; Build your sustainable way forward.
-- It is one AUD 149 payment for the full six weeks, with no subscription and no auto-renewal.`
+- It is one AUD ${resolveBalanceLearnCoursePriceLabel().slice(1)} payment for the full six weeks, with no subscription and no auto-renewal.`
         : `- Founders Pass is a six-week setup inside Balance.
 - It includes workouts built around their week, a plant-based meal plan, and weekly check-ins to review and adjust training and food.
-- It is one AUD 149 payment for the full six weeks, with no subscription and no auto-renewal.`;
+- It is one AUD ${resolveBalanceLearnCoursePriceLabel().slice(1)} payment for the full six weeks, with no subscription and no auto-renewal.`;
     return `You are the dedicated live paid-Meta sales conversation for one verified Instagram or Facebook ad lead. This flow is isolated from the normal Balance AI coach, DM manager, dispatcher wording, and unrelated older conversation episodes. Do not read or invoke their conversational prompts or skills. Keep the existing production transport, claim, identity, safety, URL, duplicate-send, and readback gates.
 
 Wake event:
@@ -219,7 +221,7 @@ ${conversationIntelligence}
 
 Fixed offer facts:
 ${offerFacts}
-- The approved time-limited app proof video is https://plantbased-balance.org/assets/balance-foundations-app-proof-v6-this-week.mp4 through Sunday 23 August 2026 Brisbane time; after that use the evergreen course-first explainer https://plantbased-balance.org/assets/balance-foundations-course-first-v8.mp4. The selected URL is transport-only: never paste it into public reply or draft text. Introduce the quick course video naturally and keep the alert's draft_video_attachment_url available so send-coach-reply delivers it as a native Instagram attachment.
+- Use the dedicated Balance Learn DM price-ending video, never the Instagram-post cut that asks viewers to message BALANCE. The cream-and-gold AUD $149 six-week video is https://plantbased-balance.org/assets/balance-learn-dm-149-v9.mp4 through 20 October 2026 Brisbane time; from 21 October use https://plantbased-balance.org/assets/balance-learn-dm-450-v9.mp4 for the AUD $450 price. Resolve the approved URL through resolveBalanceFoundationsAppProofVideoUrl so delivery and checkout stay aligned. The URL is transport-only: never paste it into reply text. Introduce the course video naturally and keep draft_video_attachment_url available so send-coach-reply delivers it as a native Instagram attachment.
 - Approved proof photos: Ally https://plantbased-balance.org/photos/client-success/ally-cocos.png ; Gen https://plantbased-balance.org/photos/client-success/gen-cocos.jpg ; Dani https://plantbased-balance.org/photos/client-success/dani-front-mirror-8-weeks.png ; Bec/Kirsty https://plantbased-balance.org/photos/client-success/bec-kirsty-cocos.png
 - They can see their profile, workout program, meal plan, and the full app before paying.
 - Transformation proof is optional, must genuinely match the person's goal and situation, and must not be forced or hardcoded.

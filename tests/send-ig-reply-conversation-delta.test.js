@@ -226,7 +226,7 @@ test('paid Meta text pauses scale with length while a media-rich turn stays boun
 });
 
 test('first-send course-video wording introduces the attached video without requiring again', () => {
-    const videoUrl = 'https://plantbased-balance.org/assets/balance-foundations-course-first-v8.mp4';
+    const videoUrl = 'https://plantbased-balance.org/assets/balance-learn-dm-149-v9.mp4';
     for (const replyText of ["Here's the course video.", 'Here is the course video.', 'Here\u2019s the course video.']) {
         assert.equal(sendIg.maySendDraftVideoAttachment({videoUrl, replyText}), true);
     }

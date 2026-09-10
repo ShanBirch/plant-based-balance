@@ -75,7 +75,7 @@ const BALANCE_FOUNDATIONS_SIX_WEEK_OFFER = Object.freeze({
     token: "balance_vegan_founders_pass",
     productName: "Balance Learn",
     productDescription: "Six-week Balance Learn course with one weekly check-in, plan review, app access, and support from Shannon",
-    unitAmount: 15000,
+    unitAmount: 14900,
     currency: "AUD",
     interval: null,
     balanceProduct: "balance_vegan_founders_pass",

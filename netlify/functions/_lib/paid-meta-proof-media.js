@@ -2,7 +2,10 @@ const ALLY_WEIGHT_LOSS_PROOF_URL = 'https://plantbased-balance.org/photos/client
 const GEN_STRENGTH_CONFIDENCE_PROOF_URL = 'https://plantbased-balance.org/photos/client-success/gen-cocos.jpg';
 const BEC_KIRSTY_SHARED_MOMENTUM_PROOF_URL = 'https://plantbased-balance.org/photos/client-success/bec-kirsty-cocos.png';
 const DANI_RECOMPOSITION_PROOF_URL = 'https://plantbased-balance.org/photos/client-success/dani-front-mirror-8-weeks.png';
-const BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL = 'https://plantbased-balance.org/assets/balance-foundations-course-first-v8.mp4';
+const BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL = 'https://plantbased-balance.org/assets/balance-learn-dm-149-v9.mp4';
+const BALANCE_LEARN_STANDARD_VIDEO_URL = 'https://plantbased-balance.org/assets/balance-learn-dm-450-v9.mp4';
+const BALANCE_LEARN_STANDARD_START_MS = Date.parse('2026-10-21T00:00:00+10:00');
+const BALANCE_LEGACY_SOCIAL_VIDEO_URL = 'https://plantbased-balance.org/assets/balance-foundations-course-first-v8.mp4';
 const BALANCE_FOUNDATIONS_THIS_WEEK_VIDEO_URL = 'https://plantbased-balance.org/assets/balance-foundations-app-proof-v6-this-week.mp4';
 const BALANCE_FOUNDATIONS_THIS_WEEK_START_MS = Date.parse('2026-08-20T14:00:00.000Z');
 const BALANCE_FOUNDATIONS_THIS_WEEK_END_MS = Date.parse('2026-08-23T14:00:00.000Z');
@@ -102,12 +105,13 @@ function maySendDraftVideoAttachment({ videoUrl = '', replyText = '' } = {}) {
 
 function isBalanceFoundationsAppProofVideoUrl(value = '') {
     const normalizedUrl = String(value || '').trim().toLowerCase();
-    return [BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL, BALANCE_FOUNDATIONS_THIS_WEEK_VIDEO_URL]
+    return [BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL, BALANCE_LEARN_STANDARD_VIDEO_URL, BALANCE_FOUNDATIONS_THIS_WEEK_VIDEO_URL, BALANCE_LEGACY_SOCIAL_VIDEO_URL]
         .some(url => url.toLowerCase() === normalizedUrl);
 }
 
 function resolveBalanceFoundationsAppProofVideoUrl(nowMs = Date.now()) {
     const timestamp = Number(nowMs);
+    if (Number.isFinite(timestamp) && timestamp >= BALANCE_LEARN_STANDARD_START_MS) return BALANCE_LEARN_STANDARD_VIDEO_URL;
     return Number.isFinite(timestamp)
         && timestamp >= BALANCE_FOUNDATIONS_THIS_WEEK_START_MS
         && timestamp < BALANCE_FOUNDATIONS_THIS_WEEK_END_MS
@@ -115,9 +119,18 @@ function resolveBalanceFoundationsAppProofVideoUrl(nowMs = Date.now()) {
         : BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL;
 }
 
+function resolvePaidMetaProofVideoAttachmentUrl(value = '', nowMs = Date.now()) {
+    const url = String(value || '').trim();
+    return isBalanceFoundationsAppProofVideoUrl(url) ? resolveBalanceFoundationsAppProofVideoUrl(nowMs) : url;
+}
+
+function resolveBalanceLearnCoursePriceLabel(nowMs = Date.now()) {
+    return Number(nowMs) >= BALANCE_LEARN_STANDARD_START_MS ? '$450' : '$149';
+}
+
 function stripPaidMetaProofMediaUrls(text = '') {
     const raw = String(text || '');
-    const escapedUrls = [BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL, BALANCE_FOUNDATIONS_THIS_WEEK_VIDEO_URL]
+    const escapedUrls = [BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL, BALANCE_LEARN_STANDARD_VIDEO_URL, BALANCE_FOUNDATIONS_THIS_WEEK_VIDEO_URL, BALANCE_LEGACY_SOCIAL_VIDEO_URL]
         .map(url => url.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
     const proofVideoUrlRe = new RegExp(escapedUrls.join('|'), 'i');
     if (!proofVideoUrlRe.test(raw)) return raw;
@@ -130,6 +143,10 @@ function stripPaidMetaProofMediaUrls(text = '') {
 }
 
 module.exports = {
+    resolveBalanceLearnCoursePriceLabel,
+    BALANCE_LEARN_STANDARD_VIDEO_URL,
+    BALANCE_LEARN_STANDARD_START_MS,
+    resolvePaidMetaProofVideoAttachmentUrl,
     ALLY_WEIGHT_LOSS_PROOF_URL,
     GEN_STRENGTH_CONFIDENCE_PROOF_URL,
     BEC_KIRSTY_SHARED_MOMENTUM_PROOF_URL,

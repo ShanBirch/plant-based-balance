@@ -149,7 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
         'coaching-month-to-month': { amount: 7499, label: 'Balance Online Coaching, Month-to-Month', successPlan: 'online_coaching_month_to_month' },
         'app-monthly': { amount: 1999, label: 'Balance App Access', successPlan: 'app_community_monthly' },
         'coaching-calls': { amount: 9999, label: 'Balance Coaching + Calls', successPlan: 'coaching_calls_weekly' },
-        'founders-pass': { amount: Date.now() < Date.parse('2026-09-21T00:00:00+10:00') ? 15000 : 45000, label: 'Balance Learn', successPlan: 'balance_foundations_six_week' }
+        'founders-pass': { amount: Date.now() < Date.parse('2026-10-21T00:00:00+10:00') ? 14900 : 45000, label: 'Balance Learn', successPlan: 'balance_foundations_six_week' }
     };
 
     const paymentRequest = stripe.paymentRequest({

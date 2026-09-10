@@ -352,11 +352,11 @@ test('time-limited Foundations proof resolves in Brisbane campaign time and expi
     );
     assert.equal(
         BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL,
-        'https://plantbased-balance.org/assets/balance-foundations-course-first-v8.mp4'
+        'https://plantbased-balance.org/assets/balance-learn-dm-149-v9.mp4'
     );
-    const courseFirstAsset = path.join(__dirname, '../assets/balance-foundations-course-first-v8.mp4');
+    const courseFirstAsset = path.join(__dirname, '../assets/balance-learn-dm-149-v9.mp4');
     assert.equal(fs.existsSync(courseFirstAsset), true);
-    assert.ok(fs.statSync(courseFirstAsset).size > 10_000_000);
+    assert.ok(fs.statSync(courseFirstAsset).size > 1_000_000);
     assert.ok(fs.statSync(courseFirstAsset).size < 20_000_000,
         'the native Instagram DM video must stay below the proven delivery-safe size');
 });
