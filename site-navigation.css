@@ -17,3 +17,7 @@ body header:has(> .balance-navigation) > .nav-actions, body header:has(> .balanc
 html:has(.balance-menu-drawer[open]) { overflow: hidden; }
 @keyframes balance-menu-enter { from { transform: translateX(-100%); } to { transform: translateX(0); } }
 @media (prefers-reduced-motion: reduce) { .balance-menu-drawer[open] { animation: none; } }
+
+/* Full website identity, compact enough for phone headers. */
+body header .brand .balance-brand-name { display: flex; flex-direction: column; align-items: center; line-height: 1.15; }
+body header .brand .balance-brand-name small { display: block; margin-top: 4px; font: 500 clamp(9px, 2.4vw, 12px)/1.2 Inter, sans-serif; letter-spacing: .04em; white-space: nowrap; color: #4b5146; -webkit-text-fill-color: #4b5146; }

@@ -37,7 +37,9 @@ Shannon retired the public Founders Pass name. Use **Balance Learn** for the AUD
 - App name: Balance.
 - Use singular "Balance", not "Balances" and not the legacy codename.
 - Public app store name: Balance: Plant-Based Fitness.
-- Parent brand/domain: plantbased-balance.org.
+- Website brand: Balance Neuroscience Fitness (Shannon requested the rebrand on 10 September 2026). Keep Balance as the short app/product name.
+- Live domain remains plantbased-balance.org pending registration and verified migration of a new domain. Current email remains shannon@plantbased-balance.org until the new Workspace address is working. Do not replace operational URLs or mail recipients with an unregistered domain.
+- Rebrand migration checklist: docs/BALANCE_REBRAND_2026_09.md.
 - Native bundle ID still uses the old `com.fitgotchi.app` codename. Do not use "FitGotchi" in user-facing copy.
 - Logo asset: `balance_logo.png`, Japanese kanji wa/harmony.
 - Default video logo treatment: whenever the Balance logo appears in a video or Reel, animate a tasteful gold glimmer sweep over it unless Shannon explicitly asks for a different treatment.
