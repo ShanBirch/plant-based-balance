@@ -13986,7 +13986,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'movement-tab', sel:'#workout-exercises-list .exercise-logger-card.workout-swipe-active [data-video-container][data-thumbnail-state="ready"]', fallbackSel:'#workout-exercises-list .exercise-logger-card.workout-swipe-active,#workout-exercises-list', title:'Follow the exercise card', fallbackTitle:'Follow the exercise card', body:'See the demonstration and the planned sets and reps. This is a preview: you do not need to perform or log any sets. Next we will explain sets, then reps. You can browse the exercises with the arrows.', fallbackBody:'Each exercise opens as one card. Next we will look at its set-entry boxes without recording a workout.', pageView:true, allowTargetInteraction:true, metaPreview:true, preserveSurface:true, nextLabel:'Show sets and reps', workoutEducation:true, action:async function(){ try { await waitForMetaPreviewWorkoutProof({ requireThumbnail:true, timeoutMs:8000 }); return true; } catch(e){ return false; } } },
     { tab:'movement-tab', sel:'#workout-exercises-list .workout-swipe-active .workout-set-row', title:'Each row is one set', body:'This row is one set of the exercise. Use + Add Set below the rows when you need another set. For now, just tap Next.', pageView:true, spotlightExplanation:true, workoutEducation:true, metaPreview:true, preserveSurface:true, nextLabel:'Next: reps', action:async function(){ return !!(await openMetaPreviewStrengthWorkout()); } },
     { tab:'movement-tab', sel:'#workout-exercises-list .workout-swipe-active .workout-set-row .input-reps', title:'Your reps go here', body:'Reps means repetitions. Enter how many repetitions you completed in this box. You do not need to enter anything during the tour. Tap Next to continue.', pageView:true, spotlightExplanation:true, workoutEducation:true, metaPreview:true, preserveSurface:true, nextLabel:'See the rest of your workout' },
-    { tab:'movement-tab', sel:'#workout-swipe-next', fallbackSel:'#workout-swipe-prev', title:'Look through your whole workout', body:'Tap the highlighted exercise arrow to see the rest of your session. Look at each exercise before continuing. You do not need to log sets or finish a workout during this preview.', pageView:true, allowTargetInteraction:true, workoutEducation:true, metaPreview:true, preserveSurface:true, requiresWorkoutBrowse:true, controlPromptPosition:'top', returnHomeAfter:true },
+    { tab:'movement-tab', sel:'#workout-swipe-next', fallbackSel:'#workout-swipe-prev', title:'Look through your whole workout', body:'Use the glowing arrows to see each exercise. Scroll freely to watch the video and review your sets and reps. No workout needs to be logged.', pageView:true, allowTargetInteraction:true, workoutEducation:true, metaPreview:true, preserveSurface:true, requiresWorkoutBrowse:true, returnHomeAfter:true },
     { tab:'dashboard', sel:'#friends-photo-feed .meta-preview-feed-post', fallbackSel:'#feed-composer-card', title:'The Balance community', fallbackTitle:'The Balance community', body:'The highlighted Feed post shows where Shannon and members share normal meals, workouts, questions and wins.', fallbackBody:'This is where Shannon posts and members share meals, workouts and wins.', pageView:true, metaPreview:true, promptBeforeAction:true, promptRequiresTargetClick:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="feed_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: meet the community', preActionBody:'Back on Home, tap the highlighted community card to see where everyone shares their real week.', preActionButton:'Tap the community card', nextLabel:'See how to post', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('feed_intro'); if(window.BalanceMetaAdTrial && typeof window.BalanceMetaAdTrial.loadPreviewFeed === 'function') await window.BalanceMetaAdTrial.loadPreviewFeed(); } catch(e){} await new Promise(function(r){ setTimeout(r,500); }); return true; } },
     { tab:'friends', sel:'#feed-composer-card', title:'Post when you need support', body:'The highlighted composer is where you share a meal, workout, question or win. There is nothing to post during the tour—use Next to return Home.', pageView:true, metaPreview:true, preserveSurface:true, returnHomeAfter:true },
     { tab:'friends', sel:'#feed-composer-card', title:'Share from one place', body:'Use What’s happening for a post, or tap From Balance to share a set, meal, workout, PB or song. Your saved profile photo stays with your Feed posts.' },
@@ -15133,6 +15133,11 @@ if (step && step.requiresFeedPost) {
       : { top:rect.bottom + gap, maxHeight:below };
   }
 
+  function getWorkoutBrowseGuideTop(setsRect, videoRect, safeTop){
+    return Math.max(safeTop, setsRect ? setsRect.top : safeTop,
+      videoRect ? videoRect.bottom + 12 : safeTop);
+  }
+
   function positionBubbleAndSpotlight(target, step, options){
     const allowScroll = !!(options && options.initialPlacement);
     const overlay = document.getElementById('guided-tour-overlay');
@@ -15272,6 +15277,18 @@ if (step && step.requiresFeedPost) {
 
     const bubbleH = bubble.offsetHeight || 180;
     const safeTop = 40;
+    if (step && step.requiresWorkoutBrowse) {
+      const exercise = q('#workout-exercises-list .exercise-logger-card.workout-swipe-active');
+      const sets = exercise && exercise.querySelector('.workout-set-row');
+      const video = exercise && exercise.querySelector('[data-video-container]');
+      // Keep the original floating guide with the set-entry area. Never clamp
+      // it upward into the video just to keep the whole guide on screen.
+      // Scrolling and exercise changes remeasure these live anchors only.
+      bubble.style.top = getWorkoutBrowseGuideTop(
+        sets && sets.getBoundingClientRect(), video && video.getBoundingClientRect(), safeTop) + 'px';
+      bubble.style.left = Math.max(8, (vw - (bubble.offsetWidth || 320)) / 2) + 'px';
+      return;
+    }
     if (step && step.tapTargetPrompt) {
       // Keep the instruction and its real To Do card in two clear regions. A
       // completed card can disappear and pull the next card upward, so make a
