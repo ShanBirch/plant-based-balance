@@ -23,7 +23,7 @@ test('saved reflections suppress repeat prompts', async () => {
     await s.open({ lessonId: 'lesson', score: 100 });
     assert.equal(s.reads(), 1);
 });
-test('lookup failures do not block completion or leave a stuck prompt lock', async () => {
+test('optional lookup failures do not block completion or leave a stuck prompt lock', async () => {
     const s = setup({ error: new Error('offline') });
     await s.open({ lessonId: 'lesson', score: 100 });
     await s.open({ lessonId: 'lesson', score: 100 });

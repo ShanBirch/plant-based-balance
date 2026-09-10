@@ -188,7 +188,10 @@ async function ensureWorkoutBuilderExerciseLibrary() {
 
 async function openWorkoutBuilder() {
     customWorkoutSelection = []; // Reset on open
-    window.currentBuilderWorkoutName = null; // Reset name so a fresh name is prompted
+    window.currentBuilderWorkoutName = null;
+    window.balanceMasterBuilderReturn = null;
+    const nameField = document.getElementById('builder-workout-name');
+    if (nameField) nameField.value = '';
     window.builderLimit = 50;
     const search = document.getElementById('builder-search');
     if (search) search.value = '';
@@ -392,8 +395,8 @@ async function startCustomBuilderWorkout() {
         }
 
         // Reuse name if already set by the SAVE button, otherwise prompt once
-        const workoutName = window.currentBuilderWorkoutName || prompt("Name your workout:");
-        if (!workoutName) return; // User cancelled
+        const workoutName = (document.getElementById('builder-workout-name')?.value || window.currentBuilderWorkoutName || '').trim();
+        if (!workoutName) { showToast('Give your workout a name first.','info'); document.getElementById('builder-workout-name')?.focus(); return; }
         window.currentBuilderWorkoutName = workoutName;
 
         // Auto-save the workout to database

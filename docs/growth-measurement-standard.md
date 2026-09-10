@@ -1,5 +1,15 @@
 # Balance Growth Measurement Standard
 
+## Master required assessments — 10 September 2026
+
+- Variant: `master_assessments_v3`. Course order: Learn, Master, Become, Lead.
+- Outcome: members demonstrate their lifts, explain what they learn and submit usable workout and meal plans.
+- Primary measure: verified weekly submissions per enrolled member, using `balance_master_submissions` joined to `balance_course_enrollments`.
+- Diagnostics: weeks 2, 5 and 9 submitted; quiz reflections saved; draft saves, validation rejections and save failures. Existing `master_stage_completed` and `master_course_completed` events remain available.
+- Baseline: zero non-test Master drafts and zero non-test legacy completions at the pre-release check on 10 September.
+- Guardrails: a draft never produces a completion receipt; only owned workouts are accepted; all required quiz reflections and four uploaded lifts are checked; submitted work remains separate from later drafts. Video submission is not technique approval.
+- Review: after 20 non-test submissions or on 24 September. Exclude `users.is_test_account` from all measures.
+
 ## Decision this system supports
 
 Decide which ad message, landing experience, DM path, and onboarding flow produces paying members who activate inside Balance, without optimising for cheap but low-quality conversations.

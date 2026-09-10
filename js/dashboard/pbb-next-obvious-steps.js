@@ -762,8 +762,9 @@
 
   function getNextCourseId() {
     try {
+      if (typeof window.getNextBalanceCourseId === 'function') return window.getNextBalanceCourseId();
       if (window.socialJourney && typeof window.socialJourney.getCurrentWeek === 'function') {
-        return Number(window.socialJourney.getCurrentWeek() || 1) >= 7 ? 'balance-identity' : 'balance-foundations';
+        return Number(window.socialJourney.getCurrentWeek() || 1) >= 7 ? 'balance-master' : 'balance-foundations';
       }
     } catch (_) {}
     return 'balance-foundations';

@@ -764,7 +764,7 @@
     const definition = getWeekDefinition();
     const lesson = WEEK_LESSONS[definition.week - 1];
     if (!isCurrentLessonSeen()) {
-      const courseId = definition.week >= 7 ? 'balance-identity' : 'balance-foundations';
+      const courseId = typeof window.getNextBalanceCourseId === 'function' ? window.getNextBalanceCourseId() : definition.week >= 7 ? 'balance-master' : 'balance-foundations';
       let exactDestination = null;
       try {
         if (typeof window.getCurrentCourseLessonDestination === 'function') {
@@ -775,7 +775,7 @@
         kind: 'course_lesson',
         courseId,
         title: exactDestination?.title || (definition.week >= 7
-          ? 'Start Balance Become: Week ' + definition.week
+          ? 'Continue Balance Master'
           : 'Complete this week\'s Balance Learn lesson'),
         body: exactDestination?.body || (lesson ? lesson.title : definition.title),
         cta: exactDestination?.cta || 'Open lesson',

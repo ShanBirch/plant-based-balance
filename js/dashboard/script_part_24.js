@@ -8,6 +8,15 @@ window._coachUserId = null;
 async function getCoachUserId() {
     if (window._coachUserId) return window._coachUserId;
 
+    // Members can read only their own user profile. Resolve the coach through
+    // a narrow authenticated lookup instead of broadening profile access.
+    try {
+        const { data, error } = await window.supabaseClient.rpc('get_balance_coach_id');
+        if (!error && data) { window._coachUserId = data; return data; }
+    } catch (e) {
+        console.warn('Could not resolve the Balance coach:', e);
+    }
+
     for (const email of COACH_EMAILS) {
         try {
             const { data } = await window.supabaseClient

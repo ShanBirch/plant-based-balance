@@ -10954,6 +10954,7 @@
 
                 // Render
                 body.innerHTML = renderClientDrillIn(data, clientName);
+                const courseRecords = document.createElement('section'); courseRecords.className = 'master-coach-records'; body.prepend(courseRecords); window.loadMasterAssessments(clientId, courseRecords);
                 if (data.user?.email) document.getElementById('client-drill-email').textContent = data.user.email;
                 if (window.lucide) lucide.createIcons();
             } catch (e) {
@@ -23839,5 +23840,5 @@
     window.playBalancePromo = function() { window.openReelPicker(); };
     </script>
     <!-- ========== END BALANCE REELS ========== -->
-</body>
+<script src="lib/admin-master-assessments.js?v=1"></script></body>
 </html>
