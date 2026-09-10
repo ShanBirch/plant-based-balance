@@ -1,0 +1,68 @@
+/* The focused plan shares one paired palette across its header, recipes and list. */
+html #ai-plan-loaded.ai-plan-focus-layout {
+    --meal-plan-ink: #171613;
+    --meal-plan-muted: #625e56;
+    --meal-plan-surface: #ffffff;
+    --meal-plan-border: #d3cec4;
+    --meal-plan-accent: #785713;
+    --meal-plan-selected: #171613;
+    --meal-plan-on-selected: #ffffff;
+    max-width: 760px;
+    margin-inline: auto;
+    color: var(--meal-plan-ink);
+    -webkit-text-fill-color: currentColor;
+}
+html[data-pbb-theme="dark"] #ai-plan-loaded.ai-plan-focus-layout {
+    --meal-plan-ink: #f8f7f2;
+    --meal-plan-muted: #c2bdb3;
+    --meal-plan-surface: #191919;
+    --meal-plan-border: #686259;
+    --meal-plan-accent: #f5d98a;
+    --meal-plan-selected: #f5d98a;
+    --meal-plan-on-selected: #171613;
+}
+html #ai-plan-loaded.ai-plan-focus-layout :where(#ai-plan-header, .ai-plan-daily-summary, .ai-plan-hero, .ai-plan-preview, .ai-plan-shopping) {
+    background: var(--meal-plan-surface) !important;
+    color: var(--meal-plan-ink) !important;
+    -webkit-text-fill-color: currentColor !important;
+    border-color: var(--meal-plan-border) !important;
+}
+html #ai-plan-loaded.ai-plan-focus-layout :where(h2, h3, h4, strong, .ai-plan-hero__macros, .ai-plan-shopping__toggle) {
+    color: var(--meal-plan-ink) !important;
+    -webkit-text-fill-color: currentColor !important;
+}
+html #ai-plan-loaded.ai-plan-focus-layout :where(#ai-plan-desc, .ai-plan-daily-summary span, .ai-plan-focus-label span, .ai-plan-hero__tags, .ai-plan-hero__details, .ai-plan-hero__details p, .ai-plan-hero__details li, .ai-plan-preview-heading span, .ai-plan-shopping__copy span, .ai-plan-shopping__chevron, .ai-plan-shopping__helper, .ai-plan-shopping__item small, .ai-plan-shopping__status, .ai-plan-shopping__item.is-checked strong) {
+    color: var(--meal-plan-muted) !important;
+    -webkit-text-fill-color: currentColor !important;
+}
+html #ai-plan-loaded.ai-plan-focus-layout :where(.ai-plan-hero__meta, .ai-plan-preview__copy small) {
+    color: var(--meal-plan-accent) !important;
+    -webkit-text-fill-color: currentColor !important;
+}
+html #ai-plan-loaded.ai-plan-focus-layout :where(.pill-btn, .sub-btn, #weekly-meal-evolution-btn, .ai-plan-hero__button, .ai-plan-shopping__download) {
+    background: var(--meal-plan-surface) !important;
+    color: var(--meal-plan-ink) !important;
+    -webkit-text-fill-color: currentColor !important;
+    border: 1px solid var(--meal-plan-border) !important;
+    min-height: 44px;
+}
+html #ai-plan-loaded.ai-plan-focus-layout :where(.pill-btn.active, .sub-btn.active, .ai-plan-hero__button--primary, .ai-plan-shopping__download) {
+    background: var(--meal-plan-selected) !important;
+    color: var(--meal-plan-on-selected) !important;
+    -webkit-text-fill-color: currentColor !important;
+}
+html #ai-plan-loaded.ai-plan-focus-layout :where(button, summary, input):focus-visible {
+    outline: 3px solid var(--meal-plan-accent);
+    outline-offset: 2px;
+}
+html #ai-plan-loaded #ai-plan-day-tabs { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
+html #ai-plan-loaded #ai-plan-day-tabs .sub-btn { min-width: 0; padding-inline: 2px; }
+html #ai-plan-loaded .ai-plan-daily-summary { flex-wrap: wrap; gap: 6px 12px; }
+html #ai-plan-loaded .ai-plan-daily-summary > span { display: flex; flex-wrap: wrap; gap: 3px; }
+html #ai-plan-loaded.ai-plan-focus-layout :where(.ai-plan-hero__title, .ai-plan-hero__details, .ai-plan-shopping__item) { overflow-wrap: anywhere; }
+html #ai-plan-loaded .ai-plan-focus-label { flex-wrap: wrap; gap: 6px; }
+html #ai-plan-loaded #ai-plan-desc { white-space: normal; }
+@media (min-width: 600px) {
+    html #ai-plan-loaded .ai-plan-preview-row { grid-auto-columns: minmax(0, 1fr); }
+    html #ai-plan-loaded .ai-plan-hero__photo { max-height: 360px; }
+}

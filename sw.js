@@ -1,8 +1,9 @@
-const CACHE_NAME = 'pbb-app-v514-setup-back-review'; // v514: revisiting a known setup answer must not auto-skip forward
+const CACHE_NAME = 'pbb-app-v515-meal-plan-review'; // v515: readable meal plans; retains setup Back review fixes
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
   './dashboard.html',
+  './css/dashboard/pbb-meal-plan.css?v=1',
   './js/dashboard/pbb-workout-tour-progress.js?v=1',
   './balance_logo_transparent.svg',
   './xp-guide.html',

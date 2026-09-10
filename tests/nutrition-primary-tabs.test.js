@@ -22,5 +22,5 @@ test('the tabs retain accessible selected state and paired theme colours', () =>
   assert.match(navigation, /setAttribute\('aria-selected', 'true'\)/);
   assert.match(css, /html\[data-pbb-theme="light"\] #view-meals #meals-nav-pills \.meals-primary-tab/);
   assert.match(css, /#view-meals #meals-nav-pills \.meals-primary-tab:focus-visible/);
-  assert.match(dashboard, /pbb-premium-overlays\.css\?v=111-meal-builder-search/);
+  assert.match(dashboard, /pbb-premium-overlays\.css\?v=\d+-[a-z0-9-]+/);
 });

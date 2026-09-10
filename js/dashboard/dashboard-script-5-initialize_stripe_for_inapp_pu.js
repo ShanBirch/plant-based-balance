@@ -5797,6 +5797,7 @@ function toggleAiPlanMealDetails(button) {
     if (!hero) return;
     const isOpen = hero.classList.toggle('is-open');
     button.textContent = isOpen ? 'Hide recipe' : 'View recipe';
+    button.setAttribute('aria-expanded', String(isOpen));
 }
 
 function openAiPlanMealLogger() {
@@ -5892,7 +5893,7 @@ function renderAiPlanFocusedDay(dayNum) {
                     <span>${Math.round(selected.fat_g || 0)}g fat</span>
                 </div>
                 <div class="ai-plan-hero__actions">
-                    <button type="button" class="ai-plan-hero__button ai-plan-hero__button--primary" onclick="toggleAiPlanMealDetails(this)">View recipe</button>
+                    <button type="button" class="ai-plan-hero__button ai-plan-hero__button--primary" onclick="toggleAiPlanMealDetails(this)" aria-expanded="false">View recipe</button>
                     <button type="button" class="ai-plan-hero__button" onclick="openAiPlanMealLogger()">Log meal</button>
                 </div>
                 <div class="ai-plan-hero__details">
