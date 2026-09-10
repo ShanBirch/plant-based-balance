@@ -32,4 +32,9 @@ Netlify CLI is authenticated to the shanbot team. Existing site: future-balance,
 For Squarespace external DNS, apex A record to 75.2.60.5 if ALIAS/ANAME is unavailable, and www CNAME to future-balance.netlify.app. Source: https://docs.netlify.com/manage/domains/configure-domains/configure-external-dns/
 
 Native dependencies explicitly reference the old domain in capacitor.config.ts (server URL and allowNavigation). Checkout host validation references it in netlify/edge-functions/lib/checkout-guard.js. Keep native, auth, webhook and payment paths on the old host until tested; do not introduce an unconditional old-to-new redirect.
+## Email activation update, 11 September
+The new domain is a verified user alias domain for plantbased-balance.org in the existing Workspace tenant, with no extra user subscription. Google confirmed Gmail activation. Authoritative MX is smtp.google.com, priority 1. SPF is v=spf1 include:_spf.google.com ~all. A 2048-bit DKIM TXT record at google._domainkey was saved and confirmed in authoritative DNS; Google completed its SPF/DKIM setup successfully. Squarespace removed its incompatible Email Security preset during the mail setup. DMARC has not yet been configured for active mail.
 
+The address shannon@balanceneurosciencefitness.com maps to the existing inbox. Continue signing into Google with shannon@plantbased-balance.org. Gmail's Send mail as list still only shows the old address. Add another email address is available, but its popup did not open through automation. The Gmail Accounts settings tab is left ready for this final sender configuration. End-to-end inbound/outbound delivery has not yet been tested; website contact email remains old until tested.
+
+Shannon explicitly reaffirmed permission to complete these setup and sign-in steps without repeated approval. Repeated Squarespace reauthentication was a browser-control limitation, not lack of user permission.
