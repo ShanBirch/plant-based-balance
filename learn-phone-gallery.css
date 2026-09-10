@@ -1,0 +1,16 @@
+.learn-gallery-controls { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:20px; color:#50544b; -webkit-text-fill-color:#50544b; }
+.learn-gallery-controls p { margin:0; font-size:14px; }
+.learn-gallery-controls > div { display:flex; gap:8px; }
+.learn-gallery-controls button { width:44px; height:44px; border:1px solid #b8892b; border-radius:50%; background:#faf7ef; color:#253026; -webkit-text-fill-color:#253026; font-size:22px; cursor:pointer; }
+.learn-gallery-controls button:disabled { opacity:.35; cursor:default; }
+.learn-phone-gallery { display:flex; gap:32px; overflow-x:auto; scroll-snap-type:x mandatory; padding:12px 12px 28px; scrollbar-color:#b8892b #eee8da; scrollbar-width:thin; }
+.learn-phone-slide { flex:0 0 280px; min-width:0; margin:0; scroll-snap-align:start; }
+.learn-phone-frame { display:block; position:relative; padding:7px; border:2px solid #67645d; border-radius:38px; background:#171817; box-shadow:0 12px 24px #20201824, inset 0 0 0 1px #99968c; }
+.learn-phone-frame::before { content:""; position:absolute; top:85px; left:-5px; width:3px; height:42px; background:#514f49; border-radius:3px 0 0 3px; }
+.learn-phone-frame::after { content:""; position:absolute; top:108px; right:-5px; width:3px; height:56px; background:#514f49; border-radius:0 3px 3px 0; }
+.learn-phone-frame img { display:block; width:100%; height:auto; aspect-ratio:1080/2424; object-fit:contain; border-radius:28px; background:#fff; }
+.learn-phone-slide figcaption { padding:20px 4px 0; color:#50544b; -webkit-text-fill-color:#50544b; font-size:14px; line-height:1.5; }
+.learn-phone-slide figcaption strong { display:block; margin:4px 0; color:#20251e; -webkit-text-fill-color:#20251e; font:700 20px/1.3 Outfit,sans-serif; }
+.learn-screen-number { color:#805f1e; -webkit-text-fill-color:#805f1e; font-size:11px; letter-spacing:.12em; }
+.learn-phone-gallery:focus-visible,.learn-phone-frame:focus-visible,.learn-gallery-controls button:focus-visible { outline:3px solid #805f1e; outline-offset:4px; }
+@media(max-width:600px) { .learn-phone-slide { flex-basis:76vw; max-width:280px; } .learn-phone-gallery { gap:24px; padding-left:5px; padding-right:20px; } .learn-gallery-controls { gap:10px; } .learn-gallery-controls p { max-width:215px; font-size:13px; } }
