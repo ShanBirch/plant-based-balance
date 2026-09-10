@@ -171,7 +171,7 @@ test('the Balance Path presents Learn, Become, Master and Lead without changing 
 test('Founders Pass onboarding captures the real-world blocker behind consistency', () => {
     const onboarding = read('js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js');
     const stepsBlock = onboarding.match(/const WIZARD_CHAT_STEPS = \[[\s\S]*?\n\];/)[0];
-    assert.match(stepsBlock, /Time for a comeback/);
+    assert.match(stepsBlock, /A new way forward/);
     assert.match(onboarding, /key: 'main_blocker'[\s\S]*?What usually knocks you off track when life gets messy/);
     assert.match(onboarding, /setWizardFieldValue\('wizard-main-blocker', answers\.main_blocker\)/);
     assert.doesNotMatch(stepsBlock, /key: 'competing_priorities'/);

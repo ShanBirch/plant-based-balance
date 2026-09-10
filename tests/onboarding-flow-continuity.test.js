@@ -59,7 +59,7 @@ test('first-run onboarding asks only plan-changing questions and does not ask me
 test('comeback onboarding uses the Balance identity, mobile safe areas, and reduced-motion support', () => {
     assert.match(dashboardSource, /wizard-brand-lockup/);
     assert.match(dashboardSource, /balance_logo_transparent\.svg/);
-    assert.match(onboardingSource, /Time for a comeback/);
+    assert.match(onboardingSource, /A new way forward/);
     assert.match(comebackCss, /env\(safe-area-inset-top/);
     assert.match(comebackCss, /@media \(prefers-reduced-motion: reduce\)/);
     assert.match(comebackCss, /comebackLogoSweep/);

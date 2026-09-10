@@ -8504,10 +8504,10 @@ const WIZARD_CHAT_STEPS = [
     {
         key: 'goal_setup_ready',
         type: 'start',
-        question: 'Time for a comeback.',
-        prelude: 'YOUR PLAN. YOUR PACE.',
+        question: 'A new way forward',
+        prelude: 'BALANCE LEARN',
         options: [
-            { value: 'lets_go', label: 'BUILD MY START' }
+            { value: 'lets_go', label: "Let's begin" }
         ]
     },
     {
@@ -11484,7 +11484,7 @@ function updateWizardUI() {
     const guidanceEl = document.getElementById('wizard-action-guidance');
 
     if(titleEl) {
-        titleEl.textContent = currentWizardStep === 1 ? 'TIME FOR A COMEBACK.' : 'YOUR BALANCE SETUP';
+        titleEl.textContent = currentWizardStep === 1 ? 'A NEW WAY FORWARD' : 'YOUR BALANCE SETUP';
     }
 
     if (guidanceEl) {
