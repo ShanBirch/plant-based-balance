@@ -5092,6 +5092,8 @@ ${progression}
 
 ${knownFactRule}
 
+Interpret the lead's meaning before choosing a step. A named difficulty, constraint, preference or support need is enough context; it does not need to match a standard category. "Conflicting advice leaves me doing nothing" already answers what gets in the way. "I care for my dad" and "sometimes only hotel floor space" are also useful context. Never follow an answer like that with "what gets in the way", "the main thing I want to understand is...", or a menu of time/stress/food possibilities. Reflect their actual detail, answer any direct question and explain the next useful step. If they are unsure or say there is no blocker, accept that without inventing one or asking them to identify it again. Preserve negations, corrections and uncertainty. Chocolate does not imply cravings or weekends; children do not imply a particular schedule. Use contractions and keep it natural.
+
 Client proof should normally be used once when it genuinely matches: Ally for weight loss, Gen for strength/confidence, Dani for body recomposition, Bec and Kirsty for shared accountability. Use no transformation when identity, safety or fit is uncertain. If using proof, name the approved person and say you are showing their photo. The deterministic transport may add the approved quick app video after both goal and blocker are known; do not invent URLs, visible media placeholders such as [course video], or repeat it.
 
 Reliable offer facts: Balance Learn is a six-week course inside Balance, built around neuroscience and the psychology of lasting change. Each week gives the person one practical learning focus, supported by Weekly Goals, alongside a personalised workout program, meal-plan support fitted to recorded dietary needs, and one weekly training/food review and adjustment. It is one AUD ${resolveBalanceLearnCoursePriceLabel()} payment for the full six weeks, with no subscription or auto-renewal. The personalised app preview comes before payment.
@@ -5149,6 +5151,7 @@ function paidMetaOutboundAskedForGoal(text = '') {
 
 function paidMetaOutboundAskedForBlocker(text = '') {
     const value = String(text || '');
+    if (/\b(?:want|need|like) to (?:know|understand|learn)\b[^.\n]{0,100}\b(?:what(?:['’]s| is)? (?:gets?|getting) in the way|blocker|barrier|stops? you)\b/i.test(value)) return true;
     if (/\b(?:what|which)\b[^?\n]{0,160}\b(?:consisten\w*|routine|schedule)\b[^?\n]{0,80}\b(?:tricky|hard(?:er|est)?|difficult|challeng\w*)\b[^?\n]*\?/i.test(value)
         || /\b(?:what|which)\b[^?\n]{0,160}\b(?:tricky|hard(?:er|est)?|difficult|challeng\w*)\b[^?\n]{0,80}\b(?:consisten\w*|routine|schedule)\b[^?\n]*\?/i.test(value)) return true;
     return /\bwhat\b[^?\n]{0,100}\b(?:gets? in the way|getting in the way|makes? (?:that|it) hard|hardest|throws? you off|knocks? you off|stops? you|breaks? the follow[ -]?through|makes? (?:it|that) difficult|keep(?:ing)? (?:it|that) consistent|stay consistent|stick to|stay on track)\b[^?\n]*\?/i.test(value)
@@ -5418,6 +5421,11 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
         || paidMetaHistoryHasConcreteBlocker(history)
         || qualifierHasKnownMetaAdBlocker(qualifier)
     );
+    const suppliedContextBeyondBareGoal = !isPaidMetaBareGoalMessage(turn)
+        && (turn.split(/\s+/).length >= 12 || history.some(item => item?.direction === 'out' && paidMetaOutboundAskedForBlocker(item.text)));
+    if (knownBroadGoal && suppliedContextBeyondBareGoal && paidMetaOutboundAskedForBlocker(reply)) {
+        issues.push('The earned paid-Meta offer is missing: the lead already supplied context or uncertainty, but the reply asks for a generic blocker again. Use the actual answer and move forward without another blocker question.');
+    }
     const broadGoalNeedsBlockerQuestion = broadFlow
         && PAID_META_FITNESS_GOAL_RE.test(turn)
         && isPaidMetaBareGoalMessage(turn)

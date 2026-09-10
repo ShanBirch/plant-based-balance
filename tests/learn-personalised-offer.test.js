@@ -102,3 +102,12 @@ test('unfamiliar personal context and direct questions cannot become a generic b
     const issues=collectPaidMetaWriterContractIssues({currentMessage,flowVariant:'broad_pain',draft:{joined:"Ten minutes isn't pointless. Short home sessions can fit around caring for your dad, including days when plans change."}});
     assert.ok(!issues.some(issue=>/answered the goal question/.test(issue)),'do not force a blocker question after the writer answers their actual question');
 });
+
+test('an indirect blocker request without a question mark cannot ignore a substantive answer', () => {
+    const currentMessage="I want to lose weight and feel confident. I read so much conflicting advice I end up doing nothing. I'm not scared of the gym. I just don't know which advice to trust.";
+    const draft={joined:'The main thing I would want to understand next is what is getting in the way in real life, like time, stress, food decisions, or conflicting advice.'};
+    const issues=collectPaidMetaWriterContractIssues({draft,currentMessage,flowVariant:'broad_pain'});
+    assert.ok(issues.some(issue=>/generic blocker again/.test(issue) && isBlockingPaidMetaWriterContractIssue(issue)));
+    const legitimate=collectPaidMetaWriterContractIssues({draft:{joined:'What usually gets in the way of making that happen consistently?'},currentMessage:'I want to lose weight',flowVariant:'broad_pain'});
+    assert.ok(!legitimate.some(issue=>/generic blocker again/.test(issue)));
+});
