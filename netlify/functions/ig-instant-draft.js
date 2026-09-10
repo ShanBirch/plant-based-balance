@@ -5213,7 +5213,8 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
             ['chocolate', /\bchocolates?\b/i],
         ];
         for (const [label, signal] of supplied) {
-            if (signal.test(inboundContext) && !signal.test(reply)) {
+            const correctsEarlierDetail = /\b(?:actually|not|isn['’]t|aren['’]t|is not|are not)\b/i.test(inboundContext);
+            if (signal.test(inboundContext) && !signal.test(reply) && !correctsEarlierDetail) {
                 issues.push(`The earned paid-Meta offer is missing a grounded acknowledgement of ${label}, supplied in the current inbound batch.`);
             }
         }

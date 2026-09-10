@@ -50,3 +50,10 @@ test('the screenshot reply fails grounding and repairs the entire rapid inbound 
     assert.match(repaired.joined,/chocolate/i);
     assert.doesNotMatch(repaired.joined,/weekends?|cravings?|emotional eating/i);
 });
+
+test('a corrected blocker does not force the writer to repeat the superseded detail', () => {
+    const currentMessage = "Actually the kids aren't the problem. It's buying chocolate at the petrol station.";
+    const draft = {joined:"It's the petrol-station chocolate habit you want to change. Balance Learn is a six-week course with your workout program, meal plan and weekly check-in. It's one AUD $149 payment, no auto-renewal. Want a free personalised preview before you pay?"};
+    const issues = collectPaidMetaWriterContractIssues({draft,currentMessage,flowVariant:'broad_pain',history:[{direction:'in',text:'Kids and chocolate, mostly.'}]});
+    assert.ok(!issues.some(issue=>/grounded acknowledgement of kids/.test(issue)));
+});
