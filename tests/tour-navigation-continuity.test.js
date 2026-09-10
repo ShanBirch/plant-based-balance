@@ -8,7 +8,7 @@ function section(begin,end){const i=html.indexOf(begin);assert.ok(i>=0);return h
 function navigation(){
  const ctx={window:{__balanceGuidedTourActive:true},tourNavigationBusy:false,tourNextBlockedUntil:0,
  showingXpIntro:false,idx:0,activeSteps:Array.from({length:19},()=>({})),activeTourGate:null,
- pendingPromptedAction:null,metaPreviewTour:true,clientActivationTour:false,Date,ended:0,visits:[]};
+ pendingPromptedAction:null,courseFeatureTour:null,metaPreviewTour:true,clientActivationTour:false,Date,ended:0,visits:[]};
  vm.runInNewContext(section('  function isTourForwardOnly','  function updateTourBackControl'),ctx);
  ctx.showStep=async i=>{ctx.idx=i;ctx.visits.push(i)};
  ctx.endFeatureTour=()=>ctx.ended++;

@@ -355,6 +355,11 @@
     }
   }
 
+  function getFitGotchiCourseAction() {
+    return window.socialJourney && typeof window.socialJourney.getFitGotchiIntroAction === 'function'
+      ? window.socialJourney.getFitGotchiIntroAction() : null;
+  }
+
   function getImportedActivityAction() {
     var pending = typeof window.getPendingImportedActivityForHome === 'function'
       ? window.getPendingImportedActivityForHome()
@@ -1189,7 +1194,9 @@
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'weekly_goals_intro'; }));
       if (window.metaAdTrialMode === true) return picked;
     }
-    addUniqueAction(picked, journeyAction);
+    if (!hasIncompleteOnboarding) addUniqueAction(picked, getFitGotchiCourseAction());
+    // The standalone Week 1 card and course queue point at the same saved action.
+    if (!(journeyAction && journeyAction.title === 'View Your FitGotchi' && picked.some(function(item){ return item.id === 'fitgotchi_intro'; }))) addUniqueAction(picked, journeyAction);
     if (onboardingEligible && hasReachedSecondProgramWeek() && !hasSeenOnboardingStep('activity_insights_intro')) {
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'activity_insights_intro'; }));
     }
@@ -1237,6 +1244,7 @@
 
   function isActionAvailable(action, selectedGoalIds) {
     if (!action || !action.id) return false;
+    if (action.id === 'fitgotchi_intro') return !!getFitGotchiCourseAction();
     if (action.id === 'balance_journey') return !!getBalanceJourneyAction();
     if (action.id === 'imported_activity') return !!getImportedActivityAction();
     if (isActionComplete(action)) return false;
@@ -1739,6 +1747,7 @@
       });
     },
     runAction: function(id){
+      if (id === 'fitgotchi_intro') { if (window.socialJourney) window.socialJourney.openFitGotchiIntro(); return; }
       try {
         window.dispatchEvent(new CustomEvent('pbb-next-step-action', { detail: { id: id } }));
       } catch (_) {}

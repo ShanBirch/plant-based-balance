@@ -18,6 +18,7 @@
       title: 'Make the first reps visible.',
       body: 'Do one real action, then record it. Feed is not a performance; it is a supportive environment that helps the new pattern feel normal.',
       tasks: [
+        task('w1_fitgotchi_intro', 'View Your FitGotchi', 'Meet your character and see how XP gives you visual feedback on your progress.', 'fitgotchi_intro', 1, '🐣', 'fitgotchi'),
         task('w1_feed_intro', 'Introduce yourself to the Feed', 'Write a simple hello in Balance Feed. No photo needed.', 'foundations_feed_intro', 1, '\uD83D\uDC4B', 'feed'),
         task('w1_wearable_setup', 'Connect your fitness watch, if you use one', 'Connect a compatible watch, or choose the honest no-watch option. Both paths receive the same course credit.', 'wearable_setup', 1, '\u231A', 'wearable'),
         task('w1_weekly_checkin', 'Complete your weekly check-in', 'Tell Shannon what worked, what got in the way and what you need next.', 'weekly_checkin', 1, '✓', 'checkin')
@@ -567,6 +568,7 @@
       foundations_pb_feed: stories.filter(row => row.media_type === 'workout_card' && storyCard(row).card_type === 'pb' && currentWeekPbIds.has(String(storyCard(row).pb_history_id || ''))).length,
       foundations_feed_reflection: linkedTextPostCount('w6_feed_reflection'),
       wearable_setup: ['verified_connection', 'no_compatible_watch'].includes(wearableSetup.status) ? 1 : 0,
+      fitgotchi_intro: safeObject(settingsBeforeProgress.fitgotchi_intro).completed_at ? 1 : 0,
       weekly_checkin: weeklyCheckinComplete ? 1 : 0
     };
     const definition = getWeekDefinition();
@@ -731,6 +733,7 @@
   }
 
   function taskActionLabel(item) {
+    if (item.type === 'fitgotchi_intro') return item.complete ? 'Viewed' : 'View Your FitGotchi';
     if (item.type === 'manual') return item.complete ? 'Completed' : 'Mark done';
     if (item.type === 'planner') return item.complete ? 'Edit plan' : 'Build plan';
     if (item.type === 'instagram_profile') return item.complete ? 'Profile saved' : 'Add profile';
@@ -785,7 +788,7 @@
     const nextTask = getNextJourneyTask();
     if (!nextTask) return null;
     return {
-      title: (definition.week >= 7 ? 'Balance Become: ' : 'Balance Learn: ') + nextTask.label,
+      title: nextTask.type === 'fitgotchi_intro' ? nextTask.label : (definition.week >= 7 ? 'Balance Become: ' : 'Balance Learn: ') + nextTask.label,
       body: nextTask.hint || definition.body,
       cta: taskActionLabel(nextTask),
       accent: definition.week >= 7 ? '#b78a2e' : '#0f766e'
@@ -1080,12 +1083,14 @@
       const savedTasks = new Map(safeArray(saved && saved.tasks).map(function(item){ return [item.id, item]; }));
       const tasks = definition.tasks.map(function(item){
         const stored = savedTasks.get(item.id);
+        // Do not retroactively lock members who already passed Week 1 before this action existed.
+        const exempt = item.type === 'fitgotchi_intro' && currentJourneyWeek > 1 && !stored;
         const current = Math.max(0, Number(stored && stored.current) || 0);
-        const complete = !!(stored && stored.complete) || current >= item.target;
+        const complete = exempt || !!(stored && stored.complete) || current >= item.target;
         return Object.assign({}, item, taskAvailability(item), {
           current,
           complete,
-          actionLabel: definition.week === currentJourneyWeek ? taskActionLabel(Object.assign({}, item, { current, complete })) : (complete ? 'Done' : 'Not completed')
+          actionLabel: exempt ? 'Not required for your earlier week' : (definition.week === currentJourneyWeek ? taskActionLabel(Object.assign({}, item, { current, complete })) : (complete ? 'Done' : 'Not completed'))
         });
       });
       const completedTasks = tasks.filter(function(item){ return item.complete; }).length;
@@ -1817,6 +1822,10 @@
     const definition = getWeekDefinition();
     const item = definition.tasks.find(candidate => candidate.id === taskId);
     if (!item) return;
+    if (item.type === 'fitgotchi_intro') {
+      openFitGotchiIntro();
+      return;
+    }
     if (item.type === 'manual') {
       await toggleManualTask(item.id);
       return;
@@ -1838,6 +1847,44 @@
       return;
     }
     switchTo(item.action, item.id);
+  }
+
+  function canOpenFitGotchiIntro() {
+    return isJourneyEligible() && !!state && Number(state.current_week) === 1
+      && window.metaAdTrialMode !== true && !window.__balancePendingClientActivation
+      && !window.__balanceGuidedTourActive;
+  }
+
+  function getFitGotchiIntroAction() {
+    if (!canOpenFitGotchiIntro() || safeObject(state.settings.fitgotchi_intro).completed_at) return null;
+    return { id:'fitgotchi_intro', title:'View Your FitGotchi',
+      body:'A Week 1 course action. See how your character turns XP into visual feedback and motivation.',
+      cta:'View Your FitGotchi', accent:'#b78a2e', priority:130, goalIds:[], action:openFitGotchiIntro };
+  }
+
+  function openFitGotchiIntro() {
+    if (!canOpenFitGotchiIntro() || typeof window.startFeatureTour !== 'function') return false;
+    closeJourney();
+    closeOnboarding();
+    const owner = currentUserId();
+    window.startFeatureTour('full', { fitgotchiCourse:true, onCourseComplete:async function(){
+      if (owner !== currentUserId() || !state || Number(state.current_week) !== 1) throw new Error('Your course changed. Reopen this action.');
+      if (!window.supabaseClient) throw new Error('Reconnect to save your Week 1 action, then try again.');
+      if (!window.getFitGotchiVisibility || window.getFitGotchiVisibility() !== 'visible') throw new Error('Turn on your FitGotchi before finishing the walkthrough.');
+      const previous = state;
+      const settings = Object.assign({}, safeObject(state.settings));
+      settings.fitgotchi_intro = settings.fitgotchi_intro && settings.fitgotchi_intro.completed_at ? settings.fitgotchi_intro : {
+        completed_at:new Date().toISOString(), version:'fitgotchi_feedback_v1', course_week:1,
+        settings_viewed:true, home_viewed:true, visibility_at_completion:'visible'
+      };
+      try { await upsertState({settings}); } catch(error) { state=previous; throw error; }
+      await calculateProgress();
+      renderCard();
+      if (window.pbbNextSteps) window.pbbNextSteps.refresh();
+      if (typeof window.refreshLearningCourseHome === 'function') window.refreshLearningCourseHome();
+      if (typeof window.trackBalanceActivity === 'function') window.trackBalanceActivity('fitgotchi_course_completed', {version:'fitgotchi_feedback_v1',week:1});
+    }});
+    return true;
   }
 
   let onboardingTestResetRunning = false;
@@ -1961,6 +2008,8 @@
     resetActivationForTest,
     isUnifiedPlanActive: function () { return isJourneyEligible() && !!state; },
     getUnifiedAction,
+    getFitGotchiIntroAction,
+    openFitGotchiIntro,
     openUnifiedAction,
     getFoundationsCourseProgress,
     taskActionForCourse,

@@ -414,6 +414,7 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
     window.setFitGotchiVisibility = function(mode) {
         mode = mode === 'hidden' ? 'hidden' : 'visible';
         var shouldPromptForCharacter = mode === 'visible' &&
+            !window.__balanceFitGotchiCourseTour &&
             localStorage.getItem('pbb_fitgotchi_needs_character_setup') === 'true';
         localStorage.setItem(KEY, mode);
         var appliedMode = applyVisibility(mode, { reloadModel: mode === 'visible' });
@@ -1971,15 +1972,15 @@ if(!window._pbbIsIOSSafari) {
 if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-progressphoto.js?v=12-private-share-studio"><\/script>');
 document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=35-balance-theme"><\/script>');
-    document.write('<script src="js/dashboard/pbb-social-journey.js?v=51-master-order"><\/script>');
-    document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=57-master-order"><\/script>');
+    document.write('<script src="js/dashboard/pbb-social-journey.js?v=52-fitgotchi-course"><\/script>');
+    document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=58-fitgotchi-course"><\/script>');
     document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=29-accountability-checkout"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
     window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=12-private-share-studio');
 window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=35-balance-theme');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=51-master-order');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=57-master-order');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=52-fitgotchi-course');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=58-fitgotchi-course');
     window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=29-accountability-checkout');
 }
 </script>
@@ -14266,6 +14267,19 @@ if(!window._pbbIsIOSSafari) {
     }
   });
 
+  // A paid Week 1 course action, deliberately outside requiredOnboardingTourSteps.
+  const fitgotchiCourseSteps = [
+    {tab:'profile', sel:'#settings-fitgotchi-visibility', title:'Turn on your FitGotchi',
+      body:'This is your character. Turn on Show FitGotchi to meet it on Home. It is a visual way to see your progress, not a measure of your worth or fitness.',
+      pageView:true, spotlightExplanation:true, requiresFitGotchiVisible:true, nextLabel:'See it on Home'},
+    {tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Your character grows with you',
+      body:'As you earn experience points (XP) through your Balance activities, your character levels up with you. This is gamification: another source of feedback that can help make your progress visible and keep you motivated.',
+      pageView:true, spotlightExplanation:true, nextLabel:'How to use this feedback'},
+    {tab:'dashboard', sel:'#tamagotchi-stats-bar', title:'Use the feedback that helps you',
+      body:'Your XP and level reflect your activity in Balance. Use them alongside your workout, food and check-in data, not instead of it. If the character motivates you, keep it on Home. Prefer a simpler screen? Turn Show FitGotchi off in Settings any time. Your XP and course progress still count.',
+      pageView:true, spotlightExplanation:true}
+  ];
+  let courseFeatureTour = null;
   let activeSteps = [];
   let idx = 0;
   let resizeHandler = null;
@@ -14532,6 +14546,20 @@ if(!window._pbbIsIOSSafari) {
     const gateIsCurrent = function(){ return gateToken === tourRenderToken && window.__balanceGuidedTourActive; };
     const finalLabel = idx === activeSteps.length - 1 ? 'Finish' : (step && step.returnHomeAfter ? 'Next: back to Home' : (step && step.nextLabel ? step.nextLabel : 'Next'));
     setTourGateUi(true, '', finalLabel);
+
+    if (step && step.requiresFitGotchiVisible) {
+      const update = function(){
+        if (!gateIsCurrent()) return;
+        const complete = !!(q('#fitgotchi-visibility-toggle') && window.getFitGotchiVisibility && window.getFitGotchiVisibility() === 'visible');
+        activeTourGate.complete = complete;
+        setTourGateUi(complete, complete ? 'Shown on Home. Tap See it on Home to continue.' : 'Tap the Show FitGotchi switch to turn it on.', finalLabel);
+        scheduleTourPosition(step);
+      };
+      activeTourGate = {complete:false, cleanup:function(){ window.removeEventListener('pbbFitGotchiVisibilityChanged', update); }};
+      window.addEventListener('pbbFitGotchiVisibilityChanged', update);
+      update();
+      return;
+    }
 
 if (step && step.requiresFeedPost) {
       const key = 'first-feed-post';
@@ -15428,6 +15456,7 @@ if (step && step.requiresFeedPost) {
   }
 
   function isTourForwardOnly(i){
+    if (courseFeatureTour) return true;
     if (!metaPreviewTour && !clientActivationTour) return false;
     const courseIndex = activeSteps.findIndex(function(step){ return step.sel === '#balance-foundations-course-start'; });
     return courseIndex >= 0 && i >= courseIndex;
@@ -15576,7 +15605,7 @@ if (step && step.requiresFeedPost) {
     const defaultNextLabel = (i === activeSteps.length - 1) ? 'Finish' : (step.returnHomeAfter ? 'Next: back to Home' : (step.nextLabel || 'Next'));
     document.getElementById('tour-next-btn').textContent = isPromptBeforeAction ? (step.preActionButton || 'Open') : defaultNextLabel;
     if (overlay) {
-      overlay.classList.toggle('tour-action-required', !!(displayStep.requiresWelcomeVideo || displayStep.requiresFeedPost || displayStep.requiresFoundationsLesson || displayStep.requiresWeeklyGoals || displayStep.requiresHighlightedClick || displayStep.requiresWorkoutBrowse));
+      overlay.classList.toggle('tour-action-required', !!(displayStep.requiresWelcomeVideo || displayStep.requiresFeedPost || displayStep.requiresFoundationsLesson || displayStep.requiresWeeklyGoals || displayStep.requiresHighlightedClick || displayStep.requiresWorkoutBrowse || displayStep.requiresFitGotchiVisible));
       overlay.classList.toggle('tour-edge-prompt', !!displayStep.edgePrompt);
       overlay.classList.toggle('tour-embedded-guide', !!displayStep.embeddedGuide);
       overlay.classList.toggle('tour-coach-note', !!displayStep.coachNoteGuide);
@@ -15618,7 +15647,7 @@ if (step && step.requiresFeedPost) {
     const checkpoint = step.xpReward
       || step.walkthroughReward
       || (step.title === 'Say hi to Coach Shan' ? 'finish' : null);
-    if (checkpoint) {
+    if (checkpoint && !courseFeatureTour) {
       const awardWalkthroughXp = await waitForWalkthroughAwarder(2200);
       if (!awardWalkthroughXp) {
         console.warn('[tour] walkthrough XP awarder unavailable for checkpoint', checkpoint);
@@ -15665,7 +15694,18 @@ if (step && step.requiresFeedPost) {
       else await showStep(idx, { afterPromptedAction:true });
       return;
     }
-    if (idx >= activeSteps.length - 1) { endFeatureTour(false); return; }
+    if (idx >= activeSteps.length - 1) {
+      if (courseFeatureTour) {
+        try {
+          setTourGateUi(false, 'Saving your Week 1 action...', 'Saving...');
+          await courseFeatureTour.onComplete();
+        } catch(error) {
+          setTourGateUi(true, error.message || 'Could not save yet. Tap Try again.', 'Try again');
+          return;
+        }
+      }
+      endFeatureTour(false); return;
+    }
     await showStep(idx + 1);
     } finally { tourNavigationBusy = false; }
   };
@@ -15736,6 +15776,8 @@ if (step && step.requiresFeedPost) {
   };
 
 window.endFeatureTour = function(skipped){
+    const completedCourseFeatureTour = courseFeatureTour;
+    if (completedCourseFeatureTour && skipped && tourNavigationBusy) return false;
     const completedMetaPreviewTour = metaPreviewTour;
     const completedClientActivationTour = clientActivationTour
       || window.__balancePendingClientActivation === true
@@ -15775,7 +15817,7 @@ window.endFeatureTour = function(skipped){
     setTourXpNote(false);
     try {
       if (completedMetaPreviewTour && skipped) localStorage.removeItem('featureTourComplete');
-      else localStorage.setItem('featureTourComplete','1');
+      else if (!completedCourseFeatureTour) localStorage.setItem('featureTourComplete','1');
     } catch(e){}
     if (resizeHandler) {
       window.removeEventListener('resize', resizeHandler);
@@ -15788,6 +15830,13 @@ window.endFeatureTour = function(skipped){
       document.removeEventListener('focusin', resizeHandler, true);
       document.removeEventListener('focusout', resizeHandler, true);
       resizeHandler = null;
+    }
+    if (completedCourseFeatureTour) {
+      courseFeatureTour = null;
+      window.__balanceFitGotchiCourseTour = false;
+      if (window.pbbNextSteps) window.pbbNextSteps.refresh();
+      try { window.trackBalanceActivity('fitgotchi_course_closed', {completed:!skipped,version:'fitgotchi_feedback_v1'}); } catch(e){}
+      return;
     }
     if (completedMetaPreviewTour && window.BalanceMetaAdTrial) {
       if (window.BalanceMetaPreviewSoundtrack) {
@@ -15827,6 +15876,8 @@ window.endFeatureTour = function(skipped){
   window.startFeatureTour = function(force, options){
     options = options || {};
     if (window.__balanceGuidedTourActive === true && options.restart !== true) return true;
+    courseFeatureTour = options.fitgotchiCourse && typeof options.onCourseComplete === 'function' ? {onComplete:options.onCourseComplete} : null;
+    window.__balanceFitGotchiCourseTour = !!courseFeatureTour;
     try { if (!force && localStorage.getItem('featureTourComplete') === '1') return; } catch(e){}
     completedTourGates.clear();
     completedPromptedActions.clear();
@@ -15851,7 +15902,9 @@ window.endFeatureTour = function(skipped){
       if (s.clientActivationOnly && !clientActivationTour) return false;
       return !s.condition || s.condition();
     });
-    if (metaPreviewTour || clientActivationTour) {
+    if (courseFeatureTour) {
+      activeSteps = fitgotchiCourseSteps;
+    } else if (metaPreviewTour || clientActivationTour) {
       activeSteps = requiredOnboardingTourSteps();
     } else if (!wantsFullTour(force, options)) {
       var quickSteps = activeSteps.filter(function(s){ return s.quick; });
@@ -15903,7 +15956,10 @@ window.endFeatureTour = function(skipped){
     if (document.fonts && document.fonts.ready) {
       document.fonts.ready.then(function(){ if (resizeHandler) resizeHandler(); }).catch(function(){});
     }
-    if (metaPreviewTour || clientActivationTour) {
+    if (courseFeatureTour) {
+      try { window.trackBalanceActivity('fitgotchi_course_started', {version:'fitgotchi_feedback_v1',week:1}); } catch(e){}
+      showStep(0);
+    } else if (metaPreviewTour || clientActivationTour) {
       showMetaTourWelcome();
     } else {
       showTourXpIntro();
@@ -17340,6 +17396,14 @@ window.endFeatureTour = function(skipped){
       return localStorage.getItem('onboardingComplete') === 'true' &&
         !(typeof window.isFitGotchiHidden === 'function' && window.isFitGotchiHidden());
     }
+  });
+
+  allFeatures.push({
+    id:'fitgotchi-week-one-feedback-v1', tab:'dashboard',
+    sel:'#next-obvious-steps-card [data-next-step-id="fitgotchi_intro"]',
+    fallbackSel:'#next-obvious-steps-card', title:'View Your FitGotchi',
+    body:'Your Week 1 course now includes a short FitGotchi walkthrough. Open View Your FitGotchi in To do next to learn how XP and your character provide feedback and motivation.',
+    condition:function(){ return !!(window.socialJourney && window.socialJourney.getFitGotchiIntroAction && window.socialJourney.getFitGotchiIntroAction()); }
   });
 
   var revealIdx = 0;
