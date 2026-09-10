@@ -84,6 +84,18 @@ test('invalid personalisation or a failed writer preserves a sendable fallback',
     assert.equal(await personalisePaidMetaOffer({draft,currentMessage:'Chocolate',writer:async()=>{throw Error('offline');}}),draft);
 });
 
+test('multiple quoted excerpts in one evidence item remain individually grounded', async () => {
+    const currentMessage = "Actually the kids aren't the problem. It's buying chocolate at the petrol station.";
+    const chunks = buildPaidMetaTailoredOfferChunks(currentMessage,'Lose weight','broad_pain');
+    const draft = {chunks,joined:chunks.join('\n'),replyMode:'campaign_sales_progression',model:'test',flowVariant:'broad_pain'};
+    const writer = async () => JSON.stringify({acknowledgement:'Got it, it is the petrol station chocolate that is the issue.',evidence:['"Actually the kids aren\'t the problem.","It\'s buying chocolate at the petrol station."']});
+    const result = await personalisePaidMetaOffer({draft,currentMessage,writer});
+    assert.match(result.model,/personal-ack/);
+    assert.match(result.joined,/^Got it, it is the petrol station chocolate/);
+    const invalid = await personalisePaidMetaOffer({draft,currentMessage,writer:async()=>JSON.stringify({acknowledgement:'Chocolate is the issue.',evidence:['"Chocolate","invented detail"']})});
+    assert.equal(invalid,draft);
+});
+
 test('a corrected blocker does not force the writer to repeat the superseded detail', () => {
     const currentMessage = "Actually the kids aren't the problem. It's buying chocolate at the petrol station.";
     const draft = {joined:"It's the petrol-station chocolate habit you want to change. Balance Learn is a six-week course with your workout program, meal plan and weekly check-in. It's one AUD $149 payment, no auto-renewal. Want a free personalised preview before you pay?"};

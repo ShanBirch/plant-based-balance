@@ -2672,7 +2672,10 @@ DECODED MEDIA, if present:\n${mediaContext}`;
         }), 15000, 'paid Meta personal acknowledgement');
         const parsed = JSON.parse(String(raw).replace(/^```(?:json)?\s*|\s*```$/g, '').trim());
         const acknowledgement = String(parsed.acknowledgement || '').replace(/\s*[—–]\s*/g, ', ').trim();
-        const quotes = Array.isArray(parsed.evidence) ? parsed.evidence : [];
+        // Some otherwise valid JSON puts several quoted excerpts inside one
+        // array item. Check each excerpt separately, without weakening grounding.
+        const quotes = Array.isArray(parsed.evidence)
+            ? parsed.evidence.flatMap(quote => String(quote).split(/["”]\s*,\s*["“]/)) : [];
         draft.personalAcknowledgementCandidate = {text:acknowledgement,evidence:quotes};
         const normalize = value => String(value).toLowerCase().replace(/[’‘]/g,"'").replace(/["“”]/g,'').replace(/\s+/g,' ').trim().replace(/^[,;:]+|[,;:]+$/g,'').trim();
         if (!acknowledgement) return fail('empty_acknowledgement');
