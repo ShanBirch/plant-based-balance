@@ -336,6 +336,12 @@
                 justify-self: end;
                 width: 38px;
                 height: 34px;
+                box-sizing: border-box;
+                padding: 0 !important;
+                text-indent: 0;
+                letter-spacing: 0;
+                appearance: none;
+                -webkit-appearance: none;
                 border: 1px solid var(--workout-focus-border);
                 border-radius: 12px;
                 background: var(--workout-focus-surface);
@@ -346,6 +352,14 @@
                 font-weight: 900;
                 line-height: 1;
                 cursor: pointer;
+            }
+            #view-active-workout.workout-focus-pilot #workout-focus-menu-button > svg {
+                display: block;
+                width: 20px;
+                height: 20px;
+                margin: 0;
+                fill: currentColor;
+                pointer-events: none;
             }
             #view-active-workout.workout-focus-pilot #workout-focus-progress {
                 position: sticky;
@@ -797,7 +811,7 @@
             button.setAttribute('aria-label', 'Workout options');
             button.setAttribute('aria-haspopup', 'menu');
             button.setAttribute('aria-expanded', 'false');
-            button.textContent = '⋯';
+            button.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>';
             button.addEventListener('click', toggleFocusMenu);
             topbar.appendChild(button);
         }

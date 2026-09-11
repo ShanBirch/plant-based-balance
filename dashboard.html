@@ -10014,6 +10014,8 @@ html[data-pbb-theme="light"] #view-activity-success { --activity-success-accent:
             #feed-composer-text {
                 display: block;
                 width: 100%;
+                min-width: 0;
+                box-sizing: border-box;
                 min-height: 92px;
                 max-height: 180px;
                 padding: 12px 13px;
@@ -10039,6 +10041,8 @@ html[data-pbb-theme="light"] #view-activity-success { --activity-success-accent:
             }
             .feed-composer-actions {
                 display: flex;
+                flex-wrap: wrap;
+                min-width: 0;
                 align-items: center;
                 gap: 5px;
                 margin-top: 10px;
@@ -10061,11 +10065,35 @@ html[data-pbb-theme="light"] #view-activity-success { --activity-success-accent:
                 font-weight: 700;
                 cursor: pointer;
             }
+            /* Let the comment field shrink instead of pushing Post off a phone. */
+            #view-friends input[id^="feed-comment-input-"] {
+                flex: 1 1 0% !important;
+                width: 0;
+                min-width: 0;
+                box-sizing: border-box;
+            }
+            #view-friends button[id^="feed-comment-btn-"] {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                flex: 0 0 auto;
+                min-width: 44px;
+                min-height: 44px;
+                box-sizing: border-box;
+                line-height: 1.2;
+                white-space: nowrap;
+                text-indent: 0;
+            }
             .feed-composer-action.feed-composer-action-primary {
                 background: var(--feed-composer-accent-soft);
                 color: var(--feed-composer-accent);
             }
             #feed-composer-post-btn {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                flex: 0 0 auto;
+                box-sizing: border-box;
                 min-width: 72px;
                 min-height: 44px;
                 margin-left: auto;
@@ -10077,6 +10105,9 @@ html[data-pbb-theme="light"] #view-activity-success { --activity-success-accent:
                 -webkit-text-fill-color: var(--feed-composer-action-ink);
                 font-size: 0.85rem;
                 font-weight: 800;
+                line-height: 1.2;
+                white-space: nowrap;
+                text-indent: 0;
                 cursor: pointer;
                 transition: opacity 0.2s, transform 0.2s;
             }
@@ -12949,7 +12980,7 @@ if (window._pbbIsIOSSafari) {
 document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=1789120000-six-week-meals&cohort_diets=1&video_health=2"><\/script>');
 }
 </script>
-<script src="js/dashboard/pbb-workout-swipe-player.js?v=6-focus-all-users"></script>
+<script src="js/dashboard/pbb-workout-swipe-player.js?v=7-centred-options"></script>
 <script src="js/dashboard/pbb-onboarding-test-navigator.js?v=7-hidden-phone-safe"></script>
 
 <!-- Image Modal HTML -->

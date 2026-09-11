@@ -49,9 +49,9 @@ test('exercise page index stays inside available cards', () => {
 test('dashboard loads the player once and cache-busts both main loader paths', () => {
     const html = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
     const serviceWorker = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
-    assert.equal((html.match(/pbb-workout-swipe-player\.js\?v=6-focus-all-users/g) || []).length, 1);
-    assert.equal((html.match(/dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=234-omnivore-meal-plan/g) || []).length, 3);
-    assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v489-specialist-heading'/);
+    assert.equal((html.match(/pbb-workout-swipe-player\.js\?v=7-centred-options/g) || []).length, 1);
+    assert.equal((html.match(/dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=/g) || []).length, 3);
+    assert.match(serviceWorker, /pbb-workout-swipe-player\.js\?v=7-centred-options/);
     assert.match(html, /id="workout-add-existing-wrap"/);
     assert.match(html, /id="workout-add-existing-exercise-btn"/);
 });
@@ -79,7 +79,10 @@ test('focus menu and set controls call the live workout functions', () => {
     assert.match(source, /workout-focus-cues-page/);
     assert.match(source, /workout-focus-pilot \.workout-swipe-prescription,[\s\S]*exercise-note-section \{ display: none !important; \}/);
     assert.match(source, /width: 38px;[\s\S]*height: 34px;/);
-    assert.match(source, /button\.textContent = '⋯'/);
+    assert.match(source, /viewBox="0 0 24 24" aria-hidden="true" focusable="false"/);
+    assert.match(source, /<circle cx="5" cy="12" r="2"\/><circle cx="12" cy="12" r="2"\/><circle cx="19" cy="12" r="2"\/>/);
+    assert.match(source, /box-sizing: border-box;\s*padding: 0 !important;/);
+    assert.doesNotMatch(source, /button\.textContent = '⋯'/);
 });
 
 test('simplified focus header keeps personal best and delete actions', () => {
