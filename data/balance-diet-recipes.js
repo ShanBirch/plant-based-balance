@@ -56,5 +56,33 @@
     '1. Roast diced carrot and zucchini with half the measured oil at 210°C for 18 minutes until tender. 2. Warm cooked quinoa and fold through spinach until wilted. 3. Add roast vegetables, pumpkin and hemp seeds, parsley, lemon, pepper and the remaining measured oil.','Mediterranean');
   const cookingMinutes = [5,4,22,8,20,0,0,0,0,12,8,15,25,35,15,18,40,12,12,15,20,0,25,18];
   Object.values(recipes).forEach((recipe,index) => { recipe.cook_time_mins=cookingMinutes[index]; recipe.prep_time_mins=recipe.slot.includes('snack')?5:10; });
+  function addSixWeek(id, slots, name, portions, method, minutes, cuisine) {
+    add(id, slots, name, portions, method, cuisine);
+    Object.assign(recipes[id], {image:'images/meals/six-week/'+id+'.jpg', cook_time_mins:minutes, prep_time_mins:slots.includes('snack')?5:10});
+  }
+  addSixWeek('orange-rice-breakfast','breakfast','Orange Cinnamon Rice Breakfast Bowl',{rice:220,orange:100,chia:12,hemp:15,cinnamon:1,water:150},
+    '1. Warm the weighed cooked rice with the water and cinnamon over low heat for 5 minutes, stirring. 2. Stir in chia and hemp seeds and stand for 5 minutes to thicken. 3. Peel and weigh the orange flesh, then arrange the segments on top.',5);
+  addSixWeek('savoury-quinoa-breakfast','breakfast','Savoury Quinoa Breakfast Bowl',{quinoa:180,spinach:40,tomato:40,pumpkin_seed:20,hemp:15,oil:10,parsley:3,pepper:0.3},
+    '1. Heat half the measured oil in a pan and soften chopped tomato for 3 minutes. 2. Add the weighed cooked quinoa and spinach and stir until piping hot and the spinach wilts. 3. Spoon into a bowl and finish with pumpkin seeds, hemp hearts, parsley, pepper and the remaining oil.',6);
+  addSixWeek('carrot-lentil-soup','lunch,dinner','Carrot and Lentil Soup',{lentil:200,carrot:75,tomato:40,spinach:40,pumpkin_seed:20,oil:15,turmeric:1,pepper:0.3,water:250},
+    '1. Heat half the measured oil in a saucepan. Add finely diced carrot, chopped tomato and turmeric and stir for 3 minutes. 2. Add water and simmer for 12 minutes until the carrot is tender. Stir in the weighed cooked lentils and spinach and heat until piping hot. 3. Ladle into a bowl and finish with pumpkin seeds, remaining oil and pepper.',18);
+  addSixWeek('ginger-tofu-lettuce','lunch,dinner','Ginger Tofu Lettuce Cups',{tofu:200,lettuce:60,cucumber:60,carrot:40,ginger:4,lime:10,oil:20,hemp:15,pepper:0.3},
+    '1. Drain the firm tofu, pat dry and weigh before cutting into small cubes. Fry in half the measured oil over medium heat for 8 to 10 minutes until golden. 2. Add grated ginger and stir for 1 minute. Mix diced cucumber and grated carrot with lime, pepper and remaining oil. 3. Spoon tofu and vegetables into washed lettuce leaves and sprinkle with hemp hearts.',11);
+  addSixWeek('chickpea-stuffed-potato','lunch,dinner','Chickpea Stuffed Baked Potato',{potato:250,chickpea:150,tomato:40,spinach:40,parsley:3,pumpkin_seed:15,oil:15,lemon:10,pepper:0.3},
+    '1. Scrub the potato, weigh the edible portion and prick with a fork. Bake at 210°C for 45 to 60 minutes until tender all the way through. 2. Drain and rinse chickpeas and weigh the drained portion. Heat with half the measured oil and chopped tomato for 5 minutes, then wilt in spinach. 3. Split the potato and fill with chickpeas. Add parsley, pumpkin seeds, lemon, remaining oil and pepper.',60);
+  addSixWeek('warm-lentil-rice','lunch,dinner','Warm Brown Rice and Lentil Salad',{brown_rice:210,lentil:200,cucumber:60,carrot:75,spinach:40,lemon:10,oil:15,parsley:3,pepper:0.3},
+    '1. Warm the weighed cooked brown rice and cooked lentils until piping hot with a splash of water. 2. Fold in spinach to wilt, then mix with diced cucumber and grated carrot. 3. Dress with all the measured oil, lemon, chopped parsley and pepper and serve warm.',6);
+  addSixWeek('tomato-egg-bake','breakfast,lunch,dinner','Tomato and Spinach Egg Bake',{egg:150,egg_white:100,tomato:40,spinach:40,oil:15,oregano:1,pepper:0.3},
+    '1. Heat the oven to 190°C. Brush a small baking dish with half the measured oil and add chopped tomato and spinach. 2. Pour the weighed egg whites around the vegetables and add the weighed whole eggs on top. Sprinkle with oregano and pepper. 3. Bake for 18 to 22 minutes until the whites and yolks are fully set through the centre. Drizzle with the remaining oil and serve.',22);
+  addSixWeek('lemon-chicken-soup','lunch,dinner','Lemon Chicken and Zucchini Soup',{chicken:180,zucchini:40,spinach:50,oil:25,lemon:10,dill:3,pepper:0.3,water:250},
+    '1. Slice the raw chicken thinly and cook in half the measured oil in a saucepan for 3 minutes. 2. Add water and sliced zucchini and simmer for 8 to 10 minutes until the chicken centre reaches 75°C. 3. Stir in spinach until wilted, then finish with lemon, dill, pepper and remaining oil.',15);
+  addSixWeek('salmon-herb-patties','lunch,dinner','Salmon and Dill Patties',{salmon:160,egg:50,cucumber:60,lettuce:40,oil:20,lemon:10,dill:3,pepper:0.3},
+    '1. Finely chop the weighed raw salmon and mix with the weighed beaten egg, chopped dill and pepper. Form small flat patties. 2. Heat half the measured oil in a non-stick pan over medium-low heat. Cook patties for 4 to 5 minutes per side until fully set and the centre reaches 75°C. 3. Serve with washed lettuce and sliced cucumber dressed with lemon and remaining oil.',10);
+  addSixWeek('beef-zucchini-skillet','lunch,dinner','Beef and Zucchini Skillet',{beef:180,zucchini:40,spinach:50,tomato:40,oil:25,paprika:1,parsley:3,pepper:0.3},
+    '1. Cut raw beef into thin strips. Heat half the measured oil in a pan over medium-high heat and cook the beef through, then transfer to a clean plate. 2. Add the remaining oil, sliced zucchini, chopped tomato and paprika and cook for 5 minutes. 3. Stir in spinach until wilted. Return beef and its juices and heat through; finish with parsley and pepper.',12);
+  addSixWeek('kiwi-yoghurt-cup','breakfast,am_snack,pm_snack','Kiwi Yoghurt and Seed Cup',{yogurt:200,kiwi:70,chia:10,pumpkin_seed:15,cinnamon:0.5},
+    '1. Stir chia and cinnamon into the measured unsweetened natural yoghurt. 2. Peel and weigh the kiwi flesh, slice and arrange over the yoghurt with pumpkin seeds.',0);
+  addSixWeek('orange-chia-pudding','am_snack,pm_snack','Orange Chia Pudding',{orange:100,chia:12,hemp:15,pumpkin_seed:10,water:70,cinnamon:0.5},
+    '1. Stir chia, hemp hearts, cinnamon and water together. Refrigerate for at least 20 minutes until thickened. 2. Peel and weigh the orange flesh, cut into pieces and spoon on top with pumpkin seeds.',0);
   return recipes;
 });

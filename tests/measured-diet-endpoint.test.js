@@ -7,9 +7,9 @@ test('continuation endpoint shares every style, measured nutrition and photo ide
  for(const style of engine.STYLES){
   const response=await post({weekNumber:2,dayNumber:0,userData:{quizResults:{calorie_goal:2000},foodPreferences:{diet_type:style}}});
   assert.equal(response.status,200,style);
-  const data=await response.json();assert.equal(data.library_version,3);assert.equal(data.day.meals.length,5);
+  const data=await response.json();assert.equal(data.library_version,4);assert.equal(data.day.meals.length,5);
   assert.match(data.plan_description,/AFCD Release 3/);
-  const expected=engine.buildPlan({calorie_goal:2000},{diet_type:style}).weeks[0].days[0].meals;
+  const expected=engine.buildPlan({calorie_goal:2000},{diet_type:style}).weeks[1].days[0].meals;
   assert.deepEqual(data.day.meals,expected);
  }
 });

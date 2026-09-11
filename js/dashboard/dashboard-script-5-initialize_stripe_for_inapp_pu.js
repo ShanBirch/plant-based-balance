@@ -5549,6 +5549,7 @@ async function loadExistingAiMealPlanInner() {
 
         const resolvedPhotoRows = [];
         const fullPlan = {
+            ...plan,
             id: plan.id,
             plan_name: plan.plan_name,
             plan_description: plan.plan_description,
@@ -5638,6 +5639,14 @@ function showAiPlanGenerating() {
 /**
  * Show the loaded plan
  */
+function getAiMealPlanScheduledWeek(plan, now = Date.now()) {
+    const firstWeek = plan.weeks?.[0]?.week_number || 1;
+    const started = new Date(plan.generated_at || plan.created_at || now);
+    const elapsedWeeks = Math.max(0, Math.floor((now - started.getTime()) / (7 * 86400000)));
+    const scheduled = plan.weeks?.length === 6 && Number.isFinite(elapsedWeeks) ? (elapsedWeeks % 6) + 1 : (plan.current_week || firstWeek);
+    return plan.weeks?.some(w => w.week_number === scheduled) ? scheduled : firstWeek;
+}
+
 function showAiPlanLoaded(plan) {
     const empty = document.getElementById('ai-plan-empty');
     const generating = document.getElementById('ai-plan-generating');
@@ -5652,12 +5661,9 @@ function showAiPlanLoaded(plan) {
     if (nameEl) nameEl.textContent = 'Your meal plan';
     if (descEl) descEl.textContent = plan.plan_name || 'Tailored to your goals';
 
-    // Render week tabs dynamically
+    // Six saved weeks advance weekly, then repeat. Browsing another week stays read-only.
+    _aiMealPlanCurrentWeek = getAiMealPlanScheduledWeek(plan);
     renderAiPlanWeekTabs(plan);
-
-    // Default to the first available week and today's day.
-    const firstWeek = plan.weeks?.[0]?.week_number || 1;
-    _aiMealPlanCurrentWeek = firstWeek;
     _aiMealPlanCurrentDay = getAiMealPlanTodayIndex();
     _aiMealPlanMealSelection = null;
     renderAiPlanShoppingList();
@@ -5705,9 +5711,9 @@ function renderAiPlanWeekTabs(plan) {
         html += `<button class="pill-btn ${isActive ? 'active' : ''}" onclick="switchAiPlanWeek(${w.week_number}, this)">Week ${w.week_number}</button>`;
     }
 
-    // Show "+ Next Week" button if under 4 weeks
-    if (weekCount < 4) {
-        html += `<button class="pill-btn" onclick="generateNextWeek()" style="background: linear-gradient(135deg, var(--primary), #10b981); color: white; border: none; font-size: 0.8rem;">+ Next Week</button>`;
+    // Older plans can add the remaining prepared weeks in one save.
+    if (weekCount < 6) {
+        html += `<button class="pill-btn" onclick="generateNextWeek()" style="background: linear-gradient(135deg, var(--primary), #10b981); color: white; border: none; font-size: 0.8rem;">Add remaining weeks</button>`;
     }
 
     container.innerHTML = html;
@@ -5718,6 +5724,7 @@ function renderAiPlanWeekTabs(plan) {
  */
 function switchAiPlanWeek(weekNum, btn) {
     _aiMealPlanCurrentWeek = weekNum;
+    try { window.trackBalanceActivity('prepared_meal_week_opened', {week:weekNum,library_version:4}); } catch (_) {}
     _aiMealPlanCurrentDay = getAiMealPlanTodayIndex();
     _aiMealPlanMealSelection = null;
     _aiMealPlanLoggedDayKey = '';
@@ -6186,7 +6193,7 @@ async function generateAiMealPlan(foodPreferencesOverride) {
                 : loadWeeklyEvolutionPreferences(user.id)
         ]);
         const foodPreferences = foodPreferencesOverride || loadedFoodPreferences;
-        try { window.trackBalanceActivity('diet_library_plan_started', { library_version: 3 }); } catch (e) {}
+        try { window.trackBalanceActivity('diet_library_plan_started', { library_version: 4 }); } catch (e) {}
 
         if (mealPlanNeedsPreferenceReview(foodPreferences)) {
             window._onboardingMealPlanReviewRequired = true;
@@ -6212,7 +6219,7 @@ async function generateAiMealPlan(foodPreferencesOverride) {
         if (statusEl) statusEl.textContent = 'Your weekly meal plan is ready! 🎉';
 
         const mealPlan = result.plan;
-        try { window.trackBalanceActivity('diet_library_plan_ready', { diet_type: mealPlan.diet_type, library_version: 3, meal_count: mealPlan.total_meals }); } catch (e) {}
+        try { window.trackBalanceActivity('diet_library_plan_ready', { diet_type: mealPlan.diet_type, library_version: 4, meal_count: mealPlan.total_meals }); } catch (e) {}
         _aiMealPlanCache = mealPlan;
         _aiMealPlanCurrentWeek = 1;
         _aiMealPlanCurrentDay = 0;
@@ -6598,7 +6605,7 @@ async function buildPreparedMetaPreviewMealPlan(profile, foodPreferences, signat
         try {
             window.trackBalanceActivity('meta_preview_meal_plan_generation_ready', {
                 source: 'prepared_library', template_id: plan.template_id,
-                meal_count: 35, dietary_tag_count: (foodPreferences.dietary_requirements || []).length
+                meal_count: plan.total_meals, dietary_tag_count: (foodPreferences.dietary_requirements || []).length
             });
         } catch (_) {}
         return plan;
@@ -6907,7 +6914,7 @@ async function loadActiveWeeklyEvolutionPlan(userId) {
     if (_aiMealPlanCache?.id) return _aiMealPlanCache;
     const { data, error } = await window.supabaseClient
         .from('ai_generated_meal_plans')
-        .select('id,plan_name,plan_description,generated_at,created_at,status')
+        .select('id,plan_name,plan_description,generated_at,created_at,status,total_meals')
         .eq('user_id', userId)
         .eq('status', 'active')
         .order('created_at', { ascending: false })
@@ -6956,6 +6963,10 @@ async function refreshWeeklyMealEvolutionHomeCard(options = {}) {
 
             const now = new Date();
             const plan = options.plan || await loadActiveWeeklyEvolutionPlan(user.id);
+            if (Number(plan?.total_meals) >= 210 || plan?.weeks?.length >= 6) {
+                hideWeeklyMealEvolutionHomeCard();
+                return false;
+            }
             if (engine.isPlanFreshForCycle(plan, now) || weeklyEvolutionPlanIsRecent(plan, now)) {
                 renderWeeklyMealEvolutionHomeCard('tailored');
                 return true;
@@ -6992,6 +7003,10 @@ async function refreshWeeklyMealEvolutionHomeCard(options = {}) {
 }
 
 async function buildNextWeekFromMealHistory(options) {
+    if (_aiMealPlanCache?.weeks?.length >= 6) {
+        showAiPlanLoaded(_aiMealPlanCache);
+        return true;
+    }
     const automatic = !!options?.automatic;
     const user = window.currentUser || await waitForCurrentUser();
     const engine = window.weeklyMealEvolution;
@@ -7174,6 +7189,7 @@ async function buildNextWeekFromMealHistory(options) {
 }
 
 function maybeBuildWeeklyPlanAtWeekEnd(plan) {
+    if (plan?.weeks?.length >= 6) return;
     if (_aiMealPlanGenerationInProgress) return;
     refreshWeeklyMealEvolutionHomeCard({ allowAuto: true, plan }).catch(error => {
         console.warn('Weekly meal evolution check failed:', error);
@@ -7195,8 +7211,7 @@ async function generateNextWeek() {
     const user = window.currentUser;
     if (!user || !_aiMealPlanCache || _aiMealPlanGenerationInProgress) return;
     const previous = _aiMealPlanCache;
-    const nextWeekNum = (previous.weeks || []).length + 1;
-    if (nextWeekNum > 4) { alert('You already have 4 weeks generated!'); return; }
+    if ((previous.weeks || []).length >= 6) return;
     _aiMealPlanGenerationInProgress = true;
     showAiPlanGenerating();
     try {
@@ -7207,19 +7222,14 @@ async function generateNextWeek() {
         ]);
         updateAiPlanGeneratingStatus('Calculating your next week and shopping quantities...', '35%');
         const fresh = window.buildPreparedMealPlan(targets || {}, preferences || {});
-        const week = { ...fresh.weeks[0], week_number: nextWeekNum };
-        const complete = { ...fresh, current_week: nextWeekNum, weeks: [...JSON.parse(JSON.stringify(previous.weeks || [])), week] };
-        if ((previous.weeks || []).some(w => w.days.some(d => d.meals.some(m => !(m.tags || []).includes('ingredient-calculated-v3'))))) {
-            complete.plan_description += ' These nutrition-source notes apply to your newly generated weeks; older saved weeks retain their original recipe data.';
-        }
-        complete.total_meals = complete.weeks.reduce((total, w) => total + w.days.reduce((n,d) => n+d.meals.length,0),0);
+        const remaining = fresh.weeks.filter(w => !(previous.weeks || []).some(old => old.week_number === w.week_number));
         updateAiPlanGeneratingStatus('Saving your complete plan...', '75%');
-        const saved = await window.persistBuiltMealPlan(window.supabaseClient, user.id, complete);
-        _aiMealPlanCache = saved.plan;
-        _aiMealPlanCurrentWeek = nextWeekNum;
-        _aiMealPlanCurrentDay = 0;
-        try { localStorage.setItem('ai_meal_plan', JSON.stringify(saved.plan)); } catch (e) {}
-        showAiPlanLoaded(saved.plan);
+        // Append atomically to this plan so existing meal IDs and logs remain intact.
+        const appended = await window.supabaseClient.rpc('append_prepared_meal_weeks', { p_plan_id: previous.id, p_weeks: remaining });
+        if (appended.error) throw appended.error;
+        _aiMealPlanCache = null;
+        await loadExistingAiMealPlan();
+        return;
     } catch (error) {
         _aiMealPlanCache = previous;
         updateAiPlanGeneratingStatus(error.message || 'Your next week could not be saved. Your current plan is still available.', '0%');

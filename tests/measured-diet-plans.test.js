@@ -11,7 +11,8 @@ function checkPlan(style, target, restrictions = []) {
   assert.equal(plan.diet_type, style);
   assert.equal(plan.weeks[0].days.length, 7);
   const selected = engine.normalizeSelection({dietary_requirements: [style, ...restrictions]});
-  for (const day of plan.weeks[0].days) {
+  assert.equal(plan.weeks.length, 6);
+  for (const day of plan.weeks.flatMap(w => w.days)) {
     assert.equal(day.meals.length, 5);
     const ingredients = day.meals.flatMap(m => m.ingredients);
     const actual = engine.nutrition(ingredients);
@@ -77,7 +78,7 @@ test('AFCD energy and available carbohydrate are used directly, including fibre'
   assert.match(engine.FOODS.boiled_egg.source.food_name, /boiled/i);
 });
 test('each recipe has its own photo and complete nutrient provenance', () => {
-  assert.equal(new Set(Object.values(engine.RECIPES).map(r=>r.image)).size, 24);
+  assert.equal(new Set(Object.values(engine.RECIPES).map(r=>r.image)).size, 36);
   for (const food of Object.values(engine.FOODS)) {
     assert.equal(food.source.release, 'AFCD Release 3');
     assert.match(food.source.url, /foodstandards.gov.au/);
@@ -119,28 +120,6 @@ test('save activates only after all meals exist; failed child save preserves the
   assert.ok(failed.events.some(e=>e.operation==='delete'));
 });
 
-test('next week persists all weeks before replacing the cache and preserves original IDs on failure', async () => {
-  const source=fs.readFileSync(path.join(__dirname,'../js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js'),'utf8');
-  const start=source.indexOf('async function generateNextWeek() {');
-  const fn=source.slice(start,source.indexOf('// Initialize meal plan view when meals tab is opened',start));
-  for(const fail of [false,true]) {
-    const previous=engine.buildPlan({calorie_goal:2000},{diet_type:'vegan'});
-    previous.id='old-plan';previous.weeks[0].days[0].meals[0].id='old-meal';
-    const db=fakeDatabase(fail?'ai_generated_meals':undefined);
-    const context={window:{BALANCE_PREPARED_MEAL_LIBRARY:engine,currentUser:{id:'test-user'},supabaseClient:db},console,
-      _aiMealPlanCache:previous,_aiMealPlanGenerationInProgress:false,_aiMealPlanCurrentWeek:1,_aiMealPlanCurrentDay:0,
-      showAiPlanGenerating(){},showAiPlanLoaded(){},updateAiPlanGeneratingStatus(){},alert(){},
-      waitForMealPlanDependencies:async()=>true,loadWeeklyEvolutionPreferences:async()=>({diet_type:'vegan'}),localStorage:{setItem(){}}};
-    vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../lib/meal-plan-populator.js'),'utf8'),context);
-    context.window.getUserNutritionTargets=async()=>({calorie_goal:2000});
-    vm.runInNewContext(fn,context);await context.generateNextWeek();
-    assert.equal(previous.weeks.length,1);assert.equal(previous.weeks[0].days[0].meals[0].id,'old-meal');
-    assert.equal(context._aiMealPlanGenerationInProgress,false);
-    if(fail){assert.equal(context._aiMealPlanCache,previous);assert.ok(!db.events.some(e=>e.payload?.status==='archived'));}
-    else{assert.equal(context._aiMealPlanCache.weeks.length,2);assert.equal(context._aiMealPlanCache.total_meals,70);assert.equal(context._aiMealPlanCurrentWeek,2);}
-  }
-});
-
 test('changing eating style preserves separately saved allergies but removes explicitly unticked derived restrictions',async()=>{
   for(const previousRequirements of [[],['gluten_free']]){
     const stored=new Map([['user_food_preferences',JSON.stringify({allergies:['nuts','gluten'],dietary_requirements:previousRequirements})]]);
@@ -160,7 +139,7 @@ test('challenge auto-plans honour saved style and use measured recipes even with
     vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../lib/meal-plan-populator.js'),'utf8'),context);
     const result=await context.window.populateVeganChallengeMealPlan(fakeDatabase(undefined,preferences),'test-user',{calorie_goal:2000});
     assert.equal(result.plan.diet_type,preferences?.dietary_requirements?.[0]||preferences?.diet_type||'vegan');
-    assert.equal(result.plan.library_version,3);
+    assert.equal(result.plan.library_version,4);
     if(preferences?.allergies)assert.ok(result.plan.weeks[0].days.flatMap(d=>d.meals.flatMap(m=>m.ingredients)).every(i=>!engine.FOODS[i.food_id].tags.includes('egg')));
   }
 });

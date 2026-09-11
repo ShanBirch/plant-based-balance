@@ -520,8 +520,8 @@ if (window._pbbIsIOSSafari) {
             'lib/weekly-meal-evolution.js?v=1',
             'data/vegan-challenge-meal-plan.js',
             'data/meal-ingredient-nutrients.js?v=3',
-            'data/balance-diet-recipes.js?v=3',
-            'lib/prepared-diet-engine.js?v=3',
+            'data/balance-diet-recipes.js?v=4-six-weeks',
+            'lib/prepared-diet-engine.js?v=4-six-weeks',
             'lib/meal-plan-photo-resolver.js?v=1',
             'lib/meal-plan-populator.js?v=6-saved-challenge-diets',
             'lib/weekly-wrapped.js?v=monthly-wrapped-layout-v3'
@@ -546,8 +546,8 @@ if (window._pbbIsIOSSafari) {
     document.write('<script src="lib/weekly-meal-evolution.js?v=1"><\/script>');
     document.write('<script src="data/vegan-challenge-meal-plan.js"><\/script>');
     document.write('<script src="data/meal-ingredient-nutrients.js?v=3"><\/script>');
-    document.write('<script src="data/balance-diet-recipes.js?v=3"><\/script>');
-    document.write('<script src="lib/prepared-diet-engine.js?v=3"><\/script>');
+    document.write('<script src="data/balance-diet-recipes.js?v=4-six-weeks"><\/script>');
+    document.write('<script src="lib/prepared-diet-engine.js?v=4-six-weeks"><\/script>');
     document.write('<script src="lib/meal-plan-photo-resolver.js?v=1"><\/script>');
     document.write('<script src="lib/meal-plan-populator.js?v=6-saved-challenge-diets"><\/script>');
     document.write('<script src="lib/weekly-wrapped.js?v=monthly-wrapped-layout-v3"><\/script>');
@@ -12885,7 +12885,7 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=244-iphone-keyboard&cohort_diets=1&video_health=2';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=1789120000-six-week-meals&cohort_diets=1&video_health=2';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
@@ -12927,7 +12927,7 @@ if (window._pbbIsIOSSafari) {
         var s = document.createElement('script');
         s.async = false;
         s.dataset.metaTrialLoader = String(attempt);
-        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=244-iphone-keyboard&cohort_diets=1&video_health=2&meta_retry=' + attempt;
+        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=1789120000-six-week-meals&cohort_diets=1&video_health=2&meta_retry=' + attempt;
         s.onload = function() {
             if (window._pbbScript5Complete && window._switchAppTabReady && typeof window._switchAppTabReal === 'function') {
                 sessionStorage.removeItem('pbb_meta_script5_recovery_v1');
@@ -12946,7 +12946,7 @@ if (window._pbbIsIOSSafari) {
         document.head.appendChild(s);
     })(0);
 } else {
-document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=244-iphone-keyboard&cohort_diets=1&video_health=2"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=1789120000-six-week-meals&cohort_diets=1&video_health=2"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=6-focus-all-users"></script>
@@ -13984,6 +13984,7 @@ if(!window._pbbIsIOSSafari) {
   }
 
   const steps = [
+    { tab:'meals', sel:'#browse-plans-pill', title:'Six weeks of meals, ready to open', body:'Open your meal plan to browse all six weeks. Each week keeps the five-meal rhythm, with different recipes, photos and a shopping list matched to your portions. Your plan moves to the next week automatically and repeats after week six.' },
     { tab:'learning', sel:'#course-card-balance-master', fallbackSel:'#balance-path', title:'Your weekly Master actions', body:'Master has three or four required actions each week. Save your answers and plans, submit your lift videos, and see each completed action recorded for you and Shannon. Quizzes and reflections complete your week.' },
     { tab:'meals', sel:'#browse-plans-pill', title:'Meals that match your eating style', body:'Choose your eating style and food restrictions in Profile. Your weekly recipes include measured portions, matching photos and a shopping list built from those portions.' },
     { tab:'learning', sel:'#learning-content', title:'Make your learning stick', body:'After a perfect quiz, save one thing you learned and how you could use it. Your required reflection stays with the lesson for you and your coach.' },
@@ -17477,6 +17478,8 @@ window.endFeatureTour = function(skipped){
     condition:function(){ return window.metaAdTrialMode !== true && localStorage.getItem('onboardingComplete') === 'true'; }
   });
 
+  allFeatures.push({ id:'six-prepared-meal-weeks-v1', tab:'meals', sel:'#browse-plans-pill', title:'Six weeks of meals, ready to open', body:'Open your meal plan to browse all six weeks. Each week keeps the five-meal rhythm, with different recipes, photos and a shopping list matched to your portions. Your plan moves to the next week automatically and repeats after week six.' });
+
   var revealIdx = 0;
   var revealSteps = [];
   var revealResizeHandler = null;
@@ -18773,7 +18776,7 @@ if (window._pbbIsIOSSafari) {
 </script>
 
 <link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=123-profile-safe-area">
-<link rel="stylesheet" href="css/dashboard/pbb-meal-plan.css?v=2">
+<link rel="stylesheet" href="css/dashboard/pbb-meal-plan.css?v=3-six-weeks">
 <link rel="stylesheet" href="css/dashboard/pbb-onboarding-comeback.css?v=9-learn-welcome">
 <link rel="stylesheet" href="css/dashboard/pbb-onboarding-foundations.css?v=13-iphone-keyboard">
 

@@ -1,8 +1,32 @@
 /* The focused plan shares one paired palette across its header, recipes and list. */
+#view-meals {
+    --meal-safe-top: env(safe-area-inset-top, 0px);
+    --meal-safe-bottom: env(safe-area-inset-bottom, 0px);
+    padding-bottom: calc(100px + var(--meal-safe-bottom));
+}
+#view-meals > .app-header {
+    padding-top: calc(12px + var(--meal-safe-top)) !important;
+}
+@media (max-width: 560px), (max-height: 560px) and (pointer: coarse) {
+    #view-meals {
+        --meal-safe-top: max(42px, env(safe-area-inset-top, 0px));
+        --meal-safe-bottom: max(24px, env(safe-area-inset-bottom, 0px));
+    }
+}
+html #ai-plan-loaded #ai-plan-week-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    overflow: visible;
+}
+html #ai-plan-loaded #ai-plan-week-tabs .pill-btn { min-width: 0; padding-inline: 6px; }
+@media (min-width: 600px) {
+    html #ai-plan-loaded #ai-plan-week-tabs { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+}
 #meal-plan-store,
 #ai-plan-meals-list .ai-plan-hero {
     /* Leave room for the sticky Meals header when navigation scrolls here. */
-    scroll-margin-top: calc(90px + env(safe-area-inset-top, 0px));
+    scroll-margin-top: calc(90px + var(--meal-safe-top, env(safe-area-inset-top, 0px)));
 }
 html #ai-plan-loaded.ai-plan-focus-layout {
     --meal-plan-ink: #171613;
