@@ -5,4 +5,12 @@
 .journey-visual { margin:24px 0 0; padding:20px; background:#faf7ef; border:1px solid #e0d2b1; border-radius:16px; }
 .journey-visual figcaption { font:700 18px/1.35 Outfit,sans-serif; color:#253026; -webkit-text-fill-color:#253026; }
 .journey-visual .plan-flow { margin:18px 0 0; }
+.journey-curriculum { margin-top:26px; }
+.journey-curriculum .curriculum-duration { margin:6px 0 16px; color:#66562f; -webkit-text-fill-color:#66562f; font-size:13px; }
+.journey-curriculum ol { list-style:none; padding:0; margin:0; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.journey-curriculum li { display:flex; align-items:flex-start; gap:12px; padding:16px; border:1px solid #e5dbc5; border-radius:12px; background:#faf7ef; }
+.curriculum-week { flex-shrink:0; padding-top:2px; font-size:12px; font-weight:700; color:#805f1e; -webkit-text-fill-color:#805f1e; }
+.journey-curriculum h4 { margin:0 0 6px; font:700 16px/1.35 Outfit,sans-serif; color:#253026; -webkit-text-fill-color:#253026; }
+.journey-curriculum li p { margin:0; font-size:13px; line-height:1.5; }
+@media(max-width:700px) { .journey-curriculum ol { grid-template-columns:1fr; } .journey-curriculum li { padding:14px 12px; gap:10px; } }
 @media(max-width:600px) { .journey-dropdown .learn-plan-body > h3 { font-size:18px; } .journey-dropdown .learn-plan-body > p { font-size:14px; } .journey-visual { padding:14px 10px; } .journey-visual figcaption { font-size:16px; } }
