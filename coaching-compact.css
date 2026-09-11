@@ -1,6 +1,6 @@
 .coaching-plan-preview { margin:16px 0; scroll-margin-top:90px; }
 .coaching-learn-grid { display:grid; grid-template-columns:1.1fr 1fr; gap:30px; align-items:start; }
-.coaching-learn-grid .offer-list { margin-top:8px; }
+.coaching-learn-grid .offer-list { margin-top:8px; margin-bottom:24px; }
 .coaching-learn-price { padding:22px; border:1px solid #ddc99a; border-radius:16px; background:#faf6eb; color:#34372b; -webkit-text-fill-color:#34372b; }
 .coaching-learn-price .learn-hero-offer { margin:0 0 18px; }
 .coaching-learn-price .learn-offer-label { flex-basis:100%; }
