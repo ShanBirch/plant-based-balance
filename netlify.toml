@@ -926,3 +926,7 @@
   to = "/login.html"
   status = 200
   force = false # Only if not exists
+
+[[edge_functions]]
+  function = "change-membership"
+  path = "/.netlify/functions/change-membership"

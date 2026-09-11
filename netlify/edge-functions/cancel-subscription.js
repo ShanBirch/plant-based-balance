@@ -46,7 +46,7 @@ function cancellationTiming(subscription, nowSeconds) {
     const metadata = subscription.metadata || {};
     const commitmentWeeks = cleanInteger(metadata.commitment_weeks);
     const commitmentEnd = commitmentWeeks
-        ? cleanInteger(subscription.start_date || subscription.created) + (commitmentWeeks * 7 * DAY_SECONDS)
+        ? cleanInteger(metadata.commitment_start || subscription.start_date || subscription.created) + (commitmentWeeks * 7 * DAY_SECONDS)
         : 0;
     const hasNoticePolicy = cleanInteger(metadata.cancellation_notice_days) === NOTICE_DAYS;
     const policyEnd = hasNoticePolicy
@@ -137,6 +137,15 @@ export default async (request) => {
         }
         const updated = [];
         for (const subscription of subscriptions) {
+            // Release our scheduled upgrade before cancelling or pausing; retain the active plan.
+            if (subscription.schedule) {
+                const id = typeof subscription.schedule === 'string' ? subscription.schedule : subscription.schedule.id;
+                const schedule = await stripeRequest(stripeKey, 'GET', '/v1/subscription_schedules/' + encodeURIComponent(id));
+                if (schedule.metadata?.balance_membership_change === 'website_v1') {
+                    await stripeRequest(stripeKey, 'POST', '/v1/subscription_schedules/' + encodeURIComponent(id) + '/release', new URLSearchParams({preserve_cancel_date:'true'}));
+                    subscription.schedule = null;
+                }
+            }
             const existing = subscriptionSummary(subscription, nowSeconds);
             if (action === "pause") {
                 if (!existing.pauseAvailable) {
