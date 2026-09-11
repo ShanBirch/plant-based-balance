@@ -15250,12 +15250,17 @@ if (step && step.requiresFeedPost) {
         ? window.innerHeight - Math.max(52, guideHeader.getBoundingClientRect().bottom)
           - target.getBoundingClientRect().height - (step.tourBottomReserve || 24) - 36
         : window.innerHeight - 180;
-      const height = Math.min(bubble.offsetHeight || 180, Math.max(guideHeader ? 70 : 100, availableHeight));
+      const height = Math.min(bubble.offsetHeight || 180, Math.max(guideHeader ? 40 : 100, availableHeight));
       const reservedHeight = Math.max(height + 48, belowSpace.offsetHeight);
       belowSpace.style.cssText = 'flex:none;width:100%;overflow-anchor:none;height:' + reservedHeight + 'px;';
       bubble.style.maxHeight = height + 'px';
       bubble.style.overflowY = 'auto';
       const bottomLimit = window.innerHeight - height - (step.tourBottomReserve || 24) - 18;
+      if (allowScroll && guideHeader) {
+        const topLimit = Math.max(52, guideHeader.getBoundingClientRect().bottom) + 12;
+        const currentRect = target.getBoundingClientRect();
+        if (currentRect.top < topLimit) scrollTourTargetBy(target, currentRect.top - topLimit);
+      }
       const rect = target.getBoundingClientRect();
       if (allowScroll && rect.bottom > bottomLimit) scrollTourTargetBy(target, rect.bottom - bottomLimit);
     } else if (belowSpace) {

@@ -4,6 +4,24 @@ const fs = require('node:fs');
 const path = require('node:path');
 const html = fs.readFileSync(path.join(__dirname, '..', 'dashboard.html'), 'utf8');
 const styles = fs.readFileSync(path.join(__dirname, '..', 'css/dashboard/pbb-premium-overlays.css'), 'utf8');
+test('FitGotchi rotation restores targets below headers with zero or nonzero safe insets',()=>{
+  const from=html.indexOf('      const guideHeader = step.requiresFitGotchiVisible');
+  const to=html.indexOf('    } else if (belowSpace)',from);
+  const placeBelow=new Function('step','target','bubble','belowSpace','q','window','allowScroll','scrollTourTargetBy',html.slice(from,to));
+  for(const inset of [0,44]){
+    for(const viewportHeight of [390,568,700]){
+      let top=-512;
+      const headerBottom=76+inset;
+      const target={getBoundingClientRect:()=>({top,bottom:top+100,height:100})};
+      const bubble={offsetHeight:180,style:{}};
+      placeBelow({fitgotchiHomePreview:true,tourBottomReserve:90},target,bubble,{offsetHeight:0,style:{}},
+        ()=>({getBoundingClientRect:()=>({bottom:headerBottom})}),{innerHeight:viewportHeight},true,
+        (_,delta)=>{top-=delta});
+      assert.ok(top>=headerBottom+12,'the character stays below the safe header');
+      assert.ok(top+100+18+parseFloat(bubble.style.maxHeight)<=viewportHeight-90,'the scrollable card clears navigation');
+    }
+  }
+});
 const start = html.indexOf('    if (pageView) {', html.indexOf('function positionBubbleAndSpotlight'));
 const end = html.indexOf('    const spaceBelow', start);
 const place = new Function('step', 'r', 'bubble', 'vh', 'bubbleH', `
