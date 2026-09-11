@@ -2655,6 +2655,7 @@ function isPaidMetaBareGoalMessage(message = '') {
 function selectFastDeterministicPaidMetaProgression({ metaAdOpeningTurn = false, draft = null, requiresMediaAnalysis = false, currentMessage = '' } = {}) {
     if (requiresMediaAnalysis) return null;
     if (currentMessage && draft?.replyMode === 'campaign_sales_progression' && draft?.paidMetaVerifiedAccessFaq !== true
+        && draft?.model !== 'deterministic_paid_meta_autonomy_v1'
         && (/\?/.test(currentMessage)
             || (paidMetaOutboundAskedForBlocker(draftTextFromDraft(draft)) && !isPaidMetaBareGoalMessage(currentMessage)))) return null;
     // Offers provide the factual scaffold only. personalisePaidMetaOffer runs
