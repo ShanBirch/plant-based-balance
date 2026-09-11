@@ -1567,6 +1567,11 @@ function buildPaidMetaTailoredOfferChunks(blockerText = '', goalText = '', flowV
     const turn = String(blockerText || '');
     const goal = String(goalText || '');
     const daysPerWeek = turn.match(/\b(\d+|one|two|three|four|five|six|seven)\s+days?\s+(?:a|per)\s+week\b/i)?.[1] || '';
+    // Outage copy must still reflect a stated interest/motivation blocker.
+    // Strip negated clauses before matching so "I'm not bored" stays excluded.
+    const interestEvidence = turn.split(/[.!?]|\bbut\b/i).filter(clause =>
+        !/\b(?:not|never|don['’]?t|doesn['’]?t|isn['’]?t|aren['’]?t)\b/i.test(clause)).join(' ');
+    const interestBlocker = /\b(?:los(?:e|ing) (?:interest|motivation)|get(?:ting)? bored|boredom)\b/i.test(interestEvidence);
     const asksCanWork = /\bcan\b[^.!?]{0,90}\bwork\b/i.test(turn);
     const wantsFatLossAndMuscle = /\b(?:lose|fat|weight)\b/i.test(goal)
         && /\b(?:build|muscle|strong|strength)\b/i.test(goal);
@@ -1610,7 +1615,9 @@ function buildPaidMetaTailoredOfferChunks(blockerText = '', goalText = '', flowV
         ? 'a meal plan fitted to your dietary preferences'
         : 'a plant-based meal plan';
     if (flowVariant === 'broad_pain') {
-        let compactAcknowledgement = 'That makes sense.';
+        let compactAcknowledgement = interestBlocker
+            ? 'Keeping your interest matters, so the plan needs to feel manageable and worth returning to.'
+            : 'That makes sense.';
         if (/\b(?:can|could|do)\b[^.!?]{0,100}\b(?:home|dumbbells?)\b/i.test(turn)) {
             compactAcknowledgement = 'Yep, your workouts can fit home training and the equipment you have, with a schedule you can repeat.';
         } else if (daysPerWeek && asksCanWork && wantsFatLossAndMuscle) {
