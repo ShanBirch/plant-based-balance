@@ -1509,7 +1509,7 @@ function isExplicitPaidMetaPreviewRequest(value = '') {
     // discovery turn, including when it follows goal/blocker context.
     return /\b(?:can|could|may) i (?:just )?(?:see|view|open|try|look at|have a look at) (?:it|the app|(?:the |my |a )?(?:free )?(?:personalised |personalized )?(?:app )?preview|the program|the setup)\b/i.test(message)
         || /\bi (?:just )?(?:want|would like|'d like) (?:the |my |a )?(?:free )?(?:personalised |personalized )?(?:app )?preview\b/i.test(message)
-        || /\b(?:show|send|give) me (?:the |my |a )?(?:free )?(?:personalised |personalized )?(?:app )?preview\b/i.test(message)
+        || /\b(?:show|send|give) (?:me )?(?:the |my |a )?(?:free )?(?:personalised |personalized )?(?:app )?preview\b/i.test(message)
         || /\bopen (?:me )?(?:the |my |a )?(?:free )?(?:personalised |personalized )?(?:app )?preview\b/i.test(message)
         || /\bi (?:just )?(?:want|would like|'d like) to (?:see|view|open|try|look at|have a look at) (?:it|the app|(?:the |my |a )?(?:free )?(?:personalised |personalized )?(?:app )?preview|the program|the setup)\b/i.test(message);
 }

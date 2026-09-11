@@ -10,6 +10,7 @@ const history = [{ direction: 'out', text: "What's the main change you'd like to
 const qualifier = { commercial_stage: 'engaged', facts: {} };
 const requests = [
     'Could I have a look at it first?',
+    'Please send the free preview',
     'I want to get fit again. Honestly not sure what stops me. Yes, getting back into a routine. Can I see the free preview?',
     'Can I see the free preview?',
     'Could I try my personalised app preview?',
