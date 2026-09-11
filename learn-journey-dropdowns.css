@@ -1,0 +1,8 @@
+.journey-dropdowns { margin-top:28px; }
+.journey-dropdown summary small { margin:0 0 4px; color:#805f1e; -webkit-text-fill-color:#805f1e; }
+.journey-dropdown .learn-plan-body > h3 { margin:0 0 12px; font-size:21px; }
+.journey-dropdown .learn-plan-body > p { max-width:760px; font-size:15px; }
+.journey-visual { margin:24px 0 0; padding:20px; background:#faf7ef; border:1px solid #e0d2b1; border-radius:16px; }
+.journey-visual figcaption { font:700 18px/1.35 Outfit,sans-serif; color:#253026; -webkit-text-fill-color:#253026; }
+.journey-visual .plan-flow { margin:18px 0 0; }
+@media(max-width:600px) { .journey-dropdown .learn-plan-body > h3 { font-size:18px; } .journey-dropdown .learn-plan-body > p { font-size:14px; } .journey-visual { padding:14px 10px; } .journey-visual figcaption { font-size:16px; } }
