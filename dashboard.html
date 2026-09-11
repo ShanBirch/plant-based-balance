@@ -13654,6 +13654,11 @@ if(!window._pbbIsIOSSafari) {
   #guided-tour-overlay.tour-control-prompt #guided-tour-bubble .tour-title { font-size: .94rem !important; line-height: 1.18; margin-bottom: 3px; }
   #guided-tour-overlay.tour-control-prompt #guided-tour-bubble .tour-body { font-size: .76rem !important; line-height: 1.3; margin-bottom: 5px; }
   #guided-tour-overlay.tour-control-prompt #tour-gate-note { font-size: .68rem !important; padding: 6px 8px !important; }
+  /* Keep the character and its explanation together while this short guide is open. */
+  #tamagotchi-widget-container.tour-fitgotchi-preview {
+    height: clamp(100px, calc(100vh - 360px), 320px) !important;
+    height: clamp(100px, calc(100dvh - 360px), 320px) !important;
+  }
   #guided-tour-overlay.tour-embedded-guide:not(.tour-gate-complete) #guided-tour-bubble,
   #guided-tour-overlay.tour-embedded-guide:not(.tour-gate-complete) #guided-tour-spotlight {
     display: none;
@@ -14273,7 +14278,7 @@ if(!window._pbbIsIOSSafari) {
       pageView:true, spotlightExplanation:true, allowTargetInteraction:true, requiresFitGotchiVisible:true, nextLabel:'Take me home'},
     {tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Make it your own',
       body:'Your FitGotchi grows with the XP you earn. Keep it on if seeing your progress helps motivate you. You can turn Show FitGotchi on or off in Settings any time. Your progress still counts either way.',
-      controlPromptPosition:'below', tourBottomReserve:90, pageView:true, spotlightExplanation:true}
+      controlPromptPosition:'below', tourBottomReserve:90, fitgotchiHomePreview:true, pageView:true, spotlightExplanation:true}
   ];
   let courseFeatureTour = null;
   let activeSteps = [];
@@ -14358,7 +14363,7 @@ if(!window._pbbIsIOSSafari) {
     tourPositionFrame = requestAnimationFrame(function(){
       tourPositionFrame = 0;
       if (renderToken !== tourRenderToken || !window.__balanceGuidedTourActive) return;
-      positionBubbleAndSpotlight(currentTourPositionTarget(displayStep), displayStep);
+      positionBubbleAndSpotlight(currentTourPositionTarget(displayStep), displayStep, options);
     });
     if (options.settle) {
       if (tourSettleTimer) clearTimeout(tourSettleTimer);
@@ -14551,7 +14556,7 @@ if(!window._pbbIsIOSSafari) {
         document.getElementById('tour-title').textContent = complete ? step.enabledTitle : step.title;
         document.getElementById('tour-body').textContent = complete ? step.enabledBody : step.body;
         setTourGateUi(complete, complete ? '' : 'Turn it on now using the Show FitGotchi switch above.', finalLabel);
-        scheduleTourPosition(step);
+        scheduleTourPosition(step, {initialPlacement:true});
       };
       activeTourGate = {complete:false, cleanup:function(){
         window.removeEventListener('pbbFitGotchiVisibilityChanged', update);
@@ -15187,7 +15192,9 @@ if (step && step.requiresFeedPost) {
     bubble.style.maxHeight = '';
     bubble.style.overflowY = '';
     // This card is below its switch, so it can safely scroll on short screens.
-    bubble.style.pointerEvents = step && step.requiresFitGotchiVisible ? 'auto' : '';
+    bubble.style.pointerEvents = step && step.controlPromptPosition === 'below' ? 'auto' : '';
+    const fitgotchiPreview = q('#tamagotchi-widget-container');
+    if (fitgotchiPreview) fitgotchiPreview.classList.toggle('tour-fitgotchi-preview', !!(step && step.fitgotchiHomePreview));
     const goalsNavigation = !!(step && step.requiresWeeklyGoals && isVisible(q('#weekly-goals-modal')));
     if (overlay) overlay.classList.toggle('tour-goals-navigation', goalsNavigation);
     const navigationOnly = !!(step && ((step.coachNoteGuide && isVisible(q('#meta-ad-trial-inbox-preview-card'))) || (step.checkinExplainerGuide && isVisible(q('#coach-checkin-explainer'))) || goalsNavigation ||
@@ -15237,8 +15244,15 @@ if (step && step.requiresFeedPost) {
         belowSpace.setAttribute('aria-hidden', 'true');
         target.after(belowSpace);
       }
-      const height = Math.min(bubble.offsetHeight || 180, Math.max(100, window.innerHeight - 180));
-      belowSpace.style.cssText = 'flex:none;width:100%;height:' + (height + 48) + 'px;';
+      const guideHeader = step.requiresFitGotchiVisible ? q('#view-profile .app-header')
+        : step.fitgotchiHomePreview ? q('#view-dashboard .app-header') : null;
+      const availableHeight = guideHeader
+        ? window.innerHeight - Math.max(52, guideHeader.getBoundingClientRect().bottom)
+          - target.getBoundingClientRect().height - (step.tourBottomReserve || 24) - 36
+        : window.innerHeight - 180;
+      const height = Math.min(bubble.offsetHeight || 180, Math.max(guideHeader ? 70 : 100, availableHeight));
+      const reservedHeight = Math.max(height + 48, belowSpace.offsetHeight);
+      belowSpace.style.cssText = 'flex:none;width:100%;overflow-anchor:none;height:' + reservedHeight + 'px;';
       bubble.style.maxHeight = height + 'px';
       bubble.style.overflowY = 'auto';
       const bottomLimit = window.innerHeight - height - (step.tourBottomReserve || 24) - 18;
@@ -15602,6 +15616,7 @@ if (step && step.requiresFeedPost) {
     document.getElementById('tour-counter').textContent = 'Step ' + (i+1) + ' / ' + activeSteps.length;
     document.getElementById('tour-title').textContent = (resolved.usedFallback && displayStep.fallbackTitle) ? displayStep.fallbackTitle : displayStep.title;
     document.getElementById('tour-body').textContent = (resolved.usedFallback && displayStep.fallbackBody) ? displayStep.fallbackBody : displayStep.body;
+    if (courseFeatureTour) document.getElementById('guided-tour-bubble').scrollTop = 0;
     setTourXpNote(false);
     updateTourBackControl(i);
     const defaultNextLabel = (i === activeSteps.length - 1) ? 'Finish' : (step.returnHomeAfter ? 'Next: back to Home' : (step.nextLabel || 'Next'));
@@ -15805,6 +15820,8 @@ window.endFeatureTour = function(skipped){
     clearActiveTourGate();
     resetTourTemporaryTargets();
     const overlay = document.getElementById('guided-tour-overlay');
+    const fitgotchiPreview = q('#tamagotchi-widget-container');
+    if (fitgotchiPreview) fitgotchiPreview.classList.remove('tour-fitgotchi-preview');
     if (overlay) overlay.classList.remove('active');
     if (overlay) overlay.classList.remove('tour-navigation-only', 'tour-forward-only');
     if (overlay) overlay.classList.remove('tour-action-required', 'tour-gate-complete', 'tour-page-view', 'tour-feature-view', 'tour-tap-target', 'tour-edge-prompt', 'tour-control-prompt', 'tour-target-interactive', 'tour-embedded-guide', 'tour-coach-note', 'tour-checkin-explainer', 'tour-typing', 'tour-transitioning', 'meta-tour-welcome-active');
