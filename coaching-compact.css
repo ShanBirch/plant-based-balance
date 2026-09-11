@@ -12,3 +12,12 @@
 .coaching-payment-details { margin-top:14px; border-top:1px solid #ddc99a; }
 .coaching-payment-details p { margin-bottom:0; }
 @media(max-width:750px) { .coaching-learn-grid { grid-template-columns:1fr; gap:16px; } .coaching-learn-price { padding:18px; } }
+
+.tailored-plan-heading { margin: 44px 0 24px; color: #263326; font-size: clamp(2rem, 4vw, 3rem); line-height: 1.15; }
+.support-body > .offer-list { margin-bottom: 24px; }
+@media (max-width: 900px) {
+  body.bio-page { --coaching-safe-top: max(24px, env(safe-area-inset-top, 0px)); --coaching-safe-bottom: max(16px, env(safe-area-inset-bottom, 0px)); padding-bottom: calc(56px + var(--coaching-safe-bottom)); }
+  body.bio-page .site-header:has(.balance-navigation) { padding-top: calc(8px + var(--coaching-safe-top)); }
+  body.bio-page .balance-menu-drawer { padding-top: calc(14px + var(--coaching-safe-top)); padding-bottom: calc(24px + var(--coaching-safe-bottom)); }
+  .coaching-plan-preview .learn-plan { scroll-margin-top: calc(90px + var(--coaching-safe-top)); }
+}
