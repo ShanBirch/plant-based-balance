@@ -31,7 +31,7 @@ for (const version of versions.data) {
 }
 await mkdir('work', { recursive: true });
 await writeFile('work/app-store-screenshots.json', JSON.stringify(result, null, 2));
-console.log(JSON.stringify(result, null, 2));
+console.log(JSON.stringify(result.map(v => ({ ...v, locales: v.locales.map(l => ({ ...l, sets: l.sets.map(s => ({ ...s, screenshots: s.screenshots.map(p => ({ fileName: p.fileName, sourceFileChecksum: p.sourceFileChecksum, assetDeliveryState: p.assetDeliveryState })) })) })) })), null, 2));
 
 if (process.env.VERIFY_SCREENSHOTS === 'true') {
   const version = result.find(v => v.version === process.env.IOS_VERSION_STRING);
@@ -42,6 +42,7 @@ if (process.env.VERIFY_SCREENSHOTS === 'true') {
   for (const locale of ['en-AU', 'en-US']) {
     const sets = version.locales.find(l => l.locale === locale)?.sets;
     const shots = sets?.find(s => s.display === 'APP_IPHONE_67')?.screenshots;
+    if (sets?.some(s => s.display !== 'APP_IPHONE_67' && s.screenshots.length)) throw new Error(`Legacy device screenshots remain for ${locale}`);
     if (!shots || shots.length !== expected.length) throw new Error(`Screenshot count mismatch for ${locale}`);
     for (const [i, expectedShot] of expected.entries()) {
       if (shots[i].sourceFileChecksum !== expectedShot.md5 || shots[i].assetDeliveryState?.state !== 'COMPLETE') {

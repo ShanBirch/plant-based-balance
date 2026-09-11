@@ -20,6 +20,10 @@ on:
         description: What is new in this version
         required: true
         default: "Improves exercise video uploads on iPhone, especially for larger workout clips, by transferring the selected file through the native app instead of browser memory."
+      review_notes:
+        description: Optional notes for App Review; blank preserves existing notes
+        required: false
+        default: ""
 
 jobs:
   submit:
@@ -50,5 +54,5 @@ jobs:
           PROCESSING_WAIT_MINUTES: "35"
           SUBMIT_FOR_REVIEW: ${{ inputs.submit_for_review }}
           IOS_RELEASE_NOTES: ${{ inputs.release_notes }}
-          IOS_REVIEW_NOTES: "This update improves custom exercise video uploads on iPhone. The app now selects and uploads larger workout clips using a native file-based upload path, avoiding WebView memory pressure that could interrupt the app. To review: sign in, open Feed, choose the exercise video upload flow, select a video from Files or Photos, complete the exercise details, and submit."
+          IOS_REVIEW_NOTES: ${{ inputs.review_notes }}
         run: node scripts/submit-ios-appstore.mjs
