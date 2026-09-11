@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v525-fitgotchi-moves'; // v525: verified character moves and relaxed resting loops
+const CACHE_NAME = 'pbb-app-v526-fitgotchi-navigation'; // v526: open FitGotchi Settings and return Home after enabling
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

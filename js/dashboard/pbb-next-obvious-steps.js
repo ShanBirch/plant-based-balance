@@ -1690,6 +1690,10 @@
     if (button.getAttribute('data-next-step-direct') === 'true') return;
     if (button.getAttribute('data-next-step-readonly') === 'true') return;
     var id = button.getAttribute('data-next-step-id');
+    if (id === 'fitgotchi_intro') {
+      window.pbbNextSteps.runAction(id);
+      return;
+    }
     var action = ACTIONS.find(function(item){ return item.id === id; });
     if (action && typeof action.action === 'function') action.action();
     setTimeout(function(){ refreshDailyStatus({ force: true }); }, 1400);

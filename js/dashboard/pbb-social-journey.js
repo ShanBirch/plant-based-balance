@@ -1863,9 +1863,18 @@
   }
 
   function openFitGotchiIntro() {
-    if (!canOpenFitGotchiIntro() || typeof window.startFeatureTour !== 'function') return false;
+    if (!canOpenFitGotchiIntro()) return false;
     closeJourney();
     closeOnboarding();
+    // Open the real destination before starting the guide, including while
+    // deferred walkthrough code is still loading on a phone.
+    if (typeof window.switchAppTab === 'function') window.switchAppTab('profile');
+    const setting = document.getElementById('settings-fitgotchi-visibility');
+    if (setting) setting.scrollIntoView({block:'center', behavior:'auto'});
+    if (typeof window.startFeatureTour !== 'function') {
+      if (typeof window.showToast === 'function') window.showToast('The guide is still loading. Return Home and tap View Your FitGotchi to retry.', 'info');
+      return false;
+    }
     const owner = currentUserId();
     window.startFeatureTour('full', { fitgotchiCourse:true, onCourseComplete:async function(){
       if (owner !== currentUserId() || !state || Number(state.current_week) !== 1) throw new Error('Your course changed. Reopen this action.');

@@ -20,7 +20,9 @@ function fixture() {
     safeObject:v=>v||{}, safeArray:v=>Array.isArray(v)?v:[], isJourneyEligible:()=>c.eligible,
     currentUserId:()=>c.owner, closeJourney(){}, closeOnboarding(){},
     renderCard(){c.renders++}, calculateProgress:async()=>{},
+    document:{getElementById:()=>({scrollIntoView:()=>{c.scrolled=true}})},
     window:{supabaseClient:{},getFitGotchiVisibility:()=>c.visibility,
+      switchAppTab:tab=>{c.tab=tab},showToast:message=>{c.message=message},
       startFeatureTour:(mode,options)=>{c.options=options},
       trackBalanceActivity:()=>{}}, visibility:'hidden',
     upsertState:async patch=>{c.writes++; c.state={...c.state,...patch};}
@@ -39,8 +41,15 @@ test('only eligible post-onboarding Week 1 members receive the action',()=>{
 });
 test('opening or abandoning the walkthrough never awards course credit',()=>{
   const c=fixture();assert.equal(c.openFitGotchiIntro(),true);
+  assert.equal(c.tab,'profile');assert.equal(c.scrolled,true);
   assert.equal(c.writes,0);assert.equal(c.state.settings.fitgotchi_intro,undefined);
   assert.equal(c.options.fitgotchiCourse,true);
+});
+test('a delayed guide still opens Settings and explains how to retry without credit',()=>{
+  const c=fixture();delete c.window.startFeatureTour;
+  assert.equal(c.openFitGotchiIntro(),false);
+  assert.equal(c.tab,'profile');assert.equal(c.scrolled,true);
+  assert.match(c.message,/retry/);assert.equal(c.writes,0);
 });
 test('completion persists once and remains complete after hiding the character',async()=>{
   const c=fixture();c.openFitGotchiIntro();
@@ -98,16 +107,35 @@ test('the mini-tour has real Settings/Home targets and is outside the payment to
 });
 test('the switch gate observes the actual visibility and removes its listener',()=>{
   const c={step:{requiresFitGotchiVisible:true},activeTourGate:null,finalLabel:'Next',
+    idx:0,setTimeout:fn=>{c.advance=fn;return 1},clearTimeout:()=>{c.advance=null},
     gateIsCurrent:()=>true,q:()=>({}),scheduleTourPosition(){},
     setTourGateUi:enabled=>{c.enabled=enabled},window:{
       getFitGotchiVisibility:()=>c.visible?'visible':'hidden',
+      tourNext:()=>{c.advanced=(c.advanced||0)+1},
       addEventListener:(name,fn)=>{c.listener=fn},
       removeEventListener:(name,fn)=>{assert.equal(fn,c.listener);c.removed=true}
     }};
   const branch=section(html,'    if (step && step.requiresFitGotchiVisible)', 'if (step && step.requiresFeedPost)');
   vm.runInNewContext('(function(){'+branch+'})()',c);
-  assert.equal(c.enabled,false);c.visible=true;c.listener();assert.equal(c.enabled,true);
+  assert.equal(c.enabled,false);assert.equal(c.advance,undefined);
+  c.visible=true;c.listener({detail:{mode:'visible'}});assert.equal(c.enabled,true);
+  c.advance();assert.equal(c.advanced,1);
+  c.listener({detail:{mode:'visible'}});c.idx=1;c.advance();assert.equal(c.advanced,1);
   c.activeTourGate.cleanup();assert.equal(c.removed,true);
+});
+
+test('the dedicated course does not evaluate unrelated feature conditions',()=>{
+  const c={courseFeatureTour:{},fitgotchiCourseSteps:[{tab:'profile'}],steps:[{condition(){throw Error('deferred feature unavailable')}}]};
+  vm.runInNewContext(section(html,'    activeSteps = courseFeatureTour ?', '    if (courseFeatureTour) {'),c);
+  assert.equal(c.activeSteps,c.fitgotchiCourseSteps);
+});
+
+test('delegated task buttons use the same FitGotchi route as direct buttons',()=>{
+  const c={ACTIONS:[],setTimeout(){},window:{pbbNextSteps:{runAction:id=>{c.opened=id}}}};
+  vm.runInNewContext(section(next,'  function handleClick(event)', '  function init()'),c);
+  const button={getAttribute:name=>name==='data-next-step-id'?'fitgotchi_intro':null};
+  c.handleClick({target:{closest:selector=>selector==='[data-next-step-id]'?button:null}});
+  assert.equal(c.opened,'fitgotchi_intro');
 });
 test('edited scripts parse and both loader paths use the new assets',()=>{
   new Function(journey);new Function(next);
@@ -115,6 +143,6 @@ test('edited scripts parse and both loader paths use the new assets',()=>{
     const at=html.indexOf('<script>',html.indexOf('<!-- ========== '+marker));
     new Function(html.slice(at+8,html.indexOf('</script>',at)));
   }
-  assert.equal((html.match(/pbb-social-journey.js\?v=52-fitgotchi-course/g)||[]).length,2);
-  assert.equal((html.match(/pbb-next-obvious-steps.js\?v=58-fitgotchi-course/g)||[]).length,2);
+  assert.equal((html.match(/pbb-social-journey.js\?v=53-fitgotchi-navigation/g)||[]).length,2);
+  assert.equal((html.match(/pbb-next-obvious-steps.js\?v=59-fitgotchi-navigation/g)||[]).length,2);
 });
