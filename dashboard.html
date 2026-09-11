@@ -605,7 +605,7 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
 <!-- Early stub definitions to prevent "undefined" errors before main scripts load -->
 <script src="js/dashboard/script_part_4.js?v=theme-toggle-shell-v2"></script>
 
-<link rel="stylesheet" href="css/dashboard/dashboard-style-1.css?v=84-instant-course-mascot">
+<link rel="stylesheet" href="css/dashboard/dashboard-style-1.css?v=85-original-3d-mascot">
 <link rel="stylesheet" href="css/dashboard/pbb-social-journey.css?v=27-direct-course-lesson">
 
 <script>if(window._crumb)window._crumb('head_complete');</script>
@@ -961,27 +961,12 @@ window.addEventListener('load', function() {
 <div class="learn-mascot" id="learnMascot">
     <div class="learn-mascot-speech" id="learnMascotSpeech">You got this!</div>
     <div class="learn-mascot-avatar" id="learnMascotAvatar" onclick="window.LearningMascot?.tapped()">
-        <!-- Inline preview: no network request, WebGL context or custom-element
-             upgrade required. iPhones retain this lightweight character. -->
-        <svg class="learn-mascot-preview" viewBox="0 0 80 80" role="img" aria-label="Your learning companion" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="40" cy="40" r="40" fill="#fff4d8"/>
-            <path d="M22 76v-9c0-10 8-16 18-16s18 6 18 16v9" fill="#ba8a2e"/>
-            <path d="M40 13v8" stroke="#765316" stroke-width="4" stroke-linecap="round"/>
-            <circle cx="40" cy="11" r="5" fill="#d8b25e"/>
-            <rect x="12" y="31" width="8" height="17" rx="4" fill="#ba8a2e"/>
-            <rect x="60" y="31" width="8" height="17" rx="4" fill="#ba8a2e"/>
-            <rect x="18" y="21" width="44" height="39" rx="15" fill="#dfbb67" stroke="#765316" stroke-width="2"/>
-            <rect x="23" y="28" width="34" height="24" rx="10" fill="#241e17"/>
-            <path d="M29 37q3-5 6 0m10 0q3-5 6 0" fill="none" stroke="#fff4d8" stroke-width="3" stroke-linecap="round"/>
-            <path d="M35 44q5 5 10 0" fill="none" stroke="#fff4d8" stroke-width="2" stroke-linecap="round"/>
-            <circle cx="40" cy="68" r="5" fill="#fff4d8"/>
-        </svg>
+        <span class="learn-mascot-status" id="learnMascotStatus" role="status">Loading…</span>
         <model-viewer
             id="mascot-model"
-            data-lazy-src="https://f005.backblazeb2.com/file/shannonsvideos/shanbot_final.glb"
+            data-lazy-src="assets/models/shanbot-course-v1.glb"
             loading="lazy"
-            onload="this.closest('.learn-mascot-avatar').classList.add('model-ready')"
-            onerror="this.closest('.learn-mascot-avatar').classList.remove('model-ready')"
+            alt="Your original 3D Shanbot learning companion"
             camera-orbit="0deg 85deg 2.5m"
             field-of-view="30deg"
             disable-zoom
@@ -998,6 +983,7 @@ window.addEventListener('load', function() {
     </div>
 </div>
 
+<script src="js/dashboard/pbb-course-mascot.js?v=1-original-3d"></script>
 <div class="container">
 <!-- DASHBOARD VIEW (HOME) -->
 <div id="view-dashboard" class="app-view">
@@ -21055,11 +21041,11 @@ if (window._pbbIsIOSSafari) {
             });
             if (window.showQuizBattleInviteModal || learningAlreadyRequested) return;
             var s = document.createElement('script');
-      s.src = 'lib/learning-inline.js?v=53-master-assessments';
+      s.src = 'lib/learning-inline.js?v=54-original-3d-mascot';
             document.head.appendChild(s);
         }, { once: true });
     } else {
-    document.write('<script src="lib/learning-inline.js?v=53-master-assessments"><\/script>');
+    document.write('<script src="lib/learning-inline.js?v=54-original-3d-mascot"><\/script>');
     }
     </script>
     <!-- Battle System & Logic Overrides (130 lines — deferred on iOS) -->

@@ -1,8 +1,9 @@
-const CACHE_NAME = 'pbb-app-v533-instant-course-mascot'; // v533: show the course companion immediately, including iPhone without WebGL
+const CACHE_NAME = 'pbb-app-v534-original-3d-mascot'; // v534: original lightweight 3D course character plus iPhone onboarding and video fixes
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
   './dashboard.html',
+  './js/dashboard/pbb-course-mascot.js?v=1-original-3d',
   './lib/fitgotchi-animations.js?v=1',
   './js/dashboard/dashboard-script-13.js?v=9-verified-moves',
   './css/dashboard/pbb-meal-plan.css?v=2',
