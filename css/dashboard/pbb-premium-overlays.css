@@ -6554,6 +6554,11 @@ html[data-pbb-theme="light"] #water-entry-sheet .water-amount-btn {
 }
 /* Other-user profile polish */
 #view-user-profile.user-profile-view {
+    --up-safe-top: env(safe-area-inset-top, 0px);
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    z-index: 10000;
     --up-bg: linear-gradient(180deg, #17130f 0%, #0b0b0a 48%, #050505 100%);
     --up-panel: rgba(255, 250, 242, 0.96);
     --up-panel-soft: rgba(255, 255, 255, 0.08);
@@ -6604,8 +6609,8 @@ html[data-pbb-theme="light"] #view-user-profile.user-profile-view {
     position: sticky;
     top: 0;
     z-index: 40;
-    min-height: calc(52px + env(safe-area-inset-top, 0px));
-    padding: calc(14px + env(safe-area-inset-top, 0px)) 18px 12px !important;
+    min-height: calc(52px + var(--up-safe-top));
+    padding: calc(14px + var(--up-safe-top)) max(18px, env(safe-area-inset-right, 0px)) 12px max(18px, env(safe-area-inset-left, 0px)) !important;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -6615,6 +6620,13 @@ html[data-pbb-theme="light"] #view-user-profile.user-profile-view {
     box-shadow: 0 16px 34px rgba(0, 0, 0, 0.34) !important;
     backdrop-filter: blur(18px) saturate(120%);
     -webkit-backdrop-filter: blur(18px) saturate(120%);
+}
+
+/* Edge-to-edge phone WebViews can report zero under the system status bar. */
+@media (max-width: 560px), (max-height: 560px) and (pointer: coarse) {
+    #view-user-profile.user-profile-view {
+        --up-safe-top: max(42px, env(safe-area-inset-top, 0px));
+    }
 }
 
 html[data-pbb-theme="light"] #view-user-profile .user-profile-sticky-header {

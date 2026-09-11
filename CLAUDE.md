@@ -16,6 +16,8 @@ padding-top: calc(15px + env(safe-area-inset-top, 0px));
 
 This applies to any `<div>` with `position: sticky; top: 0;` that acts as a view header.
 
+Shannon's standing mobile QA rule (11 September 2026): always check that screens opened from another screen, especially Feed -> member profile, keep their title and controls clear of the time, Wi-Fi and battery icons. Check on opening, after scrolling, and after returning/reopening, in light and dark mode and small portrait/landscape phone viewports. Test both a nonzero notch inset and a zero-inset edge-to-edge WebView; `env()` alone is not proof of safety. Use the established phone fallback `max(42px, env(safe-area-inset-top, 0px))` where the WebView can report zero. Full-screen pages must own their viewport and internal scroll so the previous screen's document scroll cannot move their sticky header under the system bar. Verify bottom content/home-indicator clearance too, capture visual proof, and bump changed stylesheet URLs before shipping.
+
 ### Always Fit Views/Popups to the Screen
 
 Every full-screen view, modal, or popup MUST fit within the visible viewport — never let content overflow off the bottom/top of the screen with no way to reach it. Apply this pattern:
