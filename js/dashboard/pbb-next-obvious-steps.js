@@ -160,12 +160,14 @@
   }
 
   function markOnboardingStepSeen(actionId) {
+    if (!hasSeenOnboardingStep(actionId)) window.BalanceOnboardingFunnel?.track('task', actionId, 'completed', { mode: 'first_week' });
     try { localStorage.setItem(onboardingStepKey(actionId), '1'); } catch (_) {}
     render();
   }
 
   function setOnboardingStepComplete(actionId, complete) {
     if (ONBOARDING_ACTION_IDS.indexOf(actionId) === -1 && actionId !== 'activity_insights_intro') return;
+    if (complete && !hasSeenOnboardingStep(actionId)) window.BalanceOnboardingFunnel?.track('task', actionId, 'completed', { mode: 'first_week' });
     try {
       if (complete) localStorage.setItem(onboardingStepKey(actionId), '1');
       else localStorage.removeItem(onboardingStepKey(actionId));
@@ -1690,6 +1692,7 @@
     if (button.getAttribute('data-next-step-direct') === 'true') return;
     if (button.getAttribute('data-next-step-readonly') === 'true') return;
     var id = button.getAttribute('data-next-step-id');
+    if (isOnboardingAction(id)) window.BalanceOnboardingFunnel?.track('task', id, 'viewed', { mode: 'first_week' });
     if (id === 'fitgotchi_intro') {
       window.pbbNextSteps.runAction(id);
       return;
@@ -1751,6 +1754,7 @@
       });
     },
     runAction: function(id){
+      if (isOnboardingAction(id)) window.BalanceOnboardingFunnel?.track('task', id, 'viewed', { mode: 'first_week' });
       if (id === 'fitgotchi_intro') { if (window.socialJourney) window.socialJourney.openFitGotchiIntro(); return; }
       try {
         window.dispatchEvent(new CustomEvent('pbb-next-step-action', { detail: { id: id } }));

@@ -1,0 +1,22 @@
+#onboarding-funnel-card { padding:20px; background:var(--admin-surface,#fffdf8) !important; color:var(--admin-text,#24201a) !important; -webkit-text-fill-color:var(--admin-text,#24201a) !important; min-width:0; }
+#onboarding-funnel-card h2 { font-size:1.2rem; margin:0 0 10px; }
+#onboarding-funnel-card h3 { font-size:1rem; margin:22px 0 10px; }
+#onboarding-funnel-card p { font-size:.8rem; line-height:1.55; color:var(--admin-muted,#575044) !important; -webkit-text-fill-color:var(--admin-muted,#575044) !important; margin:10px 0; }
+.onboarding-report-filters { display:flex; gap:12px; flex-wrap:wrap; align-items:end; }
+.onboarding-report-filters label { display:flex; flex-direction:column; gap:5px; font-size:.8rem; }
+.onboarding-report-filters select,.onboarding-report-filters button { border:1px solid #b8a887; border-radius:8px; min-height:44px; padding:8px 12px; background:var(--admin-surface,#fff) !important; color:var(--admin-text,#24201a) !important; -webkit-text-fill-color:var(--admin-text,#24201a) !important; font:inherit; }
+.onboarding-report-filters button { cursor:pointer; background:var(--admin-surface-3,#ecdbaf) !important; }
+.onboarding-report-totals { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr)); gap:10px; margin-top:18px; }
+.onboarding-report-totals div { display:flex; flex-direction:column; gap:6px; padding:14px; background:var(--admin-surface-3,#f5eddc) !important; border-radius:10px; }
+.onboarding-report-totals strong { font-size:1.7rem; }
+.onboarding-report-totals span { font-size:.8rem; }
+.onboarding-report-table { width:100%; overflow:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; }
+.onboarding-report-table table { width:100%; border-collapse:collapse; font-size:.8rem; }
+.onboarding-report-table th,.onboarding-report-table td { text-align:left; padding:10px; border-bottom:1px solid #e2d8c5; min-width:78px; max-width:260px; overflow-wrap:anywhere; vertical-align:top; }
+.onboarding-report-table th { background:var(--admin-surface-3,#f5eddc) !important; }
+@media (max-width:768px), (max-height:500px) {
+    body:has(#metrics.active) .main-content { padding-top:calc(62px + max(44px, env(safe-area-inset-top, 0px))) !important; padding-bottom:max(34px, env(safe-area-inset-bottom, 0px)) !important; }
+    body:has(#metrics.active) .hamburger { top:calc(10px + max(44px, env(safe-area-inset-top, 0px))) !important; }
+}
+
+#onboarding-funnel-card h2,#onboarding-funnel-card h3,#onboarding-funnel-card label,#onboarding-funnel-card th,#onboarding-funnel-card td,#onboarding-funnel-card strong,#onboarding-funnel-card span { color:var(--admin-text,#24201a) !important; -webkit-text-fill-color:var(--admin-text,#24201a) !important; }

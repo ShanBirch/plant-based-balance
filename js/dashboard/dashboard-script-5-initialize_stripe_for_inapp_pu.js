@@ -9173,6 +9173,7 @@ function renderWizardChatControls() {
     }
 
     if (!step) return;
+    window.BalanceOnboardingFunnel?.track('question', step.key, 'viewed', { step_number: wizardChatStepIndex + 1 });
 
     if (step.type === 'start') {
         setWizardChatLayoutMode({ noTextbox: true, intro: true });
@@ -9350,6 +9351,7 @@ function initializeWizardChatIntake() {
 }
 
 function advanceWizardChat(step, value, displayText = null) {
+    window.BalanceOnboardingFunnel?.track('question', step.key, 'completed', { step_number: wizardChatStepIndex + 1 });
     wizardChatAnswers[step.key] = value;
     const input = document.getElementById('wizard-chat-input');
     if (input) input.value = '';
@@ -10268,6 +10270,7 @@ function initOnboardingWizard() {
         return false;
     }
     modal.dataset.launchState = 'opening';
+    window.BalanceOnboardingFunnel?.track('setup', 'setup', 'viewed');
     setOnboardingNavigationGate(true);
     if (window._crumb) window._crumb('onboarding_wizard_init');
     if (window.metaAdTrialMode && window.BalanceMetaAdTrial) {
@@ -11332,6 +11335,7 @@ function updateWizardUI() {
     const previousStepMatch = previouslyActiveSlide?.id?.match(/^slide-(\d+)$/);
     const previousStep = previousStepMatch ? parseInt(previousStepMatch[1], 10) : currentWizardStep;
     normalizeWizardStep();
+    window.BalanceOnboardingFunnel?.track('screen', 'slide_' + currentWizardStep, 'viewed', { step_number: currentWizardStep });
     closeOnboardingBlockingSurfaces();
     const wizardOverlay = document.getElementById('onboarding-wizard');
     const wizardContent = document.querySelector('#onboarding-wizard .wizard-content');
@@ -12336,6 +12340,7 @@ async function wizardNext() {
     }
 
     if(currentWizardStep < finalWizardStep) {
+        window.BalanceOnboardingFunnel?.track('screen', 'slide_' + currentWizardStep, 'completed', { step_number: currentWizardStep });
         currentWizardStep++;
 
         // Skip optional/deferred setup slides and keep the weekly-goal handoff as the final step.
@@ -14141,6 +14146,7 @@ function playHeaderCoinGrantAnimation(startBalance, endBalance, grantedAmount) {
 async function finishOnboarding() {
     const completingTransferredSetup = !!window.__pbbTransferredSetupPending;
     try { window.trackBalanceActivity('onboarding_finish_started', { transferred_setup: completingTransferredSetup }, { immediate:true }); } catch(e) {}
+    window.BalanceOnboardingFunnel?.track('setup', 'saving_plan', 'viewed');
 
     // The paid-ad walkthrough promises a real personalised meal plan and an
     // actual food photo. Do not close setup and race into the tour while that
@@ -14200,6 +14206,9 @@ async function finishOnboarding() {
     }
     localStorage.setItem('onboardingComplete', 'true');
     localStorage.setItem('plantbased_onboarding_complete', 'true'); // Also set alternate key for consistency
+    window.BalanceOnboardingFunnel?.track('screen', 'slide_' + currentWizardStep, 'completed', { step_number: currentWizardStep });
+    window.BalanceOnboardingFunnel?.track('setup', 'saving_plan', 'completed');
+    window.BalanceOnboardingFunnel?.track('setup', 'setup', 'completed');
     if (window.metaAdTrialMode && window.BalanceMetaAdTrial) {
         window.BalanceMetaAdTrial.onOnboardingComplete();
     }

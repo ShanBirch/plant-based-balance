@@ -174,7 +174,7 @@ test('the dedicated course does not evaluate unrelated feature conditions',()=>{
 });
 
 test('delegated task buttons use the same FitGotchi route as direct buttons',()=>{
-  const c={ACTIONS:[],setTimeout(){},window:{pbbNextSteps:{runAction:id=>{c.opened=id}}}};
+  const c={ACTIONS:[],isOnboardingAction:()=>true,setTimeout(){},window:{pbbNextSteps:{runAction:id=>{c.opened=id}}}};
   vm.runInNewContext(section(next,'  function handleClick(event)', '  function init()'),c);
   const button={getAttribute:name=>name==='data-next-step-id'?'fitgotchi_intro':null};
   c.handleClick({target:{closest:selector=>selector==='[data-next-step-id]'?button:null}});
@@ -187,5 +187,5 @@ test('edited scripts parse and both loader paths use the new assets',()=>{
     new Function(html.slice(at+8,html.indexOf('</script>',at)));
   }
   assert.equal((html.match(/pbb-social-journey.js\?v=54-fitgotchi-bootstrap/g)||[]).length,2);
-  assert.equal((html.match(/pbb-next-obvious-steps.js\?v=59-fitgotchi-navigation/g)||[]).length,2);
+  assert.equal((html.match(/pbb-next-obvious-steps.js\?v=60-onboarding-funnel/g)||[]).length,2);
 });
