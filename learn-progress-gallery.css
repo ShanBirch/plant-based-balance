@@ -1,0 +1,7 @@
+.progress-photo { position:relative; width:100%; aspect-ratio:var(--crop-ratio); overflow:hidden; background:#eee8da; }
+.progress-photo[hidden] { display:none; }
+.progress-photo img { position:absolute; width:var(--image-width); max-width:none; height:auto; left:var(--image-left); top:var(--image-top); display:block; }
+.progress-controls { display:flex; gap:8px; padding:12px 16px; background:#faf7ef; }
+.progress-controls button { flex:1; min-height:44px; padding:8px 12px; border:1px solid #d6c7a7; border-radius:10px; background:#fffdf8; font-family:inherit; font-size:14px; font-weight:600; line-height:1.2; color:#34382e; -webkit-text-fill-color:#34382e; cursor:pointer; }
+.progress-controls button[aria-pressed="true"] { background:#e5cb88; border-color:#9c782d; color:#24271e; -webkit-text-fill-color:#24271e; }
+.progress-controls button:focus-visible { outline:3px solid #805f1e; outline-offset:2px; }
