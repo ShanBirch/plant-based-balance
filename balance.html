@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Balance | The App and Home Base | Balance Neuroscience Fitness</title>
-    <meta name="description" content="Start Balance Learn, the six-week behaviour-change course with personalised training, Weekly Goals, community and weekly review. One AUD $149 payment for the full six weeks, with no subscription or automatic renewal.">
+    <meta name="description" content="Personalised workouts, meal plans, practical learning and a supportive community. Explore the Balance app and build habits that last.">
     <meta property="og:title" content="Balance | The App and Home Base | Balance Neuroscience Fitness">
-    <meta property="og:description" content="Practical behaviour change, personalised training and weekly review across six weeks. One AUD $149 payment for the full six weeks, with no subscription or automatic renewal.">
+    <meta property="og:description" content="Personalised workouts, meal plans, practical learning and a supportive community. Explore the Balance app and build habits that last.">
     <meta property="og:image" content="https://plantbased-balance.org/balance_logo_transparent.png">
     <meta property="og:url" content="https://plantbased-balance.org/balance.html">
     <meta property="og:type" content="website">
@@ -21,7 +21,7 @@
     <link rel="modulepreload" href="https://esm.sh/three@0.160.0/examples/jsm/loaders/GLTFLoader.js?target=es2020" crossorigin="anonymous">
     <link rel="modulepreload" href="https://esm.sh/three@0.160.0/examples/jsm/loaders/DRACOLoader.js?target=es2020" crossorigin="anonymous">
     <link rel="preload" href="https://cdn.jsdelivr.net/npm/meshoptimizer@0.21.0/meshopt_decoder.min.js" as="script">
-    <link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb?v=balance-showcase-1" as="fetch" crossorigin="anonymous" fetchpriority="high" data-balance-character-preload="true">
+    <link rel="preload" href="/assets/models/balance-web-greet-v2.glb" as="fetch" crossorigin="anonymous" fetchpriority="high" data-balance-character-preload="true">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
     <script>
         (function () {
@@ -59,11 +59,17 @@
     </script>
     <script src="https://cdn.jsdelivr.net/npm/meshoptimizer@0.21.0/meshopt_decoder.min.js" defer></script>
     <script src="lib/avatar3d.js?v=balance-character-loader-1" defer></script>
-    <script src="balance-character-live.js?v=balance-character-loader-1" defer></script>
+    <script src="balance-character-live.js?v=20260911-fast" defer></script>
 <link rel="stylesheet" href="/site-navigation.css?v=20260911-page-theme">
 <link rel="stylesheet" href="/learn-intro-price.css?v=20260909">
+<link rel="stylesheet" href="/learn-phone-gallery.css?v=20260911">
+<link rel="stylesheet" href="/balance-app-page.css?v=20260911">
+<script src="/learn-phone-gallery.js?v=20260911" defer></script>
+<link rel="stylesheet" href="/course-journey.css?v=20260910">
+<link rel="stylesheet" href="/learn-plan-details.css?v=20260911">
+<link rel="stylesheet" href="/learn-journey-dropdowns.css?v=20260911-curriculum">
 </head>
-<body class="bio-page landing-page">
+<body class="bio-page landing-page balance-app-page">
     <div class="page-shell">
         <header class="site-header">
             <a class="brand" href="/bio">
@@ -92,80 +98,34 @@
                         >
                     </h1>
                     <p class="lead">
-                        Start with a practical six-week course that helps you understand behaviour change, then practise it through training, food, Weekly Goals and real-life review.
+                        Your training, nutrition and learning in one place. Build practical skills, follow your plans and see your progress.
                     </p>
-                    <div class="button-row">
-                        <a class="btn primary" href="/founders">See your personalised Balance preview</a>
-                        <a class="btn secondary" href="dashboard.html">Open the app</a>
-                        <a class="btn secondary" href="coaching.html">Compare support options</a>
-                        <a class="btn secondary" href="book.html">Talk it through</a>
-                        <a class="btn secondary" href="bio.html">Back to hub</a>
-                    </div>
                 </div>
             </section>
 
-            <section class="section founders-pass-section">
-                <article class="surface founders-pass-card reveal">
-                    <div class="founders-pass-copy">
-                        <span class="section-kicker">Balance Learn</span>
-                        <h2 class="section-title">Understand change, then practise it in real life.</h2>
-                        <p class="section-text">
-                            Learn practical neuroscience and behaviour science, then apply it with a personalised workout plan, meal-plan support, Weekly Goals, the Balance community and weekly review. Plant-based support is available if that is how you eat.
-                        </p>
-                        <div class="tag-row" aria-label="Balance Learn inclusions">
-                            <span class="tag">Six-week entry course</span>
-                            <span class="tag">Personalised workout plan</span>
-                            <span class="tag">Weekly check-ins and review</span>
-                        </div>
-                    </div>
-                    <div class="founders-pass-offer">
-                        <div class="learn-intro-price"><strong>Introductory package: AUD <span data-learn-upfront>$149</span> for six weeks</strong><span>AUD $450 from 21 October 2026</span><span class="intro-saving">Launch price available through 20 October 2026, Brisbane time. Includes Balance Learn, weekly check-ins, plan review and six weeks of app access.</span></div><div class="offer-price">AUD <span data-learn-upfront>$149</span> <span>one payment</span></div>
-                        <p class="offer-copy">One AUD <span data-learn-upfront>$149</span> payment for the full six weeks. No automatic renewal with upfront payment. Ongoing services are separate and optional.</p>
-                        <a class="btn primary" href="/founders">See your personalised Balance preview</a>
-                        <span class="small-note">Payment appears only after your personalised setup and the required app tour.</span>
-                    </div>
-                </article>
-            </section>
+            <section class="section app-screenshots" aria-labelledby="app-screens-title"><div class="section-header"><div><span class="section-kicker">Inside Balance</span><h2 class="section-title" id="app-screens-title">Take a look around.</h2></div></div><div class="learn-gallery-controls"><p id="learn-gallery-hint">Swipe to explore. Tap a screen for a closer look.</p><div><button type="button" data-gallery-step="-1" aria-label="Previous app screenshot" aria-controls="learn-phone-gallery">←</button><button type="button" data-gallery-step="1" aria-label="Next app screenshot" aria-controls="learn-phone-gallery">→</button></div></div><div class="learn-phone-gallery" id="learn-phone-gallery" role="region" aria-label="Inside the Balance app" aria-describedby="learn-gallery-hint" tabindex="0"><figure class="learn-phone-slide"><a class="learn-phone-frame" href="/photos/learn-app-home-sep11.png" target="_blank" rel="noopener" aria-label="Enlarge home screenshot (opens in a new tab)"><img src="/photos/learn-app-home-sep11.png" alt="Balance home screen" loading="lazy" decoding="async" width="1080" height="2424"></a><figcaption><span class="learn-screen-number">01 / 05</span><strong>Your next step, ready</strong><span>Weekly Goals and what to do next.</span></figcaption></figure>
+<figure class="learn-phone-slide"><a class="learn-phone-frame" href="/photos/learn-app-course-sep11.png" target="_blank" rel="noopener" aria-label="Enlarge course screenshot (opens in a new tab)"><img src="/photos/learn-app-course-sep11.png" alt="Balance course screen" loading="lazy" decoding="async" width="1080" height="2424"></a><figcaption><span class="learn-screen-number">02 / 05</span><strong>Your six-week course</strong><span>Short lessons. One week at a time.</span></figcaption></figure>
+<figure class="learn-phone-slide"><a class="learn-phone-frame" href="/photos/learn-app-meals-sep11.png" target="_blank" rel="noopener" aria-label="Enlarge meals screenshot (opens in a new tab)"><img src="/photos/learn-app-meals-sep11.png" alt="Balance meals screen" loading="lazy" decoding="async" width="1080" height="2424"></a><figcaption><span class="learn-screen-number">03 / 05</span><strong>Meals that fit your day</strong><span>Your meals, recipes and food log.</span></figcaption></figure>
+<figure class="learn-phone-slide"><a class="learn-phone-frame" href="/photos/learn-app-training-sep11.png" target="_blank" rel="noopener" aria-label="Enlarge training screenshot (opens in a new tab)"><img src="/photos/learn-app-training-sep11.png" alt="Balance training screen" loading="lazy" decoding="async" width="1080" height="2424"></a><figcaption><span class="learn-screen-number">04 / 05</span><strong>Your workout, guided</strong><span>Exercise demos, sets and progress.</span></figcaption></figure>
+<figure class="learn-phone-slide"><a class="learn-phone-frame" href="/photos/learn-app-feed-sep11.png" target="_blank" rel="noopener" aria-label="Enlarge feed screenshot (opens in a new tab)"><img src="/photos/learn-app-feed-sep11.png" alt="Balance feed screen" loading="lazy" decoding="async" width="1080" height="2424"></a><figcaption><span class="learn-screen-number">05 / 05</span><strong>Share the small wins</strong><span>A place to practise and stay connected.</span></figcaption></figure></div></section>
 
-            <section class="section">
+            <section class="section" id="app-functions">
                 <div class="section-header">
                     <div>
                         <span class="section-kicker">app functions</span>
-                        <h2 class="section-title">One system, seven moving parts, and one clear next step.</h2>
+                        <h2 class="section-title">The tools for your everyday progress.</h2>
                     </div>
                     <p class="section-text">
-                        Ask Balance gets you moving quickly. Nutrition keeps the numbers clear. Movement keeps training structured. Analytics turns your data into decisions. Learn explains the why. Feed keeps the community alive. The character makes progress feel real.
+                        Train, eat, track and connect. Everything stays together, so you can focus on your next step.
                     </p>
                 </div>
 
                 <div class="feature-motion-grid">
-                    <article class="surface feature-motion-card ask-motion reveal">
-                        <div class="feature-motion-copy">
-                            <span class="label">ask balance</span>
-                            <h3>A quick text box when you just want the next move.</h3>
-                            <p class="offer-copy">
-                                Ask for the food log, the workout, the quiz, or the next screen without digging through menus.
-                            </p>
-                        </div>
-                        <div class="feature-motion-scene ask-scene" aria-hidden="true">
-                            <div class="ask-thread">
-                                <div class="ask-input-shell">
-                                    <span>Ask Balance</span>
-                                    <i></i>
-                                </div>
-                                <div class="ask-response ask-response-one">log snack</div>
-                                <div class="ask-response ask-response-two">start workout</div>
-                                <div class="ask-typing">
-                                    <i></i><i></i><i></i>
-                                </div>
-                            </div>
-                        </div>
-                    </article>
 
                     <article class="surface feature-motion-card nutrition-motion reveal">
                         <div class="feature-motion-copy">
                             <span class="label">nutrition</span>
-                            <h3>Food tracking without making the day feel like admin.</h3>
+                            <h3>Meals and nutrition, made clearer.</h3>
                             <p class="offer-copy">
                                 Calories, macros, micronutrients, meals, snacks, and quick check-ins all stay visible in one calm snapshot.
                             </p>
@@ -199,7 +159,7 @@
                     <article class="surface feature-motion-card movement-motion reveal">
                         <div class="feature-motion-copy">
                             <span class="label">movement</span>
-                            <h3>The training week feels alive before you even start.</h3>
+                            <h3>Your workout, ready when you are.</h3>
                             <p class="offer-copy">
                                 Workouts, programs, form checks, and trend cues sit together so the next session is obvious.
                             </p>
@@ -231,7 +191,7 @@
                     <article class="surface feature-motion-card analytics-motion reveal">
                         <div class="feature-motion-copy">
                             <span class="label">analytics</span>
-                            <h3>Your dashboard gathers all your data and gives it back clearly.</h3>
+                            <h3>See how your habits are adding up.</h3>
                             <p class="offer-copy">
                                 Food, training, learning, check-ins, and trends come together so you can make more informed decisions.
                             </p>
@@ -262,36 +222,10 @@
                         </div>
                     </article>
 
-                    <article class="surface feature-motion-card learn-motion reveal">
-                        <div class="feature-motion-copy">
-                            <span class="label">learn</span>
-                            <h3>Small lessons that keep the reason switched on.</h3>
-                            <p class="offer-copy">
-                                Quizzes, XP, and short explanations make the why easier to remember when motivation dips.
-                            </p>
-                        </div>
-                        <div class="feature-motion-scene learn-scene" aria-hidden="true">
-                            <div class="learn-bulb">
-                                <span></span>
-                            </div>
-                            <div class="learn-notification">
-                                <strong>Daily quiz</strong>
-                                <span>+10 XP</span>
-                            </div>
-                            <div class="learn-ping ping-one"></div>
-                            <div class="learn-ping ping-two"></div>
-                            <div class="learn-stack">
-                                <span>why</span>
-                                <span>quiz</span>
-                                <span>xp</span>
-                            </div>
-                        </div>
-                    </article>
-
                     <article class="surface feature-motion-card feed-motion reveal">
                         <div class="feature-motion-copy">
                             <span class="label">feed</span>
-                            <h3>The social side keeps little wins moving.</h3>
+                            <h3>Share your progress. Stay connected.</h3>
                             <p class="offer-copy">
                                 Posts, reactions, challenge nudges, and group energy give the app a pulse between check-ins.
                             </p>
@@ -317,22 +251,21 @@
                         </div>
                     </article>
                 </div>
-
-                <div class="offer-grid character-offer-grid">
-                    <article class="surface offer-card reveal">
-                        <span class="label">progress loop</span>
-                        <h3>Your character</h3>
-                        <p class="offer-copy">The game layer turns consistency into something you can actually see.</p>
-                        <ul class="offer-list">
-                            <li>Level ups, XP, and streaks.</li>
-                            <li>Unlocks, battles, and rare rewards.</li>
-                            <li>A visible reminder that the work is adding up.</li>
-                        </ul>
-                    </article>
-                </div>
             </section>
 
-            <section class="section character-showcase reveal">
+            <section class="section app-learn" aria-labelledby="app-learn-title"><div class="surface app-learn-card"><div><span class="section-kicker">Balance Learn · The six-week course</span><h2 class="section-title" id="app-learn-title">Understand your habits. Practise lasting change.</h2><p class="section-text">Short weekly lessons, personalised training, meal support and a weekly review with Shannon. Learn the skills, then put them into practice inside Balance.</p><a class="app-text-link" href="/founders">Explore Balance Learn <span aria-hidden="true">→</span></a></div><div class="app-learn-offer"><div class="learn-intro-price learn-hero-offer" data-learn-presentation="hero"><div class="learn-offer-line"><s class="learn-standard-price" aria-label="Standard price: AUD 450">$450</s><strong class="learn-offer-price" aria-label="AUD 149">$149</strong><span class="learn-offer-label">Introductory Offer</span></div><small>Offer lasts until October 20th.</small></div><p class="small-note">Create your account, set up your plan and preview before paying.</p></div></div></section>
+
+            <section class="balance-journey" id="four-part-journey" aria-labelledby="four-part-journey-title">
+    <p class="journey-eyebrow">The four-part Balance journey</p>
+    <h2 id="four-part-journey-title">Learn. Master. Become. Lead.</h2>
+    <p class="journey-intro">Start by understanding change. Build the skills to guide yourself, practise them in real life, then help someone else take their next step.</p>
+    <div class="journey-dropdowns"><details class="learn-plan journey-dropdown"><summary><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h6q2 0 2 2v15q0-2-2-2H4V4m16 0h-6q-2 0-2 2m8-2v15h-6q-2 0-2 2"/></svg><span><small>Part 1 · Start here</small><strong>Learn</strong></span><span class="plan-toggle" aria-hidden="true">+</span></summary><div class="learn-plan-body"><h3>Understand change and build your foundations.</h3><p>A guided six-week course to understand your habits and turn learning into practical training, food and weekly goals, with check-ins and plan review from Shannon.</p><div class="journey-curriculum"><h3>What you study each week</h3><p class="curriculum-duration">6 weeks · Start with the introductory lesson</p><ol><li><span class="curriculum-week">Week 1</span><div><h4>Why change feels hard</h4><p>Past experience, predictions and how new experiences help you learn.</p></div></li><li><span class="curriculum-week">Week 2</span><div><h4>Work with your energy</h4><p>Understand why sleep, stress and low energy change your choices so you can plan for the days that usually throw you off.</p></div></li><li><span class="curriculum-week">Week 3</span><div><h4>Build a rhythm that sticks</h4><p>Use repetition, smaller actions and your surroundings to make the habits you want easier to keep doing.</p></div></li><li><span class="curriculum-week">Week 4</span><div><h4>Take the fight out of food</h4><p>Cravings, emotional eating and recognising the need behind the feeling.</p></div></li><li><span class="curriculum-week">Week 5</span><div><h4>Make progress easier to repeat</h4><p>How routines, surroundings and other people shape your habits.</p></div></li><li><span class="curriculum-week">Week 6</span><div><h4>Build your sustainable way forward</h4><p>Bring the food basics together into a flexible approach that supports your goal without rigid rules or all-or-nothing thinking.</p></div></li></ol></div><figure class="journey-visual"><figcaption>Understand it. Try it. Learn from it.</figcaption><div class="plan-flow"><span><b>01</b>Notice your habits</span><span class="plan-arrow" aria-hidden="true">→</span><span><b>02</b>Try a small change</span><span class="plan-arrow" aria-hidden="true">→</span><span><b>03</b>Review with Shannon</span></div></figure></div></details>
+<details class="learn-plan journey-dropdown"><summary><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V9h5v11m1 0V4h5v16m1 0v-8h5v8"/></svg><span><small>Part 2</small><strong>Master</strong></span><span class="plan-toggle" aria-hidden="true">+</span></summary><div class="learn-plan-body"><h3>Build the skills to guide your own training and food.</h3><p>Learn anatomy, exercise technique, programming, nutrition and recovery. Put it into practice by building your own workout program and a week of meals.</p><div class="journey-curriculum"><h3>What you study each week</h3><p class="curriculum-duration">10 weeks · A new week opens every seven days</p><ol><li><span class="curriculum-week">Week 1</span><div><h4>Know the muscles you train</h4><p>Connect a muscle to its job and an exercise.</p></div></li><li><span class="curriculum-week">Week 2</span><div><h4>Understand compound lifts</h4><p>Film a squat, hinge, push and pull for Shannon to review.</p></div></li><li><span class="curriculum-week">Week 3</span><div><h4>Choose exercises for your muscles</h4><p>Explain your exercise choices and suitable alternatives.</p></div></li><li><span class="curriculum-week">Week 4</span><div><h4>Set your training dose</h4><p>Choose sets, reps, rest and a progression rule.</p></div></li><li><span class="curriculum-week">Week 5</span><div><h4>Build your workout program</h4><p>Save a repeatable week with exercises and progression.</p></div></li><li><span class="curriculum-week">Week 6</span><div><h4>Fit cardio and recovery into your plan</h4><p>Make room for conditioning, sleep and recovery.</p></div></li><li><span class="curriculum-week">Week 7</span><div><h4>Learn how to build a meal</h4><p>Choose foods and portions that support your day.</p></div></li><li><span class="curriculum-week">Week 8</span><div><h4>Check variety and essential nutrients</h4><p>Review your food choices before building the full week.</p></div></li><li><span class="curriculum-week">Week 9</span><div><h4>Design one week of meals</h4><p>Save seven days with shopping, prep and a backup.</p></div></li><li><span class="curriculum-week">Week 10</span><div><h4>Review and adjust your plans</h4><p>Explain what you would keep and what you would change.</p></div></li></ol></div><figure class="journey-visual"><figcaption>Build the skills to guide yourself.</figcaption><div class="plan-flow"><span><b>01</b>Learn the principles</span><span class="plan-arrow" aria-hidden="true">→</span><span><b>02</b>Build your workouts</span><span class="plan-arrow" aria-hidden="true">→</span><span><b>03</b>Plan your meals</span></div></figure></div></details>
+<details class="learn-plan journey-dropdown"><summary><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7a9 9 0 1 0 1 8M20 3v5h-5"/></svg><span><small>Part 3</small><strong>Become</strong></span><span class="plan-toggle" aria-hidden="true">+</span></summary><div class="learn-plan-body"><h3>Practise the person you are becoming.</h3><p>Turn training, food and recovery into a repeatable way of living. Shape your environment, reflect on real progress and build a sustainable rhythm for sharing your journey through the Balance Feed and Instagram.</p><div class="journey-curriculum"><h3>What you study each week</h3><p class="curriculum-duration">6 weeks · Practical actions, Feed and Instagram</p><ol><li><span class="curriculum-week">Week 1</span><div><h4>Train your inputs</h4><p>Understand how attention trains your feed and shapes what starts to feel normal.</p></div></li><li><span class="curriculum-week">Week 2</span><div><h4>Keep content downstream of the work</h4><p>Build posts and Stories from training, food and real life.</p></div></li><li><span class="curriculum-week">Week 3</span><div><h4>Audit your algorithm</h4><p>Remove noisy inputs and deliberately reinforce the environment you want.</p></div></li><li><span class="curriculum-week">Week 4</span><div><h4>Build a weekly rhythm</h4><p>Choose a posting rhythm that fits around the work instead of replacing it.</p></div></li><li><span class="curriculum-week">Week 5</span><div><h4>Tell one useful story</h4><p>Give the evidence meaning by explaining what happened, what helped and what comes next.</p></div></li><li><span class="curriculum-week">Week 6</span><div><h4>Keep the pattern</h4><p>Choose the smallest identity and content rhythm you can sustain.</p></div></li></ol></div><figure class="journey-visual"><figcaption>Turn practice into a repeatable routine.</figcaption><div class="plan-flow"><span><b>01</b>Practise your routine</span><span class="plan-arrow" aria-hidden="true">→</span><span><b>02</b>Reflect on progress</span><span class="plan-arrow" aria-hidden="true">→</span><span><b>03</b>Adjust & return</span></div></figure></div></details>
+<details class="learn-plan journey-dropdown"><summary><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 20v-3q0-4 4-4t4 4v3m2 0v-3q0-4 4-4t4 4v3M7 4a3 3 0 1 0 0 6 3 3 0 0 0 0-6m10 0a3 3 0 1 0 0 6 3 3 0 0 0 0-6"/></svg><span><small>Part 4</small><strong>Lead</strong></span><span class="plan-toggle" aria-hidden="true">+</span></summary><div class="learn-plan-body"><h3>Help someone else take their next step.</h3><p>Lead through your example, invite a small shared challenge and practise encouragement. Learn to support someone through setbacks without taking over, and contribute to the community.</p><div class="journey-curriculum"><h3>What you study each week</h3><p class="curriculum-duration">6 practical weeks · Work through them at your pace</p><ol><li><span class="curriculum-week">Week 1</span><div><h4>Lead through the example you set</h4><p>Choose the values and actions you want to demonstrate.</p></div></li><li><span class="curriculum-week">Week 2</span><div><h4>Invite someone into a small challenge</h4><p>Agree on a manageable action and check-in together.</p></div></li><li><span class="curriculum-week">Week 3</span><div><h4>Encourage without taking over</h4><p>Listen, recognise effort and keep ownership with the other person.</p></div></li><li><span class="curriculum-week">Week 4</span><div><h4>Support someone through a setback</h4><p>Help someone find their next step while respecting your role.</p></div></li><li><span class="curriculum-week">Week 5</span><div><h4>Make your community stronger</h4><p>Contribute useful support and respect other people’s privacy.</p></div></li><li><span class="curriculum-week">Week 6</span><div><h4>Keep a sustainable supporting role</h4><p>Reflect on your actions and choose a commitment you can maintain.</p></div></li></ol></div><figure class="journey-visual"><figcaption>Use your experience to support someone else.</figcaption><div class="plan-flow"><span><b>01</b>Lead by example</span><span class="plan-arrow" aria-hidden="true">→</span><span><b>02</b>Invite a shared challenge</span><span class="plan-arrow" aria-hidden="true">→</span><span><b>03</b>Encourage their next step</span></div></figure></div></details></div>
+    <p class="journey-note"><strong>Balance Learn is part one.</strong> The six-week Learn package on this page covers your starting course and support. Master, Become and Lead describe the wider journey beyond those first six weeks.</p>
+</section>
+<section class="section character-showcase reveal">
                 <div class="surface character-live-panel">
                     <div class="fitgotchi-live-frame">
                         <div id="balance-character-stage" class="fitgotchi-stage" role="img" aria-label="Live Balance character animation"></div>
@@ -352,43 +285,15 @@
                         <p class="section-text">
                             Level ups, XP, streaks, unlocks, battles, and rewards all feed into the same loop. It gives the work a little face, so consistency feels like something is actually growing.
                         </p>
-                        <div class="tag-row" aria-label="Character progress loop">
-                            <span class="tag">XP</span>
-                            <span class="tag">Streaks</span>
-                            <span class="tag">Unlocks</span>
-                            <span class="tag">Rewards</span>
-                        </div>
                     </div>
                 </div>
             </section>
-
-            <section class="section story-grid" style="margin-top: 14px;">
-                <div class="surface quote-card reveal">
-                    <div class="quote-mark">"</div>
-                    <p>
-                        I wanted one place where the plan, the training, the learning, and the social proof all live together.
-                    </p>
-                    <p class="small-note">That is why the app, the weekly check-in, and the coaching all sit together.</p>
-                </div>
-
-                <div class="surface info-card reveal">
-                    <span class="section-kicker">best first moves</span>
-                    <ul class="info-list">
-                        <li>Use Ask Balance when you want speed.</li>
-                        <li>Open Nutrition when you want the micronutrients and meal totals in front of you.</li>
-                        <li>Open Movement when you want the workout in front of you.</li>
-                        <li>Use Learn when you want the why behind the plan.</li>
-                        <li>Use Feed when you want the community nudge.</li>
-                        <li>Keep an eye on the character when you want progress to feel real.</li>
-                    </ul>
-                </div>
-            </section>
-        <section class="learn-payment-options" aria-label="Balance Learn payment options" style="max-width:1000px;margin:28px auto;padding:24px;border:1px solid #d9d4c9;border-radius:20px;background:#fffdf8;color:#243124;-webkit-text-fill-color:#243124;line-height:1.7"><h2 style="color:#243124;-webkit-text-fill-color:#243124;font-size:1.4rem">Balance Learn payment options</h2><p><strong>Choose how you pay.</strong> Pay AUD <span data-learn-upfront>$149</span> upfront for six weeks with no automatic renewal, or AUD $24.83 per week with a six-week minimum (six payments, AUD $148.98 minimum total). The weekly option continues at AUD $24.83 per week with the same weekly check-in, workout and food review, app and community access. After six weeks, cancel before your next weekly payment with no additional notice period.</p><a href="/founders" style="color:#315531;-webkit-text-fill-color:#315531;font-weight:800">See your personalised Balance preview</a> · <a href="/coaching" style="color:#315531;-webkit-text-fill-color:#315531;font-weight:800">Compare all support options</a></section>
 </main>
 
         <footer class="footer">
             <div>Balance is operated by Shannon Birch.</div>
             <div class="footer-links">
+                <a href="/dashboard.html">Open the app</a>
                 <a href="/founders">Balance Learn</a>
                 <a href="cancellation.html">Pause or cancel</a>
                 <a href="bio.html">Back to hub</a>
@@ -396,7 +301,7 @@
             </div>
         </footer>
     </div>
-<script type="module" src="/learn-course-pricing-ui.js?v=20260910-launch"></script>
+<script type="module" src="/learn-course-pricing-ui.js?v=20260911-title-case"></script>
 <script src="/site-navigation.js?v=20260909-drawer" defer></script>
 </body>
 </html>

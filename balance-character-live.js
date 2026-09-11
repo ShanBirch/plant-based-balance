@@ -1,9 +1,13 @@
 (function () {
-    var MODEL_URL = 'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb';
+    var MODEL_URL = '/assets/models/balance-web-greet-v2.glb';
     var STAGE_ID = 'balance-character-stage';
     var MAX_TRIES = 160;
     var progressTimer = null;
     var depsRequested = false;
+    if (typeof window.loadBalanceCharacterDeps === 'function') {
+        depsRequested = true;
+        window.loadBalanceCharacterDeps();
+    }
 
     function getFrame(stage) {
         return stage ? stage.closest('.fitgotchi-live-frame') : null;
@@ -98,6 +102,7 @@
             interactive: false,
             autoRotate: false,
             modelUrl: MODEL_URL,
+            cacheBustModel: false,
             onModelProgress: function (progress) {
                 if (!frame) return;
 
@@ -179,7 +184,7 @@
                     }
                 }
             }, {
-                rootMargin: '160px 0px',
+                rootMargin: '1000px 0px',
                 threshold: 0.15
             });
 

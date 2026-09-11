@@ -1,0 +1,36 @@
+/* App overview: the same cream, gold and ink as the course pages. */
+html body.balance-app-page { --bg:#faf7ef; --text-main:#243124; --text-muted:#50544b; background:#faf7ef; color:#243124; -webkit-text-fill-color:#243124; }
+.balance-app-page .hero { padding-bottom:12px; }
+.balance-app-page .hero .lead { max-width:700px; margin-inline:auto; }
+.balance-app-page .section { padding-top:48px; }
+.balance-app-page .section-header { display:block; margin-bottom:24px; }
+.balance-app-page .section-header .section-text { max-width:680px; margin-top:14px; }
+.balance-app-page .feature-motion-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; }
+.balance-app-page .surface { background:#fffdf8; border-color:#dfd5be; box-shadow:none; }
+.balance-app-page .feature-motion-card { padding:26px; }
+.balance-app-page .feature-motion-card h3 { font-size:24px; }
+.balance-app-page .app-learn-card { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); gap:36px; padding:32px; border-radius:24px; align-items:center; }
+.balance-app-page .app-text-link { display:inline-block; margin-top:24px; padding-block:10px; color:#795719; -webkit-text-fill-color:#795719; font-weight:800; text-underline-offset:5px; }
+.balance-app-page .app-learn-offer { border-left:1px solid #dfd5be; padding-left:32px; }
+.balance-app-page .app-learn-offer .learn-intro-price { margin:0 0 16px; }
+.balance-app-page .character-live-copy .section-text { max-width:540px; }
+.balance-app-page .character-showcase { padding-top:48px; }
+@media(max-width:600px) {
+ .balance-app-page .feature-motion-grid,.balance-app-page .app-learn-card { grid-template-columns:1fr; }
+ .balance-app-page .app-learn-card { padding:24px; gap:24px; }
+ .balance-app-page .app-learn-offer { border-left:0; border-top:1px solid #dfd5be; padding:24px 0 0; }
+ .balance-app-page .section { padding-top:32px; }
+}
+/* Reserve clearance even in mobile edge-to-edge browsers reporting zero insets. */
+@media (pointer:coarse), (max-width:900px) {
+ html body.balance-app-page .site-header:has(.balance-navigation) { padding-top:calc(8px + max(env(safe-area-inset-top, 0px), 24px)); }
+ .balance-app-page .balance-menu-drawer { padding-top:calc(14px + max(env(safe-area-inset-top, 0px), 24px)); padding-bottom:calc(24px + max(env(safe-area-inset-bottom, 0px), 24px)); }
+ .balance-app-page .page-shell { padding-bottom:calc(32px + max(env(safe-area-inset-bottom, 0px), 24px)); }
+}
+.balance-app-page .section-kicker,.balance-app-page .label { background:none; border:0; border-radius:0; padding:0; box-shadow:none; color:#805f1e; -webkit-text-fill-color:#805f1e; }
+.balance-app-page .feature-motion-card { min-height:420px; grid-template-rows:auto minmax(220px,1fr); }
+html[data-bio-theme] body.balance-app-page .section-kicker, html[data-bio-theme] body.balance-app-page .label { background:transparent; border:0; box-shadow:none; }
+.balance-app-page .balance-journey { width:min(1080px,100%); margin:0 auto; padding:48px 24px 0; box-sizing:border-box; }
+@media (pointer:coarse), (max-width:900px) {
+ .balance-app-page .balance-menu-drawer { top:max(env(safe-area-inset-top, 0px), 24px); height:calc(100dvh - max(env(safe-area-inset-top, 0px), 24px)); padding-top:14px; }
+}
