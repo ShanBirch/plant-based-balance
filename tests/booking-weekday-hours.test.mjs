@@ -1,7 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import handler, {buildSlotsForDate} from '../netlify/functions/balance-booking.mts';
+import handler, {buildSlotsForDate, buildAvailableDates} from '../netlify/functions/balance-booking.mts';
 const settings={booking_enabled:true,event_name:'Call with Shannon',duration_minutes:60,minimum_notice_hours:24,booking_window_days:5,timezone:'Australia/Brisbane',calendar_id:'primary',location:'Google Meet',weekly_hours:Object.fromEntries([0,1,2,3,4,5,6].map(d=>[d,d>0&&d<6?[{start:'07:00',end:'15:00'}]:[]]))};
+test('five available dates skip weekends and fully booked days',()=>{
+ const now=new Date('2026-09-11T22:00:00Z');
+ assert.deepEqual(buildAvailableDates(settings,[],now).map(d=>d.date),['2026-09-14','2026-09-15','2026-09-16','2026-09-17','2026-09-18']);
+ const busy=[{start:'2026-09-13T21:00:00Z',end:'2026-09-14T05:00:00Z'}];
+ assert.deepEqual(buildAvailableDates(settings,busy,now).map(d=>d.date),['2026-09-15','2026-09-16','2026-09-17','2026-09-18','2026-09-21']);
+ assert.deepEqual(buildAvailableDates(settings,[{start:'2026-09-01T00:00:00Z',end:'2027-01-01T00:00:00Z'}],now),[]);
+});
 test('one-hour weekday calls stay within 7am–3pm Brisbane, with no weekends',()=>{
  for(let day=14;day<=18;day++){
  const slots=buildSlotsForDate(settings,`2026-09-${day}`,[],new Date('2026-09-11T00:00:00Z'));

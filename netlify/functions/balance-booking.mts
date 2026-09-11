@@ -44,6 +44,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 const OUTSIDE_HOURS_DURATION_MINUTES = 60;
 const PUBLIC_BOOKING_WINDOW_DAYS = 5;
+const AVAILABILITY_LOOKAHEAD_DAYS = 35;
 
 function getEnv(name: string): string {
     const netlifyValue = globalThis.Netlify?.env?.get?.(name);
@@ -523,13 +524,24 @@ export function buildSlotsForDate(settingsInput: BookingSettings, date: string, 
     return slots;
 }
 
+export function buildAvailableDates(settings: BookingSettings, busy: BusyRange[], now = new Date()) {
+    const firstDate = brisbaneDateKey(now);
+    const dates = [];
+    for (let offset = 0; offset < AVAILABILITY_LOOKAHEAD_DAYS && dates.length < PUBLIC_BOOKING_WINDOW_DAYS; offset += 1) {
+        const date = dateKeyForOffset(firstDate, offset);
+        const slots = buildSlotsForDate(settings, date, busy, now);
+        if (slots.length) dates.push({ date, label: dateLabel(date), slots });
+    }
+    return dates;
+}
+
 async function getAvailability(_fromDate: string, settings: BookingSettings): Promise<{
     dates: Array<{ date: string; label: string; slots: Array<{ start: string; end: string; label: string }> }>;
     calendarConnected: boolean;
     calendarReconnectRequired: boolean;
     calendarConnectionIssue: boolean;
 }> {
-    const days = PUBLIC_BOOKING_WINDOW_DAYS;
+    const days = AVAILABILITY_LOOKAHEAD_DAYS;
     const firstDate = brisbaneDateKey();
     const lastDate = dateKeyForOffset(firstDate, days - 1);
     const timeMin = dateAtBrisbaneTime(firstDate, "00:00").toISOString();
@@ -545,13 +557,7 @@ async function getAvailability(_fromDate: string, settings: BookingSettings): Pr
         };
     }
     const busy = [...databaseBusy, ...google.busy];
-    const dates = [];
-
-    for (let offset = 0; offset < days; offset += 1) {
-        const date = dateKeyForOffset(firstDate, offset);
-        const slots = buildSlotsForDate(settings, date, busy);
-        if (slots.length) dates.push({ date, label: dateLabel(date), slots });
-    }
+    const dates = buildAvailableDates(settings, busy);
     return {
         dates,
         calendarConnected: true,
