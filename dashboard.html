@@ -14055,7 +14055,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'meals', sel:'#weekly-meal-evolution-btn', fallbackSel:'#browse-plans-pill', title:'A plan that learns your meals', fallbackTitle:'Open your meal plan', body:"At the end of each week, Balance keeps the meals you actually eat, adds two small variations, and suggests simple ways to cover nutrition gaps.", fallbackBody:"Open your meal plan to build next week from the meals you actually ate.", action:function(){ try { var pill=document.getElementById('browse-plans-pill'); if(typeof switchWeek==='function') switchWeek('meal-plan-store', pill); } catch(e){} } },
     { tab:'dashboard', sel:'.profile-icon[onclick*="profile"]', title:'Profile settings', body:"Open Profile when you need settings, dietary requirements, password changes, character customisation, or to replay this tour later." },
     { tab:'profile', sel:'#settings-app-suggestions', title:'App Suggestions', body:"Got an idea for Balance? Tap this row in Settings and send it straight to Shannon's Needs You list." },
-    { tab:'profile', sel:'#settings-fitgotchi-visibility', title:'Choose your Home style', body:'FitGotchi starts hidden for new members. Turn this on any time if you want your character back on Home.', condition: function(){ return typeof window.isFitGotchiHidden === 'function' && window.isFitGotchiHidden(); } },
+    { tab:'profile', sel:'#settings-fitgotchi-visibility', title:'Choose your Home style', body:'Your FitGotchi levels up with the XP you earn in Balance. It is an extra way to visualise your progress. Use View Your FitGotchi in To do next for a guided introduction, and keep it on or off depending on what motivates you.', condition: function(){ return typeof window.isFitGotchiHidden === 'function' && window.isFitGotchiHidden(); } },
     { tab:'profile', sel:'#settings-payment-method', title:'Payment Method', body:"Update your saved card from Profile > Settings > Payment Method." },
 
     { tab:'movement-tab', sel:'#mvmt-week-workouts-card', title:"Train with Coach Shan!", body:"Shannon updates his workouts daily — tap this gold card to see what he's doing in the gym this week and follow along with his exact sessions." },
@@ -14265,15 +14265,15 @@ if(!window._pbbIsIOSSafari) {
 
   // A paid Week 1 course action, deliberately outside requiredOnboardingTourSteps.
   const fitgotchiCourseSteps = [
-    {tab:'profile', sel:'#settings-fitgotchi-visibility', title:'Turn on your FitGotchi',
-      body:'Turn on Show FitGotchi to meet your character on Home. It comes ready with its standard colours, so there is nothing to design. Your character is visual feedback on your progress, not a measure of your worth or fitness.',
-      pageView:true, spotlightExplanation:true, allowTargetInteraction:true, requiresFitGotchiVisible:true, nextLabel:'See it on Home'},
-    {tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Your character grows with you',
-      body:'As you earn experience points (XP) through your Balance activities, your character levels up with you. This is gamification: another source of feedback that can help make your progress visible and keep you motivated.',
-      pageView:true, spotlightExplanation:true, nextLabel:'How to use this feedback'},
-    {tab:'dashboard', sel:'#tamagotchi-stats-bar', title:'Use the feedback that helps you',
-      body:'Your XP and level reflect your activity in Balance. Use them alongside your workout, food and check-in data, not instead of it. If the character motivates you, keep it on Home. Prefer a simpler screen? Turn Show FitGotchi off in Settings any time. Your XP and course progress still count.',
-      pageView:true, spotlightExplanation:true}
+    {tab:'profile', sel:'#settings-fitgotchi-visibility', title:'Meet your FitGotchi',
+      body:'Your FitGotchi levels up as you earn XP through your Balance activities. It is an extra data point alongside your training, food and check-ins: a way to see your work in progress and find a little extra motivation.',
+      enabledTitle:"Let's see your FitGotchi",
+      enabledBody:'Your FitGotchi is switched on. Let\'s head Home and see your progress come to life.',
+      controlPromptPosition:'below', tourBottomReserve:90,
+      pageView:true, spotlightExplanation:true, allowTargetInteraction:true, requiresFitGotchiVisible:true, nextLabel:'Take me home'},
+    {tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Make it your own',
+      body:'Your FitGotchi grows with the XP you earn. Keep it on if seeing your progress helps motivate you. You can turn Show FitGotchi on or off in Settings any time. Your progress still counts either way.',
+      controlPromptPosition:'below', tourBottomReserve:90, pageView:true, spotlightExplanation:true}
   ];
   let courseFeatureTour = null;
   let activeSteps = [];
@@ -14544,24 +14544,17 @@ if(!window._pbbIsIOSSafari) {
     setTourGateUi(true, '', finalLabel);
 
     if (step && step.requiresFitGotchiVisible) {
-      let advanceTimer = null;
-      const stepIndex = idx;
-      const update = function(event){
+      const update = function(){
         if (!gateIsCurrent()) return;
         const complete = !!(q('#fitgotchi-visibility-toggle') && window.getFitGotchiVisibility && window.getFitGotchiVisibility() === 'visible');
         activeTourGate.complete = complete;
-        setTourGateUi(complete, complete ? 'Shown on Home. Tap See it on Home to continue.' : 'Tap the Show FitGotchi switch to turn it on.', finalLabel);
+        document.getElementById('tour-title').textContent = complete ? step.enabledTitle : step.title;
+        document.getElementById('tour-body').textContent = complete ? step.enabledBody : step.body;
+        setTourGateUi(complete, complete ? '' : 'Turn it on now using the Show FitGotchi switch above.', finalLabel);
         scheduleTourPosition(step);
-        if (complete && event && event.detail && event.detail.mode === 'visible' && !advanceTimer) {
-          advanceTimer = setTimeout(function(){
-            advanceTimer = null;
-            if (gateIsCurrent() && idx === stepIndex && window.getFitGotchiVisibility() === 'visible') window.tourNext();
-          }, 150);
-        }
       };
       activeTourGate = {complete:false, cleanup:function(){
         window.removeEventListener('pbbFitGotchiVisibilityChanged', update);
-        if (advanceTimer) clearTimeout(advanceTimer);
       }};
       window.addEventListener('pbbFitGotchiVisibilityChanged', update);
       update();
@@ -15193,6 +15186,8 @@ if (step && step.requiresFeedPost) {
     bubble.style.bottom = '';
     bubble.style.maxHeight = '';
     bubble.style.overflowY = '';
+    // This card is below its switch, so it can safely scroll on short screens.
+    bubble.style.pointerEvents = step && step.requiresFitGotchiVisible ? 'auto' : '';
     const goalsNavigation = !!(step && step.requiresWeeklyGoals && isVisible(q('#weekly-goals-modal')));
     if (overlay) overlay.classList.toggle('tour-goals-navigation', goalsNavigation);
     const navigationOnly = !!(step && ((step.coachNoteGuide && isVisible(q('#meta-ad-trial-inbox-preview-card'))) || (step.checkinExplainerGuide && isVisible(q('#coach-checkin-explainer'))) || goalsNavigation ||
@@ -15944,9 +15939,13 @@ window.endFeatureTour = function(skipped){
     if (typeof pushNavigationState === 'function') {
       try { pushNavigationState('guided-tour-overlay', function(){ endFeatureTour(true); }); } catch(e){}
     }
-    resizeHandler = function(){
+    resizeHandler = function(event){
       const step = activeTourDisplayStep || activeSteps[idx];
       if (!step) return;
+      if (courseFeatureTour && event && event.type === 'resize') {
+        positionBubbleAndSpotlight(currentTourPositionTarget(step), step, { initialPlacement:true });
+        return;
+      }
       scheduleTourPosition(step);
     };
     window.addEventListener('resize', resizeHandler);
@@ -17406,10 +17405,10 @@ window.endFeatureTour = function(skipped){
   });
 
   allFeatures.push({
-    id:'fitgotchi-week-one-feedback-v1', tab:'dashboard',
+    id:'fitgotchi-week-one-feedback-v2', tab:'dashboard',
     sel:'#next-obvious-steps-card [data-next-step-id="fitgotchi_intro"]',
     fallbackSel:'#next-obvious-steps-card', title:'View Your FitGotchi',
-    body:'Open View Your FitGotchi in To do next to learn how XP and your character provide feedback and motivation. Your character comes ready with standard colours, with no design step.',
+    body:'Open View Your FitGotchi in To do next for a short guided tour. Turn it on in Settings, then tap Take me home to see your progress visualised.',
     condition:function(){ return !!(window.socialJourney && window.socialJourney.getFitGotchiIntroAction && window.socialJourney.getFitGotchiIntroAction()); }
   });
 

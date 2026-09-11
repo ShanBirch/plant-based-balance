@@ -97,19 +97,22 @@ test('the mini-tour has real Settings/Home targets and is outside the payment to
   const steps=section(html,'  const fitgotchiCourseSteps','  let activeSteps');
   assert.match(steps,/settings-fitgotchi-visibility/);
   assert.match(steps,/tamagotchi-widget-container/);
-  assert.match(steps,/tamagotchi-stats-bar/);
-  assert.match(steps,/gamification/);assert.match(steps,/any time/);
+  assert.match(steps,/extra data point/);assert.match(steps,/any time/);
+  assert.match(steps,/controlPromptPosition:'below'/);
+  assert.match(steps,/nextLabel:'Take me home'/);
   assert.doesNotMatch(section(html,'const REQUIRED_ONBOARDING_TOUR_TITLES', 'function requiredOnboardingTourSteps'),/FitGotchi/);
   assert.doesNotMatch(section(next,'var ONBOARDING_ACTION_IDS', '];'),/fitgotchi/);
-  assert.match(html,/fitgotchi-week-one-feedback-v1/);
+  assert.match(html,/fitgotchi-week-one-feedback-v2/);
   assert.match(html,/else if \(!completedCourseFeatureTour\) localStorage.setItem/);
   assert.match(html,/completedCourseFeatureTour && skipped && tourNavigationBusy/);
 });
-test('the switch gate observes the actual visibility and removes its listener',()=>{
-  const c={step:{requiresFitGotchiVisible:true},activeTourGate:null,finalLabel:'Next',
-    idx:0,setTimeout:fn=>{c.advance=fn;return 1},clearTimeout:()=>{c.advance=null},
+test('switching on updates the card and waits for Take me home; switching off restores the prompt',()=>{
+  const nodes={'tour-title':{},'tour-body':{}};
+  const c={step:{requiresFitGotchiVisible:true,title:'Meet your FitGotchi',body:'Progress explained',enabledTitle:"Let's see your FitGotchi",enabledBody:'Head Home'},activeTourGate:null,finalLabel:'Take me home',
+    document:{getElementById:id=>nodes[id]},
+    setTimeout(){throw Error('must wait for the member to press Take me home')},
     gateIsCurrent:()=>true,q:()=>({}),scheduleTourPosition(){},
-    setTourGateUi:enabled=>{c.enabled=enabled},window:{
+    setTourGateUi:(enabled,note,label)=>{c.enabled=enabled;c.note=note;c.label=label},window:{
       getFitGotchiVisibility:()=>c.visible?'visible':'hidden',
       tourNext:()=>{c.advanced=(c.advanced||0)+1},
       addEventListener:(name,fn)=>{c.listener=fn},
@@ -117,11 +120,20 @@ test('the switch gate observes the actual visibility and removes its listener',(
     }};
   const branch=section(html,'    if (step && step.requiresFitGotchiVisible)', 'if (step && step.requiresFeedPost)');
   vm.runInNewContext('(function(){'+branch+'})()',c);
-  assert.equal(c.enabled,false);assert.equal(c.advance,undefined);
+  assert.equal(c.enabled,false);assert.equal(nodes['tour-title'].textContent,'Meet your FitGotchi');
+  assert.match(c.note,/Turn it on now/);
   c.visible=true;c.listener({detail:{mode:'visible'}});assert.equal(c.enabled,true);
-  c.advance();assert.equal(c.advanced,1);
-  c.listener({detail:{mode:'visible'}});c.idx=1;c.advance();assert.equal(c.advanced,1);
+  assert.equal(nodes['tour-title'].textContent,"Let's see your FitGotchi");
+  assert.equal(c.label,'Take me home');assert.equal(c.advanced,undefined);
+  c.visible=false;c.listener();assert.equal(c.enabled,false);
+  assert.equal(nodes['tour-body'].textContent,'Progress explained');
   c.activeTourGate.cleanup();assert.equal(c.removed,true);
+});
+
+test('the short guide starts in Settings and ends with the optional Home explanation',()=>{
+  const c={};vm.runInNewContext(section(html,'  const fitgotchiCourseSteps','  let courseFeatureTour')+'\nthis.steps=fitgotchiCourseSteps;',c);
+  assert.equal(c.steps.length,2);assert.equal(c.steps[0].tab,'profile');
+  assert.equal(c.steps[1].tab,'dashboard');assert.match(c.steps[1].body,/on or off/);
 });
 
 test('the dedicated course does not evaluate unrelated feature conditions',()=>{
