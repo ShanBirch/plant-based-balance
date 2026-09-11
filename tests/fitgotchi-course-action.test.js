@@ -186,6 +186,6 @@ test('edited scripts parse and both loader paths use the new assets',()=>{
     const at=html.indexOf('<script>',html.indexOf('<!-- ========== '+marker));
     new Function(html.slice(at+8,html.indexOf('</script>',at)));
   }
-  assert.equal((html.match(/pbb-social-journey.js\?v=54-fitgotchi-bootstrap/g)||[]).length,2);
-  assert.equal((html.match(/pbb-next-obvious-steps.js\?v=60-onboarding-funnel/g)||[]).length,2);
+  assert.equal((html.match(/pbb-social-journey.js\?v=55-week1-progress-photos/g)||[]).length,2);
+  assert.equal((html.match(/pbb-next-obvious-steps.js\?v=61-course-photo-sync/g)||[]).length,2);
 });

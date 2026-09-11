@@ -20,6 +20,7 @@
       tasks: [
         task('w1_fitgotchi_intro', 'View Your FitGotchi', 'Meet your character and see how XP gives you visual feedback on your progress.', 'fitgotchi_intro', 1, '🐣', 'fitgotchi'),
         task('w1_feed_intro', 'Introduce yourself to the Feed', 'Write a simple hello in Balance Feed. No photo needed.', 'foundations_feed_intro', 1, '\uD83D\uDC4B', 'feed'),
+        task('w1_progress_photos', 'Take your starting progress photos', 'Save front, side and back photos in your first week. Saving all three ticks this action off automatically. No Feed sharing needed.', 'progress_photo_set', 1, '📷', 'progress-photos'),
         task('w1_wearable_setup', 'Connect your fitness watch, if you use one', 'Connect a compatible watch, or choose the honest no-watch option. Both paths receive the same course credit.', 'wearable_setup', 1, '\u231A', 'wearable'),
         task('w1_weekly_checkin', 'Complete your weekly check-in', 'Tell Shannon what worked, what got in the way and what you need next.', 'weekly_checkin', 1, '✓', 'checkin')
       ]
@@ -437,6 +438,16 @@
     }
   }
 
+  function isCourseProgressPhotoSet(row, startIso, endIso) {
+    let notes;
+    try { notes = typeof row.notes === 'string' ? JSON.parse(row.notes) : row.notes; } catch (_) { return false; }
+    if (!notes || !Array.isArray(notes.shots)) return false;
+    // A calendar-week row can be replaced; use the actual save time, not its original creation time.
+    const savedAt = Date.parse(notes.saved_at || row.created_at);
+    if (!(savedAt >= Date.parse(startIso) && savedAt < Date.parse(endIso))) return false;
+    return ['front', 'side', 'back'].every(angle => notes.shots.some(shot => shot && shot.angle === angle && !!shot.photo_url));
+  }
+
   async function calculateProgress() {
     if (isActivationPreview() && state) {
       const previewTasks = getWeekDefinition().tasks.map(item => Object.assign({}, item, { current: 0, complete: false }));
@@ -447,7 +458,7 @@
     const supabase = window.supabaseClient;
     const startIso = dateFromKey(state.week_started_at).toISOString();
     const endIso = dateFromKey(addDaysKey(state.week_started_at, 7)).toISOString();
-    const [stories, comments, transactions, workouts, checkins, personalBests, wearableConnections, nativeWearableRows, memberProfile] = await Promise.all([
+    const [stories, comments, transactions, workouts, checkins, personalBests, wearableConnections, nativeWearableRows, memberProfile, progressPhotos] = await Promise.all([
       safeQuery(() => supabase.from('stories')
         .select('id,media_type,caption,course_action_id,created_at')
         .eq('user_id', currentUserId())
@@ -502,7 +513,12 @@
       safeQuery(() => supabase.from('users')
         .select('id,ig_handle')
         .eq('id', currentUserId())
-        .limit(1))
+        .limit(1)),
+      safeQuery(() => supabase.from('weekly_progress_photos')
+        .select('id,notes,created_at,photo_week')
+        .eq('user_id', currentUserId())
+        .gte('photo_week', addDaysKey(state.week_started_at, -6))
+        .lt('photo_week', addDaysKey(state.week_started_at, 7)))
     ]);
 
     const manual = new Set(state.completed_task_ids);
@@ -569,6 +585,7 @@
       foundations_feed_reflection: linkedTextPostCount('w6_feed_reflection'),
       wearable_setup: ['verified_connection', 'no_compatible_watch'].includes(wearableSetup.status) ? 1 : 0,
       fitgotchi_intro: safeObject(settingsBeforeProgress.fitgotchi_intro).completed_at ? 1 : 0,
+      progress_photo_set: progressPhotos.some(row => isCourseProgressPhotoSet(row, startIso, endIso)) ? 1 : 0,
       weekly_checkin: weeklyCheckinComplete ? 1 : 0
     };
     const definition = getWeekDefinition();
@@ -733,6 +750,7 @@
   }
 
   function taskActionLabel(item) {
+    if (item.type === 'progress_photo_set') return item.complete ? 'Photos saved ✓' : 'Take photos';
     if (item.type === 'fitgotchi_intro') return item.complete ? 'Viewed' : 'View Your FitGotchi';
     if (item.type === 'manual') return item.complete ? 'Completed' : 'Mark done';
     if (item.type === 'planner') return item.complete ? 'Edit plan' : 'Build plan';
@@ -788,6 +806,7 @@
     const nextTask = getNextJourneyTask();
     if (!nextTask) return null;
     return {
+      taskId: nextTask.id,
       title: nextTask.type === 'fitgotchi_intro' ? nextTask.label : (definition.week >= 7 ? 'Balance Become: ' : 'Balance Learn: ') + nextTask.label,
       body: nextTask.hint || definition.body,
       cta: taskActionLabel(nextTask),
@@ -1084,7 +1103,7 @@
       const tasks = definition.tasks.map(function(item){
         const stored = savedTasks.get(item.id);
         // Do not retroactively lock members who already passed Week 1 before this action existed.
-        const exempt = item.type === 'fitgotchi_intro' && currentJourneyWeek > 1 && !stored;
+        const exempt = ['fitgotchi_intro', 'progress_photo_set'].includes(item.type) && currentJourneyWeek > 1 && !stored;
         const current = Math.max(0, Number(stored && stored.current) || 0);
         const complete = exempt || !!(stored && stored.complete) || current >= item.target;
         return Object.assign({}, item, taskAvailability(item), {
@@ -1467,6 +1486,12 @@
   function switchTo(action, taskId) {
     if (action === 'checkin' && typeof window.openWeeklyCheckinPreview === 'function') return window.openWeeklyCheckinPreview();
     closeJourney();
+    if (action === 'progress-photos') {
+      if (typeof window.switchAppTab === 'function') window.switchAppTab('dashboard');
+      if (typeof window.openProgressPhotoCapture === 'function') window.openProgressPhotoCapture();
+      else showToast('Photo capture is still loading. Please try again.', 'error');
+      return;
+    }
     if (action === 'instagram') return openInstagram();
     if (action === 'diary') {
       if (typeof window.switchAppTab === 'function') window.switchAppTab('dashboard');
@@ -2066,6 +2091,7 @@
     advanceWeek,
     restart,
     _test: {
+      isCourseProgressPhotoSet,
       WEEK_DEFINITIONS,
       WEEK_LESSONS,
       isInstagramPlanComplete,

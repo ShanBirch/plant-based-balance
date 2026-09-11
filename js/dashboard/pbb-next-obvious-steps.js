@@ -1222,7 +1222,7 @@
       if (action && isSourceCardDue(selector)) addUniqueAction(picked, action);
     });
     var progressPhotoAction = ACTIONS.find(function(actionItem){ return actionItem.id === 'progress_photo'; });
-    if (progressPhotoAction && isSourceCardDue('#weekly-progress-photo-card')) addUniqueAction(picked, progressPhotoAction);
+    if (progressPhotoAction && (!journeyAction || journeyAction.taskId !== 'w1_progress_photos') && isSourceCardDue('#weekly-progress-photo-card')) addUniqueAction(picked, progressPhotoAction);
     var fitnessDiaryAction = ACTIONS.find(function(actionItem){ return actionItem.id === 'fitness_diary'; });
     if (fitnessDiaryAction && isFitnessDiaryDue()) addUniqueAction(picked, fitnessDiaryAction);
     if (isWeeklyCheckinDue()) {

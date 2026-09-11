@@ -580,7 +580,7 @@ let progressPhotoCaptureState = null;
         overlay = document.createElement('div');
         overlay.id = 'progress-photo-shot-guide';
         overlay.className = 'progress-photo-shot-guide';
-        overlay.style.cssText = 'display:none; position:fixed; inset:0; z-index:100200; background:rgba(5,5,10,0.98); padding:calc(20px + env(safe-area-inset-top, 0px)) 18px calc(20px + env(safe-area-inset-bottom, 0px)); box-sizing:border-box; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; align-items:center; justify-content:center;';
+        overlay.style.cssText = 'display:none; position:fixed; inset:0; z-index:100200; background:rgba(5,5,10,0.98); padding:calc(20px + max(42px, env(safe-area-inset-top, 0px))) 18px calc(20px + max(24px, env(safe-area-inset-bottom, 0px))); box-sizing:border-box; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; align-items:center; justify-content:center;';
         document.body.appendChild(overlay);
         return overlay;
     }
@@ -615,7 +615,7 @@ let progressPhotoCaptureState = null;
         }).join('');
 
         overlay.innerHTML = ''
-            + '<div class="progress-photo-guide-panel" style="width:100%; max-width:420px; color:#fff;">'
+            + '<div class="progress-photo-guide-panel" style="width:100%; max-width:420px; max-height:100%; overflow-y:auto; flex-shrink:1; color:#fff;">'
             + '<div class="progress-photo-guide-header" style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:22px;">'
             + '<div>'
             + '<div class="progress-photo-guide-eyebrow" style="font-size:0.78rem; color:rgba(255,255,255,0.62); font-weight:800; text-transform:uppercase; letter-spacing:0;">Progress photo set</div>'
@@ -994,6 +994,11 @@ let progressPhotoCaptureState = null;
             window._pbbCurrentProgressPhoto = savedPhoto;
 
             markProgressPhotoCompletedForCurrentWeek();
+            // Refresh both course credit and Home only after the complete set is durably saved.
+            try {
+                if (window.socialJourney) await window.socialJourney.refresh();
+                if (window.pbbNextSteps) window.pbbNextSteps.refresh();
+            } catch (error) { console.warn('Progress photo course refresh failed:', error); }
             await awardProgressPhotoXP(userId, savedPhoto, shots[0].file);
 
             if (uploadingCard) uploadingCard.style.display = 'none';
@@ -1011,6 +1016,7 @@ let progressPhotoCaptureState = null;
                 await window.refreshInsightsCheckinPhotoCard();
             }
 
+            if (window.pbbNextSteps) window.pbbNextSteps.refresh();
             console.log('Progress photo set uploaded successfully!');
 
         } catch (error) {
