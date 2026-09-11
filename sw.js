@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v532-onboarding-funnel'; // v532: first-party ad to onboarding progress and admin report
+const CACHE_NAME = 'pbb-app-v532-iphone-onboarding'; // v532: cover iOS keyboard pans, clear the tour banner, and prime exercise previews
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -21,14 +21,14 @@ const ASSETS = [
   './workout_library_extended.js',
   './js/dashboard/script_part_2.js?v=16-imported-activity-latest',
   './js/dashboard/dashboard-script-3-1_get_user_data.js?v=62-phone-tour-replay',
-  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=244-onboarding-funnel&cohort_diets=1&video_health=2',
+  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=244-iphone-keyboard&cohort_diets=1&video_health=2',
   './js/dashboard/pbb-settings-navigation.js?v=1-settings-navigation',
   './js/dashboard/pbb-meta-preview-soundtrack.js?v=3-coach-video-ducking',
   './js/dashboard/pbb-app-telemetry.js?v=1',
   './js/dashboard/pbb-deferred-weeklygoals.js?v=35-balance-theme',
   './css/dashboard/pbb-onboarding-comeback.css?v=8',
-  './css/dashboard/pbb-onboarding-foundations.css?v=11-typed-question-layout',
-  './js/dashboard/dashboard-script-7-video_logic.js?v=20260902-stopwatch-centred',
+  './css/dashboard/pbb-onboarding-foundations.css?v=13-iphone-keyboard',
+  './js/dashboard/dashboard-script-7-video_logic.js?v=20260911-ios-preview',
   './js/dashboard/dashboard-script-10-points_widget_functions.js?v=67-verified-moves',
   './js/dashboard/pbb-deferred-fitbit.js?v=3-latest-import-only',
   './js/dashboard/pbb-next-obvious-steps.js?v=54-tour-quiz-continue',

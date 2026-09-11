@@ -7897,10 +7897,31 @@ const wizardSlideTransitionMs = 280;
 let wizardSectionTransitionTimer = null;
 const wizardSectionTransitionMs = 1550;
 
+let wizardBodyScrollSnapshot = null;
 function setOnboardingScrollLock(locked) {
     try {
+        // overflow:hidden alone still lets iOS pan the document to a focused input.
+        const body = document.body;
+        if (locked && !wizardBodyScrollSnapshot) {
+            const properties = ['position', 'top', 'left', 'width'];
+            wizardBodyScrollSnapshot = {
+                x: window.scrollX, y: window.scrollY,
+                styles: properties.map(name => [name, body.style.getPropertyValue(name), body.style.getPropertyPriority(name)])
+            };
+            body.style.setProperty('position', 'fixed', 'important');
+            body.style.setProperty('top', `${-wizardBodyScrollSnapshot.y}px`, 'important');
+            body.style.setProperty('left', `${-wizardBodyScrollSnapshot.x}px`, 'important');
+            body.style.setProperty('width', '100%', 'important');
+        }
         document.documentElement.classList.toggle('pbb-onboarding-locked', !!locked);
         document.body.classList.toggle('pbb-onboarding-locked', !!locked);
+        if (!locked && wizardBodyScrollSnapshot) {
+            const snapshot = wizardBodyScrollSnapshot;
+            wizardBodyScrollSnapshot = null;
+            snapshot.styles.forEach(([name, value, priority]) => value
+                ? body.style.setProperty(name, value, priority) : body.style.removeProperty(name));
+            window.scrollTo(snapshot.x, snapshot.y);
+        }
     } catch (e) {}
 }
 
@@ -9033,8 +9054,9 @@ function bindWizardChatControlEvents() {
 function setWizardChatKeyboardMode(active) {
     const wizard = document.getElementById('onboarding-wizard');
     if (!wizard) return;
+    const entering = active && !wizard.classList.contains('wizard-chat-keyboard');
     wizard.classList.toggle('wizard-chat-keyboard', !!active);
-    if (active) scrollWizardChatToPromptStart();
+    if (entering) scrollWizardChatToPromptStart();
 }
 
 function syncWizardViewportMetrics() {
@@ -9042,10 +9064,14 @@ function syncWizardViewportMetrics() {
     if (!wizard) return;
     const visualViewport = window.visualViewport;
     const viewportHeight = Math.max(
-        320,
+        1,
         Math.round(visualViewport?.height || window.innerHeight || document.documentElement.clientHeight || 0)
     );
     wizard.style.setProperty('--pbb-wizard-viewport-height', `${viewportHeight}px`);
+    // Keep the opaque curtain full-sized; only its inner card fits the keyboard.
+    const coverHeight = Math.max(viewportHeight, window.innerHeight || 0, document.documentElement.clientHeight || 0);
+    wizard.style.setProperty('--pbb-wizard-cover-height', `${coverHeight}px`);
+    wizard.style.setProperty('--pbb-wizard-viewport-top', `${Math.max(0, visualViewport?.offsetTop || 0)}px`);
 
     const activeElement = document.activeElement;
     const focusedWizardField = !!(
@@ -9067,7 +9093,14 @@ function syncWizardViewportMetrics() {
 function bindWizardChatViewportEvents() {
     if (wizardChatViewportBound) return;
     wizardChatViewportBound = true;
-    const syncFromViewport = () => syncWizardViewportMetrics();
+    let viewportFrame = null;
+    const syncFromViewport = () => {
+        if (viewportFrame !== null) return;
+        viewportFrame = requestAnimationFrame(() => {
+            viewportFrame = null;
+            syncWizardViewportMetrics();
+        });
+    };
     if (window.visualViewport) {
         window.visualViewport.addEventListener('resize', syncFromViewport);
         window.visualViewport.addEventListener('scroll', syncFromViewport);
@@ -24536,7 +24569,9 @@ function findExerciseThumbnail(exerciseName, videoUrl = '') {
 window.findExerciseThumbnail = findExerciseThumbnail;
 
 function createExerciseVideoBlockHtml(videoUrl, exerciseName = '', providedThumbnailUrl = '') {
-    const safeUrl = String(videoUrl || '')
+    // Request a still frame on iOS without starting playback or requiring a tap.
+    const previewUrl = String(videoUrl || '').includes('#') ? String(videoUrl || '') : `${videoUrl}#t=0.1`;
+    const safeUrl = previewUrl
         .replace(/&/g, '&amp;')
         .replace(/"/g, '&quot;')
         .replace(/</g, '&lt;')

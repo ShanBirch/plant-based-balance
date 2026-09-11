@@ -58,6 +58,7 @@ function seekExerciseVideoThumbnailFrame(video, onReady, onError) {
     const cleanup = () => {
         if (fallbackTimer) clearTimeout(fallbackTimer);
         video.removeEventListener('loadeddata', seekFrame);
+        video.removeEventListener('loadedmetadata', seekFrame);
         video.removeEventListener('seeked', finish);
         video.removeEventListener('error', fail);
     };
@@ -90,11 +91,12 @@ function seekExerciseVideoThumbnailFrame(video, onReady, onError) {
             cleanup();
             return;
         }
-        if (video.readyState < 2) return;
+        // Safari can stop at HAVE_METADATA until explicitly asked to seek.
+        if (video.readyState < 1) return;
 
         const target = getExerciseThumbnailSeekTime(video);
         if (target <= 0 || Math.abs(Number(video.currentTime || 0) - target) < 0.03) {
-            finish();
+            if (video.readyState >= 2) finish();
             return;
         }
 
@@ -107,8 +109,9 @@ function seekExerciseVideoThumbnailFrame(video, onReady, onError) {
     };
 
     video.addEventListener('error', fail, { once: true });
-    if (video.readyState >= 2) seekFrame();
-    else video.addEventListener('loadeddata', seekFrame, { once: true });
+    video.addEventListener('loadedmetadata', seekFrame, { once: true });
+    video.addEventListener('loadeddata', seekFrame, { once: true });
+    if (video.readyState >= 1) seekFrame();
 
     fallbackTimer = setTimeout(() => {
         if (settled) return;

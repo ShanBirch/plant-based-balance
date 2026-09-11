@@ -15,8 +15,11 @@
     --foundations-gold-soft: #d8b25e;
     --foundations-line: rgba(138, 90, 18, .24);
     isolation: isolate;
-    height: var(--pbb-wizard-viewport-height, 100dvh) !important;
-    max-height: var(--pbb-wizard-viewport-height, 100dvh) !important;
+    top: var(--pbb-wizard-viewport-top, 0px) !important;
+    bottom: auto !important;
+    height: var(--pbb-wizard-cover-height, 100lvh) !important;
+    max-height: none !important;
+    box-sizing: border-box;
     overflow: hidden;
     padding: max(12px, env(safe-area-inset-top, 0px)) 12px max(12px, env(safe-area-inset-bottom, 0px)) !important;
     background:
@@ -184,6 +187,9 @@ html[data-pbb-theme="dark"] #onboarding-wizard .onboarding-modal.wizard-containe
 
 #onboarding-wizard .wizard-chat-intake {
     display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    width: 100%;
+    min-width: 0;
     grid-template-rows: auto auto auto minmax(0, 1fr) auto !important;
     height: 100% !important;
     min-height: 0 !important;
@@ -742,11 +748,11 @@ html[data-pbb-theme="dark"] #onboarding-wizard .onboarding-modal.wizard-containe
     50% { transform: scale(1.08); }
 }
 
-@media (max-width: 560px) {
+@media (max-width: 560px), (max-height: 560px) and (max-width: 1000px) {
     #onboarding-wizard.onboarding-overlay {
         /* Some edge-to-edge WebViews report zero even under the status bar. */
         --pbb-wizard-safe-top: max(42px, env(safe-area-inset-top, 0px));
-        --pbb-wizard-safe-bottom: max(6px, env(safe-area-inset-bottom, 0px));
+        --pbb-wizard-safe-bottom: max(12px, env(safe-area-inset-bottom, 0px));
         align-items: flex-start !important;
         padding: var(--pbb-wizard-safe-top) 6px var(--pbb-wizard-safe-bottom) !important;
     }
@@ -754,7 +760,11 @@ html[data-pbb-theme="dark"] #onboarding-wizard .onboarding-modal.wizard-containe
     #onboarding-wizard .onboarding-modal.wizard-container,
     html[data-pbb-theme="light"] #onboarding-wizard .onboarding-modal.wizard-container,
     html[data-pbb-theme="dark"] #onboarding-wizard .onboarding-modal.wizard-container {
-        width: calc(100vw - 12px) !important;
+        width: min(520px, calc(100vw - 12px)) !important;
+        min-height: 0 !important;
+        flex: 0 1 auto !important;
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
         height: calc(var(--pbb-wizard-viewport-height, 100dvh) - var(--pbb-wizard-safe-top) - var(--pbb-wizard-safe-bottom)) !important;
         max-height: calc(var(--pbb-wizard-viewport-height, 100dvh) - var(--pbb-wizard-safe-top) - var(--pbb-wizard-safe-bottom)) !important;
         border-radius: 24px !important;
@@ -762,6 +772,57 @@ html[data-pbb-theme="dark"] #onboarding-wizard .onboarding-modal.wizard-containe
 
     #onboarding-wizard .wizard-header {
         padding: 18px 18px 0 !important;
+    }
+
+    /* Keyboard animation already supplies intermediate viewport sizes. A second
+       CSS height transition trails behind it and exposes/jumps the content. */
+    #onboarding-wizard .onboarding-modal.wizard-container {
+        transition: background-color .2s, border-color .2s !important;
+    }
+
+    #onboarding-wizard.wizard-chat-mode.wizard-chat-keyboard .wizard-content {
+        overflow-y: auto !important;
+    }
+
+    #onboarding-wizard.wizard-chat-mode.wizard-chat-keyboard .wizard-chat-intake {
+        display: flex !important;
+        flex-direction: column;
+        min-height: 0 !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    #onboarding-wizard.wizard-chat-mode.wizard-chat-keyboard .wizard-chat-intake > * {
+        flex: 0 0 auto !important;
+        width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+    }
+
+    #onboarding-wizard.wizard-chat-mode.wizard-chat-keyboard .wizard-chat-messages {
+        align-self: stretch !important;
+        max-height: none !important;
+        overflow: visible !important;
+    }
+
+    #onboarding-wizard .wizard-chat-input-row {
+        min-width: 0;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    #onboarding-wizard .wizard-chat-input-row input {
+        width: 0 !important;
+        min-width: 0 !important;
+        flex: 1 1 0% !important;
+        box-sizing: border-box;
+        font-size: 16px !important;
+    }
+
+    #onboarding-wizard .wizard-chat-input-row button {
+        flex: 0 0 auto;
+        min-width: 64px;
+        min-height: 44px;
     }
 
     #onboarding-wizard .wizard-content {
@@ -792,7 +853,7 @@ html[data-pbb-theme="dark"] #onboarding-wizard .onboarding-modal.wizard-containe
     }
 
     #onboarding-wizard.wizard-chat-mode.wizard-chat-keyboard .onboarding-modal.wizard-container {
-        width: calc(100vw - 12px) !important;
+        width: min(520px, calc(100vw - 12px)) !important;
         height: calc(var(--pbb-wizard-viewport-height, 100dvh) - var(--pbb-wizard-safe-top) - var(--pbb-wizard-safe-bottom)) !important;
         max-height: calc(var(--pbb-wizard-viewport-height, 100dvh) - var(--pbb-wizard-safe-top) - var(--pbb-wizard-safe-bottom)) !important;
         border-radius: 18px !important;

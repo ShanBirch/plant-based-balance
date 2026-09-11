@@ -12882,7 +12882,7 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=244-onboarding-funnel&cohort_diets=1&video_health=2';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=244-iphone-keyboard&cohort_diets=1&video_health=2';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
@@ -12924,7 +12924,7 @@ if (window._pbbIsIOSSafari) {
         var s = document.createElement('script');
         s.async = false;
         s.dataset.metaTrialLoader = String(attempt);
-        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=244-onboarding-funnel&cohort_diets=1&video_health=2&meta_retry=' + attempt;
+        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=244-iphone-keyboard&cohort_diets=1&video_health=2&meta_retry=' + attempt;
         s.onload = function() {
             if (window._pbbScript5Complete && window._switchAppTabReady && typeof window._switchAppTabReal === 'function') {
                 sessionStorage.removeItem('pbb_meta_script5_recovery_v1');
@@ -12943,7 +12943,7 @@ if (window._pbbIsIOSSafari) {
         document.head.appendChild(s);
     })(0);
 } else {
-document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=244-onboarding-funnel&cohort_diets=1&video_health=2"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=244-iphone-keyboard&cohort_diets=1&video_health=2"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=6-focus-all-users"></script>
@@ -13385,6 +13385,12 @@ if(!window._pbbIsIOSSafari) {
 <style>
   #guided-tour-overlay { position: fixed; inset: 0; z-index: 400000; pointer-events: auto; display: none; }
   #view-active-workout .tour-workout-arrow { outline:2px solid #c49b42; outline-offset:4px; box-shadow:0 0 0 7px rgba(196,155,66,.18),0 0 18px rgba(196,155,66,.5); }
+  #view-active-workout.tour-workout-safe-area {
+    top:var(--pbb-tour-workout-top, 44px) !important;
+    height:calc(100dvh - var(--pbb-tour-workout-top, 44px)) !important;
+    min-height:0 !important;
+    scroll-padding-top:100px;
+  }
   #guided-tour-overlay.active { display: block; }
   #guided-tour-overlay.tour-transitioning::after {
     content: 'Opening your next page…'; position: fixed; left: 50%; top: 50%;
@@ -15024,7 +15030,7 @@ if (step && step.requiresFeedPost) {
     document.getElementById('tour-workout-browse-guide')?.remove();
     document.querySelectorAll('.tour-workout-arrow').forEach(function(el){ el.classList.remove('tour-workout-arrow'); });
     document.getElementById('guided-tour-overlay')?.classList.remove('tour-workout-browse');
-    document.getElementById('view-active-workout')?.classList.remove('tour-workout-docked');
+    document.getElementById('view-active-workout')?.classList.remove('tour-workout-docked', 'tour-workout-safe-area');
     document.getElementById('guided-tour-overlay')?.classList.remove('tour-workout-dock');
     document.getElementById('guided-tour-below-space')?.remove();
     var ptr = document.getElementById('ptr-indicator');
@@ -15176,6 +15182,13 @@ if (step && step.requiresFeedPost) {
       videoRect ? videoRect.bottom + 12 : safeTop);
   }
 
+  function getTourSafeTop(){
+    const banner = document.getElementById('guest-mode-banner');
+    const rect = banner && banner.getBoundingClientRect();
+    return Math.max(44, rect && banner.getClientRects().length && window.getComputedStyle(banner).visibility !== 'hidden'
+      ? rect.bottom + 12 : 0);
+  }
+
   function positionBubbleAndSpotlight(target, step, options){
     const allowScroll = !!(options && options.initialPlacement);
     const overlay = document.getElementById('guided-tour-overlay');
@@ -15214,6 +15227,10 @@ if (step && step.requiresFeedPost) {
 
     // Use the original floating card without shrinking the workout viewport.
     const workoutView = document.getElementById('view-active-workout');
+    if (workoutView) {
+      workoutView.classList.toggle('tour-workout-safe-area', !!(step && step.workoutEducation));
+      workoutView.style.setProperty('--pbb-tour-workout-top', getTourSafeTop() + 'px');
+    }
     if (overlay) overlay.classList.remove('tour-workout-dock', 'tour-workout-browse');
     if (workoutView) workoutView.classList.remove('tour-workout-docked');
     if (step && step.workoutEducation) {
@@ -15323,19 +15340,19 @@ if (step && step.requiresFeedPost) {
     const vh = Math.max(window.innerHeight || 640, 320);
     const bottomReserve = step && typeof step.tourBottomReserve === 'number' ? step.tourBottomReserve : 90;
     // Never pin a scrolled-away control's glow over an unrelated header icon.
-    const targetOnScreen = r.bottom > 40 && r.top < vh - bottomReserve && r.right > 0 && r.left < vw;
+    const safeTop = getTourSafeTop();
+    const targetOnScreen = r.bottom > safeTop && r.top < vh - bottomReserve && r.right > 0 && r.left < vw;
     spot.style.opacity = targetOnScreen ? '1' : '0';
-    const top = Math.max(r.top - pad, 8);
+    const top = Math.max(r.top - pad, safeTop);
     const left = Math.max(r.left - pad, 8);
     const width = Math.max(24, Math.min(r.width + pad*2, vw - left - 8));
-    const height = Math.max(24, Math.min(r.height + pad*2, vh - top - bottomReserve));
+    const height = Math.max(0, Math.min(r.bottom + pad, vh - bottomReserve) - top);
     spot.style.top = top + 'px';
     spot.style.left = left + 'px';
     spot.style.width = width + 'px';
     spot.style.height = height + 'px';
 
     const bubbleH = bubble.offsetHeight || 180;
-    const safeTop = 40;
     if (step && step.requiresWorkoutBrowse) {
       const exercise = q('#workout-exercises-list .exercise-logger-card.workout-swipe-active');
       const sets = exercise && exercise.querySelector('.workout-set-row');
@@ -18755,7 +18772,7 @@ if (window._pbbIsIOSSafari) {
 <link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=123-profile-safe-area">
 <link rel="stylesheet" href="css/dashboard/pbb-meal-plan.css?v=2">
 <link rel="stylesheet" href="css/dashboard/pbb-onboarding-comeback.css?v=9-learn-welcome">
-<link rel="stylesheet" href="css/dashboard/pbb-onboarding-foundations.css?v=12-keyboard-safe-area">
+<link rel="stylesheet" href="css/dashboard/pbb-onboarding-foundations.css?v=13-iphone-keyboard">
 
 
 <script src="js/dashboard/script_part_24.js?v=3-coach-lookup"></script>
@@ -18895,7 +18912,7 @@ if (typeof WORKOUT_LIBRARY !== 'undefined' && typeof WORKOUT_LIBRARY_EXTENDED !=
 </script>
 <script>
 // Script-7 (29KB) - video logic. Defer on iOS to reduce memory pressure.
-var pbbVideoLogicSrc = 'js/dashboard/dashboard-script-7-video_logic.js?v=20260902-stopwatch-centred';
+var pbbVideoLogicSrc = 'js/dashboard/dashboard-script-7-video_logic.js?v=20260911-ios-preview';
 if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
