@@ -15,6 +15,8 @@ const ALLY_INTRO_RE = /\b(?:this is ally|here(?:'s| is) ally|ally(?:,|\s+(?:is|w
 const GEN_INTRO_RE = /\b(?:this is gen|here(?:'s| is) gen|gen(?:,|\s+(?:is|was|got|built|became))|one of my clients)\b/i;
 const BEC_KIRSTY_INTRO_RE = /\b(?:this is bec and kirsty|these are bec and kirsty|here(?:'s| are) bec and kirsty|bec and kirsty|two of my clients)\b/i;
 const DANI_INTRO_RE = /\b(?:this is dani|here(?:'s| is) dani|dani(?:,|\s+(?:is|was|worked|changed))|one of my clients)\b/i;
+// "Lose interest" and "lose track" are not body-weight goals.
+const WEIGHT_GOAL_RE = /\b(?:weight|fat|lean|kg|kgs|kilos?|kilograms?|lbs?|pounds?)\b|\b\d+(?:\.\d+)?\s*(?:kg|kgs|kilos?|kilograms?|lbs?|pounds?)\b/i;
 
 const PAID_META_TRANSFORMATION_PROOFS = Object.freeze([
     {
@@ -30,7 +32,7 @@ const PAID_META_TRANSFORMATION_PROOFS = Object.freeze([
         imageUrl: GEN_STRENGTH_CONFIDENCE_PROOF_URL,
         introductionRe: GEN_INTRO_RE,
         matches: text => /\b(?:strong\w*|strength|muscle|fitter|fitness|confidence|confident)\b/i.test(text)
-            && !/\b(?:lose|weight|fat|kg|kgs|kilogram|lb|lbs|pound|recomp|tone)\b/i.test(text)
+            && !WEIGHT_GOAL_RE.test(text) && !/\b(?:recomp|tone)\b/i.test(text)
             && !/\b(?:together|partner|friend|community|shared|buddy)\b/i.test(text),
         buildIntroduction: () => `This is Gen. She wanted to feel stronger, fitter and more confident, and built that through progressive training and a plan simple enough to keep repeating.`,
     },
@@ -46,7 +48,7 @@ const PAID_META_TRANSFORMATION_PROOFS = Object.freeze([
         id: 'ally_busy_weight_loss',
         imageUrl: ALLY_WEIGHT_LOSS_PROOF_URL,
         introductionRe: ALLY_INTRO_RE,
-        matches: text => /\b(?:lose|losing|weight|fat|lean|kg|kgs|kilogram|lb|lbs|pound)\b/i.test(text),
+        matches: text => WEIGHT_GOAL_RE.test(text),
         buildIntroduction: text => {
             const kgGoal = String(text || '').match(/\b(\d{1,2}(?:\.\d+)?)\s*(?:kg|kgs|kilograms?)\b/i)?.[1] || '';
             const goalLead = kgGoal ? `${kgGoal}kg is a solid goal. ` : '';
