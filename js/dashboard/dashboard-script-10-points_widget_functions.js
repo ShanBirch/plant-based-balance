@@ -464,11 +464,10 @@ function checkNewAnimationUnlocks(previousLevel, newLevel) {
     const mv = document.getElementById('tamagotchi-model');
     if (!mv || !mv.availableAnimations) return;
 
-    // Check for milestone unlocks (character skin, battle mode, backgrounds)
+    // Check for milestone unlocks (character skin and backgrounds).
     const MILESTONE_UNLOCKS = [
         { level: 5, displayName: 'Newcomer Skin', icon: '🧑', category: 'milestone' },
         { level: 5, displayName: 'Gym Background', icon: '🏋️', category: 'milestone' },
-        { level: 10, displayName: 'Battle Mode', icon: '🥊', category: 'milestone' },
         { level: 10, displayName: 'Rising Skin', icon: '💪', category: 'milestone' },
     ];
 

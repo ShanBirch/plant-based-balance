@@ -6,6 +6,18 @@
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
 <style>
 * { touch-action: manipulation; }
+/* Retired FitGotchi combat surfaces. Keep legacy DOM hooks inert for older
+   cached helpers; XP, character animations and community games are unchanged. */
+.battle-trigger-btn,
+#battle-mode-overlay,
+#battle-hp-container,
+#battle-mana-container,
+#battle-action-container,
+#battle-stats-row,
+#settings-allocate-stats-btn,
+#stat-alloc-overlay,
+#battle-invite-overlay,
+.battle-challenge-toast { display: none !important; }
 /* Defensive: ensure metadata-content elements never render as visible text.
    Browsers normally hide these via the UA stylesheet, but if a rapid tap on
    the settings/profile icon during the initial load surfaces the document
@@ -413,25 +425,11 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
     window.applyFitGotchiVisibility = applyVisibility;
     window.setFitGotchiVisibility = function(mode) {
         mode = mode === 'hidden' ? 'hidden' : 'visible';
-        var shouldPromptForCharacter = mode === 'visible' &&
-            !window.__balanceFitGotchiCourseTour &&
-            localStorage.getItem('pbb_fitgotchi_needs_character_setup') === 'true';
+        // New members use the standard appearance. A stale onboarding flag
+        // must never turn the Home visibility switch into a colour-design wizard.
+        localStorage.removeItem('pbb_fitgotchi_needs_character_setup');
         localStorage.setItem(KEY, mode);
         var appliedMode = applyVisibility(mode, { reloadModel: mode === 'visible' });
-        if (shouldPromptForCharacter) {
-            var setupAttempts = 0;
-            function openFirstCharacterSetup() {
-                if (typeof window.openCharacterCustomizationShortcut === 'function') {
-                    localStorage.removeItem('pbb_fitgotchi_needs_character_setup');
-                    localStorage.setItem('pbb_fitgotchi_character_setup_prompted', 'true');
-                    window.openCharacterCustomizationShortcut();
-                } else if (setupAttempts < 20) {
-                    setupAttempts += 1;
-                    setTimeout(openFirstCharacterSetup, 250);
-                }
-            }
-            setTimeout(openFirstCharacterSetup, 350);
-        }
         return appliedMode;
     };
     window.toggleFitGotchiVisibility = function() {
@@ -1188,10 +1186,7 @@ window.addEventListener('load', function() {
                 🗺️
             </div>
 
-            <!-- Battle Trigger Button -->
-            <div class="battle-trigger-btn" onclick="event.stopPropagation(); startBattle();" title="Battle Mode">
-                🥊
-            </div>
+            <!-- Legacy FitGotchi battles are retired. Character unlocks remain. -->
 
             <!-- Animation Selector Button -->
             <div class="animation-trigger-btn" onclick="showAnimationSelector()" title="Unlocks">
@@ -14020,7 +14015,7 @@ if(!window._pbbIsIOSSafari) {
         await new Promise(function(r){ setTimeout(r, 260); });
       } },
     { tab:'dashboard', sel:'#home-cohort-challenge-invite-top', title:'6-Week Challenge', body:"The 6-week challenge sits under your character on Home. Tap it to open the leaderboard or check how to earn XP.", quick: true, condition: function(){ var c = document.getElementById('home-cohort-challenge-invite-top'); return c && c.innerHTML.trim() !== ''; } },
-    { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Meet your FitGotchi', body:"This is your FitGotchi. Feed and train it alongside you as it levels up with you.", quick: true, condition: function(){ return !(typeof window.isFitGotchiHidden === 'function' && window.isFitGotchiHidden()); } },
+    { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Meet your FitGotchi', body:"Your character comes ready with standard colours. Earn XP and watch it level up with you, without a design step or the old character battle mode.", quick: true, condition: function(){ return !(typeof window.isFitGotchiHidden === 'function' && window.isFitGotchiHidden()); } },
     { tab:'dashboard', sel:'#monthly-wrapped-card', title:'Your Month, Wrapped', body:"At the start of each month, tap this card for your workouts, PBs, mood, streaks, weekly goals, and next-month forecast.", quick: true, condition: function(){ var c = document.getElementById('monthly-wrapped-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#weekly-goals-card', title:'Your goals, set for you', body:"Balance uses your setup answers to choose the first three weekly goals. Open Weekly Goals whenever you want to adjust the targets for real life.", quick: true, condition: function(){ var c = document.getElementById('weekly-goals-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#next-obvious-steps-card', fallbackSel:'#social-journey-card', title:'Your Next Step', body:'Once you finish this App Tour and your first Balance Learn lesson, use To do next near the top of Home to see exactly what to do next.', quick: true, condition: function(){ var c = document.getElementById('next-obvious-steps-card'); return !!(window.socialJourney && window.socialJourney.isEligibleUser() && c && c.style.display !== 'none'); } },
@@ -14270,7 +14265,7 @@ if(!window._pbbIsIOSSafari) {
   // A paid Week 1 course action, deliberately outside requiredOnboardingTourSteps.
   const fitgotchiCourseSteps = [
     {tab:'profile', sel:'#settings-fitgotchi-visibility', title:'Turn on your FitGotchi',
-      body:'This is your character. Turn on Show FitGotchi to meet it on Home. It is a visual way to see your progress, not a measure of your worth or fitness.',
+      body:'Turn on Show FitGotchi to meet your character on Home. It comes ready with its standard colours, so there is nothing to design. Your character is visual feedback on your progress, not a measure of your worth or fitness.',
       pageView:true, spotlightExplanation:true, requiresFitGotchiVisible:true, nextLabel:'See it on Home'},
     {tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Your character grows with you',
       body:'As you earn experience points (XP) through your Balance activities, your character levels up with you. This is gamification: another source of feedback that can help make your progress visible and keep you motivated.',
@@ -17402,8 +17397,15 @@ window.endFeatureTour = function(skipped){
     id:'fitgotchi-week-one-feedback-v1', tab:'dashboard',
     sel:'#next-obvious-steps-card [data-next-step-id="fitgotchi_intro"]',
     fallbackSel:'#next-obvious-steps-card', title:'View Your FitGotchi',
-    body:'Your Week 1 course now includes a short FitGotchi walkthrough. Open View Your FitGotchi in To do next to learn how XP and your character provide feedback and motivation.',
+    body:'Open View Your FitGotchi in To do next to learn how XP and your character provide feedback and motivation. Your character comes ready with standard colours, with no design step.',
     condition:function(){ return !!(window.socialJourney && window.socialJourney.getFitGotchiIntroAction && window.socialJourney.getFitGotchiIntroAction()); }
+  });
+
+  allFeatures.push({
+    id:'fitgotchi-simple-progress-no-combat-v1', tab:'profile',
+    sel:'#settings-fitgotchi-visibility', title:'A simpler FitGotchi',
+    body:'Turn on your character to see your progress and level up with XP. Standard colours are ready to go, with no design step. The old character battle mode has been removed. Your saved character and XP are unchanged.',
+    condition:function(){ return window.metaAdTrialMode !== true && localStorage.getItem('onboardingComplete') === 'true'; }
   });
 
   var revealIdx = 0;
@@ -20271,13 +20273,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=65-all-styles-wysiwyg';
+            s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=66-no-character-battles';
             s.onload = function() { if(window._crumb)window._crumb('script10_deferred_loaded'); };
             document.head.appendChild(s);
         }, 1500);
     }, { once: true });
 } else {
-        document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=65-all-styles-wysiwyg"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=66-no-character-battles"><\/script>');
 }
 </script>
 
@@ -21013,13 +21015,13 @@ if(!window._pbbIsIOSSafari) {
         window.addEventListener('pbbInitComplete', function() {
             setTimeout(function() {
                 var s = document.createElement('script');
-                s.src = 'js/dashboard/dashboard-script-14-stat_system_save_load_display.js?v=2';
+                s.src = 'js/dashboard/dashboard-script-14-stat_system_save_load_display.js?v=3-no-character-battles';
                 s.onload = function() { if(window._crumb)window._crumb('script14_deferred_loaded'); };
                 document.head.appendChild(s);
             }, 3500);
         }, { once: true });
     } else {
-        document.write('<script src="js/dashboard/dashboard-script-14-stat_system_save_load_display.js?v=2"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-14-stat_system_save_load_display.js?v=3-no-character-battles"><\/script>');
     }
     </script>
 

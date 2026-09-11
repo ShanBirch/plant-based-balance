@@ -1,6 +1,9 @@
 (function() {
         'use strict';
-        console.log('🎮 Loading Progression & Battle System...');
+        console.log('Loading character progression...');
+        // Retired for every member. Retain compatibility exports and saved
+        // stats, but never launch a fight, send an invite, or spend battle coins.
+        const FITGOTCHI_BATTLES_ENABLED = false;
 
         // ============================================================
         // STAT SYSTEM - Save/Load/Display
@@ -104,6 +107,7 @@
 
         // Tooltip on stat tap
         window.showStatTooltip = function(stat) {
+            if (!FITGOTCHI_BATTLES_ENABLED) return false;
             const descriptions = {
                 str: 'Strength increases your attack damage in battle',
                 hp: 'Health Points give you more HP in battle',
@@ -143,6 +147,7 @@
 
         // Called when user levels up - grants stat points
         function grantStatPoints(previousLevel, newLevel) {
+            if (!FITGOTCHI_BATTLES_ENABLED) return false;
             if (window.isAdminViewing) return; // Admin view-as is read-only
             let totalNewPoints = 0;
             for (let lvl = previousLevel + 1; lvl <= newLevel; lvl++) {
@@ -165,6 +170,7 @@
         window.grantStatPointsForLevelUp = grantStatPoints;
 
         function showStatAllocationModal() {
+            if (!FITGOTCHI_BATTLES_ENABLED) return false;
             if (window.guestMode) return; // Skip in guest preview mode
             if (window.isAdminViewing) return; // Admin view-as is read-only
             if (window.__balanceGuidedTourActive) {
@@ -352,6 +358,7 @@
 
         // Grant any missing stat points for users who leveled before the stat system existed
         async function ensureRetroactiveStatPoints() {
+            if (!FITGOTCHI_BATTLES_ENABLED) return false;
             if (window.isAdminViewing) return; // Admin view-as is read-only
 
             // Wait for battle stats to load from DB first to avoid granting
@@ -448,6 +455,7 @@
         function updateBattleButtonLock() {
             const btn = document.querySelector('.battle-trigger-btn');
             if (!btn) return;
+            if (!FITGOTCHI_BATTLES_ENABLED) { btn.remove(); return; }
             const level = window.getCurrentUserLevel ? window.getCurrentUserLevel() : 1;
             if (level < 10) {
                 btn.classList.add('locked');
@@ -519,6 +527,7 @@
         // BATTLE INVITE SYSTEM
         // ============================================================
         window.startBattle = async function() {
+            if (!FITGOTCHI_BATTLES_ENABLED) return false;
             console.log('🥊 BATTLE BUTTON CLICKED');
 
             // Level gate
@@ -540,6 +549,7 @@
         window._currentBattleBet = 0;
 
         async function showBattleInviteModal() {
+            if (!FITGOTCHI_BATTLES_ENABLED) return false;
             // Create overlay
             const overlay = document.createElement('div');
             overlay.className = 'battle-invite-overlay';
@@ -793,6 +803,7 @@
         window.updateArenaButtonLock = updateArenaButtonLock;
 
         window._sendBattleInvite = async function(friendId, friendName) {
+            if (!FITGOTCHI_BATTLES_ENABLED) return false;
             const betAmount = window._currentBattleBet || 0;
 
             // Debit coins for the bet before starting
@@ -911,6 +922,7 @@
         // INCOMING BATTLE CHALLENGE NOTIFICATION
         // ============================================================
         function showBattleChallengeNotification(fromName, fromId, battleId, coinBet) {
+            if (!FITGOTCHI_BATTLES_ENABLED) return false;
             // Remove existing challenge toasts
             document.querySelectorAll('.battle-challenge-toast:not(.quiz-battle-challenge-toast)').forEach(el => el.remove());
 
@@ -945,6 +957,7 @@
         }
 
         window.acceptBattleChallenge = async function(fromId, fromName, btn, battleId, coinBet) {
+            if (!FITGOTCHI_BATTLES_ENABLED) return false;
             const toast = btn.closest('.battle-challenge-toast');
             if (toast) toast.remove();
 
@@ -1012,6 +1025,7 @@
 
         // Poll for incoming battle challenges (check nudges)
         async function checkForBattleChallenges() {
+            if (!FITGOTCHI_BATTLES_ENABLED) return false;
             if (!window.supabaseClient || !window.currentUser) return;
             try {
                 const userId = window.currentUser.id || window.currentUser.user_id;
@@ -1095,9 +1109,11 @@
 
         // Check for challenges every 15 seconds (track so it can be cleared)
         if (window._battleChallengeInterval) clearInterval(window._battleChallengeInterval);
-        window._battleChallengeInterval = setInterval(checkForBattleChallenges, 15000);
-        // Initial check after page load
-        setTimeout(checkForBattleChallenges, 5000);
+        window._battleChallengeInterval = null;
+        if (FITGOTCHI_BATTLES_ENABLED) {
+            window._battleChallengeInterval = setInterval(checkForBattleChallenges, 15000);
+            setTimeout(checkForBattleChallenges, 5000);
+        }
 
         // ============================================================
         // INCOMING QUIZ BATTLE CHALLENGE NOTIFICATION
@@ -1210,6 +1226,7 @@
         // ACTUAL BATTLE ENGINE (renamed from startBattle)
         // ============================================================
         window._runBattle = async function(opponentName) {
+            if (!FITGOTCHI_BATTLES_ENABLED) return false;
             console.log('🥊 BATTLE START vs', opponentName);
 
             if (window._battleInProgress) return;

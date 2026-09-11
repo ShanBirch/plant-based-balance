@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v523-fitgotchi-course'; // v523: Week 1 FitGotchi course action and walkthrough
+const CACHE_NAME = 'pbb-app-v524-simple-fitgotchi'; // v524: standard appearance without setup; retire character battles
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -27,7 +27,7 @@ const ASSETS = [
   './css/dashboard/pbb-onboarding-comeback.css?v=8',
   './css/dashboard/pbb-onboarding-foundations.css?v=11-typed-question-layout',
   './js/dashboard/dashboard-script-7-video_logic.js?v=20260902-stopwatch-centred',
-  './js/dashboard/dashboard-script-10-points_widget_functions.js?v=65-all-styles-wysiwyg',
+  './js/dashboard/dashboard-script-10-points_widget_functions.js?v=66-no-character-battles',
   './js/dashboard/pbb-deferred-fitbit.js?v=3-latest-import-only',
   './js/dashboard/pbb-next-obvious-steps.js?v=54-tour-quiz-continue',
   './js/dashboard/pbb-deferred-formcheck.js?v=58-ios-exercise-video-upload&video_health=2',
