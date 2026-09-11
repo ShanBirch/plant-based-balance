@@ -1,8 +1,10 @@
-const CACHE_NAME = 'pbb-app-v524-simple-fitgotchi'; // v524: standard appearance without setup; retire character battles
+const CACHE_NAME = 'pbb-app-v525-fitgotchi-moves'; // v525: verified character moves and relaxed resting loops
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
   './dashboard.html',
+  './lib/fitgotchi-animations.js?v=1',
+  './js/dashboard/dashboard-script-13.js?v=9-verified-moves',
   './css/dashboard/pbb-meal-plan.css?v=2',
   './js/dashboard/pbb-workout-tour-progress.js?v=1',
   './balance_logo_transparent.svg',
@@ -27,7 +29,7 @@ const ASSETS = [
   './css/dashboard/pbb-onboarding-comeback.css?v=8',
   './css/dashboard/pbb-onboarding-foundations.css?v=11-typed-question-layout',
   './js/dashboard/dashboard-script-7-video_logic.js?v=20260902-stopwatch-centred',
-  './js/dashboard/dashboard-script-10-points_widget_functions.js?v=66-no-character-battles',
+  './js/dashboard/dashboard-script-10-points_widget_functions.js?v=67-verified-moves',
   './js/dashboard/pbb-deferred-fitbit.js?v=3-latest-import-only',
   './js/dashboard/pbb-next-obvious-steps.js?v=54-tour-quiz-continue',
   './js/dashboard/pbb-deferred-formcheck.js?v=58-ios-exercise-video-upload&video_health=2',

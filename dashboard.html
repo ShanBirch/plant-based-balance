@@ -572,6 +572,7 @@ if (!window._pbbIsIOSSafari) {
 <!-- <script src="lib/avatar.js"></script> -->
 <!-- <link rel="stylesheet" href="lib/avatar.css"> -->
 <script>if(window._crumb)window._crumb('BEFORE_script_part_3');</script>
+<script src="lib/fitgotchi-animations.js?v=1"></script>
 <script src="js/dashboard/script_part_3.js?v=56"></script>
 <script>if(window._crumb)window._crumb('AFTER_script_part_3');</script>
 <!-- Preload onboarding 3D models so they display instantly in the wizard -->
@@ -20273,13 +20274,13 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=66-no-character-battles';
+            s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=67-verified-moves';
             s.onload = function() { if(window._crumb)window._crumb('script10_deferred_loaded'); };
             document.head.appendChild(s);
         }, 1500);
     }, { once: true });
 } else {
-        document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=66-no-character-battles"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=67-verified-moves"><\/script>');
 }
 </script>
 
@@ -20934,7 +20935,7 @@ if (window._pbbIsIOSSafari) {
         window.addEventListener('pbbInitComplete', function() {
             setTimeout(function() {
                 var s = document.createElement('script');
-                s.src = 'js/dashboard/dashboard-script-13.js?v=8';
+                s.src = 'js/dashboard/dashboard-script-13.js?v=9-verified-moves';
                 s.onload = function() {
                     // updateFitGotchi (tamagotchi visual update) is now defined.
                     // loadPointsWidget ran earlier (at script-10 load, ~1500ms) but
@@ -20948,7 +20949,7 @@ if (window._pbbIsIOSSafari) {
             }, 3000);
         }, { once: true });
     } else {
-        document.write('<script src="js/dashboard/dashboard-script-13.js?v=8"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-13.js?v=9-verified-moves"><\/script>');
     }
     </script>
 

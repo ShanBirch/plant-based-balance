@@ -390,42 +390,10 @@ function triggerVictoryAnimation() {
     function playVictoryAnim() {
         if (!mv.availableAnimations || !mv.availableAnimations.length) return;
 
-        // Prioritise dance animations for level-up celebrations
-        const victoryAnim = mv.availableAnimations.find(a =>
-            a === 'dance' ||
-            a === 'dance_1'
-        ) || mv.availableAnimations.find(a =>
-            a === 'clap' ||
-            a === 'arms_up_still' ||
-            a === 'laugh'
-        ) || mv.availableAnimations.find(a =>
-            a === 'greet' ||
-            a === 'strut' ||
-            a === 'warm_up'
-        );
-
-        if (victoryAnim) {
-            mv.animationName = victoryAnim;
-            mv.play();
-
-            // Loop the dance: replay once after the first play to fill the celebration window
-            setTimeout(() => {
-                if (mv.animationName === victoryAnim) {
-                    mv.currentTime = 0;
-                    mv.play();
-                }
-            }, 2500);
-
-            // Return to the shared resting loop after celebration
-            setTimeout(() => {
-                if (window.applyIdleAnimation) {
-                    window.applyIdleAnimation(mv);
-                } else {
-                    mv.pause();
-                    mv.currentTime = 0;
-                }
-            }, 6000);
-        }
+        const animations = window.PbbCharacterAnimations;
+        if (!animations) return;
+        const victoryAction = ['dance', 'dance_1', 'clap', 'laugh', 'greet'].find(name => animations.resolve(mv, name));
+        if (victoryAction) void animations.play(mv, victoryAction);
     }
 
     // If model already has animations loaded, play immediately
@@ -479,17 +447,13 @@ function checkNewAnimationUnlocks(previousLevel, newLevel) {
     });
 
     // Find animations that were just unlocked
-    const newlyUnlocked = ANIMATION_UNLOCKS.filter(unlock => {
+    const supportedMoves = window.PbbCharacterAnimations?.available(mv, window.ANIMATION_UNLOCKS || []) || [];
+    const newlyUnlocked = supportedMoves.filter(unlock => {
         // Was locked before, unlocked now
         const wasLocked = previousLevel < unlock.unlockLevel;
         const isUnlockedNow = newLevel >= unlock.unlockLevel;
 
-        // Check if this animation actually exists in the model
-        const existsInModel = mv.availableAnimations.some(a =>
-            a.toLowerCase() === unlock.name.toLowerCase()
-        );
-
-        return wasLocked && isUnlockedNow && existsInModel;
+        return wasLocked && isUnlockedNow;
     });
 
     // Show unlock toasts with delay between each (after milestones)

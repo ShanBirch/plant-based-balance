@@ -760,7 +760,7 @@
         // cartwheel, basketball, greet_2, depressed_walk, angry_2, hit_to_3,
         // bow, say_goodbye, block, die_1, volleyball, kick_2, dance_5, agree,
         // stand, angry_3, heart_pose
-        // NOTE: 'idle' is NOT in the unlock array - unmapped animations default to unlocked
+        // Stable action IDs; per-model clip corrections live in fitgotchi-animations.js.
         const ANIMATION_UNLOCKS = [
             // Level 1 starter animations (baby has full animations now)
             { name: 'walk', displayName: 'Walk', unlockLevel: 1, icon: '🚶', category: 'special' },
@@ -785,23 +785,23 @@
             { name: 'angry_2', displayName: 'Furious', unlockLevel: 8, icon: '🤬', category: 'reactions' },
 
             // Level 10 unlocks (Rising evolution + Battle Mode)
-            { name: 'greet_1', displayName: 'Hey!', unlockLevel: 10, icon: '🤙', category: 'greetings' },
-            { name: 'greet_2', displayName: 'Hi There', unlockLevel: 10, icon: '✌️', category: 'greetings' },
+            { name: 'greet_1', displayName: 'Big Wave', unlockLevel: 10, icon: '🤙', category: 'greetings' },
+            { name: 'greet_2', displayName: 'Wave', unlockLevel: 10, icon: '✌️', category: 'greetings' },
             { name: 'angry_1', displayName: 'Annoyed', unlockLevel: 10, icon: '😤', category: 'reactions' },
             { name: 'stretch', displayName: 'Stretch', unlockLevel: 10, icon: '🧘', category: 'exercise' },
             { name: 'kick', displayName: 'Kick', unlockLevel: 10, icon: '🦵', category: 'combat' },
-            { name: 'hit_to_2', displayName: 'Hit To 2', unlockLevel: 10, icon: '🤜', category: 'reactions' },
-            { name: 'stand_hands_on_hips', displayName: 'Power Pose', unlockLevel: 10, icon: '💪', category: 'poses' },
+            { name: 'hit_to_2', displayName: 'Stagger', unlockLevel: 10, icon: '🤜', category: 'reactions' },
+            { name: 'stand_hands_on_hips', displayName: 'Ready Stance', unlockLevel: 10, icon: '💪', category: 'poses' },
             { name: 'strut', displayName: 'Strut', unlockLevel: 10, icon: '🚶', category: 'dance' },
 
             // Level 15 unlocks
             { name: 'lose', displayName: 'Lose', unlockLevel: 15, icon: '😞', category: 'reactions' },
             { name: 'pushup', displayName: 'Push-Up', unlockLevel: 15, icon: '💪', category: 'exercise' },
             { name: 'karate', displayName: 'Karate', unlockLevel: 15, icon: '🥋', category: 'combat' },
-            { name: 'hit_to_head', displayName: 'Hit To Head', unlockLevel: 15, icon: '🎯', category: 'reactions' },
-            { name: 'hit_to_side', displayName: 'Hit To Side', unlockLevel: 15, icon: '⚡', category: 'reactions' },
-            { name: 'dance_1', displayName: 'Groove', unlockLevel: 15, icon: '🎵', category: 'dance' },
-            { name: 'arms_up_still', displayName: 'Arms Up', unlockLevel: 15, icon: '🙌', category: 'celebrations' },
+            { name: 'hit_to_head', displayName: 'Head Hit', unlockLevel: 15, icon: '🎯', category: 'reactions' },
+            { name: 'hit_to_side', displayName: 'Side Hit', unlockLevel: 15, icon: '⚡', category: 'reactions' },
+            { name: 'dance_1', displayName: 'Side Step', unlockLevel: 15, icon: '🎵', category: 'dance' },
+            { name: 'arms_up_still', displayName: 'Guard Stance', unlockLevel: 15, icon: '🥊', category: 'poses' },
             { name: 'laugh_3', displayName: 'Cracking Up', unlockLevel: 15, icon: '😹', category: 'celebrations' },
 
             // Level 20 unlocks (Growing evolution)
@@ -811,25 +811,25 @@
             { name: 'heart_pose', displayName: 'Heart Pose', unlockLevel: 20, icon: '❤️', category: 'celebrations' },
             { name: 'basketball', displayName: 'Basketball', unlockLevel: 20, icon: '🏀', category: 'exercise' },
             { name: 'boxing_1', displayName: 'Boxing Combo', unlockLevel: 20, icon: '🥊', category: 'combat' },
-            { name: 'hit_to_3', displayName: 'Hit To 3', unlockLevel: 20, icon: '💥', category: 'reactions' },
-            { name: 'stand', displayName: 'Stand Tall', unlockLevel: 20, icon: '🧍', category: 'poses' },
-            { name: 'dance_2', displayName: 'Moves', unlockLevel: 20, icon: '🎶', category: 'dance' },
+            { name: 'hit_to_3', displayName: 'Heavy Hit', unlockLevel: 20, icon: '💥', category: 'reactions' },
+            { name: 'stand', displayName: 'Relaxed Stand', unlockLevel: 20, icon: '🧍', category: 'poses' },
+            { name: 'dance_2', displayName: 'Step & Sway', unlockLevel: 20, icon: '🎶', category: 'dance' },
 
             // Level 25 unlocks
             { name: 'angry_walk', displayName: 'Angry Walk', unlockLevel: 25, icon: '😡', category: 'reactions' },
             { name: 'laugh_2', displayName: 'LOL', unlockLevel: 25, icon: '🤣', category: 'celebrations' },
             { name: 'volleyball', displayName: 'Volleyball', unlockLevel: 25, icon: '🏐', category: 'exercise' },
-            { name: 'hit_to_1', displayName: 'Hit To 1', unlockLevel: 25, icon: '👊', category: 'reactions' },
-            { name: 'dance_3', displayName: 'Boogie', unlockLevel: 25, icon: '🕺', category: 'dance' },
+            { name: 'hit_to_1', displayName: 'Body Hit', unlockLevel: 25, icon: '👊', category: 'reactions' },
+            { name: 'dance_3', displayName: 'Arm Swing', unlockLevel: 25, icon: '🕺', category: 'dance' },
 
             // Level 30 unlocks (Consistent evolution)
-            { name: 'pitch', displayName: 'Pitch', unlockLevel: 30, icon: '⚾', category: 'poses' },
+            { name: 'pitch', displayName: 'Baseball Pitch', unlockLevel: 30, icon: '⚾', category: 'exercise' },
             { name: 'cartwheel', displayName: 'Cartwheel', unlockLevel: 30, icon: '🤸', category: 'special' },
             { name: 'dance_4', displayName: 'Freestyle', unlockLevel: 30, icon: '🎧', category: 'dance' },
             { name: 'boxing_2', displayName: 'Boxing Pro', unlockLevel: 30, icon: '💥', category: 'combat' },
 
             // Level 35 unlocks
-            { name: 'dance_5', displayName: 'Show Off', unlockLevel: 35, icon: '✨', category: 'dance' },
+            { name: 'dance_5', displayName: 'Dance Shuffle', unlockLevel: 35, icon: '✨', category: 'dance' },
 
             // Level 40 unlocks (Committed evolution)
             { name: 'kick_2', displayName: 'Spin Kick', unlockLevel: 40, icon: '🌀', category: 'combat' },
@@ -884,112 +884,25 @@
         }
         window.getCurrentUserLevel = getCurrentUserLevel;
 
-        // Check if an animation is unlocked for current user
-        function isAnimationUnlocked(animName) {
-            const level = getCurrentUserLevel();
-            // First try exact match, then includes match
-            let unlock = ANIMATION_UNLOCKS.find(a =>
-                a.name.toLowerCase() === animName.toLowerCase()
-            );
-            if (!unlock) {
-                unlock = ANIMATION_UNLOCKS.find(a =>
-                    animName.toLowerCase().includes(a.name.toLowerCase()) ||
-                    a.name.toLowerCase().includes(animName.toLowerCase())
-                );
-            }
-            return unlock ? level >= unlock.unlockLevel : true; // Unknown animations are unlocked
-        }
+        const characterAnimations = window.PbbCharacterAnimations;
 
-        // Get unlock info for an animation
         function getAnimationUnlockInfo(animName) {
-            // First try exact match, then includes match
-            let unlock = ANIMATION_UNLOCKS.find(a =>
-                a.name.toLowerCase() === animName.toLowerCase()
-            );
-            if (!unlock) {
-                unlock = ANIMATION_UNLOCKS.find(a =>
-                    animName.toLowerCase().includes(a.name.toLowerCase()) ||
-                    a.name.toLowerCase().includes(animName.toLowerCase())
-                );
-            }
-            return unlock;
+            return ANIMATION_UNLOCKS.find(a => a.name === animName);
         }
 
-        // Get all unlocked animations from available animations
-        function getUnlockedAnimations(availableAnimations) {
-            const level = getCurrentUserLevel();
-            return availableAnimations.filter(animName => {
-                const unlock = getAnimationUnlockInfo(animName);
-                return unlock ? level >= unlock.unlockLevel : true;
-            });
-        }
-
-        // Store available animations when model loads
-        let shaziAvailableAnimations = [];
-
-        // Stop any playing animation and return to static stance
-        let previewTimeoutId = null;
-        function stopAnimation() {
+        function playAnimation(animName, returnToRest = true) {
             const mv = document.getElementById('tamagotchi-model');
-            if (previewTimeoutId) { clearTimeout(previewTimeoutId); previewTimeoutId = null; }
-            if (mv) {
-                mv.pause();
-                mv.currentTime = 0;
-            }
-        }
-
-        // Play a specific animation
-        function playAnimation(animName, returnToStatic = true) {
-            const mv = document.getElementById('tamagotchi-model');
-            if (!mv) return false;
-
-            // Cancel any pending preview reset from a previous animation
-            if (previewTimeoutId) { clearTimeout(previewTimeoutId); previewTimeoutId = null; }
-
-            // Check if unlocked based on level
-            if (!isAnimationUnlocked(animName)) {
-                const unlock = getAnimationUnlockInfo(animName);
-                if (unlock) {
-                    showToast(`Unlock at Level ${unlock.unlockLevel}`, 'info');
-                }
+            const unlock = getAnimationUnlockInfo(animName);
+            if (!mv || !unlock) return false;
+            if (getCurrentUserLevel() < unlock.unlockLevel) {
+                showToast(`Unlock at Level ${unlock.unlockLevel}`, 'info');
                 return false;
             }
-
-            // Try to find matching animation in availableAnimations if they exist
-            let targetAnim = animName;
-            if (mv.availableAnimations?.length) {
-                // First try exact match (case insensitive)
-                let found = mv.availableAnimations.find(a =>
-                    a.toLowerCase() === animName.toLowerCase()
-                );
-                // If no exact match, try includes match
-                if (!found) {
-                    found = mv.availableAnimations.find(a =>
-                        a.toLowerCase().includes(animName.toLowerCase())
-                    );
-                }
-                if (found) targetAnim = found;
+            if (!characterAnimations.resolve(mv, animName)) {
+                showToast('This move is not available for this character.', 'info');
+                return false;
             }
-
-            // Set and play the animation
-            mv.animationName = targetAnim;
-            mv.play();
-
-            if (returnToStatic) {
-                // Use the actual animation duration so the full move plays before resetting
-                requestAnimationFrame(() => {
-                    const durationMs = (mv.duration > 0 ? mv.duration : 3.5) * 1000;
-                    previewTimeoutId = setTimeout(() => {
-                        if (window.applyIdleAnimation) {
-                            window.applyIdleAnimation(mv);
-                        } else {
-                            mv.pause();
-                            mv.currentTime = 0;
-                        }
-                        previewTimeoutId = null;
-                    }, durationMs);
-                });
-            }
+            void characterAnimations.play(mv, animName, { loop: !returnToRest });
             return true;
         }
 
@@ -1000,6 +913,7 @@
 
         let _animSelectorBuilt = false; // true after first full build
         let _animSelectorBuiltForLevel = null;
+        let _animSelectorBuiltForModel = null;
 
         // Lightweight update: flip active classes without rebuilding the whole panel.
         // Called by selectRareSkin instead of a full rebuild.
@@ -1054,8 +968,10 @@
                 }
             }
 
+            const modelKey = [mv.getAttribute('src'), mv.loaded, ...(mv.availableAnimations || [])].join('|');
+
             // If the panel is already built and we're just re-showing it, skip rebuild
-            if (_animSelectorBuilt && !forceRebuild && _animSelectorBuiltForLevel === level) {
+            if (_animSelectorBuilt && !forceRebuild && _animSelectorBuiltForLevel === level && _animSelectorBuiltForModel === modelKey) {
                 container.style.display = 'block';
                 if (typeof pushNavigationState === 'function') {
                     pushNavigationState('animation-selector', closeAnimationSelector);
@@ -1067,7 +983,8 @@
 
             // ── Animation categories ──────────────────────────────────────────────
             const categories = {};
-            ANIMATION_UNLOCKS.forEach(unlock => {
+            const supportedMoves = characterAnimations.available(mv, ANIMATION_UNLOCKS);
+            supportedMoves.forEach(unlock => {
                 if (!categories[unlock.category]) categories[unlock.category] = [];
                 categories[unlock.category].push({
                     name: unlock.name,
@@ -1099,6 +1016,10 @@
                     </div>
                     <div class="animation-selector-content">
             `;
+
+            if (!supportedMoves.length) {
+                html += '<p style="padding:12px 20px;color:var(--text-main,#f8f8f8);-webkit-text-fill-color:var(--text-main,#f8f8f8)">' + (mv.loaded === false ? 'Your character is loading. Moves will appear when it is ready.' : 'This character has a fixed pose. Choose another skin to use moves.') + '</p>';
+            }
 
             const categoryOrder = ['greetings', 'reactions', 'celebrations', 'exercise', 'combat', 'poses', 'dance', 'special'];
             categoryOrder.forEach(cat => {
@@ -1236,6 +1157,7 @@
             }
             _animSelectorBuilt = true;
             _animSelectorBuiltForLevel = level;
+            _animSelectorBuiltForModel = modelKey;
         };
 
 
@@ -1586,72 +1508,23 @@
 
 
 
-        // Shared helper: play the best available resting animation on a model-viewer.
-        // Called on initial load AND whenever a new skin is set (including DBZ characters).
-        window.applyIdleAnimation = function(mv) {
-            if (!mv) return;
-            const anims = mv.availableAnimations || [];
-            if (!anims.length) return;
-
-            const src = String(mv.getAttribute('src') || mv.src || '').toLowerCase();
-            const activeRareSkin = String(localStorage.getItem('active_rare_skin') || '').toLowerCase();
-            const isShanbot = src.includes('shanbot') || activeRareSkin === 'shanbot';
-
-            // Priority order for a natural resting pose.
-            // Uses substring matching so names like "Armature|Idle", "idle_loop",
-            // "Breathing Idle", "CharacterArmature|Idle" all resolve correctly.
-            const preferred = isShanbot
-                ? ['stand', 'idle', 'fold_arms']
-                : ['idle', 'breath', 'stand', 'stand_hands_on_hips', 'arms_up_still', 'fold_arms'];
-            // Avoid static/pose-only clips as a resting animation
-            const poseBlacklist = ['pose', 'tpose', 't-pose', 'bind', 'rest_pose', 'apose', 'a-pose'];
-            const actionBlacklist = [
-                'hit', 'kick', 'boxing', 'fight', 'karate', 'block', 'angry',
-                'scared', 'die', 'lose', 'dance', 'push_up', 'pushup', 'spin'
-            ];
-            const clean = (name) => String(name || '').toLowerCase();
-            const isPose = (name) => poseBlacklist.some(p => clean(name).includes(p));
-            const isAction = (name) => actionBlacklist.some(p => clean(name).includes(p));
-            const isRestCandidate = (name) => !isPose(name) && !isAction(name);
-
-            let chosen = null;
-            for (const needle of preferred) {
-                const match = anims.find(a => clean(a) === needle && isRestCandidate(a))
-                    || anims.find(a => clean(a).includes(needle) && isRestCandidate(a));
-                if (match) { chosen = match; break; }
+        // Also handles models that loaded before deferred script-13, and the
+        // replacement model-viewer created during phone skin/recovery swaps.
+        window.applyIdleAnimation = mv => characterAnimations.rest(mv);
+        function onCharacterLoaded(mv) {
+            window.shaziAnimations = mv.availableAnimations || [];
+            if (window.applyCharacterColors && shouldApplyCharacterColorsToModel(mv.getAttribute('src'), localStorage.getItem('active_rare_skin') || '')) {
+                window.applyCharacterColors(mv, mv.getAttribute('src'));
             }
-            // Fallback: first calm-ish animation, then first non-pose, then absolute first.
-            if (!chosen) chosen = anims.find(isRestCandidate) || anims.find(a => !isPose(a)) || anims[0];
-            console.log('[applyIdleAnimation] available:', anims, '→ chose:', chosen);
-
-            if (mv.animationName !== chosen) {
-                mv.animationName = chosen;
-                mv.currentTime = 0;
-            }
-            mv.play();
-        };
-
-        // Listen for initial model load to log available animations and apply colors + idle pose
-        const initialModelViewer = document.getElementById('tamagotchi-model');
-        if (initialModelViewer) {
-            initialModelViewer.addEventListener('load', () => {
-                console.log('Initial model loaded:', initialModelViewer.getAttribute('src'));
-                console.log('Available animations:', initialModelViewer.availableAnimations);
-
-                // Store animations globally for debugging
-                window.shaziAnimations = initialModelViewer.availableAnimations || [];
-
-                // Apply user's custom character colors to the initial model
-                if (window.applyCharacterColors && shouldApplyCharacterColorsToModel(initialModelViewer.getAttribute('src'), localStorage.getItem('active_rare_skin') || '')) {
-                    window.applyCharacterColors(initialModelViewer, initialModelViewer.getAttribute('src'));
-                }
-
-                // Apply resting idle/stand animation so character doesn't T-pose
-                window.applyIdleAnimation(initialModelViewer);
-                scheduleAndroidCharacterWidgetSync('initial-model-loaded', 1200);
-            });
+            void window.applyIdleAnimation(mv);
+            window.populateTamagotchiAnimations();
+            scheduleAndroidCharacterWidgetSync('initial-model-loaded', 1200);
         }
-
+        document.addEventListener('load', event => {
+            if (event.target?.id === 'tamagotchi-model') onCharacterLoaded(event.target);
+        }, true);
+        const initialModelViewer = document.getElementById('tamagotchi-model');
+        if (initialModelViewer?.loaded) onCharacterLoaded(initialModelViewer);
 
         // ============================================================
         // CAMERA SYNC: Gym background rotates with character
@@ -1690,30 +1563,13 @@
             console.log('Background camera sync initialized');
         })();
 
-        // Tap reaction - greeting animation
-        document.getElementById('tamagotchi-model')?.addEventListener('click', () => {
-            const mv = document.getElementById('tamagotchi-model');
-            if (!mv || !mv.availableAnimations || !mv.availableAnimations.length) return;
-
-            // Find the greeting animation
-            let greetAnim = mv.availableAnimations.find(a => a === 'greet');
-            if (!greetAnim) {
-                greetAnim = mv.availableAnimations.find(a => a === 'bow');
-            }
-            if (greetAnim) {
-                mv.animationName = greetAnim;
-                mv.play();
-
-                // Return to the shared resting loop after animation plays
-                setTimeout(() => {
-                    if (window.applyIdleAnimation) {
-                        window.applyIdleAnimation(mv);
-                    } else {
-                        mv.pause();
-                        mv.currentTime = 0;
-                    }
-                }, 3000);
-            }
+        // Delegate so a replacement viewer keeps its tap reaction. Use the
+        // same playback owner as the move selector, with no stale reset timer.
+        document.addEventListener('click', event => {
+            const mv = event.target;
+            if (mv?.id !== 'tamagotchi-model' || window.isDuringBattle) return;
+            const greeting = ['greet', 'greet_2', 'say_goodbye', 'bow'].find(name => characterAnimations.resolve(mv, name));
+            if (greeting) void characterAnimations.play(mv, greeting);
         });
 
         // Battle state flags (used by camera distance update guard)
