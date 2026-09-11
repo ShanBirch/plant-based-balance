@@ -15235,10 +15235,13 @@ if (step && step.requiresFeedPost) {
       return;
     }
 
-    // Reserve space below the button inside the welcome's scrolling container.
+    // Home's explanation floats over existing cards; control prompts can reserve space.
     let belowSpace = document.getElementById('guided-tour-below-space');
     if (step && step.controlPromptPosition === 'below' && target) {
-      if (!belowSpace) {
+      if (step.fitgotchiHomePreview) {
+        if (belowSpace) belowSpace.remove();
+        belowSpace = null;
+      } else if (!belowSpace) {
         belowSpace = document.createElement('div');
         belowSpace.id = 'guided-tour-below-space';
         belowSpace.setAttribute('aria-hidden', 'true');
@@ -15251,8 +15254,10 @@ if (step && step.requiresFeedPost) {
           - target.getBoundingClientRect().height - (step.tourBottomReserve || 24) - 36
         : window.innerHeight - 180;
       const height = Math.min(bubble.offsetHeight || 180, Math.max(guideHeader ? 40 : 100, availableHeight));
-      const reservedHeight = Math.max(height + 48, belowSpace.offsetHeight);
-      belowSpace.style.cssText = 'flex:none;width:100%;overflow-anchor:none;height:' + reservedHeight + 'px;';
+      if (belowSpace) {
+        const reservedHeight = Math.max(height + 48, belowSpace.offsetHeight);
+        belowSpace.style.cssText = 'flex:none;width:100%;overflow-anchor:none;height:' + reservedHeight + 'px;';
+      }
       bubble.style.maxHeight = height + 'px';
       bubble.style.overflowY = 'auto';
       const bottomLimit = window.innerHeight - height - (step.tourBottomReserve || 24) - 18;
