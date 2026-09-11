@@ -12,8 +12,9 @@ platform :ios do
       screenshots_path: "store-listing/app-store-screenshots",
       skip_binary_upload: true,
       skip_app_version_update: false,
-      skip_metadata: false,
+      skip_metadata: ENV["DELIVER_SKIP_METADATA"] == "true",
       skip_screenshots: false,
+      overwrite_screenshots: true,
       submit_for_review: false,
       force: true,
       run_precheck_before_submit: false

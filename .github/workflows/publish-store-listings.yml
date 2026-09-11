@@ -17,10 +17,18 @@ on:
         description: App Store version draft to prepare
         required: true
         default: "1.8"
+      inspect_only:
+        description: Only inspect Apple versions and screenshots without changing listings
+        type: boolean
+        default: false
+      screenshots_only:
+        description: Preserve Apple text metadata and replace only screenshots
+        type: boolean
+        default: false
 
 jobs:
   google-play:
-    if: ${{ inputs.publish_google_play == true }}
+    if: ${{ inputs.publish_google_play == true && inputs.inspect_only != true }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -72,7 +80,28 @@ jobs:
             > "$RUNNER_TEMP/app-store-api-key.json"
 
       - name: Prepare App Store copy and screenshots
+        if: ${{ inputs.inspect_only != true }}
         env:
           APP_STORE_API_KEY_PATH: ${{ runner.temp }}/app-store-api-key.json
           IOS_VERSION_STRING: ${{ inputs.ios_version_string }}
+          DELIVER_SKIP_METADATA: ${{ inputs.screenshots_only }}
         run: fastlane ios prepare_store_listing
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Inspect and verify screenshots stored by Apple
+        env:
+          APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          IOS_VERSION_STRING: ${{ inputs.ios_version_string }}
+          VERIFY_SCREENSHOTS: ${{ inputs.inspect_only != true }}
+        run: node scripts/inspect-app-store-screenshots.mjs
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: app-store-screenshot-verification
+          path: work/app-store-screenshots.json
