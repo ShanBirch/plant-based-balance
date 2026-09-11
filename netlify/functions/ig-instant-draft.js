@@ -2263,6 +2263,10 @@ function buildDeterministicPaidMetaConversationReply({
         const asksAutomaticCharge = /\b(?:charg\w*|bill\w*|payment|renew\w*)\b[\s\S]{0,50}\bautomatic\w*\b|\bautomatic\w*\b[\s\S]{0,50}\b(?:charg\w*|bill\w*|payment|renew\w*)\b/i.test(message);
         const asksDietRequirement = /\b(?:vegetarian|vegan|plant[- ]based)\s+only\b|\bonly\s+(?:for\s+)?(?:vegetarians?|vegans?|plant[- ]based)\b|\b(?:have|need) to (?:be|eat|go) (?:vegetarian|vegan|plant[- ]based)\b/i.test(message);
         const factualAnswers = [
+            /\b(?:can|could) i\b[^?.!]{0,65}\b(?:without (?:a |the )?gym|(?:train|work out|do (?:it|this)) at home)\b/i.test(message)
+                ? 'Yes, you can train at home. The workout setup can fit the space and equipment you have.' : '',
+            /\bwhen (?:does|will) (?:it|the course|balance learn) (?:start|launch)\b/i.test(message)
+                ? (Date.now() < Date.parse('2026-09-20T14:00:00Z') ? 'Balance Learn launches on 21 September 2026.' : 'Balance Learn launched on 21 September 2026.') : '',
             asksDietRequirement ? "You don't need to be vegetarian or vegan. Food support fits your dietary preferences." : '',
             asksAutomaticCharge ? "The preview is free and won't charge you automatically. Payment only happens if you choose to purchase." : '',
         ].filter(Boolean);
