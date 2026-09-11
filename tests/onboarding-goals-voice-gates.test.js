@@ -41,7 +41,7 @@ test('both activation tours require an explicit Weekly Goals save', () => {
 
 test('Weekly Goals chooser uses one readable cream, white and gold Balance theme', () => {
   assert.match(weeklyGoals, /function styleVarsForMeta\(meta\) \{[\s\S]*?--goal-accent:#765410;--goal-soft:#fff8e7;--goal-border:#d8b25e/);
-  assert.match(weeklyGoals, /#weekly-goals-modal \.weekly-goal-sheet\{background:linear-gradient\(180deg,#fffdf8 0%,#f6eddb 100%\) !important/);
+  assert.match(weeklyGoals, /#weekly-goals-modal \.weekly-goal-sheet\{[^}]*background:linear-gradient\(180deg,#fffdf8 0%,#f6eddb 100%\) !important/);
   assert.match(weeklyGoals, /font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif !important/);
   assert.match(weeklyGoals, /#weekly-goals-modal \.weekly-goal-hero[^{]*\{[^}]*background:linear-gradient\(135deg,#fffdf8 0%,#f4e6c8 100%\) !important/);
   assert.match(weeklyGoals, /weekly-goal-hero > div > div:first-child\{max-width:calc\(100% - 104px\)/);
@@ -110,7 +110,7 @@ test('every onboarding coach video shows Shannon as its poster frame', () => {
 
 test('changed onboarding assets are cache-busted', () => {
   assert.match(dashboard, /meta-ad-trial\.js\?v=17-goal-alignment/);
-  assert.match(dashboard, /pbb-deferred-weeklygoals\.js\?v=35-balance-theme/);
+  assert.match(dashboard, /pbb-deferred-weeklygoals\.js\?v=36-community-challenge/);
   assert.match(dashboard, /pbb-social-journey\.js\?v=45-exact-course-label/);
   assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=227-meal-primary-tabs/);
   assert.match(dashboard, /dashboard-script-6-ai_coach_draft_mode_logic_auth\.js\?v=50-community-games-theme/);

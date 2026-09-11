@@ -147,7 +147,7 @@ test('Home goals and plan cards follow light and dark mode', () => {
     assert.match(css, /weekly-goal-progress-card__value\.is-complete/);
     assert.match(css, /html\.pbb-unified-next-steps #weekly-goals-card\.weekly-goals-home-card\s*\{[\s\S]*?margin: 10px 25px 14px !important/);
     assert.match(html, /pbb-social-journey\.css\?v=27-direct-course-lesson/);
-    assert.match(html, /pbb-deferred-weeklygoals\.js\?v=35-balance-theme/);
+    assert.match(html, /pbb-deferred-weeklygoals\.js\?v=36-community-challenge/);
 });
 
 test('first check-in ships the captioned Shannon welcome video used by Inbox and Your Next Step', () => {

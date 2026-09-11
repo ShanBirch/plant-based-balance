@@ -74,22 +74,8 @@
       ]
     },
     {
-      category: 'Health IQ',
-      blurb: 'Learn through quizzes and games',
-      short: 'IQ',
-      accent: '#d97706',
-      soft: '#fffbeb',
-      border: '#fde68a',
-      gradient: 'linear-gradient(135deg,#f59e0b,#ef4444)',
-      goals: [
-        { id: 'daily_quiz_days', label: 'Complete Daily Quiz', target: 3, unit: 'days', min: 1, max: 7, step: 1 },
-        { id: 'questions_answered', label: 'Answer Health IQ questions', target: 20, unit: 'questions', min: 5, max: 80, step: 5 },
-        { id: 'perfect_lessons', label: 'Score 100% on lessons', target: 1, unit: 'lessons', min: 1, max: 5, step: 1 }
-      ]
-    },
-    {
       category: 'Community',
-      blurb: 'Coach, Feed, friends, and games',
+      blurb: 'Feed, friends, challenges, and games',
       short: 'C',
       accent: '#0891b2',
       soft: '#ecfeff',
@@ -97,8 +83,9 @@
       gradient: 'linear-gradient(135deg,#0891b2,#14b8a6)',
       goals: [
         { id: 'share_workout_feed', label: 'Share workout to Feed', target: 1, unit: 'posts', min: 1, max: 3, step: 1 },
-        { id: 'share_meal_feed', label: 'Share meal to Feed (+15 XP)', target: 1, unit: 'posts', min: 1, max: 3, step: 1 },
-        { id: 'message_coach', label: 'Message your coach', target: 1, unit: 'messages', min: 1, max: 3, step: 1 },
+        { id: 'share_meal_feed', label: 'Share meal to Feed', target: 1, unit: 'posts', min: 1, max: 3, step: 1 },
+        { id: 'feed_actions', label: 'Take actions in the Feed', target: 10, unit: 'actions', min: 5, max: 50, step: 5 },
+        { id: 'challenge_friend', label: 'Challenge a friend', target: 1, unit: 'challenges', min: 1, max: 3, step: 1 },
         { id: 'invite_friend', label: 'Invite a friend', target: 1, unit: 'friends', min: 1, max: 3, step: 1 },
         { id: 'complete_game', label: 'Complete a game', target: 1, unit: 'games', min: 1, max: 5, step: 1 }
       ]
@@ -106,6 +93,13 @@
   ];
 
   const GOAL_BY_ID = {};
+  // Keep past check-ins recalculable without offering retired goals for new weeks.
+  const RETIRED_GOALS = {
+    daily_quiz_days: { id: 'daily_quiz_days', label: 'Complete Daily Quiz', category: 'Health IQ', target: 3, unit: 'days', min: 1, max: 7, step: 1 },
+    questions_answered: { id: 'questions_answered', label: 'Answer Health IQ questions', category: 'Health IQ', target: 20, unit: 'questions', min: 5, max: 80, step: 5 },
+    perfect_lessons: { id: 'perfect_lessons', label: 'Score 100% on lessons', category: 'Health IQ', target: 1, unit: 'lessons', min: 1, max: 5, step: 1 },
+    message_coach: { id: 'message_coach', label: 'Message your coach', category: 'Community', target: 1, unit: 'messages', min: 1, max: 3, step: 1 }
+  };
   GOAL_CATALOG.forEach(group => {
     group.goals.forEach(goal => {
       GOAL_BY_ID[goal.id] = Object.assign({ category: group.category }, goal);
@@ -114,7 +108,7 @@
 
   const ONBOARDING_INTENT_TO_WEEKLY_GOALS = {
     lose_weight: ['weight_loss', 'weigh_in_days', 'calorie_range_days'],
-    learn_fitness: ['daily_quiz_days', 'questions_answered', 'complete_workouts'],
+    learn_fitness: ['complete_workouts', 'build_workouts', 'mood_checkin_days'],
     improve_nutrition: ['protein_days', 'meal_log_days', 'calorie_range_days'],
     consistent_workouts: ['complete_workouts', 'build_workouts', 'mood_checkin_days'],
     build_strength: ['complete_workouts', 'protein_days', 'build_workouts'],
@@ -196,6 +190,7 @@
       const target = picked ? picked.target : goal.target;
       return 'Chosen: ' + formatTarget(target) + ' ' + goal.unit;
     }
+    if (goal.id === 'feed_actions') return '10 posts, comments or reactions';
     if (goal.unit === 'days') return 'Pick your days after choosing';
     if (goal.unit === 'nights') return 'Pick your nights after choosing';
     if (goal.unit === 'workouts') return 'Pick your workout count';
@@ -307,11 +302,11 @@
     } catch (_) {}
   }
 
-  function resolveGoalDefinition(raw) {
+  function resolveGoalDefinition(raw, includeRetired) {
     const goalId = typeof raw === 'string'
       ? raw
       : raw && (raw.id || raw.goal_id || raw.goalId);
-    return goalId && GOAL_BY_ID[goalId] ? GOAL_BY_ID[goalId] : null;
+    return goalId ? (GOAL_BY_ID[goalId] || (includeRetired && RETIRED_GOALS[goalId]) || null) : null;
   }
 
   function isMealEntryGoal(raw, target) {
@@ -330,8 +325,8 @@
     return Object.assign({}, def, { max: 21, unit: 'meals' });
   }
 
-  function normalizeGoal(raw) {
-    const def = resolveGoalDefinition(raw);
+  function normalizeGoal(raw, includeRetired) {
+    const def = resolveGoalDefinition(raw, includeRetired);
     if (!def) return null;
     let target = Number(raw && typeof raw === 'object' ? raw.target : null);
     if (!Number.isFinite(target) || target <= 0) target = def.target;
@@ -349,12 +344,12 @@
     };
   }
 
-  function normalizeSelected(list) {
+  function normalizeSelected(list, includeRetired) {
     if (!Array.isArray(list)) return [];
     const seen = new Set();
     const result = [];
     list.forEach(item => {
-      const goal = normalizeGoal(item);
+      const goal = normalizeGoal(item, includeRetired);
       if (!goal || seen.has(goal.id) || result.length >= MAX_GOALS) return;
       seen.add(goal.id);
       result.push(goal);
@@ -623,15 +618,21 @@
     return rows;
   }
 
-  async function loadProgressData(userId, week) {
+  async function loadProgressData(userId, week, selected) {
     const supabase = window.supabaseClient;
     if (!supabase) return {};
 
     const startIso = dateFromKey(week.arcStart).toISOString();
     const endIso = dateFromKey(week.endExclusive).toISOString();
-    let coachId = window._coachUserId || null;
-    if (!coachId && typeof window.getCoachUserId === 'function') {
-      try { coachId = await window.getCoachUserId(); } catch (_) {}
+    let coachMessages = [];
+    if ((selected || []).some(goal => goal.id === 'message_coach')) {
+      let coachId = window._coachUserId || null;
+      if (!coachId && typeof window.getCoachUserId === 'function') {
+        try { coachId = await window.getCoachUserId(); } catch (_) {}
+      }
+      if (coachId) coachMessages = await safeQuery('historical coach messages', () => supabase.from('nudges')
+        .select('id,created_at').eq('sender_id', userId).eq('receiver_id', coachId)
+        .gte('created_at', startIso).lt('created_at', endIso));
     }
 
     const queries = [
@@ -673,6 +674,20 @@
         .eq('user_id', userId)
         .gte('created_at', startIso)
         .lt('created_at', endIso)),
+      safePagedQuery('feed comments', (from, to) => supabase.from('feed_comments')
+        .select('id,story_id,created_at')
+        .eq('user_id', userId)
+        .gte('created_at', startIso)
+        .lt('created_at', endIso)
+        .order('id', { ascending: true })
+        .range(from, to)),
+      safePagedQuery('feed reactions', (from, to) => supabase.from('feed_reactions')
+        .select('id,story_id,created_at')
+        .eq('user_id', userId)
+        .gte('created_at', startIso)
+        .lt('created_at', endIso)
+        .order('id', { ascending: true })
+        .range(from, to)),
       safeQuery('lesson_completions', () => supabase.from('lesson_completions')
         .select('games_played,score_percentage,completed_at')
         .eq('user_id', userId)
@@ -728,14 +743,12 @@
         .or('challenger_id.eq.' + userId + ',opponent_id.eq.' + userId)
         .gte('created_at', startIso)
         .lt('created_at', endIso)),
-      coachId
-        ? safeQuery('nudges coach messages', () => supabase.from('nudges')
-          .select('id,created_at')
-          .eq('sender_id', userId)
-          .eq('receiver_id', coachId)
-          .gte('created_at', startIso)
-          .lt('created_at', endIso))
-        : Promise.resolve([]),
+      safeQuery('friend challenge invitations', () => supabase.from('challenge_participants')
+        .select('challenge_id,user_id,invited_at,challenges!inner(creator_id)')
+        .eq('challenges.creator_id', userId)
+        .neq('user_id', userId)
+        .gte('invited_at', startIso)
+        .lt('invited_at', endIso)),
       safeQuery('referrals', () => supabase.from('referrals')
         .select('id,created_at,status')
         .eq('referrer_user_id', userId)
@@ -744,10 +757,10 @@
     ];
 
     const [
-      nutrition, mealLogs, workouts, customWorkouts, weighIns, stories,
+      nutrition, mealLogs, workouts, customWorkouts, weighIns, stories, feedComments, feedReactions,
       lessons, milestones, checkins, moodLogs, ouraActivity,
       fitbitActivity, whoopSleep, ouraSleep, fitbitSleep,
-      gameMatches, quizBattles, coachMessages, referrals
+      gameMatches, quizBattles, challengeInvites, referrals
     ] = await Promise.all(queries);
 
     return {
@@ -757,6 +770,8 @@
       customWorkouts,
       weighIns,
       stories,
+      feedComments,
+      feedReactions,
       lessons,
       milestones,
       checkins,
@@ -768,6 +783,7 @@
       fitbitSleep,
       gameMatches,
       quizBattles,
+      challengeInvites,
       coachMessages,
       referrals
     };
@@ -944,6 +960,22 @@
         current = weekRows(data.stories, week, createdDateKey)
           .filter(row => row.media_type === 'nutrition_card' || row.media_type === 'meal_card').length;
         break;
+      case 'feed_actions': {
+        const count = rows => new Set(weekRows(rows, week, createdDateKey).map(row => row.id).filter(Boolean)).size;
+        const posts = count(data.stories);
+        const comments = count(data.feedComments);
+        const reactions = count(data.feedReactions);
+        current = posts + comments + reactions;
+        helper = posts + ' posts, ' + comments + ' comments, ' + reactions + ' reactions';
+        break;
+      }
+      case 'challenge_friend':
+        // Count each sent challenge once, even when it invites several friends.
+        current = new Set(weekRows(data.challengeInvites, week,
+          row => row.invited_at ? getDateKey(new Date(row.invited_at)) : null)
+          .map(row => row.challenge_id).filter(Boolean)).size;
+        helper = 'Invite a friend to a challenge from Community.';
+        break;
       case 'message_coach':
         current = weekRows(data.coachMessages, week, createdDateKey).length;
         break;
@@ -1054,7 +1086,7 @@
       };
     }
 
-    const data = await loadProgressData(userId, week);
+    const data = await loadProgressData(userId, week, selected);
     const goals = selected.map(goal => calculateGoal(goal, data, week));
     const completed = goals.filter(goal => goal.complete).length;
     const arc = buildArcSnapshot(data, week);
@@ -1079,7 +1111,7 @@
     if (isFutureWeek(week)) return null;
 
     const row = await fetchWeeklyRow(userId, week.start);
-    const selected = normalizeSelected(row && row.selected_goals);
+    const selected = normalizeSelected(row && row.selected_goals, week.endExclusive <= getDateKey(new Date()));
     if (!selected.length) return null;
 
     const result = await calculateProgress(userId, week, selected);
@@ -1240,11 +1272,15 @@
 
     const style = document.createElement('style');
     style.textContent = `
-      #weekly-goals-modal .weekly-goal-sheet{background:linear-gradient(180deg,#fffdf8 0%,#f6eddb 100%) !important;color:#181713 !important;width:100%;max-width:560px;max-height:88vh;overflow:auto;border:1px solid rgba(154,105,25,.28) !important;border-radius:24px 24px 0 0;box-shadow:0 -22px 56px rgba(60,43,16,.24) !important;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif !important;}
-      #weekly-goals-modal .weekly-goal-sheet *{font-family:inherit;}
+      #weekly-goals-modal{--weekly-safe-top:max(42px,env(safe-area-inset-top,0px));--weekly-safe-bottom:max(16px,env(safe-area-inset-bottom,0px));padding:var(--weekly-safe-top) max(0px,env(safe-area-inset-right,0px)) var(--weekly-safe-bottom) max(0px,env(safe-area-inset-left,0px)) !important;box-sizing:border-box;height:100dvh;}
+      #weekly-goals-modal .weekly-goal-sheet{box-sizing:border-box;max-height:min(88vh,calc(100dvh - var(--weekly-safe-top) - var(--weekly-safe-bottom))) !important;overscroll-behavior:contain;background:linear-gradient(180deg,#fffdf8 0%,#f6eddb 100%) !important;color:#181713 !important;width:100%;max-width:560px;max-height:88vh;overflow:auto;border:1px solid rgba(154,105,25,.28) !important;border-radius:24px 24px 0 0;box-shadow:0 -22px 56px rgba(60,43,16,.24) !important;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif !important;}
+      #weekly-goals-modal .weekly-goal-sheet *{font-family:inherit;color:#181713 !important;-webkit-text-fill-color:#181713 !important;}
+      #weekly-goals-modal .weekly-goal-sheet .weekly-goal-footer{background:#fffdf8 !important;}
+      #weekly-goals-modal .weekly-goal-sheet .weekly-goal-choice span,#weekly-goals-modal .weekly-goal-sheet .weekly-goal-category-head > div:last-child{color:#5f584c !important;-webkit-text-fill-color:#5f584c !important;}
       #weekly-goals-modal .weekly-goal-hero{position:sticky;top:0;z-index:2;padding:18px 20px 15px;border-bottom:1px solid rgba(154,105,25,.24) !important;background:linear-gradient(135deg,#fffdf8 0%,#f4e6c8 100%) !important;color:#181713 !important;overflow:hidden;}
       .weekly-goal-hero:before{content:"";position:absolute;right:58px;top:15px;width:72px;height:72px;border-radius:999px;background:#f8c55a;box-shadow:0 0 34px rgba(248,197,90,.35);opacity:.95;}
       .weekly-goal-hero:after{content:"";position:absolute;right:77px;top:6px;width:62px;height:62px;border-radius:999px;background:#fffdf8;}
+      #weekly-goals-modal .weekly-goal-hero button{background:#fffdf8 !important;color:#181713 !important;-webkit-text-fill-color:#181713 !important;}
       #weekly-goals-modal .weekly-goal-hero [style*="color:white"],#weekly-goals-modal .weekly-goal-hero [style*="color: white"]{color:#181713 !important;-webkit-text-fill-color:#181713 !important;}
       #weekly-goals-modal .weekly-goal-hero [style*="#fde68a"]{color:#765410 !important;-webkit-text-fill-color:#765410 !important;}
       #weekly-goals-modal .weekly-goal-hero > div > div:first-child{max-width:calc(100% - 104px);position:relative;z-index:1;}

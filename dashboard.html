@@ -514,7 +514,7 @@ if (window._pbbIsIOSSafari) {
             'lib/native-health.js',
             'lib/native-push.js?v=41-meal-reminders-retired',
             'lib/native-iap.js',
-            'lib/stories.js?v=76-feed-composer-profile-photo&video_health=2',
+            'lib/stories.js?v=76-feed-composer-profile-photo&video_health=2&weekly_goals=2',
             'lib/ai-opponents.js',
             'lib/games.js?v=3',
             'lib/nutrition-calculator.js',
@@ -540,7 +540,7 @@ if (window._pbbIsIOSSafari) {
 } else {
     document.write('<script src="lib/vegan-meal-safety.js?v=2"><\/script>');
     document.write('<script src="lib/migrate-localstorage.js"><\/script>');
-    document.write('<script src="lib/stories.js?v=76-feed-composer-profile-photo&video_health=2"><\/script>');
+    document.write('<script src="lib/stories.js?v=76-feed-composer-profile-photo&video_health=2&weekly_goals=2"><\/script>');
     document.write('<script src="lib/ai-opponents.js"><\/script>');
     document.write('<script src="lib/games.js?v=3"><\/script>');
     document.write('<script src="lib/nutrition-calculator.js"><\/script>');
@@ -1972,14 +1972,14 @@ if(!window._pbbIsIOSSafari) {
     <script>
 if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-progressphoto.js?v=13-course-photo-sync"><\/script>');
-document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=35-balance-theme"><\/script>');
+document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=36-community-challenge"><\/script>');
     document.write('<script src="js/dashboard/pbb-social-journey.js?v=55-week1-progress-photos"><\/script>');
     document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=61-course-photo-sync"><\/script>');
     document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=29-accountability-checkout"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
     window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=13-course-photo-sync');
-window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=35-balance-theme');
+window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=36-community-challenge');
     window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=55-week1-progress-photos');
     window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=61-course-photo-sync');
     window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=29-accountability-checkout');
@@ -14073,7 +14073,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#home-cohort-challenge-invite-top', title:'6-Week Challenge', body:"The 6-week challenge sits under your character on Home. Tap it to open the leaderboard or check how to earn XP.", quick: true, condition: function(){ var c = document.getElementById('home-cohort-challenge-invite-top'); return c && c.innerHTML.trim() !== ''; } },
     { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Meet your FitGotchi', body:"Your character comes ready with standard colours. Earn XP and watch it level up with you, without a design step or the old character battle mode.", quick: true, condition: function(){ return !(typeof window.isFitGotchiHidden === 'function' && window.isFitGotchiHidden()); } },
     { tab:'dashboard', sel:'#monthly-wrapped-card', title:'Your Month, Wrapped', body:"At the start of each month, tap this card for your workouts, PBs, mood, streaks, weekly goals, and next-month forecast.", quick: true, condition: function(){ var c = document.getElementById('monthly-wrapped-card'); return c && c.style.display !== 'none'; } },
-    { tab:'dashboard', sel:'#weekly-goals-card', title:'Your goals, set for you', body:"Balance uses your setup answers to choose the first three weekly goals. Open Weekly Goals whenever you want to adjust the targets for real life.", quick: true, condition: function(){ var c = document.getElementById('weekly-goals-card'); return c && c.style.display !== 'none'; } },
+    { tab:'dashboard', sel:'#weekly-goals-card', title:'Your Weekly Goals', body:"Pick up to three goals across body, training, food, recovery, or community. Try Challenge a friend or track 10 Feed actions through posts, comments and reactions.", quick: true, condition: function(){ var c = document.getElementById('weekly-goals-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#next-obvious-steps-card', fallbackSel:'#social-journey-card', title:'Your Next Step', body:'Once you finish this App Tour and your first Balance Learn lesson, use To do next near the top of Home to see exactly what to do next.', quick: true, condition: function(){ var c = document.getElementById('next-obvious-steps-card'); return !!(window.socialJourney && window.socialJourney.isEligibleUser() && c && c.style.display !== 'none'); } },
     { tab:'dashboard', sel:'#next-obvious-steps-card', fallbackSel:'#social-journey-card', title:'Build Your Fitness Instagram', body:'Balance Become now teaches you how your inputs shape your output, then helps you plan an Instagram that reinforces the person you want to become.', quick: true, condition: function(){ var c = document.getElementById('next-obvious-steps-card'); return !!(window.socialJourney && window.socialJourney.isEligibleUser() && window.socialJourney.getCurrentWeek() >= 7 && c && c.style.display !== 'none'); } },
     { tab:'dashboard', sel:'#next-obvious-steps-card', fallbackSel:'#social-journey-card', title:'Proof that matches the action', body:'Balance Learn and Balance Become connect Fitness Diary shares to the exact weekly action. Lead keeps Balance Feed as your weekly reflection home and clearly separates verified Balance activity from your own Instagram confirmations.', quick: true, condition: function(){ var c = document.getElementById('next-obvious-steps-card'); return !!(window.socialJourney && window.socialJourney.isEligibleUser() && c && c.style.display !== 'none'); } },
@@ -16731,11 +16731,11 @@ window.endFeatureTour = function(skipped){
       }
     },
     {
-      id: 'weekly-goals-v1',
+      id: 'weekly-goals-community-challenge-v2',
       tab: 'dashboard',
       sel: '#weekly-goals-card',
       title: 'Weekly Goals',
-      body: "Pick up to 3 goals for the week. Choose body, training, food, recovery, Health IQ, or community, then watch each week build into your Month Wrapped.",
+      body: "Pick up to 3 goals for the week. Choose body, training, food, recovery, or community. Try Challenge a friend or track 10 Feed actions through posts, comments and reactions.",
       condition: function(){ var c = document.getElementById('weekly-goals-card'); return c && c.style.display !== 'none'; }
     },
     {
