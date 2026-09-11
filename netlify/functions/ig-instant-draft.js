@@ -1492,6 +1492,15 @@ function isExplicitPaidMetaPreviewAcceptance(value = '') {
         || /^(?:i(?:'d| would) like|give me|send me|let me|can i|i want)\b[\s\S]{0,120}\b(?:look|access|link|check it out|see it)\b[\s\S]{0,60}$/i.test(message);
 }
 
+function hasPaidMetaCourseAffordabilityDecline(value = '') {
+    return String(value || '').split(/[.!?;\n]+|\b(?:but|however)\b/i).some(clause => {
+        const explicitCourse = /\b(?:course|program|programme|balance learn|149|450)\b/i.test(clause);
+        if (!explicitCourse && /\b(?:grocer\w*|food|meals?|ingredients?|gym|equipment|childcare|child care|rent|supplements?|transport|petrol)\b/i.test(clause)) return false;
+        return /\b(?:i|we)\s+(?:can['\u2019]?t|cannot|can not)\s+afford\s+(?:it|that|(?:this|the)\s+(?:course|program|programme)|balance learn)\b/i.test(clause)
+            || /\b(?:149|450|price|cost|course|program|it|that)\b.{0,45}\b(?:too (?:much|expensive)|can['\u2019]?t afford|cannot afford|not (?:in|within) (?:my )?budget)\b/i.test(clause);
+    });
+}
+
 function hasPaidMetaPreviewOrPriceDecline(value = '') {
     const message = String(value || '').replace(/\s+/g, ' ').trim();
     // A later explicit change of mind can renew preview consent within a
@@ -1506,8 +1515,7 @@ function hasPaidMetaPreviewOrPriceDecline(value = '') {
         || /\b(?:not now|no thanks|not interested)\b/i.test(message)
         || /(?:^|[.!?]|\bactually[, ]+)\s*(?:actually[, ]+)?(?:please\s+)?hold off\b/i.test(message)
         || /(?:^|[.!?])\s*(?:(?:i|we)\s+)?need to think about (?:it|this|that)\b/i.test(message)
-        || /\b(?:i|we)\s+(?:can['\u2019]?t|cannot|can not)\s+afford\s+(?:it|that|(?:this|the)\s+(?:course|program|programme)|balance learn)\b/i.test(message)
-        || /\b(?:\$?\s*(?:149|450)|price|cost|it|that)\b[\s\S]{0,45}\b(?:too (?:much|expensive)|can['\u2019]?t afford|cannot afford|not (?:in|within) (?:my )?budget)\b/i.test(message);
+        || hasPaidMetaCourseAffordabilityDecline(message);
 }
 
 function isExplicitPaidMetaPreviewRequest(value = '') {
@@ -3100,6 +3108,26 @@ function foundersPassCheckoutUrlForMessage(message = '', customData = {}, flowVa
 }
 
 const META_AD_CURRICULUM_QUESTION_RE = /\bwhat\s+(?:(?:will|do|can|would)\s+(?:i|we|you)\s+|am\s+i\s+(?:going\s+to\s+)?)(?:actually\s+)?learn\b|\b(?:what|which|how|can|could|do|does).{0,40}\b(?:teach|cover|curriculum|lessons?|week[ -]?by[ -]?week|happens? (?:each|every) week|the six weeks)\b|\btell me\b.{0,30}\b(?:course|curriculum|lessons?|six weeks)\b|\b(?:course|curriculum|lessons?)\b.{0,30}\b(?:include|inside|cover|work)\b/i;
+
+// A mention of price is not necessarily a request for the course price.
+// Evaluate clauses separately so an accepted fee or another living expense
+// cannot force the writer's relevant answer into a canned course-price reply.
+function asksPaidMetaCoursePrice(currentMessage = '') {
+    const text = String(currentMessage || '').replace(/[’]/g, "'");
+    return text.split(/[.!?;\n]+|\b(?:but|however)\b/i).some(part => {
+        const clause = part.trim();
+        if (!/\b(?:how much|prices?|pricing|costs?|fees?|charge)\b/i.test(clause)) return false;
+        if (/\bhow much\s+(?:time|protein|weight|fat|muscle|water|sleep|exercise|food|equipment|support)\b/i.test(clause)
+            && !/\b(?:prices?|pricing|costs?|fees?|charge)\b/i.test(clause)) return false;
+        if (/\b(?:not asking|don'?t need|already know|know the price)\b/i.test(clause)) return false;
+        if (/\b(?:price|cost|fee)\b.{0,25}\b(?:fine|okay|ok|sorted|not (?:the |a |an? )?(?:issue|problem|concern))\b/i.test(clause)) return false;
+        const coursePriceQuestion = /\b(?:how much (?:is|does|will|would) (?:the )?(?:course|program|programme|pass|balance(?: learn)?)|(?:price|cost|fee) (?:of|for) (?:the )?(?:course|program|programme|pass|balance(?: learn)?)|(?:course|program|programme|pass|balance(?: learn)?) (?:price|cost|fee))\b/i.test(clause);
+        const otherExpense = /\b(?:grocer\w*|food|meals?|ingredients?|supermarket\w*|gym|equipment|childcare|child care|babysitt\w*|rent|supplements?|protein powder|transport|petrol)\b/i.test(clause);
+        if (otherExpense && !coursePriceQuestion) return false;
+        return /\b(?:how much|what(?:'s| is| are| does| will| would)|tell me|show me|can you|could you|do i|does it|will i|would i)\b/i.test(clause)
+            || /^(?:(?:the|your|course|program|balance learn)\s+)*(?:prices?|pricing|cost|fees?)$/i.test(clause);
+    });
+}
 
 function resolveMetaAdFirstReplyIntent(currentMessage = '') {
     const text = String(currentMessage || '').toLowerCase().replace(/[’]/g, "'");
@@ -5138,6 +5166,7 @@ PAID META SINGLE-WRITER PLAYBOOK:
 - Never repeat or lightly reword a question Shannon already asked. Never echo the lead's sentence back as Shannon's reply. Use their answer, add a relevant coaching or proof point, then make the next adjacent move.
 - Treat a stated target as a target, not completed progress. For example, "I want to lose 10kg" must never become "10kg down".
 - When they ask about the program, price, inclusions or personalised coaching, answer that direct question before qualifying further. A positive reaction such as "looks great" is not permission to offer checkout. Send checkout only after explicit transactional intent such as asking to join, pay, sign up or receive the checkout link.
+- Distinguish the course fee from the cost of groceries, equipment, childcare or a gym. If they say the course price is fine, do not repeat it or treat them as declining. Answer the actual practical question in their newest turn. Food support can use ordinary supermarket ingredients; do not promise an exact grocery bill or require specialty products.
 - For inclusions, answer accurately: workout programming, plant-based meal planning, six weeks of app/community access, and one weekly training/food review and adjustment. Do not claim an endlessly tailored daily meal plan or unlimited coaching.
 - If they ask whether Shannon is trying to sell them something, answer plainly that Balance is a paid program and Shannon is checking whether it fits before offering it. Then back off. No question, pitch, link, euphemism or continuation hook in that reply.
 - Keep it like a real active DM: concise, specific, warm and low-pressure. No intake bundles, option menus, canned therapy language or brochure dump.`;
@@ -5468,7 +5497,7 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
         && /\$24\.83\s*(?:\/\s*week|(?:a|per)\s+week)/i.test(reply)
         && /\bsix[ -]week minimum\b/i.test(reply)
         && /\bcontinues?\b[^.!?\n]{0,80}\buntil\b[^.!?\n]{0,30}\bcancel\w*/i.test(reply);
-    if (/\b(?:how much|price|cost)\b/i.test(turn)
+    if (asksPaidMetaCoursePrice(turn)
         && !correctWeeklyPriceAnswer
         && !new RegExp('\\bone\\s+(?:(?:aud|au\\$)\\s+)?\\$' + resolveBalanceLearnCoursePriceLabel().slice(1) + '\\s+payment\\s+for\\s+the\\s+full\\s+six\\s+weeks\\b', 'i').test(reply)) {
         issues.push(('Answer the price exactly as one $149 payment for the full six weeks.'.replaceAll('$149', resolveBalanceLearnCoursePriceLabel())));
