@@ -1,0 +1,20 @@
+.learn-close { background:#f5f0e4; border-top:1px solid #e1d3b5; padding:64px 0; color:#22241e; -webkit-text-fill-color:#22241e; }
+.learn-close-grid { display:grid; grid-template-columns:1.15fr 1fr; gap:56px; align-items:center; }
+.learn-close-copy h2 { font:900 clamp(2rem,4vw,3.3rem)/1.05 Outfit,sans-serif; letter-spacing:-.035em; margin:18px 0; color:#22241e; -webkit-text-fill-color:#22241e; }
+.learn-close-copy p { max-width:520px; color:#56574b; -webkit-text-fill-color:#56574b; line-height:1.65; }
+.learn-close-copy ul { list-style:none; padding:0; margin:24px 0 0; }
+.learn-close-copy li { position:relative; padding:9px 0 9px 26px; font-size:15px; line-height:1.45; }
+.learn-close-copy li::before { content:'✓'; position:absolute; left:0; color:#8a6823; -webkit-text-fill-color:#8a6823; font-weight:800; }
+.learn-close-offer { padding:32px; border:1px solid #cbb477; border-radius:24px; background:#fffdf7; box-shadow:0 16px 40px #5e481012; }
+.learn-close-kicker { margin:0; font-size:11px; letter-spacing:.12em; font-weight:700; color:#795c21; -webkit-text-fill-color:#795c21; }
+.learn-close .learn-offer-line { gap:8px 16px; }
+.learn-close .learn-offer-label { flex-basis:100%; font-size:15px; }
+.learn-close .learn-hero-offer small { color:#635f50; -webkit-text-fill-color:#635f50; }
+.learn-close-payment { font-size:14px; line-height:1.6; color:#55564a; -webkit-text-fill-color:#55564a; margin:0 0 22px; }
+.learn-close .cta { width:100%; min-height:54px; padding:16px; border:1px solid #171914; border-radius:12px; background:#171914; color:#f4d890; -webkit-text-fill-color:#f4d890; font:700 16px/1.4 Outfit,sans-serif; box-shadow:none; white-space:normal; cursor:pointer; }
+.learn-close .cta:hover { background:#302d22; }
+.learn-close .secure-note { margin:16px 0; color:#5b5b4e; -webkit-text-fill-color:#5b5b4e; font-size:12px; line-height:1.55; text-align:center; }
+.learn-close-payment-link { display:block; text-align:center; color:#76581d; -webkit-text-fill-color:#76581d; font-size:13px; text-underline-offset:3px; }
+#learn-payment-faq { scroll-margin-top:90px; }
+.learn-close :focus-visible { outline:3px solid #aa8231; outline-offset:4px; }
+@media(max-width:750px) { .learn-close-grid { grid-template-columns:1fr; gap:28px; } .learn-close { padding:40px 0; } .learn-close-offer { padding:24px 20px; } }
