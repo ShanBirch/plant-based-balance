@@ -37,6 +37,7 @@
         && bookingSource === 'coaching_calls_purchase';
 
     if (isFirstPtSession) {
+        byId('booking-length-note').innerHTML = '<i>02</i> 30 minutes · Google Meet';
         document.title = 'Book Your First PT Session | Balance';
         byId('booking-intro-kicker').textContent = '1:1 personal training';
         byId('booking-intro-title').textContent = 'Book your first PT session.';
