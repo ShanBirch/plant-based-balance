@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v532-iphone-onboarding'; // v532: cover iOS keyboard pans, clear the tour banner, and prime exercise previews
+const CACHE_NAME = 'pbb-app-v533-instant-course-mascot'; // v533: show the course companion immediately, including iPhone without WebGL
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
