@@ -38,7 +38,7 @@ const ADMIN_EMAILS = new Set([
 ]);
 const GOOGLE_REFRESH_TOKEN_KEY = "balance_booking_google_refresh_token";
 const GOOGLE_OAUTH_STATE_KEY = "balance_booking_google_oauth_state";
-const DEFAULT_PUBLIC_ORIGIN = "https://plantbased-balance.org";
+const DEFAULT_PUBLIC_ORIGIN = "https://balanceneurosciencefitness.com";
 const DEFAULT_BOOKING_URL = `${DEFAULT_PUBLIC_ORIGIN}/book`;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -51,12 +51,19 @@ function getEnv(name: string): string {
     return String(netlifyValue || processValue || "").trim();
 }
 
+export function currentBookingDomain(value: string): string {
+    const legacy = 'https://plantbased-balance.org';
+    return value === legacy || value.startsWith(legacy + '/')
+        ? DEFAULT_PUBLIC_ORIGIN + value.slice(legacy.length)
+        : value;
+}
+
 function publicOrigin(): string {
-    return (getEnv("BALANCE_BOOKING_PUBLIC_ORIGIN") || DEFAULT_PUBLIC_ORIGIN).replace(/\/+$/, "");
+    return currentBookingDomain(getEnv("BALANCE_BOOKING_PUBLIC_ORIGIN") || DEFAULT_PUBLIC_ORIGIN).replace(/\/+$/, "");
 }
 
 function bookingUrl(): string {
-    return getEnv("BALANCE_BOOKING_URL") || `${publicOrigin()}/book` || DEFAULT_BOOKING_URL;
+    return currentBookingDomain(getEnv("BALANCE_BOOKING_URL") || `${publicOrigin()}/book` || DEFAULT_BOOKING_URL);
 }
 
 function json(status: number, body: Record<string, unknown>, headers: Record<string, string> = {}): Response {
