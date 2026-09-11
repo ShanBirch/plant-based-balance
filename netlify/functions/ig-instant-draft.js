@@ -1497,6 +1497,7 @@ function hasPaidMetaPreviewOrPriceDecline(value = '') {
     return /\b(?:don['\u2019]?t|do not)\s+send\s+(?:me\s+)?(?:a|the|that)?\s*(?:(?:free )?(?:personalised |personalized )?(?:app )?preview|link)\b/i.test(message)
         || /\b(?:not now|no thanks|not interested)\b/i.test(message)
         || /(?:^|[.!?])\s*(?:actually[, ]+)?(?:please\s+)?hold off\b/i.test(message)
+        || /(?:^|[.!?])\s*(?:(?:i|we)\s+)?need to think about (?:it|this|that)\b/i.test(message)
         || /\b(?:i|we)\s+(?:can['\u2019]?t|cannot|can not)\s+afford\s+(?:it|that|(?:this|the)\s+(?:course|program|programme)|balance learn)\b/i.test(message)
         || /\b(?:\$?\s*(?:149|450)|price|cost|it|that)\b[\s\S]{0,45}\b(?:too (?:much|expensive)|can['\u2019]?t afford|cannot afford|not (?:in|within) (?:my )?budget)\b/i.test(message);
 }

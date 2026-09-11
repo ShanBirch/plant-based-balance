@@ -6,6 +6,8 @@ for (const currentMessage of [
     'Can I see the free preview?\nActually hold off, I need to check with my partner.',
     'Can I see the free preview? Please hold off for now.',
     'Hold off, please.',
+    'Need to think about it',
+    'I need to think about this.',
 ]) test(`preview withdrawal produces a sendable pause: ${currentMessage}`, () => {
     const draft = buildDeterministicPaidMetaConversationReply({ currentMessage, history, flowVariant: 'broad_pain', appPreviewUrl: 'https://future-balance.netlify.app/p/synthetic-preview-token-12345' });
     assert.equal(draft?.model, 'deterministic_paid_meta_autonomy_v1');
