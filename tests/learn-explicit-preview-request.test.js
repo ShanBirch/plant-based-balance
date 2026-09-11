@@ -38,6 +38,16 @@ for (const currentMessage of requests) {
     });
 }
 
+test('preview handoff explicitly answers an automatic-charge question in the same turn', () => {
+    const currentMessage = 'Can I see the free preview, and will it charge me automatically?';
+    const draft = buildDeterministicPaidMetaConversationReply({ currentMessage, history, qualifier, flowVariant: 'broad_pain', appPreviewUrl: previewUrl });
+    assert.equal(draft?.appPreviewHandoff, true);
+    assert.match(draft.joined, /preview is free/i);
+    assert.match(draft.joined, /won.t charge you automatically/i);
+    assert.ok(draft.joined.includes(previewUrl));
+    assert.equal(buildPaidMetaConversationApproval({ metaAdConversationFastLane: true, draft, currentMessage, qualifier })?.required, false);
+});
+
 for (const currentMessage of [
     'Can I see the free preview? Actually no thanks, not now.',
     'Please don’t send me the free preview.',

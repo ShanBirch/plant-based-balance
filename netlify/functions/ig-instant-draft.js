@@ -2110,6 +2110,17 @@ function buildDeterministicPaidMetaConversationReply({
         || META_AD_FIRST_REPLY_OPT_OUT_RE.test(message)
         || META_AD_FIRST_REPLY_REVIEW_REQUIRED_RE.test(message)) return null;
 
+    // Factual access FAQ, not a pitch or an invitation. Keep its verified
+    // answer out of the organic readiness gate and do not add a sales link.
+    if (flowVariant === 'broad_pain'
+        && /^when does (?:it|the course|balance learn) start(?:[?,]?(?:\s+and)?\s+)what happens after (?:six|6) weeks[?.!]*$/i.test(message)) {
+        const launch = Date.now() < Date.parse('2026-09-20T14:00:00Z')
+            ? 'Balance Learn launches on 21 September 2026.'
+            : 'Balance Learn launched on 21 September 2026.';
+        const joined = `${launch} The upfront package includes six weeks of the course, app and community access, with weekly check-ins. That access and support end after six weeks with no automatic renewal; continuing afterwards is a separate choice.`;
+        return { joined, chunks: [joined], model: 'deterministic_paid_meta_guided_sales_v1', replyMode: 'campaign_sales_progression', paidMetaVerifiedAccessFaq: true, maxChunks: 1, flowVariant, error: null };
+    }
+
     if (!skipIdentityDisclosure && META_AD_IDENTITY_QUESTION_RE.test(message)) {
         return buildPaidMetaIdentityReply({
             currentMessage: message,
@@ -2248,7 +2259,10 @@ function buildDeterministicPaidMetaConversationReply({
         && appPreviewUrl
         && (directPreviewRequest || acceptedExplicitPreviewInvitation || genericReadyAfterQualifiedOffer || (historyHasGoal && historyHasBlocker))) {
         const mealPlanCopy = broadFlow ? 'meal plan fitted to your dietary preferences' : 'plant-based meal plan';
-        const joined = `Yep, here you go. This opens the app download and setup steps, then you can explore your preview before you pay: ${appPreviewUrl}`;
+        const asksAutomaticCharge = /\b(?:charg\w*|bill\w*|payment|renew\w*)\b[\s\S]{0,50}\bautomatic\w*\b|\bautomatic\w*\b[\s\S]{0,50}\b(?:charg\w*|bill\w*|payment|renew\w*)\b/i.test(message);
+        const joined = asksAutomaticCharge
+            ? `The preview is free and won't charge you automatically. Payment only happens if you choose to purchase. Here are the app download and preview setup steps: ${appPreviewUrl}`
+            : `Yep, here you go. This opens the app download and setup steps, then you can explore your preview before you pay: ${appPreviewUrl}`;
         return {
             chunks: [joined],
             joined,
@@ -2639,7 +2653,7 @@ function isPaidMetaBareGoalMessage(message = '') {
 
 function selectFastDeterministicPaidMetaProgression({ metaAdOpeningTurn = false, draft = null, requiresMediaAnalysis = false, currentMessage = '' } = {}) {
     if (requiresMediaAnalysis) return null;
-    if (currentMessage && draft?.replyMode === 'campaign_sales_progression'
+    if (currentMessage && draft?.replyMode === 'campaign_sales_progression' && draft?.paidMetaVerifiedAccessFaq !== true
         && (/\?/.test(currentMessage)
             || (paidMetaOutboundAskedForBlocker(draftTextFromDraft(draft)) && !isPaidMetaBareGoalMessage(currentMessage)))) return null;
     // Offers provide the factual scaffold only. personalisePaidMetaOffer runs
