@@ -2673,6 +2673,20 @@ function selectFastDeterministicPaidMetaProgression({ metaAdOpeningTurn = false,
     return shouldApplyDeterministicPaidMetaReplyOverride(draft) ? draft : null;
 }
 
+function removeRepeatedPaidMetaPreviewInvitation({ draft, currentMessage = '', history = [] } = {}) {
+    if (!draft || draft.appPreviewHandoff || draft.checkoutUrl || draft.videoAttachmentUrl || draft.imageAttachmentUrl
+        || !/\?/.test(currentMessage) || isExplicitPaidMetaPreviewRequest(currentMessage)) return draft;
+    const isInvitation = text => /^(?:if you want[, ]+i can|(?:would you like|do you want|want) (?:me )?to)\b[\s\S]*\bpreview\b/i.test(String(text).trim())
+        && !/https?:\/\//i.test(text);
+    const priorInvitation = history.filter(item => item?.direction === 'out').slice(-4)
+        .some(item => String(item.text || '').split(/\n+/).some(isInvitation));
+    if (!priorInvitation) return draft;
+    const parts = (draft.chunks || [draft.joined || '']).flatMap(chunk => String(chunk).split(/\n+/)).filter(Boolean);
+    const kept = parts.filter(part => !isInvitation(part));
+    if (kept.length === parts.length || kept.join(' ').trim().split(/\s+/).length < 5) return draft;
+    return { ...draft, chunks: kept, joined: kept.join('\n\n'), repeatedPreviewInvitationRemoved: true };
+}
+
 async function personalisePaidMetaOffer({ draft, currentMessage = '', history = [], writer = callOpenAITextModel } = {}) {
     const joined = draftTextFromDraft(draft);
     const marker = 'Balance Learn is a six-week course';
@@ -10083,6 +10097,17 @@ exports.handler = async (event) => {
                 });
             }
         }
+        if (metaAdConversationFastLane && !thread.linked_user_id && blockingPaidMetaContractIssues.length === 0) {
+            const conciseDraft = removeRepeatedPaidMetaPreviewInvitation({ draft, currentMessage: currentInboundTurnMessage, history: displayHistory });
+            if (conciseDraft !== draft) {
+                draft = conciseDraft;
+                currentAlertData = await persistCocosDraftRepair({
+                    alertId, currentAlertData, draft, challengeOfferWarning,
+                    repairField: 'paid_meta_repeated_preview_invitation',
+                    repairMeta: { status: 'accepted', repaired_at: new Date().toISOString() },
+                });
+            }
+        }
         const nonBlockingPaidMetaContractIssues = unresolvedPaidMetaContractIssues
             .filter(issue => !isBlockingPaidMetaWriterContractIssue(issue));
         if (nonBlockingPaidMetaContractIssues.length > 0 && blockingPaidMetaContractIssues.length === 0) {
@@ -10566,6 +10591,7 @@ exports._test = {
     shouldApplyDeterministicPaidMetaReplyOverride,
     selectFastDeterministicPaidMetaProgression,
     personalisePaidMetaOffer,
+    removeRepeatedPaidMetaPreviewInvitation,
     isPaidMetaBareGoalMessage,
     shouldUseOutboundSyntheticVoice,
     restoreCoalescedPaidMetaVoiceDraft,
