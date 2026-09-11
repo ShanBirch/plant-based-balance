@@ -32,7 +32,8 @@ function contrast(foreground, background) {
 }
 
 test('loads the cache-busted dark-theme contrast sweep', () => {
-    assert.match(dashboard, /pbb-premium-overlays\.css\?v=102-community-games-theme/);
+    const version = dashboard.match(/pbb-premium-overlays\.css\?v=(\d+)/);
+    assert.ok(version && Number(version[1]) >= 102, 'load the contrast sweep or a newer stylesheet version');
     assert.match(css, /Dark-theme contrast sweep/);
     assert.match(css, /#view-active-workout[^}]+\.exercise-note-input/s);
     assert.match(css, /#movement-archive #workout-list input/);
