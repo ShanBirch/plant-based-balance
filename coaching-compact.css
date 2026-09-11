@@ -1,0 +1,14 @@
+.coaching-plan-preview { margin:16px 0; scroll-margin-top:90px; }
+.coaching-learn-grid { display:grid; grid-template-columns:1.1fr 1fr; gap:30px; align-items:start; }
+.coaching-learn-grid .offer-list { margin-top:8px; }
+.coaching-learn-price { padding:22px; border:1px solid #ddc99a; border-radius:16px; background:#faf6eb; color:#34372b; -webkit-text-fill-color:#34372b; }
+.coaching-learn-price .learn-hero-offer { margin:0 0 18px; }
+.coaching-learn-price .learn-offer-label { flex-basis:100%; }
+.coaching-learn-price .learn-hero-offer small { color:#635f50; -webkit-text-fill-color:#635f50; }
+.coaching-learn-price > p,.coaching-payment-details p { font-size:13px; line-height:1.6; color:#53564a; -webkit-text-fill-color:#53564a; }
+.support-group .coaching-payment-details > summary { padding:14px 0 0; gap:8px; font-size:13px; font-weight:700; color:#76581d; -webkit-text-fill-color:#76581d; }
+.support-group .coaching-payment-details > summary::after { content:'+'; font-size:20px; margin-left:auto; }
+.support-group .coaching-payment-details[open] > summary::after { content:'−'; }
+.coaching-payment-details { margin-top:14px; border-top:1px solid #ddc99a; }
+.coaching-payment-details p { margin-bottom:0; }
+@media(max-width:750px) { .coaching-learn-grid { grid-template-columns:1fr; gap:16px; } .coaching-learn-price { padding:18px; } }

@@ -26,7 +26,7 @@ test('hero offer shows crossed-out standard price only during the introductory p
         if (amount === 14900) {
             assert.match(hero.innerHTML, /<s[^>]+>\$450<\/s>/);
             assert.match(hero.innerHTML, /\$149/);
-            assert.match(hero.innerHTML, /introductory offer/);
+            assert.match(hero.innerHTML, /Introductory Offer/);
             assert.match(hero.innerHTML, /Offer lasts until October 20th/);
         } else {
             assert.match(hero.innerHTML, /\$450/);

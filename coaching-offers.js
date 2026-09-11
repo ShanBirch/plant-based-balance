@@ -4,7 +4,7 @@
         const id = window.location.hash.slice(1);
         const target = document.getElementById(id);
         if (!target) return;
-        const group = target.closest('details.support-group');
+        const group = target.closest('details') || target.querySelector('details.learn-plan');
         if (group) group.open = true;
         requestAnimationFrame(() => target.scrollIntoView({ block: 'start' }));
     }
