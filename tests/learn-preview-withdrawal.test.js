@@ -22,3 +22,18 @@ test('negated hold-off wording does not block an explicit request', () => {
     const draft = buildDeterministicPaidMetaConversationReply({ currentMessage: "Don't hold off. Can I see the free preview?", history, flowVariant: 'broad_pain', appPreviewUrl: 'https://future-balance.netlify.app/p/synthetic-preview-token-12345' });
     assert.equal(draft?.appPreviewHandoff, true);
 });
+
+for (const currentMessage of [
+    'actually hold off\nchanged my mind please send the preview',
+    'No thanks. I changed my mind, can I see the preview?',
+]) test(`explicit renewed consent supersedes an earlier pause: ${currentMessage}`, () => {
+    const draft = buildDeterministicPaidMetaConversationReply({currentMessage, history, flowVariant:'broad_pain', appPreviewUrl:'https://future-balance.netlify.app/p/synthetic-preview-token-12345'});
+    assert.equal(draft?.appPreviewHandoff, true);
+});
+
+test('a withdrawal after renewed consent still wins', () => {
+    const currentMessage = 'Hold off. Changed my mind, send the preview. Actually hold off please';
+    const draft = buildDeterministicPaidMetaConversationReply({currentMessage, history, flowVariant:'broad_pain', appPreviewUrl:'https://future-balance.netlify.app/p/synthetic-preview-token-12345'});
+    assert.equal(draft?.model, 'deterministic_paid_meta_autonomy_v1');
+    assert.doesNotMatch(draft.joined, /https?:/);
+});

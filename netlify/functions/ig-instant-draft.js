@@ -1494,6 +1494,14 @@ function isExplicitPaidMetaPreviewAcceptance(value = '') {
 
 function hasPaidMetaPreviewOrPriceDecline(value = '') {
     const message = String(value || '').replace(/\s+/g, ' ').trim();
+    // A later explicit change of mind can renew preview consent within a
+    // coalesced inbound burst. Inspect only the suffix, including any later
+    // withdrawal, rather than letting the first pause veto the whole turn.
+    const renewed = [...message.matchAll(/\b(?:i(?:'ve| have)?\s+)?changed my mind\b/gi)].at(-1);
+    if (renewed) {
+        const latestIntent = message.slice(renewed.index + renewed[0].length);
+        if (isExplicitPaidMetaPreviewRequest(latestIntent)) return false;
+    }
     return /\b(?:don['\u2019]?t|do not)\s+send\s+(?:me\s+)?(?:a|the|that)?\s*(?:(?:free )?(?:personalised |personalized )?(?:app )?preview|link)\b/i.test(message)
         || /\b(?:not now|no thanks|not interested)\b/i.test(message)
         || /(?:^|[.!?]|\bactually[, ]+)\s*(?:actually[, ]+)?(?:please\s+)?hold off\b/i.test(message)
