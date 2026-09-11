@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v528-fitgotchi-guided-cards'; // v528: keep FitGotchi guide controls and character visible on short screens
+const CACHE_NAME = 'pbb-app-v529-fitgotchi-guide-bootstrap'; // v529: start the FitGotchi guide from its inserted onboarding template
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [

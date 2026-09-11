@@ -51,6 +51,37 @@ test('a delayed guide still opens Settings and explains how to retry without cre
   assert.equal(c.tab,'profile');assert.equal(c.scrolled,true);
   assert.match(c.message,/retry/);assert.equal(c.writes,0);
 });
+
+test('an inert template guide is bootstrapped before starting the Week 1 action',()=>{
+  const c=fixture();
+  const originalStart=c.window.startFeatureTour;
+  delete c.window.startFeatureTour;
+  c.window.ensureGuidedFeatureTourRuntime=()=>{c.boots=(c.boots||0)+1;c.window.startFeatureTour=originalStart;};
+  assert.equal(c.openFitGotchiIntro(),true);
+  assert.equal(c.boots,1);assert.equal(c.tab,'profile');
+  assert.equal(c.options.fitgotchiCourse,true);assert.equal(c.message,undefined);assert.equal(c.writes,0);
+  c.openFitGotchiIntro();assert.equal(c.boots,1);
+});
+
+test('the real activation bootstrap registers the guide stored inside the onboarding template',()=>{
+  const onboarding=fs.readFileSync(path.join(root,'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js'),'utf8');
+  const guideStart=html.indexOf('<script>',html.indexOf('<!-- ========== GUIDED FEATURE TOUR'))+8;
+  const guideSource=html.slice(guideStart,html.indexOf('</script>',guideStart));
+  assert.ok(html.indexOf('id="tmpl-onboarding"')<guideStart);
+  assert.ok(html.indexOf('</script><!-- end tmpl-onboarding -->')>guideStart);
+  const runtimeScript={textContent:guideSource,dataset:{}};
+  const c={console,URLSearchParams,location:{search:''},setTimeout(){},setInterval(){},addEventListener(){},
+    document:{scripts:[runtimeScript],addEventListener(){},querySelector(){return null},getElementById(){return null}},
+    localStorage:{getItem(){return null}}};
+  c.window=c;
+  vm.createContext(c);
+  vm.runInContext(section(onboarding,'function ensureGuidedFeatureTourRuntime()', 'function startWizardClientActivationTour('),c);
+  assert.equal(c.startFeatureTour,undefined);
+  assert.equal(c.ensureGuidedFeatureTourRuntime(),true);
+  assert.equal(typeof c.startFeatureTour,'function');
+  assert.equal(runtimeScript.dataset.balanceTourBootstrapped,'true');
+  assert.equal(c.ensureGuidedFeatureTourRuntime(),true);
+});
 test('completion persists once and remains complete after hiding the character',async()=>{
   const c=fixture();c.openFitGotchiIntro();
   await assert.rejects(c.options.onCourseComplete(),/Turn on/);
@@ -155,6 +186,6 @@ test('edited scripts parse and both loader paths use the new assets',()=>{
     const at=html.indexOf('<script>',html.indexOf('<!-- ========== '+marker));
     new Function(html.slice(at+8,html.indexOf('</script>',at)));
   }
-  assert.equal((html.match(/pbb-social-journey.js\?v=53-fitgotchi-navigation/g)||[]).length,2);
+  assert.equal((html.match(/pbb-social-journey.js\?v=54-fitgotchi-bootstrap/g)||[]).length,2);
   assert.equal((html.match(/pbb-next-obvious-steps.js\?v=59-fitgotchi-navigation/g)||[]).length,2);
 });

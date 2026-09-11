@@ -1871,6 +1871,11 @@
     if (typeof window.switchAppTab === 'function') window.switchAppTab('profile');
     const setting = document.getElementById('settings-fitgotchi-visibility');
     if (setting) setting.scrollIntoView({block:'center', behavior:'auto'});
+    // The onboarding template inserts this inline guide without executing it.
+    // Use the same on-demand bootstrap as the main activation walkthrough.
+    if (typeof window.startFeatureTour !== 'function' && typeof window.ensureGuidedFeatureTourRuntime === 'function') {
+      window.ensureGuidedFeatureTourRuntime();
+    }
     if (typeof window.startFeatureTour !== 'function') {
       if (typeof window.showToast === 'function') window.showToast('The guide is still loading. Return Home and tap View Your FitGotchi to retry.', 'info');
       return false;
