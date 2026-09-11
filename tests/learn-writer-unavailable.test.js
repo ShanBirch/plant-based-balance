@@ -1,24 +1,25 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const {buildPaidMetaUnavailableAcknowledgement, isPaidMetaUnavailableAcknowledgement, buildPaidMetaConversationApproval, collectPaidMetaWriterContractIssues, getAutoDmHoldReason} = require('../netlify/functions/ig-instant-draft')._test;
+const {buildPaidMetaUnavailableDraft, isAutomatedOutageNotice, buildPaidMetaConversationApproval, getAutoDmHoldReason} = require('../netlify/functions/ig-instant-draft')._test;
 
-test('an unavailable writer yields a sendable, honest acknowledgement with retained diagnosis', () => {
-  const draft=buildPaidMetaUnavailableAcknowledgement('429 no credits remaining');
-  assert.equal(draft.error,null);
+test('writer failure stays empty and held, with diagnosis retained', () => {
+  const draft=buildPaidMetaUnavailableDraft('429 no credits remaining');
+  assert.deepEqual(draft.chunks,[]);
+  assert.equal(draft.joined,'');
+  assert.match(draft.error,/429/);
   assert.match(draft.writerFailure,/429/);
-  assert.match(draft.joined,/reply system is having trouble/);
-  assert.doesNotMatch(draft.joined,/https?:|149|beginners|yes/i);
-  assert.deepEqual(collectPaidMetaWriterContractIssues({draft,currentMessage:'Is it suitable for beginners?',flowVariant:'broad_pain'}),[]);
-  const approval=buildPaidMetaConversationApproval({metaAdConversationFastLane:true,draft,currentMessage:'Is it suitable for beginners?'});
-  assert.equal(approval?.required,false);
-  assert.notEqual(getAutoDmHoldReason({draft})?.code,'draft_unavailable');
+  assert.equal(buildPaidMetaConversationApproval({metaAdConversationFastLane:true,draft,currentMessage:'Is it suitable for beginners?'}),null);
+  assert.equal(getAutoDmHoldReason({draft})?.code,'draft_unavailable');
 });
-
-test('outage approval requires the exact reviewed acknowledgement and never bypasses sensitive gates', () => {
-  const draft=buildPaidMetaUnavailableAcknowledgement('offline');
-  assert.equal(isPaidMetaUnavailableAcknowledgement({...draft,joined:'Buy now',chunks:['Buy now']}),false);
-  assert.equal(isPaidMetaUnavailableAcknowledgement({...draft,appPreviewHandoff:true}),false);
-  assert.equal(buildPaidMetaConversationApproval({metaAdConversationFastLane:false,draft,currentMessage:'Hi'}),null);
-  assert.equal(buildPaidMetaConversationApproval({metaAdConversationFastLane:true,linkedUserId:'client',draft,currentMessage:'Hi'}),null);
-  assert.equal(buildPaidMetaConversationApproval({metaAdConversationFastLane:true,draft,currentMessage:'Stop messaging me'}),null);
+for(const text of [
+  'Sorry, our reply system is having trouble right now. Please try again a little later.',
+  'Sorry, our reply is having trouble right now. Please try again a little later.',
+  'Sorry. This message cannot be replied to right now.',
+]) test(`old outage copy cannot auto-send: ${text}`, () => {
+  assert.equal(isAutomatedOutageNotice(text),true);
+  assert.equal(getAutoDmHoldReason({draft:{joined:text,chunks:[text],model:'deterministic_paid_meta_unavailable_v1'}})?.code,'draft_unavailable');
+});
+test('ordinary replies are unaffected', () => {
+  assert.equal(isAutomatedOutageNotice('Hey, how are you?'),false);
+  assert.equal(isAutomatedOutageNotice('No worries, I will not send the preview.'),false);
 });

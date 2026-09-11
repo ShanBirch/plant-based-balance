@@ -2883,7 +2883,7 @@ function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draf
             label: 'lead is in onboarding/setup',
         };
     }
-    if (draft?.error || !draft?.joined) {
+    if (draft?.error || !draft?.joined || isAutomatedOutageNotice(draft.joined)) {
         return {
             code: 'draft_unavailable',
             label: 'AI draft was unavailable',
@@ -3411,7 +3411,6 @@ function buildPaidMetaConversationApproval({
         && !linkedUserId
         && ['campaign_sales_progression', 'campaign_buyer_handoff', 'campaign_app_preview_handoff'].includes(String(draft?.replyMode || ''))
         && (/^deterministic_paid_meta_(?:conversation|guided_sales|handoff|autonomy|identity)_v\d+(?:\+[a-z0-9_-]+)*$/i.test(String(draft?.model || ''))
-            || isPaidMetaUnavailableAcknowledgement(draft)
             || verifiedExplicitPreviewHandoff)
         && !META_AD_FIRST_REPLY_OPT_OUT_RE.test(message)
         && !META_AD_FIRST_REPLY_REVIEW_REQUIRED_RE.test(message)
@@ -5349,20 +5348,17 @@ function ensurePaidMetaAppVideoPreviewCta(draft = {}) {
     };
 }
 
-function buildPaidMetaUnavailableAcknowledgement(error = '') {
-    const chunks = ["Sorry, our reply system is having trouble right now. Please try again a little later."];
-    return {chunks, joined:chunks[0], model:'deterministic_paid_meta_unavailable_v1', replyMode:'campaign_sales_progression', error:null, writerFailure:String(error).slice(0,1200)};
+function buildPaidMetaUnavailableDraft(error = '') {
+    const failure = String(error || 'AI writer unavailable').slice(0,1200);
+    // Shannon: leave failed replies unsent; never send outage copy to leads.
+    return {chunks:[], joined:'', model:'none', replyMode:'campaign_sales_progression', error:failure, writerFailure:failure};
 }
 
-function isPaidMetaUnavailableAcknowledgement(draft = {}) {
-    return draft.model === 'deterministic_paid_meta_unavailable_v1'
-        && draft.replyMode === 'campaign_sales_progression'
-        && draftTextFromDraft(draft) === buildPaidMetaUnavailableAcknowledgement().joined
-        && !draft.appPreviewHandoff && !draft.imageAttachmentUrl && !draft.videoAttachmentUrl;
+function isAutomatedOutageNotice(value = '') {
+    return /^(?:sorry[,.!]?\s*)?(?:our reply(?: system)? is having trouble right now|(?:this )?message can(?:not|'t|’t) be replied to right now)\b/i.test(String(value).trim());
 }
 
 function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', qualifier = {}, history = [], flowVariant = 'plant_based_control' } = {}) {
-    if (isPaidMetaUnavailableAcknowledgement(draft)) return [];
     const reply = draftTextFromDraft(draft);
     const turn = String(currentMessage || '').replace(/\s+/g, ' ').trim();
     if (!reply || !turn) return [];
@@ -7379,7 +7375,7 @@ Rules:
                         lastError = null;
                         console.warn(`[ig-draft] paid Meta model chain failed; used local sales fallback: ${err.message}`);
                     } else {
-                        return { ...buildPaidMetaUnavailableAcknowledgement(lastError), imageCount: imageParts.length, audioCount: audioParts.length, videoCount: videoParts.length, reelContextCount, reelThumbnailCount, mediaDecode, timeline: totalConversationText, conversationEpisode, currentTurnAnchorBlock, storyReplyPromptContextBlock, mediaContextPromptBlock, learningReelContextBlock, learningReelReplyAnchorBlock, learningReelEvidenceBlock };
+                        return { ...buildPaidMetaUnavailableDraft(lastError), imageCount: imageParts.length, audioCount: audioParts.length, videoCount: videoParts.length, reelContextCount, reelThumbnailCount, mediaDecode, timeline: totalConversationText, conversationEpisode, currentTurnAnchorBlock, storyReplyPromptContextBlock, mediaContextPromptBlock, learningReelContextBlock, learningReelReplyAnchorBlock, learningReelEvidenceBlock };
                     }
                 }
             } else try {
@@ -10625,8 +10621,8 @@ exports._test = {
     buildPaidMetaProofVideoRetryReply,
     shouldApplyDeterministicPaidMetaReplyOverride,
     selectFastDeterministicPaidMetaProgression,
-    buildPaidMetaUnavailableAcknowledgement,
-    isPaidMetaUnavailableAcknowledgement,
+    buildPaidMetaUnavailableDraft,
+    isAutomatedOutageNotice,
     personalisePaidMetaOffer,
     removeRepeatedPaidMetaPreviewInvitation,
     isPaidMetaBareGoalMessage,
