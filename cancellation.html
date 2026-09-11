@@ -64,8 +64,8 @@
 
     <section id="login-card" class="card hidden">
         <h2>Log in to continue</h2>
-        <p>Use the Balance account connected to your subscription. After login, open Profile and choose Cancel subscription.</p>
-        <a class="button secondary" href="/login.html">Log in to Balance</a>
+        <p>Use the Balance account connected to your subscription. After login, you will return here to manage it.</p>
+        <a class="button secondary" href="/login.html?redirect=%2Fcancellation.html%3Ffrom%3Dwebsite">Log in to Balance</a>
     </section>
 
     <section id="loading-card" class="card"><p>Loading your subscription...</p></section>
@@ -105,8 +105,13 @@
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+if (new URLSearchParams(window.location.search).get('from') === 'website') {
+ const back=document.getElementById('subscription-settings-back');
+ back.textContent='Back to My Account'; back.setAttribute('aria-label','Back to My Account');
+}
 function returnToBalanceSettings() {
-    var fallback = '/dashboard.html?tab=profile';
+    var website = new URLSearchParams(window.location.search).get('from') === 'website';
+    var fallback = website ? '/account.html' : '/dashboard.html?tab=profile';
     var fromSettings = new URLSearchParams(window.location.search).get('from') === 'settings';
     if (!fromSettings || window.history.length <= 1) {
         window.location.href = fallback;
