@@ -2261,8 +2261,13 @@ function buildDeterministicPaidMetaConversationReply({
         && (directPreviewRequest || acceptedExplicitPreviewInvitation || genericReadyAfterQualifiedOffer || (historyHasGoal && historyHasBlocker))) {
         const mealPlanCopy = broadFlow ? 'meal plan fitted to your dietary preferences' : 'plant-based meal plan';
         const asksAutomaticCharge = /\b(?:charg\w*|bill\w*|payment|renew\w*)\b[\s\S]{0,50}\bautomatic\w*\b|\bautomatic\w*\b[\s\S]{0,50}\b(?:charg\w*|bill\w*|payment|renew\w*)\b/i.test(message);
-        const joined = asksAutomaticCharge
-            ? `The preview is free and won't charge you automatically. Payment only happens if you choose to purchase. Here are the app download and preview setup steps: ${appPreviewUrl}`
+        const asksDietRequirement = /\b(?:vegetarian|vegan|plant[- ]based)\s+only\b|\bonly\s+(?:for\s+)?(?:vegetarians?|vegans?|plant[- ]based)\b|\b(?:have|need) to (?:be|eat|go) (?:vegetarian|vegan|plant[- ]based)\b/i.test(message);
+        const factualAnswers = [
+            asksDietRequirement ? "You don't need to be vegetarian or vegan. Food support fits your dietary preferences." : '',
+            asksAutomaticCharge ? "The preview is free and won't charge you automatically. Payment only happens if you choose to purchase." : '',
+        ].filter(Boolean);
+        const joined = factualAnswers.length
+            ? `${factualAnswers.join(' ')} Here are the app download and preview setup steps: ${appPreviewUrl}`
             : `Yep, here you go. This opens the app download and setup steps, then you can explore your preview before you pay: ${appPreviewUrl}`;
         return {
             chunks: [joined],

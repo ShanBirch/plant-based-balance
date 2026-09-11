@@ -50,6 +50,16 @@ test('preview handoff explicitly answers an automatic-charge question in the sam
     assert.equal(buildPaidMetaConversationApproval({ metaAdConversationFastLane: true, draft, currentMessage, qualifier })?.required, false);
 });
 
+test('preview handoff answers dietary eligibility without discarding another billing question', () => {
+    for (const currentMessage of ['Can I see the preview and is the course vegetarian only?', 'Can I see the preview, do I have to be vegan, and will it charge me automatically?']) {
+        const draft = buildDeterministicPaidMetaConversationReply({ currentMessage, history, qualifier, flowVariant: 'broad_pain', appPreviewUrl: previewUrl });
+        assert.equal(draft?.appPreviewHandoff, true);
+        assert.match(draft.joined, /don.t need to be vegetarian or vegan/i);
+        assert.ok(draft.joined.includes(previewUrl));
+        if (/charge/.test(currentMessage)) assert.match(draft.joined, /won.t charge you automatically/i);
+    }
+});
+
 for (const currentMessage of [
     'Can I see the free preview? Actually no thanks, not now.',
     'Please don’t send me the free preview.',
