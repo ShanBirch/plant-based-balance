@@ -8671,6 +8671,71 @@ let wizardChatViewportBound = false;
 let wizardChatControlsBound = false;
 let wizardChatKeepKeyboardAfterSubmit = false;
 let wizardChatChoicePending = false;
+let wizardChatNeedsResume = false;
+
+function saveWizardCheckpoint() {
+    const modal = document.getElementById('onboarding-wizard');
+    if (!modal?.classList.contains('active')) return;
+    if (window.BalanceOnboardingProgress?.read()?.stage === 'checkout') return;
+    const fields = Array.from(modal.querySelectorAll('input[id],select[id],textarea[id]'))
+        .filter(el => !['file', 'password'].includes(el.type))
+        .map(el => ({ id:el.id, value:el.value, checked:el.checked }));
+    window.BalanceOnboardingProgress?.save('setup', { wizard:{
+        step:currentWizardStep, chatStarted:wizardChatStarted, chatComplete:wizardChatComplete,
+        chatIndex:wizardChatStepIndex, answers:wizardChatAnswers, freeform:wizardChatFreeformAnswers,
+        fields, gender:selectedGender, frequency:wizardTrainingFrequency,
+        days:Array.from(wizardSelectedDays), split:wizardSplitPreference,
+        calendar:wizardWorkoutCalendar, times:wizardWorkoutTimes,
+        cuisines:Array.from(wizardCuisinePreferences), favourites:Array.from(wizardFavoriteFoods),
+        allergies:Array.from(wizardFoodAllergies), diet:Array.from(wizardDietaryRequirements),
+        interests:Array.from(wizardLearningInterests), liked:Array.from(wizardLikedExercises), avoided:Array.from(wizardAvoidedExercises)
+    } });
+}
+
+function restoreWizardCheckpoint() {
+    const saved = window.BalanceOnboardingProgress?.read();
+    const draft = saved?.stage === 'setup' && saved.wizard;
+    if (!draft) return false;
+    currentWizardStep = Math.max(1, Math.min(totalWizardSteps, Number(draft.step) || 1));
+    wizardChatStarted = !!draft.chatStarted;
+    wizardChatComplete = !!draft.chatComplete;
+    wizardChatStepIndex = Math.max(0, Math.min(WIZARD_CHAT_STEPS.length, Number(draft.chatIndex) || 0));
+    wizardChatAnswers = draft.answers || {};
+    wizardChatFreeformAnswers = draft.freeform || {};
+    selectedGender = draft.gender || selectedGender;
+    wizardTrainingFrequency = draft.frequency || 0;
+    wizardSelectedDays = new Set(draft.days || []);
+    wizardSplitPreference = draft.split || '';
+    wizardWorkoutCalendar = draft.calendar || {};
+    wizardWorkoutTimes = draft.times || {};
+    wizardCuisinePreferences = new Set(draft.cuisines || []);
+    wizardFavoriteFoods = new Set(draft.favourites || []);
+    wizardFoodAllergies = new Set(draft.allergies || []);
+    wizardDietaryRequirements = new Set(draft.diet || []);
+    wizardLearningInterests = new Set(draft.interests || []);
+    wizardLikedExercises = new Set(draft.liked || []);
+    wizardAvoidedExercises = new Set(draft.avoided || []);
+    (draft.fields || []).forEach(field => {
+        const el = document.getElementById(field.id);
+        if (el?.closest('#onboarding-wizard') && el.type !== 'file' && el.type !== 'password') {
+            el.value = field.value;
+            if (typeof field.checked === 'boolean') el.checked = field.checked;
+        }
+    });
+    wizardChatNeedsResume = wizardChatStarted;
+    return true;
+}
+
+document.addEventListener('input', event => {
+    if (event.target?.closest('#onboarding-wizard')) saveWizardCheckpoint();
+});
+document.addEventListener('change', event => {
+    if (event.target?.closest('#onboarding-wizard')) saveWizardCheckpoint();
+});
+window.addEventListener('pagehide', saveWizardCheckpoint);
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') saveWizardCheckpoint();
+});
 
 function getWizardChatStep() {
     return WIZARD_CHAT_STEPS[wizardChatStepIndex] || null;
@@ -9352,6 +9417,7 @@ function askWizardChatQuestion(options = {}) {
     // Back is an explicit request to review an answer, including a known
     // profile value. Auto-skipping here would bounce straight forward again.
     if (!options.revisit) skipWizardChatKnownProfileSteps();
+    saveWizardCheckpoint();
     const step = getWizardChatStep();
     if (!step) {
         wizardChatComplete = true;
@@ -9377,6 +9443,11 @@ function askWizardChatQuestion(options = {}) {
 function initializeWizardChatIntake() {
     bindWizardChatViewportEvents();
     setWizardChatKeyboardMode(document.activeElement && document.activeElement.id === 'wizard-chat-input');
+    if (wizardChatNeedsResume) {
+        wizardChatNeedsResume = false;
+        askWizardChatQuestion({ instant:true, revisit:true });
+        return;
+    }
     if (wizardChatStarted) {
         renderWizardChatMessages();
         renderWizardChatProgress();
@@ -10001,6 +10072,7 @@ async function saveWizardFoodPreferences() {
 }
 
 function resetFreshOnboardingPreferences() {
+    window.BalanceOnboardingProgress?.clear();
     [
         'onboardingComplete',
         'plantbased_onboarding_complete',
@@ -10073,7 +10145,7 @@ async function checkAndTriggerOnboarding() {
 
     // The dedicated authenticated test account is deliberately repeatable.
     // Never let its completed database profile skip the paid onboarding run.
-    if (forcePaidOnboardingTest) {
+    if (forcePaidOnboardingTest && !window.BalanceOnboardingProgress?.read()) {
         resetFreshOnboardingPreferences();
         localStorage.removeItem('onboardingComplete');
         localStorage.removeItem('plantbased_onboarding_complete');
@@ -10135,7 +10207,9 @@ async function checkAndTriggerOnboarding() {
             // The dedicated phone-test account can be reset from another device.
             // Its database flag is the source of truth, so a stale local completion
             // flag must never make the next phone launch skip the fresh onboarding.
-            if (userData && userData.is_test_account && !userData.onboarding_complete) {
+            if (userData && userData.is_test_account && !userData.onboarding_complete
+                && (!window.BalanceOnboardingProgress?.read()
+                    || (window.BalanceOnboardingProgress.read().stage !== 'setup' && localStorage.getItem('onboardingComplete') === 'true'))) {
                 resetFreshOnboardingPreferences();
                 isReturningMember = false;
                 // A deliberate test reset must win over saved quiz answers below.
@@ -10163,6 +10237,33 @@ async function checkAndTriggerOnboarding() {
         } catch (e) {
             console.warn('Transferred client check failed:', e);
         }
+    }
+
+    // A completed setup is not a completed tour. Resume before the legacy
+    // completion/essential-answer shortcuts can expose an unrestricted Home.
+    const checkpoint = window.BalanceOnboardingProgress?.read();
+    const trial = window.metaAdTrialMode && window.BalanceMetaAdTrial?.readState();
+    if (checkpoint?.stage === 'checkout' || trial?.interruptedStage === 'checkout') {
+        window.BalanceMetaAdTrial?.openCheckoutGate();
+        return;
+    }
+    if (checkpoint?.stage === 'tour' || (trial?.onboardingCompletedAt && !trial.walkthroughCompletedAt)) {
+        window.__balanceOnboardingResumePending = true;
+        // Startup selects Home later. Resume after that final switch, otherwise
+        // it would navigate away from the restored tour destination again.
+        const resumeTour = () => {
+            window.__balanceOnboardingResumePending = false;
+            if (window.metaAdTrialMode) startWizardMetaPreviewTour(0, { resume:true });
+            else startWizardClientActivationTour(0, { resume:true });
+        };
+        if (window.__balanceStartupHomeReady) resumeTour();
+        else window.addEventListener('pbbInitComplete', resumeTour, { once:true });
+        return;
+    }
+    if (checkpoint?.stage === 'setup' || (trial && !trial.onboardingCompletedAt)) {
+        window._onboardingWizardPending = true;
+        initOnboardingWizard();
+        return;
     }
 
     // Check if this guest or authenticated account has completed onboarding.
@@ -10462,7 +10563,9 @@ function initOnboardingWizard() {
             window._pausedMascotSrc = savedMascotSrc;
         }
         // Skip story, go straight to wizard
+        const restoredInput = window.BalanceOnboardingProgress?.read()?.wizard?.fields?.find(field => field.id === 'wizard-chat-input');
         currentWizardStep = 1;
+        restoreWizardCheckpoint();
         setOnboardingScrollLock(true);
         modal.classList.add('active');
         modal.style.display = 'flex';
@@ -10470,6 +10573,11 @@ function initOnboardingWizard() {
         modal.dataset.launchState = 'open';
         syncWizardViewportMetrics();
         updateWizardUI();
+        if (restoredInput) {
+            const input = document.getElementById('wizard-chat-input');
+            if (input) input.value = restoredInput.value;
+            saveWizardCheckpoint();
+        }
         return true;
     }
 
@@ -11378,6 +11486,7 @@ function updateWizardUI() {
     const previousStepMatch = previouslyActiveSlide?.id?.match(/^slide-(\d+)$/);
     const previousStep = previousStepMatch ? parseInt(previousStepMatch[1], 10) : currentWizardStep;
     normalizeWizardStep();
+    saveWizardCheckpoint();
     window.BalanceOnboardingFunnel?.track('screen', 'slide_' + currentWizardStep, 'viewed', { step_number: currentWizardStep });
     closeOnboardingBlockingSurfaces();
     const wizardOverlay = document.getElementById('onboarding-wizard');
@@ -12869,7 +12978,7 @@ function startWizardClientActivationTour(attempt = 0, options = {}) {
     if (typeof start === 'function') {
         try {
             localStorage.removeItem('featureTourComplete');
-            start(true, { clientActivation: true });
+            start(true, { clientActivation: true, resume:options.resume === true });
 
             const overlay = document.getElementById('guided-tour-overlay');
             if (overlay && overlay.classList.contains('active')) {
@@ -12922,7 +13031,7 @@ function startWizardMetaPreviewTour(attempt = 0, options = {}) {
     if (typeof start === 'function') {
         try {
             localStorage.removeItem('featureTourComplete');
-            start(false, { metaPreview: true });
+            start(false, { metaPreview: true, resume:options.resume === true });
 
             const overlay = document.getElementById('guided-tour-overlay');
             if (overlay && overlay.classList.contains('active')) {
@@ -14249,6 +14358,7 @@ async function finishOnboarding() {
     }
     localStorage.setItem('onboardingComplete', 'true');
     localStorage.setItem('plantbased_onboarding_complete', 'true'); // Also set alternate key for consistency
+    window.BalanceOnboardingProgress?.save('tour', { wizard:null, tour:null });
     window.BalanceOnboardingFunnel?.track('screen', 'slide_' + currentWizardStep, 'completed', { step_number: currentWizardStep });
     window.BalanceOnboardingFunnel?.track('setup', 'saving_plan', 'completed');
     window.BalanceOnboardingFunnel?.track('setup', 'setup', 'completed');

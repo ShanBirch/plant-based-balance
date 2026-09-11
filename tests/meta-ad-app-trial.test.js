@@ -322,7 +322,36 @@ test('the dedicated phone account repeats onboarding even with a saved login', (
     assert.match(login, /session && !isSwitchingAccount[\s\S]*isDedicatedOnboardingTestAccount\(user\)[\s\S]*dedicatedOnboardingTestDestination\(\)/);
     assert.match(login, /shannonrhysbirch\+phone-onboarding-test@gmail\.com/);
     assert.match(onboarding, /const forcePaidOnboardingTest = window\.metaAdTrialMode === true/);
-    assert.match(onboarding, /if \(forcePaidOnboardingTest\)[\s\S]*pbb_fitgotchi_visibility', 'hidden'[\s\S]*initOnboardingWizard\(\)/);
+    assert.match(onboarding, /if \(forcePaidOnboardingTest && !window.BalanceOnboardingProgress\?\.read\(\)\)[\s\S]*pbb_fitgotchi_visibility', 'hidden'[\s\S]*initOnboardingWizard\(\)/);
+});
+
+test('saved account-first mode survives a clean URL and does not replace authentication', () => {
+    const trial = runTrial('?meta_trial=facebook_5m_foundations_v3&account_first=1&learn_entry=website');
+    const api=trial.window.BalanceMetaAdTrial;
+    assert.equal(api.restoreAuthenticatedMode('member-a'),true);
+    trial.window.location.search='';
+    trial.window.metaAdTrialMode=false;
+    assert.equal(api.restoreAuthenticatedMode('member-a'),true);
+    assert.equal(api.readState().ownerUserId,'member-a');
+    assert.equal(trial.sessionStorage.getItem('guestMode'),null);
+    assert.equal(api.restoreAuthenticatedMode('member-b'),false);
+    trial.window.currentUser={id:'member-a',email:'test@example.com'};
+    assert.equal(api.openCheckoutGate(),true);
+    assert.equal(trial.elements['meta-ad-trial-gate'].style.display,'flex');
+    assert.equal(trial.window.location.href.includes('login.html'),false);
+    api.markClaimed('member-a');
+    assert.equal(api.restoreAuthenticatedMode('member-a'),false);
+});
+
+test('Unlock opens payment even when the transient mode flag has not hydrated', () => {
+    for(const query of ['', '?meta_trial=facebook_5m_foundations_v3&account_first=1&learn_entry=website']) {
+        const trial=runTrial(query);
+        trial.window.metaAdTrialMode=false;
+        const before=trial.window.location.href;
+        assert.equal(trial.window.BalanceMetaAdTrial.openCheckoutGate(),true);
+        assert.equal(trial.elements['meta-ad-trial-gate'].style.display,'flex');
+        assert.equal(trial.window.location.href,before);
+    }
 });
 
 test('dashboard, signup, native handoffs, measurement, and both discovery systems are wired', () => {
@@ -462,4 +491,11 @@ test('website Learn starts the account-first preview and keeps website attributi
     const query = 'account_first=1&meta_trial=facebook_5m_foundations_v3&learn_entry=website&utm_source=website&utm_medium=organic';
     assert.match(handoff.buildNativePreviewUrl(query), /^com\.fitgotchi\.app:\/\/meta-trial\?/);
     assert.equal(handoff.buildNativePreviewUrl('account_first=1&meta_trial=facebook_5m_foundations_v3&utm_source=website'), '');
+});
+
+test('payment does not prefill the synthetic preview account email', () => {
+    const app = runTrial('?meta_app_trial=facebook_5m_foundations_v3&utm_source=facebook&utm_medium=paid_social');
+    app.window.currentUser = { id:'preview-guest', email:'guest@preview.local' };
+    app.window.BalanceMetaAdTrial.openCheckoutGate();
+    assert.notEqual(app.elements['meta-ad-trial-email'].value, 'guest@preview.local');
 });

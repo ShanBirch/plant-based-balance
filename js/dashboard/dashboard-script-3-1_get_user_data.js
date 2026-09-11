@@ -455,6 +455,7 @@
             }
 
             var fastStartupEligible = !window._pbbIsIOSSafari &&
+                !window.metaAdTrialMode && !window.BalanceOnboardingProgress?.read() &&
                 !window.BalanceMetaAdTrial?.hasPendingPhoneReplay?.(window.currentUser) &&
                 !window.isAdminViewing &&
                 localStorage.getItem('dashboardInitialized') === 'true' &&
@@ -473,6 +474,7 @@
                     localStorage.setItem('_pbb_crash_count', '0');
                     window._pbbCrashCount = 0;
                 } catch(e) {}
+                window.__balanceStartupHomeReady = true;
                 window.dispatchEvent(new Event('pbbInitComplete'));
                 setTimeout(function() {
                     runStartupDataRefresh().catch(function(e) {
@@ -592,6 +594,7 @@
                 }
             }
             _crumb('init_complete');
+            window.__balanceStartupHomeReady = true;
             if (window.BalanceMetaAdTrial?.hasPendingPhoneReplay?.(window.currentUser)) {
                 try { await window.BalanceMetaAdTrial.replayPhoneTestTour(); }
                 catch (error) { console.warn('[phone-tour-replay] Will retry on next open.', error); }

@@ -27,8 +27,8 @@ test('training-day guidance is refreshed after a custom day selection', () => {
 });
 
 test('new members and paid preview users enter the correct guided tour mode', () => {
-    assert.match(onboardingSource, /start\(true, \{ clientActivation: true \}\)/);
-    assert.match(onboardingSource, /start\(false, \{ metaPreview: true \}\)/);
+    assert.match(onboardingSource, /start\(true, \{ clientActivation: true, resume:options.resume === true \}\)/);
+    assert.match(onboardingSource, /start\(false, \{ metaPreview: true, resume:options.resume === true \}\)/);
 });
 
 test('Balance suggests Weekly Goals but requires the member to save their choice', () => {
@@ -183,7 +183,7 @@ test('typed-only prompts sit beside their input without an empty choices spacer'
 
 test('remote test reset opens setup before saved quiz answers can complete it again', () => {
     const vm = require('node:vm');
-    const start = onboardingSource.indexOf('if (userData && userData.is_test_account && !userData.onboarding_complete)');
+    const start = onboardingSource.indexOf('if (userData && userData.is_test_account && !userData.onboarding_complete');
     const end = onboardingSource.indexOf('if (userData && userData.is_transferred_client', start);
     const branch = onboardingSource.slice(start, end);
     for (const [isTest, complete, expected] of [[true,false,1],[true,true,0],[false,false,0]]) {
@@ -193,6 +193,7 @@ test('remote test reset opens setup before saved quiz answers can complete it ag
             userData: {is_test_account:isTest,onboarding_complete:complete},
             localStorage: {removeItem() {}}, sessionStorage: {removeItem() {}},
             window: {}, isReturningMember: true,
+            resetFreshOnboardingPreferences() {},
             initOnboardingWizard() { opened++; },
             readSavedQuiz() { fallbackReads++; return {age:34,weight:80,height:180}; }
         };

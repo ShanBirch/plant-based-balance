@@ -9,7 +9,7 @@ test('Back can revisit a known profile answer without bouncing forward', () => {
  const ctx = { wizardChatStarted:true, wizardChatComplete:false, wizardChatStepIndex:3, wizardChatAskToken:0,
   WIZARD_CHAT_STEPS:[{key:'start'},{key:'gender'},{key:'name'},{key:'age'}],
   wizardChatAnswers:{gender:'female',name:'Fresh',age:34}, wizardChatFreeformAnswers:{},
-  skipWizardChatKnownProfileSteps(){ctx.wizardChatStepIndex++;},
+  saveWizardCheckpoint(){}, skipWizardChatKnownProfileSteps(){ctx.wizardChatStepIndex++;},
   getWizardChatStep(){return ctx.WIZARD_CHAT_STEPS[ctx.wizardChatStepIndex];},
   getWizardChatInitialMultiSelection(){return [];}, appendWizardChatQuestion(){},
   renderWizardChatMessages(){},renderWizardChatProgress(){},renderWizardChatControls(){},rebuildWizardChatMessagesUntil(){} };

@@ -49,9 +49,9 @@ test('exercise page index stays inside available cards', () => {
 test('dashboard loads the player once and cache-busts both main loader paths', () => {
     const html = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
     const serviceWorker = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
-    assert.equal((html.match(/pbb-workout-swipe-player\.js\?v=7-centred-options/g) || []).length, 1);
+    assert.equal((html.match(/pbb-workout-swipe-player\.js\?v=8-resume-exercise/g) || []).length, 1);
     assert.equal((html.match(/dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=/g) || []).length, 3);
-    assert.match(serviceWorker, /pbb-workout-swipe-player\.js\?v=7-centred-options/);
+    assert.match(serviceWorker, /pbb-workout-swipe-player\.js\?v=8-resume-exercise/);
     assert.match(html, /id="workout-add-existing-wrap"/);
     assert.match(html, /id="workout-add-existing-exercise-btn"/);
 });

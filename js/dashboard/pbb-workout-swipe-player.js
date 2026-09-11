@@ -1177,6 +1177,7 @@
         init,
         sync,
         setMode,
+        goTo,
         next,
         previous
     });

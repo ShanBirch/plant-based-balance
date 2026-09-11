@@ -193,7 +193,8 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
 <!-- CRITICAL: Admin view-as localStorage isolation — runs BEFORE any other localStorage reads -->
 <script src="js/dashboard/script_part_1.js"></script>
 <!-- Paid-Facebook preview attribution must be available before auth-guard decides guest vs member mode. -->
-<script src="lib/meta-ad-trial.js?v=25-onboarding-funnel"></script>
+<script src="lib/onboarding-progress.js?v=1"></script>
+<script src="lib/meta-ad-trial.js?v=26-resume-session"></script>
 
 <!-- CRITICAL: Hide loading overlay for returning users and restore cached FitGotchi state -->
 <script>
@@ -442,7 +443,7 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
 </script>
 
 <!-- Supabase & Auth Guard -->
-<script src="js/dashboard/script_part_2.js?v=16-imported-activity-latest"></script>
+<script src="js/dashboard/script_part_2.js?v=17-resume-session"></script>
 <script>
 // ── Native OAuth warm-start callback (non-iOS) ────────────────────
 // On iOS this is set up inside the deferred chain above (after supabaseClient exists).
@@ -742,7 +743,7 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
 <div id="guest-mode-banner" style="display:none; position:fixed; top:0; left:0; right:0; z-index:9999; background:linear-gradient(135deg,#48864B,#6ab04c); color:white; padding:calc(8px + env(safe-area-inset-top, 0px)) 16px 10px 16px; font-size:0.85rem; font-weight:600; text-align:center; box-shadow:0 2px 12px rgba(0,0,0,0.15); font-family:'Inter',sans-serif;">
     <div style="display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap;">
         <span id="guest-mode-label">You're exploring as a guest</span>
-        <button onclick="window.metaAdTrialMode && window.BalanceMetaAdTrial ? window.BalanceMetaAdTrial.openCheckoutGate() : (window.location.href='/login.html')" style="background:white; color:#48864B; border:none; padding:6px 16px; border-radius:20px; font-weight:700; font-size:0.8rem; cursor:pointer; font-family:inherit;">Unlock Balance</button>
+        <button onclick="window.BalanceMetaAdTrial?.openCheckoutGate()" style="background:white; color:#48864B; border:none; padding:6px 16px; border-radius:20px; font-weight:700; font-size:0.8rem; cursor:pointer; font-family:inherit;">Unlock Balance</button>
         <button id="guest-banner-dismiss-btn" onclick="dismissGuestBanner()" style="background:transparent; color:rgba(255,255,255,0.8); border:1px solid rgba(255,255,255,0.4); padding:5px 10px; border-radius:20px; font-size:0.75rem; cursor:pointer; font-family:inherit;">Dismiss</button>
     </div>
 </div>
@@ -2976,7 +2977,7 @@ if (window._pbbIsIOSSafari) {
     function _doLoadScript3() {
         if(window._crumb)window._crumb('script3_loading');
         var s = document.createElement('script');
-    s.src = 'js/dashboard/dashboard-script-3-1_get_user_data.js?v=62-phone-tour-replay';
+    s.src = 'js/dashboard/dashboard-script-3-1_get_user_data.js?v=63-resume-session';
         document.head.appendChild(s);
     }
     if (window._pbbAuthIsReady) {
@@ -2987,7 +2988,7 @@ if (window._pbbIsIOSSafari) {
         }, { once: true });
     }
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-3-1_get_user_data.js?v=62-phone-tour-replay"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-3-1_get_user_data.js?v=63-resume-session"><\/script>');
 }
 </script>
 
@@ -12916,7 +12917,7 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=1789120000-six-week-meals&cohort_diets=1&video_health=2';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=1789200000-resume-session&cohort_diets=1&video_health=2';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
@@ -12958,7 +12959,7 @@ if (window._pbbIsIOSSafari) {
         var s = document.createElement('script');
         s.async = false;
         s.dataset.metaTrialLoader = String(attempt);
-        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=1789120000-six-week-meals&cohort_diets=1&video_health=2&meta_retry=' + attempt;
+        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=1789200000-resume-session&cohort_diets=1&video_health=2&meta_retry=' + attempt;
         s.onload = function() {
             if (window._pbbScript5Complete && window._switchAppTabReady && typeof window._switchAppTabReal === 'function') {
                 sessionStorage.removeItem('pbb_meta_script5_recovery_v1');
@@ -12977,10 +12978,10 @@ if (window._pbbIsIOSSafari) {
         document.head.appendChild(s);
     })(0);
 } else {
-document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=1789120000-six-week-meals&cohort_diets=1&video_health=2"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=1789200000-resume-session&cohort_diets=1&video_health=2"><\/script>');
 }
 </script>
-<script src="js/dashboard/pbb-workout-swipe-player.js?v=7-centred-options"></script>
+<script src="js/dashboard/pbb-workout-swipe-player.js?v=8-resume-exercise"></script>
 <script src="js/dashboard/pbb-onboarding-test-navigator.js?v=7-hidden-phone-safe"></script>
 
 <!-- Image Modal HTML -->
@@ -13418,6 +13419,12 @@ if(!window._pbbIsIOSSafari) {
 <!-- ========== GUIDED FEATURE TOUR ========== -->
 <style>
   #guided-tour-overlay { position: fixed; inset: 0; z-index: 400000; pointer-events: auto; display: none; }
+  body:has(#guided-tour-overlay.active) #guest-mode-banner { z-index:400200 !important; }
+  #guest-mode-banner button[onclick*="openCheckoutGate"] { background:#fff !important; color:#151515 !important; -webkit-text-fill-color:#151515 !important; }
+  @media (max-width:600px), (max-height:500px) {
+    #guest-mode-banner { padding-top:max(42px, calc(8px + env(safe-area-inset-top, 0px))) !important; }
+    #meta-ad-trial-gate { padding-top:max(44px, calc(20px + env(safe-area-inset-top, 0px))) !important; padding-bottom:max(20px, env(safe-area-inset-bottom, 0px)) !important; }
+  }
   #view-active-workout .tour-workout-arrow { outline:2px solid #c49b42; outline-offset:4px; box-shadow:0 0 0 7px rgba(196,155,66,.18),0 0 18px rgba(196,155,66,.5); }
   #view-active-workout.tour-workout-safe-area {
     top:var(--pbb-tour-workout-top, 44px) !important;
@@ -14342,6 +14349,32 @@ if(!window._pbbIsIOSSafari) {
   let activeTourFallbackTarget = null;
   const completedTourGates = new Set();
   const completedPromptedActions = new Set();
+  let workoutBrowseCheckpoint = null;
+
+  function saveTourCheckpoint(){
+    if (!(metaPreviewTour || clientActivationTour) || !window.__balanceGuidedTourActive) return;
+    if (window.BalanceOnboardingProgress?.read()?.stage === 'checkout') return;
+    window.BalanceOnboardingProgress?.save('tour', { tour:{
+      step:window.__balanceGuidedTourShowingIntro ? null : activeSteps[idx]?.title,
+      gates:Array.from(completedTourGates),
+      prompted:Array.from(completedPromptedActions).map(i => activeSteps[i]?.title).filter(Boolean),
+      workout:workoutBrowseCheckpoint,
+      foundationsComplete:sessionStorage.getItem('pbb_meta_preview_foundations_complete_v1') === 'true'
+    } });
+  }
+  window.addEventListener('pagehide', saveTourCheckpoint);
+  document.addEventListener('visibilitychange', function(){
+    if (document.visibilityState === 'hidden') saveTourCheckpoint();
+  });
+  window.pauseFeatureTourForCheckout = function(){
+    saveTourCheckpoint();
+    tourRenderToken += 1;
+    cancelScheduledTourPosition();
+    clearActiveTourGate();
+    resetTourTemporaryTargets();
+    window.__balanceGuidedTourActive = false;
+    document.getElementById('guided-tour-overlay')?.classList.remove('active');
+  };
 
   function tourAllowsInteraction(target){
     if (!window.__balanceGuidedTourActive || !target || !target.closest) return true;
@@ -14672,25 +14705,28 @@ if (step && step.requiresFeedPost) {
 
     if (step && step.requiresWorkoutBrowse) {
       const container = document.getElementById('workout-exercises-list');
-      const seen = new Set();
+      const seen = new Set(workoutBrowseCheckpoint?.seen || []);
       const key = 'workout-browse:' + idx;
+      if (Number.isInteger(workoutBrowseCheckpoint?.index)) window.PBBWorkoutSwipePlayer?.goTo(workoutBrowseCheckpoint.index);
       const update = function(){
         const cards = container ? Array.from(container.querySelectorAll('.exercise-logger-card')) : [];
         const current = cards.findIndex(function(card){ return card.classList.contains('workout-swipe-active'); });
-        if (current >= 0) seen.add(cards[current]);
-        const remaining = cards.filter(function(card){ return !seen.has(card); });
+        if (current >= 0) seen.add(current);
+        const remaining = cards.filter(function(card,index){ return !seen.has(index); });
         const complete = cards.length > 0 && (completedTourGates.has(key) || remaining.length === 0);
         activeTourGate.complete = complete;
         if (complete) {
           completedTourGates.add(key);
           setTourGateUi(true, 'You have seen all ' + cards.length + ' exercises. You can continue without logging a workout.', finalLabel);
         } else {
-          const unseenAhead = cards.some(function(card,index){ return index > current && !seen.has(card); });
+          const unseenAhead = cards.some(function(card,index){ return index > current && !seen.has(index); });
           step.sel = unseenAhead ? '#workout-swipe-next' : '#workout-swipe-prev';
           const target = q(step.sel);
           activeTourFallbackTarget = target;
           setTourGateUi(false, cards.length ? 'You have seen ' + (cards.length - remaining.length) + ' of ' + cards.length + ' exercises. Tap the highlighted arrow.' : 'Your exercises are still loading.', 'View every exercise');
         }
+        workoutBrowseCheckpoint = { index:current, seen:Array.from(seen) };
+        saveTourCheckpoint();
         scheduleTourPosition(step);
       };
       const observer = container ? new MutationObserver(update) : null;
@@ -15599,6 +15635,7 @@ if (step && step.requiresFeedPost) {
     idx = i;
     showingXpIntro = false;
     window.__balanceGuidedTourShowingIntro = false;
+    saveTourCheckpoint();
     const step = activeSteps[i];
     if (options.afterPromptedAction) tourNextBlockedUntil = Date.now() + 900;
     const overlay = document.getElementById('guided-tour-overlay');
@@ -15891,6 +15928,7 @@ window.endFeatureTour = function(skipped){
     }
     try { window.trackBalanceActivity('guided_tour_completed', { mode: completedClientActivationTour ? 'client_activation' : (completedMetaPreviewTour ? 'meta_preview' : 'standard'), skipped: !!skipped, final_step_number: Number(idx) + 1, step_count: activeSteps.length }, { immediate:true }); } catch(e){}
     trackTourProgress(idx, skipped ? 'skipped' : 'completed');
+    if (!skipped && completedClientActivationTour && !completedCourseFeatureTour) window.BalanceOnboardingProgress?.clear();
     clearActiveTourGate();
     resetTourTemporaryTargets();
     const overlay = document.getElementById('guided-tour-overlay');
@@ -15968,6 +16006,8 @@ window.endFeatureTour = function(skipped){
 
   window.startFeatureTour = function(force, options){
     options = options || {};
+    const savedTour = options.resume === true ? window.BalanceOnboardingProgress?.read()?.tour : null;
+    workoutBrowseCheckpoint = savedTour?.workout || null;
     if (window.__balanceGuidedTourActive === true && options.restart !== true) return true;
     courseFeatureTour = options.fitgotchiCourse && typeof options.onCourseComplete === 'function' ? {onComplete:options.onCourseComplete} : null;
     window.__balanceFitGotchiCourseTour = !!courseFeatureTour;
@@ -16006,6 +16046,14 @@ window.endFeatureTour = function(skipped){
     if (!activeSteps.length) {
       try { window.trackBalanceActivity('guided_tour_failed', { reason: 'no_eligible_steps' }, { immediate:true }); } catch(e){}
       return;
+    }
+    if (savedTour) {
+      (savedTour.gates || []).forEach(key => completedTourGates.add(key));
+      (savedTour.prompted || []).forEach(title => {
+        const index = activeSteps.findIndex(step => step.title === title);
+        if (index >= 0) completedPromptedActions.add(index);
+      });
+      if (savedTour.foundationsComplete) sessionStorage.setItem('pbb_meta_preview_foundations_complete_v1', 'true');
     }
     idx = 0;
     showingXpIntro = false;
@@ -16053,7 +16101,10 @@ window.endFeatureTour = function(skipped){
     if (document.fonts && document.fonts.ready) {
       document.fonts.ready.then(function(){ if (resizeHandler) resizeHandler(); }).catch(function(){});
     }
-    if (courseFeatureTour) {
+    const resumeIndex = savedTour?.step ? activeSteps.findIndex(step => step.title === savedTour.step) : -1;
+    if (resumeIndex >= 0) {
+      showStep(resumeIndex);
+    } else if (courseFeatureTour) {
       try { window.trackBalanceActivity('fitgotchi_course_started', {version:'fitgotchi_feedback_v1',week:1}); } catch(e){}
       showStep(0);
     } else if (metaPreviewTour || clientActivationTour) {
@@ -16061,6 +16112,7 @@ window.endFeatureTour = function(skipped){
     } else {
       showTourXpIntro();
     }
+    saveTourCheckpoint();
   };
 
   window.replayFeatureTour = function(){
