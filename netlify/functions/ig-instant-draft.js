@@ -2676,7 +2676,7 @@ function selectFastDeterministicPaidMetaProgression({ metaAdOpeningTurn = false,
 function removeRepeatedPaidMetaPreviewInvitation({ draft, currentMessage = '', history = [] } = {}) {
     if (!draft || draft.appPreviewHandoff || draft.checkoutUrl || draft.videoAttachmentUrl || draft.imageAttachmentUrl
         || !/\?/.test(currentMessage) || isExplicitPaidMetaPreviewRequest(currentMessage)) return draft;
-    const isInvitation = text => /^(?:if you want[, ]+i can|(?:would you like|do you want|want) (?:me )?to)\b[\s\S]*\bpreview\b/i.test(String(text).trim())
+    const isInvitation = text => /^(?:if you(?: want|(?:['’]d| would) like)[, ]+i can|(?:would you like|do you want|want) (?:me )?to)\b[\s\S]*\bpreview\b/i.test(String(text).trim())
         && !/https?:\/\//i.test(text);
     const priorInvitation = history.filter(item => item?.direction === 'out').slice(-4)
         .some(item => String(item.text || '').split(/\n+/).some(isInvitation));

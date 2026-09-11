@@ -9,6 +9,10 @@ test('factual follow-up retains answer and drops already offered standalone prev
     const result = removeRepeatedPaidMetaPreviewInvitation({ draft, history, currentMessage: 'Are the lessons different for everyone?' });
     assert.equal(result.joined, answer);
     assert.deepEqual(result.chunks, [answer]);
+    for (const ending of [invitation.replace('If you want', 'If you’d like'), invitation.replace('If you want', 'If you would like')]) {
+        const variant = { ...draft, chunks: [answer, ending], joined: `${answer}\n${ending}` };
+        assert.equal(removeRepeatedPaidMetaPreviewInvitation({ draft: variant, history, currentMessage: 'How many lessons?' }).joined, answer);
+    }
 });
 test('first invitation, explicit handoff and media sequence remain intact', () => {
     assert.equal(removeRepeatedPaidMetaPreviewInvitation({ draft, history: [], currentMessage: 'How many lessons?' }), draft);
