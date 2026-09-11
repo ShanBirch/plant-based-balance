@@ -278,18 +278,18 @@ function defaultSettings(): BookingSettings {
     return {
         booking_enabled: false,
         event_name: "Balance call",
-        duration_minutes: 30,
+        duration_minutes: 60,
         minimum_notice_hours: 24,
         booking_window_days: PUBLIC_BOOKING_WINDOW_DAYS,
         timezone: BRISBANE_TIMEZONE,
         calendar_id: "primary",
         location: "Online, link sent after booking",
         weekly_hours: {
-            "1": [{ start: "10:00", end: "15:00" }],
-            "2": [{ start: "10:00", end: "15:00" }],
-            "3": [{ start: "10:00", end: "15:00" }],
-            "4": [{ start: "10:00", end: "15:00" }],
-            "5": [],
+            "1": [{ start: "07:00", end: "15:00" }],
+            "2": [{ start: "07:00", end: "15:00" }],
+            "3": [{ start: "07:00", end: "15:00" }],
+            "4": [{ start: "07:00", end: "15:00" }],
+            "5": [{ start: "07:00", end: "15:00" }],
             "6": [],
             "0": [],
         },
@@ -745,6 +745,7 @@ async function createBooking(req: Request): Promise<Response> {
 
     if (trimText(body.company || body.website, 200)) return json(400, { ok: false, error: "invalid_request" });
     const settings = await getSettings();
+    if (normalizeBookingSource(body.source) === "weekly_checkin_pt") settings.duration_minutes = 30;
     if (!settings.booking_enabled) return json(409, { ok: false, error: "booking_not_open" });
 
     const name = trimText(body.name, 120);
@@ -752,8 +753,9 @@ async function createBooking(req: Request): Promise<Response> {
     const phone = normalizeSmsPhone(body.phone);
     const goal = trimText(body.goal, 1000);
     const startsAt = trimText(body.startsAt, 80);
-    const callType = normalizeCallType(body.callType);
+    const callType: CallType = "video";
     const bookingMode = normalizeBookingMode(body.bookingMode);
+    if (bookingMode === "outside_hours") return json(400, { ok: false, error: "outside_hours_unavailable" });
     const bookingSource = normalizeBookingSource(body.source);
     const ptAddonType = bookingSource === "weekly_checkin_pt" ? normalizePtAddonType(body.addonType) : null;
     const ptSessionsPerWeek = bookingSource === "zoom_pt"
@@ -935,6 +937,7 @@ export default async function handler(req: Request): Promise<Response> {
         if (url.searchParams.get("mode") === "settings") return handleSettings(req);
         if (req.method === "GET") {
             const settings = await getSettings();
+            if (url.searchParams.get("source") === "weekly_checkin_pt") settings.duration_minutes = 30;
             if (!settings.booking_enabled) return json(200, {
                 ok: true,
                 ...publicSettings(settings),

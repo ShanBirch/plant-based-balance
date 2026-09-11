@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Book a Balance Call | Shannon Birch | Balance Neuroscience Fitness</title>
     <meta name="description" content="Choose a time to talk with Shannon if you want to discuss Balance Learn before deciding. A call is optional.">
     <meta property="og:title" content="Book a Balance Call | Balance Neuroscience Fitness">
@@ -15,22 +15,13 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
-    <script>
-        (function () {
-            try {
-                var savedTheme = localStorage.getItem('userThemePreference');
-                document.documentElement.setAttribute('data-bio-theme', savedTheme === 'light' || savedTheme === 'antigravity-light' ? 'light' : 'dark');
-            } catch (_) {
-                document.documentElement.setAttribute('data-bio-theme', 'dark');
-            }
-            document.documentElement.classList.add('reveal-ready');
-        })();
-    </script>
+    <script>document.documentElement.setAttribute('data-bio-theme','light');document.documentElement.classList.add('reveal-ready');</script>
     <link rel="stylesheet" href="bio.css">
     <link rel="stylesheet" href="booking.css">
     <script src="bio-animations.js" defer></script>
-    <script src="booking.js?v=2-weekly-pt-checkout" defer></script>
+    <script src="booking.js?v=20260911-meet" defer></script>
 <link rel="stylesheet" href="/site-navigation.css?v=20260911-page-theme">
+<link rel="stylesheet" href="/story-booking-polish.css?v=20260911">
 </head>
 <body class="bio-page booking-page">
     <div class="page-shell">
@@ -50,10 +41,10 @@
             <section class="booking-intro reveal">
                 <span class="eyebrow" id="booking-intro-kicker">A proper chat</span>
                 <h1 id="booking-intro-title">Book a call<br><span>with Shannon.</span></h1>
-                <p id="booking-intro-copy">Pick a time that works and let me know what you want to get clear on. You do not need a call to start Balance Learn. This is here if you would rather talk it through first.</p>
+                <p id="booking-intro-copy">An hour to talk through your goals, ask questions and find the right support. Meet with Shannon online, Monday to Friday, 7 a.m. to 3 p.m. Brisbane time.</p>
                 <div class="booking-trust-row" aria-label="Booking details">
                     <span><i>01</i> <span id="booking-timezone-label">Your local time</span></span>
-                    <span><i>02</i> Confirmation sent after booking</span>
+                    <span><i>02</i> One hour · Google Meet</span>
                 </div>
             </section>
 
@@ -94,19 +85,12 @@
                                 <span>Email</span>
                                 <input type="email" name="email" autocomplete="email" maxlength="320" required placeholder="you@email.com">
                             </label>
+                            <input type="hidden" name="callType" value="video">
                             <label>
-                                <span>How would you like to chat?</span>
-                                <select name="callType" aria-describedby="booking-call-type-note">
-                                    <option value="phone">Phone call</option>
-                                    <option value="video">Video call (Google Meet)</option>
-                                    <option value="whatsapp">WhatsApp call</option>
-                                </select>
-                            </label>
-                            <label>
-                                <span id="booking-phone-label">Mobile number <em>for your text confirmation and reminder</em></span>
+                                <span id="booking-phone-label">Mobile number <em>so Shannon can contact you if needed</em></span>
                                 <input type="tel" name="phone" autocomplete="tel" maxlength="40" required placeholder="Your mobile number">
                             </label>
-                            <p class="booking-call-note" id="booking-call-type-note">Shannon will call you on this number.</p>
+                            <p class="booking-call-note" id="booking-call-type-note">Your Google Meet link will be included in your calendar invitation.</p>
                             <label class="booking-goal">
                                 <span>What would you like to cover? <em>optional</em></span>
                                 <textarea name="goal" maxlength="1000" rows="3" placeholder="A little context helps me come prepared."></textarea>
@@ -116,74 +100,13 @@
                                 <input type="text" name="company" tabindex="-1" autocomplete="off">
                             </label>
                         </div>
-                        <p class="booking-form-note">By booking, you’ll receive a Balance confirmation and calendar invitation.</p>
+                        <p class="booking-form-note">Your calendar invitation will include your Google Meet link.</p>
                         <button class="btn primary booking-submit" type="submit">
                             <span>Confirm my call</span>
                             <span class="booking-submit-loader" aria-hidden="true"></span>
                         </button>
                         <p class="booking-error" id="booking-error" role="alert" hidden></p>
                     </form>
-
-                    <section class="booking-outside-hours" aria-labelledby="booking-outside-hours-title">
-                        <button class="booking-outside-toggle" id="booking-outside-toggle" type="button" aria-expanded="false" aria-controls="booking-outside-panel">
-                            <span>
-                                <strong id="booking-outside-hours-title">Need a time outside Shannon's usual hours?</strong>
-                                <small>Choose a one-hour time that works for you.</small>
-                            </span>
-                            <span class="booking-outside-arrow" aria-hidden="true">→</span>
-                        </button>
-
-                        <div class="booking-outside-panel" id="booking-outside-panel" hidden>
-                            <p>Pick a one-hour time in your timezone. Balance checks Shannon's calendar before confirming it.</p>
-                            <form id="booking-outside-form" class="booking-form booking-outside-form" novalidate>
-                                <div class="booking-form-grid">
-                                    <label>
-                                        <span>Date</span>
-                                        <input type="date" name="outsideDate" required>
-                                    </label>
-                                    <label>
-                                        <span>Start time</span>
-                                        <input type="time" name="outsideTime" step="1800" required>
-                                    </label>
-                                    <label>
-                                        <span>Your name</span>
-                                        <input type="text" name="name" autocomplete="name" maxlength="120" required placeholder="Your name">
-                                    </label>
-                                    <label>
-                                        <span>Email</span>
-                                        <input type="email" name="email" autocomplete="email" maxlength="320" required placeholder="you@email.com">
-                                    </label>
-                                    <label>
-                                        <span>How would you like to chat?</span>
-                                        <select name="callType" aria-describedby="booking-outside-call-type-note">
-                                            <option value="phone">Phone call</option>
-                                            <option value="video">Video call (Google Meet)</option>
-                                            <option value="whatsapp">WhatsApp call</option>
-                                        </select>
-                                    </label>
-                                    <label>
-                                <span id="booking-outside-phone-label">Mobile number <em>for your text confirmation and reminder</em></span>
-                                <input type="tel" name="phone" autocomplete="tel" maxlength="40" required placeholder="Your mobile number">
-                                    </label>
-                                    <p class="booking-call-note" id="booking-outside-call-type-note">Shannon will call you on this number.</p>
-                                    <label class="booking-goal">
-                                        <span>What would you like to cover? <em>optional</em></span>
-                                        <textarea name="goal" maxlength="1000" rows="3" placeholder="A little context helps Shannon come prepared."></textarea>
-                                    </label>
-                                    <label class="booking-honeypot" aria-hidden="true">
-                                        <span>Company</span>
-                                        <input type="text" name="company" tabindex="-1" autocomplete="off">
-                                    </label>
-                                </div>
-                                <p class="booking-form-note">This books a one-hour call if it is clear in Shannon's calendar.</p>
-                                <button class="btn primary booking-submit" type="submit">
-                                    <span>Book my one-hour call</span>
-                                    <span class="booking-submit-loader" aria-hidden="true"></span>
-                                </button>
-                                <p class="booking-error" id="booking-outside-error" role="alert" hidden></p>
-                            </form>
-                        </div>
-                    </section>
                 </div>
 
                 <div class="booking-success" id="booking-success" hidden aria-live="polite">

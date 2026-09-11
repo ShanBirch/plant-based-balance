@@ -123,8 +123,8 @@
     }
 
     function currentCallType(targetForm) {
-        const value = String(targetForm?.querySelector('[name="callType"]')?.value || 'phone').toLowerCase();
-        return ['phone', 'video', 'whatsapp'].includes(value) ? value : 'phone';
+        const value = String(targetForm?.querySelector('[name="callType"]')?.value || 'video').toLowerCase();
+        return ['phone', 'video', 'whatsapp'].includes(value) ? value : 'video';
     }
 
     function updateCallTypeFields(targetForm, phoneLabelId, noteId) {
@@ -134,11 +134,11 @@
         const callTypeNote = byId(noteId);
         if (phoneInput) phoneInput.required = true;
         if (phoneLabel) {
-            phoneLabel.innerHTML = 'Mobile number <em>for your text confirmation and reminder</em>';
+            phoneLabel.innerHTML = 'Mobile number <em>so Shannon can contact you if needed</em>';
         }
         if (callTypeNote) {
             callTypeNote.textContent = callType === 'video'
-                ? 'You will get a Google Meet link in your calendar invitation, plus a text confirmation and reminder.'
+                ? 'Your Google Meet link will be included in your calendar invitation.'
                 : callType === 'whatsapp'
                     ? 'Shannon will give you a WhatsApp call on this number. We will also text your confirmation and reminder.'
                     : 'Shannon will call you on this number. We will also text your confirmation and reminder.';
@@ -259,7 +259,7 @@
 
     async function loadAvailability() {
         try {
-            const response = await fetch(endpoint, { headers: { Accept: 'application/json' } });
+            const response = await fetch(isWeeklyCheckinPt ? `${endpoint}?source=weekly_checkin_pt` : endpoint, { headers: { Accept: 'application/json' } });
             const data = await response.json();
             state.settings = data;
             state.dates = groupSlotsInLocalTime(Array.isArray(data.dates) ? data.dates : []);
@@ -291,7 +291,7 @@
             return null;
         }
         if (phone.replace(/\D/g, '').length < 6) {
-            showError('Add a mobile number for your text confirmation and reminder.', targetError);
+            showError('Add a mobile number so Shannon can contact you if needed.', targetError);
             return null;
         }
         return { data, name, email, callType, phone };
@@ -353,7 +353,7 @@
             } else {
                 byId('booking-success-copy').textContent = bookingCallType === 'video'
                     ? (meetingUrl
-                        ? `Your video call is confirmed. Your Google Meet link is in the Balance email and calendar invitation.${smsNote}`
+                        ? `Your video call is confirmed. Your Google Meet link is in your calendar invitation.${smsNote}`
                         : `Your video call is confirmed. Shannon will send the video link shortly.${smsNote}`)
                     : bookingCallType === 'whatsapp'
                         ? `Your WhatsApp call is confirmed. Shannon will call the number you entered.${smsNote}`
