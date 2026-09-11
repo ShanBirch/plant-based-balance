@@ -26,15 +26,26 @@
     const requestedPtSessions = ['1', '3', '5'].includes(urlParams.get('pt_sessions'))
         ? urlParams.get('pt_sessions')
         : null;
+    const isFirstPtSession = bookingSource === 'first_pt_session';
     const isZoomPtEnquiry = bookingSource === 'zoom_pt';
     const ptAddon = ['zoom_pt_1_upgrade', 'extra_zoom_pt'].includes(urlParams.get('addon'))
         ? urlParams.get('addon')
         : null;
     const isWeeklyCheckinPt = bookingSource === 'weekly_checkin_pt' && Boolean(ptAddon);
-    const isAnyZoomPt = isZoomPtEnquiry || isWeeklyCheckinPt;
+    const isAnyZoomPt = isZoomPtEnquiry || isWeeklyCheckinPt || isFirstPtSession;
     const isFirstCoachingCall = urlParams.get('first_call') === '1'
         && bookingSource === 'coaching_calls_purchase';
 
+    if (isFirstPtSession) {
+        document.title = 'Book Your First PT Session | Balance';
+        byId('booking-intro-kicker').textContent = '1:1 personal training';
+        byId('booking-intro-title').textContent = 'Book your first PT session.';
+        byId('booking-intro-copy').textContent = 'Choose a 30-minute online training session with Shannon. Tell us about your goals, equipment and any injuries or limitations. Booking reserves your first session; membership and payment are arranged separately.';
+        byId('booking-card-title').textContent = 'Choose your first session.';
+        const label = form?.querySelector('.booking-submit span:first-child');
+        if (label) label.textContent = 'Book my first PT session';
+        show(document.querySelector('.booking-outside-hours'), false);
+    }
     if (isZoomPtEnquiry) {
         document.title = 'Check 1:1 Zoom PT Availability | Balance';
         byId('booking-intro-kicker').textContent = requestedPtSessions
@@ -151,7 +162,7 @@
         const goal = targetForm.querySelector('[name="goal"]');
         if (callType) callType.value = 'video';
         if (goal) {
-            goal.placeholder = isWeeklyCheckinPt
+            goal.placeholder = (isWeeklyCheckinPt || isFirstPtSession)
                 ? 'Add any injuries, limitations, or notes Shannon should know before your live session.'
                 : requestedPtSessions
                 ? `I am interested in Zoom PT ${requestedPtSessions}. Add your main goal, current injuries or limitations, and the days or times that usually work.`
@@ -259,12 +270,12 @@
 
     async function loadAvailability() {
         try {
-            const response = await fetch(isWeeklyCheckinPt ? `${endpoint}?source=weekly_checkin_pt` : endpoint, { headers: { Accept: 'application/json' } });
+            const response = await fetch((isWeeklyCheckinPt || isFirstPtSession) ? `${endpoint}?source=${isFirstPtSession ? 'first_pt_session' : 'weekly_checkin_pt'}` : endpoint, { headers: { Accept: 'application/json' } });
             const data = await response.json();
             state.settings = data;
             state.dates = groupSlotsInLocalTime(Array.isArray(data.dates) ? data.dates : []);
             show(loading, false);
-            duration.textContent = data.durationMinutes ? `${data.durationMinutes} min call` : 'Call times';
+            duration.textContent = data.durationMinutes ? `${data.durationMinutes} min ${isFirstPtSession ? 'session' : 'call'}` : 'Call times';
             renderTimeZone();
             if (!data.ok || !data.bookingEnabled || !state.dates.length) {
                 show(unavailable, true);
@@ -319,7 +330,7 @@
                     company: String(details.data.get('company') || '').trim(),
                     visitorTimeZone: localTimeZone,
                     bookingMode,
-                    source: isWeeklyCheckinPt ? 'weekly_checkin_pt' : isZoomPtEnquiry ? 'zoom_pt' : 'public_booking_page',
+                    source: isFirstPtSession ? 'first_pt_session' : isWeeklyCheckinPt ? 'weekly_checkin_pt' : isZoomPtEnquiry ? 'zoom_pt' : 'public_booking_page',
                     ptSessionsPerWeek: isZoomPtEnquiry && requestedPtSessions ? Number(requestedPtSessions) : null,
                     addonType: isWeeklyCheckinPt ? ptAddon : null,
                 }),
@@ -347,7 +358,10 @@
             const bookingCallType = result.booking?.callType || details.callType;
             const meetingUrl = result.booking?.meetingUrl || '';
             const smsNote = result.smsConfirmationSent ? ' A text confirmation is on its way too.' : '';
-            if (isZoomPtEnquiry) {
+            if (isFirstPtSession) {
+                byId('booking-success-title').textContent = 'First PT session booked.';
+                byId('booking-success-copy').textContent = 'Your 30-minute training session is confirmed. Your Google Meet link is in your calendar invitation. Your membership has not been changed.';
+            } else if (isZoomPtEnquiry) {
                 byId('booking-success-title').textContent = 'Zoom PT fit call booked.';
                 byId('booking-success-copy').textContent = 'Your Zoom PT fit call is confirmed. We will check health fit, recurring times and the right starting structure before payment.';
             } else {

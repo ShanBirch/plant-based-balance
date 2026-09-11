@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import {choices, previewChange, scheduleParameters} from './lib/membership-change.js';
+const catalog=choices.map(p=>({name:p.productName,unitAmount:p.unitAmount,commitmentWeeks:p.commitmentWeeks,disclosure:p.checkoutDisclosure}));
 const json=(body,status=200)=>new Response(JSON.stringify(body),{status,headers:{'Content-Type':'application/json','Cache-Control':'no-store'}});
 const env=name=>globalThis.Netlify?.env?.get(name)||Deno.env.get(name);
 async function stripe(key,path,params,idempotency) {
@@ -17,7 +18,7 @@ export default async request=>{
   const profile=await supabase.from('users').select('stripe_customer_id').eq('id',auth.data.user.id).single();
   if(profile.error)return json({error:'Could not load your membership.'},500);
   const customer=profile.data?.stripe_customer_id;
-  if(!customer)return json({subscriptions:[],message:'No Stripe membership is linked to this login. If you paid through Apple or Google Play, manage your plan through that store. If you paid on the website, contact Shannon to link your membership.'});
+  if(!customer)return json({subscriptions:[],catalog,message:'No Stripe membership is linked to this login. If you paid through Apple or Google Play, manage your plan through that store. If you paid on the website, contact Shannon to link your membership.'});
   const key=env('STRIPE_SECRET_KEY');
   const list=await stripe(key,`subscriptions?customer=${encodeURIComponent(customer)}&status=all&limit=100`);
   const subscriptions=list.data.filter(s=>['active','trialing','past_due','unpaid','paused'].includes(s.status));
@@ -30,7 +31,7 @@ export default async request=>{
     if(subscriptions.length===1&&!list.has_more)for(const p of choices){try{options.push(previewChange(s,p.token));}catch{}}
     rows.push({id:s.id,name:choices.find(p=>p.balancePlan===s.metadata?.balance_plan)?.productName||s.items?.data?.[0]?.price?.nickname||'Your Balance membership',options,scheduled});
    }
-   return json({subscriptions:rows});
+   return json({subscriptions:rows,catalog});
   }
   const body=await request.json();
   if(!['preview','confirm'].includes(body.action))return json({error:'Unsupported action.'},400);

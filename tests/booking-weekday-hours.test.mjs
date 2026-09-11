@@ -32,6 +32,7 @@ test('outside-hours submission is refused, and PT retains its 30-minute slot len
  assert.equal(response.status,400);assert.equal((await response.json()).error,'outside_hours_unavailable');
  const normal=await (await handler(new Request('https://balance.test/api/booking'))).json();
  const pt=await (await handler(new Request('https://balance.test/api/booking?source=weekly_checkin_pt'))).json();
- assert.equal(normal.durationMinutes,60);assert.equal(pt.durationMinutes,30);
+ const first=await (await handler(new Request('https://balance.test/api/booking?source=first_pt_session'))).json();
+ assert.equal(first.durationMinutes,30);assert.equal(normal.durationMinutes,60);assert.equal(pt.durationMinutes,30);
  }finally{globalThis.fetch=savedFetch;globalThis.Netlify=savedNetlify;}
 });

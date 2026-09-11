@@ -24,6 +24,11 @@
  async function loadMembership(){
   const host=el('membership-options');host.textContent='Loading membership options…';
   try{const data=await api();host.replaceChildren();if(!data.subscriptions.length)add(host,'p',data.message||'No active Stripe membership was found. Contact Shannon if you need help linking your plan.');
+   if(!data.subscriptions.some(s=>s.options?.length)) {
+    add(host,'h3','Explore coaching commitments');
+    for(const p of data.catalog || []) {const row=add(host,'div','','membership-option');add(row,'h3',p.name);add(row,'p',money(p.unitAmount)+' / week · '+p.commitmentWeeks+'-week minimum');add(row,'p',p.disclosure);}
+    const help=add(host,'a','Ask Shannon to arrange my change','account-link');help.href='mailto:shannon@balanceneurosciencefitness.com?subject=Membership%20change';
+   }
    for(const s of data.subscriptions){add(host,'h3',s.name);if(s.scheduled){add(host,'p','Scheduled: '+s.scheduled.name+' from '+date(s.scheduled.effectiveAt)+'. Cancelling or pausing removes this scheduled change.');continue;}if(!s.options.length)add(host,'p','Contact Shannon to arrange a change for this membership.');
     for(const p of s.options){const row=add(host,'div','','membership-option');add(row,'h3',p.name);add(row,'p',money(p.unitAmount)+' / week · '+p.commitmentWeeks+'-week minimum');const button=add(row,'button','Review this change','account-button');button.type='button';button.onclick=()=>review(s.id,p.token,button);}
    }

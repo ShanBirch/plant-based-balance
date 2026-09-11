@@ -98,9 +98,9 @@ function normalizeBookingMode(value: unknown): BookingMode {
     return trimText(value, 30).toLowerCase() === "outside_hours" ? "outside_hours" : "standard";
 }
 
-function normalizeBookingSource(value: unknown): "public_booking_page" | "zoom_pt" | "weekly_checkin_pt" {
+function normalizeBookingSource(value: unknown): "public_booking_page" | "zoom_pt" | "weekly_checkin_pt" | "first_pt_session" {
     const source = trimText(value, 40).toLowerCase();
-    if (source === "zoom_pt" || source === "weekly_checkin_pt") return source;
+    if (source === "zoom_pt" || source === "weekly_checkin_pt" || source === "first_pt_session") return source;
     return "public_booking_page";
 }
 
@@ -675,7 +675,7 @@ async function createCalendarEvent(settings: BookingSettings, booking: Record<st
     const bookingSource = normalizeBookingSource(metadata.source);
     const ptAddonType = normalizePtAddonType(metadata.addon_type);
     const ptSessionsPerWeek = normalizePtSessionsPerWeek(metadata.pt_sessions_per_week);
-    const eventPrefix = bookingSource === "weekly_checkin_pt"
+    const eventPrefix = bookingSource === "first_pt_session" ? "First PT training session" : bookingSource === "weekly_checkin_pt"
         ? (ptAddonType === "extra_zoom_pt" ? "Extra weekly Zoom PT" : "Weekly Zoom PT")
         : bookingSource === "zoom_pt" && ptSessionsPerWeek
         ? `Zoom PT ${ptSessionsPerWeek} fit call`
@@ -758,7 +758,7 @@ async function createBooking(req: Request): Promise<Response> {
 
     if (trimText(body.company || body.website, 200)) return json(400, { ok: false, error: "invalid_request" });
     const settings = await getSettings();
-    if (normalizeBookingSource(body.source) === "weekly_checkin_pt") settings.duration_minutes = 30;
+    if (["weekly_checkin_pt", "first_pt_session"].includes(normalizeBookingSource(body.source))) settings.duration_minutes = 30;
     if (!settings.booking_enabled) return json(409, { ok: false, error: "booking_not_open" });
 
     const name = trimText(body.name, 120);
@@ -950,7 +950,7 @@ export default async function handler(req: Request): Promise<Response> {
         if (url.searchParams.get("mode") === "settings") return handleSettings(req);
         if (req.method === "GET") {
             const settings = await getSettings();
-            if (url.searchParams.get("source") === "weekly_checkin_pt") settings.duration_minutes = 30;
+            if (["weekly_checkin_pt", "first_pt_session"].includes(url.searchParams.get("source") || "")) settings.duration_minutes = 30;
             if (!settings.booking_enabled) return json(200, {
                 ok: true,
                 ...publicSettings(settings),
