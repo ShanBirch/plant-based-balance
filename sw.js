@@ -1,7 +1,8 @@
-const CACHE_NAME = 'pbb-app-v536-onboarding-resume'; // v535: centre workout menu dots independently of iPhone font metrics
+const CACHE_NAME = 'pbb-app-v537-balance-quiz-gold'; // Balance quiz palette, including rewards and level-up
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
+  './css/dashboard/pbb-quiz-theme.css?v=1-balance-gold',
   './dashboard.html',
   './js/dashboard/pbb-workout-swipe-player.js?v=8-resume-exercise',
   './js/dashboard/pbb-course-mascot.js?v=1-original-3d',

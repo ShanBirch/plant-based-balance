@@ -1,0 +1,143 @@
+/* Scoped to quizzes and their rewards, not module identities or answer logic.
+   Paired ink/text-fill overrides are intentional: legacy styles set both. */
+:root {
+    --quiz-bg:#fbf7ee; --quiz-card:#fffdf7; --quiz-ink:#25251f;
+    --quiz-muted:#686052; --quiz-gold:#80601f; --quiz-line:#d8c9aa;
+    --quiz-selected:#f4e4b9; --quiz-button:#e3c16f; --quiz-button-ink:#292313;
+    --quiz-correct:#e9f0df; --quiz-correct-ink:#365324;
+    --quiz-incorrect:#f9e7dd; --quiz-incorrect-ink:#87391f;
+}
+html:not([data-pbb-theme="light"]) {
+    --quiz-bg:#191b18; --quiz-card:#252820; --quiz-ink:#fffaf0;
+    --quiz-muted:#c6bfae; --quiz-gold:#e3c16f; --quiz-line:#6d634c;
+    --quiz-selected:#403720; --quiz-correct:#273c26; --quiz-correct-ink:#c7e4b0;
+    --quiz-incorrect:#432c24; --quiz-incorrect-ink:#ffd3be;
+}
+html #view-learning:has(.balance-quiz) > div:first-child {
+    padding-top:max(44px,env(safe-area-inset-top,0px))!important;
+    background:var(--quiz-bg)!important; border-color:var(--quiz-line)!important;
+}
+html #view-learning:has(.balance-quiz) > div:first-child h2 {
+    color:var(--quiz-ink)!important; -webkit-text-fill-color:var(--quiz-ink)!important;
+}
+html #learning-content .balance-quiz.balance-quiz.balance-quiz,
+#game-feedback-overlay.balance-quiz-feedback,
+#health-iq-celebration .health-iq-celebration-card {
+    background:var(--quiz-bg)!important; color:var(--quiz-ink)!important;
+    -webkit-text-fill-color:var(--quiz-ink)!important; box-sizing:border-box;
+}
+html #learning-content .balance-quiz.balance-quiz.balance-quiz :is(div,p,span,strong,h1,h2,h3,button),
+#game-feedback-overlay.balance-quiz-feedback :is(div,p,span,button),
+#health-iq-celebration :is(div,span,button) {
+    color:var(--quiz-ink)!important; -webkit-text-fill-color:var(--quiz-ink)!important; text-shadow:none!important;
+}
+html #learning-content .balance-quiz.balance-quiz.balance-quiz :is(.learning-game-progress-header,.learning-game-question-card,.learning-game-scenario-card,.fill-blank-option,.tap-all-option,.match-item,.order-item,.scenario-option,.balance-quiz-summary) {
+    background:var(--quiz-card)!important; border-color:var(--quiz-line)!important;
+    box-shadow:0 5px 20px #0000000a!important;
+}
+html #learning-content .balance-quiz.balance-quiz.balance-quiz :is(.learning-game-count-pill,.learning-game-progress-track,.order-number,.tap-checkbox) {
+    background:var(--quiz-selected)!important; border-color:var(--quiz-line)!important;
+}
+html #learning-content .balance-quiz.balance-quiz.balance-quiz :is(.learning-game-progress-track > div,[style*="color: #80601f"],#blank-slot) {
+    color:var(--quiz-gold)!important; -webkit-text-fill-color:var(--quiz-gold)!important;
+    border-color:var(--quiz-gold)!important;
+}
+html #learning-content .balance-quiz.balance-quiz.balance-quiz .learning-game-progress-track > div {
+    background:var(--quiz-button)!important;
+}
+html #learning-content .balance-quiz.balance-quiz.balance-quiz :is(.learning-game-helper,.learning-game-count-pill) {
+    color:var(--quiz-muted)!important; -webkit-text-fill-color:var(--quiz-muted)!important;
+}
+html #learning-content .balance-quiz.balance-quiz.balance-quiz :is(.learning-answer-selected,.selected):not(.learning-answer-correct):not(.learning-answer-incorrect) {
+    background:var(--quiz-selected)!important; border-color:var(--quiz-gold)!important;
+}
+html #learning-content .balance-quiz.balance-quiz.balance-quiz .learning-answer-selected .tap-checkbox {
+    background:var(--quiz-button)!important; color:var(--quiz-button-ink)!important;
+    -webkit-text-fill-color:var(--quiz-button-ink)!important;
+}
+html #learning-content .balance-quiz.balance-quiz.balance-quiz .learning-answer-correct,
+html #learning-content .balance-quiz.balance-quiz.balance-quiz .learning-answer-correct * {
+    background:var(--quiz-correct)!important; color:var(--quiz-correct-ink)!important;
+    -webkit-text-fill-color:var(--quiz-correct-ink)!important; border-color:var(--quiz-correct-ink)!important;
+}
+html #learning-content .balance-quiz.balance-quiz.balance-quiz .learning-answer-incorrect,
+html #learning-content .balance-quiz.balance-quiz.balance-quiz .learning-answer-incorrect * {
+    background:var(--quiz-incorrect)!important; color:var(--quiz-incorrect-ink)!important;
+    -webkit-text-fill-color:var(--quiz-incorrect-ink)!important; border-color:var(--quiz-incorrect-ink)!important;
+}
+html #learning-content .balance-quiz.balance-quiz.balance-quiz button[onclick^="window.check"],
+html #learning-content .balance-quiz.balance-quiz.balance-quiz.balance-quiz-result button,
+#game-feedback-overlay.balance-quiz-feedback > button,
+#health-iq-celebration .health-iq-celebration-btn {
+    background:linear-gradient(110deg,#edd395,var(--quiz-button))!important;
+    color:var(--quiz-button-ink)!important; -webkit-text-fill-color:var(--quiz-button-ink)!important;
+    border:1px solid #b08b3c!important; border-radius:16px!important; min-height:48px;
+}
+html #learning-content .balance-quiz button:focus-visible,
+#game-feedback-overlay button:focus-visible,#health-iq-celebration button:focus-visible {
+    outline:3px solid var(--quiz-gold)!important; outline-offset:3px;
+}
+html #learning-content .balance-quiz button:disabled { opacity:.55; cursor:default; }
+html #learning-content .balance-quiz.balance-quiz-result {
+    min-height:100%!important; padding:28px 20px max(100px,calc(80px + env(safe-area-inset-bottom,0px)))!important;
+}
+html #learning-content .balance-quiz.balance-quiz-result > h1 {
+    font-family:'Playfair Display',Georgia,serif; font-weight:600!important;
+}
+html #learning-content .balance-quiz.balance-quiz-result > div:first-child {
+    background:var(--quiz-selected)!important; border:1px solid var(--quiz-line); box-shadow:none!important;
+}
+html #learning-content .balance-quiz.balance-quiz-result .balance-quiz-summary { padding:24px!important; max-width:350px!important; border:1px solid var(--quiz-line); }
+html #learning-content .balance-quiz.balance-quiz-result [style*="border-top"] {border-color:var(--quiz-line)!important}
+html #learning-content .balance-quiz.balance-quiz-result [style*="height: 6px"],
+html #learning-content .balance-quiz.balance-quiz-result [style*="height:6px"] {background:var(--quiz-line)!important}
+html #learning-content .balance-quiz.balance-quiz-result [style*="height: 100%"],
+html #learning-content .balance-quiz.balance-quiz-result [style*="height:100%"] {background:var(--quiz-button)!important}
+html #learning-content .balance-quiz.balance-quiz-result .health-iq-levelup-banner {
+    background:var(--quiz-selected)!important; border:1px solid var(--quiz-line); box-shadow:none;
+}
+html #learning-content .balance-quiz.balance-quiz-result .health-iq-levelup-glow {display:none}
+#game-feedback-overlay.balance-quiz-feedback {
+    border:1px solid var(--quiz-line); border-bottom:0;
+    max-height:calc(100dvh - max(44px,env(safe-area-inset-top,0px)) - 12px)!important;
+    padding-bottom:max(28px,env(safe-area-inset-bottom,0px))!important;
+}
+#game-feedback-overlay.balance-quiz-feedback > div {background:var(--quiz-selected)!important;border-radius:16px;padding:14px}
+#game-feedback-overlay.balance-quiz-feedback[data-result="incorrect"] > div {background:var(--quiz-incorrect)!important}
+#game-feedback-overlay.balance-quiz-feedback svg {fill:var(--quiz-gold)!important}
+#health-iq-celebration {
+    padding:max(44px,env(safe-area-inset-top,0px)) 16px max(24px,env(safe-area-inset-bottom,0px));
+    box-sizing:border-box; overflow:hidden;
+}
+#health-iq-celebration .health-iq-celebration-card {
+    max-height:100%; overflow-y:auto; overscroll-behavior:contain;
+    width:100%; max-width:360px; padding:28px 24px; border:1px solid var(--quiz-line);
+    box-shadow:0 18px 65px #00000030;
+}
+#health-iq-celebration :is(.health-iq-celebration-badge,.health-iq-celebration-xp) {background:var(--quiz-selected);box-shadow:none;animation:none}
+#health-iq-celebration .health-iq-ring {border-color:var(--quiz-line);animation-iteration-count:2}
+#health-iq-celebration .hiq-old {opacity:1;color:var(--quiz-muted)!important;-webkit-text-fill-color:var(--quiz-muted)!important}
+#health-iq-celebration .health-iq-celebration-rank-transition {flex-wrap:wrap}
+/* Reading, key insight and start-quiz use the same palette as the questions. */
+html #learning-content .balance-quiz.story-container {--module-color:var(--quiz-gold)!important}
+html #learning-content .balance-quiz.balance-quiz.balance-quiz :is(.story-visual,.story-key-insight,.story-skip-btn) {
+    background:var(--quiz-card)!important; border-color:var(--quiz-line)!important;
+}
+html #learning-content .balance-quiz.balance-quiz.balance-quiz :is(.story-text strong,.story-key-insight-label) {
+    color:var(--quiz-gold)!important;-webkit-text-fill-color:var(--quiz-gold)!important;
+}
+html #learning-content .balance-quiz.balance-quiz.balance-quiz .story-image-caption {
+    background:#fffdf7!important;color:#25251f!important;-webkit-text-fill-color:#25251f!important;
+}
+html #learning-content .balance-quiz.balance-quiz.balance-quiz :is(.story-next-btn,button[onclick="window.startLessonGames()"]) {
+    background:linear-gradient(110deg,#edd395,var(--quiz-button))!important;
+    color:var(--quiz-button-ink)!important;-webkit-text-fill-color:var(--quiz-button-ink)!important;
+}
+html #learning-content .balance-quiz.balance-quiz.balance-quiz :is(.story-next-btn,button[onclick="window.startLessonGames()"]) :is(span,svg) {
+    color:var(--quiz-button-ink)!important;-webkit-text-fill-color:var(--quiz-button-ink)!important;fill:var(--quiz-button-ink)!important;
+}
+html #learning-content .balance-quiz .story-controls {padding-bottom:max(30px,env(safe-area-inset-bottom,0px))}
+@media(prefers-reduced-motion:reduce) {
+    .balance-quiz *,#game-feedback-overlay *,#health-iq-celebration * {animation:none!important;transition:none!important}
+    #health-iq-celebration .health-iq-celebration-particles {display:none}
+}
