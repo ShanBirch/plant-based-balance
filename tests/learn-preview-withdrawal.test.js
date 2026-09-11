@@ -3,6 +3,8 @@ const assert = require('node:assert/strict');
 const { buildDeterministicPaidMetaConversationReply, buildPaidMetaConversationApproval, selectFastDeterministicPaidMetaProgression } = require('../netlify/functions/ig-instant-draft')._test;
 const history = [{ direction: 'out', text: "What's the main change you want in the next six weeks?" }];
 for (const currentMessage of [
+    'can i see the preview\nactually hold off please',
+    'can i see the preview actually hold off please',
     'Can I see the free preview?\nActually hold off, I need to check with my partner.',
     'Can I see the free preview? Please hold off for now.',
     'Hold off, please.',
