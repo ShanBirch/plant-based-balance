@@ -31,6 +31,7 @@
  */
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const { registerPaidLeadDispatch } = require('./_lib/ig-paid-lead-dispatch-intake');
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 const {
     extractMediaReferences,
@@ -761,7 +762,10 @@ async function upsertThread({ subscriberId, defaultCoachId, channel, igUsername,
         if (igUsername) patch.ig_username = igUsername;
         if (profileName) patch.profile_name = profileName;
         if (profilePicUrl) patch.profile_pic_url = profilePicUrl;
-        const mergedCustomData = mergeCustomDataWithGraph(existing[0].custom_data, customData, graphDuplicate?.thread, nowIso);
+        const mergedCustomData = registerPaidLeadDispatch(
+            mergeCustomDataWithGraph(existing[0].custom_data, customData, graphDuplicate?.thread, nowIso),
+            { channel, linkedUserId: existing[0].linked_user_id || linkedUser?.id, nowIso }
+        );
         if (Object.keys(mergedCustomData).length > 0) patch.custom_data = mergedCustomData;
         if (!existing[0].coach_id && defaultCoachId) patch.coach_id = defaultCoachId;
         if (!existing[0].linked_user_id && linkedUser) {
@@ -780,7 +784,10 @@ async function upsertThread({ subscriberId, defaultCoachId, channel, igUsername,
         };
     }
     const initialStage = leadStageForLinkedUser('new', linkedUser);
-    const initialCustomData = mergeCustomDataWithGraph({}, customData, graphDuplicate?.thread, nowIso);
+    const initialCustomData = registerPaidLeadDispatch(
+        mergeCustomDataWithGraph({}, customData, graphDuplicate?.thread, nowIso),
+        { channel, linkedUserId: linkedUser?.id, nowIso }
+    );
     const inserted = await supabase('ig_threads', {
         method: 'POST',
         body: [{

@@ -60,6 +60,8 @@ Shannon retired the public Founders Pass name. Use **Balance Learn** for the AUD
 
 ## Strategy
 
+- Paid-ad lead intake (2026-09-12): every browser dispatcher wake must follow `docs/IG_PAID_LEAD_DISPATCH_INTAKE.md` and run `scripts/ig-paid-lead-dispatch-intake.sql` before lane inventory caches. Graph/ManyChat inbounds register paid leads on the existing contact record. The intake also finds older/late-attributed ad conversations. Registration never changes sales stage, message permission or active conversation ownership.
+
 The app is built. The business goal is a mostly automated acquisition and coaching machine.
 
 Client/prospect-facing language must reflect this: do not say Shannon is "building Balance", "working on the app", or "still building it" in a way that makes the app sound unfinished. Safe phrasing is "I built Balance", "Balance is my app", "I run Balance", or "I'm improving the coaching/business systems around it".

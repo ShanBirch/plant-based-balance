@@ -39,6 +39,7 @@ const {
     legacyGraphSubscriberIds,
 } = require('./_lib/meta-ig-accounts');
 const { resolveIgAcquisitionMode } = require('./_lib/ig-acquisition-mode');
+const { registerPaidLeadDispatch } = require('./_lib/ig-paid-lead-dispatch-intake');
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
@@ -1772,6 +1773,7 @@ function mergeGraphCustomData(priorCustomData, {
     direction = 'in',
     metaAdReferral = null,
     attributionOnly = false,
+    linkedUserId = null,
 }) {
     const base = {
         ...safeObject(priorCustomData),
@@ -1843,7 +1845,7 @@ function mergeGraphCustomData(priorCustomData, {
         result.acquisition_mode = resolvedAcquisitionMode;
         result.acquisition_mode_resolved_at = nowIso;
     }
-    return result;
+    return registerPaidLeadDispatch(result, { direction, attributionOnly, linkedUserId, nowIso });
 }
 
 async function findThreadByGraphParticipantId(participantId, selectColumns) {
@@ -2026,6 +2028,7 @@ async function upsertGraphThread({
         direction,
         metaAdReferral,
         attributionOnly,
+        linkedUserId: current?.linked_user_id || null,
     });
     if (exactGraphThread?.id && current?.id && exactGraphThread.id !== current.id) {
         customData.instagram_graph = {
