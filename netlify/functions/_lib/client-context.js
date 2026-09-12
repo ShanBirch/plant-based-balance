@@ -590,6 +590,11 @@ function isAlwaysNeedsYouPerson(record = {}) {
 function isAppProblemSupportRequest(text = '') {
     const t = String(text || '').replace(/\s+/g, ' ').trim();
     if (!t) return false;
+    // Food, workouts and being "stuck" also describe ordinary coaching
+    // obstacles. Require an actual app surface or technical failure signal.
+    const digitalContext = /\b(?:app|screen|page|tab|button|login|log in|password|account|notification|upload|download)\b/i.test(t);
+    const technicalFailure = /\b(?:bug|glitch|error|crash|crashed|frozen|freeze|loading|load|save|saved|spinning|not showing|won['\u2019]?t show|can['\u2019]?t access|cannot access)\b/i.test(t);
+    if (!digitalContext && !technicalFailure) return false;
     const appContext = /\b(app|balance|screen|page|tab|button|start|saved|custom workout|workout|exercise|machine|meal|food|nutrition|photo|progress|check[- ]?in|challenge|login|log in|password|account|notification|loading|load|save|saved)\b/i.test(t);
     const problem = /\b(not working|doesn['\u2019]?t work|isn['\u2019]?t working|broken|bug|glitch|glitched|error|stuck|missing|wrong|can['\u2019]?t access|cant access|won['\u2019]?t let me|won['\u2019]?t go|won['\u2019]?t load|will not load|won['\u2019]?t open|cannot|can['\u2019]?t log|cant log|login|log in|fix|help me fix|sort this|issue|problem|crash|crashed|frozen|freeze|upload failed|didn['\u2019]?t save|not showing|won['\u2019]?t show|keeps spinning|blank page)\b/i.test(t);
     return appContext && problem;

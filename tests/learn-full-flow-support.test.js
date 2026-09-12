@@ -2,6 +2,11 @@ const test=require('node:test'),assert=require('node:assert/strict');
 const api=require('../netlify/functions/ig-instant-draft')._test;
 const send=require('../netlify/functions/send-ig-reply')._test;
 const {LEARN_SUPPORT_CHOICE}=require('../netlify/functions/_lib/paid-meta-zoom');
+test('ordinary planning obstacles are not held as app faults; real app faults still are',()=>{
+ const {isAppProblemSupportRequest}=require('../netlify/functions/_lib/client-context');
+ for(const text of ['I drive between jobs and need cold packed lunches, food planning is where I get stuck','Food is my problem','My workout routine is not working for me'])assert.equal(isAppProblemSupportRequest(text),false,text);
+ for(const text of ['The app is stuck','My workout will not load','The food photo upload failed','The custom workout start button won’t load the next page'])assert.equal(isAppProblemSupportRequest(text),true,text);
+});
 test('body-composition goal delivers Dani proof in deterministic and writer paths',()=>{
  for(const goal of ['I want better body composition','I want to improve body composition']){
   const d=api.buildDeterministicPaidMetaConversationReply({currentMessage:goal,history:[],flowVariant:'broad_pain'});
