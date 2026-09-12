@@ -1,3 +1,5 @@
+> The self-confirmation behavior below is superseded by [coach-reviewed action records](LEARN_ACTION_COACH_REVIEW.md). Retained as implementation history.
+
 # Balance Learn weekly actions
 
 Approved direction implemented 12 September 2026. Each week has five actions. Meal counts mean individual logged meals across the whole course week, never days or calorie prescriptions. Movement follows the member's program; a completed history workout or positive-duration logged movement counts, at most once per day, so exercise sets and duplicate imports cannot inflate the count.

@@ -10967,6 +10967,7 @@
 
                 // Render
                 body.innerHTML = renderClientDrillIn(data, clientName);
+                const learnReviewButton = document.createElement('button'); learnReviewButton.className = 'alert-btn alert-btn-view'; learnReviewButton.textContent = 'Review Learn actions'; learnReviewButton.onclick = () => window.BalanceLearnActionReview.coach(clientId); body.prepend(learnReviewButton);
                 const courseRecords = document.createElement('section'); courseRecords.className = 'master-coach-records'; body.prepend(courseRecords); window.loadMasterAssessments(clientId, courseRecords);
                 if (data.user?.email) document.getElementById('client-drill-email').textContent = data.user.email;
                 if (window.lucide) lucide.createIcons();
@@ -19204,6 +19205,7 @@
                     </div>
                     ${alert.client_name ? `<div style="width:36px; height:36px; background:#48864B; color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.75rem; flex-shrink:0;">${getInitials(alert.client_name)}</div>` : ''}
                 </div>
+                ${alert.alert_type === 'weekly_checkin' && alert.client_id ? `<button class="alert-btn alert-btn-view" onclick="window.BalanceLearnActionReview.coach('${escapeHtml(alert.client_id)}')">Review Learn actions</button>` : ''}
                 ${followUpReasonHtml}
                 ${qualifierStripHtml}
                 ${cleanExplanationHtml}
@@ -23854,5 +23856,5 @@
     </script>
     <!-- ========== END BALANCE REELS ========== -->
 <script src="lib/balance-master-actions.js?v=1"></script>
-<script src="lib/admin-master-assessments.js?v=2-weekly-actions"></script></body>
+<link rel="stylesheet" href="css/learn-action-review.css?v=1"><script src="lib/learn-weekly-actions.js?v=3-coach-review"></script><script src="lib/learn-action-review.js?v=1"></script><script src="lib/admin-master-assessments.js?v=2-weekly-actions"></script></body>
 </html>

@@ -36,7 +36,7 @@ test('Home To Do Next opens the due weekly action directly', () => {
   assert.match(journey, /if \(item\.action === 'feed'\) return 'Open Feed'/);
   assert.match(journey, /if \(item\.action === 'meals'\) return 'Open Nutrition'/);
   assert.match(journey, /if \(item\.action === 'movement'\) return 'Open Movement'/);
-  assert.match(journey, /item\.type === 'weekly_checkin' \|\| item\.type === 'learn_experiment'/);
+  assert.match(journey, /item\.type === 'weekly_checkin'/);
   assert.match(journey, /if \(action === 'checkin'[\s\S]*?openWeeklyCheckinPreview/);
 });
 

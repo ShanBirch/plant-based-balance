@@ -31,7 +31,7 @@ function fixture(){
 test('weekly endpoint saves one experiment answer, preserves diary/midweek data and synchronizes coach revisions',async()=>{
  const f=fixture();assert.equal((await f.send()).statusCode,200);
  const saved=f.records.additional_data.weekly_checkin;
- assert.equal(saved.course_week,1);assert.equal(saved.course_experiment_completed,true);
+ assert.equal(saved.course_week,1);assert.equal(saved.course_experiment_completed,false);
  assert.equal(f.records.additional_data.fitness_diary.note,'Keep this diary');
  assert.equal(f.records.additional_data.weekly_checkins.length,2);
  assert.equal([...f.alerts.values()][0].data.response.course_learning,f.payload.course_learning);
@@ -41,7 +41,7 @@ test('weekly endpoint saves one experiment answer, preserves diary/midweek data 
 });
 test('stale weeks and blank confirmed experiments cannot tick; weekly check-in itself remains available',async()=>{
  const f=fixture();assert.equal((await f.send({course_week:2})).statusCode,409);
- assert.equal((await f.send({course_learning:''})).statusCode,400);
+ assert.equal((await f.send({course_learning:''})).statusCode,200);
  assert.equal((await f.send({course_learning:'',course_experiment_completed:false})).statusCode,200);
 });
 test('failed read or failed readback never returns saved or creates coach credit',async()=>{

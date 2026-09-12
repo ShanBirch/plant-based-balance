@@ -20,6 +20,10 @@ Latest confirmed decision: the complete six-week Learn package, including weekly
 
 Shannon confirmed all coaching packages also include Balance Learn course access, including Online Coaching and Zoom PT.
 
+## Weekly course actions and completion tracking (12 September 2026)
+
+Shannon's standing requirement: every course week must include a clear, actionable task with a saved record of what the member did. Completion must be tracked and visibly ticked off in the course section, and remain visible after leaving and reopening it. Each week's instructions must explain what to do, where to record it, and what counts as done. Reading a lesson or writing an intention alone is not evidence that the practical action was completed.
+
 ## Public four-part journey (10 September 2026)
 
 Shannon confirmed the public journey order: Learn → Master → Become → Lead. The website describes each stage and identifies the six-week Learn offer as part one, rather than implying it includes all four courses. This website presentation does not alter existing app progression, saved progress or entitlements.

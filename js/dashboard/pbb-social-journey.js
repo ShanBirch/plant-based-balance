@@ -26,7 +26,7 @@
       tasks: [
         task('w1_meals', 'Track 3 meals this week', 'Log 3 meals in total, across the week. These are meals, not days or calorie targets.', 'learn_meals', 3, '🥗', 'meals'),
         task('w1_workouts', 'Complete 1 workout this week', 'Follow your program. A completed workout or logged movement session counts, at most once per day. Use the movement that fits your plan.', 'learn_workouts', 1, '🏋️', 'movement'),
-        task('w1_experiment', window.BalanceLearnWeeklyActions.experiment(1).title, window.BalanceLearnWeeklyActions.experiment(1).prompt + ' Report it once in your weekly check-in to tick this off.', 'learn_experiment', 1, '📝', 'checkin'),
+        task('w1_experiment', window.BalanceLearnWeeklyActions.experiment(1).title, window.BalanceLearnWeeklyActions.experiment(1).prompt + ' Report what happened in your weekly check-in. Your coach confirms completion before this ticks off.', 'learn_experiment', 1, '📝', 'checkin'),
         task('w1_feed_intro', 'Introduce yourself to the Feed', 'Write a simple hello in Balance Feed. No photo needed.', 'foundations_feed_intro', 1, '\uD83D\uDC4B', 'feed'),
         task('w1_weekly_checkin', 'Complete your weekly check-in', 'Tell Shannon what worked, what got in the way and what you need next.', 'weekly_checkin', 1, '✓', 'checkin')
       ]
@@ -39,7 +39,7 @@
       tasks: [
         task('w2_meals', 'Track 5 meals this week', 'Log 5 meals in total, across the week. These are meals, not days or calorie targets.', 'learn_meals', 5, '🥗', 'meals'),
         task('w2_workouts', 'Complete 2 workouts this week', 'Follow your program. A completed workout or logged movement session counts, at most once per day. Use the movement that fits your plan.', 'learn_workouts', 2, '🏋️', 'movement'),
-        task('w2_experiment', window.BalanceLearnWeeklyActions.experiment(2).title, window.BalanceLearnWeeklyActions.experiment(2).prompt + ' Report it once in your weekly check-in to tick this off.', 'learn_experiment', 1, '📝', 'checkin'),
+        task('w2_experiment', window.BalanceLearnWeeklyActions.experiment(2).title, window.BalanceLearnWeeklyActions.experiment(2).prompt + ' Report what happened in your weekly check-in. Your coach confirms completion before this ticks off.', 'learn_experiment', 1, '📝', 'checkin'),
         task('w2_feed_comment', 'Comment on someone else\'s Feed post', 'Respond to the person or what they shared.', 'foundations_feed_comments', 1, '💬', 'feed'),
         task('w2_weekly_checkin', 'Complete your weekly check-in', 'Tell Shannon what worked, what got in the way and what you need next.', 'weekly_checkin', 1, '✓', 'checkin')
       ]
@@ -52,7 +52,7 @@
       tasks: [
         task('w3_meals', 'Track 5 meals this week', 'Log 5 meals in total, across the week. These are meals, not days or calorie targets.', 'learn_meals', 5, '🥗', 'meals'),
         task('w3_workouts', 'Complete 2 workouts this week', 'Follow your program. A completed workout or logged movement session counts, at most once per day. Use the movement that fits your plan.', 'learn_workouts', 2, '🏋️', 'movement'),
-        task('w3_experiment', window.BalanceLearnWeeklyActions.experiment(3).title, window.BalanceLearnWeeklyActions.experiment(3).prompt + ' Report it once in your weekly check-in to tick this off.', 'learn_experiment', 1, '📝', 'checkin'),
+        task('w3_experiment', window.BalanceLearnWeeklyActions.experiment(3).title, window.BalanceLearnWeeklyActions.experiment(3).prompt + ' Report what happened in your weekly check-in. Your coach confirms completion before this ticks off.', 'learn_experiment', 1, '📝', 'checkin'),
         task('w3_workout_feed', 'Share a completed workout to Feed', 'Choose a workout you completed in Balance and share its workout card.', 'foundations_workout_feed', 1, '🏋️', 'movement'),
         task('w3_weekly_checkin', 'Complete your weekly check-in', 'Tell Shannon what worked, what got in the way and what you need next.', 'weekly_checkin', 1, '✓', 'checkin')
       ]
@@ -65,7 +65,7 @@
       tasks: [
         task('w4_meals', 'Track 7 meals this week', 'Log 7 meals in total, across the week. These are meals, not days or calorie targets.', 'learn_meals', 7, '🥗', 'meals'),
         task('w4_workouts', 'Complete 2 workouts this week', 'Follow your program. A completed workout or logged movement session counts, at most once per day. Use the movement that fits your plan.', 'learn_workouts', 2, '🏋️', 'movement'),
-        task('w4_experiment', window.BalanceLearnWeeklyActions.experiment(4).title, window.BalanceLearnWeeklyActions.experiment(4).prompt + ' Report it once in your weekly check-in to tick this off.', 'learn_experiment', 1, '📝', 'checkin'),
+        task('w4_experiment', window.BalanceLearnWeeklyActions.experiment(4).title, window.BalanceLearnWeeklyActions.experiment(4).prompt + ' Report what happened in your weekly check-in. Your coach confirms completion before this ticks off.', 'learn_experiment', 1, '📝', 'checkin'),
         task('w4_meal_feed', 'Share a meal to Feed', 'Choose a meal you logged in Balance and share its meal card.', 'foundations_meal_feed', 1, '🥗', 'meals'),
         task('w4_weekly_checkin', 'Complete your weekly check-in', 'Tell Shannon what worked, what got in the way and what you need next.', 'weekly_checkin', 1, '✓', 'checkin')
       ]
@@ -78,7 +78,7 @@
       tasks: [
         task('w5_meals', 'Track 7 meals this week', 'Log 7 meals in total, across the week. These are meals, not days or calorie targets.', 'learn_meals', 7, '🥗', 'meals'),
         task('w5_workouts', 'Complete 3 workouts this week', 'Follow your program. A completed workout or logged movement session counts, at most once per day. Use the movement that fits your plan.', 'learn_workouts', 3, '🏋️', 'movement'),
-        task('w5_experiment', window.BalanceLearnWeeklyActions.experiment(5).title, window.BalanceLearnWeeklyActions.experiment(5).prompt + ' Report it once in your weekly check-in to tick this off.', 'learn_experiment', 1, '📝', 'checkin'),
+        task('w5_experiment', window.BalanceLearnWeeklyActions.experiment(5).title, window.BalanceLearnWeeklyActions.experiment(5).prompt + ' Report what happened in your weekly check-in. Your coach confirms completion before this ticks off.', 'learn_experiment', 1, '📝', 'checkin'),
         task('w5_pb_feed', 'Achieve and share one exercise PB to Feed', 'Share a personal best recorded by Balance from a completed exercise.', 'foundations_pb_feed', 1, '🏆', 'movement'),
         task('w5_weekly_checkin', 'Complete your weekly check-in', 'Tell Shannon what worked, what got in the way and what you need next.', 'weekly_checkin', 1, '✓', 'checkin')
       ]
@@ -91,7 +91,7 @@
       tasks: [
         task('w6_meals', 'Track 7 meals this week', 'Log 7 meals in total, across the week. These are meals, not days or calorie targets.', 'learn_meals', 7, '🥗', 'meals'),
         task('w6_workouts', 'Complete 3 workouts this week', 'Follow your program. A completed workout or logged movement session counts, at most once per day. Use the movement that fits your plan.', 'learn_workouts', 3, '🏋️', 'movement'),
-        task('w6_experiment', window.BalanceLearnWeeklyActions.experiment(6).title, window.BalanceLearnWeeklyActions.experiment(6).prompt + ' Report it once in your weekly check-in to tick this off.', 'learn_experiment', 1, '📝', 'checkin'),
+        task('w6_experiment', window.BalanceLearnWeeklyActions.experiment(6).title, window.BalanceLearnWeeklyActions.experiment(6).prompt + ' Report what happened in your weekly check-in. Your coach confirms completion before this ticks off.', 'learn_experiment', 1, '📝', 'checkin'),
         task('w6_feed_reflection', 'Share your course reflections in Feed', 'Write what changed, what helped and what you want to keep doing.', 'foundations_feed_reflection', 1, '📝', 'feed'),
         task('w6_weekly_checkin', 'Complete your weekly check-in', 'Tell Shannon what worked, what got in the way and what you need next.', 'weekly_checkin', 1, '✓', 'checkin')
       ]
@@ -301,7 +301,7 @@
 
   function taskAvailability(item, date) {
     const clock = brisbaneClockParts(date);
-    if (item && (item.type === 'weekly_checkin' || item.type === 'learn_experiment')) {
+    if (item && (item.type === 'weekly_checkin')) {
       const availableNow = ['Fri', 'Sat', 'Sun'].includes(clock.weekday);
       return {
         availableNow,
@@ -612,7 +612,7 @@
       workout_days: workoutDays,
       learn_meals: new Set(meals.map(row => row.id)).size,
       learn_workouts: window.BalanceLearnWeeklyActions.movementDays(workouts, activities),
-      learn_experiment: weeklyReports.some(row => Number(row.course_week) === Number(state.current_week) && row.course_experiment_completed === true && String(row.course_learning || '').trim().length >= 2) ? 1 : 0,
+      learn_experiment: window.BalanceLearnActionReview?.complete(window.BalanceLearnActionReview.record(state.current_week)) ? 1 : 0,
       workout_bundle: Math.min(workoutDays, stories.filter(row => row.media_type === 'workout_card').length),
       foundations_feed_intro: linkedTextPostCount('w1_feed_intro'),
       foundations_feed_comments: comments.length,
@@ -799,7 +799,7 @@
     if (item.type === 'instagram_profile') return item.complete ? 'Profile saved' : 'Add profile';
     if (item.type === 'daily_manual') return dailyTaskDates(item.id).includes(brisbaneDateKey()) ? 'Today done' : 'Mark today done';
     if (item.type === 'member_attestation') return item.complete ? 'Confirmed by you' : 'Confirm I did this';
-    if ((item.type === 'weekly_checkin' || item.type === 'learn_experiment')) return item.complete ? 'Sent' : 'Open check-in';
+    if ((item.type === 'weekly_checkin')) return item.complete ? 'Sent' : 'Open check-in';
     if (item.type === 'wearable_setup') return item.complete ? 'Setup recorded' : 'Choose setup';
     if (item.type === 'foundations_diary_feed' || item.type === 'identity_diary_feed') return item.complete ? 'Shared' : 'Open Fitness Diary';
     if (item.action === 'feed') return 'Open Feed';
@@ -1143,6 +1143,12 @@
         : safeObject(snapshots[String(definition.week)]);
       const savedTasks = new Map(safeArray(saved && saved.tasks).map(function(item){ return [item.id, item]; }));
       const tasks = definition.tasks.map(function(item){
+        if (item.type === 'learn_experiment') {
+          const review = window.BalanceLearnActionReview;
+          const record = review?.record(definition.week);
+          const complete = review?.complete(record) || false;
+          return Object.assign({},item,{current:complete?1:0,complete,exempt:record?.status==='legacy_completed',reviewStatus:review?.status(definition.week) || 'Status unavailable',availableNow:definition.week<=currentJourneyWeek,actionLabel:'View action'});
+        }
         const stored = savedTasks.get(item.id);
         // Do not retroactively lock members who already passed Week 1 before this action existed.
         const rollout = safeObject(safeObject(state.settings).learn_actions_v2);
@@ -1178,6 +1184,7 @@
       showToast('That week will unlock when you reach it.', 'info');
       return;
     }
+    if (taskId === 'w' + week + '_experiment') return window.BalanceLearnActionReview.open(week);
     if (GETTING_STARTED_TASKS.some(item => item.id === taskId)) return taskAction(taskId);
     if (week !== Number(state.current_week)) {
       showToast('This is a previous week. Its saved result is shown here.', 'info');
@@ -1331,6 +1338,8 @@
     const existingSettings = safeObject(state && state.settings);
     const settings = Object.assign({}, existingSettings);
     delete settings.lesson_seen_weeks;
+    delete settings.foundation_week_progress;
+    settings.learn_actions_v2 = {prior_week:1,credited_weeks:[]};
     state = normalizeState(Object.assign({}, defaultState(), {
       onboarding_complete: false,
       settings
@@ -1851,6 +1860,8 @@
     if (!confirmed) return;
     const settings = Object.assign({}, safeObject(state.settings));
     delete settings.lesson_seen_weeks;
+    delete settings.foundation_week_progress;
+    settings.learn_actions_v2 = {prior_week:1,credited_weeks:[]};
     await upsertState({
       current_week: 1,
       week_started_at: brisbaneDateKey(),
@@ -1860,6 +1871,8 @@
       reminder_receipts: [],
       settings
     });
+    await window.BalanceLearnActionReview.api({operation:'restart'});
+    await window.BalanceLearnActionReview.load();
     progress = null;
     await calculateProgress();
     renderCard();
@@ -1872,6 +1885,7 @@
     loading = true;
     try {
       await loadState();
+      await window.BalanceLearnActionReview?.load();
       ensureUi();
       await calculateProgress();
       const forceFreshTest = isOnboardingTestUser() && sessionStorage.getItem('pbb_activation_force_fresh') === 'true';
@@ -1893,6 +1907,7 @@
     const definition = getWeekDefinition();
     const item = definition.tasks.concat(GETTING_STARTED_TASKS).find(candidate => candidate.id === taskId);
     if (!item) return;
+    if (item.type === 'learn_experiment') return window.BalanceLearnActionReview.open(state.current_week);
     if (item.type === 'fitgotchi_intro') {
       openFitGotchiIntro();
       return;

@@ -7,7 +7,7 @@ const source = fs.readFileSync(require('node:path').join(__dirname, '../js/dashb
 function fixture(week = 1) {
   const rows = {}, writes = [];
   const c = { console, Intl, Date, URLSearchParams, setTimeout() {}, localStorage: { getItem: () => 'true' }, sessionStorage: { getItem: () => null }, document: { getElementById: () => null } };
-  c.window = c; c.BalanceLearnWeeklyActions = learn; c.location = { hostname: 'test', search: '' }; c.currentUser = { id: 'member' };
+  c.window = c; c.BalanceLearnWeeklyActions = learn; c.actionRecords = {}; c.BalanceLearnActionReview = {open(){},record:w=>c.actionRecords[w],complete:r=>['completed','legacy_completed'].includes(r?.status),status:()=> 'Planned'}; c.location = { hostname: 'test', search: '' }; c.currentUser = { id: 'member' };
   c.supabaseClient = { from(table) {
     let payload;
     const q = { upsert(p) { payload = p; writes.push(p); return q; }, then(resolve) { return Promise.resolve({ data: payload || rows[table] || [] }).then(resolve); } };
@@ -41,11 +41,11 @@ test('opening actions cannot award meals, movement, experiments or check-ins; sa
   rows.daily_checkins = [{checkin_date:'2026-09-07',additional_data:{weekly_checkin:{week_start:'2026-09-07',submitted_at:'2026-09-11T06:00:00Z',course_week:1,course_learning:'I snack when I sit down after work.',course_experiment_completed:true}}}];
   await f.calculateProgress();
   const week = f.getFoundationsCourseProgress().weekProgress[0];
-  assert.equal(week.completedTasks,4);
+  assert.equal(week.completedTasks,3);
   assert.equal(week.tasks.find(t=>t.type==='learn_workouts').current,1);
-  assert.equal(writes.at(-1).settings.foundation_week_progress['1'].tasks.filter(t=>t.complete).length,4);
+  assert.equal(writes.at(-1).settings.foundation_week_progress['1'].tasks.filter(t=>t.complete).length,3);
   const persisted = JSON.parse(JSON.stringify(writes.at(-1))); f.set(persisted);
-  await f.calculateProgress(); assert.equal(f.getFoundationsCourseProgress().weekProgress[0].completedTasks,4);
+  await f.calculateProgress(); assert.equal(f.getFoundationsCourseProgress().weekProgress[0].completedTasks,3);
   rows.daily_checkins[0].additional_data.weekly_checkin.course_experiment_completed=false;
   await f.calculateProgress();
   assert.equal(f.getFoundationsCourseProgress().weekProgress[0].tasks.find(t=>t.type==='learn_experiment').complete,false);
@@ -61,7 +61,7 @@ test('weekly evidence handles non-Monday starts, excludes midweek, stale and fut
   assert.equal(learn.effectiveWeek({current_week:1,week_started_at:'2026-09-02'},new Date('2026-09-11T00:00:00Z')),2);
 });
 test('completed old weeks keep explicit earlier credit and setup remains separately saved', async () => {
-  const { f, rows } = fixture(3);
+  const { f, rows, c } = fixture(3); c.actionRecords={1:{status:'legacy_completed'},2:{status:'legacy_completed'}};
   f.set({current_week:3,week_started_at:'2026-09-09',settings:{learn_actions_v2:{prior_week:3,credited_weeks:[1,2]},foundations_wearable_setup:{status:'no_compatible_watch'},fitgotchi_intro:{completed_at:'2026-09-01'}}});
   rows.weekly_progress_photos=[{notes:{saved_at:'2026-09-01T00:00:00Z',shots:['front','side','back'].map(angle=>({angle,photo_url:'https://example.test/'+angle}))}}];
   await f.calculateProgress(); const progress=f.getFoundationsCourseProgress();
@@ -71,3 +71,5 @@ test('completed old weeks keep explicit earlier credit and setup remains separat
   assert.equal(progress.setupTasks.length,3);
   assert.ok(progress.setupTasks.every(t=>t.complete));
 });
+
+test('only coach confirmation gives a course tick, including earlier weeks', async()=>{ const {f,c}=fixture(3); for(const status of ['planned','submitted','needs_information','completed']) { c.actionRecords[1]={status}; await f.calculateProgress(); assert.equal(f.getFoundationsCourseProgress().weekProgress[0].tasks.find(t=>t.type==='learn_experiment').complete,status==='completed'); } });

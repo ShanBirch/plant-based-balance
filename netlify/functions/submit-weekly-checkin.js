@@ -1,3 +1,4 @@
+const learnReview = require('./_lib/learn-action-review');
 const crypto = require('crypto');
 const learnActions = require('../../lib/learn-weekly-actions');
 
@@ -148,7 +149,7 @@ function validatePayload(body = {}, now = new Date()) {
     const blocker = cleanString(body.blocker, 600);
     const note = cleanString(body.note, 900);
     const courseLearning = cleanString(body.course_learning, 900);
-    const experimentCompleted = body.course_experiment_completed === true;
+    const experimentCompleted = false; // Retired self-confirmation flag: completion requires coach review.
     if (experimentCompleted && courseLearning.length < 2) return { error: 'Add what happened when you tried your course experiment.' };
     const confidence = Math.round(Number(body.confidence || 0));
 
@@ -302,7 +303,8 @@ function responseSummary(response) {
         `Support requested: ${SUPPORT_LABELS[response.support]}.`,
         response.note ? `Anything else: ${response.note}` : '',
         response.course_learning ? `Course learning: ${response.course_learning}` : 'Course learning: nothing added.',
-        response.course_week ? `Learn week ${response.course_week}: ${learnActions.experiment(response.course_week)?.prompt || ''} Experiment tried: ${response.course_experiment_completed ? 'yes' : 'not confirmed'}.` : '',
+        response.learn_action_report ? `Saved action evidence: ${JSON.stringify(response.learn_action_report.answers)}${response.learn_action_report.meal ? ' Saved meal: ' + response.learn_action_report.meal.name : ''}` : '',
+        response.course_week ? `Learn week ${response.course_week}: ${learnActions.experiment(response.course_week)?.prompt || ''} Action report status: ${response.learn_action?.status || 'not submitted'}. Only a coach confirmation completes the course action.` : '',
         `Weekly goals: ${goalSummary(response.goals)}`,
     ].filter(Boolean).join('\n');
 }
@@ -395,10 +397,21 @@ exports.handler = async (event) => {
         // the client has not refreshed yet. Never attach a report to a stale form.
         const journeyRows = await supabaseQuery(`social_journey_progress?select=current_week,week_started_at&user_id=eq.${encodeURIComponent(authUser.id)}&limit=1`);
         const courseWeek = learnActions.effectiveWeek(journeyRows[0]);
-        if (Number(body.course_week) && Number(body.course_week) !== courseWeek) return json(409, { error: 'Your course week has changed. Reopen the check-in to see the current experiment.' });
+        if (!body.learn_action && Number(body.course_week) && Number(body.course_week) !== courseWeek) return json(409, { error: 'Your course week has changed. Reopen the check-in to see the current experiment.' });
         if (Number(body.course_week) && learnActions.experiment(courseWeek)) response.course_week = courseWeek;
         else response.course_experiment_completed = false;
+        if (body.learn_action && occurrence !== 'weekly') return json(400,{error:'Submit course action evidence with your weekly check-in.'});
+        const prepared = body.learn_action ? await learnReview.prepareReport(authUser.id,body.learn_action,{...response}) : null;
+        if (prepared) {
+            response.course_week = prepared.week || prepared.existing.week;
+            response.learn_action_report = prepared.payload?.report || prepared.existing.report;
+        }
         await saveResponse(authUser.id, response);
+        if (prepared) {
+            const record = await learnReview.saveReport(authUser.id,prepared);
+            response.learn_action = {id:record.id,enrollment_id:record.enrollment_id,week:record.week,status:record.status,revision:record.revision};
+            await saveResponse(authUser.id,response);
+        }
         const suggestedMessage = await generateReplyDraft({
             clientName: profile.name,
             coachId,
@@ -455,7 +468,8 @@ exports.handler = async (event) => {
         });
     } catch (error) {
         console.error('[submit-weekly-checkin] failed:', error.message);
-        return json(500, { error: 'Your check-in could not be saved. Please try again.' });
+        if(error.sqlstate==='40001')return json(409,{error:'Your action evidence changed. Reopen the check-in before submitting again.'});
+        return json(error.status && !error.body && error.status < 500 ? error.status : 500, { error: error.status && !error.body && error.status < 500 ? error.message : 'Your check-in could not be saved. Reopen it before trying again.' });
     }
 };
 

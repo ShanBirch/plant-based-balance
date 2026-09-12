@@ -177,6 +177,6 @@ test('edited scripts parse and both loader paths use the new assets',()=>{
     const at=html.indexOf('<script>',html.indexOf('<!-- ========== '+marker));
     new Function(html.slice(at+8,html.indexOf('</script>',at)));
   }
-  assert.equal((html.match(/pbb-social-journey.js\?v=56-learn-weekly-actions/g)||[]).length,2);
+  assert.equal((html.match(/pbb-social-journey.js\?v=57-coach-reviewed-actions/g)||[]).length,2);
   assert.equal((html.match(/pbb-next-obvious-steps.js\?v=61-course-photo-sync/g)||[]).length,2);
 });

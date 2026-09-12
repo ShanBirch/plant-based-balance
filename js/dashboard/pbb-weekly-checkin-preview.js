@@ -1330,11 +1330,11 @@
       '    </section>',
       '    <label class="pbb-wci-field">',
       '      <span class="pbb-wci-field-label">What did you learn from the Course this week?</span>',
-      '      <span class="pbb-wci-field-help">' + escapeHtml(learnExperiment() ? learnExperiment().prompt + ' Save your answer here to tick off this week’s experiment in Learn. If you have not tried it yet, you can still send your weekly check-in.' : 'Optional if you did not complete a Course lesson this week.') + '</span>',
+      '      <span class="pbb-wci-field-help">' + escapeHtml(learnExperiment() ? 'Optional lesson takeaway. Report your practical action below for coach review.' : 'Optional if you did not complete a Course lesson this week.') + '</span>',
       '      <input type="hidden" name="course_week" value="' + (learnExperiment() ? learnExperiment().week : '') + '">',
       '      <textarea class="pbb-wci-input" name="course_learning" maxlength="900" placeholder="One idea, pattern, or action that stood out..."></textarea>',
       '    </label>',
-      learnExperiment() ? '    <label class="pbb-wci-field"><span><input type="checkbox" name="course_experiment_completed"> I tried this week’s experiment and described what happened above.</span></label>' : '',
+      window.BalanceLearnActionReview?.form() || '',
       '    <label class="pbb-wci-field">',
       '      <span class="pbb-wci-field-label">Anything else Shannon should know?</span>',
       '      <textarea class="pbb-wci-input" name="note" maxlength="900" placeholder="Optional"></textarea>',
@@ -1395,7 +1395,7 @@
       note: String(formData.get('note') || '').trim(),
       course_learning: String(formData.get('course_learning') || '').trim(),
       course_week: Number(formData.get('course_week') || 0),
-      course_experiment_completed: formData.get('course_experiment_completed') === 'on',
+      learn_action: window.BalanceLearnActionReview?.payload(form) || null,
       week_start: getWeekWindow().startKey,
       week_end: localDateKey(new Date(getWeekWindow().end.getTime() - 24 * 60 * 60 * 1000)),
       occurrence: activeOccurrence() || 'weekly',
@@ -1684,11 +1684,12 @@
     }
   }
 
-  function openWeeklyCheckinPreview(){
+  async function openWeeklyCheckinPreview(){
     if (!isWeeklyCheckinWindowOpen()) {
       showToast('Your weekly check-in opens Friday and stays available through Sunday.', 'info');
       return;
     }
+    try { await window.BalanceLearnActionReview?.load(); } catch (error) { showToast(error.message, 'error'); return; }
     ensureStyles();
     markReviewViewed();
     try {
@@ -1729,6 +1730,7 @@
     var sheet = overlay.querySelector('.pbb-wci-sheet');
     var closeBtn = overlay.querySelector('.pbb-wci-close');
     var responseForm = overlay.querySelector('#weekly-checkin-response-form');
+    window.BalanceLearnActionReview?.bindForm(responseForm);
     // Read on every open so edits do not require retyping a previously sent review.
     if (!isExplicitPreviewEnabled() && window.supabaseClient && getReviewUserId()) {
       window.supabaseClient.from('daily_checkins').select('additional_data')
