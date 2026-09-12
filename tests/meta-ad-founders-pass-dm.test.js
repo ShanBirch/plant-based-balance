@@ -406,6 +406,12 @@ test('paid Meta fast lane marks Seen before starting the early typing indicator'
 });
 
 test('approved Balance links become native Instagram buttons without a visible raw URL', () => {
+    const booking = resolveApprovedInstagramLinkButton('Book a fit call here: https://plantbased-balance.org/book');
+    const bookingPayload = buildInstagramGraphButtonMessagePayload({ recipientId: 'lead-1', ...booking, text: '' });
+    assert.equal(booking.separateDisplayText, true);
+    assert.equal(bookingPayload.message.attachment.payload.template_type, 'generic');
+    assert.equal(bookingPayload.message.attachment.payload.elements[0].buttons[0].title, 'Book a fit call');
+    assert.equal(bookingPayload.message.attachment.payload.elements[0].buttons[0].url, 'https://plantbased-balance.org/book');
     const link = resolveApprovedInstagramLinkButton('Here you go, download Balance here: https://plantbased-balance.org/founders');
     assert.deepEqual(link, {
         url: 'https://plantbased-balance.org/founders',

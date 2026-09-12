@@ -1761,16 +1761,17 @@ function resolveApprovedInstagramLinkButton(text = '') {
         .replace(/\s+/g, ' ')
         .trim() || 'Here you go. This opens Balance.';
     const isPreview = /^\/p\//.test(path) || path === '/meta-app-preview.html';
+    const isBooking = host === 'plantbased-balance.org' && /^\/book\/?$/.test(path);
     return {
         url: rawUrl,
         displayText,
-        ...(isPreview ? { separateDisplayText: true } : {}),
+        ...((isPreview || isBooking) ? { separateDisplayText: true } : {}),
         title: isPreview
             ? 'Open your preview'
-            : 'Open Balance',
-        ...(isPreview ? {
+            : isBooking ? 'Book a fit call' : 'Open Balance',
+        ...((isPreview || isBooking) ? {
             imageUrl: BALANCE_PREVIEW_CARD_IMAGE_URL,
-            cardTitle: BALANCE_PREVIEW_CARD_TITLE,
+            cardTitle: isBooking ? 'Find a time for your Balance fit call' : BALANCE_PREVIEW_CARD_TITLE,
         } : {}),
     };
 }
