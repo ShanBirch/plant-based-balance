@@ -26,7 +26,9 @@ const cases = [
 test('grocery bridge explains practical fit and keeps media, price and decision',async()=>{
  const currentMessage='Food shopping on a tight grocery budget makes meal planning hard';
  const chunks=buildPaidMetaTailoredOfferChunks(currentMessage,'Lose weight','broad_pain');
- const draft={chunks,joined:chunks.join('\n'),replyMode:'campaign_sales_progression',model:'test',flowVariant:'broad_pain',videoAttachmentUrl:'course.mp4'};
+ // Writer repairs can omit flowVariant or coalesce all paragraphs into one
+ // chunk; the actual support choice identifies the approved full-flow offer.
+ const draft={chunks:[chunks.join('\n\n')],joined:chunks.join('\n\n'),replyMode:'campaign_sales_progression',model:'test',videoAttachmentUrl:'course.mp4'};
  const result=await personalisePaidMetaOffer({draft,currentMessage,writer:async contents=>{
   assert.match(contents[0].parts[0].text,/NOT a paraphrase exercise/);
   return JSON.stringify({acknowledgement:'We can keep your meal plan based on ordinary supermarket ingredients and simple repeatable meals. The food side of Learn helps you build habits around that.',evidence:['tight grocery budget']});

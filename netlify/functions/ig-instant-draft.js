@@ -1191,6 +1191,7 @@ async function persistCocosDraftRepair({ alertId, currentAlertData, draft, repai
             ...(currentAlertData || {}),
             draft_messages: draft.chunks,
             draft_text: draft.joined,
+            draft_error: draft.error || null,
             ...buildDraftVideoAttachmentData(draft),
             ...buildDraftImageAttachmentData(draft),
             draft_model: draft.model,
@@ -2766,7 +2767,7 @@ DECODED MEDIA, if present:\n${mediaContext}`;
         const chunks = [...(draft.chunks || [joined])];
         const index = chunks.findIndex(chunk => String(chunk).includes(marker));
         if (index < 0) return fail('missing_offer_marker');
-        if (draft.flowVariant === 'broad_pain' && chunks.at(-1) === LEARN_SUPPORT_CHOICE) {
+        if (joined.includes(LEARN_SUPPORT_CHOICE)) {
             const terms = `Learn runs for six weeks in the app and community, with a workout program, meal plan and my weekly training and food check-in. It's one AUD ${resolveBalanceLearnCoursePriceLabel()} payment, with no subscription or auto-renewal.${draft.videoAttachmentUrl ? " Here's the course video." : ''}`;
             chunks.splice(index,chunks.length-index,acknowledgement,terms,LEARN_SUPPORT_CHOICE);
         } else {
