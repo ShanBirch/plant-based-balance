@@ -29,3 +29,11 @@ test('split Zoom offer keeps yes on the call route',()=>{
  const d=buildPaidMetaZoomHandoff({currentMessage:'Yes please',history:[{direction:'out',text:'Zoom PT includes Learn and live 30-minute training.'},{direction:'out',text:'Book a fit call here: https://plantbased-balance.org/book'}],flowVariant:'broad_pain'});
  assert.equal(d.paidMetaZoomHandoff,true);
 });
+
+test('compact PT5 selects five weekly sessions',()=>{
+ const d=buildPaidMetaZoomHandoff({currentMessage:'Tell me about Zoom PT5 and how to get started',flowVariant:'broad_pain'});
+ assert.match(d.joined,/AUD \$425 per week/);
+});
+for (const currentMessage of ['I work on Zoom all day so I want workouts away from my screen. Can I see the Learn preview?','Does the 149 dollars cover the Learn course and a 30-minute Zoom session each week?']) test('writer must resolve meaning: '+currentMessage,()=>{
+ assert.equal(buildPaidMetaZoomHandoff({currentMessage,flowVariant:'broad_pain'}),null);
+});
