@@ -988,7 +988,7 @@ function isVerifiedBroadPaidMetaGoalToBlockerMove({
 function collectCocosAutoRepairIssues({ draft, draftReview, challengeOfferWarning, currentMessage, qualifier, leadStage, linkedUserId, meaningfulLeadReplyCount, voiceNoteMode = false, metaAdConversationFastLane = false, flowVariant = '' }) {
     const issues = [];
     const draftText = draftTextFromDraft(draft);
-    const verifiedPaidMetaProgression = /^deterministic_paid_meta_conversation_v\d+/i.test(String(draft?.model || ''))
+    const verifiedPaidMetaProgression = /^deterministic_paid_meta_(?:conversation|guided_sales)_v\d+/i.test(String(draft?.model || ''))
         && ['campaign_sales_progression', 'campaign_buyer_handoff', 'campaign_app_preview_handoff'].includes(String(draft?.replyMode || ''));
     const challengeOfferAllowed = hasChallengeInviteReadinessSignal(currentMessage)
         || hasEarnedChallengeInviteMoment({ qualifier, currentMessage, leadReplyCount: meaningfulLeadReplyCount })
@@ -5378,6 +5378,10 @@ function attachPaidMetaWriterSelectedMedia(draft = {}, {
 function ensurePaidMetaAppVideoPreviewCta(draft = {}) {
     if (!isBalanceFoundationsAppProofVideoUrl(draft?.videoAttachmentUrl)) return draft;
     const replyText = draftTextFromDraft(draft);
+    // The approved broad flow chooses support after the video. Adding the
+    // legacy preview question here creates two CTAs and triggers a repair
+    // which can discard the video introduction.
+    if (replyText.includes(LEARN_SUPPORT_CHOICE)) return draft;
     const alreadyOffersSetupBeforePayment = /\b(?:open|show|send|set(?:ting)?|build(?:ing)?)\b[^.!?\n]{0,80}\b(?:program|workout|meal plan|plan|preview)\b[^.!?\n]{0,100}\b(?:before (?:you )?(?:pay|decide)|before payment)\b/i.test(replyText)
         && /\?/.test(replyText);
     if (alreadyOffersSetupBeforePayment) return draft;

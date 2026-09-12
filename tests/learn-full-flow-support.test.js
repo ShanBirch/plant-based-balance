@@ -11,6 +11,9 @@ test('goal to photo to blocker to video to support choice then either destinatio
  const blocker='The kids and chocolate after dinner make consistency difficult';
  const offer=api.buildDeterministicPaidMetaConversationReply({currentMessage:blocker,history,flowVariant:'broad_pain',allowVideoAttachment:true});
  assert.ok(offer.videoAttachmentUrl);assert.equal(offer.chunks.at(-1),LEARN_SUPPORT_CHOICE);
+ const finalOffer=api.ensurePaidMetaAppVideoPreviewCta(offer);
+ assert.equal(finalOffer,offer,'legacy video CTA must not append a second question');
+ assert.deepEqual(api.collectCocosAutoRepairIssues({draft:finalOffer,currentMessage:blocker,meaningfulLeadReplyCount:2,metaAdConversationFastLane:true,flowVariant:'broad_pain'}),[]);
  const items=send.appendPaidMetaProofMedia(offer.chunks.map(text=>({kind:'text',text})),{videoUrl:offer.videoAttachmentUrl});
  assert.equal(items.at(-2).kind,'video');assert.equal(items.at(-1).text,LEARN_SUPPORT_CHOICE);
  assert.deepEqual(api.collectPaidMetaWriterContractIssues({draft:offer,currentMessage:blocker,history,flowVariant:'broad_pain'}),[]);
