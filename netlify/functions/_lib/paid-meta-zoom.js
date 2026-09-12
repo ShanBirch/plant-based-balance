@@ -1,4 +1,15 @@
 const ZOOM_BOOKING_URL = 'https://plantbased-balance.org/book';
+const LEARN_SUPPORT_CHOICE = 'Would you prefer doing your workouts on your own with the app and my weekly check-in, or adding 30-minute one-on-one Zoom sessions?';
+function resolveLearnSupportChoice(currentMessage = '', history = []) {
+    const last = [...history].reverse().find(x => x?.direction === 'out');
+    if (!/workouts on your own[\s\S]*Zoom sessions\?/i.test(String(last?.text || ''))) return null;
+    const text = String(currentMessage).trim();
+    if (/\?|\b(?:stop|hold off|not now|neither)\b/i.test(text)) return null;
+    if (/\b(?:on my own|by myself|independent\w*|own workouts|just (?:the )?(?:app|learn|course)|no zoom|without zoom)\b/i.test(text)) return 'independent';
+    if (/\bzoom\b/i.test(text) && !/\b(?:not|no|don.t|do not)\b/i.test(text)) return 'zoom';
+    if (/^(?:yes|yeah|yep|sure|okay|ok|sounds good|please)[.! ]*$/i.test(text)) return 'clarify';
+    return null;
+}
 const ZOOM_RE = /\bzoom\b|\blive (?:one[- ]on[- ]one |1[:.]1 )?(?:training|workouts?|sessions?)\b/i;
 
 function buildPaidMetaZoomHandoff({ currentMessage = '', history = [], flowVariant } = {}) {
@@ -27,7 +38,7 @@ function buildPaidMetaZoomHandoff({ currentMessage = '', history = [], flowVaria
     // Unknown compound questions need the writer's real answer, not a
     // transport shortcut that could erase their question.
     if (/\?/.test(text) && /\b(?:injur|pain|hurt|pregnan|refund|cancel|time zone|equipment|recorded|recording)\w*\b/i.test(text)) return null;
-    const interested = /\b(?:want|interested|keen|prefer|like|yes|can i|could i|tell me|how does|how do)\b/i.test(text);
+    const interested = resolveLearnSupportChoice(text, history) === 'zoom' || /\b(?:want|interested|keen|prefer|like|yes|can i|could i|tell me|how does|how do)\b/i.test(text);
     if (!priceQuestion && !bookingRequest && !acceptance && !interested) return null;
     const frequency = /\b(?:three|3)\s*(?:zoom\s+)?(?:times|sessions?)?\s*(?:a|per|each)?\s*week|\bzoom pt\s*3\b/i.test(text) ? 3
         : /\b(?:five|5)\s*(?:zoom\s+)?(?:times|sessions?)?\s*(?:a|per|each)?\s*week|\bzoom pt\s*5\b/i.test(text) ? 5
@@ -41,4 +52,4 @@ function buildPaidMetaZoomHandoff({ currentMessage = '', history = [], flowVaria
     const joined = `${availability}Zoom PT includes Balance Learn plus live 30-minute one-on-one training sessions with me.${facts ? ' '+facts : ''} It starts with a six-week coaching block.\n\nBook a fit call here so we can check availability and whether it suits you before payment: ${ZOOM_BOOKING_URL}`;
     return {joined,chunks:joined.split('\n\n'),model:'deterministic_paid_meta_guided_sales_v1',replyMode:'campaign_sales_progression',paidMetaZoomHandoff:true,callBookingUrl:ZOOM_BOOKING_URL,maxChunks:2,flowVariant,error:null};
 }
-module.exports={buildPaidMetaZoomHandoff,ZOOM_BOOKING_URL};
+module.exports={buildPaidMetaZoomHandoff,ZOOM_BOOKING_URL,LEARN_SUPPORT_CHOICE,resolveLearnSupportChoice};

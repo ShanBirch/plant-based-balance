@@ -1527,7 +1527,7 @@ test('a long broad burst repairs the direct gluten-free answer without repeating
     assert.match(repaired.joined, /time you have/i);
     assert.match(repaired.joined, /food prep/i);
     assert.match(repaired.joined, /no subscription or auto-renewal/i);
-    assert.match(repaired.joined, /personalised (?:app )?preview/i);
+    assert.match(repaired.joined, /workouts on your own.*Zoom sessions/i);
     assert.doesNotMatch(repaired.joined, /what usually gets in the way/i);
     assert.ok((repaired.joined.match(/\?/g) || []).length <= 1);
     assert.deepEqual(collectPaidMetaWriterContractIssues({
@@ -2112,7 +2112,7 @@ test('paid Meta identity questions answer honestly and continue from the earned 
     assert.match(identityGoalAndBlocker.joined, /dietary preferences/i);
     assert.match(identityGoalAndBlocker.joined, /AUD \$149/i);
     assert.match(identityGoalAndBlocker.joined, /no subscription or auto-renewal/i);
-    assert.match(identityGoalAndBlocker.joined, /personalised preview before you pay\?/i);
+    assert.match(identityGoalAndBlocker.joined, /workouts on your own.*Zoom sessions/i);
     assert.ok(identityGoalAndBlocker.videoAttachmentUrl);
     assert.equal((identityGoalAndBlocker.joined.match(/\?/g) || []).length, 1);
     assert.doesNotMatch(identityGoalAndBlocker.joined, /plant[ -]?based|vegan/i);
@@ -3609,7 +3609,7 @@ test('verified broad route completes goal, blocker, neutral offer and signed pre
     assert.match(offerReply.joined, /meal plan fitted to your dietary preferences/i);
     assert.match(offerReply.joined, /one (?:AUD )?\$149 payment for the full six weeks/i);
     assert.match(offerReply.joined, /no subscription or auto-renewal/i);
-    assert.match(offerReply.joined, /personalised preview/i);
+    assert.match(offerReply.joined, /workouts on your own.*Zoom sessions/i);
     assert.equal((offerReply.joined.match(/\?/g) || []).length, 1,
         'the offer asks for preview consent, not another discovery fact');
 
@@ -3626,7 +3626,7 @@ test('verified broad route completes goal, blocker, neutral offer and signed pre
     assert.match(liveHecticWorkReply.joined, /six-week course on neuroscience and psychology/i);
     assert.match(liveHecticWorkReply.joined, /one (?:AUD )?\$149 payment for the full six weeks/i);
     assert.match(liveHecticWorkReply.joined, /no subscription or auto-renewal/i);
-    assert.match(liveHecticWorkReply.joined, /personalised preview/i);
+    assert.match(liveHecticWorkReply.joined, /workouts on your own.*Zoom sessions/i);
     assert.equal(liveHecticWorkReply.videoAttachmentUrl, resolveBalanceFoundationsAppProofVideoUrl());
     const liveHecticMediaReady = attachPaidMetaWriterSelectedMedia(liveHecticWorkReply, {
         allowAttachments: true,
@@ -3665,7 +3665,7 @@ test('verified broad route completes goal, blocker, neutral offer and signed pre
         ...offerReply.chunks.map(text => ({ direction: 'out', text })),
     ];
     const previewReply = buildDeterministicPaidMetaConversationReply({
-        currentMessage: 'Yes please',
+        currentMessage: 'On my own please',
         qualifier: {
             commercial_stage: 'offer_ready',
             facts: { current_state: goal, history_blockers: blocker },
@@ -3873,7 +3873,7 @@ test('broad writer contract repairs missing terms, adds the native explainer, an
     });
     assert.match(repairedOffer.joined, /one AUD \$149 payment for the full six weeks/i);
     assert.match(repairedOffer.joined, /no subscription or auto-renewal/i);
-    assert.match(repairedOffer.joined, /personalised preview/i);
+    assert.match(repairedOffer.joined, /workouts on your own.*Zoom sessions/i);
     assert.equal(repairedOffer.videoAttachmentUrl, BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL);
     assert.match(repairedOffer.joined, /course video/i);
 

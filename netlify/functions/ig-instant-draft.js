@@ -1,5 +1,5 @@
 const { outboundAnswersOlderInbound } = require('./_lib/ig-reply-source');
-const { buildPaidMetaZoomHandoff, ZOOM_BOOKING_URL } = require('./_lib/paid-meta-zoom');
+const { buildPaidMetaZoomHandoff, ZOOM_BOOKING_URL, LEARN_SUPPORT_CHOICE, resolveLearnSupportChoice } = require('./_lib/paid-meta-zoom');
 /**
  * ig-instant-draft — produces an AI draft reply for an inbound Instagram DM
  * captured by the manychat-inbound webhook.
@@ -1552,7 +1552,7 @@ function hasCompletePaidMetaOfferText(text = '') {
         && /\bmeal plan\b/i.test(value)
         && /\$\s*(?:149|450)\b/i.test(value)
         && /\b(?:no subscription|no auto-renewal|does not auto-renew|doesn't auto-renew)\b/i.test(value)
-        && offersPreviewBeforeDecision;
+        && (offersPreviewBeforeDecision || value.includes(LEARN_SUPPORT_CHOICE));
 }
 
 function buildPaidMetaTailoredOfferText(blockerText = '', goalText = '', flowVariant = 'plant_based_control') {
@@ -1689,7 +1689,7 @@ function buildPaidMetaTailoredOfferChunks(blockerText = '', goalText = '', flowV
         return [
             `${compactAcknowledgement} Balance Learn is a six-week course on neuroscience and psychology, with six weeks in the app and community.`,
             ("Your workout program, meal plan fitted to your dietary preferences, and weekly check-in are included. It's one AUD $149 payment for the full six weeks, with no subscription or auto-renewal.".replaceAll('$149', resolveBalanceLearnCoursePriceLabel())),
-            'Want me to open your free personalised preview before you pay?',
+            LEARN_SUPPORT_CHOICE,
         ];
     }
     return [
@@ -1705,7 +1705,7 @@ function addPaidMetaProofVideoToOfferChunks(chunks = [], history = [], flowVaria
         return { chunks: offerChunks, videoAttachmentUrl: null };
     }
     const finalIndex = offerChunks.length - 1;
-    const terminalPreviewQuestion = /^Want me to open your free personalised preview[^?]*\?$/i.test(offerChunks[finalIndex]);
+    const terminalPreviewQuestion = /^Want me to open your free personalised preview[^?]*\?$/i.test(offerChunks[finalIndex]) || offerChunks[finalIndex] === LEARN_SUPPORT_CHOICE;
     const videoIntroduction = flowVariant === 'broad_pain'
         ? "Here's the course video."
         : "Here's a quick video showing the course and what's inside Balance.";
@@ -2236,6 +2236,13 @@ function buildDeterministicPaidMetaConversationReply({
         if (proof) return guidedReply([proof.introduction], { imageAttachmentUrl: proof.imageUrl });
     }
 
+    const supportChoice = broadFlow ? resolveLearnSupportChoice(message, history) : null;
+    if (supportChoice === 'independent') return buildDeterministicPaidMetaConversationReply({currentMessage:'Show me the preview',history,flowVariant,appPreviewUrl,checkoutUrl,allowVideoAttachment});
+    if (supportChoice === 'clarify') return {
+        joined: LEARN_SUPPORT_CHOICE, chunks: [LEARN_SUPPORT_CHOICE],
+        model: 'deterministic_paid_meta_guided_sales_v1', replyMode: 'campaign_sales_progression',
+        paidMetaSupportChoice: true, maxChunks: 1, flowVariant, error: null,
+    };
     const zoomHandoff = buildPaidMetaZoomHandoff({currentMessage:message,history,flowVariant});
     if (zoomHandoff) return zoomHandoff;
     if (broadFlow && hasPaidMetaPreviewOrPriceDecline(message)) {
@@ -2689,7 +2696,7 @@ function isPaidMetaBareGoalMessage(message = '') {
 
 function selectFastDeterministicPaidMetaProgression({ metaAdOpeningTurn = false, draft = null, requiresMediaAnalysis = false, currentMessage = '' } = {}) {
     if (requiresMediaAnalysis) return null;
-    if (currentMessage && draft?.replyMode === 'campaign_sales_progression' && draft?.paidMetaVerifiedAccessFaq !== true && draft?.paidMetaZoomHandoff !== true
+    if (currentMessage && draft?.replyMode === 'campaign_sales_progression' && draft?.paidMetaVerifiedAccessFaq !== true && draft?.paidMetaZoomHandoff !== true && draft?.paidMetaSupportChoice !== true
         && draft?.model !== 'deterministic_paid_meta_autonomy_v1'
         && (/\?/.test(currentMessage)
             || (paidMetaOutboundAskedForBlocker(draftTextFromDraft(draft)) && !isPaidMetaBareGoalMessage(currentMessage)))) return null;
@@ -5239,6 +5246,7 @@ Verified course curriculum, for explicit outline or week-by-week questions: week
 Send the signed preview immediately after they ask to see it or accept the free personalised preview. A positive reaction such as "looks great" is not checkout intent. Send checkout only after they explicitly ask to join, pay, sign up or receive the checkout link. Hand off instead of improvising for medical/safety issues, account or payment support, existing-client app support, or a direct request for Shannon. Keep replies quick, warm, concise and human. ${linkQuestionRule} If asked who is replying, say plainly: "You're chatting with Shannon's digital Balance helper. I can help here, and Shannon can jump in if needed." Never deny automation or pretend the helper is Shannon. No em dashes.
 
 Campaign variant: ${flowVariant}
+LATEST FULL-FLOW REQUIREMENT FOR broad_pain: the normal ad journey is greeting, six-week goal, relevant verified client photo, real-life blocker, personalised Learn explanation with the approved course video, then the support choice. After the video ask whether they prefer doing workouts on their own with the app and weekly check-in, or adding 30-minute one-on-one Zoom sessions. This support decision replaces the ordinary preview invitation at that stage and overrides earlier default preview language. Do not require them to mention Zoom first. It is not a third discovery question. If they already clearly chose a support mode, respect it rather than asking again. Independent workouts lead to the Learn preview; Zoom interest leads to the fit-call booking with Learn included. A bare yes to the either/or question is ambiguous, so clarify which option instead of assuming Zoom. Never invent a client match; preserve opt-outs and sensitive-topic handling. Explicit earlier factual or link requests should still be answered without forcing unrelated steps.
 Channel: ${channelLabel}
 Lead: ${leadName}
 
