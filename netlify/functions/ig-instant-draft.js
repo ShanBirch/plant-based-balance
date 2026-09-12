@@ -3452,7 +3452,8 @@ function buildPaidMetaConversationApproval({
     const verifiedExplicitPreviewHandoff = draft?.replyMode === 'campaign_app_preview_handoff'
         && draft?.appPreviewHandoff === true
         && isMetaAppPreviewUrl(draft?.appPreviewUrl)
-        && (isExplicitPaidMetaPreviewRequest(message) || isExplicitPaidMetaPreviewAcceptance(message));
+        && (isExplicitPaidMetaPreviewRequest(message) || isExplicitPaidMetaPreviewAcceptance(message)
+            || resolveLearnSupportChoice(message, history) === 'independent');
     const deterministicProgression = metaAdConversationFastLane
         && !linkedUserId
         && ['campaign_sales_progression', 'campaign_buyer_handoff', 'campaign_app_preview_handoff'].includes(String(draft?.replyMode || ''))
@@ -3470,7 +3471,8 @@ function buildPaidMetaConversationApproval({
                     // that this acceptance follows a preview offer. Requiring
                     // the approval layer to rediscover that offer in another
                     // short history window can strand valid long journeys.
-                    || isExplicitPaidMetaPreviewAcceptance(message))));
+                    || isExplicitPaidMetaPreviewAcceptance(message)
+                    || resolveLearnSupportChoice(message, history) === 'independent')));
     if (!deterministicProgression) return null;
     return {
         required: false,

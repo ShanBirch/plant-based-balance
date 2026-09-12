@@ -38,8 +38,10 @@ test('goal to photo to blocker to video to support choice then either destinatio
  assert.deepEqual(api.collectPaidMetaWriterContractIssues({draft:offer,currentMessage:blocker,history,flowVariant:'broad_pain'}),[]);
  history.push({direction:'in',text:blocker},...items.map(x=>({direction:'out',text:x.text})));
  const base={history,flowVariant:'broad_pain',appPreviewUrl:'https://future-balance.netlify.app/p/synthetic-token-12345'};
- for(const choice of ['On my own please','Just the app for me']){
+ for(const choice of ['On my own please','Just the app for me','On my own with the app please','I prefer doing workouts on my own','Just Learn and workouts on my own']){
   const d=api.buildDeterministicPaidMetaConversationReply({...base,currentMessage:choice});assert.equal(d.appPreviewHandoff,true);
+  const approval=api.buildPaidMetaConversationApproval({metaAdConversationFastLane:true,draft:d,currentMessage:choice,history});
+  assert.equal(approval?.required,false,choice+' must be approved through delivery');
  }
  const zoom=api.buildDeterministicPaidMetaConversationReply({...base,currentMessage:'Zoom sessions please'});assert.equal(zoom.paidMetaZoomHandoff,true);
  const unclear=api.buildDeterministicPaidMetaConversationReply({...base,currentMessage:'Yes'});assert.equal(unclear.paidMetaSupportChoice,true);assert.equal(unclear.joined,LEARN_SUPPORT_CHOICE);
