@@ -511,7 +511,7 @@ if (window._pbbIsIOSSafari) {
         var deferredLibs = [
             'lib/vegan-meal-safety.js?v=2',
             'lib/migrate-localstorage.js',
-            'lib/native-health.js',
+            'lib/native-health.js?v=20260912-sleep-local-date',
             'lib/native-push.js?v=41-meal-reminders-retired',
             'lib/native-iap.js',
             'lib/stories.js?v=76-feed-composer-profile-photo&video_health=2&weekly_goals=2',
@@ -563,7 +563,7 @@ if (window._pbbIsIOSSafari) {
 <script>
 if (!window._pbbIsIOSSafari) {
     // Non-iOS: load native scripts synchronously
-    document.write('<script src="lib/native-health.js"><\/script>');
+    document.write('<script src="lib/native-health.js?v=20260912-sleep-local-date"><\/script>');
     document.write('<script src="lib/native-push.js?v=41-meal-reminders-retired"><\/script>');
     document.write('<script src="lib/native-iap.js"><\/script>');
 }
