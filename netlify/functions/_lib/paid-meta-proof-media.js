@@ -62,6 +62,13 @@ function resolvePaidMetaTransformationProof({ goalText = '', blockerText = '' } 
     if (!text || /\b(?:pregnan\w*|postpartum|after (?:having )?(?:a )?baby|eating disorder|anorex\w*|bulimi\w*|self[- ]harm|suicid\w*|injur\w*|pain|rehab|recover\w*)\b/i.test(text)) {
         return null;
     }
+    // Matching every word in a coalesced burst can select an obsolete or
+    // explicitly negated goal. If goal scope is contested, omit transformation
+    // proof rather than attach somebody else's weight-loss story by keyword.
+    if (/\b(?:not|no longer|don['’]?t|do not|isn['’]?t|instead of|rather than)\b[^.!?]{0,45}\b(?:weight|fat|lean|kg|kilos?|pounds?|strength|stronger|muscle|recomp\w*|tone)\b/i.test(text)
+        || /\b(?:changed my mind|actually|correction)\b[^.!?]{0,65}\b(?:want|goal|weight|strength|stronger)\b/i.test(text)) {
+        return null;
+    }
     const proof = PAID_META_TRANSFORMATION_PROOFS.find(candidate => candidate.matches(text));
     if (!proof) return null;
     return {

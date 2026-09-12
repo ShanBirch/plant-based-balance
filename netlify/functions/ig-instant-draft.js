@@ -2283,7 +2283,7 @@ function buildDeterministicPaidMetaConversationReply({
         && appPreviewUrl
         && (directPreviewRequest || acceptedExplicitPreviewInvitation || genericReadyAfterQualifiedOffer || (historyHasGoal && historyHasBlocker))) {
         const mealPlanCopy = broadFlow ? 'meal plan fitted to your dietary preferences' : 'plant-based meal plan';
-        const asksAutomaticCharge = /\b(?:charg\w*|bill\w*|payment|renew\w*)\b[\s\S]{0,50}\bautomatic\w*\b|\bautomatic\w*\b[\s\S]{0,50}\b(?:charg\w*|bill\w*|payment|renew\w*)\b/i.test(message);
+        const asksAutomaticCharge = asksPaidMetaPreviewCharge(message);
         const asksDietRequirement = /\b(?:vegetarian|vegan|plant[- ]based)\s+only\b|\bonly\s+(?:for\s+)?(?:vegetarians?|vegans?|plant[- ]based)\b|\b(?:have|need) to (?:be|eat|go) (?:vegetarian|vegan|plant[- ]based)\b/i.test(message);
         const factualAnswers = [
             /\b(?:can|could) i\b[^?.!]{0,65}\b(?:without (?:a |the )?gym|(?:train|work out|do (?:it|this)) at home)\b/i.test(message)
@@ -3107,7 +3107,13 @@ function foundersPassCheckoutUrlForMessage(message = '', customData = {}, flowVa
     return buildMetaAdCheckoutUrl({ customData, flowVariant, currentMessage: message, acquisitionMode });
 }
 
-const META_AD_CURRICULUM_QUESTION_RE = /\bwhat\s+(?:(?:will|do|can|would)\s+(?:i|we|you)\s+|am\s+i\s+(?:going\s+to\s+)?)(?:actually\s+)?learn\b|\b(?:what|which|how|can|could|do|does).{0,40}\b(?:teach|cover|curriculum|lessons?|week[ -]?by[ -]?week|happens? (?:each|every) week|the six weeks)\b|\btell me\b.{0,30}\b(?:course|curriculum|lessons?|six weeks)\b|\b(?:course|curriculum|lessons?)\b.{0,30}\b(?:include|inside|cover|work)\b/i;
+const META_AD_CURRICULUM_QUESTION_RE = /\bwhat\s+(?:(?:will|do|can|would)\s+(?:i|we|you)\s+|am\s+i\s+(?:going\s+to\s+)?)(?:actually\s+)?learn\b|\b(?:curriculum|week[ -]?by[ -]?week|(?:full|six[ -]week|course) outline)\b|\bwhat happens? (?:each|every) week\b|\b(?:what|which)\b.{0,35}\b(?:topics?|themes?|teach|cover)\b|\b(?:course|lessons?)\b.{0,25}\b(?:teach|cover)\b|\btell me about (?:the )?(?:course|lessons?|six weeks)\b/i;
+
+function asksPaidMetaPreviewCharge(message = '') {
+    return /\b(?:charg\w*|bill\w*|payment|renew\w*)\b[\s\S]{0,50}\bautomatic\w*\b|\bautomatic\w*\b[\s\S]{0,50}\b(?:charg\w*|bill\w*|payment|renew\w*)\b/i.test(message)
+        || (/\b(?:preview|opening|open|clicking|click|trying|try)\b/i.test(message)
+            && /\b(?:will|does|do|would|can|could|is)\b[^?!]{0,90}\b(?:charg\w*|bill\w*|pay\w*|cost|free)\b/i.test(message));
+}
 
 // A mention of price is not necessarily a request for the course price.
 // Evaluate clauses separately so an accepted fee or another living expense
@@ -5218,7 +5224,9 @@ Keep three separate facts clear: the course has a fixed weekly LEARNING theme; t
 Answer yes/no questions directly before explaining. If asked whether every workout differs, say not necessarily: exercises and sessions can repeat to practise and measure progress, with adjustments when appropriate. Never guarantee no repeated sessions. If asked whether lessons differ between people, answer no: everyone gets the same core lessons, while workout and meal-plan setup can be personalised. Do not borrow the workout answer "not necessarily" for this fixed-curriculum question. Do not list all six themes unless they ask for the outline.
 If a recent outbound already offered the preview and the person asks another factual question instead of accepting, answer that question and stop. Do not repeat or rephrase the unanswered preview invitation. Their question is not a new opportunity to ask the same thing again. Send the preview when they explicitly request or accept it.
 
-Verified course curriculum, for direct course, lesson or week-by-week questions: week 1, Why change feels hard; week 2, Work with your energy; week 3, Build a rhythm that sticks; week 4, Take the fight out of food; week 5, Make progress easier to repeat; week 6, Build your sustainable way forward. The course uses lessons, practical actions and Weekly Goals alongside the person's workout and nutrition setup. Do not dump all six weeks into an ordinary pitch. Give the full outline only when they ask for curriculum detail; otherwise use only the one or two themes relevant to their words.
+Answer every actual question in the current turn before any sales move. A mention of lessons is not a request for the curriculum outline. Lessons are self-paced within the six-week access period: they can catch up on weekends and do not have to complete one every day. There is no verified fixed duration for every lesson, so do not invent a minutes-per-lesson figure. Say the time varies and they can work through it at their own pace. Someone can focus on the lessons alongside their existing trainer and meal plan; do not imply a separate discounted lessons-only package or tell them to replace their coach. For shared household meals, acknowledge dislikes such as tofu and suggest flexible shared bases with different proteins rather than guaranteeing everyone can always eat one identical dinner.
+After a direct practical answer, stop or make one optional preview invitation. Do not repeat the goal or blocker question just because it remains unanswered. If an invitation was already made, answer and stop. Keep ordinary factual answers to one or two short bubbles.
+Verified course curriculum, for explicit outline or week-by-week questions: week 1, Why change feels hard; week 2, Work with your energy; week 3, Build a rhythm that sticks; week 4, Take the fight out of food; week 5, Make progress easier to repeat; week 6, Build your sustainable way forward. The course uses lessons, practical actions and Weekly Goals alongside the person's workout and nutrition setup. Do not dump all six weeks into an ordinary pitch. Give the full outline only when they ask for curriculum detail; otherwise use only the one or two themes relevant to their words.
 
 Send the signed preview immediately after they ask to see it or accept the free personalised preview. A positive reaction such as "looks great" is not checkout intent. Send checkout only after they explicitly ask to join, pay, sign up or receive the checkout link. Hand off instead of improvising for medical/safety issues, account or payment support, existing-client app support, or a direct request for Shannon. Keep replies quick, warm, concise and human. ${linkQuestionRule} If asked who is replying, say plainly: "You're chatting with Shannon's digital Balance helper. I can help here, and Shannon can jump in if needed." Never deny automation or pretend the helper is Shannon. No em dashes.
 
@@ -5424,8 +5432,7 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
     const autonomyPause = broadFlow && hasPaidMetaPreviewOrPriceDecline(turn);
     const focusedCourseFact = /\b(?:how many lessons|certificate|week [1-6])\b/i.test(turn)
         && !/\b(?:curriculum|week[ -]?by[ -]?week|each.*six weeks|all (?:the )?weeks|full.*outline|what (?:will|do) i learn)\b/i.test(turn);
-    const asksForCurriculumOutline = !focusedCourseFact && (META_AD_CURRICULUM_QUESTION_RE.test(turn)
-        || /\b(?:what do i (?:actually )?learn|what (?:will|do) (?:i|you) learn|what does (?:the )?course teach|week[ -]?by[ -]?week|curriculum|six[- ]week (?:course|outline)|course (?:content|lessons?))\b/i.test(turn));
+    const asksForCurriculumOutline = !focusedCourseFact && META_AD_CURRICULUM_QUESTION_RE.test(turn);
     const asksOfferInfo = /\b(?:how much|price|cost|renew|what(?:'s| is) included|what do i get|do i (?:actually )?get|workouts?|meal plan|check[ -]?in|details|how (?:does|do) (?:it|the program) work)\b/i.test(turn);
     const asksMealPlanQuestion = /\bdo you (?:offer|have|provide|include) (?:a |any )?(?:plant[ -]?based )?meal plans?\b|\bis (?:a |the )?meal plan included\b/i.test(turn);
     const asksGlutenFreeSupport = /\bgluten[ -]?free\b/i.test(turn)
@@ -5606,7 +5613,7 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
         && /\bbefore i (?:answer|tell you)\b/i.test(turn)
         && replyQuestions.some(question => paidMetaOutboundAskedForGoal(question));
     const resumesUnansweredGoalAfterFaq = broadFlow
-        && (asksForCurriculumOutline || asksOfferInfo)
+        && asksForCurriculumOutline
         && !knownBroadGoal
         && replyQuestions.some(question => paidMetaOutboundAskedForGoal(question));
     if (!resumesExplicitlyDeferredGoal
@@ -5662,7 +5669,13 @@ function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = 
             && isPaidMetaConcreteBlocker(turn));
     let joined = '';
     let fixedChunks = null;
-    if (/Incorrect Learn lesson count|full six-week course outline|course answer must return/i.test(issueText)) {
+    if (flowVariant === 'broad_pain' && /repeated a question/i.test(issueText) && !repairsEarnedOffer
+        && draftTextFromDraft(draft).replace(/[^.!?\n]*\?/g, '').trim()
+        && !/answer the price exactly|Incorrect Learn lesson count|full six-week course outline|course answer must return/i.test(issueText)) {
+        // Keep the useful answer; a repeated discovery question does not
+        // justify replacing it with another canned discovery turn.
+        joined = draftTextFromDraft(draft).replace(/[^.!?\n]*\?/g, '').trim();
+    } else if (/Incorrect Learn lesson count|full six-week course outline|course answer must return/i.test(issueText)) {
         fixedChunks = [
             'There are 31 lessons: an introductory lesson, then 30 across six weeks. You earn a Certificate of Completion by finishing the required lessons and practical actions.',
             'Week 1, Why change feels hard. Week 2, Work with your energy. Week 3, Build a rhythm that sticks.',
@@ -5674,15 +5687,17 @@ function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = 
         }
         joined = fixedChunks.join('\n\n');
     } else if (/answer the price exactly/i.test(issueText)) {
-        const knownBlocker = isPaidMetaConcreteBlocker(turn)
-            || paidMetaHistoryHasConcreteBlocker(history)
-            || qualifierHasKnownMetaAdBlocker(qualifier);
-        const nextQuestion = !fallbackGoal
-            ? "What's the main change you'd like to make over the next six weeks?"
-            : !knownBlocker
-                ? 'What usually gets in the way of making that happen consistently?'
-                : 'Want me to open your free personalised preview before you pay?';
-        joined = `It's one AUD ${resolveBalanceLearnCoursePriceLabel()} payment for the full six weeks, with no subscription or auto-renewal. ${nextQuestion}`;
+        // Correct the price without dropping the other questions in the turn.
+        const otherAnswers = draftTextFromDraft(draft)
+            .split(/(?<=[.!?])\s+|\n+/)
+            .filter(sentence => !/\$|\b(?:aud|payment|price|subscription|renewal)\b/i.test(sentence)
+                && !/\?/.test(sentence)).join(' ').trim();
+        const homeAnswer = /\b(?:without (?:a |the )?gym|(?:train|work out) at home)\b/i.test(turn)
+            && !/\bhome\b/i.test(otherAnswers)
+            ? 'Yes, you can train at home, with the workout setup fitted to your space and equipment.' : '';
+        const previewAnswer = asksPaidMetaPreviewCharge(turn)
+            ? 'The preview is free. Opening it does not charge you; payment only happens if you choose to purchase.' : '';
+        joined = [`It's one AUD ${resolveBalanceLearnCoursePriceLabel()} payment for the full six weeks, with no subscription or auto-renewal.`, otherAnswers, homeAnswer, previewAnswer].filter(Boolean).join(' ');
     } else if (/offered checkout without explicit transactional intent/i.test(issueText)) {
         const mealPlanCopy = flowVariant === 'broad_pain'
             ? 'meal plan fitted to your dietary preferences'

@@ -3970,7 +3970,7 @@ test('broad writer contract repairs missing terms, adds the native explainer, an
     assert.equal(resolvedCurriculumIssues.filter(isBlockingPaidMetaWriterContractIssue).length, 0);
 });
 
-test('price-first broad replies repair to exact terms and return to the missing goal', () => {
+test('price-first broad replies repair exact terms without repeating the unanswered goal', () => {
     const draft = {
         joined: 'It’s AUD $149 for the full 6 weeks, with no subscription or auto-renewal. Want the preview?',
         chunks: ['It’s AUD $149 for the full 6 weeks, with no subscription or auto-renewal. Want the preview?'],
@@ -3995,7 +3995,7 @@ test('price-first broad replies repair to exact terms and return to the missing 
     });
     assert.match(repaired.joined, /one AUD \$149 payment for the full six weeks/i);
     assert.match(repaired.joined, /no subscription or auto-renewal/i);
-    assert.match(repaired.joined, /main change.*next six weeks\?/i);
+    assert.doesNotMatch(repaired.joined, /\?/);
     assert.doesNotMatch(repaired.joined, /preview/i);
     const resolved = collectPaidMetaWriterContractIssues({
         draft: repaired,
