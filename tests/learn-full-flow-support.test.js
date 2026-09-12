@@ -2,6 +2,23 @@ const test=require('node:test'),assert=require('node:assert/strict');
 const api=require('../netlify/functions/ig-instant-draft')._test;
 const send=require('../netlify/functions/send-ig-reply')._test;
 const {LEARN_SUPPORT_CHOICE}=require('../netlify/functions/_lib/paid-meta-zoom');
+
+test('concise offer after introduction permits independent preview without repeating inclusions',()=>{
+ const history=[
+  {direction:'out',text:'Hey, how are you? Balance Learn is a six-week course in the app using neuroscience and psychology. You get workouts, food support and my weekly check-in.'},
+  {direction:'in',text:'I want to lose 5kg'},
+  {direction:'out',text:'What usually gets in the way of making that happen consistently?'},
+  {direction:'in',text:'The kids and chocolate after dinner make consistency difficult'},
+  {direction:'out',text:'A flexible food routine can include chocolate and fit around family life.'},
+  {direction:'out',text:"It's one AUD $149 payment, with no subscription or auto-renewal. Here's the course video."},
+  {direction:'out',text:'[VIDEO:course.mp4]'},
+  {direction:'out',text:LEARN_SUPPORT_CHOICE},
+ ];
+ const currentMessage='On my own please';
+ const draft=api.buildDeterministicPaidMetaConversationReply({history,currentMessage,flowVariant:'broad_pain',appPreviewUrl:'https://future-balance.netlify.app/p/synthetic-token-12345'});
+ assert.equal(draft.appPreviewHandoff,true);
+ assert.deepEqual(api.collectPaidMetaWriterContractIssues({draft,currentMessage,history,flowVariant:'broad_pain'}),[]);
+});
 test('ordinary planning obstacles are not held as app faults; real app faults still are',()=>{
  const {isAppProblemSupportRequest}=require('../netlify/functions/_lib/client-context');
  for(const text of ['I drive between jobs and need cold packed lunches, food planning is where I get stuck','Food is my problem','My workout routine is not working for me'])assert.equal(isAppProblemSupportRequest(text),false,text);

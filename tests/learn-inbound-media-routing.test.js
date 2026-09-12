@@ -15,14 +15,14 @@ test('decoded goal and shift constraints replace a repeated blocker question wit
  const draft={joined:"Before I line up your week, what's your blocker right now?",mediaDecode:{analysis_complete:true,analysis_succeeded:true,media_summary:"Goal: build strength. Available Tuesday and Saturday. Work shifts change each week. Dumbbells at home."}};
  const result=_test.applyDecodedPaidMetaAudioHandoff(draft,{flowVariant:'broad_pain',currentMessage:'Could this work for me?'});
  assert.doesNotMatch(result.joined,/your blocker|gets in the way/i);
- assert.match(result.joined,/preview/i);
+ assert.match(result.joined,/workouts on your own.*30-minute one-on-one Zoom sessions/i);
  assert.equal(result.mediaDecode,draft.mediaDecode);
  assert.notEqual(result.appPreviewHandoff,true);
  assert.equal(_test.applyDecodedPaidMetaAudioHandoff({...draft,mediaDecode:{...draft.mediaDecode,analysis_complete:false}},{flowVariant:'broad_pain'}).joined,draft.joined);
  for (const joined of ['Quick check so I tailor your plan properly: what’s the main real-life thing that usually makes consistency tricky with this schedule?', 'What makes it difficult to stay consistent?', 'Which part of your routine is hardest?']) {
   const repaired=_test.applyDecodedPaidMetaAudioHandoff({...draft,joined},{flowVariant:'broad_pain',currentMessage:'Could this work for me?'});
   assert.notEqual(repaired.joined,joined);
-  assert.match(repaired.joined,/preview/i);
+  assert.match(repaired.joined,/workouts on your own.*30-minute one-on-one Zoom sessions/i);
  }
 });
 

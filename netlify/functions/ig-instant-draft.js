@@ -1549,8 +1549,8 @@ function hasCompletePaidMetaOfferText(text = '') {
     const offersPreviewBeforeDecision = /\bbefore (?:(?:you )?pay|making a payment|(?:you )?decide(?: anything)?)/i.test(value)
         || /\b(?:free )?personalised (?:app )?preview first\b/i.test(value);
     return /\b(?:six|6)[- ]weeks?\b/i.test(value)
-        && /\b(?:workout|training program)\b/i.test(value)
-        && /\bmeal plan\b/i.test(value)
+        && /\b(?:workouts?|training program)\b/i.test(value)
+        && /\b(?:meal plan|food support)\b/i.test(value)
         && /\$\s*(?:149|450)\b/i.test(value)
         && /\b(?:no subscription|no auto-renewal|does not auto-renew|doesn't auto-renew)\b/i.test(value)
         && (offersPreviewBeforeDecision || value.includes(LEARN_SUPPORT_CHOICE));
@@ -5644,7 +5644,8 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
     const exactAcceptedPreview = draft?.appPreviewHandoff === true
         && draft?.replyMode === 'campaign_app_preview_handoff'
         && isMetaAppPreviewUrl(draft?.appPreviewUrl)
-        && (isExplicitPaidMetaPreviewRequest(turn) || isExplicitPaidMetaPreviewAcceptance(turn));
+        && (isExplicitPaidMetaPreviewRequest(turn) || isExplicitPaidMetaPreviewAcceptance(turn)
+            || resolveLearnSupportChoice(turn, history) === 'independent');
     // When the writer has chosen to progress after the blocker answer, enforce
     // the whole approved offer even if that obstacle is not in a keyword list.
     const lastOutboundForStage = [...history].reverse().find(item => item?.direction === 'out');
