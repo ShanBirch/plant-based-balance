@@ -2,6 +2,8 @@
 
 The six practical actions use `lib/learn-weekly-actions.js` as their shared instructions and completion criteria. This replaces the v2 self-confirmation checkbox. Meal, workout, community, setup and existing historical credits remain separate.
 
+See the [live browser verification record](LEARN_ACTION_COACH_REVIEW_QA_2026_09_12.md).
+
 | Week | Member records | Evidence required for coach confirmation |
 | --- | --- | --- |
 | 1 | Repeating pattern, situation/time and what immediately preceded it | Observation; no behaviour change required |
