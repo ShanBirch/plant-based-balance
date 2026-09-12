@@ -5405,6 +5405,13 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
         return [];
     }
     const issues = [];
+    const sharedHouseholdDiet = /\b(?:partner|both|household)\b/i.test(turn)
+        && /\b(?:vegetarian|vegan|meat|tofu|dietary|dinners?)\b/i.test(turn);
+    if (sharedHouseholdDiet && (
+        /\b(?:don['’]?t|do not|won['’]?t|wouldn['’]?t)\b[^.!?]{0,35}\b(?:need|have)\b[^.!?]{0,35}\b(?:two|separate)\b/i.test(reply)
+        || /\b(?:fitted|personalised|personalized|preview)\b[^.!?]{0,90}\bboth\b/i.test(reply))) {
+        issues.push('Household meal scope: suggest shared meal bases with separate protein choices, not a guaranteed joint plan or preview for both people. Respect the stated dislikes.');
+    }
     if (/\bBalance Learn\b/i.test(reply) && /\$\s*(?:149|450)\b/i.test(reply)) {
         const inboundContext = paidMetaCurrentInboundRunText(history, turn);
         const supplied = [
@@ -5629,7 +5636,7 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
 }
 
 function isBlockingPaidMetaWriterContractIssue(issue = '') {
-    return /Incorrect Learn lesson count|repeated a question|directly asked whether|answer why Shannon went vegan|meal-plan question directly|gluten-free question directly|sales suspicion|answer the sales question|answer the price exactly|do not ask for an email|offered checkout without explicit transactional intent|ignored the supplied plant-based duration|broad paid-ad reply|answered the goal question|full six-week course outline|course answer must return|earned paid-Meta offer is missing/i.test(String(issue || ''));
+    return /Household meal scope|Incorrect Learn lesson count|repeated a question|directly asked whether|answer why Shannon went vegan|meal-plan question directly|gluten-free question directly|sales suspicion|answer the sales question|answer the price exactly|do not ask for an email|offered checkout without explicit transactional intent|ignored the supplied plant-based duration|broad paid-ad reply|answered the goal question|full six-week course outline|course answer must return|earned paid-Meta offer is missing/i.test(String(issue || ''));
 }
 
 function filterVerifiedPreviewHandoffContractIssues({
@@ -5670,7 +5677,9 @@ function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = 
             && isPaidMetaConcreteBlocker(turn));
     let joined = '';
     let fixedChunks = null;
-    if (flowVariant === 'broad_pain' && /repeated a question/i.test(issueText) && !repairsEarnedOffer
+    if (/Household meal scope/i.test(issueText)) {
+        joined = `You can aim for shared meal bases with different protein options for you and your partner.${/\btofu\b/i.test(turn) ? ' We can leave tofu out of your plan.' : ''} It may still take some separate prep. Your meal setup and preview are personalised to you, rather than a joint plan for two people.`;
+    } else if (flowVariant === 'broad_pain' && /repeated a question/i.test(issueText) && !repairsEarnedOffer
         && draftTextFromDraft(draft).replace(/[^.!?\n]*\?/g, '').trim()
         && !/answer the price exactly|Incorrect Learn lesson count|full six-week course outline|course answer must return/i.test(issueText)) {
         // Keep the useful answer; a repeated discovery question does not

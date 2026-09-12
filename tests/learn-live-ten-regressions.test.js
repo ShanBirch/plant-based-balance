@@ -72,3 +72,15 @@ test('price repair does not duplicate existing home and no-charge answers',()=>{
     assert.equal((draft.joined.match(/charg/gi)||[]).length,1);
     assert.ok(draft.chunks.length<=2);
 });
+
+test('household preferences do not promise a joint personalised plan or identical dinners',()=>{
+    const a=args('I eat meat, my partner is vegetarian, and we both hate tofu. Can the meals work for both of us without cooking two separate dinners?', 'The meals are fitted to both of your dietary preferences, so you don’t need to cook two separate dinners. I can show a preview for both of you.');
+    const issues=collectPaidMetaWriterContractIssues(a);
+    assert.ok(issues.some(x=>/Household meal scope/.test(x)));
+    const draft=buildPaidMetaGuaranteedContractFallback({...a,issues});
+    assert.match(draft.joined,/shared meal bases/);
+    assert.match(draft.joined,/leave tofu out/);
+    assert.match(draft.joined,/separate prep/);
+    assert.match(draft.joined,/personalised to you/);
+    assert.ok(!collectPaidMetaWriterContractIssues({...a,draft}).some(x=>/Household meal scope/.test(x)));
+});
