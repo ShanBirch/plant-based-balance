@@ -23,6 +23,19 @@ const cases = [
     {text: 'Can three days a week work?', needs: [/three days/i], absent: [/overwhelm/i]},
     {text: 'Not weekends or cravings. It is chocolate after school pickup.', needs: [], absent: [/cravings and weekends/i, /account for.*weekends/i]},
 ];
+test('grocery bridge explains practical fit and keeps media, price and decision',async()=>{
+ const currentMessage='Food shopping on a tight grocery budget makes meal planning hard';
+ const chunks=buildPaidMetaTailoredOfferChunks(currentMessage,'Lose weight','broad_pain');
+ const draft={chunks,joined:chunks.join('\n'),replyMode:'campaign_sales_progression',model:'test',flowVariant:'broad_pain',videoAttachmentUrl:'course.mp4'};
+ const result=await personalisePaidMetaOffer({draft,currentMessage,writer:async contents=>{
+  assert.match(contents[0].parts[0].text,/NOT a paraphrase exercise/);
+  return JSON.stringify({acknowledgement:'We can keep your meal plan based on ordinary supermarket ingredients and simple repeatable meals. The food side of Learn helps you build habits around that.',evidence:['tight grocery budget']});
+ }});
+ assert.ok(!result.error);assert.match(result.chunks[0],/ordinary supermarket ingredients/);
+ assert.doesNotMatch(result.joined,/neuroscience and psychology|budget makes meal planning hard/);
+ assert.match(result.joined,/six weeks.*workout program.*meal plan.*weekly training and food check-in/);
+ assert.equal(result.chunks.at(-1),chunks.at(-1));assert.equal(result.videoAttachmentUrl,draft.videoAttachmentUrl);
+});
 for (const scenario of cases) {
     test(`the offer backup stays grounded: ${scenario.text}`, () => {
         const chunks = buildPaidMetaTailoredOfferChunks(scenario.text, 'Lose fat and build muscle', 'broad_pain');
@@ -67,22 +80,24 @@ test('final personal acknowledgement sees the full batch and preserves the offer
     assert.notEqual(result,draft);
     assert.equal(result.chunks[0],draft.chunks[0]);
     assert.match(result.chunks[1],/^Sounds like the kids and chocolate might/);
-    assert.equal(result.chunks[1].slice(result.chunks[1].indexOf('Balance Learn')),draft.chunks[1].slice(draft.chunks[1].indexOf('Balance Learn')));
-    assert.deepEqual(result.chunks.slice(2),draft.chunks.slice(2));
+    assert.doesNotMatch(result.chunks[1],/neuroscience and psychology/);
+    assert.match(result.chunks[2],/six weeks.*workout program.*meal plan.*weekly training and food check-in/);
+    assert.match(result.chunks[2],/\$149.*no subscription or auto-renewal.*Here's the course video/);
+    assert.equal(result.chunks.at(-1),draft.chunks.at(-1));
     assert.equal(result.videoAttachmentUrl,draft.videoAttachmentUrl);
     assert.equal(result.imageAttachmentUrl,draft.imageAttachmentUrl);
 });
 
-test('invalid personalisation or a failed writer preserves a sendable fallback', async () => {
+test('invalid personalisation or a failed writer holds the offer privately', async () => {
     const chunks=buildPaidMetaTailoredOfferChunks('Chocolate','Lose weight','broad_pain');
     const draft={chunks,joined:chunks.join('\n'),replyMode:'campaign_sales_progression',model:'test',flowVariant:'broad_pain'};
     for (const payload of [
         {acknowledgement:'Weekends and cravings are your problem.',evidence:['Chocolate']},
         {acknowledgement:'Kids make it hard.',evidence:['Kids']},
         {acknowledgement:'Chocolate is the issue?',evidence:['Chocolate']},
-        {acknowledgement:'x'.repeat(201),evidence:['Chocolate']},
-    ]) assert.equal(await personalisePaidMetaOffer({draft,currentMessage:'Chocolate',writer:async()=>JSON.stringify(payload)}),draft);
-    assert.equal(await personalisePaidMetaOffer({draft,currentMessage:'Chocolate',writer:async()=>{throw Error('offline');}}),draft);
+        {acknowledgement:'x'.repeat(361),evidence:['Chocolate']},
+    ]) assert.ok((await personalisePaidMetaOffer({draft,currentMessage:'Chocolate',writer:async()=>JSON.stringify(payload)})).error);
+    assert.ok((await personalisePaidMetaOffer({draft,currentMessage:'Chocolate',writer:async()=>{throw Error('offline');}})).error);
 });
 
 test('multiple quoted excerpts in one evidence item remain individually grounded', async () => {
@@ -94,7 +109,7 @@ test('multiple quoted excerpts in one evidence item remain individually grounded
     assert.match(result.model,/personal-ack/);
     assert.match(result.joined,/^Got it, it is the petrol station chocolate/);
     const invalid = await personalisePaidMetaOffer({draft,currentMessage,writer:async()=>JSON.stringify({acknowledgement:'Chocolate is the issue.',evidence:['"Chocolate","invented detail"']})});
-    assert.equal(invalid,draft);
+    assert.ok(invalid.error);
 });
 
 test('a corrected blocker does not force the writer to repeat the superseded detail', () => {
