@@ -11049,6 +11049,56 @@ html[data-pbb-theme="light"] .course-card-art {
     padding-bottom: 120px;
 }
 
+/* Your Week owns its scroll so reopening it cannot inherit another screen's offset. */
+@media (max-width: 640px), (max-height: 500px) {
+    #learning-content > .course-week-page {
+        position: fixed;
+        inset: 0;
+        height: 100dvh;
+        min-height: 0;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+        box-sizing: border-box;
+        padding-top: 0;
+        padding-bottom: calc(120px + max(20px, env(safe-area-inset-bottom, 0px)));
+        background: var(--course-surface, #111);
+        color: var(--course-copy);
+        z-index: 20;
+    }
+    #learning-content > .course-week-page > .course-detail-nav {
+        position: sticky;
+        top: 0;
+        padding-top: calc(14px + max(42px, env(safe-area-inset-top, 0px)));
+        background: var(--course-surface, #111);
+        z-index: 5;
+    }
+}
+
+.course-week-page-section > p {
+    color: var(--course-muted);
+    -webkit-text-fill-color: var(--course-muted);
+    font-size: .8rem;
+    line-height: 1.5;
+}
+
+#course-learning-home .course-week-action-copy strong,
+#course-learning-home .course-week-action-copy small {
+    white-space: normal;
+    text-overflow: clip;
+    overflow: visible;
+    overflow-wrap: anywhere;
+    line-height: 1.45;
+}
+#course-learning-home .course-week-action-copy strong { font-size: .82rem; }
+#course-learning-home .course-week-action-copy small { font-size: .76rem; }
+#course-learning-home .course-week-action-copy small b { display: block; margin-top: 6px; color: var(--course-copy); }
+#course-learning-home .course-week-action-open { min-height: 44px; }
+@media (max-width:380px) {
+    #course-learning-home .course-week-action-row { grid-template-columns: 28px minmax(0,1fr); align-items: start; }
+    #course-learning-home .course-week-action-open { grid-column: 2; justify-self: start; }
+}
+
 .course-week-page-header {
     width: calc(100% - 30px);
     max-width: 650px;

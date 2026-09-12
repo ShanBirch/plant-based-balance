@@ -359,6 +359,9 @@ html[data-pbb-theme="dark"].pbb-unified-next-steps #next-obvious-steps-card.is-u
 #social-journey-onboarding { display: none; position: fixed; inset: 0; z-index: 10045; padding: calc(20px + env(safe-area-inset-top, 0px)) 18px calc(20px + env(safe-area-inset-bottom, 0px)); background: rgba(0, 0, 0, .78); backdrop-filter: blur(9px); align-items: center; justify-content: center; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
 #social-journey-onboarding.is-open { display: flex; }
 .social-journey-onboarding__sheet { width: 100%; max-width: 500px; max-height: 100%; overflow-y: auto; border: 1px solid var(--sj-border); border-radius: 25px; background: var(--sj-panel); color: var(--sj-cream); -webkit-text-fill-color: var(--sj-cream); box-shadow: 0 28px 80px rgba(0, 0, 0, .5); }
+@media (max-width:640px),(max-height:500px) {
+  #social-journey-onboarding { height:100dvh; box-sizing:border-box; overflow:hidden; padding-top:calc(16px + max(42px,env(safe-area-inset-top,0px))); padding-bottom:calc(16px + max(20px,env(safe-area-inset-bottom,0px))); }
+}
 .social-journey-onboarding__visual { min-height: 210px; padding: 25px 22px; background: linear-gradient(145deg, #24211b, #101010); color: var(--sj-cream); -webkit-text-fill-color: var(--sj-cream); display: flex; flex-direction: column; justify-content: flex-end; position: relative; overflow: hidden; }
 .social-journey-onboarding__visual::after { content: ""; position: absolute; right: -40px; top: -45px; width: 150px; height: 150px; border: 1px solid rgba(245, 217, 138, .18); border-radius: 50%; }
 .social-journey-onboarding__step { position: relative; color: var(--sj-gold-light); -webkit-text-fill-color: var(--sj-gold-light); font-size: .64rem; font-weight: 950; letter-spacing: .11em; text-transform: uppercase; }

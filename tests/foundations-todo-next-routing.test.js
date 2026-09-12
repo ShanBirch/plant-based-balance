@@ -6,7 +6,7 @@ const test = require('node:test');
 const root = path.join(__dirname, '..');
 const journey = fs.readFileSync(path.join(root, 'js/dashboard/pbb-social-journey.js'), 'utf8');
 const nextSteps = fs.readFileSync(path.join(root, 'js/dashboard/pbb-next-obvious-steps.js'), 'utf8');
-const foundations = journey.slice(journey.indexOf('const WEEK_DEFINITIONS'), journey.indexOf("week: 7,"));
+const foundations = journey.slice(journey.indexOf('const GETTING_STARTED_TASKS'), journey.indexOf("week: 7,"));
 
 test('Foundations Weeks 1 to 6 expose the intended actionable destinations', () => {
   const expected = [
@@ -18,7 +18,6 @@ test('Foundations Weeks 1 to 6 expose the intended actionable destinations', () 
     ['w3_workout_feed', 'movement'],
     ['w3_weekly_checkin', 'checkin'],
     ['w4_meal_feed', 'meals'],
-    ['w4_diary_feed', 'diary'],
     ['w4_weekly_checkin', 'checkin'],
     ['w5_pb_feed', 'movement'],
     ['w5_weekly_checkin', 'checkin'],
@@ -37,7 +36,7 @@ test('Home To Do Next opens the due weekly action directly', () => {
   assert.match(journey, /if \(item\.action === 'feed'\) return 'Open Feed'/);
   assert.match(journey, /if \(item\.action === 'meals'\) return 'Open Nutrition'/);
   assert.match(journey, /if \(item\.action === 'movement'\) return 'Open Movement'/);
-  assert.match(journey, /if \(item\.type === 'weekly_checkin'\) return item\.complete \? 'Sent' : 'Open check-in'/);
+  assert.match(journey, /item\.type === 'weekly_checkin' \|\| item\.type === 'learn_experiment'/);
   assert.match(journey, /if \(action === 'checkin'[\s\S]*?openWeeklyCheckinPreview/);
 });
 

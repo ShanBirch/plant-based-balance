@@ -8,8 +8,8 @@ const journey = fs.readFileSync(path.join(root, 'js/dashboard/pbb-social-journey
 const diary = fs.readFileSync(path.join(root, 'js/dashboard/dashboard-script-1-daily_weighin_card_logic.js'), 'utf8');
 const migration = fs.readFileSync(path.join(root, 'supabase/migrations/20260825113000_course_diary_and_wearable_evidence.sql'), 'utf8');
 
-test('Foundations Week 4 and every Identity week require an exact diary-to-Feed action', () => {
-  assert.match(journey, /task\('w4_diary_feed',[\s\S]*?'foundations_diary_feed'/);
+test('Learn uses the weekly report while every Identity week retains its diary-to-Feed action', () => {
+  assert.doesNotMatch(journey, /task\('w4_diary_feed'/);
   for (let week = 7; week <= 12; week += 1) {
     assert.match(journey, new RegExp(`task\\('w${week}_diary_feed',[\\s\\S]*?'identity_diary_feed'`));
     assert.match(migration, new RegExp(`'w${week}_diary_feed'`));
@@ -19,7 +19,7 @@ test('Foundations Week 4 and every Identity week require an exact diary-to-Feed 
 });
 
 test('diary completion joins the exact course action to a real diary check-in in the same course week', () => {
-  assert.match(journey, /\.gte\('checkin_date', state\.week_started_at\)[\s\S]*?\.lt\('checkin_date', addDaysKey\(state\.week_started_at, 7\)\)/);
+  assert.match(journey, /row\.checkin_date < state\.week_started_at \|\| row\.checkin_date >= addDaysKey\(state\.week_started_at, 7\)/);
   assert.match(journey, /row\.course_action_id === currentDiaryTaskId/);
   assert.match(journey, /card\.card_type === 'fitness_diary'/);
   assert.match(journey, /diaryEntryDates\.has\(String\(card\.diary_date \|\| ''\)\)/);

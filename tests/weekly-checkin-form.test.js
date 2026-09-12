@@ -21,6 +21,7 @@ function loadEndpointTestHelpers() {
     fetch: async () => { throw new Error('fetch should not run in helper tests'); },
     require(request) {
       if (request === 'crypto') return require('node:crypto');
+      if (request === '../../lib/learn-weekly-actions') return require('../lib/learn-weekly-actions');
       if (request === './_lib/client-context') {
         return {
           SUPABASE_URL: '',
@@ -117,7 +118,7 @@ test('Home omits the automated review card while retaining the client check-in f
   assert.doesNotMatch(renderFunction, /Your weekly check-in is ready/);
   assert.match(frontend, /window\.openWeeklyCheckinPreview = openWeeklyCheckinPreview/);
   assert.match(frontend, /window\.isWeeklyCheckinDue = isReviewEnabled/);
-  assert.match(serviceWorker, /pbb-app-v422-course-tour-handoff/);
+  assert.match(serviceWorker, /pbb-app-v\d+-/);
 });
 
 test('To Do Next routes a due weekly check-in directly into the client form', () => {

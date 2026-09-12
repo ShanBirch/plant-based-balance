@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const learnActions = require('../../lib/learn-weekly-actions');
 
 const {
     SUPABASE_URL,
@@ -147,6 +148,8 @@ function validatePayload(body = {}, now = new Date()) {
     const blocker = cleanString(body.blocker, 600);
     const note = cleanString(body.note, 900);
     const courseLearning = cleanString(body.course_learning, 900);
+    const experimentCompleted = body.course_experiment_completed === true;
+    if (experimentCompleted && courseLearning.length < 2) return { error: 'Add what happened when you tried your course experiment.' };
     const confidence = Math.round(Number(body.confidence || 0));
 
     if (!OVERALL_VALUES.has(overall)) return { error: 'Choose how the week felt overall.' };
@@ -168,6 +171,7 @@ function validatePayload(body = {}, now = new Date()) {
             support,
             note,
             course_learning: courseLearning,
+            course_experiment_completed: experimentCompleted,
             goals: cleanGoals(body.goals),
         },
     };
@@ -212,7 +216,7 @@ function asObject(value) {
 async function saveResponse(clientId, response) {
     const rows = await supabaseQuery(
         `daily_checkins?select=id,additional_data&user_id=eq.${encodeURIComponent(clientId)}&checkin_date=eq.${response.week_start}&limit=1`
-    ).catch(() => []);
+    );
     const existing = rows[0] || null;
     const existingAdditionalData = asObject(existing?.additional_data);
     const weeklyCheckins = mergeWeeklyCheckinResponses(existingAdditionalData, response);
@@ -228,6 +232,7 @@ async function saveResponse(clientId, response) {
             body: { additional_data: additionalData },
             prefer: 'return=minimal',
         });
+        await verifySavedResponse(clientId, response);
         return;
     }
 
@@ -240,6 +245,16 @@ async function saveResponse(clientId, response) {
         }],
         prefer: 'resolution=merge-duplicates,return=minimal',
     });
+    await verifySavedResponse(clientId, response);
+}
+
+async function verifySavedResponse(clientId, response) {
+    const rows = await supabaseQuery(`daily_checkins?select=additional_data&user_id=eq.${encodeURIComponent(clientId)}&checkin_date=eq.${response.week_start}&limit=1`);
+    const saved = asObject(rows[0]?.additional_data);
+    const responses = Array.isArray(saved.weekly_checkins) ? saved.weekly_checkins : [];
+    if (!responses.some(item => item.submitted_at === response.submitted_at && item.occurrence === response.occurrence && item.course_learning === response.course_learning)) {
+        throw new Error('Weekly check-in readback did not match');
+    }
 }
 
 function mergeWeeklyCheckinResponses(existingAdditionalData, response) {
@@ -287,6 +302,7 @@ function responseSummary(response) {
         `Support requested: ${SUPPORT_LABELS[response.support]}.`,
         response.note ? `Anything else: ${response.note}` : '',
         response.course_learning ? `Course learning: ${response.course_learning}` : 'Course learning: nothing added.',
+        response.course_week ? `Learn week ${response.course_week}: ${learnActions.experiment(response.course_week)?.prompt || ''} Experiment tried: ${response.course_experiment_completed ? 'yes' : 'not confirmed'}.` : '',
         `Weekly goals: ${goalSummary(response.goals)}`,
     ].filter(Boolean).join('\n');
 }
@@ -375,6 +391,13 @@ exports.handler = async (event) => {
     if (!coachId) return json(500, { error: 'No coach found' });
 
     try {
+        // Resolve course identity on the server, including an elapsed week that
+        // the client has not refreshed yet. Never attach a report to a stale form.
+        const journeyRows = await supabaseQuery(`social_journey_progress?select=current_week,week_started_at&user_id=eq.${encodeURIComponent(authUser.id)}&limit=1`);
+        const courseWeek = learnActions.effectiveWeek(journeyRows[0]);
+        if (Number(body.course_week) && Number(body.course_week) !== courseWeek) return json(409, { error: 'Your course week has changed. Reopen the check-in to see the current experiment.' });
+        if (Number(body.course_week) && learnActions.experiment(courseWeek)) response.course_week = courseWeek;
+        else response.course_experiment_completed = false;
         await saveResponse(authUser.id, response);
         const suggestedMessage = await generateReplyDraft({
             clientName: profile.name,
@@ -383,7 +406,7 @@ exports.handler = async (event) => {
             response,
         });
         const summary = responseSummary(response);
-        const alert = await insertCoachAlert({
+        const alertRow = {
             client_id: authUser.id,
             client_name: profile.name,
             coach_id: coachId,
@@ -404,7 +427,25 @@ exports.handler = async (event) => {
                 drafted_at: new Date().toISOString(),
                 draft_model: suggestedMessage ? 'shannon_voice_chain' : null,
             },
-        }, idempotencyKey(authUser.id, response.week_start, occurrence));
+        };
+        const key = idempotencyKey(authUser.id, response.week_start, occurrence);
+        let alert = await insertCoachAlert(alertRow, key);
+        if (alert.deduped && alert.alertId) {
+            const rows = await supabaseQuery(`coach_alerts?select=id,status,data&id=eq.${encodeURIComponent(alert.alertId)}&limit=1`);
+            const existing = rows[0];
+            if (existing?.status === 'pending') {
+                await supabaseQuery(`coach_alerts?id=eq.${encodeURIComponent(alert.alertId)}&status=eq.pending`, {
+                    method: 'PATCH', body: { description: alertRow.description, suggested_message: alertRow.suggested_message, data: alertRow.data }, prefer: 'return=minimal',
+                });
+            } else if (asObject(existing?.data).activity_snapshot !== summary) {
+                // A revised answer after coach review needs a new review receipt.
+                const revision = crypto.createHash('sha256').update(summary).digest('hex').slice(0, 16);
+                alert = await insertCoachAlert({ ...alertRow, title: `${profile.name} updated their weekly check-in` }, key + ':' + revision);
+            }
+        }
+        if (!alert.alertId) throw new Error('Coach review receipt could not be confirmed');
+        const receipt = await supabaseQuery(`coach_alerts?select=id,data&id=eq.${encodeURIComponent(alert.alertId)}&limit=1`);
+        if (asObject(receipt[0]?.data).activity_snapshot !== summary) throw new Error('Coach review readback did not match');
 
         return json(200, {
             ok: true,

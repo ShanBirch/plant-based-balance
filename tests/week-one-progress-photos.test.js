@@ -7,7 +7,7 @@ function fixture() {
   const c = { console, URLSearchParams, Intl, Date, setTimeout() {}, photos: [], writes: [],
     document: { getElementById() { return null; } },
     localStorage: { getItem() { return 'true'; } }, sessionStorage: { getItem() { return null; } } };
-  c.window = c;
+  c.window = c; c.BalanceLearnWeeklyActions = require('../lib/learn-weekly-actions');
   c.location = { hostname: 'localhost', search: '' };
   c.currentUser = { id: 'test-member' };
   c.supabaseClient = { from(table) {
@@ -37,25 +37,13 @@ test('only all three saved angles inside the course week count, including replac
   assert.equal(check(photo()), true);
   for (const row of [photo(['front']), photo(['front', 'front', 'back']), photo(undefined, '2026-09-06T13:59:59Z'), photo(undefined, '2026-09-13T14:00:00Z'), { notes: 'invalid' }]) assert.equal(check(row), false);
 });
-test('one photo action drives To Do Next, course progress and the persisted snapshot', async () => {
+test('starting photo evidence is saved separately from recurring weekly actions', async () => {
   const c = fixture();
   await c.fixture.calculateProgress();
-  assert.equal(c.fixture.getUnifiedAction().taskId, 'w1_progress_photos');
-  c.openProgressPhotoCapture = () => { c.opened = true; };
-  await c.fixture.taskAction('w1_progress_photos');
-  assert.equal(c.opened, true);
-  assert.equal(c.fixture.getFoundationsCourseProgress().weekProgress[0].tasks.find(t => t.id === 'w1_progress_photos').complete, false);
-  c.photos = [photo()];
-  await c.fixture.calculateProgress();
-  assert.notEqual(c.fixture.getUnifiedAction()?.taskId, 'w1_progress_photos');
-  const saved = c.writes.at(-1);
-  assert.equal(saved.progress_snapshot.tasks.find(t => t.id === 'w1_progress_photos').complete, true);
-  assert.equal(saved.settings.foundation_week_progress['1'].tasks.find(t => t.id === 'w1_progress_photos').complete, true);
-  assert.match(c.fixture.renderTasks(), /Photos saved ✓/);
-});
-test('members already beyond week one are not relocked by the added action', () => {
-  const c = fixture(); c.fixture.set({ current_week: 2, settings: {} });
-  const task = c.fixture.getFoundationsCourseProgress().weekProgress[0].tasks.find(t => t.id === 'w1_progress_photos');
-  assert.equal(task.complete, true);
-  assert.equal(task.actionLabel, 'Not required for your earlier week');
+  assert.equal(c.fixture.getFoundationsCourseProgress().setupTasks.find(t=>t.id==='w1_progress_photos').complete,false);
+  c.openProgressPhotoCapture=()=>{c.opened=true;};
+  await c.fixture.taskAction('w1_progress_photos'); assert.equal(c.opened,true);
+  c.photos=[photo()]; await c.fixture.calculateProgress();
+  assert.equal(c.writes.at(-1).settings.learn_setup_progress.find(t=>t.id==='w1_progress_photos').complete,true);
+  assert.equal(c.fixture.getFoundationsCourseProgress().weekProgress[0].tasks.length,5);
 });

@@ -607,7 +607,7 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
 <script src="js/dashboard/script_part_4.js?v=theme-toggle-shell-v2"></script>
 
 <link rel="stylesheet" href="css/dashboard/dashboard-style-1.css?v=85-original-3d-mascot">
-<link rel="stylesheet" href="css/dashboard/pbb-social-journey.css?v=27-direct-course-lesson">
+<link rel="stylesheet" href="css/dashboard/pbb-social-journey.css?v=28-learn-weekly-actions">
 
 <script>if(window._crumb)window._crumb('head_complete');</script>
 <style id="balance-earned-celebration-styles">
@@ -1973,16 +1973,18 @@ if(!window._pbbIsIOSSafari) {
 if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-progressphoto.js?v=13-course-photo-sync"><\/script>');
 document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=36-community-challenge"><\/script>');
-    document.write('<script src="js/dashboard/pbb-social-journey.js?v=55-week1-progress-photos"><\/script>');
+    document.write('<script src="lib/learn-weekly-actions.js?v=1"><\/script>');
+    document.write('<script src="js/dashboard/pbb-social-journey.js?v=56-learn-weekly-actions"><\/script>');
     document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=61-course-photo-sync"><\/script>');
-    document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=29-accountability-checkout"><\/script>');
+    document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=30-learn-weekly-actions"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
     window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=13-course-photo-sync');
 window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=36-community-challenge');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=55-week1-progress-photos');
+    window._pbbDeferredQueue.push('lib/learn-weekly-actions.js?v=1');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=56-learn-weekly-actions');
     window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=61-course-photo-sync');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=29-accountability-checkout');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=30-learn-weekly-actions');
 }
 </script>
 
@@ -14022,7 +14024,8 @@ if(!window._pbbIsIOSSafari) {
   }
 
   const steps = [
-    { tab:'learning', sel:'#balance-foundations-course-card', fallbackSel:'.course-library-intro', title:'Your starting progress photos', body:'Week 1 of Balance Learn includes front, side and back progress photos. Open Take photos from your course actions or To Do Next. Saving all three ticks off the same action in both places. Sharing to Feed is optional.' },
+    { tab:'learning', sel:'#learning-content', title:'Five actions for your week', body:'Open Your Week in Balance Learn. Track meals, complete workouts, try one lesson experiment, join in with the community and send your weekly check-in. Saved activity ticks off your course actions. Your one-time setup has its own checklist.' },
+    { tab:'learning', sel:'#balance-foundations-course-card', fallbackSel:'.course-library-intro', title:'Your starting progress photos', body:'Open Getting started under Your Week in Balance Learn to save front, side and back starting photos. Saving all three ticks off your setup action. Sharing to Feed is optional.' },
     { tab:'meals', sel:'#browse-plans-pill', title:'Six weeks of meals, ready to open', body:'Open your meal plan to browse all six weeks. Each week keeps the five-meal rhythm, with different recipes, photos and a shopping list matched to your portions. Your plan moves to the next week automatically and repeats after week six.' },
     { tab:'learning', sel:'#course-card-balance-master', fallbackSel:'#balance-path', title:'Your weekly Master actions', body:'Master has three or four required actions each week. Save your answers and plans, submit your lift videos, and see each completed action recorded for you and Shannon. Quizzes and reflections complete your week.' },
     { tab:'meals', sel:'#browse-plans-pill', title:'Meals that match your eating style', body:'Choose your eating style and food restrictions in Profile. Your weekly recipes include measured portions, matching photos and a shopping list built from those portions.' },
@@ -17020,7 +17023,8 @@ window.endFeatureTour = function(skipped){
   // First-run onboarding now uses the guided walkthrough only. Keep legacy
   // feature-drop entries dormant so users do not see duplicate spotlight cards.
   allFeatures = [];
-  allFeatures.push({ id:'learn-week1-progress-photos-v1', tab:'learning', sel:'#balance-foundations-course-card', fallbackSel:'.course-library-intro', title:'Your starting progress photos', body:'Week 1 of Balance Learn includes front, side and back progress photos. Open Take photos from your course actions or To Do Next. Saving all three ticks off the same action in both places. Sharing to Feed is optional.' });
+  allFeatures.push({ id:'learn-weekly-actions-v2', tab:'learning', sel:'#learning-content', title:'Five actions for your week', body:'Open Your Week in Balance Learn. Track meals, complete workouts, try one lesson experiment, join in with the community and send your weekly check-in. Saved activity ticks off your course actions. Your one-time setup has its own checklist.' });
+  allFeatures.push({ id:'learn-week1-progress-photos-v1', tab:'learning', sel:'#balance-foundations-course-card', fallbackSel:'.course-library-intro', title:'Your starting progress photos', body:'Open Getting started under Your Week in Balance Learn to save front, side and back starting photos. Saving all three ticks off your setup action. Sharing to Feed is optional.' });
   allFeatures.push({
     id: 'workout-complete-share-all-members-v1',
     tab: 'movement-tab',
@@ -18860,7 +18864,7 @@ if (window._pbbIsIOSSafari) {
 }
 </script>
 
-<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=124-course-safe-area">
+<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=125-learn-weekly-actions">
 <link rel="stylesheet" href="css/dashboard/pbb-quiz-theme.css?v=1-balance-gold">
 <link rel="stylesheet" href="css/dashboard/pbb-meal-plan.css?v=3-six-weeks">
 <link rel="stylesheet" href="css/dashboard/pbb-onboarding-comeback.css?v=9-learn-welcome">
@@ -21130,11 +21134,11 @@ if (window._pbbIsIOSSafari) {
             });
             if (window.showQuizBattleInviteModal || learningAlreadyRequested) return;
             var s = document.createElement('script');
-      s.src = 'lib/learning-inline.js?v=55-balance-quiz-gold';
+      s.src = 'lib/learning-inline.js?v=56-learn-weekly-actions';
             document.head.appendChild(s);
         }, { once: true });
     } else {
-    document.write('<script src="lib/learning-inline.js?v=55-balance-quiz-gold"><\/script>');
+    document.write('<script src="lib/learning-inline.js?v=56-learn-weekly-actions"><\/script>');
     }
     </script>
     <!-- Battle System & Logic Overrides (130 lines — deferred on iOS) -->

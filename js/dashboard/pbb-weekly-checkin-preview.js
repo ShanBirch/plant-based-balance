@@ -529,6 +529,25 @@
     });
   }
 
+  function restoreWeeklyResponse(form, rows) {
+    if (!form) return;
+    var responses = (rows || []).flatMap(function(row) {
+      var extra = readCheckinExtra(row);
+      return (Array.isArray(extra.weekly_checkins) ? extra.weekly_checkins : []).concat(extra.weekly_checkin ? [extra.weekly_checkin] : []);
+    });
+    var saved = responses.find(function(item) { return item.week_start === getWeekWindow().startKey && (item.occurrence || 'weekly') === (activeOccurrence() || 'weekly'); });
+    if (!saved) return;
+    ['overall', 'win', 'blocker', 'confidence', 'support', 'note', 'course_learning'].forEach(function(name) {
+      var fields = form.querySelectorAll('[name="' + name + '"]');
+      fields.forEach(function(field) {
+        if (field.type === 'radio') field.checked = field.value === String(saved[name]);
+        else field.value = saved[name] || '';
+      });
+    });
+    var checkbox = form.querySelector('[name="course_experiment_completed"]');
+    if (checkbox) checkbox.checked = saved.course_experiment_completed === true && Number(saved.course_week) === Number(form.elements.course_week.value);
+  }
+
   function cleanFeedbackText(value){
     return String(value == null ? '' : value).trim().replace(/\s+/g, ' ').replace(/[.!?]+$/g, '');
   }
@@ -948,6 +967,7 @@
     var moodRows = payload[10] || [];
 
     if (!isExplicitPreviewEnabled() && hasSubmittedWeeklyResponse(checkins, week.startKey, activeOccurrence())) {
+      if (window.socialJourney && typeof window.socialJourney.refresh === 'function') await window.socialJourney.refresh();
       markReviewCompleted();
     }
 
@@ -1138,7 +1158,7 @@
       '@keyframes pbbWciXpSweep{100%{transform:translateX(65%)}}',
       '@keyframes pbbWciXpSpark{0%{opacity:0;transform:translate(0,0) scale(.7)}18%{opacity:1}100%{opacity:0;transform:translate(var(--spark-x),var(--spark-y)) scale(.2)}}',
       '@media (max-width:420px){.pbb-wci-metrics,.pbb-wci-grid-3{grid-template-columns:1fr}.pbb-wci-actions{grid-template-columns:1fr}.pbb-wci-card-title{font-size:1.08rem}.pbb-wci-hero h2{font-size:1.35rem}}',
-      '@media (max-width:640px){.pbb-wci-overlay{padding:0}.pbb-wci-sheet{max-width:none;min-height:100%;max-height:100%;border-radius:0;border-left:0;border-right:0}.pbb-wci-body{padding-left:16px;padding-right:16px}}'
+      '@media (max-width:640px),(max-height:500px){.pbb-wci-overlay{padding:0;height:100dvh;overflow:hidden}.pbb-wci-sheet{max-width:none;height:100%;min-height:0;max-height:100%;border-radius:0;border-left:0;border-right:0}.pbb-wci-head{padding-top:calc(15px + max(42px,env(safe-area-inset-top,0px)))}.pbb-wci-body{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-bottom:calc(22px + max(20px,env(safe-area-inset-bottom,0px)))}}'
     ].join('');
     document.head.appendChild(style);
   }
@@ -1310,9 +1330,11 @@
       '    </section>',
       '    <label class="pbb-wci-field">',
       '      <span class="pbb-wci-field-label">What did you learn from the Course this week?</span>',
-      '      <span class="pbb-wci-field-help">Optional if you did not complete a Course lesson this week.</span>',
+      '      <span class="pbb-wci-field-help">' + escapeHtml(learnExperiment() ? learnExperiment().prompt + ' Save your answer here to tick off this week’s experiment in Learn. If you have not tried it yet, you can still send your weekly check-in.' : 'Optional if you did not complete a Course lesson this week.') + '</span>',
+      '      <input type="hidden" name="course_week" value="' + (learnExperiment() ? learnExperiment().week : '') + '">',
       '      <textarea class="pbb-wci-input" name="course_learning" maxlength="900" placeholder="One idea, pattern, or action that stood out..."></textarea>',
       '    </label>',
+      learnExperiment() ? '    <label class="pbb-wci-field"><span><input type="checkbox" name="course_experiment_completed"> I tried this week’s experiment and described what happened above.</span></label>' : '',
       '    <label class="pbb-wci-field">',
       '      <span class="pbb-wci-field-label">Anything else Shannon should know?</span>',
       '      <textarea class="pbb-wci-input" name="note" maxlength="900" placeholder="Optional"></textarea>',
@@ -1322,6 +1344,11 @@
       '  </form>',
       '</section>'
     ].join('');
+  }
+
+  function learnExperiment() {
+    var course = window.socialJourney && window.socialJourney.getFoundationsCourseProgress();
+    return course && course.available && window.BalanceLearnWeeklyActions ? window.BalanceLearnWeeklyActions.experiment(course.currentJourneyWeek) : null;
   }
 
   function weeklyGoalSnapshot(data){
@@ -1367,6 +1394,8 @@
       support: String(formData.get('support') || ''),
       note: String(formData.get('note') || '').trim(),
       course_learning: String(formData.get('course_learning') || '').trim(),
+      course_week: Number(formData.get('course_week') || 0),
+      course_experiment_completed: formData.get('course_experiment_completed') === 'on',
       week_start: getWeekWindow().startKey,
       week_end: localDateKey(new Date(getWeekWindow().end.getTime() - 24 * 60 * 60 * 1000)),
       occurrence: activeOccurrence() || 'weekly',
@@ -1432,11 +1461,14 @@
             overall: payload.overall,
             confidence: payload.confidence,
             support: payload.support,
+            course_week: payload.course_week || null,
+            course_experiment_completed: payload.course_experiment_completed,
             goal_count: payload.goals.length
           }, { immediate: true });
         }
       } catch (_) {}
 
+      if (window.socialJourney && typeof window.socialJourney.refresh === 'function') await window.socialJourney.refresh();
       markReviewCompleted();
       closeWeeklyCheckinPreview();
       renderCard();
@@ -1697,6 +1729,14 @@
     var sheet = overlay.querySelector('.pbb-wci-sheet');
     var closeBtn = overlay.querySelector('.pbb-wci-close');
     var responseForm = overlay.querySelector('#weekly-checkin-response-form');
+    // Read on every open so edits do not require retyping a previously sent review.
+    if (!isExplicitPreviewEnabled() && window.supabaseClient && getReviewUserId()) {
+      window.supabaseClient.from('daily_checkins').select('additional_data')
+        .eq('user_id', getReviewUserId()).eq('checkin_date', getWeekWindow().startKey)
+        .then(function(result) { if (result.error) throw result.error; if (responseForm && !responseForm.dataset.edited) restoreWeeklyResponse(responseForm, result.data); })
+        .catch(function() { setWeeklyReflectionError(responseForm, 'Your earlier answer could not be loaded. Reopen when connected to edit it.'); });
+      responseForm.addEventListener('input', function() { responseForm.dataset.edited = '1'; }, { once: true });
+    }
 
     overlay.addEventListener('click', function(){
       closeWeeklyCheckinPreview();

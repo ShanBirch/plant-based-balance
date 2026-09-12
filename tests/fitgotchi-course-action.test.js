@@ -30,14 +30,14 @@ function fixture() {
   vm.runInNewContext(section(journey,'  function canOpenFitGotchiIntro()', '  let onboardingTestResetRunning'),c);
   return c;
 }
-test('only eligible post-onboarding Week 1 members receive the action',()=>{
+test('eligible post-onboarding Learn members can finish the setup action',()=>{
   const c=fixture();
   assert.equal(c.getFitGotchiIntroAction().title,'View Your FitGotchi');
   for(const flag of ['metaAdTrialMode','__balancePendingClientActivation','__balanceGuidedTourActive']){
     c.window[flag]=true;assert.equal(c.getFitGotchiIntroAction(),null);c.window[flag]=false;
   }
   c.eligible=false;assert.equal(c.getFitGotchiIntroAction(),null);c.eligible=true;
-  c.state.current_week=2;assert.equal(c.getFitGotchiIntroAction(),null);
+  c.state.current_week=2;assert.ok(c.getFitGotchiIntroAction());c.state.current_week=7;assert.equal(c.getFitGotchiIntroAction(),null);
 });
 test('opening or abandoning the walkthrough never awards course credit',()=>{
   const c=fixture();assert.equal(c.openFitGotchiIntro(),true);
@@ -108,22 +108,13 @@ test('missing connection and account changes cannot silently earn credit',async(
   c.window.supabaseClient={};c.owner='another-member';
   await assert.rejects(c.options.onCourseComplete(),/course changed/);assert.equal(c.writes,0);
 });
-test('the required task participates in the course checklist, without relocking previous weeks',()=>{
-  const c={safeObject:v=>v||{},safeArray:v=>Array.isArray(v)?v:[],taskAvailability:()=>({}),taskActionLabel:()=>''};
-  vm.runInNewContext(section(journey,'  function task(id,','  function lesson('),c);
-  vm.runInNewContext(section(journey,'  const WEEK_DEFINITIONS','  const WEEK_LESSONS')+'\nthis.definitions=WEEK_DEFINITIONS;',c);
-  const definition=c.definitions[0];
-  assert.equal(definition.tasks[0].id,'w1_fitgotchi_intro');
-  c.state={current_week:1,settings:{}};
-  c.progress={tasks:definition.tasks.filter(x=>x.type!=='fitgotchi_intro').map(x=>({...x,current:1,complete:true}))};
-  vm.runInNewContext(section(journey,'  function getFoundationsCourseProgress()', '  function taskActionForCourse('),c);
-  assert.equal(c.getFoundationsCourseProgress().weekProgress[0].tasksComplete,false);
-  c.progress.tasks.push({...definition.tasks[0],current:1,complete:true});
-  assert.equal(c.getFoundationsCourseProgress().weekProgress[0].tasksComplete,true);
-  c.state={current_week:2,settings:{foundation_week_progress:{'1':{tasks:c.progress.tasks.slice(0,-1)}}}};
-  assert.equal(c.getFoundationsCourseProgress().weekProgress[0].tasksComplete,true);
-  assert.match(journey,/fitgotchi_intro: safeObject\(settingsBeforeProgress.fitgotchi_intro\).completed_at \? 1 : 0/);
+test('FitGotchi setup stays separate from five recurring actions',()=>{
+  const setup=section(journey,'  const GETTING_STARTED_TASKS','  const WEEK_DEFINITIONS');
+  assert.match(setup,/w1_fitgotchi_intro/);
+  assert.doesNotMatch(section(journey,'  const WEEK_DEFINITIONS','  const WEEK_LESSONS'),/w1_fitgotchi_intro/);
+  assert.match(journey,/learn_setup_progress = setupTasks/);
 });
+
 test('the mini-tour has real Settings/Home targets and is outside the payment tour',()=>{
   const steps=section(html,'  const fitgotchiCourseSteps','  let activeSteps');
   assert.match(steps,/settings-fitgotchi-visibility/);
@@ -186,6 +177,6 @@ test('edited scripts parse and both loader paths use the new assets',()=>{
     const at=html.indexOf('<script>',html.indexOf('<!-- ========== '+marker));
     new Function(html.slice(at+8,html.indexOf('</script>',at)));
   }
-  assert.equal((html.match(/pbb-social-journey.js\?v=55-week1-progress-photos/g)||[]).length,2);
+  assert.equal((html.match(/pbb-social-journey.js\?v=56-learn-weekly-actions/g)||[]).length,2);
   assert.equal((html.match(/pbb-next-obvious-steps.js\?v=61-course-photo-sync/g)||[]).length,2);
 });

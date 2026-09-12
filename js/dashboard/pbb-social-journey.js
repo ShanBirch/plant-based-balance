@@ -11,67 +11,87 @@
   const BRISBANE_TIMEZONE = 'Australia/Brisbane';
   const WELCOME_VIDEO_URL = window.PBB_BALANCE_WELCOME_VIDEO_URL || '/assets/balance-onboarding-coach-note-captioned.mp4?v=20260910-word-reveal';
 
+  const GETTING_STARTED_TASKS = [
+    task('w1_fitgotchi_intro', 'View Your FitGotchi', 'Meet your character and see how XP gives you visual feedback on your progress.', 'fitgotchi_intro', 1, '🐣', 'fitgotchi'),
+    task('w1_progress_photos', 'Take your starting progress photos', 'Save your starting front, side and back photos. Saving all three ticks this action off automatically. No Feed sharing needed.', 'progress_photo_set', 1, '📷', 'progress-photos'),
+    task('w1_wearable_setup', 'Connect your fitness watch, if you use one', 'Connect a compatible watch, or choose the honest no-watch option. Both paths receive the same course credit.', 'wearable_setup', 1, '\u231A', 'wearable')
+  ];
+
   const WEEK_DEFINITIONS = [
     {
       week: 1,
-      phase: 'BALANCE LEARN · BUILD THE EVIDENCE',
-      title: 'Make the first reps visible.',
-      body: 'Do one real action, then record it. Feed is not a performance; it is a supportive environment that helps the new pattern feel normal.',
+      phase: 'BALANCE LEARN · WEEK 1',
+      title: 'Why change feels hard',
+      body: 'Build a manageable rhythm with meals, movement and one practical experiment. Report what happened in your weekly check-in.',
       tasks: [
-        task('w1_fitgotchi_intro', 'View Your FitGotchi', 'Meet your character and see how XP gives you visual feedback on your progress.', 'fitgotchi_intro', 1, '🐣', 'fitgotchi'),
+        task('w1_meals', 'Track 3 meals this week', 'Log 3 meals in total, across the week. These are meals, not days or calorie targets.', 'learn_meals', 3, '🥗', 'meals'),
+        task('w1_workouts', 'Complete 1 workout this week', 'Follow your program. A completed workout or logged movement session counts, at most once per day. Use the movement that fits your plan.', 'learn_workouts', 1, '🏋️', 'movement'),
+        task('w1_experiment', window.BalanceLearnWeeklyActions.experiment(1).title, window.BalanceLearnWeeklyActions.experiment(1).prompt + ' Report it once in your weekly check-in to tick this off.', 'learn_experiment', 1, '📝', 'checkin'),
         task('w1_feed_intro', 'Introduce yourself to the Feed', 'Write a simple hello in Balance Feed. No photo needed.', 'foundations_feed_intro', 1, '\uD83D\uDC4B', 'feed'),
-        task('w1_progress_photos', 'Take your starting progress photos', 'Save front, side and back photos in your first week. Saving all three ticks this action off automatically. No Feed sharing needed.', 'progress_photo_set', 1, '📷', 'progress-photos'),
-        task('w1_wearable_setup', 'Connect your fitness watch, if you use one', 'Connect a compatible watch, or choose the honest no-watch option. Both paths receive the same course credit.', 'wearable_setup', 1, '\u231A', 'wearable'),
         task('w1_weekly_checkin', 'Complete your weekly check-in', 'Tell Shannon what worked, what got in the way and what you need next.', 'weekly_checkin', 1, '✓', 'checkin')
       ]
     },
     {
       week: 2,
-      phase: 'BALANCE LEARN · TRAIN FOR PROGRESS',
-      title: 'Training becomes evidence.',
-      body: 'Make the minimum visible. A normal session counts, and sharing it helps the repetition feel real.',
+      phase: 'BALANCE LEARN · WEEK 2',
+      title: 'Work with your energy',
+      body: 'Build a manageable rhythm with meals, movement and one practical experiment. Report what happened in your weekly check-in.',
       tasks: [
+        task('w2_meals', 'Track 5 meals this week', 'Log 5 meals in total, across the week. These are meals, not days or calorie targets.', 'learn_meals', 5, '🥗', 'meals'),
+        task('w2_workouts', 'Complete 2 workouts this week', 'Follow your program. A completed workout or logged movement session counts, at most once per day. Use the movement that fits your plan.', 'learn_workouts', 2, '🏋️', 'movement'),
+        task('w2_experiment', window.BalanceLearnWeeklyActions.experiment(2).title, window.BalanceLearnWeeklyActions.experiment(2).prompt + ' Report it once in your weekly check-in to tick this off.', 'learn_experiment', 1, '📝', 'checkin'),
         task('w2_feed_comment', 'Comment on someone else\'s Feed post', 'Respond to the person or what they shared.', 'foundations_feed_comments', 1, '💬', 'feed'),
         task('w2_weekly_checkin', 'Complete your weekly check-in', 'Tell Shannon what worked, what got in the way and what you need next.', 'weekly_checkin', 1, '✓', 'checkin')
       ]
     },
     {
       week: 3,
-      phase: 'BALANCE LEARN · FUEL THE WORK',
-      title: 'Let normal meals count.',
-      body: 'Document what you already eat. The goal is awareness and useful repetition, not performance.',
+      phase: 'BALANCE LEARN · WEEK 3',
+      title: 'Build a rhythm that sticks',
+      body: 'Build a manageable rhythm with meals, movement and one practical experiment. Report what happened in your weekly check-in.',
       tasks: [
+        task('w3_meals', 'Track 5 meals this week', 'Log 5 meals in total, across the week. These are meals, not days or calorie targets.', 'learn_meals', 5, '🥗', 'meals'),
+        task('w3_workouts', 'Complete 2 workouts this week', 'Follow your program. A completed workout or logged movement session counts, at most once per day. Use the movement that fits your plan.', 'learn_workouts', 2, '🏋️', 'movement'),
+        task('w3_experiment', window.BalanceLearnWeeklyActions.experiment(3).title, window.BalanceLearnWeeklyActions.experiment(3).prompt + ' Report it once in your weekly check-in to tick this off.', 'learn_experiment', 1, '📝', 'checkin'),
         task('w3_workout_feed', 'Share a completed workout to Feed', 'Choose a workout you completed in Balance and share its workout card.', 'foundations_workout_feed', 1, '🏋️', 'movement'),
         task('w3_weekly_checkin', 'Complete your weekly check-in', 'Tell Shannon what worked, what got in the way and what you need next.', 'weekly_checkin', 1, '✓', 'checkin')
       ]
     },
     {
       week: 4,
-      phase: 'BALANCE LEARN · WORK WITH REAL LIFE',
-      title: 'Make a normal meal visible.',
-      body: 'Share food you actually logged in Balance. The useful meal counts without needing to look perfect.',
+      phase: 'BALANCE LEARN · WEEK 4',
+      title: 'Take the fight out of food',
+      body: 'Build a manageable rhythm with meals, movement and one practical experiment. Report what happened in your weekly check-in.',
       tasks: [
+        task('w4_meals', 'Track 7 meals this week', 'Log 7 meals in total, across the week. These are meals, not days or calorie targets.', 'learn_meals', 7, '🥗', 'meals'),
+        task('w4_workouts', 'Complete 2 workouts this week', 'Follow your program. A completed workout or logged movement session counts, at most once per day. Use the movement that fits your plan.', 'learn_workouts', 2, '🏋️', 'movement'),
+        task('w4_experiment', window.BalanceLearnWeeklyActions.experiment(4).title, window.BalanceLearnWeeklyActions.experiment(4).prompt + ' Report it once in your weekly check-in to tick this off.', 'learn_experiment', 1, '📝', 'checkin'),
         task('w4_meal_feed', 'Share a meal to Feed', 'Choose a meal you logged in Balance and share its meal card.', 'foundations_meal_feed', 1, '🥗', 'meals'),
-        task('w4_diary_feed', 'Create a Fitness Diary entry and share it to Feed', 'Complete a real Fitness Diary entry, then share that exact diary entry to Balance Feed.', 'foundations_diary_feed', 1, '📓', 'diary'),
         task('w4_weekly_checkin', 'Complete your weekly check-in', 'Tell Shannon what worked, what got in the way and what you need next.', 'weekly_checkin', 1, '✓', 'checkin')
       ]
     },
     {
       week: 5,
-      phase: 'BALANCE LEARN · MAKE THE PLAN FIT THE GOAL',
-      title: 'Make progress visible.',
-      body: 'A personal best is evidence that the work is moving. Share the result from your Balance workout history.',
+      phase: 'BALANCE LEARN · WEEK 5',
+      title: 'Make progress easier to repeat',
+      body: 'Build a manageable rhythm with meals, movement and one practical experiment. Report what happened in your weekly check-in.',
       tasks: [
+        task('w5_meals', 'Track 7 meals this week', 'Log 7 meals in total, across the week. These are meals, not days or calorie targets.', 'learn_meals', 7, '🥗', 'meals'),
+        task('w5_workouts', 'Complete 3 workouts this week', 'Follow your program. A completed workout or logged movement session counts, at most once per day. Use the movement that fits your plan.', 'learn_workouts', 3, '🏋️', 'movement'),
+        task('w5_experiment', window.BalanceLearnWeeklyActions.experiment(5).title, window.BalanceLearnWeeklyActions.experiment(5).prompt + ' Report it once in your weekly check-in to tick this off.', 'learn_experiment', 1, '📝', 'checkin'),
         task('w5_pb_feed', 'Achieve and share one exercise PB to Feed', 'Share a personal best recorded by Balance from a completed exercise.', 'foundations_pb_feed', 1, '🏆', 'movement'),
         task('w5_weekly_checkin', 'Complete your weekly check-in', 'Tell Shannon what worked, what got in the way and what you need next.', 'weekly_checkin', 1, '✓', 'checkin')
       ]
     },
     {
       week: 6,
-      phase: 'BALANCE LEARN · KEEP BECOMING THE PERSON WHO DOES IT',
-      title: 'Show the process, not a performance.',
-      body: 'Finish Balance Learn with a light routine that can survive an ordinary messy week.',
+      phase: 'BALANCE LEARN · WEEK 6',
+      title: 'Build your sustainable way forward',
+      body: 'Build a manageable rhythm with meals, movement and one practical experiment. Report what happened in your weekly check-in.',
       tasks: [
+        task('w6_meals', 'Track 7 meals this week', 'Log 7 meals in total, across the week. These are meals, not days or calorie targets.', 'learn_meals', 7, '🥗', 'meals'),
+        task('w6_workouts', 'Complete 3 workouts this week', 'Follow your program. A completed workout or logged movement session counts, at most once per day. Use the movement that fits your plan.', 'learn_workouts', 3, '🏋️', 'movement'),
+        task('w6_experiment', window.BalanceLearnWeeklyActions.experiment(6).title, window.BalanceLearnWeeklyActions.experiment(6).prompt + ' Report it once in your weekly check-in to tick this off.', 'learn_experiment', 1, '📝', 'checkin'),
         task('w6_feed_reflection', 'Share your course reflections in Feed', 'Write what changed, what helped and what you want to keep doing.', 'foundations_feed_reflection', 1, '📝', 'feed'),
         task('w6_weekly_checkin', 'Complete your weekly check-in', 'Tell Shannon what worked, what got in the way and what you need next.', 'weekly_checkin', 1, '✓', 'checkin')
       ]
@@ -281,7 +301,7 @@
 
   function taskAvailability(item, date) {
     const clock = brisbaneClockParts(date);
-    if (item && item.type === 'weekly_checkin') {
+    if (item && (item.type === 'weekly_checkin' || item.type === 'learn_experiment')) {
       const availableNow = ['Fri', 'Sat', 'Sun'].includes(clock.weekday);
       return {
         availableNow,
@@ -409,6 +429,15 @@
     if (result.error) throw result.error;
     state = normalizeState(result.data || defaultState());
     if (!result.data) await upsertState({});
+    if (!safeObject(state.settings).learn_actions_v2) {
+      const settings = Object.assign({}, safeObject(state.settings));
+      const snapshots = safeObject(settings.foundation_week_progress);
+      const credited = Object.keys(snapshots).filter(key => { const snap = snapshots[key]; return snap && snap.total_count > 0 && snap.completed_count === snap.total_count; }).map(Number);
+      const prior = state.progress_snapshot;
+      if (prior && prior.total_count > 0 && prior.completed_count === prior.total_count) credited.push(Number(prior.week || state.current_week));
+      settings.learn_actions_v2 = { enrolled_at: new Date().toISOString(), prior_week: result.data ? (window.BalanceLearnWeeklyActions.effectiveWeek(result.data) || Number(state.current_week)) : 1, credited_weeks: credited };
+      await upsertState({ settings });
+    }
     await rollForwardElapsedWeeks();
     return state;
   }
@@ -438,6 +467,12 @@
     }
   }
 
+  async function requiredProgressQuery(factory) {
+    const result = await factory();
+    if (!result || result.error) throw result?.error || new Error('Weekly activity could not be loaded.');
+    return safeArray(result.data);
+  }
+
   function isCourseProgressPhotoSet(row, startIso, endIso) {
     let notes;
     try { notes = typeof row.notes === 'string' ? JSON.parse(row.notes) : row.notes; } catch (_) { return false; }
@@ -458,7 +493,7 @@
     const supabase = window.supabaseClient;
     const startIso = dateFromKey(state.week_started_at).toISOString();
     const endIso = dateFromKey(addDaysKey(state.week_started_at, 7)).toISOString();
-    const [stories, comments, transactions, workouts, checkins, personalBests, wearableConnections, nativeWearableRows, memberProfile, progressPhotos] = await Promise.all([
+    const [stories, comments, transactions, workouts, checkins, personalBests, wearableConnections, nativeWearableRows, memberProfile, progressPhotos, meals, activities] = await Promise.all([
       safeQuery(() => supabase.from('stories')
         .select('id,media_type,caption,course_action_id,created_at')
         .eq('user_id', currentUserId())
@@ -480,16 +515,16 @@
           'earn_activity_instagram_share',
           'earn_workout_instagram_share'
         ])),
-      safeQuery(() => supabase.from('workouts')
-        .select('workout_date')
+      requiredProgressQuery(() => supabase.from('workouts')
+        .select('workout_date,reps,time_duration')
         .eq('user_id', currentUserId())
         .eq('workout_type', 'history')
         .gte('workout_date', state.week_started_at)
         .lt('workout_date', addDaysKey(state.week_started_at, 7))),
-      safeQuery(() => supabase.from('daily_checkins')
+      requiredProgressQuery(() => supabase.from('daily_checkins')
         .select('checkin_date,additional_data')
         .eq('user_id', currentUserId())
-        .gte('checkin_date', state.week_started_at)
+        .gte('checkin_date', addDaysKey(state.week_started_at, -6))
         .lt('checkin_date', addDaysKey(state.week_started_at, 7))),
       safeQuery(() => supabase.from('pb_history')
         .select('id,achieved_at')
@@ -517,19 +552,19 @@
       safeQuery(() => supabase.from('weekly_progress_photos')
         .select('id,notes,created_at,photo_week')
         .eq('user_id', currentUserId())
-        .gte('photo_week', addDaysKey(state.week_started_at, -6))
-        .lt('photo_week', addDaysKey(state.week_started_at, 7)))
+        .order('photo_week', { ascending: false }).limit(100)),
+      requiredProgressQuery(() => supabase.from('meal_logs').select('id').eq('user_id', currentUserId())
+        .gte('meal_date', state.week_started_at).lt('meal_date', addDaysKey(state.week_started_at, 7))),
+      requiredProgressQuery(() => supabase.from('activity_logs').select('activity_date,duration_minutes').eq('user_id', currentUserId())
+        .gte('activity_date', state.week_started_at).lt('activity_date', addDaysKey(state.week_started_at, 7)))
     ]);
 
     const manual = new Set(state.completed_task_ids);
     const memberAttestations = safeObject(safeObject(state.settings).member_attestations);
     const workoutDays = new Set(workouts.map(row => row.workout_date).filter(Boolean)).size;
     const instagramShares = transactions.length;
-    const weeklyCheckinComplete = checkins.some(row => {
-      const extra = safeObject(row && row.additional_data);
-      const responses = safeArray(extra.weekly_checkins).concat(extra.weekly_checkin ? [Object.assign({ occurrence: 'weekly' }, extra.weekly_checkin)] : []);
-      return responses.some(item => item && item.week_start === state.week_started_at && (item.occurrence || 'weekly') === 'weekly' && !!item.submitted_at);
-    });
+    const weeklyReports = window.BalanceLearnWeeklyActions.reportsForWeek(checkins, state.current_week, startIso, endIso);
+    const weeklyCheckinComplete = weeklyReports.length > 0;
     const storyCard = row => {
       try { return safeObject(JSON.parse(String(row && row.caption || '{}'))); } catch (_) { return {}; }
     };
@@ -538,6 +573,7 @@
     ).length;
     const currentWeekPbIds = new Set(personalBests.map(row => String(row.id || '')).filter(Boolean));
     const diaryEntryDates = new Set(checkins.filter(row => {
+      if (row.checkin_date < state.week_started_at || row.checkin_date >= addDaysKey(state.week_started_at, 7)) return false;
       const extra = safeObject(row && row.additional_data);
       const diary = safeObject(extra.fitness_diary || (extra.type === 'fitness_diary' ? extra : null));
       return diary.type === 'fitness_diary' || Object.keys(diary).length > 0;
@@ -574,6 +610,9 @@
       workout_instagram_shares: transactions.filter(row => row.transaction_type === 'earn_workout_instagram_share').length,
       meal_instagram_shares: transactions.filter(row => row.transaction_type === 'earn_meal_instagram_share').length,
       workout_days: workoutDays,
+      learn_meals: new Set(meals.map(row => row.id)).size,
+      learn_workouts: window.BalanceLearnWeeklyActions.movementDays(workouts, activities),
+      learn_experiment: weeklyReports.some(row => Number(row.course_week) === Number(state.current_week) && row.course_experiment_completed === true && String(row.course_learning || '').trim().length >= 2) ? 1 : 0,
       workout_bundle: Math.min(workoutDays, stories.filter(row => row.media_type === 'workout_card').length),
       foundations_feed_intro: linkedTextPostCount('w1_feed_intro'),
       foundations_feed_comments: comments.length,
@@ -585,10 +624,12 @@
       foundations_feed_reflection: linkedTextPostCount('w6_feed_reflection'),
       wearable_setup: ['verified_connection', 'no_compatible_watch'].includes(wearableSetup.status) ? 1 : 0,
       fitgotchi_intro: safeObject(settingsBeforeProgress.fitgotchi_intro).completed_at ? 1 : 0,
-      progress_photo_set: progressPhotos.some(row => isCourseProgressPhotoSet(row, startIso, endIso)) ? 1 : 0,
+      progress_photo_set: progressPhotos.some(row => isCourseProgressPhotoSet(row, '1970-01-01T00:00:00Z', endIso)) ? 1 : 0,
       weekly_checkin: weeklyCheckinComplete ? 1 : 0
     };
     const definition = getWeekDefinition();
+    const setupTasks = GETTING_STARTED_TASKS.map(item => Object.assign({}, item, { current: Number(counts[item.type] || 0), complete: Number(counts[item.type] || 0) >= item.target }));
+    settingsBeforeProgress.learn_setup_progress = setupTasks;
     const tasks = definition.tasks.map(item => {
       const current = item.type === 'manual'
         ? (manual.has(item.id) ? 1 : 0)
@@ -609,7 +650,8 @@
       updated_at: new Date().toISOString(),
       completed_count: tasks.filter(item => item.complete).length,
       total_count: tasks.length,
-      tasks
+      tasks,
+      action_version: 2
     };
     state.progress_snapshot = progress;
     const settings = settingsBeforeProgress;
@@ -757,7 +799,7 @@
     if (item.type === 'instagram_profile') return item.complete ? 'Profile saved' : 'Add profile';
     if (item.type === 'daily_manual') return dailyTaskDates(item.id).includes(brisbaneDateKey()) ? 'Today done' : 'Mark today done';
     if (item.type === 'member_attestation') return item.complete ? 'Confirmed by you' : 'Confirm I did this';
-    if (item.type === 'weekly_checkin') return item.complete ? 'Sent' : 'Open check-in';
+    if ((item.type === 'weekly_checkin' || item.type === 'learn_experiment')) return item.complete ? 'Sent' : 'Open check-in';
     if (item.type === 'wearable_setup') return item.complete ? 'Setup recorded' : 'Choose setup';
     if (item.type === 'foundations_diary_feed' || item.type === 'identity_diary_feed') return item.complete ? 'Shared' : 'Open Fitness Diary';
     if (item.action === 'feed') return 'Open Feed';
@@ -1103,12 +1145,14 @@
       const tasks = definition.tasks.map(function(item){
         const stored = savedTasks.get(item.id);
         // Do not retroactively lock members who already passed Week 1 before this action existed.
-        const exempt = ['fitgotchi_intro', 'progress_photo_set'].includes(item.type) && currentJourneyWeek > 1 && !stored;
+        const rollout = safeObject(safeObject(state.settings).learn_actions_v2);
+        const exempt = safeArray(rollout.credited_weeks).includes(definition.week) || (!stored && item.type.startsWith('learn_') && definition.week < Number(rollout.prior_week || 1));
         const current = Math.max(0, Number(stored && stored.current) || 0);
         const complete = exempt || !!(stored && stored.complete) || current >= item.target;
         return Object.assign({}, item, taskAvailability(item), {
           current,
           complete,
+          exempt,
           actionLabel: exempt ? 'Not required for your earlier week' : (definition.week === currentJourneyWeek ? taskActionLabel(Object.assign({}, item, { current, complete })) : (complete ? 'Done' : 'Not completed'))
         });
       });
@@ -1125,7 +1169,7 @@
         isLocked: definition.week > currentJourneyWeek
       };
     });
-    return { available: true, currentJourneyWeek, weekProgress };
+    return { available: true, currentJourneyWeek, weekProgress, setupTasks: safeArray(safeObject(state.settings).learn_setup_progress) };
   }
 
   function taskActionForCourse(weekNumber, taskId) {
@@ -1134,6 +1178,7 @@
       showToast('That week will unlock when you reach it.', 'info');
       return;
     }
+    if (GETTING_STARTED_TASKS.some(item => item.id === taskId)) return taskAction(taskId);
     if (week !== Number(state.current_week)) {
       showToast('This is a previous week. Its saved result is shown here.', 'info');
       return;
@@ -1834,6 +1879,7 @@
         await showGoals();
       }
       renderCard();
+      if (typeof window.refreshLearningCourseHome === 'function') window.refreshLearningCourseHome();
     } catch (error) {
       console.warn('[social-journey] refresh failed', error);
       const card = getCard();
@@ -1845,7 +1891,7 @@
 
   async function taskAction(taskId) {
     const definition = getWeekDefinition();
-    const item = definition.tasks.find(candidate => candidate.id === taskId);
+    const item = definition.tasks.concat(GETTING_STARTED_TASKS).find(candidate => candidate.id === taskId);
     if (!item) return;
     if (item.type === 'fitgotchi_intro') {
       openFitGotchiIntro();
@@ -1875,7 +1921,7 @@
   }
 
   function canOpenFitGotchiIntro() {
-    return isJourneyEligible() && !!state && Number(state.current_week) === 1
+    return isJourneyEligible() && !!state && Number(state.current_week) <= 6
       && window.metaAdTrialMode !== true && !window.__balancePendingClientActivation
       && !window.__balanceGuidedTourActive;
   }
@@ -1883,7 +1929,7 @@
   function getFitGotchiIntroAction() {
     if (!canOpenFitGotchiIntro() || safeObject(state.settings.fitgotchi_intro).completed_at) return null;
     return { id:'fitgotchi_intro', title:'View Your FitGotchi',
-      body:'A Week 1 course action. See how your character turns XP into visual feedback and motivation.',
+      body:'A getting-started action. See how your character turns XP into visual feedback and motivation.',
       cta:'View Your FitGotchi', accent:'#b78a2e', priority:130, goalIds:[], action:openFitGotchiIntro };
   }
 
@@ -1907,8 +1953,8 @@
     }
     const owner = currentUserId();
     window.startFeatureTour('full', { fitgotchiCourse:true, onCourseComplete:async function(){
-      if (owner !== currentUserId() || !state || Number(state.current_week) !== 1) throw new Error('Your course changed. Reopen this action.');
-      if (!window.supabaseClient) throw new Error('Reconnect to save your Week 1 action, then try again.');
+      if (owner !== currentUserId() || !state || Number(state.current_week) > 6) throw new Error('Your course changed. Reopen this action.');
+      if (!window.supabaseClient) throw new Error('Reconnect to save your setup action, then try again.');
       if (!window.getFitGotchiVisibility || window.getFitGotchiVisibility() !== 'visible') throw new Error('Turn on your FitGotchi before finishing the walkthrough.');
       const previous = state;
       const settings = Object.assign({}, safeObject(state.settings));
