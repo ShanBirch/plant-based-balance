@@ -1,0 +1,101 @@
+/* Sunday weigh-in: scoped Balance cream/obsidian and gold, including callipers
+   and confirmation. Explicit text-fill defeats legacy WebKit colour sweeps. */
+#weigh-in-modal {
+    --wi-surface:#f8f7f2;
+    --wi-field:#fffdf7;
+    --wi-ink:#0c0c0c;
+    --wi-muted:#686052;
+    --wi-tint:#f4e9cf;
+    --wi-accent:#80601f;
+    --wi-border:#96866a;
+    --wi-gold:#d8b25e;
+    --wi-gold-light:#f5d98a;
+}
+html:not([data-pbb-theme="light"]) #weigh-in-modal {
+    --wi-surface:#191919; --wi-field:#252525; --wi-ink:#fffaf0;
+    --wi-muted:#c6bfae; --wi-tint:#332c1d; --wi-accent:#e3c16f;
+    --wi-border:#9b8963;
+}
+html #weigh-in-modal.modal-overlay {
+    box-sizing:border-box!important; inset:0!important;
+    height:100%!important; height:100dvh!important;
+    padding:max(44px,env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) max(24px,env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))!important;
+    background:rgba(12,12,12,.52)!important;
+    overflow:hidden!important;
+}
+html #weigh-in-modal .modal-content {
+    box-sizing:border-box!important; max-height:100%!important;
+    width:100%!important; max-width:400px!important; margin:0!important;
+    padding:0!important; overflow-y:auto!important; overflow-x:hidden!important;
+    overscroll-behavior:contain; -webkit-overflow-scrolling:touch;
+    background:var(--wi-surface)!important; border:1px solid var(--wi-border)!important;
+    border-radius:24px!important; box-shadow:0 18px 60px #00000033!important;
+}
+html #weigh-in-modal .modal-content :is(h3,p,label,span,strong,div,button,input) {
+    color:var(--wi-ink)!important; -webkit-text-fill-color:var(--wi-ink)!important;
+    text-shadow:none!important;
+}
+html #weigh-in-modal .modal-content .weighin-header {
+    background:var(--wi-tint)!important; border-bottom:1px solid var(--wi-border);
+    padding:22px 20px 18px!important;
+}
+html #weigh-in-modal .weighin-header > div[style*="position: absolute"] { display:none!important; }
+html #weigh-in-modal .weighin-header::before,
+html #weigh-in-modal .weighin-header::after { display:none!important; }
+html #weigh-in-modal .modal-content .weighin-icon {
+    color:var(--wi-accent)!important; -webkit-text-fill-color:var(--wi-accent)!important;
+    margin-bottom:8px; display:flex; justify-content:center;
+}
+html #weigh-in-modal .modal-content > div:last-child { background:var(--wi-surface)!important; padding:22px!important; }
+html #weigh-in-modal .modal-content :is(p,#weigh-in-modal-unit-label,#bf-result-category),
+html #weigh-in-modal #weigh-in-bf-inputs label {
+    color:var(--wi-muted)!important; -webkit-text-fill-color:var(--wi-muted)!important; opacity:1!important;
+}
+html #weigh-in-modal .modal-content input {
+    background:var(--wi-field)!important; border:1.5px solid var(--wi-border)!important;
+    font-size:16px!important; min-width:0; min-height:44px;
+}
+html #weigh-in-modal .modal-content input::placeholder {
+    color:var(--wi-muted)!important; -webkit-text-fill-color:var(--wi-muted)!important; opacity:1;
+}
+html #weigh-in-modal #weigh-in-bf-inputs label { min-height:2.7em; line-height:1.35; }
+html #weigh-in-modal .modal-content :is(input:focus,button:focus-visible) {
+    outline:2px solid var(--wi-accent)!important; outline-offset:3px;
+    border-color:var(--wi-accent)!important; box-shadow:none!important;
+}
+html #weigh-in-modal .modal-content button {
+    min-height:48px; white-space:normal!important; line-height:1.35!important;
+    border:1px solid var(--wi-border)!important; border-radius:12px!important;
+    background:var(--wi-field)!important; box-shadow:none!important;
+    transform:none!important;
+}
+html #weigh-in-modal .modal-content #weigh-in-bf-toggle,
+html #weigh-in-modal .modal-content #bf-result-row {
+    background:var(--wi-tint)!important;
+}
+html #weigh-in-modal #weigh-in-bf-chevron { fill:var(--wi-accent)!important; flex-shrink:0; }
+html #weigh-in-modal .modal-content button[onclick="submitWeighInModal()"] {
+    background:linear-gradient(110deg,var(--wi-gold-light),var(--wi-gold))!important;
+    color:#292313!important; -webkit-text-fill-color:#292313!important;
+    border-color:#80601f!important;
+}
+html #weigh-in-modal .modal-content button:hover:not(:disabled) { filter:brightness(.96); }
+html #weigh-in-modal .modal-content button:disabled { opacity:.55; cursor:wait; filter:none; }
+html #weigh-in-modal .modal-content #weigh-in-modal-success-section > div:nth-child(2) {
+    color:var(--wi-accent)!important; -webkit-text-fill-color:var(--wi-accent)!important;
+}
+/* Same neutral diagram for either measurement protocol; numbers stay legible. */
+html #weigh-in-modal :is(#bf-diagram-male,#bf-diagram-female) :is(path,ellipse,rect) { fill:var(--wi-tint); stroke:var(--wi-accent); }
+html #weigh-in-modal :is(#bf-diagram-male,#bf-diagram-female) circle { fill:var(--wi-accent); stroke:var(--wi-field); }
+html #weigh-in-modal :is(#bf-diagram-male,#bf-diagram-female) text { fill:var(--wi-field); }
+html #weigh-in-modal :is(#bf-sites-male,#bf-sites-female) span {
+    background:var(--wi-accent)!important; color:var(--wi-field)!important;
+    -webkit-text-fill-color:var(--wi-field)!important;
+}
+@media (max-width:360px) {
+    html #weigh-in-modal .modal-content > div:last-child { padding:18px!important; }
+}
+@media (prefers-reduced-motion:reduce) {
+    html #weigh-in-modal .modal-content,
+    html #weigh-in-modal .modal-content * { animation:none!important; transition:none!important; }
+}

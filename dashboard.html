@@ -18869,6 +18869,7 @@ if (window._pbbIsIOSSafari) {
 
 <link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=125-learn-weekly-actions">
 <link rel="stylesheet" href="css/dashboard/pbb-quiz-theme.css?v=1-balance-gold">
+<link rel="stylesheet" href="css/dashboard/pbb-weighin-theme.css?v=1-balance-gold">
 <link rel="stylesheet" href="css/dashboard/pbb-meal-plan.css?v=3-six-weeks">
 <link rel="stylesheet" href="css/dashboard/pbb-onboarding-comeback.css?v=9-learn-welcome">
 <link rel="stylesheet" href="css/dashboard/pbb-onboarding-foundations.css?v=13-iphone-keyboard">
@@ -19135,12 +19136,12 @@ if(!window._pbbIsIOSSafari) {
     <div class="modal-content" style="background: white; width: 100%; border-radius: 24px; padding: 0; max-width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); animation: fadeInScale 0.2s ease-out;">
 
         <!-- Header -->
-        <div style="padding: 25px 25px 20px; text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 24px 24px 0 0; color: white; position: relative; overflow: hidden;">
+        <div class="weighin-header" style="padding: 25px 25px 20px; text-align: center; border-radius: 24px 24px 0 0; position: relative; overflow: hidden;">
             <div style="position: absolute; top: -20px; right: -20px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
             <div style="position: absolute; bottom: -30px; left: -30px; width: 80px; height: 80px; background: rgba(255,255,255,0.05); border-radius: 50%;"></div>
             <div style="position: relative; z-index: 1;">
-                <div style="font-size: 2.5rem; margin-bottom: 10px;">⚖️</div>
-                <h3 style="margin: 0 0 5px 0; font-family: 'Playfair Display'; font-size: 1.5rem;">Weigh-In</h3>
+                <div class="weighin-icon" aria-hidden="true"><svg viewBox="0 0 32 32" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 5v23M10 28h12M5 10h22M7 10l-4 10h8L7 10Zm18 0-4 10h8l-4-10Z"/><circle cx="16" cy="7" r="2"/></svg></div>
+                <h3 id="weighin-title" style="margin: 0 0 5px 0; font-family: 'Playfair Display'; font-size: 1.5rem;">Weigh-In</h3>
                 <p style="margin: 0; opacity: 0.9; font-size: 0.9rem;">Track your weekly progress</p>
             </div>
         </div>
@@ -19148,7 +19149,7 @@ if(!window._pbbIsIOSSafari) {
         <!-- Content -->
         <div style="padding: 25px;">
             <div id="weigh-in-modal-input-section">
-                <label style="display: block; font-weight: 600; color: var(--text-main); margin-bottom: 12px; font-size: 0.95rem;">Enter your weight</label>
+                <label for="weigh-in-modal-input" style="display: block; font-weight: 600; color: var(--text-main); margin-bottom: 12px; font-size: 0.95rem;">Enter your weight</label>
                 <div style="position: relative; margin-bottom: 20px;">
                     <input type="number" id="weigh-in-modal-input" placeholder="Enter weight" step="0.1" min="20" max="500" style="width: 100%; padding: 16px 60px 16px 20px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 1.1rem; box-sizing: border-box; transition: border-color 0.2s;" onfocus="this.style.borderColor='#667eea'" onblur="this.style.borderColor='#e2e8f0'">
                     <span id="weigh-in-modal-unit-label" style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); color: #666; font-size: 1rem; font-weight: 600;">kg</span>
