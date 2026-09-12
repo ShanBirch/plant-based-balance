@@ -10,6 +10,8 @@ async function run(timezone, sample, expectedDate, options = {}) {
   const writes = [], queries = [], warnings = [];
   const context = {
     Date,
+    setTimeout,
+    clearTimeout,
     console: { warn: (...args) => warnings.push(args), log() {}, error() {} },
     window: {
       _nativeHealthReady: true,

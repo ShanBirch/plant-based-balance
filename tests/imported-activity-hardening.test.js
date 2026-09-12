@@ -81,6 +81,8 @@ const supabase = { from: (table) => {
 } };
 
 (async () => {
+  context.setTimeout = setTimeout;
+  context.clearTimeout = clearTimeout;
   assert.strictEqual(await context.window.NativeHealth.init(), true, 'native health should initialise');
   assert.ok(requestedReadTypes.includes('workouts'), 'workout sessions must be requested at runtime');
 

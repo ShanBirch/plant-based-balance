@@ -511,7 +511,7 @@ if (window._pbbIsIOSSafari) {
         var deferredLibs = [
             'lib/vegan-meal-safety.js?v=2',
             'lib/migrate-localstorage.js',
-            'lib/native-health.js?v=20260912-sleep-local-date',
+            'lib/native-health.js?v=20260912-connection-v1',
             'lib/native-push.js?v=41-meal-reminders-retired',
             'lib/native-iap.js',
             'lib/stories.js?v=76-feed-composer-profile-photo&video_health=2&weekly_goals=2',
@@ -563,7 +563,7 @@ if (window._pbbIsIOSSafari) {
 <script>
 if (!window._pbbIsIOSSafari) {
     // Non-iOS: load native scripts synchronously
-    document.write('<script src="lib/native-health.js?v=20260912-sleep-local-date"><\/script>');
+    document.write('<script src="lib/native-health.js?v=20260912-connection-v1"><\/script>');
     document.write('<script src="lib/native-push.js?v=41-meal-reminders-retired"><\/script>');
     document.write('<script src="lib/native-iap.js"><\/script>');
 }
@@ -21659,7 +21659,14 @@ function onHealthConnectGranted() {
 
 // Called by native onResume via evaluateJavascript when user returns from Health Connect
 window._recheckHealthPermission = function() {
-    if (localStorage.getItem('healthConnectEnabled') === 'true') return; // already connected
+    if (localStorage.getItem('healthConnectEnabled') === 'true') {
+        // Returning from Android Settings can leave a stale connected flag.
+        // Recheck the actual bridge and retry reads without another dialog.
+        if (window.NativeHealth && typeof window.NativeHealth.recoverConnection === 'function') {
+            window.NativeHealth.recoverConnection();
+        }
+        return;
+    }
 
     // Probe Health Connect by trying to read steps
     if (window.NativeHealth && typeof window.NativeHealth.checkPermission === 'function') {
