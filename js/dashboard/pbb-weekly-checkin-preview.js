@@ -1876,24 +1876,52 @@
   }
 
   var openingPush = false;
+  var pushRetryTimer = null;
+  var pushRetryCount = 0;
+  function retryCheckinPush(){
+    if (pushRetryTimer || !window._pbbPendingCheckinPush || pushRetryCount >= 60) return;
+    pushRetryTimer = setTimeout(function(){
+      pushRetryTimer = null;
+      pushRetryCount++;
+      openCheckinFromPush();
+    }, 1000);
+  }
   async function openCheckinFromPush(){
     if (new URLSearchParams(window.location.search).get('checkin') === 'ready') window._pbbPendingCheckinPush = true;
-    if (!window._pbbPendingCheckinPush || openingPush || !getReviewUserId() || !window.userProfile || isGuidedTourActive()) return;
+    if (!window._pbbPendingCheckinPush || openingPush) return;
+    if (!getReviewUserId() || isGuidedTourActive()) { retryCheckinPush(); return; }
     openingPush = true;
     try {
+      if (window._pbbProfilePromise) await window._pbbProfilePromise;
+      if (!window.userProfile) { retryCheckinPush(); return; }
+      syncProgramStartDate();
       await maybeLoadSchedule();
       await maybeLoadLiveData();
-      if (!hasCompletedFirstProgramWeek()) return;
+      // An initial data refresh may still own the profile request. Keep the
+      // tap until that request finishes rather than silently abandoning it.
+      if (state.loading || !state.programStartKnown) { retryCheckinPush(); return; }
+      if (!hasCompletedFirstProgramWeek()) {
+        window._pbbPendingCheckinPush = false;
+        showToast('Your check-in opens after your first week of training.', 'info');
+        return;
+      }
+      if (typeof window.switchAppTab !== 'function') { retryCheckinPush(); return; }
+      window.switchAppTab('dashboard');
+      await openWeeklyCheckinPreview();
+      // A direct tap can reopen a sent check-in to view/edit saved answers.
+      // Do not consume successful intent merely because a toast was shown.
+      if (!document.getElementById('weekly-checkin-preview-overlay') && isWeeklyCheckinWindowOpen()) {
+        retryCheckinPush(); return;
+      }
       window._pbbPendingCheckinPush = false;
+      pushRetryCount = 0;
+      if (pushRetryTimer) { clearTimeout(pushRetryTimer); pushRetryTimer = null; }
       var url = new URL(window.location.href);
       url.searchParams.delete('checkin');
       window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
-      if (typeof window.switchAppTab === 'function') window.switchAppTab('dashboard');
-      if (hasCompletedReviewAction()) {
-        showToast('You have already completed this check-in.', 'success');
-      } else {
-        await openWeeklyCheckinPreview();
-      }
+    } catch (error) {
+      console.warn('[checkin-push] Waiting for check-in readiness:', error);
+      retryCheckinPush();
     } finally { openingPush = false; }
   }
   window.addEventListener('pbbCheckinPush', openCheckinFromPush);

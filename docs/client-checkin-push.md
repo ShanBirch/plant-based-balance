@@ -6,7 +6,11 @@ The scheduled worker checks every 15 minutes during Brisbane 08:00-20:45. It sel
 
 Confirmed provider acceptance records sent_at. Ambiguous failures remain claimed to prevent double pushes; this is at-most-once dispatch, not a guarantee that the operating system displays the message. The diagnostic result remains available for repair; do not blindly clear receipts and resend.
 
-Native remote and local foreground taps, browser service-worker taps and cold-start `?checkin=ready` all open the member form after user/profile readiness. Expired notifications show the normal availability message; completed actions show an already-completed message. The Wednesday opening gate now matches the assigned Wednesday form.
+Native remote and local foreground taps, browser service-worker taps and cold-start `?checkin=ready` all open the member form after user/profile readiness. Expired notifications show the normal availability message; direct taps can reopen completed check-ins to view/edit saved answers. The Wednesday opening gate now matches the assigned Wednesday form.
+
+## Tap readiness follow-up, 13 September 2026
+
+Shannon confirmed the Android launcher fix opens Balance, but not the form. Retain the pending tap while account/profile and initial live data load, await the profile promise, and retry readiness for up to 60 seconds rather than abandoning an early tap. Consume the intent only after the form opens or the availability gate supplies an answer. Browser QA with the actual component and a profile delayed 1.5 seconds (no subsequent readiness event) opened the real weekly check-in form. All 23 focused regression tests passed, including delayed auth, in-flight profile, concurrent refresh/events, native payload and vendor interop. Physical-device form-opening confirmation remains outstanding.
 
 QA: focused Node tests plus existing check-in and admin push filter tests. Database rollback test selected 20 then 2 eligible members with zero overlap; authenticated users cannot claim notifications. No recipient records were retained by these dry runs. Browser fixture using the actual component verified cold URL entry, warm notification event, close/back/reopen, scrolling to Send, 320x568 light/dark and 568x320 dark. Screenshots show the existing 42px status-bar fallback and reachable bottom action; physical-device notification/tap confirmation remains separate.
 
