@@ -1975,7 +1975,7 @@ if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-progressphoto.js?v=13-course-photo-sync"><\/script>');
 document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=36-community-challenge"><\/script>');
     document.write('<script src="lib/learn-weekly-actions.js?v=3-coach-review"><\/script>');
-    document.write('<script src="lib/learn-action-review.js?v=1"><\/script>');
+    document.write('<script src="lib/learn-action-review.js?v=2"><\/script>');
     document.write('<script src="js/dashboard/pbb-social-journey.js?v=57-coach-reviewed-actions"><\/script>');
     document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=61-course-photo-sync"><\/script>');
     document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=31-coach-reviewed-actions"><\/script>');
@@ -1984,7 +1984,7 @@ document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=36-commu
     window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=13-course-photo-sync');
 window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=36-community-challenge');
     window._pbbDeferredQueue.push('lib/learn-weekly-actions.js?v=3-coach-review');
-    window._pbbDeferredQueue.push('lib/learn-action-review.js?v=1');
+    window._pbbDeferredQueue.push('lib/learn-action-review.js?v=2');
     window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=57-coach-reviewed-actions');
     window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=61-course-photo-sync');
     window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=31-coach-reviewed-actions');
@@ -21137,11 +21137,11 @@ if (window._pbbIsIOSSafari) {
             });
             if (window.showQuizBattleInviteModal || learningAlreadyRequested) return;
             var s = document.createElement('script');
-      s.src = 'lib/learning-inline.js?v=57-coach-reviewed-actions';
+      s.src = 'lib/learning-inline.js?v=58-action-history';
             document.head.appendChild(s);
         }, { once: true });
     } else {
-    document.write('<script src="lib/learning-inline.js?v=57-coach-reviewed-actions"><\/script>');
+    document.write('<script src="lib/learning-inline.js?v=58-action-history"><\/script>');
     }
     </script>
     <!-- Battle System & Logic Overrides (130 lines — deferred on iOS) -->
