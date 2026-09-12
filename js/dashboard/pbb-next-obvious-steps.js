@@ -357,6 +357,23 @@
     }
   }
 
+  function getLearnCourseAction() {
+    var review = window.BalanceLearnActionReview;
+    var state = review && review.state;
+    if (!state || !state.available || window.metaAdTrialMode === true) return null;
+    var week = Number(state.current_week);
+    var definition = window.BalanceLearnWeeklyActions && window.BalanceLearnWeeklyActions.experiment(week);
+    if (!definition || review.complete(review.record(week))) return null;
+    var base = ACTIONS.find(function(action){ return action.id === 'learn_weekly_action'; });
+    return Object.assign({}, base, {
+      taskId: 'w' + week + '_experiment',
+      week: week,
+      title: 'Week ' + week + ': ' + definition.title,
+      body: review.status(week) + '. Save your reflection and record what happened in your weekly check-in.',
+      cta: 'View weekly action'
+    });
+  }
+
   function getFitGotchiCourseAction() {
     return window.socialJourney && typeof window.socialJourney.getFitGotchiIntroAction === 'function'
       ? window.socialJourney.getFitGotchiIntroAction() : null;
@@ -849,6 +866,7 @@
 
   function isActionComplete(action) {
     if (!action || !action.id) return false;
+    if (action.id === 'learn_weekly_action') return !getLearnCourseAction();
     if (action.id === 'balance_journey') return !getBalanceJourneyAction();
     if (action.id === 'imported_activity') return !getImportedActivityAction();
     if (visibleCompleteFallback(action.id)) return true;
@@ -862,6 +880,19 @@
   }
 
   var ACTIONS = [
+    {
+      id: 'learn_weekly_action',
+      title: 'Your weekly course action',
+      body: 'Save your reflection and report what happened.',
+      cta: 'View weekly action',
+      accent: '#b78a2e',
+      priority: 985,
+      goalIds: [],
+      action: function(){
+        var current = getLearnCourseAction();
+        if (current) window.BalanceLearnActionReview.open(current.week);
+      }
+    },
     {
       id: 'imported_activity',
       title: 'Add a photo to your activity',
@@ -1178,6 +1209,8 @@
   function dailyActionSet(selectedGoalIds) {
     var picked = [];
     var journeyAction = getBalanceJourneyAction();
+    var learnAction = getLearnCourseAction();
+    if (learnAction && journeyAction && journeyAction.taskId === learnAction.taskId) journeyAction = null;
     addUniqueAction(picked, getImportedActivityAction());
     var onboardingEligible = isOnboardingAccount();
     var hasIncompleteOnboarding = onboardingEligible && ONBOARDING_ACTION_IDS.some(function(id){
@@ -1197,6 +1230,7 @@
       if (window.metaAdTrialMode === true) return picked;
     }
     if (!hasIncompleteOnboarding) addUniqueAction(picked, getFitGotchiCourseAction());
+    addUniqueAction(picked, learnAction);
     // The standalone Week 1 card and course queue point at the same saved action.
     if (!(journeyAction && journeyAction.title === 'View Your FitGotchi' && picked.some(function(item){ return item.id === 'fitgotchi_intro'; }))) addUniqueAction(picked, journeyAction);
     if (onboardingEligible && hasReachedSecondProgramWeek() && !hasSeenOnboardingStep('activity_insights_intro')) {
@@ -1246,6 +1280,7 @@
 
   function isActionAvailable(action, selectedGoalIds) {
     if (!action || !action.id) return false;
+    if (action.id === 'learn_weekly_action') return !!getLearnCourseAction();
     if (action.id === 'fitgotchi_intro') return !!getFitGotchiCourseAction();
     if (action.id === 'balance_journey') return !!getBalanceJourneyAction();
     if (action.id === 'imported_activity') return !!getImportedActivityAction();
@@ -1809,6 +1844,7 @@
   }
   document.addEventListener('pbbWeeklyGoalsSaved', function(){ refreshSoon(120); });
   window.addEventListener('pbbCurrentUserReady', function(){ refreshSoon(120); });
+  window.addEventListener('pbbLearnActionReviewUpdated', function(){ refreshSoon(0); });
   window.addEventListener('pbbWeeklyCheckinAvailabilityChanged', function(){ refreshSoon(0); });
   document.addEventListener('pbbInitComplete', function(){ refreshSoon(300); });
   document.addEventListener('appCriticalContentReady', function(){ refreshSoon(300); });
