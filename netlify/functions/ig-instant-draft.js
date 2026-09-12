@@ -1746,10 +1746,9 @@ function buildPaidMetaGoalToBlockerText(goalText = '', transformationProof = nul
         acknowledgement = 'Yeah, having more energy and feeling fitter is a solid goal.';
     }
     const proofLine = String(transformationProof?.introduction || '').trim();
-    const courseBridge = proofLine
-        ? 'That is the kind of progress the six-week Balance Learn course helps you build around your real week.'
-        : 'The six-week Balance Learn course helps you turn that goal into a clear week you can actually follow.';
-    return `${acknowledgement}${proofLine ? ` ${proofLine}` : ''} What usually gets in the way of making that happen consistently?`;
+    const introduction = /\bgoal\b[^.!?]*[.!?]/i.test(proofLine.split(/This is /i)[0])
+        ? proofLine : `${acknowledgement}${proofLine ? ` ${proofLine}` : ''}`;
+    return `${introduction} What usually gets in the way of making that happen consistently?`;
 }
 
 function paidMetaHistoryHasConcreteBlocker(history = []) {
