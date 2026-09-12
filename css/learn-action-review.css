@@ -21,3 +21,36 @@ html[data-admin-theme="dark"] #learn-action-dialog,html[data-pbb-theme="dark"] #
 #learn-action-dialog :focus-visible{outline:3px solid var(--lar-focus);outline-offset:3px}
 #learn-action-dialog [data-error]{font-weight:600;color:var(--lar-error) !important;-webkit-text-fill-color:var(--lar-error) !important}
 [data-learn-report]{border-top:1px solid currentColor;margin-top:20px;padding-top:16px}
+
+/* Balance Learn: a calm task, a notebook, then a clear reporting step. */
+#learn-action-dialog{--lar-card:#ffffff;--lar-soft:#f4eddd;--lar-gold:#866019;--lar-button:#ead090;--lar-card-line:#d8ccb5}
+html[data-admin-theme="dark"] #learn-action-dialog,html[data-pbb-theme="dark"] #learn-action-dialog,body.dark-mode #learn-action-dialog,html.pbb-theme-dark #learn-action-dialog{--lar-card:#242a25;--lar-soft:#30352a;--lar-gold:#e9c875;--lar-button:#e9c875;--lar-card-line:#60634f}
+#learn-action-dialog .lar-member{display:grid;gap:22px;max-width:620px;margin:auto}
+#learn-action-dialog .lar-week-picker{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+#learn-action-dialog .lar-week-picker label{margin:0;font-size:12px;color:var(--lar-muted)!important;-webkit-text-fill-color:var(--lar-muted)!important}
+#learn-action-dialog .lar-week-picker select{margin-top:5px;padding:8px 12px;min-height:44px;font-size:14px}
+#learn-action-dialog .lar-status{font-size:12px;line-height:1.4;padding:8px 12px;border-radius:20px;background:var(--lar-soft);max-width:220px}
+#learn-action-dialog .lar-hero{padding:28px 24px;border:1px solid var(--lar-card-line);border-radius:22px;background:radial-gradient(ellipse at top right,rgba(216,178,94,.18),transparent 70%),var(--lar-soft)}
+#learn-action-dialog .lar-eyebrow{display:block;font:700 11px/1.5 Inter,system-ui,sans-serif;letter-spacing:.13em;color:var(--lar-gold)!important;-webkit-text-fill-color:var(--lar-gold)!important}
+#learn-action-dialog .lar-hero h3{font:500 clamp(27px,5vw,36px)/1.15 'Playfair Display',Georgia,serif;margin:12px 0 18px;letter-spacing:-.02em}
+#learn-action-dialog .lar-gold-rule{height:2px;width:42px;background:var(--lar-gold);margin-bottom:18px}
+#learn-action-dialog .lar-hero p{margin:0;font-size:16px;line-height:1.75}
+#learn-action-dialog .lar-panel{padding:24px;background:var(--lar-card);border:1px solid var(--lar-card-line);border-radius:18px}
+#learn-action-dialog .lar-panel h3{font:600 21px/1.3 Inter,system-ui,sans-serif;margin:8px 0 14px}
+#learn-action-dialog .lar-panel label{font-size:15px;line-height:1.65;margin:12px 0}
+#learn-action-dialog .lar-panel textarea{min-height:150px;background:var(--lar-paper)!important;line-height:1.65;border-style:solid}
+#learn-action-dialog .lar-caption{font-size:13px;line-height:1.65;margin:12px 0 0;color:var(--lar-muted)!important;-webkit-text-fill-color:var(--lar-muted)!important}
+#learn-action-dialog button.lar-primary{background:var(--lar-button);border-color:var(--lar-button);color:#24291f!important;-webkit-text-fill-color:#24291f!important;min-height:48px;margin:8px 0 0;padding:12px 18px}
+#learn-action-dialog button.lar-primary:disabled{color:#555c50!important;-webkit-text-fill-color:#555c50!important}
+#learn-action-dialog .lar-prompts{list-style:none;margin:20px 0;padding:0;display:grid;gap:0}
+#learn-action-dialog .lar-prompts li{display:grid;grid-template-columns:28px minmax(0,1fr);gap:12px;padding:16px 0;border-top:1px solid var(--lar-card-line)}
+#learn-action-dialog .lar-prompt-number{display:grid;place-items:center;width:28px;height:28px;border:1px solid var(--lar-card-line);border-radius:50%;font-size:12px;color:var(--lar-gold)!important;-webkit-text-fill-color:var(--lar-gold)!important}
+#learn-action-dialog .lar-member h4{font:600 15px/1.5 Inter,system-ui,sans-serif;margin:2px 0 0;text-transform:none;letter-spacing:normal}
+#learn-action-dialog .lar-prompts li{margin:0}
+#learn-action-dialog .lar-answer{white-space:pre-wrap;font-size:15px;line-height:1.7;margin:8px 0 0}
+#learn-action-dialog .lar-completion{display:grid;grid-template-columns:30px minmax(0,1fr);gap:12px;padding:4px 8px}
+#learn-action-dialog .lar-completion-icon{font-size:25px;color:var(--lar-gold)!important;-webkit-text-fill-color:var(--lar-gold)!important}
+#learn-action-dialog .lar-completion p{font-size:13px;line-height:1.7;margin:6px 0;color:var(--lar-muted)!important;-webkit-text-fill-color:var(--lar-muted)!important}
+#learn-action-dialog .lar-review-note,#learn-action-dialog .lar-saved-meal{padding:14px;background:var(--lar-soft);border-radius:12px}
+#learn-action-dialog .lar-history summary{cursor:pointer;font-size:14px;font-weight:600;min-height:44px;align-content:center}
+@media(max-width:380px){#learn-action-dialog .lar-body{padding-left:14px;padding-right:14px}#learn-action-dialog .lar-hero,#learn-action-dialog .lar-panel{padding:22px 18px}#learn-action-dialog .lar-panel button{width:100%}}
