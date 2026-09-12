@@ -304,7 +304,7 @@ function responseSummary(response) {
         response.note ? `Anything else: ${response.note}` : '',
         response.course_learning ? `Course learning: ${response.course_learning}` : 'Course learning: nothing added.',
         response.learn_action_report ? `Saved action evidence: ${JSON.stringify(response.learn_action_report.answers)}${response.learn_action_report.meal ? ' Saved meal: ' + response.learn_action_report.meal.name : ''}` : '',
-        response.course_week ? `Learn week ${response.course_week}: ${learnActions.experiment(response.course_week)?.prompt || ''} Action report status: ${response.learn_action?.status || 'not submitted'}. Only a coach confirmation completes the course action.` : '',
+        response.course_week ? `Learn action week ${response.learn_action?.week || response.course_week}: ${learnActions.experiment(response.learn_action?.week || response.course_week)?.prompt || ''} Action report status: ${response.learn_action?.status || 'not submitted'}. Only a coach confirmation completes the course action.` : '',
         `Weekly goals: ${goalSummary(response.goals)}`,
     ].filter(Boolean).join('\n');
 }
@@ -403,7 +403,6 @@ exports.handler = async (event) => {
         if (body.learn_action && occurrence !== 'weekly') return json(400,{error:'Submit course action evidence with your weekly check-in.'});
         const prepared = body.learn_action ? await learnReview.prepareReport(authUser.id,body.learn_action,{...response}) : null;
         if (prepared) {
-            response.course_week = prepared.week || prepared.existing.week;
             response.learn_action_report = prepared.payload?.report || prepared.existing.report;
         }
         await saveResponse(authUser.id, response);
