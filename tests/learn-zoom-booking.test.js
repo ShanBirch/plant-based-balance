@@ -45,6 +45,13 @@ test('named Learn preview request reaches the requested handoff without selling 
  assert.equal(api.selectFastDeterministicPaidMetaProgression({draft:d,currentMessage}),d);
  assert.doesNotMatch(d.joined,/book|zoom/i);
 });
+test('requested weekend times are never guaranteed before the fit call',()=>{
+ const currentMessage='I want Zoom sessions with Learn, but can you guarantee evenings on weekends?';
+ const d=api.buildDeterministicPaidMetaConversationReply({currentMessage,flowVariant:'broad_pain'});
+ assert.match(d.joined,/can't guarantee those times/);
+ assert.ok(d.joined.includes(ZOOM_BOOKING_URL));
+ assert.deepEqual(api.collectPaidMetaWriterContractIssues({draft:d,currentMessage,history:[],flowVariant:'broad_pain'}),[]);
+});
 for (const currentMessage of ['I work on Zoom all day so I want workouts away from my screen. Can I see the Learn preview?','Does the 149 dollars cover the Learn course and a 30-minute Zoom session each week?']) test('writer must resolve meaning: '+currentMessage,()=>{
  assert.equal(buildPaidMetaZoomHandoff({currentMessage,flowVariant:'broad_pain'}),null);
 });

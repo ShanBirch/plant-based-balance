@@ -23,7 +23,7 @@ function buildPaidMetaZoomHandoff({ currentMessage = '', history = [], flowVaria
     if (!explicit && !(priorZoom && (acceptance || priceQuestion || bookingRequest))) return null;
     // Unknown compound questions need the writer's real answer, not a
     // transport shortcut that could erase their question.
-    if (/\?/.test(text) && /\b(?:injur|pain|hurt|pregnan|refund|cancel|time zone|weekends?|evenings?|equipment|recorded|recording)\w*\b/i.test(text)) return null;
+    if (/\?/.test(text) && /\b(?:injur|pain|hurt|pregnan|refund|cancel|time zone|equipment|recorded|recording)\w*\b/i.test(text)) return null;
     const interested = /\b(?:want|interested|keen|prefer|like|yes|can i|could i|tell me|how does|how do)\b/i.test(text);
     if (!priceQuestion && !bookingRequest && !acceptance && !interested) return null;
     const frequency = /\b(?:three|3)\s*(?:zoom\s+)?(?:times|sessions?)?\s*(?:a|per|each)?\s*week|\bzoom pt\s*3\b/i.test(text) ? 3
@@ -33,7 +33,9 @@ function buildPaidMetaZoomHandoff({ currentMessage = '', history = [], flowVaria
     const facts = priceQuestion || frequency
         ? (frequency ? `The ${frequency}-session option is AUD $${prices[frequency]} per week.` : 'The options are AUD $125/week for one session, $275/week for three, or $425/week for five.')
         : '';
-    const joined = `Zoom PT includes Balance Learn plus live 30-minute one-on-one training sessions with me.${facts ? ' '+facts : ''} It starts with a six-week coaching block.\n\nBook a fit call here so we can check availability and whether it suits you before payment: ${ZOOM_BOOKING_URL}`;
+    const availability = /\b(?:guarantee|availability|weekends?|evenings?)\b/i.test(text)
+        ? "I can't guarantee those times before we check availability. " : '';
+    const joined = `${availability}Zoom PT includes Balance Learn plus live 30-minute one-on-one training sessions with me.${facts ? ' '+facts : ''} It starts with a six-week coaching block.\n\nBook a fit call here so we can check availability and whether it suits you before payment: ${ZOOM_BOOKING_URL}`;
     return {joined,chunks:joined.split('\n\n'),model:'deterministic_paid_meta_guided_sales_v1',replyMode:'campaign_sales_progression',paidMetaZoomHandoff:true,callBookingUrl:ZOOM_BOOKING_URL,maxChunks:2,flowVariant,error:null};
 }
 module.exports={buildPaidMetaZoomHandoff,ZOOM_BOOKING_URL};
