@@ -62,6 +62,7 @@ test('goal to photo to blocker to video to support choice then either destinatio
  const base={history,flowVariant:'broad_pain',appPreviewUrl:'https://future-balance.netlify.app/p/synthetic-token-12345'};
  for(const choice of ['On my own please','Just the app for me','On my own with the app please','I prefer doing workouts on my own','Just Learn and workouts on my own']){
   const d=api.buildDeterministicPaidMetaConversationReply({...base,currentMessage:choice});assert.equal(d.appPreviewHandoff,true);
+  assert.deepEqual(api.collectPaidMetaWriterContractIssues({draft:d,currentMessage:choice,history,flowVariant:'broad_pain'}),[],choice+' is a choice, not an inclusions question');
   const approval=api.buildPaidMetaConversationApproval({metaAdConversationFastLane:true,draft:d,currentMessage:choice,history});
   assert.equal(approval?.required,false,choice+' must be approved through delivery');
  }
