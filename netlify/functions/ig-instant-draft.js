@@ -1402,7 +1402,7 @@ function resolveMetaAdEarlyTypingDelayMs({ lastInboundAt = '', seed = '', nowMs 
 
 const PAID_META_GOAL_SIGNAL_RE = /\b(?:lose|drop|reduce|gain|build|improve|get|feel|become|want|need|goal|stronger|fitter|leaner|healthier|weight|fat|muscle|strength|fitness|energy|confidence)\b/i;
 const PAID_META_BLOCKER_SIGNAL_RE = /\b(?:stop(?:ping)? and start(?:ing)?|stop[- ]start|keep stopping|keep restarting|always restart|fall(?:ing)? off|drop(?:ping)? off|never stick|can(?:'t| not) stick|inconsisten|discourag\w*|lose motivation|no motivation|no time|too busy|overwhelm|cravings?|weekends?|chocolate|emotional(?:ly)? eat\w*|having (?:it|chocolate|snacks?) around|accountab|stay on track|follow through|miss(?:ed|ing) (?:a )?(?:workout|session)|skip(?:ped|ping)? (?:a )?(?:training|workout|session)|shifts? change|changing shifts?|hectic work(?:days?| weeks?)?|work (?:gets?|is|becomes?) hectic|family stuff|things? (?:just )?get(?:s)? in the way|work (?:and|&) (?:the )?kids|kids (?:and|&) work|busy with (?:work|kids|family))\b/i;
-const PAID_META_FITNESS_GOAL_RE = /\b(?:lose|losing|weight|wieght|body fat|fat loss|fit|fitter|fitness|strong|stronger|strength|muscle|energy|health|healthier|tone|toned|confidence|run|running|training|workout)\b/i;
+const PAID_META_FITNESS_GOAL_RE = /\b(?:lose|losing|weight|wieght|body fat|body composition|recomposition|fat loss|fit|fitter|fitness|strong|stronger|strength|muscle|energy|health|healthier|tone|toned|confidence|run|running|training|workout)\b/i;
 const PAID_META_CONCRETE_BLOCKER_RE = /\b(?:no time|not enough time|run out of time|too busy|work gets busy|hectic work(?:days?| weeks?)?|work (?:gets?|is|becomes?) hectic|prep|prepar\w*|routine|shifts?|roster|schedule|craving|weekend|chocolate|emotional(?:ly)? eat\w*|having (?:it|chocolate|snacks?) around|motivat\w*|inconsisten\w*|consisten\w*|stick|fall(?:ing)? off|drop(?:ping)?|stop(?:ping)?|restart|follow[ -]?through|accountab\w*|miss(?:ed|ing)? (?:a )?(?:workout|session)|skip(?:ped|ping)? (?:a )?(?:training|workout|session)|random(?:ly)?|never know|no (?:proper )?(?:workout )?(?:plan|program)|don['\u2019]?t (?:have|know) (?:a |what )?(?:proper )?(?:workout )?(?:plan|program|to do)|overwhelm\w*|too much information|pain|injur\w*|cost|money|confidence)\b/i;
 const PAID_META_STRONG_BLOCKER_RE = /\b(?:no time|not enough time|run out of time|too busy|work gets busy|hectic work(?:days?| weeks?)?|work (?:gets?|is|becomes?) hectic|prep|prepar\w*|routine|shifts?|roster|schedule|craving|weekend|chocolate|emotional(?:ly)? eat\w*|having (?:it|chocolate|snacks?) around|lose motivation|no motivation|inconsisten\w*|can['\u2019]?t stick|fall(?:ing)? off|drop(?:ping)? off|stop(?:ping)?|restart|follow[ -]?through|miss(?:ed|ing)? (?:a )?(?:workout|session)|skip(?:ped|ping)? (?:a )?(?:training|workout|session)|random(?:ly)?|never know|no (?:proper )?(?:workout )?(?:plan|program)|don['\u2019]?t (?:have|know) (?:a |what )?(?:proper )?(?:workout )?(?:plan|program|to do)|overwhelm\w*|too much information|pain|injur\w*|cost|money)\b/i;
 const PAID_META_FOOD_CONFUSION_RE = /\b(?:(?:i\s+)?(?:don['\u2019]?t|do not|dont)\s+know|(?:i\s+)?(?:dunno|dunn)|not sure|unsure|confused)\b[^.!?\n]{0,48}\b(?:what|how)\b[^.!?\n]{0,32}\b(?:eat|eating|meal|meals|food|protein)\b|\b(?:what|how)\b[^.!?\n]{0,32}\b(?:eat|eating|meal|meals|food|protein)\b[^.!?\n]{0,48}\b(?:confus|unsure|not sure)\w*/i;
@@ -2691,7 +2691,7 @@ function isPaidMetaBareGoalMessage(message = '') {
     // recognises the person's particular caring/work/access circumstances.
     const goals = String(message || '').trim().split(/\s+and\s+/i);
     if (goals.length > 1) return goals.every(isPaidMetaBareGoalMessage);
-    return /^(?:(?:i|we)\s+)?(?:(?:want|need|would like|hope)(?:\s+to)?\s+)?(?:lose (?:some |a bit of |around |about )?(?:weight|fat|body fat|\d+(?:\.\d+)?\s*kg)|build (?:muscle|strength)|get (?:fit|fitter|strong|stronger)|feel (?:fit|fitter|strong|stronger|confident)|(?:have )?more energy|tone up)[.!\s]*$/i.test(String(message || '').trim());
+    return /^(?:(?:i|we)\s+)?(?:(?:want|need|would like|hope)(?:\s+to)?\s+)?(?:lose (?:some |a bit of |around |about )?(?:weight|fat|body fat|\d+(?:\.\d+)?\s*kg)|build (?:muscle|strength)|(?:better|improve) body composition|recomposition|get (?:fit|fitter|strong|stronger)|feel (?:fit|fitter|strong|stronger|confident)|(?:have )?more energy|tone up)[.!\s]*$/i.test(String(message || '').trim());
 }
 
 function selectFastDeterministicPaidMetaProgression({ metaAdOpeningTurn = false, draft = null, requiresMediaAnalysis = false, currentMessage = '' } = {}) {
@@ -5331,10 +5331,25 @@ function attachPaidMetaWriterSelectedMedia(draft = {}, {
     allowAttachments = false,
     flowVariant = 'plant_based_control',
     history = [],
+    currentMessage = '',
 } = {}) {
     if (!allowAttachments) return draft;
     const replyText = draftTextFromDraft(draft);
     if (!replyText) return draft;
+    // Preserve the approved proof step when a free-form writer acknowledges a
+    // goal then asks for the blocker without introducing the matching client.
+    const alreadySentPhoto = history.some(item => item?.direction === 'out' && /\[IMAGE:|client-success\//i.test(String(item.text || '')));
+    const goalProof = flowVariant === 'broad_pain' && !alreadySentPhoto
+        && !draft.imageAttachmentUrl && paidMetaOutboundAskedForBlocker(replyText)
+        ? resolvePaidMetaTransformationProof({goalText:currentMessage}) : null;
+    if (goalProof && !maySendDraftImageAttachment({imageUrl:goalProof.imageUrl,replyText})) {
+        const question = replyText.match(/[^.!?\n]*\?\s*$/)?.[0]?.trim();
+        if (question) {
+            const acknowledgement = replyText.slice(0,replyText.lastIndexOf(question)).trim();
+            const chunks = [`${acknowledgement} ${goalProof.introduction}`.trim(),question];
+            return {...draft,chunks,joined:chunks.join('\n\n'),imageAttachmentUrl:goalProof.imageUrl};
+        }
+    }
     const proofCandidates = [
         { name: /\bally\b/i, imageUrl: ALLY_WEIGHT_LOSS_PROOF_URL },
         { name: /\bgen\b/i, imageUrl: GEN_STRENGTH_CONFIDENCE_PROOF_URL },
@@ -8868,6 +8883,7 @@ exports.handler = async (event) => {
             allowAttachments: hasInstagramGraphRoute,
             flowVariant: metaAdFlowVariant,
             history,
+            currentMessage: messageText,
         });
         draft = ensurePaidMetaAppVideoPreviewCta(draft);
     }

@@ -2,6 +2,15 @@ const test=require('node:test'),assert=require('node:assert/strict');
 const api=require('../netlify/functions/ig-instant-draft')._test;
 const send=require('../netlify/functions/send-ig-reply')._test;
 const {LEARN_SUPPORT_CHOICE}=require('../netlify/functions/_lib/paid-meta-zoom');
+test('body-composition goal delivers Dani proof in deterministic and writer paths',()=>{
+ for(const goal of ['I want better body composition','I want to improve body composition']){
+  const d=api.buildDeterministicPaidMetaConversationReply({currentMessage:goal,history:[],flowVariant:'broad_pain'});
+  assert.match(d.joined,/Dani/);assert.ok(d.imageAttachmentUrl);assert.ok(api.isPaidMetaBareGoalMessage(goal));
+ }
+ const writer={joined:'That makes sense, body composition is a great goal. What usually gets in the way for you?',chunks:[],model:'writer'};
+ const d=api.attachPaidMetaWriterSelectedMedia(writer,{allowAttachments:true,flowVariant:'broad_pain',currentMessage:'I want better body composition'});
+ assert.match(d.joined,/Dani/);assert.ok(d.imageAttachmentUrl);assert.match(d.chunks.at(-1),/gets in the way/);
+});
 test('goal to photo to blocker to video to support choice then either destination',()=>{
  const history=[{direction:'out',text:"Hey, how are you? What's the main change you want in the next six weeks?"}];
  const goal='I want to lose 5kg';
