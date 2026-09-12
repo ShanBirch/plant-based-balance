@@ -22,3 +22,10 @@ test('first invitation, explicit handoff and media sequence remain intact', () =
     }
     assert.equal(removeRepeatedPaidMetaPreviewInvitation({ draft, history, currentMessage: 'Can I see the preview?' }), draft);
 });
+
+test('invitation embedded after a factual sentence is removed without dropping the answer',()=>{
+    const merged={...draft,chunks:[answer+' '+invitation],joined:answer+' '+invitation};
+    assert.equal(removeRepeatedPaidMetaPreviewInvitation({draft:merged,history,currentMessage:'Are the lessons self-paced?'}).joined,answer);
+    const embeddedHistory=[{direction:'out',text:'Yes, beginners can start gently. '+invitation}];
+    assert.equal(removeRepeatedPaidMetaPreviewInvitation({draft:merged,history:embeddedHistory,currentMessage:'Are the lessons self-paced?'}).joined,answer);
+});
