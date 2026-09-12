@@ -35,7 +35,8 @@ test('grocery bridge explains practical fit and keeps media, price and decision'
  }});
  assert.ok(!result.error);assert.match(result.chunks[0],/ordinary supermarket ingredients/);
  assert.doesNotMatch(result.joined,/neuroscience and psychology|budget makes meal planning hard/);
- assert.match(result.joined,/six weeks.*workout program.*meal plan.*weekly training and food check-in/);
+ assert.doesNotMatch(result.joined,/six.week|neuroscience|psychology|app and community/i);
+ assert.match(result.joined,/one AUD \$149 payment/);
  assert.equal(result.chunks.at(-1),chunks.at(-1));assert.equal(result.videoAttachmentUrl,draft.videoAttachmentUrl);
 });
 for (const scenario of cases) {
@@ -83,7 +84,7 @@ test('final personal acknowledgement sees the full batch and preserves the offer
     assert.equal(result.chunks[0],draft.chunks[0]);
     assert.match(result.chunks[1],/^Sounds like the kids and chocolate might/);
     assert.doesNotMatch(result.chunks[1],/neuroscience and psychology/);
-    assert.match(result.chunks[2],/six weeks.*workout program.*meal plan.*weekly training and food check-in/);
+    assert.doesNotMatch(result.chunks[2],/six.week|workout program|meal plan|neuroscience|psychology/i);
     assert.match(result.chunks[2],/\$149.*no subscription or auto-renewal.*Here's the course video/);
     assert.equal(result.chunks.at(-1),draft.chunks.at(-1));
     assert.equal(result.videoAttachmentUrl,draft.videoAttachmentUrl);
