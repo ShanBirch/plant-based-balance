@@ -1,4 +1,5 @@
 const { outboundAnswersOlderInbound } = require('./_lib/ig-reply-source');
+const { buildPaidMetaZoomHandoff, ZOOM_BOOKING_URL } = require('./_lib/paid-meta-zoom');
 /**
  * ig-instant-draft — produces an AI draft reply for an inbound Instagram DM
  * captured by the manychat-inbound webhook.
@@ -2235,6 +2236,8 @@ function buildDeterministicPaidMetaConversationReply({
         if (proof) return guidedReply([proof.introduction], { imageAttachmentUrl: proof.imageUrl });
     }
 
+    const zoomHandoff = buildPaidMetaZoomHandoff({currentMessage:message,history,flowVariant});
+    if (zoomHandoff) return zoomHandoff;
     if (broadFlow && hasPaidMetaPreviewOrPriceDecline(message)) {
         const joined = /\b(?:too (?:much|expensive)|can['\u2019]?t afford|cannot afford|not (?:in|within) (?:my )?budget)\b/i.test(message)
             ? 'That’s completely fair. No stress, I won’t send the link.'
@@ -2686,7 +2689,7 @@ function isPaidMetaBareGoalMessage(message = '') {
 
 function selectFastDeterministicPaidMetaProgression({ metaAdOpeningTurn = false, draft = null, requiresMediaAnalysis = false, currentMessage = '' } = {}) {
     if (requiresMediaAnalysis) return null;
-    if (currentMessage && draft?.replyMode === 'campaign_sales_progression' && draft?.paidMetaVerifiedAccessFaq !== true
+    if (currentMessage && draft?.replyMode === 'campaign_sales_progression' && draft?.paidMetaVerifiedAccessFaq !== true && draft?.paidMetaZoomHandoff !== true
         && draft?.model !== 'deterministic_paid_meta_autonomy_v1'
         && (/\?/.test(currentMessage)
             || (paidMetaOutboundAskedForBlocker(draftTextFromDraft(draft)) && !isPaidMetaBareGoalMessage(currentMessage)))) return null;
@@ -3509,7 +3512,9 @@ function shouldBypassGenericLinkHandoffForApprovedPaidMetaProgression({ approval
     return approval?.required === false
         && approval?.code === 'approved_meta_ad_sales_progression'
         && draft?.replyMode === 'campaign_sales_progression'
-        && !/https?:\/\//i.test(String(draft?.joined || ''));
+        && (!/https?:\/\//i.test(String(draft?.joined || ''))
+            || (draft?.paidMetaZoomHandoff === true && draft?.callBookingUrl === ZOOM_BOOKING_URL
+                && (String(draft?.joined || '').match(/https?:\/\/\S+/g) || []).every(url => url === ZOOM_BOOKING_URL)));
 }
 
 const META_AD_CARD_ATTACHMENT_RE = /^\[attachment:https:\/\/lookaside\.fbsbx\.com\/ig_messaging_cdn\/?[^\]]*\]$/i;
@@ -5224,6 +5229,7 @@ Client proof should normally be used once when it genuinely matches: Ally for we
 Reliable offer facts: Balance Learn is a six-week course inside Balance, built around neuroscience and the psychology of lasting change. Each week gives the person one practical learning focus, supported by Weekly Goals, alongside a personalised workout program, meal-plan support fitted to recorded dietary needs, and one weekly check-in where Shannon reviews their training and food and adjusts the plan. It is one AUD ${resolveBalanceLearnCoursePriceLabel()} payment for the full six weeks, with no subscription or auto-renewal. The personalised app preview comes before payment.
 Keep three separate facts clear: the course has a fixed weekly LEARNING theme; the workout schedule fits the person's availability and needs; Shannon reviews training and food in one weekly CHECK-IN. Never shorten this to "one weekly training" or imply the package limits them to one workout a week. If they ask whether it means one workout weekly, directly explain that weekly refers to the review, not the number of workouts. Do not promise a different workout every week merely because they dislike repetition. For lessons-only interest or an existing coach, explain that the curriculum stays fixed; personalisation applies to the workout/nutrition setup and review, not individually rewritten lessons.
 Answer yes/no questions directly before explaining. If asked whether every workout differs, say not necessarily: exercises and sessions can repeat to practise and measure progress, with adjustments when appropriate. Never guarantee no repeated sessions. If asked whether lessons differ between people, answer no: everyone gets the same core lessons, while workout and meal-plan setup can be personalised. Do not borrow the workout answer "not necessarily" for this fixed-curriculum question. Do not list all six themes unless they ask for the outline.
+ZOOM SUPPORT OPTION: Learn remains the core course. If the person says they want live supervised training, technique feedback or scheduled live accountability, you may ask one relevant question about adding 30-minute one-on-one Zoom training. Do not pitch all packages to everyone or infer Zoom interest from generic uncertainty. Zoom PT includes Learn: AUD $125/week for one live session weekly, $275/week for three, $425/week for five. It starts with a six-week coaching block, billed weekly in advance after fit and recurring availability are confirmed. When they want Zoom, the next step is booking a fit call at https://plantbased-balance.org/book, NOT the course preview, app setup or checkout. Do not promise an available slot or collect payment. Answer their actual questions first. If they decline Zoom or choose Learn alone, respect that and return to the ordinary Learn preview path. A bare yes after discussing the Zoom fit call means that call, not an app preview. Use the existing booking page so they can choose the call format there. These Zoom instructions take precedence over the default preview handoff below.
 If a recent outbound already offered the preview and the person asks another factual question instead of accepting, answer that question and stop. Do not repeat or rephrase the unanswered preview invitation. Their question is not a new opportunity to ask the same thing again. Send the preview when they explicitly request or accept it.
 
 Answer every actual question in the current turn before any sales move. A mention of lessons is not a request for the curriculum outline. Lessons are self-paced within the six-week access period: they can catch up on weekends and do not have to complete one every day. There is no verified fixed duration for every lesson, so do not invent a minutes-per-lesson figure. Say the time varies and they can work through it at their own pace. Someone can focus on the lessons alongside their existing trainer and meal plan; do not imply a separate discounted lessons-only package or tell them to replace their coach. For shared household meals, acknowledge dislikes such as tofu and suggest flexible shared bases with different proteins rather than guaranteeing everyone can always eat one identical dinner.
@@ -5402,6 +5408,8 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
     const reply = draftTextFromDraft(draft);
     const turn = String(currentMessage || '').replace(/\s+/g, ' ').trim();
     if (!reply || !turn) return [];
+    if (draft?.paidMetaZoomHandoff === true
+        && draftTextFromDraft(buildPaidMetaZoomHandoff({currentMessage:turn,history,flowVariant})) === reply) return [];
     if (draft?.replyMode === 'campaign_first_reply'
         && /^deterministic_meta_ad_founders_pass_v\d+$/.test(String(draft?.model || ''))) {
         return [];
