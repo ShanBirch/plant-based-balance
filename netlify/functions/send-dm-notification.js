@@ -414,7 +414,9 @@ async function sendNativePush(token, payload) {
             message.android.notification = {
                 channel_id: channelId,
                 sound: 'default',
-                click_action: 'FCM_PLUGIN_ACTIVITY',
+                // No custom click_action: FCM opens the installed app's launcher
+                // activity and forwards data extras. FCM_PLUGIN_ACTIVITY is not
+                // registered by our Capacitor manifest and can dismiss without opening.
                 color: accent.color,
             };
             // `tag` on android.notification tells Android to replace any
@@ -914,6 +916,7 @@ exports.handler = async (event) => {
 };
 
 module.exports.__test = {
+    sendNativePush,
     getExternalMessageChannel,
     getAlertExternalChannel,
     isClientScopedAdminPush,
