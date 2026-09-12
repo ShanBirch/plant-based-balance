@@ -99,6 +99,19 @@ test('family wording represents kids without forcing parroting', async () => {
     assert.match(result.joined,/family life/);
 });
 
+test('a missing personal concern receives one targeted rewrite before holding',async()=>{
+ const chunks=buildPaidMetaTailoredOfferChunks('Kids and chocolate','Lose weight','broad_pain');
+ const draft={chunks,joined:chunks.join('\n'),replyMode:'campaign_sales_progression',model:'test',flowVariant:'broad_pain'};
+ let calls=0;
+ const result=await personalisePaidMetaOffer({draft,currentMessage:'Kids and chocolate',writer:async contents=>{
+  calls++;
+  if(calls===1)return JSON.stringify({acknowledgement:'We can leave room for chocolate in a repeatable food routine.',evidence:['chocolate']});
+  assert.match(contents[0].parts[0].text,/REWRITE FEEDBACK/);
+  return JSON.stringify({acknowledgement:'We can leave room for chocolate in a flexible food routine, then adjust it around family life during the weekly review.',evidence:['Kids','chocolate']});
+ }});
+ assert.equal(calls,2);assert.ok(!result.error);assert.match(result.joined,/family life/);
+});
+
 test('invalid personalisation or a failed writer holds the offer privately', async () => {
     const chunks=buildPaidMetaTailoredOfferChunks('Chocolate','Lose weight','broad_pain');
     const draft={chunks,joined:chunks.join('\n'),replyMode:'campaign_sales_progression',model:'test',flowVariant:'broad_pain'};
