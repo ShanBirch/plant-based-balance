@@ -11,6 +11,16 @@ test('body-composition goal delivers Dani proof in deterministic and writer path
  const d=api.attachPaidMetaWriterSelectedMedia(writer,{allowAttachments:true,flowVariant:'broad_pain',currentMessage:'I want better body composition'});
  assert.match(d.joined,/Dani/);assert.ok(d.imageAttachmentUrl);assert.match(d.chunks.at(-1),/gets in the way/);
 });
+test('unfamiliar blocker cannot jump from writer acknowledgement to preview without video and support choice',()=>{
+ const history=[{direction:'in',text:'I want better body composition'},{direction:'out',text:'What usually gets in the way of making that happen consistently?'}];
+ const currentMessage='Too much conflicting advice leaves me doing nothing';
+ const draft={joined:'That makes sense. Balance Learn gives you structure. If you want, I can send the free personalised app preview next.',model:'writer'};
+ const issues=api.collectPaidMetaWriterContractIssues({draft,currentMessage,history,flowVariant:'broad_pain'});
+ assert.ok(issues.some(x=>/earned paid-Meta offer is missing/.test(x)));
+ const fixed=api.buildPaidMetaGuaranteedContractFallback({draft,currentMessage,history,flowVariant:'broad_pain',issues});
+ assert.ok(fixed.videoAttachmentUrl);assert.equal(fixed.chunks.at(-1),LEARN_SUPPORT_CHOICE);
+ assert.deepEqual(api.collectPaidMetaWriterContractIssues({draft:fixed,currentMessage,history,flowVariant:'broad_pain'}),[]);
+});
 test('goal to photo to blocker to video to support choice then either destination',()=>{
  const history=[{direction:'out',text:"Hey, how are you? What's the main change you want in the next six weeks?"}];
  const goal='I want to lose 5kg';

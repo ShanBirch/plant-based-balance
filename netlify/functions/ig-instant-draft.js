@@ -5633,14 +5633,21 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
         && draft?.replyMode === 'campaign_app_preview_handoff'
         && isMetaAppPreviewUrl(draft?.appPreviewUrl)
         && (isExplicitPaidMetaPreviewRequest(turn) || isExplicitPaidMetaPreviewAcceptance(turn));
+    // When the writer has chosen to progress after the blocker answer, enforce
+    // the whole approved offer even if that obstacle is not in a keyword list.
+    const lastOutboundForStage = [...history].reverse().find(item => item?.direction === 'out');
+    const writerProgressedAfterBlocker = broadFlow
+        && paidMetaOutboundAskedForBlocker(lastOutboundForStage?.text || '')
+        && !/\?/.test(turn) && /\b(?:Learn|preview)\b/i.test(reply);
     const earnedBroadOfferNow = !exactAcceptedPreview && knownBroadGoal
-        && knownBroadBlocker
+        && (knownBroadBlocker || writerProgressedAfterBlocker)
         && !autonomyPause
         && !asksForCurriculumOutline
         && !hasRecentCompletePaidMetaOffer(history)
         && !isExplicitPaidMetaPreviewRequest(turn)
         && !hasDirectPaidMetaCheckoutIntent(turn);
-    if (earnedBroadOfferNow && !hasCompletePaidMetaOfferText(reply)) {
+    if (earnedBroadOfferNow && (!hasCompletePaidMetaOfferText(reply)
+        || (writerProgressedAfterBlocker && !reply.includes(LEARN_SUPPORT_CHOICE)))) {
         issues.push(('The earned paid-Meta offer is missing the complete offer contract. State the neutral six-week setup, one AUD $149 payment for the full six weeks, no subscription or auto-renewal, and offer the personalised preview before payment.'.replaceAll('$149', resolveBalanceLearnCoursePriceLabel())));
     }
     const normalizeQuestion = value => String(value || '')
