@@ -21311,13 +21311,19 @@ function getPrescribedSetPrefill(exercise, isTimeBased) {
     // in the exercise prescription/cue above the logger.
     const numericTarget = prescription.match(/\d+(?:\.\d+)?/);
     if (!numericTarget) return null;
-    return isTimeBased
+    const prefill = isTimeBased
         ? { time: numericTarget[0] }
         : { reps: numericTarget[0] };
+    if (exercise.prescriptionOverridesHistory === true) prefill.preferPrescription = true;
+    return prefill;
 }
 
 function mergeSetPrefill(previousSet, prescribedSet) {
     if (!previousSet && !prescribedSet) return null;
+    // An explicit coach revision replaces targets, while retaining useful load history.
+    if (prescribedSet?.preferPrescription) {
+        return { kg: previousSet?.kg || '', reps: prescribedSet.reps || '', time: prescribedSet.time || '' };
+    }
     return {
         kg: previousSet?.kg || '',
         reps: previousSet?.reps || prescribedSet?.reps || '',
@@ -22771,7 +22777,7 @@ function renderWorkoutExercises(exercises) {
         card.dataset.prescribedSets = String(prescribedSets || '');
         card.dataset.prescribedReps = String(ex.reps || ex.time || '');
         const hasWeekSpecificPlan = !!getCurrentWeeklyPlanItem(ex);
-        const numSets = (ex.durationBudgeted || hasWeekSpecificPlan) ? prescribedSets : (previousSummary && previousSummary.setCount > 0 ? previousSummary.setCount : prescribedSets);
+        const numSets = (ex.prescriptionOverridesHistory || ex.durationBudgeted || hasWeekSpecificPlan) ? prescribedSets : (previousSummary && previousSummary.setCount > 0 ? previousSummary.setCount : prescribedSets);
         const isTimeBased = isTimeBasedExercise(ex);
         const prescribedSet = getPrescribedSetPrefill(ex, isTimeBased);
         const setsHtml = Array.from({length: numSets}, (_, setIdx) => {
