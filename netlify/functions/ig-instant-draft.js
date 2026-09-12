@@ -5694,9 +5694,10 @@ function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = 
             .filter(sentence => !/\$|\b(?:aud|payment|price|subscription|renewal)\b/i.test(sentence)
                 && !/\?/.test(sentence)).join(' ').trim();
         const homeAnswer = /\b(?:without (?:a |the )?gym|(?:train|work out) at home)\b/i.test(turn)
-            && !/\bhome\b/i.test(otherAnswers)
+            && !/\b(?:home|without (?:a |the )?gym)\b/i.test(otherAnswers)
             ? 'Yes, you can train at home, with the workout setup fitted to your space and equipment.' : '';
         const previewAnswer = asksPaidMetaPreviewCharge(turn)
+            && !/\b(?:preview|opening|clicking)\b[^.!?]{0,90}\b(?:won['’]?t|does not|doesn['’]?t|no|not)\b[^.!?]{0,30}\b(?:charg\w*|bill\w*|pay\w*)\b/i.test(otherAnswers)
             ? 'The preview is free. Opening it does not charge you; payment only happens if you choose to purchase.' : '';
         joined = [`It's one AUD ${resolveBalanceLearnCoursePriceLabel()} payment for the full six weeks, with no subscription or auto-renewal.`, otherAnswers, homeAnswer, previewAnswer].filter(Boolean).join(' ');
     } else if (/offered checkout without explicit transactional intent/i.test(issueText)) {

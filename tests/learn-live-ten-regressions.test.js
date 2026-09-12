@@ -64,3 +64,11 @@ test('noun-first goal question is still a repeat after a lesson answer',()=>{
     const draft=buildPaidMetaGuaranteedContractFallback({...a,issues});
     assert.equal(draft.joined,'The time varies between lessons.');
 });
+
+test('price repair does not duplicate existing home and no-charge answers',()=>{
+    const a=args('How much is the course, can I train without a gym, and will the free preview charge my card automatically?', "It's AUD $149 for six weeks. You can train without a gym, and the free personalised preview won’t charge your card automatically. If you want, I can send that through here.");
+    const draft=buildPaidMetaGuaranteedContractFallback({...a,issues:collectPaidMetaWriterContractIssues(a)});
+    assert.equal((draft.joined.match(/gym|train at home/gi)||[]).length,1);
+    assert.equal((draft.joined.match(/charg/gi)||[]).length,1);
+    assert.ok(draft.chunks.length<=2);
+});
