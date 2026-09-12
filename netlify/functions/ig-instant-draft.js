@@ -5273,6 +5273,7 @@ function lastPaidMetaOutbound(history = []) {
 function paidMetaOutboundAskedForGoal(text = '') {
     const value = String(text || '');
     return /\b(?:main|biggest|primary)\b[^?\n]{0,80}\b(?:health|fitness|fit|goal|result|change|achieve|working towards)\b[^?\n]{0,80}\?/i.test(value)
+        || /\b(?:what|which)\s+(?:(?:one|main|biggest|specific)\s+)?(?:changes?|goals?|results?|improvements?)\b[^?\n]{0,120}\?/i.test(value)
         || /\bwhat(?:'s| is) your (?:health or fitness |fitness |main )?goal\b[^?\n]*\?/i.test(value)
         || /\bwhat result (?:are you|would you be)\b[^?\n]*\?/i.test(value)
         || /\bwhat (?:would|do) you (?:most )?(?:want|like|hope) to (?:change|achieve|improve)\b[^?\n]*\?/i.test(value);

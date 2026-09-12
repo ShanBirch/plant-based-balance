@@ -56,3 +56,11 @@ test('repeat-question repair retains the useful grocery answer',()=>{
     assert.match(draft.joined,/basic supermarket ingredients/);
     assert.doesNotMatch(draft.joined,/\?/);
 });
+
+test('noun-first goal question is still a repeat after a lesson answer',()=>{
+    const a=args('How much time do the lessons take?', 'The time varies between lessons. What change would you most like to make over the next six weeks?');
+    const issues=collectPaidMetaWriterContractIssues(a);
+    assert.ok(issues.some(x=>/repeated a question/.test(x)));
+    const draft=buildPaidMetaGuaranteedContractFallback({...a,issues});
+    assert.equal(draft.joined,'The time varies between lessons.');
+});
