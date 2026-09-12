@@ -14,7 +14,7 @@ test('each current Learn week has its own named Home action independent of the l
   const {c,review}=fixture();
   for(let week=1;week<=6;week++){review.state.current_week=week;const a=c.getLearnCourseAction();assert.equal(a.week,week);assert.equal(a.taskId,`w${week}_experiment`);assert.ok(a.title.includes(definitions.experiment(week).title));assert.equal(a.cta,'View weekly action');}
 });
-test('saved and submitted reflections stay visible until coach confirmation',()=>{
+test('saved and submitted reflections stay visible until evidence review confirms completion',()=>{
   const {c,review}=fixture();
   for(const status of ['planned','submitted','needs_information']){review.row={status};assert.ok(c.getLearnCourseAction());}
   for(const status of ['completed','legacy_completed']){review.row={status};assert.equal(c.getLearnCourseAction(),null);}

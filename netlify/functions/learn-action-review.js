@@ -1,4 +1,5 @@
 const review=require('./_lib/learn-action-review');
+const learnAI=require('./_lib/learn-action-ai-review');
 const {SUPABASE_URL,SUPABASE_SERVICE_KEY,supabaseQuery}=require('./_lib/client-context');
 const json=(status,body)=>({statusCode:status,headers:{'Content-Type':'application/json','Cache-Control':'no-store'},body:JSON.stringify(body)});
 exports.handler=async event=>{
@@ -13,6 +14,7 @@ exports.handler=async event=>{
    const target=input.client_id||user.id;
    const ctx=await review.context(user.id,target,input.enrollment_id||null);
    if(event.httpMethod==='GET'){
+     if(ctx.available && !ctx.can_review)ctx.records=await learnAI.retryPending(user.id,ctx.records);
      if(ctx.available && !ctx.can_review && ctx.current_week>=6)Object.assign(ctx,await review.nutrition(user.id,review.weekStart(ctx,6)));
      return json(200,{ok:true,...ctx});
    }

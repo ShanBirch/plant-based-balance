@@ -72,4 +72,4 @@ test('completed old weeks keep explicit earlier credit and setup remains separat
   assert.ok(progress.setupTasks.every(t=>t.complete));
 });
 
-test('only coach confirmation gives a course tick, including earlier weeks', async()=>{ const {f,c}=fixture(3); for(const status of ['planned','submitted','needs_information','completed']) { c.actionRecords[1]={status}; await f.calculateProgress(); assert.equal(f.getFoundationsCourseProgress().weekProgress[0].tasks.find(t=>t.type==='learn_experiment').complete,status==='completed'); } });
+test('only confirmed completion gives a course tick, including earlier weeks', async()=>{ const {f,c}=fixture(3); for(const status of ['planned','submitted','needs_information','completed']) { c.actionRecords[1]={status}; await f.calculateProgress(); assert.equal(f.getFoundationsCourseProgress().weekProgress[0].tasks.find(t=>t.type==='learn_experiment').complete,status==='completed'); } });

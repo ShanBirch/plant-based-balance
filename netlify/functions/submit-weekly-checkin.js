@@ -1,4 +1,5 @@
 const learnReview = require('./_lib/learn-action-review');
+const learnAI = require('./_lib/learn-action-ai-review');
 const crypto = require('crypto');
 const learnActions = require('../../lib/learn-weekly-actions');
 
@@ -149,7 +150,7 @@ function validatePayload(body = {}, now = new Date()) {
     const blocker = cleanString(body.blocker, 600);
     const note = cleanString(body.note, 900);
     const courseLearning = cleanString(body.course_learning, 900);
-    const experimentCompleted = false; // Retired self-confirmation flag: completion requires coach review.
+    const experimentCompleted = false; // Never trust client self-confirmation; server evidence review owns the tick.
     if (experimentCompleted && courseLearning.length < 2) return { error: 'Add what happened when you tried your course experiment.' };
     const confidence = Math.round(Number(body.confidence || 0));
 
@@ -304,7 +305,7 @@ function responseSummary(response) {
         response.note ? `Anything else: ${response.note}` : '',
         response.course_learning ? `Course learning: ${response.course_learning}` : 'Course learning: nothing added.',
         response.learn_action_report ? `Saved action evidence: ${JSON.stringify(response.learn_action_report.answers)}${response.learn_action_report.meal ? ' Saved meal: ' + response.learn_action_report.meal.name : ''}` : '',
-        response.course_week ? `Learn action week ${response.learn_action?.week || response.course_week}: ${learnActions.experiment(response.learn_action?.week || response.course_week)?.prompt || ''} Action report status: ${response.learn_action?.status || 'not submitted'}. Only a coach confirmation completes the course action.` : '',
+        response.course_week ? `Learn action week ${response.learn_action?.week || response.course_week}: ${learnActions.experiment(response.learn_action?.week || response.course_week)?.prompt || ''} Action report status: ${response.learn_action?.status || 'not submitted'}. The automatic evidence review records completion only when this action is discussed and its criteria are met.` : '',
         `Weekly goals: ${goalSummary(response.goals)}`,
     ].filter(Boolean).join('\n');
 }
@@ -401,13 +402,20 @@ exports.handler = async (event) => {
         if (Number(body.course_week) && learnActions.experiment(courseWeek)) response.course_week = courseWeek;
         else response.course_experiment_completed = false;
         if (body.learn_action && occurrence !== 'weekly') return json(400,{error:'Submit course action evidence with your weekly check-in.'});
-        const prepared = body.learn_action ? await learnReview.prepareReport(authUser.id,body.learn_action,{...response}) : null;
+        let actionInput=body.learn_action;
+        if(!actionInput && occurrence==='weekly' && learnActions.experiment(courseWeek)){
+            const ctx=await learnReview.context(authUser.id),row=ctx.records.find(r=>r.week===courseWeek);
+            actionInput={enrollment_id:ctx.enrollment.id,week:courseWeek,revision:row?.revision||0,answers:{},meal_id:row?.report?.meal?.id||null};
+        }
+        const prepared = actionInput ? await learnReview.prepareReport(authUser.id,actionInput,{...response}) : null;
+        let actionRecord=null;
         if (prepared) {
             response.learn_action_report = prepared.payload?.report || prepared.existing.report;
         }
         await saveResponse(authUser.id, response);
         if (prepared) {
             const record = await learnReview.saveReport(authUser.id,prepared);
+            actionRecord=record;
             response.learn_action = {id:record.id,enrollment_id:record.enrollment_id,week:record.week,status:record.status,revision:record.revision};
             await saveResponse(authUser.id,response);
         }
@@ -459,11 +467,19 @@ exports.handler = async (event) => {
         const receipt = await supabaseQuery(`coach_alerts?select=id,data&id=eq.${encodeURIComponent(alert.alertId)}&limit=1`);
         if (asObject(receipt[0]?.data).activity_snapshot !== summary) throw new Error('Coach review readback did not match');
 
+        // Only after delivery is verified. AI failure never undoes a delivered
+        // check-in or awards credit; opening the action retries pending reviews.
+        if(actionRecord){
+            try{actionRecord=await learnAI.reviewDelivered(authUser.id,actionRecord,alert.alertId);}
+            catch(error){console.warn('[submit-weekly-checkin] Action review pending:',error.message);}
+        }
+
         return json(200, {
             ok: true,
             alert_id: alert.alertId,
             deduped: alert.deduped,
             week_start: response.week_start,
+            learn_action_status: actionRecord?.status || null,
         });
     } catch (error) {
         console.error('[submit-weekly-checkin] failed:', error.message);

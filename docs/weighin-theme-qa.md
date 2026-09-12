@@ -12,4 +12,4 @@ Scoped to the existing weigh-in modal; weight persistence, XP, calliper calculat
 
 ## Publishing status
 
-Not deployed. Terminal network access failed and the connected GitHub write was denied because this session cannot approve publishing. No branch was updated. Local edits are based on c4ff131 and must be rebased/patched onto current main before publishing. Read-only comparison against 045f2a3432c534e2f40281cf57d01acbbbe5a3a2 found the weigh-in template and the three other existing modified files unchanged upstream; unrelated dashboard updates must be preserved.
+The initial session could not publish. On 13 September network/filesystem access was restored; the focused fix was committed and rebased onto 045f2a3432c534e2f40281cf57d01acbbbe5a3a2, preserving other dashboard work, for shipping with the weekly-action update.
