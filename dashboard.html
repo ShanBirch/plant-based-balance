@@ -512,7 +512,7 @@ if (window._pbbIsIOSSafari) {
             'lib/vegan-meal-safety.js?v=2',
             'lib/migrate-localstorage.js',
             'lib/native-health.js?v=20260912-connection-v1',
-            'lib/native-push.js?v=41-meal-reminders-retired',
+            'lib/native-push.js?v=42-client-checkin',
             'lib/native-iap.js',
             'lib/stories.js?v=76-feed-composer-profile-photo&video_health=2&weekly_goals=2',
             'lib/ai-opponents.js',
@@ -564,7 +564,7 @@ if (window._pbbIsIOSSafari) {
 if (!window._pbbIsIOSSafari) {
     // Non-iOS: load native scripts synchronously
     document.write('<script src="lib/native-health.js?v=20260912-connection-v1"><\/script>');
-    document.write('<script src="lib/native-push.js?v=41-meal-reminders-retired"><\/script>');
+    document.write('<script src="lib/native-push.js?v=42-client-checkin"><\/script>');
     document.write('<script src="lib/native-iap.js"><\/script>');
 }
 </script>
@@ -1978,7 +1978,7 @@ document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=36-commu
     document.write('<script src="lib/learn-action-review.js?v=5-ai-evidence"><\/script>');
     document.write('<script src="js/dashboard/pbb-social-journey.js?v=58-ai-actions"><\/script>');
     document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=62-weekly-course-action"><\/script>');
-    document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=33-action-mobile-controls"><\/script>');
+    document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=34-checkin-push"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
     window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=13-course-photo-sync');
@@ -1987,7 +1987,7 @@ window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=36-com
     window._pbbDeferredQueue.push('lib/learn-action-review.js?v=5-ai-evidence');
     window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=58-ai-actions');
     window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=62-weekly-course-action');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=33-action-mobile-controls');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=34-checkin-push');
 }
 </script>
 
@@ -14094,7 +14094,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#insights-bodyweight-summary-card', fallbackSel:'#fitbit-performance-card', title:'Your insights, simplified', fallbackTitle:'Your insights, simplified', body:'Each clean card shows the number that matters now. Tap its button when you want the full graph and dated history.', fallbackBody:'Open Activity Insights from this Home card to see your new snapshot cards.', action: async function(){ try { if (typeof openInsightsView === 'function') openInsightsView(); } catch(e){} await new Promise(function(resolve){ setTimeout(resolve, 500); }); } },
     { tab:'dashboard', sel:'#insights-steps-summary-card', fallbackSel:'#fitbit-performance-card', title:'Add steps any day', fallbackTitle:'Add steps any day', body:'Tap Add your steps when you do not use a watch, then open step history for the graph and every daily total.', fallbackBody:'Open Activity Insights from this Home card to add or review daily steps.', action: async function(){ try { if (typeof openInsightsView === 'function') openInsightsView(); } catch(e){} await new Promise(function(resolve){ setTimeout(resolve, 500); }); } },
     { tab:'dashboard', sel:'#progress-photo-share-feed-btn,#weekly-progress-photo-done-card', title:'Share progress photos', body:"After your Monday progress photos are saved, share them to Feed for an extra 20 XP.", condition: function(){ var c = document.getElementById('weekly-progress-photo-done-card'); return c && c.style.display !== 'none'; } },
-    { tab:'dashboard', sel:'#weekly-checkin-card', title:'Weekly Review', body:"A shimmering gold review card shows the person's onboarding goal, weekly progress, check-ins, mood signals, and one clear action to set next week goals.", quick: true, condition: function(){ var c = document.getElementById('weekly-checkin-card'); return c && c.style.display !== 'none'; } },
+    { tab:'dashboard', sel:'#next-obvious-steps-card', title:'Your check-in reminder', body:"With phone notifications enabled, Balance reminds you when your check-in is available. Tap the notification to open it. You can also find it here on Home.", condition: function(){ var c = document.getElementById('next-obvious-steps-card'); return c && c.getClientRects().length > 0; } },
     { tab:'dashboard', sel:'#mood-checkin-card', title:'Daily mood check-in', body:"Three quick check-ins a day (morning / afternoon / evening) earn you bonus XP and feed your AI coach." },
     { tab:'dashboard', sel:'#fitness-diary-card,#fitness-diary-done-card', title:'Fitness Diary', body:"At night, Fitness Diary asks how your day really went. Use the big box for work stress, wins, motivation, and anything you want to share to Feed.", quick: true, condition: function(){ var c = document.getElementById('fitness-diary-card'); var d = document.getElementById('fitness-diary-done-card'); return (c && c.style.display !== 'none') || (d && d.style.display !== 'none'); } },
     { tab:'dashboard', sel:'#daily-quiz-card', title:'Daily quiz', body:"A new quick quiz every day. Answer it to earn XP." },
@@ -16768,12 +16768,12 @@ window.endFeatureTour = function(skipped){
       condition: function(){ try { return window.pbbNextSteps && window.pbbNextSteps.isMemberEligible && window.pbbNextSteps.isMemberEligible() && !!document.querySelector('#next-obvious-steps-card .next-step-action'); } catch(e){ return false; } }
     },
     {
-      id: 'weekly-checkin-friday-form-v10',
+      id: 'weekly-checkin-ready-push-v1',
       tab: 'dashboard',
-      sel: '#weekly-checkin-card',
-      title: 'Weekly Check-In',
-      body: "From Friday to Sunday, review your weekly goals and tell Shannon what went well, what got in the way, and what support you need next.",
-      condition: function(){ var c = document.getElementById('weekly-checkin-card'); return c && c.style.display !== 'none'; }
+      sel: '#next-obvious-steps-card',
+      title: 'Your check-in reminder',
+      body: "With phone notifications enabled, Balance reminds you when your check-in is available. Tap the notification to open it. You can also find it here on Home.",
+      condition: function(){ var c = document.getElementById('next-obvious-steps-card'); return c && c.getClientRects().length > 0; }
     },
     {
       id: 'customize-character-shortcut-v1',

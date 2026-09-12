@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v538-balance-weighin-gold'; // Balance weigh-in palette in both themes
+const CACHE_NAME = 'pbb-app-v539-client-checkin-push';
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -19,7 +19,7 @@ const ASSETS = [
   './lib/auth-guard.js?v=14-resume-session',
   './lib/meta-ad-trial.js?v=26-resume-session',
   './lib/onboarding-progress.js?v=1',
-  './lib/native-push.js?v=41-meal-reminders-retired',
+  './lib/native-push.js?v=42-client-checkin',
   './login.html',
   './exercise_videos.js?v=20260813-global-phone-video-v1',
   './workout_library.js',
@@ -331,6 +331,17 @@ self.addEventListener('notificationclick', (e) => {
 
   e.waitUntil(
     clients.matchAll({ type: 'window', includeUnmatched: true }).then(clientList => {
+      if (notificationData.type === 'client_checkin_ready') {
+        for (const client of clientList) {
+          if (client.url.includes('/dashboard.html') && 'focus' in client) {
+            return client.focus().then(focused => {
+              focused.postMessage({ type: 'client_checkin_ready' });
+              return focused;
+            });
+          }
+        }
+        return clients.openWindow('./dashboard.html?checkin=ready');
+      }
       if (notificationData.type === 'dispatcher_approval_ready') {
         return fetch('/.netlify/functions/approve-ig-dispatch-batch', {
           method: 'POST',

@@ -1681,7 +1681,8 @@
         timeZone: 'Australia/Brisbane',
         weekday: 'short'
       }).format(date || new Date());
-      return weekday === 'Fri' || weekday === 'Sat' || weekday === 'Sun';
+      return weekday === 'Fri' || weekday === 'Sat' || weekday === 'Sun'
+        || (weekday === 'Wed' && state.schedule.enabled === true && state.schedule.additional_days.indexOf('wednesday') !== -1);
     } catch (_) {
       var day = (date || new Date()).getDay();
       return day === 5 || day === 6 || day === 0;
@@ -1874,6 +1875,36 @@
     maybeStartBookedPtCheckout();
   }
 
+  var openingPush = false;
+  async function openCheckinFromPush(){
+    if (new URLSearchParams(window.location.search).get('checkin') === 'ready') window._pbbPendingCheckinPush = true;
+    if (!window._pbbPendingCheckinPush || openingPush || !getReviewUserId() || !window.userProfile || isGuidedTourActive()) return;
+    openingPush = true;
+    try {
+      await maybeLoadSchedule();
+      await maybeLoadLiveData();
+      if (!hasCompletedFirstProgramWeek()) return;
+      window._pbbPendingCheckinPush = false;
+      var url = new URL(window.location.href);
+      url.searchParams.delete('checkin');
+      window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
+      if (typeof window.switchAppTab === 'function') window.switchAppTab('dashboard');
+      if (hasCompletedReviewAction()) {
+        showToast('You have already completed this check-in.', 'success');
+      } else {
+        await openWeeklyCheckinPreview();
+      }
+    } finally { openingPush = false; }
+  }
+  window.addEventListener('pbbCheckinPush', openCheckinFromPush);
+  window.addEventListener('pbbInitComplete', openCheckinFromPush);
+  window.addEventListener('pbbCurrentUserReady', openCheckinFromPush);
+  if (navigator.serviceWorker) navigator.serviceWorker.addEventListener('message', function(event){
+    if (event.data && event.data.type === 'client_checkin_ready') {
+      window._pbbPendingCheckinPush = true;
+      openCheckinFromPush();
+    }
+  });
   window.openWeeklyCheckinPreview = openWeeklyCheckinPreview;
   window.isWeeklyCheckinWindowOpen = isWeeklyCheckinWindowOpen;
   window.closeWeeklyCheckinPreview = closeWeeklyCheckinPreview;
@@ -1896,4 +1927,5 @@
     maybeLoadLiveData();
     maybeStartBookedPtCheckout();
   });
+  openCheckinFromPush();
 })();

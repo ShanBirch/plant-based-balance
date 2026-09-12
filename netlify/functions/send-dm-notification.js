@@ -231,6 +231,10 @@ function isValidBusinessScorecardPush(payload = {}) {
 }
 
 function isAllowedAdminPhonePush({ type, alert, payload }) {
+    // Shannon can also use the member check-in flow on his own account.
+    if (type === 'client_checkin_ready') {
+        return !alert && payload.senderId === payload.recipientId;
+    }
     if (type === DISPATCHER_APPROVAL_NOTIFICATION_TYPE) {
         return !alert && isValidDispatcherApprovalPush(payload);
     }
