@@ -1520,7 +1520,7 @@ function hasPaidMetaPreviewOrPriceDecline(value = '') {
 }
 
 function isExplicitPaidMetaPreviewRequest(value = '') {
-    const message = String(value || '').replace(/\s+/g, ' ').trim();
+    const message = String(value || '').replace(/\s+/g, ' ').replace(/\b(?:balance )?learn preview\b/gi, 'preview').trim();
     if (!message || hasPaidMetaPreviewOrPriceDecline(message)) return false;
     // Preview descriptors do not change an explicit request into another
     // discovery turn, including when it follows goal/blocker context.

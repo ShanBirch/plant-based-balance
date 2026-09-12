@@ -38,6 +38,13 @@ test('one Zoom session a week retains the chosen frequency and price',()=>{
  const d=buildPaidMetaZoomHandoff({currentMessage:'Yes please, one Zoom session a week',flowVariant:'broad_pain'});
  assert.match(d.joined,/AUD \$125 per week/);
 });
+test('named Learn preview request reaches the requested handoff without selling Zoom',()=>{
+ const currentMessage='I work on Zoom all day so I want workouts away from my screen. Can I see the Learn preview?';
+ const d=api.buildDeterministicPaidMetaConversationReply({currentMessage,flowVariant:'broad_pain',appPreviewUrl:'https://future-balance.netlify.app/p/test-token-12345'});
+ assert.equal(d.appPreviewHandoff,true);
+ assert.equal(api.selectFastDeterministicPaidMetaProgression({draft:d,currentMessage}),d);
+ assert.doesNotMatch(d.joined,/book|zoom/i);
+});
 for (const currentMessage of ['I work on Zoom all day so I want workouts away from my screen. Can I see the Learn preview?','Does the 149 dollars cover the Learn course and a 30-minute Zoom session each week?']) test('writer must resolve meaning: '+currentMessage,()=>{
  assert.equal(buildPaidMetaZoomHandoff({currentMessage,flowVariant:'broad_pain'}),null);
 });
