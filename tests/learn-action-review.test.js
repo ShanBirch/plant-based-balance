@@ -68,3 +68,14 @@ test('a member weekly report reaches the normal Your Call queue even without an 
  assert.equal(sandbox.needsYouHasOperatorWork({...row,status:'sent'}),false);
  assert.equal(sandbox.needsYouHasOperatorWork({...row,data:{subtype:'unrelated'}}),false);
 });
+test('an earlier enrollment reflection cannot satisfy a new run of the selected action lesson',async()=>{
+ let record=null;
+ const window={currentUser:{id:'member'},BalanceLearnWeeklyActions:actions,BalanceLearnActionReview:{load:async()=>{},state:{current_week:6},record:()=>record,complete:r=>r?.status==='completed'},supabaseClient:{from:()=>({select:()=>({eq:async()=>({data:[{lesson_id:'mind-1-4'},{lesson_id:'mind-1-1'}]})})})}};
+ vm.runInNewContext(fs.readFileSync(require.resolve('../lib/lesson-reflections'),'utf8'),{window});
+ await window.BalanceLessonReflections.load();
+ assert.equal(window.BalanceLessonReflections.has('mind-1-4'),false);
+ assert.equal(window.BalanceLessonReflections.has('mind-1-1'),true);
+ record={reflection_text:'A plan saved for this enrollment'};
+ assert.equal(window.BalanceLessonReflections.has('mind-1-4'),true);
+ window.currentUser={id:'other'};assert.equal(window.BalanceLessonReflections.has('mind-1-4'),false);
+});
