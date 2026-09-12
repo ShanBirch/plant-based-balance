@@ -1,5 +1,5 @@
 #learn-action-dialog{--lar-paper:#fffcf4;--lar-ink:#24291f;--lar-line:#a89978;position:fixed;inset:0;z-index:100140;background:#0006;display:flex;justify-content:center;padding:0 max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px));font:15px/1.55 Inter,system-ui,sans-serif}
-html[data-pbb-theme="dark"] #learn-action-dialog,body.dark-mode #learn-action-dialog,html.pbb-theme-dark #learn-action-dialog{--lar-paper:#1b201c;--lar-ink:#fff6e6;--lar-line:#a89978}
+html[data-admin-theme="dark"] #learn-action-dialog,html[data-pbb-theme="dark"] #learn-action-dialog,body.dark-mode #learn-action-dialog,html.pbb-theme-dark #learn-action-dialog{--lar-paper:#1b201c;--lar-ink:#fff6e6;--lar-line:#a89978}
 #learn-action-dialog *{box-sizing:border-box;color:var(--lar-ink);-webkit-text-fill-color:currentColor}
 #learn-action-dialog section{width:100%;max-width:760px;height:100dvh;overflow:auto;overscroll-behavior:contain;background:var(--lar-paper)}
 #learn-action-dialog header{position:sticky;top:0;z-index:1;display:flex;align-items:center;gap:12px;background:var(--lar-paper);padding:calc(12px + max(42px,env(safe-area-inset-top,0px))) 20px 12px;border-bottom:1px solid var(--lar-line)}
