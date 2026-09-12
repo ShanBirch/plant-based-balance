@@ -26,9 +26,9 @@ function buildPaidMetaZoomHandoff({ currentMessage = '', history = [], flowVaria
     if (/\?/.test(text) && /\b(?:injur|pain|hurt|pregnan|refund|cancel|time zone|weekends?|evenings?|equipment|recorded|recording)\w*\b/i.test(text)) return null;
     const interested = /\b(?:want|interested|keen|prefer|like|yes|can i|could i|tell me|how does|how do)\b/i.test(text);
     if (!priceQuestion && !bookingRequest && !acceptance && !interested) return null;
-    const frequency = /\b(?:three|3)\s*(?:times|sessions?)?\s*(?:a|per|each)?\s*week|\bzoom pt\s*3\b/i.test(text) ? 3
-        : /\b(?:five|5)\s*(?:times|sessions?)?\s*(?:a|per|each)?\s*week|\bzoom pt\s*5\b/i.test(text) ? 5
-        : /\b(?:one|1|once)\s*(?:times|sessions?)?\s*(?:a|per|each)?\s*week|\bzoom pt\s*1\b/i.test(text) ? 1 : null;
+    const frequency = /\b(?:three|3)\s*(?:zoom\s+)?(?:times|sessions?)?\s*(?:a|per|each)?\s*week|\bzoom pt\s*3\b/i.test(text) ? 3
+        : /\b(?:five|5)\s*(?:zoom\s+)?(?:times|sessions?)?\s*(?:a|per|each)?\s*week|\bzoom pt\s*5\b/i.test(text) ? 5
+        : /\b(?:one|1|once)\s*(?:zoom\s+)?(?:times|sessions?)?\s*(?:a|per|each)?\s*week|\bzoom pt\s*1\b/i.test(text) ? 1 : null;
     const prices = {1:125,3:275,5:425};
     const facts = priceQuestion || frequency
         ? (frequency ? `The ${frequency}-session option is AUD $${prices[frequency]} per week.` : 'The options are AUD $125/week for one session, $275/week for three, or $425/week for five.')
