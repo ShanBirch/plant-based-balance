@@ -57,3 +57,14 @@ test('completed records are preserved on a repeated check-in',async()=>{
  const prepared=await f.api.prepareReport('member',{enrollment_id:'enrollment-a',week:1,revision:3},{});
  assert.equal(prepared.alreadyComplete,true);assert.equal((await f.api.saveReport('member',prepared)).id,'saved');
 });
+test('a member weekly report reaches the normal Your Call queue even without an AI draft',()=>{
+ const html=fs.readFileSync(require.resolve('../admin-dashboard.html'),'utf8');
+ const start=html.indexOf('function needsYouHasOperatorWork('),end=html.indexOf('function needsYouMatchesView(',start);
+ const body=html.slice(start,end),sandbox={NEEDS_YOU_ALERT_TYPES:['weekly_checkin'],DM_ALERT_TYPES:[],dmClientIdsCache:{ids:new Set()}};
+ for(const [,name] of body.matchAll(/\b((?:is|needsYou|getAlert)\w+)\(/g))sandbox[name]=()=>false;
+ vm.runInNewContext(body,sandbox);
+ const row={status:'pending',alert_type:'weekly_checkin',data:{subtype:'client_weekly_checkin_response',needs_you_required:true}};
+ assert.equal(sandbox.needsYouHasOperatorWork(row),true);
+ assert.equal(sandbox.needsYouHasOperatorWork({...row,status:'sent'}),false);
+ assert.equal(sandbox.needsYouHasOperatorWork({...row,data:{subtype:'unrelated'}}),false);
+});

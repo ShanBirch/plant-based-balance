@@ -967,7 +967,9 @@
     var moodRows = payload[10] || [];
 
     if (!isExplicitPreviewEnabled() && hasSubmittedWeeklyResponse(checkins, week.startKey, activeOccurrence())) {
+      await window.BalanceLearnActionReview?.load();
       if (window.socialJourney && typeof window.socialJourney.refresh === 'function') await window.socialJourney.refresh();
+      window.refreshLearningCourseHome?.();
       markReviewCompleted();
     }
 
@@ -1468,7 +1470,9 @@
         }
       } catch (_) {}
 
+      await window.BalanceLearnActionReview?.load();
       if (window.socialJourney && typeof window.socialJourney.refresh === 'function') await window.socialJourney.refresh();
+      window.refreshLearningCourseHome?.();
       markReviewCompleted();
       closeWeeklyCheckinPreview();
       renderCard();

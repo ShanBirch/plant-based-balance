@@ -13360,7 +13360,7 @@
                     || data.needs_you_reason === 'subscription_sale'
                     || data.operator_queue === 'needs_you';
             }
-            if (alert.alert_type === 'weekly_checkin') return isCoachCheckinApprovalDraft(alert) || isOverdueManualIgCheckin(alert);
+            if (alert.alert_type === 'weekly_checkin') return (alert.data?.subtype === 'client_weekly_checkin_response' && alert.data?.needs_you_required === true) || isCoachCheckinApprovalDraft(alert) || isOverdueManualIgCheckin(alert);
             if (alert.alert_type === 'first_workout') {
                 return needsYouHasSuggestedDraft(alert);
             }
