@@ -1,4 +1,7 @@
-const webpush = globalThis.__PBB_WEB_PUSH_DEPENDENCY__ || require('web-push');
+const webpushDependency = globalThis.__PBB_WEB_PUSH_DEPENDENCY__ || require('web-push');
+// The prebundled ESM entry exposes { default: webpush } through CommonJS.
+// Native and browser sends both pass VAPID setup, so unwrap before using it.
+const webpush = webpushDependency.default || webpushDependency;
 const crypto = require('crypto');
 const { normalizeCoachDraftText } = require('./_lib/client-context');
 const { loadFirebaseServiceAccount } = require('./_lib/firebase-service-account');
