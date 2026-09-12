@@ -11283,6 +11283,17 @@ html[data-pbb-theme="light"] .course-card-art {
     margin-top: 16px;
 }
 
+body:has(.course-welcome) {
+    --course-safe-top: env(safe-area-inset-top, 0px);
+    --course-safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+/* Edge-to-edge phone WebViews can report zero beneath the status bar. */
+@media (max-width: 560px), (max-height: 560px) and (pointer: coarse) {
+    body:has(.course-welcome) {
+        --course-safe-top: max(59px, env(safe-area-inset-top, 0px));
+        --course-safe-bottom: max(24px, env(safe-area-inset-bottom, 0px));
+    }
+}
 .course-welcome {
     position: fixed;
     z-index: 10020;
@@ -11291,8 +11302,11 @@ html[data-pbb-theme="light"] .course-card-art {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 42px 26px;
-    overflow: hidden;
+    justify-content: safe center;
+    box-sizing: border-box;
+    padding: calc(76px + var(--course-safe-top)) max(26px, env(safe-area-inset-right, 0px)) calc(26px + var(--course-safe-bottom)) max(26px, env(safe-area-inset-left, 0px));
+    overflow-y: auto;
+    overscroll-behavior: contain;
     background: var(--course-hero);
     color: var(--course-hero-copy);
     text-align: center;
@@ -11301,10 +11315,12 @@ html[data-pbb-theme="light"] .course-card-art {
     transition: opacity .28s ease, transform .28s ease;
 }
 
-.course-welcome.is-visible { opacity: 1; transform: translateY(0); }
-.course-welcome-close { position: absolute; z-index: 2; top: calc(12px + env(safe-area-inset-top, 0px)); right: calc(18px + env(safe-area-inset-right, 0px)); width: 44px; height: 44px; border: 1px solid var(--course-border); border-radius: 50%; background: var(--course-subtle); color: var(--course-hero-copy); font-size: .75rem; }
+.course-welcome > * { flex-shrink: 0; }
+.course-welcome.is-visible { opacity: 1; transform: none; }
+.course-welcome-close { position: fixed; z-index: 2; top: calc(12px + var(--course-safe-top)); right: calc(18px + env(safe-area-inset-right, 0px)); width: 44px; height: 44px; border: 1px solid var(--course-border); border-radius: 50%; background: var(--course-subtle); color: var(--course-hero-copy); font-size: .75rem; }
 /* The tour music control shares this safe top row with the welcome close button. */
 body:has(.course-welcome) #meta-preview-music-control {
+    top: calc(12px + var(--course-safe-top));
     left: calc(18px + env(safe-area-inset-left, 0px));
     right: auto;
 }
