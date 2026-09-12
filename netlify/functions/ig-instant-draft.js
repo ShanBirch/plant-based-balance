@@ -5473,7 +5473,8 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
         ];
         for (const [label, signal] of supplied) {
             const correctsEarlierDetail = /\b(?:actually|not|isn['’]t|aren['’]t|is not|are not)\b/i.test(inboundContext);
-            if (signal.test(inboundContext) && !signal.test(reply) && !correctsEarlierDetail) {
+            const represented = signal.test(reply) || (label === 'kids' && /\bfamily\b/i.test(reply));
+            if (signal.test(inboundContext) && !represented && !correctsEarlierDetail) {
                 issues.push(`The earned paid-Meta offer is missing a grounded acknowledgement of ${label}, supplied in the current inbound batch.`);
             }
         }
@@ -10236,7 +10237,7 @@ exports.handler = async (event) => {
                 currentAlertData = await persistCocosDraftRepair({
                     alertId, currentAlertData, draft, challengeOfferWarning,
                     repairField: 'paid_meta_personal_acknowledgement',
-                    repairMeta: {status:draft.error?'held':'accepted',reason:draft.personalAcknowledgementFailure || null,repaired_at:new Date().toISOString(),...draft.personalAcknowledgement},
+                    repairMeta: {status:draft.error?'held':'accepted',reason:draft.personalAcknowledgementFailure || null,candidate:draft.personalAcknowledgementCandidate,repaired_at:new Date().toISOString(),...draft.personalAcknowledgement},
                 });
             } else if (draft.personalAcknowledgementFailure) {
                 currentAlertData = await persistCocosDraftRepair({

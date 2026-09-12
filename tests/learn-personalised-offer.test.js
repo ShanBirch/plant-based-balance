@@ -91,6 +91,14 @@ test('final personal acknowledgement sees the full batch and preserves the offer
     assert.equal(result.imageAttachmentUrl,draft.imageAttachmentUrl);
 });
 
+test('family wording represents kids without forcing parroting', async () => {
+    const chunks=buildPaidMetaTailoredOfferChunks('Kids and chocolate','Lose weight','broad_pain');
+    const draft={chunks,joined:chunks.join('\n'),replyMode:'campaign_sales_progression',model:'test',flowVariant:'broad_pain'};
+    const result=await personalisePaidMetaOffer({draft,currentMessage:'Kids and chocolate',writer:async()=>JSON.stringify({acknowledgement:'We can build a flexible food routine around family life that still includes chocolate, then use the weekly review to adjust what is not working.',evidence:['Kids','chocolate']})});
+    assert.ok(!result.error);
+    assert.match(result.joined,/family life/);
+});
+
 test('invalid personalisation or a failed writer holds the offer privately', async () => {
     const chunks=buildPaidMetaTailoredOfferChunks('Chocolate','Lose weight','broad_pain');
     const draft={chunks,joined:chunks.join('\n'),replyMode:'campaign_sales_progression',model:'test',flowVariant:'broad_pain'};
