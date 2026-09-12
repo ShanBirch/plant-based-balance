@@ -12,10 +12,13 @@ function buildPaidMetaZoomHandoff({ currentMessage = '', history = [], flowVaria
     if (/\b(?:hold off|not now|stop messaging|leave me|no thanks|not interested)\b/i.test(text)
         || /\b(?:no|not|without|don['’]?t want|do not want)\s+(?:the\s+)?(?:zoom|live training|live sessions)\b/i.test(text)
         || /\b(?:just|only) (?:the )?(?:course|learn|app|preview)\b/i.test(text)) return null;
-    const recentOut = [...history].reverse().filter(x => x?.direction === 'out').slice(0,2);
+    const recentOut = [...history].reverse().filter(x => x?.direction === 'out').slice(0,3);
     const lastOut = recentOut[0];
     const priorZoom = ZOOM_RE.test(String(lastOut?.text || ''))
-        || (/\bfit call\b/i.test(String(lastOut?.text || '')) && ZOOM_RE.test(String(recentOut[1]?.text || '')));
+        || (/\bfit call\b/i.test(String(lastOut?.text || '')) && ZOOM_RE.test(String(recentOut[1]?.text || '')))
+        || (String(lastOut?.text || '').trim() === 'Find a time for your Balance fit call'
+            && /\bfit call\b/i.test(String(recentOut[1]?.text || ''))
+            && ZOOM_RE.test(String(recentOut[2]?.text || '')));
     const explicit = ZOOM_RE.test(text);
     const acceptance = /^(?:yes|yeah|yep|sure|okay|ok|sounds good|keen|please|let['’]?s do it)\b/i.test(text);
     const priceQuestion = /\b(?:price|cost|how much|per week|weekly|include[ds]?|course included|30.minute|half.hour)\b/i.test(text);

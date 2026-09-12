@@ -52,6 +52,14 @@ test('requested weekend times are never guaranteed before the fit call',()=>{
  assert.ok(d.joined.includes(ZOOM_BOOKING_URL));
  assert.deepEqual(api.collectPaidMetaWriterContractIssues({draft:d,currentMessage,history:[],flowVariant:'broad_pain'}),[]);
 });
+test('yes after delivered three-part Zoom card stays a deterministic booking handoff',()=>{
+ const currentMessage='Yes please';
+ const history=[{direction:'out',text:'Zoom PT includes Balance Learn plus live 30-minute sessions.'},{direction:'out',text:'Book a fit call here so we can check availability before payment'},{direction:'out',text:'Find a time for your Balance fit call'}];
+ const d=api.buildDeterministicPaidMetaConversationReply({currentMessage,history,flowVariant:'broad_pain'});
+ assert.equal(d.paidMetaZoomHandoff,true);
+ assert.ok(d.joined.includes(ZOOM_BOOKING_URL));
+ assert.equal(api.selectFastDeterministicPaidMetaProgression({draft:d,currentMessage}),d);
+});
 for (const currentMessage of ['I work on Zoom all day so I want workouts away from my screen. Can I see the Learn preview?','Does the 149 dollars cover the Learn course and a 30-minute Zoom session each week?']) test('writer must resolve meaning: '+currentMessage,()=>{
  assert.equal(buildPaidMetaZoomHandoff({currentMessage,flowVariant:'broad_pain'}),null);
 });
