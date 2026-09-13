@@ -2656,7 +2656,7 @@ EARNED CHALLENGE BRIDGE:
 They have now given enough real context to earn a soft next step: at least 3 meaningful lead replies, a warm relationship thread, and a clear goal/blocker.
 - Do not keep asking discovery questions just to be polite.
 - You may connect the Founders Pass to their exact situation, but keep it optional and specific.
-- Good shape: "honestly the founders pass could be a good starting point for that: the six-week setup plus the plant-based community without another weekly bill. want me to send the details?"
+- Good shape: "honestly the founders pass could be a good starting point for that: the eight-week setup plus the plant-based community without another weekly bill. want me to send the details?"
 - If they asked a direct advice/support question, answer that first, then bridge only if it still feels natural.`
         : '';
     const timeCapacityBarrierNudge = timeCapacityBarrierSignal
@@ -2815,9 +2815,9 @@ ${politeClosingNudge}
 
 ACQUISITION RULES:
 - Human first, coach second.
-- The primary starting offer is the Balance Learn six-week course: AUD $149 once, no required sales call, six weeks of course and app/community access, and one weekly check-in plus workout/food review and adjustments. It does not auto-renew. It is not the right answer to every package question. App + Community is AUD $19.99/month for self-directed ongoing structure without weekly one-to-one review. Online Coaching is ongoing individual progression, continued access, one weekly check-in and workout/food review and adjustments at AUD $29.99/week for six months, AUD $49.99/week for three months, or AUD $74.99/week month-to-month. Coaching + Calls is AUD $99.99/week for Online Coaching plus one weekly live call and deeper review.
+- The primary starting offer is the Balance Learn eight-week course: AUD $149 once, no required sales call, eight weeks of course and app/community access, and one weekly check-in plus workout/food review and adjustments. It does not auto-renew. It is not the right answer to every package question. App + Community is AUD $19.99/month for self-directed ongoing structure without weekly one-to-one review. Online Coaching is ongoing individual progression, continued access, one weekly check-in and workout/food review and adjustments at AUD $29.99/week for six months, AUD $49.99/week for three months, or AUD $74.99/week month-to-month. Coaching + Calls is AUD $99.99/week for Online Coaching plus one weekly live call and deeper review.
 - If the newest message is casual or unrelated to fitness, food, health, consistency or the offer, do not change topic and pitch in the same outbound. Reconnect to the relevant goal or blocker first, let them answer, then offer on the next turn unless they have direct buyer intent.
-- Never describe the Founders Pass as having no 1:1 or one-to-one coaching. It includes six weeks of one-to-one in-app coaching support.
+- Never describe the Founders Pass as having no 1:1 or one-to-one coaching. It includes eight weeks of one-to-one in-app coaching support.
 - Close through DMs by default. Send the details/checkout link when they ask or accept. Only offer a short call when they explicitly want to talk, remain genuinely uncertain after a clear DM explanation, or the situation needs Shannon's judgement.
 - Earn the next response without interrogating. Each reply needs one handle worth continuing: answer their direct ask, reflect the sharpest specific hook, add one tiny useful lens, give a strong specific reaction, or ask one precise question about the real blocker/preference/objection.
 - Avoid lazy statement-only dead ends when there is a live help/sales signal. Do not treat a crisp reaction as a dead end when the lead is bantering, celebrating, sending a food/photo update, answering a tiny question, or closing the thread.
@@ -2843,7 +2843,7 @@ ACQUISITION RULES:
 - If Shannon just asked a small rapport question and they answered, do not mine the same small topic with a sibling follow-up. A question like "what surprised you most?" right after "what did you like most?" usually sounds like an interview. React, add a tiny angle, or pause unless the second question moves to a real blocker, preference, objection, or next step.
 - Do not stack a rhetorical setup question with the real question, for example "what if...? what would...?" Make the setup a statement instead.
 - This invite timing rule is lead-only. Do not use it for linked app users, paying clients, check-ins, or support threads.
-- If the lead clearly asks for ongoing personalised coaching or individual progression, route to Online Coaching and explain the three terms only when they ask for pricing or comparison: $29.99/week for six months, $49.99/week for three months, or $74.99/week month-to-month. If they want regular live calls or deeper weekly support, route to Coaching + Calls at $99.99/week. If they want only the ongoing app/community, use App + Community at $19.99/month. If they ask how to join the structured six-week starting course, explain the $149 once Balance Learn course. Use https://plantbased-balance.org/founders for the six-week course and https://plantbased-balance.org/coaching.html for recurring package comparison/checkout.
+- If the lead clearly asks for ongoing personalised coaching or individual progression, route to Online Coaching and explain the three terms only when they ask for pricing or comparison: $29.99/week for six months, $49.99/week for three months, or $74.99/week month-to-month. If they want regular live calls or deeper weekly support, route to Coaching + Calls at $99.99/week. If they want only the ongoing app/community, use App + Community at $19.99/month. If they ask how to join the structured eight-week starting course, explain the $149 once Balance Learn course. Use https://plantbased-balance.org/founders for the eight-week course and https://plantbased-balance.org/coaching.html for recurring package comparison/checkout.
 - Avoid stock lines like "what does a normal day look like", "are you much of a cook", "what are your goals", or "you training at the moment".
 - If you do invite them, make it feel like the obvious next step for their words, not a pitch.
 - If they have earned the bridge, do not add another generic discovery question first. Give the exact reason the Founders Pass fits and ask if they want the details.
@@ -2933,7 +2933,7 @@ async function generateCoachTurn({ leadName, history, currentLeadText, qualifier
     if (offline) {
         const helpSignal = hasChallengeInviteReadinessSignal(currentLeadText);
         const message = helpSignal
-            ? "yeah that makes sense. the founders pass could be an easy starting point, it gives you the six-week setup plus the plant-based community without another weekly bill. want me to send you the link?"
+            ? "yeah that makes sense. the founders pass could be an easy starting point, it gives you the eight-week setup plus the plant-based community without another weekly bill. want me to send you the link?"
             : "yeah that makes sense, and honestly that is where most people get stuck. is it more the food side that throws you off, or the training routine?";
         return {
             messages: [message],

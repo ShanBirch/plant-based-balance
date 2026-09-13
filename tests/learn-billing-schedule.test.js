@@ -4,7 +4,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const root = path.join(__dirname, '../netlify/edge-functions');
 const url = source => 'data:text/javascript;base64,' + Buffer.from(source).toString('base64');
-const guardUrl = url(fs.readFileSync(path.join(root, 'lib/checkout-guard.js'), 'utf8'));
+const pricingUrl = url(fs.readFileSync(path.join(root, '../../lib/learn-course-pricing.js'), 'utf8'));
+const guardUrl = url(fs.readFileSync(path.join(root, 'lib/checkout-guard.js'), 'utf8').replace('../../../lib/learn-course-pricing.js', pricingUrl));
 const load = file => import(url(fs.readFileSync(path.join(root, file), 'utf8')
     .replace(/(['"])(?:\.\/)?lib\/checkout-guard.js\1|(['"])\.\/checkout-guard.js\2/g, JSON.stringify(guardUrl))));
 

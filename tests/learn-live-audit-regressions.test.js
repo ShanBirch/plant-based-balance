@@ -4,8 +4,8 @@ const { buildDeterministicPaidMetaConversationReply: build, shouldApplyDetermini
 const base = { flowVariant: 'broad_pain', checkoutUrl: 'https://future-balance.netlify.app/fitness', appPreviewUrl: 'https://future-balance.netlify.app/p/Test_123-xyz9876543210', allowVideoAttachment: true };
 test('focused course questions answer only requested facts', () => {
  const draft=build({...base,currentMessage:'How many lessons are there and what is week 4 about?'});
- assert.match(draft.joined,/31 lessons/);
- assert.match(draft.joined,/Week 4: take the fight out of food/);
+ assert.match(draft.joined,/45 lessons/);
+ assert.match(draft.joined,/Week 4: Work with your energy/);
  assert.doesNotMatch(draft.joined,/Week [12356]:|Certificate/);
  const review=require('../netlify/functions/ig-instant-draft')._test;
  assert.deepEqual(review.collectPaidMetaWriterContractIssues({draft,currentMessage:'How many lessons are there and what is week 4 about?',flowVariant:'broad_pain'}).filter(review.isBlockingPaidMetaWriterContractIssue),[]);
@@ -40,7 +40,7 @@ test('combined goal and blocker preserves photo and native course video without 
 });
 test('course facts and weekly terms answer the actual question', () => {
   const curriculum = build({...base,currentMessage:'How many lessons and is there a certificate?'});
-  assert.match(curriculum.joined,/31 lessons/);
+  assert.match(curriculum.joined,/45 lessons/);
   assert.match(curriculum.joined,/Certificate of Completion/);
   const weekly = build({...base,currentMessage:'Can I pay weekly? Does it keep charging after six weeks?'});
   assert.match(weekly.joined,/24\.83/);
@@ -125,7 +125,7 @@ test('curriculum facts survive the writer contract and fallback', () => {
  const draft=build({...base,currentMessage,history});
  assert.deepEqual(collectPaidMetaWriterContractIssues({draft,currentMessage,history,flowVariant:'broad_pain'}),[]);
  const fallback=buildPaidMetaGuaranteedContractFallback({draft,currentMessage,history,flowVariant:'broad_pain',issues:['The course answer must return to the still-missing six-week goal.']});
- assert.match(fallback.joined,/31 lessons/);
+ assert.match(fallback.joined,/45 lessons/);
  assert.match(fallback.joined,/Certificate of Completion/);
 });
 test('night work and disrupted food are already supplied blockers despite goal typos', () => {

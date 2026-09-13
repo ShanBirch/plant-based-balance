@@ -765,15 +765,15 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
 <div id="meta-ad-trial-gate" role="dialog" aria-modal="true" aria-labelledby="meta-ad-trial-gate-title" style="display:none; position:fixed; inset:0; z-index:500000; background:rgba(3,7,18,0.88); align-items:center; justify-content:center; padding:calc(20px + env(safe-area-inset-top, 0px)) 20px calc(20px + env(safe-area-inset-bottom, 0px)); box-sizing:border-box; font-family:'Inter',sans-serif;">
     <div style="background:#ffffff; color:#151515; -webkit-text-fill-color:#151515; border-radius:24px; padding:32px 24px; max-width:380px; width:100%; max-height:100%; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; text-align:center; box-shadow:0 28px 80px rgba(0,0,0,0.4); box-sizing:border-box;">
         <img src="balance_logo.png" alt="Balance" style="width:64px; height:64px; object-fit:contain; margin:0 auto 16px; display:block;">
-        <h3 id="meta-ad-trial-gate-title" style="margin:0 0 10px; font-size:1.35rem; line-height:1.2; color:#151515; -webkit-text-fill-color:#151515; font-family:'Montserrat',sans-serif;">Start your personalised six weeks</h3>
+        <h3 id="meta-ad-trial-gate-title" style="margin:0 0 10px; font-size:1.35rem; line-height:1.2; color:#151515; -webkit-text-fill-color:#151515; font-family:'Montserrat',sans-serif;">Start your personalised eight weeks</h3>
         <p style="color:#5f5a50; -webkit-text-fill-color:#5f5a50; font-size:0.95rem; margin:0 0 12px; line-height:1.5;">You have seen how your first week works. Start Balance Learn to keep your setup and have Shannon help adjust it around real life.</p>
         <div role="group" aria-label="Choose how to pay" style="display:flex; gap:6px; padding:5px; border:1px solid #cfc8ba; border-radius:14px; margin:0 0 14px;">
             <button type="button" data-learn-payment="balance_meta_foundations_pass" aria-pressed="true" onclick="window.BalanceMetaAdTrial.selectPaymentOption('balance_meta_foundations_pass')" style="flex:1; min-height:56px; border:0; border-radius:10px; background:#171923; color:#fff; -webkit-text-fill-color:#fff; font-weight:800; cursor:pointer;">Pay upfront<br><span id="learn-upfront-price-label" style="font-size:.85rem;">See current price</span></button>
             <button type="button" data-learn-payment="balance_learn_weekly" aria-pressed="false" onclick="window.BalanceMetaAdTrial.selectPaymentOption('balance_learn_weekly')" style="flex:1; min-height:56px; border:0; border-radius:10px; background:#fffdf8; color:#171923; -webkit-text-fill-color:#171923; font-weight:800; cursor:pointer;">Subscribe weekly<br><span style="font-size:.85rem;">$24.83 / week</span></button>
         </div>
-        <p id="meta-ad-trial-price-copy" style="color:#151515; -webkit-text-fill-color:#151515; font-size:1.05rem; margin:0 0 18px; font-weight:800;">One upfront payment for the full six weeks. No subscription or automatic renewal.</p>
+        <p id="meta-ad-trial-price-copy" style="color:#151515; -webkit-text-fill-color:#151515; font-size:1.05rem; margin:0 0 18px; font-weight:800;">One upfront payment for the full eight weeks. No subscription or automatic renewal.</p>
         <div id="meta-ad-trial-personal-summary" style="display:grid; gap:7px; margin:0 0 14px; text-align:left;" aria-label="Your Balance setup">
-            <div style="padding:10px 12px; border-radius:11px; background:#faf6ec; border:1px solid #eadfc8; color:#37332d; -webkit-text-fill-color:#37332d; font-size:.8rem; line-height:1.35;"><strong>Your goal:</strong> <span data-summary="goal">a repeatable first six weeks</span></div>
+            <div style="padding:10px 12px; border-radius:11px; background:#faf6ec; border:1px solid #eadfc8; color:#37332d; -webkit-text-fill-color:#37332d; font-size:.8rem; line-height:1.35;"><strong>Your goal:</strong> <span data-summary="goal">a repeatable first eight weeks</span></div>
             <div style="padding:10px 12px; border-radius:11px; background:#faf6ec; border:1px solid #eadfc8; color:#37332d; -webkit-text-fill-color:#37332d; font-size:.8rem; line-height:1.35;"><strong>Your training:</strong> <span data-summary="training">a realistic weekly workout plan</span></div>
             <div style="padding:10px 12px; border-radius:11px; background:#faf6ec; border:1px solid #eadfc8; color:#37332d; -webkit-text-fill-color:#37332d; font-size:.8rem; line-height:1.35;"><strong>Your food:</strong> <span data-summary="food">a meal plan matched to your preferences</span></div>
         </div>
@@ -782,7 +782,7 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
             <div style="display:grid; gap:7px; font-size:.8rem; line-height:1.35; font-weight:700;">
                 <span>✓ Your personalised workout program</span>
                 <span>✓ Your meal plan, recipes and shopping list</span>
-                <span>✓ The complete six-week behaviour-change course</span>
+                <span>✓ The complete eight-week behaviour-change course</span>
                 <span>✓ Six weeks of Balance app and community access</span>
                 <span>✓ One weekly check-in with Shannon</span>
                 <span>✓ Weekly workout and food review and adjustments</span>
@@ -793,10 +793,10 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
         <input id="meta-ad-trial-email" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" style="width:100%; box-sizing:border-box; border:1px solid #cfc8ba; background:#ffffff; color:#151515; -webkit-text-fill-color:#151515; padding:13px 12px; border-radius:11px; font-size:1rem; margin:0 0 14px;">
         <label style="display:flex; align-items:flex-start; gap:9px; text-align:left; color:#5f5a50; -webkit-text-fill-color:#5f5a50; font-size:0.72rem; line-height:1.4; margin:0 0 14px;">
             <input id="meta-ad-trial-terms" type="checkbox" style="margin:2px 0 0; width:17px; height:17px; flex:0 0 auto; accent-color:#111111;">
-            <span>I agree to the <a href="terms.html" target="_blank" rel="noopener" style="color:#166534; -webkit-text-fill-color:#166534;">Terms</a>, <a href="privacy.html" target="_blank" rel="noopener" style="color:#166534; -webkit-text-fill-color:#166534;">Privacy Policy</a>, <a href="client-agreement.html" target="_blank" rel="noopener" style="color:#166534; -webkit-text-fill-color:#166534;">Client Agreement</a> and <a href="refund-policy.html" target="_blank" rel="noopener" style="color:#166534; -webkit-text-fill-color:#166534;">Refund Policy</a>. <span id="meta-ad-trial-terms-price">One upfront payment covers the full six weeks and does not renew automatically.</span></span>
+            <span>I agree to the <a href="terms.html" target="_blank" rel="noopener" style="color:#166534; -webkit-text-fill-color:#166534;">Terms</a>, <a href="privacy.html" target="_blank" rel="noopener" style="color:#166534; -webkit-text-fill-color:#166534;">Privacy Policy</a>, <a href="client-agreement.html" target="_blank" rel="noopener" style="color:#166534; -webkit-text-fill-color:#166534;">Client Agreement</a> and <a href="refund-policy.html" target="_blank" rel="noopener" style="color:#166534; -webkit-text-fill-color:#166534;">Refund Policy</a>. <span id="meta-ad-trial-terms-price">One upfront payment covers the full eight weeks and does not renew automatically.</span></span>
         </label>
         <div id="meta-ad-trial-error" role="alert" style="display:none; color:#b42318; -webkit-text-fill-color:#b42318; background:#fef3f2; border:1px solid #fecdca; border-radius:9px; padding:9px; font-size:0.76rem; line-height:1.35; margin:0 0 12px;"></div>
-        <button id="meta-ad-trial-checkout-btn" type="button" onclick="window.BalanceMetaAdTrial.beginCheckout()" style="width:100%; background:#111111; color:#ffffff; -webkit-text-fill-color:#ffffff; border:none; padding:15px; border-radius:12px; font-size:1rem; font-weight:800; cursor:pointer; font-family:'Montserrat',sans-serif;">START MY SIX WEEKS</button>
+        <button id="meta-ad-trial-checkout-btn" type="button" onclick="window.BalanceMetaAdTrial.beginCheckout()" style="width:100%; background:#111111; color:#ffffff; -webkit-text-fill-color:#ffffff; border:none; padding:15px; border-radius:12px; font-size:1rem; font-weight:800; cursor:pointer; font-family:'Montserrat',sans-serif;">START MY EIGHT WEEKS</button>
         <p style="color:#777166; -webkit-text-fill-color:#777166; font-size:0.72rem; margin:12px 0 0; line-height:1.4;">Secure Stripe checkout. After payment, we will bring you straight back to Balance.</p>
     </div>
 </div>
@@ -806,7 +806,7 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
     <div style="background:#fffdf8; color:#171923; -webkit-text-fill-color:#171923; border:1px solid rgba(183,138,46,.34); border-radius:24px; padding:30px 24px; max-width:380px; width:100%; text-align:center; box-shadow:0 28px 80px rgba(0,0,0,.42); box-sizing:border-box;">
         <img src="balance_logo.png" alt="Balance" style="width:58px; height:58px; object-fit:contain; margin:0 auto 14px; display:block;">
         <h3 id="meta-ad-trial-exit-title" style="margin:0 0 9px; font:800 1.35rem/1.2 'Montserrat',sans-serif; color:#171923; -webkit-text-fill-color:#171923;">Keep setting up?</h3>
-        <p id="meta-ad-trial-exit-body" style="margin:0 0 20px; color:#4f4a43; -webkit-text-fill-color:#4f4a43; font-size:.92rem; line-height:1.5;">Continue where you left off, or unlock the complete six-week program now.</p>
+        <p id="meta-ad-trial-exit-body" style="margin:0 0 20px; color:#4f4a43; -webkit-text-fill-color:#4f4a43; font-size:.92rem; line-height:1.5;">Continue where you left off, or unlock the complete eight-week program now.</p>
         <button id="meta-ad-trial-resume-btn" type="button" onclick="window.BalanceMetaAdTrial.resumeInterruptedFlow()" style="width:100%; background:linear-gradient(135deg,#d4ad52,#f0cf76); color:#171923; -webkit-text-fill-color:#171923; border:1px solid #b78a2e; padding:14px; border-radius:12px; font:800 .92rem 'Montserrat',sans-serif; cursor:pointer; margin-bottom:10px;">CONTINUE SETUP</button>
         <button id="meta-ad-trial-exit-pay" type="button" onclick="window.BalanceMetaAdTrial.openCheckoutGate()" style="width:100%; background:#111; color:#fffaf0; -webkit-text-fill-color:#fffaf0; border:none; padding:14px; border-radius:12px; font:800 .92rem 'Montserrat',sans-serif; cursor:pointer;">CHOOSE MY PAYMENT OPTION</button>
         <p style="margin:11px 0 0; color:#625c52; -webkit-text-fill-color:#625c52; font-size:.7rem; line-height:1.4;">Choose a one-time payment or a weekly subscription.</p>
@@ -824,7 +824,7 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
             <div style="max-width:92%; background:#fffaf0; border:1px solid rgba(183,138,46,.3); border-radius:18px 18px 18px 5px; padding:9px 11px; color:#3d3427; font-size:.78rem; line-height:1.42; box-shadow:0 5px 15px rgba(74,55,18,.07);">I’ve left you a coach note about your first week and how we’ll use Balance together.</div>
             <div style="width:100%; margin-top:8px; background:linear-gradient(135deg,#f4df9f,#e2ba58); border:1px solid rgba(146,103,29,.32); border-radius:18px 18px 18px 5px; padding:8px; box-sizing:border-box; box-shadow:0 7px 20px rgba(112,77,16,.13);">
                 <div style="font-size:.64rem; font-weight:900; letter-spacing:.06em; color:#68480f; margin:0 3px 6px;">● VIDEO COACH NOTE FROM SHANNON</div>
-                <video id="meta-ad-trial-welcome-video" poster="/assets/balance-onboarding-coach-note-poster.jpg" controls playsinline preload="metadata" controlslist="nodownload noplaybackrate" disablepictureinpicture src="/assets/balance-onboarding-coach-note-captioned.mp4?v=20260910-word-reveal" style="display:block; width:100%; max-height:min(67dvh,650px); aspect-ratio:9/16; object-fit:contain; background:#171923; border-radius:12px; pointer-events:auto;"></video>
+                <video id="meta-ad-trial-welcome-video" poster="/assets/balance-onboarding-coach-note-poster.jpg" controls playsinline preload="metadata" controlslist="nodownload noplaybackrate" disablepictureinpicture src="/assets/balance-onboarding-coach-note-eight-weeks.mp4?v=20260914" style="display:block; width:100%; max-height:min(67dvh,650px); aspect-ratio:9/16; object-fit:contain; background:#171923; border-radius:12px; pointer-events:auto;"></video>
                 <div id="meta-ad-trial-welcome-status" role="status" aria-live="polite" style="margin:7px 3px 0; color:#68480f; font-size:.69rem; line-height:1.35; font-weight:800;">Watch the full coach note to unlock Next.</div>
                 <button id="meta-ad-trial-welcome-continue" type="button" onclick="tourNext()" style="display:none; width:100%; margin-top:8px; border:1px solid rgba(104,72,15,.4); border-radius:12px; padding:12px 14px; background:#171923; color:#fffaf0; -webkit-text-fill-color:#fffaf0; font:850 .78rem/1 'Montserrat',sans-serif; letter-spacing:.045em; text-transform:uppercase; cursor:pointer; pointer-events:auto;">Next: choose Weekly Goals</button>
             </div>
@@ -1991,7 +1991,7 @@ document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=36-commu
     document.write('<script src="lib/learn-predictive-content.js?v=1-eight-weeks"><\/script>');
     document.write('<script src="lib/learn-weekly-actions.js?v=eight-weeks-v1"><\/script>');
     document.write('<script src="lib/learn-action-review.js?v=eight-weeks-v1"><\/script>');
-    document.write('<script src="js/dashboard/pbb-social-journey.js?v=eight-weeks-v1"><\/script>');
+    document.write('<script src="js/dashboard/pbb-social-journey.js?v=eight-week-funnel-20260914"><\/script>');
     document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=eight-weeks-v1"><\/script>');
     document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=36-checkin-feedback"><\/script>');
 } else {
@@ -2002,7 +2002,7 @@ window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=36-com
     window._pbbDeferredQueue.push('lib/learn-predictive-content.js?v=1-eight-weeks');
     window._pbbDeferredQueue.push('lib/learn-weekly-actions.js?v=eight-weeks-v1');
     window._pbbDeferredQueue.push('lib/learn-action-review.js?v=eight-weeks-v1');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=eight-weeks-v1');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=eight-week-funnel-20260914');
     window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=eight-weeks-v1');
     window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=36-checkin-feedback');
 }
@@ -14071,7 +14071,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#friends-photo-feed .meta-preview-feed-post', fallbackSel:'#feed-composer-card', title:'The Balance community', fallbackTitle:'The Balance community', body:'The highlighted Feed post shows where Shannon and members share normal meals, workouts, questions and wins.', fallbackBody:'This is where Shannon posts and members share meals, workouts and wins.', pageView:true, metaPreview:true, promptBeforeAction:true, promptRequiresTargetClick:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="feed_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: meet the community', preActionBody:'Back on Home, tap the highlighted community card to see where everyone shares their real week.', preActionButton:'Tap the community card', nextLabel:'See how to post', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('feed_intro'); if(window.BalanceMetaAdTrial && typeof window.BalanceMetaAdTrial.loadPreviewFeed === 'function') await window.BalanceMetaAdTrial.loadPreviewFeed(); } catch(e){} await new Promise(function(r){ setTimeout(r,500); }); return true; } },
     { tab:'friends', sel:'#feed-composer-card', title:'Post when you need support', body:'The highlighted composer is where you share a meal, workout, question or win. There is nothing to post during the tour—use Next to return Home.', pageView:true, metaPreview:true, preserveSurface:true, returnHomeAfter:true },
     { tab:'friends', sel:'#feed-composer-card', title:'Share from one place', body:'Use What’s happening for a post, or tap From Balance to share a set, meal, workout, PB or song. Your saved profile photo stays with your Feed posts.' },
-    { tab:'dashboard', sel:'#meta-ad-trial-welcome-video', fallbackSel:'#meta-ad-trial-inbox-preview-card', title:'Watch Shannon’s coach note', body:'Tap Play and watch to the end. Shannon explains your weekly check-ins, your first six weeks and what comes next.', metaPreview:true, embeddedGuide:true, coachNoteGuide:true, requiresWelcomeVideo:true, promptBeforeAction:true, promptRequiresTargetClick:true, returnHomeAfter:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="coach_message_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: hear from your coach', preActionBody:'Back on Home, tap the highlighted coach-message card to hear how your weekly support works.', preActionButton:'Tap the coach message card', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('coach_message_intro'); else if(!(options && options.fromTargetClick) && window.BalanceMetaAdTrial) window.BalanceMetaAdTrial.showInboxPreview(); } catch(e){} await new Promise(function(r){ setTimeout(r,350); }); return true; } },
+    { tab:'dashboard', sel:'#meta-ad-trial-welcome-video', fallbackSel:'#meta-ad-trial-inbox-preview-card', title:'Watch Shannon’s coach note', body:'Tap Play and watch to the end. Shannon explains your weekly check-ins, your first eight weeks and what comes next.', metaPreview:true, embeddedGuide:true, coachNoteGuide:true, requiresWelcomeVideo:true, promptBeforeAction:true, promptRequiresTargetClick:true, returnHomeAfter:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="coach_message_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: hear from your coach', preActionBody:'Back on Home, tap the highlighted coach-message card to hear how your weekly support works.', preActionButton:'Tap the coach message card', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('coach_message_intro'); else if(!(options && options.fromTargetClick) && window.BalanceMetaAdTrial) window.BalanceMetaAdTrial.showInboxPreview(); } catch(e){} await new Promise(function(r){ setTimeout(r,350); }); return true; } },
     { tab:'dashboard', sel:'.weekly-goal-onboarding-guide', fallbackSel:'#weekly-goals-card', title:'Pick your Weekly Goals', body:'Pick one to three realistic actions for this week, set the targets, then save them. These become the simple commitments Shannon can review with you.', metaPreview:true, requiresWeeklyGoals:true, promptBeforeAction:true, promptRequiresTargetClick:true, returnHomeAfter:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="weekly_goals_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: choose your Weekly Goals', preActionBody:'Back on Home, tap the highlighted Weekly Goals card and choose the realistic actions you want Shannon to review.', preActionButton:'Tap the Weekly Goals card', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('weekly_goals_intro'); else if(!(options && options.fromTargetClick) && typeof window.openWeeklyGoalsModal === 'function') await window.openWeeklyGoalsModal({ source:'meta_preview_setup', week:'current' }); } catch(e){} await new Promise(function(r){ setTimeout(r,350); }); return true; } },
     { tab:'learning', sel:'#balance-foundations-course-start', fallbackSel:'.course-detail-primary', title:'Start your course', body:'Tap the highlighted course button. It may say Start course or Continue course. This opens your Balance Learn welcome before Week 1 begins.', pageView:true, metaPreview:true, promptBeforeAction:true, promptRequiresTargetClick:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="foundations_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: start your course', preActionBody:'Tap the highlighted Course card to begin Balance Learn.', preActionButton:'Tap the Course card', requiresHighlightedClick:true, highlightedClickPrompt:'Tap the highlighted course button to open your welcome.', highlightedClickComplete:'Your course welcome is ready. Tap Next to keep going.', nextLabel:'See your course welcome', action:function(){ return openMetaPreviewFoundationsCourseStart(); } },
     { tab:'learning', sel:'#balance-foundations-welcome-start', fallbackSel:'#course-welcome', controlPromptPosition:'below', tourBottomReserve:24, title:'Welcome to Balance Learn', body:'Your course is ready. Each week you will learn the idea, take the action and track the evidence. Tap Start Week 1 when you are ready.', pageView:true, metaPreview:true, preserveSurface:true, requiresHighlightedClick:true, highlightedClickPrompt:'Tap Start Week 1 to open your first week.', highlightedClickComplete:'Week 1 is open. Tap Next to find your first lesson.', nextLabel:'Find Lesson 1' },
@@ -17151,7 +17151,7 @@ window.endFeatureTour = function(skipped){
     tab: 'dashboard',
     sel: '#guest-mode-banner',
     title: 'Five minutes to explore',
-    body: 'Your preview clock starts after onboarding. Explore Balance, then choose whether to start the full six-week course with one upfront payment.',
+    body: 'Your preview clock starts after onboarding. Explore Balance, then choose whether to start the full eight-week course with one upfront payment.',
     condition: function(){ return window.metaAdTrialMode === true; }
   });
   allFeatures.push({
@@ -18853,7 +18853,7 @@ window.endFeatureTour = function(skipped){
                 <p class="wizard-result-kicker">RECOMMENDED STARTING POINTS</p>
                 <h3>Here’s what Balance recommends.</h3>
                 <p class="wizard-result-summary">
-                    Based on your answers, these could suit <strong id="wizard-weekly-goal-target">a repeatable first six weeks</strong>.
+                    Based on your answers, these could suit <strong id="wizard-weekly-goal-target">a repeatable first eight weeks</strong>.
                 </p>
                 <div id="wizard-assigned-goals" class="wizard-assigned-goals" aria-live="polite"></div>
                 <div class="wizard-coach-note">
@@ -18927,13 +18927,13 @@ if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=52-word-reveal-coach-note';
+            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=eight-week-funnel-20260914';
             s.onload = function() { if(window._crumb)window._crumb('script6_deferred_loaded'); };
             document.head.appendChild(s);
         }, 2000);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=52-word-reveal-coach-note"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=eight-week-funnel-20260914"><\/script>');
 }
 </script>
 
