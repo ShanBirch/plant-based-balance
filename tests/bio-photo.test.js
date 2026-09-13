@@ -1,5 +1,9 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const html=fs.readFileSync('bio.html','utf8');
+test('masthead puts menu on the left before the logo in visual and keyboard order',()=>{
+ const header=html.match(/<header class="bio-masthead">([\s\S]*?)<\/header>/)[1];
+ assert.ok(header.indexOf('id="bio-menu-open"')<header.indexOf('class="identity"'));
+});
 test('photo hub retains destinations and uses all five new photos without a footer band',()=>{
  for(const href of ['/founders','/balance.html','/coaching.html','/journey.html','/clients.html','/book.html'])assert.ok(html.includes('href="'+href+'"'));
  assert.match(html,/photo-learn[\s\S]*?photos\/bio\/shannon-panel-1.jpg/);
