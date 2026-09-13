@@ -1,0 +1,7 @@
+# Photo-led bio, 13 September 2026
+
+Variant: `bio_photo_v1`. Hypothesis: full-photo destinations with Learn first make the bio easier to explore and improve qualified Learn visits. Primary KPI: paid Learn purchases per bio visitor. Diagnostics: `bio_landing` views and `bio_learn`, `bio_app`, `bio_coaching`, `bio_story`, `bio_results`, `bio_call` entry completions in the existing first-party onboarding funnel, mode `bio_photo_v1`. Guardrails: broken links, load weight, mobile overflow and CTA readability. Review 27 September 2026. UTMs and click identifiers are forwarded without replacing original first-touch storage; existing visitor/session identifiers are reused.
+
+The first image is Shannon's supplied black-and-white photo, copied unchanged. Other photos already appeared in the website/store assets. Replace each panel's image source and adjust its CSS object-position when new photos arrive. The results and booking destinations remain as footer links. No app entitlements, checkout prices or payment routes changed.
+
+QA: 320x568 and 390x844 portrait, 568x320 landscape, cream/dark, normal zero-inset fallback and local simulated 59px top/34px bottom notch spacing; opening, scrolling, return navigation and reachable footer. Four real-image links remain visible without JavaScript; initial image eager, later images lazy. Focus outline, reduced motion, contrast and attribution behavior checked. Physical Instagram in-app browser remains a device-specific follow-up.
