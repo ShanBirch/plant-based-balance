@@ -114,6 +114,17 @@ test('overlong grocery bridge is rewritten without dropping price, video or supp
  assert.equal(result.videoAttachmentUrl,'course.mp4');assert.equal(result.chunks.at(-1),chunks.at(-1));
 });
 
+test('a grounded rewrite missing the preferred length target does not strand a healthy reply',async()=>{
+ const currentMessage='I forget what I planned to do when I arrive at the gym and just wander around';
+ const chunks=buildPaidMetaTailoredOfferChunks(currentMessage,'Body composition','broad_pain');
+ let calls=0;
+ const result=await personalisePaidMetaOffer({draft:{chunks,joined:chunks.join('\n'),replyMode:'campaign_sales_progression',flowVariant:'broad_pain'},currentMessage,writer:async()=>{
+  calls++;return JSON.stringify({acknowledgement:'A clear gym setup with a simple order can help you arrive knowing exactly what to do, so the session fits the way you actually train. Balance Learn can shape that plan around your gym and adjust it from the weekly check-in.',evidence:[currentMessage]});
+ }});
+ assert.equal(calls,2);assert.ok(!result.error);assert.match(result.joined,/clear gym setup/);
+ assert.equal(result.chunks.at(-1),chunks.at(-1));
+});
+
 test('a missing personal concern receives one targeted rewrite before holding',async()=>{
  const chunks=buildPaidMetaTailoredOfferChunks('Kids and chocolate','Lose weight','broad_pain');
  const draft={chunks,joined:chunks.join('\n'),replyMode:'campaign_sales_progression',model:'test',flowVariant:'broad_pain'};

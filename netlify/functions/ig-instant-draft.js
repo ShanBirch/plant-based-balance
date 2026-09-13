@@ -2767,7 +2767,11 @@ ${repairFeedback ? `REWRITE FEEDBACK:\n${repairFeedback}` : ''}`;
         draft.personalAcknowledgementCandidate = {text:acknowledgement,evidence:quotes};
         const normalize = value => String(value).toLowerCase().replace(/[’‘]/g,"'").replace(/["“”]/g,'').replace(/\s+/g,' ').trim().replace(/^[,;:]+|[,;:]+$/g,'').trim();
         if (!acknowledgement) return fail('empty_acknowledgement');
-        if (acknowledgement.length > 360 || acknowledgement.split(/\s+/).length > 35) return fail('acknowledgement_too_long');
+        const acknowledgementWords = acknowledgement.split(/\s+/).length;
+        // Ask once for the shorter DM, but do not strand an otherwise valid
+        // reply merely because the rewrite missed the preferred word target.
+        // The existing hard size and grounding checks still apply.
+        if (acknowledgement.length > 360 || acknowledgementWords > 45 || (!repairFeedback && acknowledgementWords > 35)) return fail('acknowledgement_too_long');
         if (/\?|https?:|\$/i.test(acknowledgement)) return fail('question_or_price_in_bridge');
         if (!quotes.length || !quotes.every(quote => normalize(quote).length >= 3 && normalize(evidence).includes(normalize(quote)))) return fail('ungrounded_evidence_quotes');
         // Keep proof/media/decision order, but replace the awkward repeated
