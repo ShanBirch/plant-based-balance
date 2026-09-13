@@ -5,6 +5,14 @@
   try{var saved=localStorage.getItem('userThemePreference');if(saved==='dark'||saved==='antigravity')theme='dark';}catch(_){}
   function paint(){document.documentElement.dataset.theme=theme;themeButton.setAttribute('aria-label','Switch to '+(theme==='light'?'dark':'light')+' theme');}
   paint();
+  var menu=document.getElementById('bio-menu');
+  var menuOpen=document.getElementById('bio-menu-open');
+  var menuClose=document.getElementById('bio-menu-close');
+  menuOpen.addEventListener('click',function(){menu.showModal();menuOpen.setAttribute('aria-expanded','true');});
+  menuClose.addEventListener('click',function(){menu.close();});
+  menu.addEventListener('close',function(){menuOpen.setAttribute('aria-expanded','false');menuOpen.focus();});
+  menu.addEventListener('click',function(event){if(event.target===menu){var rect=menu.getBoundingClientRect();if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom)menu.close();}});
+  window.addEventListener('pageshow',function(){if(menu.open)menu.close();});
   themeButton.addEventListener('click',function(){theme=theme==='light'?'dark':'light';paint();try{localStorage.setItem('userThemePreference',theme);}catch(_){}});
   var params=new URLSearchParams(location.search);
   var keys=['utm_source','utm_medium','utm_campaign','utm_content','utm_term','fbclid','gclid','campaign_id','adset_id','ad_id','creative_id'];
