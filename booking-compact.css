@@ -1,0 +1,8 @@
+/* Public booking starts with choosing a slot; context stays with the form. */
+.booking-page .booking-layout{grid-template-columns:minmax(0,1fr);align-items:start;min-height:0;gap:20px;max-width:760px;margin:0 auto;padding:24px 0 32px}
+.booking-page .booking-intro{padding:0;text-align:left}
+.booking-page .booking-intro h1{font-size:clamp(1.9rem,5vw,2.8rem);line-height:1.12;margin:10px 0 0}
+.booking-page .booking-card{min-height:0}
+.booking-context-note:empty{display:none}
+.booking-context-note{margin:16px 0;color:var(--text-muted);line-height:1.6}
+@media(max-width:600px){.booking-page .booking-layout{padding-top:18px;gap:18px}.booking-page .booking-intro{padding:0}.booking-page .booking-intro h1{font-size:clamp(1.8rem,7.5vw,2.4rem)}}
