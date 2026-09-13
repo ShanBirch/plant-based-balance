@@ -210,7 +210,7 @@
       const base=ORIGINAL_WEEK_DEFINITIONS[Math.min(i,5)];
       const experiment=window.BalanceLearnWeeklyActions.experiment(i+1,version);
       const tasks=base.tasks.map(t=>({...t,id:t.id.replace(/^w\d+_/,'w'+(i+1)+'_')}));
-      for(const task of tasks)if(task.type==='foundations_reflection_feed' && i<7){task.label='Share one thing you learned this week';task.hint='Describe one observation from this week and what you want to try next.';}
+      for(const task of tasks)if(task.type==='foundations_feed_reflection' && i<7){task.label='Share one thing you learned this week';task.hint='Describe one observation from this week and what you want to try next.';}
       const action=tasks.find(t=>t.type==='learn_experiment');
       Object.assign(action,{label:experiment.title,hint:experiment.prompt+' Report what happened in your weekly check-in.'});
       // Keep community actions tied to the calendar; nutrition and experiment tasks follow the curriculum.
