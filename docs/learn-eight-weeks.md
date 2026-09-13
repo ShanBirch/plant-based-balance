@@ -21,6 +21,10 @@ Arunima Sharma has 25 completed lessons and is due to enter original week 6. Her
 
 ## Teaching rationale and sources
 
+Standing requirement reaffirmed by Shannon on 14 September 2026: every Learn week must include the existing practical weekly actions plus exactly one applied task from that week's course content. Retain the established five-step structure: meal tracking, movement, one lesson-linked experiment, one community action and the weekly check-in. The experiment must reference a lesson actually assigned to that member's week, with explicit evidence prompts; writing a plan alone must not mark the experiment completed.
+
+Continuation week 7: track seven meals, complete three workouts/movement sessions, test one expectation in context, share one thing learned in Feed and complete the weekly check-in. Continuation week 8: retain meal/movement targets, test a prediction and record a proportionate model update, share course reflections and complete the check-in. Original weeks 1–6 and their evidence remain intact. The eight new-starter weeks and eight continuation weeks were audited against these requirements.
+
 Use the same unfamiliar-gym example throughout: expect judgement, observe what happens, consider reliability, revise a proportionate expectation and test again. Explain state inference versus longer-lasting parameter learning, confidence/precision weighting, uncertainty, repeated evidence and generalisation. A numerical delta-rule example is explicitly a teaching sketch, not a literal complete neural algorithm.
 
 The free-energy principle is presented as a theoretical framework. Statistical surprise, prediction error and variational free energy are distinguished. Free energy is not equated with calories, disagreement is not reduced to glucose conservation, and predictive processing is not used to claim a lack of agency or literal prediction of the entire universe.

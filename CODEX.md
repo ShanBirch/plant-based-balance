@@ -501,4 +501,6 @@ Shannon wants data collected on every meaningful growth, sales, onboarding, and 
 
 ## Learn curriculum extension (14 September 2026)
 
+Every Learn week must retain the established weekly actions and exactly one practical task applying that week's lessons. The structure is meal tracking, movement, one lesson-linked experiment, a community action and the weekly check-in. Match the experiment to the member's actual curriculum sequence; require an account of the relevant observation/action, not just a saved intention. See docs/learn-eight-weeks.md for the continuation-week actions.
+
 Learn now has eight weeks. Use docs/learn-eight-weeks.md and lib/learn-curriculum.js for the current sequence. New starters cover experience, free energy and model updating before repeatable habits. Existing Learn members keep their original first six weeks, then experience/prediction and learning. Existing Become calendars are retained. Upfront access is 56 days at the existing price; weekly billing minimums are unchanged. Teach the free-energy principle as a framework, explain confidence-weighted learning from surprise, retain agency and distinguish inference from parameter learning. Use a concrete example across the explanation.
