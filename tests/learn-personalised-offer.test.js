@@ -99,6 +99,21 @@ test('family wording represents kids without forcing parroting', async () => {
     assert.match(result.joined,/family life/);
 });
 
+test('overlong grocery bridge is rewritten without dropping price, video or support choice',async()=>{
+ const currentMessage='Food shopping on a tight grocery budget makes meal planning hard';
+ const chunks=buildPaidMetaTailoredOfferChunks(currentMessage,'Lose weight','broad_pain');
+ const draft={chunks,joined:chunks.join('\n'),replyMode:'campaign_sales_progression',flowVariant:'broad_pain',videoAttachmentUrl:'course.mp4'};
+ let calls=0;
+ const result=await personalisePaidMetaOffer({draft,currentMessage,writer:async()=>{
+  calls++;
+  return JSON.stringify({acknowledgement:calls===1?'A plan built around ordinary supermarket ingredients and a weekly food review could help you keep meals workable on a tight grocery budget, while adjusting lunches or dinners that are not fitting well. That gives you a repeatable food setup you can actually keep using.':'We can build meals around ordinary supermarket ingredients, then use the weekly food review to adjust choices that are not fitting your grocery budget.',evidence:[currentMessage]});
+ }});
+ assert.equal(calls,2);assert.ok(!result.error);
+ assert.doesNotMatch(result.joined,/That gives you a repeatable/);
+ assert.match(result.joined,/one AUD \$149 payment/);
+ assert.equal(result.videoAttachmentUrl,'course.mp4');assert.equal(result.chunks.at(-1),chunks.at(-1));
+});
+
 test('a missing personal concern receives one targeted rewrite before holding',async()=>{
  const chunks=buildPaidMetaTailoredOfferChunks('Kids and chocolate','Lose weight','broad_pain');
  const draft={chunks,joined:chunks.join('\n'),replyMode:'campaign_sales_progression',model:'test',flowVariant:'broad_pain'};

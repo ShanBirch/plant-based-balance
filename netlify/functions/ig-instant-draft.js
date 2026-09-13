@@ -2736,7 +2736,7 @@ async function personalisePaidMetaOffer({ draft, currentMessage = '', history = 
     const evidence = `${leadContext}\n${inbound}\n${mediaContext}`;
     const fail = reason => {
         if (!repairFeedback && ['grounding_contract','acknowledgement_too_long','ungrounded_evidence_quotes'].includes(reason)) {
-            return personalisePaidMetaOffer({draft,currentMessage,history,writer,repairFeedback:`Your previous draft failed ${reason}: ${JSON.stringify(draft.personalAcknowledgementCandidate)}. Rewrite once. Represent every supplied concern, including children/family AND chocolate if both are present. Include only actual current circumstances; do not invent restarting each week. Keep within 40 words and quote exact evidence.`});
+            return personalisePaidMetaOffer({draft,currentMessage,history,writer,repairFeedback:`Your previous draft failed ${reason}: ${JSON.stringify(draft.personalAcknowledgementCandidate)}. Rewrite once. Represent every supplied concern, including children/family AND chocolate if both are present. Include only actual current circumstances; do not invent restarting each week. Keep within 35 words, remove generic concluding sentences, and quote exact evidence.`});
         }
         return {...draft,personalAcknowledgementFailure:reason,error:`Personal offer bridge unavailable: ${reason}`};
     };
@@ -2767,7 +2767,7 @@ ${repairFeedback ? `REWRITE FEEDBACK:\n${repairFeedback}` : ''}`;
         draft.personalAcknowledgementCandidate = {text:acknowledgement,evidence:quotes};
         const normalize = value => String(value).toLowerCase().replace(/[’‘]/g,"'").replace(/["“”]/g,'').replace(/\s+/g,' ').trim().replace(/^[,;:]+|[,;:]+$/g,'').trim();
         if (!acknowledgement) return fail('empty_acknowledgement');
-        if (acknowledgement.length > 360 || acknowledgement.split(/\s+/).length > 45) return fail('acknowledgement_too_long');
+        if (acknowledgement.length > 360 || acknowledgement.split(/\s+/).length > 35) return fail('acknowledgement_too_long');
         if (/\?|https?:|\$/i.test(acknowledgement)) return fail('question_or_price_in_bridge');
         if (!quotes.length || !quotes.every(quote => normalize(quote).length >= 3 && normalize(evidence).includes(normalize(quote)))) return fail('ungrounded_evidence_quotes');
         // Keep proof/media/decision order, but replace the awkward repeated
