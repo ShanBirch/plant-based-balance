@@ -6,6 +6,17 @@
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
 <style>
 * { touch-action: manipulation; }
+/* First-paint guard: keep legacy markup inert until the account and Home layout
+   have settled, including while phone styles/scripts are still downloading. */
+html:not([data-pbb-shell-ready]) body > .container { visibility: hidden !important; pointer-events: none !important; }
+#login-loading-overlay {
+    position: fixed; inset: 0; z-index: 1000000; box-sizing: border-box;
+    width: 100%; height: 100%; height: 100dvh;
+    padding: max(42px, env(safe-area-inset-top, 0px)) max(20px, env(safe-area-inset-right, 0px)) max(24px, env(safe-area-inset-bottom, 0px)) max(20px, env(safe-area-inset-left, 0px));
+    overflow: auto; overscroll-behavior: contain;
+}
+#login-loading-overlay > * { flex-shrink: 0; max-width: 100%; }
+@media (max-height: 500px) { #login-loading-overlay { justify-content: flex-start !important; } }
 /* Retired FitGotchi combat surfaces. Keep legacy DOM hooks inert for older
    cached helpers; XP, character animations and community games are unchanged. */
 .battle-trigger-btn,
@@ -48,6 +59,7 @@ script, style, head, link, meta, title { display: none !important; }
 #tamagotchi-levelup-overlay:not(.active) { display: none !important; }
 </style>
 <title>Balance</title>
+<script src="js/dashboard/pbb-startup-shell.js?v=1" defer></script>
 <meta name="description" content="Plant-based workouts, vegan nutrition, progress tracking and community in one app.">
 
 
@@ -944,6 +956,7 @@ window.addEventListener('load', function() {
     // Also hide the loading overlay for guest mode
     var overlay = document.getElementById('login-loading-overlay');
     if (overlay) overlay.style.display = 'none';
+    document.documentElement.setAttribute('data-pbb-shell-ready', 'true');
 
     // Set demo values in the UI
     var streakEl = document.getElementById('tamagotchi-streak');
@@ -1976,8 +1989,8 @@ if(!window._pbbIsIOSSafari) {
 document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=36-community-challenge"><\/script>');
     document.write('<script src="lib/learn-weekly-actions.js?v=3-coach-review"><\/script>');
     document.write('<script src="lib/learn-action-review.js?v=5-ai-evidence"><\/script>');
-    document.write('<script src="js/dashboard/pbb-social-journey.js?v=58-ai-actions"><\/script>');
-    document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=62-weekly-course-action"><\/script>');
+    document.write('<script src="js/dashboard/pbb-social-journey.js?v=59-startup-ready"><\/script>');
+    document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=63-startup-ready"><\/script>');
     document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=35-checkin-tap-ready"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
@@ -1985,8 +1998,8 @@ document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=36-commu
 window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=36-community-challenge');
     window._pbbDeferredQueue.push('lib/learn-weekly-actions.js?v=3-coach-review');
     window._pbbDeferredQueue.push('lib/learn-action-review.js?v=5-ai-evidence');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=58-ai-actions');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=62-weekly-course-action');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=59-startup-ready');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=63-startup-ready');
     window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=35-checkin-tap-ready');
 }
 </script>
@@ -2982,7 +2995,7 @@ if (window._pbbIsIOSSafari) {
     function _doLoadScript3() {
         if(window._crumb)window._crumb('script3_loading');
         var s = document.createElement('script');
-    s.src = 'js/dashboard/dashboard-script-3-1_get_user_data.js?v=63-resume-session';
+    s.src = 'js/dashboard/dashboard-script-3-1_get_user_data.js?v=64-settled-startup';
         document.head.appendChild(s);
     }
     if (window._pbbAuthIsReady) {
@@ -2993,7 +3006,7 @@ if (window._pbbIsIOSSafari) {
         }, { once: true });
     }
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-3-1_get_user_data.js?v=63-resume-session"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-3-1_get_user_data.js?v=64-settled-startup"><\/script>');
 }
 </script>
 

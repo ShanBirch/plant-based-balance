@@ -94,7 +94,9 @@ test('tour checkpoint preserves the current stable step, gates and exercise posi
 test('Unlock has no sign-in fallback, and unfinished journeys never use the fast Home paint', () => {
     const button=dashboard.match(/<button[^>]*onclick="[^"]*openCheckoutGate[^>]*>Unlock Balance<\/button>/)[0];
     assert.doesNotMatch(button,/login\.html|metaAdTrialMode/);
-    assert.match(read('js/dashboard/dashboard-script-3-1_get_user_data.js'),/!window.metaAdTrialMode && !window.BalanceOnboardingProgress\?\.read\(\)/);
+    const startup = read('js/dashboard/dashboard-script-3-1_get_user_data.js');
+    assert.doesNotMatch(startup,/if \(fastStartupEligible\)/);
+    assert.match(startup,/await runStartupDataRefresh\(\)/);
     assert.match(dashboard,/body:has\(#guided-tour-overlay.active\) #guest-mode-banner \{ z-index:400200/);
     assert.match(setupSource,/if \(window.__balanceStartupHomeReady\) resumeTour\(\)/);
     assert.match(setupSource,/if \(wizardChatNeedsResume\)[\s\S]*?askWizardChatQuestion\(\{ instant:true, revisit:true \}\)/);

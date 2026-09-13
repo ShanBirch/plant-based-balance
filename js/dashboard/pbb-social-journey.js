@@ -1880,8 +1880,15 @@
     renderJourney();
   }
 
-  async function refresh() {
-    if (!isJourneyEligible() || loading) return;
+  let refreshPromise = null;
+  function refresh() {
+    if (!isJourneyEligible()) return Promise.resolve(true);
+    if (refreshPromise) return refreshPromise;
+    refreshPromise = refreshHomeState();
+    return refreshPromise;
+  }
+
+  async function refreshHomeState() {
     loading = true;
     try {
       await loadState();
@@ -1894,12 +1901,15 @@
       }
       renderCard();
       if (typeof window.refreshLearningCourseHome === 'function') window.refreshLearningCourseHome();
+      return true;
     } catch (error) {
       console.warn('[social-journey] refresh failed', error);
       const card = getCard();
       if (card) card.style.display = 'none';
+      return false;
     } finally {
       loading = false;
+      refreshPromise = null;
     }
   }
 

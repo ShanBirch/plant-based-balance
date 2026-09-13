@@ -1802,7 +1802,7 @@
     openCoachCheckinExplainer: openCoachCheckinExplainer,
     closeCoachCheckinExplainer: closeCoachCheckinExplainer,
     setOnboardingStepComplete: setOnboardingStepComplete,
-    refreshStatus: function(){ refreshDailyStatus({ force: true }); },
+    refreshStatus: function(){ return refreshDailyStatus({ force: true }); },
     enablePreview: function(){
       try { localStorage.setItem(PREVIEW_STORAGE_KEY, '1'); } catch (_) {}
       render();

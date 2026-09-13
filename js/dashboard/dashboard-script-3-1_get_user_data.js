@@ -413,7 +413,7 @@
                 if (!isSameStartupUser()) return;
 
                 _crumb('initProgramDate_start');
-                try { initProgramDate(); } catch(e) { _crumb('initProgramDate_ERROR: ' + (e&&e.message||e)); }
+                try { await initProgramDate(); } catch(e) { _crumb('initProgramDate_ERROR: ' + (e&&e.message||e)); }
                 _crumb('initProgramDate_done');
 
                 // Apply saved theme AFTER gender is loaded from database
@@ -454,37 +454,8 @@
                 if(typeof window.loadCommunityFeed === 'function') window.loadCommunityFeed();
             }
 
-            var fastStartupEligible = !window._pbbIsIOSSafari &&
-                !window.metaAdTrialMode && !window.BalanceOnboardingProgress?.read() &&
-                !window.BalanceMetaAdTrial?.hasPendingPhoneReplay?.(window.currentUser) &&
-                !window.isAdminViewing &&
-                localStorage.getItem('dashboardInitialized') === 'true' &&
-                localStorage.getItem('pbb_last_user_id') === startupUserId &&
-                localStorage.getItem('onboardingComplete') === 'true';
-
-            if (fastStartupEligible) {
-                didFastPaint = true;
-                _crumb('fast_paint_start');
-                updateLoginProgress(70, 'Opening...');
-                if(typeof switchAppTab === 'function') {
-                    const homeNav = document.querySelector('.nav-item');
-                    switchAppTab('dashboard', homeNav);
-                }
-                try {
-                    localStorage.setItem('_pbb_crash_count', '0');
-                    window._pbbCrashCount = 0;
-                } catch(e) {}
-                window.__balanceStartupHomeReady = true;
-                window.dispatchEvent(new Event('pbbInitComplete'));
-                setTimeout(function() {
-                    runStartupDataRefresh().catch(function(e) {
-                        _crumb('fast_paint_refresh_ERROR: ' + (e&&e.message||e));
-                    });
-                }, 0);
-                _crumb('fast_paint_done');
-            } else {
-                await runStartupDataRefresh();
-            }
+            // Saved account state must settle before the initial Home reveal.
+            await runStartupDataRefresh();
 
             // Native app: permissions & health/push initialization
             // Skip in guest mode — no real user to sync health data for
@@ -615,7 +586,17 @@
             }
             } catch(initError) {
                 if (window._crumb) window._crumb('init_ERROR: ' + (initError && initError.message ? initError.message : String(initError)));
-                console.error('Initialization error (dismissing overlay anyway):', initError);
+                console.error('Initialization error:', initError);
+                window.BalanceStartupShell?.fail();
+                return;
+            }
+
+            try {
+                await window.BalanceStartupShell.prepare();
+            } catch (error) {
+                console.warn('Home setup not ready:', error);
+                window.BalanceStartupShell?.fail();
+                return;
             }
 
             // --- Dismiss Login Loading Overlay ---
@@ -627,6 +608,7 @@
                 const wasReturningUser = localStorage.getItem('dashboardInitialized') === 'true';
                 const overlay = document.getElementById('login-loading-overlay');
 
+                window.BalanceStartupShell.reveal();
                 updateLoginProgress(100, 'Ready!');
                 if (!window.isAdminViewing) { try { localStorage.setItem('dashboardInitialized', 'true'); if (window.currentUser) localStorage.setItem('pbb_last_user_id', window.currentUser.id); } catch(e) {} }
                 if (overlay) {
