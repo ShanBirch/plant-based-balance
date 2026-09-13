@@ -537,7 +537,7 @@
     });
     var saved = responses.find(function(item) { return item.week_start === getWeekWindow().startKey && (item.occurrence || 'weekly') === (activeOccurrence() || 'weekly'); });
     if (!saved) return;
-    ['overall', 'win', 'blocker', 'confidence', 'support', 'note', 'course_learning'].forEach(function(name) {
+    ['overall', 'win', 'blocker', 'confidence', 'support', 'note', 'course_learning', 'app_coaching_feedback'].forEach(function(name) {
       var fields = form.querySelectorAll('[name="' + name + '"]');
       fields.forEach(function(field) {
         if (field.type === 'radio') field.checked = field.value === String(saved[name]);
@@ -1341,6 +1341,10 @@
       '      <span class="pbb-wci-field-label">Anything else Shannon should know?</span>',
       '      <textarea class="pbb-wci-input" name="note" maxlength="900" placeholder="Optional"></textarea>',
       '    </label>',
+      '    <label class="pbb-wci-field">',
+      '      <span class="pbb-wci-field-label">Is there any feedback you’d like to give about the app or the coaching?</span>',
+      '      <textarea class="pbb-wci-input" name="app_coaching_feedback" maxlength="900" placeholder="Optional — what’s working well, or what could be better?"></textarea>',
+      '    </label>',
       '    <div class="pbb-wci-form-error" data-wci-form-error role="alert"></div>',
       '    <button type="submit" class="pbb-wci-action primary" data-wci-action="submit">Send check-in to Shannon</button>',
       '  </form>',
@@ -1395,6 +1399,7 @@
       confidence: Number(formData.get('confidence') || 0),
       support: String(formData.get('support') || ''),
       note: String(formData.get('note') || '').trim(),
+      app_coaching_feedback: String(formData.get('app_coaching_feedback') || '').trim(),
       course_learning: String(formData.get('course_learning') || '').trim(),
       course_week: Number(formData.get('course_week') || 0),
       learn_action: window.BalanceLearnActionReview?.payload(form) || null,

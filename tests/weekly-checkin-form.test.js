@@ -202,3 +202,17 @@ test('server validation accepts the current Monday week and rejects incomplete a
   }, now);
   assert.match(invalid.error, /biggest win/i);
 });
+
+ test('optional app and coaching feedback survives validation, storage merge, and coach summary', () => {
+  const helpers = loadEndpointTestHelpers();
+  const payload = { week_start: '2026-09-07', overall: 'mixed', win: 'Two workouts', confidence: 4, support: 'nothing_specific' };
+  const now = new Date('2026-09-13T02:00:00Z');
+  assert.equal(helpers.validatePayload(payload, now).value.app_coaching_feedback, '');
+  const checked = helpers.validatePayload({ ...payload, app_coaching_feedback: '  Easier meal search please  ' }, now);
+  assert.equal(checked.value.app_coaching_feedback, 'Easier meal search please');
+  const stored = helpers.mergeWeeklyCheckinResponses({}, { ...checked.value, occurrence: 'weekly' });
+  const reloaded = JSON.parse(JSON.stringify(stored))[0];
+  assert.equal(reloaded.app_coaching_feedback, 'Easier meal search please');
+  assert.match(helpers.responseSummary(reloaded), /App and coaching feedback: Easier meal search please/);
+  assert.equal(helpers.validatePayload({ ...payload, app_coaching_feedback: 'x'.repeat(1000) }, now).value.app_coaching_feedback.length, 900);
+ });
