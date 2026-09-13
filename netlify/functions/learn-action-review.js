@@ -15,7 +15,8 @@ exports.handler=async event=>{
    const ctx=await review.context(user.id,target,input.enrollment_id||null);
    if(event.httpMethod==='GET'){
      if(ctx.available && !ctx.can_review)ctx.records=await learnAI.retryPending(user.id,ctx.records);
-     if(ctx.available && !ctx.can_review && ctx.current_week>=6)Object.assign(ctx,await review.nutrition(user.id,review.weekStart(ctx,6)));
+     const mealWeek=ctx.available ? review.actions.curriculum.weeks(ctx.curriculum_version).find(w=>w.action===6)?.number : null;
+     if(ctx.available && !ctx.can_review && mealWeek && ctx.current_week>=mealWeek)Object.assign(ctx,await review.nutrition(user.id,review.weekStart(ctx,mealWeek)));
      return json(200,{ok:true,...ctx});
    }
    if(input.operation==='restart'){

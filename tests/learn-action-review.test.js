@@ -1,13 +1,13 @@
 const test=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs');
 const actions=require('../lib/learn-weekly-actions');
-function fixture(){
+function fixture(version='legacy_six',week=6){
  const enrollment={id:'enrollment-a',user_id:'member',active:true,start_date:'2026-08-08'};
  const rows=[];
  const calls=[];
  const query=async(path,options={})=>{
   calls.push({path,options});
   if(path.startsWith('admin_users')||path.startsWith('coach_clients'))return [];
-  if(path.startsWith('social_journey_progress'))return [{current_week:6,week_started_at:'2026-09-12'}];
+  if(path.startsWith('social_journey_progress'))return [{current_week:week,week_started_at:'2026-09-12',settings:{learn_curriculum:version}}];
   if(path==='rpc/ensure_learn_action_enrollment')return enrollment;
   if(path.startsWith('learn_action_enrollments'))return [enrollment];
   if(path.startsWith('learn_action_reviews'))return rows;
@@ -32,6 +32,18 @@ test('reflection and intention fields cannot substitute for an actual report',as
  const f=fixture();const result=await f.api.prepareReport('member',{enrollment_id:'enrollment-a',week:3,revision:0,reflection_text:'I intend to try it',answers:{}},{occurrence:'weekly'});
  assert.equal(result.payload.complete,false);
  assert.equal(f.calls.some(c=>c.options.method && !c.path.startsWith('rpc/ensure_')),false);
+});
+
+test('server accepts week eight with the correct evidence for each curriculum',async()=>{
+ for(const version of ['eight_v1','bridge_eight_v1']){
+  const f=fixture(version,8),definition=actions.experiment(8,version);
+  const answers=Object.fromEntries(definition.fields.map(([key])=>[key,'Observed outcome and proportionate update']));
+  const prepared=await f.api.prepareReport('member',{enrollment_id:'enrollment-a',week:8,revision:0,answers,...(definition.requiresMeal?{meal_id:'own-meal'}:{})},{occurrence:'weekly'});
+  assert.equal(prepared.payload.complete,true);
+  assert.equal(prepared.payload.instructions.curriculum_version,version);
+  assert.equal(f.calls.some(c=>c.path.startsWith('user_saved_meals')),definition.requiresMeal);
+  await assert.rejects(f.api.prepareReport('member',{enrollment_id:'enrollment-a',week:9,revision:0,answers},{}),/not available/);
+ }
 });
 test('cross-member and cross-enrollment evidence are rejected',async()=>{
  const f=fixture();

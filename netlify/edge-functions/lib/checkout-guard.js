@@ -74,13 +74,13 @@ export function assertStarterCoachingPlan(priceId) {
 const BALANCE_FOUNDATIONS_SIX_WEEK_OFFER = Object.freeze({
     token: "balance_vegan_founders_pass",
     productName: "Balance Learn",
-    productDescription: "Six-week Balance Learn course with one weekly check-in, plan review, app access, and support from Shannon",
+    productDescription: "Eight-week Balance Learn course with one weekly check-in, plan review, app access, and support from Shannon",
     unitAmount: 14900,
     currency: "AUD",
     interval: null,
     balanceProduct: "balance_vegan_founders_pass",
     balancePlan: "balance_foundations_six_week",
-    accessDays: 42,
+    accessDays: 56,
     checkinsPerWeek: "1",
     callsPerWeek: "0",
     allowBump: false,
@@ -198,7 +198,7 @@ export function getBalanceCheckoutPlan(priceId, now = new Date()) {
     if (plan === BALANCE_FOUNDATIONS_SIX_WEEK_OFFER) {
         const pricing = getLearnCoursePricing(now);
         return Object.freeze({ ...plan, ...pricing,
-            checkoutDisclosure: `One AUD $${pricing.unitAmount / 100} payment for the full six-week Balance Learn course, app access and weekly check-ins. No automatic renewal.` });
+            checkoutDisclosure: `One AUD $${pricing.unitAmount / 100} payment for the full eight-week Balance Learn course, app access and weekly check-ins. No automatic renewal.` });
     }
     return plan;
 }

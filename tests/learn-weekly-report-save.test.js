@@ -7,7 +7,7 @@ function fixture(journeyWeek=1){
    if(url.startsWith('client_memory'))return [];
    if(url.startsWith('users'))return [{id:'member',name:'QA'}];
    if(url.startsWith('coach_clients'))return [{coach_id:'coach'}];
-   if(url.startsWith('social_journey_progress'))return [{current_week:journeyWeek,week_started_at:'2026-09-09'}];
+   if(url.startsWith('social_journey_progress'))return [{current_week:journeyWeek,week_started_at:'2026-09-09',settings:{learn_curriculum:'legacy_six'}}];
    if(url.startsWith('daily_checkins')){
      if(options.method){if(!dropWrite)records.additional_data=options.body.additional_data;return [];}
      if(failRead)throw Error('offline');
@@ -24,7 +24,7 @@ function fixture(journeyWeek=1){
    loadClientMemory:async()=>null,buildMemoryBlock:()=>'',buildNameUsePolicyBlock:()=>'',callVertexAIModel:async()=> 'Review draft',normalizeGeneratedCoachDraftText:x=>x,stripLeadingGreeting:x=>x,truncate:(s,n)=>s.slice(0,n)};
  class FixedDate extends Date{constructor(...a){super(...(a.length?a:['2026-09-11T08:00:00Z']));}static now(){return new Date('2026-09-11T08:00:00Z').getTime();}}
  const module={exports:{}};
- vm.runInNewContext(source,{module,exports:module.exports,Date:FixedDate,console:{error(){},warn(){}},fetch:async()=>({ok:true,json:async()=>({id:'member'})}),require:p=>p==='./_lib/learn-action-review'?{prepareReport:async(user,input)=>({week:input.week,payload:{report:{answers:input.answers}}}),saveReport:async(user,prepared)=>({id:'action-record',enrollment_id:'enrollment',week:prepared.week,status:'submitted',revision:1})}:p==='crypto'?require('crypto'):p==='../../lib/learn-weekly-actions'?require('../lib/learn-weekly-actions'):helpers});
+ vm.runInNewContext(source,{module,exports:module.exports,Date:FixedDate,console:{error(){},warn(){}},fetch:async()=>({ok:true,json:async()=>({id:'member'})}),require:p=>p==='./_lib/learn-action-review'?{context:async()=>({enrollment:{id:'enrollment'},records:[]}),prepareReport:async(user,input)=>({week:input.week,payload:{report:{answers:input.answers}}}),saveReport:async(user,prepared)=>({id:'action-record',enrollment_id:'enrollment',week:prepared.week,status:'submitted',revision:1})}:p==='../../lib/learn-curriculum'?require('../lib/learn-curriculum'):p==='crypto'?require('crypto'):p==='../../lib/learn-weekly-actions'?require('../lib/learn-weekly-actions'):helpers});
  const payload={week_start:'2026-09-07',overall:'mixed',win:'Logged lunch',confidence:3,support:'nothing_specific',course_week:1,course_learning:'I noticed I snack just after sitting down.',course_experiment_completed:true};
  return {records,alerts,payload,send:(change={})=>module.exports.handler({httpMethod:'POST',headers:{authorization:'Bearer test'},body:JSON.stringify({...payload,...change})}),fail:()=>{failRead=true},drop:()=>{dropWrite=true}};
 }

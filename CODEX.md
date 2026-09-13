@@ -16,7 +16,7 @@ This file is the durable handoff context for Codex sessions. Read it at the star
 
 ## Balance Learn introductory pricing (10 September 2026)
 
-Latest confirmed decision: the complete six-week Learn package, including weekly check-ins and plan review, is AUD $149 upfront. Launch is 21 September 2026; the launch offer runs through 20 October 2026 Brisbane time. New upfront purchases become AUD $450 at midnight on 21 October 2026. This is one payment for the full six-week course, not a one-month course or a recurring charge. The earlier $150 price and 21 September increase are retired. Existing purchases keep their entitlements. The separate $24.83 weekly Learn membership and Zoom PT prices are unchanged. The shared lib/learn-course-pricing.js schedule controls the server price. Public pages use the live offer endpoint to display the current amount.
+Latest confirmed decision: the complete eight-week Learn package, including weekly check-ins and plan review, is AUD $149 upfront. Launch is 21 September 2026; the launch offer runs through 20 October 2026 Brisbane time. New upfront purchases become AUD $450 at midnight on 21 October 2026. This is one payment for the full eight-week course, not a one-month course or a recurring charge. The earlier $150 price and 21 September increase are retired. Existing purchases keep their entitlements. The separate $24.83 weekly Learn membership and Zoom PT prices are unchanged. The shared lib/learn-course-pricing.js schedule controls the server price. Public pages use the live offer endpoint to display the current amount.
 
 Shannon confirmed all coaching packages also include Balance Learn course access, including Online Coaching and Zoom PT.
 
@@ -498,3 +498,7 @@ Shannon wants data collected on every meaningful growth, sales, onboarding, and 
 - Use stable experiment and event names. Do not change a live definition halfway through a comparison.
 - Choose winners using business outcomes and lead quality. Cheap clicks, views, or DMs are diagnostic metrics, not final success metrics.
 - No new ad, landing-page variant, checkout path, onboarding change, or automated DM flow is considered ready until its measurement path has been verified.
+
+## Learn curriculum extension (14 September 2026)
+
+Learn now has eight weeks. Use docs/learn-eight-weeks.md and lib/learn-curriculum.js for the current sequence. New starters cover experience, free energy and model updating before repeatable habits. Existing Learn members keep their original first six weeks, then experience/prediction and learning. Existing Become calendars are retained. Upfront access is 56 days at the existing price; weekly billing minimums are unchanged. Teach the free-energy principle as a framework, explain confidence-weighted learning from surprise, retain agency and distinguish inference from parameter learning. Use a concrete example across the explanation.

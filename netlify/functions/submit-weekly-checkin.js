@@ -305,7 +305,7 @@ function responseSummary(response) {
         response.note ? `Anything else: ${response.note}` : '',
         response.course_learning ? `Course learning: ${response.course_learning}` : 'Course learning: nothing added.',
         response.learn_action_report ? `Saved action evidence: ${JSON.stringify(response.learn_action_report.answers)}${response.learn_action_report.meal ? ' Saved meal: ' + response.learn_action_report.meal.name : ''}` : '',
-        response.course_week ? `Learn action week ${response.learn_action?.week || response.course_week}: ${learnActions.experiment(response.learn_action?.week || response.course_week)?.prompt || ''} Action report status: ${response.learn_action?.status || 'not submitted'}. The automatic evidence review records completion only when this action is discussed and its criteria are met.` : '',
+        response.course_week ? `Learn action week ${response.learn_action?.week || response.course_week}: ${learnActions.experiment(response.learn_action?.week || response.course_week,response.curriculum_version)?.prompt || ''} Action report status: ${response.learn_action?.status || 'not submitted'}. The automatic evidence review records completion only when this action is discussed and its criteria are met.` : '',
         `Weekly goals: ${goalSummary(response.goals)}`,
     ].filter(Boolean).join('\n');
 }
@@ -396,14 +396,16 @@ exports.handler = async (event) => {
     try {
         // Resolve course identity on the server, including an elapsed week that
         // the client has not refreshed yet. Never attach a report to a stale form.
-        const journeyRows = await supabaseQuery(`social_journey_progress?select=current_week,week_started_at&user_id=eq.${encodeURIComponent(authUser.id)}&limit=1`);
+        const journeyRows = await supabaseQuery(`social_journey_progress?select=current_week,week_started_at,settings,created_at&user_id=eq.${encodeURIComponent(authUser.id)}&limit=1`);
         const courseWeek = learnActions.effectiveWeek(journeyRows[0]);
+        const curriculumVersion = require('../../lib/learn-curriculum').version(journeyRows[0]);
         if (!body.learn_action && Number(body.course_week) && Number(body.course_week) !== courseWeek) return json(409, { error: 'Your course week has changed. Reopen the check-in to see the current experiment.' });
-        if (Number(body.course_week) && learnActions.experiment(courseWeek)) response.course_week = courseWeek;
+        response.curriculum_version = curriculumVersion;
+        if (Number(body.course_week) && learnActions.experiment(courseWeek, curriculumVersion)) response.course_week = courseWeek;
         else response.course_experiment_completed = false;
         if (body.learn_action && occurrence !== 'weekly') return json(400,{error:'Submit course action evidence with your weekly check-in.'});
         let actionInput=body.learn_action;
-        if(!actionInput && occurrence==='weekly' && learnActions.experiment(courseWeek)){
+        if(!actionInput && occurrence==='weekly' && learnActions.experiment(courseWeek, curriculumVersion)){
             const ctx=await learnReview.context(authUser.id),row=ctx.records.find(r=>r.week===courseWeek);
             actionInput={enrollment_id:ctx.enrollment.id,week:courseWeek,revision:row?.revision||0,answers:{},meal_id:row?.report?.meal?.id||null};
         }

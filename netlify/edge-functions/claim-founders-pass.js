@@ -2,7 +2,7 @@ const STRIPE_API_VERSION = "2026-02-25.clover";
 const FOUNDERS_PRODUCT = "balance_vegan_founders_pass";
 const FOUNDERS_PLAN = "balance_foundations_six_week";
 const LEGACY_FOUNDERS_PLAN = "founders_pass_lifetime";
-const FOUNDATIONS_ACCESS_DAYS = 42;
+const FOUNDATIONS_ACCESS_DAYS = 56;
 
 function json(payload, status = 200) {
     return new Response(JSON.stringify(payload), {

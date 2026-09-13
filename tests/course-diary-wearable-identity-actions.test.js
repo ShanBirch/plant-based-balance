@@ -32,7 +32,7 @@ test('Foundations Week 1 wearable setup records distinct equal-credit outcomes',
   assert.match(journey, /status: 'no_compatible_watch'[\s\S]*?course_credit: 1/);
   assert.match(journey, /existing\.status === 'no_compatible_watch' \? existing/);
   assert.match(journey, /\['verified_connection', 'no_compatible_watch'\]\.includes\(wearableSetup\.status\)/);
-  const identity = journey.slice(journey.indexOf('week: 7,'), journey.indexOf('const WEEK_LESSONS'));
+  const identity = journey.slice(journey.indexOf('week: 7,'), journey.indexOf('const ORIGINAL_WEEK_LESSONS'));
   assert.doesNotMatch(identity, /wearable_setup|w1_wearable_setup/);
 });
 

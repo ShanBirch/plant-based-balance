@@ -17,7 +17,7 @@
     task('w1_wearable_setup', 'Connect your fitness watch, if you use one', 'Connect a compatible watch, or choose the honest no-watch option. Both paths receive the same course credit.', 'wearable_setup', 1, '\u231A', 'wearable')
   ];
 
-  const WEEK_DEFINITIONS = [
+  const ORIGINAL_WEEK_DEFINITIONS = [
     {
       week: 1,
       phase: 'BALANCE LEARN · WEEK 1',
@@ -179,7 +179,7 @@
     }
   ];
 
-  const WEEK_LESSONS = [
+  const ORIGINAL_WEEK_LESSONS = [
     lesson('Build the evidence. Edit the environment.', 'Identity is not something you have to declare or feel ready for. Your brain updates its idea of who you are from the actions it repeatedly sees. Every workout completed, normal meal shared and honest Feed post becomes evidence. Feed also changes the environment around you, making looking after your health more visible, supported and normal.', ['Do the action first. Posting is the receipt, not the performance.', 'Make the useful choice easier to see and repeat; that is how you edit the environment.', 'Keep the action small enough for an ordinary week. Repetition builds identity better than one perfect effort.']),
     lesson('Progress needs a repeatable minimum.', 'The best training week is not the hardest one. It is the one you can complete and build from.', ['A normal workout is worth recording.', 'Two completed sessions beat five imagined ones.', 'Make the work visible so it does not disappear from memory.']),
     lesson('Food works better as evidence.', 'Seeing your normal meals clearly makes useful changes easier than judging them from memory.', ['Post what you already eat.', 'Notice what fuels training and keeps you satisfied.', 'Aim for useful repetition, not perfect plates.']),
@@ -193,6 +193,32 @@
     lesson('A useful story gives evidence meaning.', 'People connect with what changed, what helped and what you are trying next.', ['Start with one real moment.', 'Say what you learned in plain language.', 'Leave room for the process to stay unfinished.']),
     lesson('Keep only what you can sustain.', 'The final goal is not more posting. It is a pattern that supports your training, food and identity.', ['Review what felt natural.', 'Choose the smallest rhythm you will keep.', 'Share the pattern, not only the result.'])
   ];
+
+  let WEEK_DEFINITIONS = ORIGINAL_WEEK_DEFINITIONS;
+  let WEEK_LESSONS = ORIGINAL_WEEK_LESSONS;
+  function getLearnCurriculum() { return window.BalanceLearnCurriculum?.version(state) || 'legacy_six'; }
+  function learnCount() { return window.BalanceLearnCurriculum?.total(getLearnCurriculum()) || 6; }
+  function journeyCount() { return learnCount()+6; }
+  function configureCurriculum(row) {
+    if(!window.BalanceLearnCurriculum)return;
+    const version=window.BalanceLearnCurriculum.version(row);
+    row.settings.learn_curriculum=version;
+    const weeks=window.BalanceLearnCurriculum.weeks(version);
+    const offset=weeks.length;
+    const definitions=weeks.map((w,i)=>{
+      if(version!=='eight_v1' && i<6)return ORIGINAL_WEEK_DEFINITIONS[i];
+      const base=ORIGINAL_WEEK_DEFINITIONS[Math.min(i,5)];
+      const experiment=window.BalanceLearnWeeklyActions.experiment(i+1,version);
+      const tasks=base.tasks.map(t=>({...t,id:t.id.replace(/^w\d+_/,'w'+(i+1)+'_')}));
+      for(const task of tasks)if(task.type==='foundations_reflection_feed' && i<7){task.label='Share one thing you learned this week';task.hint='Describe one observation from this week and what you want to try next.';}
+      const action=tasks.find(t=>t.type==='learn_experiment');
+      Object.assign(action,{label:experiment.title,hint:experiment.prompt+' Report what happened in your weekly check-in.'});
+      // Keep community actions tied to the calendar; nutrition and experiment tasks follow the curriculum.
+      return {...base,week:i+1,phase:'BALANCE LEARN · WEEK '+(i+1),title:w.title,body:w.description,tasks};
+    });
+    WEEK_DEFINITIONS=definitions.concat(ORIGINAL_WEEK_DEFINITIONS.slice(6).map((d,i)=>({...d,week:offset+i+1})));
+    WEEK_LESSONS=weeks.map((w,i)=>version!=='eight_v1'&&i<6?ORIGINAL_WEEK_LESSONS[i]:lesson(w.title,w.description,[window.BalanceLearnWeeklyActions.experiment(i+1,version).prompt])).concat(ORIGINAL_WEEK_LESSONS.slice(6));
+  }
 
   let state = null;
   let progress = null;
@@ -332,7 +358,7 @@
   }
 
   function getWeekDefinition() {
-    const week = Math.max(1, Math.min(12, Number(state && state.current_week) || 1));
+    const week = Math.max(1, Math.min(journeyCount(), Number(state && state.current_week) || 1));
     return WEEK_DEFINITIONS[week - 1];
   }
 
@@ -345,7 +371,7 @@
       onboarding_complete: false,
       completed_task_ids: [],
       progress_snapshot: {},
-      settings: {},
+      settings: {learn_curriculum:'eight_v1'},
       reminder_receipts: []
     };
   }
@@ -353,10 +379,11 @@
   function normalizeState(row) {
     const base = defaultState();
     const next = Object.assign(base, row || {});
-    next.current_week = Math.max(1, Math.min(12, Number(next.current_week) || 1));
+    next.current_week = Math.max(1, Math.min((window.BalanceLearnCurriculum?.total(window.BalanceLearnCurriculum.version(next)) || 6)+6, Number(next.current_week) || 1));
     next.completed_task_ids = safeArray(next.completed_task_ids);
     next.progress_snapshot = safeObject(next.progress_snapshot);
     next.settings = safeObject(next.settings);
+    configureCurriculum(next);
     next.reminder_receipts = safeArray(next.reminder_receipts);
     return next;
   }
@@ -443,12 +470,12 @@
   }
 
   async function rollForwardElapsedWeeks() {
-    if (!state || state.current_week >= 12) return;
+    if (!state || state.current_week >= journeyCount()) return;
     const today = dateFromKey(brisbaneDateKey());
     const start = dateFromKey(state.week_started_at);
     const elapsed = Math.max(0, Math.floor((today.getTime() - start.getTime()) / (7 * 24 * 60 * 60 * 1000)));
     if (!elapsed) return;
-    const nextWeek = Math.min(12, state.current_week + elapsed);
+    const nextWeek = Math.min(journeyCount(), state.current_week + elapsed);
     const moved = nextWeek - state.current_week;
     await upsertState({
       current_week: nextWeek,
@@ -600,6 +627,8 @@
     }
     const wearableSetup = safeObject(settingsBeforeProgress.foundations_wearable_setup);
     const instagramHandle = String(memberProfile[0] && memberProfile[0].ig_handle || '').replace(/^@+/, '').trim();
+    const definition = getWeekDefinition();
+    const textActionId = type => definition.tasks.find(item=>item.type===type)?.id || '';
     const counts = {
       feed_posts: stories.length,
       meal_feed_posts: stories.filter(row => row.media_type === 'meal_card' || row.media_type === 'nutrition_card').length,
@@ -614,20 +643,19 @@
       learn_workouts: window.BalanceLearnWeeklyActions.movementDays(workouts, activities),
       learn_experiment: window.BalanceLearnActionReview?.complete(window.BalanceLearnActionReview.record(state.current_week)) ? 1 : 0,
       workout_bundle: Math.min(workoutDays, stories.filter(row => row.media_type === 'workout_card').length),
-      foundations_feed_intro: linkedTextPostCount('w1_feed_intro'),
+      foundations_feed_intro: linkedTextPostCount(textActionId('foundations_feed_intro')),
       foundations_feed_comments: comments.length,
       foundations_workout_feed: stories.filter(row => row.media_type === 'workout_card' && storyCard(row).card_type === 'workout' && !!storyCard(row).workout_date).length,
       foundations_meal_feed: stories.filter(row => row.media_type === 'meal_card' && storyCard(row).card_type === 'meal').length,
       foundations_diary_feed: linkedDiaryShares,
       identity_diary_feed: linkedDiaryShares,
       foundations_pb_feed: stories.filter(row => row.media_type === 'workout_card' && storyCard(row).card_type === 'pb' && currentWeekPbIds.has(String(storyCard(row).pb_history_id || ''))).length,
-      foundations_feed_reflection: linkedTextPostCount('w6_feed_reflection'),
+      foundations_feed_reflection: linkedTextPostCount(textActionId('foundations_feed_reflection')),
       wearable_setup: ['verified_connection', 'no_compatible_watch'].includes(wearableSetup.status) ? 1 : 0,
       fitgotchi_intro: safeObject(settingsBeforeProgress.fitgotchi_intro).completed_at ? 1 : 0,
       progress_photo_set: progressPhotos.some(row => isCourseProgressPhotoSet(row, '1970-01-01T00:00:00Z', endIso)) ? 1 : 0,
       weekly_checkin: weeklyCheckinComplete ? 1 : 0
     };
-    const definition = getWeekDefinition();
     const setupTasks = GETTING_STARTED_TASKS.map(item => Object.assign({}, item, { current: Number(counts[item.type] || 0), complete: Number(counts[item.type] || 0) >= item.target }));
     settingsBeforeProgress.learn_setup_progress = setupTasks;
     const tasks = definition.tasks.map(item => {
@@ -656,7 +684,7 @@
     state.progress_snapshot = progress;
     const settings = settingsBeforeProgress;
     const foundationWeekProgress = Object.assign({}, safeObject(settings.foundation_week_progress));
-    if (definition.week <= 6) {
+    if (definition.week <= learnCount()) {
       foundationWeekProgress[String(definition.week)] = progress;
       settings.foundation_week_progress = foundationWeekProgress;
     }
@@ -671,7 +699,7 @@
   function lessonSeenWeeks() {
     return safeArray(safeObject(state && state.settings).lesson_seen_weeks)
       .map(Number)
-      .filter(week => week >= 1 && week <= 12);
+      .filter(week => week >= 1 && week <= journeyCount());
   }
 
   function instagramPlan() {
@@ -781,7 +809,7 @@
     card.style.display = 'block';
     card.innerHTML = '<div class="social-journey-card__inner">'
       + '<div class="social-journey-card__week-art"><span>WEEK</span><strong>' + String(definition.week).padStart(2, '0') + '</strong></div>'
-      + '<div class="social-journey-card__eyebrow">' + (!lessonSeen ? 'A message from Coach Shannon' : (definition.week >= 7 ? 'Balance Become' : 'Balance Learn') + ' &middot; Week ' + definition.week) + '</div>'
+      + '<div class="social-journey-card__eyebrow">' + (!lessonSeen ? 'A message from Coach Shannon' : (definition.week > learnCount() ? 'Balance Become' : 'Balance Learn') + ' &middot; Week ' + definition.week) + '</div>'
       + '<div class="social-journey-card__title">' + escapeHtml(cardTitle) + '</div>'
       + '<div class="social-journey-card__copy">' + escapeHtml(cardCopy) + '</div>'
       + '<div class="social-journey-card__row"><div class="social-journey-card__progress"><span style="width:' + percent + '%"></span></div><div class="social-journey-card__count">' + completed + ' / ' + total + '</div></div>'
@@ -827,7 +855,7 @@
     const definition = getWeekDefinition();
     const lesson = WEEK_LESSONS[definition.week - 1];
     if (!isCurrentLessonSeen()) {
-      const courseId = typeof window.getNextBalanceCourseId === 'function' ? window.getNextBalanceCourseId() : definition.week >= 7 ? 'balance-master' : 'balance-foundations';
+      const courseId = typeof window.getNextBalanceCourseId === 'function' ? window.getNextBalanceCourseId() : definition.week > learnCount() ? 'balance-master' : 'balance-foundations';
       let exactDestination = null;
       try {
         if (typeof window.getCurrentCourseLessonDestination === 'function') {
@@ -837,7 +865,7 @@
       return {
         kind: 'course_lesson',
         courseId,
-        title: exactDestination?.title || (definition.week >= 7
+        title: exactDestination?.title || (definition.week > learnCount()
           ? 'Continue Balance Master'
           : 'Complete this week\'s Balance Learn lesson'),
         body: exactDestination?.body || (lesson ? lesson.title : definition.title),
@@ -849,17 +877,17 @@
     if (!nextTask) return null;
     return {
       taskId: nextTask.id,
-      title: nextTask.type === 'fitgotchi_intro' ? nextTask.label : (definition.week >= 7 ? 'Balance Become: ' : 'Balance Learn: ') + nextTask.label,
+      title: nextTask.type === 'fitgotchi_intro' ? nextTask.label : (definition.week > learnCount() ? 'Balance Become: ' : 'Balance Learn: ') + nextTask.label,
       body: nextTask.hint || definition.body,
       cta: taskActionLabel(nextTask),
-      accent: definition.week >= 7 ? '#b78a2e' : '#0f766e'
+      accent: definition.week > learnCount() ? '#b78a2e' : '#0f766e'
     };
   }
 
   function openUnifiedAction() {
     if (!isJourneyEligible() || !state) return;
     if (!isCurrentLessonSeen()) {
-      const courseId = Number(state.current_week || 1) >= 7 ? 'balance-identity' : 'balance-foundations';
+      const courseId = Number(state.current_week || 1) > learnCount() ? 'balance-identity' : 'balance-foundations';
       if (typeof window.pbbOpenCurrentCourseLesson === 'function') {
         window.pbbOpenCurrentCourseLesson(courseId);
       } else if (typeof window.switchAppTab === 'function') {
@@ -1003,7 +1031,7 @@
   }
 
   function renderInstagramPlanSummary() {
-    if (!state || Number(state.current_week) < 7) return '';
+    if (!state || Number(state.current_week) <= learnCount()) return '';
     const plan = instagramPlan();
     if (!isInstagramPlanComplete(plan)) {
       return '<section class="social-journey-section"><h3 class="social-journey-section__heading">Your fitness Instagram plan</h3><div class="social-journey-callout"><strong>Turn the idea into a decision.</strong><p>Define who the account is for, what it will document and the boundaries that keep it healthy.</p></div><button type="button" class="social-journey-button secondary" onclick="socialJourney.openInstagramPlanner()">Build my plan</button></section>';
@@ -1039,22 +1067,22 @@
     const complete = progress && progress.completed_count >= progress.total_count;
 
     document.querySelector('.social-journey-header__title').textContent = definition.title;
-    document.querySelector('.social-journey-header__week').textContent = 'Week ' + definition.week + ' of 12';
+    document.querySelector('.social-journey-header__week').textContent = 'Week ' + definition.week + ' of ' + journeyCount();
     container.innerHTML = '<section class="social-journey-hero social-journey-goals-hero">'
       + '<div class="social-journey-hero__eyebrow">' + escapeHtml(definition.phase) + '</div>'
       + '<div class="social-journey-goals-hero__label">YOUR NEXT STEPS</div><h2>' + escapeHtml(definition.title) + '</h2><p>' + escapeHtml(definition.body) + '</p>' + weekDots() + '</section>'
       + renderDailyPlan()
       + renderWeeklyGoalFocus()
       + renderInstagramPlanSummary()
-      + '<section class="social-journey-section"><h3 class="social-journey-section__heading">' + (definition.week >= 7 ? 'Balance Become this week' : 'Balance Learn this week') + '</h3>' + renderTasks() + '</section>'
-      + (definition.week === 6 ? '<div class="social-journey-callout"><strong>Next: Balance Become.</strong><p>Before planning an account, you will learn how your data inputs train your feed and how repeated exposure can shape what feels normal.</p></div>' : '')
+      + '<section class="social-journey-section"><h3 class="social-journey-section__heading">' + (definition.week > learnCount() ? 'Balance Become this week' : 'Balance Learn this week') + '</h3>' + renderTasks() + '</section>'
+      + (definition.week === learnCount() ? '<div class="social-journey-callout"><strong>Next: Balance Become.</strong><p>Before planning an account, you will learn how your data inputs train your feed and how repeated exposure can shape what feels normal.</p></div>' : '')
       + (complete ? '<div class="social-journey-callout"><strong>This week is complete.</strong><p>Your next lesson will arrive with the next week. For now, keep the actions small and repeatable.</p></div>' : '')
       + '<section class="social-journey-section"><h3 class="social-journey-section__heading">Reminder route</h3><div class="social-journey-callout"><strong>' + (connectedHandle ? connectedHandle : 'In-app first') + '</strong><p>' + escapeHtml(reminderText) + '</p></div>'
       + '<button type="button" class="social-journey-button secondary" onclick="socialJourney.openReminderSetup()">' + (connectedHandle ? 'Review Instagram reminder' : 'Connect Instagram reminder') + '</button>' + instagramButton + '</section>'
       + '<section class="social-journey-finish"><button type="button" class="social-journey-button" onclick="socialJourney.useGoals()">Use these next steps</button><button type="button" class="social-journey-text-button" onclick="socialJourney.reviewLesson()">Review this week\'s lesson</button></section>'
       + '<section class="social-journey-pilot-controls"><h3>Shannon pilot controls</h3><p>These controls change only this social journey. They never reset your character, levels, coins, workouts, meals or other account data.</p>'
       + '<button type="button" class="social-journey-button secondary" onclick="socialJourney.sendTestReminder()" ' + (connectedHandle ? '' : 'disabled') + '>Send a test Instagram reminder</button>'
-      + '<button type="button" class="social-journey-button secondary" onclick="socialJourney.advanceWeek()">' + (state.current_week >= 12 ? 'Journey is at Week 12' : 'Preview the next week') + '</button>'
+      + '<button type="button" class="social-journey-button secondary" onclick="socialJourney.advanceWeek()">' + (state.current_week >= journeyCount() ? 'Journey is at Week ' + journeyCount() : 'Preview the next week') + '</button>'
       + '<button type="button" class="social-journey-button danger" onclick="socialJourney.restart()">Restart only this journey</button></section>';
     if (!isPilotUser()) {
       container.querySelectorAll('.social-journey-pilot-controls').forEach(function(element){ element.remove(); });
@@ -1071,8 +1099,8 @@
     const definition = getWeekDefinition();
     const lessonCopy = WEEK_LESSONS[definition.week - 1];
     const isFirstLesson = definition.week === 1;
-    document.querySelector('.social-journey-header__title').textContent = isFirstLesson ? 'Your first lesson' : (definition.week >= 7 ? 'Balance Become' : 'Week ' + definition.week + ' lesson');
-    document.querySelector('.social-journey-header__week').textContent = 'Week ' + definition.week + ' of 12';
+    document.querySelector('.social-journey-header__title').textContent = isFirstLesson ? 'Your first lesson' : (definition.week > learnCount() ? 'Balance Become' : 'Week ' + definition.week + ' lesson');
+    document.querySelector('.social-journey-header__week').textContent = 'Week ' + definition.week + ' of ' + journeyCount();
     container.innerHTML = '<section class="social-journey-lesson">'
       + '<div class="social-journey-lesson__number"><span>WEEK</span><strong>' + String(definition.week).padStart(2, '0') + '</strong></div>'
       + '<div class="social-journey-lesson__eyebrow">' + escapeHtml(definition.phase) + '</div>'
@@ -1081,35 +1109,35 @@
       + '<div class="social-journey-learn-points">' + (isFirstLesson
         ? '<div><span>01</span><p>Answer honestly rather than trying to guess the perfect response.</p></div><div><span>02</span><p>If you miss one, keep going. The explanation is part of the lesson.</p></div><div><span>03</span><p>When you finish, Balance will bring you back to your next steps.</p></div>'
         : lessonCopy.points.map(function(point, index){ return '<div><span>' + String(index + 1).padStart(2, '0') + '</span><p>' + escapeHtml(point) + '</p></div>'; }).join('')) + '</div></section>'
-      + '<div class="social-journey-lesson-action"><button type="button" class="social-journey-button" onclick="' + (isFirstLesson ? 'socialJourney.startFirstCourseLesson()' : 'socialJourney.showGoals()') + '">' + (isFirstLesson ? 'Begin my first lesson' : (definition.week === 7 ? 'I understand the loop - build my plan' : 'Use this lesson')) + '</button><button type="button" class="social-journey-text-button" onclick="socialJourney.close()">Not now</button></div>';
+      + '<div class="social-journey-lesson-action"><button type="button" class="social-journey-button" onclick="' + (isFirstLesson ? 'socialJourney.startFirstCourseLesson()' : 'socialJourney.showGoals()') + '">' + (isFirstLesson ? 'Begin my first lesson' : (definition.week === learnCount()+1 ? 'I understand the loop - build my plan' : 'Use this lesson')) + '</button><button type="button" class="social-journey-text-button" onclick="socialJourney.close()">Not now</button></div>';
   }
 
   function renderIdentityCourseLesson() {
     ensureUi();
     const container = document.getElementById('social-journey-content');
-    const week = Math.max(7, Math.min(12, Number(coursePreviewWeek) || 7));
+    const week = Math.max(learnCount()+1, Math.min(journeyCount(), Number(coursePreviewWeek) || learnCount()+1));
     const definition = WEEK_DEFINITIONS[week - 1];
     const lessonCopy = WEEK_LESSONS[week - 1];
     if (!container || !definition || !lessonCopy) return;
     const isCurrentWeek = Number(state && state.current_week) === week;
     document.querySelector('.social-journey-header__title').textContent = 'Balance Become';
-    document.querySelector('.social-journey-header__week').textContent = 'Week ' + (week - 6) + ' of 6';
+    document.querySelector('.social-journey-header__week').textContent = 'Week ' + (week - learnCount()) + ' of 6';
     container.innerHTML = '<section class="social-journey-lesson">'
-      + '<div class="social-journey-lesson__number"><span>BECOME</span><strong>' + String(week - 6).padStart(2, '0') + '</strong></div>'
+      + '<div class="social-journey-lesson__number"><span>BECOME</span><strong>' + String(week - learnCount()).padStart(2, '0') + '</strong></div>'
       + '<div class="social-journey-lesson__eyebrow">' + escapeHtml(definition.phase) + '</div>'
       + '<h2>' + escapeHtml(lessonCopy.title) + '</h2><p>' + escapeHtml(lessonCopy.body) + '</p></section>'
       + '<section class="social-journey-learn-card"><div class="social-journey-section__heading">Put it into practice</div>'
       + '<div class="social-journey-learn-points">' + lessonCopy.points.map(function(point, index){ return '<div><span>' + String(index + 1).padStart(2, '0') + '</span><p>' + escapeHtml(point) + '</p></div>'; }).join('') + '</div></section>'
       + '<div class="social-journey-lesson-action">'
-      + (isCurrentWeek ? '<button type="button" class="social-journey-button" onclick="socialJourney.showGoals()">' + (week === 7 ? 'I understand the loop - build my plan' : 'Use this lesson') + '</button>' : '')
+      + (isCurrentWeek ? '<button type="button" class="social-journey-button" onclick="socialJourney.showGoals()">' + (week === learnCount()+1 ? 'I understand the loop - build my plan' : 'Use this lesson') + '</button>' : '')
       + '<button type="button" class="social-journey-button secondary" onclick="socialJourney.returnToCourse()">Back to Balance Become</button></div>';
   }
 
   function getIdentityCourseProgress() {
-    const currentJourneyWeek = Math.max(1, Math.min(12, Number(state && state.current_week) || 1));
+    const currentJourneyWeek = Math.max(1, Math.min(journeyCount(), Number(state && state.current_week) || 1));
     const seenWeeks = new Set(lessonSeenWeeks());
-    const weekProgress = WEEK_DEFINITIONS.slice(6).map(function(definition, index){
-      const journeyWeek = index + 7;
+    const weekProgress = WEEK_DEFINITIONS.slice(learnCount()).map(function(definition, index){
+      const journeyWeek = index + learnCount() + 1;
       const lessonCopy = WEEK_LESSONS[journeyWeek - 1];
       return {
         number: index + 1,
@@ -1127,7 +1155,7 @@
       total: weekProgress.length,
       percent: Math.round((completed / weekProgress.length) * 100),
       isComplete: completed === weekProgress.length,
-      isUnlocked: currentJourneyWeek >= 7,
+      isUnlocked: currentJourneyWeek > learnCount(),
       currentJourneyWeek,
       weekProgress
     };
@@ -1135,9 +1163,9 @@
 
   function getFoundationsCourseProgress() {
     if (!state) return { available: false, currentJourneyWeek: 1, weekProgress: [] };
-    const currentJourneyWeek = Math.max(1, Math.min(12, Number(state.current_week) || 1));
+    const currentJourneyWeek = Math.max(1, Math.min(journeyCount(), Number(state.current_week) || 1));
     const snapshots = safeObject(safeObject(state.settings).foundation_week_progress);
-    const weekProgress = WEEK_DEFINITIONS.slice(0, 6).map(function(definition){
+    const weekProgress = WEEK_DEFINITIONS.slice(0, learnCount()).map(function(definition){
       const saved = definition.week === currentJourneyWeek
         ? progress
         : safeObject(snapshots[String(definition.week)]);
@@ -1179,7 +1207,7 @@
   }
 
   function taskActionForCourse(weekNumber, taskId) {
-    const week = Math.max(1, Math.min(6, Number(weekNumber) || 1));
+    const week = Math.max(1, Math.min(learnCount(), Number(weekNumber) || 1));
     if (!state || week > Number(state.current_week)) {
       showToast('That week will unlock when you reach it.', 'info');
       return;
@@ -1195,7 +1223,7 @@
 
   function openIdentityCourseWeek(weekNumber) {
     if (!isJourneyEligible() || !state) return;
-    const week = Math.max(7, Math.min(12, Number(weekNumber) || 7));
+    const week = Math.max(learnCount()+1, Math.min(journeyCount(), Number(weekNumber) || learnCount()+1));
     if (week > Number(state.current_week)) {
       showToast('That Balance Become week will unlock when you reach it.', 'info');
       return;
@@ -1561,7 +1589,7 @@
       }, 350);
       return;
     }
-    if (action === 'feed' && (taskId === 'w1_feed_intro' || taskId === 'w6_feed_reflection')) {
+    if (action === 'feed' && /^w[1-8]_feed_(intro|reflection)$/.test(taskId)) {
       try { sessionStorage.setItem('pbb_foundations_feed_action', taskId); } catch (_) {}
     }
     const isFeedAction = action === 'feed' || action === 'feed-photo';
@@ -1845,7 +1873,7 @@
   }
 
   async function advanceWeek() {
-    if (!state || state.current_week >= 12) return;
+    if (!state || state.current_week >= journeyCount()) return;
     await upsertState({ current_week: state.current_week + 1, week_started_at: brisbaneDateKey(), progress_snapshot: {} });
     await calculateProgress();
     renderCard();
@@ -1946,7 +1974,7 @@
   }
 
   function canOpenFitGotchiIntro() {
-    return isJourneyEligible() && !!state && Number(state.current_week) <= 6
+    return isJourneyEligible() && !!state && Number(state.current_week) <= learnCount()
       && window.metaAdTrialMode !== true && !window.__balancePendingClientActivation
       && !window.__balanceGuidedTourActive;
   }
@@ -1978,7 +2006,7 @@
     }
     const owner = currentUserId();
     window.startFeatureTour('full', { fitgotchiCourse:true, onCourseComplete:async function(){
-      if (owner !== currentUserId() || !state || Number(state.current_week) > 6) throw new Error('Your course changed. Reopen this action.');
+      if (owner !== currentUserId() || !state || Number(state.current_week) > learnCount()) throw new Error('Your course changed. Reopen this action.');
       if (!window.supabaseClient) throw new Error('Reconnect to save your setup action, then try again.');
       if (!window.getFitGotchiVisibility || window.getFitGotchiVisibility() !== 'visible') throw new Error('Turn on your FitGotchi before finishing the walkthrough.');
       const previous = state;
@@ -2121,6 +2149,8 @@
     getFitGotchiIntroAction,
     openFitGotchiIntro,
     openUnifiedAction,
+    getLearnCurriculum,
+    getLearnWeekCount: learnCount,
     getFoundationsCourseProgress,
     taskActionForCourse,
     getIdentityCourseProgress,
