@@ -3,6 +3,40 @@ const api=require('../netlify/functions/ig-instant-draft')._test;
 const send=require('../netlify/functions/send-ig-reply')._test;
 const {LEARN_SUPPORT_CHOICE}=require('../netlify/functions/_lib/paid-meta-zoom');
 
+for(const [index,question,goal] of [
+ [1,'Whats the course about?','I want to lose some weight!'],
+ [2,"What's the course about?",'I need to lose weight, 15 kilos'],
+ [3,'What is the course about?','I want to build strength'],
+ [4,'What does the course cover?','I want to get fitter'],
+ [5,'What does this course teach?','I want better body composition'],
+ [6,'Can you explain the course?','I want to build muscle'],
+ [7,'Can you tell me about the course?','I want to lose 5kg'],
+ [8,'What is this course about?','I need to lose some weight'],
+ [9,"What's this course about?",'I want to get stronger'],
+ [10,'Whats the course about?','I want to lose 15 kilograms'],
+]) test(`overview plus goal full journey ${index}`,()=>{
+ const opener={direction:'out',text:"Hey, how are you? What's the main change you want in the next six weeks?"};
+ for(const batched of [false,true]){
+  const history=[opener,{direction:'in',text:question}];
+  const currentMessage=batched?`${question}\n${goal}`:goal;
+  const d=api.buildDeterministicPaidMetaConversationReply({currentMessage,history,flowVariant:'broad_pain'});
+  assert.match(d.joined,/understand what makes habits hard/);
+  assert.ok(d.imageAttachmentUrl);assert.match(d.joined,/gets in the way/);
+  assert.equal(d.videoAttachmentUrl,undefined);
+  assert.equal(api.selectFastDeterministicPaidMetaProgression({draft:d,currentMessage}),d);
+  assert.deepEqual(api.collectPaidMetaWriterContractIssues({draft:d,currentMessage,history,flowVariant:'broad_pain'}),[]);
+  history.push({direction:'in',text:goal},...d.chunks.map(text=>({direction:'out',text})),{direction:'out',text:`[IMAGE:${d.imageAttachmentUrl}]`});
+  const offer=api.buildDeterministicPaidMetaConversationReply({currentMessage:'Shift work makes regular workouts hard',history,flowVariant:'broad_pain',allowVideoAttachment:true});
+  assert.ok(offer.videoAttachmentUrl);assert.equal(offer.chunks.at(-1),LEARN_SUPPORT_CHOICE);
+  history.push(...offer.chunks.map(text=>({direction:'out',text})));
+  const base={history,flowVariant:'broad_pain',appPreviewUrl:'https://future-balance.netlify.app/p/synthetic-token-12345'};
+  const invite=api.buildDeterministicPaidMetaConversationReply({...base,currentMessage:'On my own please'});
+  assert.match(invite.joined,/Would you like that\?/);assert.equal(invite.appPreviewHandoff,undefined);
+  history.push({direction:'out',text:invite.joined});
+  assert.equal(api.buildDeterministicPaidMetaConversationReply({...base,currentMessage:'Yes please'}).appPreviewHandoff,true);
+ }
+});
+
 test('independent choice offers preview without repeating inclusions or sending the card',()=>{
  const history=[
   {direction:'out',text:'Hey, how are you? Balance Learn is a six-week course in the app using neuroscience and psychology. You get workouts, food support and my weekly check-in.'},

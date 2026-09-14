@@ -2208,13 +2208,19 @@ function buildDeterministicPaidMetaConversationReply({
     // A second goal fragment is still the goal, not the answer to a blocker
     // question we have not asked. Preserve the proof step for the whole burst.
     const lastGoalPrompt = [...history].reverse().find(item => item?.direction === 'out');
-    const goalBurst = PAID_META_FITNESS_GOAL_RE.test(message) && isPaidMetaBareGoalMessage(message)
-        ? message : paidMetaCurrentInboundRunText(history, message);
+    const unansweredBurst = paidMetaCurrentInboundRunText(history, message);
+    const overviewBurst = paidMetaGoalWithOverviewQuestion(message) || paidMetaGoalWithOverviewQuestion(unansweredBurst);
+    const goalBurst = overviewBurst?.goal || (PAID_META_FITNESS_GOAL_RE.test(message) && isPaidMetaBareGoalMessage(message)
+        ? message : unansweredBurst);
     if (broadFlow && paidMetaOutboundAskedForGoal(lastGoalPrompt?.text || '')
         && isPaidMetaBareGoalMessage(goalBurst) && PAID_META_FITNESS_GOAL_RE.test(goalBurst)) {
         const proof = resolvePaidMetaTransformationProof({ goalText: goalBurst });
-        return guidedReply([buildPaidMetaGoalToBlockerText(goalBurst, proof)], {
+        return guidedReply([
+            ...(overviewBurst ? ["The course helps you understand what makes habits hard to change, then practise changes to your food and training in everyday life."] : []),
+            buildPaidMetaGoalToBlockerText(goalBurst, proof)
+        ], {
             imageAttachmentUrl: proof?.imageUrl || null,
+            paidMetaVerifiedAccessFaq: !!overviewBurst,
         });
     }
     if (broadFlow && /\b(?:leave it with me|time to think|not right now)\b/i.test(message)) {
@@ -2699,6 +2705,16 @@ function shouldApplyDeterministicPaidMetaReplyOverride(draft = null) {
         || (draft.flowVariant === 'broad_pain' && /^deterministic_paid_meta_guided_sales_v\d+$/i.test(String(draft.model || '')))
         || (draft.replyMode === 'campaign_sales_progression'
             && /^deterministic_paid_meta_autonomy_v\d+$/i.test(String(draft.model || '')));
+}
+
+function paidMetaGoalWithOverviewQuestion(message = '') {
+    const text = String(message || '').trim();
+    const question = /\b(?:what['’]?s (?:the |this )?course about|what is (?:the |this )?course about|what does (?:the |this )?course (?:cover|teach)|can you (?:explain|tell me about) (?:the |this )?course)\s*\?/ig;
+    if (!question.test(text)) return null;
+    question.lastIndex = 0;
+    const goal = text.replace(question, '').replace(/\s+/g, ' ').trim();
+    // This exact FAQ exception must not swallow another question or a blocker.
+    return isPaidMetaBareGoalMessage(goal) ? { goal } : null;
 }
 
 function isPaidMetaBareGoalMessage(message = '') {
@@ -5524,7 +5540,7 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
     const autonomyPause = broadFlow && hasPaidMetaPreviewOrPriceDecline(turn);
     const focusedCourseFact = /\b(?:how many lessons|certificate|week [1-6])\b/i.test(turn)
         && !/\b(?:curriculum|week[ -]?by[ -]?week|each.*six weeks|all (?:the )?weeks|full.*outline|what (?:will|do) i learn)\b/i.test(turn);
-    const asksForCurriculumOutline = !focusedCourseFact && META_AD_CURRICULUM_QUESTION_RE.test(turn);
+    const asksForCurriculumOutline = !focusedCourseFact && !paidMetaGoalWithOverviewQuestion(turn) && META_AD_CURRICULUM_QUESTION_RE.test(turn);
     const asksOfferInfo = resolveLearnSupportChoice(turn, history) !== 'independent'
         && /\b(?:how much|price|cost|renew|what(?:'s| is) included|what do i get|do i (?:actually )?get|workouts?|meal plan|check[ -]?in|details|how (?:does|do) (?:it|the program) work)\b/i.test(turn);
     const asksMealPlanQuestion = /\bdo you (?:offer|have|provide|include) (?:a |any )?(?:plant[ -]?based )?meal plans?\b|\bis (?:a |the )?meal plan included\b/i.test(turn);
@@ -5652,7 +5668,7 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
         || paidMetaHistoryHasConcreteBlocker(history)
         || qualifierHasKnownMetaAdBlocker(qualifier)
     );
-    const suppliedContextBeyondBareGoal = !isPaidMetaBareGoalMessage(turn)
+    const suppliedContextBeyondBareGoal = !isPaidMetaBareGoalMessage(turn) && !paidMetaGoalWithOverviewQuestion(turn)
         && (turn.split(/\s+/).length >= 12 || history.some(item => item?.direction === 'out' && paidMetaOutboundAskedForBlocker(item.text)));
     if (knownBroadGoal && suppliedContextBeyondBareGoal && paidMetaOutboundAskedForGoal(reply)) {
         issues.push('The earned paid-Meta offer is missing: the lead already supplied their goal and context or uncertainty, but the reply asks for their goal again. Keep their stated goal and move forward without another goal question.');
