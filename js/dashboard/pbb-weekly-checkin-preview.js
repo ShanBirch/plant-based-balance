@@ -1701,7 +1701,7 @@
   async function openWeeklyCheckinPreview(options){
     var source = options && options.source === 'settings' ? 'settings' : 'todo_next';
     if (!isWeeklyCheckinWindowOpen(undefined, source === 'settings')) {
-      showToast('Your weekly check-in opens Friday and stays available through Sunday.', 'info');
+      showToast('This is available to open Friday through to Sunday.', 'info');
       return;
     }
     try { await window.BalanceLearnActionReview?.load(); } catch (error) { showToast(error.message, 'error'); return; }
