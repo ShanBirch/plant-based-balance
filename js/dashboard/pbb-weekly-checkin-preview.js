@@ -1680,22 +1680,27 @@
     showToast('Next week goals would open from here.', 'info');
   }
 
-  function isWeeklyCheckinWindowOpen(date){
+  function isWeeklyCheckinWindowOpen(date, weekendOnly){
     try {
       var weekday = new Intl.DateTimeFormat('en-AU', {
         timeZone: 'Australia/Brisbane',
         weekday: 'short'
       }).format(date || new Date());
       return weekday === 'Fri' || weekday === 'Sat' || weekday === 'Sun'
-        || (weekday === 'Wed' && state.schedule.enabled === true && state.schedule.additional_days.indexOf('wednesday') !== -1);
+        || (!weekendOnly && weekday === 'Wed' && state.schedule.enabled === true && state.schedule.additional_days.indexOf('wednesday') !== -1);
     } catch (_) {
       var day = (date || new Date()).getDay();
       return day === 5 || day === 6 || day === 0;
     }
   }
 
-  async function openWeeklyCheckinPreview(){
-    if (!isWeeklyCheckinWindowOpen()) {
+  function openYourCheckin(){
+    return openWeeklyCheckinPreview({ source: 'settings' });
+  }
+
+  async function openWeeklyCheckinPreview(options){
+    var source = options && options.source === 'settings' ? 'settings' : 'todo_next';
+    if (!isWeeklyCheckinWindowOpen(undefined, source === 'settings')) {
       showToast('Your weekly check-in opens Friday and stays available through Sunday.', 'info');
       return;
     }
@@ -1706,7 +1711,7 @@
       var trackedWeek = getWeekWindow();
       if (typeof window.trackBalanceActivity === 'function') {
         window.trackBalanceActivity('weekly_review_opened', {
-          source: 'todo_next',
+          source: source,
           week_start: trackedWeek.startKey,
           week_end: trackedWeek.endKey
         }, { immediate: true });
@@ -1763,6 +1768,9 @@
 
     if (typeof window.pushNavigationState === 'function') {
       try { window.pushNavigationState('weekly-checkin-preview-overlay', closeWeeklyCheckinPreview); } catch (_) {}
+    }
+    if (typeof window.enableSwipeBackNavigation === 'function') {
+      window.enableSwipeBackNavigation('weekly-checkin-preview-overlay', closeWeeklyCheckinPreview);
     }
   }
 
@@ -1939,6 +1947,7 @@
     }
   });
   window.openWeeklyCheckinPreview = openWeeklyCheckinPreview;
+  window.openYourCheckin = openYourCheckin;
   window.isWeeklyCheckinWindowOpen = isWeeklyCheckinWindowOpen;
   window.closeWeeklyCheckinPreview = closeWeeklyCheckinPreview;
   window.isWeeklyCheckinDue = isReviewEnabled;

@@ -101,7 +101,7 @@ test('the weekly form uses the same Inter typeface as the app', () => {
 });
 
 test('the opened check-in contains the form, not the old full weekly review', () => {
-  const openFunction = frontend.slice(frontend.indexOf('function openWeeklyCheckinPreview(){'), frontend.indexOf('function handleKeydown'));
+  const openFunction = frontend.slice(frontend.indexOf('function openWeeklyCheckinPreview(options){'), frontend.indexOf('function closeWeeklyCheckinPreview(){'));
   assert.match(openFunction, /renderWeeklyReflectionForm\(data\)/);
   assert.doesNotMatch(openFunction, /What we made happen/);
   assert.doesNotMatch(openFunction, /Calories and the call/);

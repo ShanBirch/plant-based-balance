@@ -13,7 +13,7 @@ const sw = read('sw.js');
 
 test('every in-app Settings destination uses the shared navigation layer', () => {
   [
-    'equipment', 'food', 'macros', 'cycle', 'battle', 'challenge',
+    'checkin', 'equipment', 'food', 'macros', 'cycle', 'battle', 'challenge',
     'character', 'health', 'addFriend', 'inviteFriend', 'password'
   ].forEach((key) => {
     assert.match(dashboard, new RegExp(`openSettingsDestination\\('${key}'\\)`), key);
@@ -24,6 +24,7 @@ test('every in-app Settings destination uses the shared navigation layer', () =>
 
 test('all Settings sheets have a matching closer', () => {
   const expected = {
+    'weekly-checkin-preview-overlay': 'closeWeeklyCheckinPreview',
     'equipment-picker-overlay': 'closeEquipmentPicker',
     'dietary-picker-overlay': 'closeDietaryPicker',
     'calories-macro-actions-overlay': 'closeCaloriesAndMacroGoals',
@@ -63,9 +64,9 @@ test('cancellation returns to Settings by button, browser history, swipe, or saf
 });
 
 test('the navigation layer is loaded and refreshed on returning phones', () => {
-  assert.match(dashboard, /pbb-settings-navigation\.js\?v=1-settings-navigation/);
-assert.match(sw, /pbb-app-v456-imported-activity-todo/);
-  assert.match(sw, /pbb-settings-navigation\.js\?v=1-settings-navigation/);
+  assert.match(dashboard, /pbb-settings-navigation\.js\?v=2-your-checkin/);
+  assert.match(sw, /pbb-app-v547-settings-checkin/);
+  assert.match(sw, /pbb-settings-navigation\.js\?v=2-your-checkin/);
 });
 
 test('opening a Settings sheet creates one back step and popstate closes it', async () => {

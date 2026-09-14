@@ -2,6 +2,11 @@
     'use strict';
 
     var destinations = {
+        checkin: {
+            open: 'openYourCheckin',
+            managesHistory: true,
+            surfaces: [{ id: 'weekly-checkin-preview-overlay', close: 'closeWeeklyCheckinPreview' }]
+        },
         equipment: {
             open: 'openEquipmentPicker',
             surfaces: [{ id: 'equipment-picker-overlay', close: 'closeEquipmentPicker' }]
@@ -179,6 +184,8 @@
         }
         try {
             var result = opener();
+            // The check-in already registers its own back and swipe navigation.
+            if (entry.managesHistory) return result;
             activateWhenReady(key);
             if (result && typeof result.then === 'function') {
                 Promise.resolve(result).then(

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v546-six-week-learn-restored';
+const CACHE_NAME = 'pbb-app-v547-settings-checkin';
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -27,7 +27,7 @@ const ASSETS = [
   './js/dashboard/script_part_2.js?v=17-resume-session',
   './js/dashboard/dashboard-script-3-1_get_user_data.js?v=65-admin-safe-area',
   './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20260915-prescription-load&cohort_diets=1&video_health=2',
-  './js/dashboard/pbb-settings-navigation.js?v=1-settings-navigation',
+  './js/dashboard/pbb-settings-navigation.js?v=2-your-checkin',
   './js/dashboard/pbb-meta-preview-soundtrack.js?v=3-coach-video-ducking',
   './js/dashboard/pbb-app-telemetry.js?v=1',
   './js/dashboard/pbb-deferred-weeklygoals.js?v=35-balance-theme',

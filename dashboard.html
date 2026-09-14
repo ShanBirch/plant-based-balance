@@ -1993,7 +1993,7 @@ document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=36-commu
     document.write('<script src="lib/learn-action-review.js?v=plan-dismiss-v3"><\/script>');
     document.write('<script src="js/dashboard/pbb-social-journey.js?v=six-weeks-restored-20260914"><\/script>');
     document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=plan-dismiss-v3"><\/script>');
-    document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=36-checkin-feedback"><\/script>');
+    document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=37-settings-checkin"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
     window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=13-course-photo-sync');
@@ -2004,7 +2004,7 @@ window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=36-com
     window._pbbDeferredQueue.push('lib/learn-action-review.js?v=plan-dismiss-v3');
     window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=six-weeks-restored-20260914');
     window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=plan-dismiss-v3');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=36-checkin-feedback');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=37-settings-checkin');
 }
 </script>
 
@@ -12473,6 +12473,7 @@ html[data-pbb-theme="light"] #view-activity-success { --activity-success-accent:
             <section class="settings-v2-section" aria-labelledby="settings-personal-title">
                 <h3 id="settings-personal-title">Personal setup</h3>
                 <div class="settings-v2-card">
+                    <button id="settings-your-checkin" class="settings-v2-row" type="button" onclick="openSettingsDestination('checkin')"><span class="settings-v2-icon" aria-hidden="true">📝</span><span class="settings-v2-copy"><strong>Your Check-In</strong><small>Open Friday to Sunday</small></span><span class="settings-v2-chevron" aria-hidden="true">›</span></button>
                     <button class="settings-v2-row" type="button" onclick="openSettingsDestination('equipment')"><span class="settings-v2-icon">🏋️</span><span class="settings-v2-copy"><strong>Training equipment</strong><small id="profile-equipment-display">No Equipment</small></span><span class="settings-v2-chevron">›</span></button>
                     <button class="settings-v2-row" type="button" onclick="openSettingsDestination('food')"><span class="settings-v2-icon">🥗</span><span class="settings-v2-copy"><strong>Food preferences</strong><small id="profile-diet-display">Not set</small></span><span class="settings-v2-chevron">›</span></button>
                     <button class="settings-v2-row" type="button" onclick="openSettingsDestination('macros')"><span class="settings-v2-icon">🎯</span><span class="settings-v2-copy"><strong>Calories &amp; macro goals</strong><small>Review targets and recalculate</small></span><span class="settings-v2-chevron">›</span></button>
@@ -14134,6 +14135,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'meals', sel:'#hydration-section,#hydration-bar', title:'Hydration', body:"Your personalised daily water goal, based on your weight and activity." },
     { tab:'meals', sel:'#weekly-meal-evolution-btn', fallbackSel:'#browse-plans-pill', title:'A plan that learns your meals', fallbackTitle:'Open your meal plan', body:"At the end of each week, Balance keeps the meals you actually eat, adds two small variations, and suggests simple ways to cover nutrition gaps.", fallbackBody:"Open your meal plan to build next week from the meals you actually ate.", action:function(){ try { var pill=document.getElementById('browse-plans-pill'); if(typeof switchWeek==='function') switchWeek('meal-plan-store', pill); } catch(e){} } },
     { tab:'dashboard', sel:'.profile-icon[onclick*="profile"]', title:'Profile settings', body:"Open Profile when you need settings, dietary requirements, password changes, character customisation, or to replay this tour later." },
+    { tab:'profile', sel:'#settings-your-checkin', title:'Your Check-In', body:'Find your weekly check-in in Settings under Personal setup. It opens Friday to Sunday and also appears in To Do Next on Home when it is due.' },
     { tab:'profile', sel:'#settings-app-suggestions', title:'App Suggestions', body:"Got an idea for Balance? Tap this row in Settings and send it straight to Shannon's Needs You list." },
     { tab:'profile', sel:'#settings-fitgotchi-visibility', title:'Choose your Home style', body:'Your FitGotchi levels up with the XP you earn in Balance. It is an extra way to visualise your progress. Use View Your FitGotchi in To do next for a guided introduction, and keep it on or off depending on what motivates you.', condition: function(){ return typeof window.isFitGotchiHidden === 'function' && window.isFitGotchiHidden(); } },
     { tab:'profile', sel:'#settings-payment-method', title:'Payment Method', body:"Update your saved card from Profile > Settings > Payment Method." },
@@ -17046,6 +17048,7 @@ window.endFeatureTour = function(skipped){
   // First-run onboarding now uses the guided walkthrough only. Keep legacy
   // feature-drop entries dormant so users do not see duplicate spotlight cards.
   allFeatures = [];
+  allFeatures.push({ id:'settings-your-checkin-v1', tab:'profile', sel:'#settings-your-checkin', title:'Your Check-In', body:'Find your weekly check-in in Settings under Personal setup. It opens Friday to Sunday and also appears in To Do Next on Home when it is due.' });
   allFeatures.push({ id:'learn-six-weeks-expanded-v2', tab:'learning', sel:'#learning-content', title:'Learn how your brain learns', body:'Balance Learn now includes experience, the free-energy principle and how surprising evidence updates predictions. The extra learning now fits within the six-week course. Your completed work stays in place. Open Learn to see the sequence for your course.' });
   allFeatures.push({ id:'learn-ai-reviewed-actions-v4', tab:'learning', sel:'#learning-content', title:'Five actions for your week', body:'Open Your Week in Balance Learn. Track meals, complete workouts, try one lesson experiment, join in with the community and send your weekly check-in. Record your practical action in the weekly check-in. Balance checks your reflection and check-in for this action before recording its course tick; you can reopen the saved evidence any time. Your one-time setup has its own checklist.' });
   allFeatures.push({ id:'learn-week1-progress-photos-v1', tab:'learning', sel:'#balance-foundations-course-card', fallbackSel:'.course-library-intro', title:'Your starting progress photos', body:'Open Getting started under Your Week in Balance Learn to save front, side and back starting photos. Saving all three ticks off your setup action. Sharing to Feed is optional.' });
@@ -21559,7 +21562,7 @@ if(!window._pbbIsIOSSafari) {
 </style>
 
 <script src="js/dashboard/pbb-deferred-pickers.js?diet_library=3&v=5-preserve-saved-allergies"></script>
-<script src="js/dashboard/pbb-settings-navigation.js?v=1-settings-navigation"></script>
+<script src="js/dashboard/pbb-settings-navigation.js?v=2-your-checkin"></script>
 
 
 <!-- Health Connect Prompt Modal -->
