@@ -2,7 +2,7 @@
 
 ## Facebook Messenger status (14 September 2026)
 
-Shannon confirmed that ManyChat is no longer used. Older ManyChat/Facebook-backstop notes below are historical and must not be treated as setup instructions. Facebook messaging uses the direct Meta integration documented in `docs/facebook-messenger-setup.md`. Its code is prepared, but Page authorization, server credentials, a real Messenger test and `pages_messaging` App Review approval are still required before public Facebook ad activation. Do not call this flow live or reconnect ManyChat.
+Shannon confirmed that ManyChat is no longer used. Older ManyChat/Facebook-backstop notes below are historical and must not be treated as setup instructions. Facebook messaging uses the direct Meta integration documented in `docs/facebook-messenger-setup.md`. Balance APP Page `561122130919678` is authorized, production credentials and webhook subscriptions are configured, and a real inbound/draft/manual reply round trip is verified. Public Facebook ad auto-reply activation still requires the paid-path test and `pages_messaging` App Review approval. Review draft `2164265864473454` needs a new recording, restricted reviewer access and required declarations; it is not submitted. Do not call public automation live or reconnect ManyChat.
 
 This file is the durable handoff context for Codex sessions. Read it at the start of a new chat before making strategy or code decisions.
 

@@ -1,6 +1,19 @@
 # Direct Facebook Messenger setup
 
-Status, 14 September 2026: code prepared for the direct Meta integration. Public Messenger activation is not complete. Shannon confirmed that ManyChat is retired; do not reconnect or use it for this setup.
+Status, 14 September 2026: direct Messenger is deployed, Page-authorized, and a real inbound/draft/manual-send/outbound round trip is verified. Public ad auto-reply activation is not complete. Shannon confirmed that ManyChat is retired; do not reconnect or use it for this setup.
+
+## Verified connection and remaining review work
+
+- Meta app `2059731324926909`, Page **Balance APP** `561122130919678`. Ads Manager confirms this Page is the identity used with `shan_n_sunny` ads.
+- Page authorization completed on 14 September. Production Functions-only secrets are configured: `FACEBOOK_APP_SECRET`, `FACEBOOK_PAGE_ACCESS_TOKEN_561122130919678`, `FACEBOOK_WEBHOOK_VERIFY_TOKEN`. `FACEBOOK_PAGE_ID` is configured for the same Page. Do not print these credentials.
+- Meta successfully verified the production callback. Both Page and app-level subscriptions include `messages`, `message_echoes`, `messaging_postbacks`, and `messaging_referrals`; webhook subscriptions use v26.0. Send API remains v25.0.
+- The first live inbound exposed the production unique key `(subscriber_id, channel)`; commit `ac40eda9` corrected the receiver conflict target and channel-scoped lookup. All 21 focused tests pass. Netlify deploy `6aa792831b7a2800083dd7df` is ready.
+- Controlled test is Shannon's existing conversation with Balance APP, canonical thread `a5b1ef87-3eeb-45c0-a3d9-22ea8c94eaf1`. Real inbound `4abadc5a-b62c-4a39-9250-efbe69be94d6` generated alert `ac9cfce9-0e9b-4b9e-a23b-87e268b10625`; the reviewed reply was sent via the admin inbox at `2026-09-14T06:25:24.815Z`. Canonical outbound `fa6ad4fd-46cb-4389-b29d-6c94017dbc70` has `source=facebook_messenger_send`. Matching text was visibly verified in Messenger. No duplicate outbound was recorded.
+- This was an **organic, manually reviewed test**, not proof of automatic paid-ad attribution, preview/media delivery, or public access approval. Do not invent ADS referral data. Paid route remains subject to real ad-path testing and Meta approval.
+- New review draft: submission `2164265864473454`, requesting `pages_messaging` only (plus renewal certification of already-approved Page-list/metadata permissions). Usage description and reproduction steps are saved. No final submission has occurred.
+- Remaining: new English screen recording of authorization and real end-to-end messaging; dedicated restricted reviewer access; required allowed-usage declarations; user review of prefilled data-handling claims before submission. Browser automation has no video recording capability; Shannon was asked to start a screen recording, with response still pending at this checkpoint.
+- The new review draft inherited full production administrator credentials from older instructions. They were removed from this draft and replaced with Messenger-only instructions. Never copy admin credentials into a review artifact or grant reviewers broad access to unrelated customer data. Older submitted reviews were not edited.
+- Existing data-handling answers name OpenAI, Google/Google Cloud, Netlify and Supabase, Shannon Rhys Birch in Australia as controller, no national-security disclosures in the preceding 12 months, and four public-authority request safeguards. These are prefilled claims requiring Shannon's confirmation, not newly verified operational facts.
 
 ## Integration
 
@@ -16,11 +29,11 @@ Status, 14 September 2026: code prepared for the direct Meta integration. Public
 
 ## Meta prerequisites observed
 
-The Balance app (`2059731324926909`) has the Messenger use case but no connected Facebook Page or Messenger webhook. The older Shanbot app also showed no connected Messenger Page/webhook.
+At initial inspection, the Balance app (`2059731324926909`) and older Shanbot app had no connected Messenger Page/webhook. Balance's connection is now configured as recorded above.
 
 Balance's `pages_show_list` and `pages_manage_metadata` were approved. `pages_messaging` was rejected. The reviewer said the use case is allowed, but the screencast did not clearly demonstrate messages being sent and received between the app and Messenger inbox. See submission `2083149019251806` in the Balance app's review feedback.
 
-The connection dialog is pending. It requests Page messaging access. Finish Page authorization, provision the secrets above, validate webhook verification, and test with an app-role account before resubmitting for public access. Do not direct paid Facebook traffic here until real Messenger delivery is verified and Meta approval is in place.
+Page authorization, credential provisioning, webhook verification, and an app-admin messaging round trip are complete. Finish the remaining review evidence and restricted reviewer access before resubmitting for public access. Do not direct paid Facebook traffic here until the complete paid path is verified and Meta approval is in place.
 
 ## Review submission draft
 
