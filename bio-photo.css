@@ -10,18 +10,11 @@ footer{padding:48px max(24px,env(safe-area-inset-right)) calc(32px + var(--safe-
 /* Full-bleed photo edition: the masthead belongs to the first image. */
 body{background:#111110}.bio-masthead{position:absolute;inset:0 0 auto;z-index:2;color:var(--photo-ink);-webkit-text-fill-color:var(--photo-ink);background:linear-gradient(#000a,transparent);padding-bottom:32px}.bio-masthead .identity img{width:40px;height:40px}.bio-masthead .identity span{font-size:18px}.bio-masthead .identity small{font-size:8px}main{gap:0;grid-template-columns:1fr}.photo-link,.photo-learn{height:100svh;min-height:500px}.photo-caption h1,.photo-caption h2{font-size:clamp(48px,10vw,92px)}.photo-link>img{object-position:center}.photo-link>img.letterboxed-source{height:134.46%;top:-17.23%;object-position:center}.photo-link.photo-results>img{object-position:right center}.photo-results .photo-caption{padding-bottom:calc(36px + var(--safe-bottom))}
 #bio-menu-open{width:48px;height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;flex-shrink:0;background:#0005;border:1px solid #fffa;border-radius:50%;cursor:pointer}#bio-menu-open span{width:20px;height:2px;background:#fff}#bio-menu-open:focus-visible{outline-color:var(--photo-gold)}
-@media(min-width:800px){.photo-link,.photo-learn{height:100svh;min-height:620px}.photo-link>img{object-fit:cover}.photo-link>img.letterboxed-source{object-fit:cover}.photo-caption{max-width:1100px;margin:auto}.bio-masthead{padding-left:40px;padding-right:40px}}
-@media(max-height:500px) and (orientation:landscape){.photo-link,.photo-learn{height:130svh;min-height:440px}.photo-link>img{object-fit:cover}.photo-caption h1,.photo-caption h2{font-size:48px}}
+@media(min-width:800px){.photo-link,.photo-learn{height:100svh;min-height:620px}.photo-link>img{object-fit:contain}.photo-link>img.letterboxed-source{object-fit:contain}.photo-caption{max-width:1100px;margin:auto}.bio-masthead{padding-left:40px;padding-right:40px}}
+@media(max-height:500px) and (orientation:landscape){.photo-link,.photo-learn{height:130svh;min-height:440px}.photo-link>img{object-fit:contain}.photo-caption h1,.photo-caption h2{font-size:48px}}
 
 /* Only the opened drawer adopts the inner website menu. Keep the original photo masthead. */
 .photo-hub { --bg:#f9f9f7; --text-main:#1a202c; --text-muted:#5f6f85; --secondary:#9b6f19; --button-hover:rgba(255,255,255,.98); }
 @media (pointer:coarse), (max-width:900px) {
  .photo-hub .balance-menu-drawer { top:max(env(safe-area-inset-top, 0px), 24px); height:calc(100dvh - max(env(safe-area-inset-top, 0px), 24px)); padding-top:14px; padding-bottom:calc(24px + max(env(safe-area-inset-bottom, 0px), 24px)); }
-}
-
-/* Fill wide screens with the photos, keeping the portrait subjects in view. */
-@media(min-width:800px), (orientation:landscape) {
- .photo-link>img, .photo-link>img.letterboxed-source { object-position:center 15%; }
- .photo-learn>img { object-position:center 10%; }
- .photo-link.photo-results>img { object-position:right 25%; }
 }
