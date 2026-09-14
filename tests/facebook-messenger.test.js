@@ -33,6 +33,9 @@ test('ad referrals persist across later ordinary messages and user ref strings d
     data = messenger.mergeMessengerData(data, ordinary);
     assert.equal(data.meta_ad_attribution.ad_id, '999');
     assert.equal(data.manual_hold, true);
+    const latest = messenger.mergeMessengerData(data, { ...ordinary, at: new Date(now + 1000).toISOString(), messageId: 'fb_graph:123:m3' });
+    assert.deepEqual(messenger.mergeMessengerData(latest, ad).current_inbound_routing, latest.current_inbound_routing,
+        'late webhook retries must not replace newer conversation routing');
     const [fake] = messenger.normalizeMessengerEvents(payload([inbound({ referral: { source: 'SHORTLINK', ref: 'source=ADS&ad_id=999' } })]), ['123'], now);
     assert.equal(fake.ad, null);
     const [referralOnly] = messenger.normalizeMessengerEvents(payload([inbound({ message: undefined, referral: { source: 'ADS', ad_id: '999' } })]), ['123'], now);

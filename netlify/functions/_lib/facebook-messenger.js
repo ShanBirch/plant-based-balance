@@ -77,6 +77,8 @@ function normalizeMessengerEvents(payload, pageIds, now = Date.now()) {
 function mergeMessengerData(prior, event) {
     const result = { ...object(prior), delivery_channel: 'facebook_messenger',
         facebook_messenger: { ...object(prior?.facebook_messenger), page_id: event.pageId, psid: event.psid, source: 'facebook_messenger' } };
+    const lastRoutingAt = Date.parse(prior?.current_inbound_routing?.received_at || '');
+    if (event.direction === 'in' && Number.isFinite(lastRoutingAt) && Date.parse(event.at) < lastRoutingAt) return result;
     const previous = object(prior?.meta_ad_attribution);
     const pendingAge = Date.parse(event.at) - Date.parse(previous.last_referral_at || '');
     const pending = event.direction === 'in' && previous.awaiting_message === true && pendingAge >= 0 && pendingAge <= 30 * 60 * 1000;
