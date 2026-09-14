@@ -12,5 +12,9 @@
         if (event.target === drawer && (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom)) drawer.close();
         if (event.target.closest('a')) drawer.close();
     });
-    drawer.addEventListener('close', () => toggle.setAttribute('aria-expanded', 'false'));
+    drawer.addEventListener('close', () => {
+        toggle.setAttribute('aria-expanded', 'false');
+        toggle.focus({ preventScroll: true });
+    });
+    window.addEventListener('pageshow', () => { if (drawer.open) drawer.close(); });
 })();

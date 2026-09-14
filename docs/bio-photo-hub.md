@@ -5,3 +5,10 @@ Variant: `bio_photo_v1`. Hypothesis: full-photo destinations with Learn first ma
 The five photos were supplied by Shannon on 13 September and copied unchanged as shannon-panel-1 through 5. Their display crops remove the screenshot letterboxing without altering the originals. Learn, App, Coaching, My Story and Results each have one photo panel. Booking, account and contact remain in the accessible native dialog menu over the first photo; the separate masthead/footer backgrounds are removed. No app entitlements, checkout prices or payment routes changed.
 
 QA: 320x568 and 390x844 portrait, cream/dark menus, open/close and scrolling. The first release also checked 568x320 landscape and simulated 59px top/34px bottom notch spacing; repeat those checks for the menu release. Five real-image links remain visible without JavaScript; initial image eager, later images lazy. Focus outline, reduced motion, contrast and attribution behavior checked. Physical Instagram in-app browser remains a device-specific follow-up.
+
+
+## Shared website menu, 14 September 2026
+
+The homepage now uses the inner pages' cream header, centred Balance Neuroscience Fitness identity, left menu button and shared left drawer. Link wording, order and destinations match the website, with Home marked current. The former homepage theme switcher and its saved-theme reads/writes are removed. Existing photo links and attribution events remain in place. Shared navigation restores focus on close and closes restored menus when returning with browser Back.
+
+This is a navigation consistency fix to `bio_photo_v1`, with the same KPI and review date above. Guardrails: menu destinations, attribution preservation, keyboard focus, browser return, mobile safe-area clearance and reachable final menu item. Browser checks cover 320x568, 390x844, 568x320 and 1440x1000 with light/dark browser preferences and simulated 0px or 59px top / 34px bottom safe areas. Physical-device verification is not implied by browser simulation.
