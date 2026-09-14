@@ -1,5 +1,9 @@
 # Balance Codex Operating Brief
 
+## Facebook Messenger status (14 September 2026)
+
+Shannon confirmed that ManyChat is no longer used. Older ManyChat/Facebook-backstop notes below are historical and must not be treated as setup instructions. Facebook messaging uses the direct Meta integration documented in `docs/facebook-messenger-setup.md`. Its code is prepared, but Page authorization, server credentials, a real Messenger test and `pages_messaging` App Review approval are still required before public Facebook ad activation. Do not call this flow live or reconnect ManyChat.
+
 This file is the durable handoff context for Codex sessions. Read it at the start of a new chat before making strategy or code decisions.
 
 ## Who You Are Working With

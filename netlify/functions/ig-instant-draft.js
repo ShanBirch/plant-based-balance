@@ -1,3 +1,4 @@
+const { resolveMessengerRoute } = require('./_lib/facebook-messenger');
 const { outboundAnswersOlderInbound } = require('./_lib/ig-reply-source');
 const { buildPaidMetaZoomHandoff, ZOOM_BOOKING_URL, LEARN_SUPPORT_CHOICE, resolveLearnSupportChoice } = require('./_lib/paid-meta-zoom');
 /**
@@ -8649,7 +8650,8 @@ exports.handler = async (event) => {
             accountId: graphAccountId,
         });
     }
-    const deliveryChannel = hasInstagramGraphRoute ? 'instagram_graph' : (isDirectGraphManual ? 'manual_ig' : channel);
+    const messengerRoute = resolveMessengerRoute(thread);
+    const deliveryChannel = messengerRoute ? 'facebook_messenger' : (hasInstagramGraphRoute ? 'instagram_graph' : (isDirectGraphManual ? 'manual_ig' : channel));
     const manualReason = humanAgentRequired && !humanAgentReady
         ? HUMAN_AGENT_NOT_APPROVED_MESSAGE
         : (isDirectGraphManual ? 'Captured directly from Instagram Graph. Copy/send this in Instagram until direct Graph sending is connected.' : undefined);
@@ -9208,6 +9210,7 @@ exports.handler = async (event) => {
             } : undefined,
             channel,
             delivery_channel: deliveryChannel,
+            facebook_messenger: messengerRoute ? thread.custom_data.facebook_messenger : undefined,
             manual_ig_required: isDirectGraphManual || undefined,
             manual_reason: manualReason,
             human_agent_required: humanAgentRequired || undefined,
@@ -9514,6 +9517,7 @@ exports.handler = async (event) => {
             ...dmLanguageObservation,
             channel,
             delivery_channel: deliveryChannel,
+            facebook_messenger: messengerRoute ? thread.custom_data.facebook_messenger : undefined,
             manual_ig_required: isDirectGraphManual || undefined,
             manual_reason: manualReason,
             human_agent_required: humanAgentRequired || undefined,

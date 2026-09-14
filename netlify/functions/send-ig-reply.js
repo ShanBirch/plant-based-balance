@@ -1,3 +1,4 @@
+const { resolveMessengerRoute, isMessengerWindowOpen, getMessengerToken, sendMessengerItem } = require('./_lib/facebook-messenger');
 const { outboundAnswersOlderInbound, recordDeliveredChunk } = require('./_lib/ig-reply-source');
 /**
  * send-ig-reply — outbound for the Instagram channel via ManyChat.
@@ -2379,6 +2380,15 @@ exports.handler = async (event) => {
         }
         return { statusCode: 422, body: JSON.stringify({ error: textIntegrity.message, code: textIntegrity.code }) };
     }
+    const messengerRoute = resolveMessengerRoute(threadForSend);
+    const shouldUseMessenger = channel === 'messenger' && !!messengerRoute;
+    let messengerToken = '';
+    if (channel === 'messenger') {
+        if (!messengerRoute) return { statusCode: 409, body: JSON.stringify({ error: 'Direct Facebook Page connection is required', code: 'facebook_messenger_route_missing' }) };
+        if (!isMessengerWindowOpen(threadForSend?.last_inbound_at)) return { statusCode: 409, body: JSON.stringify({ error: 'Messenger 24-hour reply window is closed', code: 'facebook_messenger_window_closed' }) };
+        messengerToken = await getMessengerToken(messengerRoute.pageId, supabase);
+        if (!messengerToken) return { statusCode: 503, body: JSON.stringify({ error: 'Facebook Page access token is missing', code: 'facebook_messenger_token_missing' }) };
+    }
     let graphRecipientId = '';
     let graphAccountId = '';
     let graphSendAvailable = false;
@@ -2545,7 +2555,7 @@ exports.handler = async (event) => {
             }),
         };
     }
-    if (!shouldUseGraph && !MANYCHAT_API_TOKEN) {
+    if (!shouldUseGraph && !shouldUseMessenger && !MANYCHAT_API_TOKEN) {
         return { statusCode: 500, body: JSON.stringify({ error: 'Server misconfigured: MANYCHAT_API_TOKEN unset' }) };
     }
     const subscriberId = alertData.subscriber_id;
@@ -2724,6 +2734,7 @@ exports.handler = async (event) => {
             }),
         };
     }
+    const shouldUseNativeGraph = shouldUseGraph || shouldUseMessenger;
     const dmBubbleOptions = resolveOutboundDmBubbleOptions({ shouldUseGraph, channel });
     messagesToSend = splitCoachDraftIntoDmBubbles(messagesToSend, dmBubbleOptions);
     if (messagesToSend.length === 0) messagesToSend = [replyText];
@@ -2773,7 +2784,7 @@ exports.handler = async (event) => {
     if (hasValidDraftImageAttachment && !hasDraftImageAttachment) {
         console.warn('[send-ig-reply] suppressed unintroduced paid-Meta proof image');
     }
-    if ((hasDraftVideoAttachment || hasDraftImageAttachment) && !shouldUseGraph) {
+    if ((hasDraftVideoAttachment || hasDraftImageAttachment) && !shouldUseNativeGraph) {
         return {
             statusCode: 409,
             body: JSON.stringify({
@@ -2788,12 +2799,12 @@ exports.handler = async (event) => {
             text: messagesToSend.join('\n\n'),
             voiceConfig: voiceMessageConfig,
         }]
-        : buildInstagramGraphOutboundItems(messagesToSend, shouldUseGraph);
+        : buildInstagramGraphOutboundItems(messagesToSend, shouldUseNativeGraph);
     if (alertData.paid_meta_app_preview_handoff === true) {
         const requiredPreviewUrl = String(alertData.paid_meta_app_preview_url || '').trim();
         const matchingPreviewButtons = outboundItems.filter(item => item.kind === 'link_button'
             && item.url === requiredPreviewUrl);
-        if (!shouldUseGraph || matchingPreviewButtons.length !== 1) {
+        if (!shouldUseNativeGraph || matchingPreviewButtons.length !== 1) {
             return {
                 statusCode: 409,
                 body: JSON.stringify({
@@ -2870,7 +2881,8 @@ exports.handler = async (event) => {
     const sentChunkGapsMs = [];
     const instagramTypingActions = [];
     let firstError = null;
-    const deliveryTransport = shouldUseGraph ? 'instagram_graph' : 'manychat';
+    const deliveryTransport = shouldUseMessenger ? 'facebook_messenger' : (shouldUseGraph ? 'instagram_graph' : 'manychat');
+    const graphMessagePrefix = shouldUseMessenger ? `fb_graph:${messengerRoute.pageId}:` : GRAPH_SUBSCRIBER_PREFIX;
     for (let i = 0; i < outboundItems.length; i++) {
         let typingStartedForChunk = false;
         if (i === 0 && shouldUseGraph) {
@@ -2920,7 +2932,11 @@ exports.handler = async (event) => {
         const item = outboundItems[i];
         const chunkText = item.text;
         try {
-            if (item.kind === 'audio') {
+            if (shouldUseMessenger) {
+                const r = await sendMessengerItem({ route: messengerRoute, item, token: messengerToken, lastInboundAt: threadForSend.last_inbound_at });
+                sendResults.push({ ok: true, response: r, text: chunkText, transport: deliveryTransport, kind: item.kind,
+                    linkUrl: item.kind === 'link_button' ? item.url : undefined, buttonTitle: item.title, videoUrl: item.videoUrl, imageUrl: item.imageUrl });
+            } else if (item.kind === 'audio') {
                 const audio = await createVoiceMessageAudio({
                     messages: resolveVoiceSourceMessages(alertData, messagesToSend),
                     alertId,
@@ -2999,12 +3015,12 @@ exports.handler = async (event) => {
                 sendResults.push({ ok: true, response: r, text: chunkText, transport: deliveryTransport, kind: 'text' });
             }
             const delivered = sendResults[sendResults.length - 1];
-            const deliveredGraphId = shouldUseGraph ? (delivered.response?.message_id || delivered.response?.id || null) : null;
+            const deliveredGraphId = shouldUseNativeGraph ? (delivered.response?.message_id || delivered.response?.id || null) : null;
             try {
                 delivered.canonicalMessages = await recordDeliveredChunk({query:supabase,message:{
                     thread_id:igThreadId,direction:'out',text:delivered.text,
-                    source:delivered.kind === 'audio' ? 'instagram_graph_voice_send' : (shouldUseGraph ? 'instagram_graph_send' : source),
-                    alert_id:alertId,manychat_message_id:deliveredGraphId ? GRAPH_SUBSCRIBER_PREFIX + deliveredGraphId : null,
+                    source:delivered.kind === 'audio' ? 'instagram_graph_voice_send' : (shouldUseMessenger ? 'facebook_messenger_send' : (shouldUseGraph ? 'instagram_graph_send' : source)),
+                    alert_id:alertId,manychat_message_id:deliveredGraphId ? graphMessagePrefix + deliveredGraphId : null,
                 }});
             } catch (receiptError) { console.warn('[send-ig-reply] incremental receipt deferred:', receiptError.message); }
         } catch (err) {
@@ -3063,14 +3079,14 @@ exports.handler = async (event) => {
     const loggedOutboundCreatedAts = [];
     const loggedOutboundReceipts = [];
     for (const result of sentChunks) {
-        const graphMessageId = shouldUseGraph
+        const graphMessageId = shouldUseNativeGraph
             ? (result.response?.message_id || result.response?.id || null)
             : null;
         try {
             const insertedMessages = result.canonicalMessages || await recordDeliveredChunk({query:supabase,message:{
                 thread_id:igThreadId,direction:'out',text:result.text,
-                source:result.kind === 'audio' ? 'instagram_graph_voice_send' : (shouldUseGraph ? 'instagram_graph_send' : source),
-                alert_id:alertId,manychat_message_id:graphMessageId ? GRAPH_SUBSCRIBER_PREFIX + graphMessageId : null,
+                source:result.kind === 'audio' ? 'instagram_graph_voice_send' : (shouldUseMessenger ? 'facebook_messenger_send' : (shouldUseGraph ? 'instagram_graph_send' : source)),
+                alert_id:alertId,manychat_message_id:graphMessageId ? graphMessagePrefix + graphMessageId : null,
             }});
             if (insertedMessages?.[0]?.id) {
                 loggedOutboundMessageIds.push(insertedMessages[0].id);
@@ -3126,7 +3142,8 @@ exports.handler = async (event) => {
         sent_chunks: sentChunks.map(r => r.text),
         sent_split_strategy: 'paragraph_coalesced_v2',
         sent_delivery_pacing: chunkPacing.strategy,
-        delivery_channel: shouldUseGraph ? 'instagram_graph' : (alertData.delivery_channel || channel),
+        delivery_channel: shouldUseMessenger ? 'facebook_messenger' : (shouldUseGraph ? 'instagram_graph' : (alertData.delivery_channel || channel)),
+        facebook_messenger: shouldUseMessenger ? { ...threadForSend.custom_data.facebook_messenger, last_send_at: sentAtIso } : alertData.facebook_messenger,
         delivery_transport: deliveryTransport,
         ...buildAlternateIgDeliveryData(alternateDelivery || {}),
         delivery_payload_kind: voiceMessageConfig.enabled
@@ -3156,7 +3173,7 @@ exports.handler = async (event) => {
             last_send_tag: graphMessageTag || undefined,
         } : alertData.instagram_graph,
         sent_chunk_gaps_ms: sentChunkGapsMs,
-        sent_graph_message_ids: shouldUseGraph
+        sent_graph_message_ids: shouldUseNativeGraph
             ? sentChunks.map(r => r.response?.message_id || r.response?.id || null).filter(Boolean)
             : (alertData.sent_graph_message_ids || undefined),
         sent_link_buttons: loggedOutboundReceipts
@@ -3216,7 +3233,7 @@ exports.handler = async (event) => {
     }
     if (firstError) {
         mergedData.last_send_error = firstError;
-        mergedData.last_send_error_code = shouldUseGraph ? 'instagram_graph_send_failed' : 'manychat_send_failed';
+        mergedData.last_send_error_code = shouldUseMessenger ? 'facebook_messenger_send_failed' : (shouldUseGraph ? 'instagram_graph_send_failed' : 'manychat_send_failed');
         mergedData.last_send_error_at = sentAtIso;
     } else {
         mergedData.last_send_error = null;
@@ -3349,7 +3366,7 @@ exports.handler = async (event) => {
         return {
             statusCode: 502,
             body: JSON.stringify({
-                error: shouldUseGraph ? 'Instagram Graph send failed' : 'ManyChat send failed',
+                error: shouldUseMessenger ? 'Messenger send failed' : (shouldUseGraph ? 'Instagram Graph send failed' : 'ManyChat send failed'),
                 details: firstError,
                 chunks_sent: sentChunks.length,
                 chunks_total: outboundItems.length,
