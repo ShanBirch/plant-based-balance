@@ -363,7 +363,9 @@
     if (!state || !state.available || window.metaAdTrialMode === true) return null;
     var week = Number(state.current_week);
     var definition = window.BalanceLearnWeeklyActions && window.BalanceLearnWeeklyActions.experiment(week);
-    if (!definition || review.complete(review.record(week))) return null;
+    var row = review.record(week);
+    // Home prompts for the plan. The later report and review belong to check-in.
+    if (!definition || review.complete(row) || String(row && row.reflection_text || '').trim() || (row && ['submitted', 'needs_information'].includes(row.status))) return null;
     var base = ACTIONS.find(function(action){ return action.id === 'learn_weekly_action'; });
     return Object.assign({}, base, {
       taskId: 'w' + week + '_experiment',
@@ -1210,7 +1212,8 @@
     var picked = [];
     var journeyAction = getBalanceJourneyAction();
     var learnAction = getLearnCourseAction();
-    if (learnAction && journeyAction && journeyAction.taskId === learnAction.taskId) journeyAction = null;
+    // The dedicated Learn action owns this reminder, including hiding saved plans.
+    if (journeyAction && /^w\d+_experiment$/.test(journeyAction.taskId)) journeyAction = null;
     addUniqueAction(picked, getImportedActivityAction());
     var onboardingEligible = isOnboardingAccount();
     var hasIncompleteOnboarding = onboardingEligible && ONBOARDING_ACTION_IDS.some(function(id){
