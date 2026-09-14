@@ -317,11 +317,20 @@
         if (window.isAdminViewing) {
             const banner = document.createElement('div');
             banner.id = 'admin-view-banner';
-            banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:999999;background:linear-gradient(135deg,#1e293b,#334155);color:white;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;font-family:Inter,sans-serif;font-size:0.85rem;box-shadow:0 4px 12px rgba(0,0,0,0.3);';
+            banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:999999;background:linear-gradient(135deg,#1e293b,#334155);color:white;-webkit-text-fill-color:white;padding:calc(10px + env(safe-area-inset-top, 0px)) 20px 10px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-family:Inter,sans-serif;font-size:0.85rem;box-shadow:0 4px 12px rgba(0,0,0,0.3);';
             banner.innerHTML = '<div style="display:flex;align-items:center;gap:10px;"><span style="font-size:1.1rem;">👁️</span><span><strong>Admin View</strong> — Viewing ' + (window.adminViewUserName || 'user') + '\'s account (read-only)</span></div><button onclick="window.close()" style="background:white;color:#1e293b;border:none;padding:6px 16px;border-radius:20px;font-size:0.8rem;font-weight:700;cursor:pointer;">Close</button>';
             document.body.prepend(banner);
-            // Push page content down so banner doesn't overlap
-            document.body.style.paddingTop = '48px';
+            document.documentElement.classList.add('pbb-admin-view-active');
+            // The banner can wrap on small portrait screens and grows with the
+            // native safe-area inset. Keep fixed app views below its real height.
+            const syncAdminViewBannerOffset = () => {
+                const offset = Math.ceil(banner.getBoundingClientRect().height);
+                document.documentElement.style.setProperty('--admin-view-banner-offset', `${offset}px`);
+                document.body.style.paddingTop = `${offset}px`;
+            };
+            syncAdminViewBannerOffset();
+            requestAnimationFrame(syncAdminViewBannerOffset);
+            window.addEventListener('resize', syncAdminViewBannerOffset, { passive: true });
         }
 
         if(window.currentUser) {

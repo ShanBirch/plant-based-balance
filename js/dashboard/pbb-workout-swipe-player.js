@@ -289,6 +289,10 @@
                 color: var(--workout-focus-text);
                 -webkit-text-fill-color: var(--workout-focus-text);
             }
+            html.pbb-admin-view-active #view-active-workout.workout-focus-pilot {
+                top: var(--admin-view-banner-offset, 0px) !important;
+                height: calc(100vh - var(--admin-view-banner-offset, 0px)) !important;
+            }
             #view-active-workout.workout-focus-pilot #workout-player-topbar {
                 min-height: 68px;
                 padding: calc(9px + env(safe-area-inset-top, 0px)) 14px 9px !important;

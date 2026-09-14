@@ -49,11 +49,23 @@ test('exercise page index stays inside available cards', () => {
 test('dashboard loads the player once and cache-busts both main loader paths', () => {
     const html = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
     const serviceWorker = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
-    assert.equal((html.match(/pbb-workout-swipe-player\.js\?v=8-resume-exercise/g) || []).length, 1);
+    assert.equal((html.match(/pbb-workout-swipe-player\.js\?v=9-admin-safe-area/g) || []).length, 1);
     assert.equal((html.match(/dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=/g) || []).length, 3);
-    assert.match(serviceWorker, /pbb-workout-swipe-player\.js\?v=8-resume-exercise/);
+    assert.match(serviceWorker, /pbb-workout-swipe-player\.js\?v=9-admin-safe-area/);
     assert.match(html, /id="workout-add-existing-wrap"/);
     assert.match(html, /id="workout-add-existing-exercise-btn"/);
+});
+
+test('admin read-only banner keeps the mobile workout below its measured safe area', () => {
+    const html = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
+    const startup = fs.readFileSync(path.join(root, 'js/dashboard/dashboard-script-3-1_get_user_data.js'), 'utf8');
+    const playerSource = fs.readFileSync(path.join(root, 'js/dashboard/pbb-workout-swipe-player.js'), 'utf8');
+    assert.match(html, /dashboard-script-3-1_get_user_data\.js\?v=65-admin-safe-area/g);
+    assert.match(startup, /env\(safe-area-inset-top, 0px\)/);
+    assert.match(startup, /getBoundingClientRect\(\)\.height/);
+    assert.match(startup, /--admin-view-banner-offset/);
+    assert.match(playerSource, /html\.pbb-admin-view-active #view-active-workout\.workout-focus-pilot/);
+    assert.match(playerSource, /height: calc\(100vh - var\(--admin-view-banner-offset, 0px\)\)/);
 });
 
 test('existing workout internals remain available beneath focus mode', () => {
