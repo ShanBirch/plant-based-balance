@@ -4,10 +4,10 @@ const {buildMediaReviewInfo} = require('../netlify/functions/_lib/client-context
 const {_test} = require('../netlify/functions/ig-instant-draft');
 test('verified course questions in decoded video receive their requested answers', () => {
  const mediaDecode={analysis_complete:true,analysis_succeeded:true,media_summary:'A slide with three questions: how many lessons are included, whether there is a completion certificate, and what happens in week 4.'};
- const result=_test.applyDecodedPaidMetaAudioHandoff({joined:'Balance is a six-week course.',mediaDecode},{flowVariant:'broad_pain',currentMessage:'[VIDEO attachment]'});
- assert.match(result.joined,/31 lessons/);
+ const result=_test.applyDecodedPaidMetaAudioHandoff({joined:'Balance is an eight-week course.',mediaDecode},{flowVariant:'broad_pain',currentMessage:'[VIDEO attachment]'});
+ assert.match(result.joined,/45 lessons across eight weeks/);
  assert.match(result.joined,/Certificate of Completion/);
- assert.match(result.joined,/Week 4: take the fight out of food/);
+ assert.match(result.joined,/Week 4: Work with your energy/);
  assert.doesNotMatch(result.joined,/slide|three questions|Week 1:/);
  assert.equal(result.mediaDecode,mediaDecode);
 });
@@ -83,7 +83,7 @@ test('incomplete audio analysis and typed declines cannot trigger voice handoffs
 test('paid media writer requires the private summary used by the delivery gate', () => {
   const prompt = _test.buildPaidMetaAgentPrompt({flowVariant:'broad_pain',hasMedia:true});
   assert.match(prompt, /"media_summary":"brief factual media description"/);
-  assert.match(prompt, /31 lessons/);
+  assert.match(prompt, /45 lessons/);
   assert.match(prompt, /24\.83\/week/);
   assert.doesNotMatch(_test.buildPaidMetaAgentPrompt({flowVariant:'broad_pain'}), /media_summary/);
 });
