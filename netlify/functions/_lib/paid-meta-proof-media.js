@@ -50,8 +50,8 @@ const PAID_META_TRANSFORMATION_PROOFS = Object.freeze([
         introductionRe: ALLY_INTRO_RE,
         matches: text => WEIGHT_GOAL_RE.test(text),
         buildIntroduction: text => {
-            const kgGoal = String(text || '').match(/\b(\d{1,2}(?:\.\d+)?)\s*(?:kg|kgs|kilograms?)\b/i)?.[1] || '';
-            const goalLead = kgGoal ? `${kgGoal}kg is a solid goal. ` : '';
+            const kgGoal = String(text || '').match(/\b(\d{1,2}(?:\.\d+)?)\s*(?:kg|kgs|kilos?|kilograms?)\b/i)?.[1] || '';
+            const goalLead = kgGoal ? `Yep, losing ${kgGoal}kg is what you're working towards. ` : '';
             return `${goalLead}This is Ally. She lost 12kg in 16 weeks while working full time and raising a family, by building the plan around her real week.`;
         },
     },

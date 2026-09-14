@@ -3,7 +3,7 @@ const api=require('../netlify/functions/ig-instant-draft')._test;
 const send=require('../netlify/functions/send-ig-reply')._test;
 const {LEARN_SUPPORT_CHOICE}=require('../netlify/functions/_lib/paid-meta-zoom');
 
-test('concise offer after introduction permits independent preview without repeating inclusions',()=>{
+test('independent choice offers preview without repeating inclusions or sending the card',()=>{
  const history=[
   {direction:'out',text:'Hey, how are you? Balance Learn is a six-week course in the app using neuroscience and psychology. You get workouts, food support and my weekly check-in.'},
   {direction:'in',text:'I want to lose 5kg'},
@@ -16,8 +16,47 @@ test('concise offer after introduction permits independent preview without repea
  ];
  const currentMessage='On my own please';
  const draft=api.buildDeterministicPaidMetaConversationReply({history,currentMessage,flowVariant:'broad_pain',appPreviewUrl:'https://future-balance.netlify.app/p/synthetic-token-12345'});
- assert.equal(draft.appPreviewHandoff,true);
+ assert.equal(draft.appPreviewHandoff,undefined);
+ assert.match(draft.joined,/Would you like that\?/);
  assert.deepEqual(api.collectPaidMetaWriterContractIssues({draft,currentMessage,history,flowVariant:'broad_pain'}),[]);
+});
+
+test('weight target in one message or rapid fragments keeps acknowledgement, photo and blocker',()=>{
+ const opener={direction:'out',text:"Hey, how are you? What's the main change you want in the next six weeks?"};
+ const cases=[
+  ['I need to lose weight, 15 kilos',[opener]],
+  ['I need to lose weight\n15 kilos',[opener]],
+  ['15 kilos',[opener,{direction:'in',text:'I need to lose weight'}]],
+  ['15 kilos',[opener,{direction:'in',text:'I need to lose weight'},{direction:'in',text:'15 kilos'}]],
+ ];
+ for(const [currentMessage,history] of cases){
+  const d=api.buildDeterministicPaidMetaConversationReply({currentMessage,history,flowVariant:'broad_pain'});
+  assert.match(d.joined,/Yep, losing 15kg/);
+  assert.match(d.joined,/This is Ally/);
+  assert.ok(d.imageAttachmentUrl);
+  assert.match(d.joined,/gets in the way/);
+  assert.equal(d.videoAttachmentUrl,undefined);
+  assert.equal(api.selectFastDeterministicPaidMetaProgression({draft:d,currentMessage}),d);
+  assert.deepEqual(api.collectPaidMetaWriterContractIssues({draft:d,currentMessage,history,flowVariant:'broad_pain'}),[]);
+ }
+ assert.equal(api.isPaidMetaBareGoalMessage('I need to lose weight, 15 kilos, but childcare is hard'),false);
+});
+
+test('preview invitation accepts yes, honours no, and explicit requests skip redundant consent',()=>{
+ const history=[{direction:'out',text:LEARN_SUPPORT_CHOICE}];
+ const base={history,flowVariant:'broad_pain',appPreviewUrl:'https://future-balance.netlify.app/p/synthetic-token-12345'};
+ const invitation=api.buildDeterministicPaidMetaConversationReply({...base,currentMessage:'I can do them on my own'});
+ assert.match(invitation.joined,/Would you like that\?/);
+ assert.doesNotMatch(invitation.joined,/https?:/);
+ const after=[...history,{direction:'out',text:invitation.joined}];
+ for(const currentMessage of ['Yes please','Yeah','That sounds good']){
+  const d=api.buildDeterministicPaidMetaConversationReply({...base,history:after,currentMessage});
+  assert.equal(d.appPreviewHandoff,true);
+ }
+ const declined=api.buildDeterministicPaidMetaConversationReply({...base,history:after,currentMessage:'No thanks'});
+ assert.notEqual(declined?.appPreviewHandoff,true);
+ const direct=api.buildDeterministicPaidMetaConversationReply({...base,currentMessage:'On my own, show me the preview'});
+ assert.equal(direct.appPreviewHandoff,true);
 });
 test('ordinary planning obstacles are not held as app faults; real app faults still are',()=>{
  const {isAppProblemSupportRequest}=require('../netlify/functions/_lib/client-context');
@@ -61,10 +100,15 @@ test('goal to photo to blocker to video to support choice then either destinatio
  history.push({direction:'in',text:blocker},...items.map(x=>({direction:'out',text:x.text})));
  const base={history,flowVariant:'broad_pain',appPreviewUrl:'https://future-balance.netlify.app/p/synthetic-token-12345'};
  for(const choice of ['On my own please','Just the app for me','On my own with the app please','I prefer doing workouts on my own','Just Learn and workouts on my own']){
-  const d=api.buildDeterministicPaidMetaConversationReply({...base,currentMessage:choice});assert.equal(d.appPreviewHandoff,true);
+  const d=api.buildDeterministicPaidMetaConversationReply({...base,currentMessage:choice});assert.equal(d.appPreviewHandoff,undefined);
+  assert.match(d.joined,/Would you like that\?/);
   assert.deepEqual(api.collectPaidMetaWriterContractIssues({draft:d,currentMessage:choice,history,flowVariant:'broad_pain'}),[],choice+' is a choice, not an inclusions question');
   const approval=api.buildPaidMetaConversationApproval({metaAdConversationFastLane:true,draft:d,currentMessage:choice,history});
   assert.equal(approval?.required,false,choice+' must be approved through delivery');
+  const acceptedHistory=[...history,{direction:'in',text:choice},{direction:'out',text:d.joined}];
+  const accepted=api.buildDeterministicPaidMetaConversationReply({...base,history:acceptedHistory,currentMessage:'Yes please'});
+  assert.equal(accepted.appPreviewHandoff,true);
+  assert.deepEqual(api.collectPaidMetaWriterContractIssues({draft:accepted,currentMessage:'Yes please',history:acceptedHistory,flowVariant:'broad_pain'}),[]);
  }
  const zoom=api.buildDeterministicPaidMetaConversationReply({...base,currentMessage:'Zoom sessions please'});assert.equal(zoom.paidMetaZoomHandoff,true);
  const unclear=api.buildDeterministicPaidMetaConversationReply({...base,currentMessage:'Yes'});assert.equal(unclear.paidMetaSupportChoice,true);assert.equal(unclear.joined,LEARN_SUPPORT_CHOICE);

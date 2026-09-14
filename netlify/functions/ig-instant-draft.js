@@ -1471,6 +1471,7 @@ function hasDirectPaidMetaCheckoutIntent(value = '') {
 
 function hasRecentPaidMetaSupportQuestion(history = []) {
     const lastOutbound = (Array.isArray(history) ? history : []).filter(item => item?.direction === 'out').slice(-2);
+    if (lastOutbound.some(item => /preview[^?]*before (?:you pay|paying|payment)[^?]*Would you like that\?/i.test(String(item.text || '')))) return true;
     if (lastOutbound.some(item => /\bi can (?:share|send|open|show you)\b[^.!?]{0,100}\bpreview\b/i.test(String(item.text || '')))) return true;
     if (lastOutbound.some(item => /\b(?:want|like|keen|shall|should|can I)\b[^?]{0,150}\bpreview\b[^?]*\?/i.test(String(item.text || '')))) return true;
     return (Array.isArray(history) ? history : [])
@@ -1747,7 +1748,7 @@ function buildPaidMetaGoalToBlockerText(goalText = '', transformationProof = nul
         acknowledgement = 'Yeah, having more energy and feeling fitter is a solid goal.';
     }
     const proofLine = String(transformationProof?.introduction || '').trim();
-    const introduction = /\bgoal\b[^.!?]*[.!?]/i.test(proofLine.split(/This is /i)[0])
+    const introduction = /\b(?:goal|working towards)\b[^.!?]*[.!?]/i.test(proofLine.split(/This is /i)[0])
         ? proofLine : `${acknowledgement}${proofLine ? ` ${proofLine}` : ''}`;
     return `${introduction} What usually gets in the way of making that happen consistently?`;
 }
@@ -2204,6 +2205,18 @@ function buildDeterministicPaidMetaConversationReply({
         chunks, joined: chunks.join('\n\n'), model: 'deterministic_paid_meta_guided_sales_v1',
         replyMode: 'campaign_sales_progression', maxChunks: Math.max(MAX_CHUNKS, chunks.length), error: null, flowVariant, ...attachments,
     });
+    // A second goal fragment is still the goal, not the answer to a blocker
+    // question we have not asked. Preserve the proof step for the whole burst.
+    const lastGoalPrompt = [...history].reverse().find(item => item?.direction === 'out');
+    const goalBurst = PAID_META_FITNESS_GOAL_RE.test(message) && isPaidMetaBareGoalMessage(message)
+        ? message : paidMetaCurrentInboundRunText(history, message);
+    if (broadFlow && paidMetaOutboundAskedForGoal(lastGoalPrompt?.text || '')
+        && isPaidMetaBareGoalMessage(goalBurst) && PAID_META_FITNESS_GOAL_RE.test(goalBurst)) {
+        const proof = resolvePaidMetaTransformationProof({ goalText: goalBurst });
+        return guidedReply([buildPaidMetaGoalToBlockerText(goalBurst, proof)], {
+            imageAttachmentUrl: proof?.imageUrl || null,
+        });
+    }
     if (broadFlow && /\b(?:leave it with me|time to think|not right now)\b/i.test(message)) {
         return guidedReply(["Of course, I'll leave it with you."]);
     }
@@ -2238,7 +2251,9 @@ function buildDeterministicPaidMetaConversationReply({
     }
 
     const supportChoice = broadFlow ? resolveLearnSupportChoice(message, history) : null;
-    if (supportChoice === 'independent') return buildDeterministicPaidMetaConversationReply({currentMessage:'Show me the preview',history,flowVariant,appPreviewUrl,checkoutUrl,allowVideoAttachment});
+    if (supportChoice === 'independent' && !isExplicitPaidMetaPreviewRequest(message)) return guidedReply([
+        "Yep, we can do that. I can help you set up a free preview of your program so you can have a look before paying. Would you like that?"
+    ], { paidMetaSupportChoice: true });
     if (supportChoice === 'clarify') return {
         joined: LEARN_SUPPORT_CHOICE, chunks: [LEARN_SUPPORT_CHOICE],
         model: 'deterministic_paid_meta_guided_sales_v1', replyMode: 'campaign_sales_progression',
@@ -2690,9 +2705,13 @@ function isPaidMetaBareGoalMessage(message = '') {
     // A narrow optimisation, never a classifier for arbitrary life context.
     // Anything more complex must reach the writer, even if no blocker keyword
     // recognises the person's particular caring/work/access circumstances.
-    const goals = String(message || '').trim().split(/\s+and\s+/i);
+    const normalized = String(message || '').trim()
+        .replace(/\b(?:kilos?|kilograms?|kgs)\b/gi, 'kg')
+        .replace(/\blose weight\s*[,;:]?\s*(?:(?:about|around|roughly)\s+)?(\d+(?:\.\d+)?\s*kg)\b/gi, 'lose $1');
+    const goals = normalized.split(/\s+and\s+/i);
     if (goals.length > 1) return goals.every(isPaidMetaBareGoalMessage);
-    return /^(?:(?:i|we)\s+)?(?:(?:want|need|would like|hope)(?:\s+to)?\s+)?(?:lose (?:some |a bit of |around |about )?(?:weight|fat|body fat|\d+(?:\.\d+)?\s*kg)|build (?:muscle|strength)|(?:better|improve) body composition|recomposition|get (?:fit|fitter|strong|stronger)|feel (?:fit|fitter|strong|stronger|confident)|(?:have )?more energy|tone up)[.!\s]*$/i.test(String(message || '').trim());
+    if (/^\d+(?:\.\d+)?\s*kg[.!\s]*$/i.test(normalized)) return true;
+    return /^(?:(?:i|we)\s+)?(?:(?:want|need|would like|hope)(?:\s+to)?\s+)?(?:lose (?:some |a bit of |around |about )?(?:weight|fat|body fat|\d+(?:\.\d+)?\s*kg)|build (?:muscle|strength)|(?:better|improve) body composition|recomposition|get (?:fit|fitter|strong|stronger)|feel (?:fit|fitter|strong|stronger|confident)|(?:have )?more energy|tone up)[.!\s]*$/i.test(normalized);
 }
 
 function selectFastDeterministicPaidMetaProgression({ metaAdOpeningTurn = false, draft = null, requiresMediaAnalysis = false, currentMessage = '' } = {}) {
@@ -3474,8 +3493,7 @@ function buildPaidMetaConversationApproval({
     const verifiedExplicitPreviewHandoff = draft?.replyMode === 'campaign_app_preview_handoff'
         && draft?.appPreviewHandoff === true
         && isMetaAppPreviewUrl(draft?.appPreviewUrl)
-        && (isExplicitPaidMetaPreviewRequest(message) || isExplicitPaidMetaPreviewAcceptance(message)
-            || resolveLearnSupportChoice(message, history) === 'independent');
+        && (isExplicitPaidMetaPreviewRequest(message) || isExplicitPaidMetaPreviewAcceptance(message));
     const deterministicProgression = metaAdConversationFastLane
         && !linkedUserId
         && ['campaign_sales_progression', 'campaign_buyer_handoff', 'campaign_app_preview_handoff'].includes(String(draft?.replyMode || ''))
@@ -3493,8 +3511,7 @@ function buildPaidMetaConversationApproval({
                     // that this acceptance follows a preview offer. Requiring
                     // the approval layer to rediscover that offer in another
                     // short history window can strand valid long journeys.
-                    || isExplicitPaidMetaPreviewAcceptance(message)
-                    || resolveLearnSupportChoice(message, history) === 'independent')));
+                    || isExplicitPaidMetaPreviewAcceptance(message))));
     if (!deterministicProgression) return null;
     return {
         required: false,
@@ -5658,8 +5675,7 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
     const exactAcceptedPreview = draft?.appPreviewHandoff === true
         && draft?.replyMode === 'campaign_app_preview_handoff'
         && isMetaAppPreviewUrl(draft?.appPreviewUrl)
-        && (isExplicitPaidMetaPreviewRequest(turn) || isExplicitPaidMetaPreviewAcceptance(turn)
-            || resolveLearnSupportChoice(turn, history) === 'independent');
+        && (isExplicitPaidMetaPreviewRequest(turn) || isExplicitPaidMetaPreviewAcceptance(turn));
     // When the writer has chosen to progress after the blocker answer, enforce
     // the whole approved offer even if that obstacle is not in a keyword list.
     const lastOutboundForStage = [...history].reverse().find(item => item?.direction === 'out');

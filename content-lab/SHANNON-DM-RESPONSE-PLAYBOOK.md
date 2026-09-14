@@ -1,5 +1,11 @@
 # Shannon DM Response Playbook
 
+## Learn ad flow correction, 15 September 2026
+
+Treat a rapid goal burst such as "I need to lose weight" followed by "15 kilos" as one goal. Acknowledge the stated target in ordinary words, introduce and deliver matched verified client proof, then ask the real-life blocker. A number is not blocker evidence. Do not jump to an abstract "practical fit" pitch or promise that target within the course.
+
+After the blocker, give a useful personal connection, concise terms and the introduced course video, then ask independent workouts versus 30-minute Zoom support. An independent choice now earns an invitation to set up the free program preview before payment. Wait for acceptance before sending its card; an explicit request to see the preview already supplies that acceptance. This supersedes the earlier immediate-preview response to an independent choice. Keep Zoom routed to the fit call and honour declines.
+
 Use this when auditing, drafting, testing, or learning from Balance lead and client conversations. The purpose is to build a Shannon-specific conversation style from real outcomes without turning DMs into scripts or pressure tactics.
 
 ## Outcome hierarchy
