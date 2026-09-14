@@ -95,6 +95,9 @@ function database() {
     const query = async (path, options = {}) => {
         if (path.startsWith('users?')) return [{ id: 'coach' }];
         if (path.startsWith('ig_threads')) {
+            // Production uniqueness is the subscriber/channel pair.
+            if (options.method === 'POST') assert.equal(path, 'ig_threads?on_conflict=subscriber_id,channel');
+            if (!options.method) assert.ok(path.includes('&channel=eq.messenger'));
             if (options.method === 'POST') thread ||= { id: 'thread', updated_at: 'version1', ...options.body };
             if (options.method === 'PATCH') thread = { ...thread, ...options.body, updated_at: `version${dispatches + 2}` };
             return thread ? [thread] : [];

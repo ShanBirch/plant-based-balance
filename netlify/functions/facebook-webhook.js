@@ -6,7 +6,7 @@ const json = (statusCode, body) => ({ statusCode, headers: { 'Content-Type': 'ap
 
 async function persistEvent(event, query) {
     const subscriber = `fb_graph:${event.pageId}:${event.psid}`;
-    const path = `ig_threads?subscriber_id=eq.${encodeURIComponent(subscriber)}`;
+    const path = `ig_threads?subscriber_id=eq.${encodeURIComponent(subscriber)}&channel=eq.messenger`;
     let [thread] = await query(`${path}&limit=1`);
     // An unsolicited Page echo does not create a new lead or start automation.
     if (!thread && event.direction === 'out') return null;
@@ -15,7 +15,7 @@ async function persistEvent(event, query) {
         if (!coach?.id) throw new Error('Messenger coach is not configured');
         const initial = mergeMessengerData({}, event);
         initial.acquisition_mode = resolveIgAcquisitionMode({ customData: initial });
-        await query('ig_threads?on_conflict=subscriber_id', { method: 'POST',
+        await query('ig_threads?on_conflict=subscriber_id,channel', { method: 'POST',
             prefer: 'resolution=ignore-duplicates,return=minimal', body: {
                 subscriber_id: subscriber, channel: 'messenger', coach_id: coach.id,
                 custom_data: initial, auto_send_enabled: false,
