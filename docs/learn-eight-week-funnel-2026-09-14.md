@@ -1,3 +1,5 @@
+> Superseded for the public course: see [Six-week Learn restored](learn-six-weeks-restored-2026-09-14.md). Arunima retains her eight-week continuation.
+
 # Eight-week Learn funnel update
 
 The eight-week Learn course now carries through public website copy, the personalised preview/payment gate, DM answers and prompts, static course imagery, the two approved DM videos, and the onboarding coach recording.

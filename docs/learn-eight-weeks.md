@@ -1,3 +1,5 @@
+> Superseded for the public course: see [Six-week Learn restored](learn-six-weeks-restored-2026-09-14.md). Arunima retains her eight-week continuation.
+
 # Eight-week Learn curriculum — 14 September 2026
 
 Learn now owns 35 Mind and 10 Fuel lessons. Become retains the five identity lessons. All 40 Mind lessons therefore have a guided home for new and continuing Learn members. Lesson IDs and completion records are retained.

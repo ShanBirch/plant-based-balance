@@ -13,7 +13,7 @@ function runtime(version='eight_v1',week=1){
  return c;
 }
 test('all 40 Mind lessons are owned by Learn or Become in the new and continuation paths',()=>{
- for(const version of ['eight_v1','bridge_eight_v1']){
+ for(const version of ['six_v2','eight_v1','bridge_eight_v1']){
   const c=runtime(version);const brain=c.BalanceCurriculum.lessons.filter(l=>l.id.startsWith('mind-'));
   assert.equal(brain.length,40);assert.equal(brain.filter(l=>l.course==='learn').length,35);assert.equal(brain.filter(l=>l.course==='become').length,5);
   const ids=curriculum.weeks(version).flatMap(w=>w.lessonIds);assert.equal(ids.length,45);assert.equal(new Set(ids).size,45);
@@ -65,5 +65,20 @@ test('all inline dashboard scripts parse after both regular and iOS loader chang
   if(/type=["'](?:application\/ld\+json|importmap|text\/x-pbb-template)/.test(match[1])||!match[2].trim())continue;
   assert.doesNotThrow(()=>new vm.Script(match[2]));
  }
- const html=read('dashboard.html');assert.equal((html.match(/learn-curriculum\.js\?v=1-eight-weeks/g)||[]).length,2);
+ const html=read('dashboard.html');assert.equal((html.match(/learn-curriculum\.js\?v=2-six-weeks/g)||[]).length,2);
+});
+
+test('six-week default includes all extra learning with one original practical action per week',()=>{
+ assert.equal(curriculum.version({}), 'six_v2');assert.equal(curriculum.total(),6);
+ const weeks=curriculum.weeks();assert.deepEqual(weeks.map(w=>w.lessonIds.length),[10,10,10,5,5,5]);
+ const c=runtime('six_v2',6);assert.equal(c.journeyTest.definitions().length,12);
+ for(let i=0;i<6;i++){
+  assert.ok(curriculum.original[i].lessonIds.every(id=>weeks[i].lessonIds.includes(id)));
+  const action=actions.experiment(i+1,'six_v2');assert.ok(weeks[i].lessonIds.includes(action.lessonId));
+  assert.deepEqual(action.fields,actions.experiment(i+1,'legacy_six').fields);
+  const tasks=c.journeyTest.definitions()[i].tasks;assert.equal(tasks.length,5);assert.equal(tasks.filter(t=>t.type==='learn_experiment').length,1);
+ }
+ assert.ok(weeks[0].lessonIds.includes('mind-3-5'));assert.ok(weeks[1].lessonIds.includes('mind-7-5'));assert.ok(weeks[2].lessonIds.includes('mind-8-5'));
+ assert.equal(actions.experiment(6,'six_v2').requiresMeal,true);
+ c.journeyTest.set({current_week:7,settings:{learn_curriculum:'six_v2'}});assert.equal(c.journeyTest.identity().isUnlocked,true);
 });

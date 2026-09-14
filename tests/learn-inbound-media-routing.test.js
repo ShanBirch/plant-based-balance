@@ -4,10 +4,10 @@ const {buildMediaReviewInfo} = require('../netlify/functions/_lib/client-context
 const {_test} = require('../netlify/functions/ig-instant-draft');
 test('verified course questions in decoded video receive their requested answers', () => {
  const mediaDecode={analysis_complete:true,analysis_succeeded:true,media_summary:'A slide with three questions: how many lessons are included, whether there is a completion certificate, and what happens in week 4.'};
- const result=_test.applyDecodedPaidMetaAudioHandoff({joined:'Balance is an eight-week course.',mediaDecode},{flowVariant:'broad_pain',currentMessage:'[VIDEO attachment]'});
- assert.match(result.joined,/45 lessons across eight weeks/);
+ const result=_test.applyDecodedPaidMetaAudioHandoff({joined:'Balance is a six-week course.',mediaDecode},{flowVariant:'broad_pain',currentMessage:'[VIDEO attachment]'});
+ assert.match(result.joined,/45 lessons and quizzes across six weeks/);
  assert.match(result.joined,/Certificate of Completion/);
- assert.match(result.joined,/Week 4: Work with your energy/);
+ assert.match(result.joined,/Week 4: take the fight out of food/i);
  assert.doesNotMatch(result.joined,/slide|three questions|Week 1:/);
  assert.equal(result.mediaDecode,mediaDecode);
 });

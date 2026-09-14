@@ -6,7 +6,7 @@ test('launch and end-of-access FAQ answers without an organic readiness hold', (
     const draft = buildDeterministicPaidMetaConversationReply({ currentMessage, flowVariant: 'broad_pain' });
     assert.equal(draft.paidMetaVerifiedAccessFaq, true);
     assert.match(draft.joined, /21 September 2026/);
-    assert.match(draft.joined, /access and support end after eight weeks with no automatic renewal/);
+    assert.match(draft.joined, /access and support end after six weeks with no automatic renewal/);
     assert.doesNotMatch(draft.joined, /https?:|\?|as soon as you join/);
     assert.equal(selectFastDeterministicPaidMetaProgression({ draft, currentMessage }), draft);
     assert.equal(buildPaidMetaConversationApproval({ metaAdConversationFastLane: true, currentMessage, draft })?.required, false);

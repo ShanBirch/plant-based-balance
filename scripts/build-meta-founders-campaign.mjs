@@ -28,7 +28,7 @@ const campaigns = [
     cta: 'SEND MESSAGE',
     accent: colours.deepGold,
     composition: 'portrait',
-    primaryText: "You haven't failed. The plan was wrong. It wasn't built around your brain, what you've been through, or what you're dealing with now. Balance Learn gives plant-based people a clear eight-week starting course with my weekly review. The Founders Pass is AU$149 once and does not auto-renew. Message “BALANCE” and I'll show you what's included.",
+    primaryText: "You haven't failed. The plan was wrong. It wasn't built around your brain, what you've been through, or what you're dealing with now. Balance Learn gives plant-based people a clear six-week starting course with my weekly review. The Founders Pass is AU$149 once and does not auto-renew. Message “BALANCE” and I'll show you what's included.",
     headline: "You haven't failed. The plan was wrong.",
     description: 'Plant-based coaching built around real life',
   },
@@ -43,12 +43,12 @@ const campaigns = [
     cta: 'MESSAGE “BALANCE”',
     accent: colours.sage,
     composition: 'portrait',
-    primaryText: 'Real change is not about finding more motivation or forcing more effort. Your brain learns through repetition, and your environment shapes what gets repeated. Balance gives plant-based people small, clear steps and eight weeks of support to build a rhythm that fits real life. Message “BALANCE” for the Founders Pass details.',
+    primaryText: 'Real change is not about finding more motivation or forcing more effort. Your brain learns through repetition, and your environment shapes what gets repeated. Balance gives plant-based people small, clear steps and six weeks of support to build a rhythm that fits real life. Message “BALANCE” for the Founders Pass details.',
     headline: 'Small steps. A rhythm that lasts.',
     description: 'Change made clearer for plant-based people',
   },
   {
-    id: '03-eight-weeks-lifetime-access',
+    id: '03-six-weeks-lifetime-access',
     boardId: 'offer-stack',
     sources: [
       { source: 'assets/campaigns/founders-pass-meta-2026-07-22/source/balance-home-screen.png', fit: 'cover' },
@@ -56,13 +56,13 @@ const campaigns = [
       { source: 'assets/campaigns/founders-pass-meta-2026-07-22/source/balance-nutrition-screen.png', fit: 'cover' },
     ],
     eyebrow: 'ONE SIMPLE FOUNDING MEMBER OFFER',
-    title: ['8-WEEK COURSE.', 'WEEKLY COACHING REVIEW.'],
+    title: ['6-WEEK COURSE.', 'WEEKLY COACHING REVIEW.'],
     body: ['Coaching support', 'Core app + plant-based community'],
     price: 'AU$149 ONCE',
     cta: 'GET THE DETAILS IN DMS',
     accent: colours.gold,
     composition: 'gallery',
-    primaryText: 'The Balance Learn Founders Pass is simple. Pay AU$149 once, follow the eight-week course, and get one weekly check-in and plan review with me. It does not auto-renew. Message “BALANCE” and I will show you what is included.',
+    primaryText: 'The Balance Learn Founders Pass is simple. Pay AU$149 once, follow the six-week course, and get one weekly check-in and plan review with me. It does not auto-renew. Message “BALANCE” and I will show you what is included.',
     headline: 'Six-week course. Weekly coaching review.',
     description: 'The Balance: Plant-Based Fitness Founders Pass',
   },
@@ -80,7 +80,7 @@ const campaigns = [
     priceSize: 27,
     composition: 'gold-frame',
     proofFit: 'contain',
-    primaryText: 'Plant-based fitness does not need more noise. Balance Learn puts training, nutrition and progress tools into an eight-week course, with one weekly check-in and plan review from me. The Founders Pass is AU$149 once and does not auto-renew. Message “BALANCE” for details.',
+    primaryText: 'Plant-based fitness does not need more noise. Balance Learn puts training, nutrition and progress tools into a six-week course, with one weekly check-in and plan review from me. The Founders Pass is AU$149 once and does not auto-renew. Message “BALANCE” for details.',
     headline: 'Plant-based fitness, made clearer',
     description: 'Training, nutrition, progress and support',
   },
@@ -99,7 +99,7 @@ const campaigns = [
       photo: { top: 205, height: 1375 },
       comments: { top: 1550, height: 510 },
     },
-    primaryText: 'Your environment shapes what gets repeated. Balance Learn gives you a plant-based community where training, progress and support live together for a clear eight-week starting block. It includes one weekly review with me for AU$149 once. Message “BALANCE” to see what is included.',
+    primaryText: 'Your environment shapes what gets repeated. Balance Learn gives you a plant-based community where training, progress and support live together for a clear six-week starting block. It includes one weekly review with me for AU$149 once. Message “BALANCE” to see what is included.',
     headline: 'Plant-based fitness is better together',
     description: 'Join the Balance founding members',
   },
@@ -114,7 +114,7 @@ const campaigns = [
     cta: 'START THE CONVERSATION',
     accent: colours.sage,
     composition: 'founder',
-    primaryText: 'I built Balance because plant-based fitness should feel less lonely and less complicated. I am an exercise scientist and former gym owner, and I coach change through small, clear steps that fit real life. Balance Learn gives you an eight-week course and my weekly review for one AUD $149 payment, with no auto-renewal. Message “BALANCE” and I will talk you through it.',
+    primaryText: 'I built Balance because plant-based fitness should feel less lonely and less complicated. I am an exercise scientist and former gym owner, and I coach change through small, clear steps that fit real life. Balance Learn gives you a six-week course and my weekly review for one AUD $149 payment, with no auto-renewal. Message “BALANCE” and I will talk you through it.',
     headline: 'Plant-based fitness, built for real life',
     description: 'Meet Shannon and the Balance Founders Pass',
   },
@@ -390,7 +390,7 @@ const campaignPlan = {
     name: "V1 | You haven't failed. The plan was wrong.",
     rollout: 'phase_1_launch',
     creative: { reels: 'balance-founders-pass-brain-ad-cream-gold-final.mp4' },
-    primaryText: "You haven't failed. The plan was wrong. It wasn't built around your brain, what you've been through, or what you're dealing with now. Your brain learns through repetition, and your environment shapes what gets repeated. Balance Learn gives plant-based people a clear eight-week starting course with my weekly review. The Founders Pass is a one-off payment of AU$149 and does not auto-renew. Message “BALANCE” and I'll show you what's included.",
+    primaryText: "You haven't failed. The plan was wrong. It wasn't built around your brain, what you've been through, or what you're dealing with now. Your brain learns through repetition, and your environment shapes what gets repeated. Balance Learn gives plant-based people a clear six-week starting course with my weekly review. The Founders Pass is a one-off payment of AU$149 and does not auto-renew. Message “BALANCE” and I'll show you what's included.",
     headline: 'Change built around your real life',
     description: 'Balance: Plant-Based Fitness Founders Pass',
     callToAction: 'Send message',
@@ -398,7 +398,7 @@ const campaignPlan = {
   dmWelcome: {
     greeting: "Hey, glad you messaged. Here is a quick look inside Balance so you can actually see what I mean.",
     appPreview: null,
-    offerMessage: "Balance Learn brings your weekly plan, plant-based nutrition, progress, learning and community into one eight-week course. The Founders Pass is AU$149 once, includes my weekly review, and does not auto-renew.",
+    offerMessage: "Balance Learn brings your weekly plan, plant-based nutrition, progress, learning and community into one six-week course. The Founders Pass is AU$149 once, includes my weekly review, and does not auto-renew.",
     quickReplies: [],
     checkoutUrl: "https://plantbased-balance.org/plant-based-fitness.html",
     followUpExpectation: "Shannon will reply here and help you work out the best next step.",
@@ -423,7 +423,7 @@ const cards = exportsList.map((x, i) => `<article><img src="${path.basename(x.fe
 const dmReplyMode = campaignPlan.dmWelcome.quickReplies.length
   ? campaignPlan.dmWelcome.quickReplies.map(esc).join(' · ')
   : 'Free text only - no visible reply buttons';
-const dmReview = `<article><div><span>DM FOLLOW-UP</span><h2>Make the eight-week offer clear.</h2><p><strong>BALANCE LEARN<br>AU$149 ONCE<br>8-WEEK COURSE<br>WEEKLY COACHING REVIEW</strong></p><p>${esc(campaignPlan.dmWelcome.greeting)}</p><p>${esc(campaignPlan.dmWelcome.offerMessage)}</p><p><strong>Reply mode:</strong> ${dmReplyMode}</p><p><strong>Checkout:</strong> ${esc(campaignPlan.dmWelcome.checkoutUrl)}</p></div></article>`;
+const dmReview = `<article><div><span>DM FOLLOW-UP</span><h2>Make the six-week offer clear.</h2><p><strong>BALANCE LEARN<br>AU$149 ONCE<br>6-WEEK COURSE<br>WEEKLY COACHING REVIEW</strong></p><p>${esc(campaignPlan.dmWelcome.greeting)}</p><p>${esc(campaignPlan.dmWelcome.offerMessage)}</p><p><strong>Reply mode:</strong> ${dmReplyMode}</p><p><strong>Checkout:</strong> ${esc(campaignPlan.dmWelcome.checkoutUrl)}</p></div></article>`;
 const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Balance Founders Pass Meta Campaign</title><style>body{margin:0;background:#f7f2e8;color:#241a12;font:16px/1.55 Arial,sans-serif}header{padding:48px max(24px,5vw);background:linear-gradient(135deg,#fff9ed,#eadcc2);border-bottom:8px solid #d8a43a}h1{font-size:clamp(36px,6vw,76px);line-height:.95;margin:12px 0}header p{max-width:760px;color:#5b4a3a}main{padding:36px max(20px,4vw);display:grid;gap:36px}article{display:grid;grid-template-columns:minmax(280px,520px) 1fr;gap:36px;align-items:start;background:#fff9ed;border:1px solid #d8a43a;border-radius:24px;padding:20px;box-shadow:0 18px 44px #6b4d241c}img,video{width:100%;border-radius:14px;background:#160d20}span{color:#a96f00;font-weight:900;letter-spacing:2px}h2{font-size:34px;line-height:1.05}p{color:#5b4a3a}@media(max-width:800px){article{grid-template-columns:1fr}header{padding-top:30px}}</style></head><body><header><span>READY FOR REVIEW</span><h1>Balance: Plant-Based Fitness<br>Founders Pass</h1><p>Brain-aware change, small clear steps, and plant-based community support. Campaign defaults to PAUSED, AU$20 per day, Australia broad 24–54, Instagram Direct conversations.</p></header><main>${cards}${dmReview}</main></body></html>`;
 await fs.writeFile(path.join(OUT, 'review.html'), html);
 

@@ -53,7 +53,7 @@ test('Weekly Goals chooser uses one readable cream, white and gold Balance theme
 
 test('preview walkthrough only unlocks Next after the full coach video plays', () => {
   assert.match(dashboard, /id="meta-ad-trial-welcome-video"/);
-  assert.match(dashboard, /balance-onboarding-coach-note-eight-weeks\.mp4/);
+  assert.match(dashboard, /balance-onboarding-coach-note-captioned\.mp4/);
   assert.match(dashboard, /id="meta-ad-trial-welcome-continue"/);
   assert.match(dashboard, /title:'Watch Shannon’s coach note'[\s\S]*?embeddedGuide:true[\s\S]*?coachNoteGuide:true[\s\S]*?requiresWelcomeVideo:true/);
   assert.match(dashboard, /#guided-tour-overlay\.tour-coach-note #guided-tour-bubble,[\s\S]*?#guided-tour-overlay\.tour-coach-note #guided-tour-spotlight[\s\S]*?display: none/);

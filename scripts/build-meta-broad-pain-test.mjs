@@ -3,7 +3,7 @@ import path from 'node:path';
 import sharp from 'sharp';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
-const OUT = path.join(ROOT, 'output', 'meta-learn-eight-weeks-2026-09-14');
+const OUT = path.join(ROOT, 'output', 'meta-broad-pain-test-2026-07-26');
 
 const C = {
   ink: '#241A12',
@@ -24,7 +24,7 @@ const ads = [
     eyebrow: 'IF YOU KEEP HAVING TO START AGAIN',
     title: ['YOU DO NOT NEED', 'A HARDER PLAN.'],
     body: ['You need one that still works', 'when real life shows up.'],
-    primaryText: "If your routine only works when life is quiet, it is not the right routine yet. Balance helps you build training around the week you actually have, with clear steps and Shannon in your corner. Balance Learn is one AUD $149 payment for the full eight weeks and does not auto-renew. Message 'BALANCE' and I will show you what is included.",
+    primaryText: "If your routine only works when life is quiet, it is not the right routine yet. Balance helps you build training around the week you actually have, with clear steps and Shannon in your corner. Balance Learn is one AUD $149 payment for the full six weeks and does not auto-renew. Message 'BALANCE' and I will show you what is included.",
     headline: 'Stop starting over',
     description: 'A fitness plan built for real life',
   },
@@ -36,7 +36,7 @@ const ads = [
     eyebrow: 'KNOWING WHAT TO DO IS NOT THE PROBLEM',
     title: ['THE HARD PART IS', 'FOLLOWING', 'THROUGH.'],
     body: ['Clear next steps.', 'A coach in your corner.'],
-    primaryText: "You probably do not need another list of exercises or another perfect meal plan. You need a clear next step, support when the week changes, and a way back without guilt. That is what we build inside Balance Learn. It includes training, nutrition tools and eight weeks with Shannon for one AUD $149 payment for the full eight weeks, with no auto-renewal. Message 'BALANCE' for the details.",
+    primaryText: "You probably do not need another list of exercises or another perfect meal plan. You need a clear next step, support when the week changes, and a way back without guilt. That is what we build inside Balance Learn. It includes training, nutrition tools and six weeks with Shannon for one AUD $149 payment for the full six weeks, with no auto-renewal. Message 'BALANCE' for the details.",
     headline: 'Turn knowing into doing',
     description: 'Clear steps and personal support',
   },
@@ -49,7 +49,7 @@ const ads = [
     eyebrow: 'WORK. KIDS. SHIFTS. LIFE.',
     title: ['YOUR PLAN SHOULD FIT', 'THE WEEK YOU HAVE.'],
     body: ['Choose the rhythm.', 'Keep control of the decision.'],
-    primaryText: "Work, kids, shifts and low-energy days are not failures. They are part of the plan. Balance Learn gives you a realistic eight-week training rhythm plus one weekly check-in and plan review with Shannon for one AUD $149 payment for the full eight weeks, with no auto-renewal. Message 'BALANCE' to take a look.",
+    primaryText: "Work, kids, shifts and low-energy days are not failures. They are part of the plan. Balance Learn gives you a realistic six-week training rhythm plus one weekly check-in and plan review with Shannon for one AUD $149 payment for the full six weeks, with no auto-renewal. Message 'BALANCE' to take a look.",
     headline: 'Built around your actual week',
     description: 'Fitness support that adapts with you',
   },
@@ -115,8 +115,8 @@ async function render(ad, width, height) {
     ${textLines(ad.title, margin, titleY, titleSize, titleGap, C.ink, 900)}
     ${textLines(ad.body, margin, bodyY, story ? 31 : 25, story ? 43 : 36, C.brown, 500)}
     ${story ? '' : `<rect x="${margin}" y="${ctaY - 8}" width="470" height="72" rx="36" fill="${C.gold}"/><text x="${margin + 235}" y="${ctaY + 38}" fill="${C.ink}" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="900" text-anchor="middle" letter-spacing="1">MESSAGE 'BALANCE'</text>`}
-    <text x="${margin}" y="${story ? 1840 : 1300}" fill="${C.deepGold}" font-family="Arial, Helvetica, sans-serif" font-size="${story ? 31 : 25}" font-weight="900">BALANCE LEARN  ·  AUD $149  ·  EIGHT WEEKS</text>
-    <text x="${margin}" y="${story ? 1886 : 1330}" fill="${C.ink}" fill-opacity=".7" font-family="Arial, Helvetica, sans-serif" font-size="${story ? 22 : 18}" font-weight="700">NO SUBSCRIPTION. NO AUTO-RENEWAL.</text>
+    <text x="${margin}" y="${story ? 1840 : 1300}" fill="${C.deepGold}" font-family="Arial, Helvetica, sans-serif" font-size="${story ? 31 : 25}" font-weight="900">FOUNDATIONS  ·  AUD $149  ·  SIX WEEKS  ·  NO AUTO-RENEWAL</text>
+    <text x="${story ? 650 : margin}" y="${story ? 1886 : 1330}" fill="${C.ink}" fill-opacity=".7" font-family="Arial, Helvetica, sans-serif" font-size="${story ? 22 : 18}" font-weight="700">BALANCE FITNESS COACHING</text>
     ${story ? `<rect x="70" y="1680" width="470" height="76" rx="38" fill="${C.gold}"/><text x="305" y="1729" fill="${C.ink}" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="900" text-anchor="middle" letter-spacing="1">MESSAGE 'BALANCE'</text>` : ''}
     <rect x="${story ? margin : 580}" y="${story ? 780 : 390}" width="${story ? 980 : 460}" height="${story ? 860 : 890}" rx="46" fill="${C.gold}" opacity=".06"/>
     <rect x="${margin}" y="${story ? 1768 : 1220}" width="${copyWidth}" height="2" fill="${C.gold}" opacity=".5"/>
@@ -138,7 +138,7 @@ const plan = {
   name: 'BAL | Balance Learn | General Fitness | IG DM | AU | 2026-08-28',
   status: 'PAUSED_FOR_REVIEW',
   objective: 'Instagram Direct conversations',
-  offer: 'Balance Learn, one AUD $149 payment for the full eight weeks, no auto-renewal',
+  offer: 'Balance Learn, one AUD $149 payment for the full six weeks, no auto-renewal',
   budget: { dailyAud: 20, instruction: 'Do not increase total budget for this test.' },
   structure: {
     campaign: 'Use the existing Instagram Direct conversations campaign.',
@@ -155,7 +155,7 @@ const plan = {
       'I struggle to stay consistent',
       'How does Balance work?',
     ],
-    rule: 'Use these only as the three Meta entry prompts. Once one is tapped, continue as a natural free-text conversation: desired eight-week change, matched client proof when relevant, real-life blocker, tailored offer with the native app video, personalised preview, then checkout only after explicit joining intent.',
+    rule: 'Use these only as the three Meta entry prompts. Once one is tapped, continue as a natural free-text conversation: desired six-week change, matched client proof when relevant, real-life blocker, tailored offer with the native app video, personalised preview, then checkout only after explicit joining intent.',
   },
   fate: {
     focus: 'Adults who keep restarting, struggle to follow through, or cannot fit rigid plans around real life.',

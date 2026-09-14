@@ -15,8 +15,8 @@ test('DM video and checkout change at the same Brisbane launch-offer boundary',(
     }
     assert.equal(getLearnCoursePricing(LEARN_INTRO_END).unitAmount,45000);
     assert.equal(resolveVideo(Date.parse(LEARN_INTRO_END)),standardVideo);
-    assert.match(launchVideo,/balance-learn-dm-149-v12-eight-weeks\.mp4$/);
-    assert.match(standardVideo,/balance-learn-dm-450-v12-eight-weeks\.mp4$/);
+    assert.match(launchVideo,/balance-learn-dm-149-v11\.mp4$/);
+    assert.match(standardVideo,/balance-learn-dm-450-v11\.mp4$/);
 });
 test('queued old social and expired-price drafts resolve to the correct current DM video',()=>{
     const legacy='https://plantbased-balance.org/assets/balance-foundations-course-first-v8.mp4';
@@ -26,20 +26,11 @@ test('queued old social and expired-price drafts resolve to the correct current 
     assert.equal(resolveAttachment('https://example.com/exercise.mp4'), 'https://example.com/exercise.mp4');
     for(const url of [legacy,launchVideo,standardVideo]) assert.equal(stripPaidMetaProofMediaUrls(`Here is the video: ${url}`),'Here is the video:');
 });
-
-test('queued six-week v11 attachments upgrade to the eight-week video at send time',()=>{
-    for (const price of [149,450]) {
-        const old=`https://plantbased-balance.org/assets/balance-learn-dm-${price}-v11.mp4`;
-        assert.equal(resolveAttachment(old,Date.parse('2026-09-21')),launchVideo);
-        assert.equal(resolveAttachment(old,Date.parse(LEARN_INTRO_END)),standardVideo);
-        assert.equal(stripPaidMetaProofMediaUrls('Here is the video: '+old),'Here is the video:');
-    }
-});
 test('the spoken DM offer uses the same $450 price after launch month',t=>{
     t.mock.method(Date,'now',()=>Date.parse(LEARN_INTRO_END));
     const {buildPaidMetaTailoredOfferChunks}=require('../netlify/functions/ig-instant-draft.js')._test;
     const text=buildPaidMetaTailoredOfferChunks('My shifts change every week','Build strength','broad_pain').join(' ');
-    assert.match(text,/AUD \$450 payment for the full eight weeks/);
+    assert.match(text,/AUD \$450 payment for the full six weeks/);
     assert.doesNotMatch(text,/\$149/);
 });
 
@@ -58,5 +49,14 @@ test('queued v10 attachments upgrade to the quieter-music revision',()=>{
  assert.equal(resolveAttachment(old,Date.parse('2026-09-21')),launchVideo);
  assert.equal(resolveAttachment(old,Date.parse(LEARN_INTRO_END)),standardVideo);
  assert.equal(stripPaidMetaProofMediaUrls('Video: '+old),'Video:');
+ }
+});
+
+test('retired eight-week attachments are replaced with the current six-week originals',()=>{
+ for(const price of [149,450]) {
+  const old=`https://plantbased-balance.org/assets/balance-learn-dm-${price}-v12-eight-weeks.mp4`;
+  assert.equal(resolveAttachment(old,Date.parse('2026-09-21')),launchVideo);
+  assert.equal(resolveAttachment(old,Date.parse(LEARN_INTRO_END)),standardVideo);
+  assert.equal(stripPaidMetaProofMediaUrls(`Here is the video: ${old}`),'Here is the video:');
  }
 });

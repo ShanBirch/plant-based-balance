@@ -38,7 +38,7 @@ for (const message of [
 ]) {
     test(`still requires an exact course-price answer: ${message}`, () => {
         assert.equal(priceIssues(message, 'The food plan can fit your preferences.').length, 1);
-        assert.deepEqual(priceIssues(message, "It's one AUD $149 payment for the full eight weeks, with no subscription or auto-renewal."), []);
+        assert.deepEqual(priceIssues(message, "It's one AUD $149 payment for the full six weeks, with no subscription or auto-renewal."), []);
     });
 }
 

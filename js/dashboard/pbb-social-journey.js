@@ -9,7 +9,7 @@
   const TABLE = 'social_journey_progress';
   const VERSION = 'social_identity_v1';
   const BRISBANE_TIMEZONE = 'Australia/Brisbane';
-  const WELCOME_VIDEO_URL = window.PBB_BALANCE_WELCOME_VIDEO_URL || '/assets/balance-onboarding-coach-note-eight-weeks.mp4?v=20260914-word-only';
+  const WELCOME_VIDEO_URL = window.PBB_BALANCE_WELCOME_VIDEO_URL || '/assets/balance-onboarding-coach-note-captioned.mp4?v=20260910-word-reveal';
 
   const GETTING_STARTED_TASKS = [
     task('w1_fitgotchi_intro', 'View Your FitGotchi', 'Meet your character and see how XP gives you visual feedback on your progress.', 'fitgotchi_intro', 1, '🐣', 'fitgotchi'),
@@ -206,7 +206,7 @@
     const weeks=window.BalanceLearnCurriculum.weeks(version);
     const offset=weeks.length;
     const definitions=weeks.map((w,i)=>{
-      if(version!=='eight_v1' && i<6)return ORIGINAL_WEEK_DEFINITIONS[i];
+      if(['legacy_six','bridge_eight_v1'].includes(version) && i<6)return ORIGINAL_WEEK_DEFINITIONS[i];
       const base=ORIGINAL_WEEK_DEFINITIONS[Math.min(i,5)];
       const experiment=window.BalanceLearnWeeklyActions.experiment(i+1,version);
       const tasks=base.tasks.map(t=>({...t,id:t.id.replace(/^w\d+_/,'w'+(i+1)+'_')}));
@@ -217,7 +217,7 @@
       return {...base,week:i+1,phase:'BALANCE LEARN · WEEK '+(i+1),title:w.title,body:w.description,tasks};
     });
     WEEK_DEFINITIONS=definitions.concat(ORIGINAL_WEEK_DEFINITIONS.slice(6).map((d,i)=>({...d,week:offset+i+1})));
-    WEEK_LESSONS=weeks.map((w,i)=>version!=='eight_v1'&&i<6?ORIGINAL_WEEK_LESSONS[i]:lesson(w.title,w.description,[window.BalanceLearnWeeklyActions.experiment(i+1,version).prompt])).concat(ORIGINAL_WEEK_LESSONS.slice(6));
+    WEEK_LESSONS=weeks.map((w,i)=>['legacy_six','bridge_eight_v1'].includes(version)&&i<6?ORIGINAL_WEEK_LESSONS[i]:lesson(w.title,w.description,[window.BalanceLearnWeeklyActions.experiment(i+1,version).prompt])).concat(ORIGINAL_WEEK_LESSONS.slice(6));
   }
 
   let state = null;
@@ -371,7 +371,7 @@
       onboarding_complete: false,
       completed_task_ids: [],
       progress_snapshot: {},
-      settings: {learn_curriculum:'eight_v1'},
+      settings: {learn_curriculum:'six_v2'},
       reminder_receipts: []
     };
   }

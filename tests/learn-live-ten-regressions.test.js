@@ -12,19 +12,19 @@ for (const [question, reply] of [
     ['Do the lessons have a deadline every day?', 'No daily deadline, work through them at your own pace within the six-week access period.'],
 ]) test(`practical lesson question stays out of outline fallback: ${question}`,()=>{
     assert.notEqual(resolveMetaAdFirstReplyIntent(question),'curriculum');
-    assert.ok(!collectPaidMetaWriterContractIssues(args(question,reply)).some(x=>/full eight-week course outline|course answer must return/.test(x)));
+    assert.ok(!collectPaidMetaWriterContractIssues(args(question,reply)).some(x=>/full six-week course outline|course answer must return/.test(x)));
 });
 
 test('actual outline requests still require the full verified curriculum',()=>{
     const question='What do I actually learn over the six weeks?';
     assert.equal(resolveMetaAdFirstReplyIntent(question),'curriculum');
-    assert.ok(collectPaidMetaWriterContractIssues(args(question,'There are lessons.')).some(x=>/full eight-week course outline/.test(x)));
+    assert.ok(collectPaidMetaWriterContractIssues(args(question,'There are lessons.')).some(x=>/full six-week course outline/.test(x)));
 });
 
 test('price repair preserves other direct answers instead of restarting discovery',()=>{
     const a=args('How much is the course, can I train without a gym, and will the free preview charge my card automatically?', 'The course costs $99. You can train at home with the equipment you have.');
     const draft=buildPaidMetaGuaranteedContractFallback({...a,issues:collectPaidMetaWriterContractIssues(a)});
-    assert.match(draft.joined,/one AUD \$149 payment for the full eight weeks/);
+    assert.match(draft.joined,/one AUD \$149 payment for the full six weeks/);
     assert.match(draft.joined,/train at home/);
     assert.match(draft.joined,/preview is free.*does not charge/);
     assert.doesNotMatch(draft.joined,/\$99|\?/);

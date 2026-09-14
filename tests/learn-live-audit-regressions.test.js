@@ -5,7 +5,7 @@ const base = { flowVariant: 'broad_pain', checkoutUrl: 'https://future-balance.n
 test('focused course questions answer only requested facts', () => {
  const draft=build({...base,currentMessage:'How many lessons are there and what is week 4 about?'});
  assert.match(draft.joined,/45 lessons/);
- assert.match(draft.joined,/Week 4: Work with your energy/);
+ assert.match(draft.joined,/Week 4: take the fight out of food/);
  assert.doesNotMatch(draft.joined,/Week [12356]:|Certificate/);
  const review=require('../netlify/functions/ig-instant-draft')._test;
  assert.deepEqual(review.collectPaidMetaWriterContractIssues({draft,currentMessage:'How many lessons are there and what is week 4 about?',flowVariant:'broad_pain'}).filter(review.isBlockingPaidMetaWriterContractIssue),[]);

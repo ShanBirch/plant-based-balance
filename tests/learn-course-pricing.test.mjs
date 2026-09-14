@@ -11,7 +11,7 @@ test('Learn stays $149 for launch month, then changes at midnight Brisbane on 21
         assert.match(before.checkoutDisclosure, /AUD \$149/);
         assert.equal(after.unitAmount, 45000);
         assert.equal(after.mode, 'payment');
-        assert.equal(after.accessDays, 56);
+        assert.equal(after.accessDays, 42);
         assert.equal(after.checkinsPerWeek, '1');
         assert.match(after.checkoutDisclosure, /AUD \$450/);
     }
