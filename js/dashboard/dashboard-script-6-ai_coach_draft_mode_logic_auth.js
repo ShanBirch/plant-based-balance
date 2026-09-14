@@ -8218,7 +8218,7 @@ async function loadDirectMessages(recipientId) {
             && window.socialJourney.shouldShowWelcomeMessage(recipientId));
         const balanceWelcomeVideo = showBalanceWelcome && typeof window.socialJourney.getWelcomeVideoUrl === 'function'
             ? window.socialJourney.getWelcomeVideoUrl()
-            : '/assets/balance-onboarding-coach-note-eight-weeks.mp4?v=20260914-opening-fix';
+            : '/assets/balance-onboarding-coach-note-eight-weeks.mp4?v=20260914-natural-join';
         const balanceWelcomeVideoComplete = !!(showBalanceWelcome
             && window.socialJourney
             && typeof window.socialJourney.isWelcomeVideoComplete === 'function'

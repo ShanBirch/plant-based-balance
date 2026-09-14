@@ -9,7 +9,7 @@
   const TABLE = 'social_journey_progress';
   const VERSION = 'social_identity_v1';
   const BRISBANE_TIMEZONE = 'Australia/Brisbane';
-  const WELCOME_VIDEO_URL = window.PBB_BALANCE_WELCOME_VIDEO_URL || '/assets/balance-onboarding-coach-note-eight-weeks.mp4?v=20260914-opening-fix';
+  const WELCOME_VIDEO_URL = window.PBB_BALANCE_WELCOME_VIDEO_URL || '/assets/balance-onboarding-coach-note-eight-weeks.mp4?v=20260914-natural-join';
 
   const GETTING_STARTED_TASKS = [
     task('w1_fitgotchi_intro', 'View Your FitGotchi', 'Meet your character and see how XP gives you visual feedback on your progress.', 'fitgotchi_intro', 1, '🐣', 'fitgotchi'),
