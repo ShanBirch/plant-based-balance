@@ -26,7 +26,7 @@ const ASSETS = [
   './workout_library_extended.js',
   './js/dashboard/script_part_2.js?v=17-resume-session',
   './js/dashboard/dashboard-script-3-1_get_user_data.js?v=63-resume-session',
-  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=1789200000-resume-session&cohort_diets=1&video_health=2',
+  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20260915-prescription-load&cohort_diets=1&video_health=2',
   './js/dashboard/pbb-settings-navigation.js?v=1-settings-navigation',
   './js/dashboard/pbb-meta-preview-soundtrack.js?v=3-coach-video-ducking',
   './js/dashboard/pbb-app-telemetry.js?v=1',

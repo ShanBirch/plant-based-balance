@@ -21314,7 +21314,10 @@ function getPrescribedSetPrefill(exercise, isTimeBased) {
     const prefill = isTimeBased
         ? { time: numericTarget[0] }
         : { reps: numericTarget[0] };
-    if (exercise.prescriptionOverridesHistory === true) prefill.preferPrescription = true;
+    if (exercise.prescriptionOverridesHistory === true || exercise.prescriptionClearsHistoricalLoad === true) {
+        prefill.preferPrescription = true;
+    }
+    if (exercise.prescriptionClearsHistoricalLoad === true) prefill.clearHistoricalLoad = true;
     return prefill;
 }
 
@@ -21322,7 +21325,11 @@ function mergeSetPrefill(previousSet, prescribedSet) {
     if (!previousSet && !prescribedSet) return null;
     // An explicit coach revision replaces targets, while retaining useful load history.
     if (prescribedSet?.preferPrescription) {
-        return { kg: previousSet?.kg || '', reps: prescribedSet.reps || '', time: prescribedSet.time || '' };
+        return {
+            kg: prescribedSet.clearHistoricalLoad ? '' : (previousSet?.kg || ''),
+            reps: prescribedSet.reps || '',
+            time: prescribedSet.time || ''
+        };
     }
     return {
         kg: previousSet?.kg || '',

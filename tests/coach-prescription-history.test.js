@@ -21,6 +21,16 @@ test('coach rep range starts at its lower bound instead of an old target', () =>
     assert.equal(result.reps, '8');
     assert.equal(result.kg, '30');
 });
+test('coach can clear irrelevant load history for bands and bodyweight movements', () => {
+    const exercise = {
+        reps: '12-15 each way',
+        prescriptionOverridesHistory: true,
+        prescriptionClearsHistoricalLoad: true
+    };
+    const prescribed = ctx.getPrescribedSetPrefill(exercise, false);
+    const result = ctx.mergeSetPrefill({ reps: '12', kg: '7' }, prescribed);
+    assert.deepEqual(JSON.parse(JSON.stringify(result)), { kg: '', reps: '12', time: '' });
+});
 test('ordinary workouts retain their previous session defaults', () => {
     const result = ctx.mergeSetPrefill({ reps: '12', kg: '30' }, ctx.getPrescribedSetPrefill({ reps: '8-12' }, false));
     assert.equal(result.reps, '12');
