@@ -1,8 +1,8 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const html=fs.readFileSync('bio.html','utf8');
 test('homepage uses the website menu and puts its control before the logo',()=>{
- const header=html.match(/<header class="site-header">([\s\S]*?)<\/header>/)[1];
- assert.ok(header.indexOf('class="balance-menu-toggle"')<header.indexOf('class="brand"'));
+ const header=html.match(/<header class="bio-masthead">([\s\S]*?)<\/header>/)[1];
+ assert.ok(header.indexOf('class="balance-menu-toggle"')<header.indexOf('class="identity"'));
 });
 test('photo hub retains destinations and uses all five new photos without a footer band',()=>{
  for(const href of ['/founders','/balance.html','/coaching.html','/journey.html','/clients.html','/book'])assert.ok(html.includes('href="'+href+'"'));

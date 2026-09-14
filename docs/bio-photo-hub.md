@@ -9,6 +9,6 @@ QA: 320x568 and 390x844 portrait, cream/dark menus, open/close and scrolling. Th
 
 ## Shared website menu, 14 September 2026
 
-The homepage now uses the inner pages' cream header, centred Balance Neuroscience Fitness identity, left menu button and shared left drawer. Link wording, order and destinations match the website, with Home marked current. The former homepage theme switcher and its saved-theme reads/writes are removed. Existing photo links and attribution events remain in place. Shared navigation restores focus on close and closes restored menus when returning with browser Back.
+The original photo-overlay masthead is preserved: circular menu button at left, white Balance / Shannon Birch identity at right, no separate background bar. Only the opened drawer uses the inner pages' light surface, left position, link order, wording and spacing. The theme switcher remains removed. Existing photo links and attribution events remain in place. Shared navigation restores focus on close and closes restored menus when returning with browser Back.
 
 This is a navigation consistency fix to `bio_photo_v1`, with the same KPI and review date above. Guardrails: menu destinations, attribution preservation, keyboard focus, browser return, mobile safe-area clearance and reachable final menu item. Browser checks cover 320x568, 390x844, 568x320 and 1440x1000 with light/dark browser preferences and simulated 0px or 59px top / 34px bottom safe areas. Physical-device verification is not implied by browser simulation.
