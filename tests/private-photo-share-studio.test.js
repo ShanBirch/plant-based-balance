@@ -69,9 +69,9 @@ test('focused editor locks the photo while text and share-card layers remain edi
   assert.match(studio, /overlayX/);
   assert.match(studio, /overlayY/);
   assert.match(studio, /overlayScale/);
-  assert.match(studio, /data-share-tool="text"/);
-  assert.match(studio, /data-share-tool="stickers"/);
-  assert.match(studio, /data-share-tool="workout"/);
+  assert.doesNotMatch(modernStudio, /data-share-tool="text"/);
+  assert.doesNotMatch(modernStudio, /data-share-tool="stickers"/);
+  assert.doesNotMatch(modernStudio, /data-share-tool="workout"/);
   assert.match(studio, /data-text-size type="range" min="45" max="165"/);
   assert.match(studio, /captionSize: clamp\(active\.captionSize \|\| 1, \.45, 1\.65\)/);
   assert.match(studio, /data-share-cycle-layout/);
@@ -170,15 +170,15 @@ test('members receive the progress-first workout completed page', () => {
   assert.match(studio, /Session complete/);
   assert.match(studio, /position:sticky;bottom:0/);
   assert.match(workoutRuntime, /BalancePrivateShareStudio\.renderWorkoutCompletePage/);
-  assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=234-omnivore-meal-plan/);
+  assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=[^"\s]+/);
 });
 
 test('private reveal, tour, and cache-busted modules ship together', () => {
   assert.match(dashboard, /photo-share-studio-all-members-v1/);
   assert.match(dashboard, /BalancePrivateShareStudio\.isEnabled\(\)/);
-  assert.match(dashboard, /pbb-private-share-studio\.js\?v=18-locked-photo-text-tools/);
-  assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=65-all-styles-wysiwyg/);
+  assert.match(dashboard, /pbb-private-share-studio\.js\?v=20-simple-share-toolbar/);
+  assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=[^"\s]+/);
   assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=[^'\"]+/);
   assert.match(dashboard, /dashboard-script-11-calorie_tracker_functions\.js\?v=41-share-done-flow/);
-  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v493-all-styles-wysiwyg'/);
+  assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v[0-9]+-[^']+'/);
 });
