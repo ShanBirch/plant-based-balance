@@ -3346,7 +3346,7 @@ function buildMetaAdFoundersPassFirstReply(currentMessage = '', { customData = {
     } else if (broadFlow && intent === 'plant_based_requirement') {
         answer = `No, you do not need to be. Balance lets you record your dietary preferences so the food side can fit you. What's the main change you'd like to make over the next six weeks?`;
     } else if (broadFlow && intent === 'price') {
-        answer = `Hey! It's AUD ${resolveBalanceLearnCoursePriceLabel()} for the full six weeks, with no subscription or automatic renewal. You get the course, workouts, food support and weekly check-ins. What are you hoping to work towards?`;
+        answer = `Hey! It's one AUD ${resolveBalanceLearnCoursePriceLabel()} payment for the full six weeks, with no subscription or automatic renewal. You get the course, workouts, food support and weekly check-ins. What are you hoping to work towards?`;
     } else if (broadFlow && intent === 'accountability') {
         answer = `You check in inside Balance and I can see what the week actually looked like, then I give you the next bit of direction and adjust your training or food where needed. What's the main change you'd like to make over the next six weeks?`;
     } else if (broadFlow && intent === 'personalised_coaching') {

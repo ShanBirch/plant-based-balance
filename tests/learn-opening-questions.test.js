@@ -13,6 +13,7 @@ test('direct course price openers answer without the BALANCE keyword', () => {
         assert.match(reply.joined, /hoping to work towards/);
         assert.ok(reply.joined.split(/\s+/).length < 60);
         assert.equal(reply.checkoutUrl, null);
+        assert.deepEqual(api.collectPaidMetaWriterContractIssues({ draft: reply, currentMessage: message, history: [], flowVariant: 'broad_pain' }), []);
     }
 });
 
@@ -22,6 +23,7 @@ test('general course introduction stays brief while an explicit outline still ge
     assert.match(brief.joined, /^Hey/);
     assert.doesNotMatch(brief.joined, /Week 1/i);
     assert.ok(brief.joined.split(/\s+/).length < 60);
+    assert.deepEqual(api.collectPaidMetaWriterContractIssues({ draft: brief, currentMessage: 'Tell me about the course', history: [], flowVariant: 'broad_pain' }), []);
     const detailed = api.buildMetaAdFoundersPassFirstReply('What will I learn week by week?', { flowVariant: 'broad_pain' });
     assert.equal(detailed.firstReplyIntent, 'curriculum');
     assert.match(detailed.joined, /Week 1/i);
