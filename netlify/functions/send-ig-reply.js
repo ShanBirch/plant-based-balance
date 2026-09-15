@@ -1,3 +1,4 @@
+const { sendRejectedMediaWithRetry, deliveredPrefix } = require('./_lib/ig-media-recovery');
 const { resolveMessengerRoute, isMessengerWindowOpen, getMessengerToken, sendMessengerItem } = require('./_lib/facebook-messenger');
 const { outboundAnswersOlderInbound, recordDeliveredChunk } = require('./_lib/ig-reply-source');
 /**
@@ -1881,7 +1882,11 @@ function buildInstagramGraphImageMessagePayload({ recipientId, imageUrl, tag }) 
     };
 }
 
-async function postInstagramGraphImage({ recipientId, accountId, imageUrl, tag }) {
+async function postInstagramGraphImage(args) {
+    return sendRejectedMediaWithRetry(() => postInstagramGraphImageAttempt(args), sleep);
+}
+
+async function postInstagramGraphImageAttempt({ recipientId, accountId, imageUrl, tag }) {
     const accessToken = await getInstagramGraphAccessToken(accountId);
     if (!accessToken) throw new Error('INSTAGRAM_GRAPH_ACCESS_TOKEN not configured');
     if (!recipientId) throw new Error('Instagram Graph recipient id missing');
@@ -1901,7 +1906,9 @@ async function postInstagramGraphImage({ recipientId, accountId, imageUrl, tag }
     try { parsed = responseText ? JSON.parse(responseText) : {}; } catch { parsed = { raw: responseText }; }
     if (!res.ok) {
         const detail = parsed?.error?.message || responseText;
-        throw new Error(`Instagram Graph image ${res.status}: ${String(detail || '').slice(0, 400)}`);
+        const error = new Error(`Instagram Graph image ${res.status}: ${String(detail || '').slice(0, 400)}`);
+        error.retryableMediaRejection = res.status >= 500 && !!parsed?.error && !parsed?.message_id && !parsed?.id;
+        throw error;
     }
     return parsed;
 }
@@ -2828,6 +2835,15 @@ exports.handler = async (event) => {
 
     let claimedAlert;
     let sendClaimId = '';
+    let priorDelivered = [];
+    if (shouldUseGraph) {
+        try {
+            const receipts = await supabase(`ig_messages?select=id,text,created_at,manychat_message_id&thread_id=eq.${encodeURIComponent(igThreadId)}&alert_id=eq.${encodeURIComponent(alertId)}&direction=eq.out&order=created_at.asc`);
+            priorDelivered = deliveredPrefix(outboundItems, receipts, GRAPH_SUBSCRIBER_PREFIX);
+        } catch (error) {
+            return { statusCode: 409, body: JSON.stringify({ error: error.message, code: 'delivery_receipt_review_required' }) };
+        }
+    }
     try {
         const conversationDelta = await getAutomatedInstagramConversationDelta({ alert, alertData, source });
         if (conversationDelta) {
@@ -2877,13 +2893,13 @@ exports.handler = async (event) => {
 
     // 3. Send each chunk via the selected transport with delays. Stop on first failure so
     //    we don't keep dispatching after a bad chunk.
-    const sendResults = [];
+    const sendResults = [...priorDelivered];
     const sentChunkGapsMs = [];
     const instagramTypingActions = [];
     let firstError = null;
     const deliveryTransport = shouldUseMessenger ? 'facebook_messenger' : (shouldUseGraph ? 'instagram_graph' : 'manychat');
     const graphMessagePrefix = shouldUseMessenger ? `fb_graph:${messengerRoute.pageId}:` : GRAPH_SUBSCRIBER_PREFIX;
-    for (let i = 0; i < outboundItems.length; i++) {
+    for (let i = priorDelivered.length; i < outboundItems.length; i++) {
         let typingStartedForChunk = false;
         if (i === 0 && shouldUseGraph) {
             const firstItem = outboundItems[0];

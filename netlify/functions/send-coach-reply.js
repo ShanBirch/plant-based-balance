@@ -581,7 +581,7 @@ exports.handler = async (event) => {
         try {
             // Native video delivery can outlive the HTTP gateway while still succeeding.
             // Queue the same guarded sender; only its canonical readback marks delivery.
-            const backgroundMedia = alertData.meta_ad_fast_lane === true && !!alertData.draft_video_attachment_url;
+            const backgroundMedia = alertData.meta_ad_fast_lane === true && !!(alertData.draft_video_attachment_url || alertData.draft_image_attachment_url);
             const endpoint = backgroundMedia ? 'send-ig-reply-background' : 'send-ig-reply';
             const res = await fetch(`${SITE_URL}/.netlify/functions/${endpoint}`, {
                 method: 'POST',

@@ -769,6 +769,9 @@ async function dispatchScheduledMetaAdReplyNow({ alertId, scheduledFor, replyTex
         return { attempted: true, ok: false, status: response.status,
             code: String(failure.code || 'immediate_dispatch_failed').slice(0, 120),
             error: String(failure.error || responseText).slice(0, 1200),
+            details: String(failure.details || '').slice(0, 1200),
+            chunks_sent: failure.chunks_sent ?? null,
+            chunks_total: failure.chunks_total ?? null,
         };
     }
     return { attempted: true, ok: true, status: response.status };
@@ -3090,10 +3093,9 @@ async function stampIgAutoSendHoldForReview({ thread, alertId, alertData, reason
     };
     if (alertId) {
         try {
-            await supabaseQuery(`coach_alerts?id=eq.${encodeURIComponent(alertId)}`, {
-                method: 'PATCH',
-                body: { data: heldData },
-                prefer: 'return=minimal',
+            return await require('./_lib/ig-media-recovery').persistReviewHold({
+                query: supabaseQuery, alertId, fallbackData: alertData,
+                hold: heldData.auto_send_review_hold,
             });
         } catch (e) {
             console.warn('[ig-draft] failed to stamp auto-send hold reason:', e.message);
