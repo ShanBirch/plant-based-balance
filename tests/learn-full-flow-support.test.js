@@ -3,6 +3,15 @@ const api=require('../netlify/functions/ig-instant-draft')._test;
 const send=require('../netlify/functions/send-ig-reply')._test;
 const {LEARN_SUPPORT_CHOICE}=require('../netlify/functions/_lib/paid-meta-zoom');
 
+test('course question interrupts blocker discovery without being mistaken for a struggle',()=>{
+ const history=[{direction:'in',text:'I want to lose weight'},{direction:'out',text:'This is Ally.'},{direction:'out',text:'[IMAGE:proof]'},{direction:'out',text:'What usually gets in the way of making that happen consistently?'}];
+ const currentMessage='Whats the details of the course';
+ const draft=api.buildDeterministicPaidMetaConversationReply({currentMessage,history,flowVariant:'broad_pain'});
+ assert.match(draft.joined,/lessons help you understand/);assert.match(draft.joined,/hardest/);
+ assert.equal(draft.videoAttachmentUrl,undefined);assert.doesNotMatch(draft.joined,/preview|\$149|Zoom/);
+ assert.deepEqual(api.collectPaidMetaWriterContractIssues({draft,currentMessage,history,flowVariant:'broad_pain'}),[]);
+});
+
 test('live coalesced duplicate goal records produce one current turn',()=>{
  const currentMessage=api.buildCurrentInboundTurnText('Whats the details of the course',[
   {text:'I want to lose weight',created_at:'2026-09-15T00:07:19.804+00:00'},

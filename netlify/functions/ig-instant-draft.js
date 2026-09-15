@@ -2209,7 +2209,14 @@ function buildDeterministicPaidMetaConversationReply({
     // question we have not asked. Preserve the proof step for the whole burst.
     const lastGoalPrompt = [...history].reverse().find(item => item?.direction === 'out');
     const unansweredBurst = paidMetaCurrentInboundRunText(history, message);
-    const overviewBurst = paidMetaGoalWithOverviewQuestion(message) || paidMetaGoalWithOverviewQuestion(unansweredBurst);
+    const overviewBurst = paidMetaGoalWithOverviewQuestion(unansweredBurst) || paidMetaGoalWithOverviewQuestion(message);
+    if (broadFlow && overviewBurst && !overviewBurst.goal && historyHasGoal
+        && paidMetaOutboundAskedForBlocker(lastGoalPrompt?.text || '')) {
+        return guidedReply([
+            "The lessons help you understand your habits, and the practical actions help you apply that to food and training. You work through them in the app, with my weekly check-in to review how things are going.",
+            "What's been hardest about staying consistent for you?"
+        ], {paidMetaVerifiedAccessFaq:true});
+    }
     const goalBurst = overviewBurst?.goal || (PAID_META_FITNESS_GOAL_RE.test(message) && isPaidMetaBareGoalMessage(message)
         ? message : unansweredBurst);
     if (broadFlow && paidMetaOutboundAskedForGoal(lastGoalPrompt?.text || '')
@@ -2714,7 +2721,7 @@ function paidMetaGoalWithOverviewQuestion(message = '') {
     question.lastIndex = 0;
     const goal = text.replace(question, '').replace(/\s+/g, ' ').trim();
     // This exact FAQ exception must not swallow another question or a blocker.
-    return isPaidMetaBareGoalMessage(goal) ? { goal } : null;
+    return !goal || isPaidMetaBareGoalMessage(goal) ? { goal } : null;
 }
 
 function isPaidMetaBareGoalMessage(message = '') {
@@ -5703,6 +5710,7 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
     // the whole approved offer even if that obstacle is not in a keyword list.
     const lastOutboundForStage = [...history].reverse().find(item => item?.direction === 'out');
     const writerProgressedAfterBlocker = broadFlow
+        && !overviewGoalTurn
         && paidMetaOutboundAskedForBlocker(lastOutboundForStage?.text || '')
         && !/\?/.test(turn) && /\b(?:Learn|preview)\b/i.test(reply);
     const earnedBroadOfferNow = !exactAcceptedPreview && knownBroadGoal
@@ -5741,6 +5749,7 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
         && replyQuestions.some(question => paidMetaOutboundAskedForGoal(question));
     if (!resumesExplicitlyDeferredGoal
         && !resumesUnansweredGoalAfterFaq
+        && !overviewGoalTurn
         && replyQuestions.some(question => previousQuestions.some(previous => (
         normalizeQuestion(previous) === normalizeQuestion(question)
         || (!!questionKind(question) && questionKind(previous) === questionKind(question))
