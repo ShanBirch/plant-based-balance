@@ -2709,7 +2709,7 @@ function shouldApplyDeterministicPaidMetaReplyOverride(draft = null) {
 
 function paidMetaGoalWithOverviewQuestion(message = '') {
     const text = String(message || '').trim();
-    const question = /\b(?:what['’]?s (?:the |this )?course about|what is (?:the |this )?course about|what does (?:the |this )?course (?:cover|teach)|can you (?:explain|tell me about) (?:the |this )?course)\s*\?/ig;
+    const question = /\b(?:what['’]?s (?:the |this )?course about|what is (?:the |this )?course about|what(?:['’]?s| is| are) (?:the )?details (?:of|for|about) (?:the |this )?course|(?:can you (?:give|send) me |tell me )?(?:the |more )?details (?:of|for|about) (?:the |this )?course|what does (?:the |this )?course (?:cover|teach)|can you (?:explain|tell me about) (?:the |this )?course)[?.!\s]*/ig;
     if (!question.test(text)) return null;
     question.lastIndex = 0;
     const goal = text.replace(question, '').replace(/\s+/g, ' ').trim();
@@ -5668,7 +5668,14 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
         || paidMetaHistoryHasConcreteBlocker(history)
         || qualifierHasKnownMetaAdBlocker(qualifier)
     );
-    const suppliedContextBeyondBareGoal = !isPaidMetaBareGoalMessage(turn) && !paidMetaGoalWithOverviewQuestion(turn)
+    const overviewGoalTurn = paidMetaGoalWithOverviewQuestion(turn)
+        || paidMetaGoalWithOverviewQuestion(paidMetaCurrentInboundRunText(history, turn));
+    if (broadFlow && overviewGoalTurn && paidMetaOutboundAskedForGoal(lastPaidMetaOutbound(history)?.text || '')) {
+        if (!paidMetaOutboundAskedForBlocker(reply)) issues.push('The lead answered the goal question and asked for course information, not the offer. Answer the question and ask the one real-life blocker question before preview or video.');
+        const proof = resolvePaidMetaTransformationProof({goalText:overviewGoalTurn.goal});
+        if (proof && !draft?.imageAttachmentUrl) issues.push('The goal discovery reply is missing its introduced matching client photo. Preserve the proof attachment before moving to the blocker.');
+    }
+    const suppliedContextBeyondBareGoal = !isPaidMetaBareGoalMessage(turn) && !overviewGoalTurn
         && (turn.split(/\s+/).length >= 12 || history.some(item => item?.direction === 'out' && paidMetaOutboundAskedForBlocker(item.text)));
     if (knownBroadGoal && suppliedContextBeyondBareGoal && paidMetaOutboundAskedForGoal(reply)) {
         issues.push('The earned paid-Meta offer is missing: the lead already supplied their goal and context or uncertainty, but the reply asks for their goal again. Keep their stated goal and move forward without another goal question.');

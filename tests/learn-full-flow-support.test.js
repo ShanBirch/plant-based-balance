@@ -3,6 +3,22 @@ const api=require('../netlify/functions/ig-instant-draft')._test;
 const send=require('../netlify/functions/send-ig-reply')._test;
 const {LEARN_SUPPORT_CHOICE}=require('../netlify/functions/_lib/paid-meta-zoom');
 
+test('goal then course-details fragment without punctuation preserves discovery',()=>{
+ const opener={direction:'out',text:"Hey, how are you? What's the main change you want in the next six weeks?"};
+ for(const question of ['Whats the details of the course','What are the details of the course?','Can you give me the details of the course','Tell me more details about the course']){
+  for(const combined of [false,true]){
+   const history=[opener,{direction:'in',text:'I want to lose weight'}];
+   const currentMessage=combined?`I want to lose weight\n${question}`:question;
+   const draft=api.buildDeterministicPaidMetaConversationReply({currentMessage,history,flowVariant:'broad_pain'});
+   assert.ok(draft?.imageAttachmentUrl,question);
+   assert.match(draft.joined,/This is Ally/);assert.match(draft.joined,/gets in the way/);
+   assert.doesNotMatch(draft.joined,/preview|\$149|Zoom/);
+   assert.equal(api.selectFastDeterministicPaidMetaProgression({draft,currentMessage}),draft);
+   assert.deepEqual(api.collectPaidMetaWriterContractIssues({draft,currentMessage,history,flowVariant:'broad_pain'}),[]);
+  }
+ }
+});
+
 for(const [index,question,goal] of [
  [1,'Whats the course about?','I want to lose some weight!'],
  [2,"What's the course about?",'I need to lose weight, 15 kilos'],
