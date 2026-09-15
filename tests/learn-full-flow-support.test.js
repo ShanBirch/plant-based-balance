@@ -3,6 +3,15 @@ const api=require('../netlify/functions/ig-instant-draft')._test;
 const send=require('../netlify/functions/send-ig-reply')._test;
 const {LEARN_SUPPORT_CHOICE}=require('../netlify/functions/_lib/paid-meta-zoom');
 
+test('double FAQ answers cannot skip a still-unanswered blocker',()=>{
+ const history=[{direction:'in',text:'I want to build strength'},{direction:'out',text:'What usually gets in the way of making that happen consistently?'}];
+ const draft={chunks:['Yep, you can train at home. The workout plan fits your setup.','No, you do not have to eat vegan food. The meal plan fits your dietary preferences.','If you want, I can send the free personalised app preview.'],model:'writer'};
+ const d=api.preservePaidMetaPendingBlocker({draft,history,currentMessage:'Can I train at home? And do I have to eat vegan food?'});
+ assert.match(d.joined,/train at home/);assert.match(d.joined,/not have to eat vegan/);
+ assert.doesNotMatch(d.joined,/preview/);assert.match(d.joined,/hardest/);
+ for(const currentMessage of ['I work nights. Can I train at home?','Show me the preview','No thanks'])assert.equal(api.preservePaidMetaPendingBlocker({draft,history,currentMessage}),draft);
+});
+
 test('course question interrupts blocker discovery without being mistaken for a struggle',()=>{
  const history=[{direction:'in',text:'I want to lose weight'},{direction:'out',text:'This is Ally.'},{direction:'out',text:'[IMAGE:proof]'},{direction:'out',text:'What usually gets in the way of making that happen consistently?'}];
  const currentMessage='Whats the details of the course';

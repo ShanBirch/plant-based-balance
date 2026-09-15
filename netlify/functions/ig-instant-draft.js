@@ -5964,6 +5964,26 @@ function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = 
     };
 }
 
+function preservePaidMetaPendingBlocker({draft, history = [], currentMessage = ''} = {}) {
+    if (!draft || draft.error || draft.appPreviewHandoff || draft.checkoutUrl || draft.paidMetaZoomHandoff
+        || isExplicitPaidMetaPreviewRequest(currentMessage) || hasDirectPaidMetaCheckoutIntent(currentMessage)
+        || META_AD_FIRST_REPLY_OPT_OUT_RE.test(currentMessage) || META_AD_FIRST_REPLY_REVIEW_REQUIRED_RE.test(currentMessage)) return draft;
+    const last = lastPaidMetaOutbound(history);
+    if (!paidMetaOutboundAskedForBlocker(last?.text || '')) return draft;
+    const text = String(currentMessage || '').trim();
+    const parts = text.split(/[?\n]+/).map(x=>x.trim()).filter(Boolean);
+    const questionOnly = parts.length && parts.every(x=>/^(?:(?:and|also|but)\s+)?(?:what|how|why|when|where|who|can|could|do|does|is|are|will|would)\b/i.test(x));
+    if (!questionOnly) return draft;
+    const chunks = (draft.chunks?.length ? draft.chunks : [draft.joined]).map(chunk=>String(chunk || '').split(/\n+|(?<=[.!?])\s+/)
+        .filter(x=>x.trim() && !/\b(?:preview|checkout|here(?:'s| is) (?:the |a )?(?:course )?video|would you prefer)\b/i.test(x)
+            && !paidMetaOutboundAskedForBlocker(x)).join(' ')).filter(Boolean);
+    if (!chunks.length) return draft;
+    chunks.push("What's been hardest about staying consistent for you?");
+    return {...draft,chunks,joined:chunks.join('\n\n'),videoAttachmentUrl:null,appPreviewUrl:null,
+        replyMode:'campaign_sales_progression',model:'deterministic_paid_meta_guided_sales_v1',paidMetaVerifiedAccessFaq:true,
+        paidMetaPendingBlocker:true,maxChunks:Math.max(MAX_CHUNKS,chunks.length)};
+}
+
 function paidMetaCurrentInboundRunText(history = [], currentMessage = '') {
     const messages = Array.isArray(history) ? history : [];
     const run = [];
@@ -10299,6 +10319,12 @@ exports.handler = async (event) => {
             }
         }
         if (metaAdConversationFastLane && !thread.linked_user_id && blockingPaidMetaContractIssues.length === 0) {
+            const pendingBlocker = preservePaidMetaPendingBlocker({draft,history:displayHistory,currentMessage:currentInboundTurnMessage});
+            if (pendingBlocker !== draft) {
+                draft = pendingBlocker;
+                currentAlertData = await persistCocosDraftRepair({alertId,currentAlertData,draft,challengeOfferWarning,
+                    repairField:'paid_meta_pending_blocker',repairMeta:{status:'accepted',repaired_at:new Date().toISOString()}});
+            }
             const personalised = await personalisePaidMetaOffer({draft,currentMessage:currentInboundTurnMessage,history:displayHistory});
             if (personalised !== draft) {
                 draft = personalised;
@@ -10839,6 +10865,7 @@ exports._test = {
     resolveInternalTestConversationResetAt,
     resolveInternalTestVoiceCooldownResetAt,
     buildCurrentInboundTurnText,
+    preservePaidMetaPendingBlocker,
     buildInternalTestQualifierThread,
     filterInternalTestHistoryAfterReset,
     isExerciseConversationFastLaneEligible,
