@@ -4843,11 +4843,11 @@ function resolveInternalTestVoiceCooldownResetAt(customData = {}, history = []) 
 }
 
 function buildCurrentInboundTurnText(currentMessage = '', recentInboundMessages = []) {
-    return [
+    return [...new Set([
         ...(Array.isArray(recentInboundMessages) ? recentInboundMessages : [])
             .map(message => String(message?.text || '').trim()),
         String(currentMessage || '').trim(),
-    ].filter(Boolean).join('\n');
+    ].filter(Boolean))].join('\n');
 }
 
 function buildInternalTestQualifierThread(thread = {}, history = []) {
@@ -5964,11 +5964,13 @@ function paidMetaCurrentInboundRunText(history = [], currentMessage = '') {
         if (direction === 'out') break;
         if (direction === 'in') {
             const text = String(message?.text || '').replace(/\s+/g, ' ').trim();
-            if (text) run.unshift(text);
+            if (text && !run.includes(text)) run.unshift(text);
         }
     }
     const current = String(currentMessage || '').replace(/\s+/g, ' ').trim();
-    if (current && !run.some(text => text.toLowerCase() === current.toLowerCase())) run.push(current);
+    const combined = run.join(' ').trim();
+    if (current && current.includes(combined) && combined) return current;
+    if (current && !run.includes(current)) run.push(current);
     return run.join(' ').trim();
 }
 

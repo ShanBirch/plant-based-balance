@@ -3,11 +3,22 @@ const api=require('../netlify/functions/ig-instant-draft')._test;
 const send=require('../netlify/functions/send-ig-reply')._test;
 const {LEARN_SUPPORT_CHOICE}=require('../netlify/functions/_lib/paid-meta-zoom');
 
+test('live coalesced duplicate goal records produce one current turn',()=>{
+ const currentMessage=api.buildCurrentInboundTurnText('Whats the details of the course',[
+  {text:'I want to lose weight',created_at:'2026-09-15T00:07:19.804+00:00'},
+  {text:'I want to lose weight',created_at:'2026-09-15T00:07:19.804Z'},
+ ]);
+ assert.equal(currentMessage,'I want to lose weight\nWhats the details of the course');
+ const history=[{direction:'out',text:"What's the main change you want in the next six weeks?"},{direction:'in',text:'I want to lose weight'},{direction:'in',text:'I want to lose weight'}];
+ const draft=api.buildDeterministicPaidMetaConversationReply({currentMessage,history,flowVariant:'broad_pain'});
+ assert.ok(draft.imageAttachmentUrl);assert.match(draft.joined,/gets in the way/);
+});
+
 test('goal then course-details fragment without punctuation preserves discovery',()=>{
  const opener={direction:'out',text:"Hey, how are you? What's the main change you want in the next six weeks?"};
  for(const question of ['Whats the details of the course','What are the details of the course?','Can you give me the details of the course','Tell me more details about the course']){
   for(const combined of [false,true]){
-   const history=[opener,{direction:'in',text:'I want to lose weight'}];
+   const history=[opener,{direction:'in',text:'I want to lose weight',created_at:'2026-09-15T00:07:19.804+00:00'},{direction:'in',text:'I want to lose weight',created_at:'2026-09-15T00:07:19.804Z'}];
    const currentMessage=combined?`I want to lose weight\n${question}`:question;
    const draft=api.buildDeterministicPaidMetaConversationReply({currentMessage,history,flowVariant:'broad_pain'});
    assert.ok(draft?.imageAttachmentUrl,question);
