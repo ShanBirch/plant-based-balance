@@ -2931,6 +2931,12 @@ function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draf
         && ['campaign_sales_progression', 'campaign_buyer_handoff', 'campaign_app_preview_handoff'].includes(String(draft?.replyMode || ''));
     const verifiedGuaranteedPaidMetaOffer = draft?.paidMetaGuaranteedContract === true
         && draft?.replyMode === 'campaign_sales_progression';
+    const verifiedRequestedVideoResend = !linkedUserId && alertData?.meta_ad_conversation_fast_lane === true
+        && alertData?.paid_meta_conversation_approval?.required === false
+        && alertData?.paid_meta_conversation_approval?.code === 'approved_meta_ad_sales_progression'
+        && draft?.replyMode === 'campaign_native_video_retry'
+        && /^deterministic_paid_meta_video_retry_v\d+$/.test(String(draft?.model || ''))
+        && isBalanceFoundationsAppProofVideoUrl(draft?.videoAttachmentUrl);
     // A reviewed invitation to see a free preview is an ordinary next step for
     // an ad lead who has supplied a goal and context. Do not apply the organic
     // coaching-pitch timing rule just because this reply used the AI writer.
@@ -3009,6 +3015,7 @@ function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draf
     }
     if (!verifiedPaidMetaProgression
         && !verifiedGuaranteedPaidMetaOffer
+        && !verifiedRequestedVideoResend
         && !verifiedPaidMetaPreviewInvitation
         && draft?.appPreviewHandoff !== true
         && isPrematureChallengeInvite({ draftText: draft.joined, currentMessage, qualifier, leadStage, linkedUserId, leadReplyCount: meaningfulLeadReplyCount })) {

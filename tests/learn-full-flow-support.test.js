@@ -224,6 +224,9 @@ test('missing course video request retries media without repitch or premature pr
   assert.equal(api.ensurePaidMetaAppVideoPreviewCta(draft),draft);
   assert.deepEqual(api.collectPaidMetaWriterContractIssues({draft,currentMessage,history,flowVariant:'broad_pain'}),[]);
   assert.equal(api.buildPaidMetaConversationApproval({draft,currentMessage,history,metaAdConversationFastLane:true}).required,false);
+  const holdArgs={draft,currentMessage,draftReview:{verdict:'pass',issues:[],confidence:1,notification_required:false,context_loss_suspected:false},qualifier:{facts:{}},leadStage:'qualifying',meaningfulLeadReplyCount:3,alertData:{meta_ad_conversation_fast_lane:true,paid_meta_conversation_approval:api.buildPaidMetaConversationApproval({draft,currentMessage,history,metaAdConversationFastLane:true})}};
+  assert.equal(api.getAutoDmHoldReason(holdArgs),null);
+  assert.equal(api.getAutoDmHoldReason({...holdArgs,contextReview:{required:true}})?.code,'context_review');
   const replaced={joined:'I can resend the video. Balance Learn is a six-week course for $149.',model:'writer',replyMode:'campaign_sales_progression'};
   const issues=api.collectPaidMetaWriterContractIssues({draft:replaced,currentMessage,history,flowVariant:'broad_pain'});
   assert.ok(issues.some(x=>/Explicit course video resend/.test(x)));
