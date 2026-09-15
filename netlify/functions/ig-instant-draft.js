@@ -1801,7 +1801,8 @@ function isExplicitPaidMetaProofVideoRetry({ currentMessage = '', history = [] }
     const directVideoRequest = /\b(?:show|send)(?:\s+me)?\s+(?:the\s+)?(?:(?:actual|course|app)\s+){0,2}(?:vid|video)(?:\s+again)?\b/i.test(message)
         || /\b(?:vid|video)\s+(?:again|please|pls|plz)\b/i.test(message);
     const failedDelivery = /\b(?:can(?:not|'t)|couldn(?:'t)?|didn(?:'t)?)\s+(?:see|watch|open|load)\s+(?:it|the\s+(?:vid|video))\b/i.test(message)
-        || /\b(?:it|the\s+(?:vid|video))\s+(?:isn't|is\s+not|didn't)\s+(?:showing|loading|coming\s+through)\b/i.test(message);
+        || /\b(?:it|the\s+(?:vid|video))\s+(?:isn't|is\s+not|didn't)\s+(?:showing|loading|coming\s+through)\b/i.test(message)
+        || /\b(?:the\s+)?(?:vid|video)\s+(?:hasn['’]?t|has not|didn['’]?t|did not)\s+(?:come through|arriv\w*|load\w*)\b/i.test(message);
     if (directVideoRequest) return true;
     if (!failedDelivery) return false;
 
@@ -1813,20 +1814,24 @@ function isExplicitPaidMetaProofVideoRetry({ currentMessage = '', history = [] }
     return /\b(?:video|vid|quick\s+(?:look|video)|watch(?:ed)?|here\s+it\s+is)\b/i.test(recentOutbound);
 }
 
-function buildPaidMetaProofVideoRetryReply(currentMessage = '') {
+function buildPaidMetaProofVideoRetryReply(currentMessage = '', {history = [], flowVariant} = {}) {
     const failedDelivery = /\b(?:can(?:not|'t)|couldn(?:'t)?|didn(?:'t)?)\s+(?:see|watch|open|load)\s+(?:it|the\s+(?:vid|video))\b/i.test(String(currentMessage || ''));
     const joined = failedDelivery
-        ? `Ah sorry, it didn't come through properly. I've sent the course video again.`
+        ? `Yep, here is the course video again.`
         : /\b(?:again|resend)\b/i.test(String(currentMessage || ''))
             ? `Yep, here is the course video again.`
             : `Yep, here is the course video.`;
+    const chunks = [joined];
+    const priorOut = history.filter(item => item?.direction === 'out').map(item => String(item.text || ''));
+    if (flowVariant === 'broad_pain' && priorOut.some(text => /Here's the course video/i.test(text))
+        && !priorOut.some(text => text.includes(LEARN_SUPPORT_CHOICE))) chunks.push(LEARN_SUPPORT_CHOICE);
     return {
-        chunks: [joined],
-        joined,
+        chunks,
+        joined: chunks.join('\n\n'),
         videoAttachmentUrl: resolveBalanceFoundationsAppProofVideoUrl(),
         model: 'deterministic_paid_meta_video_retry_v1',
         replyMode: 'campaign_native_video_retry',
-        maxChunks: 1,
+        maxChunks: chunks.length,
         error: null,
     };
 }
@@ -3513,6 +3518,13 @@ function buildPaidMetaConversationApproval({
         ? [...(draft.mediaDecode.audio_transcripts || []).map(item => item?.text), ...(draft.mediaDecode.video_processing || []).map(item=>item?.transcript)].map(text=>String(text || '').trim()).filter(Boolean)
         : [];
     const message = [String(currentMessage || '').trim(), ...new Set(decodedAudio)].filter(Boolean).join('\n');
+    if (metaAdConversationFastLane && !linkedUserId && !draft?.error
+        && draft?.replyMode === 'campaign_native_video_retry'
+        && isExplicitPaidMetaProofVideoRetry({currentMessage:message,history})
+        && isBalanceFoundationsAppProofVideoUrl(draft?.videoAttachmentUrl)
+        && !META_AD_FIRST_REPLY_OPT_OUT_RE.test(message) && !META_AD_FIRST_REPLY_REVIEW_REQUIRED_RE.test(message)) {
+        return {required:false,code:'approved_meta_ad_sales_progression',label:'requested course video resend',reason:'Explicit media resend request using the approved course video.',detected_at:new Date().toISOString()};
+    }
     const verifiedExplicitPreviewHandoff = draft?.replyMode === 'campaign_app_preview_handoff'
         && draft?.appPreviewHandoff === true
         && isMetaAppPreviewUrl(draft?.appPreviewUrl)
@@ -5455,6 +5467,7 @@ function attachPaidMetaWriterSelectedMedia(draft = {}, {
 }
 
 function ensurePaidMetaAppVideoPreviewCta(draft = {}) {
+    if (draft?.replyMode === 'campaign_native_video_retry') return draft;
     if (!isBalanceFoundationsAppProofVideoUrl(draft?.videoAttachmentUrl)) return draft;
     const replyText = draftTextFromDraft(draft);
     // The approved broad flow chooses support after the video. Adding the
@@ -5499,6 +5512,8 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
     const reply = draftTextFromDraft(draft);
     const turn = String(currentMessage || '').replace(/\s+/g, ' ').trim();
     if (!reply || !turn) return [];
+    if (draft?.replyMode === 'campaign_native_video_retry' && isExplicitPaidMetaProofVideoRetry({currentMessage:turn,history})
+        && reply === buildPaidMetaProofVideoRetryReply(turn,{history,flowVariant}).joined) return [];
     if (flowVariant === 'broad_pain' && resolveLearnSupportChoice(turn, history) === 'clarify') {
         return reply === LEARN_SUPPORT_CHOICE ? [] : ['Ambiguous support choice: clarify app workouts versus Zoom before proceeding.'];
     }
@@ -8995,7 +9010,7 @@ exports.handler = async (event) => {
         && isExplicitPaidMetaProofVideoRetry({ currentMessage: messageText, history })) {
         draft = {
             ...draft,
-            ...buildPaidMetaProofVideoRetryReply(messageText),
+            ...buildPaidMetaProofVideoRetryReply(messageText,{history,flowVariant:metaAdFlowVariant}),
             flowVariant: metaAdFlowVariant,
         };
     }

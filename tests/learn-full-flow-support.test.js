@@ -214,6 +214,20 @@ test('goal to photo to blocker to video to support choice then either destinatio
 const unclear=api.buildDeterministicPaidMetaConversationReply({...base,currentMessage:'Yes'});assert.equal(unclear.paidMetaSupportChoice,true);assert.equal(unclear.joined,LEARN_SUPPORT_CHOICE);
 });
 
+test('missing course video request retries media without repitch or premature preview',()=>{
+ const history=[{direction:'in',text:'I want better body composition'},{direction:'out',text:"It's one AUD $149 payment, with no subscription or auto-renewal. Here's the course video."}];
+ for(const currentMessage of ["The video hasn't come through. Can you send it again?",'The video did not arrive','The video hasn’t loaded']) {
+  assert.equal(api.isExplicitPaidMetaProofVideoRetry({currentMessage,history}),true);
+  const draft=api.buildPaidMetaProofVideoRetryReply(currentMessage,{history,flowVariant:'broad_pain'});
+  assert.ok(draft.videoAttachmentUrl);assert.equal(draft.chunks.at(-1),LEARN_SUPPORT_CHOICE);
+  assert.doesNotMatch(draft.joined,/149|preview|conflicting advice/);
+  assert.equal(api.ensurePaidMetaAppVideoPreviewCta(draft),draft);
+  assert.deepEqual(api.collectPaidMetaWriterContractIssues({draft,currentMessage,history,flowVariant:'broad_pain'}),[]);
+  assert.equal(api.buildPaidMetaConversationApproval({draft,currentMessage,history,metaAdConversationFastLane:true}).required,false);
+ }
+ assert.equal(api.isExplicitPaidMetaProofVideoRetry({currentMessage:'My parcel has not arrived',history}),false);
+});
+
 test('ambiguous support acceptance cannot become a repeated pitch or guessed handoff',()=>{
  const history=[{direction:'out',text:LEARN_SUPPORT_CHOICE}];
  for(const currentMessage of ['Yes','Sure','Okay']) {

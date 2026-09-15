@@ -377,15 +377,15 @@ test('explicit paid Meta video retry always carries the currently approved nativ
 
     const draft = buildPaidMetaProofVideoRetryReply("I can't see it");
     assert.equal(draft.videoAttachmentUrl, resolveBalanceFoundationsAppProofVideoUrl());
-    assert.match(draft.joined, /sent the course video again/i);
+    assert.match(draft.joined, /here is the course video again/i);
     assert.doesNotMatch(draft.joined, /\?/);
     assert.equal(maySendDraftVideoAttachment({
         videoUrl: draft.videoAttachmentUrl,
         replyText: draft.joined,
     }), true);
     const completed = ensurePaidMetaAppVideoPreviewCta(draft);
-    assert.match(completed.joined, /free personalised preview/i);
-    assert.equal((completed.joined.match(/\?/g) || []).length, 1);
+    assert.equal(completed, draft, 'resending media does not earn a new preview pitch');
+    assert.equal((completed.joined.match(/\?/g) || []).length, 0);
     assert.doesNotMatch(completed.joined, /\[course video\]/i);
     assert.equal(maySendDraftVideoAttachment({
         videoUrl: BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL,
