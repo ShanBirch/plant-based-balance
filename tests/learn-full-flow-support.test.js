@@ -3,6 +3,17 @@ const api=require('../netlify/functions/ig-instant-draft')._test;
 const send=require('../netlify/functions/send-ig-reply')._test;
 const {LEARN_SUPPORT_CHOICE}=require('../netlify/functions/_lib/paid-meta-zoom');
 
+test('goal bundled with multiple answered questions still needs proof and struggle',()=>{
+ const history=[{direction:'out',text:"What's the main change you want in the next six weeks?"}];
+ const draft={chunks:['Yep, you can train at home. And no, it does not have to be vegan food.','The meal plan fits your dietary preferences.','If muscle gain is your goal, I can show you the personalised app preview.']};
+ const currentMessage='I want to build muscle. Can I train at home? Do I have to eat vegan food?';
+ const d=api.preservePaidMetaPendingBlocker({draft,history,currentMessage});
+ assert.match(d.joined,/train at home/);assert.match(d.joined,/not have to be vegan/);
+ assert.match(d.joined,/This is Gen/);assert.ok(d.imageAttachmentUrl);assert.match(d.joined,/gets in the way/);
+ assert.doesNotMatch(d.joined,/preview/);
+ assert.equal(api.preservePaidMetaPendingBlocker({draft,history,currentMessage:'I want to build muscle. I work nights. Can I train at home?'}),draft);
+});
+
 test('double FAQ answers cannot skip a still-unanswered blocker',()=>{
  const history=[{direction:'in',text:'I want to build strength'},{direction:'out',text:'What usually gets in the way of making that happen consistently?'}];
  const draft={chunks:['Yep, you can train at home. The workout plan fits your setup.','No, you do not have to eat vegan food. The meal plan fits your dietary preferences.','If you want, I can send the free personalised app preview.'],model:'writer'};

@@ -5969,17 +5969,24 @@ function preservePaidMetaPendingBlocker({draft, history = [], currentMessage = '
         || isExplicitPaidMetaPreviewRequest(currentMessage) || hasDirectPaidMetaCheckoutIntent(currentMessage)
         || META_AD_FIRST_REPLY_OPT_OUT_RE.test(currentMessage) || META_AD_FIRST_REPLY_REVIEW_REQUIRED_RE.test(currentMessage)) return draft;
     const last = lastPaidMetaOutbound(history);
-    if (!paidMetaOutboundAskedForBlocker(last?.text || '')) return draft;
     const text = String(currentMessage || '').trim();
     const parts = text.split(/[?\n]+/).map(x=>x.trim()).filter(Boolean);
     const questionOnly = parts.length && parts.every(x=>/^(?:(?:and|also|but)\s+)?(?:what|how|why|when|where|who|can|could|do|does|is|are|will|would)\b/i.test(x));
-    if (!questionOnly) return draft;
+    const sentences = text.split(/[.!?\n]+/).map(x=>x.trim()).filter(Boolean);
+    const goals = sentences.filter(x=>isPaidMetaBareGoalMessage(x) && PAID_META_FITNESS_GOAL_RE.test(x));
+    const goalWithQuestions = paidMetaOutboundAskedForGoal(last?.text || '') && goals.length > 0
+        && sentences.every(x=>goals.includes(x) || /^(?:(?:and|also|but)\s+)?(?:what|how|why|when|where|who|can|could|do|does|is|are|will|would)\b/i.test(x));
+    if (!(paidMetaOutboundAskedForBlocker(last?.text || '') && questionOnly) && !goalWithQuestions) return draft;
+    if (goalWithQuestions && draft.imageAttachmentUrl && paidMetaOutboundAskedForBlocker(draftTextFromDraft(draft))) return draft;
     const chunks = (draft.chunks?.length ? draft.chunks : [draft.joined]).map(chunk=>String(chunk || '').split(/\n+|(?<=[.!?])\s+/)
         .filter(x=>x.trim() && !/\b(?:preview|checkout|here(?:'s| is) (?:the |a )?(?:course )?video|would you prefer)\b/i.test(x)
             && !paidMetaOutboundAskedForBlocker(x)).join(' ')).filter(Boolean);
     if (!chunks.length) return draft;
-    chunks.push("What's been hardest about staying consistent for you?");
+    const proof = goalWithQuestions ? resolvePaidMetaTransformationProof({goalText:goals.join(' and ')}) : null;
+    if (goalWithQuestions) chunks.push(buildPaidMetaGoalToBlockerText(goals.join(' and '),proof));
+    else chunks.push("What's been hardest about staying consistent for you?");
     return {...draft,chunks,joined:chunks.join('\n\n'),videoAttachmentUrl:null,appPreviewUrl:null,
+        imageAttachmentUrl:proof?.imageUrl || draft.imageAttachmentUrl || null,
         replyMode:'campaign_sales_progression',model:'deterministic_paid_meta_guided_sales_v1',paidMetaVerifiedAccessFaq:true,
         paidMetaPendingBlocker:true,maxChunks:Math.max(MAX_CHUNKS,chunks.length)};
 }
