@@ -2,6 +2,21 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const api = require('../netlify/functions/ig-instant-draft')._test;
 
+test('a vague consistency opener cannot turn the following bare goal into an earned offer', () => {
+    const history = [
+        {direction:'in',text:'I struggle to stay consistent'},
+        {direction:'out',text:'Hey, how are you? Consistency usually is not a knowledge problem.'},
+        {direction:'out',text:"What's the main change you'd like to make over the next six weeks?"},
+    ];
+    const params = {currentMessage:'I want to get stronger',history,flowVariant:'broad_pain',qualifier:{facts:{history_blockers:'struggles to stay consistent'}}};
+    const draft = api.buildDeterministicPaidMetaConversationReply(params);
+    assert.match(draft.joined,/This is Gen/);
+    assert.match(draft.joined,/gets in the way/);
+    assert.ok(draft.imageAttachmentUrl);
+    assert.doesNotMatch(draft.joined,/\$149|six-week course/);
+    assert.deepEqual(api.collectPaidMetaWriterContractIssues({...params,draft}), []);
+});
+
 test('early price and home FAQ cannot promise a quick video when discovery defers the attachment', () => {
     const currentMessage = "What's the price of the course? Can I do the workouts at home?";
     const history = [{direction:'out',text:"What's the main change you want in the next six weeks?"}];

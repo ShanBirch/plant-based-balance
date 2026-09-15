@@ -5733,10 +5733,13 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
     if (knownBroadGoal && suppliedContextBeyondBareGoal && paidMetaOutboundAskedForBlocker(reply)) {
         issues.push('The earned paid-Meta offer is missing: the lead already supplied context or uncertainty, but the reply asks for a generic blocker again. Use the actual answer and move forward without another blocker question.');
     }
+    const answeringGoalPrompt = broadFlow && PAID_META_FITNESS_GOAL_RE.test(turn)
+        && isPaidMetaBareGoalMessage(turn)
+        && paidMetaOutboundAskedForGoal(lastPaidMetaOutbound(history)?.text || '');
     const broadGoalNeedsBlockerQuestion = broadFlow
         && PAID_META_FITNESS_GOAL_RE.test(turn)
         && isPaidMetaBareGoalMessage(turn)
-        && !knownBroadBlocker
+        && (!knownBroadBlocker || answeringGoalPrompt)
         && !autonomyPause
         && !asksForCurriculumOutline
         && !asksOfferInfo
@@ -5759,6 +5762,7 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
         && !/^(?:(?:and|also)\s+)?(?:what|how|why|when|where|who|can|could|do|does|is|are|will|would)\b/i.test(turn)
         && (turn.split(/\s+/).length >= 6 || /\b(?:not sure|don['’]?t know|dunno)\b/i.test(turn));
     const earnedBroadOfferNow = !exactAcceptedPreview && knownBroadGoal
+        && !answeringGoalPrompt
         && (knownBroadBlocker || writerProgressedAfterBlocker)
         && !autonomyPause
         && !asksForCurriculumOutline
