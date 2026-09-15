@@ -211,5 +211,22 @@ test('goal to photo to blocker to video to support choice then either destinatio
   assert.deepEqual(api.collectPaidMetaWriterContractIssues({draft:accepted,currentMessage:'Yes please',history:acceptedHistory,flowVariant:'broad_pain'}),[]);
  }
  const zoom=api.buildDeterministicPaidMetaConversationReply({...base,currentMessage:'Zoom sessions please'});assert.equal(zoom.paidMetaZoomHandoff,true);
- const unclear=api.buildDeterministicPaidMetaConversationReply({...base,currentMessage:'Yes'});assert.equal(unclear.paidMetaSupportChoice,true);assert.equal(unclear.joined,LEARN_SUPPORT_CHOICE);
+const unclear=api.buildDeterministicPaidMetaConversationReply({...base,currentMessage:'Yes'});assert.equal(unclear.paidMetaSupportChoice,true);assert.equal(unclear.joined,LEARN_SUPPORT_CHOICE);
+});
+
+test('ambiguous support acceptance cannot become a repeated pitch or guessed handoff',()=>{
+ const history=[{direction:'out',text:LEARN_SUPPORT_CHOICE}];
+ for(const currentMessage of ['Yes','Sure','Okay']) {
+  for(const joined of ['It is 45 lessons across six weeks and AUD $149.', 'Here is your preview', 'Book a Zoom fit call']) {
+   const draft={joined,model:'writer'};
+   const args={draft,currentMessage,history,flowVariant:'broad_pain'};
+   const issues=api.collectPaidMetaWriterContractIssues(args);
+   assert.ok(issues.some(x=>/Ambiguous support choice/.test(x)));
+   const fixed=api.buildPaidMetaGuaranteedContractFallback({...args,issues});
+   assert.equal(fixed.joined,LEARN_SUPPORT_CHOICE);
+   assert.deepEqual(api.collectPaidMetaWriterContractIssues({...args,draft:fixed}),[]);
+   assert.equal(fixed.appPreviewHandoff,undefined);
+   assert.equal(fixed.paidMetaZoomHandoff,undefined);
+  }
+ }
 });

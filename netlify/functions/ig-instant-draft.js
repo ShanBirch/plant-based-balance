@@ -5499,6 +5499,9 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
     const reply = draftTextFromDraft(draft);
     const turn = String(currentMessage || '').replace(/\s+/g, ' ').trim();
     if (!reply || !turn) return [];
+    if (flowVariant === 'broad_pain' && resolveLearnSupportChoice(turn, history) === 'clarify') {
+        return reply === LEARN_SUPPORT_CHOICE ? [] : ['Ambiguous support choice: clarify app workouts versus Zoom before proceeding.'];
+    }
     if (draft?.paidMetaZoomHandoff === true
         && draftTextFromDraft(buildPaidMetaZoomHandoff({currentMessage:turn,history,flowVariant})) === reply) return [];
     if (draft?.replyMode === 'campaign_first_reply'
@@ -5762,6 +5765,7 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
 }
 
 function isBlockingPaidMetaWriterContractIssue(issue = '') {
+    if (/Ambiguous support choice/i.test(String(issue || ''))) return true;
     return /Unverified lesson captions|Household meal scope|Incorrect Learn lesson count|repeated a question|directly asked whether|answer why Shannon went vegan|meal-plan question directly|gluten-free question directly|sales suspicion|answer the sales question|answer the price exactly|do not ask for an email|offered checkout without explicit transactional intent|ignored the supplied plant-based duration|broad paid-ad reply|answered the goal question|full six-week course outline|course answer must return|earned paid-Meta offer is missing/i.test(String(issue || ''));
 }
 
@@ -5788,6 +5792,9 @@ function filterVerifiedPreviewHandoffContractIssues({
 }
 
 function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = '', issues = [], qualifier = {}, history = [], flowVariant = 'plant_based_control' } = {}) {
+    if (flowVariant === 'broad_pain' && resolveLearnSupportChoice(currentMessage, history) === 'clarify') {
+        return {joined:LEARN_SUPPORT_CHOICE,chunks:[LEARN_SUPPORT_CHOICE],model:'deterministic_paid_meta_guided_sales_v1',replyMode:'campaign_sales_progression',paidMetaSupportChoice:true,maxChunks:1,flowVariant,error:null};
+    }
     const issueText = (Array.isArray(issues) ? issues : []).join(' ');
     const turn = String(currentMessage || '').replace(/\s+/g, ' ').trim();
     const fallbackFacts = qualifier?.facts && typeof qualifier.facts === 'object' ? qualifier.facts : {};
