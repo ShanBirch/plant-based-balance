@@ -9,7 +9,7 @@ const { splitCoachDraftIntoDmBubbles } = require('../netlify/functions/_lib/clie
 test('partial recovery ignores only verified receipts for this alert, never newer inbound or manual replies', async () => {
     const originalFetch = global.fetch;
     const own = {id:'receipt', direction:'out', alert_id:'a', text:'Intro'};
-    const params = {alert:{id:'a'}, alertData:{ig_thread_id:'t',source_inbound_created_at:'2026-09-15T00:00:00Z'}, source:'scheduled_worker',confirmedReceiptIds:['receipt']};
+    const params = {alert:{id:'a'}, alertData:{ig_thread_id:'t',scheduled_via:'auto_send',source_inbound_created_at:'2026-09-15T00:00:00Z'}, source:'scheduled_worker',confirmedReceiptIds:['receipt']};
     try {
         global.fetch = async () => ({ok:true,text:async()=>JSON.stringify([own])});
         assert.equal(await sendIg.getAutomatedInstagramConversationDelta(params), null);
