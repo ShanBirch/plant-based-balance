@@ -2828,8 +2828,14 @@ ${repairFeedback ? `REWRITE FEEDBACK:\n${repairFeedback}` : ''}`;
         const index = chunks.findIndex(chunk => String(chunk).includes(marker));
         if (index < 0) return fail('missing_offer_marker');
         if (joined.includes(LEARN_SUPPORT_CHOICE)) {
-            const terms = `It's one AUD ${resolveBalanceLearnCoursePriceLabel()} payment, with no subscription or auto-renewal.${draft.videoAttachmentUrl ? " Here's the course video." : ''}`;
-            chunks.splice(index,chunks.length-index,acknowledgement,terms,LEARN_SUPPORT_CHOICE);
+            const alreadyExplainedPrice = history.some(item => item?.direction === 'out'
+                && String(item.text || '').includes(resolveBalanceLearnCoursePriceLabel())
+                && /one\s+(?:AUD\s+)?\$[\d.]+\s+payment\s+for\s+the\s+full\s+six\s+weeks/i.test(item.text)
+                && /no subscription|no auto(?:matic)?[ -]?renewal/i.test(item.text));
+            const terms = [alreadyExplainedPrice && !asksPaidMetaCoursePrice(inbound) ? ''
+                : `It's one AUD ${resolveBalanceLearnCoursePriceLabel()} payment, with no subscription or auto-renewal.`,
+                draft.videoAttachmentUrl ? "Here's the course video." : ''].filter(Boolean).join(' ');
+            chunks.splice(index,chunks.length-index,...[acknowledgement,terms,LEARN_SUPPORT_CHOICE].filter(Boolean));
         } else {
             chunks[index] = `${acknowledgement} ${chunks[index].slice(chunks[index].indexOf(marker))}`;
         }

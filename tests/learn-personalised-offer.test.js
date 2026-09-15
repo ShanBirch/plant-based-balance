@@ -23,6 +23,18 @@ const cases = [
     {text: 'Can three days a week work?', needs: [/three days/i], absent: [/overwhelm/i]},
     {text: 'Not weekends or cravings. It is chocolate after school pickup.', needs: [], absent: [/cravings and weekends/i, /account for.*weekends/i]},
 ];
+
+test('video introduction does not repeat already answered current course terms', async () => {
+ const currentMessage='I only have dumbbells at home';
+ const chunks=buildPaidMetaTailoredOfferChunks(currentMessage,'Get stronger','broad_pain');
+ const draft={chunks,joined:chunks.join('\n\n'),replyMode:'campaign_sales_progression',model:'test',videoAttachmentUrl:'course.mp4'};
+ const result=await personalisePaidMetaOffer({draft,currentMessage,history:[{direction:'out',text:"It's one AUD $149 payment for the full six weeks, with no subscription or auto-renewal."}],writer:async()=>JSON.stringify({acknowledgement:'We can build your workouts around the dumbbells you have at home.',evidence:['dumbbells at home']})});
+ assert.ok(!result.error);
+ assert.doesNotMatch(result.joined,/\$149|subscription/);
+ assert.match(result.joined,/Here's the course video/);
+ assert.equal(result.videoAttachmentUrl,'course.mp4');
+ assert.equal(result.chunks.at(-1),chunks.at(-1));
+});
 test('grocery bridge explains practical fit and keeps media, price and decision',async()=>{
  const currentMessage='Food shopping on a tight grocery budget makes meal planning hard';
  const chunks=buildPaidMetaTailoredOfferChunks(currentMessage,'Lose weight','broad_pain');
