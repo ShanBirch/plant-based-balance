@@ -5712,7 +5712,9 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
     const writerProgressedAfterBlocker = broadFlow
         && !overviewGoalTurn
         && paidMetaOutboundAskedForBlocker(lastOutboundForStage?.text || '')
-        && !/\?/.test(turn) && /\b(?:Learn|preview)\b/i.test(reply);
+        && !/\?/.test(turn) && !isPaidMetaBareGoalMessage(turn)
+        && !/^(?:(?:and|also)\s+)?(?:what|how|why|when|where|who|can|could|do|does|is|are|will|would)\b/i.test(turn)
+        && (turn.split(/\s+/).length >= 6 || /\b(?:not sure|don['’]?t know|dunno)\b/i.test(turn));
     const earnedBroadOfferNow = !exactAcceptedPreview && knownBroadGoal
         && (knownBroadBlocker || writerProgressedAfterBlocker)
         && !autonomyPause

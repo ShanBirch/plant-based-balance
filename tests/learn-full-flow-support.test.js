@@ -3,6 +3,16 @@ const api=require('../netlify/functions/ig-instant-draft')._test;
 const send=require('../netlify/functions/send-ig-reply')._test;
 const {LEARN_SUPPORT_CHOICE}=require('../netlify/functions/_lib/paid-meta-zoom');
 
+test('substantive struggle cannot stall just because writer omits Learn keyword',()=>{
+ const history=[{direction:'in',text:'I want to build muscle'},{direction:'out',text:'What usually gets in the way of making that happen consistently?'}];
+ const currentMessage='I have two short evenings free but the routines I find take an hour';
+ const draft={joined:'That makes sense, two short evenings is different to an hour-long routine. The workouts fit the time you have.',model:'writer'};
+ const issues=api.collectPaidMetaWriterContractIssues({draft,currentMessage,history,flowVariant:'broad_pain'});
+ assert.ok(issues.some(x=>/earned paid-Meta offer is missing/.test(x)));
+ const repaired=api.buildPaidMetaGuaranteedContractFallback({draft,currentMessage,history,flowVariant:'broad_pain',issues});
+ assert.ok(repaired.videoAttachmentUrl);assert.equal(repaired.chunks.at(-1),LEARN_SUPPORT_CHOICE);
+});
+
 test('goal bundled with multiple answered questions still needs proof and struggle',()=>{
  const history=[{direction:'out',text:"What's the main change you want in the next six weeks?"}];
  const draft={chunks:['Yep, you can train at home. And no, it does not have to be vegan food.','The meal plan fits your dietary preferences.','If muscle gain is your goal, I can show you the personalised app preview.']};
