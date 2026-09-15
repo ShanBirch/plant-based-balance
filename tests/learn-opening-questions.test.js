@@ -2,6 +2,13 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const api = require('../netlify/functions/ig-instant-draft')._test;
 
+test('Saturday and Sunday support a weekend description without weakening invented-context checks', () => {
+    const draft = {joined:'Balance Learn can fit training around your weekends. It is one AUD $149 payment for the full six weeks.'};
+    const issues = text => api.collectPaidMetaWriterContractIssues({draft,currentMessage:text,flowVariant:'broad_pain'});
+    assert.equal(issues('Weekdays are full but I can train on Saturday and Sunday').some(x=>x.includes('weekends was invented')),false);
+    assert.equal(issues('I have kids and like chocolate').some(x=>x.includes('weekends was invented')),true);
+});
+
 test('a vague consistency opener cannot turn the following bare goal into an earned offer', () => {
     const history = [
         {direction:'in',text:'I struggle to stay consistent'},

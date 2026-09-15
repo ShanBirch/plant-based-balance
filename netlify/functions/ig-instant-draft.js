@@ -5580,7 +5580,10 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
             ['cravings', /\bcravings?\b/i],
             ['emotional eating', /\bemotional(?:ly)? eat\w*\b/i],
         ]) {
-            if (signal.test(reply) && !signal.test(leadEvidence)) {
+            const suppliedEvidence = label === 'weekends'
+                ? /\b(?:weekends?|saturdays?|sundays?)\b/i.test(leadEvidence)
+                : signal.test(leadEvidence);
+            if (signal.test(reply) && !suppliedEvidence) {
                 issues.push(`The earned paid-Meta offer is missing a grounded acknowledgement: ${label} was invented, not supplied by the lead.`);
             }
         }
