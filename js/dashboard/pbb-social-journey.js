@@ -1974,6 +1974,7 @@
   }
 
   function canOpenFitGotchiIntro() {
+    if (window.BalanceOnboardingProgress?.isTourSuppressed()) return false;
     return isJourneyEligible() && !!state && Number(state.current_week) <= learnCount()
       && window.metaAdTrialMode !== true && !window.__balancePendingClientActivation
       && !window.__balanceGuidedTourActive;

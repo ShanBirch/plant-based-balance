@@ -12950,6 +12950,12 @@ function ensureGuidedFeatureTourRuntime() {
     }
 }
 function startWizardClientActivationTour(attempt = 0, options = {}) {
+    if (window.BalanceOnboardingProgress?.isTourSuppressed()) {
+        window.__balanceClientActivationTourQueued = false;
+        window.__balanceOnboardingResumePending = false;
+        window.__balancePendingClientActivation = false;
+        return;
+    }
     const isLocalTourPreview = options.preview === true;
     if ((window.metaAdTrialMode && !isLocalTourPreview) || (window.__balanceClientActivationTourStarted && !options.restart)) return;
 
