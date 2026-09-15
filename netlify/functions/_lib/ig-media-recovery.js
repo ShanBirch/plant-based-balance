@@ -35,4 +35,11 @@ function deliveredPrefix(items, receipts, prefix) {
     });
 }
 
-module.exports = { sendRejectedMediaWithRetry, persistReviewHold, deliveredPrefix };
+function hasIncompleteDelivery(data = {}) {
+    return !!data.send_claim_id || !!data.last_send_error
+        || data.auto_send_review_hold?.code === 'immediate_dispatch_failed'
+        || (Number(data.chunks_total) > Number(data.chunks_sent || 0))
+        || (!!(data.draft_image_attachment_url || data.draft_video_attachment_url) && !Number(data.chunks_total));
+}
+
+module.exports = { sendRejectedMediaWithRetry, persistReviewHold, deliveredPrefix, hasIncompleteDelivery };

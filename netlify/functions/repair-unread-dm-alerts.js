@@ -423,6 +423,8 @@ LIMIT 20`;
         const answeredPending = await execSqlJson(answeredPendingSql);
         const resolved = [];
         for (const row of answeredPending) {
+            const { hasIncompleteDelivery } = require('./_lib/ig-media-recovery');
+            if (hasIncompleteDelivery(row.alert_data)) continue;
             const nowIso = new Date().toISOString();
             const data = mergeData(row.alert_data, {
                 cancel_reason: 'cleared_by_recorded_outbound_reply',
@@ -432,7 +434,7 @@ LIMIT 20`;
                 resolved_last_outbound_at: row.effective_last_outbound_at,
             });
             try {
-                const updated = await supabase(`coach_alerts?id=eq.${row.alert_id}&status=eq.pending`, {
+                const updated = await supabase(`coach_alerts?id=eq.${row.alert_id}&status=eq.pending&data->>send_claim_id=is.null`, {
                     method: 'PATCH',
                     body: {
                         status: 'canceled',

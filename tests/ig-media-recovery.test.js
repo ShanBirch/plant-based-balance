@@ -2,6 +2,20 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { sendRejectedMediaWithRetry, persistReviewHold } = require('../netlify/functions/_lib/ig-media-recovery');
 const { deliveredPrefix } = require('../netlify/functions/_lib/ig-media-recovery');
+const { hasIncompleteDelivery } = require('../netlify/functions/_lib/ig-media-recovery');
+
+test('cleanup must not mistake an intro for a complete media reply', () => {
+    for (const data of [
+        {send_claim_id:'in-progress'},
+        {chunks_sent:1,chunks_total:3},
+        {last_send_error:'image rejected'},
+        {auto_send_review_hold:{code:'immediate_dispatch_failed'}},
+        {draft_image_attachment_url:'proof.png'},
+        {draft_video_attachment_url:'course.mp4'},
+    ]) assert.equal(hasIncompleteDelivery(data), true);
+    assert.equal(hasIncompleteDelivery({chunks_sent:3,chunks_total:3}), false);
+    assert.equal(hasIncompleteDelivery({}), false);
+});
 
 test('partial retry resumes after the canonically confirmed introduction', () => {
     const items = [{kind:'text',text:'Intro'}, {kind:'image',text:'[IMAGE:proof.png]'}, {kind:'text',text:'Question?'}];
