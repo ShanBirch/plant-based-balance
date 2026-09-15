@@ -214,6 +214,7 @@ Balance business operating loop:
 - Capacitor app loads the production web app remotely from Netlify. Server/web changes ship after pushing to `main` and Netlify redeploying. Native Android changes need an APK/AAB rebuild.
 - Important globals: `window.currentUser`, `completedWorkoutDataForShare`.
 - Important localStorage flags: `pbb_seen_features`, `featureTourComplete`.
+- Guided-tour audience (Shannon, 16 September 2026): only active Meta ads free-look journeys and dedicated onboarding test accounts. Existing clients and ordinary app users must bypass automatic starts, saved-tour resumes, manual replays and course tour entry points. Keep the shared eligibility rule in `lib/onboarding-progress.js`; preserve the Meta preview, checkout and learning requirements.
 - Realtime channels are used for live multiplayer, battles, and group chat.
 
 ## Code Landmarks

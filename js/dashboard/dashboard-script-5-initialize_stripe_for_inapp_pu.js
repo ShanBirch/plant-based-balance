@@ -10247,7 +10247,8 @@ async function checkAndTriggerOnboarding() {
         window.BalanceMetaAdTrial?.openCheckoutGate();
         return;
     }
-    if (checkpoint?.stage === 'tour' || (trial?.onboardingCompletedAt && !trial.walkthroughCompletedAt)) {
+    if (!window.BalanceOnboardingProgress?.isTourSuppressed()
+        && (checkpoint?.stage === 'tour' || (trial?.onboardingCompletedAt && !trial.walkthroughCompletedAt))) {
         window.__balanceOnboardingResumePending = true;
         // Startup selects Home later. Resume after that final switch, otherwise
         // it would navigate away from the restored tour destination again.
@@ -13010,6 +13011,11 @@ function startWizardClientActivationTour(attempt = 0, options = {}) {
 window.startWizardClientActivationTour = startWizardClientActivationTour;
 
 function startWizardMetaPreviewTour(attempt = 0, options = {}) {
+    if (window.BalanceOnboardingProgress?.isTourSuppressed()) {
+        window.__balanceMetaPreviewTourQueued = false;
+        window.__balanceOnboardingResumePending = false;
+        return;
+    }
     if (!window.metaAdTrialMode || (window.__balanceMetaPreviewTourStarted && !options.restart)) return;
 
     if (attempt === 0) {

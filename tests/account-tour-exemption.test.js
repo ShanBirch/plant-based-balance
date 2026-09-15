@@ -25,15 +25,66 @@ test('Nat cannot resume or save a tour, while checkout and setup checkpoints sta
     assert.equal(window.BalanceOnboardingProgress.read().stage,stage);
   }
 });
-test('exemption follows only the verified account across sign-out and account changes', () => {
+test('regular members and ordinary guests cannot launch tours', () => {
   const {window} = context();
   assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(), true);
   window.currentUser = {id:'another-member'};
-  assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(), false);
+  assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(), true);
   window.BalanceOnboardingProgress.save('tour',{});
-  assert.equal(window.BalanceOnboardingProgress.read().stage,'tour');
+  assert.equal(window.BalanceOnboardingProgress.read(),null);
   window.currentUser = null;
-  assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(), false);
+  assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(), true);
+});
+test('active Meta free-look guests and owning accounts retain tour checkpoints', () => {
+  const {window} = context('meta-lead');
+  const trial = {ownerUserId:'meta-lead',activatedAt:123};
+  window.BalanceMetaAdTrial = {readState:()=>trial,isActive:()=>true};
+  assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(),false);
+  window.BalanceOnboardingProgress.save('tour',{tour:{step:2}});
+  assert.equal(window.BalanceOnboardingProgress.read().tour.step,2);
+  window.currentUser = null;
+  delete trial.ownerUserId;
+  assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(),false);
+  window.currentUser = {id:'shared-preview-guest'};
+  window.guestMode = true;
+  assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(),false);
+});
+test('real Meta trial activation, ownership restore and claim respect tour eligibility', () => {
+  const {window} = context('meta-lead');
+  const session = new Map();
+  window.sessionStorage = {getItem:k=>session.get(k)||null,setItem:(k,v)=>session.set(k,v),removeItem:k=>session.delete(k)};
+  vm.runInNewContext(read('lib/meta-ad-trial.js'), {window,URLSearchParams,Date,console,setTimeout,clearTimeout,setInterval,clearInterval});
+  const trial = window.BalanceMetaAdTrial;
+  window.localStorage.setItem(trial.STATE_KEY, JSON.stringify({variant:trial.VARIANT,activatedAt:123,accountFirst:true}));
+  assert.equal(trial.restoreAuthenticatedMode('meta-lead'),true);
+  assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(),false);
+  window.currentUser = {id:'existing-member'};
+  assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(),true);
+  window.currentUser = {id:'meta-lead'};
+  trial.markClaimed('meta-lead');
+  assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(),true);
+});
+test('claimed, inactive, unowned and another account preview cannot re-enable a member tour', () => {
+  const {window} = context();
+  const trial = {ownerUserId:nat};
+  window.BalanceMetaAdTrial = {readState:()=>trial,isActive:()=>true};
+  assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(),false);
+  trial.claimedAt = 123;
+  assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(),true);
+  delete trial.claimedAt;
+  trial.ownerUserId = 'another-member';
+  assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(),true);
+  delete trial.ownerUserId;
+  assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(),true);
+  trial.ownerUserId = nat;
+  window.BalanceMetaAdTrial.isActive = ()=>false;
+  assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(),true);
+});
+test('dedicated QA accounts remain eligible, but admin client viewing cannot start tours', () => {
+  const {window} = context('e6781875-f657-4f91-91e1-1289c0e345f8');
+  assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(),false);
+  window.isAdminViewing = true;
+  assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(),true);
 });
 test('forced replay, activation and course tour all stop before opening UI or scheduling retries', () => {
   const {window} = context();
@@ -53,6 +104,12 @@ test('forced replay, activation and course tour all stop before opening UI or sc
   ctx.startWizardClientActivationTour();
   assert.equal(window.__balanceClientActivationTourQueued,false);
   assert.equal(window.__balancePendingClientActivation,false);
+  const m = wizard.indexOf('function startWizardMetaPreviewTour(');
+  const n = wizard.indexOf('window.startWizardMetaPreviewTour =',m);
+  vm.runInNewContext(wizard.slice(m,n),ctx);
+  window.__balanceMetaPreviewTourQueued = true;
+  ctx.startWizardMetaPreviewTour();
+  assert.equal(window.__balanceMetaPreviewTourQueued,false);
   const journey = read('js/dashboard/pbb-social-journey.js');
   const c = journey.indexOf('  function canOpenFitGotchiIntro()');
   const d = journey.indexOf('  function getFitGotchiIntroAction()',c);
