@@ -3201,7 +3201,7 @@ function foundersPassCheckoutUrlForMessage(message = '', customData = {}, flowVa
     return buildMetaAdCheckoutUrl({ customData, flowVariant, currentMessage: message, acquisitionMode });
 }
 
-const META_AD_CURRICULUM_QUESTION_RE = /\bwhat\s+(?:(?:will|do|can|would)\s+(?:i|we|you)\s+|am\s+i\s+(?:going\s+to\s+)?)(?:actually\s+)?learn\b|\b(?:curriculum|week[ -]?by[ -]?week|(?:full|six[ -]week|course) outline)\b|\bwhat happens? (?:each|every) week\b|\b(?:what|which)\b.{0,35}\b(?:topics?|themes?|teach|cover)\b|\b(?:course|lessons?)\b.{0,25}\b(?:teach|cover)\b|\btell me about (?:the )?(?:course|lessons?|six weeks)\b/i;
+const META_AD_CURRICULUM_QUESTION_RE = /\bwhat\s+(?:(?:will|do|can|would)\s+(?:i|we|you)\s+|am\s+i\s+(?:going\s+to\s+)?)(?:actually\s+)?learn\b|\b(?:curriculum|week[ -]?by[ -]?week|(?:full|six[ -]week|course) outline)\b|\bwhat happens? (?:each|every) week\b|\b(?:what|which)\b.{0,35}\b(?:topics?|themes?|teach|cover)\b|\b(?:course|lessons?)\b.{0,25}\b(?:teach|cover)\b|\btell me about (?:the )?(?:lessons?|six weeks)\b/i;
 
 function asksPaidMetaPreviewCharge(message = '') {
     return /\b(?:charg\w*|bill\w*|payment|renew\w*)\b[\s\S]{0,50}\bautomatic\w*\b|\bautomatic\w*\b[\s\S]{0,50}\b(?:charg\w*|bill\w*|payment|renew\w*)\b/i.test(message)
@@ -3280,6 +3280,7 @@ function shouldUseDeterministicMetaAdFirstReply(currentMessage = '') {
 
     const normalized = message.toLowerCase().replace(/[\u2018\u2019]/g, "'");
     if (asksPaidMetaCoursePrice(normalized)) return true;
+    if (/^(?:tell me about|what(?:'s| is)) (?:the )?course(?: about)?[!?.\s]*$/i.test(normalized)) return true;
     if (/^(?:i\s+)?(?:keep starting over|struggle to stay consistent)[!?.\s]*$/i.test(normalized)) return true;
     if (/^how does balance work[!?.\s]*$/i.test(normalized)) return true;
     if (/^balance[!?.\s]*$/i.test(message)) return true;
@@ -6019,7 +6020,7 @@ function preservePaidMetaPendingBlocker({draft, history = [], currentMessage = '
     const last = lastPaidMetaOutbound(history);
     const text = String(currentMessage || '').trim();
     const parts = text.split(/[?\n]+/).map(x=>x.trim()).filter(Boolean);
-    const questionOnly = parts.length && parts.every(x=>/^(?:(?:and|also|but)\s+)?(?:what|how|why|when|where|who|can|could|do|does|is|are|will|would)\b/i.test(x));
+    const questionOnly = parts.length && parts.every(x=>/^(?:(?:and|also|but)\s+)?(?:what|how|why|when|where|who|can|could|do|does|is|are|will|would|tell me)\b/i.test(x));
     const sentences = text.split(/[.!?\n]+/).map(x=>x.trim()).filter(Boolean);
     const goals = sentences.filter(x=>isPaidMetaBareGoalMessage(x) && PAID_META_FITNESS_GOAL_RE.test(x));
     const goalWithQuestions = paidMetaOutboundAskedForGoal(last?.text || '') && goals.length > 0

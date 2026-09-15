@@ -34,12 +34,16 @@ test('direct course price openers answer without the BALANCE keyword', () => {
 });
 
 test('general course introduction stays brief while an explicit outline still gets the curriculum', () => {
+    assert.equal(api.shouldUseDeterministicMetaAdFirstReply('Tell me about the course'), true);
     const brief = api.buildMetaAdFoundersPassFirstReply('Tell me about the course', { flowVariant: 'broad_pain' });
     assert.equal(brief.firstReplyIntent, 'overview');
     assert.match(brief.joined, /^Hey/);
     assert.doesNotMatch(brief.joined, /Week 1/i);
     assert.ok(brief.joined.split(/\s+/).length < 60);
     assert.deepEqual(api.collectPaidMetaWriterContractIssues({ draft: brief, currentMessage: 'Tell me about the course', history: [], flowVariant: 'broad_pain' }), []);
+    const history=[{direction:'out',text:"What's the main change you'd like to make over the next six weeks?"}];
+    const writer={joined:'The lessons help you understand your habits and practise changes to food and training.',model:'writer'};
+    assert.ok(!api.collectPaidMetaWriterContractIssues({draft:writer,currentMessage:'Tell me about the course',history,flowVariant:'broad_pain'}).some(issue=>/curriculum|weekly themes|six themes|Week 1/i.test(issue)));
     const detailed = api.buildMetaAdFoundersPassFirstReply('What will I learn week by week?', { flowVariant: 'broad_pain' });
     assert.equal(detailed.firstReplyIntent, 'curriculum');
     assert.match(detailed.joined, /Week 1/i);
