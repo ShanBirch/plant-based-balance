@@ -224,6 +224,12 @@ test('missing course video request retries media without repitch or premature pr
   assert.equal(api.ensurePaidMetaAppVideoPreviewCta(draft),draft);
   assert.deepEqual(api.collectPaidMetaWriterContractIssues({draft,currentMessage,history,flowVariant:'broad_pain'}),[]);
   assert.equal(api.buildPaidMetaConversationApproval({draft,currentMessage,history,metaAdConversationFastLane:true}).required,false);
+  const replaced={joined:'I can resend the video. Balance Learn is a six-week course for $149.',model:'writer',replyMode:'campaign_sales_progression'};
+  const issues=api.collectPaidMetaWriterContractIssues({draft:replaced,currentMessage,history,flowVariant:'broad_pain'});
+  assert.ok(issues.some(x=>/Explicit course video resend/.test(x)));
+  const repaired=api.buildPaidMetaGuaranteedContractFallback({draft:replaced,currentMessage,history,flowVariant:'broad_pain',issues});
+  assert.equal(repaired.replyMode,'campaign_native_video_retry');
+  assert.deepEqual(api.collectPaidMetaWriterContractIssues({draft:repaired,currentMessage,history,flowVariant:'broad_pain'}),[]);
  }
  assert.equal(api.isExplicitPaidMetaProofVideoRetry({currentMessage:'My parcel has not arrived',history}),false);
 });

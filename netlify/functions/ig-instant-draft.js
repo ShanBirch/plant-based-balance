@@ -5512,8 +5512,14 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
     const reply = draftTextFromDraft(draft);
     const turn = String(currentMessage || '').replace(/\s+/g, ' ').trim();
     if (!reply || !turn) return [];
-    if (draft?.replyMode === 'campaign_native_video_retry' && isExplicitPaidMetaProofVideoRetry({currentMessage:turn,history})
-        && reply === buildPaidMetaProofVideoRetryReply(turn,{history,flowVariant}).joined) return [];
+    if (isExplicitPaidMetaProofVideoRetry({currentMessage:turn,history})) {
+        const resendParts = (Array.isArray(draft?.chunks) && draft.chunks.length ? draft.chunks : [draft?.joined || reply]).map(text=>String(text).trim());
+        const validResend = draft?.replyMode === 'campaign_native_video_retry'
+            && isBalanceFoundationsAppProofVideoUrl(draft?.videoAttachmentUrl)
+            && /^Yep, here is the course video(?: again)?\.$/.test(resendParts[0])
+            && resendParts.slice(1).every(text=>text === LEARN_SUPPORT_CHOICE);
+        return validResend ? [] : ['Explicit course video resend must preserve the native media request without another pitch.'];
+    }
     if (flowVariant === 'broad_pain' && resolveLearnSupportChoice(turn, history) === 'clarify') {
         return reply === LEARN_SUPPORT_CHOICE ? [] : ['Ambiguous support choice: clarify app workouts versus Zoom before proceeding.'];
     }
@@ -5780,6 +5786,7 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
 }
 
 function isBlockingPaidMetaWriterContractIssue(issue = '') {
+    if (/Explicit course video resend/i.test(String(issue || ''))) return true;
     if (/Ambiguous support choice/i.test(String(issue || ''))) return true;
     return /Unverified lesson captions|Household meal scope|Incorrect Learn lesson count|repeated a question|directly asked whether|answer why Shannon went vegan|meal-plan question directly|gluten-free question directly|sales suspicion|answer the sales question|answer the price exactly|do not ask for an email|offered checkout without explicit transactional intent|ignored the supplied plant-based duration|broad paid-ad reply|answered the goal question|full six-week course outline|course answer must return|earned paid-Meta offer is missing/i.test(String(issue || ''));
 }
@@ -5807,6 +5814,7 @@ function filterVerifiedPreviewHandoffContractIssues({
 }
 
 function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = '', issues = [], qualifier = {}, history = [], flowVariant = 'plant_based_control' } = {}) {
+    if (isExplicitPaidMetaProofVideoRetry({currentMessage,history})) return {...buildPaidMetaProofVideoRetryReply(currentMessage,{history,flowVariant}),flowVariant};
     if (flowVariant === 'broad_pain' && resolveLearnSupportChoice(currentMessage, history) === 'clarify') {
         return {joined:LEARN_SUPPORT_CHOICE,chunks:[LEARN_SUPPORT_CHOICE],model:'deterministic_paid_meta_guided_sales_v1',replyMode:'campaign_sales_progression',paidMetaSupportChoice:true,maxChunks:1,flowVariant,error:null};
     }
