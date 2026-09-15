@@ -2,6 +2,18 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const api = require('../netlify/functions/ig-instant-draft')._test;
 
+test('goal already acknowledged with FAQ answers is not praised again before proof', () => {
+    const currentMessage="I want to build muscle. What's the price of the course? Can I train at home?";
+    const history=[{direction:'out',text:"What's the main change you want in the next six weeks?"}];
+    const draft={chunks:["It's one AUD $149 payment for the full six weeks. Nice one, building muscle is a great goal. Yes, you can train at home."]};
+    const result=api.preservePaidMetaPendingBlocker({draft,history,currentMessage});
+    assert.match(result.joined,/great goal/);
+    assert.doesNotMatch(result.joined,/solid goal/);
+    assert.match(result.joined,/This is Gen/);
+    assert.ok(result.imageAttachmentUrl);
+    assert.match(result.joined,/gets in the way/);
+});
+
 test('new greeting cannot be converted into a personalised offer by old pending discovery', () => {
     const currentMessage='How does Balance work?';
     const draft=api.buildMetaAdFoundersPassFirstReply(currentMessage,{flowVariant:'broad_pain'});

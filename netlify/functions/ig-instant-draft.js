@@ -6036,7 +6036,12 @@ function preservePaidMetaPendingBlocker({draft, history = [], currentMessage = '
             && !paidMetaOutboundAskedForBlocker(x) && !(pendingGoal && paidMetaOutboundAskedForGoal(x))).join(' ')).filter(Boolean);
     if (!chunks.length) return draft;
     const proof = goalWithQuestions ? resolvePaidMetaTransformationProof({goalText:goals.join(' and ')}) : null;
-    if (goalWithQuestions) chunks.push(buildPaidMetaGoalToBlockerText(goals.join(' and '),proof));
+    if (goalWithQuestions) {
+        const proofText = buildPaidMetaGoalToBlockerText(goals.join(' and '),proof);
+        const proofStart = proofText.indexOf('This is ');
+        const acknowledgedGoal = PAID_META_FITNESS_GOAL_RE.test(chunks.join(' '));
+        chunks.push(acknowledgedGoal && proofStart >= 0 ? proofText.slice(proofStart) : proofText);
+    }
     else if (pendingGoal) chunks.push("What's the main change you'd like to make over the next six weeks?");
     else chunks.push("What's been hardest about staying consistent for you?");
     return {...draft,chunks,joined:chunks.join('\n\n'),videoAttachmentUrl:null,appPreviewUrl:null,
