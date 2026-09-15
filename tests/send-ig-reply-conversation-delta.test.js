@@ -6,6 +6,20 @@ const path = require('node:path');
 const sendIg = require('../netlify/functions/send-ig-reply')._test;
 const { splitCoachDraftIntoDmBubbles } = require('../netlify/functions/_lib/client-context');
 
+test('partial recovery ignores only verified receipts for this alert, never newer inbound or manual replies', async () => {
+    const originalFetch = global.fetch;
+    const own = {id:'receipt', direction:'out', alert_id:'a', text:'Intro'};
+    const params = {alert:{id:'a'}, alertData:{ig_thread_id:'t',source_inbound_created_at:'2026-09-15T00:00:00Z'}, source:'scheduled_worker',confirmedReceiptIds:['receipt']};
+    try {
+        global.fetch = async () => ({ok:true,text:async()=>JSON.stringify([own])});
+        assert.equal(await sendIg.getAutomatedInstagramConversationDelta(params), null);
+        for (const newer of [{id:'new-in',direction:'in',text:'Actually no thanks'}, {id:'manual',direction:'out',text:'Manual reply'}]) {
+            global.fetch = async () => ({ok:true,text:async()=>JSON.stringify([own,newer])});
+            assert.deepEqual(await sendIg.getAutomatedInstagramConversationDelta(params), newer);
+        }
+    } finally { global.fetch = originalFetch; }
+});
+
 test('automated send cannot bypass an active draft review hold', () => {
     const heldData = {
         scheduled_via: 'auto_send',

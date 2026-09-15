@@ -2100,7 +2100,7 @@ function resolveAutomatedConversationAnchorAt(alert = {}) {
     return Number.isFinite(fallbackAt) ? new Date(fallbackAt).toISOString() : '';
 }
 
-async function getAutomatedInstagramConversationDelta({ alert = {}, alertData = {}, source = '' } = {}) {
+async function getAutomatedInstagramConversationDelta({ alert = {}, alertData = {}, source = '', confirmedReceiptIds = [] } = {}) {
     if (!isAutomatedPermanentNeedsYouSendSource(source, alertData)) return null;
     const threadId = String(alertData.ig_thread_id || '').trim();
     const anchorAt = resolveAutomatedConversationAnchorAt({ ...alert, data: alertData });
@@ -2109,6 +2109,7 @@ async function getAutomatedInstagramConversationDelta({ alert = {}, alertData = 
         `ig_messages?select=id,direction,text,created_at,alert_id,source&thread_id=eq.${encodeURIComponent(threadId)}&created_at=gt.${encodeURIComponent(anchorAt)}&order=created_at.desc&limit=20`
     );
     for (const row of rows || []) {
+        if (row.direction === 'out' && row.alert_id === alert.id && confirmedReceiptIds.includes(row.id)) continue;
         if (await outboundAnswersOlderInbound({query:supabase,threadId,outbound:row,sourceAt:anchorAt})) continue;
         return row;
     }
@@ -2845,7 +2846,9 @@ exports.handler = async (event) => {
         }
     }
     try {
-        const conversationDelta = await getAutomatedInstagramConversationDelta({ alert, alertData, source });
+        const conversationDelta = await getAutomatedInstagramConversationDelta({ alert, alertData, source,
+            confirmedReceiptIds: priorDelivered.flatMap(item => item.canonicalMessages.map(row => row.id)),
+        });
         if (conversationDelta) {
             await cancelAutomatedConversationDeltaSend({ alertId, alertData, delta: conversationDelta });
             return {
