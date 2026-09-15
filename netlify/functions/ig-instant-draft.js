@@ -6014,7 +6014,7 @@ function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = 
 }
 
 function preservePaidMetaPendingBlocker({draft, history = [], currentMessage = ''} = {}) {
-    if (!draft || draft.error || draft.appPreviewHandoff || draft.checkoutUrl || draft.paidMetaZoomHandoff
+    if (!draft || draft.error || draft.replyMode === 'campaign_first_reply' || draft.appPreviewHandoff || draft.checkoutUrl || draft.paidMetaZoomHandoff
         || isExplicitPaidMetaPreviewRequest(currentMessage) || hasDirectPaidMetaCheckoutIntent(currentMessage)
         || META_AD_FIRST_REPLY_OPT_OUT_RE.test(currentMessage) || META_AD_FIRST_REPLY_REVIEW_REQUIRED_RE.test(currentMessage)) return draft;
     const last = lastPaidMetaOutbound(history);
