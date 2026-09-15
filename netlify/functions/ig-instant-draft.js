@@ -6018,14 +6018,19 @@ function preservePaidMetaPendingBlocker({draft, history = [], currentMessage = '
     const goals = sentences.filter(x=>isPaidMetaBareGoalMessage(x) && PAID_META_FITNESS_GOAL_RE.test(x));
     const goalWithQuestions = paidMetaOutboundAskedForGoal(last?.text || '') && goals.length > 0
         && sentences.every(x=>goals.includes(x) || /^(?:(?:and|also|but)\s+)?(?:what|how|why|when|where|who|can|could|do|does|is|are|will|would)\b/i.test(x));
-    if (!(paidMetaOutboundAskedForBlocker(last?.text || '') && questionOnly) && !goalWithQuestions) return draft;
+    const pendingGoal = paidMetaOutboundAskedForGoal(last?.text || '') && questionOnly
+        && !paidMetaHistoryHasFitnessGoal(history);
+    if (!(paidMetaOutboundAskedForBlocker(last?.text || '') && questionOnly) && !goalWithQuestions && !pendingGoal) return draft;
     if (goalWithQuestions && draft.imageAttachmentUrl && paidMetaOutboundAskedForBlocker(draftTextFromDraft(draft))) return draft;
     const chunks = (draft.chunks?.length ? draft.chunks : [draft.joined]).map(chunk=>String(chunk || '').split(/\n+|(?<=[.!?])\s+/)
-        .filter(x=>x.trim() && !/\b(?:preview|checkout|here(?:'s| is) (?:the |a )?(?:course )?video|would you prefer)\b/i.test(x)
-            && !paidMetaOutboundAskedForBlocker(x)).join(' ')).filter(Boolean);
+        .filter(x=>x.trim() && !(pendingGoal
+            ? /\b(?:i can (?:also )?(?:send|show|set)|would you like|if you want|here(?:'s| is) (?:the |a )?(?:course )?video|would you prefer)\b/i.test(x)
+            : /\b(?:preview|checkout|here(?:'s| is) (?:the |a )?(?:course )?video|would you prefer)\b/i.test(x))
+            && !paidMetaOutboundAskedForBlocker(x) && !(pendingGoal && paidMetaOutboundAskedForGoal(x))).join(' ')).filter(Boolean);
     if (!chunks.length) return draft;
     const proof = goalWithQuestions ? resolvePaidMetaTransformationProof({goalText:goals.join(' and ')}) : null;
     if (goalWithQuestions) chunks.push(buildPaidMetaGoalToBlockerText(goals.join(' and '),proof));
+    else if (pendingGoal) chunks.push("What's the main change you'd like to make over the next six weeks?");
     else chunks.push("What's been hardest about staying consistent for you?");
     return {...draft,chunks,joined:chunks.join('\n\n'),videoAttachmentUrl:null,appPreviewUrl:null,
         imageAttachmentUrl:proof?.imageUrl || draft.imageAttachmentUrl || null,
