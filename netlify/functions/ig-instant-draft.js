@@ -3225,6 +3225,8 @@ function asksPaidMetaCoursePrice(currentMessage = '') {
 
 function resolveMetaAdFirstReplyIntent(currentMessage = '') {
     const text = String(currentMessage || '').toLowerCase().replace(/[’]/g, "'");
+    if (asksPaidMetaCoursePrice(text)) return 'price';
+    if (/^(?:hey[,!]?\s*)?(?:tell me about|what(?:'s| is)) (?:the )?course(?: about)?[!?.\s]*$/i.test(text)) return 'overview';
     if (/^(?:i\s+)?keep starting over[!?.\s]*$/.test(text)) return 'restart_loop';
     if (/^(?:i\s+)?struggle to stay consistent[!?.\s]*$/.test(text)) return 'consistency';
     if (/^how does balance work[!?.\s]*$/.test(text)) return 'how_balance_works';
@@ -3271,6 +3273,7 @@ function shouldUseDeterministicMetaAdFirstReply(currentMessage = '') {
     }
 
     const normalized = message.toLowerCase().replace(/[\u2018\u2019]/g, "'");
+    if (asksPaidMetaCoursePrice(normalized)) return true;
     if (/^(?:i\s+)?(?:keep starting over|struggle to stay consistent)[!?.\s]*$/i.test(normalized)) return true;
     if (/^how does balance work[!?.\s]*$/i.test(normalized)) return true;
     if (/^balance[!?.\s]*$/i.test(message)) return true;
@@ -3343,7 +3346,7 @@ function buildMetaAdFoundersPassFirstReply(currentMessage = '', { customData = {
     } else if (broadFlow && intent === 'plant_based_requirement') {
         answer = `No, you do not need to be. Balance lets you record your dietary preferences so the food side can fit you. What's the main change you'd like to make over the next six weeks?`;
     } else if (broadFlow && intent === 'price') {
-        answer = `${supportScope}\n\nWhat's the main change you'd like to make over the next six weeks?`;
+        answer = `Hey! It's AUD ${resolveBalanceLearnCoursePriceLabel()} for the full six weeks, with no subscription or automatic renewal. You get the course, workouts, food support and weekly check-ins. What are you hoping to work towards?`;
     } else if (broadFlow && intent === 'accountability') {
         answer = `You check in inside Balance and I can see what the week actually looked like, then I give you the next bit of direction and adjust your training or food where needed. What's the main change you'd like to make over the next six weeks?`;
     } else if (broadFlow && intent === 'personalised_coaching') {
