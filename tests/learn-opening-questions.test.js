@@ -2,6 +2,19 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const api = require('../netlify/functions/ig-instant-draft')._test;
 
+test('early price and home FAQ cannot promise a quick video when discovery defers the attachment', () => {
+    const currentMessage = "What's the price of the course? Can I do the workouts at home?";
+    const history = [{direction:'out',text:"What's the main change you want in the next six weeks?"}];
+    for (const intro of ["Here's a quick video showing the course and what's inside Balance.", 'Here is a short course video.', 'Here’s the video.']) {
+        const result = api.preservePaidMetaPendingBlocker({currentMessage,history,draft:{chunks:["It's one AUD $149 payment for the full six weeks, with no subscription or auto-renewal. Yep, you can do the workouts at home. " + intro],videoAttachmentUrl:'video.mp4'}});
+        assert.match(result.joined,/AUD \$149/);
+        assert.match(result.joined,/workouts at home/);
+        assert.match(result.joined,/main change/);
+        assert.doesNotMatch(result.joined,/video/i);
+        assert.equal(result.videoAttachmentUrl,null);
+    }
+});
+
 test('goal already acknowledged with FAQ answers is not praised again before proof', () => {
     const currentMessage="I want to build muscle. What's the price of the course? Can I train at home?";
     const history=[{direction:'out',text:"What's the main change you want in the next six weeks?"}];

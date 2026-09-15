@@ -6033,8 +6033,8 @@ function preservePaidMetaPendingBlocker({draft, history = [], currentMessage = '
     if (goalWithQuestions && draft.imageAttachmentUrl && paidMetaOutboundAskedForBlocker(draftTextFromDraft(draft))) return draft;
     const chunks = (draft.chunks?.length ? draft.chunks : [draft.joined]).map(chunk=>String(chunk || '').split(/\n+|(?<=[.!?])\s+/)
         .filter(x=>x.trim() && !(pendingGoal
-            ? /\b(?:i can (?:also )?(?:send|show|set)|would you like|if you want|here(?:'s| is) (?:the |a )?(?:course )?video|would you prefer)\b/i.test(x)
-            : /\b(?:preview|checkout|here(?:'s| is) (?:the |a )?(?:course )?video|would you prefer)\b/i.test(x))
+            ? /\b(?:i can (?:also )?(?:send|show|set)|would you like|if you want|here(?:['’]s| is) (?:the |a )?(?:(?:quick|short) )?(?:course )?video|would you prefer)\b/i.test(x)
+            : /\b(?:preview|checkout|here(?:['’]s| is) (?:the |a )?(?:(?:quick|short) )?(?:course )?video|would you prefer)\b/i.test(x))
             && !paidMetaOutboundAskedForBlocker(x) && !(pendingGoal && paidMetaOutboundAskedForGoal(x))).join(' ')).filter(Boolean);
     if (!chunks.length) return draft;
     const proof = goalWithQuestions ? resolvePaidMetaTransformationProof({goalText:goals.join(' and ')}) : null;
