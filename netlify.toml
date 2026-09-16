@@ -9,6 +9,9 @@
 [functions."ig-instant-draft*"]
   included_files = [".netlify/video-runtime/ffmpeg"]
 
+[functions."learn-ai-experiment*"]
+  included_files = [".netlify/video-runtime/ffmpeg"]
+
 [functions."admin-reset-user-password"]
   node_bundler = "esbuild"
 

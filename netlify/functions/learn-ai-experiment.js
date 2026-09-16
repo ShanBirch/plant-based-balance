@@ -20,7 +20,7 @@ exports.handler=async(event)=>{
    const prepared=await require('../../experiments/learn-ai/media.cjs').prepare(rows,{recordAnalysis:false});
    const result=await decide({history:input.history||[],inbound:prepared.messages.map(m=>m.text),model:'gpt-5.4'});
    return respond(200,{...result,media:prepared.context.map(item=>({message_id:item.message_id,kinds:item.kinds,complete:item.complete}))});
-  }catch(e){return respond(503,{error:e.code==='media_wait'?'media_not_ready':'replay_unavailable'});}
+  }catch(e){return respond(503,{error:e.code==='media_wait'?'media_not_ready':'replay_unavailable',reason:e.code==='media_wait'?e.message.slice(0,160):undefined});}
  }
  if(input.mode==='status'||input.mode==='send'){
   const live=require('../../experiments/learn-ai/live.cjs');
