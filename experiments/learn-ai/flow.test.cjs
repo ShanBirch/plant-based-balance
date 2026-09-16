@@ -32,8 +32,9 @@ test('dispatch claims are stable across retry and distinct per action',()=>{
 });
 test('preview card describes website and keeps download out of its label',()=>{
  const m=graphMessage({type:'card',asset_id:'preview'});
- assert.match(m.attachment.payload.buttons[0].url,/meta-app-preview|\/p\//);
- assert.doesNotMatch(m.attachment.payload.buttons[0].title,/download/i);
+ assert.equal(m.attachment.payload.template_type,'generic');
+ assert.match(m.attachment.payload.elements[0].buttons[0].url,/meta-app-preview|\/p\//);
+ assert.doesNotMatch(m.attachment.payload.elements[0].buttons[0].title,/download/i);
 });
 test('reject unknown assets and unintroduced media without rewriting conversation',()=>{
  assert.throws(()=>validatePlan({status:'reply',actions:[{type:'image',asset_id:'made_up',text:''}]}));

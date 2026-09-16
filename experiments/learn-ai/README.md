@@ -22,6 +22,8 @@ The first live trial uncovered a transport defect: Graph webhook message IDs had
 
 The preview card opens the course website first. Its message explains that the button at the bottom leads to app download and preview setup. The mirror transformation is Kristy after 26 weeks of coaching with Shannon; this is separate from Learn's six-week duration.
 
+Shannon subsequently rejected the alternative's generic speaking style and explicitly preferred the original flow's voice. The current prompt includes original-flow reply examples for greeting, facts, named proof, personal fit, support choice, preview invitation and website handoff. Do not trade away that voice merely to improve mechanical sequence scores. `deliver.cjs` reconciles a delayed HTTP response by reading confirmed receipts before continuing; it never resends an uncertain action.
+
 ## Operating a bounded live comparison
 
 Coordinate exclusive ownership with the existing tester. Save the test thread's previous flag state; set an expiring experiment session and opt out only that thread from the original responder. Feed canonical inbound/history to generation, retain the raw plan, then explicitly execute ordered actions while collecting receipts. Check the recipient's actual inbox. After testing, restore only the flags owned by this session and return ownership to the original tester. Do not enable this transport for customers or edit the original automation merely to run the comparison.

@@ -25,7 +25,9 @@ function graphMessage(action,threadId=THREAD) {
  const asset=catalogue()[action.asset_id];
  if(action.type==='card'){
   const url=action.asset_id==='preview'?buildMetaAppPreviewUrl(threadId,{flowVariant:'broad_pain'}):asset.url;
-  return {attachment:{type:'template',payload:{template_type:'button',text:action.asset_id==='preview'?'Explore Balance Learn and your free preview':'Find a time for your Balance fit call',buttons:[{type:'web_url',url,title:action.asset_id==='preview'?'View course & preview':'Book a fit call'}]}}};
+  // Same Instagram generic-card format used by the existing sender; plain
+  // button templates can arrive as text with no clickable button in the inbox.
+  return {attachment:{type:'template',payload:{template_type:'generic',elements:[{title:action.asset_id==='preview'?'Explore Balance Learn and your free preview':'Find a time for your Balance fit call',image_url:'https://plantbased-balance.org/assets/balance-founders-og-cream-gold.png',buttons:[{type:'web_url',url,title:action.asset_id==='preview'?'Open your preview':'Book a fit call'}]}]}}};
  }
  return {attachment:{type:action.type,payload:{url:asset.url}}};
 }
@@ -81,7 +83,7 @@ async function send({session,inbound_id,index,plan}){
   if(!r.ok||!result.message_id)throw Error(`graph_${r.status}`);
   data.outcome='confirmed';data.message_id=result.message_id;data.confirmed_at=new Date().toISOString();
   await db(`coach_alerts?id=eq.${id}`,{method:'PATCH',body:{status:'dismissed',data,actioned_at:data.confirmed_at}});
-  const text=action.type==='text'?action.text:action.type==='card'?`${message.attachment.payload.text} ${message.attachment.payload.buttons[0].url}`:`[${action.type.toUpperCase()}:${catalogue()[action.asset_id].url}]`;
+  const text=action.type==='text'?action.text:action.type==='card'?`${message.attachment.payload.elements[0].title} ${message.attachment.payload.elements[0].buttons[0].url}`:`[${action.type.toUpperCase()}:${catalogue()[action.asset_id].url}]`;
   const canonicalId=`ig_graph:${result.message_id.replace(/^ig_graph:/,'')}`;
   const provenance={source:'learn_ai_experiment',alert_id:id,author_type:'balance_system',training_provenance:'system_generated',delivery_origin:'instagram_graph_api'};
   const already=await db(`ig_messages?thread_id=eq.${THREAD}&manychat_message_id=eq.${encodeURIComponent(canonicalId)}&select=id&limit=1`);
