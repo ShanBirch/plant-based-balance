@@ -4,7 +4,7 @@ const {decide}=require('./flow.cjs');
 const live=require('./live.cjs');
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const normalize=id=>String(id||'').replace(/^ig_graph:/,'');
-function enabled(thread){return thread?.id===live.THREAD&&thread?.custom_data?.learn_ai_experiment?.mode==='automatic';}
+function enabled(thread){return thread?.id===live.THREAD&&(thread.learn_ai_settings||thread?.custom_data?.learn_ai_experiment)?.mode==='automatic';}
 function episode(messages){
  let start=0;
  for(let i=0;i<messages.length;i++)if(messages[i].direction==='in'&&/^(balance|i struggle to stay consistent|i keep starting over|how does balance work)[.!?\s]*$/i.test(messages[i].text.trim()))start=i;
@@ -31,7 +31,7 @@ async function acquire(thread,db=live.db,wait=sleep){
 }
 async function release(lock,db=live.db){await db(`coach_alerts?id=eq.${lock.id}&data->>token=eq.${lock.token}`,{method:'PATCH',body:{data:{token:'',until:0}}});}
 async function run(thread,sourceMessageId){
- const session=thread.custom_data.learn_ai_experiment.session;
+ const session=(thread.learn_ai_settings||thread.custom_data.learn_ai_experiment).session;
  live.assertTestSession(thread,session);
  const lock=await acquire(thread);
  let claim;

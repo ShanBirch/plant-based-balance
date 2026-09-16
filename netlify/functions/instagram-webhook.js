@@ -2001,7 +2001,7 @@ async function upsertGraphThread({
         subscriberId,
         ...legacyGraphSubscriberIds(participantId),
     ].filter(Boolean);
-    const selectColumns = 'id,subscriber_id,coach_id,channel,profile_name,ig_username,lead_stage,linked_user_id,last_inbound_at,last_outbound_at,custom_data,auto_send_enabled';
+    const selectColumns = 'id,subscriber_id,coach_id,channel,profile_name,ig_username,lead_stage,linked_user_id,last_inbound_at,last_outbound_at,custom_data,learn_ai_settings,auto_send_enabled';
     const existing = await supabase(
         `ig_threads?select=${selectColumns}&subscriber_id=in.(${subscriberCandidates.map(encodeURIComponent).join(',')})&channel=eq.instagram&limit=5`
     );
@@ -2289,7 +2289,9 @@ async function dispatchDraft({ thread, messageText, dedupeId }) {
     // the background draft worker or its AI provider fails, the inbound still
     // appears in Needs You and the reconcile pass can retry the empty draft.
     try {
-        await ensureInboundAlertShell({ thread, messageText, dedupeId });
+        const alternativeSelected = thread.id === '4baea56e-eab4-4887-a732-39b14e983d44'
+            && thread.learn_ai_settings?.mode === 'automatic';
+        if (!alternativeSelected) await ensureInboundAlertShell({ thread, messageText, dedupeId });
     } catch (err) {
         // The shell is a safety net, not a prerequisite for drafting. A transient
         // alert insert failure must not strand a real inbound before the worker

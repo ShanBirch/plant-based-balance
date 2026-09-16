@@ -5,6 +5,8 @@ test('automatic mode selects only the explicitly enabled test thread',()=>{
  assert.equal(enabled({id:THREAD,custom_data:{learn_ai_experiment:{mode:'automatic'}}}),true);
  assert.equal(enabled({id:'customer',custom_data:{learn_ai_experiment:{mode:'automatic'}}}),false);
  assert.equal(enabled({id:THREAD,custom_data:{learn_ai_experiment:{mode:'manual'}}}),false);
+ assert.equal(enabled({id:THREAD,learn_ai_settings:{mode:'automatic'},custom_data:{}}),true);
+ assert.equal(enabled({id:'customer',learn_ai_settings:{mode:'automatic'},custom_data:{}}),false);
 });
 test('BALANCE resets prior test context while numeric fragments remain in the same episode',()=>{
  const messages=[{direction:'in',text:'old goal'},{direction:'out',text:'old question'},{direction:'in',text:'BALANCE'},{direction:'in',text:'I want to lose weight'},{direction:'in',text:'15 kilos'}];

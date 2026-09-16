@@ -14,10 +14,11 @@ async function db(route,{method='GET',body}={}) {
  const text=await r.text();return text?JSON.parse(text):[];
 }
 function assertTestSession(thread,session,now=Date.now()) {
- const flag=thread?.custom_data?.learn_ai_experiment;
+ const flag=thread?.learn_ai_settings||thread?.custom_data?.learn_ai_experiment;
  if(thread?.id!==THREAD||thread.ig_username!=='goldcoast_ai_solutions'||thread.subscriber_id!==`ig_graph:${ACCOUNT}:${RECIPIENT}`||thread.linked_user_id)throw Error('wrong_test_identity');
  const timeValid=flag?.mode==='automatic'||(Number.isFinite(Date.parse(flag?.expires_at))&&Date.parse(flag.expires_at)>now);
- if(thread.custom_data?.codex_ai_opt_out!==true||!flag||flag.session!==session||!timeValid)throw Error('test_session_inactive');
+ const selectedAutomatic=thread?.learn_ai_settings?.mode==='automatic';
+ if((!selectedAutomatic&&thread.custom_data?.codex_ai_opt_out!==true)||!flag||flag.session!==session||!timeValid)throw Error('test_session_inactive');
  return flag;
 }
 function receiptId(inbound,index){const h=crypto.createHash('sha256').update(`learn-ai:${inbound}:${index}`).digest('hex').slice(0,32);return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`;}
