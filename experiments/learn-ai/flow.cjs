@@ -52,7 +52,7 @@ function validatePlan(plan, assets = catalogue()) {
 }
 async function decide({history = [], inbound, receipts = [], model = 'gpt-5.4-mini', apiKey = process.env.OPENAI_API_KEY, now = new Date(), fetchImpl = fetch}) {
   if (process.env.LEARN_EXPERIMENT_URL) {
-    const response = await fetchImpl(process.env.LEARN_EXPERIMENT_URL, {method:'POST',signal:AbortSignal.timeout(100000),headers:{'Content-Type':'application/json',Authorization:`Bearer ${process.env.LEARN_EXPERIMENT_TOKEN}`},body:JSON.stringify({history,inbound,receipts})});
+    const response = await fetchImpl(process.env.LEARN_EXPERIMENT_URL, {method:'POST',signal:AbortSignal.timeout(100000),headers:{'Content-Type':'application/json',Authorization:`Bearer ${process.env.LEARN_EXPERIMENT_TOKEN}`},body:JSON.stringify({history,inbound,receipts,model:process.env.LEARN_EXPERIMENT_MODEL||model})});
     if(!response.ok) throw Error(`experiment_http_${response.status}`);
     return response.json();
   }

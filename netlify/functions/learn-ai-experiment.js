@@ -17,6 +17,7 @@ exports.handler=async(event)=>{
   catch(e){return respond(409,{error:e.message});}
  }
  if(!Array.isArray(input.inbound)||!input.inbound.length||!input.inbound.every(x=>typeof x==='string')||!Array.isArray(input.history||[]))return respond(400,{error:'invalid_input'});
- try{return respond(200,await decide({history:input.history||[],inbound:input.inbound,receipts:input.receipts||[]}));}
+ const model=input.model==='gpt-5.4-mini'?'gpt-5.4-mini':'gpt-5.4';
+ try{return respond(200,await decide({history:input.history||[],inbound:input.inbound,receipts:input.receipts||[],model}));}
  catch(e){console.error('learn experiment',e.message);return respond(502,{error:'generation_unavailable'});}
 };
