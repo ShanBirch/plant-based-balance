@@ -23,7 +23,8 @@ async function evidence(job,view,db=live.db){
  const d=job.data;
  const conversions=await db(`growth_outcome_events?select=id&ig_thread_id=eq.${live.THREAD}&event_type=in.(app_joined,subscription_started,meta_app_preview_onboarding_started,meta_app_preview_onboarding_completed,meta_app_preview_trial_purchase_claimed,meta_app_preview_trial_subscription_claimed)&occurred_at=gte.${encodeURIComponent(d.link_sent_at)}&limit=1`);
  const bookings=await db(`balance_bookings?select=id&metadata->>ig_thread_id=eq.${live.THREAD}&created_at=gte.${encodeURIComponent(d.link_sent_at)}&limit=1`);
- return reason(job,view,{converted:conversions.length>0,booked:bookings.length>0});
+ const onboarding=await db(`lp_events?select=id&event_type=in.(onboarding_progress,course_progress)&metadata->>thread_id=eq.${live.THREAD}&metadata->>user_id=not.is.null&created_at=gte.${encodeURIComponent(d.link_sent_at)}&limit=1`);
+ return reason(job,view,{converted:conversions.length>0||onboarding.length>0,booked:bookings.length>0});
 }
 async function enqueue({session,inbound_id,plan},deps={}){
  const db=deps.db||live.db,inspect=deps.inspect||live.inspect;

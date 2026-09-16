@@ -34,6 +34,9 @@ test('conversion queries use linked identities; lookup failures cannot authorize
  const {job,view}=fixture();const routes=[];
  await evidence(job,view,async route=>{routes.push(route);return[];});
  assert.match(routes[0],/ig_thread_id=eq\./);assert.match(routes[1],/metadata->>ig_thread_id=eq\./);
+ assert.match(routes[2],/metadata->>user_id=not.is.null/);
+ view.messages[0].created_at=new Date(Date.now()-3*3600000).toISOString();
+ assert.equal(await evidence(job,view,async route=>route.startsWith('lp_events')?[{id:1}]:[]),'joined_or_purchased');
  await assert.rejects(()=>evidence(job,view,async()=>{throw Error('database_unavailable');}),/database_unavailable/);
 });
 
@@ -50,7 +53,7 @@ test('claimed reminder sends once and rechecks a reply arriving during typing',a
    let sends=0;
    live.db=async(route,opts={})=>{
     if(route.startsWith('ig_threads'))return [view.thread];
-    if(route.startsWith('growth_outcome_events')||route.startsWith('balance_bookings'))return [];
+    if(route.startsWith('growth_outcome_events')||route.startsWith('balance_bookings')||route.startsWith('lp_events'))return [];
     if(opts.method==='POST'){if(rows.has(opts.body.id))throw Error('database_409');rows.set(opts.body.id,structuredClone(opts.body));return[opts.body];}
     const key=route.match(/id=eq\.([^&]+)/)?.[1],row=rows.get(key);
     if(!row)return[];

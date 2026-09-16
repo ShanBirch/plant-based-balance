@@ -48,12 +48,13 @@ async function save(event, user) {
     const lastTouch = { ...data.last_touch, ...verifiedAd };
     const row = {
         event_id: data.event_id, visitor_id: data.visitor_id, session_id: data.session_id,
-        event_type: 'onboarding_progress', landing_page: 'onboarding', page_variant: VERSION,
+        event_type: data.phase === 'course' ? 'course_progress' : 'onboarding_progress', landing_page: data.phase === 'course' ? 'course' : 'onboarding', page_variant: VERSION,
         duration_ms: Math.round(data.duration_ms),
         utm_source: lastTouch.utm_source || null, utm_medium: lastTouch.utm_medium || null,
         utm_campaign: lastTouch.utm_campaign || null, utm_content: lastTouch.utm_content || null,
         metadata: { funnel_version: VERSION, phase: data.phase, step: data.step, status: data.status,
             flow: data.flow, mode: data.mode, step_number: data.step_number,
+            ...(data.phase === 'course' ? { course_id: data.course_id, lesson_id: data.lesson_id } : {}),
             user_id: user?.id || null, test_mode: data.test_mode || testAccount,
             occurred_at: Math.abs(Date.now() - Date.parse(data.occurred_at)) < 86400000 ? data.occurred_at : new Date().toISOString(),
             first_touch: data.first_touch, last_touch: lastTouch, verified_paid_meta: !!verifiedAd, thread_id: threadId }

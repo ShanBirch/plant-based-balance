@@ -1866,7 +1866,7 @@ window.addEventListener('load', function() {
     </script>
 
 
-    <script src="lib/onboarding-funnel.js?v=1"></script>
+    <script src="lib/onboarding-funnel.js?v=2"></script>
     <script src="js/dashboard/pbb-app-telemetry.js?v=1"></script>
     <script>
 if(!window._pbbIsIOSSafari) {
@@ -21163,11 +21163,11 @@ if (window._pbbIsIOSSafari) {
             });
             if (window.showQuizBattleInviteModal || learningAlreadyRequested) return;
             var s = document.createElement('script');
-      s.src = 'lib/learning-inline.js?v=six-weeks-v2';
+      s.src = 'lib/learning-inline.js?v=course-tracking-v3';
             document.head.appendChild(s);
         }, { once: true });
     } else {
-    document.write('<script src="lib/learning-inline.js?v=six-weeks-v2"><\/script>');
+    document.write('<script src="lib/learning-inline.js?v=course-tracking-v3"><\/script>');
     }
     </script>
     <!-- Battle System & Logic Overrides (130 lines — deferred on iOS) -->

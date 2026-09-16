@@ -84,3 +84,40 @@ test('signed ad handoff resolves canonical ad identifiers without persisting its
         assert.equal(stored.metadata.meta_ref,undefined);assert.equal(stored.metadata.user_id,null);
     }finally{global.fetch=oldFetch;if(oldUrl===undefined)delete process.env.SUPABASE_URL;else process.env.SUPABASE_URL=oldUrl;if(oldKey===undefined)delete process.env.SUPABASE_SERVICE_ROLE_KEY;else process.env.SUPABASE_SERVICE_ROLE_KEY=oldKey;}
 });
+
+test('course hooks deliver authenticated first-party events without ad analytics', async () => {
+    const calls=[];let seq=0;
+    const storage={getItem:()=>null,setItem:()=>{}};
+    const window={document:{},location:{pathname:'/dashboard.html',search:''},crypto:{randomUUID:()=>`course-event-${++seq}00000000`},localStorage:storage,sessionStorage:storage,addEventListener:()=>{},setTimeout:()=>{},supabaseClient:{auth:{getSession:async()=>({data:{session:{access_token:'test-session'}}})}},fetch:async(url,options)=>{calls.push({url,options,body:JSON.parse(options.body)});return{ok:true};}};
+    vm.runInNewContext(fs.readFileSync(require.resolve('../lib/onboarding-funnel'),'utf8'),{window,URLSearchParams,Date});
+    // Exercise the actual app adapters, not a duplicate of their implementation.
+    const source=fs.readFileSync(require.resolve('../lib/learning-inline'),'utf8');
+    const adapters=source.slice(source.indexOf('    function trackFoundationsEvent('),source.indexOf('    function recordFoundationsMilestones('));
+    vm.runInNewContext(adapters+"trackFoundationsEvent('foundations_lesson_started',{lesson_id:'lesson1'});trackCourseEvent('course_week_opened','food',{week_number:2});",{window,BALANCE_FOUNDATIONS:{id:'foundations'}});
+    await new Promise(resolve=>setImmediate(resolve));
+    assert.equal(calls.length,2);
+    assert.equal(calls[0].url,'/.netlify/functions/onboarding-progress');
+    assert.equal(calls[0].options.headers.Authorization,'Bearer test-session');
+    assert.equal(calls[0].body.course_id,'foundations');assert.equal(calls[0].body.lesson_id,'lesson1');
+    assert.equal(calls[1].body.phase,'course');assert.equal(calls[1].body.step_number,2);
+});
+
+test('course endpoint saves verified account identity separately from onboarding reports', async () => {
+    const oldFetch=global.fetch,oldUrl=process.env.SUPABASE_URL,oldKey=process.env.SUPABASE_SERVICE_ROLE_KEY;
+    process.env.SUPABASE_URL='https://example.supabase.co';process.env.SUPABASE_SERVICE_ROLE_KEY='test-only';
+    let stored;
+    global.fetch=async(url,options)=>({ok:true,json:async()=>{
+        if(url.includes('/auth/v1/user'))return{id:'verified-account',email:'test@example.com'};
+        if(url.includes('/users?'))return[{is_test_account:true}];
+        stored=JSON.parse(options.body);return null;
+    }});
+    try {
+        const result=await handler({httpMethod:'POST',headers:{Authorization:'Bearer valid'},body:JSON.stringify({...base(),phase:'course',step:'course_topic_started',course_id:'food',lesson_id:'topic1',user_id:'spoof',answers:'private'})});
+        assert.equal(result.statusCode,200);assert.equal(stored.event_type,'course_progress');
+        assert.equal(stored.metadata.user_id,'verified-account');assert.equal(stored.metadata.course_id,'food');
+        assert.equal(stored.metadata.lesson_id,'topic1');assert.equal(stored.metadata.answers,undefined);
+        assert.equal(stored.metadata.test_mode,true);
+        global.fetch=async()=>({ok:false,status:401,json:async()=>null});
+        assert.equal((await handler({httpMethod:'POST',headers:{Authorization:'Bearer invalid'},body:JSON.stringify(base())})).statusCode,401);
+    }finally{global.fetch=oldFetch;if(oldUrl===undefined)delete process.env.SUPABASE_URL;else process.env.SUPABASE_URL=oldUrl;if(oldKey===undefined)delete process.env.SUPABASE_SERVICE_ROLE_KEY;else process.env.SUPABASE_SERVICE_ROLE_KEY=oldKey;}
+});
