@@ -4,7 +4,7 @@ The ad message flow must send the dedicated **price-ending DM video**. The old `
 
 Approved delivery files:
 
-- `assets/balance-learn-dm-149-v11.mp4`: AUD $149 for the full six weeks, used through 20 October 2026 Brisbane time.
+- `assets/balance-learn-dm-149-v13-polished-cards.mp4`: AUD $149 for the full six weeks, used through 20 October 2026 Brisbane time.
 - `assets/balance-learn-dm-450-v11.mp4`: AUD $450 for the full six weeks, used from midnight 21 October 2026 Brisbane time.
 
 Launch is 21 September. The introductory window lasts one month after launch; the $450 change is in October. Upfront checkout and public offer copy follow the same dates. Weekly membership pricing is unchanged.
@@ -22,3 +22,12 @@ The launch ending shows standard AUD $450 crossed out, AUD $149 launch price and
 ## v11 music balance
 
 Music gain and every point in both music volume envelopes are 80% of v10 (20% quieter). Effects, voice, visuals and timing are unchanged. Both date-based delivery versions use this mix; queued v9/v10 attachments resolve to v11.
+
+
+## Final polished-cards edit - 16 September delivery update
+
+Shannon selected the final edit completed on 15 September: `Balance-Learn-DM-Polished-Cards.mp4` (223.4 seconds). Source: `C:/Users/shann/Documents/Codex/2026-09-14/can-you-find-the-raw-edit/outputs/Balance-Learn-DM-Polished-Cards.mp4`. Editable composition: the same task's `work/dm-course/index.html`. Drive archive: https://drive.google.com/file/d/1GchKn1xpYvK1frXCGJCUhyx7sjJZ0t6f/view.
+
+The v13 delivery copy retains all content and timing, including real community examples, the ten polished lesson cards, the check-in ending and the $149 six-week offer. It is encoded at 720 x 1280, H.264/AAC with MP4 faststart for native DM delivery. This supersedes the historical 114.3-second launch edit described above.
+
+The canonical selector and operator prompt use v13 immediately. Queued v11 launch URLs are recognized, upgraded at send time and stripped from message text. Existing introduction and prior-video guards remain active. Because this final edit shows $149, the existing approved $450 v11 fallback still takes over on 21 October Brisbane time; v13 is not valid for that later price. No lead messages are sent as part of deployment verification.

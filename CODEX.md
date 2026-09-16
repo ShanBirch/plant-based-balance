@@ -20,7 +20,7 @@ This file is the durable handoff context for Codex sessions. Read it at the star
 
 ## Six-week Learn restored (14 September 2026)
 
-Shannon withdrew the eight-week public rollout. The default Learn course is six weeks, with the added experience/perception, free-energy principle and actual-learning content integrated into weeks 1-3. Keep the original six weekly themes and practical actions. Arunima Sharma alone retains her assigned eight-week continuation and all progress. See `docs/learn-six-weeks-restored-2026-09-14.md`. Use the original onboarding recording and v11 six-week DM videos; do not publish the retired eight-week media.
+Shannon withdrew the eight-week public rollout. The default Learn course is six weeks, with the added experience/perception, free-energy principle and actual-learning content integrated into weeks 1-3. Keep the original six weekly themes and practical actions. Arunima Sharma alone retains her assigned eight-week continuation and all progress. See `docs/learn-six-weeks-restored-2026-09-14.md`. Use the original onboarding recording. The current DM video is the final 15 September polished-cards six-week edit, `balance-learn-dm-149-v13-polished-cards.mp4`; the date-based $450 fallback remains v11. See `docs/learn-dm-video-2026-09-10.md`. Do not publish the retired eight-week media.
 
 ## Balance Learn introductory pricing (10 September 2026)
 
