@@ -1,5 +1,23 @@
 const test=require('node:test');const assert=require('node:assert/strict');
 const {decide,validatePlan,facts}=require('./flow.cjs');
+const {assertTestSession,receiptId,graphMessage,THREAD}=require('./live.cjs');
+test('live dispatch requires exact test identity and explicit active session',()=>{
+ const t={id:THREAD,ig_username:'goldcoast_ai_solutions',subscriber_id:'ig_graph:17841415641641750:989348707404558',linked_user_id:null,custom_data:{codex_ai_opt_out:true,learn_ai_experiment:{session:'test',expires_at:'2099-01-01'}}};
+ assert.doesNotThrow(()=>assertTestSession(t,'test'));
+ assert.throws(()=>assertTestSession({...t,id:'another-thread'},'test'));
+ assert.throws(()=>assertTestSession({...t,linked_user_id:'customer'},'test'));
+ assert.throws(()=>assertTestSession(t,'different-session'));
+ assert.throws(()=>assertTestSession({...t,custom_data:{...t.custom_data,codex_ai_opt_out:false}},'test'));
+ assert.throws(()=>assertTestSession(t,'test',Date.parse('2100-01-01')));
+});
+test('dispatch claims are stable across retry and distinct per action',()=>{
+ assert.equal(receiptId('inbound',0),receiptId('inbound',0));assert.notEqual(receiptId('inbound',0),receiptId('inbound',1));
+});
+test('preview card describes website and keeps download out of its label',()=>{
+ const m=graphMessage({type:'card',asset_id:'preview'});
+ assert.match(m.attachment.payload.buttons[0].url,/meta-app-preview|\/p\//);
+ assert.doesNotMatch(m.attachment.payload.buttons[0].title,/download/i);
+});
 test('reject unknown assets and unintroduced media without rewriting conversation',()=>{
  assert.throws(()=>validatePlan({status:'reply',actions:[{type:'image',asset_id:'made_up',text:''}]}));
  assert.throws(()=>validatePlan({status:'reply',actions:[{type:'image',asset_id:'ally',text:''}]}));
