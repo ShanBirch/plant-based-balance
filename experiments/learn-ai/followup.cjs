@@ -6,6 +6,7 @@ const DELAY_MS=2*60*60*1000;
 const TEXT={zoom:'Hey, how did you go with booking in? Need a hand with anything?',preview:'Hey, how did you go with the course page? Need a hand with anything?'};
 function reason(job,view,{now=Date.now(),converted=false,booked=false}={}){
  const d=job.data,t=view.thread;
+ if(require('./handoff.cjs').pending(view.receipts))return 'safety_review_pending';
  if(t.id!==live.THREAD||t.learn_ai_settings?.mode!=='automatic'||t.learn_ai_settings.session!==d.session)return 'selection_changed';
  if(t.linked_user_id||['in_app','paying','churned'].includes(t.lead_stage))return 'joined';
  if(String(t.custom_data?.do_not_follow_up).toLowerCase()==='true')return 'do_not_follow_up';
@@ -21,7 +22,7 @@ function reason(job,view,{now=Date.now(),converted=false,booked=false}={}){
 }
 async function evidence(job,view,db=live.db){
  const d=job.data;
- const conversions=await db(`growth_outcome_events?select=id&ig_thread_id=eq.${live.THREAD}&event_type=in.(app_joined,subscription_started,meta_app_preview_onboarding_started,meta_app_preview_onboarding_completed,meta_app_preview_trial_purchase_claimed,meta_app_preview_trial_subscription_claimed)&occurred_at=gte.${encodeURIComponent(d.link_sent_at)}&limit=1`);
+ const conversions=await db(`growth_outcome_events?select=id&ig_thread_id=eq.${live.THREAD}&event_type=in.(app_joined,subscription_started,meta_app_preview_purchase_completed,meta_app_preview_onboarding_started,meta_app_preview_onboarding_completed,meta_app_preview_trial_purchase_claimed,meta_app_preview_trial_subscription_claimed)&occurred_at=gte.${encodeURIComponent(d.link_sent_at)}&limit=1`);
  const bookings=await db(`balance_bookings?select=id&metadata->>ig_thread_id=eq.${live.THREAD}&created_at=gte.${encodeURIComponent(d.link_sent_at)}&limit=1`);
  const onboarding=await db(`lp_events?select=id&event_type=in.(onboarding_progress,course_progress)&metadata->>thread_id=eq.${live.THREAD}&metadata->>user_id=not.is.null&created_at=gte.${encodeURIComponent(d.link_sent_at)}&limit=1`);
  return reason(job,view,{converted:conversions.length>0||onboarding.length>0,booked:bookings.length>0});

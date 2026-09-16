@@ -55,3 +55,16 @@ test('automatic delivery waits for media, retries before sending and does not se
  assert.equal((await run(thread,'voice',payload,deps)).skipped,'turn_already_attempted');assert.equal(sends,1);
  }finally{Object.assign(live,originals);}
 });
+
+test('ordinary blocker phrases never erase an already supplied goal',()=>{
+ const first=[{direction:'in',text:'I want to get stronger'},{direction:'out',text:'What gets in the way?'}];
+ for(const text of ['I keep starting over','I struggle to stay consistent','How does Balance work?'])assert.equal(episode([...first,{direction:'in',text}]).length,3);
+});
+test('a quick inbound arriving during an AI send stays unanswered',()=>{
+ const {unanswered}=require('./automatic.cjs');
+ const messages=[{id:'first',direction:'in',text:'Strength'},{id:'second',direction:'in',text:'At home please'},{id:'sent',direction:'out',text:'This is Gen',source:'learn_ai_experiment'}];
+ const receipts=[{data:{inbound_id:'first',outcome:'confirmed',action:{type:'text'}}}];
+ assert.deepEqual(unanswered(messages,receipts).map(m=>m.id),['second']);
+ assert.deepEqual(unanswered([...messages,{id:'manual',direction:'out',source:'human'}],receipts),[]);
+ assert.deepEqual(unanswered(messages,[...receipts,{data:{inbound_id:'second',outcome:'complete'}}]),[]);
+});

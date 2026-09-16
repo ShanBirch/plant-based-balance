@@ -8,8 +8,19 @@ const normalize=id=>String(id||'').replace(/^ig_graph:/,'');
 function enabled(thread){return thread?.id===live.THREAD&&(thread.learn_ai_settings||thread?.custom_data?.learn_ai_experiment)?.mode==='automatic';}
 function episode(messages){
  let start=0;
- for(let i=0;i<messages.length;i++)if(messages[i].direction==='in'&&/^(balance|i struggle to stay consistent|i keep starting over|how does balance work)[.!?\s]*$/i.test(messages[i].text.trim()))start=i;
+ // Only the explicit test restart keyword resets context. An ordinary answer
+ // such as "I keep starting over" must retain the goal and previous question.
+ for(let i=0;i<messages.length;i++)if(messages[i].direction==='in'&&/^balance[.!?\s]*$/i.test(messages[i].text.trim()))start=i;
  return messages.slice(start);
+}
+function unanswered(messages,receipts=[]){
+ let handled=-1;
+ for(const receipt of receipts){
+  const data=receipt.data||{};
+  if((data.action&&data.outcome==='confirmed')||data.outcome==='complete')handled=Math.max(handled,messages.findIndex(m=>m.id===data.inbound_id));
+ }
+ for(let i=0;i<messages.length;i++)if(messages[i].direction==='out'&&messages[i].source!=='learn_ai_experiment')handled=Math.max(handled,i);
+ return messages.slice(handled+1).filter(m=>m.direction==='in');
 }
 // One atomic lease per test thread serialises uploads and quick follow-up DMs.
 // This controls delivery ownership only; the model owns the conversation.
@@ -40,8 +51,7 @@ async function run(thread,sourceMessageId,payload={}, {decideImpl=decide,presenc
   const view=await live.inspect(session),messages=episode(view.messages);
   const newest=messages.findLast(m=>m.direction==='in');
   if(!newest||normalize(newest.manychat_message_id)!==normalize(sourceMessageId))return{skipped:'newer_inbound'};
-  const lastOut=messages.findLastIndex(m=>m.direction==='out');
-  const pending=messages.slice(lastOut+1).filter(m=>m.direction==='in');
+  const pending=unanswered(messages,view.receipts);
   if(!pending.length)return{skipped:'already_answered'};
   const id=live.receiptId('automatic-turn:'+newest.id,0);
   const previous=(await live.db(`coach_alerts?id=eq.${id}&select=id,data`))[0];
@@ -63,7 +73,10 @@ async function run(thread,sourceMessageId,payload={}, {decideImpl=decide,presenc
   claim.data.media_context=prepared.context;
   const receipts=view.receipts.map(r=>r.data).filter(r=>r.action&&messages.some(m=>m.id===r.inbound_id)).map(r=>({action:r.action,status:r.outcome==='confirmed'?'sent':'not_confirmed'}));
   const firstPending=messages.indexOf(pending[0]);
-  const result=await decideImpl({model:'gpt-5.4',history:prepared.messages.slice(0,firstPending).map(m=>({direction:m.direction,text:m.text})),inbound:prepared.messages.slice(firstPending).filter(m=>m.direction==='in').map(m=>m.text),receipts});
+  const safety=require('./handoff.cjs');
+  const pendingSafety=safety.pending(view.receipts);
+  const result=await decideImpl({model:'gpt-5.4',history:prepared.messages.slice(0,firstPending).map(m=>({direction:m.direction,text:m.text})),inbound:prepared.messages.slice(firstPending).filter(m=>m.direction==='in').map(m=>m.text),receipts,pendingSafety});
+  if(result.plan.status==='needs_human'&&!pendingSafety)claim.data.handoff_id=await safety.queue({thread:view.thread,session,inbound_id:newest.id,plan:result.plan,media_context:prepared.context});
   Object.assign(claim.data,result,{outcome:'sending'});
   await live.db(`coach_alerts?id=eq.${id}`,{method:'PATCH',body:{data:claim.data}});
   for(let index=0;index<result.plan.actions.length;index++){
@@ -99,4 +112,4 @@ async function run(thread,sourceMessageId,payload={}, {decideImpl=decide,presenc
   await live.db(`coach_alerts?data->>ig_thread_id=eq.${live.THREAD}&data->>manychat_message_id=eq.${encodeURIComponent(sourceMessageId)}&status=eq.pending`,{method:'PATCH',body:{status:'canceled'}}).catch(()=>{});
  }
 }
-module.exports={enabled,episode,acquire,release,run};
+module.exports={enabled,episode,unanswered,acquire,release,run};

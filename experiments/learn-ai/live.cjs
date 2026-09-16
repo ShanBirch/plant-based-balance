@@ -66,7 +66,7 @@ async function inspect(session){
  const thread=(await db(`ig_threads?id=eq.${THREAD}&select=*`))[0];
  const flag=assertTestSession(thread,session);
  const messages=(await db(`ig_messages?thread_id=eq.${THREAD}&created_at=gte.${encodeURIComponent(flag.started_at)}&select=id,direction,text,source,alert_id,created_at,manychat_message_id&order=created_at.desc,id.desc&limit=200`)).reverse();
- const receipts=await db(`coach_alerts?data->>session=eq.${encodeURIComponent(session)}&select=id,data`);
+ const receipts=await db(`coach_alerts?data->>session=eq.${encodeURIComponent(session)}&select=id,status,data`);
  return {thread,flag,messages:reconcileMessages(messages,receipts),receipts};
 }
 async function send({session,inbound_id,index,plan,onDelivered,receipt_namespace=inbound_id,beforeSend}){

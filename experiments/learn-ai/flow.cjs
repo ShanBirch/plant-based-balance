@@ -30,12 +30,14 @@ function catalogue(now = new Date()) {
   };
 }
 function facts(now = new Date()) {
-  return {verified_date: now.toISOString(), course: 'Balance Learn', duration: 'six weeks', lessons_and_quizzes: 45,
+  const weeks=require('../../lib/learn-curriculum.js').weeks();
+  return {verified_date: now.toISOString(), course: 'Balance Learn', duration: 'six weeks', lessons_and_quizzes: weeks.reduce((n,w)=>n+w.lessonIds.length,0),
     upfront_aud: now.getTime() >= Date.parse('2026-10-21T00:00:00+10:00') ? 450 : 149,
     upfront_terms: 'One payment, no subscription or auto-renewal. Launch 21 September 2026. Intro price through 20 October Brisbane time.',
     optional_weekly: 'AUD 24.83/week, six-week minimum AUD 148.98, continuing until cancelled. Distinct from upfront payment.',
     includes: 'Fixed neuroscience/psychology course, personalised workout program, meal-plan support fitted to dietary preferences, my weekly training/food review and adjustments, six weeks app/community access. Home or gym workouts. Not unlimited daily coaching.',
-    themes: ['Why change feels hard','Work with your energy','Build a rhythm that sticks','Take the fight out of food','Make progress easier to repeat','Build your sustainable way forward'],
+    themes: weeks.map(w=>w.title),
+    weekly_curriculum: weeks.map(w=>({week:w.number,title:w.title,description:w.description,lesson_count:w.lessonIds.length})),
     completion: 'Certificate of Completion after required lessons and actions, not accreditation.',
     written_lessons: true, video_captions: 'unconfirmed',
     zoom: 'Live 30-minute sessions: AUD 125/week for one, 275 for three, 425 for five. Six-week starting block. Learn included. Do not guarantee specific times.'};
@@ -53,7 +55,7 @@ function validatePlan(plan, assets = catalogue()) {
   }
   return plan;
 }
-async function decide({history = [], inbound, receipts = [], model = 'gpt-5.4-mini', apiKey = process.env.OPENAI_API_KEY, now = new Date(), fetchImpl = fetch}) {
+async function decide({history = [], inbound, receipts = [], pendingSafety = false, model = 'gpt-5.4-mini', apiKey = process.env.OPENAI_API_KEY, now = new Date(), fetchImpl = fetch}) {
   if (process.env.LEARN_EXPERIMENT_URL) {
     const response = await fetchImpl(process.env.LEARN_EXPERIMENT_URL, {method:'POST',signal:AbortSignal.timeout(100000),headers:{'Content-Type':'application/json',Authorization:`Bearer ${process.env.LEARN_EXPERIMENT_TOKEN}`},body:JSON.stringify({history,inbound,receipts,model:process.env.LEARN_EXPERIMENT_MODEL||model})});
     if(!response.ok) throw Error(`experiment_http_${response.status}`);
@@ -61,7 +63,7 @@ async function decide({history = [], inbound, receipts = [], model = 'gpt-5.4-mi
   }
   if (!apiKey) throw Error('api_key_unavailable');
   const assets = catalogue(now);
-  const context = {facts: facts(now), assets: Object.fromEntries(Object.entries(assets).map(([id,a])=>[id,{type:a.type,facts:a.facts}])), history, receipts, latest_inbound_burst: inbound};
+  const context = {facts: facts(now), assets: Object.fromEntries(Object.entries(assets).map(([id,a])=>[id,{type:a.type,facts:a.facts}])), history, receipts, pending_safety_review: pendingSafety, latest_inbound_burst: inbound};
   const started = Date.now();
   const res = await fetchImpl('https://api.openai.com/v1/responses', {method:'POST', signal:AbortSignal.timeout(90000),
     headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},

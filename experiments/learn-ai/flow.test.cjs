@@ -70,3 +70,12 @@ test('API error never invents an apology or retries',async()=>{
 test('incomplete response cannot be mistaken for a plan',async()=>{
  await assert.rejects(()=>decide({inbound:['hello'],apiKey:'test',fetchImpl:async()=>({ok:true,json:async()=>({status:'incomplete'})})}),/model_incomplete/);
 });
+
+test('course answers use numbered weeks from the actual curriculum',()=>{
+ const course=facts();assert.equal(course.weekly_curriculum.length,6);
+ assert.equal(course.weekly_curriculum.find(w=>w.week===4).title,'Take the fight out of food');
+ assert.equal(course.lessons_and_quizzes,course.weekly_curriculum.reduce((n,w)=>n+w.lesson_count,0));
+});
+test('safety handoff cannot include a sales asset',()=>{
+ assert.throws(()=>validatePlan({status:'needs_human',actions:[{type:'text',text:'Here',asset_id:''},{type:'card',asset_id:'preview',text:''}]}),/invalid_asset_action/);
+});
