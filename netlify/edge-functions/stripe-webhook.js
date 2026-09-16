@@ -1,4 +1,5 @@
 import { ensureLearnBillingSchedule } from "./lib/learn-billing-schedule.js";
+import { handoffPurchasedCustomer } from "./lib/customer-dm-handoff.js";
 import Stripe from "stripe";
 import { sendCAPIEvent } from "./lib/capi-utils.js";
 
@@ -762,9 +763,13 @@ async function recordMetaPreviewPurchaseAndQueue({ session, stripeEvent, email, 
     const canonicalOutbound = Array.isArray(messageRows) ? messageRows.find(message =>
         String(message.direction || "").toLowerCase() === "out"
         && String(message.text || "").includes(token)
-        && /https:\/\/(?:plantbased-balance\.org|future-balance\.netlify\.app)\/(?:meta-app-preview\.html|p\/)/i.test(String(message.text || ""))
+        && /https:\/\/(?:plantbased-balance\.org|future-balance\.netlify\.app|balanceneurosciencefitness\.com)\/(?:meta-app-preview\.html|p\/)/i.test(String(message.text || ""))
     ) : null;
     if (!canonicalOutbound) return { skipped: "canonical_preview_missing" };
+
+    const [paidPurchase] = await supabaseRequest(`founders_pass_purchases?select=*&stripe_checkout_session_id=eq.${encodeURIComponent(session.id)}&status=eq.paid&limit=1`);
+    const handoff = await handoffPurchasedCustomer({ query: supabaseRequest, purchase: paidPurchase, threadId: thread.id, userId: user?.id });
+    if (handoff.skipped) return handoff;
 
     const analyticsSessionId = cleanString(session?.metadata?.session_id, 100);
     const visitorId = cleanString(session?.metadata?.visitor_id, 100);
@@ -808,7 +813,7 @@ async function recordMetaPreviewPurchaseAndQueue({ session, stripeEvent, email, 
     await supabaseRequest(`ig_threads?id=eq.${encodeURIComponent(thread.id)}`, {
         method: "PATCH",
         prefer: "return=minimal",
-        body: { lead_stage: "paying" },
+        body: { lead_stage: user?.id ? "in_app" : "paying" },
     });
 
     const existingAlerts = await supabaseRequest(

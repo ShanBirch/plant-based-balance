@@ -174,6 +174,7 @@ const {
     isClientManagerAutoReplyEnabled,
     isClientManagerBrowserDispatchEnabled,
     isAlwaysNeedsYouPerson,
+    isProtectedManualClient,
     shouldBypassKayNeedsYouForAlert,
 } = require('./_lib/client-context');
 const {
@@ -2291,6 +2292,17 @@ exports.handler = async (event) => {
             });
         } catch (err) {
             console.warn('[send-ig-reply] stale send error cleanup failed:', err.message);
+        }
+    }
+    if (isAutomatedPermanentNeedsYouSendSource(source, alertData)) {
+        const clientId = threadForSend?.linked_user_id || alert.client_id;
+        const [person] = clientId ? await supabase(`users?select=name&id=eq.${encodeURIComponent(clientId)}&limit=1`) : [];
+        const purchaseId = threadForSend?.custom_data?.customer_lifecycle?.purchase_id;
+        if ((clientId && !person) || isProtectedManualClient(person || {}) || isProtectedManualClient(threadForSend || {}) || isProtectedManualClient({ name: alert.client_name })) {
+            return { statusCode: 409, body: JSON.stringify({ code: 'protected_manual_client', error: 'This client requires Shannon to reply.' }) };
+        }
+        if (purchaseId && (source !== 'balance_lead_client_manager_cron' || alertData.customer_service_purchase_id !== purchaseId)) {
+            return { statusCode: 409, body: JSON.stringify({ code: 'customer_handoff_review_required', error: 'Purchase requires a fresh customer-service review.' }) };
         }
     }
     if (shouldBlockLinkedClientAutomatedIgSend({ alert, alertData, thread: threadForSend, source })) {

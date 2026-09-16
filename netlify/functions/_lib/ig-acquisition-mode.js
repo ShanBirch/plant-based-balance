@@ -48,7 +48,7 @@ function hasVerifiedMetaAttribution(customData = {}) {
 }
 
 function resolveIgAcquisitionMode({ customData = {}, linkedUserId = null } = {}) {
-    if (linkedUserId) return ACQUISITION_MODES.EXISTING_CLIENT;
+    if (linkedUserId || customData.customer_lifecycle?.purchase_id) return ACQUISITION_MODES.EXISTING_CLIENT;
     if (hasVerifiedMetaAttribution(customData)) return ACQUISITION_MODES.PAID_META;
     if (customData?.learn_keyword_flow?.keyword === 'balance') return ACQUISITION_MODES.LEARN_KEYWORD;
 
@@ -92,7 +92,7 @@ PAID META CONVERSATION MODE:
 - After the first reply, preserve this paid context for the full thread. A later message does not turn them into an organic outreach lead.
 - Preserve the verified paid offer-flow variant and attributed checkout URL. Never infer or switch the paid experiment route from a later generic message.`;
     }
-    if (normalizedMode === ACQUISITION_MODES.EXISTING_CLIENT) return '';
+    if (normalizedMode === ACQUISITION_MODES.EXISTING_CLIENT) return '\nCUSTOMER SERVICE / COACHING MODE: This person has an app account or a verified purchase. Stop the ad funnel. Answer their course, setup and coaching questions from live member evidence. Payment without a linked account means onboarding help, not another pitch. Do not assume payment, enrolment or progress from account creation alone.\n';
     const sourceDescription = normalizedMode === ACQUISITION_MODES.ORGANIC_FOLLOWER
         ? 'an existing follower relationship'
         : (normalizedMode === ACQUISITION_MODES.ORGANIC_OUTREACH

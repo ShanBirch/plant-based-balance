@@ -30,9 +30,11 @@ const {
     fireCoachEditAnalysis,
     isClientManagerAutoReplyEnabled,
     isAlwaysNeedsYouPerson,
+    isProtectedManualClient,
     shouldBypassKayNeedsYouForAlert,
 } = require('./_lib/client-context');
 const { resolveUtf8TransportText } = require('./_lib/outbound-text-integrity');
+const { loadCustomerServicePermission } = require('./_lib/customer-service-policy');
 
 async function supabase(path, options = {}) {
     const url = `${SUPABASE_URL}/rest/v1/${path}`;
@@ -286,6 +288,8 @@ function isCurrentClientAlert(alert = {}, liveThread = null) {
 }
 
 function isManagerOwnedClientAutoReply(alert = {}, source = '', liveThread = null) {
+    if (source === 'balance_lead_client_manager_cron' && alert.alert_type === 'incoming_dm'
+        && !alert.data?.ig_thread_id && alert._liveCustomerServicePermission === true) return true;
     return String(source || '').trim().toLowerCase() === 'balance_lead_client_manager_cron'
         && !!liveThread?.linked_user_id
         && isClientManagerAutoReplyEnabled(liveThread)
@@ -512,6 +516,16 @@ exports.handler = async (event) => {
                 error: 'Instagram thread could not be verified, so the automated send was stopped.',
                 code: 'current_client_status_unverified',
             }) };
+        }
+    }
+    if (isAutomatedPermanentNeedsYouSendSource(source, alert.data || {})) {
+        const clientId = liveThread?.linked_user_id || alert.client_id;
+        const [person] = clientId ? await supabase(`users?select=name&id=eq.${encodeURIComponent(clientId)}&limit=1`) : [];
+        if ((clientId && !person) || isProtectedManualClient(person || {}) || isProtectedManualClient(liveThread || {}) || isProtectedManualClient({ name: alert.client_name })) {
+            return { statusCode: 409, body: JSON.stringify({ code: 'protected_manual_client', error: 'This client requires Shannon to reply.' }) };
+        }
+        if (source === 'balance_lead_client_manager_cron' && alert.alert_type === 'incoming_dm' && !alert.data?.ig_thread_id) {
+            alert._liveCustomerServicePermission = await loadCustomerServicePermission(supabase, alert.coach_id, alert.client_id);
         }
     }
     if (shouldBlockCurrentClientAutomatedSend(alert, source, liveThread)) {

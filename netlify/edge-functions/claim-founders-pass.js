@@ -1,3 +1,4 @@
+import { handoffPurchasedCustomer } from "./lib/customer-dm-handoff.js";
 const STRIPE_API_VERSION = "2026-02-25.clover";
 const FOUNDERS_PRODUCT = "balance_vegan_founders_pass";
 const FOUNDERS_PLAN = "balance_foundations_six_week";
@@ -110,6 +111,9 @@ export default async (request) => {
             if (!verified || verified.email !== userEmail) {
                 return json({ error: "This purchase does not match the signed-in account." }, 403);
             }
+            const [existingPurchase] = await supabaseRequest(supabaseUrl, serviceKey,
+                `founders_pass_purchases?select=metadata&stripe_checkout_session_id=eq.${encodeURIComponent(sessionId)}&limit=1`);
+            verified.metadata = { ...existingPurchase?.metadata, ...verified.metadata };
             await supabaseRequest(supabaseUrl, serviceKey, "founders_pass_purchases?on_conflict=stripe_checkout_session_id", {
                 method: "POST",
                 prefer: "resolution=merge-duplicates,return=representation",
@@ -140,6 +144,13 @@ export default async (request) => {
             body: { subscription_status: expired ? "expired" : "active", subscription_plan: purchasePlan },
         });
 
+        if (purchase.metadata?.verified_ig_thread_id) {
+            const handoff = await handoffPurchasedCustomer({
+                query: (path, options) => supabaseRequest(supabaseUrl, serviceKey, path, options),
+                purchase, threadId: purchase.metadata.verified_ig_thread_id, userId: user.id,
+            });
+            if (handoff.skipped) console.warn('Customer DM handoff held:', handoff.skipped);
+        }
         return json({ claimed: true, plan: purchasePlan, accessExpiresAt, expired });
     } catch (error) {
         console.error("Founders Pass claim error:", error.message);

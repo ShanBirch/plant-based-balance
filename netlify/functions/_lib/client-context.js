@@ -19,6 +19,7 @@
 
 const { callGeminiModelChain, callOpenAIModelChain } = require('./ai-router');
 const { loadFirebaseServiceAccount } = require('./firebase-service-account');
+const { loadCourseClientContext } = require('./course-client-context');
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
@@ -535,6 +536,7 @@ function isKayNeedsYouPerson(record = {}) {
 }
 
 function isClientManagerAutoReplyEnabled(record = {}) {
+    if (isProtectedManualClient(record)) return false;
     const source = asPlainObject(record);
     const customData = asPlainObject(source.custom_data || source.customData);
     const instagramGraph = asPlainObject(customData.instagram_graph);
@@ -555,6 +557,7 @@ function isClientManagerBrowserDispatchEnabled(record = {}) {
 function isAlwaysNeedsYouPerson(record = {}) {
     const source = asPlainObject(record);
     const customData = asPlainObject(source.custom_data || source);
+    if (isProtectedManualClient(record)) return true;
     if (isClientManagerAutoReplyEnabled(record)) return false;
     if (
         customData.needs_you_always === true
@@ -585,6 +588,13 @@ function isAlwaysNeedsYouPerson(record = {}) {
             || name === 'dani'
             || name.startsWith('francesca ');
     });
+}
+
+function isProtectedManualClient(record = {}) {
+    const custom = record.custom_data || record;
+    return custom.customer_service_manual_only === true
+        || alwaysNeedsYouNameCandidates(record).some(name =>
+            ['nat', 'arunima sharma', 'shane minahan', 'mrs natty t'].includes(name));
 }
 
 function isAppProblemSupportRequest(text = '') {
@@ -909,6 +919,8 @@ async function maybeAutoSendDraft({
     forceSend = false,
 }) {
     if (!coachId || !clientId || !alertId) return false;
+    const [liveClient] = await supabaseQuery(`users?select=name&id=eq.${encodeURIComponent(clientId)}&limit=1`).catch(() => []);
+    if (!liveClient || isProtectedManualClient(liveClient)) return false;
     draftText = normalizeGeneratedCoachDraftText(draftText);
     if (!draftText || !draftText.trim()) return false;
 
@@ -3701,6 +3713,7 @@ async function loadWeeklyAppContext(userId, options = {}) {
     ]);
 
     const lines = [];
+    lines.push(await loadCourseClientContext(userId, supabaseQuery));
     if (challengeLines.length) {
         lines.push(`Active challenges:\n${challengeLines.join('\n')}`);
     }
@@ -8216,6 +8229,7 @@ module.exports = {
     isClientManagerAutoReplyEnabled,
     isClientManagerBrowserDispatchEnabled,
     isAlwaysNeedsYouPerson,
+    isProtectedManualClient,
     isKayNeedsYouPerson,
     isProgramUpdateOrAppFixContext,
     shouldBypassKayNeedsYouForProgramUpdateOrAppFix,

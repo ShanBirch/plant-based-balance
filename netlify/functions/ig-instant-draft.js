@@ -4763,12 +4763,12 @@ function isCurrentMetaAdInbound({ customData = {}, manychatMessageId = '' } = {}
 }
 
 function isMetaAdFastLaneEligible({ linkedUserId = null, customData = {}, manychatMessageId = '' } = {}) {
-    if (linkedUserId) return false;
+    if (linkedUserId || customData.customer_lifecycle?.purchase_id) return false;
     return isCurrentMetaAdInbound({ customData, manychatMessageId });
 }
 
 function isMetaAdConversationFastLaneEligible({ linkedUserId = null, customData = {} } = {}) {
-    if (linkedUserId) return false;
+    if (linkedUserId || customData.customer_lifecycle?.purchase_id) return false;
     const attribution = customData && typeof customData.meta_ad_attribution === 'object'
         ? customData.meta_ad_attribution
         : {};
@@ -4780,6 +4780,7 @@ function isMetaAdConversationFastLaneEligible({ linkedUserId = null, customData 
 }
 
 function buildLearnKeywordFlowCustomData({currentMessage = '', linkedUserId = null, customData = {}, manychatMessageId = '', nowIso = new Date().toISOString()} = {}) {
+    if (customData.customer_lifecycle?.purchase_id) return null;
     const account = normalizeBotAccount(customData.bot_account || customData.instagram_graph?.bot_account);
     if (linkedUserId || account !== 'shan_n_sunny' || !/^balance[.!?\s]*$/i.test(String(currentMessage).trim())) return null;
     return {
