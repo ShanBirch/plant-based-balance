@@ -42,7 +42,7 @@ test('new brain imagery is limited to new units and approved social lesson',()=>
  }
 });
 test('loader versions and both feature discovery entries ship together',()=>{
- const html=fs.readFileSync('dashboard.html','utf8');assert.equal((html.match(/learning-inline.js\?v=short-pages-20260916/g)||[]).length,2);
+ const html=fs.readFileSync('dashboard.html','utf8');assert.equal((html.match(/learning-inline.js\?v=photo-only-20260916/g)||[]).length,2);
  assert.equal((html.match(/Take your lessons one page at a time/g)||[]).length,2);
  assert.match(html,/pbb-quiz-theme.css\?v=2-short-pages/);
 });
