@@ -1,6 +1,13 @@
 const test=require('node:test');const assert=require('node:assert/strict');
 const {decide,validatePlan,facts}=require('./flow.cjs');
 const {assertTestSession,receiptId,graphMessage,THREAD}=require('./live.cjs');
+test('Graph echoes match confirmed receipts without treating real human messages as ours',()=>{
+ const {reconcileMessages}=require('./live.cjs');
+ const rows=[{id:'echo',direction:'out',source:'instagram_native_inbox',manychat_message_id:'ig_graph:abc'},{id:'copy',direction:'out',source:'learn_ai_experiment',manychat_message_id:'abc'},{id:'human',direction:'out',source:'instagram_native_inbox',manychat_message_id:'ig_graph:def'}];
+ const actual=reconcileMessages(rows,[{id:'receipt',data:{outcome:'confirmed',message_id:'abc'}}]);
+ assert.equal(actual.length,2);assert.equal(actual[0].source,'learn_ai_experiment');assert.equal(actual[1].source,'instagram_native_inbox');
+ assert.equal(reconcileMessages(rows,[{id:'receipt',data:{outcome:'uncertain',message_id:'abc'}}])[0].source,'instagram_native_inbox');
+});
 test('live dispatch requires exact test identity and explicit active session',()=>{
  const t={id:THREAD,ig_username:'goldcoast_ai_solutions',subscriber_id:'ig_graph:17841415641641750:989348707404558',linked_user_id:null,custom_data:{codex_ai_opt_out:true,learn_ai_experiment:{session:'test',expires_at:'2099-01-01'}}};
  assert.doesNotThrow(()=>assertTestSession(t,'test'));

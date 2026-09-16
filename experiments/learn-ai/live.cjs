@@ -16,7 +16,7 @@ async function db(route,{method='GET',body}={}) {
 function assertTestSession(thread,session,now=Date.now()) {
  const flag=thread?.custom_data?.learn_ai_experiment;
  if(thread?.id!==THREAD||thread.ig_username!=='goldcoast_ai_solutions'||thread.subscriber_id!==`ig_graph:${ACCOUNT}:${RECIPIENT}`||thread.linked_user_id)throw Error('wrong_test_identity');
- if(thread.custom_data?.codex_ai_opt_out!==true||!flag||flag.session!==session||Date.parse(flag.expires_at)<=now)throw Error('test_session_inactive');
+ if(thread.custom_data?.codex_ai_opt_out!==true||!flag||flag.session!==session||!Number.isFinite(Date.parse(flag.expires_at))||Date.parse(flag.expires_at)<=now)throw Error('test_session_inactive');
  return flag;
 }
 function receiptId(inbound,index){const h=crypto.createHash('sha256').update(`learn-ai:${inbound}:${index}`).digest('hex').slice(0,32);return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`;}
@@ -29,11 +29,23 @@ function graphMessage(action,threadId=THREAD) {
  }
  return {attachment:{type:action.type,payload:{url:asset.url}}};
 }
+function reconcileMessages(messages,receipts){
+ const normalize=id=>String(id||'').replace(/^ig_graph:/,'');
+ const confirmed=new Map(receipts.filter(r=>r.data?.outcome==='confirmed'&&r.data.message_id).map(r=>[normalize(r.data.message_id),r]));
+ const seen=new Set();
+ return messages.flatMap(m=>{
+  const key=normalize(m.manychat_message_id)||m.id;
+  if(seen.has(key))return [];seen.add(key);
+  const receipt=m.direction==='out'&&confirmed.get(key);
+  return [{...m,...(receipt?{source:'learn_ai_experiment',alert_id:receipt.id}:{})}];
+ });
+}
 async function inspect(session){
  const thread=(await db(`ig_threads?id=eq.${THREAD}&select=*`))[0];
  const flag=assertTestSession(thread,session);
  const messages=await db(`ig_messages?thread_id=eq.${THREAD}&created_at=gte.${encodeURIComponent(flag.started_at)}&select=id,direction,text,source,alert_id,created_at,manychat_message_id&order=created_at.asc,id.asc&limit=200`);
- return {thread,flag,messages};
+ const receipts=await db(`coach_alerts?data->>session=eq.${encodeURIComponent(session)}&select=id,data`);
+ return {thread,flag,messages:reconcileMessages(messages,receipts)};
 }
 async function send({session,inbound_id,index,plan}){
  validatePlan(plan);
@@ -70,9 +82,11 @@ async function send({session,inbound_id,index,plan}){
   data.outcome='confirmed';data.message_id=result.message_id;data.confirmed_at=new Date().toISOString();
   await db(`coach_alerts?id=eq.${id}`,{method:'PATCH',body:{status:'dismissed',data,actioned_at:data.confirmed_at}});
   const text=action.type==='text'?action.text:action.type==='card'?`${message.attachment.payload.text} ${message.attachment.payload.buttons[0].url}`:`[${action.type.toUpperCase()}:${catalogue()[action.asset_id].url}]`;
-  const already=await db(`ig_messages?thread_id=eq.${THREAD}&manychat_message_id=eq.${encodeURIComponent(result.message_id)}&select=id&limit=1`);
-  if(!already.length)await db('ig_messages',{method:'POST',body:{thread_id:THREAD,direction:'out',text,source:'learn_ai_experiment',alert_id:id,manychat_message_id:result.message_id,created_at:data.confirmed_at}});
-  else await db(`ig_messages?id=eq.${already[0].id}`,{method:'PATCH',body:{source:'learn_ai_experiment',alert_id:id}});
+  const canonicalId=`ig_graph:${result.message_id.replace(/^ig_graph:/,'')}`;
+  const provenance={source:'learn_ai_experiment',alert_id:id,author_type:'balance_system',training_provenance:'system_generated',delivery_origin:'instagram_graph_api'};
+  const already=await db(`ig_messages?thread_id=eq.${THREAD}&manychat_message_id=eq.${encodeURIComponent(canonicalId)}&select=id&limit=1`);
+  if(!already.length)await db('ig_messages',{method:'POST',body:{thread_id:THREAD,direction:'out',text,...provenance,manychat_message_id:canonicalId,created_at:data.confirmed_at}});
+  else await db(`ig_messages?id=eq.${already[0].id}`,{method:'PATCH',body:provenance});
   return data;
  }catch(e){
   // If provider confirmed delivery, never relabel that as failed or repeat it.
@@ -80,4 +94,4 @@ async function send({session,inbound_id,index,plan}){
   data.error=e.message;await db(`coach_alerts?id=eq.${id}`,{method:'PATCH',body:{data}}).catch(()=>{});throw e;
  }
 }
-module.exports={inspect,send,assertTestSession,receiptId,graphMessage,THREAD};
+module.exports={inspect,send,assertTestSession,receiptId,graphMessage,reconcileMessages,THREAD};
