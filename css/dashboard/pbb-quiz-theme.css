@@ -141,3 +141,51 @@ html #learning-content .balance-quiz .story-controls {padding-bottom:max(30px,en
     .balance-quiz *,#game-feedback-overlay *,#health-iq-celebration * {animation:none!important;transition:none!important}
     #health-iq-celebration .health-iq-celebration-particles {display:none}
 }
+/* Compact, independently scrollable reading pages. Quiz gameplay is unchanged. */
+html #view-learning:has(.story-paged):not([style*="display: none"]):not([style*="display:none"]) {
+    position:fixed!important; inset:0!important; height:100dvh!important; max-height:100dvh!important;
+    padding:0!important; overflow:hidden!important; display:flex!important; flex-direction:column; z-index:120;
+}
+html #view-learning:has(.story-paged) > div:first-child {
+    flex:none; padding: max(42px,env(safe-area-inset-top,0px)) 20px 10px!important;
+}
+html #view-learning:has(.story-paged) > #learning-content {flex:1; min-height:0; overflow:hidden;}
+html #learning-content .story-paged {height:100%; min-height:0; overflow:hidden;}
+html #learning-content .story-paged > div:first-child {padding:8px 16px!important; flex:none;}
+html #learning-content .story-paged h1 {font-size:clamp(1.05rem,3.8vw,1.4rem)!important; line-height:1.25;}
+html #learning-content .story-paged .story-progress-dots {padding:4px 20px 10px; gap:12px; align-items:center; flex:none;}
+html #learning-content .story-page-count {font-size:.78rem; white-space:nowrap; color:var(--quiz-muted)!important;}
+html #learning-content .story-progress-dots progress {height:6px; max-width:160px; flex:1; accent-color:var(--quiz-gold);}
+html #learning-content .story-paged #story-content-area {flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch;}
+html #learning-content .story-paged #story-content-area[hidden] {display:none;}
+html #learning-content .story-paged .story-slide {min-height:0; padding:10px 20px 18px; gap:14px; max-width:640px; margin:auto;}
+html #learning-content .story-paged .story-text {font-size:1.05rem; line-height:1.6; text-align:left; max-width:560px; white-space:pre-line; animation:none; opacity:1; overflow-wrap:anywhere;}
+html #learning-content .story-paged .story-photo {margin:0; width:100%; max-width:480px; border:1px solid var(--quiz-line); border-radius:14px; overflow:hidden; background:var(--quiz-card);}
+html #learning-content .story-paged .story-photo img {display:block; width:100%; height:170px; background:#10120f;}
+html #learning-content .story-paged .story-image-caption {position:static; padding:5px 8px; text-align:center; font-size:.7rem; line-height:1.3;}
+html #learning-content .story-paged .story-photo-credit {padding:4px 8px; text-align:center; font-size:.65rem; line-height:1.3; color:var(--quiz-muted);}
+html #learning-content .story-paged .story-photo-credit a {color:var(--quiz-muted); -webkit-text-fill-color:var(--quiz-muted); text-decoration:underline;}
+html #learning-content .story-paged .story-controls {margin-top:auto; flex:none; padding:10px 16px max(24px,env(safe-area-inset-bottom,0px)); gap:8px; border-top:1px solid var(--quiz-line); background:var(--quiz-bg);}
+html #learning-content .story-paged .story-controls button {padding:12px 8px; min-height:44px; font-size:.88rem; box-shadow:none;}
+html #learning-content .story-paged .story-controls button:disabled {opacity:.45; cursor:default;}
+html #learning-content .story-paged #story-key-insight {min-height:0; overflow-y:auto; flex:1; padding-top:12px;}
+html #learning-content .story-paged #story-quiz-btn {flex:none; padding-bottom:max(24px,env(safe-area-inset-bottom,0px))!important;}
+@media(max-height:700px) {
+    html #learning-content .story-paged .story-photo img {height:125px;}
+    html #learning-content .story-paged .story-text {font-size:1rem; line-height:1.5;}
+}
+@media(orientation:landscape) and (max-height:500px) {
+    html #learning-content .story-paged > div:first-child {display:none;}
+    html #learning-content .story-paged .story-slide:has(.story-photo) {display:grid; grid-template-columns:minmax(140px,35%) 1fr; align-items:start; max-width:850px;}
+    html #learning-content .story-paged .story-photo img {height:120px;}
+    html #learning-content .story-paged .story-controls {padding-top:6px;}
+}
+html #learning-content .story-paged .story-controls button:hover {transform:none;}
+/* Retain a generous, uncropped canvas for the existing labelled diagrams. */
+html #learning-content .story-paged .story-photo--diagram img {height:240px; background:white;}
+@media(orientation:landscape) and (max-height:500px) {
+    html #learning-content .story-paged .story-photo img {height:60px;}
+    html #learning-content .story-paged .story-photo--diagram img {height:140px;}
+    html #learning-content .story-paged .story-image-caption {font-size:.6rem;padding:3px 5px;}
+    html #learning-content .story-paged .story-photo-credit {font-size:.55rem;padding:3px 5px;}
+}
