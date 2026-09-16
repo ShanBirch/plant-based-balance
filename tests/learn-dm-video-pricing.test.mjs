@@ -15,8 +15,8 @@ test('DM video and checkout change at the same Brisbane launch-offer boundary',(
     }
     assert.equal(getLearnCoursePricing(LEARN_INTRO_END).unitAmount,45000);
     assert.equal(resolveVideo(Date.parse(LEARN_INTRO_END)),standardVideo);
-    assert.match(launchVideo,/balance-learn-dm-149-v13-polished-cards\.mp4$/);
-    assert.match(standardVideo,/balance-learn-dm-450-v11\.mp4$/);
+    assert.match(launchVideo,/balance-learn-dm-149-v14-energy-context\.mp4$/);
+    assert.match(standardVideo,/balance-learn-dm-450-v14-energy-context\.mp4$/);
 });
 test('queued old social and expired-price drafts resolve to the correct current DM video',()=>{
     const legacy='https://plantbased-balance.org/assets/balance-foundations-course-first-v8.mp4';
@@ -70,4 +70,16 @@ test('queued v11 launch attachments use the approved September 15 final edit',()
  const {maySendDraftVideoAttachment}=require('../netlify/functions/_lib/paid-meta-proof-media.js');
  assert.equal(maySendDraftVideoAttachment({videoUrl:launchVideo,replyText:'Here is the course video'}),true);
  assert.equal(maySendDraftVideoAttachment({videoUrl:launchVideo,replyText:'How is your week?'}),false);
+});
+
+
+test('queued pre-energy videos upgrade without duplicating URLs or bypassing introduction',()=>{
+ const {maySendDraftVideoAttachment}=require('../netlify/functions/_lib/paid-meta-proof-media.js');
+ for(const old of ['balance-learn-dm-149-v13-polished-cards.mp4','balance-learn-dm-450-v11.mp4']){
+ const url='https://plantbased-balance.org/assets/'+old;
+ assert.equal(resolveAttachment(url,Date.parse('2026-09-16T12:00:00+10:00')),launchVideo);
+ assert.equal(resolveAttachment(url,Date.parse(LEARN_INTRO_END)),standardVideo);
+ assert.equal(stripPaidMetaProofMediaUrls('Video: '+url),'Video:');
+ assert.equal(maySendDraftVideoAttachment({videoUrl:url,replyText:'How are you?'}),false);
+ }
 });

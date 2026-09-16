@@ -1,5 +1,9 @@
 # Shannon Content Edit Memory
 
+## 16 September 2026: connect Learn, Test and Use
+
+Shannon asked to replace the ad-flow video’s eyes/camera science and unrelated eating-location reflection with a single environment-and-energy example. Keep Learn as a concise packet of science; make the quiz and written reflection apply that same idea. Show the actual sequence: information, quiz, lesson reflection, then the separate weekly check-in. Environment can influence felt alertness through learned associations alongside body signals; never promise that changing rooms eliminates fatigue. Contract: docs/learn-dm-video-2026-09-10.md, v14.
+
 Read this before creating or revising Balance feed posts, Stories, Reels, carousels, covers or their automations.
 
 For any Shannon-led spoken script, also read `content-lab/SHANNON-SPOKEN-VOICE-BIBLE.md` and `content-lab/SHANNON-SCRIPT-VOICE-REFERENCE.md`. The spoken-voice bible owns surface phrasing, reductions, hesitation placement and measured cadence. The cravings script remains the canonical public-script construction example. Match how it sounds; do not assume every future Reel should reuse its topic or three-step structure.
