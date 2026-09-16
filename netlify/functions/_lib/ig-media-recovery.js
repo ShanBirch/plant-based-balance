@@ -16,7 +16,9 @@ async function persistReviewHold({ query, alertId, fallbackData, hold }) {
     const current = rows?.[0];
     if (!current || current.status !== 'pending') return current?.data || fallbackData;
     if (current.data?.send_claim_id) return current.data;
-    const data = { ...current.data, auto_send_enabled_at_draft: true, auto_send_review_hold: hold };
+    const data = { ...current.data,
+        ...(hold.code === 'immediate_dispatch_failed' ? {} : fallbackData),
+        auto_send_enabled_at_draft: true, auto_send_review_hold: hold };
     await query(`coach_alerts?id=eq.${encodeURIComponent(alertId)}&status=eq.pending&data->>send_claim_id=is.null`, {
         method: 'PATCH', body: { data }, prefer: 'return=minimal',
     });

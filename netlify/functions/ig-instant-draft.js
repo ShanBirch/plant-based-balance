@@ -10453,6 +10453,15 @@ exports.handler = async (event) => {
                 draft, currentMessage:currentInboundTurnMessage, history:displayHistory,
                 linkedUserId:thread.linked_user_id, mediaReview, contextReview,
             });
+            currentAlertData = {...currentAlertData, paid_meta_final_review_trace:{
+                verified_invitation:!!verifiedInvitation,
+                last_outbound:lastPaidMetaOutbound(displayHistory)?.text || null,
+                context_required:!!contextReview?.required, context_reasons:contextReview?.reasons || [],
+                media_required:!!mediaReview?.required,
+                support_choice:resolveLearnSupportChoice(currentInboundTurnMessage,displayHistory),
+                attachment_present:!!(draft.appPreviewUrl || draft.imageAttachmentUrl || draft.videoAttachmentUrl),
+                final_reply:draftTextFromDraft(draft),
+            }};
             if (verifiedInvitation) {
                 draftReview = verifiedInvitation;
                 effectiveContextReview = contextReview;

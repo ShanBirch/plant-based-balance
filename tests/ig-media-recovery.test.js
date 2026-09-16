@@ -68,7 +68,7 @@ for (const failure of ['network timeout', 'credits exhausted', 'permission denie
 test('holding a failed send preserves receipts and provider error rather than stale draft data', async () => {
     const fresh = { chunks_sent: 1, sent_chunks: ['intro'], last_send_error: 'Graph image 500', draft_text: 'current' };
     const writes = [];
-    const result = await persistReviewHold({ alertId: 'test', fallbackData: { draft_text: 'old' }, hold: { code: 'failed' },
+    const result = await persistReviewHold({ alertId: 'test', fallbackData: { draft_text: 'old' }, hold: { code: 'immediate_dispatch_failed' },
         query: async (url, options) => options ? writes.push({ url, options }) : [{ status: 'pending', data: fresh }],
     });
     assert.equal(result.chunks_sent, 1);
