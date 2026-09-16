@@ -1,6 +1,16 @@
 const test=require('node:test');const assert=require('node:assert/strict');
 const {decide,validatePlan,facts}=require('./flow.cjs');
 const {assertTestSession,receiptId,graphMessage,THREAD}=require('./live.cjs');
+test('delayed video confirmation is read back, never resent, before following text',async()=>{
+ const {deliverActions}=require('./deliver.cjs');const calls=[];
+ await deliverActions({session:'s',inbound_id:'i',plan:{actions:[{},{}]},sleep:async()=>{},call:async x=>{calls.push([x.mode,x.index]);if(x.mode==='send'&&x.index===0)throw Error('gateway_timeout');if(x.mode==='status')return{receipts:[{data:{inbound_id:'i',index:0,outcome:'confirmed'}}]};return{inbound_id:'i',index:1,outcome:'confirmed'};}});
+ assert.deepEqual(calls,[['send',0],['status',undefined],['send',1]]);
+});
+test('uncertain delivery stops later messages with no resend',async()=>{
+ const {deliverActions}=require('./deliver.cjs');const calls=[];
+ await assert.rejects(()=>deliverActions({session:'s',inbound_id:'i',plan:{actions:[{},{}]},sleep:async()=>{},call:async x=>{calls.push(x.mode);if(x.mode==='send')throw Error('timeout');return{receipts:[{data:{inbound_id:'i',index:0,outcome:'uncertain'}}]};}}),/delivery_uncertain/);
+ assert.deepEqual(calls,['send','status']);
+});
 test('Graph echoes match confirmed receipts without treating real human messages as ours',()=>{
  const {reconcileMessages}=require('./live.cjs');
  const rows=[{id:'echo',direction:'out',source:'instagram_native_inbox',manychat_message_id:'ig_graph:abc'},{id:'copy',direction:'out',source:'learn_ai_experiment',manychat_message_id:'abc'},{id:'human',direction:'out',source:'instagram_native_inbox',manychat_message_id:'ig_graph:def'}];
