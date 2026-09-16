@@ -16,7 +16,8 @@ async function db(route,{method='GET',body}={}) {
 function assertTestSession(thread,session,now=Date.now()) {
  const flag=thread?.custom_data?.learn_ai_experiment;
  if(thread?.id!==THREAD||thread.ig_username!=='goldcoast_ai_solutions'||thread.subscriber_id!==`ig_graph:${ACCOUNT}:${RECIPIENT}`||thread.linked_user_id)throw Error('wrong_test_identity');
- if(thread.custom_data?.codex_ai_opt_out!==true||!flag||flag.session!==session||!Number.isFinite(Date.parse(flag.expires_at))||Date.parse(flag.expires_at)<=now)throw Error('test_session_inactive');
+ const timeValid=flag?.mode==='automatic'||(Number.isFinite(Date.parse(flag?.expires_at))&&Date.parse(flag.expires_at)>now);
+ if(thread.custom_data?.codex_ai_opt_out!==true||!flag||flag.session!==session||!timeValid)throw Error('test_session_inactive');
  return flag;
 }
 function receiptId(inbound,index){const h=crypto.createHash('sha256').update(`learn-ai:${inbound}:${index}`).digest('hex').slice(0,32);return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`;}
@@ -45,7 +46,7 @@ function reconcileMessages(messages,receipts){
 async function inspect(session){
  const thread=(await db(`ig_threads?id=eq.${THREAD}&select=*`))[0];
  const flag=assertTestSession(thread,session);
- const messages=await db(`ig_messages?thread_id=eq.${THREAD}&created_at=gte.${encodeURIComponent(flag.started_at)}&select=id,direction,text,source,alert_id,created_at,manychat_message_id&order=created_at.asc,id.asc&limit=200`);
+ const messages=(await db(`ig_messages?thread_id=eq.${THREAD}&created_at=gte.${encodeURIComponent(flag.started_at)}&select=id,direction,text,source,alert_id,created_at,manychat_message_id&order=created_at.desc,id.desc&limit=200`)).reverse();
  const receipts=await db(`coach_alerts?data->>session=eq.${encodeURIComponent(session)}&select=id,data`);
  return {thread,flag,messages:reconcileMessages(messages,receipts),receipts};
 }
@@ -96,4 +97,4 @@ async function send({session,inbound_id,index,plan}){
   data.error=e.message;await db(`coach_alerts?id=eq.${id}`,{method:'PATCH',body:{data}}).catch(()=>{});throw e;
  }
 }
-module.exports={inspect,send,assertTestSession,receiptId,graphMessage,reconcileMessages,THREAD};
+module.exports={db,inspect,send,assertTestSession,receiptId,graphMessage,reconcileMessages,THREAD};

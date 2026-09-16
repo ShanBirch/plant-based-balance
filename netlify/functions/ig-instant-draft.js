@@ -8149,6 +8149,13 @@ exports.handler = async (event) => {
     if (!thread) {
         return { statusCode: 404, body: JSON.stringify({ error: 'Thread not found' }) };
     }
+    // Explicit account-scoped alternative selected by Shannon for personal testing.
+    // The background worker already owns the lifetime needed for native video.
+    const learnAlternative = require('../../experiments/learn-ai/automatic.cjs');
+    if (learnAlternative.enabled(thread)) {
+        const result = await learnAlternative.run(thread, manychatMessageId);
+        return { statusCode: 200, body: JSON.stringify(result) };
+    }
     // Finish an already claimed paid reply before drafting its successor.
     // Otherwise a new question can start a second offer/video while the first
     // attachment is still uploading. Freshness is checked again after waiting.
