@@ -114,7 +114,7 @@ function buildMetaAppPreviewUrl(threadId, options = {}) {
 function isMetaAppPreviewUrl(value = '') {
     try {
         const url = new URL(String(value || ''));
-        return ['https://plantbased-balance.org', 'https://future-balance.netlify.app'].includes(url.origin)
+        return ['https://plantbased-balance.org', 'https://future-balance.netlify.app', 'https://balanceneurosciencefitness.com'].includes(url.origin)
             && (url.pathname === '/meta-app-preview.html'
                 || /^\/p\/[A-Za-z0-9_-]{20,100}\/?$/.test(url.pathname));
     } catch (_) {

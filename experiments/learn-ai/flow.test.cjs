@@ -42,9 +42,10 @@ test('branded card retains its valid preview signature and branded Zoom destinat
  const old=process.env.META_APP_PREVIEW_REF_SECRET;
  process.env.META_APP_PREVIEW_REF_SECRET='synthetic-signature-test';
  try{
-  const {verifyMetaAppPreviewRef}=require('../../netlify/functions/_lib/meta-app-preview-ref');
+  const {verifyMetaAppPreviewRef,isMetaAppPreviewUrl}=require('../../netlify/functions/_lib/meta-app-preview-ref');
   const url=new URL(graphMessage({type:'card',asset_id:'preview'}).attachment.payload.elements[0].buttons[0].url);
   assert.equal(url.origin,'https://balanceneurosciencefitness.com');
+  assert.equal(isMetaAppPreviewUrl(url.toString()),true);
   assert.equal(verifyMetaAppPreviewRef(url.pathname.split('/').at(-1)).threadId,THREAD);
   assert.equal(graphMessage({type:'card',asset_id:'zoom'}).attachment.payload.elements[0].buttons[0].url,'https://balanceneurosciencefitness.com/book');
  }finally{if(old===undefined)delete process.env.META_APP_PREVIEW_REF_SECRET;else process.env.META_APP_PREVIEW_REF_SECRET=old;}
