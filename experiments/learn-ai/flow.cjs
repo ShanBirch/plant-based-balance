@@ -22,7 +22,7 @@ function catalogue(now = new Date()) {
   return {
     ally: {type: 'image', url: 'https://plantbased-balance.org/photos/client-success/ally-cocos.png', facts: 'Weight loss. Ally lost 12kg in 16 weeks while working full time and raising a family.'},
     gen: {type: 'image', url: 'https://plantbased-balance.org/photos/client-success/gen-cocos.jpg', facts: 'Strength, fitness and confidence through progressive repeatable training.'},
-    kristy: {type: 'image', url: 'https://plantbased-balance.org/photos/client-success/kristy-front-mirror-26-weeks.png', facts: 'Kristy. Progress over 26 weeks of coaching with Shannon; not the duration of Learn.'},
+    kristy: {type: 'image', url: 'https://plantbased-balance.org/photos/client-success/kristy-front-mirror-26-weeks.png', facts: 'Kristy. Progress over 26 weeks of coaching with me; not the duration of Learn.'},
     bec_kirsty: {type: 'image', url: 'https://plantbased-balance.org/photos/client-success/bec-kirsty-cocos.png', facts: 'Shared accountability. Both lost over 10kg and got stronger.'},
     course: {type: 'video', url: `https://plantbased-balance.org/assets/balance-learn-dm-${standard ? '450-v11' : '149-v13-polished-cards'}.mp4`, facts: 'Approved six-week Learn explanation.'},
     preview: {type: 'card', url: null, facts: 'Signed course WEBSITE link. Read the course information, then use the bottom button for app download and preview setup. Free preview before payment, no automatic charge.'},
@@ -34,7 +34,7 @@ function facts(now = new Date()) {
     upfront_aud: now.getTime() >= Date.parse('2026-10-21T00:00:00+10:00') ? 450 : 149,
     upfront_terms: 'One payment, no subscription or auto-renewal. Launch 21 September 2026. Intro price through 20 October Brisbane time.',
     optional_weekly: 'AUD 24.83/week, six-week minimum AUD 148.98, continuing until cancelled. Distinct from upfront payment.',
-    includes: 'Fixed neuroscience/psychology course, personalised workout program, meal-plan support fitted to dietary preferences, weekly Shannon training/food review and adjustments, six weeks app/community access. Home or gym workouts. Not unlimited daily coaching.',
+    includes: 'Fixed neuroscience/psychology course, personalised workout program, meal-plan support fitted to dietary preferences, my weekly training/food review and adjustments, six weeks app/community access. Home or gym workouts. Not unlimited daily coaching.',
     themes: ['Why change feels hard','Work with your energy','Build a rhythm that sticks','Take the fight out of food','Make progress easier to repeat','Build your sustainable way forward'],
     completion: 'Certificate of Completion after required lessons and actions, not accreditation.',
     written_lessons: true, video_captions: 'unconfirmed',
