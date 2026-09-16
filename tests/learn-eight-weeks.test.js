@@ -90,7 +90,7 @@ test('all inline dashboard scripts parse after both regular and iOS loader chang
   assert.doesNotThrow(()=>new vm.Script(match[2]));
  }
  const html=read('dashboard.html');assert.equal((html.match(/learn-curriculum\.js\?v=2-six-weeks/g)||[]).length,2);
- assert.equal((html.match(/learn-predictive-content\.js\?v=6-original-restored/g)||[]).length,2);
+ assert.equal((html.match(/learn-predictive-content\.js\?v=7-social-prediction/g)||[]).length,2);
 });
 
 test('every Learn path has six to eight questions with valid answers and distinct prompts',()=>{
@@ -110,9 +110,9 @@ test('every Learn path has six to eight questions with valid answers and distinc
   }
  }
  const six=curriculum.weeks().flatMap(w=>w.lessonIds).map(id=>all.find(l=>l.id===id));
- assert.equal(six.filter(l=>l.games.length===6).length,1);
+ assert.equal(six.filter(l=>l.games.length===6).length,0);
  assert.equal(six.filter(l=>l.games.length===7).length,1);
- assert.equal(six.filter(l=>l.games.length===8).length,43);
+ assert.equal(six.filter(l=>l.games.length===8).length,44);
 });
 
 test('six-week default includes all extra learning with one original practical action per week',()=>{
@@ -131,7 +131,16 @@ test('six-week default includes all extra learning with one original practical a
 });
 
 
-test('approved social explanation and six questions remain byte-for-byte unchanged',()=>{
+test('requested social lesson teaches prediction and feedback while retaining the Feed experiment',()=>{
  const lesson=runtime().lessonData['mind-6'].find(l=>l.id==='mind-6-5');
- assert.equal(require('node:crypto').createHash('sha256').update(JSON.stringify(lesson)).digest('hex'),'26da50116faf350d2411a4acb96b1640f87f0831df620e3d8544e7b2ef247031');
+ assert.equal(lesson.games.length,8);
+ assert.match(lesson.content.intro,/variational free energy/);
+ assert.match(lesson.content.intro,/current signals from your body and environment/);
+ assert.match(lesson.content.intro,/not a scientifically established dose/);
+ assert.match(lesson.content.intro,/57% relative increase/);
+ assert.match(lesson.content.intro,/three posts/);
+ assert.match(lesson.content.intro,/three other people's posts/);
+ assert.ok(lesson.games.some(g=>g.question==='What does surprise mean in this framework?' && g.correctIndex===1));
+ assert.ok(lesson.games.some(g=>g.question==='How do predictions and feedback work together in this account?' && g.correctIndex===2));
+ for(const g of lesson.games){assert.ok(g.explanation);if(g.options)assert.ok(g.options[g.correctIndex]);}
 });
