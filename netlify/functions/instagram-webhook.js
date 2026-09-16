@@ -2284,7 +2284,15 @@ async function dispatchDraft({ thread, messageText, dedupeId }) {
     // Paid-ad DMs are a live-chat lane. Start the native typing indicator before
     // alert persistence, history loading, model generation, or draft review.
     // The draft worker refreshes typing later if the reply takes longer.
-    await startPaidMetaTypingImmediately(thread);
+    const learnAlternativeSelected = thread.id === '4baea56e-eab4-4887-a732-39b14e983d44'
+        && thread.learn_ai_settings?.mode === 'automatic';
+    if (learnAlternativeSelected) {
+        try {
+            const signal = require('../../experiments/learn-ai/live.cjs').senderActions(thread, thread.learn_ai_settings.session);
+            await signal('mark_seen');
+            await signal('typing_on');
+        } catch (error) { console.warn('[instagram-webhook] Learn presence unavailable:', error.message); }
+    } else await startPaidMetaTypingImmediately(thread);
     // Persist an actionable shell before any model/provider work starts. If
     // the background draft worker or its AI provider fails, the inbound still
     // appears in Needs You and the reconcile pass can retry the empty draft.

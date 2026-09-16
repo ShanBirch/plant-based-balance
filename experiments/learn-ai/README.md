@@ -13,7 +13,9 @@ The small transport layer still validates action format, resolves approved asset
 - `automatic.cjs`: runs from the existing background inbound worker when the exact test thread has `learn_ai_settings.mode=automatic`. This dedicated column survives ordinary conversation updates that replace `custom_data`. Uses an atomic delivery lease, one generation claim per inbound, canonical messages and confirmed receipts. `BALANCE` starts a new test episode. No local process or bearer-token renewal is needed for automatic replies.
 - `netlify/functions/learn-ai-experiment.js`, exposed through its modern-functions wrapper: bearer-protected generation and explicit test `status`/`send` modes. Access expires at the time in `access.json`; only the token hash is stored here.
 
-Run `node --test experiments/learn-ai/flow.test.cjs experiments/learn-ai/automatic.test.cjs` for transport, test routing, episode reset and concurrent-worker checks.
+Run `node --test experiments/learn-ai/flow.test.cjs experiments/learn-ai/automatic.test.cjs experiments/learn-ai/presence.test.cjs` for transport, test routing, episode reset, concurrent-worker and presence/pacing checks.
+
+Automatic delivery marks seen at ingestion and worker start. One non-overlapping typing heartbeat refreshes every four seconds throughout generation, pacing and uploads; it has no 45-second cutoff. Message delivery reasserts typing immediately when another item follows. Text pacing is 2 seconds plus 0.4 seconds per word, bounded to 3–30 seconds (45 words takes 20 seconds). Processing time counts toward the first message, and prior delivery/bookkeeping time counts toward subsequent delays. Attachments get 1.8 seconds of preparation plus actual upload time. Typing stops after the final delivery or a stopped run; presence API failures are logged without blocking a reply. The delivery lease renews during longer sequences. The original responder is unchanged.
 
 ## Evaluation boundaries
 

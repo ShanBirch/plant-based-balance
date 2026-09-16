@@ -22,6 +22,17 @@ function assertTestSession(thread,session,now=Date.now()) {
  return flag;
 }
 function receiptId(inbound,index){const h=crypto.createHash('sha256').update(`learn-ai:${inbound}:${index}`).digest('hex').slice(0,32);return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`;}
+function senderActions(thread,session){
+ assertTestSession(thread,session);
+ let token;
+ return async action=>{
+  if(!['mark_seen','typing_on','typing_off'].includes(action))throw Error('invalid_sender_action');
+  if(!token)token=(await resolveMetaIgAccessToken(ACCOUNT,db)).token;
+  if(!token)throw Error('transport_unavailable');
+  const r=await fetch(`https://graph.instagram.com/v25.0/${ACCOUNT}/messages`,{method:'POST',signal:AbortSignal.timeout(3000),headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({recipient:{id:RECIPIENT},sender_action:action})});
+  return {ok:r.ok,status:r.status};
+ };
+}
 function graphMessage(action,threadId=THREAD) {
  if(action.type==='text')return {text:action.text};
  const asset=catalogue()[action.asset_id];
@@ -51,7 +62,7 @@ async function inspect(session){
  const receipts=await db(`coach_alerts?data->>session=eq.${encodeURIComponent(session)}&select=id,data`);
  return {thread,flag,messages:reconcileMessages(messages,receipts),receipts};
 }
-async function send({session,inbound_id,index,plan}){
+async function send({session,inbound_id,index,plan,onDelivered}){
  validatePlan(plan);
  if(!Number.isInteger(index)||index<0||index>=plan.actions.length)throw Error('invalid_action_index');
  const {thread,messages}=await inspect(session);
@@ -84,6 +95,8 @@ async function send({session,inbound_id,index,plan}){
   const result=await r.json();
   if(!r.ok||!result.message_id)throw Error(`graph_${r.status}`);
   data.outcome='confirmed';data.message_id=result.message_id;data.confirmed_at=new Date().toISOString();
+  // Refresh presence as soon as Graph delivers, before receipt bookkeeping.
+  if(onDelivered)await onDelivered().catch(()=>{});
   await db(`coach_alerts?id=eq.${id}`,{method:'PATCH',body:{status:'dismissed',data,actioned_at:data.confirmed_at}});
   const text=action.type==='text'?action.text:action.type==='card'?`${message.attachment.payload.elements[0].title} ${message.attachment.payload.elements[0].buttons[0].url}`:`[${action.type.toUpperCase()}:${catalogue()[action.asset_id].url}]`;
   const canonicalId=`ig_graph:${result.message_id.replace(/^ig_graph:/,'')}`;
@@ -98,4 +111,4 @@ async function send({session,inbound_id,index,plan}){
   data.error=e.message;await db(`coach_alerts?id=eq.${id}`,{method:'PATCH',body:{data}}).catch(()=>{});throw e;
  }
 }
-module.exports={db,inspect,send,assertTestSession,receiptId,graphMessage,reconcileMessages,THREAD};
+module.exports={db,inspect,send,assertTestSession,receiptId,graphMessage,reconcileMessages,senderActions,THREAD};

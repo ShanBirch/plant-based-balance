@@ -2,6 +2,7 @@
 const crypto=require('node:crypto');
 const {decide}=require('./flow.cjs');
 const live=require('./live.cjs');
+const {createPresence}=require('./presence.cjs');
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const normalize=id=>String(id||'').replace(/^ig_graph:/,'');
 function enabled(thread){return thread?.id===live.THREAD&&(thread.learn_ai_settings||thread?.custom_data?.learn_ai_experiment)?.mode==='automatic';}
@@ -34,7 +35,7 @@ async function run(thread,sourceMessageId){
  const session=(thread.learn_ai_settings||thread.custom_data.learn_ai_experiment).session;
  live.assertTestSession(thread,session);
  const lock=await acquire(thread);
- let claim;
+ let claim,presence;
  try{
   const view=await live.inspect(session),messages=episode(view.messages);
   const newest=messages.findLast(m=>m.direction==='in');
@@ -46,14 +47,29 @@ async function run(thread,sourceMessageId){
   if((await live.db(`coach_alerts?id=eq.${id}&select=id`)).length)return{skipped:'turn_already_attempted'};
   claim={id,data:{session,inbound_id:newest.id,experiment_thread_id:live.THREAD,outcome:'generating',started_at:new Date().toISOString()}};
   await live.db('coach_alerts',{method:'POST',body:{id,idempotency_key:`learn-auto-turn:${newest.id}`,coach_id:thread.coach_id,alert_type:'general_idea',title:'Learn automatic test turn',status:'dismissed',data:claim.data}});
+  let renewedAt=Date.now();
+  presence=createPresence({signal:live.senderActions(view.thread,session),onHeartbeat:async()=>{
+   if(Date.now()-renewedAt<30000)return;
+   const held=await live.db(`coach_alerts?id=eq.${lock.id}&data->>token=eq.${lock.token}`,{method:'PATCH',body:{data:{token:lock.token,until:Date.now()+240000}}});
+   if(!held.length)throw Error('delivery_ownership_lost');
+   renewedAt=Date.now();
+  }});
+  await presence.start();
   const receipts=view.receipts.map(r=>r.data).filter(r=>r.action&&messages.some(m=>m.id===r.inbound_id)).map(r=>({action:r.action,status:r.outcome==='confirmed'?'sent':'not_confirmed'}));
   const result=await decide({model:'gpt-5.4',history:messages.slice(0,messages.indexOf(pending[0])).map(m=>({direction:m.direction,text:m.text})),inbound:pending.map(m=>m.text),receipts});
   Object.assign(claim.data,result,{outcome:'sending'});
   await live.db(`coach_alerts?id=eq.${id}`,{method:'PATCH',body:{data:claim.data}});
   for(let index=0;index<result.plan.actions.length;index++){
-   const receipt=await live.send({session,inbound_id:newest.id,index,plan:result.plan});
+   const pacing=await presence.before(result.plan.actions[index]);
+   (claim.data.delivery_pacing??=[]).push({index,...pacing});
+   const owner=(await live.db(`coach_alerts?id=eq.${lock.id}&select=data`))[0];
+   if(owner?.data?.token!==lock.token||owner.data.until<Date.now())throw Error('delivery_ownership_lost');
+   const hasNext=index<result.plan.actions.length-1;
+   const receipt=await live.send({session,inbound_id:newest.id,index,plan:result.plan,onDelivered:async()=>{
+    await presence.delivered(hasNext);
+    if(!hasNext)await presence.stop();
+   }});
    if(receipt.outcome!=='confirmed')throw Error('automatic_delivery_not_confirmed');
-   if(index<result.plan.actions.length-1)await sleep(1400);
   }
   Object.assign(claim.data,{outcome:'complete',completed_at:new Date().toISOString()});
   await live.db(`coach_alerts?id=eq.${id}`,{method:'PATCH',body:{data:claim.data}});
@@ -62,6 +78,11 @@ async function run(thread,sourceMessageId){
   if(claim){Object.assign(claim.data,{outcome:'stopped',error:e.message});await live.db(`coach_alerts?id=eq.${claim.id}`,{method:'PATCH',body:{data:claim.data}}).catch(()=>{});}
   throw e;
  }finally{
+  if(presence){
+   await presence.stop();
+   claim.data.presence_events=presence.events;
+   await live.db(`coach_alerts?id=eq.${claim.id}`,{method:'PATCH',body:{data:claim.data}}).catch(()=>{});
+  }
   await release(lock);
   // Existing webhook shells are transport bookkeeping, not a second responder.
   await live.db(`coach_alerts?data->>ig_thread_id=eq.${live.THREAD}&data->>manychat_message_id=eq.${encodeURIComponent(sourceMessageId)}&status=eq.pending`,{method:'PATCH',body:{status:'canceled'}}).catch(()=>{});
