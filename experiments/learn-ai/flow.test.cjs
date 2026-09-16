@@ -34,7 +34,20 @@ test('preview card describes website and keeps download out of its label',()=>{
  const m=graphMessage({type:'card',asset_id:'preview'});
  assert.equal(m.attachment.payload.template_type,'generic');
  assert.match(m.attachment.payload.elements[0].buttons[0].url,/meta-app-preview|\/p\//);
+ assert.equal(new URL(m.attachment.payload.elements[0].buttons[0].url).origin,'https://balanceneurosciencefitness.com');
  assert.doesNotMatch(m.attachment.payload.elements[0].buttons[0].title,/download/i);
+});
+
+test('branded card retains its valid preview signature and branded Zoom destination',()=>{
+ const old=process.env.META_APP_PREVIEW_REF_SECRET;
+ process.env.META_APP_PREVIEW_REF_SECRET='synthetic-signature-test';
+ try{
+  const {verifyMetaAppPreviewRef}=require('../../netlify/functions/_lib/meta-app-preview-ref');
+  const url=new URL(graphMessage({type:'card',asset_id:'preview'}).attachment.payload.elements[0].buttons[0].url);
+  assert.equal(url.origin,'https://balanceneurosciencefitness.com');
+  assert.equal(verifyMetaAppPreviewRef(url.pathname.split('/').at(-1)).threadId,THREAD);
+  assert.equal(graphMessage({type:'card',asset_id:'zoom'}).attachment.payload.elements[0].buttons[0].url,'https://balanceneurosciencefitness.com/book');
+ }finally{if(old===undefined)delete process.env.META_APP_PREVIEW_REF_SECRET;else process.env.META_APP_PREVIEW_REF_SECRET=old;}
 });
 test('reject unknown assets and unintroduced media without rewriting conversation',()=>{
  assert.throws(()=>validatePlan({status:'reply',actions:[{type:'image',asset_id:'made_up',text:''}]}));

@@ -37,7 +37,10 @@ function graphMessage(action,threadId=THREAD) {
  if(action.type==='text')return {text:action.text};
  const asset=catalogue()[action.asset_id];
  if(action.type==='card'){
-  const url=action.asset_id==='preview'?buildMetaAppPreviewUrl(threadId,{flowVariant:'broad_pain'}):asset.url;
+  const destination=new URL(action.asset_id==='preview'?buildMetaAppPreviewUrl(threadId,{flowVariant:'broad_pain'}):asset.url);
+  // Keep the signed preview path intact while using the current public brand.
+  destination.host='balanceneurosciencefitness.com';
+  const url=destination.toString();
   // Same Instagram generic-card format used by the existing sender; plain
   // button templates can arrive as text with no clickable button in the inbox.
   return {attachment:{type:'template',payload:{template_type:'generic',elements:[{title:action.asset_id==='preview'?'Explore Balance Learn and your free preview':'Find a time for your Balance fit call',image_url:'https://plantbased-balance.org/assets/balance-founders-og-cream-gold.png',buttons:[{type:'web_url',url,title:action.asset_id==='preview'?'Open your preview':'Book a fit call'}]}]}}};

@@ -26,7 +26,7 @@ function catalogue(now = new Date()) {
     bec_kirsty: {type: 'image', url: 'https://plantbased-balance.org/photos/client-success/bec-kirsty-cocos.png', facts: 'Shared accountability. Both lost over 10kg and got stronger.'},
     course: {type: 'video', url: `https://plantbased-balance.org/assets/balance-learn-dm-${standard ? '450-v11' : '149-v13-polished-cards'}.mp4`, facts: 'Approved six-week Learn explanation.'},
     preview: {type: 'card', url: null, facts: 'Signed course WEBSITE link. Read the course information, then use the bottom button for app download and preview setup. Free preview before payment, no automatic charge.'},
-    zoom: {type: 'card', url: 'https://plantbased-balance.org/book', facts: 'Fit-call booking, not checkout. Availability and suitability checked before payment.'},
+    zoom: {type: 'card', url: 'https://balanceneurosciencefitness.com/book', facts: 'Fit-call booking, not checkout. Availability and suitability checked before payment.'},
   };
 }
 function facts(now = new Date()) {
