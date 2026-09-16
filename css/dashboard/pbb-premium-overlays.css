@@ -1608,7 +1608,7 @@ html[data-pbb-theme="light"] #view-meals #meals-nav-pills .meals-primary-tab[ari
 }
 .meal-builder-custom-input::placeholder { color: rgba(248,247,242,.4); -webkit-text-fill-color: rgba(248,247,242,.4); }
 .meal-builder-custom-input:focus { border-color: #d8b25e; box-shadow: 0 0 0 3px rgba(216,178,94,.12); }
-.meal-builder-optional { color: rgba(248,247,242,.48) !important; -webkit-text-fill-color: rgba(248,247,242,.48) !important; font-weight: 600; }
+.meal-builder-optional { color: rgba(248,247,242,.72) !important; -webkit-text-fill-color: rgba(248,247,242,.72) !important; font-weight: 600; }
 .meal-builder-custom-share {
     display: flex; align-items: flex-start; gap: 10px; margin: 2px 0 8px; padding: 12px; border: 1px solid rgba(216,178,94,.22);
     border-radius: 12px; background: rgba(216,178,94,.08); cursor: pointer;
@@ -1679,7 +1679,7 @@ html[data-pbb-theme="light"] .meal-builder-custom-status,
 html[data-pbb-theme="light"] .meal-builder-my-foods-empty { color: #6a655c !important; -webkit-text-fill-color: #6a655c !important; }
 html[data-pbb-theme="light"] .meal-builder-custom-input { background: #fff; border-color: rgba(184,137,43,.28); color: #151515 !important; -webkit-text-fill-color: #151515 !important; }
 html[data-pbb-theme="light"] .meal-builder-custom-input::placeholder { color: #8b857c; -webkit-text-fill-color: #8b857c; }
-html[data-pbb-theme="light"] .meal-builder-optional { color: #777168 !important; -webkit-text-fill-color: #777168 !important; }
+html[data-pbb-theme="light"] .meal-builder-optional { color: #6f6a61 !important; -webkit-text-fill-color: #6f6a61 !important; }
 html[data-pbb-theme="light"] .meal-builder-custom-share { background: #fff9ec; border-color: rgba(184,137,43,.25); }
 html[data-pbb-theme="light"] .meal-builder-custom-share strong,
 html[data-pbb-theme="light"] .meal-builder-my-food-item strong { color: #151515 !important; -webkit-text-fill-color: #151515 !important; }
@@ -14291,4 +14291,48 @@ html[data-pbb-theme] #view-workout-success > div > div:first-child p,
 html[data-pbb-theme] #view-workout-success #share-section-sub {
     color: #d4cec5 !important;
     -webkit-text-fill-color: #d4cec5 !important;
+}
+
+/* Second readability pass: dynamically opened battle and nutrition content. */
+html[data-pbb-theme] #feed-battle-chooser-overlay [role="dialog"],
+html[data-pbb-theme] #feed-battle-chooser-overlay [data-feed-battle-option] {
+    background: var(--pbb-readable-sheet) !important;
+    color: var(--pbb-readable-text) !important;
+    border-color: var(--pbb-readable-border) !important;
+}
+html[data-pbb-theme] #feed-battle-chooser-overlay * {
+    -webkit-text-fill-color: currentColor !important;
+}
+html[data-pbb-theme] #feed-battle-chooser-title,
+html[data-pbb-theme] #feed-battle-chooser-overlay [style*="color:#111827"] {
+    color: var(--pbb-readable-text) !important;
+}
+html[data-pbb-theme] #feed-battle-chooser-overlay [style*="color:#64748b"] {
+    color: var(--pbb-readable-muted) !important;
+}
+html[data-pbb-theme] #feed-battle-chooser-overlay [style*="color:#0f766e"] {
+    color: var(--pbb-readable-success) !important;
+}
+html[data-pbb-theme] #feed-battle-chooser-overlay [aria-hidden="true"],
+html[data-pbb-theme] #feed-battle-chooser-overlay [aria-label="Close battle chooser"] {
+    background: #243d35 !important;
+    color: #ffffff !important;
+}
+html[data-pbb-theme] #tracker-micro-grid .micro-detail-tip {
+    color: var(--pbb-readable-muted) !important;
+    -webkit-text-fill-color: var(--pbb-readable-muted) !important;
+}
+/* These controls keep their gold/cream surfaces in both themes. */
+html[data-pbb-theme] #game-challenge-modal #send-game-challenge-btn,
+html[data-pbb-theme] #workout-exercises-list .exercise-pb-pill {
+    color: #33240d !important;
+    -webkit-text-fill-color: #33240d !important;
+}
+@media (max-width: 600px), (max-height: 500px) {
+    html #feed-battle-chooser-overlay {
+        padding: max(42px, env(safe-area-inset-top, 0px)) 14px max(20px, env(safe-area-inset-bottom, 0px)) !important;
+    }
+    html #feed-battle-chooser-overlay > [role="dialog"] {
+        max-height: 100% !important;
+    }
 }
