@@ -14336,3 +14336,100 @@ html[data-pbb-theme] #workout-exercises-list .exercise-pb-pill {
         max-height: 100% !important;
     }
 }
+
+/* Third readability pass: error/loading dialogs and generated game controls. */
+html[data-pbb-theme] :is(#workout-save-error-dialog, #checkout-loading) > div {
+    background: var(--pbb-readable-sheet) !important;
+    color: var(--pbb-readable-text) !important;
+    -webkit-text-fill-color: var(--pbb-readable-text) !important;
+    border: 1px solid var(--pbb-readable-border);
+    box-shadow: var(--pbb-readable-shadow);
+}
+html[data-pbb-theme] :is(#workout-save-error-dialog, #checkout-loading) :is(h3, p) {
+    color: var(--pbb-readable-text) !important;
+    -webkit-text-fill-color: var(--pbb-readable-text) !important;
+}
+html[data-pbb-theme] #workout-save-error-dialog button[onclick="closeWorkoutSaveErrorDialog()"] {
+    background: var(--pbb-readable-surface-soft) !important;
+    color: var(--pbb-readable-text) !important;
+    -webkit-text-fill-color: var(--pbb-readable-text) !important;
+    border: 1px solid var(--pbb-readable-border) !important;
+}
+html:not([data-pbb-theme="light"]) #stat-alloc-overlay .stat-alloc-desc {
+    color: var(--pbb-readable-muted) !important;
+    -webkit-text-fill-color: var(--pbb-readable-muted) !important;
+}
+html[data-pbb-theme] #custom-tracker-modal button[onclick*="_trackerSave"],
+html[data-pbb-theme] #workout-save-error-dialog button[onclick="retryWorkoutSave()"] {
+    background: linear-gradient(135deg, #f5d98a, #d8b25e) !important;
+    color: #17130d !important;
+    -webkit-text-fill-color: #17130d !important;
+}
+/* White celebration text needs a dark surface at every gradient stop. */
+html[data-pbb-theme] #milestone-celebration-modal > div > div:first-child {
+    background: linear-gradient(160deg, #78350f, #92400e 62%, #9a4a0a) !important;
+}
+@media (max-width: 600px), (max-height: 500px) {
+    html :is(#workout-save-error-dialog, #checkout-loading, #stat-alloc-overlay, #battle-invite-overlay, #arena-invite-overlay, #quiz-battle-invite-overlay, #custom-tracker-modal, #milestone-celebration-modal) {
+        box-sizing: border-box;
+        padding: max(42px, env(safe-area-inset-top, 0px)) 16px max(20px, env(safe-area-inset-bottom, 0px)) !important;
+    }
+    html :is(#workout-save-error-dialog, #checkout-loading, #stat-alloc-overlay, #battle-invite-overlay, #arena-invite-overlay, #quiz-battle-invite-overlay, #custom-tracker-modal, #milestone-celebration-modal) > div {
+        box-sizing: border-box;
+        max-height: 100% !important;
+        overflow-y: auto !important;
+    }
+}
+/* Tracker ratings retain pale grey/gold backgrounds in either theme. */
+html[data-pbb-theme] #custom-tracker-modal button[data-metric][data-val] {
+    color: #17130d !important;
+    -webkit-text-fill-color: #17130d !important;
+}
+/* Allocation values and +/- controls must remain legible on tinted rows. */
+html[data-pbb-theme] #stat-alloc-overlay :is(.stat-alloc-current, .stat-alloc-btn, .stat-alloc-btn-minus, .stat-alloc-points-left span) {
+    color: var(--pbb-readable-text) !important;
+    -webkit-text-fill-color: var(--pbb-readable-text) !important;
+}
+html[data-pbb-theme="light"] #stat-alloc-overlay .stat-alloc-desc {
+    color: #5e5a53 !important;
+    -webkit-text-fill-color: #5e5a53 !important;
+}
+/* Game sheets, like Quiz Battle, keep a dark playing surface in both themes. */
+html[data-pbb-theme] :is(#battle-invite-overlay, #arena-invite-overlay) > div {
+    background: #191919 !important;
+}
+html[data-pbb-theme] :is(#battle-invite-overlay, #quiz-battle-invite-overlay) [style*="color: rgba(255,255,255,0.4)"],
+html[data-pbb-theme] #quiz-battle-invite-overlay [style*="color:rgba(255,255,255,0.5)"] {
+    color: #d4cec5 !important;
+    -webkit-text-fill-color: #d4cec5 !important;
+}
+html[data-pbb-theme] #arena-invite-overlay .arena-count-btn.active {
+    color: #8fe7b4 !important;
+    -webkit-text-fill-color: #8fe7b4 !important;
+}
+html[data-pbb-theme] #battle-invite-overlay .battle-bet-btn,
+html[data-pbb-theme] #battle-invite-overlay input,
+html[data-pbb-theme] #quiz-battle-invite-overlay input[type="number"],
+html[data-pbb-theme] #arena-invite-overlay .arena-count-btn:not(.active) {
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+}
+html[data-pbb-theme] #battle-invite-overlay input,
+html[data-pbb-theme] #quiz-battle-invite-overlay input[type="number"] {
+    background: #262626 !important;
+}
+html[data-pbb-theme] #battle-invite-overlay input::placeholder,
+html[data-pbb-theme] #quiz-battle-invite-overlay input[type="number"]::placeholder {
+    color: #d4cec5 !important;
+    -webkit-text-fill-color: #d4cec5 !important;
+    opacity: 1;
+}
+html[data-pbb-theme] #quiz-battle-invite-overlay .battle-invite-header p {
+    color: #d4cec5 !important;
+    -webkit-text-fill-color: #d4cec5 !important;
+}
+html[data-pbb-theme] #quiz-battle-invite-overlay .battle-invite-close {
+    background: #262626 !important;
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+}
