@@ -6059,6 +6059,22 @@ function preservePaidMetaPendingBlocker({draft, history = [], currentMessage = '
         paidMetaPendingBlocker:true,maxChunks:Math.max(MAX_CHUNKS,chunks.length)};
 }
 
+function approveVerifiedIndependentPreviewInvitation({ draft, currentMessage, history = [], linkedUserId, mediaReview, contextReview } = {}) {
+    if (linkedUserId || mediaReview?.required || contextReview?.required
+        || META_AD_FIRST_REPLY_OPT_OUT_RE.test(currentMessage || '')
+        || META_AD_FIRST_REPLY_REVIEW_REQUIRED_RE.test(currentMessage || '')
+        || lastPaidMetaOutbound(history)?.text !== LEARN_SUPPORT_CHOICE
+        || resolveLearnSupportChoice(currentMessage, history) !== 'independent') return null;
+    const approvedText = "Yep, we can do that. I can help you set up a free preview of your program so you can have a look before paying. Would you like that?";
+    if (draftTextFromDraft(draft) !== approvedText || draft?.appPreviewUrl || draft?.imageAttachmentUrl || draft?.videoAttachmentUrl) return null;
+    return {
+        verdict:'pass', confidence:1, issues:[], notification_required:false, notification_reason:null,
+        context_loss_suspected:false, reviewed_at:new Date().toISOString(),
+        summary:'Verified independent choice answers the immediately preceding support question; the approved preview invitation asks permission and sends no link.',
+        reviewer_model:'verified-independent-preview-invitation-v1',
+    };
+}
+
 function paidMetaCurrentInboundRunText(history = [], currentMessage = '') {
     const messages = Array.isArray(history) ? history : [];
     const run = [];
@@ -9928,7 +9944,7 @@ exports.handler = async (event) => {
         const learningReelReviewContext = learningReelReviewText
             ? `\nRecent sent learning reel context:\n${truncate(learningReelReviewText, 1800)}`
             : '';
-        const verifiedOfferContext = metaAdConversationFastLane ? ('\nVERIFIED LEARN FACTS FOR REVIEW AND REPAIR: 45 lessons and quizzes across six weeks. Certificate of Completion requires finishing the required lessons and practical actions; no accreditation claim. Week 1: Why change feels hard. Week 2: Work with your energy. Week 3: Build a rhythm that sticks. Week 4: Take the fight out of food. Week 5: Make progress easier to repeat. Week 6: Build your sustainable way forward. AUD $149 upfront for six weeks, no auto-renewal; alternatively AUD $24.83/week, six-week minimum AUD $148.98, continuing until cancelled. Preserve these facts when editing; answer only the facts asked for, without reciting the questions or adding a goal question already asked.'.replaceAll('$149', resolveBalanceLearnCoursePriceLabel())) : '';
+        const verifiedOfferContext = metaAdConversationFastLane ? ('\nVERIFIED LEARN FACTS FOR REVIEW AND REPAIR: A free personalised program preview before payment is an approved part of this flow. After choosing independent workouts, ask permission for that preview; send the signed card only after acceptance. Do not repeat price or inclusions at the support-choice step. 45 lessons and quizzes across six weeks. Certificate of Completion requires finishing the required lessons and practical actions; no accreditation claim. Week 1: Why change feels hard. Week 2: Work with your energy. Week 3: Build a rhythm that sticks. Week 4: Take the fight out of food. Week 5: Make progress easier to repeat. Week 6: Build your sustainable way forward. AUD $149 upfront for six weeks, no auto-renewal; alternatively AUD $24.83/week, six-week minimum AUD $148.98, continuing until cancelled. Preserve these facts when editing; answer only the facts asked for, without reciting the questions or adding a goal question already asked.'.replaceAll('$149', resolveBalanceLearnCoursePriceLabel())) : '';
         const reviewContextBlocks = `LATEST just-arrived ${channelLabel} message from ${leadName} (this is the message the draft must answer): "${reviewLatestForPrompt}"${mediaSummaryReviewContext}${audioTranscriptReviewContext}${priorText}${timelineText}${workoutText}${memoryText}${crossChannelText}${learningReelReviewContext}${verifiedOfferContext}`;
         const reviewTimeoutMs = cocosAutoSendLane ? COCOS_DRAFT_REVIEW_TIMEOUT_MS : IG_DRAFT_REVIEW_TIMEOUT_MS;
         const approvedDeterministicReview = buildApprovedDeterministicMetaAdFirstReplyReview({
@@ -10429,6 +10445,19 @@ exports.handler = async (event) => {
         }
         const nonBlockingPaidMetaContractIssues = unresolvedPaidMetaContractIssues
             .filter(issue => !isBlockingPaidMetaWriterContractIssue(issue));
+        // Reconcile the final, exact approved invitation after repairs. An
+        // earlier model review must not label our verified free preview an
+        // invented offer or require repeating the price at this stage.
+        if (metaAdConversationFastLane && blockingPaidMetaContractIssues.length === 0) {
+            const verifiedInvitation = approveVerifiedIndependentPreviewInvitation({
+                draft, currentMessage:currentInboundTurnMessage, history:displayHistory,
+                linkedUserId:thread.linked_user_id, mediaReview, contextReview,
+            });
+            if (verifiedInvitation) {
+                draftReview = verifiedInvitation;
+                effectiveContextReview = contextReview;
+            }
+        }
         if (nonBlockingPaidMetaContractIssues.length > 0 && blockingPaidMetaContractIssues.length === 0) {
             currentAlertData = {
                 ...(currentAlertData || {}),
@@ -10957,6 +10986,7 @@ exports._test = {
     buildApprovedMetaAdFirstReplyHandoffData,
     shouldBypassGenericLinkHandoffForApprovedPaidMetaProgression,
     buildApprovedDeterministicMetaAdFirstReplyReview,
+    approveVerifiedIndependentPreviewInvitation,
     filterMetaAdCardAttachmentHistory,
     isMetaAdCardAttachmentTransportArtifact,
     suppressUnresolvedMetaAdCardPhoto,

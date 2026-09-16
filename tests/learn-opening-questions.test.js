@@ -2,6 +2,16 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const api = require('../netlify/functions/ig-instant-draft')._test;
 
+test('verified independent preview permission is approved, while unsupported drafts and real review holds remain blocked', () => {
+    const history=[{direction:'out',text:'Would you prefer doing your workouts on your own with the app and my weekly check-in, or adding 30-minute one-on-one Zoom sessions?'}];
+    const draft={joined:"Yep, we can do that. I can help you set up a free preview of your program so you can have a look before paying. Would you like that?"};
+    const p={history,draft,currentMessage:'On my own please'};
+    assert.equal(api.approveVerifiedIndependentPreviewInvitation(p).verdict,'pass');
+    for (const changed of [{history:[]},{currentMessage:'Zoom please'},{linkedUserId:'client'}, {contextReview:{required:true}}, {mediaReview:{required:true}}, {draft:{joined:'Pay me now'}}, {draft:{...draft,appPreviewUrl:'https://example.com'}}]) {
+        assert.equal(api.approveVerifiedIndependentPreviewInvitation({...p,...changed}),null);
+    }
+});
+
 test('Saturday and Sunday support a weekend description without weakening invented-context checks', () => {
     const draft = {joined:'Balance Learn can fit training around your weekends. It is one AUD $149 payment for the full six weeks.'};
     const issues = text => api.collectPaidMetaWriterContractIssues({draft,currentMessage:text,flowVariant:'broad_pain'});
