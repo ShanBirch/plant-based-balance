@@ -5766,6 +5766,7 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
         && (turn.split(/\s+/).length >= 6 || /\b(?:not sure|don['’]?t know|dunno)\b/i.test(turn));
     const earnedBroadOfferNow = !exactAcceptedPreview && knownBroadGoal
         && !answeringGoalPrompt
+        && resolveLearnSupportChoice(turn, history) !== 'independent'
         && (knownBroadBlocker || writerProgressedAfterBlocker)
         && !autonomyPause
         && !asksForCurriculumOutline

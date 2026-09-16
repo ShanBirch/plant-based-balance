@@ -2,6 +2,24 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const api = require('../netlify/functions/ig-instant-draft')._test;
 
+test('independent choice never reopens the offer after a short consistency greeting', () => {
+    const currentMessage='On my own please';
+    const history=[
+        {direction:'in',text:'I struggle to stay consistent'},
+        {direction:'in',text:'I want to get stronger'},
+        {direction:'in',text:'Weekdays are full but I can train on Saturday and Sunday'},
+        {direction:'out',text:'A weekend-based training setup could suit you.'},
+        {direction:'out',text:"It's one AUD $149 payment, with no subscription or auto-renewal. Here's the course video."},
+        {direction:'out',text:'[VIDEO:https://plantbased-balance.org/assets/balance-learn-dm-149-v13-polished-cards.mp4]'},
+        {direction:'out',text:'Would you prefer doing your workouts on your own with the app and my weekly check-in, or adding 30-minute one-on-one Zoom sessions?'},
+    ];
+    const p={currentMessage,history,flowVariant:'broad_pain',qualifier:{facts:{current_state:'get stronger',history_blockers:'weekdays full'}}};
+    const draft=api.buildDeterministicPaidMetaConversationReply(p);
+    assert.match(draft.joined,/Would you like that/);
+    assert.doesNotMatch(draft.joined,/\$149/);
+    assert.deepEqual(api.collectPaidMetaWriterContractIssues({...p,draft}),[]);
+});
+
 test('verified independent preview permission is approved, while unsupported drafts and real review holds remain blocked', () => {
     const history=[{direction:'out',text:'Would you prefer doing your workouts on your own with the app and my weekly check-in, or adding 30-minute one-on-one Zoom sessions?'}];
     const draft={joined:"Yep, we can do that. I can help you set up a free preview of your program so you can have a look before paying. Would you like that?"};
