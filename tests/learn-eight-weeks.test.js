@@ -66,7 +66,7 @@ test('all inline dashboard scripts parse after both regular and iOS loader chang
   assert.doesNotThrow(()=>new vm.Script(match[2]));
  }
  const html=read('dashboard.html');assert.equal((html.match(/learn-curriculum\.js\?v=2-six-weeks/g)||[]).length,2);
- assert.equal((html.match(/learn-predictive-content\.js\?v=3-six-question-quizzes/g)||[]).length,2);
+ assert.equal((html.match(/learn-predictive-content\.js\?v=4-social-learning/g)||[]).length,2);
 });
 
 test('every Learn path has six to eight questions with valid answers and distinct prompts',()=>{
