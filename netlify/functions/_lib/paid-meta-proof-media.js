@@ -1,7 +1,7 @@
 const ALLY_WEIGHT_LOSS_PROOF_URL = 'https://plantbased-balance.org/photos/client-success/ally-cocos.png';
 const GEN_STRENGTH_CONFIDENCE_PROOF_URL = 'https://plantbased-balance.org/photos/client-success/gen-cocos.jpg';
 const BEC_KIRSTY_SHARED_MOMENTUM_PROOF_URL = 'https://plantbased-balance.org/photos/client-success/bec-kirsty-cocos.png';
-const DANI_RECOMPOSITION_PROOF_URL = 'https://plantbased-balance.org/photos/client-success/dani-front-mirror-8-weeks.png';
+const KRISTY_RECOMPOSITION_PROOF_URL = 'https://plantbased-balance.org/photos/client-success/kristy-front-mirror-26-weeks.png';
 const BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL = 'https://plantbased-balance.org/assets/balance-learn-dm-149-v13-polished-cards.mp4';
 const BALANCE_LEARN_STANDARD_VIDEO_URL = 'https://plantbased-balance.org/assets/balance-learn-dm-450-v11.mp4';
 const BALANCE_LEARN_STANDARD_START_MS = Date.parse('2026-10-21T00:00:00+10:00');
@@ -14,18 +14,18 @@ const BALANCE_APP_VIDEO_INTRO_RE = /\b(?:quick\s+(?:look|video)|app\s+(?:video|w
 const ALLY_INTRO_RE = /\b(?:this is ally|here(?:'s| is) ally|ally(?:,|\s+(?:is|was|lost|has))|one of my clients)\b/i;
 const GEN_INTRO_RE = /\b(?:this is gen|here(?:'s| is) gen|gen(?:,|\s+(?:is|was|got|built|became))|one of my clients)\b/i;
 const BEC_KIRSTY_INTRO_RE = /\b(?:this is bec and kirsty|these are bec and kirsty|here(?:'s| are) bec and kirsty|bec and kirsty|two of my clients)\b/i;
-const DANI_INTRO_RE = /\b(?:this is dani|here(?:'s| is) dani|dani(?:,|\s+(?:is|was|worked|changed))|one of my clients)\b/i;
+const KRISTY_INTRO_RE = /\b(?:this is kristy|here(?:'s| is) kristy|kristy(?:,|\s+(?:is|was|worked|changed))|one of my clients)\b/i;
 // "Lose interest" and "lose track" are not body-weight goals.
 const WEIGHT_GOAL_RE = /\b(?:weight|fat|lean|kg|kgs|kilos?|kilograms?|lbs?|pounds?)\b|\b\d+(?:\.\d+)?\s*(?:kg|kgs|kilos?|kilograms?|lbs?|pounds?)\b/i;
 
 const PAID_META_TRANSFORMATION_PROOFS = Object.freeze([
     {
-        id: 'dani_recomposition',
-        imageUrl: DANI_RECOMPOSITION_PROOF_URL,
-        introductionRe: DANI_INTRO_RE,
+        id: 'kristy_recomposition',
+        imageUrl: KRISTY_RECOMPOSITION_PROOF_URL,
+        introductionRe: KRISTY_INTRO_RE,
         matches: text => /\b(?:recomp\w*|body composition|tone|toned|definition|shape)\b/i.test(text)
             && !/\b(?:injur\w*|pain|rehab|recover\w*)\b/i.test(text),
-        buildIntroduction: () => `This is Dani. Her goal was body recomposition rather than just chasing the scale, and the visible change came from repeatable training and nutrition structure over eight weeks.`,
+        buildIntroduction: () => `This is Kristy. These photos show her progress over 26 weeks of coaching with Shannon.`,
     },
     {
         id: 'gen_strength_confidence',
@@ -99,7 +99,7 @@ function requiredPaidMetaProofImageUrl(replyText = '') {
         { re: /\b(?:this is ally|here(?:'s| is) ally)\b/i, imageUrl: ALLY_WEIGHT_LOSS_PROOF_URL },
         { re: /\b(?:this is gen|here(?:'s| is) gen)\b/i, imageUrl: GEN_STRENGTH_CONFIDENCE_PROOF_URL },
         { re: /\b(?:this is bec and kirsty|these are bec and kirsty|here(?:'s| are) bec and kirsty)\b/i, imageUrl: BEC_KIRSTY_SHARED_MOMENTUM_PROOF_URL },
-        { re: /\b(?:this is dani|here(?:'s| is) dani)\b/i, imageUrl: DANI_RECOMPOSITION_PROOF_URL },
+        { re: /\b(?:this is kristy|here(?:'s| is) kristy)\b/i, imageUrl: KRISTY_RECOMPOSITION_PROOF_URL },
     ];
     return requiredIntroductions.find(item => item.re.test(text))?.imageUrl || null;
 }
@@ -159,7 +159,7 @@ module.exports = {
     ALLY_WEIGHT_LOSS_PROOF_URL,
     GEN_STRENGTH_CONFIDENCE_PROOF_URL,
     BEC_KIRSTY_SHARED_MOMENTUM_PROOF_URL,
-    DANI_RECOMPOSITION_PROOF_URL,
+    KRISTY_RECOMPOSITION_PROOF_URL,
     BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL,
     BALANCE_FOUNDATIONS_THIS_WEEK_VIDEO_URL,
     hasAllyProofIntroduction,

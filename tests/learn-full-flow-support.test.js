@@ -163,14 +163,14 @@ test('ordinary planning obstacles are not held as app faults; real app faults st
  for(const text of ['I drive between jobs and need cold packed lunches, food planning is where I get stuck','Food is my problem','My workout routine is not working for me'])assert.equal(isAppProblemSupportRequest(text),false,text);
  for(const text of ['The app is stuck','My workout will not load','The food photo upload failed','The custom workout start button won’t load the next page'])assert.equal(isAppProblemSupportRequest(text),true,text);
 });
-test('body-composition goal delivers Dani proof in deterministic and writer paths',()=>{
+test('body-composition goal delivers Kristy proof in deterministic and writer paths',()=>{
  for(const goal of ['I want better body composition','I want to improve body composition']){
   const d=api.buildDeterministicPaidMetaConversationReply({currentMessage:goal,history:[],flowVariant:'broad_pain'});
-  assert.match(d.joined,/Dani/);assert.ok(d.imageAttachmentUrl);assert.ok(api.isPaidMetaBareGoalMessage(goal));
+  assert.match(d.joined,/Kristy/);assert.ok(d.imageAttachmentUrl);assert.ok(api.isPaidMetaBareGoalMessage(goal));
  }
  const writer={joined:'That makes sense, body composition is a great goal. What usually gets in the way for you?',chunks:[],model:'writer'};
  const d=api.attachPaidMetaWriterSelectedMedia(writer,{allowAttachments:true,flowVariant:'broad_pain',currentMessage:'I want better body composition'});
- assert.match(d.joined,/Dani/);assert.ok(d.imageAttachmentUrl);assert.match(d.chunks.at(-1),/gets in the way/);
+ assert.match(d.joined,/Kristy/);assert.ok(d.imageAttachmentUrl);assert.match(d.chunks.at(-1),/gets in the way/);
 });
 test('unfamiliar blocker cannot jump from writer acknowledgement to preview without video and support choice',()=>{
  const history=[{direction:'in',text:'I want better body composition'},{direction:'out',text:'What usually gets in the way of making that happen consistently?'}];

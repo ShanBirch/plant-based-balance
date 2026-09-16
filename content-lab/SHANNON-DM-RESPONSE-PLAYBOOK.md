@@ -81,3 +81,7 @@ For each promoted, rejected, or retested pattern, save:
 - Goal/blocker, offer-ready, buyer-intent, checkout, and purchase outcomes where observable.
 - Decision: durable, supported, provisional, rejected, or retest.
 - Any Shannon wording correction and the skill or prompt updated from it.
+
+## Kristy proof correction, 16 September 2026
+
+Shannon confirmed the front-facing mirror comparison previously mislabelled Dani belongs to Kristy and shows progress over 26 weeks of coaching with Shannon. Use kristy-front-mirror-26-weeks.png and that exact factual attribution. Do not describe it as an eight-week result or imply it occurred during the six-week Learn course. Other Dani photos are separate assets.

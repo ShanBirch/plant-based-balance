@@ -3142,7 +3142,7 @@ const {
     ALLY_WEIGHT_LOSS_PROOF_URL,
     GEN_STRENGTH_CONFIDENCE_PROOF_URL,
     BEC_KIRSTY_SHARED_MOMENTUM_PROOF_URL,
-    DANI_RECOMPOSITION_PROOF_URL,
+    KRISTY_RECOMPOSITION_PROOF_URL,
     BALANCE_FOUNDATIONS_APP_PROOF_VIDEO_URL,
     isBalanceFoundationsAppProofVideoUrl,
     maySendDraftImageAttachment,
@@ -5449,7 +5449,7 @@ function attachPaidMetaWriterSelectedMedia(draft = {}, {
         { name: /\bally\b/i, imageUrl: ALLY_WEIGHT_LOSS_PROOF_URL },
         { name: /\bgen\b/i, imageUrl: GEN_STRENGTH_CONFIDENCE_PROOF_URL },
         { name: /\bbec\b[^.!?\n]{0,30}\bkirsty\b|\bkirsty\b[^.!?\n]{0,30}\bbec\b/i, imageUrl: BEC_KIRSTY_SHARED_MOMENTUM_PROOF_URL },
-        { name: /\bdani\b/i, imageUrl: DANI_RECOMPOSITION_PROOF_URL },
+        { name: /\bkristy\b/i, imageUrl: KRISTY_RECOMPOSITION_PROOF_URL },
     ];
     const selectedProof = proofCandidates.find(candidate => candidate.name.test(replyText)
         && maySendDraftImageAttachment({ imageUrl: candidate.imageUrl, replyText }));

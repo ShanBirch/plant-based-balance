@@ -1760,7 +1760,7 @@ test('paid Meta guided sales stages move goal to blocker to complete offer to pr
     const sentUrl = linkReply.joined.match(/https?:\/\/\S+/)?.[0] || '';
     assert.equal(linkReply.replyMode, 'campaign_app_preview_handoff');
     assert.match(linkReply.joined, /Yep, here you go/i);
-    assert.match(linkReply.joined, /app download and setup steps/i);
+    assert.match(linkReply.joined, /button at the bottom to download the app/i);
     assert.equal(isMetaAppPreviewUrl(sentUrl), true);
 });
 
@@ -1775,9 +1775,9 @@ test('paid Meta transformation proof is selected from the lead goal and withheld
     const recomposition = resolvePaidMetaTransformationProof({
         goalText: 'I want body recomposition and more tone, not just a lower number on the scale.',
     });
-    assert.equal(recomposition.id, 'dani_recomposition');
-    assert.match(recomposition.imageUrl, /dani-front-mirror-8-weeks\.png/i);
-    assert.match(recomposition.introduction, /This is Dani/i);
+    assert.equal(recomposition.id, 'kristy_recomposition');
+    assert.match(recomposition.imageUrl, /kristy-front-mirror-26-weeks\.png/i);
+    assert.match(recomposition.introduction, /This is Kristy/i);
 
     const shared = resolvePaidMetaTransformationProof({
         goalText: 'My friend and I want to train together, lose weight and keep each other accountable.',
