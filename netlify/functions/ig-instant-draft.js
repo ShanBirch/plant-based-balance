@@ -8154,7 +8154,7 @@ exports.handler = async (event) => {
     // The background worker already owns the lifetime needed for native video.
     const learnAlternative = require('../../experiments/learn-ai/automatic.cjs');
     if (learnAlternative.enabled(thread)) {
-        const result = await learnAlternative.run(thread, manychatMessageId);
+        const result = await learnAlternative.run(thread, manychatMessageId, payload);
         return { statusCode: 200, body: JSON.stringify(result) };
     }
     // Finish an already claimed paid reply before drafting its successor.

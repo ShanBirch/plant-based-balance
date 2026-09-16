@@ -31,7 +31,7 @@ async function acquire(thread,db=live.db,wait=sleep){
  throw Error('automatic_delivery_busy');
 }
 async function release(lock,db=live.db){await db(`coach_alerts?id=eq.${lock.id}&data->>token=eq.${lock.token}`,{method:'PATCH',body:{data:{token:'',until:0}}});}
-async function run(thread,sourceMessageId){
+async function run(thread,sourceMessageId,payload={}, {decideImpl=decide,presenceFactory=createPresence,prepareMedia=require('./media.cjs').prepare}={}){
  const session=(thread.learn_ai_settings||thread.custom_data.learn_ai_experiment).session;
  live.assertTestSession(thread,session);
  const lock=await acquire(thread);
@@ -44,19 +44,26 @@ async function run(thread,sourceMessageId){
   const pending=messages.slice(lastOut+1).filter(m=>m.direction==='in');
   if(!pending.length)return{skipped:'already_answered'};
   const id=live.receiptId('automatic-turn:'+newest.id,0);
-  if((await live.db(`coach_alerts?id=eq.${id}&select=id`)).length)return{skipped:'turn_already_attempted'};
+  const previous=(await live.db(`coach_alerts?id=eq.${id}&select=id,data`))[0];
+  if(previous&&previous.data?.outcome!=='media_wait')return{skipped:'turn_already_attempted'};
   claim={id,data:{session,inbound_id:newest.id,experiment_thread_id:live.THREAD,outcome:'generating',started_at:new Date().toISOString()}};
-  await live.db('coach_alerts',{method:'POST',body:{id,idempotency_key:`learn-auto-turn:${newest.id}`,coach_id:thread.coach_id,alert_type:'general_idea',title:'Learn automatic test turn',status:'dismissed',data:claim.data}});
+  if(previous){
+   const reclaimed=await live.db(`coach_alerts?id=eq.${id}&data->>outcome=eq.media_wait`,{method:'PATCH',body:{data:claim.data}});
+   if(!reclaimed.length)return{skipped:'turn_already_attempted'};
+  }else await live.db('coach_alerts',{method:'POST',body:{id,idempotency_key:`learn-auto-turn:${newest.id}`,coach_id:thread.coach_id,alert_type:'general_idea',title:'Learn automatic test turn',status:'dismissed',data:claim.data}});
   let renewedAt=Date.now();
-  presence=createPresence({signal:live.senderActions(view.thread,session),onHeartbeat:async()=>{
+  presence=presenceFactory({signal:live.senderActions(view.thread,session),onHeartbeat:async()=>{
    if(Date.now()-renewedAt<30000)return;
    const held=await live.db(`coach_alerts?id=eq.${lock.id}&data->>token=eq.${lock.token}`,{method:'PATCH',body:{data:{token:lock.token,until:Date.now()+240000}}});
    if(!held.length)throw Error('delivery_ownership_lost');
    renewedAt=Date.now();
   }});
   await presence.start();
+  const prepared=await prepareMedia(messages,{payload,receipts:view.receipts,pendingIds:pending.map(m=>m.id)});
+  claim.data.media_context=prepared.context;
   const receipts=view.receipts.map(r=>r.data).filter(r=>r.action&&messages.some(m=>m.id===r.inbound_id)).map(r=>({action:r.action,status:r.outcome==='confirmed'?'sent':'not_confirmed'}));
-  const result=await decide({model:'gpt-5.4',history:messages.slice(0,messages.indexOf(pending[0])).map(m=>({direction:m.direction,text:m.text})),inbound:pending.map(m=>m.text),receipts});
+  const firstPending=messages.indexOf(pending[0]);
+  const result=await decideImpl({model:'gpt-5.4',history:prepared.messages.slice(0,firstPending).map(m=>({direction:m.direction,text:m.text})),inbound:prepared.messages.slice(firstPending).filter(m=>m.direction==='in').map(m=>m.text),receipts});
   Object.assign(claim.data,result,{outcome:'sending'});
   await live.db(`coach_alerts?id=eq.${id}`,{method:'PATCH',body:{data:claim.data}});
   for(let index=0;index<result.plan.actions.length;index++){
@@ -79,7 +86,7 @@ async function run(thread,sourceMessageId){
   await live.db(`coach_alerts?id=eq.${id}`,{method:'PATCH',body:{data:claim.data}});
   return{ok:true,actions:result.plan.actions.length};
  }catch(e){
-  if(claim){Object.assign(claim.data,{outcome:'stopped',error:e.message});await live.db(`coach_alerts?id=eq.${claim.id}`,{method:'PATCH',body:{data:claim.data}}).catch(()=>{});}
+  if(claim){Object.assign(claim.data,{outcome:e.code==='media_wait'?'media_wait':'stopped',error:e.message});await live.db(`coach_alerts?id=eq.${claim.id}`,{method:'PATCH',body:{data:claim.data}}).catch(()=>{});}
   throw e;
  }finally{
   if(presence){

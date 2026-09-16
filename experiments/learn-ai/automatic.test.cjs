@@ -26,3 +26,32 @@ test('lease acquisition serialises workers and a stale owner cannot unlock the n
  await release(first,db);assert.equal(row.data.token,second.token);
  await release(second,db);assert.equal(row.data.token,'');
 });
+
+test('automatic delivery waits for media, retries before sending and does not send twice',async()=>{
+ const live=require('./live.cjs'),{run}=require('./automatic.cjs');
+ const originals={db:live.db,inspect:live.inspect,send:live.send,senderActions:live.senderActions};
+ const rows=new Map();let ready=false,sends=0,modelInput;
+ const thread={id:THREAD,coach_id:'coach',ig_username:'goldcoast_ai_solutions',subscriber_id:'ig_graph:17841415641641750:989348707404558',learn_ai_settings:{mode:'automatic',session:'qa'},custom_data:{}};
+ const messages=[{id:'voice',direction:'in',text:'[AUDIO:https://test.invalid/note]',manychat_message_id:'ig_graph:voice'}];
+ try {
+ live.inspect=async()=>({thread,messages,receipts:[]});live.senderActions=()=>async()=>({ok:true});
+ live.db=async(route,options={})=>{
+  if(route.startsWith('coach_alerts?data->>ig_thread_id'))return[];
+  if(options.method==='POST'){if(rows.has(options.body.id))throw Error('database_409');rows.set(options.body.id,structuredClone(options.body));return[options.body];}
+  const id=route.match(/id=eq\.([^&]+)/)?.[1],row=rows.get(id);if(!row)return[];
+  const token=route.match(/data->>token=eq\.([^&]*)/)?.[1];if(token!==undefined&&row.data.token!==decodeURIComponent(token))return[];
+  if(route.includes('outcome=eq.media_wait')&&row.data.outcome!=='media_wait')return[];
+  if(options.method==='PATCH')Object.assign(row,structuredClone(options.body));return[structuredClone(row)];
+ };
+ live.send=async()=>{sends++;return{outcome:'confirmed'};};
+ const deps={presenceFactory:()=>({events:[],start:async()=>{},before:async()=>({}),delivered:async()=>{},stop:async()=>{}}),prepareMedia:async(_messages,options)=>{
+  assert.equal(options.payload.durableMediaIds[0],'saved-media');
+  if(!ready)throw Object.assign(Error('pending transcript'),{code:'media_wait'});
+  return{messages:[{...messages[0],text:'I prefer Zoom please'}],context:[{message_id:'voice',text:'I prefer Zoom please',complete:true}]};
+ },decideImpl:async input=>{modelInput=input;return{plan:{status:'reply',actions:[{type:'text',text:'Yep, we can do that.',asset_id:''}]}};}};
+ const payload={durableMediaIds:['saved-media']};
+ await assert.rejects(run(thread,'voice',payload,deps),/pending transcript/);assert.equal(sends,0);
+ ready=true;assert.equal((await run(thread,'voice',payload,deps)).ok,true);assert.equal(sends,1);assert.deepEqual(modelInput.inbound,['I prefer Zoom please']);
+ assert.equal((await run(thread,'voice',payload,deps)).skipped,'turn_already_attempted');assert.equal(sends,1);
+ }finally{Object.assign(live,originals);}
+});
