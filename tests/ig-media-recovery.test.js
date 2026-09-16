@@ -78,6 +78,16 @@ test('holding a failed send preserves receipts and provider error rather than st
     assert.match(writes[0].url, /status=eq.pending&data->>send_claim_id=is.null/);
 });
 
+test('a pre-send review hold records the current review instead of stale database review evidence', async () => {
+    const currentReview = {context_review:{required:true,reasons:['paid_meta_writer_contract']},draft_review:{verdict:'block'}};
+    let written;
+    await persistReviewHold({alertId:'a',fallbackData:currentReview,hold:{code:'context_review'},
+        query:async (url,options)=>options ? (written=options.body.data) : [{status:'pending',data:{context_review:null,draft_review:{verdict:'pass'}}}],
+    });
+    assert.deepEqual(written.context_review,currentReview.context_review);
+    assert.equal(written.draft_review.verdict,'block');
+});
+
 for (const row of [{ status: 'sent', data: { complete: true } }, { status: 'pending', data: { send_claim_id: 'active' } }]) {
     test(`hold cannot overwrite ${row.status === 'sent' ? 'completed delivery' : 'an active sender'}`, async () => {
         const result = await persistReviewHold({ alertId: 'test', hold: { code: 'failed' },
