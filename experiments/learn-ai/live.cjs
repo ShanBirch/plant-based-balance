@@ -3,6 +3,7 @@
 const crypto=require('node:crypto');
 const {catalogue,validatePlan}=require('./flow.cjs');
 const {buildMetaAppPreviewUrl}=require('../../netlify/functions/_lib/meta-app-preview-ref');
+const {resolveMetaIgAccessToken}=require('../../netlify/functions/_lib/meta-ig-accounts');
 const THREAD='4baea56e-eab4-4887-a732-39b14e983d44';
 const ACCOUNT='17841415641641750';
 const RECIPIENT='989348707404558';
@@ -59,7 +60,7 @@ async function send({session,inbound_id,index,plan}){
   const last=[...fresh.messages].reverse().find(m=>m.direction==='in');
   if(last?.id!==inbound_id)throw Error('stale_before_send');
   if(fresh.messages.some(m=>m.direction==='out'&&Date.parse(m.created_at)>=Date.parse(last.created_at)&&m.source!=='learn_ai_experiment'))throw Error('human_takeover');
-  let token=process.env.INSTAGRAM_GRAPH_ACCESS_TOKEN||process.env.IG_GRAPH_ACCESS_TOKEN||process.env.META_IG_ACCESS_TOKEN||process.env.INSTAGRAM_ACCESS_TOKEN;
+  let token=(await resolveMetaIgAccessToken(ACCOUNT,db)).token;
   if(!token)token=(await db('app_private_secrets?select=value&key=eq.instagram_graph_access_token&limit=1'))[0]?.value;
   if(!token)throw Error('transport_unavailable');
   const message=graphMessage(action);
