@@ -14433,3 +14433,122 @@ html[data-pbb-theme] #quiz-battle-invite-overlay .battle-invite-close {
     color: #fffaf2 !important;
     -webkit-text-fill-color: #fffaf2 !important;
 }
+
+/* Conditional states: upload feedback, chat sharing and calendar controls. */
+html[data-pbb-theme] #calendar-activity-modal button[onclick*="adjustCalendarActivityMinutes"] {
+    background: #e2e8f0 !important;
+    color: #17130d !important;
+    -webkit-text-fill-color: #17130d !important;
+}
+html[data-pbb-theme] #challenge-prizes-top-label,
+html[data-pbb-theme] #challenge-claim-reward-btn {
+    color: #07130b !important;
+    -webkit-text-fill-color: #07130b !important;
+    text-shadow: none !important;
+}
+html[data-pbb-theme] #guest-mode-banner button[onclick*="openCheckoutGate"] {
+    background: #ffffff !important;
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+}
+html[data-pbb-theme] #view-dashboard #weekly-progress-photo-uploading {
+    background: #831843 !important;
+}
+html[data-pbb-theme] #view-dashboard #weekly-progress-photo-uploading-copy {
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+}
+html[data-pbb-theme] #view-dashboard #progress-photo-share-feed-btn {
+    background: #fffaf2 !important;
+    color: #831843 !important;
+    -webkit-text-fill-color: #831843 !important;
+}
+html[data-pbb-theme] #create-custom-exercise-modal #custom-exercise-video-native-placeholder,
+html[data-pbb-theme] #create-custom-exercise-modal #custom-exercise-video-native-placeholder * {
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+}
+html[data-pbb-theme] #store-review-modal #store-review-feedback-text {
+    background: var(--pbb-readable-sheet) !important;
+    color: var(--pbb-readable-text) !important;
+    -webkit-text-fill-color: var(--pbb-readable-text) !important;
+}
+html[data-pbb-theme] #store-review-modal #store-review-feedback-text::placeholder {
+    color: var(--pbb-readable-muted) !important;
+    -webkit-text-fill-color: var(--pbb-readable-muted) !important;
+    opacity: 1;
+}
+html[data-pbb-theme] #quick-share-modal #multi-select-hint,
+html[data-pbb-theme] #quick-share-modal #multi-select-hint * {
+    background: #f0fdf4 !important;
+    color: #166534 !important;
+    -webkit-text-fill-color: #166534 !important;
+}
+html[data-pbb-theme] #quick-share-modal button[onclick*="goToGroupChatsToShare"],
+html[data-pbb-theme] #group-chat-modal button[onclick*="openShareWinInChat"],
+html[data-pbb-theme] #view-cycle div:has(> #cycle-day-display),
+html[data-pbb-theme] #view-cycle #cycle-day-display {
+    background: #f5d98a !important;
+    color: #17130d !important;
+    -webkit-text-fill-color: #17130d !important;
+}
+html:not([data-pbb-theme="light"]) #direct-message-modal #dm-recording-status {
+    color: #ffb5b5 !important;
+    -webkit-text-fill-color: #ffb5b5 !important;
+}
+@media (max-width: 600px), (max-height: 500px) {
+    html #calendar-activity-modal {
+        padding-top: max(42px, env(safe-area-inset-top, 0px)) !important;
+    }
+    html #calendar-activity-modal > div {
+        max-height: 100% !important;
+        padding-bottom: calc(20px + max(20px, env(safe-area-inset-bottom, 0px))) !important;
+    }
+    html #challenge-prizes-page > div:first-child {
+        padding-top: calc(15px + max(42px, env(safe-area-inset-top, 0px))) !important;
+    }
+    html #challenge-prizes-page {
+        padding-bottom: max(20px, env(safe-area-inset-bottom, 0px));
+    }
+}
+html:not([data-pbb-theme="light"]) :is(#create-challenge-modal, #challenge-results-modal, #challenge-pass-modal) [style*="color: rgba(255,255,255,0.4)"],
+html:not([data-pbb-theme="light"]) :is(#create-challenge-modal, #challenge-results-modal, #challenge-pass-modal) [style*="color: rgba(255,255,255,0.4)"] * {
+    color: #d4cec5 !important;
+    -webkit-text-fill-color: #d4cec5 !important;
+}
+html:not([data-pbb-theme="light"]) #create-challenge-modal [style*="color: #9ca3af"],
+html:not([data-pbb-theme="light"]) #create-challenge-modal [style*="color: #fbbf24"] {
+    color: #fff0c2 !important;
+    -webkit-text-fill-color: #fff0c2 !important;
+}
+html:not([data-pbb-theme="light"]) #create-challenge-modal [style*="color: rgba(192,132,252,0.7)"] {
+    color: #e3baff !important;
+    -webkit-text-fill-color: #e3baff !important;
+}
+html[data-pbb-theme] #unlock-equip-btn,
+html[data-pbb-theme] #challenge-exit-btn-container button {
+    background: #1d4ed8 !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+html:not([data-pbb-theme="light"]) #coach-chat-modal > div > div:first-child > div:first-child > span {
+    color: #17130d !important;
+    -webkit-text-fill-color: #17130d !important;
+}
+@media (max-width: 600px), (max-height: 500px) {
+    html :is(#store-review-modal, #quick-share-modal, #direct-message-modal, #group-chat-modal, #coach-chat-modal, #create-challenge-modal, #challenge-results-modal, #challenge-pass-modal, #rare-unlock-celebration) {
+        box-sizing: border-box;
+        padding: max(42px, env(safe-area-inset-top, 0px)) 12px max(20px, env(safe-area-inset-bottom, 0px)) !important;
+    }
+    html :is(#store-review-modal, #quick-share-modal, #direct-message-modal, #group-chat-modal, #coach-chat-modal, #create-challenge-modal, #challenge-results-modal, #challenge-pass-modal, #rare-unlock-celebration) > div {
+        box-sizing: border-box;
+        max-height: 100% !important;
+        overflow-y: auto !important;
+    }
+    html #challenge-leaderboard-modal > div:first-child {
+        padding-top: calc(15px + max(42px, env(safe-area-inset-top, 0px))) !important;
+    }
+    html #challenge-leaderboard-modal {
+        padding-bottom: max(20px, env(safe-area-inset-bottom, 0px));
+    }
+}
