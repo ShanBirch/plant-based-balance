@@ -10,7 +10,7 @@ test('independent choice never reopens the offer after a short consistency greet
         {direction:'in',text:'Weekdays are full but I can train on Saturday and Sunday'},
         {direction:'out',text:'A weekend-based training setup could suit you.'},
         {direction:'out',text:"It's one AUD $149 payment, with no subscription or auto-renewal. Here's the course video."},
-        {direction:'out',text:'[VIDEO:https://plantbased-balance.org/assets/balance-learn-dm-149-v14-energy-context.mp4]'},
+        {direction:'out',text:'[VIDEO:https://plantbased-balance.org/assets/balance-learn-dm-149-v15-typewriter.mp4]'},
         {direction:'out',text:'Would you prefer doing your workouts on your own with the app and my weekly check-in, or adding 30-minute one-on-one Zoom sessions?'},
     ];
     const p={currentMessage,history,flowVariant:'broad_pain',qualifier:{facts:{current_state:'get stronger',history_blockers:'weekdays full'}}};

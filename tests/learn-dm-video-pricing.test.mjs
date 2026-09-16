@@ -15,8 +15,8 @@ test('DM video and checkout change at the same Brisbane launch-offer boundary',(
     }
     assert.equal(getLearnCoursePricing(LEARN_INTRO_END).unitAmount,45000);
     assert.equal(resolveVideo(Date.parse(LEARN_INTRO_END)),standardVideo);
-    assert.match(launchVideo,/balance-learn-dm-149-v14-energy-context\.mp4$/);
-    assert.match(standardVideo,/balance-learn-dm-450-v14-energy-context\.mp4$/);
+    assert.match(launchVideo,/balance-learn-dm-149-v15-typewriter\.mp4$/);
+    assert.match(standardVideo,/balance-learn-dm-450-v15-typewriter\.mp4$/);
 });
 test('queued old social and expired-price drafts resolve to the correct current DM video',()=>{
     const legacy='https://plantbased-balance.org/assets/balance-foundations-course-first-v8.mp4';
@@ -82,4 +82,13 @@ test('queued pre-energy videos upgrade without duplicating URLs or bypassing int
  assert.equal(stripPaidMetaProofMediaUrls('Video: '+url),'Video:');
  assert.equal(maySendDraftVideoAttachment({videoUrl:url,replyText:'How are you?'}),false);
  }
+});
+
+
+test('queued v14 energy editions resolve to current typewriter editions',()=>{for(const price of [149,450]){const old='https://plantbased-balance.org/assets/balance-learn-dm-'+price+'-v14-energy-context.mp4';assert.equal(resolveAttachment(old,Date.parse('2026-09-16')),launchVideo);assert.equal(resolveAttachment(old,Date.parse(LEARN_INTRO_END)),standardVideo);assert.equal(stripPaidMetaProofMediaUrls('Video: '+old),'Video:');}});
+
+test('Learn AI ad catalogue shares the canonical current video and price boundary',()=>{
+ const {catalogue}=require('../experiments/learn-ai/flow.cjs');
+ assert.equal(catalogue(new Date('2026-09-16')).course.url,launchVideo);
+ assert.equal(catalogue(new Date(LEARN_INTRO_END)).course.url,standardVideo);
 });

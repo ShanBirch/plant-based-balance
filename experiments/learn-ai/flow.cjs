@@ -1,6 +1,7 @@
 'use strict';
 const crypto = require('node:crypto');
 const prompt = require('./prompt.json');
+const {resolveBalanceFoundationsAppProofVideoUrl} = require('../../netlify/functions/_lib/paid-meta-proof-media.js');
 const schema = {
   type: 'object', additionalProperties: false,
   required: ['conversation_facts', 'status', 'decision_summary', 'actions'],
@@ -18,13 +19,12 @@ const schema = {
   },
 };
 function catalogue(now = new Date()) {
-  const standard = now.getTime() >= Date.parse('2026-10-21T00:00:00+10:00');
   return {
     ally: {type: 'image', url: 'https://plantbased-balance.org/photos/client-success/ally-cocos.png', facts: 'Weight loss. Ally lost 12kg in 16 weeks while working full time and raising a family.'},
     gen: {type: 'image', url: 'https://plantbased-balance.org/photos/client-success/gen-cocos.jpg', facts: 'Strength, fitness and confidence through progressive repeatable training.'},
     kristy: {type: 'image', url: 'https://plantbased-balance.org/photos/client-success/kristy-front-mirror-26-weeks.png', facts: 'Kristy. Progress over 26 weeks of coaching with me; not the duration of Learn.'},
     bec_kirsty: {type: 'image', url: 'https://plantbased-balance.org/photos/client-success/bec-kirsty-cocos.png', facts: 'Shared accountability. Both lost over 10kg and got stronger.'},
-    course: {type: 'video', url: `https://plantbased-balance.org/assets/balance-learn-dm-${standard ? '450-v11' : '149-v13-polished-cards'}.mp4`, facts: 'Approved six-week Learn explanation.'},
+    course: {type: 'video', url: resolveBalanceFoundationsAppProofVideoUrl(now.getTime()), facts: 'Approved six-week Learn explanation.'},
     preview: {type: 'card', url: null, facts: 'Signed course WEBSITE link. Read the course information, then use the bottom button for app download and preview setup. Free preview before payment, no automatic charge.'},
     zoom: {type: 'card', url: 'https://balanceneurosciencefitness.com/book', facts: 'Fit-call booking, not checkout. Availability and suitability checked before payment.'},
   };

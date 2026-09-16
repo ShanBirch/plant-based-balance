@@ -4,8 +4,8 @@ The ad message flow must send the dedicated **price-ending DM video**. The old `
 
 Approved delivery files:
 
-- `assets/balance-learn-dm-149-v14-energy-context.mp4`: AUD $149 for the full six weeks, used through 20 October 2026 Brisbane time.
-- `assets/balance-learn-dm-450-v14-energy-context.mp4`: AUD $450 for the full six weeks, used from midnight 21 October 2026 Brisbane time.
+- `assets/balance-learn-dm-149-v15-typewriter.mp4`: AUD $149 for the full six weeks, used through 20 October 2026 Brisbane time.
+- `assets/balance-learn-dm-450-v15-typewriter.mp4`: AUD $450 for the full six weeks, used from midnight 21 October 2026 Brisbane time.
 
 Launch is 21 September. The introductory window lasts one month after launch; the $450 change is in October. Upfront checkout and public offer copy follow the same dates. Weekly membership pricing is unchanged.
 
@@ -41,3 +41,9 @@ Editable project: C:/Users/shann/Documents/Codex/2026-09-16/with-the-video-that-
 Experiment: energy_context_v14. Hypothesis: one connected science/quiz/application example improves understanding and movement from video to app preview. Primary KPI: verified video recipients reaching app preview; diagnostics: clarification replies and checkout starts; guardrail: duplicate video sends and unsupported promises. Decision date: 23 September 2026, compare with v13 subject to available recipient attribution and sample size.
 
 Reusable production rule: keep the science card, quiz feedback and application form on one concept. Present information first, then use a personal example to test and apply it. Describe environmental influence as possible, not guaranteed or a substitute for physiological needs.
+
+## v15: type the reflection answer
+
+Shannon requested the written reflection to type itself out instead of appearing in phrase fades. The same answer now types character by character over 4.8 seconds, with a moving caret and a readable hold before the weekly check-in. Both price editions use this animation. v14 URLs remain recognized and upgrade at send time. The soundtrack, other sections and total 223.4-second duration are preserved. Deliverables: Balance-Learn-Energy-Typewriter.mp4 and Balance-Learn-Energy-Typewriter-Standard-Price.mp4 in the existing task outputs folder.
+
+Reusable rule: when demonstrating a person writing into a form, use a deterministic character-by-character typing effect with a caret and a final reading hold, rather than fading in completed phrases.

@@ -1,5 +1,9 @@
 # Shannon Content Edit Memory
 
+## 16 September 2026: type written form answers
+
+Shannon asked for the Learn video reflection answer to type itself out, replacing its phrase-reveal animation. Form-entry demonstrations should use character-by-character typing with a moving caret and a short completed-text hold. Preserve the form layout and copy. Contract: docs/learn-dm-video-2026-09-10.md, v15.
+
 ## 16 September 2026: connect Learn, Test and Use
 
 Shannon asked to replace the ad-flow video’s eyes/camera science and unrelated eating-location reflection with a single environment-and-energy example. Keep Learn as a concise packet of science; make the quiz and written reflection apply that same idea. Show the actual sequence: information, quiz, lesson reflection, then the separate weekly check-in. Environment can influence felt alertness through learned associations alongside body signals; never promise that changing rooms eliminates fatigue. Contract: docs/learn-dm-video-2026-09-10.md, v14.
