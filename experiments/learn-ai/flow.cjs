@@ -12,7 +12,7 @@ const schema = {
     decision_summary: {type: 'string'},
     actions: {type: 'array', items: {type: 'object', additionalProperties: false,
       required: ['type', 'text', 'asset_id'], properties: {
-        type: {type: 'string', enum: ['text', 'image', 'video', 'card']},
+        type: {type: 'string', enum: ['text', 'image', 'video', 'card', 'reaction']},
         text: {type: 'string'}, asset_id: {type: 'string'},
       }}},
   },
@@ -45,9 +45,12 @@ function facts(now = new Date()) {
 function validatePlan(plan, assets = catalogue()) {
   if (!plan || !['reply','pause','needs_human'].includes(plan.status) || !Array.isArray(plan.actions)) throw Error('invalid_plan');
   if (plan.status === 'reply' && !plan.actions.length) throw Error('empty_reply');
+  if (plan.actions.filter(a=>a.type==='reaction').length>1) throw Error('duplicate_reaction');
   for (const [i,a] of plan.actions.entries()) {
     if (a.type === 'text') {
       if (!a.text?.trim() || a.asset_id || /https?:\/\//i.test(a.text)) throw Error('invalid_text_action');
+    } else if (a.type === 'reaction') {
+      if (plan.status !== 'reply' || a.text || a.asset_id !== 'love') throw Error('invalid_reaction_action');
     } else {
       if (plan.status !== 'reply' || !assets[a.asset_id] || assets[a.asset_id].type !== a.type || a.text) throw Error('invalid_asset_action');
       if (plan.actions[i-1]?.type !== 'text') throw Error('missing_media_introduction');

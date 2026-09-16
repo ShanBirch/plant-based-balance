@@ -51,6 +51,12 @@ function graphMessage(action,threadId=THREAD) {
  }
  return {attachment:{type:action.type,payload:{url:asset.url}}};
 }
+function graphRequest(action,inbound){
+ if(action.type!=='reaction')return {recipient:{id:RECIPIENT},message:graphMessage(action)};
+ const target=String(inbound?.manychat_message_id||'').replace(/^ig_graph:/,'');
+ if(inbound?.direction!=='in'||!target)throw Error('reaction_target_unavailable');
+ return {recipient:{id:RECIPIENT},sender_action:'react',payload:{message_id:target,reaction:'love'}};
+}
 function reconcileMessages(messages,receipts){
  const normalize=id=>String(id||'').replace(/^ig_graph:/,'');
  const confirmed=new Map(receipts.filter(r=>r.data?.outcome==='confirmed'&&r.data.message_id).map(r=>[normalize(r.data.message_id),r]));
@@ -97,15 +103,20 @@ async function send({session,inbound_id,index,plan,onDelivered,receipt_namespace
   let token=(await resolveMetaIgAccessToken(ACCOUNT,db)).token;
   if(!token)token=(await db('app_private_secrets?select=value&key=eq.instagram_graph_access_token&limit=1'))[0]?.value;
   if(!token)throw Error('transport_unavailable');
-  const message=graphMessage(action);
+  const request=graphRequest(action,last),message=request.message;
   if(beforeSend)await beforeSend();
-  const r=await fetch(`https://graph.instagram.com/v25.0/${ACCOUNT}/messages`,{method:'POST',signal:AbortSignal.timeout(55000),headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({recipient:{id:RECIPIENT},message})});
+  const r=await fetch(`https://graph.instagram.com/v25.0/${ACCOUNT}/messages`,{method:'POST',signal:AbortSignal.timeout(55000),headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify(request)});
   const result=await r.json();
-  if(!r.ok||!result.message_id)throw Error(`graph_${r.status}`);
-  data.outcome='confirmed';data.message_id=result.message_id;data.confirmed_at=new Date().toISOString();
+  if(!r.ok||result.error||(action.type==='reaction'?result.recipient_id!==RECIPIENT:!result.message_id))throw Error(`graph_${r.status}`);
+  data.outcome='confirmed';
+  if(action.type==='reaction')data.reacted_to_message_id=request.payload.message_id;
+  else data.message_id=result.message_id;
+  data.confirmed_at=new Date().toISOString();
   // Refresh presence as soon as Graph delivers, before receipt bookkeeping.
   if(onDelivered)await onDelivered().catch(()=>{});
   await db(`coach_alerts?id=eq.${id}`,{method:'PATCH',body:{status:'dismissed',data,actioned_at:data.confirmed_at}});
+  // A reaction acknowledges the inbound. It is not a new outgoing message.
+  if(action.type==='reaction')return data;
   const text=action.type==='text'?action.text:action.type==='card'?`${message.attachment.payload.elements[0].title} ${message.attachment.payload.elements[0].buttons[0].url}`:`[${action.type.toUpperCase()}:${catalogue()[action.asset_id].url}]`;
   const canonicalId=`ig_graph:${result.message_id.replace(/^ig_graph:/,'')}`;
   const provenance={source:'learn_ai_experiment',alert_id:id,author_type:'balance_system',training_provenance:'system_generated',delivery_origin:'instagram_graph_api'};
@@ -119,4 +130,4 @@ async function send({session,inbound_id,index,plan,onDelivered,receipt_namespace
   data.error=e.message;await db(`coach_alerts?id=eq.${id}`,{method:'PATCH',body:{data}}).catch(()=>{});throw e;
  }
 }
-module.exports={db,inspect,send,assertTestSession,receiptId,graphMessage,reconcileMessages,senderActions,THREAD};
+module.exports={db,inspect,send,assertTestSession,receiptId,graphMessage,graphRequest,reconcileMessages,senderActions,THREAD};

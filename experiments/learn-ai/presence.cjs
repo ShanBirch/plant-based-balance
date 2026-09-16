@@ -3,6 +3,7 @@ const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 // About 150 words/minute: a 45-word paragraph takes 20 seconds.
 // No random jitter or fast-lane compression. Upload time is not extra typing time.
 function duration(action){
+ if(action.type==='reaction')return 0;
  if(action.type!=='text')return 1800;
  const words=String(action.text||'').trim().split(/\s+/).filter(Boolean).length;
  return Math.min(30000,Math.max(3000,2000+words*400));
