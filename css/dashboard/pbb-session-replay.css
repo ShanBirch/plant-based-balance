@@ -1,0 +1,6 @@
+#balance-replay-settings{scroll-margin-top:100px;scroll-margin-bottom:120px}
+@media(max-width:900px),(pointer:coarse){
+  /* Edge-to-edge WebViews can report zero even underneath the status bar. */
+  #view-profile .settings-v2-header{padding-top:calc(12px + max(42px,var(--pbb-replay-safe-top,env(safe-area-inset-top,0px))))!important}
+  #view-profile .settings-v2-shell{padding-bottom:calc(100px + max(24px,var(--pbb-replay-safe-bottom,env(safe-area-inset-bottom,0px))))}
+}

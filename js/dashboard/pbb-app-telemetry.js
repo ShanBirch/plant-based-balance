@@ -108,6 +108,8 @@
   function track(type, data, options) {
     const eventType = safeToken(type, 'app_interaction');
     const clean = sanitize(data || {}, 0) || {};
+    const replaySession = root.BalanceReplay && root.BalanceReplay.getSessionId();
+    if (replaySession) clean.replay_session_id = replaySession;
     const dedupeKey = options && options.dedupeKey ? eventType + ':' + options.dedupeKey : '';
     if (dedupeKey) {
       const now = Date.now();
