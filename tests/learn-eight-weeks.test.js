@@ -50,23 +50,47 @@ test('nutrition evidence follows the curriculum; week eight learning never deman
  }
  assert.equal(actions.reportComplete(8,{fit:'Fits my day'},null,'eight_v1'),false);
 });
-test('revised quizzes only test what their lesson teaches and reject absolute claims',()=>{
- const c=runtime();for(const unit of ['mind-3','mind-7','mind-8'])for(const lesson of c.lessonData[unit]){
-  assert.ok(lesson.content.intro.length>450);assert.equal(lesson.games.length,6);
-  for(const game of lesson.games)if(game.options)assert.ok(game.options[game.correctIndex]);
-  assert.doesNotMatch(lesson.content.intro,/the only thing your brain ever does|predicts the entire universe as fact|all disagreement is caused by saving glucose/);
+// Digests independently verified against the audit and bc3a149a^ lesson definitions.
+const originalLessonHashes = {
+  "mind-1-2": "3ad422f879176ad31d7c69b56294b30374b291b3edb02d5e7285657ccf9ab2ca",
+  "mind-1-3": "faf40a500dab26e62d4205cedc8907c8d7e234cd130c1856595d6d011b4e1437",
+  "mind-3-1": "231b32f79e894384d620a2cc14d4324bbee9cbe6af7c3b1fd510a52773e1310e",
+  "mind-3-2": "a9e5b376cbc130fc73e22691c47c6f2b147b6367af577758935b8f07cb40e1bb",
+  "mind-3-3": "f98ac56f74d7b470faf41c9af9331fcdd25f7598ce1919e462144768d5671e80",
+  "mind-3-4": "feb4acf3ae1cc522fdecefc2511988b5a43e07a5510a4c611db40b9706aa8c54",
+  "mind-3-5": "91c906d6fa4b5eb75f577d03f2b489599208e8106a85f88f4dc957d4c010b973",
+  "mind-4-2": "6fd701103b438f5a3f79ca1ba825589080fe8304898a634f2fa02a0eea13a63c",
+  "mind-4-5": "858266b3bcca1c038f1a9f467c36e7b198e135d0e42d5fb091c504b690a70e7e",
+  "mind-6-1": "66ca91296801d03095a6db7159e7a7cfdd8cac298b0f931e0bde97d2f34d07e3",
+  "mind-6-2": "ee04e7e6efd021bca0c0b08b316eeb0593cedc90a70168533f47d0b96f45d1a8",
+  "mind-7-1": "c6a57e49ef50148b96a4daf13f81d43c5b01a33dcd5acb195408886d09848786",
+  "mind-7-2": "8f0c3545411af773b3d978b156c3fa44fc09ce35744d1a0173ce780b33c93d48",
+  "mind-7-3": "01955c922c8016b3c40c70332ad0008515440e8252f9c2b1ec59c6e35912e213",
+  "mind-7-4": "48369e0f8e683acfc7a646977e74b39352e05c5daa568d7ad5d3d4c62cd179c4",
+  "mind-7-5": "755438cd6ffcdbd806869c9f31cc5bfea8e2f5e09a99f143d0896438f882c92a",
+  "mind-8-1": "b72cd139e6da505c7868321e769f58d6bdd715f2403c351e8c1e7b31de3820f1",
+  "mind-8-2": "3afe3ab4d2fa00efdbbc902cedd27155f42ae93b1bbac223b5570be7bc4b0499",
+  "mind-8-3": "c6e8b2711c1de46d7d550556c669c78da081569cb47d1065a48bd31bc594983b",
+  "mind-8-4": "8f29f8c57d50c8a97fb24df1e6b0abcb199336ac177a5ad53eca899bf1034487",
+  "mind-8-5": "a437322ed4aa1aa6ae153fe5434577154e9829052141e0294ba1901870967042"
+};
+test('21 restored lessons exactly preserve original titles, explanations, eight questions and answer mappings',()=>{
+ const c=runtime(), crypto=require('node:crypto');
+ for(const [id,hash] of Object.entries(originalLessonHashes)){
+  const lesson=Object.values(c.lessonData).flat().find(l=>l.id===id);
+  assert.equal(lesson.games.length,8,id);
+  assert.equal(crypto.createHash('sha256').update(JSON.stringify(lesson)).digest('hex'),hash,id);
+  assert.equal(c.BalanceCurriculum.lessons.find(l=>l.id===id).title,lesson.title,id+' catalog title');
  }
- assert.match(c.lessonData['mind-8'][0].content.intro,/parameters/);
- assert.match(c.lessonData['mind-8'][1].content.intro,/learning rate/);
- assert.match(c.lessonData['mind-7'][3].content.intro,/epistemic value/);
 });
+
 test('all inline dashboard scripts parse after both regular and iOS loader changes',()=>{
  for(const match of read('dashboard.html').replace(/<!--[\s\S]*?-->/g,'').matchAll(/^ *<script\b([^>]*)>([\s\S]*?)<\/script>/gmi)){
   if(/type=["'](?:application\/ld\+json|importmap|text\/x-pbb-template)/.test(match[1])||!match[2].trim())continue;
   assert.doesNotThrow(()=>new vm.Script(match[2]));
  }
  const html=read('dashboard.html');assert.equal((html.match(/learn-curriculum\.js\?v=2-six-weeks/g)||[]).length,2);
- assert.equal((html.match(/learn-predictive-content\.js\?v=5-feed-practice/g)||[]).length,2);
+ assert.equal((html.match(/learn-predictive-content\.js\?v=6-original-restored/g)||[]).length,2);
 });
 
 test('every Learn path has six to eight questions with valid answers and distinct prompts',()=>{
@@ -86,9 +110,9 @@ test('every Learn path has six to eight questions with valid answers and distinc
   }
  }
  const six=curriculum.weeks().flatMap(w=>w.lessonIds).map(id=>all.find(l=>l.id===id));
- assert.equal(six.filter(l=>l.games.length===6).length,22);
+ assert.equal(six.filter(l=>l.games.length===6).length,1);
  assert.equal(six.filter(l=>l.games.length===7).length,1);
- assert.equal(six.filter(l=>l.games.length===8).length,22);
+ assert.equal(six.filter(l=>l.games.length===8).length,43);
 });
 
 test('six-week default includes all extra learning with one original practical action per week',()=>{
@@ -104,4 +128,10 @@ test('six-week default includes all extra learning with one original practical a
  assert.ok(weeks[0].lessonIds.includes('mind-3-5'));assert.ok(weeks[1].lessonIds.includes('mind-7-5'));assert.ok(weeks[2].lessonIds.includes('mind-8-5'));
  assert.equal(actions.experiment(6,'six_v2').requiresMeal,true);
  c.journeyTest.set({current_week:7,settings:{learn_curriculum:'six_v2'}});assert.equal(c.journeyTest.identity().isUnlocked,true);
+});
+
+
+test('approved social explanation and six questions remain byte-for-byte unchanged',()=>{
+ const lesson=runtime().lessonData['mind-6'].find(l=>l.id==='mind-6-5');
+ assert.equal(require('node:crypto').createHash('sha256').update(JSON.stringify(lesson)).digest('hex'),'26da50116faf350d2411a4acb96b1640f87f0831df620e3d8544e7b2ef247031');
 });
