@@ -52,7 +52,7 @@ async function send({session,inbound_id,index,plan}){
  const data={experiment_thread_id:THREAD,session,inbound_id,index,plan_hash:hash,action,outcome:'attempting'};
  // A unique primary key is the atomic dispatch claim. Dismissed experimental receipts
  // are never eligible for the existing DM scheduler or manager.
- await db('coach_alerts',{method:'POST',body:{id,idempotency_key:`learn-ai:${inbound_id}:${index}`,coach_id:thread.coach_id,alert_type:'learn_ai_experiment_receipt',title:'Learn alternative test receipt',status:'dismissed',data}});
+ await db('coach_alerts',{method:'POST',body:{id,idempotency_key:`learn-ai:${inbound_id}:${index}`,coach_id:thread.coach_id,alert_type:'general_idea',title:'Learn alternative test receipt',status:'dismissed',data}});
  try {
   // Recheck latest input and ownership immediately before each external action.
   const fresh=await inspect(session);
