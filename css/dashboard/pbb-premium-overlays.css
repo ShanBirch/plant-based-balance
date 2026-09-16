@@ -14087,6 +14087,7 @@ html[data-pbb-theme] :where(.settings-picker-close, .settings-picker-option, .di
 }
 
 .movement-tool-view .balance-workout-history-meta,
+.movement-tool-view .balance-workout-history-intro,
 .movement-tool-view .balance-workout-history-exercises,
 .movement-tool-view .balance-workout-history-empty span,
 .movement-tool-view :is(.coach-workout-list-card, .coach-workout-exercise-card) [style*="color:#64748b"],
@@ -14137,4 +14138,157 @@ html[data-pbb-theme] #weekly-goals-modal .weekly-goal-hero [style*="#fde68a"] {
 }
 html #weekly-goals-modal .weekly-goal-hero > div {
     z-index: 1;
+}
+
+/* September readability audit: keep each foreground paired with its actual
+   surface, including the intentionally cream exercise sheets in dark mode. */
+#view-workout-builder label:has(#builder-workout-name) {
+    color: var(--text-main) !important;
+    -webkit-text-fill-color: var(--text-main) !important;
+}
+
+html:not([data-pbb-theme="light"]) :is(#add-exercise-modal, #create-custom-exercise-modal) [style*="color: #94a3b8"] {
+    color: #6f6a61 !important;
+    -webkit-text-fill-color: #6f6a61 !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-dashboard .card:has(#dashboard-current-phase-title),
+html:not([data-pbb-theme="light"]) #view-dashboard .card:has(#dashboard-current-phase-title) .card-body,
+html:not([data-pbb-theme="light"]) #rare-rewards-modal > .modal-content > div:first-child {
+    background: #191919 !important;
+    border-color: var(--border) !important;
+}
+
+html:not([data-pbb-theme="light"]) #post-workout-share-btn {
+    background: #241f16 !important;
+    color: #f5d98a !important;
+    -webkit-text-fill-color: #f5d98a !important;
+    border-color: #8a6c32 !important;
+}
+
+html:not([data-pbb-theme="light"]) #calendar-action-build-own-btn {
+    background: #12372a !important;
+    color: #96edbb !important;
+    -webkit-text-fill-color: #96edbb !important;
+    border-color: #438263 !important;
+}
+
+html:not([data-pbb-theme="light"]) #remove-replacement-btn {
+    background: #361b1b !important;
+    color: #ffb5b5 !important;
+    -webkit-text-fill-color: #ffb5b5 !important;
+    border-color: #915151 !important;
+}
+
+html:not([data-pbb-theme="light"]) :is(#calendar-action-build-own-btn, #remove-replacement-btn, #post-workout-share-btn) * {
+    color: inherit !important;
+    -webkit-text-fill-color: currentColor !important;
+}
+
+html:not([data-pbb-theme="light"]) #quick-entry-tutorial-modal > div > div:first-child {
+    background: linear-gradient(135deg, #f5d98a, #d8b25e) !important;
+}
+html:not([data-pbb-theme="light"]) #quick-entry-tutorial-modal > div > div:first-child :is(h2, p) {
+    color: #17130d !important;
+    -webkit-text-fill-color: #17130d !important;
+}
+
+/* Smaller text needs stronger contrast than large headings. */
+html:not([data-pbb-theme="light"]) #hydration-section button {
+    color: #8edcff !important;
+    -webkit-text-fill-color: #8edcff !important;
+}
+html:not([data-pbb-theme="light"]) #perf-weight-sub[style*="239, 68, 68"],
+html:not([data-pbb-theme="light"]) #perf-weight-sub[style*="#ef4444"] {
+    color: #ff9a9a !important;
+    -webkit-text-fill-color: #ff9a9a !important;
+}
+html:not([data-pbb-theme="light"]) :is(.header-msg-badge, #feed-nav-badge) {
+    background: #b91c1c !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+html:not([data-pbb-theme="light"]) #view-profile button[onclick*="logout"],
+html:not([data-pbb-theme="light"]) #view-profile button[onclick*="Logout"] {
+    background: #b91c1c !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+html:not([data-pbb-theme="light"]) #badge-collection-modal button[onclick="closeBadgeModal()"] {
+    background: #1d4ed8 !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+
+/* Mobile sheets must also clear edge-to-edge WebViews whose env() is zero. */
+@media (max-width: 600px), (max-height: 500px) {
+    #view-workout-builder > div:first-child,
+    #add-exercise-modal > div > div:first-child,
+    #create-custom-exercise-modal > div > div:first-child {
+        padding-top: calc(15px + max(42px, env(safe-area-inset-top, 0px))) !important;
+    }
+    #view-your-workouts .movement-tool-header {
+        padding-top: max(42px, env(safe-area-inset-top, 0px));
+    }
+    #view-workout-builder {
+        box-sizing: border-box;
+        padding-bottom: calc(120px + max(20px, env(safe-area-inset-bottom, 0px))) !important;
+    }
+    #builder-floating-action,
+    #calendar-workout-action-modal > div {
+        box-sizing: border-box;
+        padding-bottom: calc(20px + max(20px, env(safe-area-inset-bottom, 0px))) !important;
+    }
+    #calendar-workout-action-modal {
+        box-sizing: border-box;
+        padding-top: max(42px, env(safe-area-inset-top, 0px));
+    }
+    #calendar-workout-action-modal > div {
+        max-height: 100% !important;
+        overflow-y: auto;
+    }
+}
+
+/* Gold actions had dark color but inherited a white WebKit text fill. */
+html:not([data-pbb-theme="light"]) #view-workout-success button[onclick*="closeSuccessScreen"],
+html:not([data-pbb-theme="light"]) #quick-share-modal button:is([onclick*="shareWin"], [onclick*="copyWinMessage"], [onclick*="quickShareToChat"], [onclick*="goToGroupChatsToShare"]) {
+    color: #090909 !important;
+    -webkit-text-fill-color: #090909 !important;
+}
+html:not([data-pbb-theme="light"]) #podium-1st > div:last-child,
+html:not([data-pbb-theme="light"]) #podium-1st > div:last-child > div,
+html:not([data-pbb-theme="light"]) #cohort-info-modal [style*="background: linear-gradient(135deg, #22c55e"] span {
+    color: #17130d !important;
+    -webkit-text-fill-color: #17130d !important;
+    text-shadow: none !important;
+}
+html:not([data-pbb-theme="light"]) .streak-header-widget {
+    background: linear-gradient(135deg, #b83e00, #9e2f00) !important;
+}
+@media (max-width: 600px), (max-height: 500px) {
+    #quick-entry-tutorial-modal,
+    #rare-rewards-modal {
+        box-sizing: border-box;
+        padding: max(42px, env(safe-area-inset-top, 0px)) 20px max(20px, env(safe-area-inset-bottom, 0px)) !important;
+    }
+    #quick-entry-tutorial-modal > div,
+    #rare-rewards-modal > div {
+        max-height: 100% !important;
+        overflow-y: auto !important;
+    }
+}
+#view-workout-builder #builder-search + svg {
+    top: auto !important;
+    bottom: 15px;
+    transform: none !important;
+}
+/* Workout celebrations retain dark surfaces in both app themes. */
+html[data-pbb-theme] #view-workout-success h1 {
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+}
+html[data-pbb-theme] #view-workout-success > div > div:first-child p,
+html[data-pbb-theme] #view-workout-success #share-section-sub {
+    color: #d4cec5 !important;
+    -webkit-text-fill-color: #d4cec5 !important;
 }
