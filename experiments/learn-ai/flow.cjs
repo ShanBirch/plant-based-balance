@@ -3,8 +3,11 @@ const crypto = require('node:crypto');
 const prompt = require('./prompt.json');
 const schema = {
   type: 'object', additionalProperties: false,
-  required: ['status', 'decision_summary', 'actions'],
+  required: ['conversation_facts', 'status', 'decision_summary', 'actions'],
   properties: {
+    conversation_facts: {type:'object',additionalProperties:false,required:['goal','practical_blocker','support_choice','preview_consent','preview_consent_quote'],properties:{
+      goal:{type:'string'},practical_blocker:{type:'string'},support_choice:{type:'string',enum:['unknown','independent','zoom']},preview_consent:{type:'string',enum:['absent','granted','withdrawn']},preview_consent_quote:{type:'string'},
+    }},
     status: {type: 'string', enum: ['reply', 'pause', 'needs_human']},
     decision_summary: {type: 'string'},
     actions: {type: 'array', items: {type: 'object', additionalProperties: false,
@@ -69,6 +72,7 @@ async function decide({history = [], inbound, receipts = [], model = 'gpt-5.4-mi
   if (data.status !== 'completed') throw Error(`model_${data.status || 'incomplete'}`);
   const output = (data.output || []).flatMap(x=>x.content || []).filter(x=>x.type === 'output_text').map(x=>x.text).join('');
   const plan = validatePlan(JSON.parse(output), assets);
-  return {plan, model:data.model, latency_ms:Date.now()-started, usage:data.usage, prompt_hash:crypto.createHash('sha256').update(prompt).digest('hex')};
+  const stableFacts={...facts(now)};delete stableFacts.verified_date;
+  return {plan, model:data.model, latency_ms:Date.now()-started, usage:data.usage, prompt_hash:crypto.createHash('sha256').update(prompt).digest('hex'),flow_hash:crypto.createHash('sha256').update(JSON.stringify({prompt,schema,facts:stableFacts,assets})).digest('hex')};
 }
 module.exports = {decide, validatePlan, catalogue, facts, prompt, schema};
