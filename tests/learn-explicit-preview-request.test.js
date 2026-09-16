@@ -27,6 +27,9 @@ for (const currentMessage of requests) {
         assert.equal(draft?.replyMode, 'campaign_app_preview_handoff');
         assert.equal(draft.appPreviewHandoff, true);
         assert.ok(draft.joined.includes(previewUrl));
+        assert.match(draft.joined, /read more about the course on this page/);
+        assert.match(draft.joined, /button at the bottom to download the app/);
+        assert.doesNotMatch(draft.joined, /opens the app download|Here are the app download/);
         assert.doesNotMatch(draft.joined, /\?|course video|main change|gets in the way/i);
         assert.ok(!draft.videoAttachmentUrl && !draft.imageAttachmentUrl);
         const approval = buildPaidMetaConversationApproval({
@@ -47,6 +50,9 @@ test('preview handoff explicitly answers an automatic-charge question in the sam
     assert.match(draft.joined, /preview is free/i);
     assert.match(draft.joined, /won.t charge you automatically/i);
     assert.ok(draft.joined.includes(previewUrl));
+        assert.match(draft.joined, /read more about the course on this page/);
+        assert.match(draft.joined, /button at the bottom to download the app/);
+        assert.doesNotMatch(draft.joined, /opens the app download|Here are the app download/);
     assert.equal(buildPaidMetaConversationApproval({ metaAdConversationFastLane: true, draft, currentMessage, qualifier })?.required, false);
 });
 
@@ -56,6 +62,9 @@ test('preview handoff answers dietary eligibility without discarding another bil
         assert.equal(draft?.appPreviewHandoff, true);
         assert.match(draft.joined, /don.t need to be vegetarian or vegan/i);
         assert.ok(draft.joined.includes(previewUrl));
+        assert.match(draft.joined, /read more about the course on this page/);
+        assert.match(draft.joined, /button at the bottom to download the app/);
+        assert.doesNotMatch(draft.joined, /opens the app download|Here are the app download/);
         if (/charge/.test(currentMessage)) assert.match(draft.joined, /won.t charge you automatically/i);
     }
 });

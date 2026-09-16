@@ -2341,8 +2341,8 @@ function buildDeterministicPaidMetaConversationReply({
             asksAutomaticCharge ? "The preview is free and won't charge you automatically. Payment only happens if you choose to purchase." : '',
         ].filter(Boolean);
         const joined = factualAnswers.length
-            ? `${factualAnswers.join(' ')} Here are the app download and preview setup steps: ${appPreviewUrl}`
-            : `Yep, here you go. This opens the app download and setup steps, then you can explore your preview before you pay: ${appPreviewUrl}`;
+            ? `${factualAnswers.join(' ')} You can read more about the course on this page, then use the button at the bottom to download the app and set up your free preview before paying: ${appPreviewUrl}`
+            : `Yep, here you go. You can read more about the course on this page, then use the button at the bottom to download the app and set up your free preview before paying: ${appPreviewUrl}`;
         return {
             chunks: [joined],
             joined,
