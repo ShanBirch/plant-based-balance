@@ -19,7 +19,7 @@ test('Foundations Weeks 1 to 6 expose the intended actionable destinations', () 
     ['w3_weekly_checkin', 'checkin'],
     ['w4_meal_feed', 'meals'],
     ['w4_weekly_checkin', 'checkin'],
-    ['w5_pb_feed', 'movement'],
+    ['w5_feed_participation', 'feed'],
     ['w5_weekly_checkin', 'checkin'],
     ['w6_feed_reflection', 'feed'],
     ['w6_weekly_checkin', 'checkin']

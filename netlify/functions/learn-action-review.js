@@ -33,6 +33,11 @@ exports.handler=async event=>{
    }
    if(['approve','request_information'].includes(input.operation)){
      if(!ctx.can_review || !await review.canReview(user.id,target))throw review.error('Coach authorization required.',403);
+     const existing=ctx.records.find(r=>Number(r.week)===Number(input.week));
+     if(input.operation==='approve' && existing?.instructions?.requiresFeed){
+       const feed=existing.report?.feed;
+       if(!feed?.verified_at || !review.actions.feedEvidence(feed.posts||[],feed.comments||[],target,feed.start,feed.end).complete)throw review.error('Three saved Feed posts and comments on three other posts are needed. Ask the member to update their weekly check-in.');
+     }
      const note=review.clean(input.note);
      if(note.length<2)throw review.error('Record why the criteria are met or what information is needed.');
      const record=await review.write(ctx,user.id,Number(input.week),input.operation,{note},Number(input.revision));

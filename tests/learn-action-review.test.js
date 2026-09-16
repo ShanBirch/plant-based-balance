@@ -13,11 +13,14 @@ function fixture(version='legacy_six',week=6){
   if(path.startsWith('learn_action_reviews'))return rows;
   if(path.startsWith('user_saved_meals'))return [{id:'own-meal',name:'Tofu bowl',protein_g:30,carbs_g:60,fat_g:15}];
   if(path.startsWith('daily_nutrition'))return [{protein_goal_g:100,carbs_goal_g:250,fat_goal_g:70}];
+  if(path.startsWith('stories?'))return feed.posts;
+  if(path.startsWith('feed_comments?'))return feed.comments;
   throw Error('Unexpected query '+path);
  };
+ const feed={posts:[],comments:[]};
  const module={exports:{}};
  vm.runInNewContext(fs.readFileSync(require.resolve('../netlify/functions/_lib/learn-action-review'),'utf8'),{module,exports:module.exports,Date,Intl,console,require:p=>p.includes('learn-weekly-actions')?actions:{supabaseQuery:query}});
- return {api:module.exports,enrollment,rows,calls};
+ return {api:module.exports,enrollment,rows,calls,feed};
 }
 test('each week requires all specific actual-report fields',()=>{
  for(let week=1;week<=6;week++){
@@ -68,6 +71,19 @@ test('completed records are preserved on a repeated check-in',async()=>{
  const f=fixture();f.rows.push({week:1,revision:3,status:'completed',id:'saved'});
  const prepared=await f.api.prepareReport('member',{enrollment_id:'enrollment-a',week:1,revision:3},{});
  assert.equal(prepared.alreadyComplete,true);assert.equal((await f.api.saveReport('member',prepared)).id,'saved');
+});
+
+test('week five saves owned in-week Feed evidence, ignoring client-supplied counts',async()=>{
+ const f=fixture(),start=f.api.weekStart({enrollment:f.enrollment},5)+'T00:00:00+10:00';
+ const base={user_id:'member',created_at:start};
+ const input={enrollment_id:'enrollment-a',week:5,revision:0,answers:{posts:'Three meals and walks',comments:'Asked about their workouts',outcome:'No change in motivation'},feed:{complete:true,post_count:3,comment_post_count:3}};
+ let result=await f.api.prepareReport('member',input,{occurrence:'weekly'});
+ assert.equal(result.payload.complete,false);assert.equal(result.payload.report.feed.post_count,0);
+ f.feed.posts=[1,2,3].map(id=>({...base,id}));
+ f.feed.comments=[1,2,3].map(id=>({...base,id,story_id:'s'+id,comment_text:'What did you try?',stories:{user_id:'other'}}));
+ result=await f.api.prepareReport('member',input,{occurrence:'weekly'});
+ assert.equal(result.payload.complete,true);assert.ok(result.payload.report.feed.verified_at);
+ assert.equal(f.calls.filter(c=>c.path.startsWith('stories?')||c.path.startsWith('feed_comments?')).every(c=>c.path.includes('user_id=eq.member')&&c.path.includes('created_at=gte.')&&c.path.includes('created_at=lt.')),true);
 });
 test('a member weekly report reaches the normal Your Call queue even without an AI draft',()=>{
  const html=fs.readFileSync(require.resolve('../admin-dashboard.html'),'utf8');

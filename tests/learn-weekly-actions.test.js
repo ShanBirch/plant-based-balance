@@ -18,7 +18,7 @@ function fixture(week = 1) {
   c.fixture.set({current_week: week, week_started_at: '2026-09-09', settings: {learn_actions_v2: {prior_week:1,credited_weeks:[]}}});
   return { c, rows, writes, f:c.fixture };
 }
-test('six weeks each contain five trackable actions with approved targets and PB retained', () => {
+test('six weeks each contain five trackable actions with approved targets and Feed participation', () => {
   const { f } = fixture();
   f.definitions.slice(0,6).forEach((week,i) => {
     assert.equal(week.tasks.length,5);
@@ -28,7 +28,7 @@ test('six weeks each contain five trackable actions with approved targets and PB
     assert.equal(week.tasks.filter(t=>t.type==='weekly_checkin').length,1);
     assert.ok(!week.tasks.some(t=>t.type==='manual'));
   });
-  assert.ok(f.definitions[4].tasks.some(t=>t.id==='w5_pb_feed'));
+  assert.ok(f.definitions[4].tasks.some(t=>t.id==='w5_feed_participation'));
 });
 test('opening actions cannot award meals, movement, experiments or check-ins; saved records drive course ticks', async () => {
   const { f, rows, writes, c } = fixture();
@@ -73,3 +73,41 @@ test('completed old weeks keep explicit earlier credit and setup remains separat
 });
 
 test('only confirmed completion gives a course tick, including earlier weeks', async()=>{ const {f,c}=fixture(3); for(const status of ['planned','submitted','needs_information','completed']) { c.actionRecords[1]={status}; await f.calculateProgress(); assert.equal(f.getFoundationsCourseProgress().weekProgress[0].tasks.find(t=>t.type==='learn_experiment').complete,status==='completed'); } });
+
+test('Feed participation counts distinct posts, excludes own replies and other weeks, and accepts PB as a post',()=>{
+ const start='2026-09-09T00:00:00+10:00',end='2026-09-16T00:00:00+10:00';
+ const base={user_id:'member',created_at:start};
+ const posts=['meal','walk','pb'].map(id=>({...base,id,media_type:id==='pb'?'workout_card':'photo'}));
+ const comments=[1,2,3].map(id=>({...base,id,story_id:'other-'+id,comment_text:'How did you make this?',stories:{user_id:'other'}}));
+ const evidence=learn.feedEvidence([...posts,posts[0],{...base,id:'foreign',user_id:'other'},{...base,id:'late',created_at:end}], [...comments,comments[0],{...comments[0],id:4,story_id:'self',stories:{user_id:'member'}}], 'member',start,end);
+ assert.equal(evidence.post_count,3);assert.equal(evidence.comment_post_count,3);assert.equal(evidence.complete,true);
+ assert.equal(learn.feedEvidence(posts,comments.slice(0,2),'member',start,end).complete,false);
+ assert.equal(learn.feedEvidence(posts.slice(0,2),comments,'member',start,end).complete,false);
+ assert.equal(learn.feedEvidence(posts,comments.map(c=>({...c,story_id:'same'})),'member',start,end).complete,false);
+ assert.equal(learn.feedEvidence(posts,comments.map(c=>({...c,comment_text:' '})),'member',start,end).complete,false);
+});
+
+test('week five Feed counts persist and review remains separate from participation',async()=>{
+ const {f,rows,c,writes}=fixture(5);
+ const base={user_id:'member',created_at:'2026-09-11T08:00:00Z'};
+ rows.stories=[1,2,3].map(id=>({...base,id}));
+ rows.feed_comments=[1,2,3].map(id=>({...base,id,story_id:'s'+id,comment_text:'That looks good, what did you use?',stories:{user_id:'other'}}));
+ await f.calculateProgress();
+ let week=f.getFoundationsCourseProgress().weekProgress[4];
+ assert.equal(week.tasks.find(t=>t.type==='learn_feed_participation').complete,true);
+ assert.equal(week.tasks.find(t=>t.type==='learn_experiment').complete,false);
+ f.set(JSON.parse(JSON.stringify(writes.at(-1))));c.actionRecords[5]={status:'completed'};
+ await f.calculateProgress();week=f.getFoundationsCourseProgress().weekProgress[4];
+ assert.equal(week.tasks.find(t=>t.type==='learn_experiment').complete,true);
+ rows.feed_comments.pop();await f.calculateProgress();
+ assert.equal(f.getFoundationsCourseProgress().weekProgress[4].tasks.find(t=>t.type==='learn_feed_participation').complete,false);
+});
+
+test('earlier completed PB task keeps credit through the new Feed task and reopening',async()=>{
+ const {f,writes}=fixture(5);
+ f.set({current_week:5,week_started_at:'2026-09-09',settings:{foundation_week_progress:{5:{tasks:[{id:'w5_pb_feed',type:'foundations_pb_feed',complete:true,current:1}]}}}});
+ for(let i=0;i<2;i++){
+  await f.calculateProgress();assert.equal(f.getFoundationsCourseProgress().weekProgress[4].tasks.find(t=>t.type==='learn_feed_participation').complete,true);
+  f.set(JSON.parse(JSON.stringify(writes.at(-1))));
+ }
+});

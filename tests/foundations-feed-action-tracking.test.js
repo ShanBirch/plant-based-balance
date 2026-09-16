@@ -16,7 +16,7 @@ test('Foundations community progression contains only the intended in-app Feed a
     ['w2_feed_comment', 'foundations_feed_comments'],
     ['w3_workout_feed', 'foundations_workout_feed'],
     ['w4_meal_feed', 'foundations_meal_feed'],
-    ['w5_pb_feed', 'foundations_pb_feed'],
+    ['w5_feed_participation', 'learn_feed_participation'],
     ['w6_feed_reflection', 'foundations_feed_reflection']
   ];
 

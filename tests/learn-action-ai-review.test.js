@@ -56,3 +56,15 @@ test('UI removes the legacy completion instructions and only shows saved complet
  assert.doesNotMatch(ui,/How your course tick appears|A reflection alone does not tick|your coach confirms completion/);
  assert.match(ui,/\$\{done \? '<div class="lar-completion"/);
 });
+
+test('Feed experiment needs saved activity plus a substantive report; no motivation change is valid',()=>{
+ const def=actions.experiment(5),start='2026-09-09T00:00:00Z',end='2026-09-16T00:00:00Z';
+ const base={user_id:'member',created_at:start};
+ const feed={start,end,verified_at:end,posts:[1,2,3].map(id=>({...base,id})),comments:[1,2,3].map(id=>({...base,id,story_id:'s'+id,comment_text:'Which exercise did you try?',stories:{user_id:'other'}}))};
+ const answers={posts:'I posted a meal, my workout and a walk.',comments:'I asked about three other posts and enjoyed hearing their answers.',outcome:'I noticed no change in motivation or what I did.'};
+ const row={...record,week:5,instructions:def,report:{answers,feed,weekly_checkin:{occurrence:'weekly'}}};
+ const decision={...positive,evidence:Object.entries(answers).map(([criterion,quote])=>({criterion,quote,source:'checkin'}))};
+ assert.equal(fixture().validateDecision(decision,row).complete,true);
+ assert.equal(fixture().validateDecision(decision,{...row,report:{...row.report,feed:null}}).complete,false);
+ assert.equal(fixture().validateDecision(decision,{...row,report:{...row.report,feed:{...feed,comments:feed.comments.slice(1)}}}).complete,false);
+});

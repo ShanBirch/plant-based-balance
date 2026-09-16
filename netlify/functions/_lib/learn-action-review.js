@@ -57,13 +57,23 @@ async function prepareReport(user,input,weeklyResponse) {
   const {week,existing,definition}=assertMemberContext(ctx,input);
   if(['completed','legacy_completed'].includes(existing?.status))return {ctx,existing,alreadyComplete:true};
   const answers=Object.fromEntries(definition.fields.map(([key])=>[key,clean(input.answers?.[key])]));
-  let meal=null,targets=null;
+  let meal=null,targets=null,feed=null;
+  if(definition.requiresFeed){
+    const start=weekStart(ctx,week)+'T00:00:00+10:00';
+    const end=new Date(Date.parse(start)+7*86400000).toISOString();
+    const filter=`user_id=eq.${encodeURIComponent(user)}&created_at=gte.${encodeURIComponent(start)}&created_at=lt.${encodeURIComponent(end)}`;
+    const [posts,comments]=await Promise.all([
+      supabaseQuery(`stories?select=id,user_id,media_type,caption,created_at&${filter}&order=created_at.asc&limit=1000`),
+      supabaseQuery(`feed_comments?select=id,user_id,story_id,comment_text,created_at,stories!inner(user_id)&stories.user_id=neq.${encodeURIComponent(user)}&${filter}&order=created_at.asc&limit=1000`)
+    ]);
+    feed={...actions.feedEvidence(posts,comments,user,start,end),verified_at:new Date().toISOString(),start,end};
+  }
   if(definition.requiresMeal){
     const source=await nutrition(user,weekStart(ctx,week));targets=source.targets;
     if(input.meal_id){meal=source.meals.find(m=>m.id===input.meal_id);if(!meal)throw error('Choose your own meal saved during this course week. No food has been logged as eaten.',400);}
   }
-  const complete=actions.reportComplete(week,answers,meal,ctx.curriculum_version) && (!definition.requiresMeal || ['protein_goal_g','carbs_goal_g','fat_goal_g'].every(k=>Number(targets?.[k])>0));
-  return {ctx,week,revision:Number(input.revision),payload:{instructions:definition,complete,report:{answers,meal,targets,weekly_checkin:weeklyResponse,reported_at:new Date().toISOString(),evidence_kind:'member_report'}}};
+  const complete=actions.reportComplete(week,answers,meal,ctx.curriculum_version) && (!definition.requiresFeed || feed?.complete===true) && (!definition.requiresMeal || ['protein_goal_g','carbs_goal_g','fat_goal_g'].every(k=>Number(targets?.[k])>0));
+  return {ctx,week,revision:Number(input.revision),payload:{instructions:definition,complete,report:{answers,meal,targets,feed,weekly_checkin:weeklyResponse,reported_at:new Date().toISOString(),evidence_kind:'member_report'}}};
 }
 async function saveReport(user,prepared) {
   if(prepared.alreadyComplete)return prepared.existing;

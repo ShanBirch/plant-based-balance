@@ -79,7 +79,7 @@
         task('w5_meals', 'Track 7 meals this week', 'Log 7 meals in total, across the week. These are meals, not days or calorie targets.', 'learn_meals', 7, '🥗', 'meals'),
         task('w5_workouts', 'Complete 3 workouts this week', 'Follow your program. A completed workout or logged movement session counts, at most once per day. Use the movement that fits your plan.', 'learn_workouts', 3, '🏋️', 'movement'),
         task('w5_experiment', window.BalanceLearnWeeklyActions.experiment(5).title, window.BalanceLearnWeeklyActions.experiment(5).prompt + ' Report what happened in your weekly check-in. Balance checks the action you describe and records your course tick.', 'learn_experiment', 1, '📝', 'checkin'),
-        task('w5_pb_feed', 'Achieve and share one exercise PB to Feed', 'Share a personal best recorded by Balance from a completed exercise.', 'foundations_pb_feed', 1, '🏆', 'movement'),
+        task('w5_feed_participation', 'Share 3 posts and comment on 3 others', 'Share meals, workouts or walks across the week. Comment meaningfully on three different posts by other people. A PB share can count as one post; no extra PB is required.', 'learn_feed_participation', 3, '💬', 'feed'),
         task('w5_weekly_checkin', 'Complete your weekly check-in', 'Tell Shannon what worked, what got in the way and what you need next.', 'weekly_checkin', 1, '✓', 'checkin')
       ]
     },
@@ -522,12 +522,12 @@
     const endIso = dateFromKey(addDaysKey(state.week_started_at, 7)).toISOString();
     const [stories, comments, transactions, workouts, checkins, personalBests, wearableConnections, nativeWearableRows, memberProfile, progressPhotos, meals, activities] = await Promise.all([
       safeQuery(() => supabase.from('stories')
-        .select('id,media_type,caption,course_action_id,created_at')
+        .select('id,user_id,media_type,caption,course_action_id,created_at')
         .eq('user_id', currentUserId())
         .gte('created_at', startIso)
         .lt('created_at', endIso)),
       safeQuery(() => supabase.from('feed_comments')
-        .select('id,story_id,created_at,stories!inner(user_id)')
+        .select('id,user_id,story_id,comment_text,created_at,stories!inner(user_id)')
         .eq('user_id', currentUserId())
         .neq('stories.user_id', currentUserId())
         .gte('created_at', startIso)
@@ -629,7 +629,11 @@
     const instagramHandle = String(memberProfile[0] && memberProfile[0].ig_handle || '').replace(/^@+/, '').trim();
     const definition = getWeekDefinition();
     const textActionId = type => definition.tasks.find(item=>item.type===type)?.id || '';
+    const feedParticipation = window.BalanceLearnWeeklyActions.feedEvidence(stories, comments, currentUserId(), startIso, endIso);
+    const priorFeedTasks = safeArray(safeObject(safeObject(state.settings).foundation_week_progress)[String(state.current_week)]?.tasks);
+    const earlierFeedCredit = priorFeedTasks.some(t => (t.type === 'foundations_pb_feed' && t.complete) || (t.type === 'learn_feed_participation' && t.earlierCredit));
     const counts = {
+      learn_feed_participation: earlierFeedCredit ? 3 : Math.min(feedParticipation.post_count, feedParticipation.comment_post_count),
       feed_posts: stories.length,
       meal_feed_posts: stories.filter(row => row.media_type === 'meal_card' || row.media_type === 'nutrition_card').length,
       workout_feed_posts: stories.filter(row => row.media_type === 'workout_card').length,
@@ -667,6 +671,7 @@
             ? (safeObject(memberAttestations[item.id]).confirmed_at ? 1 : 0)
             : (item.type === 'daily_manual' ? currentWeekDailyTaskCount(item.id) : Number(counts[item.type] || 0))));
       return Object.assign({}, item, {
+        ...(item.type === 'learn_feed_participation' ? {earlierCredit:earlierFeedCredit,hint: earlierFeedCredit ? 'Your earlier completed Feed action is kept.' : item.hint + ' Saved this week: ' + feedParticipation.post_count + '/3 posts; ' + feedParticipation.comment_post_count + '/3 other posts commented on.'} : {}),
         current,
         complete: current >= item.target,
         percent: Math.max(0, Math.min(100, item.target ? (current / item.target) * 100 : 0))
@@ -1178,11 +1183,12 @@
           return Object.assign({},item,{current:complete?1:0,complete,exempt:record?.status==='legacy_completed',reviewStatus:review?.status(definition.week) || 'Status unavailable',availableNow:definition.week<=currentJourneyWeek,actionLabel:'View action'});
         }
         const stored = savedTasks.get(item.id);
+        const earlierFeedCredit = item.type === 'learn_feed_participation' && [...savedTasks.values()].some(t=>t.type==='foundations_pb_feed' && t.complete);
         // Do not retroactively lock members who already passed Week 1 before this action existed.
         const rollout = safeObject(safeObject(state.settings).learn_actions_v2);
         const exempt = safeArray(rollout.credited_weeks).includes(definition.week) || (!stored && item.type.startsWith('learn_') && definition.week < Number(rollout.prior_week || 1));
         const current = Math.max(0, Number(stored && stored.current) || 0);
-        const complete = exempt || !!(stored && stored.complete) || current >= item.target;
+        const complete = earlierFeedCredit || exempt || !!(stored && stored.complete) || current >= item.target;
         return Object.assign({}, item, taskAvailability(item), {
           current,
           complete,
