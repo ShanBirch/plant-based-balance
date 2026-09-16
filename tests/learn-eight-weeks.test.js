@@ -52,7 +52,7 @@ test('nutrition evidence follows the curriculum; week eight learning never deman
 });
 test('revised quizzes only test what their lesson teaches and reject absolute claims',()=>{
  const c=runtime();for(const unit of ['mind-3','mind-7','mind-8'])for(const lesson of c.lessonData[unit]){
-  assert.ok(lesson.content.intro.length>450);assert.equal(lesson.games.length,3);
+  assert.ok(lesson.content.intro.length>450);assert.equal(lesson.games.length,6);
   for(const game of lesson.games)if(game.options)assert.ok(game.options[game.correctIndex]);
   assert.doesNotMatch(lesson.content.intro,/the only thing your brain ever does|predicts the entire universe as fact|all disagreement is caused by saving glucose/);
  }
@@ -66,6 +66,29 @@ test('all inline dashboard scripts parse after both regular and iOS loader chang
   assert.doesNotThrow(()=>new vm.Script(match[2]));
  }
  const html=read('dashboard.html');assert.equal((html.match(/learn-curriculum\.js\?v=2-six-weeks/g)||[]).length,2);
+ assert.equal((html.match(/learn-predictive-content\.js\?v=3-six-question-quizzes/g)||[]).length,2);
+});
+
+test('every Learn path has six to eight questions with valid answers and distinct prompts',()=>{
+ const c=runtime(), all=Object.values(c.lessonData).flat();
+ for(const version of ['six_v2','eight_v1','bridge_eight_v1','legacy_six']){
+  for(const id of curriculum.weeks(version).flatMap(w=>w.lessonIds)){
+   const lesson=all.find(l=>l.id===id);
+   assert.ok(lesson.games.length>=6 && lesson.games.length<=8,`${id}: ${lesson.games.length}`);
+   if(lesson.games.length!==6)continue;
+   const prompts=lesson.games.map(g=>g.question);
+   assert.equal(new Set(prompts).size,prompts.length,`Duplicate prompt in ${id}`);
+   for(const g of lesson.games){
+    assert.ok(g.explanation?.trim(),`${id}: missing feedback`);
+    if(g.options){assert.ok(Number.isInteger(g.correctIndex));assert.ok(g.options[g.correctIndex]);assert.equal(new Set(g.options).size,g.options.length);}
+    else assert.equal(typeof g.answer,'boolean');
+   }
+  }
+ }
+ const six=curriculum.weeks().flatMap(w=>w.lessonIds).map(id=>all.find(l=>l.id===id));
+ assert.equal(six.filter(l=>l.games.length===6).length,22);
+ assert.equal(six.filter(l=>l.games.length===7).length,1);
+ assert.equal(six.filter(l=>l.games.length===8).length,22);
 });
 
 test('six-week default includes all extra learning with one original practical action per week',()=>{
