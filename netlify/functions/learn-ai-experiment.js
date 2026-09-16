@@ -1,5 +1,5 @@
 'use strict';
-// Separate, non-sending experiment. No webhook or existing DM imports.
+// Separate experiment: generation by default; explicit, session-bound test send mode.
 const crypto=require('node:crypto');
 const access=require('../../experiments/learn-ai/access.json');
 const {decide}=require('../../experiments/learn-ai/flow.cjs');
@@ -13,7 +13,7 @@ exports.handler=async(event)=>{
  let input;try{input=JSON.parse(event.body||'{}')}catch{return respond(400,{error:'invalid_json'})}
  if(input.mode==='status'||input.mode==='send'){
   const live=require('../../experiments/learn-ai/live.cjs');
-  try {const result=input.mode==='status'?await live.inspect(input.session):await live.send(input);return respond(200,input.mode==='status'?{messages:result.messages}:result);}
+  try {const result=input.mode==='status'?await live.inspect(input.session):await live.send(input);return respond(200,input.mode==='status'?{messages:result.messages,receipts:result.receipts}:result);}
   catch(e){return respond(409,{error:e.message});}
  }
  if(!Array.isArray(input.inbound)||!input.inbound.length||!input.inbound.every(x=>typeof x==='string')||!Array.isArray(input.history||[]))return respond(400,{error:'invalid_input'});

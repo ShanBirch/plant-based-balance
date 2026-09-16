@@ -45,7 +45,7 @@ async function inspect(session){
  const flag=assertTestSession(thread,session);
  const messages=await db(`ig_messages?thread_id=eq.${THREAD}&created_at=gte.${encodeURIComponent(flag.started_at)}&select=id,direction,text,source,alert_id,created_at,manychat_message_id&order=created_at.asc,id.asc&limit=200`);
  const receipts=await db(`coach_alerts?data->>session=eq.${encodeURIComponent(session)}&select=id,data`);
- return {thread,flag,messages:reconcileMessages(messages,receipts)};
+ return {thread,flag,messages:reconcileMessages(messages,receipts),receipts};
 }
 async function send({session,inbound_id,index,plan}){
  validatePlan(plan);
