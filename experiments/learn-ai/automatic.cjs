@@ -72,6 +72,10 @@ async function run(thread,sourceMessageId){
    if(receipt.outcome!=='confirmed')throw Error('automatic_delivery_not_confirmed');
   }
   Object.assign(claim.data,{outcome:'complete',completed_at:new Date().toISOString()});
+  if(result.plan.actions.some(a=>a.type==='card')){
+   try{claim.data.followup=await require('./followup.cjs').enqueue({session,inbound_id:newest.id,plan:result.plan});}
+   catch(e){claim.data.followup_error=e.message;}
+  }
   await live.db(`coach_alerts?id=eq.${id}`,{method:'PATCH',body:{data:claim.data}});
   return{ok:true,actions:result.plan.actions.length};
  }catch(e){

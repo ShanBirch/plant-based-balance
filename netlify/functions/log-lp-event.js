@@ -122,7 +122,7 @@ async function verifiedPreviewThread(eventPayload, nowMs = Date.now()) {
     const verified = verifyMetaAppPreviewRef(token, { nowMs });
     if (!verified) return null;
     const rows = await supabase(
-        `ig_threads?select=id,coach_id,linked_user_id,subscriber_id,ig_username,profile_name,lead_stage,last_inbound_at,last_outbound_at,custom_data&id=eq.${encodeURIComponent(verified.threadId)}&limit=1`
+        `ig_threads?select=id,coach_id,linked_user_id,subscriber_id,ig_username,profile_name,lead_stage,last_inbound_at,last_outbound_at,custom_data,learn_ai_settings&id=eq.${encodeURIComponent(verified.threadId)}&limit=1`
     );
     const thread = rows[0] || null;
     if (!thread) return null;
@@ -219,6 +219,7 @@ async function enqueueMetaAppPreviewFollowup(eventPayload, nowMs = Date.now(), c
     const preview = context || await verifiedPreviewThread(eventPayload, nowMs);
     if (!preview) return { queued: false, reason: 'invalid_ref' };
     const { thread, token } = preview;
+    if(thread.id==='4baea56e-eab4-4887-a732-39b14e983d44'&&thread.learn_ai_settings?.mode==='automatic')return {queued:false,reason:'learn_link_followup_owns_thread'};
     if (!isEligiblePreviewThread(thread, nowMs)) return { queued: false, reason: 'ineligible_thread' };
 
     const messages = await supabase(

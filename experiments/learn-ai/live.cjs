@@ -2,7 +2,7 @@
 // Transport-only test harness. Never selects a conversational stage or rewrites text.
 const crypto=require('node:crypto');
 const {catalogue,validatePlan}=require('./flow.cjs');
-const {buildMetaAppPreviewUrl}=require('../../netlify/functions/_lib/meta-app-preview-ref');
+const {buildMetaAppPreviewUrl,createMetaAppPreviewRef}=require('../../netlify/functions/_lib/meta-app-preview-ref');
 const {resolveMetaIgAccessToken}=require('../../netlify/functions/_lib/meta-ig-accounts');
 const THREAD='4baea56e-eab4-4887-a732-39b14e983d44';
 const ACCOUNT='17841415641641750';
@@ -40,6 +40,10 @@ function graphMessage(action,threadId=THREAD) {
   const destination=new URL(action.asset_id==='preview'?buildMetaAppPreviewUrl(threadId,{flowVariant:'broad_pain'}):asset.url);
   // Keep the signed preview path intact while using the current public brand.
   destination.host='balanceneurosciencefitness.com';
+  if(action.asset_id==='zoom'){
+   const ref=createMetaAppPreviewRef(threadId);
+   if(ref)destination.searchParams.set('meta_ref',ref);
+  }
   const url=destination.toString();
   // Same Instagram generic-card format used by the existing sender; plain
   // button templates can arrive as text with no clickable button in the inbox.
@@ -65,7 +69,7 @@ async function inspect(session){
  const receipts=await db(`coach_alerts?data->>session=eq.${encodeURIComponent(session)}&select=id,data`);
  return {thread,flag,messages:reconcileMessages(messages,receipts),receipts};
 }
-async function send({session,inbound_id,index,plan,onDelivered}){
+async function send({session,inbound_id,index,plan,onDelivered,receipt_namespace=inbound_id,beforeSend}){
  validatePlan(plan);
  if(!Number.isInteger(index)||index<0||index>=plan.actions.length)throw Error('invalid_action_index');
  const {thread,messages}=await inspect(session);
@@ -74,11 +78,11 @@ async function send({session,inbound_id,index,plan,onDelivered}){
  if(Date.now()-Date.parse(latestInbound.created_at)>24*3600000)throw Error('messaging_window_closed');
  const after=messages.filter(m=>m.direction==='out'&&Date.parse(m.created_at)>=Date.parse(latestInbound.created_at));
  if(after.some(m=>m.source!=='learn_ai_experiment'))throw Error('other_sender_active');
- const id=receiptId(inbound_id,index);
+ const id=receiptId(receipt_namespace,index);
  const existing=(await db(`coach_alerts?id=eq.${id}&select=id,data`))[0];
  if(existing)return {duplicate:true,...existing.data}; // Never repeat an ambiguous send.
  const hash=crypto.createHash('sha256').update(JSON.stringify(plan)).digest('hex');
- if(index>0){const previous=(await db(`coach_alerts?id=eq.${receiptId(inbound_id,index-1)}&select=data`))[0];if(previous?.data?.outcome!=='confirmed'||previous.data.plan_hash!==hash)throw Error('prior_action_not_confirmed');}
+ if(index>0){const previous=(await db(`coach_alerts?id=eq.${receiptId(receipt_namespace,index-1)}&select=data`))[0];if(previous?.data?.outcome!=='confirmed'||previous.data.plan_hash!==hash)throw Error('prior_action_not_confirmed');}
  const action=plan.actions[index];
  const data={experiment_thread_id:THREAD,session,inbound_id,index,plan_hash:hash,action,outcome:'attempting'};
  // A unique primary key is the atomic dispatch claim. Dismissed experimental receipts
@@ -94,6 +98,7 @@ async function send({session,inbound_id,index,plan,onDelivered}){
   if(!token)token=(await db('app_private_secrets?select=value&key=eq.instagram_graph_access_token&limit=1'))[0]?.value;
   if(!token)throw Error('transport_unavailable');
   const message=graphMessage(action);
+  if(beforeSend)await beforeSend();
   const r=await fetch(`https://graph.instagram.com/v25.0/${ACCOUNT}/messages`,{method:'POST',signal:AbortSignal.timeout(55000),headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({recipient:{id:RECIPIENT},message})});
   const result=await r.json();
   if(!r.ok||!result.message_id)throw Error(`graph_${r.status}`);

@@ -584,6 +584,16 @@ async function sendAutoSendHoldNotification(alert, autoHold) {
  * to flip to 'sent' once delivered.
  */
 async function fireAlert(alert) {
+    if(alert.data?.learn_link_followup===true){
+        try{
+            const response=await fetch(`${SITE_URL}/.netlify/functions/learn-link-followup-background`,{method:'POST',signal:AbortSignal.timeout(5000),headers:{'Content-Type':'application/json',Authorization:`Bearer ${SUPABASE_SERVICE_KEY}`},body:JSON.stringify({id:alert.id})});
+            if(!response.ok)throw Error(`followup_dispatch_${response.status}`);
+            return {ok:true,dispatched:true};
+        }catch(error){
+            await supabase(`coach_alerts?id=eq.${alert.id}`,{method:'PATCH',body:{status:'canceled',data:{...alert.data,outcome:'dispatch_uncertain',error:error.message}}});
+            return {ok:false,error:error.message};
+        }
+    }
     try {
         const conversion = await getMetaPreviewConversionAfterGate(alert);
         if (conversion) {

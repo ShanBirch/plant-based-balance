@@ -330,6 +330,7 @@
                     company: String(details.data.get('company') || '').trim(),
                     visitorTimeZone: localTimeZone,
                     bookingMode,
+                    metaRef: urlParams.get('meta_ref') || '',
                     source: isFirstPtSession ? 'first_pt_session' : isWeeklyCheckinPt ? 'weekly_checkin_pt' : isZoomPtEnquiry ? 'zoom_pt' : 'public_booking_page',
                     ptSessionsPerWeek: isZoomPtEnquiry && requestedPtSessions ? Number(requestedPtSessions) : null,
                     addonType: isWeeklyCheckinPt ? ptAddon : null,

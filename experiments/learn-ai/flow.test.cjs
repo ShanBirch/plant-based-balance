@@ -47,7 +47,9 @@ test('branded card retains its valid preview signature and branded Zoom destinat
   assert.equal(url.origin,'https://balanceneurosciencefitness.com');
   assert.equal(isMetaAppPreviewUrl(url.toString()),true);
   assert.equal(verifyMetaAppPreviewRef(url.pathname.split('/').at(-1)).threadId,THREAD);
-  assert.equal(graphMessage({type:'card',asset_id:'zoom'}).attachment.payload.elements[0].buttons[0].url,'https://balanceneurosciencefitness.com/book');
+  const booking=new URL(graphMessage({type:'card',asset_id:'zoom'}).attachment.payload.elements[0].buttons[0].url);
+  assert.equal(booking.origin+booking.pathname,'https://balanceneurosciencefitness.com/book');
+  assert.equal(verifyMetaAppPreviewRef(booking.searchParams.get('meta_ref')).threadId,THREAD);
  }finally{if(old===undefined)delete process.env.META_APP_PREVIEW_REF_SECRET;else process.env.META_APP_PREVIEW_REF_SECRET=old;}
 });
 test('reject unknown assets and unintroduced media without rewriting conversation',()=>{

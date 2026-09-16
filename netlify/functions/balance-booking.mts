@@ -1,5 +1,6 @@
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { normalizeSmsPhone, sendBookingSms, smsConfigured } from "./_lib/booking-sms.mts";
+import previewRefs from "./_lib/meta-app-preview-ref.js";
 
 type TimeRange = { start: string; end: string };
 type WeeklyHours = Record<string, TimeRange[]>;
@@ -793,6 +794,7 @@ async function createBooking(req: Request): Promise<Response> {
             .find(slot => slot.start === start.toISOString());
     if (!selectedSlot) return json(409, { ok: false, error: "slot_no_longer_available" });
 
+    const verifiedDmRef = previewRefs.verifyMetaAppPreviewRef(trimText(body.metaRef, 700));
     let inserted: Record<string, unknown>;
     try {
         const rows = await supabaseRequest("balance_bookings", {
@@ -808,6 +810,7 @@ async function createBooking(req: Request): Promise<Response> {
                 timezone: visitorTimeZone,
                 metadata: {
                     source: bookingSource,
+                    ...(verifiedDmRef ? { ig_thread_id: verifiedDmRef.threadId } : {}),
                     booking_mode: bookingMode,
                     call_type: callType,
                     pt_sessions_per_week: ptSessionsPerWeek,
