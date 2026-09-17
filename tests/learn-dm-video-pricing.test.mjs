@@ -15,8 +15,8 @@ test('DM video and checkout change at the same Brisbane launch-offer boundary',(
     }
     assert.equal(getLearnCoursePricing(LEARN_INTRO_END).unitAmount,45000);
     assert.equal(resolveVideo(Date.parse(LEARN_INTRO_END)),standardVideo);
-    assert.match(launchVideo,/balance-learn-dm-149-v15-typewriter\.mp4$/);
-    assert.match(standardVideo,/balance-learn-dm-450-v15-typewriter\.mp4$/);
+    assert.match(launchVideo,/balance-learn-dm-149-v16-checkin\.mp4$/);
+    assert.match(standardVideo,/balance-learn-dm-450-v16-checkin\.mp4$/);
 });
 test('queued old social and expired-price drafts resolve to the correct current DM video',()=>{
     const legacy='https://plantbased-balance.org/assets/balance-foundations-course-first-v8.mp4';
@@ -92,3 +92,6 @@ test('Learn AI ad catalogue shares the canonical current video and price boundar
  assert.equal(catalogue(new Date('2026-09-16')).course.url,launchVideo);
  assert.equal(catalogue(new Date(LEARN_INTRO_END)).course.url,standardVideo);
 });
+
+
+test('queued v15 typing videos upgrade to restored check-in editions',()=>{for(const price of [149,450]){const old='https://plantbased-balance.org/assets/balance-learn-dm-'+price+'-v15-typewriter.mp4';assert.equal(resolveAttachment(old,Date.parse('2026-09-17')),launchVideo);assert.equal(resolveAttachment(old,Date.parse(LEARN_INTRO_END)),standardVideo);assert.equal(stripPaidMetaProofMediaUrls('Video: '+old),'Video:');}});

@@ -4,8 +4,8 @@ The ad message flow must send the dedicated **price-ending DM video**. The old `
 
 Approved delivery files:
 
-- `assets/balance-learn-dm-149-v15-typewriter.mp4`: AUD $149 for the full six weeks, used through 20 October 2026 Brisbane time.
-- `assets/balance-learn-dm-450-v15-typewriter.mp4`: AUD $450 for the full six weeks, used from midnight 21 October 2026 Brisbane time.
+- `assets/balance-learn-dm-149-v16-checkin.mp4`: AUD $149 for the full six weeks, used through 20 October 2026 Brisbane time.
+- `assets/balance-learn-dm-450-v16-checkin.mp4`: AUD $450 for the full six weeks, used from midnight 21 October 2026 Brisbane time.
 
 Launch is 21 September. The introductory window lasts one month after launch; the $450 change is in October. Upfront checkout and public offer copy follow the same dates. Weekly membership pricing is unchanged.
 
@@ -47,3 +47,7 @@ Reusable production rule: keep the science card, quiz feedback and application f
 Shannon requested the written reflection to type itself out instead of appearing in phrase fades. The same answer now types character by character over 4.8 seconds, with a moving caret and a readable hold before the weekly check-in. Both price editions use this animation. v14 URLs remain recognized and upgrade at send time. The soundtrack, other sections and total 223.4-second duration are preserved. Deliverables: Balance-Learn-Energy-Typewriter.mp4 and Balance-Learn-Energy-Typewriter-Standard-Price.mp4 in the existing task outputs folder.
 
 Reusable rule: when demonstrating a person writing into a form, use a deterministic character-by-character typing effect with a caret and a final reading hold, rather than fading in completed phrases.
+
+## v16: restore the interactive weekly check-in
+
+Restored the original app check-in form markup and styling, replacing the simplified card. The cursor selects Mostly on track, types “The gym helped me feel more alert.” and “Getting started after work.”, then selects confidence 4. Both answers type character by character with a caret. This replaces only 110.4–118.4 seconds; the reflection typing, soundtrack and 223.4-second runtime are retained. Both Meta ad-flow paths use the shared selector; queued v15 attachments upgrade at send time.

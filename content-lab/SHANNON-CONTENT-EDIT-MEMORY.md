@@ -343,3 +343,7 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 | 2026-09-10 | Correct the onboarding coach recording to four stages: Learn, Master, Become, Lead. A clean black screen can replace Shannon during the correction; avoid overlapping speech or graphics. | Replace the complete affected phrase as one approved Shannon voice performance, fully cover obsolete graphics and mouth movements, preserve adjacent speech and music, and inspect both edit joins before publishing. | Onboarding coach videos and small corrections to recorded narration |
 
 | 2026-09-10 | Keep the original onboarding reveal: each stage appears as Shannon says it. Shannon supplied the preferred ElevenLabs download. | Use the supplied audio verbatim, retain its pauses, align reveals to measured word onsets, and keep previous names visible as the list builds. Match the original condensed lettering, upward fade/scale and gold arrows. | Onboarding coach videos and narrated stage/list reveals |
+
+## 17 September 2026: preserve the real check-in form
+
+For Share your week in the Learn ad video, Shannon prefers the actual check-in form layout with its rating buttons, fields and confidence scale. Show the cursor selecting controls, then typing answers. Do not replace a working app-form demonstration with a simplified static card. Updated example copy may connect to the lesson.
