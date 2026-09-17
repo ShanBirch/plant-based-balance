@@ -78,8 +78,12 @@ async function run(thread,sourceMessageId,payload={}, {decideImpl=decide,presenc
   const result=await decideImpl({model:'gpt-5.4',history:prepared.messages.slice(0,firstPending).map(m=>({direction:m.direction,text:m.text})),inbound:prepared.messages.slice(firstPending).filter(m=>m.direction==='in').map(m=>m.text),receipts,pendingSafety});
   if(result.plan.status==='needs_human'&&!pendingSafety)claim.data.handoff_id=await safety.queue({thread:view.thread,session,inbound_id:newest.id,plan:result.plan,media_context:prepared.context});
   Object.assign(claim.data,result,{outcome:'sending'});
+  // A reaction-only or silent turn has no message left to type. Drain the
+  // heartbeat before transport/database work, so it cannot flicker after a like.
+  if(!result.plan.actions.some(a=>a.type!=='reaction'))await presence.stop();
   await live.db(`coach_alerts?id=eq.${id}`,{method:'PATCH',body:{data:claim.data}});
   for(let index=0;index<result.plan.actions.length;index++){
+   if(result.plan.actions.slice(index).every(a=>a.type==='reaction'))await presence.stop();
    const pacing=await presence.before(result.plan.actions[index]);
    (claim.data.delivery_pacing??=[]).push({index,...pacing});
    const owner=(await live.db(`coach_alerts?id=eq.${lock.id}&select=data`))[0];

@@ -2290,7 +2290,8 @@ async function dispatchDraft({ thread, messageText, dedupeId }) {
         try {
             const signal = require('../../experiments/learn-ai/live.cjs').senderActions(thread, thread.learn_ai_settings.session);
             await signal('mark_seen');
-            await signal('typing_on');
+            // The alternative worker owns typing after its settle/ownership
+            // checks. Starting here creates an unrefreshed pulse before it runs.
         } catch (error) { console.warn('[instagram-webhook] Learn presence unavailable:', error.message); }
     } else await startPaidMetaTypingImmediately(thread);
     // Persist an actionable shell before any model/provider work starts. If

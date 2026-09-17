@@ -53,6 +53,21 @@ test('automatic delivery waits for media, retries before sending and does not se
  await assert.rejects(run(thread,'voice',payload,deps),/pending transcript/);assert.equal(sends,0);
  ready=true;assert.equal((await run(thread,'voice',payload,deps)).ok,true);assert.equal(sends,1);assert.deepEqual(modelInput.inbound,['I prefer Zoom please']);
  assert.equal((await run(thread,'voice',payload,deps)).skipped,'turn_already_attempted');assert.equal(sends,1);
+ // Real reaction-only turns must drain typing before the heart is dispatched;
+ // a heart followed by text must retain typing for the actual reply.
+ for(const actions of [
+  [{type:'reaction',text:'',asset_id:'love'}],
+  [{type:'reaction',text:'',asset_id:'love'},{type:'text',text:'Awesome, keep me in the loop',asset_id:''}],
+  [],
+ ]){
+  rows.clear();const events=[];let stopped=false;
+  const presence={events:[],start:async()=>{events.push('start');},before:async()=>({}),delivered:async next=>{if(next&&!stopped)events.push('refresh');},stop:async()=>{stopped=true;events.push('stop');}};
+  live.send=async({index,onDelivered})=>{events.push('send:'+actions[index].type);await onDelivered();return{outcome:'confirmed'};};
+  await run(thread,'voice',payload,{...deps,presenceFactory:()=>presence,decideImpl:async()=>({plan:{status:actions.length?'reply':'pause',actions}})});
+  if(actions.length===1){assert.ok(events.indexOf('stop')<events.indexOf('send:reaction'));assert.equal(events.includes('refresh'),false);}
+  if(actions.length===2){assert.ok(events.indexOf('stop')>events.indexOf('send:text'));assert.ok(events.includes('refresh'));}
+  if(!actions.length)assert.ok(events.includes('stop'));
+ }
  }finally{Object.assign(live,originals);}
 });
 
