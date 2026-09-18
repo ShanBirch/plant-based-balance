@@ -2129,7 +2129,11 @@
       maybeResetOnboardingTest();
       return;
     }
-    if (initialized || !isJourneyEligible()) return;
+    if (!isJourneyEligible()) return;
+    if (initialized) {
+      if (!state) refresh();
+      return;
+    }
     initialized = true;
     const card = getCard();
     if (card) card.addEventListener('click', async function () {
@@ -2224,6 +2228,7 @@
   document.addEventListener('appCriticalContentReady', init);
   window.addEventListener('pbbInitComplete', init);
   window.addEventListener('appCriticalContentReady', init);
+  window.addEventListener('pbbOnboardingComplete', init);
   window.addEventListener('pbbWeeklyGoalsSaved', refresh);
   window.addEventListener('pbbNextStepsUpdated', function () {
     if (!initialized || !state) return;

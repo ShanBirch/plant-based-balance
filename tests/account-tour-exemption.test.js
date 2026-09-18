@@ -35,6 +35,71 @@ test('regular members and ordinary guests cannot launch tours', () => {
   window.currentUser = null;
   assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(), true);
 });
+
+test('new members get a resumable first tour without inheriting another account completion', () => {
+  const {window,storage} = context('new-member');
+  window.currentUser.created_at = '2026-09-18T04:42:50Z';
+  storage.set('featureTourComplete', '1'); // Prior account on the same device.
+  assert.equal(window.BalanceOnboardingProgress.needsFirstRunTour(), true);
+  assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(), false);
+  window.BalanceOnboardingProgress.save('tour', {tour:{step:3}});
+  assert.equal(window.BalanceOnboardingProgress.read().tour.step, 3);
+  window.BalanceOnboardingProgress.completeFirstRunTour();
+  assert.equal(window.BalanceOnboardingProgress.needsFirstRunTour(), false);
+  window.currentUser = {id:'another-new-member',created_at:'2026-09-18T05:00:00Z'};
+  assert.equal(window.BalanceOnboardingProgress.needsFirstRunTour(), true);
+  assert.equal(window.BalanceOnboardingProgress.read(), null);
+});
+
+test('remote completion keeps a new member out of the tour on a fresh device', () => {
+  const {window} = context('new-member');
+  window.currentUser.created_at = '2026-09-18T04:42:50Z';
+  window.currentUser.user_metadata = {balance_app_tour_completed_at:'2026-09-18T05:00:00Z'};
+  assert.equal(window.BalanceOnboardingProgress.needsFirstRunTour(), false);
+  assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(), true);
+});
+
+test('completed setup resumes a missed new-member tour after Home startup', async () => {
+  const {window, storage} = context('new-member');
+  window.currentUser.created_at = '2026-09-18T04:42:50Z';
+  let resume, starts = 0, events = 0;
+  window.addEventListener = (name, handler) => { if (name === 'pbbInitComplete') resume = handler; };
+  window.dispatchEvent = () => { events++; };
+  const source = read('js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js');
+  const a = source.indexOf('async function checkAndTriggerOnboarding()');
+  const b = source.indexOf('function initOnboardingWizard()', a);
+  const ctx = {window,localStorage:window.localStorage, console, CustomEvent:function(){},
+    dbHelpers:{users:{get:async()=>({onboarding_complete:true})}},
+    startWizardClientActivationTour:()=>starts++};
+  vm.runInNewContext(source.slice(a,b), ctx);
+  await ctx.checkAndTriggerOnboarding();
+  assert.equal(events,1);
+  assert.equal(storage.get('pbb_onboarding_owner_user_id'),'new-member');
+  assert.equal(starts,0);
+  resume();
+  assert.equal(starts,1);
+});
+
+test('daily-plan initialization runs when setup completes after startup', () => {
+  const source = read('js/dashboard/pbb-social-journey.js');
+  const a = source.indexOf('  function init() {');
+  const b = source.indexOf('  window.socialJourney =',a);
+  let ready = false, refreshes = 0;
+  const ctx = {initialized:false,state:null,window:{location:{search:''}}, URLSearchParams,
+    isJourneyEligible:()=>ready, getCard:()=>null, ensureUi(){}, refresh(){refreshes++;}};
+  vm.runInNewContext(source.slice(a,b),ctx);
+  ctx.init();
+  assert.equal(refreshes,0);
+  ready = true;
+  ctx.init();
+  assert.equal(refreshes,1);
+  ctx.init(); // Retry a failed initial load.
+  assert.equal(refreshes,2);
+  ctx.state = {current_week:1};
+  ctx.init();
+  assert.equal(refreshes,2);
+  assert.match(source,/window\.addEventListener\('pbbOnboardingComplete', init\)/);
+});
 test('active Meta free-look guests and owning accounts retain tour checkpoints', () => {
   const {window} = context('meta-lead');
   const trial = {ownerUserId:'meta-lead',activatedAt:123};

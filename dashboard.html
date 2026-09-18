@@ -205,7 +205,7 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
 <!-- CRITICAL: Admin view-as localStorage isolation — runs BEFORE any other localStorage reads -->
 <script src="js/dashboard/script_part_1.js"></script>
 <!-- Paid-Facebook preview attribution must be available before auth-guard decides guest vs member mode. -->
-<script src="lib/onboarding-progress.js?v=3"></script>
+<script src="lib/onboarding-progress.js?v=4-new-member-tour"></script>
 <script src="lib/meta-ad-trial.js?v=26-resume-session"></script>
 
 <!-- CRITICAL: Hide loading overlay for returning users and restore cached FitGotchi state -->
@@ -1994,7 +1994,7 @@ document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=36-commu
     document.write('<script src="lib/learn-predictive-content.js?v=7-social-prediction"><\/script>');
     document.write('<script src="lib/learn-weekly-actions.js?v=feed-week-five-20260916"><\/script>');
     document.write('<script src="lib/learn-action-review.js?v=feed5-plan-dismiss-v3"><\/script>');
-    document.write('<script src="js/dashboard/pbb-social-journey.js?v=feed-week-five-20260916"><\/script>');
+    document.write('<script src="js/dashboard/pbb-social-journey.js?v=20260918-setup-handoff"><\/script>');
     document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=plan-dismiss-v3"><\/script>');
     document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=38-settings-availability"><\/script>');
 } else {
@@ -2005,7 +2005,7 @@ window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=36-com
     window._pbbDeferredQueue.push('lib/learn-predictive-content.js?v=7-social-prediction');
     window._pbbDeferredQueue.push('lib/learn-weekly-actions.js?v=feed-week-five-20260916');
     window._pbbDeferredQueue.push('lib/learn-action-review.js?v=feed5-plan-dismiss-v3');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=feed-week-five-20260916');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=20260918-setup-handoff');
     window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=plan-dismiss-v3');
     window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=38-settings-availability');
 }
@@ -12957,7 +12957,7 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20260916-previous-workouts-contrast&cohort_diets=1&video_health=2';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20260918-setup-handoff&cohort_diets=1&video_health=2';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
@@ -12999,7 +12999,7 @@ if (window._pbbIsIOSSafari) {
         var s = document.createElement('script');
         s.async = false;
         s.dataset.metaTrialLoader = String(attempt);
-        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20260916-previous-workouts-contrast&cohort_diets=1&video_health=2&meta_retry=' + attempt;
+        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20260918-setup-handoff&cohort_diets=1&video_health=2&meta_retry=' + attempt;
         s.onload = function() {
             if (window._pbbScript5Complete && window._switchAppTabReady && typeof window._switchAppTabReal === 'function') {
                 sessionStorage.removeItem('pbb_meta_script5_recovery_v1');
@@ -13018,7 +13018,7 @@ if (window._pbbIsIOSSafari) {
         document.head.appendChild(s);
     })(0);
 } else {
-document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20260916-previous-workouts-contrast&cohort_diets=1&video_health=2"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20260918-setup-handoff&cohort_diets=1&video_health=2"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=9-admin-safe-area"></script>
@@ -13522,6 +13522,9 @@ if(!window._pbbIsIOSSafari) {
   #guided-tour-overlay.meta-tour-welcome-active #guided-tour-spotlight,
   #guided-tour-overlay.meta-tour-welcome-active #guided-tour-bubble { display: none; }
   #meta-tour-welcome {
+    --tour-safe-top: max(48px, env(safe-area-inset-top, 0px));
+    --tour-safe-bottom: max(32px, env(safe-area-inset-bottom, 0px));
+    box-sizing: border-box;
     position: absolute;
     inset: 0;
     display: none;
@@ -13530,16 +13533,17 @@ if(!window._pbbIsIOSSafari) {
     overflow-y: auto;
     overscroll-behavior: contain;
     padding:
-      max(24px, env(safe-area-inset-top))
+      var(--tour-safe-top)
       max(18px, env(safe-area-inset-right))
-      max(24px, env(safe-area-inset-bottom))
+      var(--tour-safe-bottom)
       max(18px, env(safe-area-inset-left));
   }
   #guided-tour-overlay.meta-tour-welcome-active #meta-tour-welcome { display: flex; }
   .meta-tour-welcome-card {
+    box-sizing: border-box;
     width: min(100%, 400px);
-    max-height: calc(100vh - 48px);
-    max-height: calc(100dvh - max(48px, calc(env(safe-area-inset-top) + env(safe-area-inset-bottom))));
+    max-height: calc(100vh - var(--tour-safe-top) - var(--tour-safe-bottom));
+    max-height: calc(100dvh - var(--tour-safe-top) - var(--tour-safe-bottom));
     overflow-y: auto;
     border: 1px solid rgba(216,178,94,.64);
     border-radius: 28px;
@@ -15912,6 +15916,8 @@ if (step && step.requiresFeedPost) {
   }
 
   function showMetaTourWelcome(){
+    const welcomeCard = document.querySelector('.meta-tour-welcome-card');
+    if (welcomeCard) welcomeCard.scrollTop = 0;
     showingXpIntro = true;
     idx = -1;
     window.__balanceGuidedTourShowingIntro = true;
@@ -15974,7 +15980,10 @@ window.endFeatureTour = function(skipped){
     }
     try { window.trackBalanceActivity('guided_tour_completed', { mode: completedClientActivationTour ? 'client_activation' : (completedMetaPreviewTour ? 'meta_preview' : 'standard'), skipped: !!skipped, final_step_number: Number(idx) + 1, step_count: activeSteps.length }, { immediate:true }); } catch(e){}
     trackTourProgress(idx, skipped ? 'skipped' : 'completed');
-    if (!skipped && completedClientActivationTour && !completedCourseFeatureTour) window.BalanceOnboardingProgress?.clear();
+    if (!skipped && completedClientActivationTour && !completedCourseFeatureTour) {
+      window.BalanceOnboardingProgress?.clear();
+      window.BalanceOnboardingProgress?.completeFirstRunTour();
+    }
     clearActiveTourGate();
     resetTourTemporaryTargets();
     const overlay = document.getElementById('guided-tour-overlay');

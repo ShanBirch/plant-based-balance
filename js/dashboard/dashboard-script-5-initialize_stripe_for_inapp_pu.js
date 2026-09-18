@@ -10132,6 +10132,7 @@ function resetFreshOnboardingPreferences() {
 async function checkAndTriggerOnboarding() {
     let isReturningMember = localStorage.getItem('onboardingComplete') === 'true';
     let databaseOnboardingStatusChecked = false;
+    let savedSetupComplete = false;
     const forcePaidOnboardingTest = window.metaAdTrialMode === true && (() => {
         try {
             const params = new URLSearchParams(window.location.search || '');
@@ -10204,6 +10205,12 @@ async function checkAndTriggerOnboarding() {
                 ? await window.getUserProfile()
                 : await dbHelpers.users.get(window.currentUser.id);
             databaseOnboardingStatusChecked = true;
+            savedSetupComplete = userData?.onboarding_complete === true;
+            if (savedSetupComplete) {
+                localStorage.setItem('onboardingComplete', 'true');
+                localStorage.setItem('pbb_onboarding_owner_user_id', String(window.currentUser.id));
+                window.dispatchEvent(new CustomEvent('pbbOnboardingComplete'));
+            }
             // The dedicated phone-test account can be reset from another device.
             // Its database flag is the source of truth, so a stale local completion
             // flag must never make the next phone launch skip the fresh onboarding.
@@ -10248,7 +10255,8 @@ async function checkAndTriggerOnboarding() {
         return;
     }
     if (!window.BalanceOnboardingProgress?.isTourSuppressed()
-        && (checkpoint?.stage === 'tour' || (trial?.onboardingCompletedAt && !trial.walkthroughCompletedAt))) {
+        && (checkpoint?.stage === 'tour' || (trial?.onboardingCompletedAt && !trial.walkthroughCompletedAt)
+            || (savedSetupComplete && window.BalanceOnboardingProgress?.needsFirstRunTour()))) {
         window.__balanceOnboardingResumePending = true;
         // Startup selects Home later. Resume after that final switch, otherwise
         // it would navigate away from the restored tour destination again.
@@ -14370,6 +14378,7 @@ async function finishOnboarding() {
     }
     localStorage.setItem('onboardingComplete', 'true');
     localStorage.setItem('plantbased_onboarding_complete', 'true'); // Also set alternate key for consistency
+    window.dispatchEvent(new CustomEvent('pbbOnboardingComplete'));
     window.BalanceOnboardingProgress?.save('tour', { wizard:null, tour:null });
     window.BalanceOnboardingFunnel?.track('screen', 'slide_' + currentWizardStep, 'completed', { step_number: currentWizardStep });
     window.BalanceOnboardingFunnel?.track('setup', 'saving_plan', 'completed');
