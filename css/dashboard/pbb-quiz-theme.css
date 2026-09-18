@@ -195,3 +195,33 @@ html #learning-content .story-paged .story-photo--diagram img {height:240px; bac
     html #learning-content .story-paged .story-image-caption {font-size:.6rem;padding:3px 5px;}
     html #learning-content .story-paged .story-photo-credit {font-size:.55rem;padding:3px 5px;}
 }
+
+/* Keep supporting photos small; labelled anatomy retains its uncropped canvas. */
+html #learning-content .story-paged .story-photo:not(.story-photo--diagram) {max-width:320px; flex-shrink:0;}
+html #learning-content .story-paged .story-photo:not(.story-photo--diagram) img {height:140px;}
+html #learning-content .story-paged .story-photo--diagram img {height:160px;}
+@media(max-height:700px) {
+    html #learning-content .story-paged > div:first-child {display:none;}
+    html #learning-content .story-paged .story-photo:not(.story-photo--diagram) img {height:90px;}
+    html #learning-content .story-paged .story-photo--diagram img {height:100px;}
+}
+@media(orientation:landscape) and (max-height:500px) {
+    html #learning-content .story-paged .story-photo:not(.story-photo--diagram) img {height:60px;}
+    html #learning-content .story-paged .story-photo--diagram img {height:80px;}
+    /* Retain the status-bar spacer, using the lesson title as the visible header. */
+    html #view-learning:has(.story-paged) > div:first-child {
+        height:max(42px,env(safe-area-inset-top,0px)); padding:0!important;
+        overflow:hidden;
+    }
+    html #view-learning:has(.story-paged) > div:first-child > * {visibility:hidden;}
+    html #learning-content .story-paged {
+        display:grid; grid-template-columns:1fr auto; grid-template-rows:auto minmax(0,1fr) auto;
+    }
+    html #learning-content .story-paged > div:nth-child(2) {padding:4px 12px!important;}
+    html #learning-content .story-paged h1 {font-size:1rem!important;}
+    html #learning-content .story-paged .story-progress-dots {padding:4px 12px;}
+    html #learning-content .story-paged .story-progress-dots progress {display:none;}
+    html #learning-content .story-paged :is(#story-content-area,.story-controls,#story-key-insight,#story-quiz-btn) {grid-column:1 / -1;}
+    html #learning-content .story-paged .story-controls {padding:6px 16px; margin:0;}
+    html #learning-content .story-paged:has(#story-content-area[hidden]) {display:flex;}
+}

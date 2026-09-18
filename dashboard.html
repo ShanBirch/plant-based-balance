@@ -14073,7 +14073,7 @@ if(!window._pbbIsIOSSafari) {
   }
 
   const steps = [
-    { tab:'learning', sel:'#learning-content', title:'Take your lessons one page at a time', body:'Your lessons now use shorter reading pages and clearer images. Use Previous and Next to move at your own pace. The lesson wording, quizzes and your saved progress stay the same.' },
+    { tab:'learning', sel:'#learning-content', title:'A picture on every lesson page', body:'Every reading page now includes a relevant photo or illustration. Use Previous and Next to move at your own pace, and scroll the page whenever you need more room.' },
     { tab:'profile', sel:'#balance-replay-settings', title:'Help fixing app problems', body:'Balance saves a masked replay automatically so Shannon can investigate app problems. Private text and media are hidden. Replays expire after seven days. You can turn this off in Settings.' },
     { tab:'learning', sel:'#learning-content', title:'Learn how your brain learns', body:'Balance Learn now includes experience, the free-energy principle and how surprising evidence updates predictions. The extra learning now fits within the six-week course. Your completed work stays in place. Open Learn to see the sequence for your course.' },
     { tab:'learning', sel:'#learning-content', title:'Five actions for your week', body:'Open Your Week in Balance Learn. Track meals, complete workouts, try one lesson experiment, join in with the community and send your weekly check-in. Record your practical action in the weekly check-in. Balance checks your reflection and check-in for this action before recording its course tick; you can reopen the saved evidence any time. Your one-time setup has its own checklist.' },
@@ -17085,7 +17085,7 @@ window.endFeatureTour = function(skipped){
   // First-run onboarding now uses the guided walkthrough only. Keep legacy
   // feature-drop entries dormant so users do not see duplicate spotlight cards.
   allFeatures = [];
-  allFeatures.push({ id:'learn-short-pages-20260916', tab:'learning', sel:'#learning-content', title:'Take your lessons one page at a time', body:'Your lessons now use shorter reading pages and clearer images. Use Previous and Next to move at your own pace. The lesson wording, quizzes and your saved progress stay the same.' });
+  allFeatures.push({ id:'learn-page-photos-20260918', tab:'learning', sel:'#learning-content', title:'A picture on every lesson page', body:'Every reading page now includes a relevant photo or illustration. Use Previous and Next to move at your own pace, and scroll the page whenever you need more room.' });
   allFeatures.push({ id:'settings-your-checkin-v1', tab:'profile', sel:'#settings-your-checkin', title:'Your Check-In', body:'Find your weekly check-in in Settings under Personal setup. It opens Friday to Sunday and also appears in To Do Next on Home when it is due.' });
   allFeatures.push({ id:'learn-six-weeks-expanded-v2', tab:'learning', sel:'#learning-content', title:'Learn how your brain learns', body:'Balance Learn now includes experience, the free-energy principle and how surprising evidence updates predictions. The extra learning now fits within the six-week course. Your completed work stays in place. Open Learn to see the sequence for your course.' });
   allFeatures.push({ id:'learn-ai-reviewed-actions-v4', tab:'learning', sel:'#learning-content', title:'Five actions for your week', body:'Open Your Week in Balance Learn. Track meals, complete workouts, try one lesson experiment, join in with the community and send your weekly check-in. Record your practical action in the weekly check-in. Balance checks your reflection and check-in for this action before recording its course tick; you can reopen the saved evidence any time. Your one-time setup has its own checklist.' });
@@ -18930,7 +18930,7 @@ if (window._pbbIsIOSSafari) {
 </script>
 
 <link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=130-replay-settings-card">
-<link rel="stylesheet" href="css/dashboard/pbb-quiz-theme.css?v=3-course-nav-clearance">
+<link rel="stylesheet" href="css/dashboard/pbb-quiz-theme.css?v=4-page-photos">
 <link rel="stylesheet" href="css/dashboard/pbb-weighin-theme.css?v=1-balance-gold">
 <link rel="stylesheet" href="css/dashboard/pbb-meal-plan.css?v=20260918-compact-3-six-weeks">
 <link rel="stylesheet" href="css/dashboard/pbb-onboarding-comeback.css?v=9-learn-welcome">
@@ -21200,11 +21200,11 @@ if (window._pbbIsIOSSafari) {
             });
             if (window.showQuizBattleInviteModal || learningAlreadyRequested) return;
             var s = document.createElement('script');
-      s.src = 'lib/learning-inline.js?v=photo-only-20260916';
+      s.src = 'lib/learning-inline.js?v=page-photos-20260918';
             document.head.appendChild(s);
         }, { once: true });
     } else {
-    document.write('<script src="lib/learning-inline.js?v=photo-only-20260916"><\/script>');
+    document.write('<script src="lib/learning-inline.js?v=page-photos-20260918"><\/script>');
     }
     </script>
     <!-- Battle System & Logic Overrides (130 lines — deferred on iOS) -->
