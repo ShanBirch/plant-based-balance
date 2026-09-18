@@ -144,7 +144,9 @@ html #learning-content .balance-quiz .story-controls {padding-bottom:max(30px,en
 /* Compact, independently scrollable reading pages. Quiz gameplay is unchanged. */
 html #view-learning:has(.story-paged):not([style*="display: none"]):not([style*="display:none"]) {
     position:fixed!important; inset:0!important; height:100dvh!important; max-height:100dvh!important;
-    padding:0!important; overflow:hidden!important; display:flex!important; flex-direction:column; z-index:120;
+    /* Reserve the fixed app menu as well as the home-indicator area, even when WebViews report zero insets. */
+    padding:0 0 calc(var(--nav-height,80px) + max(24px,env(safe-area-inset-bottom,0px)))!important;
+    box-sizing:border-box; overflow:hidden!important; display:flex!important; flex-direction:column; z-index:120;
 }
 html #view-learning:has(.story-paged) > div:first-child {
     flex:none; padding: max(42px,env(safe-area-inset-top,0px)) 20px 10px!important;
@@ -170,6 +172,10 @@ html #learning-content .story-paged .story-controls button {padding:12px 8px; mi
 html #learning-content .story-paged .story-controls button:disabled {opacity:.45; cursor:default;}
 html #learning-content .story-paged #story-key-insight {min-height:0; overflow-y:auto; flex:1; padding-top:12px;}
 html #learning-content .story-paged #story-quiz-btn {flex:none; padding-bottom:max(24px,env(safe-area-inset-bottom,0px))!important;}
+/* Let the insight and quiz action scroll together when landscape leaves little reading space. */
+html #learning-content .story-paged:has(#story-content-area[hidden]) {overflow-y:auto; overscroll-behavior:contain;}
+html #learning-content .story-paged:has(#story-content-area[hidden]) > div {flex-shrink:0;}
+html #learning-content .story-paged #story-content-area[hidden] ~ #story-key-insight {flex:none; overflow:visible;}
 @media(max-height:700px) {
     html #learning-content .story-paged .story-photo img {height:125px;}
     html #learning-content .story-paged .story-text {font-size:1rem; line-height:1.5;}

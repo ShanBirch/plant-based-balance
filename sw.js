@@ -3,7 +3,7 @@ const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB key
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
   './css/dashboard/pbb-weighin-theme.css?v=1-balance-gold',
-  './css/dashboard/pbb-quiz-theme.css?v=2-short-pages',
+  './css/dashboard/pbb-quiz-theme.css?v=3-course-nav-clearance',
   './dashboard.html',
   './js/dashboard/pbb-workout-swipe-player.js?v=9-admin-safe-area',
   './js/dashboard/pbb-course-mascot.js?v=1-original-3d',
