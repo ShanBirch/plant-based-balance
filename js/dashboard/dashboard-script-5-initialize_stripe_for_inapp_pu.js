@@ -5639,12 +5639,8 @@ function showAiPlanGenerating() {
 /**
  * Show the loaded plan
  */
-function getAiMealPlanScheduledWeek(plan, now = Date.now()) {
-    const firstWeek = plan.weeks?.[0]?.week_number || 1;
-    const started = new Date(plan.generated_at || plan.created_at || now);
-    const elapsedWeeks = Math.max(0, Math.floor((now - started.getTime()) / (7 * 86400000)));
-    const scheduled = plan.weeks?.length === 6 && Number.isFinite(elapsedWeeks) ? (elapsedWeeks % 6) + 1 : (plan.current_week || firstWeek);
-    return plan.weeks?.some(w => w.week_number === scheduled) ? scheduled : firstWeek;
+function getAiMealPlanInitialWeek(plan) {
+    return plan.weeks?.find(week => week.week_number === 1)?.week_number || plan.weeks?.[0]?.week_number || 1;
 }
 
 function showAiPlanLoaded(plan) {
@@ -5661,8 +5657,8 @@ function showAiPlanLoaded(plan) {
     if (nameEl) nameEl.textContent = 'Your meal plan';
     if (descEl) descEl.textContent = plan.plan_name || 'Tailored to your goals';
 
-    // Six saved weeks advance weekly, then repeat. Browsing another week stays read-only.
-    _aiMealPlanCurrentWeek = getAiMealPlanScheduledWeek(plan);
+    // Always open at Week 1; the arrows browse the other saved weeks.
+    _aiMealPlanCurrentWeek = getAiMealPlanInitialWeek(plan);
     renderAiPlanWeekTabs(plan);
     _aiMealPlanCurrentDay = getAiMealPlanTodayIndex();
     _aiMealPlanMealSelection = null;

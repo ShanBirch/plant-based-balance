@@ -4,14 +4,14 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 const engine=require('../lib/prepared-diet-engine');
 const shopping=require('../lib/meal-plan-shopping-list');
-test('saved six-week plans advance weekly and wrap without resetting the start date',()=>{
+test('meal plans always open on week one regardless of age or saved week',()=>{
   const source=fs.readFileSync(require.resolve('../js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js'),'utf8');
-  const start=source.indexOf('function getAiMealPlanScheduledWeek(');
+  const start=source.indexOf('function getAiMealPlanInitialWeek(');
   const context={Date};vm.runInNewContext(source.slice(start,source.indexOf('function showAiPlanLoaded(',start)),context);
   const plan={generated_at:'2026-09-01T00:00:00Z',weeks:Array.from({length:6},(_,i)=>({week_number:i+1}))};
-  for(let week=0;week<14;week++)assert.equal(context.getAiMealPlanScheduledWeek(plan,Date.parse(plan.generated_at)+week*7*86400000),(week%6)+1);
-  assert.equal(context.getAiMealPlanScheduledWeek({...plan,generated_at:'invalid'},Date.now()),1);
-  assert.equal(context.getAiMealPlanScheduledWeek({...plan,weeks:[{week_number:1},{week_number:2}],current_week:2},Date.now()),2);
+  for(let week=0;week<14;week++)assert.equal(context.getAiMealPlanInitialWeek(plan,Date.parse(plan.generated_at)+week*7*86400000),1);
+  assert.equal(context.getAiMealPlanInitialWeek({...plan,generated_at:'invalid'},Date.now()),1);
+  assert.equal(context.getAiMealPlanInitialWeek({...plan,weeks:[{week_number:1},{week_number:2}],current_week:2},Date.now()),1);
 });
 for(const style of engine.STYLES)test(style+' introduces recipes through all six weeks and reconciles every shopping list',()=>{
   const plan=engine.buildPlan({calorie_goal:2000},{diet_type:style});

@@ -2280,10 +2280,10 @@ if(!window._pbbIsIOSSafari) {
     .ai-plan-focus-layout #ai-plan-header > div > div { min-width: 0; }
     .ai-plan-focus-layout #ai-plan-name { font-size: 1.16rem !important; line-height: 1.2; }
     .ai-plan-focus-layout #ai-plan-desc { margin-top: 4px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .ai-plan-focus-layout #ai-plan-week-tabs { padding: 9px 15px 5px !important; }
+    .ai-plan-focus-layout #ai-plan-week-tabs { padding: 4px 0 !important; }
     #ai-plan-week-tabs { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px; }
-    .ai-plan-week-selector { display: flex; align-items: center; flex: 0 0 auto; border: 1px solid rgba(201,154,46,.35); border-radius: 999px; overflow: hidden; background: #171613; color: #fff; -webkit-text-fill-color: #fff; }
-    .ai-plan-week-selector button { display: grid; place-items: center; width: 46px; min-height: 44px; padding: 0; border: 0; background: transparent; color: #fff; -webkit-text-fill-color: #fff; font-size: 1.65rem; cursor: pointer; }
+    .ai-plan-week-selector { display: flex; align-items: center; justify-content: space-between; flex: 1 0 100%; width: 100%; border: 0; border-radius: 0; background: transparent; color: var(--meal-plan-ink); -webkit-text-fill-color: var(--meal-plan-ink); }
+    .ai-plan-week-selector button { display: grid; place-items: center; width: 46px; min-height: 44px; padding: 0; border: 0; background: transparent; color: inherit; -webkit-text-fill-color: inherit; font-size: 1.65rem; cursor: pointer; }
     .ai-plan-week-selector button:disabled { opacity: .3; cursor: default; }
     .ai-plan-week-selector button:focus-visible { outline: 2px solid #d5b45f; outline-offset: -4px; border-radius: 999px; }
     .ai-plan-week-selector > span { min-width: 84px; text-align: center; font-size: .85rem; font-weight: 700; }
@@ -12964,7 +12964,7 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20260918-compact-meal-weeks&cohort_diets=1&video_health=2';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20260918-full-width-week-one&cohort_diets=1&video_health=2';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
@@ -13006,7 +13006,7 @@ if (window._pbbIsIOSSafari) {
         var s = document.createElement('script');
         s.async = false;
         s.dataset.metaTrialLoader = String(attempt);
-        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20260918-compact-meal-weeks&cohort_diets=1&video_health=2&meta_retry=' + attempt;
+        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20260918-full-width-week-one&cohort_diets=1&video_health=2&meta_retry=' + attempt;
         s.onload = function() {
             if (window._pbbScript5Complete && window._switchAppTabReady && typeof window._switchAppTabReal === 'function') {
                 sessionStorage.removeItem('pbb_meta_script5_recovery_v1');
@@ -13025,7 +13025,7 @@ if (window._pbbIsIOSSafari) {
         document.head.appendChild(s);
     })(0);
 } else {
-document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20260918-compact-meal-weeks"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20260918-full-width-week-one"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=9-admin-safe-area"></script>
