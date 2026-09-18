@@ -507,3 +507,7 @@ Shannon wants data collected on every meaningful growth, sales, onboarding, and 
 - Use stable experiment and event names. Do not change a live definition halfway through a comparison.
 - Choose winners using business outcomes and lead quality. Cheap clicks, views, or DMs are diagnostic metrics, not final success metrics.
 - No new ad, landing-page variant, checkout path, onboarding change, or automated DM flow is considered ready until its measurement path has been verified.
+
+### Video-only new-client welcome (18 September 2026)
+Shannon requested the onboarding coach video as the welcome, without a separate automated Coach Shannon text DM. Both onboarding-welcome-draft and the legacy send-welcome-message endpoint must not send or queue welcome texts. Keep signup context seeding and normal coach conversations. Historical draft helpers exist only for compatibility tests; do not reconnect them to delivery.
+
