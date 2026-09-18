@@ -323,11 +323,9 @@
   }
 
   function isUnifiedPlanActive() {
-    try {
-      return !!(window.socialJourney && typeof window.socialJourney.isUnifiedPlanActive === 'function' && window.socialJourney.isUnifiedPlanActive());
-    } catch (_) {
-      return false;
-    }
+    // Home's layout is not dependent on the asynchronous course-state fetch.
+    // Otherwise every login briefly renders the retired daily panel.
+    return isMemberEligible();
   }
 
   function getBalanceJourneyAction() {
@@ -1614,7 +1612,7 @@
     var guidedSetup = window.metaAdTrialMode === true;
     var unified = isUnifiedPlanActive() || guidedSetup;
     var showTestControls = isPreviewEligible() && !unified;
-    if (guidedSetup && document.documentElement) {
+    if (unified && document.documentElement) {
       document.documentElement.classList.add('pbb-unified-next-steps');
     }
     if (!isMemberEligible()) {

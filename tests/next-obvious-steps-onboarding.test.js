@@ -17,7 +17,7 @@ const onboardingIds = [
   'weekly_goals_intro'
 ];
 
-function loadPlan({ createdAt, seen = [], week = 1, goals = [], metaTrial = false }) {
+function loadPlan({ createdAt, seen = [], week = 1, goals = [], metaTrial = false, loadingJourney = false, renderCard = false }) {
   const userId = 'test-user';
   const storage = new Map();
   seen.forEach(id => storage.set(`pbb_onboarding_step_seen:${userId}:${id}`, '1'));
@@ -27,11 +27,13 @@ function loadPlan({ createdAt, seen = [], week = 1, goals = [], metaTrial = fals
     setItem(key, value) { storage.set(key, String(value)); },
     removeItem(key) { storage.delete(key); }
   };
+  const card = { style: {}, innerHTML: '', classList: { toggle() {} } };
   const document = {
+    documentElement: { classList: { add() {} } },
     readyState: 'loading',
     hidden: false,
     addEventListener() {},
-    getElementById() { return null; },
+    getElementById(id) { return renderCard && id === 'next-obvious-steps-card' ? card : null; },
     querySelector() { return null; },
     querySelectorAll() { return []; },
     createElement() { return { addEventListener() {} }; },
@@ -44,7 +46,7 @@ function loadPlan({ createdAt, seen = [], week = 1, goals = [], metaTrial = fals
     localStorage,
     location: { search: '' },
     socialJourney: {
-      isUnifiedPlanActive() { return true; },
+      isUnifiedPlanActive() { return !loadingJourney; },
       getCurrentWeek() { return week; }
     },
     weeklyGoals: {
@@ -75,8 +77,19 @@ function loadPlan({ createdAt, seen = [], week = 1, goals = [], metaTrial = fals
     Math
   });
 
+  if (renderCard) {
+    window.pbbNextSteps.refresh();
+    return card;
+  }
   return window.pbbNextSteps.getPlan();
 }
+
+test('first Home render uses To do next while course state is still loading', () => {
+  const card = loadPlan({ createdAt: '2026-09-18T04:42:50Z', loadingJourney: true, renderCard: true });
+  assert.match(card.innerHTML, /To do next/);
+  assert.doesNotMatch(card.innerHTML, /What to do today/);
+  assert.equal(card.style.display, 'block');
+});
 
 test('existing accounts never receive first-run introduction cards', () => {
   const plan = loadPlan({ createdAt: '2025-01-01T00:00:00Z', week: 1 });
