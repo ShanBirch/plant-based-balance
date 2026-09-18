@@ -5684,12 +5684,6 @@ function renderAiPlanGuidance(plan) {
     const firstWeek = plan?.weeks?.[0];
     const guidance = firstWeek?.theme_description || '';
     const isEvolvingPlan = plan?.plan_name === 'Your Evolving Weekly Plan';
-    const isMeasuredPlan = (plan?.weeks || []).some(week => (week.days || []).some(day => (day.meals || []).some(meal => (meal.tags || []).includes('ingredient-calculated-v3'))));
-    if (isMeasuredPlan && plan.plan_description) {
-        card.innerHTML = '<details><summary>About portions and nutrition</summary><p>' + escapeAiPlanText(plan.plan_description) + '</p></details>';
-        card.style.display = 'block';
-        return;
-    }
     card.textContent = isEvolvingPlan ? guidance : '';
     card.style.display = isEvolvingPlan && guidance ? 'block' : 'none';
 }
@@ -5703,13 +5697,12 @@ function renderAiPlanWeekTabs(plan) {
     if (!container) return;
 
     const weekCount = plan.weeks?.length || 0;
-    let html = '';
-
-    for (let i = 0; i < weekCount; i++) {
-        const w = plan.weeks[i];
-        const isActive = w.week_number === _aiMealPlanCurrentWeek;
-        html += `<button class="pill-btn ${isActive ? 'active' : ''}" onclick="switchAiPlanWeek(${w.week_number}, this)">Week ${w.week_number}</button>`;
-    }
+    const index = (plan.weeks || []).findIndex(w => w.week_number === _aiMealPlanCurrentWeek);
+    let html = `<div class="ai-plan-week-selector" role="group" aria-label="Meal plan week">
+        <button type="button" aria-label="Previous week" onclick="selectAiPlanWeekRelative(-1)" ${index <= 0 ? 'disabled' : ''}><span aria-hidden="true">&#8249;</span></button>
+        <span aria-live="polite" aria-atomic="true">Week ${_aiMealPlanCurrentWeek}</span>
+        <button type="button" aria-label="Next week" onclick="selectAiPlanWeekRelative(1)" ${index >= weekCount - 1 ? 'disabled' : ''}><span aria-hidden="true">&#8250;</span></button>
+    </div>`;
 
     // Older plans can add the remaining prepared weeks in one save.
     if (weekCount < 6) {
@@ -5717,6 +5710,19 @@ function renderAiPlanWeekTabs(plan) {
     }
 
     container.innerHTML = html;
+}
+
+function selectAiPlanWeekRelative(direction) {
+    const weeks = _aiMealPlanCache?.weeks || [];
+    const index = weeks.findIndex(w => w.week_number === _aiMealPlanCurrentWeek);
+    const next = weeks[index + direction];
+    if (index < 0 || !next) return;
+    switchAiPlanWeek(next.week_number);
+    const label = direction < 0 ? 'Previous week' : 'Next week';
+    const selector = document.querySelector('.ai-plan-week-selector');
+    const button = selector?.querySelector(`[aria-label="${label}"]`);
+    if (button && !button.disabled) button.focus({ preventScroll: true });
+    else selector?.querySelector('button:not(:disabled)')?.focus({ preventScroll: true });
 }
 
 /**
@@ -5729,11 +5735,7 @@ function switchAiPlanWeek(weekNum, btn) {
     _aiMealPlanMealSelection = null;
     _aiMealPlanLoggedDayKey = '';
 
-    // Update week pills
-    if (btn) {
-        document.querySelectorAll('#ai-plan-week-tabs .pill-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-    }
+    renderAiPlanWeekTabs(_aiMealPlanCache);
 
     // Update day pills - return to today.
     document.querySelectorAll('#ai-plan-day-tabs .sub-btn').forEach((b, i) => {

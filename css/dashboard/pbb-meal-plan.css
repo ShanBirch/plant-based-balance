@@ -14,14 +14,12 @@
     }
 }
 html #ai-plan-loaded #ai-plan-week-tabs {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
     overflow: visible;
-}
-html #ai-plan-loaded #ai-plan-week-tabs .pill-btn { min-width: 0; padding-inline: 6px; }
-@media (min-width: 600px) {
-    html #ai-plan-loaded #ai-plan-week-tabs { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 }
 #meal-plan-store,
 #ai-plan-meals-list .ai-plan-hero {
