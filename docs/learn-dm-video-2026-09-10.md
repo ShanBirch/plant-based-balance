@@ -4,8 +4,8 @@ The ad message flow must send the dedicated **price-ending DM video**. The old `
 
 Approved delivery files:
 
-- `assets/balance-learn-dm-149-v16-checkin.mp4`: AUD $149 for the full six weeks, used through 20 October 2026 Brisbane time.
-- `assets/balance-learn-dm-450-v16-checkin.mp4`: AUD $450 for the full six weeks, used from midnight 21 October 2026 Brisbane time.
+- `assets/balance-learn-dm-149-v17-community.mp4`: AUD $149 for the full six weeks, used through 20 October 2026 Brisbane time.
+- `assets/balance-learn-dm-450-v17-community.mp4`: AUD $450 for the full six weeks, used from midnight 21 October 2026 Brisbane time.
 
 Launch is 21 September. The introductory window lasts one month after launch; the $450 change is in October. Upfront checkout and public offer copy follow the same dates. Weekly membership pricing is unchanged.
 
@@ -51,3 +51,6 @@ Reusable rule: when demonstrating a person writing into a form, use a determinis
 ## v16: restore the interactive weekly check-in
 
 Restored the original app check-in form markup and styling, replacing the simplified card. The cursor selects Mostly on track, types “The gym helped me feel more alert.” and “Getting started after work.”, then selects confidence 4. Both answers type character by character with a caret. This replaces only 110.4–118.4 seconds; the reflection typing, soundtrack and 223.4-second runtime are retained. Both Meta ad-flow paths use the shared selector; queued v15 attachments upgrade at send time.
+
+## v17: community bubble clearance
+Moved the community comments group from 525px to 600px on the 1080x1920 composition. Replaced only 190.4–196.4 seconds in both price editions; copied original audio. Current sends and queued v16 attachments resolve to v17.
