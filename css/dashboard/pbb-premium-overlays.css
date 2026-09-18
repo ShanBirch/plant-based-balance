@@ -13526,6 +13526,22 @@ html:not([data-pbb-theme="light"]) #view-profile .settings-v2-more {
     overflow: hidden;
 }
 
+@media (max-width: 560px), (max-height: 560px) and (pointer: coarse) {
+    #view-profile .settings-v2-header { padding-top: calc(10px + max(42px, env(safe-area-inset-top, 0px))) !important; }
+}
+
+#view-profile #balance-replay-settings { margin-top: 14px; }
+#view-profile .settings-v2-replay-row { display: flex; align-items: center; min-height: 66px; padding: 0 8px 0 14px; gap: 4px; }
+#view-profile .settings-v2-replay-label { display: flex; align-items: center; gap: 11px; flex: 1; min-width: 0; min-height: 66px; cursor: pointer; }
+#view-profile #balance-replay-enabled { width: 19px; height: 19px; flex: 0 0 19px; margin: 0; accent-color: var(--settings-accent); }
+#view-profile .settings-v2-replay-expand { display: flex; align-items: center; justify-content: center; flex: 0 0 44px; min-height: 44px; padding: 0; background: transparent; border: 0; box-shadow: none; cursor: pointer; }
+#view-profile .settings-v2-replay-expand[aria-expanded="true"] .settings-v2-chevron { transform: rotate(90deg); }
+#view-profile .settings-v2-replay-expand:focus-visible,
+#view-profile #balance-replay-enabled:focus-visible { outline: 2px solid var(--settings-accent); outline-offset: 2px; }
+#view-profile #balance-replay-information { border-top: 1px solid var(--settings-border); padding: 14px; font-size: 0.82rem; line-height: 1.55; color: var(--settings-muted); -webkit-text-fill-color: var(--settings-muted); }
+#view-profile #balance-replay-information p { margin: 0 0 10px; }
+#view-profile #balance-replay-information a { color: var(--settings-accent); -webkit-text-fill-color: var(--settings-accent); text-decoration: underline; text-underline-offset: 3px; }
+
 #view-profile .settings-v2-row {
     align-items: center;
     background: transparent !important;

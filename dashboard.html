@@ -12547,14 +12547,19 @@ html[data-pbb-theme="light"] #view-activity-success { --activity-success-accent:
                     </div>
                 </div>
 
-        <section id="balance-replay-settings" style="margin:18px 0;padding:18px;border:1px solid var(--border);border-radius:14px;background:var(--card-bg);color:var(--text-main);-webkit-text-fill-color:var(--text-main);">
-            <label style="display:flex;align-items:center;gap:12px;font-weight:700;min-height:44px;">
-                <input id="balance-replay-enabled" type="checkbox" checked onchange="window.BalanceReplay && window.BalanceReplay.setEnabled(this.checked)" style="width:22px;height:22px;flex-shrink:0;">
-                Help troubleshoot app problems
-            </label>
-            <p style="font-size:0.88rem;line-height:1.5;margin:10px 0;color:var(--text-main);-webkit-text-fill-color:var(--text-main);">Balance automatically saves a masked replay of your taps, scrolling and screens so Shannon can investigate problems. Private text, photos and videos are hidden. Replays expire after seven days. Turn this off to stop future replay on this device.</p>
-            <a href="privacy.html#session-replay" target="_blank" rel="noopener" style="color:var(--text-main);-webkit-text-fill-color:var(--text-main);text-decoration:underline;">How replay protects your privacy</a>
-        </section>
+                <section id="balance-replay-settings" class="settings-v2-card" aria-label="App troubleshooting">
+                    <div class="settings-v2-replay-row">
+                        <label class="settings-v2-replay-label" for="balance-replay-enabled">
+                            <input id="balance-replay-enabled" type="checkbox" checked onchange="window.BalanceReplay && window.BalanceReplay.setEnabled(this.checked)">
+                            <span class="settings-v2-copy"><strong>Help troubleshoot app problems</strong></span>
+                        </label>
+                        <button class="settings-v2-replay-expand" type="button" aria-label="App troubleshooting information" aria-expanded="false" aria-controls="balance-replay-information" onclick="var expanded = this.getAttribute('aria-expanded') !== 'true'; this.setAttribute('aria-expanded', String(expanded)); document.getElementById('balance-replay-information').hidden = !expanded;"><span class="settings-v2-chevron" aria-hidden="true">›</span></button>
+                    </div>
+                    <div id="balance-replay-information" hidden>
+                        <p>Balance automatically saves a masked replay of your taps, scrolling and screens so Shannon can investigate problems. Private text, photos and videos are hidden. Replays expire after seven days. Turn this off to stop future replay on this device.</p>
+                        <a href="privacy.html#session-replay" target="_blank" rel="noopener">How replay protects your privacy</a>
+                    </div>
+                </section>
 
                 <details class="settings-v2-more">
                     <summary><span>Guides, replays &amp; app refresh</span><small>Less-used support tools</small></summary>
@@ -18908,7 +18913,7 @@ if (window._pbbIsIOSSafari) {
 }
 </script>
 
-<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=129-dark-mode-conditional-states">
+<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=130-replay-settings-card">
 <link rel="stylesheet" href="css/dashboard/pbb-quiz-theme.css?v=2-short-pages">
 <link rel="stylesheet" href="css/dashboard/pbb-weighin-theme.css?v=1-balance-gold">
 <link rel="stylesheet" href="css/dashboard/pbb-meal-plan.css?v=3-six-weeks">
