@@ -590,12 +590,16 @@
   }
 
   function openCoachMessageTarget() {
-    markOnboardingStepSeen('coach_message_intro');
     switchTab('dashboard');
     afterTab(function(){
       try {
-        if (window.BalanceMetaAdTrial && typeof window.BalanceMetaAdTrial.showInboxPreview === 'function') {
-          window.BalanceMetaAdTrial.showInboxPreview();
+        if (window.BalanceMetaAdTrial && typeof window.BalanceMetaAdTrial.showInboxPreview === 'function'
+            && window.BalanceMetaAdTrial.showInboxPreview() === true) {
+          markOnboardingStepSeen('coach_message_intro');
+          return;
+        }
+        if (window.socialJourney && typeof window.socialJourney.openCoachInbox === 'function') {
+          window.socialJourney.openCoachInbox();
           return;
         }
       } catch (_) {}

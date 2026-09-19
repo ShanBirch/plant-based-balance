@@ -1561,7 +1561,9 @@
     return String(recipientId || '') === SHANNON_USER_ID
       && isJourneyEligible()
       && !!state
-      && !isCurrentLessonSeen();
+      // The first lesson now precedes the coach note in onboarding. Keep the
+      // note available throughout week one, including after that lesson.
+      && (Number(state.current_week) === 1 || !isCurrentLessonSeen());
   }
 
   function closeJourney() {

@@ -33,6 +33,29 @@ test('failed saved setup offers retry without exposing legacy Home',async()=>{
     assert.equal(ctx.children[1].textContent,'Retry');ctx.children[1].onclick();
     assert.equal(ctx.window.reloaded,true);
 });
+
+test('Home fetches independent state together but waits for the slower result',async()=>{
+    for (const slow of ['journey', 'daily']) {
+        const ctx=setup(); const started=[]; let release;
+        const pending=new Promise(resolve=>{release=resolve;});
+        ctx.window.socialJourney.refresh=()=>{started.push('journey');return slow==='journey'?pending:Promise.resolve(true);};
+        ctx.window.pbbNextSteps.refreshStatus=()=>{started.push('daily');return slow==='daily'?pending:Promise.resolve();};
+        const ready=ctx.window.BalanceStartupShell.prepare();
+        await new Promise(resolve=>setTimeout(resolve,5));
+        assert.deepEqual(started,['journey','daily']);
+        assert.equal(ctx.window.rendered,undefined);
+        release(true); await ready;
+        assert.equal(ctx.window.rendered,true);
+    }
+});
+
+test('failed daily state still blocks the Home reveal',async()=>{
+    const ctx=setup();
+    ctx.window.pbbNextSteps.refreshStatus=async()=>{throw new Error('daily state offline');};
+    await assert.rejects(ctx.window.BalanceStartupShell.prepare(),/daily state offline/);
+    assert.equal(ctx.window.rendered,undefined);
+    assert.equal(ctx.attributes['data-pbb-shell-ready'],undefined);
+});
 test('startup awaits saved state and applies the shell gate before fade-out',()=>{
     const html=fs.readFileSync(path.join(root,'dashboard.html'),'utf8');
     const init=fs.readFileSync(path.join(root,'js/dashboard/dashboard-script-3-1_get_user_data.js'),'utf8');

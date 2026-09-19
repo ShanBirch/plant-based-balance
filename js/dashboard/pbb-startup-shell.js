@@ -24,9 +24,14 @@
         }, 15000);
         if (!root.weeklyGoals.getState().week) await bounded(root.weeklyGoals.refresh(), 15000);
         await waitFor(function() { return !root.weeklyGoals.getState().loading; }, 15000);
-        var ready = await bounded(root.socialJourney.refresh(), 15000);
+        // These read independent saved data. Keep the shell guarded until both
+        // finish, then render the final card order once with all state available.
+        var results = await Promise.all([
+            bounded(root.socialJourney.refresh(), 15000),
+            bounded(root.pbbNextSteps.refreshStatus(), 15000)
+        ]);
+        var ready = results[0];
         if (ready === false) throw new Error('Could not load saved Home setup');
-        await bounded(root.pbbNextSteps.refreshStatus(), 15000);
         root.pbbNextSteps.refresh();
         // Commit styles and the final card order before the loader starts fading.
         await new Promise(function(resolve) { requestAnimationFrame(function() { requestAnimationFrame(resolve); }); });

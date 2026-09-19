@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v550-replay-settings-card';
+const CACHE_NAME = 'pbb-app-v551-loading-performance';
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -207,7 +207,9 @@ self.addEventListener('fetch', (e) => {
 
   // Network first for HTML, JS, and CSS files (always get latest)
   if (url.pathname.endsWith('.html') || url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
-    const fetchOptions = url.pathname.endsWith('.html') ? { cache: 'no-store' } : { cache: 'reload' };
+    // Revalidate scripts/styles on every visit, but allow HTTP 304 responses to
+    // reuse unchanged bytes. `reload` bypassed this and downloaded them in full.
+    const fetchOptions = url.pathname.endsWith('.html') ? { cache: 'no-store' } : { cache: 'no-cache' };
     e.respondWith(
       fetch(e.request, fetchOptions)
         .then(response => {

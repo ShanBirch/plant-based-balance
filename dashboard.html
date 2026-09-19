@@ -59,7 +59,7 @@ script, style, head, link, meta, title { display: none !important; }
 #tamagotchi-levelup-overlay:not(.active) { display: none !important; }
 </style>
 <title>Balance</title>
-<script src="js/dashboard/pbb-startup-shell.js?v=1" defer></script>
+<script src="js/dashboard/pbb-startup-shell.js?v=2-parallel-home" defer></script>
 <meta name="description" content="Plant-based workouts, vegan nutrition, progress tracking and community in one app.">
 
 
@@ -206,7 +206,7 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
 <script src="js/dashboard/script_part_1.js"></script>
 <!-- Paid-Facebook preview attribution must be available before auth-guard decides guest vs member mode. -->
 <script src="lib/onboarding-progress.js?v=4-new-member-tour"></script>
-<script src="lib/meta-ad-trial.js?v=26-resume-session"></script>
+<script src="lib/meta-ad-trial.js?v=27-coach-video-handoff"></script>
 
 <!-- CRITICAL: Hide loading overlay for returning users and restore cached FitGotchi state -->
 <script>
@@ -814,8 +814,8 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
 </div>
 
 <!-- A local, read-only Inbox proof moment for the paid Meta preview. It never queries a member Inbox. -->
-<div id="meta-ad-trial-inbox-preview" aria-hidden="true" style="display:none; position:fixed; inset:0; z-index:399900; background:#f6f0e3; align-items:center; justify-content:center; padding:calc(10px + env(safe-area-inset-top, 0px)) 12px calc(10px + env(safe-area-inset-bottom, 0px)); box-sizing:border-box; font-family:'Inter',sans-serif; pointer-events:none;">
-    <div id="meta-ad-trial-inbox-preview-card" style="width:min(100%,430px); max-height:calc(100dvh - 20px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); background:#fff; border:1px solid #e4d7bd; border-radius:24px; box-shadow:0 18px 50px rgba(74,55,18,.16); overflow:auto; overscroll-behavior:contain; pointer-events:auto;">
+<div id="meta-ad-trial-inbox-preview" aria-hidden="true" style="display:none; position:fixed; inset:0; z-index:399900; background:#f6f0e3; align-items:center; justify-content:center; padding:max(52px, calc(10px + env(safe-area-inset-top, 0px))) 12px max(24px, calc(10px + env(safe-area-inset-bottom, 0px))); box-sizing:border-box; font-family:'Inter',sans-serif; pointer-events:none;">
+    <div id="meta-ad-trial-inbox-preview-card" style="width:min(100%,430px); max-height:100%; background:#fff; border:1px solid #e4d7bd; border-radius:24px; box-shadow:0 18px 50px rgba(74,55,18,.16); overflow:auto; overscroll-behavior:contain; pointer-events:auto;">
         <div style="display:flex; align-items:center; gap:11px; padding:12px 14px; border-bottom:1px solid #eee4d2; background:#fffdf8;">
             <div style="width:42px; height:42px; border-radius:50%; display:grid; place-items:center; background:linear-gradient(135deg,#d4ad52,#f0cf76); color:#171923; font:900 16px Georgia,serif;">S</div>
             <div><strong style="display:block; color:#171923; font-size:.96rem;">Coach Shannon</strong><span style="display:block; color:#7a7061; font-size:.72rem; margin-top:2px;">Your Balance Inbox</span></div>
@@ -1994,8 +1994,8 @@ document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=36-commu
     document.write('<script src="lib/learn-predictive-content.js?v=7-social-prediction"><\/script>');
     document.write('<script src="lib/learn-weekly-actions.js?v=feed-week-five-20260916"><\/script>');
     document.write('<script src="lib/learn-action-review.js?v=feed5-plan-dismiss-v3"><\/script>');
-    document.write('<script src="js/dashboard/pbb-social-journey.js?v=20260918-setup-handoff"><\/script>');
-    document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=20260918-stable-home"><\/script>');
+    document.write('<script src="js/dashboard/pbb-social-journey.js?v=20260919-coach-video"><\/script>');
+    document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=20260919-coach-video"><\/script>');
     document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=39-checkin-spacing"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
@@ -2005,8 +2005,8 @@ window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=36-com
     window._pbbDeferredQueue.push('lib/learn-predictive-content.js?v=7-social-prediction');
     window._pbbDeferredQueue.push('lib/learn-weekly-actions.js?v=feed-week-five-20260916');
     window._pbbDeferredQueue.push('lib/learn-action-review.js?v=feed5-plan-dismiss-v3');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=20260918-setup-handoff');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=20260918-stable-home');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=20260919-coach-video');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=20260919-coach-video');
     window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=39-checkin-spacing');
 }
 </script>
@@ -14327,7 +14327,12 @@ if(!window._pbbIsIOSSafari) {
   const coachTourStep = findTourStep('Watch Shannon’s coach note');
   if (coachTourStep) Object.assign(coachTourStep, {
     sel:'#meta-ad-trial-welcome-video,#balance-onboarding-welcome-video,#social-journey-welcome-video',
-    fallbackSel:'#meta-ad-trial-inbox-preview-card,.balance-onboarding-message-card,.social-journey-welcome'
+    fallbackSel:'#meta-ad-trial-inbox-preview-card,.balance-onboarding-inbox-message,.social-journey-welcome',
+    action:async function(){
+      if (!q(coachTourStep.sel) && window.BalanceMetaAdTrial) window.BalanceMetaAdTrial.showInboxPreview();
+      // A card or an empty inbox is not proof that the required video opened.
+      return await waitForPromptedStepSurface({ sel:coachTourStep.sel }, 4000);
+    }
   });
 
   const foundationsTourStep = findTourStep('Read, then take the quiz');
@@ -15765,7 +15770,8 @@ if (step && step.requiresFeedPost) {
     if (tourScrollTarget && typeof tourScrollTarget.scrollIntoView === 'function') {
       const isTapPromptTarget = !!(isPromptBeforeAction && step.promptRequiresTargetClick);
       try { tourScrollTarget.scrollIntoView({ block:displayStep.tourScrollContextSel ? 'start' : (isTapPromptTarget ? 'end' : 'center'), behavior:'auto' }); } catch(e){}
-      await new Promise(function(r){ setTimeout(r, 120); });
+      // Instant scrolling needs a layout frame, not a fixed pause on every step.
+      await new Promise(function(resolve){ requestAnimationFrame(resolve); });
       if (renderToken !== tourRenderToken) return;
       if (isTapPromptTarget) {
         try {
@@ -15773,12 +15779,13 @@ if (step && step.requiresFeedPost) {
           const targetBottomLimit = Math.max(220, (window.innerHeight || 640) - 118);
           if (targetRect.bottom > targetBottomLimit) {
             scrollTourTargetBy(target, targetRect.bottom - targetBottomLimit);
-            await new Promise(function(r){ setTimeout(r, 80); });
+            await new Promise(function(resolve){ requestAnimationFrame(resolve); });
           }
         } catch(e) {}
       }
     }
 
+    if (renderToken !== tourRenderToken) return;
     document.getElementById('tour-counter').textContent = 'Step ' + (i+1) + ' / ' + activeSteps.length;
     document.getElementById('tour-title').textContent = (resolved.usedFallback && displayStep.fallbackTitle) ? displayStep.fallbackTitle : displayStep.title;
     document.getElementById('tour-body').textContent = (resolved.usedFallback && displayStep.fallbackBody) ? displayStep.fallbackBody : displayStep.body;
@@ -15961,6 +15968,18 @@ if (step && step.requiresFeedPost) {
     showStep(0);
   };
 
+  function incompleteRequiredTourStep(){
+    return activeSteps.findIndex(function(step, index){
+      const key = step.requiresWelcomeVideo ? 'welcome-video'
+        : step.requiresWeeklyGoals ? 'weekly-goals'
+        : step.requiresFoundationsLesson ? 'foundations-lesson:' + step.requiresFoundationsLesson
+        : step.requiresFeedPost ? 'first-feed-post'
+        : step.requiresWorkoutBrowse ? 'workout-browse:' + index
+        : step.requiresHighlightedClick ? 'highlighted-click:' + index : null;
+      return key && !completedTourGates.has(key);
+    });
+  }
+
 window.endFeatureTour = function(skipped){
     const completedCourseFeatureTour = courseFeatureTour;
     if (completedCourseFeatureTour && skipped && tourNavigationBusy) return false;
@@ -15972,6 +15991,14 @@ window.endFeatureTour = function(skipped){
     if (skipped && (completedMetaPreviewTour || completedClientActivationTour)) {
       if (typeof showToast === 'function') showToast('Finish the guided tour to continue.', 'info');
       return false;
+    }
+    if (!completedCourseFeatureTour && !skipped && (completedMetaPreviewTour || completedClientActivationTour)) {
+      const incompleteIndex = incompleteRequiredTourStep();
+      if (incompleteIndex >= 0) {
+        showStep(incompleteIndex);
+        return false;
+      }
+      if (idx !== activeSteps.length - 1) return false;
     }
     tourRenderToken += 1;
     cancelScheduledTourPosition();
