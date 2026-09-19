@@ -453,7 +453,7 @@
       for (var dependency of dependencies) {
         await load(dependency[0], function(){ return !!window[dependency[1]]; });
       }
-      await load('lib/learning-inline.js?v=course-handoff-20260919', function(){
+      await load('lib/learning-inline.js?v=welcome-stays-open-20260919', function(){
         return typeof window.prepareBalanceFoundationsStartForTour === 'function'
           && typeof window.openCurrentCourseLesson === 'function'
           && typeof window.getCurrentCourseLessonDestination === 'function';

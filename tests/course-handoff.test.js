@@ -2,6 +2,20 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const read=f=>fs.readFileSync(path.join(__dirname,'..',f),'utf8');
 function section(s,a,b){const i=s.indexOf(a),j=s.indexOf(b,i);assert.ok(i>=0&&j>i);return s.slice(i,j)}
 const next=read('js/dashboard/pbb-next-obvious-steps.js');
+test('guided welcome opens the collapsed course overview before choosing Week 1',()=>{
+ const course={id:'balance-foundations',type:'foundations',isUnlocked:true,progress:{weekProgress:[{number:1}]}},calls=[];
+ const c={window:{__balanceGuidedTourActive:true},learningState:{},getCourseById:()=>course,consumeCourseWelcomeRequirement(){},markCourseStarted(){},trackCourseEvent(){},pushLearningHistoryState(){},renderCourseDetail:()=>calls.push('overview'),renderFoundationsWeekPage:()=>calls.push('week')};
+ vm.runInNewContext(section(read('lib/learning-inline.js'),'    window.startCourseFromWelcome = function','    window.toggleFoundationsWeek ='),c);
+ c.window.startCourseFromWelcome(course.id);assert.deepEqual(calls,['overview']);assert.equal(c.learningState.expandedFoundationsWeekNumber,null);
+ c.window.__balanceGuidedTourActive=false;c.window.startCourseFromWelcome(course.id);assert.deepEqual(calls,['overview','week']);
+});
+test('background progress updates preserve the welcome until the member starts or closes it',()=>{
+ let welcome={},renders=0;
+ const c={window:{},learningState:{userProgress:{},currentView:'courseDetail',activeCourseId:'balance-foundations'},document:{getElementById:id=>id==='course-welcome'?welcome:null},getCourseById:()=>({}),renderCourseDetail:()=>renders++};
+ vm.runInNewContext(section(read('lib/learning-inline.js'),'    window.refreshLearningCourseHome = function()','    window.startCourseTopic ='),c);
+ for(let i=0;i<5;i++)c.window.refreshLearningCourseHome();assert.equal(renders,0);
+ welcome=null;c.window.refreshLearningCourseHome();assert.equal(renders,1);
+});
 function opener(overrides={}){
  const calls=[];const c={Promise,setTimeout,clearTimeout,window:{__balanceGuidedTourActive:true,_ensureLearningProgressLoaded:async()=>{},prepareBalanceFoundationsStartForTour:()=>calls.push('overview'),showToast:()=>calls.push('retry')},document:{getElementById:()=>({getClientRects:()=>[{}]})},ensureLearningSystemLoaded:async()=>true,switchTab:()=>true,isVisibleSelector:()=>true,markOnboardingStepSeen:()=>calls.push('seen'),setOnboardingStepComplete:()=>calls.push('incomplete'),...overrides};
  vm.runInNewContext(section(next,'  function openFoundationsTarget()','  function getNextCourseId()'),c);return {c,calls};

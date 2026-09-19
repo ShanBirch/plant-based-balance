@@ -1995,7 +1995,7 @@ document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=36-commu
     document.write('<script src="lib/learn-weekly-actions.js?v=feed-week-five-20260916"><\/script>');
     document.write('<script src="lib/learn-action-review.js?v=feed5-plan-dismiss-v3"><\/script>');
     document.write('<script src="js/dashboard/pbb-social-journey.js?v=20260919-coach-video"><\/script>');
-    document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=20260919-course-handoff"><\/script>');
+    document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=20260919-welcome-stays-open"><\/script>');
     document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=39-checkin-spacing"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
@@ -2006,7 +2006,7 @@ window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=36-com
     window._pbbDeferredQueue.push('lib/learn-weekly-actions.js?v=feed-week-five-20260916');
     window._pbbDeferredQueue.push('lib/learn-action-review.js?v=feed5-plan-dismiss-v3');
     window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=20260919-coach-video');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=20260919-course-handoff');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=20260919-welcome-stays-open');
     window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=39-checkin-spacing');
 }
 </script>
@@ -14109,7 +14109,8 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#meta-ad-trial-welcome-video', fallbackSel:'#meta-ad-trial-inbox-preview-card', title:'Watch Shannon’s coach note', body:'Tap Play and watch to the end. Shannon explains your weekly check-ins, your first six weeks and what comes next.', metaPreview:true, embeddedGuide:true, coachNoteGuide:true, requiresWelcomeVideo:true, promptBeforeAction:true, promptRequiresTargetClick:true, returnHomeAfter:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="coach_message_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: hear from your coach', preActionBody:'Back on Home, tap the highlighted coach-message card to hear how your weekly support works.', preActionButton:'Tap the coach message card', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('coach_message_intro'); else if(!(options && options.fromTargetClick) && window.BalanceMetaAdTrial) window.BalanceMetaAdTrial.showInboxPreview(); } catch(e){} await new Promise(function(r){ setTimeout(r,350); }); return true; } },
     { tab:'dashboard', sel:'.weekly-goal-onboarding-guide', fallbackSel:'#weekly-goals-card', title:'Pick your Weekly Goals', body:'Pick one to three realistic actions for this week, set the targets, then save them. These become the simple commitments Shannon can review with you.', metaPreview:true, requiresWeeklyGoals:true, promptBeforeAction:true, promptRequiresTargetClick:true, returnHomeAfter:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="weekly_goals_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: choose your Weekly Goals', preActionBody:'Back on Home, tap the highlighted Weekly Goals card and choose the realistic actions you want Shannon to review.', preActionButton:'Tap the Weekly Goals card', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('weekly_goals_intro'); else if(!(options && options.fromTargetClick) && typeof window.openWeeklyGoalsModal === 'function') await window.openWeeklyGoalsModal({ source:'meta_preview_setup', week:'current' }); } catch(e){} await new Promise(function(r){ setTimeout(r,350); }); return true; } },
     { tab:'learning', sel:'#balance-foundations-course-start', fallbackSel:'.course-detail-primary', title:'Start your course', body:'Tap the highlighted course button. It may say Start course or Continue course. This opens your Balance Learn welcome before Week 1 begins.', pageView:true, metaPreview:true, promptBeforeAction:true, promptRequiresTargetClick:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="foundations_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: start your course', preActionBody:'Tap the highlighted Course card to begin Balance Learn.', preActionButton:'Tap the Course card', requiresHighlightedClick:true, highlightedClickPrompt:'Tap the highlighted course button to open your welcome.', highlightedClickComplete:'Your course welcome is ready. Tap Next to keep going.', nextLabel:'See your course welcome', action:function(){ return openMetaPreviewFoundationsCourseStart(); } },
-    { tab:'learning', sel:'#balance-foundations-welcome-start', fallbackSel:'#course-welcome', controlPromptPosition:'below', tourBottomReserve:24, title:'Welcome to Balance Learn', body:'Your course is ready. Each week you will learn the idea, take the action and track the evidence. Tap Start Week 1 when you are ready.', pageView:true, metaPreview:true, preserveSurface:true, requiresHighlightedClick:true, highlightedClickPrompt:'Tap Start Week 1 to open your first week.', highlightedClickComplete:'Week 1 is open. Tap Next to find your first lesson.', nextLabel:'Find Lesson 1' },
+    { tab:'learning', sel:'#balance-foundations-welcome-start', fallbackSel:'#course-welcome', controlPromptPosition:'below', tourBottomReserve:24, title:'Welcome to Balance Learn', body:'Your course is ready. Each week you will learn the idea, take the action and track the evidence. Tap Start Week 1 when you are ready.', pageView:true, metaPreview:true, preserveSurface:true, requiresHighlightedClick:true, highlightedClickPrompt:'Tap Start Week 1 to open your first week.', highlightedClickComplete:'Your course is open. Choose Why change feels hard next.', nextLabel:'Find Lesson 1' },
+    { tab:'learning', sel:'#balance-foundations-first-week', title:'Why change feels hard', body:'This is your first week. Tap Why change feels hard to see its lessons.', pageView:true, metaPreview:true, preserveSurface:true, requiresHighlightedClick:true, highlightedClickPrompt:'Tap the highlighted week to reveal your first lesson.', highlightedClickComplete:'Your first week is open. Meet the Researchers is next.', nextLabel:'Find Lesson 1' },
     { tab:'learning', sel:'#balance-foundations-first-lesson', fallbackSel:'.course-week-lesson-row', title:'Take your first lesson', body:'Your lessons and weekly actions now live together here. Tap the highlighted first lesson to begin.', pageView:true, metaPreview:true, preserveSurface:true, requiresHighlightedClick:true, highlightedClickPrompt:'Tap the highlighted first lesson to begin.', highlightedClickComplete:'Lesson 1 is open. Tap Next and complete the short lesson and quiz.', nextLabel:'Take the lesson' },
     { tab:'learning', sel:'#story-next-btn,#story-quiz-btn button,.learning-game-stage button,.learning-game-stage .match-item,.learning-game-stage .order-item', fallbackSel:'#learning-content', title:'Read, then take the quiz', body:'Read all four researcher cards, continue to the key insight, then complete the short quiz. This is how Balance Learn teaches you to make change work, one lesson at a time.', pageView:true, interactivePage:true, edgePrompt:true, embeddedGuide:true, metaPreview:true, metaPreviewSignoff:true, requiresFoundationsLesson:'mind-1-1', preserveSurface:true, action:async function(){ var opened = await openMetaPreviewFirstFoundationsLesson(); if(!opened && typeof showToast === 'function') showToast('Your first course lesson is still loading.', 'info'); return !!opened; } },
     { tab:'dashboard', sel:'#coach-checkin-explainer .coach-checkin-explainer__panel', fallbackSel:'#next-obvious-steps-card', title:'What Shannon checks each week', body:'See how your goals, meals, course, workouts, check-in, progress photos, sleep, steps and recovery help Shannon adjust the next week.', metaPreview:true, checkinExplainerGuide:true, promptBeforeAction:true, promptRequiresTargetClick:true, returnHomeAfter:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="coach_checkin_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: see how check-ins work', preActionBody:'Tap the highlighted check-in card to see exactly what Shannon reviews and what to keep updated during the week.', preActionButton:'Tap the check-in card', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('coach_checkin_intro'); await new Promise(function(r){ setTimeout(r,180); }); return !!document.querySelector('#coach-checkin-explainer.is-open .coach-checkin-explainer__panel'); } catch(e){ return false; } } },
@@ -14252,6 +14253,7 @@ if(!window._pbbIsIOSSafari) {
     'Introduce yourself',
     'Start your course',
     'Welcome to Balance Learn',
+    'Why change feels hard',
     'Take your first lesson',
     'Read, then take the quiz',
     'What Shannon checks each week',
@@ -14900,7 +14902,8 @@ if (step && step.requiresFeedPost) {
         const courseDestination = step.sel === '#balance-foundations-course-start'
           ? '#balance-foundations-welcome-start'
           : step.sel === '#balance-foundations-welcome-start'
-            ? '#balance-foundations-first-lesson' : null;
+            ? '#balance-foundations-first-week'
+            : step.sel === '#balance-foundations-first-week' ? '#balance-foundations-first-lesson' : null;
         // Follow the actual rendered destination, including a welcome reopened
         // from an interrupted tour, instead of spotlighting the covered page.
         if (courseDestination && q(courseDestination) &&
@@ -15625,6 +15628,7 @@ if (step && step.requiresFeedPost) {
     if (!step || !step.preserveSurface || step.workoutEducation) return;
     await ensureTab(step.tab);
     const courseSurface = step.sel === '#balance-foundations-welcome-start' ? 'welcome'
+      : step.sel === '#balance-foundations-first-week' ? 'overview'
       : step.sel === '#balance-foundations-first-lesson' ? 'week' : null;
     if (courseSurface === 'week' || step.requiresFoundationsLesson) {
       try { sessionStorage.setItem('pbb_activation_first_lesson', 'true'); } catch(_) {}
@@ -21231,11 +21235,11 @@ if (window._pbbIsIOSSafari) {
             });
             if (window.showQuizBattleInviteModal || learningAlreadyRequested) return;
             var s = document.createElement('script');
-      s.src = 'lib/learning-inline.js?v=course-handoff-20260919';
+      s.src = 'lib/learning-inline.js?v=welcome-stays-open-20260919';
             document.head.appendChild(s);
         }, { once: true });
     } else {
-    document.write('<script src="lib/learning-inline.js?v=course-handoff-20260919"><\/script>');
+    document.write('<script src="lib/learning-inline.js?v=welcome-stays-open-20260919"><\/script>');
     }
     </script>
     <!-- Battle System & Logic Overrides (130 lines — deferred on iOS) -->
