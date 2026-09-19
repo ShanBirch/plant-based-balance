@@ -4,8 +4,8 @@ The ad message flow must send the dedicated **price-ending DM video**. The old `
 
 Approved delivery files:
 
-- `assets/balance-learn-dm-149-v17-community.mp4`: AUD $149 for the full six weeks, used through 20 October 2026 Brisbane time.
-- `assets/balance-learn-dm-450-v17-community.mp4`: AUD $450 for the full six weeks, used from midnight 21 October 2026 Brisbane time.
+- `assets/balance-learn-dm-149-v18-sharp.mp4`: AUD $149 for the full six weeks, used through 20 October 2026 Brisbane time.
+- `assets/balance-learn-dm-450-v18-sharp.mp4`: AUD $450 for the full six weeks, used from midnight 21 October 2026 Brisbane time.
 
 Launch is 21 September. The introductory window lasts one month after launch; the $450 change is in October. Upfront checkout and public offer copy follow the same dates. Weekly membership pricing is unchanged.
 
@@ -13,7 +13,7 @@ Both videos use the cream-and-gold DM ending, Balance Learn branding, larger les
 
 `resolveBalanceFoundationsAppProofVideoUrl` owns the date-based selection. The sender resolves known old attachments again at send time, so queued social-cut or expired-price drafts use the current DM file. The operator prompt in `scripts/ig-codex-live-worker.mjs` documents the same rule. Preserve the existing media-introduction and no-double-send checks.
 
-Current editable project: `C:/Users/shann/Documents/Codex/2026-09-16/with-the-video-that-we-sent/work/dm-course`. HyperFrames 0.8.38; 1080 × 1920 master, 720 × 1280 delivery, 30 fps, 223.4 seconds. Both H.264/AAC delivery files stay below 20 MB. Earlier revisions below are historical.
+Current editable project: `C:/Users/shann/Documents/Codex/2026-09-16/with-the-video-that-we-sent/work/dm-course`. HyperFrames 0.8.38; 1080 × 1920 master and delivery, 30 fps, 223.4 seconds. Both H.264/AAC delivery files stay below 20 MB. Earlier revisions below are historical.
 
 ## v10 discount and sound revision
 
@@ -54,3 +54,12 @@ Restored the original app check-in form markup and styling, replacing the simpli
 
 ## v17: community bubble clearance
 Moved the community comments group from 525px to 600px on the 1080x1920 composition. Replaced only 190.4–196.4 seconds in both price editions; copied original audio. Current sends and queued v16 attachments resolve to v17.
+
+
+## 19 September: v18 sharp text delivery
+
+Reassembled both price editions directly from the 1080 × 1920 energy master plus the original 1080p reflection, interactive check-in and community patches. This removes the repeated 720p delivery-to-delivery encoding from v14–v17. Text is restored from the original rendered source, not artificially sharpened or upscaled from v17. One final H.264 encode with MP4 faststart keeps each attachment below the existing 20 MB delivery budget. Original AAC audio is copied unchanged; runtime remains 223.4 seconds at 30 fps.
+
+The canonical selector and operator instructions use v18. Queued v17 attachments are recognized and upgraded at send time, with the same pricing boundary, introduction guard and URL stripping. No DMs are sent during verification. Rebuild recipe and quality evidence: the 17 September `let-s-leave-that-one-for-2` task, `work/dm-sharpness` and `outputs/dm-sharpness`.
+
+Production rule: apply revisions to the highest-resolution master and export the native DM copy once. Never use a prior compressed delivery as the next editing master. Check text in decoded final frames at both native and phone display sizes, including title cards and app demonstrations.

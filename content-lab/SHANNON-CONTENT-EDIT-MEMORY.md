@@ -347,3 +347,10 @@ When Shannon gives explicit edit feedback, treat it as a reusable production rul
 ## 17 September 2026: preserve the real check-in form
 
 For Share your week in the Learn ad video, Shannon prefers the actual check-in form layout with its rating buttons, fields and confidence scale. Show the cursor selecting controls, then typing answers. Do not replace a working app-form demonstration with a simplified static card. Updated example copy may connect to the lesson.
+
+
+### DM explainer text sharpness — 19 September 2026
+
+- Shannon reported uneven, blurry text in the Learn DM video, particularly the Personalised Meal-Plan Support card.
+- Rebuild revisions from the original 1080p master and original scene renders, never from a previously compressed delivery copy. Export once and retain 1080p where it fits the native attachment budget.
+- Inspect decoded final frames at native resolution and phone display size across title cards, lessons and app demos. Update the canonical ad-flow selector and send-time legacy URL normalization together so queued replies also use the corrected asset.
