@@ -1551,7 +1551,11 @@
     state.loading = true;
     state.saving = true;
     renderCard();
-    closeWeeklyGoalsModal();
+    const saveButton = document.querySelector('#weekly-goals-modal .weekly-goal-save-btn');
+    if (saveButton) {
+      saveButton.disabled = true;
+      saveButton.textContent = 'Saving your goals…';
+    }
 
     try {
       const result = await calculateProgress(userId, week, selected);
@@ -1572,6 +1576,8 @@
       state.loading = false;
       state.saving = false;
       emitWeeklyGoalsSaved(week, selected, saveSource, { localOnly: state.lastSaveWasLocalOnly });
+      // Let the tour acknowledge completion before removing its current target.
+      closeWeeklyGoalsModal();
       state.modalSource = '';
       renderCard();
       if (state.refreshQueued) {
