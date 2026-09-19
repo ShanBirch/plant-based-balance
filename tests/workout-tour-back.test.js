@@ -4,6 +4,11 @@ const vm=require('node:vm');
 const html=require('node:fs').readFileSync(require('node:path').join(__dirname,'../dashboard.html'),'utf8');
 const start=html.indexOf('  async function ensureWorkoutTourSurface');
 const source=html.slice(start,html.indexOf('async function showStep',start));
+
+test('the first workout preview uses the same safe-area and no-logging protection as later stops',()=>{
+  const first=html.split('\n').find(line=>line.includes("title:'Open your first workout'"));
+  assert.match(first,/workoutEducation:true/);
+});
 test('Back from Home reopens the workout before arming its guide',async()=>{
   let visible=false,opened=0;const calls=[];
   const ctx={q:()=>visible,ensureTab:async tab=>calls.push(tab),openMetaPreviewStrengthWorkout:async()=>{opened++;visible=true;return {};},console};
