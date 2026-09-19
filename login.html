@@ -12,7 +12,7 @@
     <meta property="og:url" content="https://plantbased-balance.org/login.html">
     <meta property="og:type" content="website">
     <link rel="stylesheet" href="styles.css">
-    <script src="lib/meta-ad-trial.js?v=12-foundations-offer-source"></script>
+    <script src="lib/meta-ad-trial.js?v=28-join-balance-sales"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://js.stripe.com/v3/"></script>
     <script>
@@ -571,8 +571,24 @@
                 && params.get('meta_trial') === 'facebook_5m_foundations_v3';
         }
 
-        function postAuthDestination(fragment = '') {
-            const incoming = new URLSearchParams(window.location.search);
+        function signupEntryParams() {
+            const params = new URLSearchParams(window.location.search);
+            const paidHandoff = sessionStorage.getItem('pbb_meta_ad_trial_checkout_session_v1')
+                || sessionStorage.getItem('balance_founders_pass_session_id');
+            if (paidHandoff) {
+                ['account_first', 'meta_trial', 'learn_entry'].forEach(key => params.delete(key));
+                return params;
+            }
+            if (!paidHandoff && !isAccountFirstPreview(params)) {
+                params.set('account_first', '1');
+                params.set('meta_trial', 'facebook_5m_foundations_v3');
+                params.set('learn_entry', 'app_signup');
+            }
+            return params;
+        }
+
+        function postAuthDestination(fragment = '', signupParams = null) {
+            const incoming = signupParams || new URLSearchParams(window.location.search);
             if (!isAccountFirstPreview(incoming)) {
                 return incoming.get('redirect') || '/dashboard.html' + fragment;
             }
@@ -599,8 +615,9 @@
             return '/dashboard.html?fresh_preview=1&account_first=1&meta_trial=facebook_5m_foundations_v3&utm_source=facebook&utm_medium=paid_social&utm_campaign=onboarding_test';
         }
 
-        function authReturnUrl() {
-            return window.location.origin + window.location.pathname + window.location.search;
+        function authReturnUrl(newSignup = false) {
+            const search = newSignup ? '?' + signupEntryParams().toString() : window.location.search;
+            return window.location.origin + window.location.pathname + search;
         }
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -670,7 +687,7 @@
                         password,
                         options: {
                             data: userData,
-                            emailRedirectTo: authReturnUrl()
+                            emailRedirectTo: authReturnUrl(true)
                         }
                     });
                     if (error) throw error;
@@ -1275,6 +1292,7 @@
                 // Check for referral code in manual field first, then URL, then sessionStorage
                 const manualRef = document.getElementById('signup-referral').value.trim();
                 const urlParams = new URLSearchParams(window.location.search);
+                const entryParams = signupEntryParams();
                 const referralCode = (manualRef || urlParams.get('ref') || sessionStorage.getItem('balance_referral_code') || '').toUpperCase().trim();
 
                 // Create account
@@ -1287,6 +1305,9 @@
                 }
 
                 const newUserId = signupResult.user?.id;
+                if (newUserId && isAccountFirstPreview(entryParams)) {
+                    if (!window.BalanceMetaAdTrial?.activateSignup(newUserId, entryParams)) throw new Error('Your account was created, but setup could not open. Please log in to continue.');
+                }
                 if (newUserId) window.BalanceOnboardingFunnel?.track('entry', 'account_created', 'completed');
 
                 // A normal signup must not inherit browser-level onboarding
@@ -1404,7 +1425,7 @@
                 const { access_token, refresh_token, expires_in, token_type } = signupResult.session;
                 const fragment = `access_token=${encodeURIComponent(access_token)}&refresh_token=${encodeURIComponent(refresh_token)}&expires_in=${expires_in}&token_type=${token_type || 'bearer'}&type=signup`;
                 setTimeout(() => {
-                    window.location.replace(postAuthDestination('#' + fragment));
+                    window.location.replace(postAuthDestination('#' + fragment, entryParams));
                 }, 500);
 
             } catch (error) {

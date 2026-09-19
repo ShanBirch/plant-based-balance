@@ -205,8 +205,8 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
 <!-- CRITICAL: Admin view-as localStorage isolation — runs BEFORE any other localStorage reads -->
 <script src="js/dashboard/script_part_1.js"></script>
 <!-- Paid-Facebook preview attribution must be available before auth-guard decides guest vs member mode. -->
-<script src="lib/onboarding-progress.js?v=5-payment-handoff"></script>
-<script src="lib/meta-ad-trial.js?v=27-coach-video-handoff"></script>
+<script src="lib/onboarding-progress.js?v=6-join-balance-recovery"></script>
+<script src="lib/meta-ad-trial.js?v=28-join-balance-sales"></script>
 
 <!-- CRITICAL: Hide loading overlay for returning users and restore cached FitGotchi state -->
 <script>
@@ -12964,7 +12964,7 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20260918-full-width-week-one&cohort_diets=1&video_health=2';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20260919-join-balance-recovery&cohort_diets=1&video_health=2';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
@@ -13006,7 +13006,7 @@ if (window._pbbIsIOSSafari) {
         var s = document.createElement('script');
         s.async = false;
         s.dataset.metaTrialLoader = String(attempt);
-        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20260918-full-width-week-one&cohort_diets=1&video_health=2&meta_retry=' + attempt;
+        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20260919-join-balance-recovery&cohort_diets=1&video_health=2&meta_retry=' + attempt;
         s.onload = function() {
             if (window._pbbScript5Complete && window._switchAppTabReady && typeof window._switchAppTabReal === 'function') {
                 sessionStorage.removeItem('pbb_meta_script5_recovery_v1');
@@ -13025,7 +13025,7 @@ if (window._pbbIsIOSSafari) {
         document.head.appendChild(s);
     })(0);
 } else {
-document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20260918-full-width-week-one"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20260919-join-balance-recovery"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=9-admin-safe-area"></script>
@@ -16124,8 +16124,8 @@ window.endFeatureTour = function(skipped){
   }
 
   window.startFeatureTour = function(force, options){
-    if (window.BalanceOnboardingProgress?.isTourSuppressed()) return false;
     options = options || {};
+    if (window.isAdminViewing || (window.BalanceOnboardingProgress?.isTourSuppressed() && options.settingsReplay !== true)) return false;
     const savedTour = options.resume === true ? window.BalanceOnboardingProgress?.read()?.tour : null;
     workoutBrowseCheckpoint = savedTour?.workout || null;
     if (window.__balanceGuidedTourActive === true && options.restart !== true) return true;
@@ -16238,7 +16238,7 @@ window.endFeatureTour = function(skipped){
 
   window.replayFeatureTour = function(){
     try { localStorage.removeItem('featureTourComplete'); } catch(e){}
-    startFeatureTour('full');
+    startFeatureTour('full', { settingsReplay:true });
   };
 
   function clearWalkthroughTourStorage(){

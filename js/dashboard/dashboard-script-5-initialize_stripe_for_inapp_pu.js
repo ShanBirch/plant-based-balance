@@ -10203,6 +10203,7 @@ async function checkAndTriggerOnboarding() {
                 ? await window.getUserProfile()
                 : await dbHelpers.users.get(window.currentUser.id);
             databaseOnboardingStatusChecked = true;
+            if (['active', 'trialing'].includes(userData?.subscription_status)) window.__balancePaidTourExemptUserId = window.currentUser.id;
             savedSetupComplete = userData?.onboarding_complete === true;
             if (savedSetupComplete) {
                 localStorage.setItem('onboardingComplete', 'true');
@@ -10251,6 +10252,17 @@ async function checkAndTriggerOnboarding() {
     if (checkpoint?.stage === 'checkout' || trial?.interruptedStage === 'checkout') {
         window.BalanceMetaAdTrial?.openCheckoutGate();
         return;
+    }
+    // Recover signups that finished the older client tour before its payment
+    // handoff shipped. Completed lessons and the tour never need replaying.
+    if (!window.metaAdTrialMode && window.BalanceOnboardingProgress?.needsCheckoutRecovery()) {
+        try {
+            if (await window.BalanceOnboardingProgress.completionDestination() === 'checkout') {
+                window.BalanceOnboardingProgress.save('checkout', {});
+                window.BalanceMetaAdTrial?.openCheckoutGate();
+                return;
+            }
+        } catch (error) { console.warn('Completed signup payment recovery will retry:', error); }
     }
     if (!window.BalanceOnboardingProgress?.isTourSuppressed()
         && (checkpoint?.stage === 'tour' || (trial?.onboardingCompletedAt && !trial.walkthroughCompletedAt)

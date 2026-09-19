@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v554-payment-handoff';
+const CACHE_NAME = 'pbb-app-v555-join-balance-sales';
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -17,8 +17,8 @@ const ASSETS = [
   './welcome.html',
   './lib/supabase.js?v=17-imported-activity-latest',
   './lib/auth-guard.js?v=14-resume-session',
-  './lib/meta-ad-trial.js?v=26-resume-session',
-  './lib/onboarding-progress.js?v=1',
+  './lib/meta-ad-trial.js?v=28-join-balance-sales',
+  './lib/onboarding-progress.js?v=6-join-balance-recovery',
   './lib/native-push.js?v=42-client-checkin',
   './login.html',
   './exercise_videos.js?v=20260813-global-phone-video-v1',
