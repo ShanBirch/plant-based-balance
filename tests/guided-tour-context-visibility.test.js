@@ -56,7 +56,7 @@ test('guided-tour positioning is frame-coordinated and settles once without chas
   assert.match(source, /function scheduleTourPosition\(step, options\)/);
   assert.match(source, /tourPositionFrame = requestAnimationFrame/);
   assert.match(source, /scheduleTourPosition\(displayStep, \{ settleOnly:true, settleDelay:240 \}\)/);
-  assert.match(source, /resizeHandler = function\(\)\{[\s\S]*?scheduleTourPosition\(step\)/);
+  assert.match(source, /resizeHandler = function\(event\)\{[\s\S]*?scheduleTourPosition\(step\)/);
   assert.match(source, /document\.addEventListener\('load', resizeHandler, true\)/);
   assert.match(source, /document\.removeEventListener\('load', resizeHandler, true\)/);
   assert.match(source, /transition: opacity \.14s ease, box-shadow \.16s ease, border-color \.16s ease/);

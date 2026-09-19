@@ -1989,7 +1989,7 @@ if(!window._pbbIsIOSSafari) {
     <script>
 if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-progressphoto.js?v=13-course-photo-sync"><\/script>');
-document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=36-community-challenge"><\/script>');
+document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=37-mobile-goal-pills"><\/script>');
     document.write('<script src="lib/learn-curriculum.js?v=2-six-weeks"><\/script>');
     document.write('<script src="lib/learn-predictive-content.js?v=7-social-prediction"><\/script>');
     document.write('<script src="lib/learn-weekly-actions.js?v=feed-week-five-20260916"><\/script>');
@@ -2000,7 +2000,7 @@ document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=36-commu
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
     window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=13-course-photo-sync');
-window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=36-community-challenge');
+window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=37-mobile-goal-pills');
     window._pbbDeferredQueue.push('lib/learn-curriculum.js?v=2-six-weeks');
     window._pbbDeferredQueue.push('lib/learn-predictive-content.js?v=7-social-prediction');
     window._pbbDeferredQueue.push('lib/learn-weekly-actions.js?v=feed-week-five-20260916');
@@ -13465,7 +13465,8 @@ if(!window._pbbIsIOSSafari) {
 
 <!-- ========== GUIDED FEATURE TOUR ========== -->
 <style>
-  #guided-tour-overlay { position: fixed; inset: 0; z-index: 400000; pointer-events: auto; display: none; }
+  #guided-tour-overlay { position: fixed; inset: 0; z-index: 400000; pointer-events: auto; display: none; box-sizing: border-box;
+    padding: max(48px, env(safe-area-inset-top, 0px)) max(18px, env(safe-area-inset-right, 0px)) max(32px, env(safe-area-inset-bottom, 0px)) max(18px, env(safe-area-inset-left, 0px)); }
   body:has(#guided-tour-overlay.active) #guest-mode-banner { z-index:400200 !important; }
   #guest-mode-banner button[onclick*="openCheckoutGate"] { background:#fff !important; color:#151515 !important; -webkit-text-fill-color:#151515 !important; }
   @media (max-width:600px), (max-height:500px) {
@@ -13480,6 +13481,32 @@ if(!window._pbbIsIOSSafari) {
     scroll-padding-top:100px;
   }
   #guided-tour-overlay.active { display: block; }
+  /* Full-page tour stops share the measured banner clearance with the guide. */
+  body:has(#guided-tour-overlay.active) #coach-checkin-explainer,
+  body:has(#guided-tour-overlay.active) #meta-ad-trial-inbox-preview,
+  body:has(#guided-tour-overlay.active) #weekly-goals-modal {
+    padding-top: var(--pbb-tour-safe-top, 48px) !important;
+    padding-bottom: var(--pbb-tour-safe-bottom, 32px) !important;
+    box-sizing: border-box;
+  }
+  body:has(#guided-tour-overlay.active) #coach-checkin-explainer .coach-checkin-explainer__panel {
+    max-height: var(--pbb-tour-available-height);
+    overflow-y: auto;
+  }
+  body:has(#guided-tour-overlay.active) .coach-checkin-explainer__content { min-height: 64px; }
+  body:has(#guided-tour-overlay.active) #weekly-goals-modal {
+    --weekly-safe-top: var(--pbb-tour-safe-top, 48px);
+    --weekly-safe-bottom: var(--pbb-tour-safe-bottom, 32px);
+  }
+  body:has(#guided-tour-overlay.active) .course-welcome { --course-safe-top: var(--pbb-tour-safe-top, 48px); }
+  @media (max-height:500px) {
+    body:has(#guided-tour-overlay.active) .coach-checkin-explainer__header { padding:10px 16px 8px; }
+    body:has(#guided-tour-overlay.active) .coach-checkin-explainer__eyebrow { display:none; }
+    body:has(#guided-tour-overlay.active) .coach-checkin-explainer__content { min-height:0; }
+    body:has(#guided-tour-overlay.active) .coach-checkin-explainer__footer { padding:10px 16px; }
+    body:has(#guided-tour-overlay.active) .coach-checkin-explainer__hint { display:none; }
+    body:has(#guided-tour-overlay.active) .coach-checkin-explainer__arrow { width:44px; height:44px; }
+  }
   #guided-tour-overlay.tour-transitioning::after {
     content: 'Opening your next page…'; position: fixed; left: 50%; top: 50%;
     transform: translate(-50%,-50%); padding: 14px 20px; border-radius: 16px;
@@ -13529,8 +13556,8 @@ if(!window._pbbIsIOSSafari) {
   #guided-tour-overlay.meta-tour-welcome-active #guided-tour-spotlight,
   #guided-tour-overlay.meta-tour-welcome-active #guided-tour-bubble { display: none; }
   #meta-tour-welcome {
-    --tour-safe-top: max(48px, env(safe-area-inset-top, 0px));
-    --tour-safe-bottom: max(32px, env(safe-area-inset-bottom, 0px));
+    --tour-safe-top: var(--pbb-tour-safe-top, max(48px, env(safe-area-inset-top, 0px)));
+    --tour-safe-bottom: var(--pbb-tour-safe-bottom, max(32px, env(safe-area-inset-bottom, 0px)));
     box-sizing: border-box;
     position: absolute;
     inset: 0;
@@ -13549,9 +13576,13 @@ if(!window._pbbIsIOSSafari) {
   .meta-tour-welcome-card {
     box-sizing: border-box;
     width: min(100%, 400px);
+    flex-shrink: 0;
     max-height: calc(100vh - var(--tour-safe-top) - var(--tour-safe-bottom));
     max-height: calc(100dvh - var(--tour-safe-top) - var(--tour-safe-bottom));
+    max-height: var(--pbb-tour-available-height, calc(100dvh - var(--tour-safe-top) - var(--tour-safe-bottom)));
     overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
     border: 1px solid rgba(216,178,94,.64);
     border-radius: 28px;
     background:
@@ -13699,6 +13730,8 @@ if(!window._pbbIsIOSSafari) {
   }
   #guided-tour-bubble {
     position: absolute;
+    box-sizing: border-box;
+    overscroll-behavior: contain;
     max-width: 320px;
     width: calc(100% - 32px);
     background: #ffffff;
@@ -14425,6 +14458,7 @@ if(!window._pbbIsIOSSafari) {
   let activeSteps = [];
   let idx = 0;
   let resizeHandler = null;
+  let tourBannerObserver = null;
   let showingXpIntro = false;
   let metaPreviewTour = false;
   let clientActivationTour = false;
@@ -15419,14 +15453,60 @@ if (step && step.requiresFeedPost) {
       videoRect ? videoRect.bottom + 12 : safeTop);
   }
 
-  function getTourSafeTop(){
+  function getTourViewportBounds(){
+    const overlay = document.getElementById('guided-tour-overlay');
+    const style = overlay && window.getComputedStyle(overlay);
+    const viewport = window.visualViewport;
+    const viewportTop = viewport ? viewport.offsetTop : 0;
+    const viewportLeft = viewport ? viewport.offsetLeft : 0;
+    const viewportBottom = viewportTop + (viewport ? viewport.height : window.innerHeight);
     const banner = document.getElementById('guest-mode-banner');
     const rect = banner && banner.getBoundingClientRect();
-    return Math.max(44, rect && banner.getClientRects().length && window.getComputedStyle(banner).visibility !== 'hidden'
+    const top = Math.max(viewportTop + (parseFloat(style && style.paddingTop) || 48), rect && banner.getClientRects().length && window.getComputedStyle(banner).visibility !== 'hidden'
       ? rect.bottom + 12 : 0);
+    const bottom = viewportBottom - (parseFloat(style && style.paddingBottom) || 32);
+    return { top, bottom,
+      left: viewportLeft + (parseFloat(style && style.paddingLeft) || 18),
+      right: viewportLeft + (viewport ? viewport.width : window.innerWidth) - (parseFloat(style && style.paddingRight) || 18) };
+  }
+
+  function syncTourViewport(){
+    const bounds = getTourViewportBounds();
+    const overlay = document.getElementById('guided-tour-overlay');
+    if (overlay) {
+      document.documentElement.style.setProperty('--pbb-tour-safe-top', bounds.top + 'px');
+      document.documentElement.style.setProperty('--pbb-tour-safe-bottom', Math.max(0, window.innerHeight - bounds.bottom) + 'px');
+      document.documentElement.style.setProperty('--pbb-tour-available-height', Math.max(0, bounds.bottom - bounds.top) + 'px');
+    }
+    return bounds;
+  }
+
+  function getTourSafeTop(){
+    return getTourViewportBounds().top;
   }
 
   function positionBubbleAndSpotlight(target, step, options){
+    const bounds = syncTourViewport();
+    layoutTourBubbleAndSpotlight(target, step, options);
+    const bubble = document.getElementById('guided-tour-bubble');
+    if (!bubble || !bubble.getClientRects().length) return;
+    // Every placement mode shares the same visible screen bounds, including
+    // centered fallbacks and full-page guides on short landscape screens.
+    const bottom = Math.min(bounds.bottom, window.innerHeight - (step && typeof step.tourBottomReserve === 'number' ? step.tourBottomReserve : 90));
+    const height = Math.max(0, bottom - bounds.top);
+    const previousMax = parseFloat(bubble.style.maxHeight);
+    bubble.style.maxHeight = Math.min(Number.isFinite(previousMax) ? previousMax : height, height) + 'px';
+    bubble.style.overflowY = 'auto';
+    bubble.style.maxWidth = Math.max(0, Math.min(320, bounds.right - bounds.left)) + 'px';
+    const rect = bubble.getBoundingClientRect();
+    const top = Math.max(bounds.top, Math.min(rect.top, bottom - rect.height));
+    const left = Math.max(bounds.left, Math.min(rect.left, bounds.right - rect.width));
+    bubble.style.transform = '';
+    bubble.style.top = top + 'px';
+    bubble.style.left = left + 'px';
+  }
+
+  function layoutTourBubbleAndSpotlight(target, step, options){
     const allowScroll = !!(options && options.initialPlacement);
     const overlay = document.getElementById('guided-tour-overlay');
     const spot = document.getElementById('guided-tour-spotlight');
@@ -16058,6 +16138,7 @@ if (step && step.requiresFeedPost) {
     }
     const overlay = document.getElementById('guided-tour-overlay');
     if (overlay) overlay.classList.add('meta-tour-welcome-active');
+    syncTourViewport();
     const startButton = document.getElementById('meta-tour-welcome-start');
     if (startButton) setTimeout(function(){ try { startButton.focus({ preventScroll:true }); } catch(e){} }, 60);
   }
@@ -16164,6 +16245,7 @@ window.endFeatureTour = function(skipped){
       if (completedMetaPreviewTour && skipped) localStorage.removeItem('featureTourComplete');
       else if (!completedCourseFeatureTour) localStorage.setItem('featureTourComplete','1');
     } catch(e){}
+    if (tourBannerObserver) { tourBannerObserver.disconnect(); tourBannerObserver = null; }
     if (resizeHandler) {
       window.removeEventListener('resize', resizeHandler);
       window.removeEventListener('scroll', resizeHandler, true);
@@ -16297,7 +16379,9 @@ window.endFeatureTour = function(skipped){
       try { pushNavigationState('guided-tour-overlay', function(){ endFeatureTour(true); }); } catch(e){}
     }
     resizeHandler = function(event){
+      syncTourViewport();
       updateTourRecovery();
+      if (overlay.classList.contains('meta-tour-welcome-active')) return;
       const step = activeTourDisplayStep || activeSteps[idx];
       if (!step) return;
       if (courseFeatureTour && event && event.type === 'resize') {
@@ -16307,6 +16391,11 @@ window.endFeatureTour = function(skipped){
       scheduleTourPosition(step);
     };
     window.addEventListener('resize', resizeHandler);
+    if (typeof ResizeObserver === 'function') {
+      tourBannerObserver = new ResizeObserver(function(){ if (resizeHandler) resizeHandler(); });
+      const banner = document.getElementById('guest-mode-banner');
+      if (banner) tourBannerObserver.observe(banner);
+    }
     window.addEventListener('scroll', resizeHandler, true);
     // Re-align only when real late media changes the layout. This replaces the
     // old blind 180/520/1100/1800ms polling sequence.

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v559-tour-controls-recovery';
+const CACHE_NAME = 'pbb-app-v560-tour-viewport';
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -34,7 +34,7 @@ const ASSETS = [
   './js/dashboard/pbb-session-replay.js?v=2-onboarding',
   './css/dashboard/pbb-session-replay.css?v=1',
   './js/vendor/rrweb-2.1.4.min.js',
-  './js/dashboard/pbb-deferred-weeklygoals.js?v=35-balance-theme',
+  './js/dashboard/pbb-deferred-weeklygoals.js?v=37-mobile-goal-pills',
   './css/dashboard/pbb-onboarding-comeback.css?v=8',
   './css/dashboard/pbb-onboarding-foundations.css?v=13-iphone-keyboard',
   './js/dashboard/dashboard-script-7-video_logic.js?v=20260911-ios-preview',
