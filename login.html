@@ -94,7 +94,7 @@
             min-height: 100dvh;
             margin: 0;
             padding: 20px;
-            padding: env(safe-area-inset-top, 20px) env(safe-area-inset-right, 20px) env(safe-area-inset-bottom, 20px) env(safe-area-inset-left, 20px);
+            padding: max(44px, env(safe-area-inset-top, 0px)) max(20px, env(safe-area-inset-right, 0px)) max(24px, env(safe-area-inset-bottom, 0px)) max(20px, env(safe-area-inset-left, 0px));
             font-family: 'Inter', sans-serif;
             box-sizing: border-box;
         }
@@ -519,16 +519,29 @@
                     <input type="email" id="signup-email" placeholder="name@example.com" required>
                 </div>
                 <div class="form-group">
-                    <label>Password</label>
+                    <label for="signup-password">Password</label>
                     <div class="password-input-wrapper">
-                        <input type="password" id="signup-password" placeholder="••••••••" minlength="6" required>
-                        <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('signup-password')">
+                        <input type="password" id="signup-password" placeholder="••••••••" minlength="6" autocomplete="new-password" oninput="clearSignupPasswordError()" required>
+                        <button type="button" class="password-toggle-btn" aria-label="Show password" onclick="togglePasswordVisibility('signup-password')">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                                 <circle cx="12" cy="12" r="3"></circle>
                             </svg>
                         </button>
                     </div>
+                </div>
+                <div class="form-group">
+                    <label for="signup-confirm-password">Confirm password</label>
+                    <div class="password-input-wrapper">
+                        <input type="password" id="signup-confirm-password" placeholder="Re-enter your password" minlength="6" autocomplete="new-password" aria-describedby="signup-password-error" oninput="clearSignupPasswordError()" required>
+                        <button type="button" class="password-toggle-btn" aria-label="Show password" onclick="togglePasswordVisibility('signup-confirm-password')">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    </div>
+                    <small id="signup-password-error" role="alert" style="display:none;color:var(--login-danger);-webkit-text-fill-color:var(--login-danger);margin-top:6px;">Passwords do not match. Please enter the same password twice.</small>
                 </div>
                 <div class="form-group" id="signup-referral-group">
                     <label>Referral Code (Optional)</label>
@@ -1153,6 +1166,7 @@
             const isPassword = input.type === 'password';
 
             input.type = isPassword ? 'text' : 'password';
+            button.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
 
             // Update icon
             const svg = button.querySelector('svg');
@@ -1225,6 +1239,11 @@
             }
         }
 
+        function clearSignupPasswordError() {
+            document.getElementById('signup-password-error').style.display = 'none';
+            document.getElementById('signup-confirm-password').removeAttribute('aria-invalid');
+        }
+
         // Handle signup
         async function handleSignup(event) {
             event.preventDefault();
@@ -1233,12 +1252,21 @@
             const name = document.getElementById('signup-name').value;
             const email = document.getElementById('signup-email').value;
             const password = document.getElementById('signup-password').value;
+            const confirmPassword = document.getElementById('signup-confirm-password');
             const btn = document.getElementById('signup-btn');
 
             if (password.length < 6) {
                 showError('Password must be at least 6 characters long.');
                 return;
             }
+
+            if (password !== confirmPassword.value) {
+                document.getElementById('signup-password-error').style.display = 'block';
+                confirmPassword.setAttribute('aria-invalid', 'true');
+                confirmPassword.focus();
+                return;
+            }
+            clearSignupPasswordError();
 
             btn.disabled = true;
             btn.textContent = 'CREATING ACCOUNT...';
