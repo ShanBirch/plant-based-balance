@@ -11517,6 +11517,13 @@ function updateWizardUI() {
         clearTimeout(wizardSlideTransitionTimer);
         wizardSlideTransitionTimer = null;
     }
+    // A refresh of the same step can interrupt the entrance animation. Finish
+    // its cleanup before deciding whether another animation is needed, or the
+    // content keeps overflow:hidden with no remaining timer to unlock it.
+    if (wizardContent) {
+        wizardContent.classList.remove('wizard-slide-transitioning');
+        wizardContent.style.removeProperty('--wizard-transition-height');
+    }
 
     if (wizardOverlay) {
         const wasChatMode = wizardOverlay.classList.contains('wizard-chat-mode');
