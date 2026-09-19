@@ -183,3 +183,12 @@ test('a hung replay loader cannot hold the independent progress event', async ()
   timers[0]();await new Promise(resolve=>setImmediate(resolve));
   assert.equal(calls.length,1);assert.equal(calls[0].replay_session_id,null);
 });
+
+test('account switching during replay startup cannot attach old progress to the new account', async () => {
+  const calls=[];let resolveReplay;const storage={getItem:()=>null,setItem:()=>{}};
+  const window={document:{},currentUser:{id:'old-account'},location:{pathname:'/dashboard.html',search:''},crypto:{randomUUID:()=> 'test-event-00000000'},localStorage:storage,sessionStorage:storage,addEventListener:()=>{},setTimeout,clearTimeout,fetch:async(url,options)=>{calls.push(options);return{ok:true};},BalanceReplay:{markOnboarding:()=>new Promise(resolve=>{resolveReplay=resolve;})}};
+  vm.runInNewContext(fs.readFileSync(require.resolve('../lib/onboarding-funnel'),'utf8'),{window,URLSearchParams,Date});
+  window.BalanceOnboardingFunnel.track('screen','slide_4','viewed');await new Promise(resolve=>setImmediate(resolve));
+  window.currentUser={id:'new-account'};resolveReplay(null);await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(calls.length,0);
+});
