@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v556-training-scroll';
+const CACHE_NAME = 'pbb-app-v557-onboarding-replay';
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -30,8 +30,8 @@ const ASSETS = [
   './js/dashboard/pbb-settings-navigation.js?v=2-your-checkin',
   './js/dashboard/pbb-meta-preview-soundtrack.js?v=3-coach-video-ducking',
   './js/dashboard/pbb-app-telemetry.js?v=2-replay',
-  './js/dashboard/pbb-replay-privacy.js?v=1',
-  './js/dashboard/pbb-session-replay.js?v=1',
+  './js/dashboard/pbb-replay-privacy.js?v=2-onboarding',
+  './js/dashboard/pbb-session-replay.js?v=2-onboarding',
   './css/dashboard/pbb-session-replay.css?v=1',
   './js/vendor/rrweb-2.1.4.min.js',
   './js/dashboard/pbb-deferred-weeklygoals.js?v=35-balance-theme',

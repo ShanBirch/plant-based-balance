@@ -20,3 +20,4 @@
 }
 
 #onboarding-funnel-card h2,#onboarding-funnel-card h3,#onboarding-funnel-card label,#onboarding-funnel-card th,#onboarding-funnel-card td,#onboarding-funnel-card strong,#onboarding-funnel-card span { color:var(--admin-text,#24201a) !important; -webkit-text-fill-color:var(--admin-text,#24201a) !important; }
+#onboarding-funnel-card a { display:inline-flex; align-items:center; min-height:44px; color:var(--admin-text,#24201a) !important; -webkit-text-fill-color:var(--admin-text,#24201a) !important; text-decoration:underline; font-weight:700; }

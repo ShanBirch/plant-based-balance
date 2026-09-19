@@ -10,7 +10,7 @@
         const grid = element('table'); const head = element('thead'); const tr = element('tr');
         headers.forEach(value => { const th = element('th', value); th.scope = 'col'; tr.appendChild(th); });
         head.appendChild(tr); grid.appendChild(head);
-        const body = element('tbody'); rows.forEach(values => { const row = element('tr'); values.forEach(value => row.appendChild(element('td', value))); body.appendChild(row); });
+        const body = element('tbody'); rows.forEach(values => { const row = element('tr'); values.forEach(value => { const cell = element('td'); if (value instanceof Node) cell.append(value); else cell.textContent = value; row.appendChild(cell); }); body.appendChild(row); });
         grid.appendChild(body); wrapper.appendChild(grid); container.appendChild(wrapper);
     }
     let requestId = 0;
@@ -39,6 +39,15 @@
             container.appendChild(element('p', data.measured_from ? 'Detailed tracking begins with recorded events from ' + new Date(data.measured_from).toLocaleDateString('en-AU') + '. Earlier steps cannot be reconstructed.' : 'Detailed tracking is ready. Results will appear as visitors use the updated flow. Earlier steps cannot be reconstructed.'));
             table(container, 'Where people get to', ['Flow / stage', 'Step', 'Reached', 'Completed', 'Last recorded here', 'Median time'], data.steps.map(step => [label(step.flow) + ' / ' + label(step.phase), label(step.step), step.reached, step.completed, step.last, step.median_seconds == null ? 'Not recorded' : step.median_seconds + 's']));
             container.appendChild(element('p', 'Optional steps and different tour routes are counted separately. Last recorded here includes people still progressing. Times measure elapsed time on completed steps.'));
+            table(container, 'Recent onboarding activity', ['Person', 'Last recorded step', 'When', 'Latest available replay'], (data.recent_sessions || []).map(item => {
+                let replay = 'No linked replay';
+                if (item.user_id && item.replay_session_id) {
+                    replay = element('a', 'Watch replay');
+                    replay.href = '/admin-session-replays.html?member=' + encodeURIComponent(item.user_id) + '&session=' + encodeURIComponent(item.replay_session_id);
+                }
+                return [item.member_name, label(item.phase) + ': ' + label(item.step) + ' · ' + label(item.status), new Date(item.last_at).toLocaleString('en-AU'), replay];
+            }));
+            container.appendChild(element('p', 'Replay starts after sign-in when troubleshooting replay is enabled. The timeline marks setup and tour steps, taps outside the highlight, and leaving or returning to Balance. These markers do not by themselves mean something went wrong. Replays expire after seven days; the latest unsent seconds may be missing.'));
             table(container, 'Campaigns and ads', ['Source', 'Campaign', 'Ad ID', 'Visitors', 'Finished setup'], data.campaigns.map(group => [group.source, group.campaign, group.ad, group.visitors, group.completed]));
             container.appendChild(element('p', 'Campaigns use the entry campaign recorded for this flow. Verified Meta ad IDs are resolved from the signed DM link where available. Missing campaign details stay Unattributed. Opening payment is not counted as a purchase.'));
         } catch (error) {

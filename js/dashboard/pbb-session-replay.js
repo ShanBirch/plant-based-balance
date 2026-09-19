@@ -6,6 +6,7 @@
   let stop, owner = '', session = '', seq = 0, queue = [], bytes = 0;
   let started = 0, busy = false, retryAt = 0, disabledUntil = 0, loading;
   let authBound = false, activeAuthId = '', enabled = true, generation = 0;
+  let onboardingContext = null, tourContext = null, contextOwner = '', lastOutsideTap = 0;
   function preferenceKey(id) { return 'pbb_replay_disabled:' + id; }
   function eligible() { return enabled && owner && activeAuthId === owner && String(root.currentUser?.id || root.currentUser?.user_id || '') === owner && !root.guestMode && !root.isAdminViewing && document.visibilityState !== 'hidden'; }
   function clear() {
@@ -36,6 +37,16 @@
       recordCanvas: false, recordCrossOriginIframes: false, collectFonts: false,
       slimDOMOptions: 'all', sampling: { mousemove: false, scroll: 200, input: 'last' } });
     if (!session) { if (stop) stop(); stop = null; return; }
+    if (contextOwner === owner && onboardingContext) marker('recording_resumed');
+    else {
+      // The wizard can render before this deferred recorder script is ready.
+      const pending = privacy.onboarding(root.BalanceOnboardingFunnel?.getReplayContext?.(owner));
+      if (pending) {
+        onboardingContext = pending; contextOwner = owner;
+        if (pending.phase === 'tour') tourContext = pending;
+        marker('progress');
+      }
+    }
     if (typeof root.trackBalanceActivity === 'function') root.trackBalanceActivity('app_replay_started', { replay_session_id: session });
   }
   async function gzip(events) {
@@ -59,7 +70,7 @@
       const { error } = await root.supabaseClient.from('app_replay_chunks').insert({
         user_id: id, session_id: sid, seq: index, payload,
         first_ms: batch[0].timestamp, last_ms: batch[batch.length - 1].timestamp,
-        error_count: batch.filter(e => e.type === 5).length
+        error_count: batch.filter(e => e.type === 5 && e.data.tag === 'balance-error').length
       });
       if (token !== generation) return;
       if (error && error.code !== '23505') {
@@ -75,7 +86,7 @@
   function setEnabled(value) {
     enabled = !!value;
     if (owner) { try { localStorage.setItem(preferenceKey(owner), enabled ? '0' : '1'); } catch (_) {} }
-    if (!enabled) clear(); else start();
+    if (!enabled) { clear(); onboardingContext = null; tourContext = null; contextOwner = ''; } else start();
     syncPreference();
   }
   function syncPreference() {
@@ -88,13 +99,13 @@
         authBound = true;
         root.supabaseClient.auth.onAuthStateChange((_event, auth) => {
           activeAuthId = auth?.user?.id || '';
-          if (owner && activeAuthId !== owner) { clear(); owner = ''; }
+          if (owner && activeAuthId !== owner) { clear(); owner = ''; onboardingContext = null; tourContext = null; contextOwner = ''; }
         });
       }
       const { data } = await root.supabaseClient.auth.getSession();
       activeAuthId = data.session?.user?.id || '';
       const userId = String(root.currentUser?.id || root.currentUser?.user_id || '');
-      if (!userId || userId !== activeAuthId || root.guestMode || root.isAdminViewing) { clear(); owner = ''; return; }
+      if (!userId || userId !== activeAuthId || root.guestMode || root.isAdminViewing) { clear(); owner = ''; onboardingContext = null; tourContext = null; contextOwner = ''; return; }
       if (owner !== userId) {
         clear(); owner = userId; enabled = true;
         try { enabled = localStorage.getItem(preferenceKey(owner)) !== '1'; } catch (_) {}
@@ -110,14 +121,50 @@
       flush();
     }
   }
-  root.BalanceReplay = { setEnabled, flush, getSessionId: () => session || null };
+  function marker(action, allowHidden = false, context = onboardingContext) {
+    if (!context || contextOwner !== owner || !session || !enabled || activeAuthId !== owner || root.guestMode || root.isAdminViewing) return;
+    if (!allowHidden && !eligible()) return;
+    const event = privacy.event({ type: 5, timestamp: Date.now(), data: { tag: 'balance-onboarding', payload: { ...context, action } } });
+    if (!event) return;
+    const length = JSON.stringify(event).length;
+    if (bytes + length > MAX_QUEUE) return;
+    queue.push(event); bytes += length;
+  }
+  async function markOnboarding(value) {
+    // Store only fixed step metadata, never answers, DOM text or URLs. An early
+    // setup event also starts capture without waiting for the five-second poll.
+    const id = String(root.currentUser?.id || root.currentUser?.user_id || '');
+    if (!id || root.guestMode || root.isAdminViewing) return null;
+    try {
+      await tick();
+      if (!eligible() || owner !== id) return null;
+      onboardingContext = privacy.onboarding(value); contextOwner = id;
+      if (!onboardingContext) return null;
+      if (onboardingContext.phase === 'tour') tourContext = onboardingContext;
+      marker('progress');
+      if (['completed', 'blocked', 'left'].includes(onboardingContext.status) || onboardingContext.phase === 'payment') flush();
+      return session || null;
+    } catch (_) { return null; }
+  }
+  root.BalanceReplay = { setEnabled, flush, markOnboarding, getSessionId: () => session || null };
+  document.addEventListener('pointerdown', event => {
+    if (!root.__balanceGuidedTourActive || !stop || !eligible() || !tourContext) return;
+    const bubble = document.getElementById('guided-tour-bubble');
+    if (bubble?.contains(event.target)) return;
+    const spotlight = document.getElementById('guided-tour-spotlight');
+    const rect = spotlight?.getBoundingClientRect();
+    if (!rect || !rect.width || !rect.height) return;
+    if (event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom) return;
+    if (Date.now() - lastOutsideTap < 1000) return;
+    lastOutsideTap = Date.now(); marker('outside_highlight', false, tourContext);
+  }, { capture: true, passive: true });
   root.addEventListener('error', errorMarker); root.addEventListener('unhandledrejection', errorMarker);
-  root.addEventListener('storage', event => { if (owner && event.key === preferenceKey(owner)) { enabled = event.newValue !== '1'; if (!enabled) clear(); else start(); syncPreference(); } });
+  root.addEventListener('storage', event => { if (owner && event.key === preferenceKey(owner)) { enabled = event.newValue !== '1'; if (!enabled) { clear(); onboardingContext = null; tourContext = null; contextOwner = ''; } else start(); syncPreference(); } });
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden) { if (stop) stop(); stop = null; flush(); }
-    else { flush().finally(() => { if (!queue.length) { clear(); tick(); } }); }
+    if (document.hidden) { marker('app_hidden', true); if (stop) stop(); stop = null; flush(); }
+    else { flush().finally(async () => { if (!queue.length) { clear(); await tick(); marker('app_returned'); } }); }
   });
-  root.addEventListener('pagehide', () => { if (stop) stop(); stop = null; flush(); });
+  root.addEventListener('pagehide', () => { marker('page_left', true); if (stop) stop(); stop = null; flush(); });
   // Periodic uploads keep most of the lead-up even when a phone kills its WebView.
   setInterval(tick, 5000); setInterval(flush, 15000); tick();
 })(window);

@@ -56,6 +56,7 @@ async function save(event, user) {
             flow: data.flow, mode: data.mode, step_number: data.step_number,
             ...(data.phase === 'course' ? { course_id: data.course_id, lesson_id: data.lesson_id } : {}),
             user_id: user?.id || null, test_mode: data.test_mode || testAccount,
+            replay_session_id: user ? data.replay_session_id : null,
             occurred_at: Math.abs(Date.now() - Date.parse(data.occurred_at)) < 86400000 ? data.occurred_at : new Date().toISOString(),
             first_touch: data.first_touch, last_touch: lastTouch, verified_paid_meta: !!verifiedAd, thread_id: threadId }
     };
@@ -114,6 +115,14 @@ function summarize(rows, now = Date.now(), traffic = 'all') {
     }
     return {
         visitors: visitors.size, completed, quiet, excluded_test_browsers: testVisitors.size,
+        recent_sessions: Array.from(visitors.values()).sort((a, b) => b.latest.created_at.localeCompare(a.latest.created_at)).slice(0, 30).map(person => {
+            const latest = person.latest.metadata;
+            const replay = person.rows.filter(row => row.metadata.user_id && row.metadata.replay_session_id && now - Date.parse(row.created_at) < 7 * 86400000).sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
+            return { user_id: replay?.metadata.user_id || latest.user_id || null,
+                replay_session_id: replay?.metadata.replay_session_id || null,
+                phase: latest.phase, step: latest.step, status: latest.status,
+                last_at: person.latest.created_at, setup_complete: person.complete };
+        }),
         steps: Array.from(steps.values()).map(step => {
             step.times.sort((a, b) => a - b);
             return { ...step, reached: step.reached.size, completed: step.completed.size, last: step.last.size, median_seconds: step.times.length ? Math.round(step.times[Math.floor(step.times.length / 2)] / 1000) : null, times: undefined };
@@ -131,7 +140,13 @@ async function report(event, user) {
     for (let offset = 0; offset < 50000; offset += 1000) {
         const page = await request('/rest/v1/lp_events?select=created_at,visitor_id,metadata,utm_source,utm_campaign,duration_ms&event_type=eq.onboarding_progress&page_variant=eq.' + VERSION + '&created_at=gte.' + encodeURIComponent(since) + '&order=id.asc&limit=1000&offset=' + offset);
         rows.push(...page);
-        if (page.length < 1000) return json(200, { ...summarize(rows, Date.now(), traffic), days, since, traffic, version: VERSION, measured_from: rows[0]?.created_at || null });
+        if (page.length < 1000) {
+            const summary = summarize(rows, Date.now(), traffic);
+            const ids = [...new Set(summary.recent_sessions.map(item => item.user_id).filter(id => /^[0-9a-f-]{36}$/i.test(id || '')))];
+            const names = ids.length ? await request('/rest/v1/users?select=id,name&id=in.(' + ids.join(',') + ')') : [];
+            summary.recent_sessions.forEach(item => { item.member_name = names.find(user => user.id === item.user_id)?.name || (item.user_id ? 'Member' : 'Before sign-in'); });
+            return json(200, { ...summary, days, since, traffic, version: VERSION, measured_from: rows[0]?.created_at || null });
+        }
     }
     return json(422, { error: 'Too many events for this report. Choose a shorter date window.' });
 }

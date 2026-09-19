@@ -68,3 +68,54 @@ test('failed uploads retain sequence and queued data instead of silently droppin
   const h = harness({ fail: true }); await h.settle(); const session = h.window.BalanceReplay.getSessionId();
   await h.window.BalanceReplay.flush(); assert.equal(h.uploads.length, 0); assert.equal(h.window.BalanceReplay.getSessionId(), session);
 });
+
+test('onboarding markers retain fixed step metadata, never answers or arbitrary labels', () => {
+  const clean = privacy.event({ type: 5, timestamp: 123, data: { tag: 'balance-onboarding', payload: { phase: 'tour', step: 'SECRET_HEALTH', step_number: 14, status: 'viewed', action: 'outside_highlight', answers: 'SECRET_ANSWER', url: 'SECRET_URL' } } });
+  assert.equal(clean.data.payload.step_number, 14);
+  assert.equal(clean.data.payload.action, 'outside_highlight');
+  assert.doesNotMatch(JSON.stringify(clean), /SECRET/);
+  assert.equal(privacy.event({ type: 5, timestamp: 1, data: { tag: 'balance-onboarding', payload: { phase: 'SECRET' } } }), null);
+});
+
+test('setup and tour markers link to a playable session without inflating errors', async () => {
+  const h = harness(); await h.settle();
+  const id = await h.window.BalanceReplay.markOnboarding({ phase: 'screen', step: 'slide_4', status: 'viewed', step_number: 4, answers: 'SECRET' });
+  assert.equal(id, h.window.BalanceReplay.getSessionId());
+  await h.window.BalanceReplay.flush();
+  const events = JSON.parse(gunzipSync(Buffer.from(h.uploads[0].payload, 'base64')));
+  assert.ok(events.some(e => e.type === 2));
+  assert.equal(events.find(e => e.data.tag === 'balance-onboarding').data.payload.step, 'slide_4');
+  assert.equal(h.uploads[0].error_count, 0); assert.doesNotMatch(JSON.stringify(events), /SECRET/);
+  h.window.BalanceReplay.setEnabled(false);
+  assert.equal(await h.window.BalanceReplay.markOnboarding({ phase: 'tour', step_number: 1 }), null);
+  await h.window.BalanceReplay.flush(); assert.equal(h.uploads.length, 1);
+});
+
+test('outside-highlight taps are marked, guide controls and target taps are not', async () => {
+  const h = harness(); await h.settle(); h.window.__balanceGuidedTourActive = true;
+  const bubbleTarget = {};
+  h.document.getElementById = id => id === 'guided-tour-bubble' ? { contains: target => target === bubbleTarget } : id === 'guided-tour-spotlight' ? { getBoundingClientRect: () => ({ left: 10, right: 100, top: 20, bottom: 80, width: 90, height: 60 }) } : null;
+  await h.window.BalanceReplay.markOnboarding({ phase: 'tour', step_number: 14, status: 'viewed' });
+  await h.window.BalanceReplay.markOnboarding({ phase: 'course', status: 'viewed' });
+  h.listeners.pointerdown({ target: bubbleTarget, clientX: 200, clientY: 200 });
+  h.listeners.pointerdown({ target: {}, clientX: 30, clientY: 40 });
+  h.listeners.pointerdown({ target: {}, clientX: 200, clientY: 200 });
+  await h.window.BalanceReplay.flush();
+  const events = JSON.parse(gunzipSync(Buffer.from(h.uploads[0].payload, 'base64')));
+  const taps = events.filter(e => e.data.payload?.action === 'outside_highlight');
+  assert.equal(taps.length, 1); assert.equal(taps[0].data.payload.step_number, 14);
+});
+
+test('background and return retain the last onboarding step; switching accounts clears it', async () => {
+  const h = harness(); await h.settle();
+  await h.window.BalanceReplay.markOnboarding({ phase: 'screen', step: 'slide_4', status: 'viewed' });
+  h.document.hidden = true; h.document.visibilityState = 'hidden'; h.listeners.visibilitychange(); await h.settle();
+  h.document.hidden = false; h.document.visibilityState = 'visible'; h.listeners.visibilitychange(); await h.settle();
+  await h.window.BalanceReplay.flush();
+  const events = h.uploads.flatMap(row => JSON.parse(gunzipSync(Buffer.from(row.payload, 'base64'))));
+  assert.ok(events.some(e => e.data.payload?.action === 'app_hidden'));
+  assert.ok(events.some(e => e.data.payload?.action === 'app_returned'));
+  h.setAuth('member-b'); h.window.currentUser.id = 'member-b'; await h.intervals[0](); await h.settle(); await h.window.BalanceReplay.flush();
+  const last = JSON.parse(gunzipSync(Buffer.from(h.uploads.at(-1).payload, 'base64')));
+  assert.equal(last.some(e => e.data.tag === 'balance-onboarding'), false);
+});

@@ -3,12 +3,12 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; connect-src https://hzapaorxqboevxnumxkv.supabase.co wss://hzapaorxqboevxnumxkv.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'none'; font-src 'none'; object-src 'none'; base-uri 'self'">
 <meta name="robots" content="noindex,nofollow"><title>Session replays · Balance Admin</title>
-<link rel="stylesheet" href="/js/vendor/rrweb-2.1.4.css"><link rel="stylesheet" href="/css/admin-session-replays.css">
+<link rel="stylesheet" href="/js/vendor/rrweb-2.1.4.css"><link rel="stylesheet" href="/css/admin-session-replays.css?v=2-onboarding">
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script defer src="/lib/supabase.js"></script>
 <script defer src="/js/vendor/rrweb-2.1.4.min.js"></script>
-<script defer src="/js/dashboard/pbb-replay-privacy.js"></script>
-<script defer src="/js/admin-session-replays.js"></script>
+<script defer src="/js/dashboard/pbb-replay-privacy.js?v=2-onboarding"></script>
+<script defer src="/js/admin-session-replays.js?v=2-onboarding"></script>
 </head><body>
 <main>
 <header><div><a href="/admin-dashboard.html">Balance Admin</a><h1>Session replays</h1></div><button id="theme" type="button">Switch theme</button></header>
@@ -20,5 +20,6 @@
 <section class="playback" aria-label="Replay player"><h2 id="session-title">Choose a session</h2><p id="session-detail">New sessions appear here after a member uses the updated app.</p>
 <div id="controls" hidden><div class="buttons"><button id="play" type="button">Play</button><button id="pause" type="button">Pause</button><label>Speed <select id="speed"><option value="1">1×</option><option value="2">2×</option><option value="4">4×</option></select></label></div>
 <label for="seek">Playback position <output id="time">0:00</output></label><input id="seek" type="range" value="0" min="0" max="1" step="100" aria-label="Playback position">
-<div id="errors" class="buttons"></div></div><div id="player"></div></section></div>
+<div id="errors" class="buttons"></div></div><div id="player"></div>
+<h3>Onboarding timeline</h3><p id="onboarding-summary"></p><div id="onboarding-timeline" aria-label="Onboarding replay steps"></div></section></div>
 </section></main></body></html>

@@ -5,6 +5,18 @@
   const labels = new Set(['Home', 'Nutrition', 'Movement', 'Course', 'Calendar', 'Feed', 'Profile', 'Settings', 'Save', 'Cancel', 'Close', 'Next', 'Back', 'Done', 'Retry', 'Loading...', 'BALANCE', 'Balance']);
   const blocked = 'input,textarea,select,[contenteditable],img,picture,svg,canvas,video,audio,iframe,object,embed,script,template,[data-replay-private],.rr-block';
   const mask = text => labels.has(String(text).trim()) ? String(text) : String(text || '').replace(/\S/g, '*');
+  const setupSteps = new Set(['setup', 'saving_plan', 'goal_setup_ready', 'gender', 'name', 'age', 'height', 'weight', 'why_now', 'main_blocker', 'weekly_capacity', 'equipment_access', 'activity_level', 'energy_level', 'movement_limits', 'dietary_requirements']);
+  function onboarding(value) {
+    if (!value || !['setup', 'question', 'screen', 'tour', 'task', 'payment', 'course'].includes(value.phase)) return null;
+    const step = String(value.step || '');
+    return {
+      phase: value.phase,
+      step: setupSteps.has(step) || /^slide_(?:[1-9]|1[0-9])$/.test(step) ? step : '',
+      step_number: Math.min(100, Math.max(0, Number(value.step_number) || 0)),
+      status: ['viewed', 'completed', 'skipped', 'blocked', 'left'].includes(value.status) ? value.status : 'viewed',
+      action: ['progress', 'outside_highlight', 'app_hidden', 'app_returned', 'page_left', 'recording_resumed'].includes(value.action) ? value.action : 'progress'
+    };
+  }
   function css(value) {
     return String(value || '').replace(/url\s*\(\s*(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|[^)]*)\s*\)/gi, 'none').replace(/@import[^;]+;?/gi, '').replace(/content\s*:[^;}]+/gi, 'content: ""');
   }
@@ -38,6 +50,10 @@
     if (e.type === 4) return { type: 4, timestamp: e.timestamp, data: { href: 'https://plantbased-balance.org/dashboard.html', width: d.width, height: d.height } };
     if (e.type === 2) return { type: 2, timestamp: e.timestamp, data: { node: node(d.node), initialOffset: d.initialOffset } };
     if (e.type === 5 && d.tag === 'balance-error') return { type: 5, timestamp: e.timestamp, data: { tag: 'balance-error', payload: {} } };
+    if (e.type === 5 && d.tag === 'balance-onboarding') {
+      const payload = onboarding(d.payload);
+      return payload ? { type: 5, timestamp: e.timestamp, data: { tag: 'balance-onboarding', payload } } : null;
+    }
     if (e.type !== 3) return null;
     let data;
     if (d.source === 0) data = { source: 0, adds: (d.adds || []).map(a => ({ parentId: a.parentId, nextId: a.nextId, node: node(a.node) })), removes: (d.removes || []).map(a => ({ parentId: a.parentId, id: a.id })), texts: (d.texts || []).map(t => ({ id: t.id, value: mask(t.value) })), attributes: (d.attributes || []).map(a => ({ id: a.id, attributes: attrs(a.attributes) })) };
@@ -48,6 +64,6 @@
     else return null; // no inputs, media, canvas, CSSOM, selection or plugins
     return { type: 3, timestamp: e.timestamp, data };
   }
-  root.BalanceReplayPrivacy = { mask, blocked, event };
+  root.BalanceReplayPrivacy = { mask, blocked, event, onboarding };
   if (typeof module !== 'undefined') module.exports = root.BalanceReplayPrivacy;
 })(typeof window !== 'undefined' ? window : globalThis);

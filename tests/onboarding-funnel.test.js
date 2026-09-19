@@ -121,3 +121,65 @@ test('course endpoint saves verified account identity separately from onboarding
         assert.equal((await handler({httpMethod:'POST',headers:{Authorization:'Bearer invalid'},body:JSON.stringify(base())})).statusCode,401);
     }finally{global.fetch=oldFetch;if(oldUrl===undefined)delete process.env.SUPABASE_URL;else process.env.SUPABASE_URL=oldUrl;if(oldKey===undefined)delete process.env.SUPABASE_SERVICE_ROLE_KEY;else process.env.SUPABASE_SERVICE_ROLE_KEY=oldKey;}
 });
+
+test('onboarding report links the latest available replay and expires old links', () => {
+  const now = Date.parse('2026-09-12T00:00:00Z');
+  const replay = '11111111-1111-4111-8111-111111111111';
+  const report = summarize([row('person','slide_4','viewed',{phase:'screen',user_id:'account1',replay_session_id:replay})], now);
+  assert.equal(report.recent_sessions[0].step, 'slide_4');
+  assert.equal(report.recent_sessions[0].replay_session_id, replay);
+  assert.equal(report.recent_sessions[0].user_id, 'account1');
+  assert.equal(summarize([row('person','slide_4','viewed',{phase:'screen',user_id:'account1',replay_session_id:replay})], now + 8 * 86400000).recent_sessions[0].replay_session_id, null);
+  assert.equal(normalize({...base(),replay_session_id:'not-a-session'}).replay_session_id, null);
+});
+
+test('browser links progress to replay and still saves progress if the recorder fails', async () => {
+  for (const failed of [false, true]) {
+    const calls=[], markers=[]; let seq=0;
+    const storage={getItem:()=>null,setItem:()=>{}};
+    const replay='11111111-1111-4111-8111-111111111111';
+    const window={document:{},location:{pathname:'/dashboard.html',search:''},crypto:{randomUUID:()=>`test-event-${++seq}00000000`},localStorage:storage,sessionStorage:storage,addEventListener:()=>{},setTimeout,clearTimeout,fetch:async(url,options)=>{calls.push(JSON.parse(options.body));return{ok:true};},BalanceReplay:{markOnboarding:async payload=>{markers.push(payload);if(failed)throw Error('unavailable');return replay;}}};
+    vm.runInNewContext(fs.readFileSync(require.resolve('../lib/onboarding-funnel'),'utf8'),{window,URLSearchParams,Date});
+    window.BalanceOnboardingFunnel.track('screen','slide_4','viewed',{step_number:4,answers:'SECRET'});
+    await new Promise(resolve=>setImmediate(resolve));
+    assert.equal(calls.length,1);assert.equal(calls[0].replay_session_id, failed ? null : replay);
+    assert.equal(markers[0].step,'slide_4');assert.doesNotMatch(JSON.stringify(calls),/SECRET/);
+  }
+});
+
+test('server stores replay correlation only with the verified signed-in account', async () => {
+  const oldFetch=global.fetch, oldUrl=process.env.SUPABASE_URL, oldKey=process.env.SUPABASE_SERVICE_ROLE_KEY;
+  process.env.SUPABASE_URL='https://example.supabase.co';process.env.SUPABASE_SERVICE_ROLE_KEY='test-only';
+  const replay='11111111-1111-4111-8111-111111111111';let stored;
+  global.fetch=async(url,options)=>({ok:true,json:async()=>{
+    if(url.includes('/auth/v1/user'))return{id:'verified-account',email:'test@example.com'};
+    if(url.includes('/users?'))return[{is_test_account:true}];
+    stored=JSON.parse(options.body);return null;
+  }});
+  try {
+    for(const signedIn of [true,false]) {
+      const result=await handler({httpMethod:'POST',headers:signedIn?{Authorization:'Bearer fixture'}:{},body:JSON.stringify({...base(),replay_session_id:replay})});
+      assert.equal(result.statusCode,200);assert.equal(stored.metadata.replay_session_id,signedIn?replay:null);
+      assert.equal(stored.metadata.user_id,signedIn?'verified-account':null);
+    }
+  }finally{global.fetch=oldFetch;if(oldUrl===undefined)delete process.env.SUPABASE_URL;else process.env.SUPABASE_URL=oldUrl;if(oldKey===undefined)delete process.env.SUPABASE_SERVICE_ROLE_KEY;else process.env.SUPABASE_SERVICE_ROLE_KEY=oldKey;}
+});
+
+test('late recorder startup can recover only the matching account step', async () => {
+  const storage={getItem:()=>null,setItem:()=>{}};let seq=0;
+  const window={document:{},currentUser:{id:'first-account'},location:{pathname:'/dashboard.html',search:''},crypto:{randomUUID:()=>`test-event-${++seq}00000000`},localStorage:storage,sessionStorage:storage,addEventListener:()=>{},setTimeout,clearTimeout,fetch:async()=>({ok:true})};
+  vm.runInNewContext(fs.readFileSync(require.resolve('../lib/onboarding-funnel'),'utf8'),{window,URLSearchParams,Date});
+  window.BalanceOnboardingFunnel.track('screen','slide_4','viewed',{step_number:4,answers:'SECRET'});
+  assert.equal(window.BalanceOnboardingFunnel.getReplayContext('first-account').step,'slide_4');
+  assert.equal(window.BalanceOnboardingFunnel.getReplayContext('second-account'),null);
+  assert.doesNotMatch(JSON.stringify(window.BalanceOnboardingFunnel.getReplayContext('first-account')),/SECRET/);
+});
+
+test('a hung replay loader cannot hold the independent progress event', async () => {
+  const calls=[],timers=[];const storage={getItem:()=>null,setItem:()=>{}};
+  const window={document:{},location:{pathname:'/dashboard.html',search:''},crypto:{randomUUID:()=> 'test-event-00000000'},localStorage:storage,sessionStorage:storage,addEventListener:()=>{},setTimeout:fn=>{timers.push(fn);return 1;},clearTimeout:()=>{},fetch:async(url,options)=>{calls.push(JSON.parse(options.body));return {ok:true};},BalanceReplay:{markOnboarding:()=>new Promise(()=>{})}};
+  vm.runInNewContext(fs.readFileSync(require.resolve('../lib/onboarding-funnel'),'utf8'),{window,URLSearchParams,Date});
+  window.BalanceOnboardingFunnel.track('screen','slide_4','viewed');
+  timers[0]();await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(calls.length,1);assert.equal(calls[0].replay_session_id,null);
+});
