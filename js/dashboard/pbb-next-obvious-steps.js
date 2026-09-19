@@ -400,44 +400,69 @@
   }
 
   function ensureLearningSystemLoaded() {
-    if (typeof window.openCurrentCourseLesson === 'function' && typeof window.getCurrentCourseLessonDestination === 'function') {
-      return Promise.resolve(true);
-    }
+    if (typeof window.prepareBalanceFoundationsStartForTour === 'function'
+        && typeof window.openCurrentCourseLesson === 'function'
+        && typeof window.getCurrentCourseLessonDestination === 'function') return Promise.resolve(true);
     if (learningSystemLoadPromise) return learningSystemLoadPromise;
-    learningSystemLoadPromise = new Promise(function(resolve){
-      var settled = false;
-      var attempts = 0;
+    function load(src, ready) {
+      if (ready()) return Promise.resolve();
       var script = Array.prototype.find.call(document.scripts || [], function(item){
-        return item.src && item.src.indexOf('learning-inline.js') !== -1;
+        return item.src && item.src.indexOf(src.split('?')[0]) !== -1 && !item.dataset.learningLoadFailed;
       });
-      function finish(loaded) {
-        if (settled) return;
-        settled = true;
-        resolve(loaded);
-      }
-      function checkReady() {
-        if (typeof window.openCurrentCourseLesson === 'function' && typeof window.getCurrentCourseLessonDestination === 'function') {
-          finish(true);
-          return;
-        }
-        if (attempts++ < 150) {
-          setTimeout(checkReady, 100);
-          return;
-        }
-        finish(false);
-      }
+      // A downloaded script can have failed while executing before its
+      // dependencies arrived. Retry it after those dependencies are ready.
+      var downloaded = script && window.performance && window.performance.getEntriesByName
+        && window.performance.getEntriesByName(script.src).some(function(entry){ return entry.responseEnd > 0; });
+      if (downloaded) script = null;
+      var append = !script;
       if (!script) {
         script = document.createElement('script');
-        script.src = 'lib/learning-inline.js?v=46-four-part-path';
-        script.addEventListener('error', function(){ finish(false); }, { once: true });
-        document.head.appendChild(script);
+        script.src = src;
       }
-      checkReady();
-    });
-    learningSystemLoadPromise.then(async function(loaded){
-      if (!loaded) return;
-      if (typeof window._ensureLearningProgressLoaded === 'function') await window._ensureLearningProgressLoaded();
-      refreshSoon(0);
+      return new Promise(function(resolve, reject){
+        var timer = setTimeout(function(){ finish(false); }, 8000);
+        function finish(ok) {
+          clearTimeout(timer);
+          script.removeEventListener('load', loaded);
+          script.removeEventListener('error', failed);
+          if (ok) resolve();
+          else { script.dataset.learningLoadFailed = 'true'; reject(new Error('Course script unavailable: ' + src)); }
+        }
+        function loaded(){ finish(ready()); }
+        function failed(){ finish(false); }
+        script.addEventListener('load', loaded, { once:true });
+        script.addEventListener('error', failed, { once:true });
+        if (append) document.head.appendChild(script);
+      });
+    }
+    learningSystemLoadPromise = (async function(){
+      // Home can request Learn before the deferred dashboard scripts arrive.
+      // Load its real prerequisites before evaluating learning-inline.js.
+      var dependencies = [
+        ['lib/learn-curriculum.js?v=2-six-weeks', 'BalanceLearnCurriculum'],
+        ['lib/learn-predictive-content.js?v=7-social-prediction', 'BalancePredictiveContent'],
+        ['lib/learn-weekly-actions.js?v=feed-week-five-20260916', 'BalanceLearnWeeklyActions'],
+        ['lib/learn-action-review.js?v=feed5-plan-dismiss-v3', 'BalanceLearnActionReview'],
+        ['lib/balance-curriculum.js?v=six-weeks-v2', 'BalanceCurriculum'],
+        ['lib/balance-course-layout.js?v=3-weekly-actions', 'BalanceCourseLayout'],
+        ['lib/balance-course-weeks.js?v=1', 'BalanceCourseWeeks'],
+        ['lib/balance-lead-course.js?v=2-week-cards', 'BalanceLead'],
+        ['lib/balance-master-actions.js?v=1', 'BalanceMasterActions'],
+        ['lib/balance-master-course.js?v=6-weekly-actions', 'BalanceMaster']
+      ];
+      for (var dependency of dependencies) {
+        await load(dependency[0], function(){ return !!window[dependency[1]]; });
+      }
+      await load('lib/learning-inline.js?v=course-handoff-20260919', function(){
+        return typeof window.prepareBalanceFoundationsStartForTour === 'function'
+          && typeof window.openCurrentCourseLesson === 'function'
+          && typeof window.getCurrentCourseLessonDestination === 'function';
+      });
+      return true;
+    })().catch(function(error){ console.warn('[next-steps] course load failed', error); return false; });
+    learningSystemLoadPromise.then(function(loaded){
+      learningSystemLoadPromise = null;
+      if (loaded) Promise.resolve(window._ensureLearningProgressLoaded()).then(function(){ refreshSoon(0); }).catch(function(error){ console.warn('[next-steps] course progress unavailable', error); });
     });
     return learningSystemLoadPromise;
   }
@@ -771,21 +796,37 @@
   }
 
   function openFoundationsTarget() {
-    markOnboardingStepSeen('foundations_intro');
-    openFoundationsCourseOverview();
+    return openFoundationsCourseOverview();
   }
 
-  async function openFoundationsCourseOverview() {
-    var loaded = await ensureLearningSystemLoaded();
-    if (!loaded) {
-      if (typeof window.showToast === 'function') window.showToast('Your course is still loading. Tap the card again in a moment.', 'info');
-      return;
-    }
-    if (typeof window._ensureLearningProgressLoaded === 'function') await window._ensureLearningProgressLoaded();
-    switchTab('learning');
-    afterTab(function(){
-      if (typeof window.openCoursePage === 'function') window.openCoursePage('balance-foundations');
-    }, 360);
+  var foundationsOpenPromise = null;
+  function openFoundationsCourseOverview() {
+    if (foundationsOpenPromise) return foundationsOpenPromise;
+    foundationsOpenPromise = (async function(){
+      var timer;
+      try {
+        if (!await ensureLearningSystemLoaded()) throw new Error('Course unavailable');
+        if (!switchTab('learning')) throw new Error('Course navigation unavailable');
+        // Tab initialization used to finish after the 360ms timer and replace
+        // Start course with the library. Wait for that actual render instead.
+        await Promise.race([
+          window._learningInitPromise || window._ensureLearningProgressLoaded(),
+          new Promise(function(_, reject){ timer=setTimeout(function(){ reject(new Error('Course progress timed out')); },12000); })
+        ]);
+        if (window.__balanceGuidedTourActive) window.prepareBalanceFoundationsStartForTour();
+        else window.openCoursePage('balance-foundations');
+        var startButton = document.getElementById('balance-foundations-course-start');
+        if (!startButton || !startButton.getClientRects().length || !isVisibleSelector('#balance-foundations-course-start')) throw new Error('Course start is not visible');
+        markOnboardingStepSeen('foundations_intro');
+        return true;
+      } catch(error) {
+        setOnboardingStepComplete('foundations_intro', false);
+        if (typeof window.showToast === 'function') window.showToast('Your course could not open. Please tap the course card to try again.', 'info');
+        return false;
+      } finally { clearTimeout(timer); }
+    })();
+    foundationsOpenPromise.then(function(){ foundationsOpenPromise=null; });
+    return foundationsOpenPromise;
   }
 
   function getNextCourseId() {
@@ -1769,6 +1810,8 @@
   window.pbbOpenNextCourseTarget = openNextCourseTarget;
 
   window.pbbNextSteps = {
+    ensureLearningSystemLoaded: ensureLearningSystemLoaded,
+    openFoundationsCourseOverview: openFoundationsCourseOverview,
     refresh: render,
     isPreviewEligible: isPreviewEligible,
     isMemberEligible: isMemberEligible,

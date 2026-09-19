@@ -1995,7 +1995,7 @@ document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=36-commu
     document.write('<script src="lib/learn-weekly-actions.js?v=feed-week-five-20260916"><\/script>');
     document.write('<script src="lib/learn-action-review.js?v=feed5-plan-dismiss-v3"><\/script>');
     document.write('<script src="js/dashboard/pbb-social-journey.js?v=20260919-coach-video"><\/script>');
-    document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=20260919-coach-video"><\/script>');
+    document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=20260919-course-handoff"><\/script>');
     document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=39-checkin-spacing"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
@@ -2006,7 +2006,7 @@ window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=36-com
     window._pbbDeferredQueue.push('lib/learn-weekly-actions.js?v=feed-week-five-20260916');
     window._pbbDeferredQueue.push('lib/learn-action-review.js?v=feed5-plan-dismiss-v3');
     window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=20260919-coach-video');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=20260919-coach-video');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=20260919-course-handoff');
     window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=39-checkin-spacing');
 }
 </script>
@@ -14054,6 +14054,10 @@ if(!window._pbbIsIOSSafari) {
   }
 
   async function openMetaPreviewFoundationsCourseStart(){
+    if (q('#balance-foundations-course-start') && !window._learningInitPromise) return true;
+    if (window.pbbNextSteps && typeof window.pbbNextSteps.openFoundationsCourseOverview === 'function') {
+      return await window.pbbNextSteps.openFoundationsCourseOverview();
+    }
     var timeoutAt = Date.now() + 9000;
     while (Date.now() < timeoutAt) {
       if (typeof window.prepareBalanceFoundationsStartForTour === 'function' || typeof window.openCoursePage === 'function') {
@@ -21227,11 +21231,11 @@ if (window._pbbIsIOSSafari) {
             });
             if (window.showQuizBattleInviteModal || learningAlreadyRequested) return;
             var s = document.createElement('script');
-      s.src = 'lib/learning-inline.js?v=page-photos-20260918';
+      s.src = 'lib/learning-inline.js?v=course-handoff-20260919';
             document.head.appendChild(s);
         }, { once: true });
     } else {
-    document.write('<script src="lib/learning-inline.js?v=page-photos-20260918"><\/script>');
+    document.write('<script src="lib/learning-inline.js?v=course-handoff-20260919"><\/script>');
     }
     </script>
     <!-- Battle System & Logic Overrides (130 lines — deferred on iOS) -->
