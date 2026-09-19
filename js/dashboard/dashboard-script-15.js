@@ -65,8 +65,11 @@
     });
 
     function shouldApplyCharacterColorsToModel(modelSrc, skinId) {
-        if (typeof window.pbbShouldApplyCharacterColorsToModel === 'function') {
-            return window.pbbShouldApplyCharacterColorsToModel(modelSrc, skinId);
+        // iOS can load this fallback before the deferred battle policy. Once
+        // installed on window it must not delegate back to itself.
+        const policy = window.pbbShouldApplyCharacterColorsToModel;
+        if (typeof policy === 'function' && policy !== shouldApplyCharacterColorsToModel) {
+            return policy(modelSrc, skinId);
         }
         if (/^level_character_[0-9]+$/i.test((skinId || '') + '')) return false;
         const clean = ((window.pbbStripModelVersion ? window.pbbStripModelVersion(modelSrc || '') : (modelSrc || '')) + '').toLowerCase().split('#')[0].split('?')[0];
@@ -526,7 +529,7 @@
                             newMv.style.opacity = '1';
                             newMv.classList.add('model-loaded');
                             if (fb) fb.style.display = 'none';
-                            if (window.applyCharacterColors && shouldApplyCharacterColorsToModel(targetSrc, opts.skinId || opts.activeSkinId || '')) {
+                            if (window.applyCharacterColors && window.pbbShouldApplyCharacterColorsToModel(targetSrc, opts.skinId || opts.activeSkinId || '')) {
                                 window.applyCharacterColors(newMv, targetSrc);
                             }
                             if (window.applyIdleAnimation) window.applyIdleAnimation(newMv);
@@ -600,7 +603,7 @@
             mv.setAttribute('src', modelSrc);
             mv.addEventListener('load', function onLoad() {
                 mv.removeEventListener('load', onLoad);
-                if (window.applyCharacterColors && shouldApplyCharacterColorsToModel(modelSrc)) window.applyCharacterColors(mv, modelSrc);
+                if (window.applyCharacterColors && window.pbbShouldApplyCharacterColorsToModel(modelSrc)) window.applyCharacterColors(mv, modelSrc);
                 if (window.applyIdleAnimation) window.applyIdleAnimation(mv);
                 if (typeof updateFitGotchi === 'function') updateFitGotchi();
             });
