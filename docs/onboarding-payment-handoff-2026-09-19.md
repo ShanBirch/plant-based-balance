@@ -1,0 +1,7 @@
+# Signed-in onboarding payment handoff
+
+The ordinary signed-in client activation tour unconditionally opened Course after all required steps, while only the Meta/website preview mode opened payment. Thus completing setup, the first quiz, coach content and goals without an active preview state led back to Course.
+
+The signed-in finishing path now checks the current account's server subscription status before dismissing the tour. Active/trialing members keep their Course destination; unpaid accounts open the existing payment gate and save an account-scoped checkout checkpoint so a reload resumes payment. No checkout session is created until the user chooses to pay. The check changes navigation only, never subscription data or access entitlements. Failed, missing, timed-out or account-switched responses leave the tour available to retry. Existing required lesson, coach-video and goal gates still run first.
+
+Validation: 22 focused tests pass (account tour exemptions, required completion gates and payment routing). The actual tour finishing code and payment markup were exercised in a browser with stubbed subscription responses: 12 viewport/theme/inset combinations, active-member routing and an offline failure followed by retry. Checkout stayed above the status bar and scrolled to its terms/button above the home indicator. A read-only database query confirmed the selected status fields on the existing dedicated QA accounts; no accounts, payments or subscriptions were changed. Screenshots are in this task's outputs.

@@ -205,7 +205,7 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
 <!-- CRITICAL: Admin view-as localStorage isolation — runs BEFORE any other localStorage reads -->
 <script src="js/dashboard/script_part_1.js"></script>
 <!-- Paid-Facebook preview attribution must be available before auth-guard decides guest vs member mode. -->
-<script src="lib/onboarding-progress.js?v=4-new-member-tour"></script>
+<script src="lib/onboarding-progress.js?v=5-payment-handoff"></script>
 <script src="lib/meta-ad-trial.js?v=27-coach-video-handoff"></script>
 
 <!-- CRITICAL: Hide loading overlay for returning users and restore cached FitGotchi state -->
@@ -14405,6 +14405,8 @@ if(!window._pbbIsIOSSafari) {
   let showingXpIntro = false;
   let metaPreviewTour = false;
   let clientActivationTour = false;
+  let clientCompletionDestination = null;
+  let clientCompletionPromise = null;
   let activeTourGate = null;
   let pendingPromptedAction = null;
   let tourNextBlockedUntil = 0;
@@ -16008,6 +16010,23 @@ window.endFeatureTour = function(skipped){
       }
       if (idx !== activeSteps.length - 1) return false;
     }
+    if (!skipped && completedClientActivationTour && !completedMetaPreviewTour && !completedCourseFeatureTour && !clientCompletionDestination) {
+      if (!clientCompletionPromise) {
+        const completionUserId = window.currentUser?.id;
+        setTourGateUi(false, 'Opening your next step...', 'Please wait');
+        clientCompletionPromise = Promise.resolve().then(function(){
+          return window.BalanceOnboardingProgress.completionDestination();
+        }).then(function(destination){
+          if (window.currentUser?.id !== completionUserId || !window.__balanceGuidedTourActive) return;
+          if (destination === 'checkout' && (!document.getElementById('meta-ad-trial-gate') || !window.BalanceMetaAdTrial?.openCheckoutGate)) throw new Error('Payment screen unavailable');
+          clientCompletionDestination = destination;
+          window.endFeatureTour(false);
+        }).catch(function(){
+          setTourGateUi(true, 'Your next step could not load. Tap Try again.', 'Try again');
+        }).finally(function(){ clientCompletionPromise = null; });
+      }
+      return false;
+    }
     tourRenderToken += 1;
     cancelScheduledTourPosition();
     activeTourDisplayStep = null;
@@ -16023,7 +16042,8 @@ window.endFeatureTour = function(skipped){
     try { window.trackBalanceActivity('guided_tour_completed', { mode: completedClientActivationTour ? 'client_activation' : (completedMetaPreviewTour ? 'meta_preview' : 'standard'), skipped: !!skipped, final_step_number: Number(idx) + 1, step_count: activeSteps.length }, { immediate:true }); } catch(e){}
     trackTourProgress(idx, skipped ? 'skipped' : 'completed');
     if (!skipped && completedClientActivationTour && !completedCourseFeatureTour) {
-      window.BalanceOnboardingProgress?.clear();
+      if (clientCompletionDestination === 'checkout') window.BalanceOnboardingProgress?.save('checkout', {});
+      else window.BalanceOnboardingProgress?.clear();
       window.BalanceOnboardingProgress?.completeFirstRunTour();
     }
     clearActiveTourGate();
@@ -16087,6 +16107,8 @@ window.endFeatureTour = function(skipped){
             setTimeout(function () { openClientActivationJourney(attempt + 1); }, 250);
           }
         })(0);
+      } else if (clientCompletionDestination === 'checkout') {
+        window.BalanceMetaAdTrial.openCheckoutGate();
       } else {
         Promise.resolve(ensureTab('learning')).catch(function(){});
       }
@@ -16111,6 +16133,7 @@ window.endFeatureTour = function(skipped){
     window.__balanceFitGotchiCourseTour = !!courseFeatureTour;
     try { if (!force && localStorage.getItem('featureTourComplete') === '1') return; } catch(e){}
     completedTourGates.clear();
+    clientCompletionDestination = null;
     completedPromptedActions.clear();
     pendingPromptedAction = null;
     tourNextBlockedUntil = 0;

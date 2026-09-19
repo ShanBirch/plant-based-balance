@@ -36,7 +36,7 @@ test('required completion check catches missing video, goals, lesson and interac
 
 test('premature end and swipe-back keep signed-in and trial onboarding active',()=>{
   for(const trial of [false,true]){
-    const visited=[];const c={window:{location:{hostname:'production',search:''},__balanceGuidedTourActive:true},courseFeatureTour:null,tourNavigationBusy:false,metaPreviewTour:trial,clientActivationTour:!trial,showToast(){},incompleteRequiredTourStep:()=>2,showStep:i=>visited.push(i),activeSteps:[{},{},{},{}],idx:2};
+    const visited=[];const c={window:{location:{hostname:'production',search:''},__balanceGuidedTourActive:true},courseFeatureTour:null,clientCompletionDestination:"course",tourNavigationBusy:false,metaPreviewTour:trial,clientActivationTour:!trial,showToast(){},incompleteRequiredTourStep:()=>2,showStep:i=>visited.push(i),activeSteps:[{},{},{},{}],idx:2};
     const start=html.indexOf('window.endFeatureTour = function(skipped){'),end=html.indexOf('    tourRenderToken += 1;',start);
     vm.runInNewContext(html.slice(start,end)+'};',c);
     assert.equal(c.window.endFeatureTour(true),false);assert.equal(c.window.endFeatureTour(false),false);
