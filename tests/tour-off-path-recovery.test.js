@@ -15,7 +15,7 @@ function harness() {
     document:{body:{}, getElementById:id=>id==='guided-tour-overlay'?overlay:recovery},
     activeTourDisplayStep:{sel:'#required-control'}, activeSteps:[{},{}], idx:1,
     tourNavigationBusy:false, tourRecoveryObserver:null, tourRecoveryTimer:0,
-    target:null, resolveStepTarget:()=>({target:c.target}), getTourSafeTop:()=>142,
+    target:null, q:()=>c.target, resolveStepTarget:()=>({target:c.target}), getTourSafeTop:()=>142,
     saved:0, visits:[], saveTourCheckpoint:()=>c.saved++,
     showStep:async i=>c.visits.push(i), setTimeout:fn=>{c.pending=fn;return 1}, clearTimeout:()=>{c.pending=null},
     MutationObserver:class { constructor(fn){c.observeMutation=fn} observe(){} disconnect(){c.disconnected=true} }
@@ -40,6 +40,13 @@ test('transitions, intro and inactive tours never display a false recovery promp
     classes.delete('tour-transitioning');if(flag==='transition') classes.add('tour-transitioning');
     c.updateTourRecovery();assert.equal(recovery.hidden,true,flag);
   }
+});
+
+test('a closed required control recovers even when its fallback card is visible',()=>{
+  const {c,recovery}=harness();
+  c.activeTourDisplayStep={sel:'#ingredient',requiresHighlightedClick:true};
+  c.resolveStepTarget=()=>({target:{}});
+  c.updateTourRecovery();assert.equal(recovery.hidden,false);
 });
 
 test('recovery reopens the same step once and does not grant completion',async()=>{

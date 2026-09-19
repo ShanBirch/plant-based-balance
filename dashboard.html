@@ -14509,10 +14509,12 @@ if(!window._pbbIsIOSSafari) {
     const recovery = document.getElementById('guided-tour-recovery');
     if (!overlay || !recovery) return;
     const step = activeTourDisplayStep;
+    const needsControl = !!(step && (step.requiresHighlightedClick || step.requiresWeeklyGoals || step.checkinExplainerGuide));
+    const target = needsControl ? q(step.sel) : resolveStepTarget(step).target;
     const unavailable = !!(window.__balanceGuidedTourActive
       && !window.__balanceGuidedTourShowingIntro && !tourNavigationBusy
       && !overlay.classList.contains('tour-transitioning') && step && step.sel
-      && !resolveStepTarget(step).target);
+      && !target);
     recovery.hidden = !unavailable;
     overlay.classList.toggle('tour-off-path', unavailable);
     if (unavailable) {
