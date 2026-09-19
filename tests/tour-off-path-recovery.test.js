@@ -4,7 +4,7 @@ const vm = require('node:vm');
 const fs = require('node:fs');
 const path = require('node:path');
 const html = fs.readFileSync(path.join(__dirname, '../dashboard.html'), 'utf8');
-const source = html.slice(html.indexOf('  function updateTourRecovery(){'), html.indexOf('  function cancelScheduledTourPosition(){'));
+const source = html.slice(html.indexOf('  function getTourCourseDestination(step){'), html.indexOf('  function cancelScheduledTourPosition(){'));
 
 function harness() {
   const classes = new Set();
@@ -47,6 +47,46 @@ test('a closed required control recovers even when its fallback card is visible'
   c.activeTourDisplayStep={sel:'#ingredient',requiresHighlightedClick:true};
   c.resolveStepTarget=()=>({target:{}});
   c.updateTourRecovery();assert.equal(recovery.hidden,false);
+});
+
+test('opening the researcher lesson is a course handoff, not an off-path screen',()=>{
+  const {c,recovery}=harness();
+  c.activeTourDisplayStep={sel:'#balance-foundations-first-lesson',requiresHighlightedClick:true};
+  const lesson = {};
+  c.q=selector=>selector==='#learning-content #story-next-btn'?lesson:null;
+  assert.equal(c.getTourCourseDestination(c.activeTourDisplayStep),lesson);
+  c.updateTourRecovery();assert.equal(recovery.hidden,true);
+  c.q=()=>null;
+  c.updateTourRecovery();assert.equal(recovery.hidden,false);
+});
+
+test('all normal course handoffs suppress recovery while the next step opens',()=>{
+  for (const [from,to] of [
+    ['#balance-foundations-course-start','#balance-foundations-welcome-start'],
+    ['#balance-foundations-welcome-start','#balance-foundations-first-week'],
+    ['#balance-foundations-first-week','#balance-foundations-first-lesson']
+  ]) {
+    const {c,recovery}=harness();
+    c.activeTourDisplayStep={sel:from,requiresHighlightedClick:true};
+    c.q=selector=>selector===to?{}:null;
+    c.updateTourRecovery();assert.equal(recovery.hidden,true,from);
+  }
+});
+
+test('the lesson handoff advances to the reading step without a recovery click',()=>{
+  const {c}=harness();
+  c.step={sel:'#balance-foundations-first-lesson',requiresHighlightedClick:true};
+  c.key='highlighted-click:1';
+  c.activeTourGate={key:c.key};
+  c.completedTourGates=new Set();
+  c.gateIsCurrent=()=>true;
+  c.q=selector=>selector==='#learning-content #story-next-btn'?{}:null;
+  c.setInterval=fn=>{c.follow=fn;return 1};
+  const start=html.indexOf('      activeTourGate.followTimer = setInterval(function(){');
+  vm.runInContext(html.slice(start,html.indexOf('      }, 420);',start)+15),c);
+  c.follow();
+  assert.deepEqual(c.visits,[2]);
+  assert.ok(c.completedTourGates.has(c.key));
 });
 
 test('recovery reopens the same step once and does not grant completion',async()=>{

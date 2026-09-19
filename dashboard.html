@@ -14538,6 +14538,19 @@ if(!window._pbbIsIOSSafari) {
   // Exploration must never leave an action-only prompt attached to a hidden
   // page. Reopen the same step through its normal renderer, without granting
   // completion or changing the tour index.
+  function getTourCourseDestination(step){
+    if (!step || !step.requiresHighlightedClick) return null;
+    const selector = step.sel === '#balance-foundations-course-start'
+      ? '#balance-foundations-welcome-start'
+      : step.sel === '#balance-foundations-welcome-start'
+        ? '#balance-foundations-first-week'
+        : step.sel === '#balance-foundations-first-week'
+          ? '#balance-foundations-first-lesson'
+          : step.sel === '#balance-foundations-first-lesson' ? '#learning-content #story-next-btn' : null;
+    if (!selector || (step.sel !== '#balance-foundations-course-start' && q('#balance-foundations-welcome-start'))) return null;
+    return q(selector);
+  }
+
   function updateTourRecovery(){
     const overlay = document.getElementById('guided-tour-overlay');
     const recovery = document.getElementById('guided-tour-recovery');
@@ -14548,7 +14561,7 @@ if(!window._pbbIsIOSSafari) {
     const unavailable = !!(window.__balanceGuidedTourActive
       && !window.__balanceGuidedTourShowingIntro && !tourNavigationBusy
       && !overlay.classList.contains('tour-transitioning') && step && step.sel
-      && !target);
+      && !target && !getTourCourseDestination(step));
     recovery.hidden = !unavailable;
     overlay.classList.toggle('tour-off-path', unavailable);
     if (unavailable) {
@@ -15029,15 +15042,9 @@ if (step && step.requiresFeedPost) {
       };
       activeTourGate.followTimer = setInterval(function(){
         if (!gateIsCurrent() || !activeTourGate || activeTourGate.key !== key) return;
-        const courseDestination = step.sel === '#balance-foundations-course-start'
-          ? '#balance-foundations-welcome-start'
-          : step.sel === '#balance-foundations-welcome-start'
-            ? '#balance-foundations-first-week'
-            : step.sel === '#balance-foundations-first-week' ? '#balance-foundations-first-lesson' : null;
         // Follow the actual rendered destination, including a welcome reopened
         // from an interrupted tour, instead of spotlighting the covered page.
-        if (courseDestination && q(courseDestination) &&
-            (step.sel === '#balance-foundations-course-start' || !q('#balance-foundations-welcome-start'))) {
+        if (getTourCourseDestination(step)) {
           completedTourGates.add(key);
           showStep(idx + 1);
           return;
