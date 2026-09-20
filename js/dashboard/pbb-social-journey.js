@@ -1209,7 +1209,7 @@
         isLocked: definition.week > currentJourneyWeek
       };
     });
-    return { available: true, currentJourneyWeek, weekProgress, setupTasks: safeArray(safeObject(state.settings).learn_setup_progress) };
+    return { available: true, quizzesUnlocked: safeObject(state.settings).learn_quizzes_unlocked === true, currentJourneyWeek, weekProgress, setupTasks: safeArray(safeObject(state.settings).learn_setup_progress) };
   }
 
   function taskActionForCourse(weekNumber, taskId) {

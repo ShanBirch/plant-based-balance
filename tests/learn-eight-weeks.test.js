@@ -144,3 +144,22 @@ test('requested social lesson teaches prediction and feedback while retaining th
  assert.ok(lesson.games.some(g=>g.question==='How do predictions and feedback work together in this account?' && g.correctIndex===2));
  for(const g of lesson.games){assert.ok(g.explanation);if(g.options)assert.ok(g.options[g.correctIndex]);}
 });
+
+test('coach quiz unlock allows catch-up without completing earlier quizzes or actions',()=>{
+ const c=runtime('bridge_eight_v1',7);
+ assert.equal(c.socialJourney.getFoundationsCourseProgress().quizzesUnlocked,false);
+ c.journeyTest.set({current_week:7,settings:{learn_curriculum:'bridge_eight_v1',learn_quizzes_unlocked:true}});
+ const shared=c.socialJourney.getFoundationsCourseProgress();
+ assert.equal(shared.quizzesUnlocked,true);
+ assert.equal(shared.weekProgress[7].isLocked,true); // Future practical actions retain their timing.
+ const source=read('lib/learning-inline.js'),start=source.indexOf('    window.startFoundationsQuiz = function'),end=source.indexOf('    window.runFoundationsCourseAction',start);
+ const weeks=[{number:1,quizCompleted:1,quizTotal:5,isComplete:false},{number:2,lessonIds:['mind-2-1'],quizzesUnlocked:false}];
+ const started=[],messages=[];
+ const ctx={window:{startFoundationsLesson:id=>started.push(id)},BALANCE_FOUNDATIONS:{id:'balance-foundations'},getCourseById:()=>({progress:{weekProgress:weeks}}),trackCourseEvent(){},showToast:m=>messages.push(m)};
+ vm.runInNewContext(source.slice(start,end),ctx);
+ ctx.window.startFoundationsQuiz('mind-2-1',2);assert.equal(started.length,0);assert.equal(messages.length,1);
+ weeks[1].quizzesUnlocked=shared.quizzesUnlocked;
+ ctx.window.startFoundationsQuiz('mind-2-1',2);assert.deepEqual(started,['mind-2-1']);
+ ctx.window.startFoundationsQuiz('not-in-this-week',2);assert.equal(started.length,1);
+ assert.equal(weeks[0].quizCompleted,1);assert.equal(weeks[0].isComplete,false);
+});
