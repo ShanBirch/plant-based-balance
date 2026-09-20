@@ -1920,10 +1920,14 @@
   async function loadAdminCoursePreview() {
     const owner = currentUserId();
     if (!owner || !window.supabaseClient) return false;
-    const result = await window.supabaseClient.from(TABLE).select('*').eq('user_id', owner).maybeSingle();
-    if (result.error) throw result.error;
+    const { data: sessionData } = await window.supabaseClient.auth.getSession();
+    const response = await fetch('/.netlify/functions/learn-action-review?course_preview=1&client_id=' + encodeURIComponent(owner), {
+      headers: { Authorization: 'Bearer ' + (sessionData?.session?.access_token || '') }
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Course preview could not load.');
     if (!window.isAdminViewing || currentUserId() !== owner) return false;
-    state = result.data ? normalizeState(result.data) : null;
+    state = result.journey ? normalizeState(result.journey) : null;
     progress = null;
     return true;
   }

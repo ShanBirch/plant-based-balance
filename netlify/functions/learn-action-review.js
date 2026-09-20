@@ -12,6 +12,11 @@ exports.handler=async event=>{
    if(!user?.id)return json(401,{error:'Login required'});
    const input=event.httpMethod==='POST'?JSON.parse(event.body||'{}'):(event.queryStringParameters||{});
    const target=input.client_id||user.id;
+   if(event.httpMethod==='GET' && input.course_preview==='1'){
+     if(target!==user.id && !await review.canReview(user.id,target))return json(403,{error:'Coach authorization required.'});
+     const rows=await supabaseQuery(`social_journey_progress?select=*&user_id=eq.${encodeURIComponent(target)}&limit=1`);
+     return json(200,{ok:true,journey:rows[0]||null});
+   }
    const ctx=await review.context(user.id,target,input.enrollment_id||null);
    if(event.httpMethod==='GET'){
      if(ctx.available && !ctx.can_review)ctx.records=await learnAI.retryPending(user.id,ctx.records);

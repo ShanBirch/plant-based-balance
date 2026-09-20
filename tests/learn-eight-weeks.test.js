@@ -168,7 +168,16 @@ test('coach preview reads member settings without writing or advancing the journ
  const src=read('js/dashboard/pbb-social-journey.js');
  const start=src.indexOf('  async function loadAdminCoursePreview()'),end=src.indexOf('  function refresh()',start);
  let requested;
- const ctx={TABLE:'social_journey_progress',currentUserId:()=> 'member',normalizeState:r=>r,state:null,progress:{},window:{isAdminViewing:true,supabaseClient:{from:()=>({select:()=>({eq:(key,id)=>{requested=id;return {maybeSingle:async()=>({data:{settings:{learn_quizzes_unlocked:true}}})};}})})}}};
+ const ctx={TABLE:'social_journey_progress',currentUserId:()=> 'member',normalizeState:r=>r,state:null,progress:{},encodeURIComponent,fetch:async url=>{requested=new URL(url,'https://test').searchParams.get('client_id');return {ok:true,json:async()=>({journey:{settings:{learn_quizzes_unlocked:true}}})};},window:{isAdminViewing:true,supabaseClient:{auth:{getSession:async()=>({data:{session:{access_token:'test'}}})}}}};
  vm.runInNewContext(src.slice(start,end),ctx);
  assert.equal(await ctx.loadAdminCoursePreview(),true);assert.equal(requested,'member');assert.equal(ctx.state.settings.learn_quizzes_unlocked,true);assert.equal(ctx.progress,null);
+});
+
+test('course preview enforces existing coach authorization and only reads',async()=>{
+ let allowed=false,queries=[];
+ const c={exports:{},fetch:async()=>({ok:true,json:async()=>({id:'coach'})}),require:name=>name==='./_lib/learn-action-review'?{canReview:async()=>allowed}:name==='./_lib/learn-action-ai-review'?{}:{SUPABASE_URL:'https://test',SUPABASE_SERVICE_KEY:'test',supabaseQuery:async q=>{queries.push(q);return [{settings:{learn_quizzes_unlocked:true}}];}}};
+ vm.runInNewContext(read('netlify/functions/learn-action-review.js'),c);
+ const event={httpMethod:'GET',headers:{authorization:'Bearer test'},queryStringParameters:{client_id:'member',course_preview:'1'}};
+ assert.equal((await c.exports.handler(event)).statusCode,403);assert.equal(queries.length,0);
+ allowed=true;const result=await c.exports.handler(event);assert.equal(result.statusCode,200);assert.equal(JSON.parse(result.body).journey.settings.learn_quizzes_unlocked,true);assert.equal(queries.length,1);assert.match(queries[0],/^social_journey_progress\?select=/);
 });
