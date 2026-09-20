@@ -1917,7 +1917,20 @@
   }
 
   let refreshPromise = null;
+  async function loadAdminCoursePreview() {
+    const owner = currentUserId();
+    if (!owner || !window.supabaseClient) return false;
+    const result = await window.supabaseClient.from(TABLE).select('*').eq('user_id', owner).maybeSingle();
+    if (result.error) throw result.error;
+    if (!window.isAdminViewing || currentUserId() !== owner) return false;
+    state = result.data ? normalizeState(result.data) : null;
+    progress = null;
+    return true;
+  }
+
   function refresh() {
+    // Coach previews read the member's curriculum/access without advancing or saving it.
+    if (window.isAdminViewing) return loadAdminCoursePreview();
     if (!isJourneyEligible()) return Promise.resolve(true);
     if (refreshPromise) return refreshPromise;
     refreshPromise = refreshHomeState();
