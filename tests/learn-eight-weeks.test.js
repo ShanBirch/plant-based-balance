@@ -163,3 +163,12 @@ test('coach quiz unlock allows catch-up without completing earlier quizzes or ac
  ctx.window.startFoundationsQuiz('not-in-this-week',2);assert.equal(started.length,1);
  assert.equal(weeks[0].quizCompleted,1);assert.equal(weeks[0].isComplete,false);
 });
+
+test('coach preview reads member settings without writing or advancing the journey',async()=>{
+ const src=read('js/dashboard/pbb-social-journey.js');
+ const start=src.indexOf('  async function loadAdminCoursePreview()'),end=src.indexOf('  function refresh()',start);
+ let requested;
+ const ctx={TABLE:'social_journey_progress',currentUserId:()=> 'member',normalizeState:r=>r,state:null,progress:{},window:{isAdminViewing:true,supabaseClient:{from:()=>({select:()=>({eq:(key,id)=>{requested=id;return {maybeSingle:async()=>({data:{settings:{learn_quizzes_unlocked:true}}})};}})})}}};
+ vm.runInNewContext(src.slice(start,end),ctx);
+ assert.equal(await ctx.loadAdminCoursePreview(),true);assert.equal(requested,'member');assert.equal(ctx.state.settings.learn_quizzes_unlocked,true);assert.equal(ctx.progress,null);
+});
