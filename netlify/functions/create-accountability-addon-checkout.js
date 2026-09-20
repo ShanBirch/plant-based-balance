@@ -38,12 +38,12 @@ function safeBookingId(value) {
 
 function siteOrigin(event) {
     const origin = String(event.headers?.origin || '').trim();
-    return /^https:\/\/(?:www\.)?plantbased-balance\.org$/i.test(origin) || /^https:\/\/[^/]+\.netlify\.app$/i.test(origin)
+    return /^https:\/\/(?:www\.)?(?:plantbased-balance\.org|balanceneurosciencefitness\.com)$/i.test(origin) || /^https:\/\/[^/]+\.netlify\.app$/i.test(origin)
         ? origin
-        : 'https://plantbased-balance.org';
+        : 'https://balanceneurosciencefitness.com';
 }
 
-async function createVoiceCheckinCheckout({ stripeKey, user, origin, weekStart }) {
+async function createVoiceCheckinCheckout({ stripeKey, user, origin, weekStart, nativeApp }) {
     const params = new URLSearchParams();
     params.set('mode', 'subscription');
     if (user.stripe_customer_id) params.set('customer', user.stripe_customer_id);
@@ -55,8 +55,8 @@ async function createVoiceCheckinCheckout({ stripeKey, user, origin, weekStart }
     params.set('line_items[0][price_data][recurring][interval]', 'week');
     params.set('line_items[0][quantity]', '1');
     params.set('custom_text[submit][message]', 'AU$25.00 is billed weekly for one extra voice-message accountability check-in. You can cancel before a future weekly renewal.');
-    params.set('success_url', `${origin}/dashboard.html?accountability_addon=voice_checkin&checkout=success`);
-    params.set('cancel_url', `${origin}/dashboard.html?accountability_addon=voice_checkin&checkout=cancelled`);
+    params.set('success_url', nativeApp ? 'https://balanceneurosciencefitness.com/checkout-return.html?status=complete' : `${origin}/dashboard.html?accountability_addon=voice_checkin&checkout=success`);
+    params.set('cancel_url', nativeApp ? 'https://balanceneurosciencefitness.com/checkout-return.html' : `${origin}/dashboard.html?accountability_addon=voice_checkin&checkout=cancelled`);
     const metadata = {
         balance_product: 'balance_accountability_addon',
         balance_plan: 'extra_voice_checkin_weekly',
@@ -98,7 +98,7 @@ async function activeMainSubscription(user) {
     return rows.find(row => !['extra_voice_checkin_weekly', 'extra_zoom_pt_weekly'].includes(String(row.subscription_plan || ''))) || null;
 }
 
-async function createPtCheckout({ stripeKey, user, origin, booking, addonType }) {
+async function createPtCheckout({ stripeKey, user, origin, booking, addonType, nativeApp }) {
     const isUpgrade = addonType === ZOOM_PT_1_UPGRADE;
     const unitAmount = isUpgrade ? 12500 : 7500;
     const previous = isUpgrade ? await activeMainSubscription(user) : null;
@@ -117,8 +117,8 @@ async function createPtCheckout({ stripeKey, user, origin, booking, addonType })
     params.set('custom_text[submit][message]', isUpgrade
         ? 'AU$125.00 is your total weekly Zoom PT 1 payment. It replaces your current coaching subscription after payment and begins with a six-week initial block.'
         : 'AU$75.00 is billed weekly for one additional recurring Zoom PT session until cancelled.');
-    params.set('success_url', `${origin}/dashboard.html?accountability_addon=${encodeURIComponent(addonType)}&checkout=success`);
-    params.set('cancel_url', `${origin}/dashboard.html?accountability_addon=${encodeURIComponent(addonType)}&checkout=cancelled`);
+    params.set('success_url', nativeApp ? 'https://balanceneurosciencefitness.com/checkout-return.html?status=complete' : `${origin}/dashboard.html?accountability_addon=${encodeURIComponent(addonType)}&checkout=success`);
+    params.set('cancel_url', nativeApp ? 'https://balanceneurosciencefitness.com/checkout-return.html' : `${origin}/dashboard.html?accountability_addon=${encodeURIComponent(addonType)}&checkout=cancelled`);
     const metadata = {
         balance_product: isUpgrade ? 'balance_zoom_pt' : 'balance_accountability_addon',
         balance_plan: isUpgrade ? 'zoom_pt_1_weekly' : 'extra_zoom_pt_weekly',
@@ -175,10 +175,10 @@ exports.handler = async (event) => {
         }
         if (ptAddon) {
             const booking = await loadBookedPtSlot({ user, bookingId, addonType: ptAddon });
-            const checkoutUrl = await createPtCheckout({ stripeKey, user, origin: siteOrigin(event), booking, addonType: ptAddon });
+            const checkoutUrl = await createPtCheckout({ stripeKey, user, origin: siteOrigin(event), nativeApp: /FitGotchi-Native/i.test(event.headers?.['user-agent'] || ''), booking, addonType: ptAddon });
             return json(200, { ok: true, checkout_url: checkoutUrl });
         }
-        const checkoutUrl = await createVoiceCheckinCheckout({ stripeKey, user, origin: siteOrigin(event), weekStart });
+        const checkoutUrl = await createVoiceCheckinCheckout({ stripeKey, user, origin: siteOrigin(event), nativeApp: /FitGotchi-Native/i.test(event.headers?.['user-agent'] || ''), weekStart });
         return json(200, { ok: true, checkout_url: checkoutUrl });
     } catch (error) {
         console.error('[accountability-addon] failed:', error.message);

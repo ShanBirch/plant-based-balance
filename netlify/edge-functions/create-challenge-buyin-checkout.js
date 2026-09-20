@@ -7,6 +7,7 @@ export default async (request, context) => {
 
     try {
         const body = await request.json();
+        const nativeApp = body.nativeApp === true || /FitGotchi-Native/i.test(request.headers.get("user-agent") || "");
         const { userId, email, challengeId } = body;
 
         if (!userId || !email || !challengeId) {
@@ -39,8 +40,8 @@ export default async (request, context) => {
                 },
                 quantity: 1,
             }],
-            success_url: request.headers.get("origin") + '/dashboard.html?challenge_buyin=success&challenge_id=' + challengeId,
-            cancel_url: request.headers.get("origin") + '/dashboard.html?challenge_buyin=cancelled',
+            success_url: nativeApp ? "https://balanceneurosciencefitness.com/checkout-return.html?status=complete" : request.headers.get("origin") + '/dashboard.html?challenge_buyin=success&challenge_id=' + challengeId,
+            cancel_url: nativeApp ? "https://balanceneurosciencefitness.com/checkout-return.html" : request.headers.get("origin") + '/dashboard.html?challenge_buyin=cancelled',
             metadata: {
                 user_id: userId,
                 challenge_id: challengeId,

@@ -40,7 +40,7 @@ assert(
 assert(
     checkoutSession.includes('const checkoutOrigin = assertSameSiteCheckoutRequest(request);') &&
     checkoutSession.includes('assertAcceptedCheckoutTerms(compliance);') &&
-    checkoutSession.includes('successUrl: checkoutOrigin') &&
+    checkoutSession.includes('successUrl: isNativeCheckout') && checkoutSession.includes(': checkoutOrigin +') &&
     checkoutSession.includes('const plan = getBalanceCheckoutPlan(priceId);') &&
     checkoutSession.includes('checkout.plan.unitAmount') &&
     checkoutSession.includes('params.set("mode", checkout.plan.mode)') &&

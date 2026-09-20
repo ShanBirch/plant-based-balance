@@ -518,3 +518,32 @@ test('payment does not prefill the synthetic preview account email', () => {
     app.window.BalanceMetaAdTrial.openCheckoutGate();
     assert.notEqual(app.elements['meta-ad-trial-email'].value, 'guest@preview.local');
 });
+
+
+test('native payment recovery verifies the account and payment before returning Home', async () => {
+    for (const scenario of ['paid', 'unpaid', 'expired', 'wrong-account', 'changed-account', 'network']) {
+        const app = runTrial('?source=meta_ad_trial');
+        const api = app.window.BalanceMetaAdTrial;
+        app.window.NativePermissions = {};
+        const state = { accountFirst: true, variant: api.VARIANT };
+        state.ownerUserId = 'buyer';
+        state.nativePayment = { sessionId: 'cs_live_paid', plan: 'balance_foundations_six_week', userId: 'buyer', createdAt: 1_800_000_000_000 };
+        app.localStorage.setItem(api.STATE_KEY, JSON.stringify(state));
+        let authCalls = 0, requests = 0;
+        app.window.authHelpers = { getSession: async () => ({ access_token: 'test-token', user: { id: scenario === 'wrong-account' || (scenario === 'changed-account' && ++authCalls > 1) ? 'other' : 'buyer' } }) };
+        app.window.fetch = async (url, options) => {
+            requests++;
+            assert.match(url, /claim-founders-pass$/);
+            assert.equal(JSON.parse(options.body).sessionId, 'cs_live_paid');
+            if (scenario === 'network') throw new Error('offline');
+            return { ok: scenario !== 'unpaid', json: async () => ({ claimed: scenario !== 'unpaid', expired: scenario === 'expired' }) };
+        };
+        const navigations = [];
+        app.window.location.replace = url => navigations.push(url);
+        assert.equal(await api.recoverNativePayment(), scenario === 'paid', scenario);
+        assert.deepEqual(navigations, scenario === 'paid' ? ['/dashboard.html'] : [], scenario);
+        assert.equal(app.sessionStorage.getItem(api.CLAIM_KEY), scenario === 'paid' ? 'true' : null);
+        if (scenario === 'paid') assert.equal(api.isActive(), false, 'verified payment must not reopen checkout on startup');
+        if (scenario === 'wrong-account') assert.equal(requests, 0);
+    }
+});

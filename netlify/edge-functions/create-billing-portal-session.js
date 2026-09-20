@@ -19,6 +19,7 @@ function getEnv(name) {
 }
 
 function getSameOriginReturnUrl(request, rawReturnUrl) {
+    if (/FitGotchi-Native/i.test(request.headers.get("user-agent") || "")) return "https://balanceneurosciencefitness.com/checkout-return.html?status=manage";
     const requestUrl = new URL(request.url);
     const fallback = new URL("/dashboard.html?tab=profile", requestUrl.origin);
     if (!rawReturnUrl) return fallback.toString();

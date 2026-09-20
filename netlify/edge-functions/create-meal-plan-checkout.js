@@ -32,27 +32,27 @@ const MEAL_PLAN_INFO = {
     'summer-shred': {
         name: 'Summer Shred 28-Day',
         description: 'High-protein meal plan for fat loss and muscle retention',
-        images: ['https://plantbasedbalance.com/assets/summer_shred_plan.png']
+        images: ['https://balanceneurosciencefitness.com/assets/summer_shred_plan.png']
     },
     'clean-bulk': {
         name: 'Clean Bulk Protocol',
         description: 'Muscle-building meal plan with quality whole foods',
-        images: ['https://plantbasedbalance.com/assets/clean_bulk_plan.png']
+        images: ['https://balanceneurosciencefitness.com/assets/clean_bulk_plan.png']
     },
     'energy-boost': {
         name: 'Energy Boost 28-Day',
         description: 'Meals designed for sustained energy throughout the day',
-        images: ['https://plantbasedbalance.com/assets/energy_boost_plan.png']
+        images: ['https://balanceneurosciencefitness.com/assets/energy_boost_plan.png']
     },
     'gut-reset': {
         name: 'Gut Reset Protocol',
         description: 'Healing meal plan focused on digestive health',
-        images: ['https://plantbasedbalance.com/assets/gut_reset_plan.png']
+        images: ['https://balanceneurosciencefitness.com/assets/gut_reset_plan.png']
     },
     'quick-easy': {
         name: 'Quick & Easy Meals',
         description: 'Healthy meals in 20 minutes or less',
-        images: ['https://plantbasedbalance.com/assets/quick_easy_plan.png']
+        images: ['https://balanceneurosciencefitness.com/assets/quick_easy_plan.png']
     }
 };
 
@@ -80,6 +80,7 @@ export default async (request, context) => {
 
     try {
         const body = await request.json();
+        const nativeApp = body.nativeApp === true || /FitGotchi-Native/i.test(request.headers.get("user-agent") || "");
         const { planSlug, email, preferences, userId } = body;
 
         // Validate required fields
@@ -118,15 +119,15 @@ export default async (request, context) => {
         }];
 
         // Origin for redirect URLs
-        const origin = request.headers.get("origin") || "https://plantbasedbalance.com";
+        const origin = request.headers.get("origin") || "https://balanceneurosciencefitness.com";
 
         // Create checkout session
         const session = await stripe.checkout.sessions.create({
             mode: 'payment', // One-time payment, not subscription
             customer_email: email || undefined,
             line_items: lineItems,
-            success_url: `${origin}/meal-plan-success.html?session_id={CHECKOUT_SESSION_ID}&plan=${planSlug}`,
-            cancel_url: `${origin}/dashboard.html#meals`,
+            success_url: nativeApp ? "https://balanceneurosciencefitness.com/checkout-return.html?status=complete" : `${origin}/meal-plan-success.html?session_id={CHECKOUT_SESSION_ID}&plan=${planSlug}`,
+            cancel_url: nativeApp ? "https://balanceneurosciencefitness.com/checkout-return.html" : `${origin}/dashboard.html#meals`,
             metadata: {
                 // Store preferences and plan info for webhook processing
                 plan_slug: planSlug,
