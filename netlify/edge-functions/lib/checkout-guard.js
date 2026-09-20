@@ -1,7 +1,9 @@
 import { getLearnCoursePricing } from "../../../lib/learn-course-pricing.js";
-const DEFAULT_SITE_ORIGIN = "https://plantbased-balance.org";
+const DEFAULT_SITE_ORIGIN = "https://balanceneurosciencefitness.com";
 const NETLIFY_HOST_SUFFIX = ".netlify.app";
 const ALLOWED_HOSTS = new Set([
+    "balanceneurosciencefitness.com",
+    "www.balanceneurosciencefitness.com",
     "plantbased-balance.org",
     "www.plantbased-balance.org",
     "localhost",

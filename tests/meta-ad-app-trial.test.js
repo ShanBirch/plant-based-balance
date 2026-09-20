@@ -18,6 +18,24 @@ function makeStorage(initial = {}) {
     };
 }
 
+test('native checkout keeps the current app screen and allows another attempt after returning', async () => {
+    const app = runTrial('?source=meta_ad_trial');
+    const launched = [];
+    app.window.NativePermissions = { openExternalBrowser: url => launched.push(url) };
+    const before = app.window.location.href;
+    app.elements['meta-ad-trial-email'].value = 'qa@example.com';
+    app.elements['meta-ad-trial-terms'].checked = true;
+    assert.equal(await app.window.BalanceMetaAdTrial.beginCheckout(), true);
+    assert.equal(app.window.location.href, before);
+    assert.deepEqual(launched, ['https://checkout.stripe.com/test-preview']);
+    assert.equal(app.events.find(event => event.event_type === 'checkout_request').body.nativeApp, true);
+    assert.equal(app.elements['meta-ad-trial-checkout-btn'].disabled, false);
+    app.window.document.visibilityState = 'visible';
+    app.window.document.listeners.visibilitychange();
+    assert.equal(await app.window.BalanceMetaAdTrial.beginCheckout(), true);
+    assert.equal(launched.length, 2);
+});
+
 function runTrial(search) {
     let now = 1_800_000_000_000;
     const elements = {
@@ -49,7 +67,8 @@ function runTrial(search) {
         cookie: '_fbc=test-fbc; _fbp=test-fbp',
         documentElement: { classList: { add(value) { this.value = value; }, remove(value) { if (this.value === value) this.value = ''; } } },
         getElementById: id => elements[id] || null,
-        addEventListener() {},
+        listeners: {},
+        addEventListener(name, callback) { this.listeners[name] = callback; },
     };
     const window = {
         location: {

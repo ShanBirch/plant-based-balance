@@ -1,0 +1,18 @@
+:root { color-scheme: light dark; font-family: system-ui, sans-serif; color: #28251d; background: #f9f7f2; }
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; min-height: 100dvh; padding: max(42px, env(safe-area-inset-top, 0px)) max(24px, env(safe-area-inset-right, 0px)) max(28px, env(safe-area-inset-bottom, 0px)) max(24px, env(safe-area-inset-left, 0px)); display: grid; place-items: center; }
+main { width: min(100%, 440px); text-align: center; padding-block: 24px; }
+img { display: block; margin: 0 auto 24px; border-radius: 50%; background: #fff; }
+.eyebrow { font-size: 11px; letter-spacing: .13em; font-weight: 700; }
+h1 { font-family: Georgia, serif; font-size: clamp(30px, 8vw, 40px); margin: 16px 0; }
+p { line-height: 1.6; }
+a { color: #665018; -webkit-text-fill-color: currentColor; }
+.primary { display: block; margin-top: 28px; padding: 17px; border-radius: 16px; background: #eacb7d; color: #28251d; font-weight: 700; text-decoration: none; border: 1px solid #a38238; }
+.primary:focus-visible, .website:focus-visible { outline: 3px solid #a38238; outline-offset: 4px; }
+.hint { font-size: 13px; }
+.website { display: inline-block; margin-top: 14px; padding: 10px 0; font-size: 14px; }
+@media (prefers-color-scheme: dark) {
+    :root { color: #f5f0e6; background: #1d211d; }
+    a { color: #eacb7d; }
+    .primary { color: #28251d; }
+}

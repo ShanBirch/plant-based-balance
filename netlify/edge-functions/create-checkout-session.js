@@ -94,6 +94,10 @@ export default async (request, context) => {
         const checkoutEmail = cleanCheckoutEmail(email, { required: false });
         const isMetaAdTrialCheckout = checkoutSource === "meta_ad_trial"
             && ["facebook_5m_foundations_v3", "facebook_5m_paid_v2"].includes(pageVariant);
+        // Existing installed builds already register this app's custom scheme.
+        // Use an HTTPS handoff so browsers that require a tap can offer Open Balance.
+        const isNativeCheckout = isMetaAdTrialCheckout && (body.nativeApp === true
+            || /FitGotchi-Native/i.test(request.headers.get("user-agent") || ""));
         const complianceMetadata = compliance?.metadata || {};
         const documentVersions = compliance?.document_versions || {};
         const stripeComplianceMetadata = {
@@ -139,7 +143,9 @@ export default async (request, context) => {
             subscriptionMetadata: subscriptionData.metadata,
             paymentMetadata: purchaseMetadata,
             successUrl: checkoutOrigin + `/success.html?session_id={CHECKOUT_SESSION_ID}&plan=${encodeURIComponent(plan.balancePlan)}&amount=${(plan.unitAmount / 100).toFixed(2)}&bump=${bump && plan.allowBump ? "true" : "false"}${isMetaAdTrialCheckout ? "&source=meta_ad_trial_paid" : ""}`,
-            cancelUrl: checkoutOrigin + (isMetaAdTrialCheckout ? "/dashboard.html" : plan.balancePlan === "balance_foundations_six_week" ? `${cancelPath}#join` : "/coaching.html#plan-checkout"),
+            cancelUrl: isNativeCheckout
+                ? "https://balanceneurosciencefitness.com/checkout-return.html"
+                : checkoutOrigin + (isMetaAdTrialCheckout ? "/dashboard.html" : plan.balancePlan === "balance_foundations_six_week" ? `${cancelPath}#join` : "/coaching.html#plan-checkout"),
             metadata: {
                 checkout_email: checkoutEmail,
                 balance_product: plan.balanceProduct,
