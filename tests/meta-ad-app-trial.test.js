@@ -347,6 +347,7 @@ test('the dedicated phone account repeats onboarding even with a saved login', (
 test('saved account-first mode survives a clean URL and does not replace authentication', () => {
     const trial = runTrial('?meta_trial=facebook_5m_foundations_v3&account_first=1&learn_entry=website');
     const api=trial.window.BalanceMetaAdTrial;
+    api.activateSignup('member-a', new URLSearchParams('?meta_trial=facebook_5m_foundations_v3&account_first=1&learn_entry=website'));
     assert.equal(api.restoreAuthenticatedMode('member-a'),true);
     trial.window.location.search='';
     trial.window.metaAdTrialMode=false;

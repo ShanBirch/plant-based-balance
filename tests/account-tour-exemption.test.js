@@ -120,7 +120,7 @@ test('real Meta trial activation, ownership restore and claim respect tour eligi
   window.sessionStorage = {getItem:k=>session.get(k)||null,setItem:(k,v)=>session.set(k,v),removeItem:k=>session.delete(k)};
   vm.runInNewContext(read('lib/meta-ad-trial.js'), {window,URLSearchParams,Date,console,setTimeout,clearTimeout,setInterval,clearInterval});
   const trial = window.BalanceMetaAdTrial;
-  window.localStorage.setItem(trial.STATE_KEY, JSON.stringify({variant:trial.VARIANT,activatedAt:123,accountFirst:true}));
+  window.localStorage.setItem(trial.STATE_KEY, JSON.stringify({variant:trial.VARIANT,activatedAt:123,accountFirst:true,ownerUserId:'meta-lead'}));
   assert.equal(trial.restoreAuthenticatedMode('meta-lead'),true);
   assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(),false);
   window.currentUser = {id:'existing-member'};
