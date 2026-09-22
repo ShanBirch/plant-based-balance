@@ -2,6 +2,19 @@
 (function () {
     'use strict';
 
+    if (window.__balanceAnalyticsLoaded) return;
+    window.__balanceAnalyticsLoaded = true;
+    const firstPartyOnly = document.currentScript?.dataset?.firstPartyOnly === 'true';
+    const memory = {};
+    function read(key, kind = 'localStorage') {
+        try { return (kind === 'localStorage' ? localStorage : sessionStorage).getItem(key); }
+        catch (_) { return memory[kind + key] || null; }
+    }
+    function write(key, value, kind = 'localStorage') {
+        memory[kind + key] = value;
+        try { (kind === 'localStorage' ? localStorage : sessionStorage).setItem(key, value); } catch (_) {}
+    }
+
     const ATTRIBUTION_KEYS = [
         'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',
         'fbclid', 'gclid', 'campaign_id', 'adset_id', 'ad_id', 'creative_id',
@@ -25,23 +38,36 @@
         return `${prefix}-${value}`;
     }
 
-    function persistentId(key, prefix, storage) {
-        let value = storage.getItem(key);
+    function persistentId(key, prefix, kind) {
+        let value = read(key, kind);
         if (!value) {
             value = randomId(prefix);
-            storage.setItem(key, value);
+            write(key, value, kind);
         }
         return value;
     }
 
-    const visitorId = persistentId(VISITOR_KEY, 'visitor', localStorage);
-    const sessionId = persistentId(SESSION_KEY, 'session', sessionStorage);
+    const visitorId = persistentId(VISITOR_KEY, 'visitor', 'localStorage');
+    const sessionId = persistentId(SESSION_KEY, 'session', 'sessionStorage');
     const params = new URLSearchParams(window.location.search);
+    if (params.get('analytics_test') === '1') write('balance_analytics_test', '1', 'sessionStorage');
+    const testMode = read('balance_analytics_test', 'sessionStorage') === '1';
+    if (testMode) window.__balanceOnboardingAnalyticsTest = true;
     const incoming = {};
     ATTRIBUTION_KEYS.forEach((key) => {
         const value = params.get(key);
         if (value) incoming[key] = value.slice(0, 500);
     });
+    // Referrers identify a source, not whether an ad was paid for.
+    try {
+        const referrer = new URL(document.referrer);
+        const siteHosts = ['plantbased-balance.org', 'balanceneurosciencefitness.com', 'future-balance.netlify.app'];
+        if (!incoming.utm_source && !siteHosts.includes(referrer.hostname.replace(/^www\./, '')) && referrer.hostname !== new URL(window.location.href).hostname) {
+            incoming.utm_source = /(^|\.)instagram\.com$/.test(referrer.hostname) ? 'instagram'
+                : /(^|\.)facebook\.com$/.test(referrer.hostname) ? 'facebook' : referrer.hostname;
+            incoming.utm_medium = incoming.utm_medium || 'referral';
+        }
+    } catch (_) {}
 
     // Paid Meta DMs use a short public path instead of exposing a long tracking
     // query. The compact base-36 suffix carries the unique numeric Meta ad ID;
@@ -66,25 +92,26 @@
     }
 
     const now = new Date().toISOString();
-    const firstTouch = safeParse(localStorage.getItem(FIRST_TOUCH_KEY), {});
-    const previousLastTouch = safeParse(localStorage.getItem(LAST_TOUCH_KEY), {});
+    const firstTouch = safeParse(read(FIRST_TOUCH_KEY), {});
+    const previousLastTouch = safeParse(read(LAST_TOUCH_KEY), {});
     if (Object.keys(incoming).length) {
         const touch = {
             ...incoming,
             landing_url: window.location.href,
             captured_at: now,
         };
-        if (!Object.keys(firstTouch).length) localStorage.setItem(FIRST_TOUCH_KEY, JSON.stringify(touch));
-        localStorage.setItem(LAST_TOUCH_KEY, JSON.stringify(touch));
-        sessionStorage.setItem('utm_data', JSON.stringify({ ...previousLastTouch, ...touch }));
-    } else if (!sessionStorage.getItem('utm_data') && Object.keys(previousLastTouch).length) {
-        sessionStorage.setItem('utm_data', JSON.stringify(previousLastTouch));
+        if (!Object.keys(firstTouch).length) write(FIRST_TOUCH_KEY, JSON.stringify(touch));
+        write(LAST_TOUCH_KEY, JSON.stringify(touch));
+        // A new source must not inherit an old paid campaign or ad ID.
+        write('utm_data', JSON.stringify(touch), 'sessionStorage');
+    } else if (!read('utm_data', 'sessionStorage') && Object.keys(previousLastTouch).length) {
+        write('utm_data', JSON.stringify(previousLastTouch), 'sessionStorage');
     }
 
     function getAttribution() {
-        const first = safeParse(localStorage.getItem(FIRST_TOUCH_KEY), {});
-        const last = safeParse(localStorage.getItem(LAST_TOUCH_KEY), {});
-        const session = safeParse(sessionStorage.getItem('utm_data'), {});
+        const first = safeParse(read(FIRST_TOUCH_KEY), {});
+        const last = safeParse(read(LAST_TOUCH_KEY), {});
+        const session = safeParse(read('utm_data', 'sessionStorage'), {});
         return {
             ...last,
             ...session,
@@ -157,6 +184,9 @@
             referrer: document.referrer || null,
             user_agent: navigator.userAgent,
             metadata: cleanMetadata({
+                tracking_version: 'public_funnel_v2',
+                test_mode: testMode,
+                traffic_type: /bot|crawler|spider|GoogleOther|Headless/i.test(navigator.userAgent) ? 'bot' : 'browser',
                 campaign_id: attribution.campaign_id || null,
                 adset_id: attribution.adset_id || null,
                 ad_id: attribution.ad_id || null,
@@ -173,9 +203,8 @@
     function sendEvent(eventType, metadata, useBeacon) {
         const payload = eventPayload(eventType, metadata);
         try {
-            if (useBeacon && navigator.sendBeacon) {
-                navigator.sendBeacon(EVENT_ENDPOINT, new Blob([JSON.stringify(payload)], { type: 'application/json' }));
-            } else {
+            const queued = useBeacon && navigator.sendBeacon && navigator.sendBeacon(EVENT_ENDPOINT, new Blob([JSON.stringify(payload)], { type: 'application/json' }));
+            if (!queued) {
                 fetch(EVENT_ENDPOINT, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -185,7 +214,7 @@
             }
         } catch (_) {}
 
-        if (typeof window.gtag === 'function') {
+        if (!firstPartyOnly && !testMode && typeof window.gtag === 'function') {
             window.gtag('event', eventType, {
                 page_variant: payload.page_variant,
                 landing_page: payload.landing_page,
@@ -198,7 +227,7 @@
     window.trackBalanceEvent = (eventType, metadata) => sendEvent(eventType, metadata, false);
 
     const GA_MEASUREMENT_ID = 'G-X4MJFTSBC3';
-    if (!document.querySelector(`script[src*="${GA_MEASUREMENT_ID}"]`)) {
+    if (!firstPartyOnly && !testMode && !document.querySelector(`script[src*="${GA_MEASUREMENT_ID}"]`)) {
         const script = document.createElement('script');
         script.async = true;
         script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`;
@@ -206,7 +235,7 @@
         window.dataLayer = window.dataLayer || [];
         window.gtag = window.gtag || function () { window.dataLayer.push(arguments); };
         window.gtag('js', new Date());
-        window.gtag('config', GA_MEASUREMENT_ID, { send_page_view: true });
+        window.gtag('config', GA_MEASUREMENT_ID, { send_page_view: false });
     }
 
     function startPageTracking() {
@@ -226,14 +255,24 @@
         window.addEventListener('scroll', checkScroll, { passive: true });
 
         document.addEventListener('click', (event) => {
-            const target = event.target.closest('a,button,[data-track]');
+            const target = event.target.closest?.('a,button,[data-track]');
             if (!target) return;
             const eventName = target.dataset.track || (target.classList.contains('checkout-btn') ? 'checkout_click' : 'click');
-            sendEvent(eventName, {
+            const href = target.dataset.trackHref || target.getAttribute('href');
+            let destination = null;
+            try { if (href) destination = new URL(href, window.location.href); } catch (_) {}
+            const store = destination?.hostname === 'apps.apple.com' ? 'ios' : destination?.hostname === 'play.google.com' ? 'android' : null;
+            const details = {
                 target: target.id || target.getAttribute('href') || target.className || target.tagName,
                 target_text: (target.innerText || target.getAttribute('aria-label') || '').trim().slice(0, 200),
-            }, false);
-        });
+                destination: destination ? destination.origin + destination.pathname : undefined,
+                link_group: target.dataset.bioLink || undefined,
+                platform: store || undefined,
+            };
+            sendEvent(eventName, details, true);
+            // Store handoff is a click, never proof of a completed installation.
+            if (store && eventName !== 'app_download_click') sendEvent('app_download_click', details, true);
+        }, true); // Capture before download handlers stop propagation or leave the page.
 
         let sentDuration = false;
         const sendDuration = () => {

@@ -17,7 +17,7 @@ const SUPABASE_SERVICE_KEY =
     process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 
 const ALLOWED_EVENT_TYPES = new Set([
-    'page_view', 'scroll', 'click', 'time_on_page', 'cta_click', 'dm_click',
+    'page_view', 'scroll', 'click', 'time_on_page', 'cta_click', 'dm_click', 'app_download_click',
     'checkout_click', 'checkout_started', 'checkout_error', 'video_play',
     'lead_created', 'purchase', 'signup', 'onboarding_started',
     'onboarding_completed', 'weekly_goals_set', 'meal_plan_created',
@@ -333,7 +333,7 @@ exports.handler = async (event) => {
         return { statusCode: 405, headers: corsHeaders(), body: JSON.stringify({ error: 'Method not allowed' }) };
     }
     if (!SUPABASE_SERVICE_KEY) {
-        return { statusCode: 200, headers: corsHeaders(), body: JSON.stringify({ ok: true, skipped: 'no_service_key' }) };
+        return { statusCode: 503, headers: corsHeaders(), body: JSON.stringify({ ok: false, error: 'analytics_unavailable' }) };
     }
 
     let payload;
@@ -395,6 +395,7 @@ exports.handler = async (event) => {
         }
     } catch (err) {
         console.error('[log-lp-event] error', err && err.message);
+        return { statusCode: 503, headers: corsHeaders(), body: JSON.stringify({ ok: false, error: 'analytics_unavailable' }) };
     }
     return { statusCode: 200, headers: corsHeaders(), body: JSON.stringify({ ok: true, inserted: rows.length }) };
 };
