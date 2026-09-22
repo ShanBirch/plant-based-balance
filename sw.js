@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v565-payment-return';
+const CACHE_NAME = 'pbb-app-v566-video-retry';
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
@@ -37,7 +37,7 @@ const ASSETS = [
   './js/dashboard/pbb-deferred-weeklygoals.js?v=37-mobile-goal-pills',
   './css/dashboard/pbb-onboarding-comeback.css?v=8',
   './css/dashboard/pbb-onboarding-foundations.css?v=13-iphone-keyboard',
-  './js/dashboard/dashboard-script-7-video_logic.js?v=20260911-ios-preview',
+  './js/dashboard/dashboard-script-7-video_logic.js?v=20260923-video-retry',
   './js/dashboard/dashboard-script-10-points_widget_functions.js?v=67-verified-moves',
   './js/dashboard/pbb-deferred-fitbit.js?v=3-latest-import-only',
   './js/dashboard/pbb-next-obvious-steps.js?v=54-tour-quiz-continue',

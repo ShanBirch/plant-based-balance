@@ -199,7 +199,7 @@ function getInlineVideoStatus(container, videoUrl) {
             const playOverlay = container.querySelector('.inline-play-overlay');
             if (video) {
                 stopInlineVideo(video);
-                startInlineVideoPlayback(container, video, videoUrl, playOverlay);
+                startInlineVideoPlayback(container, video, videoUrl, playOverlay, true);
             }
         });
     }
@@ -225,7 +225,7 @@ function hideInlineVideoStatus(container) {
     if (status) status.style.display = 'none';
 }
 
-function startInlineVideoPlayback(container, video, videoUrl, playOverlay) {
+function startInlineVideoPlayback(container, video, videoUrl, playOverlay, reload = false) {
     if (!container || !video || !videoUrl) return;
 
     clearInlineVideoLoadTimer(video);
@@ -272,7 +272,9 @@ function startInlineVideoPlayback(container, video, videoUrl, playOverlay) {
     video.oncanplay = handleInlineVideoReady;
     video.onplaying = handleInlineVideoReady;
 
-    if (video.src !== videoUrl) {
+    // A failed media element retains its error even when the network recovers.
+    // Retry must restart resource selection for the SAME URL, not just play().
+    if (reload || video.error || video.src !== videoUrl) {
         video.src = videoUrl;
         video.load();
     }
