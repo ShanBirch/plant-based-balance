@@ -225,76 +225,115 @@ function hideInlineVideoStatus(container) {
     if (status) status.style.display = 'none';
 }
 
+
+function getExerciseVideoBackup(videoUrl) {
+    try {
+        const canonical = new URL(videoUrl, window.location.href);
+        canonical.hash = ''; canonical.search = '';
+        return (window.PBB_EXERCISE_VIDEO_BACKUPS || {})[canonical.href] || '';
+    } catch (_) { return ''; }
+}
+
+function reportExerciseVideoPlayback(videoUrl, stage, video, attempt, reason) {
+    try {
+        const asset = new URL(videoUrl, window.location.href).pathname.split('/').pop();
+        window.trackBalanceActivity?.('exercise_video_' + stage, {
+            asset: asset.slice(0, 100), attempt, reason,
+            media_code: Number(video.error?.code || 0),
+            ready_state: video.readyState, network_state: video.networkState,
+            online: navigator.onLine !== false
+        }, { dedupeKey: asset + ':' + stage + ':' + attempt, dedupeMs: 10000 });
+    } catch (_) {}
+}
+
 function startInlineVideoPlayback(container, video, videoUrl, playOverlay, reload = false) {
     if (!container || !video || !videoUrl) return;
-
     clearInlineVideoLoadTimer(video);
-    hideInlineVideoStatus(container);
-    cacheWorkoutVideosForOffline(videoUrl);
-
-    // A posterless exercise is primed to a real working frame. Rewind only
-    // when the user actually presses play so the complete demo still runs.
+    const session = {};
+    video._pbbPlaybackSession = session;
+    const current = () => video._pbbPlaybackSession === session && video.isConnected !== false;
+    const backup = getExerciseVideoBackup(videoUrl);
+    const sources = [videoUrl, videoUrl];
+    if (backup) sources.push(backup);
+    let attempt = 0;
+    let pendingRecovery = false;
+    let recoveredReported = false;
     video.dataset.exerciseThumbnailRequest = '';
     if (video.dataset.thumbnailPrimed === 'true' && Number(video.currentTime || 0) > 0) {
         try { video.currentTime = 0; } catch (_) {}
     }
     revealInlineExerciseThumbnail(video);
-
-    if (playOverlay) playOverlay.style.display = 'none';
     video.controls = true;
     video.muted = false;
     video.playsInline = true;
     video.setAttribute('playsinline', '');
     video.setAttribute('webkit-playsinline', '');
+    currentInlineVideo = video;
 
-    video.onerror = function() {
+    const fail = reason => {
+        if (!current()) return;
         clearInlineVideoLoadTimer(video);
         if (playOverlay) playOverlay.style.display = 'none';
-        video.controls = false;
+        video.controls = true;
         showInlineVideoStatus(container, videoUrl);
-        currentInlineVideo = null;
+        reportExerciseVideoPlayback(videoUrl, 'failed', video, attempt, reason);
     };
-
-    // "waiting" is normal while a remote MP4 buffers, especially in Android
-    // WebView. Keep playback alive so it can recover instead of pausing it.
-    video.onwaiting = function() {
+    const recover = reason => {
+        if (!current() || pendingRecovery) return;
         clearInlineVideoLoadTimer(video);
-        video._pbbInlineLoadTimer = setTimeout(function() {
-            if (!video || video.readyState >= 2 || video.paused) return;
-            showInlineVideoStatus(container, videoUrl);
-        }, 45000);
+        if (attempt >= sources.length - 1 || navigator.onLine === false) { fail(reason); return; }
+        pendingRecovery = true;
+        reportExerciseVideoPlayback(videoUrl, 'retry', video, attempt, reason);
+        video._pbbInlineLoadTimer = setTimeout(() => {
+            if (!current()) return;
+            pendingRecovery = false;
+            attempt++;
+            run(true);
+        }, 750);
     };
-
-    const handleInlineVideoReady = function() {
+    const armTimeout = () => {
+        if (pendingRecovery) return;
+        clearInlineVideoLoadTimer(video);
+        video._pbbInlineLoadTimer = setTimeout(() => recover('buffer_timeout'), 12000);
+    };
+    const run = force => {
+        if (!current()) return;
         clearInlineVideoLoadTimer(video);
         hideInlineVideoStatus(container);
+        if (playOverlay) playOverlay.style.display = 'none';
+        const thisAttempt = attempt;
+        video.onerror = () => recover('media_error');
+        video.onwaiting = armTimeout;
+        video.oncanplay = () => { if (current() && !pendingRecovery) clearInlineVideoLoadTimer(video); };
+        video.onplaying = () => {
+            if (!current()) return;
+            clearInlineVideoLoadTimer(video);
+            pendingRecovery = false;
+            hideInlineVideoStatus(container);
+            if (playOverlay) playOverlay.style.display = 'none';
+            if (attempt && !recoveredReported) {
+                recoveredReported = true;
+                reportExerciseVideoPlayback(videoUrl, 'recovered', video, attempt, attempt > 1 ? 'backup' : 'primary_retry');
+            }
+        };
+        if (force || video.error || video.src !== sources[attempt]) {
+            video.src = sources[attempt];
+            video.load();
+        }
+        armTimeout();
+        video.play().catch(error => {
+            if (!current() || thisAttempt !== attempt || error.name === 'AbortError') return;
+            if (error.name === 'NotAllowedError') {
+                clearInlineVideoLoadTimer(video);
+                video.controls = true;
+                if (playOverlay) playOverlay.style.display = 'flex';
+                reportExerciseVideoPlayback(videoUrl, 'needs_tap', video, attempt, 'playback_policy');
+                return;
+            }
+            recover('play_rejected');
+        });
     };
-    video.oncanplay = handleInlineVideoReady;
-    video.onplaying = handleInlineVideoReady;
-
-    // A failed media element retains its error even when the network recovers.
-    // Retry must restart resource selection for the SAME URL, not just play().
-    if (reload || video.error || video.src !== videoUrl) {
-        video.src = videoUrl;
-        video.load();
-    }
-
-    video.play().catch(e => {
-        console.error("Inline video play error:", e);
-        clearInlineVideoLoadTimer(video);
-        video.controls = false;
-        showInlineVideoStatus(container, videoUrl);
-        currentInlineVideo = null;
-    });
-
-    video._pbbInlineLoadTimer = setTimeout(function() {
-        if (!video || video.readyState >= 2 || video.paused) return;
-        // Keep the media element playing underneath the status. If buffering
-        // completes, oncanplay/onplaying hides the status automatically.
-        showInlineVideoStatus(container, videoUrl);
-    }, 45000);
-
-    currentInlineVideo = video;
+    run(reload);
 }
 
 function playInlineVideo(event, videoUrl) {

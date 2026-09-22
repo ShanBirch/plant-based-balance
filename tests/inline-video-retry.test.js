@@ -24,6 +24,7 @@ for (const scenario of [
         }
     };
     const context = {
+        getExerciseVideoBackup() { return ""; }, reportExerciseVideoPlayback() {}, navigator: {onLine:true},
         clearInlineVideoLoadTimer() {}, hideInlineVideoStatus() {},
         cacheWorkoutVideosForOffline() {}, revealInlineExerciseThumbnail() {},
         showInlineVideoStatus() { throw new Error('Playback should recover'); },

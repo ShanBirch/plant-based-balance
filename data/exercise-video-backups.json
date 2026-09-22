@@ -1,0 +1,107 @@
+[
+  {
+    "name": "Dumbbell Goblet Squat",
+    "primary": "https://plantbased-balance.org/assets/exercise-videos/compat/goblet-squat.mp4",
+    "backup": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/backup-v1/e74ab2a7ae1a649145e00ce2.mp4",
+    "bytes": 781767,
+    "sha256": "e74ab2a7ae1a649145e00ce2c4d567f4b4c61b871ec9e896797b094a31d3c102"
+  },
+  {
+    "name": "Dumbbell Bench Press",
+    "primary": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/phone-v1/b43812635823cb88b97346e5.mp4",
+    "backup": "/assets/exercise-videos/backup/7d5d09d043d9888f7ad62019.mp4",
+    "bytes": 873792,
+    "sha256": "7d5d09d043d9888f7ad620192eda23f25cec8888d85afa01a18724277461a50b"
+  },
+  {
+    "name": "Dumbbell Single Arm Row",
+    "primary": "https://plantbased-balance.org/assets/exercise-videos/compat/dumbbell-single-arm-row.mp4",
+    "backup": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/backup-v1/2787e4ef455e127262960f87.mp4",
+    "bytes": 288642,
+    "sha256": "2787e4ef455e127262960f875dc1d9365df546b1132fb43afa7947168521f5f5"
+  },
+  {
+    "name": "Hollow Body Hold",
+    "primary": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/phone-v1/acea1803f9eb80ee594aec44.mp4",
+    "backup": "/assets/exercise-videos/backup/6334bd0f83c3bea9a8fc7d5f.mp4",
+    "bytes": 83924,
+    "sha256": "6334bd0f83c3bea9a8fc7d5f79294060f4d08dff2565f1bd8cb6b8835c152d8b"
+  },
+  {
+    "name": "Dumbbell Romanian Deadlift",
+    "primary": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/phone-v1/8caf3c7873a3dcc4386fb8b4.mp4",
+    "backup": "/assets/exercise-videos/backup/bd380a4902e7c11a7327816c.mp4",
+    "bytes": 8913118,
+    "sha256": "bd380a4902e7c11a7327816c77aff72fc749236b98e7ade8230ec0e22c2c1d73"
+  },
+  {
+    "name": "Kneeling Push Up",
+    "primary": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/phone-v1/2d2a10f666178ff02067830d.mp4",
+    "backup": "/assets/exercise-videos/backup/06661f03ba77338c2b0bab26.mp4",
+    "bytes": 1448659,
+    "sha256": "06661f03ba77338c2b0bab263c9c4252bf766e0d2ec7f12981c5c0a38b51e84b"
+  },
+  {
+    "name": "Standing Dumbbell Bicep Curls",
+    "primary": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/phone-v1/28b713946443b8d05c9abc23.mp4",
+    "backup": "/assets/exercise-videos/backup/3482f8491bc58f0cee0b74bd.mp4",
+    "bytes": 4331426,
+    "sha256": "3482f8491bc58f0cee0b74bd42fcb08a3d0d6106272b151c348bb7de73a8305a"
+  },
+  {
+    "name": "Plank",
+    "primary": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/phone-v1/5d89bdb72cbf41264de67eba.mp4",
+    "backup": "/assets/exercise-videos/backup/a417b1dca95f7c101862c942.mp4",
+    "bytes": 661491,
+    "sha256": "a417b1dca95f7c101862c942ef59d7806b1c77a0aee5a43acbb03802c3c0643b"
+  },
+  {
+    "name": "Dumbbell Skull Crusher",
+    "primary": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/phone-v1/1b120133b95f99d089dff702.mp4",
+    "backup": "/assets/exercise-videos/backup/095b616261991bc4fa066ed9.mp4",
+    "bytes": 1229721,
+    "sha256": "095b616261991bc4fa066ed9c1cbae746e8d70bcf878eb0f33d351fe0594ec13"
+  },
+  {
+    "name": "Ab Crunch",
+    "primary": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/phone-v1/87429d2a4602b601301c53e7.mp4",
+    "backup": "/assets/exercise-videos/backup/d0fccabeb2cd95707d4f0586.mp4",
+    "bytes": 109867,
+    "sha256": "d0fccabeb2cd95707d4f058698b42f33eb806c4c12a90056321ac8bb7fc9e881"
+  },
+  {
+    "name": "Bench Single Leg Hip Thrust",
+    "primary": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/phone-v1/086f0bae9d1b94f5938618a7.mp4",
+    "backup": "/assets/exercise-videos/backup/aaa0e04c0db5874e1d43e26e.mp4",
+    "bytes": 1590996,
+    "sha256": "aaa0e04c0db5874e1d43e26eebfaa1b1181122798443e487421592cf2dac6b40"
+  },
+  {
+    "name": "High Plank Shoulder Taps",
+    "primary": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/phone-v1/d405852b53c360ca99485fe7.mp4",
+    "backup": "/assets/exercise-videos/backup/c99a030273bbc8d79b074ec2.mp4",
+    "bytes": 1683863,
+    "sha256": "c99a030273bbc8d79b074ec25598f1d4d213fab5f573924e7c332cd561d6c992"
+  },
+  {
+    "name": "Cat Cow",
+    "primary": "https://plantbased-balance.org/assets/exercise-videos/compat/cat-cow.mp4",
+    "backup": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/backup-v1/5a3dae5141037c4e0b4ce960.mp4",
+    "bytes": 306286,
+    "sha256": "5a3dae5141037c4e0b4ce9607f33c31bd78d472178f421a18d3e25d78a1b1578"
+  },
+  {
+    "name": "Child's Pose",
+    "primary": "https://plantbased-balance.org/assets/exercise-videos/compat/childs-pose.mp4",
+    "backup": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/backup-v1/1f21084e9baa028811ea42d9.mp4",
+    "bytes": 100297,
+    "sha256": "1f21084e9baa028811ea42d930a43d48476e16c221477f4df96a096d1aee831f"
+  },
+  {
+    "name": "Yoga - Seated Side Stretch",
+    "primary": "https://plantbased-balance.org/assets/exercise-videos/compat/yoga-seated-side-stretch.mp4",
+    "backup": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/backup-v1/e1227b185ac62452aacbab3f.mp4",
+    "bytes": 124886,
+    "sha256": "e1227b185ac62452aacbab3febc8b393a6da4225a624ab0f6bad37c64cc214d3"
+  }
+]
