@@ -1,8 +1,8 @@
-const CACHE_NAME = 'pbb-app-v567-video-recovery';
+const CACHE_NAME = 'pbb-app-v568-video-same-site';
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
-  './js/dashboard/pbb-exercise-video-backups.js?v=1',
+  './js/dashboard/pbb-exercise-video-backups.js?v=2',
   './css/dashboard/pbb-weighin-theme.css?v=1-balance-gold',
   './css/dashboard/pbb-quiz-theme.css?v=4-page-photos',
   './dashboard.html',
@@ -27,7 +27,7 @@ const ASSETS = [
   './workout_library_extended.js',
   './js/dashboard/script_part_2.js?v=17-resume-session',
   './js/dashboard/dashboard-script-3-1_get_user_data.js?v=65-admin-safe-area',
-  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20260919-training-scroll',
+  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20260923-video-same-site',
   './js/dashboard/pbb-settings-navigation.js?v=2-your-checkin',
   './js/dashboard/pbb-meta-preview-soundtrack.js?v=3-coach-video-ducking',
   './js/dashboard/pbb-app-telemetry.js?v=2-replay',
@@ -38,7 +38,7 @@ const ASSETS = [
   './js/dashboard/pbb-deferred-weeklygoals.js?v=37-mobile-goal-pills',
   './css/dashboard/pbb-onboarding-comeback.css?v=8',
   './css/dashboard/pbb-onboarding-foundations.css?v=13-iphone-keyboard',
-  './js/dashboard/dashboard-script-7-video_logic.js?v=20260923-video-recovery',
+  './js/dashboard/dashboard-script-7-video_logic.js?v=20260923-video-same-site',
   './js/dashboard/dashboard-script-10-points_widget_functions.js?v=67-verified-moves',
   './js/dashboard/pbb-deferred-fitbit.js?v=3-latest-import-only',
   './js/dashboard/pbb-next-obvious-steps.js?v=54-tour-quiz-continue',

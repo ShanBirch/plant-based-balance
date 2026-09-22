@@ -16,3 +16,21 @@ window.PBB_EXERCISE_VIDEO_BACKUPS = {
   "https://plantbased-balance.org/assets/exercise-videos/compat/childs-pose.mp4": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/backup-v1/1f21084e9baa028811ea42d9.mp4",
   "https://plantbased-balance.org/assets/exercise-videos/compat/yoga-seated-side-stretch.mp4": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/backup-v1/e1227b185ac62452aacbab3f.mp4"
 };
+
+// Prefer the same-site copy: client playback reports confirmed that the
+// external source stalled while these identical copies played successfully.
+window.resolveExerciseVideoSource = function (value) {
+  try {
+    const url = new URL(value, window.location.href);
+    url.hash = ''; url.search = '';
+    const backup = window.PBB_EXERCISE_VIDEO_BACKUPS[url.href];
+    if (backup && new URL(backup, window.location.href).origin === window.location.origin) {
+      return new URL(backup, window.location.href).href;
+    }
+  } catch (_) {}
+  return value;
+};
+// Keep the independent host available if the preferred source fails.
+for (const [primary, backup] of Object.entries(window.PBB_EXERCISE_VIDEO_BACKUPS)) {
+  window.PBB_EXERCISE_VIDEO_BACKUPS[new URL(backup, window.location.href).href] = primary;
+}

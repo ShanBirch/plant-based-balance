@@ -24740,6 +24740,7 @@ function findExerciseThumbnail(exerciseName, videoUrl = '') {
 window.findExerciseThumbnail = findExerciseThumbnail;
 
 function createExerciseVideoBlockHtml(videoUrl, exerciseName = '', providedThumbnailUrl = '') {
+    if (typeof window !== 'undefined' && window.resolveExerciseVideoSource) videoUrl = window.resolveExerciseVideoSource(videoUrl);
     // Request a still frame on iOS without starting playback or requiring a tap.
     const previewUrl = String(videoUrl || '').includes('#') ? String(videoUrl || '') : `${videoUrl}#t=0.1`;
     const safeUrl = previewUrl

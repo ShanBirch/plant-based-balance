@@ -248,6 +248,7 @@ function reportExerciseVideoPlayback(videoUrl, stage, video, attempt, reason) {
 
 function startInlineVideoPlayback(container, video, videoUrl, playOverlay, reload = false) {
     if (!container || !video || !videoUrl) return;
+    if (typeof window !== 'undefined' && window.resolveExerciseVideoSource) videoUrl = window.resolveExerciseVideoSource(videoUrl);
     clearInlineVideoLoadTimer(video);
     const session = {};
     video._pbbPlaybackSession = session;
