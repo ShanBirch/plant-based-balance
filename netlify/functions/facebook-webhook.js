@@ -2,6 +2,7 @@
 const { supabaseQuery, insertCoachAlert } = require('./_lib/client-context');
 const { configuredPageIds, verifyMessengerSignature, normalizeMessengerEvents, mergeMessengerData } = require('./_lib/facebook-messenger');
 const { resolveIgAcquisitionMode } = require('./_lib/ig-acquisition-mode');
+const { recordPairingProof } = require('./_lib/messenger-review-pairing');
 const json = (statusCode, body) => ({ statusCode, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
 
 async function persistEvent(event, query) {
@@ -56,6 +57,8 @@ async function processEvents(events, { query = supabaseQuery, alert = insertCoac
         }
         processed++;
         if (event.direction !== 'in') continue;
+        // Review pairing proves control of the sender. It is not a sales prompt.
+        if (await recordPairingProof(event, thread, query)) continue;
         // The existing pipeline owns claims, draft recovery, safety review and
         // sending. Preserve its exact source ID on every retry.
         const [existing] = await query(`coach_alerts?select=id,status,data&idempotency_key=eq.${encodeURIComponent(`ig_incoming_dm:${event.messageId}`)}&limit=1`);

@@ -56,3 +56,6 @@ Record a new English-language demonstration showing Page authorization, a test u
 `node --test tests/facebook-messenger.test.js tests/facebook-messenger-send.test.js tests/ig-acquisition-mode.test.js tests/ig-instant-draft-background.test.js tests/send-ig-reply-conversation-delta.test.js`
 
 The new tests use simulated services; they are not evidence of live Messenger delivery. The pre-existing `send-ig-reply-challenge-offer` test fails on a timestamp expectation in unchanged mainline code; broader paid-flow copy tests also contain existing expectation mismatches. Record deployment and live-test receipts when activation is completed.
+
+### 23 September 2026 reviewer access update
+The review recording, separate connected-Page screenshot and notes are uploaded in draft2164265864473454. Reviewer self-pairing now supports a private invitation and a short session bound to the reviewer's own signed Messenger inbound, with no older history or linked-client access. Meta's general guide says reviewers use their own test accounts, while the pages_messaging form separately asks for a real account with Tester role. Do not supply Shannon's personal login or claim that this unresolved Messenger-specific requirement is waived. No final submission or public ad auto-reply activation has occurred.

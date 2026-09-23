@@ -93,6 +93,7 @@ function database() {
     let dispatches = 0;
     let failDispatch = false;
     const query = async (path, options = {}) => {
+        if (path.startsWith('app_private_secrets?select=value&key=eq.messenger_review_proof_')) return [];
         if (path.startsWith('users?')) return [{ id: 'coach' }];
         if (path.startsWith('ig_threads')) {
             // Production uniqueness is the subscriber/channel pair.
@@ -146,4 +147,13 @@ test('failed draft handoff can retry the stored inbound without losing it or dup
     await webhook._test.processEvents(events, db.dependencies);
     assert.equal(db.messages.size, 1);
     assert.equal(db.dispatches, 2);
+});
+
+test('review pairing messages are persisted but never sent to the sales draft pipeline', async () => {
+    const db = database();
+    const events = messenger.normalizeMessengerEvents(payload([inbound({message:{mid:'pair1',text:'BALANCE REVIEW '+ 'a'.repeat(32)}})]), ['123'], now);
+    await webhook._test.processEvents(events, db.dependencies);
+    assert.equal(db.messages.size, 1);
+    assert.equal(db.dispatches, 0);
+    assert.equal(db.alertRow, null);
 });

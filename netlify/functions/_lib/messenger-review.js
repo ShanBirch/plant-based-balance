@@ -1,4 +1,5 @@
 const { createHash, timingSafeEqual } = require('node:crypto');
+const { resolvePairing, active, parseGrant } = require('./messenger-review-pairing');
 
 const uuid = value => /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(value || '');
 const numeric = value => /^\d+$/.test(value || '');
@@ -22,20 +23,21 @@ function createReviewHandler({ query, send, now = Date.now }) {
         try {
             const hash = createHash('sha256').update(code).digest('hex');
             const [secret] = await query(`app_private_secrets?select=value&key=eq.messenger_review_${hash}&limit=1`);
-            let grant;
-            try { grant = JSON.parse(secret?.value || 'null'); } catch { grant = null; }
-            if (!grant || grant.enabled !== true || !uuid(grant.thread_id) || !numeric(grant.page_id)
-                || !numeric(grant.psid) || !Number.isFinite(time(grant.since))
-                || !Number.isFinite(time(grant.expires_at)) || time(grant.expires_at) <= now()
-                || time(grant.since) > now()) return reply(403, { error: 'Review access is unavailable or expired.' });
+            let grant = parseGrant(secret);
+            if (!active(grant, now())) return reply(403, { error: 'Review access is unavailable or expired.' });
             const raw = await request.text();
             if (raw.length > 6000) return reply(413, { error: 'Request too large.' });
             let body;
             try { body = JSON.parse(raw); } catch { return reply(400, { error: 'Invalid request.' }); }
-            if (!body || !['read', 'send'].includes(body.action)
+            if (!body || !['open', 'pair', 'read', 'send'].includes(body.action)
                 || Object.keys(body).some(k => !['action', 'revision', 'text'].includes(k))) {
                 return reply(400, { error: 'Unsupported request.' });
             }
+            const pairing = await resolvePairing({ query, hash, secret, grant, action: body.action, now: now() });
+            if (pairing.status) return reply(pairing.status, pairing.body);
+            grant = pairing.grant;
+            if (!uuid(grant.thread_id) || !numeric(grant.page_id) || !numeric(grant.psid)
+                || !Number.isFinite(time(grant.since)) || time(grant.since) > now()) return reply(403, { error: 'Review access is unavailable or expired.' });
             const [thread] = await query(`ig_threads?select=id,channel,subscriber_id,linked_user_id,custom_data,last_inbound_at&id=eq.${grant.thread_id}&limit=1`);
             const route = thread?.custom_data?.facebook_messenger;
             if (!thread || thread.linked_user_id || thread.channel !== 'messenger'
@@ -58,7 +60,7 @@ function createReviewHandler({ query, send, now = Date.now }) {
                 && typeof draft === 'string' && draft.trim());
             // A digest prevents exposing the sender's alert capability to a reviewer.
             const revision = eligible ? createHash('sha256').update(JSON.stringify([alert.id, latest.id, draft])).digest('hex') : null;
-            if (body.action === 'read') return reply(200, {
+            if (['open', 'pair', 'read'].includes(body.action)) return reply(200, {
                 page: 'Balance APP', label: 'Controlled Messenger test conversation',
                 messages: [...messages].reverse().map(m => ({ direction: m.direction, text: String(m.text || ''), at: m.created_at })),
                 draft: eligible ? draft : '', revision, canSend: eligible && windowOpen,
