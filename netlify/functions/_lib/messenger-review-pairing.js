@@ -18,7 +18,7 @@ async function recordPairingProof(event, thread, query, now = Date.now()) {
     if (pending?.phase !== 'waiting' || pending.page_id !== event.pageId
         || !(Date.parse(pending.expires_at) > now) || !(Date.parse(event.at) >= Date.parse(pending.since))
         || Date.parse(event.at) > now) return true;
-    await query(`app_private_secrets?key=eq.${key}&value=eq.${encodeURIComponent(JSON.stringify(row.value))}`, {
+    await query(`app_private_secrets?key=eq.${key}&value=in.(${encodeURIComponent(JSON.stringify(row.value))})`, {
         method: 'PATCH', body: { value: JSON.stringify({ source: 'facebook_messenger_verified', thread_id: thread.id,
             page_id: event.pageId, psid: event.psid, at: event.at }), updated_at: new Date(now).toISOString() },
     });
@@ -29,7 +29,9 @@ async function recordPairingProof(event, thread, query, now = Date.now()) {
 // revocation or bind a session to a different participant. No public DB policy.
 async function replaceGrant(query, hash, oldValue, grant) {
     const match = encodeURIComponent(JSON.stringify(oldValue));
-    return query(`app_private_secrets?key=eq.${keyFor(hash)}&value=eq.${match}`, {
+    // PostgREST only unquotes escaped string literals inside the in-list grammar.
+    // A quoted eq value compares the quote characters too and matches no rows.
+    return query(`app_private_secrets?key=eq.${keyFor(hash)}&value=in.(${match})`, {
         method: 'PATCH', body: { value: JSON.stringify(grant), updated_at: new Date().toISOString() },
     });
 }

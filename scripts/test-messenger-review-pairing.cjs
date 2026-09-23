@@ -19,7 +19,8 @@ function fixture() {
             }
             const key = p.get('key').slice(3), value = grants.get(key);
             if (options.method === 'PATCH') {
-                const expected = JSON.parse(p.get('value').slice(3));
+                assert.match(p.get('value'), /^in\.\(".*"\)$/);
+                const expected = JSON.parse(p.get('value').slice(4,-1));
                 if (value !== expected) return [];
                 grants.set(key, options.body.value); return [options.body];
             }
@@ -139,7 +140,7 @@ test('proof writer ignores echoes and ordinary text and never overwrites first s
     const query=async(path,o={})=>{
         if(!o.method)return [{value}];
         assert.equal(o.method,'PATCH');
-        assert.equal(JSON.parse(new URLSearchParams(path.split('?')[1]).get('value').slice(3)),value);
+        assert.equal(JSON.parse(new URLSearchParams(path.split('?')[1]).get('value').slice(4,-1)),value);
         value=o.body.value;writes++;return [{value}];
     };
     assert.equal(await recordPairingProof({...e,direction:'out'},{id:tid},query,start),false);
