@@ -9,6 +9,12 @@ function validSignature(raw,signature,secret){
   if(!secret||!/^sha256=[a-f0-9]{64}$/i.test(signature||''))return false;
   return crypto.timingSafeEqual(Buffer.from(signature.slice(7),'hex'),crypto.createHmac('sha256',secret).update(raw).digest());
 }
+function validDeliverySignature(raw,signature,portraitSecret,env=process.env){
+  // Balance already delivers this account's events through instagram-webhook.
+  // Preserve its original signed body while also accepting the portrait app.
+  return [portraitSecret,env.META_APP_SECRET,env.META_IG_APP_SECRET,env.INSTAGRAM_APP_SECRET]
+    .filter(Boolean).some(key=>validSignature(raw,signature,key));
+}
 function inboundEvents(payload,now=Date.now()){
   const events=[];
   for(const entry of payload.entry||[]){
@@ -89,7 +95,7 @@ exports.handler=async event=>{
   if(event.httpMethod!=='POST')return json(405,{error:'Method not allowed'});
   const raw=event.isBase64Encoded?Buffer.from(event.body||'','base64').toString('utf8'):event.body||'';
   const signature=event.headers?.['x-hub-signature-256']||event.headers?.['X-Hub-Signature-256'];
-  if(!validSignature(raw,signature,await secret('lcp_ig_app_secret')))return json(403,{error:'Invalid signature'});
+  if(!validDeliverySignature(raw,signature,await secret('lcp_ig_app_secret')))return json(403,{error:'Invalid signature'});
   let payload;try{payload=JSON.parse(raw);}catch{return json(400,{error:'Invalid JSON'});}
   if(payload.drain && Math.abs(Date.now()-Number(payload.timestamp))>300000)return json(403,{error:'Expired recovery request'});
   const config=(await supabaseQuery(`lcp_dm_settings?account_id=eq.${OWNER_ID}&select=enabled,starts_at`))[0];
@@ -120,4 +126,4 @@ exports.handler=async event=>{
   }
   return json(200,{ok:true,results});
 };
-exports._test={validSignature,inboundEvents,offerNow,processEvent,secret};
+exports._test={validSignature,validDeliverySignature,inboundEvents,offerNow,processEvent,secret};

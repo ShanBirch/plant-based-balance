@@ -23,6 +23,13 @@ Enable only after `lcp-dm-admin` reports the correct connected identity and a
 configured signature secret. `lcp_dm_settings.enabled` is the kill switch.
 Set `starts_at` at activation so old messages are never backfilled.
 
+Meta delivery uses the existing Balance app (2059731324926909), where the
+portrait account is already subscribed to messages at `instagram-webhook`.
+Its original Balance signature is verified again by the portrait worker.
+The Shanbot connection provides the portrait-scoped send token. Its old ngrok
+callback and Shan/Sunny subscription are unchanged; do not enable a duplicate
+Shanbot webhook subscription for this account.
+
 Server-only secrets in `app_private_secrets`: `lcp_ig_access_token` and
 `lcp_ig_app_secret` (the Instagram app secret for the subscribed Meta app).
 Protected production Functions variables `LCP_IG_ACCESS_TOKEN` and

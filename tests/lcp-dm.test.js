@@ -2,7 +2,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const crypto=require('crypto');
 const {OWNER_ID,ORDER_URL,parseDecision,replyFor,bubbles}=require('../netlify/functions/_lib/lcp-dm-knowledge');
-const {inboundEvents,validSignature}=require('../netlify/functions/lcp-dm-background')._test;
+const {inboundEvents,validSignature,validDeliverySignature}=require('../netlify/functions/lcp-dm-background')._test;
 const {routePortraitEntries}=require('../netlify/functions/_lib/lcp-dm-route');
 const offer={checkoutEnabled:true,framedEnabled:false,customDesignEnabled:true,proofWindow:'Within five business days',revisionWindow:'Within three business days',fulfilmentWindow:'After approval'};
 test('single and group prices are exact, selected formats stay focused',()=>{
@@ -32,6 +32,15 @@ test('all outbound bubbles fit and preserve complete links',()=>{
 });
 test('requires genuine exact signature, rejects missing credentials',()=>{
  const raw='{"hello":1}',secret='test-only';const sig='sha256='+crypto.createHmac('sha256',secret).update(raw).digest('hex');assert.ok(validSignature(raw,sig,secret));assert.equal(validSignature(raw+' ',sig,secret),false);assert.equal(validSignature(raw,sig,''),false);
+});
+test('accepts the existing Balance delivery signature without accepting unknown apps',()=>{
+ const raw='{"entry":[]}',sign=key=>'sha256='+crypto.createHmac('sha256',key).update(raw).digest('hex');
+ const env={META_APP_SECRET:'existing-balance-app'};
+ assert.equal(validDeliverySignature(raw,sign('existing-balance-app'),'portrait-app',env),true);
+ assert.equal(validDeliverySignature(raw,sign('portrait-app'),'portrait-app',env),true);
+ assert.equal(validDeliverySignature(raw,sign('unknown-app'),'portrait-app',env),false);
+ assert.equal(validDeliverySignature(raw+' ',sign('existing-balance-app'),'portrait-app',env),false);
+ assert.equal(validDeliverySignature(raw,'',null,{}),false);
 });
 test('only fresh incoming portrait DMs qualify, no echoes or other accounts',()=>{
  const now=Date.now();const message={sender:{id:'1234'},recipient:{id:OWNER_ID},timestamp:now,message:{mid:'test',text:'price?'}};
