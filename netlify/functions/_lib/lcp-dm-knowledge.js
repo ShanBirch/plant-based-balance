@@ -37,7 +37,7 @@ function replyFor(decision, offer) {
     }
     if (!subjects && intents.includes('groups')) blocks.push('Two subjects are A$69 / A$109 / A$139; three or four are A$89 / A$129 / A$159, in digital / unframed / framed order. How many people and pets would you like together?');
     if (!offer.framedEnabled && (!decision.format||decision.format==='framed')) blocks.push('Framed ordering is not open yet, while physical sample checks are completed.');
-    if (tier>1 || intents.includes('groups')) blocks.push('Group options are shown for planning. Please check their availability on the order page before uploading or paying.');
+    if (tier>1 || intents.includes('groups')) blocks.push(offer.groupTypes?.length?'Group availability depends on the portrait type. Check the available options on the order page before uploading or paying.':'Group portraits are shown for planning, but group uploading and checkout are not open yet.');
   }
   if (intents.includes('preview')) blocks.push('You can see a watermarked preview before paying. Upload a clear photo on the order page. Allow around 5–10 minutes during the first batch, sometimes longer. One free preview per day; payment keeps the same chosen artwork.');
   if (intents.includes('photos')) blocks.push('Choose a clear, well-lit photo with their face and distinctive markings visible. Upload it securely on the order page, using photos you own or have permission to use. A photo sent in this chat does not place an order.');
@@ -50,7 +50,8 @@ function replyFor(decision, offer) {
   if (intents.includes('thanks')) blocks.push('You’re welcome! Happy to help with any portrait questions.');
   if (intents.includes('unrelated')) blocks.push('I can help with Little Companion portraits, prices and ordering. What would you like to know about a portrait?');
   if (intents.some(i=>['order','prices','preview','photos','style','groups','custom','message'].includes(i))) {
-    blocks.push(offer.checkoutEnabled?`Choose your options, upload your photo and view the preview here. Secure payment comes after you accept the preview: ${ORDER_URL}`:`Checkout is currently paused. You can browse the options here and return when orders reopen: ${ORDER_URL}`);
+    const optionClosed=(decision.format==='framed'&&!offer.framedEnabled)||((tier>1||intents.includes('groups'))&&!offer.groupTypes?.length);
+    blocks.push(!offer.checkoutEnabled?`Checkout is currently paused. You can browse the options here and return when orders reopen: ${ORDER_URL}`:optionClosed?`You can browse the options and check availability here: ${ORDER_URL}`:`Choose your options, upload your photo and view the preview here. Secure payment comes after you accept the preview: ${ORDER_URL}`);
   }
   return {pause:false,text:blocks.join('\n\n')};
 }

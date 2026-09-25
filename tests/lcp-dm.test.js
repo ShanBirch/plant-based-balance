@@ -12,6 +12,7 @@ test('single and group prices are exact, selected formats stay focused',()=>{
  }
  assert.match(replyFor({intents:['prices'],subjects:2,format:'framed'},offer).text,/A\$139/);
  assert.match(replyFor({intents:['prices'],subjects:2,format:'framed'},offer).text,/not open yet/);
+ assert.doesNotMatch(replyFor({intents:['prices'],subjects:2,format:'framed'},offer).text,/upload your photo|Secure payment comes/);
 });
 test('closed checkout never claims payment is available',()=>{
  const r=replyFor({intents:['order']},{...offer,checkoutEnabled:false});assert.match(r.text,/Checkout is currently paused/);assert.doesNotMatch(r.text,/Secure payment comes/);

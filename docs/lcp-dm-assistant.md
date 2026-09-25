@@ -25,6 +25,8 @@ Set `starts_at` at activation so old messages are never backfilled.
 
 Server-only secrets in `app_private_secrets`: `lcp_ig_access_token` and
 `lcp_ig_app_secret` (the Instagram app secret for the subscribed Meta app).
+Protected production Functions variables `LCP_IG_ACCESS_TOKEN` and
+`LCP_IG_APP_SECRET` are supported as initial connection fallbacks.
 These have no fallback to another business's token. All webhooks must have a
 valid Meta HMAC signature. `lcp-dm-admin` requires the existing service-role bearer
 credential and returns no secrets. Its `preview` action does not send anything.
@@ -33,6 +35,9 @@ credential and returns no secrets. Its `preview` action does not send anything.
 Duplicate webhook IDs are ignored, only inbound messages inside 24 hours qualify,
 and leases prevent concurrent replies. Delivery uncertainties are held, never
 blindly retried. No outbound prospecting, comment-to-DM campaign or ad changes.
+The per-minute recovery function drains queued messages after contention; a
+manual Instagram reply pauses the conversation. RLS intentionally has no client
+policies because all portrait tables are server-only, verified by explicit grants.
 Media/story messages and existing-order issues pause for human assistance.
 `lcp_dm_conversations.paused` is the per-conversation manual hold; set it false
 only after the human issue is resolved. All three tables use RLS and grant access
