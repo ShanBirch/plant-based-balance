@@ -4,6 +4,7 @@ const crypto=require('crypto');
 const {OWNER_ID,ORDER_URL,parseDecision,replyFor,bubbles}=require('../netlify/functions/_lib/lcp-dm-knowledge');
 const {inboundEvents,validSignature,validDeliverySignature}=require('../netlify/functions/lcp-dm-background')._test;
 const {routePortraitEntries}=require('../netlify/functions/_lib/lcp-dm-route');
+const {refreshPortraitToken}=require('../netlify/functions/_lib/lcp-dm-refresh');
 const offer={checkoutEnabled:true,framedEnabled:false,customDesignEnabled:true,proofWindow:'Within five business days',revisionWindow:'Within three business days',fulfilmentWindow:'After approval'};
 test('single and group prices are exact, selected formats stay focused',()=>{
  for(const [subjects,price] of [[1,49],[2,69],[3,89],[4,89]]){
@@ -53,4 +54,21 @@ test('portrait entries never fall through into coaching or old comment campaigns
  const result=await routePortraitEntries(payload,{body:JSON.stringify(payload),headers:{}},async()=>{calls++;return {ok:true};});
  assert.equal(calls,1);assert.deepEqual(result.entry,[payload.entry[1]]);
  await assert.rejects(routePortraitEntries(payload,{body:'{}'},async()=>({ok:false})));
+});
+test('renewal waits seven days and rejects a different account without overwriting credentials',async()=>{
+ const now=Date.now();let writes=0,requests=0;
+ const query=async(path,options)=>{if(options){writes++;return [];}return [{value:'test-only',updated_at:new Date(now-86400000).toISOString()}];};
+ assert.equal((await refreshPortraitToken(query,async()=>{requests++;},{},now)).status,'not_due');
+ assert.equal(requests,0);assert.equal(writes,0);
+ const oldQuery=async(path,options)=>{if(options){writes++;return [];}return [{value:'test-only',updated_at:new Date(now-8*86400000).toISOString()}];};
+ const responses=[{access_token:'renewed-test-only',expires_in:5184000},{user_id:'999',username:'other'}];
+ await assert.rejects(refreshPortraitToken(oldQuery,async()=>({ok:true,json:async()=>responses.shift()}),{},now),/identity mismatch/);
+ assert.equal(writes,0);
+});
+test('renewal saves a verified portrait token with a concurrency guard',async()=>{
+ const now=Date.now(),updated_at=new Date(now-8*86400000).toISOString();let write;
+ const query=async(path,options)=>{if(options){write={path,...options};return [];}return [{value:'test-only',updated_at}];};
+ const responses=[{access_token:'renewed-test-only',expires_in:5184000},{user_id:OWNER_ID,username:'littlecompanionportraits'}];
+ assert.equal((await refreshPortraitToken(query,async()=>({ok:true,json:async()=>responses.shift()}),{},now)).status,'renewed');
+ assert.ok(write.path.includes(encodeURIComponent(updated_at)));assert.equal(write.body.value,'renewed-test-only');
 });

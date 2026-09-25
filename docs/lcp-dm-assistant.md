@@ -32,6 +32,10 @@ Shanbot webhook subscription for this account.
 
 Server-only secrets in `app_private_secrets`: `lcp_ig_access_token` and
 `lcp_ig_app_secret` (the Instagram app secret for the subscribed Meta app).
+The subscribed delivery app is Balance-IG; the sending token is Shanbot-IG.
+The daily `lcp-dm-refresh` job renews the sending token when seven days old,
+verifies the exact account, and saves it in the existing server-only secrets table.
+It never logs tokens or overwrites a more recently saved connection.
 Protected production Functions variables `LCP_IG_ACCESS_TOKEN` and
 `LCP_IG_APP_SECRET` are supported as initial connection fallbacks.
 These have no fallback to another business's token. All webhooks must have a
