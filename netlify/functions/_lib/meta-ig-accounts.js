@@ -18,13 +18,13 @@ const BUILT_IN_ACCOUNT_MAP = Object.freeze({
     '17841422424052111': Object.freeze({
         ownerId: '17841422424052111',
         accountId: '17841422424052111',
-        botAccount: 'goldcoast_ai_solutions',
+        botAccount: 'littlecompanionportraits',
         accessToken: '',
         accessTokenEnv: '',
         tokenSecretKey: 'meta_ig_access_token_goldcoast_ai_solutions',
-        autoDraftMessages: null,
-        autoDraftStoryReplies: null,
-        autoSendMessages: null,
+        autoDraftMessages: false,
+        autoDraftStoryReplies: false,
+        autoSendMessages: false,
     }),
 });
 

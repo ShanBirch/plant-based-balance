@@ -8150,6 +8150,12 @@ exports.handler = async (event) => {
     if (!thread) {
         return { statusCode: 404, body: JSON.stringify({ error: 'Thread not found' }) };
     }
+    // This renamed account has its own isolated commerce assistant. Recovery
+    // jobs and legacy callers must never draft coaching replies for it.
+    if (JSON.stringify(thread.custom_data?.instagram_graph || {}).includes('17841422424052111')
+        || thread.custom_data?.bot_account === 'littlecompanionportraits') {
+        return { statusCode: 200, body: JSON.stringify({ skipped: 'portrait_assistant_owns_account' }) };
+    }
     // Explicit account-scoped alternative selected by Shannon for personal testing.
     // The background worker already owns the lifetime needed for native video.
     const learnAlternative = require('../../experiments/learn-ai/automatic.cjs');

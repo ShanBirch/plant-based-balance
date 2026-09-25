@@ -501,6 +501,11 @@ exports.handler = async (event = {}) => {
         return json(400, { error: 'Invalid JSON' });
     }
 
+    try {
+        payload = await require('./_lib/lcp-dm-route').routePortraitEntries(payload, event);
+    } catch {
+        return json(503, { error: 'Portrait DM dispatch unavailable' });
+    }
     const events = normalizeMetaIgWebhookEvents(payload);
     const processed = [];
     for (const igEvent of events) {

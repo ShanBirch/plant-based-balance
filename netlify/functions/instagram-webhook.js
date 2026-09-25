@@ -87,7 +87,6 @@ const INSTAGRAM_GRAPH_ACCESS_TOKEN_ENV = process.env.INSTAGRAM_GRAPH_ACCESS_TOKE
     || '';
 let cachedInstagramGraphAccessToken = INSTAGRAM_GRAPH_ACCESS_TOKEN_ENV || '';
 const GOLD_COAST_AI_IG_ACCOUNT_IDS = new Set([
-    '17841422424052111',
     ...splitEnvList(process.env.GOLD_COAST_AI_IG_ACCOUNT_IDS || process.env.GOLD_COAST_AI_IG_ACCOUNT_ID || ''),
 ]);
 const GOLD_COAST_AI_WEBSITE_URL = process.env.GOLD_COAST_AI_WEBSITE_URL
@@ -272,6 +271,7 @@ function commentKeywordForPrivateReply(event = {}) {
 function isGoldCoastAiAccount(event = {}, accountConfig = {}) {
     const botAccount = normalizeHandle(accountConfig.botAccount);
     const ownerId = String(event.ownerId || event.igAccountId || event.recipientId || '').trim();
+    if (ownerId === '17841422424052111') return false;
     return botAccount === 'goldcoast_ai_solutions' || GOLD_COAST_AI_IG_ACCOUNT_IDS.has(ownerId);
 }
 
@@ -3248,6 +3248,12 @@ exports.handler = async (event) => {
     } catch (err) {
         console.error('[instagram-webhook] invalid JSON:', err.message);
         return json(400, { error: 'Invalid JSON' });
+    }
+
+    try {
+        payload = await require('./_lib/lcp-dm-route').routePortraitEntries(payload, event);
+    } catch {
+        return json(503, { error: 'Portrait DM dispatch unavailable' });
     }
 
     try {

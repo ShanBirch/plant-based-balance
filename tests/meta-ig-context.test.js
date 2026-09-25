@@ -192,7 +192,9 @@ assert.strictEqual(shannonAccount.tokenSecretKey, 'meta_ig_access_token_17841415
 assert.strictEqual(shannonAccount.autoDraftMessages, true);
 assert.strictEqual(shannonAccount.autoSendMessages, true);
 const goldCoastAccount = resolveMetaIgAccountConfig('17841422424052111');
-assert.strictEqual(goldCoastAccount.botAccount, 'goldcoast_ai_solutions');
+assert.strictEqual(goldCoastAccount.botAccount, 'littlecompanionportraits');
+assert.strictEqual(goldCoastAccount.autoDraftMessages, false);
+assert.strictEqual(goldCoastAccount.autoSendMessages, false);
 assert.strictEqual(goldCoastAccount.tokenSecretKey, 'meta_ig_access_token_goldcoast_ai_solutions');
 assert.strictEqual(buildGraphSubscriberId('17841499999999999', '555222111'), 'ig_graph:17841499999999999:555222111');
 assert.deepStrictEqual(legacyGraphSubscriberIds('555222111'), ['meta_ig:555222111', 'ig_graph:555222111']);

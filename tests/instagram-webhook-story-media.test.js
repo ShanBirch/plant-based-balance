@@ -270,7 +270,7 @@ const websiteComment = {
 assert.strictEqual(_test.commentKeywordForPrivateReply(websiteComment), 'website');
 assert.strictEqual(
     _test.shouldSendGoldCoastWebsitePrivateReply(websiteComment, { botAccount: 'goldcoast_ai_solutions' }),
-    true
+    false
 );
 assert.strictEqual(
     _test.commentKeywordForPrivateReply({ ...websiteComment, text: 'my website' }),

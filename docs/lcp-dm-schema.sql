@@ -1,0 +1,10 @@
+create table if not exists public.lcp_dm_settings(account_id text primary key, enabled boolean not null default false, starts_at timestamptz not null default now());
+create table if not exists public.lcp_dm_conversations(sender_id text primary key, paused boolean not null default false, reason text, lease uuid, lease_until timestamptz);
+create table if not exists public.lcp_dm_events(id text primary key, sender_id text not null, inbound_text text not null default '', received_at timestamptz not null, media boolean not null default false, story boolean not null default false, status text not null default 'queued', reason text, reply_text text, decision jsonb, sent_ids jsonb not null default '[]', updated_at timestamptz not null default now());
+create index if not exists lcp_dm_events_sender_time on public.lcp_dm_events(sender_id,received_at desc);
+alter table public.lcp_dm_settings enable row level security;
+alter table public.lcp_dm_conversations enable row level security;
+alter table public.lcp_dm_events enable row level security;
+revoke all on public.lcp_dm_settings,public.lcp_dm_conversations,public.lcp_dm_events from anon,authenticated;
+grant select,insert,update,delete on public.lcp_dm_settings,public.lcp_dm_conversations,public.lcp_dm_events to service_role;
+insert into public.lcp_dm_settings(account_id,enabled) values ('17841422424052111',false) on conflict do nothing;
