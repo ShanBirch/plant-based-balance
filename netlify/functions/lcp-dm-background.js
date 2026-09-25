@@ -23,7 +23,7 @@ function inboundEvents(payload,now=Date.now()){
   }
   return events;
 }
-async function secret(key){const rows=await supabaseQuery(`app_private_secrets?key=eq.${eq(key)}&select=value&limit=1`);return rows?.[0]?.value||'';}
+async function secret(key){const rows=await supabaseQuery(`app_private_secrets?key=eq.${eq(key)}&select=value&limit=1`);return rows?.[0]?.value||process.env[key.toUpperCase()]||'';}
 async function offerNow(){
   const r=await fetch(`${ORIGIN}/offer-config.js`,{signal:AbortSignal.timeout(10000),cache:'no-store'});
   if(!r.ok)throw Error('Shop unavailable');
@@ -120,4 +120,4 @@ exports.handler=async event=>{
   }
   return json(200,{ok:true,results});
 };
-exports._test={validSignature,inboundEvents,offerNow,processEvent};
+exports._test={validSignature,inboundEvents,offerNow,processEvent,secret};
