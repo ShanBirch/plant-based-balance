@@ -69,8 +69,8 @@ function bubbles(text, max=1000) {
 
 function cardMessage({title,subtitle,url,button}) {
   if(title.length>80||subtitle.length>80||button.length>20)throw Error('Oversized portrait card');
-  return {attachment:{type:'template',payload:{template_type:'generic',elements:[{
-    title,subtitle,image_url:`${ORIGIN}/assets/lifestyle/poppy-artwork.webp`,
+  return {attachment:{type:'template',payload:{template_type:'generic',image_aspect_ratio:'square',elements:[{
+    title,subtitle,image_url:`${ORIGIN}/assets/milo-sample.png`,
     default_action:{type:'web_url',url},buttons:[{type:'web_url',url,title:button}]
   }]}}};
 }
