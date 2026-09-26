@@ -11,7 +11,7 @@ exports.handler=async event=>{
   const input=JSON.parse(event.body||'{}');
   if(input.action==='preview'){
    const text=String(input.text||'').slice(0,4000);
-   const decision=parseDecision(await callGeminiFallback([{role:'user',parts:[{text:classifierPrompt([],text)}]}],{temperature:0,maxOutputTokens:350}));
+   const decision=parseDecision(await callGeminiFallback([{role:'user',parts:[{text:classifierPrompt([],text)}]}],{temperature:0,maxOutputTokens:350}),text);
    const offer=await offerNow(),reply=replyFor(decision,offer);
    return {statusCode:200,body:JSON.stringify({decision,...reply,messages:outboundMessages(reply,decision,offer),sent:false})};
   }

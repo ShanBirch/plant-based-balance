@@ -31,11 +31,11 @@ test('classifier cannot add arbitrary text, invalid intents or prices',()=>{
 test('all outbound bubbles fit and preserve complete links',()=>{
  const r=replyFor({intents:['prices','preview','custom'],subjects:4},offer);const p=bubbles(r.text);assert.ok(p.every(x=>x.length<=1000));assert.ok(p.some(x=>x.includes(ORDER_URL)));assert.ok(p.length<=9);
 });
-test('a simple price enquiry is one clickable image card, without raw URLs',()=>{
+test('a simple price enquiry answers in text before its clickable image card',()=>{
  const live={...offer,framedEnabled:true};const decision={intents:['prices']};
  const messages=outboundMessages(replyFor(decision,live),decision,live);
- assert.equal(messages.length,1);assert.equal(messages[0].text,undefined);
- const payload=messages[0].attachment.payload,card=payload.elements[0];
+ assert.equal(messages.length,2);assert.match(messages[0].text,/digital A\$49/);
+ const payload=messages[1].attachment.payload,card=payload.elements[0];
  assert.equal(payload.template_type,'generic');assert.match(card.subtitle,/A\$49.*A\$89.*A\$119/);
  assert.match(card.subtitle,/GST.*delivery included/);assert.ok(card.subtitle.length<=80);
  assert.equal(card.buttons[0].type,'web_url');assert.equal(card.buttons[0].url,ORDER_URL);
@@ -49,6 +49,25 @@ test('specific prices and long answers retain detail with a separate card',()=>{
   for(const m of messages.filter(m=>m.text)){assert.ok(m.text.length<=1000);assert.ok(!m.text.includes('https://'));}
  }
  assert.deepEqual(bubbles('First paragraph.\n\nSecond paragraph.'),['First paragraph.\n\nSecond paragraph.']);
+});
+test('cheapest questions always answer in text and distinguish design fees from finished portraits',()=>{
+ const live={...offer,framedEnabled:true,groupTypes:['pets']};
+ for(const text of ['Whats your cheapest offer?','What is your lowest price?','most affordable option','least expensive portrait','budget option']){
+  const d=parseDecision('{"intents":["prices"]}',text);
+  assert.equal(d.cheapest,true);
+  const messages=outboundMessages(replyFor(d,live),d,live);
+  assert.match(messages[0].text,/A\$20 custom-design session: one design plus up to five edits/);
+  assert.match(messages[0].text,/finished digital portrait for one pet is A\$49/);
+  assert.match(messages[0].text,/totals A\$69/);
+  assert.ok(messages[1].attachment);
+  const closed=replyFor(d,{...live,checkoutEnabled:false});assert.match(closed.text,/paused/);assert.doesNotMatch(closed.text,/lowest-priced purchase/);
+  assert.doesNotMatch(replyFor(d,{...live,customDesignEnabled:false}).text,/A\$20/);
+ }
+ const print=parseDecision('{"intents":["prices"],"format":"unframed"}','cheapest print');
+ assert.match(replyFor(print,live).text,/A\$89/);assert.doesNotMatch(replyFor(print,live).text,/A\$20/);
+ assert.equal(replyFor(parseDecision('{"intents":["human"]}','cheapest refund'),live).pause,true);
+ assert.match(replyFor({intents:['custom']},live).text,/one design and up to five edits/);
+ assert.doesNotMatch(replyFor({intents:['custom','style']},live).text,/three choices|3 choices/);
 });
 test('cards respect paused checkout and human holds, and use the right destination',()=>{
  for(const intent of ['stop','human']){
@@ -65,7 +84,7 @@ test('cards respect paused checkout and human holds, and use the right destinati
 });
 test('casual greetings do not bury the answer or add a needless sales follow-up',()=>{
  const live={...offer,framedEnabled:true};const d={intents:['greeting','prices','thanks']};
- assert.equal(outboundMessages(replyFor(d,live),d,live).length,1);
+ assert.equal(outboundMessages(replyFor(d,live),d,live).length,2);
  assert.doesNotMatch(replyFor(d,live).text,/Are you thinking|Is it for|You’re welcome/);
  const thanks=replyFor({intents:['thanks']},live);assert.ok(thanks.text.length<40);assert.ok(!thanks.text.includes('http'));
  assert.match(replyFor({intents:['revision']},live).text,/Standard portraits include one minor correction/);

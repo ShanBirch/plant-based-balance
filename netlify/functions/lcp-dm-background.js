@@ -60,7 +60,7 @@ async function processEvent(inbound,config,existing=false){
     let decision;
     if(inbound.media||inbound.story){decision={intents:['human']};}
     else if(!inbound.inbound_text.trim()){await update(inbound.id,{status:'ignored',reason:'empty'});return {status:'ignored'};}
-    else decision=parseDecision(await callGeminiFallback([{role:'user',parts:[{text:classifierPrompt(history.reverse(),inbound.inbound_text)}]}],{temperature:0,maxOutputTokens:350}));
+    else decision=parseDecision(await callGeminiFallback([{role:'user',parts:[{text:classifierPrompt(history.reverse(),inbound.inbound_text)}]}],{temperature:0,maxOutputTokens:350}),inbound.inbound_text);
     const offer=await offerNow();
     const reply=replyFor(decision,offer);
     const parts=outboundMessages(reply,decision,offer);

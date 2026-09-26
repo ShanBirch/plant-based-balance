@@ -15,10 +15,10 @@ Conversation: ${JSON.stringify(history).slice(-10000)}
 Latest customer message: ${JSON.stringify(text).slice(0,4000)}`;
 }
 
-function parseDecision(raw) {
+function parseDecision(raw, customerText='') {
   const data = JSON.parse(String(raw).replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,''));
   if (!Array.isArray(data.intents) || !data.intents.length || data.intents.length > 3 || data.intents.some(i=>!INTENTS.includes(i))) throw Error('Invalid classification');
-  return {intents:[...new Set(data.intents)],subjects:[1,2,3,4].includes(data.subjects)?data.subjects:null,format:['digital','unframed','framed'].includes(data.format)?data.format:null};
+  return {intents:[...new Set(data.intents)],cheapest:/\b(cheapest|lowest[ -](?:price|cost)|least expensive|most affordable|budget option)\b/i.test(customerText),subjects:[1,2,3,4].includes(data.subjects)?data.subjects:null,format:['digital','unframed','framed'].includes(data.format)?data.format:null};
 }
 
 function replyFor(decision, offer) {
@@ -26,6 +26,15 @@ function replyFor(decision, offer) {
   if (intents.includes('stop')) return {pause:true,reason:'opt_out',text:'No problem, I’ll stop automated replies here. Shannon can take over when available.'};
   if (intents.includes('human')) return {pause:true,reason:'human_requested',text:'This needs Shannon’s help. Please email shannon@balanceneurosciencefitness.com with the details and your order reference if you have one. I’ll pause automated replies here.'};
   const blocks=[];
+  if(decision.cheapest){
+    if(!offer.checkoutEnabled)return {pause:false,text:`Checkout is currently paused, so I can’t offer a purchase right now. You can browse availability here: ${ORDER_URL}`};
+    const price=PRICES[tier][decision.format==='unframed'?1:decision.format==='framed'?2:0];
+    const product=decision.format==='unframed'?'unframed 8 × 10 inch print plus digital portrait':decision.format==='framed'?'black framed 8 × 10 inch print plus digital portrait':'finished digital portrait';
+    const scope=tier===1?'one pet':`${tier} people/pets`;
+    if((decision.format==='framed'&&!offer.framedEnabled)||(tier>1&&!offer.groupTypes?.length))return {pause:false,text:`That option is not currently open for ordering. Please check the available options here: ${ORDER_URL}`};
+    const entry=offer.customDesignEnabled&&!decision.format?`Our lowest-priced purchase is the A$20 custom-design session: one design plus up to five edits. That is a design fee; the finished digital portrait or print costs extra, and the A$20 is not deducted.\n\n`:'';
+    return {pause:false,text:`${entry}The cheapest ${product} for ${scope} is A$${price} including GST${decision.format==='unframed'||decision.format==='framed'?' and Australian delivery':''}. ${entry?`Custom design plus the finished digital portrait for ${scope} totals A$${price+20}. `:''}You can also use the standard free watermarked preview before buying.\n\nChoose your options here: ${ORDER_URL}`};
+  }
   if (intents.includes('identity')) blocks.push('I’m Little Companion’s automated assistant. I can help with portrait options, prices and ordering. Shannon handles anything that needs a personal check.');
   if (intents.includes('greeting') && intents.length===1) blocks.push('Hey! I can help you turn a favourite photo into a portrait 🐾 Is it for one pet, a few companions, or you together?');
   if (intents.includes('prices') || intents.includes('groups')) {
@@ -42,8 +51,8 @@ function replyFor(decision, offer) {
   if (intents.includes('preview')) blocks.push('Yes—you can see a free, watermarked preview before deciding. Upload a clear photo and allow around 5–10 minutes, sometimes longer. You get one free preview per day, and buying keeps the artwork you chose.');
   if (intents.includes('photos')) blocks.push('A clear photo with their face and markings visible works best—natural light helps! Use a photo you own or have permission to use, then upload it through the button below. Sending a photo here won’t start an order.');
   if (intents.includes('delivery')) blocks.push(`We currently serve Australia. ${offer.proofWindow}. ${offer.fulfilmentWindow}. These are estimates, so please check with Shannon before ordering for a fixed date.`);
-  if (intents.includes('style')) blocks.push('You can choose the portrait options on the order page and see a preview before paying. For something different, the design-your-own option creates three custom choices for an additional A$20.');
-  if (intents.includes('custom')) blocks.push(offer.customDesignEnabled?'Have a particular look in mind? Design your own is A$20 including GST for three choices and up to five edits to your selected portrait in a new session. Your finished portrait is purchased separately; the A$20 is additional and is not deducted from that price.':'Design-your-own ordering is not currently available. You can browse the standard options on the order page.');
+  if (intents.includes('style')) blocks.push('You can choose the portrait options on the order page and see a preview before paying. For something different, the design-your-own option creates one custom design for an additional A$20.');
+  if (intents.includes('custom')) blocks.push(offer.customDesignEnabled?'Have a particular look in mind? Design your own is A$20 including GST for one design and up to five edits to your selected portrait in a new session. Your finished portrait is purchased separately; the A$20 is additional and is not deducted from that price.':'Design-your-own ordering is not currently available. You can browse the standard options on the order page.');
   if (intents.includes('message')) blocks.push('A personal message of up to 12 words can be added to the artwork for A$5 extra.');
   if (intents.includes('revision')) blocks.push(`Standard portraits include one minor correction. ${offer.revisionWindow}. New design-your-own sessions include up to five edits to the selected portrait; older sessions show their own allowance. You approve the proof before final delivery or printing. For an existing order, use your private proof page or contact Shannon.`);
   if (intents.includes('refund')) blocks.push(`The cancellation and refund details are here: ${ORIGIN}/refunds. For a specific order or refund request, Shannon needs to review it personally.`);
@@ -85,13 +94,13 @@ function outboundMessages(reply,decision,offer) {
   if(hasOrder)text=text.split('\n\n').filter(p=>!p.includes(ORDER_URL)).join('\n\n');
   if(hasRefund)text=text.replace(`${ORIGIN}/refunds`,'the return-policy card below');
   const simplePrice=decision.intents.includes('prices')&&decision.intents.every(i=>['prices','greeting','thanks'].includes(i))&&offer.checkoutEnabled&&offer.framedEnabled&&(!decision.subjects||decision.subjects===1)&&!decision.format;
-  if(text&&!simplePrice)messages.push(...bubbles(text).map(text=>({text})));
+  if(text)messages.push(...bubbles(text).map(text=>({text})));
   if(hasOrder){
     const custom=decision.intents.includes('custom')&&offer.customDesignEnabled;
     const available=offer.checkoutEnabled&&!(decision.format==='framed'&&!offer.framedEnabled)&&!((decision.subjects>1||decision.intents.includes('groups'))&&!offer.groupTypes?.length);
     messages.push(cardMessage({
       title:simplePrice?'One pet · prints include digital':custom?'Design your own portrait':'Little Companion Portraits',
-      subtitle:simplePrice?'Digital A$49 · Unframed A$89 · Framed A$119\nGST + AU print delivery included':!available?'Browse portrait options and current availability.':custom?'A$20 for 3 choices. Finished portrait purchased separately.':'See your free watermarked preview before you pay.',
+      subtitle:simplePrice?'Digital A$49 · Unframed A$89 · Framed A$119\nGST + AU print delivery included':!available?'Browse portrait options and current availability.':custom?'A$20 for 1 design + 5 edits. Finished portrait purchased separately.':'See your free watermarked preview before you pay.',
       url:custom?ORDER_URL.replace('/order?','/custom-design?'):ORDER_URL,
       button:!available?'Browse portraits':custom?'Design my portrait':'Create my portrait'
     }));
