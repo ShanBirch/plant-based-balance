@@ -27,7 +27,7 @@ function replyFor(decision, offer) {
   if (intents.includes('human')) return {pause:true,reason:'human_requested',text:'This needs Shannon’s help. Please email shannon@balanceneurosciencefitness.com with the details and your order reference if you have one. I’ll pause automated replies here.'};
   const blocks=[];
   if (intents.includes('identity')) blocks.push('I’m Little Companion’s automated assistant. I can help with portrait options, prices and ordering. Shannon handles anything that needs a personal check.');
-  if (intents.includes('greeting')) blocks.push('Hi! Are you thinking of a portrait of one pet, a few companions, or you together?');
+  if (intents.includes('greeting') && intents.length===1) blocks.push('Hey! I can help you turn a favourite photo into a portrait 🐾 Is it for one pet, a few companions, or you together?');
   if (intents.includes('prices') || intents.includes('groups')) {
     const amounts=PRICES[tier], label=subjects?`${subjects===1?'one pet':subjects+' people/pets'}`:'one pet';
     if(subjects || !intents.includes('groups')) {
@@ -39,15 +39,15 @@ function replyFor(decision, offer) {
     if (!offer.framedEnabled && (!decision.format||decision.format==='framed')) blocks.push('Framed ordering is not open yet, while physical sample checks are completed.');
     if (tier>1 || intents.includes('groups')) blocks.push(offer.groupTypes?.length?'Group availability depends on the portrait type. Check the available options on the order page before uploading or paying.':'Group portraits are shown for planning, but group uploading and checkout are not open yet.');
   }
-  if (intents.includes('preview')) blocks.push('You can see a watermarked preview before paying. Upload a clear photo on the order page. Allow around 5–10 minutes during the first batch, sometimes longer. One free preview per day; payment keeps the same chosen artwork.');
-  if (intents.includes('photos')) blocks.push('Choose a clear, well-lit photo with their face and distinctive markings visible. Upload it securely on the order page, using photos you own or have permission to use. A photo sent in this chat does not place an order.');
+  if (intents.includes('preview')) blocks.push('Yes—you can see a free, watermarked preview before deciding. Upload a clear photo and allow around 5–10 minutes, sometimes longer. You get one free preview per day, and buying keeps the artwork you chose.');
+  if (intents.includes('photos')) blocks.push('A clear photo with their face and markings visible works best—natural light helps! Use a photo you own or have permission to use, then upload it through the button below. Sending a photo here won’t start an order.');
   if (intents.includes('delivery')) blocks.push(`We currently serve Australia. ${offer.proofWindow}. ${offer.fulfilmentWindow}. These are estimates, so please check with Shannon before ordering for a fixed date.`);
   if (intents.includes('style')) blocks.push('You can choose the portrait options on the order page and see a preview before paying. For something different, the design-your-own option creates three custom choices for an additional A$20.');
-  if (intents.includes('custom')) blocks.push(offer.customDesignEnabled?'Design your own costs A$20 including GST for three custom choices. Your finished portrait is purchased separately at the normal portrait price. The A$20 is additional and is not deducted from that price.':'Design-your-own ordering is not currently available. You can browse the standard options on the order page.');
+  if (intents.includes('custom')) blocks.push(offer.customDesignEnabled?'Have a particular look in mind? Design your own is A$20 including GST for three choices and up to five edits to your selected portrait in a new session. Your finished portrait is purchased separately; the A$20 is additional and is not deducted from that price.':'Design-your-own ordering is not currently available. You can browse the standard options on the order page.');
   if (intents.includes('message')) blocks.push('A personal message of up to 12 words can be added to the artwork for A$5 extra.');
-  if (intents.includes('revision')) blocks.push(`One minor correction is included. ${offer.revisionWindow}. You approve the proof before final delivery or printing. For an existing order, use your private proof page or contact Shannon.`);
+  if (intents.includes('revision')) blocks.push(`Standard portraits include one minor correction. ${offer.revisionWindow}. New design-your-own sessions include up to five edits to the selected portrait; older sessions show their own allowance. You approve the proof before final delivery or printing. For an existing order, use your private proof page or contact Shannon.`);
   if (intents.includes('refund')) blocks.push(`The cancellation and refund details are here: ${ORIGIN}/refunds. For a specific order or refund request, Shannon needs to review it personally.`);
-  if (intents.includes('thanks')) blocks.push('You’re welcome! Happy to help with any portrait questions.');
+  if (intents.includes('thanks') && intents.length===1) blocks.push('You’re welcome 🐾');
   if (intents.includes('unrelated')) blocks.push('I can help with Little Companion portraits, prices and ordering. What would you like to know about a portrait?');
   if (intents.some(i=>['order','prices','preview','photos','style','groups','custom','message'].includes(i))) {
     const optionClosed=(decision.format==='framed'&&!offer.framedEnabled)||((tier>1||intents.includes('groups'))&&!offer.groupTypes?.length);
@@ -84,7 +84,7 @@ function outboundMessages(reply,decision,offer) {
   let text=reply.text;
   if(hasOrder)text=text.split('\n\n').filter(p=>!p.includes(ORDER_URL)).join('\n\n');
   if(hasRefund)text=text.replace(`${ORIGIN}/refunds`,'the return-policy card below');
-  const simplePrice=decision.intents.length===1&&decision.intents[0]==='prices'&&offer.checkoutEnabled&&offer.framedEnabled&&(!decision.subjects||decision.subjects===1)&&!decision.format;
+  const simplePrice=decision.intents.includes('prices')&&decision.intents.every(i=>['prices','greeting','thanks'].includes(i))&&offer.checkoutEnabled&&offer.framedEnabled&&(!decision.subjects||decision.subjects===1)&&!decision.format;
   if(text&&!simplePrice)messages.push(...bubbles(text).map(text=>({text})));
   if(hasOrder){
     const custom=decision.intents.includes('custom')&&offer.customDesignEnabled;

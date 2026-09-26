@@ -63,6 +63,14 @@ test('cards respect paused checkout and human holds, and use the right destinati
  const refund={intents:['refund']};
  assert.match(outboundMessages(replyFor(refund,offer),refund,offer).at(-1).attachment.payload.elements[0].buttons[0].url,/\/refunds$/);
 });
+test('casual greetings do not bury the answer or add a needless sales follow-up',()=>{
+ const live={...offer,framedEnabled:true};const d={intents:['greeting','prices','thanks']};
+ assert.equal(outboundMessages(replyFor(d,live),d,live).length,1);
+ assert.doesNotMatch(replyFor(d,live).text,/Are you thinking|Is it for|You’re welcome/);
+ const thanks=replyFor({intents:['thanks']},live);assert.ok(thanks.text.length<40);assert.ok(!thanks.text.includes('http'));
+ assert.match(replyFor({intents:['revision']},live).text,/Standard portraits include one minor correction/);
+ assert.match(replyFor({intents:['revision']},live).text,/five edits/);
+});
 test('requires genuine exact signature, rejects missing credentials',()=>{
  const raw='{"hello":1}',secret='test-only';const sig='sha256='+crypto.createHmac('sha256',secret).update(raw).digest('hex');assert.ok(validSignature(raw,sig,secret));assert.equal(validSignature(raw+' ',sig,secret),false);assert.equal(validSignature(raw,sig,''),false);
 });
