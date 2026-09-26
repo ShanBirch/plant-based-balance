@@ -39,7 +39,7 @@ test('a simple price enquiry is one clickable image card, without raw URLs',()=>
  assert.equal(payload.template_type,'generic');assert.match(card.subtitle,/A\$49.*A\$89.*A\$119/);
  assert.match(card.subtitle,/GST.*delivery included/);assert.ok(card.subtitle.length<=80);
  assert.equal(card.buttons[0].type,'web_url');assert.equal(card.buttons[0].url,ORDER_URL);
- assert.equal(card.default_action.url,ORDER_URL);assert.equal(card.image_url,'https://plantbased-balance.org/assets/little-companion-dm-milo.png');assert.equal(payload.image_aspect_ratio,'square');
+ assert.equal(card.default_action.url,ORDER_URL);assert.equal(card.image_url,'https://plantbased-balance.org/assets/little-companion-dm-jumper.png');assert.equal(payload.image_aspect_ratio,'square');
 });
 test('specific prices and long answers retain detail with a separate card',()=>{
  const live={...offer,framedEnabled:true,groupTypes:['pets']};
