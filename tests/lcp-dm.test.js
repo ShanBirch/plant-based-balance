@@ -68,6 +68,10 @@ test('cheapest questions always answer in text and distinguish design fees from 
  assert.equal(replyFor(parseDecision('{"intents":["human"]}','cheapest refund'),live).pause,true);
  assert.match(replyFor({intents:['custom']},live).text,/one design and up to five edits/);
  assert.doesNotMatch(replyFor({intents:['custom','style']},live).text,/three choices|3 choices/);
+ const missed=parseDecision('{"intents":["unrelated"]}','How much is a portrait?');
+ assert.deepEqual(missed.intents,['prices']);
+ const missedPrint=parseDecision('{"intents":["prices"],"format":null}','What is your cheapest print?');
+ assert.equal(missedPrint.format,'unframed');assert.match(replyFor(missedPrint,live).text,/A\$89/);
 });
 test('cards respect paused checkout and human holds, and use the right destination',()=>{
  for(const intent of ['stop','human']){

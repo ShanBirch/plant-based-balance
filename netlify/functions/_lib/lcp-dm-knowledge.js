@@ -18,6 +18,15 @@ Latest customer message: ${JSON.stringify(text).slice(0,4000)}`;
 function parseDecision(raw, customerText='') {
   const data = JSON.parse(String(raw).replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,''));
   if (!Array.isArray(data.intents) || !data.intents.length || data.intents.length > 3 || data.intents.some(i=>!INTENTS.includes(i))) throw Error('Invalid classification');
+  // Ground explicit price and format words in the customer's current question.
+  // A classifier miss must not turn an ordinary pricing question into a deflection.
+  if(!data.intents.some(i=>['human','stop'].includes(i))&&/\b(how much|price|prices|pricing|cost|cheapest|lowest[ -](?:price|cost)|least expensive|most affordable|budget option)\b/i.test(customerText)){
+    data.intents=['prices',...data.intents.filter(i=>!['prices','unrelated','greeting','thanks'].includes(i))].slice(0,3);
+    if(/\b(unframed|without (?:a )?frame)\b/i.test(customerText))data.format='unframed';
+    else if(/\bframed\b|\bwith (?:a )?frame\b/i.test(customerText))data.format='framed';
+    else if(/\bprints?\b/i.test(customerText))data.format='unframed';
+    else if(/\bdigital\b/i.test(customerText))data.format='digital';
+  }
   return {intents:[...new Set(data.intents)],cheapest:/\b(cheapest|lowest[ -](?:price|cost)|least expensive|most affordable|budget option)\b/i.test(customerText),subjects:[1,2,3,4].includes(data.subjects)?data.subjects:null,format:['digital','unframed','framed'].includes(data.format)?data.format:null};
 }
 
