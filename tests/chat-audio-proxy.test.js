@@ -1,8 +1,20 @@
 const assert = require('assert');
+const fs = require('node:fs');
+const path = require('node:path');
 const validUrl = 'https://f005.backblazeb2.com/file/plantbasedbalancestories/chats/client-id/checkin.mp3';
 
 (async () => {
     const proxy = await import('../netlify/functions/chat-audio-proxy.mts');
+    // Test the actual deployed entry, not only the legacy implementation.
+    const toml = fs.readFileSync(path.join(__dirname, '../netlify.toml'), 'utf8');
+    const functionsDir = toml.match(/^\s*functions\s*=\s*"([^"]+)"/m)[1];
+    const entryPath = path.join(__dirname, '..', functionsDir, 'chat-audio-proxy.mts');
+    // Netlify discovers routes statically from the entry file. Re-exporting
+    // config works in Node but leaves /api/chat-audio serving the site's HTML.
+    assert.match(fs.readFileSync(entryPath, 'utf8'), /export const config\s*=\s*\{\s*path:\s*['"]\/api\/chat-audio['"]/);
+    const entry = await import(require('node:url').pathToFileURL(entryPath).href);
+    assert.strictEqual(entry.config.path, '/api/chat-audio');
+    assert.strictEqual(entry.default, proxy.default);
     assert.strictEqual(proxy.resolveAllowedAudioUrl(validUrl), validUrl);
     assert.strictEqual(proxy.resolveAllowedAudioUrl('http://f005.backblazeb2.com/file/plantbasedbalancestories/chats/a.mp3'), null);
     assert.strictEqual(proxy.resolveAllowedAudioUrl('https://example.com/file/plantbasedbalancestories/chats/a.mp3'), null);
@@ -29,7 +41,7 @@ const validUrl = 'https://f005.backblazeb2.com/file/plantbasedbalancestories/cha
     };
 
     try {
-        const result = await proxy.default(new Request(`https://plantbased-balance.org/api/chat-audio?url=${encodeURIComponent(validUrl)}`, {
+        const result = await entry.default(new Request(`https://plantbased-balance.org/api/chat-audio?url=${encodeURIComponent(validUrl)}`, {
             headers: { range: 'bytes=0-10' },
         }));
         assert.strictEqual(result.status, 206);
