@@ -56,14 +56,48 @@ function replyFor(decision, offer) {
   return {pause:false,text:blocks.join('\n\n')};
 }
 
-function bubbles(text, max=240) {
-  const result=[]; let buffer='';
-  for(const word of text.split(/\s+/)) {
-    if(word.length>max) throw Error('Oversized reply item');
-    if(buffer && buffer.length+word.length+1>max){result.push(buffer);buffer='';}
-    buffer+=(buffer?' ':'')+word;
+function bubbles(text, max=1000) {
+  const result=[]; let remaining=String(text).trim();
+  while(remaining.length>max){
+    const paragraph=remaining.lastIndexOf('\n\n',max);
+    const end=paragraph>0?paragraph:remaining.lastIndexOf(' ',max);
+    if(end<=0)throw Error('Oversized reply item');
+    result.push(remaining.slice(0,end).trim());remaining=remaining.slice(end).trim();
   }
-  if(buffer)result.push(buffer); return result;
+  if(remaining)result.push(remaining);return result;
 }
 
-module.exports={OWNER_ID,ORIGIN,ORDER_URL,PRICES,classifierPrompt,parseDecision,replyFor,bubbles};
+function cardMessage({title,subtitle,url,button}) {
+  if(title.length>80||subtitle.length>80||button.length>20)throw Error('Oversized portrait card');
+  return {attachment:{type:'template',payload:{template_type:'generic',elements:[{
+    title,subtitle,image_url:`${ORIGIN}/assets/lifestyle/poppy-artwork.webp`,
+    default_action:{type:'web_url',url},buttons:[{type:'web_url',url,title:button}]
+  }]}}};
+}
+
+function outboundMessages(reply,decision,offer) {
+  // Use the same native generic-template cards as Balance. Links are structured
+  // buttons, never split into a text bubble or supplied by the classifier.
+  if(reply.pause)return bubbles(reply.text).map(text=>({text}));
+  const messages=[],hasOrder=reply.text.includes(ORDER_URL);
+  const hasRefund=reply.text.includes(`${ORIGIN}/refunds`);
+  let text=reply.text;
+  if(hasOrder)text=text.split('\n\n').filter(p=>!p.includes(ORDER_URL)).join('\n\n');
+  if(hasRefund)text=text.replace(`${ORIGIN}/refunds`,'the return-policy card below');
+  const simplePrice=decision.intents.length===1&&decision.intents[0]==='prices'&&offer.checkoutEnabled&&offer.framedEnabled&&(!decision.subjects||decision.subjects===1)&&!decision.format;
+  if(text&&!simplePrice)messages.push(...bubbles(text).map(text=>({text})));
+  if(hasOrder){
+    const custom=decision.intents.includes('custom')&&offer.customDesignEnabled;
+    const available=offer.checkoutEnabled&&!(decision.format==='framed'&&!offer.framedEnabled)&&!((decision.subjects>1||decision.intents.includes('groups'))&&!offer.groupTypes?.length);
+    messages.push(cardMessage({
+      title:simplePrice?'One pet · prints include digital':custom?'Design your own portrait':'Little Companion Portraits',
+      subtitle:simplePrice?'Digital A$49 · Unframed A$89 · Framed A$119\nGST + AU print delivery included':!available?'Browse portrait options and current availability.':custom?'A$20 for 3 choices. Finished portrait purchased separately.':'See your free watermarked preview before you pay.',
+      url:custom?ORDER_URL.replace('/order?','/custom-design?'):ORDER_URL,
+      button:!available?'Browse portraits':custom?'Design my portrait':'Create my portrait'
+    }));
+  }
+  if(hasRefund)messages.push(cardMessage({title:'Returns and refunds',subtitle:'Read our policy or contact Shannon about an existing order.',url:`${ORIGIN}/refunds`,button:'Read return policy'}));
+  return messages;
+}
+
+module.exports={OWNER_ID,ORIGIN,ORDER_URL,PRICES,classifierPrompt,parseDecision,replyFor,bubbles,outboundMessages};

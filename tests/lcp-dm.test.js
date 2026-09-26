@@ -1,7 +1,7 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const crypto=require('crypto');
-const {OWNER_ID,ORDER_URL,parseDecision,replyFor,bubbles}=require('../netlify/functions/_lib/lcp-dm-knowledge');
+const {OWNER_ID,ORDER_URL,parseDecision,replyFor,bubbles,outboundMessages}=require('../netlify/functions/_lib/lcp-dm-knowledge');
 const {inboundEvents,validSignature,validDeliverySignature}=require('../netlify/functions/lcp-dm-background')._test;
 const {routePortraitEntries}=require('../netlify/functions/_lib/lcp-dm-route');
 const {refreshPortraitToken}=require('../netlify/functions/_lib/lcp-dm-refresh');
@@ -29,7 +29,39 @@ test('classifier cannot add arbitrary text, invalid intents or prices',()=>{
  const d=parseDecision('{"intents":["prices"],"subjects":10,"price":1,"format":"free"}');assert.equal(d.subjects,null);assert.equal(d.format,null);assert.match(replyFor(d,offer).text,/A\$49/);
 });
 test('all outbound bubbles fit and preserve complete links',()=>{
- const r=replyFor({intents:['prices','preview','custom'],subjects:4},offer);const p=bubbles(r.text);assert.ok(p.every(x=>x.length<=240));assert.ok(p.some(x=>x.includes(ORDER_URL)));assert.ok(p.length<=9);
+ const r=replyFor({intents:['prices','preview','custom'],subjects:4},offer);const p=bubbles(r.text);assert.ok(p.every(x=>x.length<=1000));assert.ok(p.some(x=>x.includes(ORDER_URL)));assert.ok(p.length<=9);
+});
+test('a simple price enquiry is one clickable image card, without raw URLs',()=>{
+ const live={...offer,framedEnabled:true};const decision={intents:['prices']};
+ const messages=outboundMessages(replyFor(decision,live),decision,live);
+ assert.equal(messages.length,1);assert.equal(messages[0].text,undefined);
+ const payload=messages[0].attachment.payload,card=payload.elements[0];
+ assert.equal(payload.template_type,'generic');assert.match(card.subtitle,/A\$49.*A\$89.*A\$119/);
+ assert.match(card.subtitle,/GST.*delivery included/);assert.ok(card.subtitle.length<=80);
+ assert.equal(card.buttons[0].type,'web_url');assert.equal(card.buttons[0].url,ORDER_URL);
+ assert.equal(card.default_action.url,ORDER_URL);assert.match(card.image_url,/assets\/lifestyle\/poppy-artwork.webp$/);
+});
+test('specific prices and long answers retain detail with a separate card',()=>{
+ const live={...offer,framedEnabled:true,groupTypes:['pets']};
+ for(const decision of [{intents:['prices'],subjects:2,format:'framed'},{intents:['prices','preview','custom'],subjects:4}]){
+  const messages=outboundMessages(replyFor(decision,live),decision,live);
+  assert.ok(messages.some(m=>m.text));assert.ok(messages.some(m=>m.attachment));
+  for(const m of messages.filter(m=>m.text)){assert.ok(m.text.length<=1000);assert.ok(!m.text.includes('https://'));}
+ }
+ assert.deepEqual(bubbles('First paragraph.\n\nSecond paragraph.'),['First paragraph.\n\nSecond paragraph.']);
+});
+test('cards respect paused checkout and human holds, and use the right destination',()=>{
+ for(const intent of ['stop','human']){
+  const d={intents:[intent,'prices']};assert.ok(outboundMessages(replyFor(d,offer),d,offer).every(m=>m.text&&!m.attachment));
+ }
+ const closed={...offer,checkoutEnabled:false},d={intents:['order']};
+ const messages=outboundMessages(replyFor(d,closed),d,closed);
+ assert.match(messages.at(-1).attachment.payload.elements[0].subtitle,/availability/);
+ assert.equal(messages.at(-1).attachment.payload.elements[0].buttons[0].title,'Browse portraits');
+ const custom={intents:['custom']};
+ assert.match(outboundMessages(replyFor(custom,offer),custom,offer).at(-1).attachment.payload.elements[0].buttons[0].url,/\/custom-design\?/);
+ const refund={intents:['refund']};
+ assert.match(outboundMessages(replyFor(refund,offer),refund,offer).at(-1).attachment.payload.elements[0].buttons[0].url,/\/refunds$/);
 });
 test('requires genuine exact signature, rejects missing credentials',()=>{
  const raw='{"hello":1}',secret='test-only';const sig='sha256='+crypto.createHmac('sha256',secret).update(raw).digest('hex');assert.ok(validSignature(raw,sig,secret));assert.equal(validSignature(raw+' ',sig,secret),false);assert.equal(validSignature(raw,sig,''),false);

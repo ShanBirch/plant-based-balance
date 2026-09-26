@@ -1,7 +1,7 @@
 'use strict';
 const crypto=require('crypto');
 const {supabaseQuery,callGeminiFallback}=require('./_lib/client-context');
-const {OWNER_ID,ORIGIN,classifierPrompt,parseDecision,replyFor,bubbles}=require('./_lib/lcp-dm-knowledge');
+const {OWNER_ID,ORIGIN,classifierPrompt,parseDecision,replyFor,outboundMessages}=require('./_lib/lcp-dm-knowledge');
 const json=(statusCode,data)=>({statusCode,body:JSON.stringify(data)});
 const eq=value=>encodeURIComponent(value);
 
@@ -61,8 +61,9 @@ async function processEvent(inbound,config,existing=false){
     if(inbound.media||inbound.story){decision={intents:['human']};}
     else if(!inbound.inbound_text.trim()){await update(inbound.id,{status:'ignored',reason:'empty'});return {status:'ignored'};}
     else decision=parseDecision(await callGeminiFallback([{role:'user',parts:[{text:classifierPrompt(history.reverse(),inbound.inbound_text)}]}],{temperature:0,maxOutputTokens:350}));
-    const reply=replyFor(decision,await offerNow());
-    const parts=bubbles(reply.text);
+    const offer=await offerNow();
+    const reply=replyFor(decision,offer);
+    const parts=outboundMessages(reply,decision,offer);
     if(!parts.length||parts.length>9)throw Error('Reply length');
     // A manual pause, newer inbound, expired window or lost lease cancels delivery.
     const current=(await supabaseQuery(`lcp_dm_conversations?sender_id=eq.${eq(inbound.sender_id)}&select=paused,lease`))[0];
@@ -75,12 +76,14 @@ async function processEvent(inbound,config,existing=false){
     const identityResponse=await fetch('https://graph.instagram.com/v25.0/me?fields=user_id,username',{headers:{Authorization:`Bearer ${token}`},signal:AbortSignal.timeout(10000)});
     const identity=await identityResponse.json();
     if(!identityResponse.ok||String(identity.user_id)!==OWNER_ID||identity.username!=='littlecompanionportraits')throw Error('Portrait connection needs refresh');
-    const sent=[];
-    for(const text of parts){
+    // Keep previous receipts if an operator explicitly queues a corrected test.
+    // Recovery still only selects queued rows; sent/uncertain rows are not retried.
+    const sent=Array.isArray(inbound.sent_ids)?[...inbound.sent_ids]:[];
+    for(const message of parts){
       // No HUMAN_AGENT override and no retries after an uncertain send.
       const row=(await supabaseQuery(`lcp_dm_conversations?sender_id=eq.${eq(inbound.sender_id)}&select=paused,lease`))[0];
       if(row?.paused||row?.lease!==lease||Date.now()-Date.parse(inbound.received_at)>=86400000)throw Error('Delivery interrupted');
-      const response=await fetch(`https://graph.instagram.com/v25.0/${OWNER_ID}/messages`,{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({recipient:{id:inbound.sender_id},message:{text}}),signal:AbortSignal.timeout(12000)});
+      const response=await fetch(`https://graph.instagram.com/v25.0/${OWNER_ID}/messages`,{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({recipient:{id:inbound.sender_id},message}),signal:AbortSignal.timeout(12000)});
       const result=await response.json();
       if(!response.ok||!result.message_id)throw Error(`Instagram delivery failed (${response.status})`);
       sent.push(result.message_id);await update(inbound.id,{sent_ids:sent});

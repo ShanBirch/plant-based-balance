@@ -18,7 +18,15 @@ Optional artwork message A$5; design-your-own A$20 for three choices, additional
 to the portrait purchase. The order URL preserves photo intake and preview before
 Stripe checkout. Never generate a generic payment link that bypasses the order.
 
-Current operational state: draft-only until Meta authentication and live testing.
+Operational state on 26 September 2026: enabled after verified owner test delivery.
+The earlier plain-text price response has been replaced by a native Instagram
+image card with a web_url button and card tap action, following Balance's generic
+template format. Simple one-pet pricing uses one card; more detailed questions
+keep one readable text response plus the relevant card. Custom-design and refund
+questions receive their specific destination. Paragraphs are preserved and text
+is split only at the API's 1000-character limit, not every 240 characters.
+
+For future reconnections, keep draft-only until Meta authentication and live testing.
 Enable only after `lcp-dm-admin` reports the correct connected identity and a
 configured signature secret. `lcp_dm_settings.enabled` is the kill switch.
 Set `starts_at` at activation so old messages are never backfilled.
