@@ -31,7 +31,7 @@
         else if (document.readyState !== 'complete') document.addEventListener('DOMContentLoaded', send, { once: true });
     }
     if (isPlantBasedChallenge) {
-        document.documentElement.setAttribute('data-bio-theme', matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-bio-theme', 'light');
         document.body.classList.add('challenge-booking');
         document.body.dataset.landingVariant = 'eight_week_consultation_v1';
         document.title = 'Book Your Challenge Consultation | Balance';
