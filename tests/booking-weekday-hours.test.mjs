@@ -2,6 +2,21 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import handler, {buildSlotsForDate, buildAvailableDates} from '../netlify/functions/balance-booking.mts';
 const settings={booking_enabled:true,event_name:'Call with Shannon',duration_minutes:60,minimum_notice_hours:24,booking_window_days:5,timezone:'Australia/Brisbane',calendar_id:'primary',location:'Google Meet',weekly_hours:Object.fromEntries([0,1,2,3,4,5,6].map(d=>[d,d>0&&d<6?[{start:'07:00',end:'15:00'}]:[]]))};
+test('extended weekday hours finish by 7pm Brisbane and continue excluding busy time',()=>{
+ const extended={...settings,weekly_hours:Object.fromEntries(Object.entries(settings.weekly_hours).map(([day,ranges])=>[day,ranges.length?[{start:'07:00',end:'19:00'}]:[]]))};
+ const now=new Date('2026-09-11T00:00:00Z');
+ for(const duration_minutes of [30,60]) {
+  const schedule={...extended,duration_minutes};
+  const slots=buildSlotsForDate(schedule,'2026-09-14',[],now);
+  assert.equal(slots[0].start,'2026-09-13T21:00:00.000Z');
+  assert.equal(slots.at(-1).end,'2026-09-14T09:00:00.000Z');
+  assert(slots.every(s=>Date.parse(s.end)<=Date.parse('2026-09-14T09:00:00Z')));
+  const busy=[{start:'2026-09-14T07:00:00Z',end:'2026-09-14T09:00:00Z'}];
+  assert(buildSlotsForDate(schedule,'2026-09-14',busy,now).every(s=>Date.parse(s.end)<=Date.parse(busy[0].start)));
+  assert.equal(buildSlotsForDate(schedule,'2026-09-19',[],now).length,0);
+  assert.equal(buildSlotsForDate(schedule,'2026-09-20',[],now).length,0);
+ }
+});
 test('five available dates skip weekends and fully booked days',()=>{
  const now=new Date('2026-09-11T22:00:00Z');
  assert.deepEqual(buildAvailableDates(settings,[],now).map(d=>d.date),['2026-09-14','2026-09-15','2026-09-16','2026-09-17','2026-09-18']);

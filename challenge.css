@@ -1,27 +1,26 @@
-/* Reuse the public site's typography, palette, navigation and buttons. */
-html body.challenge-page { --bg:#faf7ef; --bg-soft:#f4f1ea; --text-main:#243124; --text-muted:#50544b; --secondary:#805f1e; --line:#dfd5be; background:var(--bg); color:var(--text-main); -webkit-text-fill-color:var(--text-main); }
-html[data-bio-theme="dark"] body.challenge-page { --bg:#111410; --bg-soft:#1c211b; --text-main:#f8f5ee; --text-muted:#c3c7ba; --secondary:#e4c77e; --line:#454b3d; --cta-bg:#d8b25e; --cta-text:#111111; }
-.challenge-page .page-shell { width:min(1120px,calc(100% - 40px)); padding-top:0; }
-.challenge-page .site-header { position:sticky; top:0; }
-.challenge-hero { display:grid; grid-template-columns:1.3fr .7fr; gap:64px; align-items:center; padding:48px 0 64px; }
-.challenge-kicker { color:var(--secondary); -webkit-text-fill-color:var(--secondary); font-size:.76rem; font-weight:800; letter-spacing:.12em; text-transform:uppercase; margin:0 0 18px; }
-.challenge-page h1,.challenge-page h2,.challenge-page h3 { font-family:Outfit,Inter,sans-serif; letter-spacing:-.035em; }
-.challenge-page h1 { font-size:clamp(2.5rem,4.5vw,3.8rem); line-height:1.06; margin:0 0 24px; }
+/* Same light editorial theme, shared background and components as /coaching. */
+.challenge-page .page-shell { width:100%; padding-top:0; }
+.challenge-page .challenge-hero { width:min(1140px,100%); grid-template-columns:minmax(0,1.3fr) minmax(0,.8fr); gap:56px; padding:64px 24px; }
+.challenge-copy { min-width:0; }
+.challenge-page .challenge-kicker { color:var(--secondary); -webkit-text-fill-color:var(--secondary); font-size:.76rem; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
+.challenge-page h1 { font-size:clamp(2.5rem,4.5vw,4rem); line-height:1.06; margin:0 0 22px; }
 .challenge-page h1 span { color:var(--secondary); -webkit-text-fill-color:var(--secondary); }
-.challenge-page h2 { font-size:clamp(1.8rem,3vw,2.6rem); line-height:1.13; margin:0 0 24px; }
-.challenge-page h3 { font-size:1.4rem; margin:14px 0 12px; }
-.challenge-page p:not(.challenge-kicker) { line-height:1.7; color:var(--text-muted); -webkit-text-fill-color:var(--text-muted); }
-.challenge-page .lead { font-size:1.2rem; font-weight:600; }
-.challenge-page .btn.primary { margin-top:12px; min-height:52px; color:var(--cta-text); -webkit-text-fill-color:var(--cta-text); box-shadow:none; }
-.challenge-note { font-size:.83rem; max-width:450px; }
-.challenge-photo { margin:0; background:var(--bg-soft); border-radius:22px; overflow:hidden; border:1px solid var(--line); }
-.challenge-photo img { width:100%; height:460px; object-fit:cover; object-position:center 12%; }
-.challenge-photo figcaption { padding:18px 22px; font-weight:700; }
+.challenge-page .challenge-copy > p:not(.challenge-kicker), .challenge-consult p { line-height:1.7; color:var(--text-muted); -webkit-text-fill-color:var(--text-muted); }
+.challenge-page .lead { font-weight:600; margin:0 0 8px; }
+.challenge-page .btn.primary { margin-top:16px; min-height:54px; color:var(--cta-text); -webkit-text-fill-color:var(--cta-text); }
+.challenge-note { font-size:.83rem; max-width:460px; margin-top:16px; }
+.challenge-page .challenge-photo { margin:0; padding:12px; background:var(--surface); border:1px solid var(--line); box-shadow:var(--shadow); }
+.challenge-photo img { display:block; width:100%; height:430px; object-fit:cover; object-position:center 12%; border-radius:18px; }
+.challenge-photo figcaption { padding:20px 10px 10px; font-weight:700; }
 .challenge-photo figcaption span { display:block; margin-top:6px; font-size:.78rem; font-weight:400; color:var(--text-muted); -webkit-text-fill-color:var(--text-muted); }
-.challenge-section { padding:48px 0; border-top:1px solid var(--line); }
-.challenge-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:32px; margin-top:36px; }
-.challenge-number { color:var(--secondary); -webkit-text-fill-color:var(--secondary); font-size:.85rem; font-weight:700; }
-.challenge-consult { display:grid; grid-template-columns:1fr 1fr; gap:56px; }
+.challenge-page .challenge-section { width:min(1092px,calc(100% - 48px)); margin:16px auto 56px; padding:36px; }
+.challenge-section h2 { font-size:clamp(1.9rem,3vw,2.7rem); line-height:1.13; margin:0 0 20px; }
+.challenge-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin-top:28px; }
+.challenge-support { padding:26px; border:1px solid #e0d2b1; border-radius:18px; background:#fffdfa; }
+.challenge-number { display:inline-flex; align-items:center; justify-content:center; width:38px; height:38px; border:1px solid #e0d2b1; border-radius:50%; color:#805f1e; -webkit-text-fill-color:#805f1e; font-size:.85rem; font-weight:700; }
+.challenge-support h3 { margin:18px 0 12px; font-size:1.5rem; }
+.challenge-support p { margin:0; }
+.challenge-consult { display:grid; grid-template-columns:1fr 1.1fr; gap:40px; border-radius:22px; background:var(--surface); }
 .challenge-consult p:first-child { margin-top:0; }
 .challenge-page :focus-visible { outline:3px solid var(--secondary); outline-offset:4px; }
 /* Also used on the consultation handoff, scoped away from other offers. */
@@ -32,19 +31,24 @@ html[data-bio-theme="dark"] .challenge-booking .surface { background:var(--surfa
 html[data-bio-theme="dark"] body.challenge-booking .eyebrow { color:var(--secondary); -webkit-text-fill-color:var(--secondary); }
 html[data-bio-theme="dark"] .challenge-booking .booking-form-grid :is(input,textarea,select) { background:var(--bg); color:var(--text-main); -webkit-text-fill-color:var(--text-main); }
 html[data-bio-theme="dark"] .challenge-booking .btn.primary { color:var(--cta-text); -webkit-text-fill-color:var(--cta-text); }
+
+/* Keep the existing consultation handoff clear in zero-inset WebViews as well. */
 @media (pointer:coarse),(max-width:900px) {
  body:is(.challenge-page,.challenge-booking) { --challenge-safe-top:max(42px,env(safe-area-inset-top,0px)); --challenge-safe-bottom:max(24px,env(safe-area-inset-bottom,0px)); }
  html body:is(.challenge-page,.challenge-booking) .site-header:has(.balance-navigation) { padding-top:calc(8px + var(--challenge-safe-top)); }
  html body:is(.challenge-page,.challenge-booking) .balance-menu-drawer { top:0; height:100dvh; padding-top:calc(14px + var(--challenge-safe-top)); padding-bottom:calc(24px + var(--challenge-safe-bottom)); }
  body:is(.challenge-page,.challenge-booking) .page-shell { padding-bottom:calc(32px + var(--challenge-safe-bottom)); padding-left:env(safe-area-inset-left,0px); padding-right:env(safe-area-inset-right,0px); }
- .challenge-hero { gap:28px; }
+}
+@media(max-width:980px) {
+ .challenge-page .challenge-hero { grid-template-columns:1fr; gap:32px; padding:40px 24px; }
+ .challenge-page .challenge-copy { align-items:center; text-align:center; }
+ .challenge-page h1 { font-size:clamp(2rem,8.3vw,3.6rem); }
+ .challenge-page .challenge-photo { width:min(100%,520px); margin:auto; }
+ .challenge-photo img { height:340px; }
 }
 @media(max-width:700px) {
- .challenge-hero { grid-template-columns:1fr; padding:32px 0; }
- .challenge-page h1 { font-size:clamp(2rem,8.5vw,3.3rem); }
- .challenge-photo img { height:320px; object-position:center 12%; }
- .challenge-grid,.challenge-consult { grid-template-columns:1fr; gap:24px; }
- .challenge-section { padding:32px 0; }
- .challenge-grid article + article { border-top:1px solid var(--line); padding-top:24px; }
+ .challenge-page .challenge-section { width:calc(100% - 32px); padding:24px 18px; margin-bottom:28px; }
+ .challenge-grid,.challenge-consult { grid-template-columns:1fr; gap:16px; }
+ .challenge-support { padding:22px; }
  .challenge-page .btn { width:100%; }
 }

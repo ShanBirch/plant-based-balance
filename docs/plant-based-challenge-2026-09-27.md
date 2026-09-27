@@ -29,3 +29,24 @@ Owner sign-in succeeded and Reconnect Google reached Google's "hasn't verified t
 - Eight browser scenarios: 360x640 and 667x375, light/dark, 0px and simulated 59px top/34px bottom insets. Opening, scrolling, booking handoff, browser return, drawer close/reopen and bottom navigation reachability passed; screenshots are in ignored `output/playwright`.
 - Mocked browser submissions and the server handler verify consultation confirmation, source/attribution storage, Calendar event naming and retained 60-minute duration without creating real bookings or sending test messages.
 - Existing booking protection, weekday hours, 30-minute PT, domain, compact-layout, Learn/Zoom routing and first-party tracking tests pass. No live appointment or invitation was created during QA.
+
+## Site integration and booking-hours follow-up, 27 September
+
+The challenge now uses the same light theme, background, full-width header, type,
+pill buttons and cream journey section as the current coaching website. White
+support cards use the existing journey palette. The public site intentionally
+stays cream and gold in either device colour preference, matching /coaching.
+Community and accountability are explicit alongside workouts, food and Learn.
+Other offer content is unchanged; shared navigation now includes the challenge
+on the hub, app, Learn, coaching, results, story, account and booking pages.
+Versioned shared assets refresh cached pages; the script also fills missing links
+on older HTML. The shared drawer retains status-bar and home-indicator clearance.
+
+Google Calendar is now connected. At Shannon's request, the singleton booking
+settings row was updated from Monday–Friday 07:00–15:00 to 07:00–19:00 in
+Australia/Brisbane. Saturday/Sunday stay closed. The 60-minute consultation,
+30-minute PT overrides, 24-hour notice, five available dates and busy-time checks
+are preserved. Only weekly_hours and updated_at changed. Final appointments
+must finish at 19:00. No real test appointments or messages are sent.
+
+Follow-up verification: 72 menu scenarios across nine public routes and eight phone/theme/inset combinations passed, plus eight challenge/booking scenarios and 39 regression tests. Existing-page comparison confirmed only navigation and versioned assets changed on the nine other pages. Screenshots remain in ignored output/playwright.

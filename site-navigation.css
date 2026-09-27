@@ -36,3 +36,8 @@ body header .brand .balance-brand-name small { display: block; margin-top: 4px; 
  body .site-header:has(.balance-navigation),body .topbar:has(.balance-navigation) { padding-top:calc(8px + var(--navigation-safe-top)); }
  .balance-menu-drawer { padding-top:calc(14px + var(--navigation-safe-top)); padding-bottom:calc(24px + var(--navigation-safe-bottom)); }
 }
+/* The shared menu must also clear status bars in edge-to-edge WebViews. */
+@media (pointer:coarse), (max-width:900px) {
+ html body:has(.balance-navigation) .site-header:has(.balance-navigation), html body:has(.balance-navigation) .topbar:has(.balance-navigation) { padding-top:calc(8px + max(42px,env(safe-area-inset-top,0px))); }
+ html body .balance-navigation .balance-menu-drawer { top:0; height:100dvh; padding-top:calc(14px + max(42px,env(safe-area-inset-top,0px))); padding-bottom:calc(24px + max(24px,env(safe-area-inset-bottom,0px))); }
+}
