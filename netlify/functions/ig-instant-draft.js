@@ -1,3 +1,4 @@
+const { CHALLENGE_FLOW, CHALLENGE_POLICY_VERSION, resolveChallengeLeadRoute, buildChallengeLeadPrompt, collectChallengeLeadIssues, buildChallengeBookingHandoff } = require('./_lib/plant-based-challenge-dm');
 const { resolveMessengerRoute } = require('./_lib/facebook-messenger');
 const { outboundAnswersOlderInbound } = require('./_lib/ig-reply-source');
 const { buildPaidMetaZoomHandoff, ZOOM_BOOKING_URL, LEARN_SUPPORT_CHOICE, resolveLearnSupportChoice } = require('./_lib/paid-meta-zoom');
@@ -2140,6 +2141,7 @@ function buildDeterministicPaidMetaConversationReply({
     allowVideoAttachment = false,
     skipIdentityDisclosure = false,
 } = {}) {
+    if (flowVariant === CHALLENGE_FLOW) return null;
     const message = String(currentMessage || '').replace(/\s+/g, ' ').replace(/\bloose wie?ght\b|\bloose weight\b/gi, 'lose weight').trim();
     if (!message
         || META_AD_FIRST_REPLY_OPT_OUT_RE.test(message)
@@ -2934,7 +2936,7 @@ function removePaidMetaBlockerVoiceGreeting({
     };
 }
 
-function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draft, draftReview, challengeOfferWarning, currentMessage, qualifier, leadStage, linkedUserId, meaningfulLeadReplyCount, contextBypass, cocosContextBypass, alertData, allowTestLaneDraftReviewWarning = false, allowBalanceLeadDraftReviewWarning = false }) {
+function getAutoDmHoldReason({ history = [], mediaReview, contextReview, onboardingPhase, draft, draftReview, challengeOfferWarning, currentMessage, qualifier, leadStage, linkedUserId, meaningfulLeadReplyCount, contextBypass, cocosContextBypass, alertData, allowTestLaneDraftReviewWarning = false, allowBalanceLeadDraftReviewWarning = false }) {
     const effectiveContextBypass = contextBypass || cocosContextBypass;
     const verifiedPaidMetaProgression = /^deterministic_paid_meta_(?:conversation|guided_sales|handoff)_v\d+/i.test(String(draft?.model || ''))
         && ['campaign_sales_progression', 'campaign_buyer_handoff', 'campaign_app_preview_handoff'].includes(String(draft?.replyMode || ''));
@@ -3022,7 +3024,12 @@ function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draf
             label: 'stock discovery question needs Shannon review',
         };
     }
-    if (!verifiedPaidMetaProgression
+    const verifiedChallengeConsultation = !linkedUserId
+        && alertData?.challenge_policy_version === CHALLENGE_POLICY_VERSION
+        && draftReview?.verdict === 'pass'
+        && !(draftReview?.issues || []).length
+        && !!buildChallengeBookingHandoff({draft, currentMessage, qualifier, history});
+    if (!verifiedChallengeConsultation && !verifiedPaidMetaProgression
         && !verifiedGuaranteedPaidMetaOffer
         && !verifiedRequestedVideoResend
         && !verifiedPaidMetaPreviewInvitation
@@ -3954,10 +3961,11 @@ function finalizeDraftChunksFromRawText(rawText, {
     knownContextText = '',
     hasDecodedMedia = false,
     allowDailyGreeting = false,
+    challengeLead = false,
 } = {}) {
     const parsed = parseDraftChunks(rawText, maxChunks);
     const baseChunks = Array.isArray(parsed.chunks) ? parsed.chunks : [];
-    const repairMissingLink = (chunks) => repairMissingChallengeBioLinkChunks(chunks, {
+    const repairMissingLink = (chunks) => challengeLead ? chunks : repairMissingChallengeBioLinkChunks(chunks, {
         maxChunks,
         currentMessageText,
         qualifier,
@@ -5529,6 +5537,7 @@ function isAutomatedOutageNotice(value = '') {
 }
 
 function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', qualifier = {}, history = [], flowVariant = 'plant_based_control' } = {}) {
+    if (flowVariant === CHALLENGE_FLOW) return collectChallengeLeadIssues({draft, currentMessage, history});
     const reply = draftTextFromDraft(draft);
     const turn = String(currentMessage || '').replace(/\s+/g, ' ').trim();
     if (!reply || !turn) return [];
@@ -5814,6 +5823,7 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
 }
 
 function isBlockingPaidMetaWriterContractIssue(issue = '') {
+    if (String(issue).startsWith('Challenge policy:')) return true;
     if (/Explicit course video resend/i.test(String(issue || ''))) return true;
     if (/Ambiguous support choice/i.test(String(issue || ''))) return true;
     return /Unverified lesson captions|Household meal scope|Incorrect Learn lesson count|repeated a question|directly asked whether|answer why Shannon went vegan|meal-plan question directly|gluten-free question directly|sales suspicion|answer the sales question|answer the price exactly|do not ask for an email|offered checkout without explicit transactional intent|ignored the supplied plant-based duration|broad paid-ad reply|answered the goal question|full six-week course outline|course answer must return|earned paid-Meta offer is missing/i.test(String(issue || ''));
@@ -5842,6 +5852,7 @@ function filterVerifiedPreviewHandoffContractIssues({
 }
 
 function buildPaidMetaGuaranteedContractFallback({ draft = {}, currentMessage = '', issues = [], qualifier = {}, history = [], flowVariant = 'plant_based_control' } = {}) {
+    if (flowVariant === CHALLENGE_FLOW) return null;
     if (isExplicitPaidMetaProofVideoRetry({currentMessage,history})) return {...buildPaidMetaProofVideoRetryReply(currentMessage,{history,flowVariant}),flowVariant};
     if (flowVariant === 'broad_pain' && resolveLearnSupportChoice(currentMessage, history) === 'clarify') {
         return {joined:LEARN_SUPPORT_CHOICE,chunks:[LEARN_SUPPORT_CHOICE],model:'deterministic_paid_meta_guided_sales_v1',replyMode:'campaign_sales_progression',paidMetaSupportChoice:true,maxChunks:1,flowVariant,error:null};
@@ -7526,9 +7537,12 @@ Rules:
             channelLabel,
             timeline: totalConversationText,
             unansweredMessages: unansweredBatch,
-            flowVariant: adFlowVariant,
+            flowVariant: adFlowVariant === CHALLENGE_FLOW ? 'broad_pain' : adFlowVariant,
             hasMedia: mediaParts.length > 0,
         });
+    }
+    if (adFlowVariant === CHALLENGE_FLOW && isSalesLeadThread) {
+        prompt = buildChallengeLeadPrompt({basePrompt: prompt, context: [leadBlock, profileBlock, memoryBlock].filter(Boolean).join("\n")});
     }
     prompt = prompt.replace(
         /- 1 to 3 chunks\.[^\n]*\n- Split where/,
@@ -7723,6 +7737,7 @@ Rules:
         linkedUserId,
         checkoutUrl,
         nativeStoryContextSummary: nativeStoryOutreachContext?.summary || null,
+        challengeLead: adFlowVariant === CHALLENGE_FLOW,
         knownContextText: totalConversationText,
         hasDecodedMedia,
         allowDailyGreeting,
@@ -8350,7 +8365,8 @@ exports.handler = async (event) => {
         metaAdConversationFastLane,
     });
     let metaAdCardAttachmentsSuppressed = unfilteredHistoryCount - history.length;
-    const metaAdFlowVariant = resolveMetaAdFlowVariant({
+    const challengeLead = resolveChallengeLeadRoute({thread, currentMessage: messageText, history});
+    const metaAdFlowVariant = challengeLead ? CHALLENGE_FLOW : resolveMetaAdFlowVariant({
         customData: thread.custom_data,
         currentMessage: messageText,
         acquisitionMode,
@@ -8997,7 +9013,7 @@ exports.handler = async (event) => {
     });
     let draft;
     try {
-        draft = fastDeterministicProgression || (!requiresInboundMediaAnalysis && metaAdOpeningTurn
+        draft = fastDeterministicProgression || (!challengeLead && !requiresInboundMediaAnalysis && metaAdOpeningTurn
             && (metaAdFlowVariant === 'broad_pain' || shouldUseDeterministicMetaAdFirstReply(messageText)) ? buildMetaAdFoundersPassFirstReply(messageText, {
             customData: thread.custom_data,
             flowVariant: metaAdFlowVariant,
@@ -9065,7 +9081,7 @@ exports.handler = async (event) => {
             appPreviewUrl: buildMetaAppPreviewUrl(thread.id, { flowVariant: metaAdFlowVariant }),
         });
     }
-    if (metaAdConversationFastLane && isContextualMetaAdOfferLinkRequest({
+    if (!challengeLead && metaAdConversationFastLane && isContextualMetaAdOfferLinkRequest({
         currentMessage: messageText,
         qualifier,
         history,
@@ -9080,7 +9096,7 @@ exports.handler = async (event) => {
             ...contextualLinkReply,
         };
     }
-    if (metaAdConversationFastLane
+    if (!challengeLead && metaAdConversationFastLane
         && hasInstagramGraphRoute
         && isExplicitPaidMetaProofVideoRetry({ currentMessage: messageText, history })) {
         draft = {
@@ -9096,7 +9112,7 @@ exports.handler = async (event) => {
             history,
             currentMessage: messageText,
         });
-        draft = ensurePaidMetaAppVideoPreviewCta(draft);
+        if (!challengeLead) draft = ensurePaidMetaAppVideoPreviewCta(draft);
     }
     if (metaAdConversationFastLane && hasInstagramGraphRoute && graphRecipientId) {
         try {
@@ -9286,14 +9302,15 @@ exports.handler = async (event) => {
         && paidMetaConversationApproval?.code === 'approved_meta_ad_sales_progression'
         && draft?.appPreviewHandoff === true
         && isMetaAppPreviewUrl(draft?.appPreviewUrl);
-    let challengeOfferWarning = metaAdFirstReplyApproval
+    const challengeBookingHandoff = challengeLead ? buildChallengeBookingHandoff({draft, currentMessage: displayMessage, history: displayHistory, qualifier, linkedUserId: thread.linked_user_id}) : null;
+    let challengeOfferWarning = challengeBookingHandoff ? {required:false, code:'approved_challenge_consultation', reason:'Scoped challenge consultation invitation; all other reviews still apply.'} : metaAdFirstReplyApproval
         || paidMetaConversationApproval
         || buildChallengeOfferWarning({ draftText: draft.joined, qualifier, currentMessage: displayMessage });
     const skipGenericPaidMetaLinkHandoff = shouldBypassGenericLinkHandoffForApprovedPaidMetaProgression({
         approval: paidMetaConversationApproval,
         draft,
     });
-    const leadOnboardingHandoffData = buildApprovedMetaAdFirstReplyHandoffData({
+    const leadOnboardingHandoffData = challengeBookingHandoff || buildApprovedMetaAdFirstReplyHandoffData({
         approval: metaAdFirstReplyApproval,
         draft,
         leadStage: effectiveLeadStage,
@@ -9405,6 +9422,8 @@ exports.handler = async (event) => {
             subscriber_id: thread.subscriber_id,
             ig_thread_id: thread.id,
             ig_username: thread.ig_username || null,
+            challenge_policy_version: challengeLead ? CHALLENGE_POLICY_VERSION : undefined,
+            offer_flow_variant: challengeLead ? CHALLENGE_FLOW : undefined,
             bot_account: botAccount || null,
             algorithm_scope: botAccount || 'balance_default',
             algorithm_fork: algorithmFork,
@@ -9713,6 +9732,8 @@ exports.handler = async (event) => {
             subscriber_id: thread.subscriber_id,
             ig_thread_id: thread.id,
             ig_username: thread.ig_username || null,
+            challenge_policy_version: challengeLead ? CHALLENGE_POLICY_VERSION : undefined,
+            offer_flow_variant: challengeLead ? CHALLENGE_FLOW : undefined,
             bot_account: botAccount || existingPending.data?.bot_account || null,
             algorithm_scope: botAccount || existingPending.data?.algorithm_scope || 'balance_default',
             algorithm_fork: algorithmFork,
@@ -9748,7 +9769,7 @@ exports.handler = async (event) => {
             paid_meta_conversation_approval: paidMetaConversationApproval
                 || existingPending.data?.paid_meta_conversation_approval
                 || undefined,
-            meta_ad_checkout_url: draft.checkoutUrl || existingPending.data?.meta_ad_checkout_url || undefined,
+            meta_ad_checkout_url: challengeLead ? null : (draft.checkoutUrl || existingPending.data?.meta_ad_checkout_url || undefined),
             meta_ad_attribution: metaAdFastLane
                 ? (thread.custom_data?.meta_ad_attribution || existingPending.data?.meta_ad_attribution || undefined)
                 : existingPending.data?.meta_ad_attribution,
@@ -9769,8 +9790,8 @@ exports.handler = async (event) => {
             outbound_voice_source_text: coalescedOutboundVoiceMessage
                 ? (draft.joined || existingPending.data?.outbound_voice_source_text || undefined)
                 : undefined,
-            paid_meta_app_preview_handoff: draft.appPreviewHandoff || existingPending.data?.paid_meta_app_preview_handoff || undefined,
-            paid_meta_app_preview_url: draft.appPreviewHandoff
+            paid_meta_app_preview_handoff: challengeLead ? false : (draft.appPreviewHandoff || existingPending.data?.paid_meta_app_preview_handoff || undefined),
+            paid_meta_app_preview_url: challengeLead ? null : draft.appPreviewHandoff
                 ? draft.appPreviewUrl
                 : existingPending.data?.paid_meta_app_preview_url,
             inbound_voice_message: inboundVoiceMessage || existingPending.data?.inbound_voice_message || undefined,
@@ -9959,7 +9980,7 @@ exports.handler = async (event) => {
         const learningReelReviewContext = learningReelReviewText
             ? `\nRecent sent learning reel context:\n${truncate(learningReelReviewText, 1800)}`
             : '';
-        const verifiedOfferContext = metaAdConversationFastLane ? ('\nVERIFIED LEARN FACTS FOR REVIEW AND REPAIR: A free personalised program preview before payment is an approved part of this flow. After choosing independent workouts, ask permission for that preview; send the signed card only after acceptance. Do not repeat price or inclusions at the support-choice step. 45 lessons and quizzes across six weeks. Certificate of Completion requires finishing the required lessons and practical actions; no accreditation claim. Week 1: Why change feels hard. Week 2: Work with your energy. Week 3: Build a rhythm that sticks. Week 4: Take the fight out of food. Week 5: Make progress easier to repeat. Week 6: Build your sustainable way forward. AUD $149 upfront for six weeks, no auto-renewal; alternatively AUD $24.83/week, six-week minimum AUD $148.98, continuing until cancelled. Preserve these facts when editing; answer only the facts asked for, without reciting the questions or adding a goal question already asked.'.replaceAll('$149', resolveBalanceLearnCoursePriceLabel())) : '';
+        const verifiedOfferContext = challengeLead ? buildChallengeLeadPrompt({}) : metaAdConversationFastLane ? ('\nVERIFIED LEARN FACTS FOR REVIEW AND REPAIR: A free personalised program preview before payment is an approved part of this flow. After choosing independent workouts, ask permission for that preview; send the signed card only after acceptance. Do not repeat price or inclusions at the support-choice step. 45 lessons and quizzes across six weeks. Certificate of Completion requires finishing the required lessons and practical actions; no accreditation claim. Week 1: Why change feels hard. Week 2: Work with your energy. Week 3: Build a rhythm that sticks. Week 4: Take the fight out of food. Week 5: Make progress easier to repeat. Week 6: Build your sustainable way forward. AUD $149 upfront for six weeks, no auto-renewal; alternatively AUD $24.83/week, six-week minimum AUD $148.98, continuing until cancelled. Preserve these facts when editing; answer only the facts asked for, without reciting the questions or adding a goal question already asked.'.replaceAll('$149', resolveBalanceLearnCoursePriceLabel())) : '';
         const reviewContextBlocks = `LATEST just-arrived ${channelLabel} message from ${leadName} (this is the message the draft must answer): "${reviewLatestForPrompt}"${mediaSummaryReviewContext}${audioTranscriptReviewContext}${priorText}${timelineText}${workoutText}${memoryText}${crossChannelText}${learningReelReviewContext}${verifiedOfferContext}`;
         const reviewTimeoutMs = cocosAutoSendLane ? COCOS_DRAFT_REVIEW_TIMEOUT_MS : IG_DRAFT_REVIEW_TIMEOUT_MS;
         const approvedDeterministicReview = buildApprovedDeterministicMetaAdFirstReplyReview({
@@ -10212,7 +10233,9 @@ exports.handler = async (event) => {
                         };
                         draftReview = repairedReview;
                         effectiveContextReview = repairedReviewResult?.contextReview || contextReview;
-                        challengeOfferWarning = buildChallengeOfferWarning({ draftText: draft.joined, qualifier, currentMessage: displayMessage });
+                        challengeOfferWarning = challengeLead && buildChallengeBookingHandoff({draft, currentMessage:displayMessage, history:displayHistory, qualifier, linkedUserId:thread.linked_user_id})
+                            ? {required:false, code:'approved_challenge_consultation', reason:'Reviewed challenge consultation invitation.'}
+                            : buildChallengeOfferWarning({ draftText: draft.joined, qualifier, currentMessage: displayMessage });
                         const repairMeta = {
                             status: 'accepted',
                             repaired_at: new Date().toISOString(),
@@ -10424,7 +10447,7 @@ exports.handler = async (event) => {
                 }
             }
         }
-        if (metaAdConversationFastLane && !thread.linked_user_id && blockingPaidMetaContractIssues.length === 0) {
+        if (!challengeLead && metaAdConversationFastLane && !thread.linked_user_id && blockingPaidMetaContractIssues.length === 0) {
             const pendingBlocker = preservePaidMetaPendingBlocker({draft,history:displayHistory,currentMessage:currentInboundTurnMessage});
             if (pendingBlocker !== draft) {
                 draft = pendingBlocker;
@@ -10447,7 +10470,7 @@ exports.handler = async (event) => {
                 });
             }
         }
-        if (metaAdConversationFastLane && !thread.linked_user_id && blockingPaidMetaContractIssues.length === 0) {
+        if (!challengeLead && metaAdConversationFastLane && !thread.linked_user_id && blockingPaidMetaContractIssues.length === 0) {
             const conciseDraft = removeRepeatedPaidMetaPreviewInvitation({ draft, currentMessage: currentInboundTurnMessage, history: displayHistory });
             if (conciseDraft !== draft) {
                 draft = conciseDraft;
@@ -10463,7 +10486,7 @@ exports.handler = async (event) => {
         // Reconcile the final, exact approved invitation after repairs. An
         // earlier model review must not label our verified free preview an
         // invented offer or require repeating the price at this stage.
-        if (metaAdConversationFastLane && blockingPaidMetaContractIssues.length === 0) {
+        if (!challengeLead && metaAdConversationFastLane && blockingPaidMetaContractIssues.length === 0) {
             const verifiedInvitation = approveVerifiedIndependentPreviewInvitation({
                 draft, currentMessage:currentInboundTurnMessage, history:displayHistory,
                 linkedUserId:thread.linked_user_id, mediaReview, contextReview,
@@ -10585,9 +10608,14 @@ exports.handler = async (event) => {
             contextBypass: autoContextBypass,
             alertData: currentAlertData,
             allowTestLaneDraftReviewWarning: voiceReplyTestLane,
+            history: displayHistory,
             allowBalanceLeadDraftReviewWarning: false,
         })
         : null;
+    if (challengeLead) {
+        const issues = collectChallengeLeadIssues({draft, currentMessage: displayMessage, history: displayHistory});
+        if (issues.length) autoHoldReason = {code:'challenge_content_policy', label:issues.join(' ')};
+    }
     if (!autoHoldReason) {
         autoHoldReason = getCocosCodexReviewHold({
             cocosAutoSendLane,

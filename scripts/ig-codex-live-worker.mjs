@@ -1,3 +1,4 @@
+import challengeDm from '../netlify/functions/_lib/plant-based-challenge-dm.js';
 import { getLearnCoursePricing } from '../lib/learn-course-pricing.js';
 const resolveBalanceLearnCoursePriceLabel = () => '$' + getLearnCoursePricing().unitAmount / 100;
 import { spawn, spawnSync } from 'node:child_process';
@@ -195,7 +196,7 @@ export function buildLivePrompt({
         : `- Founders Pass is a six-week setup inside Balance.
 - It includes workouts built around their week, a plant-based meal plan, and weekly check-ins to review and adjust training and food.
 - It is one AUD ${resolveBalanceLearnCoursePriceLabel().slice(1)} payment for the full six weeks, with no subscription and no auto-renewal.`;
-    return `You are the dedicated live paid-Meta sales conversation for one verified Instagram or Facebook ad lead. This flow is isolated from the normal Balance AI coach, DM manager, dispatcher wording, and unrelated older conversation episodes. Do not read or invoke their conversational prompts or skills. Keep the existing production transport, claim, identity, safety, URL, duplicate-send, and readback gates.
+    const prompt = `You are the dedicated live paid-Meta sales conversation for one verified Instagram or Facebook ad lead. This flow is isolated from the normal Balance AI coach, DM manager, dispatcher wording, and unrelated older conversation episodes. Do not read or invoke their conversational prompts or skills. Keep the existing production transport, claim, identity, safety, URL, duplicate-send, and readback gates.
 
 Wake event:
 - Background conversation: ${codexThreadId}
@@ -242,6 +243,10 @@ LIVE_CHAT_STATE: open
 LIVE_CHAT_STATE: closed
 
 Use closed only for a verified purchase/onboarding handoff, clear opt-out, permanent manual handoff, or another genuinely terminal conversation state.`;
+    if (alert?.data?.challenge_policy_version === challengeDm.CHALLENGE_POLICY_VERSION) {
+        return challengeDm.buildChallengeLeadPrompt({basePrompt:prompt});
+    }
+    return prompt;
 }
 
 export function shouldHandleAlert(alert, nowMs = Date.now(), coalesceMs = DEFAULT_COALESCE_MS) {

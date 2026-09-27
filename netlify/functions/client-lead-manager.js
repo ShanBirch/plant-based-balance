@@ -1,3 +1,4 @@
+const { CHALLENGE_BOOKING_URL, CHALLENGE_POLICY_VERSION } = require('./_lib/plant-based-challenge-dm');
 /**
  * client-lead-manager - scheduled Needs You router and clean-lead fallback.
  *
@@ -642,7 +643,7 @@ function approvedLinkHandoffKind(alert = {}) {
         && data.needs_you_required !== true;
     if (!baseAllowed) return '';
     if ([APPROVED_COACHING_URL, LEGACY_APPROVED_COACHING_URL].includes(url) && replyText.includes(url)) return 'coaching';
-    if (data.call_booking_handoff === true && url === APPROVED_BOOKING_URL && replyText.includes(APPROVED_BOOKING_URL)) return 'call_booking';
+    if (data.call_booking_handoff === true && (url === APPROVED_BOOKING_URL || (url === CHALLENGE_BOOKING_URL && data.challenge_policy_version === CHALLENGE_POLICY_VERSION)) && replyText.includes(url)) return 'call_booking';
     return '';
 }
 
