@@ -1,4 +1,4 @@
-const { CHALLENGE_FLOW, CHALLENGE_POLICY_VERSION, resolveChallengeLeadRoute, buildChallengeLeadPrompt, collectChallengeLeadIssues, buildChallengeBookingHandoff } = require('./_lib/plant-based-challenge-dm');
+const { CHALLENGE_FLOW, CHALLENGE_POLICY_VERSION, normalizeChallengeBookingUrls, finalizeChallengeText, challengeHandoffMetadata, buildChallengeUnavailableFallback, resolveChallengeLeadRoute, buildChallengeLeadPrompt, collectChallengeLeadIssues, buildChallengeBookingHandoff } = require('./_lib/plant-based-challenge-dm');
 const { resolveMessengerRoute } = require('./_lib/facebook-messenger');
 const { outboundAnswersOlderInbound } = require('./_lib/ig-reply-source');
 const { buildPaidMetaZoomHandoff, ZOOM_BOOKING_URL, LEARN_SUPPORT_CHOICE, resolveLearnSupportChoice } = require('./_lib/paid-meta-zoom');
@@ -5156,19 +5156,20 @@ function isSalesAcquisitionThread({ leadStage, linkedUserId } = {}) {
     return !linkedUserId && !['in_app', 'paying', 'churned'].includes(leadStage);
 }
 
-function buildOrganicBalanceLearnSeriesBlock({ leadStage, linkedUserId, acquisitionMode } = {}) {
+function buildOrganicBalanceLearnSeriesBlock({ leadStage, linkedUserId, acquisitionMode, challengeLead = false } = {}) {
     if (!isSalesAcquisitionThread({ leadStage, linkedUserId }) || isPaidMetaAcquisitionMode(acquisitionMode)) return '';
-    return `
+    const block = `
 
 ORGANIC BALANCE LEARN SERIES:
 - This is a normal organic DM conversation, not the paid-ad script. Do not use quick replies, present a menu, or force the paid flow's fixed two-question sequence.
-- Balance Learn is a six-week course built around the neuroscience and psychology of lasting change, with five interactive lesson-to-quiz experiences each week (30 total).
+- Balance Learn is a six-week course built around the neuroscience and psychology of lasting change, with ${challengeLead ? '45 lessons and quizzes' : 'five interactive lesson-to-quiz experiences each week (30 total)' }.
 - The six weekly themes are: why change feels hard; work with your energy; build a rhythm that sticks; take the fight out of food; make progress easier to repeat; and build your sustainable way forward.
 - Use this knowledge selectively. When the person raises restarting, consistency, low energy, habits, cravings, all-or-nothing thinking or sustainable eating, first acknowledge their exact situation, then offer at most one plain-language idea from the most relevant theme. Do not diagnose them, call it a brain hack, promise to rewire them, or imply a guaranteed result.
 - Do not dump the six-week outline unless they ask what they will learn or what is inside. If they ask, answer accurately and proportionately.
 - The offer also includes a workout program, meal-plan support fitted to their dietary preferences, one weekly check-in with review/adjustments, and six weeks of app/community access. It is one AUD ${resolveBalanceLearnCoursePriceLabel()} payment with no auto-renewal.
 - The course is not positioned as plant-based. Vegan or plant-based food can remain a natural personal or dietary-preference topic when the person raises it, but it is never the default offer frame or a qualification gate.
 - Bridge only after a genuine help/start signal or enough earned human context. Connect the Learn series to the person's own blocker in one casual line, offer details without pressure, and send the approved link only when they ask or accept.`;
+    return challengeLead ? block.split('\n').filter(line => !/^- (?:The offer also|The course is not|Bridge only)/.test(line)).join('\n') : block;
 }
 
 function buildAcquisitionMomentumBlock({ botAccount, leadStage, linkedUserId } = {}) {
@@ -5308,7 +5309,8 @@ function buildPaidMetaAgentPrompt({
         .map(message => String(message?.text || message || '').trim())
         .filter(Boolean)
         .map((message, index) => `${index + 1}. ${message}`);
-    const broadFlow = flowVariant === 'broad_pain';
+    const challengeFlow = flowVariant === CHALLENGE_FLOW;
+    const broadFlow = flowVariant === 'broad_pain' || challengeFlow;
     const journey = broadFlow
         ? 'Natural journey, not a checklist: learn the change they most want over the next six weeks, then the real-life blocker or support need. Those are the only two discovery jobs. Skip either when the lead already supplied it. Once both are known, stop discovery, explain the neutral six-week setup and truthful terms, then offer the free personalised app preview before payment.'
         : 'Natural journey, not a checklist: learn whether they are plant-based/vegan or looking to become so; connect over why and how long when natural; learn their health or fitness goal; learn what is making that goal difficult; introduce genuinely relevant proof when identity, safety and outcome fit are reliable; explain how Balance helps with their stated situation; offer a free personalised look at their workout program and plant-based meal plan inside the app before they decide or pay.';
@@ -5327,30 +5329,30 @@ BROAD ROUTE GUARD: do not introduce plant-based, vegan or vegetarian positioning
 
 Your job is to read the complete paid-ad conversation and write Shannon's next Instagram DM. Treat every unanswered bubble as one current turn. Answer every live direct or reciprocal question before making the next sales move. The newest substantive message controls when it changes the topic.
 
-${journey}
+${challengeFlow ? 'Understand their goal from the whole conversation, explain the relevant challenge support, and invite a consultation using the scoped content policy below. No blocker prerequisite.' : journey}
 
-${progression}
+${challengeFlow ? 'Answer all live questions first. Use known facts. Ask at most one question only when needed; no discovery or permission question when the goal is already known.' : progression}
 
 ${knownFactRule}
 
 Interpret the lead's meaning before choosing a step. A named difficulty, constraint, preference or support need is enough context; it does not need to match a standard category. "Conflicting advice leaves me doing nothing" already answers what gets in the way. "I care for my dad" and "sometimes only hotel floor space" are also useful context. Never follow an answer like that with "what gets in the way", "the main thing I want to understand is...", or a menu of time/stress/food possibilities. Reflect their actual detail, answer any direct question and explain the next useful step. If they are unsure or say there is no blocker, accept that without inventing one or asking them to identify it again. Preserve negations, corrections and uncertainty. Chocolate does not imply cravings or weekends; children do not imply a particular schedule. Use contractions and keep it natural.
 
-Client proof should normally be used once when it genuinely matches: Ally for weight loss, Gen for strength/confidence, Kristy for body recomposition (26 weeks of coaching with Shannon), Bec and Kirsty for shared accountability. Use no transformation when identity, safety or fit is uncertain. If using proof, name the approved person and say you are showing their photo. The deterministic transport may add the approved quick app video after both goal and blocker are known; do not invent URLs, visible media placeholders such as [course video], or repeat it.
+Client proof should normally be used once when it genuinely matches: Ally for weight loss, Gen for strength/confidence, Kristy for body recomposition (26 weeks of coaching with Shannon), Bec and Kirsty for shared accountability. Use no transformation when identity, safety or fit is uncertain. If using proof, name the approved person and say you are showing their photo. ${challengeFlow ? 'Do not proactively add the course explainer video;' : 'The deterministic transport may add the approved quick app video after both goal and blocker are known;'} do not invent URLs, visible media placeholders such as [course video], or repeat it.
 
-Reliable offer facts: Balance Learn is a six-week course inside Balance, built around neuroscience and the psychology of lasting change. Each week gives the person one practical learning focus, supported by Weekly Goals, alongside a personalised workout program, meal-plan support fitted to recorded dietary needs, and one weekly check-in where Shannon reviews their training and food and adjusts the plan. It is one AUD ${resolveBalanceLearnCoursePriceLabel()} payment for the full six weeks, with no subscription or auto-renewal. The personalised app preview comes before payment.
+Reliable offer facts: Balance Learn is a six-week course inside Balance, built around neuroscience and the psychology of lasting change. Each week gives the person one practical learning focus, supported by Weekly Goals, alongside a personalised workout program, meal-plan support fitted to recorded dietary needs, and one weekly check-in where Shannon reviews their training and food and adjusts the plan. It is one AUD ${resolveBalanceLearnCoursePriceLabel()} payment for the full six weeks, with no subscription or auto-renewal. ${challengeFlow ? 'These are reference facts for explicit Learn questions, not the default challenge pitch.' : 'The personalised app preview comes before payment.'}
 Keep three separate facts clear: the course has a fixed weekly LEARNING theme; the workout schedule fits the person's availability and needs; Shannon reviews training and food in one weekly CHECK-IN. Never shorten this to "one weekly training" or imply the package limits them to one workout a week. If they ask whether it means one workout weekly, directly explain that weekly refers to the review, not the number of workouts. Do not promise a different workout every week merely because they dislike repetition. For lessons-only interest or an existing coach, explain that the curriculum stays fixed; personalisation applies to the workout/nutrition setup and review, not individually rewritten lessons.
 Answer yes/no questions directly before explaining. If asked whether every workout differs, say not necessarily: exercises and sessions can repeat to practise and measure progress, with adjustments when appropriate. Never guarantee no repeated sessions. If asked whether lessons differ between people, answer no: everyone gets the same core lessons, while workout and meal-plan setup can be personalised. Do not borrow the workout answer "not necessarily" for this fixed-curriculum question. Do not list all six themes unless they ask for the outline.
-ZOOM SUPPORT OPTION: Learn remains the core course. If the person says they want live supervised training, technique feedback or scheduled live accountability, you may ask one relevant question about adding 30-minute one-on-one Zoom training. Do not pitch all packages to everyone or infer Zoom interest from generic uncertainty. Zoom PT includes Learn: AUD $125/week for one live session weekly, $275/week for three, $425/week for five. It starts with a six-week coaching block, billed weekly in advance after fit and recurring availability are confirmed. When they want Zoom, the next step is booking a fit call at https://plantbased-balance.org/book, NOT the course preview, app setup or checkout. Do not promise an available slot or collect payment. Answer their actual questions first. If they decline Zoom or choose Learn alone, respect that and return to the ordinary Learn preview path. A bare yes after discussing the Zoom fit call means that call, not an app preview. Use the existing booking page so they can choose the call format there. These Zoom instructions take precedence over the default preview handoff below.
-If a recent outbound already offered the preview and the person asks another factual question instead of accepting, answer that question and stop. Do not repeat or rephrase the unanswered preview invitation. Their question is not a new opportunity to ask the same thing again. Send the preview when they explicitly request or accept it.
+${challengeFlow ? '' : `ZOOM SUPPORT OPTION: Learn remains the core course. If the person says they want live supervised training, technique feedback or scheduled live accountability, you may ask one relevant question about adding 30-minute one-on-one Zoom training. Do not pitch all packages to everyone or infer Zoom interest from generic uncertainty. Zoom PT includes Learn: AUD $125/week for one live session weekly, $275/week for three, $425/week for five. It starts with a six-week coaching block, billed weekly in advance after fit and recurring availability are confirmed. When they want Zoom, the next step is booking a fit call at https://plantbased-balance.org/book, NOT the course preview, app setup or checkout. Do not promise an available slot or collect payment. Answer their actual questions first. If they decline Zoom or choose Learn alone, respect that and return to the ordinary Learn preview path. A bare yes after discussing the Zoom fit call means that call, not an app preview. Use the existing booking page so they can choose the call format there. These Zoom instructions take precedence over the default preview handoff below.
+If a recent outbound already offered the preview and the person asks another factual question instead of accepting, answer that question and stop. Do not repeat or rephrase the unanswered preview invitation. Their question is not a new opportunity to ask the same thing again. Send the preview when they explicitly request or accept it.`}
 
 Answer every actual question in the current turn before any sales move. A mention of lessons is not a request for the curriculum outline. Lessons are self-paced within the six-week access period: they can catch up on weekends and do not have to complete one every day. There is no verified fixed duration for every lesson, so do not invent a minutes-per-lesson figure. Say the time varies and they can work through it at their own pace. Someone can focus on the lessons alongside their existing trainer and meal plan; do not imply a separate discounted lessons-only package or tell them to replace their coach. For shared household meals, acknowledge dislikes such as tofu and suggest flexible shared bases with different proteins rather than guaranteeing everyone can always eat one identical dinner.
-After a direct practical answer, stop or make one optional preview invitation. Do not repeat the goal or blocker question just because it remains unanswered. If an invitation was already made, answer and stop. Keep ordinary factual answers to one or two short bubbles.
+After a direct practical answer, ${challengeFlow ? 'follow the scoped content decision below; do not append a preview invitation.' : 'stop or make one optional preview invitation.'} Do not repeat the goal or blocker question just because it remains unanswered. If an invitation was already made, answer and stop. Keep ordinary factual answers to one or two short bubbles.
 Verified course curriculum, for explicit outline or week-by-week questions: week 1, Why change feels hard; week 2, Work with your energy; week 3, Build a rhythm that sticks; week 4, Take the fight out of food; week 5, Make progress easier to repeat; week 6, Build your sustainable way forward. The course uses lessons, practical actions and Weekly Goals alongside the person's workout and nutrition setup. Do not dump all six weeks into an ordinary pitch. Give the full outline only when they ask for curriculum detail; otherwise use only the one or two themes relevant to their words.
 
-Send the signed preview immediately after they ask to see it or accept the free personalised preview. A positive reaction such as "looks great" is not checkout intent. Send checkout only after they explicitly ask to join, pay, sign up or receive the checkout link. Hand off instead of improvising for medical/safety issues, account or payment support, existing-client app support, or a direct request for Shannon. Keep replies quick, warm, concise and human. ${linkQuestionRule} If asked who is replying, say plainly: "You're chatting with Shannon's digital Balance helper. I can help here, and Shannon can jump in if needed." Never deny automation or pretend the helper is Shannon. No em dashes.
+${challengeFlow ? '' : `Send the signed preview immediately after they ask to see it or accept the free personalised preview. A positive reaction such as "looks great" is not checkout intent. Send checkout only after they explicitly ask to join, pay, sign up or receive the checkout link. `}Hand off instead of improvising for medical/safety issues, account or payment support, existing-client app support, or a direct request for Shannon. Keep replies quick, warm, concise and human. ${challengeFlow ? 'A consultation card, opt-out, sensitive issue, handoff or natural close has no follow-up question and pauses.' : linkQuestionRule} If asked who is replying, say plainly: "You're chatting with Shannon's digital Balance helper. I can help here, and Shannon can jump in if needed." Never deny automation or pretend the helper is Shannon. No em dashes.
 
 Campaign variant: ${flowVariant}
-LATEST FULL-FLOW REQUIREMENT FOR broad_pain: the normal ad journey is greeting, six-week goal, relevant verified client photo, real-life blocker, personalised Learn explanation with the approved course video, then the support choice. After the video ask whether they prefer doing workouts on their own with the app and weekly check-in, or adding 30-minute one-on-one Zoom sessions. This support decision replaces the ordinary preview invitation at that stage and overrides earlier default preview language. Do not require them to mention Zoom first. It is not a third discovery question. If they already clearly chose a support mode, respect it rather than asking again. Independent workouts lead to the Learn preview; Zoom interest leads to the fit-call booking with Learn included. A bare yes to the either/or question is ambiguous, so clarify which option instead of assuming Zoom. Never invent a client match; preserve opt-outs and sensitive-topic handling. Explicit earlier factual or link requests should still be answered without forcing unrelated steps.
+${challengeFlow ? '' : `LATEST FULL-FLOW REQUIREMENT FOR broad_pain: the normal ad journey is greeting, six-week goal, relevant verified client photo, real-life blocker, personalised Learn explanation with the approved course video, then the support choice. After the video ask whether they prefer doing workouts on their own with the app and weekly check-in, or adding 30-minute one-on-one Zoom sessions. This support decision replaces the ordinary preview invitation at that stage and overrides earlier default preview language. Do not require them to mention Zoom first. It is not a third discovery question. If they already clearly chose a support mode, respect it rather than asking again. Independent workouts lead to the Learn preview; Zoom interest leads to the fit-call booking with Learn included. A bare yes to the either/or question is ambiguous, so clarify which option instead of assuming Zoom. Never invent a client match; preserve opt-outs and sensitive-topic handling. Explicit earlier factual or link requests should still be answered without forcing unrelated steps.`}
 Channel: ${channelLabel}
 Lead: ${leadName}
 
@@ -5537,11 +5539,11 @@ function isAutomatedOutageNotice(value = '') {
 }
 
 function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', qualifier = {}, history = [], flowVariant = 'plant_based_control' } = {}) {
-    if (flowVariant === CHALLENGE_FLOW) return collectChallengeLeadIssues({draft, currentMessage, history});
+    const challengeFlow = flowVariant === CHALLENGE_FLOW;
     const reply = draftTextFromDraft(draft);
     const turn = String(currentMessage || '').replace(/\s+/g, ' ').trim();
     if (!reply || !turn) return [];
-    if (isExplicitPaidMetaProofVideoRetry({currentMessage:turn,history})) {
+    if (!challengeFlow && isExplicitPaidMetaProofVideoRetry({currentMessage:turn,history})) {
         const resendParts = (Array.isArray(draft?.chunks) && draft.chunks.length ? draft.chunks : [draft?.joined || reply]).map(text=>String(text).trim());
         const validResend = draft?.replyMode === 'campaign_native_video_retry'
             && isBalanceFoundationsAppProofVideoUrl(draft?.videoAttachmentUrl)
@@ -5558,7 +5560,7 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
         && /^deterministic_meta_ad_founders_pass_v\d+$/.test(String(draft?.model || ''))) {
         return [];
     }
-    const issues = [];
+    const issues = challengeFlow ? collectChallengeLeadIssues({draft, currentMessage, history, qualifier}) : [];
     const sharedHouseholdDiet = /\b(?:partner|both|household)\b/i.test(turn)
         && /\b(?:vegetarian|vegan|meat|tofu|dietary|dinners?)\b/i.test(turn);
     if (sharedHouseholdDiet && (
@@ -5657,7 +5659,7 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
         if (!/\b(?:paid|sell|sale|program)\b/i.test(reply)) issues.push('Answer the sales question honestly: Balance is a paid program.');
         if (/\?/.test(reply)) issues.push('Sales suspicion requires a direct answer and space: remove every follow-up question and continuation hook.');
     }
-    if (asksOfferInfo && /\b(?:workouts?|meal plan)\b/i.test(turn) && !/\b(?:weekly|check[ -]?in|review)\b/i.test(reply)) {
+    if (!challengeFlow && asksOfferInfo && /\b(?:workouts?|meal plan)\b/i.test(turn) && !/\b(?:weekly|check[ -]?in|review)\b/i.test(reply)) {
         issues.push('The lead asked what they get. Include the one weekly training and food review/check-in in the direct answer.');
     }
     if (asksMealPlanQuestion
@@ -5676,17 +5678,17 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
         && /\$24\.83\s*(?:\/\s*week|(?:a|per)\s+week)/i.test(reply)
         && /\bsix[ -]week minimum\b/i.test(reply)
         && /\bcontinues?\b[^.!?\n]{0,80}\buntil\b[^.!?\n]{0,30}\bcancel\w*/i.test(reply);
-    if (asksPaidMetaCoursePrice(turn)
+    if (!challengeFlow && asksPaidMetaCoursePrice(turn)
         && !correctWeeklyPriceAnswer
         && !new RegExp('\\bone\\s+(?:(?:aud|au\\$)\\s+)?\\$' + resolveBalanceLearnCoursePriceLabel().slice(1) + '\\s+payment\\s+for\\s+the\\s+full\\s+six\\s+weeks\\b', 'i').test(reply)) {
         issues.push(('Answer the price exactly as one $149 payment for the full six weeks.'.replaceAll('$149', resolveBalanceLearnCoursePriceLabel())));
     }
     if (/\b(?:e-?mail|email address|best email)\b/i.test(reply)) {
-        issues.push('Do not ask for an email in Instagram. Send the signed app-preview card; onboarding collects the account email there.');
+        issues.push(challengeFlow ? 'Challenge policy: Do not ask for an email in the DM; the consultation page handles booking details.' : 'Do not ask for an email in Instagram. Send the signed app-preview card; onboarding collects the account email there.');
     }
     if (!hasDirectPaidMetaCheckoutIntent(turn)
         && /\b(?:checkout link|send you (?:the )?(?:payment|checkout) link|grab (?:the )?founders? pass|ready to (?:pay|join|sign up))\b/i.test(reply)) {
-        issues.push('The reply offered checkout without explicit transactional intent. Keep the lead in the free personalised preview flow until they ask to join, pay, sign up or receive checkout.');
+        issues.push(challengeFlow ? 'Challenge policy: Do not invent checkout for the consultation offer.' : 'The reply offered checkout without explicit transactional intent. Keep the lead in the free personalised preview flow until they ask to join, pay, sign up or receive checkout.');
     }
     if (broadFlow && /\b(?:plant[ -]?based meal plan|plant[ -]?based fitness program|plant[ -]?based community)\b/i.test(reply)) {
         issues.push('The broad paid-ad reply introduced plant-based offer positioning. Replace it with neutral fitness and dietary-preference language.');
@@ -5792,11 +5794,12 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
         .replace(/[^a-z0-9?\s]/g, '')
         .replace(/\s+/g, ' ')
         .trim();
-    const replyQuestions = String(reply || '').match(/[^.!?]*\?/g) || [];
+    const questionText = value => challengeFlow ? String(value || '').replace(/https?:\/\/[^\s]+/gi, '') : String(value || '');
+    const replyQuestions = questionText(reply).match(/[^.!?]*\?/g) || [];
     const previousQuestions = (Array.isArray(history) ? history : [])
         .filter(message => String(message?.direction || '').toLowerCase() === 'out')
         .slice(-4)
-        .flatMap(message => String(message?.text || '').match(/[^.!?]*\?/g) || []);
+        .flatMap(message => questionText(message?.text).match(/[^.!?]*\?/g) || []);
     const questionKind = question => {
         if (paidMetaOutboundAskedForGoal(question)) return 'goal';
         if (paidMetaOutboundAskedForBlocker(question)) return 'blocker';
@@ -7036,7 +7039,7 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, c
     const conversationLanePolicyBlock = paidMetaSingleWriter ? '' : buildConversationLanePolicyBlock({ linkedUserId });
     const paidMetaConversationWriterBlock = buildPaidMetaConversationWriterBlock({ linkedUserId, acquisitionMode, flowVariant: adFlowVariant });
     const acquisitionModePolicyBlock = isSalesLeadThread ? buildAcquisitionModePromptBlock(acquisitionMode) : '';
-    const organicBalanceLearnSeriesBlock = buildOrganicBalanceLearnSeriesBlock({ leadStage, linkedUserId, acquisitionMode });
+    const organicBalanceLearnSeriesBlock = buildOrganicBalanceLearnSeriesBlock({ leadStage, linkedUserId, acquisitionMode, challengeLead: adFlowVariant === CHALLENGE_FLOW });
     const dmLanguageExperimentBlock = !paidMetaSingleWriter && isSalesLeadThread
         ? String(dmLanguageExperiment?.promptBlock || '')
         : '';
@@ -7238,9 +7241,9 @@ Use this batch as context, not a checklist. First decide what is still live: dir
     // still 'new' — linked_user_id is the truth, the column lags.
     const isOnboardedOrPostFunnel = !isSalesLeadThread;
     const funnelContext = isOnboardedOrPostFunnel ? '' : META_AD_FUNNEL_CONTEXT;
-    const challengeNextStepBlock = isOnboardedOrPostFunnel ? '' : buildChallengeNextStepBlock(qualifier, currentMessageText, checkoutUrl);
-    const oneOnOneCoachingBlock = isOnboardedOrPostFunnel ? '' : buildOneOnOneCoachingBlock(adFlowVariant, checkoutUrl, acquisitionMode);
-    const balanceCallBookingBlock = isOnboardedOrPostFunnel ? '' : buildBalanceCallBookingBlock();
+    const challengeNextStepBlock = isOnboardedOrPostFunnel || (adFlowVariant === CHALLENGE_FLOW && !isAppReconnectOrAccountSupportRequest(currentMessageText)) ? '' : buildChallengeNextStepBlock(qualifier, currentMessageText, checkoutUrl);
+    const oneOnOneCoachingBlock = isOnboardedOrPostFunnel || adFlowVariant === CHALLENGE_FLOW ? '' : buildOneOnOneCoachingBlock(adFlowVariant, checkoutUrl, acquisitionMode);
+    const balanceCallBookingBlock = isOnboardedOrPostFunnel || adFlowVariant === CHALLENGE_FLOW ? '' : buildBalanceCallBookingBlock();
     const qualifierRelationshipBlock = buildQualifierRelationshipBlock(qualifier);
 
     // Cross-channel: when this lead is linked to an app user, fold in
@@ -7537,12 +7540,12 @@ Rules:
             channelLabel,
             timeline: totalConversationText,
             unansweredMessages: unansweredBatch,
-            flowVariant: adFlowVariant === CHALLENGE_FLOW ? 'broad_pain' : adFlowVariant,
+            flowVariant: adFlowVariant,
             hasMedia: mediaParts.length > 0,
         });
     }
     if (adFlowVariant === CHALLENGE_FLOW && isSalesLeadThread) {
-        prompt = buildChallengeLeadPrompt({basePrompt: prompt, context: [leadBlock, profileBlock, memoryBlock].filter(Boolean).join("\n")});
+        prompt = buildChallengeLeadPrompt({basePrompt: prompt, context: [leadBlock, profileBlock, memoryBlock].filter(Boolean).join("\n"), currentMessage: unansweredBatch.map(m => m.text).join("\n"), history, qualifier});
     }
     prompt = prompt.replace(
         /- 1 to 3 chunks\.[^\n]*\n- Split where/,
@@ -7664,7 +7667,9 @@ Rules:
                     }
                 }
                 if (!rawText) {
-                    const timeoutFallback = buildDeterministicPaidMetaConversationReply({
+                    const timeoutFallback = adFlowVariant === CHALLENGE_FLOW
+                        ? buildChallengeUnavailableFallback({currentMessage:unansweredBatch.map(m=>m.text).join("\n"),history,qualifier})
+                        : buildDeterministicPaidMetaConversationReply({
                         currentMessage: unansweredBatch.map(message => message.text).join('\n'),
                         qualifier,
                         history,
@@ -7683,6 +7688,7 @@ Rules:
                         // in `error` makes getAutoDmHoldReason() suppress this safe
                         // fallback even after it passes the paid conversation review.
                         lastError = null;
+                        if (adFlowVariant === CHALLENGE_FLOW) model = timeoutFallback.model;
                         console.warn(`[ig-draft] paid Meta model chain failed; used local sales fallback: ${err.message}`);
                     } else {
                         return { ...buildPaidMetaUnavailableDraft(lastError), imageCount: imageParts.length, audioCount: audioParts.length, videoCount: videoParts.length, reelContextCount, reelThumbnailCount, mediaDecode, timeline: totalConversationText, conversationEpisode, currentTurnAnchorBlock, storyReplyPromptContextBlock, mediaContextPromptBlock, learningReelContextBlock, learningReelReplyAnchorBlock, learningReelEvidenceBlock };
@@ -7742,6 +7748,7 @@ Rules:
         hasDecodedMedia,
         allowDailyGreeting,
     });
+    if (adFlowVariant === CHALLENGE_FLOW) cleanedChunks = normalizeChallengeBookingUrls(cleanedChunks);
     if (!cleanedChunks.length && hasInlineMedia) {
         const lastShannonConversationEvent = [...mergedConversationEvents].reverse()
             .find(event => event.speaker === 'Shannon');
@@ -7843,6 +7850,9 @@ Rules:
     if (lowContentStoryReplyPolicyBlock) {
         cleanedChunks = [buildLowContentStoryAcknowledgement(currentMessage)];
         model = `${String(model || 'none')}+low-content-story-reaction`;
+    }
+    if (adFlowVariant === CHALLENGE_FLOW && !hasInlineMedia && !hadAudioUrls && !hadPhotoUrls && !hadVideoUrls && !hasReelContext) {
+        cleanedChunks = finalizeChallengeText(cleanedChunks, {currentMessage:unansweredBatch.map(m=>m.text).join('\n'),history,qualifier});
     }
     const shadowDraftInput = (model === 'vertex-v7' && !hasInlineMedia) ? {
         contents: textContents,
@@ -9302,7 +9312,7 @@ exports.handler = async (event) => {
         && paidMetaConversationApproval?.code === 'approved_meta_ad_sales_progression'
         && draft?.appPreviewHandoff === true
         && isMetaAppPreviewUrl(draft?.appPreviewUrl);
-    const challengeBookingHandoff = challengeLead ? buildChallengeBookingHandoff({draft, currentMessage: displayMessage, history: displayHistory, qualifier, linkedUserId: thread.linked_user_id}) : null;
+    const challengeBookingHandoff = challengeLead ? buildChallengeBookingHandoff({draft, currentMessage: buildCurrentInboundTurnText(displayMessage, displayRecentInboundMessages), history: displayHistory, qualifier, linkedUserId: thread.linked_user_id}) : null;
     let challengeOfferWarning = challengeBookingHandoff ? {required:false, code:'approved_challenge_consultation', reason:'Scoped challenge consultation invitation; all other reviews still apply.'} : metaAdFirstReplyApproval
         || paidMetaConversationApproval
         || buildChallengeOfferWarning({ draftText: draft.joined, qualifier, currentMessage: displayMessage });
@@ -9542,7 +9552,7 @@ exports.handler = async (event) => {
             media_review: mediaReview.required ? mediaReview : null,
             context_review: contextReview.required ? contextReview : null,
             challenge_offer_warning: challengeOfferWarning,
-            ...(leadOnboardingHandoffData || {}),
+            ...(challengeLead ? challengeHandoffMetadata(leadOnboardingHandoffData) : (leadOnboardingHandoffData || {})),
             first_captured_lead_reply: firstCapturedLeadReply,
             // Trailing inbound streak, same shape as instant-coach-draft.
             // Media in those prior messages gets rendered as clean labels.
@@ -9839,7 +9849,7 @@ exports.handler = async (event) => {
             media_review: mediaReview.required ? mediaReview : null,
             context_review: contextReview.required ? contextReview : null,
             challenge_offer_warning: challengeOfferWarning,
-            ...(leadOnboardingHandoffData || {}),
+            ...(challengeLead ? challengeHandoffMetadata(leadOnboardingHandoffData) : (leadOnboardingHandoffData || {})),
             first_captured_lead_reply: firstCapturedLeadReply || !!existingPending.data?.first_captured_lead_reply,
             // Refresh on every coalesce — `history` already includes every
             // unanswered inbound up to (but excluding) the current one, so
@@ -9980,7 +9990,7 @@ exports.handler = async (event) => {
         const learningReelReviewContext = learningReelReviewText
             ? `\nRecent sent learning reel context:\n${truncate(learningReelReviewText, 1800)}`
             : '';
-        const verifiedOfferContext = challengeLead ? buildChallengeLeadPrompt({}) : metaAdConversationFastLane ? ('\nVERIFIED LEARN FACTS FOR REVIEW AND REPAIR: A free personalised program preview before payment is an approved part of this flow. After choosing independent workouts, ask permission for that preview; send the signed card only after acceptance. Do not repeat price or inclusions at the support-choice step. 45 lessons and quizzes across six weeks. Certificate of Completion requires finishing the required lessons and practical actions; no accreditation claim. Week 1: Why change feels hard. Week 2: Work with your energy. Week 3: Build a rhythm that sticks. Week 4: Take the fight out of food. Week 5: Make progress easier to repeat. Week 6: Build your sustainable way forward. AUD $149 upfront for six weeks, no auto-renewal; alternatively AUD $24.83/week, six-week minimum AUD $148.98, continuing until cancelled. Preserve these facts when editing; answer only the facts asked for, without reciting the questions or adding a goal question already asked.'.replaceAll('$149', resolveBalanceLearnCoursePriceLabel())) : '';
+        const verifiedOfferContext = challengeLead ? buildChallengeLeadPrompt({currentMessage:currentInboundTurnMessage,history:displayHistory,qualifier}) : metaAdConversationFastLane ? ('\nVERIFIED LEARN FACTS FOR REVIEW AND REPAIR: A free personalised program preview before payment is an approved part of this flow. After choosing independent workouts, ask permission for that preview; send the signed card only after acceptance. Do not repeat price or inclusions at the support-choice step. 45 lessons and quizzes across six weeks. Certificate of Completion requires finishing the required lessons and practical actions; no accreditation claim. Week 1: Why change feels hard. Week 2: Work with your energy. Week 3: Build a rhythm that sticks. Week 4: Take the fight out of food. Week 5: Make progress easier to repeat. Week 6: Build your sustainable way forward. AUD $149 upfront for six weeks, no auto-renewal; alternatively AUD $24.83/week, six-week minimum AUD $148.98, continuing until cancelled. Preserve these facts when editing; answer only the facts asked for, without reciting the questions or adding a goal question already asked.'.replaceAll('$149', resolveBalanceLearnCoursePriceLabel())) : '';
         const reviewContextBlocks = `LATEST just-arrived ${channelLabel} message from ${leadName} (this is the message the draft must answer): "${reviewLatestForPrompt}"${mediaSummaryReviewContext}${audioTranscriptReviewContext}${priorText}${timelineText}${workoutText}${memoryText}${crossChannelText}${learningReelReviewContext}${verifiedOfferContext}`;
         const reviewTimeoutMs = cocosAutoSendLane ? COCOS_DRAFT_REVIEW_TIMEOUT_MS : IG_DRAFT_REVIEW_TIMEOUT_MS;
         const approvedDeterministicReview = buildApprovedDeterministicMetaAdFirstReplyReview({
@@ -10098,7 +10108,7 @@ exports.handler = async (event) => {
             draft,
             draftReview,
             challengeOfferWarning,
-            currentMessage: metaAdConversationFastLane ? currentInboundTurnMessage : displayMessage,
+            currentMessage: metaAdConversationFastLane || challengeLead ? currentInboundTurnMessage : displayMessage,
             qualifier,
             leadStage: effectiveLeadStage,
             linkedUserId: thread.linked_user_id,
@@ -10233,7 +10243,7 @@ exports.handler = async (event) => {
                         };
                         draftReview = repairedReview;
                         effectiveContextReview = repairedReviewResult?.contextReview || contextReview;
-                        challengeOfferWarning = challengeLead && buildChallengeBookingHandoff({draft, currentMessage:displayMessage, history:displayHistory, qualifier, linkedUserId:thread.linked_user_id})
+                        challengeOfferWarning = challengeLead && buildChallengeBookingHandoff({draft, currentMessage:buildCurrentInboundTurnText(displayMessage, displayRecentInboundMessages), history:displayHistory, qualifier, linkedUserId:thread.linked_user_id})
                             ? {required:false, code:'approved_challenge_consultation', reason:'Reviewed challenge consultation invitation.'}
                             : buildChallengeOfferWarning({ draftText: draft.joined, qualifier, currentMessage: displayMessage });
                         const repairMeta = {
@@ -10561,6 +10571,19 @@ exports.handler = async (event) => {
         });
     }
 
+    if (challengeLead) {
+        // Repairs can add/remove the invitation. Persist permissions for the
+        // exact final text, never an earlier or coalesced checkout draft.
+        const handoff = buildChallengeBookingHandoff({draft,currentMessage:currentInboundTurnMessage,history:displayHistory,qualifier,linkedUserId:thread.linked_user_id});
+        currentAlertData = {...(currentAlertData || {}), ...challengeHandoffMetadata(handoff)};
+        challengeOfferWarning = handoff
+            ? {required:false,code:'approved_challenge_consultation',reason:'Final challenge consultation invitation; all other gates still apply.'}
+            : buildChallengeOfferWarning({draftText:draft.joined,qualifier,currentMessage:currentInboundTurnMessage});
+        await supabaseQuery(`coach_alerts?id=eq.${encodeURIComponent(alertId)}&status=eq.pending`, {
+            method:'PATCH',body:{data:currentAlertData},prefer:'return=minimal',
+        });
+    }
+
     // Verified current Meta ad openings and clear exercise conversations use the AI coach fast lane.
     // They still require a clean reviewer pass or a narrow deterministic cleanup of a
     // non-blocking style warning. Other leads stay pending for manager review;
@@ -10600,7 +10623,7 @@ exports.handler = async (event) => {
             draft,
             draftReview,
             challengeOfferWarning,
-            currentMessage: metaAdConversationFastLane ? currentInboundTurnMessage : displayMessage,
+            currentMessage: metaAdConversationFastLane || challengeLead ? currentInboundTurnMessage : displayMessage,
             qualifier,
             leadStage: effectiveLeadStage,
             linkedUserId: thread.linked_user_id,
@@ -10613,7 +10636,7 @@ exports.handler = async (event) => {
         })
         : null;
     if (challengeLead) {
-        const issues = collectChallengeLeadIssues({draft, currentMessage: displayMessage, history: displayHistory});
+        const issues = collectPaidMetaWriterContractIssues({draft, currentMessage: buildCurrentInboundTurnText(displayMessage, displayRecentInboundMessages), history: displayHistory, qualifier, flowVariant: CHALLENGE_FLOW});
         if (issues.length) autoHoldReason = {code:'challenge_content_policy', label:issues.join(' ')};
     }
     if (!autoHoldReason) {

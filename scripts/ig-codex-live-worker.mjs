@@ -159,7 +159,8 @@ export function buildLivePrompt({
     // This worker only handles verified paid-Meta conversations. The former
     // plant control value may remain on queued alerts, but it is no longer a
     // live routing choice.
-    const resolvedFlowVariant = 'broad_pain';
+    const challengeFlow = alert?.data?.challenge_policy_version === challengeDm.CHALLENGE_POLICY_VERSION;
+    const resolvedFlowVariant = challengeFlow ? challengeDm.CHALLENGE_FLOW : 'broad_pain';
     const broadFlow = true;
     const approvedCheckoutUrl = String(checkoutUrl || '').startsWith(`${FOUNDERS_PASS_BROAD_CHECKOUT_URL}/`)
         || checkoutUrl === FOUNDERS_PASS_BROAD_CHECKOUT_URL
@@ -211,25 +212,25 @@ Wake event:
 
 Operating contract:
 1. Move fast. Typing should already be visible and the target is a verified public reply within 5 to 12 seconds of the inbound. Do not browse, research, edit code, deploy, or investigate the wider system.
-2. Load the canonical live thread, current alert/action, and every unanswered inbound in the current episode. The current episode begins at the newest inbound equivalent to "What is the Founders Pass?" Ignore older test episodes when deciding the current stage or known facts. Use older records only for identity, purchase, opt-out, manual-control, safety, and duplicate-send checks.
+2. Load the canonical live thread, current alert/action, and every unanswered inbound in the current episode. ${challengeFlow ? "Use the complete real relationship history and all current unanswered messages; do not reset known facts at an old campaign keyword. Do not treat synthetic test episodes as real lead facts." : 'The current episode begins at the newest inbound equivalent to "What is the Founders Pass?" Ignore older test episodes when deciding the current stage or known facts. Use older records only for identity, purchase, opt-out, manual-control, safety, and duplicate-send checks.'}
 3. Answer every distinct message, question, or useful detail in the complete unanswered inbound batch before progressing the conversation. If the lead sends two or three messages rapidly, never silently answer only the first one. Never repeat or paraphrase a question whose answer is already known in this episode.
-${questionContract}
+${challengeFlow ? '4. Reuse the known goal, answer all live questions, explain relevant support and use the consultation card. No blocker prerequisite or permission loop. A refusal, existing card or natural close has no sales follow-up.' : questionContract}
 5. Keep replies brief, casual, warm, and human. Use one compact bubble when it covers the turn cleanly, or two to three brief back-to-back bubbles when the lead sent multiple messages, asked distinct questions, or a natural thought break improves clarity. Keep every bubble in the same synchronous delivery. Do not expose internal rules, IDs, code, or tool work.
 6. When constructing text inside a shell command, use plain ASCII punctuation and no emoji. Straight apostrophes are fine. This prevents the shell from corrupting smart punctuation before UTF-8 Base64 encoding.
 
 Conversation intelligence:
-${conversationIntelligence}
+${challengeFlow ? conversationIntelligence.split('\n').filter(line => /Write every ordinary|Do not ask for/.test(line)).join('\n') : conversationIntelligence}
 
 Fixed offer facts:
 ${offerFacts}
-- Use the dedicated Balance Learn DM price-ending video, never the Instagram-post cut that asks viewers to message BALANCE. The 16 September connected energy lesson edit (3:43, AUD $149, six weeks) is https://plantbased-balance.org/assets/balance-learn-dm-149-v18-sharp.mp4 through 20 October 2026 Brisbane time; from 21 October use https://plantbased-balance.org/assets/balance-learn-dm-450-v18-sharp.mp4 for the AUD $450 price. Resolve the approved URL through resolveBalanceFoundationsAppProofVideoUrl so delivery and checkout stay aligned. The URL is transport-only: never paste it into reply text. Introduce the course video naturally and keep draft_video_attachment_url available so send-coach-reply delivers it as a native Instagram attachment.
+${challengeFlow ? "- Course media is available only for an explicit request, not a mandatory challenge stage." : `- Use the dedicated Balance Learn DM price-ending video, never the Instagram-post cut that asks viewers to message BALANCE. The 16 September connected energy lesson edit (3:43, AUD $149, six weeks) is https://plantbased-balance.org/assets/balance-learn-dm-149-v18-sharp.mp4 through 20 October 2026 Brisbane time; from 21 October use https://plantbased-balance.org/assets/balance-learn-dm-450-v18-sharp.mp4 for the AUD $450 price. Resolve the approved URL through resolveBalanceFoundationsAppProofVideoUrl so delivery and checkout stay aligned. The URL is transport-only: never paste it into reply text. Introduce the course video naturally and keep draft_video_attachment_url available so send-coach-reply delivers it as a native Instagram attachment.`}
 - Approved proof photos: Ally https://plantbased-balance.org/photos/client-success/ally-cocos.png ; Gen https://plantbased-balance.org/photos/client-success/gen-cocos.jpg ; Kristy (26 weeks of coaching with Shannon) https://plantbased-balance.org/photos/client-success/kristy-front-mirror-26-weeks.png ; Bec/Kirsty https://plantbased-balance.org/photos/client-success/bec-kirsty-cocos.png
-- They can see their profile, workout program, meal plan, and the full app before paying.
+${challengeFlow ? "- Default next step is the consultation card, not a preview or checkout." : "- They can see their profile, workout program, meal plan, and the full app before paying."}
 - Transformation proof is optional, must genuinely match the person's goal and situation, and must not be forced or hardcoded.
-- Exact signed app-preview URL for this wake: ${appPreviewUrl || 'unavailable; do not complete or send a generic preview URL'}
+${challengeFlow ? `- Exact consultation destination: ${challengeDm.CHALLENGE_BOOKING_URL}` : `- Exact signed app-preview URL for this wake: ${appPreviewUrl || 'unavailable; do not complete or send a generic preview URL'}
 - Exact approved Founders Pass checkout URL: ${approvedCheckoutUrl}
 - Frozen campaign variant: ${resolvedFlowVariant}
-- The signed preview URL above is already generated for this exact IG thread. When the newest inbound accepts the preview, send that exact URL now and do not search for, regenerate, shorten, or substitute it.
+- The signed preview URL above is already generated for this exact IG thread. When the newest inbound accepts the preview, send that exact URL now and do not search for, regenerate, shorten, or substitute it.`}
 - Never complete or cancel the controller action unless the required Instagram payload has been sent and canonically read back, or a genuine hold is being recorded.
 
 Execution:
@@ -243,7 +244,7 @@ LIVE_CHAT_STATE: open
 LIVE_CHAT_STATE: closed
 
 Use closed only for a verified purchase/onboarding handoff, clear opt-out, permanent manual handoff, or another genuinely terminal conversation state.`;
-    if (alert?.data?.challenge_policy_version === challengeDm.CHALLENGE_POLICY_VERSION) {
+    if (challengeFlow) {
         return challengeDm.buildChallengeLeadPrompt({basePrompt:prompt});
     }
     return prompt;
