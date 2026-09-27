@@ -33,7 +33,7 @@ function isValidSignature(body, headers = {}) {
     if (!received.startsWith('sha256=')) return false;
     const expected = crypto.createHmac('sha256', APP_SECRET).update(body, 'utf8').digest('hex');
     const actual = received.slice('sha256='.length);
-    if (actual.length !== expected.length) return false;
+    if (!/^[a-f0-9]{64}$/i.test(actual)) return false;
     return crypto.timingSafeEqual(Buffer.from(actual, 'hex'), Buffer.from(expected, 'hex'));
 }
 
@@ -104,7 +104,8 @@ async function alreadyReceived(messageId) {
 async function createAlert(event, coachId) {
     const receivedAt = new Date(event.receivedAt);
     const windowEndsAt = new Date(receivedAt.getTime() + WINDOW_MS).toISOString();
-    const defaultReply = `Hey ${event.profileName.split(/\s+/)[0] || 'there'}, got this. I’m just reading through it now and I’ll get back to you properly shortly x`;
+    // Never present a canned acknowledgement as a coach-generated answer.
+    const defaultReply = '';
     const rows = await supabase('coach_alerts', {
         method: 'POST',
         body: [{
@@ -127,6 +128,8 @@ async function createAlert(event, coachId) {
                 whatsapp_customer_service_window_ends_at: windowEndsAt,
                 incoming_message: event.text,
                 auto_send_blocked: true,
+                whatsapp_draft_status: 'queued',
+                needs_you_required: true,
             },
         }],
     });
@@ -183,7 +186,17 @@ exports.handler = async (event) => {
         for (const inbound of inboundEvents(payload)) {
             if (await alreadyReceived(inbound.messageId)) continue;
             const createdAlert = await createAlert(inbound, coachId);
-            await notifyCoach({ coachId, event: inbound, ...createdAlert });
+            try {
+                const queued = await fetch(`${SITE_URL}/.netlify/functions/whatsapp-draft-background`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` },
+                    body: JSON.stringify({ alertId: createdAlert.alert?.id }),
+                });
+                if (!queued.ok) throw new Error('Draft dispatch failed');
+            } catch {
+                // Keep the durable inbound visible even when the AI worker is unavailable.
+                await notifyCoach({ coachId, event: inbound, ...createdAlert });
+            }
             created++;
         }
         return json(200, { ok: true, created });
