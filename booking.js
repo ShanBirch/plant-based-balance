@@ -34,11 +34,13 @@
         document.documentElement.setAttribute('data-bio-theme', 'light');
         document.body.classList.add('challenge-booking');
         document.body.dataset.landingVariant = 'eight_week_consultation_v1';
-        document.title = 'Book Your Challenge Consultation | Balance';
+        document.title = 'Book Your 60-Minute Video Call | Balance';
         byId('booking-intro-kicker').textContent = 'Eight-week plant-based transformation challenge';
-        byId('booking-intro-title').textContent = 'Talk about your goals with Shannon.';
-        byId('booking-intro-copy').textContent = 'We will talk through your goals, your routine and the support that fits you. Shannon will explain the options and pricing before you choose a package.';
-        byId('booking-card-title').textContent = 'Choose your consultation time.';
+        byId('booking-intro-title').textContent = 'Book a 60-minute video call with Shannon.';
+        byId('booking-intro-copy').textContent = 'In your 60-minute video call, we will talk through your goals, your routine and the support that fits you. Shannon will explain the options and pricing before you choose a package.';
+        byId('booking-card-title').textContent = 'Choose your video call time.';
+        const submitLabel = form?.querySelector('.booking-submit span:first-child');
+        if (submitLabel) submitLabel.textContent = 'Confirm my 60-minute video call';
         const menuBooking = document.querySelector('.balance-menu-drawer a[aria-current="page"]');
         if (menuBooking) { menuBooking.href = '/book?' + urlParams.toString(); menuBooking.textContent = 'Book a Consultation'; }
         byId('booking-unavailable-title').textContent = 'Arrange your consultation with Shannon.';
@@ -304,7 +306,9 @@
             state.settings = data;
             state.dates = groupSlotsInLocalTime(Array.isArray(data.dates) ? data.dates : []);
             show(loading, false);
-            duration.textContent = data.durationMinutes ? `${data.durationMinutes} min ${isFirstPtSession ? 'session' : 'call'}` : 'Call times';
+            duration.textContent = isPlantBasedChallenge
+                ? `${data.durationMinutes || 60}-minute video call`
+                : data.durationMinutes ? `${data.durationMinutes} min ${isFirstPtSession ? 'session' : 'call'}` : 'Call times';
             renderTimeZone();
             if (!data.ok || !data.bookingEnabled || !state.dates.length) {
                 trackChallengeBooking('booking_unavailable', { reason: data.calendarReconnectRequired ? 'calendar_reconnect_required' : 'no_available_times' });
@@ -399,10 +403,10 @@
                 byId('booking-success-title').textContent = 'First PT session booked.';
                 byId('booking-success-copy').textContent = 'Your 30-minute training session is confirmed. Your Google Meet link is in your calendar invitation. Your membership has not been changed.';
             } else if (isPlantBasedChallenge) {
-                byId('booking-success-title').textContent = 'Your consultation is booked.';
+                byId('booking-success-title').textContent = 'Your video call is booked.';
                 byId('booking-success-copy').textContent = meetingUrl
-                    ? 'Your consultation with Shannon is confirmed. Your Google Meet link is in your calendar invitation. We will talk through your goals and the right support before you choose a package.'
-                    : 'Your consultation with Shannon is confirmed. Shannon will send the video link shortly. We will talk through your goals and the right support before you choose a package.';
+                    ? 'Your 60-minute video call with Shannon is confirmed. Your Google Meet link is in your calendar invitation. We will talk through your goals and the right support before you choose a package.'
+                    : 'Your 60-minute video call with Shannon is confirmed. Shannon will send the video link shortly. We will talk through your goals and the right support before you choose a package.';
             } else if (isZoomPtEnquiry) {
                 byId('booking-success-title').textContent = 'Zoom PT fit call booked.';
                 byId('booking-success-copy').textContent = 'Your Zoom PT fit call is confirmed. We will check health fit, recurring times and the right starting structure before payment.';

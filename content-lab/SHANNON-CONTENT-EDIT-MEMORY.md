@@ -1,5 +1,9 @@
 # Shannon Content Edit Memory
 
+## 27 September 2026: challenge pages show the product and real people
+
+Shannon asked to closely reuse the Balance Learn landing page for the Plant-Based Challenge, including its phone, app screenshots and client photos instead of a headshot-led page. Tailor the food and offer copy to the challenge: use plant-based examples (Ginger Tofu, not Ginger Turkey), omit the Learn/Master/Become/Lead journey, and present the six-week Balance Learn course as included within the eight-week challenge. The final two weeks apply the learning through continued training, meals and habits. Preserve the separate Learn page and its offer. Existing client photos describe past coaching results, not results from the new challenge. Contract: docs/plant-based-challenge-2026-09-27.md.
+
 ## 16 September 2026: type written form answers
 
 Shannon asked for the Learn video reflection answer to type itself out, replacing its phrase-reveal animation. Form-entry demonstrations should use character-by-character typing with a moving caret and a short completed-text hold. Preserve the form layout and copy. Contract: docs/learn-dm-video-2026-09-10.md, v15.
