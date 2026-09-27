@@ -10,7 +10,7 @@ const crypto = require('crypto');
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 const VERIFY_TOKEN = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN || process.env.META_WEBHOOK_VERIFY_TOKEN;
-const APP_SECRET = process.env.WHATSAPP_APP_SECRET || process.env.META_APP_SECRET;
+const APP_SECRET = process.env.WHATSAPP_APP_SECRET || process.env.META_APP_SECRET || process.env.FACEBOOK_APP_SECRET;
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 const WINDOW_MS = 24 * 60 * 60 * 1000;
 

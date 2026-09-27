@@ -13,8 +13,10 @@ Sending from the card uses the Cloud API, records the exact sent copy, and refus
 - Balance app `2059731324926909` is published with the WhatsApp use case, but its webhook callback is blank.
 - Its owner portfolio `438978263608090` lists an older COCO'S CONNECTED account with an offline US number ending 8102. Do not register or replace this as the requested Balance number.
 - The separate Balance - Fitness Gamified portfolio has no WhatsApp accounts.
-- Shannon confirmed the existing Balance mobile number ending 9395. Connect that existing account while preserving the phone app. Do not delete its WhatsApp account or migrate it to Cloud-only registration without discussing the consequences.
-- Netlify site access works locally, but its environment-variable API returned 401. Credential configuration is not verified by this inspection.
+- Shannon verified the existing Balance mobile number ending 9395. Meta now lists Balance WhatsApp Business app account `2144973466456358` as Connected, quality High, in the owner portfolio. This Business Suite link does not establish Cloud API coexistence.
+- Created WhatsApp Embedded Signup configuration `1424994552893599` (60-day token template). No access token has been issued by this configuration yet. The existing app-review configuration is unchanged.
+- The connected Netlify service can read environment configuration even though the local environment API returns 401. Production has `META_WEBHOOK_VERIFY_TOKEN` and the existing shared `FACEBOOK_APP_SECRET`; the webhook accepts these as fallbacks. No `WHATSAPP_ACCESS_TOKEN` is configured yet.
+- Complete supported coexistence onboarding while preserving the phone app. Explain its linked-device and feature restrictions before the final connection. Do not delete its WhatsApp account or migrate it to Cloud-only registration. See [Meta's coexistence guide](https://developers.facebook.com/documentation/business-messaging/whatsapp/embedded-signup/onboarding-business-app-users).
 
 ## Rollout measurement
 
@@ -27,7 +29,7 @@ Hypothesis: contextual WhatsApp drafts reduce manual writing time while preservi
 3. In WhatsApp > Configuration, set the callback URL to the endpoint above and use the same value for the Verify Token as the `WHATSAPP_WEBHOOK_VERIFY_TOKEN` Netlify environment variable.
 4. Subscribe the app to the `messages` webhook field.
 5. Create a permanent system-user access token with the WhatsApp messaging permissions and save it in Netlify as `WHATSAPP_ACCESS_TOKEN`.
-6. Save Meta's App Secret in Netlify as `WHATSAPP_APP_SECRET`. Do not put either secret in the repository.
+6. Save Meta's App Secret in Netlify as `WHATSAPP_APP_SECRET`, or reuse the same app's existing `META_APP_SECRET` / `FACEBOOK_APP_SECRET` fallback. Do not put secrets in the repository.
 7. Optionally set `WHATSAPP_GRAPH_API_VERSION` when Meta requires a version different from the default configured by the app.
 
 ## Required Netlify environment variables

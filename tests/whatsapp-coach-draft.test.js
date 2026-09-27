@@ -79,6 +79,27 @@ test('malformed non-hex webhook signatures reject without throwing', () => {
     assert.equal(webhook.isValidSignature('{}', { 'x-hub-signature-256': `sha256=${signature}` }), true);
 });
 
+test('webhook uses the existing shared Meta app secret only when channel overrides are absent', () => {
+    const names = ['WHATSAPP_APP_SECRET', 'META_APP_SECRET', 'FACEBOOK_APP_SECRET'];
+    const original = names.map(name => process.env[name]);
+    const path = require.resolve('../netlify/functions/whatsapp-webhook');
+    const signed = secret => ({ 'x-hub-signature-256': `sha256=${crypto.createHmac('sha256', secret).update('{}').digest('hex')}` });
+    try {
+        delete process.env.WHATSAPP_APP_SECRET;
+        delete process.env.META_APP_SECRET;
+        process.env.FACEBOOK_APP_SECRET = 'shared-meta-test';
+        delete require.cache[path];
+        assert.equal(require(path)._test.isValidSignature('{}', signed('shared-meta-test')), true);
+        process.env.WHATSAPP_APP_SECRET = 'channel-test';
+        delete require.cache[path];
+        assert.equal(require(path)._test.isValidSignature('{}', signed('shared-meta-test')), false);
+        assert.equal(require(path)._test.isValidSignature('{}', signed('channel-test')), true);
+    } finally {
+        names.forEach((name, index) => { if (original[index] === undefined) delete process.env[name]; else process.env[name] = original[index]; });
+        delete require.cache[path];
+    }
+});
+
 test('worker preserves manual-only state and duplicate jobs neither redraft nor send', async () => {
     const modulePath = require.resolve('../netlify/functions/_lib/client-context');
     const originalModule = require.cache[modulePath];
