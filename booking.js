@@ -23,6 +23,34 @@
     const outsidePanel = byId('booking-outside-panel');
     const urlParams = new URLSearchParams(window.location.search);
     const bookingSource = urlParams.get('source') || '';
+    const isPlantBasedChallenge = bookingSource === 'plant_based_challenge';
+    function trackChallengeBooking(event, details = {}) {
+        if (!isPlantBasedChallenge) return;
+        const send = () => window.trackBalanceEvent?.(event, { source: 'plant_based_challenge', ...details });
+        if (window.trackBalanceEvent) send();
+        else if (document.readyState !== 'complete') document.addEventListener('DOMContentLoaded', send, { once: true });
+    }
+    if (isPlantBasedChallenge) {
+        document.documentElement.setAttribute('data-bio-theme', matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.body.classList.add('challenge-booking');
+        document.body.dataset.landingVariant = 'eight_week_consultation_v1';
+        document.title = 'Book Your Challenge Consultation | Balance';
+        byId('booking-intro-kicker').textContent = 'Eight-week plant-based transformation challenge';
+        byId('booking-intro-title').textContent = 'Talk about your goals with Shannon.';
+        byId('booking-intro-copy').textContent = 'We will talk through your goals, your routine and the support that fits you. Shannon will explain the options and pricing before you choose a package.';
+        byId('booking-card-title').textContent = 'Choose your consultation time.';
+        const menuBooking = document.querySelector('.balance-menu-drawer a[aria-current="page"]');
+        if (menuBooking) { menuBooking.href = '/book?' + urlParams.toString(); menuBooking.textContent = 'Book a Consultation'; }
+        byId('booking-unavailable-title').textContent = 'Arrange your consultation with Shannon.';
+        byId('booking-unavailable-copy').textContent = 'Online times are unavailable right now. Email Shannon your goal, timezone and a few times that suit, and he can arrange a consultation with you.';
+        const fallback = byId('booking-unavailable-action');
+        fallback.textContent = 'Email about my consultation';
+        fallback.href = 'mailto:shannon@balanceneurosciencefitness.com?subject=' + encodeURIComponent('Eight-week plant-based challenge consultation') + '&body=' + encodeURIComponent('Hi Shannon, I am interested in the eight-week plant-based transformation challenge.\n\nMy goal:\n\nMy timezone:\n\nTimes that suit:');
+        fallback.dataset.track = 'cta_click';
+        fallback.dataset.cta = 'challenge_consultation_email';
+        byId('booking-success-primary').href = '/plant-based-challenge';
+        byId('booking-success-primary').textContent = 'Back to the challenge';
+    }
     const requestedPtSessions = ['1', '3', '5'].includes(urlParams.get('pt_sessions'))
         ? urlParams.get('pt_sessions')
         : null;
@@ -237,6 +265,7 @@
         const slot = date && date.slots[index];
         if (!slot) return;
         state.selectedSlot = slot;
+        trackChallengeBooking('booking_slot_selected');
         document.querySelectorAll('.booking-slot').forEach((button, buttonIndex) => button.classList.toggle('active', buttonIndex === index));
         selectedSlot.textContent = `${dateTimeLabel(slot.start)} (${friendlyTimeZone()})`;
         show(form, true);
@@ -278,13 +307,16 @@
             duration.textContent = data.durationMinutes ? `${data.durationMinutes} min ${isFirstPtSession ? 'session' : 'call'}` : 'Call times';
             renderTimeZone();
             if (!data.ok || !data.bookingEnabled || !state.dates.length) {
+                trackChallengeBooking('booking_unavailable', { reason: data.calendarReconnectRequired ? 'calendar_reconnect_required' : 'no_available_times' });
                 show(unavailable, true);
                 return;
             }
             show(flow, true);
+            trackChallengeBooking('booking_available');
             renderDates();
             renderSlots();
         } catch (_) {
+            trackChallengeBooking('booking_unavailable', { reason: 'availability_request_failed' });
             show(loading, false);
             duration.textContent = 'Call times';
             show(unavailable, true);
@@ -316,6 +348,7 @@
         const button = targetForm.querySelector('button[type="submit"]');
         button.disabled = true;
         button.classList.add('loading');
+        trackChallengeBooking('booking_started');
         try {
             const response = await fetch(endpoint, {
                 method: 'POST',
@@ -331,7 +364,8 @@
                     visitorTimeZone: localTimeZone,
                     bookingMode,
                     metaRef: urlParams.get('meta_ref') || '',
-                    source: isFirstPtSession ? 'first_pt_session' : isWeeklyCheckinPt ? 'weekly_checkin_pt' : isZoomPtEnquiry ? 'zoom_pt' : 'public_booking_page',
+                    source: isPlantBasedChallenge ? 'plant_based_challenge' : isFirstPtSession ? 'first_pt_session' : isWeeklyCheckinPt ? 'weekly_checkin_pt' : isZoomPtEnquiry ? 'zoom_pt' : 'public_booking_page',
+                    ...(isPlantBasedChallenge ? { attribution: window.getAttributionData?.() || {} } : {}),
                     ptSessionsPerWeek: isZoomPtEnquiry && requestedPtSessions ? Number(requestedPtSessions) : null,
                     addonType: isWeeklyCheckinPt ? ptAddon : null,
                 }),
@@ -339,6 +373,7 @@
             const result = await response.json().catch(() => ({}));
             if (!response.ok || !result.ok) {
                 if (result.error === 'slot_no_longer_available') {
+                    trackChallengeBooking('booking_error', { reason: 'slot_no_longer_available' });
                     showError('That time is no longer free. Try another time and we will check it again.', targetError);
                     await loadAvailability();
                     return;
@@ -354,6 +389,7 @@
             }
             show(flow, false);
             show(success, true);
+            trackChallengeBooking('booking_confirmed');
             if (isFirstCoachingCall) byId('booking-success-title').textContent = 'First call booked.';
             byId('booking-success-time').textContent = `${dateTimeLabel(result.booking.startsAt)} (${friendlyTimeZone()})`;
             const bookingCallType = result.booking?.callType || details.callType;
@@ -362,6 +398,11 @@
             if (isFirstPtSession) {
                 byId('booking-success-title').textContent = 'First PT session booked.';
                 byId('booking-success-copy').textContent = 'Your 30-minute training session is confirmed. Your Google Meet link is in your calendar invitation. Your membership has not been changed.';
+            } else if (isPlantBasedChallenge) {
+                byId('booking-success-title').textContent = 'Your consultation is booked.';
+                byId('booking-success-copy').textContent = meetingUrl
+                    ? 'Your consultation with Shannon is confirmed. Your Google Meet link is in your calendar invitation. We will talk through your goals and the right support before you choose a package.'
+                    : 'Your consultation with Shannon is confirmed. Shannon will send the video link shortly. We will talk through your goals and the right support before you choose a package.';
             } else if (isZoomPtEnquiry) {
                 byId('booking-success-title').textContent = 'Zoom PT fit call booked.';
                 byId('booking-success-copy').textContent = 'Your Zoom PT fit call is confirmed. We will check health fit, recurring times and the right starting structure before payment.';
@@ -375,6 +416,7 @@
                         : `Your phone call is confirmed. Shannon will call the number you entered.${smsNote}`;
             }
         } catch (_) {
+            trackChallengeBooking('booking_error', { reason: 'confirmation_failed' });
             showError('Could not confirm that call just now. Please try again in a moment.', targetError);
         } finally {
             button.disabled = false;

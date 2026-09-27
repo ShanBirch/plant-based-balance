@@ -1,0 +1,50 @@
+/* Reuse the public site's typography, palette, navigation and buttons. */
+html body.challenge-page { --bg:#faf7ef; --bg-soft:#f4f1ea; --text-main:#243124; --text-muted:#50544b; --secondary:#805f1e; --line:#dfd5be; background:var(--bg); color:var(--text-main); -webkit-text-fill-color:var(--text-main); }
+html[data-bio-theme="dark"] body.challenge-page { --bg:#111410; --bg-soft:#1c211b; --text-main:#f8f5ee; --text-muted:#c3c7ba; --secondary:#e4c77e; --line:#454b3d; --cta-bg:#d8b25e; --cta-text:#111111; }
+.challenge-page .page-shell { width:min(1120px,calc(100% - 40px)); padding-top:0; }
+.challenge-page .site-header { position:sticky; top:0; }
+.challenge-hero { display:grid; grid-template-columns:1.3fr .7fr; gap:64px; align-items:center; padding:48px 0 64px; }
+.challenge-kicker { color:var(--secondary); -webkit-text-fill-color:var(--secondary); font-size:.76rem; font-weight:800; letter-spacing:.12em; text-transform:uppercase; margin:0 0 18px; }
+.challenge-page h1,.challenge-page h2,.challenge-page h3 { font-family:Outfit,Inter,sans-serif; letter-spacing:-.035em; }
+.challenge-page h1 { font-size:clamp(2.5rem,4.5vw,3.8rem); line-height:1.06; margin:0 0 24px; }
+.challenge-page h1 span { color:var(--secondary); -webkit-text-fill-color:var(--secondary); }
+.challenge-page h2 { font-size:clamp(1.8rem,3vw,2.6rem); line-height:1.13; margin:0 0 24px; }
+.challenge-page h3 { font-size:1.4rem; margin:14px 0 12px; }
+.challenge-page p:not(.challenge-kicker) { line-height:1.7; color:var(--text-muted); -webkit-text-fill-color:var(--text-muted); }
+.challenge-page .lead { font-size:1.2rem; font-weight:600; }
+.challenge-page .btn.primary { margin-top:12px; min-height:52px; color:var(--cta-text); -webkit-text-fill-color:var(--cta-text); box-shadow:none; }
+.challenge-note { font-size:.83rem; max-width:450px; }
+.challenge-photo { margin:0; background:var(--bg-soft); border-radius:22px; overflow:hidden; border:1px solid var(--line); }
+.challenge-photo img { width:100%; height:460px; object-fit:cover; object-position:center 12%; }
+.challenge-photo figcaption { padding:18px 22px; font-weight:700; }
+.challenge-photo figcaption span { display:block; margin-top:6px; font-size:.78rem; font-weight:400; color:var(--text-muted); -webkit-text-fill-color:var(--text-muted); }
+.challenge-section { padding:48px 0; border-top:1px solid var(--line); }
+.challenge-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:32px; margin-top:36px; }
+.challenge-number { color:var(--secondary); -webkit-text-fill-color:var(--secondary); font-size:.85rem; font-weight:700; }
+.challenge-consult { display:grid; grid-template-columns:1fr 1fr; gap:56px; }
+.challenge-consult p:first-child { margin-top:0; }
+.challenge-page :focus-visible { outline:3px solid var(--secondary); outline-offset:4px; }
+/* Also used on the consultation handoff, scoped away from other offers. */
+.challenge-booking .page-shell { padding-top:0; }
+.challenge-booking * { -webkit-text-fill-color:currentColor; }
+html[data-bio-theme="dark"] body.challenge-booking { --bg:#111410; --bg-soft:#1c211b; --surface:#1c211b; --surface-strong:#1c211b; --text-main:#f8f5ee; --text-muted:#c3c7ba; --secondary:#e4c77e; --line:#454b3d; background:var(--bg); color:var(--text-main); -webkit-text-fill-color:var(--text-main); }
+html[data-bio-theme="dark"] .challenge-booking .surface { background:var(--surface); border-color:var(--line); }
+html[data-bio-theme="dark"] body.challenge-booking .eyebrow { color:var(--secondary); -webkit-text-fill-color:var(--secondary); }
+html[data-bio-theme="dark"] .challenge-booking .booking-form-grid :is(input,textarea,select) { background:var(--bg); color:var(--text-main); -webkit-text-fill-color:var(--text-main); }
+html[data-bio-theme="dark"] .challenge-booking .btn.primary { color:var(--cta-text); -webkit-text-fill-color:var(--cta-text); }
+@media (pointer:coarse),(max-width:900px) {
+ body:is(.challenge-page,.challenge-booking) { --challenge-safe-top:max(42px,env(safe-area-inset-top,0px)); --challenge-safe-bottom:max(24px,env(safe-area-inset-bottom,0px)); }
+ html body:is(.challenge-page,.challenge-booking) .site-header:has(.balance-navigation) { padding-top:calc(8px + var(--challenge-safe-top)); }
+ html body:is(.challenge-page,.challenge-booking) .balance-menu-drawer { top:0; height:100dvh; padding-top:calc(14px + var(--challenge-safe-top)); padding-bottom:calc(24px + var(--challenge-safe-bottom)); }
+ body:is(.challenge-page,.challenge-booking) .page-shell { padding-bottom:calc(32px + var(--challenge-safe-bottom)); padding-left:env(safe-area-inset-left,0px); padding-right:env(safe-area-inset-right,0px); }
+ .challenge-hero { gap:28px; }
+}
+@media(max-width:700px) {
+ .challenge-hero { grid-template-columns:1fr; padding:32px 0; }
+ .challenge-page h1 { font-size:clamp(2rem,8.5vw,3.3rem); }
+ .challenge-photo img { height:320px; object-position:center 12%; }
+ .challenge-grid,.challenge-consult { grid-template-columns:1fr; gap:24px; }
+ .challenge-section { padding:32px 0; }
+ .challenge-grid article + article { border-top:1px solid var(--line); padding-top:24px; }
+ .challenge-page .btn { width:100%; }
+}

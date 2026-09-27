@@ -99,10 +99,22 @@ function normalizeBookingMode(value: unknown): BookingMode {
     return trimText(value, 30).toLowerCase() === "outside_hours" ? "outside_hours" : "standard";
 }
 
-function normalizeBookingSource(value: unknown): "public_booking_page" | "zoom_pt" | "weekly_checkin_pt" | "first_pt_session" {
+export function normalizeBookingSource(value: unknown): "public_booking_page" | "zoom_pt" | "weekly_checkin_pt" | "first_pt_session" | "plant_based_challenge" {
     const source = trimText(value, 40).toLowerCase();
+    if (source === "plant_based_challenge") return source;
     if (source === "zoom_pt" || source === "weekly_checkin_pt" || source === "first_pt_session") return source;
     return "public_booking_page";
+}
+
+// Store only bounded campaign fields, never arbitrary client metadata or form answers.
+export function normalizeBookingAttribution(value: unknown): Record<string, unknown> {
+    const input = value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+    const keys = ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "fbclid", "gclid", "campaign_id", "adset_id", "ad_id", "creative_id", "placement", "site_source_name", "meta_ad_name", "visitor_id", "session_id"];
+    const clean = (raw: unknown) => {
+        const source = raw && typeof raw === "object" && !Array.isArray(raw) ? raw as Record<string, unknown> : {};
+        return Object.fromEntries(keys.filter(key => typeof source[key] === "string" && source[key]).map(key => [key, trimText(source[key], 500)]));
+    };
+    return { ...clean(input), first_touch: clean(input.first_touch), last_touch: clean(input.last_touch) };
 }
 
 function normalizePtAddonType(value: unknown): "zoom_pt_1_upgrade" | "extra_zoom_pt" | null {
@@ -680,7 +692,7 @@ async function createCalendarEvent(settings: BookingSettings, booking: Record<st
         ? (ptAddonType === "extra_zoom_pt" ? "Extra weekly Zoom PT" : "Weekly Zoom PT")
         : bookingSource === "zoom_pt" && ptSessionsPerWeek
         ? `Zoom PT ${ptSessionsPerWeek} fit call`
-        : settings.event_name;
+        : bookingSource === "plant_based_challenge" ? "Eight-week plant-based challenge consultation" : settings.event_name;
     const createMeet = callType === "video";
     const query = new URLSearchParams({ sendUpdates: "all" });
     if (createMeet) query.set("conferenceDataVersion", "1");
@@ -810,6 +822,7 @@ async function createBooking(req: Request): Promise<Response> {
                 timezone: visitorTimeZone,
                 metadata: {
                     source: bookingSource,
+                    ...(bookingSource === "plant_based_challenge" ? { attribution: normalizeBookingAttribution(body.attribution) } : {}),
                     ...(verifiedDmRef ? { ig_thread_id: verifiedDmRef.threadId } : {}),
                     booking_mode: bookingMode,
                     call_type: callType,

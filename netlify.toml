@@ -668,6 +668,11 @@
   status = 200
 
 [[redirects]]
+  from = "/plant-based-challenge"
+  to = "/plant-based-challenge.html"
+  status = 200
+
+[[redirects]]
   from = "/book"
   to = "/book.html"
   status = 200
