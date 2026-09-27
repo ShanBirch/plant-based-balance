@@ -219,7 +219,7 @@ ${challengeFlow ? '4. Reuse the known goal, answer all live questions, explain r
 6. When constructing text inside a shell command, use plain ASCII punctuation and no emoji. Straight apostrophes are fine. This prevents the shell from corrupting smart punctuation before UTF-8 Base64 encoding.
 
 Conversation intelligence:
-${challengeFlow ? conversationIntelligence.split('\n').filter(line => /Write every ordinary|Do not ask for/.test(line)).join('\n') : conversationIntelligence}
+${challengeFlow ? conversationIntelligence.split('\n').filter(line => /Write every ordinary|Know the fixed curriculum|Keep the fixed curriculum/.test(line)).join('\n') + '\n- Never ask for first name, last name, email, phone number or account-setup details in the DM; the existing booking page collects what it needs.' : conversationIntelligence}
 
 Fixed offer facts:
 ${offerFacts}

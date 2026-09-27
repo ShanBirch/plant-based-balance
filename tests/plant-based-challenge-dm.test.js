@@ -207,6 +207,8 @@ test('dormant worker inherits challenge content without changing the transport c
     assert.ok(prompt.includes(CHALLENGE_BOOKING_URL));
     assert.ok(prompt.includes('Revalidate the supplied codex_live_worker controller claim'));
     assert.ok(prompt.includes('replyTextUtf8Base64'));
+    assert.ok(prompt.includes('Keep the fixed curriculum distinct'));
+    assert.ok(prompt.includes('Never ask for first name'));
     assert.doesNotMatch(prompt,/Exact signed app-preview URL|Exact approved Founders Pass checkout URL|newest inbound equivalent to/);
 });
 
@@ -232,6 +234,7 @@ test('requested package facts survive a rapid-batch answer without unsolicited p
     const text=finalizeChallengeText(["Yep, the live workout is half an hour."],{currentMessage:'What does the $125 a week option include?\nIs the live workout half an hour?'}).join(' ');
     for(const pattern of [/125/,/weekly/,/1:1/,/Learn/]) assert.match(text,pattern);
     assert.doesNotMatch(finalizeChallengeText(['Yep, half an hour.'],{currentMessage:'Is the live workout half an hour?'}).join(' '),/125/);
+    assert.equal(finalizeChallengeText(["Yeah I'm vegan, I've been for five years too."],{currentMessage:'I am vegetarian. Are you vegan?'}).join(' '),"Yeah I'm vegan, I've been for five years.");
 });
 
 
@@ -240,4 +243,50 @@ test('known goals do not turn unrelated rapport into a sales invitation', () => 
     const history=[{direction:'in',text:'I want to get stronger and need help'}];
     for(const currentMessage of ['How was your weekend?', 'That sunset looks amazing', 'Nice!', 'Are you vegan?']) assert.equal(resolveChallengeTurn({history,currentMessage}).offering,false,currentMessage);
     assert.equal(resolveChallengeTurn({history:[{direction:'out',text:'Want the consultation booking card?'}],currentMessage:'Yes please'}).offering,true);
+});
+
+
+test('ordinary acknowledgement after a pause is not confused with a future sales hook', () => {
+    const history=[{direction:'in',text:'Not now, I need time to think.'}];
+    assert.deepEqual(collectChallengeLeadIssues({history,currentMessage:'I trained yesterday.',draft:{joined:'Nice, sounds like you are already taking action.'}}),[]);
+    assert.ok(collectChallengeLeadIssues({history,currentMessage:'I trained yesterday.',draft:{joined:'When you are ready, we can make a plan.'}}).length);
+});
+
+
+test('a later legacy promise outranks stale challenge metadata until explicitly reopened', () => {
+    const thread={...fresh,custom_data:{...fresh.custom_data,offer_flow_variant:'plant_based_challenge'}};
+    const history=[{direction:'in',text:'Tell me about the plant-based challenge'},{direction:'in',text:'Can I see the Learn preview?'},{direction:'out',text:'Want your free app preview?'}];
+    assert.equal(resolveChallengeLeadRoute({thread,history,currentMessage:'Yes please'}),false);
+    assert.equal(resolveChallengeLeadRoute({thread,history,currentMessage:'Actually I want the eight-week plant-based challenge'}),true);
+    assert.equal(resolveChallengeLeadRoute({thread,currentMessage:'How much is the six-week Learn course?'}),false);
+});
+
+
+test('model-outage fallback retains common offer and requested-price answers without bypassing questions', () => {
+    const {buildChallengeUnavailableFallback}=require('../netlify/functions/_lib/plant-based-challenge-dm');
+    const offer=buildChallengeUnavailableFallback({currentMessage:'I want to get stronger and need a plan.'});
+    assert.ok(offer.joined.includes(CHALLENGE_BOOKING_URL));
+    assert.match(buildChallengeUnavailableFallback({currentMessage:'What does the $125 package include?'}).joined,/125/);
+    assert.doesNotMatch(buildChallengeUnavailableFallback({currentMessage:'What does the challenge cost?'}).joined,/125/);
+    assert.equal(buildChallengeUnavailableFallback({currentMessage:'I want strength, but can you promise this fixes my condition?'}),null);
+});
+
+
+test('off-topic rapport and pain answers lose only the unwanted sales sentences', () => {
+    const {finalizeChallengeText}=require('../netlify/functions/_lib/plant-based-challenge-dm');
+    const history=[{direction:'in',text:'I want to build muscle'}];
+    const rapport=finalizeChallengeText([`It really is, hey. I can help with your muscle-building goal and the challenge. If you want, I can send a consult link: ${CHALLENGE_BOOKING_URL}`],{history,currentMessage:'That sunset looks amazing!'}).join(' ');
+    assert.equal(rapport,'It really is, hey.');
+    const subtlePitch='It really is. And building muscle can fit around shifts too. If you want, I can help you with the right support for that.';
+    assert.equal(finalizeChallengeText([subtlePitch],{history,currentMessage:'That sunset looks amazing!'}).join(' '),'It really is.');
+    assert.ok(collectChallengeLeadIssues({history,currentMessage:'That sunset looks amazing!',draft:{joined:subtlePitch}}).length);
+    const pain=finalizeChallengeText(["I can't tell you what exercise fixes that. Get the swollen knee assessed by a physio. If you want, we can book a challenge consult later."],{currentMessage:'My knee is swollen and painful. What will fix it?'}).join(' ');
+    assert.match(pain,/assessed/);
+    assert.doesNotMatch(pain,/challenge|consult|book/);
+});
+
+
+test('a late repair cannot hide a sales tail behind a correct safety answer', () => {
+    const currentMessage='My knee is swollen and painful. What will fix it?';
+    assert.ok(collectChallengeLeadIssues({currentMessage,draft:{joined:"I can't tell you what exercise fixes that. If you want, book a challenge consult later."}}).length);
 });

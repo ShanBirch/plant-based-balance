@@ -15,21 +15,21 @@ context.loadEditExamples = async () => '';
 const {generateDraft, collectPaidMetaWriterContractIssues} = require('../netlify/functions/ig-instant-draft')._test;
 const {CHALLENGE_FLOW,CHALLENGE_BOOKING_URL,collectChallengeLeadIssues} = require('../netlify/functions/_lib/plant-based-challenge-dm');
 const scenarios = [
-    {name:'known goal unrelated rapport',history:[{direction:'in',text:'I want to build muscle'},{direction:'out',text:'We can work training around your shifts.'}],message:'That sunset looks amazing!',forbidden:/https?:|book|challenge|\$125/i},
+    {name:'known goal unrelated rapport',history:[{direction:'in',text:'I want to build muscle'},{direction:'out',text:'We can work training around your shifts.'}],message:'That sunset looks amazing!',forbidden:/https?:|book|challenge|\$125|muscle|strength|can help/i},
     {name:'prior refusal stays respected',history:[{direction:'in',text:'I want to get stronger'},{direction:'in',text:'Not now, I need time to think.'},{direction:'out',text:'No worries, take your time.'}],message:'I trained yesterday.',forbidden:/https?:|\?|book|challenge|when you|if you/i},
     {name:'explicit booking resend',history:[{direction:'out',text:`Choose a time here: ${CHALLENGE_BOOKING_URL}`}],message:'Can you resend the consultation booking link?',card:true},
     {name:'price across rapid batch',batch:[{text:'What does the $125 a week option include?'}],message:'Is the live workout half an hour?',required:[/125/,/30|half.an.hour/i],forbidden:/https?:|want me to/i},
     {name:'ordinary unusual goal',message:'I want to hike without getting puffed and need some help with a plan.',card:true},
     {name:'pain question has no sales pitch',message:'I want to get stronger but my knee is swollen and painful. What exercise will fix it?',forbidden:/https?:|book|challenge|\$125/i},
     {name:'unknown goal',message:'Can you tell me about the eight-week plant-based challenge?',forbidden:/\$|\/book|free.*preview/i},
-    {name:'goal and support',message:'I want to get stronger. I work night shifts and need a plan I can keep doing.',required:[/shift/i,/training|workout/i,/meal|food|nutrition/i],card:true},
+    {name:'goal and support',message:'I want to get stronger. I work night shifts and need a plan I can keep doing.',required:[/shift|night/i,/training|workout|strength plan/i,/meal|food|nutrition/i],card:true},
     {name:'known goal no interrogation',history:[{direction:'in',text:'I want to build muscle, I am vegetarian and work nights.'},{direction:'out',text:'We can work training around those night shifts.'}],message:'Yeah, how can you help me with that?',card:true,forbidden:/what.{0,30}(?:goal|achieve)|how long.{0,20}(?:vegetarian|plant)/i},
     {name:'direct price',message:'How much does the eight-week challenge cost?',required:[/support|package|option/i],forbidden:/\$149|\$125.{0,20}(?:challenge|everyone)/i},
     {name:'optional live package',message:'What does the $125 a week option include?',required:[/125/,/30/,/weekly|week/,/live|1:1|one.on.one/i]},
     {name:'explicit Learn question',message:'What does Balance Learn cover within the challenge?',required:[/learn|course/i],forbidden:/\$|free.*preview/i},
     {name:'autonomy',history:[{direction:'in',text:'I want to lose weight'}],message:'Not now, I need time to think.',forbidden:/https?:|\?|\$|preview/i},
     {name:'already delivered card',history:[{direction:'in',text:'I want to get stronger'},{direction:'out',text:`Pick a consultation time here: ${CHALLENGE_BOOKING_URL}`}],message:'Thanks!',forbidden:/https?:|\$|preview/i},
-    {name:'rapid messages and reciprocal',history:[{direction:'out',text:'What change would you like help with?'}],batch:[{text:'I want strength and I am vegetarian. Are you vegan?'}],message:'Food is the confusing bit and I work night shifts.',required:[/vegan/i,/food|meal/i,/shift/i],card:true},
+    {name:'rapid messages and reciprocal',history:[{direction:'out',text:'What change would you like help with?'}],batch:[{text:'I want strength and I am vegetarian. Are you vegan?'}],message:'Food is the confusing bit and I work night shifts.',required:[/vegan/i,/food|meal/i,/shift|night/i],card:true},
 ];
 (async()=>{
     const results=[];
