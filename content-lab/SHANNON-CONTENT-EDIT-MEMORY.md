@@ -358,3 +358,10 @@ For Share your week in the Learn ad video, Shannon prefers the actual check-in f
 - Shannon reported uneven, blurry text in the Learn DM video, particularly the Personalised Meal-Plan Support card.
 - Rebuild revisions from the original 1080p master and original scene renders, never from a previously compressed delivery copy. Export once and retain 1080p where it fits the native attachment budget.
 - Inspect decoded final frames at native resolution and phone display size across title cards, lessons and app demos. Update the canonical ad-flow selector and send-time legacy URL normalization together so queued replies also use the corrected asset.
+# Client sample meal plans — 28 September 2026
+
+Shannon rejected a plain, dense sample meal-plan PDF as looking dodgy. Use a
+polished Balance handout: warm cream, forest green, restrained gold, generous
+spacing, a relevant food illustration, clear meal cards and clickable research.
+Visually inspect every page. Explain that a sample PDF is illustrative; actual
+Balance meal plans are built into the app rather than delivered as PDFs.

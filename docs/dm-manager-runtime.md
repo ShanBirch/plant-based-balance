@@ -32,6 +32,25 @@ claims, newer messages, manual holds and opt-outs. Do not infer authority to
 restart the browser, clear a personal-boundary hold or send generic Story text.
 Other API-window/browser-only work must likewise surface for manual handling.
 
+## New messages needing Shannon
+
+Shannon reaffirmed on 28 September 2026 that Story replies belong in Needs You.
+Every new unanswered inbound batch needing his reply must produce one concise
+Codex notification, even when that contact already has an older pending card.
+Deduplicate by exact source inbound IDs, not contact or alert identity. Bundle
+rapid messages and include who wrote, what they said, why his reply is needed,
+and a useful suggested response where permitted. Retrieve media first when
+possible; if decoding fails, notify with that limitation instead of hiding the
+new batch. Unchanged surfaced batches remain quiet. A notification never grants
+send approval. Explicit approval applies only to the reviewed current reply.
+
+The existing ten-minute automation provides these notifications while Shannon
+works elsewhere. Do not promise instant delivery or automatic insertion into an
+unrelated active conversation. During longer Balance work sessions, check new
+Needs You batches periodically (about every ten minutes) and mention genuinely
+new unsurfaced items in commentary without abandoning the current task. Use the
+same source-ID receipt to avoid duplicate notices from the automation.
+
 Record successful live reads separately from completed action passes. A missing
 transport, failed lease, unreadable inbox or failed media recovery is not a
 healthy pass. Deduplicate an unchanged failure notice by its exact signature,

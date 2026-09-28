@@ -2,6 +2,17 @@
 
 Read `CODEX.md` first, then `CLAUDE.md`.
 
+## Surface new messages while working
+
+Shannon requested on 28 September 2026 that new messages needing his reply be
+surfaced while he works with Codex, rather than requiring him to check Needs You.
+During longer Balance sessions, check for new unsurfaced Needs You inbound
+batches about every ten minutes and briefly tell him in commentary. Follow
+`docs/dm-manager-runtime.md` and share exact source-ID notification receipts with
+the existing DM manager automation to avoid duplicates. Story replies stay
+manual Needs You; a notification is not approval to send. Do not promise instant
+cross-chat interruption or create another duplicate monitor.
+
 `CODEX.md` contains the durable business, strategy, repo, AI-coach pipeline, database, ManyChat, Android, and workflow handoff for Shannon and Balance.
 
 `CLAUDE.md` contains important UI and mobile app implementation rules.
