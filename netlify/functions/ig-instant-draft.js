@@ -9262,6 +9262,7 @@ exports.handler = async (event) => {
         media_decode: effectiveMediaDecode,
     });
     const contextReview = buildContextReviewInfo({
+        offer_flow_variant: metaAdFlowVariant,
         channel,
         ig_thread_id: thread.id,
         manychat_message_id: manychatMessageId || null,

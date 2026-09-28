@@ -290,3 +290,19 @@ test('a late repair cannot hide a sales tail behind a correct safety answer', ()
     const currentMessage='My knee is swollen and painful. What will fix it?';
     assert.ok(collectChallengeLeadIssues({currentMessage,draft:{joined:"I can't tell you what exercise fixes that. If you want, book a challenge consult later."}}).length);
 });
+
+
+test('explicit challenge Balance keyword retains the overview and asks for a goal', () => {
+ const {buildChallengeTurnDirective,finalizeChallengeText}=require('../netlify/functions/_lib/plant-based-challenge-dm');
+ assert.match(buildChallengeTurnDirective({currentMessage:'Balance'}),/brief accurate overview/);
+ const reply='The eight-week plant-based challenge includes training and meal plans. What would you like to change?';
+ assert.deepEqual(finalizeChallengeText([reply],{currentMessage:'Balance'}),[reply]);
+});
+test('only the explicit challenge keyword is independent of missing prior context', () => {
+ const {buildContextReviewInfo}=require('../netlify/functions/_lib/client-context');
+ const input={channel:'instagram',first_captured_lead_reply:true,message_preview:'Balance',offer_flow_variant:'plant_based_challenge'};
+ assert.equal(buildContextReviewInfo(input).required,false);
+ assert.equal(buildContextReviewInfo({...input,offer_flow_variant:undefined}).required,true);
+ assert.equal(buildContextReviewInfo({...input,message_preview:'that one'}).required,true);
+ assert.equal(buildContextReviewInfo({...input,context_review:{required:true,reasons:['voice_note_review_required']}}).required,true);
+});

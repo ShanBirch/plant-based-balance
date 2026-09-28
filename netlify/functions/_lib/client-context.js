@@ -5261,7 +5261,11 @@ function buildContextReviewInfo(alertOrData) {
 
     const latest = getContextReviewLatestText(data);
     const normalizedLatest = normalizeContextText(latest);
-    const contextDependent = isContextDependentText(normalizedLatest);
+    // An explicitly routed challenge keyword is a standalone enquiry, not a
+    // reference to an unseen message. All media and other context holds remain.
+    const challengeKeyword = data.offer_flow_variant === 'plant_based_challenge'
+        && /^balance[.!?\s]*$/i.test(normalizedLatest);
+    const contextDependent = !challengeKeyword && isContextDependentText(normalizedLatest);
     const manyChat = isManyChatContext(data, alertOrData);
     const priorContextCount = countPriorContextMessages(data);
     const trackedOutbound = hasTrackedOutboundContext(data);
