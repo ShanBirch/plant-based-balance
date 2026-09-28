@@ -59,11 +59,13 @@ const leadAlertData = buildStoryReplyAlertData({
     graphMessageId: 'ig_graph:owner:ig-mid-story-1',
     storyId: 'story-123',
 });
-assert.strictEqual(leadAlertData.operator_queue, 'browser_dispatcher');
+assert.strictEqual(leadAlertData.operator_queue, 'needs_you');
 assert.strictEqual(leadAlertData.browser_story_reply_required, true);
 assert.strictEqual(leadAlertData.native_story_context_required, true);
-assert.strictEqual(leadAlertData.browser_send_allowed, true);
-assert.strictEqual(leadAlertData.needs_shannon_approval, false);
+assert.strictEqual(leadAlertData.browser_send_allowed, false);
+assert.strictEqual(leadAlertData.browser_dispatch_required, false);
+assert.strictEqual(leadAlertData.needs_shannon_approval, true);
+assert.strictEqual(leadAlertData.notification_required, true);
 
 const clientAlertData = buildStoryReplyAlertData({
     thread: {
@@ -148,7 +150,7 @@ assert.match(migration, /GRANT EXECUTE ON FUNCTION public\.route_story_reply_inb
             }
             if (path.startsWith('coach_alerts?id=')) return [];
             return {
-                outcome: 'browser_dispatch_queued',
+                outcome: 'browser_dispatch_paused_needs_you',
                 action_id: 'action-1',
             };
         },
@@ -159,6 +161,8 @@ assert.match(migration, /GRANT EXECUTE ON FUNCTION public\.route_story_reply_inb
     assert.strictEqual(routeResult.actionId, 'action-1');
     assert.strictEqual(calls[0].idempotencyKey, 'ig_incoming_story_reply:message-1');
     assert.strictEqual(calls[0].payload.suggested_message, null);
+    assert.strictEqual(calls[0].payload.data.operator_queue, 'needs_you');
+    assert.strictEqual(calls[0].payload.data.browser_send_allowed, false);
     const routeCall = calls.find(call => call.path === 'rpc/route_story_reply_inbound_to_browser_dispatcher');
     const alertPatch = calls.find(call => call.path?.startsWith('coach_alerts?id='));
     assert.strictEqual(alertPatch.options.body.suggested_message, null);

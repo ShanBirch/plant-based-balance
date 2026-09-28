@@ -7,6 +7,7 @@ const { extractStoryReplyText } = require('./meta-ig-context');
 const ROUTED_OUTCOMES = new Set([
     'browser_dispatch_queued',
     'browser_dispatch_already_active',
+    'browser_dispatch_paused_needs_you',
 ]);
 
 function cleanText(value = '', maxLength = 2000) {
@@ -44,7 +45,6 @@ function buildStoryReplyAlertData({
     const graph = thread.custom_data?.instagram_graph && typeof thread.custom_data.instagram_graph === 'object'
         ? thread.custom_data.instagram_graph
         : {};
-    const linkedClient = !!thread.linked_user_id;
     return {
         channel: 'instagram',
         delivery_channel: 'instagram_native_inbox',
@@ -56,12 +56,17 @@ function buildStoryReplyAlertData({
         linked_user_id: thread.linked_user_id || null,
         manychat_message_id: graphMessageId || null,
         source_message_id: sourceMessageId || null,
-        operator_queue: 'browser_dispatcher',
+        // Browser delivery is paused under the current customer-service policy.
+        // Keep the native-context requirement, but make the work visible to Shannon.
+        operator_queue: 'needs_you',
         browser_story_reply_required: true,
-        browser_dispatch_required: true,
-        browser_dispatch_reason: 'inbound_story_reply_native_context',
-        browser_send_allowed: !linkedClient,
-        needs_shannon_approval: linkedClient,
+        browser_dispatch_required: false,
+        browser_dispatch_reason: 'browser_dispatch_paused',
+        browser_send_allowed: false,
+        needs_shannon_approval: true,
+        needs_you_required: true,
+        notification_required: true,
+        notification_reason: 'story_context_requires_manual_review',
         native_story_context_required: true,
         story_id: storyId || null,
         story_url: storyUrl || null,
@@ -160,16 +165,16 @@ async function routeInboundStoryReplyToBrowser({
     const outcome = String(routeResult?.outcome || '');
 
     if (alertId && !ROUTED_OUTCOMES.has(outcome)) {
-        const holdPreserved = /hold|manual|suppression|needs_you|blocked/i.test(outcome);
         await query(`coach_alerts?id=eq.${encodeURIComponent(alertId)}&status=eq.pending`, {
             method: 'PATCH',
             body: {
                 data: {
                     ...liveAlertData,
-                    operator_queue: holdPreserved ? 'needs_you' : 'browser_dispatcher',
+                    operator_queue: 'needs_you',
                     browser_dispatch_route_outcome: outcome || 'route_failed',
-                    browser_dispatch_required: !holdPreserved,
-                    needs_shannon_approval: holdPreserved || liveAlertData.needs_shannon_approval,
+                    browser_dispatch_required: false,
+                    browser_send_allowed: false,
+                    needs_shannon_approval: true,
                 },
             },
             prefer: 'return=minimal',
