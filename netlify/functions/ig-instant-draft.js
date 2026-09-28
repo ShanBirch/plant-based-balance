@@ -4788,7 +4788,7 @@ function isMetaAdConversationFastLaneEligible({ linkedUserId = null, customData 
 }
 
 function buildLearnKeywordFlowCustomData({currentMessage = '', linkedUserId = null, customData = {}, manychatMessageId = '', nowIso = new Date().toISOString()} = {}) {
-    if (customData.customer_lifecycle?.purchase_id) return null;
+    if (customData.customer_lifecycle?.purchase_id || customData.offer_flow_variant === CHALLENGE_FLOW) return null;
     const account = normalizeBotAccount(customData.bot_account || customData.instagram_graph?.bot_account);
     if (linkedUserId || account !== 'shan_n_sunny' || !/^balance[.!?\s]*$/i.test(String(currentMessage).trim())) return null;
     return {

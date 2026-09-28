@@ -196,11 +196,11 @@ async function secretValueForKey(key, supabaseQuery) {
     const cleanKey = cleanString(key, 180);
     if (!cleanKey || typeof supabaseQuery !== 'function') return '';
     const cached = tokenCache.get(`secret:${cleanKey}`);
-    if (cached) return cached;
+    if (cached && Date.now() - cached.loadedAt < 60000) return cached.token;
     try {
         const rows = await supabaseQuery(`app_private_secrets?select=value&key=eq.${encodeURIComponent(cleanKey)}&limit=1`);
         const token = cleanString(rows?.[0]?.value || '', 5000);
-        if (token) tokenCache.set(`secret:${cleanKey}`, token);
+        if (token) tokenCache.set(`secret:${cleanKey}`, { token, loadedAt: Date.now() });
         return token;
     } catch (err) {
         console.warn(`[meta-ig-accounts] token secret lookup failed for ${cleanKey}:`, err.message);

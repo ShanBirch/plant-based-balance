@@ -23,3 +23,8 @@ test('keyword route stays scoped to explicit course interest and unlinked leads'
     assert.equal(buildLearnKeywordFlowCustomData({currentMessage:'balance',linkedUserId:'client',customData:{bot_account:'shan_n_sunny'}}),null);
     assert.equal(buildLearnKeywordFlowCustomData({currentMessage:'balance',customData:{bot_account:'another_account'}}),null);
 });
+
+
+test('Balance keyword preserves an explicitly selected challenge conversation', () => {
+ assert.equal(buildLearnKeywordFlowCustomData({currentMessage:'Balance',customData:{bot_account:'shan_n_sunny',offer_flow_variant:'plant_based_challenge'}}),null);
+});
