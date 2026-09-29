@@ -5278,11 +5278,12 @@ function buildContextReviewInfo(alertOrData) {
         reasons.push('manychat_reconcile_latest_only');
         labels.push('reconcile backfill only saw latest input');
     }
-    if (manyChat && firstCaptured && contextDependent) {
+    const challengeClarification = data.offer_flow_variant === 'plant_based_challenge' && contextDependent;
+    if (manyChat && firstCaptured && contextDependent && !challengeClarification) {
         reasons.push('first_captured_reply_with_hidden_context');
         labels.push('first captured reply may be missing Shannon opener');
     }
-    if (manyChat && contextDependent && !trackedOutbound && priorContextCount <= 1) {
+    if (manyChat && contextDependent && !trackedOutbound && priorContextCount <= 1 && !challengeClarification) {
         reasons.push('reference_heavy_reply_without_tracked_context');
         labels.push('reply refers to missing thread context');
     }
@@ -5316,6 +5317,7 @@ function buildContextReviewInfo(alertOrData) {
         label,
         latest_text: truncate(normalizedLatest, 180),
         context_dependent: contextDependent,
+        clarification_if_needed: challengeClarification,
         first_captured_lead_reply: firstCaptured,
         manychat_message_id: messageId || null,
         prior_context_count: priorContextCount,
@@ -6414,6 +6416,7 @@ CHALLENGE CONVERSATION QUALITY CHECK (replaces the older lead offer/timing playb
 - Block an actual URL/card before acceptance of that invitation or an explicit booking-link request. After consent, expect the approved booking card and answers to any accompanying questions.
 - No proof photos, videos, diet qualification checklist, unsolicited prices or universal weekly Zoom promise. Shannon is vegetarian. Respect refusals, existing coaching, safety, identity, context and media evidence requirements.
 - Answer every direct question, use saved answers and corrections, and keep wording natural and proportionate. Do not penalise the approved opening goal question as stock intake. Do not require a call for factual answers.
+- Missing ordinary conversational context should produce a useful answer or one natural clarification, not silence. Pass a truthful clarification when the reference is ambiguous; it need not also ask a goal or struggle question. Do not set context_loss_suspected=true merely because a clarification is needed. Block invented facts and retain genuine missing-media, authenticity and safety holds.
 - Missing an introduction or support explanation is a CONTENT OMISSION, not missing conversation history. Set context_loss_suspected=false and notification_reason=lead_quality for that defect so the writer can repair it. Set context_loss_suspected=true only if actual source conversation or essential evidence is missing. Do not write the customer reply yourself.` : isLeadDmReview ? `
 IG/FB LEAD QUALITY CHECK:
 - Judge this as a conversion DM, not only a context-matching task. The reply should keep the conversation moving in Shannon's casual human voice.

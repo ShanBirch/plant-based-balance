@@ -7,7 +7,10 @@ test('model understanding clears free-written enquiry heuristics without clearin
     const {buildContextReviewInfo,mergeDraftReviewContextReview}=require('../netlify/functions/_lib/client-context');
     const input={channel:'instagram',first_captured_lead_reply:true,message_preview:'Hey, I saw your ad. Can you tell me how this works?',offer_flow_variant:'plant_based_challenge'};
     const context=buildContextReviewInfo(input);
-    assert.equal(context.required,true);
+    assert.equal(context.required,false);
+    assert.equal(context.clarification_if_needed,true);
+    context.required=true;
+    context.reasons=['first_captured_reply_with_hidden_context','reference_heavy_reply_without_tracked_context'];
     const review={verdict:'warn',confidence:0.93,context_assessment:'model',context_loss_suspected:false,notification_required:false,notification_reason:'lead_quality',issues:['Include the course duration']};
     assert.equal(mergeDraftReviewContextReview(review,context,'plant_based_challenge').required,false);
     assert.equal(mergeDraftReviewContextReview(review,context,'broad_pain').required,true);
@@ -236,12 +239,13 @@ test('a late repair cannot hide a sales tail behind a correct safety answer', ()
 });
 
 
-test('only the explicit challenge keyword is independent of missing prior context', () => {
+test('challenge enquiries can clarify missing conversational references without a keyword', () => {
  const {buildContextReviewInfo}=require('../netlify/functions/_lib/client-context');
  const input={channel:'instagram',first_captured_lead_reply:true,message_preview:'Balance',offer_flow_variant:'plant_based_challenge'};
  assert.equal(buildContextReviewInfo(input).required,false);
  assert.equal(buildContextReviewInfo({...input,offer_flow_variant:undefined}).required,true);
- assert.equal(buildContextReviewInfo({...input,message_preview:'that one'}).required,true);
+ assert.equal(buildContextReviewInfo({...input,message_preview:'that one'}).required,false);
+ assert.equal(buildContextReviewInfo({...input,message_preview:'that one'}).clarification_if_needed,true);
  assert.equal(buildContextReviewInfo({...input,context_review:{required:true,reasons:['voice_note_review_required']}}).required,true);
 });
 
