@@ -219,7 +219,7 @@ function normalizeBehaviorProfile(raw = {}) {
 }
 
 function hasDirectBuyerIntent(value) {
-    const text = String(value || '').replace(/\s+/g, ' ').trim().toLowerCase();
+    const text = require('./dm-readiness').stripNegatedReadiness(value || '').replace(/\s+/g, ' ').trim().toLowerCase();
     if (!text) return false;
     return /^(?:how much|price\??|pricing\??|cost\??|what(?:'s| is) (?:actually )?included\??|what do i get\??|send (?:me )?(?:the )?(?:link|details)\b)/i.test(text)
         || /\b(?:can|could) you send (?:me )?(?:the )?(?:link|details)\b/i.test(text)
@@ -273,6 +273,7 @@ function deriveCommercialStage({ qualifier = {}, currentMessage = '', proposedSt
     const replies = Math.max(0, Number(qualifier.meaningful_lead_reply_count || 0));
     if (qualifier.stage === 'lost' || behavior.sales_readiness === 'not_now') return 'engaged';
     if (hasDirectBuyerIntent(currentMessage)) return 'buyer_intent';
+    if (require('./dm-readiness').stripNegatedReadiness(currentMessage).includes('[not-ready]')) return 'engaged';
 
     const prior = normalizeCommercialStage(qualifier.commercial_stage);
     if (behavior.sales_readiness === 'link_ready' || prior === 'buyer_intent') return 'buyer_intent';

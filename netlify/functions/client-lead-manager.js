@@ -1,4 +1,6 @@
 const { CHALLENGE_BOOKING_URL, CHALLENGE_POLICY_VERSION } = require('./_lib/plant-based-challenge-dm');
+const { stripNegatedReadiness } = require('./_lib/dm-readiness');
+const { hasDirectBuyerIntent } = require('./_lib/qualifier-engine');
 /**
  * client-lead-manager - scheduled Needs You router and clean-lead fallback.
  *
@@ -707,7 +709,7 @@ function buildApprovedCoachingAutoSchedulePatch(alert = {}, now = new Date()) {
 }
 
 function containsCommercialDecisionText(...values) {
-    const text = values.map(value => String(value || '')).join(' ').toLowerCase();
+    const text = values.map(value => stripNegatedReadiness(value || '')).join(' ').toLowerCase();
     return /founders? pass|balance foundations|plant-based fitness|inside balance|join balance|sign\s*up|checkout|\$\s*(?:89\.99|99)|(?:89\.99|99)\s*(?:once|one[- ]?time)|one[- ]?time (?:price|payment)|lifetime access|six weeks? (?:with me|of coaching|support)|work with me|coaching (?:offer|package|program)|send you (?:the )?(?:details|link)|want me to send|book (?:a )?call|booking link|how (?:do|can) i (?:join|start)|ready to (?:join|start)/i.test(text);
 }
 
@@ -727,6 +729,10 @@ function shouldAutoScheduleCleanLeadCloudFallback(alert = {}, classification = {
     const mediaReview = buildMediaReviewInfo(alert);
     const draftText = normalizeCoachDraftText(alert.suggested_message || data.draft_text || '').trim();
     const commercialStage = String(data.qualifier?.commercial_stage || '').toLowerCase();
+    const inbound = latestLeadText(data);
+    const notReadyUpdate = stripNegatedReadiness(inbound).includes('[not-ready]')
+        && !hasDirectBuyerIntent(inbound) && !/[?]/.test(inbound)
+        && !containsCommercialDecisionText(inbound);
     const appProblemHold = getAppProblemAutoSendHoldReason({
         currentMessage: latestLeadText(data),
         draftText,
@@ -746,7 +752,7 @@ function shouldAutoScheduleCleanLeadCloudFallback(alert = {}, classification = {
         || data.permanent_needs_you_draft_only === true) return false;
     if (data.sales_moment === true
         || data.call_booking_handoff === true
-        || ['offer_ready', 'buyer_intent'].includes(commercialStage)) return false;
+        || (!notReadyUpdate && ['offer_ready', 'buyer_intent'].includes(commercialStage))) return false;
     if (containsCommercialDecisionText(draftText, latestLeadText(data))) return false;
     if (/https?:\/\/\S+/i.test(draftText)) return false;
     if (String(data.draft_reply_mode || '').toLowerCase() === 'voice') return false;
@@ -764,6 +770,21 @@ function warningTextForCloudRepair(review = {}) {
     ].filter(Boolean).join(' ');
 }
 
+function removableCloudDraftTail(alert = {}) {
+    const data = alert.data || {};
+    const warning = warningTextForCloudRepair(normalizeDraftReview(data));
+    // Only delete a volunteered conditional offer, never manufacture a replacement
+    // fact. The retained reaction still goes through a fresh real context review.
+    if (!/\b(?:promise|unsolicited|unrequested|not grounded)\b/i.test(warning)) return null;
+    if (CLOUD_REPAIR_HARD_HOLD_RE.test(warning.replace(/\boffer\b/gi, ''))) return null;
+    const draft = normalizeCoachDraftText(alert.suggested_message || data.draft_text || '').trim();
+    const bubbles = draft.split(/\n+/).map(s => s.trim()).filter(Boolean);
+    if (bubbles.length !== 2 || bubbles[0].length > 160 || /[?]|https?:|www\./i.test(bubbles[0])) return null;
+    if (!/^(?:ah+h?|oh|haha+|yeah|fair|no worries|that makes sense)\b/i.test(bubbles[0])) return null;
+    if (!/^if\b.{0,100}\bi can\b/i.test(bubbles[1])) return null;
+    return bubbles[0];
+}
+
 function shouldAttemptCleanLeadCloudRepair(alert = {}, classification = {}) {
     if (!alert || alert.status !== 'pending' || classification?.shouldRoute || !isAcquisitionLeadAlert(alert)) return false;
     const data = alert.data || {};
@@ -777,12 +798,14 @@ function shouldAttemptCleanLeadCloudRepair(alert = {}, classification = {}) {
     if (!['', 'none', 'generic_voice', 'lead_quality'].includes(notificationReason)) return false;
 
     const warningText = warningTextForCloudRepair(review);
-    if (!CLOUD_REPAIRABLE_WARNING_RE.test(warningText) || CLOUD_REPAIR_HARD_HOLD_RE.test(warningText)) return false;
+    const trimmedDraft = removableCloudDraftTail(alert);
+    if (!trimmedDraft && (!CLOUD_REPAIRABLE_WARNING_RE.test(warningText) || CLOUD_REPAIR_HARD_HOLD_RE.test(warningText))) return false;
 
     // Reuse the complete clean-fallback gate by substituting a synthetic pass
     // only for eligibility. The repaired text still needs its own real pass.
     const eligibilityAlert = {
         ...alert,
+        suggested_message: trimmedDraft || alert.suggested_message,
         data: {
             ...data,
             draft_review: {
@@ -888,12 +911,17 @@ ORIGINAL DRAFT (not a source of truth):
 ${originalDraft}`;
 
     let parsed = { messages: [], holdReason: 'repair_generation_failed' };
+    const trimmedDraft = removableCloudDraftTail(alert);
     try {
-        const raw = await callGeminiFallback(
-            [{ role: 'user', parts: [{ text: prompt }] }],
-            { maxOutputTokens: 700, temperature: 0.2 }
-        );
-        parsed = parseCleanLeadCloudRepair(raw);
+        if (trimmedDraft) {
+            parsed = parseCleanLeadCloudRepair(JSON.stringify({ messages: [trimmedDraft] }));
+        } else {
+            const raw = await callGeminiFallback(
+                [{ role: 'user', parts: [{ text: prompt }] }],
+                { maxOutputTokens: 700, temperature: 0.2 }
+            );
+            parsed = parseCleanLeadCloudRepair(raw);
+        }
     } catch (error) {
         parsed = { messages: [], holdReason: `repair_generation_failed:${String(error.message || error).slice(0, 120)}` };
     }
@@ -941,6 +969,7 @@ ${originalDraft}`;
         && reviewResult?.contextReview?.required !== true;
     const repairMeta = {
         status: accepted ? 'accepted' : 'held',
+        strategy: trimmedDraft ? 'remove_unsolicited_conditional_tail' : 'reviewed_rewrite',
         attempted_at: attemptedAt,
         original_review: review,
         repaired_review: repairedReview,
@@ -1440,10 +1469,28 @@ function buildNeedsYouData(alert, classification) {
 async function loadPendingDmAlerts(limit = MAX_PER_RUN) {
     const types = DM_ALERT_TYPES.join(',');
     const fetchLimit = Math.min(MAX_PER_RUN * 3, Math.max(Number(limit) || MAX_PER_RUN, MAX_PER_RUN) * 3);
-    const rows = await supabaseQuery(
-        `coach_alerts?select=id,created_at,client_id,client_name,coach_id,alert_type,title,description,suggested_message,status,data&status=eq.pending&alert_type=in.(${types})&order=created_at.asc&limit=${fetchLimit}`
-    );
-    return rankPendingDmAlerts(rows).slice(0, Math.max(1, Number(limit) || MAX_PER_RUN));
+    const count = Math.min(MAX_PER_RUN, Math.max(1, Number(limit) || MAX_PER_RUN));
+    const [recent, rows] = await Promise.all([
+        supabaseQuery(`coach_alerts?select=id,created_at,client_id,client_name,coach_id,alert_type,title,description,suggested_message,status,data&status=eq.pending&alert_type=in.(${types})&order=created_at.desc,id.desc&limit=${Math.ceil(count / 2)}`),
+        supabaseQuery(
+            `coach_alerts?select=id,created_at,client_id,client_name,coach_id,alert_type,title,description,suggested_message,status,data&status=eq.pending&alert_type=in.(${types})&order=created_at.asc&limit=${fetchLimit}`
+        ),
+    ]);
+    return selectPendingDmAlerts(recent, rows, count);
+}
+
+function selectPendingDmAlerts(recent = [], backlog = [], limit = MAX_PER_RUN) {
+    // Reserve capacity before ranking: old held cards must not crowd every fresh
+    // ordinary conversation out of the finite scan and repair budget.
+    const selected = rankPendingDmAlerts(recent).slice(0, Math.ceil(limit / 2));
+    const seen = new Set(selected.map(a => a.id));
+    for (const alert of rankPendingDmAlerts(backlog)) {
+        if (selected.length >= limit) break;
+        if (seen.has(alert.id)) continue;
+        selected.push(alert);
+        seen.add(alert.id);
+    }
+    return selected;
 }
 
 function pendingDmPriorityScore(alert = {}, now = new Date()) {
@@ -1823,6 +1870,10 @@ exports.handler = async () => {
 };
 
 exports._test = {
+    loadPendingDmAlerts,
+    repairCleanLeadCloudDraft,
+    removableCloudDraftTail,
+    selectPendingDmAlerts,
     classifyNeedsYou,
     buildNeedsYouData,
     draftReviewNeedsContext,

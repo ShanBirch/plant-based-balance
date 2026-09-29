@@ -55,6 +55,30 @@ unanswered batch and reviewed under the existing manager rules, not left behind
 the cursor. Do not loosen a real hold to clear the backlog. A waiting outcome is
 an assessment receipt, not evidence of a sent reply.
 
+## Reply execution after review
+
+A ready action with owner `dm_manager` belongs to this manager; it is not evidence
+that a different worker is handling it. For an eligible ordinary text reply,
+claim that exact thread with `claim_ig_next_actions('dm_manager',1,300,run_id,
+ARRAY[thread_id]::uuid[])`, repair the wording from live context, and use the
+existing guarded production `send-coach-reply` HTTP endpoint with
+`source=balance_lead_client_manager_cron`, `forceText=true`, `alertId`, and the
+UTF-8 Base64 text fields. Check the run lease and exact claim before delivery.
+Verify canonical outbound history, then complete that exact claim. These are
+existing SQL RPC and HTTPS capabilities, not separately named connector tools.
+Their absence from a tool-name search is not a delivery blocker.
+
+Do not finish with `waiting for bounded review` merely because a normal draft
+needs shortening. Perform one bounded repair and review now; if still genuinely
+blocked, save the concrete remaining issue and surface it as required. An active
+foreign claim, new inbound/outbound, or live safety/manual hold still wins.
+
+The cloud fallback reserves half its scan for newest pending messages and the
+rest for older work. A two-bubble reaction with an unrequested conditional offer
+may have that second bubble deleted, then receive a fresh real review before it
+can schedule. Explicitly negated readiness is not buyer intent; later actual
+purchase questions retain their sales handling. No failed review is promoted.
+
 ## Incident resolution
 
 Mazzie's batch (`81f214a5-0ce3-41cb-8ea9-786451696792`,
