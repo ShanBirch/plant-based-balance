@@ -610,19 +610,19 @@
 
 [[redirects]]
   from = "/fitness"
-  to = "/fitness-coaching.html"
+  to = "/coaching.html"
   status = 200
   force = true
 
 [[redirects]]
   from = "/fitness/"
-  to = "/fitness-coaching.html"
+  to = "/coaching.html"
   status = 200
   force = true
 
 [[redirects]]
   from = "/fitness/:meta_ref"
-  to = "/fitness-coaching.html"
+  to = "/coaching.html"
   status = 200
   force = true
 

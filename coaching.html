@@ -1,568 +1,164 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="en-AU">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>What I Offer | Shannon Birch | Balance Neuroscience Fitness</title>
-    <meta name="description" content="Compare Balance Learn, App Access and online coaching from AU$29.99 per week. Choose a six-month, three-month or month-to-month coaching term.">
-    <meta property="og:title" content="What I Offer | Shannon Birch | Balance Neuroscience Fitness">
-    <meta property="og:description" content="Online coaching from AU$29.99 per week, with six-month, three-month and month-to-month options.">
-    <meta property="og:image" content="https://plantbased-balance.org/balance_logo_transparent.png">
-    <meta property="og:url" content="https://plantbased-balance.org/coaching.html">
-    <meta property="og:type" content="website">
-    <meta name="color-scheme" content="light dark">
-    <link rel="icon" type="image/png" href="balance_logo_transparent.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
-    <script src="https://js.stripe.com/v3/"></script>
-    <script>
-        (function () {
-            document.documentElement.setAttribute('data-bio-theme', 'light');
-            document.documentElement.classList.add('reveal-ready');
-        })();
-    </script>
-    <link rel="stylesheet" href="bio.css">
-    <style>
-        .training-options-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 32px; margin: 24px 0 0; padding: 0; list-style: none; }
-        .training-options-list li { padding: 20px 0; border-top: 1px solid #b8a77b66; }
-        .training-options-list h3 { margin: 0 0 8px; font-size: 20px; }
-        .training-options-list p { margin: 0; line-height: 1.6; }
-        @media (max-width: 600px) { .training-options-list { grid-template-columns: 1fr; } }
-        .starter-checkout {
-            max-width: 960px;
-            margin: 0 auto;
-            text-align: center;
-        }
-
-        .starter-checkout .offer-price {
-            margin: 10px 0 4px;
-        }
-
-        .starter-checkout .label {
-            width: fit-content;
-            margin: 0 auto;
-        }
-
-        .offer-cta {
-            width: 100%;
-            margin-top: 18px;
-            box-sizing: border-box;
-        }
-
-        .checkout-plan-grid {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 14px;
-            margin: 24px 0;
-            text-align: left;
-        }
-
-        .checkout-plan-option {
-            display: flex;
-            flex-direction: column;
-            padding: 20px;
-            border: 1px solid rgba(36, 49, 36, 0.14);
-            border-radius: 18px;
-            background: #f7f8f4;
-            color: #243124;
-            -webkit-text-fill-color: #243124;
-        }
-
-        .checkout-plan-option.featured-option {
-            border: 2px solid #d8ab47;
-            background: #fffaf0;
-        }
-
-        .checkout-plan-option h3,
-        .checkout-plan-option p {
-            color: #243124;
-            -webkit-text-fill-color: #243124;
-        }
-
-        .checkout-plan-option .offer-price {
-            margin-bottom: 10px;
-            display: flex;
-            align-items: baseline;
-            flex-wrap: wrap;
-            gap: 2px;
-            max-width: 100%;
-            white-space: nowrap;
-            line-height: 1;
-        }
-
-        .checkout-plan-option .offer-price span {
-            color: #5f6f85;
-            -webkit-text-fill-color: #5f6f85;
-            font-family: "Inter", sans-serif;
-            font-size: 0.84rem;
-            font-weight: 800;
-            letter-spacing: 0;
-        }
-
-        .checkout-plan-option.founders-option {
-            grid-column: 1 / -1;
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) minmax(190px, 0.34fr);
-            align-items: center;
-            gap: 28px;
-            padding: 24px;
-            border: 2px solid #d8ab47;
-            background: linear-gradient(135deg, #fffaf0, #f7f8f4);
-            box-shadow: 0 16px 34px rgba(184, 137, 43, 0.12);
-        }
-
-        .checkout-plan-option .plan-kicker {
-            display: inline-block;
-            margin-bottom: 6px;
-            color: #7a5717;
-            -webkit-text-fill-color: #7a5717;
-            font-size: 0.74rem;
-            font-weight: 900;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-        }
-
-        .founders-option .offer-price {
-            font-size: 2.45rem;
-        }
-
-        .founders-option .offer-copy {
-            max-width: 520px;
-            margin-bottom: 0;
-        }
-
-        .founders-option .checkout-btn {
-            min-height: 56px;
-        }
-
-        .checkout-plan-option .checkout-btn {
-            margin-top: auto;
-        }
-
-        .checkout-group-heading {
-            grid-column: 1 / -1;
-            padding: 4px 2px 0;
-        }
-
-        .checkout-group-heading h3 {
-            margin: 0 0 4px;
-            color: #243124;
-            -webkit-text-fill-color: #243124;
-        }
-
-        .checkout-group-heading p,
-        .plan-term {
-            margin: 0;
-            color: #5f6f85;
-            -webkit-text-fill-color: #5f6f85;
-            font-size: 0.86rem;
-            font-weight: 700;
-            line-height: 1.45;
-        }
-
-        .plan-term {
-            margin-bottom: 14px;
-        }
-
-        .checkout-inclusions {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 10px;
-            margin: 24px 0;
-            text-align: left;
-        }
-
-        .checkout-inclusion {
-            padding: 14px 16px;
-            border-radius: 16px;
-            background: rgba(65, 103, 65, 0.08);
-            color: #243124;
-            -webkit-text-fill-color: #243124;
-            font-weight: 700;
-            line-height: 1.45;
-        }
-
-        .checkout-inclusion::before {
-            content: '✓';
-            color: #416741;
-            margin-right: 9px;
-        }
-
-        #checkout-terms-container {
-            margin: 20px 0;
-            padding: 16px;
-            border: 1px solid rgba(36, 49, 36, 0.14);
-            border-radius: 16px;
-            background: #f7f8f4;
-            text-align: left;
-            transition: border-color 0.2s ease, background 0.2s ease;
-        }
-
-        #checkout-terms-container label {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            color: #394339;
-            -webkit-text-fill-color: #394339;
-            font-size: 0.88rem;
-            line-height: 1.55;
-            cursor: pointer;
-        }
-
-        #checkout-terms-container input {
-            width: 21px;
-            height: 21px;
-            margin-top: 1px;
-            flex: 0 0 auto;
-            accent-color: #416741;
-        }
-
-        #checkout-terms-container a {
-            color: #315531;
-            -webkit-text-fill-color: #315531;
-            font-weight: 800;
-            text-decoration: underline;
-        }
-
-        .checkout-btn {
-            width: 100%;
-            border: 0;
-            cursor: pointer;
-            font-family: inherit;
-            font-size: inherit;
-            font-weight: 800;
-        }
-
-        .checkout-note {
-            margin: 12px 0 0;
-            color: #667066;
-            -webkit-text-fill-color: #667066;
-            font-size: 0.84rem;
-        }
-
-        .zoom-pt-section {
-            scroll-margin-top: 100px;
-        }
-
-        .zoom-pt-grid {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 14px;
-            margin-top: 22px;
-        }
-
-        .zoom-pt-card {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .zoom-pt-card.featured {
-            border: 2px solid #d8ab47;
-            background: linear-gradient(135deg, #fffaf0, #f7f8f4);
-        }
-
-        .zoom-pt-card .offer-cta {
-            margin-top: auto;
-        }
-
-        .zoom-pt-note {
-            margin: 18px 0 0;
-            color: #667066;
-            -webkit-text-fill-color: #667066;
-            font-size: 0.9rem;
-            line-height: 1.55;
-        }
-
-        .coaching-photo-break {
-            display: grid;
-            grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.65fr);
-            gap: 18px;
-            margin-top: 8px;
-        }
-
-        .coaching-photo {
-            position: relative;
-            min-height: 420px;
-            overflow: hidden;
-            border-radius: 28px;
-            background: #243124;
-            box-shadow: 0 20px 46px rgba(36, 49, 36, 0.16);
-        }
-
-        .coaching-photo img {
-            width: 100%;
-            height: 100%;
-            display: block;
-            object-fit: cover;
-        }
-
-        .coaching-photo.group-photo img {
-            object-position: center 32%;
-        }
-
-        .coaching-photo.training-photo img {
-            object-position: center 38%;
-        }
-
-        .coaching-photo::after {
-            content: '';
-            position: absolute;
-            inset: 42% 0 0;
-            background: linear-gradient(180deg, transparent, rgba(12, 18, 12, 0.82));
-            pointer-events: none;
-        }
-
-        .coaching-photo figcaption {
-            position: absolute;
-            z-index: 1;
-            right: 24px;
-            bottom: 22px;
-            left: 24px;
-            color: #ffffff;
-            -webkit-text-fill-color: #ffffff;
-        }
-
-        .coaching-photo figcaption span {
-            display: block;
-            margin-bottom: 5px;
-            color: #f1cc71;
-            -webkit-text-fill-color: #f1cc71;
-            font-size: 0.72rem;
-            font-weight: 900;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-        }
-
-        .coaching-photo figcaption strong {
-            display: block;
-            font-family: "Outfit", sans-serif;
-            font-size: clamp(1.35rem, 2.4vw, 2rem);
-            line-height: 1.08;
-        }
-
-        @media (max-width: 640px) {
-            .checkout-inclusions,
-            .checkout-plan-grid,
-            .zoom-pt-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .checkout-plan-option.founders-option {
-                grid-template-columns: 1fr;
-                gap: 18px;
-            }
-
-            .coaching-photo-break {
-                grid-template-columns: 1fr;
-                gap: 14px;
-            }
-
-            .coaching-photo {
-                min-height: 340px;
-                border-radius: 22px;
-            }
-
-            .coaching-photo.training-photo {
-                min-height: 390px;
-            }
-
-            .coaching-photo figcaption {
-                right: 18px;
-                bottom: 18px;
-                left: 18px;
-            }
-        }
-
-        .offers-section { max-width: 1040px; margin-inline: auto; scroll-margin-top: 100px; }
-        .support-group { margin: 14px 0; border: 1px solid #d9d4c9; border-radius: 22px; background: #fffdf8; color: #243124; -webkit-text-fill-color: #243124; scroll-margin-top: 100px; overflow: hidden; }
-        .support-group[open] { border-color: #aa8138; }
-        .support-group summary { display: flex; align-items: center; gap: 24px; padding: 25px 28px; cursor: pointer; list-style: none; }
-        .support-group summary::-webkit-details-marker { display: none; }
-        .support-group summary::after { content: '+'; font-size: 26px; width: 24px; flex-shrink: 0; text-align: center; }
-        .support-group[open] summary::after { content: '−'; }
-        .support-group summary > span:first-child { flex: 1; }
-        .support-group summary strong { display: block; font-family: Outfit, sans-serif; font-size: clamp(1.3rem, 2.5vw, 1.65rem); }
-        .support-description { display: block; margin-top: 5px; color: #586151; -webkit-text-fill-color: #586151; font-size: .9rem; line-height: 1.5; }
-        .support-price { font-weight: 800; font-size: 1rem; white-space: nowrap; }
-        .support-body { padding: 0 28px 28px; line-height: 1.65; }
-        .support-body > p { max-width: 760px; }
-        .support-body > .checkout-plan-option { max-width: 620px; }
-        .support-body .checkout-plan-grid { margin-bottom: 0; }
-        .support-group summary:focus-visible { outline: 3px solid #8b672c; outline-offset: -5px; }
-        .purchase-terms { margin-top: 28px; padding: 22px; border-radius: 20px; background: #f1eee7; }
-        @media (max-width: 720px) {
-            .support-group summary { padding: 20px; gap: 12px; flex-wrap: wrap; }
-            .support-group summary > span:first-child { flex-basis: calc(100% - 40px); order: 0; }
-            .support-group summary::after { order: 1; }
-            .support-price { order: 2; font-size: .95rem; }
-            .support-body { padding: 0 20px 22px; }
-            .support-body .checkout-plan-grid, .support-body .zoom-pt-grid { grid-template-columns: 1fr; }
-        }
-    </style>
-    <script src="bio-animations.js" defer></script>
-<link rel="stylesheet" href="/site-navigation.css?v=20260927-challenge-menu">
-<link rel="stylesheet" href="/learn-intro-price.css?v=20260911-red-gold">
-<link rel="stylesheet" href="/course-journey.css?v=20260910">
-<link rel="stylesheet" href="/learn-plan-details.css?v=20260911">
-<link rel="stylesheet" href="/learn-journey-dropdowns.css?v=20260911-curriculum">
-<link rel="stylesheet" href="/coaching-compact.css?v=20260912-tailored">
-<link rel="stylesheet" href="/tailored-support.css?v=20260912">
-<script src="/analytics.js?v=public-funnel-20260922" data-first-party-only="true" defer></script>
-</head>
-<body data-landing-page="coaching" class="bio-page landing-page">
-    <div class="page-shell">
-        <header class="site-header">
-            <a class="brand" href="/bio">
-                <img src="balance_logo_transparent.png" alt="Balance logo">
-                <span class="balance-brand-name">Balance<small>Neuroscience Fitness</small></span>
-            </a>
-            <div class="nav-actions">
-                <a class="nav-button primary" href="/founders">Balance Learn</a>
-            </div>
-        <div class="balance-navigation"><button class="balance-menu-toggle" type="button" aria-label="Open menu" aria-controls="balance-menu" aria-expanded="false"><span></span><span></span><span></span></button><dialog id="balance-menu" class="balance-menu-drawer" aria-label="Main menu"><button class="balance-menu-close" type="button" aria-label="Close menu">&times;</button><nav aria-label="Main navigation"><a href="/bio">Home</a><a href="/">Balance App</a><a href="/founders">Balance Learn</a><a href="/plant-based-challenge" data-track="cta_click" data-cta="navigation_challenge">Plant-Based Challenge</a><a href="/coaching" aria-current="page">What I Offer</a><a href="/clients">Results</a><a href="/journey">My Story</a><a href="/book">Book a Call</a><a href="/account.html">My Account</a></nav></dialog></div>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Coaching with Shannon | Balance</title>
+<meta name="description" content="Online coaching at AUD $75/week or weekly Zoom training at AUD $125/week, plus a $120 onboarding fee. Explore Summer Shred and ongoing coaching.">
+<meta property="og:title" content="Coaching with Shannon | Balance">
+<meta property="og:description" content="Online coaching at AUD $75/week or weekly Zoom training at AUD $125/week, plus a $120 onboarding fee. Explore Summer Shred and ongoing coaching.">
+<meta name="theme-color" content="#f7f0e3">
+<link rel="icon" href="/balance_logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/challenge-learn-layout.css?v=20260927-learn-template">
+<link rel="stylesheet" href="/challenge-learn.css?v=20260927-learn-template">
+<link rel="stylesheet" href="/learn-week-diagrams.css?v=20260911">
+<link rel="stylesheet" href="/summer-shred-offers.css?v=20260929">
+<link rel="stylesheet" href="/site-navigation.css?v=20260929-summer">
+<script src="/analytics.js?v=public-funnel-20260922" data-first-party-only="true" defer>
+</script>
+<script src="/site-navigation.js?v=20260929-summer" defer>
+</script>
+<script src="/public-offer-links.js?v=20260929" defer></script>
+<link rel="canonical" href="https://plantbased-balance.org/coaching"></head>
+<body class="challenge-learn-page" data-landing-page="coaching" data-landing-variant="coaching_consultation_v2">
+<header class="topbar">
+        <a class="brand" href="/bio">
+<span class="brand-icon">
+<img src="balance_logo.png" alt="Balance">
+</span>
+<span class="balance-brand-name">Balance<small>Neuroscience Fitness</small>
+</span>
+</a>
+    <div class="balance-navigation">
+<button class="balance-menu-toggle" type="button" aria-label="Open menu" aria-controls="balance-menu" aria-expanded="false">
+<span>
+</span>
+<span>
+</span>
+<span>
+</span>
+</button>
+<dialog id="balance-menu" class="balance-menu-drawer" aria-label="Main menu">
+<button class="balance-menu-close" type="button" aria-label="Close menu">&times;</button>
+<nav aria-label="Main navigation">
+<a href="/plant-based-challenge" data-track="cta_click" data-cta="navigation_challenge">Summer Shred</a>
+<a href="/bio">Home</a>
+<a href="/">Balance App</a>
+<a href="/founders">Balance Learn</a>
+<a href="/coaching">Coaching</a>
+<a href="/clients">Results</a>
+<a href="/journey">My Story</a>
+<a href="/book?source=plant_based_challenge" data-challenge-booking>Book a Consultation</a>
+<a href="/account.html">My Account</a>
+</nav>
+</dialog>
+</div>
 </header>
-
-        <main>
-            <section class="hero hero-solo">
-                <div class="surface hero-copy reveal">
-                    <span class="eyebrow">support options</span>
-                    <h1>What I Offer.</h1>
-                    <p class="lead">
-                        Exercise science, personalised training and nutrition support to help you build lasting habits.
-                    </p>
-                </div>
-
-            </section>
-
-<section class="balance-journey" id="four-part-journey" aria-labelledby="four-part-journey-title">
-    <p class="journey-eyebrow">The four-part Balance journey</p>
-    <h2 id="four-part-journey-title">Learn. Master. Become. Lead.</h2>
-    <p class="journey-intro">Start by understanding change. Build the skills to guide yourself, practise them in real life, then help someone else take their next step.</p>
-    <div class="journey-dropdowns"><details class="learn-plan journey-dropdown"><summary><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h6q2 0 2 2v15q0-2-2-2H4V4m16 0h-6q-2 0-2 2m8-2v15h-6q-2 0-2 2"/></svg><span><small>Part 1 · Start here</small><strong>Learn</strong></span><span class="plan-toggle" aria-hidden="true">+</span></summary><div class="learn-plan-body"><h3>Understand change and build your foundations.</h3><p>A guided six-week course to understand your habits and turn learning into practical training, food and weekly goals, with check-ins and plan review from Shannon.</p><div class="journey-curriculum"><h3>What you study each week</h3><p class="curriculum-duration">6 weeks · Start with the introductory lesson</p><ol><li><span class="curriculum-week">Week 1</span><div><h4>Why change feels hard</h4><p>Past experience, predictions and how new experiences help you learn.</p></div></li><li><span class="curriculum-week">Week 2</span><div><h4>Work with your energy</h4><p>Understand why sleep, stress and low energy change your choices so you can plan for the days that usually throw you off.</p></div></li><li><span class="curriculum-week">Week 3</span><div><h4>Build a rhythm that sticks</h4><p>Use repetition, smaller actions and your surroundings to make the habits you want easier to keep doing.</p></div></li><li><span class="curriculum-week">Week 4</span><div><h4>Take the fight out of food</h4><p>Cravings, emotional eating and recognising the need behind the feeling.</p></div></li><li><span class="curriculum-week">Week 5</span><div><h4>Make progress easier to repeat</h4><p>How routines, surroundings and other people shape your habits.</p></div></li><li><span class="curriculum-week">Week 6</span><div><h4>Build your sustainable way forward</h4><p>Bring the food basics together into a flexible approach that supports your goal without rigid rules or all-or-nothing thinking.</p></div></li></ol></div><figure class="journey-visual"><figcaption>Understand it. Try it. Learn from it.</figcaption><div class="plan-flow"><span><b>01</b>Notice your habits</span><span class="plan-arrow" aria-hidden="true">→</span><span><b>02</b>Try a small change</span><span class="plan-arrow" aria-hidden="true">→</span><span><b>03</b>Review with Shannon</span></div></figure></div></details>
-<details class="learn-plan journey-dropdown"><summary><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V9h5v11m1 0V4h5v16m1 0v-8h5v8"/></svg><span><small>Part 2</small><strong>Master</strong></span><span class="plan-toggle" aria-hidden="true">+</span></summary><div class="learn-plan-body"><h3>Build the skills to guide your own training and food.</h3><p>Learn anatomy, exercise technique, programming, nutrition and recovery. Put it into practice by building your own workout program and a week of meals.</p><div class="journey-curriculum"><h3>What you study each week</h3><p class="curriculum-duration">10 weeks · A new week opens every seven days</p><ol><li><span class="curriculum-week">Week 1</span><div><h4>Know the muscles you train</h4><p>Connect a muscle to its job and an exercise.</p></div></li><li><span class="curriculum-week">Week 2</span><div><h4>Understand compound lifts</h4><p>Film a squat, hinge, push and pull for Shannon to review.</p></div></li><li><span class="curriculum-week">Week 3</span><div><h4>Choose exercises for your muscles</h4><p>Explain your exercise choices and suitable alternatives.</p></div></li><li><span class="curriculum-week">Week 4</span><div><h4>Set your training dose</h4><p>Choose sets, reps, rest and a progression rule.</p></div></li><li><span class="curriculum-week">Week 5</span><div><h4>Build your workout program</h4><p>Save a repeatable week with exercises and progression.</p></div></li><li><span class="curriculum-week">Week 6</span><div><h4>Fit cardio and recovery into your plan</h4><p>Make room for conditioning, sleep and recovery.</p></div></li><li><span class="curriculum-week">Week 7</span><div><h4>Learn how to build a meal</h4><p>Choose foods and portions that support your day.</p></div></li><li><span class="curriculum-week">Week 8</span><div><h4>Check variety and essential nutrients</h4><p>Review your food choices before building the full week.</p></div></li><li><span class="curriculum-week">Week 9</span><div><h4>Design one week of meals</h4><p>Save seven days with shopping, prep and a backup.</p></div></li><li><span class="curriculum-week">Week 10</span><div><h4>Review and adjust your plans</h4><p>Explain what you would keep and what you would change.</p></div></li></ol></div><figure class="journey-visual"><figcaption>Build the skills to guide yourself.</figcaption><div class="plan-flow"><span><b>01</b>Learn the principles</span><span class="plan-arrow" aria-hidden="true">→</span><span><b>02</b>Build your workouts</span><span class="plan-arrow" aria-hidden="true">→</span><span><b>03</b>Plan your meals</span></div></figure></div></details>
-<details class="learn-plan journey-dropdown"><summary><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7a9 9 0 1 0 1 8M20 3v5h-5"/></svg><span><small>Part 3</small><strong>Become</strong></span><span class="plan-toggle" aria-hidden="true">+</span></summary><div class="learn-plan-body"><h3>Practise the person you are becoming.</h3><p>Turn training, food and recovery into a repeatable way of living. Shape your environment, reflect on real progress and build a sustainable rhythm for sharing your journey through the Balance Feed and Instagram.</p><div class="journey-curriculum"><h3>What you study each week</h3><p class="curriculum-duration">6 weeks · Practical actions, Feed and Instagram</p><ol><li><span class="curriculum-week">Week 1</span><div><h4>Train your inputs</h4><p>Understand how attention trains your feed and shapes what starts to feel normal.</p></div></li><li><span class="curriculum-week">Week 2</span><div><h4>Keep content downstream of the work</h4><p>Build posts and Stories from training, food and real life.</p></div></li><li><span class="curriculum-week">Week 3</span><div><h4>Audit your algorithm</h4><p>Remove noisy inputs and deliberately reinforce the environment you want.</p></div></li><li><span class="curriculum-week">Week 4</span><div><h4>Build a weekly rhythm</h4><p>Choose a posting rhythm that fits around the work instead of replacing it.</p></div></li><li><span class="curriculum-week">Week 5</span><div><h4>Tell one useful story</h4><p>Give the evidence meaning by explaining what happened, what helped and what comes next.</p></div></li><li><span class="curriculum-week">Week 6</span><div><h4>Keep the pattern</h4><p>Choose the smallest identity and content rhythm you can sustain.</p></div></li></ol></div><figure class="journey-visual"><figcaption>Turn practice into a repeatable routine.</figcaption><div class="plan-flow"><span><b>01</b>Practise your routine</span><span class="plan-arrow" aria-hidden="true">→</span><span><b>02</b>Reflect on progress</span><span class="plan-arrow" aria-hidden="true">→</span><span><b>03</b>Adjust & return</span></div></figure></div></details>
-<details class="learn-plan journey-dropdown"><summary><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 20v-3q0-4 4-4t4 4v3m2 0v-3q0-4 4-4t4 4v3M7 4a3 3 0 1 0 0 6 3 3 0 0 0 0-6m10 0a3 3 0 1 0 0 6 3 3 0 0 0 0-6"/></svg><span><small>Part 4</small><strong>Lead</strong></span><span class="plan-toggle" aria-hidden="true">+</span></summary><div class="learn-plan-body"><h3>Help someone else take their next step.</h3><p>Lead through your example, invite a small shared challenge and practise encouragement. Learn to support someone through setbacks without taking over, and contribute to the community.</p><div class="journey-curriculum"><h3>What you study each week</h3><p class="curriculum-duration">6 practical weeks · Work through them at your pace</p><ol><li><span class="curriculum-week">Week 1</span><div><h4>Lead through the example you set</h4><p>Choose the values and actions you want to demonstrate.</p></div></li><li><span class="curriculum-week">Week 2</span><div><h4>Invite someone into a small challenge</h4><p>Agree on a manageable action and check-in together.</p></div></li><li><span class="curriculum-week">Week 3</span><div><h4>Encourage without taking over</h4><p>Listen, recognise effort and keep ownership with the other person.</p></div></li><li><span class="curriculum-week">Week 4</span><div><h4>Support someone through a setback</h4><p>Help someone find their next step while respecting your role.</p></div></li><li><span class="curriculum-week">Week 5</span><div><h4>Make your community stronger</h4><p>Contribute useful support and respect other people’s privacy.</p></div></li><li><span class="curriculum-week">Week 6</span><div><h4>Keep a sustainable supporting role</h4><p>Reflect on your actions and choose a commitment you can maintain.</p></div></li></ol></div><figure class="journey-visual"><figcaption>Use your experience to support someone else.</figcaption><div class="plan-flow"><span><b>01</b>Lead by example</span><span class="plan-arrow" aria-hidden="true">→</span><span><b>02</b>Invite a shared challenge</span><span class="plan-arrow" aria-hidden="true">→</span><span><b>03</b>Encourage their next step</span></div></figure></div></details></div>
+<main>
+<section class="hero">
+<div class="wrap offer-intro">
+<div class="eyebrow">Coaching with Shannon</div>
+<h1>A plan for your life.<br>
+<span>Support to follow through.</span>
+</h1>
+<p class="hero-copy">Workouts, nutrition support and accountability, with a weekly review of your training, meal plan, Learn progress and how you're going.</p>
+<a class="cta" href="/plant-based-challenge" data-track="cta_click" data-cta="coaching_summer">Explore Plant-Based Summer Shred</a>
+</div>
 </section>
-
-            <section class="tailored-support" aria-labelledby="tailored-support-heading"><h2 id="tailored-support-heading">YOUR TAILORED SUPPORT</h2><details class="learn-plan" id="your-workout-program"><summary><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8v8m4-11v14m8-14v14m4-11v8M8 12h8"/></svg><span><strong>Your workout program</strong><small>Gym, home, bands and more</small></span><span class="plan-toggle" aria-hidden="true">+</span></summary><div class="learn-plan-body"><p class="plan-intro">Train where you are, with what you have.</p><div class="plan-options"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8v8m4-11v14m8-14v14m4-11v8M8 12h8"/></svg><h3>Full gym</h3><p>Barbells, dumbbells and machines.</p></div><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7M5 9v12h14V9M9 21v-8h6v8"/></svg><h3>At home with weights</h3><p>Dumbbells, with an optional bench.</p></div><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v6m-7-4 7 2 7-2m-7 4-5 7m5-7 5 7"/><circle cx="12" cy="4" r="2"/></svg><h3>No equipment</h3><p>Bodyweight sessions, wherever you are.</p></div><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 5c-5 0-5 14 0 14s7-14 12-14 5 14 0 14S11 5 6 5"/></svg><h3>Resistance bands</h3><p>Full-body training with bands.</p></div><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v7m-7-4 7 2 7-2m-7 4-8 5h16l-8-5"/><circle cx="12" cy="4" r="2"/></svg><h3>Yoga</h3><p>Restorative, power, yin and vinyasa.</p></div><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7a9 9 0 1 0 1 8M20 3v5h-5"/></svg><h3>Recovery & mobility</h3><p>Stretching, mobility and active recovery.</p></div></div><div class="plan-flow" aria-label="Choose your setup, then Follow your plan, then Log your progress"><span><b>01</b>Choose your setup</span><span class="plan-arrow" aria-hidden="true">→</span><span><b>02</b>Follow your plan</span><span class="plan-arrow" aria-hidden="true">→</span><span><b>03</b>Log your progress</span></div></div></details>
-<details class="learn-plan" id="your-meal-plan"><summary><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3v7m-3-7v5q0 3 3 3t3-3V3M5 11v10M17 3v18m0-18q-6 7 0 9"/></svg><span><strong>Your meal plan</strong><small>Meals for the way you eat</small></span><span class="plan-toggle" aria-hidden="true">+</span></summary><div class="learn-plan-body"><p class="plan-intro">Meals that fit the way you eat.</p><div class="plan-meal-photos"><figure><img src="/assets/meal-plans/balance-four-meal/oats-blueberries-protein.png" alt="Oats & blueberries" loading="lazy" width="1254" height="1254"><figcaption>Oats & blueberries</figcaption></figure><figure><img src="/assets/meal-plans/balance-four-meal/chicken-rice-vegetables.png" alt="Chicken, rice & vegetables" loading="lazy" width="1254" height="1254"><figcaption>Chicken, rice & vegetables</figcaption></figure><figure><img src="/assets/meal-plans/balance-four-meal/banana-protein-smoothie.png" alt="Banana protein smoothie" loading="lazy" width="1254" height="1254"><figcaption>Banana protein smoothie</figcaption></figure></div><p class="plan-note">Example meals. Your meals follow the eating style and preferences you choose.</p><div class="plan-diets"><div><h3>Vegan</h3><p>Plant-based meals without meat, fish, eggs or dairy.</p></div><div><h3>Vegetarian</h3><p>Meat-free and fish-free meals, with eggs and dairy as options.</p></div><div><h3>Omnivore</h3><p>A mix of plant foods, meat, fish, eggs and dairy.</p></div><div><h3>Pescatarian</h3><p>Plant foods, fish and seafood, with eggs and dairy as options. No meat or poultry.</p></div><div><h3>Flexitarian</h3><p>Mostly plant-based meals, with some meat and fish across the week.</p></div><div><h3>Mediterranean</h3><p>Meals built around vegetables, whole grains, legumes, olive oil and fish.</p></div><div><h3>Keto</h3><p>Lower-carbohydrate meals with a higher share of energy from fats.</p></div><div><h3>Paleo</h3><p>Meat, fish, eggs, vegetables, fruit, nuts and seeds, without grains, legumes or dairy.</p></div><div><h3>Whole30</h3><p>Meals without grains, legumes, dairy, added sugar or alcohol.</p></div></div><p class="plan-note">Gluten-free and dairy-free preferences are available during setup.</p><div class="plan-flow" aria-label="Choose your preferences, then Get meals & shopping list, then Cook, log & adjust"><span><b>01</b>Choose your preferences</span><span class="plan-arrow" aria-hidden="true">→</span><span><b>02</b>Get meals & shopping list</span><span class="plan-arrow" aria-hidden="true">→</span><span><b>03</b>Cook, log & adjust</span></div></div></details>
-<details class="learn-plan" id="your-weekly-support">
-                <summary><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v12H9l-5 4V5m4 4h8m-8 4h5"/></svg><span><strong>Your weekly support</strong><small>Review your week and plan your next steps</small></span><span class="plan-toggle" aria-hidden="true">+</span></summary>
-                <div class="learn-plan-body">
-                  <p class="plan-intro">A weekly check-in inside Balance, with feedback from Shannon.</p>
-                  <div class="plan-flow" aria-label="Complete your check-in, review your week, adjust your plan"><span><b>01</b>Check in</span><span class="plan-arrow" aria-hidden="true">→</span><span><b>02</b>Review together</span><span class="plan-arrow" aria-hidden="true">→</span><span><b>03</b>Adjust your plan</span></div>
-                  <div class="plan-support-grid">
-                    <div><h3>Tell me how it went</h3><p>Complete the weekly check-in form in the app. Share your wins, what got in the way, how confident you feel and where you need support.</p></div>
-                    <div><h3>We look at the whole week</h3><p>I review your answers alongside the workouts, food, sleep and progress you have logged, plus your weekly goals and recent messages.</p></div>
-                    <div><h3>Make the next week work better</h3><p>You receive feedback through Balance, with practical next steps and adjustments to your training or food plan where needed. You can ask questions in the app too.</p></div>
-                  </div>
-                  <p class="plan-note">Weekly check-ins are included with Balance Learn and coaching packages. App Access on its own does not include a personal weekly review.</p>
-                </div>
-              </details></section>
-<section class="section offers-section" id="plan-checkout"><div class="section-header"><div><span class="section-kicker">find your fit</span><h2 class="section-title">Choose your level of support.</h2></div><p class="section-text">Start with a six-week course, choose ongoing support, or train live with Shannon. Open an option to see what is included. All prices are in AUD.</p></div>
-<details class="support-group" id="balance-learn" open><summary><span><strong>Balance Learn</strong><span class="support-description">Six weeks of learning, plans and weekly review.</span></span><span class="support-price"><span data-learn-upfront>$149</span> upfront or $24.83 / week</span></summary><div class="support-body"><div class="coaching-learn-grid"><div><ul class="offer-list"><li>Full Balance Learn course and six weeks of app and community access</li><li>Personalised workout plan and food support</li><li>One weekly check-in, workout and food review, and adjustments from Shannon</li></ul><a class="btn primary" href="/founders">Explore Balance Learn</a><p class="checkout-note">Create your account, set up your plan and preview before paying.</p></div><div class="coaching-learn-price"><div class="learn-intro-price learn-hero-offer" data-learn-presentation="hero"><div class="learn-offer-line"><s class="learn-standard-price" aria-label="Standard price: AUD 450">$450</s><strong class="learn-offer-price" aria-label="AUD 149">$149</strong><span class="learn-offer-label">Introductory Offer</span></div><small>Offer lasts until October 20th.</small></div><p>One payment for the full six weeks.<br>No automatic renewal with upfront payment.</p><details class="coaching-payment-details"><summary>Weekly payments &amp; terms</summary><p>Pay AUD <span data-learn-upfront>$149</span> upfront for six weeks with no automatic renewal, or AUD $24.83 per week with a six-week minimum (six payments, AUD $148.98 minimum total). The weekly option continues at AUD $24.83 per week with the same weekly check-in, workout and food review, app and community access. After six weeks, cancel before your next weekly payment with no additional notice period.</p></details></div></div></div></details>
-<details class="support-group" id="starter-coaching"><summary><span><strong>Online Coaching</strong><span class="support-description">Ongoing plans, weekly check-ins and individual adjustments.</span></span><span class="support-price">From $29.99 / week</span></summary><div class="support-body"><p>Balance Learn course access, app access, one weekly check-in with Shannon, individual workout and food adjustments, and accountability inside Balance. Choose a longer initial term for a lower weekly rate.</p><div class="checkout-plan-grid"><div class="checkout-plan-option featured-option">
-                            <span class="plan-kicker">Best weekly rate</span>
-                            <h3>6-Month Coaching</h3>
-                            <div class="offer-price">$29.99<span>/week</span></div>
-                            <p class="offer-copy">Online coaching with a 26-week initial minimum. Billed weekly and continues at the same rate after the initial term. Cancellation requires 30 days' notice.</p>
-                            <p class="plan-term">AU$29.99 due today, then weekly.</p>
-                            <button class="btn primary checkout-btn" data-plan="coaching-6-month" data-hosted-checkout-only="true" type="button">Choose 6 months</button>
+<section id="summer-shred">
+<div class="wrap offer-intro">
+<div class="eyebrow">Start with Summer Shred</div>
+<h2>Ten weeks. One clear commitment.</h2>
+<p class="hero-copy">Join the Plant-Based Summer Shred with online coaching at AUD $75/week, or one weekly Zoom training session at AUD $125/week. Both include the six-week Learn course and one AUD $120 onboarding fee.</p>
+<p class="offer-terms">Ten-week minimum total: AUD $870 for online coaching or AUD $1,370 with weekly Zoom training, including onboarding. The challenge replaces the usual three-month coaching commitment.</p>
+<a class="offer-crosslink" href="/plant-based-challenge#summer-support">See what's included in Summer Shred →</a>
 </div>
-<div class="checkout-plan-option">
-                            <span class="plan-kicker">Balanced commitment</span>
-                            <h3>3-Month Coaching</h3>
-                            <div class="offer-price">$49.99<span>/week</span></div>
-                            <p class="offer-copy">Online coaching with a 13-week initial minimum. Billed weekly and continues at the same rate after the initial term. Cancellation requires 30 days' notice.</p>
-                            <p class="plan-term">AU$49.99 due today, then weekly.</p>
-                            <button class="btn secondary checkout-btn" data-plan="coaching-3-month" data-hosted-checkout-only="true" type="button">Choose 3 months</button>
+</section>
+<section id="ongoing-coaching">
+<div class="wrap">
+<div class="section-head">
+<div class="eyebrow">Coaching outside the challenge</div>
+<h2>Choose how we work together.</h2>
+<p>These coaching options have a three-month commitment. All prices are in AUD. We discuss your goals and confirm fit before payment.</p>
 </div>
-<div class="checkout-plan-option">
-                            <span class="plan-kicker">Most flexible</span>
-                            <h3>Month-to-Month Coaching</h3>
-                            <div class="offer-price">$74.99<span>/week</span></div>
-                            <p class="offer-copy">Online coaching with a four-week initial minimum. Billed weekly and continues until cancelled with 30 days' notice.</p>
-                            <p class="plan-term">AU$74.99 due today, then weekly.</p>
-                            <button class="btn secondary checkout-btn" data-plan="coaching-month-to-month" data-hosted-checkout-only="true" type="button">Choose month-to-month</button>
-</div></div></div></details>
-<details class="support-group" id="zoom-pt"><summary><span><strong>1:1 Zoom PT</strong><span class="support-description">Live 30-minute training sessions with Shannon.</span></span><span class="support-price">From $125 / week</span></summary><div class="support-body"><p>Real-time form feedback and hands-on coaching. We confirm health fit and recurring availability before payment.</p><div class="zoom-pt-grid">
-                    <article class="surface offer-card zoom-pt-card">
-                        <span class="label">once weekly</span>
-                        <h3>Zoom PT 1</h3>
-                        <div class="offer-price">$125<span>/week</span></div>
-                        <p class="offer-copy">One live 30-minute 1:1 Zoom PT session each week.</p>
-                        <ul class="offer-list">
-                            <li>Balance Learn course access</li><li>Personalised training structure</li>
-                            <li>General vegetarian or plant-based food guidance</li>
-                            <li>Balance app access and accountability</li>
-                            <li>Weekly programming and progress adjustments</li>
-                        </ul>
-                        <a class="btn secondary offer-cta" href="book.html?source=zoom_pt&amp;pt_sessions=1">Check availability</a>
-                    </article>
-
-                    <article class="surface offer-card zoom-pt-card">
-                        <span class="label">three times weekly</span>
-                        <h3>Zoom PT 3</h3>
-                        <div class="offer-price">$275<span>/week</span></div>
-                        <p class="offer-copy">Three live 30-minute 1:1 Zoom PT sessions each week.</p>
-                        <ul class="offer-list">
-                            <li>Everything in Zoom PT 1</li>
-                            <li>More live coaching and form feedback</li>
-                            <li>Training progression managed across the week</li>
-                            <li>Higher-touch accountability inside Balance</li>
-                        </ul>
-                        <a class="btn secondary offer-cta" href="book.html?source=zoom_pt&amp;pt_sessions=3">Check availability</a>
-                    </article>
-
-                    <article class="surface offer-card zoom-pt-card featured">
-                        <span class="label">highest support</span>
-                        <h3>Zoom PT 5</h3>
-                        <div class="offer-price">$425<span>/week</span></div>
-                        <p class="offer-copy">Five live 30-minute 1:1 Zoom PT sessions each week.</p>
-                        <ul class="offer-list">
-                            <li>Everything in Zoom PT 3</li>
-                            <li>Maximum live accountability across the week</li>
-                            <li>Careful progression around current capacity</li>
-                            <li>Limited places due to calendar demand</li>
-                        </ul>
-                        <a class="btn primary offer-cta" href="book.html?source=zoom_pt&amp;pt_sessions=5">Check availability</a>
-                    </article>
-                </div>
-                <p class="zoom-pt-note">Zoom PT begins with a six-week coaching block. Sessions are billed weekly in advance after Shannon confirms fit and recurring availability. Health screening may be required before training begins.</p>
-            </div></details>
-<details class="support-group" id="app-access"><summary><span><strong>App Access</strong><span class="support-description">Self-directed training tools and the Balance community.</span></span><span class="support-price">$19.99 / month</span></summary><div class="support-body"><ul class="offer-list"><li>Balance app and community access</li><li>Tailored workout program refreshed every six weeks</li><li>Weekly goal setting, progress tracking, XP and character levels</li></ul><div class="checkout-plan-option">
-                            <h3>App Access</h3>
-                            <div class="offer-price">$19.99<span>/month</span></div>
-                            <p class="offer-copy">App membership, tailored workout structure, progress tools, and the Balance community. No weekly 1:1 check-in.</p>
-                            <button class="btn secondary checkout-btn" data-plan="app-monthly" data-hosted-checkout-only="true" type="button">Start App Access</button>
-</div></div></details>
-<div class="purchase-terms"><h3>Before starting an ongoing plan</h3><div id="checkout-terms-container">
-                        <label>
-                            <input type="checkbox" id="terms-checkbox">
-                            <span>
-                                I agree to the <a href="terms.html" target="_blank" rel="noopener">Terms &amp; Conditions</a>,
-                                <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>,
-                                <a href="client-agreement.html" target="_blank" rel="noopener">Client Agreement</a>, and
-                                <a href="refund-policy.html" target="_blank" rel="noopener">Refund Policy</a>.
-                            </span>
-                        </label>
-                    </div>
-
-                    <p class="checkout-note">Online Coaching has an initial minimum of 26, 13 or 4 weekly payments for the six-month, three-month or month-to-month option. App Access and Online Coaching require 30 days' notice to cancel. For Online Coaching, billing continues until the later of the initial minimum end date or notice end date. Balance Learn upfront ends after six weeks without automatic renewal. Balance Learn weekly has its separate six-week minimum, then can be cancelled before the next weekly payment without an additional notice period.</p><p class="checkout-note">Already a member? <a href="cancellation.html">Manage, pause or cancel your subscription</a>.</p></div></section>
+<div class="offer-grid">
+<article class="offer-card featured" id="zoom-pt">
+<div class="eyebrow">Train live with Shannon</div>
+<h3>Weekly Zoom coaching</h3>
+<p>One live 1:1 Zoom training session each week, with your plan and support between sessions.</p>
+<p class="offer-price">$125<small> AUD / week</small>
+</p>
+<p>
+<strong>Plus one AUD $120 onboarding fee.</strong>
+</p>
+<ul>
+<li>One Zoom training session each week</li>
+<li>Nutrition and meal-plan support</li>
+<li>Weekly review and adjustments from Shannon</li>
+<li>Balance app, community and accountability</li>
+<li>The complete six-week Balance Learn course</li>
+</ul>
+<p class="offer-terms">Three-month commitment.</p>
+<a class="cta" href="/book?source=zoom_pt&amp;pt_sessions=1"  data-track="cta_click" data-cta="coaching_zoom">Talk with Shannon</a>
+</article>
+<article class="offer-card" id="online-coaching">
+<div class="eyebrow">Train independently, with support</div>
+<h3>Online coaching</h3>
+<p>Follow your workout program at the gym or at home, with coaching and accountability through Balance.</p>
+<p class="offer-price">$75<small> AUD / week</small>
+</p>
+<p>
+<strong>Plus one AUD $120 onboarding fee.</strong>
+</p>
+<ul>
+<li>Your personalised workout program</li>
+<li>Nutrition and meal-plan support</li>
+<li>Weekly review and adjustments from Shannon</li>
+<li>Balance app, community and accountability</li>
+<li>The complete six-week Balance Learn course</li>
+</ul>
+<p class="offer-terms">Three-month commitment.</p>
+<a class="cta" href="/book"  data-track="cta_click" data-cta="coaching_online">Talk with Shannon</a>
+</article>
+</div>
+<p class="offer-terms">One AUD $120 onboarding fee per enrolment. Payment arrangements, session details and terms are confirmed before you join. Existing clients keep their agreed package and entitlements.</p>
+<a class="offer-crosslink" href="/founders">Read about the included Learn course →</a>
+</div>
+</section>
+<section>
+<div class="wrap faq">
+<h2>Before you start.</h2>
+<details>
+<summary>Do I need a Zoom session?</summary>
+<p>No. Online coaching supports your independent training at the gym or at home. Weekly Zoom coaching adds one live training session with Shannon.</p>
+</details>
+<details>
+<summary>Can I buy Learn or app access separately?</summary>
+<p>New enrolments are through coaching or Summer Shred. Learn and Balance app access are included. Existing members keep the access and terms they already agreed to.</p>
+</details>
+<details>
+<summary>How do I choose?</summary>
+<p>Talk with Shannon about your goals, routine and the support you need. We'll confirm the package, commitment and payment arrangements before you commit.</p>
+</details>
+<a class="cta" href="/book" data-track="cta_click" data-cta="coaching_consultation">Book a consultation</a>
+<p class="offer-terms">
+<a href="/account">Existing member? Manage your account</a>
+</p>
+</div>
+</section>
 </main>
-
-        <footer class="footer">
-            <div>Balance is operated by Shannon Birch.</div>
-            <div class="footer-links">
-                <a href="bio.html">Back to hub</a>
-                <a href="cancellation.html">Pause or cancel</a>
-                <a href="mailto:shannon@balanceneurosciencefitness.com">shannon@balanceneurosciencefitness.com</a>
-            </div>
-        </footer>
-    </div>
-    <script src="checkout.js?v=learn-launch-20260910"></script><script src="coaching-offers.js?v=20260911-compact" defer></script>
-<script type="module" src="/learn-course-pricing-ui.js?v=20260911-title-case"></script>
-<script src="/site-navigation.js?v=20260927-challenge-menu" defer></script>
+<footer>
+        <div class="wrap footer-row">
+<span>© 2026 Balance. Gold Coast, Australia.</span>
+<div class="footer-links">
+<a href="terms.html">Terms</a>
+<a href="privacy.html">Privacy</a>
+<a href="refund-policy.html">Refunds</a>
+<a href="cancellation.html">Pause or cancel</a>
+<a href="contact.html">Contact</a>
+</div>
+</div>
+    </footer>
 </body>
 </html>

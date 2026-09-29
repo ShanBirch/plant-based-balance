@@ -1,23 +1,4 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const vm = require('node:vm');
-const html = fs.readFileSync(require('node:path').join(__dirname, '../plant-based-fitness.html'), 'utf8');
-const script = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]).find(s => s.includes('var paidMetaSources'));
-for (const device of ['Desktop', 'iPhone', 'Android']) {
-    test('website Learn preview handoff: ' + device, () => {
-        const nodes = new Map();
-        const node = id => { if (!nodes.has(id)) nodes.set(id, {style:{},dataset:{},hidden:true,handlers:{},addEventListener(event,handler){this.handlers[event]=handler;},setAttribute(){}}); return nodes.get(id); };
-        const window = {location:{search:'',pathname:'/founders',hash:''},localStorage:{getItem(){return null;}},BalanceIOSMetaPreviewHandoff:require('../lib/ios-meta-preview-handoff.js'),matchMedia:()=>({matches:true})};
-        const document = {getElementById:node,querySelector:node,querySelectorAll:()=>[],body:{classList:{add(){}},dataset:{}}};
-        vm.runInNewContext(script,{window,document,navigator:{userAgent:device},URLSearchParams});
-        assert.equal(node('paid-preview-downloads').hidden, true);
-        const hero = node('foundations-hero-action').href;
-        if(device==='Desktop') assert.match(hero,/^\/login.html\?action=signup&/);
-        if(device==='Android') { const ref=new URL(hero).searchParams.get('referrer'); assert.match(ref,/learn_entry%3Dwebsite/); }
-        if(device==='iPhone') { assert.match(hero,/apps.apple.com/); assert.match(node('paid-preview-open-installed').href,/learn_entry=website/); node('foundations-hero-action').handlers.click(); assert.equal(node('paid-preview-downloads').hidden, false); }
-        assert.equal(node('#checkout-terms-container').style.display,undefined);
-        assert.equal(node('checkout-terms-container').style.display,'none');
-        assert.match(node('.secure-note').textContent,/Payment comes after the preview/);
-    });
-}
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
+const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
+test('Learn describes six weeks without a standalone purchase or app gallery',()=>{const html=read('plant-based-fitness.html');assert.equal((html.match(/class="course-week"/g)||[]).length,6);assert.doesNotMatch(html,/data-plan=|checkout\.js|learn-course-pricing-ui|learn-phone-gallery|phone-stage|\$149|\$24\.83/);assert.match(html,/href="\/plant-based-challenge"/);assert.match(html,/Existing members keep their agreed access/);});
+test('campaign handoff retains source and drops unrelated private query data',()=>{const links=[{href:'https://balance.test/plant-based-challenge#summer-support'},{href:'https://balance.test/book?source=plant_based_challenge'},{href:'https://external.test/book'},{href:'https://balance.test/account'}];vm.runInNewContext(read('public-offer-links.js'),{URL,URLSearchParams,Set,location:{origin:'https://balance.test',search:'?utm_source=instagram&ad_id=123&private_email=hidden&analytics_test=1'},document:{querySelectorAll:()=>links}});for(const l of links.slice(0,2)){const u=new URL(l.href,'https://balance.test');assert.equal(u.searchParams.get('utm_source'),'instagram');assert.equal(u.searchParams.get('ad_id'),'123');assert.equal(u.searchParams.get('private_email'),null);}assert.equal(new URL(links[0].href,'https://balance.test').hash,'#summer-support');assert.equal(new URL(links[1].href,'https://balance.test').searchParams.get('source'),'plant_based_challenge');assert.equal(links[2].href,'https://external.test/book');assert.equal(links[3].href,'https://balance.test/account');});

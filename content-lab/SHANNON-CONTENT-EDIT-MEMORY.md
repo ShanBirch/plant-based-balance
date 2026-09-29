@@ -1,5 +1,9 @@
 # Shannon Content Edit Memory
 
+## 29 September 2026: give each website page one purpose
+
+Shannon asked for Learn to describe the six-week course without app screenshots or a sales checkout. Summer Shred combines the ten-week plant-based challenge with app demonstrations and support. The app page explains features rather than repeating the course curriculum and package comparison. Keep navigation consistent but avoid repeating entire sections across destinations. This supersedes the 27 September eight-week positioning and standalone Learn sales. Contract: docs/summer-shred-website-2026-09-29.md.
+
 ## 27 September 2026: challenge pages show the product and real people
 
 Shannon asked to closely reuse the Balance Learn landing page for the Plant-Based Challenge, including its phone, app screenshots and client photos instead of a headshot-led page. Tailor the food and offer copy to the challenge: use plant-based examples (Ginger Tofu, not Ginger Turkey), omit the Learn/Master/Become/Lead journey, and present the six-week Balance Learn course as included within the eight-week challenge. The final two weeks apply the learning through continued training, meals and habits. Preserve the separate Learn page and its offer. Existing client photos describe past coaching results, not results from the new challenge. Contract: docs/plant-based-challenge-2026-09-27.md.

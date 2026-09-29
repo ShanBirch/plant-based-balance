@@ -5,10 +5,10 @@ test('homepage uses the website menu and puts its control before the logo',()=>{
  assert.ok(header.indexOf('class="balance-menu-toggle"')<header.indexOf('class="identity"'));
 });
 test('photo hub retains destinations and uses all five new photos without a footer band',()=>{
- for(const href of ['/founders','/balance.html','/coaching.html','/journey.html','/clients.html','/book'])assert.ok(html.includes('href="'+href+'"'));
+ for(const href of ['/founders','/balance.html','/coaching.html','/journey.html','/clients.html','/book?source=plant_based_challenge'])assert.ok(html.includes('href="'+href+'"'));
  assert.match(html,/photo-learn[\s\S]*?photos\/bio\/shannon-panel-1.jpg/);
  for(const m of html.matchAll(/<img src="\/([^"]+)"/g))assert.ok(fs.existsSync(m[1]),m[1]);
- assert.equal((html.match(/class="photo-link /g)||[]).length,5);
+ assert.equal((html.match(/class="photo-link /g)||[]).length,6);
  for(let i=1;i<=5;i++)assert.ok(html.includes('shannon-panel-'+i+'.jpg'));
  assert.ok(!html.includes('<footer>'));assert.match(html,/<dialog id="balance-menu"/);
 });

@@ -692,7 +692,7 @@ async function createCalendarEvent(settings: BookingSettings, booking: Record<st
         ? (ptAddonType === "extra_zoom_pt" ? "Extra weekly Zoom PT" : "Weekly Zoom PT")
         : bookingSource === "zoom_pt" && ptSessionsPerWeek
         ? `Zoom PT ${ptSessionsPerWeek} fit call`
-        : bookingSource === "plant_based_challenge" ? "Eight-week plant-based challenge consultation" : settings.event_name;
+        : bookingSource === "plant_based_challenge" ? "Plant-Based Summer Shred consultation" : settings.event_name;
     const createMeet = callType === "video";
     const query = new URLSearchParams({ sendUpdates: "all" });
     if (createMeet) query.set("conferenceDataVersion", "1");

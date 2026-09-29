@@ -7,12 +7,28 @@
     if (nav && !nav.querySelector('a[href="/plant-based-challenge"]')) {
         const challenge = document.createElement('a');
         challenge.href = '/plant-based-challenge';
-        challenge.textContent = 'Plant-Based Challenge';
+        challenge.textContent = 'Summer Shred';
         challenge.dataset.track = 'cta_click';
         challenge.dataset.cta = 'navigation_challenge';
         const learn = nav.querySelector('a[href="/founders"]');
         if (learn) learn.after(challenge);
         else nav.append(challenge);
+    }
+    if (nav) {
+        const challenge = nav.querySelector('a[href="/plant-based-challenge"]');
+        if (challenge) { challenge.textContent = 'Summer Shred'; nav.prepend(challenge); }
+        const coaching = nav.querySelector('a[href="/coaching"]');
+        if (coaching) coaching.textContent = 'Coaching';
+        const book = nav.querySelector('a[href="/book"]');
+        if (book) book.href = '/book?source=plant_based_challenge';
+        const current = location.pathname.replace(/\.html$/, '').replace(/\/$/, '') || '/';
+        const destination = current === '/plant-based-fitness' ? '/founders'
+            : ['/fitness', '/fitness-coaching'].includes(current) ? '/coaching'
+            : current === '/balance' ? '/' : current;
+        for (const link of nav.querySelectorAll('a')) {
+            if (new URL(link.href, location.origin).pathname.replace(/\.html$/, '') === destination) link.setAttribute('aria-current', 'page');
+            else link.removeAttribute('aria-current');
+        }
     }
     toggle.addEventListener('click', () => {
         drawer.showModal();

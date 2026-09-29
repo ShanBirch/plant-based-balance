@@ -1,725 +1,352 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en-AU">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Balance Learn | Six-Week Program | Balance Neuroscience Fitness</title>
-    <meta name="description" content="Build practical consistency through the guided six-week Balance Learn course, with weekly actions and Shannon's Saturday review. One AUD $149 payment.">
-    <meta property="og:title" content="Balance Learn | Six-Week Program | Balance Neuroscience Fitness">
-    <meta property="og:description" content="A supported six-week behaviour-change course with practical weekly actions and Shannon's Saturday review. One AUD $149 payment.">
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://plantbased-balance.org/founders">
-    <meta property="og:image" content="https://plantbased-balance.org/assets/balance-founders-og-cream-gold.png?v=20260804">
-    <meta property="og:image:width" content="1200">
-    <meta property="og:image:height" content="630">
-    <meta property="og:image:alt" content="The gold Balance harmony logo on a cream background">
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Balance Learn | Six-Week Program">
-    <meta name="twitter:description" content="A supported six-week behaviour-change course with practical weekly actions and Shannon's Saturday review. One AUD $149 payment.">
-    <meta name="twitter:image" content="https://plantbased-balance.org/assets/balance-founders-og-cream-gold.png?v=20260804">
-    <meta name="theme-color" content="#f7f0e3">
-    <link rel="icon" href="balance_logo.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script>document.documentElement.classList.add('motion-ready');</script>
-    <script src="https://js.stripe.com/v3/"></script>
-    <script>
-        !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-        n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
-        n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
-        t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
-        document,'script','https://connect.facebook.net/en_US/fbevents.js');
-        fbq('init','1928402271406692');
-        fbq('track','PageView');
-    </script>
-    <style>
-        :root {
-            color-scheme: light;
-            --forest: #1a202c;
-            --forest-2: #f4f1ea;
-            --leaf: #b8892b;
-            --lime: #d8b25e;
-            --cream: #f9f9f7;
-            --paper: #ffffff;
-            --ink: #1a202c;
-            --muted: #5f6f85;
-            --line: rgba(184, 137, 43, .16);
-            --shadow: 0 24px 70px rgba(0, 0, 0, .08);
-        }
-
-        * { box-sizing: border-box; }
-        html { scroll-behavior: smooth; }
-        body {
-            margin: 0;
-            color: var(--ink);
-            background:
-                radial-gradient(circle at 8% 18%, rgba(216,178,94,.08), transparent 24rem),
-                linear-gradient(180deg, #fbfaf7 0%, var(--cream) 100%);
-            font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            line-height: 1.55;
-        }
-        a { color: inherit; }
-        button, input { font: inherit; }
-        a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visible { outline: 3px solid var(--leaf); outline-offset: 4px; }
-
-        .wrap { width: min(1140px, calc(100% - 36px)); margin: 0 auto; }
-        .topbar {
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            width: 100%;
-            max-width: none;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: calc(16px + env(safe-area-inset-top, 0px)) max(18px, calc((100vw - 1140px) / 2)) 16px;
-            border-bottom: 1px solid var(--line);
-            background: rgba(249, 246, 238, .88);
-            backdrop-filter: blur(12px);
-        }
-        .brand { display: inline-flex; align-items: center; gap: 10px; color: var(--ink); font-family: 'Outfit', sans-serif; text-decoration: none; font-weight: 900; }
-        .brand-icon { position: relative; width: 36px; height: 36px; display: grid; place-items: center; }
-        .brand-icon::before { content: ""; position: absolute; inset: -3px; border: 1px solid rgba(184,137,43,.28); border-radius: 50%; }
-        .brand img { width: 34px; height: 34px; object-fit: contain; border-radius: 50%; }
-        .brand span { letter-spacing: -.03em; font-size: 1.2rem; }
-        .nav-actions { display: flex; align-items: center; gap: 18px; }
-        .nav-link { color: var(--muted); font-size: .9rem; font-weight: 600; text-decoration: none; }
-        .nav-link:hover { color: var(--ink); }
-        .top-link { padding: 10px 22px; border-radius: 999px; color: #111111; background: var(--lime); font-size: .9rem; font-weight: 800; text-decoration: none; box-shadow: 0 14px 30px rgba(184,137,43,.16); }
-        .top-link:hover { opacity: .86; }
-
-        .paid-preview-route {
-            display: none;
-            max-width: 620px;
-            margin: 18px 0 0;
-            padding: 13px 16px;
-            border: 1px solid rgba(184,137,43,.24);
-            border-radius: 16px;
-            background: rgba(255,255,255,.7);
-            color: #4f5968;
-            font-size: .84rem;
-            font-weight: 700;
-            box-shadow: 0 14px 34px rgba(26,32,44,.06);
-        }
-        body.paid-meta-preview .paid-preview-route { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-        .preview-install-return { flex-basis: 100%; padding-top: 10px; border-top: 1px solid var(--line); }
-        .preview-install-return[hidden] { display: none; }
-        .preview-install-return p { margin: 0 0 8px; font-weight: 400; }
-        .paid-preview-route span { display: inline-flex; align-items: center; gap: 8px; }
-        .paid-preview-route span + span::before { content: "\2192"; color: #9a6919; }
-        .paid-preview-downloads { display: none; max-width: 620px; margin-top: 18px; padding: 16px; border: 1px solid rgba(184,137,43,.24); border-radius: 18px; background: rgba(255,255,255,.82); box-shadow: 0 14px 34px rgba(26,32,44,.06); }
-        body.paid-meta-preview .paid-preview-downloads { display: block; }
-        .paid-preview-downloads p { margin: 0 0 12px; color: #4f5968; font-size: .88rem; line-height: 1.5; }
-        .paid-preview-store-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .paid-preview-store { display: flex; align-items: center; justify-content: center; min-height: 46px; padding: 11px 14px; border-radius: 12px; background: #151515; color: #fff; font-size: .86rem; font-weight: 800; text-decoration: none; }
-        .paid-preview-store[hidden] { display: none; }
-        .paid-preview-open { display: flex; align-items: center; justify-content: center; min-height: 46px; margin-top: 12px; padding: 11px 14px; border: 1px solid #b8892b; border-radius: 12px; color: #704d12; background: #fff8e8; font-size: .88rem; font-weight: 900; text-decoration: none; }
-        .paid-preview-ios-recovery { margin: 12px 0 0 !important; padding: 11px 12px; border-left: 3px solid #b8892b; border-radius: 9px; color: #3f3525 !important; background: #fff8e8; }
-        .paid-preview-ios-recovery[hidden] { display: none; }
-
-        .hero {
-            position: relative;
-            overflow: hidden;
-            padding-bottom: 80px;
-            background: radial-gradient(circle at 82% 8%, rgba(216,178,94,.16), transparent 34%);
-        }
-        .hero::before {
-            content: "";
-            position: absolute;
-            width: 560px;
-            height: 560px;
-            border-radius: 50%;
-            background: rgba(216, 178, 94, .08);
-            right: -190px;
-            top: -230px;
-        }
-        .hero-grid {
-            position: relative;
-            display: grid;
-            grid-template-columns: 1.12fr .88fr;
-            gap: 68px;
-            align-items: center;
-            min-height: 630px;
-        }
-        .eyebrow {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 13px;
-            border: 1px solid rgba(184, 137, 43, .22);
-            border-radius: 999px;
-            color: var(--leaf);
-            background: rgba(216,178,94,.12);
-            font-size: .79rem;
-            font-weight: 900;
-            letter-spacing: .08em;
-            text-transform: uppercase;
-        }
-        .eyebrow::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--leaf); }
-        h1 {
-            margin: 24px 0 20px;
-            max-width: 720px;
-            color: var(--ink);
-            font-family: 'Outfit', sans-serif;
-            font-size: clamp(2.55rem, 6vw, 4.6rem);
-            font-weight: 900;
-            line-height: 1.04;
-            letter-spacing: -.055em;
-        }
-        h1 span { color: var(--leaf); }
-        .hero-copy { max-width: 650px; color: var(--muted); font-size: clamp(1.05rem, 2vw, 1.2rem); }
-        .price-line { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; margin: 26px 0 22px; }
-        .price { color: var(--ink); font-family: 'Outfit', sans-serif; font-size: 3.4rem; line-height: .9; font-weight: 900; letter-spacing: -.06em; }
-        .price-note { color: var(--muted); font-weight: 750; }
-        .cta {
-            display: inline-flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 58px;
-            padding: 15px 24px;
-            border: 0;
-            border-radius: 999px;
-            color: #111111;
-            background: var(--lime);
-            box-shadow: 0 14px 30px rgba(184, 137, 43, .18);
-            font-weight: 800;
-            text-decoration: none;
-            cursor: pointer;
-        }
-        .cta:hover { transform: translateY(-1px); }
-        .cta:disabled { opacity: .55; cursor: not-allowed; transform: none; }
-        .micro { margin: 12px 0 0; color: var(--muted); font-size: .9rem; }
-
-        html.motion-ready .reveal { opacity: 0; transform: translateY(28px); transition: opacity .72s ease, transform .72s ease; }
-        html.motion-ready .reveal.is-visible { opacity: 1; transform: translateY(0); }
-
-        .phone-stage { position: relative; min-height: 540px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 18px; padding: 22px 0; }
-        .phone-stage::before {
-            content: "";
-            position: absolute;
-            inset: 15% 1% 7%;
-            border-radius: 38% 62% 58% 42%;
-            background: var(--forest);
-            transform: rotate(-5deg);
-        }
-        .phone {
-            position: relative;
-            width: min(330px, 88vw);
-            padding: 11px;
-            border-radius: 38px;
-            border: 1px solid rgba(17,17,17,.12);
-            background: #111111;
-            box-shadow: 0 32px 70px rgba(8, 31, 23, .35);
-            transform: rotate(3deg);
-        }
-        .screen { min-height: 548px; overflow: hidden; border-radius: 29px; background: #f4f1ea; }
-        .screen-head { padding: 25px 20px 18px; color: #111111; background: linear-gradient(145deg, #f5d98a, #d8b25e); }
-        .screen-label { opacity: .72; font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
-        .screen-head strong { display: block; margin-top: 5px; font-size: 1.4rem; }
-        .week-card { margin: 16px; padding: 16px; border: 1px solid var(--line); border-radius: 18px; background: var(--paper); box-shadow: 0 9px 26px rgba(0,0,0,.07); }
-        .week-row { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
-        .week-row strong { color: var(--ink); }
-        .week-row span { color: var(--leaf); font-size: .8rem; font-weight: 900; }
-        .bar { height: 8px; margin: 13px 0 4px; overflow: hidden; border-radius: 99px; background: #eee8da; }
-        .bar::after { content: ""; display: block; width: 68%; height: 100%; background: var(--leaf); border-radius: inherit; }
-        .workout { display: grid; grid-template-columns: 42px 1fr auto; align-items: center; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
-        .workout-icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 13px; background: rgba(216,178,94,.14); font-size: 1.15rem; }
-        .workout p { margin: 1px 0; color: var(--muted); font-size: .76rem; }
-        .tick { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; color: #111111; background: var(--lime); font-size: .75rem; font-weight: 900; }
-        .community-preview { padding: 0 16px 17px; }
-        .community-title { display: flex; justify-content: space-between; margin: 0 2px 10px; font-size: .88rem; }
-        .post { display: flex; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 16px; background: var(--paper); box-shadow: 0 7px 20px rgba(0,0,0,.06); }
-        .avatar { flex: 0 0 auto; width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; color: #111111; background: var(--lime); font-weight: 900; }
-        .post p { margin: 2px 0 0; color: var(--muted); font-size: .78rem; }
-        .phone-highlights { position: relative; z-index: 3; width: 100%; display: flex; flex-wrap: wrap; justify-content: center; gap: 9px; pointer-events: none; }
-        .floating-note { position: static; display: inline-flex; align-items: center; gap: 8px; padding: 12px 15px; border: 1px solid rgba(184,137,43,.16); border-radius: 15px; background: rgba(255,255,255,.96); box-shadow: 0 18px 46px rgba(26,32,44,.14); font-size: .82rem; font-weight: 900; white-space: nowrap; }
-        .floating-note::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--lime); box-shadow: 0 0 0 4px rgba(216,178,94,.16); }
-        .note-one { transform: rotate(-2deg); }
-        .note-two { transform: rotate(2deg); }
-
-        .app-showcase { padding-top: 68px; }
-        .app-showcase-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
-        .app-shot-card { position: relative; min-height: 470px; overflow: hidden; border: 1px solid rgba(184,137,43,.18); border-radius: 26px; background: #11131a; box-shadow: 0 24px 55px rgba(26,32,44,.13); }
-        .app-shot-card:nth-child(2) { transform: translateY(22px); }
-        .app-shot-card img { width: 100%; height: 100%; min-height: 470px; display: block; object-fit: cover; object-position: top center; transition: transform .75s cubic-bezier(.2,.7,.2,1); }
-        .app-shot-card:hover img { transform: scale(1.025); }
-        .app-shot-label { position: absolute; inset: auto 16px 16px; padding: 14px 16px; border: 1px solid rgba(255,255,255,.14); border-radius: 16px; color: white; background: rgba(12,13,18,.82); backdrop-filter: blur(12px); box-shadow: 0 14px 30px rgba(0,0,0,.24); }
-        .app-shot-label strong { display: block; color: #f5d98a; font-family: 'Outfit', sans-serif; }
-        .app-shot-label span { color: #d9dee7; font-size: .8rem; }
-
-        .proof-strip { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: #1a202c; color: white; }
-        .proof-grid { display: grid; grid-template-columns: repeat(3, 1fr); }
-        .proof-item { padding: 25px; text-align: center; border-right: 1px solid rgba(255,255,255,.14); }
-        .proof-item:last-child { border-right: 0; }
-        .proof-item strong { display: block; color: #f5d98a; font-size: 1.05rem; }
-        .proof-item span { color: #c6ced8; font-size: .86rem; }
-
-        section { padding: 88px 0; }
-        .section-head { max-width: 760px; margin-bottom: 38px; }
-        .section-head h2, .founder h2, .join-card h2 { margin: 12px 0 14px; color: var(--ink); font-family: 'Outfit', sans-serif; font-size: clamp(2.1rem, 5vw, 3.7rem); font-weight: 900; line-height: 1.02; letter-spacing: -.05em; }
-        .section-head p { color: var(--muted); font-size: 1.08rem; }
-        .card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
-        .feature-card { min-height: 220px; padding: 25px; border: 1px solid var(--line); border-radius: 22px; background: var(--paper); transition: transform .2s, border-color .2s; }
-        .feature-card:hover { transform: translateY(-3px); border-color: rgba(184,137,43,.3); }
-        .feature-number { display: inline-grid; place-items: center; width: auto; min-width: 42px; height: 42px; padding: 0 12px; border-radius: 12px; color: #111111; background: var(--lime); font-weight: 900; white-space: nowrap; }
-        .feature-card h3 { margin: 35px 0 8px; color: var(--ink); font-family: 'Outfit', sans-serif; font-size: 1.15rem; }
-        .feature-card p { margin: 0; color: var(--muted); }
-        .feature-card.foundations-prelude { grid-column: 1 / -1; min-height: 0; display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 18px; background: linear-gradient(135deg, rgba(216,178,94,.16), var(--paper)); }
-        .feature-card.foundations-prelude h3 { grid-column: 1 / -1; margin: 0; }
-
-        .dark-section { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); color: white; background: #1a202c; }
-        .dark-grid { display: grid; grid-template-columns: .92fr 1.08fr; gap: 70px; align-items: start; }
-        .dark-section h2 { margin: 10px 0 18px; color: white; font-family: 'Outfit', sans-serif; font-size: clamp(2.3rem, 5vw, 4rem); font-weight: 900; line-height: 1; letter-spacing: -.05em; }
-        .dark-section .lead { max-width: 520px; color: #c6ced8; }
-        .difference-list { display: grid; gap: 12px; }
-        .difference { padding: 19px 20px; border: 1px solid rgba(255,255,255,.14); border-radius: 18px; background: rgba(255,255,255,.055); }
-        .difference strong { color: #f5d98a; }
-        .difference p { margin: 4px 0 0; color: #c6ced8; }
-
-        .client-stories { background: linear-gradient(180deg, rgba(216,178,94,.08), rgba(255,255,255,.35)); }
-        .story-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
-        .story-card { overflow: hidden; border: 1px solid rgba(184,137,43,.2); border-radius: 26px; background: var(--paper); box-shadow: 0 20px 48px rgba(26,32,44,.09); }
-        .story-photo { width: 100%; aspect-ratio: 1.08 / 1; display: block; object-fit: cover; background: #eee8da; }
-        .story-card:first-child .story-photo { object-position: center 35%; }
-        .story-copy { padding: 24px; }
-        .story-kicker { display: block; margin-bottom: 7px; color: #9a6919; font-size: .76rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
-        .story-copy h3 { margin: 0 0 9px; color: var(--ink); font-family: 'Outfit', sans-serif; font-size: 1.42rem; line-height: 1.08; }
-        .story-copy p { margin: 0; color: var(--muted); }
-        .story-note { max-width: 760px; margin: 24px 0 0; color: var(--muted); font-size: .84rem; }
-
-        .founder-grid { display: grid; grid-template-columns: .8fr 1.2fr; gap: 60px; align-items: center; }
-        .founder-mark { position: relative; min-height: 430px; overflow: hidden; border: 1px solid var(--line); border-radius: 30px; background: linear-gradient(145deg, #f5d98a, #d8b25e); box-shadow: var(--shadow); }
-        .founder-photo { width: 100%; height: 100%; min-height: 430px; display: block; object-fit: cover; object-position: center 24%; }
-        .founder-logo { position: absolute; right: 18px; bottom: 18px; width: 82px; height: 82px; padding: 8px; border-radius: 50%; background: rgba(255,255,255,.92); box-shadow: 0 16px 36px rgba(0,0,0,.24); }
-        .founder p { color: var(--muted); font-size: 1.05rem; }
-        .founder strong { color: #8b6418; }
-
-        .fit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-        .fit-card { padding: 26px; border-radius: 20px; background: var(--paper); border: 1px solid var(--line); }
-        .fit-card h3 { margin-top: 0; color: var(--ink); font-family: 'Outfit', sans-serif; }
-        .fit-card ul { margin: 0; padding: 0; list-style: none; }
-        .fit-card li { position: relative; margin: 11px 0; padding-left: 27px; color: var(--muted); }
-        .fit-card li::before { position: absolute; left: 0; font-weight: 950; }
-        .fit-card.yes li::before { content: "✓"; color: #4e9659; }
-        .fit-card.no li::before { content: "×"; color: #9d6a61; }
-
-        .faq { max-width: 820px; }
-        details { border-top: 1px solid var(--line); padding: 20px 0; }
-        details:last-child { border-bottom: 1px solid var(--line); }
-        summary { color: var(--ink); font-weight: 900; cursor: pointer; }
-        details p { max-width: 700px; color: var(--muted); }
-
-        .join { padding-top: 40px; }
-        .join-card {
-            position: relative;
-            overflow: hidden;
-            display: grid;
-            grid-template-columns: 1.06fr .94fr;
-            gap: 45px;
-            padding: clamp(28px, 6vw, 65px);
-            border: 1px solid rgba(245,217,138,.18);
-            border-radius: 28px;
-            color: white;
-            background: #1a202c;
-            box-shadow: var(--shadow);
-        }
-        .join-card h2 { color: white; }
-        .join-card p { color: #c6ced8; }
-        .offer-box { padding: 26px; border: 1px solid var(--line); border-radius: 20px; background: var(--paper); color: var(--ink); }
-        .offer-box .price { font-size: 3.2rem; }
-        .offer-box ul { padding-left: 21px; color: var(--muted); }
-        #checkout-terms-container { margin: 18px 0; padding: 13px; border: 1px solid var(--line); border-radius: 12px; color: var(--muted); background: var(--forest-2); font-size: .78rem; }
-        #checkout-terms-container label { display: flex; align-items: flex-start; gap: 9px; }
-        #checkout-terms-container input { margin-top: 3px; accent-color: var(--leaf); }
-        #checkout-terms-container a { font-weight: 850; }
-        .checkout-btn { width: 100%; }
-        .secure-note { margin: 10px 0 0 !important; color: var(--muted) !important; text-align: center; font-size: .78rem; }
-
-        footer { padding: 38px 0 55px; border-top: 1px solid var(--line); color: var(--muted); font-size: .84rem; }
-        .footer-row { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
-        .footer-links { display: flex; flex-wrap: wrap; gap: 16px; }
-
-        @media (max-width: 850px) {
-            .hero-grid, .dark-grid, .founder-grid, .join-card { grid-template-columns: 1fr; }
-            .story-grid { grid-template-columns: 1fr 1fr; }
-            .hero-grid { gap: 12px; padding-top: 35px; }
-            .hero-copy { max-width: 560px; }
-            .phone-stage { min-height: 590px; }
-            .card-grid { grid-template-columns: 1fr 1fr; }
-            .founder-mark { min-height: 300px; }
-            .app-showcase-grid { grid-template-columns: repeat(3, minmax(240px, 1fr)); overflow-x: auto; padding: 0 2px 36px; scroll-snap-type: x mandatory; scrollbar-width: none; }
-            .app-showcase-grid::-webkit-scrollbar { display: none; }
-            .app-shot-card { scroll-snap-align: center; }
-            .app-shot-card:nth-child(2) { transform: none; }
-        }
-        @media (max-width: 570px) {
-            .wrap { width: min(100% - 24px, 1140px); }
-            .nav-link { display: none; }
-            .top-link { padding: 9px 15px; font-size: .8rem; }
-            h1 { font-size: clamp(2.55rem, 13vw, 4rem); }
-            .hero { padding-bottom: 55px; }
-            .phone-stage { min-height: 0; display: flex; flex-direction: column; gap: 24px; padding: 14px 0 8px; }
-            .phone-stage::before { inset: 11% -10px 18%; }
-            .phone { width: min(310px, calc(100vw - 50px)); }
-            .screen { min-height: 515px; }
-            .phone-highlights { position: static; width: 100%; display: flex; flex-wrap: wrap; justify-content: center; gap: 9px; }
-            .floating-note { position: static; transform: none; padding: 10px 12px; white-space: normal; text-align: left; box-shadow: 0 10px 25px rgba(26,32,44,.1); }
-            .proof-grid, .card-grid, .fit-grid, .story-grid { grid-template-columns: 1fr; }
-            .story-photo { aspect-ratio: 1.12 / 1; }
-            .feature-card.foundations-prelude { grid-template-columns: 1fr; gap: 14px; }
-            body.paid-meta-preview .paid-preview-route { flex-wrap: wrap; }
-            .paid-preview-store-row { grid-template-columns: 1fr; }
-            .proof-item { border-right: 0; border-bottom: 1px solid rgba(255,255,255,.14); }
-            section { padding: 65px 0; }
-            .join-card { border-radius: 24px; }
-            .app-showcase-grid { margin-right: -12px; grid-template-columns: repeat(3, minmax(78vw, 1fr)); }
-            .app-shot-card, .app-shot-card img { min-height: 440px; }
-        }
-
-        @media (prefers-reduced-motion: no-preference) {
-            .brand-icon { animation: logoBreathe 4.6s ease-in-out infinite; }
-            .brand-icon::before { animation: logoRing 4.6s ease-in-out infinite; }
-            .phone { animation: phoneFloat 5.8s ease-in-out infinite; }
-            .phone-stage::before { animation: stageDrift 8s ease-in-out infinite alternate; }
-            .note-one { animation: noteOneFloat 5.2s ease-in-out infinite; }
-            .note-two { animation: noteTwoFloat 5.8s ease-in-out infinite; }
-            .bar::after { transform-origin: left; animation: progressIn 1.4s .35s both cubic-bezier(.2,.8,.2,1); }
-            .founder-logo { animation: logoBreathe 4.6s ease-in-out infinite; }
-        }
-        @media (prefers-reduced-motion: reduce) {
-            html.motion-ready .reveal, html.motion-ready .reveal.is-visible { opacity: 1; transform: none; transition: none; }
-        }
-        @keyframes logoBreathe { 0%, 100% { transform: scale(1) rotate(0deg); } 50% { transform: scale(1.06) rotate(2deg); } }
-        @keyframes logoRing { 0%, 100% { transform: scale(.9); opacity: .25; } 50% { transform: scale(1.14); opacity: .7; } }
-        @keyframes phoneFloat { 0%, 100% { transform: rotate(3deg) translateY(0); } 50% { transform: rotate(2deg) translateY(-10px); } }
-        @keyframes stageDrift { from { transform: rotate(-5deg) scale(1); } to { transform: rotate(-2deg) scale(1.035); } }
-        @keyframes noteOneFloat { 0%, 100% { transform: rotate(-4deg) translateY(0); } 50% { transform: rotate(-2deg) translateY(-7px); } }
-        @keyframes noteTwoFloat { 0%, 100% { transform: rotate(4deg) translateY(0); } 50% { transform: rotate(2deg) translateY(7px); } }
-        @keyframes progressIn { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-
-        .course-week-list { display: grid; gap: 12px; }
-        .course-week { padding: 0; border: 1px solid var(--line); border-radius: 16px; background: var(--paper); color: var(--ink); -webkit-text-fill-color: var(--ink); }
-        .course-week summary { display: grid; grid-template-columns: auto 1fr auto; gap: 16px; align-items: center; padding: 18px 22px; list-style: none; }
-        .course-week summary::-webkit-details-marker { display: none; }
-        .course-week-title { font: 700 1.15rem/1.35 'Outfit', sans-serif; }
-        .course-week-arrow { font-size: 1.5rem; line-height: 1; }
-        .course-week[open] .course-week-arrow { transform: rotate(180deg); }
-        .course-week p { max-width: none; margin: 0; padding: 0 22px 22px; color: var(--muted); -webkit-text-fill-color: var(--muted); }
-        @media (max-width: 600px) { .course-week summary { gap: 12px; padding: 16px; } .course-week p { padding: 0 16px 18px; } .course-week-title { font-size: 1.05rem; } }
-    </style>
-<link rel="stylesheet" href="/site-navigation.css?v=20260927-challenge-menu">
-<link rel="stylesheet" href="/learn-intro-price.css?v=20260911-red-gold">
-<link rel="stylesheet" href="/course-journey.css?v=20260910">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Balance Learn | The Six-Week Course | Balance</title>
+<meta name="description" content="Understand your habits and practise lasting lifestyle change through six weeks of lessons, reflection and practical actions. Included with Balance coaching.">
+<meta property="og:title" content="Balance Learn | The Six-Week Course | Balance">
+<meta property="og:description" content="Understand your habits and practise lasting lifestyle change through six weeks of lessons, reflection and practical actions. Included with Balance coaching.">
+<meta name="theme-color" content="#f7f0e3">
+<link rel="icon" href="/balance_logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/challenge-learn-layout.css?v=20260927-learn-template">
+<link rel="stylesheet" href="/challenge-learn.css?v=20260927-learn-template">
 <link rel="stylesheet" href="/learn-week-diagrams.css?v=20260911">
-<link rel="stylesheet" href="/learn-phone-gallery.css?v=20260911">
-<script src="/learn-phone-gallery.js?v=20260911" defer></script>
-<link rel="stylesheet" href="/learn-plan-details.css?v=20260911">
-<link rel="stylesheet" href="/learn-progress-gallery.css?v=20260911">
-<script src="/learn-progress-gallery.js?v=20260911" defer></script>
-<link rel="stylesheet" href="/learn-journey-dropdowns.css?v=20260911-curriculum">
-<link rel="stylesheet" href="/learn-close-offer.css?v=20260911">
-<link rel="stylesheet" href="/tailored-support.css?v=20260912">
-<link rel="stylesheet" href="/learn-download-cta.css?v=20260915">
-</head>
-<body data-landing-page="plant-based-founders-pass" data-landing-variant="plant_based_control">
-    <header class="topbar">
-        <a class="brand" href="/bio"><span class="brand-icon"><img src="balance_logo.png" alt="Balance"></span><span class="balance-brand-name">Balance<small>Neuroscience Fitness</small></span></a>
-            <div class="nav-actions"><a class="nav-link" href="balance.html">Explore Balance</a><a class="top-link" id="foundations-top-action" href="/founders#join">Start Balance Learn</a></div>
-    <div class="balance-navigation"><button class="balance-menu-toggle" type="button" aria-label="Open menu" aria-controls="balance-menu" aria-expanded="false"><span></span><span></span><span></span></button><dialog id="balance-menu" class="balance-menu-drawer" aria-label="Main menu"><button class="balance-menu-close" type="button" aria-label="Close menu">&times;</button><nav aria-label="Main navigation"><a href="/bio">Home</a><a href="/">Balance App</a><a href="/founders" aria-current="page">Balance Learn</a><a href="/plant-based-challenge" data-track="cta_click" data-cta="navigation_challenge">Plant-Based Challenge</a><a href="/coaching">What I Offer</a><a href="/clients">Results</a><a href="/journey">My Story</a><a href="/book">Book a Call</a><a href="/account.html">My Account</a></nav></dialog></div>
+<link rel="stylesheet" href="/summer-shred-offers.css?v=20260929">
+<link rel="stylesheet" href="/site-navigation.css?v=20260929-summer">
+<script src="/analytics.js?v=public-funnel-20260922" data-first-party-only="true" defer>
+</script>
+<script src="/site-navigation.js?v=20260929-summer" defer>
+</script>
+<script src="/public-offer-links.js?v=20260929" defer></script>
+<link rel="canonical" href="https://plantbased-balance.org/founders"></head>
+<body class="challenge-learn-page course-page" data-landing-page="balance_learn" data-landing-variant="learn_course_information_v1">
+<header class="topbar">
+        <a class="brand" href="/bio">
+<span class="brand-icon">
+<img src="balance_logo.png" alt="Balance">
+</span>
+<span class="balance-brand-name">Balance<small>Neuroscience Fitness</small>
+</span>
+</a>
+    <div class="balance-navigation">
+<button class="balance-menu-toggle" type="button" aria-label="Open menu" aria-controls="balance-menu" aria-expanded="false">
+<span>
+</span>
+<span>
+</span>
+<span>
+</span>
+</button>
+<dialog id="balance-menu" class="balance-menu-drawer" aria-label="Main menu">
+<button class="balance-menu-close" type="button" aria-label="Close menu">&times;</button>
+<nav aria-label="Main navigation">
+<a href="/plant-based-challenge" data-track="cta_click" data-cta="navigation_challenge">Summer Shred</a>
+<a href="/bio">Home</a>
+<a href="/">Balance App</a>
+<a href="/founders">Balance Learn</a>
+<a href="/coaching">Coaching</a>
+<a href="/clients">Results</a>
+<a href="/journey">My Story</a>
+<a href="/book?source=plant_based_challenge" data-challenge-booking>Book a Consultation</a>
+<a href="/account.html">My Account</a>
+</nav>
+</dialog>
+</div>
 </header>
-
-    <main>
-        <section class="hero">
-            <div class="wrap hero-grid">
-                <div class="reveal">
-                    <div class="eyebrow">For people who feel stuck, overwhelmed or tired of restarting</div>
-                    <h1>Six weeks to <span>understand change and build what lasts.</span></h1>
-                <p class="hero-copy"><strong>Balance Learn helps you understand change, build better habits, and create a way of eating you can maintain.</strong> Each week turns practical behaviour-change and neuroscience principles into actions you can use through training, food and real-life review with Shannon.</p>
-                <div class="learn-intro-price learn-hero-offer" data-learn-presentation="hero"><div class="learn-offer-line"><s class="learn-standard-price" aria-label="Standard price: AUD 450">$450</s><strong class="learn-offer-price" aria-label="AUD 149">$149</strong><span class="learn-offer-label">Introductory Offer</span></div><small>Offer lasts until October 20th.</small></div>
-                <a class="cta" id="foundations-hero-action" href="/founders#join" data-track="cta_click">Start Balance Learn</a>
-                <div class="paid-preview-route" id="paid-preview-route" aria-label="Balance preview steps"><span>Download Balance</span><span>Create your account</span><span>Set up your plan</span><span>Preview before paying</span>
-                    <div class="preview-install-return" id="paid-preview-downloads" hidden><p>Installed Balance? Return here to continue your preview.</p><a class="paid-preview-open" id="paid-preview-open-installed" href="#">Open my personalised preview</a></div>
-                </div>
-                </div>
-                <div class="phone-stage reveal" aria-label="Preview of the Balance app">
-                    <div class="phone">
-                        <div class="screen">
-                            <div class="screen-head"><span class="screen-label">Your week in Balance</span><strong>Good morning 👋</strong></div>
-                            <div class="week-card">
-                                <div class="week-row"><strong>Week 2 momentum</strong><span>68%</span></div>
-                                <div class="bar"></div>
-                                <div class="workout"><div class="workout-icon">🏋️</div><div><strong>Full Body A</strong><p>45 min · strength</p></div><div class="tick">✓</div></div>
-                                <div class="workout"><div class="workout-icon">✓</div><div><strong>Weekly Goal</strong><p>One practical action</p></div><div class="tick">✓</div></div>
-                            </div>
-                            <div class="community-preview">
-                                <div class="community-title"><strong>Community</strong><span>Today</span></div>
-                                <div class="post"><div class="avatar">B</div><div><strong>Small wins count</strong><p>Got my session done before work. Nearly talked myself out of it too.</p></div></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="phone-highlights" aria-label="Balance highlights">
-                        <div class="floating-note note-one">A clear next action</div>
-                        <div class="floating-note note-two">Support when the week gets messy</div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section id="how-foundations-works">
-            <div class="wrap">
-                <div class="section-head reveal"><div class="eyebrow">Your complete six-week path</div><h2>Learn it, use it, review it, then make it fit real life.</h2><p>Balance Learn is a guided starting course, not a pile of information. Each week gives you a clear lesson theme, practical actions inside Balance, and one review point with Shannon.</p></div>
-                <div class="course-week-list">
-                    <article class="feature-card foundations-prelude"><h3>Balance Learn: The Six-Week Course</h3></article>
-                    <details class="course-week"><summary><span class="feature-number">WEEK 1</span><span class="course-week-title">Why change feels hard</span><span class="course-week-arrow" aria-hidden="true">⌄</span></summary><p>Understand how your brain uses past experience, set your first Weekly Goals, and begin with a workout and meal-plan starting point you can actually use.</p><figure class="week-diagram" aria-label="Week 1: Spot the pattern"><figcaption>Spot the pattern</figcaption><div class="week-diagram-flow"><div class="week-diagram-node"><svg viewBox="-2 -2 36 36" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7a12 12 0 1 1-3 13M7 2v7H0M16 8v9l6 3"/></svg><span>Past experience</span></div><span class="week-diagram-arrow" aria-hidden="true">→</span><div class="week-diagram-node"><svg viewBox="-2 -2 36 36" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 6c-5-7-13-1-10 5-7 3-5 11 0 12-1 7 7 9 10 4V6Zm0 0c5-7 13-1 10 5 7 3 5 11 0 12 1 7-7 9-10 4M9 12l7 4m7-4-7 4M8 23l8-3m8 3-8-3"/></svg><span>What you expect</span></div><span class="week-diagram-arrow" aria-hidden="true">→</span><div class="week-diagram-node"><svg viewBox="-2 -2 36 36" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12a12 12 0 0 1 22-3M27 2v8h-8M27 20A12 12 0 0 1 5 23M5 30v-8h8"/></svg><span>Familiar choices</span></div></div><div class="week-diagram-note">↳ New experiences help you learn a different pattern.</div></figure></details>
-                    <details class="course-week"><summary><span class="feature-number">WEEK 2</span><span class="course-week-title">Work with your energy</span><span class="course-week-arrow" aria-hidden="true">⌄</span></summary><p>Notice how sleep, stress and low-energy days change your choices. Use the app to keep the next action visible when the week is not ideal.</p><figure class="week-diagram" aria-label="Week 2: Plan for the energy you have"><figcaption>Plan for the energy you have</figcaption><div class="week-diagram-inputs"><span>Sleep</span><span>Stress</span><span>Recovery</span></div><div class="week-diagram-down" aria-hidden="true">↓</div><div class="week-diagram-flow"><div class="week-diagram-node"><svg viewBox="-2 -2 36 36" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="9" width="26" height="15" rx="3"/><path d="M29 13h2v7h-2M7 13v7m5-7v7m5-7v7"/></svg><span>Your energy today</span></div><span class="week-diagram-arrow" aria-hidden="true">→</span><div class="week-diagram-node"><svg viewBox="-2 -2 36 36" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 26h9v-8h10v-8h9M23 3h7v7"/></svg><span>A manageable next step</span></div></div></figure></details>
-                    <details class="course-week"><summary><span class="feature-number">WEEK 3</span><span class="course-week-title">Build a rhythm that sticks</span><span class="course-week-arrow" aria-hidden="true">⌄</span></summary><p>Use repetition, smaller actions and your surroundings to make training and food habits easier to return to.</p><figure class="week-diagram" aria-label="Week 3: Small actions, repeated"><figcaption>Small actions, repeated</figcaption><div class="week-diagram-stairs"><div class="week-diagram-node"><svg viewBox="-2 -2 36 36" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 26h9v-8h10v-8h9M23 3h7v7"/></svg><span>Start small</span></div><div class="week-diagram-node"><svg viewBox="-2 -2 36 36" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12a12 12 0 0 1 22-3M27 2v8h-8M27 20A12 12 0 0 1 5 23M5 30v-8h8"/></svg><span>Repeat it</span></div><div class="week-diagram-node"><svg viewBox="-2 -2 36 36" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="16" cy="16" r="13"/><path d="m9 16 5 5 9-10"/></svg><span>Build a rhythm</span></div></div></figure></details>
-                    <details class="course-week"><summary><span class="feature-number">WEEK 4</span><span class="course-week-title">Take the fight out of food</span><span class="course-week-arrow" aria-hidden="true">⌄</span></summary><p>Learn what cravings and emotional eating may be trying to solve, then use meal support and food tracking without turning the week into a test.</p><figure class="week-diagram" aria-label="Week 4: Get curious about a craving"><figcaption>Get curious about a craving</figcaption><div class="week-diagram-flow"><div class="week-diagram-node"><svg viewBox="-2 -2 36 36" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 28 4 17C-6 7 8-2 16 8 24-2 38 7 28 17Z"/></svg><span>Notice the craving</span></div><span class="week-diagram-arrow" aria-hidden="true">→</span><div class="week-diagram-node"><svg viewBox="-2 -2 36 36" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="16" cy="16" r="13"/><path d="M12 10v12m8-12v12"/></svg><span>Pause</span></div><span class="week-diagram-arrow" aria-hidden="true">→</span><div class="week-diagram-node"><svg viewBox="-2 -2 36 36" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="13" r="9"/><path d="m20 20 9 9"/></svg><span>Check the need</span></div></div><div class="week-diagram-note">Hunger? Stress? Tiredness? Notice what is happening.</div></figure></details>
-                    <details class="course-week"><summary><span class="feature-number">WEEK 5</span><span class="course-week-title">Make progress easier to repeat</span><span class="course-week-arrow" aria-hidden="true">⌄</span></summary><p>Shape the choices around you, follow your workout plan, and use your real training evidence to see what is working.</p><figure class="week-diagram" aria-label="Week 5: Make the next workout easier"><figcaption>Make the next workout easier</figcaption><div class="week-diagram-compare"><div><span class="week-diagram-tag">More steps</span><div class="week-diagram-node"><svg viewBox="-2 -2 36 36" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="13" r="9"/><path d="m20 20 9 9"/></svg><span>Find your gear</span></div><span class="week-diagram-small">Then decide what to do</span></div><span class="week-diagram-arrow" aria-hidden="true">→</span><div><span class="week-diagram-tag">Less friction</span><div class="week-diagram-node"><svg viewBox="-2 -2 36 36" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 11h22l2 18H3ZM11 11V7a5 5 0 0 1 10 0v4"/></svg><span>Gear ready. Plan ready.</span></div><span class="week-diagram-small">Take the next step</span></div></div></figure></details>
-                    <details class="course-week"><summary><span class="feature-number">WEEK 6</span><span class="course-week-title">Build your sustainable way forward</span><span class="course-week-arrow" aria-hidden="true">⌄</span></summary><p>Bring your training, food and comeback plan together. Finish the course, complete your reflection, and receive your verified Certificate of Completion.</p><figure class="week-diagram" aria-label="Week 6: Bring your plan together"><figcaption>Bring your plan together</figcaption><div class="week-diagram-three"><div class="week-diagram-node"><svg viewBox="-2 -2 36 36" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 11v10m5-14v18m20-18v18m5-14v10M6 16h20"/></svg><span>Training</span></div><div class="week-diagram-node"><svg viewBox="-2 -2 36 36" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="16" r="11"/><circle cx="18" cy="16" r="6"/><path d="M2 3v10m3-10v10M1 13h5M3 13v16"/></svg><span>Food</span></div><div class="week-diagram-node"><svg viewBox="-2 -2 36 36" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12a12 12 0 0 1 22-3M27 2v8h-8M27 20A12 12 0 0 1 5 23M5 30v-8h8"/></svg><span>Comeback plan</span></div></div><div class="week-diagram-down" aria-hidden="true">↓</div><div class="week-diagram-result">A routine you can return to</div></figure></details>
-                </div>
-            </div>
-        </section>
-
-        <div class="proof-strip">
-            <div class="wrap proof-grid">
-                <div class="proof-item"><strong>Prelude plus six guided weeks</strong><span>31 lessons with practical actions</span></div>
-                <div class="proof-item"><strong>Saturday review</strong><span>Training and food reviewed and adjusted</span></div>
-                    <div class="proof-item"><strong>One AUD <span data-learn-upfront>$149</span> payment</strong><span>Full six weeks, no automatic renewal</span></div>
-            </div>
-        </div>
-
-        <section class="app-showcase">
-            <div class="wrap">
-                <div class="section-head reveal"><div class="eyebrow">The course lives inside Balance</div><h2>Your weekly learning and real-world actions stay connected.</h2><p>The app supports the course rather than replacing it. Course shows what to learn, Home makes the next action obvious, and your plans, Weekly Goals and Feed help you practise it during the week.</p></div>
-                <div class="learn-gallery-controls"><p id="learn-gallery-hint">Swipe to explore. Tap a screen for a closer look.</p><div><button type="button" data-gallery-step="-1" aria-label="Previous app screenshot" aria-controls="learn-phone-gallery">←</button><button type="button" data-gallery-step="1" aria-label="Next app screenshot" aria-controls="learn-phone-gallery">→</button></div></div><div class="learn-phone-gallery" id="learn-phone-gallery" role="region" aria-label="Inside the Balance app" aria-describedby="learn-gallery-hint" tabindex="0"><figure class="learn-phone-slide"><a class="learn-phone-frame" href="/photos/learn-app-home-sep11.png" target="_blank" rel="noopener" aria-label="Enlarge home screenshot (opens in a new tab)"><img src="/photos/learn-app-home-sep11.png" alt="Balance home screen" loading="lazy" decoding="async" width="1080" height="2424"></a><figcaption><span class="learn-screen-number">01 / 05</span><strong>Your next step, ready</strong><span>Weekly Goals and what to do next.</span></figcaption></figure>
-<figure class="learn-phone-slide"><a class="learn-phone-frame" href="/photos/learn-app-course-sep11.png" target="_blank" rel="noopener" aria-label="Enlarge course screenshot (opens in a new tab)"><img src="/photos/learn-app-course-sep11.png" alt="Balance course screen" loading="lazy" decoding="async" width="1080" height="2424"></a><figcaption><span class="learn-screen-number">02 / 05</span><strong>Your six-week course</strong><span>Short lessons. One week at a time.</span></figcaption></figure>
-<figure class="learn-phone-slide"><a class="learn-phone-frame" href="/photos/learn-app-meals-sep11.png" target="_blank" rel="noopener" aria-label="Enlarge meals screenshot (opens in a new tab)"><img src="/photos/learn-app-meals-sep11.png" alt="Balance meals screen" loading="lazy" decoding="async" width="1080" height="2424"></a><figcaption><span class="learn-screen-number">03 / 05</span><strong>Meals that fit your day</strong><span>Your meals, recipes and food log.</span></figcaption></figure>
-<figure class="learn-phone-slide"><a class="learn-phone-frame" href="/photos/learn-app-training-sep11.png" target="_blank" rel="noopener" aria-label="Enlarge training screenshot (opens in a new tab)"><img src="/photos/learn-app-training-sep11.png" alt="Balance training screen" loading="lazy" decoding="async" width="1080" height="2424"></a><figcaption><span class="learn-screen-number">04 / 05</span><strong>Your workout, guided</strong><span>Exercise demos, sets and progress.</span></figcaption></figure>
-<figure class="learn-phone-slide"><a class="learn-phone-frame" href="/photos/learn-app-feed-sep11.png" target="_blank" rel="noopener" aria-label="Enlarge feed screenshot (opens in a new tab)"><img src="/photos/learn-app-feed-sep11.png" alt="Balance feed screen" loading="lazy" decoding="async" width="1080" height="2424"></a><figcaption><span class="learn-screen-number">05 / 05</span><strong>Share the small wins</strong><span>A place to practise and stay connected.</span></figcaption></figure></div>
-            </div>
-        </section>
-
-<section class="tailored-support" aria-labelledby="tailored-support-heading"><h2 id="tailored-support-heading">YOUR TAILORED SUPPORT</h2><details class="learn-plan" id="your-workout-program"><summary><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8v8m4-11v14m8-14v14m4-11v8M8 12h8"/></svg><span><strong>Your workout program</strong><small>Gym, home, bands and more</small></span><span class="plan-toggle" aria-hidden="true">+</span></summary><div class="learn-plan-body"><p class="plan-intro">Train where you are, with what you have.</p><div class="plan-options"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8v8m4-11v14m8-14v14m4-11v8M8 12h8"/></svg><h3>Full gym</h3><p>Barbells, dumbbells and machines.</p></div><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7M5 9v12h14V9M9 21v-8h6v8"/></svg><h3>At home with weights</h3><p>Dumbbells, with an optional bench.</p></div><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v6m-7-4 7 2 7-2m-7 4-5 7m5-7 5 7"/><circle cx="12" cy="4" r="2"/></svg><h3>No equipment</h3><p>Bodyweight sessions, wherever you are.</p></div><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 5c-5 0-5 14 0 14s7-14 12-14 5 14 0 14S11 5 6 5"/></svg><h3>Resistance bands</h3><p>Full-body training with bands.</p></div><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v7m-7-4 7 2 7-2m-7 4-8 5h16l-8-5"/><circle cx="12" cy="4" r="2"/></svg><h3>Yoga</h3><p>Restorative, power, yin and vinyasa.</p></div><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7a9 9 0 1 0 1 8M20 3v5h-5"/></svg><h3>Recovery & mobility</h3><p>Stretching, mobility and active recovery.</p></div></div><div class="plan-flow" aria-label="Choose your setup, then Follow your plan, then Log your progress"><span><b>01</b>Choose your setup</span><span class="plan-arrow" aria-hidden="true">→</span><span><b>02</b>Follow your plan</span><span class="plan-arrow" aria-hidden="true">→</span><span><b>03</b>Log your progress</span></div></div></details>
-<details class="learn-plan" id="your-meal-plan"><summary><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3v7m-3-7v5q0 3 3 3t3-3V3M5 11v10M17 3v18m0-18q-6 7 0 9"/></svg><span><strong>Your meal plan</strong><small>Meals for the way you eat</small></span><span class="plan-toggle" aria-hidden="true">+</span></summary><div class="learn-plan-body"><p class="plan-intro">Meals that fit the way you eat.</p><div class="plan-meal-photos"><figure><img src="/assets/meal-plans/balance-four-meal/oats-blueberries-protein.png" alt="Oats & blueberries" loading="lazy" width="1254" height="1254"><figcaption>Oats & blueberries</figcaption></figure><figure><img src="/assets/meal-plans/balance-four-meal/chicken-rice-vegetables.png" alt="Chicken, rice & vegetables" loading="lazy" width="1254" height="1254"><figcaption>Chicken, rice & vegetables</figcaption></figure><figure><img src="/assets/meal-plans/balance-four-meal/banana-protein-smoothie.png" alt="Banana protein smoothie" loading="lazy" width="1254" height="1254"><figcaption>Banana protein smoothie</figcaption></figure></div><p class="plan-note">Example meals. Your meals follow the eating style and preferences you choose.</p><div class="plan-diets"><div><h3>Vegan</h3><p>Plant-based meals without meat, fish, eggs or dairy.</p></div><div><h3>Vegetarian</h3><p>Meat-free and fish-free meals, with eggs and dairy as options.</p></div><div><h3>Omnivore</h3><p>A mix of plant foods, meat, fish, eggs and dairy.</p></div><div><h3>Pescatarian</h3><p>Plant foods, fish and seafood, with eggs and dairy as options. No meat or poultry.</p></div><div><h3>Flexitarian</h3><p>Mostly plant-based meals, with some meat and fish across the week.</p></div><div><h3>Mediterranean</h3><p>Meals built around vegetables, whole grains, legumes, olive oil and fish.</p></div><div><h3>Keto</h3><p>Lower-carbohydrate meals with a higher share of energy from fats.</p></div><div><h3>Paleo</h3><p>Meat, fish, eggs, vegetables, fruit, nuts and seeds, without grains, legumes or dairy.</p></div><div><h3>Whole30</h3><p>Meals without grains, legumes, dairy, added sugar or alcohol.</p></div></div><p class="plan-note">Gluten-free and dairy-free preferences are available during setup.</p><div class="plan-flow" aria-label="Choose your preferences, then Get meals & shopping list, then Cook, log & adjust"><span><b>01</b>Choose your preferences</span><span class="plan-arrow" aria-hidden="true">→</span><span><b>02</b>Get meals & shopping list</span><span class="plan-arrow" aria-hidden="true">→</span><span><b>03</b>Cook, log & adjust</span></div></div></details>
-<details class="learn-plan" id="your-weekly-support">
-                <summary><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v12H9l-5 4V5m4 4h8m-8 4h5"/></svg><span><strong>Your weekly support</strong><small>Review your week and plan your next steps</small></span><span class="plan-toggle" aria-hidden="true">+</span></summary>
-                <div class="learn-plan-body">
-                  <p class="plan-intro">A weekly check-in inside Balance, with feedback from Shannon.</p>
-                  <div class="plan-flow" aria-label="Complete your check-in, review your week, adjust your plan"><span><b>01</b>Check in</span><span class="plan-arrow" aria-hidden="true">→</span><span><b>02</b>Review together</span><span class="plan-arrow" aria-hidden="true">→</span><span><b>03</b>Adjust your plan</span></div>
-                  <div class="plan-support-grid">
-                    <div><h3>Tell me how it went</h3><p>Complete the weekly check-in form in the app. Share your wins, what got in the way, how confident you feel and where you need support.</p></div>
-                    <div><h3>We look at the whole week</h3><p>I review your answers alongside the workouts, food, sleep and progress you have logged, plus your weekly goals and recent messages.</p></div>
-                    <div><h3>Make the next week work better</h3><p>You receive feedback through Balance, with practical next steps and adjustments to your training or food plan where needed. You can ask questions in the app too.</p></div>
-                  </div>
-                  <p class="plan-note">Weekly check-ins are included with Balance Learn and coaching packages. App Access on its own does not include a personal weekly review.</p>
-                </div>
-              </details></section>
-
-
-
-
-
-
-
-
-
-
-        <section class="client-stories" aria-labelledby="client-stories-title">
-            <div class="wrap">
-                <div class="section-head reveal"><div class="eyebrow">Real people Shannon has coached</div><h2 id="client-stories-title">Different journeys. The same need for a plan that works in real life.</h2><p>These people were coached by Shannon before Balance Learn. Their experiences helped shape the practical support, shared accountability and weekly adjustment now built into the course.</p></div>
-                <div class="story-grid">
-                    <article class="story-card reveal">
-                        <img class="story-photo" src="photos/client-success/bec-kirsty-cocos.png" alt="Christy and Beck together during their coaching journey and later celebrating together" loading="lazy">
-                        <div class="story-copy"><span class="story-kicker">Shared accountability</span><h3>Christy and Beck</h3><p>The sisters each lost more than 10 kg and became stronger. Having someone beside them made the plan easier to return to and helped turn individual effort into shared momentum.</p></div>
-                    </article>
-                    <article class="story-card reveal">
-                        <img class="story-photo" src="photos/client-success/gen-cocos.jpg" alt="Gen's coaching progress shown in two side-profile photographs" loading="lazy">
-                        <div class="story-copy"><span class="story-kicker">Strength and confidence</span><h3>Gen</h3><p>Gen's journey was about more than a visual change. Clear training direction and steady coaching helped her build strength, confidence and evidence that her effort was working.</p></div>
-                    </article>
-                    <article class="story-card reveal">
-                        <div class="progress-gallery" aria-label="Dani progress photos"><div class="progress-photo" id="dani-front"  style="--crop-ratio:1080/1074;--image-width:100%;--image-left:0%;--image-top:0%"><img src="photos/client-success/dani-front-8-weeks.png" alt="Dani's coaching progress, front comparison" loading="lazy"></div><div class="progress-photo" id="dani-back" hidden style="--crop-ratio:888/887;--image-width:102.81531531531532%;--image-left:-1.3513513513513513%;--image-top:-55.2423900789177%"><img src="photos/client-success/dani-back-source-sep11.png" alt="Dani's coaching progress, back comparison" loading="lazy"></div><div class="progress-controls" aria-label="Choose photo angle"><button type="button" aria-controls="dani-front" aria-pressed="true">Front</button><button type="button" aria-controls="dani-back" aria-pressed="false">Back</button></div></div>
-                        <div class="story-copy"><span class="story-kicker">Eight weeks of steady work</span><h3>Dani</h3><p>Dani created visible body-composition progress over eight weeks by staying with the work. Her journey is a reminder that repeatable weeks matter more than chasing a perfect one.</p></div>
-                    </article>
-                    <article class="story-card reveal">
-                        <div class="progress-gallery" aria-label="Shane progress photos"><div class="progress-photo" id="shane-front"  style="--crop-ratio:888/790;--image-width:102.81531531531532%;--image-left:-1.3513513513513513%;--image-top:-50.63291139240506%"><img src="photos/client-success/shane-front-source-sep11.png" alt="Shane's coaching progress, front comparison" loading="lazy"></div><div class="progress-photo" id="shane-back" hidden style="--crop-ratio:888/790;--image-width:102.81531531531532%;--image-left:-1.3513513513513513%;--image-top:-50.63291139240506%"><img src="photos/client-success/shane-back-source-sep11.png" alt="Shane's coaching progress, back comparison" loading="lazy"></div><div class="progress-photo" id="shane-side" hidden style="--crop-ratio:888/790;--image-width:102.81531531531532%;--image-left:-1.3513513513513513%;--image-top:-62.0253164556962%"><img src="photos/client-success/shane-side-source-sep11.png" alt="Shane's coaching progress, side comparison" loading="lazy"></div><div class="progress-controls" aria-label="Choose photo angle"><button type="button" aria-controls="shane-front" aria-pressed="true">Front</button><button type="button" aria-controls="shane-back" aria-pressed="false">Back</button><button type="button" aria-controls="shane-side" aria-pressed="false">Side</button></div></div>
-                        <div class="story-copy"><span class="story-kicker">Six weeks of progress</span><h3>Shane</h3><p>Shane's front, back and side comparisons show his progress over six weeks of coaching with Shannon.</p></div>
-                    </article>
-                </div>
-                <p class="story-note">Individual experiences vary. These are examples of Shannon's previous coaching work and are not promises of a particular result from Balance Learn.</p>
-            </div>
-        </section>
-
-        <section class="founder">
-            <div class="wrap founder-grid reveal">
-                <div class="founder-mark"><img class="founder-photo" src="photos/shannon-portrait.jpg" alt="Shannon Birch, exercise scientist and founder of Balance"><img class="founder-logo" src="balance_logo_transparent.png" alt="" aria-hidden="true"></div>
-                <div><div class="eyebrow">Built by Shannon</div><h2>Why does change stick for some people, but not others?</h2>
-                    <p>I'm an exercise scientist and former gym owner. I've worked with hundreds of clients. Some changed their lives. Others struggled to make it stick. That left me wondering why. Was it really about being lazy or trying harder, or was something deeper going on?</p>
-                    <p>Studying neuroscience led me to look more closely at the habits and automatic responses that shape our everyday choices. I built Balance to help people understand that &ldquo;autopilot&rdquo; and practise making changes in their own lives.</p>
-                    <p>Balance Learn is the introductory six-week course, part one of four. It brings those ideas into your training, food and daily routines, with practical actions and support from me.</p>
-                    <p><strong>It's more than a meal plan or workout program.</strong> It's knowledge you can put to work, with guidance as you practise. The aim is to build skills you can keep using long after these six weeks.</p></div>
-            </div>
-        </section>
-
-<section class="balance-journey" id="four-part-journey" aria-labelledby="four-part-journey-title">
-    <p class="journey-eyebrow">The four-part Balance journey</p>
-    <h2 id="four-part-journey-title">Learn. Master. Become. Lead.</h2>
-    <p class="journey-intro">Start by understanding change. Build the skills to guide yourself, practise them in real life, then help someone else take their next step.</p>
-    <div class="journey-dropdowns"><details class="learn-plan journey-dropdown"><summary><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h6q2 0 2 2v15q0-2-2-2H4V4m16 0h-6q-2 0-2 2m8-2v15h-6q-2 0-2 2"/></svg><span><small>Part 1 · Start here</small><strong>Learn</strong></span><span class="plan-toggle" aria-hidden="true">+</span></summary><div class="learn-plan-body"><h3>Understand change and build your foundations.</h3><p>A guided six-week course to understand your habits and turn learning into practical training, food and weekly goals, with check-ins and plan review from Shannon.</p><div class="journey-curriculum"><h3>What you study each week</h3><p class="curriculum-duration">6 weeks · Start with the introductory lesson</p><ol><li><span class="curriculum-week">Week 1</span><div><h4>Why change feels hard</h4><p>Past experience, predictions and how new experiences help you learn.</p></div></li><li><span class="curriculum-week">Week 2</span><div><h4>Work with your energy</h4><p>Understand why sleep, stress and low energy change your choices so you can plan for the days that usually throw you off.</p></div></li><li><span class="curriculum-week">Week 3</span><div><h4>Build a rhythm that sticks</h4><p>Use repetition, smaller actions and your surroundings to make the habits you want easier to keep doing.</p></div></li><li><span class="curriculum-week">Week 4</span><div><h4>Take the fight out of food</h4><p>Cravings, emotional eating and recognising the need behind the feeling.</p></div></li><li><span class="curriculum-week">Week 5</span><div><h4>Make progress easier to repeat</h4><p>How routines, surroundings and other people shape your habits.</p></div></li><li><span class="curriculum-week">Week 6</span><div><h4>Build your sustainable way forward</h4><p>Bring the food basics together into a flexible approach that supports your goal without rigid rules or all-or-nothing thinking.</p></div></li></ol></div><figure class="journey-visual"><figcaption>Understand it. Try it. Learn from it.</figcaption><div class="plan-flow"><span><b>01</b>Notice your habits</span><span class="plan-arrow" aria-hidden="true">→</span><span><b>02</b>Try a small change</span><span class="plan-arrow" aria-hidden="true">→</span><span><b>03</b>Review with Shannon</span></div></figure></div></details>
-<details class="learn-plan journey-dropdown"><summary><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V9h5v11m1 0V4h5v16m1 0v-8h5v8"/></svg><span><small>Part 2</small><strong>Master</strong></span><span class="plan-toggle" aria-hidden="true">+</span></summary><div class="learn-plan-body"><h3>Build the skills to guide your own training and food.</h3><p>Learn anatomy, exercise technique, programming, nutrition and recovery. Put it into practice by building your own workout program and a week of meals.</p><div class="journey-curriculum"><h3>What you study each week</h3><p class="curriculum-duration">10 weeks · A new week opens every seven days</p><ol><li><span class="curriculum-week">Week 1</span><div><h4>Know the muscles you train</h4><p>Connect a muscle to its job and an exercise.</p></div></li><li><span class="curriculum-week">Week 2</span><div><h4>Understand compound lifts</h4><p>Film a squat, hinge, push and pull for Shannon to review.</p></div></li><li><span class="curriculum-week">Week 3</span><div><h4>Choose exercises for your muscles</h4><p>Explain your exercise choices and suitable alternatives.</p></div></li><li><span class="curriculum-week">Week 4</span><div><h4>Set your training dose</h4><p>Choose sets, reps, rest and a progression rule.</p></div></li><li><span class="curriculum-week">Week 5</span><div><h4>Build your workout program</h4><p>Save a repeatable week with exercises and progression.</p></div></li><li><span class="curriculum-week">Week 6</span><div><h4>Fit cardio and recovery into your plan</h4><p>Make room for conditioning, sleep and recovery.</p></div></li><li><span class="curriculum-week">Week 7</span><div><h4>Learn how to build a meal</h4><p>Choose foods and portions that support your day.</p></div></li><li><span class="curriculum-week">Week 8</span><div><h4>Check variety and essential nutrients</h4><p>Review your food choices before building the full week.</p></div></li><li><span class="curriculum-week">Week 9</span><div><h4>Design one week of meals</h4><p>Save seven days with shopping, prep and a backup.</p></div></li><li><span class="curriculum-week">Week 10</span><div><h4>Review and adjust your plans</h4><p>Explain what you would keep and what you would change.</p></div></li></ol></div><figure class="journey-visual"><figcaption>Build the skills to guide yourself.</figcaption><div class="plan-flow"><span><b>01</b>Learn the principles</span><span class="plan-arrow" aria-hidden="true">→</span><span><b>02</b>Build your workouts</span><span class="plan-arrow" aria-hidden="true">→</span><span><b>03</b>Plan your meals</span></div></figure></div></details>
-<details class="learn-plan journey-dropdown"><summary><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7a9 9 0 1 0 1 8M20 3v5h-5"/></svg><span><small>Part 3</small><strong>Become</strong></span><span class="plan-toggle" aria-hidden="true">+</span></summary><div class="learn-plan-body"><h3>Practise the person you are becoming.</h3><p>Turn training, food and recovery into a repeatable way of living. Shape your environment, reflect on real progress and build a sustainable rhythm for sharing your journey through the Balance Feed and Instagram.</p><div class="journey-curriculum"><h3>What you study each week</h3><p class="curriculum-duration">6 weeks · Practical actions, Feed and Instagram</p><ol><li><span class="curriculum-week">Week 1</span><div><h4>Train your inputs</h4><p>Understand how attention trains your feed and shapes what starts to feel normal.</p></div></li><li><span class="curriculum-week">Week 2</span><div><h4>Keep content downstream of the work</h4><p>Build posts and Stories from training, food and real life.</p></div></li><li><span class="curriculum-week">Week 3</span><div><h4>Audit your algorithm</h4><p>Remove noisy inputs and deliberately reinforce the environment you want.</p></div></li><li><span class="curriculum-week">Week 4</span><div><h4>Build a weekly rhythm</h4><p>Choose a posting rhythm that fits around the work instead of replacing it.</p></div></li><li><span class="curriculum-week">Week 5</span><div><h4>Tell one useful story</h4><p>Give the evidence meaning by explaining what happened, what helped and what comes next.</p></div></li><li><span class="curriculum-week">Week 6</span><div><h4>Keep the pattern</h4><p>Choose the smallest identity and content rhythm you can sustain.</p></div></li></ol></div><figure class="journey-visual"><figcaption>Turn practice into a repeatable routine.</figcaption><div class="plan-flow"><span><b>01</b>Practise your routine</span><span class="plan-arrow" aria-hidden="true">→</span><span><b>02</b>Reflect on progress</span><span class="plan-arrow" aria-hidden="true">→</span><span><b>03</b>Adjust & return</span></div></figure></div></details>
-<details class="learn-plan journey-dropdown"><summary><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 20v-3q0-4 4-4t4 4v3m2 0v-3q0-4 4-4t4 4v3M7 4a3 3 0 1 0 0 6 3 3 0 0 0 0-6m10 0a3 3 0 1 0 0 6 3 3 0 0 0 0-6"/></svg><span><small>Part 4</small><strong>Lead</strong></span><span class="plan-toggle" aria-hidden="true">+</span></summary><div class="learn-plan-body"><h3>Help someone else take their next step.</h3><p>Lead through your example, invite a small shared challenge and practise encouragement. Learn to support someone through setbacks without taking over, and contribute to the community.</p><div class="journey-curriculum"><h3>What you study each week</h3><p class="curriculum-duration">6 practical weeks · Work through them at your pace</p><ol><li><span class="curriculum-week">Week 1</span><div><h4>Lead through the example you set</h4><p>Choose the values and actions you want to demonstrate.</p></div></li><li><span class="curriculum-week">Week 2</span><div><h4>Invite someone into a small challenge</h4><p>Agree on a manageable action and check-in together.</p></div></li><li><span class="curriculum-week">Week 3</span><div><h4>Encourage without taking over</h4><p>Listen, recognise effort and keep ownership with the other person.</p></div></li><li><span class="curriculum-week">Week 4</span><div><h4>Support someone through a setback</h4><p>Help someone find their next step while respecting your role.</p></div></li><li><span class="curriculum-week">Week 5</span><div><h4>Make your community stronger</h4><p>Contribute useful support and respect other people’s privacy.</p></div></li><li><span class="curriculum-week">Week 6</span><div><h4>Keep a sustainable supporting role</h4><p>Reflect on your actions and choose a commitment you can maintain.</p></div></li></ol></div><figure class="journey-visual"><figcaption>Use your experience to support someone else.</figcaption><div class="plan-flow"><span><b>01</b>Lead by example</span><span class="plan-arrow" aria-hidden="true">→</span><span><b>02</b>Invite a shared challenge</span><span class="plan-arrow" aria-hidden="true">→</span><span><b>03</b>Encourage their next step</span></div></figure></div></details></div>
-
+<main>
+<section class="hero course-intro">
+<div class="wrap offer-intro">
+<div class="eyebrow">Balance Learn · The six-week course</div>
+<h1>Understand change.<br>
+<span>Build what lasts.</span>
+</h1>
+<p class="hero-copy">Why do you fall back into old habits, even when you know what you want to do? Learn helps you understand the patterns behind your choices and practise a different way forward.</p>
+<p class="hero-copy">Six weeks of behaviour-change and neuroscience principles, explained in everyday language and turned into practical actions for your life.</p>
+<a class="cta" href="#course-content">Explore the six weeks</a>
+</div>
 </section>
-
-        <section>
-            <div class="wrap">
-                <div class="section-head"><div class="eyebrow">Is this you?</div><h2>A good fit if you want a real system, not a fitness identity test.</h2></div>
-                <div class="fit-grid">
-                <div class="fit-card yes"><h3>Balance Learn is for you if:</h3><ul><li>You know some of what to do but struggle to keep doing it when life changes.</li><li>You feel overwhelmed by all-or-nothing plans or keep restarting after a missed day.</li><li>You want a clear weekly course, workout structure and practical accountability.</li><li>You are willing to complete the lessons, weekly actions and Saturday check-in.</li></ul></div>
-                    <div class="fit-card no"><h3>It is probably not for you if:</h3><ul><li>You want instant replies or unlimited daily one-to-one coaching.</li><li>You need medical, injury or clinical nutrition treatment.</li><li>You only want a PDF and never plan to use the app or community.</li><li>You expect results without completing the training and check-ins.</li></ul></div>
+<section id="course-content">
+<div class="wrap">
+<div class="section-head">
+<div class="eyebrow">What you'll learn</div>
+<h2>One idea at a time.<br>Put it into practice.</h2>
+<p>Work through the introductory lesson, then six weekly themes. Each week connects what you learn with something you can try, record and reflect on.</p>
+</div>
+<div class="course-week-list">
+                    <article class="feature-card foundations-prelude">
+<h3>Balance Learn: The Six-Week Course</h3>
+</article>
+                    <details class="course-week">
+<summary>
+<span class="feature-number">WEEK 1</span>
+<span class="course-week-title">Why change feels hard</span>
+<span class="course-week-arrow" aria-hidden="true">⌄</span>
+</summary>
+<p>Understand how your brain uses past experience, set your first Weekly Goals, and begin with a workout and meal-plan starting point you can actually use.</p>
+<figure class="week-diagram" aria-label="Week 1: Spot the pattern">
+<figcaption>Spot the pattern</figcaption>
+<div class="week-diagram-flow">
+<div class="week-diagram-node">
+<svg viewBox="-2 -2 36 36" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M7 7a12 12 0 1 1-3 13M7 2v7H0M16 8v9l6 3"/>
+</svg>
+<span>Past experience</span>
+</div>
+<span class="week-diagram-arrow" aria-hidden="true">→</span>
+<div class="week-diagram-node">
+<svg viewBox="-2 -2 36 36" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M16 6c-5-7-13-1-10 5-7 3-5 11 0 12-1 7 7 9 10 4V6Zm0 0c5-7 13-1 10 5 7 3 5 11 0 12 1 7-7 9-10 4M9 12l7 4m7-4-7 4M8 23l8-3m8 3-8-3"/>
+</svg>
+<span>What you expect</span>
+</div>
+<span class="week-diagram-arrow" aria-hidden="true">→</span>
+<div class="week-diagram-node">
+<svg viewBox="-2 -2 36 36" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M5 12a12 12 0 0 1 22-3M27 2v8h-8M27 20A12 12 0 0 1 5 23M5 30v-8h8"/>
+</svg>
+<span>Familiar choices</span>
+</div>
+</div>
+<div class="week-diagram-note">↳ New experiences help you learn a different pattern.</div>
+</figure>
+</details>
+                    <details class="course-week">
+<summary>
+<span class="feature-number">WEEK 2</span>
+<span class="course-week-title">Work with your energy</span>
+<span class="course-week-arrow" aria-hidden="true">⌄</span>
+</summary>
+<p>Notice how sleep, stress and low-energy days change your choices. Use the app to keep the next action visible when the week is not ideal.</p>
+<figure class="week-diagram" aria-label="Week 2: Plan for the energy you have">
+<figcaption>Plan for the energy you have</figcaption>
+<div class="week-diagram-inputs">
+<span>Sleep</span>
+<span>Stress</span>
+<span>Recovery</span>
+</div>
+<div class="week-diagram-down" aria-hidden="true">↓</div>
+<div class="week-diagram-flow">
+<div class="week-diagram-node">
+<svg viewBox="-2 -2 36 36" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<rect x="2" y="9" width="26" height="15" rx="3"/>
+<path d="M29 13h2v7h-2M7 13v7m5-7v7m5-7v7"/>
+</svg>
+<span>Your energy today</span>
+</div>
+<span class="week-diagram-arrow" aria-hidden="true">→</span>
+<div class="week-diagram-node">
+<svg viewBox="-2 -2 36 36" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M2 26h9v-8h10v-8h9M23 3h7v7"/>
+</svg>
+<span>A manageable next step</span>
+</div>
+</div>
+</figure>
+</details>
+                    <details class="course-week">
+<summary>
+<span class="feature-number">WEEK 3</span>
+<span class="course-week-title">Build a rhythm that sticks</span>
+<span class="course-week-arrow" aria-hidden="true">⌄</span>
+</summary>
+<p>Use repetition, smaller actions and your surroundings to make training and food habits easier to return to.</p>
+<figure class="week-diagram" aria-label="Week 3: Small actions, repeated">
+<figcaption>Small actions, repeated</figcaption>
+<div class="week-diagram-stairs">
+<div class="week-diagram-node">
+<svg viewBox="-2 -2 36 36" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M2 26h9v-8h10v-8h9M23 3h7v7"/>
+</svg>
+<span>Start small</span>
+</div>
+<div class="week-diagram-node">
+<svg viewBox="-2 -2 36 36" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M5 12a12 12 0 0 1 22-3M27 2v8h-8M27 20A12 12 0 0 1 5 23M5 30v-8h8"/>
+</svg>
+<span>Repeat it</span>
+</div>
+<div class="week-diagram-node">
+<svg viewBox="-2 -2 36 36" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<circle cx="16" cy="16" r="13"/>
+<path d="m9 16 5 5 9-10"/>
+</svg>
+<span>Build a rhythm</span>
+</div>
+</div>
+</figure>
+</details>
+                    <details class="course-week">
+<summary>
+<span class="feature-number">WEEK 4</span>
+<span class="course-week-title">Take the fight out of food</span>
+<span class="course-week-arrow" aria-hidden="true">⌄</span>
+</summary>
+<p>Learn what cravings and emotional eating may be trying to solve, then use meal support and food tracking without turning the week into a test.</p>
+<figure class="week-diagram" aria-label="Week 4: Get curious about a craving">
+<figcaption>Get curious about a craving</figcaption>
+<div class="week-diagram-flow">
+<div class="week-diagram-node">
+<svg viewBox="-2 -2 36 36" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M16 28 4 17C-6 7 8-2 16 8 24-2 38 7 28 17Z"/>
+</svg>
+<span>Notice the craving</span>
+</div>
+<span class="week-diagram-arrow" aria-hidden="true">→</span>
+<div class="week-diagram-node">
+<svg viewBox="-2 -2 36 36" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<circle cx="16" cy="16" r="13"/>
+<path d="M12 10v12m8-12v12"/>
+</svg>
+<span>Pause</span>
+</div>
+<span class="week-diagram-arrow" aria-hidden="true">→</span>
+<div class="week-diagram-node">
+<svg viewBox="-2 -2 36 36" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<circle cx="13" cy="13" r="9"/>
+<path d="m20 20 9 9"/>
+</svg>
+<span>Check the need</span>
+</div>
+</div>
+<div class="week-diagram-note">Hunger? Stress? Tiredness? Notice what is happening.</div>
+</figure>
+</details>
+                    <details class="course-week">
+<summary>
+<span class="feature-number">WEEK 5</span>
+<span class="course-week-title">Make progress easier to repeat</span>
+<span class="course-week-arrow" aria-hidden="true">⌄</span>
+</summary>
+<p>Shape the choices around you, follow your workout plan, and use your real training evidence to see what is working.</p>
+<figure class="week-diagram" aria-label="Week 5: Make the next workout easier">
+<figcaption>Make the next workout easier</figcaption>
+<div class="week-diagram-compare">
+<div>
+<span class="week-diagram-tag">More steps</span>
+<div class="week-diagram-node">
+<svg viewBox="-2 -2 36 36" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<circle cx="13" cy="13" r="9"/>
+<path d="m20 20 9 9"/>
+</svg>
+<span>Find your gear</span>
+</div>
+<span class="week-diagram-small">Then decide what to do</span>
+</div>
+<span class="week-diagram-arrow" aria-hidden="true">→</span>
+<div>
+<span class="week-diagram-tag">Less friction</span>
+<div class="week-diagram-node">
+<svg viewBox="-2 -2 36 36" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M5 11h22l2 18H3ZM11 11V7a5 5 0 0 1 10 0v4"/>
+</svg>
+<span>Gear ready. Plan ready.</span>
+</div>
+<span class="week-diagram-small">Take the next step</span>
+</div>
+</div>
+</figure>
+</details>
+                    <details class="course-week">
+<summary>
+<span class="feature-number">WEEK 6</span>
+<span class="course-week-title">Build your sustainable way forward</span>
+<span class="course-week-arrow" aria-hidden="true">⌄</span>
+</summary>
+<p>Bring your training, food and comeback plan together. Finish the course, complete your reflection, and receive your verified Certificate of Completion.</p>
+<figure class="week-diagram" aria-label="Week 6: Bring your plan together">
+<figcaption>Bring your plan together</figcaption>
+<div class="week-diagram-three">
+<div class="week-diagram-node">
+<svg viewBox="-2 -2 36 36" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M1 11v10m5-14v18m20-18v18m5-14v10M6 16h20"/>
+</svg>
+<span>Training</span>
+</div>
+<div class="week-diagram-node">
+<svg viewBox="-2 -2 36 36" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<circle cx="18" cy="16" r="11"/>
+<circle cx="18" cy="16" r="6"/>
+<path d="M2 3v10m3-10v10M1 13h5M3 13v16"/>
+</svg>
+<span>Food</span>
+</div>
+<div class="week-diagram-node">
+<svg viewBox="-2 -2 36 36" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M5 12a12 12 0 0 1 22-3M27 2v8h-8M27 20A12 12 0 0 1 5 23M5 30v-8h8"/>
+</svg>
+<span>Comeback plan</span>
+</div>
+</div>
+<div class="week-diagram-down" aria-hidden="true">↓</div>
+<div class="week-diagram-result">A routine you can return to</div>
+</figure>
+</details>
                 </div>
-            </div>
-        </section>
-
-        <section>
-            <div class="wrap faq">
-                <div class="section-head"><div class="eyebrow">Clear before you join</div><h2>Questions people usually ask.</h2></div>
-                <details><summary>What happens after the six weeks?</summary><p>If you want to continue after Balance Learn, the next course is <strong>Balance Master</strong>. Over ten weeks, you'll study exercise technique, build your own workout program and design a week of meals. Learn is part one of the four-part journey.</p><p>Your upfront Learn package ends after six weeks without automatically renewing. If you chose weekly payments, your membership continues until you cancel. See the payment options below for the terms.</p></details>
-                    <details id="learn-payment-faq"><summary>What are the payment options?</summary><p><strong>Choose how you pay.</strong> Pay AUD <span data-learn-upfront>$149</span> upfront for six weeks with no automatic renewal, or AUD $24.83 per week with a six-week minimum (six payments, AUD $148.98 minimum total). The weekly option continues at AUD $24.83 per week with the same weekly check-in, workout and food review, app and community access. After six weeks, cancel before your next weekly payment with no additional notice period.</p><p><a href="/coaching">Compare all support options</a></p></details>
-                <details><summary>What coaching is included?</summary><p>For six weeks, you receive one weekly check-in plus a workout and food review with practical adjustments from Shannon. You can also ask questions inside Balance. It does not include instant replies, unlimited daily access or live weekly calls.</p></details>
-                <details><summary>Can the meal support fit plant-based eating?</summary><p>Yes. Meal-plan support can fit plant-based eating and other recorded dietary needs. Plant-based eating is an available support option, not a requirement or the focus of the course.</p></details>
-                <details><summary>Can I train at home?</summary><p>Yes. Choose full gym training, at-home dumbbell workouts, bodyweight sessions with no equipment, or resistance band training. Balance also includes yoga, recovery and mobility sessions. Your starting structure can be matched to the equipment you have available. <a href="/coaching#training-programs">See the training options</a>.</p></details>
-                <details><summary>Is the character the main point of the app?</summary><p>No. Gamification is there to make consistency more enjoyable. Your workouts, nutrition, progress and community remain the main experience.</p></details>
-            </div>
-        </section>
-
-        <section class="join learn-close" id="join"><div class="wrap learn-close-grid"><div class="learn-close-copy"><div class="eyebrow">BALANCE LEARN</div><h2>Your next six weeks start here.</h2><p>Understand your habits and put what you learn into practice, with a plan and support from Shannon.</p><ul><li>The complete six-week Learn course</li><li>Your workout program and meal support</li><li>One weekly check-in with Shannon</li><li>Weekly training and food review, with adjustments</li><li>Six weeks of app and community access</li><li>A personal next-step recommendation at completion</li></ul></div><div class="learn-close-offer"><p class="learn-close-kicker">YOUR SIX-WEEK PACKAGE · AUD</p><div class="learn-intro-price learn-hero-offer" data-learn-presentation="hero"><div class="learn-offer-line"><s class="learn-standard-price" aria-label="Standard price: AUD 450">$450</s><strong class="learn-offer-price" aria-label="AUD 149">$149</strong><span class="learn-offer-label">Introductory Offer</span></div><small>Offer lasts until October 20th.</small></div><p class="learn-close-payment">One payment for the full six weeks.<br>No automatic renewal with upfront payment.</p><div id="checkout-terms-container">
-                        <label><input type="checkbox" id="terms-checkbox"><span>I agree to the <a href="terms.html" target="_blank" rel="noopener">Terms &amp; Conditions</a>, <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>, <a href="client-agreement.html" target="_blank" rel="noopener">Client Agreement</a> and <a href="refund-policy.html" target="_blank" rel="noopener">Refund Policy</a>.</span></label>
-                    </div><button class="cta checkout-btn" data-plan="founders-pass" data-hosted-checkout-only="true" data-track="checkout_click" type="button">Set up my plan &amp; preview Balance</button><p class="secure-note">Create your free account and preview your plan. Payment comes after the preview.</p><a class="learn-close-payment-link" href="#learn-payment-faq" onclick="document.getElementById('learn-payment-faq').open = true">See payment options</a></div></div></section>
-
+</div>
+</section>
+<section>
+<div class="wrap">
+<div class="section-head">
+<div class="eyebrow">How learning becomes change</div>
+<h2>Understand it. Try it. Learn from it.</h2>
+</div>
+<div class="course-steps">
+<article>
+<h3>Learn</h3>
+<p>Short lessons help you recognise the effects of past experience, energy, surroundings and repetition on everyday choices.</p>
+</article>
+<article>
+<h3>Practise</h3>
+<p>Use the weekly action in your own life. Make a manageable change and record what you actually did.</p>
+</article>
+<article>
+<h3>Reflect</h3>
+<p>Review what happened, notice what helped and decide what to adjust. Build a routine you can return to after a difficult week.</p>
+</article>
+</div>
+</div>
+</section>
+<section>
+<div class="wrap faq">
+<div class="section-head">
+<h2>About the course.</h2>
+</div>
+<details>
+<summary>Is Learn the same as Summer Shred?</summary>
+<p>No. Learn is the six-week course included within the ten-week Plant-Based Summer Shred. The challenge brings the learning together with workouts, food support and accountability.</p>
+</details>
+<details>
+<summary>How do I access Learn?</summary>
+<p>Learn is included with Balance coaching and Summer Shred. It is no longer sold as a separate upfront or weekly purchase. Existing members keep their agreed access.</p>
+</details>
+<details>
+<summary>What is the aim?</summary>
+<p>To understand your habits and build practical skills for long-term lifestyle change. You apply the lessons to real situations, rather than relying on a perfect week or a rigid plan.</p>
+</details>
+</div>
+</section>
+<section>
+<div class="wrap offer-intro">
+<div class="eyebrow">Learning with support</div>
+<h2>Put Learn to work in Summer Shred.</h2>
+<p class="hero-copy">Bring the course into ten weeks of training, plant-based nutrition support and accountability with Shannon.</p>
+<a class="cta" href="/plant-based-challenge" data-track="cta_click" data-cta="learn_to_summer">Explore Plant-Based Summer Shred</a>
+</div>
+</section>
 </main>
-
-    <footer>
-        <div class="wrap footer-row"><span>© 2026 Balance. Gold Coast, Australia.</span><div class="footer-links"><a href="terms.html">Terms</a><a href="privacy.html">Privacy</a><a href="refund-policy.html">Refunds</a><a href="cancellation.html">Pause or cancel</a><a href="contact.html">Contact</a></div></div>
+<footer>
+        <div class="wrap footer-row">
+<span>© 2026 Balance. Gold Coast, Australia.</span>
+<div class="footer-links">
+<a href="terms.html">Terms</a>
+<a href="privacy.html">Privacy</a>
+<a href="refund-policy.html">Refunds</a>
+<a href="cancellation.html">Pause or cancel</a>
+<a href="contact.html">Contact</a>
+</div>
+</div>
     </footer>
-    <script src="/analytics.js?v=public-funnel-20260922"></script>
-    <script src="lib/onboarding-funnel.js?v=1"></script>
-    <script src="checkout.js?v=learn-launch-20260910"></script>
-    <script src="lib/ios-meta-preview-handoff.js?v=2-website"></script>
-    <script>
-        (function () {
-            var params = new URLSearchParams(window.location.search);
-            var isAppleDevice = /iPhone|iPad|iPod/i.test(navigator.userAgent || '');
-            var iosHandoff = window.BalanceIOSMetaPreviewHandoff;
-            var iosRecoveryStorage = null;
-            try { iosRecoveryStorage = window.localStorage; } catch (_) {}
-            if (isAppleDevice && iosHandoff) {
-                var recoveredParams = iosHandoff.recover({
-                    location: window.location,
-                    storage: iosRecoveryStorage
-                });
-                if (recoveredParams) params = recoveredParams;
-            }
-            var source = (params.get('utm_source') || '').trim().toLowerCase();
-            var medium = (params.get('utm_medium') || '').trim().toLowerCase();
-            var paidMetaSources = ['facebook', 'fb', 'instagram', 'ig', 'meta'];
-            var paidMetaMedia = ['paid_social', 'paid', 'cpc'];
-            var isPaidMeta = paidMetaSources.indexOf(source) !== -1 && paidMetaMedia.indexOf(medium) !== -1;
-            if (!isPaidMeta) {
-                params.set('learn_entry', 'website');
-                if (!source) params.set('utm_source', 'website');
-                if (!medium) params.set('utm_medium', 'organic');
-            }
-
-            params.delete('guest');
-            params.set('account_first', '1');
-            params.set('meta_trial', 'facebook_5m_foundations_v3');
-            params.delete('meta_preview');
-            var appStoreUrl = 'https://apps.apple.com/us/app/balance-fitness-gamified/id6761238161';
-            var playStoreBaseUrl = 'https://play.google.com/store/apps/details?id=com.fitgotchi.app';
-            var playReferrer = 'pbb_meta_trial=' + encodeURIComponent(params.toString());
-            var playStoreUrl = playStoreBaseUrl + '&referrer=' + encodeURIComponent(playReferrer);
-            var isAndroidDevice = /Android/i.test(navigator.userAgent || '');
-            var webPreviewUrl = '/login.html?action=signup&' + params.toString();
-            var primaryStoreUrl = isAppleDevice ? appStoreUrl : (isAndroidDevice ? playStoreUrl : webPreviewUrl);
-            var primaryStoreLabel = isAppleDevice ? 'Download Balance for iPhone' : (isAndroidDevice ? 'Download Balance for Android' : 'Set up my plan & preview Balance');
-            var nativePreviewUrl = isAppleDevice && iosHandoff
-                ? iosHandoff.buildNativePreviewUrl(params)
-                : 'com.fitgotchi.app://meta-trial?' + params.toString();
-            var heroAction = document.getElementById('foundations-hero-action');
-            var topAction = document.getElementById('foundations-top-action');
-            var checkoutButton = document.querySelector('.checkout-btn[data-plan="founders-pass"]');
-            var checkoutTerms = document.getElementById('checkout-terms-container');
-            var openInstalled = document.getElementById('paid-preview-open-installed');
-            var installReturn = document.getElementById('paid-preview-downloads');
-
-            function rememberIosPreviewHandoff() {
-                if (!isAppleDevice || !iosHandoff) return;
-                var recovery = iosHandoff.remember(params, {
-                    location: window.location,
-                    history: window.history,
-                    storage: iosRecoveryStorage
-                });
-                if (installReturn) installReturn.hidden = false;
-            }
-
-            document.body.classList.add('paid-meta-preview');
-            document.body.dataset.landingVariant = 'facebook_5m_foundations_v3';
-            [heroAction, topAction].forEach(function (action) {
-                if (!action) return;
-                action.href = primaryStoreUrl;
-                action.textContent = action === heroAction ? primaryStoreLabel : 'Download Balance';
-                action.dataset.previewHandoff = 'true';
-            });
-            if (openInstalled) {
-                openInstalled.href = nativePreviewUrl || '#paid-preview-downloads';
-                if (!nativePreviewUrl) {
-                    openInstalled.textContent = 'This secure preview link has expired — ask Shannon for a fresh link';
-                    openInstalled.setAttribute('aria-disabled', 'true');
-                }
-            }
-            if (isAppleDevice) {
-                [heroAction, topAction].forEach(function (action) {
-                    if (!action) return;
-                    action.target = '_blank';
-                    action.rel = 'noopener';
-                    action.addEventListener('click', rememberIosPreviewHandoff);
-                });
-                if (recoveredParams && installReturn) installReturn.hidden = false;
-            }
-            if (checkoutTerms) checkoutTerms.style.display = 'none';
-            var secureNote = document.querySelector('.secure-note');
-            if (secureNote) secureNote.textContent = 'Create your free account and preview your plan. Payment comes after the preview.';
-            if (checkoutButton) {
-                checkoutButton.dataset.trackHref = primaryStoreUrl;
-                checkoutButton.textContent = primaryStoreLabel;
-                checkoutButton.addEventListener('click', function (event) {
-                    event.preventDefault();
-                    event.stopImmediatePropagation();
-                    rememberIosPreviewHandoff();
-                    window.location.href = primaryStoreUrl;
-                }, true);
-            }
-        })();
-
-        (function () {
-            var items = document.querySelectorAll('.reveal');
-            var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-            if (reduced || !('IntersectionObserver' in window)) {
-                items.forEach(function (item) { item.classList.add('is-visible'); });
-                return;
-            }
-            var observer = new IntersectionObserver(function (entries, currentObserver) {
-                entries.forEach(function (entry) {
-                    if (!entry.isIntersecting) return;
-                    entry.target.classList.add('is-visible');
-                    currentObserver.unobserve(entry.target);
-                });
-            }, { threshold: .12, rootMargin: '0px 0px -36px' });
-            items.forEach(function (item) { observer.observe(item); });
-        })();
-    </script>
-<script type="module" src="/learn-course-pricing-ui.js?v=20260911-title-case"></script>
-<script src="/site-navigation.js?v=20260927-challenge-menu" defer></script>
 </body>
 </html>

@@ -33,9 +33,9 @@
     if (isPlantBasedChallenge) {
         document.documentElement.setAttribute('data-bio-theme', 'light');
         document.body.classList.add('challenge-booking');
-        document.body.dataset.landingVariant = 'eight_week_consultation_v1';
+        document.body.dataset.landingVariant = 'summer_shred_ten_week_v1';
         document.title = 'Book Your 60-Minute Video Call | Balance';
-        byId('booking-intro-kicker').textContent = 'Eight-week plant-based transformation challenge';
+        byId('booking-intro-kicker').textContent = 'Plant-Based Summer Shred · 10 weeks';
         byId('booking-intro-title').textContent = 'Book a 60-minute video call with Shannon.';
         byId('booking-intro-copy').textContent = 'In your 60-minute video call, we will talk through your goals, your routine and the support that fits you. Shannon will explain the options and pricing before you choose a package.';
         byId('booking-card-title').textContent = 'Choose your video call time.';
@@ -47,7 +47,7 @@
         byId('booking-unavailable-copy').textContent = 'Online times are unavailable right now. Email Shannon your goal, timezone and a few times that suit, and he can arrange a consultation with you.';
         const fallback = byId('booking-unavailable-action');
         fallback.textContent = 'Email about my consultation';
-        fallback.href = 'mailto:shannon@balanceneurosciencefitness.com?subject=' + encodeURIComponent('Eight-week plant-based challenge consultation') + '&body=' + encodeURIComponent('Hi Shannon, I am interested in the eight-week plant-based transformation challenge.\n\nMy goal:\n\nMy timezone:\n\nTimes that suit:');
+        fallback.href = 'mailto:shannon@balanceneurosciencefitness.com?subject=' + encodeURIComponent('Plant-Based Summer Shred consultation') + '&body=' + encodeURIComponent('Hi Shannon, I am interested in the ten-week Plant-Based Summer Shred.\n\nMy goal:\n\nMy timezone:\n\nTimes that suit:');
         fallback.dataset.track = 'cta_click';
         fallback.dataset.cta = 'challenge_consultation_email';
         byId('booking-success-primary').href = '/plant-based-challenge';

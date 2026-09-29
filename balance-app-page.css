@@ -23,7 +23,7 @@ html body.balance-app-page { --bg:#faf7ef; --text-main:#243124; --text-muted:#50
 }
 /* Reserve clearance even in mobile edge-to-edge browsers reporting zero insets. */
 @media (pointer:coarse), (max-width:900px) {
- html body.balance-app-page .site-header:has(.balance-navigation) { padding-top:calc(8px + max(env(safe-area-inset-top, 0px), 24px)); }
+ html body.balance-app-page .site-header:has(.balance-navigation) { padding-top:calc(8px + max(env(safe-area-inset-top, 0px), 42px)); }
  .balance-app-page .balance-menu-drawer { padding-top:calc(14px + max(env(safe-area-inset-top, 0px), 24px)); padding-bottom:calc(24px + max(env(safe-area-inset-bottom, 0px), 24px)); }
  .balance-app-page .page-shell { padding-bottom:calc(32px + max(env(safe-area-inset-bottom, 0px), 24px)); }
 }

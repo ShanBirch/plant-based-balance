@@ -1,10 +1,2 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs');
-test('offer heading leads directly to four-part journey without photo card',()=>{
- const html=fs.readFileSync('coaching.html','utf8');
- const intro=html.slice(html.indexOf('<main>'),html.indexOf('id="four-part-journey"'));
- assert.ok(intro.includes('<h1>What I Offer.</h1>'));
- assert.ok(intro.includes('hero hero-solo'));
- assert.ok(!intro.includes('<aside'));assert.ok(!intro.includes('Best first move'));
- assert.ok(!intro.includes('what-i-offer-portrait.jpg'));
- assert.ok(html.includes('Learn. Master. Become. Lead.'));
-});
+test('coaching leads with Summer Shred and separates the ongoing commitment',()=>{const html=fs.readFileSync('coaching.html','utf8');assert.ok(html.indexOf('id="summer-shred"')<html.indexOf('id="ongoing-coaching"'));assert.match(html,/three-month commitment/i);assert.match(html,/ten-week.*commitment/i);assert.doesNotMatch(html,/four-part-journey|learn-phone-gallery|data-plan=|checkout\.js|\$29\.99|\$49\.99|\$74\.99|\$19\.99/);assert.match(html,/\$120 onboarding fee/);});
