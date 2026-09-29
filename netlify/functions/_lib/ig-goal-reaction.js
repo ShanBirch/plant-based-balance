@@ -17,6 +17,7 @@ async function sendGoalReaction({target, recipientId, previous, persist, post}) 
         const result = await post({recipient:{id:recipientId}, sender_action:'react', payload:{message_id:target,reaction:'love'}});
         if (String(result?.recipient_id || '') !== String(recipientId)) throw new Error('reaction_not_confirmed');
         receipt.outcome = 'confirmed';
+        receipt.transport = result.reaction_transport || 'instagram_graph';
     } catch (error) {
         receipt.outcome = 'unconfirmed';
         receipt.error = String(error.message || error).slice(0,250);

@@ -1,3 +1,4 @@
+const {postGoalReaction} = require('./_lib/ig-reaction-transport');
 const {goalReactionTarget, sendGoalReaction} = require('./_lib/ig-goal-reaction');
 const {collectChallengeLeadIssues, resolveChallengeLeadRoute, CHALLENGE_FLOW} = require('./_lib/plant-based-challenge-dm');
 const {textTypingDurationMs, waitWithTypingRefresh} = require('./_lib/ig-typing-pacing');
@@ -2952,13 +2953,7 @@ exports.handler = async (event) => {
                 post:async payload => {
                     const token = await getInstagramGraphAccessToken(graphAccountId);
                     if (!token) throw new Error('reaction_token_unavailable');
-                    const response = await fetch(`https://graph.instagram.com/${INSTAGRAM_GRAPH_API_VERSION}/${encodeURIComponent(graphAccountId || 'me')}/messages`, {
-                        method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},
-                        body:JSON.stringify(payload),signal:AbortSignal.timeout(5000),
-                    });
-                    const result = await response.json();
-                    if (!response.ok || result.error) throw new Error(`reaction_graph_${response.status}: ${result.error?.code || ''}/${result.error?.error_subcode || ''} ${String(result.error?.message || '').slice(0,180)}`);
-                    return result;
+                    return postGoalReaction({payload,accountId:graphAccountId,token,query:supabase,version:INSTAGRAM_GRAPH_API_VERSION});
                 },
             });
         } catch (error) {
