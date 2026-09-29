@@ -101,6 +101,14 @@ test('a new action version archives and clears the older operator receipt', () =
     assert.match(waitingRepair, /q\.status IN \('waiting', 'claimed'\)/i);
     assert.match(waitingRepair, /OR coalesce\(q\.receipt, '\{\}'::JSONB\) = '\{\}'::JSONB/i);
     assert.match(waitingRepair, /fresh ready\/cooldown rows cannot carry stale receipts/i);
+
+    const cloudCooldownRepair = fs.readFileSync(
+        path.join(__dirname, '..', 'supabase', 'migrations', '20260929113500_allow_expired_unattempted_cloud_dm_cooldown_claims.sql'),
+        'utf8'
+    );
+    assert.match(cloudCooldownRepair, /q\.status = 'cooldown'[\s\S]+cloud_dm_manager_fallback[\s\S]+outbound_attempted/i);
+    assert.match(cloudCooldownRepair, /scheduled_alert\.status = 'scheduled'/i);
+    assert.match(cloudCooldownRepair, /OR coalesce\(q\.receipt, '\{\}'::JSONB\) = '\{\}'::JSONB/i);
 });
 
 test('commercial queue recognises Founders Pass offer and checkout evidence', () => {
