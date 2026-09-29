@@ -188,7 +188,7 @@ const IG_DRAFT_REVIEW_TIMEOUT_MS = 7000;
 const IG_PAID_META_TYPING_REFRESH_MS = 4000;
 const GRAPH_SUBSCRIBER_PREFIX = 'ig_graph:';
 
-function startPaidMetaTypingHeartbeat({ enabled, recipientId, accountId } = {}) {
+function startPaidMetaTypingHeartbeat({ enabled, recipientId, accountId, maxDurationMs = 45000 } = {}) {
     if (!enabled || !recipientId) return () => {};
     let stopped = false;
     let inFlight = false;
@@ -214,7 +214,7 @@ function startPaidMetaTypingHeartbeat({ enabled, recipientId, accountId } = {}) 
     const timeout = setTimeout(() => {
         stopped = true;
         clearInterval(interval);
-    }, 45000);
+    }, maxDurationMs);
     timeout.unref?.();
     return () => {
         stopped = true;
@@ -1164,6 +1164,7 @@ ${draftText}
 ${flowVariant === CHALLENGE_FLOW ? 'CHALLENGE REPAIR OVERRIDE: Follow the full-conversation challenge contract in the supplied context. It supersedes the generic tiny-acknowledgement and pitch-only-on-request rules above. A BALANCE enquiry needs the brief introduction BEFORE the goal question. An earned support explanation and booking-link permission question are allowed once goal and support need are understood, even without an explicit call request. Write the complete corrected response naturally; do not copy a canned example. Preserve every unanswered question. The corrected response will undergo the same independent review and consent checks.' : ''}`;
     const repairContents = [{ role: 'user', parts: [{ text: prompt }] }];
     const repairConfig = { maxOutputTokens: Math.min(1200, Math.max(500, (maxChunks || MAX_CHUNKS) * 280)), temperature: 0.35 };
+    if (flowVariant === CHALLENGE_FLOW) Object.assign(repairConfig, {maxOutputTokens:2200,reasoningEffort:'medium'});
     const rawText = paidMetaMode
         ? await callOpenAITextModel(repairContents, repairConfig, {
             profile: 'coach_fallback',
@@ -7588,6 +7589,7 @@ Rules:
     const generationConfig = {
         maxOutputTokens: replyMode.maxOutputTokens,
         temperature: isShortAnswerMessage(currentMessageText) ? 0.55 : 0.85,
+        ...(adFlowVariant === CHALLENGE_FLOW ? {maxOutputTokens:2200,reasoningEffort:'medium'} : {}),
     };
 
     let rawText = '';
@@ -7647,7 +7649,7 @@ Rules:
                         profile: 'coach_fallback',
                         label: 'openai-paid-meta-primary',
                         models: ['gpt-5.4-mini'],
-                    }), 10000, 'paid Meta OpenAI writer')
+                    }), adFlowVariant === CHALLENGE_FLOW ? 30000 : 10000, 'paid Meta OpenAI writer')
                     : await callVertexAIModel(textContents, generationConfig),
                 paidMetaSingleWriter ? 'GPT-5.4 mini paid Meta writer' : 'Vertex v7'
             );
@@ -8861,6 +8863,7 @@ exports.handler = async (event) => {
         });
         stopPaidMetaTypingHeartbeat = startPaidMetaTypingHeartbeat({
             enabled: true,
+            maxDurationMs: challengeLead ? 90000 : 45000,
             recipientId: graphRecipientId,
             accountId: graphAccountId,
         });
@@ -10004,7 +10007,7 @@ exports.handler = async (event) => {
             : '';
         const verifiedOfferContext = challengeLead ? buildChallengeLeadPrompt({currentMessage:currentInboundTurnMessage,history:displayHistory,qualifier}) : metaAdConversationFastLane ? ('\nVERIFIED LEARN FACTS FOR REVIEW AND REPAIR: A free personalised program preview before payment is an approved part of this flow. After choosing independent workouts, ask permission for that preview; send the signed card only after acceptance. Do not repeat price or inclusions at the support-choice step. 45 lessons and quizzes across six weeks. Certificate of Completion requires finishing the required lessons and practical actions; no accreditation claim. Week 1: Why change feels hard. Week 2: Work with your energy. Week 3: Build a rhythm that sticks. Week 4: Take the fight out of food. Week 5: Make progress easier to repeat. Week 6: Build your sustainable way forward. AUD $149 upfront for six weeks, no auto-renewal; alternatively AUD $24.83/week, six-week minimum AUD $148.98, continuing until cancelled. Preserve these facts when editing; answer only the facts asked for, without reciting the questions or adding a goal question already asked.'.replaceAll('$149', resolveBalanceLearnCoursePriceLabel())) : '';
         const reviewContextBlocks = `LATEST just-arrived ${channelLabel} message from ${leadName} (this is the message the draft must answer): "${reviewLatestForPrompt}"${mediaSummaryReviewContext}${audioTranscriptReviewContext}${priorText}${timelineText}${workoutText}${memoryText}${crossChannelText}${learningReelReviewContext}${verifiedOfferContext}`;
-        const reviewTimeoutMs = cocosAutoSendLane ? COCOS_DRAFT_REVIEW_TIMEOUT_MS : IG_DRAFT_REVIEW_TIMEOUT_MS;
+        const reviewTimeoutMs = challengeLead ? 30000 : cocosAutoSendLane ? COCOS_DRAFT_REVIEW_TIMEOUT_MS : IG_DRAFT_REVIEW_TIMEOUT_MS;
         const approvedDeterministicReview = buildApprovedDeterministicMetaAdFirstReplyReview({
             metaAdFirstInbound: metaAdOpeningTurn,
             metaAdGoalReplyTurn,
@@ -10208,7 +10211,7 @@ exports.handler = async (event) => {
                     businessName: autoDraftRepairBusinessName,
                     paidMetaMode: metaAdConversationFastLane,
                     flowVariant: metaAdFlowVariant,
-                }), COCOS_DRAFT_REPAIR_TIMEOUT_MS, `${autoDraftRepairBusinessName} draft repair`);
+                }), challengeLead ? 30000 : COCOS_DRAFT_REPAIR_TIMEOUT_MS, `${autoDraftRepairBusinessName} draft repair`);
                 if (repaired?.joined) {
                     const repairedPaidMetaContractIssues = metaAdConversationFastLane
                         ? collectPaidMetaWriterContractIssues({
@@ -10231,7 +10234,7 @@ exports.handler = async (event) => {
                         qualifier,
                         linkedUserId: thread.linked_user_id,
                         meaningfulLeadReplyCount,
-                    }), IG_DRAFT_REVIEW_TIMEOUT_MS, 'Coco repaired draft review');
+                    }), reviewTimeoutMs, 'Coco repaired draft review');
                     const repairedReview = repairedReviewResult?.review || null;
                     const earnedPaidMetaOfferRepair = metaAdConversationFastLane
                         && repairIssues.some(issue => /earned offer|complete offer|offer is now earned/i.test(String(issue || '')));

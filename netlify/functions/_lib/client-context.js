@@ -6499,7 +6499,11 @@ DRAFT TO REVIEW:
 ${draft}`;
 
         const contents = [{ role: 'user', parts: [{ text: prompt }] }];
-        const reply = await callGeminiFallback(contents, { maxOutputTokens: 700, temperature: 0.1 });
+        const reply = offerFlowVariant === 'plant_based_challenge' && OPENAI_API_KEY
+            ? await callOpenAITextModel(contents, {maxOutputTokens:2200,reasoningEffort:'medium'}, {
+                models:['gpt-5.4-mini'],label:'challenge-conversation-review',
+            })
+            : await callGeminiFallback(contents, { maxOutputTokens: 700, temperature: 0.1 });
         return normalizeDraftReviewPayload(parseDraftReviewJson(reply), {
             trustExplicitContextAssessment: offerFlowVariant === 'plant_based_challenge',
         });

@@ -56,6 +56,7 @@ global.fetch = async (url, options) => {
                 generationConfig: {
                     maxOutputTokens: 120,
                     temperature: 0.2,
+                    reasoningEffort: 'medium',
                 },
             },
         });
@@ -63,6 +64,7 @@ global.fetch = async (url, options) => {
         assert.strictEqual(capturedBody.model, 'gpt-5.4-mini');
         assert.strictEqual(capturedBody.max_output_tokens, 120);
         assert.strictEqual(capturedBody.temperature, 0.2);
+        assert.deepStrictEqual(capturedBody.reasoning,{effort:'medium'});
         assert.strictEqual(capturedBody.input[0].content[1].type, 'input_image');
         assert.strictEqual(data.candidates[0].content.parts[0].text, 'nice work');
         assert.strictEqual(data.usageMetadata.totalTokenCount, 13);

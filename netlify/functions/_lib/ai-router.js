@@ -281,6 +281,7 @@ async function callOpenAIModel({ apiKey, model, payload, label, profile }) {
     if (maxOutputTokens) body.max_output_tokens = maxOutputTokens;
     if (generationConfig.temperature != null) body.temperature = generationConfig.temperature;
     if (payload?.text) body.text = payload.text;
+    if (generationConfig.reasoningEffort) body.reasoning = {effort:generationConfig.reasoningEffort};
 
     let response = await fetch('https://api.openai.com/v1/responses', {
         method: 'POST',

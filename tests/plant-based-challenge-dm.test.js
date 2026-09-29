@@ -99,7 +99,10 @@ test('actual draft assembly preserves learned voice, full context and the same m
         await generateDraft({...input,adFlowVariant:'plant_based_control'});
         await generateDraft({...input,adFlowVariant:'plant_based_challenge'});
         assert.equal(requests.length,2);
-        assert.deepEqual(requests[1].config,requests[0].config);
+        assert.equal(requests[1].config.temperature,requests[0].config.temperature);
+        assert.equal(requests[1].config.reasoningEffort,'medium');
+        assert.equal(requests[0].config.reasoningEffort,undefined);
+        assert.equal(requests[1].config.maxOutputTokens,2200);
         assert.equal(requests[1].options.label,'openai-paid-meta-primary');
         for (const text of ['LEARNED VOICE FIXTURE','Profile fixture: vegetarian','Memory fixture: strength goal, night shifts','I already told you about my night shifts.','And do I need to be vegan?']) {
 
