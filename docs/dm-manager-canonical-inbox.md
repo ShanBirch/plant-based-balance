@@ -1,0 +1,71 @@
+# Canonical inbox identity and coverage
+
+The 29 September 2026 local manager paired Mazzie's new message/thread IDs with
+Arunima's name and an unrelated workout quote. It then treated a fresh eligible
+conversation as permanently manual and the next delta-only scan skipped it.
+The Graph webhook and draft writer had received both messages correctly.
+
+`scripts/dm-manager-inbox.cjs` provides read-only joined SQL packets plus a
+fail-closed receipt validator. The installed runtime copy is
+`C:/Users/shann/.codex/automations/balance-lead-client-dm-manager/runtime/dm-manager-inbox.cjs`.
+It requires Node only. It does not send, authorize delivery, or replace existing
+identity, safety, transport, run-lease or controller-claim checks.
+
+## Every local manager pass
+
+1. Acquire the existing run lease. Run `node <runtime-helper> sql`, execute the
+   emitted SQL with the connected Supabase tool, and save the returned `snapshot`
+   object as UTF-8 JSON in the automation runtime folder. Preserve the actual tool
+   result, not a reconstruction from memory. No credentials belong in these files.
+2. Read each packet as a unit. Identity, exact unanswered messages, alerts and
+   controller belong to that single thread. Never zip independent query arrays or
+   attach names/quotes from prior prose. Memory supplies history, never identity.
+   Freshest conversations come first. Scan older pages using the returned offset
+   as time allows; save the unassessed thread IDs for continuation, reloading them
+   with the exact-thread query on the next pass. Always scan fresh page zero too.
+3. Before a claim, delivery, dismissal, manual hold, notification, or skip, run
+   `sql 0 <thread-uuid>` and save that fresh exact-thread snapshot. An empty packet
+   means the conversation changed or was answered: re-read it, do not act on the
+   previous packet. Read additional live history/account policy when required.
+4. Write a receipt array for the exact-thread snapshot. Copy `thread_id`,
+   `ig_username`, `profile_name`, `linked_user_id`, `latest_inbound_id` and the
+   **entire exact `unanswered` array** directly from that packet, plus `outcome`
+   and a concrete `reason`. Never type identity/quoted message fields from memory.
+   Outcomes: `sent`, `scheduled`, `needs_you`, `waiting`, `no_reply`,
+   `external_owner`, `failed`. Before transport use `waiting`; after transport
+   update only with verified canonical readback (`readback_verified`, `evidence_id`).
+5. Run `node <runtime-helper> validate snapshot.json receipts.json` before the
+   decision takes effect. Failure means reload and correct the mismatch, not bypass
+   validation. Permanent-person holds must use `hold_kind=permanent_manual` and
+   `manual_user_id` equal to the packet's exact linked user; an explicit live thread
+   manual flag is also valid. A name-only match never establishes that exception.
+   Other genuine personal, Story, safety, identity and client policy holds remain.
+6. Keep receipts in a structured per-thread ledger, including source IDs and exact
+   text. Reuse an unchanged notification receipt only after matching its thread,
+   identity and source batch to a fresh canonical packet. Never use “notified” as
+   “answered”, or a notification cursor as the inbox coverage boundary.
+7. Validate the page snapshot and all its receipts with `--partial` at the end.
+   Persist its actual `action_pass_complete`, `missing_thread_ids`, `more_pages`
+   and `next_offset` output. A partial page/scan is never a completed inbox audit.
+   Bound the pass by the existing seven/nine-minute limits. A later page alone
+   cannot establish full coverage. No-fresh-delta is not no-unanswered-work.
+
+Ordinary unlinked text with a style warning should be repaired from the full
+unanswered batch and reviewed under the existing manager rules, not left behind
+the cursor. Do not loosen a real hold to clear the backlog. A waiting outcome is
+an assessment receipt, not evidence of a sent reply.
+
+## Incident resolution
+
+Mazzie's batch (`81f214a5-0ce3-41cb-8ea9-786451696792`,
+`653fb194-8c9a-49c2-9635-5e4d245ce074`) belongs to thread
+`459cf1d5-fe11-4f7d-8114-99746e06cd43`, handle `mazzie_maz_wellness`, unlinked.
+The old 09:09 UTC automation memory entry attributing it to Arunima is invalid.
+One manager-reviewed text reply was delivered at 09:53 UTC and verified as
+`ebefac3b-ff92-4894-98b6-ec17cab0e36f`. Alert
+`8014e05d-bc47-4851-b723-7113d443d691` is sent and the exact controller claim was
+completed. Do not resend this batch or notify it as Arunima's workout.
+
+Verification: `node --test tests/dm-manager-inbox.test.cjs tests/dm-manager-lease.test.cjs`.
+Tests cover cross-person name/text mixing, invalid manual attribution, incomplete
+batches/coverage, stale reads, readback requirements and SQL input validation.
