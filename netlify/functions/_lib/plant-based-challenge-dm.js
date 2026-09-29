@@ -74,7 +74,8 @@ function resolveChallengeTurn({currentMessage = '', history = []} = {}) {
         && !/\b(?:but|not yet|not now|no thanks|don['’]?t send|do not send|rather not|maybe|before|if)\b/i.test(currentMessage);
     const cardSent = history.some(item => item?.direction === 'out' && (bookingInText.test(textOf(item)) || /^Find a time for your Balance fit call$/i.test(textOf(item))));
     const support = supportSignal.test(currentMessage);
-    const directRequest = bookRequest.test(currentMessage) && !/\b(?:don['’]?t|do not|not ready|not yet|rather not)\b/i.test(currentMessage);
+    const referencesBookingThenRequestsResend = /\b(?:booking|consultation|call) link\b[\s\S]{0,120}\b(?:resend|send|share)\s+(?:it|that|the link)\b/i.test(currentMessage);
+    const directRequest = (bookRequest.test(currentMessage) || referencesBookingThenRequestsResend) && !/\b(?:don['’]?t|do not|not ready|not yet|rather not)\b/i.test(currentMessage);
     const wantsCard = !paused && !support && !socialCall.test(currentMessage)
         && (directRequest || (accepted && !cardSent));
     return {paused, pausedNow:pauseSignal.test(currentMessage), cardSent, wantsCard, support};

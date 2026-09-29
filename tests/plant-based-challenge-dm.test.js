@@ -3,6 +3,13 @@ const assert = require('node:assert/strict');
 const { resolveChallengeLeadRoute, buildChallengeLeadPrompt, collectChallengeLeadIssues, buildChallengeBookingHandoff, CHALLENGE_BOOKING_URL } = require('../netlify/functions/_lib/plant-based-challenge-dm');
 const fresh = { created_at:'2026-09-27T00:00:00Z', custom_data:{bot_account:'shan_n_sunny'} };
 
+test('explicit booking-link resend can refer back to the link earlier in the same message', () => {
+    const {resolveChallengeTurn}=require('../netlify/functions/_lib/plant-based-challenge-dm');
+    assert.equal(resolveChallengeTurn({currentMessage:"The booking link didn't come through. Can you resend it please?"}).wantsCard,true);
+    assert.equal(resolveChallengeTurn({currentMessage:"The booking link didn't come through. Don't resend it."}).wantsCard,false);
+    assert.equal(resolveChallengeTurn({currentMessage:'My receipt did not arrive. Can you resend it?'}).wantsCard,false);
+});
+
 test('model understanding clears free-written enquiry heuristics without clearing real context holds', () => {
     const {buildContextReviewInfo,mergeDraftReviewContextReview}=require('../netlify/functions/_lib/client-context');
     const input={channel:'instagram',first_captured_lead_reply:true,message_preview:'Hey, I saw your ad. Can you tell me how this works?',offer_flow_variant:'plant_based_challenge'};
