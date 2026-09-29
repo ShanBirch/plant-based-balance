@@ -4821,7 +4821,9 @@ function isInternalMetaAdConversationTestLane({ linkedUserId = null, customData 
     const botAccount = normalizeBotAccount(
         customData?.bot_account || customData?.instagram_graph?.bot_account
     );
-    return botAccount === 'shan_n_sunny'
+    const verifiedManyChatTest = customData?.manychat_business?.workspace === 'fb996573'
+        && customData?.manychat_business?.page_id === '561122130919678';
+    return (botAccount === 'shan_n_sunny' || verifiedManyChatTest)
         && customData?.internal_test_auto_reply_enabled === true
         && ['plant_based_control', 'broad_pain'].includes(
             String(customData?.internal_test_meta_ad_flow || '').trim().toLowerCase()
