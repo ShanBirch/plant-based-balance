@@ -3,6 +3,19 @@ const assert = require('node:assert/strict');
 const { resolveChallengeLeadRoute, buildChallengeLeadPrompt, collectChallengeLeadIssues, buildChallengeBookingHandoff, CHALLENGE_BOOKING_URL } = require('../netlify/functions/_lib/plant-based-challenge-dm');
 const fresh = { created_at:'2026-09-27T00:00:00Z', custom_data:{bot_account:'shan_n_sunny'} };
 
+test('free-written enquiries use known challenge context without any keyword', () => {
+    const campaignThread = {...fresh,custom_data:{...fresh.custom_data,offer_flow_variant:'plant_based_challenge',meta_ad_attribution:{ad_id:'new-ad'}}};
+    for (const currentMessage of ['Hey, I saw your ad. Can you tell me how this works?','hiya','Can you help me get fitter?','I want stronger legs but shifts keep getting in the way','I only have a small space to exercise in']) {
+        assert.equal(resolveChallengeLeadRoute({thread:campaignThread,currentMessage}),true);
+        assert.equal(resolveChallengeLeadRoute({thread:fresh,currentMessage}),true);
+        assert.equal(resolveChallengeLeadRoute({thread:{...campaignThread,linked_user_id:'existing-client'},currentMessage}),false);
+    }
+    const helpers = require('../netlify/functions/ig-instant-draft')._test;
+    const currentMessage = 'Hey, I saw your ad. Can you tell me how this works?';
+    assert.ok(helpers.buildInternalMetaAdTestResetCustomData({currentMessage,customData:{bot_account:'shan_n_sunny',internal_test_auto_reply_enabled:true,internal_test_meta_ad_flow:'broad_pain'}}));
+    assert.equal(helpers.buildInternalMetaAdTestResetCustomData({currentMessage,customData:campaignThread.custom_data}),null);
+});
+
 test('conversational booking invitation keeps the consent boundary', () => {
     const invitation = 'Want me to grab the booking link for you so we can tee up a call time?';
     const history = [{direction:'out',text:invitation}];

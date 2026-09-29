@@ -4840,6 +4840,7 @@ function isRepeatableInternalMetaAdTestOpener(value = '') {
     const message = String(value || '').replace(/\s+/g, ' ').trim();
     // Repeat these ad entry questions independently in the opted-in test lane.
     // Real lead conversations never use this test-only episode boundary.
+    if (message === 'Hey, I saw your ad. Can you tell me how this works?') return true;
     if (/^(?:tell me (?:more )?about (?:the )?summer shred|can i do (?:the )?summer shred at home|is (?:the )?summer shred right for me)[.!?\s]*$/i.test(message)) return true;
     return /^(?:balance|what is (?:the )?founders pass|i keep starting over|i struggle to stay consistent|how does balance work)[.!?\s]*$/i.test(message);
 }
