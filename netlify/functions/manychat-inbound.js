@@ -855,18 +855,21 @@ async function insertInboundMessage({ threadId, text, manychatMessageId, nowIso,
         }
     }
     try {
+        // External Request does not expose a native message ID in this workspace.
+        // Keep a canonical revision so late writers cannot answer an older turn.
+        const revisionId = manychatMessageId || `manychat_inbound:${require('crypto').randomUUID()}`;
         const rows = await supabase('ig_messages', {
             method: 'POST',
             body: [{
                 thread_id: threadId,
                 direction: 'in',
                 text,
-                manychat_message_id: manychatMessageId || null,
+                manychat_message_id: revisionId,
                 source: 'manychat',
             }],
             prefer: 'return=representation',
         });
-        return { inserted: true, deduped: false, messageId: rows[0]?.id || null };
+        return { inserted: true, deduped: false, messageId: rows[0]?.id || null, revisionId };
     } catch (err) {
         const isDuplicate = err.sqlstate === '23505'
             || /23505|duplicate key/.test(err.message || '');
@@ -1217,7 +1220,7 @@ exports.handler = async (event) => {
                 subscriberId,
                 channel,
                 messageText,
-                manychatMessageId,
+                manychatMessageId: messageResult.revisionId || manychatMessageId,
                 igUsername: thread.ig_username || igUsername,
                 profileName: thread.profile_name || profileName,
                 customData: thread.custom_data || customData,
