@@ -6,7 +6,7 @@ const CHALLENGE_BOOKING_URL = 'https://plantbased-balance.org/book?source=plant_
 const LAUNCH_AT = Date.parse('2026-09-27T00:00:00+10:00');
 // Canonical Balance Page, verified in docs/facebook-messenger-setup.md.
 const BALANCE_PAGE_ID = '561122130919678';
-const challengeMention = /\b(?:(?:eight|8)[ -]week\s+(?:plant[ -]based\s+)?(?:transformation\s+)?challenge|plant[ -]based\s+(?:transformation\s+)?challenge)\b/i;
+const challengeMention = /\b(?:(?:eight|8|ten|10)[ -]week\s+(?:plant[ -]based\s+)?(?:transformation\s+)?challenge|plant[ -]based\s+(?:transformation\s+)?challenge|(?:plant[ -]based\s+)?summer shred)\b/i;
 const legacyMention = /\b(?:founders? pass|(?:six|6)[ -]week\s+(?:Balance\s+)?(?:Learn|course|Foundations)|(?:Learn|course|app|personalised|personalized)\s+preview|(?:Learn|course)\s+(?:video|explainer))\b/i;
 const priceQuestion = /(?:\b(?:how much|prices?|pricing|costs?|fees?|charge|125\s*(?:dollars|a week))\b|\$\s*125)/i;
 const courseQuestion = /\b(?:learn|course|curriculum|lessons?|week.by.week|education|certificate)\b/i;
@@ -32,7 +32,10 @@ function resolveChallengeLeadRoute({thread = {}, currentMessage = '', history = 
     if (legacyMention.test(currentMessage)) return false;
     if (!challengeHistory && /\b(?:Balance Learn|(?:price|cost|how much).*(?:Learn|course))\b/i.test(currentMessage)) return false;
     for (const item of [...history].reverse()) {
-        if (legacyMention.test(textOf(item)) || /free.*preview|\/p\//i.test(textOf(item))) return false;
+        // Learn is included in Summer Shred. Our own course explanation must
+        // not silently migrate the next reply into the older photo/video flow.
+        if ((item?.direction === 'in' && legacyMention.test(textOf(item)))
+            || (item?.direction === 'out' && /free.*preview|\/p\/|\/founders\b|checkout (?:link|card)/i.test(textOf(item)))) return false;
         if (item?.direction === 'in' && challengeMention.test(textOf(item))) return true;
     }
     if (explicitChallenge) return true;

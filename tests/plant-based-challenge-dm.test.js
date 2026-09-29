@@ -249,3 +249,12 @@ test('a missing intro is a repairable content omission, while actual missing con
  assert.equal(ctx.mergeDraftReviewContextReview(missing).required,true);
  assert.equal(ctx.normalizeDraftReviewPayload(raw).context_loss_suspected,true);
 });
+
+test('the included Learn explanation never migrates Summer Shred into the legacy media route', () => {
+ const thread={created_at:'2026-09-29T00:00:00Z',custom_data:{bot_account:'shan_n_sunny',offer_flow_variant:'plant_based_challenge'}};
+ const history=[{direction:'in',text:'BALANCE'},{direction:'out',text:'The ten week Summer Shred includes workout programming, meal plan support, accountability, and Balance Learn, the six week course that helps with the long-term change side of it.'},{direction:'out',text:'What are you looking to achieve over the next ten weeks?'}];
+ assert.equal(resolveChallengeLeadRoute({thread,history,currentMessage:"I'd like to feel fitter and get stronger for hiking."}),true);
+ assert.equal(resolveChallengeLeadRoute({thread,history:[...history,{direction:'in',text:'I want hiking fitness'},{direction:'out',text:'What makes that difficult?'}],currentMessage:'Conflicting advice means I do nothing'}),true);
+ for(const currentMessage of ['Tell me about the ten-week plant-based challenge','Tell me about Summer Shred']) assert.equal(resolveChallengeLeadRoute({thread,history:[],currentMessage}),true);
+ assert.equal(resolveChallengeLeadRoute({thread,history:[...history,{direction:'out',text:'Want your free app preview?'}],currentMessage:'Yes please'}),false);
+});
