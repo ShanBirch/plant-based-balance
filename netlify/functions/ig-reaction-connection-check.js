@@ -6,7 +6,7 @@ const PAGE = '561122130919678';
 exports.handler = async event => {
     const secret = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || '';
     const supplied = String(event.headers?.authorization || event.headers?.Authorization || '').replace(/^Bearer /, '');
-    if (!secret || supplied.length !== secret.length || !timingSafeEqual(Buffer.from(secret),Buffer.from(supplied))) {
+    if (!secret || Buffer.byteLength(supplied) !== Buffer.byteLength(secret) || !timingSafeEqual(Buffer.from(secret),Buffer.from(supplied))) {
         return {statusCode:403,body:JSON.stringify({error:'forbidden'})};
     }
     if (event.httpMethod !== 'POST') return {statusCode:405,body:'{}'};
