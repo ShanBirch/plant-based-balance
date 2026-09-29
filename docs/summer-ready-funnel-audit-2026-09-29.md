@@ -26,3 +26,9 @@ The remote-model writer-only smoke suite was updated but cannot run without an a
 ## Measurement
 
 Hypothesis: consistent offer facts and campaign routing reduce wrong-offer handoffs and increase qualified challenge consultations. Keep `summer_shred_ten_week_v1` and existing booking events/source stable. Primary KPI: verified qualified challenge bookings and subsequent coaching sales. Diagnostics: wrong-offer/legacy-preview handoffs, clarification/price-question turns, booking availability/errors, CTA and booking progression. Guardrails: duplicate or protected-client sends, unsolicited cards, invented terms and attribution loss. Review 6 October 2026; do not infer sales from clicks or replies. Existing campaign IDs and UTM parameters survived the browser handoff.
+
+## Production readback
+
+Commit c02da2e2 published in Netlify deploy 6abb5bb04bc8ac0008a87b76 at 2026-09-29T06:34:56.762Z. Production challenge, hub, coaching, course, app, booking and changed scripts returned HTTP 200 with Summer Ready Shred. A live mobile challenge-to-booking visit showed the 5 October 2026 date, 60-minute video-call heading and retained ad_id/utm_source/source. No booking was submitted. Business ledger receipt: d82b7082-9b11-4edf-b991-5fae7076c345.
+
+A final price-intent regression also verifies that questions explicitly naming the $75 option or $120 onboarding fee can receive factual pricing, just like the existing $125 option. The 38 focused challenge tests passed after this follow-up.

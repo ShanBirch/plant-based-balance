@@ -36,3 +36,9 @@ test('challenge price, duration and launch evidence agrees with the public offer
     const history=[{direction:'out',text:'Want me to grab the booking link for you so we can tee up a call time?'}];
     assert.ok(policy.buildChallengeBookingHandoff({currentMessage:'Yes please',history,draft:{joined:policy.CHALLENGE_BOOKING_URL}}));
 });
+
+test('questions naming either current package or onboarding can receive its price', () => {
+    for (const currentMessage of ['What is included in the $75 option?', 'What does the $120 cover?', 'What do I get for $125?']) {
+        assert.deepEqual(policy.collectChallengeLeadIssues({currentMessage,draft:{joined:'Online coaching is AUD $75/week plus one AUD $120 onboarding fee, a ten-week minimum of AUD $870.'}}),[]);
+    }
+});
