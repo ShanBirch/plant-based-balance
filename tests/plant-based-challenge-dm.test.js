@@ -28,7 +28,7 @@ test('a question about education within the challenge stays on challenge without
 });
 test('writer keeps known context, thoughtful tone, truthful pricing, safety and direct consultation instructions', () => {
     const prompt = buildChallengeLeadPrompt({timeline:'Lead: I want strength around night shifts.',unansweredMessages:['How would that work?'],context:'KNOWN GOAL: strength; vegetarian',productKnowledge:'Learn is six weeks. AUD $149.',hasMedia:true});
-    for (const evidence of [/night shifts/,/KNOWN GOAL/,/vegetarian/,/eight-week/,/training/i,/meal plans/i,/Balance Learn/,/accountability/,/community/,/60.minute/,/125/,/30.minute/,/only.*ask.*price/i,/do not.*repeat.*question/i,/manual|human/i,/media_summary/,/six weeks/]) assert.match(prompt,evidence);
+    for (const evidence of [/night shifts/,/KNOWN GOAL/,/vegetarian/,/Summer Shred/,/training/i,/meal plans/i,/Balance Learn/,/accountability/,/community/,/60.minute/,/125/,/30.minute/,/Only if they ask about price/i,/never repeat|Reuse answers/i,/manual|human/i,/media_summary/,/six weeks/]) assert.match(prompt,evidence);
     assert.ok(prompt.includes(CHALLENGE_BOOKING_URL));
 });
 test('challenge contract blocks preview detours, unsolicited prices, course dumps and unsupported promises', () => {
@@ -42,19 +42,6 @@ test('challenge contract blocks preview detours, unsolicited prices, course dump
     assert.deepEqual(collectChallengeLeadIssues({draft:{joined:'The optional AUD $125/week package includes one weekly 30-minute live 1:1 training session. We can work out the right support on the consultation.'},currentMessage:'What does the $125 package include?'}),[]);
     assert.deepEqual(collectChallengeLeadIssues({draft:{joined:'Balance Learn is six weeks. It covers practical behaviour change alongside the training and nutrition support.'},currentMessage:'What is Balance Learn?'}),[]);
 });
-test('a goal earns a brief relevant offer and the existing card; rejection and already sent cards are not resent', () => {
-    const joined = `We can build training and meal plans around your shifts, with education through Balance Learn and accountability. You can pick a consultation time here: ${CHALLENGE_BOOKING_URL}`;
-    const input = {draft:{joined},currentMessage:'I want to get stronger around my night shifts',history:[],linkedUserId:null};
-    assert.equal(buildChallengeBookingHandoff(input).approved_link_auto_sendable,true);
-    for (const currentMessage of ['No thanks', 'Stop messaging me', 'Not now, I need to think', 'Are you trying to sell me something?']) {
-        assert.equal(buildChallengeBookingHandoff({...input,currentMessage}),null);
-        assert.ok(collectChallengeLeadIssues({...input,currentMessage}).length);
-    }
-    assert.equal(buildChallengeBookingHandoff({...input,linkedUserId:'client'}),null);
-    assert.equal(buildChallengeBookingHandoff({...input,history:[{direction:'out',text:joined}],currentMessage:'Thanks'}),null);
-    assert.equal(buildChallengeBookingHandoff({...input,history:[{direction:'out',text:joined}],currentMessage:'Can you resend the booking link?'}).approved_link_auto_sendable,true);
-});
-
 test('the verified Balance Facebook Page shares content policy without adopting other Pages', () => {
     const thread = {...fresh,channel:'messenger',subscriber_id:'fb_graph:561122130919678:123',custom_data:{facebook_messenger:{page_id:'561122130919678',psid:'123'}}};
     assert.equal(resolveChallengeLeadRoute({thread,currentMessage:'I want to get fitter'}),true);
@@ -90,7 +77,7 @@ test('the established rich card retains its artwork, destination and text/card o
 
 test('consultation content approval never overrides safety, context, media or reviewer holds', () => {
     const writer = require('../netlify/functions/ig-instant-draft')._test;
-    const common = {draft:{joined:`I can help with that strength goal through training and meal plans. Pick a consultation time here: ${CHALLENGE_BOOKING_URL}`,model:'vertex-v7'},currentMessage:'I want to build strength',qualifier:{facts:{motivation:'build strength'}},linkedUserId:null,leadStage:'qualifying',meaningfulLeadReplyCount:1,alertData:{challenge_policy_version:'plant_based_challenge_consult_v1'},challengeOfferWarning:{required:false,code:'approved_challenge_consultation'},mediaReview:{required:false},contextReview:{required:false},draftReview:{verdict:'pass',confidence:1,issues:[],context_loss_suspected:false}};
+    const common = {draft:{joined:`I can help with that strength goal through training and meal plans. Pick a consultation time here: ${CHALLENGE_BOOKING_URL}`,model:'vertex-v7'},currentMessage:'I want to build strength',qualifier:{facts:{motivation:'build strength'}},linkedUserId:null,leadStage:'qualifying',meaningfulLeadReplyCount:1,alertData:{challenge_policy_version:'plant_based_challenge_consent_v2'},challengeOfferWarning:{required:false,code:'approved_challenge_consultation'},mediaReview:{required:false},contextReview:{required:false},draftReview:{verdict:'pass',confidence:1,issues:[],context_loss_suspected:false}};
     assert.equal(writer.getAutoDmHoldReason(common),null);
     for (const override of [{mediaReview:{required:true}},{contextReview:{required:true}},{draftReview:{verdict:'warn',issues:['Missing context']}},{draft:{...common.draft,error:'model failed'}}]) assert.ok(writer.getAutoDmHoldReason({...common,...override}));
 });
@@ -113,9 +100,9 @@ test('actual draft assembly preserves learned voice, full context and the same m
         await generateDraft({...input,adFlowVariant:'plant_based_challenge'});
         assert.equal(requests.length,2);
         assert.deepEqual(requests[1].config,requests[0].config);
-        assert.deepEqual(requests[1].options,requests[0].options);
-        for (const text of ['LEARNED VOICE FIXTURE','Profile fixture: vegetarian','Memory fixture: strength goal, night shifts','I already told you about my night shifts.','And do I need to be vegan?','CONVERSATION RESPONSIBILITY','GROUNDING AND TIMELINE RULES']) {
-            assert.ok(requests[0].prompt.includes(text),text);
+        assert.equal(requests[1].options.label,'openai-paid-meta-primary');
+        for (const text of ['LEARNED VOICE FIXTURE','Profile fixture: vegetarian','Memory fixture: strength goal, night shifts','I already told you about my night shifts.','And do I need to be vegan?']) {
+
             assert.ok(requests[1].prompt.includes(text),text);
         }
         assert.ok(requests[1].prompt.includes(CHALLENGE_BOOKING_URL));
@@ -134,20 +121,6 @@ test('challenge content guard catches capitalized and misspelled destinations', 
 });
 
 
-test('challenge turn decisions preserve refusals, prior cards, FAQ answers and support', () => {
-    const {resolveChallengeTurn, normalizeChallengeBookingUrls} = require('../netlify/functions/_lib/plant-based-challenge-dm');
-    const history=[{direction:'in',text:'I want to build strength'},{direction:'in',text:'Not now, I need time to think'}];
-    assert.equal(resolveChallengeTurn({history,currentMessage:'I trained yesterday'}).offering,false);
-    assert.equal(resolveChallengeTurn({history,currentMessage:'I trained yesterday'}).paused,true);
-    assert.equal(resolveChallengeTurn({history,currentMessage:'I am ready to book a consultation'}).offering,true);
-    assert.equal(resolveChallengeTurn({history:history.slice(0,1),currentMessage:'How much does it cost?'}).offering,false);
-    assert.equal(resolveChallengeTurn({history:history.slice(0,1),currentMessage:"I can't log in, can you help?"}).offering,false);
-    assert.equal(resolveChallengeTurn({history:history.slice(0,1),currentMessage:'Want to video chat on Discord?'}).offering,false);
-    assert.equal(resolveChallengeTurn({currentMessage:'Can you tell me about the eight-week plant-based challenge?'}).offering,false);
-    assert.equal(resolveChallengeTurn({currentMessage:'I want to get stronger and need a plan'}).offering,true);
-    assert.equal(normalizeChallengeBookingUrls(['Https://plant-based-balance.org/book?source=plant_based_challenge'])[0],CHALLENGE_BOOKING_URL);
-});
-
 test('challenge contract keeps common fact and conversational checks without old sales stages', () => {
     const {collectPaidMetaWriterContractIssues:check,buildPaidMetaAgentPrompt} = require('../netlify/functions/ig-instant-draft')._test;
     const base={flowVariant:'plant_based_challenge'};
@@ -156,54 +129,18 @@ test('challenge contract keeps common fact and conversational checks without old
         ['Can you support gluten-free meals?','Sounds good.',/gluten-free question/],
         ['Are you trying to sell me something?','No, just chatting.',/sales question honestly/],
         ['How many lessons?','There are six lessons.',/Incorrect Learn lesson count/],
-        ['I want to get stronger. Are you vegan?',`Training and meals can help. ${CHALLENGE_BOOKING_URL}`,/personal vegan question/],
+        ['Are you vegan?',"I'm vegan for five years.",/vegetarian/],
     ]) assert.ok(check({...base,currentMessage,draft:{joined}}).some(v=>pattern.test(v)),currentMessage);
     assert.deepEqual(check({...base,currentMessage:'How much does the challenge cost?',draft:{joined:'The price depends on the support package.'}}),[]);
     const prompt=buildPaidMetaAgentPrompt({flowVariant:'plant_based_challenge'});
     assert.doesNotMatch(prompt,/LATEST FULL-FLOW REQUIREMENT|BROAD ROUTE GUARD|preview comes before payment|GUIDE THE SALE|ZOOM SUPPORT OPTION/);
-    for (const text of ['Preserve negations, corrections and uncertainty','Answer yes/no questions directly','Never deny automation','media','fixed weekly LEARNING theme','45 lessons']) assert.ok(prompt.includes(text),text);
+    for (const text of ['Preserve negations, corrections and uncertainty','Answer yes/no questions directly','Never deny automation','fixed weekly LEARNING theme','45 lessons']) assert.ok(prompt.includes(text),text);
 });
 
-
-test('text closes lose sales tails but factual answers remain intact', () => {
-    const {finalizeChallengeText,challengeHandoffMetadata,buildChallengeUnavailableFallback} = require('../netlify/functions/_lib/plant-based-challenge-dm');
-    const input={currentMessage:'Not now, I need time to think.',history:[{direction:'in',text:'I want to get stronger'}]};
-    assert.deepEqual(finalizeChallengeText(['No worries, take your time. When you are ready we can plan training.'],input),['No worries, take your time.']);
-    assert.deepEqual(finalizeChallengeText(['No worries. If you want, tell me more about your goal.'],{...input,currentMessage:'Thanks!'}),['No worries.']);
-    assert.deepEqual(finalizeChallengeText(['The package is optional.'],{currentMessage:'Is this a package?'}),['The package is optional.']);
-    assert.equal(buildChallengeUnavailableFallback(input).error,null);
-    assert.equal(buildChallengeUnavailableFallback({currentMessage:'What is the best treatment for knee pain?'}),null);
-    const cleared=challengeHandoffMetadata();
-    assert.equal(cleared.approved_link_auto_sendable,false);
-    assert.equal(cleared.signup_link_handoff_url,null);
-    for(const key of ['needs_you_required','permanent_manual','context_review','media_review']) assert.equal(Object.hasOwn(cleared,key),false);
-});
-
-
-test('actual writer finalization removes observed close regressions and preserves all-provider-failure recovery', async () => {
-    const contextPath=require.resolve('../netlify/functions/_lib/client-context');
-    const draftPath=require.resolve('../netlify/functions/ig-instant-draft');
-    const saved=require.cache[contextPath].exports;
-    const input={leadName:'Fixture',leadBlock:'Synthetic enquiry',profileBlock:'',memoryBlock:'',history:[],currentMessage:'Thanks!',recentInboundMessages:[],leadStage:'qualifying',channel:'instagram',igThreadId:null,linkedUserId:null,priorScheduledDrafts:[],linkedNudges:[],qualifier:{facts:{}},botAccount:'shan_n_sunny',acquisitionMode:'organic_inbound',adFlowVariant:'plant_based_challenge'};
-    let fail=false;
-    const model=async()=>{if(fail)throw new Error('Synthetic model failure');return JSON.stringify({messages:['No worries at all. If you want, tell me what you mean by stronger.']});};
-    require.cache[contextPath].exports={...saved,loadEditExamples:async()=>'',callVertexAIModel:model,callOpenAITextModel:model,callGeminiFallback:model};
-    delete require.cache[draftPath];
-    try {
-        const {generateDraft}=require(draftPath)._test;
-        assert.equal((await generateDraft(input)).joined,'No worries at all.');
-        fail=true;
-        const fallback=await generateDraft({...input,acquisitionMode:'paid_meta',currentMessage:'Can I book a consultation?'});
-        assert.equal(fallback.error,null);
-        assert.equal(fallback.model,'deterministic_challenge_unavailable_v1');
-        assert.ok(fallback.joined.includes(CHALLENGE_BOOKING_URL));
-        assert.deepEqual(collectChallengeLeadIssues({draft:fallback,currentMessage:'Can I book a consultation?'}),[]);
-    } finally {require.cache[contextPath].exports=saved;delete require.cache[draftPath];}
-});
 
 test('dormant worker inherits challenge content without changing the transport contract', async () => {
     const {buildLivePrompt}=await import('../scripts/ig-codex-live-worker.mjs');
-    const prompt=buildLivePrompt({alert:{id:'fixture',data:{challenge_policy_version:'plant_based_challenge_consult_v1'}},action:{id:'fixture'},codexThreadId:'fixture'});
+    const prompt=buildLivePrompt({alert:{id:'fixture',data:{challenge_policy_version:'plant_based_challenge_consent_v2'}},action:{id:'fixture'},codexThreadId:'fixture'});
     assert.ok(prompt.includes(CHALLENGE_BOOKING_URL));
     assert.ok(prompt.includes('Revalidate the supplied codex_live_worker controller claim'));
     assert.ok(prompt.includes('replyTextUtf8Base64'));
@@ -218,31 +155,6 @@ test('booking query parameters are not repeated conversational questions', () =>
     const input={flowVariant:'plant_based_challenge',currentMessage:'Can you resend the consultation booking link?',history:[{direction:'out',text:`Choose a time: ${CHALLENGE_BOOKING_URL}`}],draft:{joined:`Here it is again: ${CHALLENGE_BOOKING_URL}`}};
     assert.deepEqual(check(input),[]);
     assert.ok(check({...input,currentMessage:'Thanks'}).length);
-});
-
-
-test('a refusal does not erase a new direct question or unrelated rapport', () => {
-    const {finalizeChallengeText}=require('../netlify/functions/_lib/plant-based-challenge-dm');
-    const history=[{direction:'in',text:'Not now, I need time to think.'}];
-    assert.deepEqual(finalizeChallengeText(["I've been vegan for five years."],{history,currentMessage:'Are you vegan?'}),["I've been vegan for five years."]);
-    assert.deepEqual(finalizeChallengeText(['Nice, glad you got that session in. When you want help, we can plan training.'],{history,currentMessage:'I trained yesterday.'}),['Nice, glad you got that session in.']);
-});
-
-
-test('requested package facts survive a rapid-batch answer without unsolicited prices', () => {
-    const {finalizeChallengeText}=require('../netlify/functions/_lib/plant-based-challenge-dm');
-    const text=finalizeChallengeText(["Yep, the live workout is half an hour."],{currentMessage:'What does the $125 a week option include?\nIs the live workout half an hour?'}).join(' ');
-    for(const pattern of [/125/,/weekly/,/1:1/,/Learn/]) assert.match(text,pattern);
-    assert.doesNotMatch(finalizeChallengeText(['Yep, half an hour.'],{currentMessage:'Is the live workout half an hour?'}).join(' '),/125/);
-    assert.equal(finalizeChallengeText(["Yeah I'm vegan, I've been for five years too."],{currentMessage:'I am vegetarian. Are you vegan?'}).join(' '),"Yeah I'm vegan, I've been for five years.");
-});
-
-
-test('known goals do not turn unrelated rapport into a sales invitation', () => {
-    const {resolveChallengeTurn}=require('../netlify/functions/_lib/plant-based-challenge-dm');
-    const history=[{direction:'in',text:'I want to get stronger and need help'}];
-    for(const currentMessage of ['How was your weekend?', 'That sunset looks amazing', 'Nice!', 'Are you vegan?']) assert.equal(resolveChallengeTurn({history,currentMessage}).offering,false,currentMessage);
-    assert.equal(resolveChallengeTurn({history:[{direction:'out',text:'Want the consultation booking card?'}],currentMessage:'Yes please'}).offering,true);
 });
 
 
@@ -262,42 +174,12 @@ test('a later legacy promise outranks stale challenge metadata until explicitly 
 });
 
 
-test('model-outage fallback retains common offer and requested-price answers without bypassing questions', () => {
-    const {buildChallengeUnavailableFallback}=require('../netlify/functions/_lib/plant-based-challenge-dm');
-    const offer=buildChallengeUnavailableFallback({currentMessage:'I want to get stronger and need a plan.'});
-    assert.ok(offer.joined.includes(CHALLENGE_BOOKING_URL));
-    assert.match(buildChallengeUnavailableFallback({currentMessage:'What does the $125 package include?'}).joined,/125/);
-    assert.doesNotMatch(buildChallengeUnavailableFallback({currentMessage:'What does the challenge cost?'}).joined,/125/);
-    assert.equal(buildChallengeUnavailableFallback({currentMessage:'I want strength, but can you promise this fixes my condition?'}),null);
-});
-
-
-test('off-topic rapport and pain answers lose only the unwanted sales sentences', () => {
-    const {finalizeChallengeText}=require('../netlify/functions/_lib/plant-based-challenge-dm');
-    const history=[{direction:'in',text:'I want to build muscle'}];
-    const rapport=finalizeChallengeText([`It really is, hey. I can help with your muscle-building goal and the challenge. If you want, I can send a consult link: ${CHALLENGE_BOOKING_URL}`],{history,currentMessage:'That sunset looks amazing!'}).join(' ');
-    assert.equal(rapport,'It really is, hey.');
-    const subtlePitch='It really is. And building muscle can fit around shifts too. If you want, I can help you with the right support for that.';
-    assert.equal(finalizeChallengeText([subtlePitch],{history,currentMessage:'That sunset looks amazing!'}).join(' '),'It really is.');
-    assert.ok(collectChallengeLeadIssues({history,currentMessage:'That sunset looks amazing!',draft:{joined:subtlePitch}}).length);
-    const pain=finalizeChallengeText(["I can't tell you what exercise fixes that. Get the swollen knee assessed by a physio. If you want, we can book a challenge consult later."],{currentMessage:'My knee is swollen and painful. What will fix it?'}).join(' ');
-    assert.match(pain,/assessed/);
-    assert.doesNotMatch(pain,/challenge|consult|book/);
-});
-
-
 test('a late repair cannot hide a sales tail behind a correct safety answer', () => {
     const currentMessage='My knee is swollen and painful. What will fix it?';
     assert.ok(collectChallengeLeadIssues({currentMessage,draft:{joined:"I can't tell you what exercise fixes that. If you want, book a challenge consult later."}}).length);
 });
 
 
-test('explicit challenge Balance keyword retains the overview and asks for a goal', () => {
- const {buildChallengeTurnDirective,finalizeChallengeText}=require('../netlify/functions/_lib/plant-based-challenge-dm');
- assert.match(buildChallengeTurnDirective({currentMessage:'Balance'}),/brief accurate overview/);
- const reply='The eight-week plant-based challenge includes training and meal plans. What would you like to change?';
- assert.deepEqual(finalizeChallengeText([reply],{currentMessage:'Balance'}),[reply]);
-});
 test('only the explicit challenge keyword is independent of missing prior context', () => {
  const {buildContextReviewInfo}=require('../netlify/functions/_lib/client-context');
  const input={channel:'instagram',first_captured_lead_reply:true,message_preview:'Balance',offer_flow_variant:'plant_based_challenge'};
@@ -305,4 +187,43 @@ test('only the explicit challenge keyword is independent of missing prior contex
  assert.equal(buildContextReviewInfo({...input,offer_flow_variant:undefined}).required,true);
  assert.equal(buildContextReviewInfo({...input,message_preview:'that one'}).required,true);
  assert.equal(buildContextReviewInfo({...input,context_review:{required:true,reasons:['voice_note_review_required']}}).required,true);
+});
+
+const policy = require('../netlify/functions/_lib/plant-based-challenge-dm');
+const offered = [{direction:'out',text:'I can work the plan around those shifts. Want me to send the call booking link?'}];
+test('goal and unusual struggle get an AI-written invitation, never immediate card permission', () => {
+    for (const currentMessage of ['I want strength','My travel changes daily and conflicting advice leaves me doing nothing','I want to hike with my dad, but hotel floor space is all I have']) {
+        assert.equal(policy.resolveChallengeTurn({currentMessage}).wantsCard,false);
+        assert.equal(buildChallengeBookingHandoff({currentMessage,draft:{joined:CHALLENGE_BOOKING_URL}}),null);
+        assert.deepEqual(collectChallengeLeadIssues({currentMessage,draft:{joined:'I can fit the training around that. Want me to send the call booking link?'}}),[]);
+    }
+});
+test('booking acceptance requires a prior link invitation and handles multiple inbound bubbles', () => {
+    for (const currentMessage of ['Yes please','Yeah sounds good','Sure, send it through','That would be great','Yes please!\nIs the call 60 minutes?']) {
+        const input={history:offered,currentMessage,draft:{joined:CHALLENGE_BOOKING_URL}};
+        assert.ok(buildChallengeBookingHandoff(input),currentMessage);
+        assert.equal(buildChallengeBookingHandoff({...input,history:[{direction:'out',text:'Do you want to get stronger?'}]}),null);
+    }
+    for (const currentMessage of ['No thanks','Not yet','Yes but not now','Maybe','Yes if it is free','Sounds interesting','What happens on the call?']) {
+        assert.equal(buildChallengeBookingHandoff({history:offered,currentMessage,draft:{joined:CHALLENGE_BOOKING_URL}}),null,currentMessage);
+    }
+});
+test('direct request supplies consent; refusal, social calls and old card acknowledgements do not', () => {
+    for(const currentMessage of ['Please send the booking link','Can I book a consultation?','Can you resend the call booking link?']) assert.ok(buildChallengeBookingHandoff({currentMessage,draft:{joined:CHALLENGE_BOOKING_URL}}));
+    for(const currentMessage of ["Don't send the booking link",'Want to video chat on Discord?','Thanks','Yes please']) assert.equal(buildChallengeBookingHandoff({currentMessage,history:[{direction:'out',text:CHALLENGE_BOOKING_URL}],draft:{joined:CHALLENGE_BOOKING_URL}}),null);
+});
+test('ordinary wording is preserved exactly and model outage never substitutes a sales script', () => {
+    for(const currentMessage of ['BALANCE','I want strength','No thanks','How much is it?']) {
+        const chunks=['A deliberately unusual model sentence.','A second answer to their other question.'];
+        assert.deepEqual(policy.finalizeChallengeText(chunks,{currentMessage}),chunks);
+        assert.equal(policy.buildChallengeUnavailableFallback({currentMessage}),null);
+    }
+});
+test('challenge media prohibition and vegetarian correction survive late draft repairs', () => {
+    for(const draft of [{joined:"Here's a photo showing a transformation"},{joined:'Here you go',imageAttachmentUrl:'https://example.com/photo.jpg'},{joined:'Here you go',videoAttachmentUrl:'https://example.com/video.mp4'},{joined:"I'm vegan for five years"}]) assert.ok(collectChallengeLeadIssues({currentMessage:'Can you help?',draft}).length);
+});
+test('opener preference includes Summer Shred, Learn and ten-week goal horizon without diet qualification', () => {
+    const prompt=buildChallengeLeadPrompt({currentMessage:'BALANCE'});
+    for(const phrase of ['Summer Shred','six-week course','long-term lifestyle changes','What are you looking to achieve over the next ten weeks?','not a vegan-status qualification gate','No transformation photos']) assert.ok(prompt.includes(phrase),phrase);
+    assert.doesNotMatch(prompt,/No extra permission loop|goal plus a genuine.*enquiry is enough|Do not ask permission to send/);
 });

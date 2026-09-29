@@ -1,3 +1,4 @@
+const {collectChallengeLeadIssues} = require('./_lib/plant-based-challenge-dm');
 const { sendRejectedMediaWithRetry, deliveredPrefix } = require('./_lib/ig-media-recovery');
 const { resolveMessengerRoute, isMessengerWindowOpen, getMessengerToken, sendMessengerItem } = require('./_lib/facebook-messenger');
 const { outboundAnswersOlderInbound, recordDeliveredChunk } = require('./_lib/ig-reply-source');
@@ -2682,6 +2683,22 @@ exports.handler = async (event) => {
     } else {
         messagesToSend = [replyText];
         wasEdited = !!draftText && replyText !== draftText;
+    }
+    // Enforce challenge consent against canonical live history, including late
+    // repairs and stale queued drafts. This never writes conversational copy.
+    if (String(alertData.challenge_policy_version || '').startsWith('plant_based_challenge_')) {
+        const recent = await supabase(`ig_messages?select=direction,text,created_at&thread_id=eq.${encodeURIComponent(igThreadId)}&order=created_at.desc&limit=100`);
+        if (!Array.isArray(recent) || !recent.length) return {statusCode:409,body:JSON.stringify({code:'challenge_consent_context_unavailable'})};
+        const testReset = !threadForSend?.linked_user_id && threadForSend?.custom_data?.internal_test_auto_reply_enabled === true
+            ? Date.parse(threadForSend.custom_data.internal_test_conversation_reset_at || '') : NaN;
+        const ordered = [...recent].reverse().filter(item => !Number.isFinite(testReset) || Date.parse(item.created_at) >= testReset);
+        const lastOut = ordered.findLastIndex(item => item.direction === 'out');
+        const currentMessage = ordered.slice(lastOut + 1).filter(item => item.direction === 'in').map(item => item.text || '').join('\n');
+        const issues = collectChallengeLeadIssues({currentMessage,history:ordered.slice(0,lastOut+1),draft:{
+            joined:messagesToSend.join('\n'),imageAttachmentUrl:alertData.draft_image_attachment_url,
+            videoAttachmentUrl:alertData.draft_video_attachment_url,audioAttachmentUrl:alertData.draft_audio_attachment_url,
+        }});
+        if (issues.length) return {statusCode:409,body:JSON.stringify({code:'challenge_consent_policy',issues})};
     }
     const draftVideoAttachmentUrl = resolvePaidMetaProofVideoAttachmentUrl(alertData.draft_video_attachment_url);
     const hasValidDraftVideoAttachment = /^https:\/\/[^\s]+\.mp4(?:[?#][^\s]*)?$/i.test(draftVideoAttachmentUrl);

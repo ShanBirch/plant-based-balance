@@ -3965,6 +3965,7 @@ function finalizeDraftChunksFromRawText(rawText, {
 } = {}) {
     const parsed = parseDraftChunks(rawText, maxChunks);
     const baseChunks = Array.isArray(parsed.chunks) ? parsed.chunks : [];
+    if (challengeLead) return splitCoachDraftIntoDmBubbles(baseChunks.map(normalizeGeneratedCoachDraftText).filter(Boolean)).slice(0, maxChunks);
     const repairMissingLink = (chunks) => challengeLead ? chunks : repairMissingChallengeBioLinkChunks(chunks, {
         maxChunks,
         currentMessageText,
@@ -5329,15 +5330,15 @@ BROAD ROUTE GUARD: do not introduce plant-based, vegan or vegetarian positioning
 
 Your job is to read the complete paid-ad conversation and write Shannon's next Instagram DM. Treat every unanswered bubble as one current turn. Answer every live direct or reciprocal question before making the next sales move. The newest substantive message controls when it changes the topic.
 
-${challengeFlow ? 'Understand their goal from the whole conversation, explain the relevant challenge support, and invite a consultation using the scoped content policy below. No blocker prerequisite.' : journey}
+${challengeFlow ? 'Understand their goal and struggle from the whole conversation, then briefly explain relevant support and ask whether they want the call booking link. Send the card only after acceptance or an explicit link request.' : journey}
 
-${challengeFlow ? 'Answer all live questions first. Use known facts. Ask at most one question only when needed; no discovery or permission question when the goal is already known.' : progression}
+${challengeFlow ? 'Answer all live questions first. Use known facts and natural understanding, not keyword stages. Ask at most one useful question. Never repeat answered discovery.' : progression}
 
 ${knownFactRule}
 
 Interpret the lead's meaning before choosing a step. A named difficulty, constraint, preference or support need is enough context; it does not need to match a standard category. "Conflicting advice leaves me doing nothing" already answers what gets in the way. "I care for my dad" and "sometimes only hotel floor space" are also useful context. Never follow an answer like that with "what gets in the way", "the main thing I want to understand is...", or a menu of time/stress/food possibilities. Reflect their actual detail, answer any direct question and explain the next useful step. If they are unsure or say there is no blocker, accept that without inventing one or asking them to identify it again. Preserve negations, corrections and uncertainty. Chocolate does not imply cravings or weekends; children do not imply a particular schedule. Use contractions and keep it natural.
 
-Client proof should normally be used once when it genuinely matches: Ally for weight loss, Gen for strength/confidence, Kristy for body recomposition (26 weeks of coaching with Shannon), Bec and Kirsty for shared accountability. Use no transformation when identity, safety or fit is uncertain. If using proof, name the approved person and say you are showing their photo. ${challengeFlow ? 'Do not proactively add the course explainer video;' : 'The deterministic transport may add the approved quick app video after both goal and blocker are known;'} do not invent URLs, visible media placeholders such as [course video], or repeat it.
+${challengeFlow ? 'No transformation photos, proof images or videos in this flow. Text only until a consented booking card.' : `Client proof should normally be used once when it genuinely matches: Ally for weight loss, Gen for strength/confidence, Kristy for body recomposition (26 weeks of coaching with Shannon), Bec and Kirsty for shared accountability. Use no transformation when identity, safety or fit is uncertain. If using proof, name the approved person and say you are showing their photo. The deterministic transport may add the approved quick app video after both goal and blocker are known; do not invent URLs, visible media placeholders such as [course video], or repeat it.`}
 
 Reliable offer facts: Balance Learn is a six-week course inside Balance, built around neuroscience and the psychology of lasting change. Each week gives the person one practical learning focus, supported by Weekly Goals, alongside a personalised workout program, meal-plan support fitted to recorded dietary needs, and one weekly check-in where Shannon reviews their training and food and adjusts the plan. It is one AUD ${resolveBalanceLearnCoursePriceLabel()} payment for the full six weeks, with no subscription or auto-renewal. ${challengeFlow ? 'These are reference facts for explicit Learn questions, not the default challenge pitch.' : 'The personalised app preview comes before payment.'}
 Keep three separate facts clear: the course has a fixed weekly LEARNING theme; the workout schedule fits the person's availability and needs; Shannon reviews training and food in one weekly CHECK-IN. Never shorten this to "one weekly training" or imply the package limits them to one workout a week. If they ask whether it means one workout weekly, directly explain that weekly refers to the review, not the number of workouts. Do not promise a different workout every week merely because they dislike repetition. For lessons-only interest or an existing coach, explain that the curriculum stays fixed; personalisation applies to the workout/nutrition setup and review, not individually rewritten lessons.
@@ -7032,7 +7033,7 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, c
     const openAiShannonVoice = buildOpenAIShannonVoiceBlock();
     const personalVoiceNoteDraftingBlock = buildPersonalVoiceNoteDraftingBlock(personalVoiceNoteMode);
     const isSalesLeadThread = isSalesAcquisitionThread({ leadStage, linkedUserId });
-    const paidMetaSingleWriter = isSalesLeadThread && isPaidMetaAcquisitionMode(acquisitionMode);
+    const paidMetaSingleWriter = isSalesLeadThread && (isPaidMetaAcquisitionMode(acquisitionMode) || adFlowVariant === CHALLENGE_FLOW);
     const accountExperimentBlock = isSalesLeadThread && !paidMetaSingleWriter ? buildAccountExperimentBlock(botAccount) : '';
     const acquisitionMomentumBlock = paidMetaSingleWriter ? '' : buildAcquisitionMomentumBlock({ botAccount, leadStage, linkedUserId });
     const acquisitionStyleBlock = paidMetaSingleWriter ? '' : buildAcquisitionStyleBlock({ leadStage, linkedUserId });
@@ -7545,7 +7546,7 @@ Rules:
         });
     }
     if (adFlowVariant === CHALLENGE_FLOW && isSalesLeadThread) {
-        prompt = buildChallengeLeadPrompt({basePrompt: prompt, context: [leadBlock, profileBlock, memoryBlock].filter(Boolean).join("\n"), currentMessage: unansweredBatch.map(m => m.text).join("\n"), history, qualifier});
+        prompt = buildChallengeLeadPrompt({basePrompt: prompt + "\nVOICE GUIDANCE (style only; current challenge facts and consent win):\n" + openAiShannonVoice + "\n" + editExamples, context: [leadBlock, profileBlock, memoryBlock].filter(Boolean).join("\n"), currentMessage: unansweredBatch.map(m => m.text).join("\n"), history, qualifier});
     }
     prompt = prompt.replace(
         /- 1 to 3 chunks\.[^\n]*\n- Split where/,
