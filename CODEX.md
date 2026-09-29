@@ -1,5 +1,9 @@
 # Balance Codex Operating Brief
 
+## Summer Shred consultation duration clarification (29 September 2026)
+
+The calendar reserves an hour, but people are not required to use the whole hour. Shannon sets it aside to get to know them properly, understand their goals and answer questions without rushing; the conversation can finish earlier. Explain this naturally when someone asks why it is long. Do not promise a specific shorter duration or confuse this with package commitment/cancellation terms.
+
 ## Summer Shred phone consultation choice (29 September 2026)
 
 Shannon requested a normal phone alternative for people who do not want video. The Summer Shred booking page now offers phone or Google Meet, using the same 60-minute availability. Shannon calls the mobile entered on the booking form; phone bookings save that type and include the number in the calendar event, without creating a Meet link. This supersedes video-only consultation wording below. The shared challenge DM writer acknowledges phone preferences, distinguishes declining video from declining all calls, and sends the existing booking card after explicit booking permission. A preference/question alone still gets an answer and natural permission invitation. Existing Zoom/PT booking routes remain video. See docs/challenge-phone-consultations-2026-09-29.md.
