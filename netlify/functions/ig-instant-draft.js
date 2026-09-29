@@ -10849,6 +10849,10 @@ exports.handler = async (event) => {
     }
 
     stopPaidMetaTypingHeartbeat();
+    if (!autoHandled && earlyInstagramTypingAction?.ok && challengeLead) {
+        await sendInstagramGraphTypingAction({recipientId:graphRecipientId,accountId:graphAccountId,
+            action:'typing_off',beforeChunkIndex:0,gapMs:0});
+    }
     if (!autoHandled && balanceLeadAutoSendLane && !cocosAutoSendLane) {
         console.log(`[ig-draft] Balance AI coach did not auto-schedule thread ${thread.id}; preserving its explicit hold for review`);
     }

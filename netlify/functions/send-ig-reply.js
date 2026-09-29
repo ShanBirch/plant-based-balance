@@ -1,4 +1,5 @@
 const {collectChallengeLeadIssues, resolveChallengeLeadRoute, CHALLENGE_FLOW} = require('./_lib/plant-based-challenge-dm');
+const {textTypingDurationMs, waitWithTypingRefresh} = require('./_lib/ig-typing-pacing');
 const { sendRejectedMediaWithRetry, deliveredPrefix } = require('./_lib/ig-media-recovery');
 const { resolveMessengerRoute, isMessengerWindowOpen, getMessengerToken, sendMessengerItem } = require('./_lib/facebook-messenger');
 const { outboundAnswersOlderInbound, recordDeliveredChunk } = require('./_lib/ig-reply-source');
@@ -1301,6 +1302,7 @@ function resolveOutboundItemGapMs({
     plannedChunkGapsMs = [],
     chunkPacing = {},
     paidMetaFastLane = false,
+    challengeFlow = false,
 } = {}) {
     if (index === 1 && outboundItems[0]?.kind === 'audio' && outboundItems[1]?.kind === 'text') {
         return VOICE_COMPANION_GAP_MS;
@@ -1315,7 +1317,9 @@ function resolveOutboundItemGapMs({
         return Math.min(plannedGapMs, PAID_META_OUTBOUND_ITEM_GAP_MAX_MS);
     }
     const nextLength = String(outboundItems[index]?.text || '').trim().length;
-    const typingGap = clampNumber(2500 + nextLength * 20, PAID_META_TEXT_GAP_MIN_MS, PAID_META_TEXT_GAP_MAX_MS);
+    const typingGap = challengeFlow
+        ? textTypingDurationMs(outboundItems[index]?.text)
+        : clampNumber(2500 + nextLength * 20, PAID_META_TEXT_GAP_MIN_MS, PAID_META_TEXT_GAP_MAX_MS);
     const perItemBudget = PAID_META_TOTAL_GAP_BUDGET_MS / Math.max(1, outboundItems.length - 1);
     return Math.round(Math.min(typingGap, perItemBudget));
 }
@@ -2964,6 +2968,7 @@ exports.handler = async (event) => {
                 plannedChunkGapsMs,
                 chunkPacing,
                 paidMetaFastLane: alertData.meta_ad_fast_lane === true,
+                challengeFlow: String(alertData.challenge_policy_version || '').startsWith('plant_based_challenge_'),
             });
             sentChunkGapsMs.push(gapMs);
             if (shouldUseGraph) {
@@ -2978,7 +2983,11 @@ exports.handler = async (event) => {
                 if (typingAction.attempted) instagramTypingActions.push(typingAction);
                 typingStartedForChunk = !!typingAction.ok;
             }
-            await sleep(gapMs);
+            await waitWithTypingRefresh({delayMs:gapMs, refresh:shouldUseGraph && String(alertData.challenge_policy_version || '').startsWith('plant_based_challenge_') ? async () => {
+                const refreshed = await sendInstagramGraphTypingAction({channel,recipientId:graphRecipientId,accountId:graphAccountId,
+                    action:'typing_on',beforeChunkIndex:i+1,gapMs});
+                if (refreshed.attempted) instagramTypingActions.push(refreshed);
+            } : null});
         }
         const item = outboundItems[i];
         const chunkText = item.text;
@@ -3260,7 +3269,8 @@ exports.handler = async (event) => {
         } : undefined,
     };
     if (instagramTypingActions.length > 0) {
-        mergedData.instagram_typing_strategy = 'typing_on_before_each_item_v2';
+        mergedData.instagram_typing_strategy = String(alertData.challenge_policy_version || '').startsWith('plant_based_challenge_')
+            ? 'word_paced_typing_refresh_v3' : 'typing_on_before_each_item_v2';
         mergedData.instagram_typing_actions = instagramTypingActions;
     }
     if (wasEdited && editReason) mergedData.edit_reason = editReason;

@@ -246,3 +246,21 @@ test('first-send course-video wording introduces the attached video without requ
     }
     assert.equal(sendIg.maySendDraftVideoAttachment({videoUrl, replyText: 'Your workout program is included.'}), false);
 });
+
+test('challenge text restores word-based typing with a bounded delivery budget', () => {
+ const {textTypingDurationMs}=require('../netlify/functions/_lib/ig-typing-pacing');
+ const short='Want me to send the booking link?';
+ const long=Array(45).fill('word').join(' ');
+ assert.equal(textTypingDurationMs(long),20000);
+ const gap=items=>sendIg.resolveOutboundItemGapMs({index:1,outboundItems:items,paidMetaFastLane:true,challengeFlow:true});
+ assert.ok(gap([{kind:'text',text:'Hi'},{kind:'text',text:long}])>gap([{kind:'text',text:'Hi'},{kind:'text',text:short}]));
+ const items=Array.from({length:6},()=>({kind:'text',text:long}));
+ assert.ok(items.slice(1).reduce((sum,_,i)=>sum+sendIg.resolveOutboundItemGapMs({index:i+1,outboundItems:items,paidMetaFastLane:true,challengeFlow:true}),0)<=20005);
+});
+
+test('long typing pauses refresh every four seconds and leave no timer running', async () => {
+ const {waitWithTypingRefresh}=require('../netlify/functions/_lib/ig-typing-pacing');
+ const events=[];
+ await waitWithTypingRefresh({delayMs:10600,wait:async ms=>events.push(ms),refresh:async()=>events.push('typing_on')});
+ assert.deepEqual(events,[4000,'typing_on',4000,'typing_on',2600]);
+});
