@@ -2,30 +2,22 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const {postGoalReaction}=require('../netlify/functions/_lib/ig-reaction-transport');
 const payload={recipient:{id:'recipient'},sender_action:'react',payload:{message_id:'mid',reaction:'love'}};
-const args={payload,accountId:'owner',token:'ig-token',query:async()=>[],env:{FACEBOOK_PAGE_ID:'123',FACEBOOK_PAGE_ACCESS_TOKEN:'page-token'}};
-const response=(data,status=200)=>new Response(JSON.stringify(data),{status});
-test('explicit transient rejection falls back only through the verified linked Page',async()=>{
- const calls=[];
- const result=await postGoalReaction({...args,fetcher:async(url,options)=>{
-  calls.push({url,options});
-  if(url.includes('graph.instagram'))return response({error:{code:2,is_transient:true}},500);
-  if(url.includes('?fields='))return response({id:'123',instagram_business_account:{id:'owner'}});
-  assert.deepEqual(JSON.parse(options.body),payload);assert.equal(options.headers.Authorization,'Bearer page-token');
-  return response({recipient_id:'recipient'});
+test('native reaction preserves exact goal target and original transport',async()=>{
+ const result=await postGoalReaction({payload,accountId:'owner',token:'private',fetcher:async(url,options)=>{
+  assert.equal(url,'https://graph.instagram.com/v25.0/owner/messages');
+  assert.deepEqual(JSON.parse(options.body),payload);
+  return new Response(JSON.stringify({recipient_id:'recipient'}));
  }});
- assert.equal(result.reaction_transport,'facebook_linked_instagram');assert.equal(calls.length,3);
+ assert.equal(result.reaction_transport,'instagram_graph');
 });
-test('timeouts, permission failures and a mismatched Page never trigger a reaction fallback',async()=>{
- for(const mode of ['timeout','permission','mismatch']){
-  let writes=0;
-  await assert.rejects(postGoalReaction({...args,fetcher:async(url,options)=>{
-   if(options.method==='POST')writes++;
-   if(url.includes('graph.instagram')){
-    if(mode==='timeout')throw Error('timeout');
-    return mode==='permission'?response({error:{code:190}},401):response({error:{code:2,is_transient:true}},500);
-   }
-   return response({id:'123',instagram_business_account:{id:'different-owner'}});
+test('failures never retry through the unsupported Page route',async()=>{
+ for(const mode of ['transient','permission','timeout']){
+  let calls=0;
+  await assert.rejects(postGoalReaction({payload,accountId:'owner',token:'private',fetcher:async()=>{
+   calls++;
+   if(mode==='timeout')throw Error('timeout');
+   return new Response(JSON.stringify({error:{code:mode==='transient'?2:190,is_transient:true}}),{status:mode==='transient'?500:401});
   }}));
-  assert.equal(writes,1);
+  assert.equal(calls,1);
  }
 });
