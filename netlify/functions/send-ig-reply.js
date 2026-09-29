@@ -2936,6 +2936,7 @@ exports.handler = async (event) => {
 
     const reactionTarget = shouldUseGraph ? goalReactionTarget({
         review:alertData.draft_review, inbound:challengeReactionInbound,
+        enabled:threadForSend?.custom_data?.skip_goal_reaction !== true,
         challenge:String(alertData.challenge_policy_version || '').startsWith('plant_based_challenge_'), edited:wasEdited,
     }) : null;
     if (reactionTarget && !alertData.instagram_goal_reaction) {

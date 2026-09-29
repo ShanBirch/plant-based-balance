@@ -1,6 +1,6 @@
 // A native acknowledgement is separate from conversational text and receipts.
-function goalReactionTarget({review, inbound, challenge, edited = false}) {
-    if (!challenge || edited || review?.goal_heart !== true || review.verdict !== 'pass'
+function goalReactionTarget({review, inbound, challenge, edited = false, enabled = true}) {
+    if (!enabled || !challenge || edited || review?.goal_heart !== true || review.verdict !== 'pass'
         || review.issues?.length || review.context_loss_suspected || review.notification_required
         || !String(review.reviewer_model || '').includes('challenge-review')
         || inbound?.direction !== 'in') return null;

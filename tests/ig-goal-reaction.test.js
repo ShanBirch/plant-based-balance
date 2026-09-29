@@ -5,6 +5,7 @@ const review = {goal_heart:true,verdict:'pass',issues:[],reviewer_model:'openai-
 const inbound = {direction:'in',manychat_message_id:'ig_graph:verified-mid'};
 test('only reviewed challenge goals with an actual inbound Graph id can be liked',()=>{
     assert.equal(goalReactionTarget({review,inbound,challenge:true}),'verified-mid');
+    assert.equal(goalReactionTarget({review,inbound,challenge:true,enabled:false}),null);
     for(const override of [{challenge:false},{edited:true},{inbound:{...inbound,direction:'out'}},{inbound:{...inbound,manychat_message_id:'unverified'}},{review:{...review,goal_heart:false}},{review:{...review,verdict:'warn'}},{review:{...review,issues:['distress']}},{review:{...review,reviewer_model:'deterministic'}}]) {
         assert.equal(goalReactionTarget({review,inbound,challenge:true,...override}),null);
     }
