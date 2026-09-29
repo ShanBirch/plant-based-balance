@@ -13,6 +13,10 @@ body{background:#111110}.bio-masthead{position:absolute;inset:0 0 auto;z-index:2
 @media(min-width:800px){.photo-link,.photo-learn{height:100svh;min-height:620px}.photo-link>img{object-fit:contain}.photo-link>img.letterboxed-source{object-fit:contain}.photo-caption{max-width:1100px;margin:auto}.bio-masthead{padding-left:40px;padding-right:40px}}
 @media(max-height:500px) and (orientation:landscape){.photo-link,.photo-learn{height:130svh;min-height:440px}.photo-link>img{object-fit:contain}.photo-caption h1,.photo-caption h2{font-size:48px}}
 
+/* Keep the two challenge characters together, with room for the phone masthead and caption. */
+.photo-summer{background:#172016}
+.photo-summer>img{object-fit:cover;object-position:50% 20%}
+@media(max-width:799px){.photo-summer>img{top:110px;height:calc(100% - 110px);max-height:110vw;object-position:50% 20%;mask-image:linear-gradient(#000 75%,transparent);-webkit-mask-image:linear-gradient(#000 75%,transparent)}}
 /* Only the opened drawer adopts the inner website menu. Keep the original photo masthead. */
 .photo-hub { --bg:#f9f9f7; --text-main:#1a202c; --text-muted:#5f6f85; --secondary:#9b6f19; --button-hover:rgba(255,255,255,.98); }
 @media (pointer:coarse), (max-width:900px) {
