@@ -3030,7 +3030,7 @@ function getAutoDmHoldReason({ history = [], mediaReview, contextReview, onboard
         flowVariant: String(alertData?.offer_flow_variant || ''),
         metaAdConversationFastLane: alertData?.meta_ad_conversation_fast_lane === true,
     });
-    if (isUnsafeStockDiscoveryQuestion(draft.joined) && !verifiedBroadPaidMetaGoalToBlocker) {
+    if (!reviewedChallengeConversation && isUnsafeStockDiscoveryQuestion(draft.joined) && !verifiedBroadPaidMetaGoalToBlocker) {
         return {
             code: 'stock_question',
             label: 'stock discovery question needs Shannon review',
