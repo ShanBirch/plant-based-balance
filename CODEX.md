@@ -1,5 +1,9 @@
 # Balance Codex Operating Brief
 
+## Summer Shred phone consultation choice (29 September 2026)
+
+Shannon requested a normal phone alternative for people who do not want video. The Summer Shred booking page now offers phone or Google Meet, using the same 60-minute availability. Shannon calls the mobile entered on the booking form; phone bookings save that type and include the number in the calendar event, without creating a Meet link. This supersedes video-only consultation wording below. The shared challenge DM writer acknowledges phone preferences, distinguishes declining video from declining all calls, and sends the existing booking card after explicit booking permission. A preference/question alone still gets an answer and natural permission invitation. Existing Zoom/PT booking routes remain video. See docs/challenge-phone-consultations-2026-09-29.md.
+
 ## Challenge client first-login welcome (29 September 2026 correction)
 
 The in-app onboarding ending is a client greeting, not a call-booking or sales prompt. Welcome challenge clients, explain weekly workout, meal-plan, Learn and progress check-ins, and invite them to say hello back. The primary action opens the existing Coach Shannon conversation for their own reply; never auto-send it. Remove the earlier optional booking CTA/KPI from this welcome. Keep returning-member suppression and the dedicated reset-test-account exception. This supersedes the earlier onboarding booking experiment described below. See docs/onboarding-coach-message.md.
