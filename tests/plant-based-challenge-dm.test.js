@@ -3,6 +3,12 @@ const assert = require('node:assert/strict');
 const { resolveChallengeLeadRoute, buildChallengeLeadPrompt, collectChallengeLeadIssues, buildChallengeBookingHandoff, CHALLENGE_BOOKING_URL } = require('../netlify/functions/_lib/plant-based-challenge-dm');
 const fresh = { created_at:'2026-09-27T00:00:00Z', custom_data:{bot_account:'shan_n_sunny'} };
 
+test('phone-call requests retain booking consent while a video preference alone does not', () => {
+ const {resolveChallengeTurn}=require('../netlify/functions/_lib/plant-based-challenge-dm');
+ for(const currentMessage of ['Please book a phone call', "I don't want a video call. Can I book a normal phone call?"]) assert.equal(resolveChallengeTurn({currentMessage}).wantsCard,true);
+ for(const currentMessage of ["I don't want a video call", "Don't book a phone call", 'I would prefer a phone call, but not yet']) assert.equal(resolveChallengeTurn({currentMessage}).wantsCard,false);
+});
+
 test('explicit booking-link resend can refer back to the link earlier in the same message', () => {
     const {resolveChallengeTurn}=require('../netlify/functions/_lib/plant-based-challenge-dm');
     assert.equal(resolveChallengeTurn({currentMessage:"The booking link didn't come through. Can you resend it please?"}).wantsCard,true);

@@ -34,13 +34,14 @@
         document.documentElement.setAttribute('data-bio-theme', 'light');
         document.body.classList.add('challenge-booking');
         document.body.dataset.landingVariant = 'summer_shred_ten_week_v1';
-        document.title = 'Book Your 60-Minute Video Call | Balance';
+        document.title = 'Book Your 60-Minute Call | Balance';
+        byId('booking-call-type-choice').hidden = false;
         byId('booking-intro-kicker').textContent = 'Summer Ready Shred · 10 weeks · Starts 5 October 2026';
-        byId('booking-intro-title').textContent = 'Book a 60-minute video call with Shannon.';
-        byId('booking-intro-copy').textContent = 'In your 60-minute video call, we will talk through your goals, your routine and the support that fits you. Shannon will explain the options and pricing before you choose a package.';
-        byId('booking-card-title').textContent = 'Choose your video call time.';
+        byId('booking-intro-title').textContent = 'Book a 60-minute call with Shannon.';
+        byId('booking-intro-copy').textContent = 'Choose a phone or video call. In your 60-minute consultation, we will talk through your goals, your routine and the support that fits you. Shannon will explain the options and pricing before you choose a package.';
+        byId('booking-card-title').textContent = 'Choose your call time.';
         const submitLabel = form?.querySelector('.booking-submit span:first-child');
-        if (submitLabel) submitLabel.textContent = 'Confirm my 60-minute video call';
+        if (submitLabel) submitLabel.textContent = 'Confirm my 60-minute call';
         const menuBooking = document.querySelector('.balance-menu-drawer a[aria-current="page"]');
         if (menuBooking) { menuBooking.href = '/book?' + urlParams.toString(); menuBooking.textContent = 'Book a Consultation'; }
         byId('booking-unavailable-title').textContent = 'Arrange your consultation with Shannon.';
@@ -174,6 +175,8 @@
         const phoneLabel = byId(phoneLabelId);
         const callTypeNote = byId(noteId);
         if (phoneInput) phoneInput.required = true;
+        const formNote = targetForm?.querySelector('.booking-form-note');
+        if (formNote) formNote.textContent = callType === 'phone' ? 'Shannon will call the mobile number you enter at your booked time.' : 'Your calendar invitation will include your Google Meet link.';
         if (phoneLabel) {
             phoneLabel.innerHTML = 'Mobile number <em>so Shannon can contact you if needed</em>';
         }
@@ -307,7 +310,7 @@
             state.dates = groupSlotsInLocalTime(Array.isArray(data.dates) ? data.dates : []);
             show(loading, false);
             duration.textContent = isPlantBasedChallenge
-                ? `${data.durationMinutes || 60}-minute video call`
+                ? `${data.durationMinutes || 60}-minute phone or video call`
                 : data.durationMinutes ? `${data.durationMinutes} min ${isFirstPtSession ? 'session' : 'call'}` : 'Call times';
             renderTimeZone();
             if (!data.ok || !data.bookingEnabled || !state.dates.length) {
@@ -403,8 +406,10 @@
                 byId('booking-success-title').textContent = 'First PT session booked.';
                 byId('booking-success-copy').textContent = 'Your 30-minute training session is confirmed. Your Google Meet link is in your calendar invitation. Your membership has not been changed.';
             } else if (isPlantBasedChallenge) {
-                byId('booking-success-title').textContent = 'Your video call is booked.';
-                byId('booking-success-copy').textContent = meetingUrl
+                byId('booking-success-title').textContent = bookingCallType === 'phone' ? 'Your phone call is booked.' : 'Your video call is booked.';
+                byId('booking-success-copy').textContent = bookingCallType === 'phone'
+                    ? 'Your 60-minute phone call with Shannon is confirmed. Shannon will call the number you entered at your booked time.'
+                    : meetingUrl
                     ? 'Your 60-minute video call with Shannon is confirmed. Your Google Meet link is in your calendar invitation. We will talk through your goals and the right support before you choose a package.'
                     : 'Your 60-minute video call with Shannon is confirmed. Shannon will send the video link shortly. We will talk through your goals and the right support before you choose a package.';
             } else if (isZoomPtEnquiry) {

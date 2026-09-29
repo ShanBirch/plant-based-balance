@@ -704,6 +704,7 @@ async function createCalendarEvent(settings: BookingSettings, booking: Record<st
             description: [
                 `Booked through Balance`,
                 `Call type: ${callTypeLabel(callType)}`,
+                callType === "phone" ? `Call this number: ${trimText(booking.phone, 40)}` : "",
                 bookingSource === "zoom_pt" && ptSessionsPerWeek ? `Requested Zoom PT sessions each week: ${ptSessionsPerWeek}` : "",
                 bookingSource === "weekly_checkin_pt" ? `Recurring weekly time selected before payment` : "",
                 goal ? `What they want to cover: ${goal}` : "",
@@ -779,7 +780,12 @@ async function createBooking(req: Request): Promise<Response> {
     const phone = normalizeSmsPhone(body.phone);
     const goal = trimText(body.goal, 1000);
     const startsAt = trimText(body.startsAt, 80);
-    const callType: CallType = "video";
+    const requestedCallType = trimText(body.callType || "video", 20).toLowerCase();
+    const isChallengeConsultation = normalizeBookingSource(body.source) === "plant_based_challenge";
+    if (isChallengeConsultation && !["phone", "video"].includes(requestedCallType)) {
+        return json(400, { ok: false, error: "invalid_call_type" });
+    }
+    const callType: CallType = isChallengeConsultation && requestedCallType === "phone" ? "phone" : "video";
     const bookingMode = normalizeBookingMode(body.bookingMode);
     if (bookingMode === "outside_hours") return json(400, { ok: false, error: "outside_hours_unavailable" });
     const bookingSource = normalizeBookingSource(body.source);

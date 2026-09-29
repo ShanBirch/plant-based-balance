@@ -17,9 +17,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
     <script>document.documentElement.setAttribute('data-bio-theme','light');document.documentElement.classList.add('reveal-ready');</script>
     <link rel="stylesheet" href="bio.css">
-    <link rel="stylesheet" href="booking.css">
+    <link rel="stylesheet" href="booking.css?v=20260929-phone-choice">
     <script src="bio-animations.js" defer></script>
-    <script src="booking.js?v=20260929-summer-ready" defer></script>
+    <script src="booking.js?v=20260929-phone-choice" defer></script>
 <link rel="stylesheet" href="/site-navigation.css?v=20260927-challenge-menu">
 <link rel="stylesheet" href="/story-booking-polish.css?v=20260911">
 <link rel="stylesheet" href="/booking-compact.css?v=20260913">
@@ -85,7 +85,13 @@
                                 <span>Email</span>
                                 <input type="email" name="email" autocomplete="email" maxlength="320" required placeholder="you@email.com">
                             </label>
-                            <input type="hidden" name="callType" value="video">
+                            <label id="booking-call-type-choice" hidden>
+                                <span>How would you like to talk?</span>
+                                <select name="callType">
+                                    <option value="video">Video call (Google Meet)</option>
+                                    <option value="phone">Phone call (Shannon calls you)</option>
+                                </select>
+                            </label>
                             <label>
                                 <span id="booking-phone-label">Mobile number <em>so Shannon can contact you if needed</em></span>
                                 <input type="tel" name="phone" autocomplete="tel" maxlength="40" required placeholder="Your mobile number">

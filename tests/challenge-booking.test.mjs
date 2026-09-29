@@ -9,7 +9,7 @@ test('challenge consultation remains a distinct source without changing existing
     assert.equal(normalizeBookingSource('invented_source'), 'public_booking_page');
 });
 
-test('challenge booking saves its campaign evidence and creates a consultation, retaining the configured duration', async () => {
+for (const callType of ['video','phone']) test(callType + ' challenge booking saves its campaign evidence and creates a consultation, retaining the configured duration', async () => {
     const savedFetch = globalThis.fetch, savedNetlify = globalThis.Netlify;
     const config = {SUPABASE_URL:'https://test.invalid',SUPABASE_SERVICE_ROLE_KEY:'test',GOOGLE_CALENDAR_CLIENT_ID:'test',GOOGLE_CALENDAR_CLIENT_SECRET:'test'};
     globalThis.Netlify = {env:{get:name=>config[name] || ''}};
@@ -30,8 +30,11 @@ test('challenge booking saves its campaign evidence and creates a consultation, 
         const availability = await (await handler(new Request('https://balance.test/api/booking?source=plant_based_challenge'))).json();
         assert.equal(availability.durationMinutes,60);
         const start = availability.dates[0].slots[0].start;
-        const response = await handler(new Request('https://balance.test/api/booking',{method:'POST',body:JSON.stringify({source:'plant_based_challenge',name:'Test',email:'test@example.com',phone:'0400000000',callType:'video',startsAt:start,attribution:{visitor_id:'visitor-test',utm_source:'instagram'},ptSessionsPerWeek:5})}));
+        const response = await handler(new Request('https://balance.test/api/booking',{method:'POST',body:JSON.stringify({source:'plant_based_challenge',name:'Test',email:'test@example.com',phone:'0400000000',callType,startsAt:start,attribution:{visitor_id:'visitor-test',utm_source:'instagram'},ptSessionsPerWeek:5})}));
         assert.equal(response.status,201);
+        assert.equal(inserted.call_type,callType);
+        assert.equal(Boolean(calendar.conferenceData),callType==='video');
+        if(callType==='phone') assert.match(calendar.description,/Call this number:.*400000000/);
         assert.equal(inserted.metadata.source,'plant_based_challenge');
         assert.equal(inserted.metadata.attribution.visitor_id,'visitor-test');
         assert.equal(inserted.metadata.pt_sessions_per_week,null);
@@ -53,3 +56,4 @@ test('booking campaign evidence keeps browser identity and first/last touch but 
     for (const key of ['goal','token','nested','fbclid']) assert.equal(result[key], undefined);
     for (const input of [null, [], 'invalid']) assert.deepEqual(normalizeBookingAttribution(input), {first_touch:{},last_touch:{}});
 });
+

@@ -128,6 +128,7 @@
    so keep the native hidden state authoritative as the booking flow moves
    between loading, available, unavailable and confirmed. */
 .booking-loading[hidden],
+#booking-call-type-choice[hidden],
 .booking-unavailable[hidden],
 .booking-success[hidden],
 .booking-form[hidden],
