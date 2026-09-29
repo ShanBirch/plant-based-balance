@@ -3,6 +3,14 @@ const assert = require('node:assert/strict');
 const { resolveChallengeLeadRoute, buildChallengeLeadPrompt, collectChallengeLeadIssues, buildChallengeBookingHandoff, CHALLENGE_BOOKING_URL } = require('../netlify/functions/_lib/plant-based-challenge-dm');
 const fresh = { created_at:'2026-09-27T00:00:00Z', custom_data:{bot_account:'shan_n_sunny'} };
 
+test('conversational booking invitation keeps the consent boundary', () => {
+    const invitation = 'Want me to grab the booking link for you so we can tee up a call time?';
+    const history = [{direction:'out',text:invitation}];
+    assert.equal(policy.resolveChallengeTurn({currentMessage:'Yes please',history}).wantsCard,true);
+    assert.equal(policy.resolveChallengeTurn({currentMessage:'Not yet thanks',history}).wantsCard,false);
+    assert.equal(policy.resolveChallengeTurn({currentMessage:'I want to build strength',history:[]}).wantsCard,false);
+});
+
 test('Summer Shred ad questions start independent internal tests but preserve real lead history', () => {
     const {buildInternalMetaAdTestResetCustomData, filterInternalTestHistoryAfterReset} = require('../netlify/functions/ig-instant-draft')._test;
     const customData = {bot_account:'shan_n_sunny',internal_test_auto_reply_enabled:true,internal_test_meta_ad_flow:'broad_pain'};
