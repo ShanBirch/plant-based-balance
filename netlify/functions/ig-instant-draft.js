@@ -576,6 +576,9 @@ function normalizeIgAutoTimingSuggestion({ timingSuggestion, delayMs, timingLabe
 }
 
 function buildIgAutoTimingSuggestion(alertLike, replyText) {
+    if (/^(?:plant_based_challenge_|summer_ready_shred_)/.test(String(alertLike?.data?.challenge_policy_version || ''))) {
+        return {action:'send_now',delay_ms:0,label:'send now',reason:'Active shared challenge conversation; generation and sender pacing provide the pause',confidence:1,signals:{direct_challenge_question:true}};
+    }
     const suggestion = buildReplyTimingSuggestion(alertLike, replyText);
     if (suggestion) return suggestion;
     const delayMs = resolveIgAutoSendDelayMs(alertLike?.data?.response_timing_profile);
@@ -603,7 +606,8 @@ function shouldDispatchMetaAdReplyImmediately({ alertData, normalizedTiming, sch
     const review = alertData?.draft_review || {};
     const safeSanitizedStyleWarning = alertData?.meta_ad_style_warning_safe_after_sanitize === true
         && isNonBlockingDraftStyleWarning(review);
-    return alertData?.meta_ad_fast_lane === true
+    return (alertData?.meta_ad_fast_lane === true
+        || /^(?:plant_based_challenge_|summer_ready_shred_)/.test(String(alertData?.challenge_policy_version || '')))
         && normalizedTiming?.action === 'send_now'
         && scheduleResolution?.deferredForWorkingHours !== true
         && (String(review.verdict || '').toLowerCase() === 'pass' || safeSanitizedStyleWarning)
