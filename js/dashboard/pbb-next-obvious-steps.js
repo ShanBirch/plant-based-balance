@@ -1032,7 +1032,7 @@
     {
       id: 'coach_message_intro',
       title: 'Hear from your coach',
-      body: 'Watch Shannon’s coach note and see how weekly support works inside Balance.',
+      body: 'Read Shannon’s message and see how weekly coaching works inside Balance.',
       cta: 'Open Message',
       accent: '#b78a2e',
       priority: 950,

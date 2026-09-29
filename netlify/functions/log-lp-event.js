@@ -17,6 +17,7 @@ const SUPABASE_SERVICE_KEY =
     process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 
 const ALLOWED_EVENT_TYPES = new Set([
+    'coach_welcome_viewed', 'coach_welcome_dismissed', 'coach_welcome_call_clicked',
     'booking_available', 'booking_unavailable', 'booking_slot_selected',
     'booking_started', 'booking_confirmed', 'booking_error',
     'page_view', 'scroll', 'click', 'time_on_page', 'cta_click', 'dm_click', 'app_download_click',

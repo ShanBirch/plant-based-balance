@@ -51,18 +51,12 @@ test('Weekly Goals chooser uses one readable cream, white and gold Balance theme
   assert.doesNotMatch(weeklyGoals, /weekly-goal-save-btn\{[^}]*#321a55/);
 });
 
-test('preview walkthrough only unlocks Next after the full coach video plays', () => {
-  assert.match(dashboard, /id="meta-ad-trial-welcome-video"/);
-  assert.match(dashboard, /balance-onboarding-coach-note-captioned\.mp4/);
-  assert.match(dashboard, /id="meta-ad-trial-welcome-continue"/);
-  assert.match(dashboard, /title:'Watch Shannon’s coach note'[\s\S]*?embeddedGuide:true[\s\S]*?coachNoteGuide:true[\s\S]*?requiresWelcomeVideo:true/);
-  assert.match(dashboard, /#guided-tour-overlay\.tour-coach-note #guided-tour-bubble,[\s\S]*?#guided-tour-overlay\.tour-coach-note #guided-tour-spotlight[\s\S]*?display: none/);
-  assert.match(dashboard, /if \(step\.coachNoteGuide && continueButton\)[\s\S]*?continueButton\.style\.display = 'block'/);
-  assert.match(dashboard, /overlay\.classList\.toggle\('tour-coach-note', !!displayStep\.coachNoteGuide\)/);
-  assert.match(dashboard, /video\.addEventListener\('ended', complete\)/);
-  assert.match(dashboard, /video\.addEventListener\('seeking', stopSkipping\)/);
-  assert.match(dashboard, /duration - furthest > 1\.6/);
-  assert.match(dashboard, /Watch the full coach note to unlock Next/);
+test('first-login walkthrough ends with a text coach message, without a video gate', () => {
+  assert.doesNotMatch(dashboard, /id="meta-ad-trial-welcome-video"|requiresWelcomeVideo:true/);
+  assert.match(dashboard, /If your plan includes weekly coaching/);
+  assert.match(dashboard, /workouts, meal plan, progress through the Learn course/);
+  assert.match(dashboard, /not included in the app preview or an app-only plan/);
+  assert.match(dashboard, /showCoachWelcome\(\{ member: clientCompletionDestination === 'course' \}\)/);
 });
 
 test('paid preview opens and requires the real first Balance Learn lesson', () => {
@@ -86,34 +80,21 @@ test('paid preview opens and requires the real first Balance Learn lesson', () =
   assert.match(learning, /Karl Friston and Lisa Feldman Barrett personally endorse Balance/);
   assert.match(learning, /Balance draws on ideas from their published work/);
   assert.match(learning, /new CustomEvent\('pbbLearningLessonFinished'/);
-  assert.match(dashboard, /#guided-tour-overlay\.tour-action-required:not\(\.tour-gate-complete\)[\s\S]*?\.tour-actions \{ display: none; \}/);
+  assert.match(dashboard, /#guided-tour-overlay\.tour-action-required:not\(\.tour-gate-complete\) #guided-tour-bubble \.tour-next \{ display: none; \}/);
   assert.match(dashboard, /activeTourGate\.followTimer = setInterval/);
 });
 
-test('real Coach Shannon inbox also requires the full coach video', () => {
-  assert.match(directMessages, /id="balance-onboarding-welcome-video"/);
-  assert.match(directMessages, /onloadedmetadata="window\.socialJourney\.guardWelcomeVideo\(this\)"/);
-  assert.match(directMessages, /id="balance-onboarding-welcome-continue"/);
-  assert.match(directMessages, /Watch the full coach note to unlock your first lesson/);
-  assert.match(socialJourney, /if \(!hasCompletedWelcomeVideo\(\)\)/);
-  assert.match(socialJourney, /function guardWelcomeVideo\(video\)/);
-  assert.match(socialJourney, /function completeWelcomeVideo\(\)/);
-  assert.match(socialJourney, /welcomeVideoCompleteUserId/);
-});
-
-test('every onboarding coach video shows Shannon as its poster frame', () => {
-  const poster = 'poster="/assets/balance-onboarding-coach-note-poster.jpg"';
-  assert.match(dashboard, new RegExp('id="meta-ad-trial-welcome-video"[^>]*' + poster));
-  assert.match(directMessages, new RegExp('id="balance-onboarding-welcome-video"[^>]*' + poster));
-  assert.match(socialJourney, new RegExp('id="social-journey-welcome-video"[^>]*' + poster));
+test('first-login Inbox and welcome use the same text and allow continuing without playing video', () => {
+  assert.doesNotMatch(directMessages, /id="balance-onboarding-welcome-video"/);
+  assert.doesNotMatch(socialJourney, /id="social-journey-welcome-video"/);
+  assert.match(directMessages, /getCoachWelcomeHtml\(\)/);
+  assert.match(socialJourney, /getCoachWelcomeHtml\(\)/);
+  assert.doesNotMatch(socialJourney, /if \(!hasCompletedWelcomeVideo\(\)\)/);
 });
 
 test('changed onboarding assets are cache-busted', () => {
-  assert.match(dashboard, /meta-ad-trial\.js\?v=17-goal-alignment/);
-  assert.match(dashboard, /pbb-deferred-weeklygoals\.js\?v=36-community-challenge/);
-  assert.match(dashboard, /pbb-social-journey\.js\?v=45-exact-course-label/);
-  assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=227-meal-primary-tabs/);
-  assert.match(dashboard, /dashboard-script-6-ai_coach_draft_mode_logic_auth\.js\?v=50-community-games-theme/);
-  assert.match(dashboard, /learning-inline\.js\?v=42-required-course-welcome/);
-assert.match(serviceWorker, /pbb-app-v456-imported-activity-todo/);
+  assert.match(dashboard, /meta-ad-trial\.js\?v=32-coach-message/);
+  assert.match(dashboard, /pbb-social-journey\.js\?v=20260929-coach-text/);
+  assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=20260929-coach-message/);
+  assert.match(dashboard, /dashboard-script-6-ai_coach_draft_mode_logic_auth\.js\?v=20260929-coach-text/);
 });

@@ -9,7 +9,7 @@ const setupSource = read('js/dashboard/dashboard-script-5-initialize_stripe_for_
 const dashboard = read('dashboard.html');
 function storage() { const map = new Map(); return { getItem:k=>map.get(k)||null, setItem:(k,v)=>map.set(k,String(v)), removeItem:k=>map.delete(k) }; }
 function boot(localStorage, id='member-a') {
-    const window = {localStorage,currentUser:{id}};
+    const window = {localStorage,currentUser:{id,created_at:'2026-09-29T00:00:00Z'}};
     vm.runInNewContext(read('lib/onboarding-progress.js'), {window});
     return window;
 }
@@ -67,17 +67,17 @@ test('wizard draft restores submitted answers, unfinished input, schedule and pr
 test('boot resumes before completion shortcuts and after the startup Home switch', async () => {
     const start=setupSource.indexOf('async function checkAndTriggerOnboarding(');
     const end=setupSource.indexOf('\nfunction initOnboardingWizard(',start);
-    for(const stage of ['setup','tour','checkout']) {
+    for(const stage of ['setup','tour','checkout','coach_welcome']) {
         const window=boot(storage());window.metaAdTrialMode=true;
         window.BalanceOnboardingProgress.save(stage,{wizard:{step:4}});
         const events={};const calls=[];
         window.location={search:''};window.addEventListener=(name,fn)=>events[name]=fn;
-        window.BalanceMetaAdTrial={readState:()=>null,hasPendingClaim:()=>false,openCheckoutGate:()=>calls.push('checkout')};
-        const ctx={window,localStorage:window.localStorage,console,initOnboardingWizard:()=>calls.push('setup'),startWizardMetaPreviewTour:(n,o)=>calls.push(o.resume?'tour-resume':'tour-restart')};
+        window.BalanceMetaAdTrial={readState:()=>null,hasPendingClaim:()=>false,showCoachWelcome:()=>calls.push('coach_welcome')};
+        const ctx={window,localStorage:window.localStorage,readSessionProfileForActiveUser:()=>null,console,initOnboardingWizard:()=>calls.push('setup'),startWizardMetaPreviewTour:(n,o)=>calls.push(o.resume?'tour-resume':'tour-restart')};
         vm.runInNewContext(setupSource.slice(start,end),ctx);
         await ctx.checkAndTriggerOnboarding();
         if(stage==='tour'){assert.deepEqual(calls,[]);events.pbbInitComplete();assert.deepEqual(calls,['tour-resume']);}
-        else assert.deepEqual(calls,[stage]);
+        else assert.deepEqual(calls,[stage === 'checkout' ? 'coach_welcome' : stage]);
     }
 });
 test('tour checkpoint preserves the current stable step, gates and exercise position on hide', () => {
@@ -92,7 +92,7 @@ test('tour checkpoint preserves the current stable step, gates and exercise posi
     assert.match(dashboard,/savedTour\.foundationsComplete/);
 });
 test('Unlock has no sign-in fallback, and unfinished journeys never use the fast Home paint', () => {
-    const button=dashboard.match(/<button[^>]*onclick="[^"]*openCheckoutGate[^>]*>Unlock Balance<\/button>/)[0];
+    const button=dashboard.match(/<button[^>]*onclick="[^"]*showCoachWelcome[^>]*>Meet your coach<\/button>/)[0];
     assert.doesNotMatch(button,/login\.html|metaAdTrialMode/);
     const startup = read('js/dashboard/dashboard-script-3-1_get_user_data.js');
     assert.doesNotMatch(startup,/if \(fastStartupEligible\)/);

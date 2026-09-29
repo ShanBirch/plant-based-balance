@@ -1259,14 +1259,9 @@
     if (!container) return;
     document.querySelector('.social-journey-header__title').textContent = 'Your Next Step';
     document.querySelector('.social-journey-header__week').textContent = 'A message from Coach Shannon';
-    const welcomeReady = hasCompletedWelcomeVideo();
-    container.innerHTML = '<section class="social-journey-welcome">'
-      + '<div class="social-journey-welcome__eyebrow">YOUR COACH NOTE &middot; PRESS PLAY</div>'
-      + '<h2>Start here.</h2>'
-      + '<p>Watch Shannon’s coach note, then complete your first Balance Learn lesson. After that, Your Next Step will show you exactly what to do next.</p>'
-      + '<video id="social-journey-welcome-video" class="social-journey-welcome__video" poster="/assets/balance-onboarding-coach-note-poster.jpg" controls playsinline preload="metadata" controlslist="nodownload noplaybackrate" disablepictureinpicture onloadedmetadata="socialJourney.guardWelcomeVideo(this)" onerror="socialJourney.welcomeVideoError(this)"><source src="' + escapeHtml(WELCOME_VIDEO_URL) + '" type="video/mp4"></video>'
-      + '<div class="social-journey-welcome__transcript"><strong>The short version</strong><p>Use the app as evidence, not judgment. Log the meal you actually ate, complete the workout that fits today, and share the ordinary reps. That is how we build something that lasts.</p></div>'
-      + '</section><div class="social-journey-lesson-action"><div id="social-journey-welcome-status" role="status" aria-live="polite" style="font-size:.78rem;font-weight:800;color:#765315;margin-bottom:8px;">' + (welcomeReady ? 'Coach note complete. Your first lesson is ready.' : 'Watch the full coach note to unlock your first lesson.') + '</div><button id="social-journey-welcome-continue" type="button" class="social-journey-button" onclick="socialJourney.reviewLesson()" ' + (welcomeReady ? '' : 'disabled') + ' style="opacity:' + (welcomeReady ? '1' : '.55') + ';cursor:' + (welcomeReady ? 'pointer' : 'not-allowed') + ';">' + (welcomeReady ? 'Open my first lesson' : 'Watch first') + '</button><button type="button" class="social-journey-text-button" onclick="socialJourney.close()">Not now</button></div>';
+    container.innerHTML = '<section class="social-journey-welcome"><h2>Coach Shannon</h2>'
+      + (window.BalanceMetaAdTrial?.getCoachWelcomeHtml() || '<p>Welcome to Balance. This is where we can chat about your progress.</p>')
+      + '</section><div class="social-journey-lesson-action"><button id="social-journey-welcome-continue" type="button" class="social-journey-button" onclick="socialJourney.reviewLesson()">Open my first lesson</button><button type="button" class="social-journey-text-button" onclick="socialJourney.close()">Not now</button></div>';
   }
 
   function startFirstCourseLesson() {
@@ -1411,14 +1406,6 @@
   }
 
   function reviewLesson() {
-    if (Number(state && state.current_week) === 1 && !hasCompletedWelcomeVideo()) {
-      showToast('Watch Shannon’s full coach note before continuing.', 'info');
-      const video = document.getElementById('social-journey-welcome-video');
-      if (video) {
-        try { video.scrollIntoView({ block: 'center', behavior: 'smooth' }); video.focus(); } catch (_) {}
-      }
-      return false;
-    }
     viewStage = 'lesson';
     renderJourney();
     const scroll = document.getElementById('social-journey-content');
@@ -1484,14 +1471,6 @@
   }
 
   function continueFromInbox() {
-    if (!hasCompletedWelcomeVideo()) {
-      showToast('Watch Shannon’s full coach note before continuing.', 'info');
-      const video = document.getElementById('balance-onboarding-welcome-video');
-      if (video) {
-        try { video.scrollIntoView({ block: 'center', behavior: 'smooth' }); video.focus(); } catch (_) {}
-      }
-      return false;
-    }
     try { window.trackBalanceActivity('coach_inbox_continued_to_lesson', { source: 'activation_journey' }, { immediate: true }); } catch (_) {}
     if (typeof window.closeDirectMessageModal === 'function') {
       window.closeDirectMessageModal();

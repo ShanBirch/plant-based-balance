@@ -120,3 +120,27 @@ test('browser analytics captures exact Meta identifiers without throwing', async
     assert.equal(payload.metadata.meta_ref, 'balance_a1');
     assert.equal(payload.metadata.target, 'founders-pass');
 });
+
+test('coach welcome analytics persist exact events without scheduling payment follow-ups', async () => {
+    process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service-key';
+    const originalFetch = global.fetch;
+    const requests = [];
+    global.fetch = async (url, options) => {
+        requests.push({url, options});
+        return {ok:true,status:201,text:async()=>''};
+    };
+    try {
+        delete require.cache[require.resolve('../netlify/functions/log-lp-event.js')];
+        const {handler}=require('../netlify/functions/log-lp-event.js');
+        for(const event_type of ['coach_welcome_viewed','coach_welcome_dismissed','coach_welcome_call_clicked']) {
+            await handler({httpMethod:'POST',body:JSON.stringify({event_type,event_id:event_type,session_id:'session-test',visitor_id:'visitor-test',landing_page:'meta-app-preview',metadata:{variant:'onboarding_coach_message_v1'}})});
+        }
+        assert.equal(requests.length,3);
+        for(const request of requests) {
+            assert.match(request.url,/\/rest\/v1\/lp_events$/);
+            const [row]=JSON.parse(request.options.body);
+            assert.equal(row.metadata.variant,'onboarding_coach_message_v1');
+            assert.ok(row.event_type.startsWith('coach_welcome_'));
+        }
+    } finally {global.fetch=originalFetch;delete process.env.SUPABASE_SERVICE_ROLE_KEY;}
+});

@@ -146,7 +146,7 @@ test('paid Facebook and Instagram attribution activate without changing organic 
     assert.equal(organicInstagram.localStorage.getItem('onboardingComplete'), 'true');
 });
 
-test('finishing the guided tour opens the fixed six-week Stripe gate', async () => {
+test('finishing the guided tour opens the coach message while explicit billing remains usable', async () => {
     const trial = runTrial('?guest=true&meta_trial=facebook_5m_foundations_v3&utm_source=facebook&utm_medium=paid_social&fbclid=test-click');
     const api = trial.window.BalanceMetaAdTrial;
     api.onOnboardingStarted();
@@ -170,8 +170,9 @@ test('finishing the guided tour opens the fixed six-week Stripe gate', async () 
     assert.ok(trial.events.some(event => event.event_type === 'trial_walkthrough_completed'));
     assert.ok(trial.events.some(event => event.event_type === 'trial_preview_started'));
 
-    assert.equal(trial.elements['meta-ad-trial-gate'].style.display, 'flex');
-    assert.ok(trial.events.some(event => event.event_type === 'trial_gate_shown'));
+    assert.equal(trial.elements['meta-ad-trial-inbox-preview'].style.display, 'flex');
+    assert.ok(!trial.events.some(event => event.event_type === 'trial_gate_shown'));
+    assert.ok(trial.events.some(event => event.event_type === 'coach_welcome_viewed'));
 
     trial.elements['meta-ad-trial-email'].value = 'buyer@example.com';
     trial.elements['meta-ad-trial-terms'].checked = true;
@@ -256,7 +257,7 @@ test('checkout summary keeps the exact six-week goal stated during onboarding', 
     assert.equal(targets.goal.textContent, 'Weight loss');
 });
 
-test('paid Meta onboarding and tour exits stay locked behind continue-or-pay choices', () => {
+test('onboarding exits offer resume or a coach message without a payment request', () => {
     const trial = runTrial('?guest=true&meta_trial=facebook_5m_foundations_v3&utm_source=instagram&utm_medium=paid_social');
     const api = trial.window.BalanceMetaAdTrial;
 
@@ -273,8 +274,8 @@ test('paid Meta onboarding and tour exits stay locked behind continue-or-pay cho
 
     assert.equal(api.openCheckoutGate(), true);
     assert.equal(trial.elements['meta-ad-trial-exit-choice'].style.display, 'none');
-    assert.equal(trial.elements['meta-ad-trial-gate'].style.display, 'flex');
-    assert.equal(api.readState().interruptedStage, 'checkout');
+    assert.equal(trial.elements['meta-ad-trial-inbox-preview'].style.display, 'flex');
+    assert.equal(api.readState().interruptedStage, 'coach_welcome');
 });
 
 test('setup interruption choice keeps readable foreground colours on its light surface', () => {
@@ -291,14 +292,14 @@ test('a checkout reload restores the blocking gate before deferred app startup c
     assert.match(source, /getElementById\('meta-ad-trial-gate'\)[\s\S]*?showGate\(true, 'checkout_reload'\)/);
 });
 
-test('the Inbox proof is local to the verified paid Meta preview', () => {
+test('the coach message is available in both preview and ordinary first-login onboarding', () => {
     const paid = runTrial('?guest=true&meta_trial=facebook_5m_foundations_v3&utm_source=facebook&utm_medium=paid_social');
     assert.equal(paid.window.BalanceMetaAdTrial.showInboxPreview(), true);
     assert.equal(paid.elements['meta-ad-trial-inbox-preview'].style.display, 'flex');
 
     const organic = runTrial('?guest=true&utm_source=instagram&utm_medium=organic');
-    assert.equal(organic.window.BalanceMetaAdTrial.showInboxPreview(), false);
-    assert.equal(organic.elements['meta-ad-trial-inbox-preview'].style.display, undefined);
+    assert.equal(organic.window.BalanceMetaAdTrial.showInboxPreview(), true);
+    assert.equal(organic.elements['meta-ad-trial-inbox-preview'].style.display, 'flex');
 });
 
 test('a claimed member revisiting the ad cannot have onboarding data cleared', () => {
@@ -327,7 +328,7 @@ test('an explicit fresh phone preview clears the previous local plan and starts 
 test('payment gate prefills the signed-in email and sends it to Stripe', async () => {
     const trial = runTrial('?guest=true&meta_trial=facebook_5m_foundations_v3&utm_source=facebook&utm_medium=paid_social');
     trial.window.currentUser = { email: 'Signed.In@Example.com' };
-    assert.equal(trial.window.BalanceMetaAdTrial.openCheckoutGate(), true);
+    assert.equal(trial.window.BalanceMetaAdTrial.showGate(true, 'explicit_billing', true), true);
     assert.equal(trial.elements['meta-ad-trial-email'].value, 'signed.in@example.com');
     trial.elements['meta-ad-trial-terms'].checked = true;
     assert.equal(await trial.window.BalanceMetaAdTrial.beginCheckout(), true);
@@ -357,19 +358,19 @@ test('saved account-first mode survives a clean URL and does not replace authent
     assert.equal(api.restoreAuthenticatedMode('member-b'),false);
     trial.window.currentUser={id:'member-a',email:'test@example.com'};
     assert.equal(api.openCheckoutGate(),true);
-    assert.equal(trial.elements['meta-ad-trial-gate'].style.display,'flex');
+    assert.equal(trial.elements['meta-ad-trial-inbox-preview'].style.display,'flex');
     assert.equal(trial.window.location.href.includes('login.html'),false);
     api.markClaimed('member-a');
     assert.equal(api.restoreAuthenticatedMode('member-a'),false);
 });
 
-test('Unlock opens payment even when the transient mode flag has not hydrated', () => {
+test('explicit member billing survives without a preview; preview users see their coach', () => {
     for(const query of ['', '?meta_trial=facebook_5m_foundations_v3&account_first=1&learn_entry=website']) {
         const trial=runTrial(query);
         trial.window.metaAdTrialMode=false;
         const before=trial.window.location.href;
         assert.equal(trial.window.BalanceMetaAdTrial.openCheckoutGate(),true);
-        assert.equal(trial.elements['meta-ad-trial-gate'].style.display,'flex');
+        assert.equal(trial.elements[query ? 'meta-ad-trial-inbox-preview' : 'meta-ad-trial-gate'].style.display,'flex');
         assert.equal(trial.window.location.href,before);
     }
 });
@@ -401,7 +402,7 @@ test('dashboard, signup, native handoffs, measurement, and both discovery system
     assert.match(dashboard, /title:'Read, then take the quiz'.*embeddedGuide:true.*metaPreview:true.*requiresFoundationsLesson:'mind-1-1'/);
     assert.match(dashboard, /title:'The Balance community'.*metaPreview:true/);
     assert.match(dashboard, /legacyFeedPostStep[\s\S]*?title:'Introduce yourself'[\s\S]*?requiresFeedPost:true/);
-    assert.match(dashboard, /title:'Watch Shannon’s coach note'.*metaPreview:true/);
+    assert.match(dashboard, /showCoachWelcome/);
     assert.match(dashboard, /title:'Pick your Weekly Goals'.*requiresWeeklyGoals:true/);
     assert.match(dashboard, /title:'Read, then take the quiz'.*metaPreviewSignoff:true.*requiresFoundationsLesson:'mind-1-1'/);
     assert.match(dashboard, /title:'One shopping list for the week'.*metaPreview:true/);
@@ -547,4 +548,20 @@ test('native payment recovery verifies the account and payment before returning 
         if (scenario === 'paid') assert.equal(api.isActive(), false, 'verified payment must not reopen checkout on startup');
         if (scenario === 'wrong-account') assert.equal(requests, 0);
     }
+});
+
+
+test('coach welcome closes and reopens, preserves setup and tracks an attributed call without starting checkout', () => {
+    const app=runTrial('?guest=true&meta_trial=facebook_5m_foundations_v3&utm_source=facebook&utm_medium=paid_social');
+    const api=app.window.BalanceMetaAdTrial;
+    app.localStorage.setItem('userProfile', '{"name":"Test"}');
+    api.showCoachWelcome(); api.closeCoachWelcome();
+    assert.equal(app.elements['meta-ad-trial-inbox-preview'].style.display,'none');
+    assert.equal(api.readState().interruptedStage,null);
+    api.showCoachWelcome(); api.bookCoachCall();
+    assert.equal(new URL(app.window.location.href).pathname,'/book');
+    assert.equal(new URL(app.window.location.href).searchParams.get('utm_campaign'),'onboarding_coach_message_v1');
+    assert.ok(app.events.some(e=>e.event_type==='coach_welcome_call_clicked'));
+    assert.ok(!app.events.some(e=>['trial_gate_shown','checkout_request'].includes(e.event_type)));
+    assert.equal(app.localStorage.getItem('userProfile'),'{"name":"Test"}');
 });

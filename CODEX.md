@@ -523,3 +523,7 @@ Shannon wants data collected on every meaningful growth, sales, onboarding, and 
 ### Video-only new-client welcome (18 September 2026)
 Shannon requested the onboarding coach video as the welcome, without a separate automated Coach Shannon text DM. Both onboarding-welcome-draft and the legacy send-welcome-message endpoint must not send or queue welcome texts. Keep signup context seeding and normal coach conversations. Historical draft helpers exist only for compatibility tests; do not reconnect them to delivery.
 
+
+## First-login ending, 29 September 2026
+
+The in-app first-login tour keeps its app showcase and ends with a text introduction from Coach Shannon, replacing the required welcome video and automatic payment request. It explains weekly review of workouts, meal plan, Learn progress and how the week is going, conditional on an active plan that includes coaching. Previews and app-only plans do not include weekly reviews. Unpaid users may book the current `/book` call destination or keep exploring. Existing member billing is unchanged. Measurement variant: `onboarding_coach_message_v1`; see `docs/onboarding-coach-message.md`. This change is confined to the in-app onboarding and welcome UI, not the separate DM conversation contract.

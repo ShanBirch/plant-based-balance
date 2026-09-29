@@ -205,8 +205,8 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
 <!-- CRITICAL: Admin view-as localStorage isolation — runs BEFORE any other localStorage reads -->
 <script src="js/dashboard/script_part_1.js"></script>
 <!-- Paid-Facebook preview attribution must be available before auth-guard decides guest vs member mode. -->
-<script src="lib/onboarding-progress.js?v=7-existing-member-login"></script>
-<script src="lib/meta-ad-trial.js?v=31-existing-member-login"></script>
+<script src="lib/onboarding-progress.js?v=8-coach-message"></script>
+<script src="lib/meta-ad-trial.js?v=32-coach-message"></script>
 
 <!-- CRITICAL: Hide loading overlay for returning users and restore cached FitGotchi state -->
 <script>
@@ -756,7 +756,7 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
 <div id="guest-mode-banner" style="display:none; position:fixed; top:0; left:0; right:0; z-index:9999; background:linear-gradient(135deg,#48864B,#6ab04c); color:white; padding:calc(8px + env(safe-area-inset-top, 0px)) 16px 10px 16px; font-size:0.85rem; font-weight:600; text-align:center; box-shadow:0 2px 12px rgba(0,0,0,0.15); font-family:'Inter',sans-serif;">
     <div style="display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap;">
         <span id="guest-mode-label">You're exploring as a guest</span>
-        <button onclick="window.BalanceMetaAdTrial?.openCheckoutGate()" style="background:white; color:#48864B; border:none; padding:6px 16px; border-radius:20px; font-weight:700; font-size:0.8rem; cursor:pointer; font-family:inherit;">Unlock Balance</button>
+        <button onclick="window.BalanceMetaAdTrial?.showCoachWelcome()" style="background:white; color:#48864B; border:none; padding:6px 16px; border-radius:20px; font-weight:700; font-size:0.8rem; cursor:pointer; font-family:inherit;">Meet your coach</button>
         <button id="guest-banner-dismiss-btn" onclick="dismissGuestBanner()" style="background:transparent; color:rgba(255,255,255,0.8); border:1px solid rgba(255,255,255,0.4); padding:5px 10px; border-radius:20px; font-size:0.75rem; cursor:pointer; font-family:inherit;">Dismiss</button>
     </div>
 </div>
@@ -806,30 +806,44 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
     <div style="background:#fffdf8; color:#171923; -webkit-text-fill-color:#171923; border:1px solid rgba(183,138,46,.34); border-radius:24px; padding:30px 24px; max-width:380px; width:100%; text-align:center; box-shadow:0 28px 80px rgba(0,0,0,.42); box-sizing:border-box;">
         <img src="balance_logo.png" alt="Balance" style="width:58px; height:58px; object-fit:contain; margin:0 auto 14px; display:block;">
         <h3 id="meta-ad-trial-exit-title" style="margin:0 0 9px; font:800 1.35rem/1.2 'Montserrat',sans-serif; color:#171923; -webkit-text-fill-color:#171923;">Keep setting up?</h3>
-        <p id="meta-ad-trial-exit-body" style="margin:0 0 20px; color:#4f4a43; -webkit-text-fill-color:#4f4a43; font-size:.92rem; line-height:1.5;">Continue where you left off, or unlock the complete six-week program now.</p>
+        <p id="meta-ad-trial-exit-body" style="margin:0 0 20px; color:#4f4a43; -webkit-text-fill-color:#4f4a43; font-size:.92rem; line-height:1.5;">Continue where you left off, or meet Coach Shannon.</p>
         <button id="meta-ad-trial-resume-btn" type="button" onclick="window.BalanceMetaAdTrial.resumeInterruptedFlow()" style="width:100%; background:linear-gradient(135deg,#d4ad52,#f0cf76); color:#171923; -webkit-text-fill-color:#171923; border:1px solid #b78a2e; padding:14px; border-radius:12px; font:800 .92rem 'Montserrat',sans-serif; cursor:pointer; margin-bottom:10px;">CONTINUE SETUP</button>
-        <button id="meta-ad-trial-exit-pay" type="button" onclick="window.BalanceMetaAdTrial.openCheckoutGate()" style="width:100%; background:#111; color:#fffaf0; -webkit-text-fill-color:#fffaf0; border:none; padding:14px; border-radius:12px; font:800 .92rem 'Montserrat',sans-serif; cursor:pointer;">CHOOSE MY PAYMENT OPTION</button>
-        <p style="margin:11px 0 0; color:#625c52; -webkit-text-fill-color:#625c52; font-size:.7rem; line-height:1.4;">Choose a one-time payment or a weekly subscription.</p>
+        <button id="meta-ad-trial-exit-pay" type="button" onclick="window.BalanceMetaAdTrial.showCoachWelcome()" style="width:100%; background:#111; color:#fffaf0; -webkit-text-fill-color:#fffaf0; border:none; padding:14px; border-radius:12px; font:800 .92rem 'Montserrat',sans-serif; cursor:pointer;">MEET COACH SHANNON</button>
+        <p style="margin:11px 0 0; color:#625c52; -webkit-text-fill-color:#625c52; font-size:.7rem; line-height:1.4;">Read how weekly coaching works and book a call if you want to talk.</p>
     </div>
 </div>
 
-<!-- A local, read-only Inbox proof moment for the paid Meta preview. It never queries a member Inbox. -->
-<div id="meta-ad-trial-inbox-preview" aria-hidden="true" style="display:none; position:fixed; inset:0; z-index:399900; background:#f6f0e3; align-items:center; justify-content:center; padding:max(52px, calc(10px + env(safe-area-inset-top, 0px))) 12px max(24px, calc(10px + env(safe-area-inset-bottom, 0px))); box-sizing:border-box; font-family:'Inter',sans-serif; pointer-events:none;">
-    <div id="meta-ad-trial-inbox-preview-card" style="width:min(100%,430px); max-height:100%; background:#fff; border:1px solid #e4d7bd; border-radius:24px; box-shadow:0 18px 50px rgba(74,55,18,.16); overflow:auto; overscroll-behavior:contain; pointer-events:auto;">
-        <div style="display:flex; align-items:center; gap:11px; padding:12px 14px; border-bottom:1px solid #eee4d2; background:#fffdf8;">
-            <div style="width:42px; height:42px; border-radius:50%; display:grid; place-items:center; background:linear-gradient(135deg,#d4ad52,#f0cf76); color:#171923; font:900 16px Georgia,serif;">S</div>
-            <div><strong style="display:block; color:#171923; font-size:.96rem;">Coach Shannon</strong><span style="display:block; color:#7a7061; font-size:.72rem; margin-top:2px;">Your Balance Inbox</span></div>
-        </div>
-        <div style="padding:10px 12px 12px; background:#faf7f0;">
-            <div style="max-width:92%; background:#fffaf0; border:1px solid rgba(183,138,46,.3); border-radius:18px 18px 18px 5px; padding:9px 11px; color:#3d3427; font-size:.78rem; line-height:1.42; box-shadow:0 5px 15px rgba(74,55,18,.07);">I’ve left you a coach note about your first week and how we’ll use Balance together.</div>
-            <div style="width:100%; margin-top:8px; background:linear-gradient(135deg,#f4df9f,#e2ba58); border:1px solid rgba(146,103,29,.32); border-radius:18px 18px 18px 5px; padding:8px; box-sizing:border-box; box-shadow:0 7px 20px rgba(112,77,16,.13);">
-                <div style="font-size:.64rem; font-weight:900; letter-spacing:.06em; color:#68480f; margin:0 3px 6px;">● VIDEO COACH NOTE FROM SHANNON</div>
-                <video id="meta-ad-trial-welcome-video" poster="/assets/balance-onboarding-coach-note-poster.jpg" controls playsinline preload="metadata" controlslist="nodownload noplaybackrate" disablepictureinpicture src="/assets/balance-onboarding-coach-note-captioned.mp4?v=20260910-word-reveal" style="display:block; width:100%; max-height:min(67dvh,650px); aspect-ratio:9/16; object-fit:contain; background:#171923; border-radius:12px; pointer-events:auto;"></video>
-                <div id="meta-ad-trial-welcome-status" role="status" aria-live="polite" style="margin:7px 3px 0; color:#68480f; font-size:.69rem; line-height:1.35; font-weight:800;">Watch the full coach note to unlock Next.</div>
-                <button id="meta-ad-trial-welcome-continue" type="button" onclick="tourNext()" style="display:none; width:100%; margin-top:8px; border:1px solid rgba(104,72,15,.4); border-radius:12px; padding:12px 14px; background:#171923; color:#fffaf0; -webkit-text-fill-color:#fffaf0; font:850 .78rem/1 'Montserrat',sans-serif; letter-spacing:.045em; text-transform:uppercase; cursor:pointer; pointer-events:auto;">Next: choose Weekly Goals</button>
-            </div>
-        </div>
+<!-- Local onboarding message; never inserts or sends a customer DM. -->
+<style>
+#meta-ad-trial-inbox-preview { display:none; position:fixed; inset:0; z-index:400100; background:#f6f0e3; align-items:center; justify-content:center; padding:max(52px, calc(12px + var(--safe-area-top, env(safe-area-inset-top, 0px)))) 12px max(28px, calc(12px + var(--safe-area-bottom, env(safe-area-inset-bottom, 0px)))); box-sizing:border-box; font-family:'Inter',sans-serif; }
+#meta-ad-trial-inbox-preview-card { width:min(100%,430px); max-height:100%; overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; background:#fffdf8; border:1px solid #dfd1b5; border-radius:22px; box-shadow:0 18px 50px #4a371229; color:#24211b; -webkit-text-fill-color:#24211b; }
+.coach-welcome-header { display:flex; align-items:center; gap:12px; padding:18px; border-bottom:1px solid #e9dfcd; }
+.coach-welcome-avatar { width:44px; height:44px; border-radius:50%; display:grid; place-items:center; background:#e8ca80; font-weight:800; flex-shrink:0; }
+.coach-welcome-header small { display:block; margin-top:3px; color:#675c49; -webkit-text-fill-color:#675c49; }
+.coach-welcome-body { padding:18px; }
+.coach-welcome-bubble { padding:16px; background:#f5ecd9; border:1px solid #e4d6b8; border-radius:18px 18px 18px 4px; font-size:.94rem; line-height:1.6; }
+.coach-welcome-bubble p { margin:0 0 14px; color:#24211b; -webkit-text-fill-color:#24211b; }
+.coach-welcome-bubble p:last-child { margin-bottom:0; }
+.coach-welcome-actions { display:grid; gap:10px; margin-top:18px; }
+.coach-welcome-actions button { min-height:48px; padding:13px; border-radius:12px; border:1px solid #b78a2e; background:#e8ca80; color:#24211b; -webkit-text-fill-color:#24211b; font:700 .9rem/1.4 'Inter',sans-serif; cursor:pointer; }
+#coach-welcome-continue { background:#fffdf8; border-color:#dfd1b5; }
+</style>
+<div id="meta-ad-trial-inbox-preview" role="dialog" aria-modal="true" aria-labelledby="coach-welcome-title" aria-hidden="true">
+  <div id="meta-ad-trial-inbox-preview-card" tabindex="-1">
+    <div class="coach-welcome-header"><div class="coach-welcome-avatar" aria-hidden="true">S</div><div><strong id="coach-welcome-title">Coach Shannon</strong><small>Your Balance Inbox</small></div></div>
+    <div class="coach-welcome-body">
+      <div class="coach-welcome-bubble">
+        <p>Hey, I'm Shannon, your coach here at Balance. Good to have you here!</p>
+        <p>This is where we'll chat. If your plan includes weekly coaching, you'll receive your check-ins here. Each week, I'll review your workouts, meal plan, progress through the Learn course and how things are going for you, then help you adjust for the week ahead.</p>
+        <p>Weekly reviews are included while your coaching plan is active. They're not included in the app preview or an app-only plan.</p>
+        <p id="coach-welcome-call-copy">Want to talk through your goals and see what support fits? Book a call with me below.</p>
+      </div>
+      <div class="coach-welcome-actions">
+        <button id="coach-welcome-book" type="button" onclick="window.BalanceMetaAdTrial.bookCoachCall()">Book a call with Shannon</button>
+        <button id="coach-welcome-continue" type="button" onclick="window.BalanceMetaAdTrial.closeCoachWelcome()">Keep exploring</button>
+      </div>
     </div>
+  </div>
 </div>
 
 <!-- Guest Signup Prompt Modal -->
@@ -1994,8 +2008,8 @@ document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=38-tour-
     document.write('<script src="lib/learn-predictive-content.js?v=7-social-prediction"><\/script>');
     document.write('<script src="lib/learn-weekly-actions.js?v=feed-week-five-20260916"><\/script>');
     document.write('<script src="lib/learn-action-review.js?v=feed5-plan-dismiss-v3"><\/script>');
-    document.write('<script src="js/dashboard/pbb-social-journey.js?v=20260921-learn-access-coach"><\/script>');
-    document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=20260919-welcome-stays-open"><\/script>');
+    document.write('<script src="js/dashboard/pbb-social-journey.js?v=20260929-coach-text"><\/script>');
+    document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=20260929-coach-message"><\/script>');
     document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=39-checkin-spacing"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
@@ -2005,8 +2019,8 @@ window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=38-tou
     window._pbbDeferredQueue.push('lib/learn-predictive-content.js?v=7-social-prediction');
     window._pbbDeferredQueue.push('lib/learn-weekly-actions.js?v=feed-week-five-20260916');
     window._pbbDeferredQueue.push('lib/learn-action-review.js?v=feed5-plan-dismiss-v3');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=20260921-learn-access-coach');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=20260919-welcome-stays-open');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=20260929-coach-text');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=20260929-coach-message');
     window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=39-checkin-spacing');
 }
 </script>
@@ -12964,7 +12978,7 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20260923-video-same-site&cohort_diets=1&video_health=2';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20260929-coach-message&cohort_diets=1&video_health=2';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
@@ -13006,7 +13020,7 @@ if (window._pbbIsIOSSafari) {
         var s = document.createElement('script');
         s.async = false;
         s.dataset.metaTrialLoader = String(attempt);
-        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20260923-video-same-site&cohort_diets=1&video_health=2&meta_retry=' + attempt;
+        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20260929-coach-message&cohort_diets=1&video_health=2&meta_retry=' + attempt;
         s.onload = function() {
             if (window._pbbScript5Complete && window._switchAppTabReady && typeof window._switchAppTabReal === 'function') {
                 sessionStorage.removeItem('pbb_meta_script5_recovery_v1');
@@ -13025,7 +13039,7 @@ if (window._pbbIsIOSSafari) {
         document.head.appendChild(s);
     })(0);
 } else {
-document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20260923-video-same-site"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20260929-coach-message"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=9-admin-safe-area"></script>
@@ -14162,7 +14176,6 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#friends-photo-feed .meta-preview-feed-post', fallbackSel:'#feed-composer-card', title:'The Balance community', fallbackTitle:'The Balance community', body:'The highlighted Feed post shows where Shannon and members share normal meals, workouts, questions and wins.', fallbackBody:'This is where Shannon posts and members share meals, workouts and wins.', pageView:true, metaPreview:true, promptBeforeAction:true, promptRequiresTargetClick:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="feed_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: meet the community', preActionBody:'Back on Home, tap the highlighted community card to see where everyone shares their real week.', preActionButton:'Tap the community card', nextLabel:'See how to post', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('feed_intro'); if(window.BalanceMetaAdTrial && typeof window.BalanceMetaAdTrial.loadPreviewFeed === 'function') await window.BalanceMetaAdTrial.loadPreviewFeed(); } catch(e){} await new Promise(function(r){ setTimeout(r,500); }); return true; } },
     { tab:'friends', sel:'#feed-composer-card', title:'Post when you need support', body:'The highlighted composer is where you share a meal, workout, question or win. There is nothing to post during the tour—use Next to return Home.', pageView:true, metaPreview:true, preserveSurface:true, returnHomeAfter:true },
     { tab:'friends', sel:'#feed-composer-card', title:'Share from one place', body:'Use What’s happening for a post, or tap From Balance to share a set, meal, workout, PB or song. Your saved profile photo stays with your Feed posts.' },
-    { tab:'dashboard', sel:'#meta-ad-trial-welcome-video', fallbackSel:'#meta-ad-trial-inbox-preview-card', title:'Watch Shannon’s coach note', body:'Tap Play and watch to the end. Shannon explains your weekly check-ins, your first six weeks and what comes next.', metaPreview:true, embeddedGuide:true, coachNoteGuide:true, requiresWelcomeVideo:true, promptBeforeAction:true, promptRequiresTargetClick:true, returnHomeAfter:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="coach_message_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: hear from your coach', preActionBody:'Back on Home, tap the highlighted coach-message card to hear how your weekly support works.', preActionButton:'Tap the coach message card', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('coach_message_intro'); else if(!(options && options.fromTargetClick) && window.BalanceMetaAdTrial) window.BalanceMetaAdTrial.showInboxPreview(); } catch(e){} await new Promise(function(r){ setTimeout(r,350); }); return true; } },
     { tab:'dashboard', sel:'.weekly-goal-onboarding-guide', fallbackSel:'#weekly-goals-card', title:'Pick your Weekly Goals', body:'Pick one to three realistic actions for this week, set the targets, then save them. These become the simple commitments Shannon can review with you.', metaPreview:true, requiresWeeklyGoals:true, promptBeforeAction:true, promptRequiresTargetClick:true, returnHomeAfter:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="weekly_goals_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: choose your Weekly Goals', preActionBody:'Back on Home, tap the highlighted Weekly Goals card and choose the realistic actions you want Shannon to review.', preActionButton:'Tap the Weekly Goals card', action:async function(options){ try { if(!(options && options.fromTargetClick) && window.pbbNextSteps) window.pbbNextSteps.runAction('weekly_goals_intro'); else if(!(options && options.fromTargetClick) && typeof window.openWeeklyGoalsModal === 'function') await window.openWeeklyGoalsModal({ source:'meta_preview_setup', week:'current' }); } catch(e){} await new Promise(function(r){ setTimeout(r,350); }); return true; } },
     { tab:'learning', sel:'#balance-foundations-course-start', fallbackSel:'.course-detail-primary', title:'Start your course', body:'Tap the highlighted course button. It may say Start course or Continue course. This opens your Balance Learn welcome before Week 1 begins.', pageView:true, metaPreview:true, promptBeforeAction:true, promptRequiresTargetClick:true, preActionSel:'#next-obvious-steps-card [data-next-step-id="foundations_intro"]', preActionFallbackSel:'#next-obvious-steps-card', preActionTitle:'Next: start your course', preActionBody:'Tap the highlighted Course card to begin Balance Learn.', preActionButton:'Tap the Course card', requiresHighlightedClick:true, highlightedClickPrompt:'Tap the highlighted course button to open your welcome.', highlightedClickComplete:'Your course welcome is ready. Tap Next to keep going.', nextLabel:'See your course welcome', action:function(){ return openMetaPreviewFoundationsCourseStart(); } },
     { tab:'learning', sel:'#balance-foundations-welcome-start', fallbackSel:'#course-welcome', controlPromptPosition:'below', tourBottomReserve:24, title:'Welcome to Balance Learn', body:'Your course is ready. Each week you will learn the idea, take the action and track the evidence. Tap Start Week 1 when you are ready.', pageView:true, metaPreview:true, preserveSurface:true, requiresHighlightedClick:true, highlightedClickPrompt:'Tap Start Week 1 to open your first week.', highlightedClickComplete:'Your course is open. Choose Why change feels hard next.', nextLabel:'Find Lesson 1' },
@@ -14313,7 +14326,6 @@ if(!window._pbbIsIOSSafari) {
     'Take your first lesson',
     'Read, then take the quiz',
     'What Shannon checks each week',
-    'Watch Shannon’s coach note',
     'Pick your Weekly Goals'
   ];
 
@@ -14385,17 +14397,6 @@ if(!window._pbbIsIOSSafari) {
       return true;
     } catch(e){ return false; }
   };
-
-  const coachTourStep = findTourStep('Watch Shannon’s coach note');
-  if (coachTourStep) Object.assign(coachTourStep, {
-    sel:'#meta-ad-trial-welcome-video,#balance-onboarding-welcome-video,#social-journey-welcome-video',
-    fallbackSel:'#meta-ad-trial-inbox-preview-card,.balance-onboarding-inbox-message,.social-journey-welcome',
-    action:async function(){
-      if (!q(coachTourStep.sel) && window.BalanceMetaAdTrial) window.BalanceMetaAdTrial.showInboxPreview();
-      // A card or an empty inbox is not proof that the required video opened.
-      return await waitForPromptedStepSurface({ sel:coachTourStep.sel }, 4000);
-    }
-  });
 
   const foundationsTourStep = findTourStep('Read, then take the quiz');
   if (foundationsTourStep && foundationsTourStep.metaPreview) Object.assign(foundationsTourStep, {
@@ -15056,87 +15057,6 @@ if (step && step.requiresFeedPost) {
         }
       }, 420);
       setTourGateUi(false, step.highlightedClickPrompt || 'Tap the highlighted control to continue.', 'Tap highlighted control');
-      return;
-    }
-
-    if (step && step.requiresWelcomeVideo) {
-      const key = 'welcome-video';
-      const video = q('#meta-ad-trial-welcome-video,#balance-onboarding-welcome-video,#social-journey-welcome-video');
-      const continueButton = document.getElementById('meta-ad-trial-welcome-continue');
-      const status = document.getElementById('meta-ad-trial-welcome-status');
-      if (continueButton) continueButton.style.display = 'none';
-      if (completedTourGates.has(key)) {
-        setTourGateUi(true, 'Coach note complete. You can keep going.', finalLabel);
-        if (status) status.textContent = 'Coach note complete. Your Weekly Goals are next.';
-        if (step.coachNoteGuide && continueButton) continueButton.style.display = 'block';
-        return;
-      }
-      const complete = function(){
-        const duration = Number(video && video.duration) || 0;
-        const furthest = Number(video && video.dataset.furthestWatched) || 0;
-        if (!duration || duration - furthest > 1.6) return;
-        completedTourGates.add(key);
-        if (activeTourGate && activeTourGate.key === key) {
-          activeTourGate.complete = true;
-          setTourGateUi(true, 'Coach note complete. You can keep going.', finalLabel);
-          if (status) status.textContent = 'Coach note complete. Your Weekly Goals are next.';
-          try { window.trackBalanceActivity('onboarding_coach_video_completed', { source:'guided_tour' }, { immediate:true }); } catch(e) {}
-          if (step.coachNoteGuide && continueButton) {
-            continueButton.style.display = 'block';
-            try { continueButton.focus({ preventScroll:true }); } catch(e) {}
-          }
-        }
-      };
-      const failed = function(){
-        if (activeTourGate && activeTourGate.key === key) {
-          setTourGateUi(false, 'The coach note could not load. Tap Play to try again.', 'Watch first');
-          if (status) status.textContent = 'The coach note could not load. Tap Play to try again.';
-        }
-      };
-      const protectWatch = function(){
-        if (!video) return;
-        const furthest = Number(video.dataset.furthestWatched) || 0;
-        if (video.currentTime > furthest + 1.5) {
-          try { video.currentTime = furthest; } catch(e) {}
-          if (status) status.textContent = 'Watch the full coach note to unlock Next. You can rewind at any time.';
-          return;
-        }
-        video.dataset.furthestWatched = String(Math.max(furthest, Number(video.currentTime) || 0));
-      };
-      const stopSkipping = function(){
-        if (!video) return;
-        const furthest = Number(video.dataset.furthestWatched) || 0;
-        if (video.currentTime > furthest + 1.5) {
-          try { video.currentTime = furthest; } catch(e) {}
-        }
-      };
-      if (video) {
-        video.dataset.furthestWatched = '0';
-        video.addEventListener('timeupdate', protectWatch);
-        video.addEventListener('seeking', stopSkipping);
-        video.addEventListener('ended', complete);
-        video.addEventListener('error', failed);
-      }
-      activeTourGate = {
-        key:key,
-        complete:false,
-        retry:function(){
-          setTourGateUi(false, 'Watch the full coach note to unlock Next.', 'Watch first');
-          if (video) {
-            try { video.scrollIntoView({ block:'center', behavior:'auto' }); video.focus(); } catch(e) {}
-          }
-        },
-        cleanup:function(){
-          if (continueButton) continueButton.style.display = 'none';
-          if (!video) return;
-          video.removeEventListener('timeupdate', protectWatch);
-          video.removeEventListener('seeking', stopSkipping);
-          video.removeEventListener('ended', complete);
-          video.removeEventListener('error', failed);
-          try { video.pause(); } catch(e) {}
-        }
-      };
-      setTourGateUi(false, video ? 'Watch the full coach note to unlock Next.' : 'The coach note is still loading.', 'Watch first');
       return;
     }
 
@@ -16202,7 +16122,7 @@ window.endFeatureTour = function(skipped){
           return window.BalanceOnboardingProgress.completionDestination();
         }).then(function(destination){
           if (window.currentUser?.id !== completionUserId || !window.__balanceGuidedTourActive) return;
-          if (destination === 'checkout' && (!document.getElementById('meta-ad-trial-gate') || !window.BalanceMetaAdTrial?.openCheckoutGate)) throw new Error('Payment screen unavailable');
+          if (!window.BalanceMetaAdTrial?.showCoachWelcome) throw new Error('Coach message unavailable');
           clientCompletionDestination = destination;
           window.endFeatureTour(false);
         }).catch(function(){
@@ -16227,7 +16147,7 @@ window.endFeatureTour = function(skipped){
     try { window.trackBalanceActivity('guided_tour_completed', { mode: completedClientActivationTour ? 'client_activation' : (completedMetaPreviewTour ? 'meta_preview' : 'standard'), skipped: !!skipped, final_step_number: Number(idx) + 1, step_count: activeSteps.length }, { immediate:true }); } catch(e){}
     trackTourProgress(idx, skipped ? 'skipped' : 'completed');
     if (!skipped && completedClientActivationTour && !completedCourseFeatureTour) {
-      if (clientCompletionDestination === 'checkout') window.BalanceOnboardingProgress?.save('checkout', {});
+      if (clientCompletionDestination === 'checkout') window.BalanceOnboardingProgress?.save('coach_welcome', {});
       else window.BalanceOnboardingProgress?.clear();
       window.BalanceOnboardingProgress?.completeFirstRunTour();
     }
@@ -16273,10 +16193,7 @@ window.endFeatureTour = function(skipped){
       return;
     }
     if (completedMetaPreviewTour && window.BalanceMetaAdTrial) {
-      if (window.BalanceMetaPreviewSoundtrack) {
-        if (skipped) window.BalanceMetaPreviewSoundtrack.stop();
-        else window.BalanceMetaPreviewSoundtrack.setPhase('payment');
-      }
+      window.BalanceMetaPreviewSoundtrack?.stop();
       if (skipped && typeof window.BalanceMetaAdTrial.showExitChoice === 'function') {
         window.BalanceMetaAdTrial.showExitChoice('tour');
       } else if (typeof window.BalanceMetaAdTrial.onWalkthroughComplete === 'function') {
@@ -16293,10 +16210,8 @@ window.endFeatureTour = function(skipped){
             setTimeout(function () { openClientActivationJourney(attempt + 1); }, 250);
           }
         })(0);
-      } else if (clientCompletionDestination === 'checkout') {
-        window.BalanceMetaAdTrial.openCheckoutGate();
       } else {
-        Promise.resolve(ensureTab('learning')).catch(function(){});
+        window.BalanceMetaAdTrial.showCoachWelcome({ member: clientCompletionDestination === 'course' });
       }
     } else if (!skipped) {
       if (!playQueuedWalkthroughLevelUp()) {
@@ -19220,13 +19135,13 @@ if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=six-weeks-restored-20260914';
+            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=20260929-coach-text';
             s.onload = function() { if(window._crumb)window._crumb('script6_deferred_loaded'); };
             document.head.appendChild(s);
         }, 2000);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=six-weeks-restored-20260914"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=20260929-coach-text"><\/script>');
 }
 </script>
 
@@ -19327,7 +19242,7 @@ if (typeof WORKOUT_LIBRARY !== 'undefined' && typeof WORKOUT_LIBRARY_EXTENDED !=
 <script src="js/dashboard/pbb-exercise-video-backups.js?v=2"></script>
 <script>
 // Script-7 (29KB) - video logic. Defer on iOS to reduce memory pressure.
-var pbbVideoLogicSrc = 'js/dashboard/dashboard-script-7-video_logic.js?v=20260923-video-same-site';
+var pbbVideoLogicSrc = 'js/dashboard/dashboard-script-7-video_logic.js?v=20260929-coach-message';
 if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {

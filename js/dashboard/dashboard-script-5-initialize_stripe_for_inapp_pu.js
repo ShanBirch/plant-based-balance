@@ -8674,7 +8674,7 @@ let wizardChatNeedsResume = false;
 function saveWizardCheckpoint() {
     const modal = document.getElementById('onboarding-wizard');
     if (!modal?.classList.contains('active')) return;
-    if (window.BalanceOnboardingProgress?.read()?.stage === 'checkout') return;
+    if (['checkout', 'coach_welcome'].includes(window.BalanceOnboardingProgress?.read()?.stage)) return;
     const fields = Array.from(modal.querySelectorAll('input[id],select[id],textarea[id]'))
         .filter(el => !['file', 'password'].includes(el.type))
         .map(el => ({ id:el.id, value:el.value, checked:el.checked }));
@@ -10249,20 +10249,9 @@ async function checkAndTriggerOnboarding() {
     // completion/essential-answer shortcuts can expose an unrestricted Home.
     const checkpoint = window.BalanceOnboardingProgress?.read();
     const trial = window.metaAdTrialMode && window.BalanceMetaAdTrial?.readState();
-    if (checkpoint?.stage === 'checkout' || trial?.interruptedStage === 'checkout') {
-        window.BalanceMetaAdTrial?.openCheckoutGate();
+    if (['checkout', 'coach_welcome'].includes(checkpoint?.stage) || ['checkout', 'coach_welcome'].includes(trial?.interruptedStage)) {
+        window.BalanceMetaAdTrial?.showCoachWelcome();
         return;
-    }
-    // Recover signups that finished the older client tour before its payment
-    // handoff shipped. Completed lessons and the tour never need replaying.
-    if (!window.metaAdTrialMode && window.BalanceOnboardingProgress?.needsCheckoutRecovery()) {
-        try {
-            if (await window.BalanceOnboardingProgress.completionDestination() === 'checkout') {
-                window.BalanceOnboardingProgress.save('checkout', {});
-                window.BalanceMetaAdTrial?.openCheckoutGate();
-                return;
-            }
-        } catch (error) { console.warn('Completed signup payment recovery will retry:', error); }
     }
     if (!window.BalanceOnboardingProgress?.isTourSuppressed()
         && (checkpoint?.stage === 'tour' || (trial?.onboardingCompletedAt && !trial.walkthroughCompletedAt)
@@ -21812,6 +21801,7 @@ function enableSwipeBackNavigation(viewId, backHandler) {
 
 // Initialize swipe-back navigation for all movement views
 function initializeMovementSwipeNavigation() {
+    enableSwipeBackNavigation('meta-ad-trial-inbox-preview', () => window.BalanceMetaAdTrial?.closeCoachWelcome());
     // Main movement views
     enableSwipeBackNavigation('view-workout-library', () => {
         switchAppTab('movement-tab');
