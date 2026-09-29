@@ -1,3 +1,4 @@
+const {isBalanceManyChatThread} = require('./manychat-channels');
 // Conversation policy only. Transport, timing, permissions and calendar settings
 // remain owned by their existing implementations.
 const CHALLENGE_FLOW = 'plant_based_challenge';
@@ -23,7 +24,7 @@ function resolveChallengeLeadRoute({thread = {}, currentMessage = '', history = 
     const balanceMessenger = !account && thread.channel === 'messenger'
         && data.facebook_messenger?.page_id === BALANCE_PAGE_ID
         && String(thread.subscriber_id || '').startsWith(`fb_graph:${BALANCE_PAGE_ID}:`);
-    if ((account !== 'shan_n_sunny' && !balanceMessenger) || thread.linked_user_id || data.customer_lifecycle?.purchase_id
+    if ((account !== 'shan_n_sunny' && !balanceMessenger && !isBalanceManyChatThread(thread)) || thread.linked_user_id || data.customer_lifecycle?.purchase_id
         || ['in_app','client','converted','paid','paying','won','churned'].includes(String(thread.lead_stage || '').toLowerCase())) return false;
     const mentionsChallengeNow = challengeMention.test(currentMessage);
     const campaignChallenge = [data.meta_ad_attribution, data.current_inbound_routing].some(ref =>

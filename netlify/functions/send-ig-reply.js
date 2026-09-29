@@ -34,6 +34,7 @@ const { outboundAnswersOlderInbound, recordDeliveredChunk } = require('./_lib/ig
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 const MANYCHAT_API_TOKEN = process.env.MANYCHAT_API_TOKEN;
+const {buildManyChatContent, isBalanceManyChatThread} = require('./_lib/manychat-channels');
 const MANYCHAT_SEND_URL = process.env.MANYCHAT_SEND_URL || 'https://api.manychat.com/fb/sending/sendContent';
 const BALANCE_PREVIEW_CARD_IMAGE_URL = 'https://plantbased-balance.org/assets/balance-founders-og-cream-gold.png';
 const BALANCE_PREVIEW_CARD_TITLE = 'Your Balance preview is ready';
@@ -645,7 +646,7 @@ function enrichAlertDataWithThreadGraph(alertData = {}, thread = null) {
     const graphRecipientId = resolveGraphRecipientId(current) || resolveThreadGraphRecipientId(thread);
     const graphAccountId = resolveGraphAccountId(current) || resolveThreadGraphAccountId(thread);
     const threadChannel = thread.channel || '';
-    const channel = current.channel === 'instagram' || current.channel === 'messenger'
+    const channel = current.channel === 'instagram' || current.channel === 'messenger' || current.channel === 'whatsapp'
         ? current.channel
         : (threadChannel || current.channel);
     const enriched = {
@@ -1590,7 +1591,7 @@ async function clearManyChatHomeNotifications({ alertId, igThreadId, sentAt, sou
     return { siblingAlertsCleared };
 }
 
-async function postToManyChat({ subscriberId, text, channel }) {
+async function postToManyChat({ subscriberId, text, channel, button }) {
     if (!MANYCHAT_API_TOKEN) {
         throw new Error('MANYCHAT_API_TOKEN not configured');
     }
@@ -1603,12 +1604,7 @@ async function postToManyChat({ subscriberId, text, channel }) {
     // FB Messenger subscribers we omit the type so Messenger's default
     // routing is used. Schema:
     //   https://manychat.github.io/dynamic_block_docs/channels/
-    const content = {
-        messages: [{ type: 'text', text }],
-    };
-    if (channel === 'instagram') {
-        content.type = 'instagram';
-    }
+    const content = buildManyChatContent({text, channel, button});
     const body = {
         subscriber_id: subscriberId,
         data: {
@@ -1616,7 +1612,7 @@ async function postToManyChat({ subscriberId, text, channel }) {
             content,
         },
     };
-    if (MANYCHAT_MESSAGE_TAG) body.message_tag = MANYCHAT_MESSAGE_TAG;
+    if (MANYCHAT_MESSAGE_TAG && channel !== 'whatsapp') body.message_tag = MANYCHAT_MESSAGE_TAG;
     const res = await fetch(MANYCHAT_SEND_URL, {
         method: 'POST',
         headers: {
@@ -1631,6 +1627,7 @@ async function postToManyChat({ subscriberId, text, channel }) {
     }
     let parsed;
     try { parsed = JSON.parse(responseText); } catch { parsed = { raw: responseText }; }
+    if (parsed.status && parsed.status !== 'success') throw new Error('ManyChat rejected delivery: ' + JSON.stringify(parsed).slice(0,400));
     return parsed;
 }
 
@@ -2415,6 +2412,12 @@ exports.handler = async (event) => {
         && threadForSend?.channel === 'messenger'
         && /^\d+$/.test(String(threadForSend?.subscriber_id || ''))
         && String(threadForSend.subscriber_id) === String(alertData.subscriber_id || '');
+    const shouldUseManyChatWhatsApp = channel === 'whatsapp' && isBalanceManyChatThread(threadForSend)
+        && String(threadForSend.subscriber_id) === String(alertData.subscriber_id || '');
+    if (channel === 'whatsapp') {
+        if (!shouldUseManyChatWhatsApp) return {statusCode:409,body:JSON.stringify({code:'whatsapp_manychat_route_missing'})};
+        if (!isMessengerWindowOpen(threadForSend.last_inbound_at)) return {statusCode:409,body:JSON.stringify({code:'whatsapp_window_closed'})};
+    }
     let messengerToken = '';
     if (channel === 'messenger') {
         if (!messengerRoute && !shouldUseManyChatMessenger) return { statusCode: 409, body: JSON.stringify({ error: 'A verified Messenger delivery route is required', code: 'facebook_messenger_route_missing' }) };
@@ -2577,7 +2580,7 @@ exports.handler = async (event) => {
             }),
         };
     }
-    if (channel !== 'instagram' && channel !== 'messenger') {
+    if (channel !== 'instagram' && channel !== 'messenger' && channel !== 'whatsapp') {
         return { statusCode: 400, body: JSON.stringify({ error: 'Alert channel is not a ManyChat channel', got: channel || null }) };
     }
     const graphTokenAvailable = shouldUseGraph ? !!(await getInstagramGraphAccessToken(graphAccountId)) : false;
@@ -2701,7 +2704,7 @@ exports.handler = async (event) => {
     let challengeReactionInbound = null;
     // Enforce challenge consent against canonical live history, including late
     // repairs and stale queued drafts. This never writes conversational copy.
-    if (String(alertData.challenge_policy_version || '').startsWith('plant_based_challenge_')
+    if (/^(?:plant_based_challenge_|summer_ready_shred_)/.test(String(alertData.challenge_policy_version || ''))
         || threadForSend?.custom_data?.offer_flow_variant === CHALLENGE_FLOW) {
         const recent = await supabase(`ig_messages?select=direction,text,created_at,manychat_message_id&thread_id=eq.${encodeURIComponent(igThreadId)}&order=created_at.desc&limit=100`);
         if (!Array.isArray(recent) || !recent.length) return {statusCode:409,body:JSON.stringify({code:'challenge_consent_context_unavailable'})};
@@ -2711,7 +2714,7 @@ exports.handler = async (event) => {
         const lastOut = ordered.findLastIndex(item => item.direction === 'out');
         if (ordered.at(-1)?.direction === 'in') challengeReactionInbound = ordered.at(-1);
         const currentMessage = ordered.slice(lastOut + 1).filter(item => item.direction === 'in').map(item => item.text || '').join('\n');
-        const challengeApplies = String(alertData.challenge_policy_version || '').startsWith('plant_based_challenge_')
+        const challengeApplies = /^(?:plant_based_challenge_|summer_ready_shred_)/.test(String(alertData.challenge_policy_version || ''))
             || resolveChallengeLeadRoute({thread:threadForSend,currentMessage,history:ordered.slice(0,lastOut+1)});
         const issues = challengeApplies ? collectChallengeLeadIssues({currentMessage,history:ordered.slice(0,lastOut+1),draft:{
             joined:messagesToSend.join('\n'),imageAttachmentUrl:alertData.draft_image_attachment_url,
@@ -2855,7 +2858,7 @@ exports.handler = async (event) => {
             text: messagesToSend.join('\n\n'),
             voiceConfig: voiceMessageConfig,
         }]
-        : buildInstagramGraphOutboundItems(messagesToSend, shouldUseNativeGraph);
+        : buildInstagramGraphOutboundItems(messagesToSend, shouldUseNativeGraph || shouldUseManyChatWhatsApp || shouldUseManyChatMessenger);
     if (alertData.paid_meta_app_preview_handoff === true) {
         const requiredPreviewUrl = String(alertData.paid_meta_app_preview_url || '').trim();
         const matchingPreviewButtons = outboundItems.filter(item => item.kind === 'link_button'
@@ -2945,7 +2948,7 @@ exports.handler = async (event) => {
     const reactionTarget = shouldUseGraph ? goalReactionTarget({
         review:alertData.draft_review, inbound:challengeReactionInbound,
         enabled:threadForSend?.custom_data?.skip_goal_reaction !== true,
-        challenge:String(alertData.challenge_policy_version || '').startsWith('plant_based_challenge_'), edited:wasEdited,
+        challenge:/^(?:plant_based_challenge_|summer_ready_shred_)/.test(String(alertData.challenge_policy_version || '')), edited:wasEdited,
     }) : null;
     if (reactionTarget && !alertData.instagram_goal_reaction) {
         try {
@@ -3008,7 +3011,7 @@ exports.handler = async (event) => {
                 plannedChunkGapsMs,
                 chunkPacing,
                 paidMetaFastLane: alertData.meta_ad_fast_lane === true,
-                challengeFlow: String(alertData.challenge_policy_version || '').startsWith('plant_based_challenge_'),
+                challengeFlow: /^(?:plant_based_challenge_|summer_ready_shred_)/.test(String(alertData.challenge_policy_version || '')),
             });
             sentChunkGapsMs.push(gapMs);
             if (shouldUseGraph) {
@@ -3023,7 +3026,7 @@ exports.handler = async (event) => {
                 if (typingAction.attempted) instagramTypingActions.push(typingAction);
                 typingStartedForChunk = !!typingAction.ok;
             }
-            await waitWithTypingRefresh({delayMs:gapMs, refresh:shouldUseGraph && String(alertData.challenge_policy_version || '').startsWith('plant_based_challenge_') ? async () => {
+            await waitWithTypingRefresh({delayMs:gapMs, refresh:shouldUseGraph && /^(?:plant_based_challenge_|summer_ready_shred_)/.test(String(alertData.challenge_policy_version || '')) ? async () => {
                 const refreshed = await sendInstagramGraphTypingAction({channel,recipientId:graphRecipientId,accountId:graphAccountId,
                     action:'typing_on',beforeChunkIndex:i+1,gapMs});
                 if (refreshed.attempted) instagramTypingActions.push(refreshed);
@@ -3036,6 +3039,9 @@ exports.handler = async (event) => {
                 const r = await sendMessengerItem({ route: messengerRoute, item, token: messengerToken, lastInboundAt: threadForSend.last_inbound_at });
                 sendResults.push({ ok: true, response: r, text: chunkText, transport: deliveryTransport, kind: item.kind,
                     linkUrl: item.kind === 'link_button' ? item.url : undefined, buttonTitle: item.title, videoUrl: item.videoUrl, imageUrl: item.imageUrl });
+            } else if ((shouldUseManyChatWhatsApp || shouldUseManyChatMessenger) && item.kind === 'link_button') {
+                const r = await postToManyChat({subscriberId,channel,text:item.displayText,button:{url:item.url,title:item.title}});
+                sendResults.push({ok:true,response:r,text:chunkText,transport:deliveryTransport,kind:item.kind,linkUrl:item.url,buttonTitle:item.title});
             } else if (item.kind === 'audio') {
                 const audio = await createVoiceMessageAudio({
                     messages: resolveVoiceSourceMessages(alertData, messagesToSend),
@@ -3309,7 +3315,7 @@ exports.handler = async (event) => {
         } : undefined,
     };
     if (instagramTypingActions.length > 0) {
-        mergedData.instagram_typing_strategy = String(alertData.challenge_policy_version || '').startsWith('plant_based_challenge_')
+        mergedData.instagram_typing_strategy = /^(?:plant_based_challenge_|summer_ready_shred_)/.test(String(alertData.challenge_policy_version || ''))
             ? 'word_paced_typing_refresh_v3' : 'typing_on_before_each_item_v2';
         mergedData.instagram_typing_actions = instagramTypingActions;
     }

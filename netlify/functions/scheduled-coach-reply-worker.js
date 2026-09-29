@@ -263,7 +263,8 @@ function buildAutoSendReviewHold(alert) {
         || data.reply_timing_choice?.source === 'auto_send'
         || data.reply_timing_suggestion?.source === 'auto_send';
     if (!isAutoSend) return null;
-    const isManyChatDm = data.channel === 'instagram'
+    const isManyChatDm = (data.channel === 'whatsapp' && data.delivery_channel === 'manychat_whatsapp')
+        || data.channel === 'instagram'
         || data.channel === 'messenger'
         || alert?.alert_type === 'ig_incoming_dm'
         || alert?.alert_type === 'fb_incoming_dm';

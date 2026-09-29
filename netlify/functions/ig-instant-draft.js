@@ -7247,7 +7247,7 @@ Use this batch as context, not a checklist. First decide what is still live: dir
         }).join('\n');
 
     const pitchHint = pitchHintForStage(leadStage);
-    const channelLabel = channel === 'messenger' ? 'Facebook Messenger' : 'Instagram';
+    const channelLabel = channel === 'whatsapp' ? 'WhatsApp' : channel === 'messenger' ? 'Facebook Messenger' : 'Instagram';
     const channelShort = channel === 'messenger' ? 'Messenger' : 'IG';
 
     // Once a lead is in_app (or paying / churned), the Meta-ad-funnel
@@ -8415,7 +8415,7 @@ exports.handler = async (event) => {
         linkedUserId: thread.linked_user_id,
         threadAutoSendEnabled: thread.auto_send_enabled,
         metaAdFastLane,
-        exerciseConversationFastLane,
+        exerciseConversationFastLane: exerciseConversationFastLane || challengeLead,
     });
     const autoSendEnabled = !thread.linked_user_id
         && (balanceLeadAutoSendLane || cocosAutoSendLane || voiceReplyTestLane || metaAdFastLane);
@@ -8873,7 +8873,7 @@ exports.handler = async (event) => {
         });
     }
     const messengerRoute = resolveMessengerRoute(thread);
-    const deliveryChannel = messengerRoute ? 'facebook_messenger' : (hasInstagramGraphRoute ? 'instagram_graph' : (isDirectGraphManual ? 'manual_ig' : channel));
+    const deliveryChannel = channel === 'whatsapp' ? 'manychat_whatsapp' : messengerRoute ? 'facebook_messenger' : (hasInstagramGraphRoute ? 'instagram_graph' : (isDirectGraphManual ? 'manual_ig' : channel));
     const manualReason = humanAgentRequired && !humanAgentReady
         ? HUMAN_AGENT_NOT_APPROVED_MESSAGE
         : (isDirectGraphManual ? 'Captured directly from Instagram Graph. Copy/send this in Instagram until direct Graph sending is connected.' : undefined);
@@ -9382,8 +9382,8 @@ exports.handler = async (event) => {
         };
     }
 
-    const alertType = channel === 'messenger' ? 'fb_incoming_dm' : 'ig_incoming_dm';
-    const channelLabel = channel === 'messenger' ? 'Messenger' : 'Instagram';
+    const alertType = channel === 'whatsapp' ? 'whatsapp_incoming_message' : channel === 'messenger' ? 'fb_incoming_dm' : 'ig_incoming_dm';
+    const channelLabel = channel === 'whatsapp' ? 'WhatsApp' : channel === 'messenger' ? 'Messenger' : 'Instagram';
     const responseTimingProfile = await loadResponseTimingProfile({
         coachId: thread.coach_id,
         clientId: thread.linked_user_id || null,
@@ -10793,7 +10793,7 @@ exports.handler = async (event) => {
         && !autoHoldReason
         && !blockedStage
         && !codexLiveWakeReady
-        && ['instagram', 'messenger'].includes(channel);
+        && ['instagram', 'messenger', 'whatsapp'].includes(channel);
     if (autoSendEnabled && blockedStage) {
         console.warn(`[ig-draft] auto-send blocked for churned thread ${thread.id}`);
     }

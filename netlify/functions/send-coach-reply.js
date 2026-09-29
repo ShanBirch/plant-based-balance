@@ -563,7 +563,7 @@ exports.handler = async (event) => {
     if (!replyText) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Reply text became empty after visible-copy cleanup' }) };
     }
-    if (alertData.channel === 'whatsapp' || alertData.delivery_channel === 'whatsapp_cloud' || alert.alert_type === 'whatsapp_incoming_message') {
+    if ((alertData.channel === 'whatsapp' && alertData.delivery_channel !== 'manychat_whatsapp') || alertData.delivery_channel === 'whatsapp_cloud' || (alert.alert_type === 'whatsapp_incoming_message' && alertData.delivery_channel !== 'manychat_whatsapp')) {
         try {
             const res = await fetch(`${SITE_URL}/.netlify/functions/send-whatsapp-reply`, {
                 method: 'POST',
@@ -578,7 +578,8 @@ exports.handler = async (event) => {
         }
     }
     const hasExternalThread = !!alertData.ig_thread_id;
-    const isInstagramOrMessenger = alertData.channel === 'instagram'
+    const isInstagramOrMessenger = (alertData.channel === 'whatsapp' && alertData.delivery_channel === 'manychat_whatsapp' && hasExternalThread)
+        || alertData.channel === 'instagram'
         || alertData.channel === 'messenger'
         || (
             hasExternalThread

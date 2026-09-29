@@ -30,6 +30,7 @@
  *   5. Return 200 quickly so ManyChat doesn't retry the webhook
  */
 
+const {normalizeManyChatChannel, BALANCE_MANYCHAT_WORKSPACE, BALANCE_PAGE_ID} = require('./_lib/manychat-channels');
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const { registerPaidLeadDispatch } = require('./_lib/ig-paid-lead-dispatch-intake');
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
@@ -742,7 +743,7 @@ async function upsertThread({ subscriberId, defaultCoachId, channel, igUsername,
     let existing = await supabase(
         `ig_threads?select=${selectColumns}&subscriber_id=eq.${encodeURIComponent(subscriberId)}&channel=eq.${encodeURIComponent(channel)}&limit=1`
     );
-    const handle = cleanIgUsername(igUsername);
+    const handle = channel === 'instagram' ? cleanIgUsername(igUsername) : null;
     if (!existing[0] && handle) {
         // ManyChat subscriber IDs can change across channel reconnects/tests.
         // The IG handle is the stable human identity, so reuse that thread
@@ -794,6 +795,7 @@ async function upsertThread({ subscriberId, defaultCoachId, channel, igUsername,
             subscriber_id: subscriberId,
             coach_id: defaultCoachId || null,
             channel: channel || 'instagram',
+            auto_send_enabled: ['messenger','whatsapp'].includes(channel),
             ig_username: igUsername || null,
             profile_name: profileName || null,
             profile_pic_url: profilePicUrl || null,
@@ -1016,10 +1018,10 @@ exports.handler = async (event) => {
     // Channel routing — defaults to 'instagram' so the existing IG flow
     // doesn't need to add the field. ManyChat's FB Messenger automation
     // should pass `"channel": "messenger"` in the External Request body.
-    let channel = String(payload.channel || 'instagram').trim().toLowerCase();
-    if (channel !== 'instagram' && channel !== 'messenger') {
-        console.warn(`[manychat-inbound] unknown channel '${channel}', defaulting to instagram`);
-        channel = 'instagram';
+    const channel = normalizeManyChatChannel(payload.channel);
+    if (!channel) return {statusCode:400,body:JSON.stringify({error:'Unsupported ManyChat channel'})};
+    if (channel === 'messenger' || channel === 'whatsapp') {
+        customData.manychat_business = {workspace:BALANCE_MANYCHAT_WORKSPACE,page_id:BALANCE_PAGE_ID};
     }
 
     await patchWebhookAudit(auditId, {
