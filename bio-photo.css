@@ -16,8 +16,9 @@ body{background:#111110}.bio-masthead{position:absolute;inset:0 0 auto;z-index:2
 /* Keep the two challenge characters together, with room for the phone masthead and caption. */
 .photo-summer{background:#172016}
 .challenge-prefix{display:block;font:600 clamp(15px,2vw,23px)/1.4 Inter,Arial,sans-serif;letter-spacing:3px;text-transform:uppercase;color:var(--photo-gold);-webkit-text-fill-color:var(--photo-gold);margin-bottom:10px}
-.photo-summer>img{object-fit:cover;object-position:50% 20%}
-@media(max-width:799px){.photo-summer>img{top:110px;height:calc(100% - 110px);max-height:110vw;object-position:50% 20%;mask-image:linear-gradient(#000 75%,transparent);-webkit-mask-image:linear-gradient(#000 75%,transparent)}}
+.photo-summer>picture{position:absolute;inset:0;z-index:-2}
+.photo-summer>picture>img{width:100%;height:100%;object-fit:cover;object-position:50% 20%}
+@media(max-width:799px){.photo-summer>picture>img{object-position:50% 0}}
 /* Only the opened drawer adopts the inner website menu. Keep the original photo masthead. */
 .photo-hub { --bg:#f9f9f7; --text-main:#1a202c; --text-muted:#5f6f85; --secondary:#9b6f19; --button-hover:rgba(255,255,255,.98); }
 @media (pointer:coarse), (max-width:900px) {
