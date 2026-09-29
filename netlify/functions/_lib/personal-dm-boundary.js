@@ -35,7 +35,7 @@ function hasBusinessCallRequest(value) {
     if (!text) return false;
     // A requested booking link is commercial context even when the lead does
     // not repeat the offer name in a follow-up about the call format.
-    const business = '(?:booking link|balance|founders? pass|starter coaching|coach(?:ing)?|work with you|fitness|health|training|workouts?|nutrition|food structure|consistency|accountability|program|offer|sales|consult(?:ation)?|help me|get started)';
+    const business = '(?:book|booking link|balance|summer (?:ready )?shred|founders? pass|starter coaching|coach(?:ing)?|work with you|fitness|health|training|workouts?|nutrition|food structure|consistency|accountability|program|offer|sales|consult(?:ation)?|help me|get started)';
     const call = '(?:call|video call|phone call|chat|talk|speak)';
     return new RegExp(`\\b${business}\\b.{0,100}\\b${call}\\b|\\b${call}\\b.{0,100}\\b${business}\\b`, 'i').test(text);
 }

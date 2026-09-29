@@ -149,3 +149,12 @@ test('a requested booking link plus call-format question remains a business hand
         assert.equal(boundary.classifyPersonalDmBoundary({inboundText}).requires_manual, true, inboundText);
     }
 });
+
+test('booking a normal phone call after declining video is a business request', () => {
+    const inboundText = "I don't want a video call. Can I book a normal phone call instead?";
+    assert.equal(boundary.hasBusinessCallRequest(inboundText), true);
+    assert.equal(boundary.classifyPersonalDmBoundary({ inboundText }).requires_manual, false);
+    for (const text of ['Can I book a video call? You are sexy', 'Can I book a phone call to hook up?']) {
+        assert.equal(boundary.classifyPersonalDmBoundary({ inboundText: text }).requires_manual, true);
+    }
+});
