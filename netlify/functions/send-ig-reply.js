@@ -2087,7 +2087,9 @@ async function loadThreadLastInboundAt(threadId) {
 }
 
 function resolveAutomatedConversationAnchorAt(alert = {}) {
-    if (Number.isFinite(Date.parse(alert.data?.source_inbound_created_at || ''))) return new Date(alert.data.source_inbound_created_at).toISOString();
+    // Postgres stores microseconds; Date.toISOString() truncates them and makes
+    // the source message itself appear newer than the draft's anchor.
+    if (Number.isFinite(Date.parse(alert.data?.source_inbound_created_at || ''))) return alert.data.source_inbound_created_at;
     const data = alert.data || {};
     const inboundCandidates = [
         data.source_inbound_created_at,

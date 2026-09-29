@@ -6,6 +6,22 @@ const path = require('node:path');
 const sendIg = require('../netlify/functions/send-ig-reply')._test;
 const { splitCoachDraftIntoDmBubbles } = require('../netlify/functions/_lib/client-context');
 
+test('canonical inbound microseconds survive the final stale-conversation query', async () => {
+    const originalFetch = global.fetch;
+    const stamp = '2026-09-29T09:21:16.421713+00:00';
+    const newer = { id: 'next', direction: 'in', text: 'Wait', created_at: '2026-09-29T09:21:16.421714+00:00' };
+    const params = { alert: { id: 'a' }, alertData: { ig_thread_id: 't', scheduled_via: 'auto_send', source_inbound_created_at: stamp }, source: 'scheduled_worker' };
+    try {
+        for (const rows of [[], [newer]]) {
+            global.fetch = async url => {
+                assert.equal(new URLSearchParams(String(url).split('?')[1]).get('created_at'), 'gt.' + stamp);
+                return { ok: true, text: async () => JSON.stringify(rows) };
+            };
+            assert.deepEqual(await sendIg.getAutomatedInstagramConversationDelta(params), rows[0] || null);
+        }
+    } finally { global.fetch = originalFetch; }
+});
+
 test('partial recovery ignores only verified receipts for this alert, never newer inbound or manual replies', async () => {
     const originalFetch = global.fetch;
     const own = {id:'receipt', direction:'out', alert_id:'a', text:'Intro'};
