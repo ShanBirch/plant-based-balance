@@ -3,6 +3,21 @@ const assert = require('node:assert/strict');
 const { resolveChallengeLeadRoute, buildChallengeLeadPrompt, collectChallengeLeadIssues, buildChallengeBookingHandoff, CHALLENGE_BOOKING_URL } = require('../netlify/functions/_lib/plant-based-challenge-dm');
 const fresh = { created_at:'2026-09-27T00:00:00Z', custom_data:{bot_account:'shan_n_sunny'} };
 
+test('Summer Shred ad questions start independent internal tests but preserve real lead history', () => {
+    const {buildInternalMetaAdTestResetCustomData, filterInternalTestHistoryAfterReset} = require('../netlify/functions/ig-instant-draft')._test;
+    const customData = {bot_account:'shan_n_sunny',internal_test_auto_reply_enabled:true,internal_test_meta_ad_flow:'broad_pain'};
+    const resetAt = '2026-09-29T06:00:00Z';
+    const history = [{direction:'in',text:'old test goal',created_at:'2026-09-29T05:00:00Z'}];
+    for (const currentMessage of ['Tell me more about the Summer Shred','Can I do the Summer Shred at home?','Is the Summer Shred right for me?']) {
+        const reset = buildInternalMetaAdTestResetCustomData({customData,currentMessage,resetAt});
+        const current = {direction:'in',text:currentMessage,created_at:resetAt};
+        assert.deepEqual(filterInternalTestHistoryAfterReset({history:[...history,current],customData:reset}),[current]);
+        assert.equal(buildInternalMetaAdTestResetCustomData({customData:{bot_account:'shan_n_sunny'},currentMessage,resetAt}),null);
+        assert.equal(buildInternalMetaAdTestResetCustomData({linkedUserId:'client',customData,currentMessage,resetAt}),null);
+        assert.equal(resolveChallengeLeadRoute({thread:{...fresh,custom_data:{bot_account:'shan_n_sunny',meta_ad_attribution:{ad_id:'new-ad'}}},currentMessage}),true);
+    }
+});
+
 test('new Balance leads use consultation; explicit returning challenge enquiries reuse that route', () => {
     assert.equal(resolveChallengeLeadRoute({thread:fresh,currentMessage:'How does your coaching work?'}),true);
     assert.equal(resolveChallengeLeadRoute({thread:{...fresh,created_at:'2026-08-01'},currentMessage:'I want the eight-week plant-based challenge'}),true);
