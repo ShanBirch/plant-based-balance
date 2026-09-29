@@ -6375,7 +6375,7 @@ function mergeDraftReviewContextReview(review, existingContextReview = null) {
     };
 }
 
-async function generateDraftReview({ draftText, alertType, contextBlocks, clientName, channelLabel, existingContextReview } = {}) {
+async function generateDraftReview({ draftText, alertType, contextBlocks, clientName, channelLabel, existingContextReview, offerFlowVariant } = {}) {
     const draft = normalizeCoachDraftText(draftText || '').trim();
     if (!draft) return null;
     try {
@@ -6384,7 +6384,16 @@ async function generateDraftReview({ draftText, alertType, contextBlocks, client
             ? `Existing deterministic context warning: ${existingContextReview.label || existingContextReview.reason || 'tracked context may be incomplete'}`
             : 'Existing deterministic context warning: none';
         const purpose = ALERT_TYPE_PURPOSES[alertType] || 'a coach reply was drafted';
-        const leadQualityBlock = isLeadDmReview ? `
+        const leadQualityBlock = isLeadDmReview && offerFlowVariant === 'plant_based_challenge' ? `
+CHALLENGE CONVERSATION QUALITY CHECK (replaces the older lead offer/timing playbook):
+- Read the entire episode and all unanswered messages. Judge meaning, not a keyword list or a minimum reply count. Use the verified challenge facts below.
+- A fresh BALANCE opening must briefly explain the ten-week plant-based Summer Shred and its support, including the six-week Learn course for lasting lifestyle change, BEFORE asking: "What are you looking to achieve over the next ten weeks?" Block a booking invitation in this opening unless the person explicitly requested a booking link.
+- If only a goal is known, understand what makes it difficult or what support they need naturally. Block an invitation that skips this understanding. Do not invent a difficulty or insist on one when they say none exists.
+- Once goal and struggle/support need are understood, expect a brief relevant support explanation AND a direct permission question about sending the booking link. Warn if the draft asks redundant discovery instead. This invitation is appropriate without three prior replies or a separate request for a call.
+- Block an actual URL/card before acceptance of that invitation or an explicit booking-link request. After consent, expect the approved booking card and answers to any accompanying questions.
+- No proof photos, videos, diet qualification checklist, unsolicited prices or universal weekly Zoom promise. Shannon is vegetarian. Respect refusals, existing coaching, safety, identity, context and media evidence requirements.
+- Answer every direct question, use saved answers and corrections, and keep wording natural and proportionate. Do not penalise the approved opening goal question as stock intake. Do not require a call for factual answers.
+- Report any conversation-order problem as lead_quality, not missing context; do not write the customer reply yourself.` : isLeadDmReview ? `
 IG/FB LEAD QUALITY CHECK:
 - Judge this as a conversion DM, not only a context-matching task. The reply should keep the conversation moving in Shannon's casual human voice.
 - Current primary paid offer: Balance Learn is one AUD $149 payment for a fixed six-week course, six weeks of app/community access, and one weekly check-in plus workout/food review and adjustments from Shannon. It does not auto-renew. Online Coaching is the ongoing individual progression option after Balance Learn or from day one at AUD $29.99/week for six months, AUD $49.99/week for three months, or AUD $74.99/week month-to-month. The default close happens inside DMs.
@@ -6541,8 +6550,9 @@ async function updateAlertDraftReview(alertId, review, contextReview = null) {
     }
 }
 
-async function reviewDraftAndUpdateAlert({ alertId, draftText, alertType, contextBlocks, clientName, channelLabel, existingContextReview, qualifier, linkedUserId, meaningfulLeadReplyCount, persist = true } = {}) {
+async function reviewDraftAndUpdateAlert({ alertId, draftText, alertType, contextBlocks, clientName, channelLabel, existingContextReview, qualifier, linkedUserId, meaningfulLeadReplyCount, persist = true, offerFlowVariant } = {}) {
     const rawReview = await generateDraftReview({
+        offerFlowVariant,
         draftText,
         alertType,
         contextBlocks,

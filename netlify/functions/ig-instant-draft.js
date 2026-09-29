@@ -1014,7 +1014,7 @@ function collectCocosAutoRepairIssues({ draft, draftReview, challengeOfferWarnin
         reviewIssues.slice(0, 4).forEach(issue => issues.push(`Reviewer issue: ${issue}`));
         if (draftReview.suggested_fix) issues.push(`Reviewer suggested fix: ${draftReview.suggested_fix}`);
     }
-    if (challengeOfferWarning?.required && !challengeOfferAllowed) {
+    if (flowVariant !== CHALLENGE_FLOW && challengeOfferWarning?.required && !challengeOfferAllowed) {
         issues.push('Draft appears to offer or link coaching. Remove the pitch unless the latest message clearly asks how to start or asks for the link.');
     }
     if (isUnsafeStockDiscoveryQuestion(draftText) && !isVerifiedBroadPaidMetaGoalToBlockerMove({
@@ -1025,7 +1025,7 @@ function collectCocosAutoRepairIssues({ draft, draftReview, challengeOfferWarnin
     })) {
         issues.push('Draft uses a stock discovery question. Replace it with a specific reply to the latest detail, or no question if a reaction is enough.');
     }
-    if (prematureChallengeInvite && !verifiedPaidMetaProgression) {
+    if (flowVariant !== CHALLENGE_FLOW && prematureChallengeInvite && !verifiedPaidMetaProgression) {
         issues.push('Draft invites coaching before the person has shown enough readiness or 3 meaningful lead replies. Keep rapport moving instead.');
     }
     if (voiceNoteMode) {
@@ -2995,11 +2995,20 @@ function getAutoDmHoldReason({ history = [], mediaReview, contextReview, onboard
             label: 'AI draft was unavailable',
         };
     }
+    // Challenge readiness is reviewed from the complete conversation, not the
+    // legacy organic three-reply/keyword threshold. All safety gates above stay.
+    const reviewedChallengeConversation = !linkedUserId
+        && alertData?.challenge_policy_version === CHALLENGE_POLICY_VERSION
+        && draftReview?.verdict === 'pass'
+        && !(draftReview?.issues || []).length
+        && !!draftReview?.reviewer_model
+        && !/^deterministic/i.test(draftReview.reviewer_model)
+        && !collectChallengeLeadIssues({draft, currentMessage, history, qualifier}).length;
     const activeChallengeOfferWarning = challengeOfferWarning?.code === 'challenge_offer'
         && !isChallengeOfferWarningText(draft?.joined || '')
         ? null
         : challengeOfferWarning;
-    if (activeChallengeOfferWarning?.required && !isPaidMetaBuyerIntentOfferReplyAllowed({
+    if (!reviewedChallengeConversation && activeChallengeOfferWarning?.required && !isPaidMetaBuyerIntentOfferReplyAllowed({
         alertData,
         challengeOfferWarning: activeChallengeOfferWarning,
         currentMessage,
@@ -3029,7 +3038,7 @@ function getAutoDmHoldReason({ history = [], mediaReview, contextReview, onboard
         && draftReview?.verdict === 'pass'
         && !(draftReview?.issues || []).length
         && !!buildChallengeBookingHandoff({draft, currentMessage, qualifier, history});
-    if (!verifiedChallengeConsultation && !verifiedPaidMetaProgression
+    if (!reviewedChallengeConversation && !verifiedChallengeConsultation && !verifiedPaidMetaProgression
         && !verifiedGuaranteedPaidMetaOffer
         && !verifiedRequestedVideoResend
         && !verifiedPaidMetaPreviewInvitation
@@ -5626,7 +5635,7 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
     const plantDurationReplyPattern = plantDuration
         ? new RegExp(`\\b(?:${durationNumber || plantDuration}|${durationWord})\\b`, 'i')
         : null;
-    if (asksPlantReciprocal && !/\b(?:five|5) years?\b/i.test(reply)) {
+    if (!challengeFlow && asksPlantReciprocal && !/\b(?:five|5) years?\b/i.test(reply)) {
         issues.push('Answer the reciprocal plant-based question explicitly: Shannon has been vegan for five years.');
     }
     if (/\baccountab/i.test(turn)) {
@@ -10039,7 +10048,9 @@ exports.handler = async (event) => {
                 reviewer_model: 'deterministic-paid-meta-fast-contract-v1',
             }
             : null;
-        const approvedFastReview = approvedDeterministicReview || approvedPaidMetaFastReview;
+        // Local contracts can check permission and facts, but cannot judge
+        // whether the writer understood this person's goal and struggle.
+        const approvedFastReview = challengeLead ? null : approvedDeterministicReview || approvedPaidMetaFastReview;
         if (approvedFastReview) {
             draftReview = approvedFastReview;
             effectiveContextReview = approvedFastReview.context_warning_overridden
@@ -10057,6 +10068,7 @@ exports.handler = async (event) => {
             const reviewResult = await withTimeout(reviewDraftAndUpdateAlert({
                 alertId,
                 draftText: draft.joined,
+                offerFlowVariant: challengeLead ? CHALLENGE_FLOW : undefined,
                 alertType,
                 contextBlocks: reviewContextBlocks,
                 clientName: leadName,
@@ -10137,7 +10149,7 @@ exports.handler = async (event) => {
         const autoDraftRepairField = cocosAutoSendLane ? 'cocos_auto_repair' : 'balance_auto_repair';
         const autoDraftRepairBusinessName = cocosAutoSendLane ? "Coco's PT Studio" : 'Balance';
         const originalStyleWarningDraft = draft.joined;
-        const safeMetaAdStyleFallback = metaAdFastLane
+        const safeMetaAdStyleFallback = !challengeLead && metaAdFastLane
             ? buildSafeMetaAdStyleFallback({
                 draft,
                 draftReview,
@@ -10206,6 +10218,7 @@ exports.handler = async (event) => {
                     const repairedReviewResult = await withTimeout(reviewDraftAndUpdateAlert({
                         alertId,
                         draftText: repaired.joined,
+                        offerFlowVariant: challengeLead ? CHALLENGE_FLOW : undefined,
                         alertType,
                         contextBlocks: reviewContextBlocks,
                         clientName: leadName,

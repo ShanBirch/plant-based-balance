@@ -227,3 +227,11 @@ test('opener preference includes Summer Shred, Learn and ten-week goal horizon w
     for(const phrase of ['Summer Shred','six-week course','long-term lifestyle changes','What are you looking to achieve over the next ten weeks?','not a vegan-status qualification gate','No transformation photos']) assert.ok(prompt.includes(phrase),phrase);
     assert.doesNotMatch(prompt,/No extra permission loop|goal plus a genuine.*enquiry is enough|Do not ask permission to send/);
 });
+
+test('challenge uses semantic review for earned invitations while keeping every safety hold', () => {
+ const writer=require('../netlify/functions/ig-instant-draft')._test;
+ const input={draft:{joined:'We can fit training around that. Want me to send the call booking link?',model:'openai-gpt-5.4-mini-paid-meta'},currentMessage:'The hotel floor is all I have to train on',history:[{direction:'in',text:'I want to hike with my dad'}],qualifier:{},linkedUserId:null,leadStage:'qualifying',meaningfulLeadReplyCount:1,alertData:{challenge_policy_version:'plant_based_challenge_consent_v2'},challengeOfferWarning:{required:true,code:'challenge_offer'},mediaReview:{required:false},contextReview:{required:false},draftReview:{verdict:'pass',confidence:1,issues:[],reviewer_model:'gemini-draft-context-review',context_loss_suspected:false,notification_required:false}};
+ assert.equal(writer.getAutoDmHoldReason(input),null);
+ for(const override of [{draftReview:{...input.draftReview,reviewer_model:'deterministic-paid-meta-fast-contract-v1'}},{draftReview:{...input.draftReview,verdict:'block',issues:['premature invitation']}},{contextReview:{required:true}},{mediaReview:{required:true}}]) assert.ok(writer.getAutoDmHoldReason({...input,...override}));
+ assert.deepEqual(writer.collectCocosAutoRepairIssues({...input,flowVariant:'plant_based_challenge'}),[]);
+});
