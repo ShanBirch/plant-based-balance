@@ -140,3 +140,12 @@ test('generic manual-only thread flags are honoured', () => {
     assert.equal(manualResult.shouldRoute, true);
     assert.ok(manualResult.reasons.includes('always_needs_you_person'));
 });
+
+test('a requested booking link plus call-format question remains a business handoff', () => {
+    const inboundText = 'Yes, please send me the booking link. Is it a 60-minute video call?';
+    assert.equal(boundary.hasBusinessCallRequest(inboundText), true);
+    assert.equal(boundary.classifyPersonalDmBoundary({inboundText}).requires_manual, false);
+    for (const inboundText of ['Can we video call tonight?', 'Send the booking link for a video call, you are sexy', 'Send the booking link for a video call, I want to hook up']) {
+        assert.equal(boundary.classifyPersonalDmBoundary({inboundText}).requires_manual, true, inboundText);
+    }
+});
