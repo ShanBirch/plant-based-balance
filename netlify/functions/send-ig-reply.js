@@ -3042,7 +3042,9 @@ exports.handler = async (event) => {
                 sendResults.push({ ok: true, response: r, text: chunkText, transport: deliveryTransport, kind: item.kind,
                     linkUrl: item.kind === 'link_button' ? item.url : undefined, buttonTitle: item.title, videoUrl: item.videoUrl, imageUrl: item.imageUrl });
             } else if ((shouldUseManyChatWhatsApp || shouldUseManyChatMessenger) && item.kind === 'link_button') {
-                const r = await postToManyChat({subscriberId,channel,text:item.displayText,button:{url:item.url,title:item.title}});
+                // Instagram's image card has no display text. ManyChat text
+                // buttons require a body, including on Messenger and WhatsApp.
+                const r = await postToManyChat({subscriberId,channel,text:item.displayText || item.text,button:{url:item.url,title:item.title}});
                 sendResults.push({ok:true,response:r,text:chunkText,transport:deliveryTransport,kind:item.kind,linkUrl:item.url,buttonTitle:item.title});
             } else if (item.kind === 'audio') {
                 const audio = await createVoiceMessageAudio({

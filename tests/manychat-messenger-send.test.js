@@ -7,13 +7,14 @@ process.env.MANYCHAT_API_TOKEN = 'test-only';
 process.env.FACEBOOK_PAGE_ACCESS_TOKEN = 'test-only';
 const { handler } = require('../netlify/functions/send-ig-reply');
 
-for (const scenario of ['valid', 'expired', 'malformed-graph', 'wrong-channel']) test('ManyChat Messenger route: ' + scenario, async () => {
+for (const scenario of ['valid', 'booking', 'expired', 'malformed-graph', 'wrong-channel']) test('ManyChat Messenger route: ' + scenario, async () => {
     const originalFetch = global.fetch;
     const at = new Date().toISOString();
+    const reply = scenario === 'booking' ? 'Here you go: https://plantbased-balance.org/book?source=plant_based_challenge' : 'Thanks for explaining that.';
     let alert = { id: 'alert', status: 'pending', created_at: at, client_id: null, coach_id: 'coach', alert_type: 'fb_incoming_dm',
-        data: { channel: 'messenger', ig_thread_id: 'thread', subscriber_id: '456', draft_text: 'Thanks for explaining that.', draft_messages: ['Thanks for explaining that.'] } };
+        data: { channel: 'messenger', ig_thread_id: 'thread', subscriber_id: '456', draft_text: reply, draft_messages: [reply] } };
     const thread = { id: 'thread', channel: 'messenger', subscriber_id: '456', last_inbound_at: at,
-        custom_data: {} };
+        custom_data: {manychat_business:{workspace:'fb996573',page_id:'561122130919678'}} };
     if (scenario === 'expired') thread.last_inbound_at = new Date(Date.now() - 25 * 3600000).toISOString();
     if (scenario === 'malformed-graph') thread.subscriber_id = alert.data.subscriber_id = 'fb_graph:123:bad';
     if (scenario === 'wrong-channel') thread.channel = 'instagram';
@@ -23,7 +24,7 @@ for (const scenario of ['valid', 'expired', 'malformed-graph', 'wrong-channel'])
         calls.push(String(url));
         const body = options.body ? JSON.parse(options.body) : null;
         let result = [];
-        if (String(url).startsWith('https://api.manychat.com/')) { assert.equal(body.subscriber_id, '456'); assert.equal(body.data.content.type, undefined); result = { status: 'success' }; }
+        if (String(url).startsWith('https://api.manychat.com/')) { assert.equal(body.subscriber_id, '456'); assert.equal(body.data.content.type, undefined); assert.ok(body.data.content.messages[0].text.trim()); if (body.data.content.messages[0].buttons) assert.equal(body.data.content.messages[0].buttons[0].url, 'https://plantbased-balance.org/book?source=plant_based_challenge'); result = { status: 'success' }; }
         else if (String(url).includes('/rest/v1/ig_threads')) result = [thread];
         else if (String(url).includes('/rest/v1/coach_alerts')) {
             if (options.method === 'PATCH') { alert = { ...alert, ...body }; result = [alert]; }
@@ -39,16 +40,16 @@ for (const scenario of ['valid', 'expired', 'malformed-graph', 'wrong-channel'])
         return { ok: true, status: 200, text: async () => JSON.stringify(result), json: async () => result };
     };
     try {
-        const result = await handler({ httpMethod: 'POST', body: JSON.stringify({ alertId: 'alert', replyText: 'Thanks for explaining that.', draftText: 'Thanks for explaining that.', source: 'admin_dashboard', forceText: true }) });
-        if (scenario !== 'valid') {
+        const result = await handler({ httpMethod: 'POST', body: JSON.stringify({ alertId: 'alert', replyText: reply, draftText: reply, source: 'admin_dashboard', forceText: true }) });
+        if (!['valid', 'booking'].includes(scenario)) {
             assert.equal(result.statusCode, 409, result.body);
             assert.equal(calls.filter(url => url.startsWith('https://api.manychat.com/')).length, 0);
             return;
         }
         assert.equal(result.statusCode, 200, result.body);
-        assert.equal(calls.filter(url => url.startsWith('https://api.manychat.com/')).length, 1);
+        assert.equal(calls.filter(url => url.startsWith('https://api.manychat.com/')).length, scenario === 'booking' ? 2 : 1);
         assert.equal(calls.some(url => /graph\.facebook\.com|graph\.instagram\.com/.test(new URL(url).hostname)), false);
-        assert.equal(messages.length, 1);
+        assert.equal(messages.length, scenario === 'booking' ? 2 : 1);
         assert.equal(messages[0].manychat_message_id, null);
         assert.equal(messages[0].source, 'admin_dashboard');
         assert.equal(alert.status, 'sent');
@@ -56,8 +57,10 @@ for (const scenario of ['valid', 'expired', 'malformed-graph', 'wrong-channel'])
         
         const duplicate = await handler({ httpMethod: 'POST', body: JSON.stringify({ alertId: 'alert', replyText: 'Thanks for explaining that.', source: 'admin_dashboard' }) });
         assert.equal(duplicate.statusCode, 409);
-        assert.equal(calls.filter(url => url.startsWith('https://api.manychat.com/')).length, 1);
+        assert.equal(calls.filter(url => url.startsWith('https://api.manychat.com/')).length, scenario === 'booking' ? 2 : 1);
     } finally { global.fetch = originalFetch; }
 });
+
+
 
 
