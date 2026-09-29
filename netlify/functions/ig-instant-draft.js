@@ -965,6 +965,7 @@ function isReviewTimeoutOnly(draftReview) {
 function reviewLooksLikePureContextGap(review) {
     if (!review) return false;
     if (review.context_loss_suspected) return true;
+    if (review.context_assessment === 'model') return false;
     const haystack = [
         review.notification_reason,
         review.summary,
@@ -1125,7 +1126,7 @@ function normalizeQuestionFreeRepairedDraft(repaired) {
     return { chunks, joined: chunks.join('\n') };
 }
 
-async function repairCocosDraftFromReview({ draft, repairIssues, reviewContextBlocks, leadName, channelLabel, maxChunks, currentMessage, qualifier, businessName = "Coco's PT Studio", paidMetaMode = false }) {
+async function repairCocosDraftFromReview({ draft, repairIssues, reviewContextBlocks, leadName, channelLabel, maxChunks, currentMessage, qualifier, businessName = "Coco's PT Studio", paidMetaMode = false, flowVariant = '' }) {
     const draftText = draftTextFromDraft(draft);
     if (!draftText || !repairIssues?.length) return null;
     const questionFreeRepair = repairRequiresQuestionFreeReply(repairIssues);
@@ -1159,7 +1160,8 @@ CONTEXT THE ORIGINAL WRITER SAW:
 ${reviewContextBlocks || '(no context provided)'}
 
 ORIGINAL DRAFT:
-${draftText}`;
+${draftText}
+${flowVariant === CHALLENGE_FLOW ? 'CHALLENGE REPAIR OVERRIDE: Follow the full-conversation challenge contract in the supplied context. It supersedes the generic tiny-acknowledgement and pitch-only-on-request rules above. A BALANCE enquiry needs the brief introduction BEFORE the goal question. An earned support explanation and booking-link permission question are allowed once goal and support need are understood, even without an explicit call request. Write the complete corrected response naturally; do not copy a canned example. Preserve every unanswered question. The corrected response will undergo the same independent review and consent checks.' : ''}`;
     const repairContents = [{ role: 'user', parts: [{ text: prompt }] }];
     const repairConfig = { maxOutputTokens: Math.min(1200, Math.max(500, (maxChunks || MAX_CHUNKS) * 280)), temperature: 0.35 };
     const rawText = paidMetaMode
@@ -1175,7 +1177,7 @@ ${draftText}`;
     }
     if (!repaired.joined || repaired.joined === draftText) return null;
     const earnedPaidMetaOfferRepair = repairIssues.some(issue => /Earned paid-Meta offer is missing/i.test(String(issue || '')));
-    if (!earnedPaidMetaOfferRepair && isUnrequestedOfferInjection({
+    if (flowVariant !== CHALLENGE_FLOW && !earnedPaidMetaOfferRepair && isUnrequestedOfferInjection({
         originalDraft: draftText,
         repairedDraft: repaired.joined,
         currentMessage,
@@ -9127,7 +9129,7 @@ exports.handler = async (event) => {
     }
     if (metaAdConversationFastLane) {
         draft = attachPaidMetaWriterSelectedMedia(draft, {
-            allowAttachments: hasInstagramGraphRoute,
+            allowAttachments: hasInstagramGraphRoute && !challengeLead,
             flowVariant: metaAdFlowVariant,
             history,
             currentMessage: messageText,
@@ -10204,6 +10206,7 @@ exports.handler = async (event) => {
                     qualifier,
                     businessName: autoDraftRepairBusinessName,
                     paidMetaMode: metaAdConversationFastLane,
+                    flowVariant: metaAdFlowVariant,
                 }), COCOS_DRAFT_REPAIR_TIMEOUT_MS, `${autoDraftRepairBusinessName} draft repair`);
                 if (repaired?.joined) {
                     const repairedPaidMetaContractIssues = metaAdConversationFastLane
@@ -10239,7 +10242,7 @@ exports.handler = async (event) => {
                         && !draftParrotsLatestInbound(repaired.joined, displayMessage)
                         && (!repairRequiresQuestionFreeReply(repairIssues)
                             || repaired.chunks.every(chunk => !isQuestionLikeText(chunk)))
-                        && (earnedPaidMetaOfferRepair || !isUnrequestedOfferInjection({
+                        && (challengeLead || earnedPaidMetaOfferRepair || !isUnrequestedOfferInjection({
                             originalDraft: originalDraftText,
                             repairedDraft: repaired.joined,
                             currentMessage: displayMessage,

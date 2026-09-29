@@ -235,3 +235,17 @@ test('challenge uses semantic review for earned invitations while keeping every 
  for(const override of [{draftReview:{...input.draftReview,reviewer_model:'deterministic-paid-meta-fast-contract-v1'}},{draftReview:{...input.draftReview,verdict:'block',issues:['premature invitation']}},{contextReview:{required:true}},{mediaReview:{required:true}}]) assert.ok(writer.getAutoDmHoldReason({...input,...override}));
  assert.deepEqual(writer.collectCocosAutoRepairIssues({...input,flowVariant:'plant_based_challenge'}),[]);
 });
+
+test('a missing intro is a repairable content omission, while actual missing conversation remains held', () => {
+ const ctx=require('../netlify/functions/_lib/client-context');
+ const writer=require('../netlify/functions/ig-instant-draft')._test;
+ const raw={verdict:'block',confidence:0.86,summary:'Missing context in the opening explanation',issues:['Missing challenge introduction before goal'],context_loss_suspected:false};
+ const review=ctx.normalizeDraftReviewPayload(raw,{trustExplicitContextAssessment:true});
+ assert.equal(review.context_loss_suspected,false);
+ assert.equal(ctx.mergeDraftReviewContextReview(review,{required:false}).required,false);
+ assert.equal(writer.reviewLooksLikePureContextGap(review),false);
+ assert.ok(writer.collectCocosAutoRepairIssues({draft:{joined:'What is your goal?'},draftReview:review,flowVariant:'plant_based_challenge'}).length);
+ const missing=ctx.normalizeDraftReviewPayload({...raw,context_loss_suspected:true},{trustExplicitContextAssessment:true});
+ assert.equal(ctx.mergeDraftReviewContextReview(missing).required,true);
+ assert.equal(ctx.normalizeDraftReviewPayload(raw).context_loss_suspected,true);
+});

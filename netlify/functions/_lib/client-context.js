@@ -5948,7 +5948,7 @@ function normalizeDraftReviewIssues(value) {
     return out;
 }
 
-function normalizeDraftReviewPayload(value) {
+function normalizeDraftReviewPayload(value, { trustExplicitContextAssessment = false } = {}) {
     const data = value && typeof value === 'object' ? value : {};
     const verdictRaw = String(data.verdict || '').toLowerCase();
     const verdict = ['pass', 'warn', 'block'].includes(verdictRaw) ? verdictRaw : 'warn';
@@ -5964,7 +5964,8 @@ function normalizeDraftReviewPayload(value) {
         || data.missingContextSuspected
     );
     const textSuggestsContextLoss = DRAFT_REVIEW_CONTEXT_RE.test([summary, suggestedFix, ...issues, notificationReason].join(' '));
-    const contextLoss = explicitContextLoss || (verdict !== 'pass' && textSuggestsContextLoss);
+    const contextLoss = explicitContextLoss || (verdict !== 'pass' && textSuggestsContextLoss
+        && !(trustExplicitContextAssessment && data.context_loss_suspected === false));
     const notificationRequired = !!(
         data.notification_required
         || data.notificationRequired
@@ -5979,6 +5980,8 @@ function normalizeDraftReviewPayload(value) {
         issues,
         suggested_fix: suggestedFix,
         context_loss_suspected: contextLoss,
+        ...(trustExplicitContextAssessment && typeof data.context_loss_suspected === 'boolean'
+            ? {context_assessment: 'model'} : {}),
         notification_required: notificationRequired,
         notification_reason: notificationReason || (contextLoss ? 'context_loss_suspected' : (notificationRequired ? 'draft_review_required' : 'none')),
         reviewed_at: new Date().toISOString(),
@@ -6263,6 +6266,7 @@ function applyLeadSalesSuspicionGuard(review, {
 function shouldDraftReviewTriggerContextReview(review) {
     if (!review) return false;
     if (review.context_loss_suspected) return true;
+    if (review.context_assessment === 'model') return false;
     if (review.verdict === 'block' && DRAFT_REVIEW_CONTEXT_RE.test([
         review.summary,
         review.suggested_fix,
@@ -6393,7 +6397,7 @@ CHALLENGE CONVERSATION QUALITY CHECK (replaces the older lead offer/timing playb
 - Block an actual URL/card before acceptance of that invitation or an explicit booking-link request. After consent, expect the approved booking card and answers to any accompanying questions.
 - No proof photos, videos, diet qualification checklist, unsolicited prices or universal weekly Zoom promise. Shannon is vegetarian. Respect refusals, existing coaching, safety, identity, context and media evidence requirements.
 - Answer every direct question, use saved answers and corrections, and keep wording natural and proportionate. Do not penalise the approved opening goal question as stock intake. Do not require a call for factual answers.
-- Report any conversation-order problem as lead_quality, not missing context; do not write the customer reply yourself.` : isLeadDmReview ? `
+- Missing an introduction or support explanation is a CONTENT OMISSION, not missing conversation history. Set context_loss_suspected=false and notification_reason=lead_quality for that defect so the writer can repair it. Set context_loss_suspected=true only if actual source conversation or essential evidence is missing. Do not write the customer reply yourself.` : isLeadDmReview ? `
 IG/FB LEAD QUALITY CHECK:
 - Judge this as a conversion DM, not only a context-matching task. The reply should keep the conversation moving in Shannon's casual human voice.
 - Current primary paid offer: Balance Learn is one AUD $149 payment for a fixed six-week course, six weeks of app/community access, and one weekly check-in plus workout/food review and adjustments from Shannon. It does not auto-renew. Online Coaching is the ongoing individual progression option after Balance Learn or from day one at AUD $29.99/week for six months, AUD $49.99/week for three months, or AUD $74.99/week month-to-month. The default close happens inside DMs.
@@ -6447,7 +6451,7 @@ Return ONLY valid JSON:
   "suggested_fix": "what Shannon should do before sending",
   "context_loss_suspected": false,
   "notification_required": false,
-  "notification_reason": "none|context_loss|non_sequitur|ignored_latest_message|missing_source_context|unsupported_claim|ai_suspicion|generic_voice|automation_leak"
+  "notification_reason": "none|lead_quality|context_loss|non_sequitur|ignored_latest_message|missing_source_context|unsupported_claim|ai_suspicion|generic_voice|automation_leak"
 }
 
 Block and set notification_required=true when:
@@ -6496,7 +6500,9 @@ ${draft}`;
 
         const contents = [{ role: 'user', parts: [{ text: prompt }] }];
         const reply = await callGeminiFallback(contents, { maxOutputTokens: 700, temperature: 0.1 });
-        return normalizeDraftReviewPayload(parseDraftReviewJson(reply));
+        return normalizeDraftReviewPayload(parseDraftReviewJson(reply), {
+            trustExplicitContextAssessment: offerFlowVariant === 'plant_based_challenge',
+        });
     } catch (err) {
         console.warn('[draft-review] generation failed:', err.message);
         return normalizeDraftReviewPayload({
@@ -8218,6 +8224,7 @@ module.exports = {
     resolveCoachDraftShadowConfig,
     fireCoachDraftShadow,
     generateDraftReview,
+    normalizeDraftReviewPayload,
     reviewDraftAndUpdateAlert,
     softenMediaOnlyDraftReview,
     softenRecentInboundBurstDraftReview,
