@@ -2957,7 +2957,7 @@ exports.handler = async (event) => {
                         body:JSON.stringify(payload),signal:AbortSignal.timeout(5000),
                     });
                     const result = await response.json();
-                    if (!response.ok || result.error) throw new Error(`reaction_graph_${response.status}`);
+                    if (!response.ok || result.error) throw new Error(`reaction_graph_${response.status}: ${result.error?.code || ''}/${result.error?.error_subcode || ''} ${String(result.error?.message || '').slice(0,180)}`);
                     return result;
                 },
             });

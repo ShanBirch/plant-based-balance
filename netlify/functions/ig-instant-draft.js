@@ -1018,7 +1018,7 @@ function collectCocosAutoRepairIssues({ draft, draftReview, challengeOfferWarnin
     if (flowVariant !== CHALLENGE_FLOW && challengeOfferWarning?.required && !challengeOfferAllowed) {
         issues.push('Draft appears to offer or link coaching. Remove the pitch unless the latest message clearly asks how to start or asks for the link.');
     }
-    if (isUnsafeStockDiscoveryQuestion(draftText) && !isVerifiedBroadPaidMetaGoalToBlockerMove({
+    if (flowVariant !== CHALLENGE_FLOW && isUnsafeStockDiscoveryQuestion(draftText) && !isVerifiedBroadPaidMetaGoalToBlockerMove({
         draft,
         currentMessage,
         flowVariant,
@@ -1129,7 +1129,7 @@ function normalizeQuestionFreeRepairedDraft(repaired) {
 async function repairCocosDraftFromReview({ draft, repairIssues, reviewContextBlocks, leadName, channelLabel, maxChunks, currentMessage, qualifier, businessName = "Coco's PT Studio", paidMetaMode = false, flowVariant = '' }) {
     const draftText = draftTextFromDraft(draft);
     if (!draftText || !repairIssues?.length) return null;
-    const questionFreeRepair = repairRequiresQuestionFreeReply(repairIssues);
+    const questionFreeRepair = flowVariant !== CHALLENGE_FLOW && repairRequiresQuestionFreeReply(repairIssues);
     const questionRule = questionFreeRepair
         ? '- Do not ask a question or add a continuation hook. End after the direct answer, clarification, reaction, or acknowledgement.'
         : '- One natural question max. Skip the question when a reaction or direct answer is enough.';
@@ -1161,7 +1161,7 @@ ${reviewContextBlocks || '(no context provided)'}
 
 ORIGINAL DRAFT:
 ${draftText}
-${flowVariant === CHALLENGE_FLOW ? 'CHALLENGE REPAIR OVERRIDE: Follow the full-conversation challenge contract in the supplied context. It supersedes the generic tiny-acknowledgement and pitch-only-on-request rules above. A BALANCE enquiry needs the brief introduction BEFORE the goal question. An earned support explanation and booking-link permission question are allowed once goal and support need are understood, even without an explicit call request. Write the complete corrected response naturally; do not copy a canned example. Preserve every unanswered question. The corrected response will undergo the same independent review and consent checks.' : ''}`;
+${flowVariant === CHALLENGE_FLOW ? 'CHALLENGE REPAIR OVERRIDE: Follow the full-conversation challenge contract in the supplied context. It supersedes the generic tiny-acknowledgement and pitch-only-on-request rules above. A BALANCE enquiry needs the brief introduction BEFORE the goal question. An earned support explanation and booking-link permission question are allowed once goal and support need are understood, even without an explicit call request. After a goal answer, keep the acknowledgement brief and ask about the unknown struggle/support need; do not repeat the opening list of inclusions. Write the complete corrected response naturally; do not copy a canned example. Preserve every unanswered question. The corrected response will undergo the same independent review and consent checks.' : ''}`;
     const repairContents = [{ role: 'user', parts: [{ text: prompt }] }];
     const repairConfig = { maxOutputTokens: Math.min(1200, Math.max(500, (maxChunks || MAX_CHUNKS) * 280)), temperature: 0.35 };
     if (flowVariant === CHALLENGE_FLOW) Object.assign(repairConfig, {maxOutputTokens:2200,reasoningEffort:'medium'});
@@ -10244,7 +10244,7 @@ exports.handler = async (event) => {
                         && (!effectiveOutboundVoiceMessage || inspectVoiceScriptQuality(repaired.joined).valid)
                         && !hasFirstPersonHealthClaim(repaired.joined)
                         && !draftParrotsLatestInbound(repaired.joined, displayMessage)
-                        && (!repairRequiresQuestionFreeReply(repairIssues)
+                        && (challengeLead || !repairRequiresQuestionFreeReply(repairIssues)
                             || repaired.chunks.every(chunk => !isQuestionLikeText(chunk)))
                         && (challengeLead || earnedPaidMetaOfferRepair || !isUnrequestedOfferInjection({
                             originalDraft: originalDraftText,
