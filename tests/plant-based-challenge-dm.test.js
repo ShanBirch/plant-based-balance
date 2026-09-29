@@ -266,3 +266,10 @@ test('challenge quality warnings cannot be relabelled as a deterministic style p
  const {buildPaidMetaNonBlockingReviewFallback}=require('../netlify/functions/ig-instant-draft')._test;
  assert.equal(buildPaidMetaNonBlockingReviewFallback({flowVariant:'plant_based_challenge',draft:{joined:'What is your goal?'},draftReview:{verdict:'warn',notification_required:false,issues:['Missing introduction']}}),null);
 });
+
+test('native likes must never be simulated with heart emojis in reply text', () => {
+ for (const heart of ['❤️','♥','💕','🩷']) {
+  assert.ok(collectChallengeLeadIssues({draft:{joined:`Nice ${heart} What gets in the way?`},currentMessage:'I want to get stronger'}).some(issue=>issue.includes('heart emojis')));
+ }
+ assert.deepEqual(collectChallengeLeadIssues({draft:{joined:'Nice, what gets in the way of building that up?'},currentMessage:'I want to get stronger'}),[]);
+});
