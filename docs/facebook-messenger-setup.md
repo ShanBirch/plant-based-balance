@@ -1,5 +1,7 @@
 # Direct Facebook Messenger setup
 
+Update, 29 September 2026: Shannon explicitly restored ManyChat Pro. Numeric ManyChat contacts on the verified Balance workspace now use the shared Summer Ready Shred conversation through ManyChat, alongside WhatsApp. The direct Graph integration and its pending public review remain separate. The retirement instruction below is historical. See [shared ManyChat flow](manychat-shared-challenge-2026-09-29.md).
+
 Status, 14 September 2026: direct Messenger is deployed, Page-authorized, and a real inbound/draft/manual-send/outbound round trip is verified. Public ad auto-reply activation is not complete. Shannon confirmed that ManyChat is retired; do not reconnect or use it for this setup.
 
 ## Verified connection and remaining review work
