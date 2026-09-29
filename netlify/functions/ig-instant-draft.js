@@ -6139,6 +6139,7 @@ function buildPaidMetaNonBlockingReviewFallback({
     checkoutUrl = '',
     appPreviewUrl = META_APP_PREVIEW_URL,
 } = {}) {
+    if (flowVariant === CHALLENGE_FLOW) return null;
     if (!isNonBlockingDraftStyleWarning(draftReview)) return null;
     const reply = draftTextFromDraft(draft);
     if (!reply || isUnsafeStockDiscoveryQuestion(reply)) return null;
@@ -8323,7 +8324,7 @@ exports.handler = async (event) => {
         // The webhook has already persisted the source message timestamp here.
         // Using draft-start time would put the episode boundary after the very
         // inbound that created it, causing the stale-source guard to cancel it.
-        resetAt: String(thread.custom_data?.instagram_graph?.last_graph_seen_at || '').trim()
+        resetAt: sourceInboundCreatedAt || String(thread.custom_data?.instagram_graph?.last_graph_seen_at || '').trim()
             || new Date().toISOString(),
     });
     if (internalTestResetCustomData) {

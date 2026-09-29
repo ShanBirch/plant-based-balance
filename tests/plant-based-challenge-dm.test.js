@@ -258,3 +258,8 @@ test('the included Learn explanation never migrates Summer Shred into the legacy
  for(const currentMessage of ['Tell me about the ten-week plant-based challenge','Tell me about Summer Shred']) assert.equal(resolveChallengeLeadRoute({thread,history:[],currentMessage}),true);
  assert.equal(resolveChallengeLeadRoute({thread,history:[...history,{direction:'out',text:'Want your free app preview?'}],currentMessage:'Yes please'}),false);
 });
+
+test('challenge quality warnings cannot be relabelled as a deterministic style pass', () => {
+ const {buildPaidMetaNonBlockingReviewFallback}=require('../netlify/functions/ig-instant-draft')._test;
+ assert.equal(buildPaidMetaNonBlockingReviewFallback({flowVariant:'plant_based_challenge',draft:{joined:'What is your goal?'},draftReview:{verdict:'warn',notification_required:false,issues:['Missing introduction']}}),null);
+});
