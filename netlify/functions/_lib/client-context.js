@@ -6188,9 +6188,13 @@ function applyLeadMediaEvidenceGuard(review, { draftText, contextBlocks, alertTy
     };
 }
 
-function applyLeadRecentRepetitionGuard(review, { draftText, contextBlocks, alertType } = {}) {
+function applyLeadRecentRepetitionGuard(review, { draftText, contextBlocks, alertType, offerFlowVariant } = {}) {
     const base = review || normalizeDraftReviewPayload({ verdict: 'pass', confidence: 0 });
     if (!['ig_incoming_dm', 'fb_incoming_dm'].includes(alertType) || base.verdict === 'block') return base;
+    // A requested explanation may revisit the previous point. Keep the model's
+    // content verdict instead of treating a useful clarification as repetition.
+    if (offerFlowVariant === 'plant_based_challenge' && base.verdict === 'pass'
+        && USER_CONFUSION_RE.test(extractJustArrivedReviewMessage(contextBlocks))) return base;
     if (!draftRepeatsRecentShannonPoint(draftText, contextBlocks)) return base;
     return {
         ...base,
@@ -6623,6 +6627,7 @@ async function reviewDraftAndUpdateAlert({ alertId, draftText, alertType, contex
         draftText,
         contextBlocks,
         alertType,
+        offerFlowVariant,
     });
     const salesSuspicionGuardedReview = applyLeadSalesSuspicionGuard(repetitionGuardedReview, {
         draftText,

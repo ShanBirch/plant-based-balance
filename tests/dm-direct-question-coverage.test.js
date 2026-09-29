@@ -117,6 +117,14 @@ Shannon: Hahaha filthy Hokas are elite, those foot straps destroy them.`,
     assert.equal(review.deterministic_guard, 'recent_outbound_semantic_repetition');
 });
 
+test('a requested challenge clarification can explain the same point after a passing review', () => {
+    const base={verdict:'pass',confidence:0.95,issues:[]};
+    const input={draftText:'That is the booking page. You can choose a time for your call there.',contextBlocks:`${reviewContext("I'm confused, what do you mean by that part?")}\nRecent timestamped timeline:\nShannon: That is the booking page. You can choose a time for your call there.`,alertType:'ig_incoming_dm',offerFlowVariant:'plant_based_challenge'};
+    assert.equal(applyLeadRecentRepetitionGuard(base,input),base);
+    assert.equal(applyLeadRecentRepetitionGuard(base,{...input,offerFlowVariant:'broad_pain'}).verdict,'warn');
+    assert.equal(applyLeadRecentRepetitionGuard({...base,verdict:'block'},input).verdict,'block');
+});
+
 test('generated phone copy restores safe common contractions', () => {
     assert.equal(
         normalizeGeneratedCoachDraftText('whats the plan? thats class, youre flying'),
