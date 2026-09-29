@@ -10191,7 +10191,7 @@ exports.handler = async (event) => {
             cocosAutoSendLane,
             balanceAutoSendLane: balanceLeadAutoSendLane,
             mediaReview,
-            baseContextReview: contextReview,
+            baseContextReview: challengeLead ? effectiveContextReview : contextReview,
             draft,
             repairIssues,
         })) {

@@ -6343,7 +6343,7 @@ function softenRecentInboundBurstDraftReview(review, contextBlocks = '') {
     };
 }
 
-function mergeDraftReviewContextReview(review, existingContextReview = null) {
+function mergeDraftReviewContextReview(review, existingContextReview = null, offerFlowVariant = '') {
     const existing = existingContextReview && typeof existingContextReview === 'object'
         ? existingContextReview
         : {};
@@ -6352,6 +6352,20 @@ function mergeDraftReviewContextReview(review, existingContextReview = null) {
         : [existing.reason].filter(Boolean).map(String));
     const labels = [];
     if (existing.label) labels.push(String(existing.label));
+
+    // In a known challenge conversation, the full-context model can resolve
+    // pronoun/short-message heuristics without requiring an entry keyword.
+    // Never clear actual missing evidence, media, identity or recovery holds.
+    if (offerFlowVariant === 'plant_based_challenge'
+        && review?.context_assessment === 'model'
+        && review?.context_loss_suspected === false
+        && Number(review.confidence) >= 0.9
+        && review.notification_required !== true
+        && (review.verdict === 'pass' || (review.verdict === 'warn' && review.notification_reason === 'lead_quality'))) {
+        reasons.delete('first_captured_reply_with_hidden_context');
+        reasons.delete('reference_heavy_reply_without_tracked_context');
+        if (!reasons.size) labels.length = 0;
+    }
 
     if (shouldDraftReviewTriggerContextReview(review) && !isMediaOnlyContextLatestText(existing.latest_text)) {
         reasons.add(`draft_review_${review.notification_reason || 'context_loss_suspected'}`);
@@ -6614,7 +6628,7 @@ async function reviewDraftAndUpdateAlert({ alertId, draftText, alertType, contex
         qualifier,
         linkedUserId,
     });
-    const contextReview = mergeDraftReviewContextReview(salesSuspicionGuardedReview, existingContextReview);
+    const contextReview = mergeDraftReviewContextReview(salesSuspicionGuardedReview, existingContextReview, offerFlowVariant);
     if (persist && alertId && salesSuspicionGuardedReview) {
         await updateAlertDraftReview(alertId, salesSuspicionGuardedReview, contextReview);
     }

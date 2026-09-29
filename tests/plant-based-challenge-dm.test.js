@@ -3,6 +3,23 @@ const assert = require('node:assert/strict');
 const { resolveChallengeLeadRoute, buildChallengeLeadPrompt, collectChallengeLeadIssues, buildChallengeBookingHandoff, CHALLENGE_BOOKING_URL } = require('../netlify/functions/_lib/plant-based-challenge-dm');
 const fresh = { created_at:'2026-09-27T00:00:00Z', custom_data:{bot_account:'shan_n_sunny'} };
 
+test('model understanding clears free-written enquiry heuristics without clearing real context holds', () => {
+    const {buildContextReviewInfo,mergeDraftReviewContextReview}=require('../netlify/functions/_lib/client-context');
+    const input={channel:'instagram',first_captured_lead_reply:true,message_preview:'Hey, I saw your ad. Can you tell me how this works?',offer_flow_variant:'plant_based_challenge'};
+    const context=buildContextReviewInfo(input);
+    assert.equal(context.required,true);
+    const review={verdict:'warn',confidence:0.93,context_assessment:'model',context_loss_suspected:false,notification_required:false,notification_reason:'lead_quality',issues:['Include the course duration']};
+    assert.equal(mergeDraftReviewContextReview(review,context,'plant_based_challenge').required,false);
+    assert.equal(mergeDraftReviewContextReview(review,context,'broad_pain').required,true);
+    assert.equal(mergeDraftReviewContextReview({...review,context_loss_suspected:true},context,'plant_based_challenge').required,true);
+    assert.equal(mergeDraftReviewContextReview({...review,confidence:0.5},context,'plant_based_challenge').required,true);
+    for (const reason of ['voice_note_review_required','ai_suspicion_or_authenticity_question','manychat_reconcile_latest_only','missing_media_evidence']) {
+        const result=mergeDraftReviewContextReview(review,{...context,reasons:[...context.reasons,reason]},'plant_based_challenge');
+        assert.equal(result.required,true);
+        assert.ok(result.reasons.includes(reason));
+    }
+});
+
 test('free-written enquiries use known challenge context without any keyword', () => {
     const campaignThread = {...fresh,custom_data:{...fresh.custom_data,offer_flow_variant:'plant_based_challenge',meta_ad_attribution:{ad_id:'new-ad'}}};
     for (const currentMessage of ['Hey, I saw your ad. Can you tell me how this works?','hiya','Can you help me get fitter?','I want stronger legs but shifts keep getting in the way','I only have a small space to exercise in']) {
