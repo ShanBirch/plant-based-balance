@@ -5982,6 +5982,7 @@ function normalizeDraftReviewPayload(value, { trustExplicitContextAssessment = f
         context_loss_suspected: contextLoss,
         ...(trustExplicitContextAssessment && typeof data.context_loss_suspected === 'boolean'
             ? {context_assessment: 'model'} : {}),
+        ...(trustExplicitContextAssessment ? {goal_heart: data.goal_heart === true} : {}),
         notification_required: notificationRequired,
         notification_reason: notificationReason || (contextLoss ? 'context_loss_suspected' : (notificationRequired ? 'draft_review_required' : 'none')),
         reviewed_at: new Date().toISOString(),
@@ -6390,6 +6391,7 @@ async function generateDraftReview({ draftText, alertType, contextBlocks, client
         const purpose = ALERT_TYPE_PURPOSES[alertType] || 'a coach reply was drafted';
         const leadQualityBlock = isLeadDmReview && offerFlowVariant === 'plant_based_challenge' ? `
 CHALLENGE CONVERSATION QUALITY CHECK (replaces the older lead offer/timing playbook):
+- Also decide goal_heart from meaning and full history. Set true when the LATEST inbound first shares a clear positive fitness goal. Normally acknowledge that first goal with a native heart before the useful text reply. Set false for repeated goals, unrelated messages, distress, painful disclosures, complaints, harmful intentions, uncertainty about appropriateness, or a goal mentioned only earlier in history. Never substitute a heart for the required reply. This restores Shannon's 17 September goal acknowledgement rule.
 - Read the entire episode and all unanswered messages. Identify the LATEST inbound and the question it answers BEFORE evaluating copy. An old BALANCE in history does not make this an opening. If the latest message provides their goal, BLOCK a draft that restarts the introduction or asks their goal again. Judge meaning, not a keyword list or a minimum reply count. Use the verified challenge facts below.
 - A fresh BALANCE opening must briefly explain the ten-week plant-based Summer Shred and its support, including the six-week Learn course for lasting lifestyle change, BEFORE asking: "What are you looking to achieve over the next ten weeks?" Block a booking invitation in this opening unless the person explicitly requested a booking link. The opening must explicitly say plant-based; flag an omission for repair rather than passing it with a suggested fix.
 - If only a goal is known, understand what makes it difficult or what support they need naturally. Block an invitation that skips this understanding. Do not invent a difficulty or insist on one when they say none exists.
@@ -6449,6 +6451,7 @@ Return ONLY valid JSON:
   "summary": "one short sentence for Shannon",
   "issues": ["specific issue"],
   "suggested_fix": "what Shannon should do before sending",
+  "goal_heart": false,
   "context_loss_suspected": false,
   "notification_required": false,
   "notification_reason": "none|lead_quality|context_loss|non_sequitur|ignored_latest_message|missing_source_context|unsupported_claim|ai_suspicion|generic_voice|automation_leak"
@@ -6504,9 +6507,11 @@ ${draft}`;
                 models:['gpt-5.4-mini'],label:'challenge-conversation-review',
             })
             : await callGeminiFallback(contents, { maxOutputTokens: 700, temperature: 0.1 });
-        return normalizeDraftReviewPayload(parseDraftReviewJson(reply), {
+        const normalized = normalizeDraftReviewPayload(parseDraftReviewJson(reply), {
             trustExplicitContextAssessment: offerFlowVariant === 'plant_based_challenge',
         });
+        if (offerFlowVariant === 'plant_based_challenge' && OPENAI_API_KEY) normalized.reviewer_model = 'openai-gpt-5.4-mini-challenge-review-medium';
+        return normalized;
     } catch (err) {
         console.warn('[draft-review] generation failed:', err.message);
         return normalizeDraftReviewPayload({

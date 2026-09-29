@@ -1,3 +1,4 @@
+const {goalReactionTarget, sendGoalReaction} = require('./_lib/ig-goal-reaction');
 const {collectChallengeLeadIssues, resolveChallengeLeadRoute, CHALLENGE_FLOW} = require('./_lib/plant-based-challenge-dm');
 const {textTypingDurationMs, waitWithTypingRefresh} = require('./_lib/ig-typing-pacing');
 const { sendRejectedMediaWithRetry, deliveredPrefix } = require('./_lib/ig-media-recovery');
@@ -2688,16 +2689,18 @@ exports.handler = async (event) => {
         messagesToSend = [replyText];
         wasEdited = !!draftText && replyText !== draftText;
     }
+    let challengeReactionInbound = null;
     // Enforce challenge consent against canonical live history, including late
     // repairs and stale queued drafts. This never writes conversational copy.
     if (String(alertData.challenge_policy_version || '').startsWith('plant_based_challenge_')
         || threadForSend?.custom_data?.offer_flow_variant === CHALLENGE_FLOW) {
-        const recent = await supabase(`ig_messages?select=direction,text,created_at&thread_id=eq.${encodeURIComponent(igThreadId)}&order=created_at.desc&limit=100`);
+        const recent = await supabase(`ig_messages?select=direction,text,created_at,manychat_message_id&thread_id=eq.${encodeURIComponent(igThreadId)}&order=created_at.desc&limit=100`);
         if (!Array.isArray(recent) || !recent.length) return {statusCode:409,body:JSON.stringify({code:'challenge_consent_context_unavailable'})};
         const testReset = !threadForSend?.linked_user_id && threadForSend?.custom_data?.internal_test_auto_reply_enabled === true
             ? Date.parse(threadForSend.custom_data.internal_test_conversation_reset_at || '') : NaN;
         const ordered = [...recent].reverse().filter(item => !Number.isFinite(testReset) || Date.parse(item.created_at) >= testReset);
         const lastOut = ordered.findLastIndex(item => item.direction === 'out');
+        if (ordered.at(-1)?.direction === 'in') challengeReactionInbound = ordered.at(-1);
         const currentMessage = ordered.slice(lastOut + 1).filter(item => item.direction === 'in').map(item => item.text || '').join('\n');
         const challengeApplies = String(alertData.challenge_policy_version || '').startsWith('plant_based_challenge_')
             || resolveChallengeLeadRoute({thread:threadForSend,currentMessage,history:ordered.slice(0,lastOut+1)});
@@ -2929,6 +2932,39 @@ exports.handler = async (event) => {
             seenAtIso: new Date().toISOString(),
         })
         : { attempted: false, ok: false, reason: 'not_instagram_graph' };
+
+    const reactionTarget = shouldUseGraph ? goalReactionTarget({
+        review:alertData.draft_review, inbound:challengeReactionInbound,
+        challenge:String(alertData.challenge_policy_version || '').startsWith('plant_based_challenge_'), edited:wasEdited,
+    }) : null;
+    if (reactionTarget && !alertData.instagram_goal_reaction) {
+        try {
+            const prior = await supabase(`coach_alerts?select=id&data->>ig_thread_id=eq.${encodeURIComponent(igThreadId)}&data->instagram_goal_reaction->>target=eq.${encodeURIComponent(reactionTarget)}&limit=1`);
+            if (!prior.length) await sendGoalReaction({
+                target:reactionTarget, recipientId:graphRecipientId,
+                persist:async receipt => {
+                    alertData.instagram_goal_reaction = receipt;
+                    const rows = await supabase(`coach_alerts?id=eq.${encodeURIComponent(alertId)}&status=eq.pending&data->>send_claim_id=eq.${encodeURIComponent(sendClaimId)}`, {
+                        method:'PATCH', body:{data:withSendClaim(alertData,claimedAlert.sendClaim)}, prefer:'return=representation',
+                    });
+                    if (!rows.length) throw new Error('reaction_send_claim_lost');
+                },
+                post:async payload => {
+                    const token = await getInstagramGraphAccessToken(graphAccountId);
+                    if (!token) throw new Error('reaction_token_unavailable');
+                    const response = await fetch(`https://graph.instagram.com/${INSTAGRAM_GRAPH_API_VERSION}/${encodeURIComponent(graphAccountId || 'me')}/messages`, {
+                        method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},
+                        body:JSON.stringify(payload),signal:AbortSignal.timeout(5000),
+                    });
+                    const result = await response.json();
+                    if (!response.ok || result.error) throw new Error(`reaction_graph_${response.status}`);
+                    return result;
+                },
+            });
+        } catch (error) {
+            console.warn('[send-ig-reply] goal reaction skipped:', error.message);
+        }
+    }
 
     // 3. Send each chunk via the selected transport with delays. Stop on first failure so
     //    we don't keep dispatching after a bad chunk.

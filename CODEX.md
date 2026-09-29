@@ -1,5 +1,7 @@
 # Balance Codex Operating Brief
 
+Shannon reaffirmed on 29 September: restore the earlier native Instagram heart on the first clear positive fitness goal, before the useful reply. Do not repeat hearts for the same goal or react to distress, painful disclosures, complaints or harmful intentions. Use the model’s contextual decision, verified inbound message IDs and durable reaction receipts; never simulate a like with an emoji text.
+
 ## Public offer and page roles (29 September 2026)
 
 Shannon authorised publication of Plant-Based Summer Shred as the main acquisition offer: ten weeks with a ten-week commitment, replacing the normal three-month coaching commitment for challenge participants. Online coaching is AUD $75/week; one weekly Zoom training session with coaching is AUD $125/week. Each enrolment has one AUD $120 onboarding fee, not stacked challenge/coaching fees. Summer Shred minimum totals including that fee are AUD $870 and AUD $1,370 respectively. Coaching outside the challenge has a three-month commitment and the same weekly prices and onboarding fee. Do not invent the new package's session length, cancellation/renewal terms or exact billing dates; confirm these before payment. Public CTAs book a consultation. The current consultation calendar remains a 60-minute video call.
