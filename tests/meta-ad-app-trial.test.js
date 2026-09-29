@@ -551,17 +551,34 @@ test('native payment recovery verifies the account and payment before returning 
 });
 
 
-test('coach welcome closes and reopens, preserves setup and tracks an attributed call without starting checkout', () => {
+test('coach welcome closes and reopens, preserves setup and opens the real coach conversation without sending or booking', async () => {
     const app=runTrial('?guest=true&meta_trial=facebook_5m_foundations_v3&utm_source=facebook&utm_medium=paid_social');
     const api=app.window.BalanceMetaAdTrial;
     app.localStorage.setItem('userProfile', '{"name":"Test"}');
     api.showCoachWelcome(); api.closeCoachWelcome();
     assert.equal(app.elements['meta-ad-trial-inbox-preview'].style.display,'none');
     assert.equal(api.readState().interruptedStage,null);
-    api.showCoachWelcome(); api.bookCoachCall();
-    assert.equal(new URL(app.window.location.href).pathname,'/book');
-    assert.equal(new URL(app.window.location.href).searchParams.get('utm_campaign'),'onboarding_coach_message_v1');
-    assert.ok(app.events.some(e=>e.event_type==='coach_welcome_call_clicked'));
+    let opened = 0;
+    app.window.openCoachChatModal = async () => { opened++; app.elements['direct-message-modal'] = {style:{display:'flex'}}; };
+    api.showCoachWelcome();
+    assert.equal(await api.replyToCoachWelcome(), true);
+    assert.equal(opened, 1);
+    assert.equal(app.elements['meta-ad-trial-inbox-preview'].style.display,'none');
+    assert.ok(app.events.some(e=>e.event_type==='coach_welcome_reply_opened'));
+    assert.equal(typeof api.bookCoachCall, 'undefined');
     assert.ok(!app.events.some(e=>['trial_gate_shown','checkout_request'].includes(e.event_type)));
     assert.equal(app.localStorage.getItem('userProfile'),'{"name":"Test"}');
 });
+
+ test('coach reply failure keeps the welcome open and allows a retry', async () => {
+    const app=runTrial('?guest=true&meta_trial=facebook_5m_foundations_v3');
+    const api=app.window.BalanceMetaAdTrial;
+    app.elements['coach-welcome-reply']={disabled:false};
+    app.elements['coach-welcome-reply-status']={textContent:''};
+    api.showCoachWelcome();
+    app.window.openCoachChatModal=async()=>{throw Error('offline')};
+    assert.equal(await api.replyToCoachWelcome(),false);
+    assert.equal(app.elements['meta-ad-trial-inbox-preview'].style.display,'flex');
+    assert.equal(app.elements['coach-welcome-reply'].disabled,false);
+    assert.match(app.elements['coach-welcome-reply-status'].textContent,/try again/);
+ });

@@ -132,7 +132,7 @@ test('coach welcome analytics persist exact events without scheduling payment fo
     try {
         delete require.cache[require.resolve('../netlify/functions/log-lp-event.js')];
         const {handler}=require('../netlify/functions/log-lp-event.js');
-        for(const event_type of ['coach_welcome_viewed','coach_welcome_dismissed','coach_welcome_call_clicked']) {
+        for(const event_type of ['coach_welcome_viewed','coach_welcome_dismissed','coach_welcome_reply_opened']) {
             await handler({httpMethod:'POST',body:JSON.stringify({event_type,event_id:event_type,session_id:'session-test',visitor_id:'visitor-test',landing_page:'meta-app-preview',metadata:{variant:'onboarding_coach_message_v1'}})});
         }
         assert.equal(requests.length,3);

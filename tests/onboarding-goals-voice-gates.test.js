@@ -53,9 +53,10 @@ test('Weekly Goals chooser uses one readable cream, white and gold Balance theme
 
 test('first-login walkthrough ends with a text coach message, without a video gate', () => {
   assert.doesNotMatch(dashboard, /id="meta-ad-trial-welcome-video"|requiresWelcomeVideo:true/);
-  assert.match(dashboard, /If your plan includes weekly coaching/);
+  assert.match(dashboard, /Welcome to the challenge/);
   assert.match(dashboard, /workouts, meal plan, progress through the Learn course/);
-  assert.match(dashboard, /not included in the app preview or an app-only plan/);
+  assert.match(dashboard, /Say hello back so we can get the conversation started/);
+  assert.doesNotMatch(dashboard, /coach-welcome-book|coach-welcome-call-copy/);
   assert.match(dashboard, /showCoachWelcome\(\{ member: clientCompletionDestination === 'course' \}\)/);
 });
 
@@ -93,7 +94,7 @@ test('first-login Inbox and welcome use the same text and allow continuing witho
 });
 
 test('changed onboarding assets are cache-busted', () => {
-  assert.match(dashboard, /meta-ad-trial\.js\?v=32-coach-message/);
+  assert.match(dashboard, /meta-ad-trial\.js\?v=33-coach-hello/);
   assert.match(dashboard, /pbb-social-journey\.js\?v=20260929-coach-text/);
   assert.match(dashboard, /dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=20260929-coach-message/);
   assert.match(dashboard, /dashboard-script-6-ai_coach_draft_mode_logic_auth\.js\?v=20260929-coach-text/);

@@ -1,5 +1,9 @@
 # Balance Codex Operating Brief
 
+## Challenge client first-login welcome (29 September 2026 correction)
+
+The in-app onboarding ending is a client greeting, not a call-booking or sales prompt. Welcome challenge clients, explain weekly workout, meal-plan, Learn and progress check-ins, and invite them to say hello back. The primary action opens the existing Coach Shannon conversation for their own reply; never auto-send it. Remove the earlier optional booking CTA/KPI from this welcome. Keep returning-member suppression and the dedicated reset-test-account exception. This supersedes the earlier onboarding booking experiment described below. See docs/onboarding-coach-message.md.
+
 Shannon’s 29 September refinement: do not repeat the opening Summer Shred inclusions after a goal answer. Briefly acknowledge the goal, then naturally understand the struggle/support need. Once that is known, explain only relevant support and ask permission for the booking link.
 
 Shannon reaffirmed on 29 September: restore the earlier native Instagram heart on the first clear positive fitness goal, before the useful reply. Do not repeat hearts for the same goal or react to distress, painful disclosures, complaints or harmful intentions. Use the model’s contextual decision, verified inbound message IDs and durable reaction receipts; never simulate a like with an emoji text. Shannon explicitly clarified: no love-heart emojis in replies; like their response natively.

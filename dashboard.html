@@ -206,7 +206,7 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
 <script src="js/dashboard/script_part_1.js"></script>
 <!-- Paid-Facebook preview attribution must be available before auth-guard decides guest vs member mode. -->
 <script src="lib/onboarding-progress.js?v=8-coach-message"></script>
-<script src="lib/meta-ad-trial.js?v=32-coach-message"></script>
+<script src="lib/meta-ad-trial.js?v=33-coach-hello"></script>
 
 <!-- CRITICAL: Hide loading overlay for returning users and restore cached FitGotchi state -->
 <script>
@@ -833,13 +833,13 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
     <div class="coach-welcome-header"><div class="coach-welcome-avatar" aria-hidden="true">S</div><div><strong id="coach-welcome-title">Coach Shannon</strong><small>Your Balance Inbox</small></div></div>
     <div class="coach-welcome-body">
       <div class="coach-welcome-bubble">
-        <p>Hey, I'm Shannon, your coach here at Balance. Good to have you here!</p>
-        <p>This is where we'll chat. If your plan includes weekly coaching, you'll receive your check-ins here. Each week, I'll review your workouts, meal plan, progress through the Learn course and how things are going for you, then help you adjust for the week ahead.</p>
-        <p>Weekly reviews are included while your coaching plan is active. They're not included in the app preview or an app-only plan.</p>
-        <p id="coach-welcome-call-copy">Want to talk through your goals and see what support fits? Book a call with me below.</p>
+        <p>Hey, I'm Shannon, your coach here at Balance. Welcome to the challenge — good to have you here!</p>
+        <p>This is where we'll chat and do your weekly check-ins. Each week, I'll review your workouts, meal plan, progress through the Learn course and how things are going for you. We'll look at what's working, what's been tricky and what to adjust for the week ahead.</p>
+        <p>Say hello back so we can get the conversation started. Let me know how you're feeling about getting started!</p>
       </div>
       <div class="coach-welcome-actions">
-        <button id="coach-welcome-book" type="button" onclick="window.BalanceMetaAdTrial.bookCoachCall()">Book a call with Shannon</button>
+        <button id="coach-welcome-reply" type="button" onclick="window.BalanceMetaAdTrial.replyToCoachWelcome()">Say hello to Shannon</button>
+        <p id="coach-welcome-reply-status" role="status" style="margin:0; color:#24211b; -webkit-text-fill-color:#24211b;"></p>
         <button id="coach-welcome-continue" type="button" onclick="window.BalanceMetaAdTrial.closeCoachWelcome()">Keep exploring</button>
       </div>
     </div>
