@@ -273,3 +273,9 @@ test('native likes must never be simulated with heart emojis in reply text', () 
  }
  assert.deepEqual(collectChallengeLeadIssues({draft:{joined:'Nice, what gets in the way of building that up?'},currentMessage:'I want to get stronger'}),[]);
 });
+
+test('sender phone capitalization preserves the approved booking destination', () => {
+ const {sanitizeVisibleOutboundDmText}=require('../netlify/functions/_lib/client-context');
+ const joined=sanitizeVisibleOutboundDmText('Yep, the consult is 60 minutes.\nhttps://plantbased-balance.org/book?source=plant_based_challenge');
+ assert.deepEqual(collectChallengeLeadIssues({draft:{joined},currentMessage:'Yes please. Is the call 60 minutes?',history:[{direction:'out',text:'Want me to send the booking link?'}]}),[]);
+});
