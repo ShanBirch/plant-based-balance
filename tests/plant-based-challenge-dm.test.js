@@ -117,8 +117,8 @@ test('actual draft assembly preserves learned voice, full context and the same m
 
 // Existing text cleanup can capitalize a URL at a sentence boundary. A malformed
 // or non-exact destination must be held instead of silently losing the rich card.
-test('challenge content guard catches capitalized and misspelled destinations', () => {
-    for (const url of ['Https://plantbased-balance.org/book?source=plant_based_challenge','Https://plant-based-balance.org/book?source=plant_based_challenge']) {
+test('challenge content guard catches misspelled destinations', () => {
+    for (const url of ['Https://plant-based-balance.org/book?source=plant_based_challenge','Https://plantbased-balance.org/BOOK?source=plant_based_challenge']) {
         assert.ok(collectChallengeLeadIssues({draft:{joined:url},currentMessage:'Send the consultation link'}).length);
     }
 });

@@ -154,7 +154,9 @@ function collectChallengeLeadIssues({draft = {}, currentMessage = '', history = 
     if (state.paused && /https?:|\?|\b(?:book(?:ing)?|consultation|when you|if you|later)\b|(?:we|i) can.{0,40}(?:training|plan|help)/i.test(reply)) issue('Respect the autonomy pause without a pitch, question or card.');
     if (state.support && /https?:|\b(?:book(?:ing)?|consult(?:ation)?)\b/i.test(reply)) issue('Do not turn a support or sensitive question into a booking pitch.');
     for (const url of reply.match(/https?:\/\/[^\s]+/gi) || []) {
-        if (new URL(url.replace(/[),.!]+$/, '')).href !== CHALLENGE_BOOKING_URL) issue('Use only the approved consultation destination on this route.');
+        let destination = '';
+        try { destination = new URL(url.replace(/[),.!]+$/, '')).href; } catch {}
+        if (destination !== CHALLENGE_BOOKING_URL) issue('Use only the approved consultation destination on this route.');
     }
     return issues;
 }
