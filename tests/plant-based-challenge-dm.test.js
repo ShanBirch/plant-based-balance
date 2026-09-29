@@ -246,6 +246,10 @@ test('challenge enquiries can clarify missing conversational references without 
  assert.equal(buildContextReviewInfo({...input,offer_flow_variant:undefined}).required,true);
  assert.equal(buildContextReviewInfo({...input,message_preview:'that one'}).required,false);
  assert.equal(buildContextReviewInfo({...input,message_preview:'that one'}).clarification_if_needed,true);
+ for (const message_preview of ["I'm confused",'What do you mean by that?','Huh?']) {
+     assert.equal(buildContextReviewInfo({...input,message_preview,last_outbound_message:{text:'The challenge includes Learn'}}).required,false);
+     assert.equal(buildContextReviewInfo({...input,message_preview,offer_flow_variant:'broad_pain',last_outbound_message:{text:'The challenge includes Learn'}}).required,true);
+ }
  assert.equal(buildContextReviewInfo({...input,context_review:{required:true,reasons:['voice_note_review_required']}}).required,true);
 });
 

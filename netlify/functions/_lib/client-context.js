@@ -5291,11 +5291,11 @@ function buildContextReviewInfo(alertOrData) {
         reasons.push('ai_suspicion_or_authenticity_question');
         labels.push('client may be questioning whether this is AI');
     }
-    if (USER_CONFUSION_RE.test(normalizedLatest)) {
+    if (data.offer_flow_variant !== 'plant_based_challenge' && USER_CONFUSION_RE.test(normalizedLatest)) {
         reasons.push('client_does_not_understand_context');
         labels.push('client says they do not understand the message/context');
     }
-    if (manyChat && trackedOutbound && SHORT_USER_CONFUSION_RE.test(normalizedLatest)) {
+    if (data.offer_flow_variant !== 'plant_based_challenge' && manyChat && trackedOutbound && SHORT_USER_CONFUSION_RE.test(normalizedLatest)) {
         reasons.push('client_does_not_understand_context');
         labels.push('client says they do not understand the message/context');
     }
