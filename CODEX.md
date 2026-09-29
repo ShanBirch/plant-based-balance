@@ -32,6 +32,8 @@ This scoped content policy supersedes historical course-first/preview-first/defa
 
 ## Facebook Messenger status (14 September 2026)
 
+Update, 29 September 2026: Shannon purchased ManyChat Pro and explicitly requested restoring the existing Messenger forwarding flow and connecting WhatsApp Business number ending 9395 through ManyChat coexistence. This supersedes the prior instruction not to reconnect ManyChat. The ManyChat Page ID was verified as `561122130919678`, the same Page as Balance APP despite stale Coco's naming. Direct Meta Messenger review is pending. Keep native Page-scoped threads on the direct transport; numeric ManyChat subscriber threads may use ManyChat with the existing 24-hour and review safeguards. WhatsApp connection and end-to-end delivery are not yet verified. Do not treat a copied Messenger flow as WhatsApp-compatible.
+
 Shannon confirmed that ManyChat is no longer used. Older ManyChat/Facebook-backstop notes below are historical and must not be treated as setup instructions. Facebook messaging uses the direct Meta integration documented in `docs/facebook-messenger-setup.md`. Balance APP Page `561122130919678` is authorized, production credentials and webhook subscriptions are configured, and a real inbound/draft/manual reply round trip is verified. Public Facebook ad auto-reply activation still requires the paid-path test and `pages_messaging` App Review approval. Review draft `2164265864473454` needs a new recording, restricted reviewer access and required declarations; it is not submitted. Do not call public automation live or reconnect ManyChat.
 
 This file is the durable handoff context for Codex sessions. Read it at the start of a new chat before making strategy or code decisions.

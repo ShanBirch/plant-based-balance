@@ -2409,10 +2409,18 @@ exports.handler = async (event) => {
     }
     const messengerRoute = resolveMessengerRoute(threadForSend);
     const shouldUseMessenger = channel === 'messenger' && !!messengerRoute;
+    // Legacy ManyChat identities are subscriber IDs, never Page-scoped Meta IDs.
+    // Keep malformed direct-Meta identities blocked rather than falling back.
+    const shouldUseManyChatMessenger = channel === 'messenger'
+        && threadForSend?.channel === 'messenger'
+        && /^\d+$/.test(String(threadForSend?.subscriber_id || ''))
+        && String(threadForSend.subscriber_id) === String(alertData.subscriber_id || '');
     let messengerToken = '';
     if (channel === 'messenger') {
-        if (!messengerRoute) return { statusCode: 409, body: JSON.stringify({ error: 'Direct Facebook Page connection is required', code: 'facebook_messenger_route_missing' }) };
+        if (!messengerRoute && !shouldUseManyChatMessenger) return { statusCode: 409, body: JSON.stringify({ error: 'A verified Messenger delivery route is required', code: 'facebook_messenger_route_missing' }) };
         if (!isMessengerWindowOpen(threadForSend?.last_inbound_at)) return { statusCode: 409, body: JSON.stringify({ error: 'Messenger 24-hour reply window is closed', code: 'facebook_messenger_window_closed' }) };
+    }
+    if (shouldUseMessenger) {
         messengerToken = await getMessengerToken(messengerRoute.pageId, supabase);
         if (!messengerToken) return { statusCode: 503, body: JSON.stringify({ error: 'Facebook Page access token is missing', code: 'facebook_messenger_token_missing' }) };
     }
