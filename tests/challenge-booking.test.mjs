@@ -35,7 +35,7 @@ test('challenge booking saves its campaign evidence and creates a consultation, 
         assert.equal(inserted.metadata.source,'plant_based_challenge');
         assert.equal(inserted.metadata.attribution.visitor_id,'visitor-test');
         assert.equal(inserted.metadata.pt_sessions_per_week,null);
-        assert.match(calendar.summary,/Plant-Based Summer Shred consultation/);
+        assert.match(calendar.summary,/Summer Ready Shred consultation/);
         assert.equal(Date.parse(calendar.end.dateTime)-Date.parse(calendar.start.dateTime),60*60*1000);
     } finally { globalThis.fetch=savedFetch;globalThis.Netlify=savedNetlify; }
 });

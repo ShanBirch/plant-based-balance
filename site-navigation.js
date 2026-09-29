@@ -4,23 +4,24 @@
     if (!toggle || !drawer) return;
     // Keep older cached pages connected to newly available public destinations.
     const nav = drawer.querySelector('nav');
-    if (nav && !nav.querySelector('a[href="/plant-based-challenge"]')) {
+    const findDestination = (pathname) => Array.from(nav?.querySelectorAll('a[href]') || []).find(link => new URL(link.href, location.origin).pathname.replace(/\.html$/, '') === pathname);
+    if (nav && !findDestination('/plant-based-challenge')) {
         const challenge = document.createElement('a');
         challenge.href = '/plant-based-challenge';
-        challenge.textContent = 'Summer Shred';
+        challenge.textContent = 'Summer Ready Shred';
         challenge.dataset.track = 'cta_click';
         challenge.dataset.cta = 'navigation_challenge';
-        const learn = nav.querySelector('a[href="/founders"]');
+        const learn = findDestination('/founders');
         if (learn) learn.after(challenge);
         else nav.append(challenge);
     }
     if (nav) {
-        const challenge = nav.querySelector('a[href="/plant-based-challenge"]');
-        if (challenge) { challenge.textContent = 'Summer Shred'; nav.prepend(challenge); }
-        const coaching = nav.querySelector('a[href="/coaching"]');
+        const challenge = findDestination('/plant-based-challenge');
+        if (challenge) { challenge.textContent = 'Summer Ready Shred'; nav.prepend(challenge); }
+        const coaching = findDestination('/coaching');
         if (coaching) coaching.textContent = 'Coaching';
-        const book = nav.querySelector('a[href="/book"]');
-        if (book) book.href = '/book?source=plant_based_challenge';
+        const book = findDestination('/book');
+        if (book) { const url = new URL(book.href, location.origin); if (!url.searchParams.has('source')) url.searchParams.set('source', 'plant_based_challenge'); book.href = url.pathname + url.search; }
         const current = location.pathname.replace(/\.html$/, '').replace(/\/$/, '') || '/';
         const destination = current === '/plant-based-fitness' ? '/founders'
             : ['/fitness', '/fitness-coaching'].includes(current) ? '/coaching'

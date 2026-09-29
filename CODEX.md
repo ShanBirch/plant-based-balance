@@ -36,6 +36,10 @@ Shannon confirmed that ManyChat is no longer used. Older ManyChat/Facebook-backs
 
 This file is the durable handoff context for Codex sessions. Read it at the start of a new chat before making strategy or code decisions.
 
+## Current Summer Ready Shred campaign (29 September 2026)
+
+For this campaign, the current offer overrides historical Foundations/Founders and eight-week acquisition wording below. Summer Ready Shred starts 5 October 2026 and lasts ten weeks, welcomes people of all genders, and includes plant-based meal guidance and the six-week Balance Learn course. Current published packages are AUD $75/week online coaching or AUD $125/week with one weekly live Zoom training session, plus one AUD $120 onboarding fee per enrolment. Ten-week minimum totals are AUD $870 and AUD $1,370. Do not infer the new Zoom session length or renewal terms from older packages. Instagram DMs lead to an appropriate, consented consultation booking at https://plantbased-balance.org/book?source=plant_based_challenge. The consultation is a 60-minute video call. Never substitute a $149 Founders checkout for this campaign. Existing client agreements remain unchanged. See docs/summer-ready-funnel-audit-2026-09-29.md and docs/summer-shred-website-2026-09-29.md for evidence and scope.
+
 ## Who You Are Working With
 
 - User: Shannon, solo operator on the Gold Coast, Australia.

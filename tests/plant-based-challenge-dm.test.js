@@ -133,7 +133,7 @@ test('the established rich card retains its artwork, destination and text/card o
 
 test('consultation content approval never overrides safety, context, media or reviewer holds', () => {
     const writer = require('../netlify/functions/ig-instant-draft')._test;
-    const common = {draft:{joined:`I can help with that strength goal through training and meal plans. Pick a consultation time here: ${CHALLENGE_BOOKING_URL}`,model:'vertex-v7'},currentMessage:'I want to build strength',qualifier:{facts:{motivation:'build strength'}},linkedUserId:null,leadStage:'qualifying',meaningfulLeadReplyCount:1,alertData:{challenge_policy_version:'plant_based_challenge_consent_v2'},challengeOfferWarning:{required:false,code:'approved_challenge_consultation'},mediaReview:{required:false},contextReview:{required:false},draftReview:{verdict:'pass',confidence:1,issues:[],context_loss_suspected:false}};
+    const common = {draft:{joined:`I can help with that strength goal through training and meal plans. Pick a consultation time here: ${CHALLENGE_BOOKING_URL}`,model:'vertex-v7'},currentMessage:'I want to build strength',qualifier:{facts:{motivation:'build strength'}},linkedUserId:null,leadStage:'qualifying',meaningfulLeadReplyCount:1,alertData:{challenge_policy_version:'summer_ready_shred_oct5_v3'},challengeOfferWarning:{required:false,code:'approved_challenge_consultation'},mediaReview:{required:false},contextReview:{required:false},draftReview:{verdict:'pass',confidence:1,issues:[],context_loss_suspected:false}};
     assert.equal(writer.getAutoDmHoldReason(common),null);
     for (const override of [{mediaReview:{required:true}},{contextReview:{required:true}},{draftReview:{verdict:'warn',issues:['Missing context']}},{draft:{...common.draft,error:'model failed'}}]) assert.ok(writer.getAutoDmHoldReason({...common,...override}));
 });
@@ -199,7 +199,7 @@ test('challenge contract keeps common fact and conversational checks without old
 
 test('dormant worker inherits challenge content without changing the transport contract', async () => {
     const {buildLivePrompt}=await import('../scripts/ig-codex-live-worker.mjs');
-    const prompt=buildLivePrompt({alert:{id:'fixture',data:{challenge_policy_version:'plant_based_challenge_consent_v2'}},action:{id:'fixture'},codexThreadId:'fixture'});
+    const prompt=buildLivePrompt({alert:{id:'fixture',data:{challenge_policy_version:'summer_ready_shred_oct5_v3'}},action:{id:'fixture'},codexThreadId:'fixture'});
     assert.ok(prompt.includes(CHALLENGE_BOOKING_URL));
     assert.ok(prompt.includes('Revalidate the supplied codex_live_worker controller claim'));
     assert.ok(prompt.includes('replyTextUtf8Base64'));
@@ -294,7 +294,7 @@ test('opener preference includes Summer Shred, Learn and ten-week goal horizon w
 
 test('challenge uses semantic review for earned invitations while keeping every safety hold', () => {
  const writer=require('../netlify/functions/ig-instant-draft')._test;
- const input={draft:{joined:'We can fit training around that. Want me to send the call booking link?',model:'openai-gpt-5.4-mini-paid-meta'},currentMessage:'The hotel floor is all I have to train on',history:[{direction:'in',text:'I want to hike with my dad'}],qualifier:{},linkedUserId:null,leadStage:'qualifying',meaningfulLeadReplyCount:1,alertData:{challenge_policy_version:'plant_based_challenge_consent_v2'},challengeOfferWarning:{required:true,code:'challenge_offer'},mediaReview:{required:false},contextReview:{required:false},draftReview:{verdict:'pass',confidence:1,issues:[],reviewer_model:'gemini-draft-context-review',context_loss_suspected:false,notification_required:false}};
+ const input={draft:{joined:'We can fit training around that. Want me to send the call booking link?',model:'openai-gpt-5.4-mini-paid-meta'},currentMessage:'The hotel floor is all I have to train on',history:[{direction:'in',text:'I want to hike with my dad'}],qualifier:{},linkedUserId:null,leadStage:'qualifying',meaningfulLeadReplyCount:1,alertData:{challenge_policy_version:'summer_ready_shred_oct5_v3'},challengeOfferWarning:{required:true,code:'challenge_offer'},mediaReview:{required:false},contextReview:{required:false},draftReview:{verdict:'pass',confidence:1,issues:[],reviewer_model:'gemini-draft-context-review',context_loss_suspected:false,notification_required:false}};
  assert.equal(writer.getAutoDmHoldReason(input),null);
  for(const override of [{draftReview:{...input.draftReview,reviewer_model:'deterministic-paid-meta-fast-contract-v1'}},{draftReview:{...input.draftReview,verdict:'block',issues:['premature invitation']}},{contextReview:{required:true}},{mediaReview:{required:true}}]) assert.ok(writer.getAutoDmHoldReason({...input,...override}));
  assert.deepEqual(writer.collectCocosAutoRepairIssues({...input,flowVariant:'plant_based_challenge'}),[]);
