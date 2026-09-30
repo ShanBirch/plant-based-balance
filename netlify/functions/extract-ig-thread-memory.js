@@ -582,11 +582,7 @@ async function processThread(thread) {
             }
         }
         try {
-            await supabaseQuery(`ig_threads?id=eq.${thread.id}`, {
-                method: 'PATCH',
-                body: threadPatch,
-                prefer: 'return=minimal',
-            });
+            await require('./_lib/ig-thread-patch').patchIgThread(supabaseQuery, { ...thread, custom_data: latestCustomData }, threadPatch);
         } catch (err) {
             console.warn(`[ig-memory] linked thread timestamp update failed for ${thread.id}: ${err.message}`);
         }
@@ -603,11 +599,7 @@ async function processThread(thread) {
         patch.personal_context = next.personal_context;
     }
     try {
-        await supabaseQuery(`ig_threads?id=eq.${thread.id}`, {
-            method: 'PATCH',
-            body: patch,
-            prefer: 'return=minimal',
-        });
+        await require('./_lib/ig-thread-patch').patchIgThread(supabaseQuery, { ...thread, custom_data: latestCustomData }, patch);
     } catch (err) {
         console.warn(`[ig-memory] thread ${thread.id} update failed: ${err.message}`);
         return { error: err.message };

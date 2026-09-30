@@ -176,16 +176,12 @@ async function patchThreadTracking(threadId, patch = {}, jobToken = '') {
                 delete nextTracking.active_job_token;
             }
         }
-        await supabaseQuery(`ig_threads?id=eq.${encodeURIComponent(threadId)}`, {
-            method: 'PATCH',
-            body: {
+        await require('./_lib/ig-thread-patch').patchIgThread(supabaseQuery, thread, {
                 custom_data: {
                     ...customData,
                     food_photo_tracking: nextTracking,
                 },
                 updated_at: new Date().toISOString(),
-            },
-            prefer: 'return=minimal',
         });
     } catch (err) {
         console.warn('[ig-food-photo-track] state patch failed:', err.message);

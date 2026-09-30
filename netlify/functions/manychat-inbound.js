@@ -700,29 +700,21 @@ async function attachGraphDuplicateToThread({ thread, graphDuplicate, customData
     };
 
     try {
-        await supabase(`ig_threads?id=eq.${encodeURIComponent(thread.id)}`, {
-            method: 'PATCH',
-            body: { custom_data: mergedCustomData },
-            prefer: 'return=minimal',
-        });
+        thread = await require('./_lib/ig-thread-patch').patchIgThread(supabase, thread, { custom_data: mergedCustomData });
     } catch (err) {
         console.warn('[manychat-inbound] delayed graph identity attach failed:', err.message);
         return { thread, updated: false };
     }
 
     try {
-        await supabase(`ig_threads?id=eq.${encodeURIComponent(graphDuplicate.thread.id)}`, {
-            method: 'PATCH',
-            body: { custom_data: graphThreadCustomData },
-            prefer: 'return=minimal',
-        });
+        await require('./_lib/ig-thread-patch').patchIgThread(supabase, graphDuplicate.thread, { custom_data: graphThreadCustomData });
     } catch (err) {
         console.warn('[manychat-inbound] graph duplicate merge marker failed:', err.message);
     }
 
     await relabelOrCancelGraphDuplicateAlerts({
         graphThreadId: graphDuplicate.thread.id,
-        targetThread: { ...thread, custom_data: mergedCustomData },
+        targetThread: thread,
         leadName,
         messageText,
         manychatMessageId,
@@ -730,7 +722,7 @@ async function attachGraphDuplicateToThread({ thread, graphDuplicate, customData
     });
 
     return {
-        thread: { ...thread, custom_data: mergedCustomData },
+        thread,
         updated: true,
     };
 }
@@ -773,16 +765,7 @@ async function upsertThread({ subscriberId, defaultCoachId, channel, igUsername,
             patch.linked_user_id = linkedUser.id;
             patch.lead_stage = leadStageForLinkedUser(existing[0].lead_stage, linkedUser);
         }
-        await supabase(`ig_threads?id=eq.${existing[0].id}`, {
-            method: 'PATCH',
-            body: patch,
-            prefer: 'return=minimal',
-        });
-        return {
-            ...existing[0],
-            ...patch,
-            coach_id: existing[0].coach_id || defaultCoachId,
-        };
+        return require('./_lib/ig-thread-patch').patchIgThread(supabase, existing[0], patch);
     }
     const initialStage = leadStageForLinkedUser('new', linkedUser);
     const initialCustomData = registerPaidLeadDispatch(

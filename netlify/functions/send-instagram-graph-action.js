@@ -289,12 +289,8 @@ function buildNextThreadActionCustomData({
 async function patchThreadActionState(args) {
     const nextCustomData = buildNextThreadActionCustomData(args);
     const thread = args.thread;
-    await supabaseQuery(`ig_threads?id=eq.${encodeURIComponent(thread.id)}`, {
-        method: 'PATCH',
-        body: { custom_data: nextCustomData },
-        prefer: 'return=minimal',
-    });
-    return nextCustomData;
+    const updated = await require('./_lib/ig-thread-patch').patchIgThread(supabaseQuery, thread, { custom_data: nextCustomData });
+    return updated.custom_data;
 }
 
 async function resolveAlertAfterReaction({ alert, action, reaction, graphMessageId, source, nowIso }) {

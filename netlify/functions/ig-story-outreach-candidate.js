@@ -2437,17 +2437,12 @@ async function ensureOutreachThread({ username, coachId, storyUrl, storyId, draf
         ].slice(-12),
     };
     if (existing?.id) {
-        await supabaseQuery(`ig_threads?id=eq.${encodeURIComponent(existing.id)}`, {
-            method: 'PATCH',
-            body: {
+        return require('./_lib/ig-thread-patch').patchIgThread(supabaseQuery, existing, {
                 coach_id: existing.coach_id || coachId || null,
                 ig_username: username,
                 profile_name: username,
                 custom_data: customPatch,
-            },
-            prefer: 'return=minimal',
         });
-        return { ...existing, custom_data: customPatch };
     }
     const inserted = await supabaseQuery('ig_threads', {
         method: 'POST',

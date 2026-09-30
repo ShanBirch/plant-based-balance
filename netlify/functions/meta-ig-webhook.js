@@ -404,19 +404,14 @@ async function upsertGraphThread(event, contentItem) {
     let thread = existingThread || null;
     if (thread) {
         thread = await updateLegacyThreadSubscriberId(thread, subscriberId);
-        await supabaseQuery(`ig_threads?id=eq.${thread.id}`, {
-            method: 'PATCH',
-            body: {
-                last_inbound_at: nowIso,
-                ig_username: username || thread.ig_username || null,
-                profile_name: username || thread.profile_name || thread.ig_username || null,
-                linked_user_id: thread.linked_user_id || linkedUser?.id || null,
-                lead_stage: thread.linked_user_id || linkedUser?.id ? 'in_app' : (thread.lead_stage || 'new'),
-                custom_data: customData,
-            },
-            prefer: 'return=minimal',
+        thread = await require('./_lib/ig-thread-patch').patchIgThread(supabaseQuery, thread, {
+            last_inbound_at: nowIso,
+            ig_username: username || thread.ig_username || null,
+            profile_name: username || thread.profile_name || thread.ig_username || null,
+            linked_user_id: thread.linked_user_id || linkedUser?.id || null,
+            lead_stage: thread.linked_user_id || linkedUser?.id ? 'in_app' : (thread.lead_stage || 'new'),
+            custom_data: customData,
         });
-        thread = { ...thread, custom_data: customData };
     } else {
         const inserted = await supabaseQuery('ig_threads', {
             method: 'POST',

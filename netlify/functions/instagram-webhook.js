@@ -1912,11 +1912,7 @@ async function markGraphThreadMergedInto({ sourceThread, targetThread, nowIso })
         merge_reason: 'graph_handle_thread_preferred',
     };
     try {
-        await supabase(`ig_threads?id=eq.${encodeURIComponent(sourceThread.id)}`, {
-            method: 'PATCH',
-            body: { custom_data: customData, updated_at: nowIso },
-            prefer: 'return=minimal',
-        });
+        await require('./_lib/ig-thread-patch').patchIgThread(supabase, sourceThread, { custom_data: customData });
     } catch (err) {
         console.warn('[instagram-webhook] graph merge marker failed:', err.message);
     }
@@ -2065,17 +2061,9 @@ async function upsertGraphThread({
         if (accountAutoSendEnabled && current.auto_send_enabled !== true) {
             patch.auto_send_enabled = true;
         }
-        await supabase(`ig_threads?id=eq.${encodeURIComponent(current.id)}`, {
-            method: 'PATCH',
-            body: patch,
-            prefer: 'return=minimal',
-        });
-        await markGraphThreadMergedInto({ sourceThread: exactGraphThread, targetThread: current, nowIso });
-        return {
-            ...current,
-            ...patch,
-            coach_id: current.coach_id || defaultCoachId || null,
-        };
+        const updated = await require('./_lib/ig-thread-patch').patchIgThread(supabase, current, patch);
+        await markGraphThreadMergedInto({ sourceThread: exactGraphThread, targetThread: updated, nowIso });
+        return updated;
     }
 
     const profileName = participantUsername || `IG user ${participantId.slice(-6)}`;
@@ -2432,13 +2420,8 @@ async function patchThreadFoodPhotoTrackingState({ thread, state = {}, jobToken 
     };
     if (state.last_ack_at) body.last_outbound_at = state.last_ack_at;
     try {
-        await supabase(`ig_threads?id=eq.${encodeURIComponent(thread.id)}`, {
-            method: 'PATCH',
-            body,
-            prefer: 'return=minimal',
-        });
-        thread.custom_data = nextCustomData;
-        if (body.last_outbound_at) thread.last_outbound_at = body.last_outbound_at;
+        const updated = await require('./_lib/ig-thread-patch').patchIgThread(supabase, thread, body);
+        Object.assign(thread, updated);
     } catch (err) {
         console.warn('[instagram-webhook] food photo tracking state patch failed:', err.message);
     }
