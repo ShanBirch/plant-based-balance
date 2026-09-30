@@ -54,7 +54,7 @@ exports.handler = async (event) => {
     let claimId = '';
     let delivered = false;
     try {
-        const alerts = await supabase(`coach_alerts?select=id,status,data,alert_type&id=eq.${encodeURIComponent(alertId)}&limit=1`);
+        const alerts = await supabase(`coach_alerts?select=id,coach_id,status,data,alert_type&id=eq.${encodeURIComponent(alertId)}&limit=1`);
         const alert = alerts[0];
         if (!alert) return json(404, { error: 'Alert not found' });
         const { operatorOwnsDm, humanSource } = require('./_lib/codex-dm-operator');
