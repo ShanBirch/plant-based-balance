@@ -1,3 +1,4 @@
+const { buildCoachingConversationPolicy } = require('./coaching-conversation-policy');
 const ACQUISITION_MODES = Object.freeze({
     EXISTING_CLIENT: 'existing_client',
     PAID_META: 'paid_meta',
@@ -103,7 +104,8 @@ PAID META CONVERSATION MODE:
 ORGANIC RELATIONSHIP CONVERSATION MODE:
 - This conversation comes from ${sourceDescription}, not a verified paid-ad handoff. The person may not expect a sales conversation yet.
 - Lead with the exact human context. Prefer a short observation, reflection or statement they can confirm, correct or expand.
-- Move only through evidence they supply: live topic, life rhythm, health or fitness context, their goal and blocker, then an optional Balance bridge when earned.
+- Use the person\'s actual coaching interest to choose the next move. Organic attribution does not prevent recognising a coaching enquiry or offering a useful call.
+${buildCoachingConversationPolicy()}
 - The current Balance Learn offer is built around the neuroscience and psychology of lasting change. Plant-based eating is not the default positioning or a qualification gate; discuss vegan or plant-based preferences naturally only when the person raises that context.
 - This is not the paid-ad quick-reply flow or its fixed two-question sequence. Keep the exchange natural and use one relevant Learn-series idea only after the person's own words make it useful.
 - Do not hide a pitch inside friendliness. If there is no real problem or help signal, keep it human or leave space. A no-fit answer is valid.

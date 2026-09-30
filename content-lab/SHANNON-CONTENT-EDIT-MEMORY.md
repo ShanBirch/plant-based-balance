@@ -1,5 +1,11 @@
 # Shannon Content Edit Memory
 
+## 30 September 2026 — conversation-led coaching calls
+
+Shannon's direction: understand the whole lead conversation and choose the next useful question rather than imposing blocker fields, stage parameters or a fixed question sequence. A new follower who independently asks about online coaching is a coaching enquiry without needing an ad referral. Naturally understand goals and difficulties, then offer a call when useful; an unfilled difficulty field must not prevent that invitation. Remove the extra "Want me to explain the challenge/coaching?" permission step. Answer questions directly. Someone wanting trust and longer-term support may need an optional call to get to know Shannon, rather than a ten-week challenge pitch.
+
+Reusable rule for DM writing, review, repair and manager automation: preserve acquisition attribution as provenance, use actual conversational intent for the next move, and share one call objective across organic coaching and campaign enquiries. Respect declined or unanswered invitations and requests to keep chatting. Call acceptance permits the existing booking card without a second link-permission question. Manual takeover and delivery/identity/safety checks remain independent. Authority: `netlify/functions/_lib/coaching-conversation-policy.js` and `docs/coaching-conversation-calls-2026-09-30.md`.
+
 ## 29 September 2026: give each website page one purpose
 
 Shannon asked for Learn to describe the six-week course without app screenshots or a sales checkout. Summer Shred combines the ten-week plant-based challenge with app demonstrations and support. The app page explains features rather than repeating the course curriculum and package comparison. Keep navigation consistent but avoid repeating entire sections across destinations. This supersedes the 27 September eight-week positioning and standalone Learn sales. Contract: docs/summer-shred-website-2026-09-29.md.

@@ -1,3 +1,4 @@
+const { buildCoachingConversationPolicy } = require('./_lib/coaching-conversation-policy');
 const { CHALLENGE_FLOW, CHALLENGE_POLICY_VERSION, normalizeChallengeBookingUrls, finalizeChallengeText, challengeHandoffMetadata, buildChallengeUnavailableFallback, resolveChallengeLeadRoute, buildChallengeLeadPrompt, collectChallengeLeadIssues, buildChallengeBookingHandoff } = require('./_lib/plant-based-challenge-dm');
 const { resolveMessengerRoute } = require('./_lib/facebook-messenger');
 const { outboundAnswersOlderInbound } = require('./_lib/ig-reply-source');
@@ -1166,7 +1167,7 @@ ${reviewContextBlocks || '(no context provided)'}
 
 ORIGINAL DRAFT:
 ${draftText}
-${flowVariant === CHALLENGE_FLOW ? 'CHALLENGE REPAIR OVERRIDE: Follow the full-conversation challenge contract in the supplied context. It supersedes the generic tiny-acknowledgement and pitch-only-on-request rules above. A BALANCE enquiry needs the brief introduction BEFORE the goal question. An earned support explanation and booking-link permission question are allowed once goal and support need are understood, even without an explicit call request. After a goal answer, keep the acknowledgement brief and ask about the unknown struggle/support need; do not repeat the opening list of inclusions. Write the complete corrected response naturally; do not copy a canned example. Preserve every unanswered question. The corrected response will undergo the same independent review and consent checks.' : ''}`;
+${flowVariant === CHALLENGE_FLOW ? buildCoachingConversationPolicy() + " Follow the verified campaign facts and consent contract supplied below. Answer all unanswered questions and write the complete corrected reply. Do not restore mandatory discovery stages or explanation-permission detours. The corrected reply receives the same independent review." : ''}`;
     const repairContents = [{ role: 'user', parts: [{ text: prompt }] }];
     const repairConfig = { maxOutputTokens: Math.min(1200, Math.max(500, (maxChunks || MAX_CHUNKS) * 280)), temperature: 0.35 };
     if (flowVariant === CHALLENGE_FLOW) Object.assign(repairConfig, {maxOutputTokens:2200,reasoningEffort:'medium'});
@@ -7577,7 +7578,21 @@ Rules:
         });
     }
     if (adFlowVariant === CHALLENGE_FLOW && isSalesLeadThread) {
-        prompt = buildChallengeLeadPrompt({basePrompt: prompt + "\nVOICE GUIDANCE (style only; current challenge facts and consent win):\n" + openAiShannonVoice + "\n" + editExamples, context: [leadBlock, profileBlock, memoryBlock].filter(Boolean).join("\n"), currentMessage: unansweredBatch.map(m => m.text).join("\n"), history, qualifier});
+        prompt = buildChallengeLeadPrompt({
+            basePrompt: [
+                "Write a concise " + channelLabel + " DM in Shannon\'s voice. Use normal contractions and phone-native wording. Reply only from verified facts and the live conversation.",
+                dailyGreetingPolicyBlock, nameUsePolicy, openAiShannonVoice, editExamples,
+                buildCoachBioBlock(), currentTurnAnchorBlock, nativeStoryOutreachContext?.block || "",
+                nativeStoryConfusionRepairBlock, learningReelContextBlock, learningReelReplyAnchorBlock,
+                "BUSINESS BOUNDARY: No flirting, social-call arrangements or personal-contact promises. Authenticity questions, explicit manual takeover, essential unresolved media and safety holds retain their existing human review.",
+                "MEDIA: " + mediaInstruction + " Use only decoded evidence. Do not claim to have heard or seen unavailable media.",
+                "CURRENT TIME (Australia/Brisbane): " + promptNowText,
+                "OUTPUT: JSON only with a messages array of 1 to 3 natural paragraph-sized bubbles. Keep one bubble when enough. No literal escape sequences or system labels in visible copy." + (mediaParts.length ? " Include a private media_summary using only available evidence." : ""),
+            ].filter(Boolean).join("\n\n"),
+            timeline: totalConversationText,
+            context: [leadBlock, profileBlock, memoryBlock, priorScheduledBlock].filter(Boolean).join("\n"),
+            currentMessage: unansweredBatch.map(m => m.text).join("\n"), history, hasMedia: mediaParts.length > 0,
+        });
     }
     prompt = prompt.replace(
         /- 1 to 3 chunks\.[^\n]*\n- Split where/,
@@ -7595,7 +7610,9 @@ Rules:
     // Text-only contents — used when vision fails OR when there's no image.
     // We rebuild the prompt with the photo-failed hint so the AI knows to
     // ask casually about the photo without pretending it saw it.
-    const textOnlyPrompt = hasInlineMedia
+    const textOnlyPrompt = hasInlineMedia && adFlowVariant === CHALLENGE_FLOW
+        ? prompt + '\nMEDIA FALLBACK: ' + textOnlyMediaFallbackNote
+        : hasInlineMedia
         ? prompt.replace(
             'THEIR NEW MESSAGE:\n' + currentMessageText + (mediaInstruction ? ` ${mediaInstruction}` : ''),
             'THEIR NEW MESSAGE:\n' + currentMessageText + (reelContextText
@@ -9019,7 +9036,7 @@ exports.handler = async (event) => {
     }
 
     const terminalQualifierStage = ['pitched', 'won'].includes(qualifier?.stage);
-    const qualifierQuestion = (!terminalQualifierStage && qualifierEligible && qualifierEvaluated && qualifier?.is_question_moment && qualifier?.next_question)
+    const qualifierQuestion = (!challengeLead && !terminalQualifierStage && qualifierEligible && qualifierEvaluated && qualifier?.is_question_moment && qualifier?.next_question)
         ? qualifier.next_question.trim()
         : null;
     const recentOutboundVoiceMessage = await hasRecentOutboundVoiceMessage(
