@@ -6800,9 +6800,13 @@ function splitCoachInstructionSections(value) {
     if (!text) return { manual: '', autoBullets: [] };
     const idx = text.toLowerCase().lastIndexOf(EDIT_LEARNING_HEADER.toLowerCase());
     if (idx < 0) return { manual: text, autoBullets: [] };
+    const learnedLines = text.slice(idx + EDIT_LEARNING_HEADER.length).split('\n');
+    // Operator-added human directions sometimes landed below the learned header.
+    // They remain manual authority, even when new stylistic learning replaces it.
+    const protectedLine = line => /^(?:Shannon(?:'s)? explicit (?:direction|instruction)|Confirmed directly by Shannon)\b/i.test(line.trim().replace(/^[-*]\s*/, ''));
     return {
-        manual: text.slice(0, idx).trim(),
-        autoBullets: normalizeAutoLearnedBullets(text.slice(idx + EDIT_LEARNING_HEADER.length)),
+        manual: [text.slice(0, idx).trim(), ...learnedLines.filter(protectedLine).map(line => line.trim().replace(/^[-*]\s*/, ''))].filter(Boolean).join('\n'),
+        autoBullets: normalizeAutoLearnedBullets(learnedLines.filter(line => !protectedLine(line)).join('\n')),
     };
 }
 
@@ -7393,47 +7397,54 @@ async function resolveEditLearningTarget(alert) {
     if (alert?.coach_id && alert?.client_id) {
         const rows = await supabaseQuery(
             `client_memory?select=coach_instructions&coach_id=eq.${alert.coach_id}&client_id=eq.${alert.client_id}&limit=1`
-        ).catch(() => []);
+        );
+        if (!rows[0]) return null;
         return {
             type: 'client_memory',
             coachId: alert.coach_id,
             clientId: alert.client_id,
             existingInstructions: rows[0]?.coach_instructions || '',
+            expectedInstructions: rows[0].coach_instructions,
         };
     }
     if (data.ig_thread_id) {
         const rows = await supabaseQuery(
             `ig_threads?select=coach_instructions&id=eq.${encodeURIComponent(data.ig_thread_id)}&limit=1`
-        ).catch(() => []);
+        );
+        if (!rows[0]) return null;
         return {
             type: 'ig_threads',
             igThreadId: data.ig_thread_id,
             existingInstructions: rows[0]?.coach_instructions || '',
+            expectedInstructions: rows[0].coach_instructions,
         };
     }
     return null;
 }
 
 async function saveEditLearningInstructions(target, value) {
+    // A model call can take long enough for Shannon or another edit to update
+    // this person. Never overwrite instructions that changed after our read.
+    if (!target || !Object.hasOwn(target, 'expectedInstructions')) return false;
+    const quotedExpected = `"${String(target.expectedInstructions ?? '').replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+    const version = target.expectedInstructions == null
+        ? '&coach_instructions=is.null'
+        : `&coach_instructions=eq.${encodeURIComponent(quotedExpected)}`;
     if (target?.type === 'client_memory' && target.coachId && target.clientId) {
-        await supabaseQuery('client_memory?on_conflict=coach_id,client_id', {
-            method: 'POST',
-            body: [{
-                coach_id: target.coachId,
-                client_id: target.clientId,
-                coach_instructions: value || null,
-            }],
-            prefer: 'resolution=merge-duplicates,return=minimal',
-        });
-        return true;
-    }
-    if (target?.type === 'ig_threads' && target.igThreadId) {
-        await supabaseQuery(`ig_threads?id=eq.${encodeURIComponent(target.igThreadId)}`, {
+        const rows = await supabaseQuery(`client_memory?coach_id=eq.${encodeURIComponent(target.coachId)}&client_id=eq.${encodeURIComponent(target.clientId)}${version}&select=coach_instructions`, {
             method: 'PATCH',
             body: { coach_instructions: value || null },
-            prefer: 'return=minimal',
+            prefer: 'return=representation',
         });
-        return true;
+        return rows.length === 1;
+    }
+    if (target?.type === 'ig_threads' && target.igThreadId) {
+        const rows = await supabaseQuery(`ig_threads?id=eq.${encodeURIComponent(target.igThreadId)}${version}&select=coach_instructions`, {
+            method: 'PATCH',
+            body: { coach_instructions: value || null },
+            prefer: 'return=representation',
+        });
+        return rows.length === 1;
     }
     return false;
 }
@@ -8277,6 +8288,9 @@ module.exports = {
     mergeLateDraftReviewData,
     isDraftReviewAutoSendSafe,
     calculateCoachEditMetrics,
+    splitCoachInstructionSections,
+    buildCoachInstructionsWithEditLearning,
+    saveEditLearningInstructions,
     softenAbsoluteLearnedInstruction,
     analyzeCoachEditAndUpdatePrompt,
     fireCoachEditAnalysis,

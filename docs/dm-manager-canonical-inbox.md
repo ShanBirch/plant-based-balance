@@ -11,6 +11,41 @@ fail-closed receipt validator. The installed runtime copy is
 It requires Node only. It does not send, authorize delivery, or replace existing
 identity, safety, transport, run-lease or controller-claim checks.
 
+## Reliable bounded persistence (30 September 2026)
+
+The helper defaults to one full conversation per page. It includes every exact
+unanswered message and current alert, every scheduled alert, all coach instructions
+and relevant policy flags. Old pending alerts created before the last outbound
+are represented by `stale_pending_alert_count`; fetch their full records only
+when investigating those historical alerts. They are not new unanswered work.
+
+Save the ACTUAL connector return with `tools.apply_patch` inside the same
+`functions.exec` that receives it. Do not pass a large JSON payload through a
+Windows command argument, print it to reconstruct it, or retype SQL/identities.
+Use unique run/page files, then the helper's capture and receipt commands:
+
+```text
+node <runtime-helper> sql 0
+node <runtime-helper> capture raw-tool-result.json snapshot.json
+node <runtime-helper> sql 0 <exact-thread-uuid>
+node <runtime-helper> capture exact-raw-tool-result.json exact-snapshot.json
+node <runtime-helper> receipt exact-snapshot.json <exact-thread-uuid> waiting "Concrete current decision" receipts.json
+node <runtime-helper> validate exact-snapshot.json receipts.json
+```
+
+Pass the SQL command's `output.trim()` unchanged to Supabase; require exit code
+zero. Save the raw return as JSON before capture. The capture command understands
+the actual connector envelope, rejects incomplete/stale/error results, and
+validates canonical thread/message pairing. Receipt creation copies all identity
+and source fields directly from the snapshot. It never grants send permission.
+After real delivery, add verified readback evidence to the receipt and validate
+again. Use `--partial` for page/scan coverage.
+
+An exact-thread decision reports `thread_pass_complete=true` but
+`action_pass_complete=false`: it cannot establish that the whole inbox was
+assessed. Preserve fresh-page and older continuation work, lease checks, claims,
+manual/client/Story/safety holds and guarded delivery.
+
 ## Every local manager pass
 
 1. Acquire the existing run lease. Run `node <runtime-helper> sql`, execute the

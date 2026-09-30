@@ -38,6 +38,20 @@ assert.match(singleMessageAnchor, /Just-arrived message to answer/);
 assert.match(singleMessageAnchor, /Write to the just-arrived message first/);
 assert.match(singleMessageAnchor, /short answer\/confirmation/);
 
+const multiMessageAnchor = buildCurrentTurnAnchorBlock({
+    currentMessageText: 'Where are you based now?',
+    lastShannonText: 'What would you like to achieve?',
+    recentInboundMessages: [
+        {text:'I want to lose body fat and improve my nutrition over six months.'},
+        {text:'I have already said I am returning to the gym.'},
+    ],
+});
+assert.match(multiMessageAnchor, /ALSO UNANSWERED/);
+assert.match(multiMessageAnchor, /improve my nutrition over six months/);
+assert.match(multiMessageAnchor, /final bubble does not erase/);
+assert.match(multiMessageAnchor, /Do not re-ask/);
+assert.doesNotMatch(buildCurrentTurnAnchorBlock({currentMessageText:'yeah',recentInboundMessages:[{text:'Can I train at home?'}]}), /short answer\/confirmation/);
+
 assert.strictEqual(isStoryOpenerConfusionMessage("I don\u2019t understand your question"), true);
 assert.strictEqual(isStoryOpenerConfusionMessage('Sorry just seen this! It was so good'), false);
 assert.strictEqual(isStoryOpenerConfusionMessage('sorry?'), true);

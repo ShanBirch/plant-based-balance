@@ -77,6 +77,36 @@ test('new Balance leads use consultation; explicit returning challenge enquiries
     assert.equal(resolveChallengeLeadRoute({thread:{...fresh,created_at:'2026-08-01'},currentMessage:'I want the eight-week plant-based challenge'}),true);
     assert.equal(resolveChallengeLeadRoute({thread:fresh,history:[{direction:'in',text:'Tell me about the eight-week plant-based challenge'}],currentMessage:'I already told you I want to get stronger'}),true);
 });
+
+test('the production loader includes the creation date required to route a fresh organic enquiry', async () => {
+    const contextPath = require.resolve('../netlify/functions/_lib/client-context');
+    const draftPath = require.resolve('../netlify/functions/ig-instant-draft');
+    const saved = require.cache[contextPath].exports;
+    let selectedPath;
+    require.cache[contextPath].exports = {...saved, supabaseQuery:async path => {
+        selectedPath = path;
+        // Model PostgREST projection: an omitted column cannot appear in a row.
+        const fields = new URLSearchParams(path.split('?')[1]).get('select').split(',');
+        return [Object.fromEntries(Object.entries({...fresh,id:'fixture'}).filter(([key]) => fields.includes(key)))];
+    }};
+    delete require.cache[draftPath];
+    try {
+        const loaded = await require(draftPath)._test.loadThread('fixture');
+        assert.match(selectedPath, /select=id,created_at,/);
+        assert.equal(resolveChallengeLeadRoute({thread:loaded,currentMessage:'I am looking for online coaching'}),true);
+    } finally {
+        require.cache[contextPath].exports = saved;
+        delete require.cache[draftPath];
+    }
+});
+
+test('Summer Ready Shred paid enquiries use the cloud writer instead of the dormant local Learn worker', () => {
+    const writer = require('../netlify/functions/ig-instant-draft')._test;
+    const input = {linkedUserId:null,customData:{codex_live_chat_enabled:true},acquisitionMode:'paid_meta'};
+    assert.equal(writer.isCodexLivePaidMetaThread({...input,flowVariant:'plant_based_challenge'}),false);
+    assert.equal(writer.isCodexLivePaidMetaThread({...input,flowVariant:'broad_pain'}),true);
+    assert.equal(writer.isCodexLivePaidMetaThread({...input,linkedUserId:'client'}),false);
+});
 test('clients, purchases, other brands, legacy campaigns and explicit old-product enquiries keep their routes', () => {
     for (const thread of [
         {...fresh,linked_user_id:'client'},

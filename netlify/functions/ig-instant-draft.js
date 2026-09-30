@@ -618,8 +618,9 @@ function shouldDispatchMetaAdReplyImmediately({ alertData, normalizedTiming, sch
         && alertData?.needs_shannon_approval !== true;
 }
 
-function isCodexLivePaidMetaThread({ linkedUserId = null, customData = {}, acquisitionMode = '' } = {}) {
+function isCodexLivePaidMetaThread({ linkedUserId = null, customData = {}, acquisitionMode = '', flowVariant = '' } = {}) {
     return !linkedUserId
+        && flowVariant !== CHALLENGE_FLOW
         && customData?.codex_live_chat_enabled !== false
         && isPaidMetaAcquisitionMode(acquisitionMode);
 }
@@ -4241,7 +4242,7 @@ JSON only:
 
 async function loadThread(threadId) {
     const rows = await supabaseQuery(
-        `ig_threads?select=id,subscriber_id,coach_id,channel,ig_username,profile_name,lead_stage,linked_user_id,last_inbound_at,last_outbound_at,custom_data,learn_ai_settings,goals,communication_style,running_notes,injuries_limits,personal_context,coach_instructions,qualifier,auto_send_enabled&id=eq.${threadId}&limit=1`
+        `ig_threads?select=id,created_at,subscriber_id,coach_id,channel,ig_username,profile_name,lead_stage,linked_user_id,last_inbound_at,last_outbound_at,custom_data,learn_ai_settings,goals,communication_style,running_notes,injuries_limits,personal_context,coach_instructions,qualifier,auto_send_enabled&id=eq.${threadId}&limit=1`
     );
     return rows[0] || null;
 }
@@ -6809,11 +6810,12 @@ function isShortAnswerMessage(text) {
     return /^(yes|yeah|yep|yup|yeh|no|nah|nope|ok|okay|true|exactly|same|right|correct|sure|perfect|good|nice|maybe|probably|definitely|lol|lmao|haha|hahaha|hahah|i know|thank you|thanks)$/i.test(normalized);
 }
 
-function buildCurrentTurnAnchorBlock({ currentMessageText, lastShannonText } = {}) {
+function buildCurrentTurnAnchorBlock({ currentMessageText, lastShannonText, recentInboundMessages = [] } = {}) {
     const current = plainSignalText(currentMessageText);
     if (!current) return '';
     const lastShannon = plainSignalText(lastShannonText);
-    const shortAnswer = isShortAnswerMessage(current);
+    const prior = recentInboundMessages.map(item => plainSignalText(item?.text || '')).filter(Boolean);
+    const shortAnswer = prior.length === 0 && isShortAnswerMessage(current);
 
     const lines = [
         '',
@@ -6823,7 +6825,12 @@ function buildCurrentTurnAnchorBlock({ currentMessageText, lastShannonText } = {
     if (lastShannon) {
         lines.push(`- Shannon's immediately previous message: "${truncate(lastShannon, 220)}"`);
     }
-    lines.push('- Write to the just-arrived message first. Use older timeline only as background for this turn, not as a menu of topics to revisit.');
+    if (prior.length) {
+        lines.push('- These earlier bubbles are ALSO UNANSWERED in this same turn, not older background:');
+        prior.forEach((text, index) => lines.push(`  ${index + 1}. ${text}`));
+        lines.push('- Answer every distinct question and use the goal, corrections or support need across this complete batch. The final bubble does not erase the earlier ones. Do not re-ask a fact already supplied in this batch.');
+    }
+    lines.push('- Write to the just-arrived message first while covering the complete unanswered turn. Use already-answered older timeline only as background, not as a menu of topics to revisit.');
     lines.push('- Do not repeat, paraphrase, or re-send an older Shannon line just because it appears in the timeline. Add the next tiny conversational beat.');
     if (shortAnswer && lastShannon) {
         lines.push("- This is a short answer/confirmation. Treat it as answering Shannon's immediately previous message. A one-liner is usually enough; do not reopen older emotions, app issues, or banter unless the short answer clearly points there.");
@@ -7372,6 +7379,7 @@ Treat this as the SAME relationship as the ${channelLabel} thread below. Don't a
         .find(event => event.speaker === 'Shannon');
     const currentTurnAnchorBlock = buildCurrentTurnAnchorBlock({
         currentMessageText,
+        recentInboundMessages,
         lastShannonText: lastShannonConversationEvent?.text || '',
     });
     const nativeStoryConfusionRepairBlock = buildNativeStoryConfusionRepairBlock({
@@ -8320,11 +8328,6 @@ exports.handler = async (event) => {
         linkedUserId: thread.linked_user_id,
         customData: thread.custom_data,
     });
-    const codexLivePaidMetaThread = isCodexLivePaidMetaThread({
-        linkedUserId: thread.linked_user_id,
-        customData: thread.custom_data,
-        acquisitionMode,
-    });
     const internalMetaAdConversationTestLane = isInternalMetaAdConversationTestLane({
         linkedUserId: thread.linked_user_id,
         customData: thread.custom_data,
@@ -8401,6 +8404,14 @@ exports.handler = async (event) => {
     });
     let metaAdCardAttachmentsSuppressed = unfilteredHistoryCount - history.length;
     const challengeLead = resolveChallengeLeadRoute({thread, currentMessage: messageText, history});
+    // The challenge already has its full-conversation cloud writer and review.
+    // Do not hand it to the dormant local Learn worker after generating it.
+    const codexLivePaidMetaThread = isCodexLivePaidMetaThread({
+        linkedUserId: thread.linked_user_id,
+        customData: thread.custom_data,
+        acquisitionMode,
+        flowVariant: challengeLead ? CHALLENGE_FLOW : '',
+    });
     const metaAdFlowVariant = challengeLead ? CHALLENGE_FLOW : resolveMetaAdFlowVariant({
         customData: thread.custom_data,
         currentMessage: messageText,
@@ -10016,7 +10027,7 @@ exports.handler = async (event) => {
             ? `\nRecent sent learning reel context:\n${truncate(learningReelReviewText, 1800)}`
             : '';
         const verifiedOfferContext = challengeLead ? buildChallengeLeadPrompt({currentMessage:currentInboundTurnMessage,history:displayHistory,qualifier}) : metaAdConversationFastLane ? ('\nVERIFIED LEARN FACTS FOR REVIEW AND REPAIR: A free personalised program preview before payment is an approved part of this flow. After choosing independent workouts, ask permission for that preview; send the signed card only after acceptance. Do not repeat price or inclusions at the support-choice step. 45 lessons and quizzes across six weeks. Certificate of Completion requires finishing the required lessons and practical actions; no accreditation claim. Week 1: Why change feels hard. Week 2: Work with your energy. Week 3: Build a rhythm that sticks. Week 4: Take the fight out of food. Week 5: Make progress easier to repeat. Week 6: Build your sustainable way forward. AUD $149 upfront for six weeks, no auto-renewal; alternatively AUD $24.83/week, six-week minimum AUD $148.98, continuing until cancelled. Preserve these facts when editing; answer only the facts asked for, without reciting the questions or adding a goal question already asked.'.replaceAll('$149', resolveBalanceLearnCoursePriceLabel())) : '';
-        const reviewContextBlocks = `LATEST just-arrived ${channelLabel} message from ${leadName} (this is the message the draft must answer): "${reviewLatestForPrompt}"${mediaSummaryReviewContext}${audioTranscriptReviewContext}${priorText}${timelineText}${workoutText}${memoryText}${crossChannelText}${learningReelReviewContext}${verifiedOfferContext}`;
+        const reviewContextBlocks = `LATEST just-arrived ${channelLabel} message from ${leadName}: "${reviewLatestForPrompt}"\nCOMPLETE UNANSWERED TURN (all of these bubbles need a response; earlier unanswered bubbles are not background):\n${currentInboundTurnMessage}\nReview the reply against the whole turn. A relevant goal or direct question in an earlier unanswered bubble remains current even when the final bubble changes topic. Do not recommend repeating an answered goal or dropping an unanswered question.${mediaSummaryReviewContext}${audioTranscriptReviewContext}${priorText}${timelineText}${workoutText}${memoryText}${crossChannelText}${learningReelReviewContext}${verifiedOfferContext}`;
         const reviewTimeoutMs = challengeLead ? 30000 : cocosAutoSendLane ? COCOS_DRAFT_REVIEW_TIMEOUT_MS : IG_DRAFT_REVIEW_TIMEOUT_MS;
         const approvedDeterministicReview = buildApprovedDeterministicMetaAdFirstReplyReview({
             metaAdFirstInbound: metaAdOpeningTurn,
@@ -10216,7 +10227,7 @@ exports.handler = async (event) => {
                     leadName,
                     channelLabel,
                     maxChunks: draft.maxChunks || MAX_CHUNKS,
-                    currentMessage: displayMessage,
+                    currentMessage: currentInboundTurnMessage,
                     qualifier,
                     businessName: autoDraftRepairBusinessName,
                     paidMetaMode: metaAdConversationFastLane,
@@ -11128,6 +11139,7 @@ exports._test = {
     isAudioPuntDraftText,
     isAudioPuntDraftChunks,
     buildCurrentTurnAnchorBlock,
+    loadThread,
     isStoryOpenerConfusionMessage,
     buildNativeStoryConfusionRepairBlock,
     normalizeIgAutoTimingSuggestion,
