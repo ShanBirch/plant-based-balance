@@ -1,3 +1,4 @@
+const { operatorOwnsDm, delegateInbound } = require('./_lib/codex-dm-operator');
 const { buildCoachingConversationPolicy } = require('./_lib/coaching-conversation-policy');
 const { CHALLENGE_FLOW, CHALLENGE_POLICY_VERSION, normalizeChallengeBookingUrls, finalizeChallengeText, challengeHandoffMetadata, buildChallengeUnavailableFallback, resolveChallengeLeadRoute, buildChallengeLeadPrompt, collectChallengeLeadIssues, buildChallengeBookingHandoff } = require('./_lib/plant-based-challenge-dm');
 const { resolveMessengerRoute } = require('./_lib/facebook-messenger');
@@ -8230,6 +8231,15 @@ exports.handler = async (event) => {
     if (JSON.stringify(thread.custom_data?.instagram_graph || {}).includes('17841422424052111')
         || thread.custom_data?.bot_account === 'littlecompanionportraits') {
         return { statusCode: 200, body: JSON.stringify({ skipped: 'portrait_assistant_owns_account' }) };
+    }
+    if (operatorOwnsDm(thread)) {
+        try {
+            const delegated = await delegateInbound(thread, supabaseQuery);
+            return { statusCode: 200, body: JSON.stringify({ ok: true, reply_owner: 'codex_conversation_operator', ...delegated }) };
+        } catch (error) {
+            console.error('[ig-draft] operator intake failed:', error.message);
+            return { statusCode: 503, body: JSON.stringify({ error: 'operator_intake_failed' }) };
+        }
     }
     // Explicit account-scoped alternative selected by Shannon for personal testing.
     // The background worker already owns the lifetime needed for native video.

@@ -2145,6 +2145,7 @@ async function cancelAutomatedConversationDeltaSend({ alertId, alertData = {}, d
 }
 
 exports.handler = async (event) => {
+    const { operatorOwnsDm, humanSource, verifyOperatorSend } = require('./_lib/codex-dm-operator');
     if (event.httpMethod !== 'POST') {
         return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
     }
@@ -2203,6 +2204,10 @@ exports.handler = async (event) => {
         return { statusCode: 409, body: JSON.stringify({ error: 'Alert already actioned', status: alert.status }) };
     }
     const rawAlertData = alert.data || {};
+    if (operatorOwnsDm(alert) && !humanSource(source)) {
+        const error = await verifyOperatorSend(alert, { ...body, reviewedText: replyTextInput }, supabase);
+        if (error) return { statusCode: 409, body: JSON.stringify({ code: error, reply_owner: 'codex_conversation_operator' }) };
+    }
     let threadForSend = rawAlertData.ig_thread_id
         ? await loadIgThreadForSend(rawAlertData.ig_thread_id)
         : null;

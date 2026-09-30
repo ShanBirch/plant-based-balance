@@ -585,6 +585,10 @@ async function sendAutoSendHoldNotification(alert, autoHold) {
  * to flip to 'sent' once delivered.
  */
 async function fireAlert(alert) {
+    const { operatorOwnsDm, humanSource } = require('./_lib/codex-dm-operator');
+    if (operatorOwnsDm(alert) && !humanSource(alert.data?.scheduled_via || '')) {
+        return { ok: false, error: 'codex_conversation_operator_owns_reply' };
+    }
     if(alert.data?.learn_link_followup===true){
         try{
             const response=await fetch(`${SITE_URL}/.netlify/functions/learn-link-followup-background`,{method:'POST',signal:AbortSignal.timeout(5000),headers:{'Content-Type':'application/json',Authorization:`Bearer ${SUPABASE_SERVICE_KEY}`},body:JSON.stringify({id:alert.id})});

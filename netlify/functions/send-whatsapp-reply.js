@@ -57,6 +57,10 @@ exports.handler = async (event) => {
         const alerts = await supabase(`coach_alerts?select=id,status,data,alert_type&id=eq.${encodeURIComponent(alertId)}&limit=1`);
         const alert = alerts[0];
         if (!alert) return json(404, { error: 'Alert not found' });
+        const { operatorOwnsDm, humanSource } = require('./_lib/codex-dm-operator');
+        if (operatorOwnsDm(alert) && !humanSource(body.source || 'admin_dashboard')) {
+            return json(409, { code: 'codex_conversation_operator_owns_reply' });
+        }
         if (alert.status !== 'pending') return json(409, { error: 'Alert already actioned', status: alert.status });
         const data = alert.data || {};
         if (data.delivery_channel !== 'whatsapp_cloud') return json(400, { error: 'This alert is not a WhatsApp Cloud message' });

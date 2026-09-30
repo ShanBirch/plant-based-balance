@@ -1,3 +1,4 @@
+const { operatorOwnsDm } = require('./_lib/codex-dm-operator');
 const { CHALLENGE_BOOKING_URL, CHALLENGE_POLICY_VERSION } = require('./_lib/plant-based-challenge-dm');
 const { stripNegatedReadiness } = require('./_lib/dm-readiness');
 const { hasDirectBuyerIntent } = require('./_lib/qualifier-engine');
@@ -1747,6 +1748,7 @@ async function runClientLeadManager({
     let aiDraftReviewsSkipped = 0;
     const maxAiDraftReviews = parseNonNegativeInteger(aiDraftReviewLimit, DEFAULT_AI_DRAFT_REVIEWS_PER_RUN);
     for (const loadedAlert of alerts) {
+        if (operatorOwnsDm(loadedAlert)) continue;
         const alert = await hydrateLiveLinkedClient(loadedAlert);
         const needsDraftReview = shouldRunDraftReview(alert);
         const approvedSalesHandoff = needsDraftReview && hasApprovedCoachingLinkHandoff(alert);

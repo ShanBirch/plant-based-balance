@@ -24,6 +24,7 @@ const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 const SEND_CLAIM_STALE_MS = 10 * 60 * 1000;
+const { operatorOwnsDm, humanSource, verifyOperatorSend } = require('./_lib/codex-dm-operator');
 const {
     normalizeGeneratedCoachDraftText,
     sanitizeVisibleOutboundDmText,
@@ -483,6 +484,10 @@ exports.handler = async (event) => {
     if (!alert) {
         return { statusCode: 404, body: JSON.stringify({ error: 'Alert not found' }) };
     }
+    if (operatorOwnsDm(alert) && !humanSource(source)) {
+        const error = await verifyOperatorSend(alert, { ...body, reviewedText: replyTextInput }, supabase);
+        if (error) return { statusCode: 409, body: JSON.stringify({ code: error, reply_owner: 'codex_conversation_operator' }) };
+    }
     if (alert.status && alert.status !== 'pending') {
         // Already actioned — don't double-send. The receiver treats 4xx as a
         // hard error, so the user gets a "Send failed" notification. That's
@@ -610,6 +615,7 @@ exports.handler = async (event) => {
                     replyTextUtf8Base64: Buffer.from(replyText, 'utf8').toString('base64'),
                     draftTextUtf8Base64: Buffer.from(draftText, 'utf8').toString('base64'),
                     source,
+                    codexOperator: body.codexOperator,
                     editReason,
                     timingSuggestion,
                     forceText,

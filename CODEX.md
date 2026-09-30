@@ -1,5 +1,9 @@
 # Balance Codex Operating Brief
 
+## Live external DM conversation ownership (30 September 2026)
+
+Shannon replaced Balance external automatic AI responses with the existing browser dispatcher's live Codex conversation operator, using Sol 6.1 with low reasoning every five minutes. Prioritise unanswered leads and client service, stay with active conversations until natural completion or five minutes of silence, then nurture existing warm/hot unconverted leads. Meta Business Suite is the preferred Instagram/Messenger inbox; verify WhatsApp connection before using it there. Preserve explicit person holds and the separate Take over lead DMs chat's ownership. Legacy external draft/automatic send workers delegate to the operator; in-app coaching stays separate. Read [the full current contract](docs/live-conversation-dm-operator-2026-09-30.md), which overrides older pipeline-first and external API-manager rules below. Ordinary authorised replies and eligible follower welcomes no longer require human review; actual tool confirmation boundaries still apply.
+
 ## Summer Shred consultation duration clarification (29 September 2026)
 
 The calendar reserves an hour, but people are not required to use the whole hour. Shannon sets it aside to get to know them properly, understand their goals and answer questions without rushing; the conversation can finish earlier. Explain this naturally when someone asks why it is long. Do not promise a specific shorter duration or confuse this with package commitment/cancellation terms.

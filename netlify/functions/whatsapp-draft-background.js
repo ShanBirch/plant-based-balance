@@ -21,6 +21,9 @@ exports.handler = async (event) => {
     const filter = `coach_alerts?id=eq.${encodeURIComponent(alertId)}&status=eq.pending`;
     const [alert] = await query(`${filter}&select=*&limit=1`);
     if (!alert || alert.data?.delivery_channel !== 'whatsapp_cloud') return { statusCode: 200 };
+    if (require('./_lib/codex-dm-operator').operatorOwnsDm(alert)) {
+        return { statusCode: 200, body: JSON.stringify({ reply_owner: 'codex_conversation_operator' }) };
+    }
     const claim = crypto.randomUUID();
     const [claimed] = await query(`${filter}&data->>whatsapp_draft_status=eq.queued&data->>send_claim_id=is.null`, {
         method: 'PATCH', body: { data: { ...alert.data, whatsapp_draft_status: 'generating', whatsapp_draft_claim: claim } },
