@@ -8,6 +8,8 @@ Inbound messages reached the database. Failures occurred after ingestion:
   therefore missed the current Summer Ready Shred route and used the legacy flow.
 - Paid challenge replies could be assigned to a dormant local Learn worker.
   No such worker was installed on the current Windows host.
+- Returning leads naming the October launch without its campaign name could
+  receive the old course flow instead of the current ten-week challenge.
 - Writer/reviewer current-turn guidance prioritized the final bubble over earlier
   rapid unanswered goals/questions.
 - The local manager repeatedly abandoned large canonical inbox results or
@@ -20,6 +22,8 @@ Inbound messages reached the database. Failures occurred after ingestion:
 Load thread creation time and resolve the current challenge before deciding local
 worker ownership. Current challenge enquiries use the existing cloud writer,
 reviewer and guarded sender. Legacy non-challenge ownership remains scoped.
+Explicit enquiries about our challenge starting in October also use the current
+route; unrelated challenges, clients and legacy requests retain their boundaries.
 
 The writer, reviewer and repair prompt cover the complete unanswered turn.
 Earlier unanswered questions are not downgraded to history by a final short reply.
@@ -35,7 +39,7 @@ missing baselines and changed rows instead of overwriting them.
 
 ## Validation
 
-74 focused checks pass across routing, loaded creation time, rapid batches,
+75 focused checks pass across routing, loaded creation time, rapid batches,
 instruction preservation/concurrent edits, canonical identity/coverage, run leases,
 warning repair, customer handover, health disclosure and challenge channel timing.
 A live read-only canonical capture/receipt check also verifies the connector

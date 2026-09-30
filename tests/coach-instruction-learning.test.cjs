@@ -24,13 +24,15 @@ const {splitCoachInstructionSections,buildCoachInstructionsWithEditLearning,save
 test('explicit human directions below the learned header survive replacement learning without being shortened', () => {
     const direction = ('Shannon explicit direction, for this person only: answer their actual question, then use their stated goals before introducing the current challenge. ' + 'Preserve the confirmed facts. '.repeat(15)).trim();
     const fact = 'Confirmed directly by Shannon: use his current age and gym-starting age instead of older profile facts.';
-    const sections = splitCoachInstructionSections(`Manual: keep this person reactive only.\n\nLearned from Shannon edits:\n- Keep replies short.\n- ${direction}\n- ${fact}`);
+    const boundary = 'Current explicit boundary, 30 September 2026: no sales sequence or proactive follow-up; respect their own pace.';
+    const sections = splitCoachInstructionSections(`Manual: keep this person reactive only.\n\nLearned from Shannon edits:\n- Keep replies short.\n- ${direction}\n- ${fact}\n${boundary}`);
     assert.ok(sections.manual.includes(direction));
     assert.ok(sections.manual.includes(fact));
     assert.deepEqual(sections.autoBullets,['Keep replies short.']);
     const replacement = buildCoachInstructionsWithEditLearning(sections.manual,['Prefer a specific acknowledgment.']);
     assert.ok(replacement.includes(direction));
     assert.ok(replacement.includes(fact));
+    assert.ok(replacement.includes(boundary));
     assert.ok(replacement.indexOf(direction) < replacement.indexOf('Learned from Shannon edits:'));
     assert.doesNotMatch(replacement,/Keep replies short/);
 });

@@ -8,6 +8,10 @@ const LAUNCH_AT = Date.parse('2026-09-27T00:00:00+10:00');
 // Canonical Balance Page, verified in docs/facebook-messenger-setup.md.
 const BALANCE_PAGE_ID = '561122130919678';
 const challengeMention = /\b(?:(?:eight|8|ten|10)[ -]week\s+(?:plant[ -]based\s+)?(?:transformation\s+)?challenge|plant[ -]based\s+(?:transformation\s+)?challenge|(?:plant[ -]based\s+)?summer(?: ready)? shred)\b/i;
+// A returning conversation can refer to the current launch by date without
+// knowing its campaign name. Keep this narrower than any mention of a challenge.
+const currentLaunchMention = /\b(?:your|the|this)\s+challenge\b[\s\S]{0,90}\b(?:starting|starts|start)\b[\s\S]{0,30}\b(?:october|oct)\b/i;
+const mentionsCurrentChallenge = text => challengeMention.test(text) || currentLaunchMention.test(text);
 // Explicitly scope the September campaign; preserve unrelated historic ad routes.
 const SUMMER_READY_AD_IDS = new Set(['120255351900560119']);
 const SUMMER_READY_CAMPAIGN_IDS = new Set(['120255351900570119']);
@@ -26,12 +30,12 @@ function resolveChallengeLeadRoute({thread = {}, currentMessage = '', history = 
         && String(thread.subscriber_id || '').startsWith(`fb_graph:${BALANCE_PAGE_ID}:`);
     if ((account !== 'shan_n_sunny' && !balanceMessenger && !isBalanceManyChatThread(thread)) || thread.linked_user_id || data.customer_lifecycle?.purchase_id
         || ['in_app','client','converted','paid','paying','won','churned'].includes(String(thread.lead_stage || '').toLowerCase())) return false;
-    const mentionsChallengeNow = challengeMention.test(currentMessage);
+    const mentionsChallengeNow = mentionsCurrentChallenge(currentMessage);
     const campaignChallenge = [data.meta_ad_attribution, data.current_inbound_routing].some(ref =>
         ref && (SUMMER_READY_AD_IDS.has(String(ref.ad_id || '')) || SUMMER_READY_CAMPAIGN_IDS.has(String(ref.campaign_id || ''))));
     const explicitChallenge = campaignChallenge || mentionsChallengeNow
         || [data.offer_flow_variant, data.booking_source, data.source, data.current_inbound_routing?.source, data.meta_ad_attribution?.source].includes(CHALLENGE_FLOW);
-    const challengeHistory = history.some(item => item?.direction === 'in' && challengeMention.test(textOf(item)));
+    const challengeHistory = history.some(item => item?.direction === 'in' && mentionsCurrentChallenge(textOf(item)));
     // Current human intent and the most recent actual promise outrank saved
     // campaign metadata. A Learn request within the challenge still has facts.
     if (mentionsChallengeNow) return true;
@@ -44,7 +48,7 @@ function resolveChallengeLeadRoute({thread = {}, currentMessage = '', history = 
         // not silently migrate the next reply into the older photo/video flow.
         if ((item?.direction === 'in' && legacyMention.test(textOf(item)) && !/\b(?:within|included|part of|challenge|shred)\b/i.test(textOf(item)))
             || (item?.direction === 'out' && /free.*preview|\/p\/|\/founders\b|checkout (?:link|card)/i.test(textOf(item)))) return false;
-        if (item?.direction === 'in' && challengeMention.test(textOf(item))) return true;
+        if (item?.direction === 'in' && mentionsCurrentChallenge(textOf(item))) return true;
     }
     if (explicitChallenge) return true;
     // Never migrate an existing ad campaign just because a new lead arrives.

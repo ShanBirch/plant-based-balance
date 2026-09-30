@@ -78,6 +78,15 @@ test('new Balance leads use consultation; explicit returning challenge enquiries
     assert.equal(resolveChallengeLeadRoute({thread:fresh,history:[{direction:'in',text:'Tell me about the eight-week plant-based challenge'}],currentMessage:'I already told you I want to get stronger'}),true);
 });
 
+test('a returning lead can ask about the current October launch without knowing the campaign name', () => {
+    const returning = {...fresh,created_at:'2026-06-01'};
+    const enquiry = 'Tell me more about your challenge starting in October 😊';
+    assert.equal(resolveChallengeLeadRoute({thread:returning,currentMessage:enquiry}),true);
+    assert.equal(resolveChallengeLeadRoute({thread:returning,currentMessage:'Can I train at home?',history:[{direction:'in',text:enquiry}]}),true);
+    assert.equal(resolveChallengeLeadRoute({thread:returning,currentMessage:'My friend is doing another challenge in October'}),false);
+    assert.equal(resolveChallengeLeadRoute({thread:{...returning,linked_user_id:'client'},currentMessage:enquiry}),false);
+});
+
 test('the production loader includes the creation date required to route a fresh organic enquiry', async () => {
     const contextPath = require.resolve('../netlify/functions/_lib/client-context');
     const draftPath = require.resolve('../netlify/functions/ig-instant-draft');

@@ -6803,7 +6803,7 @@ function splitCoachInstructionSections(value) {
     const learnedLines = text.slice(idx + EDIT_LEARNING_HEADER.length).split('\n');
     // Operator-added human directions sometimes landed below the learned header.
     // They remain manual authority, even when new stylistic learning replaces it.
-    const protectedLine = line => /^(?:Shannon(?:'s)? explicit (?:direction|instruction)|Confirmed directly by Shannon)\b/i.test(line.trim().replace(/^[-*]\s*/, ''));
+    const protectedLine = line => /^(?:Shannon(?:'s)? explicit (?:direction|instruction)|Confirmed directly by Shannon|Current explicit boundary)\b/i.test(line.trim().replace(/^[-*]\s*/, ''));
     return {
         manual: [text.slice(0, idx).trim(), ...learnedLines.filter(protectedLine).map(line => line.trim().replace(/^[-*]\s*/, ''))].filter(Boolean).join('\n'),
         autoBullets: normalizeAutoLearnedBullets(learnedLines.filter(line => !protectedLine(line)).join('\n')),
