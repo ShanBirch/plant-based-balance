@@ -1,5 +1,9 @@
 # Shannon Content Edit Memory
 
+## 1 October 2026 - static Meta ad typography follows each reference format
+
+Shannon said the separated oversized `10` and `WEEKS` and enlarged plant-based meal guidance looked scattered. White text ads should read like a short note: one headline, connected short paragraphs and durations kept together. Match the saved Nutrition Collective reference per format. Its photo ads use short headlines and supporting lines, so do not apply the white-note layout to photos unless the individual reference does. Keep plant-based meal guidance the same size, weight and colour as adjacent supporting copy; proof headings may use a restrained subtitle. Keep original photos intact. Disable Meta automatic text overlays and visual touch-ups when they undermine the approved layout. Campaign-specific contract and review assets: `.codex-artifacts/summer-ready-shred/photo-adjustments/` and `white-examples/`.
+
 ## 30 September 2026 — conversation-led coaching calls
 
 Shannon's direction: understand the whole lead conversation and choose the next useful question rather than imposing blocker fields, stage parameters or a fixed question sequence. A new follower who independently asks about online coaching is a coaching enquiry without needing an ad referral. Naturally understand goals and difficulties, then offer a call when useful; an unfilled difficulty field must not prevent that invitation. Remove the extra "Want me to explain the challenge/coaching?" permission step. Answer questions directly. Someone wanting trust and longer-term support may need an optional call to get to know Shannon, rather than a ten-week challenge pitch.
