@@ -14,6 +14,9 @@ Inbound messages reached the database. Failures occurred after ingestion:
   rapid unanswered goals/questions.
 - The local manager repeatedly abandoned large canonical inbox results or
   reconstructed them incorrectly. Historical pending alerts inflated those reads.
+- The manager also reported missing local execution credentials even though the
+  supported guarded HTTPS sender needs no local service key. A harmless live
+  nonexistent-alert probe confirmed the server/database path returns HTTP 404.
 - Direct human instructions below the automatic learning header could be replaced
   by new style learning; a slow learning write could also overwrite a newer edit.
 
@@ -39,7 +42,8 @@ missing baselines and changed rows instead of overwriting them.
 
 ## Validation
 
-75 focused checks pass across routing, loaded creation time, rapid batches,
+80 focused checks pass after integrating the concurrent coaching-conversation
+policy update, across routing, loaded creation time, rapid batches,
 instruction preservation/concurrent edits, canonical identity/coverage, run leases,
 warning repair, customer handover, health disclosure and challenge channel timing.
 A live read-only canonical capture/receipt check also verifies the connector
@@ -52,3 +56,21 @@ this change and has not been altered.
 No policy hold, reviewer verdict, identity check, active foreign claim or booking
 consent rule is relaxed. The Summer Shred conversation's existing chat remains
 its owner. No customer message was sent by this repair task.
+
+## Production evidence
+
+Production deploy 6abc80406b888b000709a48b published commit 9c918ff5 at
+2026-09-30 03:22:43 UTC. A harmless POST with no thread/message returned the
+expected HTTP 400 from the live draft function. The repaired live canonical
+exact-thread capture/receipt reports thread_pass_complete=true and
+action_pass_complete=false, preserving the distinction from whole-inbox coverage.
+
+The manager runtime helper and persistence/transport instructions are installed
+and its existing ten-minute automation remains active with its existing model.
+Legion and Mazzie were separately paused for Shannon's browser takeover; this
+task does not re-enable them.
+
+The current models produced live drafts/reviews during the investigation. No
+local model credential was available for additional synthetic writer calls.
+Automated delivery after these routing fixes still needs an eligible real inbound
+turn; endpoint availability is not proof of a delivered customer reply.

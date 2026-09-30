@@ -1,5 +1,26 @@
 # Canonical inbox identity and coverage
 
+## Manager transport does not require a local service credential
+
+The guarded production endpoint `send-coach-reply` uses the exact pending alert
+UUID as its one-use capability (see its authorization comment and handler).
+Supabase service keys and Graph credentials live on the server. The manager must
+not look for, copy or extract them into its local runtime. A missing local model,
+admin or service key is not a blocker for this supported transport.
+
+On 30 September 2026, a POST using the manager source and a nonexistent test alert
+returned HTTP 404 `{"error":"Alert not found"}` without an Authorization header.
+This verifies server/database reachability and the actual credential contract;
+it does not authorize or prove customer delivery.
+
+For a real eligible reply, validate the fresh exact-thread receipt, check the run
+lease, acquire/check the exact controller claim, make the bounded repair/review
+and POST `alertId`, `source=balance_lead_client_manager_cron`, `forceText=true`,
+`replyTextUtf8Base64` and `draftTextUtf8Base64` to
+`https://plantbased-balance.org/.netlify/functions/send-coach-reply`.
+Then verify canonical history and finish the exact claim. Do not call a random
+alert or the readiness probe a send. Current human takeover holds always win.
+
 The 29 September 2026 local manager paired Mazzie's new message/thread IDs with
 Arunima's name and an unrelated workout quote. It then treated a fresh eligible
 conversation as permanently manual and the next delta-only scan skipped it.
