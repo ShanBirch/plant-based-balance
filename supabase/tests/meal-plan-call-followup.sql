@@ -33,6 +33,14 @@ BEGIN
  'rollback-test@example.invalid',jsonb_build_object('ig_thread_id',tid));
  IF public.ig_meal_plan_action_eligible(a.id) THEN RAISE EXCEPTION 'booking bypass'; END IF;
  DELETE FROM public.balance_bookings WHERE metadata->>'ig_thread_id'=tid::text;
+ INSERT INTO public.growth_outcome_events(event_key,event_type,event_family,event_status,source_system,ig_thread_id)
+ VALUES('rollback-booking:'||tid,'call_booked','sales','recorded','rollback_test',tid);
+ IF public.ig_meal_plan_action_eligible(a.id) THEN RAISE EXCEPTION 'recorded booking outcome bypass'; END IF;
+ DELETE FROM public.growth_outcome_events WHERE ig_thread_id=tid;
+ INSERT INTO public.growth_outcome_events(event_key,event_type,event_family,event_status,source_system,ig_thread_id)
+ VALUES('rollback-subscription:'||tid,'subscription_started','sales','active','rollback_test',tid);
+ IF public.ig_meal_plan_action_eligible(a.id) THEN RAISE EXCEPTION 'active subscription outcome bypass'; END IF;
+ DELETE FROM public.growth_outcome_events WHERE ig_thread_id=tid;
  INSERT INTO public.ig_messages(thread_id,direction,text,source) VALUES(tid,'out','Newer conversation turn','rollback_test');
  IF public.ig_meal_plan_action_eligible(a.id) THEN RAISE EXCEPTION 'newer turn bypass'; END IF;
  DELETE FROM public.ig_messages WHERE thread_id=tid AND id<>src;
