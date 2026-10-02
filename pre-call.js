@@ -46,7 +46,7 @@
             const response = await fetch('/api/pre-call', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
                 kind, submission_id: submissionId, name: data.get('name'), email: data.get('email'), website: data.get('website'), consent: data.get('consent') === 'yes', answers
             }) });
-            if (!response.ok) throw new Error('submit_failed');
+            if (!response.ok || (await response.json()).ok !== true) throw new Error('submit_failed');
             form.hidden = true;
             const success = document.getElementById('success'); success.hidden = false; success.focus(); success.scrollIntoView({ block: 'start' });
         } catch (_) {
