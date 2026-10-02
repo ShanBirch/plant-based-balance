@@ -25,6 +25,13 @@ BEGIN
  SELECT count(*) INTO v_after FROM public.ig_messages WHERE thread_id=a.thread_id;
  ASSERT v_after=v_count, 'trigger duplicate';
  ASSERT NOT EXISTS (SELECT 1 FROM public.ig_messages WHERE id=v_id AND training_eligible), 'system reply mislabeled for training';
+ DELETE FROM public.ig_messages WHERE id=v_id;
+ UPDATE public.ig_next_actions SET receipt=receipt WHERE id=a.id;
+ ASSERT EXISTS (SELECT 1 FROM public.ig_messages
+   WHERE thread_id=a.thread_id AND source='codex_native_delivery_receipt'
+     AND text=a.receipt->>'delivered_text'), 'trigger did not restore confirmed delivery';
+ SELECT count(*) INTO v_after FROM public.ig_messages WHERE thread_id=a.thread_id;
+ ASSERT v_after=v_count, 'trigger must restore exactly one delivery';
  ASSERT NOT has_function_privilege('anon','public.persist_ig_native_delivery_receipt(uuid,integer,uuid,uuid,jsonb)','execute'), 'public writer exposed';
 END;
 $$;
