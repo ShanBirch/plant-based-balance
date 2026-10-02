@@ -19504,7 +19504,8 @@ async function retryWorkoutSave() {
 // POST-WORKOUT RATING SYSTEM (Simplified)
 // ============================================
 let workoutRatingState = {
-    difficulty: 3,
+    loadChoice: null,
+    saving: false,
     energy: 3,
     workoutName: null,
     sourceType: 'workout',
@@ -19519,49 +19520,68 @@ function selectRating(group, value) {
     workoutRatingState[group] = value;
 }
 
-function selectIntensityPref(pref) {
-    workoutRatingState.intensityPref = pref;
+const WORKOUT_LOAD_CHOICES = {
+    too_light: { difficulty: 1, preference: 'harder', label: 'Too light' },
+    perfect: { difficulty: 3, preference: 'perfect', label: 'Perfect' },
+    too_heavy: { difficulty: 5, preference: 'lighter', label: 'Too heavy' }
+};
+function selectIntensityPref(choice) {
+    if (workoutRatingState.saving || !Object.hasOwn(WORKOUT_LOAD_CHOICES, choice)) return;
+    workoutRatingState.loadChoice = choice;
+    checkRatingFormValid();
+}
+function checkRatingFormValid() {
+    document.querySelectorAll('[data-workout-load]').forEach(button => {
+        button.setAttribute('aria-pressed', String(button.dataset.workoutLoad === workoutRatingState.loadChoice));
+        button.disabled = workoutRatingState.saving;
+    });
+    const saveBtn = document.getElementById('save-rating-btn');
+    if (saveBtn) saveBtn.disabled = workoutRatingState.saving || !Object.hasOwn(WORKOUT_LOAD_CHOICES, workoutRatingState.loadChoice);
 }
 
-function checkRatingFormValid() {}
-
 function openWorkoutRatingModal(workoutName, sourceType, sourceId) {
+    if (workoutRatingState.saving) return;
     workoutRatingState = {
-        difficulty: 3,
+        loadChoice: null,
+        saving: false,
         energy: 3,
         workoutName: workoutName || 'Workout',
         sourceType: sourceType || 'workout',
         sourceId: sourceId || null
     };
 
-    // Reset sliders to center
-    const diffSlider = document.getElementById('rating-difficulty-slider');
+    // New sessions start unanswered; keep the separate energy slider.
     const energySlider = document.getElementById('rating-energy-slider');
-    if (diffSlider) diffSlider.value = 3;
     if (energySlider) energySlider.value = 3;
 
     // Reset save button state (may be stuck from previous save)
     const saveBtn = document.getElementById('save-rating-btn');
     if (saveBtn) {
-        saveBtn.disabled = false;
         saveBtn.textContent = 'Save';
     }
+    checkRatingFormValid();
 
     // Set workout name in header
     const nameEl = document.getElementById('rating-workout-name');
     if (nameEl) nameEl.textContent = workoutName || 'Rate your workout';
 
     document.getElementById('workout-rating-modal').style.display = 'flex';
+    if (typeof pushNavigationState === 'function') pushNavigationState('workout-rating-modal', skipWorkoutRating);
 }
 
 async function saveWorkoutRating() {
+    const choice = Object.hasOwn(WORKOUT_LOAD_CHOICES, workoutRatingState.loadChoice) ? WORKOUT_LOAD_CHOICES[workoutRatingState.loadChoice] : null;
+    if (!choice || workoutRatingState.saving) return;
+    workoutRatingState.saving = true;
+    checkRatingFormValid();
     const saveBtn = document.getElementById('save-rating-btn');
     if (saveBtn) {
         saveBtn.disabled = true;
         saveBtn.textContent = 'Saving...';
     }
 
-    const difficulty = parseInt(document.getElementById('rating-difficulty-slider')?.value || 3);
+    // Compatibility score for the existing NOT NULL 1-5 column, not a slider answer.
+    const difficulty = choice.difficulty;
     const energy = parseInt(document.getElementById('rating-energy-slider')?.value || 3);
     const ratingData = {
         workout_date: getLocalDateString(new Date()),
@@ -19573,8 +19593,10 @@ async function saveWorkoutRating() {
         energy_level: energy,
         muscle_soreness: null,
         tightness: null,
-        intensity_preference: difficulty >= 4 ? 'lighter' : difficulty <= 2 ? 'harder' : 'perfect',
-        notes: null
+        intensity_preference: choice.preference,
+        // Existing text column stores explicit provenance without a schema migration.
+        // Load feeling is not an explicit request to change the program.
+        notes: JSON.stringify({ feedback_version: 'workout_load_buttons_v1', load_choice: workoutRatingState.loadChoice, difficulty_source: 'compatibility_mapping' })
     };
 
     function queueRatingLocally(reason) {
@@ -19597,7 +19619,7 @@ async function saveWorkoutRating() {
         }
 
         showToast('Workout rated!', 'success');
-        document.getElementById('workout-rating-modal').style.display = 'none';
+        closeWorkoutRatingModal();
 
         // Happy moment — see if it's time to ask for an app store review.
         // Gated internally by lifetime workout count + throttling.
@@ -19609,18 +19631,25 @@ async function saveWorkoutRating() {
         console.warn('Workout rating save failed; queued locally:', err);
         queueRatingLocally(err?.message || 'save_failed');
         showToast('Workout rated!', 'success');
-        const modal = document.getElementById('workout-rating-modal');
-        if (modal) modal.style.display = 'none';
+        closeWorkoutRatingModal();
     } finally {
-        if (saveBtn) {
-            saveBtn.disabled = false;
-            saveBtn.textContent = 'Save';
-        }
+        workoutRatingState.saving = false;
+        workoutRatingState.loadChoice = null;
+        checkRatingFormValid();
+        if (saveBtn) saveBtn.textContent = 'Save';
     }
 }
 
-function skipWorkoutRating() {
+function closeWorkoutRatingModal() {
     document.getElementById('workout-rating-modal').style.display = 'none';
+    if (typeof syncAndroidHistoryAfterSwipe === 'function') syncAndroidHistoryAfterSwipe('workout-rating-modal');
+}
+
+function skipWorkoutRating() {
+    if (workoutRatingState.saving) return;
+    workoutRatingState.loadChoice = null;
+    checkRatingFormValid();
+    closeWorkoutRatingModal();
 }
 
 /* ──────────────────────────────────────────────────────────────────────
@@ -19926,13 +19955,14 @@ async function loadWorkoutInsights() {
         // Set averages
         document.getElementById('insight-avg-feeling').textContent = averages.avgFeeling;
         document.getElementById('insight-avg-feeling-emoji').textContent = feelingEmojis[Math.round(averages.avgFeeling)] || '😐';
-        document.getElementById('insight-avg-difficulty').textContent = averages.avgDifficulty;
+        document.getElementById('insight-avg-difficulty').textContent = averages.avgDifficulty ?? '—';
         document.getElementById('insight-avg-difficulty-emoji').textContent = difficultyEmojis[Math.round(averages.avgDifficulty)] || '💪';
         document.getElementById('insight-avg-energy').textContent = averages.avgEnergy;
         document.getElementById('insight-avg-energy-emoji').textContent = energyEmojis[Math.round(averages.avgEnergy)] || '🔋';
 
         // Intensity preference bar
         const total = averages.intensityBreakdown.lighter + averages.intensityBreakdown.perfect + averages.intensityBreakdown.harder;
+        document.getElementById('insights-intensity-bar').style.display = total > 0 ? 'block' : 'none';
         if (total > 0) {
             const lighterPct = Math.round((averages.intensityBreakdown.lighter / total) * 100);
             const perfectPct = Math.round((averages.intensityBreakdown.perfect / total) * 100);
@@ -19940,9 +19970,9 @@ async function loadWorkoutInsights() {
             document.getElementById('insight-bar-lighter').style.width = lighterPct + '%';
             document.getElementById('insight-bar-perfect').style.width = perfectPct + '%';
             document.getElementById('insight-bar-harder').style.width = harderPct + '%';
-            document.getElementById('insight-lighter-pct').textContent = lighterPct > 0 ? `Lighter ${lighterPct}%` : '';
-            document.getElementById('insight-perfect-pct').textContent = perfectPct > 0 ? `Same ${perfectPct}%` : '';
-            document.getElementById('insight-harder-pct').textContent = harderPct > 0 ? `Harder ${harderPct}%` : '';
+            document.getElementById('insight-lighter-pct').textContent = lighterPct > 0 ? `Too heavy ${lighterPct}%` : '';
+            document.getElementById('insight-perfect-pct').textContent = perfectPct > 0 ? `Perfect ${perfectPct}%` : '';
+            document.getElementById('insight-harder-pct').textContent = harderPct > 0 ? `Too light ${harderPct}%` : '';
         }
 
         // Overtraining alert
@@ -19978,6 +20008,7 @@ async function loadWorkoutInsights() {
                             <div style="flex:1;">
                                 <div style="font-size:0.85rem; font-weight:600; color:var(--text-main);">${r.workout_name || 'Workout'}</div>
                                 <div style="font-size:0.7rem; color:var(--text-muted);">${dateStr}</div>
+                                <div style="font-size:0.7rem; color:var(--text-muted);">${r.load_feedback_label || 'Earlier slider rating'}</div>
                             </div>
                             <div style="display:flex; gap:6px; font-size:1rem;">
                                 <span title="Feeling">${feelingEmojis[r.overall_feeling] || ''}</span>

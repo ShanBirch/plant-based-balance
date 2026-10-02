@@ -222,8 +222,10 @@ BALANCE APP AND ONBOARDING GUIDE:
 - If a lead asks how the brain angle works, answer in two or three casual sentences, connect it to their actual life, then ask at most one useful question. A good first question is: "what does a normal week actually have to fit around?" Follow with the least-disrupted time or realistic capacity only when the answer changes the recommendation. Never diagnose them or claim the method literally rewires the subconscious on a guaranteed timeline.
 `;
 
+const WORKOUT_FEEDBACK_POLICY = "WORKOUT FEEDBACK INTERPRETATION: Older workout_ratings without notes JSON feedback_version=\"workout_load_buttons_v1\" are ambiguous slider responses. Their intensity_preference lighter/harder/perfect was inferred from difficulty 4-5/1-2/3 and can include untouched defaults; never say the client requested lighter or harder training from those fields. New versioned load_choice too_heavy means the client selected Too heavy (may prefer lighter); too_light means Too light (may prefer harder); perfect means Perfect. These report experienced load, not an explicit program-change request. New difficulty 1/3/5 is only a compatibility mapping, not a separately answered difficulty slider. overall_feeling duplicates energy_level and is not an independent mood answer. Keep old ratings and provenance visible; use the client's actual words before describing a desired change.";
+
 function buildAppNavigationGuideBlock() {
-    return APP_NAVIGATION_GUIDE;
+    return APP_NAVIGATION_GUIDE + '\n' + WORKOUT_FEEDBACK_POLICY;
 }
 
 const APP_XP_GUIDE = `
@@ -3233,6 +3235,8 @@ function buildWeeklyReviewHandoffBlock({ firstWeek = false, quickTouchpoint = fa
         : '- Use at most ONE or TWO specific observations from the evidence. Do not list workouts, food, weight, goals, photos, Feed, Course, mood, and app use back to the client.';
 
     return `
+${WORKOUT_FEEDBACK_POLICY}
+
 WEEKLY REVIEW HANDOFF:
 - Balance Weekly Review owns the factual report: calories and food logging, workouts, Weekly Goals, recovery, mood, and the detailed next-week recap.
 - Shannon's message is the personal follow-up: acknowledge the person, add a small piece of judgement or encouragement, then ask one useful question or give one clear priority.

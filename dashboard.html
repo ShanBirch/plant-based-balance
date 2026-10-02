@@ -455,7 +455,7 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
 </script>
 
 <!-- Supabase & Auth Guard -->
-<script src="js/dashboard/script_part_2.js?v=18-existing-member-login"></script>
+<script src="js/dashboard/script_part_2.js?v=19-workout-load-buttons"></script>
 <script>
 // ── Native OAuth warm-start callback (non-iOS) ────────────────────
 // On iOS this is set up inside the deferred chain above (after supabaseClient exists).
@@ -7610,7 +7610,7 @@ if (window._pbbIsIOSSafari) {
                     <div id="insight-avg-feeling-emoji" style="font-size:1rem;">-</div>
                 </div>
                 <div style="text-align:center; padding:10px 6px; background:#f8fafc; border-radius:10px;">
-                    <div style="font-size:0.65rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:4px;">Difficulty</div>
+                    <div style="font-size:0.65rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:4px;">Earlier difficulty</div>
                     <div id="insight-avg-difficulty" style="font-size:1.4rem; font-weight:700; color:#6366f1;">-</div>
                     <div id="insight-avg-difficulty-emoji" style="font-size:1rem;">-</div>
                 </div>
@@ -7623,16 +7623,16 @@ if (window._pbbIsIOSSafari) {
 
             <!-- Intensity preference bar -->
             <div id="insights-intensity-bar" style="margin-bottom:10px;">
-                <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:6px; font-weight:600;">Next time intensity preference</div>
+                <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:6px; font-weight:600;">Workout load feedback (selected answers)</div>
                 <div style="display:flex; height:8px; border-radius:4px; overflow:hidden; background:#f1f5f9;">
-                    <div id="insight-bar-lighter" style="background:#60a5fa; height:100%; transition:width 0.3s;" title="Lighter"></div>
-                    <div id="insight-bar-perfect" style="background:#22c55e; height:100%; transition:width 0.3s;" title="Same"></div>
-                    <div id="insight-bar-harder" style="background:#f97316; height:100%; transition:width 0.3s;" title="Harder"></div>
+                    <div id="insight-bar-lighter" style="background:#60a5fa; height:100%; transition:width 0.3s;" title="Too heavy"></div>
+                    <div id="insight-bar-perfect" style="background:#22c55e; height:100%; transition:width 0.3s;" title="Perfect"></div>
+                    <div id="insight-bar-harder" style="background:#f97316; height:100%; transition:width 0.3s;" title="Too light"></div>
                 </div>
                 <div style="display:flex; justify-content:space-between; font-size:0.65rem; color:var(--text-muted); margin-top:3px;">
-                    <span id="insight-lighter-pct">Lighter</span>
-                    <span id="insight-perfect-pct">Same</span>
-                    <span id="insight-harder-pct">Harder</span>
+                    <span id="insight-lighter-pct">Too heavy</span>
+                    <span id="insight-perfect-pct">Perfect</span>
+                    <span id="insight-harder-pct">Too light</span>
                 </div>
             </div>
 
@@ -8513,14 +8513,15 @@ if(!window._pbbIsIOSSafari) {
         </div>
 
         <div class="workout-rating-body">
-            <!-- Difficulty Slider -->
+            <!-- Explicit load feedback; no assumed answer -->
             <div class="workout-rating-question">
-                <div class="workout-rating-label">How hard was your workout?</div>
-                <input class="workout-rating-range" type="range" id="rating-difficulty-slider" min="1" max="5" value="3" step="1" oninput="updateSliderLabel('difficulty')">
-                <div class="workout-rating-scale">
-                    <span>Easy</span>
-                    <span>Hard</span>
+                <div class="workout-rating-label" id="rating-load-label">How did the workout load feel?</div>
+                <div class="workout-load-options" role="group" aria-labelledby="rating-load-label" aria-describedby="rating-load-hint">
+                    <button type="button" data-workout-load="too_light" aria-pressed="false" onclick="selectIntensityPref('too_light')">Too light</button>
+                    <button type="button" data-workout-load="perfect" aria-pressed="false" onclick="selectIntensityPref('perfect')">Perfect</button>
+                    <button type="button" data-workout-load="too_heavy" aria-pressed="false" onclick="selectIntensityPref('too_heavy')">Too heavy</button>
                 </div>
+                <p class="workout-load-hint" id="rating-load-hint">Choose one to save, or skip this feedback.</p>
             </div>
 
             <!-- Energy Slider -->
@@ -8538,7 +8539,7 @@ if(!window._pbbIsIOSSafari) {
                 <button class="workout-rating-skip" onclick="skipWorkoutRating()">
                     Skip
                 </button>
-                <button class="workout-rating-save" id="save-rating-btn" onclick="saveWorkoutRating()">
+                <button class="workout-rating-save" id="save-rating-btn" disabled onclick="saveWorkoutRating()">
                     Save
                 </button>
             </div>
@@ -12978,7 +12979,7 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20260929-coach-message&cohort_diets=1&video_health=2';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261003-workout-load-buttons&cohort_diets=1&video_health=2';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
@@ -13020,7 +13021,7 @@ if (window._pbbIsIOSSafari) {
         var s = document.createElement('script');
         s.async = false;
         s.dataset.metaTrialLoader = String(attempt);
-        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20260929-coach-message&cohort_diets=1&video_health=2&meta_retry=' + attempt;
+        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261003-workout-load-buttons&cohort_diets=1&video_health=2&meta_retry=' + attempt;
         s.onload = function() {
             if (window._pbbScript5Complete && window._switchAppTabReady && typeof window._switchAppTabReal === 'function') {
                 sessionStorage.removeItem('pbb_meta_script5_recovery_v1');
@@ -13039,7 +13040,7 @@ if (window._pbbIsIOSSafari) {
         document.head.appendChild(s);
     })(0);
 } else {
-document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20260929-coach-message"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261003-workout-load-buttons"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=9-admin-safe-area"></script>
@@ -14147,6 +14148,7 @@ if(!window._pbbIsIOSSafari) {
   }
 
   const steps = [
+    { tab:'movement-tab', sel:'.workout-load-options', fallbackSel:'#today-workout-card', title:'Clear workout feedback', body:'After your workout, choose Too light, Perfect or Too heavy to say how the load felt. Choose one to save, or skip.', fallbackTitle:'Clear workout feedback', fallbackBody:'After your workout, choose Too light, Perfect or Too heavy to say how the load felt. Choose one to save, or skip.' },
     { tab:'learning', sel:'#learning-content', title:'A picture on every lesson page', body:'Every reading page now includes a relevant photo or illustration. Use Previous and Next to move at your own pace, and scroll the page whenever you need more room.' },
     { tab:'profile', sel:'#balance-replay-settings', title:'Help fixing app problems', body:'Balance saves a masked replay automatically so Shannon can investigate app problems. Private text and media are hidden. Replays expire after seven days. You can turn this off in Settings.' },
     { tab:'learning', sel:'#learning-content', title:'Learn how your brain learns', body:'Balance Learn now includes experience, the free-energy principle and how surprising evidence updates predictions. The extra learning now fits within the six-week course. Your completed work stays in place. Open Learn to see the sequence for your course.' },
@@ -17252,6 +17254,7 @@ window.endFeatureTour = function(skipped){
   // First-run onboarding now uses the guided walkthrough only. Keep legacy
   // feature-drop entries dormant so users do not see duplicate spotlight cards.
   allFeatures = [];
+  allFeatures.push({ id:'workout-load-buttons-v1', tab:'movement-tab', sel:'.workout-load-options', fallbackSel:'#today-workout-card', title:'Clear workout feedback', body:'After your workout, choose Too light, Perfect or Too heavy to say how the load felt. Choose one to save, or skip.', fallbackTitle:'Clear workout feedback', fallbackBody:'After your workout, choose Too light, Perfect or Too heavy to say how the load felt. Choose one to save, or skip.' });
   allFeatures.push({ id:'learn-page-photos-20260918', tab:'learning', sel:'#learning-content', title:'A picture on every lesson page', body:'Every reading page now includes a relevant photo or illustration. Use Previous and Next to move at your own pace, and scroll the page whenever you need more room.' });
   allFeatures.push({ id:'settings-your-checkin-v1', tab:'profile', sel:'#settings-your-checkin', title:'Your Check-In', body:'Find your weekly check-in in Settings under Personal setup. It opens Friday to Sunday and also appears in To Do Next on Home when it is due.' });
   allFeatures.push({ id:'learn-six-weeks-expanded-v2', tab:'learning', sel:'#learning-content', title:'Learn how your brain learns', body:'Balance Learn now includes experience, the free-energy principle and how surprising evidence updates predictions. The extra learning now fits within the six-week course. Your completed work stays in place. Open Learn to see the sequence for your course.' });
@@ -19096,7 +19099,7 @@ if (window._pbbIsIOSSafari) {
 }
 </script>
 
-<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=130-replay-settings-card">
+<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=131-workout-load-buttons">
 <link rel="stylesheet" href="css/dashboard/pbb-quiz-theme.css?v=4-page-photos">
 <link rel="stylesheet" href="css/dashboard/pbb-weighin-theme.css?v=1-balance-gold">
 <link rel="stylesheet" href="css/dashboard/pbb-meal-plan.css?v=20260918-compact-3-six-weeks">
@@ -19242,7 +19245,7 @@ if (typeof WORKOUT_LIBRARY !== 'undefined' && typeof WORKOUT_LIBRARY_EXTENDED !=
 <script src="js/dashboard/pbb-exercise-video-backups.js?v=2"></script>
 <script>
 // Script-7 (29KB) - video logic. Defer on iOS to reduce memory pressure.
-var pbbVideoLogicSrc = 'js/dashboard/dashboard-script-7-video_logic.js?v=20260929-coach-message';
+var pbbVideoLogicSrc = 'js/dashboard/dashboard-script-7-video_logic.js?v=20261003-workout-load-buttons';
 if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {

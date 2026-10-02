@@ -2,6 +2,8 @@
 // attribution remains separate; this policy does not grant send permission.
 function buildCoachingConversationPolicy({ reviewer = false } = {}) {
     return `
+WORKOUT FEEDBACK INTERPRETATION: Older workout_ratings without notes JSON feedback_version="workout_load_buttons_v1" are ambiguous slider responses. Their intensity_preference lighter/harder/perfect was inferred from difficulty 4-5/1-2/3 and can include untouched defaults; never say the client requested lighter or harder training from those fields. New versioned load_choice too_heavy means the client selected Too heavy (may prefer lighter); too_light means Too light (may prefer harder); perfect means Perfect. These report experienced load, not an explicit program-change request. New difficulty 1/3/5 is only a compatibility mapping, not a separately answered difficulty slider. overall_feeling duplicates energy_level and is not an independent mood answer. Keep old ratings and provenance visible; use the client's actual words before describing a desired change.
+
 CONVERSATION-LED COACHING ENQUIRIES (Shannon, 30 September 2026):
 Read the complete exchange and all unanswered messages. Answer what the person actually asks first, in Shannon's casual voice, then choose the smallest useful next move from their meaning. Saved qualifier stages, suggested questions, warmth, reply counts and empty goal/blocker fields are advisory notes, never a script or permission gate.
 A new follower who messages about trying online coaching, working with Shannon, getting training help or choosing a coach is a coaching lead even without an ad referral. Preserve organic attribution. A follow, compliment or ordinary social conversation alone does not require a pitch.

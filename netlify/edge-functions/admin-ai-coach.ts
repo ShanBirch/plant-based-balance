@@ -1439,7 +1439,7 @@ export default async function (request: Request, context: Context) {
       : buildGeneralSystemPrompt(analyticsSummary, personalityBlock);
 
     const contents: any[] = [
-      { role: "user", parts: [{ text: `SYSTEM: ${systemPrompt}` }] },
+      { role: "user", parts: [{ text: `SYSTEM: ${systemPrompt}\nWORKOUT FEEDBACK INTERPRETATION: Older workout_ratings without notes JSON feedback_version="workout_load_buttons_v1" are ambiguous slider responses. Their intensity_preference lighter/harder/perfect was inferred from difficulty 4-5/1-2/3 and can include untouched defaults; never say the client requested lighter or harder training from those fields. New versioned load_choice too_heavy means the client selected Too heavy (may prefer lighter); too_light means Too light (may prefer harder); perfect means Perfect. These report experienced load, not an explicit program-change request. New difficulty 1/3/5 is only a compatibility mapping, not a separately answered difficulty slider. overall_feeling duplicates energy_level and is not an independent mood answer. Keep old ratings and provenance visible; use the client's actual words before describing a desired change.` }] },
       { role: "model", parts: [{ text: "Got it. I have your platform context loaded and the live tools (Supabase + GitHub repo) ready. What would you like to know?" }] },
     ];
 
