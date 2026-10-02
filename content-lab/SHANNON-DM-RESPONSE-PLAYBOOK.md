@@ -1,5 +1,9 @@
 # Shannon DM Response Playbook
 
+## Organic follower conversation direction, 3 October 2026
+
+Follower/outreach business chats should naturally move from their exact context toward fitness or nutrition, their own goals, and a consented phone call with Shannon. Rapport supports that outcome; do not wait for an explicit coaching enquiry or keep chatting without purpose. Keep invitations relevant and optional, respect declines, and send the booking card only after consent. Known personal/dating contacts are excluded even when they discuss the gym. Use Shannon's labels/instructions and relationship evidence, never gender or gym interest alone; ambiguous personal intent stays neutral for Shannon. Existing personal/manual holds remain. This supersedes older call-only-as-escalation guidance for organic business conversations. Shared runtime policy: netlify/functions/_lib/coaching-conversation-policy.js.
+
 ## Learn ad flow correction, 15 September 2026
 
 Treat a rapid goal burst such as "I need to lose weight" followed by "15 kilos" as one goal. Acknowledge the stated target in ordinary words, introduce and deliver matched verified client proof, then ask the real-life blocker. A number is not blocker evidence. Do not jump to an abstract "practical fit" pitch or promise that target within the course.
