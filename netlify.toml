@@ -930,6 +930,12 @@
   force = true
 
 [[redirects]]
+  from = "/api/pre-call"
+  to = "/.netlify/functions/pre-call"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/*"
   to = "/login.html"
   status = 200
