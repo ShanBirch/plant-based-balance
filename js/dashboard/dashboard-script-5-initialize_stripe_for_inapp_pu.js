@@ -18014,7 +18014,7 @@ async function saveExerciseNote(textarea) {
 
 function getSetRowHtml(exName, setNum, isTimeBased, prefillData) {
     // prefillData: optional {kg, reps, time} from previous session
-    const prefillKg = prefillData && prefillData.kg && prefillData.kg !== '0' && prefillData.kg !== '' ? prefillData.kg : '';
+    const prefillKg = prefillData?.explicitLoad ? String(prefillData.kg) : (prefillData && prefillData.kg && prefillData.kg !== '0' && prefillData.kg !== '' ? prefillData.kg : '');
     const prefillReps = prefillData && prefillData.reps ? prefillData.reps : '';
     const prefillTime = prefillData && prefillData.time ? prefillData.time : '';
     const hasPrefill = prefillKg || prefillReps || prefillTime;
@@ -21376,6 +21376,12 @@ function getPrescribedSetPrefill(exercise, isTimeBased) {
         prefill.preferPrescription = true;
     }
     if (exercise.prescriptionClearsHistoricalLoad === true) prefill.clearHistoricalLoad = true;
+    const load = exercise.prescribedWeightKg;
+    if (load !== undefined && load !== null && load !== '' && Number.isFinite(Number(load)) && Number(load) >= 0) {
+        prefill.kg = String(Number(load));
+        prefill.explicitLoad = true;
+        prefill.preferPrescription = true;
+    }
     return prefill;
 }
 
@@ -21384,7 +21390,8 @@ function mergeSetPrefill(previousSet, prescribedSet) {
     // An explicit coach revision replaces targets, while retaining useful load history.
     if (prescribedSet?.preferPrescription) {
         return {
-            kg: prescribedSet.clearHistoricalLoad ? '' : (previousSet?.kg || ''),
+            kg: prescribedSet.explicitLoad ? prescribedSet.kg : (prescribedSet.clearHistoricalLoad ? '' : (previousSet?.kg || '')),
+            explicitLoad: prescribedSet.explicitLoad === true,
             reps: prescribedSet.reps || '',
             time: prescribedSet.time || ''
         };
