@@ -884,7 +884,10 @@ async function createBooking(req: Request): Promise<Response> {
             await supabaseRequest(`balance_bookings?id=eq.${encodeURIComponent(String(inserted.id || ""))}`, {
                 method: "PATCH",
                 headers: { Prefer: "return=minimal" },
-                body: JSON.stringify({ confirmation_email_sent_at: new Date().toISOString() }),
+                body: JSON.stringify({ confirmation_email_sent_at: new Date().toISOString(), metadata: {
+                    ...(inserted.metadata as Record<string, unknown> || {}),
+                    pre_call_form_email_sent_at: new Date().toISOString(),
+                } }),
             });
         }
     } catch (error) {
