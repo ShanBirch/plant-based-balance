@@ -9,6 +9,7 @@ const OWNERS = new Set([
     'follower_operator',
     'feed_operator',
     'discovery_operator',
+    'personal_operator',
     'onboarding',
     'manual',
 ]);

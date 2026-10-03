@@ -8233,6 +8233,9 @@ exports.handler = async (event) => {
         || thread.custom_data?.bot_account === 'littlecompanionportraits') {
         return { statusCode: 200, body: JSON.stringify({ skipped: 'portrait_assistant_owns_account' }) };
     }
+    if (thread.custom_data?.personal_outreach === true) {
+        return { statusCode: 200, body: JSON.stringify({ skipped: 'personal_contact_manual_only', thread_id: thread.id }) };
+    }
     if (operatorOwnsDm(thread)) {
         try {
             const delegated = await delegateInbound(thread, supabaseQuery);
