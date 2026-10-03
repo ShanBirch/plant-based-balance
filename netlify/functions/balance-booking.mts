@@ -225,6 +225,19 @@ function localizedConfirmationEmailContent({ name, prettyDate, goal, callType, m
     };
 }
 
+export function preCallConfirmationEmailContent(details: Parameters<typeof localizedConfirmationEmailContent>[0]) {
+    const content = localizedConfirmationEmailContent(details);
+    const menopauseContext = /\b(?:peri[- ]?menopaus\w*|post[- ]?menopaus\w*|menopaus\w*|HRT|hormone replacement therapy)\b/i.test(details.goal);
+    const formUrl = `https://plantbased-balance.org/${menopauseContext ? 'menopause-pre-call' : 'pre-call'}.html`;
+    const alternate = menopauseContext ? '' : '<p style="color:#ded8cc;font-size:14px;line-height:1.55">If you’d prefer to focus on menopause-related changes, you can use <a href="https://plantbased-balance.org/menopause-pre-call.html" style="color:#f5d98a">the menopause form instead</a>. You only need to fill in one.</p>';
+    const invitation = `<p style="margin:24px 0 0;color:#ded8cc;font-size:16px;line-height:1.65">Before our call, could you please fill in this quick form? It’ll help me prepare and focus on what matters most to you. Brief answers are fine, and you can skip anything you’d rather discuss on the call.</p><p><a href="${formUrl}" style="color:#f5d98a;font-weight:800">Fill in your pre-call form</a></p>${alternate}<p style="color:#ded8cc">Thanks so much!</p>`;
+    return {
+        ...content,
+        html: content.html.replace('</td></tr></table>', `${invitation}</td></tr></table>`),
+        text: `${content.text}\n\nBefore our call, could you please fill in this quick form? ${formUrl}\n\nBrief answers are fine, and you can skip anything you’d rather discuss on the call.${menopauseContext ? '' : '\nIf you’d prefer to focus on menopause-related changes, use https://plantbased-balance.org/menopause-pre-call.html instead. You only need to fill in one.'}\n\nThanks so much!`,
+    };
+}
+
 function safeHtml(value: unknown): string {
     return String(value || "")
         .replace(/&/g, "&amp;")
@@ -752,7 +765,7 @@ async function sendConfirmationEmail(settings: BookingSettings, booking: Record<
             subject: `You’re booked in with Balance, ${prettyDate}`,
             html: `<!doctype html><html><body style="margin:0;background:#f6f3ec;padding:32px 16px;font-family:Inter,Arial,sans-serif;color:#171717"><table role="presentation" style="width:100%;max-width:620px;margin:0 auto;background:#111111;border-radius:24px;overflow:hidden"><tr><td style="padding:34px 32px 18px;text-align:center"><img src="${publicOrigin()}/balance_logo_transparent.png" width="64" height="64" alt="Balance" style="display:inline-block;border-radius:16px"><p style="margin:18px 0 0;color:#f5d98a;font-size:12px;font-weight:800;letter-spacing:1.7px;text-transform:uppercase">Call confirmed</p><h1 style="margin:10px 0 0;color:#fff;font-size:30px;line-height:1.1">You’re in, ${safeHtml(name)}.</h1></td></tr><tr><td style="padding:16px 32px 34px"><div style="background:#f5d98a;border-radius:18px;padding:22px;color:#151515"><p style="margin:0 0 7px;font-size:12px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase">Your Balance call</p><p style="margin:0;font-size:21px;font-weight:800;line-height:1.3">${safeHtml(prettyDate)}<br><span style="font-size:15px;font-weight:600">Brisbane time</span></p></div><p style="margin:24px 0 0;color:#ded8cc;font-size:16px;line-height:1.65">I’m looking forward to hearing where you’re at and what would make things feel easier from here.</p>${goal ? `<p style="margin:18px 0 0;padding:16px;border:1px solid #36332e;border-radius:14px;color:#ded8cc;font-size:14px;line-height:1.55"><strong style="display:block;margin-bottom:5px;color:#f5d98a">You want to cover</strong>${safeHtml(goal)}</p>` : ""}<p style="margin:24px 0 0;color:#aaa396;font-size:13px;line-height:1.55">A calendar invitation is on its way too. If anything changes, reply to this email and we’ll sort it.</p><p style="margin:24px 0 0;color:#f5d98a;font-size:15px;font-weight:800">Shannon<br><span style="color:#aaa396;font-size:13px;font-weight:500">Balance</span></p></td></tr></table></body></html>`,
             text: `You’re booked in with Balance, ${name}.\n\nYour call: ${prettyDate} (Brisbane time).\n\n${goal ? `You want to cover: ${goal}\n\n` : ""}A calendar invitation is on its way too. If anything changes, reply to this email and we’ll sort it.\n\nShannon, Balance`,
-            ...localizedConfirmationEmailContent({ name, prettyDate, goal, callType, meetingUrl, timezone }),
+            ...preCallConfirmationEmailContent({ name, prettyDate, goal, callType, meetingUrl, timezone }),
         }),
     });
     return response.ok;
