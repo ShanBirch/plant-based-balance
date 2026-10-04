@@ -14607,3 +14607,21 @@ html:not([data-pbb-theme="light"]) #coach-chat-modal > div > div:first-child > d
         padding-bottom: max(20px, env(safe-area-inset-bottom, 0px));
     }
 }
+
+/* Coach advice uses paired workout surfaces, avoiding legacy gradient overrides. */
+:is(#view-active-workout, #view-active-workout-stub) .exercise-coach-cue {
+    margin-top: 10px; padding: 10px 12px; border-radius: 12px;
+    border: 1px solid var(--pbb-luxe-gold, #d8b25e) !important;
+    background: #24211b !important; color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+    box-shadow: none !important; overflow-wrap: anywhere;
+}
+:is(#view-active-workout, #view-active-workout-stub) .exercise-coach-cue :is(.exercise-coach-cue-label, .exercise-coach-cue-text) {
+    color: inherit !important; -webkit-text-fill-color: inherit !important;
+}
+.exercise-coach-cue-label { font-size: .62rem; font-weight: 900; letter-spacing: .5px; text-transform: uppercase; margin-bottom: 4px; }
+.exercise-coach-cue-text { font-size: .82rem; line-height: 1.35; font-weight: 600; }
+html[data-pbb-theme="light"] :is(#view-active-workout, #view-active-workout-stub) .exercise-coach-cue {
+    background: var(--pbb-luxe-cream, #fffaf2) !important;
+    color: #24211b !important; -webkit-text-fill-color: #24211b !important;
+}

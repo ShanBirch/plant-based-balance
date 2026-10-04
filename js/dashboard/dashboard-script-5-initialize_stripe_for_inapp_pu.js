@@ -21340,16 +21340,9 @@ function escapeHtml(text) {
 
 function getCoachCueHtml(exercise) {
     const cue = exercise?.coachCue || exercise?.coach_cue || exercise?.cue || exercise?.focus || '';
-    if (!cue) return '';
-
-    return `
-        <div class="exercise-coach-cue" style="margin-top:10px; padding:10px 12px; border-radius:12px; border:1px solid rgba(124,58,237,0.2); background:linear-gradient(135deg, rgba(124,58,237,0.08), rgba(20,184,166,0.08));">
-            <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
-                <span style="font-size:0.62rem; font-weight:900; letter-spacing:0.5px; text-transform:uppercase; color:#6d28d9;">Coach cue</span>
-            </div>
-            <div style="font-size:0.82rem; line-height:1.35; color:var(--text-main); font-weight:600;">${escapeHtml(cue)}</div>
-        </div>
-    `;
+    const normalize = value => String(value || '').replace(/\s+/g, ' ').trim().toLowerCase();
+    if (!normalize(cue) || normalize(cue) === normalize(exercise?.desc || exercise?.description)) return '';
+    return `<div class="exercise-coach-cue"><div class="exercise-coach-cue-label">Coach cue</div><div class="exercise-coach-cue-text">${escapeHtml(cue)}</div></div>`;
 }
 
 function isTimeBasedExercise(exercise) {
