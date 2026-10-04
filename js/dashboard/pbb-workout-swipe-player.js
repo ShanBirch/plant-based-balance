@@ -295,7 +295,7 @@
             }
             #view-active-workout.workout-focus-pilot #workout-player-topbar {
                 min-height: 68px;
-                padding: calc(9px + env(safe-area-inset-top, 0px)) 14px 9px !important;
+                padding: calc(9px + max(42px, env(safe-area-inset-top, 0px))) 14px 9px !important;
                 display: grid !important;
                 grid-template-columns: 54px minmax(0, 1fr) 48px;
                 gap: 8px;
@@ -305,6 +305,7 @@
                 -webkit-text-fill-color: var(--workout-focus-text) !important;
                 backdrop-filter: blur(18px);
             }
+            html.pbb-admin-view-active #view-active-workout.workout-focus-pilot #workout-player-topbar { padding-top: 9px !important; }
             #view-active-workout.workout-focus-pilot #workout-cancel-action {
                 min-height: 44px;
                 padding: 8px 4px !important;
@@ -431,11 +432,19 @@
             #view-active-workout.workout-focus-pilot .workout-swipe-prescription,
             #view-active-workout.workout-focus-pilot .exercise-note-section { display: none !important; }
             #view-active-workout.workout-focus-pilot .workout-set-row {
-                grid-template-columns: 30px minmax(44px, 1fr) minmax(44px, 1fr) minmax(44px, 1fr) 30px 30px 34px !important;
+                grid-template-columns: 22px minmax(0, 1fr) minmax(0, 1fr) 44px 24px 24px 30px !important;
                 gap: 5px !important;
                 padding: 9px 10px !important;
                 border-color: var(--workout-focus-border) !important;
             }
+            #view-active-workout.workout-focus-pilot .sets-list-container { overflow-x: auto; }
+            #view-active-workout.workout-focus-pilot .workout-set-row { min-width: 270px; }
+            #view-active-workout.workout-focus-pilot .workout-rest-period { font-size: .75rem; text-align: center; color: var(--workout-focus-text); -webkit-text-fill-color: var(--workout-focus-text); }
+            #view-active-workout.workout-focus-pilot .exercise-logger-card:not(.workout-rest-timed) .workout-set-row > :nth-child(2),
+            #view-active-workout.workout-focus-pilot .workout-rest-timed .workout-set-row > :nth-child(3) { display: none; }
+            #view-active-workout.workout-focus-pilot .exercise-logger-card > div:has(> .workout-rest-heading) { grid-template-columns:22px minmax(0,1fr) minmax(0,1fr) 44px 24px 24px 30px !important; gap:5px !important; padding:10px 10px 0 !important; }
+            #view-active-workout.workout-focus-pilot .exercise-logger-card:not(.workout-rest-timed) > div:has(> .workout-rest-heading) > :nth-child(2),
+            #view-active-workout.workout-focus-pilot .workout-rest-timed > div:has(> .workout-rest-heading) > :nth-child(3) { display:none; }
             #view-active-workout.workout-focus-pilot .workout-set-row input,
             #view-active-workout.workout-focus-pilot .exercise-note-input {
                 min-width: 0;
@@ -891,11 +900,15 @@
         if (!card) return;
         const wrappers = Array.from(card.querySelectorAll('.set-wrapper'));
         const nextWrapper = wrappers.find((wrapper) => !wrapper.classList.contains('workout-focus-set-complete'));
-        if (nextWrapper) toggleSetDone(nextWrapper, true);
-        if (typeof root.startRestTimer === 'function') root.startRestTimer(true);
+        if (!nextWrapper) return;
+        toggleSetDone(nextWrapper, true);
+        if (typeof root.startRestTimer === 'function') root.startRestTimer(true, root.getWorkoutRestSeconds(card));
     }
 
     function ensureFocusCard(card, index, cards) {
+        const seconds = root.getWorkoutRestSeconds(card);
+        card.querySelectorAll('.workout-rest-period').forEach((label) => { label.textContent = seconds + 's'; });
+        card.classList.toggle('workout-rest-timed', card.dataset.exerciseName ? /plank|hold|stretch/i.test(card.dataset.exerciseName) : false);
         card.querySelectorAll('.set-wrapper').forEach((wrapper) => {
             const row = wrapper.querySelector('.workout-set-row');
             if (!row || row.querySelector('.workout-focus-set-done')) return;
@@ -907,7 +920,7 @@
             button.setAttribute('aria-pressed', 'false');
             button.addEventListener('click', () => {
                 const completed = toggleSetDone(wrapper);
-                if (completed && typeof root.startRestTimer === 'function') root.startRestTimer(true);
+                if (completed && typeof root.startRestTimer === 'function') root.startRestTimer(true, root.getWorkoutRestSeconds(card));
             });
             row.appendChild(button);
         });

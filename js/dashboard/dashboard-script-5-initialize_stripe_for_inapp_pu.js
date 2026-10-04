@@ -16939,6 +16939,7 @@ async function startActiveWorkout(id, forcedDayIndex = null) {
         const card = document.createElement('div');
         card.className = 'exercise-logger-card';
         card.setAttribute('data-exercise-name', ex.name);
+        card.dataset.restSeconds = String(getExerciseRestSeconds(ex));
         card.setAttribute('data-is-user-added', ex.isUserAdded || false);
         card.style.cssText = "background:white; border-radius:24px; box-shadow:0 10px 30px rgba(0,0,0,0.05); margin-bottom:25px; overflow:hidden; border:1px solid #f1f5f9;";
 
@@ -17003,8 +17004,8 @@ async function startActiveWorkout(id, forcedDayIndex = null) {
                 </div>
             </div>
 
-            <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr 32px 32px; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
-                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div></div><div></div>
+            <div style="display:grid; grid-template-columns:30px 1fr 1fr 1fr 52px 28px 28px; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
+                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div class="workout-rest-heading">Rest period</div><div></div><div></div>
             </div>
 
             <div class="sets-list-container">
@@ -18012,6 +18013,18 @@ async function saveExerciseNote(textarea) {
 // END EXERCISE NOTES SYSTEM
 // ===========================================
 
+function getExerciseRestSeconds(exercise) {
+    const explicit = Number(exercise?.restSeconds ?? exercise?.rest_seconds);
+    if (Number.isFinite(explicit) && explicit > 0) return Math.min(600, Math.round(explicit));
+    const name = String(typeof exercise === 'string' ? exercise : exercise?.name || '');
+    return /squat|deadlift|romanian|bench press|chest press|overhead press|shoulder press|push.?up|row|pull.?up|chin.?up|lunge|hip thrust|leg press|step.?up/i.test(name) ? 90 : 60;
+}
+
+function getWorkoutRestSeconds(card) {
+    const prescribed = Number(card?.dataset?.restSeconds);
+    return prescribed > 0 ? prescribed : getExerciseRestSeconds(card?.dataset?.exerciseName || '');
+}
+
 function getSetRowHtml(exName, setNum, isTimeBased, prefillData) {
     // prefillData: optional {kg, reps, time} from previous session
     const prefillKg = prefillData?.explicitLoad ? String(prefillData.kg) : (prefillData && prefillData.kg && prefillData.kg !== '0' && prefillData.kg !== '' ? prefillData.kg : '');
@@ -18020,7 +18033,7 @@ function getSetRowHtml(exName, setNum, isTimeBased, prefillData) {
     const hasPrefill = prefillKg || prefillReps || prefillTime;
     return `
         <div class="set-wrapper"${hasPrefill ? ' data-prefilled="true"' : ''}>
-            <div class="workout-set-row" style="display:grid; grid-template-columns:40px 1fr 1fr 1fr 32px 32px; gap:8px; align-items:center; padding:10px 15px; border-top:1px solid #f8fafc;">
+            <div class="workout-set-row" style="display:grid; grid-template-columns:30px 1fr 1fr 1fr 52px 28px 28px; gap:8px; align-items:center; padding:10px 15px; border-top:1px solid #f8fafc;">
                 <div class="set-number" style="font-weight:800; color:#94a3b8; font-size:0.85rem; text-align:center;">${setNum}</div>
                 <div style="position:relative;">
                     <input type="text" class="input-time" placeholder="${isTimeBased ? 'sec' : '-'}" value="${prefillTime}" style="width:100%; border:none; background:#f8fafc; border-radius:8px; padding:10px 5px; text-align:center; font-weight:700; color:var(--text-main); font-size:0.9rem;">
@@ -18028,6 +18041,7 @@ function getSetRowHtml(exName, setNum, isTimeBased, prefillData) {
                 </div>
                 <input type="text" class="input-reps" placeholder="Reps" value="${prefillReps}" style="width:100%; border:none; background:#f8fafc; border-radius:8px; padding:10px 5px; text-align:center; font-weight:700; color:var(--text-main); font-size:0.9rem;">
                 <input type="text" class="input-kg" placeholder="Kg" value="${prefillKg}" style="width:100%; border:none; background:#f8fafc; border-radius:8px; padding:10px 5px; text-align:center; font-weight:700; color:var(--text-main); font-size:0.9rem;">
+                <span class="workout-rest-period">${getExerciseRestSeconds(exName)}s</span>
                 <button class="drop-set-toggle" onclick="toggleDropSet(this)" title="Toggle Drop Set">DS</button>
                 <button class="delete-set-btn" onclick="deleteSetRow(this)" title="Delete Set" style="width:32px; height:32px; border:none; background:transparent; color:#ef4444; cursor:pointer; border-radius:8px; display:flex; align-items:center; justify-content:center; transition:background 0.2s;">
                     <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
@@ -18612,6 +18626,8 @@ function setupWorkoutInputListeners() {
 let _restTimerInterval = null;
 let _restTimerSecondsLeft = 0;
 let _restTimerTotal = 0;
+let _restTimerDeadline = 0;
+let _restTimerHideTimeout = null;
 
 function _getRestTimerDuration() {
     const val = localStorage.getItem('pbb_rest_timer_duration');
@@ -18619,23 +18635,26 @@ function _getRestTimerDuration() {
     return parseInt(val) || 90;
 }
 
-function startRestTimer(manual) {
-    let duration = _getRestTimerDuration();
+function startRestTimer(manual, exerciseDuration) {
+    const activeCard = document.querySelector('.exercise-logger-card.workout-swipe-active');
+    let duration = Number(exerciseDuration) || (activeCard ? getWorkoutRestSeconds(activeCard) : _getRestTimerDuration());
     if (!duration) {
         if (!manual) return; // timer is off and not a manual press
         duration = 90; // manual press with "off" preset → fall back to 90s
     }
 
+    clearTimeout(_restTimerHideTimeout);
     // Cancel any existing countdown and restart fresh
     _clearRestTimerInterval();
     _restTimerSecondsLeft = duration;
     _restTimerTotal = duration;
+    _restTimerDeadline = Date.now() + duration * 1000;
 
     _showRestTimerOverlay();
     _updateRestTimerDisplay();
 
     _restTimerInterval = setInterval(() => {
-        _restTimerSecondsLeft--;
+        _restTimerSecondsLeft = Math.max(0, Math.ceil((_restTimerDeadline - Date.now()) / 1000));
         _updateRestTimerDisplay();
         if (_restTimerSecondsLeft <= 0) {
             _clearRestTimerInterval();
@@ -18684,7 +18703,7 @@ function _hideRestTimerOverlay() {
     // Restore normal bottom padding
     var wrapper = document.getElementById('workout-content-wrapper');
     if (wrapper) wrapper.style.paddingBottom = '120px';
-    setTimeout(() => { overlay.style.display = 'none'; }, 350);
+    _restTimerHideTimeout = setTimeout(() => { overlay.style.display = 'none'; }, 350);
     // Re-show the floating Start Rest button
     var fab = document.getElementById('start-rest-timer-btn');
     if (fab) fab.style.display = 'flex';
@@ -18709,7 +18728,7 @@ function _onRestTimerDone() {
     if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
     const display = document.getElementById('rest-timer-display');
     if (display) { display.textContent = 'GO!'; display.style.color = '#4ade80'; }
-    setTimeout(() => _hideRestTimerOverlay(), 1500);
+    _restTimerHideTimeout = setTimeout(() => _hideRestTimerOverlay(), 1500);
 }
 
 function setRestTimerPreset(seconds) {
@@ -18718,13 +18737,13 @@ function setRestTimerPreset(seconds) {
         stopRestTimer();
     } else if (_restTimerInterval) {
         // Restart with new duration if currently running
-        startRestTimer();
+        startRestTimer(true, seconds);
     }
     _syncRestPresetButtons();
 }
 
 function _syncRestPresetButtons() {
-    const val = localStorage.getItem('pbb_rest_timer_duration') || '90';
+    const val = _restTimerInterval || _restTimerSecondsLeft > 0 ? String(_restTimerTotal) : (localStorage.getItem('pbb_rest_timer_duration') || '90');
     const map = { 'rest-preset-off': 'off', 'rest-preset-30': '30', 'rest-preset-60': '60', 'rest-preset-90': '90' };
     Object.entries(map).forEach(([id, preset]) => {
         const btn = document.getElementById(id);
@@ -18957,8 +18976,8 @@ async function continueRecoveredWorkout() {
             </div>
             ${getExerciseNotesHtml(exerciseName)}
             ${getVolumeDisplayHtml(exerciseName)}
-            <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr 32px 32px; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
-                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div></div><div></div>
+            <div style="display:grid; grid-template-columns:30px 1fr 1fr 1fr 52px 28px 28px; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
+                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div class="workout-rest-heading">Rest period</div><div></div><div></div>
             </div>
             <div class="sets-list-container">${setsHtml}</div>
             <div style="padding:15px; border-top:1px solid #f8fafc;">
@@ -22830,6 +22849,7 @@ function renderWorkoutExercises(exercises) {
         const card = document.createElement('div');
         card.className = 'exercise-logger-card';
         card.setAttribute('data-exercise-name', ex.name);
+        card.dataset.restSeconds = String(getExerciseRestSeconds(ex));
         card.setAttribute('data-is-user-added', ex.isUserAdded || false);
         card.style.cssText = 'background:white; border-radius:24px; box-shadow:0 10px 30px rgba(0,0,0,0.05); margin-bottom:25px; overflow:hidden; border:1px solid #f1f5f9;';
 
@@ -22878,8 +22898,8 @@ function renderWorkoutExercises(exercises) {
 
             ${getVolumeDisplayHtml(ex.name)}
 
-            <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr 32px 32px; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
-                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div></div><div></div>
+            <div style="display:grid; grid-template-columns:30px 1fr 1fr 1fr 52px 28px 28px; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
+                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div class="workout-rest-heading">Rest period</div><div></div><div></div>
             </div>
 
             <div class="sets-list-container">
@@ -23321,7 +23341,8 @@ function addExerciseWithSets(exerciseName, sets) {
                     <input type="text" class="input-time" placeholder="-" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
                     <input type="text" class="input-reps" placeholder="Reps" value="${set.reps || ''}" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
                     <input type="text" class="input-kg" placeholder="Kg" value="${set.kg || ''}" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
-                    <button class="drop-set-toggle" onclick="toggleDropSet(this)" title="Toggle Drop Set">DS</button>
+                    <span class="workout-rest-period">${getExerciseRestSeconds(exName)}s</span>
+                <button class="drop-set-toggle" onclick="toggleDropSet(this)" title="Toggle Drop Set">DS</button>
                     <button class="delete-set-btn" onclick="deleteSetRow(this)" title="Delete Set" style="width:32px; height:32px; border:none; background:transparent; color:#ef4444; cursor:pointer; border-radius:8px; display:flex; align-items:center; justify-content:center; transition:background 0.2s;"><svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
                 </div>
                 <div class="drop-set-container">
@@ -23383,8 +23404,8 @@ function addExerciseWithSets(exerciseName, sets) {
                 </div>
             </div>
 
-            <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr 32px 32px; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
-                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div></div><div></div>
+            <div style="display:grid; grid-template-columns:30px 1fr 1fr 1fr 52px 28px 28px; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
+                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div class="workout-rest-heading">Rest period</div><div></div><div></div>
             </div>
 
             <div class="sets-list-container">
@@ -24097,8 +24118,8 @@ function addExerciseToUI(exercise) {
                 </div>
             </div>
 
-            <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr 32px 32px; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
-                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div></div><div></div>
+            <div style="display:grid; grid-template-columns:30px 1fr 1fr 1fr 52px 28px 28px; gap:8px; padding:10px 15px 0 15px; font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; text-align:center;">
+                <div>Set</div><div>Time</div><div>Reps</div><div>Kg</div><div class="workout-rest-heading">Rest period</div><div></div><div></div>
             </div>
 
             <div class="sets-list-container">
@@ -24116,7 +24137,8 @@ function addExerciseToUI(exercise) {
                                 <input type="text" class="input-time" placeholder="-" data-exercise="${exercise.name}" data-set="${setIdx + 1}" data-field="time" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
                                 <input type="text" class="input-reps" placeholder="Reps" value="${prefillReps}" data-exercise="${exercise.name}" data-set="${setIdx + 1}" data-field="reps" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
                                 <input type="text" class="input-kg" placeholder="Kg" value="${prefillKg}" data-exercise="${exercise.name}" data-set="${setIdx + 1}" data-field="weight" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
-                                <button class="drop-set-toggle" onclick="toggleDropSet(this)" title="Toggle Drop Set">DS</button>
+                                <span class="workout-rest-period">${getExerciseRestSeconds(exName)}s</span>
+                <button class="drop-set-toggle" onclick="toggleDropSet(this)" title="Toggle Drop Set">DS</button>
                                 <button class="delete-set-btn" onclick="deleteSetRow(this)" title="Delete Set" style="width:32px; height:32px; border:none; background:transparent; color:#ef4444; cursor:pointer; border-radius:8px; display:flex; align-items:center; justify-content:center; transition:background 0.2s;"><svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
                             </div>
                             <div class="drop-set-container">

@@ -12979,7 +12979,7 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261005-coach-cue&cohort_diets=1&video_health=2';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261005-exercise-rest&cohort_diets=1&video_health=2';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
@@ -13021,7 +13021,7 @@ if (window._pbbIsIOSSafari) {
         var s = document.createElement('script');
         s.async = false;
         s.dataset.metaTrialLoader = String(attempt);
-        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261005-coach-cue&cohort_diets=1&video_health=2&meta_retry=' + attempt;
+        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261005-exercise-rest&cohort_diets=1&video_health=2&meta_retry=' + attempt;
         s.onload = function() {
             if (window._pbbScript5Complete && window._switchAppTabReady && typeof window._switchAppTabReal === 'function') {
                 sessionStorage.removeItem('pbb_meta_script5_recovery_v1');
@@ -13040,10 +13040,10 @@ if (window._pbbIsIOSSafari) {
         document.head.appendChild(s);
     })(0);
 } else {
-document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261005-coach-cue"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261005-exercise-rest"><\/script>');
 }
 </script>
-<script src="js/dashboard/pbb-workout-swipe-player.js?v=9-admin-safe-area"></script>
+<script src="js/dashboard/pbb-workout-swipe-player.js?v=10-exercise-rest"></script>
 <script src="js/dashboard/pbb-onboarding-test-navigator.js?v=7-hidden-phone-safe"></script>
 
 <!-- Image Modal HTML -->
@@ -14148,6 +14148,7 @@ if(!window._pbbIsIOSSafari) {
   }
 
   const steps = [
+    { tab:'movement-tab', sel:'#today-workout-card', title:'Rest between your sets', body:'Your workout shows Rest period after Kg: 90 seconds for compound lifts and 60 seconds for accessories, unless your coach sets another duration. Tap Complete set & start rest after entering your results to open the countdown.' },
     { tab:'movement-tab', sel:'.workout-load-options', fallbackSel:'#today-workout-card', title:'Clear workout feedback', body:'After your workout, choose Too light, Perfect or Too heavy to say how the load felt. Choose one to save, or skip.', fallbackTitle:'Clear workout feedback', fallbackBody:'After your workout, choose Too light, Perfect or Too heavy to say how the load felt. Choose one to save, or skip.' },
     { tab:'learning', sel:'#learning-content', title:'A picture on every lesson page', body:'Every reading page now includes a relevant photo or illustration. Use Previous and Next to move at your own pace, and scroll the page whenever you need more room.' },
     { tab:'profile', sel:'#balance-replay-settings', title:'Help fixing app problems', body:'Balance saves a masked replay automatically so Shannon can investigate app problems. Private text and media are hidden. Replays expire after seven days. You can turn this off in Settings.' },
@@ -17254,6 +17255,7 @@ window.endFeatureTour = function(skipped){
   // First-run onboarding now uses the guided walkthrough only. Keep legacy
   // feature-drop entries dormant so users do not see duplicate spotlight cards.
   allFeatures = [];
+  allFeatures.push({ id:'exercise-rest-period-v1', tab:'movement-tab', sel:'#today-workout-card', title:'Rest between your sets', body:'Your workout shows Rest period after Kg: 90 seconds for compound lifts and 60 seconds for accessories, unless your coach sets another duration. Tap Complete set & start rest after entering your results to open the countdown.' });
   allFeatures.push({ id:'workout-load-buttons-v1', tab:'movement-tab', sel:'.workout-load-options', fallbackSel:'#today-workout-card', title:'Clear workout feedback', body:'After your workout, choose Too light, Perfect or Too heavy to say how the load felt. Choose one to save, or skip.', fallbackTitle:'Clear workout feedback', fallbackBody:'After your workout, choose Too light, Perfect or Too heavy to say how the load felt. Choose one to save, or skip.' });
   allFeatures.push({ id:'learn-page-photos-20260918', tab:'learning', sel:'#learning-content', title:'A picture on every lesson page', body:'Every reading page now includes a relevant photo or illustration. Use Previous and Next to move at your own pace, and scroll the page whenever you need more room.' });
   allFeatures.push({ id:'settings-your-checkin-v1', tab:'profile', sel:'#settings-your-checkin', title:'Your Check-In', body:'Find your weekly check-in in Settings under Personal setup. It opens Friday to Sunday and also appears in To Do Next on Home when it is due.' });
@@ -19099,7 +19101,7 @@ if (window._pbbIsIOSSafari) {
 }
 </script>
 
-<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=133-coach-cue">
+<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=134-exercise-rest">
 <link rel="stylesheet" href="css/dashboard/pbb-quiz-theme.css?v=4-page-photos">
 <link rel="stylesheet" href="css/dashboard/pbb-weighin-theme.css?v=1-balance-gold">
 <link rel="stylesheet" href="css/dashboard/pbb-meal-plan.css?v=20260918-compact-3-six-weeks">
@@ -19245,7 +19247,7 @@ if (typeof WORKOUT_LIBRARY !== 'undefined' && typeof WORKOUT_LIBRARY_EXTENDED !=
 <script src="js/dashboard/pbb-exercise-video-backups.js?v=2"></script>
 <script>
 // Script-7 (29KB) - video logic. Defer on iOS to reduce memory pressure.
-var pbbVideoLogicSrc = 'js/dashboard/dashboard-script-7-video_logic.js?v=20261005-coach-cue';
+var pbbVideoLogicSrc = 'js/dashboard/dashboard-script-7-video_logic.js?v=20261005-exercise-rest';
 if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {

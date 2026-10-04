@@ -14625,3 +14625,8 @@ html[data-pbb-theme="light"] :is(#view-active-workout, #view-active-workout-stub
     background: #fffaf2 !important;
     color: #24211b !important; -webkit-text-fill-color: #24211b !important;
 }
+
+/* Rest sheet remains reachable in short phone and edge-to-edge viewports. */
+#rest-timer-overlay { box-sizing: border-box; padding-bottom: max(20px, env(safe-area-inset-bottom, 0px)) !important; }
+#rest-timer-card { box-sizing: border-box; max-height: calc(100dvh - max(42px, env(safe-area-inset-top, 0px)) - max(20px, env(safe-area-inset-bottom, 0px)) - var(--admin-view-banner-offset, 0px)); overflow-y:auto; overscroll-behavior:contain; }
+.workout-rest-period { color:var(--text-main); -webkit-text-fill-color:var(--text-main); font-weight:700; text-align:center; font-size:.8rem; }
