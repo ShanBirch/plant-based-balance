@@ -449,7 +449,7 @@
             #view-active-workout.workout-focus-pilot .workout-set-row > .drop-set-toggle,
             #view-active-workout.workout-focus-pilot .workout-set-row > .delete-set-btn { display:none !important; }
             #view-active-workout.workout-focus-pilot .workout-set-row > .input-reps,
-            #view-active-workout.workout-focus-pilot .workout-set-row > .input-kg { max-width:90px; justify-self:center; }
+            #view-active-workout.workout-focus-pilot .workout-set-row > .input-kg { width:100%; min-width:0; max-width:none; justify-self:stretch; }
             #view-active-workout.workout-focus-pilot .workout-set-options { width:44px; height:44px; border:1px solid var(--workout-focus-border); border-radius:10px; background:var(--workout-focus-surface); color:var(--workout-focus-text); -webkit-text-fill-color:var(--workout-focus-text); font-size:1.1rem; cursor:pointer; }
             #view-active-workout.workout-focus-pilot .workout-set-options[aria-expanded="true"] { background:var(--workout-focus-gold-soft); }
             #view-active-workout.workout-focus-pilot .workout-set-options-menu { margin:0 14px 10px auto; width:min(210px, calc(100% - 28px)); padding:6px; border:1px solid var(--workout-focus-border); border-radius:12px; background:var(--workout-focus-surface); color:var(--workout-focus-text); box-shadow:0 6px 16px rgba(0,0,0,.12); }
