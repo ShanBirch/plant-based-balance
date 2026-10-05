@@ -13043,7 +13043,7 @@ if (window._pbbIsIOSSafari) {
 document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261005-exercise-rest"><\/script>');
 }
 </script>
-<script src="js/dashboard/pbb-workout-swipe-player.js?v=10-exercise-rest"></script>
+<script src="js/dashboard/pbb-workout-swipe-player.js?v=11-rest-start-button"></script>
 <script src="js/dashboard/pbb-onboarding-test-navigator.js?v=7-hidden-phone-safe"></script>
 
 <!-- Image Modal HTML -->
@@ -14148,7 +14148,7 @@ if(!window._pbbIsIOSSafari) {
   }
 
   const steps = [
-    { tab:'movement-tab', sel:'#today-workout-card', title:'Rest between your sets', body:'Your workout shows Rest period after Kg: 90 seconds for compound lifts and 60 seconds for accessories, unless your coach sets another duration. Tap Complete set & start rest after entering your results to open the countdown.' },
+    { tab:'movement-tab', sel:'#today-workout-card', title:'Rest between your sets', body:'Your workout shows Rest period after Kg: 90 seconds for compound lifts and 60 seconds for accessories, unless your coach sets another duration. Enter your results, then tap Start in the Rest period column to complete that set and open its countdown.' },
     { tab:'movement-tab', sel:'.workout-load-options', fallbackSel:'#today-workout-card', title:'Clear workout feedback', body:'After your workout, choose Too light, Perfect or Too heavy to say how the load felt. Choose one to save, or skip.', fallbackTitle:'Clear workout feedback', fallbackBody:'After your workout, choose Too light, Perfect or Too heavy to say how the load felt. Choose one to save, or skip.' },
     { tab:'learning', sel:'#learning-content', title:'A picture on every lesson page', body:'Every reading page now includes a relevant photo or illustration. Use Previous and Next to move at your own pace, and scroll the page whenever you need more room.' },
     { tab:'profile', sel:'#balance-replay-settings', title:'Help fixing app problems', body:'Balance saves a masked replay automatically so Shannon can investigate app problems. Private text and media are hidden. Replays expire after seven days. You can turn this off in Settings.' },
@@ -17255,7 +17255,7 @@ window.endFeatureTour = function(skipped){
   // First-run onboarding now uses the guided walkthrough only. Keep legacy
   // feature-drop entries dormant so users do not see duplicate spotlight cards.
   allFeatures = [];
-  allFeatures.push({ id:'exercise-rest-period-v1', tab:'movement-tab', sel:'#today-workout-card', title:'Rest between your sets', body:'Your workout shows Rest period after Kg: 90 seconds for compound lifts and 60 seconds for accessories, unless your coach sets another duration. Tap Complete set & start rest after entering your results to open the countdown.' });
+  allFeatures.push({ id:'exercise-rest-period-v1', tab:'movement-tab', sel:'#today-workout-card', title:'Rest between your sets', body:'Your workout shows Rest period after Kg: 90 seconds for compound lifts and 60 seconds for accessories, unless your coach sets another duration. Enter your results, then tap Start in the Rest period column to complete that set and open its countdown.' });
   allFeatures.push({ id:'workout-load-buttons-v1', tab:'movement-tab', sel:'.workout-load-options', fallbackSel:'#today-workout-card', title:'Clear workout feedback', body:'After your workout, choose Too light, Perfect or Too heavy to say how the load felt. Choose one to save, or skip.', fallbackTitle:'Clear workout feedback', fallbackBody:'After your workout, choose Too light, Perfect or Too heavy to say how the load felt. Choose one to save, or skip.' });
   allFeatures.push({ id:'learn-page-photos-20260918', tab:'learning', sel:'#learning-content', title:'A picture on every lesson page', body:'Every reading page now includes a relevant photo or illustration. Use Previous and Next to move at your own pace, and scroll the page whenever you need more room.' });
   allFeatures.push({ id:'settings-your-checkin-v1', tab:'profile', sel:'#settings-your-checkin', title:'Your Check-In', body:'Find your weekly check-in in Settings under Personal setup. It opens Friday to Sunday and also appears in To Do Next on Home when it is due.' });
