@@ -936,6 +936,12 @@
   force = true
 
 [[redirects]]
+  from = "/api/group-session"
+  to = "/.netlify/functions/group-session"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/*"
   to = "/login.html"
   status = 200
@@ -944,3 +950,4 @@
 [[edge_functions]]
   function = "change-membership"
   path = "/.netlify/functions/change-membership"
+
