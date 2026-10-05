@@ -18017,7 +18017,7 @@ function getExerciseRestSeconds(exercise) {
     const explicit = Number(exercise?.restSeconds ?? exercise?.rest_seconds);
     if (Number.isFinite(explicit) && explicit > 0) return Math.min(600, Math.round(explicit));
     const name = String(typeof exercise === 'string' ? exercise : exercise?.name || '');
-    return /squat|deadlift|romanian|bench press|chest press|overhead press|shoulder press|push.?up|row|pull.?up|chin.?up|lunge|hip thrust|leg press|step.?up/i.test(name) ? 90 : 60;
+    return /squat|deadlift|romanian|bench press|chest press|overhead press|shoulder press|push.?up|row|pull.?up|pulldown|chin.?up|lunge|hip thrust|leg press|step.?up/i.test(name) ? 90 : 60;
 }
 
 function getWorkoutRestSeconds(card) {

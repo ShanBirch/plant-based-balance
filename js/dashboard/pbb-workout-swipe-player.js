@@ -432,20 +432,33 @@
             #view-active-workout.workout-focus-pilot .workout-swipe-prescription,
             #view-active-workout.workout-focus-pilot .exercise-note-section { display: none !important; }
             #view-active-workout.workout-focus-pilot .workout-set-row {
-                grid-template-columns: 22px 48px 48px 74px 32px 32px !important;
+                grid-template-columns: 24px minmax(44px, 1fr) minmax(44px, 1fr) 68px 44px !important;
                 gap: 5px !important;
-                justify-content: center;
-                padding: 9px 10px !important;
+                justify-content: stretch;
+                padding: 10px 14px !important;
                 border-color: var(--workout-focus-border) !important;
             }
             #view-active-workout.workout-focus-pilot .sets-list-container { overflow-x: auto; }
-            #view-active-workout.workout-focus-pilot .workout-set-row { min-width: 270px; }
+            #view-active-workout.workout-focus-pilot .workout-set-row { min-width: 0; }
             #view-active-workout.workout-focus-pilot .workout-rest-period { font-size: .75rem; text-align: center; color: var(--workout-focus-text); -webkit-text-fill-color: var(--workout-focus-text); }
             #view-active-workout.workout-focus-pilot .exercise-logger-card:not(.workout-rest-timed) .workout-set-row > :nth-child(2),
             #view-active-workout.workout-focus-pilot .workout-rest-timed .workout-set-row > :nth-child(3) { display: none; }
-            #view-active-workout.workout-focus-pilot .exercise-logger-card > div:has(> .workout-rest-heading) { grid-template-columns:22px 48px 48px 74px 32px 32px !important; gap:5px !important; justify-content:center; padding:10px 10px 0 !important; }
+            #view-active-workout.workout-focus-pilot .exercise-logger-card > div:has(> .workout-rest-heading) { grid-template-columns:24px minmax(44px, 1fr) minmax(44px, 1fr) 68px 44px !important; gap:5px !important; justify-content:stretch; padding:10px 14px 0 !important; }
             #view-active-workout.workout-focus-pilot .exercise-logger-card:not(.workout-rest-timed) > div:has(> .workout-rest-heading) > :nth-child(2),
             #view-active-workout.workout-focus-pilot .workout-rest-timed > div:has(> .workout-rest-heading) > :nth-child(3) { display:none; }
+            #view-active-workout.workout-focus-pilot .workout-set-row > .drop-set-toggle,
+            #view-active-workout.workout-focus-pilot .workout-set-row > .delete-set-btn { display:none !important; }
+            #view-active-workout.workout-focus-pilot .workout-set-row > .input-reps,
+            #view-active-workout.workout-focus-pilot .workout-set-row > .input-kg { max-width:90px; justify-self:center; }
+            #view-active-workout.workout-focus-pilot .workout-set-options { width:44px; height:44px; border:1px solid var(--workout-focus-border); border-radius:10px; background:var(--workout-focus-surface); color:var(--workout-focus-text); -webkit-text-fill-color:var(--workout-focus-text); font-size:1.1rem; cursor:pointer; }
+            #view-active-workout.workout-focus-pilot .workout-set-options[aria-expanded="true"] { background:var(--workout-focus-gold-soft); }
+            #view-active-workout.workout-focus-pilot .workout-set-options-menu { margin:0 14px 10px auto; width:min(210px, calc(100% - 28px)); padding:6px; border:1px solid var(--workout-focus-border); border-radius:12px; background:var(--workout-focus-surface); color:var(--workout-focus-text); box-shadow:0 6px 16px rgba(0,0,0,.12); }
+            #view-active-workout.workout-focus-pilot .workout-set-options-menu[hidden] { display:none; }
+            #view-active-workout.workout-focus-pilot .workout-set-options-menu button { display:block; width:100%; min-height:44px; padding:10px 12px; border:0; border-radius:8px; text-align:left; background:transparent; color:var(--workout-focus-text); -webkit-text-fill-color:var(--workout-focus-text); font:inherit; font-size:.8rem; cursor:pointer; }
+            #view-active-workout.workout-focus-pilot .workout-set-options-menu button:hover { background:var(--workout-focus-gold-soft); }
+            #view-active-workout.workout-focus-pilot .workout-set-options-menu button:disabled { opacity:.5; cursor:default; }
+            #view-active-workout.workout-focus-pilot :is(.workout-set-options,.workout-set-options-menu button):focus-visible { outline:2px solid var(--workout-focus-gold); outline-offset:2px; }
+            #view-active-workout.workout-focus-pilot .exercise-logger-card > div:has(> .workout-rest-heading) > :last-child { display:none; }
             #view-active-workout.workout-focus-pilot .workout-set-row input,
             #view-active-workout.workout-focus-pilot .exercise-note-input {
                 min-width: 0;
@@ -906,13 +919,67 @@
         if (typeof root.startRestTimer === 'function') root.startRestTimer(true, root.getWorkoutRestSeconds(card));
     }
 
+    function closeSetOptions() {
+        document.querySelectorAll('.workout-set-options-menu').forEach((menu) => { menu.hidden = true; });
+        document.querySelectorAll('.workout-set-options').forEach((button) => { button.setAttribute('aria-expanded', 'false'); });
+    }
+
+    function ensureSetOptions(wrapper, row) {
+        if (row.querySelector('.workout-set-options')) return;
+        const drop = row.querySelector('.drop-set-toggle');
+        const remove = row.querySelector('.delete-set-btn');
+        if (!drop || !remove) return;
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'workout-set-options';
+        button.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>';
+        button.setAttribute('aria-label', 'Set options');
+        button.setAttribute('aria-haspopup', 'menu');
+        button.setAttribute('aria-expanded', 'false');
+        const menu = document.createElement('div');
+        menu.className = 'workout-set-options-menu';
+        menu.setAttribute('role', 'menu');
+        menu.hidden = true;
+        const addDrop = document.createElement('button');
+        addDrop.type = 'button';
+        addDrop.setAttribute('role', 'menuitem');
+        addDrop.textContent = 'Add Drop Set';
+        addDrop.addEventListener('click', () => {
+            closeSetOptions();
+            if (drop.classList.contains('active')) {
+                const add = wrapper.querySelector('.drop-add-btn');
+                if (add && typeof root.addDropRow === 'function') root.addDropRow(add);
+            } else if (typeof root.toggleDropSet === 'function') root.toggleDropSet(drop);
+        });
+        const deleteButton = document.createElement('button');
+        deleteButton.type = 'button';
+        deleteButton.setAttribute('role', 'menuitem');
+        deleteButton.textContent = 'Delete';
+        deleteButton.addEventListener('click', () => {
+            closeSetOptions();
+            if (typeof root.deleteSetRow === 'function') root.deleteSetRow(remove);
+        });
+        menu.append(addDrop, deleteButton);
+        button.addEventListener('click', () => {
+            const opening = menu.hidden;
+            closeSetOptions();
+            menu.hidden = !opening;
+            button.setAttribute('aria-expanded', String(opening));
+            deleteButton.disabled = wrapper.closest('.sets-list-container').querySelectorAll('.set-wrapper').length <= 1;
+        });
+        row.appendChild(button);
+        row.insertAdjacentElement('afterend', menu);
+    }
+
     function ensureFocusCard(card, index, cards) {
         const seconds = root.getWorkoutRestSeconds(card);
         card.querySelectorAll('.workout-rest-period:not(button)').forEach((label) => { label.textContent = seconds + 's'; });
         card.classList.toggle('workout-rest-timed', card.dataset.exerciseName ? /plank|hold|stretch/i.test(card.dataset.exerciseName) : false);
         card.querySelectorAll('.set-wrapper').forEach((wrapper) => {
             const row = wrapper.querySelector('.workout-set-row');
-            if (!row || row.querySelector('.workout-focus-set-done')) return;
+            if (!row) return;
+            ensureSetOptions(wrapper, row);
+            if (row.querySelector('.workout-focus-set-done')) return;
             const button = document.createElement('button');
             button.type = 'button';
             button.className = 'workout-focus-set-done workout-rest-period';
@@ -1124,6 +1191,7 @@
     }
 
     function goTo(index) {
+        closeSetOptions();
         const cards = getCards();
         const nextIndex = clampIndex(index, cards.length);
         if (nextIndex === currentIndex) return;
@@ -1173,7 +1241,11 @@
             const observer = new root.MutationObserver(() => queueSync());
             observer.observe(container, { childList: true });
         }
+        document.addEventListener('click', (event) => {
+            if (!event.target.closest('.workout-set-options,.workout-set-options-menu')) closeSetOptions();
+        });
         document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') closeSetOptions();
             const view = getView();
             if (!view || view.style.display === 'none' || !view.classList.contains('workout-swipe-mode')) return;
             const cuesPage = document.getElementById('workout-focus-cues-page');
