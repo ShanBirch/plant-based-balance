@@ -432,8 +432,9 @@
             #view-active-workout.workout-focus-pilot .workout-swipe-prescription,
             #view-active-workout.workout-focus-pilot .exercise-note-section { display: none !important; }
             #view-active-workout.workout-focus-pilot .workout-set-row {
-                grid-template-columns: 22px minmax(0, 1fr) minmax(0, 1fr) 62px 24px 24px !important;
+                grid-template-columns: 22px 48px 48px 74px 32px 32px !important;
                 gap: 5px !important;
+                justify-content: center;
                 padding: 9px 10px !important;
                 border-color: var(--workout-focus-border) !important;
             }
@@ -442,7 +443,7 @@
             #view-active-workout.workout-focus-pilot .workout-rest-period { font-size: .75rem; text-align: center; color: var(--workout-focus-text); -webkit-text-fill-color: var(--workout-focus-text); }
             #view-active-workout.workout-focus-pilot .exercise-logger-card:not(.workout-rest-timed) .workout-set-row > :nth-child(2),
             #view-active-workout.workout-focus-pilot .workout-rest-timed .workout-set-row > :nth-child(3) { display: none; }
-            #view-active-workout.workout-focus-pilot .exercise-logger-card > div:has(> .workout-rest-heading) { grid-template-columns:22px minmax(0,1fr) minmax(0,1fr) 62px 24px 24px !important; gap:5px !important; padding:10px 10px 0 !important; }
+            #view-active-workout.workout-focus-pilot .exercise-logger-card > div:has(> .workout-rest-heading) { grid-template-columns:22px 48px 48px 74px 32px 32px !important; gap:5px !important; justify-content:center; padding:10px 10px 0 !important; }
             #view-active-workout.workout-focus-pilot .exercise-logger-card:not(.workout-rest-timed) > div:has(> .workout-rest-heading) > :nth-child(2),
             #view-active-workout.workout-focus-pilot .workout-rest-timed > div:has(> .workout-rest-heading) > :nth-child(3) { display:none; }
             #view-active-workout.workout-focus-pilot .workout-set-row input,
