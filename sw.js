@@ -6,7 +6,7 @@ const ASSETS = [
   './css/dashboard/pbb-weighin-theme.css?v=1-balance-gold',
   './css/dashboard/pbb-quiz-theme.css?v=4-page-photos',
   './dashboard.html',
-  './js/dashboard/pbb-workout-swipe-player.js?v=12-compact-set-inputs',
+  './js/dashboard/pbb-workout-swipe-player.js?v=13-rest-start-label',
   './js/dashboard/pbb-course-mascot.js?v=1-original-3d',
   './lib/fitgotchi-animations.js?v=1',
   './js/dashboard/dashboard-script-13.js?v=9-verified-moves',
