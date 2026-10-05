@@ -99,9 +99,9 @@ function normalizeBookingMode(value: unknown): BookingMode {
     return trimText(value, 30).toLowerCase() === "outside_hours" ? "outside_hours" : "standard";
 }
 
-export function normalizeBookingSource(value: unknown): "public_booking_page" | "zoom_pt" | "weekly_checkin_pt" | "first_pt_session" | "plant_based_challenge" {
+export function normalizeBookingSource(value: unknown): "public_booking_page" | "zoom_pt" | "weekly_checkin_pt" | "first_pt_session" | "plant_based_challenge" | "home_pt" {
     const source = trimText(value, 40).toLowerCase();
-    if (source === "plant_based_challenge") return source;
+    if (source === "plant_based_challenge" || source === "home_pt") return source;
     if (source === "zoom_pt" || source === "weekly_checkin_pt" || source === "first_pt_session") return source;
     return "public_booking_page";
 }
@@ -705,6 +705,7 @@ async function createCalendarEvent(settings: BookingSettings, booking: Record<st
         ? (ptAddonType === "extra_zoom_pt" ? "Extra weekly Zoom PT" : "Weekly Zoom PT")
         : bookingSource === "zoom_pt" && ptSessionsPerWeek
         ? `Zoom PT ${ptSessionsPerWeek} fit call`
+        : bookingSource === "home_pt" ? "At-home personal training consultation"
         : bookingSource === "plant_based_challenge" ? "Summer Ready Shred consultation" : settings.event_name;
     const createMeet = callType === "video";
     const query = new URLSearchParams({ sendUpdates: "all" });
@@ -719,6 +720,7 @@ async function createCalendarEvent(settings: BookingSettings, booking: Record<st
                 `Call type: ${callTypeLabel(callType)}`,
                 callType === "phone" ? `Call this number: ${trimText(booking.phone, 40)}` : "",
                 bookingSource === "zoom_pt" && ptSessionsPerWeek ? `Requested Zoom PT sessions each week: ${ptSessionsPerWeek}` : "",
+                bookingSource === "home_pt" ? `Requested package: ${metadata.home_pt_package === "balance" ? "Home PT + Balance (one home session, app and three independent workouts)" : "Home personal training session"}` : "",
                 bookingSource === "weekly_checkin_pt" ? `Recurring weekly time selected before payment` : "",
                 goal ? `What they want to cover: ${goal}` : "",
                 `Booking: ${bookingUrl()}`,
@@ -794,11 +796,11 @@ async function createBooking(req: Request): Promise<Response> {
     const goal = trimText(body.goal, 1000);
     const startsAt = trimText(body.startsAt, 80);
     const requestedCallType = trimText(body.callType || "video", 20).toLowerCase();
-    const isChallengeConsultation = normalizeBookingSource(body.source) === "plant_based_challenge";
-    if (isChallengeConsultation && !["phone", "video"].includes(requestedCallType)) {
+    const isConsultation = ["plant_based_challenge", "home_pt"].includes(normalizeBookingSource(body.source));
+    if (isConsultation && !["phone", "video"].includes(requestedCallType)) {
         return json(400, { ok: false, error: "invalid_call_type" });
     }
-    const callType: CallType = isChallengeConsultation && requestedCallType === "phone" ? "phone" : "video";
+    const callType: CallType = isConsultation && requestedCallType === "phone" ? "phone" : "video";
     const bookingMode = normalizeBookingMode(body.bookingMode);
     if (bookingMode === "outside_hours") return json(400, { ok: false, error: "outside_hours_unavailable" });
     const bookingSource = normalizeBookingSource(body.source);
@@ -841,7 +843,8 @@ async function createBooking(req: Request): Promise<Response> {
                 timezone: visitorTimeZone,
                 metadata: {
                     source: bookingSource,
-                    ...(bookingSource === "plant_based_challenge" ? { attribution: normalizeBookingAttribution(body.attribution) } : {}),
+                    ...(bookingSource === "home_pt" ? { home_pt_package: body.homePtPackage === "balance" ? "balance" : "session" } : {}),
+                    ...(["plant_based_challenge", "home_pt"].includes(bookingSource) ? { attribution: normalizeBookingAttribution(body.attribution) } : {}),
                     ...(verifiedDmRef ? { ig_thread_id: verifiedDmRef.threadId } : {}),
                     booking_mode: bookingMode,
                     call_type: callType,

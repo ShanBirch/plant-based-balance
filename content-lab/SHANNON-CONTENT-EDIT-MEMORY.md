@@ -379,3 +379,8 @@ polished Balance handout: warm cream, forest green, restrained gold, generous
 spacing, a relevant food illustration, clear meal cards and clickable research.
 Visually inspect every page. Explain that a sample PDF is illustrative; actual
 Balance meal plans are built into the app rather than delivered as PDFs.
+
+
+## 6 October 2026 - local Facebook coaching posts keep prices on the website
+
+Shannon confirmed home PT at AUD $120 for 45 minutes and Home PT + Balance at AUD $170/week. For the local Facebook group campaign, promote at-home training, Zoom training and online coaching without publishing prices in post copy, graphics or link previews. Keep public prices on the website. Shannon authorised unattended weekly posting without repeated review, within each group's live advertising rules and with durable duplicate prevention. Campaign contract: docs/local-facebook-coaching.md.
