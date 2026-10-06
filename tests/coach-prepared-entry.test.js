@@ -33,3 +33,11 @@ test('fresh-device and reopened entry is account-scoped and leaves ordinary setu
  assert.equal(window.BalanceOnboardingProgress.isCoachPreparedMember(),false);window.guestMode=false;window.isAdminViewing=true;
  assert.equal(window.BalanceOnboardingProgress.isCoachPreparedMember(),false);
 });
+test('an existing session refreshes the prepared preference after an admin change',async()=>{
+ const {c,window,modal}=runtime();
+ window.currentUser.user_metadata={balance_onboarding_mode:'coach_guided'};
+ window.supabaseClient={auth:{getUser:async()=>({data:{user:{id:'prepared',user_metadata:{balance_onboarding_mode:'coach_guided',balance_coach_prepared:true}}}})}};
+ await c.checkAndTriggerOnboarding();
+ assert.equal(modal.style.display,'none');assert.equal(c.isOnboardingNavigationLocked(),false);
+ assert.equal(window.currentUser.user_metadata.balance_coach_prepared,true);
+});

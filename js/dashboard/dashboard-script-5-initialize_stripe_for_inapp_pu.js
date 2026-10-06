@@ -10148,6 +10148,17 @@ function resetFreshOnboardingPreferences() {
 }
 
 async function checkAndTriggerOnboarding() {
+    if (window.BalanceOnboardingProgress?.isCoachGuidedMember() && window.supabaseClient?.auth?.getUser) {
+        // An admin may prepare the account after this device cached its session.
+        // Refresh only this authenticated identity; do not manufacture profile completion.
+        const identity = window.currentUser.id;
+        try {
+            const result = await window.supabaseClient.auth.getUser();
+            if (!result.error && result.data?.user?.id === identity && window.currentUser?.id === identity) {
+                window.currentUser.user_metadata = result.data.user.user_metadata || {};
+            }
+        } catch (_) { /* Keep the known preference usable offline. */ }
+    }
     if (window.BalanceOnboardingProgress?.isCoachPreparedMember()) {
         enterCoachPreparedDashboard();
         return;
