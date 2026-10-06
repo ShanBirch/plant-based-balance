@@ -1,10 +1,12 @@
-const CACHE_NAME = 'pbb-app-v569-workout-load-buttons';
+const CACHE_NAME = 'pbb-app-v570-private-menopause';
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
 const ASSETS = [
   './js/dashboard/pbb-exercise-video-backups.js?v=2',
   './css/dashboard/pbb-weighin-theme.css?v=1-balance-gold',
   './css/dashboard/pbb-quiz-theme.css?v=4-page-photos',
+  './css/balance-menopause.css?v=1-private-review',
+  './lib/balance-menopause.js?v=1-private-review',
   './dashboard.html',
   './js/dashboard/pbb-workout-swipe-player.js?v=15-full-width-set-inputs',
   './js/dashboard/pbb-course-mascot.js?v=1-original-3d',
