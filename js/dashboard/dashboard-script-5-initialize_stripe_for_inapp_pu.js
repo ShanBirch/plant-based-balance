@@ -2817,6 +2817,11 @@ function isCoachSessionAvailable(workout, date = new Date()) {
 function renderWeeklyCalendar() {
     const grid = document.getElementById('weekly-calendar');
     if(!grid) return;
+    const coached = !!window.BalancePersonalisedLearn?.enabled();
+    document.getElementById('view-cycle')?.classList.toggle('coach-assigned-active',coached);
+    let coachedNote = document.getElementById('coach-supplementary-calendar-note');
+    if (coached && !coachedNote) { coachedNote=document.createElement('p'); coachedNote.id='coach-supplementary-calendar-note'; grid.before(coachedNote); }
+    if (coachedNote) { coachedNote.hidden=!coached; coachedNote.textContent='Keep your two usual gym classes on their existing days. Wednesday is Zoom coaching. This calendar adds your Saturday home session from week three.'; }
     grid.innerHTML = '';
 
     // Self-healing: If variable is empty but input has value, sync it.
@@ -5826,6 +5831,7 @@ function renderAiPlanFocusedDay(dayNum) {
     const container = document.getElementById('ai-plan-meals-list');
     if (!day?.meals || !container) return;
     const familyPlan = _aiMealPlanCache.diet_type === 'family_lower_carb';
+    document.getElementById('view-meals')?.classList.toggle('coach-assigned-active',familyPlan);
     const nutritionSummary = document.getElementById('ai-plan-day-nutrition');
     if (nutritionSummary) nutritionSummary.style.display = familyPlan ? 'none' : '';
 
