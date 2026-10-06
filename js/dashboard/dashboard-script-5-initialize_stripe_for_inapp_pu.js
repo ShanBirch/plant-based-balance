@@ -2808,6 +2808,12 @@ function escapeCalendarJsArg(value) {
         .replace(/\n/g, ' ');
 }
 
+function isCoachSessionAvailable(workout, date = new Date()) {
+    if (!workout?.availableFrom && !workout?.availableUntil) return true;
+    const key = new Intl.DateTimeFormat('en-CA', {timeZone:'Australia/Brisbane',year:'numeric',month:'2-digit',day:'2-digit'}).format(date);
+    return (!workout.availableFrom || key >= workout.availableFrom) && (!workout.availableUntil || key <= workout.availableUntil);
+}
+
 function renderWeeklyCalendar() {
     const grid = document.getElementById('weekly-calendar');
     if(!grid) return;
@@ -2962,6 +2968,8 @@ function renderWeeklyCalendar() {
             // Use custom program schedule
             const schedule = activeCustomProgram.weekly_schedule || [];
             WEEKLY_SCHEDULE = schedule.map((item, idx) => {
+                const scheduledDate = new Date(monday); scheduledDate.setDate(monday.getDate() + idx);
+                if (!isCoachSessionAvailable(item.workout,scheduledDate)) return {day:item.day,program:'rest',dayIndex:idx,isRest:true};
                 if (!item.workout || item.workout.type === 'rest') {
                     return { day: item.day, program: 'rest', dayIndex: idx, isRest: true };
                 }
@@ -3768,6 +3776,7 @@ window.openCalendarWorkout = async function(dayIndexFromMonday, replacementDate)
             const scheduleEntry = (activeCustomProgram.weekly_schedule || [])[sourceDayIndexFromMonday];
             const dayWorkout = scheduleEntry?.workout;
             if (dayWorkout) {
+                if (!isCoachSessionAvailable(dayWorkout)) { showToast('This added session starts in week three. Keep your usual classes and coaching check-in for now.'); return; }
                 if (dayWorkout.type === 'rest') {
                     showToast('Today is a rest day. Enjoy your recovery!');
                     return;
@@ -5816,6 +5825,9 @@ function renderAiPlanFocusedDay(dayNum) {
     const day = week?.days?.find(item => item.day_of_week === dayNum);
     const container = document.getElementById('ai-plan-meals-list');
     if (!day?.meals || !container) return;
+    const familyPlan = _aiMealPlanCache.diet_type === 'family_lower_carb';
+    const nutritionSummary = document.getElementById('ai-plan-day-nutrition');
+    if (nutritionSummary) nutritionSummary.style.display = familyPlan ? 'none' : '';
 
     loadAiMealPlanLoggedTypes(dayNum);
 
@@ -5864,7 +5876,7 @@ function renderAiPlanFocusedDay(dayNum) {
     }).join('');
     const tags = (selected.tags || []).filter(tag => !['prepared-library','ingredient-calculated-v3'].includes(tag)).slice(0, 3).map(tag => escapeAiPlanText(window.BALANCE_PREPARED_MEAL_LIBRARY?.label(tag) || tag)).join(' · ')
         || escapeAiPlanText(selected.description || 'Planned for you');
-    const focusLabel = allComplete && isToday
+    const focusLabel = familyPlan ? 'Shared family dinner' : allComplete && isToday
         ? 'Today complete'
         : selectedIndex === nextIndex && isToday
             ? 'Up next'
@@ -5891,15 +5903,15 @@ function renderAiPlanFocusedDay(dayNum) {
                 <div class="ai-plan-hero__meta"><span>${escapeAiPlanText(selectedSlot)}</span><span>${escapeAiPlanText(selected.meal_time || '')}</span></div>
                 <h3 class="ai-plan-hero__title">${escapeAiPlanText(selected.name)}</h3>
                 <div class="ai-plan-hero__tags">${tags}</div>
-                <div class="ai-plan-hero__macros">
+                ${familyPlan ? '' : `<div class="ai-plan-hero__macros">
                     <span>${Math.round(selected.calories || 0)} cal</span>
                     <span>${Math.round(selected.protein_g || 0)}g protein</span>
                     <span>${Math.round(selected.carbs_g || 0)}g carbs</span>
                     <span>${Math.round(selected.fat_g || 0)}g fat</span>
-                </div>
+                </div>`}
                 <div class="ai-plan-hero__actions">
                     <button type="button" class="ai-plan-hero__button ai-plan-hero__button--primary" onclick="toggleAiPlanMealDetails(this)" aria-expanded="false">View recipe</button>
-                    <button type="button" class="ai-plan-hero__button" onclick="openAiPlanMealLogger()">Log meal</button>
+                    ${familyPlan ? '' : '<button type="button" class="ai-plan-hero__button" onclick="openAiPlanMealLogger()">Log meal</button>'}
                 </div>
                 <div class="ai-plan-hero__details">
                     ${selected.description ? `<p>${escapeAiPlanText(selected.description)}</p>` : ''}
@@ -15955,6 +15967,7 @@ async function renderMovementView() {
             // Use custom program schedule
             const schedule = activeCustomProgram.weekly_schedule || [];
             WEEKLY_SCHEDULE = schedule.map((item, idx) => {
+                if (!isCoachSessionAvailable(item.workout)) return {day:item.day,program:'rest',dayIndex:idx,isRest:true};
                 if (!item.workout || item.workout.type === 'rest') {
                     return { day: item.day, program: 'rest', dayIndex: idx, isRest: true, fallback: 'yoga', fallbackIdx: idx };
                 }
@@ -22777,6 +22790,7 @@ async function startLibraryWorkout(categoryKey, subcategoryKey, workoutId) {
 // lookup and per-workout customizations since there's no category/id to key
 // off of.
 async function startInlineWorkout(workout) {
+    if (!isCoachSessionAvailable(workout)) { showToast('This added session is not available yet. Follow the current phase of your coaching plan.'); return; }
     if (!workout || !Array.isArray(workout.exercises) || workout.exercises.length === 0) {
         console.error('startInlineWorkout: invalid workout', workout);
         return;
