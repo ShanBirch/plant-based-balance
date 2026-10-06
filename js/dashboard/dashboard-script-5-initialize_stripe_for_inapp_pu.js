@@ -1315,6 +1315,7 @@ function scheduleDashboardTaskForActiveUser(task, delayMs) {
 }
 
 function isOnboardingNavigationLocked() {
+    if (window.BalanceOnboardingProgress?.isCoachPreparedMember()) return false;
     const wizard = document.getElementById('onboarding-wizard');
     const wizardIsOpen = !!(wizard && (
         wizard.classList.contains('active') ||
@@ -1337,6 +1338,7 @@ function setOnboardingNavigationGate(locked) {
 
 // Real switchAppTab implementation - replaces the early stub
 function _switchAppTabReal(tabName, btn) {
+    document.getElementById('view-dashboard')?.classList.toggle('coach-assigned-active',!!window.BalanceOnboardingProgress?.isCoachPreparedMember());
     // First-run setup is a required guided gate. Keep this check at the shared
     // navigation boundary as a safety net even when another feature tries to
     // restore or invoke the bottom tabs while the wizard is open.
@@ -10146,6 +10148,10 @@ function resetFreshOnboardingPreferences() {
 }
 
 async function checkAndTriggerOnboarding() {
+    if (window.BalanceOnboardingProgress?.isCoachPreparedMember()) {
+        enterCoachPreparedDashboard();
+        return;
+    }
     let isReturningMember = localStorage.getItem('onboardingComplete') === 'true';
     let databaseOnboardingStatusChecked = false;
     let savedSetupComplete = false;
@@ -10432,7 +10438,21 @@ async function checkAndTriggerOnboarding() {
     }
 }
 
+function enterCoachPreparedDashboard() {
+    if (!window.BalanceOnboardingProgress?.isCoachPreparedMember()) return false;
+    // Readiness is navigation, not a completed questionnaire or health consent.
+    const modal = document.getElementById('onboarding-wizard');
+    if (modal) { modal.style.display='none'; modal.classList.remove('active'); delete modal.dataset.launchState; }
+    window._onboardingWizardPending=false;
+    window.__balanceOnboardingResumePending=false;
+    window.BalanceOnboardingProgress.clear();
+    setOnboardingScrollLock(false);
+    setOnboardingNavigationGate(false);
+    return true;
+}
+
 function initOnboardingWizard() {
+    if (window.BalanceOnboardingProgress?.isCoachPreparedMember()) return enterCoachPreparedDashboard();
     // Guard against multiple simultaneous triggers
     const modal = document.getElementById('onboarding-wizard');
     if (!modal) return;

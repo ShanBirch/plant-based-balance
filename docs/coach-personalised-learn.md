@@ -2,6 +2,14 @@
 
 The `family_lower_carb_v1` learning profile is assigned in an individual account's `user_metadata.balance_learning_profile`. It is separate from the `coach_guided` tour preference. No public enrolment, email or profile completion is created by this change.
 
+## Coach-prepared direct entry (7 October clarification)
+
+A coach-guided account explicitly marked `user_metadata.balance_coach_prepared: true` enters its prepared Home directly. The startup check, deferred wizard entry and shared navigation gate all respect that scoped preference. Interrupted setup navigation is cleared and the bottom tabs remain available. Tour-only coach-guided accounts without the prepared flag keep their previous setup flow; guest and admin-preview contexts cannot inherit prepared entry.
+
+This is a navigation choice, not evidence that the member completed a questionnaire. The users-table `onboarding_complete` field, anthropometrics, unanswered profile fields, consent, quiz results, payment and course completions are not filled or marked complete. Missing details can be discussed with the coach later. Initial health/notification permission prompts are deferred rather than consent being fabricated; their optional settings remain available.
+
+The prepared Home header and internal scroll use the same phone clearance treatment as the coached Calendar and Meals. Fresh-session and cold-reopen verification must use actual account state, without hiding or removing the wizard DOM to manufacture a passing result.
+
 Assigned members see Balance Learn followed immediately by a planned four-week Balance Menopause component. The five week-six food lessons retain their IDs, but receive actual rewritten introductions, key points and eight matching quiz questions each: energy balance without counting, familiar protein foods, flexible carbohydrate choices, fats and satisfying meals, and one shared family meal. All 45 Learn lessons were audited for unwanted dietary framing. Other accounts keep the existing lesson definitions and course path; switching accounts does not mutate the shared content.
 
 The food examples use a shared protein-and-vegetable base with individual sides. No calorie target, ketogenic allowance, allergy clearance or weight-loss guarantee is assigned. Educational background: [Australian food groups](https://www.eatforhealth.gov.au/food-essentials/five-food-groups). The weekly practical-action machinery and stored completions remain intact; lesson reads do not fabricate action completion.
@@ -10,7 +18,7 @@ The menopause outline has four planned weeks: transition; food, muscle and bone;
 
 The assigned course screen owns its viewport and internal scroll with a 42px minimum top fallback, nonzero inset support and reachable bottom content. Existing lesson-reader layout retains its own safe-area styling. The scoped stylesheet and both dashboard script loaders have fresh versions.
 
-Validation: profile isolation and real lesson/quiz content tests; owner-only menopause access and signout tests; existing Learn progression, theme and tour tests. Mobile review covers 360×640 and 640×360, light/dark, 0/59px top insets, opening, internal scrolling, returning/reopening and bottom clearance. A real account with incomplete essential profile setup must finish that setup with the coach; UI-isolation screenshots are not evidence that the profile questionnaire was completed.
+Validation: profile isolation and real lesson/quiz content tests; owner-only menopause access and signout tests; existing Learn progression, theme and tour tests. Mobile review covers 360×640 and 640×360, light/dark, 0/59px top insets, opening, internal scrolling, returning/reopening and bottom clearance. Earlier UI-isolation screenshots did not establish direct entry; the later coach-prepared fresh/reopen checks verify the real flow without fabricating questionnaire completion.
 
 ## Phased sessions and family dinner guides
 

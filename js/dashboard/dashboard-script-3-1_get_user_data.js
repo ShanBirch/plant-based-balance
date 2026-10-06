@@ -544,7 +544,7 @@
                             }
                         });
                     }
-                } else if (!window._onboardingWizardPending) {
+                } else if (!window._onboardingWizardPending && !window.BalanceOnboardingProgress?.isCoachPreparedMember()) {
                     // First time on native & no onboarding wizard pending — show permissions modal
                     // (If wizard IS pending, permissions modal will show after wizard finishes)
                     setTimeout(showNativePermissionsModal, 800);
@@ -554,8 +554,8 @@
                 // notifications?" dialog appears on top of the wizard. Once
                 // the wizard finishes, showNativePermissionsModal asks for
                 // permission and then calls init() itself.
-                if (window.NativePush && !window._onboardingWizardPending) window.NativePush.init();
-            } else if (!window._onboardingWizardPending) {
+                if (window.NativePush && !window._onboardingWizardPending && (window.NativePermissions.hasRequestedPermissions() || !window.BalanceOnboardingProgress?.isCoachPreparedMember())) window.NativePush.init();
+            } else if (!window._onboardingWizardPending && !window.BalanceOnboardingProgress?.isCoachPreparedMember()) {
                 // Web (non-native): request notification permission now that user is logged in
                 // and onboarding is complete. Deferred from DOMContentLoaded to avoid
                 // showing the browser dialog during the onboarding wizard.

@@ -205,7 +205,7 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
 <!-- CRITICAL: Admin view-as localStorage isolation — runs BEFORE any other localStorage reads -->
 <script src="js/dashboard/script_part_1.js"></script>
 <!-- Paid-Facebook preview attribution must be available before auth-guard decides guest vs member mode. -->
-<script src="lib/onboarding-progress.js?v=9-coach-guided"></script>
+<script src="lib/onboarding-progress.js?v=10-coach-prepared"></script>
 <script src="lib/meta-ad-trial.js?v=33-coach-hello"></script>
 
 <!-- CRITICAL: Hide loading overlay for returning users and restore cached FitGotchi state -->
@@ -3023,7 +3023,7 @@ if (window._pbbIsIOSSafari) {
     function _doLoadScript3() {
         if(window._crumb)window._crumb('script3_loading');
         var s = document.createElement('script');
-    s.src = 'js/dashboard/dashboard-script-3-1_get_user_data.js?v=65-admin-safe-area';
+    s.src = 'js/dashboard/dashboard-script-3-1_get_user_data.js?v=66-coach-ready';
         document.head.appendChild(s);
     }
     if (window._pbbAuthIsReady) {
@@ -3034,7 +3034,7 @@ if (window._pbbIsIOSSafari) {
         }, { once: true });
     }
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-3-1_get_user_data.js?v=65-admin-safe-area"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-3-1_get_user_data.js?v=66-coach-ready"><\/script>');
 }
 </script>
 
@@ -12979,7 +12979,7 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261007-coach-safe&cohort_diets=1&video_health=2';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261007-coach-ready&cohort_diets=1&video_health=2';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
@@ -13021,7 +13021,7 @@ if (window._pbbIsIOSSafari) {
         var s = document.createElement('script');
         s.async = false;
         s.dataset.metaTrialLoader = String(attempt);
-        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261007-coach-safe&cohort_diets=1&video_health=2&meta_retry=' + attempt;
+        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261007-coach-ready&cohort_diets=1&video_health=2&meta_retry=' + attempt;
         s.onload = function() {
             if (window._pbbScript5Complete && window._switchAppTabReady && typeof window._switchAppTabReal === 'function') {
                 sessionStorage.removeItem('pbb_meta_script5_recovery_v1');
@@ -13040,7 +13040,7 @@ if (window._pbbIsIOSSafari) {
         document.head.appendChild(s);
     })(0);
 } else {
-document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261007-coach-safe"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261007-coach-ready"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=15-full-width-set-inputs"></script>
@@ -21360,7 +21360,7 @@ if (window._pbbIsIOSSafari) {
     <link rel="stylesheet" href="css/balance-master-course.css?v=1">
     <script src="lib/balance-curriculum.js?v=six-weeks-v2"></script>
     <link rel="stylesheet" href="css/balance-course-layout.css?v=1">
-    <link rel="stylesheet" href="css/balance-menopause.css?v=3-coached-safe-areas">
+    <link rel="stylesheet" href="css/balance-menopause.css?v=4-coach-ready-home">
     <script src="lib/balance-menopause.js?v=1-private-review"></script>
     <script src="lib/coach-personalised-learn.js?v=1-family-meals"></script>
     <script src="lib/balance-course-layout.js?v=3-weekly-actions"></script>
