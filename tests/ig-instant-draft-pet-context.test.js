@@ -6,6 +6,7 @@ const {
     buildOrganicBalanceLearnSeriesBlock,
     buildAcquisitionStyleBlock,
     buildAcquisitionMomentumBlock,
+    extractIgStoryContextForPrompt,
     suppressPetSpeciesGuessingInDraftChunks,
     suppressStoryLocationQuestionsInDraftChunks,
     hasKnownStoryLocationContext,
@@ -175,6 +176,28 @@ const neutralChunks = suppressPetSpeciesGuessingInDraftChunks([
 });
 
 assert.deepStrictEqual(neutralChunks, ['nero looks cute']);
+
+const sunshineStoryReply = `[IG_STORY_REPLY_CONTEXT]
+Visible story text: Sunnies been chewing my headphones
+Story summary: You posted about your dog chewing your headphones.
+Their reply: "She can do no wrong!!!"`;
+
+assert.match(extractIgStoryContextForPrompt(sunshineStoryReply), /your rabbit chewing your headphones/i);
+assert.doesNotMatch(extractIgStoryContextForPrompt(sunshineStoryReply), /your dog chewing your headphones/i);
+
+assert.deepStrictEqual(
+    suppressPetSpeciesGuessingInDraftChunks(['your dog is chaos haha'], {
+        currentMessageText: sunshineStoryReply,
+    }),
+    ['your rabbit is chaos haha']
+);
+
+assert.deepStrictEqual(
+    suppressPetSpeciesGuessingInDraftChunks(['sunny is a good dog'], {
+        currentMessageText: 'My dog Sunny loves this',
+    }),
+    ['sunny is a good dog']
+);
 
 const tugunContext = buildNativeStoryOutreachContextBlock({
     ig_username: 'lealthaisb',

@@ -6206,6 +6206,20 @@ function extractIgStoryReplyText(text) {
     return 'replied to your story';
 }
 
+const SHANNON_RABBIT_NAME_RE = /\b(?:sunshine|sunny(?:'s|s)?|sunnies)\b/i;
+const DOG_SPECIES_RE = /\b(?:doggo|dog|puppy)\b/ig;
+
+function correctKnownShannonPetFacts(text, context = '') {
+    const raw = String(text || '');
+    const evidence = `${raw} ${String(context || '')}`;
+    if (!isIgStoryReplyContextText(evidence) || !SHANNON_RABBIT_NAME_RE.test(evidence)) return raw;
+    return raw.replace(DOG_SPECIES_RE, match => {
+        if (match === match.toUpperCase()) return 'RABBIT';
+        if (match[0] === match[0].toUpperCase()) return 'Rabbit';
+        return 'rabbit';
+    });
+}
+
 function isQuestionLikeText(text = '') {
     const value = String(text || '').trim();
     if (!value) return false;
@@ -6257,7 +6271,7 @@ function extractIgStoryContextForPrompt(text) {
         .split(/\nTheir reply:/i)[0]
         .trim();
     if (!body || /^Raw IG message:/i.test(body)) return '';
-    return body;
+    return correctKnownShannonPetFacts(body, raw);
 }
 
 function buildIgStoryReplyPromptContextBlock({ leadName, currentMessage = '', recentInboundMessages = [] } = {}) {
@@ -6509,13 +6523,16 @@ Use this if the new message is replying to Shannon's native story opener or a co
 
 function suppressPetSpeciesGuessingInDraftChunks(chunks, { currentMessageText = '', qualifier = null, nativeStoryContextSummary = null } = {}) {
     const input = Array.isArray(chunks) ? chunks : [];
-    const contextText = [
+    const rawContextText = [
         currentMessageText,
         qualifier?.facts?.relationship_checklist?.pets,
         nativeStoryContextSummary?.story_description,
         nativeStoryContextSummary?.story_visible_text,
         nativeStoryContextSummary?.sent_comment,
-    ].filter(Boolean).join(' ').toLowerCase();
+    ].filter(Boolean).join(' ');
+    const knownShannonRabbit = isIgStoryReplyContextText(currentMessageText)
+        && SHANNON_RABBIT_NAME_RE.test(currentMessageText);
+    const contextText = correctKnownShannonPetFacts(rawContextText, currentMessageText).toLowerCase();
     const knownCat = /\b(cat|kitten)\b/i.test(contextText);
     const knownDog = /\b(dog|doggo|puppy)\b/i.test(contextText);
     const knownSpecies = knownCat || knownDog || /\b(rabbit|bunny|horse)\b/i.test(contextText);
@@ -6524,6 +6541,7 @@ function suppressPetSpeciesGuessingInDraftChunks(chunks, { currentMessageText = 
         .map(chunk => {
             let out = String(chunk || '').trim();
             if (!out) return '';
+            if (knownShannonRabbit) out = correctKnownShannonPetFacts(out, currentMessageText);
             const asksSpecificSpecies = /\bwhat\s+(?:kind|kinda|type|breed)\s+(?:of\s+)?(?:doggo|dog|puppy|cat|kitten)\b/i;
             if (asksSpecificSpecies.test(out)) {
                 const guessedDog = /\b(doggo|dog|puppy)\b/i.test(out);
@@ -8190,6 +8208,7 @@ async function sendContextCheckNotification({ adminId, alertId, leadName, client
 exports._test = {
     generateDraft,
     isIgStoryReplyContextText,
+    extractIgStoryContextForPrompt,
     sanitizeIgStoryReplyContextText,
     stripObviousMediaReceiptPreamble,
     getCocosAutoContextBypass,
@@ -11047,6 +11066,7 @@ exports._test = {
     applyDecodedPaidMetaAudioHandoff,
     generateDraft,
     isIgStoryReplyContextText,
+    extractIgStoryContextForPrompt,
     sanitizeIgStoryReplyContextText,
     stripObviousMediaReceiptPreamble,
     buildNativeStoryOutreachContextBlock,
