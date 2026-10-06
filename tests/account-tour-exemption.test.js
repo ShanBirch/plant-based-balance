@@ -59,6 +59,24 @@ test('remote completion keeps a new member out of the tour on a fresh device', (
   assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(), true);
 });
 
+test('coach-guided onboarding suppresses only the current member tour and preserves setup', () => {
+  const {window,storage} = context('coached-member');
+  window.currentUser.created_at = '2026-10-07T00:00:00Z';
+  window.currentUser.user_metadata = {balance_onboarding_mode:'coach_guided'};
+  assert.equal(window.BalanceOnboardingProgress.needsFirstRunTour(),false);
+  assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(),true);
+  assert.equal(window.currentUser.user_metadata.balance_app_tour_completed_at,undefined);
+  window.BalanceOnboardingProgress.save('setup',{screen:'profile'});
+  assert.equal(window.BalanceOnboardingProgress.read().stage,'setup');
+  window.BalanceOnboardingProgress.save('tour',{});
+  assert.equal(window.BalanceOnboardingProgress.read().stage,'setup');
+  storage.clear(); // Fresh phone, same authenticated preference.
+  assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(),true);
+  window.currentUser={id:'another-member',created_at:'2026-10-07T00:00:00Z'};
+  assert.equal(window.BalanceOnboardingProgress.needsFirstRunTour(),true);
+  assert.equal(window.BalanceOnboardingProgress.isTourSuppressed(),false);
+});
+
 test('completed setup resumes a missed new-member tour after Home startup', async () => {
   const {window, storage} = context('new-member');
   window.currentUser.created_at = '2026-09-18T04:42:50Z';
