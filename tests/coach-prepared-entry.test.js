@@ -53,3 +53,11 @@ test('verified read-only admin preview opens Home without target auth metadata o
  assert.equal(window.currentUser.id,'viewed-member');assert.equal(values.size,0);
  assert.equal(window.userProfile,undefined);
 });
+
+test('cached session without any coach flags refreshes before opening the questionnaire',async()=>{
+ const {c,window,modal}=runtime();
+ window.currentUser.user_metadata={};window._pbbUsingCachedSessionUser=true;
+ window.supabaseClient={auth:{getUser:async()=>({data:{user:{id:'prepared',user_metadata:{balance_onboarding_mode:'coach_guided',balance_coach_prepared:true}}}})}};
+ await c.checkAndTriggerOnboarding();
+ assert.equal(modal.style.display,'none');assert.equal(c.isOnboardingNavigationLocked(),false);
+});

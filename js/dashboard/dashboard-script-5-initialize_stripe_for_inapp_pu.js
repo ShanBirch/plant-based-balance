@@ -10151,7 +10151,7 @@ function resetFreshOnboardingPreferences() {
 async function checkAndTriggerOnboarding() {
     // A verified read-only admin preview must never start a member questionnaire.
     if (window.isAdminViewing) { enterCoachPreparedDashboard(); return; }
-    if (window.BalanceOnboardingProgress?.isCoachGuidedMember() && window.supabaseClient?.auth?.getUser) {
+    if ((window.BalanceOnboardingProgress?.isCoachGuidedMember() || window._pbbUsingCachedSessionUser) && window.supabaseClient?.auth?.getUser) {
         // An admin may prepare the account after this device cached its session.
         // Refresh only this authenticated identity; do not manufacture profile completion.
         const identity = window.currentUser.id;
