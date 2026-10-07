@@ -12256,3 +12256,13 @@ html[data-pbb-theme="light"] #weigh-in-editor-modal input {
     }
 }
 
+/* Admin client previews also run in edge-to-edge mobile WebViews. Some Android
+   WebViews report a zero env() inset while the system status bar still overlays
+   the page, so the mobile banner needs a real fallback rather than env() alone. */
+@media (max-width: 760px) {
+    #admin-view-banner {
+        padding-top: calc(10px + max(42px, env(safe-area-inset-top, 0px))) !important;
+        padding-bottom: max(10px, env(safe-area-inset-bottom, 0px)) !important;
+    }
+}
+
