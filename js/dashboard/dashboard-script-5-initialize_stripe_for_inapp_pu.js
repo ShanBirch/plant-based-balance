@@ -3818,7 +3818,7 @@ window.openCalendarWorkout = async function(dayIndexFromMonday, replacementDate)
             const scheduleEntry = (activeCustomProgram.weekly_schedule || [])[sourceDayIndexFromMonday];
             const dayWorkout = scheduleEntry?.workout;
             if (dayWorkout) {
-                if (!isCoachSessionAvailable(dayWorkout)) { showToast('This added session starts in week three. Keep your usual classes and coaching check-in for now.'); return; }
+                if (!isCoachSessionAvailable(dayWorkout, previewDate) && !window.isAdminViewing) { showToast('This added session starts in week three. Keep your usual classes and coaching check-in for now.'); return; }
                 if (dayWorkout.type === 'rest') {
                     showToast('Today is a rest day. Enjoy your recovery!');
                     return;

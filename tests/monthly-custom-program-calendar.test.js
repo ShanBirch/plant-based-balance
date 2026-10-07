@@ -28,5 +28,10 @@ assert.match(
   /!isCoachSessionAvailable\(workout\) && !window\.isAdminViewing/,
   'Future session gating must remain enforced for members while allowing admin QA'
 );
+assert.match(
+  source,
+  /!isCoachSessionAvailable\(dayWorkout, previewDate\) && !window\.isAdminViewing/,
+  'Calendar launch gating should use the selected date while preserving the member gate'
+);
 
 console.log('monthly custom-program calendar checks passed');
