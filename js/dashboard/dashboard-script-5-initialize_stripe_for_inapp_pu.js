@@ -16684,7 +16684,8 @@ async function renderMovementView() {
             .map(item => {
                 const day = typeof escapeCalendarHtml === 'function' ? escapeCalendarHtml(item.displayDay || item.day || '') : (item.displayDay || item.day || '');
                 const name = typeof escapeCalendarHtml === 'function' ? escapeCalendarHtml(item.inlineWorkout.name || 'Gym session') : (item.inlineWorkout.name || 'Gym session');
-                return `<div style="font-size:0.8rem; font-weight:800; padding:7px 10px; border:1px solid rgba(255,255,255,0.24); border-radius:12px; background:rgba(255,255,255,0.1);">${day} · ${name}</div>`;
+                const exercises = item.inlineWorkout.exercises.map(exercise => `<li>${escapeCalendarHtml(exercise.name)} · ${escapeCalendarHtml(String(exercise.sets || ''))} sets × ${escapeCalendarHtml(String(exercise.reps || ''))}</li>`).join('');
+                return `<details style="font-size:0.8rem; padding:10px; border:1px solid rgba(255,255,255,0.24); border-radius:12px; background:rgba(255,255,255,0.1); color:#fff; width:100%;"><summary style="font-weight:800; cursor:pointer;">${day} · ${name}</summary><p>Programme preview · review with Shannon before starting.</p><ul style="padding-left:20px; line-height:1.7;">${exercises}</ul><p>${escapeCalendarHtml(item.inlineWorkout.description || '')}</p></details>`;
             })
             .join('');
         personalWeekDiv.id = 'mvmt-personal-week-card';
