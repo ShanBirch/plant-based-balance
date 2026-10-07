@@ -453,7 +453,7 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
 </script>
 
 <!-- Supabase & Auth Guard -->
-<script src="js/dashboard/script_part_2.js?v=21-offline-launch"></script>
+<script src="js/dashboard/script_part_2.js?v=22-bounded-entitlement"></script>
 <script>
 // ── Native OAuth warm-start callback (non-iOS) ────────────────────
 // On iOS this is set up inside the deferred chain above (after supabaseClient exists).
@@ -3021,7 +3021,7 @@ if (window._pbbIsIOSSafari) {
     function _doLoadScript3() {
         if(window._crumb)window._crumb('script3_loading');
         var s = document.createElement('script');
-    s.src = 'js/dashboard/dashboard-script-3-1_get_user_data.js?v=67-startup-recovery';
+    s.src = 'js/dashboard/dashboard-script-3-1_get_user_data.js?v=68-startup-identity';
         document.head.appendChild(s);
     }
     if (window._pbbAuthIsReady) {
@@ -3032,7 +3032,7 @@ if (window._pbbIsIOSSafari) {
         }, { once: true });
     }
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-3-1_get_user_data.js?v=67-startup-recovery"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-3-1_get_user_data.js?v=68-startup-identity"><\/script>');
 }
 </script>
 

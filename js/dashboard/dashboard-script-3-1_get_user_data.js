@@ -263,15 +263,20 @@
                 finishIfReady();
             }, 100);
             window.addEventListener('pbbCurrentUserReady', finishIfReady);
-            // Timeout after 8s just in case
+            // Session validation and the bounded membership check can exceed
+            // 8 seconds together. Never start against a still-pending identity.
             setTimeout(() => {
                 clearInterval(check);
                 window.removeEventListener('pbbCurrentUserReady', finishIfReady);
-                resolve(window.currentUser || null);
-            }, 8000);
+                resolve(isAuthReady() ? (window.currentUser || null) : null);
+            }, 30000);
         });
 
-        await waitForAuth();
+        const startupAuth = await waitForAuth();
+        if (!startupAuth) {
+            window.BalanceStartupShell?.fail();
+            return;
+        }
 
         // Detect user switch: if a different user is now logged in, clear all stale
         // cached data that was eagerly restored from localStorage at page parse time.
@@ -334,6 +339,9 @@
         }
 
         if(window.currentUser) {
+            var startupUserId = window.currentUser.id || window.currentUser.user_id;
+            var startupAdminView = !!window.isAdminViewing;
+            var didFastPaint = false;
             try {
             // --- Crash breadcrumb helpers (survives hard WebKit crash) ---
             function _crumb(step) {
@@ -365,9 +373,9 @@
 
             // Fire-and-forget: non-blocking background loads
             _crumb('loadChat');
-            loadChat();
+            if (typeof loadChat === 'function') loadChat();
             _crumb('loadJournalHistory');
-            loadJournalHistory();
+            if (typeof loadJournalHistory === 'function') loadJournalHistory();
 
             // Preload custom exercises for video matching
             if (typeof dbHelpers !== 'undefined' && dbHelpers.customExercises) {
@@ -384,9 +392,6 @@
                 }).catch(e => console.warn('Custom exercises preload:', e));
             }
 
-            var startupUserId = window.currentUser && (window.currentUser.id || window.currentUser.user_id);
-            var startupAdminView = !!window.isAdminViewing;
-            var didFastPaint = false;
             function isSameStartupUser() {
                 var activeUserId = window.currentUser && (window.currentUser.id || window.currentUser.user_id);
                 return activeUserId === startupUserId && (!!window.isAdminViewing) === startupAdminView;

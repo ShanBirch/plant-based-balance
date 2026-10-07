@@ -38,3 +38,12 @@ test('startup recovery cannot reveal a different account or pending authenticati
     assert.equal(recovered, state === 'valid');
   }
 });
+
+test('early optional helpers run only after startup identity is captured', () => {
+  const source = read('js/dashboard/dashboard-script-3-1_get_user_data.js');
+  assert.ok(source.indexOf('var startupUserId =') < source.indexOf("_crumb('loadChat')"));
+  assert.match(source, /if \(typeof loadChat === 'function'\) loadChat\(\)/);
+  assert.match(source, /if \(typeof loadJournalHistory === 'function'\) loadJournalHistory\(\)/);
+  assert.match(source, /resolve\(isAuthReady\(\) \? \(window.currentUser \|\| null\) : null\)/);
+  assert.match(source, /if \(!startupAuth\) \{[\s\S]*?return;/);
+});
