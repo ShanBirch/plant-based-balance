@@ -3546,8 +3546,38 @@ function renderMonthlyCalendar() {
     container.innerHTML = html;
 }
 
-// Helper to get workout label for monthly calendar view
-function getMonthlyWorkoutLabel(dayIndex, isMale) {
+function getMonthlyCustomProgramContext(dayIndex, date = new Date()) {
+    const program = window.activeCustomProgramCache;
+    if (!program || !program.is_active || !program.start_date) return null;
+
+    const targetDate = date instanceof Date ? date : new Date(date);
+    if (Number.isNaN(targetDate.getTime())) return null;
+
+    const targetKey = getLocalDateString(targetDate);
+    const startKey = String(program.start_date).slice(0, 10);
+    if (!startKey || targetKey < startKey) return null;
+
+    const startDate = new Date(`${startKey}T12:00:00`);
+    const targetDay = new Date(`${targetKey}T12:00:00`);
+    const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+    const currentWeek = Math.max(1, Math.floor((targetDay - startDate) / msPerWeek) + 1);
+    if (!customProgramUsesCompletionGating(program) && currentWeek > Number(program.duration_weeks || 0)) return null;
+
+    const sourceDayIndex = getWorkoutSourceDayIndex(dayIndex);
+    const scheduleEntry = (program.weekly_schedule || [])[sourceDayIndex];
+    return { program, scheduleEntry, workout: scheduleEntry?.workout || null, currentWeek };
+}
+
+// Helper to get workout label for monthly calendar view. The active coach
+// program must win here just as it does in Week and Movement views.
+function getMonthlyWorkoutLabel(dayIndex, isMale, date = new Date()) {
+    const customContext = getMonthlyCustomProgramContext(dayIndex, date);
+    if (customContext) {
+        const workout = customContext.workout;
+        if (!workout || workout.type === 'rest') return 'Rest Day';
+        return workout.name || customContext.scheduleEntry?.day || 'Workout';
+    }
+
     const sourceDayIndex = getWorkoutSourceDayIndex(dayIndex);
 
     // Load user profile to determine schedule type
@@ -3625,7 +3655,7 @@ function renderMonthlyDayCell(date, today, cycleStart, cycleLen, msPerDay, isBas
     const dateStr = getLocalDateString(date);
 
     // Get workout label for this day based on user's schedule
-    let workoutLabel = getMonthlyWorkoutLabel(dayIndex, isMale);
+    let workoutLabel = getMonthlyWorkoutLabel(dayIndex, isMale, date);
 
     // Check for active replacement for this day
     const replacement = typeof getReplacementForDay === 'function' ? getReplacementForDay(dayIndex, dateStr) : null;
@@ -3665,7 +3695,8 @@ window.openMonthlyDayDetail = function(dateStr) {
     const dayOfWeek = date.getDay();
     const dayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Monday = 0
 
-    // For now, if it's the current week, use the action modal
+    // Members can only launch the current week. Read-only admin view may open
+    // a future date so a coach can verify a prepared session before it begins.
     const todayDayOfWeek = today.getDay();
     const distToMon = (todayDayOfWeek + 6) % 7;
     const monday = new Date(today);
@@ -3676,10 +3707,10 @@ window.openMonthlyDayDetail = function(dateStr) {
     targetMonday.setDate(date.getDate() - dayIndex);
     targetMonday.setHours(0, 0, 0, 0);
 
-    if (monday.getTime() === targetMonday.getTime()) {
-        // Same week - get workout name and open action modal
+    if (monday.getTime() === targetMonday.getTime() || window.isAdminViewing) {
+        // Get the exact date-aware workout name and open the action modal.
         const isMale = (typeof isMaleUser === 'function' && isMaleUser());
-        let workoutLabel = getMonthlyWorkoutLabel(dayIndex, isMale);
+        let workoutLabel = getMonthlyWorkoutLabel(dayIndex, isMale, date);
 
         // Check for replacement
         const dateStr = getLocalDateString(date);
@@ -3776,8 +3807,11 @@ window.openCalendarWorkout = async function(dayIndexFromMonday, replacementDate)
     const activeCustomProgram = window.activeCustomProgramCache;
     if (activeCustomProgram && activeCustomProgram.is_active && activeCustomProgram.start_date) {
         const startDate = new Date(activeCustomProgram.start_date);
+        const previewDate = window.isAdminViewing && replacementDate
+            ? new Date(`${replacementDate}T12:00:00`)
+            : new Date();
         const msPerWeek = 7 * 24 * 60 * 60 * 1000;
-        const weeksElapsed = Math.floor((new Date() - startDate) / msPerWeek);
+        const weeksElapsed = Math.floor((previewDate - startDate) / msPerWeek);
         const currentWeek = Math.max(1, weeksElapsed + 1);
 
         if (customProgramUsesCompletionGating(activeCustomProgram) || currentWeek <= activeCustomProgram.duration_weeks) {
@@ -22831,7 +22865,7 @@ async function startLibraryWorkout(categoryKey, subcategoryKey, workoutId) {
 // lookup and per-workout customizations since there's no category/id to key
 // off of.
 async function startInlineWorkout(workout) {
-    if (!isCoachSessionAvailable(workout)) { showToast('This added session is not available yet. Follow the current phase of your coaching plan.'); return; }
+    if (!isCoachSessionAvailable(workout) && !window.isAdminViewing) { showToast('This added session is not available yet. Follow the current phase of your coaching plan.'); return; }
     if (!workout || !Array.isArray(workout.exercises) || workout.exercises.length === 0) {
         console.error('startInlineWorkout: invalid workout', workout);
         return;
