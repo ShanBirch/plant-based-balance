@@ -20,3 +20,9 @@ Identity is verified with the auth server before loading. Account changes clear 
 This is an owner-only educational review release. Clinical review is still required before wider release. The original requested video has not been recovered. Researcher profiles link to official institutional pages; researcher portraits have not been copied because reuse permission is unestablished. These limitations are also shown in the private course review notes. Do not describe the course as clinically approved or release it to other accounts without further authorization.
 
 The seeded payload and source draft files remain in ignored `work/menopause/`, not deployed public assets. Future content edits must update the protected database row through an authorized operator workflow.
+
+## 7 October presentation repair
+
+The menopause overview and weeks now use the shared course layout. Lessons and quizzes retain the shared learning player, including bounded scrolling, visible reduced-motion answers and safe mobile controls. Private evidence stays inside the end-of-lesson insight panel. Delayed feedback transitions cannot reopen a question after leaving it. The personalised unreleased outline retains its existing clinical-review gate.
+
+Sixteen focused automated checks passed. An isolated fixture using the actual player and private curriculum checked all 27 lessons and 216 question layouts at 320 × 568, plus eight light/dark portrait/landscape combinations with zero and nonzero safe-area insets, navigation, feedback, retry and reopening. Screenshots are saved in ignored output folders. No production progress or curriculum records were changed by this presentation repair.

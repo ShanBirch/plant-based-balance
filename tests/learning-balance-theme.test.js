@@ -36,7 +36,7 @@ test('reward overlays remain scrollable and safe with zero or nonzero phone inse
  assert.match(css,/max\(24px,env\(safe-area-inset-bottom,0px\)\)/);
  assert.match(css,/prefers-reduced-motion:reduce/);
  const dashboard=read('dashboard.html');
- assert.equal((dashboard.match(/pbb-quiz-theme.css\?v=4-page-photos/g)||[]).length,1);
- assert.equal((dashboard.match(/learning-inline.js\?v=20261007-personalised-learn/g)||[]).length,2);
- assert.match(read('sw.js'),/pbb-quiz-theme.css\?v=4-page-photos/);
+ assert.equal((dashboard.match(/pbb-quiz-theme.css\?v=5-shared-player/g)||[]).length,1);
+ assert.equal((dashboard.match(/learning-inline.js\?v=20261007-menopause-shared-player/g)||[]).length,2);
+ assert.match(read('sw.js'),/pbb-quiz-theme.css\?v=5-shared-player/);
 });

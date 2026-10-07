@@ -1,5 +1,26 @@
 /* Scoped to quizzes and their rewards, not module identities or answer logic.
    Paired ink/text-fill overrides are intentional: legacy styles set both. */
+/* The same bounded player is used for every course, including private lessons. */
+html #view-learning:has(.learning-game-shell) {
+    position:fixed!important; inset:0!important; height:100dvh!important;
+    display:flex!important; flex-direction:column; overflow:hidden!important;
+    padding:0!important; box-sizing:border-box; background:var(--quiz-bg)!important;
+}
+html #view-learning:has(.learning-game-shell) > div:first-child {
+    flex:none; padding-top:max(44px,env(safe-area-inset-top,0px))!important;
+}
+html #view-learning:has(.learning-game-shell) #learning-content {
+    flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain;
+    padding-bottom:calc(var(--nav-height,80px) + max(24px,env(safe-area-inset-bottom,0px)))!important;
+}
+html #learning-content .learning-game-shell {min-height:0!important;}
+html #learning-content .learning-game-stage {flex:none!important; box-sizing:border-box;}
+html #learning-content .learning-game-stage > div {box-sizing:border-box;}
+@media(prefers-reduced-motion:reduce) {
+    html #learning-content .balance-quiz :is(.scenario-option,.match-item,.tap-all-option,.fill-blank-option,.order-item,.card-enter,.story-slide,.story-photo,.story-text) {
+        opacity:1!important; transform:none!important;
+    }
+}
 :root {
     --quiz-bg:#fbf7ee; --quiz-card:#fffdf7; --quiz-ink:#25251f;
     --quiz-muted:#686052; --quiz-gold:#80601f; --quiz-line:#d8c9aa;
