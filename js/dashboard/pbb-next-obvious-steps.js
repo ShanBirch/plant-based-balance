@@ -160,12 +160,14 @@
   }
 
   function markOnboardingStepSeen(actionId) {
+    if (window.isAdminViewing) return;
     if (!hasSeenOnboardingStep(actionId)) window.BalanceOnboardingFunnel?.track('task', actionId, 'completed', { mode: 'first_week' });
     try { localStorage.setItem(onboardingStepKey(actionId), '1'); } catch (_) {}
     render();
   }
 
   function setOnboardingStepComplete(actionId, complete) {
+    if (window.isAdminViewing) return;
     if (ONBOARDING_ACTION_IDS.indexOf(actionId) === -1 && actionId !== 'activity_insights_intro') return;
     if (complete && !hasSeenOnboardingStep(actionId)) window.BalanceOnboardingFunnel?.track('task', actionId, 'completed', { mode: 'first_week' });
     try {
@@ -325,7 +327,7 @@
   function isUnifiedPlanActive() {
     // Home's layout is not dependent on the asynchronous course-state fetch.
     // Otherwise every login briefly renders the retired daily panel.
-    return isMemberEligible();
+    return isMemberEligible() || !!(window.isAdminViewing && window.currentUser?.id);
   }
 
   function getBalanceJourneyAction() {
@@ -1527,6 +1529,7 @@
   }
 
   async function awardCompletionXpIfNeeded() {
+    if (window.isAdminViewing) return;
     if (isShowAllEnabled()) return;
     if (!hasCompletedDay()) return;
     if (!window.currentUser || !window.currentUser.id || !window.supabaseClient) return;
@@ -1660,7 +1663,7 @@
     if (unified && document.documentElement) {
       document.documentElement.classList.add('pbb-unified-next-steps');
     }
-    if (!isMemberEligible()) {
+    if (!isMemberEligible() && !(window.isAdminViewing && window.currentUser?.id)) {
       card.style.display = 'none';
       card.innerHTML = '';
       return;
