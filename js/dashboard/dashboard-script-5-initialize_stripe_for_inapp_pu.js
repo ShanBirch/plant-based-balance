@@ -16551,7 +16551,7 @@ async function renderMovementView() {
             heroMeta = assets[suggestedProgram] || assets[fbProgram] || assets['yoga'];
             heroSched = heroProg ? heroProg.schedule[workoutDayIndex % heroProg.schedule.length] : { title: 'Workout', exercises: [] };
         }
-    } else {
+    } else if (!heroSched) {
         // Standard program from WORKOUT_DB
         // gym_split / female_gym_split have no WORKOUT_DB entry — use 'gym' as fallback.
         // On iOS, WORKOUT_LIBRARY loads 2000 ms after pbbInitComplete while script-5 loads
