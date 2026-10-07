@@ -2976,7 +2976,8 @@ function renderWeeklyCalendar() {
             const schedule = activeCustomProgram.weekly_schedule || [];
             WEEKLY_SCHEDULE = schedule.map((item, idx) => {
                 const scheduledDate = new Date(monday); scheduledDate.setDate(monday.getDate() + idx);
-                if (!isCoachSessionAvailable(item.workout,scheduledDate)) return {day:item.day,program:'rest',dayIndex:idx,isRest:true};
+                // Upcoming assigned sessions stay visible; start buttons enforce their date window.
+                if (item.workout?.availableUntil && scheduledDate >= new Date(item.workout.availableUntil + 'T23:59:59')) return {day:item.day,program:'rest',dayIndex:idx,isRest:true};
                 if (!item.workout || item.workout.type === 'rest') {
                     return { day: item.day, program: 'rest', dayIndex: idx, isRest: true };
                 }
