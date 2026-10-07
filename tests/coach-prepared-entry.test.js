@@ -41,3 +41,15 @@ test('an existing session refreshes the prepared preference after an admin chang
  assert.equal(modal.style.display,'none');assert.equal(c.isOnboardingNavigationLocked(),false);
  assert.equal(window.currentUser.user_metadata.balance_coach_prepared,true);
 });
+
+test('verified read-only admin preview opens Home without target auth metadata or profile writes',async()=>{
+ const {c,window,modal,values}=runtime();
+ window.isAdminViewing=true;
+ window.currentUser={id:'viewed-member',user_metadata:{name:'Jennie'}};
+ window.supabaseClient={auth:{getUser:async()=>{throw Error('Must not replace target identity with admin');}}};
+ await c.checkAndTriggerOnboarding();
+ assert.equal(modal.style.display,'none');assert.equal(c.isOnboardingNavigationLocked(),false);
+ assert.equal(c.initOnboardingWizard(),true);
+ assert.equal(window.currentUser.id,'viewed-member');assert.equal(values.size,0);
+ assert.equal(window.userProfile,undefined);
+});

@@ -1315,7 +1315,7 @@ function scheduleDashboardTaskForActiveUser(task, delayMs) {
 }
 
 function isOnboardingNavigationLocked() {
-    if (window.BalanceOnboardingProgress?.isCoachPreparedMember()) return false;
+    if (window.isAdminViewing || window.BalanceOnboardingProgress?.isCoachPreparedMember()) return false;
     const wizard = document.getElementById('onboarding-wizard');
     const wizardIsOpen = !!(wizard && (
         wizard.classList.contains('active') ||
@@ -10148,6 +10148,8 @@ function resetFreshOnboardingPreferences() {
 }
 
 async function checkAndTriggerOnboarding() {
+    // A verified read-only admin preview must never start a member questionnaire.
+    if (window.isAdminViewing) { enterCoachPreparedDashboard(); return; }
     if (window.BalanceOnboardingProgress?.isCoachGuidedMember() && window.supabaseClient?.auth?.getUser) {
         // An admin may prepare the account after this device cached its session.
         // Refresh only this authenticated identity; do not manufacture profile completion.
@@ -10450,7 +10452,7 @@ async function checkAndTriggerOnboarding() {
 }
 
 function enterCoachPreparedDashboard() {
-    if (!window.BalanceOnboardingProgress?.isCoachPreparedMember()) return false;
+    if (!window.isAdminViewing && !window.BalanceOnboardingProgress?.isCoachPreparedMember()) return false;
     // Readiness is navigation, not a completed questionnaire or health consent.
     const modal = document.getElementById('onboarding-wizard');
     if (modal) { modal.style.display='none'; modal.classList.remove('active'); delete modal.dataset.launchState; }
@@ -10463,7 +10465,7 @@ function enterCoachPreparedDashboard() {
 }
 
 function initOnboardingWizard() {
-    if (window.BalanceOnboardingProgress?.isCoachPreparedMember()) return enterCoachPreparedDashboard();
+    if (window.isAdminViewing || window.BalanceOnboardingProgress?.isCoachPreparedMember()) return enterCoachPreparedDashboard();
     // Guard against multiple simultaneous triggers
     const modal = document.getElementById('onboarding-wizard');
     if (!modal) return;
