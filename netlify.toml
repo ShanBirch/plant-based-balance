@@ -1,5 +1,5 @@
 [build]
-  command = "node scripts/prepare-video-runtime.cjs"
+  command = "node scripts/build-offline-shell.cjs && node scripts/prepare-video-runtime.cjs"
   publish = "."
   functions = "netlify/modern-functions"
 

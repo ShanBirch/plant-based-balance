@@ -1,55 +1,7 @@
-const CACHE_NAME = 'pbb-app-v571-menopause-shared-player';
+const CACHE_NAME = 'pbb-app-v572-offline-launch';
+importScripts('./offline-shell.js');
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';
-const ASSETS = [
-  './js/dashboard/pbb-exercise-video-backups.js?v=2',
-  './css/dashboard/pbb-weighin-theme.css?v=1-balance-gold',
-  './css/dashboard/pbb-quiz-theme.css?v=5-shared-player',
-  './css/balance-menopause.css?v=5-shared-course-player',
-  './lib/balance-menopause.js?v=5-shared-course-player',
-  './dashboard.html',
-  './js/dashboard/pbb-workout-swipe-player.js?v=15-full-width-set-inputs',
-  './js/dashboard/pbb-course-mascot.js?v=1-original-3d',
-  './lib/fitgotchi-animations.js?v=1',
-  './js/dashboard/dashboard-script-13.js?v=9-verified-moves',
-  './css/dashboard/pbb-meal-plan.css?v=2',
-  './js/dashboard/pbb-workout-tour-progress.js?v=1',
-  './balance_logo_transparent.svg',
-  './xp-guide.html',
-  './assets/balance_logo.png',
-  './welcome.html',
-  './lib/supabase.js?v=18-workout-load-buttons',
-  './lib/auth-guard.js?v=14-resume-session',
-  './lib/meta-ad-trial.js?v=30-payment-return',
-  './lib/onboarding-progress.js?v=6-join-balance-recovery',
-  './lib/native-push.js?v=42-client-checkin',
-  './login.html',
-  './exercise_videos.js?v=20260813-global-phone-video-v1',
-  './workout_library.js',
-  './workout_library_extended.js',
-  './js/dashboard/script_part_2.js?v=17-resume-session',
-  './js/dashboard/dashboard-script-3-1_get_user_data.js?v=65-admin-safe-area',
-  './js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20260923-video-same-site',
-  './js/dashboard/pbb-settings-navigation.js?v=2-your-checkin',
-  './js/dashboard/pbb-meta-preview-soundtrack.js?v=3-coach-video-ducking',
-  './js/dashboard/pbb-app-telemetry.js?v=2-replay',
-  './js/dashboard/pbb-replay-privacy.js?v=2-onboarding',
-  './js/dashboard/pbb-session-replay.js?v=2-onboarding',
-  './css/dashboard/pbb-session-replay.css?v=1',
-  './js/vendor/rrweb-2.1.4.min.js',
-  './js/dashboard/pbb-deferred-weeklygoals.js?v=37-mobile-goal-pills',
-  './css/dashboard/pbb-onboarding-comeback.css?v=8',
-  './css/dashboard/pbb-onboarding-foundations.css?v=13-iphone-keyboard',
-  './js/dashboard/dashboard-script-7-video_logic.js?v=20260923-video-same-site',
-  './js/dashboard/dashboard-script-10-points_widget_functions.js?v=67-verified-moves',
-  './js/dashboard/pbb-deferred-fitbit.js?v=3-latest-import-only',
-  './js/dashboard/pbb-next-obvious-steps.js?v=54-tour-quiz-continue',
-  './js/dashboard/pbb-deferred-formcheck.js?v=58-ios-exercise-video-upload&video_health=2',
-  './js/dashboard/pbb-deferred-workoutbuilder.js?v=10',
-  './js/dashboard/pbb-deferred-yourworkouts.js?v=3',
-  './js/dashboard/pbb-deferred-savedworkouts.js?v=7',
-  './js/dashboard/dashboard-script-12-program_builder_state.js?v=4'
-];
 
 // Onboarding models needed immediately on first login.
 // Fetched ONE AT A TIME after install to avoid OOM crashes on mobile Safari.
@@ -99,10 +51,19 @@ async function cacheModelsSequentially(cache, urls) {
 
 // Install - cache app shell, then pre-cache onboarding models sequentially.
 self.addEventListener('install', (e) => {
-  self.skipWaiting(); // Force activation immediately
   e.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(ASSETS))
+      .then(async cache => {
+        // Download sequentially to avoid mobile memory spikes. If any shell
+        // file fails, retain the previous working worker and its offline cache.
+        for (const asset of self.PBB_OFFLINE_ASSETS) {
+          const url = new URL(asset, self.location.href);
+          const response = await fetch(url, { cache: 'reload' });
+          if (!response.ok) throw new Error('Offline shell unavailable: ' + asset);
+          await cache.put(url, response);
+        }
+        await self.skipWaiting();
+      })
       .then(() => broadcast({ event: 'sw_installed', cache: CACHE_NAME }))
     // Onboarding models are cached after activate (see below) to avoid
     // blocking install and to keep memory usage low during SW startup.
@@ -116,7 +77,7 @@ self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys()
       .then((keys) => Promise.all(
-        keys.filter(k => k !== CACHE_NAME && k !== MODEL_CACHE_NAME && k !== WORKOUT_VIDEO_CACHE_NAME).map(k => caches.delete(k))
+        keys.filter(k => /^pbb-app-/.test(k) && k !== CACHE_NAME).map(k => caches.delete(k))
       ))
       .then(() => self.clients.claim())
       .then(() => broadcast({ event: 'sw_active' }))
@@ -191,9 +152,36 @@ function createRangeResponse(request, response) {
   }).catch(() => response);
 }
 
-// Fetch - Network First for HTML/JS/CSS and 3D models, Cache First for images
+async function shellResponse(event, url) {
+  const cache = await caches.open(CACHE_NAME);
+  const isDashboard = url.origin === self.location.origin && url.pathname === '/dashboard.html';
+  const isLogin = url.origin === self.location.origin && url.pathname === '/login.html';
+  const cached = await cache.match(event.request, { ignoreSearch: isDashboard || isLogin });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 3000);
+  try {
+    const response = await fetch(event.request, { cache: 'no-cache', signal: controller.signal });
+    if (!response.ok && cached) return cached;
+    if (response.ok && response.status === 200 && response.type !== 'opaque') {
+      // Never save preview/admin impersonation HTML as the normal dashboard.
+      if (!isDashboard || !url.searchParams.has('view_as')) {
+        event.waitUntil(cache.put(isDashboard ? new URL('/dashboard.html', url) : event.request, response.clone()).catch(() => {}));
+      }
+    }
+    return response;
+  } catch (error) {
+    if (cached) return cached;
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// Cache only public app files, never API responses or non-GET requests.
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
+  if (e.request.method !== 'GET' || url.protocol !== 'https:' && url.protocol !== 'http:') return;
+  if (url.pathname.startsWith('/.netlify/') || url.hostname.endsWith('.supabase.co')) return;
 
   if (url.pathname.match(/\.(mp4|mov|webm)$/i)) {
     return;
@@ -203,26 +191,16 @@ self.addEventListener('fetch', (e) => {
   if (url.pathname.endsWith('/admin-dashboard.html') || url.pathname.endsWith('admin-dashboard.html')) {
     e.respondWith(
       fetch(e.request, { cache: 'no-store' })
-        .catch(() => caches.match(e.request, { ignoreSearch: true }))
     );
     return;
   }
 
   // Network first for HTML, JS, and CSS files (always get latest)
-  if (url.pathname.endsWith('.html') || url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
-    // Revalidate scripts/styles on every visit, but allow HTTP 304 responses to
-    // reuse unchanged bytes. `reload` bypassed this and downloaded them in full.
-    const fetchOptions = url.pathname.endsWith('.html') ? { cache: 'no-store' } : { cache: 'no-cache' };
-    e.respondWith(
-      fetch(e.request, fetchOptions)
-        .then(response => {
-          // Clone and cache fresh response
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
-          return response;
-        })
-        .catch(() => caches.match(e.request, { ignoreSearch: true })) // Fallback to cache if offline
-    );
+  const publicFile = url.origin === self.location.origin && /\.(html|js|css)$/.test(url.pathname);
+  const cdnScript = ['cdn.jsdelivr.net', 'unpkg.com', 'fonts.googleapis.com', 'fonts.gstatic.com'].includes(url.hostname) &&
+    ['script', 'style', 'font'].includes(e.request.destination);
+  if (publicFile || cdnScript) {
+    e.respondWith(shellResponse(e, url));
     return;
   }
 
@@ -254,9 +232,15 @@ self.addEventListener('fetch', (e) => {
   }
 
   // Cache first for everything else (images, icons)
-  e.respondWith(
-    caches.match(e.request).then((response) => response || fetch(e.request))
-  );
+  if (url.origin === self.location.origin && /\.(png|jpe?g|svg|webp|ico|woff2?)$/i.test(url.pathname)) {
+    e.respondWith(caches.open(CACHE_NAME).then(async cache => {
+      const cached = await cache.match(e.request);
+      if (cached) return cached;
+      const response = await fetch(e.request);
+      if (response.ok) e.waitUntil(cache.put(e.request, response.clone()).catch(() => {}));
+      return response;
+    }));
+  }
 });
 
 // Handle push notifications from server

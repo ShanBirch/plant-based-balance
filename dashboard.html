@@ -59,7 +59,7 @@ script, style, head, link, meta, title { display: none !important; }
 #tamagotchi-levelup-overlay:not(.active) { display: none !important; }
 </style>
 <title>Balance</title>
-<script src="js/dashboard/pbb-startup-shell.js?v=2-parallel-home" defer></script>
+<script src="js/dashboard/pbb-startup-shell.js?v=3-nonblocking-home" defer></script>
 <meta name="description" content="Plant-based workouts, vegan nutrition, progress tracking and community in one app.">
 
 
@@ -179,24 +179,23 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
 
 <script>
 
-  // Only register the service worker on web — not inside the Capacitor native shell.
-  // On native, FCM handles push notifications directly.
-  // On iOS Safari, defer to pbbInitComplete to reduce memory pressure during init.
+  // Android's remote WebView can cache the app shell; native push stays with FCM.
+  // iOS native needs a bundled shell in a store build, rather than a web worker.
   function _pbbRegisterSW() {
-    if ('serviceWorker' in navigator &&
-        !(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())) {
+    var nativeIOS = /iP(ad|hone|od)/.test(navigator.userAgent) &&
+      (navigator.userAgent.includes('FitGotchi-Native') || window._fitgotchiNativePlatform === 'ios');
+    if ('serviceWorker' in navigator && !nativeIOS) {
       navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
         .then(reg => {
             reg.update().catch(function() {});
             console.log('SW Registered!', reg);
         })
         .catch(err => console.log('SW Failed:', err));
-    } else if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
-      console.log('[SW] Skipped service worker registration on native (FCM handles push)');
     }
   }
-  if (window._pbbIsIOSSafari) {
+  if (/iP(ad|hone|od)/.test(navigator.userAgent)) {
     window.addEventListener('pbbInitComplete', _pbbRegisterSW, { once: true });
+    window.addEventListener('load', function() { setTimeout(_pbbRegisterSW, 15000); }, { once: true });
   } else {
     _pbbRegisterSW();
   }
@@ -455,7 +454,7 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
 </script>
 
 <!-- Supabase & Auth Guard -->
-<script src="js/dashboard/script_part_2.js?v=20-member-preview-preferences"></script>
+<script src="js/dashboard/script_part_2.js?v=21-offline-launch"></script>
 <script>
 // ── Native OAuth warm-start callback (non-iOS) ────────────────────
 // On iOS this is set up inside the deferred chain above (after supabaseClient exists).
@@ -14148,6 +14147,7 @@ if(!window._pbbIsIOSSafari) {
   }
 
   const steps = [
+    { tab:'movement-tab', sel:'#today-workout-card', title:'Open your saved workout offline', body:'On web and supported Android devices, open Balance online first so its files and your workout can be saved. You can then reopen your saved workout without reception. Completed sets sync when you reconnect. New content and videos still need internet.' },
     { tab:'movement-tab', sel:'#today-workout-card', title:'More room for your sets', body:'Your set results and Start rest button share one spacious row. Open the three-dot Set options menu to Add Drop Set or Delete a set.' },
     { tab:'movement-tab', sel:'#today-workout-card', title:'Rest between your sets', body:'Your workout shows Rest period after Kg: 90 seconds for compound lifts and 60 seconds for accessories, unless your coach sets another duration. Enter your results, then tap Start in the Rest period column to complete that set and open its countdown.' },
     { tab:'movement-tab', sel:'.workout-load-options', fallbackSel:'#today-workout-card', title:'Clear workout feedback', body:'After your workout, choose Too light, Perfect or Too heavy to say how the load felt. Choose one to save, or skip.', fallbackTitle:'Clear workout feedback', fallbackBody:'After your workout, choose Too light, Perfect or Too heavy to say how the load felt. Choose one to save, or skip.' },
@@ -16721,6 +16721,7 @@ window.endFeatureTour = function(skipped){
   // -------------------------------------------------------
 
   var allFeatures = [
+    { id:'offline-launch-v1', tab:'movement-tab', sel:'#today-workout-card', title:'Open your saved workout offline', body:'On web and supported Android devices, open Balance online first so its files and your workout can be saved. You can then reopen your saved workout without reception. Completed sets sync when you reconnect. New content and videos still need internet.' },
     { id:'automatic-masked-replay-v1', tab:'profile', sel:'#balance-replay-settings', title:'Help fixing app problems', body:'Balance now saves a masked replay automatically so Shannon can investigate app problems. Private text and media are hidden. Replays expire after seven days. You can turn this off in Settings.' },
     { id:'checkin-app-coaching-feedback-v1', tab:'dashboard', sel:'#next-obvious-steps-card', title:'Your feedback is welcome', body:'When your check-in is due, open it from To Do Next. The optional feedback box lets you tell Shannon what is working well with the app or coaching, and what could be better.' },
     { id:'master-actions-v4', tab:'learning', sel:'#course-card-balance-master', fallbackSel:'#balance-path', title:'Your weekly Master actions', body:'Master has three or four required actions each week. Save your answers and plans, submit your lift videos, and see each completed action recorded for you and Shannon. Quizzes and reflections complete your week.' },
