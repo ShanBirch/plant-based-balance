@@ -167,6 +167,7 @@ class ViewController: CAPBridgeViewController {
 
     private func nativeBootstrapScript() -> String {
         var source = "window._fitgotchiNativePlatform = 'ios';"
+        source += "window._pbbIOSOfflineShellEnabled = true;"
         if let action = BalanceShortcutHandoff.pendingAction() {
             let escapedAction = javascriptStringLiteral(action)
             source += "window._pendingBalanceShortcutAction = '\(escapedAction)';"

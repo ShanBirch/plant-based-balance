@@ -596,8 +596,19 @@
             } catch(initError) {
                 if (window._crumb) window._crumb('init_ERROR: ' + (initError && initError.message ? initError.message : String(initError)));
                 console.error('Initialization error:', initError);
-                window.BalanceStartupShell?.fail();
-                return;
+                // Authentication and account-switch cleanup have already run.
+                // Native permissions, push and Home widgets are not prerequisites
+                // for viewing the authenticated member's screen.
+                const recoveryUserId = window.currentUser && (window.currentUser.id || window.currentUser.user_id);
+                if (!recoveryUserId || recoveryUserId !== startupUserId || (!!window.isAdminViewing) !== startupAdminView || window._pbbAuthGuardPending) {
+                    window.BalanceStartupShell?.fail();
+                    return;
+                }
+                window._pbbStartupRecoveryNeeded = true;
+                window.trackBalanceActivity?.('app_startup_recovered', {
+                    stage: 'initialization', error_name: initError?.name || 'Error'
+                });
+                window.dispatchEvent(new Event('pbbInitComplete'));
             }
 
             try {

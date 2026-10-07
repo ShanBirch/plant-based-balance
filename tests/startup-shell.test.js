@@ -9,7 +9,7 @@ function setup() {
     const attributes = {};
     const children = [];
     const overlay = { style: {}, classList: { remove() {} }, replaceChildren() { children.length = 0; }, append(...items) { children.push(...items); } };
-    const document = { documentElement: { setAttribute(k,v) { attributes[k]=v; } }, querySelectorAll() { return [{sheet:{},media:''}]; }, getElementById() { return overlay; }, createElement() { return {style:{}}; } };
+    const document = { documentElement: { setAttribute(k,v) { attributes[k]=v; } }, querySelectorAll(selector) { assert.match(selector,/dashboard-style-1\.css/); return [{sheet:{},media:''}]; }, getElementById() { return overlay; }, createElement() { return {style:{}}; } };
     const window = { location:{href:'https://plantbased-balance.org/dashboard.html?native_rev=1',replace(url){ window.reloaded=url; }}, weeklyGoals:{getState(){return {week:{},loading:false};}}, socialJourney: { refresh: async()=>true }, pbbNextSteps:{refreshStatus:async()=>{},refresh(){window.rendered=true;}} };
     vm.runInNewContext(source,{window,document,Date,URL,Promise,setTimeout,clearTimeout,requestAnimationFrame:fn=>setTimeout(fn,0)});
     return {window,attributes,children,overlay};
@@ -64,6 +64,12 @@ test('failed daily state no longer blocks the Home reveal',async()=>{
     assert.equal(ctx.window.rendered,true);
     assert.equal(ctx.window._pbbHomeRefreshDeferred,true);
     assert.equal(ctx.attributes['data-pbb-shell-ready'],undefined);
+});
+
+test('broken weekly widget state cannot escape the optional refresh boundary',async()=>{
+    const ctx=setup();ctx.window.weeklyGoals.getState=()=>{throw Error('widget unavailable');};
+    await ctx.window.BalanceStartupShell.prepare();
+    assert.equal(ctx.window._pbbHomeRefreshDeferred,true);
 });
 test('hanging refresh and unavailable optional modules still allow startup',async()=>{
     const ctx=setup();ctx.window._pbbStartupRefreshTimeoutMs=15;

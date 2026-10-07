@@ -20,6 +20,8 @@ const config: CapacitorConfig = {
   webDir: 'www',
 
   ios: {
+    // Enable WKWebView service workers for the domains declared in Info.plist.
+    limitsNavigationsToAppBoundDomains: true,
     // Append user agent so your JS can detect native app
     appendUserAgent: 'FitGotchi-Native',
     backgroundColor: '#1a1a2e',

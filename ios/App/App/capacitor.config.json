@@ -11,6 +11,7 @@
 	},
 	"webDir": "www",
 	"ios": {
+		"limitsNavigationsToAppBoundDomains": true,
 		"appendUserAgent": "FitGotchi-Native",
 		"backgroundColor": "#1a1a2e"
 	},

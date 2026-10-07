@@ -20,15 +20,17 @@
     async function prepare() {
         var refreshTimeout = root._pbbStartupRefreshTimeoutMs || 8000;
         await waitFor(function() {
-            var styles = Array.from(document.querySelectorAll('link[rel="stylesheet"][href*="dashboard/"]'));
+            // Only the main screen stylesheet is needed to open. Optional replay,
+            // quiz and overlay styles must not block the entire dashboard.
+            var styles = Array.from(document.querySelectorAll('link[rel="stylesheet"][href*="dashboard-style-1.css"]'));
             return styles.length > 0 && styles.every(function(link) { return !!link.sheet && link.media !== 'print'; });
         }, 15000);
         // Home cards are enhancements, not login prerequisites. Keep their
         // saved state and let them finish/retry independently after opening.
         var jobs = [];
-        if (root.weeklyGoals && !root.weeklyGoals.getState().week) {
-            jobs.push(bounded(Promise.resolve().then(function() { return root.weeklyGoals.refresh(); }), refreshTimeout));
-        }
+        if (root.weeklyGoals) jobs.push(bounded(Promise.resolve().then(function() {
+            if (!root.weeklyGoals.getState().week) return root.weeklyGoals.refresh();
+        }), refreshTimeout));
         if (root.socialJourney) jobs.push(bounded(Promise.resolve().then(function() { return root.socialJourney.refresh(); }), refreshTimeout));
         if (root.pbbNextSteps) jobs.push(bounded(Promise.resolve().then(function() { return root.pbbNextSteps.refreshStatus(); }), refreshTimeout));
         var results = await Promise.allSettled(jobs);
