@@ -5884,7 +5884,7 @@ function renderAiPlanFocusedDay(dayNum) {
     }).join('');
     const tags = (selected.tags || []).filter(tag => !['prepared-library','ingredient-calculated-v3'].includes(tag)).slice(0, 3).map(tag => escapeAiPlanText(window.BALANCE_PREPARED_MEAL_LIBRARY?.label(tag) || tag)).join(' · ')
         || escapeAiPlanText(selected.description || 'Planned for you');
-    const focusLabel = familyPlan ? 'Shared family dinner' : allComplete && isToday
+    const focusLabel = familyPlan ? 'Your daily meals' : allComplete && isToday
         ? 'Today complete'
         : selectedIndex === nextIndex && isToday
             ? 'Up next'
@@ -16006,7 +16006,7 @@ async function renderMovementView() {
             // Use custom program schedule
             const schedule = activeCustomProgram.weekly_schedule || [];
             WEEKLY_SCHEDULE = schedule.map((item, idx) => {
-                if (!isCoachSessionAvailable(item.workout)) return {day:item.day,program:'rest',dayIndex:idx,isRest:true};
+                // Keep assigned sessions visible for review; starting still checks the phase date.
                 if (!item.workout || item.workout.type === 'rest') {
                     return { day: item.day, program: 'rest', dayIndex: idx, isRest: true, fallback: 'yoga', fallbackIdx: idx };
                 }
