@@ -443,7 +443,7 @@
       // Load its real prerequisites before evaluating learning-inline.js.
       var dependencies = [
         ['lib/learn-curriculum.js?v=5-experience-intro', 'BalanceLearnCurriculum'],
-        ['lib/learn-brain-foundations.js?v=4-experience-intro', 'BalanceBrainFoundations'],
+        ['lib/learn-brain-foundations.js?v=5-mixed-quiz', 'BalanceBrainFoundations'],
         ['lib/learn-predictive-content.js?v=8-optional-examples', 'BalancePredictiveContent'],
         ['lib/learn-weekly-actions.js?v=retired-20261008', 'BalanceLearnWeeklyActions'],
         ['lib/learn-action-review.js?v=retired-20261008', 'BalanceLearnActionReview'],
@@ -457,7 +457,7 @@
       for (var dependency of dependencies) {
         await load(dependency[0], function(){ return !!window[dependency[1]]; });
       }
-      await load('lib/learning-inline.js?v=20261008-experience-intro', function(){
+      await load('lib/learning-inline.js?v=20261008-mixed-quiz', function(){
         return typeof window.prepareBalanceFoundationsStartForTour === 'function'
           && typeof window.openCurrentCourseLesson === 'function'
           && typeof window.getCurrentCourseLessonDestination === 'function';

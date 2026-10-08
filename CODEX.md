@@ -1,5 +1,9 @@
 # Balance Codex Operating Brief
 
+## Balance Learn: mixed Week 1 quizzes (8 October 2026)
+
+Shannon requested the same quiz variety as later lessons. All five new Week 1 lessons now use all six existing formats: scenarios, true/false, matching pairs, fill-in-the-blank, ordering and select-all. Keep eight questions per new lesson, stable IDs and saved completions, and the existing quiz styling. The researchers quiz already has mixed games. Reading pages and lesson order stay intact. Reset the shared player's internal scroll when each question opens. See docs/learn-beginner-teaching-contract.md.
+
 ## Balance Learn: constructed experience is lesson two (8 October 2026)
 
 Shannon approved publishing Your Brain Constructs Your Experience as lesson two, immediately after Meet the Researchers. New ID mind-0-5 has eight questions and uses the existing player and brain-body diagram. Active curriculum ten_v2 has 50 lessons: six in Week 1, four in Week 2, five in Weeks 3-10. All 49 previous IDs retain their order and credit; ten_v1 and other archived calendars remain available. Teach that both stopping and continuing thoughts are part of the brain-body process, with learning and agency operating through it. Do not claim the free-energy principle establishes that conscious decisions do not exist or that effort removes physical limits. New lessons remain available to assigned learning profiles. This supersedes the earlier 49-lesson/four-or-five-every-week facts below.

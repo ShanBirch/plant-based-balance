@@ -43,10 +43,10 @@ test('stale action submissions are rejected before any enrollment write or autom
 });
 test('course display and both app loading paths use ten weeks with retired tasks and the original quiz stylesheet',()=>{
  const html=read('dashboard.html');assert.equal((html.match(/learn-curriculum.js\?v=5-experience-intro/g)||[]).length,2);assert.equal((html.match(/title:'Learn at a steadier pace'/g)||[]).length,2);
- assert.equal((html.match(/learning-inline.js\?v=20261008-experience-intro/g)||[]).length,2);
+ assert.equal((html.match(/learning-inline.js\?v=20261008-mixed-quiz/g)||[]).length,2);
  assert.match(player,/course !== 'learn' && window.getCourseLessonCompletions/);assert.match(player,/!isFoundationsContext && result\?\.reflection_eligible/);
  assert.match(read('plant-based-fitness.html'),/50 lessons and quizzes/);assert.equal((read('plant-based-fitness.html').match(/<details class="course-week">/g)||[]).length,10);
  assert.equal((html.match(/title:'Your experience, explained'/g)||[]).length,2);
- for(const file of ['dashboard.html','js/dashboard/pbb-next-obvious-steps.js']){assert.match(read(file),/learn-brain-foundations.js\?v=4-experience-intro/);assert.match(read(file),/learning-inline.js\?v=20261008-experience-intro/);}
+ for(const file of ['dashboard.html','js/dashboard/pbb-next-obvious-steps.js']){assert.match(read(file),/learn-brain-foundations.js\?v=5-mixed-quiz/);assert.match(read(file),/learning-inline.js\?v=20261008-mixed-quiz/);}
  assert.match(html,/pbb-quiz-theme.css\?v=5-shared-player/);
 });

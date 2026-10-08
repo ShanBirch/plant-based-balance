@@ -23,13 +23,22 @@ test('the 45 original lesson IDs and six original practical actions remain avail
  assert.deepEqual(curriculum.weeks('six_v2').map(w=>w.action),[1,2,3,4,5,6]);
  for(const version of ['legacy_six','bridge_eight_v1'])assert.ok(curriculum.weeks(version).every(w=>!w.lessonIds.some(id=>curriculum.brainBasics.includes(id))));
 });
-test('all new quizzes have eight taught questions with valid feedback and answers',()=>{
+test('each new Week 1 quiz has eight valid games spanning all six existing formats',()=>{
  const d=data();
  for(const row of foundations.basics){
   const lesson=d.LESSONS['mind-0'].find(l=>l.id===row.id);
-  assert.equal(lesson.games.length,8);assert.equal(new Set(lesson.games.map(g=>g.question)).size,8);
+  assert.equal(lesson.games.length,8);assert.equal(new Set(lesson.games.map(g=>g.question || g.sentence || g.pairs.map(p=>p.left).join('|'))).size,8);
+  assert.deepEqual([...new Set(lesson.games.map(g=>g.type))].sort(),Object.values(d.GAME_TYPES).sort());
   assert.equal(d.UNITS[lesson.unitId].moduleId,'mind');
-  for(const g of lesson.games){assert.ok(g.explanation);if(g.options){assert.ok(g.options[g.correctIndex]);assert.equal(new Set(g.options).size,3);}else assert.equal(typeof g.answer,'boolean');}
+  for(const g of lesson.games){
+   assert.ok(g.explanation);
+   if(g.type===d.GAME_TYPES.SCENARIO_STORY){assert.ok(g.options[g.correctIndex]);assert.equal(new Set(g.options).size,3);}
+   else if(g.type===d.GAME_TYPES.FILL_BLANK){assert.ok(g.options.includes(g.answer));assert.equal(new Set(g.options).size,g.options.length);}
+   else if(g.type===d.GAME_TYPES.TAP_ALL){assert.ok(g.options.some(o=>o.correct));assert.ok(g.options.some(o=>!o.correct));assert.ok(g.options.every(o=>typeof o.correct==='boolean'&&o.text));}
+   else if(g.type===d.GAME_TYPES.MATCH_PAIRS){assert.ok(g.pairs.length>=3);assert.ok(g.pairs.every(p=>p.left&&p.right));assert.equal(new Set(g.pairs.map(p=>p.left)).size,g.pairs.length);}
+   else if(g.type===d.GAME_TYPES.ORDER_SEQUENCE){assert.ok(g.items.length>=3);assert.equal(new Set(g.items).size,g.items.length);}
+   else assert.equal(typeof g.answer,'boolean');
+  }
   assert.ok(fs.existsSync(lesson.content.image.src));assert.doesNotMatch(lesson.content.intro,/—/);
  }
  assert.match(d.LESSONS['mind-0'].find(l=>l.id==='mind-0-2').content.intro,/action potential/);
@@ -54,7 +63,7 @@ test('personalised nutrition keeps its own examples and diet instructions',()=>{
 });
 test('the new content uses the existing player and both regular and iOS asset loaders',()=>{
  const html=read('dashboard.html');
- assert.equal((html.match(/learn-brain-foundations.js\?v=4-experience-intro/g)||[]).length,2);
+ assert.equal((html.match(/learn-brain-foundations.js\?v=5-mixed-quiz/g)||[]).length,2);
  assert.ok(html.indexOf('learn-brain-foundations.js')<html.indexOf('learning-inline.js?v='));
  assert.match(source,/\.\.\.supportSlides\(support.before\), \.\.\.originalSlides, \.\.\.supportSlides\(support.after\)/);
  assert.match(html,/id:'learn-brain-basics-20261008'/);
