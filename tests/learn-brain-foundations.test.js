@@ -11,14 +11,14 @@ test('new basics are distinct unfinished lessons after the researchers, preservi
  vm.runInNewContext(source.slice(source.indexOf('    function getFoundationsProgress('),source.indexOf('    function trackFoundationsEvent(')),ctx);
  const saved={lessons_completed:['mind-1-1','mind-1-2'],total_lessons_completed:2,total_xp_from_learning:40};
  const before=JSON.stringify(saved),progress=ctx.getFoundationsProgress(saved);
- assert.equal(progress.nextLessonId,'mind-0-1');assert.equal(progress.quizCompleted,2);assert.equal(progress.quizTotal,49);
+ assert.equal(progress.nextLessonId,'mind-0-5');assert.equal(progress.quizCompleted,2);assert.equal(progress.quizTotal,50);
  assert.equal(JSON.stringify(saved),before);
- assert.deepEqual(progress.weekProgress[0].lessonIds,['mind-1-1',...curriculum.brainBasics]);
- for(const id of curriculum.brainBasics){saved.lessons_completed.push(id);assert.equal(ctx.getFoundationsProgress(saved).quizCompleted,saved.lessons_completed.length);}
+ assert.deepEqual(progress.weekProgress[0].lessonIds,['mind-1-1',curriculum.experienceIntro,...curriculum.brainBasics]);
+ for(const id of [curriculum.experienceIntro,...curriculum.brainBasics]){saved.lessons_completed.push(id);assert.equal(ctx.getFoundationsProgress(saved).quizCompleted,saved.lessons_completed.length);}
  assert.equal(ctx.getFoundationsProgress(saved).nextLessonId,'mind-1-3');
 });
 test('the 45 original lesson IDs and six original practical actions remain available',()=>{
- const oldIds=curriculum.weeks().flatMap(w=>w.lessonIds).filter(id=>!curriculum.brainBasics.includes(id));
+ const oldIds=curriculum.weeks().flatMap(w=>w.lessonIds).filter(id=>!curriculum.brainBasics.includes(id)&&id!==curriculum.experienceIntro);
  assert.equal(oldIds.length,45);assert.equal(new Set(oldIds).size,45);
  assert.deepEqual(curriculum.weeks('six_v2').map(w=>w.action),[1,2,3,4,5,6]);
  for(const version of ['legacy_six','bridge_eight_v1'])assert.ok(curriculum.weeks(version).every(w=>!w.lessonIds.some(id=>curriculum.brainBasics.includes(id))));
@@ -32,8 +32,8 @@ test('all new quizzes have eight taught questions with valid feedback and answer
   for(const g of lesson.games){assert.ok(g.explanation);if(g.options){assert.ok(g.options[g.correctIndex]);assert.equal(new Set(g.options).size,3);}else assert.equal(typeof g.answer,'boolean');}
   assert.ok(fs.existsSync(lesson.content.image.src));assert.doesNotMatch(lesson.content.intro,/—/);
  }
- assert.match(d.LESSONS['mind-0'][1].content.intro,/action potential/);
- assert.match(d.LESSONS['mind-0'][1].content.intro,/neurotransmitters/);
+ assert.match(d.LESSONS['mind-0'].find(l=>l.id==='mind-0-2').content.intro,/action potential/);
+ assert.match(d.LESSONS['mind-0'].find(l=>l.id==='mind-0-2').content.intro,/neurotransmitters/);
 });
 test('every later Learn lesson has vocabulary, a connected example and a practical observation',()=>{
  const all=Object.values(data().LESSONS).flat();
@@ -54,7 +54,7 @@ test('personalised nutrition keeps its own examples and diet instructions',()=>{
 });
 test('the new content uses the existing player and both regular and iOS asset loaders',()=>{
  const html=read('dashboard.html');
- assert.equal((html.match(/learn-brain-foundations.js\?v=3-predictive-foundations/g)||[]).length,2);
+ assert.equal((html.match(/learn-brain-foundations.js\?v=4-experience-intro/g)||[]).length,2);
  assert.ok(html.indexOf('learn-brain-foundations.js')<html.indexOf('learning-inline.js?v='));
  assert.match(source,/\.\.\.supportSlides\(support.before\), \.\.\.originalSlides, \.\.\.supportSlides\(support.after\)/);
  assert.match(html,/id:'learn-brain-basics-20261008'/);

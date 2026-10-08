@@ -13,7 +13,7 @@ test('assigned profile adapts real lesson text and all eight quiz questions with
  assert.equal(w.BalancePersonalisedLearn.lesson(original),original);
  w.currentUser={id:'assigned-member',user_metadata:{balance_learning_profile:'family_lower_carb_v1'}};
  const ids=curriculum.weeks().flatMap(w=>w.lessonIds);
- assert.equal(ids.length,49);
+ assert.equal(ids.length,50);
  for(const original of Object.values(w.lessons).flat().filter(l=>ids.includes(l.id))){
   const lesson=w.BalancePersonalisedLearn.lesson(original);
   assert.equal(lesson.id,original.id);

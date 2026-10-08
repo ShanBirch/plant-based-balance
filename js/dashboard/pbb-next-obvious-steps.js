@@ -442,12 +442,12 @@
       // Home can request Learn before the deferred dashboard scripts arrive.
       // Load its real prerequisites before evaluating learning-inline.js.
       var dependencies = [
-        ['lib/learn-curriculum.js?v=4-ten-week-learning', 'BalanceLearnCurriculum'],
-        ['lib/learn-brain-foundations.js?v=2-learning-only', 'BalanceBrainFoundations'],
+        ['lib/learn-curriculum.js?v=5-experience-intro', 'BalanceLearnCurriculum'],
+        ['lib/learn-brain-foundations.js?v=4-experience-intro', 'BalanceBrainFoundations'],
         ['lib/learn-predictive-content.js?v=8-optional-examples', 'BalancePredictiveContent'],
         ['lib/learn-weekly-actions.js?v=retired-20261008', 'BalanceLearnWeeklyActions'],
         ['lib/learn-action-review.js?v=retired-20261008', 'BalanceLearnActionReview'],
-        ['lib/balance-curriculum.js?v=ten-week-learning-v1', 'BalanceCurriculum'],
+        ['lib/balance-curriculum.js?v=ten-week-learning-v2', 'BalanceCurriculum'],
         ['lib/balance-course-layout.js?v=3-weekly-actions', 'BalanceCourseLayout'],
         ['lib/balance-course-weeks.js?v=1', 'BalanceCourseWeeks'],
         ['lib/balance-lead-course.js?v=2-week-cards', 'BalanceLead'],
@@ -457,7 +457,7 @@
       for (var dependency of dependencies) {
         await load(dependency[0], function(){ return !!window[dependency[1]]; });
       }
-      await load('lib/learning-inline.js?v=20261008-ten-week-learning', function(){
+      await load('lib/learning-inline.js?v=20261008-experience-intro', function(){
         return typeof window.prepareBalanceFoundationsStartForTour === 'function'
           && typeof window.openCurrentCourseLesson === 'function'
           && typeof window.getCurrentCourseLessonDestination === 'function';

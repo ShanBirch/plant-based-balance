@@ -1,5 +1,7 @@
 # Beginner teaching for Balance Learn
 
+Later approval, 8 October: Your Brain Constructs Your Experience is added as lesson two, mind-0-5. The active ten-week course now has 50 lessons. The gym example connects effort, stopping/continuing thoughts and agency within the brain-body process. It keeps six multiple-choice and two true/false questions in the existing player, stable completion IDs and the existing brain-body diagram. This lesson provides the overview; the existing sensory, emotion, fatigue and learning lessons provide later detail. Sources for effort and agency: [de Morree and colleagues](https://pubmed.ncbi.nlm.nih.gov/22725828/) and [Friston and colleagues on choice](https://pmc.ncbi.nlm.nih.gov/articles/PMC3782702/). No claim that free energy proves conscious decisions nonexistent.
+
 The ten-week pacing and learning-only decision later on 8 October supersedes the six-week schedule and mandatory action references below. See docs/learn-ten-week-learning-only.md. Beginner teaching and existing player/style criteria still apply.
 
 Approved 8 October 2026. Preserve the six-week course, original absolute wording, lesson IDs, quizzes, weekly actions and player style. Assume no prior brain knowledge.

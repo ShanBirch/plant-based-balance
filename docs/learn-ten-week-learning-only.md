@@ -4,11 +4,11 @@ Approved by Shannon, 8 October 2026. Supersedes the earlier six-week pacing and 
 
 ## Delivery
 
-All 49 lesson IDs and their flattened order match six_v2 exactly. The app's active course is ten_v1, independent of the historical action calendar.
+The app's active course is ten_v2 with 50 lessons. Lesson two is mind-0-5, Your Brain Constructs Your Experience, approved by Shannon later on 8 October. All 49 existing IDs retain their relative order. The archived ten_v1 path still has 49 lessons and matches six_v2 exactly; the active learning path is independent of the historical action calendar.
 
 | Week | Topic | Lessons |
 | --- | --- | --- |
-| 1 | Meet your brain: researchers, brain, cells, body messages, senses | 5 |
+| 1 | Meet your brain: researchers, constructed experience, brain, cells, body messages, senses | 6 |
 | 2 | How your brain predicts | 4 |
 | 3 | Experience shapes reality | 5 |
 | 4 | Work with your energy | 5 |
@@ -19,7 +19,7 @@ All 49 lesson IDs and their flattened order match six_v2 exactly. The app's acti
 | 9 | Make progress easier to repeat | 5 |
 | 10 | Build your sustainable way forward | 5 |
 
-Week progress, next unfinished lesson and full course completion use saved lesson quiz IDs. Retired actions, reflections and calendar dates cannot block Learn. Someone who completed the original first two keeps both and sees mind-0-1 next. The public course page uses the same ten topics. Existing customer billing, support durations, prices and lifetime entitlements stay as agreed; the suggested learning pace does not invent new sale terms.
+Week progress, next unfinished lesson and full course completion use saved lesson quiz IDs. Retired actions, reflections and calendar dates cannot block Learn. Someone who completed the original first two, or all previous 49, keeps that credit and sees mind-0-5 next. No completed lesson, issued certificate or XP record is reset. The public course page uses the same ten topics. Existing customer billing, support durations, prices and lifetime entitlements stay as agreed; the suggested learning pace does not invent new sale terms.
 
 ## Retirement boundaries
 
@@ -37,8 +37,8 @@ No task definitions, API implementations, tables, member completions, XP, action
 
 ## Verification and evaluation
 
-192 focused checks pass and eight browser cases pass. Focused checks cover exact order/count, saved first-two progress, 100% completion without tasks, Home suppression, quiet retired forms, stale submissions, archived evidence access, ordinary coaching check-in persistence and historical calendar/action behavior. The lesson and quiz CSS has no diff.
+193 focused checks pass and eight browser cases pass after adding lesson two. Focused checks cover the new second position, all previous 49 IDs in order, retained first-two/all-49 completions, assigned-profile access, 100% completion without tasks, Home suppression, quiet retired forms, stale submissions, archived evidence access, ordinary coaching check-in persistence and historical calendar/action behavior. The lesson and quiz CSS has no diff.
 
-Browser proof uses the real renderers and production CSS in isolated local fixtures: small portrait/landscape, light/dark and both zero and nonzero top/bottom safe-area reports. It checks course reopening/scrolling, Week 1/10, original first-two credit, wrong-answer retry and perfect quiz completion. Proof: output/learn-ten-week-proof in the managed task worktree. These are emulated checks rather than physical-device tests.
+Browser proof uses the real renderers and production CSS in isolated local fixtures: small portrait/landscape, light/dark and both zero and nonzero top/bottom safe-area reports. It checks course reopening/scrolling, Week 1/10, original first-two credit, reading every new lesson page, wrong-answer retry and eight-answer perfect quiz completion. Proof: output/learn-experience-intro-proof in the managed task worktree. These are emulated checks rather than physical-device tests. The new canonical catalog row is active with eight questions; no member completion or XP rows were changed by the migration.
 
 Review completion by lesson count and member feedback on 22 October 2026. A lower per-week workload should help continuation; do not compare old and new week-completion percentages without accounting for the different schedule.

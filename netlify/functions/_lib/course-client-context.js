@@ -31,7 +31,7 @@ function buildCourseClientContext(data) {
     const purchase = data.purchase?.[0];
     const lines = [
         'LIVE COURSE / CUSTOMER CONTEXT:',
-        'Balance Learn is a ten-week learning course: 49 lessons and quizzes, four or five per week. Practical course tasks and compulsory Learn reflections are retired. Existing task records and billing/support agreements are preserved. Answer this member as customer service/coaching, never restart ad discovery, pitch their existing purchase, or send a checkout follow-up.',
+        'Balance Learn is a ten-week learning course: 50 lessons and quizzes, six in Week 1 and four or five in later weeks. Practical course tasks and compulsory Learn reflections are retired. Existing task records and billing/support agreements are preserved. Answer this member as customer service/coaching, never restart ad discovery, pitch their existing purchase, or send a checkout follow-up.',
         'Use only relevant saved facts below. Account creation, payment, enrolment, available week and completed lessons are different facts. Missing logs do not prove inactivity. A lookup failure means unknown.',
         `Account onboarding: ${account ? (account.onboarding_complete ? 'complete' : 'incomplete') : 'unknown'}. Access: ${account?.subscription_status || 'unknown'}; plan: ${account?.subscription_plan || 'unknown'}.`,
         data.purchase === null ? 'Payment lookup unavailable.' : purchase ? `Latest purchase: ${purchase.status}, ${purchase.purchased_at}; access expiry: ${purchase.metadata?.access_expires_at || 'not recorded'}.` : 'No matched course purchase recorded; this does not rule out another entitlement.',

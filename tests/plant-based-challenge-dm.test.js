@@ -245,7 +245,7 @@ test('challenge contract keeps common fact and conversational checks without old
     assert.deepEqual(check({...base,currentMessage:'How much does the challenge cost?',draft:{joined:'The price depends on the support package.'}}),[]);
     const prompt=buildPaidMetaAgentPrompt({flowVariant:'plant_based_challenge'});
     assert.doesNotMatch(prompt,/LATEST FULL-FLOW REQUIREMENT|BROAD ROUTE GUARD|preview comes before payment|GUIDE THE SALE|ZOOM SUPPORT OPTION/);
-    for (const text of ['Preserve negations, corrections and uncertainty','Answer yes/no questions directly','Never deny automation','fixed weekly LEARNING theme','49 lessons']) assert.ok(prompt.includes(text),text);
+    for (const text of ['Preserve negations, corrections and uncertainty','Answer yes/no questions directly','Never deny automation','fixed weekly LEARNING theme','50 lessons']) assert.ok(prompt.includes(text),text);
 });
 
 

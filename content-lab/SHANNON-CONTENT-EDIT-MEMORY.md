@@ -1,5 +1,9 @@
 # Shannon Content Edit Memory
 
+## 8 October 2026 - constructed experience is lesson two
+
+Shannon approved Your Brain Constructs Your Experience immediately after the researchers so he can take it. Use the gym example: both I should stop and I can continue thoughts arise through the brain-body process; learning, attention and agency operate through that process. Keep a firm explanation without claiming the free-energy principle proves conscious decisions nonexistent. Active course now has 50 lessons, six in Week 1, four in Week 2 and five in later weeks. Preserve all previous IDs/completions and quiz styling. See docs/learn-ten-week-learning-only.md.
+
 ## 8 October 2026 - prediction and sensory inference clarification
 
 Shannon questioned the new cup and sensory lessons because they sounded like input arrives before the brain starts predicting. Teach an already active, recurrent predictive system: sensory evidence constrains inferred causes, and expectations help guide movement. The specific original “Your Brain Guesses First” claim that only prediction violations become conscious is corrected too; this is a scoped accuracy exception to the earlier absolute-wording preservation rule. Expected sensations can be conscious and errors can be nonconscious. The brain can learn useful explanations, but does not receive direct access to the world or finished pictures from the eyes. Keep all lesson IDs, completion credit, eight-question counts and existing quiz formats/styles. Sources and criteria: docs/learn-beginner-teaching-contract.md.

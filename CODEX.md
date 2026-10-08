@@ -1,5 +1,9 @@
 # Balance Codex Operating Brief
 
+## Balance Learn: constructed experience is lesson two (8 October 2026)
+
+Shannon approved publishing Your Brain Constructs Your Experience as lesson two, immediately after Meet the Researchers. New ID mind-0-5 has eight questions and uses the existing player and brain-body diagram. Active curriculum ten_v2 has 50 lessons: six in Week 1, four in Week 2, five in Weeks 3-10. All 49 previous IDs retain their order and credit; ten_v1 and other archived calendars remain available. Teach that both stopping and continuing thoughts are part of the brain-body process, with learning and agency operating through it. Do not claim the free-energy principle establishes that conscious decisions do not exist or that effort removes physical limits. New lessons remain available to assigned learning profiles. This supersedes the earlier 49-lesson/four-or-five-every-week facts below.
+
 ## Balance Learn: ongoing prediction and sensory inference (8 October 2026)
 
 Shannon flagged that the new cup and incoming-signal lessons sounded reactive. Explain an already active brain: ongoing predictions and sensory evidence support inference about current causes and future input; expectations can guide movement before and during the reach. Correct the specific original mind-1-2 claim that only prediction violations become conscious, including its quiz and takeaway. Expected sensations can be conscious and prediction errors can be nonconscious. This scoped accuracy correction supersedes earlier absolute-wording preservation for that claim. Preserve lesson IDs, completion credit, quiz formats and visual style. Sources and teaching criteria: docs/learn-beginner-teaching-contract.md.

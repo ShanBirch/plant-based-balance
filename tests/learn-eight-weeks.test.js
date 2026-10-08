@@ -17,7 +17,7 @@ test('all 40 Mind lessons are owned by Learn or Become in the new and continuati
  for(const version of ['six_v2','eight_v1','bridge_eight_v1']){
   const c=runtime(version);const brain=c.BalanceCurriculum.lessons.filter(l=>l.id.startsWith('mind-'));
   const total=version==='bridge_eight_v1'?45:49;
-  assert.equal(brain.length,44);assert.equal(brain.filter(l=>l.course==='learn').length,total-10);assert.equal(brain.filter(l=>l.course==='become').length,5);
+  assert.equal(brain.length,45);assert.equal(brain.filter(l=>l.course==='learn').length,total-10);assert.equal(brain.filter(l=>l.course==='become').length,5);
   const ids=curriculum.weeks(version).flatMap(w=>w.lessonIds);assert.equal(ids.length,total);assert.equal(new Set(ids).size,total);
   for(const id of ids)assert.ok(Object.values(c.lessonData).flat().find(l=>l.id===id),id);
  }
@@ -98,7 +98,7 @@ test('all inline dashboard scripts parse after both regular and iOS loader chang
   if(/type=["'](?:application\/ld\+json|importmap|text\/x-pbb-template)/.test(match[1])||!match[2].trim())continue;
   assert.doesNotThrow(()=>new vm.Script(match[2]));
  }
- const html=read('dashboard.html');assert.equal((html.match(/learn-curriculum\.js\?v=4-ten-week-learning/g)||[]).length,2);
+ const html=read('dashboard.html');assert.equal((html.match(/learn-curriculum\.js\?v=5-experience-intro/g)||[]).length,2);
  assert.equal((html.match(/learn-predictive-content\.js\?v=8-optional-examples/g)||[]).length,2);
 });
 
