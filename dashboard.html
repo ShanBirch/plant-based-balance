@@ -566,6 +566,8 @@ if (window._pbbIsIOSSafari) {
 </script>
 <script src="lib/challenge-display-window.js?v=1"></script>
 <script src="lib/meal-plan-shopping-list.js?v=2&diet_library=3"></script>
+<script src="lib/meal-plan-family-servings.js?v=1"></script>
+<link rel="stylesheet" href="css/dashboard/meal-plan-family-servings.css?v=1">
 <script>
 // platform.js is tiny (1KB) and needed for platform detection during init
 </script>
@@ -2478,6 +2480,12 @@ if(!window._pbbIsIOSSafari) {
                         </button>
                         <div class="ai-plan-shopping__panel" id="ai-plan-shopping-panel" hidden>
                             <p class="ai-plan-shopping__helper">Combined from every meal in the selected week. Tick off what you already have, then download the list.</p>
+                            <label id="ai-plan-shopping-family" hidden style="display:none;align-items:center;gap:10px;margin:12px 0;font-size:.8rem;">
+                                <input type="checkbox" onchange="setAiPlanShoppingFamily(this)"> Shop for the family batch
+                            </label>
+                            <label id="ai-plan-shopping-snacks" hidden style="display:none;align-items:center;gap:10px;margin:12px 0;font-size:.8rem;">
+                                <input type="checkbox" checked onchange="setAiPlanShoppingSnacks(this)"> Include optional snacks
+                            </label>
                             <div class="ai-plan-shopping__list" id="ai-plan-shopping-list"></div>
                             <div class="ai-plan-shopping__footer">
                                 <span class="ai-plan-shopping__status" id="ai-plan-shopping-status" role="status" aria-live="polite"></span>
@@ -12956,7 +12964,7 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261008-monthly-custom-preview&cohort_diets=1&video_health=2';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261008-family-servings&cohort_diets=1&video_health=2';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
@@ -12998,7 +13006,7 @@ if (window._pbbIsIOSSafari) {
         var s = document.createElement('script');
         s.async = false;
         s.dataset.metaTrialLoader = String(attempt);
-        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261008-monthly-custom-preview&cohort_diets=1&video_health=2&meta_retry=' + attempt;
+        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261008-family-servings&cohort_diets=1&video_health=2&meta_retry=' + attempt;
         s.onload = function() {
             if (window._pbbScript5Complete && window._switchAppTabReady && typeof window._switchAppTabReal === 'function') {
                 sessionStorage.removeItem('pbb_meta_script5_recovery_v1');
@@ -13017,7 +13025,7 @@ if (window._pbbIsIOSSafari) {
         document.head.appendChild(s);
     })(0);
 } else {
-document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261008-monthly-custom-preview"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261008-family-servings"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=15-full-width-set-inputs"></script>
@@ -14125,6 +14133,7 @@ if(!window._pbbIsIOSSafari) {
   }
 
   const steps = [
+    { tab:'meals', sel:'.ai-plan-family', title:'Your plate and the family batch', body:'Open a family recipe to compare your serving with the batch. Choose grams or hands and household measures, then set how many portions to cook.', fallbackSel:'#ai-plan-loaded', condition:function(){ return !!(window._aiMealPlanCache && window._aiMealPlanCache.diet_type === 'family_lower_carb'); } },
     { tab:'movement-tab', sel:'#today-workout-card', title:'Open your saved workout offline', body:'On web, supported Android devices and updated iPhone apps, open Balance online first so its files and your workout can be saved. You can then reopen your saved workout without reception. Completed sets sync when you reconnect. New content and videos still need internet.' },
     { tab:'movement-tab', sel:'#today-workout-card', title:'More room for your sets', body:'Your set results and Start rest button share one spacious row. Open the three-dot Set options menu to Add Drop Set or Delete a set.' },
     { tab:'movement-tab', sel:'#today-workout-card', title:'Rest between your sets', body:'Your workout shows Rest period after Kg: 90 seconds for compound lifts and 60 seconds for accessories, unless your coach sets another duration. Enter your results, then tap Start in the Rest period column to complete that set and open its countdown.' },
@@ -16699,6 +16708,7 @@ window.endFeatureTour = function(skipped){
   // -------------------------------------------------------
 
   var allFeatures = [
+    { id:'family-meal-servings-v1', tab:'meals', sel:'.ai-plan-family', title:'Your plate and the family batch', body:'Open a family recipe to compare your serving with the batch. Choose grams or hands and household measures, then set how many portions to cook.', fallbackSel:'#ai-plan-loaded', condition:function(){ return !!(window._aiMealPlanCache && window._aiMealPlanCache.diet_type === 'family_lower_carb'); } },
     { id:'offline-launch-v1', tab:'movement-tab', sel:'#today-workout-card', title:'Open your saved workout offline', body:'On web, supported Android devices and updated iPhone apps, open Balance online first so its files and your workout can be saved. You can then reopen your saved workout without reception. Completed sets sync when you reconnect. New content and videos still need internet.' },
     { id:'automatic-masked-replay-v1', tab:'profile', sel:'#balance-replay-settings', title:'Help fixing app problems', body:'Balance now saves a masked replay automatically so Shannon can investigate app problems. Private text and media are hidden. Replays expire after seven days. You can turn this off in Settings.' },
     { id:'checkin-app-coaching-feedback-v1', tab:'dashboard', sel:'#next-obvious-steps-card', title:'Your feedback is welcome', body:'When your check-in is due, open it from To Do Next. The optional feedback box lets you tell Shannon what is working well with the app or coaching, and what could be better.' },

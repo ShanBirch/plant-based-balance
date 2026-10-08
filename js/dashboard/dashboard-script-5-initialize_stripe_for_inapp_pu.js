@@ -5055,12 +5055,44 @@ function getAiPlanShoppingWeek() {
 
 function getAiPlanShoppingItems() {
     const helper = window.BalanceMealPlanShopping;
-    return helper?.buildWeekItems ? helper.buildWeekItems(getAiPlanShoppingWeek()) : [];
+    const week = getAiPlanShoppingWeek();
+    const family = window.BalanceFamilyServings;
+    const shoppingWeek = family && week ? { ...week, days: week.days.map(day => ({ ...day,
+        meals: day.meals.filter(meal => window._aiPlanIncludeOptionalSnacks !== false || !meal.tags?.includes('Optional snack')).map(meal => ({ ...meal, ingredients: family.ingredients(meal,
+            window._aiPlanShoppingFamily ? 'family' : 'personal', window._aiPlanFamilyPortions) }))
+    })) } : week;
+    return helper?.buildWeekItems ? helper.buildWeekItems(shoppingWeek) : [];
+}
+
+function setAiPlanPortionGuide(value) {
+    window._aiPlanPortionGuide = value === 'hands' ? 'hands' : 'grams';
+    const recipeWasOpen = !!document.querySelector('.ai-plan-hero.is-open');
+    renderAiPlanFocusedDay(_aiMealPlanCurrentDay);
+    if (recipeWasOpen) document.querySelector('.ai-plan-hero')?.classList.add('is-open');
+}
+
+function setAiPlanFamilyPortions(value) {
+    window._aiPlanFamilyPortions = window.BalanceFamilyServings.portions(value);
+    const recipeWasOpen = !!document.querySelector('.ai-plan-hero.is-open');
+    renderAiPlanFocusedDay(_aiMealPlanCurrentDay);
+    if (recipeWasOpen) document.querySelector('.ai-plan-hero')?.classList.add('is-open');
+    renderAiPlanShoppingList();
+}
+
+function setAiPlanShoppingFamily(input) {
+    window._aiPlanShoppingFamily = input.checked;
+    renderAiPlanShoppingList();
+}
+
+function setAiPlanShoppingSnacks(input) {
+    window._aiPlanIncludeOptionalSnacks = input.checked;
+    renderAiPlanShoppingList();
 }
 
 function getAiPlanShoppingStorageKey() {
     const planKey = _aiMealPlanCache?.id || _aiMealPlanCache?.plan_name || 'meal-plan';
-    return `pbb_ai_plan_shopping:${planKey}:week:${_aiMealPlanCurrentWeek}`;
+    const batch = (window._aiPlanShoppingFamily ? `:family:${window._aiPlanFamilyPortions || 5}` : '') + (window._aiPlanIncludeOptionalSnacks === false ? ':no-snacks' : '');
+    return `pbb_ai_plan_shopping:${planKey}:week:${_aiMealPlanCurrentWeek}${batch}`;
 }
 
 function getAiPlanCheckedShoppingItems() {
@@ -5100,12 +5132,26 @@ function renderAiPlanShoppingList() {
     }
 
     const items = getAiPlanShoppingItems();
+    const familyToggle = document.getElementById('ai-plan-shopping-family');
+    const snackToggle = document.getElementById('ai-plan-shopping-snacks');
+    if (snackToggle) {
+        const hasOptional = getAiPlanShoppingWeek()?.days?.some(day => day.meals?.some(meal => meal.tags?.includes('Optional snack')));
+        snackToggle.hidden = !hasOptional;
+        snackToggle.style.display = hasOptional ? 'flex' : 'none';
+        snackToggle.querySelector('input').checked = window._aiPlanIncludeOptionalSnacks !== false;
+    }
+    if (familyToggle) {
+        const hasFamily = getAiPlanShoppingWeek()?.days?.some(day => day.meals?.some(meal => window.BalanceFamilyServings?.supported(meal)));
+        familyToggle.hidden = !hasFamily;
+        familyToggle.style.display = hasFamily ? 'flex' : 'none';
+        familyToggle.querySelector('input').checked = !!window._aiPlanShoppingFamily;
+    }
     const checked = getAiPlanCheckedShoppingItems();
     const availableKeys = new Set(items.map(item => item.key));
     const validChecked = new Set(Array.from(checked).filter(key => availableKeys.has(key)));
     if (validChecked.size !== checked.size) saveAiPlanCheckedShoppingItems(validChecked);
 
-    summary.textContent = `Week ${_aiMealPlanCurrentWeek} · ${items.length} ingredient${items.length === 1 ? '' : 's'}`;
+    summary.textContent = `Week ${_aiMealPlanCurrentWeek} · ${items.length} ingredient${items.length === 1 ? '' : 's'}${window._aiPlanShoppingFamily ? ` · Batch of ${window._aiPlanFamilyPortions || 5}` : ''}`;
     list.innerHTML = items.map(item => {
         const isChecked = validChecked.has(item.key);
         const encodedKey = escapeAiPlanText(encodeURIComponent(item.key));
@@ -5917,6 +5963,7 @@ function renderAiPlanFocusedDay(dayNum) {
         const amount = ingredient?.amount ? ` ${escapeAiPlanText(ingredient.amount)}` : '';
         return `<li>${escapeAiPlanText(ingredient?.name || '')}${amount}</li>`;
     }).join('');
+    const familyServings = window.BalanceFamilyServings?.render(selected, window._aiPlanFamilyPortions) || '';
     const tags = (selected.tags || []).filter(tag => !['prepared-library','ingredient-calculated-v3'].includes(tag)).slice(0, 3).map(tag => escapeAiPlanText(window.BALANCE_PREPARED_MEAL_LIBRARY?.label(tag) || tag)).join(' · ')
         || escapeAiPlanText(selected.description || 'Planned for you');
     const focusLabel = familyPlan ? 'Your daily meals' : allComplete && isToday
@@ -5946,6 +5993,7 @@ function renderAiPlanFocusedDay(dayNum) {
                 <div class="ai-plan-hero__meta"><span>${escapeAiPlanText(selectedSlot)}</span><span>${escapeAiPlanText(selected.meal_time || '')}</span></div>
                 <h3 class="ai-plan-hero__title">${escapeAiPlanText(selected.name)}</h3>
                 <div class="ai-plan-hero__tags">${tags}</div>
+                ${familyServings}
                 ${familyPlan ? '' : `<div class="ai-plan-hero__macros">
                     <span>${Math.round(selected.calories || 0)} cal</span>
                     <span>${Math.round(selected.protein_g || 0)}g protein</span>
@@ -5958,7 +6006,7 @@ function renderAiPlanFocusedDay(dayNum) {
                 </div>
                 <div class="ai-plan-hero__details">
                     ${selected.description ? `<p>${escapeAiPlanText(selected.description)}</p>` : ''}
-                    ${ingredients ? `<h4>Ingredients</h4><ul>${ingredients}</ul>` : ''}
+                    ${ingredients && !familyServings ? `<h4>Ingredients</h4><ul>${ingredients}</ul>` : ''}
                     ${selected.preparation ? `<h4>Preparation</h4>${formatAiPlanPreparation(selected.preparation)}` : ''}
                 </div>
             </div>
