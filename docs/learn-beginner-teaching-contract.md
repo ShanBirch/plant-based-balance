@@ -24,6 +24,9 @@ The other 44 original lessons gain supporting reading pages: a plain-language de
 ## Criteria for future edits
 
 - Teach concrete brain/body communication before abstract prediction and free energy.
+- Make the brain's ongoing predictions explicit even in the basic sensory-route and cup examples. Incoming signals constrain an already active inference process; do not teach a fixed stimulus, then thought, then response sequence.
+- Separate physical signalling from its predictive-coding/active-inference interpretation. Predictions concern current causes as well as future input. Descending proprioceptive predictions and reflex pathways can guide movement; sensory evidence remains essential and its influence depends on estimated reliability.
+- Teach that predicted sensations can be consciously experienced and prediction errors can be nonconscious. Do not equate mismatch with awareness, claim only errors enter the nervous system, or say the brain never understands anything. It infers causes from signals rather than directly observing those causes.
 - Define new terms on first use; teach one main idea per reading page.
 - Connect the example, explanation, quiz and practical action.
 - Distinguish electrical signals within neurons from chemical messages at many synapses, and mathematical free energy from calories.
@@ -36,6 +39,8 @@ The other 44 original lessons gain supporting reading pages: a plain-language de
 
 Anatomy and messaging checked against [NIH/NINDS education](https://www.ninds.nih.gov/health-information/public-education/brain-basics), [NIH neurobiology curriculum](https://www.ncbi.nlm.nih.gov/books/NBK20367/) and [NINDS glossary](https://www.ninds.nih.gov/health-information/disorders/glossary-neurological-terms). The free-energy distinction follows [Friston's review](https://www.fil.ion.ucl.ac.uk/~karl/NRN.pdf).
 
+Prediction-first clarification, 8 October 2026: the four new lessons keep their IDs, eight-question counts and player styling. The cup examples now anticipate the action rather than waiting for input; the sensory lesson explicitly teaches inference and tests it. The original mind-1-2 lesson also receives a scoped correction to its claim that only prediction violations become conscious, retaining its eight original quiz formats. This exception supersedes the earlier wording-preservation rule for that specific claim; no member completions are reset. The account follows [Friston on recurrent predictive coding](https://discovery.ucl.ac.uk/id/eprint/10056744/1/Friston_News%20and%20views.pdf) and [Adams, Shipp and Friston on active inference in the motor system](https://pmc.ncbi.nlm.nih.gov/articles/PMC3637647/). [Meijs and colleagues' experiments](https://pmc.ncbi.nlm.nih.gov/articles/PMC6596276/) found conscious access facilitated by valid expectations and prediction errors without awareness, supporting the distinction between mismatch and conscious experience. This is a theoretical account of perception/action, not a claim that free energy is an established complete theory of consciousness.
+
 Hypothesis: foundations and connected examples improve comprehension and continued participation. Compare week-1 completion, quiz retries and member feedback before/after, considering the four extra lessons. Guardrails: valid saved completions, working saves, unchanged original questions and reachable mobile controls. Review on 22 October 2026 before further compulsory additions. No member message is sent as part of this update.
 
 ## Verification
@@ -43,3 +48,5 @@ Hypothesis: foundations and connected examples improve comprehension and continu
 Focused course, quiz, progress, action and offer-fact regressions passed. Eight browser cases passed with the actual lesson/quiz renderers and existing CSS: 320x568 portrait and 667x375 landscape, light/dark, zero and 59px top inset (34px bottom). Opening, scrolling, returning/reopening, wrong-answer retry, all eight correct answers and retained original completions were checked. Browser tests used isolated local progress, not a live member account. These are emulated phone checks, not physical-device testing. Existing quiz CSS has no diff. Visual proof and the JSON report are in the ignored output/learn-brain-proof directory of the managed task worktree.
 
 The four canonical server catalog rows are active, each with eight questions and perfect-score completion guards. No member completion or XP row was altered by the catalog migration.
+
+The prediction clarification passed 33 focused checks and eight mobile browser cases. The sensory lesson was read through, reopened and completed after a wrong-answer retry; the corrected original prediction lesson and its ordering quiz were also rendered in each case. Portrait/landscape, both themes and zero/nonzero insets passed. Proof: output/learn-predictive-foundations-proof. No lesson or quiz CSS changed.

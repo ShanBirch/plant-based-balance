@@ -40,7 +40,7 @@ test('stale action submissions are rejected before any enrollment write or autom
 });
 test('course display and both app loading paths use ten weeks with retired tasks and the original quiz stylesheet',()=>{
  const html=read('dashboard.html');assert.equal((html.match(/learn-curriculum.js\?v=4-ten-week-learning/g)||[]).length,2);assert.equal((html.match(/title:'Learn at a steadier pace'/g)||[]).length,2);
- assert.equal((html.match(/learning-inline.js\?v=20261008-ten-week-learning/g)||[]).length,2);
+ assert.equal((html.match(/learning-inline.js\?v=20261008-predictive-foundations/g)||[]).length,2);
  assert.match(player,/course !== 'learn' && window.getCourseLessonCompletions/);assert.match(player,/!isFoundationsContext && result\?\.reflection_eligible/);
  assert.match(read('plant-based-fitness.html'),/49 lessons and quizzes/);assert.equal((read('plant-based-fitness.html').match(/<details class="course-week">/g)||[]).length,10);
  assert.match(html,/pbb-quiz-theme.css\?v=5-shared-player/);

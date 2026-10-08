@@ -1,5 +1,9 @@
 # Shannon Content Edit Memory
 
+## 8 October 2026 - prediction and sensory inference clarification
+
+Shannon questioned the new cup and sensory lessons because they sounded like input arrives before the brain starts predicting. Teach an already active, recurrent predictive system: sensory evidence constrains inferred causes, and expectations help guide movement. The specific original “Your Brain Guesses First” claim that only prediction violations become conscious is corrected too; this is a scoped accuracy exception to the earlier absolute-wording preservation rule. Expected sensations can be conscious and errors can be nonconscious. The brain can learn useful explanations, but does not receive direct access to the world or finished pictures from the eyes. Keep all lesson IDs, completion credit, eight-question counts and existing quiz formats/styles. Sources and criteria: docs/learn-beginner-teaching-contract.md.
+
 ## 8 October 2026 - ten-week Learn pacing, practical tasks retired
 
 Shannon approved spreading all 49 lessons across ten weeks while preserving teaching order and the existing lesson/quiz style. Retire practical Learn tasks from the app for now, including Home reminders and check-in/report requirements. Retain their source and saved history; course completion now comes from the lesson quizzes. Keep the new course pace distinct from existing customer billing/support agreements. Contract: docs/learn-ten-week-learning-only.md.

@@ -54,7 +54,7 @@ test('personalised nutrition keeps its own examples and diet instructions',()=>{
 });
 test('the new content uses the existing player and both regular and iOS asset loaders',()=>{
  const html=read('dashboard.html');
- assert.equal((html.match(/learn-brain-foundations.js\?v=2-learning-only/g)||[]).length,2);
+ assert.equal((html.match(/learn-brain-foundations.js\?v=3-predictive-foundations/g)||[]).length,2);
  assert.ok(html.indexOf('learn-brain-foundations.js')<html.indexOf('learning-inline.js?v='));
  assert.match(source,/\.\.\.supportSlides\(support.before\), \.\.\.originalSlides, \.\.\.supportSlides\(support.after\)/);
  assert.match(html,/id:'learn-brain-basics-20261008'/);

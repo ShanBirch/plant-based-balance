@@ -1,5 +1,9 @@
 # Balance Codex Operating Brief
 
+## Balance Learn: ongoing prediction and sensory inference (8 October 2026)
+
+Shannon flagged that the new cup and incoming-signal lessons sounded reactive. Explain an already active brain: ongoing predictions and sensory evidence support inference about current causes and future input; expectations can guide movement before and during the reach. Correct the specific original mind-1-2 claim that only prediction violations become conscious, including its quiz and takeaway. Expected sensations can be conscious and prediction errors can be nonconscious. This scoped accuracy correction supersedes earlier absolute-wording preservation for that claim. Preserve lesson IDs, completion credit, quiz formats and visual style. Sources and teaching criteria: docs/learn-beginner-teaching-contract.md.
+
 ## Balance Learn: ten-week learning course and retired tasks (8 October 2026)
 
 Shannon approved ten weeks with 49 existing lessons in exactly the same teaching order: five lessons in Week 1, four in Week 2, then five in Weeks 3-10. Teach brain basics before prediction. Keep the approved wording, photos/diagrams and existing lesson/quiz styling.

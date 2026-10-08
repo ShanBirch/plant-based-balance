@@ -53,8 +53,8 @@ test('nutrition evidence follows the curriculum; week eight learning never deman
  assert.equal(actions.reportComplete(8,{fit:'Fits my day'},null,'eight_v1'),false);
 });
 // Digests independently verified against the audit and bc3a149a^ lesson definitions.
+// mind-1-2 has the scoped 8 October accuracy correction: awareness is not limited to prediction errors.
 const originalLessonHashes = {
-  "mind-1-2": "3ad422f879176ad31d7c69b56294b30374b291b3edb02d5e7285657ccf9ab2ca",
   "mind-1-3": "faf40a500dab26e62d4205cedc8907c8d7e234cd130c1856595d6d011b4e1437",
   "mind-3-1": "231b32f79e894384d620a2cc14d4324bbee9cbe6af7c3b1fd510a52773e1310e",
   "mind-3-2": "a9e5b376cbc130fc73e22691c47c6f2b147b6367af577758935b8f07cb40e1bb",
@@ -76,7 +76,7 @@ const originalLessonHashes = {
   "mind-8-4": "8f29f8c57d50c8a97fb24df1e6b0abcb199336ac177a5ad53eca899bf1034487",
   "mind-8-5": "a437322ed4aa1aa6ae153fe5434577154e9829052141e0294ba1901870967042"
 };
-test('21 restored lessons exactly preserve original titles, explanations, eight questions and answer mappings',()=>{
+test('20 unaffected restored lessons exactly preserve original titles, explanations, eight questions and answer mappings',()=>{
  const c=runtime(), crypto=require('node:crypto');
  for(const [id,hash] of Object.entries(originalLessonHashes)){
   const lesson=Object.values(c.lessonData).flat().find(l=>l.id===id);
@@ -84,6 +84,13 @@ test('21 restored lessons exactly preserve original titles, explanations, eight 
   assert.equal(crypto.createHash('sha256').update(JSON.stringify(lesson)).digest('hex'),hash,id);
   assert.equal(c.BalanceCurriculum.lessons.find(l=>l.id===id).title,lesson.title,id+' catalog title');
  }
+});
+
+test('the corrected prediction lesson keeps its completion ID and all eight original quiz formats',()=>{
+ const c=runtime(),lesson=Object.values(c.lessonData).flat().find(l=>l.id==='mind-1-2');
+ assert.equal(lesson.title,'Your Brain Guesses First');assert.equal(lesson.unitId,'mind-1');
+ assert.deepEqual(Array.from(lesson.games,g=>g.type),['order_sequence','swipe_true_false','tap_all','fill_blank','match_pairs','scenario_story','swipe_true_false','fill_blank']);
+ assert.equal(c.BalanceCurriculum.lessons.find(l=>l.id==='mind-1-2').title,lesson.title);
 });
 
 test('all inline dashboard scripts parse after both regular and iOS loader changes',()=>{

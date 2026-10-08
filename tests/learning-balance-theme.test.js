@@ -37,6 +37,6 @@ test('reward overlays remain scrollable and safe with zero or nonzero phone inse
  assert.match(css,/prefers-reduced-motion:reduce/);
  const dashboard=read('dashboard.html');
  assert.equal((dashboard.match(/pbb-quiz-theme.css\?v=5-shared-player/g)||[]).length,1);
- assert.equal((dashboard.match(/learning-inline.js\?v=20261008-ten-week-learning/g)||[]).length,2);
+ assert.equal((dashboard.match(/learning-inline.js\?v=20261008-predictive-foundations/g)||[]).length,2);
  assert.match(read('offline-shell.js'),/pbb-quiz-theme.css\?v=5-shared-player/);
 });
