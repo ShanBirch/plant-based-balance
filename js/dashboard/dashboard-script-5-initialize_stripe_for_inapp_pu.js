@@ -5049,7 +5049,7 @@ function escapeAiPlanText(value) {
 }
 
 function getAiPlanShoppingWeek() {
-    if (!_aiMealPlanCache?.weeks) return null;
+    if (!_aiMealPlanCache?.weeks || !isAiPlanWeekAvailable()) return null;
     return _aiMealPlanCache.weeks.find(week => Number(week.week_number) === Number(_aiMealPlanCurrentWeek)) || null;
 }
 
@@ -5117,6 +5117,8 @@ function updateAiPlanShoppingStatus(items, checked) {
 }
 
 function renderAiPlanShoppingList() {
+    const shoppingCard = document.getElementById('ai-plan-shopping-card');
+    if (shoppingCard) shoppingCard.hidden = !isAiPlanWeekAvailable();
     const list = document.getElementById('ai-plan-shopping-list');
     const summary = document.getElementById('ai-plan-shopping-summary');
     const download = document.getElementById('ai-plan-shopping-download');
@@ -5736,7 +5738,12 @@ function showAiPlanGenerating() {
 /**
  * Show the loaded plan
  */
+function isAiPlanWeekAvailable() {
+    return window.BalanceMealRelease?.available(_aiMealPlanCache, _aiMealPlanCurrentWeek) !== false;
+}
+
 function getAiMealPlanInitialWeek(plan) {
+    if (plan.weekly_release_start && window.BalanceMealRelease) return window.BalanceMealRelease.current(plan);
     return plan.weeks?.find(week => week.week_number === 1)?.week_number || plan.weeks?.[0]?.week_number || 1;
 }
 
@@ -5908,6 +5915,17 @@ function openAiPlanMealLogger() {
 }
 
 function renderAiPlanFocusedDay(dayNum) {
+    const available = isAiPlanWeekAvailable();
+    const dayTabs = document.getElementById('ai-plan-day-tabs');
+    if (dayTabs) dayTabs.hidden = !available;
+    if (!available) {
+        const container = document.getElementById('ai-plan-meals-list');
+        const date = window.BalanceMealRelease.label(_aiMealPlanCache, _aiMealPlanCurrentWeek);
+        if (container) container.innerHTML = '<section class="ai-plan-hero" style="padding:24px" role="status"><h3>Delivered in Week ' + _aiMealPlanCurrentWeek + '</h3><p>Your meals and shopping list will be available from ' + escapeAiPlanText(date) + '. For now, keep following your current week.</p></section>';
+        const nutrition = document.getElementById('ai-plan-day-nutrition');
+        if (nutrition) nutrition.innerHTML = '';
+        return;
+    }
     if (!_aiMealPlanCache || !_aiMealPlanCache.weeks) return;
     const week = _aiMealPlanCache.weeks.find(item => item.week_number === _aiMealPlanCurrentWeek);
     const day = week?.days?.find(item => item.day_of_week === dayNum);

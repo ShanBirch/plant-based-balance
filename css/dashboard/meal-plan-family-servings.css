@@ -17,3 +17,4 @@ html[data-pbb-theme="dark"] .ai-plan-family tbody td:nth-child(2){color:#a0d4a9;
 html[data-pbb-theme="dark"] .ai-plan-family__footnote{color:#d2cfc5;-webkit-text-fill-color:#d2cfc5}
 
 html[data-pbb-theme="dark"] .ai-plan-hero__button--primary{color:#252821;-webkit-text-fill-color:#252821}
+#ai-plan-shopping-card[hidden],#ai-plan-day-tabs[hidden]{display:none!important}
