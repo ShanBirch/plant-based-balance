@@ -2005,7 +2005,8 @@ if(!window._pbbIsIOSSafari) {
 if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-progressphoto.js?v=13-course-photo-sync"><\/script>');
 document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=38-tour-save-handoff"><\/script>');
-    document.write('<script src="lib/learn-curriculum.js?v=2-six-weeks"><\/script>');
+    document.write('<script src="lib/learn-curriculum.js?v=3-brain-basics"><\/script>');
+    document.write('<script src="lib/learn-brain-foundations.js?v=1-beginner-steps"><\/script>');
     document.write('<script src="lib/learn-predictive-content.js?v=7-social-prediction"><\/script>');
     document.write('<script src="lib/learn-weekly-actions.js?v=feed-week-five-20260916"><\/script>');
     document.write('<script src="lib/learn-action-review.js?v=admin-member-week-v4"><\/script>');
@@ -2016,7 +2017,8 @@ document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=38-tour-
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
     window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=13-course-photo-sync');
 window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=38-tour-save-handoff');
-    window._pbbDeferredQueue.push('lib/learn-curriculum.js?v=2-six-weeks');
+    window._pbbDeferredQueue.push('lib/learn-curriculum.js?v=3-brain-basics');
+    window._pbbDeferredQueue.push('lib/learn-brain-foundations.js?v=1-beginner-steps');
     window._pbbDeferredQueue.push('lib/learn-predictive-content.js?v=7-social-prediction');
     window._pbbDeferredQueue.push('lib/learn-weekly-actions.js?v=feed-week-five-20260916');
     window._pbbDeferredQueue.push('lib/learn-action-review.js?v=admin-member-week-v4');
@@ -14128,6 +14130,7 @@ if(!window._pbbIsIOSSafari) {
   }
 
   const steps = [
+    { tab:'learning', sel:'#learning-content', title:'Meet your brain first', body:'Week 1 now starts with four short lessons on the brain, brain cells, messages and senses before prediction. New explanations and everyday examples help you through the later lessons. Your completed lessons still count.' },
     { tab:'meals', sel:'.ai-plan-family', title:'Your plate and the family batch', body:'Open a family recipe to compare your serving with the batch. Choose grams or hands and household measures, then set how many portions to cook.', fallbackSel:'#ai-plan-loaded', condition:function(){ return !!(window._aiMealPlanCache && window._aiMealPlanCache.diet_type === 'family_lower_carb'); } },
     { tab:'movement-tab', sel:'#today-workout-card', title:'Open your saved workout offline', body:'On web, supported Android devices and updated iPhone apps, open Balance online first so its files and your workout can be saved. You can then reopen your saved workout without reception. Completed sets sync when you reconnect. New content and videos still need internet.' },
     { tab:'movement-tab', sel:'#today-workout-card', title:'More room for your sets', body:'Your set results and Start rest button share one spacious row. Open the three-dot Set options menu to Add Drop Set or Delete a set.' },
@@ -17239,6 +17242,7 @@ window.endFeatureTour = function(skipped){
   // First-run onboarding now uses the guided walkthrough only. Keep legacy
   // feature-drop entries dormant so users do not see duplicate spotlight cards.
   allFeatures = [];
+  allFeatures.push({ id:'learn-brain-basics-20261008', tab:'learning', sel:'#learning-content', title:'Meet your brain first', body:'Week 1 now starts with four short lessons on the brain, brain cells, messages and senses before prediction. New explanations and everyday examples help you through the later lessons. Your completed lessons still count.' });
   allFeatures.push({ id:'workout-set-options-v1', tab:'movement-tab', sel:'#today-workout-card', title:'More room for your sets', body:'Your set results and Start rest button share one spacious row. Open the three-dot Set options menu to Add Drop Set or Delete a set.' });
   allFeatures.push({ id:'exercise-rest-period-v1', tab:'movement-tab', sel:'#today-workout-card', title:'Rest between your sets', body:'Your workout shows Rest period after Kg: 90 seconds for compound lifts and 60 seconds for accessories, unless your coach sets another duration. Enter your results, then tap Start in the Rest period column to complete that set and open its countdown.' });
   allFeatures.push({ id:'workout-load-buttons-v1', tab:'movement-tab', sel:'.workout-load-options', fallbackSel:'#today-workout-card', title:'Clear workout feedback', body:'After your workout, choose Too light, Perfect or Too heavy to say how the load felt. Choose one to save, or skip.', fallbackTitle:'Clear workout feedback', fallbackBody:'After your workout, choose Too light, Perfect or Too heavy to say how the load felt. Choose one to save, or skip.' });
@@ -21361,11 +21365,11 @@ if (window._pbbIsIOSSafari) {
             });
             if (window.showQuizBattleInviteModal || learningAlreadyRequested) return;
             var s = document.createElement('script');
-      s.src = 'lib/learning-inline.js?v=20261007-menopause-shared-player';
+      s.src = 'lib/learning-inline.js?v=20261008-brain-basics';
             document.head.appendChild(s);
         }, { once: true });
     } else {
-    document.write('<script src="lib/learning-inline.js?v=20261007-menopause-shared-player"><\/script>');
+    document.write('<script src="lib/learning-inline.js?v=20261008-brain-basics"><\/script>');
     }
     </script>
     <!-- Battle System & Logic Overrides (130 lines — deferred on iOS) -->

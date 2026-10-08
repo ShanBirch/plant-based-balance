@@ -1,5 +1,11 @@
 # Shannon Content Edit Memory
 
+## 8 October 2026 - beginner teaching with the existing Learn style
+
+Shannon approved retaining the original absolute wording and scientific teaching while making the six-week course understandable with no prior brain knowledge. Teach the brain, neurons, electrical/chemical messages and the brain-body relationship before prediction and free energy. Define terms first, connect an ordinary example to the explanation and quiz, and add one practical observation. Keep completed IDs stable; members who finished the first two lessons need the new basics next without losing completions.
+
+Shannon explicitly said updates must keep the existing lesson and quiz style. Reuse the player, palette, buttons, feedback, pagination and layout; content editing does not authorize a redesign. Contract: docs/learn-beginner-teaching-contract.md.
+
 ## 1 October 2026 - static Meta ad typography follows each reference format
 
 Shannon said the separated oversized `10` and `WEEKS` and enlarged plant-based meal guidance looked scattered. White text ads should read like a short note: one headline, connected short paragraphs and durations kept together. Match the saved Nutrition Collective reference per format. Its photo ads use short headlines and supporting lines, so do not apply the white-note layout to photos unless the individual reference does. Keep plant-based meal guidance the same size, weight and colour as adjacent supporting copy; proof headings may use a restrained subtitle. Keep original photos intact. Disable Meta automatic text overlays and visual touch-ups when they undermine the approved layout. Campaign-specific contract and review assets: `.codex-artifacts/summer-ready-shred/photo-adjustments/` and `white-examples/`.

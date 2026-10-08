@@ -2,6 +2,7 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const curriculum=require('../lib/learn-curriculum');
 function runtime(){
  const window={BalanceLearnCurriculum:curriculum,BalancePredictiveContent:{apply(){}}};
+ vm.runInNewContext(fs.readFileSync('lib/learn-brain-foundations.js','utf8'),{window});
  vm.runInNewContext(fs.readFileSync('lib/coach-personalised-learn.js','utf8'),{window});
  const source=fs.readFileSync('lib/learning-inline.js','utf8');
  vm.runInNewContext(source.slice(0,source.indexOf('    // STATE'))+'window.lessons=LESSONS;})();',{window});
@@ -12,7 +13,7 @@ test('assigned profile adapts real lesson text and all eight quiz questions with
  assert.equal(w.BalancePersonalisedLearn.lesson(original),original);
  w.currentUser={id:'assigned-member',user_metadata:{balance_learning_profile:'family_lower_carb_v1'}};
  const ids=curriculum.weeks().flatMap(w=>w.lessonIds);
- assert.equal(ids.length,45);
+ assert.equal(ids.length,49);
  for(const original of Object.values(w.lessons).flat().filter(l=>ids.includes(l.id))){
   const lesson=w.BalancePersonalisedLearn.lesson(original);
   assert.equal(lesson.id,original.id);

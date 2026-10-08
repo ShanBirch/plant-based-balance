@@ -3,7 +3,7 @@ const curriculum=require('../lib/learn-curriculum'),actions=require('../lib/lear
 const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
 function runtime(version='eight_v1',week=1){
  const c={console,Date,Intl,URLSearchParams,setTimeout(){},document:{getElementById:()=>null},localStorage:{getItem:()=>null},sessionStorage:{getItem:()=>null},location:{hostname:'test',search:''},currentUser:{id:'member'}};c.window=c;
- for(const file of ['learn-curriculum','learn-weekly-actions','learn-predictive-content','balance-curriculum','balance-course-layout'])vm.runInNewContext(read('lib/'+file+'.js'),c);
+ for(const file of ['learn-curriculum','learn-brain-foundations','learn-weekly-actions','learn-predictive-content','balance-curriculum','balance-course-layout'])vm.runInNewContext(read('lib/'+file+'.js'),c);
  let source=read('js/dashboard/pbb-social-journey.js');
  vm.runInNewContext(source.slice(0,source.indexOf('  window.finishBalanceActivationLesson'))+`window.socialJourney={getLearnCurriculum,getLearnWeekCount:learnCount,getFoundationsCourseProgress};window.journeyTest={set:r=>{state=normalizeState(r)},definitions:()=>WEEK_DEFINITIONS,identity:getIdentityCourseProgress,roll:rollForwardElapsedWeeks};})();`,c);
  c.journeyTest.set({current_week:week,week_started_at:'2026-09-14',settings:{learn_curriculum:version},lessons_completed:[]});
@@ -15,8 +15,9 @@ function runtime(version='eight_v1',week=1){
 test('all 40 Mind lessons are owned by Learn or Become in the new and continuation paths',()=>{
  for(const version of ['six_v2','eight_v1','bridge_eight_v1']){
   const c=runtime(version);const brain=c.BalanceCurriculum.lessons.filter(l=>l.id.startsWith('mind-'));
-  assert.equal(brain.length,40);assert.equal(brain.filter(l=>l.course==='learn').length,35);assert.equal(brain.filter(l=>l.course==='become').length,5);
-  const ids=curriculum.weeks(version).flatMap(w=>w.lessonIds);assert.equal(ids.length,45);assert.equal(new Set(ids).size,45);
+  const total=version==='bridge_eight_v1'?45:49;
+  assert.equal(brain.length,44);assert.equal(brain.filter(l=>l.course==='learn').length,total-10);assert.equal(brain.filter(l=>l.course==='become').length,5);
+  const ids=curriculum.weeks(version).flatMap(w=>w.lessonIds);assert.equal(ids.length,total);assert.equal(new Set(ids).size,total);
   for(const id of ids)assert.ok(Object.values(c.lessonData).flat().find(l=>l.id===id),id);
  }
 });
@@ -89,7 +90,7 @@ test('all inline dashboard scripts parse after both regular and iOS loader chang
   if(/type=["'](?:application\/ld\+json|importmap|text\/x-pbb-template)/.test(match[1])||!match[2].trim())continue;
   assert.doesNotThrow(()=>new vm.Script(match[2]));
  }
- const html=read('dashboard.html');assert.equal((html.match(/learn-curriculum\.js\?v=2-six-weeks/g)||[]).length,2);
+ const html=read('dashboard.html');assert.equal((html.match(/learn-curriculum\.js\?v=3-brain-basics/g)||[]).length,2);
  assert.equal((html.match(/learn-predictive-content\.js\?v=7-social-prediction/g)||[]).length,2);
 });
 
@@ -112,12 +113,12 @@ test('every Learn path has six to eight questions with valid answers and distinc
  const six=curriculum.weeks().flatMap(w=>w.lessonIds).map(id=>all.find(l=>l.id===id));
  assert.equal(six.filter(l=>l.games.length===6).length,0);
  assert.equal(six.filter(l=>l.games.length===7).length,1);
- assert.equal(six.filter(l=>l.games.length===8).length,44);
+ assert.equal(six.filter(l=>l.games.length===8).length,48);
 });
 
 test('six-week default includes all extra learning with one original practical action per week',()=>{
  assert.equal(curriculum.version({}), 'six_v2');assert.equal(curriculum.total(),6);
- const weeks=curriculum.weeks();assert.deepEqual(weeks.map(w=>w.lessonIds.length),[10,10,10,5,5,5]);
+ const weeks=curriculum.weeks();assert.deepEqual(weeks.map(w=>w.lessonIds.length),[14,10,10,5,5,5]);
  const c=runtime('six_v2',6);assert.equal(c.journeyTest.definitions().length,12);
  for(let i=0;i<6;i++){
   assert.ok(curriculum.original[i].lessonIds.every(id=>weeks[i].lessonIds.includes(id)));

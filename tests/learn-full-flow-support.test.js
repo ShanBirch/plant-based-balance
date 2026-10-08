@@ -240,7 +240,7 @@ test('missing course video request retries media without repitch or premature pr
 test('ambiguous support acceptance cannot become a repeated pitch or guessed handoff',()=>{
  const history=[{direction:'out',text:LEARN_SUPPORT_CHOICE}];
  for(const currentMessage of ['Yes','Sure','Okay']) {
-  for(const joined of ['It is 45 lessons across six weeks and AUD $149.', 'Here is your preview', 'Book a Zoom fit call']) {
+  for(const joined of ['It is 49 lessons across six weeks and AUD $149.', 'Here is your preview', 'Book a Zoom fit call']) {
    const draft={joined,model:'writer'};
    const args={draft,currentMessage,history,flowVariant:'broad_pain'};
    const issues=api.collectPaidMetaWriterContractIssues(args);
