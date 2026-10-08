@@ -4,7 +4,7 @@ const reply=(statusCode,data)=>({statusCode,headers:{'Content-Type':'application
 function timing(day,time,now=Date.now()){
  if(!/^\d{4}-\d{2}-\d{2}$/.test(day)||!/^\d{2}:\d{2}$/.test(time))throw Error('Choose a day and time.');
  const shop=new Date(day+'T'+time+':00+10:00');
- if(!Number.isFinite(+shop)||+shop<now||+shop>now+90*86400000||time>'22:30')throw Error('Choose a future shopping time before 10:30 pm, within the next 90 days.');
+ if(!Number.isFinite(+shop)||new Date(+shop+10*3600000).toISOString().slice(0,16)!==day+'T'+time||+shop<now||+shop>now+90*86400000||time>'22:30')throw Error('Choose a future shopping time before 10:30 pm, within the next 90 days.');
  const follow=new Date(Math.max(+new Date(day+'T19:00:00+10:00'),+shop+3600000));
  return {shop_at:shop.toISOString(),follow_up_at:follow.toISOString()};
 }
