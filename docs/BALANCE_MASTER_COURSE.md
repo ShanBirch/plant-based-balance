@@ -1,5 +1,11 @@
 # Balance Master
 
+## Week 2 messaging handoff (8 October 2026)
+
+Members send their squat, hinge, push and pull clips privately to Shannon on Instagram or the messaging platform they normally use together. Master no longer launches Form Check for this assignment. After sending, members save the platform and sent date for each movement. All four records, the assigned lesson quizzes/reflections and the weekly knowledge check remain required. Dates must be valid and cannot be in the future (Australia/Brisbane).
+
+External records are explicitly member-reported, not verified delivery or technique approval. Server-generated action receipts retain that distinction for coach review. Earlier successful in-app submissions continue to count. An unavailable in-app video-status check does not block external records or Week 2 completion. Historical Form Check notes below describe the previous workflow.
+
 Current structure: ten weekly releases. See BALANCE_FOUR_PART_COURSES.md for the current curriculum, selected specialist lessons and migration. The notes below record the original six-stage release.
 
 Published implementation: six self-paced stages, 18 short teaching sections, 12 knowledge-check questions, four written applications and two saved projects. Entry is through Course > Balance Master after Balance Learn completion. Before completion of Learn, members can preview the six outcomes.

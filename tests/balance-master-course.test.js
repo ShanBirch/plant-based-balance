@@ -68,19 +68,20 @@ test('account changes clear cached progress and failed loads remain retryable', 
     fail=false;await c.load();assert.equal(c.progress().completed,1);
 });
 
-test('compound stage requires four confirmed receipts and clears them on account switch or failed check', async () => {
+test('compound stage uses four saved action receipts even when the in-app video check is unavailable', async () => {
     let submissions={}, fail=false;
     const data={actionReceipts:receipts(2),completedStages:{1:true},quizReflections:{1:'I learned to practise controlled compound movements.'},answers:{'1-0':2,'1-1':0},reflections:{1:'Keep a controlled position'}};
     const win={currentUser:{id:'member'},fetch:async()=>({ok:!fail,json:async()=>({submissions,error:'offline'})}),supabaseClient:{auth:{getSession:async()=>({data:{session:{access_token:'token'}}})},from(table){const q={select(){return q},eq(){return q},order:async()=>({data:[]}),maybeSingle:async()=>({data:{data}})};return q;}}};
     const c=runtime(win);
     data.answers['1-1']=c.stages[1].questions[1][2];
-    await c.load(); assert.equal(c.stageDone(1,data),false);
+    await c.load(); assert.equal(c.stageDone(1,data),true);
     submissions={squat:{id:'1'},hinge:{id:'2'},push:{id:'3'}};
-    await c.load(true); assert.equal(c.stageDone(1,data),false);
+    await c.load(true); assert.equal(c.stageDone(1,data),true);
     submissions.pull={id:'4'};await c.load(true);assert.equal(c.stageDone(1,data),true);
-    fail=true;await c.load(true);assert.equal(c.stageDone(1,data),false);
+    fail=true;await c.load(true);assert.equal(c.stageDone(1,data),true);
     fail=false;await c.load(true);assert.equal(c.stageDone(1,data),true);
-    win.currentUser.id='another';c.progress();assert.equal(c.stageDone(1,data),false);
+    data.actionReceipts['2:pull'].isCurrent=false;assert.equal(c.stageDone(1,data),false);
+    win.currentUser.id='another';assert.equal(c.progress().completed,0);
 });
 
 test('every week has three or four separately required actions and receipt-only progress',()=>{
@@ -95,7 +96,7 @@ test('every week has three or four separately required actions and receipt-only 
  assert.equal(course.actionProgress(1,{actionAnswers:data.actionAnswers}).completed,0);
 });
 test('server action definitions agree with the member and coach checklist',()=>{
- const sql=fs.readFileSync(path.join(root,'supabase/migrations/20260910061328_balance_master_weekly_actions.sql'),'utf8');
+ const sql=fs.readFileSync(path.join(root,'supabase/migrations/20261008022232_master_external_video_delivery.sql'),'utf8');
  const defs=JSON.parse(sql.match(/v_definitions jsonb := '(.+?)'::jsonb;/s)[1].replaceAll("''","'"));
  assert.deepEqual(defs,JSON.parse(JSON.stringify(actionsWindow.BalanceMasterActions.weeks)));
 });
