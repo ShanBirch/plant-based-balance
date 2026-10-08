@@ -20,8 +20,9 @@ async function context(actor,user=actor,enrollmentId=null) {
   if(actor!==user && !await canReview(actor,user))throw error('You cannot review this member.',403);
   const rows=await supabaseQuery(`social_journey_progress?select=current_week,week_started_at,settings,created_at&user_id=eq.${encodeURIComponent(user)}&limit=1`);
   if(!rows[0])return {available:false,records:[],enrollments:[]};
-  const current=unwrap(await supabaseQuery('rpc/ensure_learn_action_enrollment',{method:'POST',body:{p_user_id:user,p_start_date:courseStart(rows[0]),p_restart:false}}));
   const enrollments=await supabaseQuery(`learn_action_enrollments?select=*&user_id=eq.${encodeURIComponent(user)}&order=created_at.desc`);
+  const current=actions.enabled ? unwrap(await supabaseQuery('rpc/ensure_learn_action_enrollment',{method:'POST',body:{p_user_id:user,p_start_date:courseStart(rows[0]),p_restart:false}})) : enrollments.find(e=>e.active) || enrollments[0];
+  if(!current && !enrollmentId)return {available:false,retired:!actions.enabled,records:[],enrollments};
   const enrollment=enrollmentId ? enrollments.find(e=>e.id===enrollmentId) : current;
   if(!enrollment)throw error('That course enrollment is not available.',404);
   const records=await supabaseQuery(`learn_action_reviews?select=*&enrollment_id=eq.${encodeURIComponent(enrollment.id)}&user_id=eq.${encodeURIComponent(user)}&order=week`);

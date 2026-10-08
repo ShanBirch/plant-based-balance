@@ -1,6 +1,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const source=fs.readFileSync(require('node:path').join(__dirname,'../netlify/functions/submit-weekly-checkin.js'),'utf8');
-function fixture(journeyWeek=1){
+function fixture(journeyWeek=1,active=true){
+ const archivedActions=Object.assign({},require('../lib/learn-weekly-actions'),{enabled:active,effectiveWeek:row=>require('../lib/learn-weekly-actions').effectiveWeek(row,new Date('2026-09-11T08:00:00Z'))});
  const records={additional_data:{fitness_diary:{note:'Keep this diary'},weekly_checkins:[{occurrence:'midweek_wednesday',week_start:'2026-09-07',course_learning:'Keep Wednesday'}]}}, alerts=new Map();
  let failRead=false,dropWrite=false;
  const query=async(url,options={})=>{
@@ -24,7 +25,7 @@ function fixture(journeyWeek=1){
    loadClientMemory:async()=>null,buildMemoryBlock:()=>'',buildNameUsePolicyBlock:()=>'',callVertexAIModel:async()=> 'Review draft',normalizeGeneratedCoachDraftText:x=>x,stripLeadingGreeting:x=>x,truncate:(s,n)=>s.slice(0,n)};
  class FixedDate extends Date{constructor(...a){super(...(a.length?a:['2026-09-11T08:00:00Z']));}static now(){return new Date('2026-09-11T08:00:00Z').getTime();}}
  const module={exports:{}};
- vm.runInNewContext(source,{module,exports:module.exports,Date:FixedDate,console:{error(){},warn(){}},fetch:async()=>({ok:true,json:async()=>({id:'member'})}),require:p=>p==='./_lib/learn-action-review'?{context:async()=>({enrollment:{id:'enrollment'},records:[]}),prepareReport:async(user,input)=>({week:input.week,payload:{report:{answers:input.answers}}}),saveReport:async(user,prepared)=>({id:'action-record',enrollment_id:'enrollment',week:prepared.week,status:'submitted',revision:1})}:p==='../../lib/learn-curriculum'?require('../lib/learn-curriculum'):p==='crypto'?require('crypto'):p==='../../lib/learn-weekly-actions'?require('../lib/learn-weekly-actions'):helpers});
+ vm.runInNewContext(source,{module,exports:module.exports,Date:FixedDate,console:{error(){},warn(){}},fetch:async()=>({ok:true,json:async()=>({id:'member'})}),require:p=>p==='./_lib/learn-action-review'?{context:async()=>({enrollment:{id:'enrollment'},records:[]}),prepareReport:async(user,input)=>({week:input.week,payload:{report:{answers:input.answers}}}),saveReport:async(user,prepared)=>({id:'action-record',enrollment_id:'enrollment',week:prepared.week,status:'submitted',revision:1})}:p==='../../lib/learn-curriculum'?require('../lib/learn-curriculum'):p==='crypto'?require('crypto'):p==='../../lib/learn-weekly-actions'?archivedActions:helpers});
  const payload={week_start:'2026-09-07',overall:'mixed',win:'Logged lunch',confidence:3,support:'nothing_specific',course_week:1,course_learning:'I noticed I snack just after sitting down.',course_experiment_completed:true};
  return {records,alerts,payload,send:(change={})=>module.exports.handler({httpMethod:'POST',headers:{authorization:'Bearer test'},body:JSON.stringify({...payload,...change})}),fail:()=>{failRead=true},drop:()=>{dropWrite=true}};
 }
@@ -49,3 +50,5 @@ test('failed read or failed readback never returns saved or creates coach credit
 });
 
 test('reporting an earlier action preserves the current course week check-in credit',async()=>{const f=fixture(6);assert.equal((await f.send({course_week:6,learn_action:{week:1,answers:{pattern:'Observed pattern'}}})).statusCode,200);assert.equal(f.records.additional_data.weekly_checkin.course_week,6);assert.equal(f.records.additional_data.weekly_checkin.learn_action.week,1);});
+
+ test('retired Learn tasks do not attach action reports or reject a normal check-in from a stale app',async()=>{const f=fixture(1,false);const result=await f.send({course_week:10,learn_action:{week:1,answers:{pattern:'Old form'}}});assert.equal(result.statusCode,200);const saved=f.records.additional_data.weekly_checkin;assert.equal(saved.course_week,undefined);assert.equal(saved.learn_action,undefined);assert.equal(saved.learn_action_report,undefined);assert.equal(f.records.additional_data.fitness_diary.note,'Keep this diary');assert.equal(f.records.additional_data.weekly_checkins.length,2);});

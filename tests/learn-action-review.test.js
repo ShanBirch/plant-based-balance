@@ -1,5 +1,6 @@
 const test=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs');
-const actions=require('../lib/learn-weekly-actions');
+const retainedActions=require('../lib/learn-weekly-actions');
+const actions=Object.assign({},retainedActions,{enabled:true,effectiveWeek:row=>retainedActions.effectiveWeek(row,new Date('2026-09-12T12:00:00Z'))});
 function fixture(version='legacy_six',week=6){
  const enrollment={id:'enrollment-a',user_id:'member',active:true,start_date:'2026-08-08'};
  const rows=[];

@@ -17,11 +17,12 @@ exports.handler=async event=>{
      const rows=await supabaseQuery(`social_journey_progress?select=*&user_id=eq.${encodeURIComponent(target)}&limit=1`);
      return json(200,{ok:true,journey:rows[0]||null});
    }
+   if(!review.actions.enabled && event.httpMethod==='POST')return json(410,{retired:true,error:'Practical Learn tasks are paused. Continue your lessons and quizzes.'});
    const ctx=await review.context(user.id,target,input.enrollment_id||null);
    if(event.httpMethod==='GET'){
-     if(ctx.available && !ctx.can_review)ctx.records=await learnAI.retryPending(user.id,ctx.records);
+     if(review.actions.enabled && ctx.available && !ctx.can_review)ctx.records=await learnAI.retryPending(user.id,ctx.records);
      const mealWeek=ctx.available ? review.actions.curriculum.weeks(ctx.curriculum_version).find(w=>w.action===6)?.number : null;
-     if(ctx.available && !ctx.can_review && mealWeek && ctx.current_week>=mealWeek)Object.assign(ctx,await review.nutrition(user.id,review.weekStart(ctx,mealWeek)));
+     if(review.actions.enabled && ctx.available && !ctx.can_review && mealWeek && ctx.current_week>=mealWeek)Object.assign(ctx,await review.nutrition(user.id,review.weekStart(ctx,mealWeek)));
      return json(200,{ok:true,...ctx});
    }
    if(input.operation==='restart'){

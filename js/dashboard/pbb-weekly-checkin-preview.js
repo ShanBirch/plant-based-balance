@@ -1355,6 +1355,7 @@
   }
 
   function learnExperiment() {
+    if (!window.BalanceLearnCurriculum?.actionsEnabled) return null;
     var course = window.socialJourney && window.socialJourney.getFoundationsCourseProgress();
     return course && course.available && window.BalanceLearnWeeklyActions ? window.BalanceLearnWeeklyActions.experiment(course.currentJourneyWeek) : null;
   }

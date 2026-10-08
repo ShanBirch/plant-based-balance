@@ -1,5 +1,9 @@
 # Shannon Content Edit Memory
 
+## 8 October 2026 - ten-week Learn pacing, practical tasks retired
+
+Shannon approved spreading all 49 lessons across ten weeks while preserving teaching order and the existing lesson/quiz style. Retire practical Learn tasks from the app for now, including Home reminders and check-in/report requirements. Retain their source and saved history; course completion now comes from the lesson quizzes. Keep the new course pace distinct from existing customer billing/support agreements. Contract: docs/learn-ten-week-learning-only.md.
+
 ## 8 October 2026 - beginner teaching with the existing Learn style
 
 Shannon approved retaining the original absolute wording and scientific teaching while making the six-week course understandable with no prior brain knowledge. Teach the brain, neurons, electrical/chemical messages and the brain-body relationship before prediction and free energy. Define terms first, connect an ordinary example to the explanation and quiz, and add one practical observation. Keep completed IDs stable; members who finished the first two lessons need the new basics next without losing completions.

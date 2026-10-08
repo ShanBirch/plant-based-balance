@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v578-learn-brain-basics';
+const CACHE_NAME = 'pbb-app-v579-ten-week-learning-only';
 importScripts('./offline-shell.js');
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const WORKOUT_VIDEO_CACHE_NAME = 'pbb-workout-videos-v2';

@@ -358,6 +358,7 @@
   }
 
   function getLearnCourseAction() {
+    if (!window.BalanceLearnCurriculum?.actionsEnabled) return null;
     var review = window.BalanceLearnActionReview;
     var state = review && review.state;
     if (!state || !state.available || window.metaAdTrialMode === true) return null;
@@ -441,11 +442,12 @@
       // Home can request Learn before the deferred dashboard scripts arrive.
       // Load its real prerequisites before evaluating learning-inline.js.
       var dependencies = [
-        ['lib/learn-curriculum.js?v=2-six-weeks', 'BalanceLearnCurriculum'],
-        ['lib/learn-predictive-content.js?v=7-social-prediction', 'BalancePredictiveContent'],
-        ['lib/learn-weekly-actions.js?v=feed-week-five-20260916', 'BalanceLearnWeeklyActions'],
-        ['lib/learn-action-review.js?v=feed5-plan-dismiss-v3', 'BalanceLearnActionReview'],
-        ['lib/balance-curriculum.js?v=six-weeks-v2', 'BalanceCurriculum'],
+        ['lib/learn-curriculum.js?v=4-ten-week-learning', 'BalanceLearnCurriculum'],
+        ['lib/learn-brain-foundations.js?v=2-learning-only', 'BalanceBrainFoundations'],
+        ['lib/learn-predictive-content.js?v=8-optional-examples', 'BalancePredictiveContent'],
+        ['lib/learn-weekly-actions.js?v=retired-20261008', 'BalanceLearnWeeklyActions'],
+        ['lib/learn-action-review.js?v=retired-20261008', 'BalanceLearnActionReview'],
+        ['lib/balance-curriculum.js?v=ten-week-learning-v1', 'BalanceCurriculum'],
         ['lib/balance-course-layout.js?v=3-weekly-actions', 'BalanceCourseLayout'],
         ['lib/balance-course-weeks.js?v=1', 'BalanceCourseWeeks'],
         ['lib/balance-lead-course.js?v=2-week-cards', 'BalanceLead'],
@@ -455,7 +457,7 @@
       for (var dependency of dependencies) {
         await load(dependency[0], function(){ return !!window[dependency[1]]; });
       }
-      await load('lib/learning-inline.js?v=welcome-stays-open-20260919', function(){
+      await load('lib/learning-inline.js?v=20261008-ten-week-learning', function(){
         return typeof window.prepareBalanceFoundationsStartForTour === 'function'
           && typeof window.openCurrentCourseLesson === 'function'
           && typeof window.getCurrentCourseLessonDestination === 'function';
@@ -640,7 +642,7 @@
     {title:'The full picture', steps:["Notice what went well.", "Keep track as you go.", "Share what got in the way."], body:'This is not about having a perfect week. Shannon looks at the full picture so your next week can be adjusted around real life.', visual:'Your week, understood', icon:'<circle cx="48" cy="48" r="28"/><path d="M48 20v28l19 12M18 24l-6 12M78 24l6 12"/>'},
     {title:'Weekly goals', steps:["Pick a few realistic goals.", "Tick them off as you go.", "Tell Shannon what got in the way."], body:'What felt realistic, what you completed and what got in the way.', visual:'Small steps. A clearer direction.', icon:'<rect x="24" y="16" width="48" height="64" rx="8"/><path d="m33 36 4 4 8-9m4 6h13M33 53h7m9 0h13M33 68h7m9 0h13"/>'},
     {title:'Meals and photos', steps:["Log your everyday meals.", "Add a photo when you can.", "Mention meals you found hard to plan."], body:'Log your meals and add photos so Shannon can see what the week actually looked like.', visual:'Show the everyday meals', icon:'<circle cx="48" cy="48" r="25"/><circle cx="48" cy="48" r="15"/><path d="M12 22v20m8-20v20m-4-20v52M80 22v52M80 22q-14 16 0 26"/>'},
-    {title:'Course progress', steps:["Work through your current week.", "Try the action in everyday life.", "Share anything that felt unclear."], body:'What you learned, completed or found difficult in Balance Learn.', visual:'Turn learning into real life', icon:'<path d="M48 27Q29 14 14 23v49q18-9 34 3 16-12 34-3V23Q67 14 48 27v48M24 34l14 4m-14 8 14 4m20-12 14-4m-14 16 14-4"/>'},
+    {title:'Course progress', steps:["Work through your current week.", "Answer the lesson quizzes.", "Share anything that felt unclear."], body:'What you learned, completed or found difficult in Balance Learn.', visual:'Understand one idea at a time', icon:'<path d="M48 27Q29 14 14 23v49q18-9 34 3 16-12 34-3V23Q67 14 48 27v48M24 34l14 4m-14 8 14 4m20-12 14-4m-14 16 14-4"/>'},
     {title:'Workouts', steps:["Log the sets and reps you complete.", "Note sessions you moved or missed.", "Share what felt too easy or too hard."], body:'Your completed sessions, logged sets and any workouts you had to move or miss.', visual:'Every session adds context', icon:'<path d="M32 48h32M15 36v24m10-32v40m46-40v40m10-32v24M15 48h10m46 0h10"/>'},
     {title:'Check-in form', steps:["Share a win from your week.", "Explain what made things harder.", "Tell Shannon where you need support."], body:'Your honest recap of what worked, what did not and what support you need.', visual:'An honest recap helps most', icon:'<path d="M18 22h60v43H43L26 79V65h-8zM30 36h36M30 47h26"/>'},
     {title:'Progress photos', steps:["Take photos if you feel comfortable.", "Use similar lighting and angles.", "Look for changes over time."], body:'Your private visual record, used to look for changes beyond one number.', visual:'Progress beyond the scales', icon:'<rect x="16" y="27" width="64" height="48" rx="8"/><circle cx="48" cy="51" r="14"/><path d="m30 27 6-10h24l6 10M68 38h1"/>'},

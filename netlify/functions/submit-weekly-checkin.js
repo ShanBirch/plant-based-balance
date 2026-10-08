@@ -399,15 +399,16 @@ exports.handler = async (event) => {
         // Resolve course identity on the server, including an elapsed week that
         // the client has not refreshed yet. Never attach a report to a stale form.
         const journeyRows = await supabaseQuery(`social_journey_progress?select=current_week,week_started_at,settings,created_at&user_id=eq.${encodeURIComponent(authUser.id)}&limit=1`);
-        const courseWeek = learnActions.effectiveWeek(journeyRows[0]);
+        const actionsActive = learnActions.enabled;
+        const courseWeek = actionsActive ? learnActions.effectiveWeek(journeyRows[0]) : null;
         const curriculumVersion = require('../../lib/learn-curriculum').version(journeyRows[0]);
-        if (!body.learn_action && Number(body.course_week) && Number(body.course_week) !== courseWeek) return json(409, { error: 'Your course week has changed. Reopen the check-in to see the current experiment.' });
+        if (actionsActive && !body.learn_action && Number(body.course_week) && Number(body.course_week) !== courseWeek) return json(409, { error: 'Your course week has changed. Reopen the check-in to see the current experiment.' });
         response.curriculum_version = curriculumVersion;
-        if (Number(body.course_week) && learnActions.experiment(courseWeek, curriculumVersion)) response.course_week = courseWeek;
+        if (actionsActive && Number(body.course_week) && learnActions.experiment(courseWeek, curriculumVersion)) response.course_week = courseWeek;
         else response.course_experiment_completed = false;
-        if (body.learn_action && occurrence !== 'weekly') return json(400,{error:'Submit course action evidence with your weekly check-in.'});
-        let actionInput=body.learn_action;
-        if(!actionInput && occurrence==='weekly' && learnActions.experiment(courseWeek, curriculumVersion)){
+        if (actionsActive && body.learn_action && occurrence !== 'weekly') return json(400,{error:'Submit course action evidence with your weekly check-in.'});
+        let actionInput=actionsActive ? body.learn_action : null;
+        if(actionsActive && !actionInput && occurrence==='weekly' && learnActions.experiment(courseWeek, curriculumVersion)){
             const ctx=await learnReview.context(authUser.id),row=ctx.records.find(r=>r.week===courseWeek);
             actionInput={enrollment_id:ctx.enrollment.id,week:courseWeek,revision:row?.revision||0,answers:{},meal_id:row?.report?.meal?.id||null};
         }

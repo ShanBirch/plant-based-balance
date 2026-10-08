@@ -340,7 +340,7 @@ test('challenge media prohibition and vegetarian correction survive late draft r
 });
 test('opener preference includes Summer Shred, Learn and ten-week goal horizon without diet qualification', () => {
     const prompt=buildChallengeLeadPrompt({currentMessage:'BALANCE'});
-    for(const phrase of ['Summer Shred','six-week course','long-term lifestyle changes','What are you looking to achieve over the next ten weeks?','not a vegan-status qualification gate','No transformation photos']) assert.ok(prompt.includes(phrase),phrase);
+    for(const phrase of ['Summer Shred','ten-week course','long-term lifestyle changes','What are you looking to achieve over the next ten weeks?','not a vegan-status qualification gate','No transformation photos']) assert.ok(prompt.includes(phrase),phrase);
     assert.doesNotMatch(prompt,/No extra permission loop|goal plus a genuine.*enquiry is enough|Do not ask permission to send/);
 });
 

@@ -6,7 +6,7 @@ const source = fs.readFileSync(require('node:path').join(__dirname,'../js/dashbo
 const definitions = require('../lib/learn-weekly-actions.js');
 function fixture() {
   const review = {state:{available:true,current_week:1},row:null,record(){return this.row},complete:r=>['completed','legacy_completed'].includes(r?.status),status(){return this.row?.status || 'Planned / not started'}};
-  const c = {window:{BalanceLearnActionReview:review,BalanceLearnWeeklyActions:definitions},ACTIONS:[{id:'learn_weekly_action',priority:985}]};
+  const c = {window:{BalanceLearnCurriculum:{actionsEnabled:true},BalanceLearnActionReview:review,BalanceLearnWeeklyActions:definitions},ACTIONS:[{id:'learn_weekly_action',priority:985}]};
   vm.runInNewContext(source.slice(source.indexOf('  function getLearnCourseAction()'),source.indexOf('  function getFitGotchiCourseAction()')),c);
   return {c,review};
 }

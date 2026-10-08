@@ -1,5 +1,11 @@
 # Balance Codex Operating Brief
 
+## Balance Learn: ten-week learning course and retired tasks (8 October 2026)
+
+Shannon approved ten weeks with 49 existing lessons in exactly the same teaching order: five lessons in Week 1, four in Week 2, then five in Weeks 3-10. Teach brain basics before prediction. Keep the approved wording, photos/diagrams and existing lesson/quiz styling.
+
+Balance Learn is now a learning course. Retire its practical tasks from the app, Home To Do Next, weekly check-in action forms, action submissions/reminders and compulsory Learn reflections. Course progress/completion counts lesson quizzes only. Preserve the action definitions, endpoints, tables, saved evidence and old calendar versions for possible later restoration; do not delete them or reinterpret historical records. The active app course uses ten_v1 independently of the archived social journey calendar. Existing Become calendars and other courses retain their behavior. Existing prices, billing periods, support agreements and lifetime entitlements are not changed by this pacing update. This supersedes earlier six-week course positioning and requirements for compulsory Learn weekly actions below. Contract: docs/learn-ten-week-learning-only.md.
+
 ## Organic follower conversation direction, 3 October 2026
 
 Follower/outreach business chats should naturally move from their exact context toward fitness or nutrition, their own goals, and a consented phone call with Shannon. Rapport supports that outcome; do not wait for an explicit coaching enquiry or keep chatting without purpose. Keep invitations relevant and optional, respect declines, and send the booking card only after consent. Known personal/dating contacts are excluded even when they discuss the gym. Use Shannon's labels/instructions and relationship evidence, never gender or gym interest alone; ambiguous personal intent stays neutral for Shannon. Existing personal/manual holds remain. This supersedes older call-only-as-escalation guidance for organic business conversations. Shared runtime policy: netlify/functions/_lib/coaching-conversation-policy.js.

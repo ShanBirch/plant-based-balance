@@ -38,8 +38,8 @@ test('in-app manager permission cannot authorize worker or proactive messages', 
 });
 test('course evidence separates public offer, assigned curriculum, progress and missing data', async () => {
     const text = buildCourseClientContext({account:[{onboarding_complete:true}],enrollment:[{id:'e',course_id:'learn',start_date:'2026-09-01'}],journey:[{current_week:2,settings:{learn_curriculum:'six_v2'}}],lessons:[{lessons_completed:['mind-2-1']}],reviews:[{enrollment_id:'e',week:2,status:'submitted',reflection_text:'shift work',report:{}}]});
-    assert.match(text,/six-week public course/); assert.match(text,/week 2: Work with your energy/);
-    assert.match(text,/recorded lessons: 1\/10/); assert.match(text,/shift work/);
+    assert.match(text,/ten-week learning course/); assert.match(text,/Learning week 1: Meet your brain/);
+    assert.match(text,/recorded lessons: 0\/5/); assert.match(text,/shift work/);
     const unavailable = await loadCourseClientContext('u',async()=>{throw Error('unavailable')});
     assert.match(unavailable,/Enrolment lookup unavailable/); assert.doesNotMatch(unavailable,/No active practical-action enrolment/);
 });

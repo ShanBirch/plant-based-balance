@@ -1,5 +1,7 @@
 # Beginner teaching for Balance Learn
 
+The ten-week pacing and learning-only decision later on 8 October supersedes the six-week schedule and mandatory action references below. See docs/learn-ten-week-learning-only.md. Beginner teaching and existing player/style criteria still apply.
+
 Approved 8 October 2026. Preserve the six-week course, original absolute wording, lesson IDs, quizzes, weekly actions and player style. Assume no prior brain knowledge.
 
 ## Current and revised delivery

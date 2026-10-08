@@ -7,7 +7,7 @@ const source = fs.readFileSync(require('node:path').join(__dirname, '../js/dashb
 function fixture(week = 1) {
   const rows = {}, writes = [];
   const c = { console, Intl, Date, URLSearchParams, setTimeout() {}, localStorage: { getItem: () => 'true' }, sessionStorage: { getItem: () => null }, document: { getElementById: () => null } };
-  c.window = c; c.BalanceLearnWeeklyActions = learn; c.actionRecords = {}; c.BalanceLearnActionReview = {open(){},record:w=>c.actionRecords[w],complete:r=>['completed','legacy_completed'].includes(r?.status),status:()=> 'Planned'}; c.location = { hostname: 'test', search: '' }; c.currentUser = { id: 'member' };
+  c.window = c;c.BalanceLearnCurriculum=Object.assign({},require('../lib/learn-curriculum'),{actionsEnabled:true}); c.BalanceLearnWeeklyActions = learn; c.actionRecords = {}; c.BalanceLearnActionReview = {open(){},record:w=>c.actionRecords[w],complete:r=>['completed','legacy_completed'].includes(r?.status),status:()=> 'Planned'}; c.location = { hostname: 'test', search: '' }; c.currentUser = { id: 'member' };
   c.supabaseClient = { from(table) {
     let payload;
     const q = { upsert(p) { payload = p; writes.push(p); return q; }, then(resolve) { return Promise.resolve({ data: payload || rows[table] || [] }).then(resolve); } };

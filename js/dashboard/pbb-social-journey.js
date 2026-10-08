@@ -214,7 +214,7 @@
       const action=tasks.find(t=>t.type==='learn_experiment');
       Object.assign(action,{label:experiment.title,hint:experiment.prompt+' Report what happened in your weekly check-in.'});
       // Keep community actions tied to the calendar; nutrition and experiment tasks follow the curriculum.
-      return {...base,week:i+1,phase:'BALANCE LEARN · WEEK '+(i+1),title:w.title,body:w.description,tasks};
+      return {...base,week:i+1,phase:'BALANCE LEARN · WEEK '+(i+1),title:w.title,body:w.description,tasks:window.BalanceLearnCurriculum.actionsEnabled?tasks:[]};
     });
     WEEK_DEFINITIONS=definitions.concat(ORIGINAL_WEEK_DEFINITIONS.slice(6).map((d,i)=>({...d,week:offset+i+1})));
     WEEK_LESSONS=weeks.map((w,i)=>['legacy_six','bridge_eight_v1'].includes(version)&&i<6?ORIGINAL_WEEK_LESSONS[i]:lesson(w.title,w.description,[window.BalanceLearnWeeklyActions.experiment(i+1,version).prompt])).concat(ORIGINAL_WEEK_LESSONS.slice(6));
@@ -511,6 +511,9 @@
   }
 
   async function calculateProgress() {
+    if (!window.BalanceLearnCurriculum.actionsEnabled && state && state.current_week <= learnCount()) {
+      progress={tasks:[],completed_count:0,total_count:0};return progress;
+    }
     if (isActivationPreview() && state) {
       const previewTasks = getWeekDefinition().tasks.map(item => Object.assign({}, item, { current: 0, complete: false }));
       progress = { tasks: previewTasks, completed_count: 0, total_count: previewTasks.length };
@@ -759,6 +762,7 @@
   }
 
   function renderCard() {
+    if (!window.BalanceLearnCurriculum.actionsEnabled && state && state.current_week <= learnCount()) { const card=getCard();if(card)card.style.display='none';return; }
     const card = getCard();
     if (!card || !isJourneyEligible() || !state) return;
     const character = document.getElementById('tamagotchi-widget-container');
@@ -856,6 +860,12 @@
   }
 
   function getUnifiedAction() {
+    if (!window.BalanceLearnCurriculum.actionsEnabled && (!state || state.current_week <= learnCount() || window.getNextBalanceCourseId?.() === 'balance-foundations')) {
+      if (!isJourneyEligible()) return null;
+      const courseId=window.getNextBalanceCourseId?.() || 'balance-foundations';
+      const destination=window.getCurrentCourseLessonDestination?.(courseId);
+      return {kind:'course_lesson',courseId,title:destination?.title || 'Continue Balance Learn',body:destination?.body || 'Learn one idea and answer its quiz.',cta:destination?.cta || 'Open lesson',accent:'#b78a2e'};
+    }
     if (!isJourneyEligible() || !state) return null;
     const definition = getWeekDefinition();
     const lesson = WEEK_LESSONS[definition.week - 1];
@@ -890,6 +900,7 @@
   }
 
   function openUnifiedAction() {
+    if (!window.BalanceLearnCurriculum.actionsEnabled && (!state || state.current_week <= learnCount() || window.getNextBalanceCourseId?.() === 'balance-foundations')) {window.pbbOpenCurrentCourseLesson?.(window.getNextBalanceCourseId?.() || 'balance-foundations');return;}
     if (!isJourneyEligible() || !state) return;
     if (!isCurrentLessonSeen()) {
       const courseId = Number(state.current_week || 1) > learnCount() ? 'balance-identity' : 'balance-foundations';
@@ -1167,6 +1178,7 @@
   }
 
   function getFoundationsCourseProgress() {
+    if (!window.BalanceLearnCurriculum.actionsEnabled) return {available:false,retired:true,weekProgress:[]};
     if (!state) return { available: false, currentJourneyWeek: 1, weekProgress: [] };
     const currentJourneyWeek = Math.max(1, Math.min(journeyCount(), Number(state.current_week) || 1));
     const snapshots = safeObject(safeObject(state.settings).foundation_week_progress);
@@ -1213,6 +1225,7 @@
   }
 
   function taskActionForCourse(weekNumber, taskId) {
+    if (!window.BalanceLearnCurriculum.actionsEnabled) return;
     const week = Math.max(1, Math.min(learnCount(), Number(weekNumber) || 1));
     if (!state || week > Number(state.current_week)) {
       showToast('That week will unlock when you reach it.', 'info');
@@ -1414,6 +1427,7 @@
   }
 
   function openJourney(stage) {
+    if (!window.BalanceLearnCurriculum.actionsEnabled && (!state || state.current_week <= learnCount())) {window.switchAppTab?.('learning');window.openCoursePage?.('balance-foundations');return;}
     if (!isJourneyEligible() || !state) return;
     if (stage === 'welcome') {
       openCoachInbox();
@@ -1886,7 +1900,7 @@
       reminder_receipts: [],
       settings
     });
-    await window.BalanceLearnActionReview.api({operation:'restart'});
+    if (window.BalanceLearnCurriculum.actionsEnabled) await window.BalanceLearnActionReview.api({operation:'restart'});
     await window.BalanceLearnActionReview.load();
     progress = null;
     await calculateProgress();

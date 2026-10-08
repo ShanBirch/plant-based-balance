@@ -40,6 +40,8 @@ function scheduledReceiptId(journey) {
 async function runReminderScan(now = new Date()) {
     const journey = await loadJourney();
     if (!journey || journey.user_id !== SHANNON_USER_ID || !journey.onboarding_complete) return { ok: true, skipped: 'pilot_not_active' };
+    const curriculum=require('../../lib/learn-curriculum');
+    if(!curriculum.actionsEnabled && Number(journey.current_week)<=curriculum.total(curriculum.version(journey)))return {ok:true,skipped:'learn_tasks_retired'};
     const settings = safeObject(journey.settings);
     if (!settings.instagram_reminders_enabled || !settings.instagram_thread_id || !settings.instagram_username) {
         return { ok: true, skipped: 'instagram_reminders_off' };
