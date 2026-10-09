@@ -1243,7 +1243,7 @@
   function openIdentityCourseWeek(weekNumber) {
     if (!isJourneyEligible() || !state) return;
     const week = Math.max(learnCount()+1, Math.min(journeyCount(), Number(weekNumber) || learnCount()+1));
-    if (week > Number(state.current_week)) {
+    if (!window.BalanceCourseWeeks?.ownerReview?.() && week > Number(state.current_week)) {
       showToast('That Balance Become week will unlock when you reach it.', 'info');
       return;
     }

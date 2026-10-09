@@ -457,7 +457,7 @@
       for (var dependency of dependencies) {
         await load(dependency[0], function(){ return !!window[dependency[1]]; });
       }
-      await load('lib/learning-inline.js?v=20261008-mixed-quiz', function(){
+      await load('lib/learning-inline.js?v=20261010-owner-review', function(){
         return typeof window.prepareBalanceFoundationsStartForTour === 'function'
           && typeof window.openCurrentCourseLesson === 'function'
           && typeof window.getCurrentCourseLessonDestination === 'function';
