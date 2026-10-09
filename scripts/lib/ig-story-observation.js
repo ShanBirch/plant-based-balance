@@ -82,6 +82,30 @@ async function openInstagramStoryVideo(tab, openStory, expectedHandle) {
   await openStory();
   await reply.or(entry).waitFor({ state: 'visible', timeoutMs: 4000 });
   if (await entry.isVisible()) await entry.click();
+  await reply.waitFor({ state: 'visible', timeoutMs: 4000 });
+  const openedSource = parseInstagramStorySource(await tab.url(), expectedHandle);
+  if (!openedSource) throw new Error('immutable_story_source_missing');
+  // A pre-load Play icon can revert to Pause when Instagram hydrates video.
+  // Wait for rendered video data, without changing playback or page state.
+  const loaded = await tab.playwright.evaluate(async () => {
+    const deadline = Date.now() + 4000;
+    do {
+      const videos = Array.from(document.querySelectorAll('video')).filter(v => {
+        const r = v.getBoundingClientRect();
+        return r.width > 0 && r.height > 0 &&
+          getComputedStyle(v).visibility !== 'hidden' &&
+          getComputedStyle(v).display !== 'none';
+      });
+      if (videos.length === 1 && videos[0].readyState >= 2 &&
+          videos[0].videoWidth > 0 && videos[0].videoHeight > 0) return true;
+      await new Promise(resolve => setTimeout(resolve, 100));
+    } while (Date.now() < deadline);
+    return false;
+  }, undefined, { timeoutMs: 5000 });
+  if (!loaded) throw new Error('video_not_loaded');
+  const loadedSource = parseInstagramStorySource(await tab.url(), expectedHandle);
+  if (!loadedSource || openedSource.storyId !== loadedSource.storyId)
+    throw new Error('creator_or_story_changed');
   await freezeInstagramStory(tab);
   return readInstagramStoryVideo(tab, expectedHandle);
 }

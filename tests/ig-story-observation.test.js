@@ -61,3 +61,22 @@ test('native freeze never blindly toggles after Pause disappeared', async () => 
     name==='Pause'?pause:name==='Play'?play:reply}}),/changed frame/);
   assert.equal(clicks,1);
 });
+test('opening waits for actual loaded media before native Pause and rejects source advance', async () => {
+  const {openInstagramStoryVideo} = require('../scripts/lib/ig-story-observation');
+  async function run(changed) {
+    let loaded=false, reads=0;
+    const reply={waitFor:async()=>{},or:()=>reply,isVisible:async()=>true};
+    const entry={isVisible:async()=>false};
+    const pause={isVisible:async()=>true,click:async()=>assert.equal(loaded,true)};
+    const play={waitFor:async()=>{},isVisible:async()=>true};
+    const tab={url:async()=> 'https://www.instagram.com/stories/alice/'+
+      (++reads===2 && changed ? '124' : '123')+'/',
+      playwright:{getByRole:(_r,{name})=>name==='View story'?entry:
+        name==='Pause'?pause:name==='Play'?play:reply,
+        evaluate:async fn=>{ if(fn.constructor.name==='AsyncFunction'){loaded=true;return true;}
+          return sample().media;}}};
+    return openInstagramStoryVideo(tab,async()=>{},'alice');
+  }
+  assert.equal((await run(false)).source.storyId,'123');
+  await assert.rejects(run(true),/creator_or_story_changed/);
+});
