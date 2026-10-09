@@ -9298,6 +9298,37 @@ function runMsnConfetti() {
     }
 }
 
+// Reduce camera photos before upload and every recipient download.
+async function prepareChatPhoto(file) {
+    if (!/^image\/(jpeg|png|webp)$/i.test(file.type) || file.size <= 350 * 1024) return file;
+    const objectUrl = URL.createObjectURL(file);
+    try {
+        const image = new Image();
+        await new Promise((resolve, reject) => {
+            image.onload = resolve;
+            image.onerror = reject;
+            image.src = objectUrl;
+        });
+        const scale = Math.min(1, 1600 / Math.max(image.naturalWidth, image.naturalHeight));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+        canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return file;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.82));
+        if (!blob || blob.size >= file.size) return file;
+        return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' });
+    } catch (error) {
+        console.warn('Chat photo optimisation unavailable; using original', error);
+        return file;
+    } finally {
+        URL.revokeObjectURL(objectUrl);
+    }
+}
+
 // Send a photo attachment in a chat (DM or group)
 async function sendChatPhoto(chatType, fileInput) {
     const file = fileInput.files[0];
@@ -9313,7 +9344,8 @@ async function sendChatPhoto(chatType, fileInput) {
     }
 
     // Show uploading indicator
-    const uploadingMsg = `[PHOTO:uploading]`;
+    const recipientId = chatType === 'dm' ? currentDMRecipient?.id : currentGroupChatId;
+    if (!recipientId) return;
     const tempId = 'chat-photo-uploading-' + Date.now();
 
     if (chatType === 'dm') {
@@ -9341,7 +9373,8 @@ async function sendChatPhoto(chatType, fileInput) {
     try {
         // Upload photo to B2
         const formData = new FormData();
-        formData.append('file', file);
+        const uploadFile = await prepareChatPhoto(file);
+        formData.append('file', uploadFile);
         formData.append('userId', userId);
 
         const uploadResponse = await fetch('/api/upload-chat-photo', {
@@ -9364,27 +9397,25 @@ async function sendChatPhoto(chatType, fileInput) {
 
         // Send the message with the photo URL
         if (chatType === 'dm') {
-            if (!currentDMRecipient) return;
             const { error } = await window.supabaseClient
                 .from('nudges')
                 .insert({
                     sender_id: userId,
-                    receiver_id: currentDMRecipient.id,
+                    receiver_id: recipientId,
                     message: photoMessage
                 });
             if (error) throw error;
-            loadDirectMessages(currentDMRecipient.id);
+            if (currentDMRecipient?.id === recipientId) await loadDirectMessages(recipientId);
         } else if (chatType === 'gc') {
-            if (!currentGroupChatId) return;
             const { error } = await window.supabaseClient
                 .from('group_chat_messages')
                 .insert({
-                    group_chat_id: currentGroupChatId,
+                    group_chat_id: recipientId,
                     user_id: userId,
                     message: photoMessage
                 });
             if (error) throw error;
-            loadGroupChatMessages(currentGroupChatId);
+            if (currentGroupChatId === recipientId) await loadGroupChatMessages(recipientId);
         }
 
     } catch (error) {
