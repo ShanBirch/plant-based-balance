@@ -79,6 +79,8 @@ self.PBB_OFFLINE_ASSETS = [
   "./js/dashboard/pbb-admin-deep-link.js?v=your-call-v1",
   "./js/dashboard/pbb-app-telemetry.js",
   "./js/dashboard/pbb-app-telemetry.js?v=2-replay",
+  "./js/dashboard/pbb-client-activity-alerts.js",
+  "./js/dashboard/pbb-client-activity-alerts.js?v=1-foreground",
   "./js/dashboard/pbb-course-mascot.js",
   "./js/dashboard/pbb-course-mascot.js?v=1-original-3d",
   "./js/dashboard/pbb-deferred-battle.js",
