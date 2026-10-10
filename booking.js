@@ -25,6 +25,7 @@
     const bookingSource = urlParams.get('source') || '';
     const isClientCoaching = bookingSource === 'client_coaching';
     if (isClientCoaching) {
+        document.body.classList.add('client-coaching-booking');
         document.title = 'Book Your Coaching Session | Balance';
         byId('booking-intro-kicker').textContent = 'Your Balance coaching';
         byId('booking-intro-title').textContent = 'Book your next coaching session.';
@@ -359,7 +360,7 @@
             show(loading, false);
             duration.textContent = isPlantBasedChallenge
                 ? `${data.durationMinutes || 60}-minute phone or video call`
-                : data.durationMinutes ? `${data.durationMinutes} min ${isFirstPtSession ? 'session' : 'call'}` : 'Call times';
+                : data.durationMinutes ? `${data.durationMinutes} min ${(isFirstPtSession || isClientCoaching) ? 'session' : 'call'}` : 'Call times';
             renderTimeZone();
             if (!data.ok || !data.bookingEnabled || !state.dates.length) {
                 trackChallengeBooking('booking_unavailable', { reason: data.calendarReconnectRequired ? 'calendar_reconnect_required' : 'no_available_times' });

@@ -3,11 +3,11 @@
 }
 
 /* Keep the sticky controls below the status bar, including zero-inset WebViews. */
-.booking-page {
-    --booking-safe-top: max(24px, env(safe-area-inset-top, 0px));
+.booking-page.client-coaching-booking {
+    --booking-safe-top: max(42px, env(safe-area-inset-top, 0px));
 }
-.booking-page .site-header {
-    padding-top: calc(12px + var(--booking-safe-top));
+html body.booking-page.client-coaching-booking .site-header:has(.balance-navigation) {
+    padding-top: calc(8px + var(--booking-safe-top));
 }
 
 .booking-layout {
