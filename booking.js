@@ -23,6 +23,27 @@
     const outsidePanel = byId('booking-outside-panel');
     const urlParams = new URLSearchParams(window.location.search);
     const bookingSource = urlParams.get('source') || '';
+    const isClientCoaching = bookingSource === 'client_coaching';
+    if (isClientCoaching) {
+        document.title = 'Book Your Coaching Session | Balance';
+        byId('booking-intro-kicker').textContent = 'Your Balance coaching';
+        byId('booking-intro-title').textContent = 'Book your next coaching session.';
+        byId('booking-intro-copy').textContent = 'Choose a 45-minute video session with Shannon from the next two weeks of available weekdays. We will review your course, practise movement and plan your next steps together.';
+        byId('booking-card-title').textContent = 'Choose your session time.';
+        for (const targetForm of [form, outsideForm]) {
+            const callType = targetForm?.querySelector('[name="callType"]');
+            const goal = targetForm?.querySelector('[name="goal"]');
+            if (callType) callType.value = 'video';
+            if (goal) goal.placeholder = 'Anything you would like to work through in our coaching session.';
+        }
+        const submitLabel = form?.querySelector('.booking-submit span:first-child');
+        if (submitLabel) submitLabel.textContent = 'Confirm my coaching session';
+        const fallback = byId('booking-unavailable-action');
+        byId('booking-unavailable-title').textContent = 'Arrange your next coaching session.';
+        byId('booking-unavailable-copy').textContent = 'No bookable times are showing right now. Send Shannon your preferred days and times in Balance so we can arrange your session.';
+        fallback.textContent = 'Message Shannon in Balance';
+        fallback.href = '/dashboard.html?action=open_dm&sender_id=00a6605e-8edb-4917-85ba-24a23f179059';
+    }
     const isPlantBasedChallenge = bookingSource === 'plant_based_challenge';
     const isHomePtEnquiry = bookingSource === 'home_pt';
     const homePtPackage = isHomePtEnquiry && urlParams.get('home_pt_package') === 'balance' ? 'balance' : 'session';
@@ -329,10 +350,12 @@
 
     async function loadAvailability() {
         try {
-            const response = await fetch((isWeeklyCheckinPt || isFirstPtSession) ? `${endpoint}?source=${isFirstPtSession ? 'first_pt_session' : 'weekly_checkin_pt'}` : endpoint, { headers: { Accept: 'application/json' } });
+            const response = await fetch(isClientCoaching ? `${endpoint}?source=client_coaching` : (isWeeklyCheckinPt || isFirstPtSession) ? `${endpoint}?source=${isFirstPtSession ? 'first_pt_session' : 'weekly_checkin_pt'}` : endpoint, { headers: { Accept: 'application/json' } });
             const data = await response.json();
             state.settings = data;
             state.dates = groupSlotsInLocalTime(Array.isArray(data.dates) ? data.dates : []);
+            const earliestDate = urlParams.get('from') || '';
+            if (isClientCoaching && /^\d{4}-\d{2}-\d{2}$/.test(earliestDate)) state.dates = state.dates.filter(date => date.key >= earliestDate);
             show(loading, false);
             duration.textContent = isPlantBasedChallenge
                 ? `${data.durationMinutes || 60}-minute phone or video call`
@@ -396,7 +419,7 @@
                     visitorTimeZone: localTimeZone,
                     bookingMode,
                     metaRef: urlParams.get('meta_ref') || '',
-                    source: isHomePtEnquiry ? 'home_pt' : isPlantBasedChallenge ? 'plant_based_challenge' : isFirstPtSession ? 'first_pt_session' : isWeeklyCheckinPt ? 'weekly_checkin_pt' : isZoomPtEnquiry ? 'zoom_pt' : 'public_booking_page',
+                    source: isClientCoaching ? 'client_coaching' : isHomePtEnquiry ? 'home_pt' : isPlantBasedChallenge ? 'plant_based_challenge' : isFirstPtSession ? 'first_pt_session' : isWeeklyCheckinPt ? 'weekly_checkin_pt' : isZoomPtEnquiry ? 'zoom_pt' : 'public_booking_page',
                     ...(isHomePtEnquiry ? { homePtPackage } : {}),
                     ...((isPlantBasedChallenge || isHomePtEnquiry) ? { attribution: window.getAttributionData?.() || {} } : {}),
                     ptSessionsPerWeek: isZoomPtEnquiry && requestedPtSessions ? Number(requestedPtSessions) : null,

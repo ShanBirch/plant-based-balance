@@ -99,10 +99,10 @@ function normalizeBookingMode(value: unknown): BookingMode {
     return trimText(value, 30).toLowerCase() === "outside_hours" ? "outside_hours" : "standard";
 }
 
-export function normalizeBookingSource(value: unknown): "public_booking_page" | "zoom_pt" | "weekly_checkin_pt" | "first_pt_session" | "plant_based_challenge" | "home_pt" {
+export function normalizeBookingSource(value: unknown): "public_booking_page" | "zoom_pt" | "weekly_checkin_pt" | "first_pt_session" | "plant_based_challenge" | "home_pt" | "client_coaching" {
     const source = trimText(value, 40).toLowerCase();
     if (source === "plant_based_challenge" || source === "home_pt") return source;
-    if (source === "zoom_pt" || source === "weekly_checkin_pt" || source === "first_pt_session") return source;
+    if (source === "zoom_pt" || source === "weekly_checkin_pt" || source === "first_pt_session" || source === "client_coaching") return source;
     return "public_booking_page";
 }
 
@@ -553,7 +553,8 @@ export function buildSlotsForDate(settingsInput: BookingSettings, date: string, 
 export function buildAvailableDates(settings: BookingSettings, busy: BusyRange[], now = new Date()) {
     const firstDate = brisbaneDateKey(now);
     const dates = [];
-    for (let offset = 0; offset < AVAILABILITY_LOOKAHEAD_DAYS && dates.length < PUBLIC_BOOKING_WINDOW_DAYS; offset += 1) {
+    const availableDays = settings.booking_window_days === 10 ? 10 : PUBLIC_BOOKING_WINDOW_DAYS;
+    for (let offset = 0; offset < AVAILABILITY_LOOKAHEAD_DAYS && dates.length < availableDays; offset += 1) {
         const date = dateKeyForOffset(firstDate, offset);
         const slots = buildSlotsForDate(settings, date, busy, now);
         if (slots.length) dates.push({ date, label: dateLabel(date), slots });
@@ -788,6 +789,10 @@ async function createBooking(req: Request): Promise<Response> {
     if (trimText(body.company || body.website, 200)) return json(400, { ok: false, error: "invalid_request" });
     const settings = await getSettings();
     if (["weekly_checkin_pt", "first_pt_session"].includes(normalizeBookingSource(body.source))) settings.duration_minutes = 30;
+    if (normalizeBookingSource(body.source) === "client_coaching") {
+        settings.duration_minutes = 45;
+        settings.booking_window_days = 10;
+    }
     if (!settings.booking_enabled) return json(409, { ok: false, error: "booking_not_open" });
 
     const name = trimText(body.name, 120);
@@ -938,7 +943,7 @@ function publicSettings(settings: BookingSettings): Record<string, unknown> {
         durationMinutes: settings.duration_minutes,
         timezone: BRISBANE_TIMEZONE,
         minimumNoticeHours: settings.minimum_notice_hours,
-        bookingWindowDays: PUBLIC_BOOKING_WINDOW_DAYS,
+        bookingWindowDays: settings.booking_window_days,
     };
 }
 
@@ -992,6 +997,10 @@ export default async function handler(req: Request): Promise<Response> {
         if (req.method === "GET") {
             const settings = await getSettings();
             if (["weekly_checkin_pt", "first_pt_session"].includes(url.searchParams.get("source") || "")) settings.duration_minutes = 30;
+            if (normalizeBookingSource(url.searchParams.get("source")) === "client_coaching") {
+                settings.duration_minutes = 45;
+                settings.booking_window_days = 10;
+            }
             if (!settings.booking_enabled) return json(200, {
                 ok: true,
                 ...publicSettings(settings),
