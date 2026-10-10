@@ -21,6 +21,7 @@ const {
     isAiAutomationOptedOut,
 } = require('./_lib/client-context');
 const { callOpenAIModelChain } = require('./_lib/ai-router');
+const { loadContext } = require('./_lib/engagement-ai-context');
 
 const SHARED_SECRET = process.env.IG_STORY_BOT_BRIDGE_SECRET || process.env.STORY_COMMENT_BRIDGE_SECRET || '';
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
@@ -2214,6 +2215,16 @@ function formatRelationshipChecklist(facts = {}) {
         .join('; ');
 }
 
+async function loadStoryConversationContext(thread, query = supabaseQuery) {
+    if (!thread?.id) return '';
+    try {
+        return await loadContext({ query, thread, enabled: true });
+    } catch (err) {
+        console.warn('[ig-story-outreach] conversation evidence lookup failed:', err.message);
+        return 'Conversation evidence unavailable; do not infer unanswered goals or invent past conversation details.';
+    }
+}
+
 function buildExistingRelationshipContext(thread, details = {}) {
     if (!thread?.id) {
         return 'No existing IG thread found. Treat this as a light first-touch opener.';
@@ -2312,7 +2323,10 @@ function buildExistingRelationshipContext(thread, details = {}) {
     const lastStory = thread.custom_data?.last_story_outreach || {};
     const lastComment = cleanText(lastStory.sent_comment || lastStory.draft_comment || '', 140);
     if (lastComment) lines.push(`Recent story opener already used: ${lastComment}`);
-    return truncate(lines.join(' '), 3500);
+    const legacyContext = truncate(lines.join(' '), 3500);
+    return details.conversationContext ? legacyContext
+        + '\nFor this initial Story comment, use history only as relevant evidence for a brief reaction to the current Story. Do not answer an old turn, revive a sales sequence or create follow-up authority. All existing Story eligibility and protections still apply.\n'
+        + details.conversationContext : legacyContext;
 }
 
 async function loadRelationshipContextForHandle(username) {
@@ -2325,11 +2339,12 @@ async function loadRelationshipContextForHandle(username) {
             storyBlockReason: '',
         };
     }
-    const [recentMessages, pendingAlerts, clientMemory, challengeRows] = await Promise.all([
+    const [recentMessages, pendingAlerts, clientMemory, challengeRows, conversationContext] = await Promise.all([
         loadRecentThreadMessages(thread.id),
         loadPendingThreadAlerts(thread.id),
         loadLinkedClientMemory(thread),
         loadChallengeParticipation(thread.linked_user_id),
+        loadStoryConversationContext(thread),
     ]);
     const storyCooldown = storyNoReplyCooldown(thread, recentMessages);
     const recentStoryCooldown = storyRecentOutreachCooldown(thread, recentMessages);
@@ -2342,6 +2357,7 @@ async function loadRelationshipContextForHandle(username) {
             pendingAlerts,
             clientMemory,
             challengeRows,
+            conversationContext,
             storyBlockReason,
             storyCooldown,
             recentStoryCooldown,
@@ -3330,6 +3346,7 @@ exports._test = {
     validateEvidenceVideo,
     normalizeStorySurfaceContext,
     buildExistingRelationshipContext,
+    loadStoryConversationContext,
     relationshipStoryBlockReason,
     hasRecentUnansweredInbound,
     storyNoReplyCooldown,
