@@ -2,6 +2,14 @@
     width: min(1140px, calc(100% - 32px));
 }
 
+/* Keep the sticky controls below the status bar, including zero-inset WebViews. */
+.booking-page {
+    --booking-safe-top: max(24px, env(safe-area-inset-top, 0px));
+}
+.booking-page .site-header {
+    padding-top: calc(12px + var(--booking-safe-top));
+}
+
 .booking-layout {
     display: grid;
     grid-template-columns: minmax(260px, .78fr) minmax(0, 1.22fr);
