@@ -8142,6 +8142,8 @@ function openDirectMessage(userId, userName, userPhoto) {
 function closeDirectMessageModal() {
     cancelDmVoiceRecording();
     const modal = document.getElementById('direct-message-modal');
+    if (modal && window.VoiceFeedbackPlayback) window.VoiceFeedbackPlayback.dispose(modal);
+    if (modal) modal.querySelectorAll('audio').forEach(audio => audio.pause());
     if (modal) modal.style.display = 'none';
     currentDMRecipient = null;
 }
@@ -8164,7 +8166,8 @@ function closeCoachChatModal() {
 async function loadDirectMessages(recipientId) {
     const container = document.getElementById('dm-messages-container');
     if (!container) return;
-
+    if (window.VoiceFeedbackPlayback) window.VoiceFeedbackPlayback.dispose(container);
+    container.querySelectorAll('audio').forEach(audio => audio.pause());
     container.innerHTML = `<div style="text-align: center; padding: 20px; color: var(--text-muted);">Loading messages...</div>`;
 
     // Ensure we have a valid user before querying
@@ -8271,7 +8274,7 @@ async function loadDirectMessages(recipientId) {
                             <div style="display:flex; align-items:center; gap:7px; margin:0 3px 5px; font-size:.69rem; font-weight:800; color:${isSent ? '#68480f' : '#475569'};">
                                 <span style="width:7px; height:7px; border-radius:50%; background:${isSent ? '#68480f' : '#64748b'};"></span>${escapeHtml(voiceLabel)}
                             </div>
-                            <audio controls preload="metadata" src="${escapeHtml(playbackUrl)}" style="display:block; width:100%; height:42px; border-radius:21px;"></audio>
+                            <audio data-voice-message-id="${escapeHtml(msg.id)}" controls preload="metadata" src="${escapeHtml(playbackUrl)}" style="display:block; width:100%; height:42px; border-radius:21px;"></audio>
                             <div style="font-size:.7rem; color:${isSent ? '#68480f' : '#94a3b8'}; opacity:.8; margin-top:3px; text-align:right;">${time}</div>
                         </div>
                     </div>
@@ -8352,6 +8355,7 @@ async function loadDirectMessages(recipientId) {
             `;
         }).join('');
 
+        if (window.VoiceFeedbackPlayback) window.VoiceFeedbackPlayback.attach(container, messages, userId, window.supabaseClient);
         // Wire up long-press on each bubble to open the reaction picker
         if (window.attachDmLongPressReactions) window.attachDmLongPressReactions(container);
 

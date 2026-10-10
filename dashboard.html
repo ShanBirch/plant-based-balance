@@ -1883,6 +1883,7 @@ window.addEventListener('load', function() {
 
     <script src="lib/onboarding-funnel.js?v=3-replay"></script>
     <script src="js/dashboard/pbb-app-telemetry.js?v=2-replay"></script>
+    <script src="lib/voice-feedback-playback.js?v=20261011-playback"></script>
     <script defer src="js/dashboard/pbb-client-activity-alerts.js?v=1-foreground"></script>
     <script defer src="js/dashboard/pbb-replay-privacy.js?v=2-onboarding"></script>
     <link rel="stylesheet" href="css/dashboard/pbb-session-replay.css?v=1">
@@ -19138,13 +19139,13 @@ if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=20261009-inbox-photo-speed';
+            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=20261011-voice-playback';
             s.onload = function() { if(window._crumb)window._crumb('script6_deferred_loaded'); };
             document.head.appendChild(s);
         }, 2000);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=20261009-inbox-photo-speed"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=20261011-voice-playback"><\/script>');
 }
 </script>
 

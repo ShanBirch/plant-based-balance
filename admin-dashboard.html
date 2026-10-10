@@ -3688,6 +3688,7 @@
     </div>
 
     <script src="/lib/supabase.js?v=4"></script>
+    <script src="/lib/voice-feedback-playback.js?v=20261011-playback"></script>
     <script>
         let allUsers = [], currentView = 'needs-you', analyticsData = null, currentConvoUserId = null, currentConvoTarget = null, convoTargetsCache = [], selectedDirectoryUserId = null;
         const IG_GRAPH_SUBSCRIBER_PREFIX = 'ig_graph:';
@@ -6737,8 +6738,15 @@
             currentConvoTarget = target || { type: 'app', id: userId, name: userName, channelLabel: 'Balance app' };
             setConversationHeader(userName, 'Balance app');
             const c=document.getElementById('conversation-messages');c.innerHTML='<div class="loading">Loading conversations...</div>';
-            try{const convos=await dbHelpers.admin.getUserConversations(userId);if(!convos.length){c.innerHTML='<p style="color:#64748b;text-align:center;padding:20px;">No conversation history yet.</p>';return;}
-            let h='';convos.forEach(m=>{h+=`<div class="chat-message ${m.role==='user'?'user':'bot'}"><div><strong>${m.role==='user'?'User':'Coach Shannon'}</strong></div><div>${renderAdminAppMessageContent(m.message_text)}</div><div class="timestamp">${new Date(m.timestamp).toLocaleString()}</div></div>`;});c.innerHTML=h;c.scrollTop=c.scrollHeight;
+            try{const convos=await dbHelpers.admin.getUserConversations(userId);
+            if(currentConvoUserId!==userId)return;
+            let h='<div id="voice-feedback-playback-summary" aria-live="polite">Loading playback receipts...</div>';
+            if(!convos.length)h+='<p style="color:#64748b;text-align:center;padding:20px;">No conversation history yet.</p>';
+            convos.forEach(m=>{h+=`<div class="chat-message ${m.role==='user'?'user':'bot'}"><div><strong>${m.role==='user'?'User':'Coach Shannon'}</strong></div><div>${renderAdminAppMessageContent(m.message_text)}</div><div class="timestamp">${new Date(m.timestamp).toLocaleString()}</div></div>`;});c.innerHTML=h;c.scrollTop=c.scrollHeight;
+            const receipts=await window.supabaseClient.rpc('get_voice_feedback_playback',{p_recipient_id:userId});
+            if(currentConvoUserId!==userId)return;
+            const summary=document.getElementById('voice-feedback-playback-summary');
+            if(summary)summary.innerHTML=receipts.error ? '<p>Playback receipts unavailable. Reopen this conversation to retry.</p>' : window.VoiceFeedbackPlayback.render(receipts.data||[]);
             }catch(e){console.error('Failed to load conversations:',e);c.innerHTML='<p style="color:#ef4444;padding:20px;">Failed to load conversations.<br><br><pre>'+adminEsc(e.stack || e.message || e)+'</pre></p>';}
             lucide.createIcons();
         }
