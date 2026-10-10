@@ -2199,6 +2199,16 @@
             border-color: var(--admin-bg-deep) !important;
         }
     </style>
+    <style>
+        #ig-lead-modal { box-sizing:border-box; height:100dvh !important; padding:max(20px, env(safe-area-inset-top, 0px), var(--balance-safe-top, 32px)) 12px max(20px, env(safe-area-inset-bottom, 0px), var(--balance-safe-bottom, 24px)); }
+        #ig-lead-modal > div { box-sizing:border-box; width:100% !important; max-height:100% !important; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; color:var(--admin-text, #0f172a); background:var(--admin-surface, #fff) !important; }
+        .engagement-history { color:var(--admin-text, #0f172a) !important; -webkit-text-fill-color:currentColor; background:var(--admin-surface-2, #f8fafc) !important; }
+        .engagement-history a { color:var(--admin-primary-strong, #28613a); -webkit-text-fill-color:currentColor; }
+        .engagement-history summary { cursor:pointer; font-weight:600; }
+        .engagement-history p, .engagement-history h4, .engagement-history ul, .engagement-history ol { margin-top:10px; }
+        .engagement-history ul, .engagement-history ol { padding-left:20px; }
+    </style>
+    <script src="/js/admin-engagement-history.js"></script>
 </head>
 <body class="admin-locked">
     <div id="ptr-indicator" aria-hidden="true">
@@ -8596,14 +8606,31 @@
             renderIgLeadLinkedUser(lead);
             _renderIgLeadQualifier(lead);
             _renderIgLeadAccuracy(lead);
+            let historyPanel = document.getElementById("ig-lead-engagement-history");
+            if (!historyPanel) {
+                historyPanel = document.createElement("div");
+                historyPanel.id = "ig-lead-engagement-history";
+                document.getElementById("ig-lead-recent-messages").before(historyPanel);
+            }
+            historyPanel.textContent = "Loading engagement history...";
+            const historyRequest = Symbol('engagement-history');
+            historyPanel._request = historyRequest;
+            BalanceEngagementHistory.load(window.supabaseClient, lead).then(model => {
+                if (igLeadEditingId !== threadId || historyPanel._request !== historyRequest) return;
+                historyPanel.innerHTML = BalanceEngagementHistory.render(model, lead);
+            }).catch(() => {
+                if (igLeadEditingId === threadId && historyPanel._request === historyRequest) historyPanel.textContent = "Engagement history unavailable. No suggestion can be supported.";
+            });
             const recentList = document.getElementById('ig-lead-recent-list');
             recentList.innerHTML = '<div style="color:#94a3b8;">Loading messages...</div>';
             document.getElementById('ig-lead-modal').style.display = 'flex';
+            document.querySelector('#ig-lead-modal > div').scrollTop = 0;
             const { data: messages } = await window.supabaseClient.from('ig_messages')
                 .select('direction, text, created_at')
                 .eq('thread_id', threadId)
                 .order('created_at', { ascending: false })
                 .limit(30);
+            if (igLeadEditingId !== threadId || historyPanel._request !== historyRequest) return;
             if (!messages || messages.length === 0) {
                 recentList.innerHTML = '<div style="color:#94a3b8;">No messages yet.</div>';
             } else {
