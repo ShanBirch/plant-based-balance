@@ -32,6 +32,37 @@ fail-closed receipt validator. The installed runtime copy is
 It requires Node only. It does not send, authorize delivery, or replace existing
 identity, safety, transport, run-lease or controller-claim checks.
 
+## Conversation evidence for replies and existing follow-ups
+
+Canonical packets now carry the newest 500 captured messages (plus a coverage
+sentinel), including source IDs, direction and timestamps, alongside existing
+thread goals, notes and memory timestamps. The helper's `capture` command adds
+`ai_context` and `ai_context_prompt` to each validated packet. Read them together
+with the entire `unanswered` batch before composing a reply. They preserve prior
+topics, quoted goal/interest language, where the exchange stopped, and Brisbane
+inbound-day/candidate-return evidence. Counts are activity, not genuine interest.
+Stored summaries are unverified; newer source corrections win. Do not re-ask an
+answered goal or revive an old sales sequence merely because someone returns.
+Short new replies may be natural continuations; a statement without a question,
+waiting or no follow-up may be appropriate.
+
+For an existing authorised due follow-up whose source is outbound, keep the
+normal action/source/consent/timing checks. Use `context-sql <exact-thread-uuid>`
+to read that one conversation without changing inbox eligibility. Save the
+actual connector's `conversation` object as JSON, then run
+`context conversation.json <exact-thread-uuid>` to prepare its evidence block.
+The context reader does not read alerts, register opportunities, create actions
+or approve a send. It rejects a mismatched or stale conversation. It cannot
+establish complete native history; inspect the native exchange when needed.
+
+An unanswered outbound defaults to waiting. An independently authorised existing
+follow-up keeps its own reason, source, timing, identity and no-repeat checks;
+the evidence block cannot create or replace any of those. Quoted check-back
+language requires interpretation, including negation, conditions and newer
+declines. Silence, message volume and candidate returns grant no contact rights.
+The installed helper requires a byte-identical `engagement-ai-context.js` beside
+it; the repository uses `netlify/functions/_lib/engagement-ai-context.js`.
+
 ## Reliable bounded persistence (30 September 2026)
 
 The helper defaults to one full conversation per page. It includes every exact

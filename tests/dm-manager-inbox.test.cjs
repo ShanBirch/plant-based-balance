@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { inboxSql, validateReceipt, unwrapSnapshot, receiptFromSnapshot } = require('../scripts/dm-manager-inbox.cjs');
+const { inboxSql, validateReceipt, unwrapSnapshot, receiptFromSnapshot, enrichSnapshot, conversationSql, contextFromConversation } = require('../scripts/dm-manager-inbox.cjs');
 const now = Date.now();
 const thread = '459cf1d5-fe11-4f7d-8114-99746e06cd43';
 const source = '653fb194-8c9a-49c2-9635-5e4d245ce074';
@@ -69,6 +69,49 @@ test('SQL binds messages and alerts to thread identity and does not use a delta 
     assert.match(sql,/stale_pending_alert_count/);
     assert.match(sql,/no_ai_send/);
     assert.throws(()=>inboxSql(0,null,0),/page size/);
+});
+
+test('canonical capture supplies historical goals and an unanswered turn without changing receipts', () => {
+    const { snapshot, receipt } = fixture();
+    const packet = snapshot.packets[0];
+    Object.assign(packet, { subscriber_id: 'exact-recipient', channel: 'instagram', history_limit: 500,
+        stored_memory: { goals: 'Stored training goal', running_notes: 'Old summary' },
+        history: [{ id: 'old-in', thread_id: thread, direction: 'in', text: 'My goal is to train twice weekly', created_at: new Date(now - 3 * 86400000).toISOString() },
+            { id: 'old-out', thread_id: thread, direction: 'out', text: 'Which days suit your shifts?', created_at: new Date(now - 3 * 86400000 + 60000).toISOString() },
+            { ...packet.unanswered[0], direction: 'in' }] });
+    const enriched = enrichSnapshot(snapshot);
+    assert.equal(enriched.packets[0].ai_context.explicitInterestOrGoalLanguage[0].messageId, 'old-in');
+    assert.equal(enriched.packets[0].ai_context.whereStopped.messageId, source);
+    assert.deepEqual(enriched.packets[0].unanswered, packet.unanswered);
+    assert.deepEqual(enriched.packets[0].policy, packet.policy);
+    assert.match(enriched.packets[0].ai_context_prompt, /Do not re-ask goals/);
+    assert.equal(validateReceipt(enriched, [receipt], { now }).identity_verified, true);
+    assert.equal(snapshot.packets[0].ai_context, undefined);
+});
+
+test('old snapshots cannot claim full historical coverage and SQL keeps source reads scoped', () => {
+    const { snapshot } = fixture();
+    assert.equal(enrichSnapshot(snapshot).packets[0].ai_context.coverage.capturedHistoryComplete, false);
+    const sql = inboxSql(0, thread);
+    assert.match(sql, /'history_limit',500/);
+    assert.match(sql, /WHERE thread_id=t.id ORDER BY created_at DESC,id DESC\s+LIMIT 501/);
+    assert.match(sql, /'stored_memory'/);
+    assert.doesNotMatch(sql, /\b(?:INSERT|UPDATE|DELETE|ALTER|GRANT)\b/i);
+});
+
+test('outbound follow-up context stays read-only, exact-thread scoped and separate from inbox eligibility', () => {
+    const sql = conversationSql(thread);
+    assert.match(sql, /WHERE t.id=/); assert.match(sql, /WHERE thread_id=t.id/);
+    assert.doesNotMatch(sql, /coach_alerts|ig_next_actions|\b(?:INSERT|UPDATE|DELETE|ALTER|GRANT)\b/i);
+    assert.throws(() => conversationSql("';DROP TABLE x"), /thread ID/);
+    const conversation = { version:1, scope:'conversation_context', thread_id:thread,
+        captured_at:new Date(now).toISOString(), history_limit:500, history:[{id:source,thread_id:thread,direction:'out',text:'Would you like to chat about your training?',created_at:new Date(now).toISOString()}] };
+    const context = contextFromConversation(conversation, thread, {now});
+    assert.equal(context.whereStopped.direction, 'out');
+    assert.equal(context.followUpReview.defaultDecision, 'wait_no_follow_up');
+    assert.throws(() => contextFromConversation({...conversation,thread_id:'other'}, thread, {now}), /Exact canonical/);
+    assert.throws(() => contextFromConversation(conversation, thread, {now:now+600000}), /Stale/);
+    assert.throws(() => contextFromConversation({...conversation,history:[{...conversation.history[0],thread_id:'other'}]}, thread, {now}), /source mismatch/);
 });
 
 test('captures the actual nested connector envelope without copying identities or quotes', () => {

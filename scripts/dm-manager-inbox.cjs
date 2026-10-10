@@ -1,6 +1,11 @@
 // Read-only canonical inbox packets and fail-closed local manager receipts.
 // No transport credentials, sends, or policy overrides live in this helper.
 const fs = require('node:fs');
+const path = require('node:path');
+// The installed read-only helper keeps a byte-identical module beside it.
+const contextModule = path.join(__dirname, '../netlify/functions/_lib/engagement-ai-context.js');
+const { HISTORY_LIMIT, buildContext, promptBlock } = require(fs.existsSync(contextModule)
+    ? contextModule : './engagement-ai-context.js');
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DEFAULT_PAGE_SIZE = 1;
 const MAX_PAGE_SIZE = 25;
@@ -10,7 +15,8 @@ function inboxSql(offset = 0, threadId = null, pageSize = DEFAULT_PAGE_SIZE) {
     if (threadId && !UUID.test(threadId)) throw new Error('Invalid thread ID');
     if (!Number.isSafeInteger(pageSize) || pageSize < 1 || pageSize > MAX_PAGE_SIZE) throw new Error('Invalid page size');
     return `WITH candidates AS (
- SELECT t.id, t.ig_username, t.profile_name, t.linked_user_id,
+ SELECT t.id, t.ig_username, t.profile_name, t.linked_user_id, t.subscriber_id, t.channel,
+        t.goals, t.personal_context, t.running_notes, t.communication_style, t.last_memory_extracted_at,
         t.coach_instructions, t.custom_data, latest.id AS latest_inbound_id,
         latest.created_at AS latest_inbound_at, outgoing.created_at AS last_outbound_at
  FROM public.ig_threads t
@@ -26,6 +32,16 @@ packets AS (
  SELECT jsonb_build_object(
   'thread_id',t.id,'ig_username',t.ig_username,'profile_name',t.profile_name,
   'linked_user_id',t.linked_user_id,'coach_instructions',t.coach_instructions,
+  'subscriber_id',t.subscriber_id,'channel',t.channel,
+  'stored_memory',jsonb_build_object('goals',t.goals,'personal_context',t.personal_context,
+    'running_notes',t.running_notes,'communication_style',t.communication_style,
+    'last_memory_extracted_at',t.last_memory_extracted_at),
+  'history_limit',${HISTORY_LIMIT},
+  'history',coalesce((SELECT jsonb_agg(jsonb_build_object('id',m.id,'thread_id',m.thread_id,
+    'direction',m.direction,'text',m.text,'source',m.source,'created_at',m.created_at)
+    ORDER BY m.created_at,m.id) FROM (SELECT id,thread_id,direction,text,source,created_at
+    FROM public.ig_messages WHERE thread_id=t.id ORDER BY created_at DESC,id DESC
+    LIMIT ${HISTORY_LIMIT + 1}) m),'[]'::jsonb),
   'latest_inbound_id',t.latest_inbound_id,'last_outbound_at',t.last_outbound_at,
   'policy',jsonb_build_object('manual_review_only',t.custom_data->'manual_review_only',
     'permanent_needs_you_draft_only',t.custom_data->'permanent_needs_you_draft_only',
@@ -62,6 +78,38 @@ SELECT jsonb_build_object('version',1,'scope','${threadId ? 'thread' : 'inbox'}'
 
 function requireSame(actual, expected, name) {
     if (actual !== expected) throw new Error(`Canonical ${name} mismatch`);
+}
+
+// Outbound-bound due follow-ups are context, never fabricated inbound work.
+function conversationSql(threadId) {
+    if (!UUID.test(threadId || '')) throw new Error('Invalid thread ID');
+    return `SELECT jsonb_build_object('version',1,'scope','conversation_context','captured_at',now(),
+ 'thread_id',t.id,'subscriber_id',t.subscriber_id,'channel',t.channel,'linked_user_id',t.linked_user_id,
+ 'stored_memory',jsonb_build_object('goals',t.goals,'personal_context',t.personal_context,
+   'running_notes',t.running_notes,'communication_style',t.communication_style,
+   'last_memory_extracted_at',t.last_memory_extracted_at),
+ 'history_limit',${HISTORY_LIMIT},'history',coalesce((SELECT jsonb_agg(jsonb_build_object(
+   'id',m.id,'thread_id',m.thread_id,'direction',m.direction,'text',m.text,'source',m.source,
+   'created_at',m.created_at) ORDER BY m.created_at,m.id) FROM
+   (SELECT id,thread_id,direction,text,source,created_at FROM public.ig_messages WHERE thread_id=t.id
+    ORDER BY created_at DESC,id DESC LIMIT ${HISTORY_LIMIT + 1}) m),'[]'::jsonb)) AS conversation
+FROM public.ig_threads t WHERE t.id='${threadId}'::uuid;`;
+}
+
+function contextFromConversation(conversation, expectedThreadId, { now = Date.now() } = {}) {
+    if (!UUID.test(expectedThreadId || '')) throw new Error('Invalid thread ID');
+    if (conversation?.version !== 1 || conversation.scope !== 'conversation_context'
+        || conversation.thread_id !== expectedThreadId || !Array.isArray(conversation.history)) {
+        throw new Error('Exact canonical conversation context required');
+    }
+    const age = now - Date.parse(conversation.captured_at);
+    if (!Number.isFinite(age) || age < -60000 || age > 9 * 60000) throw new Error('Stale conversation context');
+    if (conversation.history.some(message => message.thread_id !== expectedThreadId)) throw new Error('Conversation source mismatch');
+    return buildContext({ thread: { ...(conversation.stored_memory || {}), id: expectedThreadId,
+        subscriber_id: conversation.subscriber_id, channel: conversation.channel,
+        linked_user_id: conversation.linked_user_id },
+        messages: conversation.history.slice(-HISTORY_LIMIT),
+        complete: conversation.history_limit === HISTORY_LIMIT && conversation.history.length <= HISTORY_LIMIT });
 }
 
 function validateReceipt(snapshot, receipts, { now = Date.now(), partial = false } = {}) {
@@ -146,6 +194,19 @@ function unwrapSnapshot(input) {
     throw new Error('Canonical snapshot missing from connector result');
 }
 
+function enrichSnapshot(snapshot) {
+    // Derive context only after validating the canonical packet/source pairing.
+    validateReceipt(snapshot, [], { partial: true });
+    return { ...snapshot, packets: snapshot.packets.map(packet => {
+        const history = packet.history;
+        const context = buildContext({ thread: { ...(packet.stored_memory || {}), id: packet.thread_id,
+            subscriber_id: packet.subscriber_id, channel: packet.channel, linked_user_id: packet.linked_user_id },
+            messages: Array.isArray(history) ? history.slice(-HISTORY_LIMIT) : [],
+            complete: Array.isArray(history) && packet.history_limit === HISTORY_LIMIT && history.length <= HISTORY_LIMIT });
+        return { ...packet, ai_context: context, ai_context_prompt: promptBlock(context) };
+    }) };
+}
+
 function receiptFromSnapshot(snapshot, threadId, outcome, reason) {
     const packet = snapshot.packets.find(packet => packet.thread_id === threadId);
     if (!packet) throw new Error('Thread missing from snapshot');
@@ -156,13 +217,19 @@ function receiptFromSnapshot(snapshot, threadId, outcome, reason) {
     return [receipt];
 }
 
-module.exports = { inboxSql, validateReceipt, unwrapSnapshot, receiptFromSnapshot };
+module.exports = { inboxSql, validateReceipt, unwrapSnapshot, receiptFromSnapshot, enrichSnapshot,
+    conversationSql, contextFromConversation };
 if (require.main === module) {
     try {
         const [command, a, b, flag, extra, last] = process.argv.slice(2);
         if (command === 'sql') console.log(inboxSql(Number(a || 0), b || null));
+        else if (command === 'context-sql') console.log(conversationSql(a));
+        else if (command === 'context') {
+            const context = contextFromConversation(JSON.parse(fs.readFileSync(a, 'utf8')), b);
+            console.log(promptBlock(context));
+        }
         else if (command === 'capture') {
-            const snapshot = unwrapSnapshot(fs.readFileSync(a, 'utf8'));
+            const snapshot = enrichSnapshot(unwrapSnapshot(fs.readFileSync(a, 'utf8')));
             fs.writeFileSync(b, JSON.stringify(snapshot, null, 2), 'utf8');
             console.log(JSON.stringify({ captured_at: snapshot.captured_at, total: snapshot.total,
                 packet_count: snapshot.packets.length, thread_ids: snapshot.packets.map(packet => packet.thread_id) }));
@@ -175,6 +242,6 @@ if (require.main === module) {
         else if (command === 'validate') console.log(JSON.stringify(validateReceipt(
             JSON.parse(fs.readFileSync(a,'utf8')), JSON.parse(fs.readFileSync(b,'utf8')),
             { partial: flag === '--partial' })));
-        else throw new Error('Use sql [offset] [threadId], capture tool-result.json snapshot.json, receipt snapshot.json threadId outcome reason receipts.json, or validate snapshot.json receipts.json [--partial]');
+        else throw new Error('Use sql [offset] [threadId], context-sql threadId, context conversation.json threadId, capture tool-result.json snapshot.json, receipt snapshot.json threadId outcome reason receipts.json, or validate snapshot.json receipts.json [--partial]');
     } catch (e) { console.error(JSON.stringify({ error:e.message, action_pass_complete:false })); process.exitCode=1; }
 }
