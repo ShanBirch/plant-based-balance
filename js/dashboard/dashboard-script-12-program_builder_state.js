@@ -708,7 +708,9 @@ async function loadActiveReplacements() {
             activeReplacementsCache = [];
             return [];
         }
-        activeReplacementsCache = await dbHelpers.workoutReplacements.getActive(user.id);
+        const userId = window.isAdminViewing && window.adminViewUserId
+            ? window.adminViewUserId : user.id;
+        activeReplacementsCache = await dbHelpers.workoutReplacements.getActive(userId);
         return activeReplacementsCache;
     } catch (err) {
         console.error('loadActiveReplacements error:', err);
