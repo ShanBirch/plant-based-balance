@@ -2210,6 +2210,13 @@ async function initCalendarView() {
     renderCycleStatus();
     renderWeeklyCalendar();
 
+    // Calendar can open after authentication or deferred scripts finish.
+    // Await dated swaps before rendering instead of relying on a page-load timer.
+    if (typeof loadActiveReplacements === 'function') {
+        await loadActiveReplacements();
+        renderWeeklyCalendar();
+    }
+
     // Restore saved calendar view preference (weekly/monthly)
     const savedViewPref = localStorage.getItem('calendarViewPreference');
     if (savedViewPref === 'monthly') {
