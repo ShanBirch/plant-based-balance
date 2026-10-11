@@ -3738,6 +3738,14 @@ window.openCalendarWorkout = async function(dayIndexFromMonday, replacementDate)
         const rWorkout = replacement.replacement_workout;
 
         // Handle different replacement types
+        if (rWorkout.type === 'inline') {
+            if (!Array.isArray(rWorkout.exercises) || !rWorkout.exercises.length) {
+                showToast('This temporary workout has no exercises. Please contact your coach.');
+                return;
+            }
+            await startInlineWorkout(rWorkout);
+            return;
+        }
         if (rWorkout.type === 'rest') {
             showToast('Today is a rest day. Enjoy your recovery!');
             return;

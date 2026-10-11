@@ -14,7 +14,7 @@ test('coach revision replaces old set counts and hold duration, preserving load 
     const rows = vm.runInNewContext(countExpression + 'numSets', { ex, prescribedSets: 2, hasWeekSpecificPlan: false, previousSummary: { setCount: 3 } });
     assert.equal(rows, 2);
     const result = ctx.mergeSetPrefill({ time: '60', reps: '10', kg: '12' }, ctx.getPrescribedSetPrefill(ex, true));
-    assert.deepEqual(JSON.parse(JSON.stringify(result)), { kg: '12', reps: '', time: '20' });
+    assert.deepEqual(JSON.parse(JSON.stringify(result)), { kg: '12', explicitLoad: false, reps: '', time: '20' });
 });
 test('coach rep range starts at its lower bound instead of an old target', () => {
     const result = ctx.mergeSetPrefill({ reps: '6', kg: '30' }, ctx.getPrescribedSetPrefill({ reps: '8-12', prescriptionOverridesHistory: true }, false));
@@ -29,7 +29,7 @@ test('coach can clear irrelevant load history for bands and bodyweight movements
     };
     const prescribed = ctx.getPrescribedSetPrefill(exercise, false);
     const result = ctx.mergeSetPrefill({ reps: '12', kg: '7' }, prescribed);
-    assert.deepEqual(JSON.parse(JSON.stringify(result)), { kg: '', reps: '12', time: '' });
+    assert.deepEqual(JSON.parse(JSON.stringify(result)), { kg: '', explicitLoad: false, reps: '12', time: '' });
 });
 test('ordinary workouts retain their previous session defaults', () => {
     const result = ctx.mergeSetPrefill({ reps: '12', kg: '30' }, ctx.getPrescribedSetPrefill({ reps: '8-12' }, false));
