@@ -21,7 +21,7 @@ $$;
 -- replaced by pg_temp, retaining every actual candidate/reservation/reconciliation condition.
 
 DO $test$
-DECLARE a uuid:=gen_random_uuid(); attempted uuid:=gen_random_uuid(); token uuid; tid uuid:=gen_random_uuid();
+DECLARE a uuid:=gen_random_uuid(); attempted uuid:=gen_random_uuid(); retired uuid:=gen_random_uuid(); token uuid; tid uuid:=gen_random_uuid();
  cid uuid:=gen_random_uuid(); result jsonb; v_reason jsonb; n integer; before_row jsonb; proof jsonb; failed boolean;
 BEGIN
  INSERT INTO pg_temp.ig_browser_shift_runs(run_id,lane,slot,status,lease_expires_at,browser_surface,browser_binding,cursor_current)
@@ -50,6 +50,8 @@ BEGIN
  UPDATE pg_temp.ig_next_actions SET reason=reason||jsonb_build_object('reviewed_at',now(),'client_matches',1) WHERE id=a;
  SELECT count(*) INTO n FROM pg_temp.claim_ig_story_action(a,1,'exact-test','test-tab','test-person','123456','That looks fun. Where is it?'); ASSERT n=0,'client';
  UPDATE pg_temp.ig_next_actions SET reason=reason||'{"client_matches":0}' WHERE id=a;
+ INSERT INTO pg_temp.ig_next_action_receipts(action_id,action_version,subject_key,ig_username,owner,action_type,terminal_status,receipt,completed_at)
+ VALUES(gen_random_uuid(),1,'ig:test-person','test-person','dm_manager','reply_inbound','completed','{"no_repeat":true}',now());
  SELECT claim_token INTO token FROM pg_temp.claim_ig_story_action(a,1,'exact-test','test-tab','test-person','123456','That looks fun. Where is it?');
  ASSERT token IS NOT NULL,'NULL-thread exact candidate selected';
  ASSERT (SELECT to_jsonb(q)=before_row FROM pg_temp.ig_next_actions q WHERE id=attempted),'higher-priority attempted row unchanged';
@@ -75,5 +77,11 @@ BEGIN
  ASSERT (SELECT count(*)=1 FROM pg_temp.ig_next_action_receipts WHERE receipt->>'target_credit'='1'),'exactly one target credit';
  ASSERT pg_temp.ig_story_receipt_attempted('{"sent_observed_at":"now"}'),'pending native send terminal';
  ASSERT NOT pg_temp.ig_story_receipt_attempted('{}'),'clean receipt';
+ INSERT INTO pg_temp.ig_next_actions(id,subject_key,ig_username,owner,status,action_type,reason)
+ VALUES(retired,'ig:retired','retired','story_operator','ready','story_reply',v_reason||'{"story_id":"654321","story_url":"https://www.instagram.com/stories/retired/654321/"}');
+ INSERT INTO pg_temp.ig_next_action_receipts(action_id,action_version,subject_key,ig_username,owner,action_type,terminal_status,receipt,completed_at)
+ VALUES(retired,1,'ig:retired','retired','story_operator','story_reply','cancelled','{"story_id":"654321","decision":"inspected_not_sent"}',now());
+ SELECT count(*) INTO n FROM pg_temp.claim_ig_story_action(retired,1,'exact-test','test-tab','retired','654321','That looks fun. Where is it?'); ASSERT n=0,'retired exact source stays terminal without attempted flag';
+ SELECT count(*) INTO n FROM pg_temp.claim_ig_next_actions('story_operator',1,300,'exact-test'); ASSERT n=0,'legacy claim also excludes retired exact source';
 END $test$;
 

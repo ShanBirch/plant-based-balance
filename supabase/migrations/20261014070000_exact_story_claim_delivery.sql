@@ -60,13 +60,17 @@ BEGIN
  -- Exact recipient/thread uniqueness remains enforced by the existing queue.
  -- Archived attempts stay terminal forever for the same source and seven days for the person.
  IF EXISTS (SELECT 1 FROM public.ig_next_action_receipts h
-  WHERE public.ig_story_receipt_attempted(h.receipt) AND (
+  WHERE (
+   -- An inspected/retired exact Story is never reused, even if it was not sent.
+   (h.action_type='story_reply' AND h.ig_username=a.ig_username AND h.receipt->>'story_id'=p_story_id)
+   OR (public.ig_story_receipt_attempted(h.receipt) AND (
    (h.action_id=a.id AND h.action_version=a.action_version)
    OR (h.ig_username=a.ig_username AND h.receipt->>'story_id'=p_story_id)
-   OR ((h.subject_key=a.subject_key OR h.ig_username=a.ig_username
+   OR (h.action_type IN ('story_reply','welcome_follower','reactivation','feed_engagement')
+       AND (h.subject_key=a.subject_key OR h.ig_username=a.ig_username
        OR (a.thread_id IS NOT NULL AND h.thread_id=a.thread_id))
        AND coalesce(nullif(h.receipt->>'attempt_reserved_at','')::timestamptz,h.completed_at,h.archived_at)>now()-interval '7 days')
-  )) THEN RETURN; END IF;
+  )))) THEN RETURN; END IF;
  RETURN QUERY UPDATE public.ig_next_actions SET status='claimed',claim_owner='story_operator',
   claim_token=gen_random_uuid(),claim_run_id=p_run_id,
   claim_expires_at=least(r.lease_expires_at,now()+make_interval(secs=>least(greatest(coalesce(p_lease_seconds,300),60),300)))
@@ -216,9 +220,8 @@ BEGIN
           AND (q.action_type <> 'story_reply' OR NOT public.ig_story_receipt_attempted(q.receipt))
           AND (q.action_type <> 'story_reply' OR NOT EXISTS (
               SELECT 1 FROM public.ig_next_action_receipts h
-              WHERE public.ig_story_receipt_attempted(h.receipt)
-              AND ((h.action_id=q.id AND h.action_version=q.action_version)
-                OR (h.ig_username=q.ig_username AND h.receipt->>'story_id'=q.reason->>'story_id'))))
+              WHERE (public.ig_story_receipt_attempted(h.receipt) AND h.action_id=q.id AND h.action_version=q.action_version)
+                OR (h.action_type='story_reply' AND h.ig_username=q.ig_username AND h.receipt->>'story_id'=q.reason->>'story_id')))
           AND (p_thread_ids IS NULL OR q.thread_id = ANY(p_thread_ids))
           AND q.due_at <= NOW()
           AND COALESCE(q.safe_after, '-infinity'::TIMESTAMPTZ) <= NOW()
