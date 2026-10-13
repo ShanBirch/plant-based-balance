@@ -8,4 +8,4 @@ if (boundary < 0) throw new Error('Missing isolated assertion block');
 // Use the exact deployed bodies against session-local tables and surface stubs.
 const functions = (migration.slice(0, migration.indexOf('REVOKE ALL')) + migration.slice(migration.indexOf('CREATE OR REPLACE FUNCTION public.claim_ig_next_actions')))
   .replaceAll('public.', 'pg_temp.').replaceAll('RETURNS SETOF ig_next_actions', 'RETURNS SETOF pg_temp.ig_next_actions');
-process.stdout.write(fixture.slice(0, boundary) + functions + fixture.slice(boundary));
+process.stdout.write(fixture.slice(0, boundary) + functions.trimEnd() + ';\n' + fixture.slice(boundary));
