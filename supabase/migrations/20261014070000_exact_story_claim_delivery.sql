@@ -40,6 +40,7 @@ BEGIN
   OR a.reason->>'story_url' IS DISTINCT FROM ('https://www.instagram.com/stories/'||p_ig_username||'/'||p_story_id||'/')
   OR a.reason->>'final_text' IS DISTINCT FROM p_final_text OR length(trim(coalesce(p_final_text,'')))=0
   OR a.reason->>'is_dm' IS DISTINCT FROM 'true'
+  OR a.reason->>'one_send_only' IS DISTINCT FROM 'true'
   OR a.reason->>'reviewed_private_story_authorization' IS DISTINCT FROM 'true'
   OR a.reason->>'native_following_verified' IS DISTINCT FROM 'true'
   OR a.reason->>'native_account' IS DISTINCT FROM 'shan_n_sunny'
@@ -49,6 +50,11 @@ BEGIN
   OR a.reason->>'run_id' IS DISTINCT FROM p_run_id
   OR a.reason->>'logical_base_id' IS DISTINCT FROM r.cursor_current->>'logical_base_id'
   OR nullif(a.reason->>'authorization_source','') IS NULL
+  OR nullif(a.reason->>'authorization_scope','') IS NULL
+  OR nullif(a.reason->>'native_history_review','') IS NULL
+  OR coalesce(a.reason->>'native_conversation_url','') !~ '^https://www.instagram.com/direct/t/[0-9]+/?$'
+  OR jsonb_typeof(a.reason->'content_review') IS DISTINCT FROM 'object'
+  OR a.reason->'content_review'='{}'::jsonb
   OR nullif(a.reason->>'reviewed_at','') IS NULL THEN RETURN; END IF;
  IF (a.reason->>'reviewed_at')::timestamptz NOT BETWEEN now()-interval '5 minutes' AND now()+interval '30 seconds' THEN RETURN; END IF;
  -- Exact recipient/thread uniqueness remains enforced by the existing queue.

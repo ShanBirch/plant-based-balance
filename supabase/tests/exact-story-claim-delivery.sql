@@ -31,6 +31,7 @@ BEGIN
  'final_text','That looks fun. Where is it?','is_dm',true,'reviewed_private_story_authorization',true,
  'native_following_verified',true,'native_account','shan_n_sunny','run_id','exact-test','logical_base_id','logical-test',
  'authorization_source','isolated regression fixture','reviewed_at',now(),'client_matches',0,'purchase_matches',0,'personal_contacts',0);
+ v_reason:=v_reason||jsonb_build_object('one_send_only',true,'authorization_scope','fixture','native_history_review','fixture full history','native_conversation_url','https://www.instagram.com/direct/t/123/','content_review',jsonb_build_object('kind','static','observed','fixture'));
  INSERT INTO pg_temp.ig_next_actions(id,subject_key,ig_username,owner,status,action_type,reason,priority)
  VALUES(a,'ig:test-person','test-person','story_operator','ready','story_reply',v_reason,1);
  INSERT INTO pg_temp.ig_next_actions(id,subject_key,ig_username,owner,status,action_type,priority,claim_owner,claim_token,claim_run_id,claim_expires_at,receipt)
