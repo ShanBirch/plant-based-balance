@@ -6,6 +6,9 @@ CREATE UNIQUE INDEX ON ig_next_action_receipts(action_id,action_version);
 CREATE TEMP TABLE ig_browser_shift_runs (LIKE public.ig_browser_shift_runs INCLUDING DEFAULTS INCLUDING CONSTRAINTS) ON COMMIT DROP;
 CREATE TEMP TABLE ig_messages (LIKE public.ig_messages INCLUDING DEFAULTS INCLUDING CONSTRAINTS) ON COMMIT DROP;
 CREATE TEMP TABLE ig_threads (id uuid,ig_username text) ON COMMIT DROP;
+CREATE TEMP TABLE coach_alerts (LIKE public.coach_alerts INCLUDING DEFAULTS) ON COMMIT DROP;
+CREATE FUNCTION pg_temp.ig_mbs_free_zoom_invite_eligible(a pg_temp.ig_next_actions) RETURNS boolean LANGUAGE sql AS $$ SELECT false $$;
+CREATE FUNCTION pg_temp.ig_user_requested_checkin_eligible(a pg_temp.ig_next_actions) RETURNS boolean LANGUAGE sql AS $$ SELECT false $$;
 CREATE FUNCTION pg_temp.ig_browser_surface_owned(p_run_id text,p_surface text) RETURNS boolean LANGUAGE sql AS $$
  SELECT EXISTS(SELECT 1 FROM pg_temp.ig_browser_shift_runs WHERE run_id=p_run_id AND browser_surface=p_surface AND status='running' AND lease_expires_at>now() AND heartbeat_at>now()-interval '5 minutes' AND started_at>now()-interval '30 minutes')
 $$;
@@ -55,6 +58,7 @@ BEGIN
  result:=pg_temp.reserve_ig_story_send(a,1,token,'exact-test','test-tab'); ASSERT result->>'reserved'='false','second reservation fails';
  UPDATE pg_temp.ig_next_actions SET status='ready',receipt='{}',claim_owner=NULL,claim_token=NULL,claim_run_id=NULL,claim_expires_at=NULL WHERE id=a;
  SELECT count(*) INTO n FROM pg_temp.claim_ig_story_action(a,1,'exact-test','test-tab','test-person','123456','That looks fun. Where is it?'); ASSERT n=0,'archived reservation blocks even if live receipt empty';
+ SELECT count(*) INTO n FROM pg_temp.claim_ig_next_actions('story_operator',1,300,'exact-test'); ASSERT n=0,'generic claim rejects live attempted and archived reservation';
  -- Simulate immediate inbound superseding the original action.
  UPDATE pg_temp.ig_next_actions SET action_version=2,owner='dm_manager',action_type='reply_inbound',reason='{"source":"fresh inbound"}',receipt='{}',status='ready' WHERE id=a;
  SELECT to_jsonb(q) INTO before_row FROM pg_temp.ig_next_actions q WHERE id=a;
@@ -63,7 +67,8 @@ BEGIN
  proof:=jsonb_build_object('native_reloaded_verified',true,'native_account','shan_n_sunny','ig_username','test-person','story_id','123456','final_text','That looks fun. Where is it?','native_screenshot','fixture.png','native_conversation_url','https://www.instagram.com/direct/t/123/');
  failed:=false; BEGIN PERFORM pg_temp.reconcile_ig_story_delivery(a,1,gen_random_uuid(),'exact-test',cid,proof); EXCEPTION WHEN raise_exception THEN failed:=true; END; ASSERT failed,'wrong original token reconcile';
  failed:=false; BEGIN PERFORM pg_temp.reconcile_ig_story_delivery(a,1,token,'exact-test',cid,proof-'native_screenshot'); EXCEPTION WHEN raise_exception THEN failed:=true; END; ASSERT failed,'missing native proof';
- result:=pg_temp.reconcile_ig_story_delivery(a,1,token,'exact-test',cid,proof); ASSERT result->>'verified'='true','superseded original delivery reconciles';
+ result:=pg_temp.reconcile_ig_story_delivery(a,1,token,'exact-test',cid,proof||'{"no_repeat":false,"run_id":"forged","original_claim_token":"forged"}'); ASSERT result->>'verified'='true','superseded original delivery reconciles';
+ ASSERT result->'receipt'->>'no_repeat'='true' AND result->'receipt'->>'run_id'='exact-test' AND result->'receipt'->>'original_claim_token'=token::text,'proof cannot overwrite original provenance';
  ASSERT (SELECT to_jsonb(q)=before_row FROM pg_temp.ig_next_actions q WHERE id=a),'fresh inbound action byte-for-byte unchanged';
  result:=pg_temp.reconcile_ig_story_delivery(a,1,token,'exact-test',cid,proof); ASSERT result->>'already_recorded'='true','idempotent proof no extra credit';
  ASSERT (SELECT count(*)=1 FROM pg_temp.ig_next_action_receipts WHERE receipt->>'target_credit'='1'),'exactly one target credit';
