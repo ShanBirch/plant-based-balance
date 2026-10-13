@@ -83,5 +83,21 @@ BEGIN
  VALUES(retired,1,'ig:retired','retired','story_operator','story_reply','cancelled','{"story_id":"654321","decision":"inspected_not_sent"}',now());
  SELECT count(*) INTO n FROM pg_temp.claim_ig_story_action(retired,1,'exact-test','test-tab','retired','654321','That looks fun. Where is it?'); ASSERT n=0,'retired exact source stays terminal without attempted flag';
  SELECT count(*) INTO n FROM pg_temp.claim_ig_next_actions('story_operator',1,300,'exact-test'); ASSERT n=0,'legacy claim also excludes retired exact source';
+ -- A misleading native Sent toast followed by a full-reload account rejection
+ -- must stay zero-credit in the original archive after a newer inbound exists.
+ INSERT INTO pg_temp.ig_next_action_receipts(action_id,action_version,subject_key,ig_username,owner,action_type,terminal_status,receipt)
+ VALUES(attempted,1,'ig:attempted','test-person','story_operator','story_reply','waiting',
+  jsonb_build_object('run_id','exact-test','original_claim_token',token,'outbound_attempted',true,'no_repeat',true,
+   'story_id','123456','final_text','That looks fun. Where is it?','attempt_reserved_at',now(),'target_credit',0));
+ UPDATE pg_temp.ig_next_actions SET action_version=2,owner='dm_manager',action_type='reply_inbound',status='ready',reason='{"source":"new inbound"}',receipt='{}' WHERE id=attempted;
+ SELECT to_jsonb(q) INTO before_row FROM pg_temp.ig_next_actions q WHERE id=attempted;
+ failed:=false; BEGIN PERFORM pg_temp.record_ig_story_rejection(attempted,1,gen_random_uuid(),'exact-test',proof||'{"native_rejection":"new requests blocked"}'); EXCEPTION WHEN raise_exception THEN failed:=true; END; ASSERT failed,'rejection wrong original token';
+ failed:=false; BEGIN PERFORM pg_temp.record_ig_story_rejection(attempted,1,token,'exact-test',proof); EXCEPTION WHEN raise_exception THEN failed:=true; END; ASSERT failed,'rejection proof must include actual native refusal';
+ result:=pg_temp.record_ig_story_rejection(attempted,1,token,'exact-test',proof||'{"native_rejection":"new requests blocked","no_repeat":false,"run_id":"forged","target_credit":1}');
+ ASSERT result->>'recorded'='true' AND result->>'target_credit'='0','rejection recorded zero credit';
+ ASSERT result->'receipt'->>'no_repeat'='true' AND result->'receipt'->>'run_id'='exact-test','rejection cannot rewrite provenance';
+ ASSERT (SELECT to_jsonb(q)=before_row FROM pg_temp.ig_next_actions q WHERE id=attempted),'rejection bookkeeping preserves newer inbound byte-for-byte';
+ failed:=false; BEGIN PERFORM pg_temp.reconcile_ig_story_delivery(attempted,1,token,'exact-test',cid,proof); EXCEPTION WHEN raise_exception THEN failed:=true; END; ASSERT failed,'rejected archive cannot later receive delivery credit';
+ failed:=false; BEGIN PERFORM pg_temp.record_ig_story_rejection(a,1,token,'exact-test',proof||'{"native_rejection":"forged rejection"}'); EXCEPTION WHEN raise_exception THEN failed:=true; END; ASSERT failed,'verified delivery cannot be downgraded';
 END $test$;
 
