@@ -54,6 +54,13 @@ BEGIN
  ASSERT failed,'reservation tuple immutable';
  r:=public.checkpoint_ig_public_comment_run(r.run_id,'fixture-owned-tab','{"partial":true}','completed','{"sql_fixture":true}');
  ASSERT NOT public.ig_public_comment_run_owned(r.run_id,'fixture-owned-tab'),'finalization releases only own lease';
+ INSERT INTO public.ig_public_comment_runs(run_id,browser_binding,status,mode)
+ VALUES('public-comment-daily-sql-fixture',b,'completed','daily');
+ failed:=false;
+ BEGIN INSERT INTO public.ig_public_comment_runs(run_id,browser_binding,status,mode)
+ VALUES('public-comment-daily-sql-fixture-restart',b,'completed','daily');
+ EXCEPTION WHEN unique_violation THEN failed:=true; END;
+ ASSERT failed,'second daily discovery pass cannot restart after completion';
  ASSERT foreign_before=(SELECT coalesce(jsonb_agg(jsonb_build_array(run_id,browser_binding,status) ORDER BY run_id),'[]'::jsonb)
  FROM public.ig_browser_shift_runs x WHERE status='running'),'foreign ownership/bindings unchanged';
 END $test$;
