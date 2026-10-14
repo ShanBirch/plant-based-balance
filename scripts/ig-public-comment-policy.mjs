@@ -1,5 +1,5 @@
 // Pure bounded discovery policy. This module never opens a browser or sends.
-export const LIMITS=Object.freeze({pilot:5,daily:10,posts:40,milliseconds:15*60_000,freshness:72*60*60_000});
+export const LIMITS=Object.freeze({pilot:5,daily:50,posts:40,milliseconds:15*60_000,freshness:72*60*60_000});
 export function canonicalPost(url) {
   const u=new URL(url);
   if (!['instagram.com','www.instagram.com'].includes(u.hostname)||u.protocol!=='https:') throw Error('native post URL required');

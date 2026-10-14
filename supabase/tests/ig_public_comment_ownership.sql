@@ -56,11 +56,9 @@ BEGIN
  ASSERT NOT public.ig_public_comment_run_owned(r.run_id,'fixture-owned-tab'),'finalization releases only own lease';
  INSERT INTO public.ig_public_comment_runs(run_id,browser_binding,status,mode)
  VALUES('public-comment-daily-sql-fixture',b,'completed','daily');
- failed:=false;
- BEGIN INSERT INTO public.ig_public_comment_runs(run_id,browser_binding,status,mode)
+ INSERT INTO public.ig_public_comment_runs(run_id,browser_binding,status,mode)
  VALUES('public-comment-daily-sql-fixture-restart',b,'completed','daily');
- EXCEPTION WHEN unique_violation THEN failed:=true; END;
- ASSERT failed,'second daily discovery pass cannot restart after completion';
+ ASSERT (SELECT count(*)=2 FROM public.ig_public_comment_runs WHERE run_id LIKE 'public-comment-daily-sql-fixture%'),'ended daily segments allow continuation without deleting receipts';
  ASSERT foreign_before=(SELECT coalesce(jsonb_agg(jsonb_build_array(run_id,browser_binding,status) ORDER BY run_id),'[]'::jsonb)
  FROM public.ig_browser_shift_runs x WHERE status='running'),'foreign ownership/bindings unchanged';
 END $test$;

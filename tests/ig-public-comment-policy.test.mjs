@@ -34,7 +34,7 @@ test('relationships reorder only the collected batch',()=>{
 test('pilot reservations survive date changes and unknown outcomes',()=>{
  const a=Array.from({length:5},(_,i)=>({id:String(i),mode:'pilot',brisbane_day:'2026-10-13',status:'uncertain'}));
  assert.equal(remainingCapacity('pilot',a,'2026-10-14'),0);
- assert.equal(remainingCapacity('daily',a,'2026-10-14'),10);
+ assert.equal(remainingCapacity('daily',a,'2026-10-14'),50);
  assert.equal(remainingCapacity('pilot',[...a,a[0]],'2026-10-14'),0);
  assert.throws(()=>remainingCapacity('pilot',[{}],'2026-10-14'));
 });
