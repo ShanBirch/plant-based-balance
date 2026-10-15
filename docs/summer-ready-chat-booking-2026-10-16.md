@@ -11,12 +11,14 @@ Shannon authorised this change on 16 October 2026. Apply to future eligible genu
 
 ## Conversation shape
 
-1. Answer the actual opening enquiry in a short message. In the reviewed 42-thread candidate sample, 27 exact openings were `Send me the challenge details 😊`, three were home-training questions, and two used the longer Summer Ready prompt. The sample includes mixed paid/organic candidates and does not establish campaign-wide percentages or phrase effectiveness.
+1. Answer the actual opening enquiry in a short message. For a generic challenge-details or tell-me-more enquiry, lead with what they can work towards: ten weeks to work towards their best shape while learning about motivation, nutrition and exercise. This is an aspiration, not a promised physical outcome; adapt to a goal already supplied and do not assume weight loss. Do not lead with written programs, weekly Zoom sessions, app features or a list of what they get. A specific inclusions question receives the relevant inclusions directly; price and home-training questions also receive direct answers without discovery or a call prerequisite. In the reviewed 42-thread candidate sample, 27 exact openings were `Send me the challenge details 😊`, three were home-training questions, and two used the longer Summer Ready prompt. The sample includes mixed paid/organic candidates and does not establish campaign-wide percentages or phrase effectiveness.
 2. In a separate bubble, ask what they hope to achieve and what their current exercise routine looks like, only when both are unknown. This deliberately tests a paired opening despite the general one-question preference. Ask only the missing question if either answer is already present; skip both if already known. Do not restart old conversations.
 3. Reflect their answer and ask their current struggle/support need when unknown. If they already supplied it, do not ask again. Connect relevant support to their own words, then offer an optional consultation.
 4. Respect refusals, thinking time, requests to keep chatting, manual/person holds, authenticity questions and safety/support exceptions. Never turn illness, injury, body-image distress or vulnerability into a booking pitch. No manufactured urgency or automatic silence follow-up.
 
 Use fresh wording, not a pasted sequence. Separate actual direct questions from the background recording in a voice handoff. Do not claim the paired opening has improved conversions; measure goal/routine replies, useful support discussions, explicit call acceptance, verified booking, attendance and sale separately.
+
+Keep the existing active-conversation behavior: check roughly every 30 seconds, reset each person's five-minute idle deadline on every new inbound and do not finish just after sending a reply. Five minutes without a reply permits the session to become idle, not a follow-up nudge. Preserve the 25/28/30-minute invocation limits and durable continuation at the runtime wall, never an expired lease. Prompt replies are the goal, not a guarantee of zero latency.
 
 ## Offer times and book inside the chat
 

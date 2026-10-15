@@ -139,6 +139,9 @@ test('relaunch writer and review share the paired-opening, neutral offer and ver
     assert.match(policy, /supervised training/);
     assert.match(policy, /motivation, nutrition and exercise/);
     assert.match(policy, /two-question opening/);
+    assert.match(policy, /lead with the outcome and learning, not a list of inclusions/);
+    assert.match(policy, /never a guaranteed result/);
+    assert.match(policy, /specifically ask what is included, explain the relevant inclusions directly/);
     assert.match(policy, /if both are known, skip both/i);
     assert.match(policy, /timeout or uncertain result is no-repeat/i);
     const prompt = challenge.buildChallengeLeadPrompt({ currentMessage: 'Tell me about the program' });
