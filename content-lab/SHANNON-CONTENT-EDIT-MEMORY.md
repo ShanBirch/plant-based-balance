@@ -1,5 +1,9 @@
 # Shannon Content Edit Memory
 
+## 16 October 2026 - rotate the featured client within the full proof collage
+
+Shannon clarified the new collage request: retain the original multi-client proof format, make Dani one smaller supporting tile, and produce two alternatives with Gen large on one side in the first and Ally (the blonde woman in the gym) large on one side in the second. Keep the other unique client groups in smaller tiles. Do not reduce this to a Gen/Ally-only pair or repeat Dani's front/mirror views as multiple supporting tiles. Retain the original Dani solo and collage elsewhere in the review set, plus the approved blurred-photo background, white frames, exact photos and honest results caveat.
+
 ## 16 October 2026 - match the white proof-photo frame
 
 Shannon liked Ally's white photo border and asked for the same on Gen's progress photo. Match that restrained white frame tightly around the actual image, preserving its aspect ratio and original pixels, in both the individual Gen ad and the Gen/Ally collage. Keep the approved Dani-style blurred-photo background and existing copy. Reuse this framing consistently across this proof-ad family.

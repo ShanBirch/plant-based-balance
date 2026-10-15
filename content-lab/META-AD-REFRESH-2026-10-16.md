@@ -10,6 +10,8 @@
 
 ## Same-day refinements
 
+Final group-collage clarification: create two full multi-client alternatives, one with Gen large on the left and one with Ally large on the left. Dani is one smaller tile in each, alongside the remaining unique client groups from the original collage. Avoid repeating Dani's front and mirror views as additional tiles, and do not substitute a two-client-only composition for the group collage. Keep the original Dani solo/collage and the new Gen/Ally solo options elsewhere in the set. The current pack is thirteen stills: nine originals refreshed, two solo alternatives and two group alternatives.
+
 Shannon explicitly retained the exact `10 weeks from now.` headline for the white-note ad. Remove only the ten-week program wording from the body/footer, plant-based positioning and expired start date. The headline is a future-oriented hook and must not imply a ten-week coaching commitment. Recheck countdown relevance when scheduling. This is an exception to the initial general duration-removal instruction.
 
 Shannon rejected the flat green background in the three new proof ads. Match the existing individual Dani proof template using the actual source photo as a blurred background behind the same dark overlay, title hierarchy, foreground progress photo, proof caveat and CTA. Use Gen's existing `gen-cocos.jpg` as the main new proof image (Shannon referred to her as Jen), plus Ally and a Gen/Ally collage in that treatment. Keep Dani's individual photo and original collage. No body alterations or invented outcome/age claims.
