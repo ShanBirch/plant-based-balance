@@ -10,6 +10,14 @@
 
 ## Attribution evidence
 
+## Same-day refinements
+
+Shannon explicitly retained the exact `10 weeks from now.` headline for the white-note ad. Remove only the ten-week program wording from the body/footer, plant-based positioning and expired start date. The headline is a future-oriented hook and must not imply a ten-week coaching commitment. Recheck countdown relevance when scheduling. This is an exception to the initial general duration-removal instruction.
+
+Shannon rejected the flat green background in the three new proof ads. Match the existing individual Dani proof template using the actual source photo as a blurred background behind the same dark overlay, title hierarchy, foreground progress photo, proof caveat and CTA. Use Gen's existing `gen-cocos.jpg` as the main new proof image (Shannon referred to her as Jen), plus Ally and a Gen/Ally collage in that treatment. Keep Dani's individual photo and original collage. No body alterations or invented outcome/age claims.
+
+## Attribution evidence
+
 Jennie Priest's live Meta Business Suite conversation contains ad-reply events on 1 October. The displayed 15:43 Brisbane activity links to an actual ad post whose artwork is the white `10 weeks from now` design. The native conversation also has labels for invitation ad `120255352182210119` and proof/coach-note ad `120255355746490119`. Do not infer first-touch order from these labels or claim one exposure exclusively caused the sale.
 
 The replacement white-note asset reports AUD24.41 spend. The earlier ten-week overview reports AUD97.96. The combined design bucket is AUD122.37, not the white note's individual spend. Retain the white-note format as a customer-associated candidate rather than dropping it based on its group's higher conversation cost.
