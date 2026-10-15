@@ -1,5 +1,9 @@
 # Shannon Content Edit Memory
 
+## 16 October 2026 - broad fitness ad refresh and customer attribution
+
+Shannon asked to remove plant-based positioning, the ten-week duration and the expired fixed start date from the Summer Ready Shred still ads, and create more proof designs foregrounding existing midlife-client imagery. This is the paid campaign's creative test, not permission to change organic messaging or invent clients' ages, outcomes or testimonials. Keep original client photographs intact and preserve the short-headline photo layouts and connected-paragraph white-note layouts. Jennie Priest's native Meta ad-reply activity links to the white `10 weeks from now` design, while her conversation carries both invitation and proof-ad labels; do not claim the collage exclusively produced the customer. Compare customer progression and verified payments as well as conversation cost, distinguish low delivery from failure, and preserve uncertainty when asset results do not reconcile. Contract: `content-lab/META-AD-REFRESH-2026-10-16.md`.
+
 ## 8 October 2026 - constructed experience is lesson two
 
 Shannon approved Your Brain Constructs Your Experience immediately after the researchers so he can take it. Use the gym example: both I should stop and I can continue thoughts arise through the brain-body process; learning, attention and agency operate through that process. Keep a firm explanation without claiming the free-energy principle proves conscious decisions nonexistent. Active course now has 50 lessons, six in Week 1, four in Week 2 and five in later weeks. Preserve all previous IDs/completions and quiz styling. See docs/learn-ten-week-learning-only.md.
