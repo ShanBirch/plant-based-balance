@@ -16,6 +16,8 @@ Shannon rejected the flat green background in the three new proof ads. Match the
 
 ## Attribution evidence
 
+White-frame refinement: Shannon liked Ally's white photo border and requested matching treatment on Gen. Add a six-pixel white border tightly around Gen's original image in the solo ad and Gen/Ally collage, preserving its aspect ratio and the approved background and copy. Do not frame the empty contain-box instead of the actual picture.
+
 Jennie Priest's live Meta Business Suite conversation contains ad-reply events on 1 October. The displayed 15:43 Brisbane activity links to an actual ad post whose artwork is the white `10 weeks from now` design. The native conversation also has labels for invitation ad `120255352182210119` and proof/coach-note ad `120255355746490119`. Do not infer first-touch order from these labels or claim one exposure exclusively caused the sale.
 
 The replacement white-note asset reports AUD24.41 spend. The earlier ten-week overview reports AUD97.96. The combined design bucket is AUD122.37, not the white note's individual spend. Retain the white-note format as a customer-associated candidate rather than dropping it based on its group's higher conversation cost.

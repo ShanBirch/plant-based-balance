@@ -1,5 +1,9 @@
 # Shannon Content Edit Memory
 
+## 16 October 2026 - match the white proof-photo frame
+
+Shannon liked Ally's white photo border and asked for the same on Gen's progress photo. Match that restrained white frame tightly around the actual image, preserving its aspect ratio and original pixels, in both the individual Gen ad and the Gen/Ally collage. Keep the approved Dani-style blurred-photo background and existing copy. Reuse this framing consistently across this proof-ad family.
+
 ## 16 October 2026 - retain the white-note hook and use Dani's proof template
 
 Shannon refined the ad refresh: keep the exact `10 weeks from now.` headline on the white-note ad, while removing the ten-week program wording from its body/footer, plant-based positioning and the old start date. The headline is a future-oriented hook, not a program-duration promise; recheck its countdown relevance when scheduling. He rejected the flat green background on the new proof designs and asked to use the same blurred source-photo background, dark overlay and layout as the individual Dani Summer Ready Shred ad. Use Gen's existing progress photograph (Shannon referred to her as Jen) as the main new proof direction, with Ally and a Gen/Ally collage in the same treatment. Keep Dani's individual photo and original collage. Preserve the actual photos and do not invent weights, ages or timeframes. These refinements supersede the earlier headline replacement and flat-green proof directions.
