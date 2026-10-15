@@ -8,8 +8,6 @@
 - This request prepares creative for review. It does not restart ads, increase spending or change live targeting. The four previous videos still contain old wording and are not included in the revised still pack.
 - Campaign assets, review gallery, export checks and private conversation-quality report are in `.codex-artifacts/ad-refresh-2026-10-16/` in Shannon's primary local checkout. Each exported still is 1080 by 1350 pixels. Keep generated outputs ignored.
 
-## Attribution evidence
-
 ## Same-day refinements
 
 Shannon explicitly retained the exact `10 weeks from now.` headline for the white-note ad. Remove only the ten-week program wording from the body/footer, plant-based positioning and expired start date. The headline is a future-oriented hook and must not imply a ten-week coaching commitment. Recheck countdown relevance when scheduling. This is an exception to the initial general duration-removal instruction.
