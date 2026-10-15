@@ -20,6 +20,12 @@ Use fresh wording, not a pasted sequence. Separate actual direct questions from 
 
 Keep the existing active-conversation behavior: check roughly every 30 seconds, reset each person's five-minute idle deadline on every new inbound and do not finish just after sending a reply. Five minutes without a reply permits the session to become idle, not a follow-up nudge. Preserve the 25/28/30-minute invocation limits and durable continuation at the runtime wall, never an expired lease. Prompt replies are the goal, not a guarantee of zero latency.
 
+## Readable message delivery
+
+Send the overview and follow-up questions as separate actual messages, not one large composer block containing line breaks. Usually one to three short, complete bubbles are enough; a short answer can stay in one message. Do not split every sentence or word, manufacture typing claims or add long artificial delays.
+
+Native Business Suite remains the sole live sending path. Each planned bubble gets one Send activation and its own durable delivery evidence under the existing owned reply sequence. The one-Send rule means once per bubble, never repeated attempts to obtain an echo. Do not mark the whole sequence complete after only its first bubble. If delivery is uncertain, stop and reconcile without repeating confirmed or uncertain bubbles. Re-read any new inbound before continuing remaining questions, and skip questions the person has now answered. The API compatibility sender also preserves the planned short bubbles, but its tests are not proof of an observed native live send. No test DM is authorised.
+
 ## Offer times and book inside the chat
 
 This fresh authorisation supersedes the 10 October link-only/no-calendar-read/no-on-behalf-booking restriction for this scoped lead experiment. It does not change calendar settings or general sending permissions.

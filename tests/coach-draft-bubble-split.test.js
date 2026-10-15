@@ -12,6 +12,18 @@ const {
     stripLeadingGreeting,
 } = require('../netlify/functions/_lib/client-context');
 
+const challengeOverview = 'It is ten weeks to work towards your best shape while learning about motivation, nutrition and exercise along the way.';
+const challengeQuestions = 'What are you hoping to achieve over the ten weeks, and what does your current exercise routine look like?';
+assert.deepStrictEqual(
+    splitCoachDraftIntoDmBubbles([challengeOverview, challengeQuestions]),
+    [challengeOverview, challengeQuestions]
+);
+assert.deepStrictEqual(
+    splitCoachDraftIntoDmBubbles(`${challengeOverview}\n\n${challengeQuestions}`),
+    [challengeOverview, challengeQuestions]
+);
+assert.deepStrictEqual(splitCoachDraftIntoDmBubbles('Yes, a phone call is fine.'), ['Yes, a phone call is fine.']);
+
 assert.deepStrictEqual(
     splitCoachDraftIntoDmBubbles('line one\n\nline two'),
     ['line one', 'line two']

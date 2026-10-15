@@ -1,5 +1,9 @@
 # Shannon Content Edit Memory
 
+## 16 October 2026 - readable separate DM bubbles
+
+Shannon reaffirmed that lead replies should arrive as understandable separate messages, not one large text block. Keep the challenge overview separate from the goal/current-routine question. Usually one to three complete short bubbles are enough, with a short answer staying in one; do not fragment every sentence. The sole native operator must retain per-bubble delivery evidence and no-repeat behavior, and re-read new inbounds before sending remaining questions. See `docs/summer-ready-chat-booking-2026-10-16.md`.
+
 ## 16 October 2026 - optional Google Meet consultation and pre-call preparation
 
 Shannon prefers Google Meet video for the initial consultation when the lead is comfortable, with a normal phone call accepted without pressure otherwise. Ask rather than silently choosing video. This does not change the paid weekly Zoom sessions. Collect the missing email address and mobile, reusing verified name/timezone rather than asking again. Tell them their confirmation email includes a questionnaire and ask them to complete it before the call. Only claim a booking or sent email after the actual verified outcome. Runtime contract: `docs/summer-ready-chat-booking-2026-10-16.md` and the existing sole 24-hour operator's adjacent contract.
