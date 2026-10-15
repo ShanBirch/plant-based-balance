@@ -1,5 +1,9 @@
 # Shannon Content Edit Memory
 
+## 16 October 2026 - optional Google Meet consultation and pre-call preparation
+
+Shannon prefers Google Meet video for the initial consultation when the lead is comfortable, with a normal phone call accepted without pressure otherwise. Ask rather than silently choosing video. This does not change the paid weekly Zoom sessions. Collect the missing email address and mobile, reusing verified name/timezone rather than asking again. Tell them their confirmation email includes a questionnaire and ask them to complete it before the call. Only claim a booking or sent email after the actual verified outcome. Runtime contract: `docs/summer-ready-chat-booking-2026-10-16.md` and the existing sole 24-hour operator's adjacent contract.
+
 ## 16 October 2026 - outcome-first challenge overview, not an inclusions list
 
 Shannon clarified that generic challenge-details/tell-me-more replies should first describe what the person can work towards: ten weeks towards their best shape while learning motivation, nutrition and exercise along the way. Frame best shape as an aspiration, not a guaranteed transformation or assumed weight-loss goal. Do not open with Zoom sessions, written programs, app features or a package checklist. Explain inclusions when specifically asked, and still answer direct price and practical questions plainly. Retain the separate goal/current-routine bubble and skip known answers. He also reaffirmed the existing five-minute idle conversation behavior, resetting on each inbound, rather than ending after each reply. Preserve ownership and runtime limits. Applies to the Summer Ready lead flow under `docs/summer-ready-chat-booking-2026-10-16.md` and the existing sole 24-hour browser operator.
