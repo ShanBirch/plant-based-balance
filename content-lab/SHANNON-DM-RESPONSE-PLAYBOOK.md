@@ -1,5 +1,9 @@
 # Shannon DM Response Playbook
 
+## Scoped opening experiment, 16 October 2026
+
+For eligible Summer Ready relaunch enquiries, Shannon explicitly requested a short direct answer followed by a separate bubble pairing the desired goal and current exercise routine, only when unknown. This overrides the general one-question default for that opening, not for later turns or other lanes. Then use actual support needs and consented in-chat slot booking under `docs/summer-ready-chat-booking-2026-10-16.md`. Treat the two-question opening as an experiment; keep the earlier observational risk below and compare useful goal/routine replies, verified bookings, attendance and sales rather than reply count alone. Preserve safety, opt-outs and non-repetition.
+
 ## Organic follower conversation direction, 3 October 2026
 
 Follower/outreach business chats should naturally move from their exact context toward fitness or nutrition, their own goals, and a consented phone call with Shannon. Rapport supports that outcome; do not wait for an explicit coaching enquiry or keep chatting without purpose. Keep invitations relevant and optional, respect declines, and send the booking card only after consent. Known personal/dating contacts are excluded even when they discuss the gym. Use Shannon's labels/instructions and relationship evidence, never gender or gym interest alone; ambiguous personal intent stays neutral for Shannon. Existing personal/manual holds remain. This supersedes older call-only-as-escalation guidance for organic business conversations. Shared runtime policy: netlify/functions/_lib/coaching-conversation-policy.js.

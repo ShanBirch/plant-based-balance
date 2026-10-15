@@ -136,7 +136,7 @@ test('a question about education within the challenge stays on challenge without
 });
 test('writer keeps known context, thoughtful tone, truthful pricing, safety and direct consultation instructions', () => {
     const prompt = buildChallengeLeadPrompt({timeline:'Lead: I want strength around night shifts.',unansweredMessages:['How would that work?'],context:'KNOWN GOAL: strength; vegetarian',productKnowledge:'Learn is six weeks. AUD $149.',hasMedia:true});
-    for (const evidence of [/night shifts/,/KNOWN GOAL/,/vegetarian/,/Summer Shred/,/training/i,/meal plans/i,/Balance Learn/,/accountability/,/community/,/60.minute/,/125/,/30.minute/,/Only if they ask about price/i,/never repeat|Reuse answers/i,/manual|human/i,/media_summary/,/six weeks/]) assert.match(prompt,evidence);
+    for (const evidence of [/night shifts/,/KNOWN GOAL/,/vegetarian/,/Summer Shred/,/training/i,/food guidance/i,/Balance Learn/,/accountability/,/community/,/60.minute/,/125/,/30.minute/,/Only if they ask about price/i,/never repeat|Reuse answers/i,/manual|human/i,/media_summary/,/six weeks/]) assert.match(prompt,evidence);
     assert.ok(prompt.includes(CHALLENGE_BOOKING_URL));
 });
 test('challenge contract blocks preview detours, unsolicited prices, course dumps and unsupported promises', () => {
@@ -147,7 +147,7 @@ test('challenge contract blocks preview detours, unsolicited prices, course dump
         'You get a weekly 30-minute live training session included.',
         'You are booked in for tomorrow.',
     ]) assert.ok(collectChallengeLeadIssues({draft:{joined},currentMessage:'I want to build strength'}).length,joined);
-    assert.deepEqual(collectChallengeLeadIssues({draft:{joined:'The optional AUD $125/week package includes one weekly 30-minute live 1:1 training session. We can work out the right support on the consultation.'},currentMessage:'What does the $125 package include?'}),[]);
+    assert.deepEqual(collectChallengeLeadIssues({draft:{joined:'The AUD $125/week package includes one weekly Zoom session and programs written for you. The ten-week minimum plus the $120 onboarding fee is $1,370.'},currentMessage:'What does the $125 package include?'}),[]);
     assert.deepEqual(collectChallengeLeadIssues({draft:{joined:'Balance Learn is six weeks. It covers practical behaviour change alongside the training and nutrition support.'},currentMessage:'What is Balance Learn?'}),[]);
 });
 test('the verified Balance Facebook Page shares content policy without adopting other Pages', () => {
@@ -340,7 +340,7 @@ test('challenge media prohibition and vegetarian correction survive late draft r
 });
 test('opener preference includes Summer Shred, Learn and ten-week goal horizon without diet qualification', () => {
     const prompt=buildChallengeLeadPrompt({currentMessage:'BALANCE'});
-    for(const phrase of ['Summer Shred','ten-week course','long-term lifestyle changes','What are you looking to achieve over the next ten weeks?','not a vegan-status qualification gate','No transformation photos']) assert.ok(prompt.includes(phrase),phrase);
+    for(const phrase of ['Summer Shred','ten-week course','long-term lifestyle changes','paired goal and current-exercise questions','no fixed public start date','No transformation photos']) assert.ok(prompt.includes(phrase),phrase);
     assert.doesNotMatch(prompt,/No extra permission loop|goal plus a genuine.*enquiry is enough|Do not ask permission to send/);
 });
 

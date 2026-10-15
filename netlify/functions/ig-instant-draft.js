@@ -5356,9 +5356,9 @@ Write visible coach-account replies in first person (I, me, my), never referring
 
 Your job is to read the complete paid-ad conversation and write Shannon's next Instagram DM. Treat every unanswered bubble as one current turn. Answer every live direct or reciprocal question before making the next sales move. The newest substantive message controls when it changes the topic.
 
-${challengeFlow ? 'Understand their goal and struggle from the whole conversation, then briefly explain relevant support and ask whether they want the call booking link. Send the card only after acceptance or an explicit link request.' : journey}
+${challengeFlow ? 'Understand their goal, current exercise routine and support need from the whole conversation, briefly explain relevant support and offer an optional call. Follow the scoped relaunch direction for fresh verified in-chat slot choices; never invent availability. The existing booking card is a consented fallback or an explicit self-booking request, not the default.' : journey}
 
-${challengeFlow ? 'Answer all live questions first. Use known facts and natural understanding, not keyword stages. Ask at most one useful question. Never repeat answered discovery.' : progression}
+${challengeFlow ? 'Answer all live questions first. Use known facts and natural understanding, not keyword stages. The scoped relaunch opening permits the goal and current-routine pair in a separate bubble when both are unknown; otherwise ask at most one useful question and never repeat answered discovery.' : progression}
 
 ${knownFactRule}
 
@@ -5710,8 +5710,8 @@ function collectPaidMetaWriterContractIssues({ draft = {}, currentMessage = '', 
         && !new RegExp('\\bone\\s+(?:(?:aud|au\\$)\\s+)?\\$' + resolveBalanceLearnCoursePriceLabel().slice(1) + '\\s+payment\\s+for\\s+the\\s+full\\s+six\\s+weeks\\b', 'i').test(reply)) {
         issues.push(('Answer the price exactly as one $149 payment for the full six weeks.'.replaceAll('$149', resolveBalanceLearnCoursePriceLabel())));
     }
-    if (/\b(?:e-?mail|email address|best email)\b/i.test(reply)) {
-        issues.push(challengeFlow ? 'Challenge policy: Do not ask for an email in the DM; the consultation page handles booking details.' : 'Do not ask for an email in Instagram. Send the signed app-preview card; onboarding collects the account email there.');
+    if (!challengeFlow && /\b(?:e-?mail|email address|best email)\b/i.test(reply)) {
+        issues.push('Do not ask for an email in Instagram. Send the signed app-preview card; onboarding collects the account email there.');
     }
     if (!hasDirectPaidMetaCheckoutIntent(turn)
         && /\b(?:checkout link|send you (?:the )?(?:payment|checkout) link|grab (?:the )?founders? pass|ready to (?:pay|join|sign up))\b/i.test(reply)) {

@@ -37,7 +37,7 @@ test('accepting a natural call invitation sends the booking card without a secon
             const input = {history,currentMessage,draft:{joined:policy.CHALLENGE_BOOKING_URL}};
             assert.equal(policy.resolveChallengeTurn(input).wantsCard,true,offer + currentMessage);
             assert.ok(policy.buildChallengeBookingHandoff(input));
-            assert.ok(policy.collectChallengeLeadIssues({...input,draft:{joined:'Want me to send the booking link?'}}).length);
+            assert.deepEqual(policy.collectChallengeLeadIssues({...input,draft:{joined:'Which timezone should I use for the available times?'}}), []);
         }
         for (const currentMessage of ['Not now thanks','Maybe later','Yes but not yet','No thanks','What happens on the call?']) {
             assert.equal(policy.resolveChallengeTurn({history,currentMessage}).wantsCard,false,currentMessage);
