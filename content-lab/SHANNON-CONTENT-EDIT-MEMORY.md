@@ -1,5 +1,9 @@
 # Shannon Content Edit Memory
 
+## 16 October 2026 - white future-note ad uses larger centred typography
+
+Shannon requested that the retained `10 weeks from now.` headline be substantially larger, with centred paragraphs and larger body copy filling more of the portrait canvas while remaining visually balanced. For this white-note Meta ad, keep the headline as a coherent two-line phrase, enlarge the CTA with the supporting copy, distribute the paragraphs vertically, and retain comfortable margins. Do not carry this centring change into unrelated photo ads. Preserve the approved headline exception while removing old program-duration wording, plant-based positioning and expired start dates. Production contract: `.codex-artifacts/ad-refresh-2026-10-16/Headline-Revision.md`; generator: `build-refresh.cjs` in the same folder. The four-photo plus sticky-note-video shortlist retains the original group collage featuring Dani, not Dani's standalone photo. The video refresh remains pending and nothing is launched.
+
 ## 16 October 2026 - rotate the featured client within the full proof collage
 
 Shannon clarified the new collage request: retain the original multi-client proof format, make Dani one smaller supporting tile, and produce two alternatives with Gen large on one side in the first and Ally (the blonde woman in the gym) large on one side in the second. Keep the other unique client groups in smaller tiles. Do not reduce this to a Gen/Ally-only pair or repeat Dani's front/mirror views as multiple supporting tiles. Retain the original Dani solo and collage elsewhere in the review set, plus the approved blurred-photo background, white frames, exact photos and honest results caveat.
