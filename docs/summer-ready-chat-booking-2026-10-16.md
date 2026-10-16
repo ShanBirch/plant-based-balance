@@ -5,7 +5,7 @@ Shannon authorised this change on 16 October 2026. Apply to future eligible genu
 ## Current offer
 
 - Ten-week challenge, with no expired or newly invented start date. Food guidance is neutral, not plant-based positioning or diet-status qualification.
-- The main package is AUD $125 a week: one weekly Zoom session with Shannon and programs written for the person. If they are not exercising, the session can be supervised training. If already exercising, it can be a lesson covering motivation, nutrition and exercise. Explain only the relevant distinction; do not promise a training session plus a separate weekly lesson.
+- The main package is AUD $125 a week: one weekly one-on-one Zoom session with Shannon and programs written for the person, not a group session. Shannon confirmed the one-on-one support positioning during this relaunch. If they are not exercising, the session can be supervised training. If already exercising, it can be a lesson covering motivation, nutrition and exercise. Explain only the relevant distinction; do not promise a training session plus a separate weekly lesson.
 - The previous confirmed AUD $120 onboarding fee has not been revoked. Preserve it and the ten-week commitment, minimum AUD $1,370. Answer direct price questions with all three amounts. Do not invent session length, billing/cancellation/renewal terms or guarantees. The initial consultation is separate from the paid Zoom sessions.
 - Retain existing client agreements and other offer routes. A request for another service is not permission to force this challenge.
 
