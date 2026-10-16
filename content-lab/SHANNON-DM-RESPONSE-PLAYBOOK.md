@@ -2,6 +2,8 @@
 
 ## Scoped opening experiment, 16 October 2026
 
+Latest Summer Ready correction: answer location and other practical questions directly, then ask the next missing goal/routine question in a separate actual message. Eligible non-terminal qualification replies must invite a response with a purposeful question: goal first, unknown blocker/support need next, then an optional call invitation. Never repeat known answers, invent a blocker, delay an explicit booking request or append qualification to a refusal, space request or safety/support exception. Do not chase silence or send retrospective correction DMs. This scoped rule supersedes older optional-question/no-compulsory-goal wording for Summer Ready qualification only. The approved generic overview now describes a 10-week challenge to get stronger, feel more confident and build lasting habits, with a step-by-step course on motivation, nutrition and exercise, without repeating the duration or promising mastery.
+
 For eligible Summer Ready relaunch enquiries, Shannon explicitly requested a short direct answer followed by a separate bubble pairing the desired goal and current exercise routine, only when unknown. This overrides the general one-question default for that opening, not for later turns or other lanes. Then use actual support needs and consented in-chat slot booking under `docs/summer-ready-chat-booking-2026-10-16.md`. Treat the two-question opening as an experiment; keep the earlier observational risk below and compare useful goal/routine replies, verified bookings, attendance and sales rather than reply count alone. Preserve safety, opt-outs and non-repetition.
 
 ## Organic follower conversation direction, 3 October 2026

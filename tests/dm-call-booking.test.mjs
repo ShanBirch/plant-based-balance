@@ -191,6 +191,21 @@ test('relaunch writer and review share the paired-opening, neutral offer and ver
         draft: { joined: 'Which timezone should I use for the available times?' } }), []);
 });
 
+test('Summer Ready practical answers keep goal, blocker and optional call progression', () => {
+    const policy = relaunch.buildSummerReadyRelaunchPolicy();
+    assert.match(policy, /with a step-by-step course on motivation, nutrition and exercise/);
+    assert.match(policy, /Mention ten weeks only once/);
+    assert.match(policy, /Where are you located/);
+    assert.match(policy, /If their goal is unknown, ask what they hope to achieve/);
+    assert.match(policy, /Once the goal is known.*struggle or support need if unknown/);
+    assert.match(policy, /offer an optional fit call with a consent question/);
+    assert.match(policy, /Do not repeat answered questions/);
+    assert.match(policy, /no blocker, accept that answer/);
+    assert.match(policy, /explicit booking request proceeds without discovery delays/);
+    assert.match(policy, /completed conversations do not require a question or a call pitch/);
+    assert.match(policy, /permission to chase silent leads or send a correction/);
+});
+
 test('compatibility writer permits the scoped paired opening and missing contact collection', () => {
     const check = require('../netlify/functions/ig-instant-draft')._test.collectPaidMetaWriterContractIssues;
     assert.deepEqual(check({ flowVariant: 'plant_based_challenge', currentMessage: 'Tell me about the program',
