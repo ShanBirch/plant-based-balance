@@ -14,9 +14,24 @@ function literal(value) {
 }
 
 export function fastReplyContext({ threadId, runId }) {
-    return `select jsonb_build_object(
-        'thread', (select to_jsonb(thread) from ig_threads thread where id=${uuid(threadId)}),
-        'messages', (select jsonb_agg(to_jsonb(message) order by created_at,id) from ig_messages message where thread_id=${uuid(threadId)}),
+    return `with target as (
+        select thread.*,custom_data->'relationship_memory_compaction' as memory from ig_threads thread where id=${uuid(threadId)}
+    ), proof as (
+        select coalesce(memory->>'source'='full_ig_history' and length(memory->>'summary')>0
+            and (memory->>'last_compacted_at')::timestamptz<=now()
+            and (select count(*) from ig_messages where thread_id=target.id and created_at<=(memory->>'last_compacted_at')::timestamptz)=(memory->>'messages_compacted')::integer
+            and exists(select 1 from ig_messages where thread_id=target.id
+                and created_at=(memory->>'last_compacted_at')::timestamptz
+                and 'ig:'||id::text=memory->>'last_compacted_event_key'),false) as valid,
+            (memory->>'last_compacted_at')::timestamptz as boundary from target
+    ) select jsonb_build_object(
+        'thread', (select to_jsonb(target)-'memory' from target),
+        'history_proof', (select jsonb_build_object('validated_compaction',valid,'boundary',boundary,
+            'mode',case when valid then 'full_history_summary_and_complete_delta' else 'full_raw_history' end) from proof),
+        'messages', (select jsonb_agg(jsonb_build_object('id',id,'direction',direction,'text',text,
+            'created_at',created_at,'source',source,'author_type',author_type,'delivery_origin',delivery_origin) order by created_at,id)
+            from ig_messages message where thread_id=${uuid(threadId)}
+            and (not coalesce((select valid from proof),false) or created_at>(select boundary from proof))),
         'actions', (select jsonb_agg(to_jsonb(action)) from ig_next_actions action where thread_id=${uuid(threadId)}),
         'personal_contact', exists(select 1 from ig_personal_contacts contact join ig_threads thread on lower(contact.ig_username)=lower(thread.ig_username) where thread.id=${uuid(threadId)}),
         'shift', (select jsonb_build_object('run_id',run_id,'status',status,'heartbeat_at',heartbeat_at,'lease_expires_at',lease_expires_at,'browser_surface',browser_surface,'binding',cursor_current->'browser_surface') from ig_browser_shift_runs where run_id=${literal(runId)})

@@ -14,6 +14,12 @@ test('one context read includes complete history, holds, actions, personal regis
         assert.ok(query.includes(table));
     }
     assert.doesNotMatch(query, /\b(update|insert|delete)\b/i);
+    assert.match(query, /messages_compacted/);
+    assert.match(query, /last_compacted_event_key/);
+    assert.match(query, /full_history_summary_and_complete_delta/);
+    assert.match(query, /full_raw_history/);
+    assert.match(query, /created_at<=/);
+    assert.match(query, /not coalesce\(\(select valid from proof\),false\)/);
     assert.throws(() => fastReplyContext({ ...input, threadId: 'bad' }), /UUID/);
 });
 
