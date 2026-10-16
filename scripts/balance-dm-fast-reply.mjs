@@ -59,9 +59,7 @@ export function fastReplyClaim(input) {
         select claim.* from staged cross join lateral claim_ig_next_actions(
             'dm_manager',1,300,${literal(runId)},ARRAY[(staged.action).thread_id]) claim
         where (staged.action).id is not null
-    ) select claimed.id,claimed.action_version,claimed.claim_token,claimed.source_message_id,claimed.reason,
-        ig_browser_action_owned(${literal(runId)},'meta_business_suite',${literal(tabId)},
-            claimed.id,claimed.action_version,claimed.claim_token,claimed.source_message_id) as owned
+    ) select claimed.id,claimed.action_version,claimed.claim_token,claimed.source_message_id,claimed.reason
         from claimed where claimed.source_message_id=${uuid(sourceMessageId)};`;
 }
 

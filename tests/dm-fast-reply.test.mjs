@@ -23,14 +23,15 @@ test('one context read includes complete history, holds, actions, personal regis
     assert.throws(() => fastReplyContext({ ...input, threadId: 'bad' }), /UUID/);
 });
 
-test('claim batches existing source/claim/guard functions without replacing their safety rules', () => {
+test('claim batches source/claim functions but leaves the visibility-sensitive guard as a fresh read', () => {
     const query = fastReplyClaim(input);
-    for (const name of ['upsert_ig_next_action', 'claim_ig_next_actions', 'ig_browser_action_owned']) {
+    for (const name of ['upsert_ig_next_action', 'claim_ig_next_actions']) {
         assert.ok(query.includes(name));
     }
     assert.match(query, /It''s a test/);
     assert.match(query, /staged as materialized/);
     assert.match(query, /ARRAY\[\(staged.action\).thread_id\]/);
+    assert.doesNotMatch(query, /ig_browser_action_owned/);
     assert.match(query, /where claimed.source_message_id=/);
     assert.match(query, /direction='in' order by created_at desc,id desc limit 1/);
     assert.doesNotMatch(query, /\b(update|insert|delete)\b/i);
