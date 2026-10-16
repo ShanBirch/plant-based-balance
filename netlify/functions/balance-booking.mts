@@ -743,7 +743,10 @@ async function createCalendarEvent(settings: BookingSettings, booking: Record<st
             start: { dateTime: booking.starts_at, timeZone: BRISBANE_TIMEZONE },
             end: { dateTime: booking.ends_at, timeZone: BRISBANE_TIMEZONE },
             attendees: email ? [{ email, displayName: name }] : [],
-            reminders: { useDefault: true },
+            reminders: { useDefault: false, overrides: [
+                { method: "popup", minutes: 120 },
+                { method: "popup", minutes: 10 },
+            ] },
             ...(createMeet ? {
                 conferenceData: {
                     createRequest: {
@@ -783,6 +786,32 @@ async function sendConfirmationEmail(settings: BookingSettings, booking: Record<
             text: `You’re booked in with Balance, ${name}.\n\nYour call: ${prettyDate} (Brisbane time).\n\n${goal ? `You want to cover: ${goal}\n\n` : ""}A calendar invitation is on its way too. If anything changes, reply to this email and we’ll sort it.\n\nShannon, Balance`,
             ...preCallConfirmationEmailContent({ name, prettyDate, goal, callType, meetingUrl, timezone }),
         }),
+    });
+    return response.ok;
+}
+
+export async function sendCoachBookingNotification(booking: Record<string, unknown>): Promise<boolean> {
+    const apiKey = getEnv("RESEND_API_KEY");
+    const from = getEnv("BOOKING_EMAIL_FROM");
+    const recipient = getEnv("BOOKING_NOTIFY_EMAIL");
+    if (!apiKey || !from || !EMAIL_RE.test(recipient)) return false;
+    const name = trimText(booking.name, 120);
+    const when = dateTimeLabel(trimText(booking.starts_at, 80), BRISBANE_TIMEZONE);
+    const method = callTypeLabel(normalizeCallType(booking.call_type));
+    const text = [
+        `New Balance booking: ${name}`,
+        `${when} (Brisbane time), ${method}`,
+        `Email: ${trimText(booking.email, 320)}`,
+        `Mobile: ${trimText(booking.phone, 40)}`,
+        booking.meeting_url ? `Join: ${trimText(booking.meeting_url, 500)}` : "",
+        booking.goal ? `Goals: ${trimText(booking.goal, 1000)}` : "",
+        `Calendar event: ${trimText(booking.calendar_event_id, 300) || "pending"}`,
+    ].filter(Boolean).join("\n\n");
+    const response = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json",
+            "Idempotency-Key": `booking-coach-${trimText(booking.id, 120)}` },
+        body: JSON.stringify({ from, to: [recipient], subject: `New Balance booking, ${when}`, text }),
     });
     return response.ok;
 }
@@ -931,6 +960,25 @@ async function createBooking(req: Request): Promise<Response> {
         outcome.push("sms_confirmation_pending");
     }
 
+    let coachNotificationSent = false;
+    try {
+        coachNotificationSent = await sendCoachBookingNotification({ ...inserted,
+            meeting_url: meetingUrl || null, calendar_event_id: calendarEventId || null });
+        if (coachNotificationSent) {
+            await supabaseRequest(`balance_bookings?id=eq.${encodeURIComponent(String(inserted.id || ""))}`, {
+                method: "PATCH", headers: { Prefer: "return=minimal" },
+                body: JSON.stringify({ metadata: {
+                    ...(inserted.metadata as Record<string, unknown> || {}),
+                    ...(emailSent ? { pre_call_form_email_sent_at: new Date().toISOString() } : {}),
+                    coach_notification_email_sent_at: new Date().toISOString(),
+                } }),
+            });
+        } else if (getEnv("BOOKING_NOTIFY_EMAIL")) outcome.push("coach_notification_pending");
+    } catch (error) {
+        console.error("[balance-booking] coach notification failed", error);
+        outcome.push("coach_notification_pending");
+    }
+
     return json(201, {
         ok: true,
         booking: {
@@ -945,6 +993,7 @@ async function createBooking(req: Request): Promise<Response> {
         calendarEventCreated: Boolean(calendarEventId),
         confirmationEmailSent: emailSent,
         smsConfirmationSent,
+        coachNotificationSent,
         notices: outcome,
     });
 }

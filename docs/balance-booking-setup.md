@@ -33,6 +33,10 @@ The booking still works if Resend is not configured. The setup page shows whethe
 
 The website and verified email sender are separate. Keep the existing verified email address unless a replacement sending domain is verified. On 16 October the controlled test recorded a booking without an email because `BOOKING_EMAIL_FROM` was missing, not because the recipient was Shannon's own address. The production sender setting has been added; verify acceptance/delivery on the next authorised confirmation without creating a duplicate appointment.
 
+## Coach notifications
+
+Set `BOOKING_NOTIFY_EMAIL` to Shannon's confirmed notification inbox. Each booking attempts one separate immediate coach email with contact details, Brisbane time and the Meet link, using a booking-specific idempotency key. `coachNotificationSent` reports provider acceptance only; failures are surfaced as `coach_notification_pending` without losing or recreating the booking. Successful acceptance is saved in booking metadata. New Calendar events have explicit pop-up reminders two hours and ten minutes before the call. Actual phone push still depends on Google Calendar notifications being enabled on Shannon's device.
+
 ## Guardrails
 
 - Bookings are off by default until Shannon opens them in the setup page.
