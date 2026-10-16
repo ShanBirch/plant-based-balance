@@ -14,6 +14,15 @@ const trustHistory = [
 ];
 const invitation = "We could have a video call and get to know each other a bit, with no pressure to sign up. Would that suit you?";
 
+test('shared coaching policy preserves Shannon’s relaxed optional phone invitation', () => {
+    const { buildCoachingConversationPolicy } = require('../netlify/functions/_lib/coaching-conversation-policy');
+    for (const reviewer of [false, true]) {
+        const guidance = buildCoachingConversationPolicy({ reviewer });
+        assert.match(guidance, /Would you want to jump on the phone sometime to have a chat about it\?/);
+        assert.match(guidance, /Never resend an already-delivered invitation/);
+    }
+});
+
 test('an organic coaching enquiry retains attribution and can invite a call without a blocker field', () => {
     const thread = {created_at:'2026-09-30T00:00:00Z',custom_data:{bot_account:'shan_n_sunny',acquisition_mode:'organic_inbound'}};
     assert.equal(attribution.resolveIgAcquisitionMode({customData:thread.custom_data}), 'organic_inbound');
@@ -28,6 +37,7 @@ test('an organic coaching enquiry retains attribution and can invite a call with
 test('accepting a natural call invitation sends the booking card without a second link-permission question', () => {
     for (const offer of [
         invitation,
+        'Would you want to jump on the phone sometime to have a chat about it?',
         'Would you like to have a phone call to discuss your training?',
         'Keen to jump on a call and talk about what you want from coaching?',
         'We could chat on a call about working together. Would that work for you?',

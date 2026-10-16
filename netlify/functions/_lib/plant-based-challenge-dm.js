@@ -77,7 +77,7 @@ function resolveChallengeTurn({currentMessage = '', history = []} = {}) {
     const offeredLink = /\?/.test(previous) && /\b(?:want|like|shall|can i|should i)\b/i.test(previous)
         && /\b(?:booking|consultation|call)\b/i.test(previous) && /\b(?:link|card|send|share)\b/i.test(previous);
     // Consent to the call itself is sufficient; a separate link question adds friction.
-    const offeredCall = /\?/.test(previous) && /\b(?:call|consultation)\b/i.test(previous)
+    const offeredCall = /\?/.test(previous) && /\b(?:call|consultation|jump on the phone)\b/i.test(previous)
         && /\b(?:want|like|keen|up for|would|shall|can we|could we|we could|let['’]?s|suit|work for)\b/i.test(previous)
         && !socialCall.test(previous);
     const accepted = (offeredLink || offeredCall) && /(?:^|\n)\s*(?:yes|yep|yeah|sure|please|absolutely|sounds good|go ahead|that (?:would be|sounds) (?:great|good)|i['’]d like that)\b/i.test(currentMessage)

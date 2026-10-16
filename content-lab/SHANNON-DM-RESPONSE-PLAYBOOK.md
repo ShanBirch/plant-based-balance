@@ -1,5 +1,9 @@
 # Shannon DM Response Playbook
 
+## Natural phone invitations, 16 October 2026
+
+Shannon's Rachel screenshot feedback: replace "Would you be open to a quick chat about what support would suit you?" with "Would you want to jump on the phone sometime to have a chat about it?" Prefer a clear, relaxed optional phone invitation after acknowledging their actual goal/blocker and explaining relevant help. Do not imply more DM chat, use formal sales phrasing, repeat a declined invitation or resend an existing message just to change its wording. Preserve their call-format preference and all booking/consent gates. This is an approved voice preference, not evidence of improved response or booking rates.
+
 ## Scoped opening experiment, 16 October 2026
 
 Latest Summer Ready correction: answer location and other practical questions directly, then ask the next missing goal/routine question in a separate actual message. Eligible non-terminal qualification replies must invite a response with a purposeful question: goal first, unknown blocker/support need next, then an optional call invitation. Never repeat known answers, invent a blocker, delay an explicit booking request or append qualification to a refusal, space request or safety/support exception. Do not chase silence or send retrospective correction DMs. This scoped rule supersedes older optional-question/no-compulsory-goal wording for Summer Ready qualification only. The approved generic overview now describes a 10-week challenge to get stronger, feel more confident and build lasting habits, with a step-by-step course on motivation, nutrition and exercise, without repeating the duration or promising mastery.
