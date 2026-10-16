@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
-import { getSlotOffer, bookSelectedSlot } from '../scripts/balance-dm-call-booking.mjs';
+import { BOOKING_ENDPOINT, getSlotOffer, bookSelectedSlot } from '../scripts/balance-dm-call-booking.mjs';
 import relaunch from '../netlify/functions/_lib/summer-ready-relaunch.js';
 import challenge from '../netlify/functions/_lib/plant-based-challenge-dm.js';
 
@@ -15,6 +15,10 @@ const availability = { ok: true, bookingEnabled: true, calendarConnected: true,
     calendarReconnectRequired: false, calendarConnectionIssue: false, durationMinutes: 60,
     dates: [{ slots: [slot, slot] }] };
 const require = createRequire(import.meta.url);
+
+test('booking helper uses the Balance Neuroscience Fitness website', () => {
+    assert.equal(BOOKING_ENDPOINT, 'https://balanceneurosciencefitness.com/api/booking');
+});
 
 function input() {
     return { actionId: '11111111-1111-4111-8111-111111111111',

@@ -3,7 +3,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 
-export const BOOKING_ENDPOINT = 'https://plantbased-balance.org/api/booking';
+export const BOOKING_ENDPOINT = 'https://balanceneurosciencefitness.com/api/booking';
 const MAX_OFFER_AGE_MS = 5 * 60 * 1000;
 const MIN_NOTICE_MS = 2 * 60 * 60 * 1000;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

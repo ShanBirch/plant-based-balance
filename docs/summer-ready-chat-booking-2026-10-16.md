@@ -63,7 +63,7 @@ Run `node <installed-helper> book --input <private-input.json> --receipts-dir <a
 - `pending_no_repeat` or `uncertain_no_repeat`: do not submit again, even after a timeout. Reconcile the private receipt, existing booking record and calendar/email outcome through read-only checks first. Do not change action IDs to retry the same uncertain booking.
 - A replay of the same completed action returns its previous receipt without another POST. Changed details on the same action are rejected. Rescheduling/cancellation require the existing appropriate workflow, not a second unrelated appointment.
 
-The existing general pre-call questionnaire is `https://plantbased-balance.org/pre-call.html`. The booking email already includes it, with the existing specialised form option when relevant. No new questionnaire or email automation is needed. Keep the normal booking confirmation separate from a paid enrolment or completed sale.
+Use `https://balanceneurosciencefitness.com` for all prospect-facing website links and the booking helper endpoint. The general pre-call questionnaire is `https://balanceneurosciencefitness.com/pre-call.html`. The booking email already includes it, with the existing specialised form option when relevant. The website domain is independent of the verified email sender, which may retain Shannon's existing email address. No new questionnaire or email automation is needed. Keep the normal booking confirmation separate from a paid enrolment or completed sale.
 
 ## Verification
 

@@ -241,13 +241,13 @@ function localizedConfirmationEmailContent({ name, prettyDate, goal, callType, m
 export function preCallConfirmationEmailContent(details: Parameters<typeof localizedConfirmationEmailContent>[0]) {
     const content = localizedConfirmationEmailContent(details);
     const menopauseContext = /\b(?:peri[- ]?menopaus\w*|post[- ]?menopaus\w*|menopaus\w*|HRT|hormone replacement therapy)\b/i.test(details.goal);
-    const formUrl = `https://plantbased-balance.org/${menopauseContext ? 'menopause-pre-call' : 'pre-call'}.html`;
-    const alternate = menopauseContext ? '' : '<p style="color:#ded8cc;font-size:14px;line-height:1.55">If you’d prefer to focus on menopause-related changes, you can use <a href="https://plantbased-balance.org/menopause-pre-call.html" style="color:#f5d98a">the menopause form instead</a>. You only need to fill in one.</p>';
+    const formUrl = `${publicOrigin()}/${menopauseContext ? 'menopause-pre-call' : 'pre-call'}.html`;
+    const alternate = menopauseContext ? '' : `<p style="color:#ded8cc;font-size:14px;line-height:1.55">If you’d prefer to focus on menopause-related changes, you can use <a href="${publicOrigin()}/menopause-pre-call.html" style="color:#f5d98a">the menopause form instead</a>. You only need to fill in one.</p>`;
     const invitation = `<p style="margin:24px 0 0;color:#ded8cc;font-size:16px;line-height:1.65">Before our call, could you please fill in this quick form? It’ll help me prepare and focus on what matters most to you. Brief answers are fine, and you can skip anything you’d rather discuss on the call.</p><p><a href="${formUrl}" style="color:#f5d98a;font-weight:800">Fill in your pre-call form</a></p>${alternate}<p style="color:#ded8cc">Thanks so much!</p>`;
     return {
         ...content,
         html: content.html.replace('</td></tr></table>', `${invitation}</td></tr></table>`),
-        text: `${content.text}\n\nBefore our call, could you please fill in this quick form? ${formUrl}\n\nBrief answers are fine, and you can skip anything you’d rather discuss on the call.${menopauseContext ? '' : '\nIf you’d prefer to focus on menopause-related changes, use https://plantbased-balance.org/menopause-pre-call.html instead. You only need to fill in one.'}\n\nThanks so much!`,
+        text: `${content.text}\n\nBefore our call, could you please fill in this quick form? ${formUrl}\n\nBrief answers are fine, and you can skip anything you’d rather discuss on the call.${menopauseContext ? '' : `\nIf you’d prefer to focus on menopause-related changes, use ${publicOrigin()}/menopause-pre-call.html instead. You only need to fill in one.`}\n\nThanks so much!`,
     };
 }
 
