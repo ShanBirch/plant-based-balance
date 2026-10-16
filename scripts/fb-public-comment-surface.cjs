@@ -24,12 +24,19 @@ function main() {
  if(cmd==='check'){console.log('{"owned":true}');return;}
  const data=JSON.parse(fs.readFileSync(input,'utf8'));
  const file=path.join(root,'state.json'),state=JSON.parse(fs.readFileSync(file,'utf8'));
- if(cmd==='reserve') {
+ if(cmd==='reserve'||cmd==='reserve-reply') {
   for(const k of ['id','recipient','source','text','evidence'])if(typeof data[k]!=='string'||!data[k])throw Error('Missing '+k);
+  const reactive=cmd==='reserve-reply';
+  if(reactive) {
+   const parent=state.actions.find(a=>a.id===data.root_attempt_id&&a.kind==='public_comment'&&a.status==='confirmed'&&!a.reactive_reply);
+   if(!parent||!/^facebook:comment:[0-9]+$/.test(data.source)||data.source!==`facebook:comment:${data.inbound_comment_id}`||data.database_reserved!==true)
+    throw Error('Verified original comment, exact inbound and database reservation required');
+  }
   if(state.holds.some(h=>h.recipient===data.recipient)||state.actions.some(a=>a.recipient===data.recipient&&
-   (a.status==='reserved'||now-a.created<7*86400000)))throw Error('Shared Facebook person hold or recent touch');
+   (a.status==='reserved'||(now-a.created<7*86400000&&!(reactive&&a.status==='confirmed'&&
+    (a.id===data.root_attempt_id||(a.reactive_reply&&a.root_attempt_id===data.root_attempt_id)))))))throw Error('Shared Facebook person hold or recent touch');
   if(state.actions.some(a=>a.id===data.id||a.source===data.source))throw Error('Shared exact source already reserved');
-  state.actions.push({...data,kind:'public_comment',role:'public_comments',status:'reserved',created:now});
+  state.actions.push({...data,reactive_reply:reactive,kind:'public_comment',role:'public_comments',status:'reserved',created:now});
  } else if(cmd==='confirm') {
   const a=state.actions.find(a=>a.id===data.id&&a.kind==='public_comment'&&a.status==='reserved');
   if(!a||!data.evidence||!data.outbound)throw Error('Exact reserved comment and native proof required');

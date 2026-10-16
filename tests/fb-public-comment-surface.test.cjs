@@ -20,6 +20,26 @@ test('public commenter shares foreign mutex and leaves Story enrollment/quota al
   const state=JSON.parse(fs.readFileSync(path.join(root,'state.json')));
   assert.equal(state.actions[0].kind,'public_comment');assert.equal(state.actions[0].status,'reserved');
   assert.equal(state.actions.filter(a=>a.kind==='story').length,0);
+  fs.writeFileSync(input,JSON.stringify({id:'db-attempt',evidence:'saved.png',outbound:'Synthetic saved root100'}));
+  assert.equal(call('confirm',owner.token,input).status,0);
+  const reply={id:'db-reply',root_attempt_id:'db-attempt',recipient:'https://www.facebook.com/fixture',source:'facebook:comment:200',inbound_comment_id:'200',text:'Synthetic reply never sent',evidence:'reply.png',database_reserved:true};
+  fs.writeFileSync(input,JSON.stringify({...reply,database_reserved:false}));
+  assert.notEqual(call('reserve-reply',owner.token,input).status,0);
+  fs.writeFileSync(input,JSON.stringify(reply));
+  assert.equal(call('reserve-reply',owner.token,input).status,0);
+  assert.notEqual(call('reserve-reply',owner.token,input).status,0);
+  const after=JSON.parse(fs.readFileSync(path.join(root,'state.json')));
+  assert.equal(after.actions[1].kind,'public_comment');assert.equal(after.actions[1].reactive_reply,true);
+  fs.writeFileSync(input,JSON.stringify({...reply,id:'new-reply',inbound_comment_id:'201',source:'facebook:comment:201'}));
+  assert.notEqual(call('reserve-reply',owner.token,input).status,0,'unresolved reply blocks a new one');
+  fs.writeFileSync(input,JSON.stringify({id:'db-reply',evidence:'saved-reply.png',outbound:'Synthetic saved reply300'}));
+  assert.equal(call('confirm',owner.token,input).status,0);
+  fs.writeFileSync(input,JSON.stringify({...reply,id:'new-reply',inbound_comment_id:'201',source:'facebook:comment:201'}));
+  assert.equal(call('reserve-reply',owner.token,input).status,0,'a new source may continue the same verified chain');
+  const held=JSON.parse(fs.readFileSync(path.join(root,'state.json')));held.holds.push({recipient:reply.recipient});
+  fs.writeFileSync(path.join(root,'state.json'),JSON.stringify(held));
+  fs.writeFileSync(input,JSON.stringify({...reply,id:'held-reply',inbound_comment_id:'202',source:'facebook:comment:202'}));
+  assert.notEqual(call('reserve-reply',owner.token,input).status,0,'manual hold persists');
   assert.equal(call('release',owner.token).status,0);
   assert.equal(fs.existsSync(path.join(root,'owner.json')),false);
  } finally {fs.rmSync(profile,{recursive:true,force:true});}
