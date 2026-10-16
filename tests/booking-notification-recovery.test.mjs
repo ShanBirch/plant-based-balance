@@ -1,6 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
 import { recoverRequestedBookingNotifications } from '../netlify/functions/balance-booking.mts';
+
+test('the deployed entry point declares its schedule explicitly for Netlify discovery', async () => {
+    const entry = await fs.readFile(new URL('../netlify/modern-functions/booking-notification-recovery.mts', import.meta.url), 'utf8');
+    assert.match(entry, /export const config = \{ schedule: '\* \* \* \* \*' \}/);
+});
 
 async function scenario({ existing = false, loseClaim = false, throwSend = false,
     reconciled = true, expired = false, reject = false } = {}) {

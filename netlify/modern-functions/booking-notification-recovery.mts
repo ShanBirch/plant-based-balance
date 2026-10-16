@@ -1,1 +1,2 @@
-export { default, config } from '../functions/booking-notification-recovery.mts';
+export { default } from '../functions/booking-notification-recovery.mts';
+export const config = { schedule: '* * * * *' };
