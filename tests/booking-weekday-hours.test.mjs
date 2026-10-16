@@ -1,7 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import handler, {buildSlotsForDate, buildAvailableDates} from '../netlify/functions/balance-booking.mts';
+import handler, {buildSlotsForDate, buildAvailableDates, prospectBookingSettings} from '../netlify/functions/balance-booking.mts';
 const settings={booking_enabled:true,event_name:'Call with Shannon',duration_minutes:60,minimum_notice_hours:24,booking_window_days:5,timezone:'Australia/Brisbane',calendar_id:'primary',location:'Google Meet',weekly_hours:Object.fromEntries([0,1,2,3,4,5,6].map(d=>[d,d>0&&d<6?[{start:'07:00',end:'15:00'}]:[]]))};
+
+test('prospect notice and evening cutoff apply without changing other booking routes',()=>{
+ const original={...settings,weekly_hours:{'5':[{start:'07:00',end:'22:00'},{start:'20:00',end:'23:00'}]}};
+ const prospect=prospectBookingSettings(original,'plant_based_challenge');
+ assert.equal(prospect.minimum_notice_hours,2);
+ assert.deepEqual(prospect.weekly_hours['5'],[{start:'07:00',end:'19:00'}]);
+ assert.equal(original.minimum_notice_hours,24);
+ assert.equal(prospectBookingSettings(original,'client_coaching'),original);
+ const slots=buildSlotsForDate(prospect,'2026-10-16',[],new Date('2026-10-16T04:00:00Z'));
+ assert.equal(slots[0].start,'2026-10-16T06:00:00.000Z');
+ assert.equal(slots.at(-1).end,'2026-10-16T09:00:00.000Z');
+});
 test('extended weekday hours finish by 7pm Brisbane and continue excluding busy time',()=>{
  const extended={...settings,weekly_hours:Object.fromEntries(Object.entries(settings.weekly_hours).map(([day,ranges])=>[day,ranges.length?[{start:'07:00',end:'19:00'}]:[]]))};
  const now=new Date('2026-09-11T00:00:00Z');

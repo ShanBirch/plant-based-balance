@@ -5,6 +5,7 @@ import { pathToFileURL } from 'node:url';
 
 export const BOOKING_ENDPOINT = 'https://plantbased-balance.org/api/booking';
 const MAX_OFFER_AGE_MS = 5 * 60 * 1000;
+const MIN_NOTICE_MS = 2 * 60 * 60 * 1000;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function validTimezone(timezone) {
@@ -25,6 +26,20 @@ function slotLabel(start, timezone) {
     }).format(new Date(start));
 }
 
+function brisbaneDate(value) {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Australia/Brisbane',
+        year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(value));
+}
+
+function allowedSlot(slot, now) {
+    const start = Date.parse(slot.start);
+    const end = Date.parse(slot.end);
+    if (!Number.isFinite(start) || !Number.isFinite(end) || start < now + MIN_NOTICE_MS || end <= start) return false;
+    const finish = new Intl.DateTimeFormat('en-GB', { timeZone: 'Australia/Brisbane',
+        hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(end));
+    return brisbaneDate(start) === brisbaneDate(end) && finish <= '19:00';
+}
+
 export async function getSlotOffer({ timezone, fetchImpl = fetch, now = Date.now() }) {
     validTimezone(timezone);
     const response = await fetchImpl(`${BOOKING_ENDPOINT}?source=plant_based_challenge`, {
@@ -34,11 +49,12 @@ export async function getSlotOffer({ timezone, fetchImpl = fetch, now = Date.now
     const data = await response.json();
     if (!readyAvailability(data)) throw new Error('Booking or calendar is unavailable; do not offer specific times');
     const slots = (Array.isArray(data.dates) ? data.dates : []).flatMap(day => Array.isArray(day.slots) ? day.slots : [])
-        .filter(slot => Number.isFinite(Date.parse(slot.start)) && Number.isFinite(Date.parse(slot.end))
-            && Date.parse(slot.start) > now && Date.parse(slot.end) > Date.parse(slot.start))
+        .filter(slot => allowedSlot(slot, now))
         .sort((first, second) => Date.parse(first.start) - Date.parse(second.start));
     const unique = slots.filter((slot, index) => slots.findIndex(other => other.start === slot.start) === index);
-    const options = unique.slice(0, 3).map(slot => ({
+    const distinctDays = unique.filter((slot, index) => unique.findIndex(other =>
+        brisbaneDate(other.start) === brisbaneDate(slot.start)) === index).slice(0, 3);
+    const options = distinctDays.map(slot => ({
         start: slot.start, end: slot.end, label: slotLabel(slot.start, timezone), timezone,
     }));
     return { checkedAt: new Date(now).toISOString(), timezone, durationMinutes: data.durationMinutes, options };
@@ -89,7 +105,8 @@ export async function bookSelectedSlot(input, { receiptsDir, fetchImpl = fetch, 
     });
     if (!availabilityResponse.ok) throw new Error('Current availability check failed; nothing booked');
     const live = await availabilityResponse.json();
-    if (!readyAvailability(live) || !live.dates?.some(day => day.slots?.some(slot => slot.start === input.startsAt))) {
+    if (!readyAvailability(live) || !live.dates?.some(day => day.slots?.some(slot =>
+        slot.start === input.startsAt && allowedSlot(slot, now)))) {
         throw new Error('Selected slot is no longer available; offer fresh alternatives');
     }
     const receipt = {

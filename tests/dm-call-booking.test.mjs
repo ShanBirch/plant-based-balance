@@ -69,6 +69,36 @@ test('booking rechecks the slot, uses existing email/form transport and does not
     } finally { await fs.rm(receiptsDir, { recursive: true }); }
 });
 
+test('offers spread across available Brisbane days with two hours notice and a 7pm finish', async () => {
+    const times = [
+        ['2026-10-16T01:59:00Z', '2026-10-16T02:59:00Z'],
+        ['2026-10-16T02:00:00Z', '2026-10-16T03:00:00Z'],
+        ['2026-10-16T03:00:00Z', '2026-10-16T04:00:00Z'],
+        ['2026-10-16T09:00:00Z', '2026-10-16T10:00:00Z'],
+        ['2026-10-16T21:00:00Z', '2026-10-16T22:00:00Z'],
+        ['2026-10-17T21:00:00Z', '2026-10-17T22:00:00Z'],
+    ].map(([start, end]) => ({ start, end }));
+    const result = await getSlotOffer({ timezone: 'America/Los_Angeles', now,
+        fetchImpl: async () => Response.json({ ...availability, dates: [{ slots: times }] }) });
+    assert.deepEqual(result.options.map(option => option.start), [times[1].start, times[4].start, times[5].start]);
+});
+
+test('a previously offered slot inside the two-hour notice cannot be booked', async () => {
+    const receiptsDir = await fs.mkdtemp(path.join(os.tmpdir(), 'dm-call-test-'));
+    const lateSlot = { start: '2026-10-16T01:00:00Z', end: '2026-10-16T02:00:00Z' };
+    let posts = 0;
+    try {
+        const booking = input();
+        booking.startsAt = lateSlot.start;
+        booking.offer.options = [{ ...lateSlot, timezone: booking.timezone }];
+        await assert.rejects(bookSelectedSlot(booking, { receiptsDir, now, fetchImpl: async (url, options) => {
+            if (options.method === 'POST') posts += 1;
+            return Response.json({ ...availability, dates: [{ slots: [lateSlot] }] });
+        } }), /no longer available/);
+        assert.equal(posts, 0);
+    } finally { await fs.rm(receiptsDir, { recursive: true }); }
+});
+
 test('unknown send outcomes are durable no-repeat, not automatic booking retries', async () => {
     const receiptsDir = await fs.mkdtemp(path.join(os.tmpdir(), 'dm-call-test-'));
     let posts = 0;

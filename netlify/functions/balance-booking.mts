@@ -18,6 +18,19 @@ type BookingSettings = {
 };
 
 type BusyRange = { start: string; end: string };
+
+export function prospectBookingSettings(settings: BookingSettings, source: unknown): BookingSettings {
+    if (normalizeBookingSource(source) !== "plant_based_challenge") return settings;
+    return {
+        ...settings,
+        minimum_notice_hours: 2,
+        weekly_hours: Object.fromEntries(Object.entries(settings.weekly_hours).map(([day, ranges]) => [
+            day, ranges.filter(range => range.start < "19:00").map(range => ({
+                ...range, end: range.end > "19:00" ? "19:00" : range.end,
+            })),
+        ])),
+    };
+}
 type CallType = "phone" | "video" | "whatsapp";
 type BookingMode = "standard" | "outside_hours";
 type CalendarEventResult = { id: string; meetingUrl: string };
@@ -787,7 +800,7 @@ async function createBooking(req: Request): Promise<Response> {
     catch { return json(400, { ok: false, error: "invalid_json" }); }
 
     if (trimText(body.company || body.website, 200)) return json(400, { ok: false, error: "invalid_request" });
-    const settings = await getSettings();
+    const settings = prospectBookingSettings(await getSettings(), body.source);
     if (["weekly_checkin_pt", "first_pt_session"].includes(normalizeBookingSource(body.source))) settings.duration_minutes = 30;
     if (normalizeBookingSource(body.source) === "client_coaching") {
         settings.duration_minutes = 45;
@@ -995,7 +1008,7 @@ export default async function handler(req: Request): Promise<Response> {
         }
         if (url.searchParams.get("mode") === "settings") return handleSettings(req);
         if (req.method === "GET") {
-            const settings = await getSettings();
+            const settings = prospectBookingSettings(await getSettings(), url.searchParams.get("source"));
             if (["weekly_checkin_pt", "first_pt_session"].includes(url.searchParams.get("source") || "")) settings.duration_minutes = 30;
             if (normalizeBookingSource(url.searchParams.get("source")) === "client_coaching") {
                 settings.duration_minutes = 45;

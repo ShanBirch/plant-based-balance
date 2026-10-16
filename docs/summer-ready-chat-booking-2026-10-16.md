@@ -67,4 +67,8 @@ The existing general pre-call questionnaire is `https://plantbased-balance.org/p
 
 ## Verification
 
+## Same-day call scheduling, 16 October update
+
+After explicit call acceptance, send a short separate acknowledgement that availability will be checked, then call the existing calendar-backed availability service. Offer the earliest real eligible time today where possible, then one option on each of the next two available days. If today is unavailable, start with the next available morning/day. Keep existing weekday/open-hour restrictions; do not invent tomorrow or weekend availability. The scoped prospect endpoint requires two hours' notice and clips configured hours to a 7pm Brisbane finish, both when reading availability and creating bookings. Other booking sources retain their configured notice. The helper independently enforces notice and finish times and rechecks before creating the appointment. A calendar conflict check is not permission to disclose private event details. Existing prospect SMS/email is not a verified notification to Shannon; coach notification delivery remains a separate outstanding setup item.
+
 Use mocked calls for booking tests: availability failure/reconnect, correct timezone, stale/unsupported slot, missing consent, busy slot, duplicate/concurrent actions, timeout/no-repeat, partial calendar/email outcomes and successful confirmation. Keep the existing pre-call-email, calendar-fail-closed, source/attribution and consent/safety tests. One read-only live prospect-availability check on 16 October succeeded with booking enabled and calendar connected; that is not permanent availability evidence and no real appointment was created.
