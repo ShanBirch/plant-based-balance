@@ -37,6 +37,8 @@ The website and verified email sender are separate. Keep the existing verified e
 
 Set `BOOKING_NOTIFY_EMAIL` to Shannon's confirmed notification inbox. Each booking attempts one separate immediate coach email with contact details, Brisbane time and the Meet link, using a booking-specific idempotency key. `coachNotificationSent` reports provider acceptance only; failures are surfaced as `coach_notification_pending` without losing or recreating the booking. Successful acceptance is saved in booking metadata. New Calendar events have explicit pop-up reminders two hours and ten minutes before the call. Actual phone push still depends on Google Calendar notifications being enabled on Shannon's device.
 
+The scheduled `booking-notification-recovery` function only processes an explicitly reconciled, unexpired server-side `metadata.notification_recovery` request on a confirmed future booking. An operator may request recovery with `state:requested`, `deliveryReconciled:true` and `expiresAt` within 24 hours after checking existing booking/provider receipts. Existing successful emails are skipped; missing emails use stable booking-specific idempotency keys. The claim is conditional on the row version, so parallel invocations cannot both send. Completed, failed, processing or uncertain requests are not automatically retried. This does not recreate the appointment or scan/send old unrequested confirmations. Verify provider delivery separately from acceptance.
+
 ## Guardrails
 
 - Bookings are off by default until Shannon opens them in the setup page.

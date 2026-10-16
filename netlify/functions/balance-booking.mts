@@ -777,7 +777,8 @@ async function sendConfirmationEmail(settings: BookingSettings, booking: Record<
     const meetingUrl = trimText(booking.meeting_url, 500);
     const response = await fetch("https://api.resend.com/emails", {
         method: "POST",
-        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json",
+            "Idempotency-Key": `booking-confirmation-${trimText(booking.id, 120)}` },
         body: JSON.stringify({
             from,
             to: [email],
@@ -814,6 +815,54 @@ export async function sendCoachBookingNotification(booking: Record<string, unkno
         body: JSON.stringify({ from, to: [recipient], subject: `New Balance booking, ${when}`, text }),
     });
     return response.ok;
+}
+
+export async function recoverRequestedBookingNotifications(): Promise<Record<string, unknown>[]> {
+    const candidates = await supabaseRequest(
+        "balance_bookings?status=eq.confirmed&metadata->notification_recovery->>state=eq.requested&limit=5"
+    ) as Record<string, unknown>[];
+    const outcomes: Record<string, unknown>[] = [];
+    for (const candidate of candidates) {
+        const metadata = candidate.metadata as Record<string, unknown> || {};
+        const requested = metadata.notification_recovery as Record<string, unknown> || {};
+        if (requested.deliveryReconciled !== true || !candidate.updated_at
+            || Date.parse(String(requested.expiresAt || "")) <= Date.now()
+            || Date.parse(String(requested.expiresAt || "")) > Date.now() + 24 * 60 * 60 * 1000
+            || !Number.isFinite(Date.parse(String(requested.expiresAt || "")))
+            || Date.parse(String(candidate.starts_at)) <= Date.now()) continue;
+        const processing = { ...requested, state: "processing", claimedAt: new Date().toISOString() };
+        const claimed = await supabaseRequest(
+            `balance_bookings?id=eq.${encodeURIComponent(String(candidate.id))}&status=eq.confirmed&updated_at=eq.${encodeURIComponent(String(candidate.updated_at))}&metadata->notification_recovery->>state=eq.requested`,
+            { method: "PATCH", body: JSON.stringify({ metadata: { ...metadata, notification_recovery: processing } }) }
+        ) as Record<string, unknown>[];
+        if (!claimed[0]) continue;
+        const booking = claimed[0];
+        const nextMetadata = { ...booking.metadata as Record<string, unknown> };
+        let confirmationSentAt = booking.confirmation_email_sent_at;
+        let state = "completed";
+        try {
+            if (!confirmationSentAt && await sendConfirmationEmail(await getSettings(), booking)) {
+                confirmationSentAt = new Date().toISOString();
+                nextMetadata.pre_call_form_email_sent_at = confirmationSentAt;
+            }
+            if (!nextMetadata.coach_notification_email_sent_at && await sendCoachBookingNotification(booking)) {
+                nextMetadata.coach_notification_email_sent_at = new Date().toISOString();
+            }
+            if (!confirmationSentAt || !nextMetadata.coach_notification_email_sent_at) state = "failed";
+        } catch {
+            state = "uncertain_no_repeat";
+        }
+        nextMetadata.notification_recovery = { ...processing, state, finishedAt: new Date().toISOString() };
+        const completed = await supabaseRequest(
+            `balance_bookings?id=eq.${encodeURIComponent(String(booking.id))}&updated_at=eq.${encodeURIComponent(String(booking.updated_at))}`,
+            { method: "PATCH", body: JSON.stringify({ metadata: nextMetadata,
+                confirmation_email_sent_at: confirmationSentAt || null }) }
+        ) as Record<string, unknown>[];
+        if (!completed[0]) throw new Error("Booking notification receipt requires reconciliation; do not resend");
+        outcomes.push({ bookingId: booking.id, state, confirmationEmailSent: Boolean(confirmationSentAt),
+            coachNotificationSent: Boolean(nextMetadata.coach_notification_email_sent_at) });
+    }
+    return outcomes;
 }
 
 function bookingConfirmationSms(booking: Record<string, unknown>): string {

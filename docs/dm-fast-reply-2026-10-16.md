@@ -1,0 +1,23 @@
+# Existing dispatcher fast-turn sequence
+
+Shannon requested a 30-second response target on 16 October. This optimises the existing sole Meta Business Suite operator, never a second sender or permission bypass. A timer change alone is not verified performance.
+
+## Warm inbox
+
+After complete initial preflight and ownership acquisition, keep the already-owned inbox warm within the existing 25/28/30-minute invocation walls. Poll active conversations about every five seconds and otherwise the inbox about every ten seconds. A conversation's five-minute silence deadline stops following up on that person; it does not require ending the whole operator invocation. Wait without broad unrelated reviews while live inbound can arrive. Required lease heartbeats, urgent service and new paid enquiries retain priority. Never extend an expired lease, take another worker's tab or start a duplicate worker. A cold handoff still has scheduler, model and safety-check latency; do not guarantee 30 seconds.
+
+## One consolidated context read
+
+Use the installed `balance-dm-fast-reply.mjs` SQL generator. It only generates SQL; it neither sends nor executes database changes. Write a private JSON input with the exact verified `threadId` and current owned `runId`, then run `node <helper-path> context <private-input-path>`. Execute that generated SELECT through the existing Supabase tool. It returns the complete canonical thread/history, current actions/receipts, personal-contact registry match and shift/binding in one response. Read full native context and compare the exact source; do not use only the newest message or infer holds are absent from an empty field. For an unchanged binding, retain the existing verified account identity rather than rediscovering it for every bubble.
+
+Compose only after checking independent holds, opt-outs, human takeover, source freshness, prior deliveries and existing ownership. New media, safety, ambiguity or missing history takes the ordinary full-review path. A new distinct source is required; no correction/repeat to an already answered source. No broad report, old comment or named-batch reconciliation between an inbound and its eligible reply.
+
+## Batch existing claim operations
+
+For an eligible reviewed message, prepare private JSON fields `threadId`, `sourceMessageId`, `runId`, `tabId`, `username`, `nativeConversationId`, current `leadState`, exact `finalText`, `fullThreadReviewed:true`, `nativeIdentityVerified:true`, `independentHoldsChecked:true`, and `internalTest` only for a known controlled test. Run `node <helper-path> claim <private-input-path>`, then execute its SQL through the existing Supabase tool.
+
+The generated dependent materialised CTE stages the action only for the still-latest inbound, claims it through the existing `claim_ig_next_actions`, and returns the existing `ig_browser_action_owned` guard. It does not replace those functions. The claim depends on the staged row so a changed source cannot cause an unrelated claim. Require one exact matching returned source, action/version/token and `owned:true`. Empty, mismatched, held or denied output means no send. Do not set review flags before doing the actual review or clear a hold to make a test pass.
+
+Fill the reviewed native composer after an owned result. Re-read current native context and run `ig_browser_action_owned` again immediately before Send, preserving the normal action-time gate and per-bubble handling. Send once, verify native delivery/composer clear, preserve proof and reconcile the receipt. Uncertain delivery is terminal/no-repeat pending reconciliation. Batch independent post-send bookkeeping when safe, but never postpone saving the no-repeat receipt in favour of another send.
+
+Measure source received, detected, context ready, claimed, native Send activated and provider/native confirmation separately. Report source-to-first-substantive-reply latency; filler acknowledgements do not count. Test only the explicitly authorised Little Companion account, not real leads.
