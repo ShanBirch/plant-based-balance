@@ -1,0 +1,14 @@
+# Story-origin business conversation refinement
+
+## Context-led conversion, Shannon, 18 October 2026
+
+Conversion remains the business goal: suitable paid coaching through genuine interest and an optional consented call, not endless friendly conversation. In casual Story-origin business chats, follow their actual topic into a relevant activity/experience, then their own aim or support interest, relevant coaching help and a call when useful. This is direction, not compulsory stages or a two/three-message counter. Take a grounded opportunity when it exists, including an explicit coaching enquiry; do not wait indefinitely or keep interviewing once help is clearly wanted.
+
+Do not append generic training/nutrition questions to unrelated pet, drink, travel or scenery replies. Explore cooking from a food discussion, walking from walks and the actual session from a workout Story. Only connect vegan nutrition to training when training is known; do not invent routines, dietary problems, goals or familiarity. Answer reciprocal questions and the complete new inbound batch first. A short statement can be the whole turn. Do not turn a polite "all good", contentment or an existing coach into an improvement/blocker interview. An ignored/declined pivot, "all good for training", space request or sensitive disclosure is not a subtler-selling opportunity. Organisations and professional networking are not automatically individual coaching prospects.
+
+When their own goal, support need or explicit coaching interest makes help relevant, briefly connect the real support and use Shannon's relaxed invitation: "Would you want to jump on the phone sometime to have a chat about it?" Do not require all stages or send a booking link before consent. Be transparent if asked about coaching or why fitness came up; never disguise sales intent as friendship. Keep direct Summer Ready enquiry/goal/routine guidance separate. Preserve personal/manual/client/safety holds, exact ownership, all source/claim/booking/no-repeat gates and truthful offer facts. No retrospective correction, silence chase, new outreach, extra sender or live-person test. Measure meaningful interest, call acceptance, verified bookings and paid clients separately from message counts; the audit is observational, not proof of increased conversion.
+
+This latest approved rule supersedes the older generic check-in examples and two/three-reciprocal-message timing cue below for casual Story-origin chats only.
+
+Live installation: existing Balance IG Browser 24-Hour Shift Dispatcher only. The shared writer/reviewer policy is netlify/functions/_lib/coaching-conversation-policy.js. The installed live-conversation-contract.md and organic-business-conversations-20261016.md carry the same current guidance. This change does not alter sending permissions, timing, campaign facts, booking infrastructure or personal-contact boundaries.
+

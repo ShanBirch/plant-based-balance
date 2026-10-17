@@ -23,6 +23,24 @@ test('shared coaching policy preserves Shannon’s relaxed optional phone invita
     }
 });
 
+test('Story conversation guidance stays context-led without dropping conversion or boundaries', () => {
+    const { buildCoachingConversationPolicy } = require('../netlify/functions/_lib/coaching-conversation-policy');
+    for (const reviewer of [false, true]) {
+        const guidance = buildCoachingConversationPolicy({ reviewer });
+        assert.match(guidance, /business objective remains conversion to suitable paid coaching/);
+        assert.match(guidance, /not compulsory stages or a fixed two\/three-message timer/);
+        assert.match(guidance, /Do not wait indefinitely when a grounded activity bridge/);
+        assert.match(guidance, /Do not append a generic training\/nutrition question to an unrelated/);
+        assert.match(guidance, /Only connect vegan eating to training when training is actually known/);
+        assert.match(guidance, /answer reciprocal questions honestly/);
+        assert.match(guidance, /A brief "all good" is not a reason to ask what needs improving/);
+        assert.match(guidance, /ignored\/declined pivot.*means ease off/);
+        assert.match(guidance, /do not disguise commercial intent as friendship/);
+        assert.match(guidance, /never transplant that intake into casual follower chat/);
+        assert.match(guidance, /No retrospective correction DM, new outreach, silence chase/);
+    }
+});
+
 test('an organic coaching enquiry retains attribution and can invite a call without a blocker field', () => {
     const thread = {created_at:'2026-09-30T00:00:00Z',custom_data:{bot_account:'shan_n_sunny',acquisition_mode:'organic_inbound'}};
     assert.equal(attribution.resolveIgAcquisitionMode({customData:thread.custom_data}), 'organic_inbound');
