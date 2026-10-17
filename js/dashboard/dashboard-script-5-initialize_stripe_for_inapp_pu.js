@@ -3670,9 +3670,9 @@ function renderMonthlyDayCell(date, today, cycleStart, cycleLen, msPerDay, isBas
     let isActivityReplacement = false;
 
     if (replacement && replacement.replacement_workout) {
-        // Show shortened version of replacement name
+        // Preserve useful names; compact calendar labels may differ from the full session title.
         const replacementName = replacement.replacement_workout.name || '';
-        workoutLabel = replacementName.length > 8 ? replacementName.substring(0, 7) + '...' : replacementName;
+        workoutLabel = replacement.replacement_workout.calendarLabel || replacementName;
         hasReplacement = true;
         isActivityReplacement = replacement.replacement_workout.type === 'activity';
     }
@@ -3687,7 +3687,7 @@ function renderMonthlyDayCell(date, today, cycleStart, cycleLen, msPerDay, isBas
              onclick="openMonthlyDayDetail('${dateStr}')"
              style="${hasReplacement && !isOtherMonth ? `border: 1px solid ${isActivityReplacement ? '#0369a1' : '#f59e0b'};` : ''}">
             <div class="monthly-day-num">${dayNum}</div>
-            <div class="monthly-day-workout">${escapeCalendarHtml(workoutLabel)}</div>
+            <div class="monthly-day-workout" style="white-space: normal; overflow-wrap: anywhere; line-height: 1.35; padding-bottom: 8px;" title="${escapeCalendarHtml(replacement?.replacement_workout?.name || workoutLabel)}">${escapeCalendarHtml(workoutLabel)}</div>
             ${phaseIndicatorHtml}
         </div>
     `;
