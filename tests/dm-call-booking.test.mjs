@@ -206,6 +206,19 @@ test('Summer Ready practical answers keep goal, blocker and optional call progre
     assert.match(policy, /permission to chase silent leads or send a correction/);
 });
 
+test('ad starters receive distinct context-aware replies without automatic call consent', () => {
+    const policy = relaunch.buildSummerReadyRelaunchPolicy();
+    assert.match(policy, /I need help getting started/);
+    assert.match(policy, /I keep falling off track/);
+    assert.match(policy, /Tell me about the challenge/);
+    assert.match(policy, /optional canned answers remain empty/);
+    assert.match(policy, /not another dispatcher message to resend/);
+    assert.match(policy, /ask what tends to knock them off track, only if unknown/);
+    assert.match(policy, /explicit starter-specific exception to goal-first order/);
+    assert.match(policy, /not automatic booking consent or proof of a sale/);
+    assert.match(policy, /price\/inclusions and explicit booking requests still get direct answers/);
+});
+
 test('compatibility writer permits the scoped paired opening and missing contact collection', () => {
     const check = require('../netlify/functions/ig-instant-draft')._test.collectPaidMetaWriterContractIssues;
     assert.deepEqual(check({ flowVariant: 'plant_based_challenge', currentMessage: 'Tell me about the program',
