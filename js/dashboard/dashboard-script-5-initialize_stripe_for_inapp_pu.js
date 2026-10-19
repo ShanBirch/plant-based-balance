@@ -21542,7 +21542,8 @@ function isTimeBasedExercise(exercise) {
 }
 
 function getPrescribedSetPrefill(exercise, isTimeBased) {
-    const prescription = String(exercise?.reps || exercise?.time || '').trim();
+    const week = typeof getCurrentWeeklyPlanItem === 'function' ? getCurrentWeeklyPlanItem(exercise) : null;
+    const prescription = String((isTimeBased ? week?.time : week?.reps) ?? exercise?.reps ?? exercise?.time ?? '').trim();
     if (!prescription) return null;
 
     // Logging fields are deliberately numeric so the completed set can still
@@ -21553,11 +21554,12 @@ function getPrescribedSetPrefill(exercise, isTimeBased) {
     const prefill = isTimeBased
         ? { time: numericTarget[0] }
         : { reps: numericTarget[0] };
-    if (exercise.prescriptionOverridesHistory === true || exercise.prescriptionClearsHistoricalLoad === true) {
+    if (week || exercise.prescriptionOverridesHistory === true || exercise.prescriptionClearsHistoricalLoad === true) {
         prefill.preferPrescription = true;
     }
     if (exercise.prescriptionClearsHistoricalLoad === true) prefill.clearHistoricalLoad = true;
-    const load = exercise.prescribedWeightKg;
+    const load = week?.weightKg ?? week?.prescribedWeightKg ?? week?.weight_kg
+        ?? exercise.prescribedWeightKg ?? exercise.weight_kg;
     if (load !== undefined && load !== null && load !== '' && Number.isFinite(Number(load)) && Number(load) >= 0) {
         prefill.kg = String(Number(load));
         prefill.explicitLoad = true;

@@ -37,3 +37,32 @@ test('ordinary workouts retain their previous session defaults', () => {
     assert.equal(result.kg, '30');
     assert.equal(ctx.mergeSetPrefill(null, null), null);
 });
+
+test('current weekly targets replace old warm-up reps and weights and change with the week', () => {
+    const scoped = vm.createContext({ week: { reps: 6, weightKg: 80 } });
+    scoped.getCurrentWeeklyPlanItem = () => scoped.week;
+    vm.runInContext(source.slice(start, end), scoped);
+    const exercise = { reps: '6', weight_kg: 80 };
+    const previous = { reps: '8', kg: '60' };
+    let result = scoped.mergeSetPrefill(previous, scoped.getPrescribedSetPrefill(exercise, false));
+    assert.equal(result.reps, '6');
+    assert.equal(result.kg, '80');
+    scoped.week = { reps: 7, weightKg: 82.5 };
+    result = scoped.mergeSetPrefill(previous, scoped.getPrescribedSetPrefill(exercise, false));
+    assert.equal(result.reps, '7');
+    assert.equal(result.kg, '82.5');
+    assert.equal(previous.kg, '60');
+});
+
+test('weekly zero load overrides history; rep-only weekly targets preserve useful load', () => {
+    const scoped = vm.createContext({ week: { reps: 12, weightKg: 0 } });
+    scoped.getCurrentWeeklyPlanItem = () => scoped.week;
+    vm.runInContext(source.slice(start, end), scoped);
+    let result = scoped.mergeSetPrefill({ reps: '8', kg: '30' }, scoped.getPrescribedSetPrefill({ reps: '10' }, false));
+    assert.equal(result.kg, '0');
+    assert.equal(result.reps, '12');
+    scoped.week = { reps: 11 };
+    result = scoped.mergeSetPrefill({ reps: '8', kg: '30' }, scoped.getPrescribedSetPrefill({ reps: '10' }, false));
+    assert.equal(result.kg, '30');
+    assert.equal(result.reps, '11');
+});
