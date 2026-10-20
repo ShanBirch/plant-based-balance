@@ -131,6 +131,19 @@
                         <a class="btn secondary" href="book.html" target="_blank" rel="noopener">Preview booking page</a>
                     </div>
                 </form>
+                <form id="owner-booking-form" hidden class="booking-setup-group">
+                    <h3>Book an agreed call</h3>
+                    <p>Owner only. Book a date agreed in conversation. Public availability stays unchanged. Calendar conflicts and working hours are checked before booking.</p>
+                    <div class="booking-setting-grid">
+                        <label>Name<input name="name" required autocomplete="off"></label>
+                        <label>Email<input name="email" type="email" required autocomplete="off"></label>
+                        <label>Mobile<input name="phone" type="tel" required autocomplete="off"></label>
+                        <label>Brisbane date and time<input name="startsAt" type="datetime-local" required></label>
+                        <label>Call format<select name="callType"><option value="phone">Phone</option><option value="video">Google Meet</option></select></label>
+                    </div>
+                    <button class="btn primary" type="submit">Book agreed call</button>
+                    <p id="owner-booking-status" role="status"></p>
+                </form>
             </section>
         </main>
     </div>

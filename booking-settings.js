@@ -108,6 +108,7 @@
             if (!response.ok || !data.ok) throw new Error(data.error || 'load_failed');
             renderState(data);
             form.hidden = false;
+            byId('owner-booking-form').hidden = false;
             card.setAttribute('aria-busy', 'false');
             const result = new URLSearchParams(window.location.search).get('calendar');
             const calendarNeedsAttention = data.googleCalendarReconnectRequired || data.googleCalendarConnectionIssue;
@@ -195,6 +196,39 @@
             setStatus('Could not start the Google Calendar connection. Check the OAuth settings in Netlify and try again.', 'error');
         } finally {
             button.disabled = false;
+        }
+    });
+
+    byId('owner-booking-form').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const ownerForm = event.currentTarget;
+        const button = ownerForm.querySelector('button[type="submit"]');
+        const result = byId('owner-booking-status');
+        button.disabled = true;
+        let attempted = false;
+        try {
+            const authHeaders = await headers();
+            const fields = new FormData(ownerForm);
+            const startsAt = new Date(`${fields.get('startsAt')}:00+10:00`).toISOString();
+            attempted = true;
+            result.textContent = 'Booking and checking the calendar…';
+            const response = await fetch('/api/booking?mode=owner_booking', {
+                method: 'POST', headers: { ...authHeaders, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: fields.get('name'), email: fields.get('email'),
+                    phone: fields.get('phone'), startsAt, callType: fields.get('callType'),
+                    visitorTimeZone: 'Australia/Brisbane', source: 'plant_based_challenge' }),
+            });
+            const data = await response.json();
+            if (response.status === 400 || response.status === 409) {
+                result.textContent = `Nothing booked: ${data.error}. Check the details or choose another agreed time.`;
+                button.disabled = false;
+                return;
+            }
+            if (!response.ok || !data.ok || !data.booking?.id) throw new Error('unknown_outcome');
+            result.textContent = `Booking ${data.booking.id}: ${data.booking.label}. Calendar invitation ${data.calendarEventCreated ? 'created' : 'pending'}. Confirmation email ${data.confirmationEmailSent ? 'sent' : 'pending'}.`;
+        } catch (_) {
+            result.textContent = attempted ? 'Booking outcome needs checking. Do not submit again until the booking records have been checked.' : 'Sign in and check the entered date before trying again.';
+            if (!attempted) button.disabled = false;
         }
     });
 

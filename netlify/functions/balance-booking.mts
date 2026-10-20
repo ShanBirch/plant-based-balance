@@ -872,7 +872,19 @@ function bookingConfirmationSms(booking: Record<string, unknown>): string {
     return `Balance: You're booked for a ${method} with Shannon, ${dateTimeLabel(startsAt, timezone)}. Check your email and calendar invite for details. We'll text you a reminder about 2 hours before.`;
 }
 
-async function createBooking(req: Request): Promise<Response> {
+async function getOwnerSelectedSlot(settings: BookingSettings, startsAt: string) {
+    const start = new Date(startsAt);
+    const end = new Date(start.getTime() + settings.duration_minutes * 60 * 1000);
+    const [databaseBusy, google] = await Promise.all([
+        databaseBusyRanges(start.toISOString(), end.toISOString()),
+        googleBusyRanges(settings, start.toISOString(), end.toISOString()),
+    ]);
+    if (!google.connected) return null;
+    return buildSlotsForDate(settings, brisbaneDateKey(start), [...databaseBusy, ...google.busy])
+        .find(slot => slot.start === start.toISOString()) || null;
+}
+
+async function createBooking(req: Request, ownerSelectedDate = false): Promise<Response> {
     let body: Record<string, unknown>;
     try { body = await req.json() as Record<string, unknown>; }
     catch { return json(400, { ok: false, error: "invalid_json" }); }
@@ -916,7 +928,9 @@ async function createBooking(req: Request): Promise<Response> {
     }
 
     const start = new Date(startsAt);
-    const selectedSlot = bookingMode === "outside_hours"
+    const selectedSlot = ownerSelectedDate
+        ? await getOwnerSelectedSlot(settings, start.toISOString())
+        : bookingMode === "outside_hours"
         ? await getOutsideHoursSlot(settings, start.toISOString())
         : (await getAvailability("", settings))
             .dates.flatMap(date => date.slots)
@@ -1105,6 +1119,12 @@ export default async function handler(req: Request): Promise<Response> {
             return json(200, { ok: true });
         }
         if (url.searchParams.get("mode") === "settings") return handleSettings(req);
+        if (url.searchParams.get("mode") === "owner_booking") {
+            const admin = await requireAdmin(req);
+            if (!admin.ok) return admin.response;
+            if (req.method !== "POST") return json(405, { ok: false, error: "method_not_allowed" });
+            return createBooking(req, true);
+        }
         if (req.method === "GET") {
             const settings = prospectBookingSettings(await getSettings(), url.searchParams.get("source"));
             if (["weekly_checkin_pt", "first_pt_session"].includes(url.searchParams.get("source") || "")) settings.duration_minutes = 30;
