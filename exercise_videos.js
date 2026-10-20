@@ -469,7 +469,7 @@ const EXERCISE_VIDEOS = {
   "Battle Rope Alternating Wave Get Up": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/phone-v1/e95db6fe6de8710e6af5ef9f.mp4",
   "Battle Rope Alternating Shoulder Press to Lateral Drop": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/phone-v1/db31a5d431e23256f615d7aa.mp4",
   "Barbell Shrug": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/phone-v1/13a501e22dc7a7bd95e5df0f.mp4",
-  "Barbell Romanian Deadlift": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/phone-v1/399f8054da14a4e027047249.mp4",
+  "Barbell Romanian Deadlift": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/phone-v1/b41f8aa2d096bb68ea7ffa09.mp4",
   "Barbell Clean and Press": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/phone-v1/c139f3249319c56250b0abcc.mp4",
   "Band Standing Hip Flexion": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/phone-v1/bbd4edb2e5c58bc85bea2e74.mp4",
   "Band Split Squat": "https://f005.backblazeb2.com/file/plantbasedbalancestories/balance-social/app-exercise-videos/phone-v1/4fa6e15b767efa9a8eda2692.mp4",
