@@ -5,23 +5,17 @@
     // Keep older cached pages connected to newly available public destinations.
     const nav = drawer.querySelector('nav');
     const findDestination = (pathname) => Array.from(nav?.querySelectorAll('a[href]') || []).find(link => new URL(link.href, location.origin).pathname.replace(/\.html$/, '') === pathname);
-    if (nav && !findDestination('/plant-based-challenge')) {
-        const challenge = document.createElement('a');
-        challenge.href = '/plant-based-challenge';
-        challenge.textContent = 'Summer Ready Shred';
-        challenge.dataset.track = 'cta_click';
-        challenge.dataset.cta = 'navigation_challenge';
-        const learn = findDestination('/founders');
-        if (learn) learn.after(challenge);
-        else nav.append(challenge);
-    }
     if (nav) {
         const challenge = findDestination('/plant-based-challenge');
-        if (challenge) { challenge.textContent = 'Summer Ready Shred'; nav.prepend(challenge); }
+        if (challenge) challenge.remove();
         const coaching = findDestination('/coaching');
-        if (coaching) coaching.textContent = 'Coaching';
+        if (coaching) { coaching.textContent = 'Coaching packages'; nav.prepend(coaching); }
         const book = findDestination('/book');
-        if (book) { const url = new URL(book.href, location.origin); if (!url.searchParams.has('source')) url.searchParams.set('source', 'plant_based_challenge'); book.href = url.pathname + url.search; }
+        if (book) {
+            const url = new URL(book.href, location.origin);
+            if (url.searchParams.get('source') === 'plant_based_challenge') url.searchParams.delete('source');
+            book.href = url.pathname + url.search;
+        }
         const current = location.pathname.replace(/\.html$/, '').replace(/\/$/, '') || '/';
         const destination = current === '/plant-based-fitness' ? '/founders'
             : ['/fitness', '/fitness-coaching'].includes(current) ? '/coaching'

@@ -23,13 +23,14 @@ test('the included six-week course cannot divert a challenge enquiry to legacy c
     assert.equal(policy.resolveChallengeLeadRoute({thread,currentMessage:'I want the Founders Pass checkout link instead'}),false);
 });
 
-test('challenge price, duration and launch evidence agrees with the public offer', () => {
+test('historic campaign facts remain intact while the public page routes new visitors to current packages', () => {
     const prompt=policy.buildChallengeLeadPrompt();
-    for(const fact of ['Summer Ready Shred','5 October 2026','all genders','AUD $75/week','AUD $125/week','AUD $120','AUD $870','AUD $1,370','six-week Learn course','60-minute video call']) assert.ok(prompt.includes(fact),fact);
+    for(const fact of ['Summer Ready Shred','no fixed start date','all genders','ten-week course']) assert.ok(prompt.includes(fact),fact);
     assert.doesNotMatch(prompt,/No universal challenge price is verified/);
     for(const file of ['plant-based-challenge.html','coaching.html']) {
         const html=fs.readFileSync(path.join(__dirname,'..',file),'utf8');
-        for(const fact of ['Summer Ready Shred','5 October 2026','$75','$125','$120','$870','$1,370','six-week']) assert.ok(html.includes(fact),`${file}: ${fact}`);
+        for(const fact of ['Balance Learn','Zoom Personal Training','Programming &amp; Nutrition','$75','$125','$120','$870','$1,370','Ten-week minimum']) assert.ok(html.includes(fact),`${file}: ${fact}`);
+        assert.doesNotMatch(html,/Starts 5 October 2026|Starting 5 October 2026|data-plan=/);
         assert.doesNotMatch(html,/women.only|eight.week challenge/i);
     }
     assert.equal(policy.buildChallengeBookingHandoff({currentMessage:'How much does it cost?',draft:{joined:'Online coaching is AUD $75/week plus one AUD $120 onboarding fee, with a ten-week minimum total of AUD $870.'}}),null);

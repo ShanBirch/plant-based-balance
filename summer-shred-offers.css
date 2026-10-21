@@ -18,3 +18,13 @@
 .course-steps p { color:var(--muted); -webkit-text-fill-color:var(--muted); line-height:1.7; }
 .offer-crosslink { display:inline-block; margin-top:16px; text-underline-offset:4px; font-weight:600; }
 @media(max-width:700px) { .offer-grid,.course-steps { grid-template-columns:1fr; } .offer-card .cta { width:100%; white-space:normal; text-align:center; } }
+
+/* Current individual coaching comparison. */
+.starting-offers { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.starting-offers .offer-card { display:flex; flex-direction:column; min-width:0; }
+.starting-offers .offer-card .cta { margin-top:auto; white-space:normal; text-align:center; }
+.starting-offers .offer-price { font-size:clamp(2rem,3vw,2.8rem); }
+.starting-offers .offer-price small { display:block; }
+.challenge-learn-page section[id], .course-page #join { scroll-margin-top:150px; }
+.challenge-learn-page footer { padding-bottom:calc(32px + max(24px,env(safe-area-inset-bottom,0px))); }
+@media(max-width:1000px) { .starting-offers { grid-template-columns:1fr; } }

@@ -954,7 +954,7 @@ async function createBooking(req: Request, ownerSelectedDate = false): Promise<R
                 metadata: {
                     source: bookingSource,
                     ...(bookingSource === "home_pt" ? { home_pt_package: body.homePtPackage === "balance" ? "balance" : "session" } : {}),
-                    ...(["plant_based_challenge", "home_pt"].includes(bookingSource) ? { attribution: normalizeBookingAttribution(body.attribution) } : {}),
+                    ...(["plant_based_challenge", "home_pt", "public_booking_page"].includes(bookingSource) ? { attribution: normalizeBookingAttribution(body.attribution) } : {}),
                     ...(verifiedDmRef ? { ig_thread_id: verifiedDmRef.threadId } : {}),
                     booking_mode: bookingMode,
                     call_type: callType,

@@ -22,5 +22,6 @@ body{background:#111110}.bio-masthead{position:absolute;inset:0 0 auto;z-index:2
 /* Only the opened drawer adopts the inner website menu. Keep the original photo masthead. */
 .photo-hub { --bg:#f9f9f7; --text-main:#1a202c; --text-muted:#5f6f85; --secondary:#9b6f19; --button-hover:rgba(255,255,255,.98); }
 @media (pointer:coarse), (max-width:900px) {
+ .photo-hub { --safe-top:max(42px,env(safe-area-inset-top,0px)); }
  .photo-hub .balance-menu-drawer { top:max(env(safe-area-inset-top, 0px), 24px); height:calc(100dvh - max(env(safe-area-inset-top, 0px), 24px)); padding-top:14px; padding-bottom:calc(24px + max(env(safe-area-inset-bottom, 0px), 24px)); }
 }

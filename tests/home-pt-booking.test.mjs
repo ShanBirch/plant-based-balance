@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import handler, {normalizeBookingSource} from '../netlify/functions/balance-booking.mts';
 
-for (const callType of ['phone', 'video']) for (const homePtPackage of ['session', 'balance']) test(callType + ' ' + homePtPackage + ' home PT consultation keeps campaign attribution and reserves a call', async () => {
+for (const callType of ['phone', 'video']) for (const homePtPackage of ['session', 'balance', 'public']) test(callType + ' ' + homePtPackage + ' consultation keeps campaign attribution and reserves a call', async () => {
+    const source = homePtPackage === 'public' ? 'public_booking_page' : 'home_pt';
     assert.equal(normalizeBookingSource('home_pt'), 'home_pt');
     const savedFetch=globalThis.fetch, savedNetlify=globalThis.Netlify;
     const config={SUPABASE_URL:'https://test.invalid',SUPABASE_SERVICE_ROLE_KEY:'test',GOOGLE_CALENDAR_CLIENT_ID:'test',GOOGLE_CALENDAR_CLIENT_SECRET:'test'};
@@ -22,18 +23,21 @@ for (const callType of ['phone', 'video']) for (const homePtPackage of ['session
     };
     try {
         const availability=await(await handler(new Request('https://balance.test/api/booking?source=home_pt'))).json();
-        const response=await handler(new Request('https://balance.test/api/booking',{method:'POST',body:JSON.stringify({source:'home_pt',homePtPackage,name:'Test',email:'test@example.com',phone:'0400000000',callType,startsAt:availability.dates[0].slots[0].start,goal:'Tugun, build strength',ptSessionsPerWeek:3,attribution:{visitor_id:'visitor-test',session_id:'session-test',utm_source:'facebook',utm_medium:'organic_group',utm_campaign:'tugun_home_pt',utm_content:'currumbin_tugun_intro'}})}));
+        const response=await handler(new Request('https://balance.test/api/booking',{method:'POST',body:JSON.stringify({source,homePtPackage,name:'Test',email:'test@example.com',phone:'0400000000',callType,startsAt:availability.dates[0].slots[0].start,goal:'Tugun, build strength',ptSessionsPerWeek:3,attribution:{visitor_id:'visitor-test',session_id:'session-test',utm_source:'facebook',utm_medium:'organic_group',utm_campaign:'tugun_home_pt',utm_content:'currumbin_tugun_intro'}})}));
         assert.equal(response.status,201);
-        assert.equal(inserted.metadata.source,'home_pt');
-        assert.equal(inserted.metadata.home_pt_package,homePtPackage);
+        assert.equal(inserted.metadata.source,source);
+        assert.equal(inserted.metadata.home_pt_package, homePtPackage === 'public' ? undefined : homePtPackage);
         assert.equal(inserted.metadata.pt_sessions_per_week,null);
         assert.equal(inserted.metadata.attribution.utm_campaign,'tugun_home_pt');
         assert.equal(inserted.metadata.attribution.visitor_id,'visitor-test');
         assert.equal(inserted.metadata.attribution.session_id,'session-test');
-        assert.match(calendar.summary,/At-home personal training consultation/);
-        assert.match(calendar.description, homePtPackage === 'balance' ? /Home PT \+ Balance/ : /Home personal training session/);
-        assert.equal(inserted.call_type,callType);
-        assert.equal(Boolean(calendar.conferenceData),callType==='video');
+        if (homePtPackage !== 'public') {
+            assert.match(calendar.summary,/At-home personal training consultation/);
+            assert.match(calendar.description, homePtPackage === 'balance' ? /Home PT \+ Balance/ : /Home personal training session/);
+        }
+        const expectedCallType = homePtPackage === 'public' ? 'video' : callType;
+        assert.equal(inserted.call_type,expectedCallType);
+        assert.equal(Boolean(calendar.conferenceData),expectedCallType==='video');
         assert.equal(Date.parse(calendar.end.dateTime)-Date.parse(calendar.start.dateTime),60*60*1000);
     } finally {globalThis.fetch=savedFetch;globalThis.Netlify=savedNetlify;}
 });

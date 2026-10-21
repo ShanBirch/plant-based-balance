@@ -72,18 +72,18 @@
         fallback.dataset.cta = 'home_pt_email';
     }
     function trackChallengeBooking(event, details = {}) {
-        if (!isPlantBasedChallenge && !isHomePtEnquiry) return;
-        const send = () => window.trackBalanceEvent?.(event, { source: isHomePtEnquiry ? 'home_pt' : 'plant_based_challenge', ...(isHomePtEnquiry ? { home_pt_package: homePtPackage } : {}), ...details });
+        if (!isPlantBasedChallenge && !isHomePtEnquiry && bookingSource) return;
+        const send = () => window.trackBalanceEvent?.(event, { source: isHomePtEnquiry ? 'home_pt' : isPlantBasedChallenge ? 'plant_based_challenge' : 'public_booking_page', offer: selectedOfferKey || null, ...(isHomePtEnquiry ? { home_pt_package: homePtPackage } : {}), ...details });
         if (window.trackBalanceEvent) send();
         else if (document.readyState !== 'complete') document.addEventListener('DOMContentLoaded', send, { once: true });
     }
     if (isPlantBasedChallenge) {
         document.documentElement.setAttribute('data-bio-theme', 'light');
         document.body.classList.add('challenge-booking');
-        document.body.dataset.landingVariant = 'summer_shred_ten_week_v1';
+        document.body.dataset.landingVariant = 'coaching_ten_week_20261021';
         document.title = 'Book Your 60-Minute Call | Balance';
         byId('booking-call-type-choice').hidden = false;
-        byId('booking-intro-kicker').textContent = 'Summer Ready Shred · 10 weeks · Starts 5 October 2026';
+        byId('booking-intro-kicker').textContent = 'Balance · Ten-week starting packages';
         byId('booking-intro-title').textContent = 'Book a 60-minute call with Shannon.';
         byId('booking-intro-copy').textContent = 'Choose a phone or video call. In your 60-minute consultation, we will talk through your goals, your routine and the support that fits you. Shannon will explain the options and pricing before you choose a package.';
         byId('booking-card-title').textContent = 'Choose your call time.';
@@ -95,11 +95,34 @@
         byId('booking-unavailable-copy').textContent = 'Online times are unavailable right now. Email Shannon your goal, timezone and a few times that suit, and he can arrange a consultation with you.';
         const fallback = byId('booking-unavailable-action');
         fallback.textContent = 'Email about my consultation';
-        fallback.href = 'mailto:shannon@balanceneurosciencefitness.com?subject=' + encodeURIComponent('Summer Ready Shred consultation') + '&body=' + encodeURIComponent('Hi Shannon, I am interested in the ten-week Summer Ready Shred.\n\nMy goal:\n\nMy timezone:\n\nTimes that suit:');
+        fallback.href = 'mailto:shannon@balanceneurosciencefitness.com?subject=' + encodeURIComponent('Balance coaching consultation') + '&body=' + encodeURIComponent('Hi Shannon, I am interested in the ten-week Balance starting packages.\n\nMy goal:\n\nMy timezone:\n\nTimes that suit:');
         fallback.dataset.track = 'cta_click';
         fallback.dataset.cta = 'challenge_consultation_email';
         byId('booking-success-primary').href = '/plant-based-challenge';
         byId('booking-success-primary').textContent = 'Back to the challenge';
+    }
+    const currentOfferNames = {
+        'learn': 'Balance Learn', 'zoom-pt': 'Zoom Personal Training',
+        'programming-nutrition': 'Programming & Nutrition',
+        'ongoing-programming': 'Ongoing Programming & Nutrition', 'ongoing-zoom': 'Ongoing coaching with Zoom PT'
+    };
+    const selectedOfferKey = Object.hasOwn(currentOfferNames, urlParams.get('offer')) ? urlParams.get('offer') : null;
+    const selectedOffer = currentOfferNames[selectedOfferKey];
+    if (!bookingSource || selectedOffer) {
+        byId('booking-unavailable-title').textContent = 'Arrange your consultation with Shannon.';
+        byId('booking-unavailable-copy').textContent = 'No online times are showing right now. Email your goal, timezone and a few times that suit so Shannon can arrange a consultation.';
+        const fallback = byId('booking-unavailable-action');
+        fallback.textContent = 'Email about coaching';
+        fallback.href = 'mailto:shannon@balanceneurosciencefitness.com?subject=' + encodeURIComponent('Balance coaching consultation' + (selectedOffer ? ': ' + selectedOffer : ''));
+    }
+    if (selectedOffer) {
+        byId('booking-intro-kicker').textContent = selectedOffer;
+        const isOngoing = selectedOfferKey.startsWith('ongoing-');
+        if (isOngoing) byId('booking-intro-copy').textContent = 'Discuss separate ongoing coaching with a three-month minimum: Programming & Nutrition at AUD $75/week, or coaching with one weekly 45-minute supervised Zoom PT session at AUD $125/week. GST included. Continuation and payment arrangements are agreed separately; a repeat upfront fee and automatic renewal are not assumed. No payment is taken here.';
+        for (const targetForm of [form, outsideForm]) {
+            const goal = targetForm?.querySelector('[name="goal"]');
+            if (goal && !goal.value) goal.value = 'Interested in ' + selectedOffer + '. ';
+        }
     }
     const requestedPtSessions = ['1', '3', '5'].includes(urlParams.get('pt_sessions'))
         ? urlParams.get('pt_sessions')
@@ -422,7 +445,7 @@
                     metaRef: urlParams.get('meta_ref') || '',
                     source: isClientCoaching ? 'client_coaching' : isHomePtEnquiry ? 'home_pt' : isPlantBasedChallenge ? 'plant_based_challenge' : isFirstPtSession ? 'first_pt_session' : isWeeklyCheckinPt ? 'weekly_checkin_pt' : isZoomPtEnquiry ? 'zoom_pt' : 'public_booking_page',
                     ...(isHomePtEnquiry ? { homePtPackage } : {}),
-                    ...((isPlantBasedChallenge || isHomePtEnquiry) ? { attribution: window.getAttributionData?.() || {} } : {}),
+                    ...((isPlantBasedChallenge || isHomePtEnquiry || !bookingSource) ? { attribution: window.getAttributionData?.() || {} } : {}),
                     ptSessionsPerWeek: isZoomPtEnquiry && requestedPtSessions ? Number(requestedPtSessions) : null,
                     addonType: isWeeklyCheckinPt ? ptAddon : null,
                 }),
