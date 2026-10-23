@@ -12657,10 +12657,13 @@ async function wizardNext() {
         // Save workout calendar to sessionStorage
         let existingData = {};
         try { existingData = JSON.parse(sessionStorage.getItem('userProfile') || '{}'); } catch(e) {}
-        existingData.workout_calendar = JSON.stringify(wizardWorkoutCalendar);
+        const calendarToSave = window.BalanceFreeStarter?.reviewPending()
+            ? Object.fromEntries(['monday','tuesday','wednesday','thursday','friday','saturday','sunday'].map(day => [day, 'rest']))
+            : wizardWorkoutCalendar;
+        existingData.workout_calendar = JSON.stringify(calendarToSave);
         existingData.workout_calendar_times = { ...wizardWorkoutTimes };
         sessionStorage.setItem('userProfile', JSON.stringify(existingData));
-        localStorage.setItem('workoutCalendar', JSON.stringify(wizardWorkoutCalendar));
+        localStorage.setItem('workoutCalendar', JSON.stringify(calendarToSave));
         localStorage.setItem('workoutCalendarTimes', JSON.stringify(wizardWorkoutTimes));
     }
 
@@ -13908,6 +13911,15 @@ function renderWizardCalendarPreview() {
     if (!container) return;
 
     const guidance = document.getElementById('wizard-calendar-guidance');
+    if (window.BalanceFreeStarter?.reviewPending()) {
+        if (guidance) guidance.textContent = 'These are your preferred days. Shannon will review your setup before assigning your two free workouts.';
+        const note = document.createElement('p');
+        const days = Array.from(wizardSelectedDays).map(day => day.charAt(0).toUpperCase() + day.slice(1));
+        note.textContent = 'Your two preferred session days: ' + days.join(' and ') + '. Your exercises are awaiting Shannon’s review. You can finish onboarding and start the course now, without payment.';
+        note.style.cssText = 'padding:16px;line-height:1.6;color:var(--text-main,#24211b);-webkit-text-fill-color:currentColor';
+        container.replaceChildren(note);
+        return;
+    }
     if (guidance) {
         guidance.textContent = wizardAssignedProgram
             ? 'Your coached sessions are already set. Keep all three, move them to days that suit you, and choose recovery or rest around them.'
