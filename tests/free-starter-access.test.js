@@ -5,6 +5,17 @@ const vm = require('node:vm');
 const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const read = name => fs.readFileSync(path.join(root, name), 'utf8');
+test('the actual first lesson supplies the eight questions required by the guarded completion API',()=>{
+    const source=read('lib/learning-inline.js');
+    const first=source.indexOf("id: 'mind-1-1', unitId:");
+    const next=source.indexOf("id: 'mind-1-2', unitId:",first);
+    const start=source.lastIndexOf('            {',first);
+    const end=source.lastIndexOf('            },',next);
+    const lesson=new Function('GAME_TYPES','LEARNING_IMAGES','return ('+source.slice(start,end)+'            });')(new Proxy({},{get:(_,key)=>key}),new Proxy({},{get:()=>''}));
+    assert.equal(lesson.id,'mind-1-1');
+    assert.equal(lesson.games.length,8);
+    assert.ok(lesson.games.every(game=>game.type));
+});
 function storage() { const values = new Map(); return { getItem: key => values.get(key) || null, setItem: (k,v) => values.set(k,String(v)), removeItem: key => values.delete(key) }; }
 function client(reply, token) {
     const sessionStorage = storage(), localStorage = storage();
