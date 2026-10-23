@@ -67,9 +67,22 @@ test('returning accounts restore access without needing the invitation again', a
 });
 test('ordinary accounts get no starter rules',async()=>{
     const w=client({ok:true,json:async()=>({starter:null})});
+    let previewRestarts=0;
+    w.BalanceMetaAdTrial={resumeAfterStarterCheck:()=>previewRestarts++};
     await w.BalanceFreeStarter.resolve({user:{id:'jessie'},access_token:'test'});
     assert.equal(w.BalanceFreeStarter.active(),false);
     assert.equal(w.BalanceFreeStarter.canStartWorkout(),true);
+    assert.equal(previewRestarts,0);
+});
+test('revoked cached starter access resumes the ordinary route once without retaining a grant',async()=>{
+    const w=client({ok:true,json:async()=>({starter:null})});
+    w.localStorage.setItem('pbb_free_starter_owner','jessie');
+    let resumes=0;
+    w.BalanceMetaAdTrial={resumeAfterStarterCheck:()=>resumes++};
+    await w.BalanceFreeStarter.resolve({user:{id:'jessie'},access_token:'test'});
+    assert.equal(w.BalanceFreeStarter.active(),false);
+    assert.equal(resumes,1);
+    assert.equal(w.localStorage.getItem('pbb_free_starter_owner'),null);
 });
 function endpoint({authOk=true, anonymous=false, rows=[], profiles=[], queryError=false}={}) {
     const calls=[];
