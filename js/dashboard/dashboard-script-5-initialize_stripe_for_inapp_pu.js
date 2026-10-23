@@ -9559,7 +9559,7 @@ function askWizardChatQuestion(options = {}) {
             setTimeout(() => wizardNext(), 0);
             return;
         }
-        wizardChatMessages = [{ role: 'coach', text: `Perfect. Based on your real week, I would start with ${getWizardStarterRoutineSummary()}. We will keep that minimum light until following through feels normal, then progress it. It is a suggestion, so you can change the frequency and exact days next.` }];
+        wizardChatMessages = [{ role: 'coach', text: window.BalanceFreeStarter?.active() ? 'Your free starter includes two home workouts. Choose the days and session length that suit you next. Shannon will review your setup before assigning the exercises. You can start the course without payment.' : `Perfect. Based on your real week, I would start with ${getWizardStarterRoutineSummary()}. We will keep that minimum light until following through feels normal, then progress it. It is a suggestion, so you can change the frequency and exact days next.` }];
         renderWizardChatMessages();
         renderWizardChatProgress();
         renderWizardChatControls();

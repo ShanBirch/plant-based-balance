@@ -2014,7 +2014,7 @@ document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=38-tour-
     document.write('<script src="lib/learn-weekly-actions.js?v=retired-20261008"><\/script>');
     document.write('<script src="lib/learn-action-review.js?v=retired-20261008"><\/script>');
     document.write('<script src="js/dashboard/pbb-social-journey.js?v=20261023-lesson-handoff"><\/script>');
-    document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=20261023-free-starter-v2"><\/script>');
+    document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=20261023-free-starter-v3"><\/script>');
     document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=40-learning-only"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
@@ -2026,7 +2026,7 @@ window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=38-tou
     window._pbbDeferredQueue.push('lib/learn-weekly-actions.js?v=retired-20261008');
     window._pbbDeferredQueue.push('lib/learn-action-review.js?v=retired-20261008');
     window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=20261023-lesson-handoff');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=20261023-free-starter-v2');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=20261023-free-starter-v3');
     window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=40-learning-only');
 }
 </script>
@@ -12964,7 +12964,7 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261023-free-starter-v2&cohort_diets=1&video_health=2';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261023-free-starter-v3&cohort_diets=1&video_health=2';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
@@ -13006,7 +13006,7 @@ if (window._pbbIsIOSSafari) {
         var s = document.createElement('script');
         s.async = false;
         s.dataset.metaTrialLoader = String(attempt);
-        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261023-free-starter-v2&cohort_diets=1&video_health=2&meta_retry=' + attempt;
+        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261023-free-starter-v3&cohort_diets=1&video_health=2&meta_retry=' + attempt;
         s.onload = function() {
             if (window._pbbScript5Complete && window._switchAppTabReady && typeof window._switchAppTabReal === 'function') {
                 sessionStorage.removeItem('pbb_meta_script5_recovery_v1');
@@ -13025,7 +13025,7 @@ if (window._pbbIsIOSSafari) {
         document.head.appendChild(s);
     })(0);
 } else {
-document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261023-free-starter-v2"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261023-free-starter-v3"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=15-full-width-set-inputs"></script>
@@ -14415,6 +14415,7 @@ if(!window._pbbIsIOSSafari) {
   function requiredOnboardingTourSteps(){
     return REQUIRED_ONBOARDING_TOUR_TITLES.map(findTourStep).filter(Boolean).map(function(step){
       if (!window.BalanceFreeStarter?.active()) return step;
+      if (step.requiresFeedPost) return Object.assign({},step,{requiresFeedPost:false,title:'Introduce yourself when you are ready',body:'You can post a hello to the community if you want to. You can also continue to your course without posting.',nextLabel:'Continue to my course'});
       if (window.BalanceFreeStarter.reviewPending() && (step.workoutEducation || step.title === 'Open your first workout')) return null;
       if (window.BalanceFreeStarter.reviewPending() && (step.requiresWorkoutBrowse || /workout program|workout week|Open the program/i.test(step.title))) {
         return {tab:'movement-tab', sel:'#today-workout-card', fallbackSel:'#movement-grid-container', title:'Your two free workouts', body:'Your two home workouts are awaiting Shannon’s review of your setup and movement restrictions. Keep going with your course. No payment is needed to access your starter.', metaPreview:true};
@@ -16068,6 +16069,7 @@ if (step && step.requiresFeedPost) {
         }
       } catch(e) {}
     }
+    if (window.BalanceFreeStarter?.active() && list) list.innerHTML = '<li><span><strong>Your free starter:</strong> two home workouts after setup review, meal tools and the course.</span></li><li><span><strong>Your community:</strong> look around and introduce yourself if you want to.</span></li><li><span><strong>Your course:</strong> complete your first lesson and quiz.</span></li><li><span><strong>Your week:</strong> choose realistic goals. Ongoing coaching is optional.</span></li>';
     const overlay = document.getElementById('guided-tour-overlay');
     if (overlay) overlay.classList.add('meta-tour-welcome-active');
     syncTourViewport();
