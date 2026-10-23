@@ -1238,6 +1238,7 @@
 
   function addUniqueAction(list, action) {
     if (!action || list.some(function(item){ return item.id === action.id; })) return;
+    action = window.BalanceFreeStarter?.adaptAction(action) || action;
     list.push(action);
   }
 

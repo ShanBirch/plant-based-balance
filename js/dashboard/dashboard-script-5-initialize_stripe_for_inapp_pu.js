@@ -9444,7 +9444,7 @@ function renderWizardChatControls() {
                 submitWizardChatAnswer();
             }
         };
-        choicesEl.innerHTML = getWizardChatOrderedOptions(step).map(option => {
+        choicesEl.innerHTML = getWizardChatOrderedOptions(step).filter(option => !window.BalanceFreeStarter?.active() || step.key !== 'weekly_capacity' || option.value === 'one_or_two').map(option => {
             const selected = step.type === 'multi'
                 ? wizardChatMultiSelection.has(option.value)
                 : wizardChatAnswers[step.key] === option.value;

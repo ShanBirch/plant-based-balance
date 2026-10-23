@@ -43,12 +43,12 @@ test('ordinary accounts get no starter rules',async()=>{
     assert.equal(w.BalanceFreeStarter.active(),false);
     assert.equal(w.BalanceFreeStarter.canStartWorkout(),true);
 });
-function endpoint({authOk=true, anonymous=false, rows=[], queryError=false}={}) {
+function endpoint({authOk=true, anonymous=false, rows=[], profiles=[], queryError=false}={}) {
     const calls=[];
     const exports={};
     vm.runInNewContext(read('netlify/functions/free-starter-access.js'),{
         exports, process:{env:{SUPABASE_URL:'https://test.invalid',SUPABASE_SERVICE_ROLE_KEY:'server-only'}},
-        require:name=>name==='node:crypto'?require(name):{supabaseQuery:async(...args)=>{calls.push(args);if(queryError)throw Error('conflict');return rows;}},
+        require:name=>name==='node:crypto'?require(name):{supabaseQuery:async(...args)=>{calls.push(args);if(queryError)throw Error('conflict');return args[0].startsWith('users?') ? profiles : rows;}},
         fetch:async()=>({ok:authOk,json:async()=>({id:'verified-user',is_anonymous:anonymous})})
     });
     return {handler:exports.handler,calls};
@@ -62,6 +62,32 @@ test('claim binds to the verified identity, hashes the secret, and ignores a sup
     assert.equal(e.calls[0][1].body.p_token_hash,require('node:crypto').createHash('sha256').update(token).digest('hex'));
     assert.equal(r.body.includes(token),false);
     assert.equal(r.body.includes('token_hash'),false);
+});
+test('a paid member keeps normal paid access instead of being limited to the starter',async()=>{
+    const e=endpoint({rows:[{id:'grant',workout_limit:2}],profiles:[{subscription_status:'active'}]});
+    const r=await e.handler({httpMethod:'POST',headers:{authorization:'Bearer test'},body:'{}'});
+    assert.deepEqual(JSON.parse(r.body),{starter:null,alreadyMember:true});
+});
+test('starter Home actions describe the free offer without changing ordinary member actions',async()=>{
+    const w=client({ok:true,json:async()=>({starter:{id:'grant',workoutsReady:false}})});
+    const action={id:'coach_checkin_intro',title:'Paid coaching',body:'Weekly review',action:()=>{throw Error('must not open paid explainer');}};
+    assert.equal(w.BalanceFreeStarter.adaptAction(action),action);
+    await w.BalanceFreeStarter.resolve({user:{id:'jessie'},access_token:'test'});
+    const adapted=w.BalanceFreeStarter.adaptAction(action);
+    assert.equal(adapted.title,'What your free starter includes');
+    assert.match(adapted.body,/not included/);
+    adapted.action();
+    assert.equal(action.title,'Paid coaching');
+});
+test('pending workout review keeps course steps but removes gates requiring an exercise programme',()=>{
+    const source=read('dashboard.html');
+    const start=source.indexOf('  function requiredOnboardingTourSteps()');
+    const end=source.indexOf('\n  steps.push',start);
+    const context={window:{BalanceFreeStarter:{active:()=>true,reviewPending:()=>true}},REQUIRED_ONBOARDING_TOUR_TITLES:['Check your workout week','Exercise','First lesson','Weekly goals'],findTourStep:title=>({title,workoutEducation:title==='Exercise'})};
+    vm.runInNewContext(source.slice(start,end)+'\nthis.run=requiredOnboardingTourSteps;',context);
+    const steps=context.run();
+    assert.deepEqual(Array.from(steps,step=>step.title),['Your two free workouts','First lesson','Weekly goals']);
+    assert.equal(steps.some(step=>step.workoutEducation||step.requiresWorkoutBrowse),false);
 });
 test('anonymous, missing-auth, malformed and conflicting claims fail without granting access',async()=>{
     const event={httpMethod:'POST',headers:{authorization:'Bearer test'},body:'{"token":"invalid"}'};

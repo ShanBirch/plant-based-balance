@@ -204,7 +204,7 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
 <script src="js/dashboard/script_part_1.js"></script>
 <!-- Paid-Facebook preview attribution must be available before auth-guard decides guest vs member mode. -->
 <script src="lib/onboarding-progress.js?v=10-coach-prepared"></script>
-<script src="lib/free-starter.js?v=1"></script>
+<script src="lib/free-starter.js?v=2"></script>
 <script src="lib/meta-ad-trial.js?v=34-free-starter"></script>
 
 <!-- CRITICAL: Hide loading overlay for returning users and restore cached FitGotchi state -->
@@ -2014,7 +2014,7 @@ document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=38-tour-
     document.write('<script src="lib/learn-weekly-actions.js?v=retired-20261008"><\/script>');
     document.write('<script src="lib/learn-action-review.js?v=retired-20261008"><\/script>');
     document.write('<script src="js/dashboard/pbb-social-journey.js?v=20261023-lesson-handoff"><\/script>');
-    document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=20261010-owner-review"><\/script>');
+    document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=20261023-free-starter"><\/script>');
     document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=40-learning-only"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
@@ -2026,7 +2026,7 @@ window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=38-tou
     window._pbbDeferredQueue.push('lib/learn-weekly-actions.js?v=retired-20261008');
     window._pbbDeferredQueue.push('lib/learn-action-review.js?v=retired-20261008');
     window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=20261023-lesson-handoff');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=20261010-owner-review');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=20261023-free-starter');
     window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=40-learning-only');
 }
 </script>
@@ -14415,12 +14415,13 @@ if(!window._pbbIsIOSSafari) {
   function requiredOnboardingTourSteps(){
     return REQUIRED_ONBOARDING_TOUR_TITLES.map(findTourStep).filter(Boolean).map(function(step){
       if (!window.BalanceFreeStarter?.active()) return step;
+      if (window.BalanceFreeStarter.reviewPending() && (step.workoutEducation || step.title === 'Open your first workout')) return null;
       if (window.BalanceFreeStarter.reviewPending() && (step.requiresWorkoutBrowse || /workout program|workout week|Open the program/i.test(step.title))) {
         return {tab:'movement-tab', sel:'#today-workout-card', fallbackSel:'#movement-grid-container', title:'Your two free workouts', body:'Your two home workouts are awaiting Shannon’s review of your setup and movement restrictions. Keep going with your course. No payment is needed to access your starter.', metaPreview:true};
       }
       if (step.checkinExplainerGuide) return {tab:'dashboard',sel:'#next-obvious-steps-card',title:'Your free starter support',body:'Your course and two home workouts are free. Weekly coaching reviews are optional and are not included. Keep following To Do Next to complete your setup.'};
       return step;
-    });
+    }).filter(Boolean);
   }
 
   steps.push({tab:'movement-tab',sel:'#today-workout-card',title:'Your free starter',body:'Your two workouts and course stay available without payment. Shannon reviews your setup before your workouts are ready.',condition:function(){return !!window.BalanceFreeStarter?.active();}});
