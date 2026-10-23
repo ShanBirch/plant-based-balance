@@ -280,7 +280,7 @@ self.PBB_OFFLINE_ASSETS = [
   "./lib/weekly-meal-evolution.js",
   "./lib/weekly-meal-evolution.js?v=1",
   "./lib/weekly-progress.js",
-  "./lib/weekly-progress.js?v=20261024-progress-1",
+  "./lib/weekly-progress.js?v=20261024-progress-2",
   "./lib/weekly-wrapped.js",
   "./lib/weekly-wrapped.js?v=monthly-wrapped-layout-v3",
   "./login.html",

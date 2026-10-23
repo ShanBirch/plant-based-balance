@@ -125,3 +125,16 @@ test('both text and audio messages expose attachment anchors in deployed chat re
     assert.ok((source.match(/data-progress-message-id=/g) || []).length >= 4);
     assert.match(source, /balanceWeeklyProgress.mount\(container, messages, recipientId\)/);
 });
+test('late progress attachments stay visible at chat bottom without moving someone reading history', async () => {
+    const vm = require('node:vm');
+    for (const initialTop of [500, 100]) {
+        const container = { isConnected: true, scrollHeight: 1000, clientHeight: 500, scrollTop: initialTop,
+            querySelectorAll: () => [], querySelector: () => ({ appendChild: () => { container.scrollHeight += 100; } }) };
+        const window = { supabaseClient: { auth: { getSession: async () => ({ data: { session: { access_token: 'fixture' } } }) } } };
+        const document = { getElementById: () => null, createElement: () => ({ querySelector: () => ({}) }) };
+        vm.runInNewContext(fs.readFileSync('lib/weekly-progress.js', 'utf8'), { window, document, URLSearchParams, console,
+            fetch: async () => ({ ok: true, json: async () => ({ can_manage: false, records: [{ week_start: '2026-10-19', message_id: message }] }) }) });
+        await window.balanceWeeklyProgress.mount(container, [], client);
+        assert.equal(container.scrollTop, initialTop === 500 ? 1100 : 100);
+    }
+});
