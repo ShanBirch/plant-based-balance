@@ -13916,7 +13916,7 @@ function renderWizardCalendarPreview() {
         const note = document.createElement('p');
         const days = Array.from(wizardSelectedDays).map(day => day.charAt(0).toUpperCase() + day.slice(1));
         note.textContent = 'Your two preferred session days: ' + days.join(' and ') + '. Your exercises are awaiting Shannon’s review. You can finish onboarding and start the course now, without payment.';
-        note.style.cssText = 'padding:16px;line-height:1.6;color:var(--text-main,#24211b);-webkit-text-fill-color:currentColor';
+        note.style.cssText = 'padding:16px;line-height:1.6;color:#24211b!important;-webkit-text-fill-color:#24211b!important';
         container.replaceChildren(note);
         return;
     }
