@@ -63,6 +63,8 @@ test('returning accounts restore access without needing the invitation again', a
     await w.BalanceFreeStarter.resolve({user:{id:'jessie'},access_token:'test'});
     assert.equal(w.BalanceFreeStarter.active(),true);
     assert.equal(w.BalanceFreeStarter.canStartWorkout(),true);
+    assert.match(w.BalanceFreeStarter.welcomeCopy(), /ready in Movement/);
+    assert.doesNotMatch(w.BalanceFreeStarter.welcomeCopy(), /awaiting my review/);
     assert.equal(w.BalanceFreeStarter.needsRetry('jessie'),true);
 });
 test('ordinary accounts get no starter rules',async()=>{
