@@ -12,7 +12,7 @@
     <meta property="og:url" content="https://plantbased-balance.org/login.html">
     <meta property="og:type" content="website">
     <link rel="stylesheet" href="styles.css">
-    <script src="lib/free-starter.js?v=5"></script>
+    <script src="lib/free-starter.js?v=6"></script>
     <script src="lib/meta-ad-trial.js?v=35-free-starter"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://js.stripe.com/v3/"></script>
@@ -568,7 +568,7 @@
     <!-- Initialize Supabase inline -->
     <script>
         function hasPendingFreeStarter() {
-            return /^[A-Za-z0-9_-]{43}$/.test(sessionStorage.getItem('pbb_free_starter_invite') || '');
+            return /^[A-Za-z0-9_-]{43}$/.test(sessionStorage.getItem('pbb_free_starter_invite') || localStorage.getItem('pbb_free_starter_invite') || '');
         }
 
         function isAccountFirstPreview(params = new URLSearchParams(window.location.search)) {
@@ -1413,7 +1413,7 @@
                 // If email confirmation is required, Supabase returns user but no session.
                 // In that case, prompt them to check their email instead of redirecting.
                 if (!signupResult.session) {
-                    showSuccess('Account created! Please check your email and click the confirmation link to activate your account.');
+                    showSuccess(hasPendingFreeStarter() ? 'Account created! Confirm your email, then return to your free invitation and sign in. No payment is required.' : 'Account created! Please check your email and click the confirmation link to activate your account.');
                     btn.disabled = false;
                     btn.textContent = 'CREATE ACCOUNT';
                     return;

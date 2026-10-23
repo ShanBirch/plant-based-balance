@@ -12,7 +12,7 @@
 <button id="start" type="button">Open my free starter</button>
 <p id="error" role="alert"></p><small>Already claimed it? <a href="login.html?redirect=%2Fdashboard.html">Sign in to Balance</a>.</small>
 </main><script>
-const token = new URLSearchParams(location.hash.slice(1)).get('invite') || sessionStorage.getItem('pbb_free_starter_invite');
+const token = new URLSearchParams(location.hash.slice(1)).get('invite') || sessionStorage.getItem('pbb_free_starter_invite') || localStorage.getItem('pbb_free_starter_invite');
 if (location.hash.includes('retry=')) document.getElementById('error').textContent = 'Your invitation could not be confirmed. Try again, or ask Shannon to check it.';
 document.getElementById('start').onclick = function () {
   if (!token || !/^[A-Za-z0-9_-]{43}$/.test(token)) {
@@ -20,6 +20,7 @@ document.getElementById('start').onclick = function () {
     return;
   }
   sessionStorage.setItem('pbb_free_starter_invite', token);
+  localStorage.setItem('pbb_free_starter_invite', token);
   location.replace('/dashboard.html');
 };
 </script></body></html>

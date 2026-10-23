@@ -21,7 +21,7 @@ test('free account creation preserves authentication and never enters the paid s
     const source=read('login.html');
     const body=source.slice(source.indexOf('        function hasPendingFreeStarter()'),source.indexOf('        const dedicatedOnboardingTestEmails'));
     const sessionStorage=storage();
-    const context={sessionStorage,URLSearchParams,window:{location:{search:'?redirect=%2Fdashboard.html&account_first=1&meta_trial=facebook_5m_foundations_v3'}}};
+    const context={sessionStorage,localStorage:storage(),URLSearchParams,window:{location:{search:'?redirect=%2Fdashboard.html&account_first=1&meta_trial=facebook_5m_foundations_v3'}}};
     vm.runInNewContext(body+'\nthis.entry=signupEntryParams;this.destination=postAuthDestination;this.preview=isAccountFirstPreview;',context);
     assert.equal(context.preview(),true);
     sessionStorage.setItem('pbb_free_starter_invite','x'.repeat(43));
@@ -29,6 +29,10 @@ test('free account creation preserves authentication and never enters the paid s
     assert.equal(context.entry().has('meta_trial'),false);
     assert.equal(context.entry().has('account_first'),false);
     assert.equal(context.destination('#access_token=test'),'/dashboard.html#access_token=test');
+    sessionStorage.removeItem('pbb_free_starter_invite');
+    context.localStorage.setItem('pbb_free_starter_invite','x'.repeat(43));
+    assert.equal(context.preview(),false);
+    assert.equal(context.entry().has('meta_trial'),false);
 });
 function client(reply, token) {
     const sessionStorage = storage(), localStorage = storage();
