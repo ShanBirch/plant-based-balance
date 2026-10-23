@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="referrer" content="no-referrer"><meta name="robots" content="noindex,nofollow">
+<title>Your free Balance starter</title>
+<style>
+*{box-sizing:border-box}html{color-scheme:light dark}body{margin:0;min-height:100vh;min-height:100dvh;background:#fffaf0;color:#24211b;-webkit-text-fill-color:#24211b;font:17px/1.6 system-ui;padding:max(48px,calc(20px + env(safe-area-inset-top,0px))) 20px max(32px,calc(20px + env(safe-area-inset-bottom,0px)))}main{max-width:520px;margin:auto}img{display:block;width:110px;margin:12px auto 30px}h1{font-size:clamp(28px,7vw,42px);line-height:1.1}p{color:#514a3d;-webkit-text-fill-color:#514a3d}button,a{color:inherit;-webkit-text-fill-color:inherit}button{width:100%;min-height:52px;border:1px solid #a47a27;border-radius:14px;background:#e4c16b;color:#24211b;-webkit-text-fill-color:#24211b;font:700 17px system-ui;padding:14px;cursor:pointer}button:disabled{opacity:.65}small{display:block;margin-top:20px}#error{color:#9d2525;-webkit-text-fill-color:#9d2525}@media(orientation:landscape){body{padding-top:max(36px,calc(12px + env(safe-area-inset-top,0px)))}}@media(prefers-color-scheme:dark){body{background:#1c1a16;color:#fff6df;-webkit-text-fill-color:#fff6df}p{color:#e0d5c0;-webkit-text-fill-color:#e0d5c0}#error{color:#ffb5ab;-webkit-text-fill-color:#ffb5ab}}
+</style></head><body><main>
+<img src="balance_logo.png" alt="Balance"><p>YOUR FREE STARTER</p>
+<h1>Your two-workout start.</h1>
+<p>Set up your own Balance account, follow the app tour and begin the course. Your two home workouts will be ready after Shannon reviews your setup and any movement restrictions.</p>
+<p>No card or payment is required. Ongoing coaching is optional, and your free starter stays available when you return.</p>
+<button id="start" type="button">Open my free starter</button>
+<p id="error" role="alert"></p><small>Already claimed it? <a href="login.html?redirect=%2Fdashboard.html">Sign in to Balance</a>.</small>
+</main><script>
+const token = new URLSearchParams(location.hash.slice(1)).get('invite') || sessionStorage.getItem('pbb_free_starter_invite');
+if (location.hash.includes('retry=')) document.getElementById('error').textContent = 'Your invitation could not be confirmed. Try again, or ask Shannon to check it.';
+document.getElementById('start').onclick = function () {
+  if (!token || !/^[A-Za-z0-9_-]{43}$/.test(token)) {
+    document.getElementById('error').textContent = 'Open the personal invitation Shannon sent you, or sign in if you have already claimed it.';
+    return;
+  }
+  sessionStorage.setItem('pbb_free_starter_invite', token);
+  location.replace('/dashboard.html');
+};
+</script></body></html>

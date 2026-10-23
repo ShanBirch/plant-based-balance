@@ -204,7 +204,8 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
 <script src="js/dashboard/script_part_1.js"></script>
 <!-- Paid-Facebook preview attribution must be available before auth-guard decides guest vs member mode. -->
 <script src="lib/onboarding-progress.js?v=10-coach-prepared"></script>
-<script src="lib/meta-ad-trial.js?v=33-coach-hello"></script>
+<script src="lib/free-starter.js?v=1"></script>
+<script src="lib/meta-ad-trial.js?v=34-free-starter"></script>
 
 <!-- CRITICAL: Hide loading overlay for returning users and restore cached FitGotchi state -->
 <script>
@@ -453,7 +454,7 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
 </script>
 
 <!-- Supabase & Auth Guard -->
-<script src="js/dashboard/script_part_2.js?v=22-bounded-entitlement"></script>
+<script src="js/dashboard/script_part_2.js?v=23-free-starter"></script>
 <script>
 // ── Native OAuth warm-start callback (non-iOS) ────────────────────
 // On iOS this is set up inside the deferred chain above (after supabaseClient exists).
@@ -2012,7 +2013,7 @@ document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=38-tour-
     document.write('<script src="lib/learn-predictive-content.js?v=8-optional-examples"><\/script>');
     document.write('<script src="lib/learn-weekly-actions.js?v=retired-20261008"><\/script>');
     document.write('<script src="lib/learn-action-review.js?v=retired-20261008"><\/script>');
-    document.write('<script src="js/dashboard/pbb-social-journey.js?v=20261010-owner-review"><\/script>');
+    document.write('<script src="js/dashboard/pbb-social-journey.js?v=20261023-lesson-handoff"><\/script>');
     document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=20261010-owner-review"><\/script>');
     document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=40-learning-only"><\/script>');
 } else {
@@ -2024,7 +2025,7 @@ window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=38-tou
     window._pbbDeferredQueue.push('lib/learn-predictive-content.js?v=8-optional-examples');
     window._pbbDeferredQueue.push('lib/learn-weekly-actions.js?v=retired-20261008');
     window._pbbDeferredQueue.push('lib/learn-action-review.js?v=retired-20261008');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=20261010-owner-review');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=20261023-lesson-handoff');
     window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=20261010-owner-review');
     window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=40-learning-only');
 }
@@ -12963,7 +12964,7 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261020-weekly-prescription-prefill&cohort_diets=1&video_health=2';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261023-free-starter&cohort_diets=1&video_health=2';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
@@ -13005,7 +13006,7 @@ if (window._pbbIsIOSSafari) {
         var s = document.createElement('script');
         s.async = false;
         s.dataset.metaTrialLoader = String(attempt);
-        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261020-weekly-prescription-prefill&cohort_diets=1&video_health=2&meta_retry=' + attempt;
+        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261023-free-starter&cohort_diets=1&video_health=2&meta_retry=' + attempt;
         s.onload = function() {
             if (window._pbbScript5Complete && window._switchAppTabReady && typeof window._switchAppTabReal === 'function') {
                 sessionStorage.removeItem('pbb_meta_script5_recovery_v1');
@@ -13024,7 +13025,7 @@ if (window._pbbIsIOSSafari) {
         document.head.appendChild(s);
     })(0);
 } else {
-document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261020-weekly-prescription-prefill"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261023-free-starter"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=15-full-width-set-inputs"></script>
@@ -14412,8 +14413,17 @@ if(!window._pbbIsIOSSafari) {
   });
 
   function requiredOnboardingTourSteps(){
-    return REQUIRED_ONBOARDING_TOUR_TITLES.map(findTourStep).filter(Boolean);
+    return REQUIRED_ONBOARDING_TOUR_TITLES.map(findTourStep).filter(Boolean).map(function(step){
+      if (!window.BalanceFreeStarter?.active()) return step;
+      if (window.BalanceFreeStarter.reviewPending() && (step.requiresWorkoutBrowse || /workout program|workout week|Open the program/i.test(step.title))) {
+        return {tab:'movement-tab', sel:'#today-workout-card', fallbackSel:'#movement-grid-container', title:'Your two free workouts', body:'Your two home workouts are awaiting Shannon’s review of your setup and movement restrictions. Keep going with your course. No payment is needed to access your starter.', metaPreview:true};
+      }
+      if (step.checkinExplainerGuide) return {tab:'dashboard',sel:'#next-obvious-steps-card',title:'Your free starter support',body:'Your course and two home workouts are free. Weekly coaching reviews are optional and are not included. Keep following To Do Next to complete your setup.'};
+      return step;
+    });
   }
+
+  steps.push({tab:'movement-tab',sel:'#today-workout-card',title:'Your free starter',body:'Your two workouts and course stay available without payment. Shannon reviews your setup before your workouts are ready.',condition:function(){return !!window.BalanceFreeStarter?.active();}});
 
   const walkthroughRewardByTitle = {
     'Ask Balance by long hold': 'tour-01',
@@ -16711,6 +16721,7 @@ window.endFeatureTour = function(skipped){
   // -------------------------------------------------------
 
   var allFeatures = [
+    {id:'free-two-workout-starter-v1',tab:'movement-tab',sel:'#today-workout-card',title:'Your free starter',body:'Your two workouts and course stay available without payment. Shannon reviews your setup before your workouts are ready.',condition:function(){return !!window.BalanceFreeStarter?.active();}},
     { id:'family-meal-servings-v1', tab:'meals', sel:'.ai-plan-family', title:'Your plate and the family batch', body:'Open a family recipe to compare your serving with the batch. Choose grams or hands and household measures, then set how many portions to cook.', fallbackSel:'#ai-plan-loaded', condition:function(){ return !!(window._aiMealPlanCache && window._aiMealPlanCache.diet_type === 'family_lower_carb'); } },
     { id:'offline-launch-v1', tab:'movement-tab', sel:'#today-workout-card', title:'Open your saved workout offline', body:'On web, supported Android devices and updated iPhone apps, open Balance online first so its files and your workout can be saved. You can then reopen your saved workout without reception. Completed sets sync when you reconnect. New content and videos still need internet.' },
     { id:'automatic-masked-replay-v1', tab:'profile', sel:'#balance-replay-settings', title:'Help fixing app problems', body:'Balance now saves a masked replay automatically so Shannon can investigate app problems. Private text and media are hidden. Replays expire after seven days. You can turn this off in Settings.' },
@@ -19068,7 +19079,7 @@ window.endFeatureTour = function(skipped){
                     Based on your answers, these could suit <strong id="wizard-weekly-goal-target">a repeatable first six weeks</strong>.
                 </p>
                 <div id="wizard-assigned-goals" class="wizard-assigned-goals" aria-live="polite"></div>
-                <div class="wizard-coach-note">
+                <div id="wizard-free-starter-promise" class="wizard-coach-note">
                     <span>WITH SHANNON</span>
                     One weekly check-in plus workout and food review during Balance Learn.
                 </div>

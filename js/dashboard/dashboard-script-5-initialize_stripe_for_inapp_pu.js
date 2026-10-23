@@ -11815,6 +11815,8 @@ function updateWizardUI() {
         initializeWizardChatIntake();
     }
 
+    window.BalanceFreeStarter?.applyCopy();
+
     // 4. Buttons
     const prevBtn = document.getElementById('wizard-back');
     const nextBtn = document.getElementById('wizard-next');
@@ -13549,6 +13551,7 @@ function updateWizardFrequencyTip() {
 }
 
 function selectTrainingFrequency(num, options = {}) {
+    if (window.BalanceFreeStarter?.active()) num = 2;
     wizardTrainingFrequency = num;
     document.getElementById('wizard-training-frequency').value = num;
 
@@ -13823,7 +13826,7 @@ function generateWizardCalendar() {
     try { userData = JSON.parse(sessionStorage.getItem('userProfile') || '{}'); } catch(e) {}
     const trainingDays = Array.from(wizardSelectedDays);
     const equipment = userData.equipment_access || 'none';
-    const recoveryOnRestDays = document.getElementById('wizard-recovery-days')?.checked;
+    const recoveryOnRestDays = !window.BalanceFreeStarter?.active() && document.getElementById('wizard-recovery-days')?.checked;
     const allDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
     // Reset calendar
@@ -14838,7 +14841,7 @@ async function finishOnboarding() {
         // lockscreen push. Every subsequent reply gets drafted by
         // instant-coach-draft.js via the existing nudges trigger.
         // See database/assign_coach_shannon_on_signup.sql.
-        try {
+        if (!window.BalanceFreeStarter?.active()) try {
             const { error: assignErr } = await window.supabaseClient.rpc('assign_coach_shannon_to_user', {
                 new_user_id: userId
             });
@@ -17029,6 +17032,7 @@ function hideAllAppViews() {
 }
 
 async function startActiveWorkout(id, forcedDayIndex = null) {
+    if (window.BalanceFreeStarter && !window.BalanceFreeStarter.canStartWorkout()) return;
     const program = WORKOUT_DB[id];
 
     // Clear custom workout tracking (this is a program workout, not custom)
@@ -22848,6 +22852,7 @@ function queueWorkoutExerciseVideosForOffline(exercises) {
 }
 
 async function startLibraryWorkout(categoryKey, subcategoryKey, workoutId) {
+    if (window.BalanceFreeStarter && !window.BalanceFreeStarter.canStartWorkout()) return;
     const category = WORKOUT_LIBRARY[categoryKey];
     const subcategory = category.subcategories[subcategoryKey];
     const workout = getPersonalisedLibraryWorkout(categoryKey, subcategoryKey, subcategory.workouts.find(w => w.id === workoutId));
@@ -22948,6 +22953,7 @@ async function startLibraryWorkout(categoryKey, subcategoryKey, workoutId) {
 // lookup and per-workout customizations since there's no category/id to key
 // off of.
 async function startInlineWorkout(workout) {
+    if (window.BalanceFreeStarter && !window.BalanceFreeStarter.canStartWorkout()) return;
     if (!isCoachSessionAvailable(workout) && !window.isAdminViewing) { showToast('This added session is not available yet. Follow the current phase of your coaching plan.'); return; }
     if (!workout || !Array.isArray(workout.exercises) || workout.exercises.length === 0) {
         console.error('startInlineWorkout: invalid workout', workout);

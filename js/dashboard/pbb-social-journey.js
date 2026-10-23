@@ -359,7 +359,16 @@
 
   function getWeekDefinition() {
     const week = Math.max(1, Math.min(journeyCount(), Number(state && state.current_week) || 1));
-    return WEEK_DEFINITIONS[week - 1];
+    const definition = WEEK_DEFINITIONS[week - 1];
+    if (!window.BalanceFreeStarter?.active()) return definition;
+    return Object.assign({}, definition, {
+      body: 'Use your free course, track what helps and reflect on your week. Weekly coaching reviews are optional.',
+      tasks: definition.tasks.map(function(item){
+        if (item.type === 'weekly_checkin') return Object.assign({},item,{type:'manual',action:'manual',label:'Reflect on your week',hint:'Notice what worked and choose one small next step. Mark done when you have reflected. This does not request a coaching review.'});
+        if (item.type === 'learn_experiment') return Object.assign({},item,{hint:item.hint.replace(/Report what happened in your weekly check-in\./g,'Record what happened in your course reflection.')});
+        return item;
+      })
+    });
   }
 
   function defaultState() {
@@ -1304,7 +1313,11 @@
     }
     try { sessionStorage.removeItem('pbb_activation_first_lesson'); } catch (_) {}
     try { sessionStorage.removeItem('pbb_activation_force_fresh'); } catch (_) {}
-    await showGoals();
+    // Persist completion without rendering an intermediate weekly-plan overlay.
+    // A missing/invalid weekly review must never strand a completed lesson.
+    let saved = false;
+    try { saved = await showGoals({ render: false }); }
+    catch (error) { console.warn('First lesson progress needs retry:', error); }
     closeJourney();
     if (typeof window.switchAppTab === 'function') {
       try { window.switchAppTab('dashboard'); } catch (_) {}
@@ -1317,7 +1330,7 @@
       const nextSteps = document.getElementById('next-obvious-steps-card');
       if (nextSteps) nextSteps.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 180);
-    showToast('Your next steps are ready on Home.', 'success');
+    showToast(saved ? 'Your next steps are ready on Home.' : 'Your lesson is complete. Reopen Course if your progress needs to sync.', saved ? 'success' : 'info');
   }
 
   function showWelcome() {
@@ -1327,8 +1340,8 @@
     if (scroll) scroll.scrollTop = 0;
   }
 
-  async function showGoals() {
-    if (!state) return;
+  async function showGoals(options = {}) {
+    if (!state) return false;
     const settings = safeObject(state.settings);
     const weeks = new Set(lessonSeenWeeks());
     weeks.add(Number(state.current_week));
@@ -1339,9 +1352,10 @@
       });
     } catch (error) {
       showToast(error.message || 'That lesson could not be saved yet.', 'error');
-      return;
+      return false;
     }
     viewStage = 'goals';
+    if (options.render === false) return true;
     renderCard();
     renderJourney();
     const scroll = document.getElementById('social-journey-content');
