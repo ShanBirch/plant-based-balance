@@ -41,3 +41,9 @@ Run `node --test tests/ig-public-comment-policy.test.mjs`. Run `supabase/tests/i
 # Reactive replies to our comments, 16 October 2026
 
 Read [outbound-comment-replies.md](outbound-comment-replies.md). Before new proactive work, the same existing owner reviews bounded native reply notifications and recorded verified parent threads, using separate exact incoming-comment reservations. This reactive lane still runs when proactive50 is reached, preserves its cumulative count and grants no extra proactive quota. Own-post comments remain with MBS. Keep private pending source/cursor and exact no-repeat; no test sends.
+
+## Shannon warm-only override, 24 October 2026
+
+The existing sole sender runs around the clock on its five-minute heartbeat. Brisbane midnight rolls immutable daily safety counts; it does not stop the worker. Warm-only discovery uses saved verified viewer/supporter evidence, at most ten profiles or ten minutes per slice and at most three newest grid posts per profile, with no broad fallback or minimum delivery target. Older suitable posts are authorised. Preserve native Following, complete media/history/recipient review, all holds and cooldowns, exact post no-repeat, fifty-reservation daily ceiling and physical ownership/runtime walls.
+
+Migration `20261023215353` permits the older-post exception only when the owned run cursor has `warm_only=true` and `older_posts_allowed=true`, and the exact action reason contains `older_post_authorization=shannon_20261024` plus nonempty `warm_audience_evidence` referencing actual verified saved evidence. Keep truthful native `post_published_at`; future dates remain rejected. Every other claim gate remains unchanged. The read-only regression checks the deployed expression for authorised old warm posts, cold audiences, missing evidence/authorisation, future dates and normal recent posts. It creates no actions, attempts or sends.
