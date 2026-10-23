@@ -14415,6 +14415,7 @@ if(!window._pbbIsIOSSafari) {
   function requiredOnboardingTourSteps(){
     return REQUIRED_ONBOARDING_TOUR_TITLES.map(findTourStep).filter(Boolean).map(function(step){
       if (!window.BalanceFreeStarter?.active()) return step;
+      if (step.requiresWeeklyGoals) return Object.assign({},step,{body:'Choose one to three realistic actions for this week, set the targets and save your goals.',preActionBody:'Tap the highlighted Weekly Goals card and choose the realistic actions you want to work towards this week.'});
       if (step.requiresFeedPost) return Object.assign({},step,{requiresFeedPost:false,title:'Introduce yourself when you are ready',body:'You can post a hello to the community if you want to. You can also continue to your course without posting.',nextLabel:'Continue to my course'});
       if (window.BalanceFreeStarter.reviewPending() && (step.workoutEducation || step.title === 'Open your first workout')) return null;
       if (window.BalanceFreeStarter.reviewPending() && (step.requiresWorkoutBrowse || /workout program|workout week|Open the program/i.test(step.title))) {
