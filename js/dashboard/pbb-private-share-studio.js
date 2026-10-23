@@ -1058,6 +1058,10 @@
         file: output.file
       });
       if (result === false || result === null) throw new Error('The share action did not complete');
+      if (kind === 'done' && active === state) {
+        close({ action: 'done', customization: customization() });
+        return;
+      }
       if (active === state) {
         var button = el.querySelector(kind === 'feed' ? '[data-share-feed]' : '[data-share-instagram]');
         if (button) {
@@ -1193,6 +1197,12 @@
     el.querySelector('[data-share-download]').addEventListener('click', function () { downloadCurrentImage(el); });
     el.querySelector('[data-share-done]').addEventListener('click', function () {
       if (!active) return;
+      if (active.busy) return;
+      // Feed selection needs the rendered photo before the editor closes.
+      if (active.rawPhoto && active.context === 'feed' && typeof active.onDone === 'function') {
+        runAction('done', el);
+        return;
+      }
       var doneCallback = active.onDone;
       close({ action: 'done', customization: customization() });
       if (typeof doneCallback === 'function') {

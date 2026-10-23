@@ -176,9 +176,39 @@ test('members receive the progress-first workout completed page', () => {
 test('private reveal, tour, and cache-busted modules ship together', () => {
   assert.match(dashboard, /photo-share-studio-all-members-v1/);
   assert.match(dashboard, /BalancePrivateShareStudio\.isEnabled\(\)/);
-  assert.match(dashboard, /pbb-private-share-studio\.js\?v=20-simple-share-toolbar/);
+  assert.match(dashboard, /pbb-private-share-studio\.js\?v=21-feed-photo-done/);
   assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=[^"\s]+/);
   assert.match(dashboard, /dashboard-script-10-points_widget_functions\.js\?v=[^'\"]+/);
   assert.match(dashboard, /dashboard-script-11-calorie_tracker_functions\.js\?v=41-share-done-flow/);
   assert.match(serviceWorker, /const CACHE_NAME = 'pbb-app-v[0-9]+-[^']+'/);
+});
+
+
+test('feed Done exports the edited file before closing and keeps failed exports retryable', async () => {
+  const vm = require('node:vm');
+  const action = studio.slice(studio.indexOf('  async function runAction('), studio.indexOf('  function bindElementLegacy('));
+  const start = studio.indexOf("    el.querySelector('[data-share-done]').addEventListener('click', function () {", studio.indexOf('  function bindElement(el)'));
+  const handler = studio.slice(start, studio.indexOf("    el.querySelector('[data-share-feed]')", start));
+  let click, received, closed = 0, fail = false, resolveRender;
+  const file = { name: 'edited.jpg', type: 'image/jpeg' };
+  const state = { context: 'feed', rawPhoto: true, photoDataUrl: 'original', onDone: result => { received = result; } };
+  const context = { active: state, el: { querySelector: () => ({ addEventListener: (_, fn) => { click = fn; } }) },
+    window: { __balanceShareStudioCustomizations: { feed: {} }, dispatchEvent() {}, showToast() {} },
+    CustomEvent: function() {}, console: { error() {} }, Promise,
+    setActionBusy() {}, saveCustomization() {}, schedulePreparedOutput() {}, customization: () => ({}),
+    currentRenderedFile: () => fail ? Promise.reject(new Error('decode failed')) : new Promise(resolve => { resolveRender = resolve; }),
+    close: () => { closed++; context.active = null; } };
+  vm.createContext(context); vm.runInContext(action + handler, context);
+  click(); click();
+  assert.equal(closed, 0);
+  resolveRender({ dataUrl: 'edited', file });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(received.file, file);
+  assert.equal(received.renderedDataUrl, 'edited');
+  assert.equal(closed, 1);
+  context.active = { ...state, busy: false }; fail = true; received = undefined;
+  click(); await new Promise(resolve => setImmediate(resolve));
+  assert.equal(context.active.busy, false);
+  assert.equal(closed, 1);
+  assert.equal(received, undefined);
 });
