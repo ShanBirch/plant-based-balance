@@ -1,0 +1,37 @@
+.pbb-progress{--wp-bg:#faf6ed;--wp-card:#fffdf8;--wp-text:#27231d;--wp-muted:#655c4d;--wp-gold:#936b23;--wp-line:#d8c9aa;--wp-soft:#f1e5c9;color:var(--wp-text);-webkit-text-fill-color:var(--wp-text);font-family:Inter,system-ui,sans-serif}
+html[data-pbb-theme="dark"] .pbb-progress{--wp-bg:#1c1915;--wp-card:#29241e;--wp-text:#fff6e5;--wp-muted:#d3c4aa;--wp-gold:#efd18c;--wp-line:#786746;--wp-soft:#3c3222}
+.pbb-progress button,.pbb-progress input,.pbb-progress textarea,.pbb-progress select{font:inherit;color:var(--wp-text);-webkit-text-fill-color:var(--wp-text)}
+.pbb-progress button{border:1px solid var(--wp-gold);background:var(--wp-soft);border-radius:12px;padding:12px 16px;min-height:44px;font-weight:750;cursor:pointer}
+.pbb-progress button:hover{filter:brightness(.96)}
+.pbb-progress button:focus-visible,.pbb-progress input:focus-visible,.pbb-progress textarea:focus-visible,.pbb-progress select:focus-visible{outline:3px solid var(--wp-gold);outline-offset:3px}
+.pbb-progress button:disabled{cursor:wait;opacity:.65}
+.pbb-progress-toolbar{flex:none;padding:8px 12px;background:var(--wp-bg);border-bottom:1px solid var(--wp-line)}
+.pbb-progress-link{margin-top:8px;display:block;width:100%;text-align:left;background:var(--wp-soft)!important;white-space:normal}
+.pbb-progress-link small{display:block;font-size:12px;font-weight:500;margin-top:5px;color:var(--wp-muted);-webkit-text-fill-color:var(--wp-muted)}
+#pbb-weekly-progress-view{position:fixed;inset:0;z-index:300500;height:100vh;height:100dvh;display:flex;flex-direction:column;background:var(--wp-bg);overflow:hidden;box-sizing:border-box}
+.pbb-progress-header{flex:none;position:relative;border-bottom:1px solid var(--wp-line);padding:calc(16px + var(--wp-safe-top,env(safe-area-inset-top,0px))) 64px 16px;text-align:center;background:var(--wp-card)}
+.pbb-progress-header h2{font-size:17px;margin:0;line-height:1.4}
+.pbb-progress-header button{position:absolute;right:14px;top:calc(8px + var(--wp-safe-top,env(safe-area-inset-top,0px)));background:transparent;width:44px;height:44px;min-width:44px;padding:0;border:0;font-size:25px;font-weight:400}
+.pbb-progress-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:24px 18px calc(32px + var(--wp-safe-bottom,env(safe-area-inset-bottom,0px)));box-sizing:border-box}
+.pbb-progress-inner{max-width:620px;margin:auto}
+.pbb-progress-kicker{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--wp-gold);-webkit-text-fill-color:var(--wp-gold);font-weight:850;margin:0 0 12px}
+.pbb-progress-title{font:700 clamp(25px,6vw,36px)/1.15 Georgia,serif;margin:0 0 12px}
+.pbb-progress-muted{color:var(--wp-muted);-webkit-text-fill-color:var(--wp-muted);font-size:14px;line-height:1.6}
+.pbb-progress-note{white-space:pre-wrap;line-height:1.6;margin:20px 0}
+.pbb-progress-card{border:1px solid var(--wp-line);background:var(--wp-card);border-radius:16px;padding:18px;margin:14px 0;overflow-wrap:anywhere}
+.pbb-progress-card h3{font-size:17px;line-height:1.4;margin:0 0 14px}
+.pbb-progress-comparison{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.pbb-progress-comparison span{display:block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--wp-muted);-webkit-text-fill-color:var(--wp-muted);margin-bottom:7px}
+.pbb-progress-comparison strong{font-size:16px;line-height:1.5;font-weight:700;white-space:pre-wrap}
+.pbb-progress-next{background:var(--wp-soft);padding:10px;border-radius:10px}
+.pbb-progress-ladder{border-top:1px solid var(--wp-line);margin-top:24px;padding:20px 0;font-size:14px;line-height:1.6}
+.pbb-progress-ladder strong{display:block;letter-spacing:.08em;font-size:21px;margin:8px 0}
+.pbb-progress-editor label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}
+.pbb-progress-editor input,.pbb-progress-editor textarea,.pbb-progress-editor select{width:100%;box-sizing:border-box;background:var(--wp-card);border:1px solid var(--wp-line);border-radius:8px;padding:10px;font-size:16px;line-height:1.4}
+.pbb-progress-editor textarea{min-height:76px;resize:vertical}
+.pbb-progress-editor select{max-width:100%}
+.pbb-progress-actions{display:flex;flex-wrap:wrap;gap:10px;margin:20px 0}
+.pbb-progress-status{min-height:24px;white-space:pre-wrap;font-size:14px;line-height:1.5}
+@media(max-width:800px){#pbb-weekly-progress-view{--wp-safe-top:max(42px,var(--pbb-replay-safe-top,env(safe-area-inset-top,0px)));--wp-safe-bottom:max(24px,var(--pbb-replay-safe-bottom,env(safe-area-inset-bottom,0px)))}}
+@media(max-height:450px) and (orientation:landscape){#pbb-weekly-progress-view{--wp-safe-top:max(24px,var(--pbb-replay-safe-top,env(safe-area-inset-top,0px)))}}
+@media(max-width:340px){.pbb-progress-body{padding-left:12px;padding-right:12px}.pbb-progress-card{padding:12px}.pbb-progress-comparison{gap:8px}}

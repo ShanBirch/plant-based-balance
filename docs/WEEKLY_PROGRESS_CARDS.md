@@ -1,0 +1,13 @@
+# Weekly check-in progress cards
+
+Balance uses cream and gold with neutral ink text for these cards, never dark green (Shannon,24October2026).
+
+Open a client's Balance chat as their assigned coach. **Weekly progress card** loads dated workout observations alongside saved program targets. Review each row: remove warm-ups, check actual equipment/loads, missed sets and symptoms, and retain only useful observations. Suggestions do not change programs or infer earned progression. Add the personal food/recovery note only from evidence actually reviewed. Preview, then **Save reviewed card**.
+
+After sending the normal text or voice check-in through its existing approved flow, choose the exact sent message and **Attach to selected message**. This does not send another message. A saved card without an attachment is a private draft. Reopen the card tool to attach it later. The client sees **View this week's progress** directly beneath the selected message; no PDF, external browser or public link. Historical snapshots retain their original week and targets. To correct a published card, save a new reviewed snapshot; do not rewrite history.
+
+The authenticated `weekly-progress` endpoint verifies the live active coach assignment before management and exact coach/client message ownership before attachment. Members may read only attached cards in their own conversation; drafts and other clients' cards are inaccessible. Previously delivered cards remain readable by their two participants after an assignment ends, without granting management access. The database table has RLS enabled, no anonymous/authenticated direct access, and service-only writes. A trigger freezes content and permits a single attachment only to the matching coach-to-client message. No outbound-message operation exists here.
+
+Use simple personalised titles such as **Shane’s weekly progress**. Private operator test deliveries must explicitly label every statistic as sample data, leave workout programs/history untouched, and use only Shannon’s own confirmed test and recipient accounts. Never manufacture a coaching assignment for a demo.
+
+The progress view uses Balance's `data-pbb-theme` light/dark states, bounded internal scrolling, existing navigation/swipe handling, keyboard focus trapping and status-bar fallback clearance for zero-inset mobile WebViews. Escape and the close control return to the underlying chat without changing its scroll. Offline cards display an error/retry in the editor; existing chat remains usable if the card fetch fails. These are snapshots, not offline storage of private health data.

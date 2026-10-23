@@ -8252,7 +8252,7 @@ async function loadDirectMessages(recipientId) {
                 const photoUrl = photoMatch[1];
                 return `
                     <div style="display: flex; justify-content: ${isSent ? 'flex-end' : 'flex-start'}; margin-bottom: 12px;">
-                        <div style="max-width: 75%;">
+                        <div data-progress-message-id="${msg.id}" style="max-width: 75%;">
                             <img src="${photoUrl}" onclick="window.open('${photoUrl}', '_blank')" style="max-width: 100%; border-radius: ${isSent ? '16px 16px 4px 16px' : '16px 16px 16px 4px'}; display: block; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.15);" onerror="this.style.display='none'">
                             <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 4px; text-align: right;">${time}</div>
                         </div>
@@ -8270,7 +8270,7 @@ async function loadDirectMessages(recipientId) {
                     .trim() || 'Voice message';
                 return `
                     <div style="display:flex; justify-content:${isSent ? 'flex-end' : 'flex-start'}; margin-bottom:12px;">
-                        <div style="width:min(88%, 390px); background:${isSent ? 'linear-gradient(135deg,#f4df9f,#e2ba58)' : 'white'}; color:#171923; border:1px solid ${isSent ? 'rgba(146,103,29,.32)' : '#e2e8f0'}; border-radius:${isSent ? '19px 19px 5px 19px' : '19px 19px 19px 5px'}; padding:10px 12px 9px; box-shadow:0 2px 7px rgba(15,23,42,.09);">
+                        <div data-progress-message-id="${msg.id}" style="width:min(88%, 390px); background:${isSent ? 'linear-gradient(135deg,#f4df9f,#e2ba58)' : 'white'}; color:#171923; border:1px solid ${isSent ? 'rgba(146,103,29,.32)' : '#e2e8f0'}; border-radius:${isSent ? '19px 19px 5px 19px' : '19px 19px 19px 5px'}; padding:10px 12px 9px; box-shadow:0 2px 7px rgba(15,23,42,.09);">
                             <div style="display:flex; align-items:center; gap:7px; margin:0 3px 5px; font-size:.69rem; font-weight:800; color:${isSent ? '#68480f' : '#475569'};">
                                 <span style="width:7px; height:7px; border-radius:50%; background:${isSent ? '#68480f' : '#64748b'};"></span>${escapeHtml(voiceLabel)}
                             </div>
@@ -8287,7 +8287,7 @@ async function loadDirectMessages(recipientId) {
                 const videoLabel = String(msg.message || '').replace(/\[video:\s*https?:\/\/[^\s\]"']+\]/ig, '').trim() || 'Form check video';
                 return `
                     <div style="display: flex; justify-content: ${isSent ? 'flex-end' : 'flex-start'}; margin-bottom: 12px;">
-                        <div style="max-width: 85%;">
+                        <div data-progress-message-id="${msg.id}" style="max-width: 85%;">
                             <div style="background: ${isSent ? 'var(--primary)' : 'white'}; color: ${isSent ? 'white' : 'var(--text-main)'}; padding: 10px 12px; border-radius: ${isSent ? '16px 16px 4px 16px' : '16px 16px 16px 4px'}; ${isSent ? '' : 'border:1px solid #e2e8f0;'} margin-bottom: 6px; white-space: pre-wrap; font-size: 0.86rem;">${escapeHtml(videoLabel)}</div>
                             <video src="${escapeHtml(videoUrl)}" controls playsinline preload="metadata" style="width: 100%; max-height: 320px; border-radius: ${isSent ? '16px 16px 4px 16px' : '16px 16px 16px 4px'}; background:#020617; display:block; box-shadow: 0 1px 3px rgba(0,0,0,0.15);"></video>
                             <a href="${escapeHtml(videoUrl)}" target="_blank" rel="noopener" style="display:inline-block; margin-top:6px; border:none; background:#f1f5f9; color:#475569; font-size:0.72rem; font-weight:700; padding:6px 10px; border-radius:8px; text-decoration:none;">Open Video</a>
@@ -8345,7 +8345,7 @@ async function loadDirectMessages(recipientId) {
             const reactionsHtml = window.renderMessageReactions ? window.renderMessageReactions(msg, userId) : '';
             return `
                 <div style="display: flex; flex-direction: column; align-items: ${isSent ? 'flex-end' : 'flex-start'}; margin-bottom: 12px;">
-                    <div ${clickHandler} data-msg-id="${msg.id}" class="dm-bubble" style="max-width: 75%; padding: 10px 14px; border-radius: ${isSent ? '16px 16px 4px 16px' : '16px 16px 16px 4px'}; ${extraStyle} box-shadow: 0 1px 3px rgba(0,0,0,0.1); user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;">
+                    <div ${clickHandler} data-msg-id="${msg.id}" data-progress-message-id="${msg.id}" class="dm-bubble" style="max-width: 75%; padding: 10px 14px; border-radius: ${isSent ? '16px 16px 4px 16px' : '16px 16px 16px 4px'}; ${extraStyle} box-shadow: 0 1px 3px rgba(0,0,0,0.1); user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;">
                         <div style="font-size: 0.9rem; line-height: 1.4;">${msg.message}</div>
                         ${inviteButtonHtml}
                         <div style="font-size: 0.7rem; opacity: 0.7; margin-top: 4px; text-align: right;">${time}</div>
@@ -8356,6 +8356,8 @@ async function loadDirectMessages(recipientId) {
         }).join('');
 
         if (window.VoiceFeedbackPlayback) window.VoiceFeedbackPlayback.attach(container, messages, userId, window.supabaseClient);
+        if (window.balanceWeeklyProgress) window.balanceWeeklyProgress.mount(container, messages, recipientId);
+
         // Wire up long-press on each bubble to open the reaction picker
         if (window.attachDmLongPressReactions) window.attachDmLongPressReactions(container);
 

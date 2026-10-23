@@ -644,6 +644,8 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
     .balance-earned-glimmer { display:none; }
   }
 </style>
+<link rel="stylesheet" href="css/dashboard/pbb-weekly-progress.css?v=20261024-progress-1">
+<script defer src="lib/weekly-progress.js?v=20261024-progress-1"></script>
 </head>
 <body>
 <script>if(window._crumb)window._crumb('body_start');</script>
@@ -14133,6 +14135,7 @@ if(!window._pbbIsIOSSafari) {
   }
 
   const steps = [
+    {tab:'home',sel:'.header-msg-icon',title:'Your check-in, with a clear next step',body:'When Shannon attaches a weekly progress card to your check-in, open View this week’s progress beneath his text or voice note. See that week’s recorded sets and your reviewed next targets inside Balance.'},
     { tab:'learning', sel:'#learning-content', title:'Send Master videos through your usual chat', body:'In Master Week 2, send your squat, hinge, push and pull clips to Shannon on Instagram or your usual messaging platform. Record where and when you sent each clip, then save it in the course.' },
     {tab:'learning',sel:'#learning-content',title:'Learn at a steadier pace',body:'Balance Learn now has ten weeks, with six lessons in Week 1 and four or five in later weeks. Read the lessons, answer the quizzes and continue at your pace. Practical course tasks are paused, and your completed lessons still count.'},
     { tab:'learning', sel:'#learning-content', title:'Meet your brain first', body:'Week 1 introduces the researchers, how your experience is constructed, then the brain, brain cells, messages and senses. Week 2 explores prediction in more detail. Your completed lessons still count.' },
@@ -16725,6 +16728,7 @@ window.endFeatureTour = function(skipped){
   // -------------------------------------------------------
 
   var allFeatures = [
+    {id:'weekly-checkin-progress-v1',tab:'home',sel:'.header-msg-icon',title:'Your weekly progress, beside your check-in',body:'Shannon can now attach a dated progress card beneath a text or voice check-in. Open the progress button to compare recorded sets with your next targets. Older cards keep their original targets.'},
     {id:'free-two-workout-starter-v1',tab:'movement-tab',sel:'#today-workout-card',title:'Your free starter',body:'Your two workouts and course stay available without payment. Shannon reviews your setup before your workouts are ready.',condition:function(){return !!window.BalanceFreeStarter?.active();}},
     { id:'family-meal-servings-v1', tab:'meals', sel:'.ai-plan-family', title:'Your plate and the family batch', body:'Open a family recipe to compare your serving with the batch. Choose grams or hands and household measures, then set how many portions to cook.', fallbackSel:'#ai-plan-loaded', condition:function(){ return !!(window._aiMealPlanCache && window._aiMealPlanCache.diet_type === 'family_lower_carb'); } },
     { id:'offline-launch-v1', tab:'movement-tab', sel:'#today-workout-card', title:'Open your saved workout offline', body:'On web, supported Android devices and updated iPhone apps, open Balance online first so its files and your workout can be saved. You can then reopen your saved workout without reception. Completed sets sync when you reconnect. New content and videos still need internet.' },
@@ -19154,13 +19158,13 @@ if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=20261011-voice-playback';
+            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=20261024-progress-1';
             s.onload = function() { if(window._crumb)window._crumb('script6_deferred_loaded'); };
             document.head.appendChild(s);
         }, 2000);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=20261011-voice-playback"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=20261024-progress-1"><\/script>');
 }
 </script>
 
