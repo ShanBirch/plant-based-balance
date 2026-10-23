@@ -69,8 +69,9 @@ test('claim binds to the verified identity, hashes the secret, and ignores a sup
     const token='x'.repeat(43);
     const r=await e.handler({httpMethod:'POST',headers:{authorization:'Bearer test'},body:JSON.stringify({token,user_id:'attacker'})});
     assert.equal(r.statusCode,200);
-    assert.equal(e.calls[0][1].body.p_user_id,'verified-user');
-    assert.equal(e.calls[0][1].body.p_token_hash,require('node:crypto').createHash('sha256').update(token).digest('hex'));
+    const claim=e.calls.find(call=>call[0]==='rpc/claim_balance_free_starter');
+    assert.equal(claim[1].body.p_user_id,'verified-user');
+    assert.equal(claim[1].body.p_token_hash,require('node:crypto').createHash('sha256').update(token).digest('hex'));
     assert.equal(r.body.includes(token),false);
     assert.equal(r.body.includes('token_hash'),false);
 });
@@ -78,6 +79,7 @@ test('a paid member keeps normal paid access instead of being limited to the sta
     const e=endpoint({rows:[{id:'grant',workout_limit:2}],profiles:[{subscription_status:'active'}]});
     const r=await e.handler({httpMethod:'POST',headers:{authorization:'Bearer test'},body:'{}'});
     assert.deepEqual(JSON.parse(r.body),{starter:null,alreadyMember:true});
+    assert.equal(e.calls.some(call=>call[0]==='rpc/claim_balance_free_starter'),false);
 });
 test('starter Home actions describe the free offer without changing ordinary member actions',async()=>{
     const w=client({ok:true,json:async()=>({starter:{id:'grant',workoutsReady:false}})});
