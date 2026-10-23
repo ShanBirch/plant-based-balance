@@ -12,7 +12,8 @@
     <meta property="og:url" content="https://plantbased-balance.org/login.html">
     <meta property="og:type" content="website">
     <link rel="stylesheet" href="styles.css">
-    <script src="lib/meta-ad-trial.js?v=31-existing-member-login"></script>
+    <script src="lib/free-starter.js?v=5"></script>
+    <script src="lib/meta-ad-trial.js?v=35-free-starter"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://js.stripe.com/v3/"></script>
     <script>
@@ -566,13 +567,22 @@
     <script src="lib/onboarding-funnel.js?v=1"></script>
     <!-- Initialize Supabase inline -->
     <script>
+        function hasPendingFreeStarter() {
+            return /^[A-Za-z0-9_-]{43}$/.test(sessionStorage.getItem('pbb_free_starter_invite') || '');
+        }
+
         function isAccountFirstPreview(params = new URLSearchParams(window.location.search)) {
+            if (hasPendingFreeStarter()) return false;
             return params.get('account_first') === '1'
                 && params.get('meta_trial') === 'facebook_5m_foundations_v3';
         }
 
         function signupEntryParams() {
             const params = new URLSearchParams(window.location.search);
+            if (hasPendingFreeStarter()) {
+                ['account_first','meta_trial','meta_preview','learn_entry','fresh_preview','guest'].forEach(key => params.delete(key));
+                return params;
+            }
             const paidHandoff = sessionStorage.getItem('pbb_meta_ad_trial_checkout_session_v1')
                 || sessionStorage.getItem('balance_founders_pass_session_id');
             if (paidHandoff) {
@@ -588,6 +598,7 @@
         }
 
         function postAuthDestination(fragment = '', signupParams = null) {
+            if (hasPendingFreeStarter()) return '/dashboard.html' + fragment;
             const incoming = signupParams || new URLSearchParams(window.location.search);
             if (!isAccountFirstPreview(incoming)) {
                 return incoming.get('redirect') || '/dashboard.html' + fragment;
