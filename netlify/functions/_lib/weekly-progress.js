@@ -82,6 +82,11 @@ function makeHandler({ query, authenticate }) {
             const scope = `coach_id=eq.${coach}&client_id=eq.${client}`;
             if (event.httpMethod === 'GET') {
                 const records = await query(`coach_weekly_progress?select=*&${scope}${canManage ? '' : '&message_id=not.is.null'}&order=created_at.desc&limit=100`);
+                if (canManage) {
+                    // A coach can also receive a delivered card in this chat.
+                    const received = await query(`coach_weekly_progress?select=*&coach_id=eq.${peer}&client_id=eq.${actor}&message_id=not.is.null&order=created_at.desc&limit=100`);
+                    records.push(...received);
+                }
                 if (!canManage || input.suggestions !== '1') return json(200, { can_manage: canManage, records });
                 const week = monday(input.week_start || currentWeek());
                 const [workouts, programs, people] = await Promise.all([

@@ -91,6 +91,19 @@ test('former participants can read only delivered cards without gaining write ac
     const write = await handler({ httpMethod: 'POST', body: JSON.stringify({ operation: 'save', peer_id: coach, id, payload, week_start: '2026-10-19' }) });
     assert.equal(write.statusCode, 403);
 });
+test('a coach can receive an attached card without exposing the sender’s drafts', async () => {
+    const handler = makeHandler({ authenticate: async () => coach, query: async path => {
+        if (path.startsWith('coach_clients')) return path.includes(`coach_id=eq.${coach}&client_id=eq.${client}`) ? [{ id: 'assigned' }] : [];
+        if (path.includes(`coach_id=eq.${client}&client_id=eq.${coach}`)) {
+            assert.ok(path.includes('message_id=not.is.null'));
+            return [{ id, message_id: message, payload }];
+        }
+        return [];
+    } });
+    const result = JSON.parse((await handler({ httpMethod: 'GET', queryStringParameters: { peer_id: client } })).body);
+    assert.equal(result.records.length, 1);
+    assert.equal(result.records[0].message_id, message);
+});
 test('suggestions retain mixed loads and missed sets, deduplicate exact duplicate set rows', () => {
     const row = { exercise_name: 'Bench', workout_date: '2026-10-20', template_name: 'Push', set_number: 1, reps: '6', weight_kg: '80' };
     const data = [row, row, { ...row, set_number: 2 }, { ...row, set_number: 3, reps: '5', weight_kg: '75' }, { ...row, set_number: 4, is_drop_set: true }];
