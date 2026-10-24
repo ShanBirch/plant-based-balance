@@ -138,3 +138,19 @@ test('late progress attachments stay visible at chat bottom without moving someo
         assert.equal(container.scrollTop, initialTop === 500 ? 1100 : 100);
     }
 });
+test('weight reveal compares matching units, keeps original loads and escapes custom text', () => {
+    const vm = require('node:vm'), window = {};
+    vm.runInNewContext(fs.readFileSync('lib/weekly-progress.js', 'utf8'), { window });
+    const render = (completed, next, exercise = 'Bench') => window.balanceWeeklyProgress.cardHtml({ payload: { title: 'Progress', sessions: '', entries: [{ exercise, completed, next }] } });
+    const increase = render('SAMPLE · 3 × 15 at 20 kg per dumbbell', '3 × 6 at 22.5 kg per dumbbell');
+    assert.match(increase, /wp-old-weight[^>]*>20 kg each/);
+    assert.match(increase, /wp-new-weight[^>]*>22.5 kg each/);
+    assert.match(increase, /wp-exercise/);
+    assert.match(increase, /Replay reveal/);
+    assert.doesNotMatch(render('3 × 8 at 20 kg', '3 × 10 at 20 kg'), /Weight increased/);
+    assert.doesNotMatch(render('3 × 15 at 20 kg each', '3 × 6 at 30 kg total'), /Weight increased/);
+    const mixed = render('20 kg × 15; 18 kg × 12', 'Coach to confirm', '<img src=x>');
+    assert.doesNotMatch(mixed, /Weight increased|<img/);
+    assert.match(mixed, /&lt;img src=x&gt;/);
+    assert.match(mixed, /wp-plain/);
+});
