@@ -116,6 +116,9 @@ begin
  where status='reserved' and attempted_at<now()-interval '10 minutes';
  update workout_accountability_events set status='expired',receipt=receipt||'{"reason":"missed_delivery_window"}'
  where status in ('pending','queued') and expires_at<now();
+ update workout_accountability_events v set status='held',receipt=receipt||'{"reason":"enrollment_changed_or_independent_hold"}'
+ from workout_accountability enrolled where enrolled.id=v.enrollment_id and v.status in ('pending','queued')
+ and (v.enrollment_version<>enrolled.version or not workout_accountability_allowed(enrolled.id));
  for e in select * from workout_accountability where enabled loop
   d:=(now() at time zone e.timezone)::date;
   if d<e.starts_on or d>e.ends_on then continue; end if;
@@ -124,7 +127,7 @@ begin
    evening_at:=greatest((d+time '20:00') at time zone e.timezone,workout_at+interval '90 minutes');
    insert into workout_accountability_events(enrollment_id,enrollment_version,local_date,session_name,kind,due_at,expires_at)
    values(e.id,e.version,d,s->>'session_name','before',workout_at-interval '30 minutes',workout_at+interval '30 minutes'),
-    (e.id,e.version,d,s->>'session_name','logged',workout_at-interval '30 minutes',(d+time '22:30') at time zone e.timezone),
+    (e.id,e.version,d,s->>'session_name','logged',(d+time '06:00') at time zone e.timezone,(d+time '22:30') at time zone e.timezone),
     (e.id,e.version,d,s->>'session_name','evening',evening_at,(d+time '22:30') at time zone e.timezone)
    on conflict do nothing;
   end loop;
@@ -141,6 +144,15 @@ begin
  end loop;
  update workout_accountability_events v set status='skipped',receipt=receipt||'{"reason":"matching_workout_logged"}'
  where v.status in ('pending','queued') and v.kind in ('before','evening') and workout_accountability_logged(v.id);
+ -- Retire only this exact unattempted event/version, so an expired reminder
+ -- cannot occupy the shared recipient queue and block the next real inbound.
+ update ig_next_actions a set status='cancelled',completed_at=now(),
+ receipt=a.receipt||jsonb_build_object('workout_reminder_retired',true,'no_repeat',true),
+ claim_owner=null,claim_token=null,claim_run_id=null,claim_expires_at=null
+ from workout_accountability_events v
+ where a.id=v.action_id and a.action_version=v.action_version
+ and a.reason->>'policy'='workout_accountability_v1' and a.reason->>'event_id'=v.id::text
+ and v.status in ('expired','skipped','held') and v.attempted_at is null and a.status in ('ready','waiting','claimed');
  -- Keep failures visible to Shannon independently of local desktop wake timing.
  insert into coach_alerts(coach_id,client_id,client_name,alert_type,priority,status,title,description,idempotency_key,data)
  select enrolled.coach_id,enrolled.user_id,t.profile_name,'follow_up_review','medium','pending','Workout reminder needs attention',

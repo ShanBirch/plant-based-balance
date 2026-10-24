@@ -58,6 +58,7 @@ begin
  if ig_workout_accountability_action_eligible(action) then raise exception 'Expired reminder send allowed'; end if;
  perform refresh_workout_accountability();
  if (select status from workout_accountability_events where id=eventid)<>'expired' then raise exception 'Missed window not marked'; end if;
+ if (select status from ig_next_actions where id=action.id)<>'cancelled' then raise exception 'Expired reminder blocks shared reply queue'; end if;
  if not exists(select 1 from coach_alerts where idempotency_key='workout_accountability_failure:'||eventid) then raise exception 'Missed reminder silently dropped'; end if;
  update workout_accountability_events set status='reserved',attempted_at=now(),claim_token=token where id=eventid;
  if record_workout_accountability(eventid,token,'sent',jsonb_build_object('native_verified',true,'canonical_message_id',sentid)) then raise exception 'False delivery accepted'; end if;
