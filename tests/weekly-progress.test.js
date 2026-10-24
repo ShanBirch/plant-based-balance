@@ -133,7 +133,7 @@ test('late progress attachments stay visible at chat bottom without moving someo
         const window = { supabaseClient: { auth: { getSession: async () => ({ data: { session: { access_token: 'fixture' } } }) } } };
         const document = { getElementById: () => null, createElement: () => ({ querySelector: () => ({}) }) };
         vm.runInNewContext(fs.readFileSync('lib/weekly-progress.js', 'utf8'), { window, document, URLSearchParams, console,
-            fetch: async () => ({ ok: true, json: async () => ({ can_manage: false, records: [{ week_start: '2026-10-19', message_id: message }] }) }) });
+            fetch: async () => ({ ok: true, json: async () => ({ can_manage: false, records: [{ week_start: '2026-10-19', message_id: message, payload }] }) }) });
         await window.balanceWeeklyProgress.mount(container, [], client);
         assert.equal(container.scrollTop, initialTop === 500 ? 1100 : 100);
     }
