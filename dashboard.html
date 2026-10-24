@@ -203,8 +203,8 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
 <!-- CRITICAL: Admin view-as localStorage isolation — runs BEFORE any other localStorage reads -->
 <script src="js/dashboard/script_part_1.js"></script>
 <!-- Paid-Facebook preview attribution must be available before auth-guard decides guest vs member mode. -->
-<script src="lib/onboarding-progress.js?v=10-coach-prepared"></script>
-<script src="lib/free-starter.js?v=8"></script>
+<script src="lib/onboarding-progress.js?v=11-coached-month"></script>
+<script src="lib/free-starter.js?v=9-coached-month"></script>
 <script src="lib/meta-ad-trial.js?v=35-free-starter"></script>
 
 <!-- CRITICAL: Hide loading overlay for returning users and restore cached FitGotchi state -->
@@ -454,7 +454,7 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
 </script>
 
 <!-- Supabase & Auth Guard -->
-<script src="js/dashboard/script_part_2.js?v=23-free-starter"></script>
+<script src="js/dashboard/script_part_2.js?v=24-coached-month"></script>
 <script>
 // ── Native OAuth warm-start callback (non-iOS) ────────────────────
 // On iOS this is set up inside the deferred chain above (after supabaseClient exists).
@@ -646,6 +646,11 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
 </style>
 <link rel="stylesheet" href="css/dashboard/pbb-weekly-progress.css?v=20261024-progress-4">
 <script defer src="lib/weekly-progress.js?v=20261024-progress-4"></script>
+<style id="coached-month-access">
+html.pbb-coached-month .nav-item[aria-label="Course"],
+html.pbb-coached-month #view-learning,
+html.pbb-coached-month #social-journey-card { display:none!important; }
+</style>
 </head>
 <body>
 <script>if(window._crumb)window._crumb('body_start');</script>
@@ -2015,8 +2020,8 @@ document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=38-tour-
     document.write('<script src="lib/learn-predictive-content.js?v=8-optional-examples"><\/script>');
     document.write('<script src="lib/learn-weekly-actions.js?v=retired-20261008"><\/script>');
     document.write('<script src="lib/learn-action-review.js?v=retired-20261008"><\/script>');
-    document.write('<script src="js/dashboard/pbb-social-journey.js?v=20261023-lesson-handoff"><\/script>');
-    document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=20261023-free-starter-v4"><\/script>');
+    document.write('<script src="js/dashboard/pbb-social-journey.js?v=coached-month-v1-20261023-lesson-handoff"><\/script>');
+    document.write('<script src="js/dashboard/pbb-next-obvious-steps.js?v=20261024-coached-month-v1"><\/script>');
     document.write('<script src="js/dashboard/pbb-weekly-checkin-preview.js?v=40-learning-only"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
@@ -2027,8 +2032,8 @@ window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=38-tou
     window._pbbDeferredQueue.push('lib/learn-predictive-content.js?v=8-optional-examples');
     window._pbbDeferredQueue.push('lib/learn-weekly-actions.js?v=retired-20261008');
     window._pbbDeferredQueue.push('lib/learn-action-review.js?v=retired-20261008');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=20261023-lesson-handoff');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=20261023-free-starter-v4');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-social-journey.js?v=coached-month-v1-20261023-lesson-handoff');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-next-obvious-steps.js?v=20261024-coached-month-v1');
     window._pbbDeferredQueue.push('js/dashboard/pbb-weekly-checkin-preview.js?v=40-learning-only');
 }
 </script>
@@ -12966,7 +12971,7 @@ if (window._pbbIsIOSSafari) {
                 return;
             }
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261023-free-starter-v4&cohort_diets=1&video_health=2';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261024-coached-month-v1&cohort_diets=1&video_health=2';
             s.onload = replayScript5DeferredInit;
             document.head.appendChild(s);
         }, script5Delay);
@@ -13008,7 +13013,7 @@ if (window._pbbIsIOSSafari) {
         var s = document.createElement('script');
         s.async = false;
         s.dataset.metaTrialLoader = String(attempt);
-        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261023-free-starter-v4&cohort_diets=1&video_health=2&meta_retry=' + attempt;
+        s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261024-coached-month-v1&cohort_diets=1&video_health=2&meta_retry=' + attempt;
         s.onload = function() {
             if (window._pbbScript5Complete && window._switchAppTabReady && typeof window._switchAppTabReal === 'function') {
                 sessionStorage.removeItem('pbb_meta_script5_recovery_v1');
@@ -13027,7 +13032,7 @@ if (window._pbbIsIOSSafari) {
         document.head.appendChild(s);
     })(0);
 } else {
-document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261023-free-starter-v4"><\/script>');
+document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=20261024-coached-month-v1"><\/script>');
 }
 </script>
 <script src="js/dashboard/pbb-workout-swipe-player.js?v=15-full-width-set-inputs"></script>
@@ -14416,6 +14421,11 @@ if(!window._pbbIsIOSSafari) {
   });
 
   function requiredOnboardingTourSteps(){
+    if (window.BalanceFreeStarter?.coached?.()) return [
+      {tab:'dashboard',sel:'#next-obvious-steps-card',title:'Your coaching month',body:'Open Inbox for messages and weekly check-ins. Your program is in Movement and meal planning is in Nutrition.',metaPreview:true},
+      {tab:'movement-tab',sel:'#today-workout-card',fallbackSel:'#movement-grid-container',title:'Your prepared workouts',body:'Your program follows the days and times you agreed with Shannon. Open your sessions from the calendar.',metaPreview:true},
+      {tab:'dashboard',sel:'#next-obvious-steps-card',title:'Stay in touch through Inbox',body:'Use Open Message on Home to find Shannon in Inbox. You can also open your meal plan from To Do Next.',metaPreview:true}
+    ];
     return REQUIRED_ONBOARDING_TOUR_TITLES.map(findTourStep).filter(Boolean).map(function(step){
       if (!window.BalanceFreeStarter?.active()) return step;
       if (step.requiresWeeklyGoals) return Object.assign({},step,{body:'Choose one to three realistic actions for this week, set the targets and save your goals.',preActionBody:'Tap the highlighted Weekly Goals card and choose the realistic actions you want to work towards this week.'});
@@ -14429,7 +14439,7 @@ if(!window._pbbIsIOSSafari) {
     }).filter(Boolean);
   }
 
-  steps.push({tab:'movement-tab',sel:'#today-workout-card',title:'Your free starter',body:'Your two workouts and course stay available without payment. Shannon reviews your setup before your workouts are ready.',condition:function(){return !!window.BalanceFreeStarter?.active();}});
+  steps.push({tab:'movement-tab',sel:'#today-workout-card',title:'Your free starter',body:'Your two workouts and course stay available without payment. Shannon reviews your setup before your workouts are ready.',condition:function(){return !!window.BalanceFreeStarter?.active() && !window.BalanceFreeStarter?.coached?.();}});
 
   const walkthroughRewardByTitle = {
     'Ask Balance by long hold': 'tour-01',
@@ -16074,6 +16084,10 @@ if (step && step.requiresFeedPost) {
       } catch(e) {}
     }
     if (window.BalanceFreeStarter?.active() && list) list.innerHTML = '<li><span><strong>Your free starter:</strong> two home workouts after setup review, meal tools and the course.</span></li><li><span><strong>Your community:</strong> look around and introduce yourself if you want to.</span></li><li><span><strong>Your course:</strong> complete your first lesson and quiz.</span></li><li><span><strong>Your week:</strong> choose realistic goals. Ongoing coaching is optional.</span></li>';
+    if (window.BalanceFreeStarter?.coached?.()) {
+      if (intro) intro.textContent = 'Your profile is saved. Here is where to find your prepared program, messages and meal planning.';
+      if (list) list.innerHTML = '<li><span><strong>Inbox:</strong> messages and weekly check-ins with Shannon.</span></li><li><span><strong>Movement:</strong> your prepared workout program.</span></li><li><span><strong>Nutrition:</strong> your meal planning tools.</span></li>';
+    }
     const overlay = document.getElementById('guided-tour-overlay');
     if (overlay) overlay.classList.add('meta-tour-welcome-active');
     syncTourViewport();
@@ -16265,6 +16279,7 @@ window.endFeatureTour = function(skipped){
     window.__balanceClientActivationTour = clientActivationTour;
     window.__balancePendingClientActivation = clientActivationTour;
     activeSteps = courseFeatureTour ? fitgotchiCourseSteps : steps.filter(function(s){
+      if (window.BalanceFreeStarter?.coached?.() && s.tab === 'learning') return false;
       if (s.clientActivationOnly && !clientActivationTour) return false;
       return !s.condition || s.condition();
     });
@@ -16729,7 +16744,8 @@ window.endFeatureTour = function(skipped){
 
   var allFeatures = [
     {id:'weekly-checkin-progress-v1',tab:'home',sel:'.header-msg-icon',title:'Your weekly progress, beside your check-in',body:'Shannon can now attach a dated progress card beneath a text or voice check-in. Open the progress button to compare recorded sets with your next targets. Older cards keep their original targets.'},
-    {id:'free-two-workout-starter-v1',tab:'movement-tab',sel:'#today-workout-card',title:'Your free starter',body:'Your two workouts and course stay available without payment. Shannon reviews your setup before your workouts are ready.',condition:function(){return !!window.BalanceFreeStarter?.active();}},
+    {id:'coached-free-month-v1',tab:'dashboard',sel:'#next-obvious-steps-card',title:'Your coaching month is ready',body:'Find messages and check-ins in Inbox, your prepared program in Movement and meal planning in Nutrition. The course is separate.',condition:function(){return !!window.BalanceFreeStarter?.coached?.();}},
+    {id:'free-two-workout-starter-v1',tab:'movement-tab',sel:'#today-workout-card',title:'Your free starter',body:'Your two workouts and course stay available without payment. Shannon reviews your setup before your workouts are ready.',condition:function(){return !!window.BalanceFreeStarter?.active() && !window.BalanceFreeStarter?.coached?.();}},
     { id:'family-meal-servings-v1', tab:'meals', sel:'.ai-plan-family', title:'Your plate and the family batch', body:'Open a family recipe to compare your serving with the batch. Choose grams or hands and household measures, then set how many portions to cook.', fallbackSel:'#ai-plan-loaded', condition:function(){ return !!(window._aiMealPlanCache && window._aiMealPlanCache.diet_type === 'family_lower_carb'); } },
     { id:'offline-launch-v1', tab:'movement-tab', sel:'#today-workout-card', title:'Open your saved workout offline', body:'On web, supported Android devices and updated iPhone apps, open Balance online first so its files and your workout can be saved. You can then reopen your saved workout without reception. Completed sets sync when you reconnect. New content and videos still need internet.' },
     { id:'automatic-masked-replay-v1', tab:'profile', sel:'#balance-replay-settings', title:'Help fixing app problems', body:'Balance now saves a masked replay automatically so Shannon can investigate app problems. Private text and media are hidden. Replays expire after seven days. You can turn this off in Settings.' },
@@ -18276,6 +18292,7 @@ window.endFeatureTour = function(skipped){
     revealSteps = allFeatures.filter(function(f) {
       if (requestedIds.length && requestedIds.indexOf(f.id) === -1) return false;
       if (seen.indexOf(f.id) !== -1) return false;
+      if (window.BalanceFreeStarter?.coached?.() && f.tab === 'learning') return false;
       if (f.condition && !f.condition()) return false;
       return true;
     });
@@ -19124,7 +19141,7 @@ if (window._pbbIsIOSSafari) {
 <link rel="stylesheet" href="css/dashboard/pbb-weighin-theme.css?v=1-balance-gold">
 <link rel="stylesheet" href="css/dashboard/pbb-meal-plan.css?v=20260918-compact-3-six-weeks">
 <link rel="stylesheet" href="css/dashboard/pbb-onboarding-comeback.css?v=9-learn-welcome">
-<link rel="stylesheet" href="css/dashboard/pbb-onboarding-foundations.css?v=13-iphone-keyboard">
+<link rel="stylesheet" href="css/dashboard/pbb-onboarding-foundations.css?v=14-coached-safe-area">
 
 
 <script src="js/dashboard/script_part_24.js?v=3-coach-lookup"></script>
@@ -21394,11 +21411,11 @@ if (window._pbbIsIOSSafari) {
             });
             if (window.showQuizBattleInviteModal || learningAlreadyRequested) return;
             var s = document.createElement('script');
-      s.src = 'lib/learning-inline.js?v=20261023-starter-progress';
+      s.src = 'lib/learning-inline.js?v=20261024-coached-month';
             document.head.appendChild(s);
         }, { once: true });
     } else {
-    document.write('<script src="lib/learning-inline.js?v=20261023-starter-progress"><\/script>');
+    document.write('<script src="lib/learning-inline.js?v=20261024-coached-month"><\/script>');
     }
     </script>
     <!-- Battle System & Logic Overrides (130 lines — deferred on iOS) -->

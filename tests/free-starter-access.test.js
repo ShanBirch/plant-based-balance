@@ -86,12 +86,12 @@ test('revoked cached starter access resumes the ordinary route once without reta
     assert.equal(resumes,1);
     assert.equal(w.localStorage.getItem('pbb_free_starter_owner'),null);
 });
-function endpoint({authOk=true, anonymous=false, rows=[], profiles=[], queryError=false}={}) {
+function endpoint({authOk=true, anonymous=false, rows=[], profiles=[], programs=rows, queryError=false}={}) {
     const calls=[];
     const exports={};
     vm.runInNewContext(read('netlify/functions/free-starter-access.js'),{
         exports, process:{env:{SUPABASE_URL:'https://test.invalid',SUPABASE_SERVICE_ROLE_KEY:'server-only'}},
-        require:name=>name==='node:crypto'?require(name):{supabaseQuery:async(...args)=>{calls.push(args);if(queryError)throw Error('conflict');return args[0].startsWith('users?') ? profiles : rows;}},
+        require:name=>name==='node:crypto'?require(name):{supabaseQuery:async(...args)=>{calls.push(args);if(queryError)throw Error('conflict');return args[0].startsWith('users?') ? profiles : args[0].startsWith('custom_workout_programs?') ? programs : rows;}},
         fetch:async()=>({ok:authOk,json:async()=>({id:'verified-user',is_anonymous:anonymous})})
     });
     return {handler:exports.handler,calls};
@@ -112,6 +112,29 @@ test('a paid member keeps normal paid access instead of being limited to the sta
     const r=await e.handler({httpMethod:'POST',headers:{authorization:'Bearer test'},body:'{}'});
     assert.deepEqual(JSON.parse(r.body),{starter:null,alreadyMember:true});
     assert.equal(e.calls.some(call=>call[0]==='rpc/claim_balance_free_starter'),false);
+});
+
+test('coached month returns the server dates, real session count and no course entitlement',async()=>{
+    const setup={schedule:[{weekday:2,time:'16:30'},{weekday:5,time:'17:15'},{weekday:7,time:'12:00'}],equipment:'none'};
+    const e=endpoint({rows:[{id:'grant',experience:'coached_month_v1',workout_limit:2,workouts_ready:true,starts_at:'2026-10-24T00:00:00Z',ends_at:'2099-11-24T00:00:00Z',setup}],programs:[{id:'real-assigned-program'}]});
+    const r=await e.handler({httpMethod:'POST',headers:{authorization:'Bearer test'},body:'{}'});
+    const body=JSON.parse(r.body);
+    assert.equal(r.statusCode,200);
+    assert.equal(body.starter.courseAccess,false);
+    assert.equal(body.starter.workoutLimit,3);
+    assert.deepEqual(body.starter.setup,setup);
+    assert.equal(e.calls.some(call=>call[0].includes('custom_workout_programs?user_id=eq.verified-user')),true);
+});
+
+test('coached access fails closed when the assigned program is missing or the free month ended',async()=>{
+    const grant={id:'grant',experience:'coached_month_v1',starts_at:'2026-01-01T00:00:00Z',ends_at:'2099-02-01T00:00:00Z'};
+    const event={httpMethod:'POST',headers:{authorization:'Bearer test'},body:'{}'};
+    const missing=await endpoint({rows:[grant],programs:[]}).handler(event);
+    assert.equal(missing.statusCode,409);
+    assert.equal(JSON.parse(missing.body).grantUnavailable,true);
+    const expired=await endpoint({rows:[{...grant,ends_at:'2000-01-01T00:00:00Z'}],programs:[{id:'existing'}]}).handler(event);
+    assert.equal(expired.statusCode,403);
+    assert.equal(JSON.parse(expired.body).expired,true);
 });
 test('starter Home actions describe the free offer without changing ordinary member actions',async()=>{
     const w=client({ok:true,json:async()=>({starter:{id:'grant',workoutsReady:false}})});

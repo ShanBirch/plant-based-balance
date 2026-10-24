@@ -448,6 +448,10 @@ exports.handler = async (event) => {
 
         for (const c of candidates) {
             try {
+                // The coached-month scheduler owns these members' included
+                // weekly reviews. Never apply legacy course or sales milestones.
+                const coachedMonth = await supabaseQuery(`balance_free_starters?select=id&user_id=eq.${c.client_id}&experience=eq.coached_month_v1&limit=1`);
+                if (coachedMonth.length) continue;
                 // Dedup
                 const existing = await supabaseQuery(
                     `coach_alerts?select=id&coach_id=eq.${c.coach_id}&client_id=eq.${c.client_id}&alert_type=eq.${milestone.alertType}&limit=1`

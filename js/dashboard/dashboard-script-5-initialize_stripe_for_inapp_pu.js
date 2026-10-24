@@ -1338,6 +1338,10 @@ function setOnboardingNavigationGate(locked) {
 
 // Real switchAppTab implementation - replaces the early stub
 function _switchAppTabReal(tabName, btn) {
+    if (tabName === 'learning' && window.BalanceFreeStarter?.coached?.()) {
+        window.showToast?.('Your free coaching month includes Inbox, workouts and meal planning. The course is separate.', 'info');
+        return false;
+    }
     document.getElementById('view-dashboard')?.classList.toggle('coach-assigned-active',!!window.BalanceOnboardingProgress?.isCoachPreparedMember());
     // First-run setup is a required guided gate. Keep this check at the shared
     // navigation boundary as a safety net even when another feature tries to
@@ -3004,6 +3008,7 @@ function renderWeeklyCalendar() {
                     return {
                         day: item.day,
                         program: 'inline',
+                        time: item.time || '',
                         dayIndex: idx,
                         subcategory: '',
                         muscleGroup: '',
@@ -3387,6 +3392,10 @@ function renderWeeklyCalendar() {
         }
 
         const displayWorkoutHtml = escapeCalendarHtml(displayWorkoutName);
+        const coachingTime = window.BalanceFreeStarter?.coached?.() && !dayWorkout.isRest ? WEEKLY_SCHEDULE[i]?.time : '';
+        const coachingTimeHtml = coachingTime
+            ? `<div class="cal-coaching-time" style="font-size:.75rem;color:var(--text-main,#24211b);-webkit-text-fill-color:var(--text-main,#24211b)">${escapeCalendarHtml(coachingTime)} · ${escapeCalendarHtml(window.BalanceFreeStarter.access().setup.timezone || 'agreed local time')}</div>`
+            : '';
         const displayWorkoutArg = escapeCalendarJsArg(displayWorkoutName);
         const replacementBadge = hasReplacement
             ? (isActivityReplacement
@@ -3404,6 +3413,7 @@ function renderWeeklyCalendar() {
                     ${phaseDotHtml}
                 </div>
                 <div class="cal-workout-tag">${displayWorkoutHtml}${replacementBadge}</div>
+                ${coachingTimeHtml}
             </div>
             <button type="button" class="cal-drag-handle" aria-label="Move workout day" title="Move workout day">
                 <svg viewBox="0 0 24 24"><path d="M9 5a2 2 0 1 1-4 0 2 2 0 0 1 4 0Zm10 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0ZM9 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0Zm10 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0ZM9 19a2 2 0 1 1-4 0 2 2 0 0 1 4 0Zm10 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z"/></svg>
@@ -8090,6 +8100,7 @@ function isTransferredWizardClient() {
 }
 
 function isWizardSlideSkipped(step) {
+    if (window.BalanceFreeStarter?.coached?.() && [3,4,5,6,7].includes(step)) return true;
     // Cycle alignment is relevant only when the member explicitly chose "For her".
     // Keep this rule here so forward, back, and resumed onboarding paths all agree.
     if (step === 3 && normalizeGenderValue(selectedGender) !== 'female') return true;
@@ -9478,6 +9489,7 @@ function renderWizardChatControls() {
 }
 
 function resolveWizardChatPrelude(step) {
+    if (window.BalanceFreeStarter?.coached?.()) return step?.type === 'start' ? 'YOUR FREE COACHING MONTH' : '';
     return typeof step?.prelude === 'function' ? step.prelude() : step?.prelude;
 }
 
@@ -9519,6 +9531,12 @@ function skipWizardChatKnownProfileSteps() {
         const profile = window.currentUserProfile || window.userProfile || window.profileData || {};
         const isTransferred = !!(profile.is_transferred_client || window.__pbbTransferredSetupPending);
         const knownName = getWizardChatKnownProfileName();
+        const coaching = window.BalanceFreeStarter?.coached?.() ? window.BalanceFreeStarter.access().setup : null;
+        if (coaching && ['weekly_capacity','equipment_access','why_now','main_blocker','movement_limits'].includes(step.key)) {
+            const known = { weekly_capacity: ({1:'one_or_two',2:'one_or_two',3:'three',4:'four',5:'five',6:'six'})[coaching.schedule.length], equipment_access:coaching.equipment, why_now:coaching.goal, main_blocker:coaching.mainBlocker || '', movement_limits:'' };
+            wizardChatAnswers[step.key] = known[step.key];
+            wizardChatStepIndex++; guard++; continue;
+        }
         const knownAnswers = {
             name: knownName,
             gender: profile.sex || profile.user_gender || '',
@@ -9559,7 +9577,7 @@ function askWizardChatQuestion(options = {}) {
             setTimeout(() => wizardNext(), 0);
             return;
         }
-        wizardChatMessages = [{ role: 'coach', text: window.BalanceFreeStarter?.active() ? 'Your free starter includes two home workouts. Choose the days and session length that suit you next. Shannon will review your setup before assigning the exercises. You can start the course without payment.' : `Perfect. Based on your real week, I would start with ${getWizardStarterRoutineSummary()}. We will keep that minimum light until following through feels normal, then progress it. It is a suggestion, so you can change the frequency and exact days next.` }];
+        wizardChatMessages = [{ role: 'coach', text: window.BalanceFreeStarter?.coached?.() ? 'Your program is already prepared around the days and times we agreed. Just finish your profile and open Balance. Inbox has your messages and check-ins; Nutrition has meal planning.' : window.BalanceFreeStarter?.active() ? 'Your free starter includes two home workouts. Choose the days and session length that suit you next. Shannon will review your setup before assigning the exercises. You can start the course without payment.' : `Perfect. Based on your real week, I would start with ${getWizardStarterRoutineSummary()}. We will keep that minimum light until following through feels normal, then progress it. It is a suggestion, so you can change the frequency and exact days next.` }];
         renderWizardChatMessages();
         renderWizardChatProgress();
         renderWizardChatControls();
@@ -9825,8 +9843,9 @@ function saveWizardChatIntakeToInputs() {
     setWizardFieldValue('wizard-competing-priorities', answers.main_blocker);
     setWizardFieldValue('wizard-weekly-capacity', answers.weekly_capacity);
     setWizardFieldValue('wizard-routine-window', answers.routine_window);
-    setWizardFieldValue('wizard-starter-session-minutes', inferredPlan.starterSessionMinutes);
-    setWizardFieldValue('wizard-recommended-frequency', getWizardRecommendedStarterFrequency(answers));
+    const coachedSetup = window.BalanceFreeStarter?.coached?.() ? window.BalanceFreeStarter.access().setup : null;
+    setWizardFieldValue('wizard-starter-session-minutes', coachedSetup?.sessionMinutes || inferredPlan.starterSessionMinutes);
+    setWizardFieldValue('wizard-recommended-frequency', coachedSetup?.schedule.length || getWizardRecommendedStarterFrequency(answers));
     setWizardFieldValue('wizard-why-now', answers.why_now);
     setWizardFieldValue('wizard-long-term-goal', answers.long_term_goal);
     setWizardFieldValue('wizard-independence-goal', answers.independence_goal);
@@ -11749,7 +11768,7 @@ function updateWizardUI() {
     let dotIndex = 0;
     for (let i = 1; i <= totalWizardSteps; i++) {
         if (dotIndex >= dots.length) break;
-        if (skippedSlides.includes(i)) {
+        if (isWizardSlideSkipped(i)) {
             dots[i - 1].style.display = 'none';
             continue;
         }
@@ -12452,6 +12471,11 @@ async function wizardNext() {
         console.log("Step 2 data collected:", quizData);
 
         // If male, skip cycle tracking (step 3) and go directly to step 4
+        if (window.BalanceFreeStarter?.coached?.()) {
+            currentWizardStep = finalWizardStep;
+            updateWizardUI();
+            return;
+        }
         if (selectedGender === 'male') {
             // Set default values for males (no cycle tracking, no hormone profile)
             let existingData = {};
@@ -13820,6 +13844,7 @@ function getWizardAssignedWorkoutOptions(day) {
     return options;
 }
 function generateWizardCalendar() {
+    if (window.BalanceFreeStarter?.coached?.()) return;
     if (wizardAssignedProgram) {
         initializeWizardAssignedCalendar();
         return;

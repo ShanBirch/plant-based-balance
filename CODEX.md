@@ -166,6 +166,22 @@ Shannon retired the public Founders Pass name. Use **Balance Learn** for the AUD
 - Balance 1:1 Zoom PT is a capacity-limited premium service with live 30-minute sessions, personalised programming, general vegetarian or plant-based food guidance, Balance access, and in-app accountability. Zoom PT 1 is AUD $125/week for one session, Zoom PT 3 is AUD $275/week for three sessions, and Zoom PT 5 is AUD $425/week for five sessions. It begins with a six-week coaching block. Confirm health fit and recurring availability before taking payment; public website CTAs book a fit call rather than opening checkout.
 - Route by fit instead of forcing the Founders Pass: structured six-week starting course -> Founders Pass; self-directed ongoing app/community -> App + Community; ongoing personalised weekly progression and review -> Online Coaching; live supervised workouts -> 1:1 Zoom PT. The Founders Pass and Online Coaching both include one weekly review during the first six weeks, but Founders follows the fixed Balance Learn curriculum and ends after six weeks while Online Coaching continues at the selected tier until cancelled. Use `https://plantbased-balance.org/coaching.html` for package comparison. Zoom PT requires an availability and health-fit check before payment.
 
+## Private organic coached month, 24 October 2026
+
+For newly accepted private organic starter invitations, use the separately
+verified `coached_month_v1` flow in `docs/free-coaching-month.md`: one free month
+starting at claim, then continued coaching only by explicit agreement. The basic
+profile and food preferences remain; workout-building and course requirements
+are omitted. Inbox/check-ins, assigned workouts and meal planning remain.
+
+The dispatch manager collects agreed availability and queues a durable setup job.
+The separate Balance Coaching Setup Worker chat owns program preparation and
+verification. The dispatcher must never build the program inline or stop serving
+other conversations while it is prepared. Only that existing sole MBS dispatcher
+sends the verified ready message back to the original chat. See the adjacent
+installed worker and setup contracts. Preserve Jessie and other historical
+starter agreements; never infer new billing or reminder consent.
+
 ## Strategy
 
 - Paid-ad lead intake (2026-09-12): every browser dispatcher wake must follow `docs/IG_PAID_LEAD_DISPATCH_INTAKE.md` and run `scripts/ig-paid-lead-dispatch-intake.sql` before lane inventory caches. Graph/ManyChat inbounds register paid leads on the existing contact record. The intake also finds older/late-attributed ad conversations. Registration never changes sales stage, message permission or active conversation ownership.

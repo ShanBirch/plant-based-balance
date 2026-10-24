@@ -5,6 +5,7 @@ async function loadCourseClientContext(userId, query) {
     if (!userId) return '';
     const id = encodeURIComponent(userId);
     const specs = {
+        starter: `balance_free_starters?select=experience,starts_at,ends_at&user_id=eq.${id}&revoked_at=is.null&limit=1`,
         account: `users?select=onboarding_complete,subscription_status,subscription_plan&id=eq.${id}&limit=1`,
         purchase: `founders_pass_purchases?select=status,purchased_at,metadata&user_id=eq.${id}&order=purchased_at.desc&limit=1`,
         enrollment: `learn_action_enrollments?select=id,course_id,start_date,active&user_id=eq.${id}&active=eq.true&order=created_at.desc&limit=1`,
@@ -19,6 +20,10 @@ async function loadCourseClientContext(userId, query) {
 }
 
 function buildCourseClientContext(data) {
+    if (data.starter?.[0]?.experience === 'coached_month_v1' && !['active','trialing','paid','paying'].includes(data.account?.[0]?.subscription_status)) {
+        const starter = data.starter[0];
+        return `LIVE COACHING MONTH CONTEXT: This member entered the private first-month-free coaching flow. Included access: assigned workout program, Inbox messages and weekly coaching check-ins, meal planning and app/community. The course is not included; never direct this member to lessons, quizzes, course tasks or workout-building onboarding. Basic profile and dietary preferences remain relevant. Start: ${starter.starts_at || 'not yet claimed'}; end: ${starter.ends_at || 'not yet started'}. Continued coaching is AUD $14.99/week only after explicit agreement and verified payment. No automatic charge. Check current dates before describing the free month as active. Preserve the agreed schedule from the prepared plan; ask only about genuine gaps or changes.`;
+    }
     const journey = data.journey?.[0];
     const enrollment = data.enrollment?.[0];
     const version = curriculum.activeVersion;

@@ -622,6 +622,12 @@
     switchTab('dashboard');
     afterTab(function(){
       try {
+        if (window.BalanceFreeStarter?.coached?.() && typeof window.openCoachChatModal === 'function') {
+          Promise.resolve(window.openCoachChatModal()).then(function(){
+            if (document.getElementById('direct-message-modal')?.style.display === 'flex') markOnboardingStepSeen('coach_message_intro');
+          }).catch(function(){ window.showToast?.('Inbox could not open. Please try the messages icon.', 'info'); });
+          return;
+        }
         if (window.BalanceMetaAdTrial && typeof window.BalanceMetaAdTrial.showInboxPreview === 'function'
             && window.BalanceMetaAdTrial.showInboxPreview() === true) {
           markOnboardingStepSeen('coach_message_intro');
@@ -1237,6 +1243,7 @@
   }
 
   function addUniqueAction(list, action) {
+    if (window.BalanceFreeStarter?.allowsAction && !window.BalanceFreeStarter.allowsAction(action)) return;
     if (!action || list.some(function(item){ return item.id === action.id; })) return;
     action = window.BalanceFreeStarter?.adaptAction(action) || action;
     list.push(action);
@@ -1266,7 +1273,7 @@
     var onboardingEligible = isOnboardingAccount();
     var hasIncompleteOnboarding = onboardingEligible && ONBOARDING_ACTION_IDS.some(function(id){
       var action = ACTIONS.find(function(item){ return item.id === id; });
-      return action && !isActionComplete(action);
+      return action && (!window.BalanceFreeStarter?.allowsAction || window.BalanceFreeStarter.allowsAction(action)) && !isActionComplete(action);
     });
     if (hasIncompleteOnboarding) {
       addUniqueAction(picked, ACTIONS.find(function(item){ return item.id === 'meal_plan_intro'; }));
@@ -1843,6 +1850,7 @@
       });
     },
     runAction: function(id){
+      if (window.BalanceFreeStarter?.allowsAction && !window.BalanceFreeStarter.allowsAction({id:id})) return;
       if (isOnboardingAction(id)) window.BalanceOnboardingFunnel?.track('task', id, 'viewed', { mode: 'first_week' });
       if (id === 'fitgotchi_intro') { if (window.socialJourney) window.socialJourney.openFitGotchiIntro(); return; }
       try {

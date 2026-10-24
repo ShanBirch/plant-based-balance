@@ -259,6 +259,7 @@
   }
 
   function isJourneyEligible() {
+    if (window.BalanceFreeStarter?.coached?.()) return false;
     if (isActivationPreview()) return true;
     if (!window.currentUser || window.guestMode || window.isAdminViewing) return false;
     try { return localStorage.getItem('onboardingComplete') === 'true'; } catch (_) { return false; }

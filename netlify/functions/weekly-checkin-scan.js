@@ -355,6 +355,19 @@ exports.handler = async () => {
     };
 
     for (const a of assignments) {
+        // Included first-month reviews have their own weekly queue. Do not
+        // silently continue free coaching after expiry through the legacy scan.
+        try {
+            const starter = await supabaseQuery(`balance_free_starters?select=id&user_id=eq.${a.client_id}&experience=eq.coached_month_v1&limit=1`);
+            if (starter.length) {
+                const account = await supabaseQuery(`users?select=subscription_status&id=eq.${a.client_id}&limit=1`);
+                if (!['active','trialing','paid','paying'].includes(account[0]?.subscription_status)) continue;
+            }
+        } catch (error) {
+            summary.failed++;
+            console.warn('[weekly-checkin] Coaching access could not be confirmed:', error.message);
+            continue;
+        }
         try {
             const assignedAt = new Date(a.assigned_at).getTime();
             const daysSinceAssigned = Math.floor((now - assignedAt) / DAY_MS);
