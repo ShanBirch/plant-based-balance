@@ -112,5 +112,42 @@ test('finite shortlist native Direct controls in offline PostgreSQL', async t =>
   const rows=(await db.query(`SELECT proname,prosecdef,has_function_privilege('anon',oid,'execute') anon,has_function_privilege('authenticated',oid,'execute') authenticated FROM pg_proc WHERE proname IN ('ig_shortlist_native_checkin_eligible','claim_ig_shortlist_native_action','reserve_ig_shortlist_native_send')`)).rows;
   assert.equal(rows.length,3);for(const row of rows){assert.equal(row.prosecdef,false);assert.equal(row.anon,false);assert.equal(row.authenticated,false);}
  });
+ await db.exec('ALTER TABLE ig_threads ADD COLUMN linked_user_id uuid');
+ await db.exec(fs.readFileSync(path.join(__dirname,
+  '../supabase/migrations/20261025034230_shortlist_exact_empty_canonical.sql'),'utf8'));
+ const emptyThread='ded9b806-8598-4a44-878a-45e8e94177ef';
+ async function emptyCanonical(){
+  await reset(makeReason(),{ig_username:'yadi.z95'});
+  await db.query("INSERT INTO ig_threads(id,ig_username,channel,custom_data) VALUES($1,'yadi.z95','instagram','{}')",[emptyThread]);
+  await db.query('UPDATE ig_next_actions SET thread_id=$1',[emptyThread]);
+ }
+ await t.test('exact empty canonical identity keeps real thread and null source',async()=>{
+  await emptyCanonical();assert.equal(await eligible(),true);
+  const claimed=(await db.query('SELECT * FROM claim_ig_shortlist_native_action($1,1,$2,$3,$4)',[action,run,'offline-tab','Hey, how have you been?'])).rows[0];
+  assert.equal(claimed.thread_id,emptyThread);assert.equal(claimed.source_message_id,null);
+  const args=[action,1,claimed.claim_token,run,'offline-tab'];
+  assert.equal((await db.query('SELECT reserve_ig_shortlist_native_send($1,$2,$3,$4,$5) r',args)).rows[0].r.reserved,true);
+  await assert.rejects(db.query('SELECT reserve_ig_shortlist_native_send($1,$2,$3,$4,$5)',args));
+ });
+ await t.test('empty canonical exception rejects missing/wrong identity, source and new history',async()=>{
+  for(const sql of ["UPDATE ig_next_actions SET thread_id=null",'UPDATE ig_next_actions SET thread_id=gen_random_uuid()',
+   'UPDATE ig_next_actions SET source_message_id=gen_random_uuid()',"UPDATE ig_threads SET ig_username='other'",
+   "UPDATE ig_threads SET channel='facebook'",'UPDATE ig_threads SET linked_user_id=gen_random_uuid()',
+   'INSERT INTO ig_messages SELECT gen_random_uuid(),id,now() FROM ig_threads']){
+   await emptyCanonical();await db.exec(sql);assert.equal(await eligible(),false,sql);
+  }
+ });
+ await t.test('empty canonical exception preserves independent holds and duplicate aliases',async()=>{
+  for(const flag of ['do_not_follow_up','blocked_by_shannon','manual_review_only','friend_manual_only','personal_outreach']){
+   await emptyCanonical();await db.query('UPDATE ig_threads SET custom_data=$1',[{[flag]:true}]);assert.equal(await eligible(),false,flag);
+  }
+  await emptyCanonical();await db.exec(`INSERT INTO ig_threads(id,ig_username,custom_data) VALUES(gen_random_uuid(),'other','{"instagram_graph":{"username":"yadi.z95"}}')`);
+  assert.equal(await eligible(),false);
+  await emptyCanonical();await db.exec("INSERT INTO ig_personal_contacts VALUES('yadi.z95')");assert.equal(await eligible(),false);
+  await emptyCanonical();await db.exec(`INSERT INTO ig_next_action_receipts VALUES('yadi.z95','{"campaign":"shortlist_casual_seven_day_v2","attempt_reserved_at":"2026-10-25T00:00:00Z"}')`);assert.equal(await eligible(),false);
+ });
+ await t.test('original absent-identity path still rejects newly found canonical identity',async()=>{
+  await reset();await db.exec("INSERT INTO ig_threads(id,ig_username,channel,custom_data) VALUES(gen_random_uuid(),'sahil__20__','instagram','{}')");assert.equal(await eligible(),false);
+ });
  await db.close();
 });

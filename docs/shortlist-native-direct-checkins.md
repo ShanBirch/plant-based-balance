@@ -45,3 +45,14 @@ These tests use an isolated fixture database and never connect to production or
 contact people. They cover authority, scope, timestamps, seven-day exclusion,
 identity/source integrity, hold/owner conflicts, legacy behavior, exact claims,
 one-use reservation, expired retry protection and restricted privileges.
+
+The final shortlist also contains `yadi.z95`, whose real canonical thread
+`ded9b806-8598-4a44-878a-45e8e94177ef` has no canonical messages. Migration
+`20261025034230_shortlist_exact_empty_canonical.sql` permits that exact existing
+identity through the same native Direct path, retaining a null source message.
+It requires zero history across the handle and Graph aliases, the matching
+Instagram identity, no linked client or independent hold, and every existing
+native review, authority, ownership and no-repeat check. A new canonical
+message or second identity blocks this exception and requires fresh review.
+This does not authorize a send without reviewing the native conversation and
+current Story availability.
