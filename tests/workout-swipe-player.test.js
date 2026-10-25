@@ -49,9 +49,9 @@ test('exercise page index stays inside available cards', () => {
 test('dashboard loads the player once and cache-busts both main loader paths', () => {
     const html = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
     const serviceWorker = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
-    assert.equal((html.match(/pbb-workout-swipe-player\.js\?v=15-full-width-set-inputs/g) || []).length, 1);
+    assert.equal((html.match(/pbb-workout-swipe-player\.js\?v=16-exercise-details-menu/g) || []).length, 1);
     assert.equal((html.match(/dashboard-script-5-initialize_stripe_for_inapp_pu\.js\?v=/g) || []).length, 3);
-    assert.match(serviceWorker, /pbb-workout-swipe-player\.js\?v=15-full-width-set-inputs/);
+    assert.match(serviceWorker, /pbb-app-v584-exercise-details-menu/);
     assert.match(html, /id="workout-add-existing-wrap"/);
     assert.match(html, /id="workout-add-existing-exercise-btn"/);
 });
@@ -60,7 +60,7 @@ test('admin read-only banner keeps the mobile workout below its measured safe ar
     const html = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
     const startup = fs.readFileSync(path.join(root, 'js/dashboard/dashboard-script-3-1_get_user_data.js'), 'utf8');
     const playerSource = fs.readFileSync(path.join(root, 'js/dashboard/pbb-workout-swipe-player.js'), 'utf8');
-    assert.match(html, /dashboard-script-3-1_get_user_data\.js\?v=65-admin-safe-area/g);
+    assert.match(html, /dashboard-script-3-1_get_user_data\.js\?v=68-startup-identity/g);
     assert.match(startup, /env\(safe-area-inset-top, 0px\)/);
     assert.match(startup, /getBoundingClientRect\(\)\.height/);
     assert.match(startup, /--admin-view-banner-offset/);
@@ -82,7 +82,7 @@ test('focus menu and set controls call the live workout functions', () => {
     assert.match(source, /Film Form Check[\s\S]*openFormCheck/);
     assert.match(source, /Share a Set[\s\S]*openWorkoutFeedShare/);
     assert.match(source, /Add Exercise[\s\S]*openAddExerciseModal/);
-    assert.match(source, /Science & Form Cues[\s\S]*openScienceCues/);
+    assert.match(source, /Exercise Details & Form Cues[\s\S]*openScienceCues/);
     assert.doesNotMatch(source, /Workout Notes|openActiveExerciseNote/);
     assert.match(source, /Finish & Save Workout[\s\S]*finishWorkout/);
     assert.match(source, /Complete set & start rest/);

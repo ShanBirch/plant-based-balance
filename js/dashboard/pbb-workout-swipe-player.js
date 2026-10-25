@@ -431,6 +431,7 @@
             }
             #view-active-workout.workout-focus-pilot .workout-swipe-prescription,
             #view-active-workout.workout-focus-pilot .exercise-note-section { display: none !important; }
+            #view-active-workout.workout-focus-pilot .exercise-logger-card :is(.workout-exercise-tip, .exercise-weekly-plan, .exercise-coach-cue) { display: none !important; }
             #view-active-workout.workout-focus-pilot .workout-set-row {
                 grid-template-columns: 24px minmax(44px, 1fr) minmax(44px, 1fr) 68px 44px !important;
                 gap: 5px !important;
@@ -801,6 +802,9 @@
 
         title.textContent = card.dataset.exerciseName || 'Current exercise';
         content.replaceChildren();
+        card.querySelectorAll('.workout-exercise-tip, .exercise-weekly-plan, .exercise-coach-cue').forEach((source) => {
+            if (source.textContent.trim()) content.appendChild(source.cloneNode(true));
+        });
         const source = card.querySelector('.exercise-technique-panel .exercise-technique-body');
         if (source) {
             Array.from(source.children).forEach((child) => content.appendChild(child.cloneNode(true)));
@@ -862,7 +866,7 @@
             card.append(
                 makeMenuItem('Film Form Check', '◉', () => callGlobal('openFormCheck', workoutContext())),
                 makeMenuItem('Share a Set', '↗', () => callGlobal('openWorkoutFeedShare', workoutContext())),
-                makeMenuItem('Science & Form Cues', '◎', openScienceCues),
+                makeMenuItem('Exercise Details & Form Cues', '◎', openScienceCues),
                 makeMenuItem('Add Exercise', '+', () => callGlobal('openAddExerciseModal')),
                 makeMenuItem('Finish & Save Workout', '✓', () => callGlobal('finishWorkout'), 'is-finish')
             );
@@ -877,11 +881,11 @@
             const page = document.createElement('section');
             page.id = 'workout-focus-cues-page';
             page.setAttribute('aria-hidden', 'true');
-            page.setAttribute('aria-label', 'Science and form cues');
+            page.setAttribute('aria-label', 'Exercise details and form cues');
             page.innerHTML = `
                 <header class="workout-focus-cues-header">
                     <button class="workout-focus-cues-back" type="button" aria-label="Back to workout">‹</button>
-                    <div class="workout-focus-cues-heading">Science &amp; Form Cues</div>
+                    <div class="workout-focus-cues-heading">Exercise Details</div>
                     <span aria-hidden="true"></span>
                 </header>
                 <div class="workout-focus-cues-body">
