@@ -1,0 +1,35 @@
+name: Telemetry privacy regression tests
+
+on:
+  push:
+    paths:
+      - 'lib/telemetry-privacy.js'
+      - 'lib/supabase.js'
+      - 'js/dashboard/pbb-app-telemetry.js'
+      - 'js/dashboard/script_part_2.js'
+      - 'dashboard.html'
+      - 'tests/telemetry-privacy.test.js'
+      - '.github/workflows/telemetry-privacy.yml'
+  pull_request:
+    paths:
+      - 'lib/telemetry-privacy.js'
+      - 'lib/supabase.js'
+      - 'js/dashboard/pbb-app-telemetry.js'
+      - 'js/dashboard/script_part_2.js'
+      - 'dashboard.html'
+      - 'tests/telemetry-privacy.test.js'
+      - '.github/workflows/telemetry-privacy.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/telemetry-privacy.test.js tests/client-activity-alerts.test.js tests/client-activity-foreground.test.js
+      - run: node --check lib/telemetry-privacy.js && node --check lib/supabase.js && node --check js/dashboard/pbb-app-telemetry.js

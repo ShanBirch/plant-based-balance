@@ -2,19 +2,23 @@
   'use strict';
 
   if (root.__pbbAppTelemetryLoaded) return;
-  root.__pbbAppTelemetryLoaded = true;
 
   const VERSION = 'app-journey-v1';
   const MAX_QUEUE = 120;
   const FLUSH_DELAY_MS = 1200;
-  const SENSITIVE_KEY = /(password|passcode|token|secret|authorization|card|cvv|cvc|expiry|email|phone|message|content|answer|response|photo|image|audio|transcript|notes?|body|text|url)/i;
+  const privacy = root.BalanceTelemetryPrivacy;
+  // Fail closed if a stale/failed asset load omitted the privacy helper.
+  if (!privacy) return;
+  root.__pbbAppTelemetryLoaded = true;
   const queue = [];
   const recent = new Map();
   let flushTimer = null;
   let flushing = false;
 
   function safeToken(value, fallback) {
-    const token = String(value == null ? '' : value)
+    const safe = privacy.string(value);
+    if (safe === '[redacted]') return 'redacted';
+    const token = safe
       .trim()
       .toLowerCase()
       .replace(/[^a-z0-9_.:-]+/g, '_')
@@ -24,18 +28,7 @@
   }
 
   function sanitize(value, depth) {
-    if (depth > 3 || value == null) return value == null ? null : undefined;
-    if (typeof value === 'boolean' || typeof value === 'number') return value;
-    if (typeof value === 'string') return value.slice(0, 120);
-    if (Array.isArray(value)) return value.slice(0, 12).map(item => sanitize(item, depth + 1)).filter(item => item !== undefined);
-    if (typeof value !== 'object') return undefined;
-    const output = {};
-    Object.keys(value).slice(0, 30).forEach(key => {
-      if (SENSITIVE_KEY.test(key)) return;
-      const clean = sanitize(value[key], depth + 1);
-      if (clean !== undefined) output[safeToken(key)] = clean;
-    });
-    return output;
+    return privacy.sanitize(value, depth);
   }
 
   function sessionId() {
@@ -78,12 +71,12 @@
       const rows = batch.map(event => ({
         user_id: userId,
         activity_type: event.type,
-        activity_data: Object.assign({
+        activity_data: sanitize(Object.assign({
           telemetry_version: VERSION,
           session_id: sessionId(),
           path: root.location && root.location.pathname || '',
           client_time: event.clientTime
-        }, event.data)
+        }, event.data), 0)
       }));
       const result = await client.from('user_activity').insert(rows);
       if (result && result.error) throw result.error;
@@ -109,7 +102,7 @@
     const eventType = safeToken(type, 'app_interaction');
     const clean = sanitize(data || {}, 0) || {};
     const replaySession = root.BalanceReplay && root.BalanceReplay.getSessionId();
-    if (replaySession) clean.replay_session_id = replaySession;
+    if (replaySession) clean.replay_session_id = privacy.string(replaySession);
     const dedupeKey = options && options.dedupeKey ? eventType + ':' + options.dedupeKey : '';
     if (dedupeKey) {
       const now = Date.now();
@@ -223,10 +216,10 @@
   root.addEventListener('error', function (event) {
     track('app_client_error', {
       error_name: safeToken(event.error && event.error.name || 'error'),
-      source_file: safeToken(String(event.filename || '').split('/').pop()),
+      source_file: safeToken(privacy.sourceFile(event.filename)),
       line: Number(event.lineno || 0),
       column: Number(event.colno || 0)
-    }, { dedupeKey: String(event.filename || '') + ':' + event.lineno, dedupeMs: 5000, immediate: true });
+    }, { dedupeKey: privacy.sourceFile(event.filename) + ':' + event.lineno, dedupeMs: 5000, immediate: true });
   });
 
   root.addEventListener('unhandledrejection', function (event) {
