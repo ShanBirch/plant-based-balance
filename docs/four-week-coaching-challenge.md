@@ -6,6 +6,18 @@ paid enquiries and the separate Summer Ready offer retain their actual terms.
 
 ## Conversation before an offer
 
+Shannon's 25 October follow-up correction: in an eligible open reciprocal
+business conversation, answer first and normally ask one relevant easy question
+in the same substantive turn. Short replies should still give the person a
+reason to respond. Do not routinely end a fresh substantive answer with only
+encouragement or a paraphrase. Follow their topic and take a natural opening
+toward their routine, goal, existing support and wanted help; when fit is known,
+invite them under the live capacity and terms below instead of interviewing
+indefinitely. This overrides generic acknowledgement-only preferences for open
+business exchanges. Completed conversations, refusals, space requests, ignored
+pivots, known answers, safety/support and independent holds remain exceptions.
+No question quota, invented problem, retrospective message or silence chase.
+
 Understand the person's own goal, current routine, existing support and whether
 they actually welcome help. A goal, weight-loss history, friendliness or gym
 interest alone is not a help signal. Use their complete conversation, reuse known
