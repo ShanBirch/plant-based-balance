@@ -14,6 +14,15 @@ const trustHistory = [
 ];
 const invitation = "We could have a video call and get to know each other a bit, with no pressure to sign up. Would that suit you?";
 
+test('organic writer and reviewer prioritise routine, support and wanted help before the capped challenge',()=>{
+    const {buildCoachingConversationPolicy}=require('../netlify/functions/_lib/coaching-conversation-policy');
+    for(const reviewer of [false,true]){
+        const text=buildCoachingConversationPolicy({reviewer});
+        assert.ok(text.indexOf('CURRENT ORGANIC POLICY')<text.indexOf('ORGANIC FOLLOWER OUTREACH OBJECTIVE'));
+        for(const detail of ['current routine','existing coach/programme/support','whether they actually welcome help','A goal, weight-loss history','balance_coaching_challenge_status','reserve_balance_coaching_challenge','AUD $14.99/week','never the default conversion','historical agreements stay intact']) assert.ok(text.includes(detail),detail);
+    }
+});
+
 test('shared coaching policy preserves Shannon’s relaxed optional phone invitation', () => {
     const { buildCoachingConversationPolicy } = require('../netlify/functions/_lib/coaching-conversation-policy');
     for (const reviewer of [false, true]) {

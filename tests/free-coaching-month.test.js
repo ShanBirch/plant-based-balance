@@ -37,9 +37,9 @@ test('missing schedule, unknown equipment, restrictions and duplicate days stop 
     }
 });
 function storage() { const data=new Map();return {getItem:k=>data.get(k)||null,setItem:(k,v)=>data.set(k,v),removeItem:k=>data.delete(k)}; }
-async function starter(experience='coached_month_v1') {
+async function starter(experience='coached_month_v1', setup={}) {
     const window={currentUser:{id:'member'},sessionStorage:storage(),localStorage:storage(),document:{addEventListener(){},querySelector(){},getElementById(){}}};
-    window.fetch=async()=>({ok:true,json:async()=>({starter:{id:'grant',experience,workoutsReady:true,setup:{schedule,equipment:'none',goal:'Get stronger'}}})});
+    window.fetch=async()=>({ok:true,json:async()=>({starter:{id:'grant',experience,workoutsReady:true,setup:{schedule,equipment:'none',goal:'Get stronger',...setup}}})});
     vm.runInNewContext(read('lib/free-starter.js'),{window});
     await window.BalanceFreeStarter.resolve({user:window.currentUser,access_token:'test'});
     return window;
@@ -59,6 +59,17 @@ test('older starter grants retain course access and their original support promi
     assert.equal(w.BalanceFreeStarter.coached(),false);
     assert.equal(w.BalanceFreeStarter.allowsAction({id:'foundations_intro'}),true);
     assert.match(w.BalanceFreeStarter.adaptAction({id:'coach_checkin_intro'}).body,/not included/);
+});
+
+test('challenge copy uses four weeks and disclosed optional continuation without changing historical months',async()=>{
+    const challenge=await starter('coached_month_v1',{challengeIntakeId:'consistency_20261025'});
+    assert.match(challenge.BalanceFreeStarter.welcomeCopy(),/four weeks/);
+    assert.match(challenge.BalanceFreeStarter.welcomeCopy(),/\$14\.99\/week only if you choose it/);
+    assert.match(challenge.BalanceFreeStarter.welcomeCopy(),/No automatic billing/);
+    assert.doesNotMatch(challenge.BalanceFreeStarter.welcomeCopy(),/first month/);
+    assert.match((await starter()).BalanceFreeStarter.welcomeCopy(),/first month/);
+    challenge.currentUser={id:'other'};
+    assert.doesNotMatch(challenge.BalanceFreeStarter.welcomeCopy(),/four weeks/);
 });
 test('coached forward, back and resumed wizard paths skip all workout-building slides',()=>{
     const source=read('js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js');

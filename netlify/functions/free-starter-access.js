@@ -35,7 +35,7 @@ exports.handler = async function (event) {
             if (!programs?.[0]?.id || !grant.starts_at || !grant.ends_at) return response(409, { grantUnavailable:true, error:'Your coaching program needs a setup check. Please ask Shannon to check it before starting.' });
         }
         if (grant?.experience === 'coached_month_v1' && grant.ends_at && Date.parse(grant.ends_at) <= Date.now()) {
-            return response(403, { expired: true, error: 'Your free coaching month has ended. Contact Shannon about continuing. No payment has been taken.' });
+            return response(403, { expired: true, error: 'Your free coaching period has ended. Contact Shannon about continuing. No payment has been taken.' });
         }
         return response(200, { starter: grant ? { id: grant.id, workoutLimit: grant.experience === 'coached_month_v1' ? grant.setup?.schedule?.length : grant.workout_limit, workoutsReady: grant.workouts_ready,
             experience: grant.experience || 'legacy_starter', startsAt: grant.starts_at || null, endsAt: grant.ends_at || null,

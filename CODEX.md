@@ -1,5 +1,18 @@
 # Balance Codex Operating Brief
 
+## Organic coaching intake, 25 October 2026
+
+Shannon authorised `docs/four-week-coaching-challenge.md`: understand goal,
+current routine, existing support and actual openness to help before an organic
+offer. A goal alone does not earn a pitch. Calls are optional. The new offer is
+one rolling six-person Balance four-week consistency challenge, four weeks free
+from invitation claim, then AUD $14.99/week only after explicit choice and a
+verified payment path. Disclose continuation before enrolment; no auto-billing.
+Use the live status/reservation RPCs and existing separate setup worker. Never
+bypass the six-person limit with another free-month offer. Preserve historical
+promises, separate paid/Summer Ready offers, independent holds and sole sender.
+This supersedes older organic goal-only free-month and call-first instructions.
+
 ## Organic business conversations and outbound-comment replies, 16 October 2026
 
 For the sole MBS conversation operator, read `docs/organic-business-conversations-2026-10-16.md`: brief rapport may gently lead to the person's training/nutrition/goals without waiting indefinitely for a new fitness keyword. Answer their actual question, preserve personal/dating/manual holds, known facts, declined pivots and exact no-repeat. Current Summer Ready and booking rules remain in `docs/summer-ready-chat-booking-2026-10-16.md`.

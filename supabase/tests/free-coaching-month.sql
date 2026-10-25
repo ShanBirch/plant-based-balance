@@ -17,7 +17,8 @@ begin
  if uid is null then raise exception 'Controlled unlinked test user required'; end if;
  insert into ig_threads(id,coach_id,ig_username,profile_name,channel,subscriber_id,custom_data)
  values(tid,'00a6605e-8edb-4917-85ba-24a23f179059','internal_coached_month_test','Internal coached month test','instagram','internal_test:'||tid,'{}');
- insert into ig_messages(id,thread_id,direction,text,source) values(acceptance,tid,'in','Yes please, Tuesdays and Fridays after work at those times','internal_rollback_test');
+ -- Historical-month fixture, before the new challenge opened.
+ insert into ig_messages(id,thread_id,direction,text,source,created_at) values(acceptance,tid,'in','Yes please, Tuesdays and Fridays after work at those times','internal_rollback_test',now()-interval '1 day');
  begin
   perform prepare_balance_free_coaching(tid,acceptance,'Australia/Brisbane','[{"weekday":2,"time":"16:30"},{"weekday":5,"time":"17:15"}]','none','Get stronger',30,v_plan,'{}');
   raise exception 'Incomplete consent accepted';

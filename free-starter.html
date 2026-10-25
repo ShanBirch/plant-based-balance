@@ -15,9 +15,9 @@
 const token = new URLSearchParams(location.hash.slice(1)).get('invite') || sessionStorage.getItem('pbb_free_starter_invite') || localStorage.getItem('pbb_free_starter_invite');
 if (location.hash.includes('retry=')) document.getElementById('error').textContent = 'Your invitation could not be confirmed. Try again, or ask Shannon to check it.';
 if (location.hash.includes('expired=')) {
-  document.getElementById('error').textContent = 'Your free coaching month has finished. Message Shannon if you would like to continue coaching.';
+  document.getElementById('error').textContent = 'Your free coaching period has finished. Message Shannon if you would like to continue coaching.';
   document.getElementById('start').disabled = true;
-  document.getElementById('start').textContent = 'Your free month has finished';
+  document.getElementById('start').textContent = 'Your free coaching has finished';
 }
 document.getElementById('start').onclick = function () {
   if (!token || !/^[A-Za-z0-9_-]{43}$/.test(token)) {
