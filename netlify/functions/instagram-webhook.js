@@ -1935,7 +1935,31 @@ async function findThreadByIgHandle(igUsername, selectColumns) {
     }
 }
 
-async function findRecentThreadByText({ messageText, direction, nowIso, selectColumns }) {
+function recentTextThreadMatchesGraphIdentity(thread, { participantId, participantUsername, igAccountId }) {
+    if (!thread) return false;
+    const data = safeObject(thread.custom_data);
+    const graph = safeObject(data.instagram_graph);
+    const subscriberParts = String(thread.subscriber_id || '').split(':');
+    const subscriberParticipant = isGraphSubscriberId(thread.subscriber_id)
+        ? subscriberParts[subscriberParts.length - 1] : null;
+    const ids = [graph.ig_graph_user_id, data.ig_graph_user_id, subscriberParticipant]
+        .map(value => String(value || '').trim()).filter(Boolean);
+    const incomingId = String(participantId || '').trim();
+    // A repeated greeting must never overwrite an established recipient ID.
+    if (ids.length && (!incomingId || ids.some(id => id !== incomingId))) return false;
+    const accounts = [graph.ig_account_id, graph.account_id, graph.owner_id,
+        data.ig_graph_account_id, data.owner_ig_user_id]
+        .map(value => String(value || '').trim()).filter(Boolean);
+    if (accounts.length && (!igAccountId || accounts.some(id => id !== String(igAccountId)))) return false;
+    const incomingHandle = cleanIgUsername(participantUsername);
+    const handles = [thread.ig_username, graph.username, graph.ig_username]
+        .map(cleanIgUsername).filter(Boolean);
+    if (incomingHandle && handles.some(handle => !sameHandle(handle, incomingHandle))) return false;
+    return ids.length > 0 || Boolean(incomingHandle && handles.some(handle => sameHandle(handle, incomingHandle)));
+}
+
+async function findRecentThreadByText({ messageText, direction, nowIso, selectColumns,
+    participantId, participantUsername, igAccountId }) {
     const needle = normalizeComparableText(messageText);
     if (!needle) return null;
     const cutoffIso = new Date(new Date(nowIso).getTime() - RECENT_IDENTITY_MATCH_MS).toISOString();
@@ -1961,7 +1985,10 @@ async function findRecentThreadByText({ messageText, direction, nowIso, selectCo
         console.warn('[instagram-webhook] recent text thread lookup failed:', err.message);
         return null;
     }
-    const threadById = new Map(threads.map(thread => [thread.id, thread]));
+    const identityMatches = threads.filter(thread => recentTextThreadMatchesGraphIdentity(thread, {
+        participantId, participantUsername, igAccountId,
+    }));
+    const threadById = new Map(identityMatches.map(thread => [thread.id, thread]));
     for (const match of matches) {
         const thread = threadById.get(match.thread_id);
         if (!thread) continue;
@@ -1971,7 +1998,7 @@ async function findRecentThreadByText({ messageText, direction, nowIso, selectCo
             return thread;
         }
     }
-    return threads[0] || null;
+    return identityMatches[0] || null;
 }
 
 function shouldUseGraphUsernameForProfileName(currentProfileName) {
@@ -2006,7 +2033,8 @@ async function upsertGraphThread({
         || null;
     const mergedThread = await findThreadById(mergedIntoThreadId(exactGraphThread), selectColumns);
     const handleThread = await findThreadByIgHandle(participantUsername, selectColumns);
-    const recentTextThread = await findRecentThreadByText({ messageText, direction, nowIso, selectColumns });
+    const recentTextThread = await findRecentThreadByText({ messageText, direction, nowIso, selectColumns,
+        participantId, participantUsername, igAccountId });
     const current = mergedThread
         || (handleThread && (!exactGraphThread || isGraphSubscriberId(exactGraphThread.subscriber_id) || handleThread.id === exactGraphThread.id) ? handleThread : null)
         || (recentTextThread && (!exactGraphThread || isGraphSubscriberId(exactGraphThread.subscriber_id)) ? recentTextThread : null)
@@ -3155,6 +3183,7 @@ async function auditPayload(payload, options) {
 }
 
 exports._test = {
+    recentTextThreadMatchesGraphIdentity,
     IG_NATIVE_INBOX_MESSAGE_SOURCE,
     IG_GRAPH_SYSTEM_MESSAGE_LABEL,
     graphMessageTrainingMetadata,

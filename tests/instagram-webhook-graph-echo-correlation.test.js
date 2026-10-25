@@ -3,6 +3,27 @@ const assert = require('node:assert/strict');
 
 const webhook = require('../netlify/functions/instagram-webhook');
 
+test('identical native greetings cannot merge two distinct Graph participants', () => {
+    const first = { ig_username: 'first_person', subscriber_id: 'ig_graph:account:recipient-one',
+        custom_data: { instagram_graph: { username: 'first_person', ig_graph_user_id: 'recipient-one', ig_account_id: 'account' } } };
+    const match = webhook._test.recentTextThreadMatchesGraphIdentity;
+    assert.equal(match(first, { participantId: 'recipient-two', participantUsername: 'second_person', igAccountId: 'account' }), false);
+    assert.equal(match(first, { participantId: 'recipient-two', participantUsername: 'first_person', igAccountId: 'account' }), false);
+    assert.equal(match(first, { participantId: 'recipient-one', participantUsername: 'first_person', igAccountId: 'account' }), true);
+    assert.equal(match(first, { participantId: 'recipient-one', participantUsername: 'first_person', igAccountId: 'other-account' }), false);
+});
+
+test('text fallback requires independent recipient identity and rejects conflicting aliases', () => {
+    const match = webhook._test.recentTextThreadMatchesGraphIdentity;
+    assert.equal(match({ id: 'unknown' }, { participantId: 'new-id', igAccountId: 'account' }), false);
+    assert.equal(match({ ig_username: 'known_person', subscriber_id: 'manychat-id' },
+        { participantId: 'new-id', participantUsername: 'known_person', igAccountId: 'account' }), true);
+    assert.equal(match({ ig_username: 'old_person', custom_data: { instagram_graph: { username: 'new_person', ig_graph_user_id: 'new-id' } } },
+        { participantId: 'new-id', participantUsername: 'new_person', igAccountId: 'account' }), false);
+    assert.equal(match({ custom_data: { instagram_graph: { ig_graph_user_id: 'same-id', ig_account_id: 'account' } } },
+        { participantId: 'same-id', igAccountId: 'account' }), true);
+});
+
 test('a Graph echo can only clear a pending alert for the same inbound', () => {
     const sent = { idempotency_key: 'ig_incoming_dm:ig_graph:goal-inbound' };
     const sameInboundShell = { idempotency_key: 'ig_incoming_dm:ig_graph:goal-inbound' };
