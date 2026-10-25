@@ -63,6 +63,20 @@ begin
  and (g.id is null or (g.revoked_at is null and g.ends_at>now()))
  on conflict(relationship_id,kind) do nothing;
 
+ -- A new client's unknown native identity/timezone is an actionable setup
+ -- task, not permission to guess and not a silent omission from the flow.
+ insert into coach_alerts(coach_id,client_id,client_name,alert_type,priority,status,title,description,idempotency_key,data)
+ select c.coach_id,c.client_id,u.name,'follow_up_review','medium','pending','New-client support needs identity or timezone',
+ 'Verify the exact native account link and confirmed timezone, then refresh onboarding support. Do not guess a recipient or timezone.',
+ 'client_onboarding_support_setup:'||c.id,jsonb_build_object('relationship_id',c.id,'operator_queue','needs_you')
+ from coach_clients c join users u on u.id=c.client_id
+ where c.status='active' and c.ended_at is null and c.coach_id='00a6605e-8edb-4917-85ba-24a23f179059'
+ and c.assigned_at>='2026-10-24T00:00:00+10' and c.assigned_at>now()-interval '4 days'
+ and u.onboarding_complete and u.last_login is not null and not coalesce(u.is_test_account,false)
+ and not exists(select 1 from client_onboarding_support_events e where e.relationship_id=c.id)
+ and not exists(select 1 from ig_threads t where t.linked_user_id=c.client_id and not free_coaching_thread_allowed(t.id))
+ on conflict(idempotency_key) where idempotency_key is not null do nothing;
+
  update client_onboarding_support_events set status='uncertain',receipt=receipt||'{"reason":"attempt_requires_reconciliation","no_repeat":true}'
  where status='reserved' and attempted_at<now()-interval '10 minutes';
  update client_onboarding_support_events set status='expired',receipt=receipt||'{"reason":"missed_delivery_window"}'

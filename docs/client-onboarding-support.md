@@ -1,7 +1,7 @@
 # New-client onboarding support
 
 Authorised by Shannon, 26 October 2026. Applies to newly assigned Balance clients,
-including Jess and Joanne from 25 October. Keep each historical access agreement.
+including the two 25 October assignments. Keep each historical access agreement.
 This extends the existing sole Meta Business Suite operator and five-minute
 `refresh_workout_accountability()` server job. No additional sender or worker.
 
@@ -44,8 +44,8 @@ Dave. Last login is account activity, not proof they installed the native app.
 
 Night two: a short human check-in, then the next useful missing decision. Reuse
 the saved program days and ask whether they suit them, rather than asking their
-whole availability again. Jess's days are suggestions around travel/grandbaby
-duties; Joanne's Tuesday is gentle recovery. Preserve that distinction. Confirm
+whole availability again. Distinguish flexible suggested sessions from agreed
+appointments, and gentle recovery from strength sessions. Confirm
 timezone only if unresolved; do not substitute Brisbane for Sydney.
 
 Ask whether messages on their training mornings and a short after-session check
