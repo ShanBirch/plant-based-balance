@@ -2,6 +2,12 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const root = path.resolve(__dirname, '..');
+// Attach the immutable deployment revision to diagnostic records.
+if (!process.argv.includes('--check') && /^[a-f0-9]{40}$/i.test(process.env.COMMIT_REF || '')) {
+  const page = path.join(root, 'dashboard.html');
+  fs.writeFileSync(page, fs.readFileSync(page, 'utf8').replace(/(<meta name="balance-build" content=")[^"]*("\/>)/, (_, before, after) => before + process.env.COMMIT_REF + after));
+}
+
 const assets = new Set(['./dashboard.html', './login.html', './balance_logo.png', './balance_logo_transparent.svg', './manifest.json']);
 const sources = ['dashboard.html', 'login.html', 'exercise_videos.js', 'workout_library.js', 'workout_library_extended.js'];
 for (const dir of ['js/dashboard', 'lib', 'css/dashboard']) {

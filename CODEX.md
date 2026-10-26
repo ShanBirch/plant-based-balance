@@ -1,5 +1,15 @@
 # Balance Codex Operating Brief
 
+## App diagnostics (26 October 2026)
+
+For app problems, read `docs/startup-error-debugging.md` and query current
+`user_activity` app_client_error groups before guessing. App diagnostics v2
+records failure categories, stable grouping keys, deployment revision, safe
+stack coordinates, control/navigation trail, connectivity and replay IDs.
+No raw messages, request bodies or URL queries are collected. Expected HTTP
+failures and resource/slow signals are not automatically confirmed defects.
+
+
 ## Organic coaching intake, 25 October 2026
 
 Shannon authorised `docs/four-week-coaching-challenge.md`: understand goal,

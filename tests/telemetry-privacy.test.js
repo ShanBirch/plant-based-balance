@@ -130,7 +130,7 @@ test('shared privacy loader rejects on asset failure and can retry without unpro
 
 test('dashboard loads versioned privacy helper before telemetry', () => {
   const html = read('dashboard.html');
-  assert.ok(html.indexOf('/lib/telemetry-privacy.js?v=1') < html.indexOf('pbb-app-telemetry.js?v=5-startup-debug'));
+  assert.ok(html.indexOf('/lib/telemetry-privacy.js?v=1') < html.indexOf('pbb-app-telemetry.js?v=6-app-diagnostics'));
   assert.match(html, /script_part_2.js\?v=25-telemetry-privacy/);
   assert.equal((read('js/dashboard/script_part_2.js').match(/supabase.js\?v=20-telemetry-privacy/g) || []).length, 2);
 });
@@ -176,7 +176,7 @@ test('startup capture installs before any other executable dashboard script', ()
   const html = read('dashboard.html');
   const scripts = [...html.matchAll(/<script\b[^>]*>/g)].map(m => m[0]);
   assert.match(scripts[0], /telemetry-privacy/);
-  assert.match(scripts[1], /pbb-app-telemetry.js\?v=5-startup-debug/);
+  assert.match(scripts[1], /pbb-app-telemetry.js\?v=6-app-diagnostics/);
 });
 
 

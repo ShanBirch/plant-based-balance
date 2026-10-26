@@ -146,7 +146,7 @@
       return session || null;
     } catch (_) { return null; }
   }
-  root.BalanceReplay = { setEnabled, flush, markOnboarding, getSessionId: () => session || null };
+  root.BalanceReplay = { setEnabled, flush, markOnboarding, markError: errorMarker, getSessionId: () => session || null };
   document.addEventListener('pointerdown', event => {
     if (!root.__balanceGuidedTourActive || !stop || !eligible() || !tourContext) return;
     const bubble = document.getElementById('guided-tour-bubble');
