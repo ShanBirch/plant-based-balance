@@ -1,5 +1,11 @@
 # Browser surface ownership — Shannon, 1 October 2026
 
+26 October override: the existing sole reactive responder now uses its own
+native Instagram tab. Read [native-instagram-reactive.md](native-instagram-reactive.md).
+Its `missed_dm_audit` lane shares the MBS coordination scope, preserving one
+reactive owner while independent Story work continues. Facebook/WhatsApp and
+MBS scans are out of scope for this responder. Historical text below is retained.
+
 This latest instruction supersedes the previous global browser queue, independent-profile requirement, idle-dispatcher handoff and shorter proactive runtime walls. Shared signed-in Chrome is supported via independently bound tab handles. Only tab-bound Playwright/DOM commands are permitted during parallel operation; no desktop coordinates, keyboard focus, profile-wide account changes or navigation of another worker's tab.
 
 ## Owners and schedule
