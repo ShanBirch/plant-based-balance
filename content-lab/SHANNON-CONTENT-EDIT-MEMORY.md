@@ -438,3 +438,8 @@ Balance meal plans are built into the app rather than delivered as PDFs.
 ## 6 October 2026 - local Facebook coaching posts keep prices on the website
 
 Shannon confirmed home PT at AUD $120 for 45 minutes and Home PT + Balance at AUD $170/week. For the local Facebook group campaign, promote at-home training, Zoom training and online coaching without publishing prices in post copy, graphics or link previews. Keep public prices on the website. Shannon authorised unattended weekly posting without repeated review, within each group's live advertising rules and with durable duplicate prevention. Campaign contract: docs/local-facebook-coaching.md.
+
+## 26 October 2026 — coaching lessons invite reflection
+
+Shannon asked to keep all concrete examples in Jennie’s free energy principle lesson while making learning the main thread. He requested the established side-by-side text and photo layout, clear title slides when topics change, and reflection after each topic so the lesson includes her experience and questions rather than continuous explanation. Reusable rule for coaching presentations: connect examples through one central learning question, preserve meaningful examples, use relevant photos beside concise editable copy, mark topic transitions, and include open reflection questions with time to answer. Ask one question at a time, allow uncertainty and disagreement, and connect the close to a small experiment chosen with the learner. Distinguish immediate interpretation from lasting learning and avoid presenting every disagreement as a survival response. Session contract: `output/jennie-fep-2026-10-27/Coach-Notes.md` and the live deck’s speaker notes.
+
