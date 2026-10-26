@@ -328,7 +328,7 @@
       const data = Object.assign({ error_kind: kind, error_name: safeToken(error && error.name || 'error'),
         missing_symbol: missingSymbol(error), diagnostic: errorContext(error) }, facts || {});
       data.issue_key = fingerprint([kind, data.error_name, data.source_file, data.line, data.column,
-        data.missing_symbol, data.operation, data.status, data.code].join(':'));
+        data.missing_symbol, data.operation, data.status, data.code, data.diagnostic.frames[0]].join(':'));
       const key = 'app_client_error:' + data.issue_key;
       if (Date.now() - Number(recent.get(key) || 0) < 5000) return;
       rateCount++;
