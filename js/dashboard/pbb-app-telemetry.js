@@ -213,10 +213,20 @@
     scanSurfaces();
   }
 
+  // Retain only a JavaScript identifier from known ReferenceError formats.
+  // Raw messages and stacks can contain private values, so never store them.
+  function missingSymbol(error, fallback) {
+    if (error && error.name && error.name !== 'ReferenceError') return undefined;
+    const value = String(error && error.message || fallback || '');
+    const match = /^(?:ReferenceError: )?(?:Can't find variable: ([A-Za-z_$][\w$]{0,63})|([A-Za-z_$][\w$]{0,63}) is not defined)$/.exec(value);
+    return match ? privacy.string(match[1] || match[2]) : undefined;
+  }
+
   root.addEventListener('error', function (event) {
     track('app_client_error', {
       error_name: safeToken(event.error && event.error.name || 'error'),
       source_file: safeToken(privacy.sourceFile(event.filename)),
+      missing_symbol: missingSymbol(event.error, event.message),
       line: Number(event.lineno || 0),
       column: Number(event.colno || 0)
     }, { dedupeKey: privacy.sourceFile(event.filename) + ':' + event.lineno, dedupeMs: 5000, immediate: true });
@@ -225,7 +235,8 @@
   root.addEventListener('unhandledrejection', function (event) {
     track('app_client_error', {
       error_name: safeToken(event.reason && event.reason.name || typeof event.reason || 'promise_rejection'),
-      source_file: 'unhandled_promise'
+      source_file: 'unhandled_promise',
+      missing_symbol: missingSymbol(event.reason)
     }, { dedupeKey: 'unhandled:' + safeToken(event.reason && event.reason.name || ''), dedupeMs: 5000, immediate: true });
   });
 

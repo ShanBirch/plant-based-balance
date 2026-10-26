@@ -130,7 +130,22 @@ test('shared privacy loader rejects on asset failure and can retry without unpro
 
 test('dashboard loads versioned privacy helper before telemetry', () => {
   const html = read('dashboard.html');
-  assert.ok(html.indexOf('/lib/telemetry-privacy.js?v=1') < html.indexOf('pbb-app-telemetry.js?v=3-privacy'));
+  assert.ok(html.indexOf('/lib/telemetry-privacy.js?v=1') < html.indexOf('pbb-app-telemetry.js?v=4-error-symbol'));
   assert.match(html, /script_part_2.js\?v=25-telemetry-privacy/);
   assert.equal((read('js/dashboard/script_part_2.js').match(/supabase.js\?v=20-telemetry-privacy/g) || []).length, 2);
+});
+
+
+test('reference errors retain only the missing identifier, with privacy filtering', async () => {
+  const h = harness();
+  h.listeners.error({ filename: 'dashboard.html', lineno: 1, error: { name: 'ReferenceError', message: "Can't find variable: appBridge" } });
+  h.listeners.unhandledrejection({ reason: { name: 'ReferenceError', message: 'workoutHelper is not defined' } });
+  h.listeners.error({ filename: 'other.js', lineno: 2, error: { name: 'ReferenceError', message: 'access_token_DUMMY is not defined' } });
+  h.listeners.error({ filename: 'other.js', lineno: 3, error: { name: 'TypeError', message: 'private client text' } });
+  await h.window.flushBalanceActivity();
+  assert.equal(h.rows.find(r => r.activity_data.line === 1).activity_data.missing_symbol, 'appBridge');
+  assert.equal(h.rows.find(r => r.activity_data.source_file === 'unhandled_promise').activity_data.missing_symbol, 'workoutHelper');
+  assert.equal(h.rows.find(r => r.activity_data.line === 2).activity_data.missing_symbol, '[redacted]');
+  assert.equal(h.rows.find(r => r.activity_data.line === 3).activity_data.missing_symbol, null);
+  assert.doesNotMatch(JSON.stringify(h.rows), /DUMMY|private client/);
 });

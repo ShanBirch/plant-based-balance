@@ -1891,7 +1891,7 @@ window.addEventListener('load', function() {
 
     <script src="lib/onboarding-funnel.js?v=3-replay"></script>
     <script src="/lib/telemetry-privacy.js?v=1"></script>
-    <script src="js/dashboard/pbb-app-telemetry.js?v=3-privacy"></script>
+    <script src="js/dashboard/pbb-app-telemetry.js?v=4-error-symbol"></script>
     <script src="lib/voice-feedback-playback.js?v=20261011-playback"></script>
     <script defer src="js/dashboard/pbb-client-activity-alerts.js?v=1-foreground"></script>
     <script defer src="js/dashboard/pbb-replay-privacy.js?v=2-onboarding"></script>
@@ -21412,11 +21412,11 @@ if (window._pbbIsIOSSafari) {
             });
             if (window.showQuizBattleInviteModal || learningAlreadyRequested) return;
             var s = document.createElement('script');
-      s.src = 'lib/learning-inline.js?v=20261024-coached-month';
+      s.src = 'lib/learning-inline.js?v=20261026-content-ready';
             document.head.appendChild(s);
         }, { once: true });
     } else {
-    document.write('<script src="lib/learning-inline.js?v=20261024-coached-month"><\/script>');
+    document.write('<script src="lib/learning-inline.js?v=20261026-content-ready"><\/script>');
     }
     </script>
     <!-- Battle System & Logic Overrides (130 lines — deferred on iOS) -->
