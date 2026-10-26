@@ -121,3 +121,13 @@ test('build stamp uses only a valid immutable revision and check mode never rewr
   assert.equal(run('PRIVATE_BAD_VALUE'),undefined);
   assert.equal(run('1'.repeat(40),['--check']),undefined);
 });
+
+
+test('guest and admin-preview failures cannot carry into a later member session',async()=>{
+  for (const flag of ['guestMode','isAdminViewing']) {
+    const h=harness();h.window[flag]=true;
+    h.window.reportBalanceAppError('preview_only',new Error());
+    h.window[flag]=false;await h.window.flushBalanceActivity();
+    assert.equal(h.errors().length,0);
+  }
+});

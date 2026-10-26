@@ -119,6 +119,7 @@
   }
 
   function track(type, data, options) {
+    if (root.guestMode || root.isAdminViewing) return;
     const eventType = safeToken(type, 'app_interaction');
     const clean = sanitize(data || {}, 0) || {};
     const replaySession = root.BalanceReplay && root.BalanceReplay.getSessionId();
