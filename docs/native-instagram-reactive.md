@@ -47,3 +47,9 @@ Latest composition, coaching support, onboarding, reminder, historical promise,
 opt-out and personal/manual policies still apply. Fresh inbound first, then
 eligible carried work; keep unresolved sources durable. Stay quiet for unchanged
 state and notify only meaningful results, failures or required user action.
+
+The existing acquisition function prefers a partial predecessor's `next_resume`.
+Always persist the complete current cursor in both `cursor_end` and `next_resume`,
+with continuation hints added inside that full object. Tab/surface hints alone
+would omit the historical cursor on the next wake. Preserve original receipt
+rows and restore omitted cursor fields from them without replaying actions.
