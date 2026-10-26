@@ -18125,8 +18125,10 @@ function getExerciseTechniqueHtml(exerciseName) {
 
 // Generate the notes section HTML for an exercise card
 function getExerciseNotesHtml(exerciseName) {
-    const coachNote = window.coachNotesCache[exerciseName] || '';
-    const userNote = window.exerciseNotesCache[exerciseName] || '';
+    const rawCoachNote = window.coachNotesCache?.[exerciseName];
+    const rawUserNote = window.exerciseNotesCache?.[exerciseName];
+    const coachNote = typeof rawCoachNote === 'string' ? rawCoachNote : '';
+    const userNote = typeof rawUserNote === 'string' ? rawUserNote : '';
     const escapedName = exerciseName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
     const hasNote = userNote.length > 0;
 
@@ -24240,53 +24242,88 @@ function searchExercisesForAdd(query) {
 
 // Select exercise to add
 async function selectExerciseToAdd(exerciseName) {
-    const user = window.currentUser;
-    const workoutKey = window.currentWorkoutKey;
+    window._addingWorkoutExercises = window._addingWorkoutExercises || new Set();
+    const exerciseKey = normalizeWorkoutExerciseHistoryKey(exerciseName);
+    if (window._addingWorkoutExercises.has(exerciseKey)) return;
+    const alreadyAdded = Array.from(document.querySelectorAll('#workout-exercises-list .exercise-logger-card'))
+        .some(card => normalizeWorkoutExerciseHistoryKey(card.dataset.exerciseName) === exerciseKey);
+    if (alreadyAdded) {
+        closeAddExerciseModal();
+        alert(`"${exerciseName}" is already in this workout.`);
+        return;
+    }
+    window._addingWorkoutExercises.add(exerciseKey);
+    try {
+        const user = window.currentUser;
+        const workoutKey = window.currentWorkoutKey;
 
-    // Create exercise object
-    const newExercise = {
-        name: exerciseName,
-        sets: 3,
-        reps: '8-12',
-        desc: 'Custom exercise added by you',
-        isUserAdded: true
-    };
+        // Create exercise object
+        const newExercise = {
+            name: exerciseName,
+            sets: 3,
+            reps: '8-12',
+            desc: 'Custom exercise added by you',
+            isUserAdded: true
+        };
 
-    // Ask user if they want to save permanently
-    const saveChoice = confirm(`Add "${exerciseName}" to this workout?\n\nClick OK to save it permanently (it will appear every time you do this workout).\nClick Cancel to just add it for today.`);
+        // Ask user if they want to save permanently
+        const saveChoice = confirm(`Add "${exerciseName}" to this workout?\n\nClick OK to save it permanently (it will appear every time you do this workout).\nClick Cancel to just add it for today.`);
 
-    // Add to UI immediately
-    addExerciseToUI(newExercise);
-    closeAddExerciseModal();
-
-    // Save to database if user confirmed and is logged in
-    if (saveChoice && user && workoutKey) {
+        // Add to UI immediately
         try {
-            await dbHelpers.workoutCustomizations.addExercise(user.id, workoutKey, {
-                name: exerciseName,
-                sets: 3,
-                reps: '8-12',
-                desc: 'Custom exercise added by you'
-            });
-            console.log(`Exercise "${exerciseName}" saved to workout permanently`);
-        } catch (e) {
-            console.error('Failed to save exercise to database:', e);
-            // Exercise is already added to UI, just log the error
+            addExerciseToUI(newExercise);
+        } catch (error) {
+            console.error('Failed to add exercise to workout:', error);
+            alert('Could not add this exercise. Your existing workout is still open. Please try again.');
+            return;
         }
+        closeAddExerciseModal();
+
+        // Save to database if user confirmed and is logged in
+        if (saveChoice && user && workoutKey) {
+            try {
+                await dbHelpers.workoutCustomizations.addExercise(user.id, workoutKey, {
+                    name: exerciseName,
+                    sets: 3,
+                    reps: '8-12',
+                    desc: 'Custom exercise added by you'
+                });
+                console.log(`Exercise "${exerciseName}" saved to workout permanently`);
+            } catch (e) {
+                console.error('Failed to save exercise to database:', e);
+                alert(`"${exerciseName}" was added for today, but could not be saved for future workouts. Keep logging this workout; you can save it permanently when your connection is back.`);
+            }
+        } else if (saveChoice) {
+            alert(`"${exerciseName}" was added for today. Open a saved workout while signed in to save it for future workouts.`);
+        }
+    } finally {
+        window._addingWorkoutExercises.delete(exerciseKey);
     }
 }
 
 // Add exercise to UI
 function addExerciseToUI(exercise) {
     const container = document.getElementById('workout-exercises-list');
-    const videoUploading = !!exercise.videoUploading || isCustomExerciseVideoUploading(exercise.name, exercise.customExerciseId);
-    const videoUrl = videoUploading ? '' : findVideoMatch(exercise.name);
-    const videoBlockHtml = videoUrl
-        ? createExerciseVideoBlockHtml(videoUrl, exercise.name)
-        : (videoUploading ? createExerciseVideoUploadPlaceholderHtml() : '');
+    if (!container) throw new Error('Active workout exercise list is unavailable');
+    let videoBlockHtml = '';
+    try {
+        const videoUploading = !!exercise.videoUploading || (typeof isCustomExerciseVideoUploading === 'function' && isCustomExerciseVideoUploading(exercise.name, exercise.customExerciseId));
+        const videoUrl = !videoUploading && typeof findVideoMatch === 'function' ? findVideoMatch(exercise.name) : '';
+        videoBlockHtml = videoUrl && typeof createExerciseVideoBlockHtml === 'function'
+            ? createExerciseVideoBlockHtml(videoUrl, exercise.name)
+            : (videoUploading && typeof createExerciseVideoUploadPlaceholderHtml === 'function' ? createExerciseVideoUploadPlaceholderHtml() : '');
+    } catch (error) {
+        console.warn('Adding exercise without optional video preview:', error);
+    }
     const previousSummaryHtml = formatPreviousWorkoutSummary(exercise.name);
     const previousSummary = getPreviousWorkoutSummary(exercise.name);
     const escapedName = exercise.name.replace(/'/g, "\\'");
+    let exerciseNotesHtml = '';
+    try {
+        exerciseNotesHtml = getExerciseNotesHtml(exercise.name);
+    } catch (error) {
+        console.warn('Adding exercise without optional notes:', error);
+    }
 
     const exerciseHtml = `
         <div class="exercise-logger-card" data-exercise-name="${exercise.name}" data-is-user-added="true" style="animation: slideInUp 0.3s ease;">
@@ -24308,7 +24345,7 @@ function addExerciseToUI(exercise) {
                 </div>
             </div>
 
-            ${getExerciseNotesHtml(exercise.name)}
+            ${exerciseNotesHtml}
 
             ${videoBlockHtml}
 
@@ -24352,7 +24389,7 @@ function addExerciseToUI(exercise) {
                                 <input type="text" class="input-time" placeholder="-" data-exercise="${exercise.name}" data-set="${setIdx + 1}" data-field="time" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
                                 <input type="text" class="input-reps" placeholder="Reps" value="${prefillReps}" data-exercise="${exercise.name}" data-set="${setIdx + 1}" data-field="reps" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
                                 <input type="text" class="input-kg" placeholder="Kg" value="${prefillKg}" data-exercise="${exercise.name}" data-set="${setIdx + 1}" data-field="weight" style="width:100%; border: none; background: #f8fafc; border-radius: 8px; padding: 10px 5px; text-align: center; font-weight: 700; color: var(--text-main); font-size: 0.9rem;">
-                                <span class="workout-rest-period">${getExerciseRestSeconds(exName)}s</span>
+                                <span class="workout-rest-period">${getExerciseRestSeconds(exercise.name)}s</span>
                 <button class="drop-set-toggle" onclick="toggleDropSet(this)" title="Toggle Drop Set">DS</button>
                                 <button class="delete-set-btn" onclick="deleteSetRow(this)" title="Delete Set" style="width:32px; height:32px; border:none; background:transparent; color:#ef4444; cursor:pointer; border-radius:8px; display:flex; align-items:center; justify-content:center; transition:background 0.2s;"><svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
                             </div>
@@ -24392,9 +24429,17 @@ function addExerciseToUI(exercise) {
     if (newCard) {
         newCard.dataset.prescribedSets = String(exercise.sets || newCard.querySelectorAll('.set-wrapper').length || 1);
         newCard.dataset.prescribedReps = String(exercise.reps || 'Log each set');
-        const playerMode = window.PBBWorkoutSwipePlayer?.sync({ focusName: exercise.name, scroll: true });
-        if (playerMode !== 'swipe') newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        setupVolumeTracking(newCard);
+        try {
+            const playerMode = window.PBBWorkoutSwipePlayer?.sync?.({ focusName: exercise.name, scroll: true });
+            if (playerMode !== 'swipe') newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } catch (error) {
+            console.warn('Exercise added without automatic focus:', error);
+        }
+        try {
+            setupVolumeTracking(newCard);
+        } catch (error) {
+            console.warn('Exercise added without volume tracking:', error);
+        }
     }
 }
 
