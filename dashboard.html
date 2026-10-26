@@ -3,6 +3,9 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
+<!-- Capture startup errors before the app scripts execute. -->
+<script src="/lib/telemetry-privacy.js?v=1"></script>
+<script src="js/dashboard/pbb-app-telemetry.js?v=5-startup-debug"></script>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
 <style>
 * { touch-action: manipulation; }
@@ -1890,8 +1893,6 @@ window.addEventListener('load', function() {
 
 
     <script src="lib/onboarding-funnel.js?v=3-replay"></script>
-    <script src="/lib/telemetry-privacy.js?v=1"></script>
-    <script src="js/dashboard/pbb-app-telemetry.js?v=4-error-symbol"></script>
     <script src="lib/voice-feedback-playback.js?v=20261011-playback"></script>
     <script defer src="js/dashboard/pbb-client-activity-alerts.js?v=1-foreground"></script>
     <script defer src="js/dashboard/pbb-replay-privacy.js?v=2-onboarding"></script>

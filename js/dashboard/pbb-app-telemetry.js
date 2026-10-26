@@ -222,11 +222,42 @@
     return match ? privacy.string(match[1] || match[2]) : undefined;
   }
 
+  const startupMilestones = { init_complete: false, critical_content_ready: false };
+  root.addEventListener('pbbInitComplete', function () { startupMilestones.init_complete = true; });
+  root.addEventListener('appCriticalContentReady', function () { startupMilestones.critical_content_ready = true; });
+
+  function errorContext(error) {
+    // Parse only file coordinates, never retain stack messages, URLs or arguments.
+    const frames = String(error && error.stack || '').split('\n').slice(0, 12).flatMap(function (line) {
+      const match = line.match(/(?:https?:\/\/[^\s@()]+\/|\/)([^\s/():?#]+\.html?|[^\s/():?#]+\.js)(?:[?#][^\s():]*)?:(\d+):(\d+)\)?$/);
+      if (!match) return [];
+      return [safeToken(privacy.sourceFile(match[1])) + ':' + Number(match[2]) + ':' + Number(match[3])];
+    }).slice(0, 5);
+    const agent = String(root.navigator && root.navigator.userAgent || '');
+    const ios = /iPhone|iPad|iPod/.test(agent);
+    return {
+      debug_version: 'startup-v1',
+      document_state: safeToken(document.readyState),
+      visibility: safeToken(document.visibilityState),
+      elapsed_ms: root.performance && typeof root.performance.now === 'function' ? Math.round(root.performance.now()) : null,
+      browser_family: /Instagram/i.test(agent) ? (ios ? 'instagram_ios' : 'instagram_other') : /FBAN|FBAV/i.test(agent) ? 'facebook' : ios ? 'ios_other' : 'other',
+      native_marker: /FitGotchi-Native/i.test(agent),
+      init_complete: startupMilestones.init_complete,
+      critical_ready: startupMilestones.critical_content_ready || !!root._appCriticalContentReady,
+      client_ready: !!(root.supabaseClient || root.supabase),
+      account_ready: !!currentUserId(),
+      learning_ready: typeof root.openCurrentCourseLesson === 'function',
+      predictive_ready: !!root.BalancePredictiveContent,
+      frames
+    };
+  }
+
   root.addEventListener('error', function (event) {
     track('app_client_error', {
       error_name: safeToken(event.error && event.error.name || 'error'),
       source_file: safeToken(privacy.sourceFile(event.filename)),
       missing_symbol: missingSymbol(event.error, event.message),
+      diagnostic: errorContext(event.error),
       line: Number(event.lineno || 0),
       column: Number(event.colno || 0)
     }, { dedupeKey: privacy.sourceFile(event.filename) + ':' + event.lineno, dedupeMs: 5000, immediate: true });
@@ -236,7 +267,8 @@
     track('app_client_error', {
       error_name: safeToken(event.reason && event.reason.name || typeof event.reason || 'promise_rejection'),
       source_file: 'unhandled_promise',
-      missing_symbol: missingSymbol(event.reason)
+      missing_symbol: missingSymbol(event.reason),
+      diagnostic: errorContext(event.reason)
     }, { dedupeKey: 'unhandled:' + safeToken(event.reason && event.reason.name || ''), dedupeMs: 5000, immediate: true });
   });
 

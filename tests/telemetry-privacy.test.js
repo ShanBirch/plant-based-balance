@@ -130,7 +130,7 @@ test('shared privacy loader rejects on asset failure and can retry without unpro
 
 test('dashboard loads versioned privacy helper before telemetry', () => {
   const html = read('dashboard.html');
-  assert.ok(html.indexOf('/lib/telemetry-privacy.js?v=1') < html.indexOf('pbb-app-telemetry.js?v=4-error-symbol'));
+  assert.ok(html.indexOf('/lib/telemetry-privacy.js?v=1') < html.indexOf('pbb-app-telemetry.js?v=5-startup-debug'));
   assert.match(html, /script_part_2.js\?v=25-telemetry-privacy/);
   assert.equal((read('js/dashboard/script_part_2.js').match(/supabase.js\?v=20-telemetry-privacy/g) || []).length, 2);
 });
@@ -148,4 +148,46 @@ test('reference errors retain only the missing identifier, with privacy filterin
   assert.equal(h.rows.find(r => r.activity_data.line === 2).activity_data.missing_symbol, '[redacted]');
   assert.equal(h.rows.find(r => r.activity_data.line === 3).activity_data.missing_symbol, null);
   assert.doesNotMatch(JSON.stringify(h.rows), /DUMMY|private client/);
+});
+
+
+test('startup diagnostics capture iPhone browser and loading milestones without private stack data', async () => {
+  const h = harness();
+  h.window.navigator = { userAgent: 'iPhone Instagram PRIVATE_DEVICE_DETAIL' };
+  h.window.performance = { now: () => 150.8 };
+  h.listeners.error({ filename: 'dashboard.html', lineno: 1, colno: 25, error: {
+    name: 'ReferenceError', message: "Can't find variable: appBridge",
+    stack: "ReferenceError: PRIVATE_CLIENT_MESSAGE\nappBridge@https://example.invalid/dashboard.html?access_token=PRIVATE_CREDENTIAL:1:25\nat init (https://example.invalid/js/startup.js:42:7)"
+  } });
+  h.listeners.pbbInitComplete(); h.listeners.appCriticalContentReady();
+  h.listeners.error({ filename: 'other.js', lineno: 5, error: { name: 'ReferenceError' } });
+  await h.window.flushBalanceActivity();
+  const early = h.rows.find(r => r.activity_data.line === 1).activity_data.diagnostic;
+  assert.equal(early.browser_family, 'instagram_ios');
+  assert.equal(early.elapsed_ms, 151);
+  assert.equal(early.init_complete, false);
+  assert.equal(early.critical_ready, false);
+  assert.deepEqual(early.frames, ['dashboard.html:1:25', 'startup.js:42:7']);
+  const later = h.rows.find(r => r.activity_data.line === 5).activity_data.diagnostic;
+  assert.equal(later.init_complete, true); assert.equal(later.critical_ready, true);
+  assert.doesNotMatch(JSON.stringify(h.rows), /PRIVATE_|example.invalid|access_token/);
+});
+test('startup capture installs before any other executable dashboard script', () => {
+  const html = read('dashboard.html');
+  const scripts = [...html.matchAll(/<script\b[^>]*>/g)].map(m => m[0]);
+  assert.match(scripts[0], /telemetry-privacy/);
+  assert.match(scripts[1], /pbb-app-telemetry.js\?v=5-startup-debug/);
+});
+
+
+test('startup errors captured before login remain queued until the account is ready', async () => {
+  const h = harness();
+  h.window.currentUser = null;
+  h.listeners.error({ filename: 'dashboard.html', lineno: 1, error: { name: 'ReferenceError', message: 'earlyBridge is not defined' } });
+  await h.window.flushBalanceActivity(); assert.equal(h.rows.length, 0);
+  h.window.currentUser = { id: 'dummy-user' };
+  await h.window.flushBalanceActivity();
+  const error = h.rows.find(r => r.activity_type === 'app_client_error').activity_data;
+  assert.equal(error.missing_symbol, 'earlyBridge');
+  assert.equal(error.diagnostic.account_ready, false);
 });
