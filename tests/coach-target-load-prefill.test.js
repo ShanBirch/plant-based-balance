@@ -21,3 +21,10 @@ test('bodyweight zero overrides bogus historical loads; invalid loads preserve l
   assert.equal(scope.mergeSetPrefill({kg:'10',reps:'8'},scope.getPrescribedSetPrefill({reps:'12'},false)).reps,'8');
   assert.equal(scope.mergeSetPrefill({kg:'.1',time:'20'},scope.getPrescribedSetPrefill({reps:'30 sec',prescriptionClearsHistoricalLoad:true},true)).time,'30');
 });
+
+test('compound timed targets use the duration, not the repetition count', () => {
+  for (const reps of ['10 x 20 sec', '10 × 20 seconds']) {
+    assert.equal(scope.getPrescribedSetPrefill({reps}, true).time, '20');
+  }
+  assert.equal(scope.getPrescribedSetPrefill({reps:'30 sec'}, true).time, '30');
+});

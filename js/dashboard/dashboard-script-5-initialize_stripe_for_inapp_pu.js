@@ -2834,7 +2834,7 @@ function renderWeeklyCalendar() {
     document.getElementById('view-cycle')?.classList.toggle('coach-assigned-active',coached);
     let coachedNote = document.getElementById('coach-supplementary-calendar-note');
     if (coached && !coachedNote) { coachedNote=document.createElement('p'); coachedNote.id='coach-supplementary-calendar-note'; grid.before(coachedNote); }
-    if (coachedNote) { coachedNote.hidden=!coached; coachedNote.textContent='Keep your two usual gym classes on their existing days. Wednesday is Zoom coaching. This calendar adds your Saturday home session from week three.'; }
+    if (coachedNote) { coachedNote.hidden=!coached; coachedNote.textContent='Your calendar shows your scheduled workouts and coaching alongside your usual classes.'; }
     grid.innerHTML = '';
 
     // Self-healing: If variable is empty but input has value, sync it.
@@ -21592,7 +21592,8 @@ function getPrescribedSetPrefill(exercise, isTimeBased) {
     // Logging fields are deliberately numeric so the completed set can still
     // be totalled and compared. Qualifiers such as "each side" remain visible
     // in the exercise prescription/cue above the logger.
-    const numericTarget = prescription.match(/\d+(?:\.\d+)?/);
+    const timedTarget = isTimeBased && prescription.match(/(?:\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)\s*(?:sec|secs|second|seconds)\b/i);
+    const numericTarget = timedTarget ? [timedTarget[1]] : prescription.match(/\d+(?:\.\d+)?/);
     if (!numericTarget) return null;
     const prefill = isTimeBased
         ? { time: numericTarget[0] }
@@ -23100,6 +23101,7 @@ function renderWorkoutExercises(exercises) {
                         <div class="workout-exercise-tip" style="color: var(--text-muted); font-size: 0.85rem;">${ex.desc || ''}</div>
                         ${getExerciseWeeklyPlanHtml(ex)}
                         ${getCoachCueHtml(ex)}
+                        ${isTimeBased && /\d+\s*[x×]\s*\d+/.test(String(ex.reps || '')) ? `<div class="workout-compound-timed-target" style="margin-top:8px; font-size:0.85rem; font-weight:700; color:var(--text-main);">Target: ${escapeHtml(String(ex.reps))} per set</div>` : ''}
                     </div>
                     <button onclick="deleteExerciseFromWorkout('${escapedName}', ${isUserAdded})" style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 5px; font-size: 0.8rem; font-weight: 600;">
                         <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: currentColor;">
