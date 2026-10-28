@@ -14630,3 +14630,16 @@ html[data-pbb-theme="light"] :is(#view-active-workout, #view-active-workout-stub
 #rest-timer-overlay { box-sizing: border-box; padding-bottom: max(20px, env(safe-area-inset-bottom, 0px)) !important; }
 #rest-timer-card { box-sizing: border-box; max-height: calc(100dvh - max(42px, env(safe-area-inset-top, 0px)) - max(20px, env(safe-area-inset-bottom, 0px)) - var(--admin-view-banner-offset, 0px)); overflow-y:auto; overscroll-behavior:contain; }
 .workout-rest-period { color:var(--text-main); -webkit-text-fill-color:var(--text-main); font-weight:700; text-align:center; font-size:.8rem; }
+
+/* Keep the calendar action sheet below the system bar and admin preview banner. */
+#calendar-workout-action-modal {
+    box-sizing: border-box;
+    padding: max(42px, env(safe-area-inset-top, 0px), var(--admin-view-banner-offset, 0px)) 0 max(20px, env(safe-area-inset-bottom, 0px));
+}
+#calendar-workout-action-modal > div {
+    box-sizing: border-box;
+    max-height: 100%;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+}
