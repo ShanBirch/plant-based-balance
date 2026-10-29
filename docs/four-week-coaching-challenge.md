@@ -1,3 +1,11 @@
+## Free enrolment, paid continuation only when Shannon directs it, 30 October 2026
+
+Shannon explicitly corrected the timing again: do not proactively mention the optional paid price during free challenge enrolment or onboarding, including after interest, setup questions, account access or the welcome. Get them started, establish the unknown goal and help them make progress. His preferred response is “Awesome, I can get you set up now if you like 😊 What are you hoping for, strength, weight loss or just building a routine? Anything in particular?” Adapt to known facts and do not assume weight loss.
+
+The offer is genuinely four weeks free, no card, no automatic billing, no payment obligation and no paid subscription created by joining. Explain those free-challenge facts naturally before accepting enrolment; terms_disclosed in reserve_balance_coaching_challenge means these free terms, not a mandatory paid-continuation pitch. Record free_terms_only:true and paid_continuation_not_offered:true in the review for clarity. Preserve actual acceptance, suitability, provenance, capacity, all holds and setup guards. Do not falsely mark any disclosure or consent that did not happen.
+
+Optional continued coaching remains AUD $14.99/week, as a separate later offer. Wait for Shannon's case-specific instruction to introduce it, for example once the person has done a few sessions and is happy with progress. Do not automatically pitch after a session count, a positive check-in or in week four. A direct question about price or what happens after the free period gets an immediate honest answer; do not evade or imply ongoing coaching is free. Any paid continuation later requires the actual price, explicit separate opt-in and verified payment. Never create a charge/subscription, imply automatic renewal or extend paid access from free enrolment, gratitude or workout completion. Existing paid agreements retain their terms. This supersedes ALL older instructions requiring the optional rate before free enrolment, without changing free duration or capacity. No retrospective correction message.
+
 # Four-week Balance consistency challenge
 
 Authorised by Shannon, 25 October 2026. This supersedes the goal-only organic
@@ -48,9 +56,10 @@ Focus on a manageable routine and participation rather than promised weight loss
 
 An invitation connects the person's stated support need to this experience.
 It can mention the small six-person intake when relevant. Before enrolment,
-explain: four weeks free, no card or automatic billing, and continued coaching
-is AUD $14.99/week only if they explicitly choose it. Answer price questions
-immediately. Do not hide continuation behind vague future opportunities.
+explain: four weeks free, no card or automatic billing and no payment obligation.
+Do not proactively mention optional pricing during free enrolment/onboarding.
+Answer direct price questions honestly; paid continuation is a separate later
+conversation only when Shannon directs it for that person.
 
 ## Live reservation and existing worker
 
@@ -89,8 +98,9 @@ retrospective pitch, silence chase, customer test or unsolicited batch blast.
 
 Week 1: establish the agreed manageable routine and review the first experience.
 Weeks 2-3: review actual training/food evidence and adapt to their real week.
-Week 4: review progress and whether ongoing support fits; offer paid continuation
-only in that relevant conversation, with explicit agreement and verified payment.
+Week 4: review progress. Do not automatically offer paid continuation. Wait for
+case-specific Shannon direction before that separate optional offer, then require
+explicit paid agreement and verified payment.
 No automatic billing, subscription creation, or reminder-consent assumption.
 
 The status RPC reports accepted reservations, queued/prepared setups, claimed

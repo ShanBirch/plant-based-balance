@@ -39,6 +39,7 @@ export function fastReplyContext({ threadId, runId }) {
             (memory->>'last_compacted_at')::timestamptz as boundary from target
     ) select jsonb_build_object(
         'conversation_continuity_policy', ${literal(JSON.stringify(continuityPolicy))}::jsonb,
+        'group_a_approach_experiment', public.balance_challenge_approach_context(${uuid(threadId)}),
         'challenge_timing_experiment', public.balance_challenge_timing_context(${uuid(threadId)}),
         'thread', (select to_jsonb(target)-'memory' from target),
         'history_proof', (select jsonb_build_object('validated_compaction',valid,'boundary',boundary,
@@ -72,6 +73,7 @@ export function fastReplyClaim(input) {
             p_priority=>800,p_source_message_id=>${uuid(sourceMessageId)},
             p_reason=>${literal(reason)}::jsonb || jsonb_build_object('reviewed_at',now())) as action
         where (select id from ig_messages where thread_id=${uuid(threadId)} and direction='in' order by created_at desc,id desc limit 1)=${uuid(sourceMessageId)}
+        and public.balance_challenge_approach_claim_allowed(${uuid(threadId)},${uuid(sourceMessageId)},${literal(JSON.stringify(conversationReview))}::jsonb)
         and (${conversationReview.trainingPivot === true || conversationReview.disposition === 'invite_challenge' ? 'true' : 'false'}=false
           or coalesce((public.balance_challenge_timing_context(${uuid(threadId)})->>'training_due')::boolean,true)
           or exists(select 1 from public.balance_challenge_timing_events v where v.assignment_id=
