@@ -42,16 +42,16 @@ test('actual helper returns policy and saves review with existing source and own
 });
 
 
-test('approved direct nested invitation needs no invented fitness goal but retains source/capacity',()=>{
- const offer={...base,disposition:'invite_challenge',approachSubvariant:'A1_direct_challenge',directChallengeReason:'Transparent invitation in the assigned first conversation',capacityChecked:true,capacityRemaining:2,freeInvitation:true};
+test('approved direct ABC invitation needs no invented fitness goal but retains source/capacity',()=>{
+ const offer={...base,disposition:'invite_challenge',challengeApproach:'direct_challenge',directChallengeReason:'Transparent invitation in the assigned first conversation',capacityChecked:true,capacityRemaining:2,freeInvitation:true};
  assert.doesNotThrow(()=>validateConversationReview(offer,source));
  assert.throws(()=>validateConversationReview({...offer,directChallengeReason:''},source));
  assert.throws(()=>validateConversationReview({...offer,capacityRemaining:0},source));
- assert.throws(()=>validateConversationReview({...offer,approachSubvariant:'A2_fitness_first'},source));
+ assert.throws(()=>validateConversationReview({...offer,challengeApproach:'fitness_first'},source));
 });
 
-test('context and claim include prospective nested allocation guard',()=>{
+test('context and claim include direct ABC timing guard',()=>{
  const input={threadId:source,sourceMessageId:source,runId:'offline-fixture',username:'fixture',nativeConversationId:'fixture',finalText:'A small free challenge might interest you.',leadState:'engaged',fullThreadReviewed:true,nativeIdentityVerified:true,independentHoldsChecked:true};
- assert.match(fastReplyContext(input),/group_a_approach_experiment/);
- assert.match(fastReplyClaim({...input,conversationReview:{...base,disposition:'continue',nextMove:'Natural current topic',responseInviting:true}}),/balance_challenge_approach_claim_allowed/);
+ assert.match(fastReplyContext(input),/direct_challenge_experiment/);
+ assert.match(fastReplyClaim({...input,conversationReview:{...base,disposition:'continue',nextMove:'Natural current topic',responseInviting:true}}),/balance_direct_challenge_claim_allowed/);
 });

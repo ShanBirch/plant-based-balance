@@ -5,6 +5,11 @@ declare tid uuid; src uuid; opener uuid; outid uuid; replyid uuid; inviteid uuid
  a jsonb; s jsonb; again jsonb; r jsonb; eligible jsonb; coach uuid; n int;
  got_a1 boolean:=false; got_a2 boolean:=false; got_b boolean:=false; failed boolean;
 begin
+ if not (select enabled from balance_challenge_approach_experiments where id='group_a_approach_20261030') then
+  assert (select enabled from balance_challenge_approach_experiments where id='direct_challenge_abc_20261030'),'retired nested test has active successor';
+  raise notice 'Historical nested test retired; current contrast tests are in challenge-direct-abc.sql';
+  return;
+ end if;
  select coach_id into coach from ig_threads where coach_id is not null limit 1;
  for n in 1..100 loop
   tid:=gen_random_uuid(); src:=gen_random_uuid(); opener:=gen_random_uuid(); outid:=gen_random_uuid();

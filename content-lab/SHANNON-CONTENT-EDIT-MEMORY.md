@@ -1,5 +1,10 @@
 # Shannon Content Edit Memory
 
+## 30 October 2026 - direct approach in every ABC timing group
+
+Shannon replaced the new Group A split with the A1-style direct challenge approach across A/B/C: first/second/third reciprocal conversation timing stays; no compulsory gym/goal qualifier. Historical fitness-first and retired nested records remain separate analysis layers. All groups share setup plus unknown-goal after interest, no proactive pricing during free onboarding and later paid continuation only on case-specific Shannon instruction. See docs/challenge-direct-abc.md.
+
+
 ## Free enrolment, paid continuation only when Shannon directs it, 30 October 2026
 
 Shannon explicitly corrected the timing again: do not proactively mention the optional paid price during free challenge enrolment or onboarding, including after interest, setup questions, account access or the welcome. Get them started, establish the unknown goal and help them make progress. His preferred response is “Awesome, I can get you set up now if you like 😊 What are you hoping for, strength, weight loss or just building a routine? Anything in particular?” Adapt to known facts and do not assume weight loss.

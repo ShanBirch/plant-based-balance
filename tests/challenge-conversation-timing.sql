@@ -20,20 +20,20 @@ begin
  assert (ctx->>'training_due')::boolean=((a->>'target_conversation')::int=1),'timing gate';
  insert into ig_messages(id,thread_id,direction,text,created_at) values(outbound,tid,'out','Controlled training opening',clock_timestamp());
  expected_failure:=false;
- begin perform record_balance_challenge_timing_event(tid,'training_opened',src,'{"full_thread_reviewed":true,"summary":"fixture","reviewed_by":"fixture","native_delivery_verified":true}');
+ begin perform record_balance_challenge_timing_event(tid,'training_opened',src,'{"full_thread_reviewed":true,"summary":"fixture","reviewed_by":"fixture","native_delivery_verified":true,"policy_revision":"direct_challenge_abc_20261030_v1","challenge_approach":"direct_challenge","invitation_in_same_message":true}');
  exception when others then expected_failure:=true; end;
  assert expected_failure,'inbound cannot count as delivered training opening';
  if (a->>'target_conversation')::int>1 then
   expected_failure:=false;
-  begin perform record_balance_challenge_timing_event(tid,'training_opened',outbound,'{"full_thread_reviewed":true,"summary":"fixture","reviewed_by":"fixture","native_delivery_verified":true}');
+  begin perform record_balance_challenge_timing_event(tid,'training_opened',outbound,'{"full_thread_reviewed":true,"summary":"fixture","reviewed_by":"fixture","native_delivery_verified":true,"policy_revision":"direct_challenge_abc_20261030_v1","challenge_approach":"direct_challenge","invitation_in_same_message":true}');
   exception when others then expected_failure:=true; end;
   assert expected_failure,'B/C cannot silently get early exposure';
  end if;
  -- Direct lead interest is a documented override, not reassignment or withheld help.
  perform record_balance_challenge_timing_event(tid,'timing_override',src,'{"full_thread_reviewed":true,"summary":"Controlled direct request override","reviewed_by":"fixture"}');
- perform record_balance_challenge_timing_event(tid,'training_opened',outbound,'{"full_thread_reviewed":true,"summary":"Controlled opening","reviewed_by":"fixture","native_delivery_verified":true}');
- perform record_balance_challenge_timing_event(tid,'invited',outbound,'{"full_thread_reviewed":true,"summary":"Controlled invitation","reviewed_by":"fixture","native_delivery_verified":true}');
- perform record_balance_challenge_timing_event(tid,'invited',outbound,'{"full_thread_reviewed":true,"summary":"Retry bookkeeping only","reviewed_by":"fixture","native_delivery_verified":true}');
+ perform record_balance_challenge_timing_event(tid,'training_opened',outbound,'{"full_thread_reviewed":true,"summary":"Controlled opening","reviewed_by":"fixture","native_delivery_verified":true,"policy_revision":"direct_challenge_abc_20261030_v1","challenge_approach":"direct_challenge","invitation_in_same_message":true}');
+ perform record_balance_challenge_timing_event(tid,'invited',outbound,'{"full_thread_reviewed":true,"summary":"Controlled invitation","reviewed_by":"fixture","native_delivery_verified":true,"policy_revision":"direct_challenge_abc_20261030_v1","challenge_approach":"direct_challenge","invitation_in_same_message":true}');
+ perform record_balance_challenge_timing_event(tid,'invited',outbound,'{"full_thread_reviewed":true,"summary":"Retry bookkeeping only","reviewed_by":"fixture","native_delivery_verified":true,"policy_revision":"direct_challenge_abc_20261030_v1","challenge_approach":"direct_challenge","invitation_in_same_message":true}');
  assert (select count(*) from balance_challenge_timing_events where assignment_id=(a->>'id')::uuid and kind='invited')=1,'receipt retries must not duplicate exposure';
  expected_failure:=false;
  begin perform record_balance_challenge_timing_event(tid,'interested',outbound,'{"full_thread_reviewed":true,"summary":"fixture","reviewed_by":"fixture"}');
@@ -63,13 +63,13 @@ begin
  -- Pushback is separate from generic invitation declines and requires exact source evidence.
  perform record_balance_challenge_timing_event(tid,'sales_intent_concern',direct_reply,
  jsonb_build_object('full_thread_reviewed',true,'summary','Controlled review','reviewed_by','fixture',
- 'evidence_quote','Controlled reply','exposure_message_id',outbound,'policy_revision','legacy_unversioned'));
+ 'evidence_quote','Controlled reply','exposure_message_id',outbound,'policy_revision','direct_challenge_abc_20261030_v1'));
  perform record_balance_challenge_timing_event(tid,'sales_intent_concern',direct_reply,
  jsonb_build_object('full_thread_reviewed',true,'summary','Retry','reviewed_by','fixture',
- 'evidence_quote','Controlled reply','exposure_message_id',outbound,'policy_revision','legacy_unversioned'));
+ 'evidence_quote','Controlled reply','exposure_message_id',outbound,'policy_revision','direct_challenge_abc_20261030_v1'));
  assert (select count(*) from balance_challenge_timing_events where assignment_id=(a->>'id')::uuid and kind='sales_intent_concern')=1,'pushback retry deduplicates';
  for review in select jsonb_build_object('full_thread_reviewed',true,'summary','fixture','reviewed_by','fixture',
- 'evidence_quote',q,'exposure_message_id',outbound,'policy_revision','legacy_unversioned') from unnest(array['invented quote','']) q loop
+ 'evidence_quote',q,'exposure_message_id',outbound,'policy_revision','direct_challenge_abc_20261030_v1') from unnest(array['invented quote','']) q loop
   expected_failure:=false;
   begin perform record_balance_challenge_timing_event(tid,'fitness_topic_rejected',direct_reply,review);
   exception when others then expected_failure:=true; end;
@@ -81,7 +81,7 @@ begin
  exception when others then expected_failure:=true; end;
  assert expected_failure,'outbound cannot be pushback';
  for review in select jsonb_build_object('full_thread_reviewed',true,'summary','controlled outcome','reviewed_by','fixture',
- 'evidence_quote','Controlled reply','exposure_message_id',outbound,'policy_revision','legacy_unversioned','category',k)
+ 'evidence_quote','Controlled reply','exposure_message_id',outbound,'policy_revision','direct_challenge_abc_20261030_v1','category',k)
  from unnest(array['fitness_topic_rejected','offer_declined','already_supported']) k loop
   perform record_balance_challenge_timing_event(tid,review->>'category',direct_reply,review);
  end loop;

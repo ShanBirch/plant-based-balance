@@ -1,3 +1,5 @@
+Latest, 30 October 2026: [Direct challenge across all ABC timings](challenge-direct-abc.md) supersedes the Group A nested split and fitness-first requirement. Historical text/receipts below are preserved.
+
 ## Free enrolment, paid continuation only when Shannon directs it, 30 October 2026
 
 Shannon explicitly corrected the timing again: do not proactively mention the optional paid price during free challenge enrolment or onboarding, including after interest, setup questions, account access or the welcome. Get them started, establish the unknown goal and help them make progress. His preferred response is “Awesome, I can get you set up now if you like 😊 What are you hoping for, strength, weight loss or just building a routine? Anything in particular?” Adapt to known facts and do not assume weight loss.
