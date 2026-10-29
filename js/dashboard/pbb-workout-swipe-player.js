@@ -442,11 +442,26 @@
             #view-active-workout.workout-focus-pilot .sets-list-container { overflow-x: auto; }
             #view-active-workout.workout-focus-pilot .workout-set-row { min-width: 0; }
             #view-active-workout.workout-focus-pilot .workout-rest-period { font-size: .75rem; text-align: center; color: var(--workout-focus-text); -webkit-text-fill-color: var(--workout-focus-text); }
-            #view-active-workout.workout-focus-pilot .exercise-logger-card:not(.workout-rest-timed) .workout-set-row > :nth-child(2),
-            #view-active-workout.workout-focus-pilot .workout-rest-timed .workout-set-row > :nth-child(3) { display: none; }
-            #view-active-workout.workout-focus-pilot .exercise-logger-card > div:has(> .workout-rest-heading) { grid-template-columns:24px minmax(44px, 1fr) minmax(44px, 1fr) 68px 44px !important; gap:5px !important; justify-content:stretch; padding:10px 14px 0 !important; }
-            #view-active-workout.workout-focus-pilot .exercise-logger-card:not(.workout-rest-timed) > div:has(> .workout-rest-heading) > :nth-child(2),
-            #view-active-workout.workout-focus-pilot .workout-rest-timed > div:has(> .workout-rest-heading) > :nth-child(3) { display:none; }
+            #view-active-workout.workout-focus-pilot .workout-set-heading {
+                display:grid !important;
+                grid-template-columns:24px minmax(44px, 1fr) minmax(44px, 1fr) 68px 44px !important;
+                gap:5px !important; padding:10px 14px 0 !important; text-align:center;
+                color:var(--workout-focus-text); -webkit-text-fill-color:var(--workout-focus-text);
+            }
+            #view-active-workout.workout-focus-pilot .workout-set-heading > * { display:none; }
+            #view-active-workout.workout-focus-pilot .workout-set-heading > :is(.set-label,.reps-label,.weight-label,.rest-label) { display:block; }
+            #view-active-workout.workout-focus-pilot .set-label,
+            #view-active-workout.workout-focus-pilot .workout-set-row > .set-number { grid-column:1; grid-row:1; }
+            #view-active-workout.workout-focus-pilot .reps-label,
+            #view-active-workout.workout-focus-pilot .workout-set-row > .input-reps,
+            #view-active-workout.workout-focus-pilot .workout-set-row > .workout-time-field { grid-column:2; grid-row:1; }
+            #view-active-workout.workout-focus-pilot .weight-label,
+            #view-active-workout.workout-focus-pilot .workout-set-row > .input-kg { grid-column:3; grid-row:1; }
+            #view-active-workout.workout-focus-pilot .rest-label,
+            #view-active-workout.workout-focus-pilot .workout-set-row > .workout-rest-period { grid-column:4; grid-row:1; }
+            #view-active-workout.workout-focus-pilot .workout-set-row > .workout-set-options { grid-column:5; grid-row:1; }
+            #view-active-workout.workout-focus-pilot .exercise-logger-card:not(.workout-rest-timed) .workout-time-field,
+            #view-active-workout.workout-focus-pilot .workout-rest-timed .workout-set-row > .input-reps { display:none; }
             #view-active-workout.workout-focus-pilot .workout-set-row > .drop-set-toggle,
             #view-active-workout.workout-focus-pilot .workout-set-row > .delete-set-btn { display:none !important; }
             #view-active-workout.workout-focus-pilot .workout-set-row > .input-reps,
@@ -459,7 +474,6 @@
             #view-active-workout.workout-focus-pilot .workout-set-options-menu button:hover { background:var(--workout-focus-gold-soft); }
             #view-active-workout.workout-focus-pilot .workout-set-options-menu button:disabled { opacity:.5; cursor:default; }
             #view-active-workout.workout-focus-pilot :is(.workout-set-options,.workout-set-options-menu button):focus-visible { outline:2px solid var(--workout-focus-gold); outline-offset:2px; }
-            #view-active-workout.workout-focus-pilot .exercise-logger-card > div:has(> .workout-rest-heading) > :last-child { display:none; }
             #view-active-workout.workout-focus-pilot .workout-set-row input,
             #view-active-workout.workout-focus-pilot .exercise-note-input {
                 min-width: 0;
@@ -979,9 +993,19 @@
         const seconds = root.getWorkoutRestSeconds(card);
         card.querySelectorAll('.workout-rest-period:not(button)').forEach((label) => { label.textContent = seconds + 's'; });
         card.classList.toggle('workout-rest-timed', card.dataset.exerciseName ? /plank|hold|stretch/i.test(card.dataset.exerciseName) : false);
+        const heading = card.querySelector('.workout-rest-heading')?.parentElement;
+        if (heading) {
+            heading.classList.add('workout-set-heading');
+            const labels = heading.children;
+            ['set-label', 'time-label', 'reps-label', 'weight-label', 'rest-label'].forEach((name, i) => labels[i]?.classList.add(name));
+            if (labels[2]) labels[2].textContent = card.classList.contains('workout-rest-timed') ? 'Time (sec)' : 'Reps';
+            if (labels[3]) labels[3].textContent = 'Weight';
+            if (labels[4]) labels[4].textContent = 'Rest';
+        }
         card.querySelectorAll('.set-wrapper').forEach((wrapper) => {
             const row = wrapper.querySelector('.workout-set-row');
             if (!row) return;
+            row.querySelector('.input-time')?.parentElement.classList.add('workout-time-field');
             ensureSetOptions(wrapper, row);
             if (row.querySelector('.workout-focus-set-done')) return;
             const button = document.createElement('button');
