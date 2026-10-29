@@ -4,6 +4,11 @@ do $$
 declare tid uuid; src uuid; opener uuid; delivered uuid; response uuid; a jsonb; r jsonb;
  eligibility jsonb; coach uuid; n int; ep int; failed boolean; seen text[]:='{}'; oldsrc uuid;
 begin
+ if not (select enabled from balance_challenge_approach_experiments where id='direct_challenge_abc_20261030') then
+  assert (select enabled from balance_challenge_approach_experiments where id='factorial_abc_20261030'),'six-cell successor active';
+  raise notice 'Direct-only rollout retired; see challenge-factorial-abc.sql for current tests';
+  return;
+ end if;
  assert not (select enabled from balance_challenge_approach_experiments where id='group_a_approach_20261030'),'nested test retired';
  select coach_id into coach from ig_threads where coach_id is not null limit 1;
  for n in 1..100 loop

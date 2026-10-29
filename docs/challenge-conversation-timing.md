@@ -1,3 +1,5 @@
+FINAL 30 October clarification: [Six-cell timing x approach test](challenge-factorial-abc.md) supersedes the A-only and all-direct versions below. BOTH approaches follow real Story rapport and run in EACH timing arm. Historical records remain intact.
+
 Latest, 30 October 2026: [Direct challenge across all ABC timings](challenge-direct-abc.md) supersedes the Group A nested split and fitness-first requirement. Historical text/receipts below are preserved.
 
 ## Free enrolment, paid continuation only when Shannon directs it, 30 October 2026

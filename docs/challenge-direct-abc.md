@@ -1,3 +1,5 @@
+FINAL 30 October clarification: [Six-cell timing x approach test](challenge-factorial-abc.md) supersedes the A-only and all-direct versions below. BOTH approaches follow real Story rapport and run in EACH timing arm. Historical records remain intact.
+
 ## Direct challenge approach across A/B/C, latest Shannon correction, 30 October 2026
 
 Shannon explicitly replaced the just-created Group A split: use the direct A1-style free challenge invitation across ALL A/B/C groups. Stop new A1/A2 allocation; keep every historical record. There is no concurrent fitness-first control now.

@@ -1,5 +1,10 @@
 # Shannon Content Edit Memory
 
+## 30 October 2026 - FINAL two-layer ABC x approach clarification
+
+Shannon explicitly corrected the design: A/B/C first/second/third reciprocal-conversation timing crossed with BOTH direct challenge and training-first approaches, six concurrent cells. Direct STILL follows genuine Story discussion for a few natural messages, then a transparent invitation; it is not a cold opener or first immediate reply. Fitness-first shares Story rapport before training discussion then invitation. Stable independent per-person approach allocation in all three timing arms; previous mistaken rollouts archived. Identical setup/unknown-goal response and no proactive onboarding price in every cell; later optional paid offer only on case-specific Shannon instruction. See docs/challenge-factorial-abc.md.
+
+
 ## 30 October 2026 - direct approach in every ABC timing group
 
 Shannon replaced the new Group A split with the A1-style direct challenge approach across A/B/C: first/second/third reciprocal conversation timing stays; no compulsory gym/goal qualifier. Historical fitness-first and retired nested records remain separate analysis layers. All groups share setup plus unknown-goal after interest, no proactive pricing during free onboarding and later paid continuation only on case-specific Shannon instruction. See docs/challenge-direct-abc.md.

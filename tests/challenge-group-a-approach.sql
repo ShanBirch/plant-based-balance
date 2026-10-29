@@ -6,7 +6,7 @@ declare tid uuid; src uuid; opener uuid; outid uuid; replyid uuid; inviteid uuid
  got_a1 boolean:=false; got_a2 boolean:=false; got_b boolean:=false; failed boolean;
 begin
  if not (select enabled from balance_challenge_approach_experiments where id='group_a_approach_20261030') then
-  assert (select enabled from balance_challenge_approach_experiments where id='direct_challenge_abc_20261030'),'retired nested test has active successor';
+  assert (select enabled from balance_challenge_approach_experiments where id='factorial_abc_20261030'),'retired nested test has active successor';
   raise notice 'Historical nested test retired; current contrast tests are in challenge-direct-abc.sql';
   return;
  end if;
