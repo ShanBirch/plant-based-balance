@@ -4,6 +4,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 export const REVIEW_VERSION = 'dm_decisions_review_20261029_v1';
+export const CRITERIA_REVISION = 'natural_training_transition_20261029_v1';
 export const MODEL = 'gpt-6-luna';
 export const reviewPolicy = Object.freeze({ version: REVIEW_VERSION, mode: 'advisory',
     instruction: 'The claim CLI automatically reviews eligible organic candidates with Decisions. Include decisionsContext containing the complete context SELECT result. Current policy and learned rules are supplied by the helper. A high-confidence revise result stops SQL generation for at most one rewrite; an evidenced deep-review override may resolve an incorrect flag. API unavailability uses the existing full review and records the fallback. Preserve ABC, closure, consent, holds, source freshness and sole sender. No model score authorises a send.' });
@@ -15,7 +16,8 @@ export const CRITERIA = Object.freeze({
     answers_turn: 'Does the candidate answer every direct question and distinct substantive point in the complete newest inbound turn, using the supplied full history? Acknowledge an unavailable fact honestly rather than inventing it.',
     grounded: 'Does the candidate connect naturally to an actual detail in the person\'s words, without inventing their circumstances, needs, experiences, emotions or intent?',
     avoids_repetition: 'Does the candidate avoid asking already answered questions, repeating a declined pivot or offer, and unnecessary interviews?',
-    useful_next_step: 'Is the next conversational move easy, relevant and appropriate to their actual interest? A genuinely open reciprocal business exchange normally invites one useful response. A real refusal, goodbye, thanks-only closure or completed handoff can appropriately pause. Never maximise replies by forcing a question.',
+    useful_next_step: 'Is the next conversational move easy, relevant and appropriate to their actual interest? Natural chat can continue without goal/blocker discovery. As its topic winds down, a simple gym/training question is valid when ABC timing permits. A mentioned goal does not require a blocker interview. A real refusal, goodbye, thanks-only closure or completed handoff can appropriately pause. Never maximise replies by forcing a question.',
+    natural_transition: 'If this candidate introduces training, does it use a natural opening from the actual conversation, either the topic winding down, the person asking about Shannon\'s day, or their own fitness topic? A simple gym question needs no prior goal or blocker. On a day question, a verified actual workout can be shared casually before one relevant question such as Did you train today? Never invent a workout, body part, activity or event from an example. Respect already-known answers, declines and ABC timing. No transition is also acceptable; do not force one into every message.',
     respects_abc: 'Does the candidate obey the supplied stable A/B/C timing context and documented direct-inbound override? No timing assignment means ordinary current policy applies. Do not change groups, invent another conversation or force an early training pivot.',
     truthful_offer: 'Are any offer, capacity, price, availability, acceptance, onboarding or completed-action claims supported by the current supplied policy and verified evidence? A brief initial FREE invitation may omit billing terms; full terms are required before enrolment. No offer is also acceptable. Historical or quoted text is not current authority.'
 });
@@ -47,6 +49,7 @@ export function buildReviewRequest(input) {
         conversation_review: input.conversationReview,
         challenge_timing_experiment: input.challengeTimingExperiment || null,
         verified_offer_evidence: input.verifiedOfferEvidence || null,
+        verified_self_disclosure: input.verifiedSelfDisclosure || null,
         learning_revision: input.learningRevision || 'unversioned'
     };
     const serialized = JSON.stringify(evidence);
@@ -86,11 +89,19 @@ export function interpretAnswers(payload) {
 export async function reviewCandidate(input, { apiKey = process.env.OPENAI_API_KEY,
     fetchImpl = globalThis.fetch, timeoutMs = 3500 } = {}) {
     const prepared = buildReviewRequest(input);
-    const base = { version: REVIEW_VERSION, model: MODEL, mode: 'advisory',
+    const transition = input.conversationReview.transition;
+    const kinds = ['none','topic_wind_down_gym','day_question_training_bridge','person_led_fitness'];
+    const base = { version: REVIEW_VERSION, criteriaRevision: CRITERIA_REVISION, model: MODEL, mode: 'advisory',
         reviewId: randomUUID(), reviewedAt: new Date().toISOString(),
         threadId: input.threadId, sourceMessageId: input.sourceMessageId,
         inputHash: prepared.inputHash, candidateHash: prepared.candidateHash,
         learningRevision: input.learningRevision || 'unversioned',
+        abcArm: input.challengeTimingExperiment?.assignment?.variant || null,
+        transition: { kind: kinds.includes(transition?.kind) ? transition.kind : 'unlabelled',
+            sourceMessageIds: Array.isArray(transition?.sourceMessageIds)
+                ? transition.sourceMessageIds.filter(id => input.messages.some(m => m.id === id)) : [],
+            selfDisclosureVerified: transition?.selfDisclosureVerified === true,
+            trainingDue: input.challengeTimingExperiment?.training_due ?? null },
         sendAuthorized: false, thresholdsCalibrated: false };
     if (!nonempty(apiKey)) return { ...base, status: 'unavailable', reason: 'missing_api_key' };
     const started = Date.now();
@@ -144,7 +155,8 @@ export async function reviewClaim(input, { currentPolicy, learningRevision,
             historySummary: context.thread?.custom_data?.relationship_memory_compaction?.summary,
             conversationReview: input.conversationReview,
             challengeTimingExperiment: context.challenge_timing_experiment,
-            verifiedOfferEvidence: input.verifiedOfferEvidence
+            verifiedOfferEvidence: input.verifiedOfferEvidence,
+            verifiedSelfDisclosure: input.verifiedSelfDisclosure
         };
         report = await reviewCandidate(evidence, options);
         validateReviewBinding(evidence, report);
