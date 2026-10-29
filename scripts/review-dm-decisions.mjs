@@ -150,7 +150,15 @@ export async function reviewClaim(input, { currentPolicy, learningRevision,
             candidateText: input.finalText, lane: 'organic_business',
             fullThreadReviewed: input.fullThreadReviewed,
             currentPolicy, learningRevision,
-            messages: context.messages,
+            messages: Array.isArray(context.messages) && context.messages.some(m => m.id === input.sourceMessageId && m.direction === 'in')
+                ? context.messages
+                : context.history_proof?.validated_compaction === true
+                    && context.latest_inbound?.id === input.sourceMessageId
+                    && context.latest_inbound?.direction === 'in'
+                    && Number.isFinite(Date.parse(context.latest_inbound?.created_at))
+                    && Date.parse(context.latest_inbound.created_at) <= Date.parse(context.history_proof?.boundary)
+                    ? [context.latest_inbound, ...(context.messages || [])]
+                    : context.messages,
             historyProof: context.history_proof,
             historySummary: context.thread?.custom_data?.relationship_memory_compaction?.summary,
             conversationReview: input.conversationReview,

@@ -13,8 +13,10 @@ test('installer is bounded, idempotent and adds persisted review to the existing
 import { pathToFileURL } from 'node:url';
 const continuityPolicy = {version:'fixture'};
 const literal = text => "'" + text.replaceAll("'", "''") + "'";
-export function fastReplyContext() { return \`SELECT jsonb_build_object(
+const uuid = text => text;
+export function fastReplyContext({threadId = 'fixture'} = {}) { return \`SELECT jsonb_build_object(
         'conversation_continuity_policy', \${literal(JSON.stringify(continuityPolicy))}::jsonb,
+        'actions', (select jsonb_agg(to_jsonb(action)) from ig_next_actions action where thread_id=\${uuid(threadId)}),
         'fixture', true);\`; }
 export function fastReplyClaim(input) { return JSON.stringify({
         conversation_policy_version: continuityPolicy.version,
@@ -34,6 +36,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     assert.equal(await fs.readFile(path.join(dir,'daily-conversation-learning/backups/decisions-20261029/balance-dm-fast-reply.mjs'),'utf8'),original);
     const installed = await import(pathToFileURL(path.join(dir,'balance-dm-fast-reply.mjs')));
     assert.match(installed.fastReplyContext(), /decisions_review_policy/);
+    assert.match(installed.fastReplyContext(), /'latest_inbound'/);
     const sql = JSON.parse(installed.fastReplyClaim({}));
     assert.equal(sql.claim,'unchanged-fixture');
     assert.equal(sql.decisions_review.reason,'direct_call_without_api_review');

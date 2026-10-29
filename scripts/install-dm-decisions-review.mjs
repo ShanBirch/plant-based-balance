@@ -44,6 +44,13 @@ export async function installReview({ runtimeDir, envFile, liveVerified = false 
         await fs.mkdir(backupDir, { recursive: true });
         await fs.writeFile(path.join(backupDir, 'balance-dm-fast-reply.mjs'), original, { flag: 'wx' });
     }
+    if (!updated.includes("'latest_inbound',")) {
+        const anchor = "        'actions', (select jsonb_agg(to_jsonb(action)) from ig_next_actions action where thread_id=${uuid(threadId)}),";
+        if (!updated.includes(anchor)) throw new Error('Compaction context changed; inspect before adding inbound evidence');
+        updated = updated.replace(anchor, `        'latest_inbound', (select jsonb_build_object('id',id,'direction',direction,'text',text,'created_at',created_at)
+            from history where direction='in' and event_key like 'ig:%' order by created_at desc,id desc limit 1),
+${anchor}`);
+    }
     const code = await fs.readFile(modulePath);
     const codeHash = createHash('sha256').update(code).digest('hex');
     await fs.copyFile(modulePath, path.join(runtimeDir, 'review-dm-decisions.mjs'));
