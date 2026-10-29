@@ -1,3 +1,19 @@
+## Natural transitions and separate pushback, Shannon 30 October 2026
+
+This supersedes the 29 October generic gym-bridge example. Read the current continuityPolicy.trainingTransition and pushbackTracking from conversation-continuity.mjs. ABC is an earliest opportunity, never a requirement to interrupt unrelated conversation. Ground the transition in their actual words or a truthful relevant answer about Shannon's day. Avoid qualification question chains and explain commercial intent directly when asked. An optional challenge invitation needs person-specific relevance, not a compulsory coach-status or blocker interview. Respect all refusals and existing holds.
+
+New exposure policy revision: `natural_transition_20261030_v1`. Put this in review.policy_revision for future training_opened and invited receipts. Preserve historical receipt revisions, stable arms, counting, intake capacity, offer and current sole sender. Do not send retrospective corrections or manufacture follow-ups.
+
+After full-thread review of an actual subsequent inbound, use record_balance_challenge_timing_event(thread_id,kind,inbound_message_id,review) with:
+- fitness_topic_rejected: explicitly rejects fitness discussion/activity. Merely not using a gym is not rejection.
+- sales_intent_concern: questions selling, hidden business intent or being interviewed; concern is not automatically a refusal.
+- offer_declined: explicitly declines a delivered invitation. Keep the existing declined receipt for backward compatibility too.
+- already_supported: explicitly satisfied with an existing coach/plan or declines because already supported. Mere coach ownership is not refusal.
+
+Review requires full_thread_reviewed:true, summary, reviewed_by, exact verbatim evidence_quote, exposure_message_id referencing the actual earlier training_opened/invited outbound, and policy_revision matching that exposure (legacy_unversioned only when absent). Offer declines require invited exposure. Multiple categories can coexist if each has evidence. No inferred classification from emojis, gratitude, no goal or silence. Historical generic declines stay unclassified until reviewed; never invent a new assignment for an old chat.
+
+The report retains old group totals and adds distinct-account category counts plus pushback_cohorts by arm, exposure revision and event kind. Categories overlap, so do not sum them as people. Compare the same revision and equal 48-hour reply/7-day downstream windows; include assigned-but-unexposed, unknown and immature cases. Zero newly labelled receipts is not proof of zero pushback. The wording revision is a new analysis cohort within the same arms; do not compare it to old wording as a clean timing effect.
+
 # Free challenge conversation timing pilot
 
 Shannon authorised a prospective A/B/C timing test on 28 October 2026.

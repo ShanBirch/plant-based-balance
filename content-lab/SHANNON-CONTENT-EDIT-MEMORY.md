@@ -1,5 +1,10 @@
 # Shannon Content Edit Memory
 
+## 30 October 2026 - natural fitness transitions and ABC pushback
+
+Shannon requested outreach changes after reviewing 11 pushback exchanges. Use an actual person-specific opening, avoid qualification question chains, answer sales-intent concerns honestly and relate challenge invitations to their own words. Preserve first/second/third-conversation ABC timing. Track fitness-topic rejection, sales-intent concern, offer declined and already supported independently using exact inbound and delivered-exposure evidence. Silence and no goal are not refusal. See docs/challenge-conversation-timing.md and the installed continuity policy. Future eligible replies only; no retrospective messages.
+
+
 ## 16 October 2026 - readable separate DM bubbles
 
 Shannon reaffirmed that lead replies should arrive as understandable separate messages, not one large text block. Keep the challenge overview separate from the goal/current-routine question. Usually one to three complete short bubbles are enough, with a short answer staying in one; do not fragment every sentence. The sole native operator must retain per-bubble delivery evidence and no-repeat behavior, and re-read new inbounds before sending remaining questions. See `docs/summer-ready-chat-booking-2026-10-16.md`.

@@ -37,6 +37,6 @@ test('actual helper returns policy and saves review with existing source and own
   assert.match(fastReplyContext(input),/conversation_continuity_policy/);
   assert.throws(()=>fastReplyClaim(input),/review required/);
   const sql=fastReplyClaim({...input,conversationReview:{...base,disposition:'continue',nextMove:'Understand wanted support',responseInviting:true}});
-  for(const value of ['conversation_review','organic_continuity_20261028','claim_ig_next_actions','order by created_at desc,id desc limit 1','balance_challenge_timing_context','timing_override']) assert.ok(sql.includes(value));
+  for(const value of ['conversation_review','organic_continuity_20261030','claim_ig_next_actions','order by created_at desc,id desc limit 1','balance_challenge_timing_context','timing_override']) assert.ok(sql.includes(value));
   assert.throws(()=>fastReplyClaim({...input,independentHoldsChecked:false,conversationReview:{...base,lane:'other',laneReason:'Client support'}}),/independent gates/);
 });

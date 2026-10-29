@@ -60,6 +60,38 @@ begin
  ctx:=record_balance_challenge_timing_conversation(tid,direct_reply,boundary_review);
  assert (ctx->>'conversation_number')::int=3,'answered direct follow-up counts as third conversation';
  assert (ctx->>'training_due')::boolean,'all three groups eligible by third verified conversation';
+ -- Pushback is separate from generic invitation declines and requires exact source evidence.
+ perform record_balance_challenge_timing_event(tid,'sales_intent_concern',direct_reply,
+ jsonb_build_object('full_thread_reviewed',true,'summary','Controlled review','reviewed_by','fixture',
+ 'evidence_quote','Controlled reply','exposure_message_id',outbound,'policy_revision','legacy_unversioned'));
+ perform record_balance_challenge_timing_event(tid,'sales_intent_concern',direct_reply,
+ jsonb_build_object('full_thread_reviewed',true,'summary','Retry','reviewed_by','fixture',
+ 'evidence_quote','Controlled reply','exposure_message_id',outbound,'policy_revision','legacy_unversioned'));
+ assert (select count(*) from balance_challenge_timing_events where assignment_id=(a->>'id')::uuid and kind='sales_intent_concern')=1,'pushback retry deduplicates';
+ for review in select jsonb_build_object('full_thread_reviewed',true,'summary','fixture','reviewed_by','fixture',
+ 'evidence_quote',q,'exposure_message_id',outbound,'policy_revision','legacy_unversioned') from unnest(array['invented quote','']) q loop
+  expected_failure:=false;
+  begin perform record_balance_challenge_timing_event(tid,'fitness_topic_rejected',direct_reply,review);
+  exception when others then expected_failure:=true; end;
+  assert expected_failure,'invented or empty quote rejected';
+ end loop;
+ expected_failure:=false;
+ begin perform record_balance_challenge_timing_event(tid,'offer_declined',outbound,
+ '{"full_thread_reviewed":true,"summary":"fixture","reviewed_by":"fixture"}');
+ exception when others then expected_failure:=true; end;
+ assert expected_failure,'outbound cannot be pushback';
+ for review in select jsonb_build_object('full_thread_reviewed',true,'summary','controlled outcome','reviewed_by','fixture',
+ 'evidence_quote','Controlled reply','exposure_message_id',outbound,'policy_revision','legacy_unversioned','category',k)
+ from unnest(array['fitness_topic_rejected','offer_declined','already_supported']) k loop
+  perform record_balance_challenge_timing_event(tid,review->>'category',direct_reply,review);
+ end loop;
+ expected_failure:=false;
+ begin perform record_balance_challenge_timing_event(tid,'sales_intent_concern',direct_reply,
+ jsonb_build_object('full_thread_reviewed',true,'summary','fixture','reviewed_by','fixture',
+ 'evidence_quote','Controlled reply','exposure_message_id',outbound,'policy_revision','wrong-cohort'));
+ exception when others then expected_failure:=true; end;
+ assert expected_failure,'cannot attribute pushback to wrong policy cohort';
+ assert balance_challenge_timing_report()->'pushback_cohorts' is not null,'report exposes policy cohorts';
  assert not has_table_privilege('anon','balance_challenge_timing_assignments','SELECT'),'private assignment table';
  assert not has_function_privilege('authenticated','assign_balance_challenge_timing(uuid,uuid,jsonb)','EXECUTE'),'private RPC';
  assert exists(select 1 from pg_class where oid='balance_challenge_timing_events'::regclass and relrowsecurity),'RLS required';
