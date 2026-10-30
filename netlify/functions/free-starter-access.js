@@ -30,9 +30,12 @@ exports.handler = async function (event) {
             rows = await supabaseQuery(`balance_free_starters?user_id=eq.${encodeURIComponent(user.id)}&revoked_at=is.null&select=id,workouts_ready,workout_limit,experience,starts_at,ends_at,setup&limit=1`);
         }
         const grant = rows?.[0];
-        if (grant?.experience === 'coached_month_v1') {
+        if (grant?.experience === 'coached_month_v1' && !grant.setup?.supportOnly) {
             const programs = await supabaseQuery(`custom_workout_programs?user_id=eq.${encodeURIComponent(user.id)}&is_active=eq.true&select=id&limit=1`);
             if (!programs?.[0]?.id || !grant.starts_at || !grant.ends_at) return response(409, { grantUnavailable:true, error:'Your coaching program needs a setup check. Please ask Shannon to check it before starting.' });
+        }
+        if (grant?.setup?.supportOnly && (grant.experience !== 'coached_month_v1' || grant.setup.challengeIntakeId !== 'consistency_20261025' || !grant.starts_at || !grant.ends_at)) {
+            return response(409, { grantUnavailable:true, error:'Your check-in access needs a setup check. Please ask Shannon for help.' });
         }
         if (grant?.experience === 'coached_month_v1' && grant.ends_at && Date.parse(grant.ends_at) <= Date.now()) {
             return response(403, { expired: true, error: 'Your free coaching period has ended. Contact Shannon about continuing. No payment has been taken.' });

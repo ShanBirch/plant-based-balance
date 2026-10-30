@@ -88,3 +88,15 @@ test('coached app tour has no lesson, feed-post, workout completion or Weekly Go
     assert.equal(steps.length,3);
     assert.ok(steps.every(step=>step.tab!=='learning'&&!step.requiresWeeklyGoals&&!step.requiresFeedPost&&!step.requiresFoundationsLesson));
 });
+
+test('support-only welcome and tour preserve trainer work without workout or paid promises',async()=>{
+ const w=await starter('coached_month_v1',{supportOnly:true,challengeIntakeId:'consistency_20261025',schedule:[]});
+ assert.equal(w.BalanceFreeStarter.supportOnly(),true);
+ assert.match(w.BalanceFreeStarter.welcomeCopy(),/Keep your training with your trainer/);
+ assert.doesNotMatch(w.BalanceFreeStarter.welcomeCopy(),/14.99|program is ready/);
+ assert.match(w.BalanceFreeStarter.adaptAction({id:'workout_week_intro'}).body,/Continue your trainer/);
+ const source=read('dashboard.html'),start=source.indexOf('  function requiredOnboardingTourSteps()'),end=source.indexOf('\n  steps.push',start);
+ const context={window:w};vm.runInNewContext(source.slice(start,end),context);
+ const steps=context.requiredOnboardingTourSteps();assert.equal(steps.length,1);assert.match(steps[0].body,/Inbox/);
+ w.currentUser={id:'other'};assert.equal(w.BalanceFreeStarter.supportOnly(),false);
+});

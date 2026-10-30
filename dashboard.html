@@ -14424,6 +14424,9 @@ if(!window._pbbIsIOSSafari) {
   });
 
   function requiredOnboardingTourSteps(){
+    if (window.BalanceFreeStarter?.supportOnly?.()) return [
+      {tab:'dashboard',sel:'#next-obvious-steps-card',title:'Your weekly check-ins',body:'Keep your current training with your trainer. Open Message on Home takes you to Shannon in Inbox for messages and weekly check-ins.',metaPreview:true}
+    ];
     if (window.BalanceFreeStarter?.coached?.()) return [
       {tab:'dashboard',sel:'#next-obvious-steps-card',title:'Your coaching month',body:'Open Inbox for messages and weekly check-ins. Your program is in Movement and meal planning is in Nutrition.',metaPreview:true},
       {tab:'movement-tab',sel:'#today-workout-card',fallbackSel:'#movement-grid-container',title:'Your prepared workouts',body:'Your program follows the days and times you agreed with Shannon. Open your sessions from the calendar.',metaPreview:true},
@@ -16090,6 +16093,10 @@ if (step && step.requiresFeedPost) {
     if (window.BalanceFreeStarter?.coached?.()) {
       if (intro) intro.textContent = 'Your profile is saved. Here is where to find your prepared program, messages and meal planning.';
       if (list) list.innerHTML = '<li><span><strong>Inbox:</strong> messages and weekly check-ins with Shannon.</span></li><li><span><strong>Movement:</strong> your prepared workout program.</span></li><li><span><strong>Nutrition:</strong> your meal planning tools.</span></li>';
+      if (window.BalanceFreeStarter?.supportOnly?.()) {
+        if (intro) intro.textContent = 'Your profile is saved. Keep your current training and use Inbox for your weekly check-in.';
+        if (list) list.innerHTML = '<li><span><strong>Inbox:</strong> messages and a short weekly check-in with Shannon.</span></li><li><span><strong>Your training:</strong> keep following your trainer’s programme.</span></li>';
+      }
     }
     const overlay = document.getElementById('guided-tour-overlay');
     if (overlay) overlay.classList.add('meta-tour-welcome-active');
@@ -16747,7 +16754,8 @@ window.endFeatureTour = function(skipped){
 
   var allFeatures = [
     {id:'weekly-checkin-progress-v1',tab:'home',sel:'.header-msg-icon',title:'Your weekly progress, beside your check-in',body:'Shannon can now attach a dated progress card beneath a text or voice check-in. Open the progress button to compare recorded sets with your next targets. Older cards keep their original targets.'},
-    {id:'coached-free-month-v1',tab:'dashboard',sel:'#next-obvious-steps-card',title:'Your coaching month is ready',body:'Find messages and check-ins in Inbox, your prepared program in Movement and meal planning in Nutrition. The course is separate.',condition:function(){return !!window.BalanceFreeStarter?.coached?.();}},
+    {id:'support-only-checkins-v1',tab:'dashboard',sel:'#next-obvious-steps-card',title:'Your weekly check-ins',body:'Keep your current training. Open Inbox for messages and a short weekly check-in with Shannon. Four weeks free, with no automatic billing.',condition:function(){return !!window.BalanceFreeStarter?.supportOnly?.();}},
+    {id:'coached-free-month-v1',tab:'dashboard',sel:'#next-obvious-steps-card',title:'Your coaching month is ready',body:'Find messages and check-ins in Inbox, your prepared program in Movement and meal planning in Nutrition. The course is separate.',condition:function(){return !!window.BalanceFreeStarter?.coached?.() && !window.BalanceFreeStarter?.supportOnly?.();}},
     {id:'free-two-workout-starter-v1',tab:'movement-tab',sel:'#today-workout-card',title:'Your free starter',body:'Your two workouts and course stay available without payment. Shannon reviews your setup before your workouts are ready.',condition:function(){return !!window.BalanceFreeStarter?.active() && !window.BalanceFreeStarter?.coached?.();}},
     { id:'family-meal-servings-v1', tab:'meals', sel:'.ai-plan-family', title:'Your plate and the family batch', body:'Open a family recipe to compare your serving with the batch. Choose grams or hands and household measures, then set how many portions to cook.', fallbackSel:'#ai-plan-loaded', condition:function(){ return !!(window._aiMealPlanCache && window._aiMealPlanCache.diet_type === 'family_lower_carb'); } },
     { id:'offline-launch-v1', tab:'movement-tab', sel:'#today-workout-card', title:'Open your saved workout offline', body:'On web, supported Android devices and updated iPhone apps, open Balance online first so its files and your workout can be saved. You can then reopen your saved workout without reception. Completed sets sync when you reconnect. New content and videos still need internet.' },

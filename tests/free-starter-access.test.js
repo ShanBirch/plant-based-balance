@@ -175,3 +175,15 @@ test('lesson handoff reaches Home even if progress persistence or an intermediat
         assert.deepEqual(events,['close','dashboard']);
     }
 });
+
+test('check-in-only access needs server dates and cohort but never a replacement program',async()=>{
+ const grant={id:'support',experience:'coached_month_v1',workouts_ready:true,starts_at:'2026-10-30T00:00:00Z',ends_at:'2099-11-27T00:00:00Z',setup:{supportOnly:true,challengeIntakeId:'consistency_20261025',schedule:[]}};
+ const e=endpoint({rows:[grant]});
+ const r=await e.handler({httpMethod:'POST',headers:{authorization:'Bearer test'},body:'{}'});
+ assert.equal(r.statusCode,200);assert.equal(JSON.parse(r.body).starter.courseAccess,false);
+ assert.equal(e.calls.some(c=>c[0].startsWith('custom_workout_programs?')),false);
+ for(const change of [{ends_at:null},{setup:{supportOnly:true}},{ends_at:'2020-01-01T00:00:00Z'}]){
+  const bad=endpoint({rows:[{...grant,...change}]});
+  assert.notEqual((await bad.handler({httpMethod:'POST',headers:{authorization:'Bearer test'},body:'{}'})).statusCode,200);
+ }
+});
