@@ -3,7 +3,9 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const modulePath = fileURLToPath(new URL('./review-dm-decisions.mjs', import.meta.url));
+// The installed organic operator uses this policy-complete source. The older
+// root helper is retained for compatibility, not as an installation source.
+const modulePath = fileURLToPath(new URL('./instagram-dm/review-dm-decisions.mjs', import.meta.url));
 const marker = '// Decisions review integration 20261029';
 
 export async function installReview({ runtimeDir, envFile, liveVerified = false }) {

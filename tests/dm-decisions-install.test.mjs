@@ -43,4 +43,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     const config = JSON.parse(await fs.readFile(path.join(dir,'decisions-review-config.json'),'utf8'));
     assert.equal(config.enabled,true);
     assert.equal(config.mode,'advisory');
+    const reviewer = await import(pathToFileURL(path.join(dir, 'review-dm-decisions.mjs')));
+    assert.ok(reviewer.CRITERIA.approach_timing_six_cells, 'reinstall must preserve the current six-cell policy');
+    assert.match(await fs.readFile(path.join(dir, 'review-dm-decisions.mjs'), 'utf8'), /approach_timing_experiment: input.approachTimingExperiment/);
 });

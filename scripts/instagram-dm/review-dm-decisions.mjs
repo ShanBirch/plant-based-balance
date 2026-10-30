@@ -50,6 +50,7 @@ export function buildReviewRequest(input) {
         candidate: input.candidateText,
         conversation_review: input.conversationReview,
         challenge_timing_experiment: input.challengeTimingExperiment || null,
+        approach_timing_experiment: input.approachTimingExperiment || null,
         verified_offer_evidence: input.verifiedOfferEvidence || null,
         verified_self_disclosure: input.verifiedSelfDisclosure || null,
         learning_revision: input.learningRevision || 'unversioned'
@@ -99,6 +100,7 @@ export async function reviewCandidate(input, { apiKey = process.env.OPENAI_API_K
         inputHash: prepared.inputHash, candidateHash: prepared.candidateHash,
         learningRevision: input.learningRevision || 'unversioned',
         abcArm: input.challengeTimingExperiment?.assignment?.variant || null,
+        approachSubvariant: input.approachTimingExperiment?.assignment?.subvariant || null,
         transition: { kind: kinds.includes(transition?.kind) ? transition.kind : 'unlabelled',
             sourceMessageIds: Array.isArray(transition?.sourceMessageIds)
                 ? transition.sourceMessageIds.filter(id => input.messages.some(m => m.id === id)) : [],
@@ -165,6 +167,7 @@ export async function reviewClaim(input, { currentPolicy, learningRevision,
             historySummary: context.thread?.custom_data?.relationship_memory_compaction?.summary,
             conversationReview: input.conversationReview,
             challengeTimingExperiment: context.challenge_timing_experiment,
+            approachTimingExperiment: context.approach_timing_experiment,
             verifiedOfferEvidence: input.verifiedOfferEvidence,
             verifiedSelfDisclosure: input.verifiedSelfDisclosure
         };
