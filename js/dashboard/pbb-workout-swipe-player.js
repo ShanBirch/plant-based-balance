@@ -270,6 +270,7 @@
             }
             #workout-focus-title,
             #workout-focus-menu-button,
+            #workout-focus-messages-button,
             #workout-focus-progress,
             #workout-focus-menu,
             #workout-focus-cues-page,
@@ -297,7 +298,7 @@
                 min-height: 68px;
                 padding: calc(9px + max(42px, env(safe-area-inset-top, 0px))) 14px 9px !important;
                 display: grid !important;
-                grid-template-columns: 54px minmax(0, 1fr) 48px;
+                grid-template-columns: 54px minmax(0, 1fr) 44px 44px;
                 gap: 8px;
                 background: color-mix(in srgb, var(--workout-focus-bg) 95%, transparent) !important;
                 border-bottom: 1px solid var(--workout-focus-border);
@@ -335,7 +336,8 @@
                 font-size: .84rem !important;
                 line-height: 1;
             }
-            #view-active-workout.workout-focus-pilot #workout-focus-menu-button {
+            #view-active-workout.workout-focus-pilot #workout-focus-menu-button,
+            #view-active-workout.workout-focus-pilot #workout-focus-messages-button {
                 display: inline-grid;
                 place-items: center;
                 justify-self: end;
@@ -358,7 +360,8 @@
                 line-height: 1;
                 cursor: pointer;
             }
-            #view-active-workout.workout-focus-pilot #workout-focus-menu-button > svg {
+            #view-active-workout.workout-focus-pilot #workout-focus-menu-button > svg,
+            #view-active-workout.workout-focus-pilot #workout-focus-messages-button > svg {
                 display: block;
                 width: 20px;
                 height: 20px;
@@ -844,10 +847,49 @@
         return button;
     }
 
+    function openWorkoutMessages() {
+        closeFocusMenu();
+        const ids = ['feed-messages-panel', 'direct-message-modal', 'group-chat-modal'];
+        const returnToWorkout = () => {
+            callGlobal('closeDirectMessageModal');
+            callGlobal('closeGroupChatModal');
+            callGlobal('closeFeedMessagesPanel');
+            document.body.classList.remove('workout-messages-open');
+            document.getElementById('workout-focus-messages-button')?.focus();
+        };
+        document.body.classList.add('workout-messages-open');
+        ids.forEach(id => {
+            const panel = document.getElementById(id);
+            if (!panel || panel.querySelector('.workout-chat-return')) return;
+            const handle = document.createElement('button');
+            handle.type = 'button';
+            handle.className = 'workout-chat-return';
+            handle.setAttribute('aria-label', 'Return to workout');
+            handle.innerHTML = '<span aria-hidden="true">⌃</span> Swipe up to return to workout';
+            let startY = null;
+            handle.addEventListener('pointerdown', event => { startY = event.clientY; handle.setPointerCapture(event.pointerId); });
+            handle.addEventListener('pointerup', event => { if (startY !== null && startY - event.clientY > 30) returnToWorkout(); startY = null; });
+            handle.addEventListener('pointercancel', () => { startY = null; });
+            handle.addEventListener('click', returnToWorkout);
+            panel.appendChild(handle);
+        });
+        callGlobal('openFeedMessagesPanel');
+    }
+
     function ensureFocusShell() {
         const view = getView();
         const topbar = document.getElementById('workout-player-topbar');
         if (!view || !topbar) return;
+
+        if (!document.getElementById('workout-focus-messages-button')) {
+            const messages = document.createElement('button');
+            messages.id = 'workout-focus-messages-button';
+            messages.type = 'button';
+            messages.setAttribute('aria-label', 'Open messages');
+            messages.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 3h16a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H9l-5 4v-4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm1 4v2h14V7zm0 4v2h10v-2z"/></svg>';
+            messages.addEventListener('click', openWorkoutMessages);
+            topbar.appendChild(messages);
+        }
 
         if (!document.getElementById('workout-focus-menu-button')) {
             const button = document.createElement('button');
