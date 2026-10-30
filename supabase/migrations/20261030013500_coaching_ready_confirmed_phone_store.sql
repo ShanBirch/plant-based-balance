@@ -11,7 +11,7 @@ begin
 
  if not exists(select 1 from balance_free_coaching_jobs where setup_id=s.id and status='prepared') then raise exception 'Separate worker verification is not complete'; end if;
  select * into t from ig_threads where id=s.thread_id;
- 
+
  select * into g from balance_free_starters where id=s.grant_id;
  if s.id is null or s.notice_status is distinct from 'pending' or s.attempted_at is not null
  or g.revoked_at is not null or g.claim_before<=now() or not free_coaching_thread_allowed(t.id) then raise exception 'Setup notice is not eligible'; end if;
