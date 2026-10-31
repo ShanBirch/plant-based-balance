@@ -57,7 +57,7 @@ ${anchor}`);
     const codeHash = createHash('sha256').update(code).digest('hex');
     await fs.copyFile(modulePath, path.join(runtimeDir, 'review-dm-decisions.mjs'));
     await fs.writeFile(path.join(runtimeDir, 'decisions-review-config.json'), JSON.stringify({
-        enabled: true, mode: 'advisory', version: 'dm_decisions_review_20261029_v1',
+        enabled: true, mode: 'advisory', version: 'dm_decisions_review_natural_20261101_v1',
         policyHash: codeHash, envFile: path.resolve(envFile), liveSyntheticVerified: true
     }, null, 2) + '\n');
     if (updated !== original) {

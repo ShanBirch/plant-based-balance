@@ -13,9 +13,9 @@ test('contextual continuation supports natural wording without compulsory questi
   assert.doesNotThrow(()=>validateConversationReview({...base,disposition:'continue',nextMove:'Reflect their new routine and invite the missing support detail',responseInviting:true},source));
 });
 test('challenge invitation needs relevant fitness context and capacity without coach or wanted-help gate',()=>{
-  const offer={...base,disposition:'invite_challenge',fitEvidence:{relevance:'They want to build strength'},capacityChecked:true,capacityRemaining:5,termsDisclosed:true};
+  const offer={...base,disposition:'invite_challenge',rapportReviewed:true,naturalInvitationReason:'Genuine rapport naturally winds down',capacityChecked:true,capacityRemaining:5,termsDisclosed:true};
   assert.doesNotThrow(()=>validateConversationReview(offer,source));
-  for(const key of Object.keys(offer.fitEvidence)) assert.throws(()=>validateConversationReview({...offer,fitEvidence:{...offer.fitEvidence,[key]:''}},source));
+  assert.throws(()=>validateConversationReview({...offer,naturalInvitationReason:''},source));
   for(const patch of [{capacityRemaining:0},{capacityChecked:false},{termsDisclosed:false}]) assert.throws(()=>validateConversationReview({...offer,...patch},source));
 });
 test('refusal support goodbye and personal exceptions do not force sales questions',()=>{
@@ -24,7 +24,7 @@ test('refusal support goodbye and personal exceptions do not force sales questio
   assert.doesNotThrow(()=>validateConversationReview({...base,lane:'other',laneReason:'Linked client asking for workout support'},source));
 });
 test('brief free invitation can precede full enrolment terms without dropping capacity checks',()=>{
-  const offer={...base,disposition:'invite_challenge',fitEvidence:{relevance:'They want to restart training'},capacityChecked:true,capacityRemaining:5,freeInvitation:true};
+  const offer={...base,disposition:'invite_challenge',rapportReviewed:true,naturalInvitationReason:'An optional invitation fits their current conversation',capacityChecked:true,capacityRemaining:5,freeInvitation:true};
   assert.doesNotThrow(()=>validateConversationReview(offer,source));
   assert.throws(()=>validateConversationReview({...offer,freeInvitation:false},source));
   assert.throws(()=>validateConversationReview({...offer,capacityRemaining:0},source));
@@ -37,22 +37,22 @@ test('actual helper returns policy and saves review with existing source and own
   assert.match(fastReplyContext(input),/conversation_continuity_policy/);
   assert.throws(()=>fastReplyClaim(input),/review required/);
   const sql=fastReplyClaim({...input,conversationReview:{...base,disposition:'continue',nextMove:'Understand wanted support',responseInviting:true}});
-  for(const value of ['conversation_review','organic_continuity_20261030','claim_ig_next_actions','order by created_at desc,id desc limit 1','balance_challenge_timing_context','timing_override']) assert.ok(sql.includes(value));
+  for(const value of ['conversation_review','organic_natural_20261101_v1','claim_ig_next_actions','order by created_at desc,id desc limit 1']) assert.ok(sql.includes(value));
   assert.throws(()=>fastReplyClaim({...input,independentHoldsChecked:false,conversationReview:{...base,lane:'other',laneReason:'Client support'}}),/independent gates/);
 });
 
 
-test('approved direct ABC invitation needs no invented fitness goal but retains source/capacity',()=>{
- const offer={...base,disposition:'invite_challenge',challengeApproach:'direct_challenge',rapportReviewed:true,directChallengeReason:'Transparent invitation in the assigned first conversation',capacityChecked:true,capacityRemaining:2,freeInvitation:true};
+test('natural invitation requires rapport and capacity, never fitness qualification or an arm',()=>{
+ const offer={...base,disposition:'invite_challenge',rapportReviewed:true,naturalInvitationReason:'Their genuine Story conversation has a natural opening for an optional invitation',capacityChecked:true,capacityRemaining:2,freeInvitation:true};
  assert.doesNotThrow(()=>validateConversationReview(offer,source));
- assert.throws(()=>validateConversationReview({...offer,directChallengeReason:''},source));
- assert.throws(()=>validateConversationReview({...offer,rapportReviewed:false},source));
- assert.throws(()=>validateConversationReview({...offer,capacityRemaining:0},source));
- assert.throws(()=>validateConversationReview({...offer,challengeApproach:'fitness_first'},source));
+ for(const patch of [{naturalInvitationReason:''},{rapportReviewed:false},{capacityRemaining:0},{capacityChecked:false},{freeInvitation:false}]) assert.throws(()=>validateConversationReview({...offer,...patch},source));
 });
-
-test('context and claim include six-cell approach and timing guard',()=>{
- const input={threadId:source,sourceMessageId:source,runId:'offline-fixture',username:'fixture',nativeConversationId:'fixture',finalText:'A small free challenge might interest you.',leadState:'engaged',fullThreadReviewed:true,nativeIdentityVerified:true,independentHoldsChecked:true};
- assert.match(fastReplyContext(input),/approach_timing_experiment/);
- assert.match(fastReplyClaim({...input,conversationReview:{...base,disposition:'continue',nextMove:'Natural current topic',responseInviting:true}}),/balance_challenge_approach_claim_allowed/);
+test('retired B/C and either old approach cannot gate SQL or leak into loaded context',()=>{
+ const input={threadId:source,sourceMessageId:source,runId:'offline-fixture',username:'fixture',nativeConversationId:'fixture',finalText:'Would you like to try the free challenge?',leadState:'engaged',fullThreadReviewed:true,nativeIdentityVerified:true,independentHoldsChecked:true,decisionsContext:{challenge_timing_experiment:{assignment:{variant:'C'},training_due:false},approach_timing_experiment:{assignment:{subvariant:'fitness_first'}}},conversationReview:{...base,disposition:'invite_challenge',rapportReviewed:true,naturalInvitationReason:'Genuine rapport naturally fits an invitation',capacityChecked:true,capacityRemaining:2,freeInvitation:true}};
+ const sql=fastReplyClaim(input),context=fastReplyContext(input);
+ assert.doesNotMatch(sql,/approach_claim_allowed|training_due|timing_override/);
+ assert.doesNotMatch(context,/balance_challenge_(timing|approach)_context|fresh_unassigned_source_needs_review/);
+ assert.match(context,/organic_natural_20261101_v1/);
+ assert.match(sql,/claim_ig_next_actions/);
+ for(const key of ['fullThreadReviewed','nativeIdentityVerified','independentHoldsChecked'])assert.throws(()=>fastReplyClaim({...input,[key]:false}),/independent gates/);
 });

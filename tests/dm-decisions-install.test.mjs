@@ -44,6 +44,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     assert.equal(config.enabled,true);
     assert.equal(config.mode,'advisory');
     const reviewer = await import(pathToFileURL(path.join(dir, 'review-dm-decisions.mjs')));
-    assert.ok(reviewer.CRITERIA.approach_timing_six_cells, 'reinstall must preserve the current six-cell policy');
-    assert.match(await fs.readFile(path.join(dir, 'review-dm-decisions.mjs'), 'utf8'), /approach_timing_experiment: input.approachTimingExperiment/);
+    assert.equal(reviewer.CRITERIA.approach_timing_six_cells, undefined);
+    assert.equal(reviewer.CRITERIA.respects_abc, undefined);
+    assert.ok(reviewer.CRITERIA.natural_transition.includes('No first/second/third'));
+    assert.doesNotMatch(await fs.readFile(path.join(dir, 'review-dm-decisions.mjs'), 'utf8'), /approach_timing_experiment: input.approachTimingExperiment/);
 });

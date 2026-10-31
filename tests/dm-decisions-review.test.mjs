@@ -19,14 +19,14 @@ const fixture = () => ({
 });
 const answers = probability => ({ answers: Object.keys(CRITERIA).map(name => ({ name, type: 'predicate', probability })) });
 
-test('request preserves complete turn and ABC but excludes arbitrary secrets', () => {
+test('request preserves complete turn and excludes retired factors but excludes arbitrary secrets', () => {
     const input = { ...fixture(), apiKey: 'fixture-secret', contactEmail: 'private@example.invalid' };
     const { request } = buildReviewRequest(input);
     const text = JSON.stringify(request);
     assert.equal(request.model, 'gpt-6-luna');
     assert.equal(request.questions.length, 7);
     assert.equal(request.input[1].content[0].type, 'input_json');
-    assert.equal(request.input[1].content[0].data.challenge_timing_experiment.assignment.variant, 'C');
+    assert.equal(request.input[1].content[0].data.challenge_timing_experiment, undefined);
     assert.match(text, /How much is it, and can I train at home/);
     assert.doesNotMatch(text, /fixture-secret|private@example/);
 });
@@ -133,17 +133,18 @@ test('missing context, missing credentials and artifact failure preserve honest 
     assert.equal(validateClaimReview(noArtifact).status, 'passed');
 });
 
-test('natural transition review records exact trigger and stable ABC without requiring a blocker', async () => {
+test('natural transition review records exact trigger without restoring retired ABC', async () => {
     const input = fixture();
     input.conversationReview.transition = { kind: 'day_question_training_bridge',
         sourceMessageIds: [input.sourceMessageId, 'not-in-history'], selfDisclosureVerified: true };
     const result = await reviewCandidate(input, { apiKey: 'offline-fixture',
         fetchImpl: async () => ({ ok: true, json: async () => answers(0.95) }) });
-    assert.equal(result.criteriaRevision, 'natural_training_transition_20261029_v1');
+    assert.equal(result.criteriaRevision, 'organic_natural_20261101_v1');
     assert.equal(result.transition.kind, 'day_question_training_bridge');
     assert.deepEqual(result.transition.sourceMessageIds, [input.sourceMessageId]);
-    assert.equal(result.abcArm, 'C');
-    assert.equal(result.transition.trainingDue, false);
-    assert.match(CRITERIA.natural_transition, /Never invent a workout/);
-    assert.match(CRITERIA.useful_next_step, /does not require a blocker interview/);
+    assert.equal(result.abcArm, undefined);
+    assert.equal(result.experimentEnforcement, false);
+    assert.equal(result.transition.trainingDue, undefined);
+    assert.match(CRITERIA.grounded, /no invented/);
+    assert.match(CRITERIA.avoids_repetition, /discovery ladder/);
 });

@@ -10,18 +10,9 @@ No raw messages, request bodies or URL queries are collected. Expected HTTP
 failures and resource/slow signals are not automatically confirmed defects.
 
 
-## Organic coaching intake, 25 October 2026
+## Organic natural conversation authority, 1 November 2026
 
-Shannon authorised `docs/four-week-coaching-challenge.md`: understand goal,
-current routine, existing support and actual openness to help before an organic
-offer. A goal alone does not earn a pitch. Calls are optional. The new offer is
-one rolling six-person Balance four-week consistency challenge, four weeks free
-from invitation claim, then AUD $14.99/week only after explicit choice and a
-verified payment path. Disclose continuation before enrolment; no auto-billing.
-Use the live status/reservation RPCs and existing separate setup worker. Never
-bypass the six-person limit with another free-month offer. Preserve historical
-promises, separate paid/Summer Ready offers, independent holds and sole sender.
-This supersedes older organic goal-only free-month and call-first instructions.
+Shannon retired organic A/B/C timing crossed with direct_challenge/fitness_first. Read docs/organic-natural-conversations.md and the installed current-conversation-policy.md for the single current authority. Genuine rapport then a natural optional free challenge invitation, no gym/goal/blocker/coach interview first or assigned episode/approach. Useful unknown setup questions after interest. Four weeks free, no card, no automatic billing, no obligation to continue clearly before enrolment. Fresh rolling six-person capacity, suitability reservation and explicit acceptance remain. Direct price questions get honest immediate answers; otherwise contextual later paid continuation only after actual use and time to judge value, verified current price/terms and separate paid agreement/payment. No proactive pricing during free enrolment/onboarding. Preserve every independent hold, exact delivery ownership and certain/uncertain no-repeat. No extra outreach, sender, schedule or capacity; historical experiment records remain unchanged. This supersedes older conflicting organic discovery/experiment/pricing wording below.
 
 ## Organic business conversations and outbound-comment replies, 16 October 2026
 
